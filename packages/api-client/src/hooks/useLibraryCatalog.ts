@@ -50,6 +50,34 @@ interface CatalogFetchClient {
   fetch<T>(url: string): Promise<T>;
 }
 
+/** Les types d'une grille de bibliothèque : « En cours » montre des épisodes, le reste films et séries. */
+export function catalogItemTypes(filters: CatalogFilters): string {
+  return filters.statusFilter === "IsResumable" ? "Movie,Episode" : "Movie,Series";
+}
+
+/**
+ * Les filtres d'une grille, en paramètres de `/Users/{id}/Items` — partagés avec
+ * le relevé des titres supprimables (`libraryDelete/deletableIndex.ts`) : « tout
+ * sélectionner » doit couvrir EXACTEMENT ce que la grille montre.
+ */
+export function catalogFilterParams(filters: CatalogFilters): string {
+  const {
+    genreIds, years, statusFilter, searchTerm, minCommunityRating, isFavorite, studioIds,
+    audioLanguages, subtitleLanguages,
+  } = filters;
+  let params = "";
+  if (genreIds && genreIds.length > 0) params += `&GenreIds=${genreIds.join(",")}`;
+  if (years && years.length > 0) params += `&Years=${years.join(",")}`;
+  if (statusFilter) params += `&Filters=${statusFilter}`;
+  if (isFavorite) params += `&IsFavorite=true`;
+  if (minCommunityRating != null) params += `&MinCommunityRating=${minCommunityRating}`;
+  if (studioIds && studioIds.length > 0) params += `&StudioIds=${studioIds.join(",")}`;
+  if (audioLanguages && audioLanguages.length > 0) params += `&AudioLanguages=${audioLanguages.map(encodeURIComponent).join(",")}`;
+  if (subtitleLanguages && subtitleLanguages.length > 0) params += `&SubtitleLanguages=${subtitleLanguages.map(encodeURIComponent).join(",")}`;
+  if (searchTerm && searchTerm.length >= 2) params += `&searchTerm=${encodeURIComponent(searchTerm)}`;
+  return params;
+}
+
 /** queryFn d'une page de catalogue — partagée entre le hook et le prefetch. */
 function buildCatalogPageFetcher(
   client: CatalogFetchClient,
@@ -57,12 +85,7 @@ function buildCatalogPageFetcher(
   libraryId: string,
   filters: CatalogFilters = {},
 ) {
-  const {
-    sortBy = "DateCreated", sortOrder = "Descending",
-    genreIds, years, statusFilter, searchTerm,
-    limit = 30, minCommunityRating, isFavorite, studioIds,
-    audioLanguages, subtitleLanguages, fields = "full",
-  } = filters;
+  const { sortBy = "DateCreated", sortOrder = "Descending", limit = 30, fields = "full" } = filters;
   // RecursiveItemCount requis par le filtre des séries vides ci-dessous ;
   // MediaSources requis pour les chips qualité au focus/hover (web, Android
   // TV) — c'est lui qui pèse : 87 % d'une page de films.
@@ -75,7 +98,7 @@ function buildCatalogPageFetcher(
 
   return ({ pageParam }: { pageParam?: unknown }) => {
     const startIndex = typeof pageParam === "number" ? pageParam : 0;
-    const itemTypes = statusFilter === "IsResumable" ? "Movie,Episode" : "Movie,Series";
+    const itemTypes = catalogItemTypes(filters);
     let url =
       `/Users/${userId}/Items?ParentId=${libraryId}` +
       `&SortBy=${sortBy}&SortOrder=${sortOrder}` +
@@ -85,15 +108,7 @@ function buildCatalogPageFetcher(
       `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1` +
       `&Limit=${limit}&StartIndex=${startIndex}` +
       `&EnableTotalRecordCount=true&EnableUserData=true`;
-    if (genreIds && genreIds.length > 0) url += `&GenreIds=${genreIds.join(",")}`;
-    if (years && years.length > 0) url += `&Years=${years.join(",")}`;
-    if (statusFilter) url += `&Filters=${statusFilter}`;
-    if (isFavorite) url += `&IsFavorite=true`;
-    if (minCommunityRating != null) url += `&MinCommunityRating=${minCommunityRating}`;
-    if (studioIds && studioIds.length > 0) url += `&StudioIds=${studioIds.join(",")}`;
-    if (audioLanguages && audioLanguages.length > 0) url += `&AudioLanguages=${audioLanguages.map(encodeURIComponent).join(",")}`;
-    if (subtitleLanguages && subtitleLanguages.length > 0) url += `&SubtitleLanguages=${subtitleLanguages.map(encodeURIComponent).join(",")}`;
-    if (searchTerm && searchTerm.length >= 2) url += `&searchTerm=${encodeURIComponent(searchTerm)}`;
+    url += catalogFilterParams(filters);
     return client.fetch<{ Items: MediaItem[]; TotalRecordCount: number }>(url).then((res) => ({
       Items: res.Items.filter((item) =>
         item.Type !== "Series" || (item.RecursiveItemCount ?? 0) > 0
