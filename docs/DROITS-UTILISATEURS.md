@@ -960,6 +960,20 @@ une NOUVELLE connexion est refusée en mots clairs.
   grâce, **position de lecture écrite par la clé d'administration** (le rapport d'arrêt du
   compte serait refusé — « Reprendre » restait vide), puis sockets fermées (4012).
   Un changement fait dans Jellyfin se voit en 30 s (cache) à 90 s au plus.
+- **Essais avant blocage, tenus par Tentacle** (`loginLockout.ts`, décision du coordinateur) :
+  Jellyfin 10.11.11 compte mais ne bloque pas (bug corrigé en 12). Pour les connexions qui
+  passent par Tentacle (web, bureau et mobile par le proxy) : après un mot de passe faux, la
+  politique relue ; compteur ≥ limite (> 0) et compte actif → `IsDisabled=true` par la
+  réécriture complète de la politique, et le refus dit « Ce compte est bloqué après trop
+  d'essais ». Après une réussite, le compteur remis à 0 par la politique (mesuré : il tient,
+  même après plus d'une minute d'activité). Un compte ACTIF au compteur resté plein — réactivé
+  par la fiche des droits (écouteur `onPolicyWritten`) ou dans Jellyfin (avant la connexion
+  suivante) — repart de 0 : il ne se rebloque pas au premier échec. Jellyfin refuse de
+  désactiver un administrateur : il ne l'est pas. **Hors de portée** : une connexion faite
+  directement à Jellyfin (son interface, une autre application) — Jellyfin 10.11 compte sans
+  bloquer, et Tentacle ne l'apprend qu'à la connexion suivante par lui.
+- **Jeton révoqué à la désactivation** : la politique gardée (30 s) peut dater d'avant ; un
+  refus de Jellyfin pour un compte connu « permis » la fait relire (5 s au plus par compte).
 - **Nouvelles connexions** (`connectRefusal.ts`) : un 403 de Jellyfin à la connexion (web,
   bureau par le proxy) est relu — désactivé (bloqué si le compteur a atteint la limite),
   hors plage, trop de sessions. Sans mot de passe, la règle de Jellyfin appliquée par
@@ -974,6 +988,9 @@ une NOUVELLE connexion est refusée en mots clairs.
   `tentacleApiFetch`) ; bloqué, la route est relue à `nextOpening` + 2 s, au plus toutes
   les cinq minutes ; revenu : requêtes invalidées, socket rouverte avec le même jeton.
   `JellyfinError.refusal` porte une connexion refusée.
+- Web et bureau, désactivé : la page dit que Jellyfin a fermé les sessions du compte. À la
+  réactivation, la route répond 401 (jeton révoqué) : la page devient « Ce compte a été
+  réactivé » avec « Se reconnecter » — jamais une app à moitié connectée sur un jeton mort.
 - Web et bureau : `AccountAccessGate` (`main.tsx`) REMPLACE l'application — tout est
   démonté (lecteur web, mpv, PiP, miroir, fenêtres du démarrage), `/watch` quitté.
   « Se déconnecter », « Changer de serveur » (bureau), « Changer de profil » (session de
@@ -1000,17 +1017,20 @@ une NOUVELLE connexion est refusée en mots clairs.
   page levée à la réouverture ; désactivé → page, levée ≤ 5 min après la réactivation, sans
   rejumelage ; « Se déconnecter du serveur » → écran de jumelage.
 - Essais : à travers Tentacle, le compteur avance d'exactement 1 par essai (ni masqué ni
-  doublé) ; Jellyfin 10.11 ne bloque pas et une réussite ne remet pas le compteur à 0.
+  doublé). Tentacle bloque au 3e mot de passe faux (`LoginAttemptsBeforeLockout = 3`), par la
+  connexion web comme par le proxy du bureau ; le bon mot de passe est ensuite refusé
+  « bloqué après trop d'essais » ; réactivé par la fiche des droits, le compteur est à 0 et un
+  mot de passe faux ne rebloque pas. Le limiteur de Tentacle (5 connexions par minute et par
+  adresse) arrête un essai AVANT Jellyfin : le compteur n'avance pas — rien n'est masqué.
 
 ### 9.1.6 Restes
 
-- Essais avant blocage sur Jellyfin 10.11 : en attente de l'arbitrage du coordinateur
-  (appliquer le blocage par Tentacle, ou le laisser à Jellyfin 12).
 - La page d'un compte DÉSACTIVÉ sur le web dure tant que la session vit ; réactivé, son
   jeton (révoqué par Jellyfin) mène à la connexion.
 - « Bloqué après trop d'essais » se lit sur le compteur de Jellyfin (`InvalidLoginAttemptCount
-  ≥ LoginAttemptsBeforeLockout`) : en 10.11, un compteur jamais remis à 0 fait dire « bloqué »
-  à un compte désactivé par l'administrateur. Fiable une fois le blocage tenu (Jellyfin 12,
-  ou Tentacle s'il l'applique).
+  ≥ LoginAttemptsBeforeLockout`) : un compteur laissé plein par une connexion directe à
+  Jellyfin 10.11 peut faire dire « bloqué » à un compte désactivé à la main.
+- Watch Together : la sortie d'un compte bloqué passera par `ejectFromRoom` de S2 (raison
+  `access_revoked`) quand sa branche sera fusionnée ; d'ici là, `leaveWatchTogetherNow`.
 - Un changement de plages fait par l'administrateur pendant la fermeture n'atteint un client
   qu'à sa relecture (au plus cinq minutes) : son socket est fermé.
