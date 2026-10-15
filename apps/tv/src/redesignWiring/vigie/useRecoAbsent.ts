@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { titleKey } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
-import { absentCard, tmdbPosterUri } from "../cards/absentCards";
+import { absentCard, absentTrailerOf, tmdbPosterUri } from "../cards/absentCards";
 import { absentTitle, type AbsentTitle } from "./absentTitle";
 import { useAbsentStates } from "./useAbsentStates";
 import type { VigieGate } from "./useVigieGate";
@@ -51,6 +51,7 @@ export function useRecoAbsent(gate: VigieGate | null, recos: readonly RecoRowIte
           year: reco.year,
           posterUri: tmdbPosterUri(reco.posterPath),
           absent: absent ?? { label: "", tone: "neutral" },
+          trailer: absentTrailerOf(key),
         }),
         focusNote: states?.hintOf(key) ?? note,
       };
