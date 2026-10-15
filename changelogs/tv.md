@@ -8,6 +8,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 ## [1.11.0]
 <!-- Bloc nu : Android TV (Google Play, 500 caractères). Depuis la 1.10.2. Le texte complet est dans [atv-1.11.0]. -->
 ### FR
+- **Choisissez vos bibliothèques** dans la barre, profil par profil
 - **Réglages › Accueil** : choisissez le bandeau principal, dont vos meilleures recommandations (serveur 1.30.0)
 - **Ma liste et Favoris** se trient et se filtrent par type
 - **Aperçu de bande-annonce au focus**, rapide, à la taille des cartes
@@ -16,6 +17,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - Profils : plus de code PIN redemandé pour revenir au sien
 
 ### EN
+- **Pick your libraries** for the side bar, profile by profile
 - **Settings › Home**: choose the main banner, including your best recommendations (server 1.30.0)
 - **My List and Favorites** can be sorted and filtered by type
 - **Trailer preview on focus**, quick, sized to your cards
@@ -26,6 +28,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 ## [atv-1.11.0]
 <!-- Bloc Apple TV (App Store Connect, 4000 caractères) : depuis la 1.10.2. -->
 ### FR
+- **Vos bibliothèques dans la barre** : à la première ouverture de chaque profil, choisissez en un instant les bibliothèques épinglées dans la barre de gauche et leur ordre ; le propriétaire de la famille peut appliquer son choix à d'autres profils de ce téléviseur
 - **« Qui regarde ? »** : le profil retenu sur ce téléviseur ne montre plus de cadenas, puisqu'il s'ouvre sans code PIN
 - **Changer de profil puis revenir au sien** : plus de code PIN redemandé
 - **Aperçu de bande-annonce au focus** : rapide, à la taille des cartes choisie, jamais hors de l'écran — titres hors bibliothèque compris
@@ -35,6 +38,7 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **Ma liste et Favoris se trient** : derniers arrivés, titre, année ou note — et se filtrent par type (films ou séries)
 
 ### EN
+- **Your libraries in the side bar**: the first time each profile opens, pick in a moment which libraries are pinned to the left bar and in what order; the family owner can apply their choice to other profiles on this TV
 - **“Who's watching?”**: the profile remembered on this TV no longer shows a lock, since it opens without a PIN
 - **Switch profile, then back to yours**: no PIN asked again
 - **Trailer preview on focus**: quick, sized to your card size, never off-screen — titles outside the library included
