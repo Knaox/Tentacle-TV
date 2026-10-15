@@ -17,6 +17,7 @@ import {
   setFamilyMemberRights,
   setOwnFamilyPin,
   snoozeFamilyInvitation,
+  unlockFamilyManage,
 } from "../family/familyApi";
 
 /**
@@ -128,6 +129,11 @@ export function useSnoozeFamilyInvitation() {
 
 export function useLeaveFamily() {
   return useFamilyMutation(leaveFamily, BELL);
+}
+
+/** La gestion d'une session de profil, ouverte par SON code : la Famille se relit aussitôt. */
+export function useUnlockFamilyManage() {
+  return useFamilyMutation(unlockFamilyManage);
 }
 
 /** Membres sortis, invités supprimés : confirmer explicitement d'abord. */

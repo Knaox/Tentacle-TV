@@ -1,6 +1,7 @@
 import {
   FAMILY_MAX_GUESTS,
   FAMILY_MAX_PROFILES,
+  type FamilyAccountDto,
   type FamilyCandidateDto,
   type FamilyCapability,
   type FamilyDto,
@@ -22,6 +23,13 @@ import type { FamilyErrorCode } from "./familyProtocol";
  * de toute façon (docs/FAMILLE.md). Pas de miroir : le serveur n'en a pas
  * besoin. Module pur : `familyClient.test.ts`.
  */
+
+/** La session de cette vue d'ensemble GÈRE : la session personnelle, ou (1.30.0) une session de
+ *  profil ouverte à la gestion par SON code (`managing`). Accepter, quitter, dissoudre et son
+ *  propre code restent à `personalSession`. */
+export function sessionManages(account: Pick<FamilyAccountDto, "personalSession" | "managing">): boolean {
+  return account.personalSession || account.managing === true;
+}
 
 /** La Famille existe-t-elle ici ? Serveur d'avant (capacité absente) ou hors
  *  ligne : rien ne s'en montre — ni réglage, ni affiche, ni requête. */
@@ -171,7 +179,7 @@ export function profileActions(
   capability: ProfileActionsCapability = {},
 ): ProfileActions {
   const family = overview.family;
-  if (!family || !overview.account.personalSession || !viewerUserId) return NO_ACTIONS;
+  if (!family || !sessionManages(overview.account) || !viewerUserId) return NO_ACTIONS;
   if (profile.kind === "owner" || isOwnProfile(profile, viewerUserId)) return NO_ACTIONS;
   if (profile.kind === "member") {
     const owner = family.rights.manageMembers;

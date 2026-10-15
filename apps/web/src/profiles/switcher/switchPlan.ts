@@ -24,6 +24,20 @@ export function switchActiveId(profiles: readonly PickerProfileDto[], activeProf
   return profiles.find((profile) => profile.personal)?.userId ?? null;
 }
 
+/**
+ * « Gérer les profils » : QUI gère. À l'ouverture et depuis la session
+ * personnelle, SON profil (derrière son code). Depuis la session d'un AUTRE
+ * profil, ce profil-là s'il gère sur ce serveur (1.30.0 : `manage`, ou
+ * `manageNeedsPin` — la page lui dit qu'il lui faut un code) — jamais le
+ * compte de l'appareil. Sinon null : l'entrée n'existe pas.
+ */
+export function manageTarget(profiles: readonly PickerProfileDto[], activeProfileId: string | null): PickerProfileDto | null {
+  if (activeProfileId === null) return profiles.find((profile) => profile.personal) ?? null;
+  const active = profiles.find((profile) => sameUserId(profile.userId, activeProfileId));
+  if (!active || active.personal) return active ?? null;
+  return active.manage || active.manageNeedsPin === true ? active : null;
+}
+
 export type SwitchPick =
   /** Le profil en cours : l'écran se referme ; `stay` : la case (`commitStay`). */
   | { kind: "close"; stay: boolean | undefined }

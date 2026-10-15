@@ -17,7 +17,7 @@ import { WhoIsWatchingView } from "../picker/WhoIsWatchingView";
 import { announceArrival } from "../switch/arrival";
 import { commitPick, curtainOf } from "../switch/commitPick";
 import { ProfileCurtain, type CurtainProfile } from "../switch/ProfileCurtain";
-import { commitStay, switchActiveId, switchPick } from "../switcher/switchPlan";
+import { commitStay, manageTarget, switchActiveId, switchPick } from "../switcher/switchPlan";
 import { pickerModelOf } from "./pickerModel";
 import { askOnThisServer, readDeviceChoiceOnThisServer, readStayOnThisServer, writeStayOnThisServer } from "./stayOnDevice";
 
@@ -145,13 +145,17 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
   // « Gérer les profils » : SON profil d'abord (derrière son code), puis la page
   // de la Famille. Un autre choix, ou le retour du pavé, oublie la destination.
   // Depuis la session personnelle ouverte, on est déjà dans son profil : tout droit.
+  // Depuis la session d'un profil qui gère (1.30.0) : la page, DANS ce profil — jamais
+  // le compte de l'appareil ; un profil qui ne gère pas n'a pas l'entrée.
   const own = profiles.find((profile) => profile.personal) ?? null;
   const activeId = switching ? switchActiveId(profiles, switching.activeProfileId) : null;
   const personalSession = switching?.activeProfileId === null;
+  const manager = manageTarget(profiles, switching?.activeProfileId ?? null);
+  const managesHere = personalSession || (manager !== null && !manager.personal);
   const { choose, back } = flow;
   const [lastChosen, setLastChosen] = useState<string | null>(null);
   const onManage = useCallback(() => {
-    if (personalSession) {
+    if (managesHere) {
       onDone(FAMILY_SETTINGS_PATH);
       return;
     }
@@ -160,7 +164,7 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
       setLastChosen(own.userId);
       choose(own.userId);
     }
-  }, [personalSession, onDone, own, choose]);
+  }, [managesHere, onDone, own, choose]);
   const onCancel = switching?.onCancel;
   const onPick = useCallback((profileId: string) => {
     landing.current = undefined;
@@ -193,8 +197,9 @@ export function ProfileLaunchScreen({ initialListing, ended = false, onDone, onA
       language: i18n.language,
       t,
       stay,
+      canManage: manager !== null,
     }),
-    [listing.data, listing.isError, flow, ended, lastChosen, activeId, slowOpening, profiles, i18n.language, t, stay],
+    [listing.data, listing.isError, flow, ended, lastChosen, activeId, slowOpening, profiles, i18n.language, t, stay, manager],
   );
 
   return (

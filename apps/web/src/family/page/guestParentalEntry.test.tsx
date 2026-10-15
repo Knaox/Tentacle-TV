@@ -48,11 +48,11 @@ function profile(kind: FamilyProfileDto["kind"], userId: string, createdBy: stri
   };
 }
 
-function overview(role: "owner" | "member", personal = true): FamilyOverviewDto {
+function overview(role: "owner" | "member", personal = true, managing = false): FamilyOverviewDto {
   return {
     v: 2,
     switches: { families: true, guests: true },
-    account: { canOwn: role === "owner", canJoin: false, reviewAccount: false, hasPin: false, personalSession: personal },
+    account: { canOwn: role === "owner", canJoin: false, reviewAccount: false, hasPin: false, personalSession: personal, managing },
     family: {
       id: "f", role, owner: { userId: "owner-id", name: "owner-id" },
       profiles: [profile("owner", "owner-id"), profile("member", "member-id"), profile("guest", "guest-owner", "owner-id"), profile("guest", "guest-member", "member-id")],
@@ -97,6 +97,13 @@ describe("« Contrôle parental » d'un invité", () => {
   it("hors session personnelle (une TV), rien", () => {
     h.parental = true;
     expect(entries(renderToStaticMarkup(<FamilySection overview={overview("owner", false)} />))).toEqual([]);
+  });
+
+  it("un profil qui gère (1.30.0, `account.managing`) : les entrées de son rôle, comme en session personnelle", () => {
+    h.parental = true;
+    expect(entries(renderToStaticMarkup(<FamilySection overview={overview("owner", false, true)} />))).toEqual(["guest-owner", "guest-member"]);
+    h.viewer = "member-id";
+    expect(entries(renderToStaticMarkup(<FamilySection overview={overview("member", false, true)} />))).toEqual(["guest-member"]);
   });
 });
 

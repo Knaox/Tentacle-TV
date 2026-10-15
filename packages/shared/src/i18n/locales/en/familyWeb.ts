@@ -14,6 +14,14 @@ export default {
     personalOnly: "Family is managed from your own session, not from “View as”.",
     disabled: "Families are turned off on this server. You can still leave a family, remove a member, delete a guest or dissolve yours.",
     guestsDisabled: "Guest profiles are turned off on this server.",
+    profileManage: "You are managing the family from this profile, with its rights. Accepting an invitation, leaving or dissolving the family is done from your own account.",
+  },
+  /** A profile session's management, locked: ITS code reopens it (1.30.0). */
+  manageUnlock: {
+    title: "Management locked",
+    body: "Enter this profile's PIN code to manage the family. It stays open while you use it.",
+    label: "Profile PIN code",
+    submit: "Unlock",
   },
   incoming: {
     title: "Invitations received",

@@ -15,6 +15,14 @@ export default {
     personalOnly: "La Famille se gère depuis votre propre session, pas depuis « Voir en tant que ».",
     disabled: "Les familles sont désactivées sur ce serveur. Vous pouvez encore quitter une famille, retirer un membre, supprimer un invité ou dissoudre la vôtre.",
     guestsDisabled: "Les profils invités sont désactivés sur ce serveur.",
+    profileManage: "Vous gérez la famille depuis ce profil, avec ses droits. Accepter une invitation, quitter ou dissoudre la famille se font depuis votre propre compte.",
+  },
+  /** La gestion d'une session de profil, fermée : SON code la rouvre (1.30.0). */
+  manageUnlock: {
+    title: "Gestion verrouillée",
+    body: "Saisissez le code PIN de ce profil pour gérer la famille. Elle reste ouverte tant que vous l'utilisez.",
+    label: "Code PIN du profil",
+    submit: "Déverrouiller",
   },
   incoming: {
     title: "Invitations reçues",

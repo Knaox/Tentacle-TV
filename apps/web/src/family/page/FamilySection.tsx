@@ -20,6 +20,7 @@ import {
   profileActions,
   profileRoleActions,
   sameUserId,
+  sessionManages,
   type FamilyErrorCode,
   type FamilyOverviewDto,
   type FamilyProfileDto,
@@ -87,7 +88,8 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const [pinGuest, setPinGuest] = useState<FamilyProfileDto | null>(null);
 
   const family = overview.family;
-  const personal = overview.account.personalSession;
+  // La session personnelle, ou un profil qui gère (1.30.0) : les mêmes gestes, ceux de son rôle.
+  const personal = sessionManages(overview.account);
   const counts = useMemo(() => familyCounts(family), [family]);
   const actions = useMemo(() => familyActions(overview), [overview]);
   const owner = family?.role !== "member";
