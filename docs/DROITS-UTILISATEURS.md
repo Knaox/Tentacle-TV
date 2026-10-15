@@ -834,7 +834,10 @@ paraît après, aucune ne se perd.
 6. **`avatarInvite`** — l'invitation unique à choisir un avatar.
 
 Une fenêtre paraît quand tout ce qui la précède est `done` et que rien de ce qui la suit
-n'est `open`. Rien hors session ni sur `/watch`. L'accès suspendu (page bloquante à la
+n'est `open` ; une fenêtre qui se ferme garde sa place 200 ms, le temps de son fondu
+(`STARTUP_EXIT_GRACE_MS` ; `Modal` sort en 143 ms). Seul un hors-ligne ÉTABLI
+(`offline-auto`, `offline-manual`) libère ce qui suit des nouveautés : `checking`, l'état
+du démarrage, n'est pas une absence. Rien hors session ni sur `/watch`. L'accès suspendu (page bloquante à la
 racine) passe avant tout : il n'a pas de rang. Diagnostic : `window.__tentacleStartup()`
 (porte du débogage du web) rend l'état de chaque fenêtre et celle qui tient le démarrage.
 
@@ -856,3 +859,35 @@ de 10 minutes sans lecture ; jamais stocké (un redémarrage l'oublie) ; il ne r
 une question coupée, et couper la question y renonce. Règle : `shared/playback/
 stillWatchingTrial.ts` ; magasin et battement : `api-client/playback/
 stillWatchingTrialStore.ts` (`tickWithStillWatchingTrial`). Le miroir a la même ligne.
+
+Ce que la fenêtre fait, relevé dans le lecteur web : elle ne prend JAMAIS le focus ;
+n'importe quelle touche (Tab compris) vaut « Continuer » — au clavier, Espace met en pause
+par le raccourci du lecteur ; le décompte se lit seconde par seconde ; à l'expiration, PAUSE
+(jamais un arrêt) et « Lecture en pause » / « Reprendre » ; le compteur traverse
+l'enchaînement d'un épisode au suivant. Elle vit dans le conteneur qui passe en plein écran
+(`VideoPlayer.tsx`). Sur le bureau, elle se tait pendant le PiP (`enabled: !pip.active`,
+choix d'origine) : l'essai reste armé jusqu'à la sortie du PiP.
+
+### Rejouer chaque cas (Damien)
+
+- **L'essai** : Réglages › Lecture › « Vous regardez encore ? » activé › « Voir la question
+  maintenant » › **Essayer**. Lancer un épisode et ne plus toucher ni la souris ni le
+  clavier : la question à 20 s, la pause 10 s plus tard (le délai de réponse réglé).
+  Recharger la page oublie l'essai (il vit en mémoire).
+- **Nouveautés non vues** (console du bureau, ou web de dev avec `?whatsnewgate=1`) :
+  `localStorage.setItem('tentacle_whats_new_seen', '1.28.2'); location.reload()`.
+- **PIN conseillé** : il revient à chaque lancement tant qu'on le ferme sans répondre ;
+  « Configurer plus tard » le masque pour le compte. Le remettre :
+  `fetch('/api/preferences/hints/familyPin', { method: 'PUT', headers: { Authorization:
+  'Bearer ' + localStorage.tentacle_token, 'Content-Type': 'application/json' }, body:
+  JSON.stringify({ dismissed: false }) })` — et un compte dans une famille, sans PIN.
+- **Invitation aux avatars** : `localStorage.removeItem('tentacle_avatar_invite_seen')`, sur
+  un compte sans photo.
+- **Mise à jour** (build de débogage) : `__tentacleSimulateUpdate()` dans la console, juste
+  après le chargement.
+- **Rideau du profil** : « Changer de profil » depuis le menu de l'avatar (bureau), ou
+  `sessionStorage.setItem('tentacle_profile_arrival', JSON.stringify({ id: 'x', name:
+  'Essai', color: '#a855f7', imageTag: null })); location.reload()`.
+- **Affiche de la Famille** : se faire inviter par un autre compte pendant que les
+  nouveautés sont ouvertes — elle attend leur fermeture.
+- **L'état, à tout moment** : `__tentacleStartup()` (web de dev, build de débogage).
