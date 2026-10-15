@@ -18,7 +18,13 @@ export {
   isRestricted,
   type ContentPolicy,
 } from "./contentPolicy";
-export { allowsExternalTitle, filterExternalTitles, type ExternalMediaType, type ExternalTitleRef } from "./externalTitles";
+export {
+  EXTERNAL_FETCH_BUDGET,
+  allowsExternalTitle,
+  filterExternalTitles,
+  type ExternalMediaType,
+  type ExternalTitleRef,
+} from "./externalTitles";
 
 /** Le pont rendu aux extensions — venu en 1.30.0, une extension le teste avant de l'appeler. */
 export interface ContentPolicyBridge {

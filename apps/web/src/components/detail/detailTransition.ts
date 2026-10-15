@@ -1,3 +1,5 @@
+import { capturePreviewLaunch, type PreviewLaunch } from "./previewLaunch";
+
 export interface DetailOrigin {
   itemId: string;
   /** Rectangle du visuel cliqué, en coordonnées de fenêtre. */
@@ -18,6 +20,13 @@ export interface DetailOrigin {
    * le takeover passe le relais à un écran déjà couvert.
    */
   covered: boolean;
+  /**
+   * Départ DEPUIS LA MINI-CARTE d'aperçu qui recouvrait la carte : l'image vue
+   * dans sa vidéo, à sa place (`previewLaunch.ts`). La fiche s'ouvre alors par
+   * `PreviewLaunchOverlay` — la vidéo grandit jusqu'à la scène —, jamais par le
+   * vol de l'affiche, cachée sous la mini-carte.
+   */
+  launch?: PreviewLaunch | null;
   stamp: number;
 }
 
@@ -51,6 +60,12 @@ export function captureDetailOrigin(
   radius = 12,
   covered = false,
 ): void {
+  // Une mini-carte recouvre la carte : c'est elle qui part, pas l'affiche cachée dessous.
+  const launch = capturePreviewLaunch(element);
+  if (launch) {
+    pending = { itemId, rect: launch.rect, imageUrl, radius, covered, launch, stamp: Date.now() };
+    return;
+  }
   // Une carte SANS image (titre que Jellyfin n'a pas trouvé) n'a rien à faire
   // voler : le calque aurait promené un cadre vide, puis attendu une affiche
   // qui ne vient pas. La fiche s'ouvre alors par sa propre entrée.

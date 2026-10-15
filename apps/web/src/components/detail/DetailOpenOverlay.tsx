@@ -23,6 +23,8 @@ interface DetailOpenOverlayProps {
    * — titre sans affiche —, le calque s'efface sur place au lieu d'attendre.
    */
   settled?: boolean;
+  /** La base est opaque : la fiche peut se montrer dessous (`MediaDetail`). */
+  onCovered?: () => void;
   onDone: () => void;
 }
 
@@ -76,7 +78,7 @@ const SETTLE = [0.16, 1, 0.3, 1] as const;
  * Repli : sans cible mesurée (média sans affiche, fiche lente), le visuel
  * s'efface sur place en fondu — jamais de blocage.
  */
-export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false, onDone }: DetailOpenOverlayProps) {
+export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false, onCovered, onDone }: DetailOpenOverlayProps) {
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(false);
   /**
@@ -137,6 +139,15 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
     clearTimeout(guardRef.current);
     guardRef.current = setTimeout(() => setPlaying(false), delay);
   }, [playing, hasTarget, settled]);
+
+  // La base a fini de monter (ou couvrait déjà, depuis un takeover) : la fiche se montre dessous.
+  const coveredRef = useRef(onCovered);
+  coveredRef.current = onCovered;
+  useEffect(() => {
+    if (!playing || !origin) return;
+    const timer = setTimeout(() => coveredRef.current?.(), origin.covered ? 0 : DECOR_S * 0.45 * 1000);
+    return () => clearTimeout(timer);
+  }, [playing, origin]);
 
   // Nettoyage au démontage SEULEMENT : purger le garde-fou à chaque passage de
   // l'effet le supprimerait dès le premier rendu suivant l'ouverture.

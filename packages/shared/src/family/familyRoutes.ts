@@ -108,7 +108,7 @@ export const FAMILY_ROUTES = {
     callers: ["personal"],
     rateLimit: { max: 10, windowMs: MINUTE },
   },
-  /** `SetGuestPhotoBody` → `GuestPhotoDto`. La photo d'un invité (1.29.0) :
+  /** `SetGuestPhotoBody` → `GuestPhotoDto`. La photo d'un invité (1.30.0) :
    *  mêmes droits que son PIN — le propriétaire, ou le membre qui l'a créé. Le
    *  serveur la relaie à Jellyfin avec sa clé (le compte de l'invité n'a pas de
    *  mot de passe) ; ses TV et « Qui regarde ? » la montrent. */

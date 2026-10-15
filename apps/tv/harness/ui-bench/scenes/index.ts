@@ -20,6 +20,7 @@ import { NAV_SCENES } from "./navScenes";
 import { OVERLAY_SCENES } from "./overlayScenes";
 import { PAIRING_SCENES } from "./pairingScenes";
 import { PLAYER_LIVE_SCENES } from "./playerLiveScenes";
+import { PREVIEW_SCENES } from "./previewScenes";
 import { PLAYER_QUALITY_SCENES } from "./playerQualityScenes";
 import { PLAYER_SCENES } from "./playerScenes";
 import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
@@ -58,6 +59,7 @@ export const SCENES: BenchScene[] = [
   ...SETTINGS_SCENES,
   // La taille des cartes, écran par écran : Petite, Normale, Grande.
   ...CARD_SIZE_SCENES,
+  ...PREVIEW_SCENES,
   ...PLAYER_SCENES,
   ...PLAYER_QUALITY_SCENES,
   ...PLAYHEAD_SCENES,

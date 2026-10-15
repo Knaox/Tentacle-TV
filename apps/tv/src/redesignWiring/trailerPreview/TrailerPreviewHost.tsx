@@ -3,6 +3,7 @@ import type { TrailerPreviewSubject } from "@tentacle-tv/shared";
 import { TrailerPreviewProvider, type CardPreview } from "../../redesign/cards/trailerPreviewPort";
 import { useTrailerPreviewsEnabled } from "../../lib/trailerPreviewSettings";
 import { PreviewSession } from "./PreviewSession";
+import { useTvPreviewWarm } from "./usePreviewWarmTv";
 
 /**
  * L'aperçu de bande-annonce au focus des cartes de rangée (Apple TV, Android
@@ -13,9 +14,12 @@ import { PreviewSession } from "./PreviewSession";
  * d'autre. Seule la carte FOCALISÉE (et le temps de son repli) monte une
  * session (`PreviewSession`) — la requête, la machine, la vidéo : une rangée
  * de vingt cartes n'en paie qu'une. Réglage coupé : aucune session du tout.
+ * Les titres autour du focus se préparent d'avance au serveur
+ * (`useTvPreviewWarm`) : leur aperçu part sans attendre sa décision.
  */
 export function TrailerPreviewHost({ children }: { children: ReactNode }) {
-  return <TrailerPreviewProvider usePreview={useTvTrailerPreview}>{children}</TrailerPreviewProvider>;
+  const warm = useTvPreviewWarm();
+  return <TrailerPreviewProvider usePreview={useTvTrailerPreview} warm={warm}>{children}</TrailerPreviewProvider>;
 }
 
 /** Le crochet du port, appelé par chaque carte de rangée à chaque rendu. */

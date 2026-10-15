@@ -25,17 +25,35 @@ export interface CardPreview {
 /** Le crochet que l'intégration fournit : appelé à CHAQUE rendu d'une carte qui peut grandir. */
 export type CardPreviewHook = (subject: TrailerPreviewSubject | null, focused: boolean) => CardPreview | null;
 
+/**
+ * La PRÉPARATION des aperçus : la rangée dit les titres autour de son focus
+ * (tv-core `trailerPreviewWarmWindow`), l'intégration les fait préparer au
+ * serveur — leur focus n'aura plus rien à attendre.
+ */
+export type CardPreviewWarm = (subjects: readonly TrailerPreviewSubject[]) => void;
+
 const NO_PREVIEW = (): CardPreview | null => null;
 
 const PortContext = createContext<CardPreviewHook | null>(null);
+const WarmContext = createContext<CardPreviewWarm | null>(null);
 
 /**
  * Fournit le crochet à tout ce qu'il enveloppe. `usePreview` ne change JAMAIS
  * d'identité (une fonction de module) : chaque carte l'appelle comme un
- * crochet, à chaque rendu.
+ * crochet, à chaque rendu. `warm` : `null` quand rien ne se prépare (serveur
+ * qui ne le sait pas, aperçus coupés).
  */
-export function TrailerPreviewProvider({ usePreview, children }: { usePreview: CardPreviewHook; children: ReactNode }) {
-  return <PortContext.Provider value={usePreview}>{children}</PortContext.Provider>;
+export function TrailerPreviewProvider({ usePreview, warm = null, children }: { usePreview: CardPreviewHook; warm?: CardPreviewWarm | null; children: ReactNode }) {
+  return (
+    <PortContext.Provider value={usePreview}>
+      <WarmContext.Provider value={warm}>{children}</WarmContext.Provider>
+    </PortContext.Provider>
+  );
+}
+
+/** La préparation des aperçus, ou `null` (sans fournisseur : rien ne se prépare). */
+export function useCardPreviewWarm(): CardPreviewWarm | null {
+  return useContext(WarmContext);
 }
 
 /**

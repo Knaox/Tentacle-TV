@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { memo, useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { MY_TITLE_PERCENT_KEY } from "@tentacle-tv/shared";
@@ -16,9 +16,13 @@ import { GreyscaleImage } from "./GreyscaleImage";
 
 /**
  * Le visage d'un titre ABSENT de la bibliothèque, dans le cadre de sa carte :
- * son affiche (TMDB) en niveaux de gris, sous un voile qui l'assombrit — et
- * s'allège au focus, sans rien redessiner (opacité seule) —, puis son badge en
- * bas à gauche, là où une carte de la bibliothèque porte sa note. Sans
+ * son affiche (TMDB) en niveaux de gris, sous un voile qui l'assombrit, puis
+ * son badge en bas à gauche, là où une carte de la bibliothèque porte sa
+ * note. Au FOCUS, l'affiche reprend ses couleurs et le voile s'allège (en
+ * fondu d'opacité : la couche grise s'efface sur l'affiche en couleurs,
+ * montée au premier focus) — l'affiche se montre telle qu'elle est, avant
+ * même sa bande-annonce. Une recommandation (`absent.inColor`) garde ses
+ * couleurs au repos, sous un voile léger : le badge dit seul l'absence. Sans
  * affiche (serveur plus ancien, titre sans image chez TMDB) : un cadre qui
  * écrit le titre et l'année, jamais une fausse affiche.
  *
@@ -34,7 +38,12 @@ import { GreyscaleImage } from "./GreyscaleImage";
 
 /** Le voile : au repos, l'affiche recule ; au focus, elle se lit. Sur un cadre
  *  sans affiche, plus léger : le titre écrit doit se lire au repos. */
-const VEIL = { image: { rest: 0.42, focused: 0.16 }, lettered: { rest: 0.22, focused: 0 } };
+const VEIL = {
+  image: { rest: 0.42, focused: 0.04 },
+  /** Une affiche en couleurs au repos (une recommandation) : à peine reculée. */
+  colored: { rest: 0.14, focused: 0 },
+  lettered: { rest: 0.22, focused: 0 },
+};
 /** Le badge, au pied de l'image : la place de la note sur les autres cartes. */
 const BADGE_INSET = 12;
 /** Le camembert d'une demande en cours, dans un badge (état de l'extension). */
@@ -149,11 +158,23 @@ function Arriving({ absent, arrival, uri, title, year, width, height, focused }:
 
 function Grey({ absent, uri, title, year, width, height, focused }: ArtworkProps) {
   const p = useFocusProgress(focused);
-  const { rest, focused: lit } = uri ? VEIL.image : VEIL.lettered;
+  const inColor = absent.inColor === true;
+  // L'affiche en couleurs, sous la couche grise : montée au premier focus (le
+  // temps du retour compris, elle reste), d'emblée pour une recommandation.
+  const [colorShown, setColorShown] = useState(inColor);
+  if (focused && !colorShown) setColorShown(true);
+  const { rest, focused: lit } = !uri ? VEIL.lettered : inColor ? VEIL.colored : VEIL.image;
   const veil = useAnimatedStyle(() => ({ opacity: rest + (lit - rest) * p.value }));
+  const grey = useAnimatedStyle(() => ({ opacity: 1 - p.value }));
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {uri ? <GreyscaleImage uri={uri} width={width} height={height} /> : <Lettered title={title} year={year} width={width} height={height} />}
+      {uri && colorShown ? <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} /> : null}
+      {uri && !inColor ? (
+        <Animated.View style={[StyleSheet.absoluteFill, grey]}>
+          <GreyscaleImage uri={uri} width={width} height={height} />
+        </Animated.View>
+      ) : null}
+      {uri ? null : <Lettered title={title} year={year} width={width} height={height} />}
       <Animated.View style={[StyleSheet.absoluteFill, styles.veil, veil]} />
       <Badge absent={absent} maxWidth={width - 2 * BADGE_INSET} />
     </View>

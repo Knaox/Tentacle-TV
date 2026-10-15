@@ -14,6 +14,7 @@ import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
+import { PreviewRevealProvider, usePagePreviewReveal } from "../../rows/previewRevealPort";
 import { RowStageProvider } from "../../rows/rowStage";
 import { ScreenReveal } from "../../motion/ScreenReveal";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
@@ -121,9 +122,12 @@ export const HomeView = memo(function HomeView({
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const heroVisible = useRef(true);
   const rewind = useRowRewindPort();
+  // La grande carte d'aperçu qui grandit vers le bas : la page la montre entière.
+  const { reveal, track: trackPreviewScroll } = usePagePreviewReveal(scrollRef);
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
+      trackPreviewScroll(contentOffset.y);
       rewind?.scroll(contentOffset.y, layoutMeasurement.height);
       // Plus de la moitié du héros hors de l'écran : il n'est plus dans le champ (tv-core).
       const visible = heroInView(contentOffset.y, TV_STAGE.hero.top, TV_STAGE.hero.height);
@@ -131,7 +135,7 @@ export const HomeView = memo(function HomeView({
       heroVisible.current = visible;
       onHeroVisibleChange?.(visible);
     },
-    [onHeroVisibleChange, rewind],
+    [onHeroVisibleChange, rewind, trackPreviewScroll],
   );
   return (
     <View style={styles.root}>
@@ -143,42 +147,44 @@ export const HomeView = memo(function HomeView({
           <StatusPanel {...status} />
         ) : (
           <RowStageProvider>
-            <ScrollView
-              ref={scrollRef}
-              style={styles.fill}
-              contentContainerStyle={styles.scroll}
-              showsVerticalScrollIndicator={false}
-              onLayout={onViewportLayout}
-              onScroll={handleScroll}
-              scrollEventThrottle={32}
-            >
-              {hero ? (
-                <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-                  <HeroBanner
-                    hero={hero}
-                    width={HERO_WIDTH}
-                    onPrimary={onHeroPrimary}
-                    onSecondary={onHeroSecondary}
-                    onToggleList={onHeroToggleList}
-                    onLongPress={onHeroLongPress}
+            <PreviewRevealProvider reveal={reveal}>
+              <ScrollView
+                ref={scrollRef}
+                style={styles.fill}
+                contentContainerStyle={styles.scroll}
+                showsVerticalScrollIndicator={false}
+                onLayout={onViewportLayout}
+                onScroll={handleScroll}
+                scrollEventThrottle={32}
+              >
+                {hero ? (
+                  <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
+                    <HeroBanner
+                      hero={hero}
+                      width={HERO_WIDTH}
+                      onPrimary={onHeroPrimary}
+                      onSecondary={onHeroSecondary}
+                      onToggleList={onHeroToggleList}
+                      onLongPress={onHeroLongPress}
+                    />
+                  </FocusSection>
+                ) : null}
+                {rows.map((row, index) => (
+                  <HomeRow
+                    key={row.key}
+                    row={row}
+                    rank={index}
+                    first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
+                    filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
+                    onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
+                    onRemoveFilter={onRemoveFilter}
+                    onPressCard={onPressCard}
+                    onLongPressCard={onLongPressCard}
+                    onFocusCard={onFocusCard}
                   />
-                </FocusSection>
-              ) : null}
-              {rows.map((row, index) => (
-                <HomeRow
-                  key={row.key}
-                  row={row}
-                  rank={index}
-                  first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
-                  filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
-                  onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
-                  onRemoveFilter={onRemoveFilter}
-                  onPressCard={onPressCard}
-                  onLongPressCard={onLongPressCard}
-                  onFocusCard={onFocusCard}
-                />
-              ))}
-            </ScrollView>
+                ))}
+              </ScrollView>
+            </PreviewRevealProvider>
           </RowStageProvider>
         )}
         <NavRail {...nav} />

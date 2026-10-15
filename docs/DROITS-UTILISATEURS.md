@@ -187,11 +187,44 @@ de champs — jamais une valeur.
   `allowsExternalTitle`, `contentPolicyBridge()`. La politique illisible est
   `closedContentPolicy` : note 0, tous les types non classés bloqués, aucune bibliothèque —
   gardée 5 s seulement (30 s pour une politique lue).
-- Le pont est BRANCHÉ dès l'étape A dans `pluginBackendLoader.ts`. Tant que l'étape D n'a pas
-  posé la correspondance des certifications, un compte restreint ne reçoit AUCUN titre
-  extérieur (fermé à l'échec) ; un compte non restreint, tout, sans requête TMDB.
+- Le pont est BRANCHÉ dans `pluginBackendLoader.ts` (`ctx.contentPolicy`), avec le filtre réel
+  (§ 5.2) depuis l'étape D.
 - Le pont nettoie ce qu'il reçoit : une entrée mal formée (type inconnu, `tmdbId` non entier
   positif) est écartée, jamais laissée passer.
+
+### 5.2 Certification TMDB → échelle de Jellyfin (étape D)
+
+Relu sur la source de Jellyfin v10.11.11 (`LocalizationManager.GetRatingScore`,
+`BaseItem.IsParentalAllowed`, fournisseurs TMDB films et séries) :
+
+- **L'échelle** : un score = l'âge MINIMAL (un entier est lu tel quel comme âge), un `subScore`
+  départage à score égal, 1000 = adulte (XXX), 1001 = interdit. Chaque pays a sa table
+  chaîne → score ; Jellyfin n'expose par l'API que celle de son pays de métadonnées
+  (`/Localization/ParentalRatings`).
+- **Le titre** (`externalTitleRule.titleScore`) : comme le fournisseur TMDB de Jellyfin, la
+  certification du PAYS DE MÉTADONNÉES de Jellyfin (`MetadataCountryCode`), sinon celle des
+  États-Unis ; une SÉRIE sans l'un ni l'autre prend la plus stricte des autres pays (Jellyfin
+  prendrait la première listée : la plus stricte n'est jamais plus large). Un FILM sans l'un ni
+  l'autre n'a pas de score. Plusieurs sorties dans un pays (`release_dates`) : la plus stricte.
+- **La chaîne** (`ratingTables.scoreCertification`) : (1) la table VIVANTE de Jellyfin si le pays
+  est son pays de métadonnées ; (2) la table de ce pays écrite par Tentacle (28 pays, d'après les
+  systèmes officiels, sur la même échelle — US, FR, GB, DE reprennent les valeurs de Jellyfin) ;
+  (3) un âge lisible (« 12 », « 12+ », « -12 », « K-16 », « M/14 », « NC16 ») ou la table
+  américaine, au plus strict des deux. « NR », « Unrated », « Exempt », vide, ou une chaîne
+  inconnue : AUCUN score — jamais deviné.
+- **La décision pour un compte restreint** (`restrictedAllows`) : caché si `adult`, sans score,
+  score ≥ 1000, score au-dessus de sa note (`IsParentalAllowed` : à score égal, le `subScore` ≤
+  son `maxParentalSubRating`), un mot-clé TMDB parmi ses étiquettes bloquées (Jellyfin pose les
+  mots-clés TMDB en étiquettes), aucune de ses étiquettes permises, ou hors de ses plages
+  horaires (heure LOCALE du serveur Tentacle — celle de Jellyfin n'est pas lisible ; hors plage,
+  rien d'extérieur). Politique illisible, panne : rien.
+- **Les données** : `release_dates` (film) ou `content_ratings` (série), RÉDUITS aux seules
+  certifications non vides, ajoutés à la fiche du cache TMDB existant (`tmdb_meta_cache`, aucune
+  table ni migration) par UN appel de plus la première fois ; une ligne périmée sert encore.
+  Au plus 24 titres lus chez TMDB par appel (`EXTERNAL_FETCH_BUDGET`) : les autres sont cachés
+  cette fois-ci et lus en fond. Compte non restreint : aucune lecture, liste rendue telle quelle.
+- `filterExternalTitles` rend les objets REÇUS, dans l'ordre : un appelant passe ses propres
+  titres (`{ mediaType, tmdbId, … }`) et garde ses champs.
 
 ## 6. Les chantiers
 
