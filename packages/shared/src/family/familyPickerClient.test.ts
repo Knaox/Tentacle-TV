@@ -6,6 +6,7 @@ import {
   personalPickerProfile,
   pickedSessionToken,
   pickerLaunch,
+  pickerShowsPinLock,
   showPickerAtLaunch,
 } from "./familyPickerClient";
 
@@ -89,5 +90,23 @@ describe("lecture de la réponse", () => {
     const zoe = profile("zoe", { kind: "guest" });
     expect(pickedSessionToken({ personal: false, token: "jwt", user: { id: "zoe", name: "Zoé" }, profile: zoe })).toBe("jwt");
     expect(pickedSessionToken({ personal: true, profile: profile("moi", { personal: true }) })).toBeNull();
+  });
+});
+
+describe("le cadenas d'une tuile de « Qui regarde ? »", () => {
+  it("fermé sur un profil qui demandera son code", () => {
+    expect(pickerShowsPinLock(profile("lea", { hasPin: true }), [])).toBe(true);
+    expect(pickerShowsPinLock(profile("lea", { hasPin: true }), ["zoe", null])).toBe(true);
+  });
+
+  it("aucun sur un profil sans code", () => {
+    expect(pickerShowsPinLock(profile("lea"), [])).toBe(false);
+  });
+
+  it("aucun sur le profil que l'écran ouvre sans code (le profil en cours, déjà déverrouillé)", () => {
+    expect(pickerShowsPinLock(profile("zoe", { hasPin: true }), ["zoe"])).toBe(false);
+    // Identifiants Jellyfin : avec ou sans tirets, en toute casse.
+    const id = "0f8f2b3c-1d2e-4f50-9a6b-7c8d9e0f1a2b";
+    expect(pickerShowsPinLock(profile(id.replace(/-/g, ""), { hasPin: true }), [id.toUpperCase()])).toBe(false);
   });
 });
