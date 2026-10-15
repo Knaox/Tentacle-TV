@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useFamilyCandidates, useFamilyLive, useFamilyOverview, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useFamilyCandidates, useFamilyOverview, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { FAMILY_PROFILE_COLORS } from "@tentacle-tv/shared";
 import {
   INVITE_SEARCH_KEY,
@@ -50,7 +50,7 @@ function entryInputOf(list: ReturnType<typeof manageListModel> | null) {
  * « Gérer les profils » de la refonte (Apple TV) — la session de qui gère
  * (le propriétaire, ou un membre avec SES droits — v2), gestion ouverte par le
  * serveur derrière SON PIN (`useManageUnlock`) : la
- * famille (`useFamilyOverview`, relue en direct par `useFamilyLive`), ses
+ * famille (`useFamilyOverview`, relue en direct par `TVFamilyLive`), ses
  * gestes (`useManageActions`), ses deux pages. Venue de « Qui regarde ? »,
  * la sortie referme la session ouverte pour gérer et y ramène ; venue des
  * réglages, elle y revient (`manageBackAction`, tv-core).
@@ -79,7 +79,6 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   const overview = useFamilyOverview({ enabled: ready });
   // Les portraits que « Qui regarde ? » connaît : le relais d'un aperçu lu pendant que Jellyfin ne répondait pas.
   const listing = useTvFamilyListing();
-  useFamilyLive({ token: storage.getItem("tentacle_token"), enabled: ready });
 
   const store = useFocusStore();
 

@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsFocused, useNavigation, type NavigationProp } from "@react-navigation/native";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { FAMILY_KEY, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { openProfileState, ownPinModes, readProfileRecord, recordPairedTheTv, tvSessionMode, type OwnPinMode, type TvProfileRole } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { SettingsProfile } from "../../redesign/screens/settings/settingsTypes";
@@ -32,8 +32,19 @@ export function useProfileActions() {
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  // Relu à chaque retour sur l'écran : le pavé du code PIN vient de mettre le profil à jour.
-  useIsFocused();
+  // Relu à chaque retour sur l'écran : le pavé du code PIN vient de mettre le profil à jour,
+  // la gestion a pu changer la famille — la liste se relit alors (rôle, gestion).
+  const focused = useIsFocused();
+  const away = useRef(false);
+  useEffect(() => {
+    if (!focused) {
+      away.current = true;
+      return;
+    }
+    if (!away.current) return;
+    away.current = false;
+    void queryClient.invalidateQueries({ queryKey: [...FAMILY_KEY] });
+  }, [focused, queryClient]);
   const record = tvSessionMode(storage) === "profile" ? readProfileRecord(storage) : null;
   const listing = useTvFamilyListing();
   const kind = record?.kind ?? null;
