@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useSharedItem, useSharedView, useJellyfinClient } from "@tentacle-tv/api-client";
+import { shareErrorCode, useSharedItem, useSharedView, useJellyfinClient } from "@tentacle-tv/api-client";
 import { statsLocale, type MediaItem } from "@tentacle-tv/shared";
 import { DetailStage } from "../components/detail/DetailStage";
 import { DetailPoster } from "../components/detail/DetailPoster";
@@ -39,7 +39,7 @@ export function SharedItemDetail() {
   const { t, i18n } = useTranslation(["share", "statsPublic"]);
   const navigate = useNavigate();
   const client = useJellyfinClient();
-  const { data: item, isLoading, isError, isFetching, refetch } = useSharedItem(token, itemId);
+  const { data: item, error, isLoading, isError, isFetching, refetch } = useSharedItem(token, itemId);
   // Le nom de l'auteur : le partage est en cache quand on vient de lui.
   const { data: list } = useSharedView(token, statsLocale(i18n.language));
   // Le retour ramène au partage : une liste, ou des statistiques.
@@ -59,6 +59,7 @@ export function SharedItemDetail() {
           retrying={isFetching}
           exitTo={`/share/${token}`}
           exitLabel={backLabel}
+          unavailable={shareErrorCode(error) === "share_unavailable"}
         />
       </ShareShell>
     );

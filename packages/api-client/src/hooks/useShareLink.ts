@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MediaItem, SharedStatsView, StatsLocale } from "@tentacle-tv/shared";
+import { useServerCapabilities } from "./useServerCapabilities";
 
 /**
  * « Partager ma liste » — hooks du lien de partage.
@@ -69,12 +70,55 @@ export interface SharedListData {
  */
 export type SharedView = SharedListData | SharedStatsView;
 
+/**
+ * Le refus d'une route de partage, par son code : `public_sharing_denied`
+ * (créer sans le droit « Partage public »), `share_unavailable` (un lien dont
+ * le propriétaire n'a plus ce droit). `null` pour toute autre erreur.
+ */
+export function shareErrorCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  try {
+    const body = JSON.parse(error.message) as { error?: unknown };
+    return typeof body.error === "string" ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ce compte peut-il partager ses listes en public ? Face à un serveur qui
+ * déclare `share.publicRight`, son droit « Partage public » de Jellyfin
+ * (`GET /api/share/access`) ; face à un serveur d'avant, oui — comme avant.
+ * Faux tant que ce n'est pas su : un bouton n'apparaît qu'une fois permis.
+ */
+export function usePublicSharingAllowed(): boolean {
+  const { capabilities, settled } = useServerCapabilities();
+  const governed = capabilities.has("share.publicRight");
+  const access = useQuery({
+    queryKey: ["share", "access"],
+    queryFn: () => shareFetch<{ publicSharing: boolean }>("/access"),
+    enabled: governed,
+    staleTime: 30_000,
+  });
+  return publicSharingAllowed(settled, governed, access.data?.publicSharing);
+}
+
+/** La règle, pure : rien tant que la configuration n'a pas répondu ; sans la capacité, comme avant. */
+export function publicSharingAllowed(settled: boolean, governed: boolean, access: boolean | undefined): boolean {
+  if (!settled) return false;
+  return governed ? access === true : true;
+}
+
 /** Crée (ou récupère) mon lien de partage — watchlist par défaut, `likes`
- *  pour la liste des titres likés (favoris + hors bibliothèque). */
+ *  pour la liste des titres likés (favoris + hors bibliothèque). Un refus
+ *  du droit relit `access` : le bouton disparaît. */
 export function useCreateShareLink(kind: ShareListKind = "watchlist") {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => shareFetch<{ token: string }>(`${kindBase(kind)}/`, { method: "POST" }),
+    onError: (error) => {
+      if (shareErrorCode(error) === "public_sharing_denied") void qc.invalidateQueries({ queryKey: ["share", "access"] });
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ["share", "mine", kind] }),
   });
 }

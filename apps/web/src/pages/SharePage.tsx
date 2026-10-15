@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useSharedView } from "@tentacle-tv/api-client";
+import { shareErrorCode, useSharedView } from "@tentacle-tv/api-client";
 import { statsLocale } from "@tentacle-tv/shared";
 import { ShareShell } from "../components/share/ShareShell";
 import { ShareError, SharePageSkeleton } from "../components/share/ShareStates";
@@ -21,7 +21,7 @@ import { useShareVisitor } from "../components/share/useShareVisitor";
 export function SharePage() {
   const { token = "" } = useParams<{ token: string }>();
   const { t, i18n } = useTranslation("share");
-  const { data, isLoading, isError, isFetching, refetch } = useSharedView(token, statsLocale(i18n.language));
+  const { data, error, isLoading, isError, isFetching, refetch } = useSharedView(token, statsLocale(i18n.language));
   const visitor = useShareVisitor(`/share/${token}`);
 
   let body;
@@ -34,6 +34,7 @@ export function SharePage() {
         retrying={isFetching}
         exitTo={visitor.authed ? "/" : visitor.loginPath}
         exitLabel={visitor.authed ? t("goHome") : t("joinSignIn")}
+        unavailable={shareErrorCode(error) === "share_unavailable"}
       />
     );
   } else if (data.kind === "stats") {

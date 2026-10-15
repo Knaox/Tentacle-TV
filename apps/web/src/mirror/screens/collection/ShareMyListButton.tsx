@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, CircleAlert, LoaderCircle, Share2 } from "lucide-react";
-import { useCreateShareLink, useMyShareLink, type ShareListKind } from "@tentacle-tv/api-client";
+import { useCreateShareLink, useMyShareLink, usePublicSharingAllowed, type ShareListKind } from "@tentacle-tv/api-client";
 import { ShareLinkModal } from "../../../components/share/ShareLinkModal";
 import { useToast } from "../../../contexts/ToastContext";
 import { copyText } from "../../../lib/clipboard";
@@ -27,7 +27,12 @@ const SETTLE_MS: Partial<Record<Status, number>> = { copied: 2_000, failed: 3_00
  * « Copier » dont l'appui est un geste neuf. Un lien impossible à créer se
  * dit sur la pilule (échec, tremblement) et dans un toast.
  */
-export function ShareMyListButton({ kind = "watchlist" }: { kind?: ShareListKind }) {
+export function ShareMyListButton(props: { kind?: ShareListKind }) {
+  // Le droit « Partage public » de Jellyfin (capacité `share.publicRight`) : sans lui, aucune pilule.
+  return usePublicSharingAllowed() ? <ShareMyListButtonView {...props} /> : null;
+}
+
+function ShareMyListButtonView({ kind = "watchlist" }: { kind?: ShareListKind }) {
   const { t } = useTranslation("common");
   const toast = useToast();
   const mine = useMyShareLink(true, kind);

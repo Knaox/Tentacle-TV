@@ -53,6 +53,9 @@ export default {
   emptyLead: "{{name}} hasn't added anything to this list yet. Come back later: the link follows the list live.",
   errorTitle: "This share can't be opened",
   errorLead: "The link may have been revoked or copied wrong, or the server isn't responding. Try again, or ask for a new link.",
+  // Le propriétaire du lien n'a plus le droit « Partage public » : le lien reviendra avec lui.
+  unavailableTitle: "Share unavailable",
+  unavailableLead: "This share isn't open right now. Try again later, or ask its author.",
   retry: "Try again",
   goHome: "Go to home",
   loading: "Loading the share…",

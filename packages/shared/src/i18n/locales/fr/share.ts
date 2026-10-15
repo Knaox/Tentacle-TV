@@ -56,6 +56,9 @@ export default {
   emptyLead: "{{name}} n'a encore rien mis dans cette liste. Revenez plus tard : le lien suit la liste en direct.",
   errorTitle: "Impossible d'ouvrir ce partage",
   errorLead: "Le lien a peut-être été révoqué par son auteur ou mal copié, ou le serveur ne répond pas. Réessayez, ou demandez un nouveau lien.",
+  // Le propriétaire du lien n'a plus le droit « Partage public » : le lien reviendra avec lui.
+  unavailableTitle: "Partage indisponible",
+  unavailableLead: "Ce partage n'est pas ouvert pour le moment. Réessayez plus tard, ou demandez à son auteur.",
   retry: "Réessayer",
   goHome: "Aller à l'accueil",
   loading: "Chargement du partage…",

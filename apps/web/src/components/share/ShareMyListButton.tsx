@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePublicSharingAllowed } from "@tentacle-tv/api-client";
 import { ShareLinkModal } from "./ShareLinkModal";
 
 interface Props {
@@ -18,7 +19,12 @@ interface Props {
  * l'accueille. `kind` et le modal n'ont pas changé : la page publique
  * `/share/:token` reçoit le même lien.
  */
-export function ShareMyListButton({ kind = "watchlist" }: Props) {
+export function ShareMyListButton(props: Props) {
+  // Le droit « Partage public » de Jellyfin (capacité `share.publicRight`) : sans lui, aucun bouton.
+  return usePublicSharingAllowed() ? <ShareMyListButtonView {...props} /> : null;
+}
+
+function ShareMyListButtonView({ kind = "watchlist" }: Props) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
 

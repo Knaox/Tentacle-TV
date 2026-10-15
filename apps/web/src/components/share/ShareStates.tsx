@@ -64,22 +64,25 @@ export const ShareListEmpty = memo(function ShareListEmpty({ ownerUsername }: { 
 /**
  * Lien révoqué, mal copié ou serveur muet : le client ne distingue pas les
  * trois (le 404 et le 502 arrivent en même erreur). Un chemin de reprise
- * (réessayer) et une sortie qui ne suppose pas de session.
+ * (réessayer) et une sortie qui ne suppose pas de session. `unavailable` :
+ * le lien existe, mais son propriétaire n'a plus le droit « Partage public »
+ * (`share_unavailable`) — il reviendra.
  */
 export const ShareError = memo(function ShareError({
-  onRetry, retrying, exitTo, exitLabel,
+  onRetry, retrying, exitTo, exitLabel, unavailable = false,
 }: {
   onRetry: () => void;
   retrying: boolean;
   exitTo: string;
   exitLabel: string;
+  unavailable?: boolean;
 }) {
   const { t } = useTranslation("share");
   return (
     <div role="alert" className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-16 text-center">
       <Emblem icon="error" />
-      <h1 className="text-2xl font-bold tracking-tight text-content-primary md:text-3xl">{t("errorTitle")}</h1>
-      <p className="mt-3 max-w-md text-[15px] leading-relaxed text-content-tertiary">{t("errorLead")}</p>
+      <h1 className="text-2xl font-bold tracking-tight text-content-primary md:text-3xl">{t(unavailable ? "unavailableTitle" : "errorTitle")}</h1>
+      <p className="mt-3 max-w-md text-[15px] leading-relaxed text-content-tertiary">{t(unavailable ? "unavailableLead" : "errorLead")}</p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <button
           type="button"
