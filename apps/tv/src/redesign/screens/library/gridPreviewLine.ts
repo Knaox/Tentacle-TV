@@ -21,7 +21,8 @@ import { motionTo } from "../../motion/motion";
  * → `CardShell` `glide`) : une grande carte qui s'ouvre ne redessine rien.
  */
 
-/** La légende d'une affiche de grille au repos (titre, année : `MediaCard`), mesurée au simulateur. */
+/** La légende d'une affiche de grille au repos (`MediaCard`) : 14 de marge, le
+ *  titre (24) et l'année (22) à 1,21 em la ligne (Inter), 2 entre les deux. */
 const CAPTION_HEIGHT = 72;
 
 export interface GridPreviewLine {
