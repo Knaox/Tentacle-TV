@@ -22,10 +22,10 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Interface web** : « Vider le cache et réinitialiser » dit ce qu'il efface vraiment — les réglages de l'appareil, les recherches récentes et le cache, jamais la session
 
 ### EN
-- **Trailer previews on hover**: on the web and in desktop app 1.29.0, rest the pointer on a poster and its trailer starts in a mini card, with sound. The server picks it in your language, checks it and streams it itself; with no playable trailer, nothing shows
+- **Trailer previews on hover**: on the web and in desktop app 1.30.0, rest the pointer on a poster and its trailer starts in a mini card, with sound. The server picks it in your language, checks it and streams it itself; with no playable trailer, nothing shows
 - **Previews go easy on YouTube**: sweeping across a row asks for nothing, a title already seen costs no new extraction, and they pause by themselves when YouTube asks for verification — the TVs' trailers always come first
 - **Lighter previews**: the video starts at the mini card's size (720p at most) and each chunk downloads only once
-- **“Who's watching?” in desktop app 1.29.0**: everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, at the top of a simpler avatar menu, brings it back at any time. The launch screen is turned on in Settings › Family. A profile opened on a computer only watches: it manages nothing
+- **“Who's watching?” in desktop app 1.30.0**: everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, at the top of a simpler avatar menu, brings it back at any time. The launch screen is turned on in Settings › Family. A profile opened on a computer only watches: it manages nothing
 - **Relayed trailers**: the server no longer compresses the video it relays a second time — less work for nothing — and its log no longer counts a player that leaves as an error
 - **Profile pictures**: 36 characters to pick from in the web client, and a picture for every Family guest
 - **Web interface**: “Clear cache and reset” now says what it really clears — this device's settings, recent searches and the cache, never the session

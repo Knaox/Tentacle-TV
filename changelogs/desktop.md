@@ -25,8 +25,8 @@ et Linux reçoivent l'ensemble.
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
 
 ### EN
-- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.29.0)
-- **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Turn it on in Settings › Family, for all your computers; “Don't ask on this device” then opens the chosen profile directly (server 1.29.0)
+- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.30.0)
+- **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Turn it on in Settings › Family, for all your computers; “Don't ask on this device” then opens the chosen profile directly (server 1.30.0)
 - **A simpler avatar menu**: “Switch profile” at the top, which brings back “Who's watching?”, then you, this device, and help at the bottom
 - **A profile opened on a computer only watches**: it manages nothing, just like on TV
 - **Profile pictures**: a gallery of 36 illustrated characters, each with a name and a story, to pick from the avatar menu — uploading your own photo is still there. Accounts without a picture are offered it once, on first launch. Family guests get one too, from Settings › Family or their own profile
