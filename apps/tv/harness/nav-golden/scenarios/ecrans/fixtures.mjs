@@ -8,6 +8,16 @@ import trailerFixtures from "./trailerFixtures.mjs";
 const FILM = "fcfbd7a81518be2f40de85b0d1ccd46f"; // Les Évadés
 const FILMS = "db4c1708cbb5dd1676284a40f2950aba"; // la bibliothèque « Films »
 
+/** Ma liste variée (le type et le tri, CO-3, CO-4) : trois films, trois séries. */
+const VARIED_WATCHLIST = [
+  "006ed12b80acc97aee7f2354e99d6003", // Wolfs (film, 2024)
+  "0116b5f8fdcdd109c7d95f9f2a91418f", // Spider-Man : New Generation (film, 2018)
+  "011bc0bdb54e7ec6533d4794a34d67b0", // Barbie (film, 2023)
+  "04ef08139925579a3cda91fb35d65b67", // Berserk (série, 1997)
+  "0930e34e87bc4eee8f73485051447276", // Lucifer (série, 2016)
+  "050252a1ec1cb92ad13bf575a6cdc8ac", // Naruto (série, 2002)
+];
+
 /**
  * Une réponse LENTE : assez pour que l'état de chargement soit relevé à coup
  * sûr, même sous charge (l'entrée est relevée après 1,5 s d'immobilité, ou
@@ -70,6 +80,10 @@ export default {
   "fiche-lente": {
     description: "la fiche de « Les Évadés » répond après 20 s",
     apply: (data) => data.route("GET", itemPath(FILM), (req, res, { json }) => later(SLOW_MS, () => json(res, 200, data.item(FILM)))),
+  },
+  "ma-liste-variee": {
+    description: "Ma liste : trois films et trois séries (Wolfs, Spider-Man : New Generation, Barbie ; Berserk, Lucifer, Naruto) — de quoi trier et filtrer",
+    apply: (data) => data.setList("watchlist", VARIED_WATCHLIST),
   },
   "favoris-vides": {
     description: "aucun favori",

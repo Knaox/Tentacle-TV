@@ -44,6 +44,7 @@ domaine (`fixtures.mjs`) :
 | `ecrans/fiche-en-erreur` | la fiche de « Les Évadés » répond 500 |
 | `ecrans/fiche-lente` | la fiche de « Les Évadés » répond après 20 s |
 | `ecrans/favoris-vides` | Favoris vide |
+| `ecrans/ma-liste-variee` | Ma liste : trois films (Wolfs, Spider-Man : New Generation, Barbie) et trois séries (Berserk, Lucifer, Naruto) — le type et le tri (CO-3, CO-4, `collections-tri.json`, enregistré sur `d214b7023`) |
 | `ecrans/grande-bibliotheque` | « Films » porte 1 200 titres (copies des films de l'instantané, identifiants neufs) |
 | `ecrans/jumelage` | sans session : la connexion par identifiants est refusée (401) ; le serveur saisi est le faux backend de la place qui joue, `http://{backend}` (substitué par le banc : `localhost:310n` au simulateur, l'IP du Mac sur l'Apple TV) |
 
