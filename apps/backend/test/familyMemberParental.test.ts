@@ -35,6 +35,11 @@ let app: FastifyInstance;
 let tokens: ReturnType<typeof seedUsers>;
 
 beforeAll(async () => {
+  // L'heure est FIGÉE (seule l'horloge, pas les minuteurs) : un mercredi à 17 h, dans la plage
+  // « semaine, 16 h – 20 h » que ces tests posent. Hors de la plage, la garde d'accès du compte
+  // refuserait le membre mineur à toutes les portes, et le test dépendrait de l'heure.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 9, 14, 17, 0));
   vi.stubGlobal("fetch", (input: string | URL, init?: RequestInit) => {
     // Jellyfin muet pour les écritures de politique (panne simulée).
     if (h.mute && (init?.method ?? "GET") === "POST" && /\/Policy$/.test(new URL(String(input)).pathname)) {
@@ -47,6 +52,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await app.close();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 /** La politique de base de Hugo, réglée par l'administrateur. */
