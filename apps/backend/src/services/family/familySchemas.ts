@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { FAMILY_GUEST_PHOTO_MAX_BASE64, FAMILY_GUEST_PHOTO_TYPES, FAMILY_PROFILE_COLORS } from "../../family/familyContract";
 import { FAMILY_PICKER_PLATFORMS } from "../../family/familyPickerContract";
+import { FAMILY_CREATION_RIGHT_VALUES } from "../../family/familyRoles";
 
 /**
  * Les corps et paramètres des routes de la Famille, validés à l'entrée — la
@@ -47,6 +48,18 @@ export const setMemberRightsBodySchema = z.object({ createGuests: z.boolean().op
 
 /** Les droits d'un invité : seuls les champs présents changent. */
 export const setGuestRightsBodySchema = z.object({ requestTitles: z.boolean().optional() });
+
+/** Le rôle d'un membre (1.30.0) : parent ou non. */
+export const setMemberRoleBodySchema = z.object({ parent: z.boolean() });
+
+/** Le défaut des droits de création (1.30.0) : seuls les champs présents changent. */
+export const creationDefaultsBodySchema = z.object({ createFamily: z.boolean().optional(), createGuests: z.boolean().optional() });
+
+/** Les droits de création d'un compte (1.30.0) : seuls les champs présents changent. */
+export const accountCreationRightsBodySchema = z.object({
+  createFamily: z.enum(FAMILY_CREATION_RIGHT_VALUES).optional(),
+  createGuests: z.enum(FAMILY_CREATION_RIGHT_VALUES).optional(),
+});
 
 export const dissolveBodySchema = z.object({ confirm: z.literal("dissolve") });
 

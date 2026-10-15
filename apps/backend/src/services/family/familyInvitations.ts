@@ -5,6 +5,7 @@ import { FAMILY_INVITATION_TTL_MS, type OutgoingInvitationDto } from "../../fami
 import type { FamilyInvitationStatus } from "../../family/familyProtocol";
 import { capacityError, inviteBlock, sameUserId, type InviteHistory } from "../../family/familyRules";
 import { isReviewAccount, refuseReviewAccount, requireFamilies } from "./familyConfig";
+import { requireCreation } from "./familyCreationRights";
 import { FamilyFailure, iso } from "./familyErrors";
 import { isFamilyGuest } from "./familyGuestMarkers";
 import { withFamilyLock } from "./familyLock";
@@ -85,6 +86,8 @@ export async function inviteMember(owner: Actor, inviteeUserId: string, now: num
   if (await isFamilyGuest(owner.userId)) throw new FamilyFailure("family.guest_account", "Un invité n'invite personne");
   const mine = await familyOf(owner.userId);
   if (mine?.role === "member") throw notOwner();
+  // Fonder une famille (première invitation) : l'administration le permet-elle (1.30.0) ?
+  if (!mine) await requireCreation(owner.userId, { founding: true, guest: false });
   const users = await getJellyfinUsers();
   if (!users) throw new FamilyFailure("family.jellyfin_unavailable", "Comptes Jellyfin indisponibles");
   const target = users.find((user) => sameUserId(user.id, inviteeUserId));
@@ -97,6 +100,7 @@ export async function inviteMember(owner: Actor, inviteeUserId: string, now: num
   const { created, founded } = await withFamilyLock(owner.userId, async () => {
     const current = await familyOf(owner.userId);
     if (current?.role === "member") throw notOwner();
+    if (!current && mine) await requireCreation(owner.userId, { founding: true, guest: false });
     const existing = current?.family ?? null;
     if (existing && (await findProfile(existing.id, target.id))) throw new FamilyFailure("family.already_member", "Déjà dans la famille");
     const counts = existing ? await familyCounts(existing.id, now) : { members: 0, guests: 0, pendingInvitations: 0 };

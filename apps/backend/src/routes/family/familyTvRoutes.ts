@@ -2,16 +2,21 @@ import type { FastifyPluginAsync } from "fastify";
 import { hashToken } from "../../services/jwt";
 import { getFamilySwitches, setFamilySwitches } from "../../services/family/familyConfig";
 import { getFamilyLaunchPolicy, setFamilyLaunchPolicy } from "../../services/family/familyLaunchPolicy";
+import { accountFamilyRights, setAccountFamilyRights } from "../../services/family/familyAccountAdmin";
+import { getCreationDefaults, setCreationDefaults } from "../../services/family/familyCreationRights";
 import { endSessionsOfKinds } from "../../services/family/familySessions";
 import { listTvProfiles, openTvSession, unlockManage } from "../../services/family/familyTv";
 import { enrollTv, pairingFromToken } from "../../services/family/familyTvEnroll";
 import {
+  accountCreationRightsBodySchema,
   adminLaunchPolicyBodySchema,
   adminSwitchesBodySchema,
+  creationDefaultsBodySchema,
   manageUnlockBodySchema,
   openTvSessionBodySchema,
+  userIdSchema,
 } from "../../services/family/familySchemas";
-import { registerFamilyRoute } from "./familyRouting";
+import { actorOf, registerFamilyRoute } from "./familyRouting";
 
 /**
  * L'Apple TV (sous `/api/family/tv`) : l'échange du jeton, « Qui regarde ? »,
@@ -62,4 +67,25 @@ export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
     console.log(`[family] « Qui regarde ? » à l'ouverture : bureau ${desktop}, TV ${policy.tv.mode}`);
     return policy;
   });
+
+  // Les droits de création (1.30.0) : le défaut, et chaque compte. Rien de ce qui existe ne tombe.
+  registerFamilyRoute(app, "adminCreationDefaults", async () => getCreationDefaults());
+
+  registerFamilyRoute(app, "adminSetCreationDefaults", async (request, actor) => {
+    const defaults = await setCreationDefaults(creationDefaultsBodySchema.parse(request.body ?? {}));
+    console.log(`[family] ${actor.username} → défaut : famille ${defaults.createFamily ? "oui" : "non"}, invités ${defaults.createGuests ? "oui" : "non"}`);
+    return defaults;
+  });
+
+  registerFamilyRoute(app, "adminAccountRights", async (request) =>
+    accountFamilyRights(userIdSchema.parse((request.params as Record<string, unknown> | undefined)?.userId)),
+  );
+
+  registerFamilyRoute(app, "adminSetAccountRights", async (request, actor) =>
+    setAccountFamilyRights(
+      actorOf(actor),
+      userIdSchema.parse((request.params as Record<string, unknown> | undefined)?.userId),
+      accountCreationRightsBodySchema.parse(request.body ?? {}),
+    ),
+  );
 };

@@ -23,6 +23,7 @@ import { desktopAtLaunchByDefault, getFamilyLaunchPolicy } from "./familyLaunchP
 import { readPickerPreference, writePickerPreference } from "./familyPickerPreference";
 import { unavailableFor, visibleProfiles } from "./familyTv";
 import { syncGuestPolicy } from "./guestPolicySync";
+import { syncMemberParental } from "./memberParentalSync";
 
 /**
  * « Qui regarde ? » sur le BUREAU (docs/FAMILLE.md, « Le bureau ») — joué
@@ -51,7 +52,8 @@ export interface PickerCaller {
 function accountRights(profiles: readonly TvProfileDto[], account: string, switches: FamilySwitches): FamilyRights {
   const own = profiles.find((profile) => sameUserId(profile.userId, account));
   const role = own?.kind === "owner" ? "owner" : own?.kind === "member" ? "member" : null;
-  return familyRightsOf(role, null, switches);
+  // Ses droits de gestion tels que la liste les dit (un parent gère tous les invités).
+  return own?.manage ?? familyRightsOf(role, null, switches);
 }
 
 function toPickerProfile(profile: TvProfileDto, account: string, rights: FamilyRights): PickerProfileDto {
@@ -136,6 +138,7 @@ async function pickNow(caller: PickerCaller, body: PickProfileBody, now: number)
   const host = await ensurePickerHost(caller.token, caller, body.platform, body.deviceName, now);
   // L'invité suit la politique de SON créateur, quel que soit l'appareil qui l'ouvre.
   if (profile.kind === "guest") void syncGuestPolicy(profile.userId, profile.createdBy ?? caller.userId);
+  if (profile.kind === "member") void syncMemberParental(profile.userId);
   const token = await startProfileSession(host, profile);
   console.log(`[family] Session de profil ouverte sur l'hôte ${host.id} (${host.platform}, ${profile.kind})`);
   return { personal: false, token, user: { id: profile.userId, name: profile.name }, profile: dto };

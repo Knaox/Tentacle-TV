@@ -39,6 +39,8 @@ export interface MemberRow {
   canRequestTitles: boolean;
   /** Invité (1.30.0) : son contrôle parental VOULU, en JSON ; null = aucun. */
   parentalControls?: string | null;
+  /** Membre (1.30.0) : nommé PARENT par le propriétaire. */
+  isParent?: boolean;
   createdAt: Date;
 }
 

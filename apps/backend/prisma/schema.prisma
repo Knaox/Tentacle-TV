@@ -383,11 +383,46 @@ model FamilyMember {
   /// La politique EFFECTIVE (recoupée avec son créateur) vit dans Jellyfin.
   parentalControls String?
   createdAt    DateTime @default(now())
+  /// Membre (1.30.0) : le propriétaire l'a nommé PARENT — il gère les invités et les membres mineurs.
+  isParent     Boolean  @default(false)
 
   @@unique([familyId, userId])
   /// v2 : UNE famille par compte — propriétaire, membre ou invité, une seule ligne.
   @@unique([userId])
   @@map("family_members")
+}
+
+/// Le contrôle parental d'un MEMBRE mineur de la Famille (1.30.0), une ligne par compte. Jellyfin porte
+/// la politique EFFECTIVE (base ∩ voulu) ; Tentacle garde le VOULU, la BASE — les champs parentaux que
+/// règle l'administrateur, rendus à l'identique au retrait — et la DERNIÈRE ÉCRITURE (un champ qui en
+/// diffère a été changé ailleurs : il devient la base). `controls` null : retiré, la base reste à rendre
+/// (`restorePending`, rejoué par le guet tant que Jellyfin ne l'a pas reprise).
+model FamilyMemberParental {
+  userId         String   @id
+  familyId       String
+  /// JSON `GuestParentalControls` ; null = retiré (base à rendre).
+  controls       String?
+  /// JSON `GuestParentalCeiling` : les champs parentaux de la politique de base.
+  base           String
+  /// JSON `GuestParentalCeiling` : la politique effective relue après la dernière écriture.
+  written        String?
+  restorePending Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([familyId])
+  @@map("family_member_parental")
+}
+
+/// Les droits de création d'un compte (1.30.0) — fonder une famille, créer des invités — réglés par
+/// l'administration : `inherit` (le défaut du serveur), `allow` ou `deny`. Sans ligne : `inherit`.
+model FamilyAccountRights {
+  userId       String   @id
+  createFamily String   @default("inherit")
+  createGuests String   @default("inherit")
+  updatedAt    DateTime @updatedAt
+
+  @@map("family_account_rights")
 }
 
 /// Les invitations : identifiant aléatoire de 128 bits (jamais un cuid —

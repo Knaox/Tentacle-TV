@@ -12,7 +12,9 @@ import {
   type OutgoingInvitationDto,
 } from "../../family/familyContract";
 import { familyRightsOf } from "../../family/familyRights";
+import type { FamilyCreationAllowed } from "../../family/familyRoles";
 import { getFamilySwitches, isReviewAccount } from "./familyConfig";
+import { creationAllowedFor } from "./familyCreationRights";
 import { profilesWithPin } from "./familyPins";
 import { withParentalState } from "./familyGuestParental";
 import {
@@ -97,6 +99,7 @@ export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap
         createdByName: creator ? users?.get(fold(creator.createdBy))?.name ?? creator.fallbackName : null,
         rights: guest ? null : { createGuests: row.canCreateGuests === true },
         guestRights: guest ? { requestTitles: row.canRequestTitles === true } : null,
+        ...(row.kind === "member" && { parent: row.isParent === true }),
       };
     })
     .sort((a, b) => Number(a.kind === "guest") - Number(b.kind === "guest"));
@@ -116,8 +119,16 @@ async function pendingOf(family: FamilyRow, users: UserMap, now: number): Promis
   }));
 }
 
-/** LA famille du porteur, vue par lui : son rôle, ses droits. */
-async function familyView(family: FamilyRow, role: FamilyRole, self: MemberRow | null, users: UserMap, now: number): Promise<FamilyDto> {
+/** LA famille du porteur, vue par lui : son rôle, ses droits (parent et droit de créer des invités compris). */
+async function familyView(
+  family: FamilyRow,
+  role: FamilyRole,
+  self: MemberRow | null,
+  users: UserMap,
+  now: number,
+  creation: FamilyCreationAllowed,
+): Promise<FamilyDto> {
+  const parent = role === "member" && self?.isParent === true;
   const rows = await familyProfiles(family.id);
   const pins = await profilesWithPin(rows.map((row) => row.userId).concat(family.ownerUserId));
   return {
@@ -126,7 +137,8 @@ async function familyView(family: FamilyRow, role: FamilyRole, self: MemberRow |
     owner: { userId: family.ownerUserId, name: nameOf(users, family.ownerUserId, family.ownerName) },
     profiles: profileDtos(family, rows, users, pins),
     pendingInvitations: role === "owner" ? await pendingOf(family, users, now) : [],
-    rights: familyRightsOf(role, self ? { createGuests: self.canCreateGuests === true } : null, getFamilySwitches()),
+    rights: familyRightsOf(role, self ? { createGuests: self.canCreateGuests === true } : null, getFamilySwitches(), { parent, creation }),
+    ...(role === "member" && { parent }),
     createdAt: family.createdAt.toISOString(),
     since: self ? self.createdAt.toISOString() : null,
   };
@@ -157,7 +169,9 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
   const [review, guest] = await Promise.all([isReviewAccount(caller.userId), guestRowOf(caller.userId)]);
 
   const mine = await familyOf(caller.userId);
-  const view = mine ? await familyView(mine.family, mine.role, mine.role === "member" ? mine.self : null, users, now) : null;
+  // Ce que l'administration permet à ce compte de créer (1.30.0) ; un invité, le compte de démonstration : rien.
+  const creation: FamilyCreationAllowed = guest || review ? { createFamily: false, createGuests: false } : await creationAllowedFor(caller.userId);
+  const view = mine ? await familyView(mine.family, mine.role, mine.role === "member" ? mine.self : null, users, now, creation) : null;
   // Le contrôle parental des invités : en session personnelle, à qui peut le régler seulement.
   const family = view && caller.personal ? await withParentalState(view, caller.userId) : view;
   const owned: FamilyOverviewDto["owned"] =
@@ -178,6 +192,7 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
       reviewAccount: review,
       hasPin: (await profilesWithPin([caller.userId])).has(caller.userId),
       personalSession: caller.personal,
+      creation,
     },
     family,
     owned,

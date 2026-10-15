@@ -9,6 +9,8 @@ import { clearInvitationBell, familyUpdate, notifyFamily, ringBell } from "./fam
 import { endForeignOnTvsOf, endMemberLink, endProfileEverywhere } from "./familySessions";
 import { cleanupGuestAccounts, retireGuestRow } from "./guestAccountCleanup";
 import { familyOf, familyProfiles, findFamily, findOwnedFamily, fold, ownerRefusal, personsOf, type FamilyRow } from "./familyStore";
+import { deleteMemberParental } from "./memberParentalStore";
+import { restoreMemberParental } from "./memberParentalSync";
 
 /**
  * Sortir de la Famille : un membre retiré par le propriétaire, un membre qui
@@ -17,7 +19,9 @@ import { familyOf, familyProfiles, findFamily, findOwnedFamily, fold, ownerRefus
  * ils restent dans la famille ; dissoudre supprime les comptes des invités,
  * quel qu'en soit le créateur, par le journal durable
  * (`guestAccountCleanup.ts`). Chaque sortie coupe d'abord les sessions de
- * profil concernées — v2 : sur les TV de TOUTE la famille.
+ * profil concernées — v2 : sur les TV de TOUTE la famille. Un membre mineur
+ * (1.30.0) qui sort retrouve sa politique de base, à l'identique : aussitôt,
+ * et par le guet si Jellyfin se tait (`memberParentalSync.ts`).
  */
 
 /** La famille du porteur, s'il en est le propriétaire — sinon le bon refus. */
@@ -36,6 +40,9 @@ async function detachMember(family: FamilyRow, memberUserId: string, reason: "re
     const row = rows.find((entry) => fold(entry.userId) === fold(memberUserId));
     if (!row || row.kind !== "member") throw new FamilyFailure("family.not_found", "Introuvable");
     await getPrisma().familyMember.deleteMany({ where: { id: row.id } });
+    // Son contrôle parental part avec la famille : base rendue (compte disparu : rien à rendre).
+    if (reason === "account_deleted") await deleteMemberParental(row.userId);
+    else await restoreMemberParental(row.userId).catch(() => false);
     const persons = personsOf(family, rows);
     await endMemberLink(persons.filter((userId) => fold(userId) !== fold(row.userId)), row.userId, reason);
     return persons;
@@ -103,6 +110,8 @@ async function dissolve(family: FamilyRow, now: number): Promise<Dissolved> {
   forgetFamilyGuests();
   const members = rows.filter((row) => row.kind === "member").map((row) => row.userId);
   await prisma.familyMember.deleteMany({ where: { familyId: family.id } });
+  // Les membres mineurs retrouvent leur politique de base (le guet rejoue si Jellyfin se tait).
+  for (const member of members) await restoreMemberParental(member).catch(() => false);
   const pending = await prisma.familyInvitation.findMany({ where: { familyId: family.id, status: "pending" } });
   await prisma.familyInvitation.updateMany({
     where: { familyId: family.id, status: "pending" },
@@ -162,6 +171,7 @@ export async function forgetFamilyAccount(userId: string, now: number): Promise<
   for (const familyId of new Set(invitations.map((invitation) => invitation.familyId))) await notifyFamily(familyId);
   await prisma.profilePin.deleteMany({ where: { userId } });
   await prisma.profilePinAttempt.deleteMany({ where: { userId } });
+  await deleteMemberParental(userId);
   await endProfileEverywhere(userId, "account_deleted");
   console.log("[family] Compte disparu : famille, adhésion et invitations soldées");
 }

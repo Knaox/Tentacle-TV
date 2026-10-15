@@ -11,6 +11,7 @@ import type {
 import { canManageGuest, familyRightsOf } from "../../family/familyRights";
 import { capacityError, guestQuotaBlock, normalizeGuestName } from "../../family/familyRules";
 import { getFamilySwitches, isReviewAccount, refuseReviewAccount, requireGuests } from "./familyConfig";
+import { requireCreation } from "./familyCreationRights";
 import { FamilyFailure, iso } from "./familyErrors";
 import { forgetFamilyGuests, isFamilyGuest } from "./familyGuestMarkers";
 import type { Actor } from "./familyInvitations";
@@ -65,6 +66,11 @@ function rightRequired(): FamilyFailure {
   return new FamilyFailure("family.guest_right_required", "Le propriétaire n'a pas permis à ce membre de créer des invités");
 }
 
+/** Un membre crée des invités si le propriétaire le lui permet — un parent, d'office. */
+function memberMayCreate(self: MemberRow): boolean {
+  return self.canCreateGuests === true || self.isParent === true;
+}
+
 /** L'invité visé, s'il est dans la famille du porteur et à sa main : 404 hors
  *  de sa famille, 403 sur un invité qu'il n'a pas créé (membre). */
 export async function manageableGuest(actor: Actor, guestUserId: string): Promise<{ row: MemberRow; family: FamilyRow }> {
@@ -72,7 +78,9 @@ export async function manageableGuest(actor: Actor, guestUserId: string): Promis
   const mine = await familyOf(actor.userId);
   const row = mine ? await findProfile(mine.family.id, guestUserId) : null;
   if (!mine || !row || row.kind !== "guest") throw new FamilyFailure("family.not_found", "Introuvable");
-  const rights = familyRightsOf(mine.role, { createGuests: mine.self.canCreateGuests === true }, getFamilySwitches());
+  const rights = familyRightsOf(mine.role, { createGuests: mine.self.canCreateGuests === true }, getFamilySwitches(), {
+    parent: mine.self.isParent === true,
+  });
   if (!canManageGuest(rights, row.createdBy ?? mine.family.ownerUserId, actor.userId)) {
     throw new FamilyFailure("family.not_owner", "Réservé au propriétaire ou au créateur de l'invité");
   }
@@ -86,14 +94,17 @@ export async function createGuest(actor: Actor, body: { name: unknown; color: Fa
   const name = normalizeGuestName(body.name);
   if (!name) throw new FamilyFailure("family.invalid_input", "Nom d'invité vide");
   const before = await familyOf(actor.userId);
-  if (before?.role === "member" && !before.self.canCreateGuests) throw rightRequired();
+  // L'administration d'abord (1.30.0) : créer un invité, et fonder la famille s'il n'en a pas.
+  await requireCreation(actor.userId, { founding: before === null, guest: true });
+  if (before?.role === "member" && !memberMayCreate(before.self)) throw rightRequired();
   // Le verrou de la famille : celle du porteur, ou celle qu'il fondera.
   const lockKey = before?.family.ownerUserId ?? actor.userId;
 
   const { row, founded } = await withFamilyLock(lockKey, async () => {
     const mine = await familyOf(actor.userId);
     if ((mine?.family.ownerUserId ?? actor.userId) !== lockKey) throw new FamilyFailure("family.not_found", "La famille a changé");
-    if (mine?.role === "member" && !mine.self.canCreateGuests) throw rightRequired();
+    if (mine?.role === "member" && !memberMayCreate(mine.self)) throw rightRequired();
+    if (!mine && before) await requireCreation(actor.userId, { founding: true, guest: true });
     const existing = mine?.family ?? null;
     const counts = existing ? await familyCounts(existing.id, now) : { members: 0, guests: 0, pendingInvitations: 0 };
     const full = capacityError("guest", counts);
@@ -150,15 +161,15 @@ export async function createGuest(actor: Actor, body: { name: unknown; color: Fa
   };
 }
 
-/** Le propriétaire — lui SEUL — règle les droits d'un invité (v2). « Peut
- *  demander » : la session de l'invité utilise les extensions à SON PROPRE
- *  nom (`familyGuestExtensions.ts`). Lu à chaque requête : le retirer coupe à
- *  l'appel suivant ; l'invité l'apprend aussi par son socket. */
+/** Le propriétaire — et, 1.30.0, un parent — règle les droits d'un invité (v2).
+ *  « Peut demander » : la session de l'invité utilise les extensions à SON
+ *  PROPRE nom (`familyGuestExtensions.ts`). Lu à chaque requête : le retirer
+ *  coupe à l'appel suivant ; l'invité l'apprend aussi par son socket. */
 export async function setGuestRights(owner: Actor, guestUserId: string, patch: SetGuestRightsBody): Promise<FamilyGuestRights> {
   await refuseReviewAccount(owner.userId);
   const mine = await familyOf(owner.userId);
-  if (mine?.role !== "owner") throw await ownerRefusal(owner.userId, guestUserId);
-  const updated = await withFamilyLock(owner.userId, async () => {
+  if (mine?.role !== "owner" && mine?.self.isParent !== true) throw await ownerRefusal(owner.userId, guestUserId);
+  const updated = await withFamilyLock(mine.family.ownerUserId, async () => {
     const row = await findProfile(mine.family.id, guestUserId);
     if (!row || row.kind !== "guest") throw await ownerRefusal(owner.userId, guestUserId);
     if (patch.requestTitles === undefined) return row;

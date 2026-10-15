@@ -15,6 +15,8 @@ import { familyOf, familyProfiles, fold } from "./familyStore";
 import { fetchUser, type UserDto } from "./guestAccounts";
 import { ceilingFromPolicy, parseGuestParental, storedGuestParental } from "./guestParentalPolicy";
 import { applyGuestPolicy } from "./guestPolicySync";
+import { memberParentalView } from "./memberParental";
+import { familyMemberParental } from "./memberParentalStore";
 
 /**
  * Le contrôle parental d'un invité (docs/DROITS-UTILISATEURS.md § 4) : le
@@ -62,11 +64,12 @@ export async function setGuestParental(actor: Actor, guestUserId: string, body: 
   return { parental: wanted, parentalCeiling: await ceilingOf(creatorUserId) };
 }
 
-/** Les options du contrôle parental : à qui peut régler au moins un invité (le propriétaire, un membre qui en a créé). */
+/** Les options du contrôle parental : à qui peut régler au moins un invité ou un membre (le propriétaire,
+ *  un parent, un membre qui a créé un invité). */
 export async function parentalOptions(actor: Actor): Promise<FamilyParentalOptionsDto> {
   const mine = await familyOf(actor.userId);
   if (!mine) throw new FamilyFailure("family.not_owner", "Aucun invité à régler");
-  if (mine.role !== "owner") {
+  if (mine.role !== "owner" && mine.self.isParent !== true) {
     const own = (await familyProfiles(mine.family.id)).some((row) => row.kind === "guest" && fold(row.createdBy ?? "") === fold(actor.userId));
     if (!own) throw new FamilyFailure("family.not_owner", "Aucun invité à régler");
   }
@@ -80,20 +83,27 @@ export async function parentalOptions(actor: Actor): Promise<FamilyParentalOptio
 
 /**
  * L'état lu avec chaque invité que CE compte peut régler (session personnelle) :
- * `parental` (voulu) et `parentalCeiling` (son créateur). Les autres profils n'en
- * portent rien. UNE lecture des comptes de Jellyfin pour tous les plafonds.
+ * `parental` (voulu) et `parentalCeiling` (son créateur) ; et, pour le propriétaire
+ * et les parents, avec chaque membre qui peut être restreint (sa base pour plafond).
+ * Les autres profils n'en portent rien. UNE lecture des comptes de Jellyfin.
  */
 export async function withParentalState(family: FamilyDto, actorUserId: string): Promise<FamilyDto> {
   const rows = await familyProfiles(family.id);
   const ownerUserId = family.owner.userId;
   const mine = (profile: FamilyProfileDto) =>
     profile.kind === "guest" && canManageGuest(family.rights, profile.createdBy ?? ownerUserId, actorUserId);
-  if (!family.profiles.some(mine)) return family;
+  const minor = (profile: FamilyProfileDto) => family.rights.manageMinors === true && profile.kind === "member" && profile.parent !== true;
+  if (!family.profiles.some((profile) => mine(profile) || minor(profile))) return family;
   const users = await jellyfinAdminFetch<UserDto[]>("/Users");
   const policies = new Map(
     (users.ok && Array.isArray(users.data) ? users.data : []).filter((user) => user.Id).map((user) => [fold(user.Id as string), user.Policy ?? {}]),
   );
+  const states = family.profiles.some(minor) ? await familyMemberParental(family.id) : [];
   const profiles = family.profiles.map((profile): FamilyProfileDto => {
+    if (minor(profile)) {
+      const state = states.find((entry) => fold(entry.userId) === fold(profile.userId));
+      return memberParentalView(profile, policies.get(fold(profile.userId)), state);
+    }
     if (!mine(profile)) return profile;
     const row = rows.find((entry) => fold(entry.userId) === fold(profile.userId));
     const creator = policies.get(fold(profile.createdBy ?? ownerUserId));

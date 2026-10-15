@@ -3,6 +3,7 @@ import { startSearchJobs } from "./search/jobs";
 import { startPairingCleanup } from "./pairingCleanup";
 import { startFamilySweep } from "./family/familySweep";
 import { startGuestPolicyWatch } from "./family/guestPolicySync";
+import { startMemberParentalWatch } from "./family/memberParentalSync";
 import { startJellyfinPoller } from "./jellyfinPoller";
 import { startJellyfinWs } from "./jellyfinWs";
 import { startNotificationPushWorker } from "./notificationPushWorker";
@@ -33,6 +34,8 @@ export function startBackgroundServices(): void {
   startFamilySweep();
   // Le contrôle parental des invités suit leur créateur, même réglé dans Jellyfin.
   startGuestPolicyWatch();
+  // Le contrôle parental des membres mineurs tient, et leur base se rend si Jellyfin s'était tu.
+  startMemberParentalWatch();
   startJellyfinPoller();
   startJellyfinWs();
   startNotificationPushWorker();

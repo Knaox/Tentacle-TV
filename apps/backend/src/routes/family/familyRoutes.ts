@@ -8,6 +8,8 @@ import { setOwnPin } from "../../services/family/familyOwnPin";
 import { parentalOptions, setGuestParental } from "../../services/family/familyGuestParental";
 import { hashToken } from "../../services/jwt";
 import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../../services/family/familyMembers";
+import { setMemberRole } from "../../services/family/familyMemberRoles";
+import { setMemberParental } from "../../services/family/memberParental";
 import {
   candidatesQuerySchema,
   createGuestBodySchema,
@@ -18,6 +20,7 @@ import {
   setGuestPhotoBodySchema,
   setGuestRightsBodySchema,
   setMemberRightsBodySchema,
+  setMemberRoleBodySchema,
   setOwnPinBodySchema,
   setPinBodySchema,
   userIdSchema,
@@ -123,6 +126,16 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
       userIdSchema.parse(param(request.params, "userId")),
       setMemberRightsBodySchema.parse(request.body ?? {}),
     ),
+  );
+
+  // Le rôle de parent (1.30.0) : le propriétaire seul.
+  registerFamilyRoute(app, "setMemberRole", async (request, actor) =>
+    setMemberRole(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), setMemberRoleBodySchema.parse(request.body)),
+  );
+
+  // Le contrôle parental d'un membre mineur (1.30.0) : le corps est validé par le service (cinq champs exacts).
+  registerFamilyRoute(app, "setMemberParental", async (request, actor) =>
+    setMemberParental(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), request.body),
   );
 
   registerFamilyRoute(app, "leave", async (request, actor) =>

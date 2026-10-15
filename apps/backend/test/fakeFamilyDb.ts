@@ -39,8 +39,13 @@ const SPECS: Record<string, ModelSpec> = {
   familyMember: {
     // v2 : une famille par compte — l'unicité de `userId` est celle de la base.
     unique: [["familyId", "userId"], ["userId"]],
-    defaults: () => ({ id: id("fm"), color: null, jellyfinName: null, createdBy: null, canCreateGuests: false, canRequestTitles: false, parentalControls: null, createdAt: now() }),
+    defaults: () => ({
+      id: id("fm"), color: null, jellyfinName: null, createdBy: null, canCreateGuests: false, canRequestTitles: false,
+      parentalControls: null, isParent: false, createdAt: now(),
+    }),
   },
+  familyMemberParental: { key: ["userId"], defaults: () => ({ controls: null, written: null, restorePending: false, createdAt: now(), updatedAt: now() }) },
+  familyAccountRights: { key: ["userId"], defaults: () => ({ createFamily: "inherit", createGuests: "inherit", updatedAt: now() }) },
   familyInvitation: { defaults: () => ({ status: "pending", createdAt: now(), respondedAt: null, snoozedUntil: null }) },
   profilePin: { key: ["userId"], defaults: () => ({ updatedAt: now() }) },
   profilePinAttempt: { key: ["userId"], defaults: () => ({ failures: 0, lockCount: 0, lockedUntil: null, updatedAt: now() }) },

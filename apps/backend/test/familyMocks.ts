@@ -23,7 +23,13 @@ export function freshState(): HarnessState {
   return {
     db: createFamilyDb(),
     jf: createFakeJellyfinUsers(),
-    config: new Map([["jwt_secret", "secret-des-bancs-de-la-famille"]]),
+    // Les droits de création (1.30.0) : NON par défaut sur un vrai serveur ; les bancs d'avant
+    // gardent le comportement d'avant (tout compte crée), ceux des droits les retirent.
+    config: new Map([
+      ["jwt_secret", "secret-des-bancs-de-la-famille"],
+      ["family_default_create_family", "true"],
+      ["family_default_create_guests", "true"],
+    ]),
     socket: [],
     ended: [],
     unpaired: [],

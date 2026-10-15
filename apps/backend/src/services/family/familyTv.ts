@@ -12,6 +12,8 @@ import { startProfileSession } from "./familyProfileSession";
 import { familyOf, familyProfiles, fold, jellyfinUserMap, memberKind, profileColor, type MemberRow } from "./familyStore";
 import type { PairingRow } from "./familyTvEnroll";
 import { syncGuestPolicy } from "./guestPolicySync";
+import { creationAllowedForMany } from "./familyCreationRights";
+import { syncMemberParental } from "./memberParentalSync";
 
 /**
  * « Qui regarde ? » et les sessions de profil de l'Apple TV (docs/FAMILLE.md).
@@ -65,7 +67,12 @@ export async function visibleProfiles(
     return users === null || (user !== undefined && !user.isDisabled);
   });
   const ids = visible.map((entry) => entry.userId);
-  const [pins, locks, review] = await Promise.all([profilesWithPin(ids), lockedProfiles(ids, now), isReviewAccount(account)]);
+  const [pins, locks, review, creations] = await Promise.all([
+    profilesWithPin(ids),
+    lockedProfiles(ids, now),
+    isReviewAccount(account),
+    creationAllowedForMany(visible.filter((entry) => entry.kind !== "guest").map((entry) => entry.userId)),
+  ]);
   const profiles = visible.map((entry): TvProfileDto => {
     const guest = entry.kind === "guest";
     const until = locks.get(entry.userId);
@@ -85,7 +92,10 @@ export async function visibleProfiles(
       manage:
         review || guest
           ? null
-          : familyRightsOf(entry.kind === "member" ? "member" : "owner", { createGuests: entry.row?.canCreateGuests === true }, switches),
+          : familyRightsOf(entry.kind === "member" ? "member" : "owner", { createGuests: entry.row?.canCreateGuests === true }, switches, {
+              parent: entry.row?.isParent === true,
+              creation: creations.get(fold(entry.userId)),
+            }),
     };
   });
   return { switches, profiles };
@@ -145,6 +155,8 @@ export async function openTvSession(pairing: PairingRow, body: OpenTvSessionBody
     if (!remembered && !opensAtLaunch) await checkProfilePin({ pairingId: pairing.id, userId: profile.userId, pin: body.pin, now });
     // L'invité suit la politique de SON créateur, quelle que soit la TV qui l'ouvre.
     if (profile.kind === "guest") void syncGuestPolicy(profile.userId, profile.createdBy ?? pairing.jellyfinUserId);
+    // Un membre mineur : son contrôle parental tient, même si sa politique a changé dans Jellyfin.
+    if (profile.kind === "member") void syncMemberParental(profile.userId);
 
     // Une seule session de profil par TV : la précédente se ferme.
     const token = await startProfileSession(pairing, profile);
