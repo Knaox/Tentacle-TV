@@ -1,4 +1,4 @@
-import { createProfileRailStore, createUseRailPinning } from "@tentacle-tv/tv-core";
+import { createProfileRailStore, createUseRailPinning, isRailSetupPending } from "@tentacle-tv/tv-core";
 import { onSessionChanged } from "../../auth/sessionEvents";
 import { tvStorage } from "../../storage/RNStorageAdapter";
 
@@ -37,3 +37,22 @@ export const railPinningStore = createProfileRailStore(tvStorage, readActiveIden
 onSessionChanged(() => railPinningStore.syncIdentity());
 
 export const useRailPinning = createUseRailPinning(railPinningStore);
+
+/**
+ * Une préconfiguration du rail reste-t-elle à proposer à l'identité active ?
+ * Lecture SYNCHRONE, hors React : de quoi choisir la page d'arrivée (la
+ * préconfiguration ou l'accueil) sans faire paraître l'accueil d'abord. Elle
+ * s'appuie sur le dernier nombre de bibliothèques vu (`noteActiveLibraryCount`) ;
+ * la décision finale reste celle de `useRailSetupGate`. Sans session : faux.
+ */
+export function railSetupPending(): boolean {
+  const { identity, setupDone } = railPinningStore.readSnapshot();
+  if (!identity) return false;
+  return isRailSetupPending({ setupDone, lastLibraryCount: railPinningStore.readLibraryCount(identity) });
+}
+
+/** Retient le nombre de bibliothèques que voit l'identité active (relevé par le rail et par la porte). */
+export function noteActiveLibraryCount(count: number): void {
+  const { identity } = railPinningStore.readSnapshot();
+  if (identity) railPinningStore.noteLibraryCount(identity, count);
+}

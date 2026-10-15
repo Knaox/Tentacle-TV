@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { RAIL_MOVABLE_FIXED, applyRailOrder, libraryRailKey, sameRailOrder, type RailPinning } from "@tentacle-tv/tv-core";
 import type { IconName } from "../../redesign/icons/Icon";
 import type { NavEntry } from "../../redesign/nav/NavRail";
-import { useRailPinning } from "../../components/nav/railPinning";
+import { noteActiveLibraryCount, useRailPinning } from "../../components/nav/railPinning";
 
 /**
  * Les entrées que l'on ORGANISE : Pour vous, Ma liste, Favoris et chaque
@@ -46,6 +46,11 @@ export function useNavCatalog(): NavCatalog {
   const { t } = useTranslation("nav");
   const { data: libraries } = useLibraries();
   const pinning = useRailPinning();
+  // Une bibliothèque arrivée depuis : la préconfiguration le saura au prochain lancement (`railSetupPending`).
+  const libraryCount = libraries?.length;
+  useEffect(() => {
+    if (libraryCount !== undefined) noteActiveLibraryCount(libraryCount);
+  }, [libraryCount]);
   return useMemo(() => {
     // Les entrées fixes organisables, dans leur ordre par défaut (tv-core), puis chaque bibliothèque.
     const [forYou, myList, favorites] = RAIL_MOVABLE_FIXED;

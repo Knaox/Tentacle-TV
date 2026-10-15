@@ -7,7 +7,7 @@ import {
   type RailSetupLatch,
   type RailSetupStatus,
 } from "@tentacle-tv/tv-core";
-import { railPinningStore } from "../../components/nav/railPinning";
+import { noteActiveLibraryCount, railPinningStore } from "../../components/nav/railPinning";
 import { useServerReachability } from "../../hooks/serverReachability";
 
 /**
@@ -66,6 +66,11 @@ export function useRailSetupGate(): RailSetupGate {
     const timer = setTimeout(wake, Math.max(0, waitingSince.at + RAIL_SETUP_MAX_WAIT_MS - Date.now()));
     return () => clearTimeout(timer);
   }, [status, identity, tick]);
+
+  // Le nombre vu, pour la lecture synchrone du prochain lancement (`railSetupPending`).
+  useEffect(() => {
+    if (typeof libraryCount === "number") noteActiveLibraryCount(libraryCount);
+  }, [libraryCount, identity]);
 
   const complete = useCallback(
     (layout: RailLayout) => {
