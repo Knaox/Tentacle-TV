@@ -91,6 +91,8 @@ vi.mock("../components/detail/TrailerButton", () => ({ TrailerButton: () => null
 vi.mock("../components/detail/TrailerHelpHint", () => ({ TrailerHelpHint: () => null }));
 vi.mock("../components/rating/DetailRating", () => ({ DetailRating: () => null }));
 vi.mock("../components/detail/DetailVersionPicker", () => ({ DetailVersionPicker: () => null }));
+// « ⋯ » (supprimer de la bibliothèque) lit ses droits au serveur : hors sujet ici.
+vi.mock("../components/libraryDelete/ItemMoreMenu", () => ({ ItemMoreMenu: () => null }));
 
 const { MediaDetail } = await import("./MediaDetail");
 
