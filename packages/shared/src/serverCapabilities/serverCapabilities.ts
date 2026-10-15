@@ -155,6 +155,11 @@ export const SERVER_CAPABILITIES = {
    *  refus 403 `{ error: "account_access", … }` à toutes les portes, annonce `account:access` sur
    *  le socket. Les clients montrent la page « compte désactivé / hors plage ». */
   "account.access": "1.30.0",
+  // ── Lot TV du 16/10 : la galerie des avatars sur la TV ──
+  /** Un jeton d'APPAREIL (TV jumelée, session de profil d'une TV) pose la photo Jellyfin de SON
+   *  compte par le proxy (`POST /Users/{soi}/Images/Primary`, `deviceWrites.ts`) : la galerie des
+   *  avatars s'ouvre sur la TV. Sans elle, le proxy refuse (403) : aucune entrée, aucune invitation. */
+  "avatars.devicePhoto": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
