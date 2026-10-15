@@ -28,7 +28,7 @@ export const RightsGroup = memo(function RightsGroup({ title, summary, open, onT
       >
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-content-primary">{title}</span>
-          <span className="mt-0.5 block truncate text-xs text-content-tertiary" title={summary}>{summary}</span>
+          <span className="mt-0.5 line-clamp-2 text-xs text-content-tertiary">{summary}</span>
         </span>
         <ChevronDown
           aria-hidden

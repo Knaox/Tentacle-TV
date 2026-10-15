@@ -33,6 +33,7 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
   const toast = useToast();
   const titleId = useId();
   const introId = useId();
+  const ratingId = useId();
   const options = useFamilyParentalOptions();
   const save = useSetFamilyGuestParental();
   const initial = useMemo(() => guestParentalOf(guest), [guest]);
@@ -63,7 +64,16 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
   };
 
   return (
-    <Modal open onClose={close} maxWidth={520} labelledBy={titleId} describedBy={introId} dismissOnBackdrop={false}>
+    <Modal
+      open
+      onClose={close}
+      maxWidth={520}
+      labelledBy={titleId}
+      describedBy={introId}
+      dismissOnBackdrop={false}
+      // Le premier réglage, en haut : jamais un champ plus bas qui ferait défiler sous l'avertissement.
+      initialFocus={() => document.getElementById(ratingId)}
+    >
       <form onSubmit={submit} noValidate className="flex max-h-[85dvh] flex-col">
         <header className="flex items-start gap-3 border-b border-line-subtle p-6 pb-4">
           <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cta-brand-fg" style={BRAND_BUTTON_STYLE}>
@@ -86,10 +96,11 @@ export function GuestParentalDialog({ guest, creatorName, onClose }: GuestParent
           </p>
           {options.isError && <p role="alert" className="text-sm text-status-error-fg">{t("familyWeb:parental.optionsError")}</p>}
           <RatingSelect
+            id={ratingId}
             ratings={ratings}
             score={draft.maxParentalRating}
             subScore={draft.maxParentalSubRating}
-            disabled={pending || !options.data}
+            disabled={pending}
             onChange={(maxParentalRating, maxParentalSubRating) => set({ maxParentalRating, maxParentalSubRating })}
           />
           <UnratedTypesField

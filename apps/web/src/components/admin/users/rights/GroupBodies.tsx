@@ -23,8 +23,8 @@ export function AccountBody({ rights, writer, isSelf }: GroupProps) {
       <ToggleRight field="isDisabled" checked={rights.isDisabled} writer={writer} lockedReason={locked("isDisabled")} />
       <ToggleRight field="isHidden" checked={rights.isHidden} writer={writer} />
       <ToggleRight field="enableRemoteAccess" checked={rights.enableRemoteAccess} writer={writer} />
-      <NumberRight field="maxActiveSessions" value={rights.maxActiveSessions} min={0} writer={writer} />
-      <NumberRight field="loginAttemptsBeforeLockout" value={rights.loginAttemptsBeforeLockout} min={-1} writer={writer} />
+      <NumberRight field="maxActiveSessions" value={rights.maxActiveSessions} writer={writer} />
+      <NumberRight field="loginAttemptsBeforeLockout" value={rights.loginAttemptsBeforeLockout} writer={writer} />
     </>
   );
 }
@@ -42,10 +42,10 @@ export function PlaybackBody({ rights, writer }: GroupProps) {
       <NumberRight
         field="remoteClientBitrateLimit"
         value={mbpsFromBits(rights.remoteClientBitrateLimit)}
-        min={0}
         decimals
         suffix="Mbit/s"
         toRight={bitsFromMbps}
+        fromRight={mbpsFromBits}
         writer={writer}
       />
       <SelectRight

@@ -131,6 +131,7 @@ export default {
   number: {
     save: "Save",
     invalid: "A whole number, please.",
+    range: "Between {{min}} and {{max}}.",
   },
 
   self: {

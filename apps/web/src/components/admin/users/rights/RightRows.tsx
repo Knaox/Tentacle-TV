@@ -1,7 +1,7 @@
 import { memo, useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
-import type { UserRightsKey } from "@tentacle-tv/shared";
+import { USER_RIGHTS_FIELDS, type UserRightsFieldSpec, type UserRightsKey } from "@tentacle-tv/shared";
 import { ToggleSwitch } from "../../../settings/ToggleSwitch";
 import { CHECKBOX, FIELD_HINT, FIELD_LABEL, INPUT, SELECT, SMALL_BUTTON } from "../../../parental/fieldStyles";
 import type { RightsWriter } from "./useRightsWriter";
@@ -50,19 +50,25 @@ interface NumberRightProps {
   /** La valeur affichée (déjà convertie : Mbit/s pour un débit). */
   value: number;
   writer: RightsWriter;
-  min: number;
   /** Décimales permises (un débit) ; entier sinon. */
   decimals?: boolean;
   suffix?: string;
-  /** La valeur affichée → celle du contrat. */
+  /** La valeur affichée → celle du contrat, et retour (bornes dites à l'écran). */
   toRight?: (value: number) => number;
+  fromRight?: (value: number) => number;
 }
+
+const same = (value: number) => value;
 
 /**
  * Un nombre : le champ garde la saisie, « Enregistrer » (ou Entrée) l'écrit.
  * Il ne part jamais à chaque touche ; la valeur relue le remplace ensuite.
+ * Les bornes sont celles du contrat (`USER_RIGHTS_FIELDS`) : une valeur hors
+ * limites est dite tout de suite, sans aller-retour — le serveur reste juge.
  */
-export const NumberRight = memo(function NumberRight({ field, value, writer, min, decimals, suffix, toRight }: NumberRightProps) {
+export const NumberRight = memo(function NumberRight({
+  field, value, writer, decimals, suffix, toRight = same, fromRight = same,
+}: NumberRightProps) {
   const { t } = useTranslation("userRights");
   const id = useId();
   const errorId = useId();
@@ -73,13 +79,23 @@ export const NumberRight = memo(function NumberRight({ field, value, writer, min
     setSeen(value);
     setDraft(String(value));
   }
+  const spec: UserRightsFieldSpec = USER_RIGHTS_FIELDS[field];
+  const min = spec.min ?? 0;
+  const max = spec.max ?? Number.MAX_SAFE_INTEGER;
   const parsed = Number(draft.replace(",", "."));
-  const valid = draft.trim() !== "" && Number.isFinite(parsed) && parsed >= min && (decimals || Number.isInteger(parsed));
+  const wellFormed = draft.trim() !== "" && Number.isFinite(parsed) && (decimals || Number.isInteger(parsed));
+  const inRange = wellFormed && toRight(parsed) >= min && toRight(parsed) <= max;
+  const valid = wellFormed && inRange;
   const changed = valid && parsed !== value;
   const save = () => {
-    if (changed) writer.write({ [field]: toRight ? toRight(parsed) : parsed });
+    if (changed) writer.write({ [field]: toRight(parsed) });
   };
-  const error = writer.errorFor(field) ?? (draft.trim() !== "" && !valid ? t("number.invalid") : null);
+  const localError = draft.trim() === "" || valid
+    ? null
+    : wellFormed
+      ? t("number.range", { min: fromRight(min), max: fromRight(max) })
+      : t("number.invalid");
+  const error = localError ?? writer.errorFor(field);
 
   return (
     <div>

@@ -132,6 +132,7 @@ export default {
   number: {
     save: "Enregistrer",
     invalid: "Un nombre entier, s'il vous plaît.",
+    range: "Entre {{min}} et {{max}}.",
   },
 
   self: {

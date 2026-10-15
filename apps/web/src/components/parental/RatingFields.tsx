@@ -12,6 +12,8 @@ interface RatingSelectProps {
   score: number | null;
   subScore: number | null;
   disabled?: boolean;
+  /** L'identifiant du `<select>` — pour y poser le premier focus d'un dialogue. */
+  id?: string;
   onChange: (score: number | null, subScore: number | null) => void;
 }
 
@@ -20,9 +22,10 @@ interface RatingSelectProps {
  * les noms de chaque pays réunis (« 12, PG-13, FSK 12 »), du plus permissif au
  * plus strict. Une note posée que la table ne connaît pas reste affichée.
  */
-export const RatingSelect = memo(function RatingSelect({ ratings, score, subScore, disabled, onChange }: RatingSelectProps) {
+export const RatingSelect = memo(function RatingSelect({ ratings, score, subScore, disabled, id: givenId, onChange }: RatingSelectProps) {
   const { t } = useTranslation("userRights");
-  const id = useId();
+  const ownId = useId();
+  const id = givenId ?? ownId;
   const choices = useMemo(() => ratingChoices(ratings), [ratings]);
   const current = currentRating(choices, score, subScore);
   const unknown = current && !choices.some((choice) => choice.key === current.key) ? current : null;
