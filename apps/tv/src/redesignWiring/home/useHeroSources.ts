@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFeaturedItems, useHomeLayout, useMediaItem, useResumeItems, type RecoRowItem } from "@tentacle-tv/api-client";
-import { hasHeroImage, type MediaItem } from "@tentacle-tv/shared";
+import { hasHeroImage, recoHeroKindOf, type MediaItem } from "@tentacle-tv/shared";
 import {
   HERO_SOURCE_WAIT_MS,
   heroItemsFrom,
@@ -59,7 +59,7 @@ export function useHeroSources(): HeroSources {
   const fixedData = fixedQuery.data?.Id === fixedId ? fixedQuery.data : undefined;
   const fixed = !fixedId ? null : fixedData ? (hasHeroImage(fixedData) ? fixedData : null) : fixedQuery.isError ? null : undefined;
 
-  const reco = useHomeRecoHero(mode === "reco");
+  const reco = useHomeRecoHero(recoHeroKindOf(mode));
 
   // L'attente bornée d'une source lente : la reprise prend le relais.
   const [waitedOut, setWaitedOut] = useState(false);

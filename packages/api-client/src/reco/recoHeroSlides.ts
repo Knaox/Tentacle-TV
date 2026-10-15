@@ -1,4 +1,5 @@
 import { useMemo, useRef } from "react";
+import { topRecoHeroItems, type RecoHeroKind } from "@tentacle-tv/shared";
 import type { RecoPageRow } from "../hooks/useRecoPage";
 import type { RecoRowItem } from "../hooks/recoTypes";
 import { useRecoPageVisit } from "./useRecoPageVisit";
@@ -30,9 +31,12 @@ function drawRank(seed: number, key: string): number {
  * calque d'image). La rangée « Pour vous », elle, reste ENTIÈRE : la bannière
  * ne lui prend rien, elle en met quelques titres en lumière.
  */
+/** Un visuel large à montrer : le backdrop TMDB, sinon celui de l'item de bibliothèque. */
+const hasWideVisual = (item: RecoRowItem): boolean => !!(item.backdropPath || item.jellyfinItemId);
+
 export function selectHeroSlides(items: readonly RecoRowItem[], seed: number, max = SLIDES_MAX): RecoRowItem[] {
   return items
-    .filter((item) => item.backdropPath || item.jellyfinItemId)
+    .filter(hasWideVisual)
     .map((item) => ({ item, rank: drawRank(seed, item.key) }))
     .sort((a, b) => a.rank - b.rank)
     .slice(0, max)
@@ -48,8 +52,19 @@ export interface RecoHeroSelection {
 }
 
 /** Pur : le héros d'une page, depuis sa rangée « Pour vous » (FILTRÉE si la
- *  page l'est — le héros suit le filtre), tiré avec `seed`. */
-export function heroSelectionFromRows(rows: readonly RecoPageRow[] | undefined, seed: number): RecoHeroSelection {
+ *  page l'est — le héros suit le filtre), tiré avec `seed`. Un genre (`movie`,
+ *  `tv` : les sources « Pour vous — Films / Séries » de l'accueil) ne tire
+ *  rien : les mieux recommandés, dans l'ordre servi (shared
+ *  `topRecoHeroItems`) ; sans eux, rien — l'appelant retombe sur la reprise. */
+export function heroSelectionFromRows(
+  rows: readonly RecoPageRow[] | undefined,
+  seed: number,
+  kind: RecoHeroKind = "all",
+): RecoHeroSelection {
+  if (kind !== "all") {
+    const slides = topRecoHeroItems(rows, kind, { max: SLIDES_MAX, accept: hasWideVisual });
+    return slides.length > 0 ? { slides, fallbackItem: undefined } : EMPTY_SELECTION;
+  }
   const forYou = rows?.find((row) => row.key === "forYou")?.items;
   if (!forYou || forYou.length === 0) return EMPTY_SELECTION;
   const slides = selectHeroSlides(forYou, seed);
@@ -66,10 +81,11 @@ export function heroSelectionFromRows(rows: readonly RecoPageRow[] | undefined, 
  */
 export function useRecoHeroSlides(
   filter: readonly number[] | null,
-  options: { enabled?: boolean } = {}
+  options: { enabled?: boolean; kind?: RecoHeroKind } = {}
 ): RecoHeroSelection {
-  const { data } = useRecoPageVisit(filter, options);
+  const { kind = "all", ...visit } = options;
+  const { data } = useRecoPageVisit(filter, visit);
   const rows = data?.rows;
   const seed = useRef(Math.random());
-  return useMemo(() => heroSelectionFromRows(rows, seed.current), [rows]);
+  return useMemo(() => heroSelectionFromRows(rows, seed.current, kind), [rows, kind]);
 }

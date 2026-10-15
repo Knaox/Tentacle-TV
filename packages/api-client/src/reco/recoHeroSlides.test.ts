@@ -4,7 +4,7 @@ import { heroSelectionFromRows, selectHeroSlides } from "./recoHeroSlides";
 
 const item = (key: string, backdrop: boolean, jellyfin = false): RecoRowItem => ({
   key,
-  mediaType: "movie",
+  mediaType: key.startsWith("tv:") ? "tv" : "movie",
   tmdbId: Number(key.split(":")[1]),
   title: key,
   year: null,
@@ -79,5 +79,22 @@ describe("heroSelectionFromRows", () => {
     expect(selection.fallbackItem?.key).toBe("movie:1");
     expect(heroSelectionFromRows(undefined, 0.5).slides).toEqual([]);
     expect(heroSelectionFromRows([], 0.5).fallbackItem).toBeUndefined();
+  });
+});
+
+describe("heroSelectionFromRows — un genre (Pour vous — Films / Séries)", () => {
+  const page = [
+    { key: "forYou", items: [item("tv:1", true), item("movie:2", true), item("movie:3", false), item("tv:4", true), item("movie:5", true)] },
+  ];
+
+  it("les mieux recommandés du genre, dans l'ordre servi, quelle que soit la graine", () => {
+    expect(heroSelectionFromRows(page, 0.1, "movie").slides.map((s) => s.key)).toEqual(["movie:2", "movie:5"]);
+    expect(heroSelectionFromRows(page, 0.9, "movie").slides.map((s) => s.key)).toEqual(["movie:2", "movie:5"]);
+    expect(heroSelectionFromRows(page, 0.5, "tv").slides.map((s) => s.key)).toEqual(["tv:1", "tv:4"]);
+  });
+
+  it("rien du genre : aucune diapositive ni repli — l'accueil garde sa bannière de reprise", () => {
+    const selection = heroSelectionFromRows([{ key: "forYou", items: [item("movie:1", true)] }], 0.5, "tv");
+    expect(selection).toEqual({ slides: [], fallbackItem: undefined });
   });
 });

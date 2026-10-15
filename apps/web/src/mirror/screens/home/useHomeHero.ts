@@ -6,7 +6,7 @@ import {
   type HomeLayoutData,
   type RecoRowItem,
 } from "@tentacle-tv/api-client";
-import { pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
+import { pickHeroMedia, recoHeroKindOf, type MediaItem } from "@tentacle-tv/shared";
 import { useRecoFilter } from "../../../hooks/useRecoFilter";
 import type { HeroSlide } from "../../hero/heroSlides";
 import { mediaHeroSlides } from "../../hero/mediaHeroSlides";
@@ -17,7 +17,8 @@ const NO_SLIDES: HeroSlide[] = [];
 /**
  * `useHomeHero` de l'app : le bandeau selon le mode du compte — `resume`
  * (reprise, sinon mis en avant), `random` (mis en avant), `fixed` (un titre
- * choisi), `reco` (le carrousel de Pour vous, même entrée de cache). Tant que
+ * choisi), `reco` / `recoMovies` / `recoSeries` (le carrousel de Pour vous —
+ * tiré, ou les mieux recommandés d'un genre —, même entrée de cache). Tant que
  * le mode n'a rien à montrer, la reprise tient le bandeau : jamais vide.
  */
 export function useHomeHero(input: {
@@ -34,7 +35,8 @@ export function useHomeHero(input: {
   const { layout, resume, featured, onPlay, onInfo, onRecoOpen, canOpenReco } = input;
   const heroMode = layout?.heroMode ?? "resume";
   const { selected } = useRecoFilter();
-  const recoHero = useRecoHeroSlides(selected, { enabled: heroMode === "reco" });
+  const recoKind = recoHeroKindOf(heroMode);
+  const recoHero = useRecoHeroSlides(selected, { enabled: recoKind !== null, kind: recoKind ?? "all" });
   const fixedId = heroMode === "fixed" ? (layout?.heroFixedItemId ?? undefined) : undefined;
   const fixed = useMediaItem(fixedId);
 
@@ -51,11 +53,11 @@ export function useHomeHero(input: {
     [mediaItems, client, onPlay, onInfo],
   );
   const recoSlides = useMemo(
-    () => (heroMode === "reco" ? recoHeroSlides(recoHero.slides, client, { onOpen: onRecoOpen, canOpen: canOpenReco }) : NO_SLIDES),
-    [heroMode, recoHero.slides, client, onRecoOpen, canOpenReco],
+    () => (recoKind !== null ? recoHeroSlides(recoHero.slides, client, { onOpen: onRecoOpen, canOpen: canOpenReco }) : NO_SLIDES),
+    [recoKind, recoHero.slides, client, onRecoOpen, canOpenReco],
   );
 
-  const showReco = heroMode === "reco" && recoSlides.length > 0;
+  const showReco = recoKind !== null && recoSlides.length > 0;
   const slides = showReco ? recoSlides : mediaSlides;
   // Ce que le mode attend n'a pas répondu : le squelette, pas un saut ensuite.
   const loading = !showReco && pick.pending;

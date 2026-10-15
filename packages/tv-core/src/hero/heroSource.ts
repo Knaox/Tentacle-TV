@@ -1,3 +1,4 @@
+import { isHeroMode, type HeroMode } from "@tentacle-tv/shared";
 import { HERO_MAX_ITEMS } from "./rotation";
 
 /**
@@ -9,8 +10,9 @@ import { HERO_MAX_ITEMS } from "./rotation";
  * - `resume` : les visionnages à reprendre, sinon la sélection du serveur ;
  * - `random` : la sélection du serveur ;
  * - `fixed` : le titre choisi ;
- * - `reco` : un tirage de « Pour vous » (sur la TV : les titres EN
- *   bibliothèque seulement — rien à demander à trois mètres).
+ * - `reco` : un tirage de « Pour vous » ; `recoMovies` / `recoSeries` : les
+ *   films / séries les mieux recommandés, dans l'ordre servi (sur la TV : les
+ *   titres EN bibliothèque seulement — rien à demander à trois mètres).
  *
  * Un mode qui n'a rien à montrer (titre fixe disparu, « Pour vous » vide)
  * retombe sur `resume` : jamais un héros vide. Ce que le mode attend se
@@ -22,7 +24,8 @@ import { HERO_MAX_ITEMS } from "./rotation";
  * Module pur.
  */
 
-export type HeroMode = "resume" | "random" | "reco" | "fixed";
+/** La liste fermée de shared (`hero/heroModes.ts`). */
+export type { HeroMode };
 export type HeroSource = "resume" | "featured" | "fixed" | "reco";
 
 /** L'attente bornée d'une source lente (la page de recommandations, le titre fixe). */
@@ -80,6 +83,8 @@ export function heroSourceFor<T>(mode: HeroMode | null, inputs: HeroInputs<T>, o
       if (inputs.fixed) return "fixed";
       return inputs.fixed === undefined && !waitedOut ? null : fallbackOf(inputs);
     case "reco":
+    case "recoMovies":
+    case "recoSeries":
       if (inputs.reco && inputs.reco.length > 0) return "reco";
       return inputs.reco === undefined && !waitedOut ? null : fallbackOf(inputs);
     case "resume":
@@ -95,6 +100,6 @@ export function heroItemsFrom<T>(source: HeroSource | null, inputs: HeroInputs<T
 /** Le mode lu du serveur ; une mise en page illisible ou en échec : `resume`, comme le web. */
 export function heroModeOf(layout: { heroMode?: string } | undefined, failed: boolean): HeroMode | null {
   const mode = layout?.heroMode;
-  if (mode === "resume" || mode === "random" || mode === "reco" || mode === "fixed") return mode;
+  if (isHeroMode(mode)) return mode;
   return layout || failed ? "resume" : null;
 }

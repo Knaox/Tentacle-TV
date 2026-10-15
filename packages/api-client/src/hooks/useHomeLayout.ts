@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { HeroMode } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "./usePreferences";
 import { invalidateRecoQueries, normalizeProviderFilter } from "./useRecoPage";
 
-export type HeroMode = "resume" | "random" | "reco" | "fixed";
+/** Les sources du bandeau : la liste fermée de shared (`hero/heroModes.ts`). */
+export type { HeroMode };
 export type CardDensity = "compact" | "normal" | "large";
 
 export interface HomeRowDescriptor {

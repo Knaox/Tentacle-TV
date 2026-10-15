@@ -20,6 +20,20 @@ describe("la source du héros, selon le mode gardé par le serveur", () => {
     expect(heroSourceFor("resume", { ...ALL, resume: [] })).toBe("featured");
   });
 
+  it("Pour vous — Films / Séries : la source « reco », et le même repli silencieux", () => {
+    for (const mode of ["recoMovies", "recoSeries"] as const) {
+      expect(heroSourceFor(mode, ALL)).toBe("reco");
+      expect(heroSourceFor(mode, { ...ALL, reco: [] })).toBe("resume");
+      expect(heroSourceFor(mode, { ...ALL, reco: undefined })).toBeNull();
+      expect(heroSourceFor(mode, { ...ALL, reco: undefined }, { waitedOut: true })).toBe("resume");
+      expect(heroModeOf({ heroMode: mode }, false)).toBe(mode);
+    }
+  });
+
+  it("une source inconnue (serveur plus récent) : la reprise, jamais un héros vide", () => {
+    expect(heroModeOf({ heroMode: "recoAnime" }, false)).toBe("resume");
+  });
+
   it("attend ce que le mode attend, au plus jusqu'à l'échéance", () => {
     expect(heroSourceFor(null, ALL)).toBeNull();
     expect(heroSourceFor("reco", { ...ALL, reco: undefined })).toBeNull();

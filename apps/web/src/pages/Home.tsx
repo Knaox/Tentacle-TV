@@ -27,7 +27,7 @@ import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "@tentacle-tv/api-client";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
 import { useRecoFilter } from "../hooks/useRecoFilter";
-import { libraryHasNoTitles, pickHeroMedia, type MediaItem } from "@tentacle-tv/shared";
+import { libraryHasNoTitles, pickHeroMedia, recoHeroKindOf, type MediaItem } from "@tentacle-tv/shared";
 import { EmptyLibraryState } from "../components/home/EmptyLibraryState";
 import { endProfileSession } from "../auth/profileEnded";
 
@@ -72,7 +72,9 @@ export function Home() {
   // Recommandations et des rangées reco:* de l'accueil (aucune requête en
   // plus). Le filtre suit sur l'accueil comme en face.
   const { selected: recoFilter } = useRecoFilter();
-  const recoHero = useRecoHeroSlides(recoFilter, { enabled: heroMode === "reco" });
+  // « Pour vous », « — Films », « — Séries » : la même page, un autre choix de titres.
+  const recoKind = recoHeroKindOf(heroMode);
+  const recoHero = useRecoHeroSlides(recoFilter, { enabled: recoKind !== null, kind: recoKind ?? "all" });
   const fixedItem = useMediaItem(heroMode === "fixed" ? layout?.heroFixedItemId ?? undefined : undefined);
 
   // Réconciliation : l'ordre stocké fait foi, les bibliothèques nouvelles
@@ -103,7 +105,7 @@ export function Home() {
   // l'ordre de l'accueil, RÉELLEMENT servie sous ce filtre — la page est la
   // même entrée de cache que les rangées et le héros, aucune requête en plus.
   const hasRecoRows = rows.some((r) => r.key.startsWith("reco:"));
-  const { data: recoPage } = useRecoPageVisit(recoFilter, { enabled: heroMode === "reco" || hasRecoRows });
+  const { data: recoPage } = useRecoPageVisit(recoFilter, { enabled: recoKind !== null || hasRecoRows });
   const filterChipRowKey = useMemo(
     () =>
       recoFilter.length > 0 && recoPage
@@ -178,7 +180,7 @@ export function Home() {
       <CardDensityProvider value={layout?.cardDensity ?? "normal"}>
         {/* Bannière encadrée. Plus de remontée sous la barre de navigation : la
             nav flotte désormais sur le CADRE, pas sur l'affiche. */}
-        {heroMode === "reco" ? (
+        {recoKind !== null ? (
           <RecoBillboardSlot
             hero={recoHero}
             fallback={heroLoading ? heroSkeleton : <HeroBillboard items={heroItems} />}

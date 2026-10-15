@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { useRecoPageVisit, useRecoSettings, selectHeroSlides, type RecoRowItem } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { topRecoHeroItems, type MediaItem, type RecoHeroKind } from "@tentacle-tv/shared";
 import { useItemsByIdsState } from "../items/useItemsByIds";
 
 const EMPTY: number[] = [];
@@ -16,19 +16,25 @@ export interface HomeRecoHero {
  * Le héros en mode `reco` : un tirage de la rangée « Pour vous » de LA page
  * du filtre du compte — la même requête que les rangées reco de l'accueil et
  * que « Pour vous » (aucune lecture en plus), le même tirage que le web et le
- * mobile (`selectHeroSlides`, une graine par montage). Le téléviseur ne tire
- * que parmi les titres EN bibliothèque : rien à demander à trois mètres.
+ * mobile (`selectHeroSlides`, une graine par montage). « Pour vous — Films /
+ * Séries » (`kind`) ne tire rien : les mieux recommandés du genre, dans
+ * l'ordre servi (shared `topRecoHeroItems`). Le téléviseur ne prend que des
+ * titres EN bibliothèque : rien à demander à trois mètres.
  */
-export function useHomeRecoHero(enabled: boolean): HomeRecoHero {
+const inLibrary = (item: RecoRowItem): boolean => item.jellyfinItemId !== null;
+
+export function useHomeRecoHero(kind: RecoHeroKind | null): HomeRecoHero {
+  const enabled = kind !== null;
   const settings = useRecoSettings();
   // Le filtre du compte d'abord (cf. `useHomeRecoSource`) : la page non filtrée ne part jamais avant.
   const settingsReady = settings.isSuccess || settings.isError;
   const page = useRecoPageVisit(settings.data?.providerFilter ?? EMPTY, { enabled: enabled && settingsReady });
   const seed = useRef(Math.random());
   const drawn = useMemo(() => {
+    if (kind === "movie" || kind === "tv") return topRecoHeroItems(page.data?.rows, kind, { accept: inLibrary });
     const forYou = page.data?.rows.find((row) => row.key === "forYou")?.items ?? [];
-    return selectHeroSlides(forYou.filter((item) => item.jellyfinItemId !== null), seed.current);
-  }, [page.data]);
+    return selectHeroSlides(forYou.filter(inLibrary), seed.current);
+  }, [page.data, kind]);
   const ids = useMemo(() => drawn.map((reco) => reco.jellyfinItemId as string), [drawn]);
   const { items, settled } = useItemsByIdsState(ids);
 
