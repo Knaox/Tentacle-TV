@@ -39,6 +39,8 @@ describe("ce qu'un appareil n'écrit jamais", () => {
   it.each([
     ["DELETE", `Users/${USER}/Items/${ITEM}`],
     ["DELETE", `Items/${ITEM}`],
+    // La suppression en lot (`DELETE /Items?ids=…`, chemin sans la query) : une TV ne supprime jamais.
+    ["DELETE", "Items"],
     ["POST", `Items/${ITEM}`],
     ["POST", `Items/${ITEM}/Images/Primary`],
     ["DELETE", `Items/${ITEM}/Images/Primary/0`],
