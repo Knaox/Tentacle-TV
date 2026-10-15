@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAutoSubmitPairingCode, useGenerateTvToken, useRelayConfirm, useDevicePairConfirm } from "@tentacle-tv/api-client";
+import { accountConnectRefusalOf } from "@tentacle-tv/shared";
 import { fetchPairingServerUrl } from "../lib/pairingServerUrl";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { PairingLockedNotice } from "../components/pair/PairingLockedNotice";
@@ -74,6 +75,15 @@ export function PairDevice() {
     }
   }, [backToIdle]);
 
+  /** Désactivé, hors plage, trop de sessions (docs/DROITS-UTILISATEURS.md § 9.1) : la raison, en mots. */
+  const showRefusal = useCallback((err: unknown): boolean => {
+    const refusal = accountConnectRefusalOf((err as { refusal?: unknown } | null)?.refusal);
+    if (!refusal) return false;
+    setStatus("error");
+    setErrorMsg(t(`accountAccess:refusals.${refusal.code}`, { count: refusal.maxSessions ?? 1 }));
+    return true;
+  }, [t]);
+
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
     setStatus("pairing");
@@ -85,7 +95,9 @@ export function PairDevice() {
       await deviceConfirmMut.mutateAsync({ code });
       setStatus("success");
       return;
-    } catch {
+    } catch (err) {
+      // Un jumelage refusé par le serveur (trop de sessions…) : dit en mots, pas de relais.
+      if (showRefusal(err)) return;
       // pas un code local — on tente le relay
     }
 
@@ -107,6 +119,7 @@ export function PairDevice() {
 
       setStatus("success");
     } catch (err) {
+      if (showRefusal(err)) return;
       setStatus("error");
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("404") || msg.includes("invalide") || msg.includes("expire")) {
@@ -117,7 +130,7 @@ export function PairDevice() {
         setErrorMsg(t("pairing:relayError"));
       }
     }
-  }, [canSubmit, code, deviceConfirmMut, tvTokenMut, relayConfirmMut, t]);
+  }, [canSubmit, code, deviceConfirmMut, tvTokenMut, relayConfirmMut, t, showRefusal]);
 
   // Le dernier caractère saisi (ou le code collé) lance le jumelage : le
   // bouton reste pour qui préfère le presser.

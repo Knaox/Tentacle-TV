@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { accountConnectRefusalOf, type AccountConnectRefusalBody } from "@tentacle-tv/shared";
 import {
   MY_PAIRED_DEVICES_KEY, PAIRED_DEVICES_KEY, forgetPairedDevice, isAlreadyRevoked, refreshPairedDevices,
 } from "./pairedDevicesCache";
@@ -29,6 +30,14 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function refusalOf(text: string): AccountConnectRefusalBody | null {
+  try {
+    return accountConnectRefusalOf(JSON.parse(text));
+  } catch {
+    return null;
+  }
+}
+
 async function pairFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...getAuthHeader(),
@@ -39,6 +48,9 @@ async function pairFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
+    // Un jumelage refusé (désactivé, hors plage, trop de sessions) : la raison voyage avec l'erreur.
+    const refusal = refusalOf(msg);
+    if (refusal) throw Object.assign(new Error(refusal.message), { status: res.status, refusal });
     // Le statut voyage avec l'erreur : un 404 au déjumelage veut dire « déjà parti ».
     throw Object.assign(new Error(msg), { status: res.status });
   }
