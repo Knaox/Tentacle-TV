@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { ACCOUNT_STORAGE_KEYS, PROFILE_STORAGE_KEYS } from "./unpairJournal";
 import { SCRUB_COUNTDOWN_KEY_PREFIX } from "../player/scrubCountdownSettings";
 import { TRAILER_SUBTITLE_KEY_PREFIX } from "../player/trailerSubtitleMemory";
+import { RAIL_PROFILES_STORAGE_KEY } from "../nav/railProfiles";
 
 /**
  * L'ISOLATION des profils de la Famille (Apple TV), clé par clé : chaque clé
@@ -40,6 +41,11 @@ const DEVICE_KEYS: Record<string, string> = {
 /** Rangées par identifiant de profil : chacune n'appartient qu'à lui. */
 const PER_PROFILE_PREFIXES = [SCRUB_COUNTDOWN_KEY_PREFIX, TRAILER_SUBTITLE_KEY_PREFIX];
 
+/** Une seule clé, mais un objet rangé par identifiant de profil : chaque identité n'y lit que SON entrée. */
+const PER_PROFILE_MAPS: Record<string, string> = {
+  [RAIL_PROFILES_STORAGE_KEY]: "la disposition du rail de chaque profil sur cette TV (préconfiguration comprise)",
+};
+
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const full = join(dir, name);
@@ -70,6 +76,7 @@ describe("l'isolation des profils, clé par clé", () => {
       !PROFILE_STORAGE_KEYS.includes(key)
       && !ACCOUNT_STORAGE_KEYS.includes(key)
       && !(key in DEVICE_KEYS)
+      && !(key in PER_PROFILE_MAPS)
       && !PER_PROFILE_PREFIXES.some((prefix) => key === prefix || key.startsWith(prefix)),
     );
     expect(unclassified).toEqual([]);
@@ -77,6 +84,10 @@ describe("l'isolation des profils, clé par clé", () => {
 
   it("une clé n'est jamais à la fois de l'appareil et d'un compte", () => {
     for (const key of Object.keys(DEVICE_KEYS)) expect(ACCOUNT_STORAGE_KEYS).not.toContain(key);
+  });
+
+  it("quitter un profil n'efface pas les dispositions du rail de toute la famille", () => {
+    for (const key of Object.keys(PER_PROFILE_MAPS)) expect(PROFILE_STORAGE_KEYS).not.toContain(key);
   });
 
   it("la session d'un profil emporte son jeton, son cache, sa file de rapports et sa lecture directe", () => {
