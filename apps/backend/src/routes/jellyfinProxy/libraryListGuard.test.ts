@@ -17,7 +17,8 @@ vi.mock("../../middleware/auth", () => ({
   validateToken: async (token: string) =>
     token === "jeton-enfant" ? { ok: true, user: { userId: "enfant", username: "Enfant", isAdmin: false, session: "personal" } } : { ok: false, reason: "invalid" },
 }));
-vi.mock("../../services/contentPolicy", () => ({
+vi.mock("../../services/contentPolicy", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../services/contentPolicy")>()),
   getContentPolicy: async () => state.policy,
 }));
 vi.mock("../../services/itemAccess/itemVisibility", () => ({

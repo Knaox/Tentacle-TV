@@ -206,3 +206,12 @@ export function clearContentPolicyCache(): void {
 export async function isRestricted(userId: string): Promise<boolean> {
   return (await getContentPolicy(userId)).restricted;
 }
+
+/**
+ * Les bibliothèques du compte sont-elles bornées (toutes non permises, ou une
+ * bloquée) ? Politique illisible : oui. Jellyfin ne les applique qu'aux listes
+ * parcourues depuis la racine du compte (cf. `routes/jellyfinProxy/libraryListGuard.ts`).
+ */
+export function limitsLibraries(policy: Pick<ContentPolicy, "readable" | "enableAllFolders" | "blockedMediaFolders">): boolean {
+  return !policy.readable || !policy.enableAllFolders || policy.blockedMediaFolders.length > 0;
+}

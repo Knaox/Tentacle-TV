@@ -19,7 +19,6 @@ vi.mock("../jellyfinAdminFetch", () => ({
 
 import {
   clearContentPolicyCache,
-  contentPolicyBridge,
   contentPolicyFromJellyfin,
   getContentPolicy,
   invalidateContentPolicy,
@@ -122,27 +121,5 @@ describe("onContentPolicyInvalidated", () => {
     stopA();
     stopB();
     log.mockRestore();
-  });
-});
-
-describe("le pont des extensions", () => {
-  it("un compte non restreint reçoit les titres tels quels, entrées mal formées écartées", async () => {
-    policy({});
-    const bridge = contentPolicyBridge();
-    const titles = await bridge.filterExternalTitles(USER, [
-      { mediaType: "movie", tmdbId: 550 },
-      { mediaType: "book", tmdbId: 1 } as never,
-      { mediaType: "tv", tmdbId: -3 },
-    ]);
-    expect(titles).toEqual([{ mediaType: "movie", tmdbId: 550 }]);
-    expect(await bridge.isRestricted(USER)).toBe(false);
-  });
-
-  it("un compte restreint ou illisible ne reçoit rien d'extérieur sans certification", async () => {
-    state.reply = { ok: false, failure: "unreachable" };
-    const bridge = contentPolicyBridge();
-    expect(await bridge.filterExternalTitles(USER, [{ mediaType: "movie", tmdbId: 550 }])).toEqual([]);
-    expect(await bridge.allowsExternalTitle(USER, { mediaType: "movie", tmdbId: 550 })).toBe(false);
-    expect(await bridge.allowsExternalTitle(USER, null as never)).toBe(false);
   });
 });

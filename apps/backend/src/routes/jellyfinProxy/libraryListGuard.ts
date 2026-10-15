@@ -31,7 +31,7 @@
 import type { FastifyReply } from "fastify";
 import type { Response } from "undici";
 import { validateToken } from "../../middleware/auth";
-import { getContentPolicy, type ContentPolicy } from "../../services/contentPolicy";
+import { getContentPolicy, limitsLibraries } from "../../services/contentPolicy";
 import { isItemVisibleTo, visibleItemIdsFor } from "../../services/itemAccess/itemVisibility";
 
 export interface LibraryListGuard {
@@ -70,11 +70,6 @@ export function listScope(method: string, path: string, query: string): ListScop
     if (lower === "userid" && value) scope.userId = value;
   }
   return scope.parents.length > 0 || scope.ids ? scope : null;
-}
-
-/** Les bibliothèques du compte sont-elles bornées ? Politique illisible : oui. */
-export function limitsLibraries(policy: ContentPolicy): boolean {
-  return !policy.readable || !policy.enableAllFolders || policy.blockedMediaFolders.length > 0;
 }
 
 /** La forme vide de la liste demandée : un tableau pour `Latest`, sinon `{ Items }`. */

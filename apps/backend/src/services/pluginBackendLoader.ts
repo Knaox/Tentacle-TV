@@ -52,7 +52,7 @@ export interface PluginBackendContext {
    * (absent : le contrôle parental n'existait pas). Une exception ⇒ l'extension
    * refuse (fermé à l'échec).
    */
-  contentPolicy?: import("./contentPolicy").ContentPolicyBridge;
+  contentPolicy?: import("./contentPolicy/extensionBridge").ContentPolicyBridge;
   /**
    * Les colonnes ADDITIVES de `notifications` que ce cœur connaît (1.30.0 :
    * « target », « state » — contrat `notifications/notificationTarget.ts`).
@@ -151,7 +151,7 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
       const { requireAuth, requireAdmin } = await import("../middleware/auth");
       const { hideRequestedTitle } = await import("./reco/requestedTitles");
       const { createHostPluginStorage } = await import("./pluginStorage/hostStorage");
-      const { contentPolicyBridge } = await import("./contentPolicy");
+      const { contentPolicyBridge } = await import("./contentPolicy/extensionBridge");
 
       const ctx: PluginBackendContext = {
         pluginId: plugin.pluginId,
