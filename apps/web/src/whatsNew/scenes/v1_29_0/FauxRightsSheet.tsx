@@ -8,8 +8,8 @@ export const SHEET_X = 344;
 const SHEET_W = 296;
 const LIST_X = 16;
 const LIST_W = SHEET_W - 32;
-export const ROW_H = 40;
-const LIST_Y = 112;
+export const ROW_H = 36;
+const LIST_Y = 102;
 /** Le contenu ouvert sous « Contrôle parental » : les rangées suivantes descendent d'autant. */
 export const PANEL_H = 128;
 export const PARENTAL_ROW = 2;
@@ -62,7 +62,7 @@ export function FauxRightsSheet({ name, open, rating, tag, ...animated }: FauxRi
         <span className="flex-1 text-[15px] font-semibold text-content-primary">{name}</span>
         <X size={14} className="text-content-tertiary" aria-hidden />
       </div>
-      <p className="absolute left-4 top-[84px] text-[9px] font-semibold uppercase tracking-wider text-content-tertiary">{t("sectionTitle")}</p>
+      <p className="absolute left-4 top-[80px] text-[9px] font-semibold uppercase tracking-wider text-content-tertiary">{t("sectionTitle")}</p>
       <div
         className="absolute overflow-hidden rounded-xl border border-line-subtle bg-fill-faint"
         style={{ left: LIST_X, top: LIST_Y, width: LIST_W, height: 360 - LIST_Y }}

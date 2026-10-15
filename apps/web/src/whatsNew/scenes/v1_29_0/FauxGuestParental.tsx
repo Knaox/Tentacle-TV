@@ -4,10 +4,10 @@ import { FamilyAvatar } from "../../../family/FamilyAvatar";
 import { Place, type Animated } from "../Place";
 
 /** Les cibles du pointeur, en px du canevas. */
-export const PARENTAL_BUTTON = { x: 452, y: 154 };
-export const DIALOG_RATING = { x: 360, y: 168 };
-export const DIALOG_SERIES = { x: 222, y: 228 };
-export const DIALOG_SAVE = { x: 432, y: 300 };
+export const PARENTAL_BUTTON = { x: 452, y: 184 };
+export const DIALOG_RATING = { x: 380, y: 178 };
+export const DIALOG_SERIES = { x: 338, y: 236 };
+export const DIALOG_SAVE = { x: 466, y: 312 };
 
 const BRAND = { backgroundImage: "var(--cta-brand-gradient)" } as const;
 const UNRATED = ["Movie", "Series", "Book", "Music"] as const;
@@ -23,7 +23,7 @@ interface FauxFamilyListProps extends Animated {
 export function FauxFamilyList({ owner, guest, parental, ...animated }: FauxFamilyListProps) {
   const { t } = useTranslation(["familyWeb", "family"]);
   return (
-    <Place x={96} y={40} w={448} h={180} {...animated}>
+    <Place x={96} y={70} w={448} h={180} {...animated}>
       <p className="text-[18px] font-bold tracking-tight text-content-primary">{t("familyWeb:nav")}</p>
       <div className="mt-3 rounded-xl border border-line-subtle bg-fill-faint">
         <span className="flex items-center gap-3 border-b border-line-subtle px-3 py-2.5">
@@ -72,28 +72,28 @@ interface FauxParentalDialogProps extends Animated {
 export function FauxParentalDialog({ owner, guest, rating, series, ...animated }: FauxParentalDialogProps) {
   const { t } = useTranslation(["familyWeb", "userRights"]);
   return (
-    <Place x={170} y={24} w={300} h={312} className="rounded-2xl border border-line-subtle bg-[var(--surface-sheet)] shadow-2xl" {...animated}>
+    <Place x={120} y={18} w={400} h={326} className="rounded-2xl border border-line-subtle bg-[var(--surface-sheet)] shadow-2xl" {...animated}>
       <div className="flex items-start gap-2.5 border-b border-line-subtle px-4 py-3">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-cta-brand-fg" style={BRAND}>
           <ShieldCheck size={14} aria-hidden />
         </span>
-        <span className="text-[12px] font-bold leading-tight text-content-primary">{t("familyWeb:parental.title", { name: guest })}</span>
+        <span className="text-[14px] font-bold leading-tight text-content-primary">{t("familyWeb:parental.title", { name: guest })}</span>
       </div>
       <div className="space-y-2 px-4 pt-3">
-        <p className="rounded-lg border border-line-subtle bg-fill-subtle px-2 py-1.5 text-[8px] leading-snug text-content-secondary">
+        <p className="rounded-lg border border-line-subtle bg-fill-subtle px-2.5 py-1.5 text-[10px] leading-snug text-content-secondary">
           {t("familyWeb:parental.ceiling", { name: guest, creator: owner })}
         </p>
-        <p className="text-[10px] font-medium text-content-primary">{t("userRights:fields.maxParentalRating.label")}</p>
-        <span className="flex h-[24px] items-center justify-between rounded-[8px] border border-line-subtle bg-tentacle-surface px-2 text-[10px] text-content-primary">
+        <p className="text-[12px] font-medium text-content-primary">{t("userRights:fields.maxParentalRating.label")}</p>
+        <span className="flex h-[28px] items-center justify-between rounded-[8px] border border-line-subtle bg-tentacle-surface px-2.5 text-[12px] text-content-primary">
           {rating ?? t("userRights:values.noLimit")}
           <ChevronDown size={11} className="text-content-tertiary" aria-hidden />
         </span>
-        <p className="pt-1 text-[10px] font-medium text-content-primary">{t("userRights:fields.blockUnratedItems.label")}</p>
-        <span className="grid grid-cols-2 gap-y-1.5 text-[9px] text-content-secondary">
+        <p className="pt-1 text-[12px] font-medium text-content-primary">{t("userRights:fields.blockUnratedItems.label")}</p>
+        <span className="grid grid-cols-2 gap-y-2 text-[11px] text-content-secondary">
           {UNRATED.map((type) => (
             <span key={type} className="flex items-center gap-1.5">
               <span
-                className={`flex h-3 w-3 items-center justify-center rounded-[3px] border ${type === "Series" && series ? "border-transparent bg-[var(--brand)]" : "border-line-strong"}`}
+                className={`flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border ${type === "Series" && series ? "border-transparent bg-[var(--brand)]" : "border-line-strong"}`}
               >
                 {type === "Series" && series && <Check size={8} className="text-white" aria-hidden />}
               </span>
@@ -103,8 +103,8 @@ export function FauxParentalDialog({ owner, guest, rating, series, ...animated }
         </span>
       </div>
       <div className="absolute inset-x-0 bottom-0 flex justify-end gap-2 border-t border-line-subtle px-4 py-2.5">
-        <span className="rounded-lg border border-line-subtle bg-fill-soft px-3 py-1.5 text-[10px] font-semibold text-content-primary">{t("familyWeb:parental.cancel")}</span>
-        <span className="rounded-lg px-3 py-1.5 text-[10px] font-semibold text-cta-brand-fg" style={BRAND}>{t("familyWeb:parental.save")}</span>
+        <span className="rounded-lg border border-line-subtle bg-fill-soft px-3 py-1.5 text-[11px] font-semibold text-content-primary">{t("familyWeb:parental.cancel")}</span>
+        <span className="rounded-lg px-3 py-1.5 text-[11px] font-semibold text-cta-brand-fg" style={BRAND}>{t("familyWeb:parental.save")}</span>
       </div>
     </Place>
   );
