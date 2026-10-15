@@ -122,11 +122,11 @@ export async function listTvProfiles(pairing: PairingRow, now: number): Promise<
 /** Qui gère depuis une session de profil de cette TV : le propriétaire de la
  *  famille (`ownerTv`), un membre (`memberTv`), ou personne (un invité, un
  *  profil qui n'est plus dans la famille de la TV). */
-export async function tvManageRole(userId: string, pairingAccount: string): Promise<"ownerTv" | "memberTv" | null> {
+export async function tvManageRole(userId: string, pairingAccount: string): Promise<"ownerProfile" | "memberProfile" | null> {
   const { entries } = await tvEntries(pairingAccount, getFamilySwitches());
   const entry = entries.find((candidate) => sameUserId(candidate.userId, userId));
   if (!entry || entry.kind === "guest") return null;
-  return entry.kind === "member" ? "memberTv" : "ownerTv";
+  return entry.kind === "member" ? "memberProfile" : "ownerProfile";
 }
 
 /** Pourquoi un profil n'est pas ouvrable sur l'appareil de ce compte (sa TV, son bureau). */

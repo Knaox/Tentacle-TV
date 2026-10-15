@@ -4,7 +4,8 @@ import { accountAccessReply, sessionAccessRefusal } from "../accountAccess/accou
 import { getPrisma } from "../db";
 import { hashToken, verifyDeviceToken, verifyTvPairingToken } from "../jwt";
 import { PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../pairedDeviceStatus";
-import type { FamilyCaller, FamilyRouteSpec } from "../../family/familyRoutes";
+import type { FamilyCaller } from "../../family/familyCallers";
+import type { FamilyRouteSpec } from "../../family/familyRoutes";
 import { FamilyFailure, sendFamilyFailure } from "./familyErrors";
 import { hasPin } from "./familyPins";
 import { isPickerProfileSession } from "./familyPickerHosts";
@@ -48,7 +49,7 @@ function forbidden(): FamilyFailure {
 }
 
 /** Qui gère depuis cette session de profil, et « Gérer les profils » est-il ouvert ? */
-async function manageVerdict(token: string, userId: string, now: number): Promise<{ role: "ownerTv" | "memberTv" | null; open: boolean }> {
+async function manageVerdict(token: string, userId: string, now: number): Promise<{ role: "ownerProfile" | "memberProfile" | null; open: boolean }> {
   const prisma = getPrisma();
   const session = await prisma.pairedDevice.findUnique({ where: { tokenHash: hashToken(token) } });
   const pairing = session?.parentId ? await prisma.pairedDevice.findUnique({ where: { id: session.parentId } }) : null;
@@ -125,7 +126,7 @@ export function familyGuard(spec: FamilyRouteSpec) {
       }
       if (desktop) return sendFamilyFailure(reply, forbidden());
       if (callers.has("tvProfile")) return actor("tvProfile");
-      if (callers.has("ownerTv") || callers.has("memberTv")) {
+      if (callers.has("ownerProfile") || callers.has("memberProfile")) {
         const { role, open } = await manageVerdict(token, userId, Date.now());
         // Un membre sur un geste de propriétaire : le même refus qu'en session personnelle.
         if (!role || !callers.has(role)) {

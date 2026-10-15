@@ -190,6 +190,7 @@ export * from "./family/familyTvContract";
 export * from "./family/familyPickerContract";
 export * from "./family/familyProtocol";
 export * from "./family/familyRoutes";
+export * from "./family/familyCallers";
 export * from "./family/familyRules";
 export * from "./family/familyRights";
 export * from "./family/familyLabels";

@@ -7,7 +7,7 @@
  * croient permis, ou l'inverse. La source canonique est SHARED ; on modifie
  * là-bas, on recopie ici :
  *
- *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,TvContract,PickerContract,Protocol,Routes,Callers,Rules,Rights}.ts apps/backend/src/family/
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -34,6 +34,7 @@ const MIRRORS = [
   "familyPickerContract.ts",
   "familyProtocol.ts",
   "familyRoutes.ts",
+  "familyCallers.ts",
   "familyRules.ts",
   "familyRights.ts",
 ];
