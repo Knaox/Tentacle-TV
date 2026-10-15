@@ -15,13 +15,14 @@ interface ProfileMenuHeaderProps {
  * rond, son nom, et ce qu'il est — « Profil invité », « Profil de la
  * famille ». Un profil ouvert sur cet ordinateur ne touche pas au compte
  * Jellyfin ; seul un INVITÉ que la session personnelle de l'appareil gère peut
- * changer sa photo (le serveur la pose : `setGuestPhoto`).
+ * changer sa photo (le serveur la pose : `setGuestPhoto`). Sans filet : le
+ * bloc d'identité (`UserAvatarMenu`) le trace sous « Changer de profil ».
  */
 export const ProfileMenuHeader = memo(function ProfileMenuHeader({ profile, onChangePhoto }: ProfileMenuHeaderProps) {
   const { t } = useTranslation(["profilePicker", "profile"]);
   const avatar = <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={44} />;
   return (
-    <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">
+    <div className="flex items-center gap-3 px-4 py-3">
       {onChangePhoto ? (
         <button
           type="button"
