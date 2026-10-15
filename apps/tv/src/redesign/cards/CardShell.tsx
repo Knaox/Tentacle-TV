@@ -25,6 +25,12 @@ import { FocusTarget } from "../focus/FocusTarget";
  * la cible, qui couvre la cellule, reste la grande carte entière. Sa présence
  * ne change jamais pour une carte donnée (une rangée en donne une à toutes
  * ses cartes, une grille jamais) : l'arbre reste le même, le focus aussi.
+ *
+ * `glide` : la cellule GLISSE quand une voisine devient la grande carte (une
+ * ligne de grille, `gridPreviewLine` — la grande carte en déborde, la cellule
+ * garde sa taille). Le style animé porte sur la cellule elle-même : `front`
+ * la pose toujours devant ses voisines. Présent pour toute la vie de la
+ * carte, lui aussi.
  */
 
 /** La grande carte : sa taille, et l'avancée de la croissance (0 → 1). */
@@ -55,6 +61,8 @@ export interface CardShellProps {
   children?: ReactNode;
   /** La carte peut grandir en grande carte d'aperçu (cf. plus haut). */
   expansion?: CardExpansion;
+  /** Le glissement de la cellule, quand une voisine de sa ligne grandit (cf. plus haut). */
+  glide?: ReturnType<typeof useAnimatedStyle>;
 }
 
 export const CardShell = memo(function CardShell(props: CardShellProps) {
@@ -83,9 +91,15 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
       </FocusTarget>
     </>
   );
-  return props.expansion ? (
-    <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>
-  ) : (
+  if (props.expansion) return <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>;
+  if (props.glide) {
+    return (
+      <Animated.View collapsable={false} style={[{ width: props.width }, props.front && styles.front, props.style, props.glide]}>
+        {body}
+      </Animated.View>
+    );
+  }
+  return (
     // Jamais aplatie (`collapsable={false}`) : sur Android, `zIndex` posé au
     // focus ferait créer la vue et re-parenter la cible — qui perdait le focus.
     <View collapsable={false} style={[{ width: props.width }, props.front && styles.front, props.style]}>

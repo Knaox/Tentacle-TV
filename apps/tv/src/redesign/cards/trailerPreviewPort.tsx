@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { TrailerPreviewSubject } from "@tentacle-tv/shared";
+import type { PreviewWarmWant } from "@tentacle-tv/tv-core";
 
 /**
  * Le PORT de l'aperçu de bande-annonce au focus d'une carte : la vue dit
@@ -28,9 +29,11 @@ export type CardPreviewHook = (subject: TrailerPreviewSubject | null, focused: b
 /**
  * La PRÉPARATION des aperçus : la rangée dit les titres autour de son focus
  * (tv-core `trailerPreviewWarmWindow`), l'intégration les fait préparer au
- * serveur — leur focus n'aura plus rien à attendre.
+ * serveur — leur focus n'aura plus rien à attendre. Une grille REMPLACE ce
+ * qui attend encore (`replace`, tv-core `gridTrailerPreviewWarmWindow`) :
+ * seule compte la fenêtre où son focus se pose.
  */
-export type CardPreviewWarm = (subjects: readonly TrailerPreviewSubject[]) => void;
+export type CardPreviewWarm = (subjects: readonly TrailerPreviewSubject[], options?: PreviewWarmWant) => void;
 
 const NO_PREVIEW = (): CardPreview | null => null;
 
