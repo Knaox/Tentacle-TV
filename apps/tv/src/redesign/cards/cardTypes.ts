@@ -75,6 +75,11 @@ export interface AbsentModel {
   /** Une demande du COMPTE : l'affiche arrive façon Apple — grise, elle se
    *  colore au prorata de l'avancement, le camembert au centre. */
   arrival?: ArrivalModel;
+  /** L'affiche garde ses COULEURS au repos — une recommandation : grise, une
+   *  page de suggestions entière le serait, et ne donnerait envie de rien.
+   *  Le badge dit seul l'absence. Ailleurs (recherche, saga), grise au repos ;
+   *  toujours en couleurs au focus. */
+  inColor?: boolean;
 }
 
 export const EMPTY_MARKERS: CardMarkers = { communityRating: null, userScore: null, statuses: [], device: null };

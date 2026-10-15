@@ -11,7 +11,8 @@ import type { VigieGate } from "./useVigieGate";
  * L'entrée « recommandations » des demandes : les titres que le moteur
  * propose et que la bibliothèque n'a PAS (`jellyfinItemId` nul), sur « Pour
  * vous » et les rangées reco de l'accueil. Mêmes cartes que la rangée « À
- * demander » de la recherche : affiche TMDB grisée, badge de l'état
+ * demander » de la recherche — sauf l'affiche, en COULEURS au repos
+ * (`AbsentModel.inColor`) : badge de l'état
  * (`useAbsentStates`), « OK : demander » sous la carte focalisée — à défaut,
  * la raison de la recommandation. Garde Vigie fermée : `null`, et l'écran ne
  * montre que la bibliothèque (tv-core `tvRecoShelves`, sans `external`).
@@ -50,7 +51,8 @@ export function useRecoAbsent(gate: VigieGate | null, recos: readonly RecoRowIte
           title: reco.title,
           year: reco.year,
           posterUri: tmdbPosterUri(reco.posterPath),
-          absent: absent ?? { label: "", tone: "neutral" },
+          // En couleurs au repos : une page de suggestions grises ne donnerait envie de rien.
+          absent: { ...(absent ?? { label: "", tone: "neutral" }), inColor: true },
           trailer: absentTrailerOf(key),
         }),
         focusNote: states?.hintOf(key) ?? note,
