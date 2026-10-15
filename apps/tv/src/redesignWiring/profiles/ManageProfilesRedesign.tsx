@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useIsFocused } from "@react-navigation/native";
 import { useFamilyCandidates, useFamilyOverview, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { FAMILY_PROFILE_COLORS } from "@tentacle-tv/shared";
 import {
@@ -31,7 +32,7 @@ import { buildManageModel } from "./manageScreenModel";
 import { SHOWN_CANDIDATES, candidateViews, freeColor, manageListModel } from "./manageModel";
 import { useManageActions } from "./useManageActions";
 import { useFamilyCapability } from "./useFamilyCapability";
-import { useManageUnlock } from "./useManageUnlock";
+import { isManagePinRequired, useManageUnlock } from "./useManageUnlock";
 import { useHiddenKeyboard } from "../pairing/useHiddenKeyboard";
 import { useTvFamilyListing } from "./useTvFamilyListing";
 
@@ -74,7 +75,9 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   );
   const serverUrl = storage.getItem("tentacle_server_url");
 
-  const unlock = useManageUnlock(origin, record?.hasPin === true);
+  const unlock = useManageUnlock();
+  const unlockRef = useRef(unlock);
+  unlockRef.current = unlock;
   const ready = unlock.phase === "ready";
   const overview = useFamilyOverview({ enabled: ready });
   // Les portraits que « Qui regarde ? » connaît : le relais d'un aperçu lu pendant que Jellyfin ne répondait pas.
@@ -89,6 +92,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   const listRef = useRef<ReturnType<typeof manageListModel> | null>(null);
   const actions = useManageActions({
     onLocked: unlock.relock,
+    onNeedsPin: unlock.needsPin,
     onRemoved: (row: ManageRowModel) => {
       const current = listRef.current;
       const index = current?.rows.findIndex((candidate) => candidate.id === row.id) ?? -1;
@@ -107,11 +111,25 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   if (actions.view !== "list") lastPage.current = actions.view;
   const candidates = useFamilyCandidates(actions.invite.search, { enabled: ready && actions.view === "invite" });
 
-  // La gestion refermée pendant qu'on lisait la famille : elle se rouvre.
+  // La gestion fermée (pas encore ouverte, ou refermée en route) : le pavé ; sans code : l'invitation à en poser un.
   useEffect(() => {
-    if (overview.error && refusalOfError(overview.error).kind === "manageLocked") unlock.relock();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!overview.error) return;
+    const refusal = refusalOfError(overview.error);
+    if (refusal.kind === "manageLocked") unlockRef.current.relock();
+    else if (isManagePinRequired(refusal)) unlockRef.current.needsPin();
   }, [overview.error]);
+  // Revenu de « Créer un code PIN » : la famille se relit, le serveur dira la suite.
+  const focused = useIsFocused();
+  const away = useRef(false);
+  useEffect(() => {
+    if (!focused) {
+      away.current = true;
+      return;
+    }
+    if (!away.current) return;
+    away.current = false;
+    if (unlockRef.current.phase === "needsPin") unlockRef.current.retry();
+  }, [focused]);
   // Après un retrait, le focus va à la ligne qui prend la place, une fois la liste relue.
   useEffect(() => {
     if (!pendingClaim.current) return undefined;
@@ -129,7 +147,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
 
   const entryKey =
     model.kind === "loading" ? null
-      : model.kind === "error" ? STATUS_PRIMARY_KEY
+      : model.kind === "error" || model.kind === "needsPin" ? STATUS_PRIMARY_KEY
         : model.kind === "pin" ? (unlock.entry.phase === "locked" ? MANAGE_BACK_KEY : pinDigitKey("1"))
           : manageEntryKey({ view: actions.view, ...entryInput, guestNamed: actions.guest.name.trim().length > 0, returnFrom: lastPage.current });
   useManageFocus(store, { entryKey, arrival: `${unlock.phase}:${actions.view}:${overview.data ? "data" : "none"}` });
@@ -176,6 +194,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
             }}
             onDigit={unlock.digit}
             onErase={unlock.erase}
+            onCreatePin={() => navigation.navigate("ProfilePin", { mode: "create" })}
           />
         </KeyboardEntryProvider>
       </FocusBindingProvider>

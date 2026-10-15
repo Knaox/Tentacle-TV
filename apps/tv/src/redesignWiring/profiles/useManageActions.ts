@@ -15,6 +15,7 @@ import { confirmBlur, confirmPress, scrubCountdownKey, type ManageRowModel, type
 import type { ManageNotice } from "../../redesign/screens/profiles/ManageProfilesView";
 import { refusalOfError } from "../../auth/profileOpening";
 import { refusalMessage } from "./profilesModel";
+import { isManagePinRequired } from "./useManageUnlock";
 
 /** La recherche part quand la saisie s'arrête — le clavier de l'Apple TV écrit lettre à lettre. */
 const SEARCH_SETTLE_MS = 700;
@@ -25,9 +26,14 @@ const SEARCH_SETTLE_MS = 700;
  * membre de créer des invités et à un invité de demander des films (le
  * propriétaire, v2). Chaque geste part
  * au serveur, qui juge ; un refus se dit dans la page. La gestion refermée en
- * route (`family.manage_locked`) se rouvre par `onLocked`.
+ * route (`family.manage_locked`) se rouvre par `onLocked` ; sans code
+ * (`family.manage_pin_required`), `onNeedsPin`.
  */
-export function useManageActions({ onLocked, onRemoved }: { onLocked: () => void; onRemoved: (row: ManageRowModel) => void }) {
+export function useManageActions({ onLocked, onNeedsPin, onRemoved }: {
+  onLocked: () => void;
+  onNeedsPin: () => void;
+  onRemoved: (row: ManageRowModel) => void;
+}) {
   const { t } = useTranslation(["familyTv", "family"]);
   const { storage } = useTentacleConfig();
   const [view, setView] = useState<ManageView>("list");
@@ -58,10 +64,11 @@ export function useManageActions({ onLocked, onRemoved }: { onLocked: () => void
     return () => clearTimeout(timer);
   }, [query]);
 
-  /** Un refus : la gestion refermée se rouvre ; tout autre se dit. */
+  /** Un refus : la gestion refermée se rouvre, un code retiré entre-temps se redemande ; tout autre se dit. */
   function refused(error: unknown): ProfileRefusal {
     const refusal = refusalOfError(error);
     if (refusal.kind === "manageLocked") onLocked();
+    else if (isManagePinRequired(refusal)) onNeedsPin();
     return refusal;
   }
 

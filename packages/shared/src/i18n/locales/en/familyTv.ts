@@ -82,6 +82,7 @@ export default {
     deleted: "{{name}}'s profile is deleted.",
     cancelled: "{{name}}'s invitation is cancelled.",
     loadFailed: "Couldn't read the family.",
+    needsPinTitle: "A PIN code to manage the family",
     noGuestRight: "The owner hasn't let you create guests yet.",
     canCreateGuests: "Can create guests",
     rightOn: "{{name}} can now create guests.",

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useReducedMotion } from "react-native-reanimated";
 import { TV_MOTION } from "@tentacle-tv/theme";
-import { unlockTvManage, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import type { TvProfilesDto } from "@tentacle-tv/shared";
 import {
   PIN_ENTRY_START,
@@ -30,7 +30,7 @@ import {
   type ProfileRefusal,
 } from "@tentacle-tv/tv-core";
 import { loadProfiles, openProfile } from "../../auth/profileOpening";
-import { heldProfileSession, leaveProfile, resumeHeldProfile } from "../../auth/profileSession";
+import { heldProfileSession, resumeHeldProfile } from "../../auth/profileSession";
 import { unpairDevice } from "../../auth/unpair";
 import { MOTION_ENABLED } from "../../redesign/motion/motion";
 
@@ -106,19 +106,6 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     setPhase({ kind: "picker" });
   }
 
-  /** « Gérer les profils » : la session du propriétaire s'ouvre, puis la gestion (PIN redemandé par le serveur). */
-  async function unlockManage(pin: string | undefined): Promise<boolean> {
-    const serverUrl = storage.getItem("tentacle_server_url");
-    const token = storage.getItem("tentacle_token");
-    if (!serverUrl || !token) return false;
-    try {
-      await unlockTvManage({ serverUrl, token }, pin ? { pin } : {});
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   async function open(list: TvProfilesDto, profileId: string, request: OpenRequest, purpose: "open" | "manage"): Promise<void> {
     const profile = findProfile(list, profileId);
     if (!profile) return;
@@ -127,12 +114,9 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     if (!alive.current) return;
     if (!result.ok) return refused(result.refusal, list, profile.userId, purpose, request);
     if (purpose === "open") return go.home();
-    if (await unlockManage(request.pin)) {
-      if (alive.current) go.manage();
-      return;
-    }
-    // La gestion refusée : la session du propriétaire, ouverte pour elle, se referme.
-    if (alive.current) leaveProfile(context, "switch");
+    // « Gérer les profils » : ouvert par SON code, le profil a la gestion ouverte (serveur 1.30.0) ;
+    // la page lit la famille, et ne redemande le code que si le serveur répond `manage_locked`.
+    go.manage();
   }
 
   /**

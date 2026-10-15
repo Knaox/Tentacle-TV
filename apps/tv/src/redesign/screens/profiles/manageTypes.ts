@@ -42,8 +42,10 @@ export interface InviteCandidateView {
 export type ManageViewModel =
   | { kind: "loading" }
   | { kind: "error"; message: string }
-  /** La gestion se rouvre par le PIN du propriétaire (dix minutes). */
+  /** La gestion se rouvre par le PIN du profil qui gère (dix minutes). */
   | { kind: "pin"; pad: PinPadModel }
+  /** Ce profil gérerait avec un code PIN : la page invite à en poser un. */
+  | { kind: "needsPin" }
   | {
       kind: "list";
       subtitle: string;
@@ -85,4 +87,6 @@ export interface ManageProfilesViewProps {
   onInviteCandidate?: (id: string) => void;
   onDigit?: (digit: string) => void;
   onErase?: () => void;
+  /** « Créer un code PIN » (sans code, pas de gestion depuis la TV). */
+  onCreatePin?: () => void;
 }

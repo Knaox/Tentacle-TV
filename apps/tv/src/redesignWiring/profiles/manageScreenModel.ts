@@ -20,7 +20,7 @@ export function buildManageModel(input: {
   t: TFunction;
 }): ManageViewModel {
   const { unlock, overview, list, actions, owner, t } = input;
-  if (unlock.phase === "unlocking") return { kind: "loading" };
+  if (unlock.phase === "needsPin") return { kind: "needsPin" };
   if (unlock.phase === "error") {
     return { kind: "error", message: unlock.failure ? refusalMessage(unlock.failure, t) : t("familyTv:manage.loadFailed") };
   }

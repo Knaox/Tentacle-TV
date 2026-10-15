@@ -23,7 +23,8 @@ export type { InviteCandidateView, ManageNotice, ManageProfilesViewProps, Manage
  * la liste de la famille et ses deux pages — créer un invité, inviter un
  * membre —, ou le pavé du PIN du propriétaire quand la gestion est à rouvrir.
  * La croix Retour, en haut à gauche comme partout, recule d'une page ; depuis
- * la liste, elle sort (`manageBackAction`, tv-core).
+ * la liste, elle sort (`manageBackAction`, tv-core). Sans code PIN, aucune
+ * gestion depuis la TV (décision du 16/10) : la page invite à en poser un.
  *
  * Clés : `manage:back` et sa bande `manage:top` ; celles de `ManageList`,
  * `GuestForm`, `InviteMember`, `PinPad` ; `status:primary`.
@@ -45,6 +46,15 @@ export const ManageProfilesView = memo(function ManageProfilesView(props: Manage
             message={model.message}
             inset={0}
             primary={{ label: t("common:retry"), icon: "refresh", onPress: props.onRetry }}
+          />
+        ) : null}
+        {model.kind === "needsPin" ? (
+          <StatusPanel
+            kind="empty"
+            title={t("familyTv:manage.needsPinTitle")}
+            message={t("familyTv:ownPin.manageHint")}
+            inset={0}
+            primary={{ label: t("familyTv:ownPin.create"), icon: "lock", onPress: props.onCreatePin }}
           />
         ) : null}
         {model.kind === "pin" ? (

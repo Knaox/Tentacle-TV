@@ -82,6 +82,7 @@ export default {
     deleted: "Le profil de {{name}} est supprimé.",
     cancelled: "L'invitation de {{name}} est annulée.",
     loadFailed: "Impossible de lire la famille.",
+    needsPinTitle: "Un code PIN pour gérer la famille",
     noGuestRight: "Le propriétaire ne vous a pas encore permis de créer des invités.",
     canCreateGuests: "Peut créer des invités",
     rightOn: "{{name}} peut désormais créer des invités.",
