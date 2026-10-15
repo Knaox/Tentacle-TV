@@ -10,6 +10,8 @@ import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";
 import { useRowCardWidth } from "./useRowCardWidth";
 import { useRowWindow } from "./useRowWindow";
+import { rowIntrinsicHeight } from "./rowTrackReserve";
+import { useRowTrackReserve } from "./useRowTrackReserve";
 import { useRowArrivals } from "./useRowArrivals";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
@@ -86,6 +88,10 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
     onScreen: rowOnScreen,
   });
   const { range } = track;
+  // Hauteur réservée tant qu'aucune carte n'est montée (cf. `rowTrackReserve`).
+  const cardsMounted = visible && range.end >= range.start;
+  const cardHeight = useRowTrackReserve({ scrollRef, cardWidth, shape: variant, kind: variant, cardsMounted });
+  const caleHeight = cardsMounted ? undefined : (cardHeight ?? undefined);
   // Une clé par TITRE (cf. `rowItemKeys`) : un ajout en tête ne remonte plus
   // toute la rangée, il y entre (`useRowArrivals`).
   const keys = useMemo(() => rowItemKeys(items.map(mediaKey)), [items]);
@@ -163,6 +169,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(16px)",
         transition: `opacity 0.35s ease ${animDelay}ms, transform 0.35s ease ${animDelay}ms`,
+        ...(cardHeight != null && { containIntrinsicSize: `auto ${rowIntrinsicHeight(cardHeight)}px` }),
       }}
     >
       <RowHeader title={title} href={href} />
@@ -209,6 +216,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
           data-preview-room="row"
           className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
+          {!visible && caleHeight != null && <div aria-hidden data-room-skip style={{ height: caleHeight, flexShrink: 0 }} />}
           {visible && (
             <>
               {/* Cales : elles tiennent la géométrie de la piste à la place des
@@ -217,7 +225,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
                   `scrollLeft` ne saute pas.
                   PAS de `snap-start` : un vide n'est pas un point d'accroche. */}
               {range.padStart > 0 && (
-                <div aria-hidden data-room-skip style={{ width: range.padStart, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padStart, height: caleHeight, flexShrink: 0 }} />
               )}
 
               {/* Clé du TITRE, jamais de sa place : Jellyfin peut renvoyer le
@@ -250,7 +258,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
               })}
 
               {range.padEnd > 0 && (
-                <div aria-hidden data-room-skip style={{ width: range.padEnd, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padEnd, height: caleHeight, flexShrink: 0 }} />
               )}
             </>
           )}

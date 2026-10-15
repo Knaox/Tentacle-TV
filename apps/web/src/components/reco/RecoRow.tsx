@@ -7,6 +7,8 @@ import { RowScrollControls } from "../rows/RowScrollControls";
 import { useRowScroll } from "../rows/useRowScroll";
 import { useRowCardWidth } from "../rows/useRowCardWidth";
 import { useRowWindow } from "../rows/useRowWindow";
+import { rowIntrinsicHeight } from "../rows/rowTrackReserve";
+import { useRowTrackReserve } from "../rows/useRowTrackReserve";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
@@ -65,6 +67,11 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
   }, [held]);
   const track = useRowWindow({ scrollRef, count: cards.length, cardWidth, onScreen: rowOnScreen });
   const { range } = track;
+  // Hauteur réservée par la piste tant qu'aucune carte n'y est montée (avant
+  // l'entrée à l'écran, fenêtre vidée) : la rangée ne change jamais de taille.
+  const cardsMounted = visible && range.end >= range.start;
+  const cardHeight = useRowTrackReserve({ scrollRef, cardWidth, shape: "poster", kind: "reco", cardsMounted });
+  const caleHeight = cardsMounted ? undefined : (cardHeight ?? undefined);
 
   // Cascade d'entrée jouée une seule fois (cf. MediaRow — même raison).
   const stagger = useRef(true);
@@ -113,6 +120,7 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(16px)",
         transition: `opacity 0.35s ease ${animDelay}ms, transform 0.35s ease ${animDelay}ms`,
+        ...(cardHeight != null && { containIntrinsicSize: `auto ${rowIntrinsicHeight(cardHeight)}px` }),
       }}
     >
       <RowHeader title={title} trailing={headerTrailing} />
@@ -134,10 +142,11 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
           data-preview-room="row"
           className="row-dim row-gutter flex snap-x snap-proximity gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide scroll-pl-[var(--row-gutter-mobile)] md:scroll-pl-[var(--row-gutter-desktop)]"
         >
+          {!visible && caleHeight != null && <div aria-hidden data-room-skip style={{ height: caleHeight, flexShrink: 0 }} />}
           {visible && (
             <>
               {range.padStart > 0 && (
-                <div aria-hidden data-room-skip style={{ width: range.padStart, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padStart, height: caleHeight, flexShrink: 0 }} />
               )}
               {cards.slice(range.start, range.end + 1).map((item, offset) => {
                 const i = range.start + offset;
@@ -155,7 +164,7 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
                 );
               })}
               {range.padEnd > 0 && (
-                <div aria-hidden data-room-skip style={{ width: range.padEnd, flexShrink: 0 }} />
+                <div aria-hidden data-room-skip style={{ width: range.padEnd, height: caleHeight, flexShrink: 0 }} />
               )}
             </>
           )}
