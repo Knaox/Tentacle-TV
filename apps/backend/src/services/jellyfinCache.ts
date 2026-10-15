@@ -16,6 +16,8 @@
  * garder zéro dépendance externe — un seul process backend par déploiement.
  */
 
+import { createHash } from "node:crypto";
+
 export interface CacheEntry {
   body: Buffer;
   contentType: string;
@@ -76,9 +78,13 @@ export function getCacheTtl(path: string): number | null {
 }
 
 function buildCacheKey(path: string, queryString: string, userToken: string | undefined): string {
-  // Le token fait partie de la clé : deux users ne doivent jamais partager une réponse
-  // (Jellyfin filtre par utilisateur sur Latest/Resume/NextUp).
-  const userKey = userToken ? userToken.slice(0, 16) : "anon";
+  // Le jeton ENTIER fait partie de la clé : deux comptes ne partagent jamais une
+  // réponse (Jellyfin filtre par compte : droits, données de visionnage). Ses
+  // 16 premiers caractères ne suffisaient pas — tous les JWT d'appareil
+  // commencent par `eyJhbGciOiJIUzI1` : deux TV de comptes différents (ou un
+  // faux jeton, la lecture du cache précédant toute validation) se servaient
+  // la même entrée. Empreinte, jamais le jeton en clair en mémoire de clés.
+  const userKey = userToken ? createHash("sha256").update(userToken).digest("base64url") : "anon";
   return `${userKey}|${path}${queryString}`;
 }
 

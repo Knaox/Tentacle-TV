@@ -44,6 +44,11 @@ vi.mock("./jellyfinLikes", () => ({
 vi.mock("./jellyfinTmdbLookup", () => ({
   libraryTmdbIndex: () => libraryTmdbIndex(),
 }));
+// Ce que les droits de chaque compte lui cachent (« compte:titre »).
+const hiddenFrom = new Set<string>();
+vi.mock("./itemAccess/itemVisibility", () => ({
+  isItemVisibleTo: async (userId: string, itemId: string) => !hiddenFrom.has(`${userId}:${itemId}`),
+}));
 vi.mock("./wsManager", () => ({
   broadcastToUser: (...args: unknown[]) => broadcastToUser(...args),
 }));
@@ -112,6 +117,7 @@ beforeEach(() => {
   liked.length = 0;
   favorited.length = 0;
   jellyfinAccepts = true;
+  hiddenFrom.clear();
   broadcastToUser.mockClear();
   pokeProfile.mockClear();
   refreshLibraryMemo.mockClear();
@@ -145,6 +151,16 @@ describe("l'arrivée d'un titre mis de côté", () => {
     expect(pokeProfile).toHaveBeenCalledTimes(2);
     // L'index de la reco (ses exclusions) se relit : le WS Jellyfin est muet à la clé d'API.
     expect(refreshLibraryMemo.mock.calls).toEqual([["u1"], ["u2"]]);
+  });
+
+  it("un titre que les droits d'un compte lui cachent n'est posé que chez les autres ; sa ligne attend", async () => {
+    rows.push(row("enfant", "movie", 603), row("adulte", "movie", 603), row("enfant", "movie", 603, "favorite"));
+    hiddenFrom.add("enfant:m1");
+    await applyPendingWatchlist([movie("m1", 603)]);
+    expect(liked).toEqual([["adulte", "m1"]]);
+    expect(favorited).toEqual([]);
+    expect(rows.map((r) => `${r.jellyfinUserId}:${r.flag}`)).toEqual(["enfant:watchlist", "enfant:favorite"]);
+    expect(broadcastToUser.mock.calls).toEqual([["adulte", "watchlist"]]);
   });
 
   it("pose le cœur d'un « J'aime » d'Affiner, sans toucher à Ma liste", async () => {

@@ -76,6 +76,12 @@ describe("affinité — la pile commune", () => {
     expect(sharedEntries([a, b]).map((e) => e.key)).toEqual(["movie:1", "movie:4"]);
   });
 
+  it("deux versions d'un film dans deux bibliothèques : jamais l'id qu'un membre ne voit pas", () => {
+    const a = member("a", [entry("movie:7", { itemId: "version-salon" }), entry("movie:8")]);
+    const b = member("b", [entry("movie:7", { itemId: "version-enfants" }), entry("movie:8")]);
+    expect(sharedEntries([a, b]).map((e) => e.key)).toEqual(["movie:8"]);
+  });
+
   it("le consensus passe devant le titre qui clive", () => {
     const lib = [entry("movie:1"), entry("movie:2"), entry("movie:3")];
     const a = member("a", lib, {

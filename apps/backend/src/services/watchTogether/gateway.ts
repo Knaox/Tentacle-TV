@@ -15,6 +15,7 @@ import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
 import { refreshHostSettings } from "./hostSettings";
 import type { WtErrorCode, WtServerMessage } from "./protocol";
 import { parseWtClientMessage } from "./protocolParse";
+import { inRoomOrder, membersBlindTo } from "./itemRights";
 
 /**
  * Watch Together — pont WebSocket : dispatch des messages métier `wt:*`
@@ -157,7 +158,26 @@ export function handleWtMessage(
     return;
   }
 
-  const member = room.members.get(user.userId)!;
+  // Un nouveau titre n'entre que si TOUS les membres le voient (cf. itemRights) ;
+  // ce qui suit attend la vérification, dans l'ordre.
+  if (msg.type === "wt:setItem") {
+    inRoomOrder(room, async () => {
+      if ((await membersBlindTo(room, msg.itemId)).length > 0) {
+        wtSrvLog(`${user.username} → setItem REFUSÉ (titre caché à un membre)`);
+        sendError(socket, "stale_item", "item_forbidden");
+        return;
+      }
+      applyAndBroadcast(room, user, msg, socket);
+    }, true);
+    return;
+  }
+  inRoomOrder(room, () => applyAndBroadcast(room, user, msg, socket));
+}
+
+/** Applique une commande d'état et la diffuse — le membre a pu partir entre-temps. */
+function applyAndBroadcast(room: Room, user: JellyfinUser, msg: Parameters<typeof applyCommand>[2], socket: WebSocket): void {
+  const member = room.members.get(user.userId);
+  if (!member) return;
   const outcome = applyCommand(room, member, msg, isUserOnline);
   // Le socket du lecteur en séance : sa fermeture lèvera l'attente (un second
   // onglet du même compte peut rester ouvert avec un lecteur mort derrière).

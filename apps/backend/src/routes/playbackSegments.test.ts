@@ -27,6 +27,11 @@ vi.mock("../services/tailAnalysis/tailAnalysis", async (importOriginal) => ({
   tailAnalysisPending: tailMocks.tailAnalysisPending,
 }));
 vi.mock("../services/tailAnalysis/tailStore", () => ({ readTailVerdict: tailMocks.readTailVerdict }));
+// Les titres que les droits du compte lui cachent.
+const hidden = vi.hoisted(() => new Set<string>());
+vi.mock("../services/itemAccess/itemVisibility", () => ({
+  isItemVisibleTo: async (_userId: string, itemId: string) => !hidden.has(itemId),
+}));
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
   verifyDeviceToken: async () => null,
@@ -186,6 +191,16 @@ describe("GET /api/playback/segments/:itemId", () => {
     ];
     const body = (await request("ep-nu")).json();
     expect(body.segments).toEqual([]);
+  });
+
+  it("un titre que les droits du compte lui cachent : la réponse vide, rien lu ni analysé en son nom", async () => {
+    hidden.add("ep-interdit");
+    scenario = [[/jf\.test\/(Items|MediaSegments|Episode)/, { status: 500 }]];
+    const response = await request("ep-interdit");
+    hidden.clear();
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ version: 1, runtimeMs: 0, segments: [] });
+    expect(tailMocks.startTailAnalysis).not.toHaveBeenCalled();
   });
 
   it("Jellyfin muet : 200 et une réponse vide — le lecteur doit lire quand même", async () => {

@@ -20,6 +20,8 @@ const rows: Row[] = [];
 const library = new Map<string, string>(); // « movie:603 » → id Jellyfin
 const calls: string[] = [];
 
+/** Les titres présents que les droits du compte lui cachent. */
+const hiddenFromAccount = new Set<string>();
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
 }));
@@ -29,8 +31,10 @@ vi.mock("../services/jwt", () => ({
   hashToken: (value: string) => value,
 }));
 vi.mock("../services/jellyfinTmdbLookup", () => ({
-  findLibraryItemByTmdb: async (tmdbId: number, mediaType: string) => {
+  // Comme Jellyfin au nom du compte : un titre que ses droits cachent est absent pour lui.
+  findLibraryItemByTmdb: async (tmdbId: number, mediaType: string, forUserId?: string) => {
     calls.push(`lookup ${mediaType}:${tmdbId}`);
+    if (!forUserId || hiddenFromAccount.has(`${mediaType}:${tmdbId}`)) return { kind: "missing" };
     const id = library.get(`${mediaType}:${tmdbId}`);
     return id ? { kind: "found", id } : { kind: "missing" };
   },
@@ -72,6 +76,7 @@ vi.mock("../services/db", () => ({
 import { watchlistRoutes } from "./watchlist";
 
 beforeEach(() => {
+  hiddenFromAccount.clear();
   rows.length = 0;
   library.clear();
   calls.length = 0;
@@ -123,6 +128,16 @@ describe("/api/watchlist/tmdb", () => {
     expect(res.json()).toEqual({ state: "listed", itemId: "m1" });
     expect(calls).toEqual(["lookup movie:603", "like u1 m1", "broadcast u1 watchlist"]);
     expect(rows).toHaveLength(0);
+    await app.close();
+  });
+
+  it("un titre présent mais caché au compte par ses droits : mis de côté, jamais son id ni Ma liste", async () => {
+    library.set("movie:603", "m1");
+    hiddenFromAccount.add("movie:603");
+    const app = await makeApp();
+    const res = await app.inject({ method: "PUT", url: "/api/watchlist/tmdb", headers, payload: { mediaType: "movie", tmdbId: 603 } });
+    expect(res.json()).toEqual({ state: "pending" });
+    expect(calls.filter((c) => c.startsWith("like"))).toEqual([]);
     await app.close();
   });
 

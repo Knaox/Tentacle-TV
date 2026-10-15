@@ -12,10 +12,11 @@
  * segments doit lire quand même, jamais échouer.
  */
 
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { resolvePlaybackSegments } from "../playback/resolveSegments";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, type JellyfinUser } from "../middleware/auth";
+import { isItemVisibleTo } from "../services/itemAccess/itemVisibility";
 import { getJellyfinApiKey, getJellyfinUrl } from "../services/configStore";
 import { getSegmentSourceBundle } from "../services/jellyfinSegments";
 import {
@@ -35,6 +36,14 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/segments/:itemId", async (request, reply) => {
     const { itemId } = ParamsSchema.parse(request.params);
+
+    // Un titre que les droits du compte lui cachent : la réponse d'un Jellyfin
+    // muet (rien), sans lecture ni analyse lancée en son nom (§ 5 du contrat).
+    const viewer = (request as FastifyRequest & { user?: JellyfinUser }).user?.userId ?? "";
+    if (!(await isItemVisibleTo(viewer, itemId))) {
+      reply.header("cache-control", "no-store");
+      return resolvePlaybackSegments(itemId, 0, { tail: null }, new Date().toISOString(), null);
+    }
 
     const bundle = await getSegmentSourceBundle(itemId);
     const resolvedAt = new Date().toISOString();

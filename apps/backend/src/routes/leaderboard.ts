@@ -1,5 +1,7 @@
-import type { FastifyPluginAsync } from "fastify";
-import { requireAuth } from "../middleware/auth";
+import type { FastifyPluginAsync, FastifyRequest } from "fastify";
+import { requireAuth, type JellyfinUser } from "../middleware/auth";
+import { isFamilyGuest } from "../services/family/familyGuestMarkers";
+import { visibleItemIdsFor } from "../services/itemAccess/itemVisibility";
 import { getJellyfinUrl } from "../services/configStore";
 import { watchLeaderboard } from "../services/leaderboard";
 import { favoriteSeries } from "../services/leaderboard/topSeries";
@@ -38,10 +40,16 @@ export const leaderboardRoutes: FastifyPluginAsync = async (app) => {
    * garder la charge principale légère.
    */
   app.get<{ Params: { userId: string } }>("/:userId/top-series", async (request, reply) => {
+    // Un invité de la Famille n'est dans aucune liste : ses séries non plus.
+    if (await isFamilyGuest(request.params.userId)) return reply.status(404).send({ message: "Compte inconnu" });
     const series = await favoriteSeries(request.params.userId);
     if (!series) {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });
     }
-    return { userId: request.params.userId, series };
+    // Les séries d'un AUTRE compte, montrées à CE compte : seulement celles
+    // que ses droits lui laissent voir (docs/DROITS-UTILISATEURS.md § 5).
+    const viewer = (request as FastifyRequest & { user?: JellyfinUser }).user?.userId ?? "";
+    const visible = new Set(await visibleItemIdsFor(viewer, series.map((entry) => entry.seriesId)));
+    return { userId: request.params.userId, series: series.filter((entry) => visible.has(entry.seriesId)) };
   });
 };

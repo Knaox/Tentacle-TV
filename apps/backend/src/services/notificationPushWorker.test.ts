@@ -85,6 +85,13 @@ vi.mock("./seerAvailabilityGuard", async () => {
   };
 });
 
+// La bibliothèque au nom du demandeur (ses droits appliqués) : le titre lui est visible,
+// sauf pour « charlie », à qui ses droits le cachent.
+vi.mock("./jellyfinTmdbLookup", () => ({
+  findLibraryItemByTmdb: async (_tmdbId: number, _type: string, forUserId?: string) =>
+    forUserId === "charlie" ? { kind: "missing" } : { kind: "found", id: "m-dune" },
+}));
+
 import { deliverPendingNotifications } from "./notificationPushWorker";
 
 let seq = 0;
@@ -136,6 +143,14 @@ describe("livraison push des demandes", () => {
       body: "« Dune » est sorti sur Tentacle TV",
     }));
     expect(store.announced.some((a) => a.jellyfinUserId === "alice" && a.contentKey === "m:t:438631")).toBe(true);
+  });
+
+  it("filet : une disponibilité que les droits du demandeur lui cachent ne part pas", async () => {
+    const n = row("charlie", "request_status", "Dune", "« Dune » est sorti sur Tentacle TV");
+    store.notifications = [n];
+    await deliverPendingNotifications();
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(store.marked).toEqual([n.id]);
   });
 
   it("le filet parle anglais à qui l'a choisi", async () => {

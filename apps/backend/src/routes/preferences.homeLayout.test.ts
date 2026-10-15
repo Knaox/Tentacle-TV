@@ -69,16 +69,17 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
-      if (url.pathname === "/Items") {
+      // Comme Jellyfin 10.11 : `/Items/{id}?userId=` rend la fiche d'un titre
+      // visible au compte, 404 sinon (effacé, caché par ses droits) et 400 pour
+      // un id qui n'est pas un GUID.
+      const single = /^\/Items\/([^/]+)$/.exec(url.pathname);
+      if (single) {
         jf.itemsCalls++;
         if (jf.down) throw new TypeError("fetch failed");
-        // Comme Jellyfin 10.11 : un `Ids` qui n'est pas un GUID est ignoré,
-        // et la réponse liste d'autres titres.
-        const id = url.searchParams.get("Ids") ?? "";
-        const items = /^[0-9a-f]{32}$/i.test(id.replace(/-/g, ""))
-          ? [...jf.visible].filter((v) => v === id.replace(/-/g, "").toLowerCase()).map((Id) => ({ Id }))
-          : [{ Id: "dossierfilms" }];
-        return new Response(JSON.stringify({ Items: items }), { status: 200 });
+        const id = decodeURIComponent(single[1]).replace(/-/g, "").toLowerCase();
+        if (!/^[0-9a-f]{32}$/.test(id)) return new Response("", { status: 400 });
+        const seen = url.searchParams.get("userId") === "u1" && jf.visible.has(id);
+        return seen ? new Response(JSON.stringify({ Id: id }), { status: 200 }) : new Response("", { status: 404 });
       }
       if (String(input).includes("/Users/Me")) {
         return new Response(

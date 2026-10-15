@@ -65,7 +65,10 @@ export function sharedEntries(members: readonly MemberTaste[]): LibraryEntry[] {
     let seenByAll = entry.played;
     for (const member of others) {
       const theirs = member.library.byKey.get(entry.key);
-      if (!theirs) return false;
+      // Le MÊME titre de la bibliothèque : deux versions d'un film dans deux
+      // bibliothèques ont deux ids, et la salle lira celui du premier — un
+      // membre qui n'en voit que l'autre ne le verrait pas (droits, § 5).
+      if (!theirs || theirs.itemId !== entry.itemId) return false;
       seenByAll = seenByAll && theirs.played;
     }
     return !seenByAll;

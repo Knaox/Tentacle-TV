@@ -30,6 +30,8 @@ const library = new Map<string, string>(); // « movie:603 » → id Jellyfin
 const calls: string[] = [];
 let jellyfinAccepts = true;
 
+/** Les titres présents que les droits du compte lui cachent. */
+const hiddenFromAccount = new Set<string>();
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
 }));
@@ -39,8 +41,10 @@ vi.mock("../services/jwt", () => ({
   hashToken: (value: string) => value,
 }));
 vi.mock("../services/jellyfinTmdbLookup", () => ({
-  findLibraryItemByTmdb: async (tmdbId: number, mediaType: string) => {
+  // Comme Jellyfin au nom du compte : un titre que ses droits cachent est absent pour lui.
+  findLibraryItemByTmdb: async (tmdbId: number, mediaType: string, forUserId?: string) => {
     calls.push(`lookup ${mediaType}:${tmdbId}`);
+    if (!forUserId || hiddenFromAccount.has(`${mediaType}:${tmdbId}`)) return { kind: "missing" };
     const id = library.get(`${mediaType}:${tmdbId}`);
     return id ? { kind: "found", id } : { kind: "missing" };
   },
@@ -103,6 +107,7 @@ vi.mock("../services/db", () => ({
 import { likeRoutes } from "./likes";
 
 beforeEach(() => {
+  hiddenFromAccount.clear();
   pending.length = 0;
   likes.length = 0;
   library.clear();
@@ -157,6 +162,15 @@ describe("/api/likes/tmdb", () => {
     expect(calls).toEqual(["lookup movie:603", "favorite u1 m1", "memo u1 movie:603 true", "broadcast u1 favorites", "poke u1"]);
     expect(pending).toHaveLength(0);
     expect(likes).toHaveLength(0);
+    await app.close();
+  });
+
+  it("un titre présent mais caché au compte par ses droits : le like attend, jamais son id ni le cœur", async () => {
+    library.set("movie:603", "m1");
+    hiddenFromAccount.add("movie:603");
+    const app = await makeApp();
+    expect((await put(app, "movie", 603)).json()).toEqual({ state: "pending" });
+    expect(calls.filter((c) => c.startsWith("favorite"))).toEqual([]);
     await app.close();
   });
 

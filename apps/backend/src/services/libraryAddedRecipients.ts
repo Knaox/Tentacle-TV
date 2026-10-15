@@ -4,6 +4,7 @@ import { indexClaims, isClaimed } from "./libraryAddedDedup";
 import { isPushPrefEnabled } from "./pushPreferences";
 import { libraryIdentityKeys, librarySeasonKeys, recentlyAnnounced, strongestKeys } from "./announcedRegistry";
 import { loadPushLangs, type PushLang } from "./pushLang";
+import { visibleItemIdsFor } from "./itemAccess/itemVisibility";
 
 // À qui annoncer une arrivée, et quoi. Seule compte la vérité Jellyfin : le
 // contenu est dans la bibliothèque, on n'attend plus que Jellyseerr le voie.
@@ -14,7 +15,8 @@ import { loadPushLangs, type PushLang } from "./pushLang";
 //  - être abonné à TOUS les ajouts — préférence « Ajouts en bibliothèque » —,
 //    demandes des autres comprises.
 // Un demandeur abonné à tout ne reçoit sa demande qu'une fois, sous sa forme
-// personnelle. Seuls comptent les utilisateurs qui ont un appareil inscrit.
+// personnelle. Seuls comptent les utilisateurs qui ont un appareil inscrit,
+// et les titres que leurs droits Jellyfin leur laissent voir.
 
 /** Déjà annoncé à cet utilisateur depuis moins que ça (par le pipeline Seer,
  *  ou avant un redémarrage) : pas deux fois. La nouveauté elle-même est jugée
@@ -69,7 +71,12 @@ export async function planRecipients(items: LibItem[], now = Date.now()): Promis
       else if (!mine && wantsAll) others.push(it);
     }
     if (requested.length + others.length === 0) continue;
-    const plan = await dropAlreadyAnnounced(userId, requested, others, now);
+    // Seulement ce que SES droits lui laissent voir : le diff est fait au nom de
+    // l'administrateur. Jellyfin muet : rien (fermé à l'échec, § 1 du contrat).
+    const visible = new Set(await visibleItemIdsFor(userId, [...requested, ...others].map((it) => it.Id)));
+    const seen = (it: LibItem) => visible.has(it.Id);
+    if (!requested.some(seen) && !others.some(seen)) continue;
+    const plan = await dropAlreadyAnnounced(userId, requested.filter(seen), others.filter(seen), now);
     if (plan) plans.push(plan);
   }
 

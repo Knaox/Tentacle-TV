@@ -15,14 +15,15 @@ const normalizeId = (id: string) => id.replace(/-/g, "").toLowerCase();
 
 /**
  * Un titre, tel que CE compte le voit (`userId` : un titre caché par ses
- * droits n'existe pas pour lui). Par `/Items?Ids=` et en comparant l'id :
- * un `Ids` illisible est ignoré par Jellyfin, qui rend alors d'autres titres.
+ * droits n'existe pas pour lui). Par `/Items/{id}?userId=`, la seule forme où
+ * Jellyfin applique TOUTE la politique — `/Items?Ids=` oublie les
+ * bibliothèques permises (mesuré 10.11.11, docs/DROITS-UTILISATEURS.md § 7).
  */
 async function itemFor(userId: string, itemId: string): Promise<ItemFacts | null> {
-  const query = new URLSearchParams({ userId, Ids: itemId, Recursive: "true", Fields: "ProviderIds", EnableImages: "false" });
-  const result = await jellyfinAdminFetch<{ Items?: ItemFacts[] }>(`/Items?${query}`, { timeoutMs: 4000 });
-  if (!result.ok) return null;
-  return (result.data.Items ?? []).find((item) => normalizeId(item.Id) === normalizeId(itemId)) ?? null;
+  const query = new URLSearchParams({ userId, Fields: "ProviderIds", EnableImages: "false", EnableUserData: "false" });
+  const result = await jellyfinAdminFetch<ItemFacts>(`/Items/${encodeURIComponent(itemId)}?${query}`, { timeoutMs: 4000 });
+  if (!result.ok || typeof result.data?.Id !== "string") return null;
+  return normalizeId(result.data.Id) === normalizeId(itemId) ? result.data : null;
 }
 
 async function imagesOf(itemId: string): Promise<JellyfinImageInfo[]> {

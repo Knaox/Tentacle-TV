@@ -301,17 +301,126 @@ Relu sur la source de Jellyfin v10.11.11 (`LocalizationManager.GetRatingScore`,
 | Interface | `lot-droits/interface` | Web + bureau : fiche des droits dans l'admin, contrôle parental dans la Famille |
 | Vigie | `lot-droits/vigie` (dépôt Tentacle-Plugin-Seer) | Découverte, recherche, fiche, demandes, `titles.*` filtrés par le pont |
 
-## 7. Chemins à fermer (audit du chantier Filtrage)
+## 7. Chemins à fermer (audit du chantier Filtrage, 2026-10-15)
 
-Proxy Jellyfin avec un jeton d'APPAREIL (TV jumelée, session de profil, qui empruntent la
-clé d'administration) : lecture forcée au compte de l'appareil, et refus d'un
-`PlaybackInfo` / flux / téléchargement d'un titre que ce compte ne voit pas ; « Pour vous »
-et toutes les rangées de recommandations (titres de la bibliothèque ET hors
-bibliothèque) ; « Derniers ajouts » en direct ; recherche ; saga / collections ; saisons
-manquantes ; aperçus et bandes-annonces ; notifications et push (« nouveau titre », «
-demande disponible ») ; Watch Together (rejoindre un salon qui lit un titre interdit) ;
-Top Shelf ; tout `/Items?Recursive=true` fait avec la clé d'API. La liste s'allonge de ce
-que l'audit trouve.
+### 7.1 Ce que Jellyfin fait, et ne fait pas (mesuré sur 10.11.11, Jellyfin jetable)
+
+| Requête (clé d'API sauf mention) | Note / étiquettes / non classés | Bibliothèques |
+|---|---|---|
+| `/Items?Recursive=true&userId=U`, `/Items/Latest?userId=U`, `/Search/Hints?userId=U` | filtrés | filtrées |
+| `/Items?ids=…&userId=U` | filtrés | **NON filtrées** |
+| `/Items/{id}?userId=U`, `POST /Items/{id}/PlaybackInfo?userId=U`, `/Items/{id}/Similar?userId=U` | 404 | 404 |
+| `/Search/Hints`, `/Items` SANS `userId` | **tout** | **tout** |
+| `/Videos/{id}/stream`, `/Videos/{id}/master.m3u8` — clé, jeton DU COMPTE restreint, ou (fichier tel quel) sans jeton | **servis** | **servis** |
+| Plages horaires | vérifiées à l'authentification d'un jeton de COMPTE seulement — jamais avec la clé d'API (appareils, recherche, recos, push) | |
+
+D'où trois règles : (1) une liste d'ids ne se filtre jamais par `ids=` seul — relevé complet
+`/Items?Recursive=true&userId=` (`services/search/userAccess.ts`) ou `/Items/{id}?userId=` un
+par un (`services/itemAccess/itemVisibility.ts`, verdict 30 s) ; (2) un flux est gardé par le
+proxy, pas par Jellyfin ; (3) la porte DIRECTE de Jellyfin (lecture directe, port publié) sert
+un fichier à qui connaît son id : hors de portée de Tentacle — d'où l'importance de ne jamais
+rendre l'id d'un titre interdit, par aucun chemin.
+
+### 7.2 Relevé — chemin → risque → correctif
+
+État : ✅ fermé (commit) · ⏳ à fermer ici · 🧱 attend le socle (`getContentPolicy`,
+`filterExternalTitles`) · 🔌 autre chantier.
+
+Étape 3 (2026-10-15) codée contre les signatures de l'étape A du socle : tant que l'étape D
+n'est pas fusionnée, `filterExternalTitles` refuse TOUT titre extérieur à un compte restreint —
+les chemins sont branchés, la correspondance des certifications arrivera sans y toucher.
+
+**Proxy Jellyfin (`routes/jellyfinProxy*`)**
+- ✅ Cache des lectures (Latest, Resume, NextUp, Views) → clé = 16 premiers caractères du jeton,
+  identiques pour TOUS les JWT d'appareil, lue avant toute validation : deux TV (ou un faux
+  jeton) se servaient la réponse d'un autre compte → clé = empreinte SHA-256 du jeton entier.
+- ✅ Jeton d'appareil (TV jumelée, profil de TV) et « voir en tant que » : clé admin prêtée,
+  une requête de catalogue sans `userId` lisait pour l'administrateur → `userId` du compte
+  posé d'office (`deviceUserScope.ts`, étendu de la seule session de profil du bureau).
+- ✅ Flux (`Videos/{id}/stream|master.m3u8|main.m3u8|hls1/…|Subtitles/…`, `Audio/{id}/…`), tout
+  jeton : servis pour un titre interdit → `streamAccess.ts`, 404 si `/Items/{id}?userId=` refuse.
+- ✅ `PlaybackInfo` d'appareil : part désormais avec `userId` → 404 de Jellyfin.
+- ✅ Trickplay (`routes/jellyfinTrickplay.ts`) : appareil → clé admin sans contrôle, et
+  `Cache-Control: public` → visibilité vérifiée, `private`.
+- ✅ Plages horaires : jamais appliquées à la clé prêtée ni aux routes du cœur → règle de Jellyfin
+  (`itemAccess/accessSchedule.ts`) sur `getContentPolicy`, dans le proxy (TV) ET `requireAuth` :
+  403 `outside_access_schedule` (jamais 401) ; administrateur et « voir en tant que » non bornés.
+- Accepté : images (`Items/{id}/Images`) — Jellyfin les sert sans jeton, le proxy n'y change rien.
+
+**Recommandations « Pour vous » (`services/reco/**`, `routes/reco*.ts`)**
+- Bibliothèque : index par compte (`candidates/libraryIndex.ts`, clé + `userId`) — correct.
+- ✅ Un titre de la bibliothèque INTERDIT au compte revient comme titre EXTÉRIEUR (affiche TMDB,
+  « Demander ») par TMDB, Vigie, voisins, tendances, pouls du serveur, communauté, Affiner
+  → retiré à la porte du service (`pageService`) : tout extérieur dont la clé `movie:|tv:` est
+  dans le catalogue mais pas dans `getUserAccess(compte)` (`search/libraryRights.ts`, sans
+  requête de plus) ; droits illisibles → extérieurs retirés.
+- ✅ Instantané et pool en base : un `jellyfinItemId` devenu invisible y reste → même porte.
+- ✅ Titres extérieurs (certification, `adult`) → `filterExternalTitles` à la même porte
+  (`reco/recoRights.ts`, une question par liste), `pool/debug` aussi ; un extérieur dont le compte
+  voit une version dans la bibliothèque passe (Jellyfin a jugé).
+- ✅ Fraîcheur : écriture faite par Tentacle → `onContentPolicyInvalidated` (socle) fait tomber sur-le-champ
+  relevé `userAccess`, verdicts de visibilité, index et page des recos ; changement fait dans Jellyfin →
+  l'empreinte de la politique, relue toutes les 30 s (`itemAccess/policyWatch.ts`).
+- ✅ `reco/people/*` : « connu pour » d'une personne TMDB vidé pour un compte restreint.
+
+**Affiner (`routes/swipe.ts`, `services/swipe/**`)**
+- ✅ Pile : pool + `/trending` et `/top_rated` TMDB (cache global 6 h) → mêmes deux filtres
+  avant `mixDeck`. ✅ `details/:type/:tmdbId` : jamais le synopsis d'un titre caché, même accolé
+  à un id visible.
+
+**Saga, collections, saisons manquantes**
+- Membres de bibliothèque : `getUserAccess` — correct.
+- ✅ `GET /api/sagas/:id` → `parts` TMDB rend TOUS les volets, interdits compris (« Demander »
+  sur l'Apple TV) → garder un volet s'il est membre visible, sinon s'il n'est pas caché dans la
+  bibliothèque ET passe `filterExternalTitles`.
+- 🔌 Saisons manquantes (`titles.gaps`) : calculées par Vigie → chantier Vigie (pont).
+
+**Recherche (`services/search/**`)**
+- Catalogue commun relevé au nom de l'admin, filtré à chaque réponse par `getUserAccess` (sans
+  `ids=`) ; épisodes par clé + `userId` du compte — correct. ✅ Fraîcheur (cf. recos).
+- 🔌 « À demander » : titres TMDB servis par Vigie → chantier Vigie.
+
+**Derniers ajouts**
+- Rangée regroupée (`latestAdditions.ts`) : inventaire au nom du compte — correct (cache : ✅).
+- `jellyfinUserEvents.ts`, `jellyfinPoller.ts` : signal `home:update` sans titre — rien à faire.
+
+**Notifications et push**
+- ✅ « Nouveau titre » (`libraryAddedRecipients.ts`) : diff au nom de l'admin, envoyé à TOUT
+  abonné sans filtre → par destinataire, ne garder que les titres qu'il voit ; échec = rien.
+- ✅ « Demande disponible » (`notificationPushWorker.ts`) : poussé au demandeur sans contrôle
+  → visibilité du titre pour `jellyfinUserId` avant l'envoi, sinon rien.
+
+**Héros, accueil**
+- ✅ `heroArtworkFor`, `isFixedHeroItemVisible` : `/Items?userId=&Ids=` (bibliothèques non
+  filtrées) → `/Items/{id}?userId=`.
+
+**Résolutions TMDB → bibliothèque**
+- ✅ `GET /api/tmdb/resolve` : au nom de l'admin → rend l'id d'un titre interdit → `userId` du compte.
+- ✅ Likes / Ma liste par TMDB (`likesTmdb.ts`, `watchlistTmdb.ts`, `watchlistPending.ts`) :
+  `findLibraryItemByTmdb` au nom de l'admin → au nom du compte (sinon branche « en attente »).
+- ✅ `GET /api/tmdb/trailers` : vidéos de tout `tmdbId` → `allowsExternalTitle`.
+
+**Watch Together**
+- ✅ Invitation (`watchTogetherInvites.ts`) : nom et id du titre lus au nom de l'HÔTE et
+  envoyés à l'invité → lus au nom de la CIBLE ; invisible pour elle : ni nom ni id.
+- ✅ `wt:setItem` / état du salon : id diffusé à tous sans contrôle → refusé si un membre ne voit
+  pas le titre (`stale_item`, messages suivants tenus dans l'ordre) ; inviter ou accepter sur un
+  titre en lecture caché à la cible : refusé.
+- ✅ Affinité : `jellyfinItemId` pris chez le premier membre → celui du membre qui le voit.
+
+**Divers**
+- ✅ `GET /api/leaderboard/:userId/top-series` : séries d'un AUTRE compte, adulte compris → ne
+  garder que ce que le DEMANDEUR voit ; un invité de la Famille n'est pas une cible.
+- ✅ `GET /api/playback/segments/:itemId` : au nom de l'admin → 404 si le compte ne voit pas.
+- Aperçus et bandes-annonces de la bibliothèque (`catalogTitle.ts`, `trailerPreview*`) : au nom
+  du compte — correct (garde 10 min, ✅ périmée au changement de politique). ✅ Par `tmdbId` :
+  aperçu et catalogue refusés pour un titre caché, rien n'est décidé ni cherché.
+- Téléchargements hors ligne (`downloads.ts`) : jeton du compte + politique relue — correct.
+- « Voir en tant que » : `request.user.userId` = le compte visé — correct (proxy : ✅).
+- Partage public (`share.ts`) : titres au nom du PROPRIÉTAIRE du lien, voulu (lien anonyme) — à
+  trancher par le coordinateur, pas filtré.
+- Top Shelf Apple TV : image statique, aucun titre — rien à faire.
+- `idfStore.ts`, `viewingStats`, `watchTime` : statistiques sans titre rendu — rien à faire.
 
 ## 8. Règles de chantier
 

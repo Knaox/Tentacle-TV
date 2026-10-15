@@ -18,11 +18,12 @@ import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
 import { sendChatHistory } from "../services/watchTogether/chat";
 import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { WT_MAX_INVITES_PER_REQUEST } from "../services/watchTogether/protocol";
+import { seesRoomItem } from "../services/watchTogether/itemRights";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 
 /**
  * Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation), vu
- * par l'hôte. Sans `userId`, Jellyfin répond 400 à une clé d'API (mesuré de
+ * par la cible (404 : un titre que ses droits lui cachent → `null`). Sans `userId`, Jellyfin répond 400 à une clé d'API (mesuré de
  * 10.10.7 à 12.1.0) : le titre n'apparaissait jamais dans l'invitation.
  */
 async function fetchItemName(itemId: string, userId: string): Promise<string | null> {
@@ -65,18 +66,22 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
     const jellyfinUsers = await getJellyfinUsers();
     const allUsers = jellyfinUsers ? await withoutFamilyGuests(jellyfinUsers, (u) => u.id).catch(() => null) : null;
     const contextItemId = room.itemId ?? room.contextItemId;
-    const itemName = contextItemId ? await fetchItemName(contextItemId, user.userId) : null;
 
     const invited: string[] = [];
     for (const targetId of new Set(userIds)) {
       if (targetId === user.userId || room.members.has(targetId)) continue;
       const target = allUsers?.find((u) => u.id === targetId);
       if (!target || target.isDisabled) continue;
+      // Le titre EN LECTURE caché à la cible par ses droits : pas d'invitation
+      // (docs/DROITS-UTILISATEURS.md § 5). Le nom, lui, est lu au nom de la
+      // CIBLE : un titre de contexte qu'elle ne voit pas ne lui est pas nommé.
+      if (!(await seesRoomItem(room, targetId))) continue;
+      const itemName = contextItemId ? await fetchItemName(contextItemId, targetId) : null;
       const invite = createInvite(
         room,
         { userId: user.userId, username: user.username },
         targetId,
-        contextItemId,
+        itemName ? contextItemId : null,
         itemName,
       );
       notifyInvite(invite);
@@ -103,6 +108,8 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
 
     const room = getRoom(invite.groupId);
     if (!room) return reply.status(404).send({ code: "group_gone" });
+    // Le salon est passé à un titre que ses droits lui cachent : l'invitation ne vaut plus.
+    if (accept && !(await seesRoomItem(room, user.userId))) return reply.status(404).send({ code: "invite_gone" });
 
     if (!accept) {
       notifyInviteResult(invite, user.username, false);

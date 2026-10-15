@@ -19,6 +19,14 @@ const store = {
   langs: [] as Array<{ key: string; value: string }>,
 };
 
+// Ce que les droits Jellyfin de chaque compte lui cachent (« compte:titre »),
+// et Jellyfin muet pour un compte.
+const hiddenFrom = new Set<string>();
+const unreachableFor = new Set<string>();
+vi.mock("./itemAccess/itemVisibility", () => ({
+  visibleItemIdsFor: async (userId: string, itemIds: string[]) =>
+    unreachableFor.has(userId) ? [] : itemIds.filter((id) => !hiddenFrom.has(`${userId}:${id}`)),
+}));
 vi.mock("./db", () => ({
   getPrisma: () => ({
     pushDevice: {
@@ -88,6 +96,8 @@ beforeEach(() => {
   store.prefs = [];
   store.announced = [];
   store.langs = [];
+  hiddenFrom.clear();
+  unreachableFor.clear();
 });
 
 describe("qui reçoit une arrivée", () => {
@@ -98,6 +108,25 @@ describe("qui reçoit une arrivée", () => {
     expect(ids(plans.get("alice")!.requested)).toEqual(["m-dune"]);
     expect(plans.has("bob")).toBe(false);
     expect(plans.has("carol")).toBe(false);
+  });
+
+  it("un titre que ses droits lui cachent n'est annoncé à personne qui ne le voit — demandeur compris", async () => {
+    store.claims = [claim("alice", 438631, "Dune")];
+    store.prefs = [pref("alice", true, true), pref("bob", true), pref("carol", true)];
+    hiddenFrom.add("alice:m-dune");
+    hiddenFrom.add("bob:m-dune");
+    const plans = byUser(await planRecipients([dune], NOW));
+    expect(plans.has("alice")).toBe(false);
+    expect(plans.has("bob")).toBe(false);
+    expect(ids(plans.get("carol")!.others)).toEqual(["m-dune"]);
+  });
+
+  it("Jellyfin muet pour un compte : rien ne lui est annoncé (fermé à l'échec)", async () => {
+    store.prefs = [pref("alice", true), pref("bob", true)];
+    unreachableFor.add("alice");
+    const plans = byUser(await planRecipients([dune], NOW));
+    expect(plans.has("alice")).toBe(false);
+    expect(ids(plans.get("bob")!.others)).toEqual(["m-dune"]);
   });
 
   it("l'abonné à tous les ajouts reçoit AUSSI la demande d'un autre", async () => {

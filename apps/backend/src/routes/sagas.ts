@@ -1,7 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
-import type { SagaResponse } from "../saga/sagaTypes";
+import type { SagaInfo, SagaMember, SagaResponse } from "../saga/sagaTypes";
+import { filterByRights } from "../services/reco/recoRights";
 import { sagaMembersFor } from "../services/search/sagaMembers";
 import { getSagaCollection } from "../services/tmdb/sagaCollection";
 
@@ -21,6 +22,20 @@ import { getSagaCollection } from "../services/tmdb/sagaCollection";
  * vide. Réponse privée, jamais mise en cache par un intermédiaire.
  */
 
+/**
+ * Les volets selon TMDB, tels que CE compte peut les voir (docs/DROITS-UTILISATEURS.md
+ * § 5) : un volet de la bibliothèque que ses droits lui cachent n'est ni montré, ni
+ * « à demander » ; un volet absent passe la politique de contenu du compte
+ * (certification) ; droits illisibles : seuls ses volets visibles restent.
+ */
+async function withinRights(userId: string, saga: SagaInfo | null, members: SagaMember[]): Promise<SagaInfo | null> {
+  if (!saga) return saga;
+  const visible = new Set(members.map((member) => member.tmdbId));
+  const absent = saga.parts.filter((part) => !visible.has(part.tmdbId)).map((part) => ({ ...part, mediaType: "movie" as const }));
+  const allowed = new Set((await filterByRights(userId, absent)).map((part) => part.tmdbId));
+  return { ...saga, parts: saga.parts.filter((part) => visible.has(part.tmdbId) || allowed.has(part.tmdbId)) };
+}
+
 const PARAMS = z.object({ collectionId: z.coerce.number().int().min(1).max(2_147_483_647) });
 const QUERY = z.object({ lang: z.enum(["fr", "en"]).catch("fr") });
 
@@ -38,7 +53,7 @@ export const sagaRoutes: FastifyPluginAsync = async (app) => {
     if (!found.ready) {
       return reply.status(503).header("Retry-After", "10").send({ error: "index-not-ready" });
     }
-    const saga = found.members.length > 0 ? await getSagaCollection(collectionId, lang) : null;
+    const saga = found.members.length > 0 ? await withinRights(user.userId, await getSagaCollection(collectionId, lang), found.members) : null;
     const body: SagaResponse = { collectionId, saga, members: found.members };
     return reply.header("Cache-Control", "private, no-store").send(body);
   });

@@ -2,6 +2,7 @@ import type { LibItem } from "./jellyfinLibrary";
 import { getPrisma, hasPrisma } from "./db";
 import { favoriteItemForUser, likeItemForUser } from "./jellyfinLikes";
 import { libraryTmdbIndex, type TmdbMediaType } from "./jellyfinTmdbLookup";
+import { isItemVisibleTo } from "./itemAccess/itemVisibility";
 import { broadcastToUser } from "./wsManager";
 import { pokeProfile } from "./reco/jobs";
 import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
@@ -123,6 +124,10 @@ async function applyRows(rows: readonly PendingRow[], targets: ReadonlyMap<strin
     const flag = pendingFlagOf(row.flag);
     const action = FLAG_ACTIONS[flag];
     const short = row.jellyfinUserId.slice(0, 8);
+    // Arrivé, mais caché à CE compte par ses droits : la ligne attend — posée
+    // le jour où sa politique le lui ouvre, jamais un drapeau sur un titre
+    // qu'il ne voit pas (docs/DROITS-UTILISATEURS.md § 5).
+    if (!(await isItemVisibleTo(row.jellyfinUserId, itemId))) continue;
     if (!(await action.apply(row.jellyfinUserId, itemId))) {
       console.warn(`[Watchlist] arrivée[${short}] ${row.mediaType}:${row.tmdbId} (${action.label}) : Jellyfin n'a pas suivi`);
       continue;

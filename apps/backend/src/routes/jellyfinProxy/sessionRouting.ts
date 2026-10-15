@@ -56,3 +56,10 @@ export async function resolveSessionRouting(
   }
   return { apiKey: adminKey ?? undefined };
 }
+
+/** Le compte visé par un jeton « voir en tant que », ou `null` : la clé
+ *  d'administration lui est prêtée, le proxy borne ses lectures à ce compte. */
+export async function impersonatedUserId(token: string | undefined): Promise<string | null> {
+  if (!token) return null;
+  return (await verifyImpersonationToken(token))?.userId ?? null;
+}

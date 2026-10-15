@@ -58,7 +58,7 @@ export const watchlistTmdbRoutes: FastifyPluginAsync = async (app) => {
   app.put("/tmdb", async (request) => {
     const user = userOf(request);
     const { mediaType, tmdbId } = bodySchema.parse(request.body);
-    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType);
+    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType, user.userId);
     if (lookup.kind === "found" && (await likeItemForUser(user.userId, lookup.id))) {
       // Une ligne d'avant (mise de côté puis arrivée) n'a plus d'objet.
       await dropPendingFlag(user.userId, mediaType, tmdbId, "watchlist");
@@ -74,7 +74,7 @@ export const watchlistTmdbRoutes: FastifyPluginAsync = async (app) => {
     const { mediaType, tmdbId } = paramsSchema.parse(request.params);
     // Mis de côté, il n'était pas encore là : rien à défaire chez Jellyfin.
     if (await dropPendingFlag(user.userId, mediaType, tmdbId, "watchlist")) return { state: "none" as const };
-    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType);
+    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType, user.userId);
     if (lookup.kind === "found") {
       if (!(await unlikeItemForUser(user.userId, lookup.id))) throw new Error("Jellyfin n'a pas retiré le titre de Ma liste");
       listChanged(user.userId);

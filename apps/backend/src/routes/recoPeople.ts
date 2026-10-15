@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
@@ -7,6 +7,7 @@ import { bootstrapPool } from "../services/reco/generationJob";
 import { pokePage } from "../services/reco/pageJobs";
 import { invalidatePool } from "../services/reco/poolStore";
 import { tmdbConfigured, tmdbFetch } from "../services/tmdb/client";
+import { isRestricted } from "../services/contentPolicy";
 import { getCachedMetaMany } from "../services/tmdb/metaCache";
 import { parseAnchors } from "../services/reco/anchorStore";
 import { isAdultPerson, popularSuggestions, recurringActors, toSuggestion } from "../services/reco/peopleSuggestions";
@@ -26,6 +27,17 @@ const likeSchema = z.object({
  * invalide le pool et régénère en fond — action explicite et rare, la
  * rangée « Avec {acteur} » doit apparaître sans attendre six heures.
  */
+/**
+ * « Connu pour » d'une personne TMDB : des titres EXTÉRIEURS, sans
+ * certification à juger — vidé pour un compte restreint (docs/DROITS-UTILISATEURS.md
+ * § 5). Ceux tirés de ce que le compte a regardé restent.
+ */
+async function knownForScrubber(request: FastifyRequest): Promise<<T extends { knownFor: string[] }>(person: T) => T> {
+  const user = (request as FastifyRequest & { user?: JellyfinUser }).user;
+  const restricted = user ? await isRestricted(user.userId) : true;
+  return (person) => (restricted ? { ...person, knownFor: [] } : person);
+}
+
 export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
@@ -42,7 +54,8 @@ export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
         page: "1",
         include_adult: "false",
       });
-      return { results: (page.results ?? []).filter((p) => !isAdultPerson(p)).slice(0, 8).map(toSuggestion) };
+      const scrub = await knownForScrubber(request);
+      return { results: (page.results ?? []).filter((p) => !isAdultPerson(p)).slice(0, 8).map(toSuggestion).map(scrub) };
     } catch {
       return { results: [] };
     }
@@ -67,7 +80,8 @@ export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
     try {
       const page = await tmdbFetch<{ results?: RawPerson[] }>("/person/popular", { page: "1" });
       const taken = new Set([...likedIds, ...own.map((p) => p.personId)]);
-      return { results: [...own, ...popularSuggestions(page.results ?? [], taken)].slice(0, SUGGESTIONS_MAX) };
+      const scrub = await knownForScrubber(request);
+      return { results: [...own, ...popularSuggestions(page.results ?? [], taken).map(scrub)].slice(0, SUGGESTIONS_MAX) };
     } catch {
       return { results: own };
     }

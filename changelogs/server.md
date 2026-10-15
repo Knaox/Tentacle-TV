@@ -24,7 +24,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Des notifications qui mènent au bon endroit** : un clic ouvre la fiche du titre ou la page exacte d'une extension, et chacune dit l'état de ce dont elle parle
 - **Analyse audio retirée** : la détection des passages par l'écoute disparaît de l'administration et de l'installation. Intro Skipper, SkipMe.db et TheIntroDB restent, et l'analyse automatique d'Intro Skipper reste coupée, sans rien à faire de votre côté
 - **Droits et contrôle parental** : chaque droit d'un compte se règle dans l'administration, directement dans Jellyfin ; un invité de la Famille a son propre contrôle parental, jamais plus large que celui de son créateur
-- **Titres hors bibliothèque filtrés** : un compte restreint ne voit plus de recommandation au-dessus de sa note
+- **Le contrôle parental de Jellyfin tient partout** : un titre interdit à un compte (note, étiquettes, bibliothèques, plages horaires) ne lui parvient par aucun chemin — recherche, recommandations, notifications, Watch Together, téléviseurs, lecture ; les titres hors bibliothèque suivent leur classification
 
 ### EN
 - **Trailer previews on hover**: on the web and in desktop app 1.30.0, rest the pointer on a poster and its trailer starts in a mini card, with sound. The server picks it in your language, checks it and streams it itself; with no playable trailer, nothing shows
@@ -38,7 +38,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Notifications that take you to the right place**: a click opens the title's page or the exact page of an extension, and each one shows the state of what it is about
 - **Audio analysis removed**: listening-based segment detection is gone from the admin and the setup. Intro Skipper, SkipMe.db and TheIntroDB stay, and Intro Skipper's automatic analysis stays off — nothing to do on your side
 - **Rights and parental control**: each account right is set in the admin, directly in Jellyfin; a Family guest gets its own parental control, never wider than its creator's
-- **Titles outside the library filtered**: a restricted account no longer sees recommendations above its rating
+- **Jellyfin's parental controls hold everywhere**: a title an account may not see (rating, tags, libraries, access hours) reaches it by no path — search, recommendations, notifications, Watch Together, TVs, playback; titles outside the library follow their rating
 
 ## [1.27.1]
 ### FR

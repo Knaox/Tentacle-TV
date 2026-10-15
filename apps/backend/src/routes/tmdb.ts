@@ -6,14 +6,14 @@
 /* ------------------------------------------------------------------ */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { getSeerrConfig } from "../services/seerConfig";
 import { getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
 import { getSeasonEpisodes } from "../services/tmdb/seasonEpisodes";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
-import { adminUserParam } from "../services/jellyfinLibrary";
 import { fetchSeerrVideos } from "../services/trailers/titleVideos";
+import { titleAllowedFor } from "../services/reco/recoRights";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
@@ -170,9 +170,13 @@ export async function tmdbRoutes(app: FastifyInstance) {
     const itemTypes = mediaType === "movie" ? "Movie" : "Series";
     try {
       const fields = "ProviderIds,ImageTags,BackdropImageTags,RemoteTrailers";
-      // Au nom de l'administrateur : sans lui, un titre ajouté depuis le
-      // démarrage de Jellyfin passait pour absent (cf. `adminUserParam`).
-      const userParam = await adminUserParam();
+      // Au nom du COMPTE : Jellyfin applique alors ses droits (note maximale,
+      // étiquettes, bibliothèques) — un titre interdit n'a pas d'id à rendre
+      // (docs/DROITS-UTILISATEURS.md § 5). Un `userId` reste indispensable :
+      // sans lui, un titre ajouté depuis le démarrage passait pour absent.
+      const viewer = (request as FastifyRequest & { user?: JellyfinUser }).user?.userId;
+      if (!viewer) return { jellyfinId: null, remoteTrailers: [] };
+      const userParam = `&userId=${encodeURIComponent(viewer)}`;
 
       // Stratégie 1 : AnyProviderIdEquals + filtre exact côté serveur
       const res = await fetch(
@@ -221,6 +225,10 @@ export async function tmdbRoutes(app: FastifyInstance) {
   app.get("/trailers", async (request: FastifyRequest, _reply: FastifyReply) => {
     const { tmdbId, mediaType } = request.query as { tmdbId?: string; mediaType?: string };
     if (!tmdbId || (mediaType !== "movie" && mediaType !== "tv")) return { videos: [] };
+    // Les bandes-annonces d'un titre que les droits du compte lui cachent : aucune (§ 5).
+    const viewer = (request as FastifyRequest & { user?: JellyfinUser }).user?.userId ?? "";
+    const id = Number(tmdbId);
+    if (!Number.isInteger(id) || !(await titleAllowedFor(viewer, { mediaType, tmdbId: id }))) return { videos: [] };
     return { videos: (await fetchSeerrVideos(tmdbId, mediaType)) ?? [] };
   });
 }

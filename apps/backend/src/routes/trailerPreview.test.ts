@@ -20,6 +20,10 @@ const { extractTrailerSource, buildCatalog, tmdbCatalog, jellyfinAdminFetch } = 
   tmdbCatalog: vi.fn<(tmdbId: number) => TrailerCatalogResponse>(),
   jellyfinAdminFetch: vi.fn(),
 }));
+// Les droits du compte sur un titre TMDB : le film 666 lui est caché.
+vi.mock("../services/reco/recoRights", () => ({
+  titleAllowedFor: async (_userId: string, title: { tmdbId: number }) => title.tmdbId !== 666,
+}));
 vi.mock("../services/trailers/ytExtract", () => ({ extractTrailerSource, prewarmExtraction: () => undefined }));
 vi.mock("../services/trailers/catalog/catalogBuild", () => ({ buildCatalog }));
 // Ce que chaque compte voit : le film pour tous sauf « intrus » ; une collection n'a rien ; Jellyfin muet : « error ».
@@ -203,6 +207,13 @@ describe("GET /api/trailers/preview", () => {
     // Un client d'avant (sans dm=1) : rien de ce qu'il ne sait pas lire.
     expect((await get(app, "tmdbId=603&mediaType=movie&lang=fr")).json()).toEqual({ error: "no_trailer" });
     expect(buildCatalog).toHaveBeenCalledTimes(1);
+  });
+
+  it("un titre TMDB que les droits du compte lui cachent : 404 no_trailer, rien n'est décidé ni cherché", async () => {
+    const app = await server();
+    tmdbCatalog.mockReturnValue(youtube(YT));
+    expect((await get(app, "tmdbId=666&mediaType=movie&lang=fr")).json()).toEqual({ error: "no_trailer" });
+    expect(buildCatalog).not.toHaveBeenCalled();
   });
 
   it("un titre TMDB hors bibliothèque ; aucune bande-annonce : 404 no_trailer ; aucune lisible : 404 unavailable", async () => {

@@ -17,6 +17,7 @@
 import type { SearchUserData } from "../../search/searchTypes";
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
 import { jellyfinAuthHeaders } from "../jellyfinAuth";
+import { policyChanged } from "../itemAccess/policyWatch";
 
 export interface UserAccess {
   at: number;
@@ -97,9 +98,12 @@ function refreshNow(userId: string): Promise<UserAccess | null> {
   return run;
 }
 
-/** Les droits du compte : servis tout de suite, construits à la première recherche. */
+/** Les droits du compte : servis tout de suite, construits à la première recherche ;
+ *  relevés sur-le-champ quand sa politique a changé. */
 export async function getUserAccess(userId: string): Promise<UserAccess | null> {
   const hit = memo.get(userId);
+  // Sa politique Jellyfin vient de changer : l'ancien relevé ne sert plus (cf. policyWatch).
+  if (hit && (await policyChanged(userId))) return refreshNow(userId);
   if (hit) {
     hit.lastReadAt = Date.now();
     if (Date.now() - hit.access.at >= STALE_MS) void refreshNow(userId);
@@ -130,6 +134,17 @@ export function markAllUserAccessStale(): void {
   for (const [userId, entry] of memo) {
     entry.access.at = 0;
     refreshUserAccess(userId);
+  }
+}
+
+/** Sa politique vient de changer : le relevé n'est plus servi, le prochain est refait sur-le-champ.
+ *  Sans compte : tous. */
+export function forgetUserAccess(userId?: string): void {
+  for (const id of userId === undefined ? [...memo.keys()] : [userId]) {
+    memo.delete(id);
+    const timer = timers.get(id);
+    if (timer) clearTimeout(timer);
+    timers.delete(id);
   }
 }
 

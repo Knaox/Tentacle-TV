@@ -4,6 +4,7 @@ import { verifyImpersonationToken } from "../services/jwt";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders } from "../services/jellyfinAuth";
 import { pairedDeviceStatus, PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../services/pairedDeviceStatus";
 import { profileSessionScope } from "../services/family/profileSessionLimits";
+import { OUTSIDE_SCHEDULE_REPLY, outsideAccessSchedule } from "../services/itemAccess/accessSchedule";
 
 /**
  * D'où vient la session d'une requête — la Famille en tire ses droits
@@ -183,6 +184,11 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
   const user = await profileScoped(request, reply, result.user);
   if (!user) return reply;
+  // Hors de ses plages horaires, un compte ne regarde rien — même ce que
+  // Tentacle lui sert avec la clé d'administration (cf. accessSchedule).
+  if (!user.isAdmin && user.session !== "impersonation" && (await outsideAccessSchedule(user.userId))) {
+    return reply.status(403).send(OUTSIDE_SCHEDULE_REPLY);
+  }
 
   (request as any).user = user;
 }
