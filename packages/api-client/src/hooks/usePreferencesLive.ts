@@ -4,9 +4,10 @@ import type { PreferencesScope, WsServerMessage } from "@tentacle-tv/shared";
 import { acquireSocket, onSocketStatus, subscribeSocket } from "../socket/tentacleSocket";
 import type { SocketStatus } from "../socket/tentacleSocket";
 import { invalidateRecoQueries } from "./useRecoPage";
+import { resyncStillWatching } from "../playback/useStillWatching";
 
 /** Les blocs diffusés en direct → la clé de cache de chacun (préfixe des sauvegardes). */
-export const PREFERENCES_LIVE_SCOPES: readonly PreferencesScope[] = ["home-layout", "reco-settings", "hints"];
+export const PREFERENCES_LIVE_SCOPES: readonly PreferencesScope[] = ["home-layout", "reco-settings", "hints", "still-watching"];
 
 /**
  * Applique un `preferences:update` reçu d'un autre appareil : relire le bloc —
@@ -18,6 +19,11 @@ export const PREFERENCES_LIVE_SCOPES: readonly PreferencesScope[] = ["home-layou
  * API commune v4 / v5 seulement (la TV tourne en v4).
  */
 export function applyPreferencesUpdate(qc: QueryClient, scope: PreferencesScope): boolean {
+  // « Vous regardez encore ? » vit dans son magasin (copie locale), pas dans le cache des requêtes.
+  if (scope === "still-watching") {
+    resyncStillWatching();
+    return true;
+  }
   if (qc.isMutating({ mutationKey: [scope] }) > 0) return false;
   void qc.invalidateQueries({ queryKey: [scope] });
   // Les réglages changent les rangées elles-mêmes : la page suit.
