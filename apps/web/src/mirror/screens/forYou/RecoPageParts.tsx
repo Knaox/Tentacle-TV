@@ -4,6 +4,7 @@ import { AlertCircle, SlidersVertical } from "lucide-react";
 import { recoRowTitleText, type RecoPage } from "@tentacle-tv/api-client";
 import { FadeIn } from "../../hero/FadeIn";
 import { SkeletonRow } from "../../hero/Skeletons";
+import { RecoTmdbOff } from "../../../components/reco/RecoTmdbOff";
 import { PillButton } from "./PillButton";
 import { RecoRow, type RecoRowActions } from "./RecoRow";
 
@@ -48,8 +49,9 @@ export function RecoPageHeader({ showTitle, filterCount, onOpenFilters }: {
 
 /**
  * `RecoStatusBanner` de l'app : UN bandeau à la fois, le premier vrai gagne —
- * perso coupée par l'utilisateur, puis (clé TMDB absente : rien) les états de
- * calcul du profil et du pool. Indication 13 tertiaire, ou bloc actionnable
+ * clé TMDB absente (les recommandations ne sont pas activées : `RecoTmdbOff`,
+ * le même constat que le bureau), perso coupée par l'utilisateur, puis les
+ * états de calcul du profil et du pool. Indication 13 tertiaire, ou bloc actionnable
  * (filet, fond faint, rayon 12) à pilule blanche.
  */
 export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart, onOpenSettings }: {
@@ -68,8 +70,8 @@ export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart, o
     </div>
   );
 
+  if (page.tmdbConfigured === false) return <RecoTmdbOff className="mx-4 mt-3" />;
   if (page.personalized === false) return actionable(t("disabledBanner"), t("disabledBannerCta"), onOpenSettings);
-  if (page.tmdbConfigured === false) return null;
   if (cold && (page.generating || page.refining)) return hint(t("generatingHint"));
   if (cold) return actionable(t("coldBannerHint"), t("coldBannerCta"), onOpenColdStart);
   if (page.exploring) return hint(t("exploringHint"));
@@ -137,6 +139,17 @@ export function RecoDisabledState({ onOpenSettings }: { onOpenSettings: () => vo
       <h1 className="text-[22px] font-extrabold tracking-[-0.5px] text-content-primary">{t("pageTitle")}</h1>
       <p className="max-w-[420px] text-[15px] text-content-secondary">{t("disabledBody")}</p>
       <PillButton title={t("disabledCta")} onPress={onOpenSettings} />
+    </div>
+  );
+}
+
+/** Pas de clé TMDB et rien à montrer : le titre et le constat, jamais les réglages de personnalisation. */
+export function RecoTmdbOffState() {
+  const { t } = useTranslation("reco");
+  return (
+    <div className="flex min-h-[60vh] flex-col justify-center gap-4 p-6">
+      <h1 className="text-[22px] font-extrabold tracking-[-0.5px] text-content-primary">{t("pageTitle")}</h1>
+      <RecoTmdbOff />
     </div>
   );
 }

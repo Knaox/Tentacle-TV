@@ -8,6 +8,7 @@ import { ColdStart } from "../components/reco/ColdStart";
 import { RecoNewerPill } from "../components/reco/RecoNewerPill";
 import { RecoPageBody } from "../components/reco/RecoPageBody";
 import { RecoSectionSwitch } from "../components/reco/RecoSectionSwitch";
+import { RecoTmdbOff } from "../components/reco/RecoTmdbOff";
 import { RecoPageSkeleton } from "../components/reco/RecoPageSkeleton";
 import { useSettledRecoPage } from "../components/reco/useSettledRecoPage";
 import { useRecoFilter } from "../hooks/useRecoFilter";
@@ -100,6 +101,14 @@ function ForYouSection() {
         ) : (
           <RecoPageSkeleton />
         )
+      ) : page.tmdbConfigured === false && page.rows.length === 0 ? (
+        // Pas de clé TMDB et rien à montrer (bibliothèque neuve) : le titre et
+        // le constat, rien d'autre — surtout pas les réglages de
+        // personnalisation, qui n'y changeraient rien.
+        <div className="row-gutter flex min-h-[60vh] flex-col justify-center">
+          <h1 className="text-2xl font-bold text-content-primary">{t("pageTitle")}</h1>
+          <RecoTmdbOff className="mt-4 max-w-2xl" />
+        </div>
       ) : page.state === "disabled" && page.rows.length === 0 ? (
         // Vieux serveur qui ne sert AUCUNE rangée en mode désactivé : l'écran
         // historique demeure. Un serveur à jour sert les rangées globales.

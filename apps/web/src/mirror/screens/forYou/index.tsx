@@ -14,7 +14,7 @@ import { ColdStartScreen } from "./ColdStartScreen";
 import { LikedActorsPanel } from "./LikedActorsPanel";
 import { recoHeroSlides } from "./RecoHeroContent";
 import { RecoFilterSheet } from "./RecoFilterSheet";
-import { RecoDisabledState, RecoErrorState, RecoPageHeader, RecoPageRows, RecoStatusBanner } from "./RecoPageParts";
+import { RecoDisabledState, RecoErrorState, RecoPageHeader, RecoPageRows, RecoStatusBanner, RecoTmdbOffState } from "./RecoPageParts";
 import { useItemSheets } from "./useItemSheets";
 import { useRecoPageModel } from "./useRecoPageModel";
 import "../../mirror.css";
@@ -80,6 +80,8 @@ function MirrorForYouSection() {
   let body;
   if (!page) {
     body = model.isError ? <RecoErrorState onRetry={model.retry} /> : <SkeletonHeroScreen rows={2} />;
+  } else if (page.tmdbConfigured === false && page.rows.length === 0) {
+    body = <RecoTmdbOffState />;
   } else if (page.state === "disabled" && page.rows.length === 0) {
     body = <RecoDisabledState onOpenSettings={openSettings} />;
   } else if (model.phase === "hold") {

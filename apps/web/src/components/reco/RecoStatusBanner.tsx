@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import type { RecoPage } from "@tentacle-tv/api-client";
+import { RecoTmdbOff } from "./RecoTmdbOff";
 
 interface RecoStatusBannerProps {
   page: RecoPage;
@@ -35,15 +36,17 @@ function Actionable({ text, cta }: { text: string; cta: ReactNode }) {
 
 /**
  * UN bandeau d'état à la fois — le premier vrai gagne. L'ordre porte le sens :
- * la perso coupée PAR L'UTILISATEUR prime (le nag de configuration serait du
- * bruit) ; la clé TMDB absente ne dit RIEN ici — l'admin a son bandeau global
- * (l'avertissement surgissant, `NoticeHost`), les autres n'y peuvent rien et ne voient rien ; puis les
- * états de calcul du profil et du pool.
+ * la clé TMDB absente prime — sans elle, rien ne s'active, quel que soit le
+ * réglage du compte : la page dit que les recommandations ne sont pas encore
+ * activées (`RecoTmdbOff`, le bouton pour l'administrateur seul) ; puis la
+ * perso coupée PAR L'UTILISATEUR ; puis les états de calcul du profil et du
+ * pool. Un serveur qui ne dit rien de TMDB (`tmdbConfigured` absent) : comme avant.
  */
 export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart }: RecoStatusBannerProps) {
   const { t } = useTranslation("reco");
   const cold = page.state === "cold";
 
+  if (page.tmdbConfigured === false) return <RecoTmdbOff className="row-gutter mb-6" />;
   if (page.personalized === false) {
     return (
       <Actionable
@@ -56,7 +59,6 @@ export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart }:
       />
     );
   }
-  if (page.tmdbConfigured === false) return null;
   if (cold && (page.generating || page.refining)) return <Hint>{t("generatingHint")}</Hint>;
   if (cold) {
     return (
