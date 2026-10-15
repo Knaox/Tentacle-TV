@@ -99,6 +99,12 @@ describe("le cadenas d'une tuile de « Qui regarde ? »", () => {
     expect(pickerShowsPinLock(profile("lea", { hasPin: true }), ["zoe", null])).toBe(true);
   });
 
+  it("TV : aucun sur le profil retenu (le serveur l'ouvre sans code), fermé sur un autre profil protégé", () => {
+    const sticky = "zoe";
+    expect(pickerShowsPinLock(profile("zoe", { hasPin: true }), [sticky])).toBe(false);
+    expect(pickerShowsPinLock(profile("lea", { hasPin: true }), [sticky])).toBe(true);
+  });
+
   it("aucun sur un profil sans code", () => {
     expect(pickerShowsPinLock(profile("lea"), [])).toBe(false);
   });

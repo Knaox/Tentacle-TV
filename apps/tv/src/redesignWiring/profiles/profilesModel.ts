@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { familyErrorKey, type TvProfileDto } from "@tentacle-tv/shared";
+import { familyErrorKey, pickerShowsPinLock, type TvProfileDto } from "@tentacle-tv/shared";
 import { isProfileLocked, type PinEntry, type ProfileRefusal } from "@tentacle-tv/tv-core";
 import type { ProfileTileModel } from "../../redesign/screens/profiles/ProfilesView";
 
@@ -33,14 +33,22 @@ export function formatUnlockTime(iso: string, language: string, now: number): st
   return `${at.toLocaleDateString(language, { weekday: "long" })} ${time}`;
 }
 
-export function tileModelOf(profile: TvProfileDto, serverUrl: string | null, now: number, language: string, t: TFunction): ProfileTileModel {
+/** `stickyProfileId` : le profil retenu de cette TV — il s'ouvre sans PIN (`planProfilePick`), donc sans cadenas. */
+export function tileModelOf(
+  profile: TvProfileDto,
+  serverUrl: string | null,
+  now: number,
+  language: string,
+  t: TFunction,
+  stickyProfileId: string | null = null,
+): ProfileTileModel {
   const locked = isProfileLocked(profile, now) && profile.lockedUntil;
   return {
     id: profile.userId,
     name: profile.name,
     color: profile.color,
     avatarUri: profileAvatarUri(serverUrl, profile.userId, profile.imageTag),
-    hasPin: profile.hasPin,
+    hasPin: pickerShowsPinLock(profile, [stickyProfileId]),
     guest: profile.kind === "guest",
     lockedLabel: locked ? t("familyTv:lockedUntil", { time: formatUnlockTime(locked, language, now) }) : null,
   };
