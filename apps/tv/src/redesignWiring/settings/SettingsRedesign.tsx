@@ -111,6 +111,7 @@ export function SettingsRedesign({ navigation, route }: Props) {
           onToggleMatchFrameRate={model.onToggleMatchFrameRate}
           onSelectScrubOutcome={model.onSelectScrubOutcome}
           onSelectScrubDelay={model.onSelectScrubDelay}
+          onChangeStillWatching={model.onChangeStillWatching}
           onToggleTrailerPreviews={model.onToggleTrailerPreviews}
           onToggleTrailerPreviewSound={model.onToggleTrailerPreviewSound}
           appearance={PLATFORM_TRAITS.liquidGlass}

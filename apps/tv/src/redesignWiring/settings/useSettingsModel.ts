@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Platform } from "react-native";
-import { setPlaybackSettings, useOwnPlaybackSettings, useServerCapability } from "@tentacle-tv/api-client";
+import { setPlaybackSettings, useOwnPlaybackSettings, useServerCapability, useStillWatchingSettings } from "@tentacle-tv/api-client";
 import { detectPreset, presetSettings, uiLanguage, type PlaybackPreset } from "@tentacle-tv/shared";
 import { SCRUB_COUNTDOWN_DELAYS } from "@tentacle-tv/tv-core";
 import type {
@@ -59,6 +59,9 @@ export function useSettingsModel() {
   const previewCapable = useServerCapability("trailers.preview");
   const previewsEnabled = useTrailerPreviewsEnabled();
   const previewSound = useTrailerPreviewSound();
+  // « Vous regardez encore ? » : réglage du COMPTE, écrit au serveur (copie locale pour le hors ligne).
+  const stillWatching = useStillWatchingSettings();
+  const stillWatchingSettings = stillWatching.available ? stillWatching.settings : null;
 
   const name = paired.name ?? "—";
   const account = useMemo<SettingsAccount>(
@@ -90,8 +93,10 @@ export function useSettingsModel() {
         : null,
       // Les aperçus au focus : rien à régler face à un serveur qui n'en sert pas.
       trailerPreviews: previewCapable ? { enabled: previewsEnabled, sound: previewSound } : null,
+      // Rien face à un serveur qui ne déclare pas `playback.stillWatching`.
+      stillWatching: stillWatchingSettings,
     }),
-    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate, scrubSettings, previewCapable, previewsEnabled, previewSound],
+    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate, scrubSettings, previewCapable, previewsEnabled, previewSound, stillWatchingSettings],
   );
 
   const about = useMemo<SettingsAbout>(
@@ -141,6 +146,7 @@ export function useSettingsModel() {
     onToggleMatchFrameRate: exoMatchFrameRateStore.set,
     onSelectScrubOutcome: selectScrubOutcome,
     onSelectScrubDelay: selectScrubDelay,
+    onChangeStillWatching: stillWatching.set,
     onToggleTrailerPreviews: trailerPreviewsStore.set,
     onToggleTrailerPreviewSound: trailerPreviewSoundStore.set,
     onToggleLiquidGlass: liquidGlassStore.set,
