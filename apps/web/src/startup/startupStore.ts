@@ -1,4 +1,4 @@
-import { useLayoutEffect, useSyncExternalStore } from "react";
+import { useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import {
   startupHolder,
   startupWindowMayShow,
@@ -89,15 +89,35 @@ export function resetStartupWindows(): void {
 }
 
 /**
+ * Le fondu de sortie d'une fenêtre (`Modal` : 150 ms) : la suivante n'entre
+ * qu'une fois la précédente partie — sans lui, les deux se croisaient à l'écran.
+ */
+export const STARTUP_EXIT_GRACE_MS = 200;
+
+/**
  * Publier l'état d'une porte tant qu'elle est montée — en effet de MISE EN
  * PAGE : avant la peinture, et avant toute réponse réseau ou minuterie qui
- * ferait paraître une autre fenêtre. Démontée, elle se retire.
+ * ferait paraître une autre fenêtre. Une fenêtre qui se ferme garde sa place
+ * le temps de son fondu (`STARTUP_EXIT_GRACE_MS`). Démontée, elle se retire.
  */
 export function usePublishStartupWindow(source: string, target: StartupWindow, state: StartupWindowState): void {
+  const published = useRef<StartupWindowState | null>(null);
   useLayoutEffect(() => {
-    publishStartupWindow(source, target, state);
+    const publish = () => {
+      published.current = state;
+      publishStartupWindow(source, target, state);
+    };
+    if (published.current !== "open" || state === "open") {
+      publish();
+      return;
+    }
+    const timer = setTimeout(publish, STARTUP_EXIT_GRACE_MS);
+    return () => clearTimeout(timer);
   }, [source, target, state]);
-  useLayoutEffect(() => () => publishStartupWindow(source, target, null), [source, target]);
+  useLayoutEffect(() => () => {
+    published.current = null;
+    publishStartupWindow(source, target, null);
+  }, [source, target]);
 }
 
 /** Est-ce le tour de `target` ? */

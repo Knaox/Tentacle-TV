@@ -1,8 +1,8 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StartupWindow, StartupWindowState } from "./startupOrder";
-import { readStartupSnapshot, resetStartupWindows, setStartupReady, useStartupTurn } from "./startupStore";
+import { STARTUP_EXIT_GRACE_MS, readStartupSnapshot, resetStartupWindows, setStartupReady, useStartupTurn } from "./startupStore";
 
 // React sans DOM, comme les bancs de la recherche (`useHeldSearchView.test.ts`).
 const g = globalThis as Record<string, unknown>;
@@ -33,7 +33,14 @@ function mount(initial: Gate[]) {
   return { turns, render, unmount: () => act(() => root?.unmount()) };
 }
 
-afterEach(resetStartupWindows);
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => {
+  resetStartupWindows();
+  vi.useRealTimers();
+});
+
+/** Le fondu de sortie de la fenêtre qui vient de se fermer. */
+const exitFade = () => act(() => vi.advanceTimersByTime(STARTUP_EXIT_GRACE_MS));
 
 describe("les portes du démarrage, montées", () => {
   it("le PIN conseillé, puis les nouveautés, puis l'avatar — chacun à son tour", () => {
@@ -49,16 +56,31 @@ describe("les portes du démarrage, montées", () => {
     render([{ target: "avatarInvite", state: "pending" }, { target: "whatsNew", state: "undecided" }, { target: "familyPin", state: "open" }]);
     expect(turns).toEqual({ familyPin: true, whatsNew: false, avatarInvite: false });
 
-    // Refermé : les nouveautés tranchent, et s'ouvrent.
+    // Refermé : les nouveautés attendent la fin de son fondu, puis tranchent et s'ouvrent.
     render([{ target: "avatarInvite", state: "pending" }, { target: "whatsNew", state: "undecided" }, { target: "familyPin", state: "done" }]);
+    expect(turns.whatsNew).toBe(false);
+    exitFade();
     expect(turns.whatsNew).toBe(true);
     expect(turns.avatarInvite).toBe(false);
     render([{ target: "avatarInvite", state: "pending" }, { target: "whatsNew", state: "open" }, { target: "familyPin", state: "done" }]);
     expect(turns.avatarInvite).toBe(false);
 
-    // Les nouveautés refermées : l'avatar.
+    // Les nouveautés refermées, leur fondu fini : l'avatar.
     render([{ target: "avatarInvite", state: "pending" }, { target: "whatsNew", state: "done" }, { target: "familyPin", state: "done" }]);
+    expect(turns.avatarInvite).toBe(false);
+    exitFade();
     expect(turns.avatarInvite).toBe(true);
+    unmount();
+  });
+
+  it("rouverte pendant son fondu, une fenêtre garde sa place", () => {
+    act(() => setStartupReady(true));
+    const { turns, render, unmount } = mount([{ target: "familyPin", state: "open" }, { target: "whatsNew", state: "undecided" }]);
+    render([{ target: "familyPin", state: "done" }, { target: "whatsNew", state: "undecided" }]);
+    render([{ target: "familyPin", state: "open" }, { target: "whatsNew", state: "undecided" }]);
+    exitFade();
+    expect(readStartupSnapshot().states.familyPin).toBe("open");
+    expect(turns.whatsNew).toBe(false);
     unmount();
   });
 
@@ -75,6 +97,7 @@ describe("les portes du démarrage, montées", () => {
     const { turns, render, unmount } = mount([{ target: "profile", state: "open" }, { target: "whatsNew", state: "undecided" }]);
     expect(turns.whatsNew).toBe(false);
     render([{ target: "profile", state: "done" }, { target: "whatsNew", state: "undecided" }]);
+    exitFade();
     expect(turns.whatsNew).toBe(true);
     unmount();
   });

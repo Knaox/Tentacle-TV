@@ -36,7 +36,9 @@ export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const { pathname } = useLocation();
   const desktopLike = useMemo(whatsNewGateForced, []);
   const ready = authed && !pathname.startsWith("/watch");
-  const online = useConnectivity().state === "online";
+  // Hors ligne ÉTABLI seulement : `checking`, l'état du démarrage, n'est pas une absence.
+  const connectivity = useConnectivity().state;
+  const offline = connectivity === "offline-auto" || connectivity === "offline-manual";
 
   useLayoutEffect(() => {
     setStartupReady(ready);
@@ -54,7 +56,7 @@ export function StartupOverlays({ authed }: StartupOverlaysProps) {
   useWhatsNewDevHook(setForced);
   const clearForced = useCallback(() => setForced(null), []);
   const whatsNewOpen = forced !== null || gate.open;
-  const whatsNewState: StartupWindowState = whatsNewOpen ? "open" : gate.decided || !online ? "done" : "undecided";
+  const whatsNewState: StartupWindowState = whatsNewOpen ? "open" : gate.decided || offline ? "done" : "undecided";
   usePublishStartupWindow("whatsNew", "whatsNew", whatsNewState);
 
   // La mise à jour : proposée à son tour ; en cours, toujours à l'écran.
