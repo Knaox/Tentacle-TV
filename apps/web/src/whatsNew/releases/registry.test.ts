@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { i18n, initI18n, isServerCapability, resolveServerCapabilities } from "@tentacle-tv/shared";
 import { isNewerVersion } from "../../lib/updateCheckers";
-import { forServer, selectWhatsNewFeatures } from "../selectFeatures";
+import { forAudience, forServer, selectWhatsNewFeatures } from "../selectFeatures";
 import { WHATS_NEW_RELEASES } from "./index";
 
 // La source unique des versions, lue telle quelle : le garde-fou porte sur le
@@ -54,19 +54,28 @@ describe("registre de l'écran de nouveautés", () => {
     }
   });
 
-  it("1.30.0 : l'aperçu, les profils, le code PIN, « Vous regardez encore ? » et la cloche exigent leur capacité, la galerie aucune — face à un serveur muet, la galerie seule", () => {
+  it("1.30.0 : l'aperçu, les profils, le code PIN, le contrôle parental, « Vous regardez encore ? », la cloche et les droits exigent leur capacité, la galerie aucune — face à un serveur muet, la galerie seule", () => {
     const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.30.0");
     expect(release?.features.map((f) => f.capability)).toEqual([
-      "trailers.preview", "family.desktopProfiles", "family.desktopProfiles", "playback.stillWatching", undefined, "notifications.targets",
+      "trailers.preview", "family.desktopProfiles", "family.desktopProfiles", "family.parentalControls", "playback.stillWatching", undefined,
+      "notifications.targets", "admin.userRights",
     ]);
     const mute = resolveServerCapabilities({ version: "1.23.0" });
     const alone = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, mute)).features;
     expect(alone.map((f) => f.id)).toEqual(["avatars"]);
     const capable = resolveServerCapabilities({
-      capabilities: ["trailers.preview", "family.desktopProfiles", "playback.stillWatching", "notifications.targets"],
+      capabilities: [
+        "trailers.preview", "family.desktopProfiles", "family.parentalControls", "playback.stillWatching", "notifications.targets",
+        "admin.userRights",
+      ],
     });
     const shown = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, capable)).features;
-    expect(shown.map((f) => f.id)).toEqual(["trailerPreview", "profiles", "familyPin", "stillWatching", "avatars", "notifications"]);
+    expect(shown.map((f) => f.id)).toEqual([
+      "trailerPreview", "profiles", "familyPin", "guestParental", "stillWatching", "avatars", "notifications", "userRights",
+    ]);
+    // Les droits des comptes ne parlent qu'aux administrateurs.
+    const member = selectWhatsNewFeatures("1.30.0", "1.28.2", forAudience(forServer(WHATS_NEW_RELEASES, capable), false)).features;
+    expect(member.map((f) => f.id)).not.toContain("userRights");
     // Sans les profils du bureau, le code PIN conseillé se tait avec eux.
     const noProfiles = resolveServerCapabilities({ capabilities: ["trailers.preview", "playback.stillWatching"] });
     const partial = selectWhatsNewFeatures("1.30.0", "1.28.2", forServer(WHATS_NEW_RELEASES, noProfiles)).features;

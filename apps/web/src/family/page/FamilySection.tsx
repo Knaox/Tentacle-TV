@@ -28,6 +28,7 @@ import { useFamilyAvailability } from "../useFamilyAvailability";
 import { useFamilyText } from "../useFamilyText";
 import { FamilyConfirm, type FamilyPending } from "./FamilyConfirm";
 import { GuestDialog } from "./GuestDialog";
+import { GuestParentalDialog } from "./GuestParentalDialog";
 import { InviteDialog } from "./InviteDialog";
 import { PendingInvitations } from "./PendingInvitations";
 import { GuestPinDialog } from "./PinEditors";
@@ -66,6 +67,9 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const onGuestPhoto = useCallback((profile: FamilyProfileDto) => {
     openGallery({ kind: "guest", userId: profile.userId, name: profile.name, imageTag: profile.imageTag, through: "session" });
   }, [openGallery]);
+  // Le contrôle parental d'un invité : serveur 1.30.0, session personnelle.
+  const parentalControls = useServerCapability("family.parentalControls");
+  const [parentalGuest, setParentalGuest] = useState<FamilyProfileDto | null>(null);
   const deleteGuest = useDeleteFamilyGuest();
   const cancelInvite = useCancelFamilyInvitation();
   const setRights = useSetFamilyMemberRights();
@@ -152,6 +156,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 onRemove={onRemove}
                 onGuestPin={setPinGuest}
                 onGuestPhoto={guestPhotos && personal ? onGuestPhoto : undefined}
+                onGuestParental={parentalControls && personal ? setParentalGuest : undefined}
                 onRightChange={onRightChange}
               />
             ))}
@@ -187,6 +192,13 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
       {dialog === "invite" && <InviteDialog onClose={() => setDialog(null)} />}
       {dialog === "guest" && <GuestDialog onClose={() => setDialog(null)} />}
       {pinGuest && <GuestPinDialog guest={pinGuest} onClose={() => setPinGuest(null)} />}
+      {parentalGuest && family && (
+        <GuestParentalDialog
+          guest={parentalGuest}
+          creatorName={parentalGuest.createdByName ?? family.owner.name}
+          onClose={() => setParentalGuest(null)}
+        />
+      )}
     </>
   );
 }

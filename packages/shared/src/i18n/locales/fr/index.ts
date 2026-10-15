@@ -53,6 +53,7 @@ import familyMobile from "./familyMobile";
 import metadataHint from "./metadataHint";
 import profilePicker from "./profilePicker";
 import avatars from "./avatars";
+import userRights from "./userRights";
 
 export default {
   common, auth, player, admin,
@@ -82,4 +83,5 @@ export default {
   metadataHint,
   profilePicker,
   avatars,
+  userRights,
 };

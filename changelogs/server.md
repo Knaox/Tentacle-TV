@@ -22,6 +22,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Photos de profil** : 36 personnages à choisir dans le client web, et une photo pour chaque invité de la Famille
 - **Interface web** : « Vider le cache et réinitialiser » dit ce qu'il efface vraiment — les réglages de l'appareil, les recherches récentes et le cache, jamais la session
 - **Des notifications qui mènent au bon endroit** : un clic ouvre la fiche du titre ou la page exacte d'une extension, et chacune dit l'état de ce dont elle parle
+- **Droits et contrôle parental** : tous les droits Jellyfin d'un compte se règlent dans l'administration, et chaque invité de la Famille a son contrôle parental, jamais au-delà de son créateur
 - **Analyse audio retirée** : la détection des passages par l'écoute disparaît de l'administration et de l'installation. Intro Skipper, SkipMe.db et TheIntroDB restent, et l'analyse automatique d'Intro Skipper reste coupée, sans rien à faire de votre côté
 - **Droits et contrôle parental** : chaque droit d'un compte se règle dans l'administration, directement dans Jellyfin ; un invité de la Famille a son propre contrôle parental, jamais plus large que celui de son créateur
 - **Le contrôle parental de Jellyfin tient partout** : un titre interdit à un compte (note, étiquettes, bibliothèques, plages horaires) ne lui parvient par aucun chemin — recherche, recommandations, notifications, Watch Together, téléviseurs, lecture ; les titres hors bibliothèque suivent leur classification
@@ -36,6 +37,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Profile pictures**: 36 characters to pick from in the web client, and a picture for every Family guest
 - **Web interface**: “Clear cache and reset” now says what it really clears — this device's settings, recent searches and the cache, never the session
 - **Notifications that take you to the right place**: a click opens the title's page or the exact page of an extension, and each one shows the state of what it is about
+- **Rights and parental controls**: all of an account's Jellyfin rights are set from the admin, and every Family guest gets parental controls, never beyond their creator
 - **Audio analysis removed**: listening-based segment detection is gone from the admin and the setup. Intro Skipper, SkipMe.db and TheIntroDB stay, and Intro Skipper's automatic analysis stays off — nothing to do on your side
 - **Rights and parental control**: each account right is set in the admin, directly in Jellyfin; a Family guest gets its own parental control, never wider than its creator's
 - **Jellyfin's parental controls hold everywhere**: a title an account may not see (rating, tags, libraries, access hours) reaches it by no path — search, recommendations, notifications, Watch Together, TVs, playback; titles outside the library follow their rating

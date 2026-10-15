@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
-import type { PairedDevice } from "@tentacle-tv/api-client";
+import { useServerCapability, type PairedDevice } from "@tentacle-tv/api-client";
 import { Sheet } from "../../ui/Sheet";
 import { UserAvatar } from "../kit";
 import { useIsMobile } from "../../../hooks/useIsMobile";
@@ -9,6 +9,7 @@ import { UserBadges } from "./UserBadges";
 import { UserDevicesSection } from "./UserDevicesSection";
 import { UserImpersonation } from "./UserImpersonation";
 import { UserRightsSection } from "./UserRightsSection";
+import { UserRightsPanel } from "./rights/UserRightsPanel";
 import { SHEET_LIST, UserSheetSection } from "./UserSheetSection";
 import { absoluteTime, relativeTime, type AdminUser } from "./userListModel";
 
@@ -25,20 +26,27 @@ interface UserSheetProps {
 /** Hauteur de la fiche sur téléphone : presque tout l'écran, comme celle d'un ticket. */
 const MOBILE_HEIGHT_RATIO = 0.92;
 const DESKTOP_WIDTH = 440;
+/** Avec tous les droits, la fiche s'élargit : trois listes côte à côte pour une plage horaire. */
+const DESKTOP_WIDTH_RIGHTS = 500;
 
 /**
- * La fiche d'un compte : qui c'est, quand on l'a vu, ce qu'il a le droit de
- * télécharger, ses appareils — et « Voir en tant que », en pied de fiche.
+ * La fiche d'un compte : qui c'est, quand on l'a vu, ses droits — tous ceux
+ * de sa politique Jellyfin face à un serveur qui déclare `admin.userRights`,
+ * sinon ceux de téléchargement seulement, comme avant —, ses appareils, et
+ * « Voir en tant que », en pied de fiche.
  * Volet latéral sur ordinateur, feuille basse sur téléphone.
  */
 export function UserSheet({ user, isSelf, devices, devicesFailed, now, onClose }: UserSheetProps) {
   const isMobile = useIsMobile();
   const titleId = useId();
+  const allRights = useServerCapability("admin.userRights");
   // Le dernier compte ouvert reste affiché pendant que la fiche se referme :
   // sans lui, son contenu disparaîtrait au premier instant du glissement.
   const [shown, setShown] = useState(user);
   if (user && user !== shown) setShown(user);
-  const size = isMobile ? Math.round(window.innerHeight * MOBILE_HEIGHT_RATIO) : DESKTOP_WIDTH;
+  const size = isMobile
+    ? Math.round(window.innerHeight * MOBILE_HEIGHT_RATIO)
+    : allRights ? DESKTOP_WIDTH_RIGHTS : DESKTOP_WIDTH;
 
   return (
     <Sheet
@@ -54,6 +62,7 @@ export function UserSheet({ user, isSelf, devices, devicesFailed, now, onClose }
           user={shown}
           titleId={titleId}
           isSelf={isSelf}
+          allRights={allRights}
           devices={devices}
           devicesFailed={devicesFailed}
           now={now}
@@ -64,10 +73,11 @@ export function UserSheet({ user, isSelf, devices, devicesFailed, now, onClose }
   );
 }
 
-function UserSheetBody({ user, titleId, isSelf, devices, devicesFailed, now, onClose }: {
+function UserSheetBody({ user, titleId, isSelf, allRights, devices, devicesFailed, now, onClose }: {
   user: AdminUser;
   titleId: string;
   isSelf: boolean;
+  allRights: boolean;
   devices: PairedDevice[] | undefined;
   devicesFailed: boolean;
   now: number;
@@ -103,7 +113,9 @@ function UserSheetBody({ user, titleId, isSelf, devices, devicesFailed, now, onC
 
       <div className="flex-1 space-y-6 px-5 py-5">
         <UserActivity user={user} now={now} />
-        <UserRightsSection userId={user.id} />
+        {allRights
+          ? <UserRightsPanel key={user.id} userId={user.id} name={user.name} isSelf={isSelf} />
+          : <UserRightsSection userId={user.id} />}
         <UserDevicesSection devices={devices} failed={devicesFailed} now={now} />
       </div>
 
