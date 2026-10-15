@@ -15,6 +15,7 @@ import type { FakeSeerr } from "./fakeSeerr";
 import type { JellyfinBench } from "./jellyfinBench";
 import { itemIdsOf, probe, Recorder, type JudgeContext } from "./judge";
 import { probeCore } from "./probesCore";
+import { probeRestrictionChange } from "./probesFreshness";
 import { probeLibrary } from "./probesLibrary";
 import { probeVigie } from "./probesVigie";
 import { HISTORY_WITNESSES, seedJellyfinHistory } from "./historySeed";
@@ -52,6 +53,10 @@ export async function runChecks(input: CheckInput): Promise<number> {
       await probeVigie(ctx, door, seerr);
     }
   }
+  // Une restriction posée par Tentacle vaut sur-le-champ (Vigie compris).
+  rec.section(`${jf.restricted.name} — fraîcheur : restriction levée puis remise par la fiche des droits`);
+  await probeRestrictionChange(ctx, restrictedDoors[0], adminPersonal, tentacle.vigie);
+
   // Le passé posé par le banc (historySeed) : les pages l'ont bien lu — les témoins permis y sont.
   const [personal] = restrictedDoors;
   const stats = await probe(ctx, personal, "GET", "/api/stats/me?period=all&tz=Europe/Paris&lang=fr&refresh=1");
