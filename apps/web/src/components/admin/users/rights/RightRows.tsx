@@ -1,7 +1,7 @@
 import { memo, useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
-import type { UserRightKey } from "@tentacle-tv/api-client";
+import type { UserRightsKey } from "@tentacle-tv/shared";
 import { ToggleSwitch } from "../../../settings/ToggleSwitch";
 import { CHECKBOX, FIELD_HINT, FIELD_LABEL, INPUT, SELECT, SMALL_BUTTON } from "../../../parental/fieldStyles";
 import type { RightsWriter } from "./useRightsWriter";
@@ -13,7 +13,7 @@ export function RightError({ text }: { text: string | null }) {
 }
 
 interface ToggleRightProps {
-  field: UserRightKey;
+  field: UserRightsKey;
   checked: boolean;
   writer: RightsWriter;
   /** Pourquoi le réglage est figé (ex. « vous ne pouvez pas… ») ; absent : modifiable. */
@@ -46,7 +46,7 @@ export const ToggleRight = memo(function ToggleRight({ field, checked, writer, l
 });
 
 interface NumberRightProps {
-  field: UserRightKey;
+  field: UserRightsKey;
   /** La valeur affichée (déjà convertie : Mbit/s pour un débit). */
   value: number;
   writer: RightsWriter;
@@ -115,7 +115,7 @@ export const NumberRight = memo(function NumberRight({ field, value, writer, min
 });
 
 interface SelectRightProps<T extends string> {
-  field: UserRightKey;
+  field: UserRightsKey;
   value: T;
   choices: readonly { value: T; label: string }[];
   writer: RightsWriter;

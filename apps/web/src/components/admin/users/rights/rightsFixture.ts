@@ -1,4 +1,4 @@
-import type { UserRights } from "@tentacle-tv/api-client";
+import type { UserRights } from "@tentacle-tv/shared";
 
 /** Un compte ordinaire, tel que Jellyfin le crée — pour les tests seulement. */
 export const PLAIN_RIGHTS: UserRights = {

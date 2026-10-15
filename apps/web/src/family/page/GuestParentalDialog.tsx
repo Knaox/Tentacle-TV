@@ -1,8 +1,8 @@
 import { useId, useMemo, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ShieldCheck } from "lucide-react";
-import { useFamilyParentalOptions, useSetFamilyGuestParental, type GuestParentalControls } from "@tentacle-tv/api-client";
-import type { FamilyProfileDto } from "@tentacle-tv/shared";
+import { useFamilyParentalOptions, useSetFamilyGuestParental } from "@tentacle-tv/api-client";
+import type { FamilyProfileDto, GuestParentalControls } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
 import { Modal } from "../../components/ui/Modal";
 import { RatingSelect, UnratedTypesField } from "../../components/parental/RatingFields";

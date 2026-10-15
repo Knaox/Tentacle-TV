@@ -1,20 +1,16 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  useUpdateUserRights,
-  userRightsRefusalOf,
-  type UserRightKey,
-  type UserRightsPatch,
-} from "@tentacle-tv/api-client";
+import { useUpdateUserRights, userRightsRefusalOf } from "@tentacle-tv/api-client";
+import type { UserRightsKey, UserRightsPatch } from "@tentacle-tv/shared";
 import { useToast } from "../../../../contexts/ToastContext";
 import { needsConfirmation, refusalKey } from "./rightsModel";
 
 export interface RightsWriter {
   /** Écrit un correctif — après confirmation s'il engage (administration, désactivation). */
   write: (patch: UserRightsPatch) => void;
-  isPending: (field: UserRightKey) => boolean;
+  isPending: (field: UserRightsKey) => boolean;
   /** Le refus du serveur, en mots, sous le réglage qui l'a provoqué ; null sinon. */
-  errorFor: (field: UserRightKey) => string | null;
+  errorFor: (field: UserRightsKey) => string | null;
   confirming: UserRightsPatch | null;
   confirm: () => void;
   cancel: () => void;
@@ -30,19 +26,21 @@ export function useRightsWriter(userId: string): RightsWriter {
   const { t } = useTranslation("userRights");
   const { show } = useToast();
   const { mutateAsync } = useUpdateUserRights();
-  const [pending, setPending] = useState<ReadonlySet<UserRightKey>>(new Set());
-  const [error, setError] = useState<{ fields: UserRightKey[]; text: string } | null>(null);
+  const [pending, setPending] = useState<ReadonlySet<UserRightsKey>>(new Set());
+  const [error, setError] = useState<{ fields: UserRightsKey[]; text: string } | null>(null);
   const [confirming, setConfirming] = useState<UserRightsPatch | null>(null);
 
   const send = useCallback((patch: UserRightsPatch) => {
-    const fields = Object.keys(patch) as UserRightKey[];
+    const fields = Object.keys(patch) as UserRightsKey[];
     setPending((current) => new Set([...current, ...fields]));
     setError((current) => (current && current.fields.some((field) => fields.includes(field)) ? null : current));
     mutateAsync({ userId, patch }).then(
       () => show("success", t("saved")),
       (reason: unknown) => {
-        const text = t(refusalKey(userRightsRefusalOf(reason)));
-        setError({ fields, text });
+        const refusal = userRightsRefusalOf(reason);
+        const text = t(refusalKey(refusal?.error ?? null));
+        // `invalid_value` nomme les champs refusés : l'erreur va sous eux.
+        setError({ fields: refusal?.fields?.length ? refusal.fields : fields, text });
         show("error", text);
       },
     ).finally(() => {
@@ -51,15 +49,15 @@ export function useRightsWriter(userId: string): RightsWriter {
   }, [mutateAsync, userId, show, t]);
 
   const write = useCallback((patch: UserRightsPatch) => {
-    const engaging = Object.entries(patch).some(([field, value]) => needsConfirmation(field as UserRightKey, value));
+    const engaging = Object.entries(patch).some(([field, value]) => needsConfirmation(field as UserRightsKey, value));
     if (engaging) setConfirming(patch);
     else send(patch);
   }, [send]);
 
   return useMemo(() => ({
     write,
-    isPending: (field: UserRightKey) => pending.has(field),
-    errorFor: (field: UserRightKey) => (error?.fields.includes(field) ? error.text : null),
+    isPending: (field: UserRightsKey) => pending.has(field),
+    errorFor: (field: UserRightsKey) => (error?.fields.includes(field) ? error.text : null),
     confirming,
     confirm: () => {
       if (confirming) send(confirming);

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { SyncPlayAccess, UserRights, UserRightsOptions } from "@tentacle-tv/api-client";
+import { SYNC_PLAY_ACCESS, type UserRights, type UserRightsOptions } from "@tentacle-tv/shared";
 import { bitsFromMbps, mbpsFromBits, toggleInList } from "../../../parental/parentalModel";
 import { CheckList, NumberRight, SelectRight, ToggleRight } from "./RightRows";
 import { MANAGEMENT_FLAGS, lockedForSelf } from "./rightsModel";
@@ -29,8 +29,6 @@ export function AccountBody({ rights, writer, isSelf }: GroupProps) {
   );
 }
 
-const SYNC_PLAY: readonly SyncPlayAccess[] = ["CreateAndJoinGroups", "JoinGroups", "None"];
-
 /** La lecture : permise ou non, ce que le serveur a le droit de convertir, le débit hors de la maison. */
 export function PlaybackBody({ rights, writer }: GroupProps) {
   const { t } = useTranslation("userRights");
@@ -53,7 +51,7 @@ export function PlaybackBody({ rights, writer }: GroupProps) {
       <SelectRight
         field="syncPlayAccess"
         value={rights.syncPlayAccess}
-        choices={SYNC_PLAY.map((value) => ({ value, label: t(`values.syncPlay.${value}`) }))}
+        choices={SYNC_PLAY_ACCESS.map((value) => ({ value, label: t(`values.syncPlay.${value}`) }))}
         writer={writer}
       />
     </>

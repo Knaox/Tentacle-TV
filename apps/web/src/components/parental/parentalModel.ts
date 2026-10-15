@@ -1,4 +1,6 @@
-import type { AccessSchedule, ParentalRatingOption, ScheduleDay } from "@tentacle-tv/api-client";
+import type { AccessScheduleDay, AccessScheduleDto, UserRightsOptions } from "@tentacle-tv/shared";
+
+type ParentalRatingOption = UserRightsOptions["parentalRatings"][number];
 
 /**
  * Les règles PURES du contrôle parental, communes à la fiche d'un compte
@@ -82,12 +84,12 @@ export function tagSuggestions(known: readonly string[], list: readonly string[]
 }
 
 /** Ajoute ou retire un identifiant d'une liste, sans doublon, en gardant l'ordre. */
-export function toggleInList(list: readonly string[], id: string, on: boolean): string[] {
+export function toggleInList<T extends string>(list: readonly T[], id: T, on: boolean): T[] {
   const without = list.filter((existing) => existing !== id);
   return on ? [...without, id] : without;
 }
 
-export const SCHEDULE_DAYS: readonly ScheduleDay[] = [
+export const SCHEDULE_DAYS: readonly AccessScheduleDay[] = [
   "Everyday", "Weekday", "Weekend", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
 ];
 
@@ -101,21 +103,21 @@ export function formatHour(hour: number): string {
   return `${String(whole).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
-export function scheduleIsValid(schedule: AccessSchedule): boolean {
+export function scheduleIsValid(schedule: AccessScheduleDto): boolean {
   return schedule.startHour >= 0 && schedule.endHour <= 24 && schedule.startHour < schedule.endHour;
 }
 
-export function sameSchedule(a: AccessSchedule, b: AccessSchedule): boolean {
+export function sameSchedule(a: AccessScheduleDto, b: AccessScheduleDto): boolean {
   return a.dayOfWeek === b.dayOfWeek && a.startHour === b.startHour && a.endHour === b.endHour;
 }
 
 /** Ajoute une plage valide et nouvelle ; sinon la liste inchangée. */
-export function addSchedule(list: readonly AccessSchedule[], schedule: AccessSchedule): AccessSchedule[] {
+export function addSchedule(list: readonly AccessScheduleDto[], schedule: AccessScheduleDto): AccessScheduleDto[] {
   if (!scheduleIsValid(schedule) || list.some((existing) => sameSchedule(existing, schedule))) return [...list];
   return [...list, schedule];
 }
 
-export function removeSchedule(list: readonly AccessSchedule[], index: number): AccessSchedule[] {
+export function removeSchedule(list: readonly AccessScheduleDto[], index: number): AccessScheduleDto[] {
   return list.filter((_, at) => at !== index);
 }
 

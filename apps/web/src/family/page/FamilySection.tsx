@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { UserPlus, Users } from "lucide-react";
 import { SettingsSection } from "@tentacle-tv/ui";
 import {
-  FAMILY_PARENTAL_CAPABILITY,
   useCancelFamilyInvitation,
   useDeleteFamilyGuest,
   useRemoveFamilyMember,
@@ -69,7 +68,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
     openGallery({ kind: "guest", userId: profile.userId, name: profile.name, imageTag: profile.imageTag, through: "session" });
   }, [openGallery]);
   // Le contrôle parental d'un invité : serveur 1.30.0, session personnelle.
-  const parentalControls = useServerCapability(FAMILY_PARENTAL_CAPABILITY);
+  const parentalControls = useServerCapability("family.parentalControls");
   const [parentalGuest, setParentalGuest] = useState<FamilyProfileDto | null>(null);
   const deleteGuest = useDeleteFamilyGuest();
   const cancelInvite = useCancelFamilyInvitation();

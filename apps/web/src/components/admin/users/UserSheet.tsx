@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
-import { USER_RIGHTS_CAPABILITY, useServerCapability, type PairedDevice } from "@tentacle-tv/api-client";
+import { useServerCapability, type PairedDevice } from "@tentacle-tv/api-client";
 import { Sheet } from "../../ui/Sheet";
 import { UserAvatar } from "../kit";
 import { useIsMobile } from "../../../hooks/useIsMobile";
@@ -39,7 +39,7 @@ const DESKTOP_WIDTH_RIGHTS = 500;
 export function UserSheet({ user, isSelf, devices, devicesFailed, now, onClose }: UserSheetProps) {
   const isMobile = useIsMobile();
   const titleId = useId();
-  const allRights = useServerCapability(USER_RIGHTS_CAPABILITY);
+  const allRights = useServerCapability("admin.userRights");
   // Le dernier compte ouvert reste affiché pendant que la fiche se referme :
   // sans lui, son contenu disparaîtrait au premier instant du glissement.
   const [shown, setShown] = useState(user);

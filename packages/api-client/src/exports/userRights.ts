@@ -1,6 +1,6 @@
 // Les droits des comptes (administration, web et bureau) et le contrôle
-// parental des invités de la Famille. Contrat : docs/DROITS-UTILISATEURS.md.
-export * from "../userRights/userRightsTypes";
+// parental des invités de la Famille. Contrat : @tentacle-tv/shared › userRights/
+// et family/familyParental.ts (docs/DROITS-UTILISATEURS.md).
 export {
   fetchUserRightsOptions, fetchUserRights, patchUserRights, fetchFamilyParentalOptions, setFamilyGuestParental,
   userRightsRefusalOf,

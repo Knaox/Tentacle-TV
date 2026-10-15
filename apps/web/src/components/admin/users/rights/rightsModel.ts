@@ -1,4 +1,4 @@
-import type { UserRightKey, UserRights, UserRightsGroup, UserRightsRefusal } from "@tentacle-tv/api-client";
+import { USER_RIGHTS_GROUPS, type UserRights, type UserRightsGroup, type UserRightsKey, type UserRightsRefusal } from "@tentacle-tv/shared";
 
 /**
  * Les règles PURES de la fiche des droits : l'ordre des rubriques, le résumé
@@ -6,7 +6,8 @@ import type { UserRightKey, UserRights, UserRightsGroup, UserRightsRefusal } fro
  * refuse d'offrir d'avance — le serveur revérifie tout.
  */
 
-export const RIGHTS_GROUPS: readonly UserRightsGroup[] = ["account", "libraries", "parental", "playback", "offline", "management"];
+/** L'ordre du contrat (`USER_RIGHTS_GROUPS`) : compte, bibliothèques, contrôle parental, lecture, hors ligne, gestion. */
+export const RIGHTS_GROUPS: readonly UserRightsGroup[] = USER_RIGHTS_GROUPS;
 
 /** Un fragment du résumé : une clé de l'espace `adminUserRights` et ses valeurs. */
 export interface SummaryPart {
@@ -25,7 +26,7 @@ export const MANAGEMENT_FLAGS = [
   "enableContentDeletion", "enableCollectionManagement", "enableSubtitleManagement", "enableLyricManagement",
   "enableLiveTvAccess", "enableLiveTvManagement", "enableRemoteControlOfOtherUsers", "enableSharedDeviceControl",
   "enablePublicSharing",
-] as const satisfies readonly UserRightKey[];
+] as const satisfies readonly UserRightsKey[];
 
 /** Vrai dès qu'une restriction de contenu est posée (même règle que le serveur, § 5). */
 export function hasParentalRestriction(rights: UserRights): boolean {
@@ -88,7 +89,7 @@ export function groupSummary(group: UserRightsGroup, rights: UserRights, context
  * serveur) : se retirer l'administration, se désactiver. La fiche ne l'offre
  * pas d'avance plutôt que d'attendre le refus.
  */
-export function lockedForSelf(field: UserRightKey, isSelf: boolean, rights: UserRights): boolean {
+export function lockedForSelf(field: UserRightsKey, isSelf: boolean, rights: UserRights): boolean {
   if (!isSelf) return false;
   if (field === "isAdministrator") return rights.isAdministrator;
   if (field === "isDisabled") return !rights.isDisabled;
@@ -96,7 +97,7 @@ export function lockedForSelf(field: UserRightKey, isSelf: boolean, rights: User
 }
 
 /** Les gestes qui demandent une confirmation : ils changent qui entre et ce qu'il peut tout faire. */
-export function needsConfirmation(field: UserRightKey, next: unknown): boolean {
+export function needsConfirmation(field: UserRightsKey, next: unknown): boolean {
   return (field === "isAdministrator" || field === "isDisabled") && next === true;
 }
 

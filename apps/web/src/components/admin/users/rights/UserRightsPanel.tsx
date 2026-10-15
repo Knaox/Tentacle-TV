@@ -1,11 +1,7 @@
 import { useCallback, useMemo, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  useUserRights,
-  useUserRightsOptions,
-  userRightsRefusalOf,
-  type UserRightsGroup,
-} from "@tentacle-tv/api-client";
+import { useUserRights, useUserRightsOptions, userRightsRefusalOf } from "@tentacle-tv/api-client";
+import type { UserRightsGroup } from "@tentacle-tv/shared";
 import { ConfirmDialog } from "../../../ui/ConfirmDialog";
 import { currentRating, ratingChoices, ratingLabel } from "../../../parental/parentalModel";
 import { SMALL_BUTTON } from "../../../parental/fieldStyles";
@@ -70,7 +66,7 @@ export function UserRightsPanel({ userId, name, isSelf }: UserRightsPanelProps) 
       ) : !rights ? (
         <div className={`${SHEET_LIST} flex items-center gap-3 px-4 py-3`}>
           <p role="alert" className="min-w-0 flex-1 text-sm text-content-secondary">
-            {userRightsRefusalOf(rightsQuery.error) ? t(refusalKey(userRightsRefusalOf(rightsQuery.error))) : t("loadError")}
+            {userRightsRefusalOf(rightsQuery.error) ? t(refusalKey(userRightsRefusalOf(rightsQuery.error)?.error ?? null)) : t("loadError")}
           </p>
           <button type="button" onClick={() => void rightsQuery.refetch()} className={SMALL_BUTTON}>{t("retry")}</button>
         </div>

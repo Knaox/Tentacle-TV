@@ -1,14 +1,14 @@
 import { memo, useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
-import type { ParentalRatingOption } from "@tentacle-tv/api-client";
+import type { UnratedItemType, UserRightsOptions } from "@tentacle-tv/shared";
 import { CHECKBOX, FIELD_HINT, FIELD_LABEL, SELECT } from "./fieldStyles";
 import { currentRating, ratingChoices, ratingLabel, toggleInList } from "./parentalModel";
 
 const NONE = "none";
 
 interface RatingSelectProps {
-  ratings: readonly ParentalRatingOption[];
+  ratings: UserRightsOptions["parentalRatings"];
   score: number | null;
   subScore: number | null;
   disabled?: boolean;
@@ -55,10 +55,10 @@ export const RatingSelect = memo(function RatingSelect({ ratings, score, subScor
 });
 
 interface UnratedTypesFieldProps {
-  types: readonly string[];
-  value: readonly string[];
+  types: readonly UnratedItemType[];
+  value: readonly UnratedItemType[];
   disabled?: boolean;
-  onChange: (next: string[]) => void;
+  onChange: (next: UnratedItemType[]) => void;
 }
 
 /** Les types bloqués quand un titre n'a pas de note : une case par type que Jellyfin connaît. */

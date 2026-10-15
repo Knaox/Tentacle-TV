@@ -7,7 +7,7 @@ import {
   patchUserRights,
   setFamilyGuestParental,
 } from "./userRightsApi";
-import type { UserRightsDto } from "./userRightsTypes";
+import type { UserRightsDto } from "@tentacle-tv/shared";
 
 /**
  * Les droits des comptes en crochets react-query (web et bureau : rien sur le
@@ -117,7 +117,8 @@ export function useFamilyParentalOptions(options: { enabled?: boolean } = {}) {
   });
 }
 
-/** Pose le contrôle parental d'un invité ; la Famille se relit (son état voyage avec l'invité). */
+/** Pose le contrôle parental d'un invité ; la Famille se relit (son état voyage avec l'invité,
+ *  `parental` et `parentalCeiling` du profil). */
 export function useSetFamilyGuestParental() {
   const qc = useQueryClient();
   return useMutation({

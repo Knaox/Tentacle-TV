@@ -19,7 +19,6 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: "fr" } }),
 }));
 vi.mock("@tentacle-tv/api-client", () => ({
-  USER_RIGHTS_CAPABILITY: "admin.userRights",
   useServerCapability: () => h.capability,
   useUserRights: () => {
     h.rightsCalls += 1;
@@ -27,7 +26,7 @@ vi.mock("@tentacle-tv/api-client", () => ({
   },
   useUserRightsOptions: () => ({ data: { libraries: [], channels: [], parentalRatings: [], unratedItemTypes: [], knownTags: [] }, isError: false }),
   useUpdateUserRights: () => ({ mutateAsync: async () => undefined }),
-  userRightsRefusalOf: (error: unknown) => (error as { code?: string } | null)?.code ?? null,
+  userRightsRefusalOf: (error: unknown) => (error as { code?: string } | null)?.code ? { error: (error as { code: string }).code } : null,
 }));
 vi.mock("../../../../contexts/ToastContext", () => ({ useToast: () => ({ show: () => undefined }) }));
 vi.mock("../../../../hooks/useIsMobile", () => ({ useIsMobile: () => false }));

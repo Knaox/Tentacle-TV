@@ -14,7 +14,6 @@ vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => k
 vi.mock("@tentacle-tv/api-client", () => {
   const mutation = () => ({ mutate: () => undefined, isPending: false });
   return {
-    FAMILY_PARENTAL_CAPABILITY: "family.parentalControls",
     useServerCapability: (key: string) => (key === "family.parentalControls" ? h.parental : false),
     useUserId: () => h.viewer,
     useCancelFamilyInvitation: mutation,

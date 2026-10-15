@@ -1,7 +1,7 @@
 import { memo, useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Clock, Plus, X } from "lucide-react";
-import type { AccessSchedule, ScheduleDay } from "@tentacle-tv/api-client";
+import type { AccessScheduleDay, AccessScheduleDto } from "@tentacle-tv/shared";
 import { CHIP_REMOVE, FIELD_HINT, FIELD_LABEL, SELECT, SMALL_BUTTON } from "./fieldStyles";
 import {
   SCHEDULE_DAYS,
@@ -14,12 +14,12 @@ import {
 } from "./parentalModel";
 
 interface ScheduleListFieldProps {
-  value: readonly AccessSchedule[];
+  value: readonly AccessScheduleDto[];
   disabled?: boolean;
-  onChange: (next: AccessSchedule[]) => void;
+  onChange: (next: AccessScheduleDto[]) => void;
 }
 
-const DEFAULT_DRAFT: AccessSchedule = { dayOfWeek: "Everyday", startHour: 8, endHour: 21 };
+const DEFAULT_DRAFT: AccessScheduleDto = { dayOfWeek: "Everyday", startHour: 8, endHour: 21 };
 
 /**
  * Les plages horaires PERMISES : une ligne par plage, retirée d'une croix ;
@@ -30,10 +30,10 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
   const { t } = useTranslation("userRights");
   const titleId = useId();
   const errorId = useId();
-  const [draft, setDraft] = useState<AccessSchedule>(DEFAULT_DRAFT);
+  const [draft, setDraft] = useState<AccessScheduleDto>(DEFAULT_DRAFT);
   const valid = scheduleIsValid(draft);
   const duplicate = value.some((existing) => sameSchedule(existing, draft));
-  const dayName = (day: ScheduleDay) => t(`parental.days.${day}`);
+  const dayName = (day: AccessScheduleDay) => t(`parental.days.${day}`);
 
   return (
     <fieldset aria-labelledby={titleId}>
@@ -69,7 +69,7 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
       <div className="mt-2 grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] items-end gap-2">
         <Labelled label={t("parental.scheduleDay")}>
           <select value={draft.dayOfWeek} disabled={disabled} className={SELECT}
-            onChange={(event) => setDraft({ ...draft, dayOfWeek: event.target.value as ScheduleDay })}>
+            onChange={(event) => setDraft({ ...draft, dayOfWeek: event.target.value as AccessScheduleDay })}>
             {SCHEDULE_DAYS.map((day) => <option key={day} value={day}>{dayName(day)}</option>)}
           </select>
         </Labelled>

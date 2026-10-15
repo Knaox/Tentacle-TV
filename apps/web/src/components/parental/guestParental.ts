@@ -1,9 +1,9 @@
-import type {
-  FamilyGuestParentalFields,
-  GuestParentalControls,
-  ParentalCeiling,
-} from "@tentacle-tv/api-client";
-import type { FamilyProfileDto } from "@tentacle-tv/shared";
+import {
+  GUEST_PARENTAL_NONE,
+  type FamilyProfileDto,
+  type GuestParentalCeiling,
+  type GuestParentalControls,
+} from "@tentacle-tv/shared";
 
 /**
  * Le contrôle parental d'un invité de la Famille, lu dans son profil — sans
@@ -12,23 +12,16 @@ import type { FamilyProfileDto } from "@tentacle-tv/shared";
  * restrictions du créateur (`parentalCeiling`).
  */
 
-export const EMPTY_GUEST_PARENTAL: GuestParentalControls = {
-  maxParentalRating: null,
-  maxParentalSubRating: null,
-  blockUnratedItems: [],
-  blockedTags: [],
-  accessSchedules: [],
-};
+export const EMPTY_GUEST_PARENTAL: GuestParentalControls = GUEST_PARENTAL_NONE;
 
-type ProfileWithParental = FamilyProfileDto & FamilyGuestParentalFields;
-
+/** La valeur voulue ; absente (serveur d'avant, ou appelant qui ne la règle pas) : aucune. */
 export function guestParentalOf(profile: FamilyProfileDto): GuestParentalControls {
-  const parental = (profile as ProfileWithParental).parental;
-  return parental ? { ...EMPTY_GUEST_PARENTAL, ...parental } : EMPTY_GUEST_PARENTAL;
+  return profile.parental ? { ...GUEST_PARENTAL_NONE, ...profile.parental } : GUEST_PARENTAL_NONE;
 }
 
-export function guestCeilingOf(profile: FamilyProfileDto): ParentalCeiling | null {
-  return (profile as ProfileWithParental).parentalCeiling ?? null;
+/** Le plafond du créateur ; null si absent ou si Jellyfin n'a pas répondu. */
+export function guestCeilingOf(profile: FamilyProfileDto): GuestParentalCeiling | null {
+  return profile.parentalCeiling ?? null;
 }
 
 /** Vrai dès que le créateur a posé quelque chose : note, type non classé, étiquette ou plage. */
