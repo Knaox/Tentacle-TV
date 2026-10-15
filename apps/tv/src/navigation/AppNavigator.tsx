@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { tvSessionMode, type SessionStorage } from "@tentacle-tv/tv-core";
+import { routeAfterSession, tvSessionMode, type SessionStorage } from "@tentacle-tv/tv-core";
 import { TV_MOTION } from "@tentacle-tv/theme";
 import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
@@ -13,6 +13,8 @@ import { BackScope } from "../redesignWiring/back/BackScope";
 import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { ProfilesScreen } from "../screens/ProfilesScreen";
+import { RailSetupScreen } from "../screens/RailSetupScreen";
+import { railSetupPending } from "../components/nav/railPinning";
 import { effectOff } from "../redesign/render/measuredEffects";
 import { RENDER } from "../redesign/render/renderProfile";
 
@@ -70,11 +72,15 @@ export function preloadCoreScreens() {
  * actif → toujours le jumelage (sa langue se choisit sur son accueil ; plus
  * de conditions d'utilisation à accepter, sur aucun des deux téléviseurs).
  * Apple TV passée aux profils (Famille), aucun profil ouvert : « Qui regarde ? ».
+ * Une session dont la préconfiguration de la barre reste à faire sur cet
+ * appareil (une installation d'avant, un profil retenu) : la page d'abord,
+ * jamais l'accueil qui clignote avant elle (`railSetupPending`, lecture
+ * synchrone du socle).
  * Lue aussi par le retour après un changement du mode Lite (`App.tsx`).
  */
-export function initialRouteOf(storage: SessionStorage): "Profiles" | "Home" | "PairCode" {
+export function initialRouteOf(storage: SessionStorage): "Profiles" | "Home" | "PairCode" | "RailSetup" {
   if (tvSessionMode(storage) === "choosing") return "Profiles";
-  return storage.getItem("tentacle_token") ? "Home" : "PairCode";
+  return storage.getItem("tentacle_token") ? routeAfterSession(railSetupPending()) : "PairCode";
 }
 
 export function AppNavigator() {
@@ -116,6 +122,8 @@ export function AppNavigator() {
       <Stack.Screen name="Profiles" component={ProfilesScreen} initialParams={{ intent: "launch" }} options={{ animation: "none" }} />
       <Stack.Screen name="ManageProfiles" component={ManageProfilesScreen} />
       <Stack.Screen name="ProfilePin" component={ProfilePinScreen} />
+      {/* La préconfiguration de la barre : avant l'accueil, une fois par profil et par appareil. */}
+      <Stack.Screen name="RailSetup" component={RailSetupScreen} initialParams={{ origin: "session" }} />
       {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
           onglets) → nav snappy ET pas de course animation/focus qui empêchait
           l'auto-collapse du rail au retour sur l'Accueil (pop). */}

@@ -10,6 +10,10 @@ export type RootStackParamList = {
   ManageProfiles: { origin: "profiles" | "settings" };
   /** SON code PIN (Réglages › Compte) : créer, changer, retirer. */
   ProfilePin: { mode: "create" | "change" | "remove" };
+  /** La préconfiguration de la barre : `session` — avant l'accueil (jumelage,
+   *  profil ouvert, démarrage) ; `settings` — l'étape du propriétaire seule,
+   *  depuis Réglages › Navigation. */
+  RailSetup: { origin: "session" | "settings" } | undefined;
   /** `entrance` : l'arrivée depuis « Qui regarde ? » — l'accueil fond par-dessus. */
   Home: { entrance?: boolean } | undefined;
   /** « Pour vous » : recommandations de la bibliothèque seule. */

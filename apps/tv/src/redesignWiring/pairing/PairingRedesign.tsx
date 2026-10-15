@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { pairingBackAction, pairingEntryKey, type PairingBackAction } from "@tentacle-tv/tv-core";
+import { pairingBackAction, pairingEntryKey, routeAfterSession, type PairingBackAction } from "@tentacle-tv/tv-core";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../navigation/types";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
@@ -15,6 +15,7 @@ import { useRelayPairingCode, useServerPairingCode } from "../../hooks/usePairin
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
 import { useBackLayer } from "../back/BackScope";
 import { enrollIfAnnounced, openOnLaunch } from "../../auth/profileEnrollment";
+import { railSetupPending } from "../../components/nav/railPinning";
 import { toPairingStep } from "./pairingModel";
 import { useHiddenKeyboard } from "./useHiddenKeyboard";
 
@@ -75,7 +76,8 @@ export function PairingRedesign({ navigation }: Props) {
       const context = { jfClient: client, storage, queryClient };
       // Une session de profil ouverte d'emblée : l'accueil ; sinon « Qui regarde ? » s'est déjà ouvert.
       if ((await enrollIfAnnounced(context)) === "enrolled" && !(await openOnLaunch(context))) return;
-      navigation.replace("Home");
+      // La préconfiguration de la barre d'abord, quand elle est due pour ce compte sur cet appareil.
+      navigation.replace(routeAfterSession(railSetupPending()));
     })();
   }, [navigation, client, storage, queryClient]);
   const flow = usePairingFlow(onPaired, FLOW_OPTIONS);
