@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
@@ -21,6 +21,12 @@ interface FloatingLayerProps extends FloatingOptions {
   style?: CSSProperties;
   role?: string;
   ariaLabel?: string;
+  /** L'identifiant du titre qui nomme le panneau (à la place d'`ariaLabel`). */
+  labelledBy?: string;
+  /** -1 : le panneau reçoit le focus à l'ouverture (dialogue). */
+  tabIndex?: number;
+  /** Autres attributs du panneau (id, aria-describedby…). */
+  attrs?: Pick<HTMLAttributes<HTMLDivElement>, "id" | "aria-describedby" | "aria-modal">;
   /** Largeur maximale voulue par l'appelant ; la fenêtre peut borner plus bas. */
   maxWidth?: number;
   /** Le panneau lui-même, pour qui doit y lire (focus, défilement). */
@@ -35,7 +41,7 @@ interface FloatingLayerProps extends FloatingOptions {
  * besoin. z-[60] : au-dessus de la barre (40), sous les modales (100).
  */
 export function FloatingLayer({
-  open, anchor, onDismiss, children, className, style, role, ariaLabel, panelRef, maxWidth, ...options
+  open, anchor, onDismiss, children, className, style, role, ariaLabel, labelledBy, tabIndex, attrs, panelRef, maxWidth, ...options
 }: FloatingLayerProps) {
   const ownRef = useRef<HTMLDivElement | null>(null);
   const ref = panelRef ?? ownRef;
@@ -71,18 +77,22 @@ export function FloatingLayer({
     <AnimatePresence>
       {open && (
         <motion.div
+          {...attrs}
           ref={ref}
           role={role}
           aria-label={ariaLabel}
+          aria-labelledby={labelledBy}
+          tabIndex={tabIndex}
           className={`fixed z-[60] ${className ?? ""}`}
           style={{
             ...style,
+            // Avant la première mesure : hors champ plutôt que caché — un panneau
+            // caché refuserait le focus qu'on lui donne au montage.
             top: placement?.top ?? 0,
-            left: placement?.left ?? 0,
+            left: placement?.left ?? -10_000,
             maxHeight: placement?.maxHeight,
             maxWidth: placement ? Math.min(placement.maxWidth, maxWidth ?? Infinity) : maxWidth,
             transformOrigin: placement?.transformOrigin,
-            visibility: placement ? undefined : "hidden",
           }}
           variants={VARIANTS}
           initial="hidden"

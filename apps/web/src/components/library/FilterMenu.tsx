@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { AnimatePresence, motion } from "framer-motion";
-import { duration, easeOut, exitDuration } from "../../theme/motion";
+import { FloatingLayer } from "../floating/FloatingLayer";
 
 interface FilterMenuProps {
   label: string;
@@ -53,20 +52,6 @@ export function FilterMenu({
     setOpen(false);
     triggerRef.current?.focus();
   };
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
 
   return (
     <div ref={rootRef} className="relative">
@@ -122,36 +107,34 @@ export function FilterMenu({
         )}
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: exitDuration(duration.fast) } }}
-            transition={{ duration: duration.fast, ease: easeOut }}
-            className={`absolute top-full z-40 mt-2 overflow-hidden ${align === "right" ? "right-0 origin-top-right" : "left-0 origin-top-left"} rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]`}
-            style={{ width, boxShadow: "var(--shadow-dropdown)" }}
-          >
-            {closeButton && (
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="truncate text-sm font-semibold text-content-primary">{label}</span>
-                <button
-                  type="button"
-                  data-menu-close
-                  onClick={closeFromPanel}
-                  aria-label={t("close")}
-                  className="flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-content-tertiary transition-colors hover:text-content-primary"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-                    <path strokeLinecap="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-            {children}
-          </motion.div>
+      {/* Le calque commun : une pastille près du bord droit ne pousse plus son panneau hors de la fenêtre. */}
+      <FloatingLayer
+        open={open}
+        anchor={rootRef}
+        onDismiss={() => setOpen(false)}
+        side="bottom"
+        align={align === "right" ? "end" : "start"}
+        className="overflow-y-auto overscroll-contain rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]"
+        style={{ width, boxShadow: "var(--shadow-dropdown)" }}
+      >
+        {closeButton && (
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span className="truncate text-sm font-semibold text-content-primary">{label}</span>
+            <button
+              type="button"
+              data-menu-close
+              onClick={closeFromPanel}
+              aria-label={t("close")}
+              className="flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-content-tertiary transition-colors hover:text-content-primary"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                <path strokeLinecap="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         )}
-      </AnimatePresence>
+        {children}
+      </FloatingLayer>
     </div>
   );
 }
