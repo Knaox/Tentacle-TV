@@ -140,6 +140,10 @@ export const SERVER_CAPABILITIES = {
    *  et leur défaut (`/api/admin/family/creation`) ; `FamilyAccountDto.creation` ; refus
    *  `family.create_family_denied` / `family.create_guests_denied`. */
   "family.creationRights": "1.30.0",
+  /** Gérer la Famille depuis une SESSION DE PROFIL, TV ou bureau : le propriétaire ou un membre,
+   *  avec les droits de son rôle, derrière SON code PIN — un code posé depuis sa session personnelle
+   *  (`family/familyCallers.ts`). Sans elle, le bureau ne montre rien de la Famille à un profil. */
+  "family.profileManage": "1.30.0",
   // ── Lot « droits 2 » : lecture et Watch Together (docs/DROITS-UTILISATEURS.md § 9.2) ──
   /** L'accès du compte à Watch Together, tiré de `SyncPlayAccess` de sa politique Jellyfin
    *  (`GET /api/watch-together/access` → `full | joinOnly | none`) : `none` ne voit plus rien de

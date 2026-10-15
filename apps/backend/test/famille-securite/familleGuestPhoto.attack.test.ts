@@ -60,8 +60,8 @@ const inviteAccept = async (from: string, userId: string, token: string) => {
 };
 
 describe("la photo d'un invité : le contrat", () => {
-  it("une session PERSONNELLE seulement — ni TV, ni session de profil", () => {
-    expect(FAMILY_ROUTES.setGuestPhoto.callers).toEqual(["personal"]);
+  it("une session personnelle, ou la gestion ouverte d'un profil par SON code (1.30.0) — jamais une session de profil quelconque", () => {
+    expect(FAMILY_ROUTES.setGuestPhoto.callers).toEqual(["personal", "ownerProfile", "memberProfile"]);
   });
 });
 

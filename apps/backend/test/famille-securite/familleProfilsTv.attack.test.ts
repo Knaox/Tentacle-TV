@@ -126,13 +126,17 @@ describe("SEC-F-16/17/30 : le PIN est haché/compté par le serveur, jamais rend
   });
 });
 
-describe("SEC-F-18 : « Gérer les profils » sur la TV exige le PIN du propriétaire", () => {
-  it("fermé sans PIN validé ; un profil d'invité n'y accède jamais", async () => {
+describe("SEC-F-18 : « Gérer les profils » sur la TV exige le PIN de CE profil", () => {
+  it("jamais sans PIN ; fermé tant que SON code n'a pas été donné ; un profil d'invité n'y accède jamais", async () => {
     const salon = await damiensTv();
+    // Sans code (1.30.0) : jamais, même pour le compte qui a jumelé la TV.
+    const bare = (await openProfile(app, salon, { profileId: IDS.damien })).json().token;
+    expect((await get("/api/family", bare)).json().code).toBe("family.manage_pin_required");
     await setPin(tokens.damien, "4242");
-    await addGuest(tokens.damien, "Zoé"); // devient candidat au focus, mais on garde la gestion fermée
-    // Le propriétaire a ouvert son profil avec son PIN, mais « Gérer » reste verrouillé.
-    const owner = (await openProfile(app, salon, { profileId: IDS.damien, pin: "4242" })).json().token;
+    await addGuest(tokens.damien, "Zoé");
+    // « Rester sur ce profil » : la session suivante s'ouvre sans code, la gestion reste fermée.
+    await openProfile(app, salon, { profileId: IDS.damien, pin: "4242", remember: true });
+    const owner = (await openProfile(app, salon, { profileId: IDS.damien })).json().token;
     expect((await get("/api/family", owner)).json().code).toBe("family.manage_locked");
     const unlock = (pin: string) => app.inject({ method: "POST", url: "/api/family/tv/manage/unlock", headers: bearer(owner), payload: { pin } });
     expect((await unlock("9999")).json().code).toBe("family.pin_invalid");

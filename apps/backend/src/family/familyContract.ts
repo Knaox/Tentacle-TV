@@ -11,7 +11,7 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). On modifie ICI, on recopie
  * là-bas :
  *
- *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,TvContract,PickerContract,Protocol,Routes,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,TvContract,PickerContract,Protocol,Routes,Callers,Rules,Rights}.ts apps/backend/src/family/
  *
  * UNE famille par compte, PARTAGÉE par tous ses membres (v2). Trois rôles :
  * - le PROPRIÉTAIRE l'a créée : il invite, annule une invitation, retire un
@@ -230,6 +230,9 @@ export interface FamilyAccountDto {
   /** La session de la requête peut faire les gestes PERSONNELS (accepter,
    *  refuser, quitter, son PIN, dissoudre) : web, bureau, mobile seulement. */
   personalSession: boolean;
+  /** 1.30.0 (`family.profileManage`) : une SESSION DE PROFIL (TV, bureau) qui gère, la gestion
+   *  ouverte par SON code — les gestes de son rôle, sans les gestes personnels. Absent : non. */
+  managing?: boolean;
   /** 1.30.0 (`family.creationRights`) : ce que l'administration permet à CE compte de
    *  créer, interrupteurs compris. Absent : serveur d'avant, rien ne s'y garde. */
   creation?: FamilyCreationAllowed;

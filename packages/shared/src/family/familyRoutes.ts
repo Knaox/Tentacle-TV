@@ -6,34 +6,19 @@
  * MIROIR : `apps/backend/src/family/familyRoutes.ts`, octet pour octet (voir
  * l'en-tête de `familyContract.ts`).
  *
- * # Les appelants
- *
- * - `personal` : une session PERSONNELLE — le jeton Jellyfin du web, du
- *   bureau, du mobile (cookie ou `Bearer`). Jamais un jeton d'appareil jumelé,
- *   jamais une session « voir en tant que ».
- * - `ownerTv` : la session de profil du PROPRIÉTAIRE de la famille, sur une
- *   TV de la famille, « Gérer les profils » ouvert par SON PIN
- *   (`tvManageUnlock` ; sans PIN, ouvert d'office).
- * - `memberTv` (v2) : la même chose pour un MEMBRE — ses droits seulement :
- *   voir la famille, créer et supprimer SES invités s'il en a le droit.
- * - `tvProfile` : une session de profil d'une TV, quel qu'en soit le profil.
- * - `tvPairing` : le jeton de jumelage d'une TV passée aux profils — il ne
- *   sert QU'À lister les profils et à en ouvrir un (et à se déjumeler).
- * - `tvLegacy` : le jeton d'appareil d'une TV d'avant les profils — seulement
- *   pour l'échange (`tvEnroll`).
- * - `admin` : un administrateur, en session personnelle.
- *
- * Une session de profil du BUREAU (`familyPickerContract.ts`) n'est AUCUN de
- * ces appelants : elle regarde, rien de la Famille ne lui répond (pas même
- * `tvProfile`, `ownerTv` ni `memberTv`). « Qui regarde ? » s'y joue par la
- * session personnelle de l'appareil (`picker*`).
+ * Les appelants (`FamilyCaller`) et la règle qui ouvre la gestion à une
+ * session de profil : `familyCallers.ts`. Une session de profil du BUREAU
+ * (`familyPickerContract.ts`) n'est que `desktopProfile` — ouvrir la gestion —
+ * ou, une fois celle-ci ouverte par SON code, `ownerProfile` / `memberProfile`.
+ * « Qui regarde ? » s'y joue par la session personnelle de l'appareil
+ * (`picker*`).
  *
  * L'acteur se déduit TOUJOURS du jeton, jamais d'un identifiant du corps ou
  * de la query. Aucune route ne prend d'identifiant de famille pour AGIR :
  * elles visent LA famille du porteur (il n'en a qu'une, propriétaire ou
  * membre). Le rôle se juge dans le service : un membre sur un geste de
- * propriétaire reçoit `family.not_owner`. Depuis sa TV, un membre voit la
- * famille et gère SES invités (`memberTv`) ; jamais le reste.
+ * propriétaire reçoit `family.not_owner`. Depuis un profil, chacun gère avec
+ * les droits de SON rôle (`memberProfile`), jamais plus.
  *
  * Deux routes existantes changent de sens pour la TV (docs/FAMILLE.md) :
  * `POST /api/pair/self/revoke` porté par le jeton de jumelage DÉJUMELLE la TV
@@ -41,7 +26,7 @@
  * ne ferme QUE cette session (« Changer de profil »).
  */
 
-export type FamilyCaller = "personal" | "ownerTv" | "memberTv" | "tvProfile" | "tvPairing" | "tvLegacy" | "admin";
+import type { FamilyCaller } from "./familyCallers";
 
 export type FamilyHttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
@@ -59,7 +44,7 @@ const HOUR = 3_600_000;
 
 export const FAMILY_ROUTES = {
   /** → `FamilyOverviewDto`. */
-  overview: { method: "GET", path: "/api/family", callers: ["personal", "ownerTv", "memberTv"] },
+  overview: { method: "GET", path: "/api/family", callers: ["personal", "ownerProfile", "memberProfile"] },
   /** `DissolveBody` → `{ dissolved: true }`. Le propriétaire seul : membres
    *  sortis, invités supprimés de Jellyfin (tous, quel que soit leur créateur). */
   dissolve: { method: "DELETE", path: "/api/family", callers: ["personal"], rateLimit: { max: 5, windowMs: HOUR } },
@@ -84,28 +69,28 @@ export const FAMILY_ROUTES = {
   createGuest: {
     method: "POST",
     path: "/api/family/guests",
-    callers: ["personal", "ownerTv", "memberTv"],
+    callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 10, windowMs: HOUR },
   },
   /** → `{ deleted: true }`. Le propriétaire : tout invité ; un membre : ceux
    *  qu'il a créés (`family.not_owner` sinon). Son compte Jellyfin est
    *  supprimé (sa lecture est perdue). */
-  deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerTv", "memberTv"] },
+  deleteGuest: { method: "DELETE", path: "/api/family/guests/:userId", callers: ["personal", "ownerProfile", "memberProfile"] },
   /** `SetGuestRightsBody` → `FamilyGuestRights`. Le propriétaire (et, 1.30.0, un parent) règle les
    *  droits d'un invité — « peut demander » : l'invité utilise les
    *  extensions à SON PROPRE NOM, personne n'agit pour un autre. */
   setGuestRights: {
     method: "PUT",
     path: "/api/family/guests/:userId/rights",
-    callers: ["personal", "ownerTv"],
+    callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
-  /** `SetPinBody` → `{ hasPin }`. Le PIN d'un invité : le propriétaire, ou le
-   *  membre qui l'a créé. */
+  /** `SetPinBody` → `{ hasPin }`. Le PIN d'un invité : le propriétaire (et un
+   *  parent), ou le membre qui l'a créé — depuis un profil aussi (1.30.0). */
   setGuestPin: {
     method: "PUT",
     path: "/api/family/guests/:userId/pin",
-    callers: ["personal"],
+    callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 10, windowMs: MINUTE },
   },
   /** `SetGuestPhotoBody` → `GuestPhotoDto`. La photo d'un invité (1.30.0) : mêmes droits que son
@@ -113,31 +98,31 @@ export const FAMILY_ROUTES = {
   setGuestPhoto: {
     method: "PUT",
     path: "/api/family/guests/:userId/photo",
-    callers: ["personal"],
+    callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 20, windowMs: MINUTE },
   },
   /** `SetGuestParentalBody` → `GuestParentalDto`. Le contrôle parental d'un invité
-   *  (1.30.0) : le propriétaire pour tout invité, le membre pour ceux qu'il a créés.
+   *  (1.30.0) : le propriétaire (et un parent) pour tout invité, le membre pour ceux qu'il a créés.
    *  L'invité reçoit l'intersection avec les restrictions de son créateur. Rend
    *  `GuestParentalDto` (`{ parental, parentalCeiling }`). */
   setGuestParental: {
     method: "PUT",
     path: "/api/family/guests/:userId/parental",
-    callers: ["personal"],
+    callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** → `FamilyParentalOptionsDto` (1.30.0) : la table des notes de Jellyfin, les types
    *  non classés, les étiquettes connues. Réservée à qui peut régler au moins un
    *  invité (le propriétaire, ou un membre qui en a créé) — `family.not_owner` sinon. */
-  parentalOptions: { method: "GET", path: "/api/family/parental/options", callers: ["personal"] },
+  parentalOptions: { method: "GET", path: "/api/family/parental/options", callers: ["personal", "ownerProfile", "memberProfile"] },
   /** → `{ removed: true }`. Le membre sort ; son compte Jellyfin n'est jamais touché. */
-  removeMember: { method: "DELETE", path: "/api/family/members/:userId", callers: ["personal", "ownerTv"] },
+  removeMember: { method: "DELETE", path: "/api/family/members/:userId", callers: ["personal", "ownerProfile"] },
   /** `SetMemberRightsBody` → `FamilyMemberRights`. Le propriétaire règle les
    *  droits d'un membre (v2). Retirer un droit ne supprime rien. */
   setMemberRights: {
     method: "PUT",
     path: "/api/family/members/:userId/rights",
-    callers: ["personal", "ownerTv"],
+    callers: ["personal", "ownerProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** `SetMemberRoleBody` → `MemberRoleDto` (1.30.0, `family.roles`). Le propriétaire SEUL nomme un
@@ -145,7 +130,7 @@ export const FAMILY_ROUTES = {
   setMemberRole: {
     method: "PUT",
     path: "/api/family/members/:userId/role",
-    callers: ["personal"],
+    callers: ["personal", "ownerProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** `SetMemberParentalBody` → `GuestParentalDto` (1.30.0, `family.memberParental`). Le contrôle parental
@@ -154,7 +139,7 @@ export const FAMILY_ROUTES = {
   setMemberParental: {
     method: "PUT",
     path: "/api/family/members/:userId/parental",
-    callers: ["personal"],
+    callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** `?q=` → `FamilyCandidateDto[]`. v2 : TOUS les comptes du serveur, cachés
@@ -164,7 +149,7 @@ export const FAMILY_ROUTES = {
   candidates: {
     method: "GET",
     path: "/api/family/candidates",
-    callers: ["personal", "ownerTv"],
+    callers: ["personal", "ownerProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** `InviteBody` → `OutgoingInvitationDto`. Le propriétaire seul — un compte
@@ -174,13 +159,13 @@ export const FAMILY_ROUTES = {
   invite: {
     method: "POST",
     path: "/api/family/invitations",
-    callers: ["personal", "ownerTv"],
+    callers: ["personal", "ownerProfile"],
     rateLimit: { max: 20, windowMs: HOUR },
   },
   // Les gestes sur une invitation portent son identifiant dans le CORPS
   // (`InvitationActionBody`) : le serveur journalise ses URL.
   /** → `{ cancelled: true }`. Le propriétaire retire une invitation en attente. */
-  cancelInvite: { method: "POST", path: "/api/family/invitations/cancel", callers: ["personal", "ownerTv"] },
+  cancelInvite: { method: "POST", path: "/api/family/invitations/cancel", callers: ["personal", "ownerProfile"] },
   /** → `FamilyMembershipDto`. Le destinataire, en session personnelle, s'il
    *  n'est dans aucune famille (`family.already_in_family`) ; ses autres
    *  invitations en attente sont closes. */
@@ -209,11 +194,13 @@ export const FAMILY_ROUTES = {
     rateLimit: { max: 30, windowMs: MINUTE },
   },
   /** `ManageUnlockBody` → `ManageUnlockResponse`. Le profil du propriétaire ou
-   *  d'un membre, derrière SON PIN : la session gère avec SES droits. */
+   *  d'un membre, sur une TV ou (1.30.0, `family.profileManage`) un bureau,
+   *  derrière SON PIN (`profileManage` : sans code, `family.manage_pin_required`) :
+   *  la session gère avec SES droits, dix minutes prolongées à chaque geste. */
   tvManageUnlock: {
     method: "POST",
     path: "/api/family/tv/manage/unlock",
-    callers: ["tvProfile"],
+    callers: ["tvProfile", "desktopProfile"],
     rateLimit: { max: 20, windowMs: MINUTE },
   },
   // « Qui regarde ? » hors des TV (le bureau, `familyPickerContract.ts`) : la

@@ -21,9 +21,16 @@ describe("table des routes", () => {
   });
 
   it("réserve les gestes personnels aux sessions personnelles", () => {
-    for (const name of ["acceptInvite", "declineInvite", "snoozeInvite", "leave", "dissolve", "setGuestPin"] as const) {
+    for (const name of ["acceptInvite", "declineInvite", "snoozeInvite", "leave", "dissolve"] as const) {
       expect(FAMILY_ROUTES[name].callers).toEqual(["personal"]);
     }
+  });
+
+  it("depuis un profil (TV, bureau), les gestes du rôle — le PIN d'un invité compris (1.30.0)", () => {
+    expect(FAMILY_ROUTES.setGuestPin.callers).toEqual(["personal", "ownerProfile", "memberProfile"]);
+    expect(FAMILY_ROUTES.setMemberRole.callers).toEqual(["personal", "ownerProfile"]);
+    const desktop = ROUTES.filter((name) => (FAMILY_ROUTES[name].callers as readonly string[]).includes("desktopProfile"));
+    expect(desktop).toEqual(["tvManageUnlock"]);
   });
 
   it("son PIN : en session personnelle, ou depuis SA session de profil sur une TV — jamais un jeton de TV", () => {

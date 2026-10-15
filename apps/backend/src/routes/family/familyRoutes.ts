@@ -30,9 +30,9 @@ import { actorOf, registerFamilyRoute } from "./familyRouting";
 
 /**
  * Les routes de la Famille sous `/api/family` — sessions personnelles (web,
- * bureau, mobile) et, pour la gestion et son propre PIN, les sessions de
- * profil sur les TV. Qui peut quoi : `FAMILY_ROUTES` (le contrat). L'acteur
- * vient du jeton.
+ * bureau, mobile) et, pour la gestion, les sessions de profil des TV et des
+ * bureaux (son propre PIN : les TV seulement). Qui peut quoi : `FAMILY_ROUTES`
+ * (le contrat). L'acteur vient du jeton.
  */
 
 function param(params: unknown, key: string): unknown {
@@ -41,7 +41,10 @@ function param(params: unknown, key: string): unknown {
 
 export const familyRoutes: FastifyPluginAsync = async (app) => {
   registerFamilyRoute(app, "overview", async (_request, actor, now) =>
-    buildOverview({ ...actorOf(actor), personal: actor.as === "personal" }, now),
+    buildOverview(
+      { ...actorOf(actor), personal: actor.as === "personal", managing: actor.as === "ownerProfile" || actor.as === "memberProfile" },
+      now,
+    ),
   );
 
   registerFamilyRoute(app, "candidates", async (request, actor, now) => {

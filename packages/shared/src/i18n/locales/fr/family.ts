@@ -60,6 +60,7 @@ export default {
     personal_session_required: "Ce geste se fait depuis votre propre session : le web, l'application de bureau ou le mobile.",
     not_owner: "Seul le propriétaire de la famille peut faire ce geste.",
     manage_locked: "Saisissez votre code PIN pour gérer les profils.",
+    manage_pin_required: "Pour gérer la famille depuis ce profil, protégez-le d'abord par un code PIN.",
     guest_account: "Un profil invité ne peut ni créer ni rejoindre de famille.",
     review_account: "Indisponible sur le compte de démonstration.",
     guest_right_required: "Le propriétaire de la famille ne vous a pas permis de créer des profils invités.",

@@ -1,8 +1,9 @@
-import type { FamilyProfileColor, FamilyProfileKind, FamilySwitches } from "./familyContract";
+import type { FamilyProfileColor, FamilyProfileKind, FamilyRights, FamilySwitches } from "./familyContract";
 
 /**
  * « Qui regarde ? » hors des TV — le CONTRAT du BUREAU (serveur 1.30.0,
- * capacité `family.desktopProfiles`). Le reste du contrat :
+ * capacité `family.desktopProfiles` ; la gestion depuis un profil :
+ * `family.profileManage`). Le reste du contrat :
  * `familyContract.ts` ; les TV : `familyTvContract.ts` ; carnet :
  * docs/FAMILLE.md, « Le bureau ».
  *
@@ -19,6 +20,8 @@ import type { FamilyProfileColor, FamilyProfileKind, FamilySwitches } from "./fa
  *   le serveur, aux règles des TV : un jeton d'appareil au nom du profil qui
  *   REGARDE et n'administre rien, une seule par appareil, coupée par tout
  *   retrait. Elle ne reçoit jamais de jeton Jellyfin : tout passe par Tentacle.
+ *   Seule exception, comme sur les TV : le propriétaire ou un membre y GÈRE la
+ *   famille avec ses droits, derrière SON PIN (`manage`).
  * - La déconnexion du compte sur cet appareil coupe ses sessions de profil.
  *
  * « Qui regarde ? » à l'ouverture se décide par APPAREIL (cet ordinateur :
@@ -108,6 +111,14 @@ export interface PickerProfileDto {
    *  sa session de profil, l'appareil l'habille par la session personnelle.
    *  Absent d'un serveur d'avant la 1.30.0. */
   photoEditable?: boolean;
+  /** Ce que la SESSION DE PROFIL de ce profil gère sur cet appareil
+   *  (`family.profileManage`), « Gérer les profils » ouvert par SON PIN — les
+   *  règles des TV (`TvProfileDto.manage`). Null : rien — un invité, le compte
+   *  de démonstration, un profil sans code PIN. Absent : rien. */
+  manage?: FamilyRights | null;
+  /** Il gérerait s'il avait un code PIN (`TvProfileDto.manageNeedsPin`).
+   *  Absent : faux. */
+  manageNeedsPin?: boolean;
 }
 
 /** `GET /api/family/picker/profiles?platform=desktop` — avec le jeton PERSONNEL. */

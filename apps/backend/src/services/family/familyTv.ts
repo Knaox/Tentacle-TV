@@ -1,6 +1,8 @@
 import { getPrisma } from "../db";
 import { FAMILY_CONTRACT_VERSION, FAMILY_MANAGE_UNLOCK_MS, type FamilyProfileKind, type FamilySwitches } from "../../family/familyContract";
 import type { ManageUnlockResponse, OpenTvSessionBody, TvProfileDto, TvProfilesDto, TvSessionDto } from "../../family/familyTvContract";
+import type { FamilyRights } from "../../family/familyContract";
+import { profileManage } from "../../family/familyCallers";
 import { familyRightsOf } from "../../family/familyRights";
 import { isPickerRequired, sameUserId } from "../../family/familyRules";
 import { getFamilySwitches, isReviewAccount } from "./familyConfig";
@@ -56,7 +58,7 @@ export async function visibleProfiles(
   account: string,
   accountName: string,
   now: number,
-): Promise<{ switches: FamilySwitches; profiles: TvProfileDto[] }> {
+): Promise<{ switches: FamilySwitches; profiles: TvProfileDto[]; roleRights: Map<string, FamilyRights> }> {
   const switches = getFamilySwitches();
   const users = await jellyfinUserMap();
   const { entries, familyOwner } = await tvEntries(account, switches);
@@ -73,10 +75,21 @@ export async function visibleProfiles(
     isReviewAccount(account),
     creationAllowedForMany(visible.filter((entry) => entry.kind !== "guest").map((entry) => entry.userId)),
   ]);
+  // Les droits du RÔLE (session personnelle) ; depuis un profil, seulement derrière un code (`profileManage`).
+  const roleRights = new Map<string, FamilyRights>();
   const profiles = visible.map((entry): TvProfileDto => {
     const guest = entry.kind === "guest";
     const until = locks.get(entry.userId);
     const jellyfinName = users?.get(fold(entry.userId))?.name;
+    const rights =
+      review || guest
+        ? null
+        : familyRightsOf(entry.kind === "member" ? "member" : "owner", { createGuests: entry.row?.canCreateGuests === true }, switches, {
+            parent: entry.row?.isParent === true,
+            creation: creations.get(fold(entry.userId)),
+          });
+    if (rights) roleRights.set(fold(entry.userId), rights);
+    const managing = profileManage(rights, pins.has(entry.userId));
     return {
       userId: entry.userId,
       kind: entry.kind,
@@ -88,17 +101,13 @@ export async function visibleProfiles(
       lockedUntil: until ? iso(until) : null,
       createdBy: guest ? entry.row?.createdBy ?? familyOwner : null,
       guestRights: guest ? { requestTitles: entry.row?.canRequestTitles === true } : null,
-      // Ce que ce profil gérerait ici, derrière SON PIN ; jamais un invité, jamais le compte de démonstration.
-      manage:
-        review || guest
-          ? null
-          : familyRightsOf(entry.kind === "member" ? "member" : "owner", { createGuests: entry.row?.canCreateGuests === true }, switches, {
-              parent: entry.row?.isParent === true,
-              creation: creations.get(fold(entry.userId)),
-            }),
+      // Ce que ce profil gérerait ici, derrière SON PIN ; jamais un invité, jamais le compte de
+      // démonstration, jamais sans code (1.30.0) — `manageNeedsPin` le dit alors.
+      manage: managing.manage,
+      manageNeedsPin: managing.needsPin,
     };
   });
-  return { switches, profiles };
+  return { switches, profiles, roleRights };
 }
 
 export async function listTvProfiles(pairing: PairingRow, now: number): Promise<TvProfilesDto> {
@@ -122,11 +131,11 @@ export async function listTvProfiles(pairing: PairingRow, now: number): Promise<
 /** Qui gère depuis une session de profil de cette TV : le propriétaire de la
  *  famille (`ownerTv`), un membre (`memberTv`), ou personne (un invité, un
  *  profil qui n'est plus dans la famille de la TV). */
-export async function tvManageRole(userId: string, pairingAccount: string): Promise<"ownerTv" | "memberTv" | null> {
+export async function tvManageRole(userId: string, pairingAccount: string): Promise<"ownerProfile" | "memberProfile" | null> {
   const { entries } = await tvEntries(pairingAccount, getFamilySwitches());
   const entry = entries.find((candidate) => sameUserId(candidate.userId, userId));
   if (!entry || entry.kind === "guest") return null;
-  return entry.kind === "member" ? "memberTv" : "ownerTv";
+  return entry.kind === "member" ? "memberProfile" : "ownerProfile";
 }
 
 /** Pourquoi un profil n'est pas ouvrable sur l'appareil de ce compte (sa TV, son bureau). */
@@ -152,14 +161,16 @@ export async function openTvSession(pairing: PairingRow, body: OpenTvSessionBody
     // seul. Un PIN ENVOYÉ (« Changer de profil » le demande toujours) se vérifie, compté comme ailleurs.
     const opensAtLaunch =
       listing.askAtLaunch === false && sameUserId(profile.userId, pairing.jellyfinUserId) && body.pin === undefined;
-    if (!remembered && !opensAtLaunch) await checkProfilePin({ pairingId: pairing.id, userId: profile.userId, pin: body.pin, now });
+    const pinChecked = !remembered && !opensAtLaunch;
+    if (pinChecked) await checkProfilePin({ pairingId: pairing.id, userId: profile.userId, pin: body.pin, now });
     // L'invité suit la politique de SON créateur, quelle que soit la TV qui l'ouvre.
     if (profile.kind === "guest") void syncGuestPolicy(profile.userId, profile.createdBy ?? pairing.jellyfinUserId);
     // Un membre mineur : son contrôle parental tient, même si sa politique a changé dans Jellyfin.
     if (profile.kind === "member") void syncMemberParental(profile.userId);
 
-    // Une seule session de profil par TV : la précédente se ferme.
-    const token = await startProfileSession(pairing, profile);
+    // Une seule session de profil par TV : la précédente se ferme. Ouverte par SON code, un profil qui
+    // gère n'a pas à le retaper pour « Gérer les profils » (1.30.0) : la gestion s'ouvre avec elle.
+    const token = await startProfileSession(pairing, profile, { manageUntil: manageUntilAtOpen(profile, pinChecked, now) });
     const remember = body.remember === true;
     await getPrisma().pairedDevice.update({
       where: { id: pairing.id },
@@ -168,6 +179,12 @@ export async function openTvSession(pairing: PairingRow, body: OpenTvSessionBody
     console.log(`[family] Session de profil ouverte sur la TV ${pairing.id} (${profile.kind})`);
     return { token, user: { id: profile.userId, name: profile.name }, profile, remembered: remember };
   });
+}
+
+/** La gestion ouverte avec une session de profil : seulement si SON code vient d'être vérifié, et
+ *  que le profil gère (`manage` : jamais sans code). Sinon, `tvManageUnlock` d'abord. */
+export function manageUntilAtOpen(profile: TvProfileDto, pinChecked: boolean, now: number): Date | null {
+  return pinChecked && profile.hasPin && profile.manage ? new Date(now + FAMILY_MANAGE_UNLOCK_MS) : null;
 }
 
 /** « Gérer les profils » : le propriétaire ou un membre de la famille de la TV,
@@ -182,6 +199,7 @@ export async function unlockManage(sessionTokenHash: string, pin: string | undef
   }
   const listing = await listTvProfiles(pairing, now);
   const profile = listing.profiles.find((entry) => sameUserId(entry.userId, session.jellyfinUserId));
+  if (profile?.manageNeedsPin) throw new FamilyFailure("family.manage_pin_required", "Gérer depuis un profil : code PIN requis");
   if (!profile?.manage) throw new FamilyFailure("family.not_owner", "Ce profil ne gère rien sur cette TV");
   await checkProfilePin({ pairingId: pairing.id, userId: profile.userId, pin, now });
   const until = now + FAMILY_MANAGE_UNLOCK_MS;

@@ -59,6 +59,7 @@ export default {
     personal_session_required: "Do this from your own session: the web, the desktop app or mobile.",
     not_owner: "Only the family owner can do this.",
     manage_locked: "Enter your PIN code to manage profiles.",
+    manage_pin_required: "To manage the family from this profile, protect it with a PIN code first.",
     guest_account: "A guest profile can't create or join a family.",
     review_account: "Not available on the demo account.",
     guest_right_required: "The family owner hasn't allowed you to create guest profiles.",

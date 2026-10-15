@@ -11,6 +11,7 @@ import type {
 import type { TvProfileDto } from "../../family/familyTvContract";
 import { canManageGuest, familyRightsOf } from "../../family/familyRights";
 import { isPickerRequired, sameUserId } from "../../family/familyRules";
+import { fold } from "./familyStore";
 import { isReviewAccount } from "./familyConfig";
 import { FamilyFailure } from "./familyErrors";
 import { isFamilyGuest } from "./familyGuestMarkers";
@@ -21,7 +22,7 @@ import { closeProfileSessions, startProfileSession } from "./familyProfileSessio
 import { currentProfileOf, ensurePickerHost, findPickerHost, pickerHostLock, touchPickerHost } from "./familyPickerHosts";
 import { desktopAtLaunchByDefault, getFamilyLaunchPolicy } from "./familyLaunchPolicy";
 import { readPickerPreference, writePickerPreference } from "./familyPickerPreference";
-import { unavailableFor, visibleProfiles } from "./familyTv";
+import { manageUntilAtOpen, unavailableFor, visibleProfiles } from "./familyTv";
 import { syncGuestPolicy } from "./guestPolicySync";
 import { syncMemberParental } from "./memberParentalSync";
 
@@ -48,12 +49,17 @@ export interface PickerCaller {
   token: string;
 }
 
-/** Ce que le compte de la session personnelle peut dans SA famille (rôle lu sur sa ligne). */
-function accountRights(profiles: readonly TvProfileDto[], account: string, switches: FamilySwitches): FamilyRights {
+/** Ce que le compte de la session personnelle peut dans SA famille (rôle lu sur sa ligne) — code ou non. */
+function accountRights(
+  profiles: readonly TvProfileDto[],
+  roleRights: ReadonlyMap<string, FamilyRights>,
+  account: string,
+  switches: FamilySwitches,
+): FamilyRights {
   const own = profiles.find((profile) => sameUserId(profile.userId, account));
   const role = own?.kind === "owner" ? "owner" : own?.kind === "member" ? "member" : null;
   // Ses droits de gestion tels que la liste les dit (un parent gère tous les invités).
-  return own?.manage ?? familyRightsOf(role, null, switches);
+  return (own && roleRights.get(fold(own.userId))) ?? familyRightsOf(role, null, switches);
 }
 
 function toPickerProfile(profile: TvProfileDto, account: string, rights: FamilyRights): PickerProfileDto {
@@ -69,6 +75,9 @@ function toPickerProfile(profile: TvProfileDto, account: string, rights: FamilyR
     personal: sameUserId(profile.userId, account),
     // Les mêmes droits que son PIN : la photo d'un invité, l'appareil l'habille par la session personnelle.
     photoEditable: profile.kind === "guest" && canManageGuest(rights, profile.createdBy, account),
+    // Ce que SA session de profil gérerait sur cet appareil, derrière son code (1.30.0).
+    manage: profile.manage,
+    manageNeedsPin: profile.manageNeedsPin === true,
   };
 }
 
@@ -78,14 +87,14 @@ async function refuseGuest(userId: string): Promise<void> {
 
 export async function listPickerProfiles(caller: PickerCaller, platform: FamilyPickerPlatform, now: number): Promise<PickerProfilesDto> {
   await refuseGuest(caller.userId);
-  const [{ switches, profiles }, host] = await Promise.all([
+  const [{ switches, profiles, roleRights }, host] = await Promise.all([
     visibleProfiles(caller.userId, caller.username, now),
     findPickerHost(caller.token),
   ]);
   const policy = getFamilyLaunchPolicy();
   const own = profiles.find((profile) => sameUserId(profile.userId, caller.userId));
   const account = { userId: own?.userId ?? caller.userId, name: own?.name ?? caller.username };
-  const rights = accountRights(profiles, caller.userId, switches);
+  const rights = accountRights(profiles, roleRights, caller.userId, switches);
   let currentProfileId = account.userId;
   if (host) {
     const active = await currentProfileOf(host.id);
@@ -118,14 +127,14 @@ async function pickNow(caller: PickerCaller, body: PickProfileBody, now: number)
   if (!personal && (await isReviewAccount(caller.userId))) {
     throw new FamilyFailure("family.review_account", "Compte de démonstration : aucun autre profil");
   }
-  const { profiles, switches } = await visibleProfiles(caller.userId, caller.username, now);
+  const { profiles, switches, roleRights } = await visibleProfiles(caller.userId, caller.username, now);
   const profile = profiles.find((entry) => sameUserId(entry.userId, body.profileId));
   if (!profile) throw await unavailableFor(caller.userId, body.profileId);
   if (profile.lockedUntil) throw new FamilyFailure("family.pin_locked", "Profil bloqué : trop d'essais", { lockedUntil: profile.lockedUntil });
 
   const existing = await findPickerHost(caller.token);
   await checkProfilePin({ pairingId: existing?.id ?? null, userId: profile.userId, pin: body.pin, now });
-  const dto = toPickerProfile(profile, caller.userId, accountRights(profiles, caller.userId, switches));
+  const dto = toPickerProfile(profile, caller.userId, accountRights(profiles, roleRights, caller.userId, switches));
 
   if (personal) {
     if (existing) {
@@ -139,7 +148,8 @@ async function pickNow(caller: PickerCaller, body: PickProfileBody, now: number)
   // L'invité suit la politique de SON créateur, quel que soit l'appareil qui l'ouvre.
   if (profile.kind === "guest") void syncGuestPolicy(profile.userId, profile.createdBy ?? caller.userId);
   if (profile.kind === "member") void syncMemberParental(profile.userId);
-  const token = await startProfileSession(host, profile);
+  // Ouverte par SON code, un profil qui gère a la gestion ouverte avec elle (1.30.0), comme sur les TV.
+  const token = await startProfileSession(host, profile, { manageUntil: manageUntilAtOpen(profile, true, now) });
   console.log(`[family] Session de profil ouverte sur l'hôte ${host.id} (${host.platform}, ${profile.kind})`);
   return { personal: false, token, user: { id: profile.userId, name: profile.name }, profile: dto };
 }
