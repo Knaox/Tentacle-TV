@@ -222,8 +222,8 @@ not exist: **Settings › Apps › Advanced app settings › App execution alias
 ## Limits of the first version
 
 - Starts at sign-in, not at power-on (see above).
-- No *audio analysis* for skip detection: it needs ffmpeg, which the app does not carry, so it is not
-  offered in this version. Detection by the three Jellyfin plugins works.
+- Skip detection comes from the three Jellyfin plugins, as with Docker: Tentacle no longer analyses audio
+  anywhere.
 - Hardware transcoding is Jellyfin's business: **Jellyfin › Dashboard › Playback › Transcoding** (Intel QSV,
   NVIDIA NVENC, AMD AMF). [gpu.md](gpu.md) is for Docker.
 

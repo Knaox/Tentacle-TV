@@ -241,9 +241,8 @@ d'application**, activez *tentacle.exe*.
 ## Limites de la première version
 
 - Démarrage à l'ouverture de session, pas à l'allumage (voir plus haut).
-- Pas d'*analyse audio* pour la détection des passages : elle exige ffmpeg, que l'app ne porte pas : elle
-  n'est pas proposée dans cette version. La détection par les
-  trois greffons de Jellyfin marche.
+- La détection des passages vient des trois greffons de Jellyfin, comme sous Docker : Tentacle n'analyse
+  plus l'audio nulle part.
 - Le transcodage matériel est l'affaire de Jellyfin : **Jellyfin › Tableau de bord › Lecture › Transcodage**
   (Intel QSV, NVIDIA NVENC, AMD AMF). [gpu.md](gpu.md) vaut pour Docker.
 
