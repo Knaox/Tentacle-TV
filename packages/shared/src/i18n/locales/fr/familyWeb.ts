@@ -210,7 +210,7 @@ export default {
     member: "Membre de la famille de {{owner}}.",
     parent: "Parent dans la famille de {{owner}}.",
     guest: "Invité de la famille de {{owner}} : un invité ne crée rien.",
-    restrictedBy: "Restreint par la famille de {{owner}} : un contrôle parental s'ajoute à ses droits ci-dessous.",
+    restrictedBy: "Restreint par la famille de {{owner}} : un contrôle parental de la famille s'ajoute à sa politique — la rubrique « Contrôle parental » montre ce qui est en vigueur.",
     summaryFamily: "Famille : {{value}}",
     summaryGuests: "invités : {{value}}",
     summaryAllowed: "permis",

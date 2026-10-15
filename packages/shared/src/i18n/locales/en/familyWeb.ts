@@ -209,7 +209,7 @@ export default {
     member: "Member of {{owner}}'s family.",
     parent: "Parent in {{owner}}'s family.",
     guest: "Guest of {{owner}}'s family: a guest never creates anything.",
-    restrictedBy: "Restricted by {{owner}}'s family: parental controls add to their rights below.",
+    restrictedBy: "Restricted by {{owner}}'s family: the family's parental controls add to their policy — the “Parental controls” section shows what is in effect.",
     summaryFamily: "Family: {{value}}",
     summaryGuests: "guests: {{value}}",
     summaryAllowed: "allowed",
