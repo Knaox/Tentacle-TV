@@ -26,6 +26,11 @@ export {
   usePlaybackSettings, usePlaybackSettingsStore, setPlaybackSettings, rehydratePlaybackSettings, initPlaybackSettingsStore,
   setGroupPlaybackSettings, groupPlaybackSettings, useOwnPlaybackSettings,
 } from "../hooks/usePlaybackSettings";
+export {
+  useStillWatching, useStillWatchingSettings, initStillWatchingStore, resyncStillWatching, rehydrateStillWatching,
+  resetStillWatchingSession,
+} from "../playback/useStillWatching";
+export type { StillWatchingController, StillWatchingSettingsState, UseStillWatchingOptions } from "../playback/useStillWatching";
 export { usePlaybackOverlay } from "../playback/usePlaybackOverlay";
 export type { SkipProposal, PlaybackOverlayInput, PlaybackOverlayResult } from "../playback/playbackOverlay.types";
 export { useMutedSegments, NO_MUTED_SEGMENTS } from "../playback/useMutedSegments";

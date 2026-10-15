@@ -23,6 +23,7 @@ import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
 import { useMpvExactSeek } from "../hooks/useMpvExactSeek";
 import { useTransparentPageDuringPlayback } from "../hooks/useTransparentPageDuringPlayback";
+import { usePlayerStillWatching } from "../hooks/useStillWatchingActivity";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
@@ -71,10 +72,8 @@ export function DesktopPlayer({
   const [showEpisodes, setShowEpisodes] = useState(false);
   const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const hasStartedRef = useRef(false);
-  // `hasStartedRef` est écrit par useMpvSource (contrat existant) ; ce MIROIR
-  // réactif garantit que l'arbitre et l'écran de chargement voient le
-  // démarrage à l'instant même — une ref seule dépendait d'un re-rendu
-  // fortuit (bug latent, corrigé en parité avec `hasStarted` de VideoPlayer).
+  // MIROIR réactif de `hasStartedRef` (écrit par useMpvSource) : l'arbitre et le
+  // chargement voient le démarrage à l'instant, sans attendre un re-rendu fortuit.
   const [hasStarted, setHasStarted] = useState(false);
   const prevSrcRef = useRef("");
   // Pistes externes déjà sub-add sur la source courante : jfIndex → sid mpv.
@@ -90,6 +89,11 @@ export function DesktopPlayer({
   // Le PiP (Linux) : réduire garde la lecture, la page reparcourt l'application.
   const pip = usePictureInPicture();
   const reduce = pip.supported ? () => pip.reduce({ restoreFullscreen: fullscreenRef.current }) : undefined;
+  // « Vous regardez encore ? » — ni en séance Watch Together, ni dans le PiP (l'encart n'y serait pas vu).
+  const stillWatching = usePlayerStillWatching({
+    playing: hasStarted && !state.paused && !state.buffering && !state.eof, enabled: !inGroupSession && !pip.active,
+    pause: () => { void setPause(true); }, play: playGated,
+  });
   // Glissement de la seekbar en cours : la détection de discontinuité se tait
   // (un glissement n'est pas un seek à rapporter — le relâchement, si).
   const draggingRef = useRef(false);
@@ -98,19 +102,16 @@ export function DesktopPlayer({
   const mpvAudio = useMemo(() => state.tracks.filter((t) => t.type === "audio"), [state.tracks]);
   const mpvSubs = useMemo(() => state.tracks.filter((t) => t.type === "sub"), [state.tracks]);
 
-  // ── Pistes affichées : DTO Jellyfin (labels riches) en ligne, ou track-list
-  // mpv du fichier local hors ligne (le DTO n'existe alors pas). Les
-  // préférences de langue hors ligne sont remontées via onAudioChange/
-  // onSubtitleChange — même pipeline d'application que le online. ──
+  // ── Pistes affichées : DTO Jellyfin en ligne, track-list mpv du fichier local hors
+  // ligne ; préférences remontées par onAudioChange/onSubtitleChange, comme en ligne. ──
   const { displayAudio, displaySubs } = useLocalPlaybackTracks({
     isLocalPlayback, fileLoaded, ready,
     audioTracks, subtitleTracks, mpvAudio, mpvSubs, localSubtitleFiles,
     localLibraryId, itemId: item?.Id, onAudioChange, onSubtitleChange, sourceKey: src,
   });
 
-  // Handlers + application des préférences de pistes audio/sous-titres.
-  // useMpvTrackSync reçoit les pistes AFFICHÉES (DTO ou fallback mpv) pour que
-  // clics manuels et application de préférence partagent la même source.
+  // Handlers + préférences de pistes : useMpvTrackSync reçoit les pistes AFFICHÉES
+  // (DTO ou fallback mpv) — clics manuels et préférences partagent la même source.
   const { handleAudioChange, handleSubtitleChange } = useMpvTrackSync({
     state, ready, fileLoaded, isDirectPlay,
     audioTracks: displayAudio, subtitleTracks: displaySubs, mpvAudio, mpvSubs,
@@ -153,9 +154,8 @@ export function DesktopPlayer({
     sourceChanging,
   );
 
-  // Sorties du lecteur (retour, fiche, fermeture de session plein écran) —
-  // QUAND sortir en fin de lecture est décidé par la coquille partagée, qui
-  // appelle `onEndOfPlayback` (plus bas) → `goToDetail`.
+  // Sorties du lecteur (retour, fiche, plein écran) — QUAND sortir en fin de lecture
+  // est décidé par la coquille partagée, qui appelle `onEndOfPlayback` → `goToDetail`.
   const { goBack, goToDetail } = useDesktopPlayerExit({ itemId });
   // La télécommande de Jellyfin — stop, pause, saut, pistes (`useSessionRemote`).
   useSessionRemote({
@@ -166,7 +166,8 @@ export function DesktopPlayer({
   // Touches média du système, incrustation de volume, Stream Deck (SMTC).
   useDesktopMediaControls({
     title, subtitle, posterUrl, paused: state.paused,
-    togglePause, setPause: async (paused) => { if (paused) await setPause(true); else playGated(); }, goBack,
+    togglePause: () => { stillWatching.reportActivity(); togglePause(); }, // une touche média prouve une présence
+    setPause: async (paused) => { stillWatching.reportActivity(); if (paused) await setPause(true); else playGated(); }, goBack,
     onNext: onNextEpisode, onPrevious: onPreviousEpisode,
     hasNext: hasNextEpisode, hasPrevious: hasPreviousEpisode,
   });
@@ -224,9 +225,8 @@ export function DesktopPlayer({
   const { prebuffering, showLoadingOverlay, onQualityChange: chooseQuality } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause, src, currentQuality, onQualityChange });
   const { fullTitle, pipLoading } = usePipLoading(showLoadingOverlay, posterUrl, title, subtitle);
 
-  // Watch Together : transport impératif + signaux prêt/buffering/pause.
-  // `wt:cancelAutoNext` = un membre a refusé l'enchaînement — même sémantique
-  // que la croix locale, sans ré-annonce au groupe.
+  // Watch Together : transport impératif + signaux prêt/buffering/pause. `wt:cancelAutoNext`
+  // = un membre a refusé l'enchaînement (la croix locale, sans ré-annonce au groupe).
   useDesktopTransport({
     transportRef, state, mediaReady, prebuffering, isDirectPlay,
     clock, lastAbsolutePosRef, effectiveMpvOffset,
@@ -260,7 +260,7 @@ export function DesktopPlayer({
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
         item={item} ratingEnabled={!isLocalPlayback && !offline}
-        onRatingEngage={playback.cancelNextCountdown}
+        onRatingEngage={playback.cancelNextCountdown} stillWatching={stillWatching}
       />
 
       <SkipBadge flash={skipFlash} />
@@ -278,9 +278,8 @@ export function DesktopPlayer({
         isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item} itemId={itemId}
         useLocalEpisodes={offline}
         displayAudio={displayAudio} displaySubs={displaySubs}
-        // L'état REACT fait foi pour la surbrillance du sélecteur, pas celui de
-        // mpv : ses mises à jour passent par l'IPC, donc elles arrivent après —
-        // le menu montrait brièvement la piste précédente.
+        // L'état REACT fait foi pour la surbrillance du sélecteur, pas celui de mpv
+        // (ses mises à jour passent par l'IPC : le menu montrait la piste précédente).
         curAudio={currentAudio} curSub={currentSubtitle}
         currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets} autoQualityActive={autoQualityActive}
         qualityDrop={qualityDrop} hasSettings={hasSettings} hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}

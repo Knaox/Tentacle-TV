@@ -11,6 +11,7 @@ import { DissolveSection, MyPinSection } from "../../family/page/AccountSections
 import { FamilySection } from "../../family/page/FamilySection";
 import { IncomingInvitationsSection } from "../../family/page/IncomingInvitations";
 import { LeaveSection } from "../../family/page/LeaveSection";
+import { FamilyPinCard } from "../../family/pinSuggest/FamilyPinCard";
 import { SECONDARY_BUTTON } from "../../family/page/familyUi";
 import { AskAtLaunchSection } from "../../profiles/settings/AskAtLaunchSection";
 
@@ -64,6 +65,7 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
   return (
     <>
       <p className="mb-5 text-sm leading-relaxed text-content-tertiary">{t("description")}</p>
+      <FamilyPinCard />
       {notices.map((notice) => (
         <Notice key={notice} text={notice} />
       ))}

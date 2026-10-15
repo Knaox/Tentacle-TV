@@ -413,4 +413,15 @@ export default {
   cardSizeSmallHint: "Un peu plus petites : plus de titres à l'écran, une colonne de plus dans les bibliothèques.",
   cardSizeNormalHint: "La taille d'origine.",
   cardSizeLargeHint: "Grandes, comme sur Netflix : moins de titres à l'écran, des images mieux mises en valeur.",
+  // « Vous regardez encore ? » — un réglage du COMPTE, le même sur tous les appareils.
+  stillWatchingTitle: "Demander si vous regardez encore",
+  stillWatchingHint: "Après un long moment sans toucher à rien, la lecture vous le demande, puis se met en pause si personne ne répond. Réglé ici, il vaut sur tous vos appareils.",
+  stillWatchingAfter: "Demander après",
+  stillWatchingCountdown: "Temps pour répondre",
+  stillWatchingHours_one: "{{count}} heure",
+  stillWatchingHours_other: "{{count}} heures",
+  stillWatchingHourHalf: "1 h 30",
+  stillWatchingSeconds_one: "{{count}} seconde",
+  stillWatchingSeconds_other: "{{count}} secondes",
+  stillWatchingMinute: "1 minute",
 } as const;

@@ -17,10 +17,12 @@
  */
 
 import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
-import { useEndCardRating } from "@tentacle-tv/api-client";
+import { useEndCardRating, type StillWatchingController } from "@tentacle-tv/api-client";
 import { LoadingBackButton, LoadingBar } from "./PlayerLoadingScreen";
 import { PlaybackOverlay } from "./PlaybackOverlay";
 import { PlaybackSpinner } from "./PlaybackSpinner";
+import { StillWatchingPrompt } from "./StillWatchingPrompt";
+import { overlayBesideStillWatching } from "./stillWatchingOverlay";
 
 interface DesktopPlayerOverlaysProps {
   showLoadingOverlay: boolean;
@@ -52,6 +54,8 @@ interface DesktopPlayerOverlaysProps {
   ratingEnabled?: boolean;
   /** Tue le décompte de la suite quand une note se pose. */
   onRatingEngage?: () => void;
+  /** « Vous regardez encore ? » — l'encart prend le coin de la pilule, qui s'efface. */
+  stillWatching?: StillWatchingController;
 }
 
 export function DesktopPlayerOverlays({
@@ -59,7 +63,7 @@ export function DesktopPlayerOverlays({
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible, panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
-  item, ratingEnabled, onRatingEngage,
+  item, ratingEnabled, onRatingEngage, stillWatching,
 }: DesktopPlayerOverlaysProps) {
   // Notation de l'épisode FINI, servie à l'affiche de fin seulement.
   const endCardRating = useEndCardRating(item, { enabled: ratingEnabled ?? true });
@@ -95,7 +99,7 @@ export function DesktopPlayerOverlays({
       {buffering && !showLoadingOverlay && <PlaybackSpinner hint={loadingHint} layer="z-20" />}
 
       <PlaybackOverlay
-        overlay={overlay}
+        overlay={overlayBesideStillWatching(overlay, stillWatching?.phase)}
         countdownTotals={countdownTotals}
         onSkip={onSkip}
         onDismiss={onDismissOverlay}
@@ -111,6 +115,9 @@ export function DesktopPlayerOverlays({
         endCardRating={endCardRating}
         onEndCardRatingEngage={onRatingEngage}
       />
+
+      {/* `z-20`, comme la pilule qu'il remplace : au-dessus de la vidéo, sous rien d'autre. */}
+      {stillWatching && <StillWatchingPrompt controller={stillWatching} controlsVisible={controlsVisible} surface="desktop" />}
     </>
   );
 }

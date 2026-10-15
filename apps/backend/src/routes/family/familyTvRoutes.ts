@@ -1,10 +1,16 @@
 import type { FastifyPluginAsync } from "fastify";
 import { hashToken } from "../../services/jwt";
 import { getFamilySwitches, setFamilySwitches } from "../../services/family/familyConfig";
+import { getFamilyLaunchPolicy, setFamilyLaunchPolicy } from "../../services/family/familyLaunchPolicy";
 import { endSessionsOfKinds } from "../../services/family/familySessions";
 import { listTvProfiles, openTvSession, unlockManage } from "../../services/family/familyTv";
 import { enrollTv, pairingFromToken } from "../../services/family/familyTvEnroll";
-import { adminSwitchesBodySchema, manageUnlockBodySchema, openTvSessionBodySchema } from "../../services/family/familySchemas";
+import {
+  adminLaunchPolicyBodySchema,
+  adminSwitchesBodySchema,
+  manageUnlockBodySchema,
+  openTvSessionBodySchema,
+} from "../../services/family/familySchemas";
 import { registerFamilyRoute } from "./familyRouting";
 
 /**
@@ -30,7 +36,7 @@ export const familyTvRoutes: FastifyPluginAsync = async (app) => {
 
 /**
  * Les interrupteurs de l'administration (sous `/api/admin`), en session
- * personnelle d'un administrateur. Couper coupe AUSSITÔT les sessions de
+ * personnelle d'un administrateur — et « Qui regarde ? » à l'ouverture. Couper coupe AUSSITÔT les sessions de
  * profil concernées ; rallumer ne ressuscite aucune session (SEC-F-14).
  */
 export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
@@ -44,5 +50,16 @@ export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
     else if (after.families && before.guests && !after.guests) await endSessionsOfKinds(["guest"], "guests_disabled");
     console.log(`[family] Interrupteurs : familles ${after.families ? "oui" : "non"}, invités ${after.guests ? "oui" : "non"}`);
     return after;
+  });
+
+  // « Qui regarde ? » à l'ouverture, plateforme par plateforme : aucune session
+  // fermée — la règle vaut au prochain lancement de chaque appareil.
+  registerFamilyRoute(app, "adminLaunchPolicy", async () => getFamilyLaunchPolicy());
+
+  registerFamilyRoute(app, "adminSetLaunchPolicy", async (request) => {
+    const policy = await setFamilyLaunchPolicy(adminLaunchPolicyBodySchema.parse(request.body));
+    const desktop = `${policy.desktop.mode}${policy.desktop.mode === "choice" ? (policy.desktop.defaultOn ? "/oui" : "/non") : ""}`;
+    console.log(`[family] « Qui regarde ? » à l'ouverture : bureau ${desktop}, TV ${policy.tv.mode}`);
+    return policy;
   });
 };

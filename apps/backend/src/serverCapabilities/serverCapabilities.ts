@@ -86,6 +86,15 @@ export const SERVER_CAPABILITIES = {
    *  (`PUT /api/family/guests/:userId/photo`) : la galerie des avatars s'ouvre
    *  pour lui — Réglages › Famille, et sa session de profil sur le bureau. */
   "family.guestPhotos": "1.30.0",
+  /** « Vous regardez encore ? » : le réglage du COMPTE (`GET/PUT /api/preferences/still-watching`,
+   *  diffusé en direct, portée `still-watching`). Sans elle, la fonction ne tourne pas : un appareil
+   *  à jour face à un serveur d'avant ne met jamais une lecture en pause de lui-même. */
+  "playback.stillWatching": "1.30.0",
+  /** « Qui regarde ? » à l'ouverture réglé par l'administration, plateforme par plateforme
+   *  (`GET/PUT /api/admin/family/picker` : coupé pour tous, ou laissé au choix de chaque
+   *  appareil — le bureau avec un défaut) ; `launchPolicy` dans « Qui regarde ? » du bureau,
+   *  `askAtLaunch` dans celui des TV. */
+  "family.pickerPolicy": "1.30.0",
   /** Le catalogue des bandes-annonces d'un titre : `GET /api/trailers/catalog` rend la liste
    *  ORDONNÉE par le serveur (la saison de l'épisode d'abord, la langue du serveur d'abord),
    *  AlloCiné compris (serveur français), lue par le relais — Dailymotion aussi — avec le repli

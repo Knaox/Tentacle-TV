@@ -17,8 +17,10 @@ et Linux reçoivent l'ensemble.
 <!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.30.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
 ### FR
 - **Aperçus de bande-annonce** : laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous : Lire, Ma liste, favori, vu, « Plus d'infos », la note, l'année et les genres ; un clic coupe le son, et les aperçus s'éteignent dans Réglages › Apparence (serveur 1.30.0)
-- **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. À activer dans Réglages › Famille, pour tous vos ordinateurs ; « Ne plus proposer sur cet appareil » ouvre ensuite directement le profil choisi (serveur 1.30.0)
+- **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. Proposé à l'ouverture par défaut ; « Ne plus proposer à la prochaine ouverture », au lancement comme dans « Changer de profil », ouvre ensuite directement le profil choisi — sur cet ordinateur seulement. L'administrateur peut le couper ou le régler pour tous (serveur 1.30.0)
 - **Un menu de l'avatar plus simple** : « Changer de profil » en tête, qui ramène à « Qui regarde ? », puis vous, cet appareil, et l'aide en pied
+- **Posez votre code PIN** : rejoindre une famille le propose aussitôt, en expliquant pourquoi, et un profil sans code reçoit une « Action recommandée » (serveur 1.30.0)
+- **« Vous regardez encore ? »** : après une heure et demie de lecture sans le moindre geste, la question paraît en bas à droite ; sans réponse, la lecture se met en pause. Réglable dans Réglages › Lecture, pour tous vos appareils (serveur 1.30.0)
 - **Un profil ouvert sur l'ordinateur regarde** : il n'administre rien, comme sur la TV
 - **Photos de profil** : une galerie de 36 personnages illustrés, chacun avec son nom et son histoire, à choisir depuis le menu de l'avatar — l'import d'une photo personnelle reste là. Un compte sans photo se la voit proposer une fois, au premier lancement. Les invités de la Famille ont aussi la leur, depuis Réglages › Famille ou leur profil
 - **Dans une famille, votre avatar prend la couleur de votre profil**, partout dans l'application
@@ -27,9 +29,11 @@ et Linux reçoivent l'ensemble.
 - **Plus rien de coupé dans une petite fenêtre** : menus, notifications, filtres et clic droit restent dans la fenêtre, se retournent près d'un bord et défilent quand elle est basse
 
 ### EN
-- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.29.0)
-- **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Turn it on in Settings › Family, for all your computers; “Don't ask on this device” then opens the chosen profile directly (server 1.29.0)
+- **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.30.0)
+- **“Who's watching?” on your computer**: everyone opens their own profile, behind their PIN if they have one. Shown at startup by default; “Don't ask at the next startup”, at launch or in “Switch profile”, then opens the chosen profile directly — on this computer only. The administrator can turn it off or set it for everyone (server 1.30.0)
 - **A simpler avatar menu**: “Switch profile” at the top, which brings back “Who's watching?”, then you, this device, and help at the bottom
+- **Set your PIN**: joining a family suggests it right away, explaining why, and a profile without one gets a “Recommended action” (server 1.30.0)
+- **“Are you still watching?”**: after an hour and a half of playback without a single gesture, the question shows up at the bottom right; with no answer, playback pauses. Adjustable in Settings › Playback, for all your devices (server 1.30.0)
 - **A profile opened on a computer only watches**: it manages nothing, just like on TV
 - **Profile pictures**: a gallery of 36 illustrated characters, each with a name and a story, to pick from the avatar menu — uploading your own photo is still there. Accounts without a picture are offered it once, on first launch. Family guests get one too, from Settings › Family or their own profile
 - **In a family, your avatar takes your profile's color**, everywhere in the app
