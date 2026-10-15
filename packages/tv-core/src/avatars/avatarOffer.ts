@@ -66,6 +66,17 @@ export function decideAvatarOffer(input: AvatarOfferInput): AvatarOfferStatus {
   return invite ? "show" : "skip";
 }
 
+/**
+ * À la CRÉATION d'un invité (Gérer les profils, sur la TV) : la galerie s'ouvre
+ * pour lui s'il n'a que la photo par défaut (aucune étiquette d'image) — et
+ * seulement face à un serveur qui sait habiller un invité depuis la TV.
+ * Rien n'est retenu : passer, c'est garder l'initiale, « Gérer les profils »
+ * reste le chemin pour y revenir.
+ */
+export function offerGuestPhotoAtCreation(created: { imageTag: string | null } | null, capable: boolean): boolean {
+  return capable && created !== null && !created.imageTag;
+}
+
 /** Ce qui a été tranché, et pour qui. */
 export interface AvatarOfferLatch {
   identity: string | null;
