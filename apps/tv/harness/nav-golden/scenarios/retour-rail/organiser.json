@@ -161,7 +161,25 @@
             "panel": "open",
             "focus": "nav:menu:up",
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "order": [
+                    "Recommendations",
+                    "Library_acf898949f3c87c958b3784cb05fd4d1",
+                    "Watchlist",
+                    "Favorites",
+                    "Library_db4c1708cbb5dd1676284a40f2950aba",
+                    "Library_d565273fd114d77bdf349a2896867069"
+                  ],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           },
           "settleMs": 600
@@ -192,7 +210,7 @@
           }
         }
       ],
-      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail) Stockage : la disposition est celle du PROFIL actif (`tentacle_tv_rail_profiles`, rail par profil du 15/10) ; la clé d'appareil `tentacle_webos_rail` reste intacte — attendus réenregistrés sur 5ffdc39e1."
     },
     {
       "id": "monter-puis-double-retour",
@@ -324,7 +342,19 @@
             "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
             "label": "Films",
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [
+                    "Library_acf898949f3c87c958b3784cb05fd4d1"
+                  ],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           },
           "settleMs": 1200
@@ -344,14 +374,24 @@
           "expect": {
             "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           },
           "settleMs": 900,
           "why": "« Tout afficher » : le focus va à l'entrée de la page (Films)"
         }
       ],
-      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail) Stockage : la disposition est celle du PROFIL actif (`tentacle_tv_rail_profiles`, rail par profil du 15/10) ; la clé d'appareil `tentacle_webos_rail` reste intacte — attendus réenregistrés sur 5ffdc39e1."
     },
     {
       "id": "tout-afficher-du-menu",
@@ -443,14 +483,24 @@
             "panel": "closed",
             "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           },
           "settleMs": 1200,
           "why": "Films a changé de case : le focus la suit"
         }
       ],
-      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail) Stockage : la disposition est celle du PROFIL actif (`tentacle_tv_rail_profiles`, rail par profil du 15/10) ; la clé d'appareil `tentacle_webos_rail` reste intacte — attendus réenregistrés sur 5ffdc39e1."
     },
     {
       "id": "deplacer-puis-poser",
@@ -521,6 +571,16 @@
           "expect": {
             "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
             "storage": {
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
               "tentacle_webos_rail": null
             }
           },
@@ -531,7 +591,25 @@
           "expect": {
             "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "order": [
+                    "Recommendations",
+                    "Watchlist",
+                    "Favorites",
+                    "Library_db4c1708cbb5dd1676284a40f2950aba",
+                    "Library_d565273fd114d77bdf349a2896867069",
+                    "Library_acf898949f3c87c958b3784cb05fd4d1"
+                  ],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           }
         },
@@ -542,7 +620,7 @@
           }
         }
       ],
-      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail) Stockage : la disposition est celle du PROFIL actif (`tentacle_tv_rail_profiles`, rail par profil du 15/10) ; la clé d'appareil `tentacle_webos_rail` reste intacte — attendus réenregistrés sur 5ffdc39e1."
     },
     {
       "id": "deplacer-puis-annuler",
@@ -678,13 +756,31 @@
           "expect": {
             "focus": "grid:0",
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "order": [
+                    "Recommendations",
+                    "Watchlist",
+                    "Library_acf898949f3c87c958b3784cb05fd4d1",
+                    "Favorites",
+                    "Library_db4c1708cbb5dd1676284a40f2950aba",
+                    "Library_d565273fd114d77bdf349a2896867069"
+                  ],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           },
           "why": "le pont de sortie : la dernière cible de contenu ; l'entrée est posée"
         }
       ],
-      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail) Stockage : la disposition est celle du PROFIL actif (`tentacle_tv_rail_profiles`, rail par profil du 15/10) ; la clé d'appareil `tentacle_webos_rail` reste intacte — attendus réenregistrés sur 5ffdc39e1."
     },
     {
       "id": "deplacer-butee-en-tete",
@@ -752,7 +848,25 @@
           "do": "select",
           "expect": {
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "order": [
+                    "Library_acf898949f3c87c958b3784cb05fd4d1",
+                    "Recommendations",
+                    "Watchlist",
+                    "Favorites",
+                    "Library_db4c1708cbb5dd1676284a40f2950aba",
+                    "Library_d565273fd114d77bdf349a2896867069"
+                  ],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           }
         },
@@ -764,7 +878,7 @@
           "why": "posée : les verrous sont levés"
         }
       ],
-      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail)"
+      "why": "départ sur la bibliothèque Films : son entrée est posée dès le chargement (l'accueil n'en a pas tant qu'il charge — tvOS donnerait le focus au rail) Stockage : la disposition est celle du PROFIL actif (`tentacle_tv_rail_profiles`, rail par profil du 15/10) ; la clé d'appareil `tentacle_webos_rail` reste intacte — attendus réenregistrés sur 5ffdc39e1."
     },
     {
       "id": "appui-long-accueil",
@@ -1025,6 +1139,16 @@
             "focus": "settings:nav:0",
             "route": "Settings",
             "storage": {
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
               "tentacle_webos_rail": null
             }
           },
@@ -1041,11 +1165,30 @@
           "expect": {
             "focus": "settings:nav:1",
             "storage": {
-              "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Watchlist\",\"Recommendations\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+              "tentacle_tv_rail_profiles": {
+                "banc-user": {
+                  "masquees": [],
+                  "order": [
+                    "Watchlist",
+                    "Recommendations",
+                    "Favorites",
+                    "Library_acf898949f3c87c958b3784cb05fd4d1",
+                    "Library_db4c1708cbb5dd1676284a40f2950aba",
+                    "Library_d565273fd114d77bdf349a2896867069"
+                  ],
+                  "setupDone": true
+                },
+                "banc-guest": {
+                  "masquees": [],
+                  "setupDone": true
+                }
+              },
+              "tentacle_webos_rail": null
             }
           }
         }
-      ]
+      ],
+      "why": "Stockage : la disposition est celle du PROFIL actif (`tentacle_tv_rail_profiles`, rail par profil du 15/10) ; la clé d'appareil `tentacle_webos_rail` reste intacte — attendus réenregistrés sur 5ffdc39e1."
     }
   ]
 }

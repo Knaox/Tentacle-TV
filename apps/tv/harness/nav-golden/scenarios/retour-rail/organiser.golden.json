@@ -252,8 +252,8 @@
       ]
     },
     "monter-x2-puis-retour": {
-      "hash": "98f78143207d",
-      "durationMs": 24739,
+      "hash": "aa075ff752e2",
+      "durationMs": 24508,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -427,7 +427,8 @@
           ],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"order\":[\"Recommendations\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         },
         {
@@ -697,8 +698,8 @@
       ]
     },
     "masquer-puis-tout-afficher": {
-      "hash": "be66f4e3223e",
-      "durationMs": 24783,
+      "hash": "47b0354416fa",
+      "durationMs": 23356,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -845,7 +846,8 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         },
         {
@@ -905,14 +907,15 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         }
       ]
     },
     "tout-afficher-du-menu": {
-      "hash": "797d4c6a4be9",
-      "durationMs": 27438,
+      "hash": "5379fc051e53",
+      "durationMs": 27605,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1149,14 +1152,15 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         }
       ]
     },
     "deplacer-puis-poser": {
-      "hash": "e2ef2a92c14e",
-      "durationMs": 25023,
+      "hash": "862a0df4edc9",
+      "durationMs": 23016,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1327,6 +1331,7 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
             "tentacle_webos_rail": null
           }
         },
@@ -1357,7 +1362,8 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         },
         {
@@ -1592,8 +1598,8 @@
       ]
     },
     "deplacer-puis-sortir": {
-      "hash": "9ce169e37e2f",
-      "durationMs": 26753,
+      "hash": "6040fe6a4a52",
+      "durationMs": 21037,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1761,14 +1767,15 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"order\":[\"Recommendations\",\"Watchlist\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         }
       ]
     },
     "deplacer-butee-en-tete": {
-      "hash": "771dd68a283a",
-      "durationMs": 24662,
+      "hash": "6528779e04f0",
+      "durationMs": 23307,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -1942,7 +1949,8 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"order\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         },
         {
@@ -2403,8 +2411,8 @@
       ]
     },
     "reglages-navigation-deplacer": {
-      "hash": "7a408fbd606d",
-      "durationMs": 30127,
+      "hash": "491823bc6f64",
+      "durationMs": 28038,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",
@@ -2539,6 +2547,7 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
             "tentacle_webos_rail": null
           }
         },
@@ -2623,7 +2632,8 @@
           "panelOwners": [],
           "writes": [],
           "storage": {
-            "tentacle_webos_rail": "{\"masquees\":[],\"order\":[\"Watchlist\",\"Recommendations\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"]}"
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[],\"order\":[\"Watchlist\",\"Recommendations\",\"Favorites\",\"Library_acf898949f3c87c958b3784cb05fd4d1\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}",
+            "tentacle_webos_rail": null
           }
         }
       ]
