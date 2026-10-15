@@ -14,6 +14,13 @@
  * ⚠️ Les clés traversent le réseau : elles ne se renomment jamais une fois livrées.
  * Champs vérifiés contre l'OpenAPI de Jellyfin 10.11.0 et 10.11.11 (`UserPolicy`,
  * identique en 12.2) : aucun champ de cette liste n'y manque.
+ *
+ * La liste ne nomme que ce qui a un EFFET dans Tentacle (revue du 2026-10-15) :
+ * « caché à la connexion », les chaînes, les collections, sous-titres et
+ * paroles, la télévision en direct, la télécommande des autres comptes et des
+ * appareils partagés sont propres à Jellyfin, ou sans geste chez nous — ils ne
+ * se règlent plus d'ici. La réécriture garde à l'octet près tout champ que la
+ * liste ne nomme pas : ils restent tels que Jellyfin les tient.
  */
 
 /** Les jours d'une plage horaire (`DynamicDayOfWeek` de Jellyfin). */
@@ -71,8 +78,8 @@ export interface UserRightsFieldSpec {
   min?: number;
   max?: number;
   nullable?: boolean;
-  /** `folderList` : la liste dans laquelle chaque identifiant doit exister. */
-  among?: "libraries" | "channels";
+  /** `folderList` : la liste dans laquelle chaque identifiant doit exister (les bibliothèques). */
+  among?: "libraries";
   /** `enum` : les valeurs permises. */
   values?: readonly string[];
 }
@@ -82,7 +89,6 @@ export interface UserRights {
   // account
   isAdministrator: boolean;
   isDisabled: boolean;
-  isHidden: boolean;
   enableRemoteAccess: boolean;
   /** 0 : sans limite. */
   maxActiveSessions: number;
@@ -91,8 +97,6 @@ export interface UserRights {
   // libraries
   enableAllFolders: boolean;
   enabledFolders: string[];
-  enableAllChannels: boolean;
-  enabledChannels: string[];
   // parental
   /** Le score maximal de la table de Jellyfin (`ParentalRatingScore.score`) ; null : aucun. */
   maxParentalRating: number | null;
@@ -117,13 +121,6 @@ export interface UserRights {
   // management
   enableContentDeletion: boolean;
   enableContentDeletionFromFolders: string[];
-  enableCollectionManagement: boolean;
-  enableSubtitleManagement: boolean;
-  enableLyricManagement: boolean;
-  enableLiveTvAccess: boolean;
-  enableLiveTvManagement: boolean;
-  enableRemoteControlOfOtherUsers: boolean;
-  enableSharedDeviceControl: boolean;
   enablePublicSharing: boolean;
 }
 
@@ -135,14 +132,11 @@ const INT32_MAX = 2_147_483_647;
 export const USER_RIGHTS_FIELDS = {
   isAdministrator: { jellyfin: "IsAdministrator", group: "account", kind: "boolean" },
   isDisabled: { jellyfin: "IsDisabled", group: "account", kind: "boolean" },
-  isHidden: { jellyfin: "IsHidden", group: "account", kind: "boolean" },
   enableRemoteAccess: { jellyfin: "EnableRemoteAccess", group: "account", kind: "boolean" },
   maxActiveSessions: { jellyfin: "MaxActiveSessions", group: "account", kind: "integer", min: 0, max: 1000 },
   loginAttemptsBeforeLockout: { jellyfin: "LoginAttemptsBeforeLockout", group: "account", kind: "integer", min: -1, max: 1000 },
   enableAllFolders: { jellyfin: "EnableAllFolders", group: "libraries", kind: "boolean" },
   enabledFolders: { jellyfin: "EnabledFolders", group: "libraries", kind: "folderList", among: "libraries" },
-  enableAllChannels: { jellyfin: "EnableAllChannels", group: "libraries", kind: "boolean" },
-  enabledChannels: { jellyfin: "EnabledChannels", group: "libraries", kind: "folderList", among: "channels" },
   maxParentalRating: { jellyfin: "MaxParentalRating", group: "parental", kind: "integer", min: 0, max: INT32_MAX, nullable: true },
   maxParentalSubRating: { jellyfin: "MaxParentalSubRating", group: "parental", kind: "integer", min: 0, max: INT32_MAX, nullable: true },
   blockUnratedItems: { jellyfin: "BlockUnratedItems", group: "parental", kind: "unratedList" },
@@ -165,13 +159,6 @@ export const USER_RIGHTS_FIELDS = {
     kind: "folderList",
     among: "libraries",
   },
-  enableCollectionManagement: { jellyfin: "EnableCollectionManagement", group: "management", kind: "boolean" },
-  enableSubtitleManagement: { jellyfin: "EnableSubtitleManagement", group: "management", kind: "boolean" },
-  enableLyricManagement: { jellyfin: "EnableLyricManagement", group: "management", kind: "boolean" },
-  enableLiveTvAccess: { jellyfin: "EnableLiveTvAccess", group: "management", kind: "boolean" },
-  enableLiveTvManagement: { jellyfin: "EnableLiveTvManagement", group: "management", kind: "boolean" },
-  enableRemoteControlOfOtherUsers: { jellyfin: "EnableRemoteControlOfOtherUsers", group: "management", kind: "boolean" },
-  enableSharedDeviceControl: { jellyfin: "EnableSharedDeviceControl", group: "management", kind: "boolean" },
   enablePublicSharing: { jellyfin: "EnablePublicSharing", group: "management", kind: "boolean" },
 } as const satisfies Record<UserRightsKey, UserRightsFieldSpec>;
 
@@ -196,7 +183,6 @@ export type UserRightsPatch = Partial<UserRights>;
 /** `GET /api/admin/users/rights/options` — ce que Jellyfin propose, pour régler. */
 export interface UserRightsOptions {
   libraries: { id: string; name: string; collectionType: string | null }[];
-  channels: { id: string; name: string }[];
   /** La table de Jellyfin (`/Localization/ParentalRatings`), dans SA langue de métadonnées. */
   parentalRatings: { name: string; score: number; subScore: number | null }[];
   unratedItemTypes: UnratedItemType[];

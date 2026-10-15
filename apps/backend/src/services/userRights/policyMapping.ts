@@ -69,14 +69,11 @@ export function rightsFromPolicy(policy: JellyfinPolicy): UserRights {
   return {
     isAdministrator: bool(p.IsAdministrator),
     isDisabled: p.IsDisabled !== false,
-    isHidden: bool(p.IsHidden),
     enableRemoteAccess: bool(p.EnableRemoteAccess),
     maxActiveSessions: int(p.MaxActiveSessions, 0),
     loginAttemptsBeforeLockout: int(p.LoginAttemptsBeforeLockout, 0),
     enableAllFolders: bool(p.EnableAllFolders),
     enabledFolders: ids(p.EnabledFolders),
-    enableAllChannels: bool(p.EnableAllChannels),
-    enabledChannels: ids(p.EnabledChannels),
     maxParentalRating: intOrNull(p.MaxParentalRating),
     maxParentalSubRating: intOrNull(p.MaxParentalSubRating),
     blockUnratedItems: unrated(p.BlockUnratedItems),
@@ -94,13 +91,6 @@ export function rightsFromPolicy(policy: JellyfinPolicy): UserRights {
     enableMediaConversion: bool(p.EnableMediaConversion),
     enableContentDeletion: bool(p.EnableContentDeletion),
     enableContentDeletionFromFolders: ids(p.EnableContentDeletionFromFolders),
-    enableCollectionManagement: bool(p.EnableCollectionManagement),
-    enableSubtitleManagement: bool(p.EnableSubtitleManagement),
-    enableLyricManagement: bool(p.EnableLyricManagement),
-    enableLiveTvAccess: bool(p.EnableLiveTvAccess),
-    enableLiveTvManagement: bool(p.EnableLiveTvManagement),
-    enableRemoteControlOfOtherUsers: bool(p.EnableRemoteControlOfOtherUsers),
-    enableSharedDeviceControl: bool(p.EnableSharedDeviceControl),
     enablePublicSharing: bool(p.EnablePublicSharing),
   };
 }

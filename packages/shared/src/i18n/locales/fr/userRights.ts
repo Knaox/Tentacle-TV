@@ -23,7 +23,6 @@ export default {
     disabled: "Désactivé",
     admin: "Administrateur",
     standard: "Utilisateur",
-    hidden: "Caché à la connexion",
     localOnly: "Réseau local seulement",
     allLibraries: "Toutes les bibliothèques",
     someLibraries_one: "{{count}} bibliothèque sur {{total}}",
@@ -57,14 +56,11 @@ export default {
   fields: {
     isAdministrator: { label: "Administrateur", hint: "Règle le serveur, les comptes et Jellyfin tout entier." },
     isDisabled: { label: "Compte désactivé", hint: "Plus aucune connexion, sur aucun appareil, jusqu'à réactivation." },
-    isHidden: { label: "Caché à la connexion", hint: "N'apparaît pas dans la liste des comptes des écrans de connexion." },
     enableRemoteAccess: { label: "Accès depuis l'extérieur", hint: "Coupé, le compte ne se connecte que depuis le réseau de la maison." },
     maxActiveSessions: { label: "Sessions simultanées", hint: "Combien d'appareils connectés à la fois. 0 : sans limite." },
     loginAttemptsBeforeLockout: { label: "Essais avant blocage", hint: "Mots de passe faux tolérés avant de bloquer le compte. 0 : valeur de Jellyfin, -1 : jamais." },
     enableAllFolders: { label: "Toutes les bibliothèques", hint: "Y compris celles qui seront créées plus tard." },
     enabledFolders: { label: "Bibliothèques permises", hint: "Le compte ne voit rien des autres." },
-    enableAllChannels: { label: "Toutes les chaînes", hint: "Les chaînes des extensions de Jellyfin." },
-    enabledChannels: { label: "Chaînes permises", hint: "Le compte ne voit rien des autres." },
     maxParentalRating: { label: "Note maximale", hint: "Les titres notés au-dessus sont invisibles, partout : listes, recherche, recommandations." },
     blockUnratedItems: { label: "Bloquer quand il n'y a pas de note", hint: "Un titre sans note de ce type est caché." },
     blockedTags: { label: "Étiquettes bloquées", hint: "Un titre qui porte l'une d'elles est caché." },
@@ -81,13 +77,6 @@ export default {
     enableMediaConversion: { label: "Version légère", hint: "Préparer une copie plus petite avant de la télécharger." },
     enableContentDeletion: { label: "Supprimer des titres", hint: "Effacer un film ou un épisode du disque, dans toutes les bibliothèques." },
     enableContentDeletionFromFolders: { label: "Supprimer dans ces bibliothèques", hint: "Effacer des titres de ces bibliothèques seulement." },
-    enableCollectionManagement: { label: "Gérer les collections", hint: "Créer, renommer et remplir des collections." },
-    enableSubtitleManagement: { label: "Gérer les sous-titres", hint: "Chercher et ajouter des sous-titres à un titre." },
-    enableLyricManagement: { label: "Gérer les paroles", hint: "Chercher et ajouter des paroles à un morceau." },
-    enableLiveTvAccess: { label: "Télévision en direct", hint: "Regarder les chaînes du tuner et le guide." },
-    enableLiveTvManagement: { label: "Gérer la télévision en direct", hint: "Programmer et supprimer des enregistrements." },
-    enableRemoteControlOfOtherUsers: { label: "Télécommander les autres", hint: "Piloter la lecture des appareils des autres comptes." },
-    enableSharedDeviceControl: { label: "Appareils partagés", hint: "Piloter les appareils que tous les comptes partagent." },
     enablePublicSharing: { label: "Partage public", hint: "Créer des liens de partage ouverts à qui les a." },
   },
 
@@ -99,7 +88,6 @@ export default {
 
   libraries: {
     none: "Aucune bibliothèque sur ce Jellyfin.",
-    noChannels: "Aucune chaîne sur ce Jellyfin.",
     unknown: "Bibliothèque disparue",
   },
 

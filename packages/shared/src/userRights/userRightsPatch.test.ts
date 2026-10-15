@@ -4,11 +4,10 @@ import { normalizeJellyfinId, parseUserRightsPatch, patchAgainstOptions } from "
 import { USER_RIGHTS_ROUTES, userRightsPath } from "./userRightsRoutes";
 
 const LIB = "f137a2dd21bbc1b99aa5c0f6bf02a805";
-const CHANNEL = "0a1b2c3d4e5f60718293a4b5c6d7e8f9";
+const OTHER = "0a1b2c3d4e5f60718293a4b5c6d7e8f9";
 
 const OPTIONS: UserRightsOptions = {
   libraries: [{ id: LIB, name: "Films", collectionType: "movies" }],
-  channels: [{ id: CHANNEL, name: "Chaîne" }],
   parentalRatings: [
     { name: "FR-10", score: 10, subScore: null },
     { name: "FR-12", score: 12, subScore: null },
@@ -79,7 +78,7 @@ describe("parseUserRightsPatch", () => {
       syncPlayAccess: "All",
       blockUnratedItems: ["Movie", "Porn"],
       blockedTags: ["a\nb"],
-      enabledChannels: ["pas-un-guid"],
+      enabledFolders: ["pas-un-guid"],
       accessSchedules: [{ dayOfWeek: "Monday", startHour: 20, endHour: 8 }],
     });
     expect(result.ok).toBe(false);
@@ -93,7 +92,7 @@ describe("parseUserRightsPatch", () => {
           "syncPlayAccess",
           "blockUnratedItems",
           "blockedTags",
-          "enabledChannels",
+          "enabledFolders",
           "accessSchedules",
         ].sort(),
       );
@@ -108,25 +107,33 @@ describe("parseUserRightsPatch", () => {
 
 describe("patchAgainstOptions", () => {
   it("laisse passer ce qui existe dans Jellyfin", () => {
-    expect(patchAgainstOptions({ enabledFolders: [LIB], enabledChannels: [CHANNEL], maxParentalRating: 12 }, OPTIONS)).toEqual([]);
+    expect(patchAgainstOptions({ enabledFolders: [LIB], maxParentalRating: 12 }, OPTIONS)).toEqual([]);
   });
 
-  it("refuse une bibliothèque, un canal ou une note inconnus", () => {
+  it("refuse une bibliothèque ou une note inconnues", () => {
     expect(
       patchAgainstOptions(
         {
-          enabledFolders: [CHANNEL],
-          enableContentDeletionFromFolders: [LIB, CHANNEL],
-          enabledChannels: [LIB],
+          enabledFolders: [OTHER],
+          enableContentDeletionFromFolders: [LIB, OTHER],
           maxParentalRating: 11,
           maxParentalSubRating: 1,
         },
         OPTIONS,
       ).sort(),
-    ).toEqual(["enableContentDeletionFromFolders", "enabledChannels", "enabledFolders", "maxParentalRating", "maxParentalSubRating"]);
+    ).toEqual(["enableContentDeletionFromFolders", "enabledFolders", "maxParentalRating", "maxParentalSubRating"]);
   });
 
   it("compare les identifiants normalisés", () => {
     expect(normalizeJellyfinId("AB-CD")).toBe("abcd");
+  });
+});
+
+describe("les droits retirés de la fiche (revue du 2026-10-15)", () => {
+  it("ne se règlent plus : un correctif qui en nomme un est refusé", () => {
+    for (const key of ["isHidden", "enableAllChannels", "enabledChannels", "enableCollectionManagement", "enableSubtitleManagement",
+      "enableLyricManagement", "enableLiveTvAccess", "enableLiveTvManagement", "enableRemoteControlOfOtherUsers", "enableSharedDeviceControl"]) {
+      expect(parseUserRightsPatch({ [key]: true })).toEqual({ ok: false, fields: [] });
+    }
   });
 });

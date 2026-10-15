@@ -9,8 +9,8 @@ const keys = (parts: { key: string }[]) => parts.map((part) => part.key);
 
 describe("le résumé d'une rubrique", () => {
   it("dit l'essentiel du compte, désactivé en tête", () => {
-    expect(keys(groupSummary("account", PLAIN_RIGHTS, context))).toEqual(["summary.standard", "summary.hidden"]);
-    const locked = { ...PLAIN_RIGHTS, isDisabled: true, isAdministrator: true, isHidden: false, enableRemoteAccess: false };
+    expect(keys(groupSummary("account", PLAIN_RIGHTS, context))).toEqual(["summary.standard"]);
+    const locked = { ...PLAIN_RIGHTS, isDisabled: true, isAdministrator: true, enableRemoteAccess: false };
     expect(keys(groupSummary("account", locked, context))).toEqual(["summary.disabled", "summary.admin", "summary.localOnly"]);
   });
 
@@ -35,7 +35,7 @@ describe("le résumé d'une rubrique", () => {
 
   it("résume hors ligne et gestion", () => {
     expect(keys(groupSummary("offline", PLAIN_RIGHTS, context))).toEqual(["summary.download"]);
-    expect(groupSummary("management", PLAIN_RIGHTS, context)).toEqual([{ key: "summary.managementCount", values: { count: 2 } }]);
+    expect(groupSummary("management", PLAIN_RIGHTS, context)).toEqual([{ key: "summary.managementCount", values: { count: 1 } }]);
   });
 });
 
@@ -51,14 +51,14 @@ describe("les garde-fous de la fiche", () => {
     expect(lockedForSelf("isAdministrator", true, admin)).toBe(true);
     expect(lockedForSelf("isDisabled", true, admin)).toBe(true);
     expect(lockedForSelf("isAdministrator", false, admin)).toBe(false);
-    expect(lockedForSelf("isHidden", true, admin)).toBe(false);
+    expect(lockedForSelf("enableRemoteAccess", true, admin)).toBe(false);
   });
 
   it("donner l'administration et désactiver demandent confirmation, pas l'inverse", () => {
     expect(needsConfirmation("isAdministrator", true)).toBe(true);
     expect(needsConfirmation("isDisabled", true)).toBe(true);
     expect(needsConfirmation("isDisabled", false)).toBe(false);
-    expect(needsConfirmation("isHidden", true)).toBe(false);
+    expect(needsConfirmation("enableRemoteAccess", true)).toBe(false);
   });
 
   it("chaque refus a ses mots, un refus inconnu aussi", () => {

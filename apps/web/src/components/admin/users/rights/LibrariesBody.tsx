@@ -11,9 +11,10 @@ function withMissing(items: readonly { id: string; name: string }[], value: read
 }
 
 /**
- * Les bibliothèques et les chaînes, par NOM : « Toutes », ou une case par
- * bibliothèque. Couper « Toutes » sans rien cocher laisse le compte sans
- * bibliothèque — c'est un choix, la liste le montre vide.
+ * Les bibliothèques, par NOM : « Toutes », ou une case par bibliothèque.
+ * Couper « Toutes » sans rien cocher laisse le compte sans bibliothèque —
+ * c'est un choix, la liste le montre vide. (Les chaînes de Jellyfin ne se
+ * règlent pas ici : Tentacle n'en affiche aucune.)
  */
 export function LibrariesBody({ rights, options, writer }: GroupProps) {
   const { t } = useTranslation("userRights");
@@ -21,10 +22,6 @@ export function LibrariesBody({ rights, options, writer }: GroupProps) {
   const libraries = useMemo(
     () => withMissing(options?.libraries ?? [], rights.enabledFolders, missing),
     [options, rights.enabledFolders, missing],
-  );
-  const channels = useMemo(
-    () => withMissing(options?.channels ?? [], rights.enabledChannels, missing),
-    [options, rights.enabledChannels, missing],
   );
 
   return (
@@ -42,21 +39,6 @@ export function LibrariesBody({ rights, options, writer }: GroupProps) {
             onToggle={(id, on) => writer.write({ enabledFolders: toggleInList(rights.enabledFolders, id, on) })}
           />
           <RightError text={writer.errorFor("enabledFolders")} />
-        </div>
-      )}
-      <ToggleRight field="enableAllChannels" checked={rights.enableAllChannels} writer={writer} />
-      {!rights.enableAllChannels && (
-        <div>
-          <CheckList
-            title={t("fields.enabledChannels.label")}
-            hint={t("fields.enabledChannels.hint")}
-            items={channels}
-            value={rights.enabledChannels}
-            disabled={writer.isPending("enabledChannels")}
-            empty={t("libraries.noChannels")}
-            onToggle={(id, on) => writer.write({ enabledChannels: toggleInList(rights.enabledChannels, id, on) })}
-          />
-          <RightError text={writer.errorFor("enabledChannels")} />
         </div>
       )}
     </>

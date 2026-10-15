@@ -105,18 +105,16 @@ export function parseUserRightsPatch(body: unknown): PatchParse {
 }
 
 /**
- * Ce qui doit EXISTER dans Jellyfin : bibliothèques et canaux nommés, note de sa
- * table. Rend les clés refusées (vide : tout existe).
+ * Ce qui doit EXISTER dans Jellyfin : bibliothèques nommées, note de sa table.
+ * Rend les clés refusées (vide : tout existe).
  */
 export function patchAgainstOptions(patch: UserRightsPatch, options: UserRightsOptions): UserRightsKey[] {
   const libraries = new Set(options.libraries.map((library) => normalizeJellyfinId(library.id)));
-  const channels = new Set(options.channels.map((channel) => normalizeJellyfinId(channel.id)));
   const refused: UserRightsKey[] = [];
   for (const key of Object.keys(patch) as UserRightsKey[]) {
     const spec: UserRightsFieldSpec = USER_RIGHTS_FIELDS[key];
     if (spec.kind === "folderList") {
-      const known = spec.among === "channels" ? channels : libraries;
-      if (!(patch[key] as string[]).every((id) => known.has(normalizeJellyfinId(id)))) refused.push(key);
+      if (!(patch[key] as string[]).every((id) => libraries.has(normalizeJellyfinId(id)))) refused.push(key);
     }
   }
   const rating = patch.maxParentalRating;

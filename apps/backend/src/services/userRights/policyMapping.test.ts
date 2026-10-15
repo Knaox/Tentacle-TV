@@ -28,18 +28,25 @@ describe("UserPolicy ↔ droits", () => {
   });
 
   it("n'écrit que les champs du correctif ; les plages repartent dans la forme de Jellyfin, sans Id", () => {
-    const policy = { AuthenticationProviderId: "a", IsHidden: false, AccessSchedules: [{ Id: 4, DayOfWeek: "Monday", StartHour: 1, EndHour: 2 }] };
-    const next = applyRightsPatch(USER, policy, { isHidden: true, accessSchedules: [{ dayOfWeek: "Sunday", startHour: 8, endHour: 12 }] });
+    const policy = { AuthenticationProviderId: "a", EnableRemoteAccess: false, AccessSchedules: [{ Id: 4, DayOfWeek: "Monday", StartHour: 1, EndHour: 2 }] };
+    const next = applyRightsPatch(USER, policy, { enableRemoteAccess: true, accessSchedules: [{ dayOfWeek: "Sunday", startHour: 8, endHour: 12 }] });
     expect(next).toEqual({
       AuthenticationProviderId: "a",
-      IsHidden: true,
+      EnableRemoteAccess: true,
       AccessSchedules: [{ DayOfWeek: "Sunday", StartHour: 8, EndHour: 12, UserId: USER }],
     });
-    expect(policy.IsHidden).toBe(false);
+    expect(policy.EnableRemoteAccess).toBe(false);
+  });
+
+  it("les droits que la fiche ne règle plus repartent tels que Jellyfin les tient", () => {
+    const policy = { IsHidden: true, EnableLiveTvAccess: false, EnabledChannels: ["c"], EnableSharedDeviceControl: true, EnableContentDownloading: true };
+    const next = applyRightsPatch(USER, policy, { enableContentDownloading: false });
+    expect(next).toEqual({ ...policy, EnableContentDownloading: false });
+    expect(Object.keys(rightsFromPolicy(policy))).not.toContain("isHidden");
   });
 
   it("repère ce que Jellyfin n'a pas retenu, sans tenir compte de l'ordre des listes", () => {
-    const reread = rightsFromPolicy({ BlockedTags: ["b", "a"], IsHidden: false });
-    expect(unappliedKeys({ blockedTags: ["a", "b"], isHidden: true }, reread)).toEqual(["isHidden"]);
+    const reread = rightsFromPolicy({ BlockedTags: ["b", "a"], EnableRemoteAccess: false });
+    expect(unappliedKeys({ blockedTags: ["a", "b"], enableRemoteAccess: true }, reread)).toEqual(["enableRemoteAccess"]);
   });
 });

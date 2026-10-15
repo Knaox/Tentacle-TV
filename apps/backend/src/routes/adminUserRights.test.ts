@@ -44,7 +44,6 @@ vi.mock("../services/jellyfinAdminFetch", () => ({
       return user ? { ok: true, data: structuredClone(user) } : { ok: false, failure: "invalid", status: 404 };
     }
     if (path === "/Library/VirtualFolders") return { ok: true, data: [{ Name: "Films", ItemId: LIB, CollectionType: "movies" }] };
-    if (path === "/Channels") return { ok: true, data: { Items: [] } };
     if (path === "/Localization/ParentalRatings") {
       return { ok: true, data: [{ Name: "12", RatingScore: { score: 12, subScore: null } }, { Name: "16", RatingScore: { score: 16, subScore: null } }] };
     }
@@ -166,7 +165,7 @@ describe("les droits d'un compte (admin)", () => {
 
   it("Jellyfin muet : 503, rien d'écrit", async () => {
     state.down = true;
-    const res = await (await app()).inject({ method: "PATCH", url: `/api/admin/users/${ALICE}/rights`, payload: { isHidden: true } });
+    const res = await (await app()).inject({ method: "PATCH", url: `/api/admin/users/${ALICE}/rights`, payload: { enableRemoteAccess: false } });
     expect([res.statusCode, res.json()]).toEqual([503, { error: "jellyfin_unreachable" }]);
   });
 

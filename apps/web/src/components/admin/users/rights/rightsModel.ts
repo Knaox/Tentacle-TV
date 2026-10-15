@@ -23,11 +23,7 @@ export interface SummaryContext {
 }
 
 /** Les droits de « Gestion », dans l'ordre de la rubrique. */
-export const MANAGEMENT_FLAGS = [
-  "enableContentDeletion", "enableCollectionManagement", "enableSubtitleManagement", "enableLyricManagement",
-  "enableLiveTvAccess", "enableLiveTvManagement", "enableRemoteControlOfOtherUsers", "enableSharedDeviceControl",
-  "enablePublicSharing",
-] as const satisfies readonly UserRightsKey[];
+export const MANAGEMENT_FLAGS = ["enableContentDeletion", "enablePublicSharing"] as const satisfies readonly UserRightsKey[];
 
 /** Vrai dès qu'une restriction de contenu est posée (même règle que le serveur, § 5). */
 export function hasParentalRestriction(rights: UserRights): boolean {
@@ -43,7 +39,6 @@ export function groupSummary(group: UserRightsGroup, rights: UserRights, context
       const parts: SummaryPart[] = [];
       if (rights.isDisabled) parts.push({ key: "summary.disabled" });
       parts.push({ key: rights.isAdministrator ? "summary.admin" : "summary.standard" });
-      if (rights.isHidden) parts.push({ key: "summary.hidden" });
       if (!rights.enableRemoteAccess) parts.push({ key: "summary.localOnly" });
       return parts;
     }

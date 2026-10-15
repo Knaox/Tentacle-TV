@@ -21,7 +21,6 @@ export function AccountBody({ rights, writer, isSelf }: GroupProps) {
     <>
       <ToggleRight field="isAdministrator" checked={rights.isAdministrator} writer={writer} lockedReason={locked("isAdministrator")} />
       <ToggleRight field="isDisabled" checked={rights.isDisabled} writer={writer} lockedReason={locked("isDisabled")} />
-      <ToggleRight field="isHidden" checked={rights.isHidden} writer={writer} />
       <ToggleRight field="enableRemoteAccess" checked={rights.enableRemoteAccess} writer={writer} />
       <NumberRight field="maxActiveSessions" value={rights.maxActiveSessions} writer={writer} />
       <NumberRight field="loginAttemptsBeforeLockout" value={rights.loginAttemptsBeforeLockout} writer={writer} />

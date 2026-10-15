@@ -24,7 +24,7 @@ vi.mock("@tentacle-tv/api-client", () => ({
     h.rightsCalls += 1;
     return { ...h.rights, refetch: () => undefined };
   },
-  useUserRightsOptions: () => ({ data: { libraries: [], channels: [], parentalRatings: [], unratedItemTypes: [], knownTags: [] }, isError: false }),
+  useUserRightsOptions: () => ({ data: { libraries: [], parentalRatings: [], unratedItemTypes: [], knownTags: [] }, isError: false }),
   useUpdateUserRights: () => ({ mutateAsync: async () => undefined }),
   userRightsRefusalOf: (error: unknown) => (error as { code?: string } | null)?.code ? { error: (error as { code: string }).code } : null,
 }));

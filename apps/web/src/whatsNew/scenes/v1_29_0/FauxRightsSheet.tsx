@@ -47,7 +47,7 @@ export function FauxRightsSheet({ name, open, rating, tag, ...animated }: FauxRi
     tag ? t("summary.blockedTags", { count: 1 }) : null,
   ].filter(Boolean).join(" · ") || t("summary.noParental");
   const summaries: Record<(typeof GROUPS)[number], string> = {
-    account: `${t("summary.standard")} · ${t("summary.hidden")}`,
+    account: `${t("summary.standard")} · ${t("summary.localOnly")}`,
     libraries: t("summary.allLibraries"),
     parental: parentalSummary,
     playback: t("summary.playbackFull"),
