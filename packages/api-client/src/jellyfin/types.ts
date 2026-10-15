@@ -1,3 +1,5 @@
+import type { AccountConnectRefusalBody } from "@tentacle-tv/shared";
+
 /** Direct streaming session config: when set, media URLs are emitted against
  *  the direct Jellyfin media base URL (with the user's own token) instead of
  *  the Tentacle backend proxy. Cleared on repeated failures via reportDirectStreamingError. */
@@ -11,7 +13,9 @@ export class JellyfinError extends Error {
   constructor(
     public status: number,
     public statusText: string,
-    public path: string
+    public path: string,
+    /** Une connexion refusée par le serveur Tentacle (désactivé, hors plage, trop de sessions…). */
+    public refusal?: AccountConnectRefusalBody,
   ) {
     super(`Media server API error ${status}: ${statusText} (${path})`);
     this.name = "JellyfinError";

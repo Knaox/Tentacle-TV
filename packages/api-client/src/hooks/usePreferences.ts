@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { reportAccountAccessBody } from "../accountAccess/accountAccessSignal";
 
 let _backendRoot = "";
 let _tokenOverride: string | null = null;
@@ -52,6 +53,8 @@ export async function tentacleApiFetch<T>(apiPath: string, init?: RequestInit): 
   const res = await fetch(`${_backendRoot}${apiPath}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
+    // Un compte bloqué (403 `account_access`) : la page de l'accès bascule tout de suite.
+    reportAccountAccessBody(res.status, msg);
     throw new TentacleApiError(msg, res.status, res.headers);
   }
   return res.json();

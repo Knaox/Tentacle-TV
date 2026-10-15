@@ -2,6 +2,7 @@ import { JELLYFIN_AUTH_HEADER, JELLYFIN_TOKEN_HEADER } from "@tentacle-tv/shared
 import { isOfflineHinted, reportNetworkSuspect, requestTimeoutMs } from "../net/requestPolicy";
 import { reportMaintenanceResponse } from "../databaseMigration/migrationSignal";
 import { JellyfinError } from "./types";
+import { inspectForbidden } from "../accountAccess/accountAccessSignal";
 
 export interface FetchWithRetryOptions {
   baseUrl: string;
@@ -143,7 +144,9 @@ export async function fetchWithRetry<T>(
         });
       }
     }
-    throw new JellyfinError(response.status, response.statusText, opts.path);
+    // Un 403 du serveur Tentacle : compte bloqué (la page bascule), ou connexion refusée en mots.
+    const refusal = opts.tentacleProxy ? await inspectForbidden(response) : undefined;
+    throw new JellyfinError(response.status, response.statusText, opts.path, refusal);
   }
   state.consecutive401Count = 0;
   if (response.status === 204) return undefined as T;

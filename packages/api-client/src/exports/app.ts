@@ -21,6 +21,18 @@ export { createMigrationGate, type MigrationGate, type MigrationGateDeps } from 
 export { checkServerDatabase } from "../databaseMigration/migrationPoller";
 export { useDatabaseMigrationGate, type DatabaseMigrationGateOptions } from "../databaseMigration/useDatabaseMigrationGate";
 
+// L'accès du compte (désactivé, hors plage — serveur 1.30) : le signal que toute
+// réponse et le socket déposent, la porte qui relit à la réouverture, et le crochet
+export {
+  reportAccountAccess, reportAccountAccessBody, reportAccountAccessResponse, reportAccountAccessMessage,
+  inspectForbidden, readAccountAccess, subscribeAccountAccess,
+} from "../accountAccess/accountAccessSignal";
+export {
+  createAccountAccessGate, accountAccessRecheckDelay, ACCESS_RECHECK_MAX_MS, ACCESS_OPENING_MARGIN_MS,
+  type AccountAccessGate, type AccountAccessGateDeps, type AccountAccessFetch,
+} from "../accountAccess/accountAccessGate";
+export { useAccountAccess, fetchAccountAccess, type AccountAccessOptions } from "../accountAccess/useAccountAccess";
+
 // Direct streaming config
 export {
   useStreamingConfig, fetchStreamingConfig, setStreamingConfigBackendUrl, STREAMING_CONFIG_QUERY_KEY, type StreamingConfig,

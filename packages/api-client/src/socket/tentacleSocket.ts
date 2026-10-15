@@ -240,8 +240,9 @@ export function resetSocketSession(): void {
  * pas abouti) : la connexion fermée par `resetSocketSession` reprend avec ce
  * jeton, pour les consommateurs qui la tiennent encore — eux ne la reprendront
  * pas, leur jeton n'ayant pas bougé. Sans consommateur, rien ne s'ouvre.
+ * Sans jeton : le MÊME — le compte a retrouvé l'accès (§ 9.1 des droits).
  */
-export function resumeSocketSession(token: string): void {
+export function resumeSocketSession(token: string | null | undefined = authToken): void {
   authToken = token;
   authClosed = false;
   if (refCount > 0 && !ws && !reconnectTimer) connect();
