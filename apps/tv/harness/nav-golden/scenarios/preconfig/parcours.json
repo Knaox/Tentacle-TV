@@ -1,6 +1,6 @@
 {
   "domain": "preconfig",
-  "reference": "PENDING",
+  "reference": "19f05d15d",
   "scenarios": [
     {
       "id": "preconfig-parcours-famille",
@@ -349,11 +349,17 @@
           }
         },
         {
-          "do": "right",
+          "do": [
+            "wait:1.5",
+            "left",
+            "left",
+            "right",
+            "right"
+          ],
           "expect": {
             "focus": "profiles:tile:2"
           },
-          "why": "« Qui regarde ? » entre sur Léa, qu'on vient de quitter"
+          "why": "Tom, la troisième tuile (depuis le bord gauche de la rangée)"
         },
         {
           "do": "select",
@@ -467,11 +473,15 @@
           }
         },
         {
-          "do": "left",
+          "do": [
+            "wait:1.5",
+            "left",
+            "left"
+          ],
           "expect": {
             "focus": "profiles:tile:0"
           },
-          "why": "« Qui regarde ? » entre sur Léa, qu'on vient de quitter"
+          "why": "le propriétaire, en tête de la rangée"
         },
         {
           "do": "select",

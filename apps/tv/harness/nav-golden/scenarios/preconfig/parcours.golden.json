@@ -1,0 +1,1479 @@
+{
+  "format": 1,
+  "domain": "preconfig",
+  "suite": "parcours",
+  "reference": {
+    "sha": "19f05d15d3f556793b160008845a499a1ba77fd5",
+    "label": "référence 19f05d15d"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "0d02ee212ee3b5bf",
+  "device": {
+    "kind": "simulateur",
+    "name": "nav-preconfig",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-15T16:57:34.495Z",
+  "scenarios": {
+    "preconfig-parcours-famille": {
+      "hash": "f211c9990a81",
+      "durationMs": 112448,
+      "start": {
+        "app": "foreground",
+        "focus": "pairing:showCode",
+        "label": "Afficher le code de jumelage",
+        "frame": [
+          495,
+          673,
+          473,
+          68
+        ],
+        "groups": [],
+        "route": "PairCode",
+        "params": null,
+        "stack": [
+          "PairCode"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            495,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            990,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pairing:url",
+          "label": "Adresse du serveur",
+          "frame": [
+            410,
+            512,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:http://{backend}\n",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:banc\n",
+          "app": "foreground",
+          "focus": "pairing:username",
+          "label": "Nom d'utilisateur",
+          "frame": [
+            410,
+            436,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            609,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "type:banc",
+          "app": "foreground",
+          "focus": null,
+          "label": null,
+          "frame": null,
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "pairing:password",
+          "label": "Mot de passe",
+          "frame": [
+            410,
+            609,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "pairing:signIn",
+          "label": "Se connecter",
+          "frame": [
+            615,
+            757,
+            279,
+            68
+          ],
+          "groups": [
+            "pairing:actions"
+          ],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "profiles:tile:0",
+          "label": "Knaoxtest",
+          "frame": [
+            548,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "launch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/auth/login",
+            "POST /api/pair/tv-token",
+            "POST /api/auth/logout",
+            "POST /api/family/tv/enroll"
+          ]
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0",
+          "label": "Animés, Dans la barre",
+          "frame": [
+            556,
+            338,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/family/tv/sessions"
+          ],
+          "texts": [
+            true
+          ]
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0",
+          "label": "Animés, Pas dans la barre",
+          "frame": [
+            556,
+            338,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "railSetup:row:0:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            338,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            338,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "railSetup:row:1:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            434,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:1:move",
+          "label": "Déplacer : Animés",
+          "frame": [
+            1532,
+            434,
+            240,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "left",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "railSetup:continue",
+          "label": "Continuer",
+          "frame": [
+            556,
+            652,
+            237,
+            68
+          ],
+          "groups": [
+            "railSetup:actions"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:applyTile:0",
+          "label": "Léa, Pas coché",
+          "frame": [
+            712,
+            431,
+            230,
+            276
+          ],
+          "groups": [
+            "railSetup:applyTiles"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true,
+            true
+          ]
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "railSetup:applyTile:1",
+          "label": "Tom, Pas coché",
+          "frame": [
+            978,
+            431,
+            230,
+            276
+          ],
+          "groups": [
+            "railSetup:applyTiles"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:applyTile:1",
+          "label": "Tom, Coché",
+          "frame": [
+            978,
+            431,
+            230,
+            276
+          ],
+          "groups": [
+            "railSetup:applyTiles"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "railSetup:applyConfirm",
+          "label": "Appliquer à 1 profil",
+          "frame": [
+            671,
+            771,
+            348,
+            68
+          ],
+          "groups": [
+            "railSetup:applyActions"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "storage": {
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-tom\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true}}"
+          }
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            278,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            566,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
+          "label": "Séries",
+          "frame": [
+            56,
+            638,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nav:RailShowAll",
+          "label": "Tout afficher",
+          "frame": [
+            56,
+            710,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            278,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Réglages",
+          "frame": [
+            56,
+            964,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:SwitchProfile",
+          "label": "Changer de profil",
+          "frame": [
+            56,
+            892,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "profiles:tile:0",
+          "label": "Knaoxtest",
+          "frame": [
+            548,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "switch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "profiles:tile:1",
+          "label": "Léa, Invité",
+          "frame": [
+            836,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "switch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "railSetup:row:0",
+          "label": "Films, Dans la barre",
+          "frame": [
+            556,
+            338,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/family/tv/sessions"
+          ],
+          "texts": [
+            true,
+            true,
+            true
+          ]
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "railSetup:row:1",
+          "label": "Séries, Dans la barre",
+          "frame": [
+            556,
+            434,
+            960,
+            84
+          ],
+          "groups": [
+            "railSetup:list"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "railSetup:continue",
+          "label": "Continuer",
+          "frame": [
+            556,
+            556,
+            237,
+            68
+          ],
+          "groups": [
+            "railSetup:actions"
+          ],
+          "route": "RailSetup",
+          "params": {
+            "origin": "session"
+          },
+          "stack": [
+            "RailSetup"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            369,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Léa, Réglages",
+          "frame": [
+            56,
+            964,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:SwitchProfile",
+          "label": "Changer de profil",
+          "frame": [
+            56,
+            892,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "profiles:tile:0",
+          "label": "Knaoxtest",
+          "frame": [
+            548,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "switch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/pair/self/revoke"
+          ]
+        },
+        {
+          "do": [
+            "wait:1.5",
+            "left",
+            "left",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "profiles:tile:2",
+          "label": "Tom",
+          "frame": [
+            1124,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "switch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/family/tv/sessions"
+          ],
+          "storage": {
+            "tentacle_tv_rail_profiles": "{\"banc-user\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-tom\":{\"masquees\":[\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"order\":[\"Recommendations\",\"Watchlist\",\"Favorites\",\"Library_db4c1708cbb5dd1676284a40f2950aba\",\"Library_d565273fd114d77bdf349a2896867069\",\"Library_acf898949f3c87c958b3784cb05fd4d1\"],\"setupDone\":true},\"banc-guest\":{\"masquees\":[],\"setupDone\":true}}"
+          }
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            278,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "down",
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
+          "frame": [
+            56,
+            566,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "preconfig-relance": {
+      "hash": "b5620d696231",
+      "durationMs": 32747,
+      "start": {
+        "app": "foreground",
+        "focus": "profiles:tile:0",
+        "label": "Knaoxtest",
+        "frame": [
+          548,
+          379,
+          248,
+          313
+        ],
+        "groups": [
+          "profiles:tiles"
+        ],
+        "route": "Profiles",
+        "params": {
+          "intent": "launch"
+        },
+        "stack": [
+          "Profiles"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "profiles:tile:0",
+          "label": "Knaoxtest",
+          "frame": [
+            548,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "launch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "profiles:tile:1",
+          "label": "Léa, Invité",
+          "frame": [
+            836,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "launch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/family/tv/sessions"
+          ]
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            56,
+            369,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "nav:Settings",
+          "label": "Léa, Réglages",
+          "frame": [
+            56,
+            964,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nav:SwitchProfile",
+          "label": "Changer de profil",
+          "frame": [
+            56,
+            892,
+            309,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "profiles:tile:1",
+          "label": "Léa, Invité",
+          "frame": [
+            836,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "switch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:1.5",
+            "left",
+            "left"
+          ],
+          "app": "foreground",
+          "focus": "profiles:tile:0",
+          "label": "Knaoxtest",
+          "frame": [
+            548,
+            379,
+            248,
+            313
+          ],
+          "groups": [
+            "profiles:tiles"
+          ],
+          "route": "Profiles",
+          "params": {
+            "intent": "switch"
+          },
+          "stack": [
+            "Profiles"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            248,
+            556,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": {
+            "entrance": true
+          },
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/family/tv/sessions"
+          ]
+        }
+      ]
+    }
+  }
+}
