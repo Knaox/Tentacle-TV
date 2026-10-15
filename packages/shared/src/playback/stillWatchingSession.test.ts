@@ -53,7 +53,7 @@ describe("« Vous regardez encore ? » — le minuteur", () => {
   });
 
   it("en pause, un geste ne ferme rien : seule la reprise de la lecture en sort", () => {
-    let session = run(initialStillWatchingSession(), 0, 14_000);
+    const session = run(initialStillWatchingSession(), 0, 14_000);
     expect(session.phase).toBe("paused");
     expect(stillWatchingActivity(session, 15_000)).toBe(session);
     // La lecture tourne encore pendant la grâce : c'est le lecteur qui n'a pas encore obéi.
