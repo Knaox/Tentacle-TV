@@ -17,6 +17,8 @@ const profile = (userId, name, patch = {}) => ({
 export const SOLO = [profile("banc-user", "Knaoxtest")];
 /** Le compte du banc et une invitée sans PIN. */
 export const DUO = [...SOLO, profile("banc-guest", "Léa", { kind: "guest", color: "teal", createdBy: "banc-user", guestRights: { requestTitles: false }, manage: null })];
+/** La même famille vue par un serveur 1.30.0 : sans code, le propriétaire ne gère rien — il le ferait avec un code. */
+export const DUO_130 = [{ ...DUO[0], manage: null, manageNeedsPin: true }, DUO[1]];
 
 export function serveFamily(data, profiles) {
   const paired = { userId: "banc-user", name: "Knaoxtest" };
