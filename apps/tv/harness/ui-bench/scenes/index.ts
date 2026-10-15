@@ -27,6 +27,7 @@ import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
 import { PLAYHEAD_SCENES } from "./playheadScenes";
 import { QUALITY_SCENES } from "./qualityScenes";
 import { RAIL_SCENES } from "./railScenes";
+import { RAIL_SETUP_SCENES } from "./railSetupScenes";
 import { REQUEST_SCENES } from "./requestScenes";
 import { SEARCH_SCENES } from "./searchScenes";
 import { SETTINGS_SCENES } from "./settingsScenes";
@@ -43,6 +44,8 @@ import type { BenchScene } from "./types";
  */
 export const SCENES: BenchScene[] = [
   ...PAIRING_SCENES,
+  // La préconfiguration de la barre : après le jumelage (ou un profil ouvert), avant l'accueil.
+  ...RAIL_SETUP_SCENES,
   ...HOME_SCENES,
   ...NAV_SCENES,
   ...RAIL_SCENES,

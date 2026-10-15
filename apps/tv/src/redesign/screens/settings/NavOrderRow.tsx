@@ -58,7 +58,11 @@ export const NavOrderRow = memo(function NavOrderRow({ index, entry, moving, onM
   );
 });
 
-function Surface({ focused, moving, children }: { focused: boolean; moving?: boolean; children: (dark: boolean) => ReactNode }) {
+/**
+ * La surface d'une ligne : verre au repos, blanche au focus, liseré de la
+ * marque quand on la déplace. Partagée avec la préconfiguration de la barre.
+ */
+export function NavRowSurface({ focused, moving, children }: { focused: boolean; moving?: boolean; children: (dark: boolean) => ReactNode }) {
   const p = useFocusProgress(focused);
   const lift = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (moving ? 0.03 : 0.02) * p.value }] }));
   const onLayer = useAnimatedStyle(() => ({ opacity: p.value }));
@@ -79,7 +83,7 @@ function MainBody({ index, entry, moving, focused }: { index: number; entry: Nav
   const { t } = useTranslation("preferences");
   const hints = useRemoteHints();
   return (
-    <Surface focused={focused} moving={moving}>
+    <NavRowSurface focused={focused} moving={moving}>
       {(dark) => {
         const main = dark ? colors.ctaFg : entry.hidden ? colors.textTertiary : colors.text;
         const soft = dark ? scrim(0.55) : colors.textTertiary;
@@ -98,14 +102,14 @@ function MainBody({ index, entry, moving, focused }: { index: number; entry: Nav
           </View>
         );
       }}
-    </Surface>
+    </NavRowSurface>
   );
 }
 
 function VisibilityBody({ hidden, label, focused }: { hidden: boolean; label: string; focused: boolean }) {
   return (
     <View style={styles.visibility}>
-      <Surface focused={focused}>
+      <NavRowSurface focused={focused}>
         {(dark) => {
           const color = dark ? colors.ctaFg : hidden ? colors.textTertiary : colors.text;
           return (
@@ -117,7 +121,7 @@ function VisibilityBody({ hidden, label, focused }: { hidden: boolean; label: st
             </View>
           );
         }}
-      </Surface>
+      </NavRowSurface>
     </View>
   );
 }
