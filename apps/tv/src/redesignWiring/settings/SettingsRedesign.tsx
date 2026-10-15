@@ -19,6 +19,7 @@ import { useHomeSettings } from "./useHomeSettings";
 import { useLicensesSettings } from "./useLicensesSettings";
 import { useNavigationSettings } from "./useNavigationSettings";
 import { useOwnPinReturn } from "./useOwnPinReturn";
+import { useRailSetupTargets } from "../railSetup/useRailSetupTargets";
 import { useProfileActions } from "./useProfileActions";
 import { useRenderTierSetting } from "./useRenderTierSetting";
 import { useSettingsModel } from "./useSettingsModel";
@@ -41,7 +42,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
  * décidé par tv-core (`focus/settingsFocus.ts`, `nav/arrange.ts`) et posé par
  * l'applicateur `platform/tvos/screens/settings.tsx`.
  */
-export function SettingsRedesign({ route }: Props) {
+export function SettingsRedesign({ navigation, route }: Props) {
   const model = useSettingsModel();
   // Famille (Apple TV) : le profil ouvert et ses gestes ; nul sur une TV d'avant les profils.
   const profiles = useProfileActions();
@@ -58,6 +59,12 @@ export function SettingsRedesign({ route }: Props) {
   // Au retour du pavé de son code PIN, le focus rejoint la section « Code PIN ».
   const onReturn = useOwnPinReturn(profiles.pinOpened);
   const screen = useRedesignScreen({ railKey: "Settings", entryKey: settingsEntryKey(tab), focus, onReturn });
+  // Le propriétaire de la famille : sa barre, appliquée à d'autres profils de cette TV (la préconfiguration).
+  const railTargets = useRailSetupTargets().targets.length;
+  const onApplyNavToProfiles = useMemo(
+    () => (railTargets > 0 ? () => navigation.navigate("RailSetup", { origin: "settings" }) : undefined),
+    [railTargets, navigation],
+  );
   // Retour annule d'abord un déplacement en cours dans l'onglet Navigation.
   useBackLayer("menu", nav.navigation.movingKey !== null, nav.cancelNavMove);
   useSettingsGroups(screen.focus);
@@ -115,6 +122,7 @@ export function SettingsRedesign({ route }: Props) {
           onToggleNavEntry={nav.onToggleNavEntry}
           onShowAllNav={nav.onShowAllNav}
           onResetNavOrder={nav.onResetNavOrder}
+          onApplyNavToProfiles={onApplyNavToProfiles}
         />
       </TabDestinationProvider>
       {/* Une seule liste de choix : celle d'un réglage de bibliothèque, ou les favoris du bandeau. */}

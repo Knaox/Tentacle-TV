@@ -138,6 +138,8 @@ export interface SettingsViewProps {
   onToggleNavEntry?: (key: string) => void;
   onShowAllNav?: () => void;
   onResetNavOrder?: () => void;
+  /** Le propriétaire de la famille : « Appliquer à d'autres profils » (absent : le bouton ne paraît pas). */
+  onApplyNavToProfiles?: () => void;
   onChoose?: (value: string) => void;
   /** Ouvre un document de l'onglet « Licences » dans le lecteur. */
   onOpenLicense?: (index: number) => void;
@@ -256,6 +258,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onToggleEntry={props.onToggleNavEntry}
                   onShowAll={props.onShowAllNav}
                   onResetOrder={props.onResetNavOrder}
+                  onApplyToProfiles={props.onApplyNavToProfiles}
                 />
               ) : null}
               {tab === "about" ? <AboutPanel about={about} /> : null}

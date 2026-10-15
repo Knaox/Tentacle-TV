@@ -44,15 +44,19 @@ export const settingsLicenseBlockKey = (index: number): string => `settings:lice
 export const NAV_SETTINGS_ROW_PREFIX = "settings:nav:";
 export const navSettingsRowKey = (slot: number): string => `${NAV_SETTINGS_ROW_PREFIX}${slot}`;
 
+/** « Appliquer à d'autres profils » (le propriétaire de la famille) : l'étape de la préconfiguration. */
+export const NAV_SETTINGS_APPLY_KEY = `${NAV_SETTINGS_ROW_PREFIX}applyProfiles`;
+
 /**
  * Ce qui devient infocalisable le temps d'un déplacement (RG-8) : la pastille
- * de chaque ligne, « Tout afficher », « Ordre par défaut » — HAUT / BAS ne
- * quittent pas les lignes, l'entrée soulevée suit le focus.
+ * de chaque ligne, « Tout afficher », « Ordre par défaut », « Appliquer à
+ * d'autres profils » — HAUT / BAS ne quittent pas les lignes, l'entrée
+ * soulevée suit le focus.
  */
 export function navSettingsLockedKeys(rowCount: number): string[] {
   const keys: string[] = [];
   for (let slot = 0; slot < rowCount; slot++) keys.push(`${navSettingsRowKey(slot)}:visibility`);
-  keys.push(`${NAV_SETTINGS_ROW_PREFIX}showAll`, `${NAV_SETTINGS_ROW_PREFIX}resetOrder`);
+  keys.push(`${NAV_SETTINGS_ROW_PREFIX}showAll`, `${NAV_SETTINGS_ROW_PREFIX}resetOrder`, NAV_SETTINGS_APPLY_KEY);
   return keys;
 }
 

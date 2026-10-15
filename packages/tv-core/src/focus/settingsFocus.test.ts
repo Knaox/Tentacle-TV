@@ -35,6 +35,7 @@ describe("Réglages › Navigation", () => {
     expect(navSettingsRowKey(3)).toBe("settings:nav:3");
     expect(navSettingsLockedKeys(2)).toEqual([
       "settings:nav:0:visibility", "settings:nav:1:visibility", "settings:nav:showAll", "settings:nav:resetOrder",
+      "settings:nav:applyProfiles",
     ]);
   });
 

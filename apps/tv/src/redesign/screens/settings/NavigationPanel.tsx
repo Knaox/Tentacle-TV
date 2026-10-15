@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { NAV_SETTINGS_APPLY_KEY } from "@tentacle-tv/tv-core";
 import { PillButton } from "../../controls/PillButton";
 import { NavOrderRow } from "./NavOrderRow";
 import { SectionTitle } from "./settingsParts";
@@ -12,14 +13,16 @@ import type { SettingsNavigation } from "./settingsTypes";
  * là, masquées comprises, dans l'ordre de la barre : OK sur une ligne la
  * soulève (HAUT / BAS la déplacent, OK la pose, Retour annule) ; la pastille
  * de droite l'affiche ou la masque. « Tout afficher » et « Ordre par défaut »
- * ne paraissent que s'ils ont quelque chose à faire.
+ * ne paraissent que s'ils ont quelque chose à faire ; « Appliquer à d'autres
+ * profils », que pour le propriétaire d'une famille dont d'autres profils
+ * vivent sur cette TV (`onApplyToProfiles`).
  *
  * Branchement : le magasin d'épinglage partagé (`useRailPinning` : masquées
  * et ordre choisi, `applyRailOrder`), les bibliothèques (`useLibraries`) ; le
  * déplacement vit dans l'intégration (`movingKey`, l'ordre en cours).
  *
  * Clés de focus : `settings:nav:<i>`, `settings:nav:<i>:visibility`,
- * `settings:nav:showAll`, `settings:nav:resetOrder`.
+ * `settings:nav:showAll`, `settings:nav:resetOrder`, `settings:nav:applyProfiles`.
  */
 
 export interface NavigationPanelProps {
@@ -28,6 +31,8 @@ export interface NavigationPanelProps {
   onToggleEntry?: (key: string) => void;
   onShowAll?: () => void;
   onResetOrder?: () => void;
+  /** Le propriétaire de la famille : sa barre, appliquée à d'autres profils de cette TV. */
+  onApplyToProfiles?: () => void;
 }
 
 export const NavigationPanel = memo(function NavigationPanel({
@@ -36,6 +41,7 @@ export const NavigationPanel = memo(function NavigationPanel({
   onToggleEntry,
   onShowAll,
   onResetOrder,
+  onApplyToProfiles,
 }: NavigationPanelProps) {
   const { t } = useTranslation(["preferences", "nav"]);
   const { entries, movingKey, canShowAll, canResetOrder } = navigation;
@@ -43,7 +49,7 @@ export const NavigationPanel = memo(function NavigationPanel({
     <View style={styles.root}>
       <View>
         <SectionTitle title={t("preferences:navigationTitle")} caption={t("preferences:navigationCaption")} />
-        {canShowAll || canResetOrder ? (
+        {canShowAll || canResetOrder || onApplyToProfiles ? (
           <View style={styles.actions}>
             {canShowAll ? (
               <PillButton label={t("nav:railShowAll")} icon="eye" size="md" focusKey="settings:nav:showAll" onPress={onShowAll} />
@@ -55,6 +61,15 @@ export const NavigationPanel = memo(function NavigationPanel({
                 size="md"
                 focusKey="settings:nav:resetOrder"
                 onPress={onResetOrder}
+              />
+            ) : null}
+            {onApplyToProfiles ? (
+              <PillButton
+                label={t("nav:railSetup.settingsApply")}
+                icon="user"
+                size="md"
+                focusKey={NAV_SETTINGS_APPLY_KEY}
+                onPress={onApplyToProfiles}
               />
             ) : null}
           </View>
