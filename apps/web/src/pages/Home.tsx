@@ -192,8 +192,8 @@ export function Home() {
         )}
 
         <div className="relative z-10 space-y-0 pb-24">
-          {rows.map((row, i) => (
-            <HomeRow key={row.key} rowKey={row.key} animDelay={150 + i * 100} data={data} />
+          {rows.map((row) => (
+            <HomeRow key={row.key} rowKey={row.key} data={data} />
           ))}
         </div>
       </CardDensityProvider>

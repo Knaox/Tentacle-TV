@@ -8,10 +8,10 @@ import { MediaRow } from "../rows/MediaRow";
  * se monte que si la rangée est active — aucune requête sinon ; sans favori,
  * rien (l'accueil garde son dégradé silencieux).
  */
-export function HomeFavoritesRow({ animDelay }: { animDelay: number }) {
+export function HomeFavoritesRow() {
   const { t } = useTranslation("common");
   const { data: favorites } = useFavorites();
   if (!favorites) return null;
   // Vide : rien — mais après la tenue (le dernier cœur décoché part au lâcher).
-  return <MediaRow title={t("common:myFavorites")} items={favorites} animDelay={animDelay} href="/favorites" hideWhenEmpty />;
+  return <MediaRow title={t("common:myFavorites")} items={favorites} href="/favorites" hideWhenEmpty />;
 }

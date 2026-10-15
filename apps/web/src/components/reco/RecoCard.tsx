@@ -25,7 +25,6 @@ interface RecoCardProps {
   item: RecoRowItem;
   index: number;
   width?: number | null;
-  entranceDelay?: number | null;
   onHoverIndex?: (index: number | null) => void;
   onDismissed?: (itemKey: string) => void;
   /** La rangée qui porte la carte : sa raison n'est pas répétée sous la carte. */
@@ -52,7 +51,6 @@ export const RecoCard = memo(function RecoCard({
   item,
   index,
   width,
-  entranceDelay,
   onHoverIndex,
   onDismissed,
   reasonRow,
@@ -131,8 +129,6 @@ export const RecoCard = memo(function RecoCard({
         width: cardWidthStyle(width, POSTER_WIDTH.md, POSTER_VW),
         // La carte soulevée passe devant sa voisine — son ombre aussi (cf. CardFrame).
         zIndex: hovered ? 2 : undefined,
-        animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
-        animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
       }}
       onMouseEnter={() => {
         setHovered(true);

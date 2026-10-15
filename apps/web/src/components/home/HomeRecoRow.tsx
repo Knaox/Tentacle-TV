@@ -5,7 +5,6 @@ import { HomeRecoFilterChip } from "./HomeRecoFilterChip";
 
 interface HomeRecoRowProps {
   rowKey: string;
-  animDelay: number;
   /** Cette rangée porte la puce du filtre de plateformes (la première servie). */
   filterChip?: boolean;
 }
@@ -22,7 +21,7 @@ const FILTER_CHIP = <HomeRecoFilterChip />;
  * miroir : la bonne page se demande dès le premier rendu. Rangée absente :
  * rien, jamais de squelette ici (l'accueil garde son dégradé silencieux).
  */
-export function HomeRecoRow({ rowKey, animDelay, filterChip }: HomeRecoRowProps) {
+export function HomeRecoRow({ rowKey, filterChip }: HomeRecoRowProps) {
   const { selected } = useRecoFilter();
   const { data: page } = useRecoPageVisit(selected);
   // Absente de la page servie (serveur ancien, filtre trop strict) : elle se tait.
@@ -31,7 +30,6 @@ export function HomeRecoRow({ rowKey, animDelay, filterChip }: HomeRecoRowProps)
   return (
     <RecoRowSlot
       row={row}
-      animDelay={animDelay}
       headerTrailing={filterChip ? FILTER_CHIP : undefined}
     />
   );

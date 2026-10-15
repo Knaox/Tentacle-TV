@@ -9,6 +9,7 @@ import { useRowCardWidth } from "../rows/useRowCardWidth";
 import { useRowWindow } from "../rows/useRowWindow";
 import { rowIntrinsicHeight } from "../rows/rowTrackReserve";
 import { useRowTrackReserve } from "../rows/useRowTrackReserve";
+import { useRowEntrance } from "../rows/useRowEntrance";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
@@ -17,7 +18,6 @@ import { RecoCard } from "./RecoCard";
 interface RecoRowProps {
   title: string;
   items: RecoRowItem[];
-  animDelay?: number;
   /** Après le titre, toujours visible (la puce du filtre sur l'accueil). */
   headerTrailing?: ReactNode;
   /** La raison de la rangée (son thème, sa graine) : les cartes ne la répètent pas. */
@@ -38,18 +38,21 @@ interface RecoRowProps {
  * parti — retirer une carte plus tôt ferait glisser sa voisine sous le
  * curseur. « Ne plus me proposer », lui, part tout de suite.
  */
-export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow }: RecoRowProps) {
+export function RecoRow({ title, items, headerTrailing, reasonRow }: RecoRowProps) {
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
   const rowRef = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
   const cardWidth = useRowCardWidth(scrollRef, "poster");
   const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
+  // L'entrée, une fois (cf. MediaRow, `rowEntrance`).
+  const holdEntrance = useRowEntrance(scrollRef, visible);
   const setRowRoot = useCallback((el: HTMLElement | null) => {
     rowRef.current = el;
     setRowEl(el);
     observeRow(el);
-  }, [observeRow]);
+    holdEntrance(el);
+  }, [observeRow, holdEntrance]);
   const controls = useHoverMount(200);
   // La page défile sous un curseur immobile : la rangée n'est plus survolée
   // (cf. RecoCard), elle se relâche — ses titres jugés partent.
@@ -72,14 +75,6 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
   const cardsMounted = visible && range.end >= range.start;
   const cardHeight = useRowTrackReserve({ scrollRef, cardWidth, shape: "poster", kind: "reco", cardsMounted });
   const caleHeight = cardsMounted ? undefined : (cardHeight ?? undefined);
-
-  // Cascade d'entrée jouée une seule fois (cf. MediaRow — même raison).
-  const stagger = useRef(true);
-  useEffect(() => {
-    if (!stagger.current || range.end < range.start) return;
-    const id = setTimeout(() => { stagger.current = false; }, 760);
-    return () => clearTimeout(id);
-  }, [range.start, range.end]);
 
   const handleScroll = useCallback(() => {
     onScroll();
@@ -116,12 +111,7 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
       onKeyDown={handleKeyDown}
       onMouseEnter={controls.onMouseEnter}
       onMouseLeave={controls.onMouseLeave}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(16px)",
-        transition: `opacity 0.35s ease ${animDelay}ms, transform 0.35s ease ${animDelay}ms`,
-        ...(cardHeight != null && { containIntrinsicSize: `auto ${rowIntrinsicHeight(cardHeight)}px` }),
-      }}
+      style={cardHeight != null ? { containIntrinsicSize: `auto ${rowIntrinsicHeight(cardHeight)}px` } : undefined}
     >
       <RowHeader title={title} trailing={headerTrailing} />
 
@@ -150,14 +140,12 @@ export function RecoRow({ title, items, animDelay = 0, headerTrailing, reasonRow
               )}
               {cards.slice(range.start, range.end + 1).map((item, offset) => {
                 const i = range.start + offset;
-                const entrance = stagger.current ? Math.min(i * 40, 400) : null;
                 return (
                   <RecoCard
                     key={item.key}
                     item={item}
                     index={i}
                     width={cardWidth}
-                    entranceDelay={entrance}
                     onHoverIndex={track.setHoveredIndex}
                     reasonRow={reasonRow}
                   />

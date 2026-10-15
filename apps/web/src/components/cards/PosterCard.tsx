@@ -27,15 +27,6 @@ interface PosterCardProps {
    * on retombe alors sur le `clamp` responsive.
    */
   width?: number | null;
-  /**
-   * Décalage de la cascade d'entrée, en ms. `null` = pas d'animation du tout.
-   *
-   * La rangée ne l'accorde qu'à sa PREMIÈRE fenêtre. Depuis que les cartes hors
-   * champ sont démontées, une carte qui revient à l'écran se remonte : garder le
-   * décalage la ferait attendre jusqu'à 360 ms avant d'apparaître, et la rangée
-   * clignoterait en cascade à chaque défilement.
-   */
-  entranceDelay?: number | null;
   /** Signale à la rangée quelle carte est survolée, pour l'épingler dans sa fenêtre. */
   onHoverIndex?: (index: number | null) => void;
 }
@@ -61,7 +52,6 @@ export const PosterCard = memo(function PosterCard({
   size = "md",
   posterImageMode = "auto",
   width,
-  entranceDelay = null,
   onHoverIndex,
 }: PosterCardProps) {
   const navigate = useNavigate();
@@ -121,8 +111,6 @@ export const PosterCard = memo(function PosterCard({
       className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
         width: cardWidthStyle(width, widths, POSTER_VW),
-        animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
-        animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
         // La carte survolée passe AU-DESSUS de ses voisines. Sans cela son ombre
         // d'élévation est recouverte du côté droit par la carte suivante — un
         // frère plus tardif, donc peint après elle : le relief se lisait à plat

@@ -32,11 +32,6 @@ interface EpisodeCardProps {
    * on retombe alors sur le `clamp` responsive.
    */
   width?: number | null;
-  /**
-   * Décalage de la cascade d'entrée, en ms. `null` = pas d'animation.
-   * Accordé par la rangée à sa PREMIÈRE fenêtre seulement (cf. `PosterCard`).
-   */
-  entranceDelay?: number | null;
   /** Signale à la rangée quelle carte est survolée, pour l'épingler dans sa fenêtre. */
   onHoverIndex?: (index: number | null) => void;
 }
@@ -61,7 +56,6 @@ export const EpisodeCard = memo(function EpisodeCard({
   index,
   size = "md",
   width,
-  entranceDelay = null,
   onHoverIndex,
 }: EpisodeCardProps) {
   const navigate = useNavigate();
@@ -146,8 +140,6 @@ export const EpisodeCard = memo(function EpisodeCard({
       className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
         width: cardWidthStyle(width, widths, EPISODE_VW),
-        animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
-        animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
         // Au-dessus des voisines pendant le survol : sans cela l'ombre
         // d'élévation est recouverte par la carte suivante (cf. `PosterCard`).
         zIndex: hovered ? 2 : undefined,

@@ -75,7 +75,7 @@ export const RecoPageBody = memo(function RecoPageBody({
         ) : (
           page.rows.map((row, i) => (
             <Fragment key={row.key}>
-              <RecoRowSlot row={row} animDelay={Math.min(i, 4) * 60} />
+              <RecoRowSlot row={row} />
               {i === teaserAfter && <RecoRefineTeaser />}
             </Fragment>
           ))

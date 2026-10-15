@@ -16,6 +16,7 @@ import { useRowArrivals } from "./useRowArrivals";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
+import { useRowEntrance } from "./useRowEntrance";
 
 export type CardVariant = "poster" | "episode";
 
@@ -26,8 +27,6 @@ interface MediaRowProps {
   items: MediaItem[];
   /** Card aspect ratio. Default `poster` (2:3). Use `episode` (16:9) for resume rows. */
   variant?: CardVariant;
-  /** Stagger delay in ms for the row entrance animation. */
-  animDelay?: number;
   /** Optional href for the "Tout voir" link. */
   href?: string;
   /** Pour les épisodes en carte poster : `series` force le poster de la série. */
@@ -49,7 +48,7 @@ interface MediaRowProps {
  * bibliothèques du serveur. Il est désormais en O(écran) : ~44 cartes, quel que
  * soit le catalogue.
  */
-export function MediaRow({ title, items: served, variant = "poster", animDelay = 0, href, posterImageMode, hideWhenEmpty = false }: MediaRowProps) {
+export function MediaRow({ title, items: served, variant = "poster", href, posterImageMode, hideWhenEmpty = false }: MediaRowProps) {
   const { t } = useTranslation("common");
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
   const rowRef = useRef<HTMLElement | null>(null);
@@ -65,11 +64,14 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
   // 400 px de marge : la rangée se remplit avant d'être à l'écran.
   const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
   // Les deux observateurs (entrée + porte) partagent la racine d'un seul geste.
+  // L'entrée (titre, puis cartes de la première vue) : une fois, cf. `rowEntrance`.
+  const holdEntrance = useRowEntrance(scrollRef, visible);
   const setRowRoot = useCallback((el: HTMLElement | null) => {
     rowRef.current = el;
     setRowEl(el);
     observeRow(el);
-  }, [observeRow]);
+    holdEntrance(el);
+  }, [observeRow, holdEntrance]);
   // Survol de la rangée : il MONTE les zones de défilement (leur
   // `backdrop-filter` ne coûte rien démonté), et il TIENT la rangée — une
   // carte qu'un geste retire (« vu » dans Reprendre, le cœur décoché dans Mes
@@ -96,22 +98,6 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
   // toute la rangée, il y entre (`useRowArrivals`).
   const keys = useMemo(() => rowItemKeys(items.map(mediaKey)), [items]);
   useRowArrivals(scrollRef, keys, range);
-  /**
-   * La cascade d'entrée ne joue qu'UNE fois par rangée.
-   *
-   * Chaque carte porte un `animationDelay` tiré de son index. Laissé en place, il
-   * ferait attendre 360 ms à une carte remontée à l'index 9 — donc une rangée qui
-   * clignote en cascade à chaque défilement, à chaque retour à l'écran. Le sursis
-   * couvre la plus longue cascade (400 ms de décalage + 340 ms d'animation) pour
-   * ne pas l'interrompre en vol.
-   */
-  const stagger = useRef(true);
-  useEffect(() => {
-    if (!stagger.current || range.end < range.start) return;
-    const id = setTimeout(() => { stagger.current = false; }, 760);
-    return () => clearTimeout(id);
-  }, [range.start, range.end]);
-
   // Le même évènement de défilement sert aux deux : l'état des flèches et la
   // fenêtre de cartes. La seconde coalesce déjà ses lectures du DOM par image.
   const handleScroll = useCallback(() => {
@@ -165,12 +151,7 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
       onKeyDown={handleKeyDown}
       onMouseEnter={controls.onMouseEnter}
       onMouseLeave={controls.onMouseLeave}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(16px)",
-        transition: `opacity 0.35s ease ${animDelay}ms, transform 0.35s ease ${animDelay}ms`,
-        ...(cardHeight != null && { containIntrinsicSize: `auto ${rowIntrinsicHeight(cardHeight)}px` }),
-      }}
+      style={cardHeight != null ? { containIntrinsicSize: `auto ${rowIntrinsicHeight(cardHeight)}px` } : undefined}
     >
       <RowHeader title={title} href={href} />
 
@@ -234,14 +215,12 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
                   chaque ajout en tête — la rangée clignotait, sans images. */}
               {items.slice(range.start, range.end + 1).map((item, offset) => {
                 const i = range.start + offset;
-                const entrance = stagger.current ? Math.min(i * 40, 400) : null;
                 return variant === "episode" ? (
                   <EpisodeCard
                     key={keys[i]}
                     item={item}
                     index={i}
                     width={cardWidth}
-                    entranceDelay={entrance}
                     onHoverIndex={track.setHoveredIndex}
                   />
                 ) : (
@@ -251,7 +230,6 @@ export function MediaRow({ title, items: served, variant = "poster", animDelay =
                     index={i}
                     posterImageMode={posterImageMode}
                     width={cardWidth}
-                    entranceDelay={entrance}
                     onHoverIndex={track.setHoveredIndex}
                   />
                 );

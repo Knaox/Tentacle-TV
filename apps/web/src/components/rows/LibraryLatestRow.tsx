@@ -11,7 +11,6 @@ interface LibraryLatestRowProps {
   libraryId: string;
   libraryName: string;
   collectionType?: string;
-  delayIndex: number;
 }
 
 /**
@@ -30,7 +29,6 @@ export function LibraryLatestRow({
   libraryId,
   libraryName,
   collectionType,
-  delayIndex,
 }: LibraryLatestRowProps) {
   const { t } = useTranslation("common");
   const dataSaver = useDataSaverActive();
@@ -95,7 +93,6 @@ export function LibraryLatestRow({
       <MediaRow
         title={title}
         items={items}
-        animDelay={550 + delayIndex * 80}
         href={`/library/${libraryId}`}
         posterImageMode="series"
       />

@@ -9,7 +9,6 @@ interface RecoRowSlotProps {
   /** La rangée SERVIE (page en une requête) — plus de requête par rangée,
    *  plus de filtre client : le serveur a déjà filtré, strictement. */
   row: RecoPageRow;
-  animDelay: number;
   /** Après le titre — un élément d'identité STABLE, la mémo en dépend. */
   headerTrailing?: ReactNode;
 }
@@ -20,7 +19,7 @@ interface RecoRowSlotProps {
  * structurel de TanStack garde `row` référentiellement stable quand rien
  * n'a changé — un drapeau qui bascule ne re-rend pas treize rangées.
  */
-export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, headerTrailing }: RecoRowSlotProps) {
+export const RecoRowSlot = memo(function RecoRowSlot({ row, headerTrailing }: RecoRowSlotProps) {
   const { t, i18n } = useTranslation("reco");
   // La rangée est servie ENTIÈRE : la bannière qui met quelques-uns de ses
   // titres en lumière ne lui retire rien.
@@ -31,5 +30,5 @@ export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, headerTra
   const title = recoRowTitleText(row, t, { locale: i18n.language });
 
   if (items.length === 0) return null;
-  return <RecoRow title={title} items={items} animDelay={animDelay} headerTrailing={headerTrailing} reasonRow={row} />;
+  return <RecoRow title={title} items={items} headerTrailing={headerTrailing} reasonRow={row} />;
 });

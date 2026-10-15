@@ -26,11 +26,9 @@ export interface HomeRowData {
  */
 export function HomeRow({
   rowKey,
-  animDelay,
   data,
 }: {
   rowKey: string;
-  animDelay: number;
   data: HomeRowData;
 }) {
   const { t } = useTranslation("common");
@@ -41,7 +39,6 @@ export function HomeRow({
       <ContinueWatchingRow
         title={t("common:resumeWatching")}
         items={data.resumeItems}
-        animDelay={animDelay}
         hideWhenEmpty
       />
     );
@@ -52,7 +49,6 @@ export function HomeRow({
       <ContinueWatchingRow
         title={t("common:nextEpisodes")}
         items={data.nextUp}
-        animDelay={animDelay}
         hideWhenEmpty
       />
     );
@@ -63,7 +59,6 @@ export function HomeRow({
       <MediaRow
         title={t("common:myList")}
         items={data.watchlist}
-        animDelay={animDelay}
         href="/watchlist"
         hideWhenEmpty
       />
@@ -76,13 +71,12 @@ export function HomeRow({
         title={t("common:alreadyWatched")}
         items={data.watchedItems}
         variant="episode"
-        animDelay={animDelay}
         hideWhenEmpty
       />
     );
   }
   if (rowKey === "favorites") {
-    return <HomeFavoritesRow animDelay={animDelay} />;
+    return <HomeFavoritesRow />;
   }
   if (rowKey.startsWith("library:")) {
     const lib = data.librariesById.get(rowKey.slice("library:".length));
@@ -92,7 +86,6 @@ export function HomeRow({
         libraryId={lib.id}
         libraryName={lib.name}
         collectionType={lib.collectionType}
-        delayIndex={lib.index}
       />
     );
   }
@@ -100,7 +93,6 @@ export function HomeRow({
     return (
       <HomeRecoRow
         rowKey={rowKey.slice("reco:".length)}
-        animDelay={animDelay}
         filterChip={rowKey === data.filterChipRowKey}
       />
     );

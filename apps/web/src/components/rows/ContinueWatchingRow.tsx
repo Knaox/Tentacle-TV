@@ -4,7 +4,6 @@ import { MediaRow } from "./MediaRow";
 interface ContinueWatchingRowProps {
   title: string;
   items: MediaItem[];
-  animDelay?: number;
   hideWhenEmpty?: boolean;
 }
 
@@ -17,13 +16,12 @@ interface ContinueWatchingRowProps {
  * provides a single place to evolve the resume row independently later
  * (e.g., add a "Remove from row" gesture without touching MediaRow).
  */
-export function ContinueWatchingRow({ title, items, animDelay, hideWhenEmpty }: ContinueWatchingRowProps) {
+export function ContinueWatchingRow({ title, items, hideWhenEmpty }: ContinueWatchingRowProps) {
   return (
     <MediaRow
       title={title}
       items={items}
       variant="episode"
-      animDelay={animDelay}
       hideWhenEmpty={hideWhenEmpty}
     />
   );
