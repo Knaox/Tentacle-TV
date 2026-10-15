@@ -703,3 +703,103 @@ Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir b
   (la route du lot le refuse). À fermer dans le proxy.
 - Banc : Jellyfin 10.11 jetable, trois comptes (administrateur ; un compte qui ne supprime que
   dans UNE bibliothèque ; un compte sans droit), médias générés ; preuves dans le rapport du lot.
+
+## 9.2 Lecture et Watch Together
+
+> Lot « droits 2 » (2026-10-15), chantier S2. Capacités `watchTogether.access` et
+> `playback.rights` (1.30.0) ; sans elles, chaque client fait comme avant.
+
+### 9.2.1 Ce que Jellyfin 10.11 applique seul (mesuré sur 10.11.11 jetable, source relue)
+
+| Droit | `PlaybackInfo` | Flux, jeton du COMPTE | Flux, clé d'API (`userId`) |
+|---|---|---|---|
+| `EnableMediaPlayback` | rien (seul `PlayAccess: None` d'une fiche) | **servi** (200) | **servi** |
+| Un seul droit de conversion coupé | `TranscodingUrl` offerte quand même | image / son **copiés de force** (`TryStreamCopy`) : flux illisible ; remux jamais gardé | **rien de gardé** (`state.User` vide) |
+| Les trois coupés | `SupportsTranscoding=false`, rien de jouable, pas d'`ErrorCode` | idem | idem |
+| `RemoteClientBitrateLimit` (0 = celui du serveur) | plafond jugé sur l'IP qui parle à Jellyfin (`X-Forwarded-For` de ses `KnownProxies`) | — | — |
+| `ForceRemoteSourceTranscoding` | appliqué aux sources `IsRemote` (TV en direct, `.strm`) | — | — |
+
+Derrière le proxy, Jellyfin voit Tentacle (adresse locale) : le plafond distant n'y valait jamais.
+Le bureau (mpv), l'Apple TV (PrismCore) et l'Android TV fabriquent leurs URL sans `PlaybackInfo` :
+rien ne les jugeait.
+
+### 9.2.2 La règle — une seule, partagée
+
+- Contrat `packages/shared/src/playback/playbackRights.ts` (miroir `apps/backend/src/playback/`) :
+  `PlaybackRights` (`mediaPlayback`, `videoTranscoding`, `audioTranscoding`, `remuxing`,
+  `maxBitrate` du client), refus `playback_not_allowed` / `conversion_not_allowed` (403 `{ code }`),
+  `streamConversions(path, query, source)` (ce qu'une URL de flux fait faire au serveur, d'après
+  `CanStreamCopyVideo/Audio` de Jellyfin : codec, copie permise, définition, débit, canaux, incrustation ;
+  elle penche vers la COPIE quand elle ne sait pas), `playbackRefusal(rights, conversions)`.
+- Un changement de conteneur (« remux ») = un flux qui ne réencode NI l'image NI le son ; un réencodage
+  permis emporte le conteneur. Un remux FAIT SUR L'APPAREIL (PrismCore) ne demande rien au serveur.
+- `rightsQuality.ts` : sans droit de réencoder, « Originale » seule ; le plafond borne l'échelle et
+  impose un palier dès que la source le dépasse, même en « Originale » choisie à la main.
+  `rightsVerdict.ts` : `negotiatedRefusal` (proposition de Jellyfin), `builtUrlRefusal` (URL fabriquée),
+  `upfrontRefusal` (la fiche suffit), `rightsBitrate`.
+- `planStream` / `engineTranscodingProfiles` ne changent pas : les droits jugent ce qu'ils produisent.
+
+### 9.2.3 Le serveur
+
+- `GET /api/playback/rights` : les droits du compte pour CE client. Politique relue par la clé
+  d'administration (`/Users/{id}`), 30 s, oubliée à chaque écriture de Tentacle ; illisible : tous les
+  droits (Jellyfin décide, comme avant — la visibilité du titre reste fermée à l'échec).
+- **Plafond** : celui du compte, sinon celui du serveur ; client « local » = règle de Jellyfin
+  (`LocalNetworkSubnets` et ses exclusions `!`, sinon RFC 1918 + ULA + site local + boucle), sur
+  l'adresse RÉELLE (`getRealClientIp`). Docker Desktop / colima perdent l'adresse source : tout y paraît local.
+- **Porte du proxy** (`jellyfinProxy/playbackGate.ts`, à la place de l'appel à `streamRefused`) :
+  titre caché → 404 (inchangé) ; lecture interdite → 403 sur `PlaybackInfo`, flux, sous-titres, audio ;
+  conversion refusée → 403 ; ce qui passe sans le droit de réencoder part en copie forcée
+  (`VideoCodec=copy`, `AudioCodec=copy` — la règle de Jellyfin pour un jeton de compte, désormais
+  aussi derrière la clé prêtée) ; plafond posé sur `MaxStreamingBitrate` de `PlaybackInfo` et sur les
+  débits d'un flux converti. Les pistes de la source ne sont lues (10 min) que pour un compte à qui
+  une conversion est refusée : un compte sans restriction ne coûte aucune requête.
+- **Le fichier tel quel (`Static=true`) n'est pas plafonné** — Jellyfin non plus ; les lecteurs lisent
+  leur plafond et choisissent un palier dessous.
+- **Accepté** : la porte DIRECTE de Jellyfin (lecture directe avec le jeton du compte) reste hors de
+  portée de Tentacle (§ 7.1, règle 3) ; Jellyfin y applique son plafond (il voit l'adresse) et sa
+  copie forcée ; nos lecteurs jugent les droits avant d'y aller.
+- `ForceRemoteSourceTranscoding` : Jellyfin l'applique dans `PlaybackInfo` ; rien d'ajouté. Un lecteur
+  qui fabrique son URL statique (mpv) ne le voit pas — Tentacle n'expose ni TV en direct ni `.strm`.
+- **Bandes-annonces** : celles de YouTube relayées ne sont PAS des médias de la bibliothèque — gardées
+  pour un compte sans lecture (une affiche animée publique, sans conversion) ; les bandes-annonces
+  LOCALES de Jellyfin sont des flux du proxy : refusées comme le reste.
+- Un fichier gardé hors ligne (bureau) se lit sans le serveur : ses droits n'y ont plus prise.
+
+### 9.2.4 Les lecteurs (web, bureau, Apple TV ; Android TV reçoit la même garde)
+
+- Crochet `usePlaybackRights()` (api-client) ; rien ne se négocie avant de connaître les droits.
+- Web : la `TranscodingUrl` de Jellyfin jugée telle qu'elle partira ; le débit demandé borné. Bureau
+  (mpv) : l'URL fabriquée jugée. Apple TV : refus d'avance, PrismCore libre, chemin serveur jugé — et
+  sans droit de réencoder, le repli demande une COPIE au lieu du HLS 8 Mb/s réencodé.
+- Messages (modèle partagé des problèmes) : « La lecture n'est pas autorisée pour ce compte. » ;
+  « Ce titre doit être converti pour être lu sur cet appareil, et votre compte ne le permet pas. »,
+  avec l'aide « L'administrateur peut l'autoriser dans Jellyfin, dans les droits de lecture de votre
+  compte. » Apple TV : cadenas, Retour seul (pas de « Réessayer »). Un 403 du proxy sans verdict
+  préalable est lu par la sonde du flux (`{ code }`). Les boutons Lire des cartes restent.
+
+### 9.2.5 Watch Together
+
+- Tentacle n'emploie PAS le SyncPlay de Jellyfin (salons, synchronisation et protocole `wt:*` sont à
+  lui) ; il en suit le droit : `SyncPlayAccess` → `full` (`CreateAndJoinGroups`), `joinOnly`
+  (`JoinGroups`), `none` (`None`, et toute valeur absente). Contrat
+  `packages/shared/src/types/watchTogetherAccess.ts` (miroir), `GET /api/watch-together/access`.
+- Serveur : créer un salon et inviter → 403 `access_denied` hors `full` ; accepter → refusé à `none` ;
+  `none` n'est ni candidat (`/users`), ni invité, ni prévenu (invitation différée comprise), et
+  `/invites` lui rend une liste vide. Comme Jellyfin, le droit se juge à la création et à l'entrée :
+  un hôte qui perd `full` garde son salon (sans plus inviter) ; un membre passé à `none` en sort
+  (`wt:dissolved`, raison additive `access_revoked`) — aussitôt après une écriture de Tentacle, au guet
+  de 30 s sinon (une lecture de `/Users`, seulement tant qu'un salon existe). `ejectFromRoom(userId,
+  reason)` (`services/watchTogether/accessWatch.ts`) sert aussi à qui doit sortir un compte d'un salon.
+- Web et bureau : `none` → plus aucune trace (bouton de la barre, fiche, invitations, socket,
+  relecture au démarrage) ; `joinOnly` → ni « Créer un groupe », ni bouton de la fiche, ni « Inviter » :
+  « Votre compte peut rejoindre un groupe quand on vous y invite, mais pas en créer un. »
+- Apple TV et Android TV : Watch Together n'y existe pas — rien à masquer. Les invités de la Famille
+  ont `SyncPlayAccess: None` : la règle les couvre aussi.
+
+### 9.2.6 Hors ligne (`EnableContentDownloading`)
+
+Vérifié sur Jellyfin jetable : `GET /api/downloads/capabilities` rend `downloads: false` et
+`/api/downloads/original/:id` 404 pour un compte sans le droit ; les quatre entrées « garder hors ligne »
+du bureau (carte, fiche, saison, épisode) lisent `canDownload` et disparaissent (un titre déjà gardé reste
+lisible). Le web n'a pas de hors ligne. Rien de changé.
