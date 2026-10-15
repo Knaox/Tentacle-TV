@@ -258,6 +258,8 @@ export * from "./playback/engineCapabilities";
 export * from "./playback/streamPlan";
 // Les droits de lecture d'un compte et la règle « quelles conversions demande ce flux ».
 export * from "./playback/playbackRights";
+export * from "./playback/rightsQuality";
+export * from "./playback/rightsVerdict";
 export * from "./playback/engineProfiles";
 export * from "./playback/deviceMediaProfile";
 export * from "./playback/simulatedDeviceProfiles";
