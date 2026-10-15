@@ -441,7 +441,10 @@ ne s'y retouche à la main (`brand/avatars/README.md`, règles de dessin compris
   leur photo (`setGuestPhoto`, mêmes droits que leur PIN), depuis Réglages › Famille, ou pendant
   la session de profil de l'invité sur le bureau, par la session PERSONNELLE de l'appareil
   (`PickerProfileDto.photoEditable`). La galerie vise une cible (`useAvatarTarget` : compte ou
-  invité). Un membre change la sienne depuis ses appareils, jamais depuis un profil.
+  invité). Un membre change la sienne depuis ses appareils ; sur la TV, une session de profil (membre ou
+  invité) pose SA photo, catalogue seulement, par le proxy (capacité `avatars.devicePhoto`,
+  `deviceWrites.ts`, galerie `redesignWiring/avatars/`). La photo d'un invité posée par un AUTRE
+  (propriétaire, parent) reste la règle de la Famille (`setGuestPhoto`).
 - **Invitation unique** (règle partagée `shared` › `avatarInvite`) : un SUJET sans photo — le
   compte en session personnelle, ou l'invité habillable de la session de profil —, en ligne, une
   fois par sujet et par appareil (`tentacle_avatar_invite_seen`) : la galerie elle-même, APRÈS
