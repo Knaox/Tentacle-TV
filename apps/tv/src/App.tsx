@@ -32,6 +32,7 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { BootScreen } from "./components/BootScreen";
 import { useServerReachable } from "./hooks/useServerReachable";
 import { MigrationCurtain, MigrationRedesign, useMigrationScreen } from "./redesignWiring/overlays/MigrationRedesign";
+import { AccountAccessRedesign, useAccountAccessScreen } from "./redesignWiring/overlays/AccountAccessRedesign";
 import { navigationRef } from "./navigation/navigationRef";
 import { runAuthRefreshFlow } from "./auth/sessionFlow";
 import { wakeRevocationDrain } from "./auth/revocationQueue";
@@ -165,6 +166,8 @@ function AppContent() {
   const [playbackShown, setPlaybackShown] = useState(false);
   // La base du serveur en migration : un écran d'attente, jamais le voile hors ligne.
   const migration = useMigrationScreen({ serverUrl: currentServerUrl, playbackShown, onResume: retry });
+  // Compte désactivé ou hors plage : sa page remplace l'application, la lecture coupée.
+  const access = useAccountAccessScreen({ enabled: serverUrl !== null, playbackShown });
   // Android TV : la pile d'écrans quittée par un changement du mode Lite, si
   // l'app repart au même endroit ; sinon (et toujours sur l'Apple TV) rien.
   const [reloadState] = useState(() => reloadNavigationState(initialRouteOf(storage)));
@@ -215,11 +218,12 @@ function AppContent() {
           onReady={syncNavState}
           onStateChange={syncNavState}
         >
-          <MigrationCurtain hidden={migration.decision.hideScreens}>
+          <MigrationCurtain hidden={migration.decision.hideScreens || access.decision.hideScreens}>
             <AppNavigator />
           </MigrationCurtain>
-          <OfflineBanner visible={!isReachable && !playbackShown && migration.decision.offlineVeilAllowed} onRetry={retry} />
+          <OfflineBanner visible={!isReachable && !playbackShown && migration.decision.offlineVeilAllowed && access.decision.offlineVeilAllowed} onRetry={retry} />
           <MigrationRedesign state={migration} />
+          <AccountAccessRedesign state={access} />
           <PairingExpiredBanner />
           <TVSessionMessageHost />
         </NavigationContainer>

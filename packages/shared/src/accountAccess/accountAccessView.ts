@@ -69,3 +69,23 @@ export function accountAccessView(blocked: AccountAccessBlocked, now: number, zo
     reopening: reopeningOf(blocked, now, zone),
   };
 }
+
+/** Une heure de la journée (minutes) dans la langue de l'interface ; null : minuit (1440, `accountAccess:midnight`). */
+export function scheduleClock(minutes: number, language: string): string | null {
+  if (minutes >= 1440) return null;
+  const date = new Date(2000, 0, 1, Math.floor(minutes / 60), minutes % 60);
+  return date.toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" });
+}
+
+/** La phrase de réouverture : sa clé (`accountAccess:reopening.<kind>`) et ses variables. */
+export function reopeningCopy(reopening: Reopening, language: string): { key: string; params: Record<string, string> } {
+  if (reopening.kind === "never" || reopening.kind === "unknown") return { key: `reopening.${reopening.kind}`, params: {} };
+  const at = new Date(reopening.at);
+  return {
+    key: `reopening.${reopening.kind}`,
+    params: {
+      time: at.toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" }),
+      day: at.toLocaleDateString(language, { weekday: "long" }),
+    },
+  };
+}

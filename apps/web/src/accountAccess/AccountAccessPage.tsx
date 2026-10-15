@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Ban, Clock, Lock } from "lucide-react";
-import { accountAccessView, type AccountAccessBlocked, type Reopening, type ScheduleLine } from "@tentacle-tv/shared";
+import { accountAccessView, reopeningCopy, scheduleClock, type AccountAccessBlocked, type Reopening, type ScheduleLine } from "@tentacle-tv/shared";
 import { useAccountAccessActions, type AccountAccessAction } from "./useAccountAccessActions";
 
 /**
@@ -108,16 +108,11 @@ function Schedules({ lines, t, lang }: { lines: ScheduleLine[]; t: T; lang: stri
   );
 }
 
-/** Une heure de la journée (minutes) dans la langue de l'interface ; 1440 = minuit. */
 function clock(minutes: number, t: T, lang: string): string {
-  if (minutes >= 1440) return t("midnight");
-  const date = new Date(2000, 0, 1, Math.floor(minutes / 60), minutes % 60);
-  return new Intl.DateTimeFormat(lang, { hour: "numeric", minute: "2-digit" }).format(date);
+  return scheduleClock(minutes, lang) ?? t("midnight");
 }
 
 function reopeningText(reopening: Reopening, t: T, lang: string): string {
-  if (reopening.kind === "never" || reopening.kind === "unknown") return t(`reopening.${reopening.kind}`);
-  const time = new Intl.DateTimeFormat(lang, { hour: "numeric", minute: "2-digit" }).format(reopening.at);
-  const day = new Intl.DateTimeFormat(lang, { weekday: "long" }).format(reopening.at);
-  return t(`reopening.${reopening.kind}`, { time, day });
+  const { key, params } = reopeningCopy(reopening, lang);
+  return t(key, params);
 }

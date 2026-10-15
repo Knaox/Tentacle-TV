@@ -8,6 +8,7 @@
  * les surimpressions et les réglages, la confirmation à double
  * appui.
  */
+export * from "./accountAccessScreen";
 export * from "./choiceEntry";
 export * from "./confirmPress";
 export * from "./migrationScreen";
