@@ -17,9 +17,9 @@ export type UpdateState = ReturnType<typeof useAutoUpdate>;
 interface UpdateModalProps {
   update: UpdateState;
   /**
-   * Un autre recouvrement de démarrage est à l'écran (les nouveautés) : la
-   * pop-up attend. L'état du hook persiste, `available` est un état — elle
-   * paraîtra à la fermeture de l'autre.
+   * Ce n'est pas son tour (`startup/startupOrder.ts` : une fenêtre qui la
+   * précède n'a pas fini, ou l'on est sur le lecteur) : la pop-up attend.
+   * L'état du hook persiste, `available` est un état — elle paraîtra à son tour.
    */
   suspended?: boolean;
 }

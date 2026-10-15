@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { consumeArrival, useLiveArrival } from "./arrival";
+import { CURTAIN_STARTUP_SOURCE, consumeArrival, useLiveArrival } from "./arrival";
 import { ProfileCurtain, type CurtainPhase, type CurtainProfile } from "./ProfileCurtain";
+import { publishStartupWindow, usePublishStartupWindow } from "../../startup/startupStore";
 
 /** Après un rechargement, le rideau reste au moins ce temps : l'application pose ses premières pages dessous. */
 const HOLD_AFTER_RELOAD_MS = 450;
@@ -24,13 +25,19 @@ interface Showing {
  * arrivée annoncée sans rechargement (son profil choisi depuis « Qui
  * regarde ? »). Il se lève dès que la page a eu le temps de se poser — jamais
  * de vide entre le profil quitté et celui qui arrive.
+ *
+ * Baissé, il tient la première fenêtre du démarrage (`startup/startupOrder.ts`) :
+ * les nouveautés ou le code PIN conseillé paraissent APRÈS sa levée, jamais dessous.
  */
 export function ProfileArrival() {
   const live = useLiveArrival();
   const [showing, setShowing] = useState<Showing | null>(() => {
     const profile = consumeArrival();
+    // Publié dès le premier rendu : monté avant `App`, il précède toute fenêtre.
+    if (profile) publishStartupWindow(CURTAIN_STARTUP_SOURCE, "profile", "open");
     return profile ? { profile, hold: HOLD_AFTER_RELOAD_MS, serial: 0 } : null;
   });
+  usePublishStartupWindow(CURTAIN_STARTUP_SOURCE, "profile", showing ? "open" : "done");
   const [phase, setPhase] = useState<CurtainPhase>("shown");
 
   // Une arrivée annoncée en direct remplace ce qui se montrait ; le rideau

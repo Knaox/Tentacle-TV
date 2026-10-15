@@ -5,6 +5,13 @@ import { useFamilyAvailability } from "../useFamilyAvailability";
 export interface FamilyPinReminderState extends FamilyPinReminder {
   /** La Famille ET les rappels du compte ont répondu : la règle a tranché. */
   settled: boolean;
+  /**
+   * On sait s'il y aura un rappel : la règle a tranché, ou il n'y en aura pas
+   * — Famille absente (serveur d'avant, hors ligne, session d'un profil) ou
+   * lecture en échec. Ce qui passe APRÈS le rappel au démarrage attend ce
+   * signal (`startup/startupOrder.ts`).
+   */
+  decided: boolean;
 }
 
 /**
@@ -14,7 +21,7 @@ export interface FamilyPinReminderState extends FamilyPinReminder {
  * hors ligne, ni dans la session d'un profil du bureau.
  */
 export function useFamilyPinReminder(): FamilyPinReminderState {
-  const { available } = useFamilyAvailability();
+  const { available, settled: availabilitySettled } = useFamilyAvailability();
   const overview = useFamilyOverview({ enabled: available });
   const hints = useDismissedHints({ enabled: available });
   const userId = useUserId();
@@ -23,5 +30,7 @@ export function useFamilyPinReminder(): FamilyPinReminderState {
     hints: hints.data,
     userId,
   });
-  return { ...rule, settled: available && overview.data !== undefined && hints.data !== undefined };
+  const settled = available && overview.data !== undefined && hints.data !== undefined;
+  const failed = overview.isError || hints.isError;
+  return { ...rule, settled, decided: availabilitySettled && (!available || settled || failed) };
 }

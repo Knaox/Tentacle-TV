@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { CurtainProfile } from "./ProfileCurtain";
+import { publishStartupWindow } from "../../startup/startupStore";
 
 /**
  * L'ARRIVÉE dans un profil : le rideau au nom du profil qui se lève sur
@@ -48,7 +49,13 @@ let live: LiveArrival | null = null;
 let serial = 0;
 const listeners = new Set<() => void>();
 
+/** Le rideau baissé tient la première fenêtre du démarrage (`startup/startupOrder.ts`). */
+export const CURTAIN_STARTUP_SOURCE = "profileArrival";
+
 export function announceArrival(profile: CurtainProfile): void {
+  // Tout de suite : l'application se monte sous le rideau dans le même geste,
+  // ses fenêtres ne doivent pas le devancer. `ProfileArrival` le relâche à la levée.
+  publishStartupWindow(CURTAIN_STARTUP_SOURCE, "profile", "open");
   serial += 1;
   live = { profile, serial };
   for (const listener of listeners) listener();

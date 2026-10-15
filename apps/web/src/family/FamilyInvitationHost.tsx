@@ -7,6 +7,8 @@ import {
   useSnoozeFamilyInvitation,
 } from "@tentacle-tv/api-client";
 import { pickPosterInvitation } from "@tentacle-tv/shared";
+import type { StartupWindowState } from "../startup/startupOrder";
+import { useStartupMayShow, usePublishStartupWindow } from "../startup/startupStore";
 import { clearFamilyPosterRequest, useFamilyPosterRequest } from "./familyPosterStore";
 import { FamilyInvitationPoster } from "./FamilyInvitationPoster";
 import { FamilyPinJoined } from "./pinSuggest/FamilyPinJoined";
@@ -32,9 +34,13 @@ export const FAMILY_SETTINGS_PATH = "/settings/family";
  *
  * Acceptée, l'affiche laisse la place à « Bienvenue dans la famille de … »
  * (`FamilyPinJoined`) si le profil n'a pas de code PIN.
+ *
+ * Une fenêtre du démarrage (`startup/startupOrder.ts`) : après « Qui regarde ? »
+ * et le code PIN conseillé, avant les nouveautés. Reçue en direct pendant qu'une
+ * autre fenêtre est ouverte, elle attend sa fermeture — jamais par-dessus.
  */
 export function FamilyInvitationHost() {
-  const { available } = useFamilyAvailability();
+  const { available, settled } = useFamilyAvailability();
   const client = useJellyfinClient();
   const token = client.getAccessToken() || localStorage.getItem("tentacle_token");
   useFamilyLive({ token, enabled: available });
@@ -87,9 +93,16 @@ export function FamilyInvitationHost() {
     [dismiss, snooze],
   );
 
+  // « Bienvenue » suit une acceptation : déjà à l'écran, il garde la place.
+  const turn = useStartupMayShow("familyInvitation");
+  const decided = settled && (!available || overview.data !== undefined || overview.isError);
+  const shown = available && (joinedOwner !== null || (invitation !== null && turn));
+  const state: StartupWindowState = shown ? "open" : available && invitation ? "pending" : decided ? "done" : "undecided";
+  usePublishStartupWindow("familyInvitation", "familyInvitation", state);
+
   if (!available) return null;
   if (joinedOwner !== null) return <FamilyPinJoined owner={joinedOwner} onClose={closeJoined} />;
-  if (!invitation) return null;
+  if (!invitation || !turn) return null;
   return (
     <FamilyInvitationPoster
       key={invitation.id}

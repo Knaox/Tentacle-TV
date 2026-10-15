@@ -4,22 +4,17 @@ import { useActiveProfile } from "../../auth/profileSession";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
 import { useConnectivity } from "../../offline/useConnectivity";
 import { shouldInviteToAvatars } from "@tentacle-tv/shared";
+import { useStartupTurn } from "../../startup/startupStore";
 import { markSubjectInvited, readInvitedSubjects } from "./inviteRule";
 import { useAvatarGallery } from "./useAvatarGallery";
 import { useGuestSessionPhoto } from "./useGuestSessionPhoto";
 
-/** Le temps de laisser l'application s'installer (et un autre recouvrement se refermer). */
+/** Le temps de laisser l'application s'installer (et la fenêtre d'avant se refermer). */
 const SETTLE_MS = 1200;
 
 interface AvatarInviteProps {
   /** Bureau, ou sa préviz forcée en développement (`?whatsnewgate=1`). */
   desktop: boolean;
-  /** Un autre recouvrement de démarrage occupe l'écran (ou n'a pas encore tranché), ou l'on est sur le lecteur. */
-  busy: boolean;
-  /** L'invitation ouverte ou refermée : les autres recouvrements attendent qu'elle se taise. */
-  onOpenChange: (open: boolean) => void;
-  /** L'invitation va paraître (son délai court) ou est ouverte : le recouvrement suivant attend. */
-  onPendingChange?: (pending: boolean) => void;
 }
 
 /**
@@ -28,8 +23,11 @@ interface AvatarInviteProps {
  * l'appareil peut habiller, pour lui (`useGuestSessionPhoto`) : la galerie
  * elle-même, en mode « invite », un peu après que tout s'est calmé. Le compte
  * est noté invité dès l'ouverture — fermer, choisir ou importer, c'est pareil.
+ *
+ * La DERNIÈRE fenêtre du démarrage (`startup/startupOrder.ts`) : elle publie
+ * qu'elle va paraître, et n'ouvre qu'à son tour.
  */
-export function AvatarInvite({ desktop, busy, onOpenChange, onPendingChange }: AvatarInviteProps) {
+export function AvatarInvite({ desktop }: AvatarInviteProps) {
   const userId = useUserId();
   const profile = useActiveProfile();
   const guestTarget = useGuestSessionPhoto();
@@ -43,24 +41,18 @@ export function AvatarInvite({ desktop, busy, onOpenChange, onPendingChange }: A
   const [invited, setInvited] = useState(readInvitedSubjects);
   const { openGallery, isOpen, dialog } = useAvatarGallery("invite");
 
-  useEffect(() => {
-    onOpenChange(isOpen);
-  }, [isOpen, onOpenChange]);
-
-  const due = shouldInviteToAvatars({
+  // Ce qu'elle VEUT, indépendamment de son tour : c'est ce que les autres fenêtres lisent.
+  const wanted = shouldInviteToAvatars({
     eligible: desktop,
     subjectId,
     canChangePhoto: profile ? guestTarget !== null : true,
     online,
     hasPhoto,
-    busy,
+    busy: false,
     invited,
   });
-
-  const pending = (due && !!subjectId) || isOpen;
-  useEffect(() => {
-    onPendingChange?.(pending);
-  }, [pending, onPendingChange]);
+  const turn = useStartupTurn("avatarInvite", isOpen ? "open" : wanted ? "pending" : "done");
+  const due = wanted && turn;
 
   useEffect(() => {
     if (!due || !subjectId) return;

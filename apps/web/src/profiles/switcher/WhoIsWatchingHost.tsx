@@ -9,6 +9,7 @@ import { dropAllSessions } from "../../auth/dropSessions";
 import { focusableIn } from "../../components/ui/Modal";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { ProfileLaunchScreen, type SwitchContext } from "../launch/ProfileLaunchScreen";
+import { usePublishStartupWindow } from "../../startup/startupStore";
 import {
   closeSwitchScreen,
   resetSwitchScreen,
@@ -32,10 +33,13 @@ const EXIT_MS = 150;
  * tant que l'écran la couvre.
  *
  * Sous la bande de la fenêtre macOS (`--hote-bandeau`), jamais par-dessus :
- * la fenêtre reste déplaçable. Fermé, il ne rend rien.
+ * la fenêtre reste déplaçable. Fermé, il ne rend rien. Ouvert, il est la
+ * première fenêtre du démarrage (`startup/startupOrder.ts`) : rien ne paraît
+ * par-dessus, ce qui attendait paraît après.
  */
 export function WhoIsWatchingHost() {
   const phase = useSwitchScreenPhase();
+  usePublishStartupWindow("profileSwitch", "profile", phase === "closed" ? "done" : "open");
   // La coquille démontée (déconnexion, page sans coquille) : l'écran avec elle.
   useEffect(() => resetSwitchScreen, []);
   if (phase === "closed") return null;

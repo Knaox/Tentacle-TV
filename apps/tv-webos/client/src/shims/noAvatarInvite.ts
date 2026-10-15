@@ -6,6 +6,6 @@
  * proposer, et la galerie — `apps/web/src/profiles/`, que sa feuille ne balaie
  * pas — quitte le bundle.
  */
-export function AvatarInvite(_props: { desktop: boolean; busy: boolean; onOpenChange: (open: boolean) => void }): null {
+export function AvatarInvite(_props: { desktop: boolean }): null {
   return null;
 }

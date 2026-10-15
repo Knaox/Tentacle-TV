@@ -17,6 +17,7 @@ import { launchPassed, noteFreshLogin, noteLoggedOut, readLaunchMirror, writeLau
 import { ProfileLaunchScreen } from "./ProfileLaunchScreen";
 import { forgetStayOnDevice, readStayOnDevice, readStayOnThisServer } from "./stayOnDevice";
 import { LaunchSplash } from "./LaunchSplash";
+import { publishStartupWindow, usePublishStartupWindow } from "../../startup/startupStore";
 
 /**
  * « Qui regarde ? » à l'ouverture du BUREAU — la porte qu'`App.tsx` consulte
@@ -40,6 +41,17 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   const gateRef = useRef(gate);
   gateRef.current = gate;
   const eligible = useRef(isDesktopApp() && authed);
+  // L'attente bornée : l'application s'ouvre sur la foi du miroir (`late`), et
+  // la réponse du serveur peut encore imposer le sélecteur — qui démonterait
+  // tout. Tant qu'elle court, aucune fenêtre du démarrage ne paraît
+  // (`startup/startupOrder.ts`). Publiée dès le premier rendu d'`App`, avant que
+  // l'application, et donc ces fenêtres, ne soient montées.
+  const [lateHold, setLateHold] = useState(() => {
+    const hold = eligible.current && gate.phase === "app" && gate.mode === "late";
+    if (hold) publishStartupWindow(LAUNCH_SOURCE, "profile", "undecided");
+    return hold;
+  });
+  usePublishStartupWindow(LAUNCH_SOURCE, "profile", lateHold && gate.phase === "app" ? "undecided" : "done");
 
   // Une connexion par mot de passe pendant cette exécution : la session
   // personnelle, sans « Qui regarde ? » (contrat du serveur). Une sortie, par
@@ -57,7 +69,14 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   const logout = useCallback(() => dropAllSessions(client, queryClient), [client, queryClient]);
 
   const startedAt = useRef(Date.now());
+  useEffect(() => {
+    if (!lateHold) return;
+    const timer = setTimeout(() => setLateHold(false), Math.max(0, LAUNCH_CHECK_BUDGET_MS - (Date.now() - startedAt.current)));
+    return () => clearTimeout(timer);
+  }, [lateHold]);
+
   const apply = useCallback((answer: FreshAnswer) => {
+    setLateHold(false);
     if (answer.kind === "listing") settleStay(answer.listing);
     const late = Date.now() - startedAt.current > LAUNCH_CHECK_BUDGET_MS;
     const step = afterFresh(gateRef.current, answer, late);
@@ -87,6 +106,9 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   if (gate.phase === "error") return <ErrorScreen onRetry={check} />;
   return <LaunchSplash />;
 }
+
+/** La source de la première fenêtre du démarrage que tient cette porte. */
+const LAUNCH_SOURCE = "profileLaunch";
 
 function initialState(authed: boolean): GateState {
   const requested = readPickerRequest() !== null;
