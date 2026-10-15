@@ -185,6 +185,7 @@ export * from "./family/familyPickerClient";
 export * from "./family/familyPickerStay";
 export * from "./family/familyProfileRefusal";
 export * from "./family/familyPinEntry";
+export * from "./family/familyPinReminder";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
