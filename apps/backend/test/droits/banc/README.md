@@ -11,7 +11,7 @@ cd apps/backend
 node "$(node -p 'require.resolve("tsx/cli")')" test/droits/banc/seed.cts "$PWD" "$B/data" "$B"
 # backend du banc sur :3131 (env : PORT, TENTACLE_DATA_DIR=$B/data, DATABASE_URL vide)
 node test/droits/banc/mint.cjs "$PWD" "$B/data" "$(cat "$B/jf/enfant-id")" > "$B/tokens.json"
-node test/droits/banc/probe.mjs "$B"        # « AUCUNE FUITE », sinon chaque fuite nommée
+BANC_URL=http://127.0.0.1:3141 node test/droits/banc/probe.mjs "$B"   # « AUCUNE FUITE », sinon chaque fuite nommée
 ```
 
 - `jellyfin.sh` : films factices G, PG-13, R, sans note, G étiqueté « interdit » (Films) et
@@ -21,8 +21,12 @@ node test/droits/banc/probe.mjs "$B"        # « AUCUNE FUITE », sinon chaque f
   part du backend : jamais `node:sqlite` dans le processus qui a Prisma ouvert).
 - `probe.mjs` : listes, recherche, recos, Affiner (aucune fuite par id ni par nom), fiche,
   PlaybackInfo, flux, manifeste, trickplay, héros (404), segments (vides) — pour chacun des
-  trois jetons ; témoin : le titre permis reste lisible.
+  trois jetons ; témoin : le titre permis reste lisible. Puis les PLAGES HORAIRES : une plage
+  qui exclut l'instant est posée sur `enfant` (Jellyfin jetable), tout doit répondre 403 après
+  la relecture de la politique (30 s), puis elle est retirée (et la sonde attend encore 30 s).
 
+Relevé du 2026-10-15, étape 3 (socle A fusionné, backend sur :3141 — le 3131 était pris par le
+banc d'une autre session) : aucune fuite, hors plage 403 partout (TV et jeton Jellyfin).
 Relevé du 2026-10-15 (branche Filtrage, avant le socle) : aucune fuite sur les trois jetons ;
 même sonde au jeton administrateur → « Adulte Rouge » partout (la sonde voit une fuite) ;
 `filmsseuls` face à « Doc Prive » : flux, héros, trickplay 404, recherche vide. Limite hors de

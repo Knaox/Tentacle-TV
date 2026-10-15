@@ -1,12 +1,14 @@
 // Banc Filtrage — preuve de bout en bout : le compte « enfant » (note maximale PG,
 // non classés bloqués, étiquette « interdit » bloquée) ne voit, par AUCUNE route du
 // cœur, un titre au-dessus. Trois jetons : Jellyfin natif, TV jumelée, « voir en tant que ».
-//   node probe.mjs <dossier-d'état>   (backend du banc sur 127.0.0.1:3131)
+//   node probe.mjs <dossier-d'état>   (backend du banc : BANC_URL, défaut http://127.0.0.1:3131)
+// Puis les plages horaires : la politique d'`enfant` reçoit une plage qui exclut l'instant
+// (Jellyfin JETABLE seulement), la sonde attend 403 partout, puis la plage est retirée.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const [dir] = process.argv.slice(2);
-const T = "http://127.0.0.1:3131";
+const T = process.env.BANC_URL ?? "http://127.0.0.1:3131";
 const U = readFileSync(join(dir, "jf/enfant-id"), "utf8").trim();
 const tokens = JSON.parse(readFileSync(join(dir, "tokens.json"), "utf8"));
 const NATIVE = readFileSync(join(dir, "jf/enfant-token"), "utf8").trim();
@@ -83,5 +85,31 @@ for (const [who, token] of [["jeton Jellyfin", NATIVE], ["TV jumelée", tokens.d
   const okItem = await call(token, "GET", `/api/jellyfin/Users/${U}/Items/${ALLOWED}`);
   note(okItem.status === 200, `témoin : fiche de « Tout Public » → ${okItem.status}`);
 }
+// ── Plages horaires : hors plage, plus rien (la politique est relue en 30 s au plus). ──
+const JF = "http://127.0.0.1:18121";
+const setSchedules = async (schedules) => {
+  const user = await (await fetch(`${JF}/Users/${U}?api_key=${KEY}`)).json();
+  const policy = { ...user.Policy, AccessSchedules: schedules };
+  const res = await fetch(`${JF}/Users/${U}/Policy?api_key=${KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(policy) });
+  if (!res.ok) throw new Error(`politique refusée (${res.status})`);
+};
+const otherDay = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][(new Date().getDay() + 3) % 7];
+await setSchedules([{ DayOfWeek: otherDay, StartHour: 0, EndHour: 1, UserId: U }]);
+console.log(`\n— hors plage (seule plage permise : ${otherDay} 0 h → 1 h) ; attente de la relecture de la politique…`);
+await new Promise((resolve) => setTimeout(resolve, 31_000));
+try {
+  for (const [who, token] of [["TV jumelée", tokens.device], ["jeton Jellyfin", NATIVE]]) {
+    for (const path of ["/api/search?q=tout", "/api/reco/page", `/api/jellyfin/Videos/${ALLOWED}/stream?static=true`]) {
+      if (who === "jeton Jellyfin" && path.startsWith("/api/jellyfin/")) continue; // Jellyfin juge lui-même ce jeton
+      const { status } = await call(token, "GET", path);
+      note(status === 403 || status === 401, `${who} ${path} → ${status}`);
+    }
+  }
+} finally {
+  // La plage retirée ne se voit qu'à la relecture suivante (30 s) : le passage d'après en dépend.
+  await setSchedules([]);
+  await new Promise((resolve) => setTimeout(resolve, 31_000));
+}
+
 console.log(`\n${failures === 0 ? "AUCUNE FUITE" : `${failures} ÉCHEC(S)`} — titre interdit : ${R}`);
 process.exit(failures === 0 ? 0 : 1);
