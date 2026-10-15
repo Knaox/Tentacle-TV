@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { RAIL_SETUP_MAX_WAIT_MS, decideRailSetup, railLayoutFromSetup, settleRailSetup, type RailSetupInput } from "./railSetup";
+import {
+  RAIL_SETUP_MAX_WAIT_MS, decideRailSetup, railLayoutFromSetup, railSetupTargetIds, settleRailSetup, type RailSetupInput,
+} from "./railSetup";
 
 const base: RailSetupInput = { identity: "alice", setupDone: false, libraries: 3, online: true };
 
@@ -85,5 +87,29 @@ describe("railLayoutFromSetup", () => {
   it("une proposée absente du catalogue se range à la suite", () => {
     const layout = railLayoutFromSetup({ masquees: [], order: [] }, ["Recommendations"], { offered: ["Library_a"], pinned: ["Library_a"] });
     expect(layout.order).toEqual(["Recommendations", "Library_a"]);
+  });
+});
+
+describe("railSetupTargetIds", () => {
+  const family = [
+    { userId: "owner", kind: "owner" as const },
+    { userId: "member", kind: "member" as const },
+    { userId: "guest", kind: "guest" as const },
+  ];
+
+  it("le propriétaire : tous les autres profils de la famille", () => {
+    expect(railSetupTargetIds(family, "owner")).toEqual(["member", "guest"]);
+  });
+
+  it("un membre, un invité, un inconnu : personne", () => {
+    expect(railSetupTargetIds(family, "member")).toEqual([]);
+    expect(railSetupTargetIds(family, "guest")).toEqual([]);
+    expect(railSetupTargetIds(family, "stranger")).toEqual([]);
+  });
+
+  it("sans famille, sans session, ou seul : personne", () => {
+    expect(railSetupTargetIds(null, "owner")).toEqual([]);
+    expect(railSetupTargetIds(family, null)).toEqual([]);
+    expect(railSetupTargetIds([family[0]], "owner")).toEqual([]);
   });
 });

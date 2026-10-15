@@ -98,3 +98,22 @@ export function railLayoutFromSetup(current: RailLayout, catalogKeys: readonly s
   const order = keys.map((key) => (offered.has(key) ? (fill[slot++] ?? key) : key));
   return { masquees: [...new Set(masquees)], order };
 }
+
+/** Ce qu'il faut savoir d'un profil de la famille pour la diffusion. */
+export interface RailSetupProfile {
+  userId: string;
+  kind: "owner" | "member" | "guest";
+}
+
+/**
+ * À qui le PROPRIÉTAIRE de la famille peut appliquer sa disposition sur cette
+ * TV : les AUTRES profils de la famille, membres et invités. Personne pour un
+ * membre, un invité, une TV sans famille ou un propriétaire seul — le rôle
+ * vient de la liste du serveur, jamais d'un réglage local.
+ */
+export function railSetupTargetIds(profiles: readonly RailSetupProfile[] | null, identity: string | null): string[] {
+  if (!profiles || !identity) return [];
+  const me = profiles.find((profile) => profile.userId === identity);
+  if (me?.kind !== "owner") return [];
+  return profiles.filter((profile) => profile.userId && profile.userId !== identity).map((profile) => profile.userId);
+}
