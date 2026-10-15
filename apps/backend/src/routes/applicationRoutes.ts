@@ -64,6 +64,7 @@ import { watchlistRoutes } from "./watchlist";
 import { recoRoutes } from "./reco";
 import { recoPeopleRoutes } from "./recoPeople";
 import { searchRoutes } from "./search";
+import { libraryDeletionRoutes } from "./libraryDeletion";
 import { sagaRoutes } from "./sagas";
 import { recoPageRoutes } from "./recoPage";
 import { recoRowRoutes } from "./recoRows";
@@ -127,6 +128,8 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(recoPeopleRoutes, { prefix: "/api/reco" });
   await app.register(recoPageRoutes, { prefix: "/api/reco" });
   await app.register(searchRoutes, { prefix: "/api/search" });
+  // Supprimer des titres par le jeton du compte : Jellyfin juge chacun (capacité `library.delete`).
+  await app.register(libraryDeletionRoutes, { prefix: "/api/library" });
   await app.register(sagaRoutes, { prefix: "/api/sagas" });
   await app.register(externalAccountRoutes, { prefix: "/api/external" });
   await app.register(configRoutes, { prefix: "/api" });

@@ -119,6 +119,10 @@ export const SERVER_CAPABILITIES = {
    *  l'accueil (`heroMode` `recoMovies` / `recoSeries`, `/api/preferences/home-layout`) :
    *  un serveur d'avant refuserait la mise en page qui les porte. */
   "home.heroRecoKinds": "1.30.0",
+  /** Supprimer des titres de la bibliothèque (web, bureau) : `GET /api/library/deletion/rights`
+   *  dit où le compte peut supprimer, `POST /api/library/deletion` supprime par le jeton DU
+   *  COMPTE, titre par titre (Jellyfin juge chacun), et fait tomber les caches du serveur. */
+  "library.delete": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

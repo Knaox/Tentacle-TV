@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../configStore", () => ({ getJellyfinUrl: () => "http://jellyfin.test", getJellyfinApiKey: () => "cle" }));
 
-import { getUserAccess, markAllUserAccessStale, resetUserAccessForTests, toUserData } from "./userAccess";
+import { dropItemsFromUserAccess, getUserAccess, markAllUserAccessStale, resetUserAccessForTests, toUserData } from "./userAccess";
 
 describe("toUserData", () => {
   it("garde Ma liste (le « j'aime » de Jellyfin) pour que la carte d'un film trouvé montre son signet", () => {
@@ -38,6 +38,17 @@ describe("les droits d'un compte après un ajout", () => {
     await vi.advanceTimersByTimeAsync(10_000);
     expect(fetch).toHaveBeenCalledTimes(2);
     expect([...(await getUserAccess("u1"))!.items.keys()]).toEqual(["film-a", "film-b"]);
+  });
+
+  it("un titre supprimé quitte sur-le-champ le relevé de chaque compte, sans nouveau relevé", async () => {
+    library = ["film-a", "film-b"];
+    await getUserAccess("u1");
+    await getUserAccess("u2");
+    const before = vi.mocked(fetch).mock.calls.length;
+    dropItemsFromUserAccess(["film-b"]);
+    expect([...(await getUserAccess("u1"))!.items.keys()]).toEqual(["film-a"]);
+    expect([...(await getUserAccess("u2"))!.items.keys()]).toEqual(["film-a"]);
+    expect(vi.mocked(fetch).mock.calls.length).toBe(before);
   });
 
   it("un compte qui n'a jamais cherché ne coûte rien", async () => {

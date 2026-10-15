@@ -137,6 +137,18 @@ export function markAllUserAccessStale(): void {
   }
 }
 
+/**
+ * Des titres viennent d'être SUPPRIMÉS : ils quittent sur-le-champ le relevé de
+ * chaque compte — recherche, recos et saga n'en montrent plus rien, sans attendre
+ * le relevé suivant ni la reconstruction complète du catalogue (six heures).
+ */
+export function dropItemsFromUserAccess(itemIds: readonly string[]): void {
+  if (itemIds.length === 0) return;
+  for (const { access } of memo.values()) {
+    for (const id of itemIds) access.items.delete(id);
+  }
+}
+
 /** Sa politique vient de changer : le relevé n'est plus servi, le prochain est refait sur-le-champ.
  *  Sans compte : tous. */
 export function forgetUserAccess(userId?: string): void {
