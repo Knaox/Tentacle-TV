@@ -4,6 +4,7 @@ import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { broadcastToUser } from "../services/wsManager";
 import { toNotificationDto } from "../notifications/notificationDto";
+import { notificationsFiltered, visibleNotificationRows } from "../notifications/notificationRights";
 
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
@@ -21,7 +22,8 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       take: limit,
     });
 
-    return notifications.map(toNotificationDto);
+    // Un avis dont le titre est caché au compte AUJOURD'HUI ne se lit plus (cf. notificationRights).
+    return (await visibleNotificationRows(user.userId, notifications)).map(toNotificationDto);
   });
 
   // GET /api/notifications/unread-count
@@ -29,11 +31,11 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
 
-    const count = await prisma.notification.count({
-      where: { jellyfinUserId: user.userId, read: false },
-    });
-
-    return { count };
+    const where = { jellyfinUserId: user.userId, read: false };
+    if (!(await notificationsFiltered(user.userId))) return { count: await prisma.notification.count({ where }) };
+    // Compte restreint : les avis qu'il ne peut plus lire ne comptent pas.
+    const unread = await prisma.notification.findMany({ where, select: { target: true }, take: 500 });
+    return { count: (await visibleNotificationRows(user.userId, unread)).length };
   });
 
   // POST /api/notifications/read-all — Mark all as read
