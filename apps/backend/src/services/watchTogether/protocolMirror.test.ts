@@ -10,6 +10,8 @@
  *     > apps/backend/src/services/watchTogether/protocolMessages.ts
  *   cp packages/shared/src/types/watchTogetherAffinity.ts \
  *     apps/backend/src/services/watchTogether/watchTogetherAffinity.ts
+ *   cp packages/shared/src/types/watchTogetherAccess.ts \
+ *     apps/backend/src/services/watchTogether/watchTogetherAccess.ts
  *
  * Même esprit que `playback/sharedMirror.test.ts`, avec une tolérance : les
  * spécificateurs d'import sont normalisés avant comparaison, rien d'autre.
@@ -41,6 +43,14 @@ describe("miroir du contrat Watch Together", () => {
     const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherMessages.ts"), "utf8");
     const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/protocolMessages.ts"), "utf8");
     expect(normalizeImports(mirror)).toBe(normalizeImports(canonical));
+  });
+
+  // L'accès d'un compte (SyncPlayAccess de Jellyfin) : aucun import, `cp` suffit.
+  it("watchTogetherAccess.ts est identique des deux côtés", () => {
+    const root = repoRoot();
+    const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherAccess.ts"), "utf8");
+    const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/watchTogetherAccess.ts"), "utf8");
+    expect(mirror).toBe(canonical);
   });
 
   // Le contrat de l'affinité n'importe rien : il se recopie tel quel,

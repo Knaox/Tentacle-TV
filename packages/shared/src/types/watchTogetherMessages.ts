@@ -218,7 +218,9 @@ export type WtStateCause =
 
 export type WtErrorCode = "not_in_group" | "not_host" | "invalid" | "stale_item";
 
-export type WtDissolvedReason = "kicked" | "expired" | "dissolved";
+/** `access_revoked` (1.30.0) : le compte a perdu l'accès à Watch Together
+ *  (`SyncPlayAccess` passé à « Interdit ») — un client d'avant y lit « dissous ». */
+export type WtDissolvedReason = "kicked" | "expired" | "dissolved" | "access_revoked";
 
 export type WtServerMessage =
   | { type: "wt:state"; state: WtRoomStateDto; originUserId: string | null; cause: WtStateCause }
@@ -229,7 +231,7 @@ export type WtServerMessage =
   | { type: "wt:invite"; invite: WtInviteDto }
   /** Notifie l'hôte du sort de son invitation. */
   | { type: "wt:inviteResult"; inviteId: string; toUserId: string; toUsername: string; accepted: boolean }
-  /** Reçu quand on ne fait plus partie du groupe (kick, grâce expirée). */
+  /** Reçu quand on ne fait plus partie du groupe (kick, grâce expirée, accès retiré). */
   | { type: "wt:dissolved"; groupId: string; reason: WtDissolvedReason }
   | { type: "wt:error"; code: WtErrorCode; message?: string }
   /** Nouveau message de chat (écho compris : l'émetteur le reçoit aussi). */

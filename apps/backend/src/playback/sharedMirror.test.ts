@@ -37,6 +37,7 @@ const PLAYBACK_FILES = [
   "claimGuards.ts",
   "tailVerdict.ts",
   "stillWatchingSettings.ts",
+  "playbackRights.ts",
 ];
 
 /** Paires [canonique, miroir], relatives à la racine du dépôt. */

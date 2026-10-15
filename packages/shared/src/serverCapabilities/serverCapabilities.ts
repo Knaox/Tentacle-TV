@@ -140,6 +140,16 @@ export const SERVER_CAPABILITIES = {
    *  et leur défaut (`/api/admin/family/creation`) ; `FamilyAccountDto.creation` ; refus
    *  `family.create_family_denied` / `family.create_guests_denied`. */
   "family.creationRights": "1.30.0",
+  // ── Lot « droits 2 » : lecture et Watch Together (docs/DROITS-UTILISATEURS.md § 9.2) ──
+  /** L'accès du compte à Watch Together, tiré de `SyncPlayAccess` de sa politique Jellyfin
+   *  (`GET /api/watch-together/access` → `full | joinOnly | none`) : `none` ne voit plus rien de
+   *  Watch Together, `joinOnly` plus rien qui crée un salon. Sans elle, comme avant. */
+  "watchTogether.access": "1.30.0",
+  /** Les droits de lecture du compte pour CE client (`GET /api/playback/rights` : lecture,
+   *  conversions de l'image et du son, changement de conteneur, plafond de débit d'après
+   *  l'adresse réelle), et leur garde dans le proxy (403 `playback_not_allowed`,
+   *  `conversion_not_allowed`). Sans elle, les lecteurs font comme avant. */
+  "playback.rights": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

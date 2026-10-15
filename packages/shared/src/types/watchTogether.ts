@@ -14,6 +14,7 @@ import { wtPositionTicksAt, type WtRoomStateDto } from "./watchTogetherMessages"
  */
 
 export * from "./watchTogetherMessages";
+export * from "./watchTogetherAccess";
 
 // ── Constantes du protocole ──
 
