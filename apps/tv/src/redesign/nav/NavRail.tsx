@@ -48,7 +48,7 @@ export type { NavRailGeometry } from "./navGeometry";
  *   avec beaucoup de bibliothèques, jamais plus haut que le rail d'avant, et
  *   sa liste défile en suivant le focus (`NavList`), avec un fondu du côté où
  *   il y a plus et un indicateur de position ;
- * - le bloc du PROFIL, ancré en bas : le compte et ses réglages ; au-dessus,
+ * - le bloc du PROFIL, ancré en bas : le compte et ses réglages (l'engrenage) ; au-dessus,
  *   « Changer de profil » sur une Apple TV passée aux profils (`switcher`,
  *   l'empilement des profils de la famille) et, plus haut, l'élément des
  *   demandes en cours quand il existe (`accessory`). Jamais caché ni poussé
@@ -84,13 +84,12 @@ export interface NavEntry {
   icon: IconName;
 }
 
-/** L'entrée du profil : le portrait (sinon l'initiale), le nom, et dessous ce qu'on y trouve. */
+/** L'entrée du profil et de ses réglages : l'engrenage, le nom, et dessous ce qu'on y trouve. */
 export interface NavAccount {
   key: string;
   label: string;
   caption?: string;
-  avatarUri?: string;
-  initial?: string;
+  icon: IconName;
 }
 
 /** « Changer de profil » (Famille) : juste au-dessus du profil, l'empilement des profils de la famille. */
@@ -259,8 +258,7 @@ export const NavRail = memo(function NavRail(props: NavRailProps) {
               itemKey={account.key}
               label={account.label}
               caption={account.caption}
-              avatarUri={account.avatarUri}
-              initial={account.initial}
+              icon={account.icon}
               active={account.key === activeKey}
               {...item}
             />
