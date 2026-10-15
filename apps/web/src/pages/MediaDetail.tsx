@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useSeriesWatchState, useTmdbSeasonEpisodes } from "@tentacle-tv/api-client";
 import { DETAIL_SEASON_PARAM, detailGallery, galleryIndexOf } from "@tentacle-tv/shared";
 import { PageTransition } from "../components/PageTransition";
@@ -88,7 +88,9 @@ export function MediaDetail() {
    */
   const [overlayCovered, setOverlayCovered] = useState(false);
   const handleOverlayCovered = useCallback(() => setOverlayCovered(true), []);
-  const pageStyle = origin !== null && !overlayCovered ? HIDDEN_UNDER_OVERLAY : undefined;
+  // Animations réduites : aucun calque ne se joue, la fiche se montre tout de suite.
+  const reducedMotion = useReducedMotion() === true;
+  const pageStyle = origin !== null && !overlayCovered && !reducedMotion ? HIDDEN_UNDER_OVERLAY : undefined;
 
   // Relue à CHAQUE changement d'item, et pas seulement au montage. React Router
   // réutilise ce composant d'une fiche à l'autre — un initialiseur `useState` ne
