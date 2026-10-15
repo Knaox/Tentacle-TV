@@ -51,6 +51,10 @@ export interface TvProfileRecord {
   familyOwnerName?: string;
   /** CE profil gère quelque chose sur cette TV (`manage` du serveur, v2). Absent d'un enregistrement d'avant. */
   manages?: boolean;
+  /** 1.30.0 : CE profil gérerait la famille s'il avait un code PIN (`manageNeedsPin`
+   *  du serveur) — l'étape « Code PIN conseillé » le dit. Absent d'un enregistrement
+   *  d'avant (ou d'un serveur d'avant) : faux. */
+  manageNeedsPin?: boolean;
   /** Un invité : ses droits à l'ouverture (« peut demander », v2) ; la garde
    *  de Vigie préfère la liste relue (`profileMayRequest`). Absent : aucun. */
   guestRights?: FamilyGuestRights | null;
@@ -94,6 +98,7 @@ export function profileRecordOf(profile: TvProfileDto, listing: ProfilesListingR
     canManage: listing.canManage,
     familyOwnerName: familyOwner?.name ?? paired.name,
     manages: profileManages(profile, listing),
+    manageNeedsPin: profile.manageNeedsPin === true,
     guestRights: profile.guestRights ?? null,
   };
 }
@@ -123,6 +128,7 @@ function isRecord(value: unknown): value is TvProfileRecord {
     && typeof r.canManage === "boolean"
     && (r.familyOwnerName === undefined || typeof r.familyOwnerName === "string")
     && (r.manages === undefined || typeof r.manages === "boolean")
+    && (r.manageNeedsPin === undefined || typeof r.manageNeedsPin === "boolean")
     && (r.guestRights === undefined || r.guestRights === null || typeof (r.guestRights as { requestTitles?: unknown }).requestTitles === "boolean");
 }
 
