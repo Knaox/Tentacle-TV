@@ -3,23 +3,23 @@
   "domain": "socle",
   "suite": "retour",
   "reference": {
-    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
-    "label": "référence 562ae44a5"
+    "sha": "67aca3e7c69dd8566e4b5e5b0bb5a5d31411b658",
+    "label": "référence 67aca3e7c"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "db6f477dbdf35e26",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — banc UI",
+    "name": "nav-T6",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:35:36.158Z",
+  "recordedAt": "2026-10-15T12:05:25.051Z",
   "scenarios": {
     "retour-accueil": {
       "hash": "ab039fb4ebaf",
-      "durationMs": 39694,
+      "durationMs": 26175,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -54,7 +54,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -75,7 +77,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -103,7 +107,7 @@
     },
     "retour-pour-vous": {
       "hash": "78f78c543981",
-      "durationMs": 29766,
+      "durationMs": 30734,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -139,7 +143,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Recommendations",
           "params": null,
           "stack": [
@@ -161,7 +167,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Recommendations",
           "params": null,
           "stack": [
@@ -190,14 +198,14 @@
     },
     "retour-ma-liste": {
       "hash": "2bdbba5a67f8",
-      "durationMs": 29375,
+      "durationMs": 26583,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
         "label": "Rick et Morty",
         "frame": [
           176,
-          196,
+          302,
           244,
           439
         ],
@@ -226,7 +234,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Watchlist",
           "params": null,
           "stack": [
@@ -248,7 +258,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Watchlist",
           "params": null,
           "stack": [
@@ -277,14 +289,14 @@
     },
     "retour-favoris": {
       "hash": "8d1fdc23be98",
-      "durationMs": 33658,
+      "durationMs": 25916,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
         "label": "Rick et Morty",
         "frame": [
           176,
-          196,
+          302,
           244,
           439
         ],
@@ -313,7 +325,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Favorites",
           "params": null,
           "stack": [
@@ -335,7 +349,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Favorites",
           "params": null,
           "stack": [
@@ -364,7 +380,7 @@
     },
     "retour-animes": {
       "hash": "fd5d2555f9d5",
-      "durationMs": 34000,
+      "durationMs": 30574,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -403,7 +419,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
@@ -428,7 +446,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
@@ -460,7 +480,7 @@
     },
     "retour-series": {
       "hash": "8a8ee6d37174",
-      "durationMs": 37369,
+      "durationMs": 30921,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
@@ -526,7 +546,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "d565273fd114d77bdf349a2896867069",
@@ -551,7 +573,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "d565273fd114d77bdf349a2896867069",
@@ -583,7 +607,7 @@
     },
     "retour-recherche": {
       "hash": "ff846e3cedc3",
-      "durationMs": 28026,
+      "durationMs": 25434,
       "start": {
         "app": "foreground",
         "focus": "key:A",
@@ -619,7 +643,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Search",
           "params": null,
           "stack": [
@@ -641,7 +667,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Search",
           "params": null,
           "stack": [
@@ -670,7 +698,7 @@
     },
     "retour-reglages": {
       "hash": "70d07834eb36",
-      "durationMs": 44358,
+      "durationMs": 40066,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
@@ -706,7 +734,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Settings",
           "params": null,
           "stack": [
@@ -749,7 +779,7 @@
     },
     "retour-fiche": {
       "hash": "1b241a1569c7",
-      "durationMs": 12377,
+      "durationMs": 14090,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
@@ -810,7 +840,9 @@
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -824,7 +856,7 @@
     },
     "retour-lecteur": {
       "hash": "fb7b4a4e077f",
-      "durationMs": 16567,
+      "durationMs": 14003,
       "start": {
         "app": "foreground",
         "focus": "resume:0",
