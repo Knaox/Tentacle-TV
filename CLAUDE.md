@@ -602,6 +602,11 @@ tv-core) ; un membre garde son propre Vigie.
   retrait direct du cache reco pour un geste de carte : passer par
   `useHeldRecoItems` / `useRecoCardHold` (`reco/recoRetirement.ts`). Seul
   « Ne plus me proposer » part tout de suite. Détail : `docs/RECO-POUR-VOUS.md`.
+- **Sans clé TMDB, la reco n'est pas activée** (état `disabled`,
+  `tmdbConfigured: false`, qui prime sur le réglage du compte) : « Pour vous »
+  le dit sans reproche, le bouton vers `/admin/metadata#tmdb` (la cible du
+  tableau de bord) pour un administrateur en session personnelle seulement,
+  les mots seuls sur TV et mobile. Poser la clé l'active pour tous (§ 6).
 
 ## Aide — un guide, une source ; un rappel, jamais une bannière
 

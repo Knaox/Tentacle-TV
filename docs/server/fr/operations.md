@@ -50,6 +50,19 @@ Tentacle crée sa propre clé (« Tentacle ») pendant l'installation. Pour la r
 bord › Clés API**, créez une clé, puis collez-la dans **Administration › Services › Jellyfin**. Tentacle ne
 remontre jamais la clé.
 
+## La clé TMDB et les recommandations
+
+Les recommandations (« Pour vous », profil de goût, titres similaires, plateformes de streaming) demandent une
+clé gratuite de [The Movie Database](https://www.themoviedb.org/settings/api) (API v3, 32 caractères). **Sans
+clé, elles sont désactivées** pour tous les comptes : la page « Pour vous » le dit — un administrateur y trouve
+un bouton vers la clé, les autres comptes lisent que leur administrateur peut les activer — et le serveur ne
+calcule rien.
+
+Pour les activer : **Administration › Métadonnées › TMDB**, collez la clé, **Enregistrer** (Tentacle la vérifie
+d'abord auprès de TMDB). Le serveur calcule alors en fond les recommandations de chaque compte ; la carte en
+montre l'avancement. Une clé posée par la variable `TMDB_API_KEY` vaut de même. Un serveur qui avait déjà une
+clé ne perd rien à la mise à jour. Retirer la clé éteint de nouveau les recommandations.
+
 ## Sauvegarder
 
 Les volumes portent tout :

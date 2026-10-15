@@ -130,3 +130,35 @@ mobile, la TV et webOS. La règle, pure, vit dans `reco/recoPageVisit.ts` :
 - **Le héros ne se retire pas au sort** : le rang d'un titre dans le tirage
   dépend de la graine de la visite et de SA clé (`selectHeroSlides`), pas de
   sa place — un titre qui sort n'emporte que sa diapositive.
+
+## 6. Sans clé TMDB, les recommandations ne sont pas activées
+
+La clé TMDB est l'interrupteur GLOBAL de la reco : absente, `serveContext`
+rend l'état `disabled` avec `tmdbConfigured: false` (champ de
+`/api/reco/page` depuis le serveur 1.17), aucun profil ne se construit, le
+fan-out ne part pas. Seules les rangées globales servables sans TMDB
+(« Les mieux notés de votre bibliothèque ») restent servies. Poser la clé
+(Administration › Métadonnées) lance le fan-out (`key-set`) ; la retirer
+éteint tout de nouveau. Aucun réglage à rallumer : un serveur qui avait une
+clé ne voit rien changer. Ni capacité ni champ nouveau : la cause voyage déjà
+dans `tmdbConfigured`, qui prime sur `personalized` (le réglage du compte
+n'y changerait rien).
+
+Ce que la page en dit, partout pareil — un constat, jamais une alerte ni un
+reproche : « Les recommandations ne sont pas encore activées : elles
+demandent une clé TMDB. »
+
+- **Web, bureau, fenêtre étroite** (`RecoTmdbOff`) : en tête de page quand
+  des rangées globales sont servies, seul sous le titre sinon. Un
+  administrateur en session PERSONNELLE (`useCanSetTmdbKey` : ni profil de
+  la Famille) a UN bouton, « Ajouter la clé TMDB », vers
+  `/admin/metadata#tmdb` (`ADMIN_TMDB_KEY_PATH`, la cible du tableau de bord
+  et de l'avertissement surgissant ; l'ancre ouvre le champ, `useHashTarget`).
+  Les autres lisent que leur administrateur peut les activer.
+- **Apple TV, Android TV, LG** (`tvRecoNotice` → `tmdbOff`) et **mobile** :
+  les mots seulement (`reco:tmdbOffDeviceHint`), aucun bouton — on n'y
+  administre rien.
+- Enregistrer ou retirer la clé invalide la page en cache
+  (`useUpdateAdminMetadata`) : l'administrateur la voit changer aussitôt ;
+  les autres comptes, au `reco:update` de leur profil ou à la péremption de
+  la page.

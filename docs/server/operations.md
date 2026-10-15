@@ -47,6 +47,18 @@ A new setup code while setup is still open: `tentacle setup token` in the contai
 Tentacle creates its own key ("Tentacle") during setup. To replace it: **Jellyfin › Dashboard › API Keys**,
 create a key, then paste it in **Administration › Services › Jellyfin**. Tentacle never shows the key back.
 
+## TMDB key and recommendations
+
+Recommendations ("For you", taste profile, similar titles, streaming platforms) need a free
+[The Movie Database](https://www.themoviedb.org/settings/api) key (API v3, 32 characters). **Without a key they
+are turned off** for every account: the "For you" page says so — an administrator gets a button to the key,
+other accounts read that their administrator can turn them on — and the server computes nothing.
+
+To turn them on: **Administration › Metadata › TMDB**, paste the key, **Save** (Tentacle checks it with TMDB
+first). The server then computes every account's recommendations in the background; the card shows the
+progress. A key set by the `TMDB_API_KEY` variable works the same way. A server that already had a key loses
+nothing on update. Removing the key turns recommendations off again.
+
 ## Back up
 
 The volumes hold everything:

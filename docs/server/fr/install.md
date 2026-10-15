@@ -107,12 +107,17 @@ Une question par écran ; les étapes s'adaptent à la pile détectée.
    réel, l'encodage HEVC (seulement avec un encodeur matériel). Chacun montre « actuellement → conseillé » ;
    ce que vous avez réglé autrement n'est jamais coché d'office. Seul ce qui est coché est appliqué ;
    **Passer** ne change rien.
-6. **Récapitulatif**, avec **l'adresse de Jellyfin pour les applications** (lecture directe à la maison) :
+6. **Clé TMDB** (facultatif) — une clé gratuite de The Movie Database (API v3). **Sans elle, les
+   recommandations sont désactivées** : ni « Pour vous », ni profil de goût, ni plateformes de streaming ; tout
+   le reste fonctionne. **Configurer plus tard** les laisse éteintes jusqu'à ce que vous posiez la clé dans
+   **Administration › Métadonnées** — elles s'activent pour tous les comptes dès qu'elle est enregistrée (voir
+   [operations.md](operations.md#la-clé-tmdb-et-les-recommandations)).
+7. **Récapitulatif**, avec **l'adresse de Jellyfin pour les applications** (lecture directe à la maison) :
    construite avec l'adresse par laquelle vous avez ouvert l'assistant et le port publié de Jellyfin
    (`JELLYFIN_PORT`), jamais un nom Docker. Modifiez-la au besoin. Puis **installation** (chaque étape ratée
    se relance seule).
-7. **Accès à distance** (facultatif) — le HTTPS par votre propre mandataire : voir [remote-access.md](remote-access.md).
-8. **Et maintenant ?** — où déposer vos fichiers, les applications de chaque plateforme, un QR code pour
+8. **Accès à distance** (facultatif) — le HTTPS par votre propre mandataire : voir [remote-access.md](remote-access.md).
+9. **Et maintenant ?** — où déposer vos fichiers, les applications de chaque plateforme, un QR code pour
     ouvrir le serveur.
 
 ## Réglages (`.env`)

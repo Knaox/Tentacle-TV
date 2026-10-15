@@ -99,11 +99,15 @@ One question per screen; the steps adapt to the stack it detects.
    skip detection (Intro Skipper, TheIntroDB, SkipMe.db), metadata language, seek bar previews, real-time
    monitoring, HEVC encoding (only with a hardware encoder). Each shows "currently → recommended"; what you
    set differently is never ticked for you. Only what is ticked is applied; **Skip** changes nothing.
-6. **Summary**, with **the Jellyfin address for the apps** (direct play on your home network): built from the
+6. **TMDB key** (optional) — a free The Movie Database key (API v3). **Without it, recommendations are
+   turned off**: no "For you", no taste profile, no streaming platforms; everything else works. **Set up
+   later** keeps them off until you add the key in **Administration › Metadata** — they turn on for every
+   account as soon as it is saved (see [operations.md](operations.md#tmdb-key-and-recommendations)).
+7. **Summary**, with **the Jellyfin address for the apps** (direct play on your home network): built from the
    address you opened the wizard with and Jellyfin's published port (`JELLYFIN_PORT`), never a Docker name.
    Change it if needed. Then **setup** (each failed step can be retried on its own).
-7. **Remote access** (optional) — HTTPS through your own reverse proxy: see [remote-access.md](remote-access.md).
-8. **What's next?** — where to drop your files, the apps for each platform, a QR code to open the server.
+8. **Remote access** (optional) — HTTPS through your own reverse proxy: see [remote-access.md](remote-access.md).
+9. **What's next?** — where to drop your files, the apps for each platform, a QR code to open the server.
 
 ## Settings (`.env`)
 
