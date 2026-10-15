@@ -19,6 +19,10 @@ vi.mock("../middleware/auth", () => ({
 }));
 vi.mock("../services/search/sagaMembers", () => ({ sagaMembersFor: h.members }));
 vi.mock("../services/tmdb/sagaCollection", () => ({ getSagaCollection: h.saga }));
+// Le film 673 est dans la bibliothèque, mais caché à ce compte par ses droits.
+vi.mock("../services/search/libraryRights", () => ({
+  libraryRightsFor: async () => ({ seesItem: () => true, hidesTitle: (_type: string, tmdbId: number) => tmdbId === 673 }),
+}));
 
 import { sagaRoutes } from "./sagas";
 
@@ -47,6 +51,20 @@ describe("GET /api/sagas/:collectionId", () => {
     expect(res.json()).toEqual({ collectionId: 1241, saga: SAGA, members: [{ itemId: "a".repeat(32), tmdbId: 671 }] });
     expect(h.members).toHaveBeenCalledWith("u1", 1241);
     expect(h.saga).toHaveBeenCalledWith(1241, "en");
+  });
+
+  it("un volet caché au compte par ses droits n'est ni montré, ni « à demander »", async () => {
+    h.members.mockResolvedValue({ ready: true, members: [{ itemId: "a".repeat(32), tmdbId: 671 }] });
+    h.saga.mockResolvedValue({
+      ...SAGA,
+      parts: [
+        { tmdbId: 671, title: "HP 1", releaseDate: "2001-11-16" },
+        { tmdbId: 672, title: "HP 2", releaseDate: "2002-11-15" },
+        { tmdbId: 673, title: "HP 3", releaseDate: "2004-05-31" },
+      ],
+    });
+    const res = await call("/api/sagas/1241");
+    expect(res.json().saga.parts.map((part: { tmdbId: number }) => part.tmdbId)).toEqual([671, 672]);
   });
 
   it("aucun film de la saga dans la bibliothèque : pas d'appel TMDB", async () => {

@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getPrisma } from "../services/db";
+import { rightsFilterFor } from "../services/reco/recoRights";
 import { requireAdmin, requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { isRebuilding, rebuildProfile } from "../services/reco/profileBuilder";
@@ -87,6 +88,7 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const pool = await readPool(user.userId);
     if (!pool) return { exists: false };
+    const allowed = await rightsFilterFor(user.userId);
     return {
       exists: true,
       generatedAt: pool.generatedAt,
@@ -101,7 +103,8 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
         acc[e.candidate.source] = (acc[e.candidate.source] ?? 0) + 1;
         return acc;
       }, {}),
-      top: pool.entries.slice(0, 15).map((e) => ({
+      // Les droits du compte, comme la page servie (cf. reco/recoRights).
+      top: pool.entries.filter((e) => allowed(e.candidate)).slice(0, 15).map((e) => ({
         key: e.candidate.key,
         title: e.candidate.title,
         source: e.candidate.source,

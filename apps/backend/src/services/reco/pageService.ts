@@ -8,6 +8,7 @@ import type { StaleReason } from "./pageRows";
 import { readGlobalsStamp, readSnapshot, touchSnapshot } from "./pageSnapshot";
 import { isRebuilding } from "./profileBuilder";
 import { filterKeyOf } from "./providerFilter";
+import { rightsFilterFor } from "./recoRights";
 import type { RecoRowItem } from "./rowItem";
 import { serveContext } from "./serveContext";
 import type { RecoState } from "./serveContext";
@@ -69,6 +70,8 @@ export async function servePage(userId: string, providers: number[] | null, them
   // snapshot peut dater, ce qu'il montre ne trahit jamais un réglage.
   let rows = applyServeExclusions(snapshot.rows, ctx.exclude);
   if (!ctx.includeVigie) rows = filterRowItems(rows, (item) => !!item.jellyfinItemId);
+  // Les droits du compte, au service aussi (cf. recoRights) : « À la une » en découle.
+  rows = filterRowItems(rows, await rightsFilterFor(userId));
   // Sans thèmes : la page du snapshot, déjà sans doublon. Avec : « Films pour vous »
   // garde ses films, les rangées suivantes ne les répètent pas.
   rows = themes ? dedupeServedRows(rows, PAGE_ROW_MIN_ITEMS) : rows.filter((row) => !isThemedRow(row.key));

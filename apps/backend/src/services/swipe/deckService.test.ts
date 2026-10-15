@@ -32,6 +32,12 @@ vi.mock("../reco/candidates/libraryMemo", () => ({ getLibraryIndexMemo: async ()
 vi.mock("../reco/candidates/exclusions", () => ({
   buildExclusions: async () => ({ everywhere: new Set(state.known) }),
 }));
+// Les droits du compte : « movie:11 » (pool) et « movie:21 » (tendance) sont des
+// films de la bibliothèque que ses droits lui cachent.
+vi.mock("../reco/recoRights", () => ({
+  rightsFilterFor: async () => (item: { mediaType: string; tmdbId: number }) =>
+    !["movie:11", "movie:21"].includes(`${item.mediaType}:${item.tmdbId}`),
+}));
 vi.mock("./swipeStore", async (orig) => ({
   ...(await orig<typeof import("./swipeStore")>()),
   listSwipes: async () => state.swipes,
@@ -88,6 +94,14 @@ beforeEach(() => {
 });
 
 describe("pile du compte", () => {
+  it("un titre que les droits du compte lui cachent ne revient ni par le pool ni par les tendances", async () => {
+    const { cards } = await buildDeck("u1", { lang: "fr", size: 20, exclude: [] });
+    const keys = cards.map((c) => c.key);
+    expect(keys).not.toContain("movie:11");
+    expect(keys).not.toContain("movie:21");
+    expect(keys).toEqual(expect.arrayContaining(["movie:10", "movie:20"]));
+  });
+
   it("mêle pool, tendances TMDB et bibliothèque, avec leurs genres traduits", async () => {
     const { cards, tmdbConfigured } = await buildDeck("u1", { lang: "fr", size: 20, exclude: [] });
     const keys = cards.map((c) => c.key);

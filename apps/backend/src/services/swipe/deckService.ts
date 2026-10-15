@@ -2,6 +2,7 @@ import { bootstrapPool, readPool } from "../reco/generationJob";
 import { buildExclusions } from "../reco/candidates/exclusions";
 import { getLibraryIndexMemo } from "../reco/candidates/libraryMemo";
 import { tmdbConfigured } from "../tmdb/client";
+import { rightsFilterFor } from "../reco/recoRights";
 import { mixDeck, shuffled } from "./deckMix";
 import { hasArtwork, libraryCard, splitPool } from "./poolCards";
 import { blockedKeys, countVerdicts, listSwipes } from "./swipeStore";
@@ -58,16 +59,21 @@ export async function buildDeck(userId: string, req: DeckRequest): Promise<DeckR
     .map((e) => libraryCard(e, "popular"));
   const libraryRandom = shuffled(unseen).slice(0, 200).map((e) => libraryCard(e, "explore"));
 
-  const { taste, deep } = pool
+  const split = pool
     ? splitPool(pool.entries, req.lang, library)
     : { taste: [] as SwipeCard[], deep: [] as SwipeCard[] };
+  // Les droits du compte AVANT le mélange (cf. reco/recoRights) : la pile garde sa
+  // taille, et un titre que ses droits lui cachent ne revient jamais par TMDB.
+  const allowed = await rightsFilterFor(userId);
+  const taste = split.taste.filter(allowed);
+  const deep = split.deep.filter(allowed);
 
   const exclude = new Set<string>([...req.exclude, ...exclusions.everywhere, ...blockedKeys(swipes, Date.now())]);
   const cards = mixDeck(
     {
       taste,
-      popular: tmdb ? [...trending, ...libraryByRating] : libraryByRating,
-      explore: shuffled([...shuffled(deep).slice(0, 120), ...classics, ...libraryRandom]),
+      popular: tmdb ? [...trending.filter(allowed), ...libraryByRating] : libraryByRating,
+      explore: shuffled([...shuffled(deep).slice(0, 120), ...classics.filter(allowed), ...libraryRandom]),
     },
     { size: req.size, exclude, balanceLibrary: tmdb }
   ).filter((c) => hasArtwork(c, library));
