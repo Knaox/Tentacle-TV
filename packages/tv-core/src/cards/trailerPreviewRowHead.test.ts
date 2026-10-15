@@ -228,6 +228,33 @@ describe("le focus quitte la rangée", () => {
   });
 });
 
+describe("le mouvement et la place posée d'avance", () => {
+  it("le passage en tête se joue avec la grande carte ; le retour est un défilement ordinaire", () => {
+    const state = reduceRowHead(INITIAL_ROW_HEAD, { type: "expand", index: 11, tileWidth: TILE, at: 0 }, { ...SCENE, cardCount: 12, ...OVER, scrollX: 0 });
+    expect(state.motion).toBe("withPreview");
+    const left = reduceRowHead(state.state, { type: "blur", index: 11, at: 10 }, { ...SCENE, cardCount: 12, ...OVER, scrollX: 4576 });
+    const back = reduceRowHead(left.state, { type: "tick", at: 10 + ROW_HEAD_LEAVE_GRACE_MS }, { ...SCENE, cardCount: 12, ...OVER, scrollX: 4576 });
+    expect(back).toMatchObject({ scrollTo: 3308, motion: "plain" });
+  });
+
+  it("au focus d'une carte de bout de rangée, la place se pose d'avance si la rangée connaît sa grande carte", () => {
+    const r = row(12, STOP);
+    r.send({ type: "focus", index: 11, at: 0, tileWidth: TILE });
+    expect(r.state.trailing).toBe(426);
+    expect(r.moves).toEqual([]);
+    // L'aperçu venu, la place est déjà là : le défilement part avec la carte.
+    const before = r.state.trailing;
+    r.send({ type: "expand", index: 11, tileWidth: TILE, at: 900 });
+    expect(r.state.trailing).toBe(before);
+  });
+
+  it("au milieu de la rangée, le focus ne pose rien (rien à redessiner pendant un parcours)", () => {
+    const r = row(12, OVER);
+    for (let index = 0; index < 8; index += 1) r.send({ type: "focus", index, at: index * 100, tileWidth: TILE });
+    expect(r.state.trailing).toBe(0);
+  });
+});
+
 describe("les autres gabarits", () => {
   it("des affiches (240, pas de 276) passent en tête de même", () => {
     const r = row(20, STOP, { cardWidth: 240 });

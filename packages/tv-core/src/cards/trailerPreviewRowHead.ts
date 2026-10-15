@@ -28,11 +28,20 @@
  *   la visite, la dernière carte focalisée toujours entière à l'écran.
  * La place posée au bout s'en va ensuite, le retour fini.
  *
+ * Le passage en tête se joue AVEC la grande carte (`motion: "withPreview"`) :
+ * le même ressort que sa croissance, image par image. En butée, le bord droit
+ * de la grande carte reste alors où était celui de la carte — elle grandit
+ * vers la GAUCHE, ses voisines de gauche glissent ; jamais elle ne dépasse de
+ * l'écran le temps du mouvement. Le retour au départ du focus, lui, est un
+ * défilement ordinaire (`plain`).
+ *
  * Module pur, horloge injectée (`at`) : la rangée annonce le focus, l'aperçu
  * et l'heure (`nextRowHeadDeadline` → `tick`) ; elle applique le défilement
- * (`scrollTo`, animé) et la place (`trailing` : un retrait à droite de la
- * piste, au-delà de sa marge, posé AVANT de défiler — la piste borne sinon le
- * défilement à son contenu d'avant).
+ * (`scrollTo`) et la place (`trailing` : un retrait à droite de la piste,
+ * au-delà de sa marge). La place doit être posée AVANT de défiler — la piste
+ * borne sinon le défilement à son contenu d'avant : elle l'est dès le FOCUS
+ * d'une carte de bout de rangée quand la rangée connaît déjà la largeur de sa
+ * grande carte (`tileWidth`, vue à un aperçu précédent), sinon à l'aperçu.
  */
 
 export type RowHeadEnd = "stop" | "overscroll";
@@ -82,7 +91,8 @@ export interface RowHeadState {
 export const INITIAL_ROW_HEAD: RowHeadState = { focused: null, last: null, trailing: 0, restX: null, leaveAt: null, releaseAt: null };
 
 export type RowHeadEvent =
-  | { type: "focus"; index: number; at: number }
+  /** `tileWidth` : la largeur de la grande carte, si la rangée la connaît déjà — la place se pose d'avance. */
+  | { type: "focus"; index: number; at: number; tileWidth?: number }
   | { type: "blur"; index: number; at: number }
   /** L'aperçu de la carte démarre : sa grande carte, de cette largeur, grandit. */
   | { type: "expand"; index: number; tileWidth: number; at: number }
@@ -90,10 +100,14 @@ export type RowHeadEvent =
   /** La rangée est remise au début (`rowRewind`, sans animation) : tout s'oublie. */
   | { type: "reset" };
 
+/** Comment défiler : avec la grande carte (son ressort, image par image), ou un défilement ordinaire. */
+export type RowHeadMotion = "withPreview" | "plain";
+
 export interface RowHeadStep {
   state: RowHeadState;
   /** Où défiler, en un mouvement animé — `null` : rien ne bouge. */
   scrollTo: number | null;
+  motion: RowHeadMotion;
 }
 
 /** La grâce entre la perte du focus et le constat qu'il a quitté la rangée. */
@@ -131,32 +145,39 @@ function returnTarget(g: RowHeadGeometry, restX: number, last: number): number {
 }
 
 const moveTo = (target: number, scrollX: number) => (Math.abs(target - scrollX) < 1 ? null : target);
+const still = (state: RowHeadState): RowHeadStep => ({ state, scrollTo: null, motion: "plain" });
+/** La place qu'il faut au bout pour mettre la carte `index` en tête (ou en butée). */
+const trailingFor = (context: RowHeadContext, index: number, tileWidth: number) =>
+  rowHeadTrailing({ ...context, scrollX: rowHeadTarget({ ...context, index, tileWidth }) });
 
 export function reduceRowHead(state: RowHeadState, event: RowHeadEvent, context: RowHeadContext): RowHeadStep {
   switch (event.type) {
-    case "focus":
-      return { state: { ...state, focused: event.index, last: event.index, leaveAt: null, releaseAt: null }, scrollTo: null };
+    case "focus": {
+      const trailing = event.tileWidth === undefined ? state.trailing : Math.max(state.trailing, trailingFor(context, event.index, event.tileWidth));
+      return still({ ...state, focused: event.index, last: event.index, trailing, leaveAt: null, releaseAt: null });
+    }
     case "blur":
-      if (state.focused !== event.index) return { state, scrollTo: null };
-      return { state: { ...state, focused: null, leaveAt: event.at + ROW_HEAD_LEAVE_GRACE_MS }, scrollTo: null };
+      if (state.focused !== event.index) return still(state);
+      return still({ ...state, focused: null, leaveAt: event.at + ROW_HEAD_LEAVE_GRACE_MS });
     case "expand": {
       const target = rowHeadTarget({ ...context, index: event.index, tileWidth: event.tileWidth });
       const scrollTo = moveTo(target, context.scrollX);
       const trailing = Math.max(state.trailing, rowHeadTrailing({ ...context, scrollX: target }));
       const restX = scrollTo !== null && state.restX === null ? context.scrollX : state.restX;
-      return { state: { ...state, focused: event.index, last: event.index, trailing, restX, leaveAt: null, releaseAt: null }, scrollTo };
+      const next = { ...state, focused: event.index, last: event.index, trailing, restX, leaveAt: null, releaseAt: null };
+      return { state: next, scrollTo, motion: "withPreview" };
     }
     case "tick":
       return tick(state, event.at, context);
     case "reset":
-      return { state: { ...INITIAL_ROW_HEAD, focused: state.focused, last: state.last }, scrollTo: null };
+      return still({ ...INITIAL_ROW_HEAD, focused: state.focused, last: state.last });
   }
 }
 
 function tick(state: RowHeadState, at: number, context: RowHeadContext): RowHeadStep {
   if (state.leaveAt !== null && at >= state.leaveAt) return leave({ ...state, leaveAt: null }, at, context);
-  if (state.releaseAt !== null && at >= state.releaseAt) return { state: { ...state, trailing: 0, releaseAt: null }, scrollTo: null };
-  return { state, scrollTo: null };
+  if (state.releaseAt !== null && at >= state.releaseAt) return still({ ...state, trailing: 0, releaseAt: null });
+  return still(state);
 }
 
 /** Le focus a quitté la rangée : le vide se referme (`stay`) ou la rangée revient (`return`). */
@@ -169,8 +190,8 @@ function leave(state: RowHeadState, at: number, context: RowHeadContext): RowHea
   const scrollTo = moveTo(target, context.scrollX);
   const next: RowHeadState = { ...state, restX: null };
   // Rien à refermer à la vue : la place posée, hors de l'écran, s'en va aussitôt.
-  if (scrollTo === null) return { state: { ...next, trailing: 0, releaseAt: null }, scrollTo };
-  return { state: { ...next, releaseAt: next.trailing > 0 ? at + ROW_HEAD_RELEASE_MS : null }, scrollTo };
+  if (scrollTo === null) return still({ ...next, trailing: 0, releaseAt: null });
+  return { state: { ...next, releaseAt: next.trailing > 0 ? at + ROW_HEAD_RELEASE_MS : null }, scrollTo, motion: "plain" };
 }
 
 /** La prochaine heure à laquelle la rangée doit être réveillée (`tick`), ou `null`. */
