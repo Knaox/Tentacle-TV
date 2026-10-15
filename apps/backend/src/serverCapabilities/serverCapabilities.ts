@@ -144,6 +144,12 @@ export const SERVER_CAPABILITIES = {
    *  avec les droits de son rôle, derrière SON code PIN — un code posé depuis sa session personnelle
    *  (`family/familyCallers.ts`). Sans elle, le bureau ne montre rien de la Famille à un profil. */
   "family.profileManage": "1.30.0",
+  /** L'administration décide si les invités peuvent demander des films : l'interrupteur
+   *  `FamilySwitches.guestRequests` (COUPÉ par défaut, mise à jour comprise) et le droit de compte
+   *  `grantGuestRequests` (défaut NON, `FamilyAccountDto.creation`) ; refus
+   *  `family.guest_requests_denied` ; case d'un invité SUSPENDUE (`FamilyGuestRights.suspended`)
+   *  sans le droit. Sans elle, la case « peut demander » se règle comme avant. */
+  "family.guestRequestsAdmin": "1.30.0",
   // ── Lot « droits 2 » : lecture et Watch Together (docs/DROITS-UTILISATEURS.md § 9.2) ──
   /** L'accès du compte à Watch Together, tiré de `SyncPlayAccess` de sa politique Jellyfin
    *  (`GET /api/watch-together/access` → `full | joinOnly | none`) : `none` ne voit plus rien de
