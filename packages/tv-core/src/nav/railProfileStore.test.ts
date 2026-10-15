@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { RAIL_STORAGE_KEY, type RailStorage } from "./railPinning";
 import { createProfileRailStore } from "./railProfileStore";
-import { RAIL_PROFILES_STORAGE_KEY } from "./railProfiles";
+import { RAIL_LIBRARIES_STORAGE_KEY, RAIL_PROFILES_STORAGE_KEY } from "./railProfiles";
 
 /** Un stockage en mémoire, avec ce qu'on y lit au départ. */
 function fakeStorage(initial: Record<string, string> = {}): RailStorage & { content: Map<string, string> } {
@@ -183,5 +183,36 @@ describe("rail par profil — stockage abîmé ou tardif", () => {
     store.rehydrate();
     expect(listener).toHaveBeenCalledTimes(1);
     expect(store.readSnapshot()).toBe(before);
+  });
+});
+
+describe("rail par profil — nombre de bibliothèques vu", () => {
+  it("retenu par identité, écrit seulement s'il change, relu au démarrage", () => {
+    const storage = fakeStorage();
+    const writes = vi.spyOn(storage, "setItem");
+    const store = createProfileRailStore(storage, identity("alice").read);
+    expect(store.readLibraryCount("alice")).toBeNull();
+    store.noteLibraryCount("alice", 1);
+    store.noteLibraryCount("alice", 1);
+    expect(writes).toHaveBeenCalledTimes(1);
+    store.noteLibraryCount("bob", 4);
+    expect(JSON.parse(storage.content.get(RAIL_LIBRARIES_STORAGE_KEY)!)).toEqual({ alice: 1, bob: 4 });
+    expect(createProfileRailStore(storage, identity("alice").read).readLibraryCount("bob")).toBe(4);
+  });
+
+  it("n'entame pas l'héritage : aucune entrée de disposition créée", () => {
+    const storage = fakeStorage({ [RAIL_STORAGE_KEY]: '{"masquees":["Library_b"]}' });
+    const store = createProfileRailStore(storage, identity("alice").read);
+    store.noteLibraryCount("alice", 3);
+    expect(storage.content.get(RAIL_PROFILES_STORAGE_KEY)).toBeUndefined();
+    expect(store.readSnapshot().masquees).toEqual(["Library_b"]);
+  });
+
+  it("valeurs abîmées ou absurdes : inconnues", () => {
+    const raw = JSON.stringify({ alice: "2", bob: -1, carol: 1.5, dave: 2 });
+    const store = createProfileRailStore(fakeStorage({ [RAIL_LIBRARIES_STORAGE_KEY]: raw }), identity("alice").read);
+    expect(["alice", "bob", "carol", "dave"].map((id) => store.readLibraryCount(id))).toEqual([null, null, null, 2]);
+    store.noteLibraryCount("alice", Number.NaN);
+    expect(store.readLibraryCount("alice")).toBeNull();
   });
 });

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { ACCOUNT_STORAGE_KEYS, PROFILE_STORAGE_KEYS } from "./unpairJournal";
 import { SCRUB_COUNTDOWN_KEY_PREFIX } from "../player/scrubCountdownSettings";
 import { TRAILER_SUBTITLE_KEY_PREFIX } from "../player/trailerSubtitleMemory";
-import { RAIL_PROFILES_STORAGE_KEY } from "../nav/railProfiles";
+import { RAIL_LIBRARIES_STORAGE_KEY, RAIL_PROFILES_STORAGE_KEY } from "../nav/railProfiles";
 
 /**
  * L'ISOLATION des profils de la Famille (Apple TV), clé par clé : chaque clé
@@ -44,6 +44,7 @@ const PER_PROFILE_PREFIXES = [SCRUB_COUNTDOWN_KEY_PREFIX, TRAILER_SUBTITLE_KEY_P
 /** Une seule clé, mais un objet rangé par identifiant de profil : chaque identité n'y lit que SON entrée. */
 const PER_PROFILE_MAPS: Record<string, string> = {
   [RAIL_PROFILES_STORAGE_KEY]: "la disposition du rail de chaque profil sur cette TV (préconfiguration comprise)",
+  [RAIL_LIBRARIES_STORAGE_KEY]: "le dernier nombre de bibliothèques vu par chaque profil (la page de préconfiguration ou l'accueil)",
 };
 
 function files(dir: string): string[] {

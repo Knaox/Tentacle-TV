@@ -44,6 +44,19 @@ export function decideRailSetup(input: RailSetupInput): RailSetupStatus {
   return input.libraries >= RAIL_SETUP_MIN_LIBRARIES ? "show" : "skip";
 }
 
+/**
+ * Une préconfiguration RESTE-t-elle à proposer, sans attendre les
+ * bibliothèques ? Pour choisir la page d'arrivée sans faire paraître
+ * l'accueil : non faite, et la dernière fois qu'on les a vues il y en avait
+ * deux au moins — ou on ne les a jamais vues. Un compte à une bibliothèque ne
+ * fait donc le détour qu'une fois ; une deuxième arrivée depuis, la page
+ * vient au lancement suivant. La décision finale reste `decideRailSetup`.
+ */
+export function isRailSetupPending(input: { setupDone: boolean; lastLibraryCount: number | null }): boolean {
+  if (input.setupDone) return false;
+  return input.lastLibraryCount === null || input.lastLibraryCount >= RAIL_SETUP_MIN_LIBRARIES;
+}
+
 /** Ce qui a été tranché, et pour qui. */
 export interface RailSetupLatch {
   identity: string | null;

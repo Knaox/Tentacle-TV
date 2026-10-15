@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  RAIL_SETUP_MAX_WAIT_MS, decideRailSetup, railLayoutFromSetup, railSetupTargetIds, settleRailSetup, type RailSetupInput,
+  RAIL_SETUP_MAX_WAIT_MS, decideRailSetup, isRailSetupPending, railLayoutFromSetup, railSetupTargetIds, settleRailSetup, type RailSetupInput,
 } from "./railSetup";
 
 const base: RailSetupInput = { identity: "alice", setupDone: false, libraries: 3, online: true };
@@ -111,5 +111,18 @@ describe("railSetupTargetIds", () => {
     expect(railSetupTargetIds(null, "owner")).toEqual([]);
     expect(railSetupTargetIds(family, null)).toEqual([]);
     expect(railSetupTargetIds([family[0]], "owner")).toEqual([]);
+  });
+});
+
+describe("isRailSetupPending", () => {
+  it("non faite et jamais vue, ou vue avec deux bibliothèques au moins : la page d'abord", () => {
+    expect(isRailSetupPending({ setupDone: false, lastLibraryCount: null })).toBe(true);
+    expect(isRailSetupPending({ setupDone: false, lastLibraryCount: 2 })).toBe(true);
+  });
+
+  it("faite, ou une seule bibliothèque la dernière fois : l'accueil directement", () => {
+    expect(isRailSetupPending({ setupDone: true, lastLibraryCount: null })).toBe(false);
+    expect(isRailSetupPending({ setupDone: false, lastLibraryCount: 1 })).toBe(false);
+    expect(isRailSetupPending({ setupDone: false, lastLibraryCount: 0 })).toBe(false);
   });
 });

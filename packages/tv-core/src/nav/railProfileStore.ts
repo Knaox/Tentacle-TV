@@ -1,8 +1,10 @@
 import { RAIL_STORAGE_KEY, type RailPinningStore, type RailStorage } from "./railPinning";
 import { sameRailOrder } from "./railOrder";
 import {
+  RAIL_LIBRARIES_STORAGE_KEY,
   RAIL_PROFILES_STORAGE_KEY,
   parseDeviceRail,
+  parseLibraryCounts,
   parseProfileRails,
   profileRailOf,
   sameProfileRail,
@@ -50,14 +52,23 @@ export interface ProfileRailStore extends RailPinningStore {
   skipSetup: (userId: string) => void;
   /** Copie la disposition de `fromUserId` chez chacun des autres, préconfiguration marquée faite. */
   applyLayoutTo: (fromUserId: string, toUserIds: readonly string[]) => void;
+  /** Le dernier nombre de bibliothèques vu pour cette identité ; null : jamais vu. */
+  readLibraryCount: (userId: string) => number | null;
+  /** Retient le nombre de bibliothèques que l'identité voit (écrit seulement s'il change). */
+  noteLibraryCount: (userId: string, count: number) => void;
 }
 
 export interface ProfileRailStoreKeys {
   profiles: string;
   device: string;
+  libraries: string;
 }
 
-const DEFAULT_KEYS: ProfileRailStoreKeys = { profiles: RAIL_PROFILES_STORAGE_KEY, device: RAIL_STORAGE_KEY };
+const DEFAULT_KEYS: ProfileRailStoreKeys = {
+  profiles: RAIL_PROFILES_STORAGE_KEY,
+  device: RAIL_STORAGE_KEY,
+  libraries: RAIL_LIBRARIES_STORAGE_KEY,
+};
 
 /** Le JSON d'appareil, à l'octet près celui de `railPinning.ts` (la LG le lit). */
 function serializeDevice(layout: RailLayout): string {
@@ -92,6 +103,7 @@ export function createProfileRailStore(
   let rawRails = safeRead(keys.profiles);
   let rails: ProfileRails = parseProfileRails(rawRails);
   let device: RailLayout = parseDeviceRail(safeRead(keys.device));
+  let libraryCounts = parseLibraryCounts(safeRead(keys.libraries));
   let identity = safeIdentity();
   /** La dernière identité ANNONCÉE aux abonnés — `readSnapshot` peut changer `identity` sans notifier. */
   let notifiedIdentity = identity;
@@ -176,6 +188,7 @@ export function createProfileRailStore(
       notify();
     },
     rehydrate() {
+      libraryCounts = parseLibraryCounts(safeRead(keys.libraries));
       const nextRaw = safeRead(keys.profiles);
       const nextDevice = parseDeviceRail(safeRead(keys.device));
       const before = snapshot;
@@ -215,6 +228,16 @@ export function createProfileRailStore(
       const next: Record<string, ProfileRailEntry> = { ...rails };
       for (const userId of targets) next[userId] = { ...copyOf(source), setupDone: true };
       writeRails(next);
+    },
+    readLibraryCount: (userId) => libraryCounts[userId] ?? null,
+    noteLibraryCount(userId, count) {
+      if (!userId || !Number.isInteger(count) || count < 0 || libraryCounts[userId] === count) return;
+      libraryCounts = { ...libraryCounts, [userId]: count };
+      try {
+        storage.setItem(keys.libraries, JSON.stringify(libraryCounts));
+      } catch {
+        // Stockage indisponible : retenu pour cette session.
+      }
     },
   };
 }

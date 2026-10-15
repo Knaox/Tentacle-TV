@@ -21,6 +21,15 @@
 export const RAIL_PROFILES_STORAGE_KEY = "tentacle_tv_rail_profiles";
 
 /**
+ * Le dernier nombre de bibliothèques VU par identité, `{ [userId]: n }` — de
+ * quoi décider AVANT de les relire s'il y a une préconfiguration à proposer
+ * (`isRailSetupPending`) : un compte à une seule bibliothèque ne passe pas par
+ * la page à chaque démarrage. Clé à part : une entrée de disposition qui
+ * n'existerait que pour ce nombre couperait l'héritage d'appareil.
+ */
+export const RAIL_LIBRARIES_STORAGE_KEY = "tentacle_tv_rail_libraries";
+
+/**
  * Une disposition : ce qui est masqué et l'ordre choisi (vide = l'ordre par
  * défaut, `applyRailOrder`). `masquees` garde son nom français : c'est une
  * clé du JSON stocké (voir `railPinning.ts`).
@@ -111,6 +120,23 @@ export function serializeProfileRails(rails: ProfileRails): string {
  */
 export function profileRailOf(rails: ProfileRails, device: RailLayout, userId: string): ProfileRailEntry {
   return rails[userId] ?? { masquees: device.masquees, order: device.order, setupDone: false };
+}
+
+/** Les nombres de bibliothèques vus ; illisibles ou abîmés : inconnus. */
+export function parseLibraryCounts(raw: string | null): Record<string, number> {
+  if (!raw) return {};
+  let loaded: unknown;
+  try {
+    loaded = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+  if (!loaded || typeof loaded !== "object" || Array.isArray(loaded)) return {};
+  const counts: Record<string, number> = {};
+  for (const [userId, value] of Object.entries(loaded as Record<string, unknown>)) {
+    if (userId && typeof value === "number" && Number.isInteger(value) && value >= 0) counts[userId] = value;
+  }
+  return counts;
 }
 
 /** Deux listes de clés identiques, clé pour clé. */
