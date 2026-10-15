@@ -15,7 +15,7 @@ import { recoHeroSlides } from "@/components/reco/hero/recoHeroSlides";
 import { RecoFilterSheet } from "@/components/reco/filters/RecoFilterSheet";
 import { LikedActorsPanel } from "@/components/reco/people/LikedActorsPanel";
 import { ColdStartScreen } from "@/components/reco/coldstart/ColdStartScreen";
-import { RecoDisabledState, RecoErrorState } from "@/components/reco/page/RecoErrorState";
+import { RecoDisabledState, RecoErrorState, RecoTmdbOffState } from "@/components/reco/page/RecoErrorState";
 import { RecoPageHeader } from "@/components/reco/page/RecoPageHeader";
 import { RecoPageRows } from "@/components/reco/page/RecoPageRows";
 import { RecoRefineTeaser } from "@/components/reco/section/RecoRefineTeaser";
@@ -96,6 +96,17 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
             <View style={styles.skeletonRow}><SkeletonRow /></View>
           </View>
         )}
+      </SubtleBackground>
+    );
+  }
+
+  if (page.tmdbConfigured === false && page.rows.length === 0) {
+    return (
+      <SubtleBackground ambient>
+        <View style={[styles.fill, { paddingTop: headerH }]}>
+          {sectionSwitch}
+          <RecoTmdbOffState />
+        </View>
       </SubtleBackground>
     );
   }

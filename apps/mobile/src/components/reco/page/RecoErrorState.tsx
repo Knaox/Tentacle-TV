@@ -32,6 +32,18 @@ export function RecoDisabledState({ onOpenSettings }: { onOpenSettings: () => vo
   );
 }
 
+/** Pas de clé TMDB et rien à montrer : le constat, jamais les réglages de personnalisation. */
+export function RecoTmdbOffState() {
+  const { t } = useTranslation("reco");
+  const st = useThemedStyles(makeStyles);
+  return (
+    <View style={[st.root, st.left]}>
+      <Text style={st.title}>{t("pageTitle")}</Text>
+      <Text style={st.bodyLeft}>{`${t("tmdbOffText")} ${t("tmdbOffDeviceHint")}`}</Text>
+    </View>
+  );
+}
+
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   root: { flex: 1, alignItems: "center" as const, justifyContent: "center" as const, gap: spacing.lg, padding: spacing.xxl },
   left: { alignItems: "flex-start" as const },

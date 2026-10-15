@@ -16,9 +16,9 @@ interface Props {
 
 /**
  * UN bandeau d'état à la fois — le premier vrai gagne, dans l'ordre du web :
- * la perso coupée PAR L'UTILISATEUR prime ; la clé TMDB absente ne dit RIEN
- * ici (l'admin a son bandeau, les autres n'y peuvent rien) ; puis les états de
- * calcul du profil et du pool.
+ * la clé TMDB absente prime (les recommandations ne sont pas activées : un
+ * constat, sans bouton — le téléphone n'a pas d'administration) ; puis la
+ * perso coupée PAR L'UTILISATEUR ; puis les états de calcul du profil et du pool.
  */
 export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart, onOpenSettings }: Props) {
   const { t } = useTranslation("reco");
@@ -35,8 +35,14 @@ export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart, o
     </View>
   );
 
+  if (page.tmdbConfigured === false) {
+    return (
+      <View style={st.actionable}>
+        <Text style={st.actionableTxt}>{`${t("tmdbOffText")} ${t("tmdbOffDeviceHint")}`}</Text>
+      </View>
+    );
+  }
   if (page.personalized === false) return actionable(t("disabledBanner"), t("disabledBannerCta"), onOpenSettings);
-  if (page.tmdbConfigured === false) return null;
   if (cold && (page.generating || page.refining)) return hint(t("generatingHint"));
   if (cold) return actionable(t("coldBannerHint"), t("coldBannerCta"), onOpenColdStart);
   if (page.exploring) return hint(t("exploringHint"));
