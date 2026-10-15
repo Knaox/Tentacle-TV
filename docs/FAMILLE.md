@@ -12,6 +12,7 @@ que le serveur garantit). Une règle, une source :
 | Routes et appelants permis | `packages/shared/src/family/familyRoutes.ts` (`FAMILY_ROUTES`) |
 | Règles pures (PIN, capacité, invitations, noms) | `packages/shared/src/family/familyRules.ts` |
 | Droits et candidats (v2) | `packages/shared/src/family/familyRights.ts` (`familyRightsOf`, `canManageGuest`, `familyCandidates`) |
+| Parents, membres mineurs, droits de création (1.30.0) | `packages/shared/src/family/familyRoles.ts` ; clients : `familyRolesClient.ts` ; carnet : docs/DROITS-UTILISATEURS.md § 9.4 |
 | Lecture d'un refus, clés i18n (clients seulement) | `packages/shared/src/family/familyLabels.ts`, espace i18n `family` |
 | Ce que les écrans montrent (places, gestes permis, affiche, couleurs) | `packages/shared/src/family/familyClient.ts` ; le bureau : `familyPickerClient.ts` (clients seulement) |
 | Miroirs du serveur (octet pour octet, `familyMirror.test.ts`) | `apps/backend/src/family/` |
@@ -31,8 +32,10 @@ accepté, la famille est celle de tous ses membres : ils la voient, leurs TV la
 montrent.
 
 - **Propriétaire** : tout compte du serveur sauf un invité, s'il n'est membre
-  d'aucune famille. Lui SEUL invite, annule une invitation, retire un membre,
-  règle les droits des membres et dissout ; il ne « quitte » pas sa famille
+  d'aucune famille — et, depuis la 1.30.0, si l'administration lui permet de
+  FONDER une famille (`createFamily`, voir « Administration »). Lui SEUL invite,
+  annule une invitation, retire un membre, règle les droits des membres, nomme
+  ou retire un parent et dissout ; il ne « quitte » pas sa famille
   (`family.owner_must_dissolve`). La famille naît à son premier invité ou à
   sa première invitation.
 - **Membre** : un compte EXISTANT qui a accepté une invitation. Il ne crée
@@ -44,6 +47,17 @@ montrent.
   supprime et ne protège (PIN) que les invités qu'il a créés, même privé du
   droit d'en créer. Retirer le droit ne supprime rien. Le retirer de la
   famille le sort, jamais de Jellyfin.
+- **Parent** (1.30.0, `family.roles`) : un membre que le propriétaire a nommé
+  parent (`setMemberRole`). Il gère les ENFANTS comme le propriétaire : tous
+  les invités (droits, photo, PIN, contrôle parental, suppression) et le
+  contrôle parental des membres mineurs ; il crée des invités sans la
+  permission du propriétaire, si l'administration lui en donne le droit.
+  Jamais : inviter, retirer, nommer un parent, dissoudre.
+- **Membre mineur** (1.30.0, `family.memberParental`) : un membre (ni parent,
+  ni administrateur Jellyfin) sur qui le propriétaire ou un parent pose un
+  contrôle parental — écrit dans SA politique Jellyfin, intersection de sa
+  politique de base (celle de l'administrateur) et du contrôle ; rendue à
+  l'identique au retrait, à son départ, à la dissolution. Ses invités suivent.
 - **Invité** : un VRAI compte Jellyfin créé par le serveur (clé d'API), caché
   (`IsHidden`), au mot de passe fort jeté aussitôt — personne n'y entre ; seules
   les TV de la famille l'ouvrent. Il porte son créateur (`createdBy`) et en
@@ -638,6 +652,15 @@ rallumer ne ressuscite aucune session. La session du compte de chaque TV
 reste. Retirer, quitter,
 supprimer un invité et dissoudre restent possibles : ils ne font que réduire.
 
+**Droits de création** (1.30.0, `family.creationRights`) : par compte, « créer
+une famille » et « créer des profils invités », chacun Par défaut / Permis /
+Refusé (`GET`/`PUT /api/admin/family/accounts/:userId`, rubrique « Famille »
+de la fiche d'un compte) ; les deux DÉFAUTS sont sur NON, réglés à côté des
+interrupteurs (`GET`/`PUT /api/admin/family/creation`). Les interrupteurs
+restent maîtres, un administrateur Jellyfin peut toujours, et seules les
+NOUVELLES créations se gardent (`family.create_family_denied`,
+`family.create_guests_denied`) : une famille et des invités déjà là restent.
+
 « Qui regarde ? » à l'ouverture, plateforme par plateforme (même page, section
 voisine, `FamilyLaunchPolicySection`) : voir « Qui regarde ? » au lancement
 (bureau) — aucune session n'est fermée, la règle vaut au prochain lancement.
@@ -667,6 +690,9 @@ voisine, `FamilyLaunchPolicySection`) : voir « Qui regarde ? » au lancement
 | Garde d'appelant des routes | `familyCaller.ts` |
 | Périmètre des sessions de profil | `profileSessionLimits.ts` |
 | Balayage (10 min) | `familySweep.ts` |
+| Droits de création (défauts, par compte), fiche d'administration | `familyCreationRights.ts`, `familyAccountAdmin.ts` |
+| Rôle de parent | `familyMemberRoles.ts` |
+| Membre mineur : pose, base (règle pure), état en base, guet et base rendue | `memberParental.ts`, `memberParentalRules.ts`, `memberParentalStore.ts`, `memberParentalSync.ts` |
 
 Le balayage (toutes les dix minutes et au démarrage) : les comptes d'invités
 au journal des suppressions partent de Jellyfin ; les invitations échues
@@ -755,6 +781,10 @@ une invitation n'y paraît que par le début de son identifiant.
   jeton Quick Connect propre à chaque session de profil ; coupures jusqu'à
   `DELETE /Devices` ; membre retiré, compte intact.
 - Les tests d'attaque de T8 : `apps/backend/test/famille-securite/`.
+- 1.30.0 : `familyCreationRights`, `familyParentRole`, `familyMemberParental`
+  (`apps/backend/test/`) ; banc réel `test/famille-roles/banc/` (Jellyfin 10.11
+  jetable : un membre « ≤ 6 ans » filtré par Jellyfin avec son jeton, base
+  rendue à l'octet près, guet).
 
 ## Compatibilité
 
@@ -764,6 +794,10 @@ une invitation n'y paraît que par le début de son identifiant.
   titre).
   Absente : serveur d'avant — les clients ne montrent rien de la Famille ; pas
   de minServer imposé.
+- Parents, membres mineurs, droits de création : capacités `family.roles`,
+  `family.memberParental`, `family.creationRights` (1.30.0) — absentes, les
+  clients ne montrent ni rôle, ni contrôle d'un membre, ni réglage de création ;
+  champs ajoutés aux DTO (`parent`, `manageRoles`, `manageMinors`, `creation`).
 - Le bureau : capacité `family.desktopProfiles` (`capabilities`, 1.30.0) ;
   absente, le bureau garde sa seule session personnelle, sans « Qui
   regarde ? » ni « Changer de profil ».

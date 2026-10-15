@@ -520,6 +520,96 @@ Relevé sur l'onglet « Contrôle parental » d'un Jellyfin 10.11.11 jetable, en
   autonome ouverte sans session ; droit coupé dans la fiche → API et page « indisponible », boutons
   disparus, création refusée ; droit rendu par l'API de Jellyfin → liste revenue ; révocation → 404.
 
+## 9.4 Famille : parents, mineurs, droits de création
+
+Lot « droits 2 », chantier S4 (2026-10-15). Contrat : `packages/shared/src/family/familyRoles.ts`
+(miroir), ré-exporté par `familyContract.ts`. Capacités `family.roles`, `family.memberParental`,
+`family.creationRights` (1.30.0). Banc réel : `apps/backend/test/famille-roles/banc/`.
+
+### 9.4.1 Droits de création — gardés par Tentacle, pas par Jellyfin
+
+- Par compte : `createFamily` et `createGuests`, chacun `inherit | allow | deny` (table
+  `family_account_rights`, sans ligne = `inherit`). `inherit` suit le DÉFAUT de l'administration
+  (`server_config` : `family_default_create_family`, `family_default_create_guests`, clé absente =
+  NON — installation neuve comme mise à jour).
+- La règle (`resolveFamilyCreation`, pure, partagée) : interrupteurs d'abord (« Familles » coupé =
+  personne ; « Profils invités » coupé = aucun invité), puis administrateur Jellyfin (toujours),
+  puis le réglage du compte, puis le défaut. Jellyfin muet : on ne le sait pas administrateur —
+  son réglage et le défaut décident.
+- Ce qui se garde : FONDER une famille (première invitation, premier invité d'un compte sans
+  famille) et CRÉER un invité. Une famille existante invite encore ; rien de ce qui existe ne
+  tombe. Créer un invité exige le droit du compte ET, pour un simple membre, la permission du
+  propriétaire (`FamilyMemberRights.createGuests`) ; un parent l'a d'office.
+- Refus : `family.create_family_denied`, `family.create_guests_denied` (403), le droit de compte
+  jugé AVANT la permission du propriétaire. `FamilyAccountDto.creation` dit aux clients ce qui
+  vaut ; `familyRightsOf` reçoit `{ parent, creation }`.
+- Administration (`requirePersonalAdmin` par l'appelant `admin` : jamais une TV) :
+  `GET|PUT /api/admin/family/creation` (les défauts), `GET|PUT /api/admin/family/accounts/:userId`
+  → `AccountFamilyRightsDto` (`rights`, `defaults`, `allowed`, `isAdministrator`, sa place dans
+  une famille, `restrictedBy`). Un invité de la Famille ne se règle pas (`family.guest_account`).
+
+### 9.4.2 Le rôle de PARENT
+
+- `family_members.isParent`, posé par le propriétaire SEUL (`PUT /api/family/members/:userId/role`,
+  personnel). `FamilyProfileDto.parent`, `FamilyDto.parent` (additifs).
+- Un parent gère les ENFANTS : `manageGuests: "all"` (droits, photo, PIN, contrôle parental,
+  suppression d'un invité) et `manageMinors` (contrôle parental des membres mineurs) ; il crée des
+  invités s'il en a le droit de compte. Restent au propriétaire : inviter, retirer, nommer un
+  parent (`manageRoles`), dissoudre. Jamais un membre sous contrôle parental
+  (`family.member_parental_refused` : le retirer d'abord).
+- Sur une TV (`memberTv`), un parent supprime ou crée des invités comme dans sa session
+  personnelle ; aucun geste nouveau n'y est ouvert.
+
+### 9.4.3 Le MEMBRE mineur — base gardée, puis rendue
+
+- Posé par le propriétaire ou un parent (`PUT /api/family/members/:userId/parental`, corps =
+  `GuestParentalControls` ENTIER ; aucun réglage = retiré), sur un membre qui n'est ni le
+  propriétaire, ni un parent, ni un administrateur Jellyfin (`family.member_parental_refused`).
+  Réponse `GuestParentalDto` : `parentalCeiling` = SA politique de base.
+- Écrit dans SA politique Jellyfin — sinon ses appels directs à Jellyfin ne seraient pas filtrés
+  — comme `effectiveGuestParental(base, voulu)` : la règle des invités, la base à la place du
+  créateur. Ses invités suivent sa politique effective (leur plafond, c'est lui).
+- Table `family_member_parental` : `controls` (le voulu ; null = retiré, base à rendre), `base`
+  (les six champs parentaux de l'administrateur), `written` (la dernière écriture relue),
+  `restorePending`. Gardé D'ABORD, écrit ensuite, relu (refus si Jellyfin ne l'a pas retenu).
+- **Un champ qui diffère de la dernière écriture a été changé ailleurs : il devient la base**
+  (`rebaseMemberParental`, pure). Note et sous-note chacune pour soi (relever la note seule ne
+  fait pas entrer la sous-note de la famille dans la base — prouvé, « Approved » en a une). Pour
+  les listes que la famille allonge (types non classés, étiquettes bloquées) : la liste lue MOINS
+  ce que la famille y avait ajouté. Étiquettes permises et plages : la valeur lue.
+- Quatre moments, un seul geste (`settleMemberParental`) : la pose ou le retrait ; toute écriture
+  faite par Tentacle (`notePolicyWritten` — le membre D'ABORD, ses invités ensuite) ; l'ouverture
+  d'un profil de ce membre (TV, bureau) ; le guet des deux minutes (`resyncMemberParental`, une
+  lecture de `/Users`, rien s'il n'y a aucune ligne), qui rejoue aussi les bases à rendre.
+- **Rendue à l'identique** : contrôle retiré, membre parti ou retiré, famille dissoute → la ligne
+  passe « à rendre » (durable), la base est réécrite, relue, la ligne effacée ; Jellyfin muet : le
+  guet la rend à son retour. Compte disparu de Jellyfin : la ligne s'efface. Un membre devenu
+  administrateur Jellyfin APRÈS la pose garde son contrôle (rien ne se relâche en silence).
+- L'état se lit avec le membre (`parental`, `parentalCeiling`), au propriétaire et aux parents
+  seulement — ni au membre lui-même, ni à un autre membre.
+
+### 9.4.4 Les clients
+
+- Web et bureau : Réglages › Famille (`ProfileRow`) — le rôle (interrupteur « Parent » du
+  propriétaire, grisé et expliqué tant qu'un contrôle restreint le membre), « Contrôle parental »
+  d'un membre (l'éditeur des invités, plafonné par la base, « Retirer le contrôle »). Admin ›
+  Comptes : les deux défauts à côté des interrupteurs. Fiche d'un compte : `AccountFamilyRightsPanel`
+  (`components/admin/users/familyRights/`), monté par une ligne dans la fiche des droits.
+- TV et mobile : rien à régler ; DTO additifs, typecheck verts. Un refus de création s'y dit par
+  son code (`family:errors.create_*_denied`).
+
+### 9.4.5 Preuves
+
+- Bancs : `familyCreationRights`, `familyParentRole`, `familyMemberParental` (routes, base gardée
+  puis rendue, administrateur par Tentacle et par Jellyfin, départs, Jellyfin muet, invités qui
+  suivent), `memberParentalRules.test.ts` ; shared : `familyRoles.test.ts`,
+  `familyRolesClient.test.ts`.
+- Jellyfin 10.11 jetable (`famille-roles/banc`, 2026-10-15) : « TOUT EST PROUVÉ » — dont un membre
+  « ≤ 6 ans » relu dans Jellyfin, ses titres filtrés par Jellyfin avec SON jeton (G seulement),
+  base rendue à l'octet près (hors `Id` des plages), un parent qui règle un invité, un compte sans
+  droit qui tente de fonder une famille (403) ; guet : changement direct dans Jellyfin repris en
+  ~100 s.
+
 ## 9.7 Suppression de titres
 
 > Lot « droits 2 » (2026-10-15), web et bureau seulement — ni mobile, ni TV, ni webOS, ni la
