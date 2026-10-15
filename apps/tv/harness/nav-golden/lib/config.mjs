@@ -18,6 +18,15 @@ export const SCENARIOS_DIR = path.join(BENCH_DIR, "scenarios");
 export const OUT_DIR = path.join(BENCH_DIR, "out");
 export const CACHE_DIR = process.env.NAV_GOLDEN_CACHE ?? path.join(os.homedir(), "Library/Caches/tentacle-nav-golden");
 export const BUNDLE_ID = "com.tentacle.mobile";
+
+/**
+ * La préconfiguration de la barre, FAITE pour les comptes du banc (le compte
+ * jumelé et l'invitée de la famille factice) : sans elle, chaque démarrage
+ * passerait par sa page avant l'accueil, et aucune référence d'avant ne se
+ * rejouerait. Un scénario qui l'éprouve pose `tentacle_tv_rail_profiles: "{}"`
+ * dans son `storage`. (Recopié dans `probe/navProbe.js`, qui ne peut l'importer.)
+ */
+export const BENCH_RAIL_PROFILES = JSON.stringify({ "banc-user": { masquees: [], setupDone: true }, "banc-guest": { masquees: [], setupDone: true } });
 export const ATV_REMOTE_DIR = path.join(REPO, "apps/tv/harness/atv-remote");
 
 /** Une erreur expliquée à l'auteur du scénario, sans pile. */

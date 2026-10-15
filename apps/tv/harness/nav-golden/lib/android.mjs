@@ -15,7 +15,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BenchError, CACHE_DIR, capture, sleep } from "./config.mjs";
+import { BENCH_RAIL_PROFILES, BenchError, CACHE_DIR, capture, sleep } from "./config.mjs";
 
 export const ANDROID_PACKAGE = process.env.NAV_GOLDEN_ANDROID_PACKAGE ?? "com.tentacletv.mobile";
 const ACTIVITY = `${ANDROID_PACKAGE}/com.tentacletv.MainActivity`;
@@ -90,12 +90,13 @@ async function storageDatabase(entries) {
 
 /** La session factice : `paired` (jumelée au faux backend) ou `none` (écran de jumelage). */
 function sessionEntries(session, backendPort) {
-  if (session === "none") return { tentacle_language: "fr" };
+  if (session === "none") return { tentacle_language: "fr", tentacle_tv_rail_profiles: BENCH_RAIL_PROFILES };
   return {
     tentacle_server_url: `http://localhost:${backendPort}`,
     tentacle_token: "banc",
     tentacle_user: JSON.stringify({ Id: "banc-user", Name: "Knaoxtest" }),
     tentacle_language: "fr",
+    tentacle_tv_rail_profiles: BENCH_RAIL_PROFILES,
   };
 }
 

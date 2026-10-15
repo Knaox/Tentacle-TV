@@ -53,6 +53,8 @@ function resetForBench() {
     if (key.startsWith("tentacle_") || key === "disclaimer_accepted") changes[key] = null;
   }
   changes.tentacle_language = "fr";
+  // La préconfiguration de la barre, faite pour les comptes du banc (`BENCH_RAIL_PROFILES`, lib/config.mjs).
+  changes.tentacle_tv_rail_profiles = JSON.stringify({ "banc-user": { masquees: [], setupDone: true }, "banc-guest": { masquees: [], setupDone: true } });
   if (session === "paired") {
     changes.tentacle_server_url = Settings.get("navGoldenServer");
     changes.tentacle_token = "banc";
