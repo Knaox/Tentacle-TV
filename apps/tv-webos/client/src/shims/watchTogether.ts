@@ -22,6 +22,9 @@ export interface WatchTogetherContextValue {
   selfId: null;
   isInGroup: boolean;
   isHost: boolean;
+  /** L'accès du compte (cf. le vrai fournisseur) : jamais, Watch Together n'existe pas ici. */
+  mayJoin: boolean;
+  mayCreate: boolean;
   send: () => boolean;
   serverNow: () => number;
   actions: Record<string, () => Promise<never>>;
@@ -48,6 +51,8 @@ const OUT_OF_GROUP: WatchTogetherContextValue = {
   selfId: null,
   isInGroup: true,
   isHost: false,
+  mayJoin: false,
+  mayCreate: false,
   send: () => false,
   serverNow: () => Date.now(),
   actions: {

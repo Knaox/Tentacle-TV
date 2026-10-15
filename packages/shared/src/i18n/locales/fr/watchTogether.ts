@@ -18,6 +18,8 @@ export default {
   cantPlay: "Ne peut pas lire ce média",
   noGroup: "Aucun groupe actif.",
   noGroupHint: "Créez un groupe et invitez d'autres utilisateurs : tout ce que vous regarderez sera parfaitement synchronisé.",
+  /** « Rejoindre seulement » : aucune création, les invitations restent. */
+  joinOnlyHint: "Votre compte peut rejoindre un groupe quand on vous y invite, mais pas en créer un.",
 
   // Modale du groupe (salle)
   roomReady: "Votre groupe est prêt",
@@ -77,6 +79,8 @@ export default {
   seekedBy: "{{name}} a changé de position",
   itemStartedBy: "{{name}} a lancé la lecture",
   groupDissolved: "Le groupe a été dissous",
+  /** Le compte a perdu Watch Together (SyncPlayAccess « Interdit ») : il est sorti du groupe. */
+  accessRevoked: "Watch Together n'est plus autorisé pour votre compte : vous avez quitté le groupe",
   memberCantPlay: "{{name}} ne peut pas lire ce média",
 
   // Overlay player

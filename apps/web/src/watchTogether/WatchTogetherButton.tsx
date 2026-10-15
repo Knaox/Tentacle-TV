@@ -19,8 +19,10 @@ interface WatchTogetherButtonProps {
  */
 export function WatchTogetherButton(props: WatchTogetherButtonProps) {
   // Bureau, session d'un profil INVITÉ : le serveur lui refuse Watch Together.
+  // Un compte sans Watch Together (SyncPlayAccess « Interdit ») n'en voit rien non plus.
   const profile = useActiveProfile();
-  return profile?.kind === "guest" ? null : <WatchTogetherControl {...props} />;
+  const { mayJoin } = useWatchTogether();
+  return profile?.kind === "guest" || !mayJoin ? null : <WatchTogetherControl {...props} />;
 }
 
 function WatchTogetherControl({ dropdownPosition = "below" }: WatchTogetherButtonProps) {

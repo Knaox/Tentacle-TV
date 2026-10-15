@@ -28,7 +28,7 @@ const SECONDARY = `${PILL} border border-line-subtle bg-fill-soft text-content-p
 export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
   const { t } = useTranslation("watchTogether");
   const { show } = useToast();
-  const { room, invites, selfId, isHost, pendingInvites, actions } = useWatchTogether();
+  const { room, invites, selfId, isHost, pendingInvites, actions, mayCreate } = useWatchTogether();
   const [busy, setBusy] = useState(false);
 
   const run = async (fn: () => Promise<unknown>, closeAfter = false) => {
@@ -97,7 +97,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
           <div className="space-y-2 border-t border-line-subtle p-3">
             <AffinityEntry variant="panel" onOpen={onClose} />
             <div className="flex gap-2">
-              {isHost && (
+              {isHost && mayCreate && (
                 <button type="button" onClick={() => open("invite")} className={PRIMARY}>
                   <UserPlus aria-hidden className="h-4 w-4" />
                   {t("invite")}
@@ -122,8 +122,8 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
       ) : (
         <div className="px-4 py-6 text-center">
           <p className="text-sm text-content-secondary">{t("noGroup")}</p>
-          <p className="mt-1.5 text-xs leading-relaxed text-content-quaternary">{t("noGroupHint")}</p>
-          <button
+          <p className="mt-1.5 text-xs leading-relaxed text-content-quaternary">{t(mayCreate ? "noGroupHint" : "joinOnlyHint")}</p>
+          {mayCreate && <button
             type="button"
             onClick={() => run(async () => {
               await actions.create();
@@ -134,7 +134,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
           >
             <Plus aria-hidden className="h-4 w-4" strokeWidth={2.4} />
             {busy ? t("creating") : t("createGroup")}
-          </button>
+          </button>}
         </div>
       )}
     </div>

@@ -18,6 +18,7 @@ export default {
   cantPlay: "Can't play this media",
   noGroup: "No active group.",
   noGroupHint: "Create a group and invite other users: everything you watch will stay perfectly in sync.",
+  joinOnlyHint: "Your account can join a group when someone invites you, but can't create one.",
 
   // Group modal (room)
   roomReady: "Your group is ready",
@@ -77,6 +78,7 @@ export default {
   seekedBy: "{{name}} changed the position",
   itemStartedBy: "{{name}} started playback",
   groupDissolved: "The group was dissolved",
+  accessRevoked: "Watch Together is no longer allowed for your account: you left the group",
   memberCantPlay: "{{name}} can't play this media",
 
   // Player overlay

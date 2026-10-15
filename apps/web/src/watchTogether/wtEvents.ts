@@ -69,6 +69,8 @@ export interface WtEventHelpers {
    * Consommé une fois.
    */
   followsLaunch?: () => boolean;
+  /** Le compte a perdu Watch Together : son accès se relit (plus aucune trace). */
+  onAccessRevoked?: () => void;
 }
 
 /** Anti-rafale : un seek se coalesce désormais côté serveur, mais chaque
@@ -196,8 +198,10 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
       const room = h.getRoom();
       if (room && room.groupId === msg.groupId) {
         h.dispatch({ type: "set_room", room: null });
-        h.toast("info", h.t(msg.reason === "kicked" ? "youWereKicked" : "groupDissolved"));
+        const reason = msg.reason === "kicked" ? "youWereKicked" : msg.reason === "access_revoked" ? "accessRevoked" : "groupDissolved";
+        h.toast("info", h.t(reason));
       }
+      if (msg.reason === "access_revoked") h.onAccessRevoked?.();
       break;
     }
     case "wt:error":

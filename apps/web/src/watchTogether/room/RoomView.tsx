@@ -65,7 +65,7 @@ function ProgramCard({ itemId }: { itemId: string }) {
 export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh: boolean; titleId: string }) {
   const { t } = useTranslation("watchTogether");
   const { show } = useToast();
-  const { selfId, isHost, pendingInvites, actions } = useWatchTogether();
+  const { selfId, isHost, pendingInvites, actions, mayCreate } = useWatchTogether();
   const [leaving, setLeaving] = useState(false);
 
   const leave = async () => {
@@ -145,7 +145,8 @@ export function RoomView({ room, fresh, titleId }: { room: WtRoomStateDto; fresh
           <LogOut aria-hidden className="h-4 w-4" />
           {t("leaveGroup")}
         </button>
-        {isHost ? (
+        {/* Inviter, c'est « Créer et rejoindre » : un hôte qui l'a perdu garde son salon, sans inviter. */}
+        {isHost && mayCreate ? (
           <button type="button" className={PRIMARY} onClick={() => showRoomView("invite")}>
             <UserPlus aria-hidden className="h-4 w-4" strokeWidth={2.2} />
             {t("inviteMembers")}

@@ -8,8 +8,9 @@ import {
   acquireSocket, fetchMyGroup, fetchMyInvites, getClockOffsetMs, onSocketStatus,
   respondToInvite, sendGroupInvites, sendSocketMessage, subscribeSocket, useUserId,
   createGroup as apiCreateGroup, kickGroupMember, leaveGroup as apiLeaveGroup,
-  setGroupPlaybackSettings,
+  setGroupPlaybackSettings, useWatchTogetherAccess, WT_ACCESS_KEY,
 } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
 import type { WsClientMessage, WtInvitableUserDto, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
 import { handleWtServerMessage, wtReducer, type WtEventHelpers } from "./wtEvents";
@@ -31,6 +32,10 @@ export interface WatchTogetherContextValue {
   isHost: boolean;
   /** Invitations envoyées par l'hôte, sans réponse encore. */
   pendingInvites: WtPendingInvite[];
+  /** L'accès du compte (SyncPlayAccess) : `mayJoin` faux = aucune trace de Watch Together ;
+   *  `mayCreate` faux = rien qui crée un salon ni invite (cf. useWatchTogetherAccess). */
+  mayJoin: boolean;
+  mayCreate: boolean;
   /** Envoie un message wt:* sur le socket partagé (false si déconnecté). */
   send: (msg: WsClientMessage) => boolean;
   /** Horloge serveur estimée : Date.now() + offset (0 si non mesuré). */
@@ -59,6 +64,10 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation("watchTogether");
   const navigate = useNavigate();
   const location = useLocation();
+  const { mayJoin, mayCreate } = useWatchTogetherAccess();
+  const queryClient = useQueryClient();
+  const mayJoinRef = useRef(mayJoin);
+  mayJoinRef.current = mayJoin;
 
   const [state, dispatch] = useReducer(wtReducer, { room: null, invites: [] });
   const pendingInvites = usePendingInvites(state.room);
@@ -96,6 +105,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     onInviteArrived: () => { if (locationRef.current === "/") setInboxOpen(true); },
     onInviteResult: (toUserId) => resolvePending(toUserId),
     followsLaunch: () => consumeLaunchFollow(),
+    onAccessRevoked: () => { void queryClient.invalidateQueries({ queryKey: [WT_ACCESS_KEY] }); },
   };
 
   // Connexion + abonnements + resynchronisation d'état.
@@ -108,6 +118,8 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
 
     const unsubMessages = subscribeSocket((msg) => {
       const h = helpersRef.current;
+      // « Interdit » : aucune invitation ne s'affiche (le serveur n'en envoie déjà plus).
+      if (msg.type === "wt:invite" && !mayJoinRef.current) return;
       if (h && msg.type.startsWith("wt:")) handleWtServerMessage(msg, h);
     });
 
@@ -125,7 +137,21 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("pagehide", onPageHide);
 
-    // Boot REST : groupe courant + invitations pendantes.
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      unsubMessages();
+      unsubStatus();
+      release();
+    };
+  }, [selfId]);
+
+  // Boot REST : groupe courant + invitations pendantes — rien pour un compte
+  // sans Watch Together (ou dont l'accès n'est pas encore connu).
+  useEffect(() => {
+    if (!selfId || !mayJoin) {
+      dispatch({ type: "set_invites", invites: [] });
+      return;
+    }
     let cancelled = false;
     fetchMyGroup()
       .then((room) => { if (!cancelled) dispatch({ type: "set_room", room }); })
@@ -133,15 +159,8 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     fetchMyInvites()
       .then((invites) => { if (!cancelled) dispatch({ type: "set_invites", invites }); })
       .catch(() => {});
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener("pagehide", onPageHide);
-      unsubMessages();
-      unsubStatus();
-      release();
-    };
-  }, [selfId]);
+    return () => { cancelled = true; };
+  }, [selfId, mayJoin]);
 
   const send = useCallback((msg: WsClientMessage) => sendSocketMessage(msg), []);
   const serverNow = useCallback(() => Date.now() + (getClockOffsetMs() ?? 0), []);
@@ -196,15 +215,17 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     isInGroup: !!state.room,
     isHost: selfIsHost,
     pendingInvites: pendingInvites.pending,
+    mayJoin,
+    mayCreate,
     send,
     serverNow,
     actions,
-  }), [state.room, state.invites, selfId, selfIsHost, pendingInvites.pending, send, serverNow, actions]);
+  }), [state.room, state.invites, selfId, selfIsHost, pendingInvites.pending, mayJoin, mayCreate, send, serverNow, actions]);
 
   return (
     <Ctx.Provider value={value}>
       {children}
-      {inboxOpen && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
+      {inboxOpen && mayJoin && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
       <WatchTogetherRoomModal />
       <GroupPlaybackPill />
       {state.room && <ChatRoot />}

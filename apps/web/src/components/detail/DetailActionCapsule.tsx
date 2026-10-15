@@ -30,7 +30,7 @@ import { useToast } from "../../contexts/ToastContext";
 export function DetailActionCapsule({ item }: { item: MediaItem }) {
   const { t } = useTranslation(["common", "cards", "watchTogether"]);
   const { show } = useToast();
-  const { isInGroup, isHost, actions: wtActions } = useWatchTogether();
+  const { isInGroup, isHost, mayCreate, actions: wtActions } = useWatchTogether();
   const isEpisode = item.Type === "Episode";
   const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
@@ -46,7 +46,8 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
   const isFavorite = isEpisode ? favoriteSeries.has(item.SeriesId) : item.UserData?.IsFavorite === true;
   const isInWatchlist = isEpisode ? watchlistSeries.has(item.SeriesId) : item.UserData?.Likes === true;
   const isWatched = item.UserData?.Played === true;
-  const canWatchTogether = item.Type !== "BoxSet" && (!isInGroup || isHost);
+  // Créer un salon, ou y inviter en hôte : « Créer et rejoindre » seulement (SyncPlayAccess).
+  const canWatchTogether = item.Type !== "BoxSet" && mayCreate && (!isInGroup || isHost);
 
   return (
     <DetailCapsule>
