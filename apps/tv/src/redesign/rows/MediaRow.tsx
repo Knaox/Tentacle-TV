@@ -85,6 +85,7 @@ export const MediaRow = memo(function MediaRow({
   // Une référence animée : le passage en tête défile sur le fil d'interface (`rowGlide`).
   const track = useAnimatedRef<ScrollView>();
   // Le défilement de la piste, relevé sans rendu : la grande carte s'y mesure.
+  // Étranglé à 100 ms, il est relu aussi à la fin d'un défilement (sa vraie fin).
   const scrollX = useRef(0);
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollX.current = event.nativeEvent.contentOffset.x;
@@ -159,6 +160,7 @@ export const MediaRow = memo(function MediaRow({
         showsHorizontalScrollIndicator={false}
         style={styles.track}
         onScroll={onScroll}
+        onMomentumScrollEnd={onScroll}
         scrollEventThrottle={100}
         onLayout={room.onTrackLayout}
         onContentSizeChange={room.onContentSizeChange}

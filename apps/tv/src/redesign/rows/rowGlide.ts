@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { ScrollView } from "react-native";
 import { cancelAnimation, scrollTo, useAnimatedReaction, useReducedMotion, useSharedValue, type AnimatedRef } from "react-native-reanimated";
 import { motionTo } from "../motion/motion";
@@ -24,6 +24,8 @@ export function useRowGlide(track: AnimatedRef<ScrollView>) {
   const from = useSharedValue(0);
   const to = useSharedValue(0);
   const active = useSharedValue(false);
+  // Côté JS : un glissé est en cours — un pas du focus ne réveille le fil d'interface que dans ce cas.
+  const gliding = useRef(false);
 
   useAnimatedReaction(
     () => progress.value,
@@ -36,6 +38,7 @@ export function useRowGlide(track: AnimatedRef<ScrollView>) {
   const glide = useCallback(
     (start: number, target: number) => {
       cancelAnimation(progress);
+      gliding.current = true;
       from.value = start;
       to.value = target;
       active.value = true;
@@ -46,6 +49,8 @@ export function useRowGlide(track: AnimatedRef<ScrollView>) {
   );
 
   const stop = useCallback(() => {
+    if (!gliding.current) return;
+    gliding.current = false;
     active.value = false;
     cancelAnimation(progress);
   }, [progress, active]);
