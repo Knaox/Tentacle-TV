@@ -705,6 +705,22 @@ de Toy Story, fiche et lecture d'un titre interdit par URL (« plus dans la bibl
 notifications (le seul avis permis, 1 non lu), hub Vigie (catalogue : 10 films, tous permis) —
 rien.
 
+**Apple TV** (simulateur neuf de la place nav-golden 5, app du cache partagé, natif
+`0d02ee212ee3b5bf`, détecteur `__navGolden.observe({ texts })` sur la liste interdite du compte) :
+- `enfant6` par le VRAI flux de jumelage d'appareil (code, confirmation, jeton) : préconfiguration
+  de la barre (Films et Séries seulement), accueil (héros et « Là où vous en étiez » : Nemo seul),
+  Pour vous (dont « Spider-Man : Brand New Day », classé « TP » en France : permis, comme Jellyfin
+  le jugerait), Ma liste, favoris, recherche, Films, Séries, « Réservée » forcée (« Cette
+  bibliothèque est vide »), fiche de Toy Story, de Bluey, fiches interdites forcées (erreur
+  générique, sans nom ni affiche) — rien.
+- **Invité « Petit »** (Famille de `libre`, ≤ 6 ans) : TV jumelée au compte `libre`, « Qui
+  regarde ? », session de PROFIL : barre à quatre bibliothèques (celles de son créateur), accueil,
+  Pour vous, favoris, Ma liste, bibliothèques, fiche interdite forcée — rien ; Le Petit Prince et
+  Pat' Patrouille (tous publics, bibliothèques de son créateur) lui restent ouverts, à raison.
+- Remarque d'interface, hors de ce chantier : sur la TV, une fiche interdite ouverte par son id dit
+  « Impossible de charger le contenu… interruption passagère » (le web : « plus dans la
+  bibliothèque »).
+
 ### 9.5.4 Acceptés, hors de portée, signalés
 
 - Images d'un titre interdit : publiques chez Jellyfin (200 sans jeton) — le proxy n'y change rien.
