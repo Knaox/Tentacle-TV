@@ -102,6 +102,27 @@ de champs — jamais une valeur.
   409, `invalid_value` 400, `jellyfin_unreachable` 503, `jellyfin_refused` 502.
 - Le correctif `update` est borné à 60 par minute et par adresse.
 
+### 3.5 Les routes d'admin (étape B)
+
+- `routes/adminUserRights.ts` (sous `adminRoutes`, puis `requirePersonalAdmin`), service
+  `services/userRights/userRightsService.ts`, correspondance pure `policyMapping.ts`.
+- Lecture d'une politique absente ou illisible champ par champ : la valeur la plus FERMÉE
+  (`isDisabled` absent = désactivé, un droit absent = refusé).
+- Écriture : correctif validé (`parseUserRightsPatch`, puis `patchAgainstOptions` s'il nomme des
+  bibliothèques, des canaux ou des notes), politique RELUE juste avant, seuls les champs du
+  correctif remplacés (les autres, `AuthenticationProviderId`, `PasswordResetProviderId` et tout
+  champ inconnu d'une version future compris, repartent tels quels), `POST /Users/{id}/Policy`,
+  relecture, état RÉEL rendu. Les plages horaires repartent dans la forme de Jellyfin
+  (`DayOfWeek`, `StartHour`, `EndHour`, `UserId`), sans `Id`.
+- **`last_admin` couvre aussi la DÉSACTIVATION** du dernier administrateur actif (au plus sûr :
+  le contrat ne nommait que le retrait de l'administration) ; `self_lockout` : un administrateur
+  ne se retire ni l'administration ni l'accès (`isDisabled`). Jellyfin refuse aussi de son côté.
+- Après toute écriture (même refusée par Jellyfin) : `notePolicyWritten` — politique de contenu
+  oubliée, et invités du compte recalculés (§ 4). Base de la Famille muette : refus
+  (`jellyfin_unreachable`), jamais un réglage à l'aveugle d'un invité possible.
+- Journal : `[user-rights] <admin> → <compte> : <clés>` ; les clés que Jellyfin n'a pas retenues
+  y sont nommées. Jamais une valeur.
+
 ## 4. Contrôle parental de la Famille
 
 - **Qui** : le PROPRIÉTAIRE règle le contrôle parental de tout invité de la famille ; un
