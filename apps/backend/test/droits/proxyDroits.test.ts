@@ -26,6 +26,7 @@ const TV_ADULT = `${JWT_HEAD}.tv-adulte.sig`;
 const VIEW_AS_CHILD = `${JWT_HEAD}.voir-enfant.sig`;
 const NATIVE_CHILD = "jeton-jellyfin-enfant";
 const FORBIDDEN = "f0".repeat(16);
+const ALLOWED = "a1".repeat(16);
 
 vi.mock("../../src/services/configStore", () => ({
   getJellyfinUrl: () => state.url,
@@ -54,6 +55,7 @@ vi.mock("../../src/services/wsManager", () => ({ broadcastToUser: () => {} }));
 import { jellyfinProxyRoutes } from "../../src/routes/jellyfinProxy";
 import { resetPairedDeviceStatusForTests } from "../../src/services/pairedDeviceStatus";
 import { clearAll } from "../../src/services/jellyfinCache";
+import { invalidateItemVisibility } from "../../src/services/itemAccess/itemVisibility";
 
 let jellyfin: http.Server;
 let app: FastifyInstance;
@@ -97,12 +99,67 @@ afterAll(async () => {
 beforeEach(() => {
   clearAll();
   resetPairedDeviceStatusForTests();
+  invalidateItemVisibility();
   state.hits = [];
 });
 
 function proxy(path: string, token: string) {
   return app.inject({ method: "GET", url: `/api/jellyfin/${path}`, headers: { "x-emby-token": token } });
 }
+
+/** Les requêtes de LECTURE parties chez Jellyfin pour ce chemin (sans la question de visibilité). */
+function sentFor(pathname: string): URL[] {
+  return state.hits.map((hit) => new URL(hit.url, "http://jf")).filter((url) => url.pathname === `/${pathname}`);
+}
+
+describe("la clé prêtée ne lit jamais pour l'administrateur", () => {
+  it("une TV jumelée : une requête de catalogue sans compte part au nom du compte de la TV", async () => {
+    for (const path of ["Items?Recursive=true&IncludeItemTypes=Movie", "Shows/NextUp?Limit=5", "Search/Hints?searchTerm=a"]) {
+      expect((await proxy(path, TV_CHILD)).statusCode, path).toBe(200);
+      expect(new URL(state.hits.at(-1)!.url, "http://jf").searchParams.get("userId"), path).toBe("enfant");
+    }
+  });
+
+  it("« voir en tant que » un compte restreint : la vue est celle de CE compte", async () => {
+    await proxy("Items?Recursive=true", VIEW_AS_CHILD);
+    expect(new URL(state.hits.at(-1)!.url, "http://jf").searchParams.get("userId")).toBe("enfant");
+  });
+
+  it("un jeton Jellyfin natif n'est pas réécrit : Jellyfin applique déjà ses droits", async () => {
+    await proxy("Items?Recursive=true", NATIVE_CHILD);
+    expect(new URL(state.hits.at(-1)!.url, "http://jf").searchParams.get("userId")).toBeNull();
+  });
+});
+
+describe("un flux ne part que vers un compte qui voit son titre", () => {
+  const streams = (id: string) => [
+    `Videos/${id}/stream?static=true`,
+    `Videos/${id}/master.m3u8?MediaSourceId=${id}`,
+    `Videos/${id}/hls1/main/0.ts`,
+    `Videos/${id}/${id}/Subtitles/2/0/Stream.vtt`,
+  ];
+
+  for (const [who, token] of [["TV jumelée", TV_CHILD], ["voir en tant que", VIEW_AS_CHILD], ["jeton Jellyfin natif", NATIVE_CHILD]] as const) {
+    it(`${who} : titre interdit → 404, le flux n'atteint jamais Jellyfin`, async () => {
+      for (const path of streams(FORBIDDEN)) {
+        expect((await proxy(path, token)).statusCode, path).toBe(404);
+      }
+      expect(state.hits.filter((hit) => hit.url.startsWith(`/Videos/${FORBIDDEN}`))).toEqual([]);
+    });
+
+    it(`${who} : titre permis → relayé, une seule question de visibilité pour toute la lecture`, async () => {
+      for (const path of streams(ALLOWED)) {
+        expect((await proxy(path, token)).statusCode, path).toBe(200);
+      }
+      expect(sentFor(`Items/${ALLOWED}`)).toHaveLength(1);
+    });
+  }
+
+  it("l'arrêt du transcodage n'est pas un flux : jamais de question de visibilité", async () => {
+    await app.inject({ method: "DELETE", url: "/api/jellyfin/Videos/ActiveEncodings?deviceId=d", headers: { "x-emby-token": TV_CHILD } });
+    expect(sentFor("Items/ActiveEncodings")).toEqual([]);
+  });
+});
 
 describe("le cache du proxy ne mélange jamais deux comptes", () => {
   it("deux TV de comptes différents, même URL : chacune reçoit SA réponse", async () => {

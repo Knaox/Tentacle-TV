@@ -20,8 +20,9 @@ import { readsInFull, replyFromCache, sendBuffered } from "./jellyfinProxy/buffe
 import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
 import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
 import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
+import { streamRefused } from "./jellyfinProxy/streamAccess";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
-import { resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
+import { impersonatedUserId, resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
 import { buildTargetUrl } from "./jellyfinProxy/targetUrl";
 import { traceBody, traceFailure, traceHeaders } from "./jellyfinProxy/streamTraces";
@@ -80,11 +81,15 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         request.log.warn({ path: wildcardPath, method: request.method }, refusal);
         return reply.status(403).send({ error: "Forbidden" });
       }
-      // Une session de profil du bureau : sans `userId`, Jellyfin répondrait
-      // pour la clé prêtée — bornée ici à SON compte (cf. deviceUserScope).
-      if (device.payload.scope === "profile" && device.payload.platform) {
-        targetUrl = buildTargetUrl(jellyfinUrl, route.path, scopedToDeviceUser(route.path, route.query, device.payload.userId));
-      }
+    }
+    // Clé prêtée (appareil, « voir en tant que ») : une requête de catalogue
+    // sans `userId` est bornée au compte, dont Jellyfin applique alors les
+    // droits (cf. deviceUserScope) ; un flux, au titre que ce compte voit (cf. streamAccess).
+    const lentKeyUser = device?.status === "paired" ? device.payload.userId : await impersonatedUserId(incomingToken);
+    if (lentKeyUser) targetUrl = buildTargetUrl(jellyfinUrl, route.path, scopedToDeviceUser(route.path, route.query, lentKeyUser));
+    if (await streamRefused(wildcardPath, incomingToken, lentKeyUser)) {
+      request.log.info({ path: wildcardPath }, "flux refuse : titre hors des droits du compte");
+      return reply.status(404).send({ error: "Not found" });
     }
 
     const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
@@ -95,8 +100,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const effectiveMethod = rewrite ? rewrite.method : request.method;
     if (rewrite) targetUrl = `${jellyfinUrl}/${rewrite.path}`;
 
-    // Cache lookup for heavy read routes (Latest/Resume/NextUp/Views).
-    // Only applies to GET — mutations always go direct.
+    // Cache des lectures lourdes (Latest/Resume/NextUp/Views), GET seulement.
     const queryString = qs;
     // Relevée AVANT la lecture : un geste qui passe pendant qu'elle court en
     // périme la réponse, qui ne se range plus (cf. jellyfinCache).
