@@ -29,21 +29,27 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     }
   });
 
-  it("une seconde de focus tenu : la demande part", () => {
-    const state = run([{ type: "hover", at: 0 }, { type: "tick", at: 999 }]);
+  it("450 ms de focus tenu : la demande part", () => {
+    const state = run([{ type: "hover", at: 0 }, { type: "tick", at: 449 }]);
     expect(state.phase).toBe("intent");
-    expect(run([{ type: "tick", at: 1_000 }], state).phase).toBe("fetching");
+    expect(run([{ type: "tick", at: 450 }], state).phase).toBe("fetching");
   });
 
-  it("la carte ne grandit qu'à 1,8 s, et seulement avec la première image", () => {
+  it("la carte ne grandit qu'à 900 ms, et seulement avec la première image", () => {
     const ready = run([
       { type: "hover", at: 0 },
-      { type: "tick", at: 1_000 },
-      { type: "streamFound", at: 1_100 },
-      { type: "videoReady", at: 1_300 },
+      { type: "tick", at: 450 },
+      { type: "streamFound", at: 500 },
+      { type: "videoReady", at: 700 },
     ]);
     expect(trailerPreviewVisible(ready)).toBe(false);
-    expect(trailerPreviewVisible(run([{ type: "tick", at: 1_800 }], ready))).toBe(true);
+    expect(trailerPreviewVisible(run([{ type: "tick", at: 900 }], ready))).toBe(true);
+  });
+
+  it("une première image tardive : la carte grandit dès qu'elle est là", () => {
+    const late = run([{ type: "hover", at: 0 }, { type: "tick", at: 450 }, { type: "streamFound", at: 500 }, { type: "tick", at: 900 }]);
+    expect(trailerPreviewVisible(late)).toBe(false);
+    expect(trailerPreviewVisible(run([{ type: "videoReady", at: 1_300 }], late))).toBe(true);
   });
 
   it("sans première image (flux bloqué), rien ne grandit jamais — échec à 8 s", () => {
