@@ -17,6 +17,10 @@ const { jellyfinAdminFetch, tmdbFetch, config, rows, switches } = vi.hoisted(() 
   config: new Map<string, string>(),
   rows: new Map<string, { payload: unknown; generatedAt: Date; expiresAt: Date }>(),
 }));
+// Les droits du compte sur un titre TMDB : le film 666 lui est caché.
+vi.mock("../services/reco/recoRights", () => ({
+  titleAllowedFor: async (_userId: string, title: { tmdbId: number }) => title.tmdbId !== 666,
+}));
 vi.mock("../services/jellyfinAdminFetch", () => ({ jellyfinAdminFetch }));
 vi.mock("../services/configStore", () => ({
   getConfigValue: (key: string) => config.get(key),
@@ -201,6 +205,12 @@ describe("GET /api/trailers/catalog", () => {
     const { body } = await catalog("tmdbId=60625&mediaType=tv&season=7");
     expect(firstPlayback(body)).toEqual({ kind: "dailymotion", videoId: "x8e90ff" });
     expect(jellyfinAdminFetch).not.toHaveBeenCalled();
+  });
+
+  it("un titre TMDB que les droits du compte lui cachent : aucune bande-annonce, aucune source interrogée", async () => {
+    const { body } = await catalog("tmdbId=666&mediaType=movie");
+    expect(body?.entries).toEqual([]);
+    expect(tmdbFetch).not.toHaveBeenCalled();
   });
 
   it("sans clé TMDB : AlloCiné cherche avec les noms de Jellyfin (bibliothèque) ou de Jellyseerr (hors bibliothèque)", async () => {

@@ -17,6 +17,7 @@
 /*  sans l'une d'elles ne serait pas celle du survol.                  */
 /* ------------------------------------------------------------------ */
 
+import { titleAllowedFor } from "../../reco/recoRights";
 import { refreshTitleLanguage, titleLanguage } from "../../reco/titleLanguage";
 import { tmdbConfigured } from "../../tmdb/client";
 import { allocineActiveFor } from "../trailerSettings";
@@ -126,6 +127,10 @@ export async function buildCatalogDetailed(
   } else {
     const id = previewTmdbIdOf(request.tmdbId);
     if (id === null) return { response: { entries: [], complete: true, language }, answered: true };
+    // Un titre TMDB que les droits du compte lui cachent : aucune bande-annonce (§ 5).
+    if (!(await titleAllowedFor(userId, { mediaType: request.mediaType, tmdbId: id }))) {
+      return { response: { entries: [], complete: true, language }, answered: true };
+    }
     tmdbRef = { id, mediaType: request.mediaType };
     requestedSeason = request.season;
   }

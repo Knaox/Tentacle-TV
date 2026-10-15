@@ -6,7 +6,8 @@
  *
  * - titre de la bibliothèque : montré s'il est visible au compte ;
  * - titre extérieur : jamais s'il est dans la bibliothèque mais caché au
- *   compte (`libraryRights.ts`) ; sinon seulement si la politique de contenu
+ *   compte (`libraryRights.ts`) ; oui s'il y est et que le compte en voit une
+ *   version (Jellyfin a jugé) ; sinon seulement si la politique de contenu
  *   du compte le laisse passer (`filterExternalTitles` du socle : certification
  *   TMDB, `adult` ; chemin court pour un compte non restreint) ;
  * - droits illisibles (catalogue ou relevé du compte absents) : les titres de
@@ -39,13 +40,21 @@ const keyOf = (item: RightsItem) => `${item.mediaType}:${item.tmdbId}`;
 export async function rightsFilterFor(userId: string, items: Iterable<RightsItem>): Promise<(item: RightsItem) => boolean> {
   const rights = await libraryRightsFor(userId);
   const candidates = new Map<string, RightsItem>();
+  const inLibrary = new Set<string>();
   for (const item of items) {
-    if (!item.jellyfinItemId && allowedByRights(rights, item)) {
-      candidates.set(keyOf(item), { mediaType: item.mediaType, tmdbId: item.tmdbId });
-    }
+    if (item.jellyfinItemId || !allowedByRights(rights, item)) continue;
+    // Le compte en voit une version dans la bibliothèque : Jellyfin a déjà jugé.
+    if (rights?.seesTitle(item.mediaType, item.tmdbId)) inLibrary.add(keyOf(item));
+    else candidates.set(keyOf(item), { mediaType: item.mediaType, tmdbId: item.tmdbId });
   }
   const passed = new Set((await filterExternalTitles(userId, [...candidates.values()])).map(keyOf));
-  return (item) => (item.jellyfinItemId ? allowedByRights(rights, item) : passed.has(keyOf(item)));
+  return (item) =>
+    item.jellyfinItemId ? allowedByRights(rights, item) : inLibrary.has(keyOf(item)) || passed.has(keyOf(item));
+}
+
+/** UN titre (fiche, bandes-annonces d'un titre nommé par TMDB) : le compte peut-il le voir ? */
+export async function titleAllowedFor(userId: string, item: RightsItem): Promise<boolean> {
+  return (await rightsFilterFor(userId, [item]))(item);
 }
 
 /** La liste, dans son ordre, réduite à ce que le compte peut voir. */

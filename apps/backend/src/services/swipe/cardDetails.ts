@@ -1,4 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
+import { titleAllowedFor } from "../reco/recoRights";
 import { tmdbConfigured, tmdbFetch } from "../tmdb/client";
 import { mergeDetails } from "./detailsMerge";
 import type { SwipeLang } from "./tmdbGenres";
@@ -87,6 +88,11 @@ export async function cardDetails(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.details;
   try {
+    // Le titre nommé par TMDB ET le titre de la bibliothèque passent les droits
+    // du compte : jamais le synopsis d'un titre caché, même accolé à un id visible.
+    const allowed = await titleAllowedFor(userId, { mediaType, tmdbId }) &&
+      (!jellyfinItemId || (await titleAllowedFor(userId, { mediaType, tmdbId, jellyfinItemId })));
+    if (!allowed) return EMPTY;
     const remote = await fromTmdb(mediaType, tmdbId, lang).catch(() => null);
     // Jellyfin n'est lu que s'il peut apporter quelque chose : synopsis ou format manquants.
     const needLocal = !!jellyfinItemId && (!remote?.overview || (remote.runtimeMinutes == null && remote.seasons == null));

@@ -13,6 +13,7 @@ import { getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
 import { getSeasonEpisodes } from "../services/tmdb/seasonEpisodes";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { fetchSeerrVideos } from "../services/trailers/titleVideos";
+import { titleAllowedFor } from "../services/reco/recoRights";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
@@ -224,6 +225,10 @@ export async function tmdbRoutes(app: FastifyInstance) {
   app.get("/trailers", async (request: FastifyRequest, _reply: FastifyReply) => {
     const { tmdbId, mediaType } = request.query as { tmdbId?: string; mediaType?: string };
     if (!tmdbId || (mediaType !== "movie" && mediaType !== "tv")) return { videos: [] };
+    // Les bandes-annonces d'un titre que les droits du compte lui cachent : aucune (§ 5).
+    const viewer = (request as FastifyRequest & { user?: JellyfinUser }).user?.userId ?? "";
+    const id = Number(tmdbId);
+    if (!Number.isInteger(id) || !(await titleAllowedFor(viewer, { mediaType, tmdbId: id }))) return { videos: [] };
     return { videos: (await fetchSeerrVideos(tmdbId, mediaType)) ?? [] };
   });
 }

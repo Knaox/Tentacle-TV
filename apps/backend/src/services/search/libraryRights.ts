@@ -29,6 +29,8 @@ export interface LibraryRights {
   seesItem(itemId: string): boolean;
   /** Ce titre (clé TMDB) est dans la bibliothèque, mais caché au compte. */
   hidesTitle(mediaType: "movie" | "tv", tmdbId: number): boolean;
+  /** Ce titre (clé TMDB) est dans la bibliothèque, et le compte en voit une version. */
+  seesTitle(mediaType: "movie" | "tv", tmdbId: number): boolean;
 }
 
 /** Le moteur est remplacé à chaque relève : sa table part avec lui. */
@@ -87,5 +89,6 @@ export async function libraryRightsFor(userId: string): Promise<LibraryRights | 
       const ids = table.get(keyOf(mediaType, tmdbId));
       return ids !== undefined && !ids.some((id) => visible.has(normalize(id)));
     },
+    seesTitle: (mediaType, tmdbId) => (table.get(keyOf(mediaType, tmdbId)) ?? []).some((id) => visible.has(normalize(id))),
   };
 }

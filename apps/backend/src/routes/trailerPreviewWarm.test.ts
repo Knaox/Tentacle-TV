@@ -18,6 +18,10 @@ const { extractTrailerSource, catalogs, detailed } = vi.hoisted(() => ({
   catalogs: new Map<string, TrailerCatalogResponse>(),
   detailed: vi.fn(),
 }));
+// Les droits du compte sur un titre TMDB : le film 666 lui est caché.
+vi.mock("../services/reco/recoRights", () => ({
+  titleAllowedFor: async (_userId: string, title: { tmdbId: number }) => title.tmdbId !== 666,
+}));
 vi.mock("../services/trailers/ytExtract", () => ({ extractTrailerSource, prewarmExtraction: () => undefined }));
 const catalogOf = (request: Record<string, unknown>): TrailerCatalogResponse =>
   catalogs.get(String(request.itemId ?? `${request.mediaType}:${request.tmdbId}`)) ?? { entries: [], complete: true, language: "fr" };

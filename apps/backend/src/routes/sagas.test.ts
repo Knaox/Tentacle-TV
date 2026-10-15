@@ -27,7 +27,7 @@ vi.mock("../services/contentPolicy", () => ({
 }));
 // Le film 673 est dans la bibliothèque, mais caché à ce compte par ses droits.
 vi.mock("../services/search/libraryRights", () => ({
-  libraryRightsFor: async () => ({ seesItem: () => true, hidesTitle: (_type: string, tmdbId: number) => tmdbId === 673 }),
+  libraryRightsFor: async () => ({ seesItem: () => true, seesTitle: () => false, hidesTitle: (_type: string, tmdbId: number) => tmdbId === 673 }),
 }));
 
 import { sagaRoutes } from "./sagas";

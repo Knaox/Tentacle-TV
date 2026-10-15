@@ -17,6 +17,7 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { resolveCatalogTitle } from "../services/trailers/catalog/catalogTitle";
+import { titleAllowedFor } from "../services/reco/recoRights";
 import { previewBody } from "../services/trailers/preview/previewBody";
 import { decidePreview, type PreviewTarget } from "../services/trailers/preview/previewDecision";
 import { previewLanguage } from "../services/trailers/preview/previewLanguage";
@@ -57,6 +58,9 @@ export const trailerPreviewRoutes: FastifyPluginAsync = async (app) => {
       const lookup = await resolveCatalogTitle(query.itemId, userId);
       if (lookup.kind === "none") return refuse(reply, 404, "no_trailer");
       if (lookup.kind === "error") return refuse(reply, 404, "unavailable");
+    } else if (!(await titleAllowedFor(userId, { mediaType: query.mediaType, tmdbId: Number(query.tmdbId) }))) {
+      // Un titre TMDB que les droits du compte lui cachent : aucun aperçu (§ 5).
+      return refuse(reply, 404, "no_trailer");
     }
     // La langue du serveur (métadonnées de Jellyfin), celle du client à défaut.
     const lang = await previewLanguage(query.lang);
