@@ -140,3 +140,28 @@ export function expectedHitRate(items: readonly JudgedTitle[], expected: Readonl
   const found = items.filter((i) => expected.has(i.key)).map((i) => i.key);
   return { rate: new Set(found).size / expected.size, found };
 }
+
+export interface OrderCheck {
+  /** La tête de la rangée porte-t-elle la meilleure correspondance de la rangée ? */
+  headIsBest: boolean;
+  /** Paires voisines où le second s'annonce PLUS haut que le premier. */
+  inversions: number;
+  /** Le plus grand écart, en points, d'un titre placé devant un titre mieux annoncé. */
+  worstGap: number;
+}
+
+/** L'ordre visible suit-il la correspondance affichée (décroissante) ? Rangée sans correspondance : rien à dire. */
+export function orderCheck(matches: ReadonlyArray<number | undefined>): OrderCheck {
+  const values = matches.filter((m): m is number => m !== undefined);
+  let inversions = 0;
+  let worstGap = 0;
+  let lowest = Infinity;
+  for (let i = 0; i < values.length; i++) {
+    if (i > 0 && values[i] > values[i - 1]) inversions++;
+    // Le pire écart : ce titre contre le moins bien annoncé de ceux placés devant lui.
+    worstGap = Math.max(worstGap, values[i] - lowest);
+    lowest = Math.min(lowest, values[i]);
+  }
+  const best = Math.max(...values);
+  return { headIsBest: values.length === 0 || values[0] === best, inversions, worstGap };
+}

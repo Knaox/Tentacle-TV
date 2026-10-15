@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { intraListDiversity, intrusions, ndcgAtK, novelty, popularityCalibration, recallAtK } from "./benchMetrics";
+import { intraListDiversity, intrusions, ndcgAtK, novelty, orderCheck, popularityCalibration, recallAtK } from "./benchMetrics";
 import type { JudgedTitle } from "./benchMetrics";
 
 const t = (key: string, votes: number | null, facets: string[] = [], universes: JudgedTitle["universes"] = []): JudgedTitle => ({
@@ -30,5 +30,11 @@ describe("mesures du banc", () => {
     expect(intraListDiversity([t("a", 1, ["x"]), t("b", 1, ["y"])])).toBe(1);
     expect(novelty([t("a", 40_000)])).toBe(0);
     expect(novelty([t("a", 39)])).toBeCloseTo(3, 0);
+  });
+
+  it("ordre : la tête est la meilleure correspondance, et l'ordre la suit", () => {
+    expect(orderCheck([84, 80, 80, 63])).toEqual({ headIsBest: true, inversions: 0, worstGap: 0 });
+    expect(orderCheck([63, 84, 80, 82])).toEqual({ headIsBest: false, inversions: 2, worstGap: 21 });
+    expect(orderCheck([undefined, undefined])).toEqual({ headIsBest: true, inversions: 0, worstGap: 0 });
   });
 });

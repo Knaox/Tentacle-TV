@@ -19,7 +19,7 @@ import { detectAppState } from "../../src/services/configStore";
 import { idfMissesFacetFamilies, loadIdfFromDb, recomputeIdf } from "../../src/services/reco/idfStore";
 import { universesOfMeta } from "../../src/services/reco/universes";
 import {
-  expectedHitRate, intraListDiversity, intrusions, novelty, popularityCalibration,
+  expectedHitRate, intraListDiversity, intrusions, novelty, orderCheck, popularityCalibration,
 } from "../../src/services/reco/bench/benchMetrics";
 import type { JudgedTitle } from "../../src/services/reco/bench/benchMetrics";
 import type { Persona } from "../../src/services/reco/bench/benchPersona";
@@ -59,6 +59,8 @@ interface Summary {
   novelty: number;
   diversity: number;
   animeShare: number;
+  /** L'ordre de « Pour vous » et « Films pour vous » suit-il la correspondance affichée ? */
+  order: string;
 }
 
 async function judge(run: PersonaRun, keys: string[]): Promise<Map<string, JudgedTitle>> {
@@ -108,6 +110,10 @@ async function benchPersona(persona: Persona, population: Persona[], label: stri
     novelty: novelty(top),
     diversity: intraListDiversity(top),
     animeShare: run.profile.animeShare,
+    order: ["forYou", "forYouMovies"].map((key) => {
+      const check = orderCheck((run.rows.find((r) => r.key === key)?.items ?? []).map((i) => (i as { match?: number }).match));
+      return `${check.headIsBest ? "tête ok" : "TÊTE"} ${check.inversions} inv. ${check.worstGap} pts`;
+    }).join(" / "),
   };
 
   // Le rapport lisible : la page servie, rangée par rangée, chaque titre avec sa raison et son score.
@@ -121,7 +127,7 @@ async function benchPersona(persona: Persona, population: Persona[], label: stri
     `| Intrus page entière | ${fmt(summary.pageIntrusion)} |`,
     `| Attendus présents sur la page | ${fmt(summary.expectedOnPage)} (${expected.found.join(", ") || "aucun"}) |`,
     `| Votes médians historique → top 20 | ${summary.historyVotes} → ${summary.top20Votes} (JS ${fmt(summary.popularityJs, 3)}) |`,
-    `| Nouveauté top 20 | ${fmt(summary.novelty)} |`, `| Diversité top 20 | ${fmt(summary.diversity, 3)} |`, "",
+    `| Nouveauté top 20 | ${fmt(summary.novelty)} |`, `| Ordre Pour vous / Films pour vous | ${summary.order} |`, `| Diversité top 20 | ${fmt(summary.diversity, 3)} |`, "",
     "## Où sont les titres « à éviter » (et les attendus absents)", "",
   ];
   const watchList = [...persona.avoid, ...(persona.expected ?? []).filter((x) => !expected.found.includes(x.key)).map((x) => ({ ...x, title: `(attendu) ${x.title ?? x.key}` }))];
@@ -192,9 +198,9 @@ async function main(): Promise<void> {
     console.log(`  ${persona.id} : ${Math.round((Date.now() - started) / 1000)} s`);
   }
   const table = [
-    `| ${label} | intrus top 20 | intrus page | attendus | votes hist → top 20 | JS pop. | nouveauté | diversité | part animé |`,
-    "|---|---|---|---|---|---|---|---|---|",
-    ...summaries.map((s) => `| ${s.persona} | ${fmt(s.top20Intrusion)} | ${fmt(s.pageIntrusion)} | ${fmt(s.expectedOnPage)} | ${s.historyVotes} → ${s.top20Votes} | ${fmt(s.popularityJs, 3)} | ${fmt(s.novelty)} | ${fmt(s.diversity, 3)} | ${fmt(s.animeShare)} |`),
+    `| ${label} | intrus top 20 | intrus page | attendus | votes hist → top 20 | JS pop. | nouveauté | diversité | part animé | ordre (Pour vous / Films) |`,
+    "|---|---|---|---|---|---|---|---|---|---|",
+    ...summaries.map((s) => `| ${s.persona} | ${fmt(s.top20Intrusion)} | ${fmt(s.pageIntrusion)} | ${fmt(s.expectedOnPage)} | ${s.historyVotes} → ${s.top20Votes} | ${fmt(s.popularityJs, 3)} | ${fmt(s.novelty)} | ${fmt(s.diversity, 3)} | ${fmt(s.animeShare)} | ${s.order} |`),
   ].join("\n");
   writeFileSync(join(ROOT, "reports", label, "summary.md"), table + "\n");
   console.log(table);
