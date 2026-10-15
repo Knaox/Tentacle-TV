@@ -8,6 +8,7 @@ export {
   resolveNotificationDestination, immediateTargetRoute, notificationHasDestination, extensionRoute, itemRoute,
   type LibraryTitleLookup, type NotificationPlatform,
 } from "../utils/notificationDestination";
+export { NOTIFICATION_STATE_META, notificationStateMeta, type NotificationTone } from "../utils/notificationState";
 export { groupNotificationsByDay, type NotificationDayGroup } from "../utils/notificationGroups";
 
 // Notification route resolution
