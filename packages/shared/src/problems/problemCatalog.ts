@@ -69,6 +69,10 @@ export const CAUSES: Record<ProblemCause, CauseEntry> = {
     icon: "lock", reason: "reasonNotAllowed", hint: "hintNotAllowed",
     actions: ["back"], transient: false,
   },
+  playbackNotAllowed: {
+    icon: "lock", reason: "reasonPlaybackNotAllowed", hint: "hintPlaybackNotAllowed",
+    actions: ["back"], transient: false,
+  },
   itemNotFound: {
     icon: "film", reason: "reasonItemNotFound", hint: "hintItemNotFound",
     actions: ["back"], transient: false,

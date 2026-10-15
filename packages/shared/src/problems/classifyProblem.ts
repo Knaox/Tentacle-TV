@@ -63,6 +63,12 @@ export interface RawProblem {
   kind?: FailureKind;
   marker?: FailureMarker;
   target?: FailureTarget;
+  /**
+   * Le refus des droits de lecture du compte (docs/DROITS-UTILISATEURS.md § 9.2) : le
+   * `code` d'un 403 du serveur, ou le verdict du lecteur AVANT de rien demander
+   * (`playbackRefusal`). Il prime sur tout le reste : c'est la cause, dite telle quelle.
+   */
+  refusal?: "playback_not_allowed" | "conversion_not_allowed";
   /** `ErrorCode` de PlaybackInfo (« NoCompatibleStream », « NotAllowed », « RateLimitExceeded »). */
   jellyfinErrorCode?: string;
   /** L'appareil se sait sans réseau (NetInfo, `navigator.onLine`). */
@@ -214,6 +220,8 @@ export function classifyProblem(input: RawProblem): ProblemCause {
     // Le fichier est là, entier : c'est l'appareil qui ne le décode pas.
     return kind === "decode" ? "decodeFailed" : "offlineFileDamaged";
   }
+  if (raw.refusal === "playback_not_allowed") return "playbackNotAllowed";
+  if (raw.refusal === "conversion_not_allowed") return "transcodeNotAllowed";
   const marked = fromMarker(raw);
   if (marked) return marked;
   if (raw.deviceOffline || raw.reachability === "network") return "deviceOffline";

@@ -17,6 +17,8 @@ export type PlaybackFailure =
   | { from: "engine"; failure: EngineFailure }
   | { from: "request"; error: unknown; target: FailureTarget; request?: string }
   | { from: "marker"; marker: FailureMarker; jellyfinErrorCode?: string }
+  /** Les droits de lecture du compte refusent (le lecteur l'a jugé, ou le serveur l'a dit). */
+  | { from: "refusal"; refusal: "playback_not_allowed" | "conversion_not_allowed" }
   /** Le fichier gardé sur l'appareil n'y est plus. */
   | { from: "missingFile" };
 
@@ -46,6 +48,8 @@ export function collectPlaybackFailure(report: PlaybackFailure): CollectedFailur
       };
     case "missingFile":
       return { raw: { kind: "notFound", target: "stream" }, facts: {} };
+    case "refusal":
+      return { raw: { refusal: report.refusal, status: 403, target: "stream" }, facts: { status: 403 } };
   }
 }
 

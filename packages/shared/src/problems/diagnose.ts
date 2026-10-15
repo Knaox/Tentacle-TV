@@ -20,11 +20,26 @@ export interface StreamProbe {
   kind?: FailureKind;
   /** Une réponse 2xx : le flux existe. */
   answered?: boolean;
+  /** Un 403 du serveur Tentacle qui dit POURQUOI (droits de lecture du compte, `{ code }`). */
+  refusal?: "playback_not_allowed" | "conversion_not_allowed";
+}
+
+/** Le code d'un refus des droits de lecture dans un corps 403 (`{ code }`), sinon rien. */
+async function refusalOf(response: Response): Promise<StreamProbe["refusal"]> {
+  try {
+    const code = ((await response.json()) as { code?: unknown } | null)?.code;
+    return code === "playback_not_allowed" || code === "conversion_not_allowed" ? code : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Faut-il interroger le flux ? Seulement quand le moteur n'a rien dit de décisif. */
 export function shouldProbeStream(raw: RawProblem): boolean {
-  if (raw.local || (raw.status !== undefined && raw.status > 0)) return false;
+  if (raw.local) return false;
+  // Un 403 du flux : la sonde lit son corps, qui dit si ce sont les droits de lecture du compte.
+  if (raw.status === 403 && !raw.refusal) return true;
+  if (raw.status !== undefined && raw.status > 0) return false;
   return raw.kind === undefined || raw.kind === "network" || raw.kind === "timeout" || raw.kind === "notFound";
 }
 
@@ -79,7 +94,7 @@ export async function probeStream(
   for (let depth = 0; depth < 3; depth++) {
     const { response, kind } = await fetchProbe(target, headers, timeoutMs);
     if (!response) return depth === 0 ? { kind } : { answered: true };
-    if (!response.ok) return { status: response.status };
+    if (!response.ok) return response.status === 403 ? { status: 403, refusal: await refusalOf(response) } : { status: response.status };
     const isPlaylist = /\.m3u8(\?|$)/i.test(target) || /mpegurl/i.test(response.headers.get("content-type") ?? "");
     if (!isPlaylist) return { answered: true };
     const next = firstPlaylistEntry(await response.text(), target);
@@ -105,6 +120,7 @@ export function withProbes(
   if (reachability) next.reachability = reachability;
   if (source?.status === 404 || source?.status === 410) next.sourceMissing = true;
   // Le refus vient du FLUX : un 500 y est une conversion, un 404 un fichier.
+  if (stream?.refusal) next.refusal = stream.refusal;
   if (stream?.status !== undefined) Object.assign(next, { status: stream.status, target: "stream" });
   else if (stream?.answered) next.streamAnswered = true;
   else if (stream?.kind && next.kind === undefined) next.kind = stream.kind;

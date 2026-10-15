@@ -95,4 +95,17 @@ describe("diagnostic d'un échec de lecture", () => {
     expect(resolvePlaylistEntry("http://o/x.ts", "https://h/a.m3u8")).toBe("http://o/x.ts");
     expect(resolvePlaylistEntry("//cdn/x.ts", "https://h/a.m3u8")).toBe("https://cdn/x.ts");
   });
+
+  it("un 403 du serveur dit POURQUOI : les droits de lecture du compte", async () => {
+    expect(shouldProbeStream({ status: 403, target: "stream" })).toBe(true);
+    expect(shouldProbeStream({ status: 403, refusal: "playback_not_allowed" })).toBe(false);
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ code: "conversion_not_allowed" }, { status: 403 })));
+    const probe = await probeStream("https://h/api/jellyfin/Videos/1/master.m3u8");
+    expect(probe).toEqual({ status: 403, refusal: "conversion_not_allowed" });
+    expect(classifyProblem(withProbes({ status: 403, target: "stream" }, "ok", probe))).toBe("transcodeNotAllowed");
+    // Un 403 sans code reste un refus générique.
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("Forbidden", { status: 403 })));
+    expect(await probeStream("https://h/v.mkv")).toEqual({ status: 403, refusal: undefined });
+    expect(classifyProblem(withProbes({ status: 403, target: "stream" }, "ok", { status: 403 }))).toBe("notAllowed");
+  });
 });

@@ -42,6 +42,8 @@ export type ProblemCause =
   // Le compte
   | "sessionExpired"
   | "notAllowed"
+  /** La politique Jellyfin du compte interdit la lecture (`EnableMediaPlayback`, 403 `playback_not_allowed`). */
+  | "playbackNotAllowed"
   // Le titre et sa lecture
   | "itemNotFound"
   | "fileMissing"

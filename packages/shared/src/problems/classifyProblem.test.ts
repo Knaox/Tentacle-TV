@@ -38,6 +38,9 @@ describe("la cause d'un échec", () => {
 
   it("le verdict de PlaybackInfo : refus, format sans conversion possible ou interdite, trop de lectures", () => {
     expect(classifyProblem({ jellyfinErrorCode: "NotAllowed" })).toBe("notAllowed");
+    // Le refus des droits de lecture prime : c'est la cause, dite telle quelle.
+    expect(classifyProblem({ refusal: "playback_not_allowed", status: 403, target: "stream" })).toBe("playbackNotAllowed");
+    expect(classifyProblem({ refusal: "conversion_not_allowed", status: 403, target: "stream", transcoding: true })).toBe("transcodeNotAllowed");
     expect(classifyProblem({ jellyfinErrorCode: "NoCompatibleStream" })).toBe("noCompatibleStream");
     expect(classifyProblem({ jellyfinErrorCode: "NoCompatibleStream", transcodeAllowed: false })).toBe("transcodeNotAllowed");
     expect(classifyProblem({ jellyfinErrorCode: "RateLimitExceeded" })).toBe("tooManyStreams");
