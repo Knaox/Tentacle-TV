@@ -26,6 +26,7 @@ export * from "./railSetup";
 export * from "./railColumn";
 export * from "./railScroll";
 export * from "./railSpec";
+export * from "./railSwitcher";
 export * from "./screenTargets";
 export * from "./screenBack";
 export * from "./profilesBack";
