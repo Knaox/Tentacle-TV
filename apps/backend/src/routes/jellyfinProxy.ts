@@ -21,6 +21,7 @@ import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
 import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
 import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
 import { streamRefused } from "./jellyfinProxy/streamAccess";
+import { OUTSIDE_SCHEDULE_REPLY, outsideAccessSchedule } from "../services/itemAccess/accessSchedule";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { impersonatedUserId, resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -60,10 +61,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const incoming = readIncomingAuth(request.headers as Record<string, string | string[] | undefined>, cookieToken, q);
     const incomingToken = incoming.token;
 
-    // Un téléviseur jumelé par le relais naît sous le nom « TV » — le relais ne
-    // transporte pas son identité. Il l'annonce en revanche ici, à chaque
-    // requête, dans l'en-tête qu'il destine à Jellyfin. En oubli volontaire, et
-    // une seule fois par appareil.
+    // Une TV jumelée par le relais naît « TV » : elle annonce ici son identité, dans
+    // l'en-tête qu'elle destine à Jellyfin (une fois par appareil, cf. deviceNaming).
     // Un jeton d'appareil n'entre que si son jumelage existe ENCORE — avant le
     // cache, avant la clé admin qui lui serait substituée. Un JWT signé ne
     // suffisait pas : révoqué, il gardait l'accès, à vie (il n'expire pas).
@@ -87,6 +86,10 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // droits (cf. deviceUserScope) ; un flux, au titre que ce compte voit (cf. streamAccess).
     const lentKeyUser = device?.status === "paired" ? device.payload.userId : await impersonatedUserId(incomingToken);
     if (lentKeyUser) targetUrl = buildTargetUrl(jellyfinUrl, route.path, scopedToDeviceUser(route.path, route.query, lentKeyUser));
+    // Hors de ses plages horaires, la TV d'un compte ne lit rien (cf. accessSchedule).
+    if (device?.status === "paired" && !device.payload.isAdmin && (await outsideAccessSchedule(device.payload.userId))) {
+      return reply.status(403).send(OUTSIDE_SCHEDULE_REPLY);
+    }
     if (await streamRefused(wildcardPath, incomingToken, lentKeyUser)) {
       request.log.info({ path: wildcardPath }, "flux refuse : titre hors des droits du compte");
       return reply.status(404).send({ error: "Not found" });
@@ -94,14 +97,12 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
     const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 
-    // Report de lecture d'un device sans token Jellyfin : réécrit en écriture
-    // des données du compte (clé admin, userId en query, corps propre).
-    // L'URL réécrite porte déjà sa query → pas d'append de `qs`.
+    // Report de lecture d'un device sans token Jellyfin : réécrit en écriture des données du
+    // compte (clé admin, userId en query, corps propre) ; l'URL réécrite porte sa query.
     const effectiveMethod = rewrite ? rewrite.method : request.method;
     if (rewrite) targetUrl = `${jellyfinUrl}/${rewrite.path}`;
 
-    // Cache des lectures lourdes (Latest/Resume/NextUp/Views), GET seulement.
-    const queryString = qs;
+    const queryString = qs; // cache des lectures lourdes (Latest/Resume/NextUp/Views), GET seulement
     // Relevée AVANT la lecture : un geste qui passe pendant qu'elle court en
     // périme la réponse, qui ne se range plus (cf. jellyfinCache).
     const cacheSince = cacheGeneration();
@@ -127,8 +128,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const latestCtx = { jellyfinUrl, headers, token: incomingToken, path: wildcardPath, queryString: qs };
     if (latest && (await serveLatestAdditions(request, reply, latest, latestCtx))) return reply;
 
-    // Progressive video streams (remux) can last hours — use a long timeout.
-    // HLS segments and API calls complete quickly, keep short timeout.
+    // Progressive streams (remux) can last hours; HLS segments and API calls stay short.
     const isProgressiveStream = /Videos\/.*\/stream/.test(wildcardPath);
     const timeout = isProgressiveStream ? 4 * 60 * 60 * 1000 : 120_000;
 
@@ -144,8 +144,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       dispatcher: getJellyfinDispatcher(),
     };
 
-    // Forward body for POST/PUT/PATCH/DELETE — le report réécrit porte le sien.
-    if (rewrite?.body) {
+    if (rewrite?.body) { // corps des écritures ; le report réécrit porte le sien
       fetchInit.body = rewrite.body;
       headers["content-type"] = "application/json";
     } else if (!rewrite && request.method !== "GET" && request.method !== "HEAD") {
