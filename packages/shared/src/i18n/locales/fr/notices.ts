@@ -21,7 +21,7 @@ export default {
   serverNewsDismissed: "Masqué jusqu'aux prochaines nouveautés.",
   // Aucune clé TMDB sur le serveur.
   tmdbKeyTitle: "Aucune clé TMDB",
-  tmdbKeyText: "Sans elle, les recommandations restent génériques pour tous les comptes : ni « Pour vous », ni profil de goût, ni filtres par plateforme.",
+  tmdbKeyText: "Sans elle, les recommandations ne sont pas activées : ni « Pour vous », ni profil de goût, ni filtres par plateforme.",
   tmdbKeyAdd: "Ajouter la clé",
   tmdbKeyDismissed: "Masqué. L'information reste dans le tableau de bord.",
   // La clé d'administration Jellyfin ne marche plus.

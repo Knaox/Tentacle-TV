@@ -21,7 +21,7 @@ export default {
   serverNewsDismissed: "Hidden until the next new features.",
   // No TMDB key on the server.
   tmdbKeyTitle: "No TMDB key",
-  tmdbKeyText: "Without it, recommendations stay generic for every account: no \"For you\", no taste profile, no platform filters.",
+  tmdbKeyText: "Without it, recommendations are turned off: no \"For you\", no taste profile, no platform filters.",
   tmdbKeyAdd: "Add the key",
   tmdbKeyDismissed: "Hidden. The information stays on the dashboard.",
   // The Jellyfin administration key no longer works.

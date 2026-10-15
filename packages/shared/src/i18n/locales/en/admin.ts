@@ -89,7 +89,7 @@ export default {
   adminKeyAction: "Set a new key",
   adminKeyDismiss: "Dismiss",
   tmdbKeyTitle: "TMDB key missing",
-  tmdbKeyMessage: "Without a TMDB key, recommendations stay generic for every account: no “For you”, no taste profile, no platform filters.",
+  tmdbKeyMessage: "Without a TMDB key, recommendations are turned off: no “For you”, no taste profile, no platform filters.",
   tmdbKeyAction: "Add the TMDB key",
   tmdbKeyDismiss: "Dismiss",
   provisioningNeedsPublicUrl: "Set the public Tentacle TV server URL first to configure the provisioning code.",

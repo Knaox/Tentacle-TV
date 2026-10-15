@@ -14,7 +14,7 @@ export default {
   tmdbBenefit_sagas: "Full collections, including the parts missing from your library",
   tmdbBenefit_providers: "Each title's streaming services, and filtering by service",
   tmdbBenefit_artwork: "Posters for titles outside your library",
-  tmdbWithout: "Without a key, everything still works: recommendations fall back on your library's genres.",
+  tmdbWithout: "Without a key, Tentacle works, but recommendations stay turned off: they turn on as soon as the key is added.",
   tmdbKeyLabel: "API key (v3)",
   tmdbKeyPlaceholder: "Paste the v3 API key",
   tmdbKeyShow: "Show the key",

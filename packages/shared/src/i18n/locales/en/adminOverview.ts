@@ -111,7 +111,7 @@ export default {
   entry_publicUrl_body: "The server could not confirm that it leads to Tentacle.",
 
   entry_tmdbKey_title: "Add a TMDB key",
-  entry_tmdbKey_body: "Without it, recommendations are the same for everyone: no “For you”, no taste profile, no streaming platforms.",
+  entry_tmdbKey_body: "Without it, recommendations are turned off: no “For you”, no taste profile, no streaming platforms.",
   entry_tmdbKey_details: "Also depending on it: the home discovery rows, Refine (which then only draws from the library), sagas, per-episode ratings, platform logos and rating sync with TMDB. The key is free, on themoviedb.org.",
 
   entry_jellyfin_title_one: "Jellyfin: {{count}} suggested change",

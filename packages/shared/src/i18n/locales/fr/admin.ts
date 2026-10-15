@@ -173,7 +173,7 @@ export default {
   adminKeyAction: "Renseigner une nouvelle clé",
   adminKeyDismiss: "Masquer",
   tmdbKeyTitle: "Clé TMDB manquante",
-  tmdbKeyMessage: "Sans clé TMDB, les recommandations restent génériques pour tous les comptes : ni « Pour vous », ni profil de goût, ni filtres par plateforme.",
+  tmdbKeyMessage: "Sans clé TMDB, les recommandations ne sont pas activées : ni « Pour vous », ni profil de goût, ni filtres par plateforme.",
   tmdbKeyAction: "Ajouter la clé TMDB",
   tmdbKeyDismiss: "Masquer",
   provisioningNeedsPublicUrl: "Renseignez d'abord l'URL publique du serveur Tentacle TV pour configurer le code de provisionnement.",

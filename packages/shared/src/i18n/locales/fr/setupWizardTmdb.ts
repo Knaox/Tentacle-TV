@@ -15,7 +15,7 @@ export default {
   tmdbBenefit_sagas: "Les sagas complètes, avec les volets qui manquent à la bibliothèque",
   tmdbBenefit_providers: "Les plateformes de streaming de chaque titre, et le filtre par plateforme",
   tmdbBenefit_artwork: "Les affiches des titres hors de votre bibliothèque",
-  tmdbWithout: "Sans clé, tout fonctionne : les recommandations retombent sur les genres de votre bibliothèque.",
+  tmdbWithout: "Sans clé, Tentacle fonctionne, mais les recommandations restent désactivées : elles s'activent dès que la clé est posée.",
   tmdbKeyLabel: "Clé API (v3)",
   tmdbKeyPlaceholder: "Collez la clé API v3",
   tmdbKeyShow: "Afficher la clé",

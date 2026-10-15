@@ -111,7 +111,7 @@ export default {
   entry_publicUrl_body: "Le serveur n'a pas pu confirmer qu'elle mène bien à Tentacle.",
 
   entry_tmdbKey_title: "Ajouter une clé TMDB",
-  entry_tmdbKey_body: "Sans elle, les recommandations restent les mêmes pour tous : ni « Pour vous », ni profil de goût, ni plateformes de streaming.",
+  entry_tmdbKey_body: "Sans elle, les recommandations ne sont pas activées : ni « Pour vous », ni profil de goût, ni plateformes de streaming.",
   entry_tmdbKey_details: "En dépendent aussi : les rangées de découverte de l'accueil, Affiner (qui ne pioche alors que dans la bibliothèque), les sagas, les notes par épisode, les logos des plateformes et la synchronisation des notes avec TMDB. La clé est gratuite, sur themoviedb.org.",
 
   entry_jellyfin_title_one: "Jellyfin : {{count}} point conseillé",

@@ -13,7 +13,7 @@ export default {
   // TMDB card
   tmdbTitle: "TMDB",
   tmdbDescription:
-    "The Movie Database powers rich recommendations — similar titles, actors, keywords, posters from outside the library — and anonymous rating sync. Without a key, the engine falls back to library genres, for every account.",
+    "The Movie Database powers rich recommendations — similar titles, actors, keywords, posters from outside the library — and anonymous rating sync. Without a key, recommendations are turned off for every account: they turn on as soon as the key is saved.",
   tmdbGetKey: "Create a free key on themoviedb.org",
   statusConfigured: "Configured",
   statusMissing: "Not configured",

@@ -49,7 +49,7 @@ export default {
   help_tmdb_free_q: "Comment obtenir une clé\u00a0?",
   help_tmdb_free_a: "Créez un compte gratuit sur themoviedb.org, puis, dans ses paramètres, la section API\u00a0: demandez une clé pour un usage personnel et copiez la clé API v3 (32 caractères).",
   help_tmdb_later_q: "Et si je la pose plus tard\u00a0?",
-  help_tmdb_later_a: "Tentacle fonctionne sans elle. Posez-la quand vous voulez dans Administration › Métadonnées\u00a0: le tableau de bord la rappelle dans ses recommandations, sans autre relance.",
+  help_tmdb_later_a: "Tentacle fonctionne sans elle, sauf les recommandations\u00a0: elles restent désactivées tant qu'elle manque. Posez-la quand vous voulez dans Administration › Métadonnées\u00a0; elles s'activent aussitôt, et d'ici là le tableau de bord la rappelle, sans autre relance.",
 
   help_recap_what_q: "Que va-t-il se passer\u00a0?",
   help_recap_what_a: "Tentacle fait ce qui est listé, dans l'ordre, puis vous connecte. Rien d'autre.",

@@ -49,7 +49,7 @@ export default {
   help_tmdb_free_q: "How do I get a key?",
   help_tmdb_free_a: "Create a free account on themoviedb.org, then open the API section of its settings: request a key for personal use and copy the v3 API key (32 characters).",
   help_tmdb_later_q: "What if I add it later?",
-  help_tmdb_later_a: "Tentacle works without it. Add it whenever you like in Administration › Metadata: the dashboard lists it among its recommendations, with no other reminder.",
+  help_tmdb_later_a: "Tentacle works without it, except for recommendations: they stay turned off until it is added. Add it whenever you like in Administration › Metadata; they turn on right away, and until then the dashboard reminds you, with no other nudge.",
 
   help_recap_what_q: "What will happen?",
   help_recap_what_a: "Tentacle does what is listed, in order, then signs you in. Nothing else.",

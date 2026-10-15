@@ -44,6 +44,13 @@ export default {
   disabledBody:
     "Personalized recommendations are turned off for your account. Enable them in your personalization settings to get suggestions tailored to your taste.",
   disabledCta: "Open personalization settings",
+  // Aucune clé TMDB sur le serveur : la reco n'est pas activée (cf. la locale FR).
+  tmdbOffText: "Recommendations aren't turned on yet: they need a TMDB key.",
+  tmdbOffAdminHint: "Add it in Administration › Metadata to turn them on for every account.",
+  tmdbOffMemberHint: "Your administrator can turn them on.",
+  tmdbOffCta: "Add the TMDB key",
+  tmdbOffDeviceHint: "Your administrator can turn them on from Tentacle on a computer, in Administration › Metadata.",
+  tvTmdbOffTitle: "Recommendations not turned on yet",
 
   disabledBanner:
     "Personalized recommendations are turned off for your account — here are general suggestions.",

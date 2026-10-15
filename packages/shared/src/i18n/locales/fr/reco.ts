@@ -44,6 +44,16 @@ export default {
   disabledBody:
     "Les recommandations personnalisées sont désactivées pour votre compte. Activez-les dans vos réglages de personnalisation pour recevoir des suggestions à votre goût.",
   disabledCta: "Ouvrir les réglages de personnalisation",
+  // Aucune clé TMDB sur le serveur : la reco n'est pas activée. Cause ≠ réglage
+  // du compte (`disabled*`) : la page le dit sans reproche, et ne propose le
+  // réglage qu'à un administrateur (session personnelle).
+  tmdbOffText: "Les recommandations ne sont pas encore activées : elles demandent une clé TMDB.",
+  tmdbOffAdminHint: "Ajoutez-la dans Administration › Métadonnées : elles s'activeront pour tous les comptes.",
+  tmdbOffMemberHint: "Votre administrateur peut les activer.",
+  tmdbOffCta: "Ajouter la clé TMDB",
+  // Téléviseurs et téléphone : aucune page d'administration, la même phrase pour tous.
+  tmdbOffDeviceHint: "Votre administrateur peut les activer depuis Tentacle sur un ordinateur, dans Administration › Métadonnées.",
+  tvTmdbOffTitle: "Recommandations pas encore activées",
 
   // Bandeaux d'état (un seul à la fois, RecoStatusBanner)
   disabledBanner:
