@@ -14,6 +14,7 @@ import type {
   ScrubCountdownModel,
   ScrubModel,
   SkipPillModel,
+  StillWatchingModel,
   TimelineSegment,
   UpNextModel,
 } from "../../redesign/screens/player/playerTypes";
@@ -138,6 +139,31 @@ export function buildUpNext(args: {
     overview: plainText(next.Overview),
     countdownLabel: timed ? nextCountdownLabel(t, countdownSeconds) : undefined,
     countdown: timed ? { remaining: countdownSeconds, total: Math.max(countdownSeconds, args.nextTotalMs / 1000) } : null,
+  };
+}
+
+/**
+ * « Vous regardez encore ? » dit en mots : la question et son décompte (en
+ * secondes arrondies au-dessus, jamais « 0 seconde » tant qu'elle est posée),
+ * puis la pause. Rien en lecture.
+ */
+export function buildStillWatching(
+  state: { phase: "none" | "asking" | "paused"; remainingMs: number; countdownMs: number },
+  t: Translate,
+): StillWatchingModel | null {
+  if (state.phase === "none") return null;
+  const asking = state.phase === "asking";
+  return {
+    phase: state.phase,
+    title: t(asking ? "player:stillWatching.title" : "player:stillWatching.pausedTitle"),
+    body: asking
+      ? t("player:stillWatching.countdown", { count: Math.max(1, Math.ceil(state.remainingMs / 1000)) })
+      : t("player:stillWatching.pausedBody"),
+    remainingMs: state.remainingMs,
+    totalMs: state.countdownMs,
+    continueLabel: t("player:stillWatching.continue"),
+    pauseLabel: t("player:stillWatching.pause"),
+    resumeLabel: t("player:stillWatching.resume"),
   };
 }
 

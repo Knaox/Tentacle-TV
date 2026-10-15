@@ -126,6 +126,21 @@ export interface UpNextModel {
   countdown?: Countdown | null;
 }
 
+/** « Vous regardez encore ? » — l'encart du coin bas-droit (`StillWatchingCard`). */
+export interface StillWatchingModel {
+  /** `asking` : la question et son décompte ; `paused` : la pause est faite. */
+  phase: "asking" | "paused";
+  title: string;
+  /** « La lecture se met en pause dans 42 secondes. » ; en pause, ce qui s'est passé. */
+  body: string;
+  /** Le temps qui reste avant la pause, et la durée du décompte (la barre). */
+  remainingMs: number;
+  totalMs: number;
+  continueLabel: string;
+  pauseLabel: string;
+  resumeLabel: string;
+}
+
 /** L'affiche plein écran de la vraie fin d'un épisode. */
 export interface EndScreenModel extends UpNextModel {
   seriesTitle: string;

@@ -8,11 +8,11 @@ import type { PlayerMedia, PlayerPanel, ScrubModel } from "../../redesign/screen
 import { useAutoCapNotice } from "../../hooks/useAutoCapNotice";
 import { useDeviceNotice } from "../../hooks/useDeviceNotice";
 import { usePlaybackTroubleState } from "../../hooks/playbackTroubleStore";
-import { playerChromeVisibility, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS } from "@tentacle-tv/tv-core";
+import { playerChromeVisibility, SKIP_BACK_SECONDS, SKIP_FORWARD_SECONDS, stillWatchingFocusEntry } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { backdropUriOf, logoUriOf, paletteOf, type ImageUrl } from "./playerArt";
 import {
-  buildEndScreen, buildPhase, buildPlayerMedia, buildScrubCountdown, buildSkipPill, buildUpNext, parseSpeedLabel,
+  buildEndScreen, buildPhase, buildPlayerMedia, buildScrubCountdown, buildSkipPill, buildStillWatching, buildUpNext, parseSpeedLabel,
   timelineSegments, trickplayFrame,
 } from "./playerChromeModels";
 import type { PlayerRedesignStageProps } from "./playerStageTypes";
@@ -40,6 +40,12 @@ export interface PlayerChrome {
   /** La pilule qui a ouvert la feuille : le focus y revient à la fermeture. */
   sheetOpener: string;
   activeSeasonIndex: number;
+  /** « Vous regardez encore ? » est à l'écran : il tient la télécommande, comme un panneau. */
+  stillWatchingShown: boolean;
+  /** Son bouton qui prend le focus (« Continuer », puis « Reprendre »), ou null. */
+  stillWatchingEntry: string | null;
+  /** La question est posée : Retour y répond « Continuer ». */
+  stillWatchingAsking: boolean;
 }
 
 /**
@@ -178,6 +184,15 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     [p.videoError, translate],
   );
 
+  // « Vous regardez encore ? » : seulement sur la lecture commencée (jamais sur l'écran d'ouverture).
+  const sw = p.stillWatching;
+  const swPhase = playing && sw ? sw.phase : "none";
+  const stillWatching = useMemo(
+    () => buildStillWatching({ phase: swPhase, remainingMs: sw?.remainingMs ?? 0, countdownMs: sw?.countdownMs ?? 0 }, translate),
+    [swPhase, sw?.remainingMs, sw?.countdownMs, translate],
+  );
+  const stillWatchingShown = stillWatching !== null;
+
   const actions = usePlayerChromeActions({
     ...p, onSelectSeason: episodes.selectSeason, episodeById: episodes.episodeById, onOpenSheet: sheet.open,
   });
@@ -189,6 +204,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   const shownBefore = playerChromeVisibility({
     playing, overlayVisible: controls.overlayVisible, pinned: osdPinned, scrubbing, autoPlayActive: p.autoPlayActive,
     panelShown: !!panel, endScreenShown: !!endScreen, troubleCovers: false, skipShown: skip !== null, upNextShown: upNext !== null,
+    stillWatchingShown,
   });
   const osdVisible = shownBefore.osdVisible;
   // Le message-outil quand un serveur ne répond plus (cf. usePlaybackTrouble).
@@ -199,7 +215,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
   const shown = playerChromeVisibility({
     playing, overlayVisible: controls.overlayVisible, pinned: osdPinned, scrubbing, autoPlayActive: p.autoPlayActive,
     panelShown: !!panel, endScreenShown: !!endScreen, troubleCovers: trouble.covers, skipShown: skip !== null,
-    upNextShown: upNext !== null,
+    upNextShown: upNext !== null, stillWatchingShown,
   });
 
   return {
@@ -209,6 +225,7 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
       buffering: p.isLoading && p.hasStarted, bufferingHint, scrub, seekFlash, skip, upNext, endScreen, panel, reloadFrame,
       notice, error, subtitle: p.subtitleCue ?? null,
       trouble: trouble.model, troubleCovers: trouble.covers, onTroubleAction: trouble.onAction,
+      stillWatching, onStillWatchingContinue: sw?.keepWatching, onStillWatchingPause: sw?.pauseNow, onStillWatchingResume: sw?.resume,
     },
     troubleCovers: trouble.covers,
     osdShown: shown.osdShown,
@@ -219,5 +236,8 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     sheetEntryKey: sheet.entryKey,
     sheetOpener: sheet.opener,
     activeSeasonIndex: episodes.activeSeasonIndex,
+    stillWatchingShown,
+    stillWatchingEntry: stillWatchingFocusEntry(swPhase),
+    stillWatchingAsking: swPhase === "asking",
   };
 }

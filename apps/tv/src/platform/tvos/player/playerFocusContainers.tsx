@@ -257,6 +257,7 @@ export const PLAYER_GROUP_CONTAINERS: Readonly<Record<string, ComponentType<Focu
   "player:timeline": TimelineGroup,
   "player:skip-island": IslandGroup,
   "upnext:actions": TrapFocusGuide,
+  "stillwatching:actions": TrapFocusGuide,
   "loading:screen": LoadingScreenGroup,
   "end:screen": EndScreenGroup,
   "trouble:screen": TroubleScreenGroup,

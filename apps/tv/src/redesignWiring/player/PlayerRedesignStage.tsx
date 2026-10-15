@@ -33,7 +33,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
   const { controls } = props;
   const pin = useOsdPin(props.paused, controls.overlayVisible);
   const chrome = usePlayerChrome(props, store, pin.pinned);
-  usePlayerBackLayers(props, { shown: chrome.osdShown, unpin: pin.unpin });
+  usePlayerBackLayers(props, { shown: chrome.osdShown, unpin: pin.unpin, stillWatchingAsking: chrome.stillWatchingAsking });
 
   // Le fond : focalisable seulement quand l'habillage est caché et que rien
   // ne le recouvre — OK ou une direction le rallume (la règle : tv-core
@@ -42,7 +42,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
   const background = playerBackgroundFocus({
     loading: chrome.loading, overlayVisible: controls.overlayVisible, pinned: pin.pinned, scrubbing: controls.scrubbing,
     showSettings: props.showSettings, showEpisodes: !!props.showEpisodes, autoPlayActive: props.autoPlayActive,
-    troubleCovers: chrome.troubleCovers, overlayKind: props.overlay.kind,
+    troubleCovers: chrome.troubleCovers, overlayKind: props.overlay.kind, stillWatchingShown: chrome.stillWatchingShown,
   });
   useTvFocusClaim(props.backgroundRef as unknown as React.RefObject<unknown>, background.claims);
 
@@ -65,6 +65,7 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
     sheetEntryKey: chrome.sheetEntryKey,
     sheetOpener: chrome.sheetOpener,
     activeSeasonIndex: chrome.activeSeasonIndex,
+    stillWatchingEntry: chrome.stillWatchingEntry,
   });
 
   return (

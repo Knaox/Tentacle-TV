@@ -2,6 +2,7 @@ import type { PlaybackRefusal, QualityPreset } from "@tentacle-tv/shared";
 import type { PlayerStageBaseProps } from "../../components/player/playerStageBaseProps";
 import type { ScrubCountdownState } from "@tentacle-tv/tv-core";
 import type { PrismStep } from "../../hooks/useTVPrismProgress";
+import type { TVStillWatching } from "../../hooks/useTVStillWatching";
 
 /**
  * Ce que l'écran du lecteur donne à l'habillage refondu : la base commune au
@@ -26,6 +27,8 @@ export interface PlayerRedesignStageProps extends Omit<PlayerStageBaseProps, "st
   qualityPresets: readonly QualityPreset[];
   /** Ce que la pile de couches du Retour lit de l'orchestration (Apple TV). */
   back?: PlayerBackSource;
+  /** « Vous regardez encore ? » — le contrôleur de l'écran (`useTVStillWatching`). */
+  stillWatching?: TVStillWatching;
 }
 
 /** Le Retour du lecteur, côté orchestration (`useTVPlayerBack`, `useTVPlayerControls`). */

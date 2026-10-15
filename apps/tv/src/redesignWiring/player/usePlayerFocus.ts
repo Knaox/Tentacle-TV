@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Component, type Ref } from "react";
 import type { View } from "react-native";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
-import { PLAYER_OSD_KEYS, playerFocusClaims, preferredFocusOf, skipIslandGuides, skipPillFocus } from "@tentacle-tv/tv-core";
+import {
+  PLAYER_OSD_KEYS, playerFocusClaims, preferredFocusOf, skipIslandGuides, skipPillFocus, STILL_WATCHING_TV_KEYS,
+} from "@tentacle-tv/tv-core";
 import type { FocusBinder, FocusBinding } from "../../redesign/focus/focusBinding";
 import { setSkipNode } from "../../components/player/focus/osdFocusBus";
 import { useOverlayFocus, type TransportKey } from "../../components/player/focus/useOverlayFocus";
@@ -22,7 +24,8 @@ import { usePanelReturnFocus } from "./usePanelReturnFocus";
  *   relais quand elle s'en va), son nœud publié sur le bus pour le pont de la
  *   frise, sa préférence d'origine (« Masquer » quand ça part tout seul).
  * - Les entrées : l'écran de chargement (Retour, ou Réessayer), la carte
- *   « À suivre », l'affiche de fin et la feuille (Pistes, Réglages) RÉCLAMENT le focus
+ *   « À suivre », l'affiche de fin, la feuille (Pistes, Réglages) et « Vous
+ *   regardez encore ? » (« Continuer », puis « Reprendre ») RÉCLAMENT le focus
  *   à leur apparition — `hasTVPreferredFocus` seul n'est honoré qu'au montage,
  *   et ignoré quand le moteur tient déjà un élément ailleurs. Les croix de
  *   l'affiche de fin et du message-outil restent infocalisables tant que leur
@@ -34,6 +37,8 @@ import { usePanelReturnFocus } from "./usePanelReturnFocus";
  */
 
 const OSD_KEYS: Readonly<Record<string, TransportKey>> = PLAYER_OSD_KEYS;
+/** Les boutons de « Vous regardez encore ? ». */
+const STILL_WATCHING_KEYS: ReadonlySet<string> = new Set(Object.values(STILL_WATCHING_TV_KEYS));
 
 export interface PlayerFocusArgs {
   store: FocusStore;
@@ -60,6 +65,8 @@ export interface PlayerFocusArgs {
   /** La pilule qui a ouvert la feuille (`player:tracks`, `player:settings`) : le focus y revient. */
   sheetOpener: string;
   activeSeasonIndex: number;
+  /** « Vous regardez encore ? » : le bouton qui prend le focus (« Continuer », puis « Reprendre »), ou null. */
+  stillWatchingEntry: string | null;
 }
 
 /** Les groupes ne portent qu'un conteneur, identique d'un rendu à l'autre. */
@@ -120,6 +127,10 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
         onFocus: () => { base.onFocus?.(); osdRef.current.buttonProps(transport).onFocus(); },
         phantomPressGuard: true,
       };
+    } else if (STILL_WATCHING_KEYS.has(key)) {
+      // L'encart paraît sans un geste, et « Reprendre » naît sous l'OK qui vient de
+      // presser « Mettre en pause » : seul un appui COMMENCÉ sur le bouton compte.
+      binding = { ...base, phantomPressGuard: true };
     } else if (key === "player:skip" || key === "player:skip-dismiss") {
       const which = key === "player:skip" ? "skip" : "dismiss";
       binding = {
@@ -151,14 +162,16 @@ export function usePlayerFocus(args: PlayerFocusArgs): { binder: FocusBinder; st
     return withPreferredFocus(binding, preferredFocusOf(key, { grabs, refusable, failed, sheetEntryKey }));
   }, [stableBinding, grabs, refusable, failed, sheetEntryKey, endExitLocked, troubleExitLocked]);
 
-  // Quatre réclamations, toujours dans le même ordre (règle des crochets).
-  const [loadingClaim, upNextClaim, endClaim, sheetClaim] = playerFocusClaims({
+  // Cinq réclamations, toujours dans le même ordre (règle des crochets).
+  const [loadingClaim, upNextClaim, endClaim, sheetClaim, stillWatchingClaim] = playerFocusClaims({
     loading: args.loading, failed, upNextShown: args.upNextShown, endShown: args.endShown, sheetEntryKey,
+    stillWatchingEntry: args.stillWatchingEntry,
   });
   useClaimOnRise(store, loadingClaim.key, loadingClaim.active);
   useClaimOnRise(store, upNextClaim.key, upNextClaim.active);
   useClaimOnRise(store, endClaim.key, endClaim.active);
   useClaimOnRise(store, sheetClaim.key, sheetClaim.active);
+  useClaimOnRise(store, stillWatchingClaim.key, stillWatchingClaim.active);
   // Un panneau refermé rend le focus à son bouton, à la fin de son fondu.
   const onPanelExited = usePanelReturnFocus(store, showSettings, showEpisodes, args.sheetOpener, args.overlayVisible);
 

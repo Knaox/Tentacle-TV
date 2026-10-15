@@ -23,17 +23,23 @@ export function useOsdPin(paused: boolean, overlayVisible: boolean): { pinned: b
 /**
  * Les couches du Retour du lecteur (Apple TV), DÉCLARÉES par la règle de
  * tv-core (`playerBackLayers`) et inscrites dans la portée de l'écran
- * (`useBackLayers`) : un état passager, la feuille, les épisodes (menu) ;
+ * (`useBackLayers`) : un état passager, « Vous regardez encore ? » (Retour y
+ * répond « Continuer »), la feuille, les épisodes (menu) ;
  * l'habillage à l'écran (surimpression) ; la sortie (page). Aucun retrait
  * d'écran n'est retenu : Menu ne dépile plus le lecteur de lui-même.
  */
-export function usePlayerBackLayers(p: PlayerRedesignStageProps, osd: { shown: boolean; unpin: () => void }): void {
+export function usePlayerBackLayers(
+  p: PlayerRedesignStageProps,
+  osd: { shown: boolean; unpin: () => void; stillWatchingAsking: boolean },
+): void {
   const { back } = p;
   const specs = playerBackLayers({
     transient: !!back?.transient, showSettings: p.showSettings, showEpisodes: !!p.showEpisodes, osdShown: osd.shown,
+    stillWatchingAsking: osd.stillWatchingAsking,
   });
   useBackLayers(specs, {
     routeTransient: () => void back?.routeBack(),
+    keepWatching: () => p.stillWatching?.keepWatching(),
     closeSettings: p.onCloseSettings,
     closeEpisodes: () => p.onCloseEpisodes?.(),
     hideOverlay: () => {

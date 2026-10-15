@@ -20,12 +20,13 @@ import type { PlaybackTroubleModel, TroubleActionKey } from "./playbackTroubleTy
 import { PlayerLoading } from "./PlayerLoading";
 import type {
   EndScreenModel, FrameImage, PlayerLabels, PlayerMedia, PlayerPanel, PlayerPhase, PlayerTimeline, ScrubModel,
-  SkipPillModel, SubtitleCue, UpNextModel,
+  SkipPillModel, StillWatchingModel, SubtitleCue, UpNextModel,
 } from "./playerTypes";
 import { ScrubOverlay } from "./ScrubOverlay";
 import { SeekFlash } from "./SeekFlash";
 import { SettingsPanel } from "./SettingsPanel";
 import { SkipPill } from "./SkipPill";
+import { StillWatchingCard } from "./StillWatchingCard";
 import { SubtitleLayer } from "./SubtitleLayer";
 import { TracksPanel } from "./TracksPanel";
 import { UpNextCard } from "./UpNextCard";
@@ -115,6 +116,11 @@ export interface PlayerChromeViewProps extends Omit<OsdControlsProps, "transport
   /** Son panneau, activé, tient le focus : l'habillage recule devant lui. */
   troubleCovers?: boolean;
   onTroubleAction?: (key: TroubleActionKey) => void;
+  /** « Vous regardez encore ? » — l'encart du coin, par-dessus le reste ; il tait l'habillage. */
+  stillWatching?: StillWatchingModel | null;
+  onStillWatchingContinue?: () => void;
+  onStillWatchingPause?: () => void;
+  onStillWatchingResume?: () => void;
 }
 
 const SAFE = TV_STAGE.safe;
@@ -128,6 +134,8 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
   // message-outil activé.
   const covers = !!props.troubleCovers;
   const chrome = playing && osdVisible && !panel && !scrub && !endScreen && !covers;
+  // « Vous regardez encore ? » prend le coin bas-droit : la pilule et la carte « À suivre » s'effacent.
+  const cornerTaken = !!props.stillWatching;
   const trouble = playing ? props.trouble ?? null : null;
   const troublePanel = trouble?.mode === "panel";
   // Le panneau, gardé le temps de sa sortie : il s'efface d'un bloc, focus
@@ -201,10 +209,10 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
       </Presented>
       {props.notice && playing && !trouble ? <QualityNotice text={props.notice} /> : null}
       {props.error && !troublePanel ? <ErrorBanner title={props.error.title} message={props.error.message} /> : null}
-      {skip && playing && !scrub && !panel && !endScreen && !covers ? (
+      {skip && playing && !scrub && !panel && !endScreen && !covers && !cornerTaken ? (
         <SkipPill model={skip} raised={chrome} dismissLabel={labels.dismiss} onSkip={props.onSkip} onDismiss={props.onDismissSkip} />
       ) : null}
-      {upNext && playing && !scrub && !panel && !endScreen && !covers ? (
+      {upNext && playing && !scrub && !panel && !endScreen && !covers && !cornerTaken ? (
         <UpNextCard model={upNext} labels={labels} onPlayNext={props.onPlayNext} onDismiss={props.onDismissNext} />
       ) : null}
       <Presented value={scrub && playing ? scrub : null} motion="reveal">
@@ -243,6 +251,14 @@ export const PlayerChromeView = memo(function PlayerChromeView(props: PlayerChro
         </Animated.View>
       ) : null}
       {endScreen ? <EndScreen model={endScreen} labels={labels} onPlayNext={props.onPlayNext} onLeave={props.onLeaveEnd} /> : null}
+      {props.stillWatching && playing ? (
+        <StillWatchingCard
+          model={props.stillWatching}
+          onContinue={props.onStillWatchingContinue}
+          onPause={props.onStillWatchingPause}
+          onResume={props.onStillWatchingResume}
+        />
+      ) : null}
       {phase.kind !== "playing" ? <PlayerLoading media={media} phase={phase} labels={labels} onBack={props.onBack} onRetry={props.onRetry} /> : null}
     </View>
   );

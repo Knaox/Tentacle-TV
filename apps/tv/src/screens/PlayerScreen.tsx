@@ -28,6 +28,7 @@ import { useTVSessionRemote } from "../hooks/useTVSessionRemote";
 import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { usePlayerItem } from "../hooks/usePlayerItem";
 import { useTVOsdEntryFocus } from "../hooks/useTVOsdEntryFocus";
+import { useTVStillWatching } from "../hooks/useTVStillWatching";
 import { PlayerRedesignStage } from "../redesignWiring/player/PlayerRedesignStage";
 import { useReleaseHiddenImages } from "../platform/renderTier";
 import type { PlayerRedesignStageProps } from "../redesignWiring/player/playerStageTypes";
@@ -104,6 +105,8 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   /** La fin du média, en état : c'est une ENTRÉE de l'arbitre. */
   const [ended, setEnded] = useState(false);
+  // « Vous regardez encore ? » : affiché, l'encart tient la télécommande comme un panneau.
+  const stillWatching = useTVStillWatching({ playing: hasStarted && !paused && !isLoading && !ended, setPaused });
   // Le scrub et l'habillage en MIROIR d'état : l'arbitre en a besoin (il
   // suspend son décompte, et il ne rend un passage mis en sourdine que le temps
   // de l'habillage) et les contrôles ont besoin de l'arbitre (`panelOpen`) —
@@ -147,7 +150,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     onScrubPause: setPaused,
     // Écran de fin plein écran (eof) = panneau : neutralise pan/scrub/play-pause du
     // lecteur ET son Back JS — le Retour est routé par useTVPlayerBack (preventRemove).
-    panelOpen: showSettings || showEpisodes || autoPlay.source === "eof",
+    panelOpen: showSettings || showEpisodes || autoPlay.source === "eof" || stillWatching.shown,
     // Le réglage « Avance rapide » du compte (Apple TV ; Android TV : aucun).
     countdownPolicy: useScrubCountdownPolicy(),
   });
@@ -185,7 +188,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   // L'habillage reprend le focus à sa réapparition et à l'entrée dans la vidéo. Réapparaître, c'est
   // SE MONTRER : une carte « suivant » ou l'écran d'ouverture (avant la 1re image) le taisent — restaurer
   // son focus l'enverrait sur un bouton infocalisable, et l'app restait SANS focus (HAUT à l'ouverture).
-  useTVOsdEntryFocus({ overlayVisible: controls.overlayVisible && autoPlay.source === null && !!streamUrl && (hasStarted || !!videoError), hasStarted, bumpOsdFocus });
+  useTVOsdEntryFocus({ overlayVisible: controls.overlayVisible && autoPlay.source === null && !stillWatching.shown && !!streamUrl && (hasStarted || !!videoError), hasStarted, bumpOsdFocus });
 
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);
@@ -288,7 +291,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     onCloseEpisodes: () => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus("episodes"); },
     onSelectEpisode: (ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); },
     onEofDismiss: () => { dismissAutoPlay(); },
-    back: { transient: back.holding, routeBack: back.routeBack, hideOverlay: controls.hideOverlay },
+    back: { transient: back.holding, routeBack: back.routeBack, hideOverlay: controls.hideOverlay }, stillWatching,
   };
   return <PlayerRedesignStage {...stage} />;
 }
