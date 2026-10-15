@@ -19,6 +19,10 @@ import { readSearchParams, searchHref, type SearchTab } from "../components/sear
 import { EXTERNAL_SEARCH_LIMIT, useExternalSearch } from "../components/search/external/useExternalSearch";
 import { QueryProblem } from "../components/problems/PageProblem";
 import { SeriesGapsScope } from "../components/seasons/SeriesGapsScope";
+import { episodesSettled } from "../components/search/page/searchViewHold";
+import { useHeldSearchView } from "../components/search/page/useHeldSearchView";
+
+const NO_EPISODES: readonly SearchMediaItem[] = [];
 
 export function Search() {
   const [params] = useSearchParams();
@@ -33,15 +37,32 @@ export function Search() {
     limit: EXTERNAL_SEARCH_LIMIT,
     enabled: searching && (state.tab === "all" || state.tab === "movies" || state.tab === "series"),
   });
+  // Résultats et épisodes s'affichent d'UN bloc : les épisodes (Jellyfin,
+  // plus lents) ne s'insèrent plus après coup sous les yeux (≤ 600 ms d'attente).
+  const view = useHeldSearchView(
+    {
+      response: search.data,
+      // Les épisodes d'une requête précédente ne vont qu'avec SES résultats.
+      episodes: episodes.isPlaceholderData && !search.isPlaceholderData ? NO_EPISODES : (episodes.data?.episodes ?? NO_EPISODES),
+    },
+    episodesSettled({
+      wanted: searching && withEpisodes,
+      isPending: episodes.isPending,
+      isError: episodes.isError,
+      isPlaceholderData: episodes.isPlaceholderData,
+      fetchStatus: episodes.fetchStatus,
+    }),
+    `${state.tab}|${state.query}`,
+  );
   const terms = useMemo(
-    () => parseSearchQuery(search.data?.correction ?? state.query).terms,
-    [search.data?.correction, state.query],
+    () => parseSearchQuery(view.response?.correction ?? state.query).terms,
+    [view.response?.correction, state.query],
   );
   // Les séries trouvées : celles qui sont incomplètes offrent leurs saisons à demander.
   const series = useMemo(() => {
-    const top = search.data?.top;
-    return [...(top?.kind === "item" ? [top.hit.item] : []), ...(search.data?.series ?? []).map((hit) => hit.item)];
-  }, [search.data]);
+    const top = view.response?.top;
+    return [...(top?.kind === "item" ? [top.hit.item] : []), ...(view.response?.series ?? []).map((hit) => hit.item)];
+  }, [view.response]);
 
   const setQuery = useCallback((query: string) => {
     navigate(searchHref(query, state.tab), { replace: true });
@@ -79,11 +100,11 @@ export function Search() {
             {searching && search.isError && !search.data && (
               <QueryProblem error={search.error} target="tentacle" retrying={search.isFetching} onRetry={() => void search.refetch()} />
             )}
-            {searching && search.data && (
+            {searching && view.response && (
               <SeriesGapsScope items={series}>
               <SearchResultsView
-                response={search.data}
-                episodes={episodes.data?.episodes ?? []}
+                response={view.response}
+                episodes={view.episodes}
                 external={external}
                 tab={state.tab}
                 terms={terms}
