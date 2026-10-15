@@ -20,6 +20,8 @@ import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { WT_MAX_INVITES_PER_REQUEST } from "../services/watchTogether/protocol";
 import { seesRoomItem } from "../services/watchTogether/itemRights";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
+import { accessIn, wtAccessOf } from "../services/watchTogether/accountAccess";
+import { WT_ACCESS_DENIED, wtMayCreate, wtMayJoin } from "../services/watchTogether/watchTogetherAccess";
 
 /**
  * Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation), vu
@@ -64,6 +66,10 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
 
     // Un invité de la Famille n'est jamais invitable (il n'apparaît dans aucune liste).
     const jellyfinUsers = await getJellyfinUsers();
+    // Inviter, c'est « Créer et rejoindre » : un hôte qui l'a perdu garde son salon, sans plus inviter.
+    if (!wtMayCreate(accessIn(jellyfinUsers, user.userId))) {
+      return reply.status(403).send({ code: WT_ACCESS_DENIED, message: "Watch Together : invitation non autorisée" });
+    }
     const allUsers = jellyfinUsers ? await withoutFamilyGuests(jellyfinUsers, (u) => u.id).catch(() => null) : null;
     const contextItemId = room.itemId ?? room.contextItemId;
 
@@ -71,7 +77,8 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
     for (const targetId of new Set(userIds)) {
       if (targetId === user.userId || room.members.has(targetId)) continue;
       const target = allUsers?.find((u) => u.id === targetId);
-      if (!target || target.isDisabled) continue;
+      // Un compte sans Watch Together (« Interdit ») n'est ni invité ni prévenu.
+      if (!target || target.isDisabled || !wtMayJoin(accessIn(allUsers, targetId))) continue;
       // Le titre EN LECTURE caché à la cible par ses droits : pas d'invitation
       // (docs/DROITS-UTILISATEURS.md § 5). Le nom, lui, est lu au nom de la
       // CIBLE : un titre de contexte qu'elle ne voit pas ne lui est pas nommé.
@@ -94,6 +101,7 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
   /** GET /invites — invitations pendantes de l'utilisateur (boot du panneau). */
   app.get("/invites", async (request) => {
     const user = (request as any).user as JellyfinUser;
+    if (!wtMayJoin(await wtAccessOf(user.userId))) return [];
     return invitesFor(user.userId).map(inviteToDto);
   });
 
@@ -108,6 +116,10 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
 
     const room = getRoom(invite.groupId);
     if (!room) return reply.status(404).send({ code: "group_gone" });
+    // « Rejoindre » est un droit : « Interdit » n'entre dans aucun salon.
+    if (accept && !wtMayJoin(await wtAccessOf(user.userId))) {
+      return reply.status(403).send({ code: WT_ACCESS_DENIED, message: "Watch Together : non autorisé" });
+    }
     // Le salon est passé à un titre que ses droits lui cachent : l'invitation ne vaut plus.
     if (accept && !(await seesRoomItem(room, user.userId))) return reply.status(404).send({ code: "invite_gone" });
 

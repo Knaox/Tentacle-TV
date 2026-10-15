@@ -16,6 +16,9 @@ import { refreshHostSettings } from "./hostSettings";
 import type { WtErrorCode, WtServerMessage } from "./protocol";
 import { parseWtClientMessage } from "./protocolParse";
 import { inRoomOrder, membersBlindTo } from "./itemRights";
+import { registerAccessWatch } from "./accessWatch";
+import { wtAccessOf } from "./accountAccess";
+import { wtMayJoin } from "./watchTogetherAccess";
 
 /**
  * Watch Together — pont WebSocket : dispatch des messages métier `wt:*`
@@ -234,6 +237,8 @@ export function registerWatchTogetherGateway(): void {
   // Un membre qui s'en va emporte ses votes d'affinité ; sous deux membres,
   // la séance s'arrête.
   onMemberRemoved(handleAffinityMemberRemoved);
+  // Un compte qui perd Watch Together sort de son salon (cf. accessWatch).
+  registerAccessWatch();
 
   // Barrière expirée : les retardataires sont lâchés, la salle repart.
   onBarrierExpired((room) => {
@@ -269,8 +274,13 @@ export function registerWatchTogetherGateway(): void {
       cancelGrace(userId);
       // Délivrance différée : un invité hors ligne au moment de l'invitation
       // la reçoit dès sa prochaine connexion (si le groupe vit encore).
-      for (const invite of invitesFor(userId)) {
-        sendToUser(userId, { type: "wt:invite", invite: inviteToDto(invite) });
+      // Un compte passé à « Interdit » ne reçoit plus rien de Watch Together.
+      const pending = invitesFor(userId);
+      if (pending.length > 0) {
+        void wtAccessOf(userId).then((access) => {
+          if (!wtMayJoin(access)) return;
+          for (const invite of pending) sendToUser(userId, { type: "wt:invite", invite: inviteToDto(invite) });
+        });
       }
     }
     const room = getRoomOf(userId);

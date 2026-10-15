@@ -8,6 +8,8 @@ import { broadcastRoom, notifyDissolved, roomToDto } from "../services/watchToge
 import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { getUserBasic } from "../services/watchTogether/usersCache";
 import { isItemVisibleTo } from "../services/itemAccess/itemVisibility";
+import { wtAccessOf } from "../services/watchTogether/accountAccess";
+import { WT_ACCESS_DENIED, wtMayCreate } from "../services/watchTogether/watchTogetherAccess";
 
 /**
  * Watch Together — cycle de vie du groupe (REST).
@@ -21,6 +23,10 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
   /** POST /group — crée un groupe (créateur = hôte). 409 si déjà en groupe. */
   app.post("/group", async (request, reply) => {
     const user = (request as any).user as JellyfinUser;
+    // « Créer et rejoindre » seulement (SyncPlayAccess de sa politique Jellyfin).
+    if (!wtMayCreate(await wtAccessOf(user.userId))) {
+      return reply.status(403).send({ code: WT_ACCESS_DENIED, message: "Watch Together : création non autorisée" });
+    }
     const body = z.object({ itemId: z.string().min(1).optional() })
       .parse(request.body ?? {});
     const profile = await getUserBasic(user.userId);

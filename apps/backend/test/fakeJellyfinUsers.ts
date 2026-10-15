@@ -49,6 +49,8 @@ export function defaultPolicy(over: Record<string, unknown> = {}): Record<string
     BlockedTags: [],
     AllowedTags: [],
     EnableRemoteAccess: true,
+    // Le défaut de Jellyfin : Watch Together (SyncPlay) « Créer et rejoindre ».
+    SyncPlayAccess: "CreateAndJoinGroups",
     AuthenticationProviderId: "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
     PasswordResetProviderId: "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
     ...over,

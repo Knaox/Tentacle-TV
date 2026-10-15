@@ -17,13 +17,15 @@ export interface CachedJellyfinUser {
   isHidden: boolean;
   /** L'avatar (`PrimaryImageTag`), pour l'adresser par contenu. */
   imageTag: string | null;
+  /** `SyncPlayAccess` de sa politique : l'accès à Watch Together (`watchTogetherAccess.ts`). */
+  syncPlayAccess: string | null;
 }
 
 interface JellyfinUserDto {
   Id: string;
   Name: string;
   PrimaryImageTag?: string;
-  Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; IsHidden?: boolean };
+  Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; IsHidden?: boolean; SyncPlayAccess?: string };
 }
 
 const TTL_MS = 30_000;
@@ -49,6 +51,7 @@ async function fetchUsers(): Promise<CachedJellyfinUser[] | null> {
       isAdministrator: u.Policy?.IsAdministrator === true,
       isHidden: u.Policy?.IsHidden === true,
       imageTag: u.PrimaryImageTag ?? null,
+      syncPlayAccess: typeof u.Policy?.SyncPlayAccess === "string" ? u.Policy.SyncPlayAccess : null,
     }));
   } catch {
     return null;

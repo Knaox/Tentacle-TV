@@ -4,6 +4,8 @@ import { isUserOnline } from "../services/wsManager";
 import { getJellyfinUsers } from "../services/watchTogether/usersCache";
 import type { WtInvitableUserDto } from "../services/watchTogether/protocol";
 import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
+import { accessIn, wtAccessOf } from "../services/watchTogether/accountAccess";
+import { wtMayJoin, type WtAccessDto } from "../services/watchTogether/watchTogetherAccess";
 
 /**
  * Watch Together — utilisateurs invitables (REST, préfixe /api/watch-together).
@@ -13,6 +15,13 @@ import { withoutFamilyGuests } from "../services/family/familyGuestMarkers";
  */
 export const watchTogetherUsersRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
+
+  /** GET /access — l'accès du compte (`SyncPlayAccess` de sa politique), capacité `watchTogether.access`. */
+  app.get("/access", async (request, reply): Promise<WtAccessDto> => {
+    const user = (request as any).user as JellyfinUser;
+    reply.header("cache-control", "private, no-store");
+    return { access: await wtAccessOf(user.userId) };
+  });
 
   /** GET /users — comptes Jellyfin actifs, hors soi-même. */
   app.get("/users", async (request, reply) => {
@@ -25,7 +34,8 @@ export const watchTogetherUsersRoutes: FastifyPluginAsync = async (app) => {
     const listed = await withoutFamilyGuests(users, (u) => u.id).catch(() => null);
     if (!listed) return reply.status(503).send({ message: "Base de données indisponible" });
     const result: WtInvitableUserDto[] = listed
-      .filter((u) => !u.isDisabled && u.id !== user.userId)
+      // Un compte sans Watch Together (« Interdit ») n'est pas un candidat.
+      .filter((u) => !u.isDisabled && u.id !== user.userId && wtMayJoin(accessIn(users, u.id)))
       .map((u) => ({
         id: u.id,
         name: u.name,
