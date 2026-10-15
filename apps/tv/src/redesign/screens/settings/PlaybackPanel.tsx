@@ -1,11 +1,14 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { PRESET_HINT_KEYS, PRESET_LABEL_KEYS, SELECTABLE_PRESETS, type PlaybackPreset } from "@tentacle-tv/shared";
+import {
+  PRESET_HINT_KEYS, PRESET_LABEL_KEYS, SELECTABLE_PRESETS, type PlaybackPreset, type StillWatchingSettings,
+} from "@tentacle-tv/shared";
 import { Chip } from "../../controls/Chip";
 import { LibraryPrefCard } from "./LibraryPrefCard";
 import { ScrubCountdownSection } from "./ScrubCountdownSection";
 import { SectionTitle, settingsText } from "./settingsParts";
+import { StillWatchingSection } from "./StillWatchingSection";
 import { ToggleRow } from "./ToggleRow";
 import { TrailerPreviewSection } from "./TrailerPreviewSection";
 import type { InterfaceLanguage, LibrarySettingKey, SettingsPlayback, SettingsScrubCountdown } from "./settingsTypes";
@@ -25,7 +28,7 @@ import type { InterfaceLanguage, LibrarySettingKey, SettingsPlayback, SettingsSc
  * Branchement : `useOwnPlaybackSettings` + `detectPreset` / `setPlaybackSettings`
  * (`presetSettings`), `useExoTunneling` / `useExoMatchFrameRate`,
  * `useSetInterfaceLanguage` (+ `i18n.changeLanguage`, `tentacle_language`),
- * `useScrubCountdownSettings`.
+ * `useScrubCountdownSettings`, `useStillWatchingSettings`.
  */
 
 export interface PlaybackPanelProps {
@@ -38,6 +41,7 @@ export interface PlaybackPanelProps {
   onToggleMatchFrameRate?: (next: boolean) => void;
   onSelectScrubOutcome?: (outcome: SettingsScrubCountdown["outcome"]) => void;
   onSelectScrubDelay?: (seconds: number) => void;
+  onChangeStillWatching?: (patch: Partial<StillWatchingSettings>) => void;
   onToggleTrailerPreviews?: (next: boolean) => void;
   onToggleTrailerPreviewSound?: (next: boolean) => void;
 }
@@ -57,6 +61,7 @@ export const PlaybackPanel = memo(function PlaybackPanel({
   onToggleMatchFrameRate,
   onSelectScrubOutcome,
   onSelectScrubDelay,
+  onChangeStillWatching,
   onToggleTrailerPreviews,
   onToggleTrailerPreviewSound,
 }: PlaybackPanelProps) {
@@ -91,6 +96,10 @@ export const PlaybackPanel = memo(function PlaybackPanel({
           onSelectOutcome={onSelectScrubOutcome}
           onSelectDelay={onSelectScrubDelay}
         />
+      ) : null}
+
+      {playback.stillWatching ? (
+        <StillWatchingSection model={playback.stillWatching} onChange={onChangeStillWatching} />
       ) : null}
 
       {playback.trailerPreviews ? (

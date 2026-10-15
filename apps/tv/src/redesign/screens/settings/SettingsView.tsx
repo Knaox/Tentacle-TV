@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { PRESET_LABEL_KEYS, heroModeLabelKey, type HeroMode, type PlaybackPreset } from "@tentacle-tv/shared";
+import { PRESET_LABEL_KEYS, heroModeLabelKey, type HeroMode, type PlaybackPreset, type StillWatchingSettings } from "@tentacle-tv/shared";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { NEUTRAL_PALETTE, type ArtworkPalette } from "../../color/artworkPalette";
@@ -121,6 +121,7 @@ export interface SettingsViewProps {
   onToggleMatchFrameRate?: (next: boolean) => void;
   onSelectScrubOutcome?: (outcome: "return" | "resume") => void;
   onSelectScrubDelay?: (seconds: number) => void;
+  onChangeStillWatching?: (patch: Partial<StillWatchingSettings>) => void;
   onToggleTrailerPreviews?: (next: boolean) => void;
   onToggleTrailerPreviewSound?: (next: boolean) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
@@ -233,6 +234,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onToggleMatchFrameRate={props.onToggleMatchFrameRate}
                   onSelectScrubOutcome={props.onSelectScrubOutcome}
                   onSelectScrubDelay={props.onSelectScrubDelay}
+                  onChangeStillWatching={props.onChangeStillWatching}
                   onToggleTrailerPreviews={props.onToggleTrailerPreviews}
                   onToggleTrailerPreviewSound={props.onToggleTrailerPreviewSound}
                 />

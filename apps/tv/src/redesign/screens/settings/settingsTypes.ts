@@ -1,5 +1,5 @@
 import type { OwnPinMode } from "@tentacle-tv/tv-core";
-import type { FamilyProfileColor, HeroMode, PlaybackPreset } from "@tentacle-tv/shared";
+import type { FamilyProfileColor, HeroMode, PlaybackPreset, StillWatchingSettings } from "@tentacle-tv/shared";
 import type { IconName } from "../../icons/Icon";
 
 /**
@@ -80,6 +80,9 @@ export interface SettingsPlayback {
   /** Les aperçus de bande-annonce au focus des cartes. Absent : le serveur ne
    *  sait pas en servir (capacité `trailers.preview`) — la section ne s'affiche pas. */
   trailerPreviews?: SettingsTrailerPreviews | null;
+  /** « Vous regardez encore ? », réglage du COMPTE. Absent : le serveur ne le
+   *  connaît pas (capacité `playback.stillWatching`) — la section ne s'affiche pas. */
+  stillWatching?: StillWatchingSettings | null;
 }
 
 /** Les aperçus de bande-annonce au focus : réglages de CE téléviseur. */
