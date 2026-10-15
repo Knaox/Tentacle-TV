@@ -21,6 +21,11 @@ vi.mock("../services/configStore", async (importOriginal) => ({
   getJellyfinUrl: () => state.jellyfinUrl,
   getJellyfinApiKey: () => "cle-admin",
 }));
+// Un compte libre : les droits du compte ont leur propre test (statsRights.test.ts).
+vi.mock("../services/contentPolicy", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../services/contentPolicy")>();
+  return { ...original, getContentPolicy: async (userId: string) => ({ ...original.contentPolicyFromJellyfin(userId, { EnableAllFolders: true }) }) };
+});
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
   verifyDeviceToken: async () => null,

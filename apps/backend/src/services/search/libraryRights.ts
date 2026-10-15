@@ -27,6 +27,9 @@ import { getUserAccess, type UserAccess } from "./userAccess";
 export interface LibraryRights {
   /** Ce titre de la bibliothèque est visible au compte. */
   seesItem(itemId: string): boolean;
+  /** Ce titre est dans la bibliothèque (le catalogue commun) mais caché au compte —
+   *  un titre SUPPRIMÉ depuis n'est pas « caché » : il n'y est plus. */
+  hidesItem(itemId: string): boolean;
   /** Ce titre (clé TMDB) est dans la bibliothèque, mais caché au compte. */
   hidesTitle(mediaType: "movie" | "tv", tmdbId: number): boolean;
   /** Ce titre (clé TMDB) est dans la bibliothèque, et le compte en voit une version. */
@@ -60,6 +63,17 @@ function tmdbTable(engine: SearchEngine): Map<string, string[]> {
 
 const normalize = (id: string) => id.replace(/-/g, "").toLowerCase();
 
+/** Les ids du catalogue, normalisés — table refaite avec le moteur. */
+const catalogIds = new WeakMap<SearchEngine, Set<string>>();
+
+function catalogOf(engine: SearchEngine): Set<string> {
+  const known = catalogIds.get(engine);
+  if (known !== undefined) return known;
+  const ids = new Set([...engine.items.keys()].map(normalize));
+  catalogIds.set(engine, ids);
+  return ids;
+}
+
 /** Un relevé est remplacé à chaque rafraîchissement : son ensemble part avec lui. */
 const visibleSets = new WeakMap<UserAccess, Set<string>>();
 
@@ -85,6 +99,7 @@ export async function libraryRightsFor(userId: string): Promise<LibraryRights | 
   const table = tmdbTable(engine);
   return {
     seesItem: (itemId) => visible.has(normalize(itemId)),
+    hidesItem: (itemId) => catalogOf(engine).has(normalize(itemId)) && !visible.has(normalize(itemId)),
     hidesTitle: (mediaType, tmdbId) => {
       const ids = table.get(keyOf(mediaType, tmdbId));
       return ids !== undefined && !ids.some((id) => visible.has(normalize(id)));

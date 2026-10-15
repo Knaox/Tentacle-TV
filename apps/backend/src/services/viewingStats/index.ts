@@ -1,3 +1,4 @@
+import { getContentPolicy } from "../contentPolicy";
 import { VIEWING_STATS_PERIODS } from "./contract";
 import type { ViewingStats, ViewingStatsPeriod, ViewingStatsTaste } from "./contract";
 import type { StatsDataset, TitleInfo } from "./dataset";
@@ -14,6 +15,7 @@ import type { MeasuredHistory } from "./measuredHistory";
 import { fetchPlayedHistory } from "./playedHistory";
 import { presentStats } from "./present";
 import type { ComputedStats, StatsLang } from "./present";
+import { statsRightsFor } from "./statsRights";
 import { readTaste } from "./taste";
 import type { LibraryTitle } from "./taste";
 import { decorateTitles, describeTitles } from "./titleCatalog";
@@ -87,7 +89,9 @@ function libraryResolver(titles: Map<string, TitleInfo>, favorites: Map<string, 
 
 async function compute(userId: string, timeZone: string): Promise<ComputedStats> {
   const now = Date.now();
-  const [history, measured] = await Promise.all([fetchPlayedHistory(userId), measuredOrEmpty(userId)]);
+  const [history, measuredRaw, rights] = await Promise.all([fetchPlayedHistory(userId), measuredOrEmpty(userId), statsRightsFor(userId)]);
+  // Ce que Tentacle a gardé lui-même (séances, goût) passe les droits d'AUJOURD'HUI (cf. statsRights).
+  const measured = rights ? { ...measuredRaw, history: rights.measured(measuredRaw.history) } : measuredRaw;
 
   const seriesNames = new Map([...measured.history.seriesNames, ...history.seriesNames]);
   const extraMovies = new Map([...measured.history.movieNames].filter(([id]) => !history.movies.has(id)));
@@ -119,6 +123,7 @@ async function compute(userId: string, timeZone: string): Promise<ComputedStats>
   let taste: ViewingStatsTaste;
   try {
     taste = await readTaste(userId, counts, judged.judgments.ratings, libraryResolver(titles, history.favorites.byTmdbKey));
+    if (rights) taste = await rights.taste(taste);
   } catch {
     taste = { available: false, computedAt: null, animeShare: 0, loved: [], signals: counts, potential: null };
   }
@@ -148,7 +153,12 @@ export interface ViewingStatsRequest {
  * (deux périodes, deux onglets) ne déclenchent qu'un seul calcul.
  */
 export async function getViewingStats(userId: string, req: ViewingStatsRequest): Promise<ViewingStats> {
-  const key = `${userId}|${req.timeZone}`;
+  // La politique du compte est dans la clé : un résumé calculé avant une restriction ne la survit pas
+  // (relue toutes les 30 s, qu'elle change dans Tentacle ou dans Jellyfin).
+  const policy = await getContentPolicy(userId);
+  const rightsKey = JSON.stringify([policy.maxParentalRating, policy.maxParentalSubRating, policy.blockUnratedItems,
+    policy.blockedTags, policy.allowedTags, policy.enableAllFolders, policy.enabledFolders, policy.blockedMediaFolders]);
+  const key = `${userId}|${req.timeZone}|${rightsKey}`;
   const cached = cache.get(key);
   const age = cached ? Date.now() - cached.at : Infinity;
   const stale = age >= TTL_MS || (req.refresh && age >= REFRESH_MIN_MS);
