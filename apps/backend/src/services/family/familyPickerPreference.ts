@@ -7,9 +7,11 @@ import {
 } from "../../family/familyPickerContract";
 
 /**
- * « Qui regarde ? » au lancement — une préférence du COMPTE, par PLATEFORME
- * (docs/FAMILLE.md, « Le bureau ») : activée sur un ordinateur, elle vaut
- * pour tous les ordinateurs de ce compte. DÉSACTIVÉE par défaut.
+ * « Qui regarde ? » au lancement — l'ANCIENNE préférence du COMPTE, par
+ * PLATEFORME, gardée pour les bureaux d'avant (routes `pickerPreference`,
+ * `setPickerPreference`). Depuis la 1.30.0, plus rien ne décide d'après elle :
+ * le bureau décide par APPAREIL, dans le cadre réglé par l'administration
+ * (`familyLaunchPolicy.ts`, docs/FAMILLE.md, « À l'ouverture »).
  *
  * Rangée dans `server_config` sous `user_profile_picker_<compte>` — la liste
  * JSON des plateformes où elle est active —, comme les rappels masqués

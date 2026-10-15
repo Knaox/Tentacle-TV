@@ -27,7 +27,7 @@ export function MpvVideoSurface({
   externalSubtitles, title, artist, paused, currentTime, isAirPlaying, showLoading, overlayVisible,
   reloadToken, subtitleScale, subtitlePosition, subtitleDelay, audioDelay,
   onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute, onPipChange,
-  onSeek, onSkip, onToggleOverlay, onSwipeDown, children,
+  onSeek, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
 }: EngineSurfaceProps) {
   const viewRef = useRef<MpvPlayerViewHandle>(null);
   const [tracks, setTracks] = useState<readonly MpvTrack[]>([]);
@@ -118,7 +118,7 @@ export function MpvVideoSurface({
   }, [onLoad, initialExternal]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
+    <View style={{ flex: 1, backgroundColor: PLAYER.bg }} onTouchStart={onActivity}>
       <MpvPlayerView
         ref={viewRef}
         style={{ flex: 1 }}

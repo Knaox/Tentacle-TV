@@ -32,6 +32,9 @@ import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
 import { useSanitizedSubtitles } from "../hooks/useSanitizedSubtitles";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
 import { MirrorPlayerOverlay, useMirrorPlayerBridge } from "../mirror/player";
+import { usePlayerStillWatching } from "../hooks/useStillWatchingActivity";
+import { StillWatchingPrompt } from "./player/StillWatchingPrompt";
+import { overlayBesideStillWatching } from "./player/stillWatchingOverlay";
 
 export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
 
@@ -81,9 +84,8 @@ export function VideoPlayer({
   // sortie quand aucune suite n'est possible.
   const [ended, setEnded] = useState(false);
   const hasStartedRef = useRef(false);
-  // Le pendant RÉACTIF de `hasStartedRef` : l'écran de chargement se décide au
-  // rendu, et une ref mutée ne re-rend rien. Sans lui, le lecteur restait noir
-  // entre son montage et la première image (cf. VideoPlayerOverlays).
+  // Le pendant RÉACTIF de `hasStartedRef` : l'écran de chargement se décide au rendu,
+  // une ref mutée ne re-rend rien (sinon : noir jusqu'à la première image).
   const [hasStarted, setHasStarted] = useState(false);
   const sourceChangingRef = useRef(false);
   const currentTimeRef = useRef(0);
@@ -158,6 +160,12 @@ export function VideoPlayer({
   });
 
   const { fullscreen, toggleFullscreen } = useElementFullscreen(containerRef, videoRef);
+  // « Vous regardez encore ? » — jamais en séance Watch Together (une pause commune ne se décide pas seul).
+  const stillWatching = usePlayerStillWatching({
+    playing: playing && !loading, enabled: !inGroupSession,
+    pause: () => videoRef.current?.pause(), play: () => { void videoRef.current?.play().catch(() => {}); },
+  });
+  const overlay = overlayBesideStillWatching(playback.overlay, stillWatching.phase);
 
   const swipe = usePlayerSwipe(skipBy, userInteractedRef);
 
@@ -232,20 +240,14 @@ export function VideoPlayer({
       // Toile du lecteur (letterboxing derrière la vidéo) → bg-black
       // volontairement en dur dans les deux thèmes clair/sombre.
       className={`relative flex h-screen w-screen items-center justify-center bg-black ${showControls ? "" : "cursor-none"}`}>
-      {/* Pas de `crossOrigin` : l'attribut ferait exiger le CORS sur l'URL de
-          lecture directe, servie par le serveur Jellyfin — donc hors origine et
-          sans en-tête. Rien n'en a besoin ici : les pistes VTT et le `.sup` PGS
-          passent par le proxy, même origine, et personne ne dessine la vidéo
-          dans un canvas. */}
+      {/* Pas de `crossOrigin` : il exigerait le CORS de l'URL de lecture directe
+          (Jellyfin, hors origine). Pistes VTT et `.sup` passent par le proxy. */}
       <video key={mediaKind} ref={videoRef} className="h-full w-full" playsInline preload="auto"
         {...videoEvents}
       >
-        {/* Tous les <track> restent montés, sélectionnés ou non : la
-            correspondance index → textTracks de useNativeMediaTracks se fait
-            par POSITION, en omettre un décalerait toutes les suivantes.
-            Seule la piste active porte une `src` — le navigateur ne charge de
-            toute façon que celle dont le `mode` n'est pas `disabled`, et
-            l'attendre évite d'afficher une seconde le fichier brut. */}
+        {/* Tous les <track> restent montés : useNativeMediaTracks les apparie par
+            POSITION. Seule la piste active porte une `src` (le navigateur ne charge
+            que celle-là, et on n'affiche pas une seconde le fichier brut). */}
         {textTracks.map((t) => (
           <track key={`${src}-${t.index}`} kind="subtitles" label={t.label}
             src={t.index === currentSubtitle ? (sanitizedSubtitleUrl ?? undefined) : undefined} />
@@ -265,14 +267,14 @@ export function VideoPlayer({
       <QualityDropNotice drop={qualityDrop ?? null} started={hasStarted} itemId={itemId} />
 
       {mirror ? (
-        <MirrorPlayerOverlay controls={controls} playback={playback} bridge={bridge}
+        <MirrorPlayerOverlay controls={controls} playback={{ ...playback, overlay }} bridge={bridge}
           media={{ hasStarted, loading: loading || seekWaiting || qualitySwitch.pending, loadingHint, showPlayButton, setShowPlayButton, videoRef, userInteractedRef }} />
       ) : (<>
         <VideoPlayerOverlays
           loading={loading || seekWaiting || qualitySwitch.pending} loadingHint={loadingHint} hasStarted={hasStarted}
           showPlayButton={showPlayButton}
           posterUrl={posterUrl}
-          overlay={playback.overlay} countdownTotals={playback.countdownTotals}
+          overlay={overlay} countdownTotals={playback.countdownTotals}
           onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
           onPlayNow={playback.playNow} controlsVisible={showControls} panelOpen={controlPanelOpen}
           nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
@@ -291,6 +293,8 @@ export function VideoPlayer({
 
         <VideoPlayerControlsLayer hasStarted={hasStarted} visible={showControls} controls={controls} />
       </>)}
+      {/* Au-dessus de la pilule de saut (qu'il efface) ; le miroir le loge à sa place à lui. */}
+      <StillWatchingPrompt controller={stillWatching} controlsVisible={showControls} surface={mirror ? "mirror" : "web"} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { cancelProfileSwitch, clearPickerRequest } from "../../auth/profileEnded
 import { enterProfile, returnToAccount } from "../../auth/sessionSwap";
 import { endPipSession } from "../../pictureInPicture/pictureInPictureStore";
 import { markLaunchPassed, noteCurrentProfile } from "../launch/launchState";
-import { forgetStayOnDevice, writeStayOnThisServer } from "../launch/stayOnDevice";
+import { askOnThisServer, forgetStayOnDevice, writeStayOnThisServer } from "../launch/stayOnDevice";
 import { markArrival } from "./arrival";
 import type { CurtainProfile } from "./ProfileCurtain";
 
@@ -43,9 +43,10 @@ export interface CommitContext {
   /** La page à ouvrir après le rechargement ; l'accueil par défaut. */
   landing?: string;
   /**
-   * « Ne plus proposer sur cet appareil » : vrai, l'ordinateur retient le
-   * profil choisi ; faux, il n'en retient plus aucun (un changement de profil,
-   * une case décochée) ; absent, rien ne change (« Gérer les profils »).
+   * « Ne plus proposer à la prochaine ouverture » : vrai, l'ordinateur retient
+   * le profil choisi ; faux, il n'en retient plus aucun et PROPOSE de nouveau
+   * « Qui regarde ? » (case décochée) ; absent, rien ne change (« Gérer les
+   * profils », ou l'administration l'a coupé).
    * Écrit seulement une fois la bascule faite.
    */
   stayOnDevice?: boolean;
@@ -110,8 +111,9 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
 
 function noteStay(profile: PickerProfileDto, accountId: string | null, stay: boolean | undefined): void {
   if (stay === undefined) return;
-  if (stay && accountId) writeStayOnThisServer(accountId, pickerStayOf(profile));
-  else forgetStayOnDevice();
+  if (!accountId) forgetStayOnDevice();
+  else if (stay) writeStayOnThisServer(accountId, pickerStayOf(profile));
+  else askOnThisServer(accountId);
 }
 
 /** Les jetons échangés dans le stockage ; faux s'il n'a pas pu l'être (illisible, plein, bloqué). */

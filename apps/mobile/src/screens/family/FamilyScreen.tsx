@@ -10,6 +10,7 @@ import { IncomingInvitationsSection } from "@/components/family/MembershipSectio
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { Skeleton } from "@/components/ui";
 import { familyScreenModel } from "@/family/familyScreenModel";
+import { FamilyPinCard } from "@/family/pinSuggest/FamilyPinCard";
 import { useFamilyAvailability } from "@/family/useFamilyAvailability";
 import { useFamilyText } from "@/family/useFamilyText";
 import { spacing, typography, useThemedStyles, type AppTheme } from "@/theme";
@@ -63,6 +64,7 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
   return (
     <>
       <Text style={st.description}>{t("description")}</Text>
+      <FamilyPinCard />
       {model.notices.map((key) => <FamilyNotice key={key} text={t(key)} />)}
       {model.showIncoming ? <IncomingInvitationsSection incoming={overview.incoming} /> : null}
       <FamilySection overview={overview} model={model} />

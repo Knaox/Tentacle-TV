@@ -82,13 +82,16 @@ describe("ce que « Qui regarde ? » montre", () => {
     if (model.kind === "picker") expect(model.profiles.map((p) => p.id)).toEqual(["zoe", "damien", "lea"]);
   });
 
-  it("« Ne plus proposer sur cet appareil » : la case, seulement si le compte demande qui regarde", () => {
+  it("« Ne plus proposer à la prochaine ouverture » : la case, tant que l'administration le permet", () => {
     const flow = { pin: null, opening: null, notice: null };
     const base = { error: null, flow, openingLabel: null, language: "fr", t, now: NOW };
     expect(pickerModelOf({ ...base, listing: listing(FAMILY), stay: true })).toMatchObject({ kind: "picker", stay: true });
     expect(pickerModelOf({ ...base, listing: listing(FAMILY) })).toMatchObject({ kind: "picker", stay: false });
-    // Préférence coupée (le sélecteur exigé après la fin d'un profil) : rien à retenir, pas de case.
-    expect(pickerModelOf({ ...base, listing: { ...listing(FAMILY), atLaunch: false }, stay: true })).toMatchObject({ kind: "picker", stay: null });
+    // Cet ordinateur ne propose pas (jamais choisi, défaut désactivé) : la case est là quand même.
+    expect(pickerModelOf({ ...base, listing: { ...listing(FAMILY), atLaunch: false }, stay: true })).toMatchObject({ kind: "picker", stay: true });
+    // Coupé par l'administration : rien à retenir, pas de case.
+    const cut = { ...listing(FAMILY), launchPolicy: { mode: "off" as const, defaultOn: true } };
+    expect(pickerModelOf({ ...base, listing: cut, stay: true })).toMatchObject({ kind: "picker", stay: null });
   });
 
   it("le pavé du profil choisi : chiffres tapés, phase et message", () => {

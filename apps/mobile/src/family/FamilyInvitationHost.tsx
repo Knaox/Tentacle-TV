@@ -11,6 +11,7 @@ import { pickPosterInvitation } from "@tentacle-tv/shared";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { clearFamilyPosterRequest, useFamilyPosterRequest } from "./familyPosterStore";
 import { FamilyInvitationPoster } from "./FamilyInvitationPoster";
+import { FamilyPinJoined } from "./pinSuggest/FamilyPinJoined";
 import { useFamilyAvailability } from "./useFamilyAvailability";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 
@@ -28,7 +29,9 @@ import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
  * montre vient du serveur, lu avec la session de l'utilisateur.
  *
  * Une modale à la fois : l'affiche attend que la feuille ouverte (cloche,
- * carte, réglage) se soit retirée (`whenNoModal`).
+ * carte, réglage) se soit retirée (`whenNoModal`). Acceptée, elle laisse la
+ * place à « Bienvenue dans la famille de … » (`FamilyPinJoined`) si le profil
+ * n'a pas de code PIN.
  */
 export function FamilyInvitationHost() {
   const { available, settled } = useFamilyAvailability();
@@ -42,6 +45,8 @@ export function FamilyInvitationHost() {
   const snooze = useSnoozeFamilyInvitation();
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set());
   const [shownId, setShownId] = useState<string | null>(null);
+  const [joinedOwner, setJoinedOwner] = useState<string | null>(null);
+  const closeJoined = useCallback(() => setJoinedOwner(null), []);
   const inPlayer = pathname.startsWith("/watch");
   // Lue par l'effet de la demande sans le relancer à chaque navigation.
   const pathnameRef = useRef(pathname);
@@ -55,7 +60,10 @@ export function FamilyInvitationHost() {
   // L'affiche passe avant l'invitation aux avatars : celle-ci attend que la
   // Famille soit lue et que l'affiche se soit tue.
   const overviewPending = available && overview.data === undefined && !overview.isError;
-  useReportStartupOverlay("family", invitation ? "active" : !settled || overviewPending ? "pending" : "quiet");
+  useReportStartupOverlay(
+    "family",
+    invitation || joinedOwner !== null ? "active" : !settled || overviewPending ? "pending" : "quiet",
+  );
 
   // La demande d'une invitation précise : la Famille se relit d'abord (elle a
   // pu être répondue ailleurs). Introuvable une fois relue → sa page (sans
@@ -108,6 +116,15 @@ export function FamilyInvitationHost() {
     [dismiss, snooze],
   );
 
-  if (!available || !invitation || shownId !== invitation.id || inPlayer) return null;
-  return <FamilyInvitationPoster key={invitation.id} invitation={invitation} onLater={later} onDone={dismiss} />;
+  if (available && joinedOwner !== null && !inPlayer) return <FamilyPinJoined owner={joinedOwner} onClose={closeJoined} />;
+  if (!available || !invitation || shownId !== invitation.id || inPlayer || joinedOwner !== null) return null;
+  return (
+    <FamilyInvitationPoster
+      key={invitation.id}
+      invitation={invitation}
+      onLater={later}
+      onDone={dismiss}
+      onAccepted={setJoinedOwner}
+    />
+  );
 }

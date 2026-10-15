@@ -6,6 +6,7 @@ export { SettingsPickerRow } from "./SettingsPickerRow";
 export { ThemeChoiceRow, THEME_MODE_LABEL_KEYS } from "./ThemeChoiceRow";
 export { LiquidGlassRow } from "./LiquidGlassRow";
 export { PlaybackSettingsSection } from "./PlaybackSettingsSection";
+export { StillWatchingSettingsSection } from "./StillWatchingSettingsSection";
 export { VideoEngineSection } from "./VideoEngineSection";
 export { SegmentedChoice } from "./SegmentedChoice";
 export { SteppedSlider } from "./SteppedSlider";

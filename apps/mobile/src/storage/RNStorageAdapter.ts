@@ -18,6 +18,10 @@ const STORAGE_KEYS = [
   // Réglages de lecture : le cache local du magasin de compte, qui répond
   // AVANT le serveur (et à sa place, hors ligne).
   "tentacle_playback_settings",
+  // « Vous regardez encore ? » — la copie du réglage du COMPTE
+  // (`STILL_WATCHING_CACHE_KEY`) : sans elle ici, le lecteur hors ligne
+  // oublierait le choix (et que le serveur le connaît) à chaque lancement.
+  "tentacle_still_watching",
   // Les trois clés d'appareil héritées : elles ne sont plus écrites, mais le
   // magasin les lit UNE fois pour semer les réglages d'un compte qui n'en a
   // pas encore. Sans elles au préchargement, le semis ne verrait rien.

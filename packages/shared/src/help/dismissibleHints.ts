@@ -41,13 +41,16 @@
  * - `adminRemoveMariadb` : « MariaDB n'est plus nécessaire » — la recommandation
  *   du tableau de bord après la migration vers SQLite (serveur 1.25), avec la
  *   marche à suivre selon l'installation.
+ * - `familyPin` : « Action recommandée : posez votre code PIN » — un membre ou
+ *   le propriétaire d'une famille sans PIN (serveur 1.30.0). « Configurer plus
+ *   tard » le masque pour le compte ; la carte de Réglages › Famille reste.
  * - `autoQuality` : « Qualité réduite » sur le lecteur — pourquoi la qualité
  *   baisse en Auto (`notices/qualityDropNotice.ts`). Masqué, le message ne
  *   paraît plus ; la raison reste lisible dans le menu Qualité.
  */
 export const DISMISSIBLE_HINTS = [
   "trailerHelp", "serverUpdate", "tmdbKey", "adminPublicUrl", "adminDirectPlay", "adminTmdbKey", "adminJellyfin",
-  "autoQuality", "adminSegmentPlugins", "adminRemoveMariadb",
+  "autoQuality", "adminSegmentPlugins", "adminRemoveMariadb", "familyPin",
 ] as const;
 
 export type DismissibleHint = (typeof DISMISSIBLE_HINTS)[number];
