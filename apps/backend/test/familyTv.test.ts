@@ -62,7 +62,9 @@ describe("l'échange du jeton de la TV", () => {
 
     const listing = await profiles(pairing);
     expect(listing.profiles.map((p: { userId: string; kind: string }) => [p.userId, p.kind])).toEqual([[IDS.damien, "owner"]]);
-    expect(listing).toMatchObject({ pickerRequired: false, canManage: true, stickyProfileId: null });
+    // Sans code PIN, personne ne gère depuis un profil (1.30.0) : pas d'entrée « Gérer les profils ».
+    expect(listing).toMatchObject({ pickerRequired: false, canManage: false, stickyProfileId: null });
+    expect(listing.profiles[0]).toMatchObject({ manage: null, manageNeedsPin: true });
   });
 
   it("une réponse perdue se rejoue, une fois — jusqu'au premier usage du nouveau jeton", async () => {

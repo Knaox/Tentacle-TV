@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { getTokenFromRequest, validateToken } from "../../middleware/auth";
 import { accountAccessReply, sessionAccessRefusal } from "../accountAccess/accountAccessState";
 import { getPrisma } from "../db";
+import { FAMILY_MANAGE_UNLOCK_MS } from "../../family/familyContract";
 import { hashToken, verifyDeviceToken, verifyTvPairingToken } from "../jwt";
 import { PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../pairedDeviceStatus";
 import type { FamilyCaller } from "../../family/familyCallers";
@@ -17,11 +18,12 @@ import { tvManageRole } from "./familyTv";
  * `FAMILY_ROUTES` décide s'il en a le droit :
  *
  * - `personal` : le jeton Jellyfin du web, du bureau, du mobile ;
- * - `ownerTv` / `memberTv` : la session de profil du propriétaire de la
- *   famille / d'un membre, sur une TV de la famille, « Gérer les profils »
- *   ouvert par SON PIN (ouvert d'office s'il n'en a pas) ;
- * - `tvProfile` : une session de profil d'une TV, quel qu'en soit le profil
- *   — jamais celle d'un bureau, qui n'est aucun appelant ;
+ * - `ownerProfile` / `memberProfile` : la session de profil du propriétaire de la
+ *   famille / d'un membre, sur une TV ou un bureau de la famille, « Gérer les
+ *   profils » ouvert par SON PIN (`familyCallers.ts`) : jamais sans code (1.30.0),
+ *   dix minutes prolongées à chaque geste ;
+ * - `tvProfile` : une session de profil d'une TV, quel qu'en soit le profil ;
+ * - `desktopProfile` : une session de profil d'un bureau — le déverrouillage seul ;
  * - `tvPairing` / `tvLegacy` : les jetons de jumelage, jugés par leur route ;
  * - `admin` : un administrateur EN SESSION PERSONNELLE.
  *
@@ -48,15 +50,29 @@ function forbidden(): FamilyFailure {
   return new FamilyFailure("family.personal_session_required", "Geste réservé à une session personnelle");
 }
 
-/** Qui gère depuis cette session de profil, et « Gérer les profils » est-il ouvert ? */
-async function manageVerdict(token: string, userId: string, now: number): Promise<{ role: "ownerProfile" | "memberProfile" | null; open: boolean }> {
+type ManageVerdict = { role: "ownerProfile" | "memberProfile" } | { refuse: FamilyFailure };
+
+/**
+ * Qui gère depuis cette session de profil, si « Gérer les profils » est ouvert :
+ * le rôle d'abord (`not_owner` : un membre sur un geste de propriétaire, le même
+ * refus qu'en session personnelle), puis SON code (`manage_pin_required` : jamais
+ * sans code, même retiré depuis l'ouverture), puis la fenêtre (`manage_locked`).
+ * Un geste admis prolonge la fenêtre de dix minutes.
+ */
+async function manageVerdict(token: string, userId: string, callers: ReadonlySet<string>, now: number): Promise<ManageVerdict> {
   const prisma = getPrisma();
   const session = await prisma.pairedDevice.findUnique({ where: { tokenHash: hashToken(token) } });
   const pairing = session?.parentId ? await prisma.pairedDevice.findUnique({ where: { id: session.parentId } }) : null;
-  if (!session || !pairing) return { role: null, open: false };
-  const role = await tvManageRole(userId, pairing.jellyfinUserId);
-  const open = (session.manageUntil !== null && session.manageUntil.getTime() > now) || !(await hasPin(userId));
-  return { role, open };
+  const role = session && pairing ? await tvManageRole(userId, pairing.jellyfinUserId) : null;
+  if (!session || !role || !callers.has(role)) {
+    return { refuse: new FamilyFailure("family.not_owner", "Réservé au propriétaire de la famille") };
+  }
+  if (!(await hasPin(userId))) return { refuse: new FamilyFailure("family.manage_pin_required", "Gérer depuis un profil : code PIN requis") };
+  if (session.manageUntil === null || session.manageUntil.getTime() <= now) {
+    return { refuse: new FamilyFailure("family.manage_locked", "« Gérer les profils » : PIN requis") };
+  }
+  await prisma.pairedDevice.update({ where: { id: session.id }, data: { manageUntil: new Date(now + FAMILY_MANAGE_UNLOCK_MS) } });
+  return { role };
 }
 
 /** Une `preHandler` par route : pose `request.familyActor`, ou répond le refus. */
@@ -116,25 +132,22 @@ export function familyGuard(spec: FamilyRouteSpec) {
       }
     }
     if (session === "tvProfile") {
-      // Une session de profil du BUREAU regarde : aucune route de la Famille
-      // ne lui répond, pas même celles des TV (docs/FAMILLE.md, « Le bureau »).
+      // Une session de profil du BUREAU ne fait que gérer, derrière SON code
+      // (1.30.0) : ni son PIN, ni les routes des TV (docs/FAMILLE.md, « Le bureau »).
       let desktop: boolean;
       try {
         desktop = await isPickerProfileSession(result.user.pairingId);
       } catch {
         return reply.status(503).send({ message: "Base de données indisponible" });
       }
-      if (desktop) return sendFamilyFailure(reply, forbidden());
-      if (callers.has("tvProfile")) return actor("tvProfile");
+      const profileCaller = desktop ? "desktopProfile" : "tvProfile";
+      if (callers.has(profileCaller)) return actor(profileCaller);
       if (callers.has("ownerProfile") || callers.has("memberProfile")) {
-        const { role, open } = await manageVerdict(token, userId, Date.now());
-        // Un membre sur un geste de propriétaire : le même refus qu'en session personnelle.
-        if (!role || !callers.has(role)) {
-          return sendFamilyFailure(reply, new FamilyFailure("family.not_owner", "Réservé au propriétaire de la famille"));
-        }
-        if (!open) return sendFamilyFailure(reply, new FamilyFailure("family.manage_locked", "« Gérer les profils » : PIN requis"));
-        return actor(role);
+        const verdict = await manageVerdict(token, userId, callers, Date.now());
+        if ("refuse" in verdict) return sendFamilyFailure(reply, verdict.refuse);
+        return actor(verdict.role);
       }
+      if (desktop) return sendFamilyFailure(reply, forbidden());
       if (callers.has("tvPairing")) {
         return sendFamilyFailure(reply, new FamilyFailure("family.pairing_required", "Jeton de jumelage de TV requis"));
       }

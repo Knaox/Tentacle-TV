@@ -43,6 +43,9 @@ export interface OverviewCaller {
   userId: string;
   username: string;
   personal: boolean;
+  /** Une session de profil qui GÈRE (gestion ouverte par son code, 1.30.0) : l'état du contrôle
+   *  parental lui revient comme à la session personnelle. Absent : non. */
+  managing?: boolean;
 }
 
 type UserMap = Map<string, CachedJellyfinUser> | null;
@@ -172,8 +175,8 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
   // Ce que l'administration permet à ce compte de créer (1.30.0) ; un invité, le compte de démonstration : rien.
   const creation: FamilyCreationAllowed = guest || review ? { createFamily: false, createGuests: false } : await creationAllowedFor(caller.userId);
   const view = mine ? await familyView(mine.family, mine.role, mine.role === "member" ? mine.self : null, users, now, creation) : null;
-  // Le contrôle parental des invités : en session personnelle, à qui peut le régler seulement.
-  const family = view && caller.personal ? await withParentalState(view, caller.userId) : view;
+  // Le contrôle parental des invités : en session personnelle ou gestion ouverte, à qui peut le régler seulement.
+  const family = view && (caller.personal || caller.managing === true) ? await withParentalState(view, caller.userId) : view;
   const owned: FamilyOverviewDto["owned"] =
     mine?.role === "owner" && family
       ? { id: family.id, profiles: family.profiles, pendingInvitations: family.pendingInvitations, createdAt: family.createdAt }
@@ -192,6 +195,7 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
       reviewAccount: review,
       hasPin: (await profilesWithPin([caller.userId])).has(caller.userId),
       personalSession: caller.personal,
+      managing: caller.managing === true,
       creation,
     },
     family,

@@ -34,6 +34,8 @@ export async function closeProfileSessions(parentId: string, reason: FamilyProfi
 export async function startProfileSession(
   parent: { id: string; name: string; platform?: string | null },
   profile: { userId: string; name: string; kind: FamilyProfileKind },
+  /** Ouverte par le code du profil, et le profil gère : la gestion s'ouvre avec elle (1.30.0). */
+  options: { manageUntil?: Date | null } = {},
 ): Promise<string> {
   await closeProfileSessions(parent.id, "replaced");
   // Sessions simultanées : la règle de Jellyfin, appliquée à cette ouverture (cf. connectRefusal).
@@ -54,6 +56,7 @@ export async function startProfileSession(
       tokenHash: hashToken(token),
       parentId: parent.id,
       profileKind: profile.kind,
+      manageUntil: options.manageUntil ?? null,
     },
   });
   // Son propre jeton Jellyfin (Quick Connect), sur l'identifiant de CETTE session.

@@ -118,13 +118,13 @@ describe("SEC-F-44 : « Gérer les profils » sur la TV d'un membre = SES droits
     const leaTv = await tvOf(IDS.lea, "Léa");
     const manage = (await openProfile(app, leaTv, { profileId: IDS.lea, pin: "1357" })).json().token as string;
 
-    // La gestion est verrouillée tant que le PIN du membre n'est pas redonné.
-    expect((await send("GET", "/api/family", manage)).json().code).toBe("family.manage_locked");
+    // Ouverte par SON code, la gestion l'est aussi ; le déverrouillage ne prend que SON code.
+    expect((await send("GET", "/api/family", manage)).json().family).toMatchObject({ role: "member" });
     const unlock = (pin?: string) => send("POST", "/api/family/tv/manage/unlock", manage, pin ? { pin } : {});
     expect((await unlock("9999")).json().code).toBe("family.pin_invalid"); // le PIN du propriétaire n'ouvre rien
     expect((await unlock("1357")).json().rights).toMatchObject({ manageMembers: false, manageGuests: "own" });
 
-    // Déverrouillée, la session de Léa n'a QUE ses droits de membre.
+    // Ouverte, la session de Léa n'a QUE ses droits de membre.
     expect((await send("POST", "/api/family/invitations", manage, { userId: IDS.cache })).json().code).toBe("family.not_owner");
     expect((await send("DELETE", `/api/family/members/${IDS.damien}`, manage)).json().code).toBe("family.not_owner");
     expect((await send("PUT", `/api/family/members/${IDS.damien}/rights`, manage, { createGuests: true })).json().code).toBe("family.not_owner");
