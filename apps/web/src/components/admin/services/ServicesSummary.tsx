@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { AudioWaveform, Database, Globe, Server, Zap } from "lucide-react";
+import { Database, Globe, Server, Zap } from "lucide-react";
 import { StatTile, type StatTone } from "../kit";
 import {
-  summarizeAudio,
   summarizeDatabase,
   summarizeDirectStreaming,
   summarizeJellyfin,
@@ -12,7 +11,6 @@ import {
   type Tone,
 } from "./serviceSummary";
 import {
-  useAudioAnalysis,
   useDirectStreamingConfig,
   useKeyHealth,
   usePublicUrlConfig,
@@ -20,7 +18,7 @@ import {
 } from "./useServicesData";
 
 /**
- * Le résumé en tête de page : cinq tuiles, un état chacune, et la tuile
+ * Le résumé en tête de page : quatre tuiles, un état chacune, et la tuile
  * entière mène à sa section (`#jellyfin`…). On sait d'un regard ce qui va et
  * ce qui ne va pas, avant de lire le moindre formulaire.
  *
@@ -45,7 +43,6 @@ export function ServicesSummary() {
   const keyState = useKeyHealth().data?.state ?? null;
   const publicUrl = usePublicUrlConfig();
   const direct = useDirectStreamingConfig();
-  const audio = useAudioAnalysis();
 
   const tiles: Tile[] = [
     {
@@ -80,18 +77,10 @@ export function ServicesSummary() {
       failed: direct.isError,
       summary: direct.data ? summarizeDirectStreaming(direct.data) : null,
     },
-    {
-      id: "segments",
-      icon: <AudioWaveform size={18} />,
-      label: t("summaryAudio"),
-      loading: audio.isPending,
-      failed: audio.isError,
-      summary: audio.data ? summarizeAudio(audio.data) : null,
-    },
   ];
 
   return (
-    <section aria-label={t("summaryLabel")} className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+    <section aria-label={t("summaryLabel")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {tiles.map(({ id, icon, label, loading, failed, summary }) => {
         const state = summary ? t(summary.label) : t("summaryUnknown");
         const hint = summary?.detail ?? (summary?.detailKey ? t(summary.detailKey) : undefined);

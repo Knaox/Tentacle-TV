@@ -1,18 +1,22 @@
 import { deleteConfigValue, getConfigValue, setConfigValue } from "../configStore";
 import { hasPrisma } from "../db";
-import { CONFIG_PENDING_KEY, INTRO_SKIPPER_MIGRATION_KEY, SEGMENT_PLUGIN_SPECS } from "./catalog";
-import { configureSegmentPlugins, introSkipperAudioOff } from "./pluginConfigure";
+import { CONFIG_PENDING_KEY, INTRO_SKIPPER_MIGRATION_KEY, LEGACY_INTRO_SKIPPER_MIGRATION_KEY, SEGMENT_PLUGIN_SPECS } from "./catalog";
+import { configureSegmentPlugins, introSkipperAutoOff } from "./pluginConfigure";
 import { findPlugin, pluginStatus, readPlugins } from "./pluginInstall";
 
 /**
  * Le guet de fond des greffons de passages, deux devoirs qui ne se font
  * qu'une fois chacun :
  *
- *  1. la MIGRATION côté Jellyfin : sur un serveur d'avant le 2026-10-06, une
- *     Intro Skipper déjà installée voit son analyse automatique (écoute
- *     comprise) coupée UNE fois ; la marque posée, un administrateur qui la
- *     rallume est respecté. Jellyfin sans Intro Skipper : rien à couper, la
- *     marque est posée aussi. Jellyfin injoignable : on retentera.
+ *  1. la COUPURE côté Jellyfin, au retrait de l'analyse audio : une Intro
+ *     Skipper déjà installée voit son analyse automatique (écoute comprise)
+ *     coupée UNE fois de plus — même là où elle avait été rallumée depuis la
+ *     première coupure (2026-10-06, `introskipper_audio_off_applied`, dont la
+ *     marque est effacée) — et le journal le dit quand elle tournait.
+ *     Tentacle n'offre plus aucun interrupteur pour la rallumer ; chaque
+ *     installation ou réparation la recoupe. Jellyfin sans Intro Skipper :
+ *     rien à couper, la marque est posée aussi. Jellyfin injoignable : on
+ *     retentera.
  *  2. les réglages EN ATTENTE : des greffons posés sans redémarrage (quelqu'un
  *     regardait) sont réglés dès que Jellyfin les a chargés.
  *
@@ -27,6 +31,9 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 export async function markIntroSkipperAudioOff(): Promise<void> {
   if (getConfigValue(INTRO_SKIPPER_MIGRATION_KEY) === undefined) {
     await setConfigValue(INTRO_SKIPPER_MIGRATION_KEY, new Date().toISOString());
+  }
+  if (getConfigValue(LEGACY_INTRO_SKIPPER_MIGRATION_KEY) !== undefined) {
+    await deleteConfigValue(LEGACY_INTRO_SKIPPER_MIGRATION_KEY);
   }
 }
 
@@ -56,10 +63,12 @@ export async function segmentPluginsTick(): Promise<boolean> {
     const status = pluginStatus(findPlugin(plugins, introSkipper));
     // Posé mais pas encore chargé : on attendra qu'il le soit.
     if (status !== "restart") {
-      const done = status !== "active" || (await introSkipperAudioOff());
-      if (done) {
+      const outcome = status === "active" ? await introSkipperAutoOff() : { done: true, changed: false };
+      if (outcome.done) {
         await markIntroSkipperAudioOff();
-        if (status === "active") console.log("[Passages] Intro Skipper : analyse automatique coupée (nouveau réglage par défaut)");
+        if (outcome.changed) {
+          console.log("[Passages] Intro Skipper : son analyse automatique (qui écoute l'audio) tournait — coupée, l'analyse audio est retirée ; rien à faire");
+        }
       }
     }
   }

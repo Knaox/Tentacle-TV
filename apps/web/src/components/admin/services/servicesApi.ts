@@ -3,7 +3,6 @@ import { readAdminKeyHealth } from "../../../lib/adminKeyHealth";
 import {
   AdminApiError,
   asRecord,
-  readAudioAnalysis,
   readDirectStreaming,
   readDirectStreamingTest,
   readPublicUrl,
@@ -39,7 +38,6 @@ export const servicesApi = {
   status: () => call("/services", readServices),
   publicUrl: () => call("/public-url", readPublicUrl),
   directStreaming: () => call("/direct-streaming", readDirectStreaming),
-  audioAnalysis: () => call("/audio-analysis", readAudioAnalysis),
   /** `force` : le serveur garde son verdict cinq minutes, « Revérifier » le refait. */
   keyHealth: (force = false) => call(`/jellyfin-key${force ? "?refresh=1" : ""}`, readAdminKeyHealth),
 
@@ -51,6 +49,5 @@ export const servicesApi = {
   saveDirectStreaming: (body: Omit<DirectStreamingConfig, "publicUrl"> & { publicUrl: string | null }) => call("/direct-streaming", ignore, "PUT", body),
   testDirectStreaming: (body: { publicUrl: string; privateUrl: string }) =>
     call("/test-direct-streaming", readDirectStreamingTest, "POST", body),
-  setAudioAnalysis: (enabled: boolean) => call("/audio-analysis", ignore, "PUT", { enabled }),
   resetServer: () => call("/reset-server", ignore, "POST", {}),
 };

@@ -9,12 +9,13 @@ const TARGET = [...CORE, "core_migrations"];
 
 describe("classement des tables de la source", () => {
   it("cœur, extension, ancien cœur", () => {
-    const fates = classifyTables(["server_config", "seer_requests", "anime_id_map", "media_audio_fingerprint"], CORE, TARGET);
+    const fates = classifyTables(["server_config", "seer_requests", "anime_id_map", "media_audio_fingerprint", "media_audio_analysis"], CORE, TARGET);
     expect(fates).toEqual([
       { name: "server_config", fate: "core" },
       { name: "seer_requests", fate: "extension" },
       { name: "anime_id_map", fate: "retired" },
       { name: "media_audio_fingerprint", fate: "retired" },
+      { name: "media_audio_analysis", fate: "retired" },
     ]);
   });
 

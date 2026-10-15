@@ -102,8 +102,9 @@ export interface ResolvedSegment {
   /**
    * D'où vient la borne : segments Jellyfin (natif ou greffon), chapitres
    * nommés, l'analyse de fin de média (`tailVerdict.ts` : « frames » quand
-   * seules les vignettes ont parlé, « audio » quand le son a été écouté) ou
-   * l'audio des voisins de saison (`audioVerdict.ts`).
+   * seules les vignettes ont parlé, « audio » quand le son a été écouté).
+   * « audio » ne naît plus — l'analyse audio est retirée — mais un verdict
+   * rangé avant, ou un instantané hors ligne, peut encore le porter.
    *
    * Champ ADDITIF au fil des versions : un client qui ne connaît pas une valeur
    * ne fait rien de moins — personne ne branche sur elle, elle sert au journal

@@ -1,5 +1,12 @@
 # Segments par l'audio des voisins de saison — relevés du labo (19-20.09.2026)
 
+> **Retiré le 2026-10-15.** L'analyse audio de Tentacle n'existe plus (« inutile,
+> et elle perturbe ») : ni voisins de saison, ni écoute de la fin de média, ni
+> ffmpeg ou fpcalc dans l'image. Le code décrit ici (`services/audio*.ts`,
+> `playback/audioVerdict.ts`) est supprimé — l'historique git le garde. Ce
+> document reste pour ses mesures et ses pistes fermées. Les passages viennent
+> des trois greffons de Jellyfin (CLAUDE.md, « Détection des passages »).
+
 Ce document fixe ce qu'un labo de deux jours a MESURÉ sur l'audio de dix
 épisodes réels, ce qui en a été retenu dans le code (`services/audio*.ts`,
 `playback/audioVerdict.ts`), les pièges payés, et les pistes FERMÉES avec

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { POST_CREDITS_MIN_MS, POST_CREDITS_THRESHOLD_MS, findSegment } from "./segmentTypes";
 import { resolvePlaybackSegments, type SegmentSources } from "./resolveSegments";
-import type { AudioVerdict } from "./audioVerdict";
 
 /** ms → ticks Jellyfin (1 tick = 100 ns). */
 const ticks = (ms: number) => ms * 10_000;
@@ -531,59 +530,5 @@ describe("le second générique — le modèle Plex", () => {
       runtime,
     );
     expect(segments.filter((s) => s.type === "Outro")).toHaveLength(2);
-  });
-});
-
-describe("resolvePlaybackSegments — le verdict audio des voisins de saison", () => {
-  const audio = (over: Partial<AudioVerdict> = {}): AudioVerdict => ({
-    intro: { startMs: 140_000, endMs: 226_000, source: "audio" as const },
-    outro: { startMs: 1_337_000, endMs: RUNTIME_MS, source: "audio" as const },
-    confirmedBy: 2,
-    neighbourKey: "ep-1,ep-3",
-    ...over,
-  });
-
-  it("comble ce qui manque, jamais ce qu'un fournisseur a dit", () => {
-    const { segments } = resolve({
-      mediaSegments: {
-        Items: [{ Type: "Outro", StartTicks: ticks(1_300_000), EndTicks: ticks(RUNTIME_MS) }],
-      },
-      audio: audio({ outro: { startMs: 1_250_000, endMs: RUNTIME_MS, source: "audio" } }),
-    });
-    expect(findSegment(segments, "Intro")).toMatchObject({
-      startMs: 140_000, endMs: 226_000, source: "audio",
-    });
-    expect(findSegment(segments, "Outro")).toMatchObject({ startMs: 1_300_000, source: "jellyfin" });
-  });
-
-  it("une intro entendue passé la moitié du média tombe sous la garde", () => {
-    const { segments } = resolve({
-      audio: audio({
-        intro: { startMs: RUNTIME_MS * 0.8, endMs: RUNTIME_MS * 0.85, source: "audio" },
-        outro: null,
-      }),
-    });
-    expect(findSegment(segments, "Intro")).toBeNull();
-  });
-
-  it("un générique entendu à 81 % du fichier laisse la scène d'après", () => {
-    const { segments } = resolve(
-      { audio: audio({ intro: null, outro: { startMs: 1_149_000, endMs: 1_238_000, source: "audio" } }) },
-      1_420_000,
-    );
-    expect(findSegment(segments, "Outro")).toMatchObject({
-      startMs: 1_149_000, endMs: 1_238_000, source: "audio",
-      endsAtMediaEnd: false, hasContentAfter: true,
-    });
-  });
-
-  it("la fin d'un générique audio courant jusqu'au bout reste redessinable par l'analyse de fin", () => {
-    const { segments } = resolve({
-      audio: audio({ intro: null, outro: { startMs: 1_300_000, endMs: RUNTIME_MS, source: "audio" } }),
-      tail: { creditsStartMs: 1_300_000, scenes: [{ startMs: 1_400_000, endMs: RUNTIME_MS }], crawl: null, audio: true },
-    });
-    expect(findSegment(segments, "Outro")).toMatchObject({
-      startMs: 1_300_000, endMs: 1_399_000, hasContentAfter: true,
-    });
   });
 });

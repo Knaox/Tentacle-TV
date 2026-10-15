@@ -620,22 +620,6 @@ model MediaFrameAnalysis {
   @@map("media_frame_analysis")
 }
 
-/// Ce que l'AUDIO des voisins de saison a dit d'un épisode — opening, ending
-/// (services/audioAnalysis.ts). Même forme et même règle que la fin de média :
-/// une ligne par épisode, et seulement quand un opening ou un ending a été
-/// trouvé — le « rien » refroidit en mémoire, les lignes vides d'avant sont
-/// purgées au démarrage.
-model MediaAudioAnalysis {
-  itemId    String   @id
-  /// Version des règles du verdict (`AUDIO_ANALYSIS_VERSION`).
-  version   Int
-  runtimeMs Int
-  verdict   String?
-  createdAt DateTime @default(now())
-
-  @@map("media_audio_analysis")
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Moteur de recommandation. Doctrine commune à tous les modèles ci-dessous :
 // - aucun enum, aucun Json — unions en String commenté, JSON en String ;
