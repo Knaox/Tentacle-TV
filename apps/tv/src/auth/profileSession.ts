@@ -1,5 +1,5 @@
 import { i18n } from "@tentacle-tv/shared";
-import type { TvSessionDto } from "@tentacle-tv/shared";
+import type { TvProfileDto, TvSessionDto } from "@tentacle-tv/shared";
 import {
   fetchInterfaceLanguage,
   flushPlaybackOutboxFor,
@@ -8,8 +8,11 @@ import {
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import {
+  PROFILE_RESUME_HOLD_MS,
   PROFILE_STORAGE_KEYS,
   beginProfileLeave,
+  reclaimRevocation,
+  releaseHeldRevocations,
   coldStartProfile,
   endWipe,
   profileRecordOf,
@@ -17,6 +20,7 @@ import {
   tvSessionMode,
   wipeAccount,
   writeProfileRecord,
+  type HeldProfileSession,
   type ProfileIntent,
   type ProfileLaunch,
   type ProfilesListingRef,
@@ -49,6 +53,41 @@ export function lastLeftProfileId(): string | null {
   return lastProfileId;
 }
 
+/** La session quittée par « Changer de profil », reprenable le temps de « Qui
+ *  regarde ? » (tv-core `profileResume`). En mémoire seulement : relancer
+ *  l'app ne contourne jamais un PIN. */
+let held: HeldProfileSession | null = null;
+export function heldProfileSession(): HeldProfileSession | null {
+  return held;
+}
+
+/** La session gardée n'est plus reprenable : sa révocation part tout de suite. */
+function releaseHeld(storage: UnpairContext["storage"]): void {
+  if (!held) return;
+  const { token } = held;
+  held = null;
+  if (releaseHeldRevocations(storage, Date.now(), token)) scheduleRevocationDrain(0);
+}
+
+/**
+ * Reprend la session gardée pour `profile` (le même profil choisi de nouveau
+ * dans « Qui regarde ? ») : ni PIN, ni appel au serveur — sa révocation sort
+ * de la file. `false` : rien à reprendre (déjà révoquée, délai passé), le
+ * profil s'ouvre comme un autre.
+ */
+export function resumeHeldProfile(
+  context: Pick<UnpairContext, "jfClient" | "storage">,
+  listing: ProfilesListingRef,
+  profile: TvProfileDto,
+): boolean {
+  const keep = held;
+  held = null;
+  if (!keep || !reclaimRevocation(context.storage, keep.token, Date.now())) return false;
+  const session: TvSessionDto = { token: keep.token, user: { id: profile.userId, name: profile.name }, profile, remembered: false };
+  adoptProfileSession(context, session, listing, keep.launch);
+  return true;
+}
+
 /** Pourquoi on revient à « Qui regarde ? » — l'écran en tire le profil à ouvrir (`planProfileLaunch`). */
 export type ProfilesRouteIntent = ProfileIntent;
 
@@ -63,6 +102,8 @@ export function adoptProfileSession(
   listing: ProfilesListingRef,
   launch: ProfileLaunch,
 ): void {
+  // Un AUTRE profil s'ouvre : la session gardée ne se reprendra plus (le serveur la ferme de toute façon).
+  if (held && held.token !== session.token) releaseHeld(storage);
   storage.removeItem("tentacle_jellyfin_token");
   storage.removeItem("tentacle_jellyfin_url");
   jfClient.setDirectStreaming(null);
@@ -107,12 +148,17 @@ export function showProfiles(intent: ProfilesRouteIntent, returnTo?: "manage"): 
  *
  * `serverEnded` : le serveur a déjà fermé la session (retrait, PIN changé,
  * coupure par l'admin…) — il n'y a plus rien à lui demander.
+ *
+ * `hold` (« Changer de profil ») : la session est GARDÉE le temps de « Qui
+ * regarde ? » — sa révocation attend `PROFILE_RESUME_HOLD_MS` ; rouvrir le
+ * même profil la reprend sans PIN (`resumeHeldProfile`).
  */
 export function leaveProfile(
   { jfClient, storage, queryClient }: UnpairContext,
   intent: ProfilesRouteIntent,
-  { serverEnded = false, returnTo }: { serverEnded?: boolean; returnTo?: "manage" } = {},
+  { serverEnded = false, returnTo, hold = false }: { serverEnded?: boolean; returnTo?: "manage"; hold?: boolean } = {},
 ): void {
+  releaseHeld(storage);
   if (tvSessionMode(storage) !== "profile" && !storage.getItem("tentacle_token")) {
     showProfiles(intent, returnTo);
     return;
@@ -121,7 +167,10 @@ export function leaveProfile(
   const serverUrl = storage.getItem("tentacle_server_url");
   const record = readProfileRecord(storage);
   lastProfileId = record?.profileId ?? lastProfileId;
-  beginProfileLeave(storage, serverEnded ? null : { serverUrl, token }, Date.now());
+  const now = Date.now();
+  const holdUntil = hold && !serverEnded && token && record ? now + PROFILE_RESUME_HOLD_MS : undefined;
+  beginProfileLeave(storage, serverEnded ? null : { serverUrl, token }, now, holdUntil);
+  if (holdUntil !== undefined && token && record) held = { profileId: record.profileId, token, launch: record.launch, until: holdUntil };
 
   jfClient.setAccessToken(null);
   jfClient.setDirectStreaming(null);
@@ -143,7 +192,8 @@ export function leaveProfile(
 /**
  * « Changer de profil » : la file des rapports de lecture part d'abord avec le
  * jeton du profil qu'on quitte (bornée : un serveur muet ne retient pas le
- * geste), puis la sortie.
+ * geste), puis la sortie — session GARDÉE : rouvrir ce profil ne redemande
+ * pas son PIN.
  */
 export async function switchProfile(context: UnpairContext): Promise<void> {
   const record = readProfileRecord(context.storage);
@@ -151,7 +201,7 @@ export async function switchProfile(context: UnpairContext): Promise<void> {
     const flush = flushPlaybackOutboxFor(context.jfClient, record.profileId).catch(() => undefined);
     await Promise.race([flush, new Promise((resolve) => setTimeout(resolve, OUTBOX_FLUSH_BUDGET_MS))]);
   }
-  leaveProfile(context, "switch");
+  leaveProfile(context, "switch", { hold: true });
 }
 
 /**

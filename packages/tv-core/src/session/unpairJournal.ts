@@ -170,21 +170,25 @@ export function beginUnpair(storage: SessionStorage, leaving: LeavingSession | n
  * restant jumelée — et le jeton de la session mis de côté pour sa révocation
  * (la même route : portée par une session de profil, elle ne ferme qu'elle).
  * Un déjumelage déjà en cours n'est jamais rétrogradé en simple sortie.
+ *
+ * `holdUntil` : « Changer de profil » GARDE la session le temps de « Qui
+ * regarde ? » (`profileResume`) — sa révocation attend jusque-là, et se
+ * reprend si l'on rouvre le même profil (`reclaimRevocation`).
  */
-export function beginProfileLeave(storage: SessionStorage, leaving: LeavingSession | null, now: number): void {
+export function beginProfileLeave(storage: SessionStorage, leaving: LeavingSession | null, now: number, holdUntil?: number): void {
   const journal = readUnpairJournal(storage);
-  const revocations = withLeaving(journal, leaving, now);
+  const revocations = withLeaving(journal, leaving, now, holdUntil);
   const accountPending = journal.wiping && journal.scope !== "profile";
   writeUnpairJournal(storage, accountPending ? { wiping: true, revocations } : { wiping: true, scope: "profile", revocations });
 }
 
 /** Les révocations du marqueur, le jeton quitté en plus (une fois). */
-function withLeaving(journal: UnpairJournal, leaving: LeavingSession | null, now: number): PendingRevocation[] {
+function withLeaving(journal: UnpairJournal, leaving: LeavingSession | null, now: number, holdUntil?: number): PendingRevocation[] {
   const serverUrl = leaving?.serverUrl?.trim();
   const token = leaving?.token?.trim();
   const revocations = [...journal.revocations];
   if (serverUrl && token && !revocations.some((r) => r.token === token)) {
-    revocations.push({ serverUrl, token, since: now, attempts: 0, notBefore: now });
+    revocations.push({ serverUrl, token, since: now, attempts: 0, notBefore: Math.max(now, holdUntil ?? now) });
   }
   return revocations.slice(-MAX_PENDING_REVOCATIONS);
 }
@@ -234,4 +238,36 @@ export function deferRevocation(storage: SessionStorage, token: string, now: num
       r.token === token ? { ...r, attempts: r.attempts + 1, notBefore: now + delayMs } : r,
     ),
   });
+}
+
+/**
+ * Reprend le jeton d'une session GARDÉE (`beginProfileLeave` avec
+ * `holdUntil`) : sa révocation sort du marqueur, la session continue. `false`
+ * si elle n'y est plus, ou si son heure est passée — le jeton est (ou va être)
+ * révoqué : la session ne se reprend pas.
+ */
+export function reclaimRevocation(storage: SessionStorage, token: string, now: number): boolean {
+  const journal = readUnpairJournal(storage);
+  const held = journal.revocations.find((r) => r.token === token);
+  if (!held || held.attempts > 0 || held.notBefore <= now) return false;
+  writeUnpairJournal(storage, { ...journal, revocations: journal.revocations.filter((r) => r.token !== token) });
+  return true;
+}
+
+/**
+ * Les sessions gardées n'attendent plus : leur révocation part à la prochaine
+ * vidange — un autre profil s'est ouvert, ou l'app redémarre (une session
+ * gardée ne survit pas à l'app). `token` : celle-là seulement. Un jeton déjà
+ * tenté garde son recul.
+ */
+export function releaseHeldRevocations(storage: SessionStorage, now: number, token?: string): boolean {
+  const journal = readUnpairJournal(storage);
+  let released = false;
+  const revocations = journal.revocations.map((r) => {
+    if (r.attempts > 0 || r.notBefore <= now || (token !== undefined && r.token !== token)) return r;
+    released = true;
+    return { ...r, notBefore: now };
+  });
+  if (released) writeUnpairJournal(storage, { ...journal, revocations });
+  return released;
 }

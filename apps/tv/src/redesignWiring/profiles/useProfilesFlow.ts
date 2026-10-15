@@ -21,6 +21,7 @@ import {
   planProfileLaunch,
   planProfilePick,
   pressPinDigit,
+  resumesHeldSession,
   refusalReloadsProfiles,
   type PinDigit,
   type PinEntry,
@@ -29,7 +30,7 @@ import {
   type ProfileRefusal,
 } from "@tentacle-tv/tv-core";
 import { loadProfiles, openProfile } from "../../auth/profileOpening";
-import { leaveProfile } from "../../auth/profileSession";
+import { heldProfileSession, leaveProfile, resumeHeldProfile } from "../../auth/profileSession";
 import { unpairDevice } from "../../auth/unpair";
 import { MOTION_ENABLED } from "../../redesign/motion/motion";
 
@@ -153,6 +154,18 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
     refused(result.refusal, list, profileId, "open", request);
   }
 
+  /**
+   * OK sur le profil qu'on vient de quitter par « Changer de profil » : sa
+   * session, gardée, se reprend — ni PIN ni attente du serveur (tv-core
+   * `profileResume`). Le profil s'avance comme à toute entrée.
+   */
+  async function resume(list: TvProfilesDto, profileId: string): Promise<void> {
+    setEntering(profileId);
+    const advanceMs = reduced || !MOTION_ENABLED ? 0 : TV_MOTION.profile.advanceMs;
+    await new Promise((resolve) => setTimeout(resolve, advanceMs));
+    if (alive.current) go.home();
+  }
+
   function refused(refusal: ProfileRefusal, list: TvProfilesDto, profileId: string, purpose: "open" | "manage", request: OpenRequest): void {
     if (refusal.kind === "unpaired") return unpairDevice(context, "revoked");
     if (refusal.kind === "pinInvalid" || refusal.kind === "locked") {
@@ -201,6 +214,10 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
       acted.current = true;
       setNotice(null);
       setLastPicked(profile.userId);
+      if (resumesHeldSession(heldProfileSession(), profile, remember, Date.now()) && resumeHeldProfile(context, listing, profile)) {
+        void resume(listing, profile.userId);
+        return;
+      }
       const plan = planProfilePick(profile, listing, remember, Date.now());
       if (plan.kind === "locked") return setNotice({ kind: "locked", until: plan.until });
       if (plan.kind === "pin") return showPin(listing, profile.userId, "open", plan.remember, plan.launch);
