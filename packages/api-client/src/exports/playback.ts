@@ -31,6 +31,9 @@ export {
   resetStillWatchingSession,
 } from "../playback/useStillWatching";
 export type { StillWatchingController, StillWatchingSettingsState, UseStillWatchingOptions } from "../playback/useStillWatching";
+export { useStillWatchingTrial } from "../playback/useStillWatchingTrial";
+export type { StillWatchingTrialState } from "../playback/useStillWatchingTrial";
+export { resetStillWatchingTrial } from "../playback/stillWatchingTrialStore";
 export { usePlaybackOverlay } from "../playback/usePlaybackOverlay";
 export type { SkipProposal, PlaybackOverlayInput, PlaybackOverlayResult } from "../playback/playbackOverlay.types";
 export { useMutedSegments, NO_MUTED_SEGMENTS } from "../playback/useMutedSegments";

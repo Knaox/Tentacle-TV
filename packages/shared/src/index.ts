@@ -271,6 +271,7 @@ export * from "./playback/playbackSettings";
 export * from "./playback/stillWatchingSettings";
 export * from "./playback/stillWatchingSession";
 export * from "./playback/stillWatchingStore";
+export * from "./playback/stillWatchingTrial";
 export * from "./playback/playbackPresets";
 export * from "./playback/segmentWindow";
 export * from "./playback/skipCandidate";

@@ -20,7 +20,6 @@ import {
   stillWatchingNeedsPause,
   stillWatchingPauseNow,
   stillWatchingRemainingMs,
-  stillWatchingTick,
   type StillWatchingSession,
   type StillWatchingSettings,
   type StillWatchingSnapshot,
@@ -30,6 +29,7 @@ import { useTentacleConfig } from "../context";
 import type { StorageAdapter } from "../storage";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { useServerCapabilities } from "../hooks/useServerCapabilities";
+import { tickWithStillWatchingTrial } from "./stillWatchingTrialStore";
 
 const ROUTE = "/api/preferences/still-watching";
 /** Une relecture par demi-minute suffit — chaque montage n'en refait pas une. */
@@ -181,7 +181,8 @@ export function useStillWatching(options: UseStillWatchingOptions): StillWatchin
     const timer = setInterval(() => {
       const now = Date.now();
       const { playing: isPlaying, settings: current, pause } = latest.current;
-      setSession(stillWatchingTick(session, { now, playing: isPlaying, settings: current }));
+      // « Essayer », dans les Réglages : la question avancée, une fois (`stillWatchingTrialStore.ts`).
+      setSession(tickWithStillWatchingTrial(session, { now, playing: isPlaying, settings: current }));
       if (stillWatchingNeedsPause(session, isPlaying, now)) pause();
     }, TICK_MS);
     return () => clearInterval(timer);
