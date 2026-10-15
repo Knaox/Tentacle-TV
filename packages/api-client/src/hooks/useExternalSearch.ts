@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useMemo } from "react";
-import { keepPreviousData, useQueries, type UseQueryResult } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import {
   providerAccepts, providerUrl, readExternalResponse, searchProviders,
   type ExternalKind, type ExternalSearchResult, type SearchablePlugin,
@@ -44,6 +44,12 @@ export interface ExternalSearchState {
   pending: boolean;
   /** Il existe au moins un plugin capable de chercher : sinon, rien à afficher du tout. */
   available: boolean;
+  /**
+   * Une réponse dit encore `complete: false` et sera relue : la section va
+   * s'étoffer. L'écran lui garde sa place d'ici là, plutôt que de grandir par
+   * vagues sous les yeux (recherche seulement — cf. `waitForComplete`).
+   */
+  settling: boolean;
 }
 
 /** Les réponses des plugins, réduites à ce qui s'affiche — partagé par la recherche et les filmographies. */
@@ -51,17 +57,35 @@ export function combineExternal(
   all: ReadonlyArray<UseQueryResult<ExternalSearchResult | null>>,
   enabled: boolean,
   providerCount: number,
+  /** Seule la recherche relit une réponse incomplète : ailleurs, elle est définitive. */
+  waitForComplete = false,
 ): ExternalSearchState {
   const results: ExternalSearchResult[] = [];
   let pending = false;
+  let settling = false;
   for (const result of all) {
     if (result.isPending && enabled) pending = true;
     const data = result.data;
+    if (waitForComplete && enabled && data && !data.complete && !result.isPlaceholderData) settling = true;
     // Une réponse d'avant (frappe plus rapide que le réseau) reste affichée,
     // mais une section vide ne s'affiche jamais.
     if (enabled && data && data.items.length > 0) results.push(data);
   }
-  return { results, pending, available: providerCount > 0 };
+  return { results, pending, available: providerCount > 0, settling };
+}
+
+/**
+ * La DERNIÈRE relecture permise rend une réponse définitive : marquée
+ * complète, elle arrête les relectures exactement au même moment qu'avant
+ * (`refetchInterval`), et `settling` ne reste jamais vrai pour rien.
+ * `updates` : les réponses déjà reçues pour cette requête.
+ */
+export function finalizeExternalResult(
+  result: ExternalSearchResult | null,
+  updates: number,
+): ExternalSearchResult | null {
+  if (!result || result.complete || updates + 1 < MAX_REFETCHES) return result;
+  return { ...result, complete: true };
 }
 
 export function useExternalSearch(
@@ -82,15 +106,19 @@ export function useExternalSearch(
 
   // `combine` : le résultat ne change que si une réponse change — pas à chaque rendu.
   const combine = useCallback(
-    (all: Array<UseQueryResult<ExternalSearchResult | null>>) => combineExternal(all, enabled, providers.length),
+    (all: Array<UseQueryResult<ExternalSearchResult | null>>) => combineExternal(all, enabled, providers.length, true),
     [enabled, providers.length],
   );
+  const queryClient = useQueryClient();
 
   return useQueries({
     queries: providers.map((provider) => ({
       queryKey: ["search", "external", provider.pluginId, provider.path, q, kind ?? "all", limit, lang],
-      queryFn: async ({ signal }: { signal: AbortSignal }) =>
-        readExternalResponse(await tentacleApiFetch<unknown>(providerUrl(provider, q, { lang, limit, kind }), { signal }), provider),
+      queryFn: async ({ signal, queryKey }: { signal: AbortSignal; queryKey: readonly unknown[] }) =>
+        finalizeExternalResult(
+          readExternalResponse(await tentacleApiFetch<unknown>(providerUrl(provider, q, { lang, limit, kind }), { signal }), provider),
+          queryClient.getQueryState(queryKey)?.dataUpdateCount ?? 0,
+        ),
       enabled,
       staleTime: 60_000,
       retry: false,
