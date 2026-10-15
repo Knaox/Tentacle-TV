@@ -139,7 +139,6 @@ describe("getSegmentSourceBundle", () => {
       libraryId: null,
       trickplay: null,
       defaultMediaSourceId: null,
-      isEpisode: false,
       sources: {},
     });
 
@@ -189,22 +188,3 @@ describe("l'URL de l'item", () => {
   });
 });
 
-describe("épisode ou non", () => {
-  const EPISODE = { ...ITEM, Type: "Episode", MediaSources: [{ Id: "src-1" }] };
-
-  it("un épisode se dit épisode, sans toucher à fields=", async () => {
-    scenario = [
-      [/\/Items\/ep-ctx\?userId=admin-user-id&fields=Chapters,Trickplay,MediaSources$/, { json: EPISODE }],
-      [/MediaSegments/, { json: NATIVE }],
-    ];
-    expect((await getSegmentSourceBundle("ep-ctx")).isEpisode).toBe(true);
-  });
-
-  it("un film n'en est pas un", async () => {
-    scenario = [
-      [/\/Items\/film/, { json: { ...EPISODE, Type: "Movie" } }],
-      [/MediaSegments/, { json: NATIVE }],
-    ];
-    expect((await getSegmentSourceBundle("film")).isEpisode).toBe(false);
-  });
-});

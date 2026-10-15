@@ -56,8 +56,6 @@ export interface SegmentSourceBundle {
    * les temps ne correspondent pas à `runtimeMs`.
    */
   defaultMediaSourceId: string | null;
-  /** Un ÉPISODE : son générique peut se clore sur l'aperçu du suivant (`tailAnalysis/`). */
-  isEpisode: boolean;
   sources: SegmentSources;
 }
 
@@ -66,7 +64,6 @@ const EMPTY_BUNDLE: SegmentSourceBundle = {
   libraryId: null,
   trickplay: null,
   defaultMediaSourceId: null,
-  isEpisode: false,
   sources: {},
 };
 
@@ -201,7 +198,6 @@ async function fetchBundle(itemId: string, url: string, apiKey: string): Promise
       libraryId: collectionFolderId(ancestorsRaw),
       trickplay: item.Trickplay ?? null,
       defaultMediaSourceId: typeof defaultSource === "string" && defaultSource !== "" ? defaultSource : null,
-      isEpisode: item.Type === "Episode",
       sources: {
         mediaSegments,
         pluginDict,

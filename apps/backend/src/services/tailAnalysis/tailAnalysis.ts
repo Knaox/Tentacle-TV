@@ -18,7 +18,6 @@
  */
 
 import { resolvePlaybackSegments } from "../../playback/resolveSegments";
-import { isCreditsChapterName } from "../../playback/segmentChapters";
 import type { TailVerdict } from "../../playback/tailVerdict";
 import type { SegmentSourceBundle } from "../jellyfinSegments";
 import { collectFrameSamples, type TrickplayManifest } from "../trickplayFrames";
@@ -30,8 +29,6 @@ import type { CellMeasure, ProviderSpan, TailInput } from "./tailTimeline";
 export const NOTHING_FOUND_COOLDOWN_MS = 24 * 3600_000;
 export const FAILURE_COOLDOWN_MS = 3600_000;
 const MAX_COOLDOWNS = 1_000;
-/** Un segment qui commence à deux secondes d'un chapitre nommé « générique » en vient. */
-const NAMED_MATCH_MS = 2_000;
 
 export interface TailAnalysisRequest {
   itemId: string;
@@ -39,8 +36,6 @@ export interface TailAnalysisRequest {
   mediaSourceId: string | null;
   trickplay: TrickplayManifest | null;
   providerSpans: ProviderSpan[];
-  /** Un épisode : son générique peut se clore sur l'aperçu du suivant. */
-  isEpisode: boolean;
   jellyfinUrl: string;
   apiKey: string;
 }
@@ -65,10 +60,7 @@ function coolDown(itemId: string, ms: number): void {
 /**
  * Les génériques annoncés par les fournisseurs : les marqueurs Jellyfin bruts
  * (même ceux que le résolveur écarte — un début reste un indice) et les Outro
- * résolus sans l'analyse (chapitres, greffons). Un chapitre NOMMÉ générique
- * (« End Credits », « Générique de fin ») est marqué : c'est le seul marqueur
- * qui dit où commence le générique illustré, là où les détecteurs de noir ne
- * voient que le défilement.
+ * résolus sans l'analyse (chapitres, greffons), sans doublon.
  */
 export function providerSpans(itemId: string, bundle: SegmentSourceBundle): ProviderSpan[] {
   const base = resolvePlaybackSegments(itemId, bundle.runtimeMs, { ...bundle.sources }, "");
@@ -77,24 +69,11 @@ export function providerSpans(itemId: string, bundle: SegmentSourceBundle): Prov
     .map((item) => ({ startMs: Math.round((item.StartTicks as number) / 10_000), endMs: Math.round((item.EndTicks as number) / 10_000) }));
   const resolved = base.segments
     .filter((s) => s.type === "Outro")
-    .map((s) => ({ startMs: Math.round(s.startMs), endMs: Math.round(s.endMs), ...(s.source === "chapters" ? { named: true } : {}) }));
-  // Jellyfin convertit parfois lui-même ce chapitre en segment natif, qui masque alors
-  // les chapitres au résolveur : on le reconnaît à son début (« L'Incroyable Hulk »).
-  const chapters = bundle.sources.chapters ?? [];
-  const named: ProviderSpan[] = chapters
-    .map((c, i) => ({ c, next: chapters[i + 1] }))
-    .filter(({ c }) => isCreditsChapterName(c.Name))
-    .map(({ c, next }) => ({
-      startMs: Math.round(c.StartPositionTicks / 10_000),
-      endMs: next ? Math.round(next.StartPositionTicks / 10_000) : Math.round(bundle.runtimeMs),
-      named: true,
-    }));
+    .map((s) => ({ startMs: Math.round(s.startMs), endMs: Math.round(s.endMs) }));
   const byKey = new Map<string, ProviderSpan>();
-  for (const span of [...native, ...resolved].map((s) => (named.some((n) => Math.abs(n.startMs - s.startMs) <= NAMED_MATCH_MS) ? { ...s, named: true } : s))) {
+  for (const span of [...native, ...resolved]) {
     const key = `${String(span.startMs)}-${String(span.endMs)}`;
-    const known = byKey.get(key);
-    if (known === undefined) byKey.set(key, span);
-    else if ("named" in span) byKey.set(key, { ...known, named: true });
+    if (!byKey.has(key)) byKey.set(key, span);
   }
   return [...byKey.values()];
 }
@@ -161,9 +140,7 @@ async function run(request: TailAnalysisRequest): Promise<void> {
       intervalMs,
       cellsFromMs: samples[0].ms,
       ...cellStrip(samples, intervalMs),
-      audio: null,
       providerSpans: request.providerSpans,
-      episode: request.isEpisode,
     };
     const verdict = readTail(input);
     if (verdict === null) {
