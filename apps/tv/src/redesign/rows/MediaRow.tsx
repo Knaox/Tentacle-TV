@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { ROW_STAGING, rowHeadCards, trailerPreviewScrollTarget } from "@tentacle-tv/tv-core";
+import { ROW_STAGING, rowHeadCards } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
 import { MediaCard } from "../cards/MediaCard";
 import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
@@ -13,6 +13,7 @@ import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
 import { useCardMetrics } from "../cards/cardSizeMode";
 import { CullingTrack, NATIVE_RECEDE } from "./CullingTrack";
+import { useRowPreviewRoom } from "./rowPreviewRoom";
 import { useRowRewindPort } from "./rowRewindPort";
 import { useStagedRow } from "./rowStage";
 
@@ -35,13 +36,10 @@ import { useStagedRow } from "./rowStage";
  *
  * Ses vignettes et ses affiches peuvent devenir la GRANDE CARTE de l'aperçu
  * de leur bande-annonce (`CardPreviewTile`) : la rangée leur fait place, et
- * défile pour montrer entière une carte qui grandit trop à droite (tv-core
- * `trailerPreviewScrollTarget`). Une carte qui se redresse (`morph`) ne
- * grandit pas.
+ * défile pour montrer entière une carte qui grandit trop à droite — la place
+ * réservée d'abord vers la fin de la rangée (`rowPreviewRoom`). Une carte qui
+ * se redresse (`morph`) ne grandit pas.
  */
-
-/** La largeur de la scène : ce que la piste montre. */
-const SCREEN_WIDTH = 1920;
 
 /** Le vide sous les cartes d'une rangée (sa marge et le bas de sa piste) : rien ne s'y voit au repos. */
 export const MEDIA_ROW_TRAILING = TV_STAGE.row.spacing;
@@ -91,26 +89,11 @@ export const MediaRow = memo(function MediaRow({
   // La largeur des cartes de la variante : celle de `MediaCard`, à la taille réglée.
   const metrics = useCardMetrics();
   const width = cardWidth ?? (variant === "morph" ? metrics.landscape.width : metrics[variant].width);
-  const onPreviewExpand = useCallback(
-    (index: number, tileWidth: number) => {
-      const target = trailerPreviewScrollTarget({
-        index,
-        cardWidth: width,
-        gap: TV_STAGE.row.gap,
-        inset,
-        scrollX: scrollX.current,
-        tileWidth,
-        viewportWidth: SCREEN_WIDTH,
-        rightMargin: TV_STAGE.safe.x,
-      });
-      if (target !== null) track.current?.scrollTo({ x: target, y: 0, animated: true });
-    },
-    [width, inset],
-  );
   const rewind = useRowRewindPort();
   // Mode Lite : la tête ajustée à ce que la piste montre (`rowHeadCards`).
   const head = mountProfile().fitRowHeads && variant !== "morph" ? rowHeadCards(1920 - inset, width + TV_STAGE.row.gap) : ROW_STAGING.headCards;
   const { shown, demand, retire } = useStagedRow(stageRank, cards.length, head);
+  const room = useRowPreviewRoom({ track, scrollX, cardWidth: width, inset, cardCount: Math.min(shown, cards.length) });
   // La carte qui a le focus dans la rangée, ou null : jamais retirée sous le focus.
   const focusedIndex = useRef<number | null>(null);
   useEffect(
@@ -150,7 +133,7 @@ export const MediaRow = memo(function MediaRow({
   // vide (une ScrollView sans cartes prendrait le focus sur Android).
   if (cards.length === 0 || shown === 0) return null;
   return (
-    <View style={styles.row}>
+    <View ref={room.rowRef} collapsable={false} style={styles.row}>
       <View style={[styles.header, { paddingLeft: inset }]}>
         <Text style={text.rowTitle} numberOfLines={1}>{title}</Text>
         {accessory}
@@ -162,9 +145,11 @@ export const MediaRow = memo(function MediaRow({
         style={styles.track}
         onScroll={onScroll}
         scrollEventThrottle={100}
+        onLayout={room.onTrackLayout}
+        onContentSizeChange={room.onContentSizeChange}
         contentContainerStyle={[
           styles.content,
-          { paddingLeft: inset, paddingRight: TV_STAGE.safe.x },
+          { paddingLeft: inset, paddingRight: TV_STAGE.safe.x + room.reserve },
           variant === "morph" && styles.morphContent,
         ]}
       >
@@ -182,7 +167,8 @@ export const MediaRow = memo(function MediaRow({
               onPressCard={onPressCard}
               onLongPressCard={onLongPressCard}
               onItemFocus={onItemFocus}
-              onPreviewExpand={onPreviewExpand}
+              onPreviewExpand={room.onPreviewExpand}
+              onPreviewCollapse={room.onPreviewCollapse}
             />
           ))}
         </CullingTrack>
@@ -204,6 +190,7 @@ const RowCard = memo(function RowCard({
   onLongPressCard,
   onItemFocus,
   onPreviewExpand,
+  onPreviewCollapse,
 }: {
   card: CardModel;
   index: number;
@@ -216,15 +203,16 @@ const RowCard = memo(function RowCard({
   onPressCard?: (card: CardModel) => void;
   onLongPressCard?: (card: CardModel) => void;
   onItemFocus: (index: number, focused: boolean, card: CardModel) => void;
-  onPreviewExpand: (index: number, tileWidth: number) => void;
+  onPreviewExpand: (index: number, tileWidth: number, tileHeight: number) => void;
+  onPreviewCollapse: () => void;
 }) {
   const place = useMemo(() => ({ row, index, native: nativeRecede }), [row, index, nativeRecede]);
   const onPress = useMemo(() => (onPressCard ? () => onPressCard(card) : undefined), [onPressCard, card]);
   const onLongPress = useMemo(() => (onLongPressCard ? () => onLongPressCard(card) : undefined), [onLongPressCard, card]);
   const onFocusChange = useCallback((focused: boolean) => onItemFocus(index, focused, card), [onItemFocus, index, card]);
-  const onExpand = useCallback((tileWidth: number) => onPreviewExpand(index, tileWidth), [onPreviewExpand, index]);
+  const onExpand = useCallback((tileWidth: number, tileHeight: number) => onPreviewExpand(index, tileWidth, tileHeight), [onPreviewExpand, index]);
   const common = { card, focusKey: `${rowKey}:${index}`, place, onPress, onLongPress, onFocusChange };
-  return variant === "morph" ? <MorphCard {...common} /> : <MediaCard {...common} variant={variant} width={width} previewable onPreviewExpand={onExpand} />;
+  return variant === "morph" ? <MorphCard {...common} /> : <MediaCard {...common} variant={variant} width={width} previewable onPreviewExpand={onExpand} onPreviewCollapse={onPreviewCollapse} />;
 });
 
 const styles = StyleSheet.create({
