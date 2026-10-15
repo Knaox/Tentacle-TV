@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { LayoutChangeEvent, ScrollView, View } from "react-native";
+import type { AnimatedRef } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import {
   INITIAL_ROW_HEAD,
@@ -8,8 +9,10 @@ import {
   reduceRowHead,
   trailerPreviewRevealOffset,
   type RowHeadEvent,
+  type RowHeadMotion,
 } from "@tentacle-tv/tv-core";
 import { usePreviewReveal } from "./previewRevealPort";
+import { useRowGlide } from "./rowGlide";
 import { useRowHeadOptions } from "./rowHeadMode";
 
 /**
@@ -21,7 +24,8 @@ import { useRowHeadOptions } from "./rowHeadMode";
  *   bout, le départ du focus). Rien ne bouge avant l'aperçu. Vers la fin de la
  *   rangée, la piste RÉSERVE d'abord la place qu'il faut (un retrait à droite)
  *   et ne défile qu'une fois cette place posée (`onContentSizeChange`) : elle
- *   bornerait sinon le défilement à son contenu d'avant ;
+ *   bornerait sinon le défilement à son contenu d'avant. Le passage en tête
+ *   se joue avec la grande carte (`rowGlide`), le retour est ordinaire ;
  * - en hauteur, la page défile si la grande carte dépasse en bas
  *   (`previewRevealPort`, tv-core `trailerPreviewRevealOffset`).
  *
@@ -38,7 +42,7 @@ const TRACK_PADDING_TOP = 12;
 const CAPTION_ROOM = 96;
 
 export interface RowPreviewRoomInput {
-  track: RefObject<ScrollView | null>;
+  track: AnimatedRef<ScrollView>;
   /** Le défilement actuel de la piste, relevé sans rendu. */
   scrollX: RefObject<number>;
   cardWidth: number;
@@ -54,12 +58,22 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
   const latest = useRef({ cardWidth, inset, cardCount, options });
   latest.current = { cardWidth, inset, cardCount, options };
   const head = useRef(INITIAL_ROW_HEAD);
-  const pending = useRef<number | null>(null);
+  const pending = useRef<{ x: number; motion: RowHeadMotion } | null>(null);
+  // La largeur de la grande carte, vue au dernier aperçu : la place se pose d'avance au focus.
+  const tileWidth = useRef<number | undefined>(undefined);
   const wake = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowRef = useRef<View>(null);
   const trackTop = useRef(0);
 
-  const scrollTo = useCallback((x: number) => track.current?.scrollTo({ x, y: 0, animated: true }), [track]);
+  const glide = useRowGlide(track);
+  const move = useCallback(
+    (x: number, motion: RowHeadMotion) => {
+      if (motion === "withPreview") return glide.glide(scrollX.current ?? 0, x);
+      glide.stop();
+      track.current?.scrollTo({ x, y: 0, animated: true });
+    },
+    [glide, scrollX, track],
+  );
 
   const dispatch = useRef<(event: RowHeadEvent) => void>(() => undefined);
   dispatch.current = (event) => {
@@ -79,10 +93,10 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     if (step.state.trailing !== before) setReserve(step.state.trailing);
     if (step.scrollTo !== null) {
       // La place grandit : le défilement attend qu'elle soit posée.
-      if (step.state.trailing > before) pending.current = step.scrollTo;
+      if (step.state.trailing > before) pending.current = { x: step.scrollTo, motion: step.motion };
       else {
         pending.current = null;
-        scrollTo(step.scrollTo);
+        move(step.scrollTo, step.motion);
       }
     }
     if (wake.current) clearTimeout(wake.current);
@@ -96,20 +110,28 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     if (wake.current) clearTimeout(wake.current);
   }, []);
 
-  /** Le focus d'une carte de la rangée. */
-  const onCardFocus = useCallback((index: number, focused: boolean) => {
-    dispatch.current({ type: focused ? "focus" : "blur", index, at: Date.now() });
-  }, []);
+  /** Le focus d'une carte de la rangée : un pas du focus rend la piste à la plateforme. */
+  const onCardFocus = useCallback(
+    (index: number, focused: boolean) => {
+      glide.stop();
+      pending.current = null;
+      const at = Date.now();
+      dispatch.current(focused ? { type: "focus", index, at, tileWidth: tileWidth.current } : { type: "blur", index, at });
+    },
+    [glide],
+  );
 
   /** La rangée est remise au début, sans animation (`rowRewind`) : la place posée s'en va. */
   const onRewind = useCallback(() => {
+    glide.stop();
     pending.current = null;
     dispatch.current({ type: "reset" });
-  }, []);
+  }, [glide]);
 
   const onPreviewExpand = useCallback(
-    (index: number, tileWidth: number, tileHeight: number) => {
-      dispatch.current({ type: "expand", index, tileWidth, at: Date.now() });
+    (index: number, width: number, tileHeight: number) => {
+      tileWidth.current = width;
+      dispatch.current({ type: "expand", index, tileWidth: width, at: Date.now() });
       if (!reveal) return;
       rowRef.current?.measureInWindow((_x, top) => {
         const offset = trailerPreviewRevealOffset({
@@ -129,8 +151,8 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     const target = pending.current;
     if (target === null) return;
     pending.current = null;
-    scrollTo(target);
-  }, [scrollTo]);
+    move(target.x, target.motion);
+  }, [move]);
 
   const onTrackLayout = useCallback((event: LayoutChangeEvent) => {
     trackTop.current = event.nativeEvent.layout.y;

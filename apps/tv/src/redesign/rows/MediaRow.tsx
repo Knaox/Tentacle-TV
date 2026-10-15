@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
+import { useAnimatedRef, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { ROW_STAGING, rowHeadCards, trailerPreviewWarmWindow } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
@@ -82,7 +82,8 @@ export const MediaRow = memo(function MediaRow({
   onFocusCard,
 }: MediaRowProps) {
   const forced = useForcedFocusKey();
-  const track = useRef<ScrollView>(null);
+  // Une référence animée : le passage en tête défile sur le fil d'interface (`rowGlide`).
+  const track = useAnimatedRef<ScrollView>();
   // Le défilement de la piste, relevé sans rendu : la grande carte s'y mesure.
   const scrollX = useRef(0);
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -111,7 +112,7 @@ export const MediaRow = memo(function MediaRow({
           if (focusedIndex.current === null || focusedIndex.current < head) retire();
         });
       }),
-    [rewind, rowKey, retire, head, rewindRoom],
+    [rewind, rowKey, retire, head, rewindRoom, track],
   );
   // Les titres autour du focus : leur aperçu se prépare au serveur (`useCardPreviewWarm`).
   const warm = useCardPreviewWarm();
