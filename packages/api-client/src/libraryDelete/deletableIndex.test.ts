@@ -38,10 +38,45 @@ describe("fetchLibraryDeletableIndex — « tout sélectionner » porte sur la b
     const params = new URL(urls[0], "http://x").searchParams;
     expect(params.get("Fields")).toBe("CanDelete,RecursiveItemCount");
     expect(params.get("EnableImages")).toBe("false");
-    expect(params.get("EnableUserData")).toBe("false");
+    expect(params.get("EnableUserData")).toBe("true");
     // Mêmes filtres et même tri que la grille.
     expect([params.get("SortBy"), params.get("GenreIds"), params.get("searchTerm"), params.get("IncludeItemTypes")])
       .toEqual(["SortName", "g1", "jet", "Movie,Series"]);
+  });
+});
+
+describe("fetchLibraryDeletableIndex — une bibliothèque de séries", () => {
+  /**
+   * Comme Jellyfin : `RecursiveItemCount` d'un dossier n'est rempli que par le
+   * calcul des données de visionnage (`Folder.FillUserDataDtoValues`), donc
+   * jamais avec `EnableUserData=false`.
+   */
+  function fakeSeriesLibrary() {
+    const items = [
+      { Id: "s0", Name: "Dark", Type: "Series", episodes: 26 },
+      { Id: "s1", Name: "Vide", Type: "Series", episodes: 0 },
+      { Id: "s2", Name: "Breaking Bad", Type: "Series", episodes: 62 },
+    ];
+    return {
+      fetch: async <T,>(url: string): Promise<T> => {
+        const params = new URL(url, "http://x").searchParams;
+        const userData = params.get("EnableUserData") === "true";
+        return {
+          Items: items.map(({ episodes, ...item }) => ({
+            ...item,
+            CanDelete: true,
+            ...(userData ? { RecursiveItemCount: episodes } : {}),
+          })),
+          TotalRecordCount: items.length,
+        } as T;
+      },
+    };
+  }
+
+  it("garde les séries qui ont des épisodes — un compte qui peut supprimer a de quoi sélectionner", async () => {
+    const index = await fetchLibraryDeletableIndex(fakeSeriesLibrary(), "u", "lib", {});
+    expect(index.order).toEqual(["s0", "s2"]);
+    expect([...index.entries.values()].every((entry) => entry.canDelete)).toBe(true);
   });
 });
 

@@ -1141,7 +1141,11 @@ Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir b
 
 - **Porte** : `useLibraryDeletionRights` (derrière `library.delete`), puis `CanDelete` relevé par
   le client avec le jeton du compte (`useLibraryDeletableIndex`, `useDeletableEntries`, champs
-  minimaux, ni image ni données de visionnage). Rien n'est montré sans les deux.
+  minimaux, aucune image). Rien n'est montré sans les deux. **Le relevé d'une bibliothèque garde
+  `EnableUserData=true`**, comme la grille : Jellyfin ne remplit `RecursiveItemCount` d'un dossier
+  que dans le calcul des données de visionnage ; sans elles, toute série paraissait vide et sortait
+  du relevé (« Aucun de ces titres ne peut être supprimé » sur une bibliothèque de séries, corrigé
+  le 2026-10-16).
 - **Fiche** (film, série, épisode) : « ⋯ » après la note, « Supprimer de la bibliothèque ». Une
   saison n'a pas de fiche : « Supprimer la saison » au bout de sa barre (liste des épisodes).
   Réussie, la suppression le dit d'un toast et la fiche ramène en arrière (à l'accueil sans

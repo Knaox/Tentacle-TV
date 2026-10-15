@@ -3,10 +3,16 @@
  * calcule pour le compte du jeton (`BaseItem.CanDelete(user)` : son droit partout,
  * ou dans la bibliothèque du titre). Jamais déduit côté client.
  *
- * Deux relevés, champs minimaux (ni image, ni données de visionnage) :
+ * Deux relevés, champs minimaux (aucune image) :
  * - la bibliothèque ENTIÈRE, avec les filtres et le tri de la grille : c'est sur
  *   elle que « tout sélectionner » porte, pas sur la page chargée ;
  * - une liste d'identifiants (résultats de la recherche, fiche d'un titre).
+ *
+ * ⚠️ Le relevé d'une bibliothèque garde `EnableUserData=true`, comme la grille :
+ * Jellyfin ne remplit `RecursiveItemCount` d'un dossier QUE dans le calcul des
+ * données de visionnage (`Folder.FillUserDataDtoValues`). Sans elles, chaque
+ * série paraissait vide, sortait du relevé, et une bibliothèque de séries disait
+ * « Aucun de ces titres ne peut être supprimé » à un compte qui en avait le droit.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -64,7 +70,8 @@ export async function fetchLibraryDeletableIndex(
       `&Fields=CanDelete,RecursiveItemCount` +
       `&ExcludeLocationTypes=Virtual&IsMissing=false&EnableImages=false` +
       `&Limit=${INDEX_PAGE}&StartIndex=${page * INDEX_PAGE}` +
-      `&EnableTotalRecordCount=true&EnableUserData=false` +
+      // `true` : sans lui, pas de `RecursiveItemCount`, donc plus aucune série (cf. en-tête).
+      `&EnableTotalRecordCount=true&EnableUserData=true` +
       catalogFilterParams(filters);
     const res = await client.fetch<{ Items: RawItem[]; TotalRecordCount: number }>(url);
     for (const item of res.Items) {
