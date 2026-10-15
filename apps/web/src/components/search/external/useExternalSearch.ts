@@ -11,6 +11,9 @@ import type { ExternalKind } from "@tentacle-tv/shared";
 
 export { combineExternal, type ExternalSearchState } from "@tentacle-tv/api-client";
 
+/** Titres hors bibliothèque demandés par la page de recherche — et dont elle garde la place. */
+export const EXTERNAL_SEARCH_LIMIT = 18;
+
 export interface ExternalSearchOptions {
   limit?: number;
   /** Depuis une bibliothèque : seulement ce type de titre. */

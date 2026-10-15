@@ -11,7 +11,7 @@ import { TopResultHero } from "./TopResultHero";
 import { EpisodeList, FacetChips, PeopleStrip, PosterGrid, Section } from "./SearchSections";
 import type { SearchTab } from "./searchParams";
 import { ExternalSections } from "../external/ExternalSections";
-import type { ExternalSearchState } from "../external/useExternalSearch";
+import { EXTERNAL_SEARCH_LIMIT, type ExternalSearchState } from "../external/useExternalSearch";
 
 interface SearchResultsViewProps {
   response: SearchResponse;
@@ -64,7 +64,7 @@ export const SearchResultsView = memo(function SearchResultsView(props: SearchRe
             </button>
           )}
         </div>
-        <ExternalSections external={external} library={owned} />
+        <ExternalSections external={external} library={owned} reserve={EXTERNAL_SEARCH_LIMIT} />
       </div>
     );
   }
@@ -88,7 +88,7 @@ export const SearchResultsView = memo(function SearchResultsView(props: SearchRe
         {tab === "movies" && <div className="mt-4"><PosterGrid items={movies} onOpen={onOpenItem} /></div>}
         {tab === "series" && <div className="mt-4"><PosterGrid items={series} onOpen={onOpenItem} /></div>}
         {(tab === "movies" || tab === "series") && (
-          <ExternalSections external={external} library={owned} kind={tab === "movies" ? "movie" : "series"} />
+          <ExternalSections external={external} library={owned} kind={tab === "movies" ? "movie" : "series"} reserve={EXTERNAL_SEARCH_LIMIT} />
         )}
         {tab === "collections" && <div className="mt-4"><PosterGrid items={collections} onOpen={onOpenItem} /></div>}
         {tab === "people" && <div className="mt-4"><PeopleStrip people={people} terms={terms} onOpen={onOpenPerson} /></div>}

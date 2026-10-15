@@ -16,7 +16,7 @@ import { SearchPageEmpty } from "../components/search/page/SearchPageEmpty";
 import { SearchPageHeader } from "../components/search/page/SearchPageHeader";
 import { SearchResultsView } from "../components/search/page/SearchResultsView";
 import { readSearchParams, searchHref, type SearchTab } from "../components/search/page/searchParams";
-import { useExternalSearch } from "../components/search/external/useExternalSearch";
+import { EXTERNAL_SEARCH_LIMIT, useExternalSearch } from "../components/search/external/useExternalSearch";
 import { QueryProblem } from "../components/problems/PageProblem";
 import { SeriesGapsScope } from "../components/seasons/SeriesGapsScope";
 
@@ -30,7 +30,7 @@ export function Search() {
   const episodes = useSearchEpisodes(state.query, { limit: state.tab === "episodes" ? 40 : 8, enabled: searching && withEpisodes });
   // Hors bibliothèque : seulement là où l'on cherche des œuvres (tout, films, séries).
   const external = useExternalSearch(state.query, {
-    limit: 18,
+    limit: EXTERNAL_SEARCH_LIMIT,
     enabled: searching && (state.tab === "all" || state.tab === "movies" || state.tab === "series"),
   });
   const terms = useMemo(

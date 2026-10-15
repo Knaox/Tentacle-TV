@@ -16,24 +16,35 @@ import type { ExternalSearchResult } from "@tentacle-tv/shared";
 
 const GRID = { gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" } as const;
 
+/**
+ * Une cellule en attente : la géométrie EXACTE d'une `ExternalResultCard`
+ * (affiche, titre `text-sm` de 20 px après `mt-2`, sous-titre de 16 px) — la
+ * vraie carte prend sa place sans rien pousser.
+ */
+function SkeletonCell() {
+  return (
+    <li aria-hidden>
+      <div className="aspect-[2/3] rounded-md bg-fill-subtle" />
+      <div className="mt-2 h-5 w-3/4 py-1"><div className="h-full rounded bg-fill-subtle" /></div>
+      <div className="h-4 w-1/2 py-0.5"><div className="h-full rounded bg-fill-faint" /></div>
+    </li>
+  );
+}
+
 export function ExternalResultsSkeleton({ count = 6 }: { count?: number }) {
   return (
     <ul aria-hidden className="grid gap-x-4 gap-y-6" style={GRID}>
-      {Array.from({ length: count }, (_, i) => (
-        <li key={i}>
-          <div className="aspect-[2/3] rounded-md bg-fill-subtle" />
-          <div className="mt-2 h-3 w-3/4 rounded bg-fill-subtle" />
-          <div className="mt-1.5 h-2.5 w-1/2 rounded bg-fill-faint" />
-        </li>
-      ))}
+      {Array.from({ length: count }, (_, i) => <SkeletonCell key={i} />)}
     </ul>
   );
 }
 
-export const ExternalResultsSection = memo(function ExternalResultsSection({ result, limit, className = "mt-10" }: {
+export const ExternalResultsSection = memo(function ExternalResultsSection({ result, limit, placeholders = 0, className = "mt-10" }: {
   result: ExternalSearchResult;
   /** Nombre de cartes montrées ; le reste est derrière « Tout voir ». */
   limit?: number;
+  /** Cellules en attente après les cartes : la réponse s'étoffe encore. */
+  placeholders?: number;
   className?: string;
 }) {
   const { t } = useTranslation("search");
@@ -66,6 +77,9 @@ export const ExternalResultsSection = memo(function ExternalResultsSection({ res
             <ExternalResultCard item={item} />
           </li>
         ))}
+        {/* Clé = la PLACE dans la grille : une carte arrivée prend celle d'une
+            cellule en attente, les suivantes ne glissent pas d'une case. */}
+        {Array.from({ length: placeholders }, (_, i) => <SkeletonCell key={`wait-${items.length + i}`} />)}
       </ul>
     </section>
   );

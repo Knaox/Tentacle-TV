@@ -13,6 +13,8 @@ import type { ExternalKind, MediaItem } from "@tentacle-tv/shared";
 import { ExternalSections } from "../search/external/ExternalSections";
 import { useExternalSearch } from "../search/external/useExternalSearch";
 
+const LIMIT = 12;
+
 function kindOf(collectionType: string | undefined): ExternalKind | null {
   if (collectionType === "movies") return "movie";
   if (collectionType === "tvshows") return "series";
@@ -29,12 +31,12 @@ export function LibraryExternalResults({ search, collectionType, items, show }: 
   show: boolean;
 }) {
   const kind = kindOf(collectionType);
-  const external = useExternalSearch(search, { kind, limit: 12, enabled: search.trim().length >= 2 });
+  const external = useExternalSearch(search, { kind, limit: LIMIT, enabled: search.trim().length >= 2 });
   const owned = useMemo(() => items.map((item) => ({ name: item.Name, year: item.ProductionYear ?? null })), [items]);
   if (!show || !external.available) return null;
   return (
     <div className="px-4 pb-10 md:px-8">
-      <ExternalSections external={external} library={owned} kind={kind} className="mt-8" />
+      <ExternalSections external={external} library={owned} kind={kind} reserve={LIMIT} className="mt-8" />
     </div>
   );
 }
