@@ -14,6 +14,9 @@ import { getContentPolicy, type ContentPolicy } from "../contentPolicy";
 import { invalidateItemVisibility } from "./itemVisibility";
 
 const seen = new Map<string, string>();
+const epochs = new Map<string, number>();
+
+const keyOf = (userId: string) => userId.replace(/-/g, "").toLowerCase();
 
 /** Ce qui décide de ce que voit le compte — pas les plages horaires, jugées à part. */
 function fingerprint(policy: ContentPolicy): string {
@@ -32,15 +35,23 @@ function fingerprint(policy: ContentPolicy): string {
 export async function policyChanged(userId: string): Promise<boolean> {
   const policy = await getContentPolicy(userId);
   if (!policy.readable) return false;
-  const key = userId.replace(/-/g, "").toLowerCase();
+  const key = keyOf(userId);
   const next = fingerprint(policy);
   const previous = seen.get(key);
   seen.set(key, next);
   if (previous === undefined || previous === next) return false;
   invalidateItemVisibility(userId);
+  epochs.set(key, (epochs.get(key) ?? 0) + 1);
   return true;
+}
+
+/** Le nombre de changements de politique vus pour ce compte : une clé de cache qui
+ *  le porte se périme d'elle-même au changement suivant. */
+export function policyEpoch(userId: string): number {
+  return epochs.get(keyOf(userId)) ?? 0;
 }
 
 export function resetPolicyWatchForTests(): void {
   seen.clear();
+  epochs.clear();
 }

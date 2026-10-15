@@ -14,6 +14,7 @@
 /*  chaque fois — ; deux demandes partagent tout.                      */
 /* ------------------------------------------------------------------ */
 
+import { policyChanged, policyEpoch } from "../../itemAccess/policyWatch";
 import { jellyfinAdminFetch } from "../../jellyfinAdminFetch";
 import type { JellyfinTrailer } from "../../../trailers/trailerList";
 import type { TrailerScope } from "../../../trailers/trailerCatalog";
@@ -144,11 +145,17 @@ async function lookup(itemId: string, userId: string): Promise<CatalogTitleLooku
   return { kind: "title", title };
 }
 
-/** Le titre que `itemId` désigne, vu par `userId` ; deux demandes simultanées partagent la lecture. */
-export function resolveCatalogTitle(itemId: string, userId: string): Promise<CatalogTitleLookup> {
-  const cacheKey = `${userId}:${itemId}`;
+/**
+ * Le titre que `itemId` désigne, vu par `userId` ; deux demandes simultanées
+ * partagent la lecture. Gardé dix minutes, mais jamais au-delà d'un changement
+ * de la politique du compte (cf. policyWatch) : un titre interdit entre-temps
+ * n'a plus de bande-annonce.
+ */
+export async function resolveCatalogTitle(itemId: string, userId: string): Promise<CatalogTitleLookup> {
+  await policyChanged(userId);
+  const cacheKey = `${userId}:${policyEpoch(userId)}:${itemId}`;
   const known = lookups.get(cacheKey);
-  if (known) return Promise.resolve(known);
+  if (known) return known;
   const pending = inflight.get(cacheKey);
   if (pending) return pending;
   const task = lookup(itemId, userId)

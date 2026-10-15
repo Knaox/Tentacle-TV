@@ -17,7 +17,7 @@ vi.mock("../contentPolicy", () => ({
 vi.mock("../configStore", () => ({ getJellyfinUrl: () => "http://jf.test", getJellyfinApiKey: () => "cle" }));
 
 import { getUserAccess, resetUserAccessForTests } from "../search/userAccess";
-import { policyChanged, resetPolicyWatchForTests } from "./policyWatch";
+import { policyChanged, policyEpoch, resetPolicyWatchForTests } from "./policyWatch";
 
 beforeEach(() => {
   resetUserAccessForTests();
@@ -36,9 +36,12 @@ describe("policyChanged", () => {
   it("première vue : rien à comparer ; même politique : non ; politique changée : oui", async () => {
     expect(await policyChanged("enfant")).toBe(false);
     expect(await policyChanged("enfant")).toBe(false);
+    expect(policyEpoch("enfant")).toBe(0);
     h.maxRating = 10;
     expect(await policyChanged("enfant")).toBe(true);
     expect(await policyChanged("enfant")).toBe(false);
+    // Une clé de cache qui porte l'époque se périme au changement.
+    expect(policyEpoch("enfant")).toBe(1);
   });
 
   it("une politique illisible (Jellyfin muet) ne jette rien", async () => {
