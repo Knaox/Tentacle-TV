@@ -20,6 +20,7 @@ import {
   railSetupApplyEnabled,
   railSetupApplyEntryKey,
   railSetupApplyTileKey,
+  railSetupGuardedKeys,
   toggleRailSetupTarget,
 } from "./railSetupApply";
 
@@ -84,10 +85,9 @@ describe("routeAfterSession — la page passe avant l'accueil", () => {
 });
 
 describe("l'étape du propriétaire", () => {
-  it("due pour le propriétaire seulement, avec au moins un autre profil", () => {
-    expect(railSetupApplyDue(true, 2)).toBe(true);
-    expect(railSetupApplyDue(true, 0)).toBe(false);
-    expect(railSetupApplyDue(false, 3)).toBe(false);
+  it("due dès qu'il y a un autre profil à qui appliquer (les cibles du propriétaire)", () => {
+    expect(railSetupApplyDue(2)).toBe(true);
+    expect(railSetupApplyDue(0)).toBe(false);
     expect(railSetupAfterContinue(true)).toBe("apply");
     expect(railSetupAfterContinue(false)).toBe("done");
   });
@@ -105,5 +105,14 @@ describe("l'étape du propriétaire", () => {
   it("le focus d'entrée est le premier profil", () => {
     expect(railSetupApplyEntryKey(2)).toBe(railSetupApplyTileKey(0));
     expect(railSetupApplyEntryKey(0)).toBe(RAIL_SETUP_APPLY_DECLINE_KEY);
+  });
+});
+
+describe("railSetupGuardedKeys — le clic fantôme", () => {
+  it("garde chaque cible de la page, lignes, pastilles, pied et étape du propriétaire", () => {
+    const guarded = railSetupGuardedKeys();
+    for (const key of [railSetupRowKey(0), railSetupMoveKey(42), RAIL_SETUP_CONTINUE_KEY, RAIL_SETUP_SKIP_KEY, railSetupApplyTileKey(0), RAIL_SETUP_APPLY_DECLINE_KEY]) {
+      expect(guarded).toContain(key);
+    }
   });
 });
