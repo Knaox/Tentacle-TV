@@ -10,8 +10,6 @@ import { startLibraryAddedNotifier } from "./libraryAddedNotifier";
 import { backfillSwipeFavorites } from "./swipe/swipeFavoritesBackfill";
 import { startAnnouncedPurge } from "./announcedRegistry";
 import { startNotificationPurge } from "./notificationPurge";
-import { sweepStaleTempDirs } from "./audioFingerprint";
-import { purgeEmptyAudioVerdicts } from "./audioAnalysis";
 import { purgeObsoleteTailRows } from "./tailAnalysis/tailStore";
 import { startWatchTime } from "./watchTime/collector";
 import { startSegmentPluginsWatch } from "./segmentPlugins/segmentPluginsWatch";
@@ -41,12 +39,9 @@ export function startBackgroundServices(): void {
   void backfillSwipeFavorites();
   startAnnouncedPurge();
   startNotificationPurge();
-  // Analyses audio et de fin de média : les temporaires d'une analyse
-  // interrompue, et ce qui a été rangé sans rien avoir trouvé (on ne range
-  // plus que les trouvailles).
-  void sweepStaleTempDirs();
+  // Analyse de fin de média : ce qui a été rangé sans rien avoir trouvé (on
+  // ne range plus que les trouvailles), et les versions périmées.
   void purgeObsoleteTailRows();
-  void purgeEmptyAudioVerdicts();
   startWatchTime();
   // Greffons de passages : Intro Skipper sans écoute (une fois), réglages en attente.
   startSegmentPluginsWatch();

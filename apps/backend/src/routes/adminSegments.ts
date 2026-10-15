@@ -1,39 +1,26 @@
 /**
- * L'analyse audio des passages, vue de l'administrateur : l'interrupteur, l'outil
- * d'empreinte trouvé sur ce serveur, et ce que la fonction a coûté depuis le
- * démarrage (fenêtres transcodées, octets, secondes, verdicts). C'est ce qui
- * permet de décider en connaissance de cause de la laisser allumée.
+ * L'ancienne route de l'analyse audio des passages, FIGÉE : l'analyse est
+ * retirée du serveur (plus d'interrupteur, plus d'outil d'empreinte).
  *
- * À part d'`admin.ts`, qui frôle les trois cents lignes.
+ * Elle ne reste que pour les bureaux déjà livrés, dont la page « Services »
+ * la lit sans capacité : une réponse « coupée, sans outil » leur fait montrer
+ * l'analyse indisponible, interrupteur grisé — aucune erreur, et ce même
+ * interrupteur ne peut plus rien écrire (l'écriture, `PUT`, est retirée).
+ * Les clients d'aujourd'hui ne l'appellent plus. La forme de la réponse est
+ * celle d'avant, champ pour champ : elle ne se retouche pas.
  */
 
 import type { FastifyPluginAsync } from "fastify";
-import { z } from "zod";
 import { requireAdmin } from "../middleware/auth";
-import { audioAnalysisCounters } from "../services/audioAnalysis";
-import { detectFingerprintTool } from "../services/audioFingerprintTool";
-import { AUDIO_ANALYSIS_KEY, isAudioAnalysisEnabled, setConfigValue } from "../services/configStore";
 
-const putSchema = z.object({ enabled: z.boolean() });
+const RETIRED_AUDIO_ANALYSIS = {
+  enabled: false,
+  tool: null,
+  counters: { jobs: 0, windows: 0, bytes: 0, seconds: 0, verdicts: 0, silent: 0, deferred: 0 },
+} as const;
 
 export const adminSegmentRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAdmin);
 
-  app.get("/audio-analysis", async () => {
-    const tool = await detectFingerprintTool();
-    return {
-      enabled: isAudioAnalysisEnabled(),
-      tool: tool === null ? null : tool.kind,
-      counters: audioAnalysisCounters(),
-    };
-  });
-
-  app.put("/audio-analysis", async (request, reply) => {
-    const parsed = putSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({ message: parsed.error.issues[0].message });
-    }
-    await setConfigValue(AUDIO_ANALYSIS_KEY, String(parsed.data.enabled));
-    return { success: true, enabled: parsed.data.enabled };
-  });
+  app.get("/audio-analysis", async () => RETIRED_AUDIO_ANALYSIS);
 };

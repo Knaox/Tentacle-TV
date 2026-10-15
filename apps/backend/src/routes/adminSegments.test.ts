@@ -1,21 +1,15 @@
 /**
- * La route admin de l'analyse audio : lecture (interrupteur, outil, compteurs),
- * écriture de l'interrupteur, refus d'un corps illisible et d'un non-admin.
+ * L'ancienne route admin de l'analyse audio, figée pour les bureaux livrés :
+ * « coupée, sans outil », réservée aux administrateurs, et plus d'écriture.
  */
 
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
-const configStore = vi.hoisted(() => new Map<string, string>());
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getJellyfinApiKey: () => "admin-key",
-  AUDIO_ANALYSIS_KEY: "audio_analysis_enabled",
-  isAudioAnalysisEnabled: () => configStore.get("audio_analysis_enabled") === "true",
-  setConfigValue: async (key: string, value: string) => {
-    configStore.set(key, value);
-  },
 }));
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
@@ -28,17 +22,10 @@ vi.mock("../services/db", () => ({
     throw new Error("pas de prisma dans ce banc");
   },
 }));
-vi.mock("../services/audioFingerprintTool", () => ({
-  detectFingerprintTool: async () => ({ kind: "fpcalc", command: "fpcalc" }),
-}));
-vi.mock("../services/audioAnalysis", () => ({
-  audioAnalysisCounters: () => ({ jobs: 2, windows: 5, bytes: 14_500_000, seconds: 16, verdicts: 1, silent: 1, deferred: 0 }),
-}));
 
 import { adminSegmentRoutes } from "./adminSegments";
 
 beforeEach(() => {
-  configStore.clear();
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -71,14 +58,14 @@ async function call(method: "GET" | "PUT", token: string, body?: unknown) {
   return response;
 }
 
-describe("GET /api/admin/audio-analysis", () => {
-  it("rend l'interrupteur (coupé par défaut), l'outil et les compteurs", async () => {
+describe("GET /api/admin/audio-analysis (figée)", () => {
+  it("rend « coupée, sans outil », compteurs à zéro : la forme que lisent les bureaux livrés", async () => {
     const response = await call("GET", "tok-admin");
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
       enabled: false,
-      tool: "fpcalc",
-      counters: { jobs: 2, windows: 5, bytes: 14_500_000, seconds: 16, verdicts: 1, silent: 1, deferred: 0 },
+      tool: null,
+      counters: { jobs: 0, windows: 0, bytes: 0, seconds: 0, verdicts: 0, silent: 0, deferred: 0 },
     });
   });
 
@@ -89,23 +76,7 @@ describe("GET /api/admin/audio-analysis", () => {
 });
 
 describe("PUT /api/admin/audio-analysis", () => {
-  it("écrit l'interrupteur, et la lecture le reflète", async () => {
-    const off = await call("PUT", "tok-admin", { enabled: false });
-    expect(off.statusCode).toBe(200);
-    expect(off.json()).toEqual({ success: true, enabled: false });
-    expect(configStore.get("audio_analysis_enabled")).toBe("false");
-    expect((await call("GET", "tok-admin")).json().enabled).toBe(false);
-    await call("PUT", "tok-admin", { enabled: true });
-    expect((await call("GET", "tok-admin")).json().enabled).toBe(true);
-  });
-
-  it("refuse un corps illisible", async () => {
-    expect((await call("PUT", "tok-admin", { enabled: "oui" })).statusCode).toBe(400);
-    expect((await call("PUT", "tok-admin", {})).statusCode).toBe(400);
-  });
-
-  it("refuse un non-admin sans rien écrire", async () => {
-    expect((await call("PUT", "tok-user", { enabled: false })).statusCode).toBe(403);
-    expect(configStore.has("audio_analysis_enabled")).toBe(false);
+  it("n'existe plus : plus rien à allumer", async () => {
+    expect((await call("PUT", "tok-admin", { enabled: true })).statusCode).toBe(404);
   });
 });

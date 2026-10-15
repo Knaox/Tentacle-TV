@@ -56,27 +56,9 @@ export interface SegmentSourceBundle {
    * les temps ne correspondent pas à `runtimeMs`.
    */
   defaultMediaSourceId: string | null;
-  /**
-   * Ce qu'il faut savoir d'un ÉPISODE pour aller écouter ses voisins de saison
-   * (`services/audioAnalysis.ts`) ; `null` pour tout ce qui n'en est pas un, ou
-   * dont la série et la saison ne sont pas connues.
-   */
-  episode: EpisodeContext | null;
+  /** Un ÉPISODE : son générique peut se clore sur l'aperçu du suivant (`tailAnalysis/`). */
+  isEpisode: boolean;
   sources: SegmentSources;
-}
-
-/** La place d'un épisode dans sa série, et ce que son fichier pèse. */
-export interface EpisodeContext {
-  seriesId: string;
-  seasonId: string;
-  /** Numéro de saison (`ParentIndexNumber`), `null` si Jellyfin ne le dit pas. */
-  seasonNumber: number | null;
-  /** Numéro d'épisode (`IndexNumber`), `null` si Jellyfin ne le dit pas. */
-  indexNumber: number | null;
-  /** Débit du fichier par défaut en bit/s (`MediaSources[0].Bitrate`), `null` si inconnu. */
-  sourceBitrate: number | null;
-  /** Date d'ajout à la bibliothèque (`DateCreated`, ISO), `null` si absente. */
-  createdAt: string | null;
 }
 
 const EMPTY_BUNDLE: SegmentSourceBundle = {
@@ -84,7 +66,7 @@ const EMPTY_BUNDLE: SegmentSourceBundle = {
   libraryId: null,
   trickplay: null,
   defaultMediaSourceId: null,
-  episode: null,
+  isEpisode: false,
   sources: {},
 };
 
@@ -120,29 +102,7 @@ interface ItemSnapshot {
   RunTimeTicks?: number;
   Chapters?: Array<{ StartPositionTicks?: number; Name?: string }>;
   Trickplay?: TrickplayManifest;
-  MediaSources?: Array<{ Id?: string; Bitrate?: number }>;
-  // Champs de base du DTO d'un épisode — toujours rendus, sans `fields=`.
-  SeriesId?: string;
-  SeasonId?: string;
-  ParentIndexNumber?: number;
-  IndexNumber?: number;
-  DateCreated?: string;
-}
-
-/** La place de l'épisode, quand l'item en est un et que Jellyfin la connaît. */
-function episodeContext(item: ItemSnapshot): EpisodeContext | null {
-  if (item.Type !== "Episode") return null;
-  if (typeof item.SeriesId !== "string" || item.SeriesId === "") return null;
-  if (typeof item.SeasonId !== "string" || item.SeasonId === "") return null;
-  const bitrate = item.MediaSources?.[0]?.Bitrate;
-  return {
-    seriesId: item.SeriesId,
-    seasonId: item.SeasonId,
-    seasonNumber: typeof item.ParentIndexNumber === "number" ? item.ParentIndexNumber : null,
-    indexNumber: typeof item.IndexNumber === "number" ? item.IndexNumber : null,
-    sourceBitrate: typeof bitrate === "number" && bitrate > 0 ? bitrate : null,
-    createdAt: typeof item.DateCreated === "string" ? item.DateCreated : null,
-  };
+  MediaSources?: Array<{ Id?: string }>;
 }
 
 /** Une valeur du dictionnaire du greffon porte-t-elle une fin exploitable ? */
@@ -241,7 +201,7 @@ async function fetchBundle(itemId: string, url: string, apiKey: string): Promise
       libraryId: collectionFolderId(ancestorsRaw),
       trickplay: item.Trickplay ?? null,
       defaultMediaSourceId: typeof defaultSource === "string" && defaultSource !== "" ? defaultSource : null,
-      episode: episodeContext(item),
+      isEpisode: item.Type === "Episode",
       sources: {
         mediaSegments,
         pluginDict,
