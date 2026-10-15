@@ -21,7 +21,7 @@ interface Props {
  *
  * Bureau, session d'un PROFIL de la famille (fenêtre étroite) : le rond et le
  * nom du profil — sans « Changer la photo », sauf pour un INVITÉ que la
- * session personnelle de l'appareil habille (serveur 1.29.0), comme dans le
+ * session personnelle de l'appareil habille (serveur 1.30.0), comme dans le
  * menu de l'avatar.
  */
 export function ProfileHero({ name, initial, isAdmin }: Props) {

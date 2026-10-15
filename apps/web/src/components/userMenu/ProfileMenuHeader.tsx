@@ -6,7 +6,7 @@ import { FamilyAvatar } from "../../family/FamilyAvatar";
 
 interface ProfileMenuHeaderProps {
   profile: ActiveProfile;
-  /** Un invité que l'appareil peut habiller (serveur 1.29.0) : son rond ouvre la galerie. */
+  /** Un invité que l'appareil peut habiller (serveur 1.30.0) : son rond ouvre la galerie. */
   onChangePhoto?: () => void;
 }
 

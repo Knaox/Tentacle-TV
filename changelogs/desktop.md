@@ -13,11 +13,11 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
-## [1.29.0]
-<!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.29.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
+## [1.30.0]
+<!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.30.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
 ### FR
-- **Aperçus de bande-annonce** : laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous : Lire, Ma liste, favori, vu, « Plus d'infos », la note, l'année et les genres ; un clic coupe le son, et les aperçus s'éteignent dans Réglages › Apparence (serveur 1.29.0)
-- **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. À activer dans Réglages › Famille, pour tous vos ordinateurs ; « Ne plus proposer sur cet appareil » ouvre ensuite directement le profil choisi (serveur 1.29.0)
+- **Aperçus de bande-annonce** : laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous : Lire, Ma liste, favori, vu, « Plus d'infos », la note, l'année et les genres ; un clic coupe le son, et les aperçus s'éteignent dans Réglages › Apparence (serveur 1.30.0)
+- **« Qui regarde ? » sur l'ordinateur** : chacun ouvre son profil, derrière son code PIN s'il en a un. À activer dans Réglages › Famille, pour tous vos ordinateurs ; « Ne plus proposer sur cet appareil » ouvre ensuite directement le profil choisi (serveur 1.30.0)
 - **Un menu de l'avatar plus simple** : « Changer de profil » en tête, qui ramène à « Qui regarde ? », puis vous, cet appareil, et l'aide en pied
 - **Un profil ouvert sur l'ordinateur regarde** : il n'administre rien, comme sur la TV
 - **Photos de profil** : une galerie de 36 personnages illustrés, chacun avec son nom et son histoire, à choisir depuis le menu de l'avatar — l'import d'une photo personnelle reste là. Un compte sans photo se la voit proposer une fois, au premier lancement. Les invités de la Famille ont aussi la leur, depuis Réglages › Famille ou leur profil

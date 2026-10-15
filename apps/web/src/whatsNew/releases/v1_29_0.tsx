@@ -2,14 +2,14 @@ import type { WhatsNewRelease } from "../types";
 import { AvatarsScene, TrailerPreviewScene, WhoIsWatchingScene } from "../scenes/v1_29_0";
 
 /**
- * 1.29.0 — la bande-annonce au survol, « Qui regarde ? » sur l'ordinateur, et
+ * 1.30.0 — la bande-annonce au survol, « Qui regarde ? » sur l'ordinateur, et
  * la galerie des photos de profil.
  *
  * Trois scènes : la mini-carte qui grandit depuis l'affiche (la vidéo, ses
  * plans, le bandeau, le son) ; le choix d'un profil — son code PIN —, et
  * « Changer de profil » dans le menu de l'avatar, qui y ramène ; la photo de
  * l'en-tête du menu, qui ouvre la troupe, et un personnage choisi. Les deux
- * premières fonctions dépendent du serveur 1.29.0 : face à un serveur qui ne
+ * premières fonctions dépendent du serveur 1.30.0 : face à un serveur qui ne
  * les déclare pas, l'app n'en montre rien, et l'écran non plus (`capability`) ;
  * la galerie, elle, ne demande rien au serveur. Le reste du bloc (YouTube
  * ménagé, des aperçus plus légers, « Vider le cache ») se dit dans le changelog.
@@ -17,7 +17,7 @@ import { AvatarsScene, TrailerPreviewScene, WhoIsWatchingScene } from "../scenes
  * Les textes vivent dans l'espace i18n `whatsNew` (v1_29_0_<id>_title / _body).
  */
 export const RELEASE_1_29_0: WhatsNewRelease = {
-  version: "1.29.0",
+  version: "1.30.0",
   features: [
     {
       id: "trailerPreview",

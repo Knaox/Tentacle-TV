@@ -437,7 +437,7 @@ ne s'y retouche à la main (`brand/avatars/README.md`, règles de dessin compris
 - Catalogue (ordre, collection, couleur d'attente, tempérament au survol) :
   `packages/shared/src/avatars/avatarCatalog.ts` ; noms et histoires : espace i18n `avatars`.
   Les identifiants nomment des fichiers et des clés : ils ne se renomment jamais.
-- **Les invités de la Famille** (serveur 1.29.0, capacité `family.guestPhotos`) : le SERVEUR pose
+- **Les invités de la Famille** (serveur 1.30.0, capacité `family.guestPhotos`) : le SERVEUR pose
   leur photo (`setGuestPhoto`, mêmes droits que leur PIN), depuis Réglages › Famille, ou pendant
   la session de profil de l'invité sur le bureau, par la session PERSONNELLE de l'appareil
   (`PickerProfileDto.photoEditable`). La galerie vise une cible (`useAvatarTarget` : compte ou
