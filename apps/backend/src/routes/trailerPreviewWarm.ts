@@ -8,13 +8,15 @@
 /*  `GET /preview`) et prépare les autres en fond (`previewWarm.ts` :  */
 /*  jamais d'extraction YouTube). Contrat : packages/shared/src/       */
 /*  trailers/trailerPreviewWarm.ts, recopié dans src/trailers/. Tout   */
-/*  compte connecté y a droit, comme à `GET /preview` — un titre de la */
-/*  bibliothèque n'est rendu qu'à un compte qui le voit. Un seau par   */
+/*  compte connecté y a droit, comme à `GET /preview` — un titre (de   */
+/*  la bibliothèque OU par TMDB) n'est rendu ni préparé que pour un    */
+/*  compte qui le voit. Un seau par                                    */
 /*  compte : dix demandes d'avance, puis une toutes les deux secondes. */
 /* ------------------------------------------------------------------ */
 
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
+import { titleAllowedFor } from "../services/reco/recoRights";
 import { resolveCatalogTitle } from "../services/trailers/catalog/catalogTitle";
 import { previewBody } from "../services/trailers/preview/previewBody";
 import { previewLanguage } from "../services/trailers/preview/previewLanguage";
@@ -38,13 +40,21 @@ function refuse(reply: FastifyReply, status: 400 | 429, body: TrailerPreviewRefu
 /** Ce que la demande fait d'un titre : un aperçu prêt à rendre, une préparation, ou rien (invisible pour ce compte). */
 type Plan = { kind: "ready"; ready: TrailerPreviewWarmReady } | { kind: "warm"; job: WarmJob } | { kind: "none" };
 
+/** Le compte voit-il ce titre ? Les mêmes questions que `GET /preview`. */
+async function subjectVisible(subject: TrailerPreviewWarmSubject, userId: string): Promise<boolean> {
+  if ("itemId" in subject) return (await resolveCatalogTitle(subject.itemId, userId)).kind === "title";
+  return titleAllowedFor(userId, { mediaType: subject.mediaType, tmdbId: subject.tmdbId });
+}
+
 async function planFor(subject: TrailerPreviewWarmSubject, lang: string | undefined, dailymotion: boolean, userId: string): Promise<Plan> {
+  // Une décision est partagée par tous ceux qui voient le titre : jamais rendue — ni préparée — pour un
+  // compte qui ne le voit pas. Par TMDB aussi : un autre compte l'avait-il déjà prévisualisé, elle lui
+  // revenait (titre caché par sa note, sa bibliothèque ou sa classification TMDB).
+  if (!(await subjectVisible(subject, userId))) return { kind: "none" };
   const target = previewTarget(subject, lang);
   const key = decisionKey(target, lang, dailymotion);
   const ready = readyPreview(key);
   if (!ready) return { kind: "warm", job: { key, target, lang, account: userId, dailymotion } };
-  // Une décision est partagée par tous ceux qui voient le titre : jamais rendue à un compte qui ne le voit pas.
-  if ("itemId" in subject && (await resolveCatalogTitle(subject.itemId, userId)).kind !== "title") return { kind: "none" };
   return { kind: "ready", ready: { subject, preview: previewBody(ready.ref, ready.resolved, ready.version) } };
 }
 

@@ -18,9 +18,10 @@ const { extractTrailerSource, catalogs, detailed } = vi.hoisted(() => ({
   catalogs: new Map<string, TrailerCatalogResponse>(),
   detailed: vi.fn(),
 }));
-// Les droits du compte sur un titre TMDB : le film 666 lui est caché.
+// Les droits du compte sur un titre TMDB : le film 666 est caché à tous, le 610 à « intrus » seulement.
 vi.mock("../services/reco/recoRights", () => ({
-  titleAllowedFor: async (_userId: string, title: { tmdbId: number }) => title.tmdbId !== 666,
+  titleAllowedFor: async (userId: string, title: { tmdbId: number }) =>
+    title.tmdbId !== 666 && !(userId.startsWith("intrus") && title.tmdbId === 610),
 }));
 vi.mock("../services/trailers/ytExtract", () => ({ extractTrailerSource, prewarmExtraction: () => undefined }));
 const catalogOf = (request: Record<string, unknown>): TrailerCatalogResponse =>
@@ -181,6 +182,20 @@ describe("POST /api/trailers/preview/warm", () => {
     await settled();
     expect((await warm(app, [{ itemId: MOVIE }], "alice")).json().ready).toHaveLength(1);
     expect((await warm(app, [{ itemId: MOVIE }], "intrus")).json()).toEqual({ ready: [], queued: 0 });
+  });
+
+  it("un titre TMDB : un aperçu décidé pour un autre compte n'est jamais rendu à qui ne le voit pas", async () => {
+    catalogs.set("movie:610", dailymotionFirst());
+    const app = await server();
+    // Caché à « intrus » (note, bibliothèque, classification) : il ne le fait pas décider…
+    expect((await warm(app, [{ tmdbId: 610, mediaType: "movie" }], "intrus")).json()).toEqual({ ready: [], queued: 0 });
+    await settled();
+    expect(detailed).not.toHaveBeenCalled();
+    // … et ne reçoit pas la décision prise pour « alice » (banc du contrôle parental, 2026-10-15).
+    await warm(app, [{ tmdbId: 610, mediaType: "movie" }], "alice");
+    await settled();
+    expect((await warm(app, [{ tmdbId: 610, mediaType: "movie" }], "alice")).json().ready).toHaveLength(1);
+    expect((await warm(app, [{ tmdbId: 610, mediaType: "movie" }], "intrus")).json()).toEqual({ ready: [], queued: 0 });
   });
 
   it("refuse un corps illisible (400) et le trop de demandes d'un compte (429, Retry-After)", async () => {
