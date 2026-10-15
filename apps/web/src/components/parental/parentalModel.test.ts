@@ -5,6 +5,7 @@ import {
   bitsFromMbps,
   currentRating,
   formatHour,
+  isNeverSchedule,
   mbpsFromBits,
   ratingChoices,
   ratingLabel,
@@ -84,5 +85,20 @@ describe("le débit", () => {
     expect(mbpsFromBits(0)).toBe(0);
     expect(bitsFromMbps(2.5)).toBe(2_500_000);
     expect(bitsFromMbps(-1)).toBe(0);
+  });
+});
+
+describe("« Jamais » : aucune plage ne se recoupe", () => {
+  const never = [{ dayOfWeek: "Sunday" as const, startHour: 24, endHour: 24 }];
+
+  it("la plage sentinelle du serveur se dit « Jamais », pas « Dimanche »", () => {
+    expect(isNeverSchedule(never)).toBe(true);
+    expect(isNeverSchedule([])).toBe(false);
+    expect(isNeverSchedule([{ dayOfWeek: "Sunday", startHour: 20, endHour: 24 }])).toBe(false);
+  });
+
+  it("une vraie plage remplace « Jamais » au lieu de s'y ajouter", () => {
+    const evening = { dayOfWeek: "Weekday" as const, startHour: 18, endHour: 21 };
+    expect(addSchedule(never, evening)).toEqual([evening]);
   });
 });

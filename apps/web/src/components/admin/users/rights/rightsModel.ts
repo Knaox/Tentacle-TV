@@ -1,4 +1,5 @@
 import { USER_RIGHTS_GROUPS, type UserRights, type UserRightsGroup, type UserRightsKey, type UserRightsRefusal } from "@tentacle-tv/shared";
+import { isNeverSchedule } from "../../../parental/parentalModel";
 
 /**
  * Les règles PURES de la fiche des droits : l'ordre des rubriques, le résumé
@@ -60,7 +61,8 @@ export function groupSummary(group: UserRightsGroup, rights: UserRights, context
       if (rights.blockUnratedItems.length) parts.push({ key: "summary.unrated", values: { count: rights.blockUnratedItems.length } });
       if (rights.blockedTags.length) parts.push({ key: "summary.blockedTags", values: { count: rights.blockedTags.length } });
       if (rights.allowedTags.length) parts.push({ key: "summary.allowedTags", values: { count: rights.allowedTags.length } });
-      if (rights.accessSchedules.length) parts.push({ key: "summary.schedules", values: { count: rights.accessSchedules.length } });
+      if (isNeverSchedule(rights.accessSchedules)) parts.push({ key: "summary.scheduleNever" });
+      else if (rights.accessSchedules.length) parts.push({ key: "summary.schedules", values: { count: rights.accessSchedules.length } });
       return parts.length ? parts : [{ key: "summary.noParental" }];
     }
     case "playback": {

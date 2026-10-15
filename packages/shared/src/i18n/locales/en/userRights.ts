@@ -37,6 +37,7 @@ export default {
     allowedTags_other: "{{count}} allowed tags",
     schedules_one: "{{count}} time window",
     schedules_other: "{{count}} time windows",
+    scheduleNever: "No time window allowed",
     noParental: "No restrictions",
     noPlayback: "Playback not allowed",
     noVideoTranscode: "No video conversion",
@@ -120,6 +121,7 @@ export default {
     scheduleRemove: "Remove the window {{day}} {{from}}–{{to}}",
     scheduleEmpty: "No window: sign-in at any time.",
     scheduleInvalid: "The end time must come after the start time.",
+    scheduleNever: "Never: no time window allowed, sign-in is always refused.",
     scheduleRange: "{{from}} – {{to}}",
     days: {
       Everyday: "Every day", Weekday: "Weekdays", Weekend: "Weekends",

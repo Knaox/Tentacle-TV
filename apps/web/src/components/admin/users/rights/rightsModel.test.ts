@@ -66,3 +66,10 @@ describe("les garde-fous de la fiche", () => {
     expect(refusalKey(null)).toBe("refusal.unknown");
   });
 });
+
+describe("le résumé du contrôle parental face à « Jamais »", () => {
+  it("dit qu'aucune plage n'est permise, pas « 1 plage horaire »", () => {
+    const never = { ...PLAIN_RIGHTS, accessSchedules: [{ dayOfWeek: "Sunday" as const, startHour: 24, endHour: 24 }] };
+    expect(keys(groupSummary("parental", never, context))).toEqual(["summary.scheduleNever"]);
+  });
+});

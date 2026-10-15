@@ -8,6 +8,7 @@ import {
   SCHEDULE_HOURS,
   addSchedule,
   formatHour,
+  isNeverSchedule,
   removeSchedule,
   sameSchedule,
   scheduleIsValid,
@@ -32,14 +33,20 @@ export const ScheduleListField = memo(function ScheduleListField({ value, disabl
   const errorId = useId();
   const [draft, setDraft] = useState<AccessScheduleDto>(DEFAULT_DRAFT);
   const valid = scheduleIsValid(draft);
-  const duplicate = value.some((existing) => sameSchedule(existing, draft));
+  const never = isNeverSchedule(value);
+  const duplicate = !never && value.some((existing) => sameSchedule(existing, draft));
   const dayName = (day: AccessScheduleDay) => t(`parental.days.${day}`);
 
   return (
     <fieldset aria-labelledby={titleId}>
       <legend id={titleId} className={FIELD_LABEL}>{t("fields.accessSchedules.label")}</legend>
       <span className={FIELD_HINT}>{t("fields.accessSchedules.hint")}</span>
-      {value.length > 0 ? (
+      {never ? (
+        <p className="mt-2 flex items-center gap-2.5 rounded-lg border border-line-subtle bg-fill-subtle px-3 py-2 text-sm text-content-primary">
+          <Clock aria-hidden className="h-3.5 w-3.5 shrink-0 text-content-tertiary" />
+          {t("parental.scheduleNever")}
+        </p>
+      ) : value.length > 0 ? (
         <ul className="mt-2 space-y-1.5">
           {value.map((schedule, index) => {
             const from = formatHour(schedule.startHour);

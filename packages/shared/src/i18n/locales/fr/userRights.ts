@@ -38,6 +38,7 @@ export default {
     allowedTags_other: "{{count}} étiquettes permises",
     schedules_one: "{{count}} plage horaire",
     schedules_other: "{{count}} plages horaires",
+    scheduleNever: "Aucune plage permise",
     noParental: "Aucune restriction",
     noPlayback: "Lecture interdite",
     noVideoTranscode: "Sans conversion vidéo",
@@ -121,6 +122,7 @@ export default {
     scheduleRemove: "Retirer la plage {{day}} {{from}}–{{to}}",
     scheduleEmpty: "Aucune plage : connexion à toute heure.",
     scheduleInvalid: "L'heure de fin doit suivre l'heure de début.",
+    scheduleNever: "Jamais : aucune plage permise, la connexion est toujours refusée.",
     scheduleRange: "{{from}} – {{to}}",
     days: {
       Everyday: "Tous les jours", Weekday: "En semaine", Weekend: "Le week-end",

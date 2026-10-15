@@ -1,4 +1,4 @@
-import type { AccessScheduleDay, AccessScheduleDto, UserRightsOptions } from "@tentacle-tv/shared";
+import { GUEST_SCHEDULE_NEVER, type AccessScheduleDay, type AccessScheduleDto, type UserRightsOptions } from "@tentacle-tv/shared";
 
 type ParentalRatingOption = UserRightsOptions["parentalRatings"][number];
 
@@ -112,9 +112,21 @@ export function sameSchedule(a: AccessScheduleDto, b: AccessScheduleDto): boolea
 }
 
 /** Ajoute une plage valide et nouvelle ; sinon la liste inchangée. */
+/**
+ * « Jamais » : la plage sentinelle (`GUEST_SCHEDULE_NEVER`, dimanche 24 h – 24 h)
+ * que le serveur pose quand les plages d'un invité et celles de son créateur ne
+ * se recoupent pas — une liste vide voudrait dire « à toute heure » chez
+ * Jellyfin. Elle se dit « Jamais », jamais « Dimanche ».
+ */
+export function isNeverSchedule(list: readonly AccessScheduleDto[]): boolean {
+  return list.length > 0 && list.every((schedule) => GUEST_SCHEDULE_NEVER.some((never) => sameSchedule(schedule, never)));
+}
+
 export function addSchedule(list: readonly AccessScheduleDto[], schedule: AccessScheduleDto): AccessScheduleDto[] {
-  if (!scheduleIsValid(schedule) || list.some((existing) => sameSchedule(existing, schedule))) return [...list];
-  return [...list, schedule];
+  // Une vraie plage remplace « Jamais » : elle ne s'y ajoute pas.
+  const base = isNeverSchedule(list) ? [] : list;
+  if (!scheduleIsValid(schedule) || base.some((existing) => sameSchedule(existing, schedule))) return [...list];
+  return [...base, schedule];
 }
 
 export function removeSchedule(list: readonly AccessScheduleDto[], index: number): AccessScheduleDto[] {
