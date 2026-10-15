@@ -76,6 +76,7 @@ s'arme puis se désarme), aucun identifiant réel tapé au jumelage.
 |---|---|---|
 | `fiche.json` | la fiche | FI-1 à FI-8, FI-10, FI-11, FI-13, PA-5 |
 | `recherche.json` | la recherche | RE-1 à RE-10 — RE-6 en relevé seulement (constat 4 du relevé : au simulateur, Menu sur le clavier ouvert quitte l'app) ; RE-11 et RE-12 : tests unitaires |
+| `recherche-banniere.json` | la recherche, requête « american » (bannière, films, séries) | RE-3 bis : BAS depuis la bannière, la première carte, puis la carte laissée ; HAUT des séries, au plus proche |
 | `parcourir.json` | Parcourir | PA-1 à PA-4 |
 | `bibliotheque.json` | bibliothèque et grilles | BI-1 à BI-3, BI-5 à BI-8, BI-10, BI-12, GR-1 à GR-4 (BI-4, BI-9, BI-11 : tests unitaires) |
 | `collections.json` | Ma liste et Favoris | CO-1, CO-2 |
@@ -101,6 +102,9 @@ C=~/Library/Caches/tentacle-nav-golden/bande-annonce; mkdir -p "$C" && ffmpeg -l
 `bande-annonce-lecteur.json` a pour référence `04c680dd8` (le code du
 lecteur simplifié tel que branché, enregistré sur un clone de « Apple TV 4K
 (at 1080p) »).
+
+`recherche-banniere.json` a pour référence `0324eaf2c` (le correctif) ;
+rejouée sur `c275dffd4`, le code d'avant, BAS y menait à `movies:2`.
 
 Hors banc (un appui ne sait pas les montrer) : le glisser du pavé, la dictée,
 le clavier système sur l'appareil — passage sur l'Apple TV « Chambre ».
