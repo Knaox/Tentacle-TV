@@ -28,6 +28,7 @@ import { PLAYHEAD_SCENES } from "./playheadScenes";
 import { QUALITY_SCENES } from "./qualityScenes";
 import { RAIL_SCENES } from "./railScenes";
 import { RAIL_SETUP_SCENES } from "./railSetupScenes";
+import { ROW_HEAD_SCENES } from "./rowHeadScenes";
 import { REQUEST_SCENES } from "./requestScenes";
 import { SEARCH_SCENES } from "./searchScenes";
 import { SETTINGS_SCENES } from "./settingsScenes";
@@ -64,6 +65,8 @@ export const SCENES: BenchScene[] = [
   // La taille des cartes, écran par écran : Petite, Normale, Grande.
   ...CARD_SIZE_SCENES,
   ...PREVIEW_SCENES,
+  // La carte en aperçu passe en tête de sa rangée : la butée, le dépassement.
+  ...ROW_HEAD_SCENES,
   ...PLAYER_SCENES,
   ...PLAYER_QUALITY_SCENES,
   ...PLAYHEAD_SCENES,
