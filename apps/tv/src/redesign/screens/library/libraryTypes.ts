@@ -8,8 +8,9 @@ import type { IconName } from "../../icons/Icon";
  * montre, et rend la main par ses callbacks.
  */
 
-/** Les critères de la barre, dans l'ordre de l'écran. */
-export type LibraryFilterKey = "status" | "favorites" | "genres" | "sort" | "years" | "rating" | "platforms";
+/** Les critères de la barre, dans l'ordre de l'écran. `type` (Tous, Films,
+ *  Séries) n'existe que sur Ma liste et les Favoris (`CollectionView`). */
+export type LibraryFilterKey = "status" | "favorites" | "genres" | "sort" | "years" | "rating" | "platforms" | "type";
 
 /** Une pastille de la barre : le nom du critère et sa valeur courante. */
 export interface FilterPillModel {

@@ -27,4 +27,8 @@ export default {
   decades: "Decades",
   ratingAndUp: "and up",
   sortCriterion: "Criterion",
+  contentType: "Type",
+  sortArrival: "Library arrival",
+  sortArrivalDesc: "Recently arrived",
+  sortArrivalAsc: "First arrived",
 } as const;

@@ -34,4 +34,10 @@ export default {
   decades: "Décennies",
   ratingAndUp: "et plus",
   sortCriterion: "Critère",
+  // Ma liste et Favoris sur TV : le type, et le tri par ARRIVÉE dans la
+  // bibliothèque (aucune date d'ajout à la liste n'existe).
+  contentType: "Type",
+  sortArrival: "Arrivée en bibliothèque",
+  sortArrivalDesc: "Arrivés récemment",
+  sortArrivalAsc: "Arrivés en premier",
 } as const;

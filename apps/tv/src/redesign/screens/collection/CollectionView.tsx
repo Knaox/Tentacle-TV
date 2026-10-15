@@ -1,15 +1,19 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { useAmbientOf, type AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
+import { FocusGroup } from "../../focus/FocusGroup";
 import type { IconName } from "../../icons/Icon";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { text } from "../../theme/tokens";
 import { EmptyState } from "../library/EmptyState";
+import { FilterBar } from "../library/FilterBar";
+import { FilterSheetLayer, type FilterSheetLayerProps } from "../library/FilterSheetLayer";
 import { GridSkeleton } from "../library/GridSkeleton";
+import type { ActiveFilterModel, FilterPillModel, LibraryFilterKey } from "../library/libraryTypes";
 import { PosterGrid, useGridColumns } from "../library/PosterGrid";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 
@@ -29,6 +33,12 @@ import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
  *   (`useTVCardActions`), le retour de `onFocusCard` vers la lumière du fond.
  * L'entrée du focus (première affiche, sinon l'action du vide) reste à
  * l'intégration (`useTVContentEntry`).
+ *
+ * Sous le titre, avec des titres seulement, la barre de la bibliothèque
+ * réduite au TYPE et au TRI (`pills`, `activeFilters`, CO-3) — mêmes
+ * pastilles, mêmes listes en Modal (`FilterSheetLayer`), mêmes clés de
+ * focus ; un type sans titre : « Aucun titre ne correspond » (`noResults`,
+ * groupe `library:empty`, CO-4).
  */
 
 export interface CollectionEmptyModel {
@@ -38,7 +48,7 @@ export interface CollectionEmptyModel {
   actionLabel: string;
 }
 
-export interface CollectionViewProps {
+export interface CollectionViewProps extends FilterSheetLayerProps {
   nav: NavRailProps;
   /** « À regarder », « Vos coups de cœur ». */
   kicker?: string;
@@ -58,6 +68,15 @@ export interface CollectionViewProps {
   /** Erreur de chargement : le panneau remplace la grille. */
   status?: StatusPanelProps | null;
   onEmptyAction?: () => void;
+  /** La barre (Type, Trier par) ; absente, la page n'en a pas. */
+  pills?: FilterPillModel[];
+  activeFilters?: ActiveFilterModel[];
+  filterLabels?: { activeFilters: string; clearAll: string };
+  /** Le type retenu ne garde aucun titre : de quoi l'effacer. */
+  noResults?: { title: string; message: string; actionLabel: string } | null;
+  onPressPill?: (key: LibraryFilterKey) => void;
+  onRemoveFilter?: (id: string) => void;
+  onClearAll?: () => void;
   onPressCard?: (card: CardModel) => void;
   onLongPressCard?: (card: CardModel) => void;
   onFocusCard?: (card: CardModel) => void;
@@ -75,26 +94,37 @@ function Header({ kicker, title, count }: { kicker?: string; title: string; coun
   );
 }
 
-export const CollectionView = memo(function CollectionView({
-  nav,
-  kicker,
-  title,
-  count,
-  cards,
-  palette: fallback,
-  ambient,
-  columns: forcedColumns,
-  loading,
-  empty,
-  status,
-  onEmptyAction,
-  onPressCard,
-  onLongPressCard,
-  onFocusCard,
-}: CollectionViewProps) {
-  const palette = useAmbientOf(ambient, fallback);
-  const columns = useGridColumns(forcedColumns);
-  const header = <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />;
+const NO_CARDS: CardModel[] = [];
+const NO_ACTIVE: ActiveFilterModel[] = [];
+
+export const CollectionView = memo(function CollectionView(props: CollectionViewProps) {
+  const { nav, kicker, title, count, cards, ambient, loading, empty, status, noResults, onEmptyAction, pills, filterLabels } = props;
+  const { onPressPill, onRemoveFilter, onClearAll } = props;
+  const activeFilters = props.activeFilters ?? NO_ACTIVE;
+  const palette = useAmbientOf(ambient, props.palette);
+  const columns = useGridColumns(props.columns);
+  // La barre ne vaut qu'avec des titres : ni chargement, ni vide (CO-3).
+  const showBar = !loading && !empty;
+  // L'en-tête ne suit pas la lumière : la carte focalisée la change à chaque
+  // pas, et un en-tête neuf redessinait la grille entière (cf. `LibraryView`).
+  const header = useMemo(
+    () => (
+      <View style={showBar && pills ? styles.headerWithBar : styles.header}>
+        <Header kicker={kicker} title={title} count={loading || empty ? undefined : count} />
+        {showBar && pills && filterLabels ? (
+          <FilterBar
+            pills={pills}
+            active={activeFilters}
+            labels={filterLabels}
+            onPressPill={onPressPill}
+            onRemoveFilter={onRemoveFilter}
+            onClearAll={onClearAll}
+          />
+        ) : null}
+      </View>
+    ),
+    [kicker, title, count, loading, empty, showBar, pills, filterLabels, activeFilters, onPressPill, onRemoveFilter, onClearAll],
+  );
   const placeholder = loading ? (
     <GridSkeleton columns={columns} rows={2} />
   ) : empty ? (
@@ -107,6 +137,16 @@ export const CollectionView = memo(function CollectionView({
         primary={{ label: empty.actionLabel, onPress: onEmptyAction }}
       />
     </View>
+  ) : noResults ? (
+    <FocusGroup focusKey="library:empty" style={styles.noResults}>
+      <EmptyState
+        icon="sliders"
+        title={noResults.title}
+        message={noResults.message}
+        palette={palette}
+        primary={{ label: noResults.actionLabel, icon: "refresh", onPress: onClearAll }}
+      />
+    </FocusGroup>
   ) : null;
   return (
     <View style={styles.root}>
@@ -120,16 +160,24 @@ export const CollectionView = memo(function CollectionView({
         </>
       ) : (
         <PosterGrid
-          cards={loading ? [] : cards}
+          cards={loading ? NO_CARDS : cards}
           columns={columns}
           header={header}
           empty={placeholder}
-          onPressCard={onPressCard}
-          onLongPressCard={onLongPressCard}
-          onFocusCard={onFocusCard}
+          onPressCard={props.onPressCard}
+          onLongPressCard={props.onLongPressCard}
+          onFocusCard={props.onFocusCard}
         />
       )}
       <NavRail {...nav} />
+      <FilterSheetLayer
+        sheet={props.sheet}
+        onSheetClose={props.onSheetClose}
+        onSheetExited={props.onSheetExited}
+        onSheetOption={props.onSheetOption}
+        onSheetClear={props.onSheetClear}
+        onSheetApply={props.onSheetApply}
+      />
     </View>
   );
 });
@@ -137,9 +185,12 @@ export const CollectionView = memo(function CollectionView({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   header: { gap: 10, marginBottom: 44 },
+  // Avec la barre : le titre, puis les pastilles (l'écart de la bibliothèque).
+  headerWithBar: { gap: 30, marginBottom: 44 },
   titleRow: { flexDirection: "row", alignItems: "baseline", gap: 22 },
   count: { color: "rgba(255, 255, 255, 0.62)" },
   // Le vide occupe la hauteur restante de la scène, centré dedans.
   empty: { height: 1080 - TV_STAGE.safe.y * 2 - 190, justifyContent: "center" },
+  noResults: { paddingTop: 40 },
   statusHeader: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.safe.y },
 });
