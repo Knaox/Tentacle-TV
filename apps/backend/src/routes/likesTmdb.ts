@@ -83,7 +83,7 @@ export const likesTmdbRoutes: FastifyPluginAsync = async (app) => {
   app.put("/tmdb", async (request) => {
     const user = userOf(request);
     const { mediaType, tmdbId } = bodySchema.parse(request.body);
-    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType);
+    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType, user.userId);
     if (lookup.kind === "found" && (await favoriteItemForUser(user.userId, lookup.id))) {
       // Il est là : le cœur porte le « j'aime », plus rien n'attend son arrivée.
       await dropOffLibraryLike(user.userId, mediaType, tmdbId);
@@ -111,7 +111,7 @@ export const likesTmdbRoutes: FastifyPluginAsync = async (app) => {
       pokeProfile(user.userId);
       return { state: "none" as const };
     }
-    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType);
+    const lookup = await findLibraryItemByTmdb(tmdbId, mediaType, user.userId);
     if (lookup.kind === "found") {
       if (!(await unfavoriteItemForUser(user.userId, lookup.id))) throw new Error("Jellyfin n'a pas retiré le cœur");
       favoritesChanged(user.userId, mediaType, tmdbId, false);

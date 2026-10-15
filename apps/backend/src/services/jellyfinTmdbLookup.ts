@@ -9,8 +9,11 @@ import { jellyfinAuthHeaders } from "./jellyfinAuth";
 //   • BEAUCOUP de titres d'un coup (le balayage des « Ma liste à l'arrivée ») :
 //     `libraryTmdbIndex`, une seule liste de la bibliothèque au lieu d'une
 //     requête par titre.
-// Toujours avec le userId admin : sans lui, /Items?Recursive=true masque une
-// partie de la bibliothèque et produirait de faux « absent ».
+// Toujours avec un userId : sans lui, /Items?Recursive=true masque une partie
+// de la bibliothèque et produirait de faux « absent ». Celui de l'admin pour
+// une question de SERVEUR (annonces Seer, balayage) ; celui du COMPTE pour un
+// geste du compte — un titre que ses droits lui cachent est « absent » pour
+// lui, jamais son id rendu (docs/DROITS-UTILISATEURS.md § 5).
 
 export type TmdbMediaType = "movie" | "tv";
 
@@ -32,10 +35,14 @@ function tmdbOf(ids: Item["ProviderIds"]): string | null {
  * (AnyProviderIdEquals + filtre exact, puis scan complet en repli — nécessaire :
  * AnyProviderIdEquals ne filtre pas sur certaines versions Jellyfin).
  */
-export async function findLibraryItemByTmdb(tmdbId: number, mediaType: TmdbMediaType): Promise<TmdbLookup> {
+export async function findLibraryItemByTmdb(
+  tmdbId: number,
+  mediaType: TmdbMediaType,
+  forUserId?: string,
+): Promise<TmdbLookup> {
   const jellyfinUrl = getJellyfinUrl();
   const apiKey = getJellyfinApiKey();
-  const userId = await getAdminUserId();
+  const userId = forUserId ? encodeURIComponent(forUserId) : await getAdminUserId();
   if (!jellyfinUrl || !apiKey || !userId) return { kind: "error" };
   const itemTypes = mediaType === "movie" ? "Movie" : "Series";
   const headers = jellyfinAuthHeaders(apiKey);
