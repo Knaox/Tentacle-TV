@@ -85,14 +85,16 @@ export async function cardDetails(
   jellyfinItemId: string | null
 ): Promise<CardDetails> {
   const key = `${userId}|${mediaType}:${tmdbId}|${lang}|${jellyfinItemId ?? ""}`;
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.details;
   try {
     // Le titre nommé par TMDB ET le titre de la bibliothèque passent les droits
     // du compte : jamais le synopsis d'un titre caché, même accolé à un id visible.
+    // AVANT le cache : un verso gardé 24 h ne survit pas à une restriction posée
+    // entre-temps (la fraîcheur du contrat est de 30 s).
     const allowed = await titleAllowedFor(userId, { mediaType, tmdbId }) &&
       (!jellyfinItemId || (await titleAllowedFor(userId, { mediaType, tmdbId, jellyfinItemId })));
     if (!allowed) return EMPTY;
+    const hit = cache.get(key);
+    if (hit && Date.now() - hit.at < CACHE_MS) return hit.details;
     const remote = await fromTmdb(mediaType, tmdbId, lang).catch(() => null);
     // Jellyfin n'est lu que s'il peut apporter quelque chose : synopsis ou format manquants.
     const needLocal = !!jellyfinItemId && (!remote?.overview || (remote.runtimeMinutes == null && remote.seasons == null));
