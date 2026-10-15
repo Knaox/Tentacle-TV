@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  mergeHiddenHomeRows, reconcileHomeRows, useMediaItem, useSaveHomeLayoutPatch, visibleHomeRows,
+  mergeHiddenHomeRows, reconcileHomeRows, useMediaItem, useSaveHomeLayoutPatch, useServerCapabilities, visibleHomeRows,
 } from "@tentacle-tv/api-client";
+import { heroModeHintKey, heroModeLabelKey, heroModesOffered } from "@tentacle-tv/shared";
 import type { CardDensity, HeroMode, HomeLayoutData, HomeRowDescriptor } from "@tentacle-tv/api-client";
 import {
-  SettingsSection, SettingsRow, SettingsChoiceRow, SettingsPickerRow, type SettingsOption,
+  SettingsSection, SettingsRow, SettingsChoiceRow, SettingsPickerRow, type SettingsIcon, type SettingsOption,
 } from "@/components/settings";
 import { FavoritePickerSheet } from "./FavoritePickerSheet";
 import { HomeRowsEditor } from "./HomeRowsEditor";
@@ -16,11 +17,22 @@ interface Props {
   libraries: ReadonlyArray<{ Id: string; Name: string }>;
 }
 
+/** Le signe de chaque source du bandeau (Feather). */
+const HERO_ICONS: Readonly<Record<HeroMode, SettingsIcon>> = {
+  resume: "play-circle",
+  random: "shuffle",
+  reco: "star",
+  recoMovies: "film",
+  recoSeries: "tv",
+  fixed: "bookmark",
+};
+
 /**
- * Sections « Accueil » et « Rangées de l'accueil » : mode du bandeau (quatre
- * valeurs → une feuille), titre fixe choisi dans les favoris, densité des
- * cartes (trois mots → segmenté en ligne), puis l'ordre et l'activation des
- * rangées. Chaque changement relit le serveur et n'écrit que lui ; les
+ * Sections « Bandeau principal » et « Rangées de l'accueil » : la source du
+ * bandeau (une feuille où chaque source dit ce qu'elle MONTRE — seulement
+ * celles que le serveur sait servir, shared `heroModesOffered`), le titre fixe
+ * choisi dans les favoris ; puis la taille des cartes (trois mots → segmenté
+ * en ligne), l'ordre et l'activation des rangées. Chaque changement relit le serveur et n'écrit que lui ; les
  * rangées se patchent PAR CLÉ sur la copie fraîche, réconciliée avec les
  * bibliothèques.
  */
@@ -28,11 +40,13 @@ export function PersonalizationHomeSection({ layout, libraries }: Props) {
   const { t } = useTranslation("preferences");
   const { t: tCommon } = useTranslation("common");
   const { t: tReco } = useTranslation("reco");
+  const { t: tHome } = useTranslation("homeSettings");
   const libs = useMemo(() => libraries.map((l) => ({ id: l.Id, name: l.Name })), [libraries]);
   const librariesById = useMemo(() => new Map(libraries.map((l) => [l.Id, l.Name])), [libraries]);
   const save = useSaveHomeLayoutPatch({ libraries: libs });
   const fixed = useMediaItem(layout.heroMode === "fixed" ? (layout.heroFixedItemId ?? undefined) : undefined);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const { capabilities } = useServerCapabilities();
 
   // La liste VISIBLE que l'éditeur manipule — même réconciliation que l'accueil.
   const editorRows = useMemo(
@@ -49,12 +63,12 @@ export function PersonalizationHomeSection({ layout, libraries }: Props) {
     save.mutate((fresh) => ({ rows: mergeHiddenHomeRows(fresh.rows, next, fresh.catalog) }));
   }, [save]);
 
-  const heroOptions: ReadonlyArray<SettingsOption<HeroMode>> = [
-    { value: "resume", label: t("persoHeroResume"), icon: "play-circle" },
-    { value: "random", label: t("persoHeroRandom"), icon: "shuffle" },
-    { value: "reco", label: t("persoHeroReco"), icon: "star" },
-    { value: "fixed", label: t("persoHeroFixed"), icon: "bookmark" },
-  ];
+  const heroOptions: ReadonlyArray<SettingsOption<HeroMode>> = heroModesOffered(capabilities, layout.heroMode).map((mode) => ({
+    value: mode,
+    label: tHome(heroModeLabelKey(mode)),
+    description: tHome(heroModeHintKey(mode)),
+    icon: HERO_ICONS[mode],
+  }));
   const densityOptions = [
     { value: "compact", label: t("persoDensityCompact") },
     { value: "normal", label: t("persoDensityNormal") },
@@ -63,34 +77,35 @@ export function PersonalizationHomeSection({ layout, libraries }: Props) {
 
   return (
     <>
-      <SettingsSection title={t("persoHomeTitle")} caption={t("persoHomeCaption")}>
+      <SettingsSection title={tHome("heroTitle")} caption={tHome("heroCaption")}>
         <SettingsPickerRow
           icon="image"
-          label={t("persoHeroMode")}
+          label={tHome("heroTitle")}
           options={heroOptions}
           value={layout.heroMode}
           onChange={(heroMode) => save.mutate({ heroMode })}
+          last={layout.heroMode !== "fixed"}
         />
         {layout.heroMode === "fixed" && (
           <SettingsRow
             icon="bookmark"
-            label={t("persoHeroFixed")}
+            label={tHome("heroFixedPickTitle")}
             value={fixed.data?.Name ?? t("persoHeroFixedNone")}
             chevron
+            last
             onPress={() => setPickerOpen(true)}
           />
         )}
+      </SettingsSection>
+
+      <SettingsSection title={tHome("rowsTitle")} caption={t("persoRowsHintMobile")}>
         <SettingsChoiceRow
           icon="grid"
-          label={t("persoDensity")}
+          label={tHome("densityTitle")}
           options={densityOptions}
           value={layout.cardDensity}
           onChange={(cardDensity) => save.mutate({ cardDensity: cardDensity as CardDensity })}
-          last
         />
-      </SettingsSection>
-
-      <SettingsSection title={t("persoRowsTitle")} caption={t("persoRowsHintMobile")}>
         <HomeRowsEditor rows={editorRows} labelFor={labelFor} onChange={changeRows} />
       </SettingsSection>
 
