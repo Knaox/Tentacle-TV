@@ -78,7 +78,7 @@ export default {
     enableMediaConversion: { label: "Light version", hint: "Prepare a smaller copy before downloading it. Also needs video conversion or container change." },
     enableContentDeletion: { label: "Delete titles", hint: "Erase a movie, an episode or a show from disk, in every library — one at a time or by selection." },
     enableContentDeletionFromFolders: { label: "Delete in these libraries", hint: "Without the right to delete everything: erase titles from these libraries only." },
-    enablePublicSharing: { label: "Public sharing", hint: "Share My list and their favorites through a link open to anyone who has it. Off, their links show nothing until the right comes back." },
+    enablePublicSharing: { label: "Public sharing", hint: "Share My list, their favorites and their statistics through a link open to anyone who has it. Off, their links show nothing until the right comes back." },
   },
 
   values: {

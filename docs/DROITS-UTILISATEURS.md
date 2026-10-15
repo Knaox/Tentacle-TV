@@ -483,24 +483,29 @@ Relevé sur l'onglet « Contrôle parental » d'un Jellyfin 10.11.11 jetable, en
 
 - **Jellyfin 10.11 ne montre pas ce droit** dans son tableau de bord (relevé) : la fiche de Tentacle
   est le seul endroit où il se règle ; un compte neuf l'a (défaut de Jellyfin `true`).
-- **Serveur** (`routes/share.ts`, `services/share/publicSharingRight.ts`) : le droit est relu dans
+- **Il garde TOUT lien public** (`share_links` : Ma liste, favoris, statistiques — décision du
+  coordinateur).
+- **Serveur** (`routes/share.ts`, `routes/shareStats.ts`, `services/share/publicSharingRight.ts`) : le droit est relu dans
   la politique du compte par la clé d'administration, gardé 30 s, oublié à toute écriture de
   politique faite par Tentacle (`onContentPolicyInvalidated`), FERMÉ à l'échec (5 s). Sans lui :
-  `POST /api/share/` et `/api/share/likes/` → 403 `public_sharing_denied` ; un lien de Ma liste ou
-  des favoris existant → 403 `share_unavailable` (liste ET fiche d'un titre), sans rien de la liste ;
-  le lien n'est pas détruit et revient avec le droit. `GET /api/share/access` → `{ publicSharing }`.
-  Les liens de STATISTIQUES ne sont pas gouvernés (Damien n'a nommé que les deux listes ; à trancher).
+  `POST /api/share/`, `/api/share/likes/` et `/api/share/stats` → 403 `public_sharing_denied` ; un
+  lien existant → 403 `share_unavailable` (la page ET la fiche d'un titre), sans rien de ce qu'il
+  montrait ; le lien n'est pas détruit et revient avec le droit. `GET /api/share/access` →
+  `{ publicSharing }` (pas de route commune « mes droits » : chaque domaine lit le sien).
 - **Au nom du propriétaire, dans ses restrictions** : Jellyfin filtre ses favoris et Ma liste
   (`userId`) ; ses likes hors bibliothèque passent `filterExternalTitles(propriétaire, …)`.
 - **Page autonome** (`static/sharePage*.ts`) : interface web coupée, `/share/<jeton>` (et la fiche
   `/share/<jeton>/<titre>`) reçoit la liste écrite par le serveur — FR/EN, AUCUN script, style sous
   nonce, `default-src 'none'`, affiches `/api/jellyfin/Items/<id>/Images/Primary` (sans jeton ni
   adresse de Jellyfin) ou TMDB à l'adresse exacte ; jamais en cache ni indexée ; « Lien
-  introuvable » (404), « Lien indisponible » (403), panne (502). Interface web allumée : la page du
-  client web, inchangée. Branchée dans `staticClients.ts` comme la page d'invitation.
+  introuvable » (404), « Lien indisponible » (403, statistiques comprises), panne (502) ; un lien de
+  statistiques renvoie au client web. Interface web allumée : la page du client web, inchangée.
+  Branchée dans `staticClients.ts` comme la page d'invitation, et nommée dans la liste de
+  `static/webUi.ts` — PAS parmi les préfixes toujours servis, qui rendraient le client web.
 - **Web / bureau** : `usePublicSharingAllowed` (api-client) — serveur qui déclare la capacité : le
-  droit lu ; serveur d'avant : comme avant (boutons montrés). « Partager ma liste » et « Partager mes
-  titres likés » (page large et fenêtre étroite) n'existent qu'avec le droit ; copier et révoquer
+  droit lu ; serveur d'avant : comme avant (boutons montrés). « Partager ma liste », « Partager mes
+  titres likés » (page large et fenêtre étroite) et « Partager » des statistiques n'existent qu'avec
+  le droit ; copier et révoquer
   restent dans la fenêtre de partage. La page publique dit « Partage indisponible ». Mobile et TV
   non touchés : le serveur refuse, c'est tout.
 - **Prouvé** (Tentacle jetable, interface web coupée par `tentacle web off`) : lien créé, page

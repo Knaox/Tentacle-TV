@@ -40,7 +40,11 @@ vi.mock("../middleware/auth", () => ({
   },
 }));
 
-vi.mock("../services/share/publicSharingRight", () => ({ mayShareInPublic: async (userId: string) => !denied.has(userId) }));
+vi.mock("../services/share/publicSharingRight", () => ({
+  mayShareInPublic: async (userId: string) => !denied.has(userId),
+  PUBLIC_SHARING_DENIED: { error: "public_sharing_denied" },
+  SHARE_UNAVAILABLE: { error: "share_unavailable" },
+}));
 vi.mock("../services/shareLists", () => ({
   sharedListEntries: async () => [{ Id: "w1", Name: "Alien", Type: "Movie", InLibrary: true }],
 }));

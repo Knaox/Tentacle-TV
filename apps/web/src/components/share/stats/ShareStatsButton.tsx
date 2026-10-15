@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Share2 } from "lucide-react";
+import { usePublicSharingAllowed } from "@tentacle-tv/api-client";
 import type { ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { ShareStatsModal } from "./ShareStatsModal";
 
@@ -11,7 +12,12 @@ import { ShareStatsModal } from "./ShareStatsModal";
  * un partage de statistiques se règle (la période) et se lit (ce qui devient
  * public) avant d'exister. 36 px de haut, une cible de 44 px au doigt.
  */
-export function ShareStatsButton({ period }: { period: ViewingStatsPeriod }) {
+export function ShareStatsButton(props: { period: ViewingStatsPeriod }) {
+  // Le droit « Partage public » de Jellyfin garde aussi les statistiques (capacité `share.publicRight`).
+  return usePublicSharingAllowed() ? <ShareStatsButtonView {...props} /> : null;
+}
+
+function ShareStatsButtonView({ period }: { period: ViewingStatsPeriod }) {
   const { t } = useTranslation("statsShare");
   const [open, setOpen] = useState(false);
   return (

@@ -7,6 +7,7 @@ import { getPrisma } from "../services/db";
 import {
   getSharedStats, isMissingOptionsColumn, readStatsShareOptions, statsShareOptionsOf, writeStatsShareOptions,
 } from "../services/shareStats";
+import { PUBLIC_SHARING_DENIED, mayShareInPublic } from "../services/share/publicSharingRight";
 import { generateShareToken } from "../services/shareToken";
 import type { SharedStatsView, StatsShareLink } from "../services/viewingStats/contractShare";
 import { JellyfinUnavailable } from "../services/viewingStats/jellyfinScan";
@@ -36,6 +37,8 @@ export function registerStatsOwnerRoutes(app: FastifyInstance): void {
   // ── POST /stats — crée le lien, ou change sa période (même jeton) ──
   app.post("/stats", { preHandler: [requireAuth] }, async (request, reply) => {
     const user = (request as { user?: JellyfinUser }).user as JellyfinUser;
+    // Le droit « Partage public » de Jellyfin, comme pour les listes (routes/share.ts).
+    if (!(await mayShareInPublic(user.userId))) return reply.status(403).send(PUBLIC_SHARING_DENIED);
     const { period, tz } = saveBody.parse(request.body ?? {});
     const options = writeStatsShareOptions({ period, timeZone: resolveTimeZone(tz) });
     try {

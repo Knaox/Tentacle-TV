@@ -7,7 +7,7 @@ import type { JellyfinUser } from "../middleware/auth";
 import { getItemDetail } from "../services/jellyfin";
 import { sharedListEntries } from "../services/shareLists";
 import { generateShareToken, normalizeShareToken } from "../services/shareToken";
-import { mayShareInPublic } from "../services/share/publicSharingRight";
+import { PUBLIC_SHARING_DENIED, SHARE_UNAVAILABLE, mayShareInPublic } from "../services/share/publicSharingRight";
 import { registerStatsOwnerRoutes, replySharedStats, sharedStatsShowsTitle } from "./shareStats";
 
 /**
@@ -28,16 +28,12 @@ const publicQuery = z.object({ lang: z.enum(["fr", "en"]).catch("fr") });
 const LINK_HEAD = { kind: true, ownerUserId: true, ownerUsername: true } as const;
 
 /**
- * Le droit « Partage public » (`EnablePublicSharing`, Jellyfin) gouverne les
- * listes : sans lui, pas de lien créé (`public_sharing_denied`), et les liens
- * existants répondent « indisponible » (`share_unavailable`) jusqu'à ce que le
- * propriétaire le retrouve — le lien n'est pas détruit.
- */
-const LIST_KINDS: ReadonlySet<string> = new Set(["watchlist", "likes"]);
-const DENIED = { error: "public_sharing_denied", message: "Partage public non autorisé" } as const;
-const UNAVAILABLE = { error: "share_unavailable", message: "Lien indisponible" } as const;
-
-/**
+ * Le droit « Partage public » (`EnablePublicSharing`, Jellyfin) gouverne TOUT
+ * lien public — listes et statistiques : sans lui, pas de lien créé
+ * (`public_sharing_denied`), et les liens existants répondent « indisponible »
+ * (`share_unavailable`) jusqu'à ce que le propriétaire le retrouve — le lien
+ * n'est pas détruit.
+ *
  * Liens de partage de listes — watchlist (« Ma liste ») et titres likés
  * (favoris + likes hors bibliothèque). MÊME mécanisme, paramétré par `kind` :
  * un lien actif par (propriétaire, liste), résolution Live à l'ouverture via
@@ -47,7 +43,7 @@ function registerOwnerRoutes(app: FastifyInstance, kind: "watchlist" | "likes", 
   // ── POST — crée (ou récupère) le lien du user courant ──
   app.post(`${base}/`, { preHandler: [requireAuth] }, async (request, reply) => {
     const user = (request as any).user as JellyfinUser;
-    if (!(await mayShareInPublic(user.userId))) return reply.status(403).send(DENIED);
+    if (!(await mayShareInPublic(user.userId))) return reply.status(403).send(PUBLIC_SHARING_DENIED);
     const prisma = getPrisma();
     const link = await prisma.shareLink.upsert({
       where: { ownerUserId_kind: { ownerUserId: user.userId, kind } },
@@ -104,7 +100,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
-    if (LIST_KINDS.has(link.kind) && !(await mayShareInPublic(link.ownerUserId))) return reply.status(403).send(UNAVAILABLE);
+    if (!(await mayShareInPublic(link.ownerUserId))) return reply.status(403).send(SHARE_UNAVAILABLE);
     if (link.kind === "stats") {
       return replySharedStats(reply, { token, ...link }, publicQuery.parse(request.query ?? {}).lang);
     }
@@ -128,7 +124,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const link = await prisma.shareLink.findUnique({ where: { token }, select: LINK_HEAD });
     if (!link) return reply.status(404).send({ message: "Lien introuvable" });
-    if (LIST_KINDS.has(link.kind) && !(await mayShareInPublic(link.ownerUserId))) return reply.status(403).send(UNAVAILABLE);
+    if (!(await mayShareInPublic(link.ownerUserId))) return reply.status(403).send(SHARE_UNAVAILABLE);
 
     try {
       // Contrôle d'appartenance selon le kind — toujours là pour empêcher

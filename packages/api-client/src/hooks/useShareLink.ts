@@ -86,7 +86,7 @@ export function shareErrorCode(error: unknown): string | null {
 }
 
 /**
- * Ce compte peut-il partager ses listes en public ? Face à un serveur qui
+ * Ce compte peut-il partager en public (listes, statistiques) ? Face à un serveur qui
  * déclare `share.publicRight`, son droit « Partage public » de Jellyfin
  * (`GET /api/share/access`) ; face à un serveur d'avant, oui — comme avant.
  * Faux tant que ce n'est pas su : un bouton n'apparaît qu'une fois permis.

@@ -16,7 +16,7 @@ import { sharePageHtml, type SharePageItem, type SharePageView } from "./sharePa
  *
  * Mêmes règles que `GET /api/share/:token` (routes/share.ts) : titres lus au
  * nom du PROPRIÉTAIRE, dans ses restrictions ; sans son droit « Partage
- * public », « lien indisponible ». Rendue par le serveur, sans script, sous
+ * public », « lien indisponible » (statistiques comprises). Rendue par le serveur, sans script, sous
  * une politique de sécurité stricte ; jamais en cache ni indexée.
  */
 export const SHARE_PAGE_PREFIX = "/share/";
@@ -60,9 +60,9 @@ export async function loadSharePage(token: string): Promise<SharePageView> {
     return { state: "error" };
   }
   if (!link) return { state: "not_found" };
+  if (!(await mayShareInPublic(link.ownerUserId))) return { state: "unavailable" };
   if (link.kind === "stats") return { state: "stats" };
   if (link.kind !== "watchlist" && link.kind !== "likes") return { state: "not_found" };
-  if (!(await mayShareInPublic(link.ownerUserId))) return { state: "unavailable" };
   try {
     const entries = await sharedListEntries(link.kind, link.ownerUserId);
     return { state: "list", kind: link.kind, owner: link.ownerUsername, items: entries.map(toItem) };

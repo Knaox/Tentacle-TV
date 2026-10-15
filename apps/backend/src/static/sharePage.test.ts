@@ -74,6 +74,7 @@ describe("ce que la page montre", () => {
     expect((await loadSharePage("aaaabbbbccccdddd")).state).toBe("stats");
     state.allowed = false;
     expect((await loadSharePage("3f2a9c01be44d7e6")).state).toBe("unavailable");
+    expect((await loadSharePage("aaaabbbbccccdddd")).state).toBe("unavailable");
     state.allowed = true;
     state.fail = true;
     expect((await loadSharePage("3f2a9c01be44d7e6")).state).toBe("error");

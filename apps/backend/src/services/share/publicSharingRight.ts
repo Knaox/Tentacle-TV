@@ -4,7 +4,8 @@ import { normalizeJellyfinId } from "../../userRights/userRightsPatch";
 
 /**
  * Le droit « Partage public » d'un compte — `EnablePublicSharing` de SA
- * politique Jellyfin, qui fait foi (docs/DROITS-UTILISATEURS.md § 9.3).
+ * politique Jellyfin, qui fait foi (docs/DROITS-UTILISATEURS.md § 9.3). Il
+ * garde TOUT lien public (`share_links` : Ma liste, favoris, statistiques).
  * Sans lui, le compte ne crée aucun lien de partage, et ceux qu'il a déjà ne
  * servent plus rien (« lien indisponible ») ; ils reviennent avec le droit.
  *
@@ -13,6 +14,10 @@ import { normalizeJellyfinId } from "../../userRights/userRightsPatch";
  * oublié à toute écriture de politique faite par Tentacle. FERMÉ À L'ÉCHEC :
  * Jellyfin muet, compte inconnu → pas de partage (gardé 5 s seulement).
  */
+
+/** Les refus, tels que les routes de partage les rendent (403). */
+export const PUBLIC_SHARING_DENIED = { error: "public_sharing_denied", message: "Partage public non autorisé" } as const;
+export const SHARE_UNAVAILABLE = { error: "share_unavailable", message: "Lien indisponible" } as const;
 
 const TTL_MS = 30_000;
 const CLOSED_TTL_MS = 5_000;

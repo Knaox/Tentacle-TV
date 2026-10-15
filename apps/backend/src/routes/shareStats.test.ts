@@ -17,6 +17,7 @@ const state = {
   jellyfinUrl: "http://jf.test" as string | null,
   statsFail: null as Error | null,
   missingColumn: false,
+  sharing: true,
 };
 
 interface Row { token: string; ownerUserId: string; ownerUsername: string; kind: string; options: string | null }
@@ -86,8 +87,12 @@ vi.mock("../services/shareLists", () => ({
     kind === "likes" ? [] : [{ Id: "w1", Name: "Alien", Type: "Movie", ProductionYear: 1979, ImageTags: { Primary: "t" }, InLibrary: true }],
 }));
 
-// Le droit « Partage public » : accordé ici, sa garde a ses propres tests (sharePublicRight.test.ts).
-vi.mock("../services/share/publicSharingRight", () => ({ mayShareInPublic: async () => true }));
+// Le droit « Partage public » (les listes ont leurs tests dans sharePublicRight.test.ts).
+vi.mock("../services/share/publicSharingRight", () => ({
+  mayShareInPublic: async () => state.sharing,
+  PUBLIC_SHARING_DENIED: { error: "public_sharing_denied" },
+  SHARE_UNAVAILABLE: { error: "share_unavailable" },
+}));
 
 function ownerStats(period: ViewingStats["period"], timeZone: string): ViewingStats {
   const grid = new Array<number>(168).fill(0);
@@ -140,6 +145,7 @@ beforeEach(() => {
   state.jellyfinUrl = "http://jf.test";
   state.statsFail = null;
   state.missingColumn = false;
+  state.sharing = true;
 });
 
 describe("le lien du propriétaire", () => {
@@ -160,6 +166,21 @@ describe("le lien du propriétaire", () => {
 
     expect((await app.inject({ method: "GET", url: "/api/share/stats/mine", headers: as("u1") })).json()).toEqual({ token, period: "year" });
     expect((await app.inject({ method: "GET", url: "/api/share/stats/mine", headers: as("u2") })).json()).toEqual({ token: null, period: null });
+  });
+
+  it("suit le droit « Partage public » : rien de créé sans lui, le lien « indisponible », puis rendu", async () => {
+    const app = await makeApp();
+    const { token } = (await app.inject({ method: "POST", url: "/api/share/stats", headers: as("u1"), payload: { period: "all" } })).json() as { token: string };
+    state.sharing = false;
+    const denied = await app.inject({ method: "POST", url: "/api/share/stats", headers: as("u2"), payload: { period: "all" } });
+    expect([denied.statusCode, denied.json().error, rows.length]).toEqual([403, "public_sharing_denied", 1]);
+    for (const url of [`/api/share/${token}`, `/api/share/${token}/item/s9`]) {
+      const res = await app.inject({ method: "GET", url });
+      expect([url, res.statusCode, res.json().error]).toEqual([url, 403, "share_unavailable"]);
+    }
+    expect(statsCalls).toHaveLength(0);
+    state.sharing = true;
+    expect((await app.inject({ method: "GET", url: `/api/share/${token}` })).json()).toMatchObject({ kind: "stats" });
   });
 
   it("refuse une période inconnue et ramène un fuseau inventé à UTC", async () => {

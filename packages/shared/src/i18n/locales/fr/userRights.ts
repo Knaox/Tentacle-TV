@@ -79,7 +79,7 @@ export default {
     enableMediaConversion: { label: "Version légère", hint: "Préparer une copie plus petite avant de la télécharger. Demande aussi la conversion de la vidéo ou le changement de conteneur." },
     enableContentDeletion: { label: "Supprimer des titres", hint: "Effacer du disque un film, un épisode ou une série, dans toutes les bibliothèques — un par un ou par sélection." },
     enableContentDeletionFromFolders: { label: "Supprimer dans ces bibliothèques", hint: "Sans le droit de tout supprimer : effacer des titres de ces bibliothèques seulement." },
-    enablePublicSharing: { label: "Partage public", hint: "Partager Ma liste et ses favoris par un lien ouvert à qui l'a. Coupé, ses liens ne montrent plus rien, jusqu'à ce qu'il le retrouve." },
+    enablePublicSharing: { label: "Partage public", hint: "Partager Ma liste, ses favoris et ses statistiques par un lien ouvert à qui l'a. Coupé, ses liens ne montrent plus rien, jusqu'à ce qu'il le retrouve." },
   },
 
   values: {
