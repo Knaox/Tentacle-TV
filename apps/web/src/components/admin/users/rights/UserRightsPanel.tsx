@@ -6,6 +6,7 @@ import { ConfirmDialog } from "../../../ui/ConfirmDialog";
 import { currentRating, ratingChoices, ratingLabel } from "../../../parental/parentalModel";
 import { SMALL_BUTTON } from "../../../parental/fieldStyles";
 import { SHEET_LIST, SheetSkeleton, UserSheetSection } from "../UserSheetSection";
+import { AccountFamilyRightsGroup } from "../familyRights/AccountFamilyRightsGroup";
 import { AccountBody, ManagementBody, OfflineBody, PlaybackBody, type GroupProps } from "./GroupBodies";
 import { LibrariesBody } from "./LibrariesBody";
 import { ParentalBody } from "./ParentalBody";
@@ -85,8 +86,9 @@ export function UserRightsPanel({ userId, name, isSelf }: UserRightsPanelProps) 
                 </RightsGroup>
               );
             })}
-            {/* Emplacement des droits de la FAMILLE (une rubrique de plus, après « Gestion ») :
-                ils ne sont pas un champ de la politique Jellyfin, leur composant se monte ici. */}
+            {/* Les droits de la FAMILLE (une rubrique de plus, après « Gestion ») : ils ne sont pas
+                un champ de la politique Jellyfin, Tentacle les garde (`family.creationRights`). */}
+            <AccountFamilyRightsGroup userId={userId} />
           </div>
         </>
       )}

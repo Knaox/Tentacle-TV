@@ -33,4 +33,27 @@ export function isEditable(dto: AccountFamilyRightsDto): boolean {
 
 export const CREATION_RIGHT_KEYS: readonly CreationRightKey[] = ["createFamily", "createGuests"];
 
+/** Un fragment du résumé de la rubrique : une clé `familyWeb:accountRights.*` et ses valeurs. */
+export interface SummaryPart {
+  key: string;
+  values?: Record<string, string>;
+  /** Une valeur elle-même à traduire (`summaryAllowed` / `summaryDenied`). */
+  valueKey?: string;
+}
+
+/**
+ * La rubrique repliée en une ligne, comme celles de la fiche des droits : ce qui vaut pour
+ * chaque droit de création, puis « restreint par la famille de … » — ou, pour un invité, sa
+ * famille seulement (il ne crée rien).
+ */
+export function familyRightsSummary(dto: AccountFamilyRightsDto): SummaryPart[] {
+  if (dto.family?.role === "guest") return [{ key: "summaryGuest", values: { owner: dto.family.ownerName } }];
+  const parts: SummaryPart[] = [
+    { key: "summaryFamily", valueKey: dto.allowed.createFamily ? "summaryAllowed" : "summaryDenied" },
+    { key: "summaryGuests", valueKey: dto.allowed.createGuests ? "summaryAllowed" : "summaryDenied" },
+  ];
+  if (dto.restrictedBy) parts.push({ key: "summaryRestricted", values: { owner: dto.restrictedBy.ownerName } });
+  return parts;
+}
+
 export type { FamilyCreationRightValue };

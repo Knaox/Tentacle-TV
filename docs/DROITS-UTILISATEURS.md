@@ -593,8 +593,10 @@ Lot « droits 2 », chantier S4 (2026-10-15). Contrat : `packages/shared/src/fam
 - Web et bureau : Réglages › Famille (`ProfileRow`) — le rôle (interrupteur « Parent » du
   propriétaire, grisé et expliqué tant qu'un contrôle restreint le membre), « Contrôle parental »
   d'un membre (l'éditeur des invités, plafonné par la base, « Retirer le contrôle »). Admin ›
-  Comptes : les deux défauts à côté des interrupteurs. Fiche d'un compte : `AccountFamilyRightsPanel`
-  (`components/admin/users/familyRights/`), monté par une ligne dans la fiche des droits.
+  Comptes : les deux défauts à côté des interrupteurs. Fiche d'un compte : la rubrique « Famille »
+  (`AccountFamilyRightsGroup`, `components/admin/users/familyRights/`), repliable comme les six
+  rubriques de Jellyfin et montée après « Gestion » (§ 9.3) — résumée en une ligne (ce qui vaut,
+  « restreint par la famille de … »), ouverte : les deux droits en boutons radio expliqués.
 - TV et mobile : rien à régler ; DTO additifs, typecheck verts. Un refus de création s'y dit par
   son code (`family:errors.create_*_denied`).
 
