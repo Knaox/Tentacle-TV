@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useActiveProfile } from "../auth/profileSession";
 import { useAccountLogout } from "../auth/useAccountLogout";
-import { avatarRingStyleFor, buildUserMenuItems, getUserInfo, type UserMenuItem } from "./userMenu/menuItems";
+import { avatarRingStyleFor, buildUserMenuGroups, getUserInfo, menuProfileItems, type UserMenuItem } from "./userMenu/menuItems";
+import { MENU_GROUP_LABEL_KEYS } from "./userMenu/UserMenuGroups";
 import { useAccountFaceColor } from "../profiles/face/useAccountFaceColor";
 import { useProfileMenuItems } from "../profiles/switcher/useProfileMenuItems";
 
@@ -13,11 +14,12 @@ interface Props {
 }
 
 /**
- * Bottom sheet mobile pour les actions utilisateur (préférences, admin,
- * jumelage, à propos, aide, crédits, déconnexion). Pendant mobile du
- * `UserAvatarMenu` desktop ; partage la même liste d'items via `menuItems.tsx`.
- * Bureau en fenêtre étroite, famille : « Changer de profil » en tête, comme
- * dans le menu de l'avatar (`useProfileMenuItems`).
+ * Bottom sheet mobile pour les actions utilisateur. Pendant mobile du
+ * `UserAvatarMenu` desktop ; mêmes familles (`buildUserMenuGroups` : moi,
+ * cet appareil, aide — crédits compris ici —, déconnexion), séparées d'un
+ * filet. Bureau en fenêtre étroite, famille : « Changer de profil » sous
+ * l'en-tête, comme dans le menu de l'avatar (`useProfileMenuItems` ;
+ * « Gérer les profils » est sur « Qui regarde ? »).
  *
  * Animations alignées sur `PlusMenu` pour la cohérence visuelle.
  */
@@ -29,7 +31,7 @@ export function MobileUserSheet({ onClose }: Props) {
   const { name, initial, isAdmin } = getUserInfo();
   const ringStyle = avatarRingStyleFor(useAccountFaceColor());
   const overlayRef = useRef<HTMLDivElement>(null);
-  const profileItems = useProfileMenuItems(onClose);
+  const profileItems = menuProfileItems(useProfileMenuItems(onClose));
 
   const handleLogout = useCallback(() => {
     onClose();
@@ -47,7 +49,7 @@ export function MobileUserSheet({ onClose }: Props) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const items = buildUserMenuItems({
+  const groups = buildUserMenuGroups({
     t,
     isAdmin,
     navigate: navigateTo,
@@ -55,8 +57,8 @@ export function MobileUserSheet({ onClose }: Props) {
     extended: true, // inclut Crédits sur mobile
     profileSession: activeProfile ? { guest: activeProfile.kind === "guest" } : null,
   });
-  const regularItems = items.filter((item) => !item.danger);
-  const dangerItems = items.filter((item) => item.danger);
+  const regularGroups = groups.filter((group) => group.key !== "session");
+  const dangerItems = groups.find((group) => group.key === "session")?.items ?? [];
 
   return createPortal(
     <div
@@ -117,7 +119,7 @@ export function MobileUserSheet({ onClose }: Props) {
 
         <div className="mx-5 mb-2 h-px bg-fill-soft" aria-hidden />
 
-        {/* Les profils (bureau, famille) : « Changer de profil », puis « Gérer les profils ». */}
+        {/* Les profils (bureau, famille) : « Changer de profil ». */}
         {profileItems.length > 0 && (
           <>
             <div className="pb-2">
@@ -127,13 +129,21 @@ export function MobileUserSheet({ onClose }: Props) {
           </>
         )}
 
-        {/* Items réguliers */}
-        <div className="pb-2">
-          {regularItems.map((item) => <SheetRow key={item.key} item={item} />)}
-        </div>
+        {/* Les familles : moi, cet appareil, aide — un filet entre chacune. */}
+        {regularGroups.map((group, index) => {
+          const labelKey = MENU_GROUP_LABEL_KEYS[group.key];
+          return (
+            <div key={group.key}>
+              {index > 0 && <div className="mx-5 my-2 h-px bg-fill-soft" aria-hidden />}
+              <div role="group" aria-label={labelKey ? t(labelKey) : undefined}>
+                {group.items.map((item) => <SheetRow key={item.key} item={item} />)}
+              </div>
+            </div>
+          );
+        })}
 
         {/* Séparateur avant logout */}
-        <div className="mx-5 my-2 h-px bg-fill-soft" aria-hidden />
+        {dangerItems.length > 0 && <div className="mx-5 my-2 h-px bg-fill-soft" aria-hidden />}
 
         {/* Logout (danger) */}
         <div className="pb-4">
