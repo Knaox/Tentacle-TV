@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { setFamilyGuestPhoto, useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { FAMILY_KEY, setFamilyGuestPhoto, useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { FAMILY_GUEST_PHOTO_TYPES, type FamilyGuestPhotoType } from "@tentacle-tv/shared";
 import {
   accountPhotoPath,
@@ -48,6 +48,8 @@ export function useAvatarPhotoUpload(target: AvatarGalleryTarget): (id: string) 
           const type = FAMILY_GUEST_PHOTO_TYPES.find((accepted): accepted is FamilyGuestPhotoType => accepted === photo.mime);
           if (!type) return false;
           await withTimeout(setFamilyGuestPhoto({ userId: target.userId, photo: { image: photo.base64, type } }));
+          // La fiche de l'invité (Gérer les profils) se relit avec sa nouvelle photo.
+          void queryClient.invalidateQueries({ queryKey: FAMILY_KEY });
         } else {
           if (!userId) return false;
           const response = await withTimeout(
