@@ -28,13 +28,14 @@ import { ConfirmPill } from "../settings/ConfirmPill";
 
 export interface AccountAccessOverlayProps {
   view: AccountAccessView;
-  action: AccountAccessScreenAction;
-  onAction?: () => void;
+  /** La principale d'abord (tv-core `decideAccountAccessScreen`). */
+  actions: readonly AccountAccessScreenAction[];
+  onAction?: (action: AccountAccessScreenAction) => void;
 }
 
 const ICONS = { disabled: "lock", lockedOut: "lock", outsideSchedule: "clock" } as const;
 
-export const AccountAccessOverlay = memo(function AccountAccessOverlay({ view, action, onAction }: AccountAccessOverlayProps) {
+export const AccountAccessOverlay = memo(function AccountAccessOverlay({ view, actions, onAction }: AccountAccessOverlayProps) {
   const { t, i18n } = useTranslation(["accountAccess", "pairing"]);
   const backing = useNativeGlassBacking("strong");
   const [armed, setArmed] = useState<"unpair" | null>(null);
@@ -42,7 +43,7 @@ export const AccountAccessOverlay = memo(function AccountAccessOverlay({ view, a
   const pressUnpair = useCallback(() => {
     const step = confirmPress(armed, "unpair");
     setArmed(step.armed);
-    if (step.run) onAction?.();
+    if (step.run) onAction?.("unpair");
   }, [armed, onAction]);
   const leaveUnpair = useCallback((focused: boolean) => {
     if (!focused) setArmed((current) => confirmBlur(current, "unpair"));
@@ -80,19 +81,29 @@ export const AccountAccessOverlay = memo(function AccountAccessOverlay({ view, a
         ) : null}
         {reopening ? <Text style={styles.reopening}>{t(`accountAccess:${reopening.key}`, reopening.params)}</Text> : null}
         <View style={styles.actions}>
-          {action === "switchProfile" ? (
-            <PillButton variant="primary" icon="user" label={t("accountAccess:actions.switchProfile")} focusKey={ACCOUNT_ACCESS_SCREEN.action} onPress={onAction} />
-          ) : (
-            <ConfirmPill
-              label={t("accountAccess:actions.unpair")}
-              icon="logout"
-              tone="danger"
-              armed={armed !== null}
-              armedLabel={t("pairing:tvUnpairConfirm")}
-              focusKey={ACCOUNT_ACCESS_SCREEN.action}
-              onPress={pressUnpair}
-              onFocusChange={leaveUnpair}
-            />
+          {actions.map((action) =>
+            action === "switchProfile" ? (
+              <PillButton
+                key={action}
+                variant="primary"
+                icon="user"
+                label={t("accountAccess:actions.switchProfile")}
+                focusKey={ACCOUNT_ACCESS_SCREEN.switchProfile}
+                onPress={() => onAction?.("switchProfile")}
+              />
+            ) : (
+              <ConfirmPill
+                key={action}
+                label={t("accountAccess:actions.unpair")}
+                icon="logout"
+                tone="danger"
+                armed={armed !== null}
+                armedLabel={t("pairing:tvUnpairConfirm")}
+                focusKey={ACCOUNT_ACCESS_SCREEN.unpair}
+                onPress={pressUnpair}
+                onFocusChange={leaveUnpair}
+              />
+            ),
           )}
         </View>
         <Text style={styles.footer}>{t(view.variant === "outsideSchedule" ? "accountAccess:footer" : "accountAccess:footerDisabled")}</Text>

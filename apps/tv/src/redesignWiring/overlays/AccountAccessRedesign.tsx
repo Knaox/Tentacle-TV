@@ -6,7 +6,10 @@ import {
   ACCOUNT_ACCESS_SCREEN,
   ACCOUNT_ACCESS_SCREEN_FOCUS,
   ACCOUNT_ACCESS_SCREEN_KEYS,
+  accountAccessEntry,
   decideAccountAccessScreen,
+  readProfileRecord,
+  recordPairedTheTv,
   tvSessionMode,
   type AccountAccessScreenAction,
   type AccountAccessScreenDecision,
@@ -45,9 +48,13 @@ export interface AccountAccessScreenState {
 export function useAccountAccessScreen(options: { enabled: boolean; playbackShown: boolean }): AccountAccessScreenState {
   const { storage } = useTentacleConfig();
   const blocked = useAccountAccess({ enabled: options.enabled });
+  const profileSession = tvSessionMode(storage) === "profile";
+  const record = profileSession ? readProfileRecord(storage) : null;
   const decision = decideAccountAccessScreen({
     blocked: blocked !== null,
-    profileSession: tvSessionMode(storage) === "profile",
+    profileSession,
+    soloProfile: record?.launch === "solo",
+    pairedTheTv: record ? recordPairedTheTv(record) : true,
     playbackShown: options.playbackShown,
   });
   useEffect(() => {
@@ -58,10 +65,10 @@ export function useAccountAccessScreen(options: { enabled: boolean; playbackShow
 }
 
 export function AccountAccessRedesign({ state }: { state: AccountAccessScreenState }) {
-  return state.decision.show && state.blocked ? <AccessSurface blocked={state.blocked} action={state.decision.action} /> : null;
+  return state.decision.show && state.blocked ? <AccessSurface blocked={state.blocked} actions={state.decision.actions} /> : null;
 }
 
-function AccessSurface({ blocked, action }: { blocked: AccountAccessBlocked; action: AccountAccessScreenAction }) {
+function AccessSurface({ blocked, actions }: { blocked: AccountAccessBlocked; actions: AccountAccessScreenAction[] }) {
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
@@ -71,10 +78,10 @@ function AccessSurface({ blocked, action }: { blocked: AccountAccessBlocked; act
   const store = useFocusStore();
   // Le piège naît avec le panneau : un groupe se lie dès son premier rendu.
   useState(() => store.bind(ACCOUNT_ACCESS_SCREEN.group, ACCOUNT_ACCESS_SCREEN_FOCUS.trapped ? { container: TrapFocusGuide } : null));
-  useKeepFocusWithin(store, ACCOUNT_ACCESS_SCREEN_KEYS, ACCOUNT_ACCESS_SCREEN_FOCUS.entry);
+  useKeepFocusWithin(store, ACCOUNT_ACCESS_SCREEN_KEYS, accountAccessEntry(actions));
   useExitOnBack(true);
 
-  const onAction = useCallback(() => {
+  const onAction = useCallback((action: AccountAccessScreenAction) => {
     // La page se lève : l'état bloqué n'appartient pas à la session qui vient.
     const leave = () => reportAccountAccess({ state: "allowed" });
     if (action === "switchProfile") {
@@ -83,12 +90,12 @@ function AccessSurface({ blocked, action }: { blocked: AccountAccessBlocked; act
     }
     unpairDevice("settings");
     leave();
-  }, [action, jfClient, storage, queryClient, unpairDevice]);
+  }, [jfClient, storage, queryClient, unpairDevice]);
 
   return (
     <View pointerEvents="box-none" style={styles.cover}>
       <FocusBindingProvider bind={store.binder}>
-        <AccountAccessOverlay view={view} action={action} onAction={onAction} />
+        <AccountAccessOverlay view={view} actions={actions} onAction={onAction} />
       </FocusBindingProvider>
     </View>
   );

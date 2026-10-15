@@ -13,9 +13,12 @@
  * - le focus ENTRE sur l'action principale et n'en sort par aucun côté ;
  * - Retour / Menu ne la contournent pas : jamais pris, l'application quitte
  *   vers l'accueil du système (Apple TV), ou quitte (Android TV, `exitOnBack`) ;
- * - l'action principale : « Changer de profil » pour une session de profil de
- *   la Famille, « Se déconnecter du serveur » (déjumelage, à double appui)
- *   sinon ;
+ * - les actions : « Changer de profil » pour une session de profil de la
+ *   Famille — sauf la session « solo » (le compte seul, ouvert d'office), où
+ *   « Qui regarde ? » ne rendrait que ce même profil bloqué —, puis « Se
+ *   déconnecter du serveur » (déjumelage, à double appui) pour qui peut
+ *   déjumeler la TV (le compte qui l'a jumelée, ou une TV d'avant les profils).
+ *   La première est l'action principale, où le focus entre ;
  * - ce n'est jamais une panne : tant qu'elle est là, pas de voile hors ligne.
  */
 
@@ -24,6 +27,10 @@ export interface AccountAccessScreenInput {
   blocked: boolean;
   /** La TV est dans une session de profil de la Famille. */
   profileSession: boolean;
+  /** Cette session est celle du compte seul, ouverte d'office (`launch: "solo"`). */
+  soloProfile: boolean;
+  /** Le profil ouvert est celui du compte qui a jumelé la TV (lui seul la déjumelle). */
+  pairedTheTv: boolean;
   /** Un écran de lecture (lecteur, bande-annonce) est au premier plan. */
   playbackShown: boolean;
 }
@@ -40,24 +47,29 @@ export interface AccountAccessScreenDecision {
   offlineVeilAllowed: boolean;
   /** Android TV : Retour quitte l'application au lieu d'agir sur l'écran caché. */
   exitOnBack: boolean;
-  /** L'action principale, où le focus entre. */
-  action: AccountAccessScreenAction;
+  /** Les actions, la principale d'abord (le focus y entre). */
+  actions: AccountAccessScreenAction[];
 }
 
-/** Les clés de focus de la page : son groupe (le piège) et son action, l'entrée. */
+/** Les clés de focus de la page : son groupe (le piège) et une par action. */
 export const ACCOUNT_ACCESS_SCREEN = {
   group: "access:panel",
-  action: "access:action",
+  switchProfile: "access:switchProfile",
+  unpair: "access:unpair",
 } as const;
 
-export const ACCOUNT_ACCESS_SCREEN_KEYS: readonly string[] = [ACCOUNT_ACCESS_SCREEN.action];
+export const ACCOUNT_ACCESS_SCREEN_KEYS: readonly string[] = [ACCOUNT_ACCESS_SCREEN.switchProfile, ACCOUNT_ACCESS_SCREEN.unpair];
 
-/** Ce que décide la page : son entrée, un piège des quatre côtés, Menu jamais pris. */
+/** Ce que décide la page : un piège des quatre côtés, Menu jamais pris ; l'entrée, `accountAccessEntry`. */
 export const ACCOUNT_ACCESS_SCREEN_FOCUS = {
-  entry: ACCOUNT_ACCESS_SCREEN.action,
   trapped: true,
   takesBack: false,
 } as const;
+
+/** La clé où le focus entre : l'action principale. */
+export function accountAccessEntry(actions: readonly AccountAccessScreenAction[]): string {
+  return ACCOUNT_ACCESS_SCREEN[actions[0] ?? "unpair"];
+}
 
 export function decideAccountAccessScreen(input: AccountAccessScreenInput): AccountAccessScreenDecision {
   const show = input.blocked;
@@ -67,6 +79,12 @@ export function decideAccountAccessScreen(input: AccountAccessScreenInput): Acco
     stopPlayback: show && input.playbackShown,
     offlineVeilAllowed: !show,
     exitOnBack: show,
-    action: input.profileSession ? "switchProfile" : "unpair",
+    actions: accountAccessActions(input),
   };
+}
+
+function accountAccessActions(input: AccountAccessScreenInput): AccountAccessScreenAction[] {
+  if (!input.profileSession) return ["unpair"];
+  if (input.soloProfile) return input.pairedTheTv ? ["unpair"] : ["switchProfile"];
+  return input.pairedTheTv ? ["switchProfile", "unpair"] : ["switchProfile"];
 }
