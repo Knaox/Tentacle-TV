@@ -96,6 +96,12 @@ export const SERVER_CAPABILITIES = {
    *  l'écran, le serveur prépare leur aperçu en fond (jamais d'extraction YouTube) et rend ceux qui
    *  sont prêts : leur survol n'a plus rien à demander. Sans elle, l'aperçu se décide au survol. */
   "trailers.previewWarm": "1.30.0",
+  /** Les droits d'un compte, lus et écrits dans SA politique Jellyfin depuis l'administration
+   *  (`/api/admin/users/:userId/rights`, `/api/admin/users/rights/options`) — web et bureau. */
+  "admin.userRights": "1.30.0",
+  /** Le contrôle parental d'un invité de la Famille (`PUT /api/family/guests/:userId/parental`),
+   *  posé par son propriétaire ou son créateur ; son état dans `FamilyProfileDto.parental`. */
+  "family.parentalControls": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

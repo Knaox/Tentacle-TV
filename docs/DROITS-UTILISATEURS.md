@@ -82,6 +82,26 @@ de champs — jamais une valeur.
 - `admin.userRights` — les trois routes ci-dessus.
 - `family.parentalControls` — le contrôle parental des invités (§ 4).
 
+### 3.4 Précisions du socle (étape A)
+
+- **Champs confirmés** contre l'OpenAPI de Jellyfin 10.11.0 et 10.11.11 (`UserPolicy`,
+  identique en 12.2) : les 37 champs du § 3.1 existent tous, aucun n'est retiré.
+- `UserRightsFieldSpec` porte en plus, quand il le faut : `min`/`max`/`nullable` (`integer` ;
+  `null` = « sans limite » pour les deux notes), `among: "libraries" | "channels"`
+  (`folderList` : `enabledFolders` et `enableContentDeletionFromFolders` choisissent parmi les
+  bibliothèques, `enabledChannels` parmi les canaux), `values` (`enum` : `syncPlayAccess`).
+- `maxParentalRating` / `maxParentalSubRating` sont des SCORES de la table de Jellyfin
+  (`ParentalRatingScore.score` / `subScore`), pas des noms : la valeur doit exister dans
+  `UserRightsOptions.parentalRatings`.
+- Validation STRICTE et partagée (`userRightsPatch.ts`, miroir) : une clé inconnue refuse le
+  correctif entier sans être nommée ; une valeur fausse le refuse en nommant sa CLÉ
+  (`{ error: "invalid_value", fields }`) ; identifiants normalisés (minuscules, sans tirets) ;
+  étiquettes rognées, dédoublonnées, 1 à 200 caractères, 500 au plus par liste ; plage horaire
+  `0 ≤ début < fin ≤ 24`, sans champ de plus.
+- Statuts HTTP des refus : `unknown_user` 404, `family_guest` / `last_admin` / `self_lockout`
+  409, `invalid_value` 400, `jellyfin_unreachable` 503, `jellyfin_refused` 502.
+- Le correctif `update` est borné à 60 par minute et par adresse.
+
 ## 4. Contrôle parental de la Famille
 
 - **Qui** : le PROPRIÉTAIRE règle le contrôle parental de tout invité de la famille ; un
@@ -102,6 +122,33 @@ de champs — jamais une valeur.
   par Tentacle, à chaque ouverture d'un profil d'invité, et par un guet périodique léger.
   Le contrôle parental voulu pour l'invité est gardé par Tentacle (c'est un réglage de la
   Famille, pas un droit Jellyfin) ; la politique EFFECTIVE, elle, vit dans Jellyfin.
+
+### 4.1 Précisions (étape A, décisions du coordinateur)
+
+- Contrat dans `packages/shared/src/family/familyParental.ts` (miroir, ré-exporté par
+  `familyContract.ts`).
+- **État lu avec l'invité** : deux champs ADDITIFS de `FamilyProfileDto` —
+  `parental?: GuestParentalControls | null` (la valeur VOULUE) et
+  `parentalCeiling?: GuestParentalCeiling | null` (les restrictions du créateur, le plafond :
+  `maxParentalRating`, `maxParentalSubRating`, `blockUnratedItems`, `blockedTags`,
+  `allowedTags`, `accessSchedules` ; null si Jellyfin est muet). Remplis SEULEMENT pour un
+  appelant qui peut régler cet invité (le propriétaire, ou le membre qui l'a créé) ; ABSENTS
+  pour tout autre appelant.
+- `setGuestParental` : `PUT`, corps = le contrôle ENTIER (remplacement), réponse
+  `GuestParentalDto` = `{ parental, parentalCeiling }`, 30 par minute.
+- `parentalOptions` : `GET /api/family/parental/options`, appelant `personal`, réservée à qui
+  peut régler au moins un invité (`family.not_owner` sinon) → `FamilyParentalOptionsDto` =
+  `{ parentalRatings, unratedItemTypes, knownTags }`, le sous-ensemble de `UserRightsOptions`,
+  mêmes formes ; UNE fonction de lecture sert les deux routes.
+- Refus : codes existants de la Famille (`family.invalid_input`, `family.not_owner`,
+  `family.jellyfin_*`) — aucun code nouveau.
+- **Formes des valeurs, communes au contrat admin et à la Famille** (conformes à Jellyfin
+  10.11) : `maxParentalRating` = score Jellyfin, `number | null` ; `maxParentalSubRating` =
+  `number | null` ; `blockUnratedItems` = noms de l'enum `UnratedItem` ; `accessSchedules` =
+  `{ dayOfWeek, startHour, endHour }[]` en camelCase, `dayOfWeek` ∈ `Sunday`…`Saturday` |
+  `Everyday` | `Weekday` | `Weekend`, heures DÉCIMALES (`double` chez Jellyfin : 20.5 = 20 h 30),
+  `0 ≤ startHour < endHour ≤ 24` ; `syncPlayAccess` ∈ `CreateAndJoinGroups` | `JoinGroups` |
+  `None` ; `remoteClientBitrateLimit` en bits/s, 0 = illimité.
 
 ## 5. Le filtrage du contenu — `apps/backend/src/services/contentPolicy/`
 
@@ -132,6 +179,19 @@ de champs — jamais une valeur.
 
   Une exception du pont ⇒ l'extension refuse (fermé à l'échec). Absent (cœur d'avant) ⇒
   comportement d'avant : le contrôle parental n'existait pas.
+
+### 5.1 Précisions du socle (étape A)
+
+- `services/contentPolicy/` : `getContentPolicy`, `invalidateContentPolicy`, `isRestricted`,
+  `filterExternalTitles(userId, titles)` (générique : rend les objets REÇUS, dans l'ordre),
+  `allowsExternalTitle`, `contentPolicyBridge()`. La politique illisible est
+  `closedContentPolicy` : note 0, tous les types non classés bloqués, aucune bibliothèque —
+  gardée 5 s seulement (30 s pour une politique lue).
+- Le pont est BRANCHÉ dès l'étape A dans `pluginBackendLoader.ts`. Tant que l'étape D n'a pas
+  posé la correspondance des certifications, un compte restreint ne reçoit AUCUN titre
+  extérieur (fermé à l'échec) ; un compte non restreint, tout, sans requête TMDB.
+- Le pont nettoie ce qu'il reçoit : une entrée mal formée (type inconnu, `tmdbId` non entier
+  positif) est écartée, jamais laissée passer.
 
 ## 6. Les chantiers
 
