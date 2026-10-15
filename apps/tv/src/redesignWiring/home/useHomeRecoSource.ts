@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useRecoPageVisit, useRecoSettings, type HomeRowDescriptor, type RecoRowItem } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem, RecoPageRow } from "@tentacle-tv/shared";
 import { useItemsByIds } from "../items/useItemsByIds";
 
 const EMPTY: number[] = [];
@@ -8,7 +8,8 @@ const EMPTY: number[] = [];
 export interface HomeRecoRow {
   /** La clé de la mise en page : `reco:<rangée servie>`. */
   layoutKey: string;
-  row: { key: string; seedTitle?: string };
+  /** La rangée servie : sa clé, sa graine, son thème (`why`, titre d'une rangée à thème). */
+  row: Pick<RecoPageRow, "key" | "seedTitle" | "why">;
   /** Les titres EN bibliothèque, chacun avec son item Jellyfin (s'il est chargé). */
   entries: Array<{ reco: RecoRowItem; item: MediaItem }>;
   /** Les titres de la rangée dans l'ordre servi — les absents compris si `external`. */

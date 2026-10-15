@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { reasonToText, recoRowTitle, useRecoPageVisit, useRecoSettings, type RecoRowItem } from "@tentacle-tv/api-client";
+import { reasonToText, recoRowTitleText, useRecoPageVisit, useRecoSettings, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { tvRecoHero, tvRecoNotice, tvRecoServedCards, tvRecoShelves, type TvRecoNotice } from "@tentacle-tv/tv-core";
 import type { ForYouShelfModel } from "../../redesign/screens/forYou/ForYouView";
@@ -47,7 +47,7 @@ export interface ForYouModels {
 }
 
 export function useForYouModels(gate: VigieGate | null): ForYouModels {
-  const { t } = useTranslation("reco");
+  const { t, i18n } = useTranslation("reco");
   const settings = useRecoSettings();
   // Le filtre du compte d'abord : sans cette garde, la page « toutes
   // plateformes » partirait avant la page filtrée (cf. TVRecoRow).
@@ -75,6 +75,8 @@ export function useForYouModels(gate: VigieGate | null): ForYouModels {
 
   const { shelves, targets } = useMemo(() => {
     const targets = new Map<string, Map<string, ForYouTarget>>();
+    // La rangée servie de chaque étagère : son thème (`why`) titre une rangée à thème.
+    const served = new Map((page?.rows ?? []).map((row) => [row.key, row]));
     const shelves = rawShelves.map((shelf): ForYouShelfModel => {
       const entries = shelf.items.flatMap((reco) => {
         const item = reco.jellyfinItemId ? items.get(reco.jellyfinItemId) : undefined;
@@ -83,7 +85,6 @@ export function useForYouModels(gate: VigieGate | null): ForYouModels {
       const byItem = new Map(entries.map((entry) => [entry.item.Id, entry.reco]));
       const shelfTargets = new Map<string, ForYouTarget>(entries.map((entry) => [entry.item.Id, entry]));
       targets.set(shelf.key, shelfTargets);
-      const title = recoRowTitle(shelf);
       const libraryCards = lists(shelf.key, entries.map((entry) => entry.item), { variant: "poster", subtitle: yearOf }, (item, card) => {
         const reco = byItem.get(item.Id);
         if (!reco) return card;
@@ -98,10 +99,10 @@ export function useForYouModels(gate: VigieGate | null): ForYouModels {
         shelfTargets.set(card.id, { reco, absent: wanted });
         return card;
       });
-      return { key: shelf.key, title: t(title.key, title.params), cards };
+      return { key: shelf.key, title: recoRowTitleText(served.get(shelf.key) ?? shelf, t, { locale: i18n.language }), cards };
     });
     return { shelves: shelves.filter((shelf) => shelf.cards.length > 0), targets };
-  }, [rawShelves, items, lists, t, reasonOf, absent]);
+  }, [rawShelves, page, items, lists, t, i18n.language, reasonOf, absent]);
 
   return {
     loading: !page && !isError,

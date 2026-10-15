@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueries } from "@tanstack/react-query";
 import {
   latestItemsQueryOptions,
-  recoRowTitle,
+  recoRowTitleText,
   useFavorites,
   useJellyfinClient,
   useLibraries,
@@ -75,6 +75,8 @@ export interface HomeRowsModel {
 
 export function useHomeRowModels(gate: VigieGate | null): HomeRowsModel {
   const { t } = useTranslation();
+  // Les titres des rangées reco : ceux du web (`recoRowTitleText`, thème compris).
+  const { t: tReco, i18n } = useTranslation("reco");
   const client = useJellyfinClient();
   const userId = useUserId();
   const { rows: layout } = useTVHomeRows();
@@ -155,7 +157,6 @@ export function useHomeRowModels(gate: VigieGate | null): HomeRowsModel {
       } else if (key.startsWith("reco:")) {
         const source = recoRows.find((row) => row.layoutKey === key);
         if (!source) continue;
-        const title = recoRowTitle(source.row);
         const byItem = new Map(source.entries.map((entry) => [entry.item.Id, entry.reco]));
         const items = source.entries.map((entry) => entry.item);
         const libraryCards = lists(key, items, { variant: "poster", subtitle: yearOf }, (item, card) =>
@@ -173,12 +174,12 @@ export function useHomeRowModels(gate: VigieGate | null): HomeRowsModel {
           rowTargets.set(card.id, { item: undefined, absent: wanted, reco, ...absentGestures });
           return card;
         });
-        rows.push({ key, title: t(`reco:${title.key}`, title.params), variant: "poster", cards });
+        rows.push({ key, title: recoRowTitleText(source.row, tReco, { locale: i18n.language }), variant: "poster", cards });
         targets.set(key, rowTargets);
       }
     }
     const targetOf = (rowKey: string, cardId: string) => targets.get(rowKey)?.get(cardId);
     return { rows: rows.filter((row) => row.cards.length > 0), targetOf, resume };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `latestStamp` résume `latestData`
-  }, [layout, resume, nextUp, watched, watchlist, favorites, libraryRows, latestStamp, recoRows, absent, lists, t]);
+  }, [layout, resume, nextUp, watched, watchlist, favorites, libraryRows, latestStamp, recoRows, absent, lists, t, tReco, i18n.language]);
 }
