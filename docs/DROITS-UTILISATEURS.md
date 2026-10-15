@@ -435,6 +435,245 @@ les chemins sont branchés, la correspondance des certifications arrivera sans y
 - 300 lignes au plus par fichier, code en anglais, commentaires en français, un commit
   par étape, jamais de push ni de tag.
 
+## 9.1 Accès du compte (lot « droits 2 », S1 — 2026-10-15)
+
+Désactivé, hors de ses plages horaires : le compte ne se sert plus de Tentacle, et une page
+le lui dit à la place de l'application. Sessions simultanées et essais avant blocage :
+une NOUVELLE connexion est refusée en mots clairs.
+
+### 9.1.1 Mesuré sur Jellyfin 10.11.11 (jetable, source relue)
+
+- **Désactiver** (`IsDisabled`) RÉVOQUE tous les jetons du compte (`RevokeUserTokens`) :
+  `/Users/Me` → 401, et toujours 401 après réactivation (web et bureau se reconnectent ; une
+  TV jumelée, jeton Tentacle, reprend seule). Connexion d'un compte désactivé → 403
+  « Error processing request. », quel que soit le mot de passe.
+- **Hors plage** : un jeton ouvert prend 403 partout (sauf `/System/Info`), rien ne dit à
+  quel compte il appartient ; revenu dans la plage, le même jeton reprend. Connexion → 403.
+  **Un administrateur** hors plage garde son jeton ouvert (200, exempté par
+  `BaseAuthorizationHandler`) mais ne peut plus se connecter (403).
+- **Sessions simultanées** : `Sessions.Count(UserId == compte) ≥ MaxActiveSessions` refuse
+  la nouvelle connexion (403) — TOUTES les sessions en mémoire, même appareil compris.
+  Une session HTTP seule ne cesse de compter qu'à la déconnexion, à la révocation de son
+  appareil ou au redémarrage de Jellyfin ; avec une socket Jellyfin, à sa fermeture.
+  `GET /Sessions` (clé d'API) les rend toutes. Quick Connect (jeton propre d'une TV) passe
+  par la même garde.
+- **Essais avant blocage — cassé en 10.11.11** : `InvalidLoginAttemptCount` avance (lisible
+  dans la Policy), Jellyfin journalise « Disabling user … » mais ne désactive pas (entité
+  `AsNoTracking`) ; une réussite ne remet pas toujours le compteur à 0. Corrigé sur
+  `master` (Jellyfin 12). `LoginAttemptsBeforeLockout` : -1 = jamais, 0 = 3.
+
+### 9.1.2 Contrat — `packages/shared/src/accountAccess/` (miroir backend, test miroir)
+
+- `AccountAccessState` = `{ state: "allowed" }` | `{ state: "disabled", lockedOut? }` |
+  `{ state: "outsideSchedule", schedules, nextOpening }` — plages en heures LOCALES du
+  serveur ; `nextOpening` en ms, `null` = jamais (sentinelle `GUEST_SCHEDULE_NEVER`) ou
+  inconnue (`schedules` vide : jeton dont le serveur a oublié le compte).
+- Règle PURE (`accountAccessRule.ts`, horloge et fuseau injectés) : `isWithinSchedules`
+  (Jellyfin : `TotalHours`, secondes comprises, bornes incluses), `nextScheduleChange`,
+  `nextScheduleOpening`, `accountAccessOf` (illisible = permis : une panne ne met personne
+  dehors), `reachedLoginAttempts`. `scheduleAllows` du filtrage y délègue : UNE règle.
+- Route `GET /api/account/access` ; refus 403 `{ error: "account_access", …état }` ;
+  annonce `{ type: "account:access", …état }` ; `auth_error` `account_access` ; fermeture
+  4012. Connexion refusée : `{ message, code, maxSessions? }`, codes `account_disabled`,
+  `account_locked_out`, `account_outside_schedule`, `account_max_sessions` (403) ; Famille :
+  `family.max_sessions`. Capacité `account.access`.
+- Vue client (`accountAccessView.ts`, pas de miroir) : lignes de plages, réouverture
+  relative (aujourd'hui, demain, plus tard, jamais, inconnue) ; mots : espace `accountAccess`.
+
+### 9.1.3 Serveur
+
+- **Portes** (`services/accountAccess/`) : `requireAuth`, `requireAdmin`,
+  `requirePersonalAdmin`, la Famille (`familyCaller`, sauf le sélecteur des TV), le proxy
+  (jeton d'appareil ; jeton Jellyfin refusé par Jellyfin dont le compte est connu et
+  bloqué), les vignettes, le socket. **Administrateurs compris** (décision du lot) ;
+  « voir en tant que » non borné (l'administrateur regarde). Ouvertes : la route d'état,
+  `POST /api/auth/logout`, `POST /api/pair/self/revoke` ; `POST /api/auth/refresh` dit 403
+  au lieu de 401. Aucun jeton révoqué par Tentacle.
+- **Le compte d'un jeton Jellyfin** (`tokenOwners.ts`) : chaque jeton vu valide est retenu
+  (empreinte, 2 000 au plus) — c'est lui qui transforme un 403/401 de Jellyfin en
+  « compte bloqué ». Après un redémarrage pendant la fermeture : « hors plage, plages
+  inconnues » (le client relit toutes les cinq minutes).
+- **Annonce** (`accessWatch.ts`), comptes connectés seulement : un minuteur sur le bord de
+  plage le plus proche, l'invalidation faite par Tentacle, et un guet d'UNE lecture de
+  `/Users` par minute (Jellyfin n'annonce aucun changement de politique), comparé à ce que
+  la dernière évaluation a vu. Bloqué : `account:access`, sortie de Watch Together sans
+  grâce (`ejectFromRoom` de § 9.2, raison `access_revoked`), **position de lecture écrite par la clé d'administration** (le rapport d'arrêt du
+  compte serait refusé — « Reprendre » restait vide), puis sockets fermées (4012).
+  Un changement fait dans Jellyfin se voit en 30 s (cache) à 90 s au plus.
+- **Essais avant blocage, tenus par Tentacle** (`loginLockout.ts`, décision du coordinateur) :
+  Jellyfin 10.11.11 compte mais ne bloque pas (bug corrigé en 12). Pour les connexions qui
+  passent par Tentacle (web, bureau et mobile par le proxy) : après un mot de passe faux, la
+  politique relue ; compteur ≥ limite (> 0) et compte actif → `IsDisabled=true` par la
+  réécriture complète de la politique, et le refus dit « Ce compte est bloqué après trop
+  d'essais ». Après une réussite, le compteur remis à 0 par la politique (mesuré : il tient,
+  même après plus d'une minute d'activité). Un compte ACTIF au compteur resté plein — réactivé
+  par la fiche des droits (écouteur `onPolicyWritten`) ou dans Jellyfin (avant la connexion
+  suivante) — repart de 0 : il ne se rebloque pas au premier échec. Jellyfin refuse de
+  désactiver un administrateur : il ne l'est pas. **Hors de portée** : une connexion faite
+  directement à Jellyfin (son interface, une autre application) — Jellyfin 10.11 compte sans
+  bloquer, et Tentacle ne l'apprend qu'à la connexion suivante par lui.
+- **Jeton révoqué à la désactivation** : la politique gardée (30 s) peut dater d'avant ; un
+  refus de Jellyfin pour un compte connu « permis » la fait relire (5 s au plus par compte).
+- **Nouvelles connexions** (`connectRefusal.ts`) : un 403 de Jellyfin à la connexion (web,
+  bureau par le proxy) est relu — désactivé (bloqué si le compteur a atteint la limite),
+  hors plage, trop de sessions. Sans mot de passe, la règle de Jellyfin appliquée par
+  Tentacle : jumelage (`generate`, `claim`, `tv-token`, `device/confirm`), code de
+  connexion, ouverture d'un profil de la Famille (sessions seulement : un profil bloqué
+  s'ouvre et sa page le dit).
+
+### 9.1.4 Clients
+
+- api-client : `useAccountAccess({ enabled })` — la route au montage, l'annonce et le refus
+  du socket, TOUTE réponse 403 `account_access` (client Jellyfin par le proxy,
+  `tentacleApiFetch`) ; bloqué, la route est relue à `nextOpening` + 2 s, au plus toutes
+  les cinq minutes ; revenu : requêtes invalidées, socket rouverte avec le même jeton.
+  `JellyfinError.refusal` porte une connexion refusée.
+- Web et bureau, désactivé : la page dit que Jellyfin a fermé les sessions du compte. À la
+  réactivation, la route répond 401 (jeton révoqué) : la page devient « Ce compte a été
+  réactivé » avec « Se reconnecter » — jamais une app à moitié connectée sur un jeton mort.
+- Web et bureau : `AccountAccessGate` (`main.tsx`) REMPLACE l'application — tout est
+  démonté (lecteur web, mpv, PiP, miroir, fenêtres du démarrage), `/watch` quitté.
+  « Se déconnecter », « Changer de serveur » (bureau), « Changer de profil » (session de
+  profil). La page de connexion dit le refus en mots.
+- Apple TV / Android TV : tv-core `decideAccountAccessScreen` (la page remplace les écrans,
+  ne cède PAS au lecteur — l'écran de lecture se ferme —, focus d'entrée sur l'action,
+  Retour jamais pris) ; `AccountAccessRedesign` l'applique. Les actions suivent la session :
+  « Changer de profil » d'une session de profil, puis « Se déconnecter du serveur »
+  (déjumelage, double appui) pour le compte qui a jumelé la TV ; la session « solo » du compte
+  (ouverte d'office, sans famille) et une TV d'avant les profils : le déjumelage seul —
+  « Qui regarde ? » n'y rendrait que ce même profil bloqué (vu au simulateur).
+- « Jumeler votre TV » (web) et la connexion disent un refus par sa raison
+  (`accountAccess:refusals.*`), jamais « erreur du relais » ni « identifiants invalides ».
+- Mobile : rien (hors périmètre) ; il reçoit des 403 au lieu des 401 d'avant.
+
+### 9.1.5 Prouvé (Jellyfin 10.11.11 jetable, serveur jetable, web et simulateur tvOS cloné)
+
+- Web : plage qui se ferme pendant une lecture → page au bord (minuteur), lecteur quitté,
+  position gardée (« Reprendre » à 30 %) ; réouverture → page levée seule, socket rouvert,
+  aucune reconnexion. Désactivé pendant la session → page en 13 s (guet) ; « Se
+  déconnecter » ; reconnexion refusée « Ce compte a été désactivé… ». `MaxActiveSessions = 1` :
+  2e connexion et jumelage refusés en mots.
+- Apple TV : même plage pendant une lecture → page, lecteur fermé, position gardée (4:57),
+  page levée à la réouverture ; désactivé → page, levée ≤ 5 min après la réactivation, sans
+  rejumelage ; « Se déconnecter du serveur » → écran de jumelage.
+- Essais : à travers Tentacle, le compteur avance d'exactement 1 par essai (ni masqué ni
+  doublé). Tentacle bloque au 3e mot de passe faux (`LoginAttemptsBeforeLockout = 3`), par la
+  connexion web comme par le proxy du bureau ; le bon mot de passe est ensuite refusé
+  « bloqué après trop d'essais » ; réactivé par la fiche des droits, le compteur est à 0 et un
+  mot de passe faux ne rebloque pas. Le limiteur de Tentacle (5 connexions par minute et par
+  adresse) arrête un essai AVANT Jellyfin : le compteur n'avance pas — rien n'est masqué.
+
+### 9.1.6 Restes
+
+- La page d'un compte DÉSACTIVÉ sur le web dure tant que la session vit ; réactivé, son
+  jeton (révoqué par Jellyfin) mène à la connexion.
+- « Bloqué après trop d'essais » se lit sur le compteur de Jellyfin (`InvalidLoginAttemptCount
+  ≥ LoginAttemptsBeforeLockout`) : un compteur laissé plein par une connexion directe à
+  Jellyfin 10.11 peut faire dire « bloqué » à un compte désactivé à la main.
+
+- Un changement de plages fait par l'administrateur pendant la fermeture n'atteint un client
+  qu'à sa relecture (au plus cinq minutes) : son socket est fermé.
+
+## 9.2 Lecture et Watch Together
+
+> Lot « droits 2 » (2026-10-15), chantier S2. Capacités `watchTogether.access` et
+> `playback.rights` (1.30.0) ; sans elles, chaque client fait comme avant.
+
+### 9.2.1 Ce que Jellyfin 10.11 applique seul (mesuré sur 10.11.11 jetable, source relue)
+
+| Droit | `PlaybackInfo` | Flux, jeton du COMPTE | Flux, clé d'API (`userId`) |
+|---|---|---|---|
+| `EnableMediaPlayback` | rien (seul `PlayAccess: None` d'une fiche) | **servi** (200) | **servi** |
+| Un seul droit de conversion coupé | `TranscodingUrl` offerte quand même | image / son **copiés de force** (`TryStreamCopy`) : flux illisible ; remux jamais gardé | **rien de gardé** (`state.User` vide) |
+| Les trois coupés | `SupportsTranscoding=false`, rien de jouable, pas d'`ErrorCode` | idem | idem |
+| `RemoteClientBitrateLimit` (0 = celui du serveur) | plafond jugé sur l'IP qui parle à Jellyfin (`X-Forwarded-For` de ses `KnownProxies`) | — | — |
+| `ForceRemoteSourceTranscoding` | appliqué aux sources `IsRemote` (TV en direct, `.strm`) | — | — |
+
+Derrière le proxy, Jellyfin voit Tentacle (adresse locale) : le plafond distant n'y valait jamais.
+Le bureau (mpv), l'Apple TV (PrismCore) et l'Android TV fabriquent leurs URL sans `PlaybackInfo` :
+rien ne les jugeait.
+
+### 9.2.2 La règle — une seule, partagée
+
+- Contrat `packages/shared/src/playback/playbackRights.ts` (miroir `apps/backend/src/playback/`) :
+  `PlaybackRights` (`mediaPlayback`, `videoTranscoding`, `audioTranscoding`, `remuxing`,
+  `maxBitrate` du client), refus `playback_not_allowed` / `conversion_not_allowed` (403 `{ code }`),
+  `streamConversions(path, query, source)` (ce qu'une URL de flux fait faire au serveur, d'après
+  `CanStreamCopyVideo/Audio` de Jellyfin : codec, copie permise, définition, débit, canaux, incrustation ;
+  elle penche vers la COPIE quand elle ne sait pas), `playbackRefusal(rights, conversions)`.
+- Un changement de conteneur (« remux ») = un flux qui ne réencode NI l'image NI le son ; un réencodage
+  permis emporte le conteneur. Un remux FAIT SUR L'APPAREIL (PrismCore) ne demande rien au serveur.
+- `rightsQuality.ts` : sans droit de réencoder, « Originale » seule ; le plafond borne l'échelle et
+  impose un palier dès que la source le dépasse, même en « Originale » choisie à la main.
+  `rightsVerdict.ts` : `negotiatedRefusal` (proposition de Jellyfin), `builtUrlRefusal` (URL fabriquée),
+  `upfrontRefusal` (la fiche suffit), `rightsBitrate`.
+- `planStream` / `engineTranscodingProfiles` ne changent pas : les droits jugent ce qu'ils produisent.
+
+### 9.2.3 Le serveur
+
+- `GET /api/playback/rights` : les droits du compte pour CE client. Politique relue par la clé
+  d'administration (`/Users/{id}`), 30 s, oubliée à chaque écriture de Tentacle ; illisible : tous les
+  droits (Jellyfin décide, comme avant — la visibilité du titre reste fermée à l'échec).
+- **Plafond** : celui du compte, sinon celui du serveur ; client « local » = règle de Jellyfin
+  (`LocalNetworkSubnets` et ses exclusions `!`, sinon RFC 1918 + ULA + site local + boucle), sur
+  l'adresse RÉELLE (`getRealClientIp`). Docker Desktop / colima perdent l'adresse source : tout y paraît local.
+- **Porte du proxy** (`jellyfinProxy/playbackGate.ts`, à la place de l'appel à `streamRefused`) :
+  titre caché → 404 (inchangé) ; lecture interdite → 403 sur `PlaybackInfo`, flux, sous-titres, audio ;
+  conversion refusée → 403 ; ce qui passe sans le droit de réencoder part en copie forcée
+  (`VideoCodec=copy`, `AudioCodec=copy` — la règle de Jellyfin pour un jeton de compte, désormais
+  aussi derrière la clé prêtée) ; plafond posé sur `MaxStreamingBitrate` de `PlaybackInfo` et sur les
+  débits d'un flux converti. Les pistes de la source ne sont lues (10 min) que pour un compte à qui
+  une conversion est refusée : un compte sans restriction ne coûte aucune requête.
+- **Le fichier tel quel (`Static=true`) n'est pas plafonné** — Jellyfin non plus ; les lecteurs lisent
+  leur plafond et choisissent un palier dessous.
+- **Accepté** : la porte DIRECTE de Jellyfin (lecture directe avec le jeton du compte) reste hors de
+  portée de Tentacle (§ 7.1, règle 3) ; Jellyfin y applique son plafond (il voit l'adresse) et sa
+  copie forcée ; nos lecteurs jugent les droits avant d'y aller.
+- `ForceRemoteSourceTranscoding` : Jellyfin l'applique dans `PlaybackInfo` ; rien d'ajouté. Un lecteur
+  qui fabrique son URL statique (mpv) ne le voit pas — Tentacle n'expose ni TV en direct ni `.strm`.
+- **Bandes-annonces** : celles de YouTube relayées ne sont PAS des médias de la bibliothèque — gardées
+  pour un compte sans lecture (une affiche animée publique, sans conversion) ; les bandes-annonces
+  LOCALES de Jellyfin sont des flux du proxy : refusées comme le reste.
+- Un fichier gardé hors ligne (bureau) se lit sans le serveur : ses droits n'y ont plus prise.
+
+### 9.2.4 Les lecteurs (web, bureau, Apple TV ; Android TV reçoit la même garde)
+
+- Crochet `usePlaybackRights()` (api-client) ; rien ne se négocie avant de connaître les droits.
+- Web : la `TranscodingUrl` de Jellyfin jugée telle qu'elle partira ; le débit demandé borné. Bureau
+  (mpv) : l'URL fabriquée jugée. Apple TV : refus d'avance, PrismCore libre, chemin serveur jugé — et
+  sans droit de réencoder, le repli demande une COPIE au lieu du HLS 8 Mb/s réencodé.
+- Messages (modèle partagé des problèmes) : « La lecture n'est pas autorisée pour ce compte. » ;
+  « Ce titre doit être converti pour être lu sur cet appareil, et votre compte ne le permet pas. »,
+  avec l'aide « L'administrateur peut l'autoriser dans Jellyfin, dans les droits de lecture de votre
+  compte. » Apple TV : cadenas, Retour seul (pas de « Réessayer »). Un 403 du proxy sans verdict
+  préalable est lu par la sonde du flux (`{ code }`). Les boutons Lire des cartes restent.
+
+### 9.2.5 Watch Together
+
+- Tentacle n'emploie PAS le SyncPlay de Jellyfin (salons, synchronisation et protocole `wt:*` sont à
+  lui) ; il en suit le droit : `SyncPlayAccess` → `full` (`CreateAndJoinGroups`), `joinOnly`
+  (`JoinGroups`), `none` (`None`, et toute valeur absente). Contrat
+  `packages/shared/src/types/watchTogetherAccess.ts` (miroir), `GET /api/watch-together/access`.
+- Serveur : créer un salon et inviter → 403 `access_denied` hors `full` ; accepter → refusé à `none` ;
+  `none` n'est ni candidat (`/users`), ni invité, ni prévenu (invitation différée comprise), et
+  `/invites` lui rend une liste vide. Comme Jellyfin, le droit se juge à la création et à l'entrée :
+  un hôte qui perd `full` garde son salon (sans plus inviter) ; un membre passé à `none` en sort
+  (`wt:dissolved`, raison additive `access_revoked`) — aussitôt après une écriture de Tentacle, au guet
+  de 30 s sinon (une lecture de `/Users`, seulement tant qu'un salon existe). `ejectFromRoom(userId,
+  reason)` (`services/watchTogether/accessWatch.ts`) sert aussi à qui doit sortir un compte d'un salon.
+- Web et bureau : `none` → plus aucune trace (bouton de la barre, fiche, invitations, socket,
+  relecture au démarrage) ; `joinOnly` → ni « Créer un groupe », ni bouton de la fiche, ni « Inviter » :
+  « Votre compte peut rejoindre un groupe quand on vous y invite, mais pas en créer un. »
+- Apple TV et Android TV : Watch Together n'y existe pas — rien à masquer. Les invités de la Famille
+  ont `SyncPlayAccess: None` : la règle les couvre aussi.
+
+### 9.2.6 Hors ligne (`EnableContentDownloading`)
+
+Vérifié sur Jellyfin jetable : `GET /api/downloads/capabilities` rend `downloads: false` et
+`/api/downloads/original/:id` 404 pour un compte sans le droit ; les quatre entrées « garder hors ligne »
+du bureau (carte, fiche, saison, épisode) lisent `canDownload` et disparaissent (un titre déjà gardé reste
+lisible). Le web n'a pas de hors ligne. Rien de changé.
+
 ## 9.3 Fiche des droits et partage public (lot « droits 2 », S3)
 
 ### La fiche ne nomme que ce qui agit dans Tentacle
@@ -616,427 +855,6 @@ Lot « droits 2 », chantier S4 (2026-10-15). Contrat : `packages/shared/src/fam
   droit qui tente de fonder une famille (403) ; guet : changement direct dans Jellyfin repris en
   ~100 s.
 
-## 9.7 Suppression de titres
-
-> Lot « droits 2 » (2026-10-15), web et bureau seulement — ni mobile, ni TV, ni webOS, ni la
-> fenêtre étroite (miroir). Capacité `library.delete` (serveur 1.30.0).
-
-### 9.7.1 Ce que Jellyfin fait (mesuré sur 10.11.11, Jellyfin jetable ; source de 12 relue)
-
-- **Les droits** : `EnableContentDeletion` (partout) et `EnableContentDeletionFromFolders` (des
-  bibliothèques, identifiants des `CollectionFolder` = ceux des vues `/Users/{id}/Views`). Un
-  administrateur suit la même règle : son droit, pas son rôle.
-- **`CanDelete`** (`Fields=CanDelete`) est calculé pour le compte du jeton, ou pour le `userId`
-  avec la clé d'API : vrai partout avec le premier droit, dans SES bibliothèques avec le second,
-  faux sinon. Celui d'une bibliothèque elle-même est toujours faux (inutilisable).
-- **`DELETE /Items/{id}`** par le jeton du compte : 204 (fichier ET dossier supprimés du disque —
-  film, épisode, saison, série entière), 401 « Unauthorized access » (refusé, rien ne bouge), 404
-  (déjà absent), 400 (identifiant nul). **Avec la clé d'API, aucun contrôle** : tout part.
-- **`DELETE /Items?ids=a,b,c` est inutilisable** : il s'arrête au PREMIER refus (401) sans dire
-  lequel — les titres d'avant supprimés, ceux d'après jamais tentés. Même code sur `master` (12).
-
-### 9.7.2 Le serveur — `routes/libraryDeletion.ts`, `services/libraryDelete/`
-
-Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir backend
-(`libraryDeleteMirror.test.ts`).
-
-| Geste | Route | Réponse |
-|-------|-------|---------|
-| Où supprimer | `GET /api/library/deletion/rights` | `{ everywhere, libraryIds }` — relu par `/Users/Me` avec le jeton du compte ; « nulle part » pour toute session non personnelle, une politique illisible, un compte désactivé |
-| Supprimer | `POST /api/library/deletion` `{ ids }` (1 à 20) | `{ results: [{ id, outcome }] }`, `outcome` ∈ `deleted` · `gone` · `forbidden` · `failed`, un par titre, dans l'ordre reçu |
-
-- **Session PERSONNELLE seulement** (`403 { error: "not_personal" }` sinon) : son jeton EST le
-  jeton Jellyfin du compte, par lequel Jellyfin juge chaque titre. Une TV jumelée, une session de
-  profil (TV ou bureau), « voir en tant que » n'ont pas de jeton Jellyfin à elles. Le proxy refuse
-  déjà tout `DELETE` d'un jeton d'appareil (`deviceWrites.ts`, inchangé ; test du lot ajouté).
-- **Un `DELETE /Items/{id}` par titre**, deux à la fois, 60 s chacun au plus (une série emporte
-  ses épisodes). Corps invalide (identifiant illisible, clé de trop, lot vide ou > 20) : refusé
-  ENTIER, rien n'est tenté. 120 appels par minute et par adresse.
-- **Après** (`afterDeletion.ts`) : les titres quittent le relevé de chaque compte
-  (`dropItemsFromUserAccess` : recherche, recos, saga n'en montrent plus rien sans attendre la
-  reconstruction de six heures), les verdicts de visibilité tombent, le catalogue se relève, et
-  `broadcastAll` (rangées Derniers ajouts, Reprendre, Prochains, Ma liste, favoris, vus) vide les
-  réponses gardées par le proxy et fait relire leurs rangées aux applications connectées.
-- **Journal** `[library-delete] <compte> (<8 car.>…) : N demandés — x supprimés, y déjà absents,
-  z refusés par Jellyfin, w en échec` — jamais un titre ni un chemin.
-- **Pourquoi une route serveur, donc une capacité** : un appel direct à Jellyfin par le proxy
-  aurait jugé de même, mais sans journal, sans vider les caches du serveur (la recherche aurait
-  rendu le titre supprimé jusqu'au relevé suivant) et en exposant au client le 401 de Jellyfin,
-  que `fetchWithRetry` lit comme une session expirée.
-
-### 9.7.3 Les clients (web, bureau)
-
-- **Porte** : `useLibraryDeletionRights` (derrière `library.delete`), puis `CanDelete` relevé par
-  le client avec le jeton du compte (`useLibraryDeletableIndex`, `useDeletableEntries`, champs
-  minimaux, ni image ni données de visionnage). Rien n'est montré sans les deux.
-- **Fiche** (film, série, épisode) : « ⋯ » après la note, « Supprimer de la bibliothèque ». Une
-  saison n'a pas de fiche : « Supprimer la saison » au bout de sa barre (liste des épisodes).
-  Réussie, la suppression le dit d'un toast et la fiche ramène en arrière (à l'accueil sans
-  historique) ; un refus ou un échec garde le bilan.
-- **Grilles des bibliothèques** : « Sélectionner » dans le panneau, si le compte peut supprimer
-  dans CETTE bibliothèque. **Recherche** : onglets Films, Séries, Épisodes, si le compte peut
-  supprimer quelque part. Jamais sur le plateau des cartes ni dans leur menu contextuel.
-- **Le mode sélection** : case dans le coin haut-gauche de l'affiche (jamais au centre ; le coin
-  haut-droit garde la pastille) ; titre refusé atténué avec un cadenas, non cochable ; le clic
-  coche, Maj + clic coche une plage, Espace/Entrée au clavier ; le survol, l'aperçu, le plateau et
-  le menu contextuel se taisent ; Échap quitte (un dialogue ouvert se ferme d'abord).
-- **« Tout sélectionner »** couvre la bibliothèque filtrée ENTIÈRE — mêmes filtres, même tri
-  (`catalogFilterParams`, partagé avec la grille), relevée par pages de 500 — avec son nombre,
-  jamais la seule page chargée. Exceptions dites dans la barre : un filtre de plateforme (appliqué
-  par le client aux titres chargés) → les titres affichés ; la recherche plafonne à 60 résultats
-  par type → « Seuls les 60 premiers résultats sont proposés sur N ».
-- **Confirmation** : combien, les cinq premiers titres puis « et N autres », « Les fichiers seront
-  aussi supprimés du disque du serveur. C'est irréversible. », et ce qu'emporte une série ou une
-  saison ; « Annuler » a le premier focus. **Progression** par lots de 20 (`aria-live`, Échap et
-  le fond inopérants), « Arrêter » entre deux lots ; un lot perdu est retenté une fois, puis ses
-  titres comptent en échec et la suite continue. **Bilan** : supprimés, déjà absents, puis
-  NOMMÉMENT les refusés, les échecs et les titres non traités, avec « Réessayer ces titres ».
-- **Caches** (`forgetDeletedItems`) : à chaque lot, les titres partis — et, pour une série ou une
-  saison, ses épisodes (`SeriesId`, `SeasonId`) — quittent toutes les données en cache (pages des
-  grilles et leur compte, rangées, Ma liste, Continuer, recherche et son meilleur résultat,
-  saisons, épisodes) ; à la fin, tout se relit. La fiche d'un titre parti est seulement marquée
-  périmée tant qu'elle est montée, puis oubliée.
-
-### 9.7.4 Hors périmètre, à suivre
-
-- Mobile, TV, webOS, fenêtre étroite (miroir) : aucune entrée. Le client LG lit seulement les
-  droits (« nulle part » : jeton d'appareil).
-- **« Voir en tant que »** : le proxy lui prête la clé d'API, et sa liste blanche laisse passer
-  `DELETE Items/{id}` — un appel FORGÉ sous ce jeton supprimerait sans contrôle de Jellyfin.
-  Antérieur à ce lot, réservé à un administrateur ; aucune interface de Tentacle ne l'emprunte
-  (la route du lot le refuse). À fermer dans le proxy.
-- Banc : Jellyfin 10.11 jetable, trois comptes (administrateur ; un compte qui ne supprime que
-  dans UNE bibliothèque ; un compte sans droit), médias générés ; preuves dans le rapport du lot.
-
-## 9.2 Lecture et Watch Together
-
-> Lot « droits 2 » (2026-10-15), chantier S2. Capacités `watchTogether.access` et
-> `playback.rights` (1.30.0) ; sans elles, chaque client fait comme avant.
-
-### 9.2.1 Ce que Jellyfin 10.11 applique seul (mesuré sur 10.11.11 jetable, source relue)
-
-| Droit | `PlaybackInfo` | Flux, jeton du COMPTE | Flux, clé d'API (`userId`) |
-|---|---|---|---|
-| `EnableMediaPlayback` | rien (seul `PlayAccess: None` d'une fiche) | **servi** (200) | **servi** |
-| Un seul droit de conversion coupé | `TranscodingUrl` offerte quand même | image / son **copiés de force** (`TryStreamCopy`) : flux illisible ; remux jamais gardé | **rien de gardé** (`state.User` vide) |
-| Les trois coupés | `SupportsTranscoding=false`, rien de jouable, pas d'`ErrorCode` | idem | idem |
-| `RemoteClientBitrateLimit` (0 = celui du serveur) | plafond jugé sur l'IP qui parle à Jellyfin (`X-Forwarded-For` de ses `KnownProxies`) | — | — |
-| `ForceRemoteSourceTranscoding` | appliqué aux sources `IsRemote` (TV en direct, `.strm`) | — | — |
-
-Derrière le proxy, Jellyfin voit Tentacle (adresse locale) : le plafond distant n'y valait jamais.
-Le bureau (mpv), l'Apple TV (PrismCore) et l'Android TV fabriquent leurs URL sans `PlaybackInfo` :
-rien ne les jugeait.
-
-### 9.2.2 La règle — une seule, partagée
-
-- Contrat `packages/shared/src/playback/playbackRights.ts` (miroir `apps/backend/src/playback/`) :
-  `PlaybackRights` (`mediaPlayback`, `videoTranscoding`, `audioTranscoding`, `remuxing`,
-  `maxBitrate` du client), refus `playback_not_allowed` / `conversion_not_allowed` (403 `{ code }`),
-  `streamConversions(path, query, source)` (ce qu'une URL de flux fait faire au serveur, d'après
-  `CanStreamCopyVideo/Audio` de Jellyfin : codec, copie permise, définition, débit, canaux, incrustation ;
-  elle penche vers la COPIE quand elle ne sait pas), `playbackRefusal(rights, conversions)`.
-- Un changement de conteneur (« remux ») = un flux qui ne réencode NI l'image NI le son ; un réencodage
-  permis emporte le conteneur. Un remux FAIT SUR L'APPAREIL (PrismCore) ne demande rien au serveur.
-- `rightsQuality.ts` : sans droit de réencoder, « Originale » seule ; le plafond borne l'échelle et
-  impose un palier dès que la source le dépasse, même en « Originale » choisie à la main.
-  `rightsVerdict.ts` : `negotiatedRefusal` (proposition de Jellyfin), `builtUrlRefusal` (URL fabriquée),
-  `upfrontRefusal` (la fiche suffit), `rightsBitrate`.
-- `planStream` / `engineTranscodingProfiles` ne changent pas : les droits jugent ce qu'ils produisent.
-
-### 9.2.3 Le serveur
-
-- `GET /api/playback/rights` : les droits du compte pour CE client. Politique relue par la clé
-  d'administration (`/Users/{id}`), 30 s, oubliée à chaque écriture de Tentacle ; illisible : tous les
-  droits (Jellyfin décide, comme avant — la visibilité du titre reste fermée à l'échec).
-- **Plafond** : celui du compte, sinon celui du serveur ; client « local » = règle de Jellyfin
-  (`LocalNetworkSubnets` et ses exclusions `!`, sinon RFC 1918 + ULA + site local + boucle), sur
-  l'adresse RÉELLE (`getRealClientIp`). Docker Desktop / colima perdent l'adresse source : tout y paraît local.
-- **Porte du proxy** (`jellyfinProxy/playbackGate.ts`, à la place de l'appel à `streamRefused`) :
-  titre caché → 404 (inchangé) ; lecture interdite → 403 sur `PlaybackInfo`, flux, sous-titres, audio ;
-  conversion refusée → 403 ; ce qui passe sans le droit de réencoder part en copie forcée
-  (`VideoCodec=copy`, `AudioCodec=copy` — la règle de Jellyfin pour un jeton de compte, désormais
-  aussi derrière la clé prêtée) ; plafond posé sur `MaxStreamingBitrate` de `PlaybackInfo` et sur les
-  débits d'un flux converti. Les pistes de la source ne sont lues (10 min) que pour un compte à qui
-  une conversion est refusée : un compte sans restriction ne coûte aucune requête.
-- **Le fichier tel quel (`Static=true`) n'est pas plafonné** — Jellyfin non plus ; les lecteurs lisent
-  leur plafond et choisissent un palier dessous.
-- **Accepté** : la porte DIRECTE de Jellyfin (lecture directe avec le jeton du compte) reste hors de
-  portée de Tentacle (§ 7.1, règle 3) ; Jellyfin y applique son plafond (il voit l'adresse) et sa
-  copie forcée ; nos lecteurs jugent les droits avant d'y aller.
-- `ForceRemoteSourceTranscoding` : Jellyfin l'applique dans `PlaybackInfo` ; rien d'ajouté. Un lecteur
-  qui fabrique son URL statique (mpv) ne le voit pas — Tentacle n'expose ni TV en direct ni `.strm`.
-- **Bandes-annonces** : celles de YouTube relayées ne sont PAS des médias de la bibliothèque — gardées
-  pour un compte sans lecture (une affiche animée publique, sans conversion) ; les bandes-annonces
-  LOCALES de Jellyfin sont des flux du proxy : refusées comme le reste.
-- Un fichier gardé hors ligne (bureau) se lit sans le serveur : ses droits n'y ont plus prise.
-
-### 9.2.4 Les lecteurs (web, bureau, Apple TV ; Android TV reçoit la même garde)
-
-- Crochet `usePlaybackRights()` (api-client) ; rien ne se négocie avant de connaître les droits.
-- Web : la `TranscodingUrl` de Jellyfin jugée telle qu'elle partira ; le débit demandé borné. Bureau
-  (mpv) : l'URL fabriquée jugée. Apple TV : refus d'avance, PrismCore libre, chemin serveur jugé — et
-  sans droit de réencoder, le repli demande une COPIE au lieu du HLS 8 Mb/s réencodé.
-- Messages (modèle partagé des problèmes) : « La lecture n'est pas autorisée pour ce compte. » ;
-  « Ce titre doit être converti pour être lu sur cet appareil, et votre compte ne le permet pas. »,
-  avec l'aide « L'administrateur peut l'autoriser dans Jellyfin, dans les droits de lecture de votre
-  compte. » Apple TV : cadenas, Retour seul (pas de « Réessayer »). Un 403 du proxy sans verdict
-  préalable est lu par la sonde du flux (`{ code }`). Les boutons Lire des cartes restent.
-
-### 9.2.5 Watch Together
-
-- Tentacle n'emploie PAS le SyncPlay de Jellyfin (salons, synchronisation et protocole `wt:*` sont à
-  lui) ; il en suit le droit : `SyncPlayAccess` → `full` (`CreateAndJoinGroups`), `joinOnly`
-  (`JoinGroups`), `none` (`None`, et toute valeur absente). Contrat
-  `packages/shared/src/types/watchTogetherAccess.ts` (miroir), `GET /api/watch-together/access`.
-- Serveur : créer un salon et inviter → 403 `access_denied` hors `full` ; accepter → refusé à `none` ;
-  `none` n'est ni candidat (`/users`), ni invité, ni prévenu (invitation différée comprise), et
-  `/invites` lui rend une liste vide. Comme Jellyfin, le droit se juge à la création et à l'entrée :
-  un hôte qui perd `full` garde son salon (sans plus inviter) ; un membre passé à `none` en sort
-  (`wt:dissolved`, raison additive `access_revoked`) — aussitôt après une écriture de Tentacle, au guet
-  de 30 s sinon (une lecture de `/Users`, seulement tant qu'un salon existe). `ejectFromRoom(userId,
-  reason)` (`services/watchTogether/accessWatch.ts`) sert aussi à qui doit sortir un compte d'un salon.
-- Web et bureau : `none` → plus aucune trace (bouton de la barre, fiche, invitations, socket,
-  relecture au démarrage) ; `joinOnly` → ni « Créer un groupe », ni bouton de la fiche, ni « Inviter » :
-  « Votre compte peut rejoindre un groupe quand on vous y invite, mais pas en créer un. »
-- Apple TV et Android TV : Watch Together n'y existe pas — rien à masquer. Les invités de la Famille
-  ont `SyncPlayAccess: None` : la règle les couvre aussi.
-
-### 9.2.6 Hors ligne (`EnableContentDownloading`)
-
-Vérifié sur Jellyfin jetable : `GET /api/downloads/capabilities` rend `downloads: false` et
-`/api/downloads/original/:id` 404 pour un compte sans le droit ; les quatre entrées « garder hors ligne »
-du bureau (carte, fiche, saison, épisode) lisent `canDownload` et disparaissent (un titre déjà gardé reste
-lisible). Le web n'a pas de hors ligne. Rien de changé.
-## 9.6 Démarrage et « Vous regardez encore ? »
-
-### L'ordre des fenêtres du démarrage (web et bureau)
-
-Une seule règle, pure : `apps/web/src/startup/startupOrder.ts` (tests à côté). Chaque
-porte PUBLIE son état dans un magasin de module (`startupStore.ts` : `undecided`,
-`pending`, `open`, `done`) et n'ouvre qu'à son tour. Rien ne s'empile ; celle qui attend
-paraît après, aucune ne se perd.
-
-1. **`profile`** — « Qui regarde ? » et son PIN. Trois sources : l'attente bornée de
-   l'ouverture du bureau (`useProfileLaunchGate`, mode `late` : jusqu'à 1,5 s, la réponse
-   du serveur peut encore imposer le sélecteur, qui démonterait l'application) ;
-   « Changer de profil » ouvert (`WhoIsWatchingHost`) ; le rideau du profil choisi
-   (`ProfileArrival`, et `announceArrival` dès le choix), jusqu'à sa levée.
-2. **`familyPin`** — « Action recommandée : posez votre code PIN » (`FamilyPinStartup`).
-   Tranché quand la Famille et les rappels ont répondu, ou qu'il n'y en aura pas
-   (Famille absente, hors ligne, session d'un profil, lecture en échec).
-3. **`familyInvitation`** — l'affiche d'une invitation dans une famille, puis
-   « Bienvenue » (`FamilyInvitationHost`). Ajoutée à la liste : elle s'empilait aussi.
-   Reçue en direct pendant qu'une autre fenêtre est ouverte, elle attend sa fermeture.
-4. **`whatsNew`** — « Nouveautés pour cette version ». La porte ne tranche qu'à son tour
-   (sa décision est définitive) ; un serveur injoignable ne retient pas la suite.
-5. **`update`** — la pop-up de mise à jour. **Décision : après les nouveautés, avant
-   l'avatar.** Elle parle de la version SUIVANTE : on lit d'abord ce qu'apporte celle
-   qu'on vient d'ouvrir ; l'installer redémarre l'application, et l'invitation aux
-   avatars, pas encore parue, attend le lancement suivant sans être perdue. En cours
-   (téléchargement, installation), elle reste à l'écran quoi qu'il arrive. Plus jamais
-   sur le lecteur.
-6. **`avatarInvite`** — l'invitation unique à choisir un avatar.
-
-Une fenêtre paraît quand tout ce qui la précède est `done` et que rien de ce qui la suit
-n'est `open` ; une fenêtre qui se ferme garde sa place 200 ms, le temps de son fondu
-(`STARTUP_EXIT_GRACE_MS` ; `Modal` sort en 143 ms). Seul un hors-ligne ÉTABLI
-(`offline-auto`, `offline-manual`) libère ce qui suit des nouveautés : `checking`, l'état
-du démarrage, n'est pas une absence. Rien hors session ni sur `/watch`. L'accès suspendu (page bloquante à la
-racine) passe avant tout : il n'a pas de rang. Diagnostic : `window.__tentacleStartup()`
-(porte du débogage du web) rend l'état de chaque fenêtre et celle qui tient le démarrage.
-
-Le dossier `startup/` est hors de `profiles/` exprès : le client LG compile
-`StartupOverlays` mais pas `profiles/` (`EXCLUDED_WEB_DIRECTORIES`) ; ses deux portes
-restent substituées, la cale de l'invitation aux avatars suit sa nouvelle signature.
-
-Apple TV : ni nouveautés, ni PIN conseillé, ni invitation aux avatars ; l'écran de
-préconfiguration est une route après « Qui regarde ? » — aucun conflit.
-
-### « Vous regardez encore ? » — l'essai
-
-Réglages › Lecture, sous les deux durées : **« Voir la question maintenant » → Essayer**.
-L'essai remet le compteur de lecture à zéro et vaut pour la prochaine lecture : la
-question paraît après **20 s de lecture sans geste**, au lieu de l'heure et demie réglée.
-Le reste est le VRAI comportement : même encart, décompte du réglage, pause à
-l'expiration, « Reprendre ». Consommé quand la question est posée ; éteint seul au bout
-de 10 minutes sans lecture ; jamais stocké (un redémarrage l'oublie) ; il ne rallume pas
-une question coupée, et couper la question y renonce. Règle : `shared/playback/
-stillWatchingTrial.ts` ; magasin et battement : `api-client/playback/
-stillWatchingTrialStore.ts` (`tickWithStillWatchingTrial`). Le miroir a la même ligne.
-
-Ce que la fenêtre fait, relevé dans le lecteur web puis sur l'Electron du dépôt (mpv,
-macOS Apple Silicon : fenêtre, plein écran, PiP) : elle ne prend JAMAIS le focus ;
-n'importe quelle touche (Tab compris) vaut « Continuer » — au clavier, Espace met en pause
-par le raccourci du lecteur ; le décompte se lit seconde par seconde ; à l'expiration, PAUSE
-(jamais un arrêt) et « Lecture en pause » / « Reprendre » ; le compteur traverse
-l'enchaînement d'un épisode au suivant. Sur le web, elle vit dans le conteneur qui passe en plein écran
-(`VideoPlayer.tsx`) ; sur le bureau, la page la dessine au-dessus de mpv, en fenêtre comme
-en plein écran (décompte, barre, « Continuer » / « Mettre en pause »). Pendant le PiP du
-bureau, elle se tait (`enabled: !pip.active`, choix d'origine) : relevé, 38 s de lecture
-en incrustation sans question, l'essai toujours armé jusqu'à la sortie du PiP.
-
-### Rejouer chaque cas (Damien)
-
-- **L'essai** : Réglages › Lecture › « Vous regardez encore ? » activé › « Voir la question
-  maintenant » › **Essayer**. Lancer un épisode et ne plus toucher ni la souris ni le
-  clavier : la question à 20 s, la pause 10 s plus tard (le délai de réponse réglé).
-  Recharger la page oublie l'essai (il vit en mémoire).
-- **Nouveautés non vues** (console du bureau, ou web de dev avec `?whatsnewgate=1`) :
-  `localStorage.setItem('tentacle_whats_new_seen', '1.28.2'); location.reload()`.
-- **PIN conseillé** : il revient à chaque lancement tant qu'on le ferme sans répondre ;
-  « Configurer plus tard » le masque pour le compte. Le remettre :
-  `fetch('/api/preferences/hints/familyPin', { method: 'PUT', headers: { Authorization:
-  'Bearer ' + localStorage.tentacle_token, 'Content-Type': 'application/json' }, body:
-  JSON.stringify({ dismissed: false }) })` — et un compte dans une famille, sans PIN.
-- **Invitation aux avatars** : `localStorage.removeItem('tentacle_avatar_invite_seen')`, sur
-  un compte sans photo.
-- **Mise à jour** (build de débogage) : `__tentacleSimulateUpdate()` dans la console, juste
-  après le chargement.
-- **Rideau du profil** : « Changer de profil » depuis le menu de l'avatar (bureau), ou
-  `sessionStorage.setItem('tentacle_profile_arrival', JSON.stringify({ id: 'x', name:
-  'Essai', color: '#a855f7', imageTag: null })); location.reload()`.
-- **Affiche de la Famille** : se faire inviter par un autre compte pendant que les
-  nouveautés sont ouvertes — elle attend leur fermeture.
-- **L'état, à tout moment** : `__tentacleStartup()` (web de dev, build de débogage).
-
-## 9.1 Accès du compte (lot « droits 2 », S1 — 2026-10-15)
-
-Désactivé, hors de ses plages horaires : le compte ne se sert plus de Tentacle, et une page
-le lui dit à la place de l'application. Sessions simultanées et essais avant blocage :
-une NOUVELLE connexion est refusée en mots clairs.
-
-### 9.1.1 Mesuré sur Jellyfin 10.11.11 (jetable, source relue)
-
-- **Désactiver** (`IsDisabled`) RÉVOQUE tous les jetons du compte (`RevokeUserTokens`) :
-  `/Users/Me` → 401, et toujours 401 après réactivation (web et bureau se reconnectent ; une
-  TV jumelée, jeton Tentacle, reprend seule). Connexion d'un compte désactivé → 403
-  « Error processing request. », quel que soit le mot de passe.
-- **Hors plage** : un jeton ouvert prend 403 partout (sauf `/System/Info`), rien ne dit à
-  quel compte il appartient ; revenu dans la plage, le même jeton reprend. Connexion → 403.
-  **Un administrateur** hors plage garde son jeton ouvert (200, exempté par
-  `BaseAuthorizationHandler`) mais ne peut plus se connecter (403).
-- **Sessions simultanées** : `Sessions.Count(UserId == compte) ≥ MaxActiveSessions` refuse
-  la nouvelle connexion (403) — TOUTES les sessions en mémoire, même appareil compris.
-  Une session HTTP seule ne cesse de compter qu'à la déconnexion, à la révocation de son
-  appareil ou au redémarrage de Jellyfin ; avec une socket Jellyfin, à sa fermeture.
-  `GET /Sessions` (clé d'API) les rend toutes. Quick Connect (jeton propre d'une TV) passe
-  par la même garde.
-- **Essais avant blocage — cassé en 10.11.11** : `InvalidLoginAttemptCount` avance (lisible
-  dans la Policy), Jellyfin journalise « Disabling user … » mais ne désactive pas (entité
-  `AsNoTracking`) ; une réussite ne remet pas toujours le compteur à 0. Corrigé sur
-  `master` (Jellyfin 12). `LoginAttemptsBeforeLockout` : -1 = jamais, 0 = 3.
-
-### 9.1.2 Contrat — `packages/shared/src/accountAccess/` (miroir backend, test miroir)
-
-- `AccountAccessState` = `{ state: "allowed" }` | `{ state: "disabled", lockedOut? }` |
-  `{ state: "outsideSchedule", schedules, nextOpening }` — plages en heures LOCALES du
-  serveur ; `nextOpening` en ms, `null` = jamais (sentinelle `GUEST_SCHEDULE_NEVER`) ou
-  inconnue (`schedules` vide : jeton dont le serveur a oublié le compte).
-- Règle PURE (`accountAccessRule.ts`, horloge et fuseau injectés) : `isWithinSchedules`
-  (Jellyfin : `TotalHours`, secondes comprises, bornes incluses), `nextScheduleChange`,
-  `nextScheduleOpening`, `accountAccessOf` (illisible = permis : une panne ne met personne
-  dehors), `reachedLoginAttempts`. `scheduleAllows` du filtrage y délègue : UNE règle.
-- Route `GET /api/account/access` ; refus 403 `{ error: "account_access", …état }` ;
-  annonce `{ type: "account:access", …état }` ; `auth_error` `account_access` ; fermeture
-  4012. Connexion refusée : `{ message, code, maxSessions? }`, codes `account_disabled`,
-  `account_locked_out`, `account_outside_schedule`, `account_max_sessions` (403) ; Famille :
-  `family.max_sessions`. Capacité `account.access`.
-- Vue client (`accountAccessView.ts`, pas de miroir) : lignes de plages, réouverture
-  relative (aujourd'hui, demain, plus tard, jamais, inconnue) ; mots : espace `accountAccess`.
-
-### 9.1.3 Serveur
-
-- **Portes** (`services/accountAccess/`) : `requireAuth`, `requireAdmin`,
-  `requirePersonalAdmin`, la Famille (`familyCaller`, sauf le sélecteur des TV), le proxy
-  (jeton d'appareil ; jeton Jellyfin refusé par Jellyfin dont le compte est connu et
-  bloqué), les vignettes, le socket. **Administrateurs compris** (décision du lot) ;
-  « voir en tant que » non borné (l'administrateur regarde). Ouvertes : la route d'état,
-  `POST /api/auth/logout`, `POST /api/pair/self/revoke` ; `POST /api/auth/refresh` dit 403
-  au lieu de 401. Aucun jeton révoqué par Tentacle.
-- **Le compte d'un jeton Jellyfin** (`tokenOwners.ts`) : chaque jeton vu valide est retenu
-  (empreinte, 2 000 au plus) — c'est lui qui transforme un 403/401 de Jellyfin en
-  « compte bloqué ». Après un redémarrage pendant la fermeture : « hors plage, plages
-  inconnues » (le client relit toutes les cinq minutes).
-- **Annonce** (`accessWatch.ts`), comptes connectés seulement : un minuteur sur le bord de
-  plage le plus proche, l'invalidation faite par Tentacle, et un guet d'UNE lecture de
-  `/Users` par minute (Jellyfin n'annonce aucun changement de politique), comparé à ce que
-  la dernière évaluation a vu. Bloqué : `account:access`, sortie de Watch Together sans
-  grâce (`ejectFromRoom` de § 9.2, raison `access_revoked`), **position de lecture écrite par la clé d'administration** (le rapport d'arrêt du
-  compte serait refusé — « Reprendre » restait vide), puis sockets fermées (4012).
-  Un changement fait dans Jellyfin se voit en 30 s (cache) à 90 s au plus.
-- **Essais avant blocage, tenus par Tentacle** (`loginLockout.ts`, décision du coordinateur) :
-  Jellyfin 10.11.11 compte mais ne bloque pas (bug corrigé en 12). Pour les connexions qui
-  passent par Tentacle (web, bureau et mobile par le proxy) : après un mot de passe faux, la
-  politique relue ; compteur ≥ limite (> 0) et compte actif → `IsDisabled=true` par la
-  réécriture complète de la politique, et le refus dit « Ce compte est bloqué après trop
-  d'essais ». Après une réussite, le compteur remis à 0 par la politique (mesuré : il tient,
-  même après plus d'une minute d'activité). Un compte ACTIF au compteur resté plein — réactivé
-  par la fiche des droits (écouteur `onPolicyWritten`) ou dans Jellyfin (avant la connexion
-  suivante) — repart de 0 : il ne se rebloque pas au premier échec. Jellyfin refuse de
-  désactiver un administrateur : il ne l'est pas. **Hors de portée** : une connexion faite
-  directement à Jellyfin (son interface, une autre application) — Jellyfin 10.11 compte sans
-  bloquer, et Tentacle ne l'apprend qu'à la connexion suivante par lui.
-- **Jeton révoqué à la désactivation** : la politique gardée (30 s) peut dater d'avant ; un
-  refus de Jellyfin pour un compte connu « permis » la fait relire (5 s au plus par compte).
-- **Nouvelles connexions** (`connectRefusal.ts`) : un 403 de Jellyfin à la connexion (web,
-  bureau par le proxy) est relu — désactivé (bloqué si le compteur a atteint la limite),
-  hors plage, trop de sessions. Sans mot de passe, la règle de Jellyfin appliquée par
-  Tentacle : jumelage (`generate`, `claim`, `tv-token`, `device/confirm`), code de
-  connexion, ouverture d'un profil de la Famille (sessions seulement : un profil bloqué
-  s'ouvre et sa page le dit).
-
-### 9.1.4 Clients
-
-- api-client : `useAccountAccess({ enabled })` — la route au montage, l'annonce et le refus
-  du socket, TOUTE réponse 403 `account_access` (client Jellyfin par le proxy,
-  `tentacleApiFetch`) ; bloqué, la route est relue à `nextOpening` + 2 s, au plus toutes
-  les cinq minutes ; revenu : requêtes invalidées, socket rouverte avec le même jeton.
-  `JellyfinError.refusal` porte une connexion refusée.
-- Web et bureau, désactivé : la page dit que Jellyfin a fermé les sessions du compte. À la
-  réactivation, la route répond 401 (jeton révoqué) : la page devient « Ce compte a été
-  réactivé » avec « Se reconnecter » — jamais une app à moitié connectée sur un jeton mort.
-- Web et bureau : `AccountAccessGate` (`main.tsx`) REMPLACE l'application — tout est
-  démonté (lecteur web, mpv, PiP, miroir, fenêtres du démarrage), `/watch` quitté.
-  « Se déconnecter », « Changer de serveur » (bureau), « Changer de profil » (session de
-  profil). La page de connexion dit le refus en mots.
-- Apple TV / Android TV : tv-core `decideAccountAccessScreen` (la page remplace les écrans,
-  ne cède PAS au lecteur — l'écran de lecture se ferme —, focus d'entrée sur l'action,
-  Retour jamais pris) ; `AccountAccessRedesign` l'applique. Les actions suivent la session :
-  « Changer de profil » d'une session de profil, puis « Se déconnecter du serveur »
-  (déjumelage, double appui) pour le compte qui a jumelé la TV ; la session « solo » du compte
-  (ouverte d'office, sans famille) et une TV d'avant les profils : le déjumelage seul —
-  « Qui regarde ? » n'y rendrait que ce même profil bloqué (vu au simulateur).
-- « Jumeler votre TV » (web) et la connexion disent un refus par sa raison
-  (`accountAccess:refusals.*`), jamais « erreur du relais » ni « identifiants invalides ».
-- Mobile : rien (hors périmètre) ; il reçoit des 403 au lieu des 401 d'avant.
-
-### 9.1.5 Prouvé (Jellyfin 10.11.11 jetable, serveur jetable, web et simulateur tvOS cloné)
-
-- Web : plage qui se ferme pendant une lecture → page au bord (minuteur), lecteur quitté,
-  position gardée (« Reprendre » à 30 %) ; réouverture → page levée seule, socket rouvert,
-  aucune reconnexion. Désactivé pendant la session → page en 13 s (guet) ; « Se
-  déconnecter » ; reconnexion refusée « Ce compte a été désactivé… ». `MaxActiveSessions = 1` :
-  2e connexion et jumelage refusés en mots.
-- Apple TV : même plage pendant une lecture → page, lecteur fermé, position gardée (4:57),
-  page levée à la réouverture ; désactivé → page, levée ≤ 5 min après la réactivation, sans
-  rejumelage ; « Se déconnecter du serveur » → écran de jumelage.
-- Essais : à travers Tentacle, le compteur avance d'exactement 1 par essai (ni masqué ni
-  doublé). Tentacle bloque au 3e mot de passe faux (`LoginAttemptsBeforeLockout = 3`), par la
-  connexion web comme par le proxy du bureau ; le bon mot de passe est ensuite refusé
-  « bloqué après trop d'essais » ; réactivé par la fiche des droits, le compteur est à 0 et un
-  mot de passe faux ne rebloque pas. Le limiteur de Tentacle (5 connexions par minute et par
-  adresse) arrête un essai AVANT Jellyfin : le compteur n'avance pas — rien n'est masqué.
-
-### 9.1.6 Restes
-
-- La page d'un compte DÉSACTIVÉ sur le web dure tant que la session vit ; réactivé, son
-  jeton (révoqué par Jellyfin) mène à la connexion.
-- « Bloqué après trop d'essais » se lit sur le compteur de Jellyfin (`InvalidLoginAttemptCount
-  ≥ LoginAttemptsBeforeLockout`) : un compteur laissé plein par une connexion directe à
-  Jellyfin 10.11 peut faire dire « bloqué » à un compte désactivé à la main.
-
-- Un changement de plages fait par l'administrateur pendant la fermeture n'atteint un client
-  qu'à sa relecture (au plus cinq minutes) : son socket est fermé.
 ## 9.5 Contrôle parental de bout en bout (lot « droits 2 », chantier S5)
 
 Prouvé contre une bibliothèque RÉELLE, et rejouable : `pnpm --filter @tentacle-tv/backend
@@ -1164,3 +982,187 @@ rien.
   (id et titre) à tous les membres du salon sans filtre par destinataire
   (`watchTogether/affinity/affinityBroadcast.ts`) — à sonder avec un salon mêlant un compte libre
   et un compte restreint.
+
+## 9.6 Démarrage et « Vous regardez encore ? »
+
+### L'ordre des fenêtres du démarrage (web et bureau)
+
+Une seule règle, pure : `apps/web/src/startup/startupOrder.ts` (tests à côté). Chaque
+porte PUBLIE son état dans un magasin de module (`startupStore.ts` : `undecided`,
+`pending`, `open`, `done`) et n'ouvre qu'à son tour. Rien ne s'empile ; celle qui attend
+paraît après, aucune ne se perd.
+
+1. **`profile`** — « Qui regarde ? » et son PIN. Trois sources : l'attente bornée de
+   l'ouverture du bureau (`useProfileLaunchGate`, mode `late` : jusqu'à 1,5 s, la réponse
+   du serveur peut encore imposer le sélecteur, qui démonterait l'application) ;
+   « Changer de profil » ouvert (`WhoIsWatchingHost`) ; le rideau du profil choisi
+   (`ProfileArrival`, et `announceArrival` dès le choix), jusqu'à sa levée.
+2. **`familyPin`** — « Action recommandée : posez votre code PIN » (`FamilyPinStartup`).
+   Tranché quand la Famille et les rappels ont répondu, ou qu'il n'y en aura pas
+   (Famille absente, hors ligne, session d'un profil, lecture en échec).
+3. **`familyInvitation`** — l'affiche d'une invitation dans une famille, puis
+   « Bienvenue » (`FamilyInvitationHost`). Ajoutée à la liste : elle s'empilait aussi.
+   Reçue en direct pendant qu'une autre fenêtre est ouverte, elle attend sa fermeture.
+4. **`whatsNew`** — « Nouveautés pour cette version ». La porte ne tranche qu'à son tour
+   (sa décision est définitive) ; un serveur injoignable ne retient pas la suite.
+5. **`update`** — la pop-up de mise à jour. **Décision : après les nouveautés, avant
+   l'avatar.** Elle parle de la version SUIVANTE : on lit d'abord ce qu'apporte celle
+   qu'on vient d'ouvrir ; l'installer redémarre l'application, et l'invitation aux
+   avatars, pas encore parue, attend le lancement suivant sans être perdue. En cours
+   (téléchargement, installation), elle reste à l'écran quoi qu'il arrive. Plus jamais
+   sur le lecteur.
+6. **`avatarInvite`** — l'invitation unique à choisir un avatar.
+
+Une fenêtre paraît quand tout ce qui la précède est `done` et que rien de ce qui la suit
+n'est `open` ; une fenêtre qui se ferme garde sa place 200 ms, le temps de son fondu
+(`STARTUP_EXIT_GRACE_MS` ; `Modal` sort en 143 ms). Seul un hors-ligne ÉTABLI
+(`offline-auto`, `offline-manual`) libère ce qui suit des nouveautés : `checking`, l'état
+du démarrage, n'est pas une absence. Rien hors session ni sur `/watch`. L'accès suspendu (page bloquante à la
+racine) passe avant tout : il n'a pas de rang. Diagnostic : `window.__tentacleStartup()`
+(porte du débogage du web) rend l'état de chaque fenêtre et celle qui tient le démarrage.
+
+Le dossier `startup/` est hors de `profiles/` exprès : le client LG compile
+`StartupOverlays` mais pas `profiles/` (`EXCLUDED_WEB_DIRECTORIES`) ; ses deux portes
+restent substituées, la cale de l'invitation aux avatars suit sa nouvelle signature.
+
+Apple TV : ni nouveautés, ni PIN conseillé, ni invitation aux avatars ; l'écran de
+préconfiguration est une route après « Qui regarde ? » — aucun conflit.
+
+### « Vous regardez encore ? » — l'essai
+
+Réglages › Lecture, sous les deux durées : **« Voir la question maintenant » → Essayer**.
+L'essai remet le compteur de lecture à zéro et vaut pour la prochaine lecture : la
+question paraît après **20 s de lecture sans geste**, au lieu de l'heure et demie réglée.
+Le reste est le VRAI comportement : même encart, décompte du réglage, pause à
+l'expiration, « Reprendre ». Consommé quand la question est posée ; éteint seul au bout
+de 10 minutes sans lecture ; jamais stocké (un redémarrage l'oublie) ; il ne rallume pas
+une question coupée, et couper la question y renonce. Règle : `shared/playback/
+stillWatchingTrial.ts` ; magasin et battement : `api-client/playback/
+stillWatchingTrialStore.ts` (`tickWithStillWatchingTrial`). Le miroir a la même ligne.
+
+Ce que la fenêtre fait, relevé dans le lecteur web puis sur l'Electron du dépôt (mpv,
+macOS Apple Silicon : fenêtre, plein écran, PiP) : elle ne prend JAMAIS le focus ;
+n'importe quelle touche (Tab compris) vaut « Continuer » — au clavier, Espace met en pause
+par le raccourci du lecteur ; le décompte se lit seconde par seconde ; à l'expiration, PAUSE
+(jamais un arrêt) et « Lecture en pause » / « Reprendre » ; le compteur traverse
+l'enchaînement d'un épisode au suivant. Sur le web, elle vit dans le conteneur qui passe en plein écran
+(`VideoPlayer.tsx`) ; sur le bureau, la page la dessine au-dessus de mpv, en fenêtre comme
+en plein écran (décompte, barre, « Continuer » / « Mettre en pause »). Pendant le PiP du
+bureau, elle se tait (`enabled: !pip.active`, choix d'origine) : relevé, 38 s de lecture
+en incrustation sans question, l'essai toujours armé jusqu'à la sortie du PiP.
+
+### Rejouer chaque cas (Damien)
+
+- **L'essai** : Réglages › Lecture › « Vous regardez encore ? » activé › « Voir la question
+  maintenant » › **Essayer**. Lancer un épisode et ne plus toucher ni la souris ni le
+  clavier : la question à 20 s, la pause 10 s plus tard (le délai de réponse réglé).
+  Recharger la page oublie l'essai (il vit en mémoire).
+- **Nouveautés non vues** (console du bureau, ou web de dev avec `?whatsnewgate=1`) :
+  `localStorage.setItem('tentacle_whats_new_seen', '1.28.2'); location.reload()`.
+- **PIN conseillé** : il revient à chaque lancement tant qu'on le ferme sans répondre ;
+  « Configurer plus tard » le masque pour le compte. Le remettre :
+  `fetch('/api/preferences/hints/familyPin', { method: 'PUT', headers: { Authorization:
+  'Bearer ' + localStorage.tentacle_token, 'Content-Type': 'application/json' }, body:
+  JSON.stringify({ dismissed: false }) })` — et un compte dans une famille, sans PIN.
+- **Invitation aux avatars** : `localStorage.removeItem('tentacle_avatar_invite_seen')`, sur
+  un compte sans photo.
+- **Mise à jour** (build de débogage) : `__tentacleSimulateUpdate()` dans la console, juste
+  après le chargement.
+- **Rideau du profil** : « Changer de profil » depuis le menu de l'avatar (bureau), ou
+  `sessionStorage.setItem('tentacle_profile_arrival', JSON.stringify({ id: 'x', name:
+  'Essai', color: '#a855f7', imageTag: null })); location.reload()`.
+- **Affiche de la Famille** : se faire inviter par un autre compte pendant que les
+  nouveautés sont ouvertes — elle attend leur fermeture.
+- **L'état, à tout moment** : `__tentacleStartup()` (web de dev, build de débogage).
+
+## 9.7 Suppression de titres
+
+> Lot « droits 2 » (2026-10-15), web et bureau seulement — ni mobile, ni TV, ni webOS, ni la
+> fenêtre étroite (miroir). Capacité `library.delete` (serveur 1.30.0).
+
+### 9.7.1 Ce que Jellyfin fait (mesuré sur 10.11.11, Jellyfin jetable ; source de 12 relue)
+
+- **Les droits** : `EnableContentDeletion` (partout) et `EnableContentDeletionFromFolders` (des
+  bibliothèques, identifiants des `CollectionFolder` = ceux des vues `/Users/{id}/Views`). Un
+  administrateur suit la même règle : son droit, pas son rôle.
+- **`CanDelete`** (`Fields=CanDelete`) est calculé pour le compte du jeton, ou pour le `userId`
+  avec la clé d'API : vrai partout avec le premier droit, dans SES bibliothèques avec le second,
+  faux sinon. Celui d'une bibliothèque elle-même est toujours faux (inutilisable).
+- **`DELETE /Items/{id}`** par le jeton du compte : 204 (fichier ET dossier supprimés du disque —
+  film, épisode, saison, série entière), 401 « Unauthorized access » (refusé, rien ne bouge), 404
+  (déjà absent), 400 (identifiant nul). **Avec la clé d'API, aucun contrôle** : tout part.
+- **`DELETE /Items?ids=a,b,c` est inutilisable** : il s'arrête au PREMIER refus (401) sans dire
+  lequel — les titres d'avant supprimés, ceux d'après jamais tentés. Même code sur `master` (12).
+
+### 9.7.2 Le serveur — `routes/libraryDeletion.ts`, `services/libraryDelete/`
+
+Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir backend
+(`libraryDeleteMirror.test.ts`).
+
+| Geste | Route | Réponse |
+|-------|-------|---------|
+| Où supprimer | `GET /api/library/deletion/rights` | `{ everywhere, libraryIds }` — relu par `/Users/Me` avec le jeton du compte ; « nulle part » pour toute session non personnelle, une politique illisible, un compte désactivé |
+| Supprimer | `POST /api/library/deletion` `{ ids }` (1 à 20) | `{ results: [{ id, outcome }] }`, `outcome` ∈ `deleted` · `gone` · `forbidden` · `failed`, un par titre, dans l'ordre reçu |
+
+- **Session PERSONNELLE seulement** (`403 { error: "not_personal" }` sinon) : son jeton EST le
+  jeton Jellyfin du compte, par lequel Jellyfin juge chaque titre. Une TV jumelée, une session de
+  profil (TV ou bureau), « voir en tant que » n'ont pas de jeton Jellyfin à elles. Le proxy refuse
+  déjà tout `DELETE` d'un jeton d'appareil (`deviceWrites.ts`, inchangé ; test du lot ajouté).
+- **Un `DELETE /Items/{id}` par titre**, deux à la fois, 60 s chacun au plus (une série emporte
+  ses épisodes). Corps invalide (identifiant illisible, clé de trop, lot vide ou > 20) : refusé
+  ENTIER, rien n'est tenté. 120 appels par minute et par adresse.
+- **Après** (`afterDeletion.ts`) : les titres quittent le relevé de chaque compte
+  (`dropItemsFromUserAccess` : recherche, recos, saga n'en montrent plus rien sans attendre la
+  reconstruction de six heures), les verdicts de visibilité tombent, le catalogue se relève, et
+  `broadcastAll` (rangées Derniers ajouts, Reprendre, Prochains, Ma liste, favoris, vus) vide les
+  réponses gardées par le proxy et fait relire leurs rangées aux applications connectées.
+- **Journal** `[library-delete] <compte> (<8 car.>…) : N demandés — x supprimés, y déjà absents,
+  z refusés par Jellyfin, w en échec` — jamais un titre ni un chemin.
+- **Pourquoi une route serveur, donc une capacité** : un appel direct à Jellyfin par le proxy
+  aurait jugé de même, mais sans journal, sans vider les caches du serveur (la recherche aurait
+  rendu le titre supprimé jusqu'au relevé suivant) et en exposant au client le 401 de Jellyfin,
+  que `fetchWithRetry` lit comme une session expirée.
+
+### 9.7.3 Les clients (web, bureau)
+
+- **Porte** : `useLibraryDeletionRights` (derrière `library.delete`), puis `CanDelete` relevé par
+  le client avec le jeton du compte (`useLibraryDeletableIndex`, `useDeletableEntries`, champs
+  minimaux, ni image ni données de visionnage). Rien n'est montré sans les deux.
+- **Fiche** (film, série, épisode) : « ⋯ » après la note, « Supprimer de la bibliothèque ». Une
+  saison n'a pas de fiche : « Supprimer la saison » au bout de sa barre (liste des épisodes).
+  Réussie, la suppression le dit d'un toast et la fiche ramène en arrière (à l'accueil sans
+  historique) ; un refus ou un échec garde le bilan.
+- **Grilles des bibliothèques** : « Sélectionner » dans le panneau, si le compte peut supprimer
+  dans CETTE bibliothèque. **Recherche** : onglets Films, Séries, Épisodes, si le compte peut
+  supprimer quelque part. Jamais sur le plateau des cartes ni dans leur menu contextuel.
+- **Le mode sélection** : case dans le coin haut-gauche de l'affiche (jamais au centre ; le coin
+  haut-droit garde la pastille) ; titre refusé atténué avec un cadenas, non cochable ; le clic
+  coche, Maj + clic coche une plage, Espace/Entrée au clavier ; le survol, l'aperçu, le plateau et
+  le menu contextuel se taisent ; Échap quitte (un dialogue ouvert se ferme d'abord).
+- **« Tout sélectionner »** couvre la bibliothèque filtrée ENTIÈRE — mêmes filtres, même tri
+  (`catalogFilterParams`, partagé avec la grille), relevée par pages de 500 — avec son nombre,
+  jamais la seule page chargée. Exceptions dites dans la barre : un filtre de plateforme (appliqué
+  par le client aux titres chargés) → les titres affichés ; la recherche plafonne à 60 résultats
+  par type → « Seuls les 60 premiers résultats sont proposés sur N ».
+- **Confirmation** : combien, les cinq premiers titres puis « et N autres », « Les fichiers seront
+  aussi supprimés du disque du serveur. C'est irréversible. », et ce qu'emporte une série ou une
+  saison ; « Annuler » a le premier focus. **Progression** par lots de 20 (`aria-live`, Échap et
+  le fond inopérants), « Arrêter » entre deux lots ; un lot perdu est retenté une fois, puis ses
+  titres comptent en échec et la suite continue. **Bilan** : supprimés, déjà absents, puis
+  NOMMÉMENT les refusés, les échecs et les titres non traités, avec « Réessayer ces titres ».
+- **Caches** (`forgetDeletedItems`) : à chaque lot, les titres partis — et, pour une série ou une
+  saison, ses épisodes (`SeriesId`, `SeasonId`) — quittent toutes les données en cache (pages des
+  grilles et leur compte, rangées, Ma liste, Continuer, recherche et son meilleur résultat,
+  saisons, épisodes) ; à la fin, tout se relit. La fiche d'un titre parti est seulement marquée
+  périmée tant qu'elle est montée, puis oubliée.
+
+### 9.7.4 Hors périmètre, à suivre
+
+- Mobile, TV, webOS, fenêtre étroite (miroir) : aucune entrée. Le client LG lit seulement les
+  droits (« nulle part » : jeton d'appareil).
+- **« Voir en tant que »** : le proxy lui prête la clé d'API, et sa liste blanche laisse passer
+  `DELETE Items/{id}` — un appel FORGÉ sous ce jeton supprimerait sans contrôle de Jellyfin.
+  Antérieur à ce lot, réservé à un administrateur ; aucune interface de Tentacle ne l'emprunte
+  (la route du lot le refuse). À fermer dans le proxy.
+- Banc : Jellyfin 10.11 jetable, trois comptes (administrateur ; un compte qui ne supprime que
+  dans UNE bibliothèque ; un compte sans droit), médias générés ; preuves dans le rapport du lot.
