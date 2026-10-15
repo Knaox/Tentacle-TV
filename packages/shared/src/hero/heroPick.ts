@@ -1,8 +1,9 @@
 import type { MediaItem } from "../types/media";
 import { hasHeroImage } from "./heroImage";
+import type { HeroMode } from "./heroModes";
 
-/** Le mode du héros que le compte a choisi (`/api/preferences/home-layout`). */
-export type HeroMediaMode = "resume" | "random" | "fixed" | "reco";
+/** Le mode du héros que le compte a choisi (`/api/preferences/home-layout`, `heroModes.ts`). */
+export type HeroMediaMode = HeroMode;
 
 /** Titres au plus dans la bannière — au-delà, le carrousel dilue plus qu'il ne montre. */
 export const HERO_MEDIA_MAX = 5;
@@ -41,8 +42,8 @@ function fallback(inputs: HeroMediaInputs, max: number): HeroMediaPick {
  * Les titres Jellyfin de la bannière d'accueil — web, bureau, miroir et
  * mobile, aux règles de la TV (tv-core `heroSource`) :
  *
- * - `resume` (et `reco` sans recommandation à montrer) : la reprise, sinon
- *   la sélection du serveur ;
+ * - `resume` (et les sources « Pour vous » sans recommandation à montrer) :
+ *   la reprise, sinon la sélection du serveur ;
  * - `random` : la sélection du serveur, sinon la reprise ;
  * - `fixed` : le titre choisi, sinon le repli.
  *

@@ -6,6 +6,8 @@
  * contre un faux /Users/Me (motif preferences.playback.test.ts).
  */
 
+import { existsSync, readFileSync } from "fs";
+import { dirname, join } from "path";
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -53,7 +55,7 @@ vi.mock("../services/db", () => ({
   }),
 }));
 
-import { defaultHomeLayout, registerHomeLayoutRoutes } from "./preferences.homeLayout";
+import { HERO_MODES, defaultHomeLayout, registerHomeLayoutRoutes } from "./preferences.homeLayout";
 import { requireAuth } from "../middleware/auth";
 import { homeRowCatalog } from "../services/homeRowCatalog";
 
@@ -110,6 +112,16 @@ async function makeApp() {
     registerHomeLayoutRoutes(scope);
   }, { prefix: "/api/preferences" });
   return app;
+}
+
+function repoRoot(): string {
+  let folder = process.cwd();
+  while (!existsSync(join(folder, "pnpm-workspace.yaml"))) {
+    const parent = dirname(folder);
+    if (parent === folder) throw new Error("racine du dépôt introuvable");
+    folder = parent;
+  }
+  return folder;
 }
 
 const headers = { "x-emby-token": "jeton-banc" };
@@ -194,6 +206,30 @@ describe("GET/PUT /api/preferences/home-layout", () => {
     expect(readBack.layout.rows).toEqual(payload.rows);
     expect(readBack.catalog.map((r: { key: string }) => r.key)).not.toContain("reco:forYou");
     await app.close();
+  });
+
+  it("PUT « Pour vous — Films » et « — Séries » : acceptés et relus tels quels", async () => {
+    const app = await makeApp();
+    for (const heroMode of ["recoMovies", "recoSeries"]) {
+      const payload = { ...layoutWith([{ key: "resume", enabled: true }]), heroMode };
+      expect((await app.inject({ method: "PUT", url: URL_PATH, headers, payload })).statusCode).toBe(200);
+      expect((await app.inject({ method: "GET", url: URL_PATH, headers })).json().layout.heroMode).toBe(heroMode);
+    }
+    await app.close();
+  });
+
+  it("PUT avec une source de bandeau inconnue : 400, rien n'est écrit", async () => {
+    const app = await makeApp();
+    const payload = { ...layoutWith([{ key: "resume", enabled: true }]), heroMode: "recoAnime" };
+    expect((await app.inject({ method: "PUT", url: URL_PATH, headers, payload })).statusCode).toBe(400);
+    expect(rows.size).toBe(0);
+    await app.close();
+  });
+
+  it("les sources du bandeau sont celles de shared (`HERO_MODES`), dans le même ordre", () => {
+    const shared = readFileSync(join(repoRoot(), "packages/shared/src/hero/heroModes.ts"), "utf8");
+    const literal = /export const HERO_MODES = \[([^\]]*)\] as const;/.exec(shared)?.[1] ?? "";
+    expect(literal.split(",").map((value) => value.trim().replace(/"/g, ""))).toEqual([...HERO_MODES]);
   });
 
   it("PUT avec une clé inconnue : 400, rien n'est écrit, personne n'est prévenu", async () => {

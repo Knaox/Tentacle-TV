@@ -115,6 +115,10 @@ export const SERVER_CAPABILITIES = {
    *  `GET /api/notifications` sert `target` et `state`, le push emporte `data.target`. La cloche
    *  ouvre sans elle la route du type, comme avant ; l'écran des nouveautés n'en parle qu'avec elle. */
   "notifications.targets": "1.30.0",
+  /** Les sources « Pour vous — Films » et « Pour vous — Séries » du bandeau principal de
+   *  l'accueil (`heroMode` `recoMovies` / `recoSeries`, `/api/preferences/home-layout`) :
+   *  un serveur d'avant refuserait la mise en page qui les porte. */
+  "home.heroRecoKinds": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

@@ -11,8 +11,17 @@ import { isFixedHeroItemVisible } from "../services/fixedHeroItem";
 // des capacités du moment — et les bibliothèques dynamiques (`library:<guid>`).
 const rowKeySchema = z.string().max(80).refine(isKnownHomeRowKey, { message: "unknown row key" });
 
+/**
+ * Les sources du bandeau principal — RECOPIE de `HERO_MODES`
+ * (`packages/shared/src/hero/heroModes.ts`, le backend ne dépend pas de
+ * shared), tenue alignée par `preferences.homeLayout.test.ts`. `recoMovies`
+ * et `recoSeries` (1.30.0) vont avec la capacité `home.heroRecoKinds` : les
+ * clients ne les proposent qu'à un serveur qui la déclare.
+ */
+export const HERO_MODES = ["resume", "random", "reco", "recoMovies", "recoSeries", "fixed"] as const;
+
 const layoutSchema = z.object({
-  heroMode: z.enum(["resume", "random", "reco", "fixed"]),
+  heroMode: z.enum(HERO_MODES),
   heroFixedItemId: z.string().max(64).nullish(),
   rows: z.array(z.object({ key: rowKeySchema, enabled: z.boolean() })).max(60),
   cardDensity: z.enum(["compact", "normal", "large"]),

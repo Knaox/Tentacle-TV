@@ -42,6 +42,13 @@ describe("pickHeroMedia", () => {
     expect(pickHeroMedia("resume", { fixed: null, resume: undefined, featured: [withImage("f")] }).pending).toBe(true);
   });
 
+  it("Pour vous — Films / Séries sans recommandation à montrer : le repli, jamais vide", () => {
+    for (const mode of ["recoMovies", "recoSeries"] as const) {
+      expect(ids(pickHeroMedia(mode, { fixed: null, resume: [withImage("r1")], featured: [withImage("f1")] }))).toEqual(["r1"]);
+      expect(ids(pickHeroMedia(mode, { fixed: null, resume: [], featured: [withImage("f1")] }))).toEqual(["f1"]);
+    }
+  });
+
   it("aléatoire vide : la reprise", () => {
     expect(ids(pickHeroMedia("random", { fixed: null, resume: [withImage("r")], featured: [] }))).toEqual(["r"]);
   });
