@@ -23,9 +23,11 @@ interface ScheduleListFieldProps {
 const DEFAULT_DRAFT: AccessScheduleDto = { dayOfWeek: "Everyday", startHour: 8, endHour: 21 };
 
 /**
- * Les plages horaires PERMISES : une ligne par plage, retirée d'une croix ;
- * dessous, jour, début et fin (à la demi-heure) pour en ajouter une. Sans
- * plage, la connexion est permise à toute heure — la phrase le dit.
+ * Le programme d'accès — les plages PERMISES : une ligne par plage (le jour,
+ * puis « 8:00 - 20:30 », comme Jellyfin), retirée d'une croix ; dessous, jour
+ * de la semaine, heure de début et heure de fin (à la demi-heure, les listes
+ * de Jellyfin) pour en ajouter une. Sans plage, l'accès est permis à toute
+ * heure — la phrase le dit.
  */
 export const ScheduleListField = memo(function ScheduleListField({ value, disabled, onChange }: ScheduleListFieldProps) {
   const { t } = useTranslation("userRights");

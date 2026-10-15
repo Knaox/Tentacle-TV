@@ -88,7 +88,7 @@ export function FauxParentalDialog({ owner, guest, rating, series, ...animated }
           {rating ?? t("userRights:values.noLimit")}
           <ChevronDown size={11} className="text-content-tertiary" aria-hidden />
         </span>
-        <p className="pt-1 text-[12px] font-medium text-content-primary">{t("userRights:fields.blockUnratedItems.label")}</p>
+        <p className="pt-1 text-[12px] font-medium text-content-primary">{t("userRights:parental.unratedTitle")}</p>
         <span className="grid grid-cols-2 gap-y-2 text-[11px] text-content-secondary">
           {UNRATED.map((type) => (
             <span key={type} className="flex items-center gap-1.5">

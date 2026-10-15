@@ -54,8 +54,8 @@ export function groupSummary(group: UserRightsGroup, rights: UserRights, context
           : { key: "summary.ratingMaxScore", values: { score: rights.maxParentalRating } });
       }
       if (rights.blockUnratedItems.length) parts.push({ key: "summary.unrated", values: { count: rights.blockUnratedItems.length } });
-      if (rights.blockedTags.length) parts.push({ key: "summary.blockedTags", values: { count: rights.blockedTags.length } });
       if (rights.allowedTags.length) parts.push({ key: "summary.allowedTags", values: { count: rights.allowedTags.length } });
+      if (rights.blockedTags.length) parts.push({ key: "summary.blockedTags", values: { count: rights.blockedTags.length } });
       if (isNeverSchedule(rights.accessSchedules)) parts.push({ key: "summary.scheduleNever" });
       else if (rights.accessSchedules.length) parts.push({ key: "summary.schedules", values: { count: rights.accessSchedules.length } });
       return parts.length ? parts : [{ key: "summary.noParental" }];

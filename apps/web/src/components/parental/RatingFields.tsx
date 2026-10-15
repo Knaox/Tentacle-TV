@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import type { UnratedItemType, UserRightsOptions } from "@tentacle-tv/shared";
 import { CHECKBOX, FIELD_HINT, FIELD_LABEL, SELECT } from "./fieldStyles";
-import { currentRating, ratingChoices, ratingLabel, toggleInList } from "./parentalModel";
+import { currentRating, ratingChoices, ratingLabel, toggleInList, unratedTypesShown } from "./parentalModel";
 
 const NONE = "none";
 
@@ -18,9 +18,11 @@ interface RatingSelectProps {
 }
 
 /**
- * La note maximale, choisie dans la table de Jellyfin : un niveau par ligne,
- * les noms de chaque pays réunis (« 12, PG-13, FSK 12 »), du plus permissif au
- * plus strict. Une note posée que la table ne connaît pas reste affichée.
+ * La classification maximale, choisie dans la table de Jellyfin et montrée
+ * comme son tableau de bord la montre : un niveau par ligne — un score, et sa
+ * sous-classification s'il en a une —, tous ses noms réunis par « / »
+ * (« 0+/Public Averti/Tous Publics/TP/U »), du plus permissif au plus strict.
+ * Une note posée que la table ne connaît pas reste affichée.
  */
 export const RatingSelect = memo(function RatingSelect({ ratings, score, subScore, disabled, id: givenId, onChange }: RatingSelectProps) {
   const { t } = useTranslation("userRights");
@@ -48,7 +50,7 @@ export const RatingSelect = memo(function RatingSelect({ ratings, score, subScor
           <option value={NONE}>{t("values.noLimit")}</option>
           {unknown && <option value={unknown.key}>{t("parental.unknownRating", { score: unknown.score })}</option>}
           {choices.map((choice) => (
-            <option key={choice.key} value={choice.key}>{ratingLabel(choice, 4)}</option>
+            <option key={choice.key} value={choice.key}>{ratingLabel(choice)}</option>
           ))}
         </select>
         <ChevronDown aria-hidden className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
@@ -64,12 +66,15 @@ interface UnratedTypesFieldProps {
   onChange: (next: UnratedItemType[]) => void;
 }
 
-/** Les types bloqués quand un titre n'a pas de note : une case par type que Jellyfin connaît. */
+/**
+ * Les types bloqués quand un titre n'a pas de classification : les cases du
+ * tableau de bord de Jellyfin, dans son ordre et dans ses mots.
+ */
 export const UnratedTypesField = memo(function UnratedTypesField({ types, value, disabled, onChange }: UnratedTypesFieldProps) {
   const { t } = useTranslation("userRights");
   const titleId = useId();
-  // Un type posé dans Jellyfin que la liste ne propose plus reste visible, et décochable.
-  const shown = useMemo(() => [...types, ...value.filter((type) => !types.includes(type))], [types, value]);
+  // Un type posé par l'API que le tableau de bord ne propose pas reste visible, et décochable.
+  const shown = useMemo(() => unratedTypesShown(types, value), [types, value]);
 
   return (
     <fieldset aria-labelledby={titleId}>

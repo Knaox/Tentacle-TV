@@ -1,4 +1,4 @@
-import { GUEST_SCHEDULE_NEVER, type AccessScheduleDay, type AccessScheduleDto, type UserRightsOptions } from "@tentacle-tv/shared";
+import { GUEST_SCHEDULE_NEVER, type AccessScheduleDay, type AccessScheduleDto, type UnratedItemType, type UserRightsOptions } from "@tentacle-tv/shared";
 
 type ParentalRatingOption = UserRightsOptions["parentalRatings"][number];
 
@@ -7,6 +7,12 @@ type ParentalRatingOption = UserRightsOptions["parentalRatings"][number];
  * (administration) et au contrôle parental d'un invité (Famille) : l'échelle
  * des notes de Jellyfin regroupée par niveau, les étiquettes, les plages
  * horaires. Aucun React ici.
+ *
+ * Tout se montre COMME l'onglet « Contrôle parental » du tableau de bord de
+ * Jellyfin 10.11 (relevé sur un Jellyfin jetable, 2026-10-15) : les noms d'un
+ * même niveau réunis par « / », ses sept types non classés dans son ordre, ses
+ * jours et ses heures à la demi-heure. Une valeur posée dans Jellyfin se relit
+ * ici telle qu'il la montre.
  */
 
 /** Un niveau de l'échelle : plusieurs pays y posent leur nom (« 12 », « PG-13 »…). */
@@ -53,11 +59,32 @@ export function currentRating(
   return choices.find((choice) => choice.key === key) ?? { key, score, subScore, names: [] };
 }
 
-/** Les noms d'un niveau, raccourcis : « 12, PG-13, FSK 12 +2 ». */
-export function ratingLabel(choice: RatingChoice, max = 3): string {
-  const shown = choice.names.slice(0, max).join(", ");
-  const rest = choice.names.length - max;
-  return rest > 0 ? `${shown} +${rest}` : shown;
+/**
+ * Les noms d'un niveau, comme Jellyfin les écrit : tous, réunis par « / »
+ * (« 0+/Public Averti/Tous Publics/TP/U »). `max` raccourcit pour un résumé
+ * d'une ligne : « TV-14-D/TV-14-L +13 ».
+ */
+export function ratingLabel(choice: RatingChoice, max?: number): string {
+  if (max === undefined || choice.names.length <= max) return choice.names.join("/");
+  return `${choice.names.slice(0, max).join("/")} +${choice.names.length - max}`;
+}
+
+/**
+ * Les types non classés que Jellyfin propose de bloquer, dans SON ordre (le
+ * tableau de bord ne montre ni `LiveTvProgram` ni `Other`).
+ */
+export const JELLYFIN_UNRATED_TYPES: readonly UnratedItemType[] = [
+  "Book", "ChannelContent", "LiveTvChannel", "Movie", "Music", "Trailer", "Series",
+];
+
+/**
+ * Les cases à montrer : celles de Jellyfin que le serveur propose, dans
+ * l'ordre de Jellyfin, puis tout type posé autrement (par l'API) — visible,
+ * donc décochable, jamais perdu en silence.
+ */
+export function unratedTypesShown(offered: readonly UnratedItemType[], value: readonly UnratedItemType[]): UnratedItemType[] {
+  const shown = JELLYFIN_UNRATED_TYPES.filter((type) => offered.includes(type));
+  return [...shown, ...value.filter((type) => !shown.includes(type))];
 }
 
 /** Une étiquette telle que Jellyfin la compare : espaces resserrés, casse gardée. */
@@ -89,18 +116,23 @@ export function toggleInList<T extends string>(list: readonly T[], id: T, on: bo
   return on ? [...without, id] : without;
 }
 
+/** Les jours, dans l'ordre de Jellyfin : la semaine depuis dimanche, puis tous les jours, la semaine, le week-end. */
 export const SCHEDULE_DAYS: readonly AccessScheduleDay[] = [
-  "Everyday", "Weekday", "Weekend", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Everyday", "Weekday", "Weekend",
 ];
 
 /** Les heures proposées, à la demi-heure : 0, 0,5 … 24. */
 export const SCHEDULE_HOURS: readonly number[] = Array.from({ length: 49 }, (_, index) => index / 2);
 
-/** 7,5 → « 07:30 » ; 24 → « 24:00 » (minuit, fin de journée). */
+/**
+ * Une heure comme Jellyfin l'écrit : 7,5 → « 7:30 », 20 → « 20:00 », et 24
+ * (minuit, la fin de la journée) → « 0:00 ». Une heure hors de la
+ * demi-heure, posée par l'API, se lit à la minute.
+ */
 export function formatHour(hour: number): string {
   const whole = Math.floor(hour);
   const minutes = Math.round((hour - whole) * 60);
-  return `${String(whole).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  return `${whole % 24}:${String(minutes).padStart(2, "0")}`;
 }
 
 export function scheduleIsValid(schedule: AccessScheduleDto): boolean {

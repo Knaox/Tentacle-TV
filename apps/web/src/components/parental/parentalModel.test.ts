@@ -13,6 +13,7 @@ import {
   scheduleIsValid,
   tagSuggestions,
   toggleInList,
+  unratedTypesShown,
 } from "./parentalModel";
 
 /** Le contrôle parental, sans React : l'échelle de Jellyfin, les étiquettes, les plages. */
@@ -42,8 +43,20 @@ describe("l'échelle des notes", () => {
     expect(currentRating(choices, 16, null)).toEqual({ key: "16", score: 16, subScore: null, names: [] });
   });
 
-  it("raccourcit les noms d'un niveau", () => {
-    expect(ratingLabel({ key: "12", score: 12, subScore: null, names: ["a", "b", "c", "d"] }, 2)).toBe("a, b +2");
+  it("écrit les noms d'un niveau comme Jellyfin, réunis par « / », raccourcis pour un résumé", () => {
+    const choice = { key: "0", score: 0, subScore: null, names: ["0+", "Public Averti", "Tous Publics", "TP", "U"] };
+    expect(ratingLabel(choice)).toBe("0+/Public Averti/Tous Publics/TP/U");
+    expect(ratingLabel(choice, 2)).toBe("0+/Public Averti +3");
+  });
+
+  it("sépare la sous-classification comme Jellyfin : TV-14 seul, TV-14-D/TV-14-L ensemble", () => {
+    const us = [
+      { name: "TV-14", score: 14, subScore: 0 },
+      { name: "TV-14-D", score: 14, subScore: 1 },
+      { name: "TV-14-L", score: 14, subScore: 1 },
+      { name: "21", score: 21, subScore: null },
+    ];
+    expect(ratingChoices(us).map((choice) => ratingLabel(choice))).toEqual(["TV-14", "TV-14-D/TV-14-L", "21"]);
   });
 });
 
@@ -58,6 +71,13 @@ describe("les étiquettes", () => {
     expect(tagSuggestions(["Horreur", "Gore", "Comédie"], ["gore"], "o")).toEqual(["Horreur", "Comédie"]);
   });
 
+  it("montre les types non classés de Jellyfin dans son ordre, puis ceux posés autrement", () => {
+    const all = ["Movie", "Trailer", "Series", "Music", "Book", "LiveTvChannel", "LiveTvProgram", "ChannelContent", "Other"] as const;
+    expect(unratedTypesShown(all, [])).toEqual(["Book", "ChannelContent", "LiveTvChannel", "Movie", "Music", "Trailer", "Series"]);
+    expect(unratedTypesShown(all, ["Other"]).at(-1)).toBe("Other");
+    expect(unratedTypesShown([], [])).toEqual([]);
+  });
+
   it("coche et décoche un identifiant sans doublon", () => {
     expect(toggleInList(["a", "b"], "a", true)).toEqual(["b", "a"]);
     expect(toggleInList(["a", "b"], "a", false)).toEqual(["b"]);
@@ -65,9 +85,10 @@ describe("les étiquettes", () => {
 });
 
 describe("les plages horaires", () => {
-  it("dit l'heure à la demi-heure", () => {
-    expect(formatHour(7.5)).toBe("07:30");
-    expect(formatHour(24)).toBe("24:00");
+  it("dit l'heure comme Jellyfin : « 7:30 », minuit de fin de journée « 0:00 »", () => {
+    expect(formatHour(7.5)).toBe("7:30");
+    expect(formatHour(20)).toBe("20:00");
+    expect(formatHour(24)).toBe("0:00");
   });
 
   it("refuse une fin avant le début, et une plage déjà posée", () => {
