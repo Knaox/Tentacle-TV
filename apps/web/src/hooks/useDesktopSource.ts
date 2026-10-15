@@ -12,8 +12,8 @@
  */
 
 import { useMemo } from "react";
-import type { JellyfinClient } from "@tentacle-tv/api-client";
-import { MPV_ENGINE, type AudioSource } from "@tentacle-tv/shared";
+import { usePlaybackRights, type JellyfinClient } from "@tentacle-tv/api-client";
+import { MPV_ENGINE, builtUrlRefusal, type AudioSource, type MediaSource, type PlaybackRefusal } from "@tentacle-tv/shared";
 import type { LocalSource } from "../downloads/playbackApi";
 import type { SubtitleTrack } from "../components/VideoPlayer";
 import { parseSideCarFileName } from "./localPlaybackTrackSources";
@@ -34,6 +34,8 @@ interface DesktopSourceParams {
   useProgressiveRemux: boolean;
   /** La piste audio lue : copiée telle quelle quand mpv la décode (DTS, TrueHD…). */
   sourceAudio: AudioSource | null;
+  /** La source lue : les droits de lecture jugent ce que l'URL lui fait faire. */
+  mediaSource?: MediaSource;
   /** Résolution locale (useLocalSource). */
   localSource: LocalSource | null;
   waitingLocal: boolean;
@@ -41,12 +43,16 @@ interface DesktopSourceParams {
 
 export function useDesktopSource(params: DesktopSourceParams): {
   desktopStreamUrl: string | null;
+  /** Les droits de lecture du compte refusent ce flux : rien ne part, le lecteur le dit. */
+  desktopRefusal: PlaybackRefusal | null;
 } {
   const {
     isDesktop, itemId, prefsReady, client, mediaSourceId, urlAudioIndex, quality,
     qualityMaxHeight, desktopIsDirectPlay, startTicks, desktopPlaySessionId,
-    burnInSubtitleIndex, useProgressiveRemux, sourceAudio, localSource, waitingLocal,
+    burnInSubtitleIndex, useProgressiveRemux, sourceAudio, localSource, waitingLocal, mediaSource,
   } = params;
+  // Les droits de lecture pour cet appareil : aucun flux avant de les connaître.
+  const { rights, settled: rightsSettled } = usePlaybackRights();
 
   const remoteUrl = useMemo(() => {
     if (!isDesktop || !itemId || !prefsReady) return null;
@@ -62,10 +68,12 @@ export function useDesktopSource(params: DesktopSourceParams): {
     });
   }, [client, itemId, urlAudioIndex, mediaSourceId, quality, qualityMaxHeight, desktopIsDirectPlay, startTicks, desktopPlaySessionId, prefsReady, burnInSubtitleIndex, isDesktop, useProgressiveRemux, sourceAudio]);
 
-  if (!isDesktop) return { desktopStreamUrl: null };
-  if (waitingLocal) return { desktopStreamUrl: null };
-  if (localSource) return { desktopStreamUrl: localSource.absolutePath };
-  return { desktopStreamUrl: remoteUrl };
+  // Un fichier gardé sur l'appareil se lit sans le serveur : ses droits n'y ont plus prise.
+  const refusal = remoteUrl && rightsSettled ? builtUrlRefusal(rights, remoteUrl, mediaSource) : null;
+  if (!isDesktop || waitingLocal) return { desktopStreamUrl: null, desktopRefusal: null };
+  if (localSource) return { desktopStreamUrl: localSource.absolutePath, desktopRefusal: null };
+  if (!rightsSettled || refusal) return { desktopStreamUrl: null, desktopRefusal: refusal };
+  return { desktopStreamUrl: remoteUrl, desktopRefusal: null };
 }
 
 /**

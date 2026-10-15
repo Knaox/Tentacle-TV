@@ -215,15 +215,14 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
     supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, playbackRestart,
   });
 
-  // ── Desktop: LOCAL D'ABORD (téléchargement complet vérifié), sinon URL de
-  // stream classique — construit dans useDesktopSource (chaîne inchangée). ──
+  // ── Desktop: LOCAL D'ABORD, sinon URL de stream classique (useDesktopSource, droits compris). ──
   const urlAudioIndex = desktopIsDirectPlay ? undefined : audioIndex;
 
-  const { desktopStreamUrl } = useDesktopSource({
+  const { desktopStreamUrl, desktopRefusal } = useDesktopSource({
     isDesktop, itemId, prefsReady: streamReady, client, mediaSourceId, urlAudioIndex,
     quality, qualityMaxHeight, desktopIsDirectPlay, startTicks,
     desktopPlaySessionId, burnInSubtitleIndex, useProgressiveRemux,
-    sourceAudio: selectedAudioStream ?? null, localSource, waitingLocal,
+    sourceAudio: selectedAudioStream ?? null, localSource, waitingLocal, mediaSource,
   });
 
   // ── Unified return values ──
@@ -295,6 +294,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode, sessionNonce =
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     segments, maxResumePct, getPositionTicks,
     isLocalPlayback, localSource,
-    itemError, negotiationError: isDesktop ? null : pbInfo.error, mediaSource,
+    itemError, mediaSource,
+    negotiationError: isDesktop ? (desktopRefusal ? { from: "refusal" as const, refusal: desktopRefusal } : null) : pbInfo.error,
   };
 }

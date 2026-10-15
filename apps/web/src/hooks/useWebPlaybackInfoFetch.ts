@@ -1,5 +1,6 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
+import { usePlaybackRights } from "@tentacle-tv/api-client";
 import type { usePlaybackInfo } from "./usePlaybackInfo";
 import { isDolbyVisionSource } from "./playbackVerdict";
 
@@ -47,6 +48,8 @@ export function useWebPlaybackInfoFetch({
   const contextRef = useRef<string | null>(null);
   /** Le titre du dernier passage de l'effet. */
   const lastItemRef = useRef(itemId);
+  // Les droits de lecture du compte pour cet appareil : rien ne se négocie avant de les connaître.
+  const { rights, settled: rightsSettled } = usePlaybackRights();
 
   useEffect(() => {
     // L'épisode vient de changer (la page reste montée) : la remise à zéro de
@@ -57,7 +60,7 @@ export function useWebPlaybackInfoFetch({
     const itemChanged = lastItemRef.current !== itemId;
     lastItemRef.current = itemId;
     if (itemChanged) return;
-    if (isDesktop || !prefsReady || !itemId) return;
+    if (isDesktop || !prefsReady || !itemId || !rightsSettled) return;
     const resumeTicks = item?.UserData?.PlaybackPositionTicks ?? 0;
     const ticks = startTicks > 0 ? startTicks : resumeTicks;
 
@@ -69,7 +72,7 @@ export function useWebPlaybackInfoFetch({
     // cette requête par le compteur de relance. Le repli reste le comportement
     // d'avant, jamais l'inverse.
     const context = [itemId, mediaSourceId, burnInSubtitleIndex, ticks, quality,
-      playbackRestart, pbInfo.mkvUnreliable, pbInfo.pgsClientUnavailable].join("|");
+      playbackRestart, pbInfo.mkvUnreliable, pbInfo.pgsClientUnavailable, JSON.stringify(rights)].join("|");
     const onlyTrackChanged = contextRef.current === context;
     contextRef.current = context;
     if (onlyTrackChanged && pbInfo.isDirectPlay && supportsNativeAudioTracks) return;
@@ -104,11 +107,12 @@ export function useWebPlaybackInfoFetch({
       // lui faire lire. Seul le téléviseur s'en sert, pour choisir le conteneur
       // d'un remux qui préserve le RPU.
       sourceDolbyVision: isDolbyVisionSource(videoStreamOf(item)),
+      rights,
     });
     // Les deux drapeaux de repli SONT des dépendances de rendu : ce sont eux,
     // et eux seuls, qui relancent la requête après un échec. Passer par
     // `startTicks` ne suffirait pas — l'échec MKV survient à 0 s, où la
     // position ne change pas.
   }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality,
-    pbInfo.mkvUnreliable, pbInfo.pgsClientUnavailable, playbackRestart]); // eslint-disable-line react-hooks/exhaustive-deps
+    pbInfo.mkvUnreliable, pbInfo.pgsClientUnavailable, playbackRestart, rightsSettled, rights]); // eslint-disable-line react-hooks/exhaustive-deps
 }

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { cachedBitrate, useItemBitrateReady, useJellyfinClient } from "@tentacle-tv/api-client";
-import { buildQualityLadder, isPresetOffered, findPreset, qualityDrop as explainDrop } from "@tentacle-tv/shared";
+import { cachedBitrate, useItemBitrateReady, useJellyfinClient, usePlaybackRights } from "@tentacle-tv/api-client";
+import {
+  buildQualityLadder, isPresetOffered, findPreset, lighterPreset, offeredQualityPresets, rightsCapTier,
+  qualityDrop as explainDrop,
+} from "@tentacle-tv/shared";
 import type { MediaSource, QualityDrop, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { startBitrateMeasurement, automaticCap } from "../lib/bitratePolicy";
 
@@ -60,8 +63,11 @@ export function useEffectiveQuality(args: {
   }, [client, enabled]);
 
   // Les paliers dépendent de la source : proposer un transcodage plus lourd
-  // que l'original serait absurde (cf. buildQualityLadder).
-  const qualityPresets = useMemo(() => buildQualityLadder(mediaSource), [mediaSource]);
+  // que l'original serait absurde (cf. buildQualityLadder). Et des droits du
+  // compte : aucun palier sans le droit de réencoder, aucun au-dessus du
+  // plafond d'un client distant (cf. rightsQuality).
+  const { rights } = usePlaybackRights();
+  const qualityPresets = useMemo(() => offeredQualityPresets(buildQualityLadder(mediaSource), rights), [mediaSource, rights]);
   const qualityPreset = findPreset(qualityKey, qualityPresets);
 
   // Garde-fou : l'échelle étant calculée d'après la source, un palier proposé
@@ -105,7 +111,11 @@ export function useEffectiveQuality(args: {
 
   const autoModeArmed = enabled && qualityKey === "original" && disarmedRef.current !== itemId;
   const autoCapActive = autoModeArmed && capAuto != null;
-  const effectivePreset = autoCapActive && capAuto ? capAuto : qualityPreset;
+  // Le plafond du serveur (client distant) n'est pas une préférence : il borne
+  // aussi « Originale » choisie à la main, et le plus léger des deux caps gagne.
+  const rightsCap = enabled ? rightsCapTier(mediaSource, rights) : null;
+  const chosenPreset = autoCapActive && capAuto ? capAuto : qualityPreset;
+  const effectivePreset = rightsCap ? lighterPreset(chosenPreset, rightsCap) ?? chosenPreset : chosenPreset;
 
   // Pourquoi la qualité baisse — dit par le lecteur (`useQualityDropNotice`),
   // relisible au menu. Le palier servi pendant un cap, c'est le débit demandé.
@@ -125,7 +135,7 @@ export function useEffectiveQuality(args: {
     qualityMaxHeight: effectivePreset.height ?? undefined,
     autoCapActive,
     autoModeArmed,
-    qualityKeyEffective: autoCapActive && capAuto ? capAuto.key : qualityKey,
+    qualityKeyEffective: effectivePreset !== qualityPreset ? effectivePreset.key : qualityKey,
     setQualityKeyManual,
     qualityDrop,
     capPending,

@@ -1,55 +1,14 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { applyTranscodeTarget, fitServerCappedTranscode, useJellyfinClient, useUserId, withDirectApiKey } from "@tentacle-tv/api-client";
 import { directPlayUrl, withRestartMark } from "../lib/directPlayUrl";
-import type { MediaSource, PlaybackFailure } from "@tentacle-tv/shared";
-import type { DeviceProfile } from "@tentacle-tv/shared";
-import {
-  buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
-  type WebProfileOptions,
-} from "../lib/deviceProfile";
+import { negotiatedRefusal, rightsBitrate, type MediaSource, type PlaybackFailure, type PlaybackRights } from "@tentacle-tv/shared";
+import type { WebProfileOptions } from "../lib/deviceProfile";
+import { buildProfile, profileRanges } from "./playbackProfile";
 import { evaluatePlayback, isHdrSource, type Verdict } from "./playbackVerdict";
 import { desktopKind } from "../desktop/detect";
 import { logPlayback } from "./playbackLog";
 
 const DBG = "[Tentacle:PlaybackInfo]";
-
-/**
- * Le profil décrit QUI LIT, et mpv ne lit pas comme un navigateur : lui envoyer
- * les capacités de Chromium faisait remuxer en HLS tout MKV — donc tout contenu
- * lourd — pour un lecteur qui l'aurait ouvert tel quel.
- *
- * Hors du hook : `fetchPlaybackInfo` est mémoïsé, et une fonction refermée sur
- * le rendu s'y serait figée.
- */
-function buildProfile(
-  nativePlayer: boolean, isMacOSTauri: boolean, bitrate?: number, options?: WebProfileOptions,
-): DeviceProfile {
-  // mpv lit tout, y compris les sous-titres image : aucune capacité à lui
-  // retirer, les drapeaux de repli ne concernent que les lecteurs web.
-  if (nativePlayer) return buildMpvDeviceProfile(bitrate);
-  if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate, options);
-  return buildBrowserDeviceProfile(bitrate, options);
-}
-
-/**
- * Les plages dynamiques que le profil ENVOYÉ déclare.
- *
- * Lues dans le profil, et non redemandées à une sonde. Les deux répondaient la
- * même chose tant qu'il n'y avait que des navigateurs : la sonde EST ce qui
- * construit le profil. Sur un téléviseur, le profil est substitué à la
- * compilation et interroge `deviceInfo` — la sonde, elle, continuait de décrire
- * Chromium. Le verdict jugeait donc le tone mapping sur des capacités qui
- * n'étaient pas celles qu'on avait annoncées au serveur, et le journal de
- * diagnostic mentait à l'endroit précis où on venait le consulter.
- */
-function profileRanges(profile: DeviceProfile): string[] {
-  for (const codec of profile.CodecProfiles ?? []) {
-    if (codec.Type !== "Video") continue;
-    const condition = codec.Conditions.find((c) => c.Property === "VideoRangeType");
-    if (condition) return condition.Value.split("|");
-  }
-  return [];
-}
 
 export interface PlaybackInfoState {
   /** Full stream URL (direct play or TranscodingUrl from server) */
@@ -157,10 +116,16 @@ export function usePlaybackInfo(nativePlayer = false) {
      * rien de ce qu'on va lui demander de lire.
      */
     sourceDolbyVision?: boolean;
+    /** Les droits de lecture du compte pour cet appareil (`usePlaybackRights`) ; absents : non jugés. */
+    rights?: PlaybackRights;
   }) => {
     const fail = (error: PlaybackFailure) => setState((prev) => ({ ...prev, isLoading: false, error }));
     // Sans compte, rien ne se négocie : la session n'existe plus.
     if (!userId) return fail({ from: "request", error: { status: 401 }, target: "tentacle" });
+    // La lecture interdite au compte : rien ne se négocie, le lecteur le dit.
+    if (opts.rights && !opts.rights.mediaPlayback) return fail({ from: "refusal", refusal: "playback_not_allowed" });
+    // Le palier, borné au plafond de ce client s'il est distant ; « Originale » : le plafond seul.
+    const tierBitrate = opts.maxStreamingBitrate != null ? rightsBitrate(opts.maxStreamingBitrate, opts.rights) : undefined;
 
     const currentFetch = ++fetchId.current;
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -168,9 +133,9 @@ export function usePlaybackInfo(nativePlayer = false) {
     try {
       // Le profil mémoïsé ne convient que si rien de propre à CETTE lecture ne
       // le change. Un débit imposé ou une source Dolby Vision le rebâtissent.
-      const customProfile = opts.maxStreamingBitrate != null || opts.sourceDolbyVision === true;
+      const customProfile = tierBitrate != null || opts.sourceDolbyVision === true;
       let profile = customProfile
-        ? buildProfile(nativePlayer, isMacOSTauri, opts.maxStreamingBitrate, {
+        ? buildProfile(nativePlayer, isMacOSTauri, tierBitrate, {
           ...profileOptions, sourceDolbyVision: opts.sourceDolbyVision,
         })
         : deviceProfile;
@@ -187,7 +152,7 @@ export function usePlaybackInfo(nativePlayer = false) {
         audioStreamIndex: opts.audioStreamIndex,
         subtitleStreamIndex: opts.subtitleStreamIndex,
         startTimeTicks: opts.startTimeTicks,
-        maxStreamingBitrate: opts.maxStreamingBitrate,
+        maxStreamingBitrate: tierBitrate ?? rightsBitrate(undefined, opts.rights),
         maxHeight: opts.maxHeight,
       });
 
@@ -223,9 +188,12 @@ export function usePlaybackInfo(nativePlayer = false) {
         // (cf. `applyTranscodeTarget`). En « Originale », seule la limite de
         // débit Internet du serveur peut avoir plafonné le flux : la même règle
         // s'y applique (`fitServerCappedTranscode`), sinon l'URL reste intacte.
-        const transcodingPath = opts.maxStreamingBitrate != null
-          ? applyTranscodeTarget(ms.TranscodingUrl, { totalBitrate: opts.maxStreamingBitrate, height: opts.maxHeight }, ms)
+        const transcodingPath = tierBitrate != null
+          ? applyTranscodeTarget(ms.TranscodingUrl, { totalBitrate: tierBitrate, height: opts.maxHeight }, ms)
           : fitServerCappedTranscode(ms.TranscodingUrl, ms);
+        // Une conversion que le compte n'a pas le droit de demander ne part pas.
+        const refusal = negotiatedRefusal(opts.rights, ms, false, transcodingPath);
+        if (refusal) return fail({ from: "refusal", refusal });
         // TranscodingUrl from proxy contains the admin API key (from token swap).
         // Replace it with the user's own Jellyfin token for direct streaming.
         url = ds && !hlsWithoutCors
@@ -233,6 +201,8 @@ export function usePlaybackInfo(nativePlayer = false) {
           : `${baseUrl}${transcodingPath}`;
       } else {
         console.warn(DBG, "no TranscodingUrl and not direct play");
+        const refusal = negotiatedRefusal(opts.rights, ms, false, null);
+        if (refusal) return fail({ from: "refusal", refusal });
         return fail({ from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode ?? "NoCompatibleStream" });
       }
 
@@ -267,7 +237,7 @@ export function usePlaybackInfo(nativePlayer = false) {
         isLoading: false,
         verdict,
         error: null,
-        requestedBps: opts.maxStreamingBitrate ?? profile.MaxStreamingBitrate ?? null,
+        requestedBps: tierBitrate ?? rightsBitrate(undefined, opts.rights) ?? profile.MaxStreamingBitrate ?? null,
       });
 
       // Relevé synthétique pour l'inspecteur d'une dalle (cf. playbackLog).

@@ -52,7 +52,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
     segments, maxResumePct, getPositionTicks,
-    isLocalPlayback, localSource, itemError,
+    isLocalPlayback, localSource, itemError, negotiationError,
   } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false, sessionNonce: attempt });
   const { t: tDownloads } = useTranslation("downloads");
 
@@ -168,7 +168,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // Un échec que plus rien ne rattrape : dit, avec ses gestes ; un défaut du
   // LECTEUR seul bascule encore vers le lecteur web (useWebPlaybackProblem).
   const playback = useWebPlaybackProblem({
-    client, itemId, item, itemError: isLocalPlayback ? null : itemError, negotiationError: null, streamUrl, isDirectPlay,
+    client, itemId, item, itemError: isLocalPlayback ? null : itemError, negotiationError, streamUrl, isDirectPlay,
     burningSubtitles: burnInSubtitleIndex != null, subtitlesActive: subtitleIndex != null,
     mediaSourceId, qualityKey, qualityPresets, positionRef,
     restartAt: (seconds) => { setStartTicks(Math.floor(seconds * TICKS_PER_SECOND)); setAttempt((n) => n + 1); },
