@@ -82,3 +82,25 @@ export function cappedByCeiling(choice: ParentalAgeChoice, ceiling: { maxParenta
   if (!ceiling || ceiling.maxParentalRating === null) return false;
   return choice.kind === "none" || choice.score > ceiling.maxParentalRating;
 }
+
+export type ParentalAgeSlot = ParentalAgeChoice | Extract<ParentalAgeCurrent, { kind: "custom" }>;
+
+/** L'ordre des pastilles : les paliers, et un réglage fait ailleurs à SA place dans l'échelle (avant le premier palier plus large). */
+export function parentalAgeSlots(choices: readonly ParentalAgeChoice[], current: ParentalAgeCurrent): ParentalAgeSlot[] {
+  if (current.kind !== "custom") return [...choices];
+  const at = choices.findIndex((choice) => choice.kind === "none" || choice.score > current.score);
+  const slots: ParentalAgeSlot[] = [...choices];
+  slots.splice(at < 0 ? slots.length : at, 0, current);
+  return slots;
+}
+
+/** Ce qui est retenu (palier ou réglage fait ailleurs) dépasse-t-il le plafond ? Alors Jellyfin appliquera le plafond. */
+export function currentCappedByCeiling(
+  choices: readonly ParentalAgeChoice[],
+  current: ParentalAgeCurrent,
+  ceiling: { maxParentalRating: number | null } | null,
+): boolean {
+  if (current.kind === "custom") return ceiling?.maxParentalRating != null && current.score > ceiling.maxParentalRating;
+  const choice = choices.find((candidate) => candidate.key === current.key);
+  return choice ? cappedByCeiling(choice, ceiling) : false;
+}

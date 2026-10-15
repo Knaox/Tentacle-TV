@@ -25,6 +25,7 @@ export default {
     summaryCustomUnnamed: "Une note réglée sur le bureau ou le web.",
     ceilingMember: "L'administrateur limite déjà ce compte à « {{names}} » : rien au-delà.",
     ceilingGuest: "Le compte qui a créé ce profil est limité à « {{names}} » : rien au-delà.",
+    ceilingGuestNamed: "Le compte de {{creator}} est limité à « {{names}} » : rien au-delà.",
     selected: "retenu",
   },
   libraries: {

@@ -2,8 +2,10 @@ import { GUEST_PARENTAL_NONE, type GuestParentalControls } from "@tentacle-tv/sh
 import { describe, expect, it } from "vitest";
 import {
   cappedByCeiling,
+  currentCappedByCeiling,
   currentParentalAge,
   parentalAgeChoices,
+  parentalAgeSlots,
   withParentalAge,
   type ParentalAgeChoice,
 } from "./parentalAge";
@@ -102,5 +104,32 @@ describe("cappedByCeiling", () => {
   it("sans plafond, ou plafond inconnu : rien à dire", () => {
     expect(cappedByCeiling(sixteen, { maxParentalRating: null })).toBe(false);
     expect(cappedByCeiling(sixteen, null)).toBe(false);
+  });
+});
+
+describe("parentalAgeSlots", () => {
+  const choices = parentalAgeChoices(FR);
+
+  it("sans réglage fait ailleurs : les paliers tels quels", () => {
+    expect(parentalAgeSlots(choices, { kind: "choice", key: "age:12" }).map((slot) => slot.key)).toEqual(choices.map((choice) => choice.key));
+  });
+
+  it("un réglage fait ailleurs se range à sa place dans l'échelle", () => {
+    const custom = currentParentalAge(choices, { ...GUEST_PARENTAL_NONE, maxParentalRating: 12, maxParentalSubRating: 1 }, FR);
+    expect(parentalAgeSlots(choices, custom).map((slot) => slot.key)).toEqual(["age:0", "age:6", "age:10", "age:12", "custom", "age:16", "none"]);
+    const above = currentParentalAge(choices, { ...GUEST_PARENTAL_NONE, maxParentalRating: 18 }, FR);
+    expect(parentalAgeSlots(choices, above).map((slot) => slot.key)).toEqual(["age:0", "age:6", "age:10", "age:12", "age:16", "custom", "none"]);
+  });
+});
+
+describe("currentCappedByCeiling", () => {
+  const choices = parentalAgeChoices(FR);
+
+  it("un palier ou un réglage fait ailleurs au-delà du plafond", () => {
+    expect(currentCappedByCeiling(choices, { kind: "choice", key: "none" }, { maxParentalRating: 12 })).toBe(true);
+    expect(currentCappedByCeiling(choices, { kind: "choice", key: "age:6" }, { maxParentalRating: 12 })).toBe(false);
+    const custom = currentParentalAge(choices, { ...GUEST_PARENTAL_NONE, maxParentalRating: 18 }, FR);
+    expect(currentCappedByCeiling(choices, custom, { maxParentalRating: 12 })).toBe(true);
+    expect(currentCappedByCeiling(choices, custom, null)).toBe(false);
   });
 });

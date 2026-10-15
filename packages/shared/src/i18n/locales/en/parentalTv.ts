@@ -23,6 +23,7 @@ export default {
     summaryCustomUnnamed: "A rating set on the desktop app or the web.",
     ceilingMember: "The administrator already limits this account to “{{names}}”: nothing beyond.",
     ceilingGuest: "The account that created this profile is limited to “{{names}}”: nothing beyond.",
+    ceilingGuestNamed: "{{creator}}'s account is limited to “{{names}}”: nothing beyond.",
     selected: "selected",
   },
   libraries: {
