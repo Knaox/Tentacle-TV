@@ -27,7 +27,10 @@ interface ProfileTileProps {
 /**
  * Un profil de « Qui regarde ? » : son rond (portrait, ou initiale sur sa
  * couleur), son nom dessous, et ce qu'il faut savoir avant d'y entrer — le
- * cadenas d'un code PIN, « Invité », un blocage et son heure de fin. Au survol
+ * cadenas d'un code PIN, « Invité », un blocage et son heure de fin. Le
+ * cadenas FERMÉ ne paraît que si la choisir demandera vraiment le code
+ * (`pinLock`) : le profil en cours (« Changer de profil ») s'ouvre sans, il
+ * porte à la place un anneau fixe et « Profil actuel ». Au survol
  * comme au focus : le rond s'élève, un halo de SA couleur s'allume dessous ;
  * au focus clavier, un anneau l'entoure. Halo et anneau sont des calques en
  * fondu d'opacité : jamais une ombre animée (`theme/cards.css`). Seuls
@@ -45,10 +48,14 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
   const [glowFrom] = profileColorStops(profile.color);
   const locked = profile.lockedLabel !== null;
   // Pas de « Vous » : devant l'écran, ce n'est pas forcément le compte (comme sur la TV).
-  const caption = locked ? profile.lockedLabel : profile.guest ? t("family:kindGuest") : null;
-  const label = profile.hasPin
-    ? t("profilePicker:tileLabelPin", { name: profile.name })
-    : t("profilePicker:tileLabel", { name: profile.name });
+  const caption = locked
+    ? profile.lockedLabel
+    : profile.current ? t("profilePicker:current") : profile.guest ? t("family:kindGuest") : null;
+  const label = profile.current
+    ? t("profilePicker:tileLabelCurrent", { name: profile.name })
+    : profile.pinLock
+      ? t("profilePicker:tileLabelPin", { name: profile.name })
+      : t("profilePicker:tileLabel", { name: profile.name });
 
   const motionStyle: CSSProperties =
     role === "chosen"
@@ -84,10 +91,15 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
             aria-hidden
             className="pointer-events-none absolute -inset-1.5 rounded-full opacity-0 ring-2 ring-line-focus transition-opacity duration-150 group-focus-visible:opacity-100"
           />
+          {/* Le profil en cours : un anneau FIXE, plus près du rond que celui du
+              focus — on y est déjà, le choisir y reste. Rien n'y bouge. */}
+          {profile.current && (
+            <span aria-hidden className="pointer-events-none absolute -inset-1 rounded-full ring-2 ring-content-primary" />
+          )}
           <span className={`relative block rounded-full ${locked ? "opacity-55" : ""}`}>
             <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={TILE_AVATAR} />
           </span>
-          {profile.hasPin && (
+          {profile.pinLock && (
             <span
               aria-hidden
               className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border border-line-subtle bg-surface-2 text-content-primary"
@@ -100,7 +112,9 @@ export const ProfileTile = memo(forwardRef<HTMLButtonElement, ProfileTileProps>(
           <span className="w-full truncate text-center text-base font-semibold text-content-secondary group-hover:text-content-primary group-focus-visible:text-content-primary">
             {profile.name}
           </span>
-          <span className={`mt-0.5 h-4 text-xs ${locked ? "text-status-error-fg" : "text-content-tertiary"}`}>{caption ?? ""}</span>
+          <span className={`mt-0.5 h-4 text-xs ${locked ? "text-status-error-fg" : profile.current ? "font-medium text-content-secondary" : "text-content-tertiary"}`}>
+            {caption ?? ""}
+          </span>
         </span>
       </button>
     </li>
