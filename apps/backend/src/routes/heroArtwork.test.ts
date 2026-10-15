@@ -39,6 +39,8 @@ vi.mock("../services/tmdb/metaCache", () => ({
 
 import { heroArtworkRoutes } from "./heroArtwork";
 
+const HIDDEN = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
 beforeEach(() => {
   tmdb.configured = true;
   tmdb.backdrop = "/fond.jpg";
@@ -50,9 +52,17 @@ beforeEach(() => {
       if (url.pathname.endsWith("/Users/Me")) {
         return new Response(JSON.stringify({ Id: "u1", Name: "banc", Policy: { IsAdministrator: false } }), { status: 200 });
       }
+      // Comme Jellyfin 10.11 : `Ids=` oublie les bibliothèques permises (le titre
+      // d'une bibliothèque interdite y figure) ; `/Items/{id}?userId=` rend 404.
       if (url.pathname === "/Items") {
-        const item = ITEMS[url.searchParams.get("Ids") ?? ""];
+        const id = url.searchParams.get("Ids") ?? "";
+        const item = ITEMS[id] ?? (id === HIDDEN ? { Id: HIDDEN, Type: "Movie" } : undefined);
         return new Response(JSON.stringify({ Items: item ? [item] : [] }), { status: 200 });
+      }
+      const single = url.pathname.match(/^\/Items\/([0-9a-f]+)$/);
+      if (single && url.searchParams.get("userId") === "u1") {
+        const item = ITEMS[single[1]];
+        return item ? new Response(JSON.stringify(item), { status: 200 }) : new Response("", { status: 404 });
       }
       const images = url.pathname.match(/^\/Items\/([0-9a-f]+)\/Images$/);
       if (images) return new Response(JSON.stringify(IMAGES[images[1]] ?? []), { status: 200 });
@@ -99,6 +109,8 @@ describe("GET /api/hero/artwork/:itemId", () => {
 
   it("un titre que le compte ne voit pas : 404 ; un id illisible : 400", async () => {
     expect((await get("dddddddddddddddddddddddddddddddd")).statusCode).toBe(404);
+    // Dans une bibliothèque que le compte n'a pas : 404, même si `Ids=` l'aurait rendu.
+    expect((await get(HIDDEN)).statusCode).toBe(404);
     expect((await get("pas-un-id")).statusCode).toBe(400);
   });
 });
