@@ -96,6 +96,10 @@ export const SERVER_CAPABILITIES = {
    *  l'écran, le serveur prépare leur aperçu en fond (jamais d'extraction YouTube) et rend ceux qui
    *  sont prêts : leur survol n'a plus rien à demander. Sans elle, l'aperçu se décide au survol. */
   "trailers.previewWarm": "1.30.0",
+  /** Chaque notification porte sa CIBLE et son ÉTAT (`notifications/notificationTarget.ts`) :
+   *  `GET /api/notifications` sert `target` et `state`, le push emporte `data.target`. La cloche
+   *  ouvre sans elle la route du type, comme avant ; l'écran des nouveautés n'en parle qu'avec elle. */
+  "notifications.targets": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
