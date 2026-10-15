@@ -4,7 +4,9 @@ import {
   fetchInterfaceLanguage,
   flushPlaybackOutboxFor,
   rehydratePlaybackSettings,
+  rehydrateStillWatching,
   resetSocketSession,
+  resetStillWatchingSession,
   setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import {
@@ -182,6 +184,9 @@ export function leaveProfile(
 
   wipeAccount(storage, PROFILE_STORAGE_KEYS);
   rehydratePlaybackSettings();
+  rehydrateStillWatching();
+  // Le temps regardé sans geste était celui du profil qu'on quitte.
+  resetStillWatchingSession();
   endWipe(storage);
 
   notifySessionChanged();

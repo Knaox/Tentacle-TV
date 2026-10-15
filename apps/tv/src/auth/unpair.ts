@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { rehydratePlaybackSettings, setPreferencesToken } from "@tentacle-tv/api-client";
+import { rehydratePlaybackSettings, rehydrateStillWatching, setPreferencesToken } from "@tentacle-tv/api-client";
 import type { JellyfinClient, StorageAdapter } from "@tentacle-tv/api-client";
 import { ACCOUNT_STORAGE_KEYS, TV_PAIRING_TOKEN_KEY, beginUnpair, endWipe, releaseHeldRevocations, wipeAccount } from "@tentacle-tv/tv-core";
 import { navigationRef } from "../navigation/navigationRef";
@@ -60,8 +60,9 @@ export function unpairDevice({ jfClient, storage, queryClient }: UnpairContext, 
   queryClient.clear();
 
   wipeAccount(storage, ACCOUNT_STORAGE_KEYS);
-  // Le magasin des réglages de lecture relit son cache, désormais vide.
+  // Les magasins des réglages de lecture relisent leur cache, désormais vide.
   rehydratePlaybackSettings();
+  rehydrateStillWatching();
   endWipe(storage);
 
   notifySessionChanged();

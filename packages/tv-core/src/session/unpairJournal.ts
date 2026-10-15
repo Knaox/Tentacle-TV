@@ -60,6 +60,8 @@ export const PROFILE_STORAGE_KEYS: readonly string[] = [
   "tentacle_recent_searches",
   // Le cache local des réglages de lecture du COMPTE (le serveur les garde).
   "tentacle_playback_settings",
+  // Le cache local de « Vous regardez encore ? », un réglage du COMPTE (`STILL_WATCHING_CACHE_KEY`, shared).
+  "tentacle_still_watching",
   // La file persistée des rapports de lecture (`OUTBOX_KEY`, api-client) : des
   // positions du compte, jamais rejouées avec le jeton d'un autre.
   "tentacle_playback_outbox",

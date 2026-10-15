@@ -92,7 +92,7 @@ describe("l'isolation des profils, clé par clé", () => {
   });
 
   it("la session d'un profil emporte son jeton, son cache, sa file de rapports et sa lecture directe", () => {
-    for (const key of ["tentacle_token", "tentacle_user", "tentacle_query_cache_v1", "tentacle_playback_outbox", "tentacle_jellyfin_token", "tentacle_device_id_jf", "tentacle_playback_settings", "tentacle_recent_searches"]) {
+    for (const key of ["tentacle_token", "tentacle_user", "tentacle_query_cache_v1", "tentacle_playback_outbox", "tentacle_jellyfin_token", "tentacle_device_id_jf", "tentacle_playback_settings", "tentacle_still_watching", "tentacle_recent_searches"]) {
       expect(PROFILE_STORAGE_KEYS).toContain(key);
     }
   });

@@ -1,4 +1,6 @@
-import { initPlaybackSettingsStore, rehydratePlaybackSettings } from "@tentacle-tv/api-client";
+import {
+  initPlaybackSettingsStore, initStillWatchingStore, rehydratePlaybackSettings, rehydrateStillWatching,
+} from "@tentacle-tv/api-client";
 import { railPinningStore } from "../components/nav/railPinning";
 import { cardSizeStore } from "./cardSize";
 import { exoTunnelingStore } from "./exoSettings";
@@ -12,10 +14,11 @@ import { tvStorage } from "../storage/RNStorageAdapter";
  * repart à sa valeur par défaut à chaque démarrage — c'est le défaut qui avait
  * fait réapparaître les entrées masquées du rail.
  *
- * Le magasin des réglages de LECTURE, lui, ne naît qu'au premier rendu qui
- * l'utilise (il lui faut le `StorageAdapter` du contexte). On le crée donc ici,
- * à la main, avant de le relire : `rehydratePlaybackSettings()` seul serait un
- * no-op silencieux sur un magasin qui n'existe pas encore.
+ * Les magasins des réglages de LECTURE et de « Vous regardez encore ? », eux,
+ * ne naissent qu'au premier rendu qui les utilise (il leur faut le
+ * `StorageAdapter` du contexte). On les crée donc ici, à la main, avant de les
+ * relire : `rehydrate…()` seul serait un no-op silencieux sur un magasin qui
+ * n'existe pas encore.
  *
  * À appeler une fois, juste après `hydrate()`.
  */
@@ -26,4 +29,6 @@ export function rehydrateStores(): void {
   cardSizeStore.rehydrate();
   initPlaybackSettingsStore(tvStorage);
   rehydratePlaybackSettings();
+  initStillWatchingStore(tvStorage);
+  rehydrateStillWatching();
 }
