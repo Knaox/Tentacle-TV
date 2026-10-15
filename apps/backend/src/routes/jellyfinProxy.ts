@@ -23,6 +23,7 @@ import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
 import { gatePlayback } from "./jellyfinProxy/playbackGate";
 import { getRealClientIp } from "../services/networkUtils";
 import { deviceAccessRefusal, proxiedLogin, proxiedRefusal } from "./jellyfinProxy/accountAccessRefusal";
+import { libraryListGuard, sendVisibleItems } from "./jellyfinProxy/libraryListGuard";
 import { translateLegacyRoute } from "./jellyfinProxy/modernRoutes";
 import { impersonatedUserId, resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
 import { nameDeviceFromHeader } from "../services/deviceNaming";
@@ -94,6 +95,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     if (gate.kind === "hidden") return reply.status(404).send({ error: "Not found" });
     if (gate.kind === "refused") return reply.status(403).send({ code: gate.code, error: "Forbidden" });
     if (gate.query) targetUrl = buildTargetUrl(jellyfinUrl, route.path, lentKeyUser ? scopedToDeviceUser(route.path, gate.query, lentKeyUser) : gate.query);
+    // Bibliothèques refusées : un parent caché rend une liste vide, une liste d'ids est filtrée (cf. libraryListGuard).
+    const listGuard = await libraryListGuard(request.method, route.path, route.query, incomingToken, lentKeyUser);
+    if (listGuard.empty !== null) return reply.type("application/json; charset=utf-8").header("cache-control", "no-store").send(listGuard.empty);
 
     const { apiKey: apiKeyOverride, rewrite, usedDeviceToken } = await resolveSessionRouting(incomingToken, wildcardPath, request.body);
 
@@ -197,10 +201,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       const cacheControl = imageCache ?? (isMediaResponse ? null : apiCacheControl(wildcardPath));
       if (cacheControl) reply.header("cache-control", cacheControl);
 
-      // Log Jellyfin error responses for debugging — without buffering the
-      // whole body, which would force the entire (potentially multi-MB) error
-      // payload into RAM and add 200-500 ms of latency on every 4xx/5xx.
-      // La photo absente d'un compte n'est pas une erreur (cf. `proxyErrorLevel`).
+      // Log Jellyfin error responses — without buffering the (potentially multi-MB)
+      // body. La photo absente d'un compte n'est pas une erreur (cf. `proxyErrorLevel`).
       if (response.status >= 400) {
         request.log[proxyErrorLevel(response.status, wildcardPath)](
           { status: response.status, path: wildcardPath, method: request.method },
@@ -214,9 +216,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // 204 No Content: must not include a body per HTTP spec.
-      if (response.status === 204 || !response.body) {
-        return reply.send();
-      }
+      if (response.status === 204 || !response.body) return reply.send();
 
       // Cacheable routes (Latest/Resume/NextUp/Views): buffer once in RAM so
       // future hits can reply from cache. Media/error routes: stream as-is.
@@ -284,6 +284,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         return reply.send(body);
       }
 
+      if (listGuard.filterUser && response.status < 400) return sendVisibleItems(reply, response, listGuard.filterUser);
       const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);
       traceBody(request, reply, nodeStream, traceCtx);
       return reply.send(nodeStream);

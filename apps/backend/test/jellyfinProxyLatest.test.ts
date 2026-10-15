@@ -39,6 +39,13 @@ vi.mock("../src/services/db", () => ({
   },
 }));
 vi.mock("../src/services/wsManager", () => ({ broadcastToUser: () => {} }));
+// Les bibliothèques refusées ont leur propre test (libraryListGuard.test.ts) : ici, un compte libre.
+vi.mock("../src/routes/jellyfinProxy/libraryListGuard", () => ({
+  libraryListGuard: async () => ({ empty: null, filterUser: null }),
+  sendVisibleItems: async () => {
+    throw new Error("aucune liste d'ids ici");
+  },
+}));
 
 import { jellyfinProxyRoutes } from "../src/routes/jellyfinProxy";
 import { clearAll, invalidateByCarousel } from "../src/services/jellyfinCache";
