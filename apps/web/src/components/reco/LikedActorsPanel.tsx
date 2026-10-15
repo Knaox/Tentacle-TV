@@ -83,6 +83,17 @@ function PersonBubble({
   );
 }
 
+/** La silhouette d'un portrait : la géométrie exacte de `PersonBubble`, sans animation. */
+function PersonBubbleSkeleton() {
+  return (
+    <div className="w-20 shrink-0 sm:w-24">
+      <div className="mx-auto h-20 w-20 rounded-full bg-fill-soft sm:h-24 sm:w-24" />
+      <div className="mx-auto mt-2 h-4 w-3/4 py-0.5"><div className="h-full rounded bg-fill-subtle" /></div>
+      <div className="mx-auto h-[16.5px] w-1/2 py-0.5"><div className="h-full rounded bg-fill-faint" /></div>
+    </div>
+  );
+}
+
 /**
  * « Vos acteurs », SUR la page Recommandations : les personnes aimées
  * (portraits cerclés de marque, retrait à la croix), des acteurs CONNUS en
@@ -158,6 +169,13 @@ export function LikedActorsPanel() {
                 onAction={() => addPerson(r)}
               />
             ))}
+          </div>
+        ) : !searching && suggestions === undefined ? (
+          // Les suggestions n'ont pas encore répondu : la bande garde la place
+          // de ses portraits, sinon la page grandissait d'un coup sous la
+          // dernière rangée (barre de défilement qui saute).
+          <div aria-hidden className="flex gap-4 overflow-hidden pb-2">
+            {Array.from({ length: 8 }, (_, i) => <PersonBubbleSkeleton key={i} />)}
           </div>
         ) : (
           <p className="text-xs text-content-tertiary">
