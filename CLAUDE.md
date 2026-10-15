@@ -663,9 +663,13 @@ demande l'aperçu (`trailers.preview`, la machine partagée du bureau) et GRANDI
 dans sa cellule à la première image, 900 ms au plus tôt — jamais un calque
 par-dessus les voisines. Elle part de la carte TELLE QU'ELLE SE DESSINE au focus
 (agrandie, soulevée : `trailerPreviewTileFrom`), la carte s'effaçant dessous, et
-sa taille suit le réglage « Taille des cartes ». La rangée RÉSERVE la place avant
-de défiler (`rows/rowPreviewRoom.ts` : sinon la dernière carte déborde), la page
-descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
+sa taille suit le réglage « Taille des cartes ». La carte dont l'aperçu DÉMARRE
+passe EN TÊTE de sa rangée, à la place de la première — rien ne bouge avant
+(tv-core `cards/trailerPreviewRowHead.ts`, règle datée : où défiler, la place
+posée au bout AVANT de défiler, le départ du focus) ; la carte y glisse sur le
+ressort de sa grande carte (`rows/rowGlide.ts`), et en bout de rangée l'essai
+choisit butée ou dépassement (Réglages › Lecture, port `rows/rowHeadMode.tsx`).
+La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
 se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
 Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
 vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
