@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ADMIN_DOWNLOAD_RIGHTS_KEY, userRightsKey } from "@tentacle-tv/api-client";
 import { BACKEND, creds, hdrs } from "../pages/adminUtils";
 
 /**
@@ -7,7 +8,10 @@ import { BACKEND, creds, hdrs } from "../pages/adminUtils";
  *
  * Deux écrans les affichent : Admin > Téléchargements (tous les comptes) et la
  * fiche d'un compte dans Admin > Utilisateurs. Ils partagent CETTE clé : un
- * interrupteur basculé dans l'un se voit dans l'autre sans relecture. La page
+ * interrupteur basculé dans l'un se voit dans l'autre sans relecture. Face à
+ * un serveur qui déclare `admin.userRights`, la fiche écrit par la route des
+ * droits (`useUpdateUserRights`), qui range aussi sa réponse sous cette clé ;
+ * dans l'autre sens, une écriture d'ici relit les droits complets du compte. La page
  * Téléchargements lit encore par ses propres fonctions, sous la même clé et
  * pour la même réponse — elle pourra passer par ce hook.
  */
@@ -27,7 +31,7 @@ export interface RightsPatch {
   enableMediaConversion?: boolean;
 }
 
-const DOWNLOAD_RIGHTS_KEY = ["admin-download-rights"] as const;
+const DOWNLOAD_RIGHTS_KEY = ADMIN_DOWNLOAD_RIGHTS_KEY;
 
 async function fetchRights(): Promise<AdminUserRights[]> {
   const res = await fetch(`${BACKEND}/api/admin/downloads/users`, {
@@ -74,6 +78,7 @@ export function useUpdateAdminDownloadRights() {
       queryClient.setQueryData<AdminUserRights[]>(DOWNLOAD_RIGHTS_KEY, (previous) =>
         previous?.map((user) => (user.id === applied.id ? applied : user)),
       );
+      void queryClient.invalidateQueries({ queryKey: userRightsKey(applied.id) });
     },
     onError: () => {
       void queryClient.invalidateQueries({ queryKey: DOWNLOAD_RIGHTS_KEY });
