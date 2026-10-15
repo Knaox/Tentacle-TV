@@ -17,6 +17,9 @@ vi.mock("../services/dataDir", async () => {
   return { DATA_ROOT: mkdtempSync(join(tmpdir(), "tentacle-webui-")) };
 });
 
+// Aucun lien de partage en base : `/share/<jeton>` reçoit la page autonome « introuvable » (sharePage.test.ts).
+vi.mock("../services/db", () => ({ getPrisma: () => ({ shareLink: { findUnique: async () => null } }) }));
+
 import { parseWebUiSwitch, readOverrideFile, resolveWebUi, webUiBlocks, WEB_UI_OVERRIDE_FILE } from "./webUi";
 import { registerStaticClients } from "./staticClients";
 import { runWebCommand } from "../cli/webUiCommand";

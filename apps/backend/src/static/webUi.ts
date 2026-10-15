@@ -22,7 +22,9 @@ import { DATA_ROOT } from "../services/dataDir";
  *
  * Et à la place du 404, le lien d'invitation (`/register?invite=…`) reçoit la
  * page d'invitation autonome du serveur (`invitePage.ts`) : l'invité crée son
- * compte sans le client web.
+ * compte sans le client web. De même, un lien de partage de Ma liste ou des
+ * favoris (`/share/<jeton>`) reçoit la page de partage autonome
+ * (`sharePage.ts`) : le visiteur voit la liste sans le client web.
  *
  * Retour en arrière : `TENTACLE_WEB_UI=on` et un redémarrage, ou
  * `tentacle web on` dans le conteneur (un fichier de `data/`, relu toutes les

@@ -10,6 +10,7 @@ import {
 import { isSetupComplete } from "../services/configStore";
 import { isWebUiEnabled, webUiBlocks } from "./webUi";
 import { INVITE_PAGE_PATH, sendInvitePage } from "./invitePage";
+import { sendSharePage, sharePageToken } from "./sharePage";
 import { createWebIndexSender, isWebIndexPath, resolveWebDebug } from "./webDebug";
 
 /**
@@ -66,9 +67,12 @@ export async function registerStaticClients(
   app.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?")[0];
     // L'interface web coupée (`TENTACLE_WEB_UI=off`) : 404, sauf l'API, /tv, /.well-known et l'assistant.
-    // Le lien d'invitation mène alors à la page autonome du serveur, sans rien du client web.
+    // Le lien d'invitation et les liens de partage mènent alors aux pages autonomes du serveur,
+    // sans rien du client web.
     if (webUiBlocks(path, webUi())) {
       if (path === INVITE_PAGE_PATH && request.method === "GET") return sendInvitePage(request, reply);
+      const shareToken = request.method === "GET" ? sharePageToken(path) : null;
+      if (shareToken) return sendSharePage(request, reply, shareToken);
       return pageNotFound(reply);
     }
     if (sendWebIndex && (request.method === "GET" || request.method === "HEAD") && isWebIndexPath(path)) {
