@@ -223,7 +223,7 @@ export function useProfilesFlow(intent: ProfileIntent, go: { home: () => void; m
       if (plan.kind === "pin") return showPin(listing, profile.userId, "open", plan.remember, plan.launch);
       void enter(listing, profile.userId, { remember: plan.remember, launch: plan.launch });
     },
-    /** « Gérer les profils » : qui gère (tv-core `manageEntryProfile` — v2 : le compte de la TV s'il gère, sinon le propriétaire), derrière SON PIN. */
+    /** « Gérer les profils » : le SEUL compte qui a jumelé la TV, avec SES droits, derrière SON PIN (tv-core `manageEntryProfile`). */
     manage: () => {
       const manager = listing ? manageEntryProfile(listing) : null;
       if (!listing || !manager || busy) return;
