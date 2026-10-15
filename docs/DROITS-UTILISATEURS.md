@@ -894,3 +894,99 @@ en incrustation sans question, l'essai toujours armé jusqu'à la sortie du PiP.
 - **Affiche de la Famille** : se faire inviter par un autre compte pendant que les
   nouveautés sont ouvertes — elle attend leur fermeture.
 - **L'état, à tout moment** : `__tentacleStartup()` (web de dev, build de débogage).
+
+## 9.1 Accès du compte (lot « droits 2 », S1 — 2026-10-15)
+
+Désactivé, hors de ses plages horaires : le compte ne se sert plus de Tentacle, et une page
+le lui dit à la place de l'application. Sessions simultanées et essais avant blocage :
+une NOUVELLE connexion est refusée en mots clairs.
+
+### 9.1.1 Mesuré sur Jellyfin 10.11.11 (jetable, source relue)
+
+- **Désactiver** (`IsDisabled`) RÉVOQUE tous les jetons du compte (`RevokeUserTokens`) :
+  `/Users/Me` → 401, et toujours 401 après réactivation (web et bureau se reconnectent ; une
+  TV jumelée, jeton Tentacle, reprend seule). Connexion d'un compte désactivé → 403
+  « Error processing request. », quel que soit le mot de passe.
+- **Hors plage** : un jeton ouvert prend 403 partout (sauf `/System/Info`), rien ne dit à
+  quel compte il appartient ; revenu dans la plage, le même jeton reprend. Connexion → 403.
+  **Un administrateur** hors plage garde son jeton ouvert (200, exempté par
+  `BaseAuthorizationHandler`) mais ne peut plus se connecter (403).
+- **Sessions simultanées** : `Sessions.Count(UserId == compte) ≥ MaxActiveSessions` refuse
+  la nouvelle connexion (403) — TOUTES les sessions en mémoire, même appareil compris.
+  Une session HTTP seule ne cesse de compter qu'à la déconnexion, à la révocation de son
+  appareil ou au redémarrage de Jellyfin ; avec une socket Jellyfin, à sa fermeture.
+  `GET /Sessions` (clé d'API) les rend toutes. Quick Connect (jeton propre d'une TV) passe
+  par la même garde.
+- **Essais avant blocage — cassé en 10.11.11** : `InvalidLoginAttemptCount` avance (lisible
+  dans la Policy), Jellyfin journalise « Disabling user … » mais ne désactive pas (entité
+  `AsNoTracking`) ; une réussite ne remet pas toujours le compteur à 0. Corrigé sur
+  `master` (Jellyfin 12). `LoginAttemptsBeforeLockout` : -1 = jamais, 0 = 3.
+
+### 9.1.2 Contrat — `packages/shared/src/accountAccess/` (miroir backend, test miroir)
+
+- `AccountAccessState` = `{ state: "allowed" }` | `{ state: "disabled", lockedOut? }` |
+  `{ state: "outsideSchedule", schedules, nextOpening }` — plages en heures LOCALES du
+  serveur ; `nextOpening` en ms, `null` = jamais (sentinelle `GUEST_SCHEDULE_NEVER`) ou
+  inconnue (`schedules` vide : jeton dont le serveur a oublié le compte).
+- Règle PURE (`accountAccessRule.ts`, horloge et fuseau injectés) : `isWithinSchedules`
+  (Jellyfin : `TotalHours`, secondes comprises, bornes incluses), `nextScheduleChange`,
+  `nextScheduleOpening`, `accountAccessOf` (illisible = permis : une panne ne met personne
+  dehors), `reachedLoginAttempts`. `scheduleAllows` du filtrage y délègue : UNE règle.
+- Route `GET /api/account/access` ; refus 403 `{ error: "account_access", …état }` ;
+  annonce `{ type: "account:access", …état }` ; `auth_error` `account_access` ; fermeture
+  4012. Connexion refusée : `{ message, code, maxSessions? }`, codes `account_disabled`,
+  `account_locked_out`, `account_outside_schedule`, `account_max_sessions` (403) ; Famille :
+  `family.max_sessions`. Capacité `account.access`.
+- Vue client (`accountAccessView.ts`, pas de miroir) : lignes de plages, réouverture
+  relative (aujourd'hui, demain, plus tard, jamais, inconnue) ; mots : espace `accountAccess`.
+
+### 9.1.3 Serveur
+
+- **Portes** (`services/accountAccess/`) : `requireAuth`, `requireAdmin`,
+  `requirePersonalAdmin`, la Famille (`familyCaller`, sauf le sélecteur des TV), le proxy
+  (jeton d'appareil ; jeton Jellyfin refusé par Jellyfin dont le compte est connu et
+  bloqué), les vignettes, le socket. **Administrateurs compris** (décision du lot) ;
+  « voir en tant que » non borné (l'administrateur regarde). Ouvertes : la route d'état,
+  `POST /api/auth/logout`, `POST /api/pair/self/revoke` ; `POST /api/auth/refresh` dit 403
+  au lieu de 401. Aucun jeton révoqué par Tentacle.
+- **Le compte d'un jeton Jellyfin** (`tokenOwners.ts`) : chaque jeton vu valide est retenu
+  (empreinte, 2 000 au plus) — c'est lui qui transforme un 403/401 de Jellyfin en
+  « compte bloqué ». Après un redémarrage pendant la fermeture : « hors plage, plages
+  inconnues » (le client relit toutes les cinq minutes).
+- **Annonce** (`accessWatch.ts`), comptes connectés seulement : un minuteur sur le bord de
+  plage le plus proche, l'invalidation faite par Tentacle, et un guet d'UNE lecture de
+  `/Users` par minute (Jellyfin n'annonce aucun changement de politique), comparé à ce que
+  la dernière évaluation a vu. Bloqué : `account:access`, sortie de Watch Together sans
+  grâce, **position de lecture écrite par la clé d'administration** (le rapport d'arrêt du
+  compte serait refusé — « Reprendre » restait vide), puis sockets fermées (4012).
+  Un changement fait dans Jellyfin se voit en 30 s (cache) à 90 s au plus.
+- **Nouvelles connexions** (`connectRefusal.ts`) : un 403 de Jellyfin à la connexion (web,
+  bureau par le proxy) est relu — désactivé (bloqué si le compteur a atteint la limite),
+  hors plage, trop de sessions. Sans mot de passe, la règle de Jellyfin appliquée par
+  Tentacle : jumelage (`generate`, `claim`, `tv-token`, `device/confirm`), code de
+  connexion, ouverture d'un profil de la Famille (sessions seulement : un profil bloqué
+  s'ouvre et sa page le dit).
+
+### 9.1.4 Clients
+
+- api-client : `useAccountAccess({ enabled })` — la route au montage, l'annonce et le refus
+  du socket, TOUTE réponse 403 `account_access` (client Jellyfin par le proxy,
+  `tentacleApiFetch`) ; bloqué, la route est relue à `nextOpening` + 2 s, au plus toutes
+  les cinq minutes ; revenu : requêtes invalidées, socket rouverte avec le même jeton.
+  `JellyfinError.refusal` porte une connexion refusée.
+- Web et bureau : `AccountAccessGate` (`main.tsx`) REMPLACE l'application — tout est
+  démonté (lecteur web, mpv, PiP, miroir, fenêtres du démarrage), `/watch` quitté.
+  « Se déconnecter », « Changer de serveur » (bureau), « Changer de profil » (session de
+  profil). La page de connexion dit le refus en mots.
+- Apple TV / Android TV : tv-core `decideAccountAccessScreen` (la page remplace les écrans,
+  ne cède PAS au lecteur — l'écran de lecture se ferme —, focus d'entrée sur l'action,
+  Retour jamais pris) ; `AccountAccessRedesign` l'applique. « Changer de profil » (session
+  de profil) ou « Se déconnecter du serveur » (déjumelage, double appui).
+- Mobile : rien (hors périmètre) ; il reçoit des 403 au lieu des 401 d'avant.
+
+### 9.1.5 Restes
+
+- Essais avant blocage sur Jellyfin 10.11 : en attente de l'arbitrage du coordinateur
+  (appliquer le blocage par Tentacle, ou le laisser à Jellyfin 12).
+- La page d'un compte DÉSACTIVÉ sur le web dure tant que la session vit ; réactivé, son
+  jeton (révoqué par Jellyfin) mène à la connexion.
