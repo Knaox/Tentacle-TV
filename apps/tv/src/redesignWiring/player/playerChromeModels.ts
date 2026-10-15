@@ -78,9 +78,12 @@ export function buildPhase(args: {
   failedMessage?: string | null;
   /** Une ouverture qui se fait attendre le dit (cf. useStartupWait). */
   startHint?: string | null;
+  /** Les droits de lecture du compte refusent : le message, son aide, et Retour seul. */
+  refused?: { message: string; hint: string } | null;
 }): PlayerPhase {
   // Échouée : jamais résolue, ou refusée par le lecteur avant la première image.
   if (!args.streamUrl || (args.failed && !args.hasStarted)) {
+    if (args.refused) return { kind: "failed", message: args.refused.message, refused: { hint: args.refused.hint } };
     if (!args.failed) return { kind: "resolving", step: args.step };
     return { kind: "failed", message: args.failedMessage ?? args.t("player:loadFailed") };
   }

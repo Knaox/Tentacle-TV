@@ -37,7 +37,9 @@ export type PlayerPhase =
   /** Flux trouvé, première image attendue. `hint` : la ligne discrète d'une
    *  ouverture qui se fait attendre (« Le transcodage peut prendre… »). */
   | { kind: "starting"; hint?: string | null }
-  | { kind: "failed"; message: string }
+  /** `refused` : les droits de lecture du compte refusent (cadenas, une ligne d'aide,
+   *  pas de « Réessayer » — réessayer n'y changerait rien). */
+  | { kind: "failed"; message: string; refused?: { hint: string } | null }
   | { kind: "playing" };
 
 /** Un passage connu du média (intro, résumé, générique…), en secondes. */

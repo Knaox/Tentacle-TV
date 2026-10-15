@@ -21,7 +21,8 @@ import { ActivitySpinner } from "../../controls/ActivitySpinner";
  *   et les étapes franchies — la seule attente longue, qui mérite d'être dite ;
  * - démarrage : l'indicateur seul — et, quand l'ouverture se fait attendre
  *   (un serveur qui transcode lentement), une ligne discrète à côté, en fondu ;
- * - échec : le message et « Réessayer » (pilule blanche).
+ * - échec : le message et « Réessayer » (pilule blanche) ; un REFUS des droits
+ *   de lecture du compte : un cadenas, la ligne d'aide, et Retour seul.
  * La croix Retour est toujours là, en haut à gauche : une ouverture qui
  * traîne n'enferme personne. Clés : `loading:back`, `loading:retry` ; groupe
  * `loading:screen` — l'écran entier, où l'intégration retient le focus.
@@ -60,6 +61,7 @@ export const PlayerLoading = memo(function PlayerLoading({
   onRetry?: () => void;
 }) {
   const failed = phase.kind === "failed";
+  const refused = phase.kind === "failed" ? phase.refused ?? null : null;
   const step = phase.kind === "resolving" ? phase.step : null;
   const hint = phase.kind === "starting" ? phase.hint ?? null : null;
   return (
@@ -82,14 +84,16 @@ export const PlayerLoading = memo(function PlayerLoading({
         {failed ? (
           <View style={styles.failure}>
             <View style={styles.messageRow}>
-              <View style={styles.alert}>
-                <Icon name="alert" size={28} color={colors.text} strokeWidth={2.2} />
+              <View style={[styles.alert, refused && styles.locked]}>
+                <Icon name={refused ? "lock" : "alert"} size={28} color={colors.text} strokeWidth={2.2} />
               </View>
               <Text style={styles.message}>{phase.message}</Text>
             </View>
-            <View style={styles.actions}>
-              <PillButton variant="primary" icon="refresh" label={labels.retry} focusKey="loading:retry" onPress={onRetry} />
-            </View>
+            {refused ? <Text style={styles.hint}>{refused.hint}</Text> : (
+              <View style={styles.actions}>
+                <PillButton variant="primary" icon="refresh" label={labels.retry} focusKey="loading:retry" onPress={onRetry} />
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.progress}>
@@ -124,6 +128,9 @@ const styles = StyleSheet.create({
   failure: { gap: 26, marginTop: 18 },
   messageRow: { flexDirection: "row", alignItems: "center", gap: 18 },
   alert: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", backgroundColor: colors.error },
+  // Un refus n'est pas une panne : un cadenas sur verre neutre, jamais le rouge de l'erreur.
+  locked: { backgroundColor: white(0.16) },
+  hint: { ...fonts.medium, fontSize: 24, lineHeight: 34, color: white(0.7), maxWidth: 900, marginLeft: 74 },
   message: { ...fonts.medium, fontSize: 28, lineHeight: 38, color: white(0.9), maxWidth: 900, flexShrink: 1 },
   actions: { flexDirection: "row", gap: 18 },
 });

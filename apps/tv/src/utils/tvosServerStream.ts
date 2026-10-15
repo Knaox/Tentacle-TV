@@ -3,12 +3,17 @@ import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
 import { getHdrCapabilities } from "../lib/hdrCapabilities";
 import { randomSessionId } from "./playerHelpers";
 import { plog } from "./playerDiag";
-import { AVPLAYER_ENGINE, SAFE_FALLBACK_ENGINE, servedReasons, withHdr } from "@tentacle-tv/shared";
+import {
+  AVPLAYER_ENGINE, SAFE_FALLBACK_ENGINE, builtUrlRefusal, servedReasons, withHdr,
+  type PlaybackRefusal, type PlaybackRights,
+} from "@tentacle-tv/shared";
 
 export interface ServerStream {
   url: string;
   playSessionId?: string;
   isDirectPlay: boolean;
+  /** Les droits de lecture du compte refusent l'URL à demander : elle ne part pas. */
+  refusal?: PlaybackRefusal;
 }
 
 /**
@@ -20,6 +25,11 @@ export interface ServerStream {
  * jamais par `StartTimeTicks`.
  *
  * `null` : le serveur n'a rendu aucune source. Lève sur une erreur réseau.
+ *
+ * Droits de lecture (docs/DROITS-UTILISATEURS.md § 9.2) : sans le droit de
+ * réencoder l'image, le repli ne demande qu'une COPIE (changement de conteneur)
+ * au lieu du HLS 8 Mb/s réencodé ; l'URL finale est jugée par la règle
+ * partagée (`builtUrlRefusal`) avant de partir.
  */
 export async function resolveServerStream(a: {
   client: JellyfinClient;
@@ -33,6 +43,7 @@ export async function resolveServerStream(a: {
   isTranscodingQuality: boolean;
   maxBitrate?: number;
   maxHeight?: number;
+  rights?: PlaybackRights;
 }): Promise<ServerStream | null> {
   const { client, itemId, mediaSourceId, audioIndex, burnInIndex, isTranscodingQuality, maxBitrate, maxHeight } = a;
   // Un preset de qualité OU un fallback codec force le transcode (DirectPlayProfiles vidés).
@@ -84,13 +95,20 @@ export async function resolveServerStream(a: {
       ? [burnInIndex >= 0 ? "SubtitleCodecNotSupported" : "DirectPlayError"]
       : served.length > 0 ? served : ["DirectPlayError"];
     // Après une erreur de lecture : le repli sûr (H.264 + AAC en TS), jamais une
-    // nouvelle tentative de ce qui vient peut-être d'échouer.
+    // nouvelle tentative de ce qui vient peut-être d'échouer. Sans le droit de
+    // réencoder l'image : sa copie seule, dans un conteneur qu'AVPlayer ouvre.
+    const copyOnly = a.rights ? !a.rights.videoTranscoding : false;
     url = client.getStreamUrl(itemId, {
-      directPlay: false, maxBitrate: 8_000_000,
+      directPlay: false, maxBitrate: copyOnly ? undefined : 8_000_000,
       audioIndex, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
       transcodeReasons: reasons,
-      engine: a.forceTranscode && burnInIndex < 0 ? SAFE_FALLBACK_ENGINE : engine, sourceAudio,
+      engine: a.forceTranscode && burnInIndex < 0 && !copyOnly ? SAFE_FALLBACK_ENGINE : engine, sourceAudio,
     });
+  }
+  const refusal = a.rights ? builtUrlRefusal(a.rights, url, ms) : null;
+  if (refusal) {
+    plog("stream", `PlaybackInfo → refusé par les droits du compte (${refusal})`);
+    return { url: "", isDirectPlay: false, refusal };
   }
   plog("stream", `PlaybackInfo → ${directPlay ? "direct play serveur" : "transcode HLS"} (audio=${audioIndex})`);
   return { url, playSessionId, isDirectPlay: directPlay };

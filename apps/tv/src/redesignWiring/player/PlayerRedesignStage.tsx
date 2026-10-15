@@ -57,7 +57,8 @@ export function PlayerRedesignStage(props: PlayerRedesignStageProps) {
     showSettings: props.showSettings,
     showEpisodes: !!props.showEpisodes,
     loading: chrome.loading,
-    failed: props.failed,
+    // Un refus n'a pas de « Réessayer » : le focus va à Retour, sa seule action.
+    failed: props.failed && !props.refusal,
     upNextShown: chrome.upNextShown,
     endShown: chrome.endShown,
     troubleActive: chrome.troubleCovers,

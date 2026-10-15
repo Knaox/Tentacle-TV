@@ -95,7 +95,7 @@ export function usePlayerStreamPipeline(args: {
   }, [cap.disarm, rawQuality.setQualityKey]);
   const quality = useMemo(() => ({
     ...rawQuality,
-    qualityKey: cap.active && cap.key ? cap.key : rawQuality.qualityKey,
+    qualityKey: cap.active && cap.key ? cap.key : rawQuality.displayKey,
     setQualityKey: setQualityKeyManual,
   }), [rawQuality, cap.active, cap.key, setQualityKeyManual]);
 
@@ -140,10 +140,11 @@ export function usePlayerStreamPipeline(args: {
     forceTranscode, servedToExo, isTranscodingQuality: transcodingQuality,
     maxBitrate: effectiveMaxBitrate, maxHeight: effectiveMaxHeight,
     isDirectPlay: requestedDirectPlay,
-    reloadNonce, ready: (!!item || itemFailed) && !cap.pending, // l'épisode suivant attend sa mesure
+    reloadNonce, ready: (!!item || itemFailed) && !cap.pending && rawQuality.rightsSettled, // mesure et droits d'abord
     prismPrefetch: sourcePrefetch.prismPrefetch,
+    rights: rawQuality.rights, refusal: rawQuality.refusal, // droits de lecture du compte (shared `rightsVerdict`)
   });
-  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed, restart } = stream;
+  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed, restart, refusal } = stream;
   // Android : un flux servi pour ce que l'appareil ne lit pas (`useDeviceConversion`) ; tvOS : absents.
   const deviceDirectStream = stream.isDirectStream ?? false;
   const deviceNotice = stream.deviceNotice ?? null;
@@ -283,7 +284,7 @@ export function usePlayerStreamPipeline(args: {
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks, handToExo,
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
-    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed, onMasterRejected,
+    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed, onMasterRejected, refusal,
     streamBitrate, prefetch,
     restartStream,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,

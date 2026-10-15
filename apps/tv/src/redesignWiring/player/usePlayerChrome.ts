@@ -82,10 +82,15 @@ export function usePlayerChrome(p: PlayerRedesignStageProps, store: FocusStore, 
     : startWait?.kind === "gaveUp" ? translate("player:troubleTranscodeDetail") : null;
   const startHint = startWait?.kind === "transcoding" ? translate("player:transcodeSlowHint")
     : startWait?.kind === "slowNetwork" ? translate("player:networkSlowHint") : null;
+  // Un refus des droits de lecture du compte : dit avec les mots du modèle des problèmes (shared).
+  const refused = useMemo(() => (p.refusal ? {
+    message: translate(p.refusal === "playback_not_allowed" ? "errors:reasonPlaybackNotAllowed" : "errors:reasonTranscodeNotAllowed"),
+    hint: translate(p.refusal === "playback_not_allowed" ? "errors:hintPlaybackNotAllowed" : "errors:hintTranscodeNotAllowed"),
+  } : null), [p.refusal, translate]);
   const phase = useMemo(() => buildPhase({
     streamUrl: p.streamUrl, failed: p.failed, hasStarted: p.hasStarted, videoError: p.videoError, step, t: translate,
-    failedMessage, startHint,
-  }), [p.streamUrl, p.failed, p.hasStarted, p.videoError, step, translate, failedMessage, startHint]);
+    failedMessage, startHint, refused,
+  }), [p.streamUrl, p.failed, p.hasStarted, p.videoError, step, translate, failedMessage, startHint, refused]);
   const playing = phase.kind === "playing";
 
   // Les passages de la frise : le contrat que l'arbitre a déjà demandé (même cache).

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { killActiveEncoding, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import type { MediaStream as JfStream, PlaybackRefusal, PlaybackRights } from "@tentacle-tv/shared";
 import { plog } from "../utils/playerDiag";
 import {
   fallbackMuxedPrismCore, preferredAudioLanguageOf, prismEligible, prismHeaders, startPrismCore, stopPrismCore,
@@ -9,6 +9,7 @@ import {
 } from "../utils/prismCoreStart";
 import { resolveServerStream } from "../utils/tvosServerStream";
 import { resolveRestartAt, withoutRestartMark, withRestartMark, type RestartAt, type RestartOutcome } from "./streamRestart";
+import { fragmentAt, refusedStream, type StreamResult } from "./tvStreamResult";
 
 /**
  * Variante tvOS de `useTVStreamUrl` (résolue par Metro sur iOS ; Android garde
@@ -21,21 +22,12 @@ import { resolveRestartAt, withoutRestartMark, withRestartMark, type RestartAt, 
  *
  * Timeline ABSOLUE (comme Android) : position de reprise via le fragment
  * `#tnt-start=` lu par `AVPlayerSurface` (seek client au onLoad).
+ *
+ * Droits de lecture du compte (docs/DROITS-UTILISATEURS.md § 9.2) : la fiche
+ * tranche d'abord (`refusal`, lecture interdite…) ; PrismCore remuxe SUR
+ * l'Apple TV, sans rien demander au serveur ; le chemin serveur juge l'URL
+ * qu'il s'apprête à demander (`tvosServerStream`).
  */
-interface StreamResult {
-  baseUrl: string | null;
-  resumeFrag?: string;
-  playSessionId?: string;
-  isDirectPlay: boolean;
-  /** Lecture directe servie par PrismCore (HLS local, timeline absolue). */
-  isPrismCore?: boolean;
-  /** Ce que PrismCore a rendu au démarrage (pistes transportées, renditions…). */
-  prism?: PrismStart;
-  /** Résolution du flux ÉCHOUÉE : l'écran de chargement affiche une erreur +
-   *  « Réessayer » au lieu de tourner pour toujours. */
-  failed?: boolean;
-}
-const fragmentAt = (sec: number) => (sec > 1 ? `#tnt-start=${Math.floor(sec)}` : "");
 /** Une session remplacée par une relance s'arrête après ce délai : AVPlayer a
  *  alors quitté son item (un arrêt immédiat ferait échouer l'item sortant). */
 const RETIRE_DELAY_MS = 3_000;
@@ -62,6 +54,9 @@ export function useTVStreamUrl(args: {
    *  `usePlayerStreamPipeline`. */
   ready: boolean;
   prismPrefetch?: PrismPrefetch; // préchargement en volume (tv-core `prismPrefetch`)
+  rights?: PlaybackRights;
+  /** Refus connu d'avance (shared `upfrontRefusal`) : rien ne se résout. */
+  refusal?: PlaybackRefusal | null;
 }) {
   const {
     itemId, mediaSourceId, container, streams, audioIndex, subtitleIndex, startTicks,
@@ -154,6 +149,7 @@ export function useTVStreamUrl(args: {
   const resolve = async (a: {
     fetchId: number; contentKey: string; startSec: number; fresh: boolean; keepShape?: boolean; mark?: number;
   }): Promise<StreamResult | null> => {
+    if (args.refusal) return refusedStream(args.refusal);
     const effAudio = effectiveAudio();
     const resumeFrag = fragmentAt(a.startSec);
     if (prismEligible({ container, streams, audioIndex: effAudio, vcodec, forceTranscode, isTranscodingQuality })) {
@@ -190,9 +186,10 @@ export function useTVStreamUrl(args: {
     }
     const server = await resolveServerStream({
       client, userId: userId ?? "", itemId, mediaSourceId, audioIndex: effAudio, burnInIndex,
-      forceTranscode, isTranscodingQuality, maxBitrate, maxHeight,
+      forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, rights: args.rights,
     });
     if (!server) return null;
+    if (server.refusal) return refusedStream(server.refusal);
     return {
       baseUrl: withRestartMark(server.url, a.mark ?? 0), resumeFrag,
       playSessionId: server.playSessionId, isDirectPlay: server.isDirectPlay,
@@ -231,7 +228,7 @@ export function useTVStreamUrl(args: {
     // startTicks = déclencheur de reload (reprise/piste/qualité). audioIndex est lu
     // via ref ; startSeconds via la closure du rendu courant, puis cuit dans resumeFrag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemId, mediaSourceId, container, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, resumeSec, burnInIndex, args.reloadNonce, vcodec, ready]);
+  }, [itemId, mediaSourceId, container, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, resumeSec, burnInIndex, args.reloadNonce, vcodec, ready, args.refusal, args.rights]);
 
   // `streamUrl` = baseUrl + fragment de reprise, cuits ensemble dans `result` :
   // change exactement une fois par reload.
@@ -295,6 +292,6 @@ export function useTVStreamUrl(args: {
   return {
     streamUrl, playSessionId: result.playSessionId,
     isDirectPlay: result.isDirectPlay, isPrismCore: result.isPrismCore ?? false, prism: result.prism,
-    failed: result.failed ?? false, retryMuxed, restart,
+    failed: result.failed ?? false, retryMuxed, restart, refusal: result.refusal ?? null,
   };
 }

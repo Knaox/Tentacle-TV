@@ -1,4 +1,4 @@
-import type { QualityPreset } from "@tentacle-tv/shared";
+import type { PlaybackRefusal, QualityPreset } from "@tentacle-tv/shared";
 import type { PlayerStageBaseProps } from "../../components/player/playerStageBaseProps";
 import type { ScrubCountdownState } from "@tentacle-tv/tv-core";
 import type { PrismStep } from "../../hooks/useTVPrismProgress";
@@ -15,6 +15,8 @@ export interface PlayerRedesignStageProps extends Omit<PlayerStageBaseProps, "st
   streamUrl: string | null;
   /** La résolution du flux a échoué : « Réessayer ». */
   failed: boolean;
+  /** Les droits de lecture du compte refusent ce titre (docs/DROITS-UTILISATEURS.md § 9.2). */
+  refusal?: PlaybackRefusal | null;
   /** Le jalon PrismCore en cours (tvOS), pendant la résolution. */
   prismStep: PrismStep | null;
   onRetry: () => void;

@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
-  BURN_IN_SUBTITLE_CODECS, SAFE_FALLBACK_ENGINE, TICKS_PER_SECOND, exoPlayerEngineFor, liteConvertedAudioEngine, mpvEngineFor,
-  transcodeMaxHeight,
+  BURN_IN_SUBTITLE_CODECS, SAFE_FALLBACK_ENGINE, TICKS_PER_SECOND, builtUrlRefusal, exoPlayerEngineFor, liteConvertedAudioEngine,
+  mpvEngineFor, transcodeMaxHeight,
 } from "@tentacle-tv/shared";
-import type { MediaStream as JfStream } from "@tentacle-tv/shared";
+import type { MediaSource, MediaStream as JfStream, PlaybackRefusal, PlaybackRights } from "@tentacle-tv/shared";
 import { useDeviceMediaProfile } from "../lib/deviceMediaProfile";
 import { usePlaybackTier } from "../lib/playbackTier";
 import { randomSessionId } from "../utils/playerHelpers";
@@ -57,6 +57,10 @@ export function useTVStreamUrl(args: {
   /** La fiche complète est là (ou a échoué) : pas d'URL avant — voir
    *  `usePlayerStreamPipeline`. */
   ready: boolean;
+  /** Droits de lecture du compte (docs/DROITS-UTILISATEURS.md § 9.2) : l'URL jugée avant de partir. */
+  rights?: PlaybackRights;
+  /** Refus connu d'avance (shared `upfrontRefusal`). */
+  refusal?: PlaybackRefusal | null;
 }) {
   const {
     itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
@@ -176,8 +180,12 @@ export function useTVStreamUrl(args: {
   // `deviceNotice` pour le message. Android seulement : la variante tvOS ne
   // les rend pas (lus `?? false` / `?? null`).
   const converting = isDirectPlay && conversion !== null;
+  // Une conversion que le compte n'a pas le droit de demander ne part pas : l'écran le dit.
+  const refusal = args.refusal
+    ?? (streamUrl && args.rights ? builtUrlRefusal(args.rights, streamUrl, { MediaStreams: streams } as MediaSource) : null);
   return {
-    streamUrl, playSessionId, isDirectPlay: directPlay, isPrismCore: false, prism, failed: false, retryMuxed, restart,
+    streamUrl: refusal ? null : streamUrl, playSessionId, isDirectPlay: directPlay, isPrismCore: false, prism,
+    failed: refusal !== null, refusal, retryMuxed, restart,
     isDirectStream: converting && conversion?.method === "DirectStream", deviceNotice: converting ? conversion?.notice ?? null : null,
   };
 }

@@ -256,7 +256,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   eofActiveRef.current = autoPlay.source === "eof";
   // Les props de l'habillage refondu — le même sur les deux téléviseurs.
   const stage: PlayerRedesignStageProps = {
-    item: item ?? placeholderItem, streamUrl, failed: p.failed || s.openFailed, prismStep: prismProgress.step,
+    item: item ?? placeholderItem, streamUrl, failed: p.failed || s.openFailed, refusal: p.refusal, prismStep: prismProgress.step,
     onRetry: () => (s.openFailed && streamUrl ? void p.restartStream({ reason: "manual" }) : p.setReloadNonce((n) => n + 1)),
     countdownTotals: playback.countdownTotals, qualityPresets: quality.qualityPresets,
     // Android : le moteur reste en pause jusqu'à sa première image (tv-core `startGate`).
