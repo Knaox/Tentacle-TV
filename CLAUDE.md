@@ -1018,6 +1018,30 @@ natif, `exoPlayerEngineFor` / `mpvEngineFor`, verdict `devicePlaybackVerdict`) :
 le décodage logiciel d'une image ; l'AV1 sans décodeur est converti par le serveur, et
 le lecteur le dit. Profil simulé du banc : `debug.tentacle.media_profile` (app `.perf`).
 
+## Préconfiguration de la barre (TV) — par profil, sur l'appareil
+
+Apple TV et Android TV : chaque profil choisit UNE fois, sur CET appareil, les bibliothèques
+épinglées dans le rail et leur ordre (route `RailSetup`, avant l'accueil). Rien côté serveur,
+aucune capacité ; ni web, ni bureau, ni mobile.
+
+- **Le rail est PAR PROFIL** (tv-core `nav/railProfileStore.ts`) : clé fixe
+  `tentacle_tv_rail_profiles` = `{ [userId]: { masquees, order?, setupDone? } }`, l'identité
+  active = l'`Id` de `tentacle_user`. Un profil sans entrée HÉRITE de `tentacle_webos_rail`
+  (la disposition de l'appareil, que la LG lit encore : jamais réécrite) — rien ne bouge à la
+  mise à jour. `useRailPinning()` garde son API : Réglages › Navigation édite le profil actif.
+- **Due** (`decideRailSetup`, `isRailSetupPending`) : pas encore faite ET au moins DEUX
+  bibliothèques (`/UserViews` du profil : ses droits Jellyfin, rien d'autre) ET en ligne ;
+  attente bornée à 5 s ; décision TENUE par identité (jamais une page sur un accueil affiché).
+  Dernier nombre de bibliothèques vu : `tentacle_tv_rail_libraries`, pour choisir la route
+  d'arrivée sans détour (`railSetupPending()`, synchrone).
+- **Place au démarrage** : après le choix du profil et son PIN, avant les nouveautés, jamais
+  par-dessus « accès suspendu ». Retour = « Passer » (marquée faite, disposition gardée).
+- **Le propriétaire** applique sa disposition à d'autres profils de la famille sur cette TV
+  (`applyLayoutTo`, étape après « Continuer » et Réglages › Navigation) : copie des masquées et
+  de l'ordre ; une bibliothèque que le profil ne voit pas n'apparaît pas chez lui.
+- Vue `redesign/screens/railSetup/`, câblage `redesignWiring/railSetup/`, règles
+  `nav/railSetup*.ts` ; le banc nav-golden marque la préconfiguration faite pour ses comptes.
+
 ## Navigation TV — une seule source
 
 L'Apple TV refondue est la référence de la navigation. Ce qui DÉCIDE — focus,
