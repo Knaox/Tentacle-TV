@@ -27,6 +27,14 @@ export const BUNDLE_ID = "com.tentacle.mobile";
  * dans son `storage`. (Recopié dans `probe/navProbe.js`, qui ne peut l'importer.)
  */
 export const BENCH_RAIL_PROFILES = JSON.stringify({ "banc-user": { masquees: [], setupDone: true }, "banc-guest": { masquees: [], setupDone: true } });
+
+/**
+ * L'étape « Code PIN conseillé » du premier passage, DÉJÀ PROPOSÉE aux comptes
+ * du banc (même raison : les références d'avant passent droit à la barre puis
+ * à l'accueil). Un scénario qui l'éprouve pose `tentacle_tv_pin_setup: "{}"`
+ * dans son `storage`. (Recopié dans `probe/navProbe.js`.)
+ */
+export const BENCH_PIN_SETUP = JSON.stringify({ "banc-user": 1, "banc-guest": 1 });
 export const ATV_REMOTE_DIR = path.join(REPO, "apps/tv/harness/atv-remote");
 
 /** Une erreur expliquée à l'auteur du scénario, sans pile. */
