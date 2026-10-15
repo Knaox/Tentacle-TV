@@ -30,3 +30,12 @@ export {
   useSetFamilyLaunchPolicy,
   useSetFamilySwitches,
 } from "../hooks/useFamilyAdmin";
+// Parents, membres mineurs et droits de création (serveur 1.30.0).
+export {
+  setFamilyMemberRole, setFamilyMemberParental, fetchFamilyCreationDefaults, setFamilyCreationDefaults,
+  fetchAccountFamilyRights, setAccountFamilyRights,
+} from "../family/familyRolesApi";
+export {
+  FAMILY_CREATION_DEFAULTS_KEY, accountFamilyRightsKey, useSetFamilyMemberRole, useSetFamilyMemberParental,
+  useFamilyCreationDefaults, useSetFamilyCreationDefaults, useAccountFamilyRights, useSetAccountFamilyRights,
+} from "../hooks/useFamilyRoles";
