@@ -62,7 +62,7 @@ export function setFamilyGuestPin(input: { userId: string; pin: string | null })
   return send(familyPath("setGuestPin", { userId: input.userId }), "PUT", { pin: input.pin });
 }
 
-/** La photo d'un invité (serveur 1.29.0, capacité `family.guestPhotos`) : son
+/** La photo d'un invité (serveur 1.30.0, capacité `family.guestPhotos`) : son
  *  propriétaire ou le membre qui l'a créé — mêmes droits que son PIN. */
 export function setFamilyGuestPhoto(input: { userId: string; photo: SetGuestPhotoBody }): Promise<GuestPhotoDto> {
   return send(familyPath("setGuestPhoto", { userId: input.userId }), "PUT", input.photo);

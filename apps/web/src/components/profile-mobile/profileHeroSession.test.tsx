@@ -60,7 +60,7 @@ describe("l'en-tête de la page Profil, fenêtre étroite", () => {
     expect(html).toContain("session.guestBadge");
   });
 
-  it("pendant la session d'un invité que l'appareil habille (serveur 1.29.0) : son rond change sa photo", () => {
+  it("pendant la session d'un invité que l'appareil habille (serveur 1.30.0) : son rond change sa photo", () => {
     state.profile = { id: "lili", name: "Lili", kind: "guest", color: "pink", imageTag: null, hasPin: false };
     state.guestTarget = { kind: "guest", userId: "lili", name: "Lili", imageTag: null, through: "personal" };
     const html = renderToStaticMarkup(<ProfileHero name="Lili" initial="L" isAdmin={false} />);

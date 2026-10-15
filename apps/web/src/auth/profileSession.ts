@@ -38,7 +38,7 @@ export interface ActiveProfile {
   imageTag: string | null;
   hasPin: boolean;
   /** Un invité que la session personnelle de l'appareil peut habiller (photo) ;
-   *  absent d'une marque d'avant la 1.29.0. */
+   *  absent d'une marque d'avant la 1.30.0. */
   photoEditable?: boolean;
 }
 

@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { rehydratePlaybackSettings, setPreferencesToken } from "@tentacle-tv/api-client";
 import type { JellyfinClient, StorageAdapter } from "@tentacle-tv/api-client";
-import { ACCOUNT_STORAGE_KEYS, TV_PAIRING_TOKEN_KEY, beginUnpair, endWipe, wipeAccount } from "@tentacle-tv/tv-core";
+import { ACCOUNT_STORAGE_KEYS, TV_PAIRING_TOKEN_KEY, beginUnpair, endWipe, releaseHeldRevocations, wipeAccount } from "@tentacle-tv/tv-core";
 import { navigationRef } from "../navigation/navigationRef";
 import { scheduleRevocationDrain } from "./revocationQueue";
 import { notifySessionChanged } from "./sessionEvents";
@@ -48,6 +48,8 @@ export function unpairDevice({ jfClient, storage, queryClient }: UnpairContext, 
         token: storage.getItem(TV_PAIRING_TOKEN_KEY) ?? storage.getItem("tentacle_token"),
       };
   beginUnpair(storage, leaving, Date.now());
+  // Une session de profil gardée par « Changer de profil » ne se reprendra plus.
+  releaseHeldRevocations(storage, Date.now());
 
   jfClient.setAccessToken(null);
   jfClient.setDirectStreaming(null);

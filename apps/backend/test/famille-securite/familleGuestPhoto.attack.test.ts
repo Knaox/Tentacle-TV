@@ -1,5 +1,5 @@
 /**
- * Tests d'attaque — la PHOTO d'un invité (`setGuestPhoto`, 1.29.0), par les
+ * Tests d'attaque — la PHOTO d'un invité (`setGuestPhoto`, 1.30.0), par les
  * vraies routes. Mêmes droits que son PIN : le propriétaire, ou le membre qui
  * l'a créé ; jamais un autre membre, jamais un compte hors de la famille,
  * jamais une session de profil. Le serveur relaie l'image à Jellyfin avec SA

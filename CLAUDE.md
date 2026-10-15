@@ -437,7 +437,7 @@ ne s'y retouche à la main (`brand/avatars/README.md`, règles de dessin compris
 - Catalogue (ordre, collection, couleur d'attente, tempérament au survol) :
   `packages/shared/src/avatars/avatarCatalog.ts` ; noms et histoires : espace i18n `avatars`.
   Les identifiants nomment des fichiers et des clés : ils ne se renomment jamais.
-- **Les invités de la Famille** (serveur 1.29.0, capacité `family.guestPhotos`) : le SERVEUR pose
+- **Les invités de la Famille** (serveur 1.30.0, capacité `family.guestPhotos`) : le SERVEUR pose
   leur photo (`setGuestPhoto`, mêmes droits que leur PIN), depuis Réglages › Famille, ou pendant
   la session de profil de l'invité sur le bureau, par la session PERSONNELLE de l'appareil
   (`PickerProfileDto.photoEditable`). La galerie vise une cible (`useAvatarTarget` : compte ou
@@ -471,7 +471,9 @@ MÊME modèle, dans `packages/shared/src/utils/` :
   pendant, `externalCardOverlay.ts`. Sur Apple TV, un titre ABSENT (saga d'un
   film, rangée « À demander » de la recherche, recommandation hors
   bibliothèque de « Pour vous » et des rangées reco de l'accueil) est une carte grisée
-  (`card.absent`, `AbsentArtwork`) ; sa demande ne passe que par
+  (`card.absent`, `AbsentArtwork`) — en couleurs au focus, et dès le repos pour
+  une recommandation (`absent.inColor`), le badge disant seul l'absence ; elle a
+  son aperçu au focus (`trailer` par la clé TMDB, `absentTrailerOf`) ; sa demande ne passe que par
   `redesignWiring/vigie/`, derrière la garde `useVigieGate` — sans elle,
   « pas disponible », et aucune trace de demande.
 - **rien au centre de l'image**, sur aucune variante ni plateforme : le clic
@@ -651,12 +653,19 @@ quelques semaines (« plantent 2 fois sur 3 », 2026-10-02). La fiche prépare l
 bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
 `docker logs … | grep '\[trailers\]'`). Mesures, banc et fragilités :
 `docs/BANDES-ANNONCES.md`.
-**Aperçu au focus (Apple TV, Android TV)** : la carte de rangée focalisée 1 s
+**Aperçu au focus (Apple TV, Android TV)** : la carte de rangée focalisée 450 ms
 demande l'aperçu (`trailers.preview`, la machine partagée du bureau) et GRANDIT
-dans sa cellule à la première image — jamais un calque par-dessus les voisines.
+dans sa cellule à la première image, 900 ms au plus tôt — jamais un calque
+par-dessus les voisines. Elle part de la carte TELLE QU'ELLE SE DESSINE au focus
+(agrandie, soulevée : `trailerPreviewTileFrom`), la carte s'effaçant dessous, et
+sa taille suit le réglage « Taille des cartes ». La rangée RÉSERVE la place avant
+de défiler (`rows/rowPreviewRoom.ts` : sinon la dernière carte déborde), la page
+descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
+se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
 Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
 vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
-`redesignWiring/trailerPreview/` (une session, la carte focalisée seulement).
+`redesignWiring/trailerPreview/` (une session, la carte focalisée seulement) ;
+banc : scènes `apercu/*` du banc UI.
 
 ## Famille — un contrat, et le serveur décide de tout
 
