@@ -15,11 +15,13 @@ import {
   visibleHomeRows,
   useServerCapabilities,
 } from "@tentacle-tv/api-client";
-import type { CardDensity, HeroMode, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
+import type { CardDensity, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
+import { heroModesOffered } from "@tentacle-tv/shared";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { SegmentedChoice } from "../../components/settings/SegmentedChoice";
-import { SettingToggleRow, SETTING_FIELD } from "../../components/settings/SettingToggleRow";
+import { SettingToggleRow } from "../../components/settings/SettingToggleRow";
+import { HeroSourcePicker } from "../../components/settings/personalization/HeroSourcePicker";
 import { HomeRowsEditor } from "../../components/settings/personalization/HomeRowsEditor";
 import { LinkedAccounts } from "../../components/settings/personalization/LinkedAccounts";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
@@ -29,8 +31,10 @@ import { rangeFill } from "../../lib/rangeFill";
 const BALANCE_SAVE_MS = 300;
 
 /**
- * Onglet « Personnalisation » : accueil configurable (mode du bandeau, ordre
- * et activation des rangées, densité) et moteur de recommandation (activation,
+ * Onglet « Personnalisation », en trois groupes qui disent chacun ce qu'ils
+ * règlent : le BANDEAU PRINCIPAL (sa source, décrite par ce qu'elle montre —
+ * `HeroSourcePicker`), les RANGÉES DE L'ACCUEIL (taille des cartes, ordre et
+ * activation), puis le moteur de recommandation (activation,
  * Vigie, communautaire, désinscription vie privée, curseur Sûr ↔ Aventureux,
  * remise à zéro du profil). Chaque changement se sauvegarde immédiatement en
  * « lire avant d'écrire » : le serveur est relu, seul le changement demandé
@@ -41,6 +45,7 @@ export function SettingsPersonalization() {
   const { t } = useTranslation("preferences");
   const { t: tCommon } = useTranslation("common");
   const { t: tReco } = useTranslation("reco");
+  const { t: tHome } = useTranslation("homeSettings");
   const { data: layout } = useHomeLayout();
   const { data: settings } = useRecoSettings();
   const { data: libraries } = useLibraries();
@@ -131,12 +136,8 @@ export function SettingsPersonalization() {
     return key;
   };
 
-  const heroOptions: ReadonlyArray<{ value: HeroMode; label: string }> = [
-    { value: "resume", label: t("persoHeroResume") },
-    { value: "random", label: t("persoHeroRandom") },
-    { value: "reco", label: t("persoHeroReco") },
-    { value: "fixed", label: t("persoHeroFixed") },
-  ];
+  // Les sources que CE serveur sait servir ; la valeur en vigueur reste lisible.
+  const heroModes = heroModesOffered(serverCaps.capabilities, layout.heroMode);
   const densityOptions: ReadonlyArray<{ value: CardDensity; label: string }> = [
     { value: "compact", label: t("persoDensityCompact") },
     { value: "normal", label: t("persoDensityNormal") },
@@ -145,49 +146,32 @@ export function SettingsPersonalization() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SettingsSection title={t("persoHomeTitle")} caption={t("persoHomeCaption")}>
+      <SettingsSection title={tHome("heroTitle")} caption={tHome("heroCaption")}>
         {/* SettingsSection ne pose AUCUN padding (et rogne via overflow-hidden) :
             le p-5 est à la charge du contenu, comme partout ailleurs. */}
+        <div className="p-5">
+          <HeroSourcePicker
+            modes={heroModes}
+            value={layout.heroMode}
+            onChange={(heroMode) => patchLayout({ heroMode })}
+            favorites={favorites}
+            fixedItemId={layout.heroFixedItemId}
+            onFixedItemChange={(heroFixedItemId) => patchLayout({ heroFixedItemId })}
+          />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title={tHome("rowsTitle")} caption={tHome("rowsCaption")}>
         <div className="flex flex-col gap-5 p-5">
           <div>
-            <p className="mb-2 text-sm font-medium text-content-primary">{t("persoHeroMode")}</p>
+            <p className="mb-2 text-sm font-medium text-content-primary">{tHome("densityTitle")}</p>
             <SegmentedChoice
-              label={t("persoHeroMode")}
-              value={layout.heroMode}
-              options={heroOptions}
-              onChange={(heroMode) => patchLayout({ heroMode })}
-            />
-            {layout.heroMode === "fixed" && (
-              <div className="mt-3">
-                {favorites && favorites.length > 0 ? (
-                  <select
-                    className={SETTING_FIELD}
-                    value={layout.heroFixedItemId ?? ""}
-                    onChange={(e) => patchLayout({ heroFixedItemId: e.target.value || null })}
-                    aria-label={t("persoHeroFixedPick")}
-                  >
-                    <option value="">{t("persoHeroFixedPick")}</option>
-                    {favorites.map((f) => (
-                      <option key={f.Id} value={f.Id}>
-                        {f.Name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="text-xs text-content-tertiary">{t("persoHeroFixedEmpty")}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <p className="mb-2 text-sm font-medium text-content-primary">{t("persoDensity")}</p>
-            <SegmentedChoice
-              label={t("persoDensity")}
+              label={tHome("densityTitle")}
               value={layout.cardDensity}
               options={densityOptions}
               onChange={(cardDensity) => patchLayout({ cardDensity })}
             />
+            <p className="mt-2 text-xs text-content-tertiary">{tHome("densityCaption")}</p>
           </div>
 
           <div>
