@@ -1,7 +1,7 @@
 import type { FamilyProfileColor, FamilyProfileKind, FamilySwitches } from "./familyContract";
 
 /**
- * « Qui regarde ? » hors des TV — le CONTRAT du BUREAU (serveur 1.29.0,
+ * « Qui regarde ? » hors des TV — le CONTRAT du BUREAU (serveur 1.30.0,
  * capacité `family.desktopProfiles`). Le reste du contrat :
  * `familyContract.ts` ; les TV : `familyTvContract.ts` ; carnet :
  * docs/FAMILLE.md, « Le bureau ».
@@ -23,7 +23,7 @@ import type { FamilyProfileColor, FamilyProfileKind, FamilySwitches } from "./fa
  *
  * « Qui regarde ? » à l'ouverture se décide par APPAREIL (cet ordinateur :
  * « Ne plus proposer à la prochaine ouverture », gardé sur la machine), dans le
- * cadre que l'ADMINISTRATION règle plateforme par plateforme (1.29.0, capacité
+ * cadre que l'ADMINISTRATION règle plateforme par plateforme (1.30.0, capacité
  * `family.pickerPolicy`) : coupé pour tous (`off`), ou au choix de chaque
  * appareil, activé par défaut (`defaultOn`) chez qui n'a jamais choisi. Sans
  * objet sous deux profils. L'ancienne préférence du COMPTE
@@ -94,7 +94,7 @@ export interface PickerProfileDto {
   color: FamilyProfileColor;
   /** Un PIN protège ce profil : le choisir le demande. */
   hasPin: boolean;
-  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo (un invité a la sienne depuis la 1.29.0). */
+  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo (un invité a la sienne depuis la 1.30.0). */
   imageTag: string | null;
   /** Trop d'essais ratés (tous appareils confondus) : bloqué jusqu'à (ISO). */
   lockedUntil: string | null;
@@ -106,7 +106,7 @@ export interface PickerProfileDto {
   /** Un invité dont le compte de la session personnelle peut changer la photo
    *  (`setGuestPhoto` : son propriétaire, ou le membre qui l'a créé) — pendant
    *  sa session de profil, l'appareil l'habille par la session personnelle.
-   *  Absent d'un serveur d'avant la 1.29.0. */
+   *  Absent d'un serveur d'avant la 1.30.0. */
   photoEditable?: boolean;
 }
 
@@ -126,7 +126,7 @@ export interface PickerProfilesDto {
   currentProfileId: string;
   /** Vrai dès deux profils : sinon « Qui regarde ? » est sans objet. */
   pickerRequired: boolean;
-  /** Pour un bureau d'avant la 1.29.0 (qui y lisait la préférence du compte) :
+  /** Pour un bureau d'avant la 1.30.0 (qui y lisait la préférence du compte) :
    *  ce que fait un ordinateur qui n'a jamais choisi — permis ET activé par
    *  défaut. Un bureau à jour décide d'après `launchPolicy` et l'appareil. */
   atLaunch: boolean;

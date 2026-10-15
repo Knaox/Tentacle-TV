@@ -10,23 +10,23 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
-## [1.29.0]
-<!-- Aperçus et « Qui regarde ? » : capacités trailers.preview et family.desktopProfiles (1.29.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
+## [1.30.0]
+<!-- Aperçus et « Qui regarde ? » : capacités trailers.preview et family.desktopProfiles (1.30.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
-- **Aperçus de bande-annonce au survol** : sur le web et dans l'application de bureau 1.29.0, laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son. Le serveur la choisit dans votre langue, la vérifie et la diffuse lui-même ; sans bande-annonce lisible, rien ne s'affiche
+- **Aperçus de bande-annonce au survol** : sur le web et dans l'application de bureau 1.30.0, laissez le pointeur sur une affiche, sa bande-annonce démarre dans une mini-carte, avec le son. Le serveur la choisit dans votre langue, la vérifie et la diffuse lui-même ; sans bande-annonce lisible, rien ne s'affiche
 - **Les aperçus ménagent YouTube** : balayer une rangée ne demande rien, un titre déjà vu ne coûte plus d'extraction, et ils se suspendent d'eux-mêmes si YouTube demande une vérification — les bandes-annonces des téléviseurs passent toujours avant
 - **Des aperçus plus légers** : la vidéo part à la taille de la mini-carte (720p au plus) et chaque morceau ne se télécharge qu'une fois
-- **« Qui regarde ? » dans l'application de bureau 1.29.0** : chacun ouvre son profil, derrière son code PIN s'il en a un, et « Changer de profil », en tête d'un menu de l'avatar simplifié, y ramène à tout moment ; proposé à l'ouverture par défaut, réglé par chaque ordinateur. L'administration le coupe ou le règle, ordinateurs et téléviseurs à part. Un profil ouvert sur un ordinateur regarde : il n'administre rien
+- **« Qui regarde ? » dans l'application de bureau 1.30.0** : chacun ouvre son profil, derrière son code PIN s'il en a un, et « Changer de profil », en tête d'un menu de l'avatar simplifié, y ramène à tout moment ; proposé à l'ouverture par défaut, réglé par chaque ordinateur. L'administration le coupe ou le règle, ordinateurs et téléviseurs à part. Un profil ouvert sur un ordinateur regarde : il n'administre rien
 - **Famille et lecture** : le code PIN proposé en rejoignant une famille, puis recommandé tant qu'il manque ; « Vous regardez encore ? » met en pause une lecture laissée sans geste, réglable pour tout le compte
 - **Bandes-annonces relayées** : le serveur ne compresse plus une seconde fois la vidéo qu'il relaie — moins de calcul pour rien — et son journal ne compte plus comme une erreur un lecteur qui s'en va
 - **Photos de profil** : 36 personnages à choisir dans le client web, et une photo pour chaque invité de la Famille
 - **Interface web** : « Vider le cache et réinitialiser » dit ce qu'il efface vraiment — les réglages de l'appareil, les recherches récentes et le cache, jamais la session
 
 ### EN
-- **Trailer previews on hover**: on the web and in desktop app 1.29.0, rest the pointer on a poster and its trailer starts in a mini card, with sound. The server picks it in your language, checks it and streams it itself; with no playable trailer, nothing shows
+- **Trailer previews on hover**: on the web and in desktop app 1.30.0, rest the pointer on a poster and its trailer starts in a mini card, with sound. The server picks it in your language, checks it and streams it itself; with no playable trailer, nothing shows
 - **Previews go easy on YouTube**: sweeping across a row asks for nothing, a title already seen costs no new extraction, and they pause by themselves when YouTube asks for verification — the TVs' trailers always come first
 - **Lighter previews**: the video starts at the mini card's size (720p at most) and each chunk downloads only once
-- **“Who's watching?” in desktop app 1.29.0**: everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, at the top of a simpler avatar menu, brings it back at any time; shown at startup by default, set by each computer. Administrators can turn it off or set it, computers and TVs apart. A profile opened on a computer only watches: it manages nothing
+- **“Who's watching?” in desktop app 1.30.0**: everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, at the top of a simpler avatar menu, brings it back at any time; shown at startup by default, set by each computer. Administrators can turn it off or set it, computers and TVs apart. A profile opened on a computer only watches: it manages nothing
 - **Family and playback**: the PIN suggested when joining a family, then recommended while it's missing; “Are you still watching?” pauses playback left without a gesture, adjustable for the whole account
 - **Relayed trailers**: the server no longer compresses the video it relays a second time — less work for nothing — and its log no longer counts a player that leaves as an error
 - **Profile pictures**: 36 characters to pick from in the web client, and a picture for every Family guest

@@ -25,7 +25,7 @@ export interface TvProfileDto {
   name: string;
   color: FamilyProfileColor;
   hasPin: boolean;
-  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo (un invité a la sienne depuis la 1.29.0). */
+  /** L'avatar Jellyfin (`PrimaryImageTag`) ; null sans photo (un invité a la sienne depuis la 1.30.0). */
   imageTag: string | null;
   /** Trop d'essais ratés (toutes TV confondues) : bloqué jusqu'à (ISO). */
   lockedUntil: string | null;
@@ -64,7 +64,7 @@ export interface TvProfilesDto {
    *  (`FamilyLaunchPolicy.tv`, `familyPickerContract.ts`). Faux (coupé) : au
    *  lancement, la TV ouvre DIRECTEMENT le profil du compte qui l'a jumelée,
    *  sans PIN (le serveur l'en dispense, lui seul). Absent (serveur d'avant la
-   *  1.29.0) : vrai. */
+   *  1.30.0) : vrai. */
   askAtLaunch?: boolean;
 }
 

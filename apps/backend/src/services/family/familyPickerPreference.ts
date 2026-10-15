@@ -9,7 +9,7 @@ import {
 /**
  * « Qui regarde ? » au lancement — l'ANCIENNE préférence du COMPTE, par
  * PLATEFORME, gardée pour les bureaux d'avant (routes `pickerPreference`,
- * `setPickerPreference`). Depuis la 1.29.0, plus rien ne décide d'après elle :
+ * `setPickerPreference`). Depuis la 1.30.0, plus rien ne décide d'après elle :
  * le bureau décide par APPAREIL, dans le cadre réglé par l'administration
  * (`familyLaunchPolicy.ts`, docs/FAMILLE.md, « À l'ouverture »).
  *

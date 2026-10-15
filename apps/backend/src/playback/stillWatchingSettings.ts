@@ -1,5 +1,5 @@
 /**
- * « Vous regardez encore ? » — le réglage du COMPTE (serveur 1.29.0, capacité
+ * « Vous regardez encore ? » — le réglage du COMPTE (serveur 1.30.0, capacité
  * `playback.stillWatching`) et son contrat `GET/PUT /api/preferences/still-watching`.
  *
  * Une préférence du compte, pas de l'appareil : réglée sur l'ordinateur, elle

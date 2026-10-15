@@ -44,8 +44,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - La rangée des titres entamés s'appelle désormais « Là où vous en étiez »
 - **Les nouveaux ajouts arrivent en direct** sur l'accueil, et les rangées se mettent à jour sans recharger toutes leurs affiches
 - Nouvel écran Crédits › Licences : la licence de l'app et le texte complet de chaque composant, même hors ligne
-- **« Vous regardez encore ? »** : après une heure et demie de lecture sans un geste, la question paraît en bas à droite, puis la lecture se met en pause ; réglable dans Lecture, pour tous vos appareils, hors ligne compris (serveur 1.29.0)
-- **Famille** : rejoindre une famille propose aussitôt un code PIN, en expliquant pourquoi, et un profil sans code reçoit une « Action recommandée » (serveur 1.29.0)
+- **« Vous regardez encore ? »** : après une heure et demie de lecture sans un geste, la question paraît en bas à droite, puis la lecture se met en pause ; réglable dans Lecture, pour tous vos appareils, hors ligne compris (serveur 1.30.0)
+- **Famille** : rejoindre une famille propose aussitôt un code PIN, en expliquant pourquoi, et un profil sans code reçoit une « Action recommandée » (serveur 1.30.0)
 
 ### EN
 - **"Devices and TVs" now has its own spot in Profile, right under Account**: one tap and you type the TV's code; your paired devices follow, ready to revoke
@@ -58,8 +58,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Offline**: the app goes straight to offline mode, with no blocking screen; a short message says whether the device has no network, the Tentacle server is offline, or Jellyfin can't be reached
 - **New additions arrive live** on Home, and rows update without reloading all their posters
 - New Credits › Licenses screen: the app's license and the full text of every component, even offline
-- **“Are you still watching?”**: after an hour and a half of playback without a gesture, the question shows up at the bottom right, then playback pauses; adjustable in Playback, for all your devices, offline included (server 1.29.0)
-- **Family**: joining a family suggests a PIN right away, explaining why, and a profile without one gets a “Recommended action” (server 1.29.0)
+- **“Are you still watching?”**: after an hour and a half of playback without a gesture, the question shows up at the bottom right, then playback pauses; adjustable in Playback, for all your devices, offline included (server 1.30.0)
+- **Family**: joining a family suggests a PIN right away, explaining why, and a profile without one gets a “Recommended action” (server 1.30.0)
 
 ## [1.10.3]
 <!-- Bloc nu : Google Play (500 caractères), qui a déjà la 1.10.2. L'App Store, resté à la 1.8.2, a son bloc ios-. -->

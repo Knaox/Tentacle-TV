@@ -3,7 +3,7 @@ import { pickerStayState, type PickerStay } from "./familyPickerStay";
 
 /**
  * « Qui regarde ? » à l'ouverture du BUREAU se décide par APPAREIL (serveur
- * 1.29.0, `family.pickerPolicy`) : chaque ordinateur garde SON choix, dans le
+ * 1.30.0, `family.pickerPolicy`) : chaque ordinateur garde SON choix, dans le
  * cadre que l'administration lui donne (`PickerProfilesDto.launchPolicy`).
  * Module pur : `familyPickerDevice.test.ts`.
  *
@@ -17,7 +17,7 @@ import { pickerStayState, type PickerStay } from "./familyPickerStay";
  */
 export type PickerDeviceChoice = "unset" | "ask" | "stay";
 
-/** Un serveur d'avant la 1.29.0 ne dit rien : permis, activé par défaut. */
+/** Un serveur d'avant la 1.30.0 ne dit rien : permis, activé par défaut. */
 const LEGACY_POLICY: FamilyDesktopLaunchPolicy = { mode: "choice", defaultOn: true };
 
 export function desktopLaunchPolicy(listing: Partial<Pick<PickerProfilesDto, "launchPolicy">>): FamilyDesktopLaunchPolicy {
