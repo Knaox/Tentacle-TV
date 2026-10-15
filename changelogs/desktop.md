@@ -21,7 +21,7 @@ et Linux reçoivent l'ensemble.
 - **Un menu de l'avatar plus simple** : « Changer de profil » en tête, qui ramène à « Qui regarde ? », puis vous, cet appareil, et l'aide en pied
 - **Posez votre code PIN** : rejoindre une famille le propose aussitôt, en expliquant pourquoi, et un profil sans code reçoit une « Action recommandée » (serveur 1.30.0)
 - **« Vous regardez encore ? »** : après une heure et demie de lecture sans le moindre geste, la question paraît en bas à droite ; sans réponse, la lecture se met en pause. Réglable dans Réglages › Lecture, pour tous vos appareils (serveur 1.30.0)
-- **Un profil ouvert sur l'ordinateur regarde** : il n'administre rien, comme sur la TV
+- **Un profil ouvert sur l'ordinateur regarde**, comme sur la TV : seule la Famille s'y gère, par le propriétaire ou un membre, avec ses droits et derrière son code PIN — « Gérer les profils » reste dans ce profil, sans passer par le compte de l'ordinateur (serveur 1.30.0)
 - **Photos de profil** : une galerie de 36 personnages illustrés, chacun avec son nom et son histoire, à choisir depuis le menu de l'avatar — l'import d'une photo personnelle reste là. Un compte sans photo se la voit proposer une fois, au premier lancement. Les invités de la Famille ont aussi la leur, depuis Réglages › Famille ou leur profil
 - **Dans une famille, votre avatar prend la couleur de votre profil**, partout dans l'application
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
@@ -38,7 +38,7 @@ et Linux reçoivent l'ensemble.
 - **A simpler avatar menu**: “Switch profile” at the top, which brings back “Who's watching?”, then you, this device, and help at the bottom
 - **Set your PIN**: joining a family suggests it right away, explaining why, and a profile without one gets a “Recommended action” (server 1.30.0)
 - **“Are you still watching?”**: after an hour and a half of playback without a single gesture, the question shows up at the bottom right; with no answer, playback pauses. Adjustable in Settings › Playback, for all your devices (server 1.30.0)
-- **A profile opened on a computer only watches**: it manages nothing, just like on TV
+- **A profile opened on a computer only watches**, just like on TV: only the Family can be managed there, by the owner or a member, with their rights and behind their PIN — “Manage profiles” stays in that profile, without going through the computer's account (server 1.30.0)
 - **Profile pictures**: a gallery of 36 illustrated characters, each with a name and a story, to pick from the avatar menu — uploading your own photo is still there. Accounts without a picture are offered it once, on first launch. Family guests get one too, from Settings › Family or their own profile
 - **In a family, your avatar takes your profile's color**, everywhere in the app
 - **“Clear cache and reset”** now says what it really clears: this device's settings, recent searches and the cache — never your session

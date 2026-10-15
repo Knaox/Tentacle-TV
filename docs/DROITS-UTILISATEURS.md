@@ -800,8 +800,10 @@ Lot « droits 2 », chantier S4 (2026-10-15). Contrat : `packages/shared/src/fam
   invités s'il en a le droit de compte. Restent au propriétaire : inviter, retirer, nommer un
   parent (`manageRoles`), dissoudre. Jamais un membre sous contrôle parental
   (`family.member_parental_refused` : le retirer d'abord).
-- Sur une TV (`memberTv`), un parent supprime ou crée des invités comme dans sa session
-  personnelle ; aucun geste nouveau n'y est ouvert.
+- Depuis SON profil (TV ou bureau, `memberProfile`, 1.30.0 `family.profileManage`), derrière
+  SON code PIN, un parent fait les mêmes gestes que dans sa session personnelle : invités
+  (création, suppression, droits, PIN, photo, contrôle parental) et membres mineurs
+  (docs/FAMILLE.md, « Gérer depuis un profil »).
 
 ### 9.4.3 Le MEMBRE mineur — base gardée, puis rendue
 
