@@ -48,6 +48,27 @@
     opacity var(--preview-enter-fade-ms) linear;
 }
 
+/* Le FONDU CROISÉ avec la carte, sans creux. La carte s'effaçait sur sa
+ * transition propre (240 ms en décélération) pendant que la mini-carte
+ * apparaissait (140 ms, linéaire) : vers 70 ms, l'une à un tiers, l'autre à
+ * moitié, le fond transparaissait — un voile sombre à chaque ouverture, et de
+ * même au retour. La carte reste donc PLEINE sous la mini-carte : elle
+ * disparaît d'un coup une fois la mini-carte opaque (le délai est
+ * `PREVIEW_ENTER_FADE_MS`, que cette feuille ne peut pas lire : la carte n'est
+ * pas sous la mini-carte), et revient d'un coup dès la sortie, dessous, avant
+ * que la mini-carte ne s'efface. Le déplacement garde sa transition. */
+.media-tile[data-concealed] {
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    opacity 0ms linear;
+}
+
+.media-tile[data-concealed="true"] {
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    opacity 0ms linear 140ms;
+}
+
 /* PARTIE vers la fiche (`previewLaunch.ts`) : l'image de sa vidéo s'envole
  * dans le calque d'ouverture, posé par-dessus à sa place exacte ; la
  * mini-carte s'efface dessous, sans revenir à sa carte. */
