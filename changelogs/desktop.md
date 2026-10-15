@@ -30,6 +30,7 @@ et Linux reçoivent l'ensemble.
 - **Plus rien de coupé dans une petite fenêtre** : menus, notifications, filtres et clic droit restent dans la fenêtre, se retournent près d'un bord et défilent quand elle est basse
 - **Bandeau principal au choix** : Personnalisation, réorganisée en « Bandeau principal » et « Rangées de l'accueil », propose aussi vos films ou séries les mieux recommandés (serveur 1.30.0)
 - **« Pour vous » sans clé TMDB** : un message simple dit que les recommandations ne sont pas encore activées ; un administrateur y trouve le chemin de la clé
+- **Plus fluide** : les rangées entrent en douceur, carte après carte ; le défilement ne saute plus, ni sur l'accueil ni dans « Pour vous » ; les résultats de la recherche paraissent d'un bloc ; et un aperçu de bande-annonce s'ouvre en fiche sans coupure
 
 ### EN
 - **Trailer previews**: rest the pointer on a poster and its trailer starts in a mini card, with sound, while the cards next to it make room. Below it: Play, My List, favorite, watched, “More info”, your rating, the year and the genres; one click mutes it, and previews can be turned off in Settings › Appearance (server 1.30.0)
@@ -46,6 +47,7 @@ et Linux reçoivent l'ensemble.
 - **Nothing cut off in a small window anymore**: menus, notifications, filters and the right-click menu stay inside the window, flip near an edge and scroll when it is short
 - **Choose the main banner**: Personalization, now grouped into “Main banner” and “Home rows”, also offers your best-recommended movies or shows (server 1.30.0)
 - **“For you” without a TMDB key**: a simple message says recommendations aren't turned on yet; administrators get the way to the key
+- **Smoother**: rows slide in gently, card after card; scrolling no longer jumps, on Home or in “For you”; search results appear all at once; and a trailer preview opens into its page without a cut
 
 ## [1.28.2]
 <!-- Bloc nu : les trois canaux partent de la 1.28.1. « Films pour vous » à l'accueil exige le serveur 1.27.1 (capacité reco.moviesRow) ; non proposée face à un serveur plus ancien. -->
