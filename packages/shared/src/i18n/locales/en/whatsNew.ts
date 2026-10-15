@@ -48,7 +48,11 @@ export default {
   v1_29_0_trailerPreview_title: "Trailers on hover",
   v1_29_0_trailerPreview_body: "Rest the pointer on a poster: its trailer starts in a mini card, with sound, and the cards next to it make room. Below it: Play, My List, favorite, watched and “More info”, your rating and the title's essentials; one click mutes it, and Settings › Appearance › “Previews on hover” turns previews off.",
   v1_29_0_profiles_title: "“Who's watching?” on your computer",
-  v1_29_0_profiles_body: "Everyone opens their own profile, behind their PIN if they have one, and “Switch profile”, in your avatar menu, brings you back to the profiles at any time. To have the app open on this screen, turn on “Ask who's watching at startup” in Settings › Family.",
+  v1_29_0_profiles_body: "The app opens on “Who's watching?”: everyone picks their profile, behind their PIN if they have one, and “Switch profile”, in your avatar menu, brings you back at any time. Tick “Don't ask at the next startup” to have this computer open straight to the chosen profile.",
+  v1_29_0_familyPin_title: "A PIN for your profile",
+  v1_29_0_familyPin_body: "When you join a family, the app tells you why to protect your profile — it shows up in “Who's watching?” on the family's TVs and computers — and opens the PIN entry. Until it has one, a “Recommended action” reminds you at startup, along with a card at the top of Settings › Family.",
+  v1_29_0_stillWatching_title: "“Are you still watching?”",
+  v1_29_0_stillWatching_body: "After 1 h 30 of playback without a single gesture, a card asks you in the corner of the player, without hiding the controls. Nobody answers? Playback pauses right where you left it, and “Resume” is waiting. The delay and the time to answer are set in Settings › Playback, for all your devices.",
   v1_29_0_avatars_title: "A profile picture with character",
   v1_29_0_avatars_body: "Click your avatar, then your photo: 36 characters are waiting, each with a name, a story and a favourite kind of film. Pick one, or upload your own photo — it follows you on all your devices. Family guests get one too.",
 

@@ -84,7 +84,7 @@ export function FauxProfilePicker({ profiles, hoveredId, cancel, ...animated }: 
           </div>
         );
       })}
-      {/* « Ne plus proposer sur cet appareil » : la case discrète, décochée. */}
+      {/* « Ne plus proposer à la prochaine ouverture » : la case discrète, décochée — à l'ouverture comme dans « Changer de profil ». */}
       <span className="absolute left-1/2 top-[244px] inline-flex h-6 -translate-x-1/2 items-center gap-2 whitespace-nowrap text-[11px] font-medium text-content-secondary">
         <span aria-hidden className="h-[13px] w-[13px] rounded-[4px] border-2 border-line-strong" />
         {t("profilePicker:stayOnDevice")}
