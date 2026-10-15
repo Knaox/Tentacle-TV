@@ -380,6 +380,21 @@ mémoire de session).
 - **CO-2** Le vide (`empty:primary`) et l'erreur (`status:secondary`, « Retour
   à l'accueil ») mènent à l'accueil (`railNavigate("Home")` : la pile remise à
   l'accueil). Retour : page du rail (T4).
+- **CO-3** Sous le titre, la barre de la bibliothèque (§ 5, mêmes clés
+  `pill:<critère>`, `active:<index>`, `active:clear`, mêmes listes en Modal,
+  même pied « Voir N titres ») réduite à DEUX pastilles : `pill:type` (Tous,
+  Films, Séries — choix unique) puis `pill:sort` (arrivée dans la bibliothèque,
+  titre, année, note ; puis l'ordre). Défaut : arrivées récentes d'abord, tous
+  les types — l'ordre d'avant. La barre n'est là qu'avec des titres (ni
+  pendant le chargement, ni sur le vide, ni sur l'erreur). L'état se retient
+  pour la session, par liste (comme la bibliothèque), jamais sur le disque.
+  Le tri par date est celui de l'ARRIVÉE DANS LA BIBLIOTHÈQUE : aucune date
+  d'ajout à la liste n'existe (ni Jellyfin, ni le serveur). Le tri se fait en
+  mémoire, par la règle commune `filterCollection` (api-client).
+- **CO-4** Le type posé est un filtre actif (sa croix rend `pill:type`) ; « Tout
+  effacer » retire le type, GARDE le tri, et rend `pill:type` — depuis le vide
+  « Aucun titre ne correspond » (`library:empty`, `empty:primary`), la
+  première affiche revenue. Un type sans titre entre sur `empty:primary`.
 
 ---
 
@@ -732,6 +747,7 @@ compter une attente dont la durée vient de tv-core. Le câblage
 | RE-10 | `cards/cardPress`, `cards/cardHold` | `SearchRedesign` |
 | PA-1 à PA-3, GR-1 à GR-4, CO-1 | `focus/gridFocus` | `screens/browse.ts` ; la vue `PosterGrid` lit `gridLineReveal`, `GRID_END_REACHED_SCREENS` |
 | GR-5 | `cards/cardPress`, `cards/cardHold` | `usePosterGrid` |
+| CO-3, CO-4 | `focus/collectionFilters` ; la barre et les listes : `focus/libraryFocus` | `screens/library.ts` |
 | BI-1 à BI-11 | `focus/libraryFocus` (dont `filterSheetEntryKey`, `filterSheetFocusKeys`, `libraryPrefetchTarget`, `LIBRARY_PREFETCH_DWELL_MS`) ; l'entrée d'une liste en Modal : `panels/choiceEntry` (T6) | `screens/library.ts` |
 | RG-1 à RG-5, RG-10, RG-11 | `focus/settingsFocus` | `screens/settings.tsx` |
 | RG-6 | `panels/confirmPress` (T6) | la vue `AccountPanel` |

@@ -36,6 +36,12 @@ describe("Ma liste et Favoris", () => {
     expect(collectionEntryKey({ failed: false, empty: false, cards: 3 })).toBe("grid:0");
     expect(collectionEntryKey({ failed: false, empty: false, cards: 0 })).toBeNull();
   });
+
+  it("un type qui ne garde aucun titre entre sur « Tout effacer » (CO-4)", () => {
+    expect(collectionEntryKey({ failed: false, empty: false, cards: 0, noResults: true })).toBe("empty:primary");
+    expect(collectionEntryKey({ failed: false, empty: false, cards: 4, noResults: false })).toBe("grid:0");
+    expect(collectionEntryKey({ failed: true, empty: false, cards: 0, noResults: true })).toBe("status:primary");
+  });
 });
 
 describe("Parcourir", () => {

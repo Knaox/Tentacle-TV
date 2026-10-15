@@ -23,6 +23,7 @@
  *   (sorties de l'écran, changement de page, Retour vers la première carte) ;
  * - les écrans (T7) : `detailFocus.ts` (la fiche), `gridFocus.ts` (les grilles,
  *   Ma liste, Favoris, Parcourir), `libraryFocus.ts` (la bibliothèque),
+ *   `collectionFilters.ts` (le type et le tri de Ma liste et des Favoris),
  *   `settingsFocus.ts` (les réglages), `pairingFocus.ts` (le jumelage),
  *   `profilesFocus.ts` (« Qui regarde ? », le PIN, « Gérer les profils »). */
 export * from "./geometry";
@@ -43,6 +44,7 @@ export * from "./focusReveal";
 export * from "./detailFocus";
 export * from "./gridFocus";
 export * from "./libraryFocus";
+export * from "./collectionFilters";
 export * from "./settingsFocus";
 export * from "./pairingFocus";
 export * from "./profilesFocus";

@@ -40,11 +40,12 @@ export const GRID_END_REACHED_SCREENS = 3;
 /**
  * L'entrée de Ma liste et des Favoris (CO-1) : « Réessayer » en erreur, la
  * sortie du vide (« Parcourir les bibliothèques »), sinon la première
- * affiche ; rien pendant le chargement.
+ * affiche ; rien pendant le chargement. Un type qui ne garde aucun titre
+ * (`noResults`, CO-4) : « Tout effacer », la même clé que la sortie du vide.
  */
-export function collectionEntryKey(state: { failed: boolean; empty: boolean; cards: number }): string | null {
+export function collectionEntryKey(state: { failed: boolean; empty: boolean; cards: number; noResults?: boolean }): string | null {
   if (state.failed) return "status:primary";
-  if (state.empty) return "empty:primary";
+  if (state.empty || (state.noResults && state.cards === 0)) return "empty:primary";
   return state.cards > 0 ? GRID_FIRST_KEY : null;
 }
 
