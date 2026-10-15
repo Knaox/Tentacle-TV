@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch, TentacleApiError } from "./usePreferences";
+import { RECO_PAGE_KEY } from "./useRecoPage";
 import { WATCH_PROVIDERS_KEY, type WatchProviderEntry } from "./useWatchProviders";
 
 /** L'avancement du calcul des recommandations de tous les comptes (« fan-out »). */
@@ -108,7 +109,12 @@ export function useUpdateAdminMetadata() {
     onSuccess: (_data, update) => {
       void qc.invalidateQueries({ queryKey: ADMIN_METADATA_KEY });
       // Une première clé ouvre l'annuaire mondial : les pays deviennent connus.
-      if (update.tmdbApiKey !== undefined) void qc.invalidateQueries({ queryKey: ADMIN_METADATA_REGIONS_KEY });
+      // La clé allume (ou éteint) les recommandations : la page « Pour vous »
+      // en cache dirait encore l'ancien état pendant son staleTime.
+      if (update.tmdbApiKey !== undefined) {
+        void qc.invalidateQueries({ queryKey: ADMIN_METADATA_REGIONS_KEY });
+        void qc.invalidateQueries({ queryKey: [RECO_PAGE_KEY] });
+      }
       // L'annuaire des plateformes du menu Filtres est celui de la région.
       if (update.watchRegion !== undefined) void qc.invalidateQueries({ queryKey: WATCH_PROVIDERS_KEY });
     },
