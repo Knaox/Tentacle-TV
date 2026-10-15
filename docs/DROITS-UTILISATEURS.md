@@ -860,13 +860,16 @@ une question coupée, et couper la question y renonce. Règle : `shared/playback
 stillWatchingTrial.ts` ; magasin et battement : `api-client/playback/
 stillWatchingTrialStore.ts` (`tickWithStillWatchingTrial`). Le miroir a la même ligne.
 
-Ce que la fenêtre fait, relevé dans le lecteur web : elle ne prend JAMAIS le focus ;
+Ce que la fenêtre fait, relevé dans le lecteur web puis sur l'Electron du dépôt (mpv,
+macOS Apple Silicon : fenêtre, plein écran, PiP) : elle ne prend JAMAIS le focus ;
 n'importe quelle touche (Tab compris) vaut « Continuer » — au clavier, Espace met en pause
 par le raccourci du lecteur ; le décompte se lit seconde par seconde ; à l'expiration, PAUSE
 (jamais un arrêt) et « Lecture en pause » / « Reprendre » ; le compteur traverse
-l'enchaînement d'un épisode au suivant. Elle vit dans le conteneur qui passe en plein écran
-(`VideoPlayer.tsx`). Sur le bureau, elle se tait pendant le PiP (`enabled: !pip.active`,
-choix d'origine) : l'essai reste armé jusqu'à la sortie du PiP.
+l'enchaînement d'un épisode au suivant. Sur le web, elle vit dans le conteneur qui passe en plein écran
+(`VideoPlayer.tsx`) ; sur le bureau, la page la dessine au-dessus de mpv, en fenêtre comme
+en plein écran (décompte, barre, « Continuer » / « Mettre en pause »). Pendant le PiP du
+bureau, elle se tait (`enabled: !pip.active`, choix d'origine) : relevé, 38 s de lecture
+en incrustation sans question, l'essai toujours armé jusqu'à la sortie du PiP.
 
 ### Rejouer chaque cas (Damien)
 
