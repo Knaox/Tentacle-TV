@@ -62,6 +62,28 @@ describe("createPreviewWarmQueue — la file de préparation des aperçus", () =
     expect(queue.take(T.settleMs, never)).toHaveLength(5);
   });
 
+  it("une grille remplace ce qui attend : une flèche tenue sur cent lignes n'en prépare qu'une fenêtre", () => {
+    const queue = createPreviewWarmQueue();
+    for (let line = 0; line < 100; line += 1) {
+      const window = Array.from({ length: 12 }, (_, n) => item(`l${line}-${n}`));
+      queue.want(window, line * 100, { replace: true });
+    }
+    const due = queue.dueAt(10_000);
+    expect(due).toBe(9_900 + T.settleMs);
+    const batch = queue.take(9_900 + T.settleMs, never);
+    expect(batch).toHaveLength(12);
+    expect(batch.every((subject) => subject.kind === "item" && subject.itemId.startsWith("l99-"))).toBe(true);
+    expect(queue.dueAt(9_900 + T.settleMs)).toBeNull();
+  });
+
+  it("remplacer ne relance pas un titre déjà envoyé", () => {
+    const queue = createPreviewWarmQueue();
+    queue.want([item("a")], 0, { replace: true });
+    expect(queue.take(T.settleMs, never)).toHaveLength(1);
+    queue.want([item("a")], 1_000, { replace: true });
+    expect(queue.dueAt(1_000)).toBeNull();
+  });
+
   it("un échec suspend tout le temps du recul", () => {
     const queue = createPreviewWarmQueue();
     queue.failed(0);
