@@ -4,6 +4,7 @@ import type { ExclusionSets } from "./candidates/exclusions";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import type { PoolEntry, PoolPayload } from "./generationJob";
 import { enrichTopEntries } from "./poolEnrichment";
+import { assignMatches } from "./poolMatch";
 import { applyCachedProviders } from "./poolProviders";
 import { gatherCandidates } from "./poolSources";
 import { preparePoolTaste } from "./poolTaste";
@@ -28,13 +29,6 @@ const SEED_META_BUDGET = 8;
 const POOL_KEEP = 1000;
 /** Acteurs adorés interrogés en plus des personnes aimées explicitement. */
 const IMPLICIT_PEOPLE_MAX = 3;
-/** Correspondance (match) du premier et du dernier du pool : monotone avec le rang. */
-const MATCH_TOP = 95;
-const MATCH_TAIL = 50;
-/** Proximité aux goûts (relevance) qui autorise la correspondance pleine. */
-const MATCH_FULL_RELEVANCE = 0.5;
-/** Correspondance d'un titre sans aucune proximité aux goûts, au mieux. */
-const MATCH_CEILING_FLOOR = 60;
 
 export interface PoolProfileRow {
   facets: string;
@@ -145,15 +139,8 @@ export async function computePool(input: PoolComputeInput, deps: PoolComputeDeps
   scored.sort(byTotalDesc);
   // L'enrichissement a pu révéler le X (fiche complète) : écarté aussi.
   scored = scored.filter((e) => !explicit(e.candidate)).slice(0, POOL_KEEP);
-  // La correspondance : le rang dans le pool du compte (95 en tête, 50 en queue),
-  // plafonnée par la proximité aux goûts — classé haut par sa seule notoriété
-  // (une procédurale du catalogue), un titre ne s'annonce pas à 88 %.
-  const span = Math.max(1, scored.length - 1);
-  scored.forEach((entry, i) => {
-    const rank = MATCH_TOP - ((MATCH_TOP - MATCH_TAIL) * i) / span;
-    const kin = Math.min(1, (entry.breakdown.relevance ?? 0) / MATCH_FULL_RELEVANCE);
-    entry.match = Math.round(Math.min(rank, MATCH_CEILING_FLOOR + (MATCH_TOP - MATCH_CEILING_FLOOR) * kin));
-  });
+  // La correspondance : le rang, plafonné par la proximité aux goûts (cf. poolMatch).
+  assignMatches(scored);
 
   // Les plateformes que le cache connaît déjà, pour TOUT le pool (une lecture
   // groupée) ; le reste attend le crawler. La région voyage avec le pool.
