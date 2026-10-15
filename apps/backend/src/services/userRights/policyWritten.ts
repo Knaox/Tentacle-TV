@@ -1,4 +1,5 @@
 import { invalidateContentPolicy } from "../contentPolicy";
+import { resyncGuestsOfCreator } from "../family/guestPolicySync";
 
 /**
  * Après TOUTE écriture de politique faite par Tentacle : ce qui en dépend ne doit
@@ -7,7 +8,7 @@ import { invalidateContentPolicy } from "../contentPolicy";
  */
 
 type Listener = (userId: string) => Promise<void> | void;
-const listeners: Listener[] = [];
+const listeners: Listener[] = [resyncGuestsOfCreator];
 
 /** Un service qui dépend d'une politique s'abonne ici (sans dépendance circulaire). */
 export function onPolicyWritten(listener: Listener): void {

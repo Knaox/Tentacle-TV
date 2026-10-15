@@ -21,7 +21,7 @@ import { closeProfileSessions, startProfileSession } from "./familyProfileSessio
 import { currentProfileOf, ensurePickerHost, findPickerHost, pickerHostLock, touchPickerHost } from "./familyPickerHosts";
 import { readPickerPreference, writePickerPreference } from "./familyPickerPreference";
 import { unavailableFor, visibleProfiles } from "./familyTv";
-import { syncGuestPolicy } from "./guestAccounts";
+import { syncGuestPolicy } from "./guestPolicySync";
 
 /**
  * « Qui regarde ? » sur le BUREAU (docs/FAMILLE.md, « Le bureau ») — joué

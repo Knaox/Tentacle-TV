@@ -171,6 +171,37 @@ de champs — jamais une valeur.
   `0 ≤ startHour < endHour ≤ 24` ; `syncPlayAccess` ∈ `CreateAndJoinGroups` | `JoinGroups` |
   `None` ; `remoteClientBitrateLimit` en bits/s, 0 = illimité.
 
+### 4.2 Le contrôle parental côté serveur (étape C)
+
+- **Le voulu** est gardé dans `family_members.parentalControls` (JSON, migration
+  `0006_family_guest_parental`) ; absent = aucun ; ILLISIBLE = le plus fermé (note 0, tous les
+  types non classés bloqués), jamais « aucun ».
+- **La règle** est pure et partagée (`effectiveGuestParental`, `familyParental.ts`, miroir) : la
+  note la plus basse (à score égal, la sous-note la plus basse ; absente = sans limite), types
+  non classés et étiquettes bloquées réunis, étiquettes permises du créateur imposées, plages
+  recoupées jour par jour. **Deux jeux de plages qui ne se recoupent pas donnent « JAMAIS »**,
+  pas une liste vide (qui voudrait dire « à toute heure » chez Jellyfin) : la plage sentinelle
+  `{ Sunday, 24, 24 }` (`GUEST_SCHEDULE_NEVER`) — Jellyfin teste `début ≤ h ≤ fin` avec h < 24.
+  Prouvé sur Jellyfin 10.11 : acceptée, et la connexion du compte est refusée.
+- **L'écriture** (`guestAccounts.guestPolicy`) : la politique de l'invité, les bibliothèques et
+  restrictions du créateur, nos interdits, PUIS le contrôle effectif. Les plages repartent au nom
+  de l'invité (`UserId`), sans `Id` — avant, celles du créateur étaient recopiées telles quelles.
+  Une écriture n'a lieu que si la politique change (plages comparées sans `Id`/`UserId`).
+- **`setGuestParental`** : `manageableGuest` (propriétaire : tout invité ; membre : les siens ;
+  sinon `family.not_owner`, hors famille `family.not_found`), corps EXACT (les cinq champs),
+  note vérifiée contre la table de Jellyfin. Le voulu est gardé D'ABORD, puis la politique est
+  écrite et RELUE (refus si Jellyfin ne l'a pas retenue) : si Jellyfin se tait, le guet la pose
+  à son retour.
+- **L'invité suit son créateur** : (1) toute écriture de politique faite par Tentacle
+  (`notePolicyWritten` → `resyncGuestsOfCreator`) ; (2) chaque ouverture d'un profil d'invité
+  (TV, bureau : `guestPolicySync.syncGuestPolicy`) ; (3) un guet toutes les DEUX minutes, UNE
+  lecture de `/Users` pour tous les invités, une écriture seulement si quelque chose a changé.
+  Un créateur introuvable : rien n'est relâché.
+- **`parentalOptions`** : le propriétaire d'une famille (même sans invité encore), ou un membre
+  qui a créé au moins un invité ; sinon `family.not_owner`.
+- **L'état lu avec l'invité** : `withParentalState` (`GET /api/family`, session personnelle
+  seulement), une lecture de `/Users` pour tous les plafonds.
+
 ## 5. Le filtrage du contenu — `apps/backend/src/services/contentPolicy/`
 
 - `getContentPolicy(userId)` → la politique de contenu du compte (note maximale, types non

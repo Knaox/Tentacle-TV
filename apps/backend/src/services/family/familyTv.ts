@@ -10,7 +10,7 @@ import { checkProfilePin, lockedProfiles, profilesWithPin } from "./familyPins";
 import { startProfileSession } from "./familyProfileSession";
 import { familyOf, familyProfiles, fold, jellyfinUserMap, memberKind, profileColor, type MemberRow } from "./familyStore";
 import type { PairingRow } from "./familyTvEnroll";
-import { syncGuestPolicy } from "./guestAccounts";
+import { syncGuestPolicy } from "./guestPolicySync";
 
 /**
  * « Qui regarde ? » et les sessions de profil de l'Apple TV (docs/FAMILLE.md).

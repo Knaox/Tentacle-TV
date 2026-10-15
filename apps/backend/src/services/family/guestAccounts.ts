@@ -4,6 +4,8 @@ import { invalidateJellyfinUsers } from "../watchTogether/usersCache";
 import { guestAccountName } from "../../family/familyRules";
 import { FamilyFailure } from "./familyErrors";
 import { abandonGuestAccount, noteGuestAccount } from "./guestAccountCleanup";
+import { GUEST_PARENTAL_NONE, type GuestParentalControls } from "../../family/familyParental";
+import { withGuestParental } from "./guestParentalPolicy";
 
 /**
  * Le compte Jellyfin d'un invité (docs/FAMILLE.md, SEC-F-29/31), par la clé
@@ -75,7 +77,7 @@ const FORCED: Record<string, unknown> = {
 
 type Policy = Record<string, unknown>;
 
-interface UserDto {
+export interface UserDto {
   Id?: string;
   Name?: string;
   Policy?: Policy;
@@ -88,20 +90,24 @@ function unavailable(step: string, result: JellyfinResult<unknown>): FamilyFailu
   return new FamilyFailure("family.jellyfin_refused", `Jellyfin a refusé : ${step}`);
 }
 
-/** La politique de l'invité : la sienne, les bibliothèques et restrictions du propriétaire, nos interdits. */
-export function guestPolicy(current: Policy, creator: Policy): Policy {
+/**
+ * La politique de l'invité : la sienne, les bibliothèques et restrictions de son
+ * créateur, nos interdits — puis son contrôle parental (1.30.0), recoupé avec les
+ * restrictions du créateur : jamais plus large (`withGuestParental`).
+ */
+export function guestPolicy(guestUserId: string, current: Policy, creator: Policy, wanted: GuestParentalControls = GUEST_PARENTAL_NONE): Policy {
   const policy: Policy = { ...current };
   for (const field of COPIED_FROM_CREATOR) if (field in creator) policy[field] = creator[field];
-  return { ...policy, ...FORCED };
+  return withGuestParental(guestUserId, { ...policy, ...FORCED }, creator, wanted);
 }
 
-async function fetchUser(userId: string): Promise<UserDto> {
+export async function fetchUser(userId: string): Promise<UserDto> {
   const result = await jellyfinAdminFetch<UserDto>(`/Users/${encodeURIComponent(userId)}`);
   if (!result.ok) throw unavailable("lecture du compte", result);
   return result.data;
 }
 
-async function writePolicy(userId: string, policy: Policy): Promise<void> {
+export async function writePolicy(userId: string, policy: Policy): Promise<void> {
   const result = await jellyfinAdminFetch(`/Users/${encodeURIComponent(userId)}/Policy`, {
     method: "POST",
     body: policy,
@@ -148,7 +154,7 @@ export async function createGuestAccount(input: {
   try {
     await noteGuestAccount(userId, jellyfinName, "creating");
     await scramblePassword(userId);
-    await writePolicy(userId, guestPolicy(created.Policy ?? (await fetchUser(userId)).Policy ?? {}, creatorPolicy));
+    await writePolicy(userId, guestPolicy(userId, created.Policy ?? (await fetchUser(userId)).Policy ?? {}, creatorPolicy));
     const check = (await fetchUser(userId)).Policy ?? {};
     if (check.IsAdministrator !== false || check.IsHidden !== true || check.EnableContentDownloading !== false) {
       throw new FamilyFailure("family.jellyfin_refused", "Politique de l'invité non retenue par Jellyfin");
@@ -159,19 +165,4 @@ export async function createGuestAccount(input: {
   }
   invalidateJellyfinUsers();
   return { userId, jellyfinName };
-}
-
-/** Recopie au besoin les bibliothèques et restrictions de son créateur (à
- *  l'ouverture d'une session d'invité). Silencieux : la session reste sûre,
- *  les interdits de l'invité ne dépendent pas de cette recopie. */
-export async function syncGuestPolicy(guestUserId: string, creatorUserId: string): Promise<void> {
-  try {
-    const [guest, creator] = await Promise.all([fetchUser(guestUserId), fetchUser(creatorUserId)]);
-    const current = guest.Policy ?? {};
-    const wanted = guestPolicy(current, creator.Policy ?? {});
-    const changed = Object.keys(wanted).some((key) => JSON.stringify(wanted[key]) !== JSON.stringify(current[key]));
-    if (changed) await writePolicy(guestUserId, wanted);
-  } catch {
-    console.log("[family] politique d'un invité non resynchronisée (Jellyfin muet)");
-  }
 }
