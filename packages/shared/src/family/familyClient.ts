@@ -199,10 +199,22 @@ export interface ProfileActionsCapability {
 /** « Peut demander des films » se règle par le propriétaire (ou un parent), la Famille
  *  et les invités allumés, sur un serveur qui annonce le droit (`guestRequests`). */
 function guestRightOf(overview: FamilyOverviewDto, capability: ProfileActionsCapability): FamilyProfileRight | null {
-  const { switches, family } = overview;
-  const regulates = family?.rights.manageMembers === true || family?.rights.manageMinors === true;
-  if (!regulates || capability.guestRequests !== true) return null;
-  return switches.families && switches.guests ? "requestTitles" : null;
+  const regulates = overview.family?.rights.manageMembers === true || overview.family?.rights.manageMinors === true;
+  return regulates && mayGrantGuestRequests(overview, capability) ? "requestTitles" : null;
+}
+
+/**
+ * La case « peut demander » d'un invité s'offre-t-elle à CE compte ? Le serveur annonce le
+ * droit (`features.family.guestRequests` : extension présente et, 1.30.0, interrupteur de
+ * l'administration allumé), la Famille et les invités allumés, et — 1.30.0,
+ * `family.guestRequestsAdmin` — l'administration permet à ce compte de le donner
+ * (`account.creation.grantGuestRequests`). Un serveur d'avant n'en dit rien : comme alors.
+ * Le RÔLE (propriétaire, parent) se juge à part. Toutes les plateformes lisent cette règle.
+ */
+export function mayGrantGuestRequests(overview: FamilyOverviewDto, capability: ProfileActionsCapability): boolean {
+  const { switches, account } = overview;
+  if (capability.guestRequests !== true || !switches.families || !switches.guests) return false;
+  return account.creation?.grantGuestRequests !== false;
 }
 
 /** Le droit « peut demander » d'un invité : un champ absent vaut « coupé ». */

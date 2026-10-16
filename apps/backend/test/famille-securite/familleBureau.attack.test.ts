@@ -26,7 +26,7 @@ vi.mock("../../src/services/deviceSessions/gateway", async () => (await import("
 
 import { freshState } from "../familyMocks";
 import { fakeJellyfinUsersFetch } from "../fakeJellyfinUsers";
-import { IDS, enroll, openProfile, pairTv, resetCaches, seedUsers } from "../familyHarness";
+import { allowGuestRequests, IDS, enroll, openProfile, pairTv, resetCaches, seedUsers } from "../familyHarness";
 import { buildPickerApp, door, pick, pickSession, pickerProfiles, seedFamily, sender } from "../familyPickerHarness";
 import { signImpersonationToken } from "../../src/services/jwt";
 import { requireAdmin, requirePersonalAdmin } from "../../src/middleware/auth";
@@ -52,6 +52,8 @@ beforeEach(() => {
   h.state = freshState();
   h.fetch = fakeJellyfinUsersFetch(h.state.jf);
   resetCaches();
+  // 1.30.0 : l'administration laisse les invités demander (le sens de ce banc, d'avant ce réglage).
+  allowGuestRequests(h.state!, { everyone: true });
   tokens = seedUsers(h.state);
 });
 

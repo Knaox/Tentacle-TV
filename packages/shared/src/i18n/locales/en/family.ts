@@ -66,6 +66,7 @@ export default {
     owner_must_dissolve: "The owner doesn't leave their family: they can dissolve it.",
     create_family_denied: "The administrator doesn't allow you to create a family.",
     create_guests_denied: "The administrator doesn't allow you to create guest profiles.",
+    guest_requests_denied: "The administrator doesn't allow you to let your guests request movies.",
     member_parental_refused: "This account can't have parental controls: the owner, a parent or an administrator never does. To make a restricted member a parent, remove their parental controls first.",
     pin_required: "This profile is protected by a PIN code.",
     pin_invalid: "Wrong PIN code.",

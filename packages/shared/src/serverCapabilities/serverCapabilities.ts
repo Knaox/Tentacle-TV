@@ -148,6 +148,12 @@ export const SERVER_CAPABILITIES = {
    *  (`GET|PUT /api/family/profiles/:userId/libraries`), écrites dans sa politique Jellyfin
    *  (plafond ∩ voulu), rendues au départ. Sans elle, le contrôle parental n'en montre rien. */
   "family.libraryLimits": "1.30.0",
+  /** L'administration décide si les invités peuvent demander des films : l'interrupteur
+   *  `FamilySwitches.guestRequests` (COUPÉ par défaut, mise à jour comprise) et le droit de compte
+   *  `grantGuestRequests` (défaut NON, `FamilyAccountDto.creation`) ; refus
+   *  `family.guest_requests_denied` ; case d'un invité SUSPENDUE (`FamilyGuestRights.suspended`)
+   *  sans le droit. Sans elle, la case « peut demander » se règle comme avant. */
+  "family.guestRequestsAdmin": "1.30.0",
   // ── Lot « droits 2 » : lecture et Watch Together (docs/DROITS-UTILISATEURS.md § 9.2) ──
   /** L'accès du compte à Watch Together, tiré de `SyncPlayAccess` de sa politique Jellyfin
    *  (`GET /api/watch-together/access` → `full | joinOnly | none`) : `none` ne voit plus rien de
