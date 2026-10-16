@@ -113,6 +113,8 @@ export interface SettingsViewProps {
   onManageProfiles?: () => void;
   /** SON code PIN : créer, changer, retirer. */
   onOwnPin?: (mode: OwnPinMode) => void;
+  /** La galerie des avatars (`account.photo`). */
+  onChangePhoto?: () => void;
   onSelectPreset?: (preset: Exclude<PlaybackPreset, "custom">) => void;
   onSelectLanguage?: (language: InterfaceLanguage) => void;
   onOpenLibrarySetting?: (libraryId: string, key: LibrarySettingKey) => void;
@@ -222,6 +224,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onSwitchProfile={props.onSwitchProfile}
                   onManageProfiles={props.onManageProfiles}
                   onOwnPin={props.onOwnPin}
+                  onChangePhoto={props.onChangePhoto}
                 />
               ) : null}
               {tab === "playback" ? (

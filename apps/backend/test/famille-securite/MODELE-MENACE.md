@@ -501,3 +501,31 @@ Exigences testables :
 
 Tests : `familleV2Delegation.attack.test.ts`. Tous les `SEC-F-xx` de la Famille
 (v1 + v2) sont désormais des tests ACTIFS — plus aucun `todo`.
+
+### SEC-F-54 — Gérer depuis un PROFIL, derrière SON code (1.30.0)
+
+Décision de Damien (2026-10-16) : le propriétaire ou un membre gère la famille
+depuis SA session de profil, TV ou bureau, avec les droits de SON rôle — à
+condition que son profil ait un code PIN (n'importe lequel : un par compte, le
+même partout). Le code ouvre la porte, jamais plus de droits. Exigences
+testables :
+
+- sans code, aucune gestion depuis un profil, même pour le compte qui a jumelé
+  la TV (`family.manage_pin_required`) ; un code retiré depuis l'ouverture la
+  referme aussitôt ;
+- l'acteur est le PROFIL de la session, jamais le compte qui a jumelé la TV ni
+  la session personnelle du bureau ;
+- ouvrir le profil par SON code ouvre la gestion ; une session ouverte sans
+  code (« Rester sur ce profil ») la demande (`tvManageUnlock`) ; dix minutes,
+  prolongées à chaque geste admis, `family.manage_locked` ensuite ;
+- un membre sur un geste de propriétaire → `family.not_owner`, avant tout
+  autre refus ; un parent gère les invités (droits, PIN, photo, contrôle
+  parental, suppression) et les membres mineurs, jamais les membres ;
+- restent à la session personnelle : accepter, refuser, « plus tard »,
+  quitter, dissoudre, son propre PIN sur un bureau, « Qui regarde ? » ;
+- une session de profil du bureau n'est l'appelant que du déverrouillage
+  (`desktopProfile`) : rien d'autre avant que la gestion soit ouverte.
+
+Tests : `familleBureau.attack.test.ts`, `familleContratRoutes.attack.test.ts`,
+`familleProfilsTv.attack.test.ts`, `familleV2Partage.attack.test.ts`,
+`familySharedTv.test.ts`, `familyTvPin.test.ts`.

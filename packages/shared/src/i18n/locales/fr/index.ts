@@ -50,6 +50,7 @@ import notices from "./notices";
 import family from "./family";
 import familyWeb from "./familyWeb";
 import familyTv from "./familyTv";
+import parentalTv from "./parentalTv";
 import familyMobile from "./familyMobile";
 import metadataHint from "./metadataHint";
 import profilePicker from "./profilePicker";
@@ -83,6 +84,7 @@ export default {
   family,
   familyWeb,
   familyTv,
+  parentalTv,
   familyMobile,
   metadataHint,
   profilePicker,

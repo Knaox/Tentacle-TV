@@ -26,7 +26,11 @@
  *  (l'administration ne permet pas à ce compte de fonder une famille / de
  *  créer des profils invités — `familyRoles.ts`) ; `family.member_parental_refused`
  *  (un contrôle parental sur le propriétaire, un parent ou un administrateur
- *  Jellyfin ; ou nommer parent un membre qui en a un). */
+ *  Jellyfin ; ou nommer parent un membre qui en a un) ; `family.manage_pin_required`
+ *  (gérer depuis une session de profil exige que ce profil ait un code PIN —
+ *  `familyCallers.ts`, `profileManage`) ; `family.guest_requests_denied` (cocher
+ *  « peut demander » sur un invité sans le droit `grantGuestRequests`, ou l'interrupteur
+ *  de l'administration coupé — `familyRoles.ts`). */
 export const FAMILY_ERROR_STATUS = {
   "family.invalid_input": 400,
   "family.pin_format": 400,
@@ -37,12 +41,14 @@ export const FAMILY_ERROR_STATUS = {
   "family.personal_session_required": 403,
   "family.not_owner": 403,
   "family.manage_locked": 403,
+  "family.manage_pin_required": 403,
   "family.guest_account": 403,
   "family.review_account": 403,
   "family.guest_right_required": 403,
   "family.owner_must_dissolve": 403,
   "family.create_family_denied": 403,
   "family.create_guests_denied": 403,
+  "family.guest_requests_denied": 403,
   "family.pin_required": 403,
   "family.pin_invalid": 403,
   "family.not_found": 404,

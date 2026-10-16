@@ -29,7 +29,7 @@ const PICKER_ROUTES: FamilyRouteName[] = ["pickerProfiles", "pickProfile", "pick
 describe("SEC-F-46 (contrat) : les routes picker n'autorisent QUE la session personnelle", () => {
   it.each(PICKER_ROUTES)("%s a pour seul appelant « personal »", (name) => {
     // Jamais tvProfile (une session de profil ne choisit pas un autre profil),
-    // jamais tvPairing/tvLegacy (ce n'est pas une TV), jamais ownerTv/memberTv/admin.
+    // jamais tvPairing/tvLegacy (ce n'est pas une TV), jamais ownerProfile/memberProfile/desktopProfile/admin.
     expect(FAMILY_ROUTES[name].callers).toEqual(["personal"]);
   });
 });

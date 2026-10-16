@@ -39,6 +39,7 @@ import { wakeRevocationDrain } from "./auth/revocationQueue";
 import { leaveProfileAtBoot } from "./auth/profileSession";
 import { ForegroundSessionValidator } from "./components/ForegroundSessionValidator";
 import { TVSessionGuard } from "./components/TVSessionGuard";
+import { TVFamilyLive } from "./components/TVFamilyLive";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
 import { TVSessionChannel } from "./components/TVSessionChannel";
 import { TVPlaybackOutbox } from "./components/TVPlaybackOutbox";
@@ -201,6 +202,7 @@ function AppContent() {
     <>
       <ForegroundSessionValidator />
       <TVSessionGuard />
+      <TVFamilyLive />
       <ForegroundDataRefresher />
       <DirectStreamingSync storage={storage} />
       <TVSessionChannel storage={storage} />

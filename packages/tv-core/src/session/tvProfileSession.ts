@@ -1,5 +1,6 @@
 import {
   isProfileColor,
+  rightsReachSomething,
   sameUserId,
   type FamilyGuestRights,
   type FamilyProfileColor,
@@ -8,6 +9,7 @@ import {
   type TvProfilesDto,
 } from "@tentacle-tv/shared";
 import { TV_PAIRING_TOKEN_KEY, TV_PROFILE_KEY } from "./tvProfileKeys";
+import { tvProfileRoleOf } from "./profileRoleName";
 import type { SessionStorage } from "./unpairJournal";
 
 /**
@@ -51,9 +53,16 @@ export interface TvProfileRecord {
   familyOwnerName?: string;
   /** CE profil gère quelque chose sur cette TV (`manage` du serveur, v2). Absent d'un enregistrement d'avant. */
   manages?: boolean;
+  /** 1.30.0 : CE profil gérerait la famille s'il avait un code PIN (`manageNeedsPin`
+   *  du serveur) — l'étape « Code PIN conseillé » et Réglages › Compte le disent.
+   *  Absent d'un enregistrement d'avant (ou d'un serveur d'avant) : faux. */
+  manageNeedsPin?: boolean;
   /** Un invité : ses droits à l'ouverture (« peut demander », v2) ; la garde
    *  de Vigie préfère la liste relue (`profileMayRequest`). Absent : aucun. */
   guestRights?: FamilyGuestRights | null;
+  /** Un membre nommé parent, à l'ouverture (1.30.0) ; Réglages préfère la liste
+   *  relue (`openProfileState`). Absent d'un enregistrement d'avant : non. */
+  parent?: boolean;
 }
 
 const KINDS: readonly FamilyProfileKind[] = ["owner", "member", "guest"];
@@ -67,13 +76,25 @@ export function pairedAccountOf(listing: Pick<TvProfilesDto, "owner"> & Partial<
   return listing.pairedBy ?? listing.owner;
 }
 
+/** Les invités qu'a créés ce compte, dans la liste ; sans la liste, on ne peut rien en dire (un). */
+function ownGuestsOf(userId: string, profiles: readonly TvProfileDto[] | undefined): number {
+  if (!profiles) return 1;
+  return profiles.filter((candidate) => candidate.kind === "guest" && !!candidate.createdBy && sameUserId(candidate.createdBy, userId)).length;
+}
+
 /**
  * CE profil a-t-il quelque chose à gérer sur cette TV (« Gérer les profils »,
  * derrière SON PIN) ? v2 : son `manage` (nul pour un invité, le compte de
- * démonstration) ; v1 (sans `manage`) : le propriétaire seul.
+ * démonstration, un profil sans code) — et un geste à y faire (décision du
+ * 16/10 : « s'il ne gère rien, pas d'entrée » — un membre sans droit de créer
+ * ni invité à lui n'y verrait qu'une liste en lecture seule) ; v1 (sans
+ * `manage`) : le propriétaire seul.
  */
-export function profileManages(profile: TvProfileDto, listing: Pick<TvProfilesDto, "canManage">): boolean {
-  if ("manage" in profile && profile.manage !== undefined) return profile.manage !== null;
+export function profileManages(profile: TvProfileDto, listing: Pick<TvProfilesDto, "canManage"> & Partial<Pick<TvProfilesDto, "profiles">>): boolean {
+  if ("manage" in profile && profile.manage !== undefined) {
+    // La règle du serveur (`rightsReachSomething`, shared), rejouée face à un serveur qui ne l'applique pas encore.
+    return profile.manage !== null && rightsReachSomething(profile.manage, ownGuestsOf(profile.userId, listing.profiles));
+  }
   return profile.kind === "owner" && listing.canManage;
 }
 
@@ -94,7 +115,9 @@ export function profileRecordOf(profile: TvProfileDto, listing: ProfilesListingR
     canManage: listing.canManage,
     familyOwnerName: familyOwner?.name ?? paired.name,
     manages: profileManages(profile, listing),
+    manageNeedsPin: profile.manageNeedsPin === true,
     guestRights: profile.guestRights ?? null,
+    parent: tvProfileRoleOf(profile) === "parent",
   };
 }
 
@@ -123,7 +146,9 @@ function isRecord(value: unknown): value is TvProfileRecord {
     && typeof r.canManage === "boolean"
     && (r.familyOwnerName === undefined || typeof r.familyOwnerName === "string")
     && (r.manages === undefined || typeof r.manages === "boolean")
-    && (r.guestRights === undefined || r.guestRights === null || typeof (r.guestRights as { requestTitles?: unknown }).requestTitles === "boolean");
+    && (r.guestRights === undefined || r.guestRights === null || typeof (r.guestRights as { requestTitles?: unknown }).requestTitles === "boolean")
+    && (r.parent === undefined || typeof r.parent === "boolean")
+    && (r.manageNeedsPin === undefined || typeof r.manageNeedsPin === "boolean");
 }
 
 /** Le profil retenu ; illisible ou incomplet : aucun (la session ne se reprend pas). */

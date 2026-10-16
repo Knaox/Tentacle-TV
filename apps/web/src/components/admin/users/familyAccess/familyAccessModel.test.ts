@@ -48,3 +48,26 @@ describe("accessChangesFor", () => {
     expect(accessChangesFor("guests", state(true, false, false, true), "off")).toEqual({});
   });
 });
+
+describe("« Les invités peuvent demander des films » (1.30.0)", () => {
+  const requests = (guestRequests: boolean | undefined, grantGuestRequests: boolean | undefined): FamilyAccessState => ({
+    switches: { families: true, guests: true, guestRequests },
+    defaults: { createFamily: false, createGuests: false, grantGuestRequests },
+  });
+
+  it("coupé par défaut (absent : un serveur qui vient d'être mis à jour)", () => {
+    expect(accessLevelOf("guestRequests", requests(undefined, undefined))).toBe("off");
+    expect(accessLevelOf("guestRequests", requests(false, true))).toBe("off");
+    expect(accessLevelOf("guestRequests", requests(true, false))).toBe("allowed");
+    expect(accessLevelOf("guestRequests", requests(true, true))).toBe("everyone");
+  });
+
+  it("allumer pose le défaut du droit de compte, puis l'interrupteur ; couper ne touche que l'interrupteur", () => {
+    expect(accessChangesFor("guestRequests", requests(false, undefined), "allowed")).toEqual({
+      defaults: { grantGuestRequests: false },
+      switches: { guestRequests: true },
+    });
+    expect(accessChangesFor("guestRequests", requests(true, false), "everyone")).toEqual({ defaults: { grantGuestRequests: true } });
+    expect(accessChangesFor("guestRequests", requests(true, true), "off")).toEqual({ switches: { guestRequests: false } });
+  });
+});

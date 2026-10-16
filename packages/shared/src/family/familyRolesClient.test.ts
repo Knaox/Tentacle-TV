@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FamilyDto, FamilyOverviewDto, FamilyProfileDto, FamilyRole } from "./familyContract";
 import { GUEST_PARENTAL_NONE } from "./familyParental";
 import { familyRightsOf } from "./familyRights";
-import { familyActions, profileActions } from "./familyClient";
+import { familyActions, profileActions, sessionManages } from "./familyClient";
 import { hasParentalControl, isFamilyParent, profileRoleActions } from "./familyRolesClient";
 
 /**
@@ -71,6 +71,14 @@ describe("profileRoleActions", () => {
     expect(profileRoleActions(o, profile("owner", OWNER), OWNER).role).toBe(false);
     const tv = { ...o, account: { ...o.account, personalSession: false } };
     expect(profileRoleActions(tv, KID, OWNER).memberParental).toBe(false);
+  });
+
+  it("un profil qui gère (1.30.0, `managing`) : les mêmes gestes qu'en session personnelle", () => {
+    const o = overview("owner");
+    const managing = { ...o, account: { ...o.account, personalSession: false, managing: true } };
+    expect(profileRoleActions(managing, KID, OWNER)).toEqual(profileRoleActions(o, KID, OWNER));
+    expect(sessionManages(managing.account)).toBe(true);
+    expect(sessionManages({ personalSession: false })).toBe(false);
   });
 
   it("lit le parent et le contrôle tels que le serveur les rend", () => {

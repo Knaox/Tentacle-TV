@@ -27,6 +27,7 @@ const NAMESPACES = [
   "family",
   "familyWeb",
   "familyTv",
+  "parentalTv",
   "familyMobile",
   "metadataHint",
   "profilePicker",

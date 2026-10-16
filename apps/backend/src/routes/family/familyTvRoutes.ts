@@ -5,6 +5,9 @@ import { getFamilyLaunchPolicy, setFamilyLaunchPolicy } from "../../services/fam
 import { accountFamilyRights, setAccountFamilyRights } from "../../services/family/familyAccountAdmin";
 import { getCreationDefaults, setCreationDefaults } from "../../services/family/familyCreationRights";
 import { endSessionsOfKinds } from "../../services/family/familySessions";
+import { notifyAllFamilies } from "../../services/family/familyGuestRequests";
+import { hasRequestExtension } from "../../services/pluginRequests";
+import type { FamilyAdminSwitchesDto } from "../../family/familyContract";
 import { listTvProfiles, openTvSession, unlockManage } from "../../services/family/familyTv";
 import { enrollTv, pairingFromToken } from "../../services/family/familyTvEnroll";
 import {
@@ -43,9 +46,15 @@ export const familyTvRoutes: FastifyPluginAsync = async (app) => {
  * Les interrupteurs de l'administration (sous `/api/admin`), en session
  * personnelle d'un administrateur — et « Qui regarde ? » à l'ouverture. Couper coupe AUSSITÔT les sessions de
  * profil concernées ; rallumer ne ressuscite aucune session (SEC-F-14).
+ *
+ * 1.30.0 : « Les invités peuvent demander des films » ne se montre que si une extension sait
+ * demander un titre (`requestExtension`) ; le couper SUSPEND les cases des invités, le
+ * rallumer les rend — chaque famille relit aussitôt (`notifyAllFamilies`).
  */
 export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
-  registerFamilyRoute(app, "adminSwitches", async () => getFamilySwitches());
+  const adminSwitches = (): FamilyAdminSwitchesDto => ({ ...getFamilySwitches(), requestExtension: hasRequestExtension() });
+
+  registerFamilyRoute(app, "adminSwitches", async () => adminSwitches());
 
   registerFamilyRoute(app, "adminSetSwitches", async (request) => {
     const patch = adminSwitchesBodySchema.parse(request.body);
@@ -53,8 +62,12 @@ export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
     const after = await setFamilySwitches(patch);
     if (before.families && !after.families) await endSessionsOfKinds(["member", "guest"], "families_disabled");
     else if (after.families && before.guests && !after.guests) await endSessionsOfKinds(["guest"], "guests_disabled");
-    console.log(`[family] Interrupteurs : familles ${after.families ? "oui" : "non"}, invités ${after.guests ? "oui" : "non"}`);
-    return after;
+    if (before.guestRequests !== after.guestRequests) await notifyAllFamilies();
+    console.log(
+      `[family] Interrupteurs : familles ${after.families ? "oui" : "non"}, invités ${after.guests ? "oui" : "non"}, ` +
+        `demandes des invités ${after.guestRequests ? "oui" : "non"}`,
+    );
+    return adminSwitches();
   });
 
   // « Qui regarde ? » à l'ouverture, plateforme par plateforme : aucune session
@@ -72,8 +85,14 @@ export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
   registerFamilyRoute(app, "adminCreationDefaults", async () => getCreationDefaults());
 
   registerFamilyRoute(app, "adminSetCreationDefaults", async (request, actor) => {
+    const before = getCreationDefaults();
     const defaults = await setCreationDefaults(creationDefaultsBodySchema.parse(request.body ?? {}));
-    console.log(`[family] ${actor.username} → défaut : famille ${defaults.createFamily ? "oui" : "non"}, invités ${defaults.createGuests ? "oui" : "non"}`);
+    // Le défaut du droit de donner « peut demander » suspend ou rend des cases d'invités.
+    if (before.grantGuestRequests !== defaults.grantGuestRequests) await notifyAllFamilies();
+    console.log(
+      `[family] ${actor.username} → défaut : famille ${defaults.createFamily ? "oui" : "non"}, invités ${defaults.createGuests ? "oui" : "non"}, ` +
+        `demandes des invités ${defaults.grantGuestRequests ? "oui" : "non"}`,
+    );
     return defaults;
   });
 

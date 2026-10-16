@@ -79,6 +79,20 @@ describe("la session d'une Apple TV passée aux profils", () => {
     expect(readProfileRecord(fakeStorage({ [TV_PROFILE_KEY]: "{oups" }).storage)).toBeNull();
   });
 
+  it("retient qu'un profil gérerait la famille avec un code (1.30.0) ; absent d'avant : faux", () => {
+    const owner = profileRecordOf({ ...OWNER, manageNeedsPin: true }, listing([OWNER, LEA]), "picked");
+    expect(owner.manageNeedsPin).toBe(true);
+    expect(record("picked").manageNeedsPin).toBe(false);
+    const { storage } = fakeStorage();
+    writeProfileRecord(storage, owner);
+    expect(readProfileRecord(storage)?.manageNeedsPin).toBe(true);
+    const { manageNeedsPin: _dropped, ...before } = owner;
+    writeProfileRecord(storage, before);
+    expect(readProfileRecord(storage)).toEqual(before);
+    storage.setItem(TV_PROFILE_KEY, JSON.stringify({ ...owner, manageNeedsPin: "oui" }));
+    expect(readProfileRecord(storage)).toBeNull();
+  });
+
   it("au démarrage à froid, ne reprend que le profil retenu ou le compte seul", () => {
     expect(resumesOnLaunch(record("sticky", true))).toBe(true);
     expect(resumesOnLaunch(record("solo"))).toBe(true);

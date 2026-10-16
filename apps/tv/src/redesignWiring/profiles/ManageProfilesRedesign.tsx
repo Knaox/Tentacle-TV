@@ -3,17 +3,14 @@ import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useFamilyCandidates, useFamilyLive, useFamilyOverview, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useIsFocused } from "@react-navigation/native";
+import { useFamilyCandidates, useFamilyOverview, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { FAMILY_PROFILE_COLORS } from "@tentacle-tv/shared";
 import {
   INVITE_SEARCH_KEY,
-  MANAGE_BACK_KEY,
-  STATUS_PRIMARY_KEY,
   manageActionRows,
   manageBackAction,
-  manageEntryKey,
   manageFocusAfterRemoval,
-  pinDigitKey,
   readProfileRecord,
   type ManageRowModel,
   type ManageView,
@@ -27,18 +24,22 @@ import { FocusBindingProvider } from "../../redesign/focus/focusBinding";
 import { KeyboardEntryProvider } from "../../redesign/screens/pairing/keyboardOpener";
 import { ManageProfilesView } from "../../redesign/screens/profiles/ManageProfilesView";
 import { useBackLayer } from "../back/BackScope";
-import { buildManageModel } from "./manageScreenModel";
-import { SHOWN_CANDIDATES, candidateViews, freeColor, manageListModel } from "./manageModel";
-import { useManageActions } from "./useManageActions";
-import { useFamilyCapability } from "./useFamilyCapability";
-import { useManageUnlock } from "./useManageUnlock";
 import { useHiddenKeyboard } from "../pairing/useHiddenKeyboard";
+import { manageEntryOf } from "./manageEntry";
+import { SHOWN_CANDIDATES, candidateViews, freeColor, manageListModel } from "./manageModel";
+import { openGuestPhoto, openParental } from "./manageRoutes";
+import { buildManageModel } from "./manageScreenModel";
+import { useManageActions } from "./useManageActions";
+import { useManageCapability } from "./useManageCapability";
+import { useManageSheet } from "./useManageSheet";
+import { isManagePinRequired, useManageUnlock } from "./useManageUnlock";
 import { useTvFamilyListing } from "./useTvFamilyListing";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ManageProfiles">;
+type ManageList = ReturnType<typeof manageListModel>;
 
-/** Ce que l'entrée du focus lit de la liste : les deux gestes qui ajoutent, et les lignes qui portent un geste. */
-function entryInputOf(list: ReturnType<typeof manageListModel> | null) {
+/** Ce que le retour du focus lit de la liste : les deux gestes qui ajoutent, et les lignes qui prennent le focus. */
+function entryInputOf(list: ManageList | null) {
   return {
     canCreateGuest: list?.capacity.canCreateGuest ?? false,
     canInvite: list?.capacity.canInvite ?? false,
@@ -47,13 +48,14 @@ function entryInputOf(list: ReturnType<typeof manageListModel> | null) {
 }
 
 /**
- * « Gérer les profils » de la refonte (Apple TV) — la session de qui gère
- * (le propriétaire, ou un membre avec SES droits — v2), gestion ouverte par le
- * serveur derrière SON PIN (`useManageUnlock`) : la
- * famille (`useFamilyOverview`, relue en direct par `useFamilyLive`), ses
- * gestes (`useManageActions`), ses deux pages. Venue de « Qui regarde ? »,
- * la sortie referme la session ouverte pour gérer et y ramène ; venue des
- * réglages, elle y revient (`manageBackAction`, tv-core).
+ * « Gérer les profils » de la refonte (Apple TV, Android TV) — la session de
+ * qui gère (le propriétaire, un parent, un membre — chacun avec SES droits),
+ * derrière SON code (`useManageUnlock` : la famille d'abord, le pavé sur
+ * `manage_locked`) : la famille (`useFamilyOverview`, relue en direct par
+ * `TVFamilyLive`), ses pages (`useManageActions`), la fiche de chaque profil
+ * (`useManageSheet`). Venue de « Qui regarde ? », la sortie referme la
+ * session ouverte pour gérer et y ramène ; venue des réglages, elle y revient
+ * (`manageBackAction`, tv-core).
  */
 export function ManageProfilesRedesign({ navigation, route }: Props) {
   const origin = route.params?.origin ?? "settings";
@@ -74,45 +76,72 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   );
   const serverUrl = storage.getItem("tentacle_server_url");
 
-  const unlock = useManageUnlock(origin, record?.hasPin === true);
+  const unlock = useManageUnlock();
+  const unlockRef = useRef(unlock);
+  unlockRef.current = unlock;
   const ready = unlock.phase === "ready";
   const overview = useFamilyOverview({ enabled: ready });
   // Les portraits que « Qui regarde ? » connaît : le relais d'un aperçu lu pendant que Jellyfin ne répondait pas.
   const listing = useTvFamilyListing();
-  useFamilyLive({ token: storage.getItem("tentacle_token"), enabled: ready });
+  const capability = useManageCapability(ready);
 
   const store = useFocusStore();
-
   const keyboardEntry = useHiddenKeyboard(store);
   useManageGroups(store);
   const pendingClaim = useRef<string | null>(null);
   // La liste de CE rendu, lue par le geste qui retire (il part après lui).
-  const listRef = useRef<ReturnType<typeof manageListModel> | null>(null);
+  const listRef = useRef<ManageList | null>(null);
   const actions = useManageActions({
     onLocked: unlock.relock,
+    onNeedsPin: unlock.needsPin,
     onRemoved: (row: ManageRowModel) => {
       const current = listRef.current;
       const index = current?.rows.findIndex((candidate) => candidate.id === row.id) ?? -1;
       pendingClaim.current = current && index >= 0 ? manageFocusAfterRemoval({ view: "list", ...entryInputOf(current) }, index) : null;
     },
   });
-  // Le droit d'un membre en cours d'envoi : sa case montre déjà le nouvel état.
-  const capability = useFamilyCapability(ready);
-  const list = overview.data
-    ? manageListModel(overview.data, owner, serverUrl, i18n.language, t, actions.pendingRight, { guestRequests: capability?.guestRequests }, listing?.profiles)
-    : null;
+  const list = overview.data ? manageListModel(overview.data, owner, serverUrl, i18n.language, t, capability, listing?.profiles) : null;
   listRef.current = list;
-  const entryInput = entryInputOf(list);
-  // La dernière page quittée (créer un invité, inviter) : de retour sur la liste, le focus rejoint son bouton.
+  const sheetRow = list?.rows.find((row) => row.id === actions.sheetId) ?? null;
+  const sheet = useManageSheet({
+    row: sheetRow,
+    actions,
+    onPhoto: (row) => openGuestPhoto(navigation, row),
+    onParental: (row) => openParental(navigation, row),
+  });
+  // La dernière page quittée (créer un invité, inviter, une fiche) : de retour sur la liste, le focus rejoint ce qui l'a ouverte.
   const lastPage = useRef<ManageView | null>(null);
   if (actions.view !== "list") lastPage.current = actions.view;
+  const sheetIndex = list && actions.sheetId ? list.rows.findIndex((row) => row.id === actions.sheetId) : -1;
+  const returnRow = useRef<number | null>(null);
+  if (sheetIndex >= 0) returnRow.current = sheetIndex;
   const candidates = useFamilyCandidates(actions.invite.search, { enabled: ready && actions.view === "invite" });
 
-  // La gestion refermée pendant qu'on lisait la famille : elle se rouvre.
+  // La gestion fermée (pas encore ouverte, ou refermée en route) : le pavé ; sans code : l'invitation à en poser un.
   useEffect(() => {
-    if (overview.error && refusalOfError(overview.error).kind === "manageLocked") unlock.relock();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!overview.error) return;
+    const refusal = refusalOfError(overview.error);
+    if (refusal.kind === "manageLocked") unlockRef.current.relock();
+    else if (isManagePinRequired(refusal)) unlockRef.current.needsPin();
   }, [overview.error]);
+  // Revenu de « Créer un code PIN » : la famille se relit, le serveur dira la suite.
+  const focused = useIsFocused();
+  const away = useRef(false);
+  useEffect(() => {
+    if (!focused) {
+      away.current = true;
+      return;
+    }
+    if (!away.current) return;
+    away.current = false;
+    if (unlockRef.current.phase === "needsPin") unlockRef.current.retry();
+  }, [focused]);
+  // Une fiche dont le profil a disparu (retiré ailleurs, relu en direct) : la liste.
+  const sheetGone = list !== null && (actions.view === "profile" || actions.view === "guestPin") && sheetRow === null;
+  const toList = actions.toList;
+  useEffect(() => {
+    if (sheetGone) toList();
+  }, [sheetGone, toList]);
   // Après un retrait, le focus va à la ligne qui prend la place, une fois la liste relue.
   useEffect(() => {
     if (!pendingClaim.current) return undefined;
@@ -122,18 +151,20 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   }, [overview.data, store]);
 
   const model = buildManageModel({
-    unlock, overview, list, actions, owner, t,
+    unlock, overview, list, actions, owner, t, sheetRow, sheet, serverUrl,
     candidates: candidates.data ? candidateViews(candidates.data, actions.invite.sent, serverUrl) : candidates.isError ? [] : null,
     more: (candidates.data?.length ?? 0) > SHOWN_CANDIDATES,
     language: i18n.language,
   });
 
-  const entryKey =
-    model.kind === "loading" ? null
-      : model.kind === "error" ? STATUS_PRIMARY_KEY
-        : model.kind === "pin" ? (unlock.entry.phase === "locked" ? MANAGE_BACK_KEY : pinDigitKey("1"))
-          : manageEntryKey({ view: actions.view, ...entryInput, guestNamed: actions.guest.name.trim().length > 0, returnFrom: lastPage.current });
-  useManageFocus(store, { entryKey, arrival: `${unlock.phase}:${actions.view}:${overview.data ? "data" : "none"}` });
+  const entryKey = manageEntryOf(model.kind, {
+    unlockLocked: unlock.entry.phase === "locked",
+    pinLocked: sheet.pin.entry.phase === "locked",
+    input: { view: actions.view, ...entryInputOf(list), guestNamed: actions.guest.name.trim().length > 0, returnFrom: lastPage.current, returnRow: returnRow.current },
+    gestures: sheetRow?.gestures ?? [],
+    lastSheetKey: sheet.lastKey.current,
+  });
+  useManageFocus(store, { entryKey, arrival: `${unlock.phase}:${actions.view}:${actions.sheetId ?? ""}:${overview.data ? "data" : "none"}` });
   useGuestColorsEntry(store, actions.view === "guest" ? actions.guest.color : null);
 
   // Venue de « Qui regarde ? » : la session ouverte pour gérer se referme, et le focus y revient sur « Gérer les profils ».
@@ -142,10 +173,14 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
     const action = ready ? manageBackAction(actions.view, origin, store.focusedKey()) : null;
     // Depuis un résultat de la recherche : la recherche d'abord (tv-core `manageBackAction`).
     if (action === "toSearch") store.claim(INVITE_SEARCH_KEY);
-    else if (action === "toList") actions.toList();
-    else exit();
+    else if (action === "toSheet") actions.toSheet();
+    else if (action === "toList") {
+      sheet.reset();
+      actions.toList();
+    } else exit();
   };
   useBackLayer("page", true, back);
+  const findRow = (id: string) => list?.rows.find((candidate) => candidate.id === id);
 
   return (
     <View style={styles.fill}>
@@ -158,14 +193,14 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
             onCreateGuest={() => actions.openGuest(freeColor(overview.data, FAMILY_PROFILE_COLORS))}
             onInvite={actions.openInvite}
             onRowAction={(id) => {
-              const row = list?.rows.find((candidate) => candidate.id === id);
-              if (row) actions.rowPress(row);
+              const row = findRow(id);
+              if (!row) return;
+              if (row.kind !== "invitation") sheet.reset();
+              actions.rowPress(row);
             }}
             onRowBlur={actions.rowBlur}
-            onRowRight={(id) => {
-              const row = list?.rows.find((candidate) => candidate.id === id);
-              if (row) void actions.toggleRight(row);
-            }}
+            onSheetRow={sheet.press}
+            onSheetRowBlur={sheet.blur}
             onGuestName={actions.setGuestName}
             onGuestColor={actions.setGuestColor}
             onGuestSubmit={() => void actions.submitGuest()}
@@ -175,8 +210,9 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
               const candidate = candidates.data?.find((entry) => entry.userId === id);
               if (candidate) void actions.sendInvite(candidate.userId, candidate.name);
             }}
-            onDigit={unlock.digit}
-            onErase={unlock.erase}
+            onDigit={model.kind === "guestPin" ? sheet.digit : unlock.digit}
+            onErase={model.kind === "guestPin" ? sheet.erase : unlock.erase}
+            onCreatePin={() => navigation.navigate("ProfilePin", { mode: "create" })}
           />
         </KeyboardEntryProvider>
       </FocusBindingProvider>

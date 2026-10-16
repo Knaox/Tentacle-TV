@@ -19,6 +19,9 @@ import { forgetReviewAccount } from "../src/services/family/familyConfig";
 import { resetOwnJellyfinTokenForTests } from "../src/services/deviceJellyfinToken";
 import { resetTokenOwnerCacheForTests } from "../src/services/deviceTokenHealth";
 import { resetGuestCreationsForTests } from "../src/services/family/familyGuests";
+import { forgetRequestExtension, setRequestExtensionForTests } from "../src/services/pluginRequests";
+import { FAMILY_GUEST_REQUESTS_KEY } from "../src/services/family/familyConfig";
+import { FAMILY_DEFAULT_GRANT_GUEST_REQUESTS_KEY } from "../src/services/family/familyCreationRights";
 import { hashToken, signDeviceToken } from "../src/services/jwt";
 import { addUser } from "./fakeJellyfinUsers";
 import type { HarnessState } from "./familyMocks";
@@ -56,6 +59,18 @@ export function resetCaches(): void {
   resetOwnJellyfinTokenForTests();
   resetTokenOwnerCacheForTests();
   resetGuestCreationsForTests();
+  forgetRequestExtension();
+}
+
+/**
+ * 1.30.0 (`family.guestRequestsAdmin`) : l'administration laisse les invités demander des
+ * films — une extension de demandes présente, l'interrupteur allumé, et (`everyone`) le
+ * défaut du droit de compte à OUI : les bancs d'avant ce réglage gardent leur sens.
+ */
+export function allowGuestRequests(state: HarnessState, options: { everyone?: boolean } = {}): void {
+  setRequestExtensionForTests(true);
+  state.config.set(FAMILY_GUEST_REQUESTS_KEY, "true");
+  if (options.everyone) state.config.set(FAMILY_DEFAULT_GRANT_GUEST_REQUESTS_KEY, "true");
 }
 
 /** Les comptes du banc (identifiants Jellyfin : 32 hexadécimaux). */

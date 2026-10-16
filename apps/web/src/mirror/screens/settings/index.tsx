@@ -1,7 +1,7 @@
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
-import { useFamilyAvailability } from "../../../family/useFamilyAvailability";
+import { useFamilySettingsAvailability } from "../../../family/useFamilyAvailability";
 import { getUserInfo } from "../../../components/userMenu/menuItems";
 import { PANE_REGISTRY } from "./paneRegistry";
 import { isPaneAvailable, parsePaneParam, profilePaneRoute } from "./panes";
@@ -27,7 +27,7 @@ export function MirrorSettingsPane() {
   const split = useProfileSplit();
   const offline = useOfflineMode();
   const { isAdmin } = getUserInfo();
-  const { available: family, settled: familySettled } = useFamilyAvailability();
+  const { available: family, settled: familySettled } = useFamilySettingsAvailability();
   const pane = parsePaneParam(raw);
 
   // La Famille dépend de `/api/config` : on attend sa réponse avant de conclure.

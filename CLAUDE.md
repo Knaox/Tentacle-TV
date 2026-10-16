@@ -441,7 +441,10 @@ ne s'y retouche à la main (`brand/avatars/README.md`, règles de dessin compris
   leur photo (`setGuestPhoto`, mêmes droits que leur PIN), depuis Réglages › Famille, ou pendant
   la session de profil de l'invité sur le bureau, par la session PERSONNELLE de l'appareil
   (`PickerProfileDto.photoEditable`). La galerie vise une cible (`useAvatarTarget` : compte ou
-  invité). Un membre change la sienne depuis ses appareils, jamais depuis un profil.
+  invité). Un membre change la sienne depuis ses appareils ; sur la TV, une session de profil (membre ou
+  invité) pose SA photo, catalogue seulement, par le proxy (capacité `avatars.devicePhoto`,
+  `deviceWrites.ts`, galerie `redesignWiring/avatars/`). La photo d'un invité posée par un AUTRE
+  (propriétaire, parent) reste la règle de la Famille (`setGuestPhoto`).
 - **Invitation unique** (règle partagée `shared` › `avatarInvite`) : un SUJET sans photo — le
   compte en session personnelle, ou l'invité habillable de la session de profil —, en ligne, une
   fois par sujet et par appareil (`tentacle_avatar_invite_seen`) : la galerie elle-même, APRÈS
@@ -712,11 +715,20 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
   corps). Changer ou retirer un PIN existant exige `currentPin`, vérifié comme
   à l'ouverture d'un profil (même compteur, même blocage). Un invité garde le
   PIN de son propriétaire ; le compte de démonstration n'en pose jamais.
+- **Gérer depuis un profil, derrière SON code** (1.30.0, `family.profileManage`,
+  décision du 2026-10-16) : le propriétaire ou un membre gère la famille depuis
+  SA session de profil (TV, bureau), avec les droits de son RÔLE — jamais sans
+  code PIN (n'importe lequel : `familyCallers.ts` › `profileManage`), jamais au
+  nom du compte de l'appareil. Ouvrir son profil par son code ouvre la gestion
+  (dix minutes glissantes), sinon `tvManageUnlock`. « Qui regarde ? » ›
+  « Gérer les profils » : le compte de l'appareil (TV : celui qui l'a jumelée).
+  Accepter, refuser, quitter, dissoudre restent personnels.
 - **Un invité n'apparaît dans AUCUNE liste** (Watch Together, candidats,
   utilisateurs, admin, classement, recommandations en fond) ; seulement dans
   les sessions en cours (`familyGuestOf`). Toute nouvelle liste de comptes
   passe par `withoutFamilyGuests` (`familyGuestMarkers.ts`), la seule source.
-- **Une session de profil regarde, elle n'administre rien** (ni push, ni
+- **Une session de profil regarde, elle n'administre rien** (hors la gestion de
+  la Famille ci-dessus ; ni push, ni
   téléchargements, ni jumelage, ni compte) ; un invité n'a en plus ni Watch
   Together, ni tickets, ni partage, ni extensions — sauf « peut demander »,
   que le propriétaire seul lui donne (et que seule une extension qui sait

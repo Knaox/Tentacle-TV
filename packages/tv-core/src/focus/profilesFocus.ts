@@ -1,5 +1,6 @@
 import { FAMILY_MAX_PROFILES, FAMILY_PROFILE_COLORS, type FamilyCandidateStatus } from "@tentacle-tv/shared";
 import { STATUS_PRIMARY_KEY } from "./homeEntry";
+import { manageSheetGuardedKeys } from "./manageSheetFocus";
 
 /**
  * Le focus des PROFILS d'une Apple TV (Famille) — « Qui regarde ? », le pavé
@@ -41,6 +42,8 @@ export interface ProfilesEntryInput {
   /** On revient de « Gérer les profils » : le focus y retourne, s'il existe encore. */
   returnTo?: "manage" | null;
   canManage?: boolean;
+  /** Le pavé a été remis à zéro après une confirmation différente (`OwnPinFlow.restarts`). */
+  pinRestarts?: number;
 }
 
 /**
@@ -64,15 +67,25 @@ export function profilesEntryKey(input: ProfilesEntryInput): string | null {
   }
 }
 
+/**
+ * Le TOUR de l'entrée : l'applicateur réclame l'entrée à chaque changement de
+ * tour, même quand la clé ne change pas. Sur le pavé, une saisie reprise de
+ * zéro (« Les deux codes diffèrent ») est un nouveau tour : le focus revient
+ * au premier chiffre au lieu de rester sur la dernière touche tapée.
+ */
+export function profilesEntryRound(input: ProfilesEntryInput): string {
+  const key = profilesEntryKey(input) ?? "";
+  return input.phase === "pin" ? `${key}#${input.pinRestarts ?? 0}` : key;
+}
+
 // ── « Gérer les profils » ───────────────────────────────────────────────────
 
 export const MANAGE_ACTIONS_GROUP = "manage:actions";
 export const MANAGE_CREATE_KEY = "manage:createGuest";
 export const MANAGE_INVITE_KEY = "manage:invite";
 export const MANAGE_ROWS_GROUP = "manage:rows";
+/** Une ligne : un profil qui ouvre sa fiche, ou « Annuler » d'une invitation. */
 export const manageRowKey = (index: number): string => `manage:row:${index}`;
-/** L'interrupteur des droits d'un membre (« Peut créer des invités »), à côté de son geste. */
-export const manageRightKey = (index: number): string => `manage:right:${index}`;
 export const MANAGE_BACK_KEY = "manage:back";
 export const MANAGE_BACK_BAR_KEY = "manage:top";
 
@@ -133,7 +146,8 @@ export function inviteCandidateFocusable(candidate: { status?: FamilyCandidateSt
   return candidate.sent || (candidate.status ?? "available") === "available";
 }
 
-export type ManageView = "list" | "guest" | "invite";
+/** Les pages de la gestion : la liste, créer un invité, inviter, la FICHE d'un profil, le code d'un invité. */
+export type ManageView = "list" | "guest" | "invite" | "profile" | "guestPin";
 
 export interface ManageEntryInput {
   view: ManageView;
@@ -148,18 +162,26 @@ export interface ManageEntryInput {
   candidates?: number;
   /** La page d'où l'on revient sur la liste : le focus retourne au bouton qui l'a ouverte. */
   returnFrom?: ManageView | null;
+  /** De retour d'une fiche : le rang de la ligne qui l'a ouverte. */
+  returnRow?: number | null;
+  /** La fiche : son premier bouton (`manageSheetEntryKey`). */
+  sheetEntry?: string | null;
 }
 
 /**
  * L'entrée de chaque page : la liste entre par sa première action possible
  * (créer un invité, sinon inviter, sinon la première ligne qui en porte une,
- * sinon la croix) — et, au retour d'une page, par le bouton qui l'avait
- * ouverte s'il est encore là ; l'invité, par son nom — ou par « Créer » une
- * fois nommé ; l'invitation, par la recherche.
+ * sinon la croix) — et, au retour d'une page, par le bouton ou la ligne qui
+ * l'avait ouverte s'il est encore là ; l'invité, par son nom — ou par « Créer »
+ * une fois nommé ; l'invitation, par la recherche ; la fiche d'un profil, par
+ * son premier geste ; le code d'un invité, par le premier chiffre.
  */
 export function manageEntryKey(input: ManageEntryInput): string {
   switch (input.view) {
     case "list":
+      if (input.returnFrom === "profile" && input.returnRow != null && input.actionRows.includes(input.returnRow)) {
+        return manageRowKey(input.returnRow);
+      }
       if (input.returnFrom === "invite" && input.canInvite) return MANAGE_INVITE_KEY;
       if (input.returnFrom === "guest" && input.canCreateGuest) return MANAGE_CREATE_KEY;
       if (input.canCreateGuest) return MANAGE_CREATE_KEY;
@@ -169,6 +191,10 @@ export function manageEntryKey(input: ManageEntryInput): string {
       return input.guestNamed ? GUEST_CREATE_KEY : GUEST_NAME_KEY;
     case "invite":
       return INVITE_SEARCH_KEY;
+    case "profile":
+      return input.sheetEntry ?? MANAGE_BACK_KEY;
+    case "guestPin":
+      return pinDigitKey(PIN_ENTRY_DIGIT);
   }
 }
 
@@ -215,7 +241,7 @@ export function manageGuardedKeys(): string[] {
     MANAGE_CREATE_KEY,
     MANAGE_INVITE_KEY,
     ...range(FAMILY_MAX_PROFILES).map(manageRowKey),
-    ...range(FAMILY_MAX_PROFILES).map(manageRightKey),
+    ...manageSheetGuardedKeys(),
     GUEST_NAME_KEY,
     ...FAMILY_PROFILE_COLORS.map(guestColorKey),
     GUEST_CREATE_KEY,

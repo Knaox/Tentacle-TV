@@ -5,6 +5,7 @@ import {
   FAMILY_MAX_GUESTS,
   FAMILY_MAX_PROFILES,
   type FamilyDto,
+  type FamilyGuestRights,
   type FamilyOverviewDto,
   type FamilyProfileDto,
   type FamilyRole,
@@ -17,6 +18,7 @@ import { getFamilySwitches, isReviewAccount } from "./familyConfig";
 import { creationAllowedFor } from "./familyCreationRights";
 import { profilesWithPin } from "./familyPins";
 import { withParentalState } from "./familyGuestParental";
+import { guestRightsOf } from "./familyGuestRequests";
 import {
   familyOf,
   familyProfiles,
@@ -43,6 +45,9 @@ export interface OverviewCaller {
   userId: string;
   username: string;
   personal: boolean;
+  /** Une session de profil qui GÈRE (gestion ouverte par son code, 1.30.0) : l'état du contrôle
+   *  parental lui revient comme à la session personnelle. Absent : non. */
+  managing?: boolean;
 }
 
 type UserMap = Map<string, CachedJellyfinUser> | null;
@@ -67,7 +72,13 @@ function creatorOf(family: FamilyRow, row: MemberRow): { createdBy: string; fall
 
 /** Les profils d'une famille : le propriétaire (sa ligne `owner`), puis les
  *  membres, puis les invités, chacun dans son ordre d'arrivée. */
-export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap, pins: Set<string>): FamilyProfileDto[] {
+export function profileDtos(
+  family: FamilyRow,
+  rows: MemberRow[],
+  users: UserMap,
+  pins: Set<string>,
+  guestRights: Map<string, FamilyGuestRights> = new Map(),
+): FamilyProfileDto[] {
   const ownerRow = rows.find((row) => row.kind === "owner") ?? null;
   const owner: FamilyProfileDto = {
     userId: family.ownerUserId,
@@ -98,7 +109,8 @@ export function profileDtos(family: FamilyRow, rows: MemberRow[], users: UserMap
         createdBy: creator?.createdBy ?? null,
         createdByName: creator ? users?.get(fold(creator.createdBy))?.name ?? creator.fallbackName : null,
         rights: guest ? null : { createGuests: row.canCreateGuests === true },
-        guestRights: guest ? { requestTitles: row.canRequestTitles === true } : null,
+        // 1.30.0 : la valeur EN VIGUEUR, et `suspended` quand l'administration ne le permet plus.
+        guestRights: guest ? guestRights.get(row.userId) ?? { requestTitles: false } : null,
         ...(row.kind === "member" && { parent: row.isParent === true }),
       };
     })
@@ -130,12 +142,15 @@ async function familyView(
 ): Promise<FamilyDto> {
   const parent = role === "member" && self?.isParent === true;
   const rows = await familyProfiles(family.id);
-  const pins = await profilesWithPin(rows.map((row) => row.userId).concat(family.ownerUserId));
+  const [pins, guestRights] = await Promise.all([
+    profilesWithPin(rows.map((row) => row.userId).concat(family.ownerUserId)),
+    guestRightsOf(rows, family.ownerUserId),
+  ]);
   return {
     id: family.id,
     role,
     owner: { userId: family.ownerUserId, name: nameOf(users, family.ownerUserId, family.ownerName) },
-    profiles: profileDtos(family, rows, users, pins),
+    profiles: profileDtos(family, rows, users, pins, guestRights),
     pendingInvitations: role === "owner" ? await pendingOf(family, users, now) : [],
     rights: familyRightsOf(role, self ? { createGuests: self.canCreateGuests === true } : null, getFamilySwitches(), { parent, creation }),
     ...(role === "member" && { parent }),
@@ -172,8 +187,8 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
   // Ce que l'administration permet à ce compte de créer (1.30.0) ; un invité, le compte de démonstration : rien.
   const creation: FamilyCreationAllowed = guest || review ? { createFamily: false, createGuests: false } : await creationAllowedFor(caller.userId);
   const view = mine ? await familyView(mine.family, mine.role, mine.role === "member" ? mine.self : null, users, now, creation) : null;
-  // Le contrôle parental des invités : en session personnelle, à qui peut le régler seulement.
-  const family = view && caller.personal ? await withParentalState(view, caller.userId) : view;
+  // Le contrôle parental des invités : en session personnelle ou gestion ouverte, à qui peut le régler seulement.
+  const family = view && (caller.personal || caller.managing === true) ? await withParentalState(view, caller.userId) : view;
   const owned: FamilyOverviewDto["owned"] =
     mine?.role === "owner" && family
       ? { id: family.id, profiles: family.profiles, pendingInvitations: family.pendingInvitations, createdAt: family.createdAt }
@@ -192,6 +207,7 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
       reviewAccount: review,
       hasPin: (await profilesWithPin([caller.userId])).has(caller.userId),
       personalSession: caller.personal,
+      managing: caller.managing === true,
       creation,
     },
     family,

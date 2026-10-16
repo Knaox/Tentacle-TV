@@ -7,7 +7,7 @@ import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useDownloadsVisibility } from "../../downloads/useDownloadState";
 import { useOfflineMode } from "../../offline/useOfflineMode";
-import { useFamilyAvailability } from "../../family/useFamilyAvailability";
+import { useFamilySettingsAvailability } from "../../family/useFamilyAvailability";
 import { useActiveProfile } from "../../auth/profileSession";
 
 /**
@@ -49,8 +49,9 @@ export function SettingsLayout() {
   // n'a aucun sens sans serveur — non rendue.
   const offline = useOfflineMode();
   // La Famille : seulement si le serveur l'annonce (`features.family`) —
-  // un serveur d'avant n'en montre rien, hors ligne non plus.
-  const { available: familyAvailable } = useFamilyAvailability();
+  // un serveur d'avant n'en montre rien, hors ligne non plus. Un profil qui
+  // gère l'a aussi (1.30.0, `family.profileManage`).
+  const { available: familyAvailable } = useFamilySettingsAvailability();
   // Bureau, session d'un profil : mot de passe et appareils sont ceux du
   // compte — le serveur les refuse à un profil, la section n'existe pas.
   const profileSession = useActiveProfile() !== null;

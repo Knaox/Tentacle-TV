@@ -91,8 +91,9 @@ function MainBody({ library, moving, focused }: { library: RailSetupLibrary; mov
   );
 }
 
-/** La case : pleine à la couleur de la marque quand la bibliothèque est dans la barre. */
-function CheckBox({ checked, dark }: { checked: boolean; dark: boolean }) {
+/** La case : pleine à la couleur de la marque quand la bibliothèque est dans la barre (et, au
+ *  contrôle parental, quand elle est autorisée). */
+export function CheckBox({ checked, dark }: { checked: boolean; dark: boolean }) {
   if (checked) {
     return (
       <View style={[styles.box, styles.boxOn]}>

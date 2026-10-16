@@ -21,6 +21,7 @@ import {
   profilesGuardedKeys,
   profileTileKey,
   profilesEntryKey,
+  profilesEntryRound,
 } from "./profilesFocus";
 import { manageBackAction, profilesBackAction } from "../nav/profilesBack";
 
@@ -33,6 +34,16 @@ describe("le focus de « Qui regarde ? »", () => {
   it("entre sur le premier chiffre du pavé, ou sur la croix quand il est bloqué", () => {
     expect(profilesEntryKey({ phase: "pin" })).toBe(pinDigitKey("1"));
     expect(profilesEntryKey({ phase: "pin", pinLocked: true })).toBe(PROFILES_BACK_KEY);
+  });
+
+  it("une saisie reprise de zéro (codes différents) est un nouveau tour : retour au premier chiffre", () => {
+    const first = profilesEntryRound({ phase: "pin", pinRestarts: 0 });
+    const again = profilesEntryRound({ phase: "pin", pinRestarts: 1 });
+    expect(again).not.toBe(first);
+    expect(profilesEntryKey({ phase: "pin", pinRestarts: 1 })).toBe(pinDigitKey("1"));
+    expect(profilesEntryRound({ phase: "pin", pinRestarts: 1 })).toBe(again);
+    // Hors du pavé, le tour est la clé : rien ne change pour les autres phases.
+    expect(profilesEntryRound({ phase: "picker", tileIndex: 2, pinRestarts: 3 })).toBe(profileTileKey(2));
   });
 
   it("une erreur entre par « Réessayer », un chargement par rien", () => {
@@ -72,6 +83,8 @@ describe("le Retour des profils", () => {
   });
 
   it("une page de la gestion recule vers la liste, la liste vers son origine", () => {
+    expect(manageBackAction("profile", "settings")).toBe("toList");
+    expect(manageBackAction("guestPin", "profiles")).toBe("toSheet");
     expect(manageBackAction("guest", "settings")).toBe("toList");
     expect(manageBackAction("invite", "profiles")).toBe("toList");
     expect(manageBackAction("list", "settings")).toBe("toSettings");
@@ -135,6 +148,16 @@ describe("le retour du focus sur les pages de profils", () => {
     // La famille est pleine depuis : « Créer un invité » n'est plus là, l'entrée habituelle.
     expect(manageEntryKey({ ...list, canCreateGuest: false, returnFrom: "guest" })).toBe(MANAGE_INVITE_KEY);
     expect(manageEntryKey({ ...list, returnFrom: null })).toBe(MANAGE_CREATE_KEY);
+    // De retour d'une fiche : la ligne qui l'a ouverte, si elle s'ouvre encore.
+    expect(manageEntryKey({ ...list, returnFrom: "profile", returnRow: 1 })).toBe(manageRowKey(1));
+    expect(manageEntryKey({ ...list, returnFrom: "profile", returnRow: 3 })).toBe(MANAGE_CREATE_KEY);
+  });
+
+  it("entre dans une fiche par son premier geste, dans le code d'un invité par le premier chiffre", () => {
+    const list = { view: "profile" as const, canCreateGuest: true, canInvite: true, actionRows: [1] };
+    expect(manageEntryKey({ ...list, sheetEntry: "manage:sheet:photo" })).toBe("manage:sheet:photo");
+    expect(manageEntryKey({ ...list, sheetEntry: null })).toBe(MANAGE_BACK_KEY);
+    expect(manageEntryKey({ ...list, view: "guestPin" })).toBe(pinDigitKey("1"));
   });
 });
 

@@ -140,6 +140,20 @@ export const SERVER_CAPABILITIES = {
    *  et leur défaut (`/api/admin/family/creation`) ; `FamilyAccountDto.creation` ; refus
    *  `family.create_family_denied` / `family.create_guests_denied`. */
   "family.creationRights": "1.30.0",
+  /** Gérer la Famille depuis une SESSION DE PROFIL, TV ou bureau : le propriétaire ou un membre,
+   *  avec les droits de son rôle, derrière SON code PIN — un code posé depuis sa session personnelle
+   *  (`family/familyCallers.ts`). Sans elle, le bureau ne montre rien de la Famille à un profil. */
+  "family.profileManage": "1.30.0",
+  /** Les BIBLIOTHÈQUES qu'une famille permet à un invité ou à un membre mineur
+   *  (`GET|PUT /api/family/profiles/:userId/libraries`), écrites dans sa politique Jellyfin
+   *  (plafond ∩ voulu), rendues au départ. Sans elle, le contrôle parental n'en montre rien. */
+  "family.libraryLimits": "1.30.0",
+  /** L'administration décide si les invités peuvent demander des films : l'interrupteur
+   *  `FamilySwitches.guestRequests` (COUPÉ par défaut, mise à jour comprise) et le droit de compte
+   *  `grantGuestRequests` (défaut NON, `FamilyAccountDto.creation`) ; refus
+   *  `family.guest_requests_denied` ; case d'un invité SUSPENDUE (`FamilyGuestRights.suspended`)
+   *  sans le droit. Sans elle, la case « peut demander » se règle comme avant. */
+  "family.guestRequestsAdmin": "1.30.0",
   // ── Lot « droits 2 » : lecture et Watch Together (docs/DROITS-UTILISATEURS.md § 9.2) ──
   /** L'accès du compte à Watch Together, tiré de `SyncPlayAccess` de sa politique Jellyfin
    *  (`GET /api/watch-together/access` → `full | joinOnly | none`) : `none` ne voit plus rien de
@@ -155,6 +169,12 @@ export const SERVER_CAPABILITIES = {
    *  refus 403 `{ error: "account_access", … }` à toutes les portes, annonce `account:access` sur
    *  le socket. Les clients montrent la page « compte désactivé / hors plage ». */
   "account.access": "1.30.0",
+  // ── Lot TV du 16/10 : la galerie des avatars sur la TV ──
+  /** Un jeton d'APPAREIL (TV jumelée, session de profil d'une TV) pose la photo Jellyfin de SON
+   *  compte par le proxy (`POST /Users/{soi}/Images/Primary`, `deviceWrites.ts`) : la galerie des
+   *  avatars s'ouvre sur la TV. Sans elle, le proxy refuse (403) : aucune entrée, aucune invitation.
+   *  `GET /api/avatars/device-photo` → `{ allowed }` : non pour le compte de démonstration (revue Apple). */
+  "avatars.devicePhoto": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

@@ -1,5 +1,6 @@
 import { getPrisma, hasPrisma } from "../db";
 import { getFamilySwitches } from "./familyConfig";
+import { guestMayRequest } from "./familyGuestRequests";
 
 /**
  * Un invité et les extensions (Famille v2 ; correction de Damien du
@@ -15,6 +16,10 @@ import { getFamilySwitches } from "./familyConfig";
  * stable, quand le prénom du profil (« Zoé ») peut être celui d'un autre
  * compte, présent ou disparu. Lu en base à CHAQUE requête : retirer le droit
  * coupe à l'appel suivant.
+ *
+ * 1.30.0 : la case ne vaut que si l'administration le permet ENCORE — interrupteur
+ * « Les invités peuvent demander des films » allumé, et le compte qui l'a cochée qui en a
+ * toujours le droit (`familyGuestRequests.ts`). Sinon elle est SUSPENDUE : refus, case gardée.
  */
 
 /** Le chemin des extensions : le cœur (`/active`, `/:id/bundle`) et les routes
@@ -32,5 +37,6 @@ export async function guestExtensionAccess(userId: string): Promise<{ accountNam
   if (!row || row.kind !== "guest") return null;
   const switches = getFamilySwitches();
   if (row.canRequestTitles !== true || !switches.families || !switches.guests) return "denied";
+  if (!(await guestMayRequest(row))) return "denied";
   return { accountName: row.jellyfinName };
 }

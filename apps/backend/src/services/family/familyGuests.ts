@@ -14,6 +14,7 @@ import { getFamilySwitches, isReviewAccount, refuseReviewAccount, requireGuests 
 import { requireCreation } from "./familyCreationRights";
 import { FamilyFailure, iso } from "./familyErrors";
 import { forgetFamilyGuests, isFamilyGuest } from "./familyGuestMarkers";
+import { guestRightsOf, requireGuestRequestGrant } from "./familyGuestRequests";
 import type { Actor } from "./familyInvitations";
 import { closeIncomingInvitations } from "./familyInvitations";
 import { withFamilyLock } from "./familyLock";
@@ -169,15 +170,19 @@ export async function setGuestRights(owner: Actor, guestUserId: string, patch: S
   await refuseReviewAccount(owner.userId);
   const mine = await familyOf(owner.userId);
   if (mine?.role !== "owner" && mine?.self.isParent !== true) throw await ownerRefusal(owner.userId, guestUserId);
+  // 1.30.0 : l'administration permet-elle à CE compte de donner « peut demander » ?
+  if (patch.requestTitles === true) await requireGuestRequestGrant(owner.userId);
   const updated = await withFamilyLock(mine.family.ownerUserId, async () => {
     const row = await findProfile(mine.family.id, guestUserId);
     if (!row || row.kind !== "guest") throw await ownerRefusal(owner.userId, guestUserId);
     if (patch.requestTitles === undefined) return row;
-    return getPrisma().familyMember.update({ where: { id: row.id }, data: { canRequestTitles: patch.requestTitles } });
+    // Décocher efface la case ; la cocher la donne AU NOM de ce compte, qui doit en avoir le droit.
+    const grantedBy = patch.requestTitles ? owner.userId : null;
+    return getPrisma().familyMember.update({ where: { id: row.id }, data: { canRequestTitles: patch.requestTitles, requestTitlesGrantedBy: grantedBy } });
   });
   await notifyFamily(mine.family.id, [updated.userId]);
   console.log(`[family] Droits d'un invité réglés dans la famille ${mine.family.id}`);
-  return { requestTitles: updated.canRequestTitles === true };
+  return (await guestRightsOf([updated], mine.family.ownerUserId)).get(updated.userId) ?? { requestTitles: false };
 }
 
 /** Sessions coupées sur toutes les TV ; l'invité quitte la base et son compte

@@ -26,7 +26,7 @@ vi.mock("../../src/services/deviceSessions/gateway", async () => (await import("
 
 import { freshState } from "../familyMocks";
 import { fakeJellyfinUsersFetch } from "../fakeJellyfinUsers";
-import { IDS, enroll, openProfile, pairTv, resetCaches, seedUsers } from "../familyHarness";
+import { allowGuestRequests, IDS, enroll, openProfile, pairTv, resetCaches, seedUsers } from "../familyHarness";
 import { buildPickerApp, door, pick, pickSession, pickerProfiles, seedFamily, sender } from "../familyPickerHarness";
 import { signImpersonationToken } from "../../src/services/jwt";
 import { requireAdmin, requirePersonalAdmin } from "../../src/middleware/auth";
@@ -52,6 +52,8 @@ beforeEach(() => {
   h.state = freshState();
   h.fetch = fakeJellyfinUsersFetch(h.state.jf);
   resetCaches();
+  // 1.30.0 : l'administration laisse les invités demander (le sens de ce banc, d'avant ce réglage).
+  allowGuestRequests(h.state!, { everyone: true });
   tokens = seedUsers(h.state);
 });
 
@@ -94,31 +96,70 @@ describe("SEC-F-46 : la porte du choix n'accepte qu'une VRAIE session personnell
   });
 });
 
-describe("SEC-F-46/47 : la session de profil du bureau regarde, et rien d'autre", () => {
-  it("n'atteint AUCUNE route de la Famille : ni la famille, ni un PIN, ni la gestion, ni un autre profil", async () => {
+describe("SEC-F-46/47 : la session de profil du bureau regarde, et ne gère que derrière SON code", () => {
+  it("sans code : ni la famille, ni un PIN, ni la gestion, ni un autre profil", async () => {
     const { zoe } = await seedFamily(app, tokens);
     // Le profil de Damien (sans PIN) ouvert sur le bureau de Léa : celui du propriétaire.
     const owner = await pickSession(app, tokens.lea, IDS.damien);
-    const attempts: Array<["GET" | "POST" | "PUT" | "DELETE", string, unknown?]> = [
-      ["GET", "/api/family"],
-      ["PUT", "/api/family/pin", { pin: "0000" }],
-      ["POST", "/api/family/tv/manage/unlock", {}],
-      ["POST", "/api/family/guests", { name: "Intrus", color: "red" }],
-      ["DELETE", `/api/family/guests/${zoe}`],
-      ["DELETE", `/api/family/members/${IDS.lea}`],
-      ["POST", "/api/family/invitations", { userId: IDS.hugo }],
-      ["GET", "/api/family/candidates"],
-      ["DELETE", "/api/family", { confirm: "dissolve" }],
-      ["POST", "/api/family/tv/sessions", { profileId: zoe }],
-      ["GET", "/api/family/tv/profiles"],
+    const attempts: Array<["GET" | "POST" | "PUT" | "DELETE", string, string, unknown?]> = [
+      ["GET", "/api/family", "family.manage_pin_required"],
+      ["PUT", "/api/family/pin", "family.personal_session_required", { pin: "0000" }],
+      ["POST", "/api/family/tv/manage/unlock", "family.manage_pin_required", {}],
+      ["POST", "/api/family/guests", "family.manage_pin_required", { name: "Intrus", color: "red" }],
+      ["DELETE", `/api/family/guests/${zoe}`, "family.manage_pin_required"],
+      ["DELETE", `/api/family/members/${IDS.lea}`, "family.manage_pin_required"],
+      ["POST", "/api/family/invitations", "family.manage_pin_required", { userId: IDS.hugo }],
+      ["GET", "/api/family/candidates", "family.manage_pin_required"],
+      ["DELETE", "/api/family", "family.personal_session_required", { confirm: "dissolve" }],
+      ["POST", "/api/family/tv/sessions", "family.personal_session_required", { profileId: zoe }],
+      ["GET", "/api/family/tv/profiles", "family.personal_session_required"],
     ];
-    for (const [method, url, payload] of attempts) {
+    for (const [method, url, code, payload] of attempts) {
       const res = await send(method, url, owner, payload);
       expect(res.statusCode, `${method} ${url}`).toBe(403);
-      expect(res.json().code, `${method} ${url}`).toBe("family.personal_session_required");
+      expect(res.json().code, `${method} ${url}`).toBe(code);
     }
     expect(h.state!.jf.users.size).toBe(7);
     expect((await door(app, owner)).status).toBe(200);
+  });
+
+  it("avec SON code (SEC-F-54) : la gestion s'ouvre avec le profil, ses droits et jamais un geste personnel", async () => {
+    await seedFamily(app, tokens);
+    await send("PUT", "/api/family/pin", tokens.damien, { pin: "4242" });
+    const listing = (await pickerProfiles(app, tokens.lea)).json();
+    expect(listing.profiles.find((p: { userId: string }) => p.userId === IDS.damien)).toMatchObject({
+      manage: { manageMembers: true, manageGuests: "all" },
+      manageNeedsPin: false,
+    });
+    const owner = await pickSession(app, tokens.lea, IDS.damien, "4242");
+    const overview = (await send("GET", "/api/family", owner)).json();
+    // L'acteur est le PROFIL (Damien), jamais le compte du bureau (Léa).
+    expect(overview.family).toMatchObject({ role: "owner" });
+    expect(overview.account).toMatchObject({ personalSession: false, managing: true });
+    const guest = (await send("POST", "/api/family/guests", owner, { name: "Léo", color: "pink" })).json();
+    expect(guest).toMatchObject({ createdBy: IDS.damien });
+    for (const [method, url, payload] of [
+      ["DELETE", "/api/family", { confirm: "dissolve" }],
+      ["PUT", "/api/family/pin", { pin: "0000", currentPin: "4242" }],
+      ["POST", "/api/family/invitations/accept", { id: "x" }],
+      ["GET", "/api/family/picker/profiles?platform=desktop"],
+    ] as const) {
+      const res = await send(method, url, owner, payload);
+      expect(res.json().code, `${method} ${url}`).toBe("family.personal_session_required");
+    }
+  });
+
+  it("un parent, depuis son profil sur le bureau du propriétaire, gère les invités comme le propriétaire — pas les membres", async () => {
+    const { zoe } = await seedFamily(app, tokens);
+    expect((await send("PUT", `/api/family/members/${IDS.lea}/role`, tokens.damien, { parent: true })).statusCode).toBe(200);
+    await send("PUT", "/api/family/pin", tokens.lea, { pin: "1357" });
+    const parent = await pickSession(app, tokens.damien, IDS.lea, "1357");
+    expect((await send("GET", "/api/family", parent)).json().family).toMatchObject({ role: "member", parent: true, rights: { manageGuests: "all" } });
+    expect((await send("PUT", `/api/family/guests/${zoe}/pin`, parent, { pin: "2468" })).json()).toEqual({ hasPin: true });
+    expect((await send("PUT", `/api/family/guests/${zoe}/rights`, parent, { requestTitles: true })).json()).toEqual({ requestTitles: true });
+    expect((await send("POST", "/api/family/invitations", parent, { userId: IDS.hugo })).json().code).toBe("family.not_owner");
+    expect((await send("PUT", `/api/family/members/${IDS.lea}/role`, parent, { parent: false })).json().code).toBe("family.not_owner");
+    expect((await send("DELETE", `/api/family/members/${IDS.lea}`, parent)).json().code).toBe("family.not_owner");
   });
 
   it("ne s'inscrit nulle part comme appareil, n'administre rien, ne touche à aucun compte", async () => {

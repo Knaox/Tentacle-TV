@@ -22,6 +22,7 @@ vi.mock("../src/services/deviceSessions/deviceAuth", async () => (await import("
 vi.mock("../src/services/deviceSessions/gateway", async () => (await import("./familyMocks")).gatewayMock());
 
 import { freshState } from "./familyMocks";
+import { hashToken } from "../src/services/jwt";
 import { fakeJellyfinUsersFetch } from "./fakeJellyfinUsers";
 import { IDS, bearer, buildFamilyApp, enroll, openProfile, pairTv, resetCaches, seedUsers } from "./familyHarness";
 
@@ -121,27 +122,47 @@ describe("le PIN d'un profil", () => {
 });
 
 describe("« Gérer les profils » sur la TV", () => {
-  it("est ouvert au propriétaire sans PIN, verrouillé par son PIN sinon", async () => {
+  it("jamais sans PIN (1.30.0) ; ouvert par SON code à l'ouverture, dix minutes prolongées à chaque geste", async () => {
     const salon = await tv();
+    const get = (token: string) => app.inject({ method: "GET", url: "/api/family", headers: bearer(token) });
+    const unlock = (token: string, pin?: string) =>
+      app.inject({ method: "POST", url: "/api/family/tv/manage/unlock", headers: bearer(token), payload: pin ? { pin } : {} });
     const open = (await openProfile(app, salon, { profileId: IDS.damien })).json().token;
-    expect((await app.inject({ method: "GET", url: "/api/family", headers: bearer(open) })).statusCode).toBe(200);
+    expect((await get(open)).json().code).toBe("family.manage_pin_required");
+    expect((await unlock(open)).json().code).toBe("family.manage_pin_required");
 
     await setPin(tokens.damien, "4242");
     const session = (await openProfile(app, salon, { profileId: IDS.damien, pin: "4242" })).json().token;
-    const locked = await app.inject({ method: "GET", url: "/api/family", headers: bearer(session) });
+    expect((await get(session)).statusCode).toBe(200);
+    const row = h.state!.db.data.pairedDevice.find((device) => device.tokenHash === hashToken(session))!;
+    // Presque échue : un geste la repousse de dix minutes.
+    row.manageUntil = new Date(Date.now() + 1_000);
+    expect((await get(session)).statusCode).toBe(200);
+    expect((row.manageUntil as Date).getTime()).toBeGreaterThan(Date.now() + 9 * 60_000);
+    // Dix minutes sans geste : verrouillée, SON code la rouvre.
+    row.manageUntil = new Date(Date.now() - 1);
+    const locked = await get(session);
     expect(locked.statusCode).toBe(403);
     expect(locked.json().code).toBe("family.manage_locked");
-    const unlock = (pin: string) => app.inject({ method: "POST", url: "/api/family/tv/manage/unlock", headers: bearer(session), payload: { pin } });
-    expect((await unlock("9999")).json().code).toBe("family.pin_invalid");
-    expect((await unlock("4242")).json().unlockedUntil).toBeTruthy();
-    expect((await app.inject({ method: "GET", url: "/api/family", headers: bearer(session) })).statusCode).toBe(200);
+    expect((await unlock(session, "9999")).json().code).toBe("family.pin_invalid");
+    expect((await unlock(session, "4242")).json().unlockedUntil).toBeTruthy();
+    expect((await get(session)).statusCode).toBe(200);
     const guest = await app.inject({
       method: "POST", url: "/api/family/guests", headers: bearer(session), payload: { name: "Zoé", color: "teal" },
     });
     expect(guest.statusCode).toBe(200);
-    // Jamais depuis la TV : dissoudre, le PIN d'un invité.
+    // Jamais depuis un profil : dissoudre (le PIN d'un invité s'y règle depuis la 1.30.0).
     const dissolve = await app.inject({ method: "DELETE", url: "/api/family", headers: bearer(session), payload: { confirm: "dissolve" } });
     expect(dissolve.json().code).toBe("family.personal_session_required");
+  });
+
+  it("un code retiré depuis l'ouverture referme la gestion, même ouverte", async () => {
+    const salon = await tv();
+    await setPin(tokens.damien, "4242");
+    const session = (await openProfile(app, salon, { profileId: IDS.damien, pin: "4242" })).json().token;
+    h.state!.db.data.profilePin.splice(0);
+    const refused = await app.inject({ method: "GET", url: "/api/family", headers: bearer(session) });
+    expect(refused.json().code).toBe("family.manage_pin_required");
   });
 
   it("est refusé au profil d'un invité, sur la TV comme ailleurs", async () => {

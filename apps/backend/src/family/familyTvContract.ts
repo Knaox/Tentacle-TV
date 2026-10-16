@@ -35,9 +35,16 @@ export interface TvProfileDto {
    *  nom) ; null sinon. Toujours rendu par un serveur v2 ; absent : aucun
    *  droit. */
   guestRights?: FamilyGuestRights | null;
+  /** 1.30.0 (`family.roles`) : un membre nommé PARENT — la TV dit son rôle, même
+   *  sans gestion ouverte (`manage` vaut null sans code). Absent : non. */
+  parent?: boolean;
   /** Ce que CE profil gérerait sur cette TV (« Gérer les profils », derrière
-   *  SON PIN) ; null : rien à y gérer — un invité, le compte de démonstration. */
+   *  SON PIN) ; null : rien à y gérer — un invité, le compte de démonstration,
+   *  et (1.30.0) un profil SANS code PIN (`familyCallers.ts`, `profileManage`). */
   manage: FamilyRights | null;
+  /** 1.30.0 : ce profil gérerait s'il avait un code PIN — la TV le dit au
+   *  lieu de proposer « Gérer les profils ». Absent (serveur d'avant) : faux. */
+  manageNeedsPin?: boolean;
 }
 
 /** `GET /api/family/tv/profiles` — « Qui regarde ? ». */
@@ -58,7 +65,8 @@ export interface TvProfilesDto {
   pickerRequired: boolean;
   /** « Gérer les profils » existe sur cette TV : au moins un profil y a quelque
    *  chose à gérer (`manage`). Faux pour le compte de démonstration, qui ne
-   *  crée rien : la TV n'en montre pas l'entrée. */
+   *  crée rien, et quand aucun profil qui gérerait n'a de code PIN : la TV
+   *  n'en montre pas l'entrée. */
   canManage: boolean;
   /** « Qui regarde ? » à l'ouverture des TV, d'après l'administration
    *  (`FamilyLaunchPolicy.tv`, `familyPickerContract.ts`). Faux (coupé) : au
@@ -86,7 +94,8 @@ export interface TvSessionDto {
   remembered: boolean;
 }
 
-/** `tvManageUnlock` : le PIN du profil de la session (propriétaire ou membre). */
+/** `tvManageUnlock` : le PIN du profil de la session (propriétaire ou membre),
+ *  sur une TV ou un bureau. */
 export interface ManageUnlockBody {
   pin?: string;
 }

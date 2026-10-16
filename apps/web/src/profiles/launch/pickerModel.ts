@@ -55,6 +55,8 @@ export interface PickerModelInput {
   openingLabel: string | null;
   /** « Ne plus proposer à la prochaine ouverture » : cochée ou non. */
   stay?: boolean | null;
+  /** « Gérer les profils » existe (`switchPlan.ts` › `manageTarget`) ; absent : SON profil est là. */
+  canManage?: boolean;
   language: string;
   t: Translate;
   now?: number;
@@ -74,7 +76,7 @@ export function pickerModelOf(input: PickerModelInput): WhoIsWatchingModel {
   return {
     kind: "picker",
     profiles: orderedProfiles(listing.profiles).map((profile) => pickerProfileOf(profile, now, language, t, input.currentId ?? null)),
-    canManage: listing.profiles.some((profile) => profile.personal),
+    canManage: input.canManage ?? listing.profiles.some((profile) => profile.personal),
     notice: flow.notice,
     entering: flow.opening ? { id: flow.opening, label: input.openingLabel } : null,
     focusId: input.lastChosen ?? null,

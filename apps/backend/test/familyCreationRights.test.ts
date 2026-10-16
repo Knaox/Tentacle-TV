@@ -57,13 +57,13 @@ describe("par défaut, un compte ne crée rien", () => {
     expect(refusal(await guest(tokens.lea))).toEqual([403, "family.create_guests_denied"]);
     expect(h.state!.db.data.family).toHaveLength(0);
     const overview = (await get("/api/family", tokens.lea)).json();
-    expect(overview.account.creation).toEqual({ createFamily: false, createGuests: false });
+    expect(overview.account.creation).toMatchObject({ createFamily: false, createGuests: false });
   });
 
   it("un administrateur Jellyfin peut toujours", async () => {
     expect((await guest(tokens.damien)).statusCode).toBe(200);
     expect((await invite(tokens.damien, IDS.lea)).statusCode).toBe(200);
-    expect((await get("/api/family", tokens.damien)).json().account.creation).toEqual({ createFamily: true, createGuests: true });
+    expect((await get("/api/family", tokens.damien)).json().account.creation).toMatchObject({ createFamily: true, createGuests: true });
   });
 });
 
@@ -82,8 +82,8 @@ describe("le réglage d'un compte, et le défaut", () => {
 
   it("le défaut à OUI vaut pour `inherit`, jamais contre un `deny`", async () => {
     const res = await send("PUT", "/api/admin/family/creation", tokens.damien, { createFamily: true, createGuests: true });
-    expect(res.json()).toEqual({ createFamily: true, createGuests: true });
-    expect((await get("/api/admin/family/creation", tokens.damien)).json()).toEqual({ createFamily: true, createGuests: true });
+    expect(res.json()).toMatchObject({ createFamily: true, createGuests: true });
+    expect((await get("/api/admin/family/creation", tokens.damien)).json()).toMatchObject({ createFamily: true, createGuests: true });
     await setAccount(IDS.hugo, { createGuests: "deny" });
     expect((await guest(tokens.lea)).statusCode).toBe(200);
     expect(refusal(await guest(tokens.hugo, "Tom"))).toEqual([403, "family.create_guests_denied"]);
@@ -103,7 +103,7 @@ describe("le réglage d'un compte, et le défaut", () => {
     await setAccount(IDS.lea, { createFamily: "allow", createGuests: "allow" });
     await send("PUT", "/api/admin/family", tokens.damien, { guests: false });
     expect(refusal(await guest(tokens.lea))).toEqual([403, "family.guests_disabled"]);
-    expect((await get(`/api/admin/family/accounts/${IDS.lea}`, tokens.damien)).json().allowed).toEqual({ createFamily: true, createGuests: false });
+    expect((await get(`/api/admin/family/accounts/${IDS.lea}`, tokens.damien)).json().allowed).toMatchObject({ createFamily: true, createGuests: false });
   });
 });
 

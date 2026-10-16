@@ -27,43 +27,35 @@ export interface ManageOwner {
   imageTag: string | null;
 }
 
-/** Le droit d'un membre ou d'un invité en cours d'envoi : sa case montre déjà le nouvel état. */
-export type PendingRight = { id: string; on: boolean } | null;
+/** Le réglage d'une fiche en cours d'envoi (sa clé) : sa case montre déjà le nouvel état. */
+export type PendingRight = { key: string; on: boolean } | null;
 
 function formatDay(iso: string, language: string): string {
   const at = new Date(iso);
   return Number.isNaN(at.getTime()) ? "—" : at.toLocaleDateString(language, { day: "numeric", month: "long" });
 }
 
-function rowView(row: ManageRowModel, serverUrl: string | null, language: string, t: TFunction, pending: PendingRight): ManageRowView {
-  const detail =
-    row.kind === "invitation"
-      ? t("familyTv:manage.pending", { date: row.expiresAt ? formatDay(row.expiresAt, language) : "—" })
-      : row.kind === "guest" && row.createdByYou
-        ? t("familyTv:manage.addedByYou")
-        : row.kind === "guest" && row.createdByName
-        ? t("familyTv:manage.addedBy", { name: row.createdByName })
-        : t(row.kind === "owner" ? "family:kindOwner" : row.kind === "member" ? "family:kindMember" : "family:kindGuest");
-  // La case de la ligne : « Peut créer des invités » (un membre), « Peut demander des films » (un invité).
-  const current = row.memberRights ? row.memberRights.createGuests : row.guestRights ? row.guestRights.requestTitles : false;
-  const rightOn = pending?.id === row.id ? pending.on : current;
-  const rightLabel = t(row.memberRights ? "familyTv:manage.canCreateGuests" : "familyTv:manage.canRequestTitles");
-  const hintKey = row.action === "remove" ? "familyTv:manage.removeHint" : row.action === "delete" ? "familyTv:manage.deleteHint" : "familyTv:manage.cancelHint";
+/** Ce que la ligne dit du profil : son rôle (« Parent » compris, 1.30.0), qui a ajouté un invité, ou l'échéance d'une invitation. */
+export function rowDetail(row: ManageRowModel, language: string, t: TFunction): string {
+  if (row.kind === "invitation") return t("familyTv:manage.pending", { date: row.expiresAt ? formatDay(row.expiresAt, language) : "—" });
+  if (row.kind === "guest" && row.createdByYou) return t("familyTv:manage.addedByYou");
+  if (row.kind === "guest" && row.createdByName) return t("familyTv:manage.addedBy", { name: row.createdByName });
+  if (row.kind === "member") return t(row.parent ? "family:kindParent" : "family:kindMember");
+  return t(row.kind === "owner" ? "family:kindOwner" : "family:kindGuest");
+}
+
+function rowView(row: ManageRowModel, serverUrl: string | null, language: string, t: TFunction): ManageRowView {
+  const invitation = row.kind === "invitation";
   return {
     id: row.id,
     name: row.name,
     color: row.color,
-    avatarUri: row.kind === "invitation" ? undefined : profileAvatarUri(serverUrl, row.userId, row.imageTag),
-    detail,
-    invitation: row.kind === "invitation",
-    action: row.action ? { kind: row.action, hint: t(hintKey, { name: row.name }) } : null,
-    right: row.memberRights || row.guestRights
-      ? {
-          label: rightLabel,
-          on: rightOn,
-          accessibilityLabel: `${row.name}, ${rightLabel} : ${t(rightOn ? "preferences:reglageActive" : "preferences:reglageDesactive")}`,
-        }
-      : null,
+    avatarUri: invitation ? undefined : profileAvatarUri(serverUrl, row.userId, row.imageTag),
+    detail: rowDetail(row, language, t),
+    invitation,
+    // La liste ne garde qu'« Annuler » d'une invitation ; retirer et supprimer vivent dans la fiche.
+    action: invitation && row.action ? { kind: row.action, hint: t("familyTv:manage.cancelHint", { name: row.name }) } : null,
+    opens: !invitation && row.gestures.length > 0,
   };
 }
 
@@ -81,7 +73,6 @@ export function manageListModel(
   serverUrl: string | null,
   language: string,
   t: TFunction,
-  pending: PendingRight = null,
   capability: ManageCapability = {},
   known: readonly KnownImageTag[] = [],
 ) {
@@ -92,7 +83,7 @@ export function manageListModel(
   const ownerName = managedFamilyOf(overview)?.ownerName ?? actor.name;
   return {
     rows,
-    views: rows.map((row) => rowView(row, serverUrl, language, t, pending)),
+    views: rows.map((row) => rowView(row, serverUrl, language, t)),
     capacity,
     subtitle: t("familyTv:manage.subtitle", { owner: ownerName, count: capacity.profiles, max: capacity.max }),
     blocked: block && (!capacity.canCreateGuest || !capacity.canInvite) ? t(BLOCK_KEYS[block]) : null,

@@ -3,12 +3,13 @@ import { Navigate } from "react-router-dom";
 import { Info } from "lucide-react";
 import { Shimmer } from "@tentacle-tv/ui";
 import { familyErrorFromApi, useFamilyOverview } from "@tentacle-tv/api-client";
-import type { FamilyOverviewDto } from "@tentacle-tv/shared";
+import { sessionManages, type FamilyOverviewDto } from "@tentacle-tv/shared";
 import { PageTransition } from "../../components/PageTransition";
-import { useFamilyAvailability } from "../../family/useFamilyAvailability";
+import { useFamilySettingsAvailability } from "../../family/useFamilyAvailability";
 import { useFamilyText } from "../../family/useFamilyText";
 import { DissolveSection, MyPinSection } from "../../family/page/AccountSections";
 import { FamilySection } from "../../family/page/FamilySection";
+import { ManageUnlockCard } from "../../family/page/ManageUnlockCard";
 import { IncomingInvitationsSection } from "../../family/page/IncomingInvitations";
 import { LeaveSection } from "../../family/page/LeaveSection";
 import { FamilyPinCard } from "../../family/pinSuggest/FamilyPinCard";
@@ -26,11 +27,18 @@ import { AskAtLaunchSection } from "../../profiles/settings/AskAtLaunchSection";
  * par l'hôte de l'affiche) : une réponse arrivée d'un autre appareil remplit
  * la page sans rechargement. Sans la Famille (serveur d'avant, hors ligne),
  * la page n'existe pas.
+ *
+ * Bureau, session d'un PROFIL qui gère (1.30.0, `family.profileManage`) : la
+ * même page, avec les droits de ce profil et sans les gestes personnels ; la
+ * gestion fermée demande SON code (`ManageUnlockCard`), un profil sans code
+ * apprend qu'il lui en faut un.
  */
 export function SettingsFamily() {
   const { t } = useTranslation("familyWeb");
-  const { available, settled } = useFamilyAvailability();
+  const { t: tf } = useTranslation("family");
+  const { available, settled } = useFamilySettingsAvailability();
   const overview = useFamilyOverview({ enabled: available });
+  const refusal = overview.isError ? familyErrorFromApi(overview.error)?.code : undefined;
 
   if ((settled && !available) || overview.data === null) return <Navigate to="/settings" replace />;
 
@@ -39,9 +47,13 @@ export function SettingsFamily() {
       <div className="max-w-2xl">
         {overview.data ? (
           <FamilyContent overview={overview.data} />
-        ) : overview.isError && familyErrorFromApi(overview.error)?.code === "family.personal_session_required" ? (
+        ) : refusal === "family.personal_session_required" ? (
           // « Voir en tant que » : la Famille n'est pas lisible, et c'est voulu.
           <Notice text={t("notice.personalOnly")} />
+        ) : refusal === "family.manage_locked" ? (
+          <ManageUnlockCard />
+        ) : refusal === "family.manage_pin_required" ? (
+          <Notice text={tf("errors.manage_pin_required")} />
         ) : overview.isError ? (
           <LoadError error={overview.error} onRetry={() => void overview.refetch()} />
         ) : (
@@ -56,10 +68,13 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
   const { t } = useTranslation("familyWeb");
   const { account, switches, family } = overview;
   const personal = account.personalSession;
+  // Un profil qui gère (1.30.0) : les gestes de son rôle, jamais les gestes personnels.
+  const manages = sessionManages(account);
   const notices = [
-    !personal && t("notice.personalOnly"),
-    personal && !switches.families && t("notice.disabled"),
-    personal && switches.families && !switches.guests && t("notice.guestsDisabled"),
+    !manages && t("notice.personalOnly"),
+    account.managing === true && t("notice.profileManage"),
+    manages && !switches.families && t("notice.disabled"),
+    manages && switches.families && !switches.guests && t("notice.guestsDisabled"),
   ].filter((notice): notice is string => typeof notice === "string");
 
   return (

@@ -50,6 +50,23 @@ describe("FamilySwitchesSection", () => {
     expect(html).toContain("admin.guestsLevelDetail_everyone");
   });
 
+  it("1.30.0, une extension sait demander : « Les invités peuvent demander des films », coupé tant qu'on ne l'allume pas", () => {
+    h.switches = { families: true, guests: true, requestExtension: true } as FamilySwitches;
+    let html = render();
+    expect(html.match(/role="radiogroup"/g)).toHaveLength(3);
+    expect(checked(html)).toEqual(["admin.familiesLevel_allowed", "admin.guestsLevel_everyone", "admin.guestRequestsLevel_off"]);
+    expect(html).toContain("admin.guestRequestsLevelDetail_off");
+    h.switches = { families: true, guests: true, guestRequests: true, requestExtension: true } as FamilySwitches;
+    h.defaults = { createFamily: false, createGuests: true, grantGuestRequests: false };
+    html = render();
+    expect(checked(html)[2]).toBe("admin.guestRequestsLevel_allowed");
+  });
+
+  it("sans extension qui sait demander : la rangée n'existe pas, même allumée", () => {
+    h.switches = { families: true, guests: true, guestRequests: true, requestExtension: false } as FamilySwitches;
+    expect(render()).not.toContain("admin.guestRequests");
+  });
+
   it("familles coupées : « Coupées », et les invités disent qu'ils ne s'ouvrent pas", () => {
     h.switches = { families: false, guests: true };
     const html = render();

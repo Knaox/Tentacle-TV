@@ -20,6 +20,7 @@ import {
   profileActions,
   profileRoleActions,
   sameUserId,
+  sessionManages,
   type FamilyErrorCode,
   type FamilyOverviewDto,
   type FamilyProfileDto,
@@ -31,6 +32,7 @@ import { useFamilyText } from "../useFamilyText";
 import { FamilyConfirm, type FamilyPending } from "./FamilyConfirm";
 import { GuestDialog } from "./GuestDialog";
 import { GuestParentalDialog } from "./GuestParentalDialog";
+import { FamilyLibrariesDialog } from "./FamilyLibrariesDialog";
 import { InviteDialog } from "./InviteDialog";
 import { PendingInvitations } from "./PendingInvitations";
 import { GuestPinDialog } from "./PinEditors";
@@ -76,6 +78,9 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const roles = useServerCapability("family.roles");
   const memberParental = useServerCapability("family.memberParental");
   const [parentalMember, setParentalMember] = useState<FamilyProfileDto | null>(null);
+  // Les bibliothèques d'un invité ou d'un membre mineur : serveur 1.30.0 (`family.libraryLimits`).
+  const libraryLimits = useServerCapability("family.libraryLimits");
+  const [librariesProfile, setLibrariesProfile] = useState<FamilyProfileDto | null>(null);
   const setRole = useSetFamilyMemberRole();
   const { mutate: mutateRole } = setRole;
   const deleteGuest = useDeleteFamilyGuest();
@@ -87,7 +92,8 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const [pinGuest, setPinGuest] = useState<FamilyProfileDto | null>(null);
 
   const family = overview.family;
-  const personal = overview.account.personalSession;
+  // La session personnelle, ou un profil qui gère (1.30.0) : les mêmes gestes, ceux de son rôle.
+  const personal = sessionManages(overview.account);
   const counts = useMemo(() => familyCounts(family), [family]);
   const actions = useMemo(() => familyActions(overview), [overview]);
   const owner = family?.role !== "member";
@@ -176,6 +182,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 onRightChange={onRightChange}
                 onRoleChange={roles && personal ? onRoleChange : undefined}
                 onMemberParental={memberParental && personal ? setParentalMember : undefined}
+                onLibraries={libraryLimits && personal ? setLibrariesProfile : undefined}
               />
             ))}
             {buttons && <li className="px-4 py-3">{buttons}</li>}
@@ -217,6 +224,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
           onClose={() => setParentalGuest(null)}
         />
       )}
+      {librariesProfile && <FamilyLibrariesDialog profile={librariesProfile} onClose={() => setLibrariesProfile(null)} />}
       {parentalMember && family && (
         <GuestParentalDialog guest={parentalMember} creatorName={family.owner.name} member onClose={() => setParentalMember(null)} />
       )}

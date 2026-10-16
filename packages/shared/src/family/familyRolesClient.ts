@@ -1,6 +1,6 @@
 import type { FamilyOverviewDto, FamilyProfileDto } from "./familyContract";
 import { isParentalNone } from "./familyRoles";
-import { isOwnProfile } from "./familyClient";
+import { isOwnProfile, sessionManages } from "./familyClient";
 
 /**
  * La Famille côté CLIENTS (web, bureau) — le RÔLE de parent et le contrôle
@@ -38,7 +38,7 @@ export function profileRoleActions(
   viewerUserId: string | null | undefined,
 ): ProfileRoleActions {
   const family = overview.family;
-  if (!family || !overview.account.personalSession || !viewerUserId) return NONE;
+  if (!family || !sessionManages(overview.account) || !viewerUserId) return NONE;
   if (profile.kind !== "member" || isOwnProfile(profile, viewerUserId)) return NONE;
   const role = family.rights.manageRoles === true;
   const restricted = hasParentalControl(profile);

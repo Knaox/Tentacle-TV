@@ -1,4 +1,4 @@
-import { memo, useCallback, type ReactNode } from "react";
+import { memo, useCallback, useMemo, type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { FocusTarget } from "../focus/FocusTarget";
@@ -25,6 +25,12 @@ import { FocusTarget } from "../focus/FocusTarget";
  * la cible, qui couvre la cellule, reste la grande carte entière. Sa présence
  * ne change jamais pour une carte donnée (une rangée en donne une à toutes
  * ses cartes, une grille jamais) : l'arbre reste le même, le focus aussi.
+ *
+ * `glide` : la cellule GLISSE quand une voisine devient la grande carte (une
+ * ligne de grille, `gridPreviewLine` — la grande carte en déborde, la cellule
+ * garde sa taille). Le style animé porte sur la cellule elle-même : `front`
+ * la pose toujours devant ses voisines. Présent pour toute la vie de la
+ * carte, lui aussi.
  */
 
 /** La grande carte : sa taille, et l'avancée de la croissance (0 → 1). */
@@ -55,9 +61,15 @@ export interface CardShellProps {
   children?: ReactNode;
   /** La carte peut grandir en grande carte d'aperçu (cf. plus haut). */
   expansion?: CardExpansion;
+  /** Le glissement de la cellule, quand une voisine de sa ligne grandit (cf. plus haut). */
+  glide?: ReturnType<typeof useAnimatedStyle>;
 }
 
 export const CardShell = memo(function CardShell(props: CardShellProps) {
+  // Le style d'une cellule qui glisse, gardé d'un rendu à l'autre : une grille recyclée
+  // redessine ses cellules à chaque ligne, sans réattacher leur style animé.
+  const { width, front, style, glide } = props;
+  const glideStyle = useMemo(() => (glide ? [{ width }, front && styles.front, style, glide] : null), [glide, width, front, style]);
   const { focusKey, frameHeight, frame, centerFrame = false, onPress, onLongPress, onTargetFocusChange, accessibilityLabel, children } = props;
   const renderFrame = useCallback(
     () => (centerFrame ? <View style={styles.center}>{frame}</View> : frame),
@@ -83,9 +95,15 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
       </FocusTarget>
     </>
   );
-  return props.expansion ? (
-    <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>
-  ) : (
+  if (props.expansion) return <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>;
+  if (glideStyle) {
+    return (
+      <Animated.View collapsable={false} style={glideStyle}>
+        {body}
+      </Animated.View>
+    );
+  }
+  return (
     // Jamais aplatie (`collapsable={false}`) : sur Android, `zIndex` posé au
     // focus ferait créer la vue et re-parenter la cible — qui perdait le focus.
     <View collapsable={false} style={[{ width: props.width }, props.front && styles.front, props.style]}>

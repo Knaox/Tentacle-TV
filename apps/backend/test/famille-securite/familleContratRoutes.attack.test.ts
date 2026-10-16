@@ -13,11 +13,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-  FAMILY_ROUTES,
-  type FamilyCaller,
-  type FamilyRouteName,
-} from "../../src/family/familyRoutes";
+import type { FamilyCaller } from "../../src/family/familyCallers";
+import { FAMILY_ROUTES, type FamilyRouteName } from "../../src/family/familyRoutes";
 import { FAMILY_ERROR_STATUS } from "../../src/family/familyProtocol";
 
 type Spec = (typeof FAMILY_ROUTES)[FamilyRouteName];
@@ -91,9 +88,9 @@ describe("SEC-F-19 : le jeton de jumelage « profils seuls » a un périmètre m
   });
 
   it("l'overview est PARTAGÉ (membre compris, v2) mais jamais ouvert au jeton de jumelage", () => {
-    // v2 : la TV d'un membre montre toute la famille → memberTv est admis.
+    // v2 : la TV d'un membre montre toute la famille → memberProfile est admis.
     // Le jeton de jumelage « profils seuls » (tvPairing), lui, ne voit JAMAIS l'overview.
-    expect(callersOf("overview")).toEqual(["personal", "ownerTv", "memberTv"]);
+    expect(callersOf("overview")).toEqual(["personal", "ownerProfile", "memberProfile"]);
     expect(callersOf("overview")).not.toContain("tvPairing");
   });
 
@@ -105,9 +102,46 @@ describe("SEC-F-19 : le jeton de jumelage « profils seuls » a un périmètre m
 
 // ── SEC-F-18 : « Gérer les profils » n'est ouvert qu'à une session de profil ──
 
-describe("SEC-F-18 : le déverrouillage de gestion passe par une session de profil (PIN du propriétaire)", () => {
-  it("tvManageUnlock n'est appelable que par une session de profil (jamais le seul jeton de jumelage)", () => {
-    expect(callersOf("tvManageUnlock")).toEqual(["tvProfile"]);
+describe("SEC-F-18 : le déverrouillage de gestion passe par une session de profil (PIN de CE profil)", () => {
+  it("tvManageUnlock n'est appelable que par une session de profil, TV ou bureau (jamais le seul jeton de jumelage)", () => {
+    expect(callersOf("tvManageUnlock")).toEqual(["tvProfile", "desktopProfile"]);
+  });
+
+  it("une session de profil du bureau n'est l'appelant d'aucune autre route : elle n'agit qu'une fois la gestion ouverte", () => {
+    for (const [name, spec] of entries) {
+      if (name === "tvManageUnlock") continue;
+      expect(spec.callers).not.toContain("desktopProfile");
+    }
+  });
+});
+
+// ── SEC-F-54 (1.30.0) : gérer depuis un profil, avec les droits de son rôle ──
+
+describe("SEC-F-54 : depuis un profil, les gestes du rôle ; jamais les gestes personnels", () => {
+  const personalOnly: FamilyRouteName[] = ["acceptInvite", "declineInvite", "snoozeInvite", "leave", "dissolve"];
+
+  it.each(personalOnly)("%s reste à la session personnelle, même pour qui gère depuis un profil", (name) => {
+    expect(callersOf(name)).toEqual(["personal"]);
+  });
+
+  it.each(["setGuestRights", "setGuestPin", "setGuestPhoto", "setGuestParental", "parentalOptions", "setMemberParental"] as const)(
+    "%s : le propriétaire et un membre depuis leur profil — un parent y a droit, le service juge le rôle",
+    (name) => {
+      expect(callersOf(name)).toEqual(["personal", "ownerProfile", "memberProfile"]);
+    },
+  );
+
+  it.each(["setMemberRole", "setMemberRights", "removeMember", "invite", "cancelInvite", "candidates"] as const)(
+    "%s : le propriétaire depuis son profil, jamais un membre",
+    (name) => {
+      expect(callersOf(name)).toEqual(["personal", "ownerProfile"]);
+    },
+  );
+
+  it("« Qui regarde ? » du bureau reste à la session personnelle de l'appareil", () => {
+    for (const name of ["pickerProfiles", "pickProfile", "pickerPreference", "setPickerPreference"] as const) {
+      expect(callersOf(name)).toEqual(["personal"]);
+    }
   });
 });
 
@@ -115,14 +149,14 @@ describe("SEC-F-18 : le déverrouillage de gestion passe par une session de prof
 
 describe("rôles v2 : retirer un membre reste au propriétaire, supprimer un invité s'ouvre au membre", () => {
   it("removeMember : le propriétaire SEUL (personnel ou sa TV) — jamais un membre, un profil quelconque ou le jumelage", () => {
-    expect(callersOf("removeMember")).toEqual(["personal", "ownerTv"]);
-    expect(callersOf("removeMember")).not.toContain("memberTv"); // un membre ne retire personne
+    expect(callersOf("removeMember")).toEqual(["personal", "ownerProfile"]);
+    expect(callersOf("removeMember")).not.toContain("memberProfile"); // un membre ne retire personne
     expect(callersOf("removeMember")).not.toContain("tvProfile");
     expect(callersOf("removeMember")).not.toContain("tvPairing");
   });
 
-  it("deleteGuest : propriétaire OU membre depuis sa TV (memberTv) — la garde « ses seuls invités » est au runtime (SEC-F-39) ; jamais le jumelage", () => {
-    expect(callersOf("deleteGuest")).toEqual(["personal", "ownerTv", "memberTv"]);
+  it("deleteGuest : propriétaire OU membre depuis son profil (memberProfile) — la garde « ses seuls invités » est au runtime (SEC-F-39) ; jamais le jumelage", () => {
+    expect(callersOf("deleteGuest")).toEqual(["personal", "ownerProfile", "memberProfile"]);
     expect(callersOf("deleteGuest")).not.toContain("tvProfile"); // pas un profil d'invité
     expect(callersOf("deleteGuest")).not.toContain("tvPairing");
   });
@@ -135,10 +169,10 @@ describe("rôles v2 : retirer un membre reste au propriétaire, supprimer un inv
 describe("SEC-F-38 : seul le propriétaire (sa session, ou sa TV) règle les droits d'un membre", () => {
   it("setMemberRights existe, PUT, et n'est appelable ni par un jeton de jumelage ni par une session de profil quelconque", () => {
     expect(FAMILY_ROUTES.setMemberRights.method).toBe("PUT");
-    expect(callersOf("setMemberRights")).toEqual(["personal", "ownerTv"]);
+    expect(callersOf("setMemberRights")).toEqual(["personal", "ownerProfile"]);
     expect(callersOf("setMemberRights")).not.toContain("tvPairing");
     expect(callersOf("setMemberRights")).not.toContain("tvProfile");
-    expect(callersOf("setMemberRights")).not.toContain("memberTv");
+    expect(callersOf("setMemberRights")).not.toContain("memberProfile");
   });
 
   it("la cible du réglage est dans l'URL (un membre précis), le droit dans le corps", () => {
@@ -156,6 +190,7 @@ describe("protocole : chaque refus du modèle de menace a son code et son statut
     ["family.invite_expired", 410], // SEC-F-05 invitation expirée
     ["family.pin_invalid", 403], // SEC-F-17 mauvais PIN
     ["family.pin_locked", 423], // SEC-F-17 verrou
+    ["family.manage_pin_required", 403], // SEC-F-54 gérer depuis un profil exige un code prouvé
     ["family.pin_format", 400], // SEC-F-16 format
     ["family.invite_quota", 429], // SEC-F-23
     ["family.invite_cooldown", 429], // SEC-F-23 délai après refus

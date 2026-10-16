@@ -15,12 +15,17 @@ vi.mock("../../services/reco/candidates/libraryMemo", () => ({
 vi.mock("../../services/wsManager", () => ({
   broadcastToUser: (userId: string, carousel: string) => broadcasts.push(`${userId} ${carousel}`),
 }));
+let usersInvalidated = 0;
+vi.mock("../../services/watchTogether/usersCache", () => ({
+  invalidateJellyfinUsers: () => { usersInvalidated += 1; },
+}));
 
-import { changesAccountState, emitProxyEvents, userDataPatchOf } from "./events";
+import { changesAccountPhoto, changesAccountState, emitProxyEvents, userDataPatchOf } from "./events";
 
 beforeEach(() => {
   patches.length = 0;
   broadcasts.length = 0;
+  usersInvalidated = 0;
 });
 
 describe("le drapeau posé par une requête du proxy", () => {
@@ -66,5 +71,25 @@ describe("l'écriture qui change l'état d'un titre (et vide les rangées en cac
     ["POST", "Items/i1"],
   ])("%s %s : non", (method, path) => {
     expect(changesAccountState(path, method)).toBe(false);
+  });
+});
+
+describe("la photo d'un compte changée par le proxy", () => {
+  it("fait relire la liste des comptes (son `imageTag`) à la requête suivante", () => {
+    emitProxyEvents("Users/u1/Images/Primary", { method: "POST", query: {} });
+    expect(usersInvalidated).toBe(1);
+    expect(patches).toEqual([]);
+    expect(broadcasts).toEqual([]);
+  });
+
+  it.each([
+    ["POST", "Users/u1/Images/Primary", true],
+    ["DELETE", "users/u1/images/primary", true],
+    ["DELETE", "Users/u1/Images/Primary/0", true],
+    ["GET", "Users/u1/Images/Primary", false],
+    ["POST", "Items/i1/Images/Primary", false],
+    ["POST", "Users/u1/Images/Backdrop", false],
+  ])("%s %s : %s", (method, path, expected) => {
+    expect(changesAccountPhoto(path, method)).toBe(expected);
   });
 });

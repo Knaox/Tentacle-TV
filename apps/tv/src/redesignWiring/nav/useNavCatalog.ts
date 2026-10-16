@@ -31,7 +31,8 @@ export interface NavCatalog {
   pinning: RailPinning;
 }
 
-function libraryIcon(collectionType?: string): IconName {
+/** Le pictogramme d'une bibliothèque, d'après son type (la barre, le contrôle parental). */
+export function libraryIcon(collectionType?: string | null): IconName {
   switch (collectionType?.toLowerCase()) {
     case "movies":
       return "film";

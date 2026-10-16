@@ -10,6 +10,7 @@ import { hashToken } from "../../services/jwt";
 import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../../services/family/familyMembers";
 import { setMemberRole } from "../../services/family/familyMemberRoles";
 import { setMemberParental } from "../../services/family/memberParental";
+import { profileLibraries, setProfileLibraries } from "../../services/family/familyLibraries";
 import {
   candidatesQuerySchema,
   createGuestBodySchema,
@@ -30,9 +31,9 @@ import { actorOf, registerFamilyRoute } from "./familyRouting";
 
 /**
  * Les routes de la Famille sous `/api/family` — sessions personnelles (web,
- * bureau, mobile) et, pour la gestion et son propre PIN, les sessions de
- * profil sur les TV. Qui peut quoi : `FAMILY_ROUTES` (le contrat). L'acteur
- * vient du jeton.
+ * bureau, mobile) et, pour la gestion, les sessions de profil des TV et des
+ * bureaux (son propre PIN : les TV seulement). Qui peut quoi : `FAMILY_ROUTES`
+ * (le contrat). L'acteur vient du jeton.
  */
 
 function param(params: unknown, key: string): unknown {
@@ -41,7 +42,10 @@ function param(params: unknown, key: string): unknown {
 
 export const familyRoutes: FastifyPluginAsync = async (app) => {
   registerFamilyRoute(app, "overview", async (_request, actor, now) =>
-    buildOverview({ ...actorOf(actor), personal: actor.as === "personal" }, now),
+    buildOverview(
+      { ...actorOf(actor), personal: actor.as === "personal", managing: actor.as === "ownerProfile" || actor.as === "memberProfile" },
+      now,
+    ),
   );
 
   registerFamilyRoute(app, "candidates", async (request, actor, now) => {
@@ -136,6 +140,14 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
   // Le contrôle parental d'un membre mineur (1.30.0) : le corps est validé par le service (cinq champs exacts).
   registerFamilyRoute(app, "setMemberParental", async (request, actor) =>
     setMemberParental(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), request.body),
+  );
+
+  registerFamilyRoute(app, "profileLibraries", async (request, actor) =>
+    profileLibraries(actorOf(actor), userIdSchema.parse(param(request.params, "userId"))),
+  );
+
+  registerFamilyRoute(app, "setProfileLibraries", async (request, actor) =>
+    setProfileLibraries(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), request.body),
   );
 
   registerFamilyRoute(app, "leave", async (request, actor) =>

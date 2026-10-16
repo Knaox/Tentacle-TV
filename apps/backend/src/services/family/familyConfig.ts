@@ -9,15 +9,21 @@ import { FamilyFailure } from "./familyErrors";
  * tant que l'administrateur ne les a pas coupés (clé absente = oui). Couper
  * « Familles » coupe membres ET invités ; « Profils invités », les invités
  * seuls. La session du propriétaire sur sa propre TV reste.
+ *
+ * 1.30.0 : « Les invités peuvent demander des films » (`guestRequests`), à l'inverse COUPÉ
+ * tant que l'administrateur ne l'a pas allumé (clé absente = non, mise à jour comprise —
+ * décision de Damien du 2026-10-16) : `familyGuestRequests.ts`.
  */
 
 export const FAMILY_ENABLED_KEY = "family_enabled";
 export const FAMILY_GUESTS_KEY = "family_guests_enabled";
+export const FAMILY_GUEST_REQUESTS_KEY = "family_guest_requests_enabled";
 
 export function getFamilySwitches(): FamilySwitches {
   return {
     families: getConfigValue(FAMILY_ENABLED_KEY) !== "false",
     guests: getConfigValue(FAMILY_GUESTS_KEY) !== "false",
+    guestRequests: getConfigValue(FAMILY_GUEST_REQUESTS_KEY) === "true",
   };
 }
 
@@ -25,13 +31,16 @@ export function getFamilySwitches(): FamilySwitches {
 export function familyCapability(): FamilyCapability {
   const switches = getFamilySwitches();
   const guests = switches.families && switches.guests;
-  // « Peut demander » n'a de sens que si une extension sait demander un titre.
-  return { v: FAMILY_CONTRACT_VERSION, enabled: switches.families, guests, guestRequests: guests && hasRequestExtension() };
+  // « Peut demander » n'a de sens que si une extension sait demander un titre — et, 1.30.0,
+  // si l'administration l'a allumé : un client d'avant cache alors la case.
+  const guestRequests = guests && switches.guestRequests === true && hasRequestExtension();
+  return { v: FAMILY_CONTRACT_VERSION, enabled: switches.families, guests, guestRequests };
 }
 
 export async function setFamilySwitches(patch: Partial<FamilySwitches>): Promise<FamilySwitches> {
   if (patch.families !== undefined) await setConfigValue(FAMILY_ENABLED_KEY, String(patch.families));
   if (patch.guests !== undefined) await setConfigValue(FAMILY_GUESTS_KEY, String(patch.guests));
+  if (patch.guestRequests !== undefined) await setConfigValue(FAMILY_GUEST_REQUESTS_KEY, String(patch.guestRequests));
   return getFamilySwitches();
 }
 

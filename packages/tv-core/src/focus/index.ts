@@ -48,4 +48,6 @@ export * from "./collectionFilters";
 export * from "./settingsFocus";
 export * from "./pairingFocus";
 export * from "./profilesFocus";
+export * from "./parentalFocus";
+export * from "./manageSheetFocus";
 export * from "./focusLockTiming";

@@ -12,6 +12,8 @@ import {
   type FamilyProfileDto,
   type GuestPhotoDto,
   type IncomingInvitationDto,
+  type ManageUnlockBody,
+  type ManageUnlockResponse,
   type SetGuestPhotoBody,
   type OutgoingInvitationDto,
 } from "@tentacle-tv/shared";
@@ -19,9 +21,9 @@ import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
 
 /**
  * Les appels de la Famille portés par la session COURANTE de l'application —
- * le web (cookie), le bureau et le mobile (jeton), et la session de profil du
- * propriétaire sur sa TV (« Gérer les profils », jeton posé par
- * `setPreferencesToken`). Les appels du jeton de JUMELAGE d'une TV vivent à
+ * le web (cookie), le bureau et le mobile (jeton), et une session de profil
+ * qui GÈRE (TV : « Gérer les profils », jeton posé par `setPreferencesToken` ;
+ * bureau, 1.30.0 : le jeton du profil actif). Les appels du jeton de JUMELAGE d'une TV vivent à
  * part (`familyTvApi.ts`) : ils ne portent jamais la session courante.
  * Contrat : `@tentacle-tv/shared` › `family/`.
  */
@@ -116,6 +118,12 @@ export function snoozeFamilyInvitation(id: string): Promise<IncomingInvitationDt
 
 export function leaveFamily(familyId: string): Promise<{ left: true }> {
   return send(familyPath("leave", { familyId }), "POST");
+}
+
+/** Ouvre la gestion d'une SESSION DE PROFIL (bureau, 1.30.0, `family.profileManage`) par SON
+ *  code : dix minutes, prolongées à chaque geste. Sans code posé : `family.manage_pin_required`. */
+export function unlockFamilyManage(body: ManageUnlockBody): Promise<ManageUnlockResponse> {
+  return send(familyPath("tvManageUnlock"), "POST", body);
 }
 
 /** Membres sortis, invités supprimés de Jellyfin : à confirmer explicitement côté client. */
