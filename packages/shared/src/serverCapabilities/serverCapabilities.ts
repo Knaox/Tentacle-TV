@@ -172,7 +172,8 @@ export const SERVER_CAPABILITIES = {
   // ── Lot TV du 16/10 : la galerie des avatars sur la TV ──
   /** Un jeton d'APPAREIL (TV jumelée, session de profil d'une TV) pose la photo Jellyfin de SON
    *  compte par le proxy (`POST /Users/{soi}/Images/Primary`, `deviceWrites.ts`) : la galerie des
-   *  avatars s'ouvre sur la TV. Sans elle, le proxy refuse (403) : aucune entrée, aucune invitation. */
+   *  avatars s'ouvre sur la TV. Sans elle, le proxy refuse (403) : aucune entrée, aucune invitation.
+   *  `GET /api/avatars/device-photo` → `{ allowed }` : non pour le compte de démonstration (revue Apple). */
   "avatars.devicePhoto": "1.30.0",
 } as const satisfies Record<string, string>;
 

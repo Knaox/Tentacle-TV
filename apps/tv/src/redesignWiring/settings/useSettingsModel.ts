@@ -17,6 +17,7 @@ import { useInterfaceLanguage } from "../../hooks/useInterfaceLanguage";
 import { useLibraryTrackPrefs } from "../../hooks/useLibraryTrackPrefs";
 import { usePairedAccount } from "../../hooks/usePairedAccount";
 import { useVerifiedImage } from "../../hooks/useVerifiedImage";
+import { useDevicePhotoAccess } from "../avatars/devicePhotoAccess";
 import { useOwnPhotoState } from "../avatars/ownPhoto";
 import {
   exoMatchFrameRateStore,
@@ -61,8 +62,9 @@ export function useSettingsModel() {
   const stillWatching = useStillWatchingSettings();
   const stillWatchingSettings = stillWatching.available ? stillWatching.settings : null;
 
-  // La galerie des avatars : rien face à un serveur qui ne déclare pas `avatars.devicePhoto`.
-  const photoCapable = useServerCapability("avatars.devicePhoto");
+  // La galerie des avatars : rien face à un serveur qui ne déclare pas `avatars.devicePhoto`,
+  // ni pour le compte de démonstration (revue Apple), dont la photo ne change pas.
+  const photoCapable = useDevicePhotoAccess() === true;
   const userId = useUserId();
   const ownPhoto = useOwnPhotoState(photoCapable ? userId : null);
   const photo = photoCapable ? (ownPhoto === false ? "choose" : "change") : null;
