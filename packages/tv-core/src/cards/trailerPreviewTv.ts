@@ -1,6 +1,6 @@
 import {
-  DEFAULT_TRAILER_PREVIEW_DELAY, TRAILER_PREVIEW_TIMING, trailerPreviewTimingFor,
-  type TrailerPreviewPace, type TrailerPreviewTiming,
+  DEFAULT_TRAILER_PREVIEW_DELAY, TRAILER_PREVIEW_DELAYS, TRAILER_PREVIEW_TIMING, parseTrailerPreviewDelay, trailerPreviewTimingFor,
+  type TrailerPreviewDelay, type TrailerPreviewPace, type TrailerPreviewTiming,
 } from "@tentacle-tv/shared";
 
 /**
@@ -16,10 +16,10 @@ import {
  * 800 ms par défaut, le même que sur le bureau ; la demande part 350 ms avant
  * lui, JAMAIS avant 450 ms de focus tenu, quel que soit le délai : un
  * parcours régulier (un pas toutes les 400 ms) ne demande rien, un pas de plus
- * la repousse. Au réglage 0,5 s, l'aperçu paraît donc dès qu'il le peut
- * (~0,75 s mesuré) : essayé à 300 ms (16/10), un parcours posé demandait un
- * aperçu par carte traversée — une extraction YouTube possible chacune, et
- * une vidéo montée à chaque pas. Historique :
+ * la repousse. Essayé à 300 ms (16/10), un parcours posé demandait un aperçu
+ * par carte traversée — une extraction YouTube possible chacune, et une vidéo
+ * montée à chaque pas ; à 450 ms, un délai de 0,5 s ne se tenait pas (~0,8 s) :
+ * les téléviseurs ne l'offrent pas (`TV_TRAILER_PREVIEW_DELAYS`). Historique :
  * une seconde et 1,8 s, « comme Netflix au salon », trop lent (15/10) ; puis
  * 900 ms ; puis le délai de l'utilisateur (16/10). Le serveur a préparé d'avance
  * l'aperçu des cartes autour du focus (`/api/trailers/preview/warm`) : la
@@ -44,9 +44,23 @@ export const TV_TRAILER_PREVIEW_TIMING: TrailerPreviewTiming = {
 /** Le pas du salon : la demande 350 ms avant le délai, jamais sous 450 ms de focus tenu (un parcours de rangée). */
 export const TV_TRAILER_PREVIEW_PACE: TrailerPreviewPace = { floorMs: 450, leadMs: 350 };
 
+/**
+ * Les délais qu'un téléviseur OFFRE : 0,8 · 1,2 · 2 s — pas 0,5 s (décision
+ * de Damien, 16/10 : sous le plancher de 450 ms, l'aperçu paraissait vers
+ * 0,8 s, le choix ne tenait pas sa promesse). L'ordinateur garde 0,5 s.
+ */
+export const TV_TRAILER_PREVIEW_DELAYS: readonly TrailerPreviewDelay[] = TRAILER_PREVIEW_DELAYS.filter(
+  (delay) => delay >= DEFAULT_TRAILER_PREVIEW_DELAY,
+);
+
+/** Une valeur gardée sur le téléviseur → un délai qu'il offre ; 0,5 s (choisi avant le 16/10) et tout le reste → le défaut. */
+export function parseTvTrailerPreviewDelay(raw: unknown): TrailerPreviewDelay {
+  return parseTrailerPreviewDelay(raw, TV_TRAILER_PREVIEW_DELAYS);
+}
+
 /** Les temps de la machine pour le délai choisi sur ce téléviseur. */
 export function tvTrailerPreviewTiming(delayMs: number): TrailerPreviewTiming {
-  return trailerPreviewTimingFor(TV_TRAILER_PREVIEW_TIMING, delayMs, TV_TRAILER_PREVIEW_PACE);
+  return trailerPreviewTimingFor(TV_TRAILER_PREVIEW_TIMING, parseTvTrailerPreviewDelay(delayMs), TV_TRAILER_PREVIEW_PACE);
 }
 
 /**

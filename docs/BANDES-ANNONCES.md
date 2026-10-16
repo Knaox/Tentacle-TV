@@ -754,11 +754,12 @@ contributeur a entendu… doublé).
 ### Un délai, choisi par l'utilisateur
 
 Du début du survol (ou du focus) à la PREMIÈRE IMAGE : le même partout, réglé
-sur l'appareil, 800 ms par défaut (0,5 · 0,8 · 1,2 · 2 s) — shared
-`previewDelay.ts`. La demande part AVANT le délai (web : 400 ms avant, jamais
+sur l'appareil, 800 ms par défaut (0,5 · 0,8 · 1,2 · 2 s ; sur la TV
+0,8 · 1,2 · 2 s, tv-core `TV_TRAILER_PREVIEW_DELAYS` — un 0,5 s gardé d'avant y
+vaut le défaut) — shared `previewDelay.ts`. La demande part AVANT le délai (web : 400 ms avant, jamais
 sous 200 ms et un pointeur arrêté ; TV : 350 ms avant, jamais sous 450 ms de
-focus tenu — à 0,5 s l'aperçu TV paraît donc ~0,75 s : essayé à 300 ms, un
-parcours posé demandait un aperçu par carte), la révélation au délai ; une source lente paraît dès qu'elle est
+focus tenu — essayé à 300 ms, un parcours posé demandait un aperçu par carte ;
+à 450 ms, 0,5 s ne se tenait pas sur TV, d'où son retrait), la révélation au délai ; une source lente paraît dès qu'elle est
 prête. Vigie le reçoit par le pont (`trailerPreview.delayMs`, additif ; 600 ms
 face à un hôte d'avant).
 

@@ -97,7 +97,7 @@ export interface SettingsPlayback {
 export interface SettingsTrailerPreviews {
   enabled: boolean;
   sound: boolean;
-  /** Le délai entre l'arrivée du focus et la première image (ms, shared `TRAILER_PREVIEW_DELAYS`). */
+  /** Le délai entre l'arrivée du focus et la première image (ms, tv-core `TV_TRAILER_PREVIEW_DELAYS`). */
   delay: number;
 }
 

@@ -676,11 +676,11 @@ dans sa cellule à la première image, au DÉLAI choisi au plus tôt — jamais 
 calque par-dessus les voisines. **Le délai** (du début du survol ou du focus à
 la première image) est le MÊME partout — web, bureau, Apple TV, Android TV,
 titres de Vigie compris (pont : `trailerPreview.delayMs`) — et se règle par
-l'UTILISATEUR sur son appareil (0,5 · 0,8 · 1,2 · 2 s, 800 ms par défaut ;
-Réglages › Apparence sur le web, › Lecture sur la TV) : une règle, shared
+l'UTILISATEUR sur son appareil (800 ms par défaut ; 0,5 · 0,8 · 1,2 · 2 s dans
+Réglages › Apparence sur le web et le bureau, 0,8 · 1,2 · 2 s dans › Lecture
+sur la TV — tv-core `TV_TRAILER_PREVIEW_DELAYS`, décision de Damien) : une règle, shared
 `previewDelay.ts` — la demande part AVANT le délai, jamais sous le plancher qui
-écarte le défilement rapide (450 ms de focus tenu sur TV, quel que soit le
-délai — à 0,5 s, l'aperçu TV paraît dès qu'il peut, ~0,75 s : tv-core
+écarte le défilement rapide (450 ms de focus tenu sur TV : tv-core
 `tvTrailerPreviewTiming` ; 200 ms et un pointeur arrêté sur le web). Aucune
 capacité : fonction purement client. Pendant l'aperçu, Lecture/Pause le met
 VRAIMENT en pause, et MAINTENUE coupe le son de l'aperçu seul (le réglage « Son

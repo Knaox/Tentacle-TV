@@ -10,7 +10,9 @@ import {
   type TrailerPreviewState,
 } from "@tentacle-tv/shared";
 import {
+  TV_TRAILER_PREVIEW_DELAYS,
   TV_TRAILER_PREVIEW_TIMING,
+  parseTvTrailerPreviewDelay,
   tvTrailerPreviewTiming,
   createTrailerPreviewMemory,
   previewStartPosition,
@@ -126,10 +128,17 @@ describe("previewVideoKey / previewStartPosition", () => {
 describe("le délai choisi sur le téléviseur", () => {
   it("la carte grandit au délai ; la demande 350 ms avant, jamais sous 450 ms de focus tenu", () => {
     expect(tvTrailerPreviewTiming(800)).toMatchObject({ revealMs: 800, intentMs: 450, intentStillMs: 0, volume: 0.7 });
-    // 0,5 s : la demande reste au plancher — un parcours de rangée (un pas / 400 ms) ne demande jamais rien.
-    expect(tvTrailerPreviewTiming(500)).toMatchObject({ revealMs: 500, intentMs: 450 });
+    // 0,5 s n'est pas offert sur un téléviseur : une valeur d'avant vaut le défaut.
+    expect(tvTrailerPreviewTiming(500)).toMatchObject({ revealMs: 800, intentMs: 450 });
     expect(tvTrailerPreviewTiming(1200)).toMatchObject({ revealMs: 1200, intentMs: 850 });
     expect(tvTrailerPreviewTiming(2000)).toMatchObject({ revealMs: 2000, intentMs: 1650 });
+  });
+
+  it("les téléviseurs offrent 0,8 · 1,2 · 2 s ; un 0,5 s gardé d'avant retombe sur le défaut", () => {
+    expect(TV_TRAILER_PREVIEW_DELAYS).toEqual([800, 1200, 2000]);
+    expect(parseTvTrailerPreviewDelay("500")).toBe(800);
+    expect(parseTvTrailerPreviewDelay("1200")).toBe(1200);
+    expect(parseTvTrailerPreviewDelay(null)).toBe(800);
   });
 
   it("le défaut est celui des temps du salon", () => {

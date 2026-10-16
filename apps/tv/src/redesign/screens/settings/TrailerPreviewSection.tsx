@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { TRAILER_PREVIEW_DELAYS, type TrailerPreviewDelay } from "@tentacle-tv/shared";
+import type { TrailerPreviewDelay } from "@tentacle-tv/shared";
+import { TV_TRAILER_PREVIEW_DELAYS } from "@tentacle-tv/tv-core";
 import { Chip } from "../../controls/Chip";
 import { SectionTitle, settingsText } from "./settingsParts";
 import { ToggleRow } from "./ToggleRow";
@@ -57,7 +58,7 @@ export const TrailerPreviewSection = memo(function TrailerPreviewSection({
         <View>
           <Text style={[settingsText.label, styles.label]}>{t("trailerPreview:delayTitle")}</Text>
           <View style={styles.chips}>
-            {TRAILER_PREVIEW_DELAYS.map((delay) => (
+            {TV_TRAILER_PREVIEW_DELAYS.map((delay) => (
               <Chip
                 key={delay}
                 label={t(`trailerPreview:delay_${delay}`)}

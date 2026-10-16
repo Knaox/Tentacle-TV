@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from "react";
-import {
-  DEFAULT_TRAILER_PREVIEW_DELAY, createBooleanStore, parseTrailerPreviewDelay, type TrailerPreviewDelay,
-} from "@tentacle-tv/shared";
+import { DEFAULT_TRAILER_PREVIEW_DELAY, createBooleanStore, type TrailerPreviewDelay } from "@tentacle-tv/shared";
+import { parseTvTrailerPreviewDelay } from "@tentacle-tv/tv-core";
 import { tvStorage } from "../storage/RNStorageAdapter";
 
 /**
@@ -28,9 +27,13 @@ export function useTrailerPreviewSound(): boolean {
   return useSyncExternalStore(trailerPreviewSoundStore.subscribe, trailerPreviewSoundStore.readSnapshot, trailerPreviewSoundStore.readSnapshot);
 }
 
+/** Le délai gardé ; une valeur que le téléviseur n'offre plus (0,5 s d'avant le 16/10) vaut le défaut, et s'efface. */
 function readDelay(): TrailerPreviewDelay {
   try {
-    return parseTrailerPreviewDelay(tvStorage.getItem(TRAILER_PREVIEW_DELAY_KEY));
+    const raw = tvStorage.getItem(TRAILER_PREVIEW_DELAY_KEY);
+    const delay = parseTvTrailerPreviewDelay(raw);
+    if (raw !== null && raw !== String(delay)) tvStorage.removeItem(TRAILER_PREVIEW_DELAY_KEY);
+    return delay;
   } catch {
     return DEFAULT_TRAILER_PREVIEW_DELAY;
   }
@@ -42,7 +45,8 @@ const notifyDelay = () => delayListeners.forEach((listener) => listener());
 
 /**
  * Le délai des aperçus de CE téléviseur : 800 ms par défaut, rien n'est écrit
- * tant qu'on n'y touche pas ; une valeur inconnue vaut ce défaut.
+ * tant qu'on n'y touche pas ; une valeur inconnue, ou que le téléviseur
+ * n'offre pas (tv-core `TV_TRAILER_PREVIEW_DELAYS`), vaut ce défaut.
  */
 export const trailerPreviewDelayStore = {
   subscribe(callback: () => void): () => void {
@@ -53,7 +57,7 @@ export const trailerPreviewDelayStore = {
   },
   readSnapshot: (): TrailerPreviewDelay => delaySnapshot,
   set(raw: number): void {
-    const delay = parseTrailerPreviewDelay(raw);
+    const delay = parseTvTrailerPreviewDelay(raw);
     if (delay === delaySnapshot) return;
     delaySnapshot = delay;
     try {

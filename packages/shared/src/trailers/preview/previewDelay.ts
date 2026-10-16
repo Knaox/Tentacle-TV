@@ -23,10 +23,16 @@ export type TrailerPreviewDelay = (typeof TRAILER_PREVIEW_DELAYS)[number];
 
 export const DEFAULT_TRAILER_PREVIEW_DELAY: TrailerPreviewDelay = 800;
 
-/** Une valeur gardée (texte ou nombre) → un choix offert ; tout le reste → le défaut. */
-export function parseTrailerPreviewDelay(raw: unknown): TrailerPreviewDelay {
+/**
+ * Une valeur gardée (texte ou nombre) → un choix offert ; tout le reste → le
+ * défaut. `choices` : ceux d'une plateforme qui n'offre pas tout (les
+ * téléviseurs, tv-core `TV_TRAILER_PREVIEW_DELAYS`).
+ */
+export function parseTrailerPreviewDelay(
+  raw: unknown, choices: readonly TrailerPreviewDelay[] = TRAILER_PREVIEW_DELAYS,
+): TrailerPreviewDelay {
   const value = typeof raw === "string" && raw.trim() !== "" ? Number(raw) : raw;
-  return (TRAILER_PREVIEW_DELAYS as readonly unknown[]).includes(value) ? (value as TrailerPreviewDelay) : DEFAULT_TRAILER_PREVIEW_DELAY;
+  return (choices as readonly unknown[]).includes(value) ? (value as TrailerPreviewDelay) : DEFAULT_TRAILER_PREVIEW_DELAY;
 }
 
 /**
