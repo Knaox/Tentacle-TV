@@ -78,6 +78,7 @@ function toPickerProfile(profile: TvProfileDto, account: string, rights: FamilyR
     // Ce que SA session de profil gérerait sur cet appareil, derrière son code (1.30.0).
     manage: profile.manage,
     manageNeedsPin: profile.manageNeedsPin === true,
+    promptsResetAt: profile.promptsResetAt ?? null,
   };
 }
 

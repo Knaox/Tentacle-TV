@@ -391,6 +391,9 @@ model FamilyMember {
   /// Invité (1.30.0) : les bibliothèques que la famille lui permet (JSON, liste d'identifiants) ;
   /// null = toutes celles de son créateur. La politique EFFECTIVE vit dans Jellyfin.
   libraryAccess String?
+  /// 1.30.0 (`family.promptsReset`) : « Reproposer le code PIN et la photo » — le premier passage de
+  /// ce profil revient sur un appareil qui a retenu « Plus tard » avant cette date. Null : jamais.
+  promptsResetAt DateTime?
 
   @@unique([familyId, userId])
   /// v2 : UNE famille par compte — propriétaire, membre ou invité, une seule ligne.

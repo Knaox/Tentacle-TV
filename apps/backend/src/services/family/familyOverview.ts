@@ -92,6 +92,7 @@ export function profileDtos(
     createdByName: null,
     rights: null,
     guestRights: null,
+    promptsResetAt: ownerRow?.promptsResetAt?.toISOString() ?? null,
   };
   const others = rows
     .filter((row) => row.kind !== "owner")
@@ -112,6 +113,7 @@ export function profileDtos(
         // 1.30.0 : la valeur EN VIGUEUR, et `suspended` quand l'administration ne le permet plus.
         guestRights: guest ? guestRights.get(row.userId) ?? { requestTitles: false } : null,
         ...(row.kind === "member" && { parent: row.isParent === true }),
+        promptsResetAt: row.promptsResetAt?.toISOString() ?? null,
       };
     })
     .sort((a, b) => Number(a.kind === "guest") - Number(b.kind === "guest"));

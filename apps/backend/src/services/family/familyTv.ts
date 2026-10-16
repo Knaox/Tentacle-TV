@@ -117,6 +117,8 @@ export async function visibleProfiles(
       // qui ne mène à aucun geste (un mineur sans droit, un membre sans invité à lui).
       manage: managing.manage,
       manageNeedsPin: managing.needsPin,
+      // « Reproposer le code PIN et la photo » (1.30.0) : la TV oublie son « Plus tard » d'avant.
+      promptsResetAt: entry.row?.promptsResetAt?.toISOString() ?? null,
     };
   });
   return { switches, profiles, roleRights };

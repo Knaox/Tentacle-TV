@@ -11,6 +11,7 @@ import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../.
 import { setMemberRole } from "../../services/family/familyMemberRoles";
 import { setMemberParental } from "../../services/family/memberParental";
 import { profileLibraries, setProfileLibraries } from "../../services/family/familyLibraries";
+import { resetPrompts } from "../../services/family/familyPromptsReset";
 import {
   candidatesQuerySchema,
   createGuestBodySchema,
@@ -148,6 +149,11 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
 
   registerFamilyRoute(app, "setProfileLibraries", async (request, actor) =>
     setProfileLibraries(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), request.body),
+  );
+
+  // « Reproposer le code PIN et la photo » (1.30.0) : aucun corps.
+  registerFamilyRoute(app, "resetPrompts", async (request, actor, now) =>
+    resetPrompts(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), now),
   );
 
   registerFamilyRoute(app, "leave", async (request, actor) =>

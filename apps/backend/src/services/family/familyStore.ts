@@ -45,6 +45,8 @@ export interface MemberRow {
   isParent?: boolean;
   /** Invité (1.30.0) : les bibliothèques que la famille lui permet, en JSON ; null = toutes celles de son créateur. */
   libraryAccess?: string | null;
+  /** 1.30.0 : « Reproposer le code PIN et la photo » demandé à cette date ; null = jamais. */
+  promptsResetAt?: Date | null;
   createdAt: Date;
 }
 

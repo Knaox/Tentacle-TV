@@ -33,6 +33,7 @@ import {
   type DismissibleHint,
 } from "../help/dismissibleHints";
 import { notifyPreferencesUpdate } from "./preferences.notify";
+import { sendToUser } from "../services/wsManager";
 
 const paramsSchema = z.object({ hint: z.enum(DISMISSIBLE_HINTS) });
 const bodySchema = z.object({
@@ -83,6 +84,22 @@ export async function dismissAccountHint(userId: string, hint: DismissibleHint):
   const current = await readState(userId);
   if (current.dismissed.includes(hint)) return;
   await writeState(userId, { dismissed: normalizeDismissedHints([...current.dismissed, hint]), marks: current.marks });
+}
+
+/**
+ * Réafficher un rappel masqué d'un compte, côté serveur — le même effet que son
+ * « Réafficher ». Sert à « Reproposer le code PIN et la photo » de la Famille
+ * (`familyPin`). Garde les autres rappels ; les appareils du compte l'apprennent
+ * en direct (`preferences:update`, portée `hints`). Rend vrai s'il était masqué.
+ */
+export async function restoreAccountHint(userId: string, hint: DismissibleHint): Promise<boolean> {
+  const current = await readState(userId);
+  if (!current.dismissed.includes(hint)) return false;
+  const marks: DismissedHintMarks = { ...current.marks };
+  delete marks[hint];
+  await writeState(userId, { dismissed: current.dismissed.filter((entry) => entry !== hint), marks });
+  sendToUser(userId, { type: "preferences:update", scope: "hints" });
+  return true;
 }
 
 /** La réponse : les rappels masqués, leurs marques, et la liste fermée de ce serveur. */
