@@ -1186,3 +1186,64 @@ Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir b
   (la route du lot le refuse). À fermer dans le proxy.
 - Banc : Jellyfin 10.11 jetable, trois comptes (administrateur ; un compte qui ne supprime que
   dans UNE bibliothèque ; un compte sans droit), médias générés ; preuves dans le rapport du lot.
+
+## 9.8 Bibliothèques permises par la famille, et contrôle parental simplifié sur TV (lot TV du 16/10, T2)
+
+Décision de Damien (16/10) : sur la TV, un contrôle parental SIMPLIFIÉ — les bibliothèques
+autorisées et un âge en quelques paliers, sans plages horaires — que le propriétaire ou un parent
+ouvre sur un invité ou un membre mineur. « Le client, c'est juste un affichage simplifié, mais
+derrière, c'est fixé par Jellyfin. » Règle FAMILIALE : un membre qui part retrouve ses droits, et
+une règle de l'administrateur prime toujours.
+
+### 9.8.1 Les bibliothèques — capacité `family.libraryLimits` (1.30.0)
+
+- Contrat : `packages/shared/src/family/familyLibraries.ts` (miroir, ré-exporté par
+  `familyContract.ts`). `GET|PUT /api/family/profiles/:userId/libraries` (`profileLibraries`,
+  `setProfileLibraries`, appelants `personal`, `ownerProfile`, `memberProfile`) →
+  `FamilyLibrariesDto { available, allowed }` ; corps EXACT `{ allowed: string[] | null }`.
+- **Mêmes droits que le contrôle parental** : invité → `manageableGuest` (propriétaire, parent, ou
+  le membre qui l'a créé) ; membre → `regulableMember` (propriétaire ou parent ; jamais le
+  propriétaire, un parent, un administrateur Jellyfin : `family.member_parental_refused`).
+- **Jellyfin applique** : `EnableAllFolders` / `EnabledFolders` = PLAFOND ∩ VOULU
+  (`services/family/familyLibraryRules.ts`, pur). Plafond : les bibliothèques du créateur (invité),
+  la base de l'administrateur (membre). `null` = toutes celles du plafond ; une liste reste une
+  liste (une bibliothèque créée plus tard n'y entre pas). Plus rien en commun avec le plafond →
+  AUCUNE bibliothèque : rien ne s'élargit. Une bibliothèque hors du plafond ou inconnue du serveur
+  est refusée (`family.invalid_input`), comme une liste vide, un doublon ou une clé en trop.
+- **Invité** : `family_members.libraryAccess` (migration `0008_family_library_limits`) ;
+  `guestPolicy` recoupe après le contrôle parental ; le guet, l'ouverture d'un profil et toute
+  écriture du créateur le tiennent, comme son âge (§ 4.2).
+- **Membre mineur** : `family_member_parental.libraries` (voulu), `libraryBase`, `libraryWritten`.
+  `settleMemberParental` écrit âge ET bibliothèques en UNE écriture (jamais deux lectures-écritures
+  croisées de la politique), relit, garde. Même règle de base qu'au § 9.4.3 : l'accès lu qui
+  diffère de la dernière écriture a été changé AILLEURS (l'administrateur) et devient la base. Une
+  base jamais relevée (ligne posée par l'âge seul) = l'accès lu. La ligne vit tant que l'âge OU les
+  bibliothèques restreignent ; les deux retirés, départ, retrait, dissolution → base rendue, à
+  l'identique ; Jellyfin muet → le guet la rend.
+- Comparaisons sans ordre ni forme d'identifiant (`samePolicy` normalise `EnabledFolders`).
+- Tests : `familyLibraryRules.test.ts`, `test/familyLibraryLimits.test.ts` (invité, plafond du
+  créateur qui se restreint, base rendue au départ et à la dissolution, l'administrateur qui change
+  pendant, âge et bibliothèques ensemble, Jellyfin muet, refus d'un membre simple, d'un parent sur
+  le propriétaire ou un parent, hors famille, administrateur Jellyfin, corps forgés).
+
+### 9.8.2 La TV (Apple TV, Android TV) — `ParentalControls { userId }`
+
+- Ouvert depuis la fiche d'un profil de « Gérer les profils » (T1), sur un profil dont le serveur
+  rend `parental` (c'est-à-dire à qui peut le régler). L'état de l'âge voyage avec
+  `GET /api/family` (rendu aussi à une session de profil qui GÈRE, 95235dc7c) ; l'échelle vient de
+  `parentalOptions` ; les bibliothèques se lisent à la demande.
+- **Âge** (tv-core `session/parentalAge.ts`) : paliers 0 (« Tout public »), 6, 10, 12, 16 ans,
+  « Sans limite » ; un palier vaut le plus grand score de la table ≤ son âge (les scores de
+  Jellyfin 10.11 sont des âges) ; deux paliers sur un même score n'en font qu'un, le plus jeune.
+  Seule la note change (`withParentalAge`) : types non classés, étiquettes et plages réglés
+  ailleurs repartent intacts. Une note réglée ailleurs hors palier se montre « Réglé ailleurs »,
+  à sa place dans l'échelle, jamais remplacée en silence. Le plafond plus strict se dit
+  (cadenas), sans interdire le choix.
+- **Bibliothèques** (tv-core `session/parentalLibraries.ts`) : une case par bibliothèque
+  proposée ; tout coché = `null` ; la dernière cochée ne se décoche pas.
+- Chaque geste part aussitôt, une écriture après l'autre (`useSaveLane`), la vue suit le geste puis
+  revient à l'état relu ; « Enregistré » au pied. La gestion refermée en route
+  (`family.manage_locked`) ramène à « Gérer les profils », qui redemande le code.
+- **Capacités** : âge d'un invité `family.parentalControls`, d'un membre `family.memberParental`,
+  bibliothèques `family.libraryLimits` — une section que le serveur ne déclare pas n'existe pas.
+- Le bureau proposera la même section « Bibliothèques » (session Famille).
