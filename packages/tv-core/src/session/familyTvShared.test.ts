@@ -67,6 +67,10 @@ describe("la famille partagée sur la TV d'un membre", () => {
     const needsPin = { ...MARC, manage: null, manageNeedsPin: true };
     expect(manageEntryProfile(marcsTv({ profiles: [annePin, needsPin, ZOE] }))).toBeNull();
     expect(manageEntryProfile(marcsTv({ profiles: [annePin, marcWithPin, ZOE], canManage: false }))).toBeNull();
+    // Un membre qui ne gère que SES invités et n'en a créé aucun : rien à y faire, pas d'entrée.
+    const idle = { ...MARC, hasPin: true, manage: { manageMembers: false, createGuests: false, manageGuests: "own" as const } };
+    expect(manageEntryProfile(marcsTv({ profiles: [annePin, idle, { ...ZOE, createdBy: "anne" }] }))).toBeNull();
+    expect(manageEntryProfile(marcsTv({ profiles: [annePin, idle, ZOE] }))?.userId).toBe("marc");
     // Le compte de la TV absent de la liste : rien.
     expect(manageEntryProfile(marcsTv({ profiles: [annePin, ZOE] }))).toBeNull();
   });
