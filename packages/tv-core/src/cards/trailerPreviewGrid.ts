@@ -130,3 +130,33 @@ export function gridTrailerPreviewWarmWindow(index: number, count: number, colum
   const start = Math.max(0, Math.min(count, Math.floor(index / perLine) * perLine));
   return [start, Math.min(count, start + 2 * perLine)];
 }
+
+/**
+ * La grille est POSÉE quand ni le focus ni la page n'ont bougé depuis
+ * `GRID_PREVIEW_SETTLE_MS` : avant, ni aperçu ni préparation. Le focus seul ne
+ * suffit pas à le dire — en défilement accéléré (flèche tenue), tvOS ne
+ * prévient l'app que d'un focus de temps en temps (un toutes les deux
+ * secondes, mesuré), alors que la page défile toujours : c'est le défilement
+ * qui dit que la grille bouge.
+ */
+export const GRID_PREVIEW_SETTLE_MS = 300;
+
+/** Dans combien de temps la grille sera posée (ms ; 0 : elle l'est), depuis son dernier mouvement. */
+export function gridPreviewSettleDelay(lastMoveAt: number | null, now: number, settleMs = GRID_PREVIEW_SETTLE_MS): number {
+  if (lastMoveAt === null) return 0;
+  return Math.max(0, lastMoveAt + settleMs - now);
+}
+
+/** Au-delà de tant de lignes défilées depuis le focus qu'elle connaît, l'app est en retard sur la page. */
+export const GRID_FOCUS_OUTRUN_LINES = 1.5;
+
+/**
+ * Le focus que l'app connaît est DÉPASSÉ : la page a défilé de plus d'une
+ * ligne et demie depuis qu'elle l'a reçu — un pas de flèche n'en fait jamais
+ * défiler plus d'une. C'est le défilement accéléré de tvOS, dont l'app ne
+ * reçoit qu'un focus de temps en temps : la carte qu'elle croit focalisée est
+ * déjà loin, son aperçu ne se demande pas. Un pas simple, lui, ne retarde rien.
+ */
+export function gridFocusOutrun(scrollAtFocus: number, scrollNow: number, lineStride: number): boolean {
+  return Math.abs(scrollNow - scrollAtFocus) > GRID_FOCUS_OUTRUN_LINES * Math.max(1, lineStride);
+}
