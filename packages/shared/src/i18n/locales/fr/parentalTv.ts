@@ -21,6 +21,7 @@ export default {
     summaryAllAges: "Les titres tout public seulement.",
     summaryYears: "Les titres jusqu'à {{age}} ans.",
     summaryNone: "Aucune limite d'âge.",
+    summaryNoneFamily: "Aucune limite fixée par la famille.",
     summaryCustom: "« {{names}} », réglé sur le bureau ou le web.",
     summaryCustomUnnamed: "Une note réglée sur le bureau ou le web.",
     ceilingMember: "L'administrateur limite déjà ce compte à « {{names}} » : rien au-delà.",

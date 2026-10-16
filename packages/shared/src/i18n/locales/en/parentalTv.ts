@@ -19,6 +19,7 @@ export default {
     summaryAllAges: "All-ages titles only.",
     summaryYears: "Titles rated up to age {{age}}.",
     summaryNone: "No age limit.",
+    summaryNoneFamily: "No limit set by the family.",
     summaryCustom: "“{{names}}”, set on the desktop app or the web.",
     summaryCustomUnnamed: "A rating set on the desktop app or the web.",
     ceilingMember: "The administrator already limits this account to “{{names}}”: nothing beyond.",

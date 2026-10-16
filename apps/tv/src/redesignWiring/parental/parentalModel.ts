@@ -46,24 +46,27 @@ export function parentalAgeView(input: {
   const { controls, ceiling, ratings, t } = input;
   const choices = parentalAgeChoices(ratings);
   const current = currentParentalAge(choices, controls, ratings);
+  // Les mêmes noms sur la ligne et dans la phrase (trois au plus) : jamais deux coupes différentes.
+  const customNames = current.kind === "custom" ? current.names.slice(0, 3).join(" / ") : "";
   // Un réglage fait ailleurs : montré à sa place dans l'échelle, jamais remplacé en silence.
   const options: ParentalAgeView["options"] = parentalAgeSlots(choices, current).map((slot) => ({
     key: slot.key,
     label: optionLabel(slot, t),
-    detail: slot.kind === "custom" ? slot.names.slice(0, 2).join(" / ") || undefined : undefined,
+    detail: slot.kind === "custom" ? customNames || undefined : undefined,
     selected: current.key === slot.key,
   }));
+  const capped = currentCappedByCeiling(choices, current, ceiling) && ceiling?.maxParentalRating != null;
   const selected = current.kind === "choice" ? choices.find((choice) => choice.key === current.key) : undefined;
   let summary: string;
   if (current.kind === "custom") {
-    summary = current.names.length
-      ? t("parentalTv:age.summaryCustom", { names: current.names.slice(0, 3).join(" / ") })
-      : t("parentalTv:age.summaryCustomUnnamed");
-  } else if (!selected || selected.kind === "none") summary = t("parentalTv:age.summaryNone");
-  else summary = selected.age === 0 ? t("parentalTv:age.summaryAllAges") : t("parentalTv:age.summaryYears", { age: selected.age });
+    summary = customNames ? t("parentalTv:age.summaryCustom", { names: customNames }) : t("parentalTv:age.summaryCustomUnnamed");
+  } else if (!selected || selected.kind === "none") {
+    // Sous un plafond, « aucune limite » mentirait : c'est la famille qui n'en pose pas (le cadenas dit le reste).
+    summary = capped ? t("parentalTv:age.summaryNoneFamily") : t("parentalTv:age.summaryNone");
+  } else summary = selected.age === 0 ? t("parentalTv:age.summaryAllAges") : t("parentalTv:age.summaryYears", { age: selected.age });
 
   let ceilingNote: string | null = null;
-  if (currentCappedByCeiling(choices, current, ceiling) && ceiling?.maxParentalRating != null) {
+  if (capped && ceiling?.maxParentalRating != null) {
     const names = ratingNames(ratings, ceiling.maxParentalRating, ceiling.maxParentalSubRating);
     ceilingNote =
       input.kind === "guest"
