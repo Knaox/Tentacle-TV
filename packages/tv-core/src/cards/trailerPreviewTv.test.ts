@@ -124,10 +124,10 @@ describe("previewVideoKey / previewStartPosition", () => {
 });
 
 describe("le délai choisi sur le téléviseur", () => {
-  it("la carte grandit au délai ; la demande 350 ms avant, jamais sous 300 ms de focus tenu", () => {
+  it("la carte grandit au délai ; la demande 350 ms avant, jamais sous 450 ms de focus tenu", () => {
     expect(tvTrailerPreviewTiming(800)).toMatchObject({ revealMs: 800, intentMs: 450, intentStillMs: 0, volume: 0.7 });
-    // 0,5 s : la demande au plancher, plus tôt qu'au défaut — sinon le choix ne se distinguait pas de 0,8 s.
-    expect(tvTrailerPreviewTiming(500)).toMatchObject({ revealMs: 500, intentMs: 300 });
+    // 0,5 s : la demande reste au plancher — un parcours de rangée (un pas / 400 ms) ne demande jamais rien.
+    expect(tvTrailerPreviewTiming(500)).toMatchObject({ revealMs: 500, intentMs: 450 });
     expect(tvTrailerPreviewTiming(1200)).toMatchObject({ revealMs: 1200, intentMs: 850 });
     expect(tvTrailerPreviewTiming(2000)).toMatchObject({ revealMs: 2000, intentMs: 1650 });
   });

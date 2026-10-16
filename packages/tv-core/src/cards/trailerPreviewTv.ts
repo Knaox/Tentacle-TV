@@ -14,11 +14,12 @@ import {
  * répète un pas toutes les ~100 ms quand on la tient. La carte grandit au
  * DÉLAI choisi sur l'appareil (Réglages › Lecture, shared `previewDelay.ts`),
  * 800 ms par défaut, le même que sur le bureau ; la demande part 350 ms avant
- * lui : à 450 ms de focus tenu au délai par défaut — un parcours régulier (un
- * pas toutes les 400 ms) ne demande rien, un pas de plus la repousse. Jamais
- * avant 300 ms : une flèche tenue ne demande rien, quel que soit le délai ;
- * seul qui choisit 0,5 s accepte qu'un parcours posé demande carte après
- * carte (à 450 ms, ce choix ne se distinguait pas de 0,8 s : 16/10). Historique :
+ * lui, JAMAIS avant 450 ms de focus tenu, quel que soit le délai : un
+ * parcours régulier (un pas toutes les 400 ms) ne demande rien, un pas de plus
+ * la repousse. Au réglage 0,5 s, l'aperçu paraît donc dès qu'il le peut
+ * (~0,75 s mesuré) : essayé à 300 ms (16/10), un parcours posé demandait un
+ * aperçu par carte traversée — une extraction YouTube possible chacune, et
+ * une vidéo montée à chaque pas. Historique :
  * une seconde et 1,8 s, « comme Netflix au salon », trop lent (15/10) ; puis
  * 900 ms ; puis le délai de l'utilisateur (16/10). Le serveur a préparé d'avance
  * l'aperçu des cartes autour du focus (`/api/trailers/preview/warm`) : la
@@ -40,8 +41,8 @@ export const TV_TRAILER_PREVIEW_TIMING: TrailerPreviewTiming = {
   volume: 0.7,
 };
 
-/** Le pas du salon : la demande 350 ms avant le délai, jamais sous 300 ms de focus tenu (une flèche tenue). */
-export const TV_TRAILER_PREVIEW_PACE: TrailerPreviewPace = { floorMs: 300, leadMs: 350 };
+/** Le pas du salon : la demande 350 ms avant le délai, jamais sous 450 ms de focus tenu (un parcours de rangée). */
+export const TV_TRAILER_PREVIEW_PACE: TrailerPreviewPace = { floorMs: 450, leadMs: 350 };
 
 /** Les temps de la machine pour le délai choisi sur ce téléviseur. */
 export function tvTrailerPreviewTiming(delayMs: number): TrailerPreviewTiming {
