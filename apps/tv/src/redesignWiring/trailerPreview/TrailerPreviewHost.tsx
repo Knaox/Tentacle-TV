@@ -32,5 +32,9 @@ function useTvTrailerPreview(subject: TrailerPreviewSubject | null, focused: boo
     () => (active && subject ? <PreviewSession subject={subject} focused={focused} onExpanded={setExpanded} onBusy={setBusy} /> : null),
     [active, subject, focused],
   );
-  return useMemo(() => (video ? { expanded: expanded && active, video } : null), [video, expanded, active]);
+  // Le focus parti, la grande carte se replie dans le rendu MÊME du flou, sans attendre que la
+  // machine le constate (deux rendus de plus : l'ancienne architecture ne regroupe pas les états
+  // posés par les effets) ; la vidéo, elle, reste le temps de son fondu de sortie.
+  const shown = expanded && active && focused;
+  return useMemo(() => (video ? { expanded: shown, video } : null), [video, shown]);
 }

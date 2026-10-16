@@ -21,10 +21,18 @@ import { FocusTarget } from "../focus/FocusTarget";
  * `expansion` : la carte peut devenir la GRANDE CARTE de l'aperçu (une
  * rangée, `trailerPreviewPort`). La cellule ELLE-MÊME grandit — sa largeur,
  * la place de l'image — et la rangée lui fait place : les voisines glissent,
- * rien ne se pose sur elles (tvOS ne propose pas un focalisable recouvert), et
- * la cible, qui couvre la cellule, reste la grande carte entière. Sa présence
- * ne change jamais pour une carte donnée (une rangée en donne une à toutes
- * ses cartes, une grille jamais) : l'arbre reste le même, le focus aussi.
+ * rien ne se pose sur elles (tvOS ne propose pas un focalisable recouvert).
+ * La CIBLE, elle, garde la largeur de la carte (toute la hauteur de la
+ * cellule) : HAUT et BAS se cherchent depuis le centre de la cible (règle des
+ * sections, native sur les deux plateformes) — depuis un aperçu, ils mènent
+ * exactement où ils mèneraient depuis la carte à sa taille normale (demande
+ * du 16/10 : la grande carte menait à la DEUXIÈME carte de la rangée du
+ * dessus). Sa présence ne change jamais pour une carte donnée (une rangée en
+ * donne une à toutes ses cartes, une grille jamais) : l'arbre reste le même,
+ * le focus aussi.
+ *
+ * La grande carte se dessine toujours DANS la cible, qu'elle déborde à
+ * droite : rien ne la recouvre, et elle suit le pouce avec la cible.
  *
  * `glide` : la cellule GLISSE quand une voisine devient la grande carte (une
  * ligne de grille, `gridPreviewLine` — la grande carte en déborde, la cellule
@@ -71,6 +79,9 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
   const { width, front, style, glide } = props;
   const glideStyle = useMemo(() => (glide ? [{ width }, front && styles.front, style, glide] : null), [glide, width, front, style]);
   const { focusKey, frameHeight, frame, centerFrame = false, onPress, onLongPress, onTargetFocusChange, accessibilityLabel, children } = props;
+  // Une cellule qui grandit garde une cible à la largeur de la carte (cf. plus haut).
+  const expandable = props.expansion !== undefined;
+  const targetStyle = useMemo(() => (expandable ? [styles.target, { width }] : StyleSheet.absoluteFill), [expandable, width]);
   const renderFrame = useCallback(
     () => (centerFrame ? <View style={styles.center}>{frame}</View> : frame),
     [centerFrame, frame],
@@ -89,7 +100,7 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
         onLongPress={onLongPress}
         onFocusChange={onTargetFocusChange}
         accessibilityLabel={accessibilityLabel}
-        style={StyleSheet.absoluteFill}
+        style={targetStyle}
       >
         {renderFrame}
       </FocusTarget>
@@ -132,5 +143,6 @@ function ExpandingSpacer({ frameHeight, expansion }: { frameHeight: number; expa
 
 const styles = StyleSheet.create({
   front: { zIndex: 10 },
+  target: { position: "absolute", left: 0, top: 0, bottom: 0 },
   center: { alignItems: "center" },
 });
