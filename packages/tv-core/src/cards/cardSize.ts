@@ -2,10 +2,11 @@
  * La taille des cartes des téléviseurs — un réglage d'APPAREIL (Réglages ›
  * Apparence, Apple TV et Android TV) : Petite, Normale, Grande.
  *
- * « Normale » est la taille d'avant le réglage, à l'identique : rien ne bouge
- * pour qui n'y touche pas. « Grande » est la taille Netflix — un peu plus de
- * trois vignettes par rangée ; « Petite », un peu plus petite, pas trop —
- * près de cinq vignettes.
+ * « Normale » est la taille d'avant le réglage, à l'identique. « Grande » est
+ * la taille Netflix — un peu plus de trois vignettes par rangée — et le DÉFAUT
+ * depuis le 16/10 (choix de Damien) : un téléviseur qui n'a jamais choisi passe
+ * en Grande, celui qui a choisi garde son choix (la clé n'est écrite qu'à un
+ * choix). « Petite », un peu plus petite, pas trop — près de cinq vignettes.
  *
  * La règle tient en un facteur appliqué aux gabarits de la scène (vignette
  * 16:9, affiche 2:3) ; les grilles, elles, changent de nombre de colonnes —
@@ -18,7 +19,7 @@ export type CardSize = "small" | "normal" | "large";
 /** L'ordre du réglage, du plus petit au plus grand. */
 export const CARD_SIZES: readonly CardSize[] = ["small", "normal", "large"];
 
-export const DEFAULT_CARD_SIZE: CardSize = "normal";
+export const DEFAULT_CARD_SIZE: CardSize = "large";
 
 /** La clé de stockage (traversée par une chaîne : ne jamais la renommer). */
 export const CARD_SIZE_STORAGE_KEY = "tentacle_tv_card_size";
@@ -37,7 +38,7 @@ export const CARD_SIZE_GRID_COLUMNS: Readonly<Record<CardSize, number>> = {
   large: 5,
 };
 
-/** Une valeur lue du stockage → une taille connue, sinon la taille normale. */
+/** Une valeur lue du stockage → une taille connue, sinon la taille par défaut. */
 export function parseCardSize(raw: string | null | undefined): CardSize {
   return raw === "small" || raw === "large" || raw === "normal" ? raw : DEFAULT_CARD_SIZE;
 }

@@ -38,13 +38,18 @@ describe("la taille lue du stockage", () => {
     for (const size of CARD_SIZES) expect(parseCardSize(size)).toBe(size);
   });
 
-  it("rend la taille normale pour rien, une valeur inconnue ou d'une autre casse", () => {
-    expect(DEFAULT_CARD_SIZE).toBe("normal");
-    expect(parseCardSize(null)).toBe("normal");
-    expect(parseCardSize(undefined)).toBe("normal");
-    expect(parseCardSize("")).toBe("normal");
-    expect(parseCardSize("huge")).toBe("normal");
-    expect(parseCardSize("Large")).toBe("normal");
+  it("rend la taille par défaut, Grande, pour rien, une valeur inconnue ou d'une autre casse", () => {
+    expect(DEFAULT_CARD_SIZE).toBe("large");
+    expect(parseCardSize(null)).toBe("large");
+    expect(parseCardSize(undefined)).toBe("large");
+    expect(parseCardSize("")).toBe("large");
+    expect(parseCardSize("huge")).toBe("large");
+    expect(parseCardSize("Large")).toBe("large");
+  });
+
+  it("une taille déjà choisie reste la sienne, Normale comprise", () => {
+    expect(parseCardSize("normal")).toBe("normal");
+    expect(parseCardSize("small")).toBe("small");
   });
 });
 

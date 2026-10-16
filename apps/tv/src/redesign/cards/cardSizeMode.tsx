@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { cardMetricsOf, DEFAULT_CARD_SIZE, type CardMetrics, type CardSize } from "@tentacle-tv/tv-core";
+import { cardMetricsOf, type CardMetrics, type CardSize } from "@tentacle-tv/tv-core";
 
 /**
  * La taille des cartes vue par les vues de la refonte : les gabarits de la
@@ -21,7 +21,8 @@ const METRICS: Readonly<Record<CardSize, CardMetrics>> = {
   large: cardMetricsOf("large", BASE),
 };
 
-const CardSizeContext = createContext<CardMetrics>(METRICS[DEFAULT_CARD_SIZE]);
+// Sans fournisseur (le banc) : la taille normale, les gabarits de la scène — pas le défaut de l'app.
+const CardSizeContext = createContext<CardMetrics>(METRICS.normal);
 
 export function CardSizeProvider({ size, children }: { size: CardSize; children: ReactNode }) {
   // Trois objets figés : une taille inchangée rend le même objet, rien ne se redessine.

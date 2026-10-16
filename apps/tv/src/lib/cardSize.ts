@@ -5,8 +5,8 @@ import { tvStorage } from "../storage/RNStorageAdapter";
 /**
  * Le réglage « Taille des cartes » de ce téléviseur : un réglage d'APPAREIL
  * (clé `tentacle_tv_card_size`, traversée par une chaîne : ne jamais la
- * renommer), « normal » par défaut — rien n'est écrit tant qu'on n'y touche
- * pas, et une valeur inconnue vaut la taille normale (`parseCardSize`).
+ * renommer), « Grande » par défaut (16/10) — rien n'est écrit tant qu'on n'y touche
+ * pas, et une valeur inconnue vaut ce défaut (`parseCardSize`).
  *
  * Les vues de la refonte ne lisent pas le stockage : `App.tsx` monte
  * `CardSizeProvider` sur ce magasin, l'onglet Apparence des réglages l'écrit,
