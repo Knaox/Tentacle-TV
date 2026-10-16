@@ -675,6 +675,13 @@ grande carte finit à la marge droite, elle grandit vers la gauche) ; au départ
 focus, la rangée RESTE où elle est (choix de Damien, 16/10).
 La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
 se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
+**L'aperçu ne gêne jamais la navigation** (16/10) : la CIBLE d'une carte qui peut
+grandir garde la largeur de la carte (`CardShell`) — HAUT et BAS partent du centre
+de la carte à sa taille normale, jamais de la grande carte ; le focus parti, la
+grande carte se replie dans le rendu même du flou ; la vidéo finie de sortir reste
+GARÉE, en pause, et son lecteur ne se démonte qu'au calme de la télécommande
+(400 ms sans intention) ou quand un autre aperçu prend la place (tv-core
+`cards/trailerPreviewPark.ts`) — jamais au milieu d'une rafale de flèches.
 Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
 vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
 `redesignWiring/trailerPreview/` (une session, la carte focalisée seulement) ;
