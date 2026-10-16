@@ -23,6 +23,7 @@ import { ParentalView, type ParentalViewModel } from "../../redesign/screens/par
 import { useBackLayer } from "../back/BackScope";
 import { profileAvatarUri, refusalMessage } from "../profiles/profilesModel";
 import { parentalAgeView } from "./parentalModel";
+import { useParentalLibraries } from "./useParentalLibraries";
 import { useParentalNotice } from "./useParentalNotice";
 import { useSaveLane } from "./useSaveLane";
 
@@ -36,10 +37,12 @@ type Props = NativeStackScreenProps<RootStackParamList, "ParentalControls">;
  * `parentalCeiling`, rendus à qui peut régler ce profil) ; l'échelle de
  * Jellyfin vient de `parentalOptions`. Chaque palier part aussitôt
  * (`setGuestParental` / `setMemberParental`, le contrôle ENTIER : seule la note
- * change), file après file (`useSaveLane`).
+ * change), file après file (`useSaveLane`) ; chaque bibliothèque aussi
+ * (`useParentalLibraries`).
  *
  * Gardé par les capacités : l'âge d'un invité par `family.parentalControls`,
- * celui d'un membre par `family.memberParental`. La gestion refermée en route
+ * celui d'un membre par `family.memberParental`, les bibliothèques par
+ * `family.libraryLimits` — sans elle, leur section n'existe pas. La gestion refermée en route
  * (`family.manage_locked`) : retour à « Gérer les profils », qui redemande le code.
  */
 export function ParentalRedesign({ navigation, route }: Props) {
@@ -60,6 +63,8 @@ export function ParentalRedesign({ navigation, route }: Props) {
   const memberAge = useServerCapability("family.memberParental");
   const ageAllowed = !!profile?.parental && (profile.kind === "guest" ? guestAge : memberAge);
   const options = useFamilyParentalOptions({ enabled: ageAllowed });
+  // Le serveur ne rend l'état parental qu'à qui peut régler ce profil : les bibliothèques suivent les mêmes droits.
+  const librariesAllowed = useServerCapability("family.libraryLimits") && !!profile?.parental;
 
   const leave = useCallback(() => navigation.goBack(), [navigation]);
   const onLocked = useCallback(() => {
@@ -84,6 +89,7 @@ export function ParentalRedesign({ navigation, route }: Props) {
     [profile?.kind, guestParental, memberParental, userId],
   );
   const ageLane = useSaveLane(sendAge, notice.report, profile?.parental);
+  const libraries = useParentalLibraries({ userId, enabled: librariesAllowed, report: notice.report, say: notice.say });
 
   const age = useMemo(() => {
     if (!ageAllowed || !profile || !options.data) return null;
@@ -109,28 +115,29 @@ export function ParentalRedesign({ navigation, route }: Props) {
 
   const currentNotice = notice.current;
   // Lu sur les données (la TV tourne sur react-query v4 : `isLoading` n'y dit pas la même chose).
-  const loading = (!overview.data && !overview.error) || (ageAllowed && !options.data && !options.error);
+  const loading = (!overview.data && !overview.error) || (ageAllowed && !options.data && !options.error) || libraries.loading;
+  const failure = overview.error ?? (ageAllowed ? options.error : null) ?? libraries.error;
   const model = useMemo<ParentalViewModel>(() => {
     if (loading) return { kind: "loading" };
-    if (overview.error) return { kind: "error", message: refusalMessage(refusalOfError(overview.error), t), retry: true };
+    if (failure) return { kind: "error", message: refusalMessage(refusalOfError(failure), t), retry: true };
     if (!profile) return { kind: "error", message: t("familyTv:unavailable"), retry: false };
-    if (ageAllowed && options.error) return { kind: "error", message: refusalMessage(refusalOfError(options.error), t), retry: true };
-    if (!age) return { kind: "error", message: t("parentalTv:unavailable"), retry: false };
+    if (!age && !libraries.view) return { kind: "error", message: t("parentalTv:unavailable"), retry: false };
     return {
       kind: "ready",
       name: profile.name,
       color: profile.color,
       avatarUri: profileAvatarUri(serverUrl, profile.userId, profile.imageTag),
       role: profile.kind === "guest" ? t("parentalTv:roles.guest") : t("parentalTv:roles.member"),
-      age: age.view,
-      libraries: null,
+      age: age?.view ?? null,
+      libraries: libraries.view,
       notice: currentNotice,
     };
-  }, [loading, overview.error, profile, ageAllowed, options.error, age, serverUrl, currentNotice, t]);
+  }, [loading, failure, profile, age, libraries.view, serverUrl, currentNotice, t]);
 
   // L'entrée : décidée à l'ARRIVÉE (le palier alors retenu), jamais reprise à chaque geste.
   const [entry, setEntry] = useState<string | null>(null);
-  const arrivedEntry = model.kind === "ready" ? parentalEntryKey({ ageKey: age?.selectedKey ?? null, libraryCount: 0 }) : null;
+  const arrivedEntry =
+    model.kind === "ready" ? parentalEntryKey({ ageKey: age?.selectedKey ?? null, libraryCount: libraries.view?.rows.length ?? 0 }) : null;
   if (entry === null && arrivedEntry !== null) setEntry(arrivedEntry);
   const entryKey = model.kind === "error" ? (model.retry ? STATUS_PRIMARY_KEY : null) : entry;
   useParentalFocus(store, {
@@ -149,8 +156,10 @@ export function ParentalRedesign({ navigation, route }: Props) {
           onRetry={() => {
             void overview.refetch();
             if (ageAllowed) void options.refetch();
+            if (librariesAllowed) void libraries.refetch();
           }}
           onAge={onAge}
+          onLibrary={libraries.onLibrary}
         />
       </FocusBindingProvider>
     </View>
