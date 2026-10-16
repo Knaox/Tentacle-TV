@@ -50,6 +50,8 @@ export interface CardGrowth {
   expansion: CardExpansion;
   expanded: boolean;
   video: ReactNode | null;
+  /** L'aperçu joue sous le focus : ce que Lecture/Pause en fait (port `CardPreview.remote`). */
+  remote: { paused: boolean; muted: boolean } | null;
   /** Placée par sa grille : la cellule ne grandit pas, la grande carte en
    *  déborde, de `from` à `to` (dans la cellule). Absente : une carte de rangée. */
   place?: { from: TrailerPreviewRect; to: TrailerPreviewRect };
@@ -108,7 +110,7 @@ export function useCardGrowth(
     else if (wasExpanded.current) handlers.current.onCollapse?.();
     wasExpanded.current = expanded;
   }, [expanded, tile.width, tile.height]);
-  return { tile, expansion, expanded, video: preview?.video ?? null };
+  return { tile, expansion, expanded, video: preview?.video ?? null, remote: preview?.remote ?? null };
 }
 
 /**
@@ -138,7 +140,7 @@ export function useDrivenCardGrowth(card: CardModel, focused: boolean, driver: C
   }, [expanded, driver]);
   const expansion = useMemo(() => ({ width: driver.tile.width, height: driver.tile.height, progress: driver.progress }), [driver]);
   const place = useMemo(() => ({ from: driver.from, to: driver.to }), [driver]);
-  return { tile: driver.tile, expansion, expanded, video: preview?.video ?? null, place };
+  return { tile: driver.tile, expansion, expanded, video: preview?.video ?? null, remote: preview?.remote ?? null, place };
 }
 
 /**

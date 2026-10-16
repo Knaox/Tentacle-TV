@@ -3,6 +3,7 @@ import type { TrailerPreviewSubject } from "@tentacle-tv/shared";
 import { TrailerPreviewProvider, type CardPreview } from "../../redesign/cards/trailerPreviewPort";
 import { useTrailerPreviewsEnabled } from "../../lib/trailerPreviewSettings";
 import { PreviewSession } from "./PreviewSession";
+import { usePreviewRemoteHint } from "./usePreviewRemote";
 import { useTvPreviewWarm } from "./usePreviewWarmTv";
 
 /**
@@ -36,5 +37,7 @@ function useTvTrailerPreview(subject: TrailerPreviewSubject | null, focused: boo
   // machine le constate (deux rendus de plus : l'ancienne architecture ne regroupe pas les états
   // posés par les effets) ; la vidéo, elle, reste le temps de son fondu de sortie.
   const shown = expanded && active && focused;
-  return useMemo(() => (video ? { expanded: shown, video } : null), [video, shown]);
+  // Ce que la télécommande fait de l'aperçu qui joue, pour l'indice sous la carte.
+  const remote = usePreviewRemoteHint(shown);
+  return useMemo(() => (video ? { expanded: shown, video, remote } : null), [video, shown, remote]);
 }

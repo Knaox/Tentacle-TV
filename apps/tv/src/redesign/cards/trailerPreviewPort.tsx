@@ -21,6 +21,11 @@ export interface CardPreview {
    * à monter.
    */
   video: ReactNode | null;
+  /**
+   * L'aperçu JOUE sous le focus : ce que Lecture/Pause en fait (pause) et son
+   * maintien (le son), pour l'indice sous la carte. `null` sinon.
+   */
+  remote?: { paused: boolean; muted: boolean } | null;
 }
 
 /** Le crochet que l'intégration fournit : appelé à CHAQUE rendu d'une carte qui peut grandir. */

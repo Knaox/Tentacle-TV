@@ -19,6 +19,7 @@ import { useTrailerPreviewSound } from "../../lib/trailerPreviewSettings";
 import { PreviewVideo } from "./PreviewVideo";
 import { previewArbiter, previewMemory, useAppActive } from "./previewDevice";
 import { previewParking, useParkedVideo } from "./previewParking";
+import { usePreviewRemote } from "./usePreviewRemote";
 import { useTvPreviewMachine } from "./useTvPreviewMachine";
 
 /** Le flux d'un cycle : l'adresse absolue, et d'où partir. */
@@ -43,13 +44,15 @@ export interface PreviewSessionProps {
  * L'aperçu d'UNE carte focalisée — le portage du crochet du bureau
  * (`apps/web/src/trailerPreview/useTrailerPreview.ts`) sur le focus :
  *
- *   - la demande au serveur part à l'INTENTION (une seconde de focus tenu,
- *     tv-core `TV_TRAILER_PREVIEW_TIMING`) ; partie, elle va au bout même si
+ *   - la demande au serveur part à l'INTENTION (avant le délai choisi, jamais
+ *     sous 450 ms de focus tenu : tv-core `tvTrailerPreviewTiming`) ; partie, elle va au bout même si
  *     le focus s'en va — sa réponse, gardée, sert le retour sur la carte ;
  *   - un refus passager (429, panne, délai) se redemande à son échéance si le
  *     focus tient, deux fois au plus ; un refus vaut « rien à montrer » ;
- *   - la vidéo se charge cachée et en pause ; la carte grandit au plus tôt à
- *     1,8 s, et seulement avec sa première image ;
+ *   - la vidéo se charge cachée et en pause ; la carte grandit au plus tôt au
+ *     délai choisi (800 ms par défaut), et seulement avec sa première image ;
+ *   - la grande carte jouée sous le focus, Lecture/Pause la met en pause, et
+ *     maintenue coupe son son (`usePreviewRemote`) ;
  *   - une vidéo qui lâche n'est pas redemandée de sitôt (mémoire de
  *     l'appareil) ; un seul aperçu à la fois (l'arbitre) ;
  *   - la vidéo finie de sortir reste GARÉE, en pause, jusqu'au calme de la
@@ -152,7 +155,9 @@ export const PreviewSession = memo(function PreviewSession({ subject, focused, o
   const video = useParkedVideo(trailerPreviewMounted(state) ? current : null);
   const mount = video !== null;
   const expanded = trailerPreviewVisible(state) && current !== null;
-  const playing = trailerPreviewPlaying(state) && video === current;
+  // Lecture/Pause pendant l'aperçu : une vraie pause, rendue dès qu'il ne joue plus.
+  const remotePaused = usePreviewRemote(expanded && focused);
+  const playing = trailerPreviewPlaying(state) && video === current && !remotePaused;
   useEffect(() => onExpanded(expanded), [expanded, onExpanded]);
   useEffect(() => onBusy(mount), [mount, onBusy]);
   // La télécommande suivie tant qu'une vidéo existe : le garage attend son calme.
