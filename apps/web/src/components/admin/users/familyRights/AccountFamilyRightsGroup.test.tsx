@@ -91,6 +91,37 @@ describe("AccountFamilyRightsGroup", () => {
   });
 });
 
+describe("« Autoriser ses invités à demander des films » (1.30.0)", () => {
+  it("montré avec une extension qui sait demander : trois droits, et le résumé le dit", () => {
+    h.open = true;
+    h.dto = dto({
+      requestExtension: true,
+      rights: { createFamily: "inherit", createGuests: "deny", grantGuestRequests: "allow" },
+      allowed: { createFamily: false, createGuests: false, grantGuestRequests: true },
+    });
+    const html = render();
+    expect(html).toContain("accountRights.grantGuestRequests");
+    expect(html.match(/type="radio"/g)).toHaveLength(9);
+    expect(familyRightsSummary(h.dto, true).map((part) => part.key)).toContain("summaryGuestRequests");
+  });
+
+  it("sans extension, ou face à un serveur d'avant : deux droits, comme alors", () => {
+    h.open = true;
+    expect(render().match(/type="radio"/g)).toHaveLength(6);
+    expect(familyRightsSummary(dto({ requestExtension: false }), true).map((part) => part.key)).not.toContain("summaryGuestRequests");
+  });
+
+  it("l'interrupteur coupé l'emporte sur un compte permis : dit par sa propre note", () => {
+    const off = dto({
+      requestExtension: true,
+      rights: { createFamily: "inherit", createGuests: "inherit", grantGuestRequests: "allow" },
+      allowed: { createFamily: false, createGuests: false, grantGuestRequests: false },
+    });
+    expect(creationNote(off, "grantGuestRequests")).toBe("switchedOffRequests");
+    expect(creationNote(dto({ isAdministrator: true, allowed: { createFamily: true, createGuests: true, grantGuestRequests: true } }), "grantGuestRequests")).toBe("adminAlways");
+  });
+});
+
 describe("familyRightsModel", () => {
   it("un administrateur peut toujours ; un interrupteur coupé l'emporte sur un réglage permis", () => {
     expect(creationNote(dto({ isAdministrator: true, allowed: { createFamily: true, createGuests: true } }), "createGuests")).toBe("adminAlways");
