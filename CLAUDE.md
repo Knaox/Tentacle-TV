@@ -707,9 +707,12 @@ GARÉE, en pause, et son lecteur ne se démonte qu'au calme de la télécommande
 session d'aperçu d'une carte ne se monte qu'après 250 ms de focus tenu, datée de
 l'arrivée du focus (`trailerPreviewDwell.ts`). Pendant l'aperçu, la carte fait la
 place de son pied sous la légende (`CardShell` `expansion.room`) : « Maintenir
-OK » et Lecture/Pause restent visibles, dans la zone sûre. Android : la vidéo
-est posée dans `TentacleFocusBlock` (aucun descendant ne prend le focus — le
-contrôleur d'ExoPlayer l'arrachait à la carte, puis au héros).
+OK » et Lecture/Pause restent visibles, dans la zone sûre. Android : l'aperçu a
+son PROPRE lecteur natif (`TentaclePreviewVideo`, `exoplayer/PreviewVideoView.kt` :
+la PlayerView sans contrôleur, une TextureView, aucun focus possible) — celle de
+react-native-video gonflait un contrôleur à chaque aperçu (fil UI bloqué au
+départ de l'aperçu suivant) dont le bouton volait le focus de la carte ; l'élément
+vidéo passe par l'adaptateur `platform/tvos/player/previewVideoElement`.
 Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
 vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
 `redesignWiring/trailerPreview/` (une session, la carte focalisée seulement) ;
