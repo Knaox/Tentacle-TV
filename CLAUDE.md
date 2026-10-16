@@ -679,8 +679,9 @@ titres de Vigie compris (pont : `trailerPreview.delayMs`) — et se règle par
 l'UTILISATEUR sur son appareil (0,5 · 0,8 · 1,2 · 2 s, 800 ms par défaut ;
 Réglages › Apparence sur le web, › Lecture sur la TV) : une règle, shared
 `previewDelay.ts` — la demande part AVANT le délai, jamais sous le plancher qui
-écarte le défilement rapide (450 ms de focus tenu sur TV : tv-core
-`tvTrailerPreviewTiming` ; 200 ms et un pointeur arrêté sur le web). Aucune
+écarte le défilement rapide (300 ms de focus tenu sur TV, 450 ms au délai par
+défaut : tv-core `tvTrailerPreviewTiming` ; 200 ms et un pointeur arrêté sur
+le web). Aucune
 capacité : fonction purement client. Pendant l'aperçu, Lecture/Pause le met
 VRAIMENT en pause, et MAINTENUE coupe le son de l'aperçu seul (le réglage « Son
 des aperçus ») — tv-core `cards/previewRemote.ts` ; sur Android le maintien est
