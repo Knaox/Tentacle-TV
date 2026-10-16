@@ -1,10 +1,22 @@
-import { canManageGuest, sameUserId, type FamilyProfileDto, type FamilyRights, type FamilySwitches } from "@tentacle-tv/shared";
+import {
+  canManageGuest,
+  hasParentalControl,
+  isFamilyParent,
+  sameUserId,
+  type FamilyProfileDto,
+  type FamilyRights,
+  type FamilySwitches,
+} from "@tentacle-tv/shared";
 
 /**
  * La FICHE d'un profil dans « Gérer les profils » (TV, décisions du 16/10) :
  * les gestes que le RÔLE de la session y a — module pur. Le serveur reste le
  * seul juge ; ces règles ne servent qu'à ne pas proposer un geste voué au
  * refus (tout refus se dit quand même).
+ *
+ * Le contrôle parental ne se propose que sur un profil que le serveur rend
+ * avec son état (`parental` : il ne le rend qu'à qui peut le régler, et pour
+ * un membre, seulement s'il peut être restreint — `profileRoleActions`).
  *
  * - Un INVITÉ, pour qui le gère (`canManageGuest` : le propriétaire et un
  *   parent, tous ; un membre, ceux qu'il a créés) : sa photo, son code PIN,
@@ -26,7 +38,8 @@ export type ManageGesture =
   /** Son code : le poser, ou le changer et le retirer. */
   | { kind: "pin"; hasPin: boolean }
   | { kind: "requestTitles"; on: boolean }
-  | { kind: "parentRole"; on: boolean }
+  /** `blocked` : un contrôle parental le restreint — le serveur refuse de le nommer parent, il faut le retirer d'abord. */
+  | { kind: "parentRole"; on: boolean; blocked: boolean }
   | { kind: "createGuests"; on: boolean }
   /** L'entrée vers l'écran du contrôle parental (bibliothèques, âge). */
   | { kind: "parental" }
@@ -70,19 +83,21 @@ function guestGestures(profile: FamilyProfileDto, context: ManageSheetContext): 
   if (rights.manageGuests === "all" && capability.guestRequests && switches.families && switches.guests) {
     gestures.push({ kind: "requestTitles", on: profile.guestRights?.requestTitles === true });
   }
-  if (capability.guestParental) gestures.push({ kind: "parental" });
+  if (capability.guestParental && profile.parental !== undefined) gestures.push({ kind: "parental" });
   gestures.push({ kind: "delete" });
   return gestures;
 }
 
 function memberGestures(profile: FamilyProfileDto, context: ManageSheetContext): ManageGesture[] {
   const { rights, capability } = context;
-  const parent = profile.parent === true;
-  // Un mineur : un membre qui n'est pas parent (un administrateur de Jellyfin, le serveur le refuse et le dit).
-  const parental = capability.memberParental === true && rights.manageMinors === true && !parent;
+  const parent = isFamilyParent(profile);
+  // Un mineur : un membre que le serveur rend avec son état (jamais un parent ni un administrateur de Jellyfin).
+  const parental = capability.memberParental === true && rights.manageMinors === true && !parent && profile.parental !== undefined;
   const gestures: ManageGesture[] = [];
   if (rights.manageMembers) {
-    if (capability.roles && rights.manageRoles) gestures.push({ kind: "parentRole", on: parent });
+    if (capability.roles && rights.manageRoles) {
+      gestures.push({ kind: "parentRole", on: parent, blocked: !parent && hasParentalControl(profile) });
+    }
     if (!parent) gestures.push({ kind: "createGuests", on: profile.rights?.createGuests === true });
     if (parental) gestures.push({ kind: "parental" });
     gestures.push({ kind: "remove" });

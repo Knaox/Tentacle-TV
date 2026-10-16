@@ -18,7 +18,8 @@ export function useManageCapability(enabled: boolean, navigation: NavigationProp
   const parental = routeDeclared(navigation, PARENTAL_ROUTE);
   return {
     guestRequests: family?.guestRequests === true,
-    guestPhotos: gallery && capabilities.has("family.guestPhotos"),
+    // La photo d'un invité depuis un profil : le relais du serveur, ouvert aux profils qui gèrent.
+    guestPhotos: gallery && capabilities.has("family.guestPhotos") && capabilities.has("family.profileManage"),
     roles: capabilities.has("family.roles"),
     guestParental: parental && capabilities.has("family.parentalControls"),
     memberParental: parental && capabilities.has("family.memberParental"),

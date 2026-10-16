@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FamilyProfileDto, FamilyRights } from "@tentacle-tv/shared";
+import { GUEST_PARENTAL_NONE, type FamilyProfileDto, type FamilyRights } from "@tentacle-tv/shared";
 import { manageGesturesOf, sheetRemoval, type ManageSheetCapability, type ManageSheetContext } from "./familyManageSheet";
 import { manageGestureKeys, manageSheetEntryKey, manageSheetFocusAfter, manageSheetGuardedKeys, manageSheetKey } from "../focus/manageSheetFocus";
 
@@ -15,9 +15,10 @@ const profile = (userId: string, kind: FamilyProfileDto["kind"], patch: Partial<
   rights: kind === "member" ? { createGuests: false } : null, ...patch,
 });
 
-const LEO = profile("leo", "guest", { createdBy: "anne", hasPin: true });
-const MIA = profile("mia", "guest", { createdBy: "paul" });
-const ADO = profile("ado", "member");
+// `parental` : le serveur rend l'état à qui peut le régler (un membre : seulement s'il peut être restreint).
+const LEO = profile("leo", "guest", { createdBy: "anne", hasPin: true, parental: GUEST_PARENTAL_NONE });
+const MIA = profile("mia", "guest", { createdBy: "paul", parental: GUEST_PARENTAL_NONE });
+const ADO = profile("ado", "member", { parental: GUEST_PARENTAL_NONE });
 const PAUL = profile("paul", "member", { parent: true });
 
 const context = (rights: FamilyRights, actorId: string, capability = ALL): ManageSheetContext => ({
@@ -49,7 +50,19 @@ describe("la fiche d'un membre", () => {
   it("le propriétaire : parent, « peut créer des invités », contrôle parental d'un mineur, retirer", () => {
     expect(kinds(manageGesturesOf(ADO, context(OWNER, "anne")))).toEqual(["parentRole", "createGuests", "parental", "remove"]);
     // Un parent crée des invités d'office, et n'a pas de contrôle parental.
-    expect(manageGesturesOf(PAUL, context(OWNER, "anne"))).toEqual([{ kind: "parentRole", on: true }, { kind: "remove" }]);
+    expect(manageGesturesOf(PAUL, context(OWNER, "anne"))).toEqual([{ kind: "parentRole", on: true, blocked: false }, { kind: "remove" }]);
+  });
+
+  it("ne propose le contrôle parental que d'un profil que le serveur rend avec son état", () => {
+    // Un administrateur de Jellyfin, ou une gestion qui ne le rend pas : rien.
+    expect(kinds(manageGesturesOf(profile("admin", "member"), context(OWNER, "anne")))).not.toContain("parental");
+    expect(kinds(manageGesturesOf(profile("leo2", "guest", { createdBy: "anne" }), context(OWNER, "anne")))).not.toContain("parental");
+  });
+
+  it("« Parent » est bloqué tant qu'un contrôle parental restreint le membre", () => {
+    const restricted = profile("ado", "member", { parental: { ...GUEST_PARENTAL_NONE, maxParentalRating: 10 } });
+    expect(manageGesturesOf(restricted, context(OWNER, "anne"))[0]).toEqual({ kind: "parentRole", on: false, blocked: true });
+    expect(manageGesturesOf(ADO, context(OWNER, "anne"))[0]).toEqual({ kind: "parentRole", on: false, blocked: false });
   });
 
   it("un parent : le contrôle parental d'un mineur, rien d'autre — jamais d'un autre parent", () => {

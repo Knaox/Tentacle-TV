@@ -112,8 +112,11 @@ export function useManageSheet({ row, actions, onPhoto, onParental }: {
         setPinEntry(PIN_ENTRY_START);
         setPinNote(null);
         return actions.openGuestPin();
-      case "requestTitles":
       case "parentRole":
+        // Restreint par un contrôle parental : le serveur refuserait — la ligne le dit déjà, la note le redit.
+        if (gesture.blocked) return actions.say({ text: t("familyTv:sheet.parentBlocked"), tone: "error" });
+        return void toggle(target, gesture.kind, key, gesture.on);
+      case "requestTitles":
       case "createGuests":
         return void toggle(target, gesture.kind, key, gesture.on);
       case "delete":

@@ -52,7 +52,8 @@ function rowsOf(gesture: ManageGesture, name: string, t: TFunction, state: Sheet
     }
     case "parentRole": {
       const key = manageSheetKey("parentRole");
-      return [{ key, kind: "toggle", icon: "user", title: t("familyTv:sheet.parent"), description: t("familyTv:sheet.parentHint"), value: toggleValue(key, gesture.on, state.pending) }];
+      const description = t(gesture.blocked ? "familyTv:sheet.parentBlocked" : "familyTv:sheet.parentHint");
+      return [{ key, kind: "toggle", icon: "user", title: t("familyTv:sheet.parent"), description, value: toggleValue(key, gesture.on, state.pending) }];
     }
     case "createGuests": {
       const key = manageSheetKey("createGuests");

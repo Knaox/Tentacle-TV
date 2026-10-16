@@ -108,6 +108,7 @@ export default {
     requestHint: "They request under their own name.",
     parent: "Parent",
     parentHint: "Manages the children: every guest, and parental controls for minor members.",
+    parentBlocked: "Remove their parental controls first to make them a parent.",
     parentOn: "{{name}} is now a parent.",
     parentOff: "{{name}} is no longer a parent.",
     createGuestsHint: "Within the family's limit; they manage the ones they create.",

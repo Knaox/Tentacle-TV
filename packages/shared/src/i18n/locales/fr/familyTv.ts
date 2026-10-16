@@ -108,6 +108,7 @@ export default {
     requestHint: "Il demande à son propre nom.",
     parent: "Parent",
     parentHint: "Gère les enfants : tous les invités, et le contrôle parental des membres mineurs.",
+    parentBlocked: "Retirez d'abord son contrôle parental pour le nommer parent.",
     parentOn: "{{name}} est désormais parent.",
     parentOff: "{{name}} n'est plus parent.",
     createGuestsHint: "Dans la limite de la famille ; il gère ceux qu'il crée.",
