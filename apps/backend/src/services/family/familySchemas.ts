@@ -53,12 +53,17 @@ export const setGuestRightsBodySchema = z.object({ requestTitles: z.boolean().op
 export const setMemberRoleBodySchema = z.object({ parent: z.boolean() });
 
 /** Le défaut des droits de création (1.30.0) : seuls les champs présents changent. */
-export const creationDefaultsBodySchema = z.object({ createFamily: z.boolean().optional(), createGuests: z.boolean().optional() });
+export const creationDefaultsBodySchema = z.object({
+  createFamily: z.boolean().optional(),
+  createGuests: z.boolean().optional(),
+  grantGuestRequests: z.boolean().optional(),
+});
 
 /** Les droits de création d'un compte (1.30.0) : seuls les champs présents changent. */
 export const accountCreationRightsBodySchema = z.object({
   createFamily: z.enum(FAMILY_CREATION_RIGHT_VALUES).optional(),
   createGuests: z.enum(FAMILY_CREATION_RIGHT_VALUES).optional(),
+  grantGuestRequests: z.enum(FAMILY_CREATION_RIGHT_VALUES).optional(),
 });
 
 export const dissolveBodySchema = z.object({ confirm: z.literal("dissolve") });
@@ -91,6 +96,7 @@ export const setPickerPreferenceBodySchema = z.object({ platform: pickerPlatform
 export const adminSwitchesBodySchema = z.object({
   families: z.boolean().optional(),
   guests: z.boolean().optional(),
+  guestRequests: z.boolean().optional(),
 });
 
 const launchModeSchema = z.enum(["off", "choice"]);

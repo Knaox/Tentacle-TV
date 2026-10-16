@@ -12,23 +12,24 @@ import {
 const ON = { families: true, guests: true };
 
 describe("resolveFamilyCreation", () => {
+  // `toMatchObject` : `grantGuestRequests` a ses propres cas (`familyGuestRequests.test.ts`).
   const base = { rights: FAMILY_DEFAULT_CREATION_RIGHTS, defaults: FAMILY_CREATION_DEFAULTS, switches: ON, isAdministrator: false };
 
   it("par défaut, un compte ne crée rien : le défaut de l'administration est NON pour les deux", () => {
-    expect(resolveFamilyCreation(base)).toEqual({ createFamily: false, createGuests: false });
+    expect(resolveFamilyCreation(base)).toMatchObject({ createFamily: false, createGuests: false });
   });
 
   it("`inherit` suit le défaut ; `allow` et `deny` l'emportent sur lui", () => {
     const defaults = { createFamily: true, createGuests: false };
-    expect(resolveFamilyCreation({ ...base, defaults })).toEqual({ createFamily: true, createGuests: false });
-    expect(resolveFamilyCreation({ ...base, defaults, rights: { createFamily: "deny", createGuests: "allow" } })).toEqual({
+    expect(resolveFamilyCreation({ ...base, defaults })).toMatchObject({ createFamily: true, createGuests: false });
+    expect(resolveFamilyCreation({ ...base, defaults, rights: { createFamily: "deny", createGuests: "allow" } })).toMatchObject({
       createFamily: false,
       createGuests: true,
     });
   });
 
   it("un administrateur Jellyfin peut toujours, même refusé", () => {
-    expect(resolveFamilyCreation({ ...base, isAdministrator: true, rights: { createFamily: "deny", createGuests: "deny" } })).toEqual({
+    expect(resolveFamilyCreation({ ...base, isAdministrator: true, rights: { createFamily: "deny", createGuests: "deny" } })).toMatchObject({
       createFamily: true,
       createGuests: true,
     });
@@ -36,11 +37,11 @@ describe("resolveFamilyCreation", () => {
 
   it("les interrupteurs restent maîtres : coupés, personne — administrateur compris", () => {
     const allow = { createFamily: "allow", createGuests: "allow" } as const;
-    expect(resolveFamilyCreation({ ...base, rights: allow, switches: { families: false, guests: true } })).toEqual({
+    expect(resolveFamilyCreation({ ...base, rights: allow, switches: { families: false, guests: true } })).toMatchObject({
       createFamily: false,
       createGuests: false,
     });
-    expect(resolveFamilyCreation({ ...base, isAdministrator: true, switches: { families: true, guests: false } })).toEqual({
+    expect(resolveFamilyCreation({ ...base, isAdministrator: true, switches: { families: true, guests: false } })).toMatchObject({
       createFamily: true,
       createGuests: false,
     });
