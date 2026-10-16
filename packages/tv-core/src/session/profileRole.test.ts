@@ -102,3 +102,20 @@ describe("le profil ouvert dans Réglages", () => {
     expect(openProfileState(record, listingOf(profile("autre"))).role).toBe("member");
   });
 });
+
+describe("le compte de démonstration (revue Apple)", () => {
+  it("n'a ni famille ni rôle : aucun libellé, jamais « Propriétaire de la famille »", () => {
+    // Le serveur le rend seul, propriétaire de rien, sans gestion (`manage` nul).
+    const review = profile("revue", { kind: "owner" });
+    const record = profileRecordOf(review, listingOf(review), "solo");
+    expect(openProfileState(record, listingOf(review))).toEqual({ role: null, manage: "none", hasPin: false });
+    expect(openProfileState(record, null).role).toBeNull();
+  });
+
+  it("un vrai propriétaire, avec sa famille, se dit propriétaire", () => {
+    const anne = profile("anne", { kind: "owner", hasPin: true, manage: OWNER });
+    const record = profileRecordOf(anne, listingOf(anne, profile("zoe", { kind: "guest" })), "picked");
+    expect(openProfileState(record, listingOf(anne, profile("zoe", { kind: "guest" }))).role).toBe("owner");
+    expect(openProfileState(record, null).role).toBe("owner");
+  });
+});

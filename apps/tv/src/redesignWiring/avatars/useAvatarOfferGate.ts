@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import { useServerCapabilities, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import {
   AVATAR_OFFER_MAX_WAIT_MS,
   isAvatarOfferPending,
@@ -11,6 +11,7 @@ import {
 } from "@tentacle-tv/tv-core";
 import { useServerReachability } from "../../hooks/serverReachability";
 import { tvStorage } from "../../storage/RNStorageAdapter";
+import { useDevicePhotoAccess } from "./devicePhotoAccess";
 import { useOwnPhotoState } from "./ownPhoto";
 
 /**
@@ -18,7 +19,8 @@ import { useOwnPhotoState } from "./ownPhoto";
  * l'identité active (profil ouvert ou compte jumelé) — la troisième étape de
  * la première entrée dans un profil. La règle est dans tv-core
  * (`decideAvatarOffer`, `settleAvatarOffer`) ; on lui donne ce que la TV
- * sait : la capacité du serveur (`avatars.devicePhoto`), la joignabilité, la
+ * sait : la capacité du serveur (`avatars.devicePhoto`) et sa permission pour
+ * ce compte (jamais le compte de démonstration), la joignabilité, la
  * photo du sujet (sonde partagée `useOwnPhotoState`), et les sujets déjà
  * invités sur cet appareil (`tentacle_avatar_invite_seen`, la clé du bureau
  * et du mobile).
@@ -40,7 +42,8 @@ let waitingSince: { identity: string | null; at: number } | null = null;
 export function useAvatarOfferGate(): AvatarOfferGate {
   const { storage } = useTentacleConfig();
   const identity = useUserId();
-  const { capabilities, known } = useServerCapabilities();
+  // La capacité ET la permission du compte (non pour le compte de démonstration).
+  const access = useDevicePhotoAccess();
   const { reachable } = useServerReachability();
   const hasPhoto = useOwnPhotoState(identity);
   const [offered, setOffered] = useState(() => readAvatarOffered(storage));
@@ -50,7 +53,7 @@ export function useAvatarOfferGate(): AvatarOfferGate {
   if (waitingSince?.identity !== identity) waitingSince = { identity, at: now };
   latch = settleAvatarOffer(latch, {
     identity,
-    capable: known ? capabilities.has("avatars.devicePhoto") : null,
+    capable: access,
     online: reachable,
     hasPhoto,
     offered,

@@ -56,6 +56,7 @@ import { watchTogetherRoutes } from "./watchTogether";
 import { watchTogetherInviteRoutes } from "./watchTogetherInvites";
 import { watchTogetherUsersRoutes } from "./watchTogetherUsers";
 import { playbackRightsRoutes } from "./playbackRights";
+import { avatarRoutes } from "./avatars";
 import { watchTogetherAffinityRoutes } from "./watchTogetherAffinity";
 import { leaderboardRoutes } from "./leaderboard";
 import { viewingStatsRoutes } from "./viewingStats";
@@ -141,6 +142,7 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   // aucun rapport d'ordre avec le proxy générique).
   await app.register(playbackSegmentRoutes, { prefix: "/api/playback" });
   await app.register(playbackRightsRoutes, { prefix: "/api/playback" });
+  await app.register(avatarRoutes, { prefix: "/api/avatars" });
 
   // ── Jellyfin trickplay tiles (specific route — must register BEFORE the wildcard proxy) ──
   await app.register(jellyfinTrickplayRoutes, { prefix: "/api/jellyfin" });
