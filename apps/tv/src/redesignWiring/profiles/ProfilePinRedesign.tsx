@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { setOwnFamilyPin, useTentacleConfig } from "@tentacle-tv/api-client";
 import {
   PIN_ENTRY_START,
+  PIN_SETUP_SAVED_HOLD_MS,
   erasePinDigit,
   ownPinCurrentRefused,
   ownPinEntered,
@@ -12,6 +13,7 @@ import {
   pinRefused,
   pressPinDigit,
   profilesEntryKey,
+  profilesEntryRound,
   readProfileRecord,
   writeProfileRecord,
   type OwnPinSubmit,
@@ -19,6 +21,7 @@ import {
   type PinEntry,
 } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
+import { startupRouteAfter, startupStackRoute } from "../../navigation/startupWindows";
 import { refusalOfError } from "../../auth/profileOpening";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
 import { useProfilesFocus, useProfilesGroups } from "../../platform/tvos/screens/profiles";
@@ -42,24 +45,44 @@ const STEP_KEYS = {
  * l'actuel (mêmes essais, même blocage) ; un code refusé se redemande. Le
  * code ne fait que transiter, dans le corps de l'appel. Enregistré : le
  * profil retenu suit (`hasPin`), et l'on revient aux réglages.
+ *
+ * Ouvert par l'étape « Code PIN conseillé » du premier passage (`origin:
+ * "startup"`) : enregistré, le pavé dit « Code PIN enregistré » le temps de
+ * le lire (touches muettes), puis passe à la fenêtre suivante du démarrage —
+ * Retour, pendant ce temps, y passe tout de suite.
  */
 export function ProfilePinRedesign({ navigation, route }: Props) {
-  const { mode } = route.params;
+  const { mode, origin } = route.params;
   const { t, i18n } = useTranslation(["familyTv", "family"]);
   const { storage } = useTentacleConfig();
   const record = readProfileRecord(storage);
   const [flow, setFlow] = useState(() => ownPinStart(mode));
   const [entry, setEntry] = useState<PinEntry>(PIN_ENTRY_START);
   const [note, setNote] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
+  // L'étape du premier passage : le code enregistré, la fenêtre suivante du démarrage.
+  const nextWindow = useCallback(
+    () => navigation.reset({ index: 0, routes: [startupStackRoute(startupRouteAfter("pinSetup"))] }),
+    [navigation],
+  );
+  useEffect(() => {
+    if (!saved) return undefined;
+    const timer = setTimeout(nextWindow, PIN_SETUP_SAVED_HOLD_MS);
+    return () => clearTimeout(timer);
+  }, [saved, nextWindow]);
 
   async function save(submit: OwnPinSubmit): Promise<void> {
     try {
       const { hasPin } = await setOwnFamilyPin(submit);
       const current = readProfileRecord(storage);
       if (current) writeProfileRecord(storage, { ...current, hasPin });
-      if (alive.current) navigation.goBack();
+      if (!alive.current) return;
+      if (origin !== "startup") return navigation.goBack();
+      setSaved(true);
+      setEntry((current) => ({ ...current, phase: "typing" }));
+      setNote(t("familyTv:pinSetup.saved"));
     } catch (error) {
       if (!alive.current) return;
       const refusal = refusalOfError(error);
@@ -76,6 +99,7 @@ export function ProfilePinRedesign({ navigation, route }: Props) {
   }
 
   const digit = (pressed: string) => {
+    if (saved) return;
     const { entry: next, submit } = pressPinDigit(entry, pressed as PinDigit);
     if (!submit) return setEntry(next);
     const step = ownPinEntered(flow, submit);
@@ -117,14 +141,16 @@ export function ProfilePinRedesign({ navigation, route }: Props) {
 
   const store = useFocusStore();
   useProfilesGroups(store);
-  const entryKey = profilesEntryKey({ phase: "pin", tileIndex: 0, pinLocked: entry.phase === "locked" });
-  useProfilesFocus(store, { entryKey, arrival: `pin:${flow.step}` });
-  useBackLayer("page", true, () => navigation.goBack());
+  const entryInput = { phase: "pin" as const, tileIndex: 0, pinLocked: entry.phase === "locked", pinRestarts: flow.restarts };
+  // « Les deux codes diffèrent » : la saisie reprend de zéro, le focus au premier chiffre (`profilesEntryRound`).
+  useProfilesFocus(store, { entryKey: profilesEntryKey(entryInput), arrival: `pin:${flow.step}`, round: profilesEntryRound(entryInput) });
+  const back = () => (saved ? nextWindow() : navigation.goBack());
+  useBackLayer("page", true, back);
 
   return (
     <View style={styles.fill}>
       <FocusBindingProvider bind={store.binder}>
-        <ProfilesView model={model} onDigit={digit} onErase={() => setEntry((current) => erasePinDigit(current))} onBack={() => navigation.goBack()} />
+        <ProfilesView model={model} onDigit={digit} onErase={() => !saved && setEntry((current) => erasePinDigit(current))} onBack={back} />
       </FocusBindingProvider>
     </View>
   );

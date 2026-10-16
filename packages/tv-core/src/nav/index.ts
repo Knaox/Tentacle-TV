@@ -32,3 +32,4 @@ export * from "./profilesBack";
 export * from "./railSetupScreen";
 export * from "./railSetupApply";
 export * from "./startupWindows";
+export * from "./pinSetupScreen";

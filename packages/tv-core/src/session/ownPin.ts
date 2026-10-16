@@ -22,6 +22,9 @@ export interface OwnPinFlow {
   fresh: string | null;
   /** La confirmation ne correspondait pas : on recommence le nouveau code. */
   mismatch: boolean;
+  /** Les saisies reprises de zéro après une confirmation différente : chacune
+   *  ramène le focus au début du pavé (`profilesEntryRound`). */
+  restarts: number;
 }
 
 /** Ce qui part au serveur : le nouveau code (null : le retirer), et l'actuel s'il y en a un. */
@@ -37,7 +40,7 @@ export function ownPinModes(kind: FamilyProfileKind, hasPin: boolean): OwnPinMod
 }
 
 export function ownPinStart(mode: OwnPinMode): OwnPinFlow {
-  return { mode, step: mode === "create" ? "new" : "current", current: null, fresh: null, mismatch: false };
+  return { mode, step: mode === "create" ? "new" : "current", current: null, fresh: null, mismatch: false, restarts: 0 };
 }
 
 /** Quatre chiffres tapés à l'étape courante : l'étape suivante, ou ce qui part au serveur. */
@@ -49,7 +52,7 @@ export function ownPinEntered(flow: OwnPinFlow, pin: string): { flow: OwnPinFlow
   }
   if (flow.step === "new") return { flow: { ...flow, fresh: pin, step: "confirm", mismatch: false }, submit: null };
   if (pin === flow.fresh) return { flow, submit: withCurrent({ pin }) };
-  return { flow: { ...flow, fresh: null, step: "new", mismatch: true }, submit: null };
+  return { flow: { ...flow, fresh: null, step: "new", mismatch: true, restarts: flow.restarts + 1 }, submit: null };
 }
 
 /** Le serveur a refusé le code ACTUEL (faux, ou bloqué) : on le redemande. */

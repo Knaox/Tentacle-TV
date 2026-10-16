@@ -21,7 +21,8 @@
     "./cards": "./src/cards/index.ts",
     "./panels": "./src/panels/index.ts",
     "./render": "./src/render/index.ts",
-    "./device": "./src/device/index.ts"
+    "./device": "./src/device/index.ts",
+    "./avatars": "./src/avatars/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

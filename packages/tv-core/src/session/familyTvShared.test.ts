@@ -56,11 +56,19 @@ describe("la famille partagée sur la TV d'un membre", () => {
     expect(recordManages(profileRecordOf(ZOE, marcsTv(), "picked"))).toBe(false);
   });
 
-  it("depuis « Qui regarde ? », gère avec le profil du compte de la TV, sinon le premier qui gère", () => {
-    expect(manageEntryProfile(marcsTv())?.userId).toBe("marc");
-    const marcWithoutRights = marcsTv({ profiles: [ANNE, { ...MARC, manage: null }, ZOE] });
-    expect(manageEntryProfile(marcWithoutRights)?.userId).toBe("anne");
-    expect(manageEntryProfile(marcsTv({ canManage: false }))).toBeNull();
+  it("depuis « Qui regarde ? », gère avec le SEUL profil du compte de la TV, derrière son code", () => {
+    const marcWithPin = { ...MARC, hasPin: true };
+    expect(manageEntryProfile(marcsTv({ profiles: [ANNE, marcWithPin, ZOE] }))?.userId).toBe("marc");
+    // Marc ne gère rien, ou n'a pas de code : pas d'entrée — jamais celle d'Anne à sa place.
+    const annePin = { ...ANNE, hasPin: true };
+    expect(manageEntryProfile(marcsTv({ profiles: [annePin, { ...marcWithPin, manage: null }, ZOE] }))).toBeNull();
+    expect(manageEntryProfile(marcsTv({ profiles: [annePin, MARC, ZOE] }))).toBeNull();
+    // Le serveur 1.30.0 le dit aussi : sans code, `manage` est nul et `manageNeedsPin` vrai.
+    const needsPin = { ...MARC, manage: null, manageNeedsPin: true };
+    expect(manageEntryProfile(marcsTv({ profiles: [annePin, needsPin, ZOE] }))).toBeNull();
+    expect(manageEntryProfile(marcsTv({ profiles: [annePin, marcWithPin, ZOE], canManage: false }))).toBeNull();
+    // Le compte de la TV absent de la liste : rien.
+    expect(manageEntryProfile(marcsTv({ profiles: [annePin, ZOE] }))).toBeNull();
   });
 });
 
@@ -86,7 +94,10 @@ describe("un serveur d'avant la famille partagée (v1)", () => {
     const listing = v1Listing();
     expect(profileManages(listing.profiles[0], listing)).toBe(true);
     expect(profileManages(listing.profiles[1], listing)).toBe(false);
-    expect(manageEntryProfile(listing)?.userId).toBe("anne");
+    // La gestion exige son code, même face à un serveur d'avant qui l'ouvrait sans.
+    expect(manageEntryProfile(listing)).toBeNull();
+    const withPin = { ...listing, profiles: [{ ...listing.profiles[0], hasPin: true }, ...listing.profiles.slice(1)] };
+    expect(manageEntryProfile(withPin)?.userId).toBe("anne");
     const record = profileRecordOf(listing.profiles[0], listing, "picked");
     expect(record.ownerId).toBe("anne");
     expect(recordPairedTheTv(record)).toBe(true);

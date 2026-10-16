@@ -31,10 +31,17 @@ export function useProfilesGroups(store: FocusStore): void {
   });
 }
 
-/** La croix (reverrouillée à chaque étape, `arrival`) et l'entrée, réclamée à chaque changement. */
-export function useProfilesFocus(store: FocusStore, { entryKey, arrival }: { entryKey: string | null; arrival: string }): void {
+/**
+ * La croix (reverrouillée à chaque étape, `arrival`) et l'entrée, réclamée à
+ * chaque changement de clé — et de tour (`round`, tv-core
+ * `profilesEntryRound` : le pavé remis à zéro y revient au premier chiffre).
+ */
+export function useProfilesFocus(
+  store: FocusStore,
+  { entryKey, arrival, round }: { entryKey: string | null; arrival: string; round?: string },
+): void {
   useBackFocus(store, { backKey: PROFILES_BACK_KEY, barKey: PROFILES_BACK_BAR_KEY, entryKey, arrival });
-  useEffect(() => (entryKey ? store.claim(entryKey) : undefined), [entryKey, store]);
+  useEffect(() => (entryKey ? store.claim(entryKey) : undefined), [entryKey, round, store]);
 }
 
 /** « Gérer les profils » : la garde du clic fantôme ; sa croix et son entrée (`useManageFocus`). */

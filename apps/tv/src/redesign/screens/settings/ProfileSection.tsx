@@ -13,13 +13,17 @@ import { SectionTitle } from "./settingsParts";
  * rouvre depuis « Qui regarde ? ».
  *
  * Dessous, SON code PIN (propriétaire ou membre — un invité a celui que pose
- * le propriétaire) : son état, et créer, ou changer et retirer.
+ * le propriétaire) : son état, et créer, ou changer et retirer. Un profil qui
+ * gérerait la famille sans avoir de code (décision du 16/10 : sans code, aucune
+ * gestion depuis la TV) n'a pas « Gérer les profils » : la section du code le
+ * lui dit (`manageNeedsPin`), juste au-dessus de « Créer un code PIN ».
  *
  * Clés : `settings:switchProfile`, `settings:manageProfiles`,
  * `settings:pin:<create|change|remove>`.
  */
-export const ProfileSection = memo(function ProfileSection({ canManage, pin, onSwitchProfile, onManageProfiles, onOwnPin }: {
+export const ProfileSection = memo(function ProfileSection({ canManage, manageNeedsPin = false, pin, onSwitchProfile, onManageProfiles, onOwnPin }: {
   canManage: boolean;
+  manageNeedsPin?: boolean;
   pin: { hasPin: boolean; modes: OwnPinMode[] };
   onSwitchProfile?: () => void;
   onManageProfiles?: () => void;
@@ -37,7 +41,10 @@ export const ProfileSection = memo(function ProfileSection({ canManage, pin, onS
       </View>
       {pin.modes.length > 0 ? (
         <View style={styles.pin}>
-          <SectionTitle title={`${t("ownPin.title")} · ${t(pin.hasPin ? "ownPin.on" : "ownPin.off")}`} caption={t("ownPin.caption")} />
+          <SectionTitle
+            title={`${t("ownPin.title")} · ${t(pin.hasPin ? "ownPin.on" : "ownPin.off")}`}
+            caption={t(manageNeedsPin && !pin.hasPin ? "ownPin.manageHint" : "ownPin.caption")}
+          />
           <View style={styles.actions}>
             {pin.modes.map((mode) => (
               <PillButton

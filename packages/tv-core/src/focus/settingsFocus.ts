@@ -66,6 +66,10 @@ export function navSettingsLockedKeys(rowCount: number): string[] {
  */
 export const NAV_SETTINGS_AFTER_RESET = navSettingsRowKey(0);
 
+/** Réglages › Compte : « Changer la photo » — la galerie des avatars. Il reste là au
+ *  retour de la galerie (son libellé seul change) : le focus y revient de lui-même. */
+export const SETTINGS_AVATAR_KEY = "settings:avatar";
+
 /** Les gestes de SON code PIN (Réglages › Compte, Famille) : `settings:pin:<create|change|remove>`. */
 export const settingsPinKey = (mode: string): string => `settings:pin:${mode}`;
 

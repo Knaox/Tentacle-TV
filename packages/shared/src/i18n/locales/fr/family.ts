@@ -20,6 +20,7 @@ export default {
     createGuestsHint: "Crée ses propres invités et ne supprime que ceux-là, dans la limite de trois pour toute la famille.",
     requestTitles: "Peut demander des films",
     requestTitlesHint: "Ses demandes partent à son nom.",
+    requestTitlesSuspended: "Suspendu par l'administrateur : rallumé, ce réglage revient tel quel.",
   },
   /** v2 : un compte de la liste qu'on ne peut pas inviter, et pourquoi. */
   candidates: {
@@ -67,6 +68,7 @@ export default {
     owner_must_dissolve: "Le propriétaire ne quitte pas sa famille : il peut la dissoudre.",
     create_family_denied: "L'administrateur ne vous permet pas de créer une famille.",
     create_guests_denied: "L'administrateur ne vous permet pas de créer des profils invités.",
+    guest_requests_denied: "L'administrateur ne vous permet pas d'autoriser vos invités à demander des films.",
     member_parental_refused: "Ce compte ne peut pas recevoir de contrôle parental : le propriétaire, un parent ou un administrateur n'en a pas. Pour nommer parent un membre restreint, retirez d'abord son contrôle parental.",
     pin_required: "Ce profil est protégé par un code PIN.",
     pin_invalid: "Code PIN incorrect.",

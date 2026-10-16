@@ -125,16 +125,17 @@ export function pickerEntryIndex(listing: Pick<TvProfilesDto, "profiles">, previ
 }
 
 /**
- * « Gérer les profils » depuis « Qui regarde ? » : QUI gère (derrière SON
- * PIN, avec SES droits — v2) — le profil du compte qui a jumelé la TV s'il a
- * quelque chose à gérer, sinon le premier profil qui gère (le propriétaire de
- * la famille). Rien à gérer sur cette TV : null, l'entrée n'existe pas.
+ * « Gérer les profils » depuis « Qui regarde ? » (décision du 16/10) : SEUL le
+ * profil du compte qui a JUMELÉ la TV, avec SES droits, derrière SON code PIN.
+ * Il ne gère rien, ou n'a pas de code : null, l'entrée n'existe pas — chacun
+ * des autres gère depuis Réglages › Compte de son propre profil. Le serveur
+ * reste juge (depuis la 1.30.0, `manage` est nul sans code) ; la TV exige aussi
+ * le code face à un serveur d'avant, qui ouvrait la gestion sans lui.
  */
 export function manageEntryProfile(listing: TvProfilesDto): TvProfileDto | null {
   if (!listing.canManage) return null;
-  const managers = listing.profiles.filter((profile) => profileManages(profile, listing));
-  const paired = pairedAccountOf(listing);
-  return managers.find((profile) => sameUserId(profile.userId, paired.userId)) ?? managers[0] ?? null;
+  const paired = findProfile(listing, pairedAccountOf(listing).userId);
+  return paired && paired.hasPin && profileManages(paired, listing) ? paired : null;
 }
 
 /**

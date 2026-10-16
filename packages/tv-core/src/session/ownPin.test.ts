@@ -28,7 +28,18 @@ describe("son code PIN depuis la TV", () => {
     let step = ownPinEntered(ownPinStart("change"), "1111");
     step = ownPinEntered(step.flow, "2222");
     step = ownPinEntered(step.flow, "2223");
-    expect(step).toMatchObject({ flow: { step: "new", mismatch: true, current: "1111", fresh: null }, submit: null });
+    expect(step).toMatchObject({ flow: { step: "new", mismatch: true, current: "1111", fresh: null, restarts: 1 }, submit: null });
+  });
+
+  it("chaque confirmation différente compte une reprise de zéro (le focus revient au début du pavé)", () => {
+    let step = ownPinEntered(ownPinStart("create"), "1234");
+    expect(step.flow.restarts).toBe(0);
+    step = ownPinEntered(step.flow, "4321");
+    expect(step.flow.restarts).toBe(1);
+    step = ownPinEntered(step.flow, "1234");
+    expect(step.flow.restarts).toBe(1);
+    step = ownPinEntered(step.flow, "9999");
+    expect(step.flow).toMatchObject({ step: "new", mismatch: true, restarts: 2 });
   });
 
   it("retirer : l'ancien code suffit", () => {

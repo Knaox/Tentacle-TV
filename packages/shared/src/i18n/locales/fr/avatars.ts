@@ -41,6 +41,20 @@ export default {
     uploadHint: "Depuis vos photos",
     guestPhotoTooLarge: "Cette photo est trop lourde pour un invité. Recadrez-la plus serré, ou choisissez un personnage.",
   },
+  /** La TV (Apple TV, Android TV) : la galerie à la télécommande, sans import de photo. */
+  tv: {
+    subtitle: "Elle vous suit sur tous vos appareils.",
+    titleGuest: "Un personnage pour {{name}}",
+    subtitleGuest: "Elle s'affiche sur ses TV et dans « Qui regarde ? ».",
+    /** Indication de touche (table de la télécommande, tv-core `remote/bindings/hints`). */
+    chooseHint: "OK : prendre {{name}}",
+    later: "Plus tard",
+    failed: "La photo n'a pas pu être posée. Réessayez, ou plus tard.",
+    done: "C'est fait : {{name}} vous représente partout.",
+    doneGuest: "C'est fait : {{name}} représente {{guest}}.",
+    change: "Changer la photo",
+    choose: "Choisir une photo",
+  },
   characters: {
     lanterne: { name: "Lanterne", story: "Ne regarde de l'horreur qu'après minuit. Elle apporte sa propre lumière." },
     huit: { name: "Huit", story: "Huit bras, et pas un de libre : la télécommande, le soda, le pop-corn…" },

@@ -36,6 +36,20 @@ export default {
     uploadHint: "From your photos",
     guestPhotoTooLarge: "This photo is too large for a guest. Crop it tighter, or pick a character.",
   },
+  /** The TV (Apple TV, Android TV): the gallery with the remote, no photo upload. */
+  tv: {
+    subtitle: "It follows you on all your devices.",
+    titleGuest: "A character for {{name}}",
+    subtitleGuest: "It shows on their TVs and in “Who's watching?”.",
+    /** Remote hint (remote table, tv-core `remote/bindings/hints`). */
+    chooseHint: "OK: pick {{name}}",
+    later: "Later",
+    failed: "The photo couldn't be set. Try again, or later.",
+    done: "Done: {{name}} now stands for you everywhere.",
+    doneGuest: "Done: {{name}} now stands for {{guest}}.",
+    change: "Change photo",
+    choose: "Choose a photo",
+  },
   characters: {
     lanterne: { name: "Lantern", story: "Only watches horror after midnight. Brings her own light." },
     huit: { name: "Eight", story: "Eight arms, not one of them free: the remote, the soda, the popcorn…" },

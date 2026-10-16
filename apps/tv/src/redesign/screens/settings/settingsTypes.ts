@@ -28,14 +28,21 @@ export interface SettingsAccount {
    *  TV d'avant les profils — le compte jumelé, « Changer de serveur » et
    *  « Déjumeler », comme toujours. */
   profile?: SettingsProfile | null;
+  /** La galerie des avatars : « Changer la photo » (il en a une), « Choisir une
+   *  photo » (il n'en a pas). Absent : un serveur qui ne déclare pas
+   *  `avatars.devicePhoto` — aucun bouton. */
+  photo?: "change" | "choose" | null;
 }
 
 export interface SettingsProfile {
-  /** « Propriétaire de cette TV », « Membre · famille de Damien », « Invité · famille de Damien ». */
+  /** « Propriétaire de la famille », « Parent · famille de Damien », « Membre · famille de Damien »,
+   *  « Invité · famille de Damien » — d'après la liste relue (tv-core `openProfileState`). */
   role: string;
   color: FamilyProfileColor;
-  /** « Gérer les profils » : le profil du propriétaire, sur une TV qui le permet. */
+  /** « Gérer les profils » : un profil qui gère, avec son code PIN (décision du 16/10). */
   canManage: boolean;
+  /** Il gérerait avec un code : l'indice « Posez un code… », au-dessus de « Créer un code PIN ». */
+  manageNeedsPin: boolean;
   /** Seul le profil du propriétaire déjumelle la TV. */
   canUnpair: boolean;
   /** Ce que dit « Oublier ce jumelage » : ce que fait le déjumelage, ou qui peut le faire. */

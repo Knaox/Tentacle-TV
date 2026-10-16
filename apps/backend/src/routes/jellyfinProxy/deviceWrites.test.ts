@@ -25,6 +25,8 @@ describe("ce qu'envoient les TV livrées", () => {
     ["DELETE", `Users/${USER}/Items/${ITEM}/Rating`],
     ["DELETE", "Videos/ActiveEncodings"],
     ["delete", "videos/activeencodings"],
+    // La galerie des avatars de la TV (1.30.0) : la photo de son compte.
+    ["POST", `Users/${USER}/Images/Primary`],
   ])("%s %s passe", (method, path) => {
     expect(isDeviceWriteAllowed(method, path)).toBe(true);
   });
@@ -45,7 +47,9 @@ describe("ce qu'un appareil n'écrit jamais", () => {
     ["POST", `Items/${ITEM}/Images/Primary`],
     ["DELETE", `Items/${ITEM}/Images/Primary/0`],
     ["POST", `Items/${ITEM}/Collections`],
-    ["POST", `Users/${USER}/Images/Primary`],
+    ["DELETE", `Users/${USER}/Images/Primary`],
+    ["POST", "Users/Me/Images/Primary"],
+    ["POST", `Users/${USER}/Images/Backdrop`],
     ["POST", "DisplayPreferences/usersettings"],
     ["POST", `Videos/${ITEM}/PlaybackInfo`],
     ["DELETE", "Sessions/Playing"],

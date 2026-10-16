@@ -130,7 +130,7 @@ describe("les interrupteurs de l'administration", () => {
   it("couper la Famille coupe les sessions des membres et refuse les gestes ; la rallumer ne ressuscite rien", async () => {
     const lea = await leaOnDamiensTv();
     const off = await send("PUT", "/api/admin/family", tokens.damien, { families: false });
-    expect(off.json()).toEqual({ families: false, guests: true });
+    expect(off.json()).toMatchObject({ families: false, guests: true });
     expect((await status(lea.session)).profileEnded).toBe(true);
     expect(h.state!.ended).toContainEqual([expect.any(String), "families_disabled"]);
     expect((await send("POST", "/api/family/invitations", tokens.damien, { userId: IDS.hugo })).json().code).toBe("family.disabled");
