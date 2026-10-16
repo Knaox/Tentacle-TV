@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { reportTrailerPlayback } from "@tentacle-tv/api-client";
-import { trailerInitialQuality, trailerItemKey, type TrailerQueueItem } from "@tentacle-tv/shared";
+import { heardTrailerItem, trailerInitialQuality, trailerItemKey, type TrailerQueueItem } from "@tentacle-tv/shared";
 import { PlaybackSpinner } from "../player/PlaybackSpinner";
 import { SkipBadge } from "../SkipBadge";
 import { useControlsAutoHide } from "../../hooks/useControlsAutoHide";
@@ -63,7 +63,9 @@ export function TrailerStage(props: TrailerStageProps) {
     setQuality(stream ? trailerInitialQuality(stream.qualities.map((q) => q.height)) : null);
   }, [stream]);
 
-  const subtitles = useTrailerSubtitles(stream, { language, version: item.version });
+  // Ce qu'on ENTEND : un doublage par IA retiré par le serveur ne se dit pas VF (et appelle les sous-titres).
+  const heard = useMemo(() => heardTrailerItem(item, stream, language), [item, stream, language]);
+  const subtitles = useTrailerSubtitles(stream, { language, version: heard.version });
   const failed = useRef(false);
   const fail = useCallback((reason: string, ms = 0) => {
     if (failed.current) return;
@@ -109,7 +111,7 @@ export function TrailerStage(props: TrailerStageProps) {
     }
   });
 
-  const labels = trailerItemLabels(item, subtitles.language, t);
+  const labels = trailerItemLabels(heard, subtitles.language, t);
   const loading = !watch.started || watch.waiting;
 
   return (

@@ -11,7 +11,8 @@
  * pas (son lecteur insère des publicités) : on passe à la suivante.
  */
 
-import type { TrailerEntry, TrailerPlayback, TrailerScope, TrailerSource, TrailerVersion } from "../trailerCatalog";
+import type { TrailerAudio, TrailerEntry, TrailerPlayback, TrailerScope, TrailerSource, TrailerVersion } from "../trailerCatalog";
+import { playedTrailerVersion } from "../trailerCatalogRank";
 
 /** Une vidéo que le relais sait lire. */
 export type RelayedTrailerPlayback = Extract<TrailerPlayback, { kind: "youtube" } | { kind: "dailymotion" }>;
@@ -92,6 +93,22 @@ export function trailerVersionLabelKey(version: TrailerVersion | undefined, lang
   const french = !!language && language.toLowerCase().split(/[-_]/)[0] === "fr";
   if (french) return version === "localized" ? "vf" : version === "subtitled" ? "vostfr" : "vo";
   return version;
+}
+
+/**
+ * L'élément tel qu'on l'ENTEND : sa version corrigée par la piste que le
+ * serveur joue (`audio` de `/resolve`) — une « VF » que YouTube doublait par
+ * IA, dont le serveur ne relaie que l'originale, se dit VO, et appelle ses
+ * sous-titres. Sans piste connue (flux pas encore résolu, une seule piste,
+ * serveur d'avant) : l'élément tel quel. `language` : celle qui a décidé des
+ * versions (le catalogue), celle du flux à défaut.
+ */
+export function heardTrailerItem<T extends Pick<TrailerQueueItem, "version">>(
+  item: T, stream: { audio?: TrailerAudio; language?: string } | null | undefined, language: string | null | undefined,
+): T {
+  if (!item.version || !stream?.audio) return item;
+  const version = playedTrailerVersion(item.version, stream.audio, language ?? stream.language);
+  return version === item.version ? item : { ...item, version };
 }
 
 /** D'où vient la vidéo, pour la liste : AlloCiné, ou la plateforme qui la sert. */

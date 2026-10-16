@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TrailerEntry } from "../trailerCatalog";
 import {
-  isEmbedFallback, trailerFailureStep, trailerNeighborIndex, trailerOriginLabel, trailerQueueOf, trailerReportBody,
+  heardTrailerItem, isEmbedFallback, trailerFailureStep, trailerNeighborIndex, trailerOriginLabel, trailerQueueOf, trailerReportBody,
   trailerResolveQuery, trailerVersionLabelKey,
 } from "./trailerQueue";
 
@@ -57,5 +57,21 @@ describe("la file du lecteur complet", () => {
   it("nomme l'origine : AlloCiné avant la plateforme", () => {
     expect(trailerOriginLabel({ playback: dm, source: "allocine" })).toBe("allocine");
     expect(trailerOriginLabel({ playback: yt, source: "tmdb" })).toBe("youtube");
+  });
+});
+
+describe("heardTrailerItem", () => {
+  const vf = { playback: { kind: "youtube" as const, ytId: "vfAiDubbed1" }, name: "Bande-annonce VF", version: "localized" as const };
+  const english = { content: "original" as const, lang: "en-US" };
+
+  it("une « VF » dont le serveur ne relaie que l'originale anglaise se dit VO", () => {
+    expect(heardTrailerItem(vf, { audio: english }, "fr").version).toBe("original");
+    expect(heardTrailerItem(vf, { audio: english, language: "fr-FR" }, null).version).toBe("original");
+  });
+
+  it("sans piste connue ou sans flux : l'élément tel quel", () => {
+    expect(heardTrailerItem(vf, {}, "fr")).toBe(vf);
+    expect(heardTrailerItem(vf, null, "fr")).toBe(vf);
+    expect(heardTrailerItem(vf, { audio: { content: "dubbed", lang: "fr" } }, "fr")).toBe(vf);
   });
 });

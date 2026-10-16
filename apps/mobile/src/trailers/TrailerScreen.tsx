@@ -5,7 +5,7 @@ import { useKeepAwake } from "expo-keep-awake";
 import { useTranslation } from "react-i18next";
 import { reportTrailerPlayback, useTentacleConfig } from "@tentacle-tv/api-client";
 import {
-  trailerFailureStep, trailerItemKey, trailerNeighborIndex, trailerPublicUrl, trailerSubtitleUrl, type TrailerStream,
+  heardTrailerItem, trailerFailureStep, trailerItemKey, trailerNeighborIndex, trailerPublicUrl, trailerSubtitleUrl, type TrailerStream,
 } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import { FONT_FAMILY, PLAYER } from "@/theme";
@@ -91,7 +91,9 @@ export function TrailerScreen() {
   }, [currentKey, serverUrl]);
 
   const stream = phase.kind === "ready" ? phase.stream : null;
-  const subtitle = useTrailerSubtitle(stream, { language, version: current?.version });
+  // Ce qu'on ENTEND : un doublage par IA retiré par le serveur ne se dit pas VF (et appelle les sous-titres).
+  const heard = useMemo(() => (current ? heardTrailerItem(current, stream, language) : null), [current, stream, language]);
+  const subtitle = useTrailerSubtitle(stream, { language, version: heard?.version });
   const subtitleUrl = stream && serverUrl ? trailerSubtitleUrl(stream, serverUrl, subtitle.lang) : null;
 
   const onStarted = useCallback(() => {
@@ -135,7 +137,7 @@ export function TrailerScreen() {
       )}
       {current && index !== null && (
         <TrailerChrome
-          item={current}
+          item={heard ?? current}
           index={index}
           count={queue.length}
           language={language}
