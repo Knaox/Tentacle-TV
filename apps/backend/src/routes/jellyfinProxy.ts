@@ -18,7 +18,7 @@ import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
 import { readsInFull, replyFromCache, sendBuffered } from "./jellyfinProxy/bufferedReply";
 import { readIncomingAuth } from "./jellyfinProxy/incomingAuth";
-import { deviceRefusal } from "./jellyfinProxy/deviceGuard";
+import { deviceGate } from "./jellyfinProxy/deviceGate";
 import { scopedToDeviceUser } from "./jellyfinProxy/deviceUserScope";
 import { gatePlayback } from "./jellyfinProxy/playbackGate";
 import { getRealClientIp } from "../services/networkUtils";
@@ -75,9 +75,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     nameDeviceFromHeader(incomingToken, incoming.identityHeader);
 
     // Un appareil ne parle que pour SON compte et n'écrit que SES données
-    // (cf. deviceGuard) : la clé admin lui est prêtée en aval.
+    // (cf. deviceGate) : la clé admin lui est prêtée en aval.
     if (device?.status === "paired") {
-      const refusal = deviceRefusal(request.method, wildcardPath, device.payload.userId, q);
+      const refusal = await deviceGate(request.method, wildcardPath, device.payload, q);
       if (refusal) {
         request.log.warn({ path: wildcardPath, method: request.method }, refusal);
         return reply.status(403).send({ error: "Forbidden" });
