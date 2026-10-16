@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
@@ -70,6 +70,9 @@ export interface CardGrowthDriver {
   collapse(): void;
   /** Le glissement de la cellule quand une voisine grandit (`CardShell` `glide`). */
   glide: CardGlide;
+  /** Suit la page depuis le focus de la carte : `onOutrun(true)` quand elle l'a
+   *  dépassé (défilement accéléré) — son aperçu ne se demande pas. Rend l'arrêt. */
+  watchFocus?: (onOutrun: (outrun: boolean) => void) => () => void;
 }
 
 /** Le style animé d'une cellule qui glisse : présent pour toute la vie de la carte. */
@@ -114,7 +117,18 @@ export function useCardGrowth(
  * la même tâche que le rendu (`useLayoutEffect`), comme `useMotion`.
  */
 export function useDrivenCardGrowth(card: CardModel, focused: boolean, driver: CardGrowthDriver): CardGrowth {
-  const preview = useCardPreview(card.trailer ?? null, focused);
+  // Un focus que la page a dépassé ne demande rien : la carte n'est déjà plus là où l'on regarde.
+  const [outrun, setOutrun] = useState(false);
+  const { watchFocus } = driver;
+  useEffect(() => {
+    if (!focused || !watchFocus) return undefined;
+    const stop = watchFocus(setOutrun);
+    return () => {
+      stop();
+      setOutrun(false);
+    };
+  }, [focused, watchFocus]);
+  const preview = useCardPreview(card.trailer ?? null, focused && !outrun);
   const expanded = preview?.expanded === true;
   const wasExpanded = useRef(false);
   useLayoutEffect(() => {

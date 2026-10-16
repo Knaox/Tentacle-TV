@@ -1,5 +1,5 @@
-import { memo, useCallback, useMemo, useRef, type ReactElement } from "react";
-import { StyleSheet, View } from "react-native";
+import { memo, useCallback, useEffect, useMemo, useRef, type ReactElement } from "react";
+import { StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, gridLineReveal } from "@tentacle-tv/tv-core";
@@ -7,6 +7,7 @@ import { useCardMetrics } from "../../cards/cardSizeMode";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { createGridMotion, type GridMotion } from "./gridMotion";
 import { useGridCellPreview, useGridPreviewLine, useGridPreviewWarm, type GridPreviewLine } from "./gridPreviewLine";
 import { useGridAhead } from "./useGridAhead";
 import { mountProfile } from "../../render/mountProfile";
@@ -153,8 +154,8 @@ function useLines(cards: CardModel[], columns: number): Line[] {
   }, [cards, columns]);
 }
 
-const GridLine = memo(function GridLine({ line, index, ...cell }: { line: Line; index: number } & Omit<CellProps, "card" | "index" | "column" | "line">) {
-  const preview = useGridPreviewLine(cell.columns);
+const GridLine = memo(function GridLine({ line, index, motion, ...cell }: { line: Line; index: number; motion: GridMotion } & Omit<CellProps, "card" | "index" | "column" | "line">) {
+  const preview = useGridPreviewLine(cell.columns, motion, lineStride(cell.width));
   return (
     <FocusSection focusKey={`${cell.focusPrefix}:line:${index}`} reveal={LINE_REVEALS[gridLineReveal(index)]} style={styles.columns}>
       {line.cards.map((card, i) => (
@@ -182,13 +183,18 @@ export const PosterGrid = memo(function PosterGrid({
   const lines = useLines(cards, columns);
   const list = useRef<FlashList<Line>>(null);
   const focusCard = useGridAhead(list, cards, columns, onFocusCard);
-  const warm = useGridPreviewWarm(cards, columns);
+  // Le mouvement de la grille : la préparation attend qu'elle se pose (`gridMotion`).
+  const motion = useMemo(() => createGridMotion(), []);
+  useEffect(() => () => motion.dispose(), [motion]);
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => motion.scrolled(event.nativeEvent.contentOffset.y), [motion]);
+  const warm = useGridPreviewWarm(cards, columns, motion);
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<Line>) => (
       <GridLine
         line={item}
         index={index}
         columns={columns}
+        motion={motion}
         width={width}
         focusPrefix={focusPrefix}
         onPressCard={onPressCard}
@@ -197,7 +203,7 @@ export const PosterGrid = memo(function PosterGrid({
         onWarm={warm}
       />
     ),
-    [columns, width, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
+    [columns, motion, width, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
   );
   return (
     // FlashList veut un parent de taille connue : la scène.
@@ -229,6 +235,7 @@ export const PosterGrid = memo(function PosterGrid({
         // poste du fil d'interface en défilement rapide.
         overrideProps={SCROLL_PROPS}
         onEndReached={onEndReached}
+        onScroll={onScroll}
         // La page suivante part à trois écrans de la fin : quand le focus
         // dévale (flèche maintenue, glisser vif), elle est là avant lui.
         onEndReachedThreshold={GRID_END_REACHED_SCREENS}
