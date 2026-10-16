@@ -7,7 +7,7 @@ import type { RowPlace } from "../motion/useRowRecede";
 import { colors, fonts, scrim } from "../theme/tokens";
 import { AbsentArtwork } from "./AbsentArtwork";
 import { CardBadge } from "./CardBadge";
-import { CardFocusFooter } from "./CardFocusFooter";
+import { CardFocusFooter, cardFocusFooterHeight } from "./CardFocusFooter";
 import { CardFrame, cardGlowOf } from "./CardFrame";
 import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
@@ -79,8 +79,8 @@ export interface MediaCardProps {
   onFocusChange?: (focused: boolean) => void;
   /** La carte peut devenir la grande carte de l'aperçu (une rangée). */
   previewable?: boolean;
-  /** Elle va grandir : la taille de la grande carte. */
-  onPreviewExpand?: (tileWidth: number, tileHeight: number) => void;
+  /** Elle va grandir : la largeur de la grande carte, et ce que la carte gagne en hauteur (image et pied). */
+  onPreviewExpand?: (tileWidth: number, grow: number) => void;
   /** Elle se replie. */
   onPreviewCollapse?: () => void;
   /** Sa grande carte et son glissement, menés par sa ligne de grille. */
@@ -96,16 +96,22 @@ function captionShift(height: number, origin: "top" | "center" = "top"): number 
 
 /** La légende suit l'image qui grandit — sur le MÊME ressort que le cadre (`progress`). Placée par
  *  sa grille, la grande carte peut s'étendre à gauche : la légende (et « Maintenir OK ») glisse
- *  avec elle, de `slideBy` au bout de sa croissance (`slideProgress`). */
-function Caption({ progress: p, shift, slideBy = 0, slideProgress, children }: {
+ *  avec elle, de `slideBy` au bout de sa croissance (`slideProgress`). Sous la grande carte d'une
+ *  rangée (`growProgress`), qui finit au bas de la place de l'image, la légende remonte de ce que
+ *  l'agrandissement du focus l'avait fait descendre : elle reste à son écart de la vidéo. */
+function Caption({ progress: p, shift, slideBy = 0, slideProgress, growProgress, children }: {
   progress: SharedValue<number>;
   shift: number;
   slideBy?: number;
   slideProgress?: SharedValue<number>;
+  growProgress?: SharedValue<number>;
   children: ReactNode;
 }) {
   const follow = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideProgress ? slideBy * slideProgress.value : 0 }, { translateY: shift * p.value }],
+    transform: [
+      { translateX: slideProgress ? slideBy * slideProgress.value : 0 },
+      { translateY: shift * p.value * (growProgress ? 1 - growProgress.value : 1) },
+    ],
   }));
   return <Animated.View style={[styles.caption, follow]}>{children}</Animated.View>;
 }
@@ -140,7 +146,9 @@ function PreviewableCard(props: MediaCardProps & { cardFocus: CardFocused }) {
   const metrics = useCardMetrics();
   const width = props.width ?? metrics[variant].width;
   const size = useMemo(() => ({ width, height: cardHeight(variant, width) }), [variant, width]);
-  const growth = useCardGrowth(card, cardFocus.focused, size, onPreviewExpand, onPreviewCollapse);
+  // La place du pied pendant l'aperçu : la raison (s'il y en a une), « Maintenir OK », Lecture/Pause.
+  const room = props.hideCaption ? 0 : cardFocusFooterHeight({ note: card.focusNote !== undefined, hold: props.onLongPress !== undefined, preview: true });
+  const growth = useCardGrowth(card, cardFocus.focused, size, room, onPreviewExpand, onPreviewCollapse);
   return <CardBody {...props} growth={growth} />;
 }
 
@@ -249,13 +257,20 @@ function CardBody({
       }
     >
       {hideCaption ? null : (
-        <Caption progress={progress} shift={captionShift(height, origin)} slideBy={growth?.place?.to.left} slideProgress={growth?.place ? growth.expansion.progress : undefined}>
+        <Caption
+          progress={progress}
+          shift={captionShift(height, origin)}
+          slideBy={growth?.place?.to.left}
+          slideProgress={growth?.place ? growth.expansion.progress : undefined}
+          growProgress={growth && !growth.place ? growth.expansion.progress : undefined}
+        >
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={card.subtitleLines ?? 1}>{card.subtitle}</Text> : null}
           <CardFocusFooter
             note={focused ? card.focusNote : undefined}
             hold={focused && onLongPress !== undefined}
             preview={focused ? growth?.remote ?? null : null}
+            previewWidth={growth?.tile.width}
             width={Math.round(width * 1.6)}
           />
         </Caption>

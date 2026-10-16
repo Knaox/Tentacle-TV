@@ -83,14 +83,18 @@ export type CardGlide = ReturnType<typeof useAnimatedStyle>;
 /**
  * L'aperçu d'une carte de rangée : sa grande carte, sa croissance (0 → 1, le
  * mouvement `unfold` : un ressort à l'aller, un retour bref) et sa vidéo.
- * `onExpand` : la carte va grandir — la rangée lui réserve sa place et la
- * montre entière ; `onCollapse` : elle se replie.
+ * `room` : la place faite sous la légende pendant l'aperçu (le pied,
+ * `cardFocusFooterHeight`). `onExpand` : la carte va grandir, de la largeur de
+ * sa grande carte et de `grow` points en hauteur (image et pied compris) — la
+ * rangée lui réserve sa place et la montre entière ; `onCollapse` : elle se
+ * replie.
  */
 export function useCardGrowth(
   card: CardModel,
   focused: boolean,
   size: { width: number; height: number },
-  onExpand?: (tileWidth: number, tileHeight: number) => void,
+  room: number,
+  onExpand?: (tileWidth: number, grow: number) => void,
   onCollapse?: () => void,
 ): CardGrowth {
   const preview = useCardPreview(card.trailer ?? null, focused);
@@ -101,15 +105,16 @@ export function useCardGrowth(
     [size.width, size.height, scale],
   );
   const progress = useMotion(expanded, "unfold");
-  const expansion = useMemo(() => ({ width: tile.width, height: tile.height, progress }), [tile, progress]);
+  const expansion = useMemo(() => ({ width: tile.width, height: tile.height, room, progress }), [tile, room, progress]);
   const handlers = useRef({ onExpand, onCollapse });
   handlers.current = { onExpand, onCollapse };
   const wasExpanded = useRef(false);
+  const grow = tile.height - size.height + room;
   useEffect(() => {
-    if (expanded) handlers.current.onExpand?.(tile.width, tile.height);
+    if (expanded) handlers.current.onExpand?.(tile.width, grow);
     else if (wasExpanded.current) handlers.current.onCollapse?.();
     wasExpanded.current = expanded;
-  }, [expanded, tile.width, tile.height]);
+  }, [expanded, tile.width, grow]);
   return { tile, expansion, expanded, video: preview?.video ?? null, remote: preview?.remote ?? null };
 }
 
@@ -138,7 +143,8 @@ export function useDrivenCardGrowth(card: CardModel, focused: boolean, driver: C
     else if (wasExpanded.current) driver.collapse();
     wasExpanded.current = expanded;
   }, [expanded, driver]);
-  const expansion = useMemo(() => ({ width: driver.tile.width, height: driver.tile.height, progress: driver.progress }), [driver]);
+  // La cellule d'une grille ne grandit pas : aucune place à faire sous sa légende.
+  const expansion = useMemo(() => ({ width: driver.tile.width, height: driver.tile.height, room: 0, progress: driver.progress }), [driver]);
   const place = useMemo(() => ({ from: driver.from, to: driver.to }), [driver]);
   return { tile: driver.tile, expansion, expanded, video: preview?.video ?? null, remote: preview?.remote ?? null, place };
 }

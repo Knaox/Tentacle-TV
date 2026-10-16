@@ -34,6 +34,8 @@ interface CycleStream {
 export interface PreviewSessionProps {
   subject: TrailerPreviewSubject;
   focused: boolean;
+  /** L'arrivée du focus : la machine en part, même montée après (le focus a dû tenir). */
+  since: number | null;
   /** La grande carte peut se montrer (première image là, rendez-vous passé). */
   onExpanded: (expanded: boolean) => void;
   /** La vidéo existe (chargée cachée, montrée, ou dans son repli) : la session doit rester montée. */
@@ -63,7 +65,7 @@ export interface PreviewSessionProps {
  * Montée par le port seulement pour la carte focalisée (et le temps de son
  * repli) : les autres cartes d'une rangée ne paient rien.
  */
-export const PreviewSession = memo(function PreviewSession({ subject, focused, onExpanded, onBusy }: PreviewSessionProps) {
+export const PreviewSession = memo(function PreviewSession({ subject, focused, since: focusedSince, onExpanded, onBusy }: PreviewSessionProps) {
   const { i18n } = useTranslation();
   const lang = uiLanguage(i18n.language);
   const { storage } = useTentacleConfig();
@@ -77,7 +79,7 @@ export const PreviewSession = memo(function PreviewSession({ subject, focused, o
   const sound = useTrailerPreviewSound();
   const [wantsStream, setWantsStream] = useState(false);
   const stream = useTrailerPreviewStream(stableSubject, lang, { enabled: wantsStream && !previewMemory.recentlyFailed(subjectKey) });
-  const [state, dispatch] = useTvPreviewMachine(focused, !appActive || !stream.capable, subjectKey);
+  const [state, dispatch] = useTvPreviewMachine(focused, !appActive || !stream.capable, subjectKey, focusedSince);
   const wants = trailerPreviewWantsStream(state);
   useEffect(() => setWantsStream(wants), [wants]);
 

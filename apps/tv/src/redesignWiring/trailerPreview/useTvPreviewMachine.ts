@@ -15,12 +15,15 @@ import { useTrailerPreviewDelay } from "../../lib/trailerPreviewSettings";
  * échéances UNE minuterie — celle de la prochaine. Ses temps sont ceux du
  * salon au DÉLAI choisi sur ce téléviseur (tv-core `tvTrailerPreviewTiming`). Pas de pointeur : aucun
  * `move`. Le blocage passe avant le focus, pour qu'une carte bloquée qui naît
- * focalisée ne démarre rien.
+ * focalisée ne démarre rien. `since` : l'arrivée du focus, quand la session
+ * n'est montée qu'après (`trailerPreviewDwell`) — le survol en est daté, le
+ * rythme ne change pas.
  */
 export function useTvPreviewMachine(
   focused: boolean,
   blocked: boolean,
   subjectKey: string | null,
+  since: number | null = null,
 ): [TrailerPreviewState, Dispatch<TrailerPreviewEvent>] {
   const delay = useTrailerPreviewDelay();
   const timing = useMemo(() => tvTrailerPreviewTiming(delay), [delay]);
@@ -34,8 +37,11 @@ export function useTvPreviewMachine(
     dispatch({ type: blocked ? "block" : "unblock", at: Date.now() });
   }, [blocked]);
 
+  const focusedSince = useRef(since);
+  focusedSince.current = since;
   useEffect(() => {
-    dispatch({ type: focused ? "hover" : "unhover", at: Date.now() });
+    const now = Date.now();
+    dispatch({ type: focused ? "hover" : "unhover", at: focused ? Math.min(now, focusedSince.current ?? now) : now });
   }, [focused]);
 
   // Un autre titre sous le même focus (une carte recyclée) : un cycle neuf.

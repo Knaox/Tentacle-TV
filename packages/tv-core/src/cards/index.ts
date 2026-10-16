@@ -13,6 +13,7 @@ export * from "./sheetActions";
 export * from "./sheetEntry";
 export * from "./sheetKeys";
 export * from "./cardSize";
+export * from "./trailerPreviewDwell";
 export * from "./trailerPreviewGrid";
 export * from "./trailerPreviewPark";
 export * from "./trailerPreviewRowHead";

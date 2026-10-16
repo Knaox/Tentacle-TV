@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import type { LayoutChangeEvent, ScrollView, View } from "react-native";
+import type { ScrollView, View } from "react-native";
 import type { AnimatedRef } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import {
@@ -25,7 +25,8 @@ import { useRowGlide } from "./rowGlide";
  *   et ne défile qu'une fois cette place posée (`onContentSizeChange`) : elle
  *   bornerait sinon le défilement à son contenu d'avant. Le passage en tête
  *   se joue avec la grande carte (`rowGlide`), le retour est ordinaire ;
- * - en hauteur, la page défile si la grande carte dépasse en bas
+ * - en hauteur, la page défile si la rangée agrandie dépasse en bas — la
+ *   grande carte, la légende et le pied, à qui la carte fait place
  *   (`previewRevealPort`, tv-core `trailerPreviewRevealOffset`).
  *
  * L'adaptateur n'a ni seuil ni durée : il date les évènements, applique ce que
@@ -35,10 +36,6 @@ import { useRowGlide } from "./rowGlide";
 /** La largeur et la hauteur de la scène. */
 const SCREEN_WIDTH = 1920;
 const SCREEN_HEIGHT = 1080;
-/** Le retrait du haut de la piste (`MediaRow`, `content.paddingTop`). */
-const TRACK_PADDING_TOP = 12;
-/** Ce que la légende tient sous la grande carte (titre, sous-titre, indication). */
-const CAPTION_ROOM = 96;
 
 export interface RowPreviewRoomInput {
   track: AnimatedRef<ScrollView>;
@@ -61,7 +58,6 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
   const tileWidth = useRef<number | undefined>(undefined);
   const wake = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rowRef = useRef<View>(null);
-  const trackTop = useRef(0);
 
   const glide = useRowGlide(track);
   const move = useCallback(
@@ -126,15 +122,17 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     dispatch.current({ type: "reset" });
   }, [glide]);
 
+  /** La carte `index` va grandir : sa grande carte a cette largeur, la carte gagne `grow` points en hauteur. */
   const onPreviewExpand = useCallback(
-    (index: number, width: number, tileHeight: number) => {
+    (index: number, width: number, grow: number) => {
       tileWidth.current = width;
       dispatch.current({ type: "expand", index, tileWidth: width, at: Date.now() });
       if (!reveal) return;
-      rowRef.current?.measureInWindow((_x, top) => {
+      // La rangée telle qu'elle sera : sa hauteur de repos, plus ce que la carte gagne (le pied compris).
+      rowRef.current?.measureInWindow((_x, top, _width, height) => {
         const offset = trailerPreviewRevealOffset({
           top,
-          bottom: top + trackTop.current + TRACK_PADDING_TOP + tileHeight + CAPTION_ROOM,
+          bottom: top + height + grow,
           viewportHeight: SCREEN_HEIGHT,
           topMargin: REVEAL_NEAREST_MARGIN,
           bottomMargin: REVEAL_NEAREST_MARGIN,
@@ -159,9 +157,5 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     move(target.x, target.motion);
   }, [move]);
 
-  const onTrackLayout = useCallback((event: LayoutChangeEvent) => {
-    trackTop.current = event.nativeEvent.layout.y;
-  }, []);
-
-  return { reserve, rowRef, onCardFocus, onRewind, onPreviewExpand, onPreviewCollapse, onContentSizeChange, onTrackLayout };
+  return { reserve, rowRef, onCardFocus, onRewind, onPreviewExpand, onPreviewCollapse, onContentSizeChange };
 }

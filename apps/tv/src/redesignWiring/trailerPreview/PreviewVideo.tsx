@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { StyleSheet } from "react-native";
 import Video, { type OnLoadData, type OnProgressData } from "react-native-video";
 import { PREVIEW_VIDEO_SURFACE } from "../../platform/tvos/player/previewVideoSurface";
+import { PreviewVideoShield } from "../../platform/tvos/player/previewVideoShield";
 
 /**
  * La vidéo de l'aperçu (Apple TV : AVPlayer ; Android TV : ExoPlayer) — le
@@ -16,6 +17,9 @@ import { PREVIEW_VIDEO_SURFACE } from "../../platform/tvos/player/previewVideoSu
  *   jamais un cadre noir (la couche vidéo est transparente avant).
  * - La surface (et son « jamais focalisable ») vient de l'adaptateur de la
  *   plateforme (`previewVideoSurface`) ; pas de volet noir avant l'image.
+ *   Sur Android, elle est posée dans une vue dont aucun descendant ne prend
+ *   le focus (`previewVideoShield`) : le contrôleur d'ExoPlayer l'arrachait
+ *   à la carte.
  */
 
 /** Chargée sans avis de première image au-delà : elle est tenue pour prête. */
@@ -71,24 +75,26 @@ export const PreviewVideo = memo(function PreviewVideo({ uri, hls, startAt, play
   );
 
   return (
-    <Video
-      {...PREVIEW_VIDEO_SURFACE}
-      source={source}
-      style={StyleSheet.absoluteFill}
-      paused={!playing}
-      muted={muted}
-      volume={volume}
-      controls={false}
-      resizeMode="cover"
-      preventsDisplaySleepDuringVideoPlayback={false}
-      hideShutterView
-      shutterColor="transparent"
-      progressUpdateInterval={PROGRESS_INTERVAL_MS}
-      onReadyForDisplay={markReady}
-      onLoad={onLoad}
-      onProgress={onProgress}
-      onError={onError}
-      onEnd={onEnded}
-    />
+    <PreviewVideoShield style={StyleSheet.absoluteFill}>
+      <Video
+        {...PREVIEW_VIDEO_SURFACE}
+        source={source}
+        style={StyleSheet.absoluteFill}
+        paused={!playing}
+        muted={muted}
+        volume={volume}
+        controls={false}
+        resizeMode="cover"
+        preventsDisplaySleepDuringVideoPlayback={false}
+        hideShutterView
+        shutterColor="transparent"
+        progressUpdateInterval={PROGRESS_INTERVAL_MS}
+        onReadyForDisplay={markReady}
+        onLoad={onLoad}
+        onProgress={onProgress}
+        onError={onError}
+        onEnd={onEnded}
+      />
+    </PreviewVideoShield>
   );
 });
