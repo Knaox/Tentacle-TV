@@ -144,9 +144,10 @@ function PreviewableCard(props: MediaCardProps & { cardFocus: CardFocused }) {
   return <CardBody {...props} growth={growth} />;
 }
 
-/** Le cadre de la carte — effacé sous sa grande carte quand elle en a une. */
+/** Le cadre de la carte — effacé sous sa grande carte quand elle en a une. Placée par sa grille,
+ *  le cadre s'efface lui-même (`CardFrame` `under`) : pas de vue de plus dans chaque cellule. */
 function FrameUnder({ growth, children }: { growth: CardGrowth | null; children: ReactNode }) {
-  return growth ? <UnderPreviewTile growth={growth}>{children}</UnderPreviewTile> : <>{children}</>;
+  return growth && !growth.place ? <UnderPreviewTile growth={growth}>{children}</UnderPreviewTile> : <>{children}</>;
 }
 
 function cardHeight(variant: MediaCardProps["variant"], width: number): number {
@@ -205,6 +206,7 @@ function CardBody({
               origin={origin}
               glow={glow}
               focusProgress={progress}
+              under={growth?.place ? growth.expansion.progress : undefined}
               focusLayer={
                 card.quality && !card.absent ? (
                   <CardQualityBadges

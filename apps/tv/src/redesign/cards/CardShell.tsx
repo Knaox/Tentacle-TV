@@ -1,4 +1,4 @@
-import { memo, useCallback, type ReactNode } from "react";
+import { memo, useCallback, useMemo, type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { FocusTarget } from "../focus/FocusTarget";
@@ -66,6 +66,10 @@ export interface CardShellProps {
 }
 
 export const CardShell = memo(function CardShell(props: CardShellProps) {
+  // Le style d'une cellule qui glisse, gardé d'un rendu à l'autre : une grille recyclée
+  // redessine ses cellules à chaque ligne, sans réattacher leur style animé.
+  const { width, front, style, glide } = props;
+  const glideStyle = useMemo(() => (glide ? [{ width }, front && styles.front, style, glide] : null), [glide, width, front, style]);
   const { focusKey, frameHeight, frame, centerFrame = false, onPress, onLongPress, onTargetFocusChange, accessibilityLabel, children } = props;
   const renderFrame = useCallback(
     () => (centerFrame ? <View style={styles.center}>{frame}</View> : frame),
@@ -92,9 +96,9 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
     </>
   );
   if (props.expansion) return <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>;
-  if (props.glide) {
+  if (glideStyle) {
     return (
-      <Animated.View collapsable={false} style={[{ width: props.width }, props.front && styles.front, props.style, props.glide]}>
+      <Animated.View collapsable={false} style={glideStyle}>
         {body}
       </Animated.View>
     );
