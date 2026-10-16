@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_TRAILER_PREVIEW_DELAY,
   INITIAL_TRAILER_PREVIEW_STATE,
   TRAILER_PREVIEW_TIMING,
   reduceTrailerPreview,
@@ -10,6 +11,7 @@ import {
 } from "@tentacle-tv/shared";
 import {
   TV_TRAILER_PREVIEW_TIMING,
+  tvTrailerPreviewTiming,
   createTrailerPreviewMemory,
   previewStartPosition,
   previewVideoKey,
@@ -35,7 +37,7 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(run([{ type: "tick", at: 450 }], state).phase).toBe("fetching");
   });
 
-  it("la carte ne grandit qu'à 900 ms, et seulement avec la première image", () => {
+  it("la carte ne grandit qu'au délai par défaut (800 ms), et seulement avec la première image", () => {
     const ready = run([
       { type: "hover", at: 0 },
       { type: "tick", at: 450 },
@@ -43,7 +45,8 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
       { type: "videoReady", at: 700 },
     ]);
     expect(trailerPreviewVisible(ready)).toBe(false);
-    expect(trailerPreviewVisible(run([{ type: "tick", at: 900 }], ready))).toBe(true);
+    expect(trailerPreviewVisible(run([{ type: "tick", at: 799 }], ready))).toBe(false);
+    expect(trailerPreviewVisible(run([{ type: "tick", at: 800 }], ready))).toBe(true);
   });
 
   it("une première image tardive : la carte grandit dès qu'elle est là", () => {
@@ -117,5 +120,18 @@ describe("previewVideoKey / previewStartPosition", () => {
     expect(previewStartPosition({ resumeAt: 31, hls: true })).toBe(31);
     expect(previewStartPosition({ resumeAt: null, hls: true })).toBe(TRAILER_PREVIEW_TIMING.startOffsetS);
     expect(previewStartPosition({ resumeAt: null, hls: false })).toBe(0);
+  });
+});
+
+describe("le délai choisi sur le téléviseur", () => {
+  it("la carte grandit au délai ; la demande 350 ms avant, jamais sous 450 ms de focus tenu", () => {
+    expect(tvTrailerPreviewTiming(800)).toMatchObject({ revealMs: 800, intentMs: 450, intentStillMs: 0, volume: 0.7 });
+    expect(tvTrailerPreviewTiming(500)).toMatchObject({ revealMs: 500, intentMs: 450 });
+    expect(tvTrailerPreviewTiming(1200)).toMatchObject({ revealMs: 1200, intentMs: 850 });
+    expect(tvTrailerPreviewTiming(2000)).toMatchObject({ revealMs: 2000, intentMs: 1650 });
+  });
+
+  it("le défaut est celui des temps du salon", () => {
+    expect(tvTrailerPreviewTiming(DEFAULT_TRAILER_PREVIEW_DELAY)).toEqual(TV_TRAILER_PREVIEW_TIMING);
   });
 });

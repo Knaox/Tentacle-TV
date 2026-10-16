@@ -1,4 +1,7 @@
-import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "@tentacle-tv/shared";
+import {
+  DEFAULT_TRAILER_PREVIEW_DELAY, TRAILER_PREVIEW_TIMING, trailerPreviewTimingFor,
+  type TrailerPreviewPace, type TrailerPreviewTiming,
+} from "@tentacle-tv/shared";
 
 /**
  * L'aperçu de bande-annonce AU FOCUS d'une carte (Apple TV, Android TV) — les
@@ -9,11 +12,13 @@ import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "@tentacle-tv/
  * Les temps sont ceux du salon, pas ceux de la souris : une télécommande
  * avance d'un pas toutes les 300 à 600 ms quand on parcourt une rangée, et
  * répète un pas toutes les ~100 ms quand on la tient. La demande au serveur
- * ne part donc qu'après 450 ms de focus tenu — un parcours régulier (un pas
- * toutes les 400 ms) ne demande rien, un pas de plus la repousse —, et la
- * carte grandit au plus tôt à 900 ms. D'abord une seconde et 1,8 s, « comme
- * Netflix au salon » : trop lent à l'essai (15/10, « ça doit se lancer
- * vraiment rapidement, comme sur le bureau »). Le serveur a préparé d'avance
+ * ne part donc jamais avant 450 ms de focus tenu — un parcours régulier (un
+ * pas toutes les 400 ms) ne demande rien, un pas de plus la repousse —, et la
+ * carte grandit au DÉLAI choisi sur l'appareil (Réglages › Lecture, shared
+ * `previewDelay.ts`), 800 ms par défaut, le même que sur le bureau : la
+ * demande part alors 350 ms avant lui, jamais avant ces 450 ms. Historique :
+ * une seconde et 1,8 s, « comme Netflix au salon », trop lent (15/10) ; puis
+ * 900 ms ; puis le délai de l'utilisateur (16/10). Le serveur a préparé d'avance
  * l'aperçu des cartes autour du focus (`/api/trailers/preview/warm`) : la
  * réponse est presque toujours immédiate, la vidéo part à l'intention. Le
  * reste (vérification par le serveur, aucune révélation sans première image,
@@ -21,17 +26,25 @@ import { TRAILER_PREVIEW_TIMING, type TrailerPreviewTiming } from "@tentacle-tv/
  */
 export const TV_TRAILER_PREVIEW_TIMING: TrailerPreviewTiming = {
   ...TRAILER_PREVIEW_TIMING,
-  /** Focus tenu avant la demande : un parcours de rangée ne demande rien. */
+  /** Focus tenu avant la demande, au délai par défaut (`tvTrailerPreviewTiming`) : un parcours de rangée ne demande rien. */
   intentMs: 450,
   /** Pas de pointeur : l'intention ne dépend que du focus tenu. */
   intentStillMs: 0,
-  /** La carte grandit au plus tôt à ce moment, depuis l'arrivée du focus. */
-  revealMs: 900,
+  /** La carte grandit au plus tôt à ce moment, depuis l'arrivée du focus : le délai choisi (`tvTrailerPreviewTiming`). */
+  revealMs: DEFAULT_TRAILER_PREVIEW_DELAY,
   /** La carte se replie un peu plus vite qu'elle n'a grandi (le mouvement d'Apple TV). */
   exitMs: 220,
   /** Le son du salon : la bande-annonce s'entend, sans couvrir la pièce. */
   volume: 0.7,
 };
+
+/** Le pas du salon : jamais de demande sous 450 ms de focus tenu ; la demande 350 ms avant le délai. */
+export const TV_TRAILER_PREVIEW_PACE: TrailerPreviewPace = { floorMs: 450, leadMs: 350 };
+
+/** Les temps de la machine pour le délai choisi sur ce téléviseur. */
+export function tvTrailerPreviewTiming(delayMs: number): TrailerPreviewTiming {
+  return trailerPreviewTimingFor(TV_TRAILER_PREVIEW_TIMING, delayMs, TV_TRAILER_PREVIEW_PACE);
+}
 
 /**
  * Ce que l'appareil retient, pour la session (un redémarrage efface tout) :

@@ -44,6 +44,7 @@ export interface PlaybackPanelProps {
   onChangeStillWatching?: (patch: Partial<StillWatchingSettings>) => void;
   onToggleTrailerPreviews?: (next: boolean) => void;
   onToggleTrailerPreviewSound?: (next: boolean) => void;
+  onSelectTrailerPreviewDelay?: (delay: number) => void;
 }
 
 const LANGUAGES: Array<{ code: InterfaceLanguage; label: string }> = [
@@ -64,6 +65,7 @@ export const PlaybackPanel = memo(function PlaybackPanel({
   onChangeStillWatching,
   onToggleTrailerPreviews,
   onToggleTrailerPreviewSound,
+  onSelectTrailerPreviewDelay,
 }: PlaybackPanelProps) {
   const { t } = useTranslation("preferences");
   const { preset, device } = playback;
@@ -107,6 +109,7 @@ export const PlaybackPanel = memo(function PlaybackPanel({
           model={playback.trailerPreviews}
           onToggleEnabled={onToggleTrailerPreviews}
           onToggleSound={onToggleTrailerPreviewSound}
+          onSelectDelay={onSelectTrailerPreviewDelay}
         />
       ) : null}
 

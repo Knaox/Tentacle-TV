@@ -117,6 +117,7 @@ export function SettingsRedesign({ navigation, route }: Props) {
           onChangeStillWatching={model.onChangeStillWatching}
           onToggleTrailerPreviews={model.onToggleTrailerPreviews}
           onToggleTrailerPreviewSound={model.onToggleTrailerPreviewSound}
+          onSelectTrailerPreviewDelay={model.onSelectTrailerPreviewDelay}
           appearance={PLATFORM_TRAITS.liquidGlass}
           onToggleLiquidGlass={PLATFORM_TRAITS.liquidGlass ? model.onToggleLiquidGlass : undefined}
           renderTier={lite.renderTier}

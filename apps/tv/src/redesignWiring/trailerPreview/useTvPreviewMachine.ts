@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, type Dispatch } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, type Dispatch } from "react";
 import {
   INITIAL_TRAILER_PREVIEW_STATE,
   nextTrailerPreviewDeadline,
@@ -6,17 +6,14 @@ import {
   type TrailerPreviewEvent,
   type TrailerPreviewState,
 } from "@tentacle-tv/shared";
-import { TV_TRAILER_PREVIEW_TIMING } from "@tentacle-tv/tv-core";
-
-/** Le réducteur de la machine aux temps du salon (tv-core `TV_TRAILER_PREVIEW_TIMING`). */
-function tvPreviewReducer(state: TrailerPreviewState, event: TrailerPreviewEvent): TrailerPreviewState {
-  return reduceTrailerPreview(state, event, TV_TRAILER_PREVIEW_TIMING);
-}
+import { tvTrailerPreviewTiming } from "@tentacle-tv/tv-core";
+import { useTrailerPreviewDelay } from "../../lib/trailerPreviewSettings";
 
 /**
  * La machine de l'aperçu (shared `previewMachine.ts`) branchée sur le focus
  * d'une carte : focus et blocage deviennent des évènements datés, et ses
- * échéances UNE minuterie — celle de la prochaine. Pas de pointeur : aucun
+ * échéances UNE minuterie — celle de la prochaine. Ses temps sont ceux du
+ * salon au DÉLAI choisi sur ce téléviseur (tv-core `tvTrailerPreviewTiming`). Pas de pointeur : aucun
  * `move`. Le blocage passe avant le focus, pour qu'une carte bloquée qui naît
  * focalisée ne démarre rien.
  */
@@ -25,7 +22,13 @@ export function useTvPreviewMachine(
   blocked: boolean,
   subjectKey: string | null,
 ): [TrailerPreviewState, Dispatch<TrailerPreviewEvent>] {
-  const [state, dispatch] = useReducer(tvPreviewReducer, INITIAL_TRAILER_PREVIEW_STATE);
+  const delay = useTrailerPreviewDelay();
+  const timing = useMemo(() => tvTrailerPreviewTiming(delay), [delay]);
+  const reducer = useCallback(
+    (current: TrailerPreviewState, event: TrailerPreviewEvent) => reduceTrailerPreview(current, event, timing),
+    [timing],
+  );
+  const [state, dispatch] = useReducer(reducer, INITIAL_TRAILER_PREVIEW_STATE);
 
   useEffect(() => {
     dispatch({ type: blocked ? "block" : "unblock", at: Date.now() });
@@ -43,7 +46,7 @@ export function useTvPreviewMachine(
     dispatch({ type: "restart", at: Date.now() });
   }, [subjectKey]);
 
-  const deadline = nextTrailerPreviewDeadline(state, TV_TRAILER_PREVIEW_TIMING);
+  const deadline = nextTrailerPreviewDeadline(state, timing);
   useEffect(() => {
     if (deadline === null) return undefined;
     const id = setTimeout(() => dispatch({ type: "tick", at: Date.now() }), Math.max(0, deadline - Date.now()));

@@ -5,6 +5,7 @@ import { railPinningStore } from "../components/nav/railPinning";
 import { cardSizeStore } from "./cardSize";
 import { exoTunnelingStore } from "./exoSettings";
 import { liquidGlassStore } from "./liquidGlass";
+import { rehydrateTrailerPreviewSettings } from "./trailerPreviewSettings";
 import { tvStorage } from "../storage/RNStorageAdapter";
 
 /**
@@ -27,6 +28,8 @@ export function rehydrateStores(): void {
   exoTunnelingStore.rehydrate();
   liquidGlassStore.rehydrate();
   cardSizeStore.rehydrate();
+  // Les aperçus au focus : sans cette relecture, un aperçu coupé (ou muet) se rallumait au démarrage.
+  rehydrateTrailerPreviewSettings();
   initPlaybackSettingsStore(tvStorage);
   rehydratePlaybackSettings();
   initStillWatchingStore(tvStorage);

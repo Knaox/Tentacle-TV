@@ -126,6 +126,7 @@ export interface SettingsViewProps {
   onChangeStillWatching?: (patch: Partial<StillWatchingSettings>) => void;
   onToggleTrailerPreviews?: (next: boolean) => void;
   onToggleTrailerPreviewSound?: (next: boolean) => void;
+  onSelectTrailerPreviewDelay?: (delay: number) => void;
   onToggleLiquidGlass?: (next: boolean) => void;
   onSelectHeroMode?: (mode: HeroMode) => void;
   onChangeFixedTitle?: () => void;
@@ -240,6 +241,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   onChangeStillWatching={props.onChangeStillWatching}
                   onToggleTrailerPreviews={props.onToggleTrailerPreviews}
                   onToggleTrailerPreviewSound={props.onToggleTrailerPreviewSound}
+                  onSelectTrailerPreviewDelay={props.onSelectTrailerPreviewDelay}
                 />
               ) : null}
               {tab === "home" && home ? (
