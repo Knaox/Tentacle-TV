@@ -11,22 +11,17 @@
  * bouge rien non plus : la place posée au bout de la piste reste tant que le
  * focus est dans la rangée — sinon la piste raccourcirait sous la voisine.
  *
- * En bout de rangée, la carte ne peut plus passer en tête ; `end`, à l'essai :
- * - `stop` (la butée) : la rangée s'arrête à son bout, la grande carte finit
- *   à la marge de droite ;
- * - `overscroll` (le dépassement) : la rangée défile AU-DELÀ de son bout — la
- *   carte passe en tête quoi qu'il arrive, du vide à sa droite. Une rangée qui
- *   tient entière dans l'écran ne dépasse jamais : deux cartes ne vont pas
- *   disparaître à gauche pour en montrer une.
+ * En bout de rangée, la carte ne peut plus passer en tête : la BUTÉE — la
+ * rangée s'arrête à son bout, la grande carte finit à la marge de droite.
+ * (Choix de Damien du 16/10, entre la butée et un dépassement au-delà du bout,
+ * qui laissait du vide à droite.)
  *
  * Quand le focus QUITTE la rangée (après une courte grâce : un pas d'une
- * carte à sa voisine passe par un instant sans focus), `release` :
- * - `stay` : la rangée reste où l'aperçu l'a laissée (la règle 1 de
- *   `focus/rowRewind.ts` : une rangée garde sa position tant qu'elle est à
- *   l'écran) ; seul un vide au-delà de son bout se referme ;
- * - `return` : elle revient où elle était avant le premier passage en tête de
- *   la visite, la dernière carte focalisée toujours entière à l'écran.
- * La place posée au bout s'en va ensuite, le retour fini.
+ * carte à sa voisine passe par un instant sans focus), elle RESTE où l'aperçu
+ * l'a laissée — la règle 1 de `focus/rowRewind.ts` : une rangée garde sa
+ * position tant qu'elle est à l'écran ; seul un vide au-delà de son bout se
+ * referme, puis la place posée au bout s'en va. (Choix de Damien : « revenir
+ * avant les aperçus » faisait perdre la carte au retour par HAUT.)
  *
  * Le passage en tête se joue AVEC la grande carte (`motion: "withPreview"`) :
  * le même ressort que sa croissance, image par image. En butée, le bord droit
@@ -36,7 +31,7 @@
  * défilement ordinaire (`plain`).
  *
  * Le REPLI d'une carte quand le focus est passé à sa droite (DROITE vers la
- * suivante), la rangée étant au-delà de son bout naturel (butée, dépassement) :
+ * suivante), la rangée étant au-delà de son bout naturel (la butée) :
  * sans rien faire, la voisine glisserait à gauche et laisserait un VIDE à sa
  * droite jusqu'à son propre aperçu (constat du Testeur A, 16/10). La rangée
  * recule alors exactement de ce que la carte rend, au rythme de son repli
@@ -52,17 +47,6 @@
  * grande carte (`tileWidth`, vue à un aperçu précédent), sinon à l'aperçu.
  */
 
-export type RowHeadEnd = "stop" | "overscroll";
-export type RowHeadRelease = "stay" | "return";
-
-export interface RowHeadOptions {
-  end: RowHeadEnd;
-  release: RowHeadRelease;
-}
-
-/** Le choix par défaut (cf. le rapport du lot du 16/10). */
-export const DEFAULT_ROW_HEAD_OPTIONS: RowHeadOptions = { end: "stop", release: "stay" };
-
 /** La rangée, en points de la scène : cartes de largeur égale. */
 export interface RowHeadGeometry {
   cardCount: number;
@@ -76,27 +60,23 @@ export interface RowHeadGeometry {
   rightMargin: number;
 }
 
-/** Ce que la rangée sait au moment de l'évènement : sa géométrie, l'essai choisi, son défilement. */
-export interface RowHeadContext extends RowHeadGeometry, RowHeadOptions {
+/** Ce que la rangée sait au moment de l'évènement : sa géométrie, son défilement. */
+export interface RowHeadContext extends RowHeadGeometry {
   scrollX: number;
 }
 
 export interface RowHeadState {
   /** La carte focalisée de la rangée, ou `null`. */
   focused: number | null;
-  /** La dernière carte focalisée (le retour la garde à l'écran). */
-  last: number | null;
   /** La place posée au bout de la piste, au-delà de sa marge. */
   trailing: number;
-  /** Le défilement d'avant le premier passage en tête de la visite (`return`). */
-  restX: number | null;
   /** Le focus est parti : la rangée le constate à cette heure (la grâce). */
   leaveAt: number | null;
   /** Le retour fini : la place posée s'en va à cette heure. */
   releaseAt: number | null;
 }
 
-export const INITIAL_ROW_HEAD: RowHeadState = { focused: null, last: null, trailing: 0, restX: null, leaveAt: null, releaseAt: null };
+export const INITIAL_ROW_HEAD: RowHeadState = { focused: null, trailing: 0, leaveAt: null, releaseAt: null };
 
 export type RowHeadEvent =
   /** `tileWidth` : la largeur de la grande carte, si la rangée la connaît déjà — la place se pose d'avance. */
@@ -134,9 +114,8 @@ const naturalEndOf = (g: RowHeadGeometry) => Math.max(0, g.inset + cardsWidthOf(
  * Le défilement qui met la carte `index` en tête — ou, en bout de rangée, la
  * butée : le bout du contenu TEL QU'IL SERA une fois la carte grandie.
  */
-export function rowHeadTarget(input: RowHeadGeometry & { index: number; tileWidth: number; end: RowHeadEnd }): number {
+export function rowHeadTarget(input: RowHeadGeometry & { index: number; tileWidth: number }): number {
   const head = input.index * pitchOf(input);
-  if (input.end === "overscroll" && naturalEndOf(input) > 0) return head;
   const growth = Math.max(0, input.tileWidth - input.cardWidth);
   const grownEnd = Math.max(0, input.inset + cardsWidthOf(input) + growth + input.rightMargin - input.viewportWidth);
   return Math.min(head, grownEnd);
@@ -145,13 +124,6 @@ export function rowHeadTarget(input: RowHeadGeometry & { index: number; tileWidt
 /** La place à poser au bout pour que la piste, ses cartes au repos, atteigne `scrollX`. */
 export function rowHeadTrailing(input: RowHeadGeometry & { scrollX: number }): number {
   return Math.max(0, Math.ceil(input.scrollX + input.viewportWidth - (input.inset + cardsWidthOf(input) + input.rightMargin)));
-}
-
-/** Le défilement du retour (`return`) : `restX`, la carte `last` gardée entière entre la tête et la marge. */
-function returnTarget(g: RowHeadGeometry, restX: number, last: number): number {
-  const left = last * pitchOf(g);
-  const lowest = left + g.inset + g.cardWidth - (g.viewportWidth - g.rightMargin);
-  return Math.min(naturalEndOf(g), Math.max(0, Math.min(left, Math.max(lowest, restX))));
 }
 
 const moveTo = (target: number, scrollX: number) => (Math.abs(target - scrollX) < 1 ? null : target);
@@ -164,7 +136,7 @@ export function reduceRowHead(state: RowHeadState, event: RowHeadEvent, context:
   switch (event.type) {
     case "focus": {
       const trailing = event.tileWidth === undefined ? state.trailing : Math.max(state.trailing, trailingFor(context, event.index, event.tileWidth));
-      return still({ ...state, focused: event.index, last: event.index, trailing, leaveAt: null, releaseAt: null });
+      return still({ ...state, focused: event.index, trailing, leaveAt: null, releaseAt: null });
     }
     case "blur":
       if (state.focused !== event.index) return still(state);
@@ -173,8 +145,7 @@ export function reduceRowHead(state: RowHeadState, event: RowHeadEvent, context:
       const target = rowHeadTarget({ ...context, index: event.index, tileWidth: event.tileWidth });
       const scrollTo = moveTo(target, context.scrollX);
       const trailing = Math.max(state.trailing, rowHeadTrailing({ ...context, scrollX: target }));
-      const restX = scrollTo !== null && state.restX === null ? context.scrollX : state.restX;
-      const next = { ...state, focused: event.index, last: event.index, trailing, restX, leaveAt: null, releaseAt: null };
+      const next = { ...state, focused: event.index, trailing, leaveAt: null, releaseAt: null };
       return { state: next, scrollTo, motion: "withPreview" };
     }
     case "collapse": {
@@ -189,7 +160,7 @@ export function reduceRowHead(state: RowHeadState, event: RowHeadEvent, context:
     case "tick":
       return tick(state, event.at, context);
     case "reset":
-      return still({ ...INITIAL_ROW_HEAD, focused: state.focused, last: state.last });
+      return still({ ...INITIAL_ROW_HEAD, focused: state.focused });
   }
 }
 
@@ -199,18 +170,12 @@ function tick(state: RowHeadState, at: number, context: RowHeadContext): RowHead
   return still(state);
 }
 
-/** Le focus a quitté la rangée : le vide se referme (`stay`) ou la rangée revient (`return`). */
+/** Le focus a quitté la rangée : elle reste, seul un vide au-delà de son bout se referme. */
 function leave(state: RowHeadState, at: number, context: RowHeadContext): RowHeadStep {
-  const natural = naturalEndOf(context);
-  const target =
-    context.release === "return" && state.restX !== null && state.last !== null
-      ? returnTarget(context, state.restX, state.last)
-      : Math.min(context.scrollX, natural);
-  const scrollTo = moveTo(target, context.scrollX);
-  const next: RowHeadState = { ...state, restX: null };
+  const scrollTo = moveTo(Math.min(context.scrollX, naturalEndOf(context)), context.scrollX);
   // Rien à refermer à la vue : la place posée, hors de l'écran, s'en va aussitôt.
-  if (scrollTo === null) return still({ ...next, trailing: 0, releaseAt: null });
-  return { state: { ...next, releaseAt: next.trailing > 0 ? at + ROW_HEAD_RELEASE_MS : null }, scrollTo, motion: "plain" };
+  if (scrollTo === null) return still({ ...state, trailing: 0, releaseAt: null });
+  return { state: { ...state, releaseAt: state.trailing > 0 ? at + ROW_HEAD_RELEASE_MS : null }, scrollTo, motion: "plain" };
 }
 
 /** La prochaine heure à laquelle la rangée doit être réveillée (`tick`), ou `null`. */

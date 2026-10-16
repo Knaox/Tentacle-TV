@@ -36,8 +36,6 @@ const DEVICE_KEYS: Record<string, string> = {
   tentacle_exo_match_frame_rate: "le décodeur d'Android TV",
   tentacle_tv_trailer_previews: "les aperçus de bande-annonce au focus (réglage du téléviseur, comme le bureau)",
   tentacle_tv_trailer_preview_sound: "le son de ces aperçus",
-  tentacle_tv_row_head_end: "l'essai « carte en tête » : le bout de rangée (réglage du téléviseur)",
-  tentacle_tv_row_head_release: "l'essai « carte en tête » : le départ du focus (réglage du téléviseur)",
   tentacle_unpair_pending: "le marqueur des purges et révocations",
 };
 

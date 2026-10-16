@@ -33,17 +33,4 @@ export default {
   progressMinutes: "{{watched}} sur {{total}} min",
   /** Au-delà de l'heure, les durées du reste de l'app : « 1h 12min sur 2h 33min ». */
   progressTime: "{{watched}} sur {{total}}",
-
-  // ── ESSAI (TV, lot du 16/10) : la carte en aperçu passe en tête ───────────
-  // Le choix fait, ces clés partent avec le réglage d'essai.
-  tvRowHeadEndLabel: "En bout de rangée (essai)",
-  tvRowHeadEndStop: "Butée",
-  tvRowHeadEndOverscroll: "Dépassement",
-  tvRowHeadEndStopHint: "La rangée s'arrête à son bout\u00a0: l'aperçu des dernières cartes finit au bord droit.",
-  tvRowHeadEndOverscrollHint: "La rangée défile au-delà de son bout\u00a0: l'aperçu est toujours en tête, du vide à sa droite.",
-  tvRowHeadReleaseLabel: "Quand le focus quitte la rangée (essai)",
-  tvRowHeadReleaseStay: "Elle reste",
-  tvRowHeadReleaseReturn: "Elle revient",
-  tvRowHeadReleaseStayHint: "La rangée reste où l'aperçu l'a laissée.",
-  tvRowHeadReleaseReturnHint: "La rangée revient où elle était avant les aperçus.",
 };

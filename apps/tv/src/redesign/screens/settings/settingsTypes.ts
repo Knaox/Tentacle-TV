@@ -1,4 +1,4 @@
-import type { OwnPinMode, RowHeadOptions } from "@tentacle-tv/tv-core";
+import type { OwnPinMode } from "@tentacle-tv/tv-core";
 import type { FamilyProfileColor, HeroMode, PlaybackPreset, StillWatchingSettings } from "@tentacle-tv/shared";
 import type { IconName } from "../../icons/Icon";
 
@@ -97,8 +97,6 @@ export interface SettingsPlayback {
 export interface SettingsTrailerPreviews {
   enabled: boolean;
   sound: boolean;
-  /** ESSAI (lot du 16/10) : la carte en aperçu passe en tête — bout de rangée, départ du focus. */
-  rowHead?: RowHeadOptions;
 }
 
 export interface SettingsChoice {

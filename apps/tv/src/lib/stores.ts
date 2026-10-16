@@ -5,7 +5,6 @@ import { railPinningStore } from "../components/nav/railPinning";
 import { cardSizeStore } from "./cardSize";
 import { exoTunnelingStore } from "./exoSettings";
 import { liquidGlassStore } from "./liquidGlass";
-import { rowHeadTrialStore } from "./rowHeadTrial";
 import { tvStorage } from "../storage/RNStorageAdapter";
 
 /**
@@ -28,7 +27,6 @@ export function rehydrateStores(): void {
   exoTunnelingStore.rehydrate();
   liquidGlassStore.rehydrate();
   cardSizeStore.rehydrate();
-  rowHeadTrialStore.rehydrate();
   initPlaybackSettingsStore(tvStorage);
   rehydratePlaybackSettings();
   initStillWatchingStore(tvStorage);

@@ -3,7 +3,6 @@ import {
   reduceRowHead,
   type RowHeadContext,
   type RowHeadEvent,
-  type RowHeadOptions,
   type RowHeadState,
 } from "./trailerPreviewRowHead";
 
@@ -15,16 +14,14 @@ import {
 // La scène de l'accueil : vignettes 380 (pas de 416), retrait 176, marge 96, grande carte 806.
 export const SCENE = { cardWidth: 380, gap: 36, inset: 176, viewportWidth: 1920, rightMargin: 96 };
 export const TILE = 806;
-export const STOP: RowHeadOptions = { end: "stop", release: "stay" };
-export const OVER: RowHeadOptions = { end: "overscroll", release: "stay" };
 
 /** Une rangée simulée : chaque défilement demandé est aussitôt atteint. */
-export function row(cardCount: number, options: RowHeadOptions, geometry: Partial<typeof SCENE> = {}) {
+export function row(cardCount: number, geometry: Partial<typeof SCENE> = {}) {
   let state: RowHeadState = INITIAL_ROW_HEAD;
   let scrollX = 0;
   const moves: number[] = [];
   const send = (event: RowHeadEvent) => {
-    const context: RowHeadContext = { ...SCENE, ...geometry, cardCount, ...options, scrollX };
+    const context: RowHeadContext = { ...SCENE, ...geometry, cardCount, scrollX };
     const step = reduceRowHead(state, event, context);
     state = step.state;
     if (step.scrollTo !== null) {

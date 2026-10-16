@@ -13,7 +13,6 @@ import {
 } from "@tentacle-tv/tv-core";
 import { usePreviewReveal } from "./previewRevealPort";
 import { useRowGlide } from "./rowGlide";
-import { useRowHeadOptions } from "./rowHeadMode";
 
 /**
  * La PLACE d'une grande carte d'aperçu dans sa rangée (`CardPreviewTile`) :
@@ -53,10 +52,9 @@ export interface RowPreviewRoomInput {
 
 export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount }: RowPreviewRoomInput) {
   const reveal = usePreviewReveal();
-  const options = useRowHeadOptions();
   const [reserve, setReserve] = useState(0);
-  const latest = useRef({ cardWidth, inset, cardCount, options });
-  latest.current = { cardWidth, inset, cardCount, options };
+  const latest = useRef({ cardWidth, inset, cardCount });
+  latest.current = { cardWidth, inset, cardCount };
   const head = useRef(INITIAL_ROW_HEAD);
   const pending = useRef<{ x: number; motion: RowHeadMotion } | null>(null);
   // La largeur de la grande carte, vue au dernier aperçu : la place se pose d'avance au focus.
@@ -87,7 +85,6 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
       inset: geometry.inset,
       viewportWidth: SCREEN_WIDTH,
       rightMargin: TV_STAGE.safe.x,
-      ...geometry.options,
       scrollX: scrollX.current ?? 0,
     });
     head.current = step.state;

@@ -26,7 +26,6 @@ import {
   useExoTunneling,
 } from "../../lib/exoSettings";
 import { liquidGlassStore } from "../../lib/liquidGlass";
-import { rowHeadTrialStore, useRowHeadTrial } from "../../lib/rowHeadTrial";
 import { useScrubCountdownSettings } from "../../lib/scrubCountdownSettings";
 import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
 import {
@@ -59,7 +58,6 @@ export function useSettingsModel() {
   const previewCapable = useServerCapability("trailers.preview");
   const previewsEnabled = useTrailerPreviewsEnabled();
   const previewSound = useTrailerPreviewSound();
-  const rowHead = useRowHeadTrial();
   // « Vous regardez encore ? » : réglage du COMPTE, écrit au serveur (copie locale pour le hors ligne).
   const stillWatching = useStillWatchingSettings();
   const stillWatchingSettings = stillWatching.available ? stillWatching.settings : null;
@@ -100,11 +98,11 @@ export function useSettingsModel() {
         ? { outcome: scrubSettings.outcome, delaySeconds: scrubSettings.delaySeconds, delays: SCRUB_COUNTDOWN_DELAYS }
         : null,
       // Les aperçus au focus : rien à régler face à un serveur qui n'en sert pas.
-      trailerPreviews: previewCapable ? { enabled: previewsEnabled, sound: previewSound, rowHead } : null,
+      trailerPreviews: previewCapable ? { enabled: previewsEnabled, sound: previewSound } : null,
       // Rien face à un serveur qui ne déclare pas `playback.stillWatching`.
       stillWatching: stillWatchingSettings,
     }),
-    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate, scrubSettings, previewCapable, previewsEnabled, previewSound, rowHead, stillWatchingSettings],
+    [preset, interfaceLanguage, libraryModels, tunneling, matchFrameRate, scrubSettings, previewCapable, previewsEnabled, previewSound, stillWatchingSettings],
   );
 
   const about = useMemo<SettingsAbout>(
@@ -157,7 +155,6 @@ export function useSettingsModel() {
     onChangeStillWatching: stillWatching.set,
     onToggleTrailerPreviews: trailerPreviewsStore.set,
     onToggleTrailerPreviewSound: trailerPreviewSoundStore.set,
-    onChangeRowHead: rowHeadTrialStore.set,
     onToggleLiquidGlass: liquidGlassStore.set,
     onChoose: chooseValue,
     closeChoices,

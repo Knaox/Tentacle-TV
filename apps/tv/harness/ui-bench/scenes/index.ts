@@ -67,7 +67,7 @@ export const SCENES: BenchScene[] = [
   // La taille des cartes, écran par écran : Petite, Normale, Grande.
   ...CARD_SIZE_SCENES,
   ...PREVIEW_SCENES,
-  // La carte en aperçu passe en tête de sa rangée : la butée, le dépassement.
+  // La carte en aperçu passe en tête de sa rangée, jusqu'à la butée.
   ...ROW_HEAD_SCENES,
   ...PLAYER_SCENES,
   ...PLAYER_QUALITY_SCENES,

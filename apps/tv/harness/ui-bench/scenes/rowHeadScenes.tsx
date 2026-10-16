@@ -1,8 +1,6 @@
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import type { RowHeadOptions } from "@tentacle-tv/tv-core";
 import { TrailerPreviewProvider, type CardPreview, type CardPreviewHook } from "../../../src/redesign/cards/trailerPreviewPort";
-import { RowHeadProvider } from "../../../src/redesign/rows/rowHeadMode";
 import { HomeView } from "../../../src/redesign/screens/home/HomeView";
 import type { BenchData } from "../data/benchData";
 import { navOf } from "../data/screenModels";
@@ -14,9 +12,9 @@ import type { BenchScene } from "./types";
  * sans serveur : une fausse vidéo opaque grandit dès qu'une carte a le focus
  * (comme `previewScenes`), et la rangée défile pour que cette carte prenne la
  * place de la première. Chaque focus figé de la planche est un pas de plus
- * dans la rangée : la 2e en tête, puis la 3e… puis le bout de rangée, dans
- * chacun des deux essais (`rowHeadMode`) : la butée, le dépassement. Une
- * rangée courte (trois cartes) ne bouge pas tant que la grande carte y tient.
+ * dans la rangée : la 2e en tête, puis la 3e… puis le bout de rangée, en
+ * butée. Une rangée courte (trois cartes) ne bouge pas tant que la grande
+ * carte y tient.
  */
 
 const FAKE_VIDEO = (
@@ -43,7 +41,7 @@ function RowHeadHome({ data, cardsPerRow }: { data: BenchData; cardsPerRow: numb
   return <HomeView nav={nav} hero={null} rows={rows} palette={palette} onLongPressCard={() => undefined} />;
 }
 
-function scene(id: string, label: string, options: RowHeadOptions, cardsPerRow: number, focusKeys: string[]): BenchScene {
+function scene(id: string, label: string, cardsPerRow: number, focusKeys: string[]): BenchScene {
   return {
     id: `apercu/en-tete-${id}`,
     group: "Aperçu au focus",
@@ -51,11 +49,9 @@ function scene(id: string, label: string, options: RowHeadOptions, cardsPerRow: 
     focusKeys,
     settleMs: 1800,
     render: (data) => (
-      <RowHeadProvider value={options}>
-        <TrailerPreviewProvider usePreview={useFakePreview}>
-          <RowHeadHome data={data} cardsPerRow={cardsPerRow} />
-        </TrailerPreviewProvider>
-      </RowHeadProvider>
+      <TrailerPreviewProvider usePreview={useFakePreview}>
+        <RowHeadHome data={data} cardsPerRow={cardsPerRow} />
+      </TrailerPreviewProvider>
     ),
   };
 }
@@ -64,7 +60,6 @@ function scene(id: string, label: string, options: RowHeadOptions, cardsPerRow: 
 const WALK = ["resume:0", "resume:1", "resume:2", "resume:3", "resume:8", "resume:9", "resume:10", "resume:11"];
 
 export const ROW_HEAD_SCENES: BenchScene[] = [
-  scene("butee", "En tête — bout de rangée en butée", { end: "stop", release: "stay" }, 12, WALK),
-  scene("depassement", "En tête — bout de rangée en dépassement", { end: "overscroll", release: "stay" }, 12, WALK),
-  scene("courte", "En tête — rangée de trois cartes", { end: "overscroll", release: "stay" }, 3, ["resume:0", "resume:1", "resume:2"]),
+  scene("butee", "En tête — bout de rangée en butée", 12, WALK),
+  scene("courte", "En tête — rangée de trois cartes", 3, ["resume:0", "resume:1", "resume:2"]),
 ];
