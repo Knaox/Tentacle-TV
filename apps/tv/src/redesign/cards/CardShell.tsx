@@ -27,9 +27,11 @@ import { FocusTarget } from "../focus/FocusTarget";
  * sections, native sur les deux plateformes) — depuis un aperçu, ils mènent
  * exactement où ils mèneraient depuis la carte à sa taille normale (demande
  * du 16/10 : la grande carte menait à la DEUXIÈME carte de la rangée du
- * dessus). Sa présence ne change jamais pour une carte donnée (une rangée en
- * donne une à toutes ses cartes, une grille jamais) : l'arbre reste le même,
- * le focus aussi.
+ * dessus). Sous la légende, la cellule fait aussi la place du pied pendant
+ * l'aperçu (`room`, « Maintenir OK », Lecture/Pause) : il reste visible, à
+ * l'écart de la rangée du dessous. Sa présence ne change jamais pour une
+ * carte donnée (une rangée en donne une à toutes ses cartes, une grille
+ * jamais) : l'arbre reste le même, le focus aussi.
  *
  * La grande carte se dessine toujours DANS la cible, qu'elle déborde à
  * droite : rien ne la recouvre, et elle suit le pouce avec la cible.
@@ -45,6 +47,8 @@ import { FocusTarget } from "../focus/FocusTarget";
 export interface CardExpansion {
   width: number;
   height: number;
+  /** La place faite SOUS la légende pendant la croissance : celle du pied (`CardFocusFooter`). */
+  room: number;
   progress: SharedValue<number>;
 }
 
@@ -91,6 +95,7 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
       {/* La place de l'image : elle se dessine dans la cible, plus bas. */}
       {props.expansion ? <ExpandingSpacer frameHeight={frameHeight} expansion={props.expansion} /> : <View style={{ height: frameHeight }} />}
       {children}
+      {props.expansion && props.expansion.room > 0 ? <ExpandingRoom expansion={props.expansion} /> : null}
       {/* En DERNIER : rien ne recouvre la cible. L'appui (OK enfoncé) qu'elle
           tient, l'image le lit (`usePressProgress`). */}
       <FocusTarget
@@ -134,6 +139,13 @@ function ExpandingCell({ width, front, style, expansion, children }: CardShellPr
   );
 }
 
+/** La place du pied, sous la légende, qui naît avec la grande carte : la rangée du dessous s'écarte d'autant. */
+function ExpandingRoom({ expansion }: { expansion: CardExpansion }) {
+  const { progress, room } = expansion;
+  const grow = useAnimatedStyle(() => ({ height: room * progress.value }));
+  return <Animated.View style={[styles.room, grow]} />;
+}
+
 /** La place de l'image qui grandit avec la cellule : la légende descend d'autant. */
 function ExpandingSpacer({ frameHeight, expansion }: { frameHeight: number; expansion: CardExpansion }) {
   const { progress, height: tall } = expansion;
@@ -145,4 +157,5 @@ const styles = StyleSheet.create({
   front: { zIndex: 10 },
   target: { position: "absolute", left: 0, top: 0, bottom: 0 },
   center: { alignItems: "center" },
+  room: { height: 0 },
 });

@@ -162,7 +162,6 @@ export const MediaRow = memo(function MediaRow({
         onScroll={onScroll}
         onMomentumScrollEnd={onScroll}
         scrollEventThrottle={100}
-        onLayout={room.onTrackLayout}
         onContentSizeChange={room.onContentSizeChange}
         contentContainerStyle={[
           styles.content,
@@ -220,14 +219,14 @@ const RowCard = memo(function RowCard({
   onPressCard?: (card: CardModel) => void;
   onLongPressCard?: (card: CardModel) => void;
   onItemFocus: (index: number, focused: boolean, card: CardModel) => void;
-  onPreviewExpand: (index: number, tileWidth: number, tileHeight: number) => void;
+  onPreviewExpand: (index: number, tileWidth: number, grow: number) => void;
   onPreviewCollapse: (index: number) => void;
 }) {
   const place = useMemo(() => ({ row, index, native: nativeRecede }), [row, index, nativeRecede]);
   const onPress = useMemo(() => (onPressCard ? () => onPressCard(card) : undefined), [onPressCard, card]);
   const onLongPress = useMemo(() => (onLongPressCard ? () => onLongPressCard(card) : undefined), [onLongPressCard, card]);
   const onFocusChange = useCallback((focused: boolean) => onItemFocus(index, focused, card), [onItemFocus, index, card]);
-  const onExpand = useCallback((tileWidth: number, tileHeight: number) => onPreviewExpand(index, tileWidth, tileHeight), [onPreviewExpand, index]);
+  const onExpand = useCallback((tileWidth: number, grow: number) => onPreviewExpand(index, tileWidth, grow), [onPreviewExpand, index]);
   const onCollapse = useCallback(() => onPreviewCollapse(index), [onPreviewCollapse, index]);
   const common = { card, focusKey: `${rowKey}:${index}`, place, onPress, onLongPress, onFocusChange };
   return variant === "morph" ? <MorphCard {...common} /> : <MediaCard {...common} variant={variant} width={width} previewable onPreviewExpand={onExpand} onPreviewCollapse={onCollapse} />;
