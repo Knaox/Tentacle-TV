@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FamilyRights, TvProfileDto, TvProfilesDto } from "@tentacle-tv/shared";
-import { openProfileState, profileManageState, recordManageState, tvProfileRoleOf } from "./profileRole";
+import { openProfileState, profileManageState, recordManageState, tvProfileRoleOf, unpairCaptionOf } from "./profileRole";
 import { profileRecordOf, readProfileRecord, writeProfileRecord, type TvProfileRecord } from "./tvProfileSession";
 
 /** Le rôle et la gestion du profil ouvert, tels que Réglages › Compte les disent (décisions du 16/10). */
@@ -119,3 +119,17 @@ describe("le compte de démonstration (revue Apple)", () => {
     expect(openProfileState(record, null).role).toBe("owner");
   });
 });
+
+describe("« Oublier ce jumelage »", () => {
+  it("sans famille (le compte de revue) : le texte simple d'un jumelage, jamais « Cette TV oubliera sa famille »", () => {
+    const review = profile("revue", { kind: "owner" });
+    const state = openProfileState(profileRecordOf(review, listingOf(review), "solo"), listingOf(review));
+    expect(unpairCaptionOf(state, true)).toBe("plain");
+  });
+
+  it("avec une famille : ce que la TV oublie ; un autre profil : seul le compte de la TV la déjumelle", () => {
+    expect(unpairCaptionOf({ role: "owner" }, true)).toBe("family");
+    expect(unpairCaptionOf({ role: "member" }, false)).toBe("ownerOnly");
+  });
+});
+

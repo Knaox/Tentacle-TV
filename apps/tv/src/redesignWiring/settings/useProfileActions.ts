@@ -3,11 +3,18 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsFocused, useNavigation, type NavigationProp } from "@react-navigation/native";
 import { FAMILY_KEY, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { openProfileState, ownPinModesFor, profileAloneIn, readProfileRecord, recordPairedTheTv, tvSessionMode, type OwnPinMode, type TvProfileRole } from "@tentacle-tv/tv-core";
+import { openProfileState, ownPinModesFor, profileAloneIn, unpairCaptionOf, type UnpairCaption, readProfileRecord, recordPairedTheTv, tvSessionMode, type OwnPinMode, type TvProfileRole } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { SettingsProfile } from "../../redesign/screens/settings/settingsTypes";
 import { switchProfile } from "../../auth/profileSession";
 import { useTvFamilyListing } from "../profiles/useTvFamilyListing";
+
+// Sans famille (le compte de revue) : le texte d'un jumelage d'avant les profils (tv-core `unpairCaptionOf`).
+const UNPAIR_KEYS: Record<UnpairCaption, string> = {
+  family: "familyTv:settings.unpairCaption",
+  plain: "pairing:tvUnpairCaption",
+  ownerOnly: "familyTv:settings.unpairOwnerOnly",
+};
 
 const ROLE_KEYS: Record<Exclude<TvProfileRole, "owner">, string> = {
   parent: "familyTv:settings.parentOf",
@@ -27,7 +34,7 @@ const ROLE_KEYS: Record<Exclude<TvProfileRole, "owner">, string> = {
  * déjumelle. TV d'avant les profils : `profile` est nul, rien ne change.
  */
 export function useProfileActions() {
-  const { t } = useTranslation(["familyTv", "family"]);
+  const { t } = useTranslation(["familyTv", "family", "pairing"]);
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
@@ -70,7 +77,7 @@ export function useProfileActions() {
       canManage: manage === "manage",
       manageNeedsPin: manage === "needsPin",
       canUnpair: pairedTheTv,
-      unpairCaption: pairedTheTv ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", { owner: tvAccountName }),
+      unpairCaption: t(UNPAIR_KEYS[unpairCaptionOf({ role }, pairedTheTv)], { owner: tvAccountName }),
       // Le compte de démonstration : aucune entrée (`ownPinModesFor`).
       pin: { hasPin, modes: ownPinModesFor({ kind, hasPin, manage, launch, alone }) },
     };

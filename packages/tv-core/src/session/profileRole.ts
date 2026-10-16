@@ -72,3 +72,18 @@ export function openProfileState(record: TvProfileRecord, listing: TvProfilesDto
   const role = tvProfileRoleOf(live);
   return { role: role === "owner" && alone ? null : role, manage: profileManageState(live, listing, hasPin), hasPin };
 }
+
+/**
+ * Ce que dit « Oublier ce jumelage » dans Réglages › Compte : `family` — la
+ * TV oublie sa famille, les invités restent ; `plain` — un jumelage sans
+ * famille (aucun rôle à dire : un compte seul, le compte de démonstration de
+ * la revue), le texte d'avant les profils ; `ownerOnly` — seul le compte qui a
+ * jumelé la TV la déjumelle.
+ */
+export type UnpairCaption = "family" | "plain" | "ownerOnly";
+
+export function unpairCaptionOf(state: Pick<OpenProfileState, "role">, pairedTheTv: boolean): UnpairCaption {
+  if (!pairedTheTv) return "ownerOnly";
+  return state.role === null ? "plain" : "family";
+}
+
