@@ -6,50 +6,8 @@ import {
   nextRowHeadDeadline,
   reduceRowHead,
   rowHeadTarget,
-  type RowHeadContext,
-  type RowHeadEvent,
-  type RowHeadOptions,
-  type RowHeadState,
 } from "./trailerPreviewRowHead";
-
-// La scène de l'accueil : vignettes 380 (pas de 416), retrait 176, marge 96, grande carte 806.
-const SCENE = { cardWidth: 380, gap: 36, inset: 176, viewportWidth: 1920, rightMargin: 96 };
-const TILE = 806;
-const STOP: RowHeadOptions = { end: "stop", release: "stay" };
-const OVER: RowHeadOptions = { end: "overscroll", release: "stay" };
-
-/** Une rangée simulée : chaque défilement demandé est aussitôt atteint. */
-function row(cardCount: number, options: RowHeadOptions, geometry: Partial<typeof SCENE> = {}) {
-  let state: RowHeadState = INITIAL_ROW_HEAD;
-  let scrollX = 0;
-  const moves: number[] = [];
-  const send = (event: RowHeadEvent) => {
-    const context: RowHeadContext = { ...SCENE, ...geometry, cardCount, ...options, scrollX };
-    const step = reduceRowHead(state, event, context);
-    state = step.state;
-    if (step.scrollTo !== null) {
-      moves.push(step.scrollTo);
-      scrollX = step.scrollTo;
-    }
-    return step.scrollTo;
-  };
-  return {
-    send,
-    get state() { return state; },
-    get scrollX() { return scrollX; },
-    set scrollX(x: number) { scrollX = x; },
-    moves,
-    /** Le focus sur la carte, puis son aperçu qui démarre. */
-    preview(index: number, at = 0, tileWidth = TILE) {
-      send({ type: "focus", index, at });
-      return send({ type: "expand", index, tileWidth, at: at + 900 });
-    },
-    /** Où la carte se trouve à l'écran (son bord gauche). */
-    screenLeft(index: number) {
-      return (geometry.inset ?? SCENE.inset) + index * ((geometry.cardWidth ?? SCENE.cardWidth) + SCENE.gap) - scrollX;
-    },
-  };
-}
+import { OVER, SCENE, STOP, TILE, row } from "./trailerPreviewRowHead.testRow";
 
 describe("la carte en aperçu passe en tête de sa rangée", () => {
   it("dès que l'aperçu démarre, la rangée défile pour que la carte prenne la place de la première", () => {

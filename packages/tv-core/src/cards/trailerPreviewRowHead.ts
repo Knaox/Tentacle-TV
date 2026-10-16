@@ -35,6 +35,14 @@
  * l'écran le temps du mouvement. Le retour au départ du focus, lui, est un
  * défilement ordinaire (`plain`).
  *
+ * Le REPLI d'une carte quand le focus est passé à sa droite (DROITE vers la
+ * suivante), la rangée étant au-delà de son bout naturel (butée, dépassement) :
+ * sans rien faire, la voisine glisserait à gauche et laisserait un VIDE à sa
+ * droite jusqu'à son propre aperçu (constat du Testeur A, 16/10). La rangée
+ * recule alors exactement de ce que la carte rend, au rythme de son repli
+ * (`motion: "withCollapse"`) : la carte focalisée ne bouge pas, la carte
+ * repliée rétrécit vers la droite, et le vide ne paraît jamais.
+ *
  * Module pur, horloge injectée (`at`) : la rangée annonce le focus, l'aperçu
  * et l'heure (`nextRowHeadDeadline` → `tick`) ; elle applique le défilement
  * (`scrollTo`) et la place (`trailing` : un retrait à droite de la piste,
@@ -96,12 +104,14 @@ export type RowHeadEvent =
   | { type: "blur"; index: number; at: number }
   /** L'aperçu de la carte démarre : sa grande carte, de cette largeur, grandit. */
   | { type: "expand"; index: number; tileWidth: number; at: number }
+  /** La grande carte de la carte `index`, de cette largeur, se replie. */
+  | { type: "collapse"; index: number; tileWidth: number; at: number }
   | { type: "tick"; at: number }
   /** La rangée est remise au début (`rowRewind`, sans animation) : tout s'oublie. */
   | { type: "reset" };
 
-/** Comment défiler : avec la grande carte (son ressort, image par image), ou un défilement ordinaire. */
-export type RowHeadMotion = "withPreview" | "plain";
+/** Comment défiler : avec la croissance de la grande carte, avec son repli, ou un défilement ordinaire. */
+export type RowHeadMotion = "withPreview" | "withCollapse" | "plain";
 
 export interface RowHeadStep {
   state: RowHeadState;
@@ -166,6 +176,15 @@ export function reduceRowHead(state: RowHeadState, event: RowHeadEvent, context:
       const restX = scrollTo !== null && state.restX === null ? context.scrollX : state.restX;
       const next = { ...state, focused: event.index, last: event.index, trailing, restX, leaveAt: null, releaseAt: null };
       return { state: next, scrollTo, motion: "withPreview" };
+    }
+    case "collapse": {
+      // Seulement quand le focus est passé à la DROITE de la carte qui se replie.
+      if (state.focused === null || state.focused <= event.index) return still(state);
+      const natural = naturalEndOf(context);
+      if (context.scrollX <= natural + 1) return still(state);
+      const growth = Math.max(0, event.tileWidth - context.cardWidth);
+      const scrollTo = moveTo(Math.max(natural, context.scrollX - growth), context.scrollX);
+      return scrollTo === null ? still(state) : { state, scrollTo, motion: "withCollapse" };
     }
     case "tick":
       return tick(state, event.at, context);
