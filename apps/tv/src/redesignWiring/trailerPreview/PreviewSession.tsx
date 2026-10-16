@@ -18,6 +18,7 @@ import { TV_TRAILER_PREVIEW_TIMING, previewStartPosition, previewVideoKey } from
 import { useTrailerPreviewSound } from "../../lib/trailerPreviewSettings";
 import { PreviewVideo } from "./PreviewVideo";
 import { previewArbiter, previewMemory, useAppActive } from "./previewDevice";
+import { previewParking, useParkedVideo } from "./previewParking";
 import { useTvPreviewMachine } from "./useTvPreviewMachine";
 
 /** Le flux d'un cycle : l'adresse absolue, et d'où partir. */
@@ -51,6 +52,9 @@ export interface PreviewSessionProps {
  *     1,8 s, et seulement avec sa première image ;
  *   - une vidéo qui lâche n'est pas redemandée de sitôt (mémoire de
  *     l'appareil) ; un seul aperçu à la fois (l'arbitre) ;
+ *   - la vidéo finie de sortir reste GARÉE, en pause, jusqu'au calme de la
+ *     télécommande (`previewParking`) : son lecteur ne se démonte jamais au
+ *     milieu d'une rafale de flèches ;
  *   - app en arrière-plan, serveur sans `trailers.preview` : rien.
  *
  * Montée par le port seulement pour la carte focalisée (et le temps de son
@@ -137,39 +141,52 @@ export const PreviewSession = memo(function PreviewSession({ subject, focused, o
   const holder = useRef({}).current;
   useEffect(() => {
     if (!wants) return undefined;
+    // Un moment de calme (un focus tenu) : la vidéo garée d'un aperçu précédent se démonte.
+    previewParking.releaseAll();
     previewArbiter.claim(holder, () => dispatch({ type: "preempted", at: Date.now() }));
     return () => previewArbiter.release(holder);
   }, [wants, holder, dispatch]);
 
   const current = cycleStream?.cycle === state.cycle ? cycleStream : null;
-  const mount = trailerPreviewMounted(state) && current !== null;
+  // La vidéo que la machine monte ; lâchée, elle reste garée jusqu'au calme (`previewParking`).
+  const video = useParkedVideo(trailerPreviewMounted(state) ? current : null);
+  const mount = video !== null;
   const expanded = trailerPreviewVisible(state) && current !== null;
-  const playing = trailerPreviewPlaying(state);
+  const playing = trailerPreviewPlaying(state) && video === current;
   useEffect(() => onExpanded(expanded), [expanded, onExpanded]);
   useEffect(() => onBusy(mount), [mount, onBusy]);
+  // La télécommande suivie tant qu'une vidéo existe : le garage attend son calme.
+  useEffect(() => (mount ? previewParking.watch() : undefined), [mount]);
   useEffect(() => () => {
     onExpanded(false);
     onBusy(false);
   }, [onExpanded, onBusy]);
 
-  const onReady = useCallback(() => dispatch({ type: "videoReady", at: Date.now() }), [dispatch]);
-  const onError = useCallback(() => dispatch({ type: "videoFailed", at: Date.now() }), [dispatch]);
-  const videoKey = current?.videoKey;
+  // La vidéo garée d'un cycle passé ne parle plus à la machine : elle vit déjà le cycle suivant.
+  const live = useRef(false);
+  live.current = video !== null && video === current;
+  const onReady = useCallback(() => {
+    if (live.current) dispatch({ type: "videoReady", at: Date.now() });
+  }, [dispatch]);
+  const onError = useCallback(() => {
+    if (live.current) dispatch({ type: "videoFailed", at: Date.now() });
+  }, [dispatch]);
+  const videoKey = video?.videoKey;
   const onEnded = useCallback(() => {
     if (videoKey) previewMemory.forgetPosition(videoKey);
-    dispatch({ type: "videoEnded", at: Date.now() });
+    if (live.current) dispatch({ type: "videoEnded", at: Date.now() });
   }, [dispatch, videoKey]);
   const onPosition = useCallback((position: number, duration: number) => {
     if (videoKey) previewMemory.savePosition(videoKey, position, duration > 0 ? duration : undefined);
   }, [videoKey]);
 
-  if (!mount || !current) return null;
+  if (!video) return null;
   return (
     <PreviewVideo
-      key={current.cycle}
-      uri={current.uri}
-      hls={current.hls}
-      startAt={current.startAt}
+      key={video.cycle}
+      uri={video.uri}
+      hls={video.hls}
+      startAt={video.startAt}
       playing={playing}
       muted={!sound}
       volume={TV_TRAILER_PREVIEW_TIMING.volume}
