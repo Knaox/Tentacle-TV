@@ -13,7 +13,7 @@ import {
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import { GUEST_PARENTAL_NONE, sameUserId, type GuestParentalControls } from "@tentacle-tv/shared";
-import { STATUS_PRIMARY_KEY, parentalAgeChipKey, parentalEntryKey, withParentalAge } from "@tentacle-tv/tv-core";
+import { STATUS_PRIMARY_KEY, parentalAgeOptionKey, parentalEntryKey, withParentalAge } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { refusalOfError } from "../../auth/profileOpening";
 import { useFocusStore } from "../../platform/tvos/focus/focusStore";
@@ -143,7 +143,7 @@ export function ParentalRedesign({ navigation, route }: Props) {
   useParentalFocus(store, {
     entryKey,
     arrival: model.kind,
-    agesEntry: age ? parentalAgeChipKey(age.selectedKey) : null,
+    agesEntry: age ? parentalAgeOptionKey(age.selectedKey) : null,
   });
   useBackLayer("page", true, leave);
 

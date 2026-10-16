@@ -19,7 +19,7 @@ import { ParentalLibrariesSection } from "./ParentalLibrariesSection";
 import type { ParentalNotice, ParentalViewProps } from "./parentalTypes";
 
 export type {
-  ParentalAgeChipView,
+  ParentalAgeOptionView,
   ParentalAgeView,
   ParentalLibrariesView,
   ParentalLibraryView,
@@ -31,8 +31,9 @@ export type {
 /**
  * Le CONTRÔLE PARENTAL simplifié d'un profil (`ParentalControls`, Apple TV et
  * Android TV) — ouvert depuis « Gérer les profils » par le propriétaire ou un
- * parent, sur un invité ou un membre mineur. Deux réglages, rien de plus :
- * l'âge maximal en quelques paliers, les bibliothèques autorisées. Chaque geste
+ * parent, sur un invité ou un membre mineur. Deux réglages, rien de plus, en
+ * deux listes côte à côte : l'âge maximal en quelques paliers (choix unique),
+ * les bibliothèques autorisées (cases). Chaque geste
  * part aussitôt au serveur, qui l'écrit dans la politique Jellyfin du profil ;
  * le reste se règle ailleurs, et la page le dit (« Plus d'options sur le bureau
  * ou le web »).
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   kicker: { ...text.kicker, marginBottom: 10 },
   title: { ...text.title },
   subtitle: { ...text.meta, marginTop: 8 },
-  body: { flex: 1, flexDirection: "row", gap: 96, marginTop: 52 },
+  body: { flex: 1, flexDirection: "row", gap: 96, marginTop: 40 },
   column: { flex: 1, maxWidth: 900 },
   footer: { flexDirection: "row", alignItems: "center", gap: 48, paddingTop: 24 },
   more: { flex: 1, flexDirection: "row", alignItems: "center", gap: 18 },

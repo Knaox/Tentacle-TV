@@ -3,11 +3,9 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { PARENTAL_LIBRARIES_SECTION, parentalLibraryRowKey } from "@tentacle-tv/tv-core";
 import { FocusSection } from "../../focus/FocusSection";
-import { FocusTarget } from "../../focus/FocusTarget";
-import { Icon } from "../../icons/Icon";
-import { colors, fonts, text } from "../../theme/tokens";
+import { text } from "../../theme/tokens";
 import { CheckBox } from "../railSetup/LibraryRow";
-import { NavRowSurface } from "../settings/NavOrderRow";
+import { ParentalRow } from "./ParentalRow";
 import type { ParentalLibrariesView, ParentalLibraryView } from "./parentalTypes";
 
 /**
@@ -25,10 +23,9 @@ export const ParentalLibrariesSection = memo(function ParentalLibrariesSection({
   const { t } = useTranslation("parentalTv");
   return (
     <View style={styles.root}>
-      <View style={styles.head}>
-        <Text style={styles.title}>{t("libraries.title")}</Text>
-        <Text style={styles.summary}>{libraries.summary}</Text>
-      </View>
+      <Text style={styles.title}>{t("libraries.title")}</Text>
+      {/* La même tenue que l'âge d'à côté : les deux listes commencent à la même hauteur. */}
+      <Text style={styles.summary}>{libraries.summary || " "}</Text>
       {libraries.rows.length === 0 ? (
         <Text style={styles.empty}>{t("libraries.empty")}</Text>
       ) : (
@@ -44,48 +41,29 @@ export const ParentalLibrariesSection = memo(function ParentalLibrariesSection({
   );
 });
 
-const ROW_HEIGHT = 76;
-
 const LibraryLine = memo(function LibraryLine({ index, row, onLibrary }: { index: number; row: ParentalLibraryView; onLibrary?: (id: string) => void }) {
   const { t } = useTranslation("parentalTv");
   return (
-    <FocusTarget
+    <ParentalRow
       focusKey={parentalLibraryRowKey(index)}
-      form="row"
-      onPress={onLibrary ? () => onLibrary(row.id) : undefined}
+      on={row.checked}
+      label={row.name}
+      icon={row.icon}
+      trailingIcon={row.checked ? undefined : "eyeOff"}
+      leading={(dark) => <CheckBox checked={row.checked} dark={dark} />}
       accessibilityLabel={`${row.name}, ${row.checked ? t("libraries.allowed") : t("libraries.hidden")}`}
-    >
-      {(focused) => (
-        <NavRowSurface focused={focused}>
-          {(dark) => {
-            const color = dark ? colors.ctaFg : row.checked ? colors.text : colors.textTertiary;
-            return (
-              <View style={styles.row}>
-                <CheckBox checked={row.checked} dark={dark} />
-                <Icon name={row.icon} size={28} color={color} strokeWidth={2.2} />
-                <Text style={[styles.label, { color }]} numberOfLines={1}>
-                  {row.name}
-                </Text>
-                {row.checked ? null : <Icon name="eyeOff" size={24} color={dark ? colors.ctaFg : colors.textTertiary} />}
-              </View>
-            );
-          }}
-        </NavRowSurface>
-      )}
-    </FocusTarget>
+      onPress={onLibrary ? () => onLibrary(row.id) : undefined}
+    />
   );
 });
 
 const styles = StyleSheet.create({
   root: { flexShrink: 1 },
-  head: { flexDirection: "row", alignItems: "baseline", gap: 16 },
   title: { ...text.rowTitle },
-  summary: { ...text.meta },
+  summary: { ...text.meta, marginTop: 8 },
   empty: { ...text.body, marginTop: 20 },
   // Haute comme ses lignes, bornée par la page : elle défile quand elle déborde.
   listBox: { flexShrink: 1, marginTop: 18 },
   // Une marge où la ligne focalisée grandit sans être coupée par le bord du défilement.
-  list: { gap: 12, paddingVertical: 8, paddingHorizontal: 10 },
-  row: { height: ROW_HEIGHT, flexDirection: "row", alignItems: "center", gap: 20, paddingHorizontal: 26 },
-  label: { ...fonts.semibold, fontSize: 27, flex: 1 },
+  list: { gap: 10, paddingVertical: 8, paddingHorizontal: 10 },
 });

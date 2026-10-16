@@ -8,7 +8,8 @@ import type { IconName } from "../../icons/Icon";
  * montrée : un serveur qui ne sait pas la régler n'en voit rien.
  */
 
-export interface ParentalAgeChipView {
+/** Une ligne de l'âge maximal (liste à choix unique). */
+export interface ParentalAgeOptionView {
   /** La clé du palier (tv-core `ParentalAgeChoice.key`, ou `custom`). */
   key: string;
   label: string;
@@ -18,7 +19,7 @@ export interface ParentalAgeChipView {
 }
 
 export interface ParentalAgeView {
-  chips: ParentalAgeChipView[];
+  options: ParentalAgeOptionView[];
   /** Ce qui passe aujourd'hui, en une phrase (« Les titres jusqu'à 12 ans. »). */
   summary: string;
   /** Le plafond plus strict que le palier retenu : Jellyfin appliquera le plafond. */

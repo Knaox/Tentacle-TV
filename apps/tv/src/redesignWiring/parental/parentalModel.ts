@@ -28,7 +28,7 @@ function ratingNames(ratings: Ratings, score: number, subScore: number | null): 
   return parentalRatingNames(ratings, score, subScore).slice(0, 3).join(" / ") || String(score);
 }
 
-function chipLabel(slot: ParentalAgeSlot, t: TFunction): string {
+function optionLabel(slot: ParentalAgeSlot, t: TFunction): string {
   if (slot.kind === "custom") return t("parentalTv:age.custom");
   if (slot.kind === "none") return t("parentalTv:age.none");
   return slot.age === 0 ? t("parentalTv:age.allAges") : t("parentalTv:age.years", { age: slot.age });
@@ -47,9 +47,9 @@ export function parentalAgeView(input: {
   const choices = parentalAgeChoices(ratings);
   const current = currentParentalAge(choices, controls, ratings);
   // Un réglage fait ailleurs : montré à sa place dans l'échelle, jamais remplacé en silence.
-  const chips: ParentalAgeView["chips"] = parentalAgeSlots(choices, current).map((slot) => ({
+  const options: ParentalAgeView["options"] = parentalAgeSlots(choices, current).map((slot) => ({
     key: slot.key,
-    label: chipLabel(slot, t),
+    label: optionLabel(slot, t),
     detail: slot.kind === "custom" ? slot.names.slice(0, 2).join(" / ") || undefined : undefined,
     selected: current.key === slot.key,
   }));
@@ -72,7 +72,7 @@ export function parentalAgeView(input: {
           : t("parentalTv:age.ceilingGuest", { names })
         : t("parentalTv:age.ceilingMember", { names });
   }
-  return { view: { chips, summary, ceilingNote }, selectedKey: current.key, choices };
+  return { view: { options, summary, ceilingNote }, selectedKey: current.key, choices };
 }
 
 /** Les bibliothèques : une case chacune, et le résumé (« Toutes », « 2 sur 4 »). */
