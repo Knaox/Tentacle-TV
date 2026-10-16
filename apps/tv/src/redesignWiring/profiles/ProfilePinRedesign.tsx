@@ -13,6 +13,7 @@ import {
   pinRefused,
   pressPinDigit,
   profilesEntryKey,
+  profilesEntryRound,
   readProfileRecord,
   writeProfileRecord,
   type OwnPinSubmit,
@@ -140,8 +141,9 @@ export function ProfilePinRedesign({ navigation, route }: Props) {
 
   const store = useFocusStore();
   useProfilesGroups(store);
-  const entryKey = profilesEntryKey({ phase: "pin", tileIndex: 0, pinLocked: entry.phase === "locked" });
-  useProfilesFocus(store, { entryKey, arrival: `pin:${flow.step}` });
+  const entryInput = { phase: "pin" as const, tileIndex: 0, pinLocked: entry.phase === "locked", pinRestarts: flow.restarts };
+  // « Les deux codes diffèrent » : la saisie reprend de zéro, le focus au premier chiffre (`profilesEntryRound`).
+  useProfilesFocus(store, { entryKey: profilesEntryKey(entryInput), arrival: `pin:${flow.step}`, round: profilesEntryRound(entryInput) });
   const back = () => (saved ? nextWindow() : navigation.goBack());
   useBackLayer("page", true, back);
 
