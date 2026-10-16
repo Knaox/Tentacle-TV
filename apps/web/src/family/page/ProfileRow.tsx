@@ -132,6 +132,46 @@ export const ProfileRow = memo(function ProfileRow({
             </span>
           )}
         </p>
+        {/* Les gestes sous les badges, jamais à côté : une rangée de quatre boutons écrasait
+            la colonne du nom et de ses droits en un ruban d'un mot par ligne. */}
+        {(actions.pin || actions.remove || memberParental || librariesEditable) && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {memberParental && (
+              <button type="button" onClick={() => onMemberParental(profile)} className={SMALL_BUTTON}
+                aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>
+                <ShieldCheck size={13} aria-hidden="true" />
+                {t("familyWeb:parental.open")}
+              </button>
+            )}
+            {parentalEditable && (
+              <button type="button" onClick={() => onGuestParental(profile)} className={SMALL_BUTTON}
+                aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>
+                <ShieldCheck size={13} aria-hidden="true" />
+                {t("familyWeb:parental.open")}
+              </button>
+            )}
+            {librariesEditable && (
+              <button type="button" onClick={() => onLibraries(profile)} className={SMALL_BUTTON}
+                aria-label={`${t("familyWeb:libraries.open")} — ${profile.name}`}>
+                <Library size={13} aria-hidden="true" />
+                {t("familyWeb:libraries.open")}
+              </button>
+            )}
+            {actions.pin && (
+              <button type="button" onClick={() => onGuestPin(profile)} className={SMALL_BUTTON}
+                aria-label={`${t("familyWeb:owned.setPin")} — ${profile.name}`}>
+                <Lock size={13} aria-hidden="true" />
+                {t("familyWeb:owned.setPin")}
+              </button>
+            )}
+            {actions.remove && (
+              <button type="button" onClick={() => onRemove(profile)} className={SMALL_DANGER_BUTTON}
+                aria-label={`${t(isGuest ? "familyWeb:owned.delete" : "familyWeb:owned.remove")} — ${profile.name}`}>
+                {t(isGuest ? "familyWeb:owned.delete" : "familyWeb:owned.remove")}
+              </button>
+            )}
+          </div>
+        )}
         {profile.kind === "member" && roleActions.role && onRoleChange && (
           <RightToggle
             label={t("familyWeb:roles.parent")}
@@ -169,44 +209,6 @@ export const ProfileRow = memo(function ProfileRow({
           </p>
         )}
       </div>
-      {(actions.pin || actions.remove || memberParental || librariesEditable) && (
-        <div className="flex flex-wrap gap-2">
-          {memberParental && (
-            <button type="button" onClick={() => onMemberParental(profile)} className={SMALL_BUTTON}
-              aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>
-              <ShieldCheck size={13} aria-hidden="true" />
-              {t("familyWeb:parental.open")}
-            </button>
-          )}
-          {parentalEditable && (
-            <button type="button" onClick={() => onGuestParental(profile)} className={SMALL_BUTTON}
-              aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>
-              <ShieldCheck size={13} aria-hidden="true" />
-              {t("familyWeb:parental.open")}
-            </button>
-          )}
-          {librariesEditable && (
-            <button type="button" onClick={() => onLibraries(profile)} className={SMALL_BUTTON}
-              aria-label={`${t("familyWeb:libraries.open")} — ${profile.name}`}>
-              <Library size={13} aria-hidden="true" />
-              {t("familyWeb:libraries.open")}
-            </button>
-          )}
-          {actions.pin && (
-            <button type="button" onClick={() => onGuestPin(profile)} className={SMALL_BUTTON}
-              aria-label={`${t("familyWeb:owned.setPin")} — ${profile.name}`}>
-              <Lock size={13} aria-hidden="true" />
-              {t("familyWeb:owned.setPin")}
-            </button>
-          )}
-          {actions.remove && (
-            <button type="button" onClick={() => onRemove(profile)} className={SMALL_DANGER_BUTTON}
-              aria-label={`${t(isGuest ? "familyWeb:owned.delete" : "familyWeb:owned.remove")} — ${profile.name}`}>
-              {t(isGuest ? "familyWeb:owned.delete" : "familyWeb:owned.remove")}
-            </button>
-          )}
-        </div>
-      )}
     </li>
   );
 });

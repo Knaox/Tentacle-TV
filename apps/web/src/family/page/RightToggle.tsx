@@ -36,7 +36,10 @@ export const RightToggle = memo(function RightToggle({ label, hint, checked, edi
         <p className="text-xs font-semibold text-content-primary">{label}</p>
         <p className="mt-0.5 text-xs leading-relaxed text-content-tertiary">{hint}</p>
       </div>
-      <ToggleSwitch checked={checked} onChange={(next) => onChange?.(next)} label={label} disabled={pending} />
+      {/* Jamais écrasé : sans ce cadre, une colonne étroite le faisait chevaucher son libellé. */}
+      <div className="flex-shrink-0">
+        <ToggleSwitch checked={checked} onChange={(next) => onChange?.(next)} label={label} disabled={pending} />
+      </div>
     </div>
   );
 });
