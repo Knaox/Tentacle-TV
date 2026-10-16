@@ -1,4 +1,4 @@
-import { memo, useRef } from "react";
+import { memo, useMemo, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { Reveal } from "../motion/Reveal";
 import { CardFocusNote } from "./CardFocusNote";
@@ -45,6 +45,7 @@ export const CardFocusFooter = memo(function CardFocusFooter({
   hold,
   preview = null,
   width,
+  previewWidth,
 }: {
   note?: string;
   /** La carte s'ouvre par l'appui maintenu : le dire. */
@@ -52,10 +53,14 @@ export const CardFocusFooter = memo(function CardFocusFooter({
   /** L'aperçu joue sous le focus : la pause et le son, pour dire Lecture/Pause (port `CardPreview.remote`). */
   preview?: { paused: boolean; muted: boolean } | null;
   width: number;
+  /** La largeur de la ligne Lecture/Pause : celle de la grande carte — sous une affiche, le pied
+   *  (1,6 × la carte) la tronquait. */
+  previewWidth?: number;
 }) {
   // La phrase reste écrite le temps de sa sortie : `note` retombe avec le focus.
   const lastNote = useRef(note);
   if (note) lastNote.current = note;
+  const previewStyle = useMemo(() => (previewWidth !== undefined && previewWidth > width ? { width: previewWidth } : undefined), [previewWidth, width]);
   return (
     <View pointerEvents="none" style={[styles.footer, { width }]}>
       <Reveal shown={note !== undefined}>
@@ -64,7 +69,7 @@ export const CardFocusFooter = memo(function CardFocusFooter({
       <Reveal shown={hold}>
         <CardHoldHint />
       </Reveal>
-      <Reveal shown={preview !== null}>
+      <Reveal shown={preview !== null} style={previewStyle}>
         {preview ? <CardPreviewHint paused={preview.paused} muted={preview.muted} /> : null}
       </Reveal>
     </View>

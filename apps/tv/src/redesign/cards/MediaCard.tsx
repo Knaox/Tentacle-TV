@@ -270,6 +270,7 @@ function CardBody({
             note={focused ? card.focusNote : undefined}
             hold={focused && onLongPress !== undefined}
             preview={focused ? growth?.remote ?? null : null}
+            previewWidth={growth?.tile.width}
             width={Math.round(width * 1.6)}
           />
         </Caption>
