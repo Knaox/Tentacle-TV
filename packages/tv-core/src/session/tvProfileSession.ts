@@ -1,10 +1,10 @@
 import {
   isProfileColor,
+  rightsReachSomething,
   sameUserId,
   type FamilyGuestRights,
   type FamilyProfileColor,
   type FamilyProfileKind,
-  type FamilyRights,
   type TvProfileDto,
   type TvProfilesDto,
 } from "@tentacle-tv/shared";
@@ -76,16 +76,10 @@ export function pairedAccountOf(listing: Pick<TvProfilesDto, "owner"> & Partial<
   return listing.pairedBy ?? listing.owner;
 }
 
-/**
- * Ces droits mènent-ils à un geste ? Le propriétaire, un parent, un membre qui
- * peut créer des invités : oui. Un membre qui ne gère que SES invités : s'il en
- * a créé un (`createdBy`, dans la liste). Sans la liste, on ne peut rien en
- * dire : oui.
- */
-function rightsReachSomething(rights: FamilyRights, userId: string, profiles: readonly TvProfileDto[] | undefined): boolean {
-  if (rights.manageMembers || rights.createGuests || rights.manageGuests === "all" || rights.manageMinors === true) return true;
-  if (rights.manageGuests !== "own" || !profiles) return rights.manageGuests === "own" && !profiles;
-  return profiles.some((candidate) => candidate.kind === "guest" && !!candidate.createdBy && sameUserId(candidate.createdBy, userId));
+/** Les invités qu'a créés ce compte, dans la liste ; sans la liste, on ne peut rien en dire (un). */
+function ownGuestsOf(userId: string, profiles: readonly TvProfileDto[] | undefined): number {
+  if (!profiles) return 1;
+  return profiles.filter((candidate) => candidate.kind === "guest" && !!candidate.createdBy && sameUserId(candidate.createdBy, userId)).length;
 }
 
 /**
@@ -98,7 +92,8 @@ function rightsReachSomething(rights: FamilyRights, userId: string, profiles: re
  */
 export function profileManages(profile: TvProfileDto, listing: Pick<TvProfilesDto, "canManage"> & Partial<Pick<TvProfilesDto, "profiles">>): boolean {
   if ("manage" in profile && profile.manage !== undefined) {
-    return profile.manage !== null && rightsReachSomething(profile.manage, profile.userId, listing.profiles);
+    // La règle du serveur (`rightsReachSomething`, shared), rejouée face à un serveur qui ne l'applique pas encore.
+    return profile.manage !== null && rightsReachSomething(profile.manage, ownGuestsOf(profile.userId, listing.profiles));
   }
   return profile.kind === "owner" && listing.canManage;
 }
