@@ -71,7 +71,8 @@ export async function setMemberParental(actor: Actor, memberUserId: string, body
     const existing = await readMemberParental(row.userId);
     if (remove) {
       if (!existing) return null;
-      const pending: MemberParentalState = { ...existing, controls: null, restorePending: true };
+      // Ses bibliothèques restent restreintes s'il y en a : seule la base de l'âge est rendue.
+      const pending: MemberParentalState = { ...existing, controls: null, restorePending: existing.libraries === null };
       await saveMemberParental(pending);
       return pending;
     }
@@ -79,7 +80,10 @@ export async function setMemberParental(actor: Actor, memberUserId: string, body
     const current = parentalOfPolicy(user.Policy ?? {});
     const next: MemberParentalState = existing
       ? { ...existing, familyId: family.id, controls: wanted, restorePending: false }
-      : { userId: row.userId, familyId: family.id, controls: wanted, base: current, written: current, restorePending: false };
+      : {
+          userId: row.userId, familyId: family.id, controls: wanted, base: current, written: current, restorePending: false,
+          libraries: null, libraryBase: null, libraryWritten: null,
+        };
     await saveMemberParental(next);
     return next;
   });

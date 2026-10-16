@@ -72,6 +72,16 @@ export function rebaseLibraryAccess(base: LibraryAccess, previous: LibraryAccess
   return sameLibraryAccess(current, previous) ? base : { all: current.all, ids: [...current.ids] };
 }
 
+/**
+ * La base d'un membre mineur telle qu'elle vaut MAINTENANT : jamais relevée, la
+ * politique lue (la famille n'y a rien écrit) ; sinon rebasée sur ce qui a changé
+ * ailleurs depuis la dernière écriture (connue, ou supposée : la cible d'alors).
+ */
+export function settledLibraryBase(base: LibraryAccess | null, written: LibraryAccess | null, wanted: WantedLibraries, current: LibraryAccess): LibraryAccess {
+  const start = base ?? current;
+  return rebaseLibraryAccess(start, written ?? effectiveLibraryAccess(start, wanted), current);
+}
+
 /** Les bibliothèques du serveur que ce plafond laisse voir, dans l'ordre du serveur. */
 export function librariesWithin<T extends { id: string }>(libraries: readonly T[], ceiling: LibraryAccess): T[] {
   return libraries.filter((library) => withinLibraryAccess(ceiling, library.id));

@@ -6,6 +6,7 @@ import { FamilyFailure } from "./familyErrors";
 import { fold } from "./familyStore";
 import { fetchUser, guestPolicy, writePolicy, type UserDto } from "./guestAccounts";
 import { parentalApplied, samePolicy, storedGuestParental } from "./guestParentalPolicy";
+import { libraryAccessOfPolicy, sameLibraryAccess, storedWantedLibraries, type WantedLibraries } from "./familyLibraryRules";
 
 /**
  * La politique d'un invité tenue à jour (docs/DROITS-UTILISATEURS.md § 4) : son
@@ -23,6 +24,7 @@ interface GuestLink {
   userId: string;
   creatorUserId: string;
   parentalControls: string | null;
+  libraryAccess: string | null;
 }
 
 /** Les invités, chacun avec son créateur (le sien, ou — ligne d'avant la v2 — le propriétaire). */
@@ -37,32 +39,51 @@ async function guestLinks(): Promise<GuestLink[]> {
   const ownerOf = new Map(families.map((family) => [family.id, family.ownerUserId]));
   return guests.flatMap((guest) => {
     const creatorUserId = guest.createdBy ?? ownerOf.get(guest.familyId);
-    return creatorUserId ? [{ userId: guest.userId, creatorUserId, parentalControls: guest.parentalControls ?? null }] : [];
+    return creatorUserId
+      ? [{ userId: guest.userId, creatorUserId, parentalControls: guest.parentalControls ?? null, libraryAccess: guest.libraryAccess ?? null }]
+      : [];
   });
 }
 
-async function wantedOf(guestUserId: string): Promise<GuestParentalControls> {
-  const row = await getPrisma().familyMember.findFirst({ where: { userId: guestUserId, kind: "guest" } });
-  return storedGuestParental(row?.parentalControls ?? null);
+/** Ce que la famille veut pour un invité : son contrôle parental et ses bibliothèques. */
+interface GuestWanted {
+  parental: GuestParentalControls;
+  libraries: WantedLibraries;
+}
+
+async function guestRowOf(guestUserId: string) {
+  return getPrisma().familyMember.findFirst({ where: { userId: guestUserId, kind: "guest" } });
+}
+
+async function wantedOf(guestUserId: string): Promise<GuestWanted> {
+  const row = await guestRowOf(guestUserId);
+  return { parental: storedGuestParental(row?.parentalControls ?? null), libraries: storedWantedLibraries(row?.libraryAccess ?? null) };
 }
 
 /** Écrit la politique de l'invité si elle diffère de ce qu'elle doit être. `strict` : relit et lève si Jellyfin ne l'a pas retenue. */
-async function reconcile(guest: UserDto & { Id: string }, creator: UserDto, wanted: GuestParentalControls, strict: boolean): Promise<boolean> {
+async function reconcile(guest: UserDto & { Id: string }, creator: UserDto, wanted: GuestWanted, strict: boolean): Promise<boolean> {
   const current = guest.Policy ?? {};
-  const target = guestPolicy(guest.Id, current, creator.Policy ?? {}, wanted);
+  const target = guestPolicy(guest.Id, current, creator.Policy ?? {}, wanted.parental, wanted.libraries);
   if (samePolicy(target, current)) return false;
   await writePolicy(guest.Id, target);
   invalidateContentPolicy(guest.Id);
-  if (strict && !parentalApplied(target, (await fetchUser(guest.Id)).Policy ?? {})) {
-    throw new FamilyFailure("family.jellyfin_refused", "Contrôle parental non retenu par Jellyfin");
+  if (strict) {
+    const reread = (await fetchUser(guest.Id)).Policy ?? {};
+    if (!parentalApplied(target, reread) || !sameLibraryAccess(libraryAccessOfPolicy(target), libraryAccessOfPolicy(reread))) {
+      throw new FamilyFailure("family.jellyfin_refused", "Contrôle parental non retenu par Jellyfin");
+    }
   }
   return true;
 }
 
-/** Pose le contrôle voulu (déjà gardé en base) sur l'invité. Lève une `FamilyFailure` si Jellyfin refuse ou se tait. */
+/**
+ * Pose le contrôle voulu (déjà gardé en base) sur l'invité, avec les bibliothèques
+ * gardées pour lui. Lève une `FamilyFailure` si Jellyfin refuse ou se tait.
+ */
 export async function applyGuestPolicy(guestUserId: string, creatorUserId: string, wanted: GuestParentalControls): Promise<void> {
-  const [guest, creator] = await Promise.all([fetchUser(guestUserId), fetchUser(creatorUserId)]);
-  await reconcile({ ...guest, Id: guestUserId }, creator, wanted, true);
+  const [guest, creator, row] = await Promise.all([fetchUser(guestUserId), fetchUser(creatorUserId), guestRowOf(guestUserId)]);
+  const libraries = storedWantedLibraries(row?.libraryAccess ?? null);
+  await reconcile({ ...guest, Id: guestUserId }, creator, { parental: wanted, libraries }, true);
 }
 
 /** À l'ouverture d'une session d'invité. Silencieux : les interdits de l'invité sont déjà dans Jellyfin. */
@@ -90,7 +111,8 @@ export async function resyncGuests(onlyCreator?: string): Promise<number> {
     // Créateur disparu : le balayage de la Famille s'en charge ; on ne relâche rien ici.
     if (!guest?.Id || !creator) continue;
     try {
-      if (await reconcile({ ...guest, Id: guest.Id }, creator, storedGuestParental(link.parentalControls), false)) written++;
+      const wanted = { parental: storedGuestParental(link.parentalControls), libraries: storedWantedLibraries(link.libraryAccess) };
+      if (await reconcile({ ...guest, Id: guest.Id }, creator, wanted, false)) written++;
     } catch {
       console.log("[family] politique d'un invité non resynchronisée (Jellyfin muet)");
     }

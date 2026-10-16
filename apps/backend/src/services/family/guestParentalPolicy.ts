@@ -82,11 +82,13 @@ export function withGuestParental(guestUserId: string, policy: JellyfinPolicy, c
   };
 }
 
-/** Deux politiques disent-elles la même chose ? Les plages se comparent sans `Id`/`UserId`. */
+/** Deux politiques disent-elles la même chose ? Les plages se comparent sans `Id`/`UserId`, les
+ *  bibliothèques sans ordre ni forme d'identifiant (Jellyfin peut les rendre autrement). */
 export function samePolicy(a: JellyfinPolicy, b: JellyfinPolicy): boolean {
   const plain = (policy: JellyfinPolicy): JellyfinPolicy => ({
     ...policy,
     AccessSchedules: rightsFromPolicy(policy).accessSchedules,
+    ...(Array.isArray(policy.EnabledFolders) ? { EnabledFolders: [...rightsFromPolicy(policy).enabledFolders].sort() } : {}),
   });
   const left = plain(a);
   const right = plain(b);
