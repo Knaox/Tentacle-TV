@@ -28,6 +28,10 @@ import { accessChangesFor, accessLevelOf, type FamilyAccessFeature, type FamilyA
  * bascules qui semblaient dire deux fois la même chose : une rangée par
  * fonction, trois positions (`familyAccessModel`). Serveur d'avant : les deux
  * interrupteurs seuls, comme alors.
+ *
+ * 1.30.0 (`family.guestRequestsAdmin`) : une troisième rangée, « Les invités peuvent demander
+ * des films », SEULEMENT si une extension sait demander un titre (`requestExtension`). Coupée
+ * par défaut ; la couper suspend les cases des invités sans les effacer.
  */
 export function FamilySwitchesSection() {
   const { t } = useTranslation("familyWeb");
@@ -35,6 +39,7 @@ export function FamilySwitchesSection() {
   const switches = useFamilySwitches({ enabled: available });
   const save = useSetFamilySwitches();
   const creationRights = useServerCapability("family.creationRights");
+  const guestRequestsAdmin = useServerCapability("family.guestRequestsAdmin");
   const defaults = useFamilyCreationDefaults({ enabled: available && creationRights });
   const saveDefaults = useSetFamilyCreationDefaults();
 
@@ -56,11 +61,13 @@ export function FamilySwitchesSection() {
     }
   };
 
+  const features: readonly FamilyAccessFeature[] =
+    guestRequestsAdmin && current?.requestExtension === true ? ["families", "guests", "guestRequests"] : ["families", "guests"];
   const loadFailed = switches.isError || (creationRights && defaults.isError);
   const body = !current ? null : creationRights ? (
     defaults.data && (
       <div className="space-y-6">
-        {(["families", "guests"] as const).map((feature) => (
+        {features.map((feature) => (
           <FamilyAccessRow
             key={feature}
             feature={feature}

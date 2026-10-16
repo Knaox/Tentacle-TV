@@ -52,14 +52,16 @@ export interface TvProfileRecord {
   familyOwnerName?: string;
   /** CE profil gère quelque chose sur cette TV (`manage` du serveur, v2). Absent d'un enregistrement d'avant. */
   manages?: boolean;
+  /** 1.30.0 : CE profil gérerait la famille s'il avait un code PIN (`manageNeedsPin`
+   *  du serveur) — l'étape « Code PIN conseillé » et Réglages › Compte le disent.
+   *  Absent d'un enregistrement d'avant (ou d'un serveur d'avant) : faux. */
+  manageNeedsPin?: boolean;
   /** Un invité : ses droits à l'ouverture (« peut demander », v2) ; la garde
    *  de Vigie préfère la liste relue (`profileMayRequest`). Absent : aucun. */
   guestRights?: FamilyGuestRights | null;
   /** Un membre nommé parent, à l'ouverture (1.30.0) ; Réglages préfère la liste
    *  relue (`openProfileState`). Absent d'un enregistrement d'avant : non. */
   parent?: boolean;
-  /** Il gérerait avec un code PIN (`TvProfileDto.manageNeedsPin`, 1.30.0). Absent : non. */
-  manageNeedsPin?: boolean;
 }
 
 const KINDS: readonly FamilyProfileKind[] = ["owner", "member", "guest"];
@@ -100,9 +102,9 @@ export function profileRecordOf(profile: TvProfileDto, listing: ProfilesListingR
     canManage: listing.canManage,
     familyOwnerName: familyOwner?.name ?? paired.name,
     manages: profileManages(profile, listing),
+    manageNeedsPin: profile.manageNeedsPin === true,
     guestRights: profile.guestRights ?? null,
     parent: tvProfileRoleOf(profile) === "parent",
-    manageNeedsPin: profile.manageNeedsPin === true,
   };
 }
 

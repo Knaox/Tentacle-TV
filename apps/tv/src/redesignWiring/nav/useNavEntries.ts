@@ -26,9 +26,6 @@ import { remoteHint } from "../../platform/input";
 /** « Tout afficher » : tv-core (`nav/railKeys`). */
 export const SHOW_ALL_KEY = RAIL_SHOW_ALL_KEY;
 
-/** Le diamètre du portrait dans la navigation (`NavItem`), en points. */
-const AVATAR = 46;
-
 export type NavEntries = Pick<NavRailProps, "search" | "entries" | "account" | "switcher" | "hints">;
 
 export interface NavEntriesOptions {
@@ -44,7 +41,7 @@ export function useNavEntries({ previewOrder = null, moving = false }: NavEntrie
   // passe le proxy du serveur, `GET /Users/{id}` non (hors de sa liste
   // blanche : la navigation retombait toujours sur l'initiale). Montré
   // seulement s'il existe — sinon un rond vide, là où l'initiale se lit.
-  const paired = usePairedAccount(AVATAR);
+  const paired = usePairedAccount();
   const avatarUri = useVerifiedImage(paired.portraitUrl);
   const userName = paired.name ?? "";
 

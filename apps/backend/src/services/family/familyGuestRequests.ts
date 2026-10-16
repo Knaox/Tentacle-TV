@@ -7,7 +7,7 @@ import { fold, type MemberRow } from "./familyStore";
 
 /**
  * « Les invités peuvent demander des films » — ce que l'administration décide (1.30.0,
- * `family.guestRequestsAdmin`, docs/DROITS-UTILISATEURS.md § 9.8). Deux niveaux :
+ * `family.guestRequestsAdmin`, docs/DROITS-UTILISATEURS.md § 9.9). Deux niveaux :
  * l'interrupteur `guestRequests` (`familyConfig.ts`, COUPÉ tant qu'on ne l'a pas allumé,
  * mise à jour comprise) et le droit de compte `grantGuestRequests`
  * (`familyCreationRights.ts`, défaut NON, un administrateur Jellyfin l'a d'office).

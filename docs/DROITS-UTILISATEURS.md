@@ -1186,3 +1186,37 @@ Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir b
   (la route du lot le refuse). À fermer dans le proxy.
 - Banc : Jellyfin 10.11 jetable, trois comptes (administrateur ; un compte qui ne supprime que
   dans UNE bibliothèque ; un compte sans droit), médias générés ; preuves dans le rapport du lot.
+
+## 9.9 Famille : « Les invités peuvent demander des films », décidé par l'administration
+
+Lot du 16/10, T7. Capacité `family.guestRequestsAdmin` (1.30.0). Contrat : `familyRoles.ts`
+(`grantGuestRequests`, `guestRequestState`), `familyContract.ts` (`FamilySwitches.guestRequests`,
+`FamilyAdminSwitchesDto.requestExtension`, `FamilyGuestRights.suspended`), refus
+`family.guest_requests_denied` (403) ; règle cliente `mayGrantGuestRequests` (`familyClient.ts`).
+Serveur : `services/family/familyGuestRequests.ts`.
+
+- **L'interrupteur** (`server_config.family_guest_requests_enabled`) : COUPÉ tant que
+  l'administration ne l'a pas allumé, MISE À JOUR COMPRISE, même sur un serveur où des invités
+  demandaient déjà (décision de Damien du 2026-10-16, contre la règle habituelle de
+  rétrocompatibilité). Coupé : aucune famille ne donne le droit, administrateurs compris.
+  `features.family.guestRequests` le suit : un client d'avant cache la case. Admin › Utilisateurs
+  › Familles : une troisième rangée à trois positions (Coupé, Comptes permis, Tous les comptes),
+  montrée SEULEMENT si une extension sait demander un titre (`requestExtension`).
+- **Le droit de compte** `grantGuestRequests` (`family_account_rights`, `inherit | allow | deny`,
+  défaut de l'administration `family_default_grant_guest_requests`, absent = NON) : réglé dans la
+  fiche d'un compte (rubrique Famille) ; un administrateur Jellyfin l'a d'office. Il appartient au
+  compte qui AGIT : le propriétaire ou un parent qui coche « peut demander » sur un invité.
+  `FamilyAccountDto.creation.grantGuestRequests` le dit au client.
+- **La case d'un invité** garde le compte qui l'a cochée (`family_members.requestTitlesGrantedBy` ;
+  ligne d'avant : son créateur, sinon le propriétaire). Que ce compte perde le droit, ou que
+  l'interrupteur se coupe : SUSPENDUE — gardée, `guestExtensionAccess` refuse les extensions,
+  les DTO disent `requestTitles: false, suspended: true` (vue d'ensemble, « Qui regarde ? », TV).
+  Le droit revenu, elle revit sans qu'on la règle de nouveau. Décocher n'exige jamais rien.
+- Chaque changement (interrupteur, défaut, fiche) fait relire les familles concernées, invités
+  compris (`family:update`).
+- Preuves : `test/familyGuestRequestsAdmin.test.ts` (défaut coupé, parent sans le droit, appel
+  direct, suspension puis rallumage, administrateur d'office) ; shared
+  `familyGuestRequests.test.ts` ; web `familyAccessModel.test.ts`, `FamilySwitchesSection.test.tsx`,
+  `AccountFamilyRightsGroup.test.tsx`. Banc réel (Jellyfin 10.11 jetable, 2026-10-16) : 11
+  vérifications de bout en bout, « TOUT EST PROUVÉ », et l'administration éprouvée dans le
+  navigateur.

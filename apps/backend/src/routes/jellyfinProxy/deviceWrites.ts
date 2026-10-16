@@ -16,7 +16,10 @@
  * n'ÉCRIT que ce qui suit — relevé le 2026-10-04 dans l'Apple TV, l'Android
  * TV (toutes les versions livrées depuis tv-v1.0.0) et la LG : ses reports de
  * lecture, la négociation de lecture, ses données de lecture, « vu »,
- * favori, Ma liste, et l'arrêt de son transcodage. Évaluée sur le chemin
+ * favori, Ma liste, et l'arrêt de son transcodage. Depuis la 1.30.0, aussi
+ * la photo de SON compte (galerie des avatars de la TV, capacité
+ * `avatars.devicePhoto`) : le garde de périmètre (`userScope.ts`) a déjà
+ * refusé tout autre compte que le sien. Évaluée sur le chemin
  * TEL QUE LE CLIENT L'ENVOIE (avant toute traduction), sans la query, en
  * toute casse (les `TranscodingUrl` arrivent en `videos/…`).
  *
@@ -42,6 +45,9 @@ export const DEVICE_WRITE_ROUTES: readonly DeviceWriteRoute[] = [
   { name: "watchlist", methods: ["POST", "DELETE"], pattern: /^Users\/[^/]+\/Items\/[^/]+\/Rating$/i },
   /** L'arrêt de son propre transcodage (`deviceId`, `playSessionId`). */
   { name: "stopTranscode", methods: ["DELETE"], pattern: /^Videos\/ActiveEncodings$/i },
+  /** La photo de SON compte : un personnage de la galerie, envoyé comme une photo importée.
+   *  Jamais `Users/Me/…` : le garde de périmètre n'y lit aucun compte, et la clé prêtée n'en a pas. */
+  { name: "ownPhoto", methods: ["POST"], pattern: /^Users\/(?!me\/)[^/]+\/Images\/Primary$/i },
 ];
 
 /** Cette requête d'appareil est-elle permise ? Toute lecture l'est (la liste

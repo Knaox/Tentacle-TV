@@ -28,6 +28,10 @@ export interface SettingsAccount {
    *  TV d'avant les profils — le compte jumelé, « Changer de serveur » et
    *  « Déjumeler », comme toujours. */
   profile?: SettingsProfile | null;
+  /** La galerie des avatars : « Changer la photo » (il en a une), « Choisir une
+   *  photo » (il n'en a pas). Absent : un serveur qui ne déclare pas
+   *  `avatars.devicePhoto` — aucun bouton. */
+  photo?: "change" | "choose" | null;
 }
 
 export interface SettingsProfile {

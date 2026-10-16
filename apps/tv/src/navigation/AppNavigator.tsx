@@ -14,6 +14,8 @@ import { PairCodeScreen } from "../screens/PairCodeScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { ProfilesScreen } from "../screens/ProfilesScreen";
 import { RailSetupScreen } from "../screens/RailSetupScreen";
+import { PinSetupScreen } from "../screens/PinSetupScreen";
+import { PhotoSetupScreen } from "../screens/PhotoSetupScreen";
 import { startupRouteAfter } from "./startupWindows";
 import { effectOff } from "../redesign/render/measuredEffects";
 import { RENDER } from "../redesign/render/renderProfile";
@@ -35,6 +37,7 @@ const WatchlistScreen = React.lazy(() => import("../screens/WatchlistScreen").th
 const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").then(m => ({ default: m.FavoritesScreen })));
 const ManageProfilesScreen = React.lazy(() => import("../screens/ManageProfilesScreen").then(m => ({ default: m.ManageProfilesScreen })));
 const ProfilePinScreen = React.lazy(() => import("../screens/ProfilePinScreen").then(m => ({ default: m.ProfilePinScreen })));
+const AvatarsScreen = React.lazy(() => import("../screens/AvatarsScreen").then(m => ({ default: m.AvatarsScreen })));
 const ParentalControlsScreen = React.lazy(() => import("../screens/ParentalControlsScreen").then(m => ({ default: m.ParentalControlsScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -73,9 +76,9 @@ export function preloadCoreScreens() {
  * actif → toujours le jumelage (sa langue se choisit sur son accueil ; plus
  * de conditions d'utilisation à accepter, sur aucun des deux téléviseurs).
  * Apple TV passée aux profils (Famille), aucun profil ouvert : « Qui regarde ? ».
- * Une session dont une fenêtre du démarrage reste due sur cet appareil (la
- * préconfiguration de la barre pour une installation d'avant, un profil
- * retenu) : la fenêtre d'abord, jamais l'accueil qui clignote avant elle
+ * Une session dont une fenêtre du démarrage reste due sur cet appareil (le
+ * code PIN conseillé ou la préconfiguration de la barre pour une installation
+ * d'avant, un profil retenu) : la fenêtre d'abord, jamais l'accueil qui clignote avant elle
  * (`startupRouteAfter`, le registre ordonné, lu synchrone).
  * Lue aussi par le retour après un changement du mode Lite (`App.tsx`).
  */
@@ -123,9 +126,14 @@ export function AppNavigator() {
       <Stack.Screen name="Profiles" component={ProfilesScreen} initialParams={{ intent: "launch" }} options={{ animation: "none" }} />
       <Stack.Screen name="ManageProfiles" component={ManageProfilesScreen} />
       <Stack.Screen name="ProfilePin" component={ProfilePinScreen} />
+      {/* La galerie des avatars (Réglages › Compte) : sa photo dans la troupe. */}
+      <Stack.Screen name="AvatarGallery" component={AvatarsScreen} />
       <Stack.Screen name="ParentalControls" component={ParentalControlsScreen} />
-      {/* La préconfiguration de la barre : avant l'accueil, une fois par profil et par appareil. */}
+      {/* Le premier passage dans un profil, avant l'accueil — une fois par profil et par appareil :
+          le code PIN conseillé, la barre, la photo (tv-core `nav/startupWindows`). */}
+      <Stack.Screen name="PinSetup" component={PinSetupScreen} initialParams={{ origin: "session" }} />
       <Stack.Screen name="RailSetup" component={RailSetupScreen} initialParams={{ origin: "session" }} />
+      <Stack.Screen name="PhotoSetup" component={PhotoSetupScreen} initialParams={{ origin: "session" }} />
       {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
           onglets) → nav snappy ET pas de course animation/focus qui empêchait
           l'auto-collapse du rail au retour sur l'Accueil (pop). */}

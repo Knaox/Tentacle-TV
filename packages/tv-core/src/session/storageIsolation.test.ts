@@ -7,6 +7,7 @@ import { ACCOUNT_STORAGE_KEYS, PROFILE_STORAGE_KEYS } from "./unpairJournal";
 import { SCRUB_COUNTDOWN_KEY_PREFIX } from "../player/scrubCountdownSettings";
 import { TRAILER_SUBTITLE_KEY_PREFIX } from "../player/trailerSubtitleMemory";
 import { RAIL_LIBRARIES_STORAGE_KEY, RAIL_PROFILES_STORAGE_KEY } from "../nav/railProfiles";
+import { PIN_SETUP_STORAGE_KEY } from "./pinSetup";
 
 /**
  * L'ISOLATION des profils de la Famille (Apple TV), clé par clé : chaque clé
@@ -45,6 +46,8 @@ const PER_PROFILE_PREFIXES = [SCRUB_COUNTDOWN_KEY_PREFIX, TRAILER_SUBTITLE_KEY_P
 const PER_PROFILE_MAPS: Record<string, string> = {
   [RAIL_PROFILES_STORAGE_KEY]: "la disposition du rail de chaque profil sur cette TV (préconfiguration comprise)",
   [RAIL_LIBRARIES_STORAGE_KEY]: "le dernier nombre de bibliothèques vu par chaque profil (la page de préconfiguration ou l'accueil)",
+  [PIN_SETUP_STORAGE_KEY]: "les profils à qui l'étape « Code PIN conseillé » a été proposée sur cette TV",
+  tentacle_avatar_invite_seen: "les sujets à qui la galerie des avatars a été proposée sur cette TV (la clé du bureau et du mobile)",
 };
 
 function files(dir: string): string[] {

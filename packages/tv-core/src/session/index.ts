@@ -9,6 +9,7 @@ export * from "./tvProfileSession";
 export * from "./profileLaunch";
 export * from "./profileResume";
 export * from "./ownPin";
+export * from "./pinSetup";
 export * from "./profileEntrance";
 export * from "./profileRefusal";
 export * from "./pinEntry";

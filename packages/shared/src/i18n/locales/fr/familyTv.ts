@@ -47,6 +47,17 @@ export default {
     mismatch: "Les deux codes diffèrent : recommencez.",
     failed: "Le code n'a pas pu être enregistré. Réessayez.",
   },
+  pinSetup: {
+    kicker: "Bienvenue, {{name}}",
+    title: "Protégez votre profil par un code PIN",
+    protect: "C'est conseillé, pour que personne d'autre n'ouvre votre profil.",
+    protectAndManage: "C'est conseillé, pour que personne d'autre n'ouvre votre profil… et pour gérer la famille depuis la TV.",
+    sameCode: "Un seul code pour votre compte, le même partout.",
+    create: "Créer un code PIN",
+    later: "Plus tard",
+    settingsHint: "Vous pourrez aussi le créer plus tard dans Réglages › Compte.",
+    saved: "Code PIN enregistré",
+  },
   settings: {
     kicker: "Profil",
     owner: "Propriétaire de la famille",

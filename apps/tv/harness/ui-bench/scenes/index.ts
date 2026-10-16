@@ -22,6 +22,7 @@ import { PAIRING_SCENES } from "./pairingScenes";
 import { PLAYER_LIVE_SCENES } from "./playerLiveScenes";
 import { PREVIEW_SCENES } from "./previewScenes";
 import { PLAYER_QUALITY_SCENES } from "./playerQualityScenes";
+import { PIN_SETUP_SCENES } from "./pinSetupScenes";
 import { PLAYER_SCENES } from "./playerScenes";
 import { PLAYER_WIRED_SCENES } from "./playerWiredScenes";
 import { PLAYHEAD_SCENES } from "./playheadScenes";
@@ -45,7 +46,8 @@ import type { BenchScene } from "./types";
  */
 export const SCENES: BenchScene[] = [
   ...PAIRING_SCENES,
-  // La préconfiguration de la barre : après le jumelage (ou un profil ouvert), avant l'accueil.
+  // Le premier passage dans un profil, avant l'accueil : le code PIN conseillé, puis la barre.
+  ...PIN_SETUP_SCENES,
   ...RAIL_SETUP_SCENES,
   ...HOME_SCENES,
   ...NAV_SCENES,
