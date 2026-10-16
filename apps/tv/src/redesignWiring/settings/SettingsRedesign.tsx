@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useJellyfinClient, useResumeItems } from "@tentacle-tv/api-client";
 import { SETTINGS_DEFAULT_TAB, settingsEntryKey } from "@tentacle-tv/tv-core";
@@ -65,6 +65,8 @@ export function SettingsRedesign({ navigation, route }: Props) {
     () => (railTargets > 0 ? () => navigation.navigate("RailSetup", { origin: "settings" }) : undefined),
     [railTargets, navigation],
   );
+  // La galerie des avatars : « Changer la photo », présent seulement face à un serveur qui le permet.
+  const onChangePhoto = useCallback(() => navigation.navigate("AvatarGallery"), [navigation]);
   // Retour annule d'abord un déplacement en cours dans l'onglet Navigation.
   useBackLayer("menu", nav.navigation.movingKey !== null, nav.cancelNavMove);
   useSettingsGroups(screen.focus);
@@ -103,6 +105,7 @@ export function SettingsRedesign({ navigation, route }: Props) {
           onSwitchProfile={profiles.onSwitchProfile}
           onManageProfiles={profiles.onManageProfiles}
           onOwnPin={profiles.onOwnPin}
+          onChangePhoto={onChangePhoto}
           onSelectPreset={model.onSelectPreset}
           onSelectLanguage={model.onSelectLanguage}
           onOpenLibrarySetting={model.onOpenLibrarySetting}

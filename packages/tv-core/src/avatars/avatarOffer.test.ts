@@ -5,6 +5,7 @@ import {
   decideAvatarOffer,
   isAvatarOfferPending,
   markAvatarOffered,
+  offerGuestPhotoAtCreation,
   readAvatarOffered,
   settleAvatarOffer,
   type AvatarOfferInput,
@@ -59,6 +60,19 @@ describe("faut-il proposer la photo ?", () => {
   it("ce qui est su l'emporte sur l'attente : une photo connue ne fait pas attendre la capacité", () => {
     expect(decideAvatarOffer({ ...DUE, capable: null, hasPhoto: true })).toBe("skip");
     expect(decideAvatarOffer({ ...DUE, capable: false, hasPhoto: null })).toBe("skip");
+  });
+});
+
+describe("à la création d'un invité", () => {
+  it("la galerie s'ouvre s'il n'a que la photo par défaut, face à un serveur qui le permet", () => {
+    expect(offerGuestPhotoAtCreation({ imageTag: null }, true)).toBe(true);
+    expect(offerGuestPhotoAtCreation({ imageTag: "" }, true)).toBe(true);
+  });
+
+  it("rien s'il a déjà une photo, si la création a échoué, ou face à un serveur d'avant", () => {
+    expect(offerGuestPhotoAtCreation({ imageTag: "abc" }, true)).toBe(false);
+    expect(offerGuestPhotoAtCreation(null, true)).toBe(false);
+    expect(offerGuestPhotoAtCreation({ imageTag: null }, false)).toBe(false);
   });
 });
 

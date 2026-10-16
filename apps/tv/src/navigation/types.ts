@@ -17,6 +17,9 @@ export type RootStackParamList = {
   ProfilePin: { mode: "create" | "change" | "remove"; origin?: "settings" | "startup" };
   /** Le code PIN conseillé du premier passage dans un profil — avant la barre. */
   PinSetup: { origin: "session" } | undefined;
+  /** La galerie des avatars : la photo du sujet de la session (Réglages › Compte, « Changer la photo »),
+   *  ou celle d'un invité qu'on vient de créer (`guest`, Gérer les profils). */
+  AvatarGallery: { guest?: { userId: string; name: string } } | undefined;
   /** La préconfiguration de la barre : `session` — avant l'accueil (jumelage,
    *  profil ouvert, démarrage) ; `settings` — l'étape du propriétaire seule,
    *  depuis Réglages › Navigation. */

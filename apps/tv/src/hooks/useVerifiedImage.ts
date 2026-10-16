@@ -8,6 +8,9 @@ import { Image } from "react-native";
  */
 const verifiedUrls = new Set<string>();
 
+/** Le délai avant la seconde lecture d'une image ratée. */
+const RETRY_MS = 1_500;
+
 /**
  * Une image qu'on ne montre que si elle existe. Un portrait Jellyfin absent
  * répond 404 : affiché tel quel, il laisserait un cercle vide là où l'initiale
@@ -20,15 +23,28 @@ export function useVerifiedImage(url: string | null | undefined): string | undef
   useEffect(() => {
     if (!url || verifiedUrls.has(url)) return;
     let alive = true;
-    Image.prefetch(url).then(
-      (ok) => {
-        if (!ok) return;
-        verifiedUrls.add(url);
-        if (alive) setVerified(url);
-      },
-      () => { /* absente ou injoignable : on garde le repli */ },
-    );
-    return () => { alive = false; };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    // Un échec se retente UNE fois, un peu plus tard : une photo tout juste
+    // posée (galerie des avatars) peut ne pas se lire au premier essai.
+    const attempt = (left: number) => {
+      // Absente ou injoignable : on garde le repli.
+      const retry = () => {
+        if (alive && left > 0) timer = setTimeout(() => attempt(left - 1), RETRY_MS);
+      };
+      Image.prefetch(url).then(
+        (ok) => {
+          if (!ok) return retry();
+          verifiedUrls.add(url);
+          if (alive) setVerified(url);
+        },
+        retry,
+      );
+    };
+    attempt(1);
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+    };
   }, [url]);
   return url && (known || verified === url) ? url : undefined;
 }

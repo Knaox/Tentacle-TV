@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { setFamilyGuestPhoto, useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { FAMILY_KEY, setFamilyGuestPhoto, useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { FAMILY_GUEST_PHOTO_TYPES, type FamilyGuestPhotoType } from "@tentacle-tv/shared";
 import {
   accountPhotoPath,
@@ -9,7 +9,8 @@ import {
   type AvatarGalleryTarget,
   type AvatarPhotoPayload,
 } from "@tentacle-tv/tv-core";
-import { bumpOwnPhotoVersion, ownPhotoQueryKey } from "./ownPhoto";
+import { bumpOwnPhotoVersion } from "../../lib/ownPhotoVersion";
+import { ownPhotoQueryKey } from "./ownPhoto";
 
 /** Le plus long qu'on attende l'image et son envoi : au-delà, l'échec se dit. */
 const SEND_TIMEOUT_MS = 20_000;
@@ -23,9 +24,9 @@ const SEND_TIMEOUT_MS = 20_000;
  *   clients. Puis sa sonde se relit, son portrait change d'adresse, et
  *   « Qui regarde ? » se relit (`["tv-profiles"]`) ;
  * - `guest` : un invité de la Famille, que le SERVEUR habille (`setGuestPhoto`,
- *   `family.guestPhotos`) — c'est lui qui dit si cette session le peut (au
- *   16/10, une session personnelle seulement : depuis une TV, il refuse, et
- *   l'échec se dit ; la règle d'un parent sur la TV est en cours de décision).
+ *   `family.guestPhotos`) — depuis une session de profil de la TV, par le
+ *   propriétaire ou un parent (`family.profileManage`) ; c'est le serveur qui
+ *   juge le rôle, un refus se dit.
  *
  * L'image entière vient du serveur Tentacle (`/avatars/<id>.webp`). Un envoi
  * à la fois. Rend vrai si la photo est posée.
@@ -47,6 +48,8 @@ export function useAvatarPhotoUpload(target: AvatarGalleryTarget): (id: string) 
           const type = FAMILY_GUEST_PHOTO_TYPES.find((accepted): accepted is FamilyGuestPhotoType => accepted === photo.mime);
           if (!type) return false;
           await withTimeout(setFamilyGuestPhoto({ userId: target.userId, photo: { image: photo.base64, type } }));
+          // La fiche de l'invité (Gérer les profils) se relit avec sa nouvelle photo.
+          void queryClient.invalidateQueries({ queryKey: FAMILY_KEY });
         } else {
           if (!userId) return false;
           const response = await withTimeout(

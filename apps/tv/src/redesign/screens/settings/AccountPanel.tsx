@@ -1,7 +1,8 @@
 import { memo, useCallback, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
+import { SETTINGS_AVATAR_KEY, confirmBlur, confirmPress } from "@tentacle-tv/tv-core";
+import { PillButton } from "../../controls/PillButton";
 import { Icon } from "../../icons/Icon";
 import { colors, text, white } from "../../theme/tokens";
 import { ConfirmPill } from "./ConfirmPill";
@@ -26,6 +27,9 @@ import { useRemoteHints } from "../../remote/remoteHints";
  * déjumelages complets (`unpairDevice`) — le changement de serveur oublie en
  * plus l'adresse.
  *
+ * À droite du nom, « Changer la photo » (« Choisir une photo » sans photo) ouvre
+ * la galerie des avatars — face à un serveur qui le permet (`account.photo`).
+ *
  * Apple TV passée aux profils (Famille, `account.profile`) : le profil ouvert
  * et son rôle, puis EN TÊTE « Changer de profil » et « Gérer les profils »
  * (`ProfileSection`) ; « Changer de serveur » s'efface — il passe par un
@@ -41,11 +45,13 @@ export interface AccountPanelProps {
   onManageProfiles?: () => void;
   /** SON code PIN : créer, changer, retirer. */
   onOwnPin?: (mode: OwnPinMode) => void;
+  /** La galerie des avatars : « Changer la photo » / « Choisir une photo » (`account.photo`). */
+  onChangePhoto?: () => void;
 }
 
 export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps) {
   const { account, initialArmed = null, onChangeServer, onLogout } = props;
-  const { t } = useTranslation(["pairing", "nav", "common", "preferences", "familyTv"]);
+  const { t } = useTranslation(["pairing", "nav", "common", "preferences", "familyTv", "avatars"]);
   const hints = useRemoteHints();
   const profile = account.profile ?? null;
   const [armed, setArmed] = useState<AccountAction | null>(initialArmed);
@@ -76,6 +82,17 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
           <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
           {profile ? <Text style={settingsText.hint}>{profile.role}</Text> : null}
         </View>
+        {/* À droite de l'identité, jamais dessous : l'en-tête garde la hauteur du
+            portrait (dessous, il grandissait et le défilement le coupait). */}
+        {account.photo && props.onChangePhoto ? (
+          <PillButton
+            label={t(account.photo === "change" ? "avatars:tv.change" : "avatars:tv.choose")}
+            icon="user"
+            size="md"
+            focusKey={SETTINGS_AVATAR_KEY}
+            onPress={props.onChangePhoto}
+          />
+        ) : null}
       </View>
 
       {/* En tête : changer de profil est le geste le plus fréquent d'une TV de famille. */}

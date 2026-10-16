@@ -37,6 +37,7 @@ const WatchlistScreen = React.lazy(() => import("../screens/WatchlistScreen").th
 const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").then(m => ({ default: m.FavoritesScreen })));
 const ManageProfilesScreen = React.lazy(() => import("../screens/ManageProfilesScreen").then(m => ({ default: m.ManageProfilesScreen })));
 const ProfilePinScreen = React.lazy(() => import("../screens/ProfilePinScreen").then(m => ({ default: m.ProfilePinScreen })));
+const AvatarsScreen = React.lazy(() => import("../screens/AvatarsScreen").then(m => ({ default: m.AvatarsScreen })));
 const ParentalControlsScreen = React.lazy(() => import("../screens/ParentalControlsScreen").then(m => ({ default: m.ParentalControlsScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -125,6 +126,8 @@ export function AppNavigator() {
       <Stack.Screen name="Profiles" component={ProfilesScreen} initialParams={{ intent: "launch" }} options={{ animation: "none" }} />
       <Stack.Screen name="ManageProfiles" component={ManageProfilesScreen} />
       <Stack.Screen name="ProfilePin" component={ProfilePinScreen} />
+      {/* La galerie des avatars (Réglages › Compte) : sa photo dans la troupe. */}
+      <Stack.Screen name="AvatarGallery" component={AvatarsScreen} />
       <Stack.Screen name="ParentalControls" component={ParentalControlsScreen} />
       {/* Le premier passage dans un profil, avant l'accueil — une fois par profil et par appareil :
           le code PIN conseillé, la barre, la photo (tv-core `nav/startupWindows`). */}

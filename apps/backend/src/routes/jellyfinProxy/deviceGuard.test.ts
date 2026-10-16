@@ -12,6 +12,24 @@ const ME = "0123456789abcdef0123456789abcdef";
 const ME_DASHED = "01234567-89ab-cdef-0123-456789abcdef";
 const OTHER = "fedcba9876543210fedcba9876543210";
 
+const GUEST = "aaaabbbbccccddddeeeeffff00001111";
+const MEMBER = "11112222333344445555666677778888";
+
+describe("la session de profil d'une TV (invité comme membre) ne pose que SA photo", () => {
+  it.each([
+    ["un invité", GUEST, MEMBER],
+    ["un invité", GUEST, ME],
+    ["un membre", MEMBER, GUEST],
+    ["un membre", MEMBER, ME],
+  ])("%s ne pose jamais la photo d'un autre compte", (_who, session, other) => {
+    expect(deviceRefusal("POST", `Users/${other}/Images/Primary`, session, {})).toMatch(/perimetre/);
+  });
+
+  it.each([["un invité", GUEST], ["un membre", MEMBER]])("%s pose la sienne", (_who, session) => {
+    expect(deviceRefusal("POST", `Users/${session}/Images/Primary`, session, {})).toBeNull();
+  });
+});
+
 describe("la photo du compte depuis un appareil", () => {
   it("passe pour son propre compte, quelle que soit la forme de l'identifiant", () => {
     expect(deviceRefusal("POST", `Users/${ME}/Images/Primary`, ME, {})).toBeNull();
