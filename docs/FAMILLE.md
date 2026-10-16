@@ -449,6 +449,28 @@ rôle — jamais ceux du compte qui a jumelé la TV ou ouvert le bureau.
   contrôle parental ; `personalSession` reste faux (`sessionManages`, shared).
 - Preuves : SEC-F-54 (`test/famille-securite/MODELE-MENACE.md`).
 
+### Sur la TV (Apple TV, Android TV — même code refondu)
+
+- **Les entrées** : « Qui regarde ? » › « Gérer les profils » au seul compte
+  qui a jumelé la TV, s'il gère et a un code (tv-core `manageEntryProfile`) ;
+  Réglages › Compte de son profil pour chacun (`openProfileState` : « Gérer les
+  profils » avec un code, sinon « Posez un code pour gérer la famille depuis la
+  TV », au-dessus de « Créer un code PIN »). Le rôle s'y lit sur la liste RELUE
+  (`TvProfileDto.parent`) : « Parent · famille de … ».
+- **Le cadenas** : la page lit la vue d'ensemble d'abord ; le pavé ne paraît
+  que sur `family.manage_locked` ; `family.manage_pin_required` mène à « Créer
+  un code PIN » (`useManageUnlock`).
+- **La fiche** : chaque profil que la session gère s'ouvre sur sa fiche, une
+  ligne par geste du rôle (tv-core `familyManageSheet`) — invité : photo
+  (galerie, `AvatarGallery`), code PIN, « peut demander », contrôle parental
+  (`ParentalControls`, seulement si le profil porte `parental`), supprimer ;
+  membre, pour le propriétaire : « Parent » (bloqué tant qu'un contrôle
+  parental le restreint), « peut créer des invités », contrôle parental d'un
+  mineur, retirer ; pour un parent : le contrôle parental d'un mineur.
+- **En direct** : `TVFamilyLive` écoute `family:update` pendant toute session
+  de profil ; la liste relue vit sous `["family", "tv-profiles"]` : un rôle
+  changé sur le bureau se voit sans rouvrir le profil.
+
 ## Qui agit : toujours le porteur du jeton
 
 L'acteur se déduit du jeton, JAMAIS d'un identifiant du corps ou de la query
