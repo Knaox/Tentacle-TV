@@ -177,6 +177,15 @@ export interface FamilyProfileDto {
    *  pour plafond SA politique de base, celle que règle l'administrateur. */
   parental?: GuestParentalControls | null;
   parentalCeiling?: GuestParentalCeiling | null;
+  /** 1.30.0 (`family.promptsReset`) : « Reproposer le code PIN et la photo » a été demandé à
+   *  cette date (ISO) — un appareil qui a retenu « Plus tard » AVANT la repropose une fois.
+   *  Null : jamais ; absent : serveur d'avant. */
+  promptsResetAt?: string | null;
+}
+
+/** `resetPrompts` → la date posée (ISO). */
+export interface PromptsResetDto {
+  promptsResetAt: string;
 }
 
 export interface OutgoingInvitationDto {

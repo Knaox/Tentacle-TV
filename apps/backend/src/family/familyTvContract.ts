@@ -45,6 +45,9 @@ export interface TvProfileDto {
   /** 1.30.0 : ce profil gérerait s'il avait un code PIN — la TV le dit au
    *  lieu de proposer « Gérer les profils ». Absent (serveur d'avant) : faux. */
   manageNeedsPin?: boolean;
+  /** 1.30.0 (`family.promptsReset`) : le premier passage est à reproposer depuis cette date
+   *  (ISO, `FamilyProfileDto.promptsResetAt`). Null : jamais ; absent : serveur d'avant. */
+  promptsResetAt?: string | null;
 }
 
 /** `GET /api/family/tv/profiles` — « Qui regarde ? ». */

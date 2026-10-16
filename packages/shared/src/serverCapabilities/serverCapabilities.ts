@@ -175,6 +175,12 @@ export const SERVER_CAPABILITIES = {
    *  avatars s'ouvre sur la TV. Sans elle, le proxy refuse (403) : aucune entrée, aucune invitation.
    *  `GET /api/avatars/device-photo` → `{ allowed }` : non pour le compte de démonstration (revue Apple). */
   "avatars.devicePhoto": "1.30.0",
+  /** « Reproposer le code PIN et la photo » d'un profil de la famille (`POST
+   *  /api/family/profiles/:userId/prompts/reset`, droits de `canResetPrompts`) : la date est rendue
+   *  dans les profils (`promptsResetAt` : vue d'ensemble, TV, « Qui regarde ? » du bureau), et le
+   *  rappel `familyPin` masqué du compte est réaffiché. Sans elle : aucun bouton, et les appareils
+   *  gardent leur « Plus tard ». */
+  "family.promptsReset": "1.30.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

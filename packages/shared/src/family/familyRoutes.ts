@@ -160,6 +160,17 @@ export const FAMILY_ROUTES = {
     callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
+  /** → `PromptsResetDto` (1.30.0, `family.promptsReset`). « Reproposer le code PIN et la photo » :
+   *  le premier passage de CE profil reviendra à sa prochaine ouverture, sur n'importe quelle TV
+   *  et sur le bureau, si le code ou la photo manquent toujours. Mêmes droits que son code ou sa
+   *  photo (`canResetPrompts`) : soi-même, le propriétaire, un parent pour les invités et les
+   *  membres mineurs, le créateur d'un invité. */
+  resetPrompts: {
+    method: "POST",
+    path: "/api/family/profiles/:userId/prompts/reset",
+    callers: ["personal", "ownerProfile", "memberProfile"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
   /** `?q=` → `FamilyCandidateDto[]`. v2 : TOUS les comptes du serveur, cachés
    *  de l'écran de connexion compris, affinés par la saisie ; jamais un invité,
    *  un compte désactivé ni soi-même. Déjà dans une famille : `in_family`,

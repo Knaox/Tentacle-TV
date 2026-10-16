@@ -119,6 +119,9 @@ export interface PickerProfileDto {
   /** Il gérerait s'il avait un code PIN (`TvProfileDto.manageNeedsPin`).
    *  Absent : faux. */
   manageNeedsPin?: boolean;
+  /** 1.30.0 (`family.promptsReset`) : la photo est à reproposer depuis cette date (ISO,
+   *  `FamilyProfileDto.promptsResetAt`). Null : jamais ; absent : serveur d'avant. */
+  promptsResetAt?: string | null;
 }
 
 /** `GET /api/family/picker/profiles?platform=desktop` — avec le jeton PERSONNEL. */

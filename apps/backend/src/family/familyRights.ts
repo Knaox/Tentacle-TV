@@ -3,6 +3,7 @@ import type {
   FamilyCandidateStatus,
   FamilyCreationAllowed,
   FamilyMemberRights,
+  FamilyProfileKind,
   FamilyRights,
   FamilyRole,
   FamilySwitches,
@@ -65,6 +66,31 @@ export function familyRightsOf(
 export function canManageGuest(rights: FamilyRights, createdBy: string | null, actorUserId: string): boolean {
   if (rights.manageGuests === "all") return true;
   return rights.manageGuests === "own" && createdBy !== null && fold(createdBy) === fold(actorUserId);
+}
+
+/** Le profil visé par « Reproposer le code PIN et la photo ». */
+export interface PromptsResetTarget {
+  userId: string;
+  kind: FamilyProfileKind;
+  /** Un membre nommé parent. */
+  parent?: boolean;
+  /** Un invité : son créateur (le propriétaire pour une ligne d'avant la v2). */
+  createdBy: string | null;
+}
+
+/**
+ * Reproposer à ce profil le code PIN et la photo de son premier passage
+ * (1.30.0, `family.promptsReset`) : mêmes droits que son code ou sa photo.
+ * Chacun pour lui-même (jamais un invité, qui n'a pas de session à lui) ; le
+ * propriétaire pour tout profil ; un parent pour les invités et les membres
+ * mineurs (tout membre qui n'est pas parent) ; un membre pour les invités
+ * qu'il a créés. Jamais le profil du propriétaire par un autre.
+ */
+export function canResetPrompts(rights: FamilyRights, target: PromptsResetTarget, actorUserId: string): boolean {
+  if (fold(target.userId) === fold(actorUserId)) return target.kind !== "guest";
+  if (target.kind === "guest") return canManageGuest(rights, target.createdBy, actorUserId);
+  if (target.kind === "owner") return false;
+  return rights.manageMembers || (rights.manageMinors === true && target.parent !== true);
 }
 
 // ── Candidats ───────────────────────────────────────────────────────────────
