@@ -661,10 +661,31 @@ quelques semaines (« plantent 2 fois sur 3 », 2026-10-02). La fiche prépare l
 bande-annonce (`/prepare`) ; chaque lecture rend compte au serveur (`/report`,
 `docker logs … | grep '\[trailers\]'`). Mesures, banc et fragilités :
 `docs/BANDES-ANNONCES.md`.
-**Aperçu au focus (Apple TV, Android TV)** : la carte de rangée focalisée 450 ms
+**Jamais un doublage par IA** (16/10) : YouTube met toutes ses pistes dans le
+maître, chacune `AUTOSELECT=YES` — chaque lecteur prenait celle de la langue de
+l'appareil, la voix de synthèse (`acont=dubbed-auto`). Le RELAIS tranche
+(`services/trailers/audioTracks.ts`, `hlsAudio.ts`) : UNE piste par groupe, un
+doublage humain dans la langue du serveur, sinon l'originale, `DEFAULT=YES` ;
+jamais un MP4 doublé automatiquement. La version DITE est celle qu'on entend
+(`playedTrailerVersion`, shared ; `audio` de `/resolve` et de l'aperçu) : une
+« VF » doublée par IA est une VO, ni étiquetée ni classée VF. Seul le lecteur
+officiel de YouTube (repli quand l'extraction est refusée) choisit encore seul.
+**Aperçu au focus (Apple TV, Android TV)** : la carte de rangée focalisée
 demande l'aperçu (`trailers.preview`, la machine partagée du bureau) et GRANDIT
-dans sa cellule à la première image, 900 ms au plus tôt — jamais un calque
-par-dessus les voisines. Elle part de la carte TELLE QU'ELLE SE DESSINE au focus
+dans sa cellule à la première image, au DÉLAI choisi au plus tôt — jamais un
+calque par-dessus les voisines. **Le délai** (du début du survol ou du focus à
+la première image) est le MÊME partout — web, bureau, Apple TV, Android TV,
+titres de Vigie compris (pont : `trailerPreview.delayMs`) — et se règle par
+l'UTILISATEUR sur son appareil (0,5 · 0,8 · 1,2 · 2 s, 800 ms par défaut ;
+Réglages › Apparence sur le web, › Lecture sur la TV) : une règle, shared
+`previewDelay.ts` — la demande part AVANT le délai, jamais sous le plancher qui
+écarte le défilement rapide (450 ms de focus tenu sur TV : tv-core
+`tvTrailerPreviewTiming` ; 200 ms et un pointeur arrêté sur le web). Aucune
+capacité : fonction purement client. Pendant l'aperçu, Lecture/Pause le met
+VRAIMENT en pause, et MAINTENUE coupe le son de l'aperçu seul (le réglage « Son
+des aperçus ») — tv-core `cards/previewRemote.ts` ; sur Android le maintien est
+reconstruit par `createAndroidTvReader` ; l'indice sous la carte :
+`CardPreviewHint`. Elle part de la carte TELLE QU'ELLE SE DESSINE au focus
 (agrandie, soulevée : `trailerPreviewTileFrom`), la carte s'effaçant dessous, et
 sa taille suit le réglage « Taille des cartes ». La carte dont l'aperçu DÉMARRE
 passe EN TÊTE de sa rangée, à la place de la première — rien ne bouge avant

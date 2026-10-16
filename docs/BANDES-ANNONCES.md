@@ -480,7 +480,7 @@ yt-dlp qui compte ses appels et un faux googlevideo local ; puis
   son premier fragment VIDÉO reçu ici (le flux coule : `FRAG_LOADED` du
   niveau principal, ou des images en tampon en lecture native) et l'image du
   titre chargée et décodée dans la mini-carte (`reportStillReady`) : la
-  mini-carte se montre au rendez-vous (600 ms) sans attendre la première
+  mini-carte se montre au rendez-vous (le délai choisi, cf. 16/10) sans attendre la première
   image ; la vidéo la rejoint en fondu (`videoReady`), ou la mini-carte
   s'efface si elle ne vient pas (8 s). Un flux trouvé mais bloqué (en-têtes
   puis rien, segments refusés) ne fait rien grandir — recette de R, banc :
@@ -714,6 +714,63 @@ déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
   cartes absentes (hors bibliothèque) ; une rangée en bas d'écran grandit vers
   le bas sans défilement vertical. Rien d'éprouvé sur un appareil depuis ce
   chantier (aucun simulateur dans l'environnement) : à vérifier au banc.
+
+## Doublage par IA, délai choisi, télécommande (16/10)
+
+### Jamais un doublage automatique
+
+Relevé le 16/10 (yt-dlp 2026.08.19, client `visionos`) : une vidéo YouTube à
+plusieurs pistes met dans son maître HLS UNE ligne `#EXT-X-MEDIA:TYPE=AUDIO`
+par langue et par groupe, toutes `DEFAULT=NO,AUTOSELECT=YES`. Chaque piste se
+dit trois fois : `YT-EXT-XTAGS` (protobuf en base64, paires `acont` /
+`lang`), le NAME (« Français (France) - dubbed-auto ») et l'URI
+(`xtags%3Dacont%3Ddubbed-auto:lang%3Dfr-FR`) ; les formats https le disent
+dans `xtags=` de leur URL. `acont` : `original` (identifiant `.4`),
+`dubbed` — un doublage HUMAIN (`.3`) —, `dubbed-auto` — la voix de synthèse
+(`.10`) —, `descriptive`. AVPlayer, ExoPlayer, mpv et hls.js prenaient la
+piste de la langue de l'appareil : la voix de synthèse sur un appareil en
+français, et l'aperçu disait « VF » (TMDB étiquette `fr` ce qu'un
+contributeur a entendu… doublé).
+
+- **Le relais tranche** (`audioTracks.ts`, `hlsAudio.ts`) : une piste par
+  groupe — un doublage humain dans la langue du serveur, sinon l'originale —,
+  réécrite `DEFAULT=YES` ; doublages automatiques et audiodescription
+  retirés, variantes muxées comprises ; jamais un MP4 dont l'URL dit
+  `dubbed-auto`. Une vidéo à une seule piste (le cas courant) ne change pas.
+- **La version dite est celle qu'on entend** (`playedTrailerVersion`,
+  shared) : la piste jouée (`audio` de `ResolvedTrailer`, de `/resolve`, de la
+  décision d'aperçu) corrige la version du catalogue. Une « VF » qu'on entend
+  en anglais devient une VO ; l'aperçu essaie alors les candidates suivantes
+  qui promettent mieux, et ne la garde qu'en réserve (dix minutes). Règles
+  `r6` : les décisions d'avant ne servent plus.
+- **Preuve réelle** (16/10, notre code de bout en bout, serveur en français) :
+  `H_G8DRU5Sn4` (doublages automatiques, 19 langues) → seule « American English
+  - original » servie ; `4ofJpOEXrZs` (doublages humains) → « Français -
+  dubbed » servie. Fixtures : `audioTracks.fixtures.ts` (hôte et IP
+  neutralisés).
+- **Reste** : le lecteur OFFICIEL de YouTube (repli quand l'extraction est
+  refusée, modale locale de Vigie hors hôte) choisit encore sa piste seul.
+
+### Un délai, choisi par l'utilisateur
+
+Du début du survol (ou du focus) à la PREMIÈRE IMAGE : le même partout, réglé
+sur l'appareil, 800 ms par défaut (0,5 · 0,8 · 1,2 · 2 s) — shared
+`previewDelay.ts`. La demande part AVANT le délai (web : 400 ms avant, jamais
+sous 200 ms et un pointeur arrêté ; TV : 350 ms avant, jamais sous 450 ms de
+focus tenu), la révélation au délai ; une source lente paraît dès qu'elle est
+prête. Vigie le reçoit par le pont (`trailerPreview.delayMs`, additif ; 600 ms
+face à un hôte d'avant).
+
+### La télécommande pendant l'aperçu (TV)
+
+Lecture/Pause met vraiment l'aperçu en pause et le reprend (Lecture et Pause
+séparées d'Android aussi) ; MAINTENUE, elle coupe ou remet le son de l'aperçu
+seul — le réglage « Son des aperçus », retenu. Ni la Siri Remote (volume par
+HDMI-CEC/IR) ni Android TV (sourdine et volume gardés par le système) ne
+laissent la sourdine à l'app. Sur Android, react-native-tvos ne détecte pas le
+maintien de Lecture/Pause : `createAndroidTvReader` le reconstruit (première
+répétition ≈ 500 ms). En build DEBUG sur tvOS, ce maintien ouvre le menu de
+développement (`RCTTVRemoteHandler`, `RCT_DEV`).
 
 ## Ce qui reste fragile, et comment le surveiller
 
