@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsFocused, useNavigation, type NavigationProp } from "@react-navigation/native";
 import { FAMILY_KEY, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { openProfileState, ownPinModes, readProfileRecord, recordPairedTheTv, tvSessionMode, type OwnPinMode, type TvProfileRole } from "@tentacle-tv/tv-core";
+import { openProfileState, ownPinModesFor, readProfileRecord, recordPairedTheTv, tvSessionMode, type OwnPinMode, type TvProfileRole } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { SettingsProfile } from "../../redesign/screens/settings/settingsTypes";
 import { switchProfile } from "../../auth/profileSession";
@@ -67,7 +67,8 @@ export function useProfileActions() {
       manageNeedsPin: manage === "needsPin",
       canUnpair: pairedTheTv,
       unpairCaption: pairedTheTv ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", { owner: tvAccountName }),
-      pin: { hasPin, modes: ownPinModes(kind, hasPin) },
+      // Le compte de démonstration : aucune entrée (`ownPinModesFor`).
+      pin: { hasPin, modes: ownPinModesFor({ kind, hasPin, manage }) },
     };
   }, [kind, role, familyOwnerName, tvAccountName, color, manage, pairedTheTv, hasPin, t]);
 

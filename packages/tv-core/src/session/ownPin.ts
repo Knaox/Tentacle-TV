@@ -1,4 +1,5 @@
 import type { FamilyProfileKind } from "@tentacle-tv/shared";
+import type { ProfileManageState } from "./profileRole";
 
 /**
  * SON code PIN, depuis son profil sur l'Apple TV (Réglages › Compte) — créer,
@@ -37,6 +38,21 @@ export interface OwnPinSubmit {
 export function ownPinModes(kind: FamilyProfileKind, hasPin: boolean): OwnPinMode[] {
   if (kind === "guest") return [];
   return hasPin ? ["change", "remove"] : ["create"];
+}
+
+/**
+ * Les gestes offerts au profil ouvert, d'après ce que la TV en sait
+ * (`openProfileState`). Le compte de démonstration n'en a AUCUN : le serveur
+ * refuse qu'il pose un code (`family.review_account`), il ne doit donc pas en
+ * voir l'entrée. Il ne se dit pas à la TV (ni la liste des profils ni la
+ * famille, fermée sans code) : il se reconnaît à ce qu'un propriétaire ou un
+ * membre n'y gère rien, ni avec ni sans code (`manage` « none » — le serveur
+ * ne lui donne aucun droit, `profileManage`), et qu'il n'a jamais de code. La
+ * règle de l'étape « Code PIN conseillé » (`pinSetupEligible`) est la même.
+ */
+export function ownPinModesFor(state: { kind: FamilyProfileKind; hasPin: boolean; manage: ProfileManageState }): OwnPinMode[] {
+  if (state.kind !== "guest" && state.manage === "none" && !state.hasPin) return [];
+  return ownPinModes(state.kind, state.hasPin);
 }
 
 export function ownPinStart(mode: OwnPinMode): OwnPinFlow {
