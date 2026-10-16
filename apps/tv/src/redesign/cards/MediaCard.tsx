@@ -94,9 +94,19 @@ function captionShift(height: number, origin: "top" | "center" = "top"): number 
   return origin === "center" ? growth / 2 : Math.max(0, growth - 4);
 }
 
-/** La légende suit l'image qui grandit — sur le MÊME ressort que le cadre (`progress`). */
-function Caption({ progress: p, shift, children }: { progress: SharedValue<number>; shift: number; children: ReactNode }) {
-  const follow = useAnimatedStyle(() => ({ transform: [{ translateY: shift * p.value }] }));
+/** La légende suit l'image qui grandit — sur le MÊME ressort que le cadre (`progress`). Placée par
+ *  sa grille, la grande carte peut s'étendre à gauche : la légende (et « Maintenir OK ») glisse
+ *  avec elle, de `slideBy` au bout de sa croissance (`slideProgress`). */
+function Caption({ progress: p, shift, slideBy = 0, slideProgress, children }: {
+  progress: SharedValue<number>;
+  shift: number;
+  slideBy?: number;
+  slideProgress?: SharedValue<number>;
+  children: ReactNode;
+}) {
+  const follow = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideProgress ? slideBy * slideProgress.value : 0 }, { translateY: shift * p.value }],
+  }));
   return <Animated.View style={[styles.caption, follow]}>{children}</Animated.View>;
 }
 
@@ -237,7 +247,7 @@ function CardBody({
       }
     >
       {hideCaption ? null : (
-        <Caption progress={progress} shift={captionShift(height, origin)}>
+        <Caption progress={progress} shift={captionShift(height, origin)} slideBy={growth?.place?.to.left} slideProgress={growth?.place ? growth.expansion.progress : undefined}>
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={card.subtitleLines ?? 1}>{card.subtitle}</Text> : null}
           <CardFocusFooter
