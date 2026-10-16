@@ -91,3 +91,12 @@ export function markPinSetupOffered(storage: SessionStorage, userId: string, now
   if (!userId) return;
   storage.setItem(PIN_SETUP_STORAGE_KEY, JSON.stringify({ ...readOffers(storage), [userId]: now }));
 }
+
+/** Oublie que l'étape a été proposée à ce profil sur cet appareil (« Reproposer le code PIN et la
+ *  photo », `promptsReset`) : elle reviendra s'il n'a toujours pas de code. */
+export function forgetPinSetupOffered(storage: SessionStorage, userId: string): void {
+  const offers = readOffers(storage);
+  if (!(userId in offers)) return;
+  delete offers[userId];
+  storage.setItem(PIN_SETUP_STORAGE_KEY, JSON.stringify(offers));
+}

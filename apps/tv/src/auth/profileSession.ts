@@ -22,6 +22,7 @@ import {
   tvSessionMode,
   wipeAccount,
   writeProfileRecord,
+  honorTvPromptsReset,
   type HeldProfileSession,
   type ProfileIntent,
   type ProfileLaunch,
@@ -115,6 +116,9 @@ export function adoptProfileSession(
   setPreferencesToken(session.token);
   storage.setItem("tentacle_token", session.token);
   storage.setItem("tentacle_user", JSON.stringify({ Id: session.user.id, Name: session.user.name }));
+  // « Reproposer le code PIN et la photo » (serveur 1.30.0) : AVANT le profil retenu, que le registre
+  // du démarrage lit aussitôt.
+  honorTvPromptsReset(storage, session.profile);
   writeProfileRecord(storage, profileRecordOf(session.profile, listing, session.remembered ? "sticky" : launch));
   notifySessionChanged();
   void followProfileLanguage(storage, session.token);
