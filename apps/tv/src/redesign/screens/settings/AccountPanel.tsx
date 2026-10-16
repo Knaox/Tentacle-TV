@@ -27,7 +27,7 @@ import { useRemoteHints } from "../../remote/remoteHints";
  * déjumelages complets (`unpairDevice`) — le changement de serveur oublie en
  * plus l'adresse.
  *
- * Sous le nom, « Changer la photo » (« Choisir une photo » sans photo) ouvre
+ * À droite du nom, « Changer la photo » (« Choisir une photo » sans photo) ouvre
  * la galerie des avatars — face à un serveur qui le permet (`account.photo`).
  *
  * Apple TV passée aux profils (Famille, `account.profile`) : le profil ouvert
@@ -81,18 +81,18 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
           <Text style={text.kicker}>{profile ? t("familyTv:settings.kicker") : t("pairing:tvCompteJumele")}</Text>
           <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
           {profile ? <Text style={settingsText.hint}>{profile.role}</Text> : null}
-          {account.photo && props.onChangePhoto ? (
-            <View style={styles.photo}>
-              <PillButton
-                label={t(account.photo === "change" ? "avatars:tv.change" : "avatars:tv.choose")}
-                icon="user"
-                size="md"
-                focusKey={SETTINGS_AVATAR_KEY}
-                onPress={props.onChangePhoto}
-              />
-            </View>
-          ) : null}
         </View>
+        {/* À droite de l'identité, jamais dessous : l'en-tête garde la hauteur du
+            portrait (dessous, il grandissait et le défilement le coupait). */}
+        {account.photo && props.onChangePhoto ? (
+          <PillButton
+            label={t(account.photo === "change" ? "avatars:tv.change" : "avatars:tv.choose")}
+            icon="user"
+            size="md"
+            focusKey={SETTINGS_AVATAR_KEY}
+            onPress={props.onChangePhoto}
+          />
+        ) : null}
       </View>
 
       {/* En tête : changer de profil est le geste le plus fréquent d'une TV de famille. */}
@@ -152,7 +152,6 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
 const styles = StyleSheet.create({
   profile: { flexDirection: "row", alignItems: "center", gap: 40 },
   identity: { flex: 1, gap: 10 },
-  photo: { flexDirection: "row", marginTop: 8 },
   name: { ...text.title, fontSize: 64, lineHeight: 72 },
   infos: {
     marginTop: 44,
