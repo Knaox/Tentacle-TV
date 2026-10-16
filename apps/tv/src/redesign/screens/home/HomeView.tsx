@@ -153,6 +153,9 @@ export const HomeView = memo(function HomeView({
                 style={styles.fill}
                 contentContainerStyle={styles.scroll}
                 showsVerticalScrollIndicator={false}
+                // La page descend AVANT que la rangée d'une grande carte d'aperçu ait grandi
+                // (`previewRevealPort`) : sans cela, iOS bornait le défilement au contenu d'avant.
+                scrollToOverflowEnabled
                 onLayout={onViewportLayout}
                 onScroll={handleScroll}
                 scrollEventThrottle={32}
