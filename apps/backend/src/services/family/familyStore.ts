@@ -41,6 +41,8 @@ export interface MemberRow {
   parentalControls?: string | null;
   /** Membre (1.30.0) : nommé PARENT par le propriétaire. */
   isParent?: boolean;
+  /** Invité (1.30.0) : les bibliothèques que la famille lui permet, en JSON ; null = toutes celles de son créateur. */
+  libraryAccess?: string | null;
   createdAt: Date;
 }
 

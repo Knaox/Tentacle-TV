@@ -144,6 +144,10 @@ export const SERVER_CAPABILITIES = {
    *  avec les droits de son rôle, derrière SON code PIN — un code posé depuis sa session personnelle
    *  (`family/familyCallers.ts`). Sans elle, le bureau ne montre rien de la Famille à un profil. */
   "family.profileManage": "1.30.0",
+  /** Les BIBLIOTHÈQUES qu'une famille permet à un invité ou à un membre mineur
+   *  (`GET|PUT /api/family/profiles/:userId/libraries`), écrites dans sa politique Jellyfin
+   *  (plafond ∩ voulu), rendues au départ. Sans elle, le contrôle parental n'en montre rien. */
+  "family.libraryLimits": "1.30.0",
   // ── Lot « droits 2 » : lecture et Watch Together (docs/DROITS-UTILISATEURS.md § 9.2) ──
   /** L'accès du compte à Watch Together, tiré de `SyncPlayAccess` de sa politique Jellyfin
    *  (`GET /api/watch-together/access` → `full | joinOnly | none`) : `none` ne voit plus rien de

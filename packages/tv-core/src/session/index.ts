@@ -19,3 +19,5 @@ export * from "./revocationDrain";
 export * from "./authVerdict";
 export * from "./passwordPairing";
 export * from "./loginForm";
+export * from "./parentalAge";
+export * from "./parentalLibraries";

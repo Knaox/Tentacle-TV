@@ -10,6 +10,7 @@ import { hashToken } from "../../services/jwt";
 import { dissolveFamily, leaveFamily, removeMember, setMemberRights } from "../../services/family/familyMembers";
 import { setMemberRole } from "../../services/family/familyMemberRoles";
 import { setMemberParental } from "../../services/family/memberParental";
+import { profileLibraries, setProfileLibraries } from "../../services/family/familyLibraries";
 import {
   candidatesQuerySchema,
   createGuestBodySchema,
@@ -139,6 +140,14 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
   // Le contrôle parental d'un membre mineur (1.30.0) : le corps est validé par le service (cinq champs exacts).
   registerFamilyRoute(app, "setMemberParental", async (request, actor) =>
     setMemberParental(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), request.body),
+  );
+
+  registerFamilyRoute(app, "profileLibraries", async (request, actor) =>
+    profileLibraries(actorOf(actor), userIdSchema.parse(param(request.params, "userId"))),
+  );
+
+  registerFamilyRoute(app, "setProfileLibraries", async (request, actor) =>
+    setProfileLibraries(actorOf(actor), userIdSchema.parse(param(request.params, "userId")), request.body),
   );
 
   registerFamilyRoute(app, "leave", async (request, actor) =>
