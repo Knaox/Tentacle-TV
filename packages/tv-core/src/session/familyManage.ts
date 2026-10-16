@@ -14,13 +14,16 @@ import {
   type FamilyRole,
   type OutgoingInvitationDto,
 } from "@tentacle-tv/shared";
+import { manageGesturesOf, type ManageGesture, type ManageSheetCapability } from "./familyManageSheet";
 
 /**
  * « GÉRER LES PROFILS » sur l'Apple TV — ce que la page montre, tiré de la vue
  * d'ensemble de la Famille (`GET /api/family`, session de qui gère, gestion
  * ouverte par SON PIN). Module pur. La famille est PARTAGÉE (v2) : le
  * propriétaire y gère tout ; un membre, ce que ses droits permettent — créer
- * des invités si le propriétaire le lui permet, supprimer ceux qu'il a créés.
+ * des invités si le propriétaire le lui permet, supprimer ceux qu'il a créés ;
+ * un parent (1.30.0), tous les invités et le contrôle parental des mineurs.
+ * Chaque profil ouvre sa FICHE, avec les gestes du rôle (`familyManageSheet.ts`).
  * Les droits et les capacités ne servent qu'à NE PAS proposer un geste voué au
  * refus : le serveur reste le seul juge, et tout refus se dit quand même
  * (`profileRefusalOf`). Un serveur v1 (sans `family`) : le propriétaire seul,
@@ -82,16 +85,18 @@ export interface ManageRowModel {
   createdByYou: boolean;
   /** Un membre, vu par le propriétaire : ses droits, réglables (« Peut créer des invités ») ; null sinon. */
   memberRights: FamilyMemberRights | null;
-  /** Un invité, vu par le propriétaire, sur un serveur qui annonce le droit :
+  /** Un invité, vu par le propriétaire ou un parent, sur un serveur qui annonce le droit :
    *  « Peut demander des films » (il demande alors à son propre nom) ; null sinon. */
   guestRights: FamilyGuestRights | null;
+  /** Un membre nommé parent (1.30.0) : la ligne le dit. */
+  parent: boolean;
+  /** Les gestes de sa FICHE (`familyManageSheet.ts`) ; aucun : la ligne ne s'ouvre pas. */
+  gestures: ManageGesture[];
 }
 
-/** Ce que `/api/config` › `features.family` annonce et que la vue d'ensemble ne porte pas. */
-export interface ManageCapability {
-  /** Le droit d'invité « peut demander » existe sur ce serveur ; absent : non. */
-  guestRequests?: boolean;
-}
+/** Ce que le serveur annonce (`features.family`, capacités) et que la vue d'ensemble ne porte pas,
+ *  et ce que cette TV sait montrer (`ManageSheetCapability`). */
+export type ManageCapability = ManageSheetCapability;
 
 /** Le geste qui RETIRE une ligne, s'il est permis à la session (`actorId`). */
 function actionOf(profile: FamilyProfileDto, rights: FamilyRights, actorId: string): ManageRowAction {
@@ -123,11 +128,13 @@ export function manageRows(
     return [{
       id: actor.userId, kind: "owner", name: actor.name, userId: actor.userId, color: actor.color, imageTag: actor.imageTag ?? null,
       hasPin: overview.account.hasPin, action: null, expiresAt: null, createdByName: null, createdByYou: false, memberRights: null, guestRights: null,
+      parent: false, gestures: [],
     }];
   }
   const { rights } = family;
-  // « Peut demander » : le propriétaire seul, la Famille et les invités allumés, le droit annoncé.
-  const guestRightsOpen = rights.manageMembers && capability.guestRequests === true && overview.switches.families && overview.switches.guests;
+  // « Peut demander » : le propriétaire et un parent (1.30.0), la Famille et les invités allumés, le droit annoncé.
+  const guestRightsOpen = rights.manageGuests === "all" && capability.guestRequests === true && overview.switches.families && overview.switches.guests;
+  const sheet = { rights, actorId: actor.userId, switches: overview.switches, capability };
   const profiles: ManageRowModel[] = family.profiles.map((profile) => ({
     id: profile.userId,
     kind: profile.kind,
@@ -142,6 +149,8 @@ export function manageRows(
     createdByYou: addedByOf(profile, family.ownerId) !== null && sameUserId(profile.createdBy ?? "", actor.userId),
     memberRights: profile.kind === "member" && rights.manageMembers ? (profile.rights ?? { createGuests: false }) : null,
     guestRights: profile.kind === "guest" && guestRightsOpen ? (profile.guestRights ?? { requestTitles: false }) : null,
+    parent: profile.kind === "member" && profile.parent === true,
+    gestures: manageGesturesOf(profile, sheet),
   }));
   const pending = rights.manageMembers ? family.pendingInvitations : [];
   const invitations: ManageRowModel[] = pending.map((invitation) => ({
@@ -158,6 +167,8 @@ export function manageRows(
     createdByYou: false,
     memberRights: null,
     guestRights: null,
+    parent: false,
+    gestures: [],
   }));
   return [...profiles, ...invitations];
 }
@@ -182,9 +193,9 @@ export function withKnownImageTags(rows: readonly ManageRowModel[], known: reado
   });
 }
 
-/** Les rangs des lignes qui portent une action (le focus de la page s'y pose). */
+/** Les rangs des lignes qui prennent le focus : une invitation (« Annuler »), un profil qui a une fiche. */
 export function manageActionRows(rows: readonly ManageRowModel[]): number[] {
-  return rows.flatMap((row, index) => (row.action ? [index] : []));
+  return rows.flatMap((row, index) => (row.kind === "invitation" ? row.action !== null : row.gestures.length > 0) ? [index] : []);
 }
 
 /** Pourquoi un geste n'est pas proposé — la page le dit à sa place. `noGuestRight` :

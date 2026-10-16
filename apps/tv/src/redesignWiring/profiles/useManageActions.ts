@@ -6,8 +6,6 @@ import {
   useDeleteFamilyGuest,
   useRemoveFamilyMember,
   useSendFamilyInvitation,
-  useSetFamilyGuestRights,
-  useSetFamilyMemberRights,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import { FAMILY_PROFILE_COLORS, normalizeGuestName, type FamilyProfileColor } from "@tentacle-tv/shared";
@@ -21,13 +19,13 @@ import { isManagePinRequired } from "./useManageUnlock";
 const SEARCH_SETTLE_MS = 700;
 
 /**
- * Les GESTES de « Gérer les profils » : retirer, supprimer, annuler (à double
- * appui — tv-core `confirmPress`), créer un invité, inviter, permettre à un
- * membre de créer des invités et à un invité de demander des films (le
- * propriétaire, v2). Chaque geste part
- * au serveur, qui juge ; un refus se dit dans la page. La gestion refermée en
- * route (`family.manage_locked`) se rouvre par `onLocked` ; sans code
- * (`family.manage_pin_required`), `onNeedsPin`.
+ * Les PAGES et les gestes de liste de « Gérer les profils » : la liste,
+ * créer un invité, inviter un membre, la FICHE d'un profil (ses gestes :
+ * `useManageSheet`) et le code d'un invité ; annuler une invitation (à double
+ * appui — tv-core `confirmPress`) ; retirer un profil depuis sa fiche. Chaque
+ * geste part au serveur, qui juge ; un refus se dit dans la page. La gestion
+ * refermée en route (`family.manage_locked`) se rouvre par `onLocked` ; sans
+ * code (`family.manage_pin_required`), `onNeedsPin`.
  */
 export function useManageActions({ onLocked, onNeedsPin, onRemoved }: {
   onLocked: () => void;
@@ -37,6 +35,8 @@ export function useManageActions({ onLocked, onNeedsPin, onRemoved }: {
   const { t } = useTranslation(["familyTv", "family"]);
   const { storage } = useTentacleConfig();
   const [view, setView] = useState<ManageView>("list");
+  // La fiche ouverte : l'identifiant de sa ligne.
+  const [sheetId, setSheetId] = useState<string | null>(null);
   const [armedId, setArmedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<ManageNotice | null>(null);
   const [guestName, setGuestName] = useState("");
@@ -48,16 +48,12 @@ export function useManageActions({ onLocked, onNeedsPin, onRemoved }: {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [sent, setSent] = useState<ReadonlySet<string>>(new Set());
-  // Le droit d'un membre en cours d'envoi : la case montre déjà le nouvel état.
-  const [pendingRight, setPendingRight] = useState<{ id: string; on: boolean } | null>(null);
 
   const createGuest = useCreateFamilyGuest();
   const deleteGuest = useDeleteFamilyGuest();
   const removeMember = useRemoveFamilyMember();
   const cancelInvite = useCancelFamilyInvitation();
   const invite = useSendFamilyInvitation();
-  const setRights = useSetFamilyMemberRights();
-  const setGuestRights = useSetFamilyGuestRights();
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), SEARCH_SETTLE_MS);
@@ -72,28 +68,39 @@ export function useManageActions({ onLocked, onNeedsPin, onRemoved }: {
     return refusal;
   }
 
-  async function runRow(row: ManageRowModel): Promise<void> {
+  /** Retire la ligne : annuler une invitation (la liste), supprimer un invité ou retirer un membre (sa fiche). */
+  async function runRow(row: ManageRowModel, action: "delete" | "remove" | "cancel"): Promise<boolean> {
     try {
-      if (row.action === "delete") {
+      if (action === "delete") {
         await deleteGuest.mutateAsync(row.userId);
         // Ses réglages rangés sur l'appareil partent avec lui.
         storage.removeItem(scrubCountdownKey(row.userId));
-      } else if (row.action === "remove") await removeMember.mutateAsync(row.userId);
-      else if (row.action === "cancel") await cancelInvite.mutateAsync(row.id);
-      const key = row.action === "delete" ? "familyTv:manage.deleted" : row.action === "remove" ? "familyTv:manage.removed" : "familyTv:manage.cancelled";
+      } else if (action === "remove") await removeMember.mutateAsync(row.userId);
+      else await cancelInvite.mutateAsync(row.id);
+      const key = action === "delete" ? "familyTv:manage.deleted" : action === "remove" ? "familyTv:manage.removed" : "familyTv:manage.cancelled";
       setNotice({ text: t(key, { name: row.name }), tone: "success" });
+      setArmedId(null);
+      setSheetId(null);
+      setView("list");
       onRemoved(row);
+      return true;
     } catch (error) {
       setNotice({ text: refusalMessage(refused(error), t), tone: "error" });
+      return false;
     }
   }
 
   return {
     view,
+    sheetId,
     armedId,
     notice,
     guest: { name: guestName, color: guestColor, creating, error: guestError },
     invite: { query, search, sent },
+    /** Ce que la fiche dit après un geste (ou un refus). */
+    say: setNotice,
+    refused,
+    runRow,
     openGuest: (suggested: FamilyProfileColor) => {
       setGuestName("");
       setGuestColor(suggested);
@@ -106,35 +113,36 @@ export function useManageActions({ onLocked, onNeedsPin, onRemoved }: {
       setNotice(null);
       setView("invite");
     },
+    /** La fiche d'un profil, ou le code de l'invité de la fiche ouverte. */
+    openSheet: (id: string) => {
+      setArmedId(null);
+      setNotice(null);
+      setSheetId(id);
+      setView("profile");
+    },
+    openGuestPin: () => setView("guestPin"),
+    toSheet: () => setView("profile"),
     toList: () => {
       setArmedId(null);
       setView("list");
     },
+    /** OK sur une ligne : une invitation s'annule à double appui ; un profil ouvre sa fiche. */
     rowPress: (row: ManageRowModel) => {
+      if (row.kind !== "invitation") {
+        if (row.gestures.length > 0) {
+          setArmedId(null);
+          setNotice(null);
+          setSheetId(row.id);
+          setView("profile");
+        }
+        return;
+      }
       const step = confirmPress(armedId, row.id);
       setArmedId(step.armed);
       if (step.armed) setNotice(null);
-      if (step.run) void runRow(row);
+      if (step.run) void runRow(row, "cancel");
     },
     rowBlur: (id: string) => setArmedId((current) => confirmBlur(current, id)),
-    pendingRight,
-    /** La case d'une ligne : « peut créer des invités » (un membre) ou « peut demander des films » (un invité). */
-    toggleRight: async (row: ManageRowModel) => {
-      if ((!row.memberRights && !row.guestRights) || pendingRight) return;
-      const guest = !row.memberRights;
-      const on = guest ? !row.guestRights?.requestTitles : !row.memberRights?.createGuests;
-      setPendingRight({ id: row.id, on });
-      try {
-        if (guest) await setGuestRights.mutateAsync({ userId: row.userId, rights: { requestTitles: on } });
-        else await setRights.mutateAsync({ userId: row.userId, rights: { createGuests: on } });
-        const key = guest ? (on ? "familyTv:manage.requestOn" : "familyTv:manage.requestOff") : on ? "familyTv:manage.rightOn" : "familyTv:manage.rightOff";
-        setNotice({ text: t(key, { name: row.name }), tone: "success" });
-      } catch (error) {
-        setNotice({ text: refusalMessage(refused(error), t), tone: "error" });
-      } finally {
-        setPendingRight(null);
-      }
-    },
     setGuestName: (name: string) => {
       setGuestName(name);
       setGuestError(null);
@@ -173,3 +181,5 @@ export function useManageActions({ onLocked, onNeedsPin, onRemoved }: {
     },
   };
 }
+
+export type ManageActions = ReturnType<typeof useManageActions>;

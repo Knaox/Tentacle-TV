@@ -72,6 +72,8 @@ describe("le Retour des profils", () => {
   });
 
   it("une page de la gestion recule vers la liste, la liste vers son origine", () => {
+    expect(manageBackAction("profile", "settings")).toBe("toList");
+    expect(manageBackAction("guestPin", "profiles")).toBe("toSheet");
     expect(manageBackAction("guest", "settings")).toBe("toList");
     expect(manageBackAction("invite", "profiles")).toBe("toList");
     expect(manageBackAction("list", "settings")).toBe("toSettings");
@@ -135,6 +137,16 @@ describe("le retour du focus sur les pages de profils", () => {
     // La famille est pleine depuis : « Créer un invité » n'est plus là, l'entrée habituelle.
     expect(manageEntryKey({ ...list, canCreateGuest: false, returnFrom: "guest" })).toBe(MANAGE_INVITE_KEY);
     expect(manageEntryKey({ ...list, returnFrom: null })).toBe(MANAGE_CREATE_KEY);
+    // De retour d'une fiche : la ligne qui l'a ouverte, si elle s'ouvre encore.
+    expect(manageEntryKey({ ...list, returnFrom: "profile", returnRow: 1 })).toBe(manageRowKey(1));
+    expect(manageEntryKey({ ...list, returnFrom: "profile", returnRow: 3 })).toBe(MANAGE_CREATE_KEY);
+  });
+
+  it("entre dans une fiche par son premier geste, dans le code d'un invité par le premier chiffre", () => {
+    const list = { view: "profile" as const, canCreateGuest: true, canInvite: true, actionRows: [1] };
+    expect(manageEntryKey({ ...list, sheetEntry: "manage:sheet:photo" })).toBe("manage:sheet:photo");
+    expect(manageEntryKey({ ...list, sheetEntry: null })).toBe(MANAGE_BACK_KEY);
+    expect(manageEntryKey({ ...list, view: "guestPin" })).toBe(pinDigitKey("1"));
   });
 });
 

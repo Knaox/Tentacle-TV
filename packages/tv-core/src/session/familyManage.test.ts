@@ -122,9 +122,23 @@ describe("« Gérer les profils » dans la famille partagée (v2)", () => {
     expect(rows.map((row) => row.guestRights)).toEqual([null, null, { requestTitles: true }, { requestTitles: false }]);
     // Un serveur qui ne l'annonce pas : aucune case.
     expect(manageRows(withRight, actor).every((row) => row.guestRights === null)).toBe(true);
-    // Un membre ne la règle jamais.
+    // Un membre ne la règle jamais ; un parent, si (1.30.0).
     const member: FamilyRights = { manageMembers: false, createGuests: true, manageGuests: "own" };
     expect(manageRows(shared("member", member), { userId: "marc", name: "Marc", color: "teal" }, { guestRequests: true }).every((row) => row.guestRights === null)).toBe(true);
+    const parent: FamilyRights = { ...member, manageGuests: "all", manageMinors: true };
+    const parentRows = manageRows(shared("member", parent), { userId: "marc", name: "Marc", color: "teal" }, { guestRequests: true });
+    expect(parentRows.map((row) => row.guestRights)).toEqual([null, null, { requestTitles: false }, { requestTitles: false }]);
+  });
+
+  it("chaque profil géré ouvre sa fiche ; la session, le propriétaire et une invitation, non", () => {
+    const owner: FamilyRights = { manageMembers: true, createGuests: true, manageGuests: "all", manageRoles: true, manageMinors: true };
+    const rows = manageRows(shared("owner", owner, 1), { userId: "anne", name: "Anne", color: "violet" });
+    expect(rows.map((row) => row.gestures.length > 0)).toEqual([false, true, true, true, false]);
+    expect(manageActionRows(rows)).toEqual([1, 2, 3, 4]);
+    // Un parent : la ligne le dit.
+    const withParent = shared("owner", owner);
+    withParent.family = { ...withParent.family!, profiles: [ANNE, { ...MARC, parent: true }, ZOE, LEA] };
+    expect(manageRows(withParent, { userId: "anne", name: "Anne", color: "violet" })[1].parent).toBe(true);
   });
 
   it("un membre ne gère que SES invités : ni retrait, ni droits, ni invitations", () => {

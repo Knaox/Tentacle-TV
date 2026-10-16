@@ -14,14 +14,25 @@ import { InviteMember } from "./InviteMember";
 import { ManageList } from "./ManageList";
 import type { ManageProfilesViewProps } from "./manageTypes";
 import { PinPad } from "./PinPad";
+import { ProfileSheet } from "./ProfileSheet";
 import { PROFILES_PALETTE } from "./profileColors";
 
-export type { InviteCandidateView, ManageNotice, ManageProfilesViewProps, ManageRowView, ManageViewModel } from "./manageTypes";
+export type {
+  InviteCandidateView,
+  ManageNotice,
+  ManageProfilesViewProps,
+  ManageRowView,
+  ManageSheetView,
+  ManageViewModel,
+  SheetRowView,
+} from "./manageTypes";
 
 /**
- * « Gérer les profils » (`ManageProfiles`, Apple TV, profil du propriétaire) :
- * la liste de la famille et ses deux pages — créer un invité, inviter un
- * membre —, ou le pavé du PIN du propriétaire quand la gestion est à rouvrir.
+ * « Gérer les profils » (`ManageProfiles`, Apple TV et Android TV, profil de
+ * qui gère — le propriétaire, un parent, un membre) : la liste de la famille et
+ * ses pages — créer un invité, inviter un membre, la FICHE d'un profil et le
+ * code PIN d'un invité —, ou le pavé de SON code quand la gestion est à
+ * rouvrir.
  * La croix Retour, en haut à gauche comme partout, recule d'une page ; depuis
  * la liste, elle sort (`manageBackAction`, tv-core). Sans code PIN, aucune
  * gestion depuis la TV (décision du 16/10) : la page invite à en poser un.
@@ -57,9 +68,16 @@ export const ManageProfilesView = memo(function ManageProfilesView(props: Manage
             primary={{ label: t("familyTv:ownPin.create"), icon: "lock", onPress: props.onCreatePin }}
           />
         ) : null}
-        {model.kind === "pin" ? (
+        {model.kind === "pin" || model.kind === "guestPin" ? (
           <View style={styles.center}>
             <PinPad pad={model.pad} onDigit={props.onDigit} onErase={props.onErase} />
+          </View>
+        ) : null}
+        {model.kind === "profile" ? (
+          <View style={styles.page}>
+            <View style={styles.body}>
+              <ProfileSheet sheet={model.sheet} onRow={props.onSheetRow} onRowBlur={props.onSheetRowBlur} />
+            </View>
           </View>
         ) : null}
         {model.kind === "list" || model.kind === "guest" || model.kind === "invite" ? (
@@ -79,7 +97,6 @@ export const ManageProfilesView = memo(function ManageProfilesView(props: Manage
                   onInvite={props.onInvite}
                   onRowAction={props.onRowAction}
                   onRowBlur={props.onRowBlur}
-                  onRowRight={props.onRowRight}
                 />
               ) : null}
               {model.kind === "guest" ? (
