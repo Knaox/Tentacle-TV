@@ -11,7 +11,7 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). On modifie ICI, on recopie
  * là-bas :
  *
- *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,TvContract,PickerContract,Protocol,Routes,Callers,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,Libraries,TvContract,PickerContract,Protocol,Routes,Callers,Rules,Rights}.ts apps/backend/src/family/
  *
  * UNE famille par compte, PARTAGÉE par tous ses membres (v2). Trois rôles :
  * - le PROPRIÉTAIRE l'a créée : il invite, annule une invitation, retire un
@@ -39,6 +39,7 @@ export * from "./familyLimits";
 export * from "./familyParental";
 export * from "./familyRoles";
 export * from "./familyBodies";
+export * from "./familyLibraries";
 import type { GuestParentalCeiling, GuestParentalControls } from "./familyParental";
 import type { FamilyCreationAllowed } from "./familyRoles";
 

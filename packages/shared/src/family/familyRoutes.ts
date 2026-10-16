@@ -142,6 +142,24 @@ export const FAMILY_ROUTES = {
     callers: ["personal", "ownerProfile", "memberProfile"],
     rateLimit: { max: 30, windowMs: MINUTE },
   },
+  /** → `FamilyLibrariesDto` (1.30.0, `family.libraryLimits`). Les bibliothèques qu'un invité ou un
+   *  membre mineur verrait sans la famille, et celles qu'elle lui permet — à qui règle son contrôle
+   *  parental seulement (`family.not_owner`, `family.member_parental_refused` sinon). Lu à la demande. */
+  profileLibraries: {
+    method: "GET",
+    path: "/api/family/profiles/:userId/libraries",
+    callers: ["personal", "ownerProfile", "memberProfile"],
+    rateLimit: { max: 60, windowMs: MINUTE },
+  },
+  /** `SetFamilyLibrariesBody` → `FamilyLibrariesDto` (1.30.0, `family.libraryLimits`). La liste ENTIÈRE
+   *  des bibliothèques permises (null : toutes celles du plafond), écrite dans SA politique Jellyfin
+   *  (plafond ∩ voulu) ; mêmes droits que son contrôle parental. Un membre qui part retrouve les siennes. */
+  setProfileLibraries: {
+    method: "PUT",
+    path: "/api/family/profiles/:userId/libraries",
+    callers: ["personal", "ownerProfile", "memberProfile"],
+    rateLimit: { max: 30, windowMs: MINUTE },
+  },
   /** `?q=` → `FamilyCandidateDto[]`. v2 : TOUS les comptes du serveur, cachés
    *  de l'écran de connexion compris, affinés par la saisie ; jamais un invité,
    *  un compte désactivé ni soi-même. Déjà dans une famille : `in_family`,
