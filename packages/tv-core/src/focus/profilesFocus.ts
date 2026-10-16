@@ -41,6 +41,8 @@ export interface ProfilesEntryInput {
   /** On revient de « Gérer les profils » : le focus y retourne, s'il existe encore. */
   returnTo?: "manage" | null;
   canManage?: boolean;
+  /** Le pavé a été remis à zéro après une confirmation différente (`OwnPinFlow.restarts`). */
+  pinRestarts?: number;
 }
 
 /**
@@ -62,6 +64,17 @@ export function profilesEntryKey(input: ProfilesEntryInput): string | null {
     case "pin":
       return input.pinLocked ? PROFILES_BACK_KEY : pinDigitKey(PIN_ENTRY_DIGIT);
   }
+}
+
+/**
+ * Le TOUR de l'entrée : l'applicateur réclame l'entrée à chaque changement de
+ * tour, même quand la clé ne change pas. Sur le pavé, une saisie reprise de
+ * zéro (« Les deux codes diffèrent ») est un nouveau tour : le focus revient
+ * au premier chiffre au lieu de rester sur la dernière touche tapée.
+ */
+export function profilesEntryRound(input: ProfilesEntryInput): string {
+  const key = profilesEntryKey(input) ?? "";
+  return input.phase === "pin" ? `${key}#${input.pinRestarts ?? 0}` : key;
 }
 
 // ── « Gérer les profils » ───────────────────────────────────────────────────
