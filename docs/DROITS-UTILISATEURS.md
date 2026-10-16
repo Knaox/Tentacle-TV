@@ -1237,8 +1237,13 @@ une règle de l'administrateur prime toujours.
   Jellyfin 10.11 sont des âges) ; deux paliers sur un même score n'en font qu'un, le plus jeune.
   Seule la note change (`withParentalAge`) : types non classés, étiquettes et plages réglés
   ailleurs repartent intacts. Une note réglée ailleurs hors palier se montre « Réglé ailleurs »,
-  à sa place dans l'échelle, jamais remplacée en silence. Le plafond plus strict se dit
-  (cadenas), sans interdire le choix.
+  à sa place dans l'échelle, avec ses noms (`parentalRatingNames` : sans sous-note, tous ceux
+  du score), jamais remplacée en silence ; une sous-note qui couvre tout son score vaut le
+  palier. Le plafond plus strict se dit (cadenas), sans interdire le choix ; « Sans limite »
+  sous un plafond dit « Aucune limite fixée par la famille ».
+- **Vue** : deux listes alignées côte à côte, l'âge (choix unique, rond plein) et les
+  bibliothèques (cases), sur la même ligne (`ParentalRow`) — jamais de pastille orpheline
+  (relevé du Testeur A). HAUT / BAS dans une liste, GAUCHE / DROITE de l'une à l'autre.
 - **Bibliothèques** (tv-core `session/parentalLibraries.ts`) : une case par bibliothèque
   proposée ; tout coché = `null` ; la dernière cochée ne se décoche pas.
 - Chaque geste part aussitôt, une écriture après l'autre (`useSaveLane`), la vue suit le geste puis
