@@ -49,6 +49,13 @@ describe("parseTrailerResolve", () => {
     expect(stream.subtitles).toEqual([PLAYER.subtitles[0]]);
   });
 
+  it("lit la piste audio jouée (doublage par IA retiré par le serveur), et ignore une piste illisible", () => {
+    expect(parseTrailerResolve({ ...PLAYER, audio: { content: "original", lang: "en-US" } }, SERVER)!.audio).toEqual({ content: "original", lang: "en-US" });
+    expect(parseTrailerResolve({ ...PLAYER, audio: { content: "dubbed-auto", lang: "fr" } }, SERVER)!.audio).toBeUndefined();
+    expect(parseTrailerResolve({ ...PLAYER, audio: { content: "original", lang: "<script>" } }, SERVER)!.audio).toBeUndefined();
+    expect(parseTrailerResolve(PLAYER, SERVER)).not.toHaveProperty("audio");
+  });
+
   it("sans flux lisible : null", () => {
     expect(parseTrailerResolve(null, SERVER)).toBeNull();
     expect(parseTrailerResolve({ mimeType: "video/mp4" }, SERVER)).toBeNull();

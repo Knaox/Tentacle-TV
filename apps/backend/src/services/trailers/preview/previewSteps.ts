@@ -9,8 +9,9 @@
 /* ------------------------------------------------------------------ */
 
 import type { TrailerCatalogRequest, TrailerVersion } from "../../../trailers/trailerCatalog";
+import { playedTrailerVersion } from "../../../trailers/trailerCatalogRank";
 import { resolveTrailer, type ResolvedTrailer } from "../trailerRelay";
-import { holdsSource, prepareTrailer, warmStart } from "../trailerPrepare";
+import { holdsSource, peekTrailer, prepareTrailer, warmStart } from "../trailerPrepare";
 import type { ExtractionOptions } from "../ytExtract";
 import { previewRefusal } from "../youtubeGuard";
 import { remember, type Refusal } from "./previewDecisionMemory";
@@ -27,8 +28,12 @@ export type PreviewOutcome =
   /** Trop de demandes (le compte), trop de décisions en cours (le serveur), ou pas encore décidé : rien n'est retenu. */
   | { kind: "limited"; retryAfterS: number };
 
-/** La version des RÈGLES de choix, dans la clé : une décision d'avant (rang du catalogue d'avant, vidéo d'un autre titre) ne sert plus. */
-export const RULES_VERSION = "r5";
+/**
+ * La version des RÈGLES de choix, dans la clé : une décision d'avant (rang du
+ * catalogue d'avant, vidéo d'un autre titre, doublage par IA compté comme une
+ * VF — r5) ne sert plus.
+ */
+export const RULES_VERSION = "r6";
 
 /**
  * La clé de la décision : le titre, la langue, les règles, et le client —
@@ -80,7 +85,8 @@ export async function playable(ref: string, stages: Stages, options: PlayableOpt
   mark = Date.now();
   const readable = await prepareTrailer(ref, resolveOptions);
   stages.verify += Date.now() - mark;
-  if (readable) return resolved;
+  // Relu : le maître lu dit la piste audio retenue (`hlsAudio.ts`).
+  if (readable) return peekTrailer(ref) ?? resolved;
   // Une source GARDÉE (d'avant un redémarrage, ou révoquée) qui ne se lit plus : une extraction neuve, une seule —
   // jamais pour qui ne veut que la vidéo tenue.
   return held && !options.heldOnly ? playable(ref, stages, options, true) : null;
@@ -96,6 +102,15 @@ export function guardStop(): PreviewOutcome | null {
   if (!refusal) return null;
   if (refusal.kind === "blocked") return { kind: "refused", error: "unavailable" };
   return { kind: "limited", retryAfterS: Math.max(1, Math.ceil(refusal.retryAfterMs / 1000)) };
+}
+
+/**
+ * La version de ce qu'on entendra : celle du catalogue, corrigée par la piste
+ * que le relais joue (`playedTrailerVersion`) — un doublage par IA n'est
+ * jamais une VF, et le relais ne le joue jamais.
+ */
+export function heardVersion(claimed: TrailerVersion, resolved: ResolvedTrailer, lang: string | undefined): TrailerVersion {
+  return playedTrailerVersion(claimed, resolved.audio, lang);
 }
 
 /** La décision retenue jusqu'à l'échéance des URL (`maxTtlMs` au plus), et sa ligne au journal. */

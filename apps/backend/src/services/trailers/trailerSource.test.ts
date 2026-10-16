@@ -127,3 +127,28 @@ describe("youTubeBlock", () => {
     ]) expect(youTubeBlock(stderr)).toBeNull();
   });
 });
+
+describe("pickTrailerSource › les doublages automatiques", () => {
+  const AUTO = "&xtags=acont%3Ddubbed-auto%3Alang%3Dfr-FR";
+  const ORIGINAL = "&xtags=acont%3Doriginal%3Alang%3Den-US";
+
+  it("rend l'inventaire des pistes, que le relais applique au maître", () => {
+    const formats: YtFormat[] = [
+      ...VISIONOS.filter((f) => f.format_id !== "140"),
+      { format_id: "139-4", protocol: "https", ext: "m4a", vcodec: "none", acodec: "mp4a.40.5", url: `https://rr.test/videoplayback?itag=139${AUTO}` },
+      { format_id: "139-20", protocol: "https", ext: "m4a", vcodec: "none", acodec: "mp4a.40.5", url: `https://rr.test/videoplayback?itag=139${ORIGINAL}` },
+    ];
+    expect(pickTrailerSource(formats, NOW)).toMatchObject({ kind: "hls", audio: { original: "en-US", dubbed: [], autoDubbed: ["fr-FR"] } });
+  });
+
+  it("ne dit rien des pistes d'une vidéo qui n'en a qu'une", () => {
+    expect(pickTrailerSource(VISIONOS, NOW)).not.toHaveProperty("audio");
+  });
+
+  it("ne choisit jamais un MP4 dont l'audio est un doublage automatique", () => {
+    const dubbed: YtFormat = { ...KIDS_STABLE[0], url: `${KIDS_STABLE[0].url}${AUTO}` };
+    expect(pickTrailerSource([dubbed, KIDS_STABLE[1]], NOW)).toBeNull();
+    const original: YtFormat = { ...KIDS_STABLE[0], url: `${KIDS_STABLE[0].url}${ORIGINAL}` };
+    expect(pickTrailerSource([dubbed, original], NOW)).toMatchObject({ kind: "progressive", url: original.url });
+  });
+});

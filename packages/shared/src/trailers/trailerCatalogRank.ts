@@ -6,7 +6,9 @@
  *    l'épisode, puis les saisons d'avant (la plus proche d'abord), la série,
  *    et seulement ensuite les saisons suivantes — elles divulgâchent ;
  * 2. la VERSION d'une vidéo par rapport à la langue du serveur
- *    (`trailerVersionOf`) : dans cette langue, sous-titrée dans elle, ou non ;
+ *    (`trailerVersionOf`) : dans cette langue, sous-titrée dans elle, ou non
+ *    — puis, la vidéo extraite, celle de la piste qu'on entend
+ *    (`playedTrailerVersion`) : un doublage par IA n'est jamais une VF ;
  * 3. le RANG (`rankCatalogEntries`) : les saisons SUIVANTES restent en
  *    dernier (elles divulgâchent) ; avant elles, d'abord tout ce qui est DANS
  *    la langue du serveur (la locale, sa langue, sous-titrée dans elle) —
@@ -27,7 +29,7 @@
 import { hasSubtitleMark, trailerLangFit } from "./trailerList";
 import {
   TRAILER_CATALOG_MAX_ENTRIES, trailerPlaybackKey, trailerScopeKey,
-  type TrailerEntry, type TrailerScope, type TrailerVersion,
+  type TrailerAudio, type TrailerEntry, type TrailerScope, type TrailerVersion,
 } from "./trailerCatalog";
 
 /** Le titre dont on ordonne les portées : un film, une série, ou une saison (celle d'un épisode, ou la saison même). */
@@ -68,6 +70,24 @@ export function trailerVersionOf(video: { name?: string; lang?: string | null },
   if (fit === "dubbed") return "localized";
   if (fit === "subtitled") return "subtitled";
   return video.lang || hasSubtitleMark(video.name) ? "original" : "unknown";
+}
+
+/**
+ * La version de ce qu'on ENTEND. Le catalogue dit ce que la vidéo prétend
+ * (TMDB étiquette `fr` une bande-annonce anglaise que YouTube double par IA
+ * pour qui la regarde en France) ; la piste que le relais joue dit la vérité :
+ * dans la langue du serveur → `localized` ; sinon `subtitled` reste (ses
+ * sous-titres sont dans l'image), tout le reste est `original`. Sans piste
+ * connue (une seule piste, Dailymotion) ou sans langue de serveur : la
+ * version du catalogue.
+ */
+export function playedTrailerVersion(
+  claimed: TrailerVersion, audio: TrailerAudio | null | undefined, serverLang: string | null | undefined,
+): TrailerVersion {
+  const server = (serverLang ?? "").split("-")[0].toLowerCase();
+  if (!audio || !server) return claimed;
+  if (audio.lang.split("-")[0].toLowerCase() === server) return "localized";
+  return claimed === "subtitled" ? "subtitled" : "original";
 }
 
 /** La règle 3 : le palier d'une entrée dans sa portée — le plus petit d'abord. */

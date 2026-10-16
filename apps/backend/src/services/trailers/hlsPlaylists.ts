@@ -10,6 +10,9 @@
 /*  variante de départ en tête ; chaque URI renvoie vers le relais.    */
 /* ------------------------------------------------------------------ */
 
+import { audioTagOf, type AudioChoice, type AudioTag } from "./audioTracks";
+import { selectMasterAudio, type MasterAudioContext } from "./hlsAudio";
+
 /** Une variante du maître : sa ligne `#EXT-X-STREAM-INF`, son URI amont. */
 export interface MasterVariant {
   key: string;
@@ -20,6 +23,8 @@ export interface MasterVariant {
   /** Le codec vidéo déclaré (`avc1.640028`…), vide si le maître n'en dit rien. */
   video: string;
   audioGroup?: string;
+  /** La piste d'une variante MUXÉE, quand le maître la marque (`YT-EXT-XTAGS`, `YT-EXT-AUDIO-CONTENT-ID`, l'URI). */
+  audioTag?: AudioTag;
 }
 
 /** Une piste audio séparée (`#EXT-X-MEDIA:TYPE=AUDIO`). */
@@ -28,6 +33,8 @@ export interface MasterRendition {
   line: string;
   upstream: string;
   group: string;
+  /** Originale, doublage humain ou automatique (`audioTracks.ts`). */
+  tag: AudioTag;
 }
 
 export interface RelayMaster {
@@ -35,6 +42,8 @@ export interface RelayMaster {
   audio: MasterRendition[];
   /** Les lignes d'en-tête gardées telles quelles (`#EXT-X-INDEPENDENT-SEGMENTS`…). */
   header: string[];
+  /** La piste audio retenue, quand le maître en marque plusieurs ; `null` : rien à choisir. */
+  audioChoice: AudioChoice | null;
 }
 
 /**
@@ -68,8 +77,20 @@ export function itagOf(url: string): string | undefined {
   return /[/?&]itag[/=](\d+)/.exec(url)?.[1];
 }
 
-/** Lit un maître et n'en garde que ce qu'un Apple TV lit sans faute. `null` : aucune variante H.264. */
-export function parseMaster(text: string, base: string): RelayMaster | null {
+/** La piste d'une variante muxée, si le maître en dit quelque chose. */
+function variantAudioTag(line: string, uri: string): AudioTag | undefined {
+  const contentId = attribute(line, "YT-EXT-AUDIO-CONTENT-ID");
+  const xtags = attribute(line, "YT-EXT-XTAGS");
+  const tag = audioTagOf({ xtags, uri, language: contentId?.split(".")[0] });
+  return tag.content !== "unknown" || tag.lang ? tag : undefined;
+}
+
+/**
+ * Lit un maître et n'en garde que ce qu'un Apple TV lit sans faute, et UNE
+ * piste audio : jamais un doublage automatique (`hlsAudio.ts`). `null` :
+ * aucune variante H.264 jouable.
+ */
+export function parseMaster(text: string, base: string, audioContext: MasterAudioContext = {}): RelayMaster | null {
   const lines = text.split(/\r?\n/).map((l) => l.trim());
   if (lines[0] !== "#EXTM3U" || !lines.some((l) => l.startsWith("#EXT-X-STREAM-INF:"))) return null;
   const header = lines.filter((l) => HEADER_TAGS.some((tag) => l.startsWith(tag)));
@@ -90,7 +111,8 @@ export function parseMaster(text: string, base: string): RelayMaster | null {
       const group = attribute(line, "GROUP-ID");
       if (!uri || !group) continue;
       const upstream = new URL(uri, base).href;
-      audio.push({ key: keyFor(upstream, `a${audio.length}`), line, upstream, group });
+      const tag = audioTagOf({ xtags: attribute(line, "YT-EXT-XTAGS"), uri, name: attribute(line, "NAME"), language: attribute(line, "LANGUAGE") });
+      audio.push({ key: keyFor(upstream, `a${audio.length}`), line, upstream, group, tag });
     } else if (line.startsWith("#EXT-X-STREAM-INF:")) {
       const uri = lines[i + 1];
       if (!uri || uri.startsWith("#")) continue;
@@ -108,12 +130,14 @@ export function parseMaster(text: string, base: string): RelayMaster | null {
         height,
         video,
         audioGroup: attribute(line, "AUDIO"),
+        audioTag: variantAudioTag(line, uri),
       });
     }
   }
-  if (!variants.length) return null;
-  const groups = new Set(variants.map((v) => v.audioGroup).filter(Boolean));
-  return { variants, audio: audio.filter((a) => groups.has(a.group)), header };
+  const selected = selectMasterAudio(audio, variants, audioContext);
+  if (!selected.variants.length) return null;
+  const groups = new Set(selected.variants.map((v) => v.audioGroup).filter(Boolean));
+  return { variants: selected.variants, audio: selected.audio.filter((a) => groups.has(a.group)), header, audioChoice: selected.choice };
 }
 
 /** La variante de départ : la plus haute jusqu'à `START_HEIGHT`, sinon la plus basse. */

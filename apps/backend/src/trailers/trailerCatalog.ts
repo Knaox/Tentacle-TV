@@ -54,6 +54,16 @@ export type TrailerPlayback =
  */
 export type TrailerVersion = "localized" | "subtitled" | "original" | "unknown";
 
+/**
+ * La piste audio que le relais JOUE, quand la vidéo en a plusieurs :
+ * l'originale ou un doublage humain — jamais un doublage automatique par IA,
+ * que le serveur retire. `lang` : la langue de YouTube (`fr-FR`, `en`).
+ */
+export interface TrailerAudio {
+  content: "original" | "dubbed";
+  lang: string;
+}
+
 export type TrailerSource = "local" | "allocine" | "tmdb" | "jellyfin" | "seerr";
 
 export interface TrailerEntry {

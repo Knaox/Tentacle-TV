@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseTrailerCatalogQuery, readTrailerCatalog, trailerCatalogPath, type TrailerEntry, type TrailerScope,
 } from "./trailerCatalog";
-import { catalogScopes, rankCatalogEntries, trailerVersionOf } from "./trailerCatalogRank";
+import { catalogScopes, playedTrailerVersion, rankCatalogEntries, trailerVersionOf } from "./trailerCatalogRank";
 
 const ITEM = "0123456789abcdef0123456789abcdef";
 const season = (n: number): TrailerScope => ({ kind: "season", season: n });
@@ -57,6 +57,25 @@ describe("catalogue › la version, d'après la langue du serveur", () => {
   it("sans marque ni code : inconnue ; un mot qui contient « vo » n'est pas une VO", () => {
     expect(trailerVersionOf({ name: "Trailer" }, "fr")).toBe("unknown");
     expect(trailerVersionOf({ name: "Voyage au bout de l'enfer" }, "fr")).toBe("unknown");
+  });
+});
+
+describe("catalogue › la version de ce qu'on entend", () => {
+  const english = { content: "original" as const, lang: "en-US" };
+  it("une « VF » dont on entend l'originale anglaise (doublage par IA retiré) est une VO", () => {
+    expect(playedTrailerVersion("localized", english, "fr")).toBe("original");
+    expect(playedTrailerVersion("unknown", english, "fr-FR")).toBe("original");
+  });
+  it("une VOSTFR garde ses sous-titres incrustés", () => {
+    expect(playedTrailerVersion("subtitled", english, "fr")).toBe("subtitled");
+  });
+  it("une piste dans la langue du serveur est une VF, doublage humain compris", () => {
+    expect(playedTrailerVersion("original", { content: "dubbed", lang: "fr" }, "fr-FR")).toBe("localized");
+    expect(playedTrailerVersion("unknown", english, "en")).toBe("localized");
+  });
+  it("sans piste connue, ou sans langue de serveur : la version du catalogue", () => {
+    expect(playedTrailerVersion("localized", undefined, "fr")).toBe("localized");
+    expect(playedTrailerVersion("localized", english, null)).toBe("localized");
   });
 });
 

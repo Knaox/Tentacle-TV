@@ -24,7 +24,8 @@ import { allocineActiveFor } from "../trailerSettings";
 import { matchAllocineVideos, type AllocineMatchTitle } from "../allocine/allocineMatch";
 import { searchAllocineVideos } from "../allocine/allocineSearch";
 import type { TrailerCatalogRequest, TrailerCatalogResponse, TrailerEntry, TrailerScope } from "../../../trailers/trailerCatalog";
-import { catalogScopes, rankCatalogEntries, type CatalogTarget } from "../../../trailers/trailerCatalogRank";
+import { catalogScopes, playedTrailerVersion, rankCatalogEntries, type CatalogTarget } from "../../../trailers/trailerCatalogRank";
+import { heldAudio } from "../trailerRelay";
 import { previewTmdbIdOf } from "../../../trailers/trailerPreview";
 import { allocineEntries, jellyfinRemoteEntries, localEntries, youtubeEntries } from "./catalogEntries";
 import { resolveCatalogTitle, type CatalogLibraryTitle } from "./catalogTitle";
@@ -97,6 +98,17 @@ const seasonScopes = (scopes: readonly TrailerScope[]) =>
  */
 export async function buildCatalog(request: TrailerCatalogRequest, userId: string, budgetMs = CATALOG_BUDGET_MS): Promise<TrailerCatalogResponse> {
   return (await buildCatalogDetailed(request, userId, budgetMs)).response;
+}
+
+/**
+ * La version d'une vidéo YouTube que le relais tient : celle de la piste qu'il
+ * joue (`playedTrailerVersion`) — un doublage par IA n'est jamais une VF, ni
+ * dans l'étiquette ni dans le rang. Les autres : telles quelles.
+ */
+function heardEntry(entry: TrailerEntry, language: string | null): TrailerEntry {
+  if (entry.playback.kind !== "youtube") return entry;
+  const version = playedTrailerVersion(entry.version, heldAudio(entry.playback.ytId), language);
+  return version === entry.version ? entry : { ...entry, version };
 }
 
 /** `buildCatalog`, avec ce que la préparation des aperçus doit savoir (`answered`). */
@@ -183,7 +195,8 @@ export async function buildCatalogDetailed(
   ];
   const settled = await Promise.all(sources.map((source) => settleBy(source, deadline)));
   const seasonsSettled = await settleBy(knownSeasons, deadline);
-  const entries = settled.flatMap((s) => (s.done && s.value ? s.value : []));
+  // Une vidéo que le relais a déjà extraite dit ce qu'on y entend : sa version promise est corrigée.
+  const entries = settled.flatMap((s) => (s.done && s.value ? s.value : [])).map((entry) => heardEntry(entry, language));
   const seasons = seasonsSettled.done && seasonsSettled.value ? seasonsSettled.value : library?.seasons.map((s) => s.season) ?? [];
   const complete = settled.every((s) => s.done) && seasonsSettled.done;
   return {

@@ -21,10 +21,10 @@ import { resolveCatalogTitle } from "../catalog/catalogTitle";
 import type { ResolvedTrailer } from "../trailerRelay";
 import { holdsSource, peekTrailer } from "../trailerPrepare";
 import { parseVideoRef } from "../videoRef";
-import { attemptsOf, previewCandidates } from "./previewCandidates";
+import { attemptsOf, langRankOf, previewCandidates } from "./previewCandidates";
 import { decisionInFlight } from "./previewDecision";
 import { knownDecision, rememberRefusal } from "./previewDecisionMemory";
-import { found, guardStop, newStages, playable, type PreviewTarget } from "./previewSteps";
+import { found, guardStop, heardVersion, newStages, playable, type PreviewTarget } from "./previewSteps";
 import { TtlLru } from "./ttlLru";
 
 /** Un titre à préparer : sa clé de décision (`decisionKey`), sa cible, la langue, le compte qui le voit. */
@@ -103,11 +103,14 @@ export async function warmDecision(job: WarmJob): Promise<WarmOutcome> {
   }
   // YouTube bride l'adresse : le survol n'essaierait que les vidéos Dailymotion.
   if (guardStop()) candidates = candidates.filter((candidate) => !candidate.youtube);
-  const [first] = attemptsOf(candidates);
+  const [first, ...others] = attemptsOf(candidates);
   if (!first || (first.youtube && !holdsSource(first.ref))) return "deferred";
   const resolved = await playable(first.ref, stages, { priority: "preview", background: true, heldOnly: first.youtube, startWarm: false });
   if (!resolved) return "unanswered";
-  found(job.key, first.ref, resolved, started, "préparé en fond", stages, { version: first.version });
+  // La première ne parle pas la langue promise (doublage par IA retiré) : le survol essaiera les suivantes.
+  const version = heardVersion(first.version, resolved, job.lang);
+  if (langRankOf(version) > first.langRank && others.length > 0) return "deferred";
+  found(job.key, first.ref, resolved, started, "préparé en fond", stages, { version });
   return "decided";
 }
 

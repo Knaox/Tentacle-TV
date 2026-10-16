@@ -88,7 +88,9 @@ export async function trailerRoutes(app: FastifyInstance) {
    *        `subtitles` [{ lang, label, auto, path }] : les pistes de YouTube,
    *        relayées en WebVTT, la langue `lang` (l'interface) puis l'anglais
    *        en tête — sans `lang`, la langue du serveur (métadonnées de
-   *        Jellyfin), rendue dans `language`. Additifs (capacité
+   *        Jellyfin), rendue dans `language` ; `audio` { content, lang } :
+   *        la piste JOUÉE quand la vidéo en a plusieurs (jamais un doublage
+   *        par IA, `services/trailers/audioTracks.ts`). Additifs (capacité
    *        `trailers.player`) : un client d'avant ne lit que `url` / `path`.
    * → 400 { error: "invalid ytId" }
    * → 409 { fallback: "embed", reason }  YouTube ne peut pas être extrait
@@ -123,6 +125,7 @@ export async function trailerRoutes(app: FastifyInstance) {
         lang: s.lang, label: s.label, auto: s.auto, path: `/api/trailers/subs/${refPathSegment(ref.key)}/${s.key}.vtt?t=${token}`,
       })),
       ...(language ? { language } : {}),
+      ...(resolved.audio ? { audio: resolved.audio } : {}),
     };
   });
 

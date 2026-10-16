@@ -28,12 +28,13 @@ import { buildCatalog } from "../catalog/catalogBuild";
 import { holdsSource, peekTrailer } from "../trailerPrepare";
 import { prewarmExtraction, type ExtractionOptions } from "../ytExtract";
 import { previewRefusal } from "../youtubeGuard";
-import { attemptsOf, MAX_ATTEMPTS, previewCandidates, type PreviewCandidate } from "./previewCandidates";
+import { attemptsOf, langRankOf, MAX_ATTEMPTS, previewCandidates, type PreviewCandidate } from "./previewCandidates";
 import { clearDecisions, knownDecision, rememberRefusal, type Refusal } from "./previewDecisionMemory";
 import { PreviewRateLimiter } from "./previewRateLimit";
 import {
-  decisionKey, found, guardStop, newStages, playable, warmPlayerStart, type PreviewOutcome, type PreviewTarget,
+  decisionKey, found, guardStop, heardVersion, newStages, playable, warmPlayerStart, type PreviewOutcome, type PreviewTarget,
 } from "./previewSteps";
+import type { ResolvedTrailer } from "../trailerRelay";
 
 export {
   onPreviewDecisionsChange, restoreDecisions, storedDecisions, type Decision, type StoredDecision,
@@ -73,14 +74,26 @@ function refuse(key: string, error: Refusal): PreviewOutcome {
   return { kind: "refused", error };
 }
 
+/** Une vidéo lisible qui ne parle pas la langue promise (son doublage par IA est retiré) : gardée en réserve. */
+interface Demoted {
+  ref: string;
+  resolved: ResolvedTrailer;
+  version: TrailerVersion;
+}
+
 /**
  * Prend la décision. `known` : la vidéo d'une décision encore valable que le
  * relais a oubliée — essayée d'abord, sans relire le catalogue. Après chaque
  * échec YouTube, le garde-fou : une vérification anti-robot n'est JAMAIS une
- * candidate morte — on s'arrête, sans rien retenir du titre.
+ * candidate morte — on s'arrête, sans rien retenir du titre. Une candidate
+ * qui promettait la langue du serveur et ne la parle pas (ce qu'on entend est
+ * l'originale : le doublage par IA est retiré) passe en RÉSERVE : les
+ * suivantes qui promettent mieux ont leur tour ; aucune ne l'est, la réserve
+ * sert, sous sa vraie version.
  */
 async function decide(
-  key: string, target: PreviewTarget, account: string, dailymotion: boolean, known?: { ref: string; version?: TrailerVersion },
+  key: string, target: PreviewTarget, account: string, dailymotion: boolean, lang: string | undefined,
+  known?: { ref: string; version?: TrailerVersion },
 ): Promise<PreviewOutcome> {
   const started = Date.now();
   const stages = newStages();
@@ -104,19 +117,34 @@ async function decide(
   if (candidates.length === 0 && stop) return stop;
   candidates = attemptsOf(candidates);
   const bestLang = candidates[0].langRank;
+  let demoted: Demoted | null = null;
+  const settle = (pick: Demoted, how: string) => {
+    // Une meilleure langue a échoué (ou n'était pas celle promise) avant : ce repli ne dure que dix minutes.
+    const fallback = langRankOf(pick.version) > bestLang;
+    return found(key, pick.ref, pick.resolved, started, `${how}${fallback ? ", langue de repli gardée 10 min" : ""}`, stages, {
+      maxTtlMs: fallback ? FALLBACK_LANG_TTL_MS : Infinity, version: pick.version,
+    });
+  };
   for (const [index, { ref, youtube, langRank, version }] of candidates.entries()) {
+    // Plus rien ne promet mieux que la réserve : elle sert.
+    if (demoted && langRank >= langRankOf(demoted.version)) break;
     if (index > 0 && Date.now() - started >= DECISION_BUDGET_MS) break;
     const resolved = await playable(ref, stages, extraction);
     if (!resolved) {
       const blocked = youtube ? guardStop() : null;
-      if (blocked) return blocked;
+      if (blocked) return demoted ? settle(demoted, "réserve (YouTube bride)") : blocked;
       continue;
     }
-    // Une meilleure langue a échoué avant : ce repli ne dure que dix minutes.
-    const fallback = langRank > bestLang;
-    const how = `essai ${index + 1}/${candidates.length}${fallback ? ", langue de repli gardée 10 min" : ""}`;
-    return found(key, ref, resolved, started, how, stages, { maxTtlMs: fallback ? FALLBACK_LANG_TTL_MS : Infinity, version });
+    const heard = heardVersion(version, resolved, lang);
+    if (langRankOf(heard) > langRank) {
+      console.log(`[trailers] aperçu ${key} : ${ref} promettait « ${version} », on entend « ${heard} » (doublage automatique retiré)`);
+      demoted ??= { ref, resolved, version: heard };
+      continue;
+    }
+    if (demoted && langRankOf(heard) >= langRankOf(demoted.version)) break;
+    return settle({ ref, resolved, version: heard }, `essai ${index + 1}/${candidates.length}`);
   }
+  if (demoted) return settle(demoted, "réserve");
   console.warn(`[trailers] aperçu ${key} : aucune lisible (${candidates.length} candidate(s), ${Date.now() - started} ms)`);
   return refuse(key, "unavailable");
 }
@@ -152,7 +180,7 @@ export async function decidePreview(
   if (!verdict.ok) return { kind: "limited", retryAfterS: verdict.retryAfterS };
   // Une extraction va sans doute suivre : l'ouvrier yt-dlp se charge pendant que le catalogue répond.
   if (!heldReprise && !previewRefusal()) prewarmExtraction();
-  const task = decide(key, target, account, dailymotion, known?.kind === "found" ? known : undefined)
+  const task = decide(key, target, account, dailymotion, lang, known?.kind === "found" ? known : undefined)
     .catch((err: unknown) => {
       console.warn(`[trailers] aperçu ${key} : décision interrompue (${err instanceof Error ? err.message : String(err)})`);
       return refuse(key, "unavailable");

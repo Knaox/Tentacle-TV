@@ -23,7 +23,8 @@ import type { RelayScope } from "./relayToken";
 import type { TrailerSource } from "./trailerSource";
 import { parseVideoRef } from "./videoRef";
 import type { SubtitleCandidate } from "./trailerSubtitles";
-import { fixedMaster, loadEntryMaster, loadEntryMedia, resolvedOf, TOKEN_SLOT, type Entry, type ResolvedTrailer } from "./relayEntry";
+import { fixedMaster, loadEntryMaster, loadEntryMedia, playedAudio, resolvedOf, TOKEN_SLOT, type Entry, type ResolvedTrailer } from "./relayEntry";
+import type { AudioChoice } from "./audioTracks";
 
 export { fetchUpstream, isReadable, resolvedOf, TOKEN_SLOT };
 export type { Entry, ResolvedTrailer };
@@ -153,6 +154,16 @@ export async function resolveTrailer(
   if (!entry) return null;
   if (entry.source.kind === "hls" && entry.source.heights.length === 0 && !(await loadMaster(entry))) return null;
   return resolvedOf(entry);
+}
+
+/**
+ * La piste que le relais JOUE pour cette vidéo, s'il la tient encore — sans
+ * extraction ni lecture amont. Le catalogue en corrige la version promise
+ * (`catalogBuild.ts`) : une « VF » doublée par IA y redevient une VO.
+ */
+export function heldAudio(ref: string): AudioChoice | undefined {
+  const entry = entries.get(ref);
+  return entry && entry.validUntil > Date.now() ? playedAudio(entry) : undefined;
 }
 
 /** La vidéo telle que le relais la tient, sans extraction ni lecture amont (`trailerPrepare.ts`). */

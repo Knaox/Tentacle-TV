@@ -10,8 +10,12 @@
  * étrangers au relais : listes vides — un serveur d'avant n'offre ni qualité
  * ni sous-titres, sans la moindre erreur. `language` : la langue qui a rangé
  * les sous-titres (celle du serveur, quand le client n'en demande pas).
- * Module pur.
+ * `audio` : la piste que le relais JOUE quand la vidéo en a plusieurs
+ * (jamais un doublage par IA) — de quoi dire la vraie version
+ * (`playedTrailerVersion`) ; absente d'un serveur d'avant. Module pur.
  */
+
+import type { TrailerAudio } from "../trailerCatalog";
 
 export interface TrailerQualityTrack {
   /** Hauteur en pixels (1080, 720…). */
@@ -43,6 +47,8 @@ export interface TrailerStream extends TrailerTracks {
   type?: "m3u8";
   /** La langue qui a rangé les sous-titres (`fr-FR`) ; absente d'un serveur d'avant. */
   language?: string;
+  /** La piste audio jouée, quand la vidéo en a plusieurs ; absente sinon, ou d'un serveur d'avant. */
+  audio?: TrailerAudio;
 }
 
 const HLS_MIME = "application/vnd.apple.mpegurl";
@@ -83,6 +89,11 @@ function readSubtitles(value: unknown): TrailerSubtitleTrack[] {
   return out.slice(0, MAX_SUBTITLES);
 }
 
+function readAudio(value: unknown): TrailerAudio | undefined {
+  if (!isRecord(value) || (value.content !== "original" && value.content !== "dubbed")) return undefined;
+  return typeof value.lang === "string" && LANG_RE.test(value.lang) ? { content: value.content, lang: value.lang } : undefined;
+}
+
 /** La réponse de `resolve` → le flux et ses pistes ; `null` sans flux lisible. */
 export function parseTrailerResolve(body: unknown, serverUrl: string): TrailerStream | null {
   if (!isRecord(body)) return null;
@@ -94,6 +105,7 @@ export function parseTrailerResolve(body: unknown, serverUrl: string): TrailerSt
     qualities: readQualities(body.qualities),
     subtitles: readSubtitles(body.subtitles),
     ...(typeof body.language === "string" && LANG_RE.test(body.language) ? { language: body.language } : {}),
+    ...(readAudio(body.audio) ? { audio: readAudio(body.audio) } : {}),
   };
 }
 

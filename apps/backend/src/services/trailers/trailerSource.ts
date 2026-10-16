@@ -13,6 +13,8 @@
 /*  enfants », n'a que le format 18 (nightly : 91 à 96).               */
 /* ------------------------------------------------------------------ */
 
+import { audioInventory, audioTagOf, isUnplayableAudio, type AudioInventory } from "./audioTracks";
+
 /** Les champs d'un format de `yt-dlp -j` dont le choix dépend. */
 export interface YtFormat {
   format_id?: string;
@@ -36,8 +38,10 @@ export type TrailerSource =
       expiresAt: number;
       /** Les hauteurs H.264 du maître, de la plus haute à la plus basse : les qualités au choix. */
       heights: number[];
+      /** Les pistes audio de la vidéo, quand YouTube en marque plusieurs (`audioTracks.ts`). */
+      audio?: AudioInventory;
     }
-  | { kind: "progressive"; url: string; headers: Record<string, string>; expiresAt: number };
+  | { kind: "progressive"; url: string; headers: Record<string, string>; expiresAt: number; audio?: AudioInventory };
 
 /** Au-delà, un flux n'apporte rien à une bande-annonce et coûte au relais. */
 const MAX_HEIGHT = 1080;
@@ -62,9 +66,18 @@ function headersOf(format: YtFormat): Record<string, string> {
   return ua ? { "User-Agent": ua } : {};
 }
 
-/** Le meilleur flux qu'un Apple TV lit sans faute, ou `null`. */
+/** Un format dont l'audio est un doublage automatique (ou une audiodescription) : jamais choisi. */
+const unplayableAudio = (f: YtFormat) => !!f.url && !!f.acodec && f.acodec !== "none" && isUnplayableAudio(audioTagOf({ uri: f.url }));
+
+/**
+ * Le meilleur flux qu'un Apple TV lit sans faute, ou `null`. Jamais un MP4
+ * dont l'audio est un doublage automatique ; l'audio d'un maître HLS se
+ * choisit au relais (`hlsAudio.ts`), d'après l'inventaire rendu ici.
+ */
 export function pickTrailerSource(formats: readonly YtFormat[], now = Date.now()): TrailerSource | null {
   const usable = formats.filter((f) => !f.has_drm);
+  const audio = audioInventory(usable.filter((f) => f.acodec && f.acodec !== "none" && f.url).map((f) => f.url as string));
+  const withAudio = audio ? { audio } : {};
 
   // 1. Les maîtres HLS, classés par la plus haute vidéo H.264 qu'ils portent.
   const masters = new Map<string, { height: number; format: YtFormat }>();
@@ -84,17 +97,17 @@ export function pickTrailerSource(formats: readonly YtFormat[], now = Date.now()
     }
     return {
       kind: "hls", masterUrl, headers: headersOf(format), expiresAt: parseExpiry(masterUrl, now),
-      heights: [...heights].sort((a, b) => b - a),
+      heights: [...heights].sort((a, b) => b - a), ...withAudio,
     };
   }
 
   // 2. Le progressif muxé H.264 + AAC le plus haut, jusqu'à 1080p.
   const progressive = usable
-    .filter((f) => f.protocol === "https" && f.url && f.ext === "mp4" && isH264(f.vcodec) && isAac(f.acodec))
+    .filter((f) => f.protocol === "https" && f.url && f.ext === "mp4" && isH264(f.vcodec) && isAac(f.acodec) && !unplayableAudio(f))
     .filter((f) => (f.height ?? 0) <= MAX_HEIGHT)
     .sort((a, b) => (b.height ?? 0) - (a.height ?? 0) || (b.tbr ?? 0) - (a.tbr ?? 0))[0];
   if (progressive?.url) {
-    return { kind: "progressive", url: progressive.url, headers: headersOf(progressive), expiresAt: parseExpiry(progressive.url, now) };
+    return { kind: "progressive", url: progressive.url, headers: headersOf(progressive), expiresAt: parseExpiry(progressive.url, now), ...withAudio };
   }
   return null;
 }

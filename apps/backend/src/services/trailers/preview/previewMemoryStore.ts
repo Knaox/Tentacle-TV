@@ -28,6 +28,7 @@ import { DATA_ROOT } from "../../dataDir";
 import { heldSources, onRelaySourcesChange, restoreSources, type HeldSource } from "../trailerRelay";
 import { onPreviewDecisionsChange, restoreDecisions, storedDecisions, type StoredDecision } from "./previewDecisionMemory";
 import { parseVideoRef } from "../videoRef";
+import { audioTagOf, isUnplayableAudio } from "../audioTracks";
 
 export const PREVIEW_MEMORY_FILE = resolve(DATA_ROOT, "trailers", "preview-memory.json");
 const VERSION = 1;
@@ -51,7 +52,8 @@ function validSource(value: unknown): value is HeldSource {
   if (!held || !YT_ID.test(String(held.ytId)) || typeof held.validUntil !== "number" || typeof held.extractedAt !== "number") return false;
   if (!source || typeof source !== "object" || !Array.isArray(held.subtitles)) return false;
   return (source.kind === "hls" && isUrl(source.masterUrl) && Array.isArray(source.heights))
-    || (source.kind === "progressive" && isUrl(source.url));
+    // Un MP4 choisi avant la règle des doublages : jamais un doublage automatique repris.
+    || (source.kind === "progressive" && isUrl(source.url) && !isUnplayableAudio(audioTagOf({ uri: String(source.url) })));
 }
 
 function validDecision(value: unknown): value is StoredDecision {

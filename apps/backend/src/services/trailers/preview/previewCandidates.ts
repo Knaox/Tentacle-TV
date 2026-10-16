@@ -51,6 +51,9 @@ export function attemptsOf(candidates: readonly PreviewCandidate[]): PreviewCand
 
 const LANG_RANK: Record<TrailerVersion, number> = { localized: 0, subtitled: 1, original: 2, unknown: 2 };
 
+/** Le rang de langue d'une version : 0 dans la langue du serveur, 1 sous-titrée, 2 autre. */
+export const langRankOf = (version: TrailerVersion) => LANG_RANK[version];
+
 /** Les vidéos du catalogue que l'aperçu peut essayer, la meilleure d'abord, sans doublon. */
 export function previewCandidates(entries: readonly TrailerEntry[], options: { dailymotion: boolean }): PreviewCandidate[] {
   const seen = new Set<string>();
