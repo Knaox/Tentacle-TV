@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { ownPinCurrentRefused, ownPinEntered, ownPinModes, ownPinModesFor, ownPinStart } from "./ownPin";
+import { isDemoProfile, ownPinCurrentRefused, ownPinEntered, ownPinModes, ownPinModesFor, ownPinStart, profileAloneIn, type OwnPinSubject } from "./ownPin";
+
+/** Le compte de revue : ouvert d'office, seul, sans code, sans aucune gestion. */
+const REVIEW: OwnPinSubject = { kind: "owner", hasPin: false, manage: "none", launch: "solo", alone: true };
 
 describe("son code PIN depuis la TV", () => {
   it("offre créer sans code, changer ou retirer avec, rien à un invité", () => {
@@ -10,16 +13,37 @@ describe("son code PIN depuis la TV", () => {
   });
 
   it("le compte de démonstration n'a aucun geste : ni « Créer », ni l'entrée de la section", () => {
-    expect(ownPinModesFor({ kind: "owner", hasPin: false, manage: "none" })).toEqual([]);
-    expect(ownPinModesFor({ kind: "member", hasPin: false, manage: "none" })).toEqual([]);
+    expect(isDemoProfile(REVIEW)).toBe(true);
+    expect(ownPinModesFor(REVIEW)).toEqual([]);
+    // La liste pas encore relue : ce que la TV a retenu suffit.
+    expect(ownPinModesFor({ ...REVIEW, alone: null })).toEqual([]);
+  });
+
+  it("un membre simple ou mineur, sans code ni droit de gestion, garde « Créer un code PIN »", () => {
+    const simple: OwnPinSubject = { kind: "member", hasPin: false, manage: "none", launch: "picked", alone: false };
+    expect(isDemoProfile(simple)).toBe(false);
+    expect(ownPinModesFor(simple)).toEqual(["create"]);
+    expect(ownPinModesFor({ ...simple, launch: "sticky" })).toEqual(["create"]);
+    // « Qui regarde ? » coupé : le compte de la TV s'ouvre d'office, mais la liste montre sa famille.
+    expect(ownPinModesFor({ ...simple, launch: "solo" })).toEqual(["create"]);
   });
 
   it("hors démonstration, les gestes de toujours", () => {
-    expect(ownPinModesFor({ kind: "owner", hasPin: false, manage: "needsPin" })).toEqual(["create"]);
-    expect(ownPinModesFor({ kind: "member", hasPin: true, manage: "manage" })).toEqual(["change", "remove"]);
-    expect(ownPinModesFor({ kind: "guest", hasPin: false, manage: "none" })).toEqual([]);
+    // Un compte sans famille, propriétaire de lui-même : il gérerait avec un code.
+    expect(ownPinModesFor({ ...REVIEW, manage: "needsPin" })).toEqual(["create"]);
+    expect(ownPinModesFor({ kind: "owner", hasPin: false, manage: "needsPin", launch: "picked", alone: false })).toEqual(["create"]);
+    expect(ownPinModesFor({ kind: "member", hasPin: true, manage: "manage", launch: "picked", alone: false })).toEqual(["change", "remove"]);
+    expect(ownPinModesFor({ kind: "guest", hasPin: false, manage: "none", launch: "picked", alone: false })).toEqual([]);
     // Un code déjà là n'est jamais celui de la démonstration : on peut le changer ou le retirer.
-    expect(ownPinModesFor({ kind: "member", hasPin: true, manage: "none" })).toEqual(["change", "remove"]);
+    expect(ownPinModesFor({ ...REVIEW, hasPin: true })).toEqual(["change", "remove"]);
+  });
+
+  it("seul dans la liste relue, ou on ne sait pas encore", () => {
+    const one = { profiles: [{ userId: "Revue-1" }] } as Parameters<typeof profileAloneIn>[0];
+    const two = { profiles: [{ userId: "anne" }, { userId: "zoe" }] } as Parameters<typeof profileAloneIn>[0];
+    expect(profileAloneIn(one, "revue1")).toBe(true);
+    expect(profileAloneIn(two, "anne")).toBe(false);
+    expect(profileAloneIn(null, "anne")).toBeNull();
   });
 
   it("créer : le nouveau code, sa confirmation, puis le serveur", () => {

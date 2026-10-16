@@ -16,7 +16,9 @@ export function useOwnPinReturn(opened: MutableRefObject<boolean>): (contentKey:
       if (!opened.current) return contentKey;
       opened.current = false;
       const record = readProfileRecord(storage);
-      const modes = record ? ownPinModesFor({ kind: record.kind, hasPin: record.hasPin, manage: recordManageState(record) }) : null;
+      const modes = record
+        ? ownPinModesFor({ kind: record.kind, hasPin: record.hasPin, manage: recordManageState(record), launch: record.launch, alone: null })
+        : null;
       return (modes ? settingsPinReturnKey(modes) : null) ?? contentKey;
     },
     [opened, storage],

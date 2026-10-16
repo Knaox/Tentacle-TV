@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsFocused, useNavigation, type NavigationProp } from "@react-navigation/native";
 import { FAMILY_KEY, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
-import { openProfileState, ownPinModesFor, readProfileRecord, recordPairedTheTv, tvSessionMode, type OwnPinMode, type TvProfileRole } from "@tentacle-tv/tv-core";
+import { openProfileState, ownPinModesFor, profileAloneIn, readProfileRecord, recordPairedTheTv, tvSessionMode, type OwnPinMode, type TvProfileRole } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { SettingsProfile } from "../../redesign/screens/settings/settingsTypes";
 import { switchProfile } from "../../auth/profileSession";
@@ -57,6 +57,8 @@ export function useProfileActions() {
   const manage = state?.manage ?? "none";
   const hasPin = state?.hasPin === true;
   const pairedTheTv = record ? recordPairedTheTv(record) : false;
+  const launch = record?.launch ?? "picked";
+  const alone = record ? profileAloneIn(listing, record.profileId) : null;
 
   const profile = useMemo<SettingsProfile | null>(() => {
     if (!kind || !color || !role) return null;
@@ -68,9 +70,9 @@ export function useProfileActions() {
       canUnpair: pairedTheTv,
       unpairCaption: pairedTheTv ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", { owner: tvAccountName }),
       // Le compte de démonstration : aucune entrée (`ownPinModesFor`).
-      pin: { hasPin, modes: ownPinModesFor({ kind, hasPin, manage }) },
+      pin: { hasPin, modes: ownPinModesFor({ kind, hasPin, manage, launch, alone }) },
     };
-  }, [kind, role, familyOwnerName, tvAccountName, color, manage, pairedTheTv, hasPin, t]);
+  }, [kind, role, familyOwnerName, tvAccountName, color, manage, launch, alone, pairedTheTv, hasPin, t]);
 
   const onSwitchProfile = useCallback(() => {
     void switchProfile({ jfClient, storage, queryClient });
