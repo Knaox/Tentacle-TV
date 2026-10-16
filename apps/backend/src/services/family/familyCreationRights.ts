@@ -1,5 +1,6 @@
 import { getConfigValue, setConfigValue } from "../configStore";
 import { getPrisma } from "../db";
+import { hasRequestExtension } from "../pluginRequests";
 import { getJellyfinUsers } from "../watchTogether/usersCache";
 import {
   FAMILY_DEFAULT_CREATION_RIGHTS,
@@ -29,25 +30,33 @@ import { fold } from "./familyStore";
 
 export const FAMILY_DEFAULT_CREATE_FAMILY_KEY = "family_default_create_family";
 export const FAMILY_DEFAULT_CREATE_GUESTS_KEY = "family_default_create_guests";
+/** 1.30.0 : autoriser ses invités à demander des films — clé absente : NON. */
+export const FAMILY_DEFAULT_GRANT_GUEST_REQUESTS_KEY = "family_default_grant_guest_requests";
 
 export function getCreationDefaults(): FamilyCreationDefaults {
   return {
     createFamily: getConfigValue(FAMILY_DEFAULT_CREATE_FAMILY_KEY) === "true",
     createGuests: getConfigValue(FAMILY_DEFAULT_CREATE_GUESTS_KEY) === "true",
+    grantGuestRequests: getConfigValue(FAMILY_DEFAULT_GRANT_GUEST_REQUESTS_KEY) === "true",
   };
 }
 
 export async function setCreationDefaults(patch: SetFamilyCreationDefaultsBody): Promise<FamilyCreationDefaults> {
   if (patch.createFamily !== undefined) await setConfigValue(FAMILY_DEFAULT_CREATE_FAMILY_KEY, String(patch.createFamily));
   if (patch.createGuests !== undefined) await setConfigValue(FAMILY_DEFAULT_CREATE_GUESTS_KEY, String(patch.createGuests));
+  if (patch.grantGuestRequests !== undefined) await setConfigValue(FAMILY_DEFAULT_GRANT_GUEST_REQUESTS_KEY, String(patch.grantGuestRequests));
   return getCreationDefaults();
 }
 
-type RightsRow = { userId: string; createFamily: string; createGuests: string };
+type RightsRow = { userId: string; createFamily: string; createGuests: string; grantGuestRequests?: string | null };
 
 function rightsOf(row: RightsRow | null | undefined): FamilyCreationRights {
   if (!row) return { ...FAMILY_DEFAULT_CREATION_RIGHTS };
-  return { createFamily: creationRightValue(row.createFamily), createGuests: creationRightValue(row.createGuests) };
+  return {
+    createFamily: creationRightValue(row.createFamily),
+    createGuests: creationRightValue(row.createGuests),
+    grantGuestRequests: creationRightValue(row.grantGuestRequests),
+  };
 }
 
 export async function accountCreationRights(userId: string): Promise<FamilyCreationRights> {
@@ -56,7 +65,7 @@ export async function accountCreationRights(userId: string): Promise<FamilyCreat
 
 export async function setAccountCreationRights(userId: string, patch: SetAccountFamilyRightsBody): Promise<FamilyCreationRights> {
   const next = { ...(await accountCreationRights(userId)), ...patch };
-  const data = { createFamily: next.createFamily, createGuests: next.createGuests };
+  const data = { createFamily: next.createFamily, createGuests: next.createGuests, grantGuestRequests: next.grantGuestRequests ?? "inherit" };
   await getPrisma().familyAccountRights.upsert({ where: { userId: fold(userId) }, create: { userId: fold(userId), ...data }, update: data });
   return next;
 }
@@ -71,7 +80,13 @@ export async function isJellyfinAdministrator(userId: string): Promise<boolean |
 /** Ce que ce compte peut créer maintenant, tout compris. */
 export async function creationAllowedFor(userId: string): Promise<FamilyCreationAllowed> {
   const [rights, admin] = await Promise.all([accountCreationRights(userId), isJellyfinAdministrator(userId)]);
-  return resolveFamilyCreation({ rights, defaults: getCreationDefaults(), switches: getFamilySwitches(), isAdministrator: admin === true });
+  return resolveFamilyCreation({
+    rights,
+    defaults: getCreationDefaults(),
+    switches: getFamilySwitches(),
+    isAdministrator: admin === true,
+    requestExtension: hasRequestExtension(),
+  });
 }
 
 /** Le même calcul pour plusieurs comptes (la gestion des profils d'une TV), en deux lectures. */
@@ -85,8 +100,12 @@ export async function creationAllowedForMany(userIds: readonly string[]): Promis
   const admins = new Set((users ?? []).filter((user) => user.isAdministrator).map((user) => fold(user.id)));
   const defaults = getCreationDefaults();
   const switches = getFamilySwitches();
+  const requestExtension = hasRequestExtension();
   return new Map(
-    keys.map((key) => [key, resolveFamilyCreation({ rights: rightsOf(byId.get(key)), defaults, switches, isAdministrator: admins.has(key) })]),
+    keys.map((key) => [
+      key,
+      resolveFamilyCreation({ rights: rightsOf(byId.get(key)), defaults, switches, isAdministrator: admins.has(key), requestExtension }),
+    ]),
   );
 }
 

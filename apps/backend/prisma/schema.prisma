@@ -379,6 +379,9 @@ model FamilyMember {
   canCreateGuests Boolean  @default(false)
   /// Invité (v2) : « peut demander » — les extensions, à son propre nom. Coupé par défaut.
   canRequestTitles Boolean @default(false)
+  /// Invité (1.30.0) : le compte qui a coché « peut demander » — c'est SON droit d'administration
+  /// (`grantGuestRequests`) qui le tient en vigueur. Null (ligne d'avant) : son créateur, sinon le propriétaire.
+  requestTitlesGrantedBy String?
   /// Invité (1.30.0) : son contrôle parental VOULU (JSON `GuestParentalControls`) ; null = aucun.
   /// La politique EFFECTIVE (recoupée avec son créateur) vit dans Jellyfin.
   parentalControls String?
@@ -420,6 +423,8 @@ model FamilyAccountRights {
   userId       String   @id
   createFamily String   @default("inherit")
   createGuests String   @default("inherit")
+  /// 1.30.0 : autoriser ses invités à demander des films (`inherit` : le défaut, NON).
+  grantGuestRequests String @default("inherit")
   updatedAt    DateTime @updatedAt
 
   @@map("family_account_rights")

@@ -2,6 +2,13 @@ import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
+// Les réglages du serveur, en mémoire : l'interrupteur « les invités peuvent demander » (1.30.0).
+const config = vi.hoisted(() => new Map<string, string>());
+vi.mock("./configStore", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./configStore")>()),
+  getConfigValue: (key: string) => config.get(key),
+}));
+
 // Un vrai dossier de données, lu par pluginManager dès son import.
 const dataRoot = vi.hoisted(() => {
   const dir = `${process.env.TMPDIR ?? "/tmp"}/tentacle-demandes-${process.pid}-${Date.now()}`;
@@ -76,10 +83,14 @@ describe("une extension sait-elle demander un titre ?", () => {
     expect(hasRequestExtension(32_000)).toBe(false);
   });
 
-  it("la capacité de la Famille ne propose « peut demander » qu'avec elle", () => {
+  it("la capacité de la Famille ne propose « peut demander » qu'avec elle — et l'interrupteur allumé (1.30.0)", () => {
+    config.set("family_guest_requests_enabled", "true");
     install([]);
     expect(familyCapability()).toMatchObject({ v: 2, guests: true, guestRequests: false });
     install([{ pluginId: "demandes", manifest: REQUESTS }]);
     expect(familyCapability()).toMatchObject({ guests: true, guestRequests: true });
+    // Coupé — ou jamais allumé, comme après la mise à jour : un client d'avant cache la case.
+    config.delete("family_guest_requests_enabled");
+    expect(familyCapability()).toMatchObject({ guests: true, guestRequests: false });
   });
 });

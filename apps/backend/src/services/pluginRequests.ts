@@ -41,3 +41,9 @@ export function hasRequestExtension(now: number = Date.now()): boolean {
 export function forgetRequestExtension(): void {
   cache = null;
 }
+
+/** Les tests : une extension de demandes présente (`true`), absente (`false`) — jusqu'au
+ *  prochain `forgetRequestExtension`. */
+export function setRequestExtensionForTests(value: boolean): void {
+  cache = { value, at: Number.POSITIVE_INFINITY };
+}

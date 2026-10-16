@@ -21,7 +21,7 @@ vi.mock("../src/services/jellyfinLibrary", () => ({ adminUserParam: async () => 
 
 import { freshState } from "./familyMocks";
 import { fakeJellyfinUsersFetch } from "./fakeJellyfinUsers";
-import { IDS, bearer, buildFamilyApp, resetCaches, seedUsers } from "./familyHarness";
+import { allowGuestRequests, IDS, bearer, buildFamilyApp, resetCaches, seedUsers } from "./familyHarness";
 import { GUEST_PARENTAL_NONE } from "../src/family/familyParental";
 import { clearUserRightsOptions } from "../src/services/userRights/userRightsOptions";
 import { withParentalOptions } from "./fakeJellyfinParental";
@@ -41,6 +41,8 @@ beforeEach(() => {
   h.state = freshState();
   h.fetch = withParentalOptions(fakeJellyfinUsersFetch(h.state.jf));
   resetCaches();
+  // 1.30.0 : l'administration laisse les invités demander (le sens de ce banc, d'avant ce réglage).
+  allowGuestRequests(h.state!, { everyone: true });
   clearUserRightsOptions();
   tokens = seedUsers(h.state);
 });
