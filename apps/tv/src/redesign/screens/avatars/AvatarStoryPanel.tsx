@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
@@ -31,6 +31,8 @@ export const AvatarStoryPanel = memo(function AvatarStoryPanel({ character, coll
   onLater?: () => void;
 }) {
   const { t } = useTranslation("avatars");
+  // « Plus tard » focalisé : OK ne prendrait personne, l'indication se tait.
+  const [laterFocused, setLaterFocused] = useState(false);
   // Le groupe couvre toute la colonne : GAUCHE depuis n'importe quelle ligne de la grille y entre.
   return (
     <FocusGroup focusKey={AVATAR_GALLERY_ACTIONS_GROUP} style={styles.panel}>
@@ -46,9 +48,9 @@ export const AvatarStoryPanel = memo(function AvatarStoryPanel({ character, coll
         </Animated.View>
       ) : null}
       <View style={styles.fill} />
-      <Status character={character} guestName={guestName} phase={phase} />
+      <Status character={character} guestName={guestName} phase={phase} hint={!laterFocused} />
       <View style={styles.actions}>
-        <PillButton label={t("tv.later")} icon="clock" size="md" focusKey={AVATAR_GALLERY_LATER_KEY} onPress={onLater} />
+        <PillButton label={t("tv.later")} icon="clock" size="md" focusKey={AVATAR_GALLERY_LATER_KEY} onPress={onLater} onFocusChange={setLaterFocused} />
       </View>
     </FocusGroup>
   );
@@ -66,7 +68,13 @@ function Portrait({ character }: { character: AvatarGalleryCharacter }) {
 }
 
 /** Ce que devient le choix : l'indication de la touche, l'attente, la réussite ou l'échec. */
-function Status({ character, guestName, phase }: { character: AvatarGalleryCharacter | null; guestName: string | null; phase: AvatarGalleryPhase }) {
+function Status({ character, guestName, phase, hint }: {
+  character: AvatarGalleryCharacter | null;
+  guestName: string | null;
+  phase: AvatarGalleryPhase;
+  /** L'indication « OK : prendre … » : seulement quand un personnage a le focus. */
+  hint: boolean;
+}) {
   const { t } = useTranslation("avatars");
   const hints = useRemoteHints();
   const name = character ? t(`characters.${character.id}.name`) : "";
@@ -98,7 +106,7 @@ function Status({ character, guestName, phase }: { character: AvatarGalleryChara
   }
   return (
     <View style={styles.status}>
-      <Text style={styles.statusText} numberOfLines={1}>{character ? t(hints.avatarChoose, { name }) : " "}</Text>
+      <Text style={styles.statusText} numberOfLines={1}>{character && hint ? t(hints.avatarChoose, { name }) : " "}</Text>
     </View>
   );
 }
