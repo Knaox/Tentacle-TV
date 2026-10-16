@@ -21,6 +21,7 @@ import {
   profilesGuardedKeys,
   profileTileKey,
   profilesEntryKey,
+  profilesEntryRound,
 } from "./profilesFocus";
 import { manageBackAction, profilesBackAction } from "../nav/profilesBack";
 
@@ -33,6 +34,16 @@ describe("le focus de « Qui regarde ? »", () => {
   it("entre sur le premier chiffre du pavé, ou sur la croix quand il est bloqué", () => {
     expect(profilesEntryKey({ phase: "pin" })).toBe(pinDigitKey("1"));
     expect(profilesEntryKey({ phase: "pin", pinLocked: true })).toBe(PROFILES_BACK_KEY);
+  });
+
+  it("une saisie reprise de zéro (codes différents) est un nouveau tour : retour au premier chiffre", () => {
+    const first = profilesEntryRound({ phase: "pin", pinRestarts: 0 });
+    const again = profilesEntryRound({ phase: "pin", pinRestarts: 1 });
+    expect(again).not.toBe(first);
+    expect(profilesEntryKey({ phase: "pin", pinRestarts: 1 })).toBe(pinDigitKey("1"));
+    expect(profilesEntryRound({ phase: "pin", pinRestarts: 1 })).toBe(again);
+    // Hors du pavé, le tour est la clé : rien ne change pour les autres phases.
+    expect(profilesEntryRound({ phase: "picker", tileIndex: 2, pinRestarts: 3 })).toBe(profileTileKey(2));
   });
 
   it("une erreur entre par « Réessayer », un chargement par rien", () => {
