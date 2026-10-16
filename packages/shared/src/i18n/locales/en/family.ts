@@ -19,6 +19,7 @@ export default {
     createGuestsHint: "Creates their own guests and can only delete those, within three guests for the whole family.",
     requestTitles: "Can request movies",
     requestTitlesHint: "Their requests are made in their own name.",
+    requestTitlesSuspended: "Suspended by the administrator: once allowed again, this setting comes back as it was.",
   },
   /** v2: an account in the list that cannot be invited, and why. */
   candidates: {

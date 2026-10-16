@@ -66,6 +66,7 @@ export const ProfileRow = memo(function ProfileRow({
   const { t } = useTranslation(["familyWeb", "family", "avatars"]);
   const { formatDate } = useFamilyText();
   const isGuest = profile.kind === "guest";
+  const suspended = isGuest && profile.guestRights?.suspended === true;
   // Mêmes droits que son PIN (`profileActions`, shared ; le serveur revérifie).
   const dressable = isGuest && actions.pin && onGuestPhoto !== undefined;
   const parentalEditable = isGuest && actions.pin && onGuestParental !== undefined;
@@ -154,12 +155,18 @@ export const ProfileRow = memo(function ProfileRow({
         {isGuest && profile.guestRights !== undefined && (
           <RightToggle
             label={t("family:rights.requestTitles")}
-            hint={t("family:rights.requestTitlesHint")}
+            // 1.30.0 : cochée, mais l'administration ne le permet plus — gardée, sans effet.
+            hint={t(suspended ? "family:rights.requestTitlesSuspended" : "family:rights.requestTitlesHint")}
             checked={guestCanRequest(profile)}
             editable={actions.right === "requestTitles"}
             pending={rightPending}
             onChange={(next) => onRightChange(profile, next)}
           />
+        )}
+        {suspended && actions.right !== "requestTitles" && (
+          <p className="mt-1 text-xs text-content-tertiary">
+            {t("family:rights.requestTitles")} — {t("family:rights.requestTitlesSuspended")}
+          </p>
         )}
       </div>
       {(actions.pin || actions.remove || memberParental || librariesEditable) && (
