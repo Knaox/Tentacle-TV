@@ -1,4 +1,7 @@
-import { TRAILER_PREVIEW_TIMING } from "@tentacle-tv/shared";
+import {
+  DEFAULT_TRAILER_PREVIEW_DELAY, TRAILER_PREVIEW_TIMING, parseTrailerPreviewDelay, type TrailerPreviewDelay,
+} from "@tentacle-tv/shared";
+import { createDeviceChoice, useDeviceChoice } from "./deviceChoice";
 import { createDeviceFlag, useDeviceFlag } from "./deviceFlag";
 import { createDeviceLevel, useDeviceLevel } from "./deviceLevel";
 
@@ -19,6 +22,21 @@ export const trailerPreviewMutedFlag = createDeviceFlag(TRAILER_PREVIEW_MUTED_ST
 /** Le volume des aperçus (0 à 1), réglé dans la mini-carte — retenu pour les suivants. */
 export const TRAILER_PREVIEW_VOLUME_STORAGE_KEY = "tentacle_trailer_preview_volume";
 export const trailerPreviewVolumeLevel = createDeviceLevel(TRAILER_PREVIEW_VOLUME_STORAGE_KEY, TRAILER_PREVIEW_TIMING.volume);
+
+/**
+ * Le délai entre le début du survol et la première image de l'aperçu (shared
+ * `previewDelay.ts` : 800 ms par défaut), choisi dans les Réglages et transmis
+ * aux extensions (Vigie) par le pont.
+ */
+export const TRAILER_PREVIEW_DELAY_STORAGE_KEY = "tentacle_trailer_preview_delay";
+export const trailerPreviewDelayChoice = createDeviceChoice<TrailerPreviewDelay>(
+  TRAILER_PREVIEW_DELAY_STORAGE_KEY, DEFAULT_TRAILER_PREVIEW_DELAY, parseTrailerPreviewDelay,
+);
+
+/** Le délai choisi pour les aperçus de cet appareil. */
+export function useTrailerPreviewDelay(): [TrailerPreviewDelay, (next: TrailerPreviewDelay) => void] {
+  return useDeviceChoice(trailerPreviewDelayChoice);
+}
 
 /** Le réglage « Aperçus de bande-annonce au survol », pour la ligne des Réglages. */
 export function useTrailerPreviewsSetting(): [boolean, (next: boolean) => void] {

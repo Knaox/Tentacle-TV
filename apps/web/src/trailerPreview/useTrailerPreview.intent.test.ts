@@ -7,7 +7,12 @@
  */
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TRAILER_PREVIEW_TIMING as T } from "@tentacle-tv/shared";
+import {
+  DEFAULT_TRAILER_PREVIEW_DELAY, TRAILER_PREVIEW_TIMING, WEB_TRAILER_PREVIEW_PACE, trailerPreviewTimingFor,
+} from "@tentacle-tv/shared";
+
+/** Les temps de la machine au délai par défaut (800 ms) : ceux que l'appareil neuf applique. */
+const T = trailerPreviewTimingFor(TRAILER_PREVIEW_TIMING, DEFAULT_TRAILER_PREVIEW_DELAY, WEB_TRAILER_PREVIEW_PACE);
 import { createPreviewRig } from "./previewTestRig";
 
 const h = vi.hoisted(() => ({

@@ -14,7 +14,7 @@ vi.mock("../../trailerPreview/previewEnvironment", () => ({
   },
 }));
 
-import { trailerPreviewMutedFlag, trailerPreviewVolumeLevel } from "../../trailerPreview/previewSettings";
+import { trailerPreviewDelayChoice, trailerPreviewMutedFlag, trailerPreviewVolumeLevel } from "../../trailerPreview/previewSettings";
 import { buildPluginBridgeScript, type PluginHostEnv } from "./buildPluginBridge";
 import {
   TRAILER_PREVIEW_ENV_EVENT, applyPluginTrailerPreviewMuted, applyPluginTrailerPreviewVolume, pluginTrailerPreviewEnv,
@@ -34,10 +34,10 @@ beforeEach(() => {
 
 describe("état des aperçus pour une extension", () => {
   it("permis sans blocage, refusé dès qu'un blocage existe ; le son suit le drapeau", () => {
-    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: true, muted: false, volume: 0.6 });
+    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: true, muted: false, volume: 0.6, delayMs: 800 });
     h.block = "setting";
     trailerPreviewMutedFlag.set(true);
-    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: false, muted: true, volume: 0.6 });
+    expect(pluginTrailerPreviewEnv()).toEqual({ enabled: false, muted: true, volume: 0.6, delayMs: 800 });
   });
 
   it("pousse chaque changement EN DIRECT, jamais deux fois la même valeur, et se désabonne", () => {
@@ -47,16 +47,29 @@ describe("état des aperçus pour une extension", () => {
     setBlock("offline");
     setBlock("dataSaver");
     expect(push).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: false, volume: 0.6 });
+    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: false, volume: 0.6, delayMs: 800 });
     trailerPreviewMutedFlag.set(true);
-    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: true, volume: 0.6 });
+    expect(push).toHaveBeenLastCalledWith({ enabled: false, muted: true, volume: 0.6, delayMs: 800 });
     setBlock(null);
-    expect(push).toHaveBeenLastCalledWith({ enabled: true, muted: true, volume: 0.6 });
+    expect(push).toHaveBeenLastCalledWith({ enabled: true, muted: true, volume: 0.6, delayMs: 800 });
     expect(push).toHaveBeenCalledTimes(3);
     stop();
     expect(h.listeners.size).toBe(0);
     trailerPreviewMutedFlag.set(false);
     expect(push).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("le délai des aperçus pour une extension", () => {
+  it("dit le délai choisi sur l'appareil, et le pousse quand il change", () => {
+    const push = vi.fn();
+    const stop = watchPluginTrailerPreviewEnv(push);
+    trailerPreviewDelayChoice.set(1200);
+    expect(push).toHaveBeenLastCalledWith({ enabled: true, muted: false, volume: 0.6, delayMs: 1200 });
+    expect(trailerPreviewEnvMessage(pluginTrailerPreviewEnv())).toMatchObject({ type: "TRAILER_PREVIEW_ENV", delayMs: 1200 });
+    trailerPreviewDelayChoice.set(800);
+    expect(push).toHaveBeenLastCalledWith({ enabled: true, muted: false, volume: 0.6, delayMs: 800 });
+    stop();
   });
 });
 
@@ -95,7 +108,7 @@ function runBridge(hostEnv: PluginHostEnv) {
 describe("le pont, dans l'iframe", () => {
   const env: PluginHostEnv = {
     tauri: false, desktop: false, mac: false, prod: true, backendUrl: "",
-    trailerPreview: { enabled: true, muted: false, volume: 0.6 },
+    trailerPreview: { enabled: true, muted: false, volume: 0.6, delayMs: 800 },
   };
 
   afterEach(() => vi.restoreAllMocks());
@@ -103,17 +116,17 @@ describe("le pont, dans l'iframe", () => {
   it("pose l'état au montage, puis le met à jour et le dit à chaque message du PARENT", () => {
     const { win, parent, send } = runBridge(env);
     const tentacleEnv = () => (win.__tentacle_env as PluginHostEnv).trailerPreview;
-    expect(tentacleEnv()).toEqual({ enabled: true, muted: false, volume: 0.6 });
+    expect(tentacleEnv()).toEqual({ enabled: true, muted: false, volume: 0.6, delayMs: 800 });
     const heard = vi.fn();
     win.addEventListener(TRAILER_PREVIEW_ENV_EVENT, (e) => heard((e as CustomEvent).detail));
 
-    send(trailerPreviewEnvMessage({ enabled: false, muted: true, volume: 0.6 }), parent);
-    expect(tentacleEnv()).toEqual({ enabled: false, muted: true, volume: 0.6 });
-    expect(heard).toHaveBeenCalledWith({ enabled: false, muted: true, volume: 0.6 });
+    send(trailerPreviewEnvMessage({ enabled: false, muted: true, volume: 0.6, delayMs: 800 }), parent);
+    expect(tentacleEnv()).toEqual({ enabled: false, muted: true, volume: 0.6, delayMs: 800 });
+    expect(heard).toHaveBeenCalledWith({ enabled: false, muted: true, volume: 0.6, delayMs: 800 });
 
     // Un autre émetteur (une iframe voisine, la page elle-même) n'y touche pas.
-    send(trailerPreviewEnvMessage({ enabled: true, muted: false, volume: 0.6 }), {});
-    expect(tentacleEnv()).toEqual({ enabled: false, muted: true, volume: 0.6 });
+    send(trailerPreviewEnvMessage({ enabled: true, muted: false, volume: 0.6, delayMs: 800 }), {});
+    expect(tentacleEnv()).toEqual({ enabled: false, muted: true, volume: 0.6, delayMs: 800 });
     expect(heard).toHaveBeenCalledTimes(1);
   });
 

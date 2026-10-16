@@ -23,5 +23,5 @@ export type { TrailerPreviewHandle, TrailerPreviewStream, TrailerPreviewVideoPro
 export { previewSubjectOf, previewSubjectOfTitle } from "./previewSubject";
 export { useTrailerPreview } from "./useTrailerPreview";
 export { TrailerPreviewVideo } from "./TrailerPreviewVideo";
-export { useTrailerPreviewMuted, useTrailerPreviewsSetting } from "./previewSettings";
+export { useTrailerPreviewDelay, useTrailerPreviewMuted, useTrailerPreviewsSetting } from "./previewSettings";
 export { trackPreviewWarm } from "./previewWarm";

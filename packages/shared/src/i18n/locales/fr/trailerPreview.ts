@@ -13,12 +13,20 @@ export default {
   /** Le nom de l'interrupteur, pour les lecteurs d'écran (la ligne seule ne dit pas « bande-annonce »). */
   settingAccessibleName: "Aperçus de bande-annonce au survol",
   settingDescription: "Laissez le pointeur sur une affiche\u00a0: sa bande-annonce se lance, avec le son. Réglage propre à cet appareil.",
+  /** Le délai avant la première image de l'aperçu (web, bureau, téléviseurs : shared `previewDelay.ts`). */
+  delayTitle: "Délai avant l'aperçu",
+  delayDescription: "Le temps à laisser le pointeur sur une affiche avant que sa bande-annonce paraisse. 0,8\u00a0s par défaut.",
+  delay_500: "0,5\u00a0s",
+  delay_800: "0,8\u00a0s",
+  delay_1200: "1,2\u00a0s",
+  delay_2000: "2\u00a0s",
 
   // ── Le réglage des téléviseurs (Réglages › Lecture, Apple TV et Android TV) ──
   tvSettingTitle: "Aperçus au focus",
-  tvSettingDescription: "Restez une seconde sur une carte\u00a0: elle s'agrandit et sa bande-annonce se lance. Réglage propre à ce téléviseur.",
+  tvSettingDescription: "Restez un instant sur une carte\u00a0: elle s'agrandit et sa bande-annonce se lance. Réglage propre à ce téléviseur.",
   tvSoundTitle: "Son des aperçus",
   tvSoundDescription: "Coupé, la bande-annonce se joue en silence.",
+  tvDelayDescription: "Le temps à rester sur une carte avant que sa bande-annonce paraisse. 0,8\u00a0s par défaut.",
 
   // ── La mini-carte ──────────────────────────────────────────────────────
   /** Le nom de la mini-carte, pour les lecteurs d'écran. */

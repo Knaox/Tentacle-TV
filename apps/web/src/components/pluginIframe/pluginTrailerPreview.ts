@@ -1,5 +1,5 @@
 import { getTrailerPreviewBlock, subscribeTrailerPreviewBlock } from "../../trailerPreview/previewEnvironment";
-import { trailerPreviewMutedFlag, trailerPreviewVolumeLevel } from "../../trailerPreview/previewSettings";
+import { trailerPreviewDelayChoice, trailerPreviewMutedFlag, trailerPreviewVolumeLevel } from "../../trailerPreview/previewSettings";
 
 /**
  * Les aperçus de bande-annonce, vus d'une EXTENSION : ce que son iframe ne
@@ -11,7 +11,11 @@ import { trailerPreviewMutedFlag, trailerPreviewVolumeLevel } from "../../traile
  *     ligne, miroir, page cachée, pas de souris, économie de données) ;
  *   - `muted` : le son des aperçus coupé d'un geste, retenu sur l'appareil ;
  *   - `volume` : le volume des aperçus (0 à 1), retenu sur l'appareil
- *     (additif : un hôte d'avant ne le donne pas).
+ *     (additif : un hôte d'avant ne le donne pas) ;
+ *   - `delayMs` : le délai choisi entre le début du survol et la première
+ *     image de l'aperçu (shared `previewDelay.ts`, 800 ms par défaut) — le
+ *     MÊME que celui des cartes du cœur (additif : une extension face à un
+ *     hôte d'avant garde le sien).
  *
  * Générique : n'importe quelle extension qui montre des aperçus le lit. La
  * capacité du serveur (`trailers.preview`), elle, se lit sur `/api/config`.
@@ -23,6 +27,7 @@ export interface PluginTrailerPreviewEnv {
   enabled: boolean;
   muted: boolean;
   volume: number;
+  delayMs: number;
 }
 
 /** L'hôte → l'iframe : l'état a changé (réglage, son, connectivité…). */
@@ -36,7 +41,10 @@ export const TRAILER_PREVIEW_ENV_EVENT = "tentacle:trailerpreview";
 
 /** L'état courant, pour le `hostEnv` du document de l'iframe. */
 export function pluginTrailerPreviewEnv(): PluginTrailerPreviewEnv {
-  return { enabled: getTrailerPreviewBlock() === null, muted: trailerPreviewMutedFlag.get(), volume: trailerPreviewVolumeLevel.get() };
+  return {
+    enabled: getTrailerPreviewBlock() === null, muted: trailerPreviewMutedFlag.get(), volume: trailerPreviewVolumeLevel.get(),
+    delayMs: trailerPreviewDelayChoice.get(),
+  };
 }
 
 /**
@@ -47,12 +55,13 @@ export function watchPluginTrailerPreviewEnv(push: (env: PluginTrailerPreviewEnv
   let last = pluginTrailerPreviewEnv();
   const refresh = () => {
     const next = pluginTrailerPreviewEnv();
-    if (next.enabled === last.enabled && next.muted === last.muted && next.volume === last.volume) return;
+    if (next.enabled === last.enabled && next.muted === last.muted && next.volume === last.volume && next.delayMs === last.delayMs) return;
     last = next;
     push(next);
   };
   const unsubscribers = [
     subscribeTrailerPreviewBlock(refresh), trailerPreviewMutedFlag.subscribe(refresh), trailerPreviewVolumeLevel.subscribe(refresh),
+    trailerPreviewDelayChoice.subscribe(refresh),
   ];
   // L'abonnement au blocage le recalcule : un écart avec la lecture d'avant se dit tout de suite.
   refresh();
@@ -90,7 +99,7 @@ export function applyPluginTrailerPreviewVolume(data: unknown): boolean {
 
 /** Le message de l'hôte à poster dans l'iframe. */
 export function trailerPreviewEnvMessage(env: PluginTrailerPreviewEnv) {
-  return { type: TRAILER_PREVIEW_ENV_MESSAGE, enabled: env.enabled, muted: env.muted, volume: env.volume };
+  return { type: TRAILER_PREVIEW_ENV_MESSAGE, enabled: env.enabled, muted: env.muted, volume: env.volume, delayMs: env.delayMs };
 }
 
 /** Script du pont (méthode de `__tentacle_bridge`, sans virgule finale) : le son coupé d'un geste. */
@@ -116,6 +125,7 @@ export function buildTrailerPreviewEnvListener(): string {
   return `
       if (data.type === ${JSON.stringify(TRAILER_PREVIEW_ENV_MESSAGE)} && e.source === parent) {
         var tp = { enabled: data.enabled === true, muted: data.muted === true, volume: typeof data.volume === "number" ? data.volume : 0.6 };
+        if (typeof data.delayMs === "number") tp.delayMs = data.delayMs;
         window.__tentacle_env.trailerPreview = tp;
         try { window.dispatchEvent(new CustomEvent(${JSON.stringify(TRAILER_PREVIEW_ENV_EVENT)}, { detail: tp })); } catch (err) {}
       }`;

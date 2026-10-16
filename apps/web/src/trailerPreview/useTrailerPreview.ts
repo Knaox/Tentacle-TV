@@ -36,8 +36,8 @@ import { usePreviewMachine } from "./usePreviewMachine";
  *     elle va au bout même si le survol cesse — sa réponse, gardée, sert le
  *     retour sur la carte (`useTrailerPreviewStream`) ;
  *   - la vidéo se charge cachée et en pause jusqu'à sa première image ;
- *   - la mini-carte se montre au plus tôt à `revealMs` (600 ms, cf.
- *     `previewTiming.ts`) et seulement si la vidéo est prête — ou si la
+ *   - la mini-carte se montre au plus tôt à `revealMs` (le délai choisi, cf.
+ *     `previewDelay.ts`) et seulement si la vidéo est prête — ou si la
  *     mini-carte a l'image du titre (`reportStillReady`) : la bande-annonce
  *     est VÉRIFIÉE par le serveur, la vidéo rejoint l'image à sa première
  *     image (`videoReady`) ;

@@ -8,7 +8,9 @@
  * survol avant que la carte ne s'agrandisse et que l'aperçu ne parte. Essayée
  * en vrai (14/10), la seconde paraissait « légèrement trop longue », puis
  * 800 ms « presque un tout petit peu lent » : il faut ne presque pas sentir
- * le délai. Le rendez-vous est à 600 ms de survol, et la vidéo y JOUE déjà
+ * le délai. Le rendez-vous était à 600 ms de survol ; depuis le 16/10 il est
+ * CHOISI par l'utilisateur, 800 ms par défaut (`previewDelay.ts` : à 600 ms,
+ * l'aperçu partait trop vite et gênait la navigation). La vidéo y JOUE déjà
  * (elle ne fige plus sa première image le temps de l'agrandissement). Et
  * seulement avec de quoi montrer : la
  * première image de la vidéo, ou l'image du titre une fois la bande-annonce
@@ -17,7 +19,8 @@
  * chargement à l'écran, jamais un flux bloqué qui ferait tout grandir.
  *
  * Pour tenir ce rendez-vous, rien ne l'attend : la demande au serveur part à
- * l'INTENTION — 200 ms de survol ET un pointeur arrêté depuis 100 ms ; une
+ * l'INTENTION — avant le délai, jamais avant 200 ms de survol, ET un pointeur
+ * arrêté depuis 100 ms (`trailerPreviewTimingFor`) ; une
  * souris qui balaie une rangée, même lentement, ou une page qui défile à la
  * molette ne demandent RIEN — puis la vidéo se charge, cachée et en pause,
  * jusqu'à sa première image. Le serveur, lui, a préparé d'avance l'aperçu des
@@ -27,7 +30,11 @@
  * serveur seul décide du reste.
  */
 export const TRAILER_PREVIEW_TIMING = {
-  /** Survol continu au-delà duquel la demande part (une souris qui traverse ne demande rien). */
+  /**
+   * Survol continu au-delà duquel la demande part (une souris qui traverse ne
+   * demande rien). Valeur de base : le délai choisi la fixe
+   * (`trailerPreviewTimingFor`).
+   */
   intentMs: 200,
   /**
    * Et le pointeur doit s'être ARRÊTÉ sur la carte depuis ce temps : un
@@ -39,7 +46,7 @@ export const TRAILER_PREVIEW_TIMING = {
   intentStillMs: 100,
   /** Le mouvement (px CSS) en deçà duquel le pointeur est tenu pour arrêté (le tremblement d'un pavé tactile). */
   intentMovePx: 6,
-  /** Révélation au plus tôt, depuis le début du survol (600 ms, cf. plus haut). */
+  /** Révélation au plus tôt, depuis le début du survol. Valeur de base : le délai choisi la remplace (`previewDelay.ts`). */
   revealMs: 600,
   /**
    * Où l'aperçu commence (s) : pas à 0, presque toujours du noir ou le logo

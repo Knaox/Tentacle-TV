@@ -5,6 +5,7 @@
  * et les réglages vivent dans `apps/web/src/trailerPreview/`.
  */
 export * from "./previewTiming";
+export * from "./previewDelay";
 export * from "./previewSubject";
 export * from "./previewMachine";
 export * from "./previewArbiter";
