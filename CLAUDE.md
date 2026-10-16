@@ -670,8 +670,9 @@ sa taille suit le réglage « Taille des cartes ». La carte dont l'aperçu DÉM
 passe EN TÊTE de sa rangée, à la place de la première — rien ne bouge avant
 (tv-core `cards/trailerPreviewRowHead.ts`, règle datée : où défiler, la place
 posée au bout AVANT de défiler, le départ du focus) ; la carte y glisse sur le
-ressort de sa grande carte (`rows/rowGlide.ts`), et en bout de rangée l'essai
-choisit butée ou dépassement (Réglages › Lecture, port `rows/rowHeadMode.tsx`).
+ressort de sa grande carte (`rows/rowGlide.ts`). En bout de rangée, la BUTÉE (la
+grande carte finit à la marge droite, elle grandit vers la gauche) ; au départ du
+focus, la rangée RESTE où elle est (choix de Damien, 16/10).
 La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
 se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
 Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
