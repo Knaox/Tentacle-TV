@@ -76,10 +76,14 @@ describe("la TV d'un membre", () => {
       [IDS.hugo, "member"],
       [zoe, "guest"],
     ]);
-    // Sans code, personne ne gère depuis un profil (1.30.0) : chacun apprend qu'un code le lui ouvrirait.
+    // Sans code, personne ne gère depuis un profil (1.30.0) : qui aurait un geste apprend qu'un code le
+    // lui ouvrirait ; un membre sans droit ni invité à lui n'a RIEN à y faire — pas même « posez un code ».
     const before = new Map(listing.profiles.map((p: { userId: string }) => [p.userId, p]));
     expect(before.get(IDS.damien)).toMatchObject({ manage: null, manageNeedsPin: true });
-    expect(before.get(IDS.lea)).toMatchObject({ manage: null, manageNeedsPin: true });
+    expect(before.get(IDS.lea)).toMatchObject({ manage: null, manageNeedsPin: false });
+    await send("PUT", `/api/family/members/${IDS.lea}/rights`, tokens.damien, { createGuests: true });
+    const granted = new Map((await profiles(leaTv)).profiles.map((p: { userId: string }) => [p.userId, p]));
+    expect(granted.get(IDS.lea)).toMatchObject({ manage: null, manageNeedsPin: true });
     expect(before.get(zoe)).toMatchObject({ createdBy: IDS.damien, manage: null, manageNeedsPin: false });
     expect(listing.canManage).toBe(false);
 
@@ -88,7 +92,7 @@ describe("la TV d'un membre", () => {
     const after = await profiles(leaTv);
     const byId = new Map(after.profiles.map((p: { userId: string }) => [p.userId, p]));
     expect(byId.get(IDS.damien)).toMatchObject({ createdBy: null, manage: { manageMembers: true, manageGuests: "all" }, manageNeedsPin: false });
-    expect(byId.get(IDS.lea)).toMatchObject({ manage: { manageMembers: false, createGuests: false, manageGuests: "own" } });
+    expect(byId.get(IDS.lea)).toMatchObject({ manage: { manageMembers: false, createGuests: true, manageGuests: "own" } });
     expect(after.canManage).toBe(true);
   });
 
@@ -158,8 +162,10 @@ describe("les coupures de la famille partagée", () => {
 });
 
 describe("« Gérer les profils » sur la TV d'un membre", () => {
+  // Léa a un geste réel (« peut créer des invités ») : sans lui, rien ne lui est ouvert (`rightsReachSomething`).
   async function leaManaging(): Promise<{ manage: string; zoe: string }> {
     const { leaTv, zoe } = await family();
+    await send("PUT", `/api/family/members/${IDS.lea}/rights`, tokens.damien, { createGuests: true });
     await send("PUT", "/api/family/pin", tokens.lea, { pin: "1357" });
     const manage = await session(leaTv, IDS.lea, "1357");
     return { manage, zoe };
@@ -173,22 +179,23 @@ describe("« Gérer les profils » sur la TV d'un membre", () => {
 
   it("ouvert sans code (« Rester sur ce profil ») : verrouillé jusqu'à SON PIN", async () => {
     const { leaTv } = await family();
+    await send("PUT", `/api/family/members/${IDS.lea}/rights`, tokens.damien, { createGuests: true });
     await send("PUT", "/api/family/pin", tokens.lea, { pin: "1357" });
     await openProfile(app, leaTv, { profileId: IDS.lea, pin: "1357", remember: true });
     const sticky = await session(leaTv, IDS.lea);
     expect((await send("GET", "/api/family", sticky)).json().code).toBe("family.manage_locked");
     expect((await unlock(sticky, "4242")).json().code).toBe("family.pin_invalid");
-    expect((await unlock(sticky, "1357")).json()).toMatchObject({ rights: { manageMembers: false, createGuests: false, manageGuests: "own" } });
+    expect((await unlock(sticky, "1357")).json()).toMatchObject({ rights: { manageMembers: false, createGuests: true, manageGuests: "own" } });
     expect((await send("GET", "/api/family", sticky)).json().family).toMatchObject({ role: "member" });
   });
 
   it("ses invités seulement, et jamais un geste de propriétaire", async () => {
     const { manage, zoe } = await leaManaging();
-    await unlock(manage, "1357");
-    expect((await send("POST", "/api/family/guests", manage, { name: "Léo", color: "pink" })).json().code).toBe("family.guest_right_required");
-    await send("PUT", `/api/family/members/${IDS.lea}/rights`, tokens.damien, { createGuests: true });
     const leo = (await send("POST", "/api/family/guests", manage, { name: "Léo", color: "pink" })).json();
     expect(leo).toMatchObject({ createdBy: IDS.lea });
+    // Le droit retiré : elle garde la main sur Léo, mais n'en crée plus.
+    await send("PUT", `/api/family/members/${IDS.lea}/rights`, tokens.damien, { createGuests: false });
+    expect((await send("POST", "/api/family/guests", manage, { name: "Max", color: "teal" })).json().code).toBe("family.guest_right_required");
     expect((await send("DELETE", `/api/family/guests/${zoe}`, manage)).json().code).toBe("family.not_owner");
     expect((await send("DELETE", `/api/family/guests/${leo.userId}`, manage)).json()).toEqual({ deleted: true });
     expect((await send("POST", "/api/family/invitations", manage, { userId: IDS.cache })).json().code).toBe("family.not_owner");
