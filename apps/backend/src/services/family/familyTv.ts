@@ -15,6 +15,7 @@ import { familyOf, familyProfiles, fold, jellyfinUserMap, memberKind, profileCol
 import type { PairingRow } from "./familyTvEnroll";
 import { syncGuestPolicy } from "./guestPolicySync";
 import { creationAllowedForMany } from "./familyCreationRights";
+import { guestRightsOf } from "./familyGuestRequests";
 import { syncMemberParental } from "./memberParentalSync";
 
 /**
@@ -69,11 +70,15 @@ export async function visibleProfiles(
     return users === null || (user !== undefined && !user.isDisabled);
   });
   const ids = visible.map((entry) => entry.userId);
-  const [pins, locks, review, creations] = await Promise.all([
+  const [pins, locks, review, creations, guestRights] = await Promise.all([
     profilesWithPin(ids),
     lockedProfiles(ids, now),
     isReviewAccount(account),
     creationAllowedForMany(visible.filter((entry) => entry.kind !== "guest").map((entry) => entry.userId)),
+    guestRightsOf(
+      visible.flatMap((entry) => (entry.row ? [entry.row] : [])),
+      familyOwner ?? account,
+    ),
   ]);
   // Les droits du RÔLE (session personnelle) ; depuis un profil, seulement derrière un code (`profileManage`).
   const roleRights = new Map<string, FamilyRights>();
@@ -100,7 +105,9 @@ export async function visibleProfiles(
       imageTag: users?.get(fold(entry.userId))?.imageTag ?? null,
       lockedUntil: until ? iso(until) : null,
       createdBy: guest ? entry.row?.createdBy ?? familyOwner : null,
-      guestRights: guest ? { requestTitles: entry.row?.canRequestTitles === true } : null,
+      // En vigueur (1.30.0) : `profileMayRequest` de la TV n'a rien d'autre à lire.
+      guestRights: guest ? guestRights.get(entry.userId) ?? { requestTitles: false } : null,
+      ...(entry.kind === "member" && entry.row?.isParent === true && { parent: true }),
       // Ce que ce profil gérerait ici, derrière SON PIN ; jamais un invité, jamais le compte de
       // démonstration, jamais sans code (1.30.0) — `manageNeedsPin` le dit alors.
       manage: managing.manage,

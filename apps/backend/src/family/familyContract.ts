@@ -11,7 +11,7 @@
  * backend ne dépend pas de `@tentacle-tv/shared`). On modifie ICI, on recopie
  * là-bas :
  *
- *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,TvContract,PickerContract,Protocol,Routes,Callers,Rules,Rights}.ts apps/backend/src/family/
+ *   cp packages/shared/src/family/family{Contract,Limits,Parental,Roles,Bodies,Libraries,TvContract,PickerContract,Protocol,Routes,Callers,Rules,Rights}.ts apps/backend/src/family/
  *
  * UNE famille par compte, PARTAGÉE par tous ses membres (v2). Trois rôles :
  * - le PROPRIÉTAIRE l'a créée : il invite, annule une invitation, retire un
@@ -39,6 +39,7 @@ export * from "./familyLimits";
 export * from "./familyParental";
 export * from "./familyRoles";
 export * from "./familyBodies";
+export * from "./familyLibraries";
 import type { GuestParentalCeiling, GuestParentalControls } from "./familyParental";
 import type { FamilyCreationAllowed } from "./familyRoles";
 
@@ -56,6 +57,19 @@ export type FamilyRole = "owner" | "member";
 export interface FamilySwitches {
   families: boolean;
   guests: boolean;
+  /** 1.30.0 (`family.guestRequestsAdmin`) : « Les invités peuvent demander des films ». COUPÉ
+   *  tant que l'administration ne l'a pas allumé — mise à jour comprise. Coupé : aucune famille
+   *  ne donne ce droit, et les invités qui l'avaient le voient SUSPENDU (`FamilyGuestRights`).
+   *  Absent : serveur d'avant, le droit d'invité se règle comme alors. */
+  guestRequests?: boolean;
+}
+
+/** `GET|PUT /api/admin/family` : les interrupteurs, et ce que l'administration doit savoir pour
+ *  les montrer. */
+export interface FamilyAdminSwitchesDto extends FamilySwitches {
+  /** 1.30.0 : une extension active et configurée sait demander un titre (`hasRequestExtension`).
+   *  Faux ou absent : l'interrupteur `guestRequests` ne se montre pas. */
+  requestExtension?: boolean;
 }
 
 /** `GET /api/config` → `features.family`. ABSENT : serveur d'avant la Famille
@@ -68,7 +82,9 @@ export interface FamilyCapability {
    *  les invités allumés, ET une extension active et configurée sait demander
    *  un titre (contrat `titles`, sa route `request`). Faux : les clients
    *  n'offrent pas l'interrupteur. Toujours rendu par un serveur v2 ; absent :
-   *  non. */
+   *  non. 1.30.0 (`family.guestRequestsAdmin`) : faux aussi tant que l'administration n'a pas
+   *  allumé `FamilySwitches.guestRequests` — un client d'avant cache alors la case ; le compte
+   *  qui AGIT doit EN PLUS en avoir le droit (`FamilyAccountDto.creation.grantGuestRequests`). */
   guestRequests?: boolean;
 }
 
@@ -95,7 +111,13 @@ export const FAMILY_DEFAULT_MEMBER_RIGHTS: Readonly<FamilyMemberRights> = { crea
  * (`FamilyCapability.guestRequests`).
  */
 export interface FamilyGuestRights {
+  /** 1.30.0 : la valeur EN VIGUEUR — la case cochée, ET l'administration qui le permet encore
+   *  (interrupteur allumé, droit du compte qui l'a donné). */
   requestTitles: boolean;
+  /** 1.30.0 (`family.guestRequestsAdmin`) : la case est cochée mais SUSPENDUE — interrupteur
+   *  coupé, ou le compte qui l'a donnée a perdu le droit. Gardée : rallumé, l'invité retrouve
+   *  son droit sans qu'on le règle de nouveau. Absent : non. */
+  suspended?: boolean;
 }
 
 export const FAMILY_DEFAULT_GUEST_RIGHTS: Readonly<FamilyGuestRights> = { requestTitles: false };

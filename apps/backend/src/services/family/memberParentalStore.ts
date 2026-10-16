@@ -2,12 +2,14 @@ import { getPrisma } from "../db";
 import type { GuestParentalCeiling, GuestParentalControls } from "../../family/familyParental";
 import { UNRATED_ITEM_TYPES } from "../../userRights/userRightsContract";
 import { parseGuestParental } from "./guestParentalPolicy";
+import { storedWantedLibraries, type LibraryAccess, type WantedLibraries } from "./familyLibraryRules";
 
 /**
  * Le contrôle parental d'un membre mineur EN BASE (`family_member_parental`) : le
- * voulu, la base et la dernière écriture, en JSON. Une ligne illisible ne relâche
- * jamais rien : un voulu illisible vaut le plus fermé, une base illisible empêche
- * de « rendre » (la ligne reste, journalisée) plutôt que de deviner.
+ * voulu, la base et la dernière écriture, en JSON — l'âge et les autres champs
+ * parentaux d'un côté, les BIBLIOTHÈQUES de l'autre (1.30.0). Une ligne illisible
+ * ne relâche jamais rien : un voulu illisible vaut le plus fermé, une base
+ * illisible empêche de « rendre » (la ligne reste, journalisée) plutôt que de deviner.
  */
 
 export interface MemberParentalState {
@@ -18,6 +20,16 @@ export interface MemberParentalState {
   base: GuestParentalCeiling;
   written: GuestParentalCeiling | null;
   restorePending: boolean;
+  /** Les bibliothèques voulues ; null : toutes celles de la base. */
+  libraries: WantedLibraries;
+  /** Les bibliothèques de la base ; null : pas encore relevées (la politique lue les donne). */
+  libraryBase: LibraryAccess | null;
+  libraryWritten: LibraryAccess | null;
+}
+
+/** La ligne retient-elle encore quelque chose ? Sinon, la base est à rendre. */
+export function memberRestricted(state: Pick<MemberParentalState, "controls" | "libraries">): boolean {
+  return state.controls !== null || state.libraries !== null;
 }
 
 /** Un voulu illisible : le plus fermé, jamais « aucun ». */
@@ -52,11 +64,35 @@ function parseControls(raw: string | null): GuestParentalControls | null {
   }
 }
 
-type Row = { userId: string; familyId: string; controls: string | null; base: string; written: string | null; restorePending: boolean };
+/** Un accès `{ all, ids }` ; absent : null ; illisible : `undefined` (la ligne ne se relâche pas). */
+function parseAccess(raw: string | null): LibraryAccess | null | undefined {
+  if (!raw) return null;
+  try {
+    const value = JSON.parse(raw) as Record<string, unknown>;
+    const ids = value.ids;
+    if (typeof value.all !== "boolean" || !Array.isArray(ids) || !ids.every((id) => typeof id === "string")) return undefined;
+    return { all: value.all, ids: ids as string[] };
+  } catch {
+    return undefined;
+  }
+}
+
+type Row = {
+  userId: string;
+  familyId: string;
+  controls: string | null;
+  base: string;
+  written: string | null;
+  restorePending: boolean;
+  libraries: string | null;
+  libraryBase: string | null;
+  libraryWritten: string | null;
+};
 
 function stateOf(row: Row): MemberParentalState | null {
   const base = parseCeiling(row.base);
-  if (!base) {
+  const libraryBase = parseAccess(row.libraryBase);
+  if (!base || libraryBase === undefined) {
     console.log("[family] contrôle parental d'un membre : base illisible en base, rien n'est relâché");
     return null;
   }
@@ -67,6 +103,9 @@ function stateOf(row: Row): MemberParentalState | null {
     base,
     written: parseCeiling(row.written),
     restorePending: row.restorePending,
+    libraries: storedWantedLibraries(row.libraries),
+    libraryBase,
+    libraryWritten: parseAccess(row.libraryWritten) ?? null,
   };
 }
 
@@ -98,6 +137,9 @@ export async function saveMemberParental(state: MemberParentalState): Promise<vo
     base: JSON.stringify(state.base),
     written: state.written ? JSON.stringify(state.written) : null,
     restorePending: state.restorePending,
+    libraries: state.libraries ? JSON.stringify(state.libraries) : null,
+    libraryBase: state.libraryBase ? JSON.stringify(state.libraryBase) : null,
+    libraryWritten: state.libraryWritten ? JSON.stringify(state.libraryWritten) : null,
   };
   await getPrisma().familyMemberParental.upsert({ where: { userId: state.userId }, create: { userId: state.userId, ...data }, update: data });
 }

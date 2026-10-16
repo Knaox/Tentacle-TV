@@ -109,6 +109,16 @@ describe("ProfileRow — la famille partagée", () => {
     expect(row(profile("guest"))).not.toContain("family:rights.requestTitles");
   });
 
+  it("1.30.0 : une case SUSPENDUE par l'administration se dit — réglable ou non", () => {
+    const suspended = { guestRights: { requestTitles: false, suspended: true as const } };
+    const editable = row(profile("guest", suspended), { pin: true, remove: true, right: "requestTitles" });
+    expect(editable).toContain("family:rights.requestTitlesSuspended");
+    expect(editable).toContain('role="switch"');
+    const readOnly = row(profile("guest", suspended));
+    expect(readOnly).toContain("family:rights.requestTitlesSuspended");
+    expect(readOnly).not.toContain('role="switch"');
+  });
+
   it("l'invité d'un autre n'offre rien ; « Vous » ne s'offre aucun geste", () => {
     expect(row(profile("guest", { createdBy: "bob", createdByName: "Bob" }))).not.toContain("<button");
     const self = row(profile("member"), NONE, { isSelf: true });

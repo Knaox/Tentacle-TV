@@ -8,14 +8,16 @@ import { GUEST_PARENTAL_NONE, type FamilyOverviewDto, type FamilyProfileDto } fr
  * pour qui gère cet invité (le propriétaire : tous ; un membre : les siens).
  * Un serveur qui ne déclare rien : aucune trace, aucune erreur.
  */
-const h = vi.hoisted(() => ({ parental: false, memberParental: false, viewer: "owner-id" }));
+const h = vi.hoisted(() => ({ parental: false, memberParental: false, libraries: false, viewer: "owner-id" }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: "fr" } }) }));
 vi.mock("@tentacle-tv/api-client", () => {
   const mutation = () => ({ mutate: () => undefined, isPending: false });
   return {
     useServerCapability: (key: string) =>
-      key === "family.parentalControls" ? h.parental : key === "family.memberParental" || key === "family.roles" ? h.memberParental : false,
+      key === "family.parentalControls" ? h.parental
+        : key === "family.memberParental" || key === "family.roles" ? h.memberParental
+          : key === "family.libraryLimits" ? h.libraries : false,
     useUserId: () => h.viewer,
     useCancelFamilyInvitation: mutation,
     useDeleteFamilyGuest: mutation,
@@ -36,6 +38,7 @@ vi.mock("./GuestDialog", () => ({ GuestDialog: () => null }));
 vi.mock("./InviteDialog", () => ({ InviteDialog: () => null }));
 vi.mock("./PinEditors", () => ({ GuestPinDialog: () => null }));
 vi.mock("./GuestParentalDialog", () => ({ GuestParentalDialog: () => null }));
+vi.mock("./FamilyLibrariesDialog", () => ({ FamilyLibrariesDialog: () => null }));
 
 const { FamilySection } = await import("./FamilySection");
 
@@ -48,11 +51,11 @@ function profile(kind: FamilyProfileDto["kind"], userId: string, createdBy: stri
   };
 }
 
-function overview(role: "owner" | "member", personal = true): FamilyOverviewDto {
+function overview(role: "owner" | "member", personal = true, managing = false): FamilyOverviewDto {
   return {
     v: 2,
     switches: { families: true, guests: true },
-    account: { canOwn: role === "owner", canJoin: false, reviewAccount: false, hasPin: false, personalSession: personal },
+    account: { canOwn: role === "owner", canJoin: false, reviewAccount: false, hasPin: false, personalSession: personal, managing },
     family: {
       id: "f", role, owner: { userId: "owner-id", name: "owner-id" },
       profiles: [profile("owner", "owner-id"), profile("member", "member-id"), profile("guest", "guest-owner", "owner-id"), profile("guest", "guest-member", "member-id")],
@@ -75,6 +78,7 @@ const entries = (html: string) => [...html.matchAll(/aria-label="familyWeb:paren
 beforeEach(() => {
   h.parental = false;
   h.memberParental = false;
+  h.libraries = false;
   h.viewer = "owner-id";
 });
 
@@ -98,6 +102,13 @@ describe("« Contrôle parental » d'un invité", () => {
     h.parental = true;
     expect(entries(renderToStaticMarkup(<FamilySection overview={overview("owner", false)} />))).toEqual([]);
   });
+
+  it("un profil qui gère (1.30.0, `account.managing`) : les entrées de son rôle, comme en session personnelle", () => {
+    h.parental = true;
+    expect(entries(renderToStaticMarkup(<FamilySection overview={overview("owner", false, true)} />))).toEqual(["guest-owner", "guest-member"]);
+    h.viewer = "member-id";
+    expect(entries(renderToStaticMarkup(<FamilySection overview={overview("member", false, true)} />))).toEqual(["guest-member"]);
+  });
 });
 
 describe("« Contrôle parental » d'un membre mineur (1.30.0)", () => {
@@ -118,5 +129,27 @@ describe("« Contrôle parental » d'un membre mineur (1.30.0)", () => {
     expect(renderToStaticMarkup(<FamilySection overview={overview("owner")} />)).toContain("familyWeb:roles.parentHint");
     h.viewer = "member-id";
     expect(renderToStaticMarkup(<FamilySection overview={overview("member")} />)).not.toContain("familyWeb:roles.parentHint");
+  });
+});
+
+const libraryEntries = (html: string) => [...html.matchAll(/aria-label="familyWeb:libraries\.open — ([^"]+)"/g)].map((match) => match[1]);
+
+describe("« Bibliothèques » d'un invité ou d'un membre mineur (1.30.0)", () => {
+  it("serveur qui ne déclare pas `family.libraryLimits` : aucune entrée, aucune erreur", () => {
+    h.memberParental = true;
+    expect(libraryEntries(renderToStaticMarkup(<FamilySection overview={overview("owner")} />))).toEqual([]);
+  });
+
+  it("mêmes droits que le contrôle parental : le propriétaire, tous les invités et le membre mineur ; un membre, ses invités", () => {
+    h.libraries = true;
+    h.memberParental = true;
+    expect(libraryEntries(renderToStaticMarkup(<FamilySection overview={overview("owner")} />))).toEqual(["member-id", "guest-owner", "guest-member"]);
+    h.viewer = "member-id";
+    expect(libraryEntries(renderToStaticMarkup(<FamilySection overview={overview("member")} />))).toEqual(["guest-member"]);
+  });
+
+  it("hors session personnelle et sans gestion ouverte (une TV), rien", () => {
+    h.libraries = true;
+    expect(libraryEntries(renderToStaticMarkup(<FamilySection overview={overview("owner", false)} />))).toEqual([]);
   });
 });

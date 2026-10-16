@@ -104,8 +104,15 @@ describe("« Qui regarde ? » depuis « Changer de profil »", () => {
     expect(html).toContain("switcher.cancel");
     expect(html).toMatch(/<input type="checkbox"[^>]*checked=""/);
     expect(tabbableTile(html)).toContain("zoe");
-    // « Gérer les profils » reste là : son profil d'abord, derrière son code.
-    expect(html).toContain("manageProfiles");
+    // Zoé ne gère rien ici (serveur d'avant, ou rien à gérer) : pas d'entrée, jamais le
+    // compte de l'appareil à sa place (1.30.0).
+    expect(html).not.toContain("manageProfiles");
+  });
+
+  it("depuis la session d'un profil qui gère (1.30.0) : « Gérer les profils » reste, pour CE profil", () => {
+    const rights = { manageMembers: false, createGuests: true, manageGuests: "all", manageRoles: false, manageMinors: true } as const;
+    state.listing = { ...LISTING, profiles: LISTING.profiles.map((p) => (p.userId === "zoe" ? { ...p, manage: rights } : p)) };
+    expect(render({ activeProfileId: "zoe" })).toContain("manageProfiles");
   });
 
   it("depuis la session personnelle : le focus sur son propre profil", () => {

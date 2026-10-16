@@ -1,6 +1,7 @@
 import {
   FAMILY_MAX_GUESTS,
   FAMILY_MAX_PROFILES,
+  type FamilyAccountDto,
   type FamilyCandidateDto,
   type FamilyCapability,
   type FamilyDto,
@@ -22,6 +23,13 @@ import type { FamilyErrorCode } from "./familyProtocol";
  * de toute façon (docs/FAMILLE.md). Pas de miroir : le serveur n'en a pas
  * besoin. Module pur : `familyClient.test.ts`.
  */
+
+/** La session de cette vue d'ensemble GÈRE : la session personnelle, ou (1.30.0) une session de
+ *  profil ouverte à la gestion par SON code (`managing`). Accepter, quitter, dissoudre et son
+ *  propre code restent à `personalSession`. */
+export function sessionManages(account: Pick<FamilyAccountDto, "personalSession" | "managing">): boolean {
+  return account.personalSession || account.managing === true;
+}
 
 /** La Famille existe-t-elle ici ? Serveur d'avant (capacité absente) ou hors
  *  ligne : rien ne s'en montre — ni réglage, ni affiche, ni requête. */
@@ -171,7 +179,7 @@ export function profileActions(
   capability: ProfileActionsCapability = {},
 ): ProfileActions {
   const family = overview.family;
-  if (!family || !overview.account.personalSession || !viewerUserId) return NO_ACTIONS;
+  if (!family || !sessionManages(overview.account) || !viewerUserId) return NO_ACTIONS;
   if (profile.kind === "owner" || isOwnProfile(profile, viewerUserId)) return NO_ACTIONS;
   if (profile.kind === "member") {
     const owner = family.rights.manageMembers;
@@ -191,10 +199,22 @@ export interface ProfileActionsCapability {
 /** « Peut demander des films » se règle par le propriétaire (ou un parent), la Famille
  *  et les invités allumés, sur un serveur qui annonce le droit (`guestRequests`). */
 function guestRightOf(overview: FamilyOverviewDto, capability: ProfileActionsCapability): FamilyProfileRight | null {
-  const { switches, family } = overview;
-  const regulates = family?.rights.manageMembers === true || family?.rights.manageMinors === true;
-  if (!regulates || capability.guestRequests !== true) return null;
-  return switches.families && switches.guests ? "requestTitles" : null;
+  const regulates = overview.family?.rights.manageMembers === true || overview.family?.rights.manageMinors === true;
+  return regulates && mayGrantGuestRequests(overview, capability) ? "requestTitles" : null;
+}
+
+/**
+ * La case « peut demander » d'un invité s'offre-t-elle à CE compte ? Le serveur annonce le
+ * droit (`features.family.guestRequests` : extension présente et, 1.30.0, interrupteur de
+ * l'administration allumé), la Famille et les invités allumés, et — 1.30.0,
+ * `family.guestRequestsAdmin` — l'administration permet à ce compte de le donner
+ * (`account.creation.grantGuestRequests`). Un serveur d'avant n'en dit rien : comme alors.
+ * Le RÔLE (propriétaire, parent) se juge à part. Toutes les plateformes lisent cette règle.
+ */
+export function mayGrantGuestRequests(overview: FamilyOverviewDto, capability: ProfileActionsCapability): boolean {
+  const { switches, account } = overview;
+  if (capability.guestRequests !== true || !switches.families || !switches.guests) return false;
+  return account.creation?.grantGuestRequests !== false;
 }
 
 /** Le droit « peut demander » d'un invité : un champ absent vaut « coupé ». */

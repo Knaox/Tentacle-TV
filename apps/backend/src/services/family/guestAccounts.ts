@@ -6,6 +6,7 @@ import { FamilyFailure } from "./familyErrors";
 import { abandonGuestAccount, noteGuestAccount } from "./guestAccountCleanup";
 import { GUEST_PARENTAL_NONE, type GuestParentalControls } from "../../family/familyParental";
 import { withGuestParental } from "./guestParentalPolicy";
+import { effectiveLibraryAccess, libraryAccessOfPolicy, withLibraryAccess, type WantedLibraries } from "./familyLibraryRules";
 
 /**
  * Le compte Jellyfin d'un invité (docs/FAMILLE.md, SEC-F-29/31), par la clé
@@ -93,12 +94,21 @@ function unavailable(step: string, result: JellyfinResult<unknown>): FamilyFailu
 /**
  * La politique de l'invité : la sienne, les bibliothèques et restrictions de son
  * créateur, nos interdits — puis son contrôle parental (1.30.0), recoupé avec les
- * restrictions du créateur : jamais plus large (`withGuestParental`).
+ * restrictions du créateur : jamais plus large (`withGuestParental`) ; et les
+ * bibliothèques que la famille lui permet (1.30.0), parmi celles du créateur
+ * (null : toutes celles-là, recopiées telles quelles).
  */
-export function guestPolicy(guestUserId: string, current: Policy, creator: Policy, wanted: GuestParentalControls = GUEST_PARENTAL_NONE): Policy {
+export function guestPolicy(
+  guestUserId: string,
+  current: Policy,
+  creator: Policy,
+  wanted: GuestParentalControls = GUEST_PARENTAL_NONE,
+  libraries: WantedLibraries = null,
+): Policy {
   const policy: Policy = { ...current };
   for (const field of COPIED_FROM_CREATOR) if (field in creator) policy[field] = creator[field];
-  return withGuestParental(guestUserId, { ...policy, ...FORCED }, creator, wanted);
+  const parental = withGuestParental(guestUserId, { ...policy, ...FORCED }, creator, wanted);
+  return libraries === null ? parental : withLibraryAccess(parental, effectiveLibraryAccess(libraryAccessOfPolicy(creator), libraries));
 }
 
 export async function fetchUser(userId: string): Promise<UserDto> {

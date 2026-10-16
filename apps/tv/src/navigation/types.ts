@@ -8,6 +8,9 @@ export type RootStackParamList = {
    *  vient ; depuis « Qui regarde ? », Retour y ramène (la session du
    *  propriétaire, ouverte pour gérer, se referme). */
   ManageProfiles: { origin: "profiles" | "settings" };
+  /** Le contrôle parental simplifié d'un invité ou d'un membre mineur, depuis
+   *  « Gérer les profils » (le reste de son état se relit dans la famille). */
+  ParentalControls: { userId: string };
   /** SON code PIN (Réglages › Compte) : créer, changer, retirer. */
   ProfilePin: { mode: "create" | "change" | "remove" };
   /** La galerie des avatars : la photo du sujet de la session (Réglages › Compte, « Changer la photo »),

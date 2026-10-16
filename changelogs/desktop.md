@@ -21,12 +21,12 @@ et Linux reçoivent l'ensemble.
 - **Un menu de l'avatar plus simple** : « Changer de profil » en tête, qui ramène à « Qui regarde ? », puis vous, cet appareil, et l'aide en pied
 - **Posez votre code PIN** : rejoindre une famille le propose aussitôt, en expliquant pourquoi, et un profil sans code reçoit une « Action recommandée » (serveur 1.30.0)
 - **« Vous regardez encore ? »** : après une heure et demie de lecture sans le moindre geste, la question paraît en bas à droite ; sans réponse, la lecture se met en pause. Réglable dans Réglages › Lecture, pour tous vos appareils (serveur 1.30.0)
-- **Un profil ouvert sur l'ordinateur regarde** : il n'administre rien, comme sur la TV
+- **Un profil ouvert sur l'ordinateur regarde**, comme sur la TV : seule la Famille s'y gère, par le propriétaire ou un membre, avec ses droits et derrière son code PIN — « Gérer les profils » reste dans ce profil, sans passer par le compte de l'ordinateur (serveur 1.30.0)
 - **Photos de profil** : une galerie de 36 personnages illustrés, chacun avec son nom et son histoire, à choisir depuis le menu de l'avatar — l'import d'une photo personnelle reste là. Un compte sans photo se la voit proposer une fois, au premier lancement. Les invités de la Famille ont aussi la leur, depuis Réglages › Famille ou leur profil
 - **Dans une famille, votre avatar prend la couleur de votre profil**, partout dans l'application
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
 - **Une cloche refaite** : les notifications groupées par jour, leur état d'un coup d'œil, « Tout marquer lu », et un clic qui mène à l'endroit exact — la fiche d'un titre qui vient d'arriver, par exemple (serveur 1.30.0)
-- **Contrôle parental et droits** : le contrôle parental d'un invité depuis Réglages › Famille, et tous les droits d'un compte dans l'administration (serveur 1.30.0)
+- **Contrôle parental et droits** : le contrôle parental d'un invité ou d'un membre mineur depuis Réglages › Famille, et les bibliothèques qu'il voit, et tous les droits d'un compte dans l'administration (serveur 1.30.0)
 - **Plus rien de coupé dans une petite fenêtre** : menus, notifications, filtres et clic droit restent dans la fenêtre, se retournent près d'un bord et défilent quand elle est basse
 - **Bandeau principal au choix** : Personnalisation, réorganisée en « Bandeau principal » et « Rangées de l'accueil », propose aussi vos films ou séries les mieux recommandés (serveur 1.30.0)
 - **« Pour vous » sans clé TMDB** : un message simple dit que les recommandations ne sont pas encore activées ; un administrateur y trouve le chemin de la clé
@@ -38,12 +38,12 @@ et Linux reçoivent l'ensemble.
 - **A simpler avatar menu**: “Switch profile” at the top, which brings back “Who's watching?”, then you, this device, and help at the bottom
 - **Set your PIN**: joining a family suggests it right away, explaining why, and a profile without one gets a “Recommended action” (server 1.30.0)
 - **“Are you still watching?”**: after an hour and a half of playback without a single gesture, the question shows up at the bottom right; with no answer, playback pauses. Adjustable in Settings › Playback, for all your devices (server 1.30.0)
-- **A profile opened on a computer only watches**: it manages nothing, just like on TV
+- **A profile opened on a computer only watches**, just like on TV: only the Family can be managed there, by the owner or a member, with their rights and behind their PIN — “Manage profiles” stays in that profile, without going through the computer's account (server 1.30.0)
 - **Profile pictures**: a gallery of 36 illustrated characters, each with a name and a story, to pick from the avatar menu — uploading your own photo is still there. Accounts without a picture are offered it once, on first launch. Family guests get one too, from Settings › Family or their own profile
 - **In a family, your avatar takes your profile's color**, everywhere in the app
 - **“Clear cache and reset”** now says what it really clears: this device's settings, recent searches and the cache — never your session
 - **A redesigned bell**: notifications grouped by day, their state at a glance, “Mark all as read”, and a click that takes you to the exact place — the page of a title that just arrived, for instance (server 1.30.0)
-- **Parental controls and rights**: a guest's parental controls from Settings › Family, and all of an account's rights in the admin (server 1.30.0)
+- **Parental controls and rights**: a guest's or a minor member's parental controls from Settings › Family, and the libraries they see, and all of an account's rights in the admin (server 1.30.0)
 - **Nothing cut off in a small window anymore**: menus, notifications, filters and the right-click menu stay inside the window, flip near an edge and scroll when it is short
 - **Choose the main banner**: Personalization, now grouped into “Main banner” and “Home rows”, also offers your best-recommended movies or shows (server 1.30.0)
 - **“For you” without a TMDB key**: a simple message says recommendations aren't turned on yet; administrators get the way to the key

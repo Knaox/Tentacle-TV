@@ -379,12 +379,18 @@ model FamilyMember {
   canCreateGuests Boolean  @default(false)
   /// Invité (v2) : « peut demander » — les extensions, à son propre nom. Coupé par défaut.
   canRequestTitles Boolean @default(false)
+  /// Invité (1.30.0) : le compte qui a coché « peut demander » — c'est SON droit d'administration
+  /// (`grantGuestRequests`) qui le tient en vigueur. Null (ligne d'avant) : son créateur, sinon le propriétaire.
+  requestTitlesGrantedBy String?
   /// Invité (1.30.0) : son contrôle parental VOULU (JSON `GuestParentalControls`) ; null = aucun.
   /// La politique EFFECTIVE (recoupée avec son créateur) vit dans Jellyfin.
   parentalControls String?
   createdAt    DateTime @default(now())
   /// Membre (1.30.0) : le propriétaire l'a nommé PARENT — il gère les invités et les membres mineurs.
   isParent     Boolean  @default(false)
+  /// Invité (1.30.0) : les bibliothèques que la famille lui permet (JSON, liste d'identifiants) ;
+  /// null = toutes celles de son créateur. La politique EFFECTIVE vit dans Jellyfin.
+  libraryAccess String?
 
   @@unique([familyId, userId])
   /// v2 : UNE famille par compte — propriétaire, membre ou invité, une seule ligne.
@@ -407,6 +413,12 @@ model FamilyMemberParental {
   /// JSON `GuestParentalCeiling` : la politique effective relue après la dernière écriture.
   written        String?
   restorePending Boolean  @default(false)
+  /// JSON : les bibliothèques voulues par la famille (liste d'identifiants) ; null = toutes celles de la base.
+  libraries      String?
+  /// JSON `{ all, ids }` : les bibliothèques de la base (celles de l'administrateur) ; null = pas encore relevées.
+  libraryBase    String?
+  /// JSON `{ all, ids }` : les bibliothèques relues après la dernière écriture.
+  libraryWritten String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -420,6 +432,8 @@ model FamilyAccountRights {
   userId       String   @id
   createFamily String   @default("inherit")
   createGuests String   @default("inherit")
+  /// 1.30.0 : autoriser ses invités à demander des films (`inherit` : le défaut, NON).
+  grantGuestRequests String @default("inherit")
   updatedAt    DateTime @updatedAt
 
   @@map("family_account_rights")

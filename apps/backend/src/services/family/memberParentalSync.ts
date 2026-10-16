@@ -13,13 +13,15 @@ import {
   sameParental,
   withParentalFields,
 } from "./memberParentalRules";
-import { allMemberParental, deleteMemberParental, readMemberParental, saveMemberParental, type MemberParentalState } from "./memberParentalStore";
+import { allMemberParental, deleteMemberParental, memberRestricted, readMemberParental, saveMemberParental, type MemberParentalState } from "./memberParentalStore";
+import { effectiveLibraryAccess, libraryAccessOfPolicy, sameLibraryAccess, settledLibraryBase, withLibraryAccess } from "./familyLibraryRules";
 
 /**
  * Le contrôle parental d'un MEMBRE mineur tenu dans Jellyfin (docs/DROITS-UTILISATEURS.md
- * § 9.4). Un seul geste, `settle` : relire la politique, faire de chaque champ changé
- * ailleurs la nouvelle base, écrire la cible (base ∩ voulu, ou la base seule quand le
- * contrôle est retiré), relire, garder. Quatre moments :
+ * § 9.4, et § 9.8 pour ses bibliothèques). Un seul geste, `settle` : relire la politique,
+ * faire de chaque champ changé ailleurs la nouvelle base, écrire la cible (base ∩ voulu,
+ * ou la base seule quand le contrôle est retiré) — âge et bibliothèques en UNE écriture —,
+ * relire, garder. Quatre moments :
  * - la pose ou le retrait par la famille (`setMemberParental`, strict : un refus de
  *   Jellyfin se dit) ;
  * - toute écriture de politique faite par Tentacle (`notePolicyWritten`, AVANT que les
@@ -44,28 +46,36 @@ export async function settleMemberParental(state: MemberParentalState, user: Use
   const previous = previousWrite(state.base, state.controls, state.written);
   const base = sameParental(current, previous) ? state.base : rebaseMemberParental(state.base, previous, current);
   const target = memberParentalTarget(base, state.controls);
+  // Les bibliothèques, la même règle : jamais relevées, la politique lue EST la base (la famille n'y a rien écrit).
+  const currentLibraries = libraryAccessOfPolicy(policy);
+  const libraryBase = settledLibraryBase(state.libraryBase, state.libraryWritten, state.libraries, currentLibraries);
+  const libraryTarget = effectiveLibraryAccess(libraryBase, state.libraries);
   let written = current;
-  const wrote = !sameParental(current, target);
+  let libraryWritten = currentLibraries;
+  const wrote = !sameParental(current, target) || !sameLibraryAccess(currentLibraries, libraryTarget);
   if (wrote) {
-    await writePolicy(userId, withParentalFields(userId, policy, target));
+    await writePolicy(userId, withLibraryAccess(withParentalFields(userId, policy, target), libraryTarget));
     invalidateContentPolicy(userId);
-    const reread = parentalOfPolicy((await fetchUser(userId)).Policy ?? {});
-    if (!sameParental(reread, target)) {
+    const rereadPolicy = (await fetchUser(userId)).Policy ?? {};
+    const reread = parentalOfPolicy(rereadPolicy);
+    const rereadLibraries = libraryAccessOfPolicy(rereadPolicy);
+    if (!sameParental(reread, target) || !sameLibraryAccess(rereadLibraries, libraryTarget)) {
       // Jellyfin n'a pas retenu : la dernière écriture reste l'ancienne, le guet rejouera.
-      await saveMemberParental({ ...state, base, restorePending: state.controls === null });
+      await saveMemberParental({ ...state, base, libraryBase, restorePending: !memberRestricted(state) });
       if (strict) throw new FamilyFailure("family.jellyfin_refused", "Contrôle parental du membre non retenu par Jellyfin");
-      return { state: { ...state, base }, wrote };
+      return { state: { ...state, base, libraryBase }, wrote };
     }
     written = reread;
+    libraryWritten = rereadLibraries;
     // Ses invités suivent sa politique effective (leur plafond, c'est lui).
     await resyncGuestsOfCreator(userId).catch(() => undefined);
   }
-  if (state.controls === null) {
+  if (!memberRestricted(state)) {
     await deleteMemberParental(userId);
     console.log("[family] Contrôle parental d'un membre retiré : sa politique de base est rendue");
     return { state: null, wrote };
   }
-  const next: MemberParentalState = { ...state, base, written, restorePending: false };
+  const next: MemberParentalState = { ...state, base, written, libraryBase, libraryWritten, restorePending: false };
   await saveMemberParental(next);
   return { state: next, wrote };
 }
@@ -78,8 +88,8 @@ async function stillRestrictable(state: MemberParentalState): Promise<boolean> {
 
 async function settleQuietly(state: MemberParentalState, user: UserDto): Promise<boolean> {
   try {
-    const controls = state.controls && (await stillRestrictable(state)) ? state.controls : null;
-    return (await settleMemberParental({ ...state, controls, restorePending: controls === null }, user, false)).wrote;
+    const kept = memberRestricted(state) && (await stillRestrictable(state)) ? state : { ...state, controls: null, libraries: null };
+    return (await settleMemberParental({ ...kept, restorePending: !memberRestricted(kept) }, user, false)).wrote;
   } catch {
     console.log("[family] contrôle parental d'un membre non resynchronisé (Jellyfin ou base muets)");
     return false;
@@ -106,7 +116,7 @@ export async function syncMemberParental(userId: string): Promise<void> {
 export async function restoreMemberParental(userId: string): Promise<boolean> {
   const state = await readMemberParental(fold(userId));
   if (!state) return true;
-  const pending: MemberParentalState = { ...state, controls: null, restorePending: true };
+  const pending: MemberParentalState = { ...state, controls: null, libraries: null, restorePending: true };
   await saveMemberParental(pending);
   try {
     return (await settleMemberParental(pending, await fetchUser(state.userId), false)).state === null;

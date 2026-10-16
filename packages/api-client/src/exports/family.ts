@@ -4,7 +4,7 @@
 export {
   familyErrorFromApi, fetchFamilyOverview, fetchFamilyCandidates, createFamilyGuest, deleteFamilyGuest,
   setFamilyGuestPin, setFamilyGuestPhoto, setOwnFamilyPin, removeFamilyMember, setFamilyMemberRights, setFamilyGuestRights, sendFamilyInvitation, cancelFamilyInvitation,
-  acceptFamilyInvitation, declineFamilyInvitation, snoozeFamilyInvitation, leaveFamily, dissolveFamily,
+  acceptFamilyInvitation, declineFamilyInvitation, snoozeFamilyInvitation, leaveFamily, dissolveFamily, unlockFamilyManage,
 } from "../family/familyApi";
 export {
   enrollTvProfiles, fetchTvProfiles, openTvProfileSession, unlockTvManage, endTvToken, type TvFamilyCall,
@@ -17,7 +17,7 @@ export {
   FAMILY_KEY, FAMILY_OVERVIEW_KEY, familyCandidatesKey, useFamilyOverview, useFamilyCandidates,
   useCreateFamilyGuest, useDeleteFamilyGuest, useSetFamilyGuestPin, useSetFamilyGuestPhoto, useSetOwnFamilyPin, useRemoveFamilyMember, useSetFamilyMemberRights, useSetFamilyGuestRights,
   useSendFamilyInvitation, useCancelFamilyInvitation, useAcceptFamilyInvitation, useDeclineFamilyInvitation,
-  useSnoozeFamilyInvitation, useLeaveFamily, useDissolveFamily,
+  useSnoozeFamilyInvitation, useLeaveFamily, useDissolveFamily, useUnlockFamilyManage,
 } from "../hooks/useFamily";
 export { useFamilyLive, type UseFamilyLiveOptions } from "../hooks/useFamilyLive";
 // L'administration : les interrupteurs « Familles » et « Profils invités ».
@@ -39,3 +39,6 @@ export {
   FAMILY_CREATION_DEFAULTS_KEY, accountFamilyRightsKey, useSetFamilyMemberRole, useSetFamilyMemberParental,
   useFamilyCreationDefaults, useSetFamilyCreationDefaults, useAccountFamilyRights, useSetAccountFamilyRights,
 } from "../hooks/useFamilyRoles";
+// Les bibliothèques permises à un invité ou à un membre mineur (serveur 1.30.0, `family.libraryLimits`).
+export { fetchFamilyLibraries, setFamilyLibraries } from "../family/familyLibrariesApi";
+export { familyLibrariesKey, useFamilyLibraries, useSetFamilyLibraries } from "../hooks/useFamilyLibraries";

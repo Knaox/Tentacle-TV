@@ -23,7 +23,7 @@ vi.mock("../src/services/deviceSessions/gateway", async () => (await import("./f
 
 import { freshState } from "./familyMocks";
 import { fakeJellyfinUsersFetch } from "./fakeJellyfinUsers";
-import { IDS, bearer, buildFamilyApp, enroll, openProfile, pairTv, resetCaches, seedUsers } from "./familyHarness";
+import { allowGuestRequests, IDS, bearer, buildFamilyApp, enroll, openProfile, pairTv, resetCaches, seedUsers } from "./familyHarness";
 import { sweepFamily } from "../src/services/family/familySweep";
 
 let app: FastifyInstance;
@@ -41,6 +41,8 @@ beforeEach(() => {
   h.state = freshState();
   h.fetch = fakeJellyfinUsersFetch(h.state.jf);
   resetCaches();
+  // 1.30.0 : l'administration laisse les invités demander (le sens de ce banc, d'avant ce réglage).
+  allowGuestRequests(h.state!, { everyone: true });
   tokens = seedUsers(h.state);
 });
 
@@ -198,6 +200,8 @@ describe("« Gérer les profils » sur la TV d'un membre", () => {
     const { damienTv, zoe } = await family();
     expect((await send("PUT", `/api/family/members/${IDS.lea}/role`, tokens.damien, { parent: true })).statusCode).toBe(200);
     await send("PUT", "/api/family/pin", tokens.lea, { pin: "1357" });
+    expect((await profiles(damienTv)).profiles.find((p: { userId: string }) => p.userId === IDS.lea)).toMatchObject({ parent: true });
+    expect((await profiles(damienTv)).profiles.find((p: { userId: string }) => p.userId === IDS.hugo).parent).toBeUndefined();
     const parent = await session(damienTv, IDS.lea, "1357");
     expect((await send("GET", "/api/family", parent)).json().family).toMatchObject({ parent: true, rights: { manageGuests: "all", manageMinors: true } });
     expect((await send("PUT", `/api/family/guests/${zoe}/rights`, parent, { requestTitles: true })).json()).toEqual({ requestTitles: true });

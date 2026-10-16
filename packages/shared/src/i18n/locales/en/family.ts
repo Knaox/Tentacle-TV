@@ -19,6 +19,7 @@ export default {
     createGuestsHint: "Creates their own guests and can only delete those, within three guests for the whole family.",
     requestTitles: "Can request movies",
     requestTitlesHint: "Their requests are made in their own name.",
+    requestTitlesSuspended: "Suspended by the administrator: once allowed again, this setting comes back as it was.",
   },
   /** v2: an account in the list that cannot be invited, and why. */
   candidates: {
@@ -66,6 +67,7 @@ export default {
     owner_must_dissolve: "The owner doesn't leave their family: they can dissolve it.",
     create_family_denied: "The administrator doesn't allow you to create a family.",
     create_guests_denied: "The administrator doesn't allow you to create guest profiles.",
+    guest_requests_denied: "The administrator doesn't allow you to let your guests request movies.",
     member_parental_refused: "This account can't have parental controls: the owner, a parent or an administrator never does. To make a restricted member a parent, remove their parental controls first.",
     pin_required: "This profile is protected by a PIN code.",
     pin_invalid: "Wrong PIN code.",
@@ -95,7 +97,7 @@ export default {
     joinedBody: "Your profile now shows up in “Who's watching?” on their TVs and computers. Without a PIN, anyone in front of the screen can open it.",
     title: "Set your PIN",
     body: "Your profile has no PIN: on the family's TVs and computers, anyone can open it from “Who's watching?”.",
-    why: "Four digits protect your history, your resume points, My List and your ratings. Only you enter it, and you can change or remove it at any time in Settings › Family.",
+    why: "Four digits protect your history, your resume points, My List and your ratings. They also let you manage the family from your profile, on a TV or a computer, with the rights the owner gives you. Only you enter it, and you can change or remove it at any time in Settings › Family.",
     set: "Set a PIN",
     later: "Set up later",
   },

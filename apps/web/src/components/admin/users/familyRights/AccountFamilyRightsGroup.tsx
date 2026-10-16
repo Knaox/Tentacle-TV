@@ -5,12 +5,13 @@ import { useAccountFamilyRights, useServerCapability, useSetAccountFamilyRights 
 import type { FamilyCreationRightValue } from "@tentacle-tv/shared";
 import { RightsGroup } from "../rights/RightsGroup";
 import { CreationRightField } from "./CreationRightField";
-import { CREATION_RIGHT_KEYS, familyPlace, familyRightsSummary, isEditable, type CreationRightKey } from "./familyRightsModel";
+import { familyPlace, familyRightsSummary, isEditable, rightKeysOf, type CreationRightKey } from "./familyRightsModel";
 
 /**
  * La rubrique « Famille » de la fiche des droits d'un compte (serveur 1.30.0,
  * `family.creationRights`), montée après « Gestion » dans la liste des rubriques :
- * ses deux droits de création — créer une famille, créer des profils invités —,
+ * ses deux droits de création — créer une famille, créer des profils invités —, et
+ * (`family.guestRequestsAdmin`) celui d'autoriser ses invités à demander des films,
  * chacun « Par défaut », « Permis » ou « Refusé », ce qui en vaut, sa place dans
  * une famille, et « Restreint par la famille de … » quand un contrôle parental de
  * la famille s'ajoute à ses droits. Ce ne sont pas des champs de la politique
@@ -19,6 +20,8 @@ import { CREATION_RIGHT_KEYS, familyPlace, familyRightsSummary, isEditable, type
 export function AccountFamilyRightsGroup({ userId }: { userId: string }) {
   const { t } = useTranslation("familyWeb");
   const capable = useServerCapability("family.creationRights");
+  // 1.30.0 : « Autoriser ses invités à demander des films », si une extension sait demander un titre.
+  const guestRequestsAdmin = useServerCapability("family.guestRequestsAdmin");
   const query = useAccountFamilyRights(userId, { enabled: capable });
   const save = useSetAccountFamilyRights();
   const [open, setOpen] = useState(false);
@@ -27,7 +30,7 @@ export function AccountFamilyRightsGroup({ userId }: { userId: string }) {
 
   const dto = query.data;
   const summary = dto
-    ? familyRightsSummary(dto)
+    ? familyRightsSummary(dto, guestRequestsAdmin)
         .map((part) => t(`accountRights.${part.key}`, { ...part.values, ...(part.valueKey && { value: t(`accountRights.${part.valueKey}`) }) }))
         .join(" · ")
     : t(query.isError ? "accountRights.loadError" : "accountRights.description");
@@ -53,7 +56,7 @@ export function AccountFamilyRightsGroup({ userId }: { userId: string }) {
             </p>
           )}
           {isEditable(dto) &&
-            CREATION_RIGHT_KEYS.map((right) => (
+            rightKeysOf(dto, guestRequestsAdmin).map((right) => (
               <CreationRightField
                 key={right}
                 dto={dto}

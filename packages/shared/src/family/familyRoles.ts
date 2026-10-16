@@ -17,6 +17,14 @@
  *   photo, PIN, suppression) comme le propriétaire, création d'invités s'il en
  *   a le droit de compte. Restent au propriétaire SEUL : inviter et retirer
  *   des membres, nommer ou retirer un parent, dissoudre.
+ * - « Peut AUTORISER ses invités à demander des films » (`grantGuestRequests`,
+ *   capacité `family.guestRequestsAdmin`) : un troisième droit de compte, réglé
+ *   comme les deux autres (défaut NON), sous l'interrupteur `guestRequests` —
+ *   COUPÉ tant que l'administration ne l'a pas allumé, mise à jour comprise —
+ *   et seulement si une extension sait demander un titre. C'est le compte qui
+ *   AGIT (propriétaire, parent) qui doit l'avoir pour cocher « peut demander »
+ *   sur un invité ; celui qui l'a cochée le perd, ou l'interrupteur se coupe :
+ *   la case est SUSPENDUE, gardée, et revit quand le droit revient.
  * - Le contrôle parental d'un MEMBRE MINEUR (`family.memberParental`) : posé
  *   par le propriétaire ou un parent sur un membre qui n'est ni le
  *   propriétaire, ni un parent, ni un administrateur Jellyfin. Il s'écrit dans
@@ -42,18 +50,26 @@ export type FamilyCreationRightValue = (typeof FAMILY_CREATION_RIGHT_VALUES)[num
 export interface FamilyCreationRights {
   createFamily: FamilyCreationRightValue;
   createGuests: FamilyCreationRightValue;
+  /** 1.30.0 (`family.guestRequestsAdmin`) : autoriser ses invités à demander des films. Absent : `inherit`. */
+  grantGuestRequests?: FamilyCreationRightValue;
 }
 
-export const FAMILY_DEFAULT_CREATION_RIGHTS: Readonly<FamilyCreationRights> = { createFamily: "inherit", createGuests: "inherit" };
+export const FAMILY_DEFAULT_CREATION_RIGHTS: Readonly<FamilyCreationRights> = {
+  createFamily: "inherit",
+  createGuests: "inherit",
+  grantGuestRequests: "inherit",
+};
 
 /** Le défaut de l'administration, pour un compte `inherit` — Admin › Comptes, à côté des interrupteurs. */
 export interface FamilyCreationDefaults {
   createFamily: boolean;
   createGuests: boolean;
+  /** 1.30.0 (`family.guestRequestsAdmin`). Absent : non. */
+  grantGuestRequests?: boolean;
 }
 
-/** NON pour les deux : un compte ne crée rien tant que l'administration ne l'a pas permis. */
-export const FAMILY_CREATION_DEFAULTS: Readonly<FamilyCreationDefaults> = { createFamily: false, createGuests: false };
+/** NON pour tous : un compte ne crée rien tant que l'administration ne l'a pas permis. */
+export const FAMILY_CREATION_DEFAULTS: Readonly<FamilyCreationDefaults> = { createFamily: false, createGuests: false, grantGuestRequests: false };
 
 /** Ce qu'un compte peut créer MAINTENANT, tout compris. */
 export interface FamilyCreationAllowed {
@@ -61,6 +77,10 @@ export interface FamilyCreationAllowed {
   createFamily: boolean;
   /** Créer un profil invité. Un membre doit EN PLUS avoir la permission du propriétaire (ou être parent). */
   createGuests: boolean;
+  /** 1.30.0 (`family.guestRequestsAdmin`) : cocher « peut demander des films » sur un invité
+   *  qu'il gère — interrupteur allumé, extension présente, et le droit du compte. Absent :
+   *  serveur d'avant, rien ne s'y garde (le comportement d'alors). */
+  grantGuestRequests?: boolean;
 }
 
 function pick(value: FamilyCreationRightValue, fallback: boolean): boolean {
@@ -77,12 +97,30 @@ export function resolveFamilyCreation(input: {
   defaults: FamilyCreationDefaults;
   switches: FamilySwitches;
   isAdministrator: boolean;
+  /** Une extension sait demander un titre ; absent : non. */
+  requestExtension?: boolean;
 }): FamilyCreationAllowed {
   const { rights, defaults, switches, isAdministrator } = input;
+  const guestsOn = switches.families && switches.guests;
   return {
     createFamily: switches.families && (isAdministrator || pick(rights.createFamily, defaults.createFamily)),
-    createGuests: switches.families && switches.guests && (isAdministrator || pick(rights.createGuests, defaults.createGuests)),
+    createGuests: guestsOn && (isAdministrator || pick(rights.createGuests, defaults.createGuests)),
+    grantGuestRequests:
+      guestsOn &&
+      switches.guestRequests === true &&
+      input.requestExtension === true &&
+      (isAdministrator || pick(rights.grantGuestRequests ?? "inherit", defaults.grantGuestRequests === true)),
   };
+}
+
+/**
+ * « Peut demander » d'un invité, tel qu'il VAUT : la case cochée (`stored`), et le compte qui
+ * l'a cochée (`granterAllowed` : `grantGuestRequests` de CE compte, interrupteur compris) qui
+ * le peut encore. Cochée sans le droit : SUSPENDUE — gardée, sans effet.
+ */
+export function guestRequestState(stored: boolean, granterAllowed: boolean): { requestTitles: boolean; suspended?: true } {
+  if (!stored) return { requestTitles: false };
+  return granterAllowed ? { requestTitles: true } : { requestTitles: false, suspended: true };
 }
 
 /** Un réglage lu d'ailleurs (base, corps) : une valeur connue, sinon `inherit`. */
@@ -102,6 +140,9 @@ export interface AccountFamilyRightsDto {
   defaults: FamilyCreationDefaults;
   /** Ce qui vaut, interrupteurs et administration compris. */
   allowed: FamilyCreationAllowed;
+  /** 1.30.0 (`family.guestRequestsAdmin`) : une extension sait demander un titre — le droit
+   *  `grantGuestRequests` ne se montre que là. Absent : non. */
+  requestExtension?: boolean;
   /** Administrateur Jellyfin : il peut toujours, quel que soit son réglage ; null : Jellyfin muet. */
   isAdministrator: boolean | null;
   /** Sa place dans une famille ; null : aucune. Un invité ne crée jamais rien. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PickerProfileDto } from "@tentacle-tv/shared";
-import { commitStay, switchActiveId, switchPick } from "./switchPlan";
+import { commitStay, manageTarget, switchActiveId, switchPick } from "./switchPlan";
 
 function profile(userId: string, extra: Partial<PickerProfileDto> = {}): PickerProfileDto {
   return { userId, kind: "member", name: userId, color: "teal", hasPin: false, imageTag: null, lockedUntil: null, createdBy: null, personal: false, ...extra };
@@ -13,6 +13,27 @@ describe("« Changer de profil » : le profil en cours", () => {
     expect(switchActiveId(FAMILY, null)).toBe("owner");
     expect(switchActiveId(FAMILY, "zoe")).toBe("zoe");
     expect(switchActiveId([profile("lea")], null)).toBeNull();
+  });
+});
+
+describe("« Gérer les profils » : qui gère", () => {
+  const RIGHTS = { manageMembers: false, createGuests: true, manageGuests: "all", manageRoles: false, manageMinors: true } as const;
+
+  it("à l'ouverture et depuis la session personnelle : son propre profil", () => {
+    expect(manageTarget(FAMILY, null)?.userId).toBe("owner");
+  });
+
+  it("depuis la session d'un profil qui gère (1.30.0) : ce profil-là, jamais le compte de l'appareil", () => {
+    const family = [FAMILY[0], profile("zoe", { hasPin: true, manage: RIGHTS }), FAMILY[2]];
+    expect(manageTarget(family, "zoe")?.userId).toBe("zoe");
+    // Sans code, il gérerait : la page lui dit qu'il lui en faut un.
+    const bare = [FAMILY[0], profile("zoe", { manage: null, manageNeedsPin: true }), FAMILY[2]];
+    expect(manageTarget(bare, "zoe")?.userId).toBe("zoe");
+  });
+
+  it("un invité, ou un serveur qui ne le sait pas : pas d'entrée", () => {
+    expect(manageTarget(FAMILY, "lea")).toBeNull();
+    expect(manageTarget(FAMILY, "zoe")).toBeNull();
   });
 });
 

@@ -37,10 +37,14 @@ export interface MemberRow {
   canCreateGuests: boolean;
   /** Invité : « peut demander » — les extensions, à son propre nom. */
   canRequestTitles: boolean;
+  /** Invité (1.30.0) : le compte qui a coché « peut demander » (`familyGuestRequests.ts`). */
+  requestTitlesGrantedBy?: string | null;
   /** Invité (1.30.0) : son contrôle parental VOULU, en JSON ; null = aucun. */
   parentalControls?: string | null;
   /** Membre (1.30.0) : nommé PARENT par le propriétaire. */
   isParent?: boolean;
+  /** Invité (1.30.0) : les bibliothèques que la famille lui permet, en JSON ; null = toutes celles de son créateur. */
+  libraryAccess?: string | null;
   createdAt: Date;
 }
 

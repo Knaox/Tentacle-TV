@@ -35,6 +35,9 @@ export interface TvProfileDto {
    *  nom) ; null sinon. Toujours rendu par un serveur v2 ; absent : aucun
    *  droit. */
   guestRights?: FamilyGuestRights | null;
+  /** 1.30.0 (`family.roles`) : un membre nommé PARENT — la TV dit son rôle, même
+   *  sans gestion ouverte (`manage` vaut null sans code). Absent : non. */
+  parent?: boolean;
   /** Ce que CE profil gérerait sur cette TV (« Gérer les profils », derrière
    *  SON PIN) ; null : rien à y gérer — un invité, le compte de démonstration,
    *  et (1.30.0) un profil SANS code PIN (`familyCallers.ts`, `profileManage`). */

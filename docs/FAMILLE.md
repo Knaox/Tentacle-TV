@@ -9,7 +9,7 @@ que le serveur garantit). Une règle, une source :
 |------|----|
 | Limites, réponses, corps | `packages/shared/src/family/familyContract.ts` (les limites : `familyLimits.ts`, ré-exportées) ; la TV : `familyTvContract.ts` ; le bureau : `familyPickerContract.ts` |
 | Codes d'erreur, temps réel, notifications | `packages/shared/src/family/familyProtocol.ts` |
-| Routes et appelants permis | `packages/shared/src/family/familyRoutes.ts` (`FAMILY_ROUTES`) |
+| Routes et appelants permis | `packages/shared/src/family/familyRoutes.ts` (`FAMILY_ROUTES`) ; les appelants et la gestion depuis un profil : `familyCallers.ts` (`profileManage`) |
 | Règles pures (PIN, capacité, invitations, noms) | `packages/shared/src/family/familyRules.ts` |
 | Droits et candidats (v2) | `packages/shared/src/family/familyRights.ts` (`familyRightsOf`, `canManageGuest`, `familyCandidates`) |
 | Parents, membres mineurs, droits de création (1.30.0) | `packages/shared/src/family/familyRoles.ts` ; clients : `familyRolesClient.ts` ; carnet : docs/DROITS-UTILISATEURS.md § 9.4 |
@@ -190,16 +190,11 @@ profils » existe (au moins un `manage`). Les avatars se lisent sans jeton
 
 ### 6. « Gérer les profils » — `POST /api/family/tv/manage/unlock`
 
-Depuis la session du propriétaire OU d'un membre, sur une TV de la famille —
-jamais un invité. Le serveur exige le PIN de CE profil s'il en a un (mêmes
-essais, même blocage) et ouvre la gestion dix minutes (`manageUntil`) ; sans
-PIN, ouverte d'office. La réponse dit les droits de la session (`rights`).
-Le propriétaire passe `ownerTv` (vue d'ensemble, candidats, inviter, annuler,
-retirer un membre, régler ses droits, créer ou supprimer un invité) ; un
-membre passe `memberTv` (vue d'ensemble, créer un invité s'il en a le droit,
-supprimer les siens) — un geste de propriétaire lui répond
-`family.not_owner`. JAMAIS depuis une TV : accepter, refuser, quitter, le PIN
-d'un invité, dissoudre. Son PIN, si : depuis SA session de profil (« Code
+Voir « Gérer depuis un profil » plus bas : la règle est la même sur une TV et
+sur un bureau. Sur la TV, « Gérer les profils » de « Qui regarde ? » est celle
+du compte qui a JUMELÉ la TV, avec ses droits (s'il ne gère rien, ou n'a pas de
+code, pas d'entrée) ; chacun des autres gère depuis Réglages › Compte de son
+propre profil. Son PIN se règle aussi depuis SA session de profil (« Code
 PIN »).
 
 ### 7. La séquence de l'Apple TV (pour le client)
@@ -219,9 +214,11 @@ PIN »).
    oublier le jeton de session, revenir au 3.
 6. « Changer de profil » : `endTvToken(jeton de session)`, puis le 3.
    « Déjumeler » : `endTvToken(jeton de jumelage)`.
-7. « Gérer les profils » (`canManage` ; le profil qui gère a un `manage`) :
-   `unlockTvManage` (SON PIN s'il en a un), puis les routes `ownerTv` ou
-   `memberTv` avec le jeton de session, selon `rights`.
+7. « Gérer les profils » (`canManage` ; le profil qui gère a un `manage`, jamais
+   sans code — `manageNeedsPin` le dit) : ouvert par SON code, le profil gère
+   déjà ; sinon (`family.manage_locked`), `unlockTvManage` avec SON code, puis
+   les routes `ownerProfile` ou `memberProfile` avec le jeton de session, selon
+   `rights`.
 
 ## Le bureau : « Qui regarde ? » et « Changer de profil » (serveur 1.30.0)
 
@@ -278,10 +275,11 @@ même compte : deux hôtes, deux sessions.
 
 ### La session de profil du bureau regarde
 
-- **Aucune route de la Famille** ne lui répond — ni la vue d'ensemble, ni son
-  PIN, ni « Gérer les profils », ni les routes des TV (403
-  `family.personal_session_required`, `familyCaller.ts`) : la Famille se gère
-  depuis la session personnelle de chacun.
+- **Aucune route de la Famille** ne lui répond — ni son PIN, ni « Qui
+  regarde ? », ni les routes des TV (403 `family.personal_session_required`,
+  `familyCaller.ts`) — **sauf la gestion** (1.30.0, `family.profileManage`) : le
+  propriétaire ou un membre y gère la famille avec les droits de son rôle,
+  derrière SON code (« Gérer depuis un profil »).
 - **Aucun jeton Jellyfin** ne lui est remis : `/api/config/streaming` répond
   `enabled: false` (avec l'identité d'appareil à adopter). Sinon, un membre
   ouvrant sans PIN le profil d'un administrateur repartirait avec un vrai
@@ -394,7 +392,10 @@ Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
   pavé) et Échap la rendent telle quelle, le focus revenu à l'avatar ; le
   focus arrive sur le profil en cours, et ce profil-là choisi referme
   l'écran sans code ni serveur ; « Gérer les profils » y mène tout droit à la
-  Famille depuis la session personnelle (son code d'abord sinon). Une
+  Famille depuis la session personnelle (son code d'abord à l'ouverture) ;
+  depuis la session d'un profil qui gère (`manageTarget`), à la Famille DANS ce
+  profil — jamais le compte de l'appareil ; un profil qui ne gère pas n'a pas
+  l'entrée. Une
   bascule quitte Watch Together, ferme le PiP et recharge, comme à
   l'ouverture. À l'ouverture de l'application, ni « Annuler » ni Échap :
   il n'y a nulle part où revenir.
@@ -404,15 +405,49 @@ Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
   jamais la déconnexion, jamais le compte sans son PIN ; ignorée pendant une
   bascule voulue (« replaced »).
 - **Ce qu'une session de profil tait** : administration, jumelage, contenu
-  gardé et hors ligne, Sécurité, Famille (`useFamilyAvailability`), photo du
-  compte, déconnexion (revenir à son profil d'abord) ; un invité perd en plus
-  Watch Together et l'Aide.
+  gardé et hors ligne, Sécurité, ce que la Famille a de personnel (invitation
+  reçue, son code, rappels : `useFamilyAvailability`), photo du compte,
+  déconnexion (revenir à son profil d'abord) ; un invité perd en plus Watch
+  Together, l'Aide et Réglages › Famille. Le propriétaire ou un membre garde
+  Réglages › Famille (`useFamilySettingsAvailability`) : la page dit son code
+  manquant (`manage_pin_required`), demande SON code si la gestion est fermée
+  (`ManageUnlockCard`), sinon gère avec ses droits (`account.managing`).
 - **Réglage coupé** : l'application rouvre le dernier profil de l'ordinateur
   (`pickerLaunch` › `resume`), le compte par défaut. Aucun raccourci clavier
   global : le menu de l'avatar se parcourt aux flèches, « Changer de profil »
   en tête.
 - La TV LG ne compile rien de tout cela : sa porte est substituée et
   `apps/web/src/profiles/` sort de sa feuille.
+
+## Gérer depuis un profil (serveur 1.30.0, `family.profileManage`)
+
+Décisions de Damien du 2026-10-16. Le propriétaire ou un membre GÈRE la famille
+depuis SA session de profil, sur une TV ou un bureau, avec les droits de SON
+rôle — jamais ceux du compte qui a jumelé la TV ou ouvert le bureau.
+
+- **Un code PIN, sinon rien** (`familyCallers.ts` › `profileManage`) :
+  n'importe quel code — un par compte, le même partout, posé depuis une TV ou
+  depuis son compte ; le code ouvre la porte, jamais plus de droits. Sans code,
+  `manage` vaut null et `manageNeedsPin` le dit ; toute route de gestion répond
+  `family.manage_pin_required`, même au compte qui a jumelé la TV. Le code est
+  relu à chaque geste : retiré, la gestion se referme.
+- **Le cadenas** : ouvrir son profil par SON code (TV : `tvOpenSession` ;
+  bureau : `pickProfile`) ouvre la gestion avec la session. Une session
+  ouverte sans code (« Rester sur ce profil », profil retenu par l'ordinateur)
+  la demande (`tvManageUnlock` — appelants `tvProfile` et `desktopProfile`).
+  Dix minutes, prolongées à chaque geste admis (`manageUntil`), puis
+  `family.manage_locked`.
+- **Les gestes** : ceux du rôle (`familyRightsOf`) — appelants `ownerProfile`
+  et `memberProfile`. Le propriétaire : tout, sauf dissoudre ; un parent :
+  créer (s'il en a le droit de compte) et supprimer des invités, leurs droits,
+  leur PIN, leur photo, leur contrôle parental, et celui des membres mineurs ;
+  un membre : ses invités. L'ordre des refus : rôle (`not_owner`), code
+  (`manage_pin_required`), fenêtre (`manage_locked`).
+- **Restent personnels** : accepter, refuser, « plus tard », quitter,
+  dissoudre, « Qui regarde ? » du bureau, et son propre PIN sur un bureau.
+- La vue d'ensemble d'un profil qui gère porte `account.managing` et l'état du
+  contrôle parental ; `personalSession` reste faux (`sessionManages`, shared).
+- Preuves : SEC-F-54 (`test/famille-securite/MODELE-MENACE.md`).
 
 ## Qui agit : toujours le porteur du jeton
 
@@ -440,9 +475,10 @@ avant de clore l'invitation — la seconde de deux courses échoue
 
 ## Sessions personnelles, sessions de TV
 
-Accepter, refuser, « plus tard », quitter, le PIN et la photo d'un invité, dissoudre :
+Accepter, refuser, « plus tard », quitter, dissoudre :
 **session personnelle** seulement — le jeton Jellyfin du web, du bureau, du
-mobile. Jamais un jeton d'appareil (TV d'avant ou session de profil), jamais
+mobile (le PIN et la photo d'un invité : aussi depuis un profil qui gère,
+1.30.0). Jamais un jeton d'appareil (TV d'avant ou session de profil), jamais
 « voir en tant que » : `family.personal_session_required`. Son propre PIN
 fait exception : aussi depuis SA session de profil sur une TV (`tvProfile`),
 jamais depuis le jeton de jumelage, une TV d'avant ni « voir en tant que ».
@@ -561,7 +597,8 @@ une réussite efface. Poser, changer ou
 retirer un PIN coupe le profil sur les TV et ôte « Rester sur ce profil » —
 sauf, quand un profil change SON PIN depuis une TV, la session de cette TV et
 son « Rester », qui restent.
-Le PIN de chacun protège aussi SA gestion des profils sur les TV.
+Le PIN de chacun protège aussi SA gestion de la famille depuis un profil, sur
+les TV et les bureaux : sans code, aucune (« Gérer depuis un profil »).
 
 ## La photo d'un invité (serveur 1.30.0)
 
@@ -806,6 +843,10 @@ une invitation n'y paraît que par le début de son identifiant.
 - Le bureau : capacité `family.desktopProfiles` (`capabilities`, 1.30.0) ;
   absente, le bureau garde sa seule session personnelle, sans « Qui
   regarde ? » ni « Changer de profil ».
+- Gérer depuis un profil : capacité `family.profileManage` (1.30.0) — absente,
+  le bureau ne montre rien de la Famille à un profil. Les TV lisent `manage` et
+  `manageNeedsPin` (champs ajoutés) ; une TV d'avant face à un serveur 1.30.0
+  ne propose plus « Gérer les profils » à un profil sans code.
 - Une TV d'avant les profils garde son jumelage ; les clients publiés ne
   voient aucun changement (champs ajoutés, jamais retirés).
 
