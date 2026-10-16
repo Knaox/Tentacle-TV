@@ -57,14 +57,27 @@ export interface ProfileManage {
 }
 
 /**
+ * Ces droits mènent-ils à un GESTE réel ? Le propriétaire, un parent, un
+ * membre qui peut créer des invités : oui. Un membre qui ne gère que SES
+ * invités (`manageGuests: "own"`) : seulement s'il en a créé un (`ownGuests`).
+ * Un membre mineur sans droit, ou un membre sans invité à lui : non — rien ne
+ * lui est proposé, ni la gestion, ni un code « pour gérer ».
+ */
+export function rightsReachSomething(rights: FamilyRights, ownGuests: number): boolean {
+  if (rights.manageMembers || rights.createGuests || rights.manageGuests === "all" || rights.manageMinors === true) return true;
+  return rights.manageGuests === "own" && ownGuests > 0;
+}
+
+/**
  * Une session de profil (TV, bureau) gère avec les droits de son RÔLE
  * (`rights` ; null pour un invité ou le compte de démonstration, qui ne
- * gèrent rien), à une condition : son profil a un code PIN — un seul par
- * compte, le même sur toutes les plateformes, qu'il l'ait posé depuis une TV
- * ou depuis son compte. Le code ouvre la porte, jamais plus de droits. Sans
- * code, rien — `needsPin` le dit.
+ * gèrent rien) — s'ils mènent à un geste réel (`rightsReachSomething`,
+ * `ownGuests` : les invités que ce compte a créés) —, à une condition : son
+ * profil a un code PIN — un seul par compte, le même sur toutes les
+ * plateformes, qu'il l'ait posé depuis une TV ou depuis son compte. Le code
+ * ouvre la porte, jamais plus de droits. Sans code, rien — `needsPin` le dit.
  */
-export function profileManage(rights: FamilyRights | null, hasPin: boolean): ProfileManage {
-  if (rights === null) return { manage: null, needsPin: false };
+export function profileManage(rights: FamilyRights | null, hasPin: boolean, ownGuests: number): ProfileManage {
+  if (rights === null || !rightsReachSomething(rights, ownGuests)) return { manage: null, needsPin: false };
   return hasPin ? { manage: rights, needsPin: false } : { manage: null, needsPin: true };
 }

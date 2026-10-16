@@ -94,7 +94,11 @@ export async function visibleProfiles(
             creation: creations.get(fold(entry.userId)),
           });
     if (rights) roleRights.set(fold(entry.userId), rights);
-    const managing = profileManage(rights, pins.has(entry.userId));
+    // Ses invités : un membre qui ne gère que les siens n'a un geste que s'il en a créé un.
+    const ownGuests = guest
+      ? 0
+      : visible.filter((other) => other.kind === "guest" && sameUserId(other.row?.createdBy ?? familyOwner ?? "", entry.userId)).length;
+    const managing = profileManage(rights, pins.has(entry.userId), ownGuests);
     return {
       userId: entry.userId,
       kind: entry.kind,
@@ -109,7 +113,8 @@ export async function visibleProfiles(
       guestRights: guest ? guestRights.get(entry.userId) ?? { requestTitles: false } : null,
       ...(entry.kind === "member" && entry.row?.isParent === true && { parent: true }),
       // Ce que ce profil gérerait ici, derrière SON PIN ; jamais un invité, jamais le compte de
-      // démonstration, jamais sans code (1.30.0) — `manageNeedsPin` le dit alors.
+      // démonstration, jamais sans code (1.30.0) — `manageNeedsPin` le dit alors —, et jamais un rôle
+      // qui ne mène à aucun geste (un mineur sans droit, un membre sans invité à lui).
       manage: managing.manage,
       manageNeedsPin: managing.needsPin,
     };

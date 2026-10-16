@@ -114,6 +114,8 @@ describe("SEC-F-43 : un départ coupe les profils de façon ÉTENDUE", () => {
 describe("SEC-F-44 : « Gérer les profils » sur la TV d'un membre = SES droits, SON PIN", () => {
   it("le PIN du membre ouvre sa gestion (droits de membre) ; les gestes du propriétaire restent refusés", async () => {
     const { zoe } = await family();
+    // Léa a un geste réel (« peut créer des invités ») : sans lui, rien ne lui est ouvert (1.30.0, `rightsReachSomething`).
+    await send("PUT", `/api/family/members/${IDS.lea}/rights`, tokens.damien, { createGuests: true });
     await send("PUT", "/api/family/pin", tokens.lea, { pin: "1357" }); // Léa pose SON PIN
     const leaTv = await tvOf(IDS.lea, "Léa");
     const manage = (await openProfile(app, leaTv, { profileId: IDS.lea, pin: "1357" })).json().token as string;
