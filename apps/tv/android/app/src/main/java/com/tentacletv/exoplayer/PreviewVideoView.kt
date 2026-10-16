@@ -12,7 +12,6 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.Arguments
@@ -30,7 +29,9 @@ import com.tentacletv.R
  * (`tentacle_exo_player_frame`), une `TextureView` qui suit l'opacité et
  * l'arrondi de la grande carte, l'image qui remplit le cadre, aucun focus
  * possible (`FOCUS_BLOCK_DESCENDANTS`), le focus audio laissé au système.
- * Le lecteur ne naît qu'au premier chargement, après la vue.
+ * Le lecteur ExoPlayer est celui, partagé, de tous les aperçus
+ * (`PreviewPlayerPool`) : pris au premier chargement, rendu au démontage —
+ * ni construit ni relâché à chaque aperçu.
  *
  * Elle ne décide de rien : elle charge la source (une fois toutes les props
  * posées, `commit`), joue ou se met en pause, et dit au JS (`onExoEvent`,
@@ -45,6 +46,8 @@ class PreviewVideoView(private val reactContext: ThemedReactContext) : FrameLayo
     private val handler = Handler(Looper.getMainLooper())
     private var player: ExoPlayer? = null
     private var released = false
+    /** Le lecteur partagé est parti vers un autre aperçu : cette vue ne le reprend jamais (une vue = une source). */
+    private var taken = false
 
     private var uri: String? = null
     private var hls = false
@@ -134,12 +137,12 @@ class PreviewVideoView(private val reactContext: ThemedReactContext) : FrameLayo
 
     /** Toutes les props posées : la source se charge — une fois par source. */
     fun commit() {
-        if (released) return
+        if (released || taken) return
         val target = uri ?: return
         val key = "$target#$hls#$startMs"
         if (key == loadedKey) return
         loadedKey = key
-        val exo = player ?: buildPlayer().also { player = it }
+        val exo = player ?: attach(PreviewPlayerPool.acquire(this, reactContext))
         loadSent = false
         val item = MediaItem.Builder().setUri(target).apply { if (hls) setMimeType(MimeTypes.APPLICATION_M3U8) }.build()
         exo.setMediaItem(item, startMs)
@@ -148,26 +151,35 @@ class PreviewVideoView(private val reactContext: ThemedReactContext) : FrameLayo
         applyVolume()
     }
 
+    /** La vue est démontée : le lecteur partagé est rendu (arrêté, gardé pour l'aperçu suivant). */
     fun release() {
         if (released) return
         released = true
         emitter.enabled = false
-        handler.removeCallbacks(progressTick)
-        playerView.player = null
-        player?.release()
-        player = null
+        detach()
+        PreviewPlayerPool.giveBack(this)
     }
 
-    private fun buildPlayer(): ExoPlayer =
-        ExoPlayer.Builder(reactContext)
-            // Un aperçu : démarrer vite (1 s en tampon suffit), sans précharger toute la bande-annonce.
-            .setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(15_000, 30_000, 1_000, 2_000).build())
-            .build()
-            .also { exo ->
-                exo.setAudioAttributes(ExoPlayerFactory.mediaAudioAttributes, false)
-                exo.addListener(listener)
-                playerView.player = exo
-            }
+    /** Le lecteur partagé part vers un autre aperçu : cette vue (garée) n'a plus rien à montrer. */
+    fun onPlayerTaken() {
+        taken = true
+        detach()
+    }
+
+    private fun attach(exo: ExoPlayer): ExoPlayer {
+        player = exo
+        exo.addListener(listener)
+        playerView.player = exo
+        return exo
+    }
+
+    private fun detach() {
+        val exo = player ?: return
+        handler.removeCallbacks(progressTick)
+        exo.removeListener(listener)
+        playerView.player = null
+        player = null
+    }
 
     private fun applyVolume() {
         player?.volume = if (muted) 0f else volume
