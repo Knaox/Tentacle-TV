@@ -57,3 +57,9 @@ export function parseInvitedSubjects(raw: string | null | undefined): string[] {
 export function withSubjectInvited(invited: readonly string[], subjectId: string): string[] {
   return [subjectId, ...invited.filter((id) => id !== subjectId)].slice(0, KEEP);
 }
+
+/** La liste sans `subjectId` : la galerie pourra lui être proposée de nouveau
+ *  (« Reproposer le code PIN et la photo », `family/familyPromptsReset`). */
+export function withoutSubjectInvited(invited: readonly string[], subjectId: string): string[] {
+  return invited.filter((id) => id !== subjectId);
+}
