@@ -151,7 +151,7 @@ describe("reproposer : ce que les appareils en lisent", () => {
     h.state!.socket.length = 0;
     expect((await reset(tokens.damien, IDS.hugo)).statusCode).toBe(200);
     const row = await h.state!.db.client.serverConfig.findUnique({ where: { key } });
-    expect(JSON.parse(row!.value)).toEqual(["tmdbKey"]);
+    expect(JSON.parse(String(row!.value))).toEqual(["tmdbKey"]);
     expect(h.state!.socket).toContainEqual({ userId: IDS.hugo, msg: { type: "preferences:update", scope: "hints" } });
   });
 });
