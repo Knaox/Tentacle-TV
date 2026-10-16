@@ -11,7 +11,8 @@ import {
   type ParentalAgeChoice,
 } from "./parentalAge";
 
-/** Une table française de Jellyfin 10.11 (relevée sur le banc parental), plus une entrée à sous-note. */
+/** Une table française de Jellyfin 10.11 (relevée sur le banc parental), plus deux entrées à sous-note au score 12 :
+ *  la sous-note 1 n'y couvre pas tout le score (« 12 – avertissement » passe au-dessus). */
 const FR = [
   { name: "U", score: 0, subScore: null },
   { name: "6+", score: 6, subScore: null },
@@ -20,6 +21,7 @@ const FR = [
   { name: "16", score: 16, subScore: null },
   { name: "18", score: 18, subScore: null },
   { name: "Approved", score: 12, subScore: 1 },
+  { name: "12 – avertissement", score: 12, subScore: 2 },
 ];
 
 /** Une table américaine : PG = 10, PG-13 = 13, R = 17. */
@@ -155,5 +157,27 @@ describe("parentalRatingNames", () => {
     expect(parentalRatingNames(US_SUB, 17, 1)).toEqual(["TV-MA"]);
     expect(parentalRatingNames(US_SUB, 17, 5)).toEqual(["R", "TV-MA"]);
     expect(parentalRatingNames(US_SUB, 9, null)).toEqual([]);
+  });
+});
+
+describe("currentParentalAge — une sous-note qui couvre tout son score", () => {
+  // PG et TV-PG au score 10, chacun avec la sous-note 0 : une note posée ailleurs avec cette sous-note EST « 10 ans ».
+  const US_PG = [
+    { name: "G", score: 0, subScore: null },
+    { name: "PG", score: 10, subScore: 0 },
+    { name: "TV-PG", score: 10, subScore: 0 },
+    { name: "PG-13", score: 13, subScore: null },
+    { name: "TV-14", score: 14, subScore: 0 },
+    { name: "TV-14-V", score: 14, subScore: 2 },
+  ];
+  const choices = parentalAgeChoices(US_PG);
+  const at = (rating: number, sub: number | null) => ({ ...GUEST_PARENTAL_NONE, maxParentalRating: rating, maxParentalSubRating: sub });
+
+  it("elle laisse passer toutes les entrées du score : le palier", () => {
+    expect(currentParentalAge(choices, at(10, 0), US_PG)).toEqual({ kind: "choice", key: "age:10" });
+  });
+
+  it("elle en écarte une : plus stricte que le palier, montrée telle quelle", () => {
+    expect(currentParentalAge(choices, at(14, 0), US_PG)).toMatchObject({ kind: "custom", score: 14, subScore: 0, names: ["TV-14"] });
   });
 });

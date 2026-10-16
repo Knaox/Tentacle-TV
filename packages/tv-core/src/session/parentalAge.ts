@@ -62,12 +62,22 @@ export function parentalRatingNames(ratings: Ratings, score: number, subScore: n
   return [...new Set(named.map((rating) => rating.name))];
 }
 
+/**
+ * Une sous-note qui laisse passer TOUTES les entrées de son score ne restreint
+ * rien de plus que le score seul (relevé du Testeur A, 16/10 : PG posé avec la
+ * sous-note de sa table restait « Réglé ailleurs » au lieu de « 10 ans »).
+ */
+function coversWholeScore(ratings: Ratings, score: number, subScore: number | null): boolean {
+  if (subScore === null) return true;
+  return ratings.filter((rating) => rating.score === score).every((rating) => rating.subScore === null || rating.subScore <= subScore);
+}
+
 /** Le palier qui correspond à la note posée ; sinon le réglage tel quel, avec ses noms dans la table. */
 export function currentParentalAge(choices: readonly ParentalAgeChoice[], controls: GuestParentalControls, ratings: Ratings): ParentalAgeCurrent {
   const score = controls.maxParentalRating;
   if (score === null) return { kind: "choice", key: PARENTAL_AGE_NONE_KEY };
   const subScore = controls.maxParentalSubRating;
-  const match = subScore === null ? choices.find((choice) => choice.kind === "age" && choice.score === score) : undefined;
+  const match = coversWholeScore(ratings, score, subScore) ? choices.find((choice) => choice.kind === "age" && choice.score === score) : undefined;
   if (match) return { kind: "choice", key: match.key };
   return { kind: "custom", key: PARENTAL_AGE_CUSTOM_KEY, score, subScore, names: parentalRatingNames(ratings, score, subScore) };
 }
