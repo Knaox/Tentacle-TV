@@ -37,16 +37,13 @@ import {
 // Source unique des versions : versions.json à la racine du monorepo (champ tv).
 const TV_VERSION: string = require("../../../../../versions.json").tv ?? "0.0.0";
 
-/** Le diamètre du portrait de l'onglet Compte. */
-const PORTRAIT = 168;
-
 /**
  * Ce que la vue des réglages reçoit, résolu — sur les hooks partagés avec les
  * réglages d'Android TV (compte, pistes par bibliothèque, langue, actions) —
  * et les gestes qu'elle rend. La liste de choix ouverte est un état d'écran.
  */
 export function useSettingsModel() {
-  const paired = usePairedAccount(PORTRAIT);
+  const paired = usePairedAccount();
   const portrait = useVerifiedImage(paired.portraitUrl);
   const { logout, changeServer } = useAccountActions();
   const { language, change: changeLanguage } = useInterfaceLanguage();

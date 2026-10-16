@@ -13,21 +13,30 @@ export function readPairedName(raw: string | null): string | null {
   return null;
 }
 
+/** La largeur demandée pour le portrait : le plus grand rond (réglages, 168 pt) au double. */
+const PORTRAIT_SOURCE_PX = 340;
+
 /**
  * Le compte jumelé tel que les réglages le montrent, sur les deux
  * téléviseurs : son nom, l'adresse de son portrait (Jellyfin, par le proxy du
- * serveur — il peut ne pas exister) et le serveur Tentacle. `portraitSize` :
- * le diamètre affiché, en points (l'image est demandée au double). Une photo
+ * serveur — il peut ne pas exister) et le serveur Tentacle. Une photo
  * choisie sur cette TV (galerie des avatars) change l'adresse du portrait
  * (`lib/ownPhotoVersion`) : le cache d'images ne rend plus l'ancien.
+ *
+ * UNE seule adresse par portrait, quelle que soit la taille du rond (la leçon
+ * de « Qui regarde ? », `profilesModel`) : les réglages et le rail relisent la
+ * même image. Avec une taille par écran, une photo tout juste choisie
+ * paraissait dans le rail et pas dans les réglages (relevé du Testeur A,
+ * 16/10, invitée dans sa session) : une lecture ratée sur l'une des deux
+ * tailles laissait l'initiale.
  */
-export function usePairedAccount(portraitSize = 132) {
+export function usePairedAccount() {
   const { storage } = useTentacleConfig();
   const client = useJellyfinClient();
   const userId = useUserId();
   const version = useOwnPhotoVersion(userId);
   const portraitUrl = userId
-    ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${portraitSize * 2}&quality=90${version > 0 ? `&v=${version}` : ""}`
+    ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${PORTRAIT_SOURCE_PX}&quality=90${version > 0 ? `&v=${version}` : ""}`
     : null;
   return {
     name: readPairedName(storage.getItem("tentacle_user")),
