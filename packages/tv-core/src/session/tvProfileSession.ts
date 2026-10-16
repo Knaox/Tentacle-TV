@@ -4,6 +4,7 @@ import {
   type FamilyGuestRights,
   type FamilyProfileColor,
   type FamilyProfileKind,
+  type FamilyRights,
   type TvProfileDto,
   type TvProfilesDto,
 } from "@tentacle-tv/shared";
@@ -76,12 +77,29 @@ export function pairedAccountOf(listing: Pick<TvProfilesDto, "owner"> & Partial<
 }
 
 /**
+ * Ces droits mènent-ils à un geste ? Le propriétaire, un parent, un membre qui
+ * peut créer des invités : oui. Un membre qui ne gère que SES invités : s'il en
+ * a créé un (`createdBy`, dans la liste). Sans la liste, on ne peut rien en
+ * dire : oui.
+ */
+function rightsReachSomething(rights: FamilyRights, userId: string, profiles: readonly TvProfileDto[] | undefined): boolean {
+  if (rights.manageMembers || rights.createGuests || rights.manageGuests === "all" || rights.manageMinors === true) return true;
+  if (rights.manageGuests !== "own" || !profiles) return rights.manageGuests === "own" && !profiles;
+  return profiles.some((candidate) => candidate.kind === "guest" && !!candidate.createdBy && sameUserId(candidate.createdBy, userId));
+}
+
+/**
  * CE profil a-t-il quelque chose à gérer sur cette TV (« Gérer les profils »,
  * derrière SON PIN) ? v2 : son `manage` (nul pour un invité, le compte de
- * démonstration) ; v1 (sans `manage`) : le propriétaire seul.
+ * démonstration, un profil sans code) — et un geste à y faire (décision du
+ * 16/10 : « s'il ne gère rien, pas d'entrée » — un membre sans droit de créer
+ * ni invité à lui n'y verrait qu'une liste en lecture seule) ; v1 (sans
+ * `manage`) : le propriétaire seul.
  */
-export function profileManages(profile: TvProfileDto, listing: Pick<TvProfilesDto, "canManage">): boolean {
-  if ("manage" in profile && profile.manage !== undefined) return profile.manage !== null;
+export function profileManages(profile: TvProfileDto, listing: Pick<TvProfilesDto, "canManage"> & Partial<Pick<TvProfilesDto, "profiles">>): boolean {
+  if ("manage" in profile && profile.manage !== undefined) {
+    return profile.manage !== null && rightsReachSomething(profile.manage, profile.userId, listing.profiles);
+  }
   return profile.kind === "owner" && listing.canManage;
 }
 

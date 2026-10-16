@@ -7,7 +7,8 @@ import { profileRecordOf, readProfileRecord, writeProfileRecord, type TvProfileR
 
 const OWNER: FamilyRights = { manageMembers: true, createGuests: true, manageGuests: "all", manageRoles: true, manageMinors: true };
 const PARENT: FamilyRights = { manageMembers: false, createGuests: true, manageGuests: "all", manageRoles: false, manageMinors: true };
-const MEMBER: FamilyRights = { manageMembers: false, createGuests: false, manageGuests: "own", manageRoles: false, manageMinors: false };
+// Un membre qui peut créer des invités : il a quelque chose à gérer.
+const MEMBER: FamilyRights = { manageMembers: false, createGuests: true, manageGuests: "own", manageRoles: false, manageMinors: false };
 
 const profile = (userId: string, patch: Partial<TvProfileDto> = {}): TvProfileDto => ({
   userId, kind: "member", name: userId, color: "violet", hasPin: false, imageTag: null, lockedUntil: null, createdBy: null, manage: null, ...patch,
@@ -61,6 +62,9 @@ describe("la gestion depuis un profil", () => {
     // Serveur d'avant : `manage` sans code — la TV exige quand même le code.
     expect(profileManageState(profile("marc", { manage: MEMBER }), listing)).toBe("needsPin");
     expect(profileManageState(profile("marc"), listing)).toBe("none");
+    // Un membre qui ne gère que ses invités et n'en a aucun : rien à y faire (décision du 16/10).
+    const idle = { ...MEMBER, createGuests: false };
+    expect(profileManageState(profile("marc", { hasPin: true, manage: idle }), listing)).toBe("none");
     expect(profileManageState(profile("zoe", { kind: "guest", hasPin: true }), listing)).toBe("none");
   });
 
