@@ -1,4 +1,6 @@
-import type { FamilyProfileKind } from "@tentacle-tv/shared";
+import { sameUserId, type FamilyProfileKind, type TvProfilesDto } from "@tentacle-tv/shared";
+import type { ProfileManageState } from "./profileRole";
+import type { ProfileLaunch } from "./tvProfileSession";
 
 /**
  * SON code PIN, depuis son profil sur l'Apple TV (Réglages › Compte) — créer,
@@ -37,6 +39,47 @@ export interface OwnPinSubmit {
 export function ownPinModes(kind: FamilyProfileKind, hasPin: boolean): OwnPinMode[] {
   if (kind === "guest") return [];
   return hasPin ? ["change", "remove"] : ["create"];
+}
+
+/** Ce que `ownPinModesFor` lit du profil ouvert. */
+export interface OwnPinSubject {
+  kind: FamilyProfileKind;
+  hasPin: boolean;
+  /** `openProfileState(...).manage`. */
+  manage: ProfileManageState;
+  /** Comment la session s'est ouverte (`TvProfileRecord.launch`). */
+  launch: ProfileLaunch;
+  /** Seul dans la liste relue de « Qui regarde ? » ; null : la liste n'est pas lue. */
+  alone: boolean | null;
+}
+
+/**
+ * Le compte de DÉMONSTRATION (revue Apple) : le serveur lui refuse tout code
+ * (`family.review_account`). Il ne se dit pas à la TV (ni la liste des profils,
+ * ni la famille, fermée sans code) ; il se reconnaît à ce que TOUT le désigne,
+ * et seulement lui :
+ * - il est ouvert d'office (`solo`), SEUL dans la liste, sans code : jamais un
+ *   membre d'une famille (même « Qui regarde ? » coupé, la liste en montre
+ *   d'autres) ;
+ * - il ne gère rien, ni avec ni sans code (`manage` « none ») — alors qu'un
+ *   compte sans famille, propriétaire de lui-même, le gérerait avec un code.
+ */
+export function isDemoProfile(subject: OwnPinSubject): boolean {
+  return subject.kind !== "guest" && !subject.hasPin && subject.manage === "none" && subject.launch === "solo" && subject.alone !== false;
+}
+
+/** Le profil ouvert est-il seul dans la liste relue ? null : liste pas encore lue. */
+export function profileAloneIn(listing: Pick<TvProfilesDto, "profiles"> | null, profileId: string): boolean | null {
+  return listing ? listing.profiles.every((profile) => sameUserId(profile.userId, profileId)) : null;
+}
+
+/**
+ * Les gestes offerts au profil ouvert : ceux de toujours (`ownPinModes`) —
+ * un membre simple ou mineur, sans code ni droit de gestion, garde « Créer un
+ * code PIN » — sauf le compte de démonstration, qui n'en voit aucun.
+ */
+export function ownPinModesFor(subject: OwnPinSubject): OwnPinMode[] {
+  return isDemoProfile(subject) ? [] : ownPinModes(subject.kind, subject.hasPin);
 }
 
 export function ownPinStart(mode: OwnPinMode): OwnPinFlow {

@@ -48,7 +48,7 @@ export interface SettingsProfile {
   canUnpair: boolean;
   /** Ce que dit « Oublier ce jumelage » : ce que fait le déjumelage, ou qui peut le faire. */
   unpairCaption: string;
-  /** SON code PIN : a-t-il un code, et les gestes offerts (aucun pour un invité — `ownPinModes`). */
+  /** SON code PIN : a-t-il un code, et les gestes offerts (aucun pour un invité ni pour le compte de démonstration — `ownPinModesFor`). */
   pin: { hasPin: boolean; modes: OwnPinMode[] };
 }
 

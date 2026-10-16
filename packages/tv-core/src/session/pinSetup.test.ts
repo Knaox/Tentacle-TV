@@ -28,7 +28,7 @@ function memory(initial: Record<string, string> = {}): SessionStorage & { data: 
 }
 
 /** Un profil neuf du propriétaire, sans code, face à un serveur 1.30.0. */
-const FRESH_OWNER: PinSetupSubject = { kind: "owner", hasPin: false, launch: "picked", manages: false, manageNeedsPin: true };
+const FRESH_OWNER: PinSetupSubject = { kind: "owner", hasPin: false, launch: "picked", manageNeedsPin: true };
 
 describe("l'étape « Code PIN conseillé » — pour qui", () => {
   it("un profil neuf sans code (propriétaire ou membre) : proposée", () => {
@@ -38,7 +38,7 @@ describe("l'étape « Code PIN conseillé » — pour qui", () => {
   });
 
   it("un profil déjà réglé (il a son code) : jamais", () => {
-    expect(pinSetupEligible({ ...FRESH_OWNER, hasPin: true, manages: true, manageNeedsPin: false })).toBe(false);
+    expect(pinSetupEligible({ ...FRESH_OWNER, hasPin: true, manageNeedsPin: false })).toBe(false);
   });
 
   it("un invité : jamais — il garde le code de son propriétaire", () => {
@@ -46,17 +46,24 @@ describe("l'étape « Code PIN conseillé » — pour qui", () => {
     expect(pinSetupEligible({ ...FRESH_OWNER, kind: "guest" })).toBe(false);
   });
 
-  it("le compte de démonstration : jamais — il ne gère rien, ni avec ni sans code", () => {
-    expect(pinSetupEligible({ ...FRESH_OWNER, manages: false, manageNeedsPin: false })).toBe(false);
-    expect(pinSetupEligible({ ...FRESH_OWNER, manages: false, manageNeedsPin: undefined })).toBe(false);
+  it("un membre simple ou mineur, sans code ni droit de gestion : proposée (protéger son profil)", () => {
+    const simple: PinSetupSubject = { kind: "member", hasPin: false, launch: "picked", manageNeedsPin: false };
+    expect(pinSetupEligible(simple)).toBe(true);
+    expect(pinSetupReason(simple)).toBe("protect");
+    expect(pinSetupEligible({ ...simple, manageNeedsPin: undefined })).toBe(true);
+  });
+
+  it("le compte de démonstration : jamais — il est toujours ouvert d'office, seul, sans code", () => {
+    expect(pinSetupEligible({ kind: "owner", hasPin: false, launch: "solo", manageNeedsPin: false })).toBe(false);
   });
 
   it("le compte seul ouvert d'office (aucune famille) : jamais", () => {
     expect(pinSetupEligible({ ...FRESH_OWNER, launch: "solo" })).toBe(false);
   });
 
-  it("un serveur d'avant la 1.30.0 (sans `manageNeedsPin`) : le profil qui gère", () => {
-    expect(pinSetupEligible({ kind: "member", hasPin: false, launch: "picked", manages: true })).toBe(true);
+  it("un serveur d'avant la 1.30.0 (sans `manageNeedsPin`) : proposée, texte « protéger » seul", () => {
+    expect(pinSetupEligible({ kind: "member", hasPin: false, launch: "picked" })).toBe(true);
+    expect(pinSetupReason({})).toBe("protect");
   });
 
   it("aucun profil ouvert : rien", () => {
@@ -117,9 +124,10 @@ describe("le profil retenu de la TV", () => {
     expect(pinSetupReason(pinSetupSubjectOf(RECORD))).toBe("protectAndManage");
   });
 
-  it("un enregistrement d'avant (ni `manages` ni `manageNeedsPin`) : le propriétaire si la TV le laissait gérer", () => {
+  it("un enregistrement d'avant (ni `manages` ni `manageNeedsPin`) : proposée, texte « protéger »", () => {
     const { manages: _m, manageNeedsPin: _n, ...before } = RECORD;
-    expect(pinSetupEligible(pinSetupSubjectOf({ ...before, canManage: true }))).toBe(true);
-    expect(pinSetupEligible(pinSetupSubjectOf(before))).toBe(false);
+    expect(pinSetupEligible(pinSetupSubjectOf(before))).toBe(true);
+    expect(pinSetupReason(pinSetupSubjectOf(before))).toBe("protect");
+    expect(pinSetupEligible(pinSetupSubjectOf({ ...before, launch: "solo" }))).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import type { FamilyProfileKind } from "@tentacle-tv/shared";
-import { recordManages, type ProfileLaunch, type TvProfileRecord } from "./tvProfileSession";
+import type { ProfileLaunch, TvProfileRecord } from "./tvProfileSession";
 import type { SessionStorage } from "./unpairJournal";
 
 /**
@@ -7,17 +7,13 @@ import type { SessionStorage } from "./unpairJournal";
  * Android TV) — la première fenêtre du démarrage (`nav/startupWindows`), avant
  * la barre et la photo. Module pur, stockage injecté.
  *
- * - Pour qui : le propriétaire ou un membre de la famille, sur un profil SANS
+ * - Pour qui : le propriétaire ou un membre de la famille — parent, membre
+ *   simple ou mineur, qu'il gère quelque chose ou non —, sur un profil SANS
  *   code. Jamais un invité (son code est celui que pose son propriétaire,
- *   `ownPinModes`) ; jamais le compte de démonstration (le serveur refuse : un
- *   code posé par un relecteur fermerait le profil au suivant) ; jamais le
- *   compte seul ouvert d'office (`solo` : aucune famille, personne d'autre
- *   devant l'écran — la règle du web, `familyPinReminder`).
- * - Le compte de démonstration ne se dit pas à la TV : il se reconnaît à ce
- *   qu'un profil du propriétaire ou d'un membre n'y gère rien, ni maintenant
- *   ni avec un code (`manages` faux, `manageNeedsPin` faux). Un serveur
- *   d'avant la 1.30.0 donne `manage` à tous les autres ; un serveur v1 (sans
- *   `manage`) ne la propose qu'au propriétaire (`recordManages`).
+ *   `ownPinModes`) ; jamais le compte seul ouvert d'office (`solo` : aucune
+ *   famille, personne d'autre devant l'écran — la règle du web,
+ *   `familyPinReminder`). Le compte de démonstration (le serveur lui refuse
+ *   tout code) en est toujours : seul, sans famille ni code (`isDemoProfile`).
  * - Une fois par profil et par appareil : « Plus tard » la marque
  *   (`PIN_SETUP_STORAGE_KEY`) ; un code posé la rend sans objet. Elle ne
  *   revient plus — le code se pose ensuite dans Réglages › Compte.
@@ -36,21 +32,18 @@ export interface PinSetupSubject {
   kind: FamilyProfileKind;
   hasPin: boolean;
   launch: ProfileLaunch;
-  /** Il gère déjà quelque chose sur cette TV (`recordManages`). */
-  manages: boolean;
   /** Il gérerait avec un code (`TvProfileDto.manageNeedsPin`, serveur 1.30.0). */
   manageNeedsPin?: boolean;
 }
 
 /** Ce que l'étape lit du profil retenu de la TV. */
 export function pinSetupSubjectOf(record: TvProfileRecord): PinSetupSubject {
-  return { kind: record.kind, hasPin: record.hasPin, launch: record.launch, manages: recordManages(record), manageNeedsPin: record.manageNeedsPin };
+  return { kind: record.kind, hasPin: record.hasPin, launch: record.launch, manageNeedsPin: record.manageNeedsPin };
 }
 
 /** Le profil est-il de ceux à qui l'on conseille un code ? */
 export function pinSetupEligible(subject: PinSetupSubject | null): boolean {
-  if (!subject || subject.kind === "guest" || subject.hasPin || subject.launch === "solo") return false;
-  return subject.manages || subject.manageNeedsPin === true;
+  return !!subject && subject.kind !== "guest" && !subject.hasPin && subject.launch !== "solo";
 }
 
 /** Pourquoi le code : protéger le profil — et, pour qui gérerait avec un code, gérer la famille depuis la TV. */

@@ -1,6 +1,6 @@
 import { useCallback, type MutableRefObject } from "react";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { ownPinModes, readProfileRecord, settingsPinReturnKey } from "@tentacle-tv/tv-core";
+import { ownPinModesFor, readProfileRecord, recordManageState, settingsPinReturnKey } from "@tentacle-tv/tv-core";
 
 /**
  * Le retour du pavé de son code PIN dans Réglages › Compte (`onReturn` de
@@ -16,7 +16,10 @@ export function useOwnPinReturn(opened: MutableRefObject<boolean>): (contentKey:
       if (!opened.current) return contentKey;
       opened.current = false;
       const record = readProfileRecord(storage);
-      return (record ? settingsPinReturnKey(ownPinModes(record.kind, record.hasPin)) : null) ?? contentKey;
+      const modes = record
+        ? ownPinModesFor({ kind: record.kind, hasPin: record.hasPin, manage: recordManageState(record), launch: record.launch, alone: null })
+        : null;
+      return (modes ? settingsPinReturnKey(modes) : null) ?? contentKey;
     },
     [opened, storage],
   );
