@@ -49,6 +49,19 @@ export function parentalAgeChoices(ratings: Ratings): ParentalAgeChoice[] {
   return [...choices, { kind: "none", key: PARENTAL_AGE_NONE_KEY }];
 }
 
+/**
+ * Les noms d'une note dans la table de Jellyfin. Sans sous-note, la limite
+ * couvre TOUT le score : chaque nom de ce score (« R » peut y porter une
+ * sous-note — relevé sur une table américaine, 16/10). Avec une sous-note : ses
+ * noms à elle, sinon ceux du score — jamais une note muette quand la table la connaît.
+ */
+export function parentalRatingNames(ratings: Ratings, score: number, subScore: number | null): string[] {
+  const sameScore = ratings.filter((rating) => rating.score === score);
+  const exact = sameScore.filter((rating) => (rating.subScore ?? null) === subScore);
+  const named = subScore === null || exact.length === 0 ? sameScore : exact;
+  return [...new Set(named.map((rating) => rating.name))];
+}
+
 /** Le palier qui correspond à la note posée ; sinon le réglage tel quel, avec ses noms dans la table. */
 export function currentParentalAge(choices: readonly ParentalAgeChoice[], controls: GuestParentalControls, ratings: Ratings): ParentalAgeCurrent {
   const score = controls.maxParentalRating;
@@ -56,8 +69,7 @@ export function currentParentalAge(choices: readonly ParentalAgeChoice[], contro
   const subScore = controls.maxParentalSubRating;
   const match = subScore === null ? choices.find((choice) => choice.kind === "age" && choice.score === score) : undefined;
   if (match) return { kind: "choice", key: match.key };
-  const names = ratings.filter((rating) => rating.score === score && (rating.subScore ?? null) === subScore).map((rating) => rating.name);
-  return { kind: "custom", key: PARENTAL_AGE_CUSTOM_KEY, score, subScore, names: [...new Set(names)] };
+  return { kind: "custom", key: PARENTAL_AGE_CUSTOM_KEY, score, subScore, names: parentalRatingNames(ratings, score, subScore) };
 }
 
 /**

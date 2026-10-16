@@ -5,6 +5,7 @@ import {
   currentCappedByCeiling,
   currentParentalAge,
   parentalAgeChoices,
+  parentalRatingNames,
   parentalAgeSlots,
   withParentalAge,
   type ParentalAgeChoice,
@@ -131,5 +132,28 @@ describe("currentCappedByCeiling", () => {
     const custom = currentParentalAge(choices, { ...GUEST_PARENTAL_NONE, maxParentalRating: 18 }, FR);
     expect(currentCappedByCeiling(choices, custom, { maxParentalRating: 12 })).toBe(true);
     expect(currentCappedByCeiling(choices, custom, null)).toBe(false);
+  });
+});
+
+describe("parentalRatingNames", () => {
+  // Une table américaine où « R » porte une sous-note (relevé du banc, 16/10) : une note posée à 17 sans sous-note.
+  const US_SUB = [
+    { name: "PG-13", score: 13, subScore: null },
+    { name: "R", score: 17, subScore: 0 },
+    { name: "TV-MA", score: 17, subScore: 1 },
+  ];
+
+  it("sans sous-note : tous les noms du score, jamais une note muette", () => {
+    expect(parentalRatingNames(US_SUB, 17, null)).toEqual(["R", "TV-MA"]);
+    expect(currentParentalAge(parentalAgeChoices(US_SUB), { ...GUEST_PARENTAL_NONE, maxParentalRating: 17 }, US_SUB)).toMatchObject({
+      kind: "custom",
+      names: ["R", "TV-MA"],
+    });
+  });
+
+  it("avec une sous-note : les siens, sinon ceux du score ; un score inconnu : aucun", () => {
+    expect(parentalRatingNames(US_SUB, 17, 1)).toEqual(["TV-MA"]);
+    expect(parentalRatingNames(US_SUB, 17, 5)).toEqual(["R", "TV-MA"]);
+    expect(parentalRatingNames(US_SUB, 9, null)).toEqual([]);
   });
 });

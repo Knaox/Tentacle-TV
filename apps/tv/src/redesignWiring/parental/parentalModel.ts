@@ -7,6 +7,7 @@ import {
   parentalAgeSlots,
   parentalLibrariesCount,
   parentalLibraryRows,
+  parentalRatingNames,
   type ParentalAgeChoice,
   type ParentalAgeSlot,
   type ParentalLibraryOption,
@@ -22,10 +23,9 @@ import type { ParentalAgeView, ParentalLibrariesView } from "../../redesign/scre
 
 type Ratings = FamilyParentalOptionsDto["parentalRatings"];
 
-/** Les noms d'une note de la table, trois au plus (« 12 / PG-13 / FSK-12 »). */
+/** Les noms d'une note de la table, trois au plus (« 12 / PG-13 / FSK-12 ») ; la note seule si la table ne la nomme pas. */
 function ratingNames(ratings: Ratings, score: number, subScore: number | null): string {
-  const names = [...new Set(ratings.filter((rating) => rating.score === score && (rating.subScore ?? null) === subScore).map((rating) => rating.name))];
-  return names.slice(0, 3).join(" / ") || String(score);
+  return parentalRatingNames(ratings, score, subScore).slice(0, 3).join(" / ") || String(score);
 }
 
 function chipLabel(slot: ParentalAgeSlot, t: TFunction): string {
