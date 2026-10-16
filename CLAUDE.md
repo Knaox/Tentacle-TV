@@ -709,7 +709,8 @@ l'arrivée du focus (`trailerPreviewDwell.ts`). Pendant l'aperçu, la carte fait
 place de son pied sous la légende (`CardShell` `expansion.room`) : « Maintenir
 OK » et Lecture/Pause restent visibles, dans la zone sûre. Android : l'aperçu a
 son PROPRE lecteur natif (`TentaclePreviewVideo`, `exoplayer/PreviewVideoView.kt` :
-la PlayerView sans contrôleur, une TextureView, aucun focus possible) — celle de
+la PlayerView sans contrôleur, une TextureView, aucun focus possible, UN ExoPlayer
+partagé par tous les aperçus, `PreviewPlayerPool`, relâché après 60 s sans aperçu) — celle de
 react-native-video gonflait un contrôleur à chaque aperçu (fil UI bloqué au
 départ de l'aperçu suivant) dont le bouton volait le focus de la carte ; l'élément
 vidéo passe par l'adaptateur `platform/tvos/player/previewVideoElement`.

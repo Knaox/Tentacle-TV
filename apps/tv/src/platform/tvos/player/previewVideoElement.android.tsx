@@ -1,7 +1,6 @@
 import { memo, useCallback, useMemo } from "react";
 import { StyleSheet, UIManager, requireNativeComponent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from "react-native";
 import { RnvPreviewVideo } from "./previewVideoRnv";
-import { PreviewVideoShield } from "./previewVideoShield";
 import type { PreviewVideoElementProps } from "./previewVideoTypes";
 
 export type { PreviewVideoElementProps } from "./previewVideoTypes";
@@ -11,9 +10,9 @@ export type { PreviewVideoElementProps } from "./previewVideoTypes";
  * (`TentaclePreviewVideo`, `exoplayer/PreviewVideoView.kt`) — une PlayerView
  * SANS contrôleur sur une TextureView, aucun focus possible. La vue de
  * react-native-video gonflait à chaque aperçu un contrôleur entier : un
- * blocage du fil UI au départ de l'aperçu suivant (lot ba1016). Un binaire
- * qui ne l'embarque pas : react-native-video, dans sa vue sans focus
- * (`previewVideoShield`), comme avant.
+ * blocage du fil UI au départ de l'aperçu suivant, et un bouton qui volait le
+ * focus de la carte (lot ba1016). Un binaire qui ne l'embarque pas :
+ * react-native-video, comme avant.
  */
 
 interface PreviewNativeEvent {
@@ -68,10 +67,5 @@ const NativeElement = memo(function NativeElement({
 });
 
 export const PreviewVideoElement = memo(function PreviewVideoElement(props: PreviewVideoElementProps) {
-  if (NativePreviewVideo) return <NativeElement {...props} />;
-  return (
-    <PreviewVideoShield style={StyleSheet.absoluteFill}>
-      <RnvPreviewVideo {...props} />
-    </PreviewVideoShield>
-  );
+  return NativePreviewVideo ? <NativeElement {...props} /> : <RnvPreviewVideo {...props} />;
 });
