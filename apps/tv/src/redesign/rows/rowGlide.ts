@@ -14,6 +14,10 @@ import { motionTo } from "../motion/motion";
  * défilement animé ordinaire, plus lent à partir que le ressort, la laissait
  * déborder à droite puis revenir).
  *
+ * `glideBack` : la même chose au REPLI d'une carte (le retour de `unfold`) —
+ * la rangée recule de ce que la carte rend, et la voisine focalisée ne bouge
+ * pas.
+ *
  * `stop` au moindre pas du focus : la plateforme (le moteur de focus de tvOS,
  * Android) reprend la piste sans qu'on la lui dispute. Animations réduites,
  * profil sans mouvement : la piste va à sa place d'un coup, comme la carte.
@@ -48,6 +52,19 @@ export function useRowGlide(track: AnimatedRef<ScrollView>) {
     [progress, from, to, active, reduced],
   );
 
+  const glideBack = useCallback(
+    (start: number, target: number) => {
+      cancelAnimation(progress);
+      gliding.current = true;
+      from.value = target;
+      to.value = start;
+      active.value = true;
+      progress.value = 1;
+      progress.value = motionTo(0, "unfold", reduced);
+    },
+    [progress, from, to, active, reduced],
+  );
+
   const stop = useCallback(() => {
     if (!gliding.current) return;
     gliding.current = false;
@@ -55,5 +72,5 @@ export function useRowGlide(track: AnimatedRef<ScrollView>) {
     cancelAnimation(progress);
   }, [progress, active]);
 
-  return { glide, stop };
+  return { glide, glideBack, stop };
 }

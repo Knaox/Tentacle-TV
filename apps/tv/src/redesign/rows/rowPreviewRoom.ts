@@ -69,6 +69,7 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
   const move = useCallback(
     (x: number, motion: RowHeadMotion) => {
       if (motion === "withPreview") return glide.glide(scrollX.current ?? 0, x);
+      if (motion === "withCollapse") return glide.glideBack(scrollX.current ?? 0, x);
       glide.stop();
       track.current?.scrollTo({ x, y: 0, animated: true });
     },
@@ -147,6 +148,13 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     [reveal],
   );
 
+  /** La grande carte se replie : la règle dit si la rangée recule avec elle (pas de vide). */
+  const onPreviewCollapse = useCallback((index: number) => {
+    const width = tileWidth.current;
+    if (width === undefined) return;
+    dispatch.current({ type: "collapse", index, tileWidth: width, at: Date.now() });
+  }, []);
+
   const onContentSizeChange = useCallback(() => {
     const target = pending.current;
     if (target === null) return;
@@ -158,5 +166,5 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount 
     trackTop.current = event.nativeEvent.layout.y;
   }, []);
 
-  return { reserve, rowRef, onCardFocus, onRewind, onPreviewExpand, onContentSizeChange, onTrackLayout };
+  return { reserve, rowRef, onCardFocus, onRewind, onPreviewExpand, onPreviewCollapse, onContentSizeChange, onTrackLayout };
 }
