@@ -203,6 +203,7 @@ export * from "./family/familyProfileRefusal";
 export * from "./family/familyPinEntry";
 export * from "./family/familyPinReminder";
 export * from "./family/familyPromptsReset";
+export * from "./family/familyPromptsOffer";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";

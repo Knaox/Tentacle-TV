@@ -3,6 +3,7 @@ import type { AccountFamilyRightsDto, FamilyCreationDefaults, SetFamilyCreationD
 import {
   fetchAccountFamilyRights,
   fetchFamilyCreationDefaults,
+  resetFamilyPrompts,
   setAccountFamilyRights,
   setFamilyCreationDefaults,
   setFamilyMemberParental,
@@ -32,6 +33,11 @@ export function useSetFamilyMemberRole() {
 /** Le contrôle parental d'un membre mineur : son état voyage avec le profil (`parental`, `parentalCeiling`). */
 export function useSetFamilyMemberParental() {
   return useFamilyGesture(setFamilyMemberParental);
+}
+
+/** « Reproposer le code PIN et la photo » (1.30.0) : la date voyage avec le profil (`promptsResetAt`). */
+export function useResetFamilyPrompts() {
+  return useFamilyGesture(resetFamilyPrompts);
 }
 
 export function useFamilyCreationDefaults(options: { enabled?: boolean } = {}) {

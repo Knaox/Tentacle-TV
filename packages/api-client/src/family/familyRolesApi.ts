@@ -4,6 +4,7 @@ import {
   type FamilyCreationDefaults,
   type GuestParentalDto,
   type MemberRoleDto,
+  type PromptsResetDto,
   type SetAccountFamilyRightsBody,
   type SetFamilyCreationDefaultsBody,
   type SetMemberParentalBody,
@@ -30,6 +31,11 @@ export function setFamilyMemberRole(input: { userId: string; parent: boolean }):
 /** Le contrôle parental d'un membre mineur (le contrôle ENTIER ; aucun réglage = retiré, base rendue). */
 export function setFamilyMemberParental(input: { userId: string; parental: SetMemberParentalBody }): Promise<GuestParentalDto> {
   return put(familyPath("setMemberParental", { userId: input.userId }), input.parental);
+}
+
+/** « Reproposer le code PIN et la photo » à ce profil (1.30.0, `family.promptsReset`) : aucun corps. */
+export function resetFamilyPrompts(userId: string): Promise<PromptsResetDto> {
+  return tentacleApiFetch<PromptsResetDto>(familyPath("resetPrompts", { userId }), { method: "POST" });
 }
 
 export function fetchFamilyCreationDefaults(): Promise<FamilyCreationDefaults> {

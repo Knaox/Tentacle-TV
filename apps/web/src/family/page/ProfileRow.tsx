@@ -8,10 +8,12 @@ import {
   type FamilyProfileDto,
   type ProfileActions,
   type ProfileRoleActions,
+  type PromptsResetOffer,
 } from "@tentacle-tv/shared";
 import { guestParentalOf, hasGuestParental } from "../../components/parental/guestParental";
 import { FamilyAvatar } from "../FamilyAvatar";
 import { useFamilyText } from "../useFamilyText";
+import { ResetPromptsButton } from "./ResetPromptsButton";
 import { RightToggle } from "./RightToggle";
 import { SMALL_BUTTON, SMALL_DANGER_BUTTON } from "./familyUi";
 
@@ -41,6 +43,8 @@ interface ProfileRowProps {
   /** Ses bibliothèques (1.30.0, `family.libraryLimits`), mêmes droits que son contrôle parental ;
    *  absent : le serveur ne le sait pas, ou la session ne le peut pas. */
   onLibraries?: (profile: FamilyProfileDto) => void;
+  /** « Reproposer le code PIN et la photo » (1.30.0, `promptsResetOffer`) ; absent : rien à reproposer. */
+  promptsReset?: PromptsResetOffer | null;
 }
 
 const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest: "family:kindGuest" } as const;
@@ -61,7 +65,7 @@ const NO_ROLE_ACTIONS: ProfileRoleActions = { role: false, roleBlockedByParental
  */
 export const ProfileRow = memo(function ProfileRow({
   profile, last, isSelf, actions, roleActions = NO_ROLE_ACTIONS, showCreator, rightPending, onRemove, onGuestPin, onGuestPhoto, onGuestParental, onRightChange,
-  onRoleChange, onMemberParental, onLibraries,
+  onRoleChange, onMemberParental, onLibraries, promptsReset,
 }: ProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "avatars"]);
   const { formatDate } = useFamilyText();
@@ -134,7 +138,7 @@ export const ProfileRow = memo(function ProfileRow({
         </p>
         {/* Les gestes sous les badges, jamais à côté : une rangée de quatre boutons écrasait
             la colonne du nom et de ses droits en un ruban d'un mot par ligne. */}
-        {(actions.pin || actions.remove || memberParental || librariesEditable) && (
+        {(actions.pin || actions.remove || memberParental || librariesEditable || promptsReset) && (
           <div className="mt-2 flex flex-wrap gap-2">
             {memberParental && (
               <button type="button" onClick={() => onMemberParental(profile)} className={SMALL_BUTTON}
@@ -164,6 +168,7 @@ export const ProfileRow = memo(function ProfileRow({
                 {t("familyWeb:owned.setPin")}
               </button>
             )}
+            {promptsReset && <ResetPromptsButton profile={profile} offer={promptsReset} />}
             {actions.remove && (
               <button type="button" onClick={() => onRemove(profile)} className={SMALL_DANGER_BUTTON}
                 aria-label={`${t(isGuest ? "familyWeb:owned.delete" : "familyWeb:owned.remove")} — ${profile.name}`}>

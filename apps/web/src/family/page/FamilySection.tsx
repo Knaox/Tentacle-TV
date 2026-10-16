@@ -19,6 +19,7 @@ import {
   isOwnProfile,
   profileActions,
   profileRoleActions,
+  promptsResetOffer,
   sameUserId,
   sessionManages,
   type FamilyErrorCode,
@@ -80,6 +81,8 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
   const [parentalMember, setParentalMember] = useState<FamilyProfileDto | null>(null);
   // Les bibliothèques d'un invité ou d'un membre mineur : serveur 1.30.0 (`family.libraryLimits`).
   const libraryLimits = useServerCapability("family.libraryLimits");
+  // « Reproposer le code PIN et la photo » : serveur 1.30.0 ; sans la capacité, aucun bouton.
+  const promptsReset = useServerCapability("family.promptsReset");
   const [librariesProfile, setLibrariesProfile] = useState<FamilyProfileDto | null>(null);
   const setRole = useSetFamilyMemberRole();
   const { mutate: mutateRole } = setRole;
@@ -183,6 +186,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
                 onRoleChange={roles && personal ? onRoleChange : undefined}
                 onMemberParental={memberParental && personal ? setParentalMember : undefined}
                 onLibraries={libraryLimits && personal ? setLibrariesProfile : undefined}
+                promptsReset={promptsReset ? promptsResetOffer(overview, profile, viewerId) : null}
               />
             ))}
             {buttons && <li className="px-4 py-3">{buttons}</li>}

@@ -161,6 +161,12 @@ export default {
     generic: "L'opération n'a pas abouti. Réessayez.",
     retryAt: "Nouvel essai possible le {{date}}.",
   },
+  /** « Reproposer le code PIN et la photo » d'un profil (1.30.0, `family.promptsReset`). */
+  prompts: {
+    reset: "Reproposer le code PIN et la photo",
+    resetPhoto: "Reproposer la photo",
+    done: "C'est noté : {{name}} se verra reproposer ce qui manque encore à sa prochaine ouverture, sur une TV ou un ordinateur.",
+  },
   /** Les bibliothèques permises à un invité ou à un membre mineur (1.30.0, `family.libraryLimits`). */
   libraries: {
     open: "Bibliothèques",

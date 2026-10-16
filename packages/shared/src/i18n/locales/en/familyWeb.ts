@@ -161,6 +161,11 @@ export default {
     retryAt: "You can try again on {{date}}.",
   },
   /** The libraries allowed to a guest or a minor member (1.30.0, `family.libraryLimits`). */
+  prompts: {
+    reset: "Offer PIN code and photo again",
+    resetPhoto: "Offer photo again",
+    done: "Done: next time {{name}} opens their profile on a TV or computer, they'll be offered what's still missing.",
+  },
   libraries: {
     open: "Libraries",
     title: "{{name}}'s libraries",

@@ -5,6 +5,7 @@ import { enterProfile, returnToAccount } from "../../auth/sessionSwap";
 import { endPipSession } from "../../pictureInPicture/pictureInPictureStore";
 import { markLaunchPassed, noteCurrentProfile } from "../launch/launchState";
 import { askOnThisServer, forgetStayOnDevice, writeStayOnThisServer } from "../launch/stayOnDevice";
+import { honorDesktopPromptsReset } from "../avatarGallery/inviteRule";
 import { markArrival } from "./arrival";
 import type { CurtainProfile } from "./ProfileCurtain";
 
@@ -73,6 +74,8 @@ export function activeProfileOf(profile: PickerProfileDto): ActiveProfile {
 export async function commitPick(picked: PickedProfileDto, context: CommitContext = {}): Promise<CommitResult> {
   const held = readActiveProfile();
   const accountId = accountUserId();
+  // « Reproposer le code PIN et la photo » (1.30.0) : l'invitation à la photo revient pour ce profil.
+  honorDesktopPromptsReset(picked.profile.userId, picked.profile.promptsResetAt);
   if (picked.personal && !held) {
     // Aucune bascule n'a lieu : la page ne se recharge pas, et le drapeau posé
     // par `beginProfileSwitch` resterait levé jusqu'à la fermeture — la garde

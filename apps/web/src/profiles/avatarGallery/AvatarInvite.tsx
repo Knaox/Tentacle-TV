@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useUserId } from "@tentacle-tv/api-client";
+import { useFamilyOverview, useUserId } from "@tentacle-tv/api-client";
 import { useActiveProfile } from "../../auth/profileSession";
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
 import { useConnectivity } from "../../offline/useConnectivity";
-import { shouldInviteToAvatars } from "@tentacle-tv/shared";
+import { sameUserId, shouldInviteToAvatars } from "@tentacle-tv/shared";
+import { useFamilyAvailability } from "../../family/useFamilyAvailability";
 import { useStartupTurn } from "../../startup/startupStore";
-import { markSubjectInvited, readInvitedSubjects } from "./inviteRule";
+import { honorDesktopPromptsReset, markSubjectInvited, readInvitedSubjects } from "./inviteRule";
 import { useAvatarGallery } from "./useAvatarGallery";
 import { useGuestSessionPhoto } from "./useGuestSessionPhoto";
 
@@ -40,6 +41,14 @@ export function AvatarInvite({ desktop }: AvatarInviteProps) {
   const hasPhoto = profile ? profile.imageTag !== null : accountHasPhoto;
   const [invited, setInvited] = useState(readInvitedSubjects);
   const { openGallery, isOpen, dialog } = useAvatarGallery("invite");
+  // « Reproposer le code PIN et la photo » (1.30.0), en session personnelle : la date du profil du
+  // compte, lue dans la vue de la famille (déjà en cache). Un profil choisi l'a honorée au choix.
+  const { available } = useFamilyAvailability();
+  const overview = useFamilyOverview({ enabled: available && !profile });
+  const resetAt = profile ? undefined : overview.data?.family?.profiles.find((p) => !!userId && sameUserId(p.userId, userId))?.promptsResetAt;
+  useEffect(() => {
+    if (honorDesktopPromptsReset(subjectId, resetAt)) setInvited(readInvitedSubjects());
+  }, [subjectId, resetAt]);
 
   // Ce qu'elle VEUT, indépendamment de son tour : c'est ce que les autres fenêtres lisent.
   const wanted = shouldInviteToAvatars({
