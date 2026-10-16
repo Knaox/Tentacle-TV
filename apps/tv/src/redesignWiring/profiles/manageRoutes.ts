@@ -8,28 +8,16 @@ import type { RootStackParamList } from "../../navigation/types";
  * `AvatarGallery`, `{ guest: { userId, name } }`, retour par `goBack` une fois
  * la photo posée, `["family"]` relu), le contrôle parental d'un invité ou
  * d'un membre mineur (T2 : `ParentalControls`, `{ userId }` — l'écran relit
- * le reste dans `GET /api/family`). La fiche ne propose le geste que si la
- * pile déclare la page (`routeDeclared`) : chacun déclare la sienne, et avant
- * son arrivée rien ne paraît, rien ne casse.
+ * le reste dans `GET /api/family`).
  */
-export const GUEST_PHOTO_ROUTE = "AvatarGallery";
-export const PARENTAL_ROUTE = "ParentalControls" as const;
-
 type AnyNavigation = NavigationProp<RootStackParamList>;
-/** La galerie (T4) n'est pas encore dans la pile de cette branche : son appel reste non typé jusqu'à sa fusion. */
-type LooseNavigate = (name: string, params?: object) => void;
 
-/** La pile déclare-t-elle cette page ? */
-export function routeDeclared(navigation: AnyNavigation, name: string): boolean {
-  return navigation.getState()?.routeNames?.includes(name as keyof RootStackParamList) ?? false;
-}
-
-/** La galerie, pour la photo de CET invité (sa cible : `guest`). */
+/** La galerie, pour la photo de CET invité. */
 export function openGuestPhoto(navigation: AnyNavigation, row: ManageRowModel): void {
-  (navigation.navigate as unknown as LooseNavigate)(GUEST_PHOTO_ROUTE, { guest: { userId: row.userId, name: row.name } });
+  navigation.navigate("AvatarGallery", { guest: { userId: row.userId, name: row.name } });
 }
 
 /** Le contrôle parental de cet invité ou de ce membre mineur. */
 export function openParental(navigation: AnyNavigation, row: ManageRowModel): void {
-  navigation.navigate(PARENTAL_ROUTE, { userId: row.userId });
+  navigation.navigate("ParentalControls", { userId: row.userId });
 }

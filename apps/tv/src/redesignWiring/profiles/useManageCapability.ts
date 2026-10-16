@@ -1,27 +1,22 @@
 import { useServerCapabilities } from "@tentacle-tv/api-client";
-import type { NavigationProp } from "@react-navigation/native";
 import type { ManageCapability } from "@tentacle-tv/tv-core";
-import type { RootStackParamList } from "../../navigation/types";
-import { GUEST_PHOTO_ROUTE, PARENTAL_ROUTE, routeDeclared } from "./manageRoutes";
+import { useGuestPhotoCapable } from "../avatars/useGuestPhotoCapable";
 import { useFamilyCapability } from "./useFamilyCapability";
 
 /**
- * Ce que la fiche d'un profil peut proposer ICI : ce que le serveur sait
- * faire (ses capacités — jamais un numéro de version), et ce que cette TV
- * sait montrer (la galerie, l'écran du contrôle parental). Un geste absent
- * de l'un ou de l'autre n'est pas proposé (tv-core `familyManageSheet`).
+ * Ce que la fiche d'un profil peut proposer : ce que le serveur sait faire
+ * (ses capacités — jamais un numéro de version). Un geste absent n'est pas
+ * proposé (tv-core `familyManageSheet`). La photo d'un invité suit la porte
+ * de la galerie (`useGuestPhotoCapable`, T4).
  */
-export function useManageCapability(enabled: boolean, navigation: NavigationProp<RootStackParamList>): ManageCapability {
+export function useManageCapability(enabled: boolean): ManageCapability {
   const family = useFamilyCapability(enabled);
   const { capabilities } = useServerCapabilities();
-  const gallery = routeDeclared(navigation, GUEST_PHOTO_ROUTE);
-  const parental = routeDeclared(navigation, PARENTAL_ROUTE);
   return {
     guestRequests: family?.guestRequests === true,
-    // La photo d'un invité depuis un profil : le relais du serveur, ouvert aux profils qui gèrent.
-    guestPhotos: gallery && capabilities.has("family.guestPhotos") && capabilities.has("family.profileManage"),
+    guestPhotos: useGuestPhotoCapable(),
     roles: capabilities.has("family.roles"),
-    guestParental: parental && capabilities.has("family.parentalControls"),
-    memberParental: parental && capabilities.has("family.memberParental"),
+    guestParental: capabilities.has("family.parentalControls"),
+    memberParental: capabilities.has("family.memberParental"),
   };
 }

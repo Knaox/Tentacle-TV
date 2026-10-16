@@ -83,7 +83,7 @@ export function ManageProfilesRedesign({ navigation, route }: Props) {
   const overview = useFamilyOverview({ enabled: ready });
   // Les portraits que « Qui regarde ? » connaît : le relais d'un aperçu lu pendant que Jellyfin ne répondait pas.
   const listing = useTvFamilyListing();
-  const capability = useManageCapability(ready, navigation);
+  const capability = useManageCapability(ready);
 
   const store = useFocusStore();
   const keyboardEntry = useHiddenKeyboard(store);
