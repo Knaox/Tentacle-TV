@@ -18,6 +18,12 @@ import { TRAILER_PREVIEW_WARM_MAX_SUBJECTS, trailerPreviewSubjectKey, type Trail
  * recevoir ce que le serveur a préparé entre-temps), jamais un titre dont
  * l'aperçu est déjà en cache. Un envoi en échec suspend tout `backoffMs`.
  *
+ * Une GRILLE remplace ce qui attend à chaque fenêtre (`want(…, { replace })`) :
+ * une flèche tenue y traverse des dizaines de lignes, et la file les aurait
+ * toutes gardées — envoyées par lots une fois le focus posé. Seule compte la
+ * fenêtre où il se pose (`gridTrailerPreviewWarmWindow`) : la préparation reste
+ * bornée à deux lignes, quelle que soit la taille du catalogue.
+ *
  * Module pur : horloge injectée, la minuterie et l'envoi sont à l'intégration.
  */
 
@@ -41,9 +47,15 @@ export function trailerPreviewWarmWindow(index: number, count: number, ahead = T
   return [start, Math.max(start, Math.min(count, index + 1 + ahead))];
 }
 
+/** Comment une fenêtre entre dans la file. */
+export interface PreviewWarmWant {
+  /** Elle REMPLACE ce qui attend encore (une grille) ; sinon, elle passe devant. */
+  replace?: boolean;
+}
+
 export interface PreviewWarmQueue {
-  /** La fenêtre du focus : ses titres passent devant ceux d'avant. */
-  want(subjects: readonly TrailerPreviewSubject[], now: number): void;
+  /** La fenêtre du focus : ses titres passent devant ceux d'avant (ou les remplacent). */
+  want(subjects: readonly TrailerPreviewSubject[], now: number, options?: PreviewWarmWant): void;
   /** Le moment où envoyer, ou `null` : rien à envoyer. */
   dueAt(now: number): number | null;
   /** Le lot à envoyer maintenant (marqués envoyés) — `isReady` : déjà en cache, rien à demander. */
@@ -71,7 +83,8 @@ export function createPreviewWarmQueue(timing: typeof TV_PREVIEW_WARM_TIMING = T
   }
 
   return {
-    want(subjects, now) {
+    want(subjects, now, options) {
+      if (options?.replace) pending.clear();
       let added = false;
       for (const subject of subjects) {
         const key = trailerPreviewSubjectKey(subject);

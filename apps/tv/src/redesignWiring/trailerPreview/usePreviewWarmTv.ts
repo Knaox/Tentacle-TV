@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewSettled, useServerCapability } from "@tentacle-tv/api-client";
 import { uiLanguage, type TrailerPreviewSubject } from "@tentacle-tv/shared";
-import { createPreviewWarmQueue } from "@tentacle-tv/tv-core";
+import { createPreviewWarmQueue, type PreviewWarmWant } from "@tentacle-tv/tv-core";
 import type { CardPreviewWarm } from "../../redesign/cards/trailerPreviewPort";
 import { useTrailerPreviewsEnabled } from "../../lib/trailerPreviewSettings";
 import { useAppActive } from "./previewDevice";
@@ -64,8 +64,8 @@ export function useTvPreviewWarm(): CardPreviewWarm | null {
       }
       if (alive.current) schedule();
     };
-    return (subjects: readonly TrailerPreviewSubject[]) => {
-      queue.want(subjects, Date.now());
+    return (subjects: readonly TrailerPreviewSubject[], options?: PreviewWarmWant) => {
+      queue.want(subjects, Date.now(), options);
       schedule();
     };
   }, [on, lang, queryClient]);
