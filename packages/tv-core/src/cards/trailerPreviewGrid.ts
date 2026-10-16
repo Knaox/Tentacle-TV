@@ -156,6 +156,9 @@ export const GRID_FOCUS_OUTRUN_LINES = 1.5;
  * défiler plus d'une. C'est le défilement accéléré de tvOS, dont l'app ne
  * reçoit qu'un focus de temps en temps : la carte qu'elle croit focalisée est
  * déjà loin, son aperçu ne se demande pas. Un pas simple, lui, ne retarde rien.
+ * Une fois la grille POSÉE (`gridPreviewSettleDelay`), son focus est le vrai :
+ * on repart de là — un focus reçu pendant que la page filait encore vers lui ne
+ * reste jamais « dépassé ».
  */
 export function gridFocusOutrun(scrollAtFocus: number, scrollNow: number, lineStride: number): boolean {
   return Math.abs(scrollNow - scrollAtFocus) > GRID_FOCUS_OUTRUN_LINES * Math.max(1, lineStride);

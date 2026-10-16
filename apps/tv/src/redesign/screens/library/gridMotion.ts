@@ -60,7 +60,7 @@ export function createGridMotion(now: () => number = Date.now): GridMotion {
       return () => settledListeners.delete(listener);
     },
     watchFocus(lineStride, onOutrun) {
-      const from = y;
+      let from = y;
       let outrun = false;
       const listener = () => {
         const next = gridFocusOutrun(from, y, lineStride);
@@ -68,8 +68,21 @@ export function createGridMotion(now: () => number = Date.now): GridMotion {
         outrun = next;
         onOutrun(next);
       };
+      // La grille posée, son focus est le vrai : un focus reçu pendant la fin
+      // d'un défilement accéléré (la page file encore vers lui) ne reste pas
+      // « dépassé » — sans quoi son aperçu ne viendrait jamais.
+      const rebase = () => {
+        from = y;
+        if (!outrun) return;
+        outrun = false;
+        onOutrun(false);
+      };
       scrollListeners.add(listener);
-      return () => scrollListeners.delete(listener);
+      settledListeners.add(rebase);
+      return () => {
+        scrollListeners.delete(listener);
+        settledListeners.delete(rebase);
+      };
     },
     dispose() {
       if (timer) clearTimeout(timer);
