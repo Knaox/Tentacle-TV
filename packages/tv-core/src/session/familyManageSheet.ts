@@ -5,7 +5,6 @@ import {
   sameUserId,
   type FamilyProfileDto,
   type FamilyRights,
-  type FamilySwitches,
 } from "@tentacle-tv/shared";
 
 /**
@@ -69,19 +68,22 @@ export interface ManageSheetContext {
   rights: FamilyRights;
   /** La session : le compte du profil qui gère. */
   actorId: string;
-  switches: FamilySwitches;
+  /** « Peut demander » se règle ici (`mayGrantGuestRequests`, shared : le droit annoncé, la Famille et
+   *  les invités allumés, et le droit de compte que donne l'administration). */
+  grantRequests: boolean;
   capability: ManageSheetCapability;
 }
 
 function guestGestures(profile: FamilyProfileDto, context: ManageSheetContext): ManageGesture[] {
-  const { rights, capability, switches } = context;
+  const { rights, capability } = context;
   if (!canManageGuest(rights, profile.createdBy ?? null, context.actorId)) return [];
   const gestures: ManageGesture[] = [];
   if (capability.guestPhotos) gestures.push({ kind: "photo" });
   gestures.push({ kind: "pin", hasPin: profile.hasPin });
-  // « Peut demander » : le propriétaire et un parent, la Famille et les invités allumés, le droit annoncé.
-  if (rights.manageGuests === "all" && capability.guestRequests && switches.families && switches.guests) {
-    gestures.push({ kind: "requestTitles", on: profile.guestRights?.requestTitles === true });
+  // « Peut demander » : le propriétaire et un parent, si l'administration le permet. La valeur EN VIGUEUR :
+  // une case cochée mais suspendue (`guestRights.suspended`) ne se montre jamais active.
+  if (rights.manageGuests === "all" && context.grantRequests) {
+    gestures.push({ kind: "requestTitles", on: profile.guestRights?.requestTitles === true && profile.guestRights.suspended !== true });
   }
   if (capability.guestParental && profile.parental !== undefined) gestures.push({ kind: "parental" });
   gestures.push({ kind: "delete" });

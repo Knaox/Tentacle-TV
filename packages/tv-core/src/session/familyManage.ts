@@ -3,6 +3,7 @@ import {
   canManageGuest,
   capacityError,
   familyRightsOf,
+  mayGrantGuestRequests,
   sameUserId,
   type FamilyGuestRights,
   type FamilyMemberRights,
@@ -132,9 +133,10 @@ export function manageRows(
     }];
   }
   const { rights } = family;
-  // « Peut demander » : le propriétaire et un parent (1.30.0), la Famille et les invités allumés, le droit annoncé.
-  const guestRightsOpen = rights.manageGuests === "all" && capability.guestRequests === true && overview.switches.families && overview.switches.guests;
-  const sheet = { rights, actorId: actor.userId, switches: overview.switches, capability };
+  // « Peut demander » : le propriétaire et un parent (1.30.0), si l'administration le permet (shared `mayGrantGuestRequests`).
+  const grantRequests = mayGrantGuestRequests(overview, { guestRequests: capability.guestRequests });
+  const guestRightsOpen = rights.manageGuests === "all" && grantRequests;
+  const sheet = { rights, actorId: actor.userId, grantRequests, capability };
   const profiles: ManageRowModel[] = family.profiles.map((profile) => ({
     id: profile.userId,
     kind: profile.kind,

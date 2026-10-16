@@ -128,6 +128,10 @@ describe("« Gérer les profils » dans la famille partagée (v2)", () => {
     const parent: FamilyRights = { ...member, manageGuests: "all", manageMinors: true };
     const parentRows = manageRows(shared("member", parent), { userId: "marc", name: "Marc", color: "teal" }, { guestRequests: true });
     expect(parentRows.map((row) => row.guestRights)).toEqual([null, null, { requestTitles: false }, { requestTitles: false }]);
+    // L'administration ne permet pas à ce compte d'autoriser ses invités à demander : aucune case.
+    const denied = shared("owner", owner);
+    denied.account = { ...denied.account, creation: { createFamily: true, createGuests: true, grantGuestRequests: false } };
+    expect(manageRows(denied, actor, { guestRequests: true }).every((row) => row.guestRights === null)).toBe(true);
   });
 
   it("chaque profil géré ouvre sa fiche ; la session, le propriétaire et une invitation, non", () => {

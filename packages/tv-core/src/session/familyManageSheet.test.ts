@@ -22,7 +22,7 @@ const ADO = profile("ado", "member", { parental: GUEST_PARENTAL_NONE });
 const PAUL = profile("paul", "member", { parent: true });
 
 const context = (rights: FamilyRights, actorId: string, capability = ALL): ManageSheetContext => ({
-  rights, actorId, switches: { families: true, guests: true }, capability,
+  rights, actorId, grantRequests: capability.guestRequests === true, capability,
 });
 const kinds = (gestures: ReturnType<typeof manageGesturesOf>) => gestures.map((gesture) => gesture.kind);
 
@@ -41,8 +41,15 @@ describe("la fiche d'un invité", () => {
 
   it("ne propose rien que ce serveur ou cette TV ne sait faire", () => {
     expect(kinds(manageGesturesOf(LEO, context(OWNER, "anne", {})))).toEqual(["pin", "delete"]);
-    const off = { ...context(OWNER, "anne"), switches: { families: true, guests: false } };
+    const off = { ...context(OWNER, "anne"), grantRequests: false };
     expect(kinds(manageGesturesOf(LEO, off))).not.toContain("requestTitles");
+  });
+
+  it("une case « peut demander » suspendue ne se montre pas active", () => {
+    const suspended = { ...LEO, guestRights: { requestTitles: false, suspended: true } };
+    expect(manageGesturesOf(suspended, context(OWNER, "anne"))).toContainEqual({ kind: "requestTitles", on: false });
+    const live = { ...LEO, guestRights: { requestTitles: true } };
+    expect(manageGesturesOf(live, context(OWNER, "anne"))).toContainEqual({ kind: "requestTitles", on: true });
   });
 });
 
