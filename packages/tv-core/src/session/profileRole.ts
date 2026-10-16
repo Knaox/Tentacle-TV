@@ -45,7 +45,9 @@ export function recordManageState(record: TvProfileRecord): ProfileManageState {
 
 /** Ce que Réglages › Compte montre du profil ouvert. */
 export interface OpenProfileState {
-  role: TvProfileRole;
+  /** Null : aucun rôle à dire — un compte sans famille, dont le compte de démonstration de la revue
+   *  (ni famille ni rôle) ; jamais « Propriétaire de la famille » pour lui. */
+  role: TvProfileRole | null;
   manage: ProfileManageState;
   hasPin: boolean;
 }
@@ -59,6 +61,14 @@ export interface OpenProfileState {
 export function openProfileState(record: TvProfileRecord, listing: TvProfilesDto | null): OpenProfileState {
   const live = listing?.profiles.find((profile) => sameUserId(profile.userId, record.profileId)) ?? null;
   const hasPin = record.hasPin;
-  if (!live || !listing) return { role: recordRoleOf(record), manage: recordManageState(record), hasPin };
-  return { role: tvProfileRoleOf(live), manage: profileManageState(live, listing, hasPin), hasPin };
+  if (!live || !listing) {
+    // Sans la liste : un « propriétaire » qui ne gère rien (le compte de revue) ne se dit pas propriétaire.
+    const role = recordRoleOf(record);
+    return { role: role === "owner" && !recordManages(record) ? null : role, manage: recordManageState(record), hasPin };
+  }
+  // Un propriétaire SEUL dans la liste n'a pas de famille (elle naît à son premier invité ou à sa
+  // première invitation) : aucun rôle à dire — le compte de revue, qui n'en crée jamais, en premier.
+  const alone = listing.profiles.every((profile) => sameUserId(profile.userId, record.profileId));
+  const role = tvProfileRoleOf(live);
+  return { role: role === "owner" && alone ? null : role, manage: profileManageState(live, listing, hasPin), hasPin };
 }

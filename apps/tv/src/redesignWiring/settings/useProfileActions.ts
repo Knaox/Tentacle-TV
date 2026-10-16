@@ -53,15 +53,17 @@ export function useProfileActions() {
   const familyOwnerName = record?.familyOwnerName ?? tvAccountName;
   const color = record?.color ?? null;
   const state = record ? openProfileState(record, listing) : null;
+  const known = state !== null;
   const role = state?.role ?? null;
   const manage = state?.manage ?? "none";
   const hasPin = state?.hasPin === true;
   const pairedTheTv = record ? recordPairedTheTv(record) : false;
 
   const profile = useMemo<SettingsProfile | null>(() => {
-    if (!kind || !color || !role) return null;
+    if (!kind || !color || !known) return null;
     return {
-      role: role === "owner" ? t("familyTv:settings.owner") : t(ROLE_KEYS[role], { owner: familyOwnerName }),
+      // Aucun rôle (un compte sans famille, le compte de revue) : aucun libellé.
+      role: role === null ? null : role === "owner" ? t("familyTv:settings.owner") : t(ROLE_KEYS[role], { owner: familyOwnerName }),
       color,
       canManage: manage === "manage",
       manageNeedsPin: manage === "needsPin",
@@ -69,7 +71,7 @@ export function useProfileActions() {
       unpairCaption: pairedTheTv ? t("familyTv:settings.unpairCaption") : t("familyTv:settings.unpairOwnerOnly", { owner: tvAccountName }),
       pin: { hasPin, modes: ownPinModes(kind, hasPin) },
     };
-  }, [kind, role, familyOwnerName, tvAccountName, color, manage, pairedTheTv, hasPin, t]);
+  }, [kind, known, role, familyOwnerName, tvAccountName, color, manage, pairedTheTv, hasPin, t]);
 
   const onSwitchProfile = useCallback(() => {
     void switchProfile({ jfClient, storage, queryClient });

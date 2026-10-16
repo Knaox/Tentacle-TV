@@ -80,7 +80,7 @@ export const AccountPanel = memo(function AccountPanel(props: AccountPanelProps)
         <View style={styles.identity}>
           <Text style={text.kicker}>{profile ? t("familyTv:settings.kicker") : t("pairing:tvCompteJumele")}</Text>
           <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
-          {profile ? <Text style={settingsText.hint}>{profile.role}</Text> : null}
+          {profile?.role ? <Text style={settingsText.hint}>{profile.role}</Text> : null}
         </View>
         {/* À droite de l'identité, jamais dessous : l'en-tête garde la hauteur du
             portrait (dessous, il grandissait et le défilement le coupait). */}

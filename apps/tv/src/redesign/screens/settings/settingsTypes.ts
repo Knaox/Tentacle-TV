@@ -36,8 +36,9 @@ export interface SettingsAccount {
 
 export interface SettingsProfile {
   /** « Propriétaire de la famille », « Parent · famille de Damien », « Membre · famille de Damien »,
-   *  « Invité · famille de Damien » — d'après la liste relue (tv-core `openProfileState`). */
-  role: string;
+   *  « Invité · famille de Damien » — d'après la liste relue (tv-core `openProfileState`).
+   *  Null : aucun rôle à dire (un compte sans famille, le compte de démonstration de la revue). */
+  role: string | null;
   color: FamilyProfileColor;
   /** « Gérer les profils » : un profil qui gère, avec son code PIN (décision du 16/10). */
   canManage: boolean;
