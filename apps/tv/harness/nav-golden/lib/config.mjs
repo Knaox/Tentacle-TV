@@ -35,6 +35,13 @@ export const BENCH_RAIL_PROFILES = JSON.stringify({ "banc-user": { masquees: [],
  * dans son `storage`. (Recopié dans `probe/navProbe.js`.)
  */
 export const BENCH_PIN_SETUP = JSON.stringify({ "banc-user": 1, "banc-guest": 1 });
+
+/**
+ * La galerie des avatars, DÉJÀ PROPOSÉE aux comptes du banc (la photo, dernière
+ * étape du premier passage). Un scénario qui l'éprouve pose
+ * `tentacle_avatar_invite_seen: "[]"` dans son `storage`. (Recopié dans `probe/navProbe.js`.)
+ */
+export const BENCH_AVATAR_OFFERED = JSON.stringify(["banc-user", "banc-guest"]);
 export const ATV_REMOTE_DIR = path.join(REPO, "apps/tv/harness/atv-remote");
 
 /** Une erreur expliquée à l'auteur du scénario, sans pile. */

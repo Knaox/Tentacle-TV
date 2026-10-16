@@ -5,7 +5,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { BENCH_PIN_SETUP, BENCH_RAIL_PROFILES, BUNDLE_ID, BenchError, capture, note, sleep, step } from "./config.mjs";
+import { BENCH_AVATAR_OFFERED, BENCH_PIN_SETUP, BENCH_RAIL_PROFILES, BUNDLE_ID, BenchError, capture, note, sleep, step } from "./config.mjs";
 
 // Le modèle des références : 1080p, l'écran de la refonte (1920 × 1080 points).
 const DEVICE_TYPE = "com.apple.CoreSimulator.SimDeviceType.Apple-TV-4K-3rd-generation-1080p";
@@ -101,7 +101,7 @@ export function resetAppState(device, { metroPort, backendPort, session, storage
 
 /** La session factice : `paired` (jumelée au faux backend) ou `none` (écran de jumelage). */
 function sessionKeys(session, backendPort) {
-  if (session === "none") return { tentacle_language: "fr", tentacle_tv_rail_profiles: BENCH_RAIL_PROFILES, tentacle_tv_pin_setup: BENCH_PIN_SETUP };
+  if (session === "none") return { tentacle_language: "fr", tentacle_tv_rail_profiles: BENCH_RAIL_PROFILES, tentacle_tv_pin_setup: BENCH_PIN_SETUP, tentacle_avatar_invite_seen: BENCH_AVATAR_OFFERED };
   return {
     tentacle_server_url: `http://localhost:${backendPort}`,
     tentacle_token: "banc",
@@ -109,6 +109,7 @@ function sessionKeys(session, backendPort) {
     tentacle_language: "fr",
     tentacle_tv_rail_profiles: BENCH_RAIL_PROFILES,
     tentacle_tv_pin_setup: BENCH_PIN_SETUP,
+    tentacle_avatar_invite_seen: BENCH_AVATAR_OFFERED,
   };
 }
 

@@ -57,6 +57,8 @@ function resetForBench() {
   changes.tentacle_tv_rail_profiles = JSON.stringify({ "banc-user": { masquees: [], setupDone: true }, "banc-guest": { masquees: [], setupDone: true } });
   // L'étape « Code PIN conseillé », déjà proposée aux comptes du banc (`BENCH_PIN_SETUP`, lib/config.mjs).
   changes.tentacle_tv_pin_setup = JSON.stringify({ "banc-user": 1, "banc-guest": 1 });
+  // La galerie des avatars, déjà proposée aux comptes du banc (`BENCH_AVATAR_OFFERED`, lib/config.mjs).
+  changes.tentacle_avatar_invite_seen = JSON.stringify(["banc-user", "banc-guest"]);
   if (session === "paired") {
     changes.tentacle_server_url = Settings.get("navGoldenServer");
     changes.tentacle_token = "banc";
