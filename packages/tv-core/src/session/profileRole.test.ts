@@ -31,7 +31,7 @@ function memoryStorage() {
 
 describe("le rôle d'un profil", () => {
   it("dit « parent » d'un membre nommé parent, que le serveur le dise ou que ses droits le montrent", () => {
-    expect(tvProfileRoleOf(profile("marc", { parent: true } as Partial<TvProfileDto>))).toBe("parent");
+    expect(tvProfileRoleOf(profile("marc", { parent: true }))).toBe("parent");
     expect(tvProfileRoleOf(profile("marc", { hasPin: true, manage: PARENT }))).toBe("parent");
     expect(tvProfileRoleOf(profile("marc", { hasPin: true, manage: MEMBER }))).toBe("member");
     expect(tvProfileRoleOf(profile("anne", { kind: "owner", manage: OWNER }))).toBe("owner");
@@ -78,8 +78,12 @@ describe("le profil ouvert dans Réglages", () => {
 
   it("suit la liste RELUE : nommé parent sur le bureau, il se dit parent sans rouvrir son profil", () => {
     expect(openProfileState(record, null)).toEqual({ role: "member", manage: "manage", hasPin: true });
-    const relu = listingOf(profile("marc", { hasPin: true, manage: PARENT }));
+    const relu = listingOf(profile("marc", { hasPin: true, parent: true, manage: PARENT }));
     expect(openProfileState(record, relu)).toEqual({ role: "parent", manage: "manage", hasPin: true });
+    // Sans code, `manage` est nul : c'est `parent` qui le dit.
+    const sansCode = profileRecordOf(profile("marc", { manageNeedsPin: true }), listingOf(), "picked");
+    const reluSansCode = listingOf(profile("marc", { parent: true, manageNeedsPin: true }));
+    expect(openProfileState(sansCode, reluSansCode)).toEqual({ role: "parent", manage: "needsPin", hasPin: false });
   });
 
   it("garde le code tel que la TV le sait : posé ici à l'instant, la liste suivra", () => {

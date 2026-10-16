@@ -16,11 +16,11 @@ function rightsOfParent(manage: FamilyRights | null | undefined): boolean {
 }
 
 /**
- * Le rôle d'un profil de la liste. `parent` s'il est rendu (absent d'un
- * serveur qui ne le dit pas) ; sinon déduit de ses droits — qu'un profil sans
- * code ne porte plus (`manage` nul) : il se dit alors « Membre ».
+ * Le rôle d'un profil de la liste : `parent` (serveur 1.30.0) ; sans lui,
+ * déduit de ses droits — qu'un profil sans code ne porte plus (`manage`
+ * nul) : il se dit alors « Membre ».
  */
-export function tvProfileRoleOf(profile: Pick<TvProfileDto, "kind" | "manage"> & { parent?: boolean }): TvProfileRole {
+export function tvProfileRoleOf(profile: Pick<TvProfileDto, "kind" | "manage" | "parent">): TvProfileRole {
   if (profile.kind !== "member") return profile.kind;
   return profile.parent === true || rightsOfParent(profile.manage) ? "parent" : "member";
 }
