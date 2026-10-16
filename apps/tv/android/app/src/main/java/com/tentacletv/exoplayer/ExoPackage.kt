@@ -12,5 +12,5 @@ class ExoPackage : ReactPackage {
         emptyList()
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
-        listOf(ExoViewManager())
+        listOf(ExoViewManager(), PreviewVideoViewManager())
 }

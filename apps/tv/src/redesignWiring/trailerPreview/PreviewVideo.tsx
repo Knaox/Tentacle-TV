@@ -1,8 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { StyleSheet } from "react-native";
-import Video, { type OnLoadData, type OnProgressData } from "react-native-video";
-import { PREVIEW_VIDEO_SURFACE } from "../../platform/tvos/player/previewVideoSurface";
-import { PreviewVideoShield } from "../../platform/tvos/player/previewVideoShield";
+import { memo, useCallback, useEffect, useRef } from "react";
+import { PreviewVideoElement } from "../../platform/tvos/player/previewVideoElement";
 
 /**
  * La vidéo de l'aperçu (Apple TV : AVPlayer ; Android TV : ExoPlayer) — le
@@ -10,16 +7,15 @@ import { PreviewVideoShield } from "../../platform/tvos/player/previewVideoShiel
  * la grande carte se montre, puis joué. Elle ne décide de rien : elle dit sa
  * première image (`onReady`), sa fin, son échec, et où elle en est.
  *
- * - La première image : `onReadyForDisplay` (AVPlayer la sert même en pause,
- *   ExoPlayer rend la première image d'un flux préparé). Faute de cet avis
- *   `READY_FALLBACK_MS` après le chargement, le chargement vaut prêt : la
- *   grande carte montre alors l'image du titre jusqu'à la première image —
- *   jamais un cadre noir (la couche vidéo est transparente avant).
- * - La surface (et son « jamais focalisable ») vient de l'adaptateur de la
- *   plateforme (`previewVideoSurface`) ; pas de volet noir avant l'image.
- *   Sur Android, elle est posée dans une vue dont aucun descendant ne prend
- *   le focus (`previewVideoShield`) : le contrôleur d'ExoPlayer l'arrachait
- *   à la carte.
+ * - La première image : AVPlayer la sert même en pause, ExoPlayer rend la
+ *   première image d'un flux préparé. Faute de cet avis `READY_FALLBACK_MS`
+ *   après le chargement, le chargement vaut prêt : la grande carte montre
+ *   alors l'image du titre jusqu'à la première image — jamais un cadre noir
+ *   (la couche vidéo est transparente avant).
+ * - Le lecteur vient de l'adaptateur de la plateforme (`previewVideoElement`) :
+ *   react-native-video sur Apple TV ; sur Android TV, un lecteur d'aperçu natif
+ *   sans contrôleur ni focus (celui de react-native-video bloquait le fil UI à
+ *   chaque aperçu et volait le focus de la carte).
  */
 
 /** Chargée sans avis de première image au-delà : elle est tenue pour prête. */
@@ -58,43 +54,30 @@ export const PreviewVideo = memo(function PreviewVideo({ uri, hls, startAt, play
     if (fallback.current) clearTimeout(fallback.current);
   }, []);
 
-  const onLoad = useCallback((data: OnLoadData) => {
-    if (data.duration > 0) duration.current = data.duration;
+  const onLoad = useCallback((loaded: number) => {
+    if (loaded > 0) duration.current = loaded;
     if (ready.current || fallback.current) return;
     fallback.current = setTimeout(markReady, READY_FALLBACK_MS);
   }, [markReady]);
-  const onProgress = useCallback((data: OnProgressData) => {
-    if (data.seekableDuration > 0) duration.current = data.seekableDuration;
-    onPosition(data.currentTime, duration.current);
+  const onProgress = useCallback((position: number, known: number) => {
+    if (known > 0) duration.current = known;
+    onPosition(position, duration.current);
   }, [onPosition]);
 
-  // Mémorisée : un objet neuf à chaque rendu rechargerait la source native.
-  const source = useMemo(
-    () => ({ uri, type: hls ? "m3u8" : undefined, startPosition: Math.round(startAt * 1000) }),
-    [uri, hls, startAt],
-  );
-
   return (
-    <PreviewVideoShield style={StyleSheet.absoluteFill}>
-      <Video
-        {...PREVIEW_VIDEO_SURFACE}
-        source={source}
-        style={StyleSheet.absoluteFill}
-        paused={!playing}
-        muted={muted}
-        volume={volume}
-        controls={false}
-        resizeMode="cover"
-        preventsDisplaySleepDuringVideoPlayback={false}
-        hideShutterView
-        shutterColor="transparent"
-        progressUpdateInterval={PROGRESS_INTERVAL_MS}
-        onReadyForDisplay={markReady}
-        onLoad={onLoad}
-        onProgress={onProgress}
-        onError={onError}
-        onEnd={onEnded}
-      />
-    </PreviewVideoShield>
+    <PreviewVideoElement
+      uri={uri}
+      hls={hls}
+      startAt={startAt}
+      playing={playing}
+      muted={muted}
+      volume={volume}
+      progressIntervalMs={PROGRESS_INTERVAL_MS}
+      onFirstFrame={markReady}
+      onLoad={onLoad}
+      onProgress={onProgress}
+      onError={onError}
+      onEnd={onEnded}
+    />
   );
 });
