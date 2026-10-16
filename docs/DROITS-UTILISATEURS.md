@@ -1187,7 +1187,7 @@ Contrat : `packages/shared/src/libraryDelete/libraryDeleteContract.ts`, miroir b
 - Banc : Jellyfin 10.11 jetable, trois comptes (administrateur ; un compte qui ne supprime que
   dans UNE bibliothèque ; un compte sans droit), médias générés ; preuves dans le rapport du lot.
 
-## 9.8 Famille : « Les invités peuvent demander des films », décidé par l'administration
+## 9.9 Famille : « Les invités peuvent demander des films », décidé par l'administration
 
 Lot du 16/10, T7. Capacité `family.guestRequestsAdmin` (1.30.0). Contrat : `familyRoles.ts`
 (`grantGuestRequests`, `guestRequestState`), `familyContract.ts` (`FamilySwitches.guestRequests`,
