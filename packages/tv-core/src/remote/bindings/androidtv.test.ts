@@ -115,8 +115,13 @@ describe("ANDROIDTV_BINDINGS — maintiens", () => {
     expect(keys).toEqual(["haut", "bas", "gauche", "droite"]);
   });
 
+  it("Lecture/Pause maintenu, que la lecture reconstruit : le même cycle que tvOS", () => {
+    expect(intentOf({ eventType: "longPlayPause", eventKeyAction: DOWN })).toEqual({ type: "hold", key: "playPause", phase: "start" });
+    expect(intentOf({ eventType: "longPlayPause", eventKeyAction: UP })).toEqual({ type: "hold", key: "playPause", phase: "end" });
+  });
+
   it("ne fait rien des maintiens que react-native-tvos n'émet jamais", () => {
-    for (const eventType of ["longPlayPause", "longRewind", "longFastForward", "longChannelUp", "longChannelDown"]) {
+    for (const eventType of ["longRewind", "longFastForward", "longChannelUp", "longChannelDown"]) {
       expect(intentOf({ eventType, eventKeyAction: DOWN }), eventType).toBeNull();
     }
   });
@@ -166,6 +171,29 @@ describe("createAndroidTvReader — les répétitions d'une touche tenue", () =>
     const read = createAndroidTvReader();
     const intents = [0, 0, 0, 1].map((action, at) => translator.translate(read({ eventType: "play", eventKeyAction: action }, at))?.intent ?? null);
     expect(intents).toEqual([null, null, null, { type: "transport", command: "lecture" }]);
+  });
+
+  it("Lecture/Pause tenue : à la première répétition, le maintien commence ; au relâchement, il finit — sans appui simple", () => {
+    const read = createAndroidTvReader();
+    const events = [0, 0, 0, 1].map((action, at) => translator.translate(read({ eventType: "playPause", eventKeyAction: action }, at)));
+    expect(events.map((e) => e?.intent ?? null)).toEqual([
+      null,
+      { type: "hold", key: "playPause", phase: "start" },
+      null,
+      { type: "hold", key: "playPause", phase: "end" },
+    ]);
+    expect(events[1]?.signal).toEqual({ name: "longPlayPause", phase: "down", at: 1 });
+  });
+
+  it("Lecture/Pause appuyée puis relâchée : l'appui simple, comme avant", () => {
+    const read = createAndroidTvReader();
+    const intents = [0, 1].map((action, at) => translator.translate(read({ eventType: "playPause", eventKeyAction: action }, at))?.intent ?? null);
+    expect(intents).toEqual([null, { type: "playPause" }]);
+    // Et le maintien d'avant ne déteint pas sur l'appui suivant.
+    const again = createAndroidTvReader();
+    for (const action of [0, 0, 1]) again({ eventType: "playPause", eventKeyAction: action }, 0);
+    expect(translator.translate(again({ eventType: "playPause", eventKeyAction: 0 }, 5))?.intent ?? null).toBeNull();
+    expect(translator.translate(again({ eventType: "playPause", eventKeyAction: 1 }, 6))?.intent).toEqual({ type: "playPause" });
   });
 
   it("suit chaque touche à part : le maintien de OK ne marque pas la croix", () => {

@@ -52,6 +52,14 @@ export const REMOTE_HINT_IDS = [
   "loginTyping",
   /** La galerie des avatars : OK prend le personnage focalisé comme photo. */
   "avatarChoose",
+  /** Sous une carte dont l'aperçu joue : Lecture/Pause met en pause… */
+  "previewPause",
+  /** … ou reprend un aperçu en pause. */
+  "previewResume",
+  /** Lecture/Pause MAINTENU coupe le son de l'aperçu (jamais celui du téléviseur)… */
+  "previewMute",
+  /** … ou le remet. */
+  "previewUnmute",
 ] as const;
 
 export type RemoteHintId = (typeof REMOTE_HINT_IDS)[number];
@@ -66,6 +74,10 @@ export type RemoteHints = Readonly<Record<RemoteHintId, string>>;
  */
 export const BASE_REMOTE_HINTS: RemoteHints = {
   holdForOptions: "cards:holdForOptions",
+  previewPause: "cards:previewPause",
+  previewResume: "cards:previewResume",
+  previewMute: "cards:previewMute",
+  previewUnmute: "cards:previewUnmute",
   railOrganize: "nav:railHintOrganize",
   railMove: "nav:railHintMove",
   railDrop: "nav:railHintDrop",

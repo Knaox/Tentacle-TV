@@ -32,6 +32,13 @@ export default {
   // La télécommande : sur une carte horizontale (où OK lit), maintenir OK
   // ouvre la feuille d'actions — l'indication du focus (Apple TV).
   holdForOptions: "Maintenir OK : plus d'options",
+  // Pendant l'aperçu d'une carte (Apple TV, Android TV) : deux moitiés jointes
+  // par « · », selon l'état — Lecture/Pause met en pause, maintenue elle coupe
+  // le son de l'APERÇU seul (tv-core `cards/previewRemote.ts`).
+  previewPause: "Lecture/Pause : pause",
+  previewResume: "Lecture/Pause : reprendre",
+  previewMute: "maintenir : couper le son",
+  previewUnmute: "maintenir : remettre le son",
 
   // Notation (fiche mobile, feuille d'appui long).
   rateTitle: "Noter ce titre",

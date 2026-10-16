@@ -40,8 +40,10 @@ import type { NoiseBinding, PressBinding, RemoteBindings } from "./types";
  * tvOS (`hold` : `start` puis `end`), tandis que le moteur de focus natif
  * suit lui-même les répétitions de la croix : la croix MAINTENUE est le
  * défilement rapide d'Android TV, comme le glisser du pavé sur Apple TV.
- * Lecture/Pause, les touches de transport et les chaînes ne connaissent pas
- * le maintien : react-native-tvos ne le détecte que pour OK et la croix.
+ * Les touches de transport et les chaînes ne connaissent pas le maintien :
+ * react-native-tvos ne le détecte que pour OK et la croix. Lecture/Pause, si :
+ * la lecture le reconstruit (`ANDROIDTV_RECONSTRUCTED_HOLDS`), comme tvOS
+ * l'annonce — maintenir Lecture/Pause coupe le son d'un aperçu.
  *
  * Données seulement : la lecture de l'événement natif (`readAndroidTvEvent`)
  * est ici parce qu'elle est pure ; l'abonnement vit dans l'adaptateur
@@ -71,15 +73,39 @@ export function readAndroidTvEvent(event: AndroidTvNativeEvent, at: number): Rem
  */
 export function createAndroidTvReader(): (event: AndroidTvNativeEvent, at: number) => RemoteSignal {
   const held = new Set<string>();
+  /** Les touches dont le maintien est annoncé (`long…` à l'enfoncement), jusqu'au relâchement. */
+  const holding = new Set<string>();
   return (event, at) => {
     const signal = readAndroidTvEvent(event, at);
-    if (signal.phase === "up") held.delete(signal.name);
+    const long = ANDROIDTV_RECONSTRUCTED_HOLDS[signal.name];
+    if (signal.phase === "up") {
+      held.delete(signal.name);
+      // Le relâchement d'un maintien annoncé le clôt — et n'est pas un appui simple.
+      if (long && holding.delete(signal.name)) return { name: long, phase: "up", at };
+      return signal;
+    }
     if (signal.phase !== "down") return signal;
-    if (held.has(signal.name)) return { ...signal, repeat: true };
+    if (held.has(signal.name)) {
+      if (!long || holding.has(signal.name)) return { ...signal, repeat: true };
+      // La première répétition d'Android : la touche est TENUE — le maintien commence.
+      holding.add(signal.name);
+      return { name: long, phase: "down", at };
+    }
     held.add(signal.name);
     return signal;
   };
 }
+
+/**
+ * Les touches dont react-native-tvos ne détecte pas le maintien (il ne le fait
+ * que pour OK et la croix) et que la lecture RECONSTRUIT, sur le modèle de
+ * OK : la première répétition d'Android (≈ 500 ms,
+ * `ViewConfiguration.getKeyRepeatTimeout()`) devient un `long…` à
+ * l'enfoncement, les répétitions suivantes restent des répétitions, et le
+ * relâchement un `long…` relâché — sans appui simple derrière. Le cycle
+ * annoncé de tvOS (`longPlayPause` de react-native-tvos), à l'identique.
+ */
+export const ANDROIDTV_RECONSTRUCTED_HOLDS: Readonly<Record<string, string>> = { playPause: "longPlayPause" };
 
 /** Le nom que l'adaptateur donne à Retour (`BackHandler`, `Modal.onRequestClose`). */
 export const ANDROIDTV_BACK_SIGNAL = "back";
@@ -127,6 +153,7 @@ export const ANDROIDTV_BINDINGS: RemoteBindings = {
   ],
   holds: [
     { signal: "longSelect", key: "select", source: `${HANDLER} — OK tenu au-delà de la première répétition (≈ 500 ms)` },
+    { signal: "longPlayPause", key: "playPause", source: "createAndroidTvReader — MEDIA_PLAY_PAUSE tenu jusqu'à la première répétition d'Android (≈ 500 ms)" },
     { signal: "longUp", key: "haut", source: HANDLER },
     { signal: "longDown", key: "bas", source: HANDLER },
     { signal: "longLeft", key: "gauche", source: HANDLER },
@@ -149,7 +176,6 @@ export const ANDROIDTV_BINDINGS: RemoteBindings = {
     unused("avrPower", "l'amplificateur, pas l'app"),
     unused("stbInput", "le décodeur, pas l'app"),
     unused("stbPower", "le décodeur, pas l'app"),
-    unused("longPlayPause", NEVER_HELD),
     unused("longRewind", NEVER_HELD),
     unused("longFastForward", NEVER_HELD),
     unused("longChannelUp", NEVER_HELD),
