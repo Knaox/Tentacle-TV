@@ -46,6 +46,17 @@ export default {
     mismatch: "The two codes differ: start again.",
     failed: "The code couldn't be saved. Try again.",
   },
+  pinSetup: {
+    kicker: "Welcome, {{name}}",
+    title: "Protect your profile with a PIN",
+    protect: "Recommended, so no one else can open your profile.",
+    protectAndManage: "Recommended, so no one else can open your profile… and to manage the family from the TV.",
+    sameCode: "One code for your account, the same everywhere.",
+    create: "Create a PIN",
+    later: "Later",
+    settingsHint: "You can also create it later in Settings › Account.",
+    saved: "PIN saved",
+  },
   settings: {
     kicker: "Profile",
     owner: "Family owner",
