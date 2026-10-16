@@ -13,9 +13,10 @@ import type { RootStackParamList } from "../../navigation/types";
  * son arrivée rien ne paraît, rien ne casse.
  */
 export const GUEST_PHOTO_ROUTE = "AvatarGallery";
-export const PARENTAL_ROUTE = "ParentalControls";
+export const PARENTAL_ROUTE = "ParentalControls" as const;
 
 type AnyNavigation = NavigationProp<RootStackParamList>;
+/** La galerie (T4) n'est pas encore dans la pile de cette branche : son appel reste non typé jusqu'à sa fusion. */
 type LooseNavigate = (name: string, params?: object) => void;
 
 /** La pile déclare-t-elle cette page ? */
@@ -30,5 +31,5 @@ export function openGuestPhoto(navigation: AnyNavigation, row: ManageRowModel): 
 
 /** Le contrôle parental de cet invité ou de ce membre mineur. */
 export function openParental(navigation: AnyNavigation, row: ManageRowModel): void {
-  (navigation.navigate as unknown as LooseNavigate)(PARENTAL_ROUTE, { userId: row.userId });
+  navigation.navigate(PARENTAL_ROUTE, { userId: row.userId });
 }
