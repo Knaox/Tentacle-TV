@@ -161,6 +161,19 @@ export default {
     generic: "L'opération n'a pas abouti. Réessayez.",
     retryAt: "Nouvel essai possible le {{date}}.",
   },
+  /** Les bibliothèques permises à un invité ou à un membre mineur (1.30.0, `family.libraryLimits`). */
+  libraries: {
+    open: "Bibliothèques",
+    title: "Bibliothèques de {{name}}",
+    intro: "Ce que {{name}} voit dans la médiathèque. Jamais plus que ce que son créateur ou l'administrateur lui permet.",
+    all: "Toutes les bibliothèques",
+    allHint: "Y compris celles qui seront créées plus tard.",
+    atLeastOne: "Gardez au moins une bibliothèque, ou choisissez « Toutes les bibliothèques ».",
+    loading: "Lecture des bibliothèques…",
+    empty: "Aucune bibliothèque à permettre : {{name}} n'en voit aucune.",
+    save: "Enregistrer",
+    saved: "Bibliothèques enregistrées.",
+  },
   parental: {
     open: "Contrôle parental",
     on: "Contrôle parental",

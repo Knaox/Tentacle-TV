@@ -160,6 +160,19 @@ export default {
     generic: "That did not work. Please try again.",
     retryAt: "You can try again on {{date}}.",
   },
+  /** The libraries allowed to a guest or a minor member (1.30.0, `family.libraryLimits`). */
+  libraries: {
+    open: "Libraries",
+    title: "{{name}}'s libraries",
+    intro: "What {{name}} sees in the media library. Never more than their creator or the administrator allows.",
+    all: "All libraries",
+    allHint: "Including those created later.",
+    atLeastOne: "Keep at least one library, or choose “All libraries”.",
+    loading: "Reading libraries…",
+    empty: "No library to allow: {{name}} sees none.",
+    save: "Save",
+    saved: "Libraries saved.",
+  },
   parental: {
     open: "Parental controls",
     on: "Parental controls",

@@ -39,3 +39,6 @@ export {
   FAMILY_CREATION_DEFAULTS_KEY, accountFamilyRightsKey, useSetFamilyMemberRole, useSetFamilyMemberParental,
   useFamilyCreationDefaults, useSetFamilyCreationDefaults, useAccountFamilyRights, useSetAccountFamilyRights,
 } from "../hooks/useFamilyRoles";
+// Les bibliothèques permises à un invité ou à un membre mineur (serveur 1.30.0, `family.libraryLimits`).
+export { fetchFamilyLibraries, setFamilyLibraries } from "../family/familyLibrariesApi";
+export { familyLibrariesKey, useFamilyLibraries, useSetFamilyLibraries } from "../hooks/useFamilyLibraries";

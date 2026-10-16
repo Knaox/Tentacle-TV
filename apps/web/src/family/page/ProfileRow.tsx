@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Camera, Lock, ShieldCheck, UserCog } from "lucide-react";
+import { Camera, Lock, ShieldCheck, UserCog, Library } from "lucide-react";
 import {
   guestCanRequest,
   hasParentalControl,
@@ -38,6 +38,9 @@ interface ProfileRowProps {
   onRoleChange?: (profile: FamilyProfileDto, parent: boolean) => void;
   /** Régler le contrôle parental d'un membre mineur ; absent : le serveur ne le sait pas. */
   onMemberParental?: (profile: FamilyProfileDto) => void;
+  /** Ses bibliothèques (1.30.0, `family.libraryLimits`), mêmes droits que son contrôle parental ;
+   *  absent : le serveur ne le sait pas, ou la session ne le peut pas. */
+  onLibraries?: (profile: FamilyProfileDto) => void;
 }
 
 const KIND_KEY = { owner: "family:kindOwner", member: "family:kindMember", guest: "family:kindGuest" } as const;
@@ -58,7 +61,7 @@ const NO_ROLE_ACTIONS: ProfileRoleActions = { role: false, roleBlockedByParental
  */
 export const ProfileRow = memo(function ProfileRow({
   profile, last, isSelf, actions, roleActions = NO_ROLE_ACTIONS, showCreator, rightPending, onRemove, onGuestPin, onGuestPhoto, onGuestParental, onRightChange,
-  onRoleChange, onMemberParental,
+  onRoleChange, onMemberParental, onLibraries,
 }: ProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "avatars"]);
   const { formatDate } = useFamilyText();
@@ -68,6 +71,7 @@ export const ProfileRow = memo(function ProfileRow({
   const parentalEditable = isGuest && actions.pin && onGuestParental !== undefined;
   const parent = isFamilyParent(profile);
   const memberParental = roleActions.memberParental && onMemberParental !== undefined;
+  const librariesEditable = onLibraries !== undefined && ((isGuest && actions.pin) || roleActions.memberParental);
   const parentalOn = isGuest ? hasGuestParental(guestParentalOf(profile)) : hasParentalControl(profile);
   const avatar = <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />;
 
@@ -158,7 +162,7 @@ export const ProfileRow = memo(function ProfileRow({
           />
         )}
       </div>
-      {(actions.pin || actions.remove || memberParental) && (
+      {(actions.pin || actions.remove || memberParental || librariesEditable) && (
         <div className="flex flex-wrap gap-2">
           {memberParental && (
             <button type="button" onClick={() => onMemberParental(profile)} className={SMALL_BUTTON}
@@ -172,6 +176,13 @@ export const ProfileRow = memo(function ProfileRow({
               aria-label={`${t("familyWeb:parental.open")} — ${profile.name}`}>
               <ShieldCheck size={13} aria-hidden="true" />
               {t("familyWeb:parental.open")}
+            </button>
+          )}
+          {librariesEditable && (
+            <button type="button" onClick={() => onLibraries(profile)} className={SMALL_BUTTON}
+              aria-label={`${t("familyWeb:libraries.open")} — ${profile.name}`}>
+              <Library size={13} aria-hidden="true" />
+              {t("familyWeb:libraries.open")}
             </button>
           )}
           {actions.pin && (

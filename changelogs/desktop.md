@@ -26,7 +26,7 @@ et Linux reçoivent l'ensemble.
 - **Dans une famille, votre avatar prend la couleur de votre profil**, partout dans l'application
 - **« Vider le cache et réinitialiser »** dit ce qu'il efface vraiment : les réglages de l'appareil, les recherches récentes et le cache, jamais votre session
 - **Une cloche refaite** : les notifications groupées par jour, leur état d'un coup d'œil, « Tout marquer lu », et un clic qui mène à l'endroit exact — la fiche d'un titre qui vient d'arriver, par exemple (serveur 1.30.0)
-- **Contrôle parental et droits** : le contrôle parental d'un invité depuis Réglages › Famille, et tous les droits d'un compte dans l'administration (serveur 1.30.0)
+- **Contrôle parental et droits** : le contrôle parental d'un invité ou d'un membre mineur depuis Réglages › Famille, et les bibliothèques qu'il voit, et tous les droits d'un compte dans l'administration (serveur 1.30.0)
 - **Plus rien de coupé dans une petite fenêtre** : menus, notifications, filtres et clic droit restent dans la fenêtre, se retournent près d'un bord et défilent quand elle est basse
 - **Bandeau principal au choix** : Personnalisation, réorganisée en « Bandeau principal » et « Rangées de l'accueil », propose aussi vos films ou séries les mieux recommandés (serveur 1.30.0)
 - **« Pour vous » sans clé TMDB** : un message simple dit que les recommandations ne sont pas encore activées ; un administrateur y trouve le chemin de la clé
@@ -43,7 +43,7 @@ et Linux reçoivent l'ensemble.
 - **In a family, your avatar takes your profile's color**, everywhere in the app
 - **“Clear cache and reset”** now says what it really clears: this device's settings, recent searches and the cache — never your session
 - **A redesigned bell**: notifications grouped by day, their state at a glance, “Mark all as read”, and a click that takes you to the exact place — the page of a title that just arrived, for instance (server 1.30.0)
-- **Parental controls and rights**: a guest's parental controls from Settings › Family, and all of an account's rights in the admin (server 1.30.0)
+- **Parental controls and rights**: a guest's or a minor member's parental controls from Settings › Family, and the libraries they see, and all of an account's rights in the admin (server 1.30.0)
 - **Nothing cut off in a small window anymore**: menus, notifications, filters and the right-click menu stay inside the window, flip near an edge and scroll when it is short
 - **Choose the main banner**: Personalization, now grouped into “Main banner” and “Home rows”, also offers your best-recommended movies or shows (server 1.30.0)
 - **“For you” without a TMDB key**: a simple message says recommendations aren't turned on yet; administrators get the way to the key
