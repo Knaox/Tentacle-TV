@@ -101,6 +101,7 @@ export async function visibleProfiles(
       lockedUntil: until ? iso(until) : null,
       createdBy: guest ? entry.row?.createdBy ?? familyOwner : null,
       guestRights: guest ? { requestTitles: entry.row?.canRequestTitles === true } : null,
+      ...(entry.kind === "member" && entry.row?.isParent === true && { parent: true }),
       // Ce que ce profil gérerait ici, derrière SON PIN ; jamais un invité, jamais le compte de
       // démonstration, jamais sans code (1.30.0) — `manageNeedsPin` le dit alors.
       manage: managing.manage,

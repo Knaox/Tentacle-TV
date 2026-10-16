@@ -198,6 +198,8 @@ describe("« Gérer les profils » sur la TV d'un membre", () => {
     const { damienTv, zoe } = await family();
     expect((await send("PUT", `/api/family/members/${IDS.lea}/role`, tokens.damien, { parent: true })).statusCode).toBe(200);
     await send("PUT", "/api/family/pin", tokens.lea, { pin: "1357" });
+    expect((await profiles(damienTv)).profiles.find((p: { userId: string }) => p.userId === IDS.lea)).toMatchObject({ parent: true });
+    expect((await profiles(damienTv)).profiles.find((p: { userId: string }) => p.userId === IDS.hugo).parent).toBeUndefined();
     const parent = await session(damienTv, IDS.lea, "1357");
     expect((await send("GET", "/api/family", parent)).json().family).toMatchObject({ parent: true, rights: { manageGuests: "all", manageMinors: true } });
     expect((await send("PUT", `/api/family/guests/${zoe}/rights`, parent, { requestTitles: true })).json()).toEqual({ requestTitles: true });
