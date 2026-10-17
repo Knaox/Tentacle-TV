@@ -29,8 +29,9 @@ import { onSameRow, type Box } from "./geometry";
  * depuis la PREMIÈRE carte de la ligne (rien à sa gauche sur sa ligne) y va
  * TOUJOURS, qu'elle soit à l'aplomb ou non — un titre d'étagère plus long
  * (« Tendances actuelles ») la décalait hors de l'aplomb, et HAUT partait au
- * héros. Depuis les autres cartes, rien ne change : l'aplomb, sinon la
- * section du dessus.
+ * héros. Et SEULEMENT depuis elle : une autre carte passée sous la tête (la
+ * rangée défilée, une grande carte d'aperçu en butée) ne l'atteint pas, HAUT
+ * y va à la section du dessus (relevé du testeur, 17/10).
  *
  * Deux exceptions, tranchées le 2026-10-01 : une section peut déclarer son
  * ENTRÉE (`entry`), qui l'emporte quand elle est focalisable — l'onglet de la
@@ -185,7 +186,9 @@ export function pickSectionNeighbor<T>(
 ): T | null {
   const head = headFromFirst(from.item, from.siblings ?? [], from.head, direction);
   if (head != null) return head;
-  const within = inLineWithin(from.item, from.siblings ?? [], direction, from.list);
+  // La tête ne se rejoint que depuis la première carte : jamais par l'aplomb.
+  const siblings = from.head == null ? (from.siblings ?? []) : (from.siblings ?? []).filter((item) => item.element !== from.head);
+  const within = inLineWithin(from.item, siblings, direction, from.list);
   if (within) return within.element;
   let kept: { section: SectionGeometry<T>; item: SectionItem<T> } | null = null;
   for (const section of adjacentSections(from.section, sections, direction)) {

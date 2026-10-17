@@ -257,7 +257,13 @@ BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView *focused, BOOL up
   CollectItems(from, siblings, YES);
   [siblings removeObject:focused];
   CGRect focusedBox = [focused convertRect:focused.bounds toView:nil];
-  if (HeadFromFirst(from, focusedBox, siblings, up) != nil || InLineWithin(focusedBox, siblings, up, from.lineList) != nil) {
+  if (HeadFromFirst(from, focusedBox, siblings, up) != nil) {
+    return YES;
+  }
+  if (from.headView != nil) {
+    [siblings removeObject:from.headView];
+  }
+  if (InLineWithin(focusedBox, siblings, up, from.lineList) != nil) {
     return YES;
   }
   for (TentacleCandidate *candidate in CandidatesBeyond(from, up)) {
@@ -282,6 +288,10 @@ UIView *TentacleNeighborTarget(TentacleFocusSection *from, UIView *focused, BOOL
   UIView *head = HeadFromFirst(from, itemBox, siblings, up);
   if (head != nil) {
     return head;
+  }
+  // La tête ne se rejoint que depuis la première carte : jamais par l'aplomb.
+  if (from.headView != nil) {
+    [siblings removeObject:from.headView];
   }
   UIView *within = InLineWithin(itemBox, siblings, up, from.lineList);
   if (within != nil) {

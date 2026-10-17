@@ -163,6 +163,8 @@ internal object FocusNeighbors {
     // 0. À l'aplomb, dans la section qu'on quitte.
     val siblings = mutableListOf<View>().also { collect(from, it, true) }.apply { remove(focused) }
     headFromFirst(from, itemBox, siblings, up, density)?.let { return it }
+    // La tête ne se rejoint que depuis la première carte : jamais par l'aplomb.
+    from.headView()?.let { siblings.remove(it) }
     inLineWithin(itemBox, siblings, up, from.lineList, density)?.let { return it }
 
     // 1-3. La plus proche des sections au-delà qui a un élément, et celles à sa hauteur.
