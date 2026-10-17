@@ -682,7 +682,9 @@ déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
   la demande part après 1 s de focus tenu (pas de second délai d'immobilité :
   la télécommande ne tremble pas), la carte grandit au plus tôt à 1,8 s ET
   seulement avec la première image, se replie en 220 ms. Volume 0,7.
-- **La grande carte** (`redesign/cards/CardPreviewTile.tsx`) : 16:9, au moins
+- **La grande carte** — RETIRÉE le 18/10 : l'aperçu se joue dans une zone fixe
+  en haut de l'écran (CLAUDE.md, « Aperçu au focus » ; tv-core
+  `focus/previewZoneLayout.ts`). Ce qu'elle était (`CardPreviewTile.tsx`) : 16:9, au moins
   42 % de l'écran (tv-core `trailerPreviewTileSize`), jamais plus large que la
   zone de contenu. Elle grandit DANS la cellule de la carte : la rangée lui
   fait place (`CardShell` `expansion`), les voisines glissent, la rangée défile

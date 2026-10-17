@@ -435,9 +435,9 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `redesign/screens/library/LibraryView.tsx`
 - L188 · FadingModal onRequestClose · **VUE** · Menu dans la Modal → `onSheetClose` (décidé par useLibrarySheets) ; le repli `?? onSheetApply` fait décider la vue (bug 9)
 
-#### `redesign/screens/library/PosterGrid.tsx`
-- L75, 85 · onLongPress · **VUE** · relais de l'appui maintenu d'une affiche
-- L124 · `<FocusSection reveal>` · **VUE** · section déclarative ; la révélation de chaque ligne vient de tv-core (`gridLineReveal`)
+#### `redesign/screens/library/PosterGrid.tsx`, `GridLine.tsx`
+- onLongPress · **VUE** · relais de l'appui maintenu d'une affiche
+- `<FocusSection reveal>` · **VUE** · sections déclaratives ; la révélation de chaque ligne vient de tv-core (`BELOW_ZONE_REVEAL`, `focus/previewZoneLayout.ts`, 18/10), l'en-tête `start`
 
 #### `redesign/screens/search/SearchDiscover.tsx`
 - L5, 47, 60, 63, 76 · FocusSection · **VUE** · sections déclaratives

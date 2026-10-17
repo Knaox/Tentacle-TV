@@ -195,10 +195,13 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
   rangée qui arrive, un logo lu) est compensé dans le même montage — en
   comparant la MÊME section.
 - **V11 — « Réduire les animations »** : la page se pose aussitôt.
-- **V12 — Modes par écran** : accueil et « Pour vous » — héros `start`,
-  rangées `nearest` 56 ; fiche — en-tête `start`, sections `anchor` 72 ;
-  grilles — 1re ligne `start`, les autres `nearest` ; barre de filtres
-  `start` ; recherche `nearest` ; réglages : une `list` sans révélation.
+- **V12 — Modes par écran** : les pages À ZONE (18/10 — accueil, « Pour
+  vous », grilles : la zone fixe de l'aperçu en haut, la page défile dessous,
+  tv-core `focus/previewZoneLayout.ts`) — rangées et lignes `anchor` 32 dans
+  la fenêtre sous la zone (`BELOW_ZONE_REVEAL`), la première comme la
+  dernière : le focus vertical est TOUJOURS au même endroit ; héros, en-tête
+  et barre de filtres `start`. Fiche — en-tête `start`, sections `anchor`
+  72 ; recherche `nearest` ; réglages : une `list` sans révélation.
 - **V13 — Au banc** (focus figé) : `useForcedFocusReveal` — `scrollTo` SANS
   animation de la section qui couvre la clé figée (préfixes `id` /
   `id:*`), marge 56 : `y = bas > vue − 56 ? bas − vue + 56 : 0`, borné à
