@@ -44,6 +44,7 @@ import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installQueryPersistence } from "./lib/queryPersistence";
 import { cleanupObsoleteStorage } from "./lib/storageCleanup";
+import { scheduleDetailPagePreload } from "./lib/detailPagePreload";
 import { bootRoutePreload } from "./lib/bootRoutePreload";
 import { installStaleBuildReload } from "./lib/staleBuildReload";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
@@ -298,4 +299,8 @@ function renderApp() {
 // Route de démarrage : son chunk d'abord (au plus 300 ms), pour rendre la
 // page d'un coup depuis le cache hydraté — sans spinner à l'arrivée.
 // Le débogage, s'il est permis, est posé avant ce premier rendu.
-void Promise.all([bootRoutePreload(window.location.pathname), webDebugReady]).then(renderApp);
+void Promise.all([bootRoutePreload(window.location.pathname), webDebugReady]).then(() => {
+  renderApp();
+  // La fiche média, en temps mort : le premier clic sur une affiche n'attend plus son chunk.
+  scheduleDetailPagePreload();
+});

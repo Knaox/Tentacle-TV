@@ -47,3 +47,54 @@ export function namesAnotherTitle(name: string | undefined, titleNames: readonly
   if (segments.length < 2) return false;
   return !isGeneric(segments[0]);
 }
+
+/** Ce que le catalogue sait de l'identité du titre : son année, ses pays d'origine (codes ISO, `US`). */
+export interface TitleIdentity {
+  year?: number | null;
+  countries?: readonly string[];
+}
+
+/** Les pays qu'un libellé accole au nom d'un titre pour dire SA version (« The Office (UK) »). */
+const COUNTRY_ALIASES: Record<string, string> = { uk: "GB", gb: "GB", us: "US", usa: "US", au: "AU", nz: "NZ", ca: "CA", fr: "FR", de: "DE", es: "ES", it: "IT", jp: "JP", kr: "KR", in: "IN" };
+/** Sans parenthèses, seuls ces pays-là disent une version — « fr » ou « en » y diraient une langue. */
+const BARE_COUNTRIES = new Set(["uk", "us", "usa", "au", "nz"]);
+
+/** Le libellé en mots, parenthèses et crochets gardés comme des mots à part. */
+function markedWords(text: string): string[] {
+  return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/&/g, " et ")
+    .replace(/[([]/g, " ( ").replace(/[)\]]/g, " ) ").replace(/[^a-z0-9()]+/g, " ").trim().split(" ").filter(Boolean)
+    .map((word) => (word === "and" ? "et" : word));
+}
+
+/**
+ * Le libellé `name` est-il celui d'une AUTRE VERSION du titre — un homonyme
+ * qui porte le même nom ? Juste après le nom du titre, un pays (« The Office
+ * (UK) », « The Office UK ») qui n'est pas l'un des siens, ou une année entre
+ * parenthèses à plus d'un an de la sienne (« Dune (1984) »). Un pays qu'on ne
+ * peut pas vérifier (pays du titre inconnus) écarte aussi : mieux vaut aucune
+ * bande-annonce que celle d'une autre série (relevé du testeur, 17/10 : la
+ * seule vidéo de The Office US était celle de la version anglaise).
+ */
+export function namesAnotherVariant(name: string | undefined, titleNames: readonly string[], identity: TitleIdentity = {}): boolean {
+  if (!name) return false;
+  const label = markedWords(name);
+  const countries = new Set((identity.countries ?? []).map((code) => code.toUpperCase()));
+  for (const title of titleNames) {
+    const own = markedWords(title).filter((word) => word !== "(" && word !== ")");
+    if (own.length === 0) continue;
+    for (let i = 0; i + own.length <= label.length; i++) {
+      if (!own.every((word, k) => label[i + k] === word)) continue;
+      let next = i + own.length;
+      const parenthesized = label[next] === "(";
+      if (parenthesized) next++;
+      const mark = label[next];
+      if (!mark || (parenthesized && label[next + 1] !== ")")) continue;
+      // Le nom du titre porte lui-même la marque (« The Office (US) » dans la bibliothèque) : c'est le sien.
+      if (titleNames.some((other) => ` ${markedWords(other).join(" ")} `.includes(` ${[...own, ...(parenthesized ? ["("] : []), mark].join(" ")} `))) continue;
+      const country = COUNTRY_ALIASES[mark];
+      if (country && (parenthesized || BARE_COUNTRIES.has(mark)) && !countries.has(country)) return true;
+      if (parenthesized && /^(19|20)\d{2}$/.test(mark) && identity.year && Math.abs(Number(mark) - identity.year) > 1) return true;
+    }
+  }
+  return false;
+}

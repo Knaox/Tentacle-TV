@@ -75,6 +75,12 @@ describe("bandes-annonces › le type d'une vidéo", () => {
     }
   });
 
+  it("le libellé « teaser » l'emporte sur le type TMDB « Trailer » (Barbie : « Teaser Officiel [VF] »)", () => {
+    expect(trailerKind(video("Barbie - Teaser Officiel [VF]", "fr", "Trailer"))).toBe("teaser");
+    expect(trailerKind(video("Barbie - Teaser Officiel 2 [VF]", "fr", "Trailer"))).toBe("teaser");
+    expect(trailerKind(video("Barbie - Bande-annonce Officielle [VF]", "fr", "Trailer"))).toBe("trailer");
+  });
+
   it("le nom du titre ne compte pas comme un mot de bonus : « The Interview » a sa bande-annonce", () => {
     expect(trailerKind(video("The Interview - Official Trailer", "en", "Trailer"), ["The Interview"])).toBe("trailer");
     expect(trailerKind(video("The Interview - Official Trailer", "en", "Trailer"))).toBe("other");

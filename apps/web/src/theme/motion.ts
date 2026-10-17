@@ -130,6 +130,17 @@ export const textCascadeDelayed: Variants = {
   show: { transition: { delayChildren: 0.14, staggerChildren: 0.04 } },
 };
 
+/**
+ * L'arrivée de la fiche média SANS calque d'ouverture : ses images sont déjà
+ * décodées (`useDetailArrival`), rien n'est à attendre — le texte part avec le
+ * décor et l'affiche, en une seule entrée. Avec 0,14 s d'amorce, le surtitre,
+ * le logo puis les boutons arrivaient en trois temps après les images (relevé
+ * du lot 1017).
+ */
+export const textCascadeArrival: Variants = {
+  show: { transition: { delayChildren: 0.02, staggerChildren: 0.03 } },
+};
+
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { duration: duration.base, ease: easeOut } },

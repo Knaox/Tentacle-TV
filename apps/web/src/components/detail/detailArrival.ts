@@ -97,6 +97,8 @@ export function useLateReveal(url: string | null) {
   if (state.url !== url) setState({ url, shown: !url || isImageCached(url), late: false });
   const reveal = () => setState((prev) => (prev.url === url && !prev.shown ? { ...prev, shown: true, late: true } : prev));
   return {
+    /** L'image est là (en mémoire au montage, ou chargée depuis). */
+    shown: state.shown,
     style: { opacity: state.shown ? 1 : 0, transition: state.late ? "opacity 300ms ease-out" : undefined },
     onLoad: reveal,
     onError: reveal,

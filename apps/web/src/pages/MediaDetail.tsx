@@ -23,7 +23,7 @@ import { useDetailArrival } from "../components/detail/detailArrival";
 import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
-import { textCascadeDelayed } from "../theme/motion";
+import { textCascadeArrival } from "../theme/motion";
 
 // `fadeUp` / `fadeIn` viennent de `theme/motion` — la fiche avait ses propres
 // copies, restées à 24 px de course quand la référence est passée à 10. La
@@ -70,6 +70,11 @@ export function MediaDetail() {
   // Origine de l'ouverture : le rectangle du visuel cliqué, capturé juste avant
   // la navigation.
   const [origin, setOrigin] = useState<DetailOrigin | null>(() => consumeDetailOrigin(itemId));
+  // L'image de la carte cliquée, gardée après le calque : l'affiche d'attente (`DetailPoster`).
+  const cardImage = useRef<{ itemId: string | undefined; url: string } | null>(null);
+  if (origin && !origin.launch && cardImage.current?.itemId !== itemId) cardImage.current = { itemId, url: origin.imageUrl };
+  const kept = cardImage.current;
+  const posterPlaceholder = kept && kept.itemId === itemId ? kept.url : null;
 
   /**
    * La page rend son état FINAL d'emblée quand elle ne s'OUVRE pas : calque en
@@ -230,13 +235,14 @@ export function MediaDetail() {
             // ligne : un objet neuf à chaque rendu fait rejouer toute la cascade
             // par framer, et cette page se rend plusieurs fois — mesure du visuel,
             // arrivée des requêtes.
-            variants={textCascadeDelayed}
+            variants={textCascadeArrival}
           >
             <DetailPoster
               item={item}
               onMeasure={handleMeasure}
               instant={skipEntrance.current}
               onOpen={openPoster}
+              placeholderUrl={posterPlaceholder}
             />
 
             <DetailTextColumn>

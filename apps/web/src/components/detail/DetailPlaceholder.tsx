@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { PageProblem, usePageProblemModel } from "../problems/PageProblem";
 
 interface DetailPlaceholderProps {
@@ -42,7 +43,10 @@ export function DetailPlaceholder({ failed, retrying, onRetry, error, quiet = fa
   if (!failed || !model) {
     return (
       <div className="flex h-screen items-center justify-center bg-surface-0">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-line-strong border-t-content-primary" />
+        {/* Le rond ne paraît qu'après 400 ms : une fiche qui arrive vite n'en montre pas l'éclair. */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.2 }}>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-line-strong border-t-content-primary" />
+        </motion.div>
       </div>
     );
   }

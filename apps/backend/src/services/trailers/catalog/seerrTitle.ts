@@ -22,6 +22,8 @@ interface SeerrTitleDto {
   originalTitle?: string;
   originalName?: string;
   originalLanguage?: string;
+  originCountry?: string[];
+  productionCountries?: Array<{ iso_3166_1?: string }>;
   releaseDate?: string;
   firstAirDate?: string;
   lastAirDate?: string;
@@ -47,6 +49,7 @@ export function seerrTitleOf(kind: CatalogMediaType, dto: SeerrTitleDto): TmdbTi
     releaseDate: (kind === "movie" ? dto.releaseDate : dto.firstAirDate) || null,
     lastAirDate: kind === "tv" ? dto.lastAirDate || null : null,
     ongoing: kind === "tv" && dto.inProduction === true,
+    countries: [...new Set([...(dto.originCountry ?? []), ...(dto.productionCountries ?? []).map((c) => c.iso_3166_1 ?? "")].filter(Boolean))],
     seasons: (dto.seasons ?? [])
       .filter((s): s is { seasonNumber: number; airDate?: string | null } => Number.isInteger(s.seasonNumber))
       .map((s) => ({ season: s.seasonNumber, airDate: s.airDate || null })),

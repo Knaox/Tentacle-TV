@@ -36,13 +36,14 @@ const rickDto = {
   first_air_date: "2013-12-02",
   last_air_date: "2025-07-27",
   in_production: true,
+  origin_country: ["US"],
   seasons: [{ season_number: 0, air_date: null }, { season_number: 6, air_date: "2022-09-04" }],
   videos: { results: [{ key: "abcdefghijk", site: "YouTube", type: "Trailer", name: "Season 1 Promos", iso_639_1: "en" }] },
   alternative_titles: { results: [{ iso_3166_1: "FR", title: "Rick & Morty" }, { iso_3166_1: "DE", title: "Rick und Morty" }] },
 };
 
 describe("TMDB du catalogue › le titre", () => {
-  it("les noms (langue du serveur, original, alternatifs de ses pays), les dates, les saisons", () => {
+  it("les noms (langue du serveur, original, alternatifs de ses pays), les dates, les pays, les saisons", () => {
     expect(tmdbTitleOf("tv", rickDto, "fr-FR")).toEqual({
       kind: "tv",
       names: ["Rick et Morty", "Rick and Morty", "Rick & Morty"],
@@ -50,6 +51,7 @@ describe("TMDB du catalogue › le titre", () => {
       releaseDate: "2013-12-02",
       lastAirDate: "2025-07-27",
       ongoing: true,
+      countries: ["US"],
       seasons: [{ season: 0, airDate: null }, { season: 6, airDate: "2022-09-04" }],
     });
     // Un serveur anglais ne retient pas les titres français.

@@ -16,7 +16,10 @@ export const Register = lazy(() => import("./pages/Register").then((m) => ({ def
 export const SharePage = lazy(() => import("./pages/SharePage").then((m) => ({ default: m.SharePage })));
 export const SharedItemDetail = lazy(() => import("./pages/SharedItemDetail").then((m) => ({ default: m.SharedItemDetail })));
 export const Watch = lazy(() => import("./pages/Watch").then((m) => ({ default: m.Watch })));
-export const MediaDetail = lazy(() => import("./pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
+// Préchargeable, et préchargée en temps mort après le démarrage (`detailPagePreload`) :
+// la fiche est la page qu'on ouvre le plus, et sur un réseau lent son chunk
+// retenait le clic (rien ne bougeait pendant ~2,5 s, l'ouverture partait périmée).
+export const MediaDetail = preloadable(() => import("./pages/MediaDetail").then((m) => m.MediaDetail));
 export const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
 export const Search = lazy(() => import("./pages/Search").then((m) => ({ default: m.Search })));
 export const Person = lazy(() => import("./pages/Person").then((m) => ({ default: m.Person })));

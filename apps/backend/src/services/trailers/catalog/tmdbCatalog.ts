@@ -38,6 +38,8 @@ export interface TmdbTitle {
   lastAirDate: string | null;
   /** Une série encore produite : de nouvelles saisons arrivent. */
   ongoing: boolean;
+  /** Les pays d'origine (codes ISO, `US`) : la garde des homonymes (`namesAnotherVariant`). */
+  countries: string[];
   seasons: TmdbSeasonInfo[];
   videos: TmdbVideo[];
 }
@@ -53,6 +55,8 @@ interface TitleDto {
   last_air_date?: string;
   in_production?: boolean;
   status?: string;
+  origin_country?: string[];
+  production_countries?: Array<{ iso_3166_1?: string }>;
   seasons?: Array<{ season_number?: number; air_date?: string | null }>;
   videos?: { results?: TmdbVideoDto[] };
   alternative_titles?: { titles?: AltTitle[]; results?: AltTitle[] };
@@ -111,6 +115,7 @@ export function tmdbTitleOf(kind: CatalogMediaType, dto: TitleDto, lang: string 
     releaseDate: (kind === "movie" ? dto.release_date : dto.first_air_date) || null,
     lastAirDate: kind === "tv" ? dto.last_air_date || null : null,
     ongoing: kind === "tv" && (dto.in_production === true || dto.status === "Returning Series"),
+    countries: [...new Set([...(dto.origin_country ?? []), ...(dto.production_countries ?? []).map((c) => c.iso_3166_1 ?? "")].filter(Boolean))],
     seasons: (dto.seasons ?? [])
       .filter((s): s is { season_number: number; air_date?: string | null } => Number.isInteger(s.season_number))
       .map((s) => ({ season: s.season_number, airDate: s.air_date || null })),
@@ -138,7 +143,7 @@ async function readTitle(tmdbId: number, kind: CatalogMediaType, lang: string | 
   } catch (err) {
     // Un titre que TMDB ne connaît pas n'a rien : ce n'est pas une panne.
     if (err instanceof TmdbError && err.status === 404) {
-      return { kind, names: [], originalLanguage: null, releaseDate: null, lastAirDate: null, ongoing: false, seasons: [], videos: [] };
+      return { kind, names: [], originalLanguage: null, releaseDate: null, lastAirDate: null, ongoing: false, countries: [], seasons: [], videos: [] };
     }
     return null;
   }

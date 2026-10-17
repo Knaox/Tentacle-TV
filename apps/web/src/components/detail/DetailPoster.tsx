@@ -32,6 +32,13 @@ interface DetailPosterProps {
    * le disque. `undefined` = la Primary de l'item, par le serveur.
    */
   imageUrl?: string | null;
+  /**
+   * L'image de la carte cliquée (déjà en mémoire) : tient la place de
+   * l'affiche tant que celle-ci, plus lourde, n'est pas arrivée — l'affiche
+   * fond par-dessus. Sans elle, un réseau lent laissait le cadre vide après
+   * l'ouverture (relevé du lot 1017).
+   */
+  placeholderUrl?: string | null;
 }
 
 /**
@@ -44,7 +51,7 @@ interface DetailPosterProps {
  *    haut de la case et flottait, minuscule, à côté d'un titre en display-2.
  *    Elle prend désormais toute la largeur de la colonne, en 16:9.
  */
-export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUrl }: DetailPosterProps) {
+export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUrl, placeholderUrl }: DetailPosterProps) {
   const { t } = useTranslation("media");
   const client = useJellyfinClient();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -125,8 +132,11 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
         className="block w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--border-focus)] disabled:cursor-default"
       >
         {/* Le zoom au survol vit sur l'IMAGE, jamais sur la boîte mesurée. */}
+        {showImage && placeholderUrl && !late.shown ? (
+          <img src={placeholderUrl} alt="" aria-hidden draggable={false} className="absolute inset-0 h-full w-full object-cover" />
+        ) : null}
         {showImage ? (
-          <span className="block" style={late.style}>
+          <span className="relative block" style={late.style}>
             <img
               src={url}
               alt={item.Name}
