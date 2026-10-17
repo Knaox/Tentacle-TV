@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DETAIL_STAGE_BOX, DETAIL_STAGE_FOCUS, DETAIL_STAGE_LAYERS } from "./detailStageGeometry";
 import { openingGuardDelay, type DetailOrigin } from "./detailTransition";
 import { DetailStageFallback } from "./DetailArtworkFallback";
+import { DetailFlight } from "./DetailFlight";
 
 export interface TargetRect {
   top: number;
@@ -162,17 +163,6 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
 
   if (!origin || reduced) return null;
 
-  const from = origin.rect;
-  // Tant que la fiche n'a pas rendu son visuel, l'image reste à sa place de
-  // départ : mieux vaut attendre que partir vers une cible devinée.
-  //
-  // La bannière d'accueil suit exactement le même trajet que les cartes, et
-  // c'est délibéré. Une première version la faisait s'ouvrir jusqu'au plein
-  // écran, au motif qu'elle EST déjà le décor de la page d'arrivée. Mais le
-  // visuel finissait alors nulle part : la fiche affiche son affiche à un
-  // endroit précis, et ne pas s'y poser laissait l'arrivée sans point de
-  // chute — le défaut même que la transition doit corriger.
-  const to = target ?? from;
 
   return createPortal(
     <AnimatePresence onExitComplete={onDone}>
@@ -215,8 +205,10 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
               // seule la façon de passer de l'un à l'autre change.
               <motion.div
                 className="absolute inset-0"
-                initial={{ opacity: 0, scale: 1.08 }}
-                animate={{ opacity: 1, scale: 1 }}
+                // `transform` entier, jamais `scale` seul : framer ne confie au
+                // compositeur que celui-là, et la fiche se monte sur le fil principal.
+                initial={{ opacity: 0, transform: "scale(1.08)" }}
+                animate={{ opacity: 1, transform: "scale(1)" }}
                 exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeOut" } }}
                 transition={{ duration: DECOR_S * 1.05, ease: SETTLE }}
               >
@@ -257,38 +249,15 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
             ))}
           </div>
 
-          {/* ── Le visuel en vol ─────────────────────────────────────────── */}
-          <motion.div
-            data-detail-flight
-            className="absolute overflow-hidden"
-            initial={{
-              top: from.top,
-              left: from.left,
-              width: from.width,
-              height: from.height,
-              borderRadius: origin.radius,
-            }}
-            animate={{
-              top: to.top,
-              left: to.left,
-              width: to.width,
-              height: to.height,
-              borderRadius: 12,
-            }}
-            // Sortie légèrement retardée : le visuel réel de la fiche est déjà
-            // dessous, on laisse l'œil s'y poser avant de retirer le calque.
-            exit={{ opacity: 0, transition: { duration: 0.18, delay: 0.04, ease: "easeOut" } }}
-            transition={{ duration: travelS, ease: SETTLE }}
-            onAnimationComplete={() => { if (target) setLanded(true); }}
-            style={{ boxShadow: "var(--elev-3)" }}
-          >
-            <img
-              src={origin.imageUrl}
-              alt=""
-              draggable={false}
-              className="h-full w-full object-cover"
-            />
-          </motion.div>
+          {/* ── Le visuel en vol (`DetailFlight`, en transform seul) ─────── */}
+          <DetailFlight
+            from={origin.rect}
+            to={target}
+            radius={origin.radius}
+            imageUrl={origin.imageUrl}
+            travelS={travelS}
+            onLanded={() => setLanded(true)}
+          />
         </div>
       )}
     </AnimatePresence>,

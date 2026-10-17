@@ -89,9 +89,10 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
               alt=""
               draggable={false}
               data-detail-art="backdrop"
-              initial={instant ? false : reduced ? { opacity: 0 } : { opacity: 0, scale: 1.06 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ opacity: { duration: 0.6, ease: "easeOut" }, scale: { duration: SETTLE_S, ease: SETTLE_EASE } }}
+              // `transform` entier, jamais `scale` seul : framer ne confie au compositeur que celui-là.
+              initial={instant ? false : reduced ? { opacity: 0 } : { opacity: 0, transform: "scale(1.06)" }}
+              animate={{ opacity: 1, transform: "scale(1)" }}
+              transition={{ opacity: { duration: 0.6, ease: "easeOut" }, transform: { duration: SETTLE_S, ease: SETTLE_EASE } }}
               className="absolute inset-0 h-full w-full object-cover"
               style={{ objectPosition: DETAIL_STAGE_FOCUS }}
               onLoad={late.onLoad}
