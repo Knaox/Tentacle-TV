@@ -23,6 +23,8 @@ const state = vi.hoisted(() => ({
   clicks: [] as Array<() => void>,
   navigate: vi.fn(),
   rescans: [] as unknown[],
+  /** La porte d'arrivée (images décodées) : un rendu statique ne la voit jamais s'ouvrir seule. */
+  arrival: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -85,7 +87,11 @@ vi.mock("../components/detail/DetailSections", () => ({ DetailSections: () => <s
 vi.mock("../components/detail/DetailImageViewer", () => ({ DetailImageViewer: () => null }));
 vi.mock("../components/detail/DetailScoreline", () => ({ DetailScoreline: () => null }));
 vi.mock("../components/detail/DetailMetadata", () => ({ DetailMetadata: () => null }));
-vi.mock("../components/detail/DetailPlaceholder", () => ({ DetailPlaceholder: () => <p data-placeholder /> }));
+vi.mock("../components/detail/DetailPlaceholder", () => ({ DetailPlaceholder: ({ quiet }: { quiet?: boolean }) => <p data-placeholder data-quiet={quiet ? "1" : "0"} /> }));
+vi.mock("../components/detail/detailArrival", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../components/detail/detailArrival")>()),
+  useDetailArrival: () => state.arrival,
+}));
 vi.mock("../components/detail/DetailActionCapsule", () => ({ DetailActionCapsule: () => null }));
 vi.mock("../components/detail/TrailerButton", () => ({ TrailerButton: () => null }));
 vi.mock("../components/detail/TrailerHelpHint", () => ({ TrailerHelpHint: () => null }));
@@ -115,6 +121,7 @@ beforeEach(() => {
   state.admin = true;
   state.capabilities = new Set(["admin.libraryRescan"]);
   state.rescans = [];
+  state.arrival = true;
 });
 
 describe("la fiche d'un titre sans images ni métadonnées", () => {
@@ -150,6 +157,13 @@ describe("la fiche d'un titre sans images ni métadonnées", () => {
     expect(html).toContain("/img/film/Backdrop");
     expect(html).toContain("Sprite Fright");
     expect(html).toContain("Lecture");
+  });
+
+  it("tant que ses images se décodent (800 ms au plus), le fond seul — sans rond d'attente qui clignoterait", () => {
+    state.arrival = false;
+    const html = render({ Id: "film", Name: "Sprite Fright", Type: "Movie", ImageTags: { Primary: "p1" } });
+    expect(html).toContain('data-quiet="1"');
+    expect(html).not.toContain("Lecture");
   });
 });
 

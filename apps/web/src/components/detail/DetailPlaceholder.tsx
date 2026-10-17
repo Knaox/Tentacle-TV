@@ -9,6 +9,12 @@ interface DetailPlaceholderProps {
   onRetry: () => void;
   /** L'erreur de la requête : sa cause se dit (fiche retirée, serveur muet, session expirée). */
   error?: unknown;
+  /**
+   * La fiche est là, ses images se décodent (`useDetailArrival`, 800 ms au
+   * plus) : le fond seul, sans le rond d'attente — sur une image en cache, il
+   * n'aurait été qu'un éclair.
+   */
+  quiet?: boolean;
 }
 
 /**
@@ -27,9 +33,11 @@ interface DetailPlaceholderProps {
  * dalle, l'échec arrive après les reprises réseau, bien au-delà du délai où le
  * moteur pose lui-même l'anneau d'un écran.
  */
-export function DetailPlaceholder({ failed, retrying, onRetry, error }: DetailPlaceholderProps) {
+export function DetailPlaceholder({ failed, retrying, onRetry, error, quiet = false }: DetailPlaceholderProps) {
   const navigate = useNavigate();
   const model = usePageProblemModel(failed ? error ?? new Error("item") : null, { availability: { canGoBack: true } });
+
+  if (quiet && !failed) return <div className="h-screen bg-surface-0" />;
 
   if (!failed || !model) {
     return (

@@ -6,6 +6,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { DetailPosterFallback } from "./DetailArtworkFallback";
+import { detailPosterUrl } from "./detailArtUrls";
+import { useLateReveal } from "./detailArrival";
 
 interface DetailPosterProps {
   item: MediaItem;
@@ -76,20 +78,15 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
   }, [hasImage, publish]);
 
   const isEpisode = item.Type === "Episode";
-  const url = !hasImage
-    ? null
-    : imageUrl ?? client.getImageUrl(item.Id, "Primary", {
-      ...(isEpisode ? { width: 832 } : { height: 600 }),
-      quality: 90,
-      // Adressée par son tag : une affiche arrivée après une analyse change
-      // d'adresse, l'échec d'avant ne la masque pas (`useBrokenImage`).
-      ...(item.ImageTags?.Primary ? { tag: item.ImageTags.Primary } : {}),
-    });
+  // La MÊME adresse que celle que la fiche décode d'avance (`detailArtUrls`).
+  const url = !hasImage ? null : imageUrl ?? detailPosterUrl(client, item);
   // Sans affiche — ou une affiche annoncée qui ne se charge pas —, le visuel
   // de repli prend sa place : la scène garde sa composition, et le calque
   // d'ouverture une cible où se poser.
   const { broken, reportFailure } = useBrokenImage(url);
   const showImage = url !== null && !broken;
+  // Arrivée après l'entrée (réseau lent) : elle fond, elle ne surgit pas.
+  const late = useLateReveal(showImage ? url : null);
 
   return (
     // Entrée en OPACITÉ seule, jamais en `y`/`scale`. Une transformation
@@ -129,14 +126,17 @@ export function DetailPoster({ item, onMeasure, instant = false, onOpen, imageUr
       >
         {/* Le zoom au survol vit sur l'IMAGE, jamais sur la boîte mesurée. */}
         {showImage ? (
-          <img
-            src={url}
-            alt={item.Name}
-            draggable={false}
-            onLoad={publish}
-            onError={reportFailure}
-            className={`w-full object-cover transition-transform duration-300 ease-out group-hover/poster:scale-[1.03] ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
-          />
+          <span className="block" style={late.style}>
+            <img
+              src={url}
+              alt={item.Name}
+              draggable={false}
+              data-detail-art="poster"
+              onLoad={() => { publish(); late.onLoad(); }}
+              onError={() => { late.onError(); reportFailure(); }}
+              className={`w-full object-cover transition-transform duration-300 ease-out group-hover/poster:scale-[1.03] ${isEpisode ? "aspect-video" : "aspect-[2/3]"}`}
+            />
+          </span>
         ) : (
           <DetailPosterFallback title={item.Name} wide={isEpisode} />
         )}

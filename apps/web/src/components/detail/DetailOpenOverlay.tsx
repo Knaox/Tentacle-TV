@@ -23,6 +23,8 @@ interface DetailOpenOverlayProps {
    * — titre sans affiche —, le calque s'efface sur place au lieu d'attendre.
    */
   settled?: boolean;
+  /** Fiche prête (`useDetailArrival`) : le visuel posé, le calque l'attend pour s'effacer ; le garde-fou reste le plafond. */
+  ready?: boolean;
   /** La base est opaque : la fiche peut se montrer dessous (`MediaDetail`). */
   onCovered?: () => void;
   onDone: () => void;
@@ -78,9 +80,11 @@ const SETTLE = [0.16, 1, 0.3, 1] as const;
  * Repli : sans cible mesurée (média sans affiche, fiche lente), le visuel
  * s'efface sur place en fondu — jamais de blocage.
  */
-export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false, onCovered, onDone }: DetailOpenOverlayProps) {
+export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false, ready = true, onCovered, onDone }: DetailOpenOverlayProps) {
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(false);
+  /** Le visuel s'est posé sur sa cible : il ne reste qu'à attendre que la fiche soit prête. */
+  const [landed, setLanded] = useState(false);
   /**
    * Origine déjà lancée. Une ouverture ne se joue QU'UNE FOIS.
    *
@@ -125,6 +129,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
     startedAt.current = performance.now();
     travelLocked.current = false;
     travelRef.current = TRAVEL_MIN_S;
+    setLanded(false);
     setPlaying(true);
   }, [origin, reduced, onDone]);
 
@@ -139,6 +144,8 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
     clearTimeout(guardRef.current);
     guardRef.current = setTimeout(() => setPlaying(false), delay);
   }, [playing, hasTarget, settled]);
+
+  useEffect(() => { if (landed && ready) setPlaying(false); }, [landed, ready]);
 
   // La base a fini de monter (ou couvrait déjà, depuis un takeover) : la fiche se montre dessous.
   const coveredRef = useRef(onCovered);
@@ -272,7 +279,7 @@ export function DetailOpenOverlay({ origin, backdropUrl, target, settled = false
             // dessous, on laisse l'œil s'y poser avant de retirer le calque.
             exit={{ opacity: 0, transition: { duration: 0.18, delay: 0.04, ease: "easeOut" } }}
             transition={{ duration: travelS, ease: SETTLE }}
-            onAnimationComplete={() => { if (target) setPlaying(false); }}
+            onAnimationComplete={() => { if (target) setLanded(true); }}
             style={{ boxShadow: "var(--elev-3)" }}
           >
             <img

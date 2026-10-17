@@ -9,6 +9,7 @@ import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { DetailStageFallback } from "./DetailArtworkFallback";
+import { useLateReveal } from "./detailArrival";
 import {
   DETAIL_STAGE_BOX,
   DETAIL_STAGE_FOCUS,
@@ -75,22 +76,28 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
   const { broken, reportFailure } = useBrokenImage(backdropUrl);
   // Mouvement réduit : le décor arrive en fondu, sans dézoom.
   const reduced = useReducedMotion();
+  const late = useLateReveal(backdropUrl && !broken ? backdropUrl : null);
 
   return (
     <section className={`relative flex w-full flex-col justify-end ${DETAIL_STAGE_MIN_H}`} aria-label={item.Name}>
       <div ref={boxRef} className={`pointer-events-none absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
         {backdropUrl && !broken && (
-          <motion.img
-            src={backdropUrl}
-            alt=""
-            draggable={false}
-            initial={instant ? false : reduced ? { opacity: 0 } : { opacity: 0, scale: 1.06 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ opacity: { duration: 0.6, ease: "easeOut" }, scale: { duration: SETTLE_S, ease: SETTLE_EASE } }}
-            className="absolute inset-0 h-full w-full object-cover"
-            style={{ objectPosition: DETAIL_STAGE_FOCUS }}
-            onError={reportFailure}
-          />
+          // Arrivé après l'entrée (réseau lent) : le décor fond, il ne surgit pas.
+          <div className="absolute inset-0" style={late.style}>
+            <motion.img
+              src={backdropUrl}
+              alt=""
+              draggable={false}
+              data-detail-art="backdrop"
+              initial={instant ? false : reduced ? { opacity: 0 } : { opacity: 0, scale: 1.06 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ opacity: { duration: 0.6, ease: "easeOut" }, scale: { duration: SETTLE_S, ease: SETTLE_EASE } }}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ objectPosition: DETAIL_STAGE_FOCUS }}
+              onLoad={late.onLoad}
+              onError={() => { late.onError(); reportFailure(); }}
+            />
+          </div>
         )}
         {/* Pas de décor (titre sans images, ou image en échec) : le repli de
             marque, jamais un aplat vide. */}
