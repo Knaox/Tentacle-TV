@@ -32,19 +32,20 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("ordre des vidéos TMDB (à langue et type égaux)", () => {
-  it("une VF avant une VOST, l'officielle, la plus haute définition, la plus récente ; YouTube seulement", () => {
+  it("une VF avant une VOST, la bande-annonce 1, l'officielle, la plus haute définition, la plus ancienne ; YouTube seulement", () => {
     const ordered = orderTmdbVideos([
       video("vostfr-1080", { name: "Bande-annonce VOST" }),
       video("vf-480", { size: 480 }),
-      video("vf-1080-old", { published_at: "2021-01-01T00:00:00.000Z" }),
       video("vf-1080-new", { published_at: "2023-06-01T00:00:00.000Z" }),
+      video("vf-1080-old", { published_at: "2021-01-01T00:00:00.000Z" }),
+      video("trailer-2", { name: "Bande-annonce 2 VF", size: 2160 }),
       video("fan", { official: false, size: 2160 }),
       video("vimeo", { site: "Vimeo" }),
       video("", {}),
     ]);
-    expect(ordered.map((v) => v.key)).toEqual(["vf-1080-new", "vf-1080-old", "vf-480", "fan", "vostfr-1080"]);
+    expect(ordered.map((v) => v.key)).toEqual(["vf-1080-old", "vf-1080-new", "vf-480", "fan", "trailer-2", "vostfr-1080"]);
     expect(ordered[0]).toEqual({
-      key: "vf-1080-new", name: "vf-1080-new", type: "Trailer", site: "YouTube", lang: "fr", url: "https://www.youtube.com/watch?v=vf-1080-new",
+      key: "vf-1080-old", name: "vf-1080-old", type: "Trailer", site: "YouTube", lang: "fr", url: "https://www.youtube.com/watch?v=vf-1080-old",
     });
   });
 });
@@ -102,5 +103,20 @@ describe("source des vidéos", () => {
     state.seerr = { url: "http://seerr.test", apiKey: "k" };
     vi.stubGlobal("fetch", vi.fn(async () => new Response("non", { status: 500 })));
     expect(await fetchSeerrVideos(10, "tv")).toBeNull();
+  });
+
+  it("Jellyseerr : bandes-annonces et teasers seulement, la 1 avant la 2 — jamais un bonus, même pour un client d'avant", async () => {
+    state.seerr = { url: "http://seerr.test", apiKey: "k" };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      relatedVideos: [
+        { key: "feat", name: "Making-of", type: "Featurette", site: "YouTube" },
+        { key: "itw", name: "Interview des acteurs", type: "Trailer", site: "YouTube" },
+        { key: "tr2", name: "Official Trailer 2", type: "Trailer", site: "YouTube" },
+        { key: "tr1", name: "Official Trailer", type: "Trailer", site: "YouTube" },
+        { key: "clip", name: "Opening Scene", type: "Clip", site: "YouTube" },
+        { key: "teaser", name: "Teaser", type: "Teaser", site: "YouTube" },
+      ],
+    }))));
+    expect((await fetchSeerrVideos(10, "movie"))?.map((v) => v.key)).toEqual(["tr1", "teaser", "tr2"]);
   });
 });

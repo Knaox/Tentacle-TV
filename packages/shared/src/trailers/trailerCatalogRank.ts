@@ -16,17 +16,18 @@
  *    la saison en cours ne passe donc jamais devant la VF de la saison
  *    d'avant (Rick et Morty S7 : la VF de S6, pas les promos anglaises de
  *    S7) ; les saisons suivantes suivent la même règle entre elles. Dans une
- *    même portée : la bande-annonce locale de Jellyfin,
- *    AlloCiné VF puis VOSTFR (un serveur français seulement), les autres
- *    sources dans la langue du serveur, puis sous-titrées, puis la langue
- *    originale ou l'anglais, et AlloCiné VO en tout dernier recours. Une
- *    bande-annonce avant un teaser.
+ *    même portée et un même groupe de langue : la bande-annonce locale de
+ *    Jellyfin, puis TOUTES les bandes-annonces avant les teasers (1.31.0 :
+ *    « les vraies bandes-annonces en VF passent devant tout ») ; puis la VF
+ *    avant la VOSTFR (AlloCiné d'abord à version égale, un serveur français
+ *    seulement), la langue originale ou l'anglais, et AlloCiné VO en tout
+ *    dernier recours ; puis la bande-annonce 1 avant la 2 (`trailerOrdinal`).
  *
  * MIROIR : recopié octet pour octet dans `apps/backend/src/trailers/` (voir
  * `trailerCatalog.ts`). On le modifie ICI.
  */
 
-import { hasSubtitleMark, trailerLangFit } from "./trailerList";
+import { hasSubtitleMark, trailerLangFit, trailerOrdinal } from "./trailerList";
 import {
   TRAILER_CATALOG_MAX_ENTRIES, trailerPlaybackKey, trailerScopeKey,
   type TrailerAudio, type TrailerEntry, type TrailerScope, type TrailerVersion,
@@ -90,21 +91,26 @@ export function playedTrailerVersion(
   return claimed === "subtitled" ? "subtitled" : "original";
 }
 
-/** La règle 3 : le palier d'une entrée dans sa portée — le plus petit d'abord. */
-function tierOf(entry: TrailerEntry): number {
-  if (entry.source === "local") return 0;
-  if (entry.source === "allocine") {
-    if (entry.version === "localized") return 1;
-    if (entry.version === "subtitled") return 2;
-    return entry.version === "unknown" ? 6 : 7;
-  }
-  if (entry.version === "localized") return 3;
-  if (entry.version === "subtitled") return 4;
-  return entry.version === "original" ? 5 : 6;
+/** Version de la langue du serveur (locale, sa langue, sous-titrée dans elle) : servie avant tout le reste. */
+function inServerLanguage(entry: TrailerEntry): boolean {
+  return entry.source === "local" || entry.version === "localized" || entry.version === "subtitled";
 }
 
-/** Les paliers de la langue du serveur (locale, sa langue, sous-titrée dans elle) : servis avant tout le reste. */
-const LAST_SERVER_LANGUAGE_TIER = 4;
+const VERSION_RANK: Record<TrailerVersion, number> = { localized: 0, subtitled: 1, original: 2, unknown: 3 };
+
+/**
+ * La règle 3 : le palier d'une entrée dans sa portée et son groupe de langue
+ * — le plus petit d'abord. La locale de Jellyfin en tête ; puis la VF avant
+ * la VOSTFR ; à version égale, AlloCiné d'abord dans la langue du serveur
+ * (ses VF sont celles des distributeurs français), en dernier hors d'elle.
+ */
+function tierOf(entry: TrailerEntry): number {
+  if (entry.source === "local") return 0;
+  const allocine = entry.source === "allocine";
+  const version = VERSION_RANK[entry.version];
+  if (inServerLanguage(entry)) return 1 + version * 2 + (allocine ? 0 : 1);
+  return allocine ? 20 : 10 + version;
+}
 
 /**
  * La liste rendue au client : seulement les portées de la fiche ; les
@@ -122,16 +128,20 @@ export function rankCatalogEntries(
   // Une fiche de saison (ou d'épisode) : ce qui suit la série, ce sont les saisons suivantes.
   const seriesAt = scopes[0]?.kind === "season" ? scopes.findIndex((scope) => scope.kind === "series") : -1;
   const later = (scope: number) => (seriesAt >= 0 && scope > seriesAt ? 1 : 0);
-  const foreign = (tier: number) => (tier > LAST_SERVER_LANGUAGE_TIER ? 1 : 0);
+  const foreign = (entry: TrailerEntry) => (inServerLanguage(entry) ? 0 : 1);
+  const local = (entry: TrailerEntry) => (entry.source === "local" ? 0 : 1);
+  const kind = (entry: TrailerEntry) => (entry.type === "trailer" ? 0 : 1);
   const ranked = entries
     .map((entry, index) => ({ entry, index, tier: tierOf(entry), scope: scopeRank.get(trailerScopeKey(entry.scope)) }))
     .filter((row): row is { entry: TrailerEntry; index: number; tier: number; scope: number } => row.scope !== undefined)
     .sort((a, b) =>
       later(a.scope) - later(b.scope)
-      || foreign(a.tier) - foreign(b.tier)
+      || foreign(a.entry) - foreign(b.entry)
       || a.scope - b.scope
+      || local(a.entry) - local(b.entry)
+      || kind(a.entry) - kind(b.entry)
       || a.tier - b.tier
-      || (a.entry.type === "trailer" ? 0 : 1) - (b.entry.type === "trailer" ? 0 : 1)
+      || trailerOrdinal(a.entry.name) - trailerOrdinal(b.entry.name)
       || a.index - b.index);
   const seen = new Set<string>();
   const result: TrailerEntry[] = [];

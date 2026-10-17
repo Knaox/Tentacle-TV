@@ -126,26 +126,66 @@ export function trailerLangMatches(tr: RichTrailer, lang: string | undefined): b
   return trailerLangFit(tr, lang) === "dubbed";
 }
 
-/** Un bonus dit par son libellé : featurette, coulisses, extrait, entretien… */
-const EXTRA_NAME = / (featurette|behind the scenes|making of|coulisses|interview|entretien|bloopers|b roll|betisier|clip|extrait) /;
+/**
+ * Un bonus dit par son libellé — il l'emporte sur le type TMDB, que sa
+ * communauté pose parfois de travers (une interview typée « Trailer ») :
+ * featurette, coulisses, extrait, entretien, bêtisier, réaction, critique,
+ * résumé, analyse, conférence de presse, fausse bande-annonce de fan…
+ */
+const EXTRA_NAME = new RegExp(
+  " (featurettes?|behind the scenes?|making of|coulisses|interviews?|entretiens?|bloopers|gag reel|b roll|betisiers?|clips?|extraits?"
+  + "|reactions?|react|reacts|review|reviews|critiques?|recap|resume|explained|explication|analyse|analysis|breakdown|easter eggs?"
+  + "|q a|press conference|conference de presse|red carpet|tapis rouge|junket|commentary|commentaire|podcast|vlog|unboxing"
+  + "|opening credits|generique|soundtrack|bande originale|music video|lyrics?|fan made|fanmade|concept trailer|parod(?:y|ie)|honest trailers?"
+  + "|pitch meeting|scene coupee|scenes coupees|deleted scenes?) ",
+);
 const TRAILER_NAME = / (bande annonce|trailer) /;
 const TEASER_NAME = / teaser /;
 
+/** Le libellé sans les noms du titre : « The Interview - Official Trailer » n'est pas une interview. */
+function wordsWithoutTitle(name: string | undefined, titleNames: readonly string[]): string {
+  let words = nameWords(name);
+  for (const title of titleNames) {
+    const plain = nameWords(title).trim();
+    if (plain) words = words.split(` ${plain} `).join(" ");
+  }
+  return words;
+}
+
 /**
- * Ce qu'est la vidéo : bande-annonce, teaser ou autre chose. Le type TMDB
- * fait foi, sauf un « Clip » ou une « Featurette » dont le libellé dit
- * « bande-annonce » (TMDB type ainsi des VF) ; sans type (Jellyfin), le
- * libellé seul, et une vidéo sans mot-clé vaut bande-annonce.
+ * Ce qu'est la vidéo : bande-annonce, teaser ou autre chose. Un mot de bonus
+ * dans le libellé (hors noms du titre, `titleNames`) en fait TOUJOURS autre
+ * chose ; sinon le type TMDB fait foi, sauf un « Clip » ou une « Featurette »
+ * dont le libellé dit « bande-annonce » (TMDB type ainsi des VF) ; sans type
+ * (Jellyfin), le libellé seul, et une vidéo sans mot-clé vaut bande-annonce.
  */
-export function trailerKind(tr: RichTrailer): "trailer" | "teaser" | "other" {
+export function trailerKind(tr: RichTrailer, titleNames: readonly string[] = []): "trailer" | "teaser" | "other" {
+  const words = wordsWithoutTitle(tr.Name, titleNames);
+  if (EXTRA_NAME.test(words)) return "other";
   const type = (tr.type ?? "").toLowerCase();
   if (type === "trailer") return "trailer";
   if (type === "teaser") return "teaser";
-  const words = nameWords(tr.Name);
-  if (EXTRA_NAME.test(words)) return "other";
   if (TEASER_NAME.test(words)) return "teaser";
   if (TRAILER_NAME.test(words)) return "trailer";
   return type ? "other" : "trailer";
+}
+
+/** Une bande-annonce « finale » vient après les numérotées. */
+const FINAL_ORDINAL = 50;
+const ORDINAL_RE = / (?:bande annonce|trailer|teaser)(?: officiel(?:le)?| official)?(?: n| no)? (\d{1,2}) /;
+
+/**
+ * Le rang d'une bande-annonce dans sa série : 1 pour la principale (« Official
+ * Trailer », « Bande-annonce (1) »), 2 pour « Trailer 2 », « Bande-annonce
+ * (2) VF », « Official Trailer #2 »… ; une « Final Trailer » après les
+ * numérotées. Un numéro de SAISON (« Season 2 Trailer ») ne compte pas.
+ */
+export function trailerOrdinal(name: string | undefined): number {
+  const words = nameWords(name);
+  const match = ORDINAL_RE.exec(words);
+  const value = match ? Number(match[1]) : 1;
+  if (/ finale? (?:trailer|bande annonce) | (?:bande annonce|trailer) finale? /.test(words)) return Math.max(value, FINAL_ORDINAL);
+  return value >= 1 && value <= 20 ? value : 1;
 }
 
 /** Priorité de type : un vrai trailer avant un teaser, puis le reste. */
@@ -155,23 +195,27 @@ function typeRank(tr: RichTrailer): number {
 }
 
 /**
- * Trie les trailers : la langue visée doublée (la VF), puis sous-titrée (la
- * VOSTFR), puis le reste (`trailerLangRank`) ; à langue égale, une bande-
- * annonce avant un teaser. Tri stable.
+ * Trie les trailers. D'abord ce qui est dans la langue visée (doublée — la VF
+ * —, ou sous-titrée — la VOSTFR), puis le reste ; dans chaque groupe, toutes
+ * les bandes-annonces avant les teasers ; puis la VF avant la VOSTFR ; puis la
+ * bande-annonce 1 avant la 2 (`trailerOrdinal`). Tri stable.
  */
 export function sortTrailersByLang<T extends RichTrailer>(trailers: T[], lang: string | undefined): T[] {
   if (trailers.length < 2) return trailers;
-  return [...trailers].sort((a, b) => {
-    const byLang = trailerLangRank(a, lang) - trailerLangRank(b, lang);
-    return byLang !== 0 ? byLang : typeRank(a) - typeRank(b);
-  });
+  const group = (tr: RichTrailer) => (trailerLangRank(tr, lang) < 2 ? 0 : 1);
+  return [...trailers].sort((a, b) =>
+    group(a) - group(b)
+    || typeRank(a) - typeRank(b)
+    || trailerLangRank(a, lang) - trailerLangRank(b, lang)
+    || trailerOrdinal(a.Name) - trailerOrdinal(b.Name));
 }
 
 /**
  * Fusionne les trailers Jellyfin (`RemoteTrailers`) et la liste complète TMDB
  * (via Jellyseerr) en dédupliquant par identifiant YouTube. Les entrées TMDB
- * priment (plus riches : type, langue). Le résultat est trié par langue de
- * l'utilisateur puis par type (trailer avant teaser).
+ * priment (plus riches : type, langue). Ce qui n'est ni une bande-annonce ni
+ * un teaser (interview, coulisses, extrait…) n'entre pas. Le résultat est
+ * trié par `sortTrailersByLang`.
  */
 export function mergeTrailers(
   jellyfin: JellyfinTrailer[],
@@ -192,5 +236,5 @@ export function mergeTrailers(
     byKey.set(id, { Url: v.url, Name: v.name, type: v.type, lang: v.lang });
   }
 
-  return sortTrailersByLang([...byKey.values()], lang);
+  return sortTrailersByLang([...byKey.values()].filter((tr) => trailerKind(tr) !== "other"), lang);
 }
