@@ -21,7 +21,10 @@
  * l'a laissée — la règle 1 de `focus/rowRewind.ts` : une rangée garde sa
  * position tant qu'elle est à l'écran ; seul un vide au-delà de son bout se
  * referme, puis la place posée au bout s'en va. (Choix de Damien : « revenir
- * avant les aperçus » faisait perdre la carte au retour par HAUT.)
+ * avant les aperçus » faisait perdre la carte au retour par HAUT.) « Elle
+ * reste » ne vaut que TANT QU'ELLE EST À L'ÉCRAN : sortie de l'écran, la règle 2
+ * de `rowRewind.ts` la remet au début (`reset`), et Retour l'y remet d'un coup
+ * (`rowRewind.back`) — mise au point du 17/10.
  *
  * Le passage en tête se joue AVEC la grande carte (`motion: "withPreview"`) :
  * le même ressort que sa croissance, image par image. En butée, le bord droit

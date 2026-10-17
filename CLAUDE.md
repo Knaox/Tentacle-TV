@@ -694,7 +694,14 @@ passe EN TÊTE de sa rangée, à la place de la première — rien ne bouge avan
 posée au bout AVANT de défiler, le départ du focus) ; la carte y glisse sur le
 ressort de sa grande carte (`rows/rowGlide.ts`). En bout de rangée, la BUTÉE (la
 grande carte finit à la marge droite, elle grandit vers la gauche) ; au départ du
-focus, la rangée RESTE où elle est (choix de Damien, 16/10).
+focus, la rangée RESTE où elle est (choix de Damien, 16/10) — tant qu'elle est à
+l'écran : sortie de l'écran, elle revient au début comme toute rangée de l'accueil
+(tv-core `focus/rowRewind.ts`), et Retour l'y remet D'UN COUP, le focus aussitôt
+sur sa première carte (`rowRewind.back`, jamais le défilement de tvOS : ~1,4 s).
+Sur Apple TV, une rangée de l'accueil et de « Pour vous » garde la carte focalisée
+au retrait de la rangée, jamais sous le rail (`FocusSection rowReveal` →
+`TentacleRowScroller.m`, qui corrige la cible de tvOS par tv-core `rowRevealOffset`,
+la règle d'Android).
 La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
 se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** (16/10) : la CIBLE d'une carte qui peut

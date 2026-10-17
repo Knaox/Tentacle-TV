@@ -3012,8 +3012,30 @@ D'où, pour les rangées de l'ACCUEIL et de « POUR VOUS » :
    PAS changer de page : la rangée est rendue telle qu'on l'a laissée, le
    focus sur la carte ouverte ;
 3. **Retour** sur une carte qui n'est pas la première ramène le focus à la
-   PREMIÈRE (la rangée défile, à la vue) ; le Retour suivant fait ce qu'il
-   faisait — le rail s'ouvre.
+   PREMIÈRE ; le Retour suivant fait ce qu'il faisait — le rail s'ouvre.
+   Depuis le 17/10, la rangée y revient D'UN COUP, puis le focus s'y pose
+   aussitôt (`rowRewind.back`, `focusNow`) : le défilement de tvOS jusqu'à
+   elle coûtait ~1,4 s sur une rangée défilée loin (une carte en aperçu
+   passée en tête) — le « gros lag » relevé par Damien.
+
+**Le 17/10, deux correctifs** (lot 1017, A2). Une rangée défilée jusqu'à son
+bout, sortie de l'écran par le bas, ne revenait plus au début : depuis le
+16/10 (51574cd8b), `useRowGlide` rendait un objet neuf à chaque rendu, et
+`MediaRow` se réinscrivait au port à chaque rendu — la réinscription
+(`remove` puis `add`) effaçait l'état « déplacée ». La rangée ne s'inscrit
+plus qu'une fois (banc : `focus/rangees-bout`). Et la règle 1 des aperçus
+(« au départ du focus, la rangée reste où l'aperçu l'a laissée »,
+`trailerPreviewRowHead.ts`) ne vaut que tant qu'elle est à l'écran : sortie
+de l'écran, la règle 2 la remet au début, aperçu ou non.
+
+**La carte focalisée au retrait de la rangée** (17/10) : tvOS défile une
+rangée à SA marge (~80 pt du bord de la ScrollView) ; à gauche, sous le rail.
+`ios/TentacleTV/TentacleRowScroller.m` corrige la cible qu'il propose
+(`scrollViewWillEndDragging:…targetContentOffset:`) par tv-core
+`rowRevealOffset` (la règle d'Android) — la carte jamais plus près des bords
+que la première ne l'est du début (176) ni la dernière de la fin (96) ; c'est
+l'animateur de tvOS qui la joue, rafale comprise. Les sections des rangées le
+demandent (`FocusSection rowReveal`) ; banc : `focus/rangees-gauche`.
 
 Ni les épisodes, ni les saisons, ni la distribution d'une fiche, ni la
 recherche : on y cherche un élément précis, garder sa place compte. Les
