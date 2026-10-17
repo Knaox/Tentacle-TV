@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useJellyfinClient, useMediaItem, useTentacleConfig } from "@tentacle-tv/api-client";
-import { parseYouTubeId } from "@tentacle-tv/shared";
+import { relayedPlaybackOfUrl } from "@tentacle-tv/shared";
 import { TRAILER_CLOSE_KEY, TRAILER_QUALITY_KEY, TRAILER_SUBTITLES_KEY, TRAILER_TIMELINE_KEY, trailerState } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import { TrailerFocusScope, useTrailerFocus, useTrailerFocusStore, useTrailerReturn } from "../../platform/tvos/screens/trailer";
@@ -45,12 +45,14 @@ export function TrailerRedesign({ route, navigation }: Props) {
   const [cue, setCue] = useState<SubtitleCue | null>(null);
   const engine = useRef<TrailerPlayerHandle | null>(null);
 
-  const ytId = parseYouTubeId(url);
+  // YouTube, ou Dailymotion (AlloCiné) : le serveur relaie les deux.
+  const video = useMemo(() => relayedPlaybackOfUrl(url), [url]);
+  const ytId = video?.kind === "youtube" ? video.ytId : null;
   const lang = (i18n.language ?? "en").slice(0, 2);
   const serverUrl = (storage.getItem("tentacle_server_url") ?? "").replace(/\/$/, "");
-  // Sans identifiant YouTube ni serveur, rien à lire : l'écran le dit — et,
-  // pour une vidéo hors YouTube, que c'est le téléviseur qui ne sait pas la lire.
-  const canPlay = TRAILER_WEBVIEW_SUPPORTED && !!ytId && !!serverUrl;
+  // Sans vidéo lisible ni serveur, rien à lire : l'écran le dit — et, pour
+  // une vidéo hors YouTube et Dailymotion, que c'est le téléviseur qui ne sait pas la lire.
+  const canPlay = TRAILER_WEBVIEW_SUPPORTED && !!video && !!serverUrl;
   const state = trailerState({ canPlay, failed, loaded });
   const isFocused = useIsFocused();
 
@@ -83,11 +85,11 @@ export function TrailerRedesign({ route, navigation }: Props) {
     quality: () => press(TRAILER_QUALITY_KEY),
   }), [press]);
 
-  const video = canPlay && ytId && !failed ? (
+  const player = canPlay && video && !failed ? (
     <TrailerWebView
       ref={engine}
-      ytId={ytId}
-      embedUri={`${serverUrl}/yt-embed.html?v=${ytId}&hl=${lang}`}
+      video={video}
+      embedUri={ytId ? `${serverUrl}/yt-embed.html?v=${ytId}&hl=${lang}` : ""}
       quality={tracks.quality}
       subtitle={tracks.subtitle}
       paused={playback.paused}
@@ -107,11 +109,11 @@ export function TrailerRedesign({ route, navigation }: Props) {
         state={state}
         title={name || item?.Name || ""}
         backdropUri={item ? detailBackdropUri(client, item) : undefined}
-        video={video}
+        video={player}
         chromeShown={playback.chromeShown}
         timelineShown={playback.timelineShown}
         waiting={waiting}
-        unavailableReason={ytId ? "youtube" : "unsupported"}
+        unavailableReason={video ? "youtube" : "unsupported"}
         timeline={playback.timeline}
         paused={playback.paused}
         scrubTarget={playback.scrubTarget}

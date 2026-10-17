@@ -91,7 +91,6 @@ export function MediaDetailRedesign({ route }: Props) {
   return (
     <FocusBindingProvider bind={focus.binder}>
       <DetailView {...model.props} episodes={episodes} {...callbacks} onRequestSeason={gapTabs.onRequestSeason} />
-      {model.extras.probes}
       {cardActions.sheet}
       {requests?.overlay}
       {rating && ratingTarget ? <ActionSheetRedesign target={ratingTarget} mode="rate" onClose={closeRating} /> : null}

@@ -1,9 +1,10 @@
+import { trailerReportBody, trailerResolveQuery, type RelayedTrailerPlayback } from "@tentacle-tv/shared";
 import { parseTrailerResolve, type TrailerStream } from "@tentacle-tv/tv-core";
 
 export type { TrailerStream };
 
 /**
- * La résolution d'une bande-annonce YouTube en un flux qu'AVPlayer sait lire
+ * La résolution d'une bande-annonce (YouTube, ou Dailymotion pour AlloCiné) en un flux qu'AVPlayer sait lire
  * (Apple TV) : `GET /api/trailers/resolve` du serveur, qui l'extrait (yt-dlp)
  * puis le RELAIE — le téléviseur ne lit plus googlevideo directement, dont
  * les URL sont liées à l'adresse IP du serveur. `path` se pose derrière
@@ -37,10 +38,10 @@ export type ResolveResult = { ok: true; stream: TrailerStream } | { ok: false; r
 
 const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
 
-async function request(serverUrl: string, token: string, ytId: string, lang: string): Promise<ResolveResult> {
+async function request(serverUrl: string, token: string, video: RelayedTrailerPlayback, lang: string): Promise<ResolveResult> {
   try {
     // `lang` ne fait que trier les sous-titres (l'interface en tête) ; un serveur d'avant l'ignore.
-    const query = `ytId=${encodeURIComponent(ytId)}&lang=${encodeURIComponent(lang)}`;
+    const query = `${trailerResolveQuery(video)}&lang=${encodeURIComponent(lang)}`;
     const res = await fetch(`${serverUrl}/api/trailers/resolve?${query}`, { headers: authHeaders(token) });
     if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` };
     const stream = parseTrailerResolve(await res.json(), serverUrl);
@@ -51,12 +52,12 @@ async function request(serverUrl: string, token: string, ytId: string, lang: str
   }
 }
 
-export function resolveTrailerStream(serverUrl: string, token: string, ytId: string, lang = "en"): Promise<ResolveResult> {
+export function resolveTrailerStream(serverUrl: string, token: string, video: RelayedTrailerPlayback, lang = "en"): Promise<ResolveResult> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<ResolveResult>((resolve) => {
     timer = setTimeout(() => resolve({ ok: false, reason: `pas de réponse en ${RESOLVE_TIMEOUT_MS / 1000} s` }), RESOLVE_TIMEOUT_MS);
   });
-  return Promise.race([request(serverUrl, token, ytId, lang), timeout]).finally(() => clearTimeout(timer));
+  return Promise.race([request(serverUrl, token, video, lang), timeout]).finally(() => clearTimeout(timer));
 }
 
 /**
@@ -64,8 +65,8 @@ export function resolveTrailerStream(serverUrl: string, token: string, ytId: str
  * listes) pendant qu'on lit la fiche. Sans réponse attendue ; un serveur
  * plus ancien répond 404, sans conséquence.
  */
-export function prepareTrailerStream(serverUrl: string, token: string, ytId: string): void {
-  fetch(`${serverUrl}/api/trailers/prepare?ytId=${encodeURIComponent(ytId)}`, { headers: authHeaders(token) }).catch(() => undefined);
+export function prepareTrailerStream(serverUrl: string, token: string, video: RelayedTrailerPlayback): void {
+  fetch(`${serverUrl}/api/trailers/prepare?${trailerResolveQuery(video)}`, { headers: authHeaders(token) }).catch(() => undefined);
 }
 
 /** L'issue d'une lecture : la première image et son délai, ou l'échec et sa raison. */
@@ -80,10 +81,10 @@ export interface TrailerOutcome {
  * Le compte rendu d'une lecture au serveur, qui le consigne : c'est ce qui
  * dira, en production, que YouTube a de nouveau changé. Sans réponse attendue.
  */
-export function reportTrailerOutcome(serverUrl: string, token: string, ytId: string, outcome: TrailerOutcome): void {
+export function reportTrailerOutcome(serverUrl: string, token: string, video: RelayedTrailerPlayback, outcome: TrailerOutcome): void {
   fetch(`${serverUrl}/api/trailers/report`, {
     method: "POST",
     headers: { ...authHeaders(token), "Content-Type": "application/json" },
-    body: JSON.stringify({ ytId, ok: outcome.ok, ms: Math.round(outcome.ms), reason: outcome.reason?.slice(0, 200) }),
+    body: JSON.stringify(trailerReportBody(video, outcome)),
   }).catch(() => undefined);
 }
