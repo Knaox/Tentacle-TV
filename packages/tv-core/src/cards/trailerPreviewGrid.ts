@@ -4,16 +4,15 @@
  *
  * Chaque LIGNE de la grille est un CARROUSEL de l'accueil, sans titre
  * (demande du 17/10 : « le même comportement que l'accueil, ligne par
- * ligne ») : au repos, ses affiches tiennent toutes à l'écran ; quand
- * l'aperçu d'une affiche démarre, sa cellule DEVIENT la grande carte (sa
- * légende et son pied passent dessous, jamais cachés), la ligne défile pour
- * la mettre EN TÊTE, collée à la navigation, et en bout de ligne c'est la
- * BUTÉE — la grande carte finit à la marge de droite, elle grandit vers la
- * gauche. Toutes ces décisions sont celles des rangées
- * (`trailerPreviewRowHead.ts`), appliquées telles quelles à la ligne : une
- * ligne qui tient à l'écran a son bout naturel à 0, si bien que le focus parti
- * (HAUT, BAS, la navigation), la ligne revient d'elle-même à sa première
- * colonne — la grille reste une grille.
+ * ligne »), et qui TOURNE (option C du 17/10, `trailerPreviewGridLine.ts`) :
+ * au repos, ses affiches tiennent toutes à l'écran ; quand l'aperçu d'une
+ * affiche démarre, sa cellule DEVIENT la grande carte (sa légende et son pied
+ * passent dessous, jamais cachés) et la ligne défile pour la mettre EN TÊTE,
+ * collée à la navigation — la place libre à droite remplie par le début de la
+ * même ligne (les reprises). Seule la dernière affiche reste en BUTÉE, sa
+ * grande carte à la marge de droite. Le focus parti (HAUT, BAS, la
+ * navigation), la ligne revient d'elle-même à sa première colonne — la
+ * grille reste une grille.
  *
  * En hauteur, la ligne qui grandit ne change pas la mise en page de la liste
  * (recyclée : la relayer à chaque image coûterait tout) : les lignes du

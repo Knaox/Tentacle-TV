@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CARD_SIZE_GRID_COLUMNS, CARD_SIZE_SCALE, CARD_SIZES } from "./cardSize";
 import { GRID_PREVIEW_SETTLE_MS, gridFocusOutrun, gridPreviewSettleDelay, gridTrailerPreviewWarmWindow } from "./trailerPreviewGrid";
-import { INITIAL_ROW_HEAD, reduceRowHead, type RowHeadContext } from "./trailerPreviewRowHead";
+import { gridLineReprises, gridLineTurns, reduceGridLine } from "./trailerPreviewGridLine";
+import { INITIAL_ROW_HEAD, type RowHeadContext } from "./trailerPreviewRowHead";
 import { trailerPreviewTileSize } from "./trailerPreviewTile";
 
 /** La grille de la scène (`PosterGrid`), recopiée : ce test ne dépend pas du thème. */
@@ -27,62 +28,75 @@ function tileOf(columns: number, scale: number) {
 function expandAt(columns: number, column: number, scale = 1) {
   const line = lineOf(columns);
   const tile = tileOf(columns, scale);
-  const step = reduceRowHead(INITIAL_ROW_HEAD, { type: "expand", index: column, tileWidth: tile.width, at: 0 }, line);
+  const step = reduceGridLine(INITIAL_ROW_HEAD, { type: "expand", index: column, tileWidth: tile.width, at: 0 }, line);
   const scrollX = step.scrollTo ?? 0;
   const left = INSET + column * (line.cardWidth + GAP) - scrollX;
   return { step, scrollX, left, right: left + tile.width };
 }
 
-describe("une ligne de grille est un carrousel de l'accueil (trailerPreviewRowHead)", () => {
-  it("au repos, une ligne pleine tient à l'écran, à chaque taille de cartes", () => {
+describe("une ligne de grille TOURNE (trailerPreviewGridLine, option C du 17/10)", () => {
+  it("au repos, une ligne pleine tient à l'écran et peut tourner, à chaque taille de cartes", () => {
     for (const size of CARD_SIZES) {
       const columns = CARD_SIZE_GRID_COLUMNS[size];
       const line = lineOf(columns);
       expect(INSET + columns * line.cardWidth + (columns - 1) * GAP).toBeLessThanOrEqual(1920 - RIGHT);
+      expect(gridLineTurns(line)).toBe(true);
     }
   });
 
-  it("la première colonne grandit sur place, la deuxième passe en tête, collée à la navigation", () => {
-    expect(expandAt(6, 0).step.scrollTo).toBeNull();
-    const second = expandAt(6, 1);
-    expect(second.left).toBe(INSET);
+  it("toute affiche sauf la dernière passe en tête, collée à la navigation", () => {
+    for (const size of CARD_SIZES) {
+      const columns = CARD_SIZE_GRID_COLUMNS[size];
+      expect(expandAt(columns, 0, CARD_SIZE_SCALE[size]).step.scrollTo).toBeNull();
+      for (let column = 1; column < columns - 1; column += 1) expect(expandAt(columns, column, CARD_SIZE_SCALE[size]).left).toBe(INSET);
+    }
   });
 
-  it("en bout de ligne, la BUTÉE : la grande carte finit à la marge droite, jamais au-delà", () => {
+  it("la dernière reste en BUTÉE : sa grande carte finit à la marge droite, jamais au-delà", () => {
     for (const size of CARD_SIZES) {
       const columns = CARD_SIZE_GRID_COLUMNS[size];
       const last = expandAt(columns, columns - 1, CARD_SIZE_SCALE[size]);
       expect(Math.abs(last.right - (1920 - RIGHT))).toBeLessThanOrEqual(1);
-      // L'avant-dernière aussi tient entière à l'écran, sa voisine de droite après elle.
-      const before = expandAt(columns, columns - 2, CARD_SIZE_SCALE[size]);
-      expect(before.left).toBeGreaterThanOrEqual(INSET - 1);
-      expect(before.right).toBeLessThanOrEqual(1920 - RIGHT + 1);
     }
   });
 
-  it("la place se pose au bout avant de défiler : la piste peut l'atteindre", () => {
-    const { step, scrollX } = expandAt(6, 5);
-    expect(step.state.trailing).toBeGreaterThanOrEqual(scrollX);
-    expect(step.motion).toBe("withPreview");
+  it("la place au bout est posée avant de défiler, et les reprises la remplissent : jamais de vide", () => {
+    for (let column = 1; column < 5; column += 1) {
+      const { step, scrollX } = expandAt(6, column);
+      expect(step.motion).toBe("withPreview");
+      // La piste, ses cartes au repos, atteint le défilement voulu.
+      expect(INSET + 6 * posterWidth(6) + 5 * GAP + RIGHT + step.state.trailing).toBeGreaterThanOrEqual(scrollX + 1920);
+      const reprises = gridLineReprises(step.state.trailing, 6, posterWidth(6) + GAP);
+      expect(reprises.length * (posterWidth(6) + GAP)).toBeGreaterThanOrEqual(step.state.trailing);
+      // Le début de la MÊME ligne, dans l'ordre.
+      expect(reprises.slice(0, column)).toEqual(Array.from({ length: Math.min(column, reprises.length) }, (_, i) => i));
+    }
   });
 
-  it("le focus parti de la ligne, elle revient à sa première colonne : la grille reste une grille", () => {
-    const line = lineOf(6);
+  it("le repli de la tête quand le focus passe à droite ne fait pas reculer la ligne", () => {
     const tile = tileOf(6, 1);
-    let state = reduceRowHead(INITIAL_ROW_HEAD, { type: "focus", index: 4, at: 0 }, line).state;
-    const expand = reduceRowHead(state, { type: "expand", index: 4, tileWidth: tile.width, at: 10 }, line);
-    state = reduceRowHead(expand.state, { type: "blur", index: 4, at: 20 }, { ...line, scrollX: expand.scrollTo ?? 0 }).state;
-    const leave = reduceRowHead(state, { type: "tick", at: 20 + 1_000 }, { ...line, scrollX: expand.scrollTo ?? 0 });
+    const expand = expandAt(6, 3);
+    const line = lineOf(6, expand.scrollX);
+    const moved = reduceGridLine(expand.step.state, { type: "focus", index: 4, at: 20 }, line);
+    const collapse = reduceGridLine(moved.state, { type: "collapse", index: 3, tileWidth: tile.width, at: 30 }, line);
+    expect(collapse.scrollTo).toBeNull();
+  });
+
+  it("le focus parti de la ligne, elle revient à sa première colonne, puis la place s'en va", () => {
+    const expand = expandAt(6, 4);
+    const line = lineOf(6, expand.scrollX);
+    const blurred = reduceGridLine(expand.step.state, { type: "blur", index: 4, at: 20 }, line).state;
+    const leave = reduceGridLine(blurred, { type: "tick", at: 1_000 }, line);
     expect(leave.scrollTo).toBe(0);
+    const released = reduceGridLine(leave.state, { type: "tick", at: 10_000 }, lineOf(6, 0));
+    expect(released.state.trailing).toBe(0);
   });
 
-  it("une dernière ligne incomplète garde le même comportement, sur ses seules affiches", () => {
+  it("une dernière ligne incomplète ne tourne pas : sa grande carte y tient, rien ne défile", () => {
     const line = lineOf(6, 0, 3);
-    const tile = tileOf(6, 1);
-    // Trois affiches : la grande carte de la troisième tient sans défiler au-delà de son besoin.
-    const step = reduceRowHead(INITIAL_ROW_HEAD, { type: "expand", index: 2, tileWidth: tile.width, at: 0 }, line);
-    const scrollX = step.scrollTo ?? 0;
-    expect(INSET + 2 * (line.cardWidth + GAP) - scrollX + tile.width).toBeLessThanOrEqual(1920 - RIGHT + 1);
+    expect(gridLineTurns(line)).toBe(false);
+    const step = reduceGridLine(INITIAL_ROW_HEAD, { type: "expand", index: 1, tileWidth: tileOf(6, 1).width, at: 0 }, line);
+    expect(step.scrollTo).toBeNull();
   });
 });
 
