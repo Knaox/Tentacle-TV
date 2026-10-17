@@ -274,9 +274,12 @@ résultat.
 
 - **GR-1** Clés `grid:<i>` ; une SECTION par ligne (`grid:line:<n>`), six
   colonnes.
-- **GR-2** Révélation : la PREMIÈRE ligne en mode `start` (la page remonte
-  tout en haut, titre et filtres — y compris au bout d'une remontée maintenue
-  ou d'un glisser vif), les autres `nearest`.
+- **GR-2** Révélation (18/10) : la grille défile SOUS la zone fixe de
+  l'aperçu (`BelowZonePage`, tv-core `focus/previewZoneLayout.ts`) ; CHAQUE
+  ligne, la première comme la dernière, en mode `anchor` (`BELOW_ZONE_REVEAL`)
+  — toujours au même endroit, juste sous la zone, y compris au bout d'une
+  remontée maintenue ou d'un glisser vif ; l'en-tête (titre, filtres, Retour)
+  en mode `start` (la page remonte tout en haut).
 - **GR-3** Bords : la dernière ligne n'a rien sous elle (BAS ne fait rien) ;
   une colonne que la dernière ligne n'atteint pas descend sur sa dernière
   affiche (règle T3) ; à droite d'une ligne, rien ; à gauche, le rail (ponts,
@@ -289,13 +292,12 @@ résultat.
 - **GR-5** OK → la fiche (`useOpenDetail` : remplace sur la page d'une
   personne, s'empile ailleurs) ; appui maintenu → le panneau d'affiche (T6) ;
   focus → la lumière du fond (l'affiche focalisée, sinon la première).
-- **GR-6** Aperçu au focus (18/10, remplace la ligne qui tournait du 17/10) :
-  chaque ligne est FIXE (`GridLine`) — ni défilement, ni rotation, ni tête
-  collée au rail, ni reprises. GAUCHE / DROITE ne déplacent que le focus ;
-  l'affiche focalisée reste dans sa colonne et sa grande carte s'adapte à la
-  colonne (`trailerPreviewAnchor`) ; sa légende sous la grande carte ; si la
-  ligne grandit, les lignes du dessous descendent d'autant (`gridLinePush`).
-  Aucune ligne n'a à revenir à sa première colonne.
+- **GR-6** Aperçu au focus (18/10, remplace la ligne qui tournait du 17/10
+  puis la grande carte) : il se joue dans la ZONE FIXE en haut de l'écran,
+  jamais dans la grille. Chaque ligne est FIXE (`GridLine`) — ni défilement, ni
+  rotation, ni tête collée au rail, ni reprises, rien qui grandit. GAUCHE /
+  DROITE ne déplacent que le focus ; aucune ligne n'a à revenir à sa première
+  colonne.
 - **GR-7** HAUT / BAS gardent la colonne : au focus d'une affiche, les lignes
   voisines déclarent leur entrée (`tvEntry`) à sa colonne — la dernière ligne
   plus courte, par sa dernière affiche (`gridLineEntries`).
@@ -755,8 +757,8 @@ compter une attente dont la durée vient de tv-core. Le câblage
 | FI-10 | `nav/screenTargets` (`detailPlayPress`) ; OK sur une carte : `cards/cardPress` (T3) ; l'appui maintenu : `cards/cardHold` (T6) ; la suite de fiches : `nav/detailChain` (T4) | `useDetailActions` |
 | RE-1 à RE-8, RE-11 | `search/searchFocus` (clés, entrée, première touche après Menu, premier résultat, meilleur résultat, recherches récentes), `search/searchTopExit` (RE-3 bis), `search/searchSubmitFlow` (`searchSubmitStep`), `search/searchShelfReturn` (`shelfReturnStep`, `SEARCH_BAR_CLAIMS_MS`) | `screens/search.ts` (`useSearchGroups`, `useSearchKeyboard`, `useSearchTopExit`) |
 | RE-10 | `cards/cardPress`, `cards/cardHold` | `SearchRedesign` |
-| PA-1 à PA-3, GR-1 à GR-4, GR-7, CO-1 | `focus/gridFocus` | `screens/browse.ts`, `focus/gridLineEntries.ts` ; la vue `PosterGrid` lit `gridLineReveal`, `GRID_END_REACHED_SCREENS` |
-| GR-6 | `cards/trailerPreviewGrid`, `cards/trailerPreviewAnchor` | `GridLine`, `gridLinePush` |
+| PA-1 à PA-3, GR-1 à GR-4, GR-7, CO-1 | `focus/gridFocus`, `focus/previewZoneLayout` | `screens/browse.ts`, `focus/gridLineEntries.ts` ; la vue `PosterGrid` lit `BELOW_ZONE_REVEAL`, `belowZoneBottomRoom`, `GRID_END_REACHED_SCREENS` |
+| GR-6 | `cards/trailerPreviewGrid`, `focus/previewZoneLayout` | `GridLine`, `BelowZonePage` |
 | GR-5 | `cards/cardPress`, `cards/cardHold` | `usePosterGrid` |
 | CO-3, CO-4 | `focus/collectionFilters` ; la barre et les listes : `focus/libraryFocus` | `screens/library.ts` |
 | BI-1 à BI-11 | `focus/libraryFocus` (dont `filterSheetEntryKey`, `filterSheetFocusKeys`, `libraryPrefetchTarget`, `LIBRARY_PREFETCH_DWELL_MS`) ; l'entrée d'une liste en Modal : `panels/choiceEntry` (T6) | `screens/library.ts` |

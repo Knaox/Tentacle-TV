@@ -688,10 +688,12 @@ jamais un MP4 doublé automatiquement. La version DITE est celle qu'on entend
 (`playedTrailerVersion`, shared ; `audio` de `/resolve` et de l'aperçu) : une
 « VF » doublée par IA est une VO, ni étiquetée ni classée VF. Seul le lecteur
 officiel de YouTube (repli quand l'extraction est refusée) choisit encore seul.
-**Aperçu au focus (Apple TV, Android TV)** : la carte de rangée focalisée
-demande l'aperçu (`trailers.preview`, la machine partagée du bureau) et GRANDIT
-dans sa cellule à la première image, au DÉLAI choisi au plus tôt — jamais un
-calque par-dessus les voisines. **Le délai** (du début du survol ou du focus à
+**Aperçu au focus (Apple TV, Android TV)** : la carte focalisée (rangée de
+l'Accueil, de « Pour vous », ligne de grille) demande l'aperçu (`trailers.preview`,
+la machine partagée du bureau), qui se joue TOUJOURS AU MÊME ENDROIT, dans une ZONE
+FIXE en haut de l'écran, façon Netflix (18/10, décision qui remplace la carte qui
+grandissait : plus de grande carte, de tête de rangée, de butée, de ligne qui tourne,
+de poussage). **Le délai** (du début du survol ou du focus à
 la première image) est le MÊME partout — web, bureau, Apple TV, Android TV,
 titres de Vigie compris (pont : `trailerPreview.delayMs`) — et se règle par
 l'UTILISATEUR sur son appareil (800 ms par défaut ; 0,5 · 0,8 · 1,2 · 2 s dans
@@ -704,54 +706,46 @@ capacité : fonction purement client. Pendant l'aperçu, Lecture/Pause le met
 VRAIMENT en pause, et MAINTENUE coupe le son de l'aperçu seul (le réglage « Son
 des aperçus ») — tv-core `cards/previewRemote.ts` ; sur Android le maintien est
 reconstruit par `createAndroidTvReader` ; l'indice sous la carte :
-`CardPreviewHint`. Elle part de la carte TELLE QU'ELLE SE DESSINE au focus
-(agrandie, soulevée : `trailerPreviewTileFrom`), la carte s'effaçant dessous, et
-sa taille suit le réglage « Taille des cartes ». La carte dont l'aperçu DÉMARRE
-passe EN TÊTE de sa rangée, à la place de la première — rien ne bouge avant
-(tv-core `cards/trailerPreviewRowHead.ts`, règle datée : où défiler, la place
-posée au bout AVANT de défiler, le départ du focus) ; la carte y glisse sur le
-ressort de sa grande carte (`rows/rowGlide.ts`). En bout de rangée, la BUTÉE (la
-grande carte finit à la marge droite, elle grandit vers la gauche) ; au départ du
-focus, la rangée RESTE où elle est (choix de Damien, 16/10) — tant qu'elle est à
-l'écran : sortie de l'écran, elle revient au début comme toute rangée de l'accueil
-(tv-core `focus/rowRewind.ts`), et Retour l'y remet D'UN COUP, le focus aussitôt
-sur sa première carte (`rowRewind.back`, jamais le défilement de tvOS : ~1,4 s).
+`CardPreviewHint`.
+**La page sous la zone** (tv-core `focus/previewZoneLayout.ts`, cadre
+`redesign/rows/BelowZonePage.tsx`) : la zone occupe le haut (`PREVIEW_ZONE_HEIGHT`,
+432 : 40 %), la page défile DESSOUS, dans sa fenêtre (648), jamais sous la zone — tvOS
+ne focalise pas un élément recouvert. Rangées et lignes sont FIXES : seul le focus
+bouge, rien ne grandit, aucune remise en page au changement de focus. La section
+focalisée se pose TOUJOURS au même endroit, juste sous la zone (`BELOW_ZONE_REVEAL` :
+mode `anchor` de `FocusSection`, natif sur les deux plateformes), la première comme la
+dernière (marge du bas : `belowZoneBottomRoom`, mesurée sur la dernière section) ; le
+héros et l'en-tête d'une grille ramènent la page en haut. Seule une carte d'une page à
+zone demande et prépare l'aperçu (`useInPreviewZone` ; `useCardPreviewFocus`, la seule
+couture de la carte) : la recherche et la fiche n'en demandent pas. Une rangée sortie de
+l'écran revient au début comme toute rangée de l'accueil (tv-core `focus/rowRewind.ts`,
+ses voisines immédiates gardées), et Retour l'y remet D'UN COUP, le focus aussitôt sur
+sa première carte (`rowRewind.back`, jamais le défilement de tvOS : ~1,4 s).
 Sur Apple TV, une rangée de l'accueil et de « Pour vous » garde la carte focalisée
 au retrait de la rangée, jamais sous le rail (`FocusSection rowReveal` →
 `TentacleRowScroller.m`, qui corrige la cible de tvOS par tv-core `rowRevealOffset`,
 la règle d'Android).
-Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir), chaque LIGNE est FIXE
-(18/10, décision de Damien qui annule la ligne qui tournait du 17/10 : `GridLine`, tv-core
-`cards/trailerPreviewGrid.ts`) : elle ne défile pas, ne tourne pas, aucune tête collée au
-rail, aucune reprise. GAUCHE/DROITE ne déplacent que le focus, l'affiche focalisée reste
-dans sa colonne, et sa grande carte s'adapte à la colonne (tv-core
-`cards/trailerPreviewAnchor.ts`) ; HAUT/BAS gardent la COLONNE (tv-core `gridLineEntries` :
-entrée `tvEntry` des lignes voisines). La ligne garde sa hauteur de repos et, si la grande
-carte et son pied la dépassent, les lignes du dessous descendent d'autant (`gridLinePush` —
-la liste recyclée ne relaie rien, jamais vers le haut) ; la marge du bas de la grille fait
-la place d'une dernière ligne agrandie.
-La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
-se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
-**L'aperçu ne gêne jamais la navigation** (16/10) : la CIBLE d'une carte qui peut
-grandir garde la largeur ET la hauteur de la carte au repos (`CardShell`,
-`TargetBox`) — HAUT et BAS partent du centre de la carte à sa taille normale, jamais
-de la grande carte ; une cible qui grandissait laissait le guide natif de BAS DANS la
-grande carte, et tvOS choisissait seul, sans la règle des sections (17/10) ; le focus parti, la
-grande carte se replie dans le rendu même du flou ; la vidéo finie de sortir reste
-GARÉE, en pause, et son lecteur ne se démonte qu'au calme de la télécommande
+Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir, collection), chaque LIGNE
+est FIXE (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) : ni défilement, ni
+rotation, ni tête collée au rail, ni reprise ; GAUCHE/DROITE ne déplacent que le focus,
+HAUT/BAS gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes
+voisines). Les titres autour du focus se préparent d'avance (`trailers.previewWarm`,
+tv-core `trailerPreviewWarmTv.ts`).
+**L'aperçu ne gêne jamais la navigation** : la cellule d'une carte garde TOUJOURS sa
+taille de repos (`CardShell` : plus de cellule qui s'élargit, de cible gardée à part ni
+de place du pied) — HAUT et BAS partent du centre de la carte ; la vidéo finie de sortir
+reste GARÉE, en pause, et son lecteur ne se démonte qu'au calme de la télécommande
 (400 ms sans intention) ou quand un autre aperçu prend la place (tv-core
 `cards/trailerPreviewPark.ts`) — jamais au milieu d'une rafale de flèches ; la
 session d'aperçu d'une carte ne se monte qu'après 250 ms de focus tenu, datée de
-l'arrivée du focus (`trailerPreviewDwell.ts`). Pendant l'aperçu, la carte fait la
-place de son pied sous la légende (`CardShell` `expansion.room`) : « Maintenir
-OK » et Lecture/Pause restent visibles, dans la zone sûre. Android : l'aperçu a
+l'arrivée du focus (`trailerPreviewDwell.ts`). Android : l'aperçu a
 son PROPRE lecteur natif (`TentaclePreviewVideo`, `exoplayer/PreviewVideoView.kt` :
 la PlayerView sans contrôleur, une TextureView, aucun focus possible, UN ExoPlayer
 partagé par tous les aperçus, `PreviewPlayerPool`, relâché après 60 s sans aperçu) — celle de
 react-native-video gonflait un contrôleur à chaque aperçu (fil UI bloqué au
 départ de l'aperçu suivant) dont le bouton volait le focus de la carte ; l'élément
 vidéo passe par l'adaptateur `platform/tvos/player/previewVideoElement`.
-Rythme et tailles : tv-core `cards/trailerPreviewTv.ts`, `trailerPreviewTile.ts` ;
+Rythme : tv-core `cards/trailerPreviewTv.ts` ;
 vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
 `redesignWiring/trailerPreview/` (une session, la carte focalisée seulement) ;
 banc : scènes `apercu/*` du banc UI.
