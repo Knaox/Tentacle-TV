@@ -66,6 +66,47 @@
           "why": "R2 inchangée : ni à l'aplomb de la puce, ni première carte — la section du dessus"
         }
       ]
+    },
+    {
+      "id": "foryou-puce-pas-par-l-aplomb",
+      "title": "« Pour vous » : une carte passée sous la puce ne la rejoint pas — HAUT va au héros",
+      "why": "Relevé du testeur (17/10) : la puce, tête de l'étagère, ne se rejoint que depuis la 1re carte ; la 2e carte (sous la puce) va au héros.",
+      "start": {
+        "fixtures": [
+          "focus/foryou-tendances"
+        ],
+        "keys": [
+          "left",
+          "wait:0.8",
+          "down",
+          "wait:0.6",
+          "select",
+          "wait:2"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "expect": {
+            "focus": "trendingNow:0"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "trendingNow:1"
+          },
+          "why": "La 2e carte, sous la puce"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "hero:list"
+          },
+          "why": "Ni la 1re carte ni l'aplomb : la tête n'est atteinte que depuis la 1re carte"
+        }
+      ]
     }
   ]
 }

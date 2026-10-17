@@ -1,0 +1,73 @@
+{
+  "domain": "focus",
+  "reference": "HEAD",
+  "defaults": {
+    "settleMs": 900
+  },
+  "scenarios": [
+    {
+      "id": "apercu-garde-la-rangee-du-dessus",
+      "title": "L'aperçu de la rangée du dessous ne remet pas au début la rangée d'où l'on vient",
+      "why": "Relevé du testeur (17/10) : Prochains épisodes défilée (One Piece en tête), BAS vers « Pour vous », son aperçu pousse la page — HAUT retombait sur la 1re carte de Prochains épisodes au lieu de One Piece.",
+      "start": {
+        "fixtures": [
+          "focus/apercus"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "wait:0.6",
+            "down"
+          ],
+          "expect": {
+            "focus": "nextUp:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right"
+          ],
+          "expect": {
+            "focus": "nextUp:4"
+          }
+        },
+        {
+          "do": "wait:3.5",
+          "why": "L'aperçu de la carte : elle passe en tête"
+        },
+        {
+          "do": "down",
+          "why": "« Pour vous », au plus proche"
+        },
+        {
+          "do": "wait:3.5",
+          "why": "Son aperçu pousse la page : Prochains épisodes sort par le haut"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "nextUp:4"
+          },
+          "why": "La rangée tenue : la carte d'où l'on venait"
+        }
+      ]
+    }
+  ]
+}
