@@ -1,15 +1,17 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
-import Animated, { useAnimatedRef } from "react-native-reanimated";
+import Animated, { useAnimatedRef, useReducedMotion, useSharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { gridLineKey, gridLineReveal } from "@tentacle-tv/tv-core";
+import { gridLineKey, gridLineReprises, gridLineReveal, gridLineTurns, reduceGridLine } from "@tentacle-tv/tv-core";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardFocusWatch } from "../../cards/CardPreviewTile";
 import type { CardModel } from "../../cards/cardTypes";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { motionTo } from "../../motion/motion";
 import { useRowPreviewRoom } from "../../rows/rowPreviewRoom";
 import type { GridMotion } from "./gridMotion";
 import { useGridLineDrop, type GridLinePush } from "./gridLinePush";
+import { GridReprise } from "./GridReprise";
 
 /**
  * Une LIGNE de grille, devenue un CARROUSEL de l'accueil sans titre (tv-core
@@ -17,9 +19,12 @@ import { useGridLineDrop, type GridLinePush } from "./gridLinePush";
  * l'écran à l'autre, ses affiches à leurs colonnes au repos. Quand l'aperçu
  * d'une affiche démarre, sa cellule DEVIENT la grande carte (`MediaCard`
  * `previewable` : la légende et le pied passent dessous) et la ligne la met
- * EN TÊTE, collée à la navigation, ou en butée au bout — la place, le
- * défilement et le départ du focus sont ceux des rangées (`rowPreviewRoom`,
- * tv-core `trailerPreviewRowHead.ts`), sans rien de recopié.
+ * EN TÊTE, collée à la navigation — la ligne TOURNE : la place au bout est
+ * remplie par les REPRISES, le début de la même ligne, atténué et non
+ * focalisable (`GridReprise`). La dernière affiche reste en butée. Le
+ * défilement, la place et le départ du focus sont ceux des rangées
+ * (`rowPreviewRoom`), menés par la règle des grilles (tv-core
+ * `trailerPreviewGridLine.ts`, qui délègue à `trailerPreviewRowHead.ts`).
  *
  * La ligne garde sa hauteur de repos (`height`) : ce que la grande carte gagne
  * déborde vers le bas, et les lignes du dessous descendent d'autant
@@ -29,6 +34,9 @@ import { useGridLineDrop, type GridLinePush } from "./gridLinePush";
  * Recyclée (FlashList), la ligne qui reçoit d'autres affiches revient à sa
  * première colonne, sans animation, et oublie la place posée au bout.
  */
+
+/** La largeur de la scène. */
+const SCREEN_WIDTH = 1920;
 
 /** Comment la page montre une ligne (`gridLineReveal`, tv-core). Des objets stables. */
 const LINE_REVEALS: Record<"start" | "nearest", FocusSectionReveal> = { start: { mode: "start" }, nearest: { mode: "nearest" } };
@@ -63,7 +71,14 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollX.current = event.nativeEvent.contentOffset.x;
   }, []);
-  const room = useRowPreviewRoom({ track, scrollX, cardWidth: width, inset: TV_STAGE.contentLeft, cardCount: line.cards.length });
+  const cardCount = line.cards.length;
+  const room = useRowPreviewRoom({ track, scrollX, cardWidth: width, inset: TV_STAGE.contentLeft, cardCount, reduce: reduceGridLine });
+  // Les reprises paraissent avec une grande carte en tête, jamais avec celle de la dernière (en butée).
+  const reduced = useReducedMotion();
+  const repriseShown = useSharedValue(0);
+  const turns = gridLineTurns({ cardCount, cardWidth: width, gap: TV_STAGE.row.gap, inset: TV_STAGE.contentLeft, viewportWidth: SCREEN_WIDTH, rightMargin: TV_STAGE.safe.x });
+  const pitch = width + TV_STAGE.row.gap;
+  const reprises = useMemo(() => (turns ? gridLineReprises(room.reserve, cardCount, pitch) : []), [turns, room.reserve, cardCount, pitch]);
   const { onRewind, onCardFocus, onPreviewExpand, onPreviewCollapse } = room;
   // Recyclée pour une autre ligne : elle revient à sa première colonne.
   const shown = useRef(index);
@@ -72,14 +87,16 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
     shown.current = index;
     track.current?.scrollTo({ x: 0, y: 0, animated: false });
     onRewind();
-  }, [index, track, onRewind]);
+    repriseShown.value = 0;
+  }, [index, track, onRewind, repriseShown]);
   const watch = useCallback<CardFocusWatch>((onOutrun) => motion.watchFocus(stride, onOutrun), [motion, stride]);
   const onExpand = useCallback(
     (at: number, tileWidth: number, grow: number) => {
       onPreviewExpand(at, tileWidth, grow);
       push.expand(index, grow);
+      repriseShown.value = motionTo(turns && at < cardCount - 1 ? 1 : 0, "unfold", reduced);
     },
-    [onPreviewExpand, push, index],
+    [onPreviewExpand, push, index, repriseShown, turns, cardCount, reduced],
   );
   const onCollapse = useCallback(
     (at: number) => {
@@ -89,7 +106,9 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
     [onPreviewCollapse, push, index],
   );
   const drop = useGridLineDrop(push, index);
-  const trackContent = useMemo(() => [styles.content, { paddingRight: TV_STAGE.safe.x + room.reserve }], [room.reserve]);
+  // Les reprises occupent la place au bout : seul ce qui en dépasse reste en retrait.
+  const trailing = Math.max(0, room.reserve - reprises.length * pitch);
+  const trackContent = useMemo(() => [styles.content, { paddingRight: TV_STAGE.safe.x + trailing }], [trailing]);
   return (
     <Animated.View style={[styles.line, drop]}>
       <FocusSection focusKey={gridLineKey(focusPrefix, index)} reveal={LINE_REVEALS[gridLineReveal(index)]}>
@@ -120,6 +139,9 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
                 onCollapse={onCollapse}
                 {...handlers}
               />
+            ))}
+            {reprises.map((column, i) => (
+              <GridReprise key={`r${i}`} card={line.cards[column]} width={width} shown={repriseShown} />
             ))}
           </ScrollView>
         </View>
