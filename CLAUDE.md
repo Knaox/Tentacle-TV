@@ -720,17 +720,16 @@ Sur Apple TV, une rangée de l'accueil et de « Pour vous » garde la carte foca
 au retrait de la rangée, jamais sous le rail (`FocusSection rowReveal` →
 `TentacleRowScroller.m`, qui corrige la cible de tvOS par tv-core `rowRevealOffset`,
 la règle d'Android).
-Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir), chaque LIGNE est ce
-carrousel, sans titre, qui TOURNE (17/10, « option C » de Damien : `GridCarouselLine`,
-tv-core `cards/trailerPreviewGridLine.ts`, qui délègue aux règles des rangées) : TOUTE
-affiche passe en tête collée au rail, la place au bout remplie par le début de la même
-ligne (reprises atténuées ↺, non focalisables, `GridReprise`) — jamais de vide ; seule la
-dernière reste en butée ; la légende et le pied SOUS la grande carte ; la ligne garde sa hauteur de repos et les lignes du
-dessous descendent d'autant (`gridLinePush` — la liste recyclée ne relaie rien) ; le
-focus parti, une ligne qui tient à l'écran revient à sa première colonne, et HAUT/BAS
-gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes voisines). Une
-affiche sortie sous le rail s'atténue (`gridLineUnderRailFade`, jamais transparente :
-GAUCHE y mène) ; la marge du bas de la grille fait la place d'une dernière ligne agrandie.
+Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir), chaque LIGNE est FIXE
+(18/10, décision de Damien qui annule la ligne qui tournait du 17/10 : `GridLine`, tv-core
+`cards/trailerPreviewGrid.ts`) : elle ne défile pas, ne tourne pas, aucune tête collée au
+rail, aucune reprise. GAUCHE/DROITE ne déplacent que le focus, l'affiche focalisée reste
+dans sa colonne, et sa grande carte s'adapte à la colonne (tv-core
+`cards/trailerPreviewAnchor.ts`) ; HAUT/BAS gardent la COLONNE (tv-core `gridLineEntries` :
+entrée `tvEntry` des lignes voisines). La ligne garde sa hauteur de repos et, si la grande
+carte et son pied la dépassent, les lignes du dessous descendent d'autant (`gridLinePush` —
+la liste recyclée ne relaie rien, jamais vers le haut) ; la marge du bas de la grille fait
+la place d'une dernière ligne agrandie.
 La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
 se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** (16/10) : la CIBLE d'une carte qui peut
