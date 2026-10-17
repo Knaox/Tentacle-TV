@@ -1,0 +1,71 @@
+{
+  "domain": "focus",
+  "reference": "HEAD",
+  "defaults": {
+    "settleMs": 900
+  },
+  "scenarios": [
+    {
+      "id": "foryou-puce-depuis-la-premiere-carte",
+      "title": "« Pour vous » : HAUT depuis la 1re carte de la 1re étagère mène à la puce du filtre, même hors de l'aplomb",
+      "why": "Décision de Damien (17/10) : « Tendances actuelles » en tête, son titre long décale la puce hors de l'aplomb de la 1re carte — HAUT partait au héros. Depuis les autres cartes, la règle R2 (l'aplomb, sinon la section du dessus) ne change pas.",
+      "start": {
+        "fixtures": [
+          "focus/foryou-tendances"
+        ],
+        "keys": [
+          "left",
+          "wait:0.8",
+          "down",
+          "wait:0.6",
+          "select",
+          "wait:2"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "expect": {
+            "focus": "trendingNow:0"
+          },
+          "why": "La 1re étagère, au plus proche du bouton du héros : sa première carte"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "filter:remove"
+          },
+          "why": "La tête déclarée de l'étagère, hors de l'aplomb de la 1re carte"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "trendingNow:1"
+          },
+          "why": "La carte sous la puce, au plus proche"
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 600,
+          "expect": {
+            "focus": "trendingNow:4"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "hero:list"
+          },
+          "why": "R2 inchangée : ni à l'aplomb de la puce, ni première carte — la section du dessus"
+        }
+      ]
+    }
+  ]
+}

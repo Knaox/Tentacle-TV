@@ -59,4 +59,12 @@ export default {
     description: "« Pour vous » : filtre Netflix · Disney+ (pastille sur la 1re étagère)",
     apply: recoFilter,
   },
+  "foryou-tendances": {
+    description: "« Pour vous » : filtre Netflix · Disney+, la 1re étagère devient « Tendances actuelles » (titre long : la puce n'est plus à l'aplomb de la 1re carte)",
+    apply: (data) => {
+      recoFilter(data);
+      const rows = data.snapshot.extras?.recoState?.rows;
+      if (rows?.[0]) rows[0].key = "trendingNow";
+    },
+  },
 };
