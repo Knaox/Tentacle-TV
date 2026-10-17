@@ -3,23 +3,23 @@
   "domain": "focus",
   "suite": "rangees-gauche",
   "reference": {
-    "sha": "ab60faff8e5158977078c0a467dd3a00a1d54a2c",
-    "label": "référence ab60faff8"
+    "sha": "32e442ca062bf9262f8c15ddfa0640c4ddccc00c",
+    "label": "référence 32e442ca0"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
   "native": "23a559a5a8f82671",
   "device": {
     "kind": "simulateur",
-    "name": "lot1017-a2",
+    "name": "lot1017-a2b",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-17T09:40:33.816Z",
+  "recordedAt": "2026-10-17T12:30:07.251Z",
   "scenarios": {
     "rangee-gauche-retrait": {
       "hash": "aaf959b46a10",
-      "durationMs": 38768,
+      "durationMs": 31837,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -182,7 +182,7 @@
     },
     "apercu-retour-premiere-carte": {
       "hash": "bab4a168e617",
-      "durationMs": 29813,
+      "durationMs": 29028,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -215,7 +215,7 @@
             176,
             271,
             494,
-            729
+            351
           ],
           "groups": [
             "section:resume"
@@ -250,7 +250,7 @@
             176,
             230,
             494,
-            729
+            351
           ],
           "groups": [
             "section:resume"
@@ -273,7 +273,7 @@
             176,
             230,
             494,
-            729
+            351
           ],
           "groups": [
             "section:resume"
@@ -298,7 +298,7 @@
             176,
             230,
             494,
-            729
+            351
           ],
           "groups": [
             "section:resume"

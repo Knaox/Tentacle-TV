@@ -17,6 +17,15 @@
  *    le « gros lag » relevé par Damien le 17/10 — Retour est un geste de
  *    retour, pas de parcours : il est instantané.
  *
+ * Le défilement d'un APERÇU ne fait sortir aucune rangée (`previewReveal`,
+ * 17/10, relevé du testeur) : la grande carte d'aperçu grandit vers le bas et
+ * pousse la page (`trailerPreviewRevealOffset`) — la rangée du dessus, d'où
+ * l'on vient, sortait alors de l'écran et revenait au début ; HAUT tombait sur
+ * sa première carte au lieu de la colonne d'où l'on venait. Les rangées à
+ * l'écran au moment où la page se pousse sont TENUES tant que le focus reste
+ * dans la rangée de l'aperçu ; il en part, elles relèvent de nouveau de la
+ * règle 2 (au prochain défilement).
+ *
  * Une rangée est DÉPLACÉE dès qu'une carte autre que la première a pris le
  * focus — c'est le focus qui fait défiler un carrousel de téléviseur ; elle
  * ne l'est plus quand elle revient au début. Seules les rangées DÉCLARÉES en
@@ -113,6 +122,11 @@ export interface RowRewind {
   /** La page défile : les rangées déplacées sorties de l'écran, à remettre au début MAINTENANT. */
   scroll(view: PageView): string[];
   /**
+   * La page va défiler pour montrer la grande carte d'un aperçu : les rangées
+   * à l'écran sont tenues tant que le focus reste dans la rangée de l'aperçu.
+   */
+  previewReveal(): void;
+  /**
    * On change de page par le rail : les rangées à remettre au début
    * maintenant. `visible` : la page était à l'écran ; `remembered` : la clé
    * que la plateforme lui rendra au retour.
@@ -142,6 +156,10 @@ export function createRowRewind(): RowRewind {
   const pending = new Set<string>();
   let focused: string | null = null;
   let left = false;
+  let lastView: PageView | null = null;
+  /** Les rangées tenues par le défilement d'un aperçu, et la rangée de cet aperçu. */
+  const held = new Set<string>();
+  let heldFor: string | null = null;
 
   const take = (selected: Iterable<string>): string[] => {
     const out = [...selected];
@@ -174,17 +192,34 @@ export function createRowRewind(): RowRewind {
       focused = focusKey;
       const card = rowCardOf(focusKey, rows);
       if (card && card.index > 0) moved.add(card.row);
+      // Le focus quitte la rangée de l'aperçu : plus rien n'est tenu.
+      if (heldFor !== null && card?.row !== heldFor) {
+        held.clear();
+        heldFor = null;
+      }
     },
     scroll(view) {
+      lastView = view;
       const holder = rowCardOf(focused, rows)?.row ?? null;
       const out: string[] = [];
       for (const row of moved) {
         const box = boxes.get(row);
-        // Jamais la rangée qui porte le focus ; jamais une rangée pas encore mesurée.
-        if (row === holder || pending.has(row) || !box || rowOnScreen(box, view)) continue;
+        // Jamais la rangée qui porte le focus, ni une tenue par un aperçu ; jamais une rangée pas encore mesurée.
+        if (row === holder || held.has(row) || pending.has(row) || !box || rowOnScreen(box, view)) continue;
         out.push(row);
       }
       return take(out);
+    },
+    previewReveal() {
+      const holder = rowCardOf(focused, rows)?.row ?? null;
+      if (holder === null) return;
+      if (heldFor !== holder) held.clear();
+      heldFor = holder;
+      for (const row of rows) {
+        const box = boxes.get(row);
+        // Sans défilement relevé, la page est en haut : ce qui y paraît compte.
+        if (box && rowOnScreen(box, lastView ?? { offset: 0, height: Number.POSITIVE_INFINITY })) held.add(row);
+      }
     },
     leave({ visible, remembered }) {
       left = true;

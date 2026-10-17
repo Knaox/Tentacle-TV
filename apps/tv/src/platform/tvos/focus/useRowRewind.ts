@@ -72,6 +72,7 @@ export function useRowRewind(focus: FocusStore, { enabled, remembered }: RowRewi
         },
         layout: (rowKey, top, height) => model.layout(rowKey, { top, height }),
         scroll: (offset, height) => rewind(model.scroll({ offset, height })),
+        previewReveal: () => model.previewReveal(),
       },
       startOf: model.startOf,
       resume(key) {

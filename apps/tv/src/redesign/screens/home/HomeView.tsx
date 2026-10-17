@@ -123,7 +123,7 @@ export const HomeView = memo(function HomeView({
   const heroVisible = useRef(true);
   const rewind = useRowRewindPort();
   // La grande carte d'aperçu qui grandit vers le bas : la page la montre entière.
-  const { reveal, track: trackPreviewScroll } = usePagePreviewReveal(scrollRef);
+  const { reveal, track: trackPreviewScroll } = usePagePreviewReveal(scrollRef, rewind?.previewReveal);
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
