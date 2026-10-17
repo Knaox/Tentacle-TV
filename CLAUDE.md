@@ -721,12 +721,16 @@ ligne (reprises atténuées ↺, non focalisables, `GridReprise`) — jamais de 
 dernière reste en butée ; la légende et le pied SOUS la grande carte ; la ligne garde sa hauteur de repos et les lignes du
 dessous descendent d'autant (`gridLinePush` — la liste recyclée ne relaie rien) ; le
 focus parti, une ligne qui tient à l'écran revient à sa première colonne, et HAUT/BAS
-gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes voisines).
+gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes voisines). Une
+affiche sortie sous le rail s'atténue (`gridLineUnderRailFade`, jamais transparente :
+GAUCHE y mène) ; la marge du bas de la grille fait la place d'une dernière ligne agrandie.
 La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
 se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** (16/10) : la CIBLE d'une carte qui peut
-grandir garde la largeur de la carte (`CardShell`) — HAUT et BAS partent du centre
-de la carte à sa taille normale, jamais de la grande carte ; le focus parti, la
+grandir garde la largeur ET la hauteur de la carte au repos (`CardShell`,
+`TargetBox`) — HAUT et BAS partent du centre de la carte à sa taille normale, jamais
+de la grande carte ; une cible qui grandissait laissait le guide natif de BAS DANS la
+grande carte, et tvOS choisissait seul, sans la règle des sections (17/10) ; le focus parti, la
 grande carte se replie dans le rendu même du flou ; la vidéo finie de sortir reste
 GARÉE, en pause, et son lecteur ne se démonte qu'au calme de la télécommande
 (400 ms sans intention) ou quand un autre aperçu prend la place (tv-core
