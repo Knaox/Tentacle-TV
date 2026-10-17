@@ -102,7 +102,11 @@ geste). Constantes : `STACK_SLACK` 24, `SAME_EDGE` 8, `FRONTIER_SLACK` 2.
 - **R2 — HAUT dans la section quittée** : seulement à l'APLOMB (chevauchement
   horizontal > 0) — la pastille d'un en-tête se rejoint depuis la carte du
   dessous, jamais une étape depuis le bout d'une rangée. Une `list` n'a rien
-  qui la coiffe : HAUT y fait comme BAS.
+  qui la coiffe : HAUT y fait comme BAS. Exception (décision du 17/10) : la
+  TÊTE déclarée d'une section (`tvHead`, `useSectionHead` — la puce du filtre
+  de la 1re étagère de « Pour vous ») est atteinte par HAUT depuis la PREMIÈRE
+  carte de sa ligne, à l'aplomb ou non (tv-core `headFromFirst`) : un titre
+  long (« Tendances actuelles ») la décalait, et HAUT partait au héros.
 - **R3 — Sections candidates** : au-delà de la section quittée (tolérance
   `min(24, plus petite hauteur / 4)`), qui partagent une abscisse avec elle
   (une autre colonne n'est jamais visée), avec au moins un élément
