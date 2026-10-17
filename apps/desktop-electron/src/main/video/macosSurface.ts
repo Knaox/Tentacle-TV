@@ -21,7 +21,7 @@ import { setPlayerSurfaceTransparent } from "../window";
 import { neverThrow, trace } from "./native";
 import { fromHandle, msg, type Rect } from "./objc";
 import { windowGone, watchMpvWindow, mpvLeftovers } from "./macosWindowWatch";
-import { attachBelowPage, moveBelow, reorderBelowPage } from "./macosChildWindow";
+import { attachBelowPage, moveBelow, releaseVideoWindow, reorderBelowPage } from "./macosChildWindow";
 import { SETTLE_MS, createSeam } from "./macosSeam";
 import { watchEdr, forgetEdr } from "./macosEdr";
 import { videoLevel, videoTarget, applyFrame } from "./macosFrame";
@@ -114,6 +114,7 @@ export class MacosSurface implements VideoSurface {
 
   /** Pose la fenêtre trouvée sous la page — voir `macosChildWindow.ts`. */
   private connect(): void {
+    if (this.host.isDestroyed()) return;
     // Trace conservée : seule façon de distinguer « mpv n'a pas créé de fenêtre »
     // de « elle existe et nous l'avons attachée ». Sans elle, un écran noir ne se
     // diagnostique plus qu'en instrumentant à la main.
@@ -149,7 +150,7 @@ export class MacosSurface implements VideoSurface {
 
   /** Remet la vidéo sous la page — voir `macosChildWindow.ts`. */
   private reattach(): void {
-    if (this.mpvWindow === null) return;
+    if (this.mpvWindow === null || this.host.isDestroyed()) return;
     neverThrow("reattachement de la fenetre video", () => {
       reorderBelowPage(this.parentWindow(), this.mpvWindow);
       // `poserCadre` et NON `align` : `align` vérifie l'ordre et rappellerait
@@ -192,6 +193,11 @@ export class MacosSurface implements VideoSurface {
   /** Le PiP s'ouvre ou se ferme : la vidéo change de parent, mpv n'en sait rien. */
   private moveTo(from: unknown, to: unknown): void {
     if (this.mpvWindow === null) return;
+    // ⚠️ Quitter pendant le PiP : la fenêtre principale peut être DÉTRUITE avant
+    // que le PiP ne se ferme (`closed` → `closePip`). Sa `NSWindow` est libérée,
+    // `this.host` lève « Object has been destroyed » — la boîte d'erreur de la
+    // 1.30.0. La vidéo quitte l'écran et le PiP ; mpv la détruira en partant.
+    if (this.host.isDestroyed()) return this.orphan(from);
     neverThrow("changement de parent de la fenetre video", () => {
       moveBelow(from ?? this.parent, to ?? this.parent, this.mpvWindow);
       applyFrame(this.mpvWindow, this.target(), this.level());
@@ -199,6 +205,14 @@ export class MacosSurface implements VideoSurface {
     trace(`fenetre video ${to === null ? "rendue a la page" : "dans le PiP"} — ${this.geometrie()}`);
     watchEdr(this.mpvWindow, to === null ? "retour du PiP" : "PiP");
     this.seam.schedule();
+  }
+
+  /** Plus de fenêtre principale où revenir : la vidéo quitte l'écran et `from`. */
+  private orphan(from: unknown): void {
+    const window = this.mpvWindow;
+    this.stopWatchdog();
+    neverThrow("retrait de la fenetre video", () => releaseVideoWindow(from, window));
+    trace("fenetre video retiree — fenetre principale detruite");
   }
 
   /** La fenêtre sous laquelle vit la vidéo : le PiP s'il est ouvert, la nôtre sinon. */
@@ -232,6 +246,7 @@ export class MacosSurface implements VideoSurface {
   /** L'état du montage, pour le rapport — voir `macosSurfaceDiag.ts`. */
   geometrie(): string {
     if (this.mpvWindow === null) return "surface non attachee";
+    if (this.host.isDestroyed()) return "fenetre principale detruite";
     return describeMontage(this.host, this.parentWindow(), this.mpvWindow, this.target());
   }
 
@@ -260,23 +275,10 @@ export class MacosSurface implements VideoSurface {
     this.clock.stop();
     forgetEdr();
     if (this.mpvWindow !== null) {
-      neverThrow("detachement de la fenetre video", () => {
-        // ⚠️ HORS DE L'ÉCRAN D'ABORD, et ce n'est pas une précaution de style.
-        //
-        // Cette fenêtre est OPAQUE et NOIRE par construction — c'est elle qui
-        // garantit le noir sous une page transparente (`attacherSousLaPage`).
-        // Détachée de son parent alors qu'elle vit encore, elle ne le suit plus
-        // et ne se recale plus : il reste un rectangle noir grand comme le
-        // moniteur, posé par-dessus l'application.
-        //
-        // L'ordre d'arrêt l'évite déjà — mpv part AVANT le détachement
-        // (`ipc/video.ts`) — mais cette attente est BORNÉE à trois secondes, et
-        // au-delà on détache quand même. `orderOut:` ferme ce cas-là : la
-        // fenêtre quitte l'écran sans être détruite, et mpv la détruira ensuite
-        // comme il l'a toujours fait.
-        msg.orderOut(this.mpvWindow);
-        msg.removeChildWindow(this.parentWindow(), this.mpvWindow);
-      });
+      // Le PiP, s'il tient encore la vidéo ; jamais une fenêtre principale détruite.
+      const parent = this.pip.ns ?? (this.host.isDestroyed() ? null : this.parent);
+      const window = this.mpvWindow;
+      neverThrow("detachement de la fenetre video", () => releaseVideoWindow(parent, window));
       this.mpvWindow = null;
     }
     this.seam.forget();

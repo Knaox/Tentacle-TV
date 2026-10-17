@@ -137,6 +137,9 @@ export class VideoWindow {
     this.pip = this.pipOf(window);
     this.pip?.window.on("resize", this.follow);
     if (!this.mpvHwnd) return;
+    // Quitter pendant le PiP : la fenêtre principale peut être détruite avant
+    // lui. Son HWND est mort — rien n'y revient, la vidéo part avec le PiP.
+    if (this.pip === null && this.host.isDestroyed()) return;
     const to = this.pip?.hwnd ?? this.parent;
     neverThrow("changement de parent de la fenetre video", () => reparent(this.mpvHwnd, to));
     trace(`fenetre video ${this.pip === null ? "rendue a la page" : "dans le PiP"}`);

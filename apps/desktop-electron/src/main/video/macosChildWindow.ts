@@ -145,3 +145,27 @@ export function moveBelow(from: unknown, to: unknown, window: unknown): void {
   if (from !== to) msg.removeChildWindow(from, window);
   msg.addChildWindow(to, window, NSWindowBelow);
 }
+
+/**
+ * Retire la fenêtre de mpv de l'écran, puis de son parent — sans lui en donner
+ * un autre. `parent` à `null` : il n'existe plus, on ne lui envoie rien.
+ *
+ * ⚠️ HORS DE L'ÉCRAN D'ABORD, et ce n'est pas une précaution de style.
+ *
+ * Cette fenêtre est OPAQUE et NOIRE par construction — c'est elle qui garantit
+ * le noir sous une page transparente (`attachBelowPage`). Détachée de son
+ * parent alors qu'elle vit encore, elle ne le suit plus et ne se recale plus :
+ * il reste un rectangle noir grand comme le moniteur, posé par-dessus
+ * l'application.
+ *
+ * L'ordre d'arrêt l'évite déjà — mpv part AVANT le détachement (`ipc/video.ts`)
+ * — mais cette attente est BORNÉE à trois secondes, et au-delà on détache quand
+ * même. `orderOut:` ferme ce cas-là : la fenêtre quitte l'écran sans être
+ * détruite, et mpv la détruira ensuite comme il l'a toujours fait. C'est aussi
+ * le seul geste sûr quand la fenêtre principale est déjà détruite (PiP fermé
+ * APRÈS elle) : sa `NSWindow` est libérée, lui écrire tuerait le processus.
+ */
+export function releaseVideoWindow(parent: unknown, window: unknown): void {
+  msg.orderOut(window);
+  if (parent !== null) msg.removeChildWindow(parent, window);
+}
