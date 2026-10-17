@@ -13,6 +13,7 @@ import { mountProfile } from "../render/mountProfile";
 import { useRowFocus } from "../motion/useRowRecede";
 import { text } from "../theme/tokens";
 import { useCardMetrics } from "../cards/cardSizeMode";
+import { useInPreviewZone } from "./BelowZonePage";
 import { CullingTrack, NATIVE_RECEDE } from "./CullingTrack";
 import { useRowRewindPort } from "./rowRewindPort";
 import { useStagedRow } from "./rowStage";
@@ -103,8 +104,10 @@ export const MediaRow = memo(function MediaRow({
     });
   };
   useEffect(() => rewind?.register(rowKey, () => toStart.current()), [rewind, rowKey]);
-  // Les titres autour du focus : leur aperçu se prépare au serveur (`useCardPreviewWarm`).
-  const warm = useCardPreviewWarm();
+  // Les titres autour du focus : leur aperçu se prépare au serveur (`useCardPreviewWarm`) —
+  // dans une page à zone seulement, la seule où il se joue.
+  const portWarm = useCardPreviewWarm();
+  const warm = useInPreviewZone() ? portWarm : null;
   const latestCards = useRef(cards);
   latestCards.current = cards;
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
