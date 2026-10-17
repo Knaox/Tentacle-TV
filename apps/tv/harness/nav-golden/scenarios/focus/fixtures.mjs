@@ -18,6 +18,31 @@ function heroSynopses(data) {
   data.list("resume").slice(0, 5).forEach((item, index) => data.patchItem(item.Id, { Overview: `Synopsis du héros ${index + 1}` }));
 }
 
+/** Le serveur du kit des aperçus (`.claude/lot1014b/banc/serve-kit.mjs`, dossier principal) : flux HLS locaux. */
+const PREVIEW_KIT = process.env.NAV_GOLDEN_PREVIEW_KIT ?? "http://127.0.0.1:3089";
+
+/**
+ * Les aperçus de bandes-annonces au focus : le serveur déclare la capacité,
+ * `/api/trailers/preview` rend pour tout titre le flux `mha` du kit (sous
+ * `/api/trailers/sim/…`, réécrit vers le kit). Sans le kit lancé, l'aperçu
+ * échoue à la lecture — rien d'autre ne change.
+ */
+function previews(data) {
+  data.route("GET", /^\/api\/config$/, (req, res, { json }) => json(res, 200, { capabilities: ["trailers.player", "trailers.preview", "trailers.previewWarm"] }));
+  data.route("GET", /^\/api\/trailers\/preview$/, (req, res, { json }) => {
+    const base = "/api/trailers/sim/_net=relay/mha";
+    json(res, 200, {
+      ytId: "dQw4w9WgXcQ", version: "original", path: `${base}/master.m3u8`, mimeType: "application/vnd.apple.mpegurl",
+      expiresAt: Date.now() + 3_600_000, heights: [1080, 720, 360], qualities: [1080, 720, 360].map((height) => ({ height, path: `${base}/master-${height}.m3u8` })),
+    });
+  });
+  data.route("POST", /^\/api\/trailers\/preview\/warm$/, (req, res, { json }) => json(res, 200, { ok: true }));
+  data.route("GET", /^\/api\/trailers\/sim\//, (req, res) => {
+    res.writeHead(302, { location: `${PREVIEW_KIT}${req.url}` });
+    res.end();
+  });
+}
+
 export default {
   home: {
     description: "accueil : filtre Netflix · Disney+ (pastille sur la rangée « Pour vous ») ; « Synopsis du héros N » sur les cinq reprises du héros",
@@ -25,6 +50,10 @@ export default {
       recoFilter(data);
       heroSynopses(data);
     },
+  },
+  apercus: {
+    description: "aperçus au focus : capacité déclarée, chaque titre rend le flux « mha » du kit local (port 3089)",
+    apply: previews,
   },
   foryou: {
     description: "« Pour vous » : filtre Netflix · Disney+ (pastille sur la 1re étagère)",

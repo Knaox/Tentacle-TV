@@ -1,0 +1,160 @@
+{
+  "domain": "focus",
+  "reference": "ab60faff8",
+  "defaults": {
+    "settleMs": 900
+  },
+  "scenarios": [
+    {
+      "id": "rangee-gauche-retrait",
+      "title": "En revenant vers la gauche, la carte se pose au retrait de la rangée, jamais sous le rail",
+      "why": "Relevé de Damien (17/10) : tvOS posait la carte précédente à SA marge (x = 80), sous le rail. TentacleRowScroller.m applique rowRevealOffset : x = 176, comme la première carte.",
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "expect": {
+            "focus": "resume:0",
+            "frame": [
+              176,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right"
+          ],
+          "expect": {
+            "focus": "resume:7"
+          }
+        },
+        {
+          "do": [
+            "left",
+            "wait:0.6",
+            "left",
+            "wait:0.6",
+            "left"
+          ],
+          "expect": {
+            "focus": "resume:4"
+          }
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "resume:3",
+            "frame": [
+              176,
+              null,
+              null,
+              null
+            ]
+          },
+          "why": "La carte qui paraît à gauche se pose au retrait (176), pas sous le rail"
+        },
+        {
+          "do": "left",
+          "expect": {
+            "focus": "resume:2",
+            "frame": [
+              176,
+              null,
+              null,
+              null
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apercu-retour-premiere-carte",
+      "title": "Retour pendant l'aperçu d'une carte : la première carte, aussitôt",
+      "why": "Relevé de Damien (17/10) : pendant un aperçu, Retour mettait longtemps à ramener la rangée sur sa première carte.",
+      "start": {
+        "fixtures": [
+          "focus/home",
+          "focus/apercus"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "expect": {
+            "focus": "resume:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right"
+          ],
+          "expect": {
+            "focus": "resume:5"
+          }
+        },
+        {
+          "do": "wait:4",
+          "why": "L'aperçu démarre (délai 0,8 s + le flux du kit) : la carte passe en tête"
+        },
+        {
+          "do": "menu",
+          "settleMs": 300,
+          "expect": {
+            "focus": "resume:0",
+            "frame": [
+              176,
+              null,
+              null,
+              null
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
