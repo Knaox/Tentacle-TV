@@ -12,7 +12,8 @@ import { applySectionEntry } from "./sectionEntry";
  * navigation), plus aucune — on y revient au plus proche, comme avant.
  *
  * Une ligne recyclée qui se remonte sous une clé déclarée reçoit son entrée
- * (le numéro natif n'existe qu'une fois monté).
+ * (le numéro natif n'existe qu'une fois monté) ; sous une autre, elle perd
+ * celle de sa vie d'avant.
  */
 export function useGridLineEntries(focus: FocusStore, count: number, columns: number, prefix: string = GRID_KEY_PREFIX): void {
   const live = useRef({ count, columns });
@@ -37,7 +38,10 @@ export function useGridLineEntries(focus: FocusStore, count: number, columns: nu
       }
       declare(next);
     });
-    const stopNodes = focus.subscribeNodes((key) => {
+    const linePrefix = gridLineKey(prefix, 0).slice(0, -1);
+    const stopNodes = focus.subscribeNodes((key, node) => {
+      // Recyclée, une ligne garde sur sa vue native l'entrée de sa vie d'avant : effacée.
+      if (node && key.startsWith(linePrefix) && !declared.has(key)) applySectionEntry(focus, key, null);
       for (const [section, entry] of declared) if (key === section || key === entry) applySectionEntry(focus, section, entry);
     });
     return () => {
