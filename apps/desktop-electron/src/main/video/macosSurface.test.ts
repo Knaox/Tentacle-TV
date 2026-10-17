@@ -30,6 +30,20 @@ const native = vi.hoisted(() => {
   return { calls, msg };
 });
 
+// Comme sur le runner Linux de quality.yml, sur TOUT poste : aucune
+// bibliothèque native ne se charge. Un module qui appelle encore `koffi.load` à
+// son import fait échouer ce test sur le Mac aussi, pas seulement en CI.
+vi.mock("koffi", () => ({
+  default: {
+    load: () => {
+      throw new Error("Failed to load shared library");
+    },
+  },
+}));
+// La seule dépendance de `macosChildWindow.ts` qui charge le runtime Objective-C.
+vi.mock("./macosFrameConstraint", () => ({
+  releaseMpvFrameConstraint: () => undefined,
+}));
 vi.mock("./objc", () => ({
   msg: native.msg,
   fromHandle: (handle: unknown) => handle,
