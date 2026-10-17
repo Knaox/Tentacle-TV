@@ -3,7 +3,7 @@
   "tv": "1.11.0",
   "webos": "1.0.0",
   "mobile": "1.11.0",
-  "server": "1.30.0",
+  "server": "1.31.0",
   "minServer": "1.23.0",
   "tvPairingEpoch": 1
 }
