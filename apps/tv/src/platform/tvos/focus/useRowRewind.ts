@@ -20,7 +20,7 @@ import type { FocusStore } from "./focusStore";
  * Le reste passe par le socle de l'écran : le focus rendu au début de la
  * rangée en quittant l'accueil par le rail (`startOf`), la clé réclamée au
  * retour (`resume`, dans `useEntryFocus`), le Retour vers la première carte
- * (`backTarget`, dans `useRailBackLayers`).
+ * (`back`, dans `useRailBackLayers` : la rangée d'un coup, puis le focus).
  */
 
 export interface RowRewindHandle {
@@ -31,6 +31,12 @@ export interface RowRewindHandle {
   resume(remembered: string | null): string | null;
   /** Retour : la première carte quand le focus est sur une autre carte d'une rangée, sinon null. */
   backTarget(focusKey: string | null): string | null;
+  /**
+   * Retour, appliqué : la rangée revient au début d'un coup (sans animation),
+   * puis rend la clé de sa première carte, où poser le focus — déjà à sa
+   * place, tvOS n'a rien à faire défiler. Null hors d'une rangée défilée.
+   */
+  back(focusKey: string | null): string | null;
 }
 
 export interface RowRewindOptions {
@@ -86,6 +92,12 @@ export function useRowRewind(focus: FocusStore, { enabled, remembered }: RowRewi
         return key;
       },
       backTarget: model.backTarget,
+      back(key) {
+        const target = model.back(key);
+        if (!target) return null;
+        rewind([target.row]);
+        return target.claim;
+      },
     }),
     [model, rewind, focus],
   );

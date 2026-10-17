@@ -88,6 +88,15 @@ describe("rowRevealOffset — la rangée qui montre la carte focalisée", () => 
     expect(rowRevealOffset(card(4), track, going)).toBe(going);
   });
 
+  it("Apple TV : la cible proposée par tvOS (carte à 80 pt, sous le rail) est ramenée au retrait", () => {
+    // Relevé du 17/10 : en revenant vers la gauche, tvOS posait la carte à 80 pt du bord.
+    const proposed = card(4).left - 80;
+    expect(rowRevealOffset(card(4), track, proposed)).toBe(card(4).left - 176);
+    // Vers la droite, sa proposition (la carte à la marge droite) est gardée telle quelle.
+    const right = card(6).left + 300 + 96 - 1920;
+    expect(rowRevealOffset(card(6), track, right)).toBe(right);
+  });
+
   it("une rangée plus courte que l'écran ne défile pas", () => {
     expect(rowRevealOffset({ left: 176, width: 300 }, { viewport: 1920, content: 800, leading: 176, trailing: 96 }, 0)).toBe(0);
   });

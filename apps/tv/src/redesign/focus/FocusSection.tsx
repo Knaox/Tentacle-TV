@@ -44,13 +44,21 @@ export interface FocusSectionProps {
   reveal?: FocusSectionReveal;
   /** Une liste de lignes, sans en-tête qui la coiffe (un panneau de réglages). */
   list?: boolean;
+  /**
+   * Sa rangée garde la carte focalisée au retrait de la rangée, jamais plus
+   * près des bords (tv-core `rowRevealOffset`) — sur Apple TV, tvOS la posait
+   * à SA marge, sous le rail, en revenant vers la gauche
+   * (`ios/TentacleTV/TentacleRowScroller.m`). Android TV le fait déjà pour
+   * toute rangée.
+   */
+  rowReveal?: boolean;
   style?: StyleProp<ViewStyle>;
   pointerEvents?: ViewProps["pointerEvents"];
   onLayout?: (event: LayoutChangeEvent) => void;
   children?: ReactNode;
 }
 
-export const FocusSection = memo(function FocusSection({ focusKey, reveal, list, style, pointerEvents, onLayout, children }: FocusSectionProps) {
+export const FocusSection = memo(function FocusSection({ focusKey, reveal, list, rowReveal, style, pointerEvents, onLayout, children }: FocusSectionProps) {
   const binding = useFocusBinding(focusKey, "section");
   if (!NativeFocusSection) {
     return (
@@ -73,6 +81,7 @@ export const FocusSection = memo(function FocusSection({ focusKey, reveal, list,
       revealResponse={TV_MOTION.spring.scroll.response}
       revealDamping={TV_MOTION.spring.scroll.dampingFraction}
       lineList={list}
+      rowReveal={rowReveal}
     >
       {children}
     </NativeFocusSection>

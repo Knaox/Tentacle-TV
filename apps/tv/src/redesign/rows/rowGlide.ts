@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { ScrollView } from "react-native";
 import { cancelAnimation, scrollTo, useAnimatedReaction, useReducedMotion, useSharedValue, type AnimatedRef } from "react-native-reanimated";
 import { motionTo } from "../motion/motion";
@@ -72,5 +72,9 @@ export function useRowGlide(track: AnimatedRef<ScrollView>) {
     cancelAnimation(progress);
   }, [progress, active]);
 
-  return { glide, glideBack, stop };
+  // Un objet STABLE : `rowPreviewRoom` en tire les gestionnaires de la rangée —
+  // neuf à chaque rendu, il faisait se réinscrire la rangée au port de
+  // `rowRewind` (qui oubliait alors qu'elle était défilée) et redessiner toutes
+  // ses cartes.
+  return useMemo(() => ({ glide, glideBack, stop }), [glide, glideBack, stop]);
 }

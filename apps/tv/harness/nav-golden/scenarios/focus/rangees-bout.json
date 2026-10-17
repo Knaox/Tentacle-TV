@@ -1,0 +1,113 @@
+{
+  "domain": "focus",
+  "reference": "ab60faff8",
+  "defaults": {
+    "settleMs": 900
+  },
+  "scenarios": [
+    {
+      "id": "rangee-bout-sortie",
+      "title": "Défilée jusqu'à son bout, sortie de l'écran par le bas : à la remontée, la rangée est revenue au début",
+      "why": "Régression du 16/10 (51574cd8b) relevée par Damien le 17/10 : la rangée se réinscrivait au port à chaque rendu et oubliait qu'elle était déplacée — elle restait à son bout. W6 : sortie de l'écran, elle revient au début ; en remontant, HAUT y entre sur la première carte.",
+      "rules": [
+        "W6",
+        "R6",
+        "V2"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/home"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1",
+          "left",
+          "right"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "expect": {
+            "focus": "resume:0"
+          }
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 900,
+          "expect": {
+            "focus": "resume:11"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "wait:0.5",
+            "down",
+            "wait:0.5",
+            "down",
+            "wait:0.5",
+            "down",
+            "wait:0.5",
+            "down",
+            "wait:0.5",
+            "down"
+          ],
+          "why": "Tout en bas : Reprendre est sortie de l'écran"
+        },
+        {
+          "do": [
+            "up",
+            "wait:0.5",
+            "up",
+            "wait:0.5",
+            "up",
+            "wait:0.5",
+            "up",
+            "wait:0.5",
+            "up",
+            "wait:0.5"
+          ],
+          "expect": {
+            "focus": "nextUp:0"
+          },
+          "why": "Remontée jusqu'à « À suivre » (la pastille du filtre en chemin)"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "resume:0"
+          },
+          "why": "W6 : Reprendre est revenue au début — HAUT entre sur sa première carte"
+        }
+      ]
+    }
+  ]
+}
