@@ -12,7 +12,7 @@ import { CardFrame, cardGlowOf } from "./CardFrame";
 import { CardShell } from "./CardShell";
 import { CardMarkerLayer } from "./CardMarkerLayer";
 import { cardLogoBottom, LOGO_BOX } from "./cardMarkerGeometry";
-import { CardPreviewTile, UnderPreviewTile, useCardGrowth, useDrivenCardGrowth, type CardGrowth, type CardGrowthDriver } from "./CardPreviewTile";
+import { CardPreviewTile, UnderPreviewTile, useCardGrowth, type CardFocusWatch, type CardGrowth } from "./CardPreviewTile";
 import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused, type CardFocused } from "./useCardFocused";
@@ -45,16 +45,13 @@ import { useCardMetrics } from "./cardSizeMode";
  * ne la recouvre, et seule l'image suit le pouce (la parallaxe d'Apple TV).
  * `onFocusChange` dit le focus de la carte (`useCardFocused`).
  *
- * `previewable` (une carte de RANGÉE, jamais d'une grille) : quand son focus
- * tient, la carte peut devenir la grande carte de l'aperçu de sa
- * bande-annonce (`CardPreviewTile`) ; `onPreviewExpand` prévient la rangée,
- * qui lui réserve sa place et la montre entière, `onPreviewCollapse` quand
- * elle se replie. Fixé pour la vie de la carte : l'arbre ne change pas.
- *
- * `previewDriver` (une affiche de GRILLE) : sa grande carte est placée par sa
- * ligne (`gridPreviewLine`) — la cellule ne grandit pas, la grande carte en
- * déborde sur trois colonnes, et la cellule glisse quand c'est une voisine qui
- * grandit. Fixé pour la vie de la carte, lui aussi.
+ * `previewable` (une carte de RANGÉE, ou d'une ligne de grille — un
+ * carrousel, `GridCarouselLine`) : quand son focus tient, la carte peut
+ * devenir la grande carte de l'aperçu de sa bande-annonce (`CardPreviewTile`) ;
+ * `onPreviewExpand` prévient la rangée, qui lui réserve sa place et la montre
+ * entière, `onPreviewCollapse` quand elle se replie. Fixé pour la vie de la
+ * carte : l'arbre ne change pas. `previewWatch` (une grille) : un focus que la
+ * page a dépassé ne demande pas d'aperçu.
  */
 
 export interface MediaCardProps {
@@ -83,8 +80,8 @@ export interface MediaCardProps {
   onPreviewExpand?: (tileWidth: number, grow: number) => void;
   /** Elle se replie. */
   onPreviewCollapse?: () => void;
-  /** Sa grande carte et son glissement, menés par sa ligne de grille. */
-  previewDriver?: CardGrowthDriver;
+  /** Suit la page depuis le focus (une grille) : un focus dépassé ne demande pas d'aperçu. */
+  previewWatch?: CardFocusWatch;
 }
 
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
@@ -94,24 +91,17 @@ function captionShift(height: number, origin: "top" | "center" = "top"): number 
   return origin === "center" ? growth / 2 : Math.max(0, growth - 4);
 }
 
-/** La légende suit l'image qui grandit — sur le MÊME ressort que le cadre (`progress`). Placée par
- *  sa grille, la grande carte peut s'étendre à gauche : la légende (et « Maintenir OK ») glisse
- *  avec elle, de `slideBy` au bout de sa croissance (`slideProgress`). Sous la grande carte d'une
- *  rangée (`growProgress`), qui finit au bas de la place de l'image, la légende remonte de ce que
- *  l'agrandissement du focus l'avait fait descendre : elle reste à son écart de la vidéo. */
-function Caption({ progress: p, shift, slideBy = 0, slideProgress, growProgress, children }: {
+/** La légende suit l'image qui grandit — sur le MÊME ressort que le cadre (`progress`). Sous la
+ *  grande carte (`growProgress`), qui finit au bas de la place de l'image, la légende remonte de ce
+ *  que l'agrandissement du focus l'avait fait descendre : elle reste à son écart de la vidéo. */
+function Caption({ progress: p, shift, growProgress, children }: {
   progress: SharedValue<number>;
   shift: number;
-  slideBy?: number;
-  slideProgress?: SharedValue<number>;
   growProgress?: SharedValue<number>;
   children: ReactNode;
 }) {
   const follow = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: slideProgress ? slideBy * slideProgress.value : 0 },
-      { translateY: shift * p.value * (growProgress ? 1 - growProgress.value : 1) },
-    ],
+    transform: [{ translateY: shift * p.value * (growProgress ? 1 - growProgress.value : 1) }],
   }));
   return <Animated.View style={[styles.caption, follow]}>{children}</Animated.View>;
 }
@@ -129,33 +119,25 @@ function LogoLayer({ uri, width, height, bottom }: { uri: string; width: number;
 
 export const MediaCard = memo(function MediaCard(props: MediaCardProps) {
   const cardFocus = useCardFocused(props.focusKey, props.onFocusChange);
-  if (props.previewDriver) return <DrivenPreviewCard {...props} driver={props.previewDriver} cardFocus={cardFocus} />;
   return props.previewable ? <PreviewableCard {...props} cardFocus={cardFocus} /> : <CardBody {...props} cardFocus={cardFocus} growth={null} />;
 });
 
-/** Une affiche de grille : sa grande carte, placée par sa ligne. */
-function DrivenPreviewCard(props: MediaCardProps & { driver: CardGrowthDriver; cardFocus: CardFocused }) {
-  const growth = useDrivenCardGrowth(props.card, props.cardFocus.focused, props.driver);
-  return <CardBody {...props} growth={growth} />;
-}
-
-/** Une carte de rangée : sa grande carte d'aperçu, selon son focus. */
+/** Une carte de rangée (ou de ligne de grille) : sa grande carte d'aperçu, selon son focus. */
 function PreviewableCard(props: MediaCardProps & { cardFocus: CardFocused }) {
-  const { card, variant, cardFocus, onPreviewExpand, onPreviewCollapse } = props;
+  const { card, variant, cardFocus, onPreviewExpand, onPreviewCollapse, previewWatch } = props;
   // La largeur réglée (`useCardMetrics`) : la grande carte part de la carte telle qu'elle est dessinée.
   const metrics = useCardMetrics();
   const width = props.width ?? metrics[variant].width;
   const size = useMemo(() => ({ width, height: cardHeight(variant, width) }), [variant, width]);
   // La place du pied pendant l'aperçu : la raison (s'il y en a une), « Maintenir OK », Lecture/Pause.
   const room = props.hideCaption ? 0 : cardFocusFooterHeight({ note: card.focusNote !== undefined, hold: props.onLongPress !== undefined, preview: true });
-  const growth = useCardGrowth(card, cardFocus.focused, size, room, onPreviewExpand, onPreviewCollapse);
+  const growth = useCardGrowth(card, cardFocus.focused, size, room, onPreviewExpand, onPreviewCollapse, previewWatch);
   return <CardBody {...props} growth={growth} />;
 }
 
-/** Le cadre de la carte — effacé sous sa grande carte quand elle en a une. Placée par sa grille,
- *  le cadre s'efface lui-même (`CardFrame` `under`) : pas de vue de plus dans chaque cellule. */
+/** Le cadre de la carte — effacé sous sa grande carte quand elle en a une. */
 function FrameUnder({ growth, children }: { growth: CardGrowth | null; children: ReactNode }) {
-  return growth && !growth.place ? <UnderPreviewTile growth={growth}>{children}</UnderPreviewTile> : <>{children}</>;
+  return growth ? <UnderPreviewTile growth={growth}>{children}</UnderPreviewTile> : <>{children}</>;
 }
 
 function cardHeight(variant: MediaCardProps["variant"], width: number): number {
@@ -176,7 +158,6 @@ function CardBody({
   onLongPress,
   cardFocus,
   growth,
-  previewDriver,
 }: MediaCardProps & { cardFocus: CardFocused; growth: CardGrowth | null }) {
   const landscape = variant === "landscape";
   const frame = useCardMetrics()[variant];
@@ -198,9 +179,7 @@ function CardBody({
       onLongPress={onLongPress}
       onTargetFocusChange={onTargetFocusChange}
       accessibilityLabel={card.title}
-      // Placée par sa grille, la grande carte déborde : la cellule garde sa taille, et glisse.
-      expansion={growth && !growth.place ? growth.expansion : undefined}
-      glide={previewDriver?.glide}
+      expansion={growth ? growth.expansion : undefined}
       frame={
         <>
           <FrameUnder growth={growth}>
@@ -214,7 +193,6 @@ function CardBody({
               origin={origin}
               glow={glow}
               focusProgress={progress}
-              under={growth?.place ? growth.expansion.progress : undefined}
               focusLayer={
                 card.quality && !card.absent ? (
                   <CardQualityBadges
@@ -252,7 +230,7 @@ function CardBody({
               )}
             </CardFrame>
           </FrameUnder>
-          {growth ? <CardPreviewTile card={card} width={width} height={height} growth={growth} /> : null}
+          {growth ? <CardPreviewTile card={card} width={width} height={height} origin={origin} growth={growth} /> : null}
         </>
       }
     >
@@ -260,9 +238,7 @@ function CardBody({
         <Caption
           progress={progress}
           shift={captionShift(height, origin)}
-          slideBy={growth?.place?.to.left}
-          slideProgress={growth?.place ? growth.expansion.progress : undefined}
-          growProgress={growth && !growth.place ? growth.expansion.progress : undefined}
+          growProgress={growth ? growth.expansion.progress : undefined}
         >
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={card.subtitleLines ?? 1}>{card.subtitle}</Text> : null}

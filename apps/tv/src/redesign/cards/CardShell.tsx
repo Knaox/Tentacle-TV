@@ -35,12 +35,6 @@ import { FocusTarget } from "../focus/FocusTarget";
  *
  * La grande carte se dessine toujours DANS la cible, qu'elle déborde à
  * droite : rien ne la recouvre, et elle suit le pouce avec la cible.
- *
- * `glide` : la cellule GLISSE quand une voisine devient la grande carte (une
- * ligne de grille, `gridPreviewLine` — la grande carte en déborde, la cellule
- * garde sa taille). Le style animé porte sur la cellule elle-même : `front`
- * la pose toujours devant ses voisines. Présent pour toute la vie de la
- * carte, lui aussi.
  */
 
 /** La grande carte : sa taille, et l'avancée de la croissance (0 → 1). */
@@ -73,15 +67,10 @@ export interface CardShellProps {
   children?: ReactNode;
   /** La carte peut grandir en grande carte d'aperçu (cf. plus haut). */
   expansion?: CardExpansion;
-  /** Le glissement de la cellule, quand une voisine de sa ligne grandit (cf. plus haut). */
-  glide?: ReturnType<typeof useAnimatedStyle>;
 }
 
 export const CardShell = memo(function CardShell(props: CardShellProps) {
-  // Le style d'une cellule qui glisse, gardé d'un rendu à l'autre : une grille recyclée
-  // redessine ses cellules à chaque ligne, sans réattacher leur style animé.
-  const { width, front, style, glide } = props;
-  const glideStyle = useMemo(() => (glide ? [{ width }, front && styles.front, style, glide] : null), [glide, width, front, style]);
+  const { width } = props;
   const { focusKey, frameHeight, frame, centerFrame = false, onPress, onLongPress, onTargetFocusChange, accessibilityLabel, children } = props;
   // Une cellule qui grandit garde une cible à la largeur de la carte (cf. plus haut).
   const expandable = props.expansion !== undefined;
@@ -112,13 +101,6 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
     </>
   );
   if (props.expansion) return <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>;
-  if (glideStyle) {
-    return (
-      <Animated.View collapsable={false} style={glideStyle}>
-        {body}
-      </Animated.View>
-    );
-  }
   return (
     // Jamais aplatie (`collapsable={false}`) : sur Android, `zIndex` posé au
     // focus ferait créer la vue et re-parenter la cible — qui perdait le focus.

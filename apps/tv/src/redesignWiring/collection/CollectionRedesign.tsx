@@ -7,6 +7,7 @@ import { railNavigate } from "../../navigation/railNavigate";
 import { RENDER } from "../../redesign/render/renderProfile";
 import { CollectionView, type CollectionEmptyModel } from "../../redesign/screens/collection/CollectionView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
+import { useGridColumnEntries } from "../grid/useGridColumnEntries";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useHeldWhile } from "../screen/useHeldWhile";
@@ -73,6 +74,7 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
     railKey: watchlist ? "Watchlist" : "Favorites",
     entryKey: collectionEntryKey({ failed: status !== null, empty: empty !== null, cards: grid.cards.length, noResults: noResults !== null }),
   });
+  useGridColumnEntries(screen.focus, grid.cards.length);
   const filters = useCollectionFilterBar(t, sort, screen.focus);
   const { sheets, bar } = filters;
   // Ce que la liste ouverte COUVRE reste tel quel jusqu'à la fin de son fondu

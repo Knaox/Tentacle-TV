@@ -30,12 +30,14 @@ interface Setup {
   filters?: (genres: Genres) => Partial<LibraryFilterState>;
   sheet?: LibraryFilterKey;
   variant?: "loading" | "empty" | "error";
+  /** Chaque affiche a sa bande-annonce (scènes `apercu/grille-*` : la fausse vidéo du banc). */
+  trailers?: boolean;
 }
 
 const genreIds = (genres: Genres, names: string[]) =>
   names.map((name) => genres.find((g) => g.name === name)?.id).filter((id): id is string => !!id);
 
-function LibraryScene({ data, setup }: { data: BenchData; setup: Setup }) {
+export function LibraryScene({ data, setup }: { data: BenchData; setup: Setup }) {
   const { t } = useTranslation();
   const lib = libraryOf(data, setup.kind);
   const genres = genresOf(data, lib?.id);
@@ -47,7 +49,13 @@ function LibraryScene({ data, setup }: { data: BenchData; setup: Setup }) {
 
   const empty = setup.variant === "empty";
   const items = useMemo(() => (empty ? [] : filterCatalog(data, lib?.id, filters)), [data, lib?.id, filters, empty]);
-  const cards = useMemo(() => items.map((item) => cardOf(data, item, yearOf(item))), [data, items]);
+  const cards = useMemo(
+    () => items.map((item) => {
+      const card = cardOf(data, item, yearOf(item));
+      return setup.trailers ? { ...card, trailer: card.trailer ?? { kind: "item" as const, itemId: card.id } } : card;
+    }),
+    [data, items, setup.trailers],
+  );
   const forcedCard = forced?.startsWith("grid:") ? cards[Number(forced.slice(5))] : undefined;
   const palette = forcedCard?.palette ?? focusedPalette ?? cards[0]?.palette ?? NEUTRAL_PALETTE;
 

@@ -10,6 +10,7 @@ import { useLibraryGroups, useLibraryLoadReprise } from "../../platform/tvos/scr
 import { RENDER } from "../../redesign/render/renderProfile";
 import { LibraryView } from "../../redesign/screens/library/LibraryView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
+import { useGridColumnEntries } from "../grid/useGridColumnEntries";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useHeldWhile } from "../screen/useHeldWhile";
@@ -82,6 +83,7 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
     entryKey: libraryEntryKey({ status: status !== null, loading, items: items.length, noResults: noResults !== null }),
   });
   const { focus } = screen;
+  useGridColumnEntries(focus, grid.cards.length);
   useLibraryGroups(focus);
 
   const span = useMemo(() => yearSpanOf(catalog.loaded), [catalog.loaded]);

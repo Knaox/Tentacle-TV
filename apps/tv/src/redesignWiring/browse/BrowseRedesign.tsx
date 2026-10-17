@@ -11,6 +11,7 @@ import { useBrowseFocus } from "../../platform/tvos/screens/browse";
 import { BrowseView } from "../../redesign/screens/browse/BrowseView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
 import { imagePixels } from "../cards/imagePixels";
+import { useGridColumnEntries } from "../grid/useGridColumnEntries";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -75,6 +76,7 @@ export function BrowseRedesign({ kind, id, name }: Params) {
   // Une page poussée : Retour y recule, rail ouvert ou non (`BackScope`).
   const screen = useRedesignScreen({ railKey: "Search", entryKey, onReselect: goBack });
   const { focus } = screen;
+  useGridColumnEntries(focus, grid.cards.length);
   useBrowseFocus(focus, { entryKey, items: items.length, failed });
 
   return (

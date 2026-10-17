@@ -1,8 +1,8 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { trailerPreviewTileFrom, trailerPreviewTileSize, type TrailerPreviewRect, type TrailerPreviewTile } from "@tentacle-tv/tv-core";
+import { trailerPreviewTileFrom, trailerPreviewTileSize, type TrailerPreviewTile } from "@tentacle-tv/tv-core";
 import { SoftGradient } from "../background/SoftGradient";
 import { useMotion } from "../motion/useMotion";
 import { colors, fonts, scrim, white } from "../theme/tokens";
@@ -29,11 +29,8 @@ import { useCardPreview } from "./trailerPreviewPort";
  * agrandis ni sa lueur. Sa taille suit le réglage « Taille des cartes ».
  * Rien ne se monte tant que la carte n'a pas de vidéo à charger.
  *
- * Une affiche de GRILLE a sa grande carte PLACÉE par sa ligne
- * (`useDrivenCardGrowth`, `CardGrowthDriver`) : la cellule ne grandit pas,
- * la grande carte en déborde, de l'affiche focalisée à l'endroit que la
- * ligne lui a fait (`place`), et c'est la ligne qui mène la croissance — ses
- * voisines glissent au même rythme.
+ * Une affiche de GRILLE grandit de la même façon : chaque ligne de la grille
+ * est un carrousel (`GridCarouselLine`).
  */
 
 /** La place de la grande carte sur l'écran de la scène. */
@@ -52,33 +49,11 @@ export interface CardGrowth {
   video: ReactNode | null;
   /** L'aperçu joue sous le focus : ce que Lecture/Pause en fait (port `CardPreview.remote`). */
   remote: { paused: boolean; muted: boolean } | null;
-  /** Placée par sa grille : la cellule ne grandit pas, la grande carte en
-   *  déborde, de `from` à `to` (dans la cellule). Absente : une carte de rangée. */
-  place?: { from: TrailerPreviewRect; to: TrailerPreviewRect };
 }
 
-/**
- * Ce que la ligne d'une grille donne à chacune de ses affiches
- * (`gridPreviewLine`) : où irait sa grande carte, la croissance que la ligne
- * mène, et de quoi la lancer et la replier.
- */
-export interface CardGrowthDriver {
-  tile: TrailerPreviewTile;
-  from: TrailerPreviewRect;
-  to: TrailerPreviewRect;
-  /** 0 → 1 : la croissance de SA grande carte (ses voisines la suivent). */
-  progress: SharedValue<number>;
-  expand(): void;
-  collapse(): void;
-  /** Le glissement de la cellule quand une voisine grandit (`CardShell` `glide`). */
-  glide: CardGlide;
-  /** Suit la page depuis le focus de la carte : `onOutrun(true)` quand elle l'a
-   *  dépassé (défilement accéléré) — son aperçu ne se demande pas. Rend l'arrêt. */
-  watchFocus?: (onOutrun: (outrun: boolean) => void) => () => void;
-}
-
-/** Le style animé d'une cellule qui glisse : présent pour toute la vie de la carte. */
-export type CardGlide = ReturnType<typeof useAnimatedStyle>;
+/** Suit la page depuis le focus de la carte : `onOutrun(true)` quand elle l'a dépassé (le
+ *  défilement accéléré d'une grille) — son aperçu ne se demande pas. Rend l'arrêt. */
+export type CardFocusWatch = (onOutrun: (outrun: boolean) => void) => () => void;
 
 /**
  * L'aperçu d'une carte de rangée : sa grande carte, sa croissance (0 → 1, le
@@ -87,7 +62,8 @@ export type CardGlide = ReturnType<typeof useAnimatedStyle>;
  * `cardFocusFooterHeight`). `onExpand` : la carte va grandir, de la largeur de
  * sa grande carte et de `grow` points en hauteur (image et pied compris) — la
  * rangée lui réserve sa place et la montre entière ; `onCollapse` : elle se
- * replie.
+ * replie. `watchFocus` (une affiche de grille) : un focus que la page a
+ * dépassé ne demande rien — la carte n'est déjà plus là où l'on regarde.
  */
 export function useCardGrowth(
   card: CardModel,
@@ -96,8 +72,18 @@ export function useCardGrowth(
   room: number,
   onExpand?: (tileWidth: number, grow: number) => void,
   onCollapse?: () => void,
+  watchFocus?: CardFocusWatch,
 ): CardGrowth {
-  const preview = useCardPreview(card.trailer ?? null, focused);
+  const [outrun, setOutrun] = useState(false);
+  useEffect(() => {
+    if (!focused || !watchFocus) return undefined;
+    const stop = watchFocus(setOutrun);
+    return () => {
+      stop();
+      setOutrun(false);
+    };
+  }, [focused, watchFocus]);
+  const preview = useCardPreview(card.trailer ?? null, focused && !outrun);
   const expanded = preview?.expanded === true;
   const { scale } = useCardMetrics();
   const tile = useMemo(
@@ -119,37 +105,6 @@ export function useCardGrowth(
 }
 
 /**
- * L'aperçu d'une affiche de GRILLE : la machine est la même (`useCardPreview`),
- * mais la place et la croissance viennent de sa ligne (`driver`) — lancée dans
- * la même tâche que le rendu (`useLayoutEffect`), comme `useMotion`.
- */
-export function useDrivenCardGrowth(card: CardModel, focused: boolean, driver: CardGrowthDriver): CardGrowth {
-  // Un focus que la page a dépassé ne demande rien : la carte n'est déjà plus là où l'on regarde.
-  const [outrun, setOutrun] = useState(false);
-  const { watchFocus } = driver;
-  useEffect(() => {
-    if (!focused || !watchFocus) return undefined;
-    const stop = watchFocus(setOutrun);
-    return () => {
-      stop();
-      setOutrun(false);
-    };
-  }, [focused, watchFocus]);
-  const preview = useCardPreview(card.trailer ?? null, focused && !outrun);
-  const expanded = preview?.expanded === true;
-  const wasExpanded = useRef(false);
-  useLayoutEffect(() => {
-    if (expanded) driver.expand();
-    else if (wasExpanded.current) driver.collapse();
-    wasExpanded.current = expanded;
-  }, [expanded, driver]);
-  // La cellule d'une grille ne grandit pas : aucune place à faire sous sa légende.
-  const expansion = useMemo(() => ({ width: driver.tile.width, height: driver.tile.height, room: 0, progress: driver.progress }), [driver]);
-  const place = useMemo(() => ({ from: driver.from, to: driver.to }), [driver]);
-  return { tile: driver.tile, expansion, expanded, video: preview?.video ?? null, remote: preview?.remote ?? null, place };
-}
-
-/**
  * La carte SOUS sa grande carte : elle s'efface pendant que la grande carte
  * la recouvre (du tiers aux deux tiers de la croissance — la grande carte est
  * alors opaque), et reparaît au repli. Sans cela, la carte agrandie du focus
@@ -166,6 +121,8 @@ interface CardPreviewTileProps {
   /** La carte au repos : la grande carte en part. */
   width: number;
   height: number;
+  /** D'où la carte grandit au focus (`CardFrame` `origin`) : la grande carte part de là. */
+  origin?: "top" | "center";
   growth: CardGrowth;
 }
 
@@ -174,16 +131,17 @@ export const CardPreviewTile = memo(function CardPreviewTile(props: CardPreviewT
   return props.growth.video ? <PreviewTileBody {...props} /> : null;
 });
 
-function PreviewTileBody({ card, width, height, growth }: CardPreviewTileProps) {
-  const { tile, expansion, video, place } = growth;
+function PreviewTileBody({ card, width, height, origin = "top", growth }: CardPreviewTileProps) {
+  const { tile, expansion, video } = growth;
   const { progress } = expansion;
   // Le départ : la carte telle qu'elle se dessine au focus, agrandie et soulevée.
-  const from = useMemo(
-    () => place?.from ?? trailerPreviewTileFrom({ cardWidth: width, cardHeight: height, focusScale: CARD_FOCUS_SCALE, lift: PREVIEW_FOCUS_LIFT }),
-    [place, width, height],
-  );
-  // L'arrivée : toute la cellule agrandie (une rangée), ou la place que la ligne a faite (une grille).
-  const to = useMemo(() => place?.to ?? { left: 0, top: 0, width: tile.width, height: tile.height }, [place, tile]);
+  const from = useMemo(() => {
+    const rect = trailerPreviewTileFrom({ cardWidth: width, cardHeight: height, focusScale: CARD_FOCUS_SCALE, lift: PREVIEW_FOCUS_LIFT });
+    // Agrandie depuis son centre (une affiche de grille), elle monte aussi de la moitié de sa croissance.
+    return origin === "center" ? { ...rect, top: rect.top - (rect.height - height) / 2 } : rect;
+  }, [width, height, origin]);
+  // L'arrivée : toute la cellule agrandie.
+  const to = useMemo(() => ({ left: 0, top: 0, width: tile.width, height: tile.height }), [tile]);
   // Opaque au premier tiers de la croissance ; elle s'efface au repli.
   const grow = useAnimatedStyle(() => {
     const p = progress.value;
