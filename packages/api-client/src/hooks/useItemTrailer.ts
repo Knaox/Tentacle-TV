@@ -39,7 +39,7 @@ export interface ItemTrailerOptions {
 }
 
 /**
- * Apple TV, Android TV, mobile et LG, d'ici leur phase : la règle d'avant —
+ * Mobile et LG, d'ici leur phase : la règle d'avant —
  * la bande-annonce locale, sinon la première vidéo YouTube de Jellyfin et de
  * TMDB —, rien ne change pour elles.
  */

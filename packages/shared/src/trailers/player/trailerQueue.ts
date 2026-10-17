@@ -13,6 +13,7 @@
 
 import type { TrailerAudio, TrailerEntry, TrailerPlayback, TrailerScope, TrailerSource, TrailerVersion } from "../trailerCatalog";
 import { playedTrailerVersion } from "../trailerCatalogRank";
+import { parseYouTubeId } from "../trailerList";
 
 /** Une vidéo que le relais sait lire. */
 export type RelayedTrailerPlayback = Extract<TrailerPlayback, { kind: "youtube" } | { kind: "dailymotion" }>;
@@ -122,4 +123,18 @@ export function trailerPublicUrl(playback: RelayedTrailerPlayback): string {
   return playback.kind === "youtube"
     ? `https://www.youtube.com/watch?v=${encodeURIComponent(playback.ytId)}`
     : `https://www.dailymotion.com/video/${encodeURIComponent(playback.videoId)}`;
+}
+
+const DAILYMOTION_URL = /dailymotion\.com\/(?:video|embed\/video)\/([A-Za-z0-9]+)/;
+
+/**
+ * La vidéo d'une adresse publique (YouTube ou Dailymotion), l'inverse de
+ * `trailerPublicUrl` : l'écran de bande-annonce des téléviseurs ne reçoit
+ * qu'une adresse, et une entrée du catalogue (AlloCiné) y passe par elle.
+ */
+export function relayedPlaybackOfUrl(url: string | undefined): RelayedTrailerPlayback | null {
+  const ytId = parseYouTubeId(url);
+  if (ytId) return { kind: "youtube", ytId };
+  const dm = url?.match(DAILYMOTION_URL);
+  return dm ? { kind: "dailymotion", videoId: dm[1] } : null;
 }

@@ -26,7 +26,8 @@ export type TrailerTarget =
  * | Plateforme                                  | playable                         |
  * |---------------------------------------------|----------------------------------|
  * | Web et bureau (lecteur complet)             | local, youtube, dailymotion      |
- * | Apple TV, Android TV, mobile, LG — d'ici leur phase | local, youtube           |
+ * | Apple TV, Android TV (écran relayé)         | local, youtube, dailymotion      |
+ * | Mobile, LG — d'ici leur phase               | local, youtube                   |
  */
 export type TrailerPlayable = "local" | "youtube" | "dailymotion";
 
