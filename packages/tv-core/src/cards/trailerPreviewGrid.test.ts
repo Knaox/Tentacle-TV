@@ -1,151 +1,88 @@
 import { describe, expect, it } from "vitest";
 import { CARD_SIZE_GRID_COLUMNS, CARD_SIZE_SCALE, CARD_SIZES } from "./cardSize";
-import {
-  GRID_PREVIEW_SETTLE_MS,
-  GRID_PREVIEW_SPAN,
-  gridFocusOutrun,
-  gridPreviewSettleDelay,
-  gridTrailerPreviewPlace,
-  gridTrailerPreviewSpread,
-  gridTrailerPreviewWarmWindow,
-} from "./trailerPreviewGrid";
+import { GRID_PREVIEW_SETTLE_MS, gridFocusOutrun, gridPreviewSettleDelay, gridTrailerPreviewWarmWindow } from "./trailerPreviewGrid";
+import { INITIAL_ROW_HEAD, reduceRowHead, type RowHeadContext } from "./trailerPreviewRowHead";
 import { trailerPreviewTileSize } from "./trailerPreviewTile";
 
 /** La grille de la scène (`PosterGrid`), recopiée : ce test ne dépend pas du thème. */
-const GRID_WIDTH = 1920 - 176 - 96;
+const INSET = 176;
+const RIGHT = 96;
+const GRID_WIDTH = 1920 - INSET - RIGHT;
 const GAP = 36;
-const FOCUS_SCALE = 1.08;
-const LIFT = 4;
-/** La légende d'une affiche de grille (titre, année), au repos. */
-const CAPTION = 72;
 
 const posterWidth = (columns: number) => Math.floor((GRID_WIDTH - GAP * (columns - 1)) / columns);
 
-/** La grande carte d'une affiche à la colonne `column`, à la taille des cartes `size`. */
-function placeAt(column: number, columns: number, focusScale = FOCUS_SCALE, lift = LIFT) {
-  const cardWidth = posterWidth(columns);
-  const cardHeight = Math.round(cardWidth * 1.5);
-  const captionBottom = cardHeight + (cardHeight * (focusScale - 1)) / 2 + CAPTION;
-  return gridTrailerPreviewPlace({ column, columns, cardWidth, cardHeight, gap: GAP, focusScale, lift, captionBottom });
+/** Une ligne pleine de la grille, vue comme une rangée de l'accueil, défilée à `scrollX`. */
+function lineOf(columns: number, scrollX = 0, cardCount = columns): RowHeadContext {
+  return { cardCount, cardWidth: posterWidth(columns), gap: GAP, inset: INSET, viewportWidth: 1920, rightMargin: RIGHT, scrollX };
 }
 
-describe("gridTrailerPreviewSpread — la ligne fait place à sa grande carte", () => {
-  it("à gauche de l'écran, la grande carte s'étend à droite : les suivantes glissent de deux colonnes", () => {
-    expect(gridTrailerPreviewSpread({ column: 0, columns: 6 })).toEqual({
-      first: 0,
-      offsets: [0, 2, 2, 2, 2, 2],
-      hidden: [false, false, false, false, false, false],
-    });
-    expect(gridTrailerPreviewSpread({ column: 3, columns: 6 }).offsets).toEqual([0, 0, 0, 0, 2, 2]);
-  });
+/** La grande carte d'une affiche de grille (`useCardGrowth`), à la taille réglée. */
+function tileOf(columns: number, scale: number) {
+  const width = posterWidth(columns);
+  return trailerPreviewTileSize({ cardWidth: width, cardHeight: Math.round(width * 1.5), screenWidth: 1920, maxWidth: GRID_WIDTH, sizeScale: scale });
+}
 
-  it("près du bord droit, elle s'arrête à la dernière colonne : ce qui est à gauche glisse d'autant", () => {
-    expect(gridTrailerPreviewSpread({ column: 4, columns: 6 })).toEqual({
-      first: 3,
-      offsets: [-1, -1, -1, -1, 0, 1],
-      hidden: [true, false, false, false, false, false],
-    });
-    expect(gridTrailerPreviewSpread({ column: 5, columns: 6 })).toEqual({
-      first: 3,
-      offsets: [-2, -2, -2, -2, -2, 0],
-      hidden: [true, true, false, false, false, false],
-    });
-  });
+/** L'aperçu de la colonne `column` démarre : où la ligne défile, et où finit la grande carte à l'écran. */
+function expandAt(columns: number, column: number, scale = 1) {
+  const line = lineOf(columns);
+  const tile = tileOf(columns, scale);
+  const step = reduceRowHead(INITIAL_ROW_HEAD, { type: "expand", index: column, tileWidth: tile.width, at: 0 }, line);
+  const scrollX = step.scrollTo ?? 0;
+  const left = INSET + column * (line.cardWidth + GAP) - scrollX;
+  return { step, scrollX, left, right: left + tile.width };
+}
 
-  it("la grille garde ses colonnes : aucune affiche ne reste sous la grande carte", () => {
-    for (const columns of [5, 6, 7]) {
-      for (let column = 0; column < columns; column += 1) {
-        const { first, offsets } = gridTrailerPreviewSpread({ column, columns });
-        expect(first).toBeGreaterThanOrEqual(0);
-        expect(first + GRID_PREVIEW_SPAN).toBeLessThanOrEqual(columns);
-        expect(first).toBeLessThanOrEqual(column);
-        offsets.forEach((offset, at) => {
-          expect(Number.isInteger(offset)).toBe(true);
-          if (at === column) return;
-          const landing = at + offset;
-          expect(landing < first || landing >= first + GRID_PREVIEW_SPAN).toBe(true);
-        });
-      }
-    }
-  });
-
-  it("une voisine immédiate ne s'efface jamais : la flèche y mène depuis la grande carte", () => {
-    // Trois colonnes : la voisine de gauche de la dernière sortirait par la gauche.
-    expect(gridTrailerPreviewSpread({ column: 2, columns: 3 }).hidden).toEqual([true, false, false]);
-    for (const columns of [3, 5, 6, 7]) {
-      for (let column = 0; column < columns; column += 1) {
-        const { hidden } = gridTrailerPreviewSpread({ column, columns });
-        if (column > 0) expect(hidden[column - 1]).toBe(false);
-        if (column < columns - 1) expect(hidden[column + 1]).toBe(false);
-      }
-    }
-  });
-
-  it("une colonne hors de la grille est ramenée dans ses bornes", () => {
-    expect(gridTrailerPreviewSpread({ column: 9, columns: 6 }).first).toBe(3);
-    expect(gridTrailerPreviewSpread({ column: -2, columns: 6 }).first).toBe(0);
-    expect(gridTrailerPreviewSpread({ column: 0, columns: 2 }).first).toBe(0);
-  });
-});
-
-describe("gridTrailerPreviewPlace — la grande carte d'une affiche de grille", () => {
-  it("trois colonnes en 16:9 — la taille de celle des rangées, en taille normale", () => {
-    const { tile } = placeAt(0, 6);
-    expect(tile).toEqual({ width: 804, height: 452 });
-    const row = trailerPreviewTileSize({ cardWidth: 244, cardHeight: 366, screenWidth: 1920, maxWidth: GRID_WIDTH });
-    expect(Math.abs(tile.width - row.width)).toBeLessThanOrEqual(4);
-  });
-
-  it("suit le réglage « Taille des cartes » : plus grande à chaque cran", () => {
-    const widths = CARD_SIZES.map((size) => placeAt(0, CARD_SIZE_GRID_COLUMNS[size]).tile.width);
-    expect(widths).toEqual([684, 804, 972]);
-    // Au plus 10 % de moins que la grande carte d'une rangée, à la même taille.
-    CARD_SIZES.forEach((size, at) => {
-      const row = trailerPreviewTileSize({ cardWidth: 244, cardHeight: 366, screenWidth: 1920, maxWidth: GRID_WIDTH, sizeScale: CARD_SIZE_SCALE[size] });
-      expect(widths[at]).toBeGreaterThanOrEqual(row.width * 0.9);
-    });
-  });
-
-  it("part de l'affiche telle qu'elle se dessine au focus : agrandie depuis son centre, soulevée", () => {
-    const { from } = placeAt(2, 6);
-    expect(from.left).toBeCloseTo(-9.76, 2);
-    expect(from.top).toBeCloseTo(-14.64 - LIFT, 2);
-    expect(from.width).toBeCloseTo(263.52, 2);
-    expect(from.height).toBeCloseTo(395.28, 2);
-    // Sans agrandissement (mode Lite) : l'affiche au repos.
-    expect(placeAt(2, 6, 1, 0).from).toEqual({ left: 0, top: 0, width: 244, height: 366 });
-  });
-
-  it("s'étend à droite de sa cellule, ou s'arrête à la dernière colonne", () => {
-    expect(placeAt(0, 6).to.left).toBe(0);
-    expect(placeAt(3, 6).to.left).toBe(0);
-    expect(placeAt(4, 6).to.left).toBe(-280);
-    expect(placeAt(5, 6).to.left).toBe(-560);
-    // Jamais au-delà de la marge de droite.
-    for (const columns of [5, 6, 7]) {
-      for (let column = 0; column < columns; column += 1) {
-        const place = placeAt(column, columns);
-        const cellLeft = 176 + column * (posterWidth(columns) + GAP);
-        expect(cellLeft + place.to.left).toBeGreaterThanOrEqual(176);
-        expect(cellLeft + place.to.left + place.tile.width).toBeLessThanOrEqual(1920 - 96 + 1);
-      }
-    }
-  });
-
-  it("reste dans la bande de sa ligne : finit au bas de la légende, mord peu au-dessus", () => {
+describe("une ligne de grille est un carrousel de l'accueil (trailerPreviewRowHead)", () => {
+  it("au repos, une ligne pleine tient à l'écran, à chaque taille de cartes", () => {
     for (const size of CARD_SIZES) {
-      for (const [scale, lift] of [[FOCUS_SCALE, LIFT], [1, 0]] as const) {
-        const columns = CARD_SIZE_GRID_COLUMNS[size];
-        const place = placeAt(1, columns, scale, lift);
-        const cardHeight = Math.round(posterWidth(columns) * 1.5);
-        const captionBottom = cardHeight + (cardHeight * (scale - 1)) / 2 + CAPTION;
-        expect(place.to.top + place.tile.height).toBeCloseTo(captionBottom, 5);
-        // L'écart entre deux lignes est de 52 points : elle n'en prend jamais la moitié.
-        expect(place.to.top).toBeGreaterThan(-26);
-        // Plus haute que l'affiche focalisée : elle ne rapetisse jamais.
-        expect(place.tile.height).toBeGreaterThan(place.from.height);
-      }
+      const columns = CARD_SIZE_GRID_COLUMNS[size];
+      const line = lineOf(columns);
+      expect(INSET + columns * line.cardWidth + (columns - 1) * GAP).toBeLessThanOrEqual(1920 - RIGHT);
     }
+  });
+
+  it("la première colonne grandit sur place, la deuxième passe en tête, collée à la navigation", () => {
+    expect(expandAt(6, 0).step.scrollTo).toBeNull();
+    const second = expandAt(6, 1);
+    expect(second.left).toBe(INSET);
+  });
+
+  it("en bout de ligne, la BUTÉE : la grande carte finit à la marge droite, jamais au-delà", () => {
+    for (const size of CARD_SIZES) {
+      const columns = CARD_SIZE_GRID_COLUMNS[size];
+      const last = expandAt(columns, columns - 1, CARD_SIZE_SCALE[size]);
+      expect(Math.abs(last.right - (1920 - RIGHT))).toBeLessThanOrEqual(1);
+      // L'avant-dernière aussi tient entière à l'écran, sa voisine de droite après elle.
+      const before = expandAt(columns, columns - 2, CARD_SIZE_SCALE[size]);
+      expect(before.left).toBeGreaterThanOrEqual(INSET - 1);
+      expect(before.right).toBeLessThanOrEqual(1920 - RIGHT + 1);
+    }
+  });
+
+  it("la place se pose au bout avant de défiler : la piste peut l'atteindre", () => {
+    const { step, scrollX } = expandAt(6, 5);
+    expect(step.state.trailing).toBeGreaterThanOrEqual(scrollX);
+    expect(step.motion).toBe("withPreview");
+  });
+
+  it("le focus parti de la ligne, elle revient à sa première colonne : la grille reste une grille", () => {
+    const line = lineOf(6);
+    const tile = tileOf(6, 1);
+    let state = reduceRowHead(INITIAL_ROW_HEAD, { type: "focus", index: 4, at: 0 }, line).state;
+    const expand = reduceRowHead(state, { type: "expand", index: 4, tileWidth: tile.width, at: 10 }, line);
+    state = reduceRowHead(expand.state, { type: "blur", index: 4, at: 20 }, { ...line, scrollX: expand.scrollTo ?? 0 }).state;
+    const leave = reduceRowHead(state, { type: "tick", at: 20 + 1_000 }, { ...line, scrollX: expand.scrollTo ?? 0 });
+    expect(leave.scrollTo).toBe(0);
+  });
+
+  it("une dernière ligne incomplète garde le même comportement, sur ses seules affiches", () => {
+    const line = lineOf(6, 0, 3);
+    const tile = tileOf(6, 1);
+    // Trois affiches : la grande carte de la troisième tient sans défiler au-delà de son besoin.
+    const step = reduceRowHead(INITIAL_ROW_HEAD, { type: "expand", index: 2, tileWidth: tile.width, at: 0 }, line);
+    const scrollX = step.scrollTo ?? 0;
+    expect(INSET + 2 * (line.cardWidth + GAP) - scrollX + tile.width).toBeLessThanOrEqual(1920 - RIGHT + 1);
   });
 });
 

@@ -84,9 +84,6 @@ export interface CardFrameProps {
   /** Ce qui ne paraît qu'au focus, DANS l'image (les badges de qualité) :
    *  monté avec l'habit du focus, le temps du retour compris — rien au repos. */
   focusLayer?: ReactNode;
-  /** La croissance de la grande carte qui la recouvre (une affiche de grille) :
-   *  le cadre s'efface dessous, dans son propre fondu — sans vue de plus. */
-  under?: SharedValue<number>;
   children: ReactNode;
 }
 
@@ -138,7 +135,6 @@ function FrameBody({
   glow,
   focusLayer,
   focusProgress,
-  under,
   children,
 }: CardFrameProps & { recede: SharedValue<number> | null; nativeID?: string }) {
   // Partagé, le ressort propre reste au repos (jamais lancé).
@@ -154,10 +150,7 @@ function FrameBody({
   // gestionnaire de vues. Mêmes valeurs, dans la même image.
   const lift = useAnimatedStyle(() => ({ transform: cardLift(p.value, pressed ? pressed.value : 0) }));
   const fade = useAnimatedStyle(() => ({
-    opacity:
-      (1 - (1 - TV_STAGE.focus.recede) * (recede ? recede.value : dim.value)) *
-      // Sous la grande carte : effacé du tiers aux deux tiers de sa croissance (`UnderPreviewTile`).
-      (under ? 1 - Math.min(1, Math.max(0, under.value * 3 - 1)) : 1),
+    opacity: 1 - (1 - TV_STAGE.focus.recede) * (recede ? recede.value : dim.value),
   }));
   // Soulèvement, reflet et fondu de l'ombre : au focus, le temps du retour.
   const [dressedOn, settle] = useFocusDressing(focused);
