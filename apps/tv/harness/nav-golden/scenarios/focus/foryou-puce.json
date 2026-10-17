@@ -1,6 +1,6 @@
 {
   "domain": "focus",
-  "reference": "a0c2a027b",
+  "reference": "65857ecfc",
   "defaults": {
     "settleMs": 900
   },
@@ -41,12 +41,14 @@
         {
           "do": "down",
           "expect": {
-            "focus": "trendingNow:1"
+            "focus": "trendingNow:0"
           },
-          "why": "La carte sous la puce, au plus proche"
+          "why": "BAS depuis la puce : la 1re carte (miroir de HAUT, 17/10)"
         },
         {
           "do": [
+            "right",
+            "wait:0.4",
             "right",
             "wait:0.4",
             "right",
@@ -64,6 +66,106 @@
             "focus": "hero:list"
           },
           "why": "R2 inchangée : ni à l'aplomb de la puce, ni première carte — la section du dessus"
+        }
+      ]
+    },
+    {
+      "id": "foryou-puce-bas-premiere-carte",
+      "title": "« Pour vous » : BAS depuis la puce mène toujours à la 1re carte, même la rangée défilée",
+      "why": "Décision de Damien (17/10), miroir de HAUT : depuis la puce, la 1re carte de l'étagère (pas celle qui est dessous) ; une rangée défilée revient à son début.",
+      "start": {
+        "fixtures": [
+          "focus/foryou-tendances"
+        ],
+        "keys": [
+          "left",
+          "wait:0.8",
+          "down",
+          "wait:0.6",
+          "select",
+          "wait:2"
+        ],
+        "focus": "hero:primary"
+      },
+      "steps": [
+        {
+          "do": "down",
+          "expect": {
+            "focus": "trendingNow:0"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "filter:remove"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "trendingNow:0",
+            "frame": [
+              176,
+              null,
+              null,
+              null
+            ]
+          },
+          "why": "La 1re carte, pas la 2e qui est sous la puce"
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "expect": {
+            "focus": "trendingNow:7"
+          }
+        },
+        {
+          "do": [
+            "left",
+            "wait:0.5",
+            "left",
+            "wait:0.5",
+            "left"
+          ],
+          "expect": {
+            "focus": "trendingNow:4"
+          },
+          "why": "La rangée défilée : la 5e carte sous la puce"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "filter:remove"
+          },
+          "why": "R2 : à l'aplomb, la puce"
+        },
+        {
+          "do": "down",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "trendingNow:0",
+            "frame": [
+              176,
+              null,
+              null,
+              null
+            ]
+          },
+          "why": "La 1re carte, la rangée revenue à son début"
         }
       ]
     }

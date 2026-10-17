@@ -2563,8 +2563,8 @@ des réglages. HAUT / BAS depuis un élément d'une section :
    qui passent à la ligne) ; en remontant, seulement ce qui est à l'APLOMB —
    la pastille du filtre, au-dessus de sa carte, n'est jamais une étape
    obligée depuis le bout de la rangée (mais depuis la PREMIÈRE carte de la
-   1re étagère de « Pour vous », HAUT y va toujours, à l'aplomb ou non —
-   `tvHead`, 17/10). Une section qui se dit LISTE de
+   1re étagère de « Pour vous », HAUT y va toujours, à l'aplomb ou non, et BAS
+   depuis elle mène toujours à la 1re carte — `tvHead`, 17/10). Une section qui se dit LISTE de
    lignes (`FocusSection list` : le panneau des réglages) n'a rien qui la
    coiffe : HAUT y va aussi à la ligne voisine, au plus proche ;
 2. sinon, la section voisine dès qu'elle a un élément focalisable (une autre

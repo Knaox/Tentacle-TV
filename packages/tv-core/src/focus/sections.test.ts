@@ -289,3 +289,28 @@ describe("la TÊTE d'une section — HAUT depuis sa première carte (17/10)", ()
   });
 });
 
+describe("BAS depuis la TÊTE — la première carte, miroir de HAUT (17/10)", () => {
+  const shelf: SectionGeometry<string> = row("forYou", 560, 5, { left: 176, width: 312, gap: 36, height: 541, header: 70 });
+  const pill = box(560, 570, 273, 52);
+  const fromPill = (fromHead: boolean) => ({ section: shelf.box, item: pill, siblings: shelf.items, head: "filter:remove", fromHead });
+  const next = row("next", 1300, 3, { left: 176 });
+
+  it("depuis la puce, la 1re carte — pas la 2e, qui est dessous", () => {
+    expect(pickSectionNeighbor(fromPill(true), [shelf, next], "bas")).toBe("forYou:0");
+  });
+
+  it("la rangée défilée (1re carte hors de l'écran à gauche) : toujours la 1re carte", () => {
+    const scrolled = row("forYou", 560, 5, { left: 176 - 2 * 348, width: 312, gap: 36, height: 541, header: 70 });
+    expect(pickSectionNeighbor({ ...fromPill(true), siblings: scrolled.items }, [scrolled, next], "bas")).toBe("forYou:0");
+  });
+
+  it("sans `fromHead`, la règle d'avant : la carte au plus proche, sous la puce", () => {
+    expect(pickSectionNeighbor(fromPill(false), [shelf, next], "bas")).toBe("forYou:1");
+  });
+
+  it("HAUT depuis la tête n'est pas touché", () => {
+    const hero = { box: box(0, 0, 1920, 500), items: [{ element: "hero:primary", box: box(176, 400, 340, 68) }] };
+    expect(pickSectionNeighbor(fromPill(true), [hero, shelf], "haut")).toBe("hero:primary");
+  });
+});
+
