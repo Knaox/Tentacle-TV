@@ -695,6 +695,13 @@ posée au bout AVANT de défiler, le départ du focus) ; la carte y glisse sur l
 ressort de sa grande carte (`rows/rowGlide.ts`). En bout de rangée, la BUTÉE (la
 grande carte finit à la marge droite, elle grandit vers la gauche) ; au départ du
 focus, la rangée RESTE où elle est (choix de Damien, 16/10).
+Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir), chaque LIGNE est ce
+carrousel, sans titre (17/10 : `GridCarouselLine`, tv-core `cards/trailerPreviewGrid.ts`,
+les règles des rangées sans copie) : même tête collée au rail, même butée, la légende et
+le pied SOUS la grande carte ; la ligne garde sa hauteur de repos et les lignes du
+dessous descendent d'autant (`gridLinePush` — la liste recyclée ne relaie rien) ; le
+focus parti, une ligne qui tient à l'écran revient à sa première colonne, et HAUT/BAS
+gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes voisines).
 La page descend si elle dépasse en bas (`previewRevealPort`). Les titres autour du focus
 se préparent d'avance (`trailers.previewWarm`, tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** (16/10) : la CIBLE d'une carte qui peut
