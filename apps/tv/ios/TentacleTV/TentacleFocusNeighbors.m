@@ -189,6 +189,37 @@ static UIView *HeadFromFirst(TentacleFocusSection *from, CGRect item, NSArray<UI
   return head;
 }
 
+/// `firstBelowHead` (sections.ts) : en descendant DEPUIS la tête, la première
+/// carte — la plus à gauche — de la ligne la plus proche sous elle.
+static UIView *FirstBelowHead(TentacleFocusSection *from, UIView *focused, CGRect item, NSArray<UIView *> *siblings, BOOL up)
+{
+  if (up || focused != from.headView) {
+    return nil;
+  }
+  TentacleItem closest = {nil, CGRectNull};
+  NSMutableArray<NSValue *> *below = [NSMutableArray array];
+  for (UIView *view in siblings) {
+    CGRect box = [view convertRect:view.bounds toView:nil];
+    if (CGRectGetMinY(box) < CGRectGetMaxY(item) - kFrontierSlack) {
+      continue;
+    }
+    TentacleItem candidate = {view, box};
+    if (closest.view == nil || CGRectGetMinY(box) < CGRectGetMinY(closest.box)) {
+      closest = candidate;
+    }
+    [below addObject:[NSValue valueWithBytes:&candidate objCType:@encode(TentacleItem)]];
+  }
+  TentacleItem first = closest;
+  for (NSValue *value in below) {
+    TentacleItem candidate;
+    [value getValue:&candidate];
+    if (OnSameRow(closest.box, candidate.box) && CGRectGetMinX(candidate.box) < CGRectGetMinX(first.box)) {
+      first = candidate;
+    }
+  }
+  return first.view;
+}
+
 /// Une section candidate : au-delà, dans la colonne — la géométrie seule, sans
 /// rien parcourir de son contenu.
 @interface TentacleCandidate : NSObject
@@ -257,7 +288,8 @@ BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView *focused, BOOL up
   CollectItems(from, siblings, YES);
   [siblings removeObject:focused];
   CGRect focusedBox = [focused convertRect:focused.bounds toView:nil];
-  if (HeadFromFirst(from, focusedBox, siblings, up) != nil || InLineWithin(focusedBox, siblings, up, from.lineList) != nil) {
+  if (HeadFromFirst(from, focusedBox, siblings, up) != nil || FirstBelowHead(from, focused, focusedBox, siblings, up) != nil ||
+      InLineWithin(focusedBox, siblings, up, from.lineList) != nil) {
     return YES;
   }
   for (TentacleCandidate *candidate in CandidatesBeyond(from, up)) {
@@ -282,6 +314,10 @@ UIView *TentacleNeighborTarget(TentacleFocusSection *from, UIView *focused, BOOL
   UIView *head = HeadFromFirst(from, itemBox, siblings, up);
   if (head != nil) {
     return head;
+  }
+  UIView *first = FirstBelowHead(from, focused, itemBox, siblings, up);
+  if (first != nil) {
+    return first;
   }
   UIView *within = InLineWithin(itemBox, siblings, up, from.lineList);
   if (within != nil) {

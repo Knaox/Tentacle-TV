@@ -30,7 +30,9 @@ import { onSameRow, type Box } from "./geometry";
  * TOUJOURS, qu'elle soit à l'aplomb ou non — un titre d'étagère plus long
  * (« Tendances actuelles ») la décalait hors de l'aplomb, et HAUT partait au
  * héros. Depuis les autres cartes, rien ne change : l'aplomb, sinon la
- * section du dessus.
+ * section du dessus. En MIROIR (décision du 17/10) : BAS depuis la tête mène
+ * TOUJOURS à la première carte de la ligne du dessous, pas à celle qui est
+ * sous la puce — la rangée défilée revient à son début pour la montrer.
  *
  * Deux exceptions, tranchées le 2026-10-01 : une section peut déclarer son
  * ENTRÉE (`entry`), qui l'emporte quand elle est focalisable — l'onglet de la
@@ -173,18 +175,37 @@ export function headFromFirst<T>(from: Box, siblings: Array<SectionItem<T>>, hea
 }
 
 /**
+ * Le miroir, en descendant DEPUIS la tête (`fromHead`) : la première carte —
+ * la plus à gauche — de la ligne la plus proche sous elle, dans sa section ;
+ * sinon `null`.
+ */
+export function firstBelowHead<T>(from: Box, siblings: Array<SectionItem<T>>, fromHead: boolean | undefined, direction: VerticalDirection): T | null {
+  if (direction !== "bas" || !fromHead) return null;
+  const below = siblings.filter((item) => item.box.top >= from.bottom - FRONTIER_SLACK);
+  if (below.length === 0) return null;
+  let closest = below[0];
+  for (const item of below) if (item.box.top < closest.box.top) closest = item;
+  let first = closest;
+  for (const item of below) if (onSameRow(closest.box, item.box) && item.box.left < first.box.left) first = item;
+  return first.element;
+}
+
+/**
  * La règle entière : depuis l'élément `item` de la section `section` (dont
- * `siblings` sont les autres éléments, `list` sa nature, `head` sa tête), HAUT ou BAS. Rend
+ * `siblings` sont les autres éléments, `list` sa nature, `head` sa tête, `fromHead` : `item` EST
+ * la tête), HAUT ou BAS. Rend
  * l'élément visé, ou `null` quand rien n'est au-delà — la plateforme garde
  * alors son comportement (un guide, un bord).
  */
 export function pickSectionNeighbor<T>(
-  from: { section: Box; item: Box; siblings?: Array<SectionItem<T>>; list?: boolean; head?: T | null },
+  from: { section: Box; item: Box; siblings?: Array<SectionItem<T>>; list?: boolean; head?: T | null; fromHead?: boolean },
   sections: Array<SectionGeometry<T>>,
   direction: VerticalDirection,
 ): T | null {
   const head = headFromFirst(from.item, from.siblings ?? [], from.head, direction);
   if (head != null) return head;
+  const first = firstBelowHead(from.item, from.siblings ?? [], from.fromHead, direction);
+  if (first != null) return first;
   const within = inLineWithin(from.item, from.siblings ?? [], direction, from.list);
   if (within) return within.element;
   let kept: { section: SectionGeometry<T>; item: SectionItem<T> } | null = null;
