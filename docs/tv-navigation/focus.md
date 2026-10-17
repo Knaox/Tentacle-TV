@@ -106,9 +106,7 @@ geste). Constantes : `STACK_SLACK` 24, `SAME_EDGE` 8, `FRONTIER_SLACK` 2.
   TÊTE déclarée d'une section (`tvHead`, `useSectionHead` — la puce du filtre
   de la 1re étagère de « Pour vous ») est atteinte par HAUT depuis la PREMIÈRE
   carte de sa ligne, à l'aplomb ou non (tv-core `headFromFirst`) : un titre
-  long (« Tendances actuelles ») la décalait, et HAUT partait au héros. Et
-  seulement depuis elle : la tête n'est jamais l'aplomb d'une autre carte (une
-  carte passée dessous par le défilement ou un aperçu en butée va au-dessus).
+  long (« Tendances actuelles ») la décalait, et HAUT partait au héros.
 - **R3 — Sections candidates** : au-delà de la section quittée (tolérance
   `min(24, plus petite hauteur / 4)`), qui partagent une abscisse avec elle
   (une autre colonne n'est jamais visée), avec au moins un élément

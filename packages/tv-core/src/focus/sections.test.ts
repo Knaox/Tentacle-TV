@@ -279,14 +279,9 @@ describe("la TÊTE d'une section — HAUT depuis sa première carte (17/10)", ()
     expect(pickSectionNeighbor(from(shelf, "forYou:0"), [hero, shelf], "haut")).toBe("hero:primary");
   });
 
-  it("depuis une autre carte, même sous la puce : la section du dessus — la tête n'est jamais l'aplomb", () => {
-    // La 2e carte (524-836) est sous la puce (560-833) : avant le 17/10, la puce.
-    expect(pickSectionNeighbor(fromCard("forYou:1"), [hero, shelf], "haut")).toBe("hero:primary");
+  it("depuis une autre carte : l'aplomb (la 2e est sous la puce), sinon la section du dessus", () => {
+    expect(pickSectionNeighbor(fromCard("forYou:1"), [hero, shelf], "haut")).toBe("filter:remove");
     expect(pickSectionNeighbor(fromCard("forYou:4"), [hero, shelf], "haut")).toBe("hero:primary");
-  });
-
-  it("sans tête déclarée, la règle d'avant : la carte sous la puce la rejoint par l'aplomb", () => {
-    expect(pickSectionNeighbor(from(shelf, "forYou:1"), [hero, shelf], "haut")).toBe("filter:remove");
   });
 
   it("en descendant, la tête ne change rien", () => {
