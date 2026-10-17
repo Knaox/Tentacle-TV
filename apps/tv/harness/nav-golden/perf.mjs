@@ -63,7 +63,7 @@ function harness(ctx, session) {
     keys: (list) => agentRun(ctx, list, { timeoutMs: 120_000 }),
     sleep,
     start: (start) => coldStart(ctx, session, start),
-    obs: () => evaluate(ctx, "globalThis.__navGolden.observe()"),
+    obs: async () => { const o = await evaluate(ctx, "globalThis.__navGolden.observe()"); return { ...o, focus: o?.focus?.key ?? null, frame: o?.focus?.frame ?? null }; },
     eval: (expr) => evaluate(ctx, expr, { timeoutMs: 30_000 }),
     arm: (mode = "fps", watch = null) => probe(`arm(${JSON.stringify(mode)}, ${JSON.stringify(watch)})`),
     async disarm() {
