@@ -10,7 +10,6 @@ import {
   gridIndexOf,
   gridLineEntries,
   gridLineKey,
-  gridLineReveal,
   isGridKey,
 } from "./gridFocus";
 
@@ -21,11 +20,6 @@ describe("grille d'affiches", () => {
     expect(isGridKey("pill:status")).toBe(false);
   });
 
-  it("la première ligne ramène la page tout en haut, les autres au plus près", () => {
-    expect(gridLineReveal(0)).toBe("start");
-    expect(gridLineReveal(1)).toBe("nearest");
-    expect(gridLineReveal(40)).toBe("nearest");
-  });
 
   it("la page suivante part à trois écrans de la fin", () => {
     expect(GRID_END_REACHED_SCREENS).toBe(3);

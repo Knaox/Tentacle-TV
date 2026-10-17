@@ -27,16 +27,13 @@ export function gridIndexOf(key: string, prefix: string = GRID_KEY_PREFIX): numb
   return /^\d+$/.test(rest) ? Number(rest) : null;
 }
 
-/**
- * Comment la page montre une ligne focalisée (GR-2) : la PREMIÈRE ramène la
- * page tout en haut, son titre et ses filtres avec elle — revenir sur la
- * première ligne, c'est revenir en haut, y compris au bout d'une remontée
- * maintenue ou d'un glisser vif, où la plateforme pose la page où son
- * défilement rapide s'arrête ; les autres viennent au plus près.
+/*
+ * Comment la page montre une ligne focalisée (GR-2, 18/10) : TOUJOURS au même
+ * endroit, juste sous la zone fixe de l'aperçu (`previewZoneLayout.ts`,
+ * `BELOW_ZONE_REVEAL`) — la première comme les autres : la position
+ * verticale du focus ne change jamais. L'en-tête (titre, filtres) ramène la
+ * page tout en haut quand le focus y remonte (sa propre section).
  */
-export function gridLineReveal(lineIndex: number): "start" | "nearest" {
-  return lineIndex === 0 ? "start" : "nearest";
-}
 
 /** La section d'une ligne de grille : `<préfixe>:line:<n>` (`PosterGrid`). */
 export const gridLineKey = (prefix: string, lineIndex: number): string => `${prefix}:line:${lineIndex}`;

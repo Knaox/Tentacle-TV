@@ -1,7 +1,7 @@
 import { memo, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { gridLineKey, gridLineReveal } from "@tentacle-tv/tv-core";
+import { BELOW_ZONE_REVEAL, gridLineKey } from "@tentacle-tv/tv-core";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import type { CardFocusWatch } from "../../cards/useCardPreviewFocus";
@@ -12,11 +12,12 @@ import type { GridMotion } from "./gridMotion";
  * Une LIGNE de grille, FIXE (tv-core `cards/trailerPreviewGrid.ts`) : ses
  * affiches restent à leurs colonnes, elle ne défile ni ne tourne, rien n'y
  * grandit. GAUCHE et DROITE ne font que déplacer le focus ; l'aperçu de
- * l'affiche focalisée se joue dans la zone fixe en haut de l'écran.
+ * l'affiche focalisée se joue dans la zone fixe en haut de l'écran, et la
+ * ligne focalisée se pose toujours au même endroit, juste sous elle.
  */
 
-/** Comment la page montre une ligne (`gridLineReveal`, tv-core). Des objets stables. */
-const LINE_REVEALS: Record<"start" | "nearest", FocusSectionReveal> = { start: { mode: "start" }, nearest: { mode: "nearest" } };
+/** La ligne focalisée se pose toujours au même endroit, sous la zone (tv-core `previewZoneLayout.ts`). */
+const LINE_REVEAL: FocusSectionReveal = BELOW_ZONE_REVEAL;
 
 export interface GridLineModel {
   start: number;
@@ -44,7 +45,7 @@ export interface GridLineProps {
 export const GridLine = memo(function GridLine({ line, index, width, height, stride, focusPrefix, motion, ...handlers }: GridLineProps) {
   const watch = useCallback<CardFocusWatch>((onOutrun) => motion.watchFocus(stride, onOutrun), [motion, stride]);
   return (
-    <FocusSection focusKey={gridLineKey(focusPrefix, index)} reveal={LINE_REVEALS[gridLineReveal(index)]}>
+    <FocusSection focusKey={gridLineKey(focusPrefix, index)} reveal={LINE_REVEAL}>
       <View style={[styles.line, { height }]}>
         {line.cards.map((card, i) => (
           // Clé de PLACE : recyclée, la ligne garde ses cartes (`PosterGrid`).
