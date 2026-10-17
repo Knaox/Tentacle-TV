@@ -7,6 +7,7 @@ import {
   useMediaItem,
   useSaveHomeLayoutPatch,
   useServerCapabilities,
+  useTrendingNowSetting,
   useUserId,
 } from "@tentacle-tv/api-client";
 import { heroModesOffered, type HeroMode } from "@tentacle-tv/shared";
@@ -41,6 +42,8 @@ export function useHomeSettings(active: boolean) {
   const save = useSaveHomeLayoutPatch();
   const client = useJellyfinClient();
   const userId = useUserId();
+  // « Tendances actuelles » en tête de « Pour vous » : préférence du compte, gardée par `reco.trending`.
+  const trendingNow = useTrendingNowSetting();
 
   const favorites = useQuery({
     queryKey: ["favorites", "titles", userId],
@@ -68,8 +71,9 @@ export function useHomeSettings(active: boolean) {
       fixedTitle: fixedItem.data?.Id === fixedId ? fixedItem.data?.Name : undefined,
       // Demandé sans favori, ou la liste attendue s'est révélée vide.
       noFavorites: noFavorites || (picking && favorites.data?.length === 0),
+      trendingNow: trendingNow.available ? trendingNow.enabled : undefined,
     };
-  }, [layout, current, capabilities, fixedItem.data, fixedId, noFavorites, picking, favorites.data]);
+  }, [layout, current, capabilities, fixedItem.data, fixedId, noFavorites, picking, favorites.data, trendingNow.available, trendingNow.enabled]);
 
   const selectHeroMode = useCallback((mode: HeroMode) => {
     if (!current) return;
@@ -101,6 +105,7 @@ export function useHomeSettings(active: boolean) {
     choiceList,
     onSelectHeroMode: selectHeroMode,
     onChangeFixedTitle: useCallback(() => setPicking(true), []),
+    onToggleTrendingNow: trendingNow.setEnabled,
     onChoose: chooseFixed,
     closeChoices,
   };

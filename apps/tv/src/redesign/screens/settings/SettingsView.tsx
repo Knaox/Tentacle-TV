@@ -67,7 +67,8 @@ import type {
  *   `onSelectLiteMode` l'écrit et recharge l'interface ; absent, rien ;
  * - `home` : le bandeau principal de l'accueil, réglage du compte
  *   (`useHomeSettings` : `useHomeLayout`, capacités du serveur, favoris) ;
- *   `onSelectHeroMode` / `onChangeFixedTitle` ; absent, l'onglet ne paraît pas ;
+ *   `onSelectHeroMode` / `onChangeFixedTitle` / `onToggleTrendingNow` (« Tendances
+ *   actuelles », `reco.trending`) ; absent, l'onglet ne paraît pas ;
  * - `navigation` (Apple TV) : les entrées organisables de la barre de gauche
  *   (`NavigationPanel`) ; absent, l'onglet ne paraît pas ;
  * - `about` : `versions.json` (`tv`), serveur, compte, appareil, année.
@@ -130,6 +131,7 @@ export interface SettingsViewProps {
   onToggleLiquidGlass?: (next: boolean) => void;
   onSelectHeroMode?: (mode: HeroMode) => void;
   onChangeFixedTitle?: () => void;
+  onToggleTrendingNow?: (next: boolean) => void;
   /** Faux : le réglage Liquid Glass n'existe pas sur cette plateforme (trait
    *  `liquidGlass`). Absent : il existe. L'onglet Apparence, lui, existe
    *  toujours (la taille des cartes). */
@@ -245,7 +247,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                 />
               ) : null}
               {tab === "home" && home ? (
-                <HomePanel home={home} onSelectHeroMode={props.onSelectHeroMode} onChangeFixedTitle={props.onChangeFixedTitle} />
+                <HomePanel home={home} onSelectHeroMode={props.onSelectHeroMode} onChangeFixedTitle={props.onChangeFixedTitle} onToggleTrendingNow={props.onToggleTrendingNow} />
               ) : null}
               {tab === "appearance" ? (
                 <AppearancePanel

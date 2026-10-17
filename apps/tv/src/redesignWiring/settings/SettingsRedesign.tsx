@@ -94,6 +94,7 @@ export function SettingsRedesign({ navigation, route }: Props) {
           home={home.home}
           onSelectHeroMode={home.onSelectHeroMode}
           onChangeFixedTitle={home.onChangeFixedTitle}
+          onToggleTrendingNow={home.onToggleTrendingNow}
           licenses={legal.licenses}
           onOpenLicense={legal.openLicense}
           choiceList={null}

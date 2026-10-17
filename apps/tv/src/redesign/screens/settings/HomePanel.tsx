@@ -6,6 +6,7 @@ import { SETTINGS_HERO_CHANGE_FIXED, settingsHeroKey } from "@tentacle-tv/tv-cor
 import { Chip } from "../../controls/Chip";
 import type { IconName } from "../../icons/Icon";
 import { SectionTitle, settingsText } from "./settingsParts";
+import { ToggleRow } from "./ToggleRow";
 import type { SettingsHome } from "./settingsTypes";
 
 /**
@@ -17,8 +18,12 @@ import type { SettingsHome } from "./settingsTypes";
  * (la liste de choix des réglages, sur les favoris). Les sources « Pour
  * vous » rappellent leur repli : sans recommandation, la reprise.
  *
+ * Dessous, la section « Pour vous » : « Tendances actuelles », la première
+ * rangée de la page, allumée ou non — réglage du COMPTE, absent face à un
+ * serveur qui ne déclare pas `reco.trending`.
+ *
  * Ce que fait OK : tv-core `hero/heroSourceSettings.ts`. Clés de focus :
- * `settings:hero:<source>`, `settings:hero:changeFixed`.
+ * `settings:hero:<source>`, `settings:hero:changeFixed`, `settings:trendingNow`.
  */
 
 /** Le signe de chaque source au repos ; la retenue porte la coche. */
@@ -31,12 +36,15 @@ const ICONS: Readonly<Record<HeroMode, IconName>> = {
   fixed: "bookmark",
 };
 
-export const HomePanel = memo(function HomePanel({ home, onSelectHeroMode, onChangeFixedTitle }: {
+export const HomePanel = memo(function HomePanel({ home, onSelectHeroMode, onChangeFixedTitle, onToggleTrendingNow }: {
   home: SettingsHome;
   onSelectHeroMode?: (mode: HeroMode) => void;
   onChangeFixedTitle?: () => void;
+  onToggleTrendingNow?: (next: boolean) => void;
 }) {
   const { t } = useTranslation("homeSettings");
+  const { t: tPrefs } = useTranslation("preferences");
+  const { t: tReco } = useTranslation("reco");
   const { current } = home;
   const fixed = current === "fixed";
   return (
@@ -73,6 +81,21 @@ export const HomePanel = memo(function HomePanel({ home, onSelectHeroMode, onCha
           </View>
         ) : null}
       </View>
+      {home.trendingNow !== undefined ? (
+        <View>
+          <SectionTitle title={tReco("rowForYou")} />
+          <ToggleRow
+            icon="sparkles"
+            title={tPrefs("persoRecoTrending")}
+            description={tPrefs("persoRecoTrendingHint")}
+            value={home.trendingNow}
+            onLabel={tPrefs("reglageActive")}
+            offLabel={tPrefs("reglageDesactive")}
+            focusKey="settings:trendingNow"
+            onToggle={onToggleTrendingNow}
+          />
+        </View>
+      ) : null}
     </View>
   );
 });
