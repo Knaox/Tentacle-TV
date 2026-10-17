@@ -1,0 +1,213 @@
+{
+  "format": 1,
+  "domain": "focus",
+  "suite": "rangees-apercu-dessus",
+  "reference": {
+    "sha": "a0c2a027bfa05137bc95ece3d5e7755325a7fd7a",
+    "label": "référence a0c2a027b"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "ac5241da1600bcd0",
+  "device": {
+    "kind": "simulateur",
+    "name": "lot1017-a2b",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-17T13:41:59.474Z",
+  "scenarios": {
+    "apercu-garde-la-rangee-du-dessus": {
+      "hash": "1746188650f9",
+      "durationMs": 36779,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          248,
+          556,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "wait:0.6",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            176,
+            271,
+            494,
+            351
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/trailers/preview/warm"
+          ]
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "nextUp:4",
+          "label": "One Piece",
+          "frame": [
+            176,
+            230,
+            494,
+            351
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:3.5",
+          "app": "foreground",
+          "focus": "nextUp:4",
+          "label": "One Piece",
+          "frame": [
+            176,
+            230,
+            494,
+            351
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/trailers/preview/warm"
+          ]
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            176,
+            126,
+            312,
+            541
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:3.5",
+          "app": "foreground",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            176,
+            126,
+            312,
+            541
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nextUp:4",
+          "label": "One Piece",
+          "frame": [
+            176,
+            126,
+            494,
+            351
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/trailers/preview/warm"
+          ]
+        }
+      ],
+      "unstable": {
+        "start": [],
+        "steps": {
+          "0": [
+            "frame"
+          ]
+        }
+      }
+    }
+  }
+}

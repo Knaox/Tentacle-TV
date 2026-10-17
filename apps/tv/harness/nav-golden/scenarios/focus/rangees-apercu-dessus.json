@@ -1,6 +1,6 @@
 {
   "domain": "focus",
-  "reference": "HEAD",
+  "reference": "a0c2a027b",
   "defaults": {
     "settleMs": 900
   },

@@ -1,6 +1,6 @@
 {
   "domain": "focus",
-  "reference": "2f38dc7c8",
+  "reference": "a0c2a027b",
   "defaults": {
     "settleMs": 900
   },
@@ -102,9 +102,9 @@
         {
           "do": "up",
           "expect": {
-            "focus": "hero:list"
+            "focus": "hero:secondary"
           },
-          "why": "Ni la 1re carte ni l'aplomb : la tête n'est atteinte que depuis la 1re carte"
+          "why": "Ni la 1re carte ni l'aplomb : la tête n'est atteinte que depuis la 1re carte — le héros, au plus proche (« Plus d'infos »)"
         }
       ]
     }
