@@ -50,11 +50,10 @@ export interface GridLineEntries {
 }
 
 /**
- * HAUT et BAS gardent la COLONNE (GR-7, 17/10) : chaque ligne est un
- * carrousel, et l'affiche dont l'aperçu démarre passe en tête de la sienne
- * (`cards/trailerPreviewGrid.ts`). Depuis elle, la règle de voisinage
- * (`sections.ts`, le centre le plus proche) mènerait à la PREMIÈRE colonne
- * de la ligne voisine, sous elle. Les lignes voisines déclarent donc leur
+ * HAUT et BAS gardent la COLONNE (GR-7) : quand l'aperçu d'une affiche
+ * démarre, sa grande carte déborde sur ses voisines (`cards/trailerPreviewGrid.ts`)
+ * et la règle de voisinage (`sections.ts`, le centre le plus proche) pourrait
+ * mener ailleurs que sous elle. Les lignes voisines déclarent donc leur
  * ENTRÉE à la colonne de l'affiche focalisée — sans aperçu, c'est déjà
  * l'affiche au centre le plus proche : rien ne change. Une ligne du dessous
  * plus courte (la dernière) entre par sa dernière affiche, comme avant.

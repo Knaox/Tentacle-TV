@@ -45,12 +45,9 @@ export interface RowPreviewRoomInput {
   inset: number;
   /** Les cartes montées dans la piste. */
   cardCount: number;
-  /** La règle qui décide (tv-core) : celle des rangées par défaut ; une ligne de grille qui tourne
-   *  passe la sienne (`reduceGridLine`), qui délègue à celle-ci. */
-  reduce?: typeof reduceRowHead;
 }
 
-export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount, reduce = reduceRowHead }: RowPreviewRoomInput) {
+export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount }: RowPreviewRoomInput) {
   const reveal = usePreviewReveal();
   const [reserve, setReserve] = useState(0);
   const latest = useRef({ cardWidth, inset, cardCount });
@@ -77,7 +74,7 @@ export function useRowPreviewRoom({ track, scrollX, cardWidth, inset, cardCount,
   dispatch.current = (event) => {
     const geometry = latest.current;
     const before = head.current.trailing;
-    const step = reduce(head.current, event, {
+    const step = reduceRowHead(head.current, event, {
       cardCount: geometry.cardCount,
       cardWidth: geometry.cardWidth,
       gap: TV_STAGE.row.gap,

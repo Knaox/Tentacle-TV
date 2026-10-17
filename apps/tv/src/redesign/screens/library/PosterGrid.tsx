@@ -7,7 +7,7 @@ import { cardFocusFooterHeight } from "../../cards/CardFocusFooter";
 import { useCardMetrics } from "../../cards/cardSizeMode";
 import type { CardModel } from "../../cards/cardTypes";
 import { PreviewRevealProvider, type PreviewReveal } from "../../rows/previewRevealPort";
-import { GridCarouselLine, type GridLineModel } from "./GridCarouselLine";
+import { GridLine, type GridLineModel } from "./GridLine";
 import { createGridMotion } from "./gridMotion";
 import { useGridLinePush } from "./gridLinePush";
 import { useGridPreviewWarm } from "./gridPreviewWarm";
@@ -38,15 +38,15 @@ import { mountProfile } from "../../render/mountProfile";
  * clées par leur PLACE, et une carte qui change de titre change d'image sans
  * jamais montrer la précédente (`MediaCard`).
  *
- * L'aperçu au focus (Apple TV, Android TV) : chaque ligne est un CARROUSEL
- * de l'accueil sans titre (`GridCarouselLine`, tv-core
- * `cards/trailerPreviewGrid.ts`) — l'affiche dont l'aperçu démarre devient la
- * grande carte, passe en tête de sa ligne (ou en butée au bout), sa légende
- * dessous ; les lignes du dessous descendent d'autant (`gridLinePush`), la
- * page aussi si la ligne dépasse en bas. HAUT et BAS gardent la colonne
- * (l'intégration déclare l'entrée des lignes voisines, tv-core
- * `gridLineEntries`). Les aperçus de sa ligne et de la suivante se préparent
- * d'avance.
+ * L'aperçu au focus (Apple TV, Android TV) : chaque ligne est FIXE
+ * (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) — elle ne défile ni ne
+ * tourne, GAUCHE et DROITE ne font que déplacer le focus. L'affiche dont
+ * l'aperçu démarre devient la grande carte, à sa place dans sa colonne, sa
+ * légende dessous ; les lignes du dessous descendent d'autant
+ * (`gridLinePush`), la page aussi si la ligne dépasse en bas. HAUT et BAS
+ * gardent la colonne (l'intégration déclare l'entrée des lignes voisines,
+ * tv-core `gridLineEntries`). Les aperçus de sa ligne et de la suivante se
+ * préparent d'avance.
  */
 
 export interface PosterGridProps {
@@ -147,9 +147,10 @@ export const PosterGrid = memo(function PosterGrid({
   const stride = lineStride(width);
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<Line>) => (
-      <GridCarouselLine
+      <GridLine
         line={item}
         index={index}
+        columns={columns}
         width={width}
         height={height}
         stride={stride}
@@ -162,7 +163,7 @@ export const PosterGrid = memo(function PosterGrid({
         onWarm={warm}
       />
     ),
-    [motion, push, width, height, stride, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
+    [motion, push, columns, width, height, stride, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
   );
   return (
     // FlashList veut un parent de taille connue : la scène.
@@ -229,7 +230,7 @@ const GRID_BOTTOM = 160;
  *  et l'année (22) à 1,21 em la ligne (Inter), 2 entre les deux. */
 const CAPTION_HEIGHT = 72;
 
-/** La hauteur d'une ligne au repos, fixe : ce que la grande carte gagne déborde (`GridCarouselLine`). */
+/** La hauteur d'une ligne au repos, fixe : ce que la grande carte gagne déborde (`GridLine`). */
 function lineHeight(width: number): number {
   return Math.round(width * 1.5) + CAPTION_HEIGHT;
 }

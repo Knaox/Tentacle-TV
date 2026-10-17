@@ -2,17 +2,13 @@
  * L'aperçu au focus dans une GRILLE d'affiches (Apple TV, Android TV) —
  * bibliothèque, Ma liste, Favoris, Parcourir.
  *
- * Chaque LIGNE de la grille est un CARROUSEL de l'accueil, sans titre
- * (demande du 17/10 : « le même comportement que l'accueil, ligne par
- * ligne »), et qui TOURNE (option C du 17/10, `trailerPreviewGridLine.ts`) :
- * au repos, ses affiches tiennent toutes à l'écran ; quand l'aperçu d'une
- * affiche démarre, sa cellule DEVIENT la grande carte (sa légende et son pied
- * passent dessous, jamais cachés) et la ligne défile pour la mettre EN TÊTE,
- * collée à la navigation — la place libre à droite remplie par le début de la
- * même ligne (les reprises). Seule la dernière affiche reste en BUTÉE, sa
- * grande carte à la marge de droite. Le focus parti (HAUT, BAS, la
- * navigation), la ligne revient d'elle-même à sa première colonne — la
- * grille reste une grille.
+ * Une ligne de grille est FIXE (décision du 18/10, qui remplace la ligne qui
+ * tournait du 17/10) : elle ne défile pas, ne tourne pas, ne met aucune
+ * affiche en tête. GAUCHE et DROITE ne font que déplacer le focus ; l'affiche
+ * focalisée reste dans sa colonne, et quand son aperçu démarre, sa grande
+ * carte s'y adapte, quelle que soit la colonne (la géométrie de la grande
+ * carte, `trailerPreviewTile*.ts`). Aucune ligne n'a donc à « revenir » à sa
+ * première colonne.
  *
  * En hauteur, la ligne qui grandit ne change pas la mise en page de la liste
  * (recyclée : la relayer à chaque image coûterait tout) : les lignes du
@@ -20,8 +16,8 @@
  * ressort, et la page descend si la ligne agrandie dépasse en bas.
  *
  * HAUT et BAS gardent la COLONNE (`gridLineEntries`, `focus/gridFocus.ts`) :
- * depuis une affiche passée en tête, la flèche ne mène pas sous elle (la
- * première colonne) mais à la même colonne de la ligne voisine.
+ * la flèche mène à la même colonne de la ligne voisine, jamais à ce qui se
+ * trouve sous la grande carte.
  */
 
 /**
