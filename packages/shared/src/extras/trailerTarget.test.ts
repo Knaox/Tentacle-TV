@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TrailerEntry } from "../trailers";
-import { catalogRemoteTrailers, catalogTrailerTarget, hasTrailer, resolveTrailerTarget } from "./trailerTarget";
+import { catalogRemoteTrailers, catalogTrailerTarget, hasTrailer, resolveTrailerTarget, trailerButtonReserved } from "./trailerTarget";
 
 const entry = (playback: TrailerEntry["playback"], name = "x"): TrailerEntry => ({
   scope: { kind: "season", season: 6 }, playback, name, version: "localized", type: "trailer", source: "allocine",
@@ -38,5 +38,18 @@ describe("bande-annonce › la cible d'après le catalogue", () => {
 
   it("sans catalogue, la règle d'avant : la locale, sinon la première distante", () => {
     expect(resolveTrailerTarget([{ Id: "local" }], [{ Url: "https://youtu.be/aaaaaaaaaaa" }])).toEqual({ kind: "local", itemId: "local" });
+  });
+});
+
+describe("le bouton posé d'avance", () => {
+  it("la fiche annonce une bande-annonce distante, les listes pas encore là : le bouton est posé", () => {
+    expect(trailerButtonReserved({ RemoteTrailers: [{ Url: "https://youtu.be/aaaaaaaaaaa" }] }, false)).toBe(true);
+  });
+
+  it("listes reçues, ou rien d'annoncé : la règle ordinaire décide (`hasTrailer`)", () => {
+    expect(trailerButtonReserved({ RemoteTrailers: [{ Url: "https://youtu.be/aaaaaaaaaaa" }] }, true)).toBe(false);
+    expect(trailerButtonReserved({ RemoteTrailers: [] }, false)).toBe(false);
+    expect(trailerButtonReserved({ RemoteTrailers: [{ Url: "" }] }, false)).toBe(false);
+    expect(trailerButtonReserved(undefined, false)).toBe(false);
   });
 });

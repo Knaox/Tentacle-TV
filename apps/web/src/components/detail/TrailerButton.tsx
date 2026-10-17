@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemTrailer } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FilmIcon } from "../media/MediaDetailIcons";
-import { parseYouTubeId, type RelayedTrailerPlayback } from "@tentacle-tv/shared";
+import { parseYouTubeId, trailerButtonReserved, type RelayedTrailerPlayback } from "@tentacle-tv/shared";
 import { TrailerViewer, useFullTrailerPlayer } from "./TrailerViewer";
 import { useTrailerIntent } from "../trailerPlayer";
 import { shouldOpenYouTubeExternally } from "./youtube";
@@ -24,14 +24,18 @@ import { CatalogTrailerPlayer } from "./CatalogTrailerPlayer";
  *    modale d'embed face à un serveur d'avant).
  * Le survol du bouton fait préparer la vidéo (`useTrailerIntent`).
  * Masqué si aucun trailer (local ni distant) : pas de bouton mort. Posé dès que
- * la fiche ANNONCE une bande-annonce locale (`LocalTrailerCount`), sans attendre
- * sa liste : la rangée d'actions ne bouge pas une fraction de seconde après.
+ * la fiche ANNONCE une bande-annonce — locale (`LocalTrailerCount`) ou distante
+ * (`RemoteTrailers`, `trailerButtonReserved`) —, sans attendre les listes : la
+ * rangée d'actions arrive entière avec la fiche. Un clic avant leur réponse
+ * part dès que la vidéo est connue.
  */
 export function TrailerButton({ item }: { item: MediaItem }) {
   const { t, i18n } = useTranslation("common");
   const navigate = useNavigate();
-  const { target, visible, remote, entries, language } = useItemTrailer(item, i18n.language, useWebTrailerPlatform());
+  const { target, visible, remote, entries, language, settled } = useItemTrailer(item, i18n.language, useWebTrailerPlatform());
   const [modalOpen, setModalOpen] = useState(false);
+  /** Un clic arrivé avant la vidéo : il part dès qu'elle est connue. */
+  const [wanted, setWanted] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
   const full = useFullTrailerPlayer();
   const remoteId = full && target?.kind === "remote" ? parseYouTubeId(target.trailer.Url) : null;
@@ -40,13 +44,15 @@ export function TrailerButton({ item }: { item: MediaItem }) {
     [target, remoteId],
   );
   const intent = useTrailerIntent(intentPlayback);
-
-  if (!visible) return null;
+  const reserved = trailerButtonReserved(item, settled);
 
   const handleClick = () => {
-    // Bande-annonce locale annoncée, liste encore en route : rien à lancer
-    // pour l'instant — elle arrive en quelques millisecondes.
-    if (!target) return;
+    // Bande-annonce annoncée, listes encore en route : le clic attend la vidéo.
+    if (!target) {
+      setWanted(true);
+      return;
+    }
+    setWanted(false);
     if (target.kind === "local") {
       navigate(`/watch/${target.itemId}`);
       return;
@@ -65,11 +71,23 @@ export function TrailerButton({ item }: { item: MediaItem }) {
     setModalOpen(true);
   };
 
+  // La vidéo arrive après un clic : on la lance ; les listes n'ont rien rendu : le clic tombe.
+  const clickRef = useRef(handleClick);
+  clickRef.current = handleClick;
+  useEffect(() => {
+    if (!wanted) return;
+    if (target) clickRef.current();
+    else if (settled) setWanted(false);
+  }, [wanted, target, settled]);
+
+  if (!visible && !reserved) return null;
+
   return (
     <>
       <button
         type="button"
         onClick={handleClick}
+        aria-busy={!target || undefined}
         {...intent}
         aria-label={t("common:watchTrailer")}
         // Posé sur la scène : `on-media`, sans flou (le voile dessous est déjà

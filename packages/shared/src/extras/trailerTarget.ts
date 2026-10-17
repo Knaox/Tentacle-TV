@@ -91,3 +91,19 @@ export function resolveTrailerTarget(
 export function hasTrailer(target: TrailerTarget | null, item: { LocalTrailerCount?: number } | undefined): boolean {
   return target !== null || (item?.LocalTrailerCount ?? 0) > 0;
 }
+
+/**
+ * Le bouton se pose-t-il D'AVANCE, avant que les listes aient répondu ? Oui
+ * quand la fiche annonce déjà une bande-annonce distante (`RemoteTrailers` de
+ * Jellyfin, lues avec le titre) : la rangée d'actions arrive entière avec la
+ * fiche, au lieu d'être décalée par un bouton qui entre jusqu'à 3 s plus tard
+ * (catalogue du serveur au premier passage — relevé du lot 1017). Réponse
+ * reçue, `hasTrailer` reprend la main : un titre dont les listes n'ont rien
+ * de juste (bonus seuls) perd son bouton — rare, et seul cas où la rangée bouge.
+ */
+export function trailerButtonReserved(
+  item: { RemoteTrailers?: ReadonlyArray<{ Url?: string | null }> | null } | undefined,
+  settled: boolean,
+): boolean {
+  return !settled && (item?.RemoteTrailers ?? []).some((trailer) => !!trailer.Url);
+}
