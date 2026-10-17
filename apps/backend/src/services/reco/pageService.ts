@@ -11,6 +11,7 @@ import { filterKeyOf } from "./providerFilter";
 import { rightsFilterFor } from "./recoRights";
 import type { RecoRowItem } from "./rowItem";
 import { serveContext } from "./serveContext";
+import { trendingHeadItems, withTrendingHead } from "./trendingHead";
 import type { RecoState } from "./serveContext";
 import type { RecoFeatured, RecoWhy } from "./recoPageTypes";
 
@@ -44,7 +45,12 @@ function rebuildReasonOf(reason: StaleReason): PageRebuildReason {
  * (première visite, filtre jamais vu) se construit à la volée, une fois ;
  * un snapshot périmé est SERVI quand même et se reconstruit en fond.
  */
-export async function servePage(userId: string, providers: number[] | null, themes = false): Promise<RecoPage> {
+export async function servePage(
+  userId: string,
+  providers: number[] | null,
+  themes = false,
+  trendingNow = false,
+): Promise<RecoPage> {
   const filterKey = filterKeyOf(providers);
   const ctx = await serveContext(userId);
   const personalized = ctx.state === "warming" || ctx.state === "ready";
@@ -78,6 +84,9 @@ export async function servePage(userId: string, providers: number[] | null, them
   // « À la une » : le titre tel que la page le sert ENCORE (exclusions du moment comprises).
   const featuredRow = snapshot.featured ? rows.find((r) => r.key === snapshot.featured!.rowKey) : undefined;
   const featuredItem = featuredRow?.items.find((i) => i.key === snapshot.featured!.key);
+  // « Tendances actuelles » en tête (`?trendingNow=1`), APRÈS « À la une » : la tête
+  // ne lui retire pas son titre. Servie au moment même — jamais dans un snapshot.
+  if (trendingNow) rows = withTrendingHead(rows, await trendingHeadItems(userId, ctx, providers));
 
   const flags = computePageFlags({
     state: ctx.state,

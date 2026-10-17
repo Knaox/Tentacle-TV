@@ -248,3 +248,15 @@ export interface RecoPage {
  * s'y appellerait « Pour vous ». Un serveur plus ancien l'ignore.
  */
 export const RECO_PAGE_THEMES_PARAM = "themes";
+
+/**
+ * Paramètre de requête par lequel un client demande la rangée « Tendances
+ * actuelles » en tête de la page (`?trendingNow=1`, capacité `reco.trending`).
+ * Le serveur la sert si le compte l'a laissée allumée et que TMDB est réglé ;
+ * la page n'a alors plus la rangée `trending` filtrée par le goût, et les
+ * rangées suivantes ne répètent pas ses titres. Un serveur plus ancien l'ignore.
+ */
+export const RECO_PAGE_TRENDING_PARAM = "trendingNow";
+
+/** La clé de la rangée de tête — elle traverse le réseau : jamais renommée. */
+export const RECO_TRENDING_NOW_ROW_KEY = "trendingNow";

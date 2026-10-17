@@ -15,8 +15,9 @@ export const recoPageRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/page", async (request) => {
     const user = (request as any).user as JellyfinUser;
-    const query = request.query as { providers?: unknown; themes?: unknown };
+    const query = request.query as { providers?: unknown; themes?: unknown; trendingNow?: unknown };
     // `?themes=1` (RECO_PAGE_THEMES_PARAM) : le client sait titrer une rangée par son `why`.
-    return servePage(user.userId, providerFilterFromQuery(query.providers), query.themes === "1");
+    // `?trendingNow=1` (RECO_PAGE_TRENDING_PARAM) : il sait rendre « Tendances actuelles » en tête.
+    return servePage(user.userId, providerFilterFromQuery(query.providers), query.themes === "1", query.trendingNow === "1");
   });
 };

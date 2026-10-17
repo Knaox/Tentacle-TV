@@ -20,6 +20,10 @@ const settingsSchema = z.object({
   /** Filtre de plateformes de la page Recommandations (ids TMDB principaux).
    *  Absent chez un vieux client : le bloc entier est remplacé, sans filtre. */
   providerFilter: z.array(z.number().int().positive()).max(PROVIDER_FILTER_MAX).default([]),
+  /** « Tendances actuelles » en tête de « Pour vous » (capacité `reco.trending`).
+   *  Absent chez un client d'avant : le choix enregistré est GARDÉ, jamais remis
+   *  au défaut — un vieux bureau qui touche un autre réglage ne la rallume pas. */
+  trendingNow: z.boolean().optional(),
 });
 
 export type RecoSettingsPayload = z.infer<typeof settingsSchema>;
@@ -31,6 +35,7 @@ export const DEFAULT_RECO_SETTINGS: RecoSettingsPayload = {
   shareHistory: true,
   explorationBalance: 70,
   providerFilter: [],
+  trendingNow: true,
 };
 
 /** La colonne JSON → ids canoniques ; illisible = aucun filtre. */
@@ -44,7 +49,8 @@ export function parseProviderFilter(raw: string | null | undefined): number[] {
 }
 
 /** GET /reco — défauts servis (`stored: false`), jamais 404.
- *  PUT /reco — remplace le bloc entier (cinq réglages, une donnée). */
+ *  PUT /reco — remplace le bloc entier (cinq réglages, une donnée) ; seul
+ *  `trendingNow`, absent, garde sa valeur enregistrée. */
 export function registerRecoSettingsRoutes(app: FastifyInstance): void {
   app.get("/reco", async (request) => {
     const user = (request as any).user as JellyfinUser;
@@ -68,6 +74,7 @@ export function registerRecoSettingsRoutes(app: FastifyInstance): void {
         shareHistory: row.shareHistory,
         explorationBalance: row.explorationBalance,
         providerFilter: parseProviderFilter(row.providerFilter),
+        trendingNow: row.trendingNow,
       },
     };
   });
@@ -83,7 +90,12 @@ export function registerRecoSettingsRoutes(app: FastifyInstance): void {
     // Ids canonisés (l'id principal de chaque famille) : la clé de snapshot
     // du filtre sauvegardé est la même que celle de la requête de page.
     const providerFilter = providerFilterFromQuery(settings.providerFilter) ?? [];
-    const data = { ...settings, providerFilter: JSON.stringify(providerFilter) };
+    const { trendingNow, ...rest } = settings;
+    const data = {
+      ...rest,
+      providerFilter: JSON.stringify(providerFilter),
+      ...(trendingNow === undefined ? {} : { trendingNow }),
+    };
     await prisma.recoSettings.upsert({
       where: { jellyfinUserId: user.userId },
       create: { jellyfinUserId: user.userId, ...data },

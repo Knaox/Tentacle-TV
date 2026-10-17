@@ -777,6 +777,9 @@ model RecoSettings {
   /// compte d'un appareil à l'autre — et pour que le serveur précalcule la
   /// page de ce filtre en fond.
   providerFilter     String   @default("[]")
+  /// « Tendances actuelles » en tête de « Pour vous » (capacité `reco.trending`,
+  /// serveur 1.31.0) : allumée par défaut, coupée par le compte.
+  trendingNow        Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

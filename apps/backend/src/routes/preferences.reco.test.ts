@@ -167,4 +167,15 @@ describe("GET/PUT /api/preferences/reco", () => {
     expect(spies.bootstrapPool).toHaveBeenCalledWith("u1");
     await app.close();
   });
+
+  it("« Tendances actuelles » : coupée, elle le reste quand un client d'avant écrit sans elle", async () => {
+    const app = await makeApp();
+    await app.inject({ method: "PUT", url: URL_PATH, headers, payload: { ...DEFAULT_RECO_SETTINGS, trendingNow: false } });
+    const { trendingNow: _omitted, ...oldClientBody } = DEFAULT_RECO_SETTINGS;
+    expect((await app.inject({ method: "PUT", url: URL_PATH, headers, payload: { ...oldClientBody, community: false } })).statusCode).toBe(200);
+    const read = (await app.inject({ method: "GET", url: URL_PATH, headers })).json();
+    expect(read.settings.trendingNow).toBe(false);
+    expect(read.settings.community).toBe(false);
+    await app.close();
+  });
 });

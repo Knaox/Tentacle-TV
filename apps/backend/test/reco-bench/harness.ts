@@ -220,7 +220,7 @@ export async function runPersona(persona: Persona, library: readonly BenchLibrar
     { vigieSource: vigieEmulation }
   );
   const ctx: ServeContext = {
-    state: "ready", signalCount: profile.signalCount, lambda: 0.7, includeVigie: true, community: true, exclude,
+    state: "ready", signalCount: profile.signalCount, lambda: 0.7, includeVigie: true, community: true, trendingNow: true, exclude,
     profile: { facets: profile.vector, signalCount: profile.signalCount, animeShare: profile.animeShare },
     bootstrapping: false, tmdbConfigured: true, personalized: true, profileComputedAt: null, settingsUpdatedAt: null,
   };
