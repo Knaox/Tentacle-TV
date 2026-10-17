@@ -8,7 +8,7 @@ import path from "node:path";
 import { CAPTURES } from "../lib/paths.mjs";
 import { webCaptureFile } from "../web/series.mjs";
 
-const SITE_REPO = process.env.VITRINE_SITE_REPO ?? path.join(os.homedir(), "Desktop/Projet - local/Tentacle/Tentacle Web");
+const SITE_REPO = process.env.VITRINE_SITE_REPO ?? path.join(os.homedir(), "Desktop/Projet - local/Tentacle Web");
 export const SITE_RAW = path.join(SITE_REPO, "tools/capture/out/raw/vitrine");
 
 /** Chaque visuel du site : sa source dans la vitrine et ses largeurs servies. */
