@@ -11,7 +11,9 @@
 /*  - sa date tombe autour de la sortie : un film ou la série, de      */
 /*    18 mois avant la sortie à 18 mois après (la dernière diffusion   */
 /*    pour une série) ; une saison, de 12 mois avant sa diffusion à    */
-/*    36 mois après (sans date connue, la fenêtre du titre) ;          */
+/*    36 mois après (sans date connue, la fenêtre du titre — mais      */
+/*    seulement la saison QUI VIENT : une « saison 7 » d'une série qui */
+/*    en compte trois est celle d'un homonyme, 1.31.0) ;               */
 /*  - elle dure de 15 s à 5 min.                                       */
 /*  Dans le doute, rien : un faux négatif laisse la place à TMDB, une  */
 /*  mauvaise bande-annonce ne se rattrape pas.                         */
@@ -54,6 +56,8 @@ export interface AllocineMatch {
   scope: TrailerScope;
   version: AllocineVersion;
   kind: "trailer" | "teaser";
+  /** Le rang dans la série de bandes-annonces : 1 pour la première, 2 pour « (2) »… */
+  index: number;
   createdTime: number;
 }
 
@@ -91,20 +95,25 @@ function titleWindow(title: AllocineMatchTitle): [number, number] | null {
  * La fenêtre de dates où la vidéo de cette portée peut avoir été publiée ;
  * `null` : aucune date sûre, rien. Une saison dont la date n'est pas connue
  * (Jellyseerr ne la donne pas toujours, Jellyfin non plus) prend celle du
- * titre entier : le nom exact reste exigé.
+ * titre entier — si c'est une saison que le titre a, ou la suivante : au-delà,
+ * c'est un homonyme qui compte plus de saisons. Le nom exact reste exigé.
  */
 function windowOf(title: AllocineMatchTitle, season: number | undefined): [number, number] | null {
   if (season === undefined) return titleWindow(title);
-  const aired = secondsOf(title.seasons?.find((s) => s.season === season)?.airDate);
-  return aired === null ? titleWindow(title) : [aired - 12 * MONTH_S, aired + 36 * MONTH_S];
+  const known = title.seasons ?? [];
+  const aired = secondsOf(known.find((s) => s.season === season)?.airDate);
+  if (aired !== null) return [aired - 12 * MONTH_S, aired + 36 * MONTH_S];
+  const last = Math.max(0, ...known.map((s) => s.season));
+  return known.length > 0 && season > last + 1 ? null : titleWindow(title);
 }
 
 const VERSION_RANK: Record<AllocineVersion, number> = { vf: 0, vostfr: 1, vo: 2 };
 
 /**
  * Les vidéos du titre, rangées : la version (VF, VOSTFR, VO), la bande-annonce
- * avant le teaser, la plus récente d'abord. Une vidéo vue deux fois (deux
- * pages de recherche) ne compte qu'une fois.
+ * avant le teaser, la bande-annonce 1 avant la « (2) », la plus récente à
+ * égalité. Une vidéo vue deux fois (deux pages de recherche) ne compte qu'une
+ * fois.
  */
 export function matchAllocineVideos(videos: readonly AllocineVideo[], title: AllocineMatchTitle): AllocineMatch[] {
   const names = new Set(title.names.map(normalizeShowName).filter(Boolean));
@@ -124,11 +133,13 @@ export function matchAllocineVideos(videos: readonly AllocineVideo[], title: All
       ? { kind: "movie" }
       : parsed.season !== undefined && parsed.season > 0 ? { kind: "season", season: parsed.season } : { kind: "series" };
     matches.push({
-      videoId: video.id, name: decodeEntities(video.title).replace(/\s+/g, " ").trim(), scope, version: parsed.version, kind: parsed.kind, createdTime: video.createdTime,
+      videoId: video.id, name: decodeEntities(video.title).replace(/\s+/g, " ").trim(), scope, version: parsed.version, kind: parsed.kind,
+      index: parsed.index ?? 1, createdTime: video.createdTime,
     });
   }
   return matches.sort((a, b) =>
     VERSION_RANK[a.version] - VERSION_RANK[b.version]
     || (a.kind === "trailer" ? 0 : 1) - (b.kind === "trailer" ? 0 : 1)
+    || a.index - b.index
     || b.createdTime - a.createdTime);
 }

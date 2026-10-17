@@ -7,6 +7,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { ChevronRightIcon } from "../media/MediaDetailIcons";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { easeOut, fadeUp } from "../../theme/motion";
+import { detailLogoUrl } from "./detailArtUrls";
+import { useLateReveal } from "./detailArrival";
 
 /**
  * Le logo entre un temps après le surtitre, d'un léger zoom arrière : c'est la
@@ -53,13 +55,13 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount, lo
   const navigate = useNavigate();
   const client = useJellyfinClient();
   const isEpisode = item.Type === "Episode";
-  // Un épisode garde son nom en texte : le logo serait celui de la série.
-  const serverLogoUrl = !isEpisode && item.ImageTags?.Logo
-    ? client.getImageUrl(item.Id, "Logo", { height: 320, quality: 90, tag: item.ImageTags.Logo })
-    : null;
+  // Un épisode garde son nom en texte : le logo serait celui de la série (`detailLogoUrl`).
+  const serverLogoUrl = detailLogoUrl(client, item);
   const logoUrl = isEpisode ? null : localLogoUrl === undefined ? serverLogoUrl : localLogoUrl;
   const { broken, reportFailure } = useBrokenImage(logoUrl);
   const showLogo = logoUrl !== null && !broken;
+  // Arrivé après l'entrée (réseau lent) : il fond, il ne surgit pas.
+  const late = useLateReveal(showLogo ? logoUrl : null);
   const kindKey = KIND_KEYS[item.Type];
   const kicker = [
     kindKey ? t(kindKey) : null,
@@ -89,13 +91,15 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount, lo
         // Le logo tient dans min(92 % de la colonne, 36rem) — dit avec une
         // largeur et un plafond, jamais `min()` : le socle Chrome 53 du
         // téléviseur ignorerait la déclaration entière (passe compat webOS).
-        <span className="block w-[92%] max-w-[36rem]">
+        <span className="block w-[92%] max-w-[36rem]" style={late.style}>
           <motion.img
             variants={logoReveal}
             src={logoUrl}
             alt=""
             draggable={false}
-            onError={reportFailure}
+            data-detail-art="logo"
+            onLoad={late.onLoad}
+            onError={() => { late.onError(); reportFailure(); }}
             style={{ transformOrigin: "left bottom" }}
             className="block h-auto max-h-28 w-auto max-w-full object-contain object-left drop-shadow-[0_6px_24px_var(--on-media-shadow)] md:max-h-36 xl:max-h-44"
           />

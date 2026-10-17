@@ -4,7 +4,8 @@
 /*  La version se décide d'après la langue du SERVEUR                  */
 /*  (`trailerVersionOf`, la règle de la liste) ; le type d'après TMDB  */
 /*  ou le libellé (`trailerKind`) — ce qui n'est ni une bande-annonce  */
-/*  ni un teaser (featurette, extrait, coulisses) n'entre pas.         */
+/*  ni un teaser (featurette, extrait, coulisses, interview, réaction, */
+/*  critique…) n'entre pas, même typé « Trailer » par TMDB.            */
 /* ------------------------------------------------------------------ */
 
 import { parseYouTubeId, trailerKind, type JellyfinTrailer, type TmdbVideo } from "../../../trailers/trailerList";
@@ -32,7 +33,7 @@ export function youtubeEntries(
     if (namesAnotherTitle(video.name, titleNames)) continue;
     const ytId = video.key && /^[\w-]{11}$/.test(video.key) ? video.key : parseYouTubeId(video.url);
     if (!ytId) continue;
-    const kind = trailerKind({ Url: video.url, Name: video.name, type: video.type });
+    const kind = trailerKind({ Url: video.url, Name: video.name, type: video.type }, titleNames);
     if (kind === "other") continue;
     entries.push({
       scope,

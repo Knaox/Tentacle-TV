@@ -79,9 +79,10 @@ describe("AlloCiné › les vidéos d'un titre (réponses réelles)", () => {
       "s6 trailer vf x8e90ff",
       "s9 trailer vostfr xa9l1fq",
       "s8 trailer vostfr x9jkc68",
-      "s5 trailer vostfr x8a2mn3",
       "s4 trailer vostfr x8a1sri",
       "s4 trailer vostfr x8a1rzz",
+      // « (2) » : après les premières bandes-annonces des autres saisons (le rang les range ensuite par portée).
+      "s5 trailer vostfr x8a2mn3",
       "s9 teaser vostfr xa1ucfa",
       "s9 trailer vo xa4n516",
       "s5 trailer vo x8a2ige",
@@ -147,5 +148,28 @@ describe("AlloCiné › les vidéos d'un titre (réponses réelles)", () => {
     // Sans date du titre, seule la saison datée passe.
     expect(matchAllocineVideos(videos, { ...title, releaseDate: null }).map((m) => m.videoId)).toEqual(["ok"]);
     expect(matchAllocineVideos(videos, { ...title, kind: "movie" })).toEqual([]);
+  });
+
+  it("une saison sans date qui n'est ni connue ni la suivante est celle d'un HOMONYME : rien", () => {
+    const title: AllocineMatchTitle = {
+      kind: "tv", names: ["X"], releaseDate: "2020-01-01", lastAirDate: "2022-01-01",
+      seasons: [{ season: 1, airDate: "2020-01-01" }, { season: 2, airDate: "2021-01-01" }],
+    };
+    const at = Date.parse("2022-06-01T00:00:00Z") / 1000;
+    const videos: AllocineVideo[] = [
+      { id: "next", title: "X - saison 3 Bande-annonce VF", createdTime: at, duration: 60 },
+      { id: "homonym", title: "X - saison 7 Bande-annonce VF", createdTime: at, duration: 60 },
+    ];
+    expect(matchAllocineVideos(videos, title).map((m) => m.videoId)).toEqual(["next"]);
+  });
+
+  it("la bande-annonce 1 avant la « (2) », à version et type égaux", () => {
+    const title: AllocineMatchTitle = { kind: "movie", names: ["X"], releaseDate: "2020-01-01" };
+    const at = Date.parse("2020-01-01T00:00:00Z") / 1000;
+    const videos: AllocineVideo[] = [
+      { id: "second", title: "X Bande-annonce (2) VF", createdTime: at + 86_400, duration: 60 },
+      { id: "first", title: "X Bande-annonce VF", createdTime: at, duration: 60 },
+    ];
+    expect(matchAllocineVideos(videos, title).map((m) => m.videoId)).toEqual(["first", "second"]);
   });
 });

@@ -18,6 +18,8 @@ import { PreviewLaunchOverlay } from "../components/detail/PreviewLaunchOverlay"
 import { DetailPlaceholder } from "../components/detail/DetailPlaceholder";
 import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../components/detail/detailTransition";
 import { DetailTitle } from "../components/detail/DetailTitle";
+import { detailLogoUrl, detailPosterUrl } from "../components/detail/detailArtUrls";
+import { useDetailArrival } from "../components/detail/detailArrival";
 import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
@@ -138,6 +140,20 @@ export function MediaDetail() {
   const backdropUrl = overlayBackdropId
     ? client.getImageUrl(overlayBackdropId, "Backdrop", { width: 1920, quality: 85 })
     : null;
+  /**
+   * L'ARRIVÉE : décor, affiche et logo décodés avant que la fiche se montre
+   * (`detailArrival.ts`, 800 ms au plus). Sous un calque d'ouverture, c'est lui
+   * qui attend avant de s'effacer ; sans calque, le fond seul tient la place,
+   * puis toute l'entrée part d'un bloc. Jamais une image qui surgit après.
+   */
+  const arrivalReady = useDetailArrival(item?.Id ?? null, [
+    backdropUrl, item ? detailPosterUrl(client, item) : null, item ? detailLogoUrl(client, item) : null,
+  ]);
+  // Une fiche déjà montrée ne se recache jamais (un calque qui s'efface avant la porte, par son garde-fou).
+  const shownFor = useRef<string | null>(null);
+  const overlayInCharge = origin !== null && !reducedMotion;
+  const holding = !!item && !arrivalReady && !overlayInCharge && shownFor.current !== item.Id;
+  if (item && !holding) shownFor.current = item.Id;
   // Depuis une mini-carte d'aperçu, c'est sa vidéo qui grandit jusqu'à la
   // scène (`PreviewLaunchOverlay`) ; depuis une carte, son visuel qui vole
   // jusqu'à l'affiche. Une clé par ouverture : la suivante repart de zéro.
@@ -147,6 +163,7 @@ export function MediaDetail() {
       launch={origin.launch}
       backdropUrl={backdropUrl}
       settled={!!item}
+      ready={arrivalReady}
       onCovered={handleOverlayCovered}
       onDone={handleOverlayDone}
     />
@@ -156,17 +173,18 @@ export function MediaDetail() {
       backdropUrl={backdropUrl}
       target={target}
       settled={!!item}
+      ready={arrivalReady}
       onCovered={handleOverlayCovered}
       onDone={handleOverlayDone}
     />
   );
 
-  if (isLoading || !item) {
+  if (isLoading || !item || holding) {
     return (
       <>
         {/* L'attente, ou l'échec : une requête en erreur ne tourne plus à vide. */}
         <div style={pageStyle}>
-          <DetailPlaceholder failed={isError && !item} error={error} retrying={isFetching} onRetry={() => void refetch()} />
+          <DetailPlaceholder quiet={holding} failed={isError && !item} error={error} retrying={isFetching} onRetry={() => void refetch()} />
         </div>
         {/* Le calque d'ouverture couvre l'écran pendant le chargement : sans
             lui ici, un aller-retour spinner → fiche crevait l'animation. */}

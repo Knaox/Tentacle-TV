@@ -12,7 +12,7 @@
 
 import { TmdbError, tmdbConfigured, tmdbFetch } from "../tmdb/client";
 import { getSeerrConfig } from "../seerConfig";
-import { hasSubtitleMark, type TmdbVideo } from "../../trailers/trailerList";
+import { hasSubtitleMark, trailerKind, trailerOrdinal, type TmdbVideo } from "../../trailers/trailerList";
 
 export type TitleMediaType = "movie" | "tv";
 
@@ -64,16 +64,20 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 /**
  * Les vidéos YouTube de TMDB, dans l'ordre où les essayer à langue et type
- * égaux (le tri de `mergeTrailers` est stable) : une VF avant une VOST, la
- * vidéo officielle, la plus haute définition, la plus récente.
+ * égaux (les tris qui suivent sont stables) : une VF avant une VOST, la
+ * bande-annonce 1 avant la 2 (`trailerOrdinal`), la vidéo officielle, la plus
+ * haute définition, puis la PLUS ANCIENNE — la bande-annonce de la sortie, pas
+ * celle d'une ressortie ; pour une série, celle de son lancement.
  */
 export function orderTmdbVideos(results: readonly TmdbVideoDto[]): TmdbVideo[] {
   const usable = results.filter((v) => (v.site ?? "").toLowerCase() === "youtube" && !!v.key);
-  const score = (v: TmdbVideoDto) => [hasSubtitleMark(v.name) ? 1 : 0, v.official === false ? 1 : 0, -(v.size ?? 0)];
+  const score = (v: TmdbVideoDto) => [
+    hasSubtitleMark(v.name) ? 1 : 0, trailerOrdinal(v.name), v.official === false ? 1 : 0, -(v.size ?? 0),
+  ];
   const sorted = [...usable].sort((a, b) => {
     const [x, y] = [score(a), score(b)];
     for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];
-    return (b.published_at ?? "").localeCompare(a.published_at ?? "");
+    return (a.published_at ?? "").localeCompare(b.published_at ?? "");
   });
   return sorted.map((v) => ({
     key: v.key as string, name: v.name, type: v.type, site: "YouTube", lang: v.iso_639_1 ?? undefined, url: youtubeUrl(v.key as string),
@@ -110,7 +114,8 @@ export async function fetchTmdbVideos(tmdbId: number, mediaType: TitleMediaType,
 
 /**
  * Les vidéos liées d'un titre selon Jellyseerr (extension Vigie) : bandes-
- * annonces et teasers, YouTube seulement. `null` : Jellyseerr absent ou muet.
+ * annonces et teasers seulement (`trailerKind`), YouTube seulement, la
+ * bande-annonce 1 avant la 2. `null` : Jellyseerr absent ou muet.
  */
 export async function fetchSeerrVideos(tmdbId: number | string, mediaType: TitleMediaType): Promise<TmdbVideo[] | null> {
   const seerr = getSeerrConfig();
@@ -134,7 +139,9 @@ export async function fetchSeerrVideos(tmdbId: number | string, mediaType: Title
         lang: v.iso_639_1,
         url: v.url || (v.key ? youtubeUrl(v.key) : ""),
       }))
-      .filter((v) => v.url);
+      // Jamais un bonus (interview, coulisses, extrait…) : même un client d'avant 1.31.0 ne le proposera plus.
+      .filter((v) => v.url && trailerKind({ Url: v.url, Name: v.name, type: v.type }) !== "other")
+      .sort((a, b) => trailerOrdinal(a.name) - trailerOrdinal(b.name));
   } catch {
     return null;
   }

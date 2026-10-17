@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   hasSubtitleMark, trailerLangMatches, mergeTrailers, parseYouTubeId, sortTrailersByLang, trailerKind, trailerLangFit,
-  type RichTrailer,
+  trailerOrdinal, type RichTrailer,
 } from "./trailerList";
 
 const video = (Name: string, lang?: string, type?: string): RichTrailer => ({ Url: `https://youtu.be/${Name}`, Name, lang, type });
@@ -65,6 +65,22 @@ describe("bandes-annonces › le type d'une vidéo", () => {
     expect(trailerKind(video("Extrait de la bande-annonce", "fr", "Clip"))).toBe("other");
   });
 
+  it("un mot de bonus l'emporte sur le type TMDB : interview, réaction, critique, coulisses… jamais une bande-annonce", () => {
+    for (const name of [
+      "Dune : Interview de Timothée Chalamet", "Dune Official Trailer Reaction", "Dune - Critique", "Behind the Scene",
+      "Dune : Les coulisses du tournage", "Dune | Q&A with Denis Villeneuve", "Dune - Recap", "Dune Concept Trailer (Fan Made)",
+      "Dune : conférence de presse", "Dune : scènes coupées", "Dune - Bêtisier", "Honest Trailers | Dune",
+    ]) {
+      expect(trailerKind(video(name, "fr", "Trailer"))).toBe("other");
+    }
+  });
+
+  it("le nom du titre ne compte pas comme un mot de bonus : « The Interview » a sa bande-annonce", () => {
+    expect(trailerKind(video("The Interview - Official Trailer", "en", "Trailer"), ["The Interview"])).toBe("trailer");
+    expect(trailerKind(video("The Interview - Official Trailer", "en", "Trailer"))).toBe("other");
+    expect(trailerKind(video("The Interview - Cast Interview", "en", "Trailer"), ["The Interview"])).toBe("other");
+  });
+
   it("sans type (Jellyfin), le libellé seul ; sans mot-clé, une bande-annonce", () => {
     expect(trailerKind(video("Making-of"))).toBe("other");
     expect(trailerKind(video("Teaser"))).toBe("teaser");
@@ -73,17 +89,29 @@ describe("bandes-annonces › le type d'une vidéo", () => {
 });
 
 describe("bandes-annonces › l'ordre", () => {
-  it("VF, puis VOSTFR, puis le reste ; à langue égale, une bande-annonce avant un teaser", () => {
+  it("dans la langue visée, toutes les bandes-annonces avant les teasers, la VF avant la VOSTFR ; puis le reste", () => {
     const list = [
       video("enTrailer", "en", "Trailer"),
       video("Bande-annonce VOST", "fr", "Trailer"),
       video("Teaser VF", "fr", "Teaser"),
       video("Bande-annonce VF", "fr", "Trailer"),
       video("Bande-annonce VO", "fr", "Trailer"),
+      video("enTeaser", "en", "Teaser"),
     ];
     expect(sortTrailersByLang(list, "fr").map((t) => t.Name)).toEqual([
-      "Bande-annonce VF", "Teaser VF", "Bande-annonce VOST", "enTrailer", "Bande-annonce VO",
+      "Bande-annonce VF", "Bande-annonce VOST", "Teaser VF", "enTrailer", "Bande-annonce VO", "enTeaser",
     ]);
+  });
+
+  it("la bande-annonce 1 avant la 2 ; un numéro de saison n'est pas un rang", () => {
+    expect(trailerOrdinal("Dune : Bande-annonce 2 VF")).toBe(2);
+    expect(trailerOrdinal("Dune Bande-annonce (2) VF")).toBe(2);
+    expect(trailerOrdinal("Official Trailer #3")).toBe(3);
+    expect(trailerOrdinal("Season 2 Official Trailer")).toBe(1);
+    expect(trailerOrdinal("Trailer 2024")).toBe(1);
+    expect(trailerOrdinal("Final Trailer")).toBeGreaterThan(3);
+    const list = [video("Bande-annonce 2 VF", "fr", "Trailer"), video("Bande-annonce VF", "fr", "Trailer")];
+    expect(sortTrailersByLang(list, "fr").map((t) => t.Name)).toEqual(["Bande-annonce VF", "Bande-annonce 2 VF"]);
   });
 
   it("serveur en anglais : la VO anglaise d'abord", () => {
@@ -99,5 +127,17 @@ describe("bandes-annonces › l'ordre", () => {
     );
     expect(merged).toEqual([{ Url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", Name: "Bande-annonce VF", type: "Trailer", lang: "fr" }]);
     expect(parseYouTubeId(merged[0].Url)).toBe("aaaaaaaaaaa");
+  });
+
+  it("la fusion écarte les bonus : interviews, featurettes, extraits — de Jellyfin comme de TMDB", () => {
+    const merged = mergeTrailers(
+      [{ Url: "https://www.youtube.com/watch?v=bbbbbbbbbbb", Name: "Interview du réalisateur" }],
+      [
+        { key: "ccccccccccc", name: "Dune : la musique", type: "Featurette", lang: "fr", url: "https://www.youtube.com/watch?v=ccccccccccc" },
+        { key: "ddddddddddd", name: "Official Trailer", type: "Trailer", lang: "en", url: "https://www.youtube.com/watch?v=ddddddddddd" },
+      ],
+      "fr",
+    );
+    expect(merged.map((t) => t.Name)).toEqual(["Official Trailer"]);
   });
 });

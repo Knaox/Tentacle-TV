@@ -7,6 +7,7 @@ import { catalogScopes, playedTrailerVersion, rankCatalogEntries, trailerVersion
 const ITEM = "0123456789abcdef0123456789abcdef";
 const season = (n: number): TrailerScope => ({ kind: "season", season: n });
 const SERIES: TrailerScope = { kind: "series" };
+const MOVIE: TrailerScope = { kind: "movie" };
 
 function entry(scope: TrailerScope, id: string, extra: Partial<TrailerEntry> = {}): TrailerEntry {
   return {
@@ -80,7 +81,7 @@ describe("catalogue › la version de ce qu'on entend", () => {
 });
 
 describe("catalogue › le rang", () => {
-  it("dans une portée : locale, AlloCiné VF, AlloCiné VOSTFR, la langue du serveur, sous-titrée, VO, inconnue, AlloCiné VO", () => {
+  it("dans une portée : locale, VF (AlloCiné d'abord), VOSTFR (AlloCiné d'abord), VO, inconnue, AlloCiné VO", () => {
     const scope = season(2);
     const shuffled = [
       entry(scope, "allocine-vo", { source: "allocine", version: "original" }),
@@ -93,7 +94,7 @@ describe("catalogue › le rang", () => {
       { ...entry(scope, "local", { source: "local", version: "unknown" }), playback: { kind: "jellyfin" as const, itemId: ITEM } },
     ];
     expect(ids(rankCatalogEntries(shuffled, [scope]))).toEqual([
-      "local", "allocine-vf", "allocine-vost", "tmdb-vf", "tmdb-vost", "tmdb-vo", "unknown", "allocine-vo",
+      "local", "allocine-vf", "tmdb-vf", "allocine-vost", "tmdb-vost", "tmdb-vo", "unknown", "allocine-vo",
     ]);
   });
 
@@ -105,6 +106,30 @@ describe("catalogue › le rang", () => {
       entry(season(1), "s1-trailer-vf", { version: "localized" }),
     ];
     expect(ids(rankCatalogEntries(list, [season(1), SERIES]))).toEqual(["s1-trailer-vf", "s1-teaser", "series-trailer", "s1-trailer"]);
+  });
+
+  it("toutes les bandes-annonces avant les teasers dans la langue du serveur : la VOSTFR passe devant le teaser VF", () => {
+    const list = [
+      entry(MOVIE, "teaser-vf", { version: "localized", type: "teaser" }),
+      entry(MOVIE, "allocine-teaser-vf", { source: "allocine", version: "localized", type: "teaser" }),
+      entry(MOVIE, "trailer-vost", { version: "subtitled" }),
+      entry(MOVIE, "trailer-vo", { version: "original" }),
+      entry(MOVIE, "trailer-vf", { version: "localized" }),
+    ];
+    expect(ids(rankCatalogEntries(list, [MOVIE]))).toEqual(["trailer-vf", "trailer-vost", "allocine-teaser-vf", "teaser-vf", "trailer-vo"]);
+  });
+
+  it("la bande-annonce 1 avant la 2, la finale après les numérotées, à version égale", () => {
+    const list = [
+      entry(MOVIE, "Dune : Bande-annonce finale VF", { version: "localized" }),
+      entry(MOVIE, "Dune : Bande-annonce 2 VF", { version: "localized" }),
+      entry(MOVIE, "Dune : Bande-annonce VF", { version: "localized" }),
+      entry(MOVIE, "Dune : Official Trailer #3", { version: "original" }),
+      entry(MOVIE, "Dune : Official Trailer", { version: "original" }),
+    ];
+    expect(ids(rankCatalogEntries(list, [MOVIE]))).toEqual([
+      "Dune : Bande-annonce VF", "Dune : Bande-annonce 2 VF", "Dune : Bande-annonce finale VF", "Dune : Official Trailer", "Dune : Official Trailer #3",
+    ]);
   });
 
   it("une vidéo rendue par deux sources ne compte qu'une fois ; hors des portées, rien ; huit au plus", () => {

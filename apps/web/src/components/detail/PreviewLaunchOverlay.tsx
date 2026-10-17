@@ -13,6 +13,11 @@ interface PreviewLaunchOverlayProps {
   backdropUrl: string | null;
   /** La fiche est rendue (requête revenue) : le calque peut la découvrir. */
   settled: boolean;
+  /**
+   * La fiche est PRÊTE à se montrer (`useDetailArrival` : son affiche et son
+   * logo décodés, ou le plafond atteint) : le calque ne s'efface pas avant.
+   */
+  ready?: boolean;
   /** Le fond est opaque : la fiche peut se montrer dessous (`MediaDetail`). */
   onCovered: () => void;
   onDone: () => void;
@@ -64,7 +69,7 @@ function FrameCanvas({ canvas }: { canvas: HTMLCanvasElement }) {
  * Animations réduites : rien ne vole, la fiche apparaît (comme l'ouverture
  * depuis une carte).
  */
-export function PreviewLaunchOverlay({ launch, backdropUrl, settled, onCovered, onDone }: PreviewLaunchOverlayProps) {
+export function PreviewLaunchOverlay({ launch, backdropUrl, settled, ready = true, onCovered, onDone }: PreviewLaunchOverlayProps) {
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(true);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -104,8 +109,8 @@ export function PreviewLaunchOverlay({ launch, backdropUrl, settled, onCovered, 
   }, [landing, settled, backdrop]);
 
   useEffect(() => {
-    if (gaveUp || (decorShown && settled)) setPlaying(false);
-  }, [gaveUp, decorShown, settled]);
+    if (gaveUp || (decorShown && settled && ready)) setPlaying(false);
+  }, [gaveUp, decorShown, settled, ready]);
 
   if (reduced) return null;
 
