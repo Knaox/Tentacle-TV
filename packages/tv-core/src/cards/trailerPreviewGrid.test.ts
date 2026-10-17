@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CARD_SIZE_GRID_COLUMNS, CARD_SIZE_SCALE, CARD_SIZES } from "./cardSize";
 import { GRID_PREVIEW_SETTLE_MS, gridFocusOutrun, gridPreviewSettleDelay, gridTrailerPreviewWarmWindow } from "./trailerPreviewGrid";
-import { gridLineReprises, gridLineTurns, gridLineUnderRailFade, reduceGridLine } from "./trailerPreviewGridLine";
+import { GRID_UNDER_RAIL_OPACITY, gridLineReprises, gridLineTurns, gridLineUnderRailFade, reduceGridLine } from "./trailerPreviewGridLine";
 import { INITIAL_ROW_HEAD, type RowHeadContext } from "./trailerPreviewRowHead";
 import { trailerPreviewTileSize } from "./trailerPreviewTile";
 
@@ -146,14 +146,30 @@ describe("gridFocusOutrun — un focus dépassé par la page", () => {
   });
 });
 
-describe("gridLineUnderRailFade — une affiche sortie sous la navigation s'atténue", () => {
-  it("pleine en tête, atténuée une colonne plus à gauche, jamais transparente", () => {
-    const w = posterWidth(6);
+describe("gridLineUnderRailFade — une affiche qui passe sous la navigation s'atténue", () => {
+  const opacityAt = (center: number, w: number) => {
     const { centers, opacities } = gridLineUnderRailFade({ inset: INSET, cardWidth: w });
-    const head = INSET + w / 2;
-    expect(head).toBeGreaterThanOrEqual(centers[1]);
-    expect(head - (w + GAP)).toBeLessThanOrEqual(centers[0]);
-    expect(opacities[0]).toBeGreaterThan(0.01);
-    expect(opacities[1]).toBe(1);
+    const t = Math.min(1, Math.max(0, (center - centers[0]) / (centers[1] - centers[0])));
+    return opacities[0] + (opacities[1] - opacities[0]) * t;
+  };
+
+  it("pleine en tête, à chaque taille de cartes", () => {
+    for (const size of CARD_SIZES) {
+      const w = posterWidth(CARD_SIZE_GRID_COLUMNS[size]);
+      expect(opacityAt(INSET + w / 2, w)).toBe(1);
+    }
+  });
+
+  it("atténuée dès un quart sous le rail — à moitié dessous (la butée), elle l'est déjà", () => {
+    for (const size of CARD_SIZES) {
+      const w = posterWidth(CARD_SIZE_GRID_COLUMNS[size]);
+      expect(opacityAt(INSET + w / 4, w)).toBeCloseTo(GRID_UNDER_RAIL_OPACITY);
+      expect(opacityAt(INSET, w)).toBeCloseTo(GRID_UNDER_RAIL_OPACITY);
+      expect(opacityAt(INSET + w / 2 - w + 1, w)).toBeCloseTo(GRID_UNDER_RAIL_OPACITY);
+    }
+  });
+
+  it("jamais transparente : GAUCHE doit y mener", () => {
+    expect(GRID_UNDER_RAIL_OPACITY).toBeGreaterThan(0.01);
   });
 });

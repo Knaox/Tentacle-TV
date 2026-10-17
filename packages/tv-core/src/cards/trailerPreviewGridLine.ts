@@ -83,11 +83,14 @@ export function gridLineReprises(trailing: number, cardCount: number, pitch: num
 export const GRID_UNDER_RAIL_OPACITY = 0.18;
 
 /**
- * L'atténuation d'une affiche selon où est son CENTRE à l'écran : pleine dès
- * le quart de la carte passé le retrait (la tête), atténuée quand son centre
- * est sous la navigation. La vue interpole entre les deux, image par image,
- * au défilement de la ligne ; l'affiche focalisée reste pleine.
+ * L'atténuation d'une affiche selon où est son CENTRE à l'écran : pleine en
+ * tête (son bord gauche au retrait), atténuée dès qu'elle passe sous la
+ * navigation — un quart sous le rail suffit (remarque du testeur, 17/10 : en
+ * butée, une affiche à MOITIÉ sous le rail restait pleine, sa légende coupée
+ * par lui). La vue interpole entre les deux, image par image, au défilement
+ * de la ligne ; l'affiche focalisée reste pleine.
  */
 export function gridLineUnderRailFade(g: { inset: number; cardWidth: number }): { centers: [number, number]; opacities: [number, number] } {
-  return { centers: [g.inset - g.cardWidth / 2, g.inset + g.cardWidth / 4], opacities: [GRID_UNDER_RAIL_OPACITY, 1] };
+  // Le centre d'une affiche en tête : le retrait plus une demi-carte (à 2 points près, l'arrondi).
+  return { centers: [g.inset + g.cardWidth / 4, g.inset + g.cardWidth / 2 - 2], opacities: [GRID_UNDER_RAIL_OPACITY, 1] };
 }
