@@ -52,10 +52,13 @@ export async function trendingHeadItems(
 
 /**
  * Pur : la page avec sa rangée de tête. Sans assez de titres, la page reste
- * telle quelle. Sinon : la rangée en tête, la rangée `trending` (goûtée) en
- * moins, et les rangées suivantes sans les titres de la tête — un titre ne
- * paraît qu'une fois par page ; une rangée que cela vide, ou fait passer sous
- * le seuil, n'est plus servie.
+ * telle quelle. Sinon : la rangée en tête, et les rangées suivantes sans les
+ * titres de la tête — un titre ne paraît qu'une fois sur « Pour vous » ; une
+ * rangée que cela vide, ou fait passer sous le seuil, n'est plus servie.
+ *
+ * Seule exception, la rangée `trending` (goûtée) reste ENTIÈRE : l'accueil
+ * peut l'épingler (`reco:trending`) et la lit dans cette même page. « Pour
+ * vous » ne la montre pas quand la tête est là (api-client `forYouPageRows`).
  */
 export function withTrendingHead<T extends ServedRow>(
   rows: readonly T[],
@@ -66,7 +69,11 @@ export function withTrendingHead<T extends ServedRow>(
   const shown = new Set(head.map((item) => item.key));
   const out: Array<T | ServedRow> = [{ key: RECO_TRENDING_NOW_ROW_KEY, items: [...head] }];
   for (const row of rows) {
-    if (row.key === TRENDING_ROW_KEY || row.key === RECO_TRENDING_NOW_ROW_KEY) continue;
+    if (row.key === RECO_TRENDING_NOW_ROW_KEY) continue;
+    if (row.key === TRENDING_ROW_KEY) {
+      out.push(row);
+      continue;
+    }
     const items = row.items.filter((item) => !shown.has(item.key));
     if (items.length === row.items.length) {
       out.push(row);

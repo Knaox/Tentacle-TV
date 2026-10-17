@@ -10,10 +10,11 @@ const keys = (...n: number[]) => n.map((i) => item(`movie:${i}`));
 const row = (key: string, ...n: number[]) => ({ key, items: keys(...n) });
 
 describe("withTrendingHead", () => {
-  it("met « Tendances actuelles » en tête, dans l'ordre servi, et retire la rangée goûtée", () => {
-    const rows = [row("forYou", 1, 2, 3, 4, 5, 6, 7, 8), row("trending", 20, 21, 22, 23, 24, 25)];
+  it("met « Tendances actuelles » en tête, dans l'ordre servi ; la rangée goûtée reste entière (accueil)", () => {
+    const rows = [row("forYou", 1, 2, 3, 4, 5, 6, 7, 8), row("trending", 30, 31, 22, 23, 24, 25)];
     const out = withTrendingHead(rows, keys(30, 31, 32, 33, 34, 35));
-    expect(out.map((r) => r.key)).toEqual(["trendingNow", "forYou"]);
+    expect(out.map((r) => r.key)).toEqual(["trendingNow", "forYou", "trending"]);
+    expect(out[2]).toBe(rows[1]);
     expect(out[0].items.map((i) => i.key)).toEqual(["movie:30", "movie:31", "movie:32", "movie:33", "movie:34", "movie:35"]);
   });
 
