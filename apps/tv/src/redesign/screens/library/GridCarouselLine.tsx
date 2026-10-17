@@ -119,7 +119,9 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
   const trackContent = useMemo(() => [styles.content, { paddingRight: TV_STAGE.safe.x + trailing }], [trailing]);
   return (
     <Animated.View style={[styles.line, drop]}>
-      <FocusSection focusKey={gridLineKey(focusPrefix, index)} reveal={LINE_REVEALS[gridLineReveal(index)]}>
+      {/* `rowReveal` : en revenant vers la gauche, la carte focalisée s'arrête au retrait de la
+          ligne, jamais sous le rail (Apple TV, `TentacleRowScroller.m` ; Android le fait déjà). */}
+      <FocusSection focusKey={gridLineKey(focusPrefix, index)} reveal={LINE_REVEALS[gridLineReveal(index)]} rowReveal>
         <View ref={room.rowRef} collapsable={false} style={{ height }}>
           <Animated.ScrollView
             ref={track}
