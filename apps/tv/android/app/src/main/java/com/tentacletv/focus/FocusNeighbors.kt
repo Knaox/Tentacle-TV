@@ -122,6 +122,16 @@ internal object FocusNeighbors {
     return kept?.view
   }
 
+  /** `headFromFirst` (sections.ts) : la tête déclarée, en remontant depuis la première carte de sa ligne. */
+  private fun headFromFirst(from: TentacleFocusSection, item: RectF, siblings: List<View>, up: Boolean, density: Float): View? {
+    if (!up) return null
+    val head = from.headView()?.takeIf { siblings.contains(it) } ?: return null
+    val slack = FRONTIER_SLACK * density
+    if (FocusGeometry.box(head).bottom > item.top + slack) return null
+    val behind = siblings.any { it !== head && FocusGeometry.box(it).let { box -> onSameRow(item, box) && box.left < item.left - slack } }
+    return if (behind) null else head
+  }
+
   private class Candidate(val section: TentacleFocusSection, val edge: Float)
 
   /** Les sections au-delà de `from`, dans sa colonne et son écran, la plus proche d'abord. */
@@ -152,6 +162,7 @@ internal object FocusNeighbors {
 
     // 0. À l'aplomb, dans la section qu'on quitte.
     val siblings = mutableListOf<View>().also { collect(from, it, true) }.apply { remove(focused) }
+    headFromFirst(from, itemBox, siblings, up, density)?.let { return it }
     inLineWithin(itemBox, siblings, up, from.lineList, density)?.let { return it }
 
     // 1-3. La plus proche des sections au-delà qui a un élément, et celles à sa hauteur.

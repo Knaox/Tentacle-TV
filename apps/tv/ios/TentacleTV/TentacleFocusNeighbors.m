@@ -165,6 +165,30 @@ static UIView *InLineWithin(CGRect from, NSArray<UIView *> *siblings, BOOL up, B
   return kept.view;
 }
 
+/// `headFromFirst` (sections.ts) : la tête déclarée, en remontant depuis la
+/// première carte de sa ligne (rien de la ligne à sa gauche), si elle est au-dessus.
+static UIView *HeadFromFirst(TentacleFocusSection *from, CGRect item, NSArray<UIView *> *siblings, BOOL up)
+{
+  UIView *head = up ? from.headView : nil;
+  if (head == nil || ![siblings containsObject:head]) {
+    return nil;
+  }
+  CGRect headBox = [head convertRect:head.bounds toView:nil];
+  if (CGRectGetMaxY(headBox) > CGRectGetMinY(item) + kFrontierSlack) {
+    return nil;
+  }
+  for (UIView *view in siblings) {
+    if (view == head) {
+      continue;
+    }
+    CGRect box = [view convertRect:view.bounds toView:nil];
+    if (OnSameRow(item, box) && CGRectGetMinX(box) < CGRectGetMinX(item) - kFrontierSlack) {
+      return nil;
+    }
+  }
+  return head;
+}
+
 /// Une section candidate : au-delà, dans la colonne — la géométrie seule, sans
 /// rien parcourir de son contenu.
 @interface TentacleCandidate : NSObject
@@ -232,7 +256,8 @@ BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView *focused, BOOL up
   NSMutableArray<UIView *> *siblings = [NSMutableArray array];
   CollectItems(from, siblings, YES);
   [siblings removeObject:focused];
-  if (InLineWithin([focused convertRect:focused.bounds toView:nil], siblings, up, from.lineList) != nil) {
+  CGRect focusedBox = [focused convertRect:focused.bounds toView:nil];
+  if (HeadFromFirst(from, focusedBox, siblings, up) != nil || InLineWithin(focusedBox, siblings, up, from.lineList) != nil) {
     return YES;
   }
   for (TentacleCandidate *candidate in CandidatesBeyond(from, up)) {
@@ -254,6 +279,10 @@ UIView *TentacleNeighborTarget(TentacleFocusSection *from, UIView *focused, BOOL
   NSMutableArray<UIView *> *siblings = [NSMutableArray array];
   CollectItems(from, siblings, YES);
   [siblings removeObject:focused];
+  UIView *head = HeadFromFirst(from, itemBox, siblings, up);
+  if (head != nil) {
+    return head;
+  }
   UIView *within = InLineWithin(itemBox, siblings, up, from.lineList);
   if (within != nil) {
     return within;

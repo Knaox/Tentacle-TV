@@ -89,6 +89,15 @@ static TentacleFocusSection *InnermostNeighborSection(UIView *view)
   return [view isDescendantOfView:self] ? view : nil;
 }
 
+- (UIView *)headView
+{
+  if (_tvHead == nil) {
+    return nil;
+  }
+  UIView *view = [_sectionBridge.uiManager viewForReactTag:_tvHead];
+  return [view isDescendantOfView:self] ? view : nil;
+}
+
 - (void)setTvNeighbors:(BOOL)tvNeighbors
 {
   _tvNeighbors = tvNeighbors;
@@ -159,5 +168,6 @@ RCT_EXPORT_VIEW_PROPERTY(lineList, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(rowReveal, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(tvNeighbors, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(tvEntry, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(tvHead, NSNumber)
 
 @end

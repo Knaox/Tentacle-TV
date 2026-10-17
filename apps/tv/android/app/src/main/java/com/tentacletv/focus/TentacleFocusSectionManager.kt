@@ -68,6 +68,11 @@ class TentacleFocusSectionManager : ReactViewManager() {
     view.tvEntry = if (tag > 0) tag else null
   }
 
+  @ReactProp(name = "tvHead", defaultInt = 0)
+  fun setTvHead(view: TentacleFocusSection, tag: Int) {
+    view.tvHead = if (tag > 0) tag else null
+  }
+
   @ReactProp(name = "tvPacing")
   fun setTvPacing(view: TentacleFocusSection, pacing: ReadableMap?) {
     HoldPacer.configure(pacing)

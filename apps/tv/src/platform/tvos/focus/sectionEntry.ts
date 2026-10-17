@@ -17,24 +17,47 @@ import type { FocusStore } from "./focusStore";
 
 type Settable = { setNativeProps?: (props: object) => void };
 
-export function applySectionEntry(focus: FocusStore, sectionKey: string, entryKey: string | null): void {
-  const handle = entryKey ? focus.handle(entryKey) : null;
-  (focus.node(sectionKey) as Settable | null)?.setNativeProps?.({ tvEntry: handle });
+/** La prop native de la section qui désigne un de ses éléments : l'entrée, ou la tête. */
+type SectionPointer = "tvEntry" | "tvHead";
+
+function applySectionPointer(focus: FocusStore, prop: SectionPointer, sectionKey: string, elementKey: string | null): void {
+  const handle = elementKey ? focus.handle(elementKey) : null;
+  (focus.node(sectionKey) as Settable | null)?.setNativeProps?.({ [prop]: handle });
 }
 
-/** Tient l'entrée de `sectionKey` sur `entryKey` — reposée quand la section
- *  ou l'élément se montent (le numéro natif n'existe qu'une fois monté). */
+export function applySectionEntry(focus: FocusStore, sectionKey: string, entryKey: string | null): void {
+  applySectionPointer(focus, "tvEntry", sectionKey, entryKey);
+}
+
+/** Tient la prop `prop` de `sectionKey` sur `elementKey` — reposée quand la
+ *  section ou l'élément se montent (le numéro natif n'existe qu'une fois monté). */
+function useSectionPointer(focus: FocusStore, prop: SectionPointer, sectionKey: string | null, elementKey: string | null): void {
+  const live = useRef(elementKey);
+  live.current = elementKey;
+  useEffect(() => {
+    if (sectionKey) applySectionPointer(focus, prop, sectionKey, elementKey);
+  }, [focus, prop, sectionKey, elementKey]);
+  useEffect(() => {
+    if (!sectionKey) return undefined;
+    return focus.subscribeNodes((key) => {
+      if (key === sectionKey || key === live.current) applySectionPointer(focus, prop, sectionKey, live.current);
+    });
+  }, [focus, prop, sectionKey]);
+}
+
+/** Tient l'entrée de `sectionKey` sur `entryKey`. */
 export function useSectionEntry(focus: FocusStore, sectionKey: string, entryKey: string | null): void {
-  const live = useRef(entryKey);
-  live.current = entryKey;
-  useEffect(() => applySectionEntry(focus, sectionKey, entryKey), [focus, sectionKey, entryKey]);
-  useEffect(
-    () =>
-      focus.subscribeNodes((key) => {
-        if (key === sectionKey || key === live.current) applySectionEntry(focus, sectionKey, live.current);
-      }),
-    [focus, sectionKey],
-  );
+  useSectionPointer(focus, "tvEntry", sectionKey, entryKey);
+}
+
+/**
+ * Tient la TÊTE de `sectionKey` sur `headKey` (prop native `tvHead`) : HAUT
+ * depuis la première carte de sa ligne y va, à l'aplomb ou non — la règle de
+ * tv-core `headFromFirst` (`focus/sections.ts`), appliquée par la section
+ * native d'Apple TV comme par celle d'Android. `null` : plus de tête.
+ */
+export function useSectionHead(focus: FocusStore, sectionKey: string | null, headKey: string | null): void {
+  useSectionPointer(focus, "tvHead", sectionKey, headKey);
 }
 
 export interface FirstVisitEntryOptions {

@@ -58,6 +58,12 @@ NS_ASSUME_NONNULL_BEGIN
 /// L'élément d'entrée, résolu à la demande (nil s'il n'est pas monté).
 - (nullable UIView *)entryView;
 
+/// Sa TÊTE déclarée (numéro natif d'un de ses éléments : la puce du filtre de
+/// « Pour vous »), ou nil : HAUT depuis la première carte de sa ligne y va,
+/// à l'aplomb ou non (tv-core `headFromFirst`).
+@property (nonatomic, copy, nullable) NSNumber *tvHead;
+- (nullable UIView *)headView;
+
 /// Le pont React (le magasin des vues, les observateurs du montage).
 @property (nonatomic, weak, readonly, nullable) RCTBridge *sectionBridge;
 

@@ -24,6 +24,14 @@ import { onSameRow, type Box } from "./geometry";
  * HAUT comme BAS y vont à la ligne voisine, au plus proche — le réglage un peu
  * trop à gauche de celui du dessus est atteint.
  *
+ * La TÊTE d'une section (`head`, décision de Damien du 17/10) : la puce du
+ * filtre de plateformes posée sur la première étagère de « Pour vous ». HAUT
+ * depuis la PREMIÈRE carte de la ligne (rien à sa gauche sur sa ligne) y va
+ * TOUJOURS, qu'elle soit à l'aplomb ou non — un titre d'étagère plus long
+ * (« Tendances actuelles ») la décalait hors de l'aplomb, et HAUT partait au
+ * héros. Depuis les autres cartes, rien ne change : l'aplomb, sinon la
+ * section du dessus.
+ *
  * Deux exceptions, tranchées le 2026-10-01 : une section peut déclarer son
  * ENTRÉE (`entry`), qui l'emporte quand elle est focalisable — l'onglet de la
  * saison affichée, toujours ; l'épisode à reprendre, à la première entrée
@@ -152,16 +160,31 @@ export function inLineWithin<T>(from: Box, siblings: Array<SectionItem<T>>, dire
 }
 
 /**
+ * La TÊTE, depuis la première carte de sa ligne, en remontant : `head` s'il
+ * est parmi `siblings`, au-dessus de `from`, et que rien de la ligne de
+ * `from` n'est à sa gauche ; sinon `null`.
+ */
+export function headFromFirst<T>(from: Box, siblings: Array<SectionItem<T>>, head: T | null | undefined, direction: VerticalDirection): T | null {
+  if (direction !== "haut" || head == null) return null;
+  const target = siblings.find((item) => item.element === head);
+  if (!target || target.box.bottom > from.top + FRONTIER_SLACK) return null;
+  const first = !siblings.some((item) => item.element !== head && onSameRow(from, item.box) && item.box.left < from.left - FRONTIER_SLACK);
+  return first ? head : null;
+}
+
+/**
  * La règle entière : depuis l'élément `item` de la section `section` (dont
- * `siblings` sont les autres éléments, `list` sa nature), HAUT ou BAS. Rend
+ * `siblings` sont les autres éléments, `list` sa nature, `head` sa tête), HAUT ou BAS. Rend
  * l'élément visé, ou `null` quand rien n'est au-delà — la plateforme garde
  * alors son comportement (un guide, un bord).
  */
 export function pickSectionNeighbor<T>(
-  from: { section: Box; item: Box; siblings?: Array<SectionItem<T>>; list?: boolean },
+  from: { section: Box; item: Box; siblings?: Array<SectionItem<T>>; list?: boolean; head?: T | null },
   sections: Array<SectionGeometry<T>>,
   direction: VerticalDirection,
 ): T | null {
+  const head = headFromFirst(from.item, from.siblings ?? [], from.head, direction);
+  if (head != null) return head;
   const within = inLineWithin(from.item, from.siblings ?? [], direction, from.list);
   if (within) return within.element;
   let kept: { section: SectionGeometry<T>; item: SectionItem<T> } | null = null;

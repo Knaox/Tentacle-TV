@@ -63,6 +63,17 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
     return if (view != null && view !== this) view else null
   }
 
+  /** Sa TÊTE déclarée (la puce du filtre de « Pour vous ») : HAUT depuis la première
+   *  carte de sa ligne y va, à l'aplomb ou non (tv-core `headFromFirst`). */
+  var tvHead: Int? = null
+
+  /** La tête, résolue à la demande (null si elle n'est pas montée ici). */
+  fun headView(): View? {
+    val tag = tvHead ?: return null
+    val view = findViewById<View>(tag)
+    return if (view != null && view !== this) view else null
+  }
+
   /** Ses enfants sont hors de sa liste d'affichage (loin de l'écran, `DrawCulling`). */
   private var drawCulled = false
 

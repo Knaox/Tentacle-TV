@@ -18,6 +18,7 @@ import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 import { ForYouView } from "../../redesign/screens/forYou/ForYouView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
 import { useTVCardActions } from "../../components/cards/actions/useTVCardActions";
+import { useSectionHead } from "../../platform/tvos/focus/sectionEntry";
 import type { RootStackParamList } from "../../navigation/types";
 import { heroModelOf } from "../hero/heroModel";
 import { useRecoFilter } from "../reco/useRecoFilter";
@@ -27,6 +28,9 @@ import { useRedesignScreen } from "../screen/useRedesignScreen";
 import type { AbsentTitle } from "../vigie/absentTitle";
 import { useTitleRequests } from "../vigie/useTitleRequests";
 import { useForYouModels } from "./useForYouModels";
+
+/** La clé de la puce du filtre de plateformes (`ForYouView`). */
+const FOR_YOU_FILTER_KEY = "filter:remove";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Recommendations">;
 
@@ -121,6 +125,8 @@ export function ForYouRedesign({ navigation }: Props) {
   // Ses étagères reviennent au début : hors de l'écran, et par Retour.
   const screen = useRedesignScreen({ railKey: "Recommendations", entryKey, rewindRows: true });
   const { ambient, onFocusCard } = useAmbientPalette(screen.focus);
+  // HAUT depuis la 1re carte de la 1re étagère : la puce du filtre, où qu'elle soit (décision du 17/10).
+  useSectionHead(screen.focus, firstShelf ? `section:${firstShelf.key}` : null, filter ? FOR_YOU_FILTER_KEY : null);
   const cardActions = useTVCardActions();
 
   const detail = useCallback((itemId: string) => navigation.navigate("MediaDetail", { itemId }), [navigation]);

@@ -263,3 +263,29 @@ describe("colonnes et entrées", () => {
     expect(isBeyond(box(0, 0, 900, 500), box(960, 100, 900, 500), "bas")).toBe(false);
   });
 });
+
+describe("la TÊTE d'une section — HAUT depuis sa première carte (17/10)", () => {
+  // « Pour vous » : la 1re étagère (Tendances actuelles), sa puce de filtre loin à droite du titre.
+  const hero = { box: box(0, 0, 1920, 500), items: [{ element: "hero:primary", box: box(176, 400, 340, 68) }] };
+  const shelf: SectionGeometry<string> = row("forYou", 560, 5, { left: 176, width: 312, gap: 36, height: 541, header: 70 });
+  shelf.items.push({ element: "filter:remove", box: box(560, 570, 273, 52) });
+  const fromCard = (element: string) => ({ ...from(shelf, element), head: "filter:remove" });
+
+  it("depuis la première carte, la puce même hors de l'aplomb", () => {
+    expect(pickSectionNeighbor(fromCard("forYou:0"), [hero, shelf], "haut")).toBe("filter:remove");
+  });
+
+  it("sans tête déclarée : l'aplomb seulement, donc le héros (le comportement d'avant)", () => {
+    expect(pickSectionNeighbor(from(shelf, "forYou:0"), [hero, shelf], "haut")).toBe("hero:primary");
+  });
+
+  it("depuis une autre carte : l'aplomb (la 2e est sous la puce), sinon la section du dessus", () => {
+    expect(pickSectionNeighbor(fromCard("forYou:1"), [hero, shelf], "haut")).toBe("filter:remove");
+    expect(pickSectionNeighbor(fromCard("forYou:4"), [hero, shelf], "haut")).toBe("hero:primary");
+  });
+
+  it("en descendant, la tête ne change rien", () => {
+    expect(pickSectionNeighbor({ ...fromCard("forYou:0"), head: "filter:remove" }, [hero, shelf, row("next", 1300, 3, { left: 176 })], "bas")).toBe("next:0");
+  });
+});
+
