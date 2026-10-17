@@ -14,6 +14,7 @@ import {
   useSaveRecoSettingsPatch,
   visibleHomeRows,
   useServerCapabilities,
+  useTrendingNowSetting,
 } from "@tentacle-tv/api-client";
 import type { CardDensity, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
 import { heroModesOffered } from "@tentacle-tv/shared";
@@ -54,6 +55,8 @@ export function SettingsPersonalization() {
   const saveLayout = useSaveHomeLayoutPatch({ libraries: libs });
   const saveSettings = useSaveRecoSettingsPatch();
   const resetProfile = useResetTasteProfile();
+  // « Tendances actuelles » : seulement face à un serveur qui déclare `reco.trending`.
+  const trendingNow = useTrendingNowSetting();
   const [confirmReset, setConfirmReset] = useState(false);
 
   // Le curseur garde un état local pendant le geste et n'écrit qu'au repos ;
@@ -184,6 +187,15 @@ export function SettingsPersonalization() {
 
       <SettingsSection title={t("persoRecoTitle")} caption={t("persoRecoCaption")}>
         <div className="flex flex-col gap-4 p-5">
+          {/* En tête : c'est la PREMIÈRE rangée de « Pour vous ». */}
+          {trendingNow.available && (
+            <SettingToggleRow
+              title={t("persoRecoTrending")}
+              hint={t("persoRecoTrendingHint")}
+              active={trendingNow.enabled}
+              onChange={trendingNow.setEnabled}
+            />
+          )}
           <SettingToggleRow
             title={t("persoRecoPersonalized")}
             hint={t("persoRecoPersonalizedHint")}

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { emitRecoDropped, hasRetiredReco, isRecoRetired } from "../reco/recoRetirementState";
 import { getSocketStatus } from "../socket/tentacleSocket";
-import { RECO_PAGE_THEMES_PARAM, type RecoPage, type RecoPageRow } from "@tentacle-tv/shared";
+import { RECO_PAGE_THEMES_PARAM, RECO_PAGE_TRENDING_PARAM, type RecoPage, type RecoPageRow } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "./usePreferences";
 
 /** Le contrat de GET /api/reco/page — la page entière, en une réponse
@@ -47,12 +47,25 @@ export function acceptRecoPageThemes(): void {
   themedRows = true;
 }
 
-/** La requête d'une page : le filtre de plateformes, et les rangées à thème si le client sait les titrer. */
+/**
+ * Ce client sait-il rendre « Tendances actuelles » en TÊTE de « Pour vous »
+ * (rangée `trendingNow`, capacité `reco.trending`) ? Il le dit au serveur
+ * (`?trendingNow=1`, RECO_PAGE_TRENDING_PARAM), qui la sert si le compte l'a
+ * laissée allumée ; un serveur d'avant ignore le paramètre. Posé UNE fois, au
+ * démarrage (web, bureau, Apple TV, Android TV) — même règle que les thèmes.
+ */
+let trendingHead = false;
+export function acceptRecoTrendingHead(): void {
+  trendingHead = true;
+}
+
+/** La requête d'une page : le filtre de plateformes, les rangées à thème et la tête des tendances si le client les sait rendre. */
 export function recoPageQuery(ids: readonly number[]): string {
   const params: string[] = [];
   const normalized = normalizeProviderFilter(ids);
   if (normalized.length > 0) params.push(`providers=${normalized.join(",")}`);
   if (themedRows) params.push(`${RECO_PAGE_THEMES_PARAM}=1`);
+  if (trendingHead) params.push(`${RECO_PAGE_TRENDING_PARAM}=1`);
   return params.length > 0 ? `?${params.join("&")}` : "";
 }
 

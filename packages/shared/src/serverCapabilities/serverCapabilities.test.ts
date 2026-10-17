@@ -30,15 +30,18 @@ describe("capacités du serveur", () => {
     // « Films pour vous » (1.27.1) en 1.27.0, ni l'aperçu au survol ni les profils
     // du bureau (1.30.0) en 1.27.1, ni le catalogue des bandes-annonces (1.30.0) en 1.29.0.
     const since = (versions: string[]) => SERVER_CAPABILITY_KEYS.filter((key) => !versions.includes(SERVER_CAPABILITIES[key]));
-    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(since(["1.27.0", "1.27.1", "1.29.0", "1.30.0"]).length);
-    expect(resolveServerCapabilities({ version: "1.27.0" }).size).toBe(since(["1.27.1", "1.29.0", "1.30.0"]).length);
-    expect(resolveServerCapabilities({ version: "1.27.1" }).size).toBe(since(["1.29.0", "1.30.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.26.0" }).size).toBe(since(["1.27.0", "1.27.1", "1.29.0", "1.30.0", "1.31.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.27.0" }).size).toBe(since(["1.27.1", "1.29.0", "1.30.0", "1.31.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.27.1" }).size).toBe(since(["1.29.0", "1.30.0", "1.31.0"]).length);
     expect(resolveServerCapabilities({ version: "1.27.1" }).has("trailers.preview")).toBe(false);
     expect(resolveServerCapabilities({ version: "1.27.1" }).has("family.desktopProfiles")).toBe(false);
-    expect(resolveServerCapabilities({ version: "1.28.0" }).size).toBe(since(["1.29.0", "1.30.0"]).length);
-    expect(resolveServerCapabilities({ version: "1.29.0" }).size).toBe(since(["1.30.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.28.0" }).size).toBe(since(["1.29.0", "1.30.0", "1.31.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.29.0" }).size).toBe(since(["1.30.0", "1.31.0"]).length);
     expect(resolveServerCapabilities({ version: "1.29.0" }).has("trailers.catalog")).toBe(false);
-    expect(resolveServerCapabilities({ version: "1.30.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
+    // « Tendances actuelles » (1.31.0) n'est pas dans un 1.30.0 qui ne déclarerait rien.
+    expect(resolveServerCapabilities({ version: "1.30.0" }).size).toBe(since(["1.31.0"]).length);
+    expect(resolveServerCapabilities({ version: "1.30.0" }).has("reco.trending")).toBe(false);
+    expect(resolveServerCapabilities({ version: "1.31.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 
   it("pas de réponse, réponse illisible : aucune capacité, jamais d'erreur", () => {
@@ -53,7 +56,7 @@ describe("capacités du serveur", () => {
     const none = resolveServerCapabilities({ version: "1.23.0" });
     expect(missingServerCapabilities(none)).toEqual(SERVER_CAPABILITY_KEYS);
     // La plus récente des versions qui apportent ce qui manque.
-    expect(newestMissingSince(none)).toBe("1.30.0");
+    expect(newestMissingSince(none)).toBe("1.31.0");
     const all = resolveServerCapabilities({ capabilities: SERVER_CAPABILITY_KEYS });
     expect(missingServerCapabilities(all)).toEqual([]);
     expect(newestMissingSince(all)).toBeNull();

@@ -74,6 +74,7 @@ export default {
   rowAnime: "Animés pour vous",
   // Rangées GLOBALES (servies à tous, quel que soit l'état du profil).
   rowTrending: "Tendances",
+  rowTrendingNow: "Tendances actuelles",
   rowServerPulse: "Ce que les utilisateurs de Tentacle regardent",
   rowBestOfLibrary: "Les mieux notés de votre bibliothèque",
 

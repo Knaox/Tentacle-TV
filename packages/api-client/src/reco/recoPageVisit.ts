@@ -1,3 +1,4 @@
+import { RECO_TRENDING_NOW_ROW_KEY } from "@tentacle-tv/shared";
 import type { RecoPage, RecoPageRow } from "../hooks/useRecoPage";
 
 /**
@@ -14,7 +15,12 @@ import type { RecoPage, RecoPageRow } from "../hooks/useRecoPage";
  */
 
 /** Les rangées servies dans TOUS les états du moteur (contrat backend). */
-export const RECO_GLOBAL_ROW_KEYS: ReadonlySet<string> = new Set(["trending", "serverPulse", "bestOfLibrary"]);
+export const RECO_GLOBAL_ROW_KEYS: ReadonlySet<string> = new Set([
+  RECO_TRENDING_NOW_ROW_KEY,
+  "trending",
+  "serverPulse",
+  "bestOfLibrary",
+]);
 
 /** L'arrivée : la page du cache s'affiche aussitôt, la fraîche la remplace encore. */
 export const RECO_ARRIVAL_MS = 2_000;
