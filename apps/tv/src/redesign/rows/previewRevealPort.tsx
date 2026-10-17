@@ -28,14 +28,8 @@ export function usePreviewReveal(): PreviewReveal | null {
 /**
  * La moitié « page » : le défilement vertical de sa ScrollView, relevé sans
  * rendu par `track` (à appeler depuis son `onScroll`), et le port qui défile.
- * `beforeReveal` : prévenu juste avant que la page se pousse — les rangées
- * qui reviennent au début n'y voient pas une sortie de l'écran
- * (`rowRewindPort`, tv-core `previewReveal`).
  */
-export function usePagePreviewReveal(
-  scrollRef: RefObject<ScrollView | null>,
-  beforeReveal?: () => void,
-): { reveal: PreviewReveal; track: (y: number) => void } {
+export function usePagePreviewReveal(scrollRef: RefObject<ScrollView | null>): { reveal: PreviewReveal; track: (y: number) => void } {
   const offset = useRef(0);
   const track = useCallback((y: number) => {
     offset.current = y;
@@ -43,11 +37,10 @@ export function usePagePreviewReveal(
   const reveal = useMemo<PreviewReveal>(
     () => ({
       scrollBy(by) {
-        beforeReveal?.();
         scrollRef.current?.scrollTo({ x: 0, y: offset.current + by, animated: true });
       },
     }),
-    [scrollRef, beforeReveal],
+    [scrollRef],
   );
   return { reveal, track };
 }

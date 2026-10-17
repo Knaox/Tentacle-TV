@@ -242,3 +242,32 @@ describe("createRowRewind — le défilement d'un aperçu ne fait sortir aucune 
   });
 });
 
+describe("createRowRewind — les voisines de la rangée du focus gardent leur place", () => {
+  it("la rangée d'où l'on vient, sortie de 8 pt par une rangée suivante haute : gardée", () => {
+    const rewind = page();
+    rewind.focus("resume:4");
+    rewind.focus("nextUp:0");
+    // Reprendre (900-1300) sort de 8 pt : la page montre « À suivre » entière.
+    expect(rewind.scroll(view(1308))).toEqual([]);
+    expect(rewind.moved()).toEqual(["resume"]);
+  });
+
+  it("deux rangées plus bas, elle n'est plus voisine : la règle 2", () => {
+    const rewind = page();
+    rewind.focus("resume:4");
+    rewind.focus("nextUp:0");
+    rewind.scroll(view(1308));
+    rewind.focus("reco:forYou:0");
+    expect(rewind.scroll(view(1700))).toEqual(["resume"]);
+  });
+
+  it("la voisine du dessous aussi (en remontant)", () => {
+    const rewind = page();
+    rewind.focus("watched:3");
+    rewind.focus("reco:forYou:0");
+    expect(rewind.scroll(view(500))).toEqual([]);
+    rewind.focus("resume:0");
+    expect(rewind.scroll(view(0))).toEqual(["watched"]);
+  });
+});
+

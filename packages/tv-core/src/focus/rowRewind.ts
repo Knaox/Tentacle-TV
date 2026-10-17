@@ -4,7 +4,11 @@
  * « Pour vous ») :
  *
  * 1. une rangée GARDE sa position tant qu'elle est à l'écran : descendre d'un
- *    cran pour regarder la rangée suivante ne fait rien perdre ;
+ *    cran pour regarder la rangée suivante ne fait rien perdre — ni quand la
+ *    rangée suivante est si haute (des affiches) que la page, pour la montrer
+ *    entière, fait sortir celle d'où l'on vient (de 8 pt, mesuré le 17/10) :
+ *    les VOISINES immédiates de la rangée du focus, au-dessus et au-dessous,
+ *    gardent toujours leur place ;
  * 2. elle REVIENT AU DÉBUT, sans animation, dès qu'elle SORT de l'écran —
  *    plus rien d'elle ne se voit — ou qu'on CHANGE DE PAGE par le rail
  *    (Accueil → Films → Accueil). Revenir d'une fiche n'est pas changer de
@@ -22,7 +26,7 @@
  * pousse la page (`trailerPreviewRevealOffset`) — la rangée du dessus, d'où
  * l'on vient, sortait alors de l'écran et revenait au début ; HAUT tombait sur
  * sa première carte au lieu de la colonne d'où l'on venait. Les rangées à
- * l'écran au moment où la page se pousse sont TENUES tant que le focus reste
+ * l'écran au DÉMARRAGE de l'aperçu sont TENUES tant que le focus reste
  * dans la rangée de l'aperçu ; il en part, elles relèvent de nouveau de la
  * règle 2 (au prochain défilement).
  *
@@ -122,8 +126,9 @@ export interface RowRewind {
   /** La page défile : les rangées déplacées sorties de l'écran, à remettre au début MAINTENANT. */
   scroll(view: PageView): string[];
   /**
-   * La page va défiler pour montrer la grande carte d'un aperçu : les rangées
-   * à l'écran sont tenues tant que le focus reste dans la rangée de l'aperçu.
+   * Un aperçu démarre dans la rangée du focus (la page va bouger : sa grande
+   * carte grandit, la page la montre) : les rangées à l'écran sont tenues
+   * tant que le focus reste dans cette rangée.
    */
   previewReveal(): void;
   /**
@@ -170,6 +175,23 @@ export function createRowRewind(): RowRewind {
     return out;
   };
 
+  /** Les voisines immédiates de `holder` : la rangée juste au-dessus, celle juste au-dessous. */
+  const neighboursOf = (holder: string | null): Set<string> => {
+    const near = new Set<string>();
+    const at = holder === null ? undefined : boxes.get(holder);
+    if (!at) return near;
+    let above: [string, number] | null = null;
+    let below: [string, number] | null = null;
+    for (const [row, box] of boxes) {
+      if (row === holder || !rows.has(row)) continue;
+      if (box.top < at.top && (above === null || box.top > above[1])) above = [row, box.top];
+      if (box.top > at.top && (below === null || box.top < below[1])) below = [row, box.top];
+    }
+    if (above) near.add(above[0]);
+    if (below) near.add(below[0]);
+    return near;
+  };
+
   const startOf = (focusKey: string): string => {
     const card = rowCardOf(focusKey, rows);
     return card ? rowStartKey(card.row) : focusKey;
@@ -201,11 +223,12 @@ export function createRowRewind(): RowRewind {
     scroll(view) {
       lastView = view;
       const holder = rowCardOf(focused, rows)?.row ?? null;
+      const near = neighboursOf(holder);
       const out: string[] = [];
       for (const row of moved) {
         const box = boxes.get(row);
-        // Jamais la rangée qui porte le focus, ni une tenue par un aperçu ; jamais une rangée pas encore mesurée.
-        if (row === holder || held.has(row) || pending.has(row) || !box || rowOnScreen(box, view)) continue;
+        // Jamais la rangée qui porte le focus, ni ses voisines, ni une tenue par un aperçu ; jamais une rangée pas encore mesurée.
+        if (row === holder || near.has(row) || held.has(row) || pending.has(row) || !box || rowOnScreen(box, view)) continue;
         out.push(row);
       }
       return take(out);

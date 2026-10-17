@@ -116,6 +116,17 @@ export const MediaRow = memo(function MediaRow({
     });
   };
   useEffect(() => rewind?.register(rowKey, () => toStart.current()), [rewind, rowKey]);
+  // L'aperçu démarre : la page va bouger (la grande carte grandit, la page la
+  // montre) — les rangées à l'écran sont tenues dès maintenant, avant tout
+  // défilement, qu'il vienne de la rangée ou du suivi natif de la page.
+  const { onPreviewExpand: expandRoom } = room;
+  const onPreviewExpand = useCallback(
+    (index: number, tileWidth: number, grow: number) => {
+      rewind?.previewReveal();
+      expandRoom(index, tileWidth, grow);
+    },
+    [rewind, expandRoom],
+  );
   // Les titres autour du focus : leur aperçu se prépare au serveur (`useCardPreviewWarm`).
   const warm = useCardPreviewWarm();
   const latestCards = useRef(cards);
@@ -184,7 +195,7 @@ export const MediaRow = memo(function MediaRow({
               onPressCard={onPressCard}
               onLongPressCard={onLongPressCard}
               onItemFocus={onItemFocus}
-              onPreviewExpand={room.onPreviewExpand}
+              onPreviewExpand={onPreviewExpand}
               onPreviewCollapse={room.onPreviewCollapse}
             />
           ))}

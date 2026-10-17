@@ -3029,8 +3029,12 @@ plus qu'une fois (banc : `focus/rangees-bout`). Et la règle 1 des aperçus
 (« au départ du focus, la rangée reste où l'aperçu l'a laissée »,
 `trailerPreviewRowHead.ts`) ne vaut que tant qu'elle est à l'écran : sortie
 de l'écran, la règle 2 la remet au début, aperçu ou non. Mais le défilement
-DÛ à un aperçu (la grande carte pousse la page) ne fait sortir aucune rangée :
-celles à l'écran au moment où la page se pousse sont tenues tant que le focus
+DÛ à un aperçu (la grande carte pousse la page) ne fait sortir aucune rangée,
+et les VOISINES immédiates de la rangée du focus gardent toujours leur place :
+une étagère d'affiches, haute, montrée entière, faisait sortir de 8 pt la
+rangée d'où l'on venait (mesuré au banc, 3 fois sur 3) — elle revenait au
+début, et HAUT tombait sur sa première carte. Pour l'aperçu :
+celles à l'écran au démarrage de l'aperçu sont tenues tant que le focus
 reste dans la rangée de l'aperçu (`rowRewind.previewReveal`) — sinon HAUT
 retombait sur la première carte de la rangée d'où l'on venait (testeur, 17/10).
 
