@@ -30,6 +30,7 @@ import { previewTmdbIdOf } from "../../../trailers/trailerPreview";
 import { allocineEntries, jellyfinRemoteEntries, localEntries, youtubeEntries } from "./catalogEntries";
 import { resolveCatalogTitle, type CatalogLibraryTitle } from "./catalogTitle";
 import { fetchSeerrTitle } from "./seerrTitle";
+import type { TitleIdentity } from "./foreignTitleGuard";
 import { fetchTmdbSeasonVideos, fetchTmdbTitle, type TmdbTitle } from "./tmdbCatalog";
 
 export interface CatalogBuildOptions {
@@ -171,26 +172,32 @@ export async function buildCatalogDetailed(
   const knownSeasons = titleInfo.then((info) => [...new Set([...(library?.seasons.map((s) => s.season) ?? []), ...(info?.seasons.map((s) => s.season) ?? [])])]);
   // Les noms du titre : une vidéo qui en nomme un AUTRE est écartée (`foreignTitleGuard.ts`).
   const namesOf = (info: TmdbTitle | null) => [...new Set([...(info?.names ?? []), ...(library?.names ?? [])])];
+  // L'année et les pays du titre : une vidéo d'une autre VERSION du même nom est écartée (`namesAnotherVariant`).
+  const identityOf = (info: TmdbTitle | null): TitleIdentity => {
+    const date = info?.releaseDate ?? library?.releaseDate ?? null;
+    return { year: date ? Number(date.slice(0, 4)) || null : null, countries: info?.countries ?? [] };
+  };
   const tmdbEntries = tmdbTitle.then(async (tmdb) => {
     if (!tmdb || !tmdbRef) return [];
     const names = namesOf(tmdb);
-    const own = youtubeEntries(tmdb.videos, ownerScope, "tmdb", languageTag, names);
+    const identity = identityOf(tmdb);
+    const own = youtubeEntries(tmdb.videos, ownerScope, "tmdb", languageTag, names, identity);
     if (isMovie) return own;
     const wanted = seasonScopes(catalogScopes(targetOf(await knownSeasons))).slice(0, TMDB_SEASONS);
     const tvId = tmdbRef.id;
     const perSeason = await Promise.all(wanted.map(async (season) => {
       const videos = heard(await fetchTmdbSeasonVideos(tvId, season, languageTag, tmdbPriority));
-      return videos ? youtubeEntries(videos, { kind: "season", season }, "tmdb", languageTag, names) : [];
+      return videos ? youtubeEntries(videos, { kind: "season", season }, "tmdb", languageTag, names, identity) : [];
     }));
     return [...own, ...perSeason.flat()];
   });
-  const seerr = seerrTitle.then((title) => (title ? youtubeEntries(title.videos, ownerScope, "seerr", languageTag, namesOf(title)) : []));
+  const seerr = seerrTitle.then((title) => (title ? youtubeEntries(title.videos, ownerScope, "seerr", languageTag, namesOf(title), identityOf(title)) : []));
 
   const sources: Array<Promise<TrailerEntry[]>> = [
     Promise.resolve(library ? localEntries(library.local, languageTag) : []),
     allocine,
     tmdbEntries,
-    titleInfo.then((info) => (library ? jellyfinRemoteEntries(library.remote, ownerScope, languageTag, namesOf(info)) : [])),
+    titleInfo.then((info) => (library ? jellyfinRemoteEntries(library.remote, ownerScope, languageTag, namesOf(info), identityOf(info)) : [])),
     seerr,
   ];
   const settled = await Promise.all(sources.map((source) => settleBy(source, deadline)));

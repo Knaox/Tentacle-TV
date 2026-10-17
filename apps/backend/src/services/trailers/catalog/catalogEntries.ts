@@ -14,12 +14,13 @@ import { trailerVersionOf } from "../../../trailers/trailerCatalogRank";
 import type { AllocineMatch } from "../allocine/allocineMatch";
 import type { AllocineVersion } from "../allocine/allocineTitle";
 import type { LocalTrailer } from "./catalogTitle";
-import { namesAnotherTitle } from "./foreignTitleGuard";
+import { namesAnotherTitle, namesAnotherVariant, type TitleIdentity } from "./foreignTitleGuard";
 
 /**
  * Les vidéos YouTube d'une source (TMDB, Jellyseerr, Jellyfin) pour une
  * portée. `titleNames` (les noms du titre) écarte la vidéo d'un AUTRE titre
- * glissée dans la liste (`foreignTitleGuard.ts`).
+ * glissée dans la liste, `identity` (année, pays) celle d'une autre VERSION
+ * du même nom (`foreignTitleGuard.ts`).
  */
 export function youtubeEntries(
   videos: readonly TmdbVideo[],
@@ -27,10 +28,11 @@ export function youtubeEntries(
   source: Extract<TrailerSource, "tmdb" | "seerr" | "jellyfin">,
   serverLang: string | null,
   titleNames: readonly string[] = [],
+  identity: TitleIdentity = {},
 ): TrailerEntry[] {
   const entries: TrailerEntry[] = [];
   for (const video of videos) {
-    if (namesAnotherTitle(video.name, titleNames)) continue;
+    if (namesAnotherTitle(video.name, titleNames) || namesAnotherVariant(video.name, titleNames, identity)) continue;
     const ytId = video.key && /^[\w-]{11}$/.test(video.key) ? video.key : parseYouTubeId(video.url);
     if (!ytId) continue;
     const kind = trailerKind({ Url: video.url, Name: video.name, type: video.type }, titleNames);
@@ -53,8 +55,9 @@ export function jellyfinRemoteEntries(
   scope: TrailerScope,
   serverLang: string | null,
   titleNames: readonly string[] = [],
+  identity: TitleIdentity = {},
 ): TrailerEntry[] {
-  return youtubeEntries(trailers.map((t) => ({ key: "", url: t.Url, name: t.Name })), scope, "jellyfin", serverLang, titleNames);
+  return youtubeEntries(trailers.map((t) => ({ key: "", url: t.Url, name: t.Name })), scope, "jellyfin", serverLang, titleNames, identity);
 }
 
 /** Les bandes-annonces locales : un fichier que l'administrateur a posé — toujours en tête de sa portée. */
