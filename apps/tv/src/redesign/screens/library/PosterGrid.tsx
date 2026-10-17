@@ -2,14 +2,11 @@ import { memo, useCallback, useEffect, useMemo, useRef, type ReactElement } from
 import { StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, REVEAL_NEAREST_MARGIN, trailerPreviewTileSize } from "@tentacle-tv/tv-core";
-import { cardFocusFooterHeight } from "../../cards/CardFocusFooter";
+import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX } from "@tentacle-tv/tv-core";
 import { useCardMetrics } from "../../cards/cardSizeMode";
 import type { CardModel } from "../../cards/cardTypes";
-import { PreviewRevealProvider, type PreviewReveal } from "../../rows/previewRevealPort";
 import { GridLine, type GridLineModel } from "./GridLine";
 import { createGridMotion } from "./gridMotion";
-import { useGridLinePush } from "./gridLinePush";
 import { useGridPreviewWarm } from "./gridPreviewWarm";
 import { useGridAhead } from "./useGridAhead";
 import { mountProfile } from "../../render/mountProfile";
@@ -40,13 +37,11 @@ import { mountProfile } from "../../render/mountProfile";
  *
  * L'aperçu au focus (Apple TV, Android TV) : chaque ligne est FIXE
  * (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) — elle ne défile ni ne
- * tourne, GAUCHE et DROITE ne font que déplacer le focus. L'affiche dont
- * l'aperçu démarre devient la grande carte, à sa place dans sa colonne, sa
- * légende dessous ; les lignes du dessous descendent d'autant
- * (`gridLinePush`), la page aussi si la ligne dépasse en bas. HAUT et BAS
- * gardent la colonne (l'intégration déclare l'entrée des lignes voisines,
- * tv-core `gridLineEntries`). Les aperçus de sa ligne et de la suivante se
- * préparent d'avance.
+ * tourne, rien n'y grandit, GAUCHE et DROITE ne font que déplacer le focus ;
+ * l'aperçu se joue dans la zone fixe en haut de l'écran. HAUT et BAS gardent
+ * la colonne (l'intégration déclare l'entrée des lignes voisines, tv-core
+ * `gridLineEntries`). Les aperçus de sa ligne et de la suivante se préparent
+ * d'avance.
  */
 
 export interface PosterGridProps {
@@ -121,28 +116,14 @@ export const PosterGrid = memo(function PosterGrid({
 }: PosterGridProps) {
   const columns = useGridColumns(forcedColumns);
   const width = posterWidth(columns);
-  const content = useGridContent(width);
   const lines = useLines(cards, columns);
   const list = useRef<FlashList<Line>>(null);
   const focusCard = useGridAhead(list, cards, columns, onFocusCard);
-  // Le mouvement de la grille : la préparation attend qu'elle se pose (`gridMotion`).
+  // Le mouvement de la grille — son focus, son défilement : la préparation attend qu'elle se pose (`gridMotion`).
   const motion = useMemo(() => createGridMotion(), []);
   useEffect(() => () => motion.dispose(), [motion]);
-  // Le défilement de la page, relevé sans rendu : la grande carte qui dépasse en bas l'y fait descendre.
-  const scrollY = useRef(0);
-  const onScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      scrollY.current = event.nativeEvent.contentOffset.y;
-      motion.scrolled(scrollY.current);
-    },
-    [motion],
-  );
-  const reveal = useMemo<PreviewReveal>(
-    () => ({ scrollBy: (by) => list.current?.scrollToOffset({ offset: scrollY.current + by, animated: true }) }),
-    [],
-  );
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => motion.scrolled(event.nativeEvent.contentOffset.y), [motion]);
   const warm = useGridPreviewWarm(cards, columns, motion);
-  const push = useGridLinePush();
   const height = lineHeight(width);
   const stride = lineStride(width);
   const renderItem = useCallback(
@@ -150,12 +131,10 @@ export const PosterGrid = memo(function PosterGrid({
       <GridLine
         line={item}
         index={index}
-        columns={columns}
         width={width}
         height={height}
         stride={stride}
         motion={motion}
-        push={push}
         focusPrefix={focusPrefix}
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}
@@ -163,65 +142,48 @@ export const PosterGrid = memo(function PosterGrid({
         onWarm={warm}
       />
     ),
-    [motion, push, columns, width, height, stride, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
+    [motion, width, height, stride, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
   );
   return (
     // FlashList veut un parent de taille connue : la scène.
-    <PreviewRevealProvider reveal={reveal}>
-      <View style={styles.list}>
-        <FlashList
-          ref={list}
-          // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
-          key={`grid-${columns}`}
-          data={lines}
-          keyExtractor={lineKey}
-          renderItem={renderItem}
-          estimatedItemSize={stride}
-          // Deux lignes d'avance de chaque côté (la liste étend ensuite son
-          // avance par étapes) : une flèche maintenue trouve toujours la ligne
-          // suivante montée — la règle des sections la cherche parmi les
-          // lignes présentes. Le profil de montage la règle (`mountProfile` :
-          // une ligne en mode Lite).
-          drawDistance={mountProfile().gridDrawDistance}
-          ListHeaderComponent={header}
-          ListEmptyComponent={empty}
-          ListFooterComponent={footer}
-          ItemSeparatorComponent={Separator}
-          contentContainerStyle={content}
-          showsVerticalScrollIndicator={false}
-          // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
-          // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
-          // étiquettes comprises — à chaque lot de lignes ajouté et à chaque
-          // battement du défilement rapide. Mesuré au profileur : le premier
-          // poste du fil d'interface en défilement rapide.
-          overrideProps={SCROLL_PROPS}
-          onEndReached={onEndReached}
-          onScroll={onScroll}
-          // La page suivante part à trois écrans de la fin : quand le focus
-          // dévale (flèche maintenue, glisser vif), elle est là avant lui.
-          onEndReachedThreshold={GRID_END_REACHED_SCREENS}
-        />
-      </View>
-    </PreviewRevealProvider>
+    <View style={styles.list}>
+      <FlashList
+        ref={list}
+        // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
+        key={`grid-${columns}`}
+        data={lines}
+        keyExtractor={lineKey}
+        renderItem={renderItem}
+        estimatedItemSize={stride}
+        // Deux lignes d'avance de chaque côté (la liste étend ensuite son
+        // avance par étapes) : une flèche maintenue trouve toujours la ligne
+        // suivante montée — la règle des sections la cherche parmi les
+        // lignes présentes. Le profil de montage la règle (`mountProfile` :
+        // une ligne en mode Lite).
+        drawDistance={mountProfile().gridDrawDistance}
+        ListHeaderComponent={header}
+        ListEmptyComponent={empty}
+        ListFooterComponent={footer}
+        ItemSeparatorComponent={Separator}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
+        // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
+        // étiquettes comprises — à chaque lot de lignes ajouté et à chaque
+        // battement du défilement rapide. Mesuré au profileur : le premier
+        // poste du fil d'interface en défilement rapide.
+        overrideProps={SCROLL_PROPS}
+        onEndReached={onEndReached}
+        onScroll={onScroll}
+        // La page suivante part à trois écrans de la fin : quand le focus
+        // dévale (flèche maintenue, glisser vif), elle est là avant lui.
+        onEndReachedThreshold={GRID_END_REACHED_SCREENS}
+      />
+    </View>
   );
 });
 
 const lineKey = (line: Line) => line.cards[0].id;
-
-/**
- * Le contenu de la liste : sa marge du bas fait la place de ce que la grande
- * carte d'une affiche gagne (l'image, puis son pied) — la dernière ligne
- * agrandie, la page peut encore descendre pour la montrer entière.
- */
-function useGridContent(width: number) {
-  const { scale } = useCardMetrics();
-  return useMemo(() => {
-    const height = Math.round(width * 1.5);
-    const tile = trailerPreviewTileSize({ cardWidth: width, cardHeight: height, screenWidth: 1920, maxWidth: GRID_WIDTH, sizeScale: scale });
-    const grow = Math.max(0, tile.height - height) + cardFocusFooterHeight({ note: false, hold: true, preview: true });
-    return { ...styles.content, paddingBottom: Math.max(GRID_BOTTOM, grow + REVEAL_NEAREST_MARGIN) };
-  }, [width, scale]);
-}
 
 /** La marge du bas, au repos. */
 const GRID_BOTTOM = 160;
@@ -230,7 +192,7 @@ const GRID_BOTTOM = 160;
  *  et l'année (22) à 1,21 em la ligne (Inter), 2 entre les deux. */
 const CAPTION_HEIGHT = 72;
 
-/** La hauteur d'une ligne au repos, fixe : ce que la grande carte gagne déborde (`GridLine`). */
+/** La hauteur d'une ligne au repos, fixe : la ligne ne grandit jamais (`GridLine`). */
 function lineHeight(width: number): number {
   return Math.round(width * 1.5) + CAPTION_HEIGHT;
 }

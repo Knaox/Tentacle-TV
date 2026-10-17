@@ -3,21 +3,14 @@
  * bibliothèque, Ma liste, Favoris, Parcourir.
  *
  * Une ligne de grille est FIXE (décision du 18/10, qui remplace la ligne qui
- * tournait du 17/10) : elle ne défile pas, ne tourne pas, ne met aucune
- * affiche en tête. GAUCHE et DROITE ne font que déplacer le focus ; l'affiche
- * focalisée reste dans sa colonne, et quand son aperçu démarre, sa grande
- * carte s'y adapte, quelle que soit la colonne (la géométrie de la grande
- * carte, `trailerPreviewTile*.ts`). Aucune ligne n'a donc à « revenir » à sa
- * première colonne.
+ * tournait du 17/10) : elle ne défile pas, ne tourne pas, rien n'y grandit.
+ * GAUCHE et DROITE ne font que déplacer le focus ; l'aperçu de l'affiche
+ * focalisée se joue dans la zone fixe en haut de l'écran, toujours au même
+ * endroit (façon Netflix), jamais dans la grille. HAUT et BAS gardent la
+ * COLONNE (`gridLineEntries`, `focus/gridFocus.ts`).
  *
- * En hauteur, la ligne qui grandit ne change pas la mise en page de la liste
- * (recyclée : la relayer à chaque image coûterait tout) : les lignes du
- * DESSOUS glissent d'autant que la cellule gagne (image et pied), sur le même
- * ressort, et la page descend si la ligne agrandie dépasse en bas.
- *
- * HAUT et BAS gardent la COLONNE (`gridLineEntries`, `focus/gridFocus.ts`) :
- * la flèche mène à la même colonne de la ligne voisine, jamais à ce qui se
- * trouve sous la grande carte.
+ * Ce qui reste ici : la préparation des aperçus autour du focus, et le
+ * plancher qui n'en demande aucun tant que la grille défile.
  */
 
 /**

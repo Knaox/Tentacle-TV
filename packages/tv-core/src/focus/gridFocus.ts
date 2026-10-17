@@ -50,13 +50,12 @@ export interface GridLineEntries {
 }
 
 /**
- * HAUT et BAS gardent la COLONNE (GR-7) : quand l'aperçu d'une affiche
- * démarre, sa grande carte déborde sur ses voisines (`cards/trailerPreviewGrid.ts`)
- * et la règle de voisinage (`sections.ts`, le centre le plus proche) pourrait
- * mener ailleurs que sous elle. Les lignes voisines déclarent donc leur
- * ENTRÉE à la colonne de l'affiche focalisée — sans aperçu, c'est déjà
- * l'affiche au centre le plus proche : rien ne change. Une ligne du dessous
- * plus courte (la dernière) entre par sa dernière affiche, comme avant.
+ * HAUT et BAS gardent la COLONNE (GR-7) : les lignes voisines déclarent leur
+ * ENTRÉE à la colonne de l'affiche focalisée — sans écart de mise en page,
+ * c'est déjà l'affiche au centre le plus proche (`sections.ts`), mais
+ * l'entrée déclarée ne dépend ni de la règle de voisinage ni de ce que la
+ * plateforme a monté. Une ligne du dessous plus courte (la dernière) entre
+ * par sa dernière affiche.
  */
 export function gridLineEntries(index: number, columns: number, count: number): GridLineEntries {
   const perLine = Math.max(1, Math.floor(columns));
