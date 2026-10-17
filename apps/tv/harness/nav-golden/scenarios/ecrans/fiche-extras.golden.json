@@ -1,0 +1,190 @@
+{
+  "format": 1,
+  "domain": "ecrans",
+  "suite": "fiche-extras",
+  "reference": {
+    "sha": "6fc0b9cd8d0ad8c4cb7da7ab5159000463668d65",
+    "label": "référence 6fc0b9cd8"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "f3fdc30de7d96417",
+  "device": {
+    "kind": "simulateur",
+    "name": "tvgrille-test",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-17T23:50:33.630Z",
+  "scenarios": {
+    "fiche-extras-catalogue": {
+      "hash": "2c24d1cdcad7",
+      "durationMs": 29837,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true,
+            true
+          ]
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "extra:0",
+          "label": "Bande-annonce VF (AlloCiné du banc)",
+          "frame": [
+            120,
+            142,
+            380,
+            289
+          ],
+          "groups": [
+            "detail:extras"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "extra:1",
+          "label": "Teaser TMDB du banc",
+          "frame": [
+            536,
+            142,
+            380,
+            289
+          ],
+          "groups": [
+            "detail:extras"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "extra:0",
+          "label": "Bande-annonce VF (AlloCiné du banc)",
+          "frame": [
+            120,
+            142,
+            380,
+            289
+          ],
+          "groups": [
+            "detail:extras"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "trailer:timeline",
+          "label": "Position dans la bande-annonce",
+          "frame": [
+            96,
+            976,
+            1728,
+            40
+          ],
+          "groups": [],
+          "route": "Trailer",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0",
+            "name": "Bande-annonce VF (AlloCiné du banc)",
+            "url": "https://www.dailymotion.com/video/x8banc1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "Trailer"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
