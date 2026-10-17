@@ -155,17 +155,18 @@ function wordsWithoutTitle(name: string | undefined, titleNames: readonly string
 /**
  * Ce qu'est la vidéo : bande-annonce, teaser ou autre chose. Un mot de bonus
  * dans le libellé (hors noms du titre, `titleNames`) en fait TOUJOURS autre
- * chose ; sinon le type TMDB fait foi, sauf un « Clip » ou une « Featurette »
+ * chose, le mot « teaser » TOUJOURS un teaser ; sinon le type TMDB fait foi, sauf un « Clip » ou une « Featurette »
  * dont le libellé dit « bande-annonce » (TMDB type ainsi des VF) ; sans type
  * (Jellyfin), le libellé seul, et une vidéo sans mot-clé vaut bande-annonce.
  */
 export function trailerKind(tr: RichTrailer, titleNames: readonly string[] = []): "trailer" | "teaser" | "other" {
   const words = wordsWithoutTitle(tr.Name, titleNames);
   if (EXTRA_NAME.test(words)) return "other";
+  // Le libellé dit « teaser » : c'en est un, même typé « Trailer » (Barbie : « Teaser Officiel [VF] »).
+  if (TEASER_NAME.test(words)) return "teaser";
   const type = (tr.type ?? "").toLowerCase();
   if (type === "trailer") return "trailer";
   if (type === "teaser") return "teaser";
-  if (TEASER_NAME.test(words)) return "teaser";
   if (TRAILER_NAME.test(words)) return "trailer";
   return type ? "other" : "trailer";
 }
