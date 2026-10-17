@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useInPreviewZone } from "../rows/BelowZonePage";
 import type { CardModel } from "./cardTypes";
 import { useCardPreview, type CardPreview } from "./trailerPreviewPort";
 
@@ -8,6 +9,9 @@ import { useCardPreview, type CardPreview } from "./trailerPreviewPort";
  * DE QUOI (`card.trailer`) au port de l'aperçu (`trailerPreviewPort`) ; la
  * vidéo se joue dans la zone fixe en haut de l'écran, jamais dans la carte —
  * la carte ne grandit pas, la rangée ne bouge pas.
+ *
+ * Hors d'une page à zone (la recherche, une fiche : `useInPreviewZone`),
+ * rien ne se demande — rien ne le jouerait.
  *
  * `watchFocus` (une affiche de grille) : un focus que la page a dépassé (le
  * défilement accéléré de tvOS) ne demande rien — la carte n'est déjà plus là
@@ -28,5 +32,6 @@ export function useCardPreviewFocus(card: CardModel, focused: boolean, watchFocu
       setOutrun(false);
     };
   }, [focused, watchFocus]);
-  return useCardPreview(card.trailer ?? null, focused && !outrun);
+  const inZone = useInPreviewZone();
+  return useCardPreview(inZone ? card.trailer ?? null : null, inZone && focused && !outrun);
 }
