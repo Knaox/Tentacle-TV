@@ -15,12 +15,12 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 ### FR
 - **« Tendances actuelles » en tête de « Pour vous »** : ce qui se regarde le plus cette semaine, films et séries, sans tenir compte des goûts du compte. Allumée par défaut, elle se coupe dans les réglages des recommandations
 - **Les bonnes bandes-annonces** : le serveur vise la bande-annonce officielle du titre exact, dans votre langue d'abord (VF, puis VOSTFR), la principale avant les suivantes, les teasers après. Plus jamais d'interview, de coulisses, d'extrait ni de vidéo d'un homonyme ; sans bande-annonce sûre, rien
-- **Interface web, une fiche qui arrive d’un seul geste** : décor, affiche, logo et textes ensemble, sans image qui surgit après l'ouverture
+- **Interface web, une fiche qui arrive d’un seul geste** : décor, affiche, logo, textes et bouton « Bande-annonce » ensemble, sans image qui surgit après l'ouverture, même sur une connexion lente
 
 ### EN
 - **“Trending now” at the top of “For you”**: what everyone is watching this week, movies and shows, regardless of the account's tastes. On by default, it can be turned off in the recommendation settings
 - **The right trailers**: the server aims for the official trailer of the exact title, in your language first (dubbed, then subtitled), the main one before the next, teasers after. No more interviews, behind-the-scenes, clips or videos of a same-name title; without a reliable trailer, nothing is shown
-- **Web interface, a detail page that arrives in one motion**: backdrop, poster, logo and text together, with no image popping in after it opens
+- **Web interface, a detail page that arrives in one motion**: backdrop, poster, logo, text and the “Trailer” button together, with no image popping in after it opens, even on a slow connection
 
 ## [1.30.0]
 <!-- Aperçus et « Qui regarde ? » : capacités trailers.preview et family.desktopProfiles (1.30.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->

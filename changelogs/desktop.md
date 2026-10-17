@@ -17,12 +17,14 @@ et Linux reçoivent l'ensemble.
 <!-- Bloc nu : les trois canaux partent de la 1.30.0. « Tendances actuelles » exige le serveur 1.31.0 (capacité reco.trending) : face à un serveur plus ancien, ni la rangée ni l'interrupteur. -->
 ### FR
 - **« Tendances actuelles » en tête de « Pour vous »** : ce qui se regarde le plus cette semaine, films et séries, sans tenir compte de vos goûts. À couper dans Réglages › Personnalisation (serveur 1.31.0)
-- **Une fiche qui arrive d'un seul geste** : en ouvrant un film ou une série, le décor, l'affiche, le logo et les textes apparaissent ensemble, sans image qui surgit après coup, et l'affiche vole jusqu'à sa place plus fluidement
+- **Une fiche qui arrive d'un seul geste** : en ouvrant un film ou une série, le décor, l'affiche, le logo, les textes et le bouton « Bande-annonce » apparaissent ensemble, sans image qui surgit après coup, même sur une connexion lente, et l'affiche vole jusqu'à sa place plus fluidement
+- **Les bonnes bandes-annonces** : la bande-annonce officielle du titre exact, en VF d'abord puis en VOSTFR ; plus d'interview, de coulisses ni de vidéo d'un homonyme (serveur 1.31.0)
 - **Quitter pendant l'image dans l'image** : l'application se ferme proprement, sans message d'erreur
 
 ### EN
 - **“Trending now” at the top of “For you”**: what everyone is watching this week, movies and shows, regardless of your tastes. Turn it off in Settings › Personalization (server 1.31.0)
-- **A detail page that arrives in one motion**: opening a movie or series brings in the backdrop, poster, logo and text together, with no image popping in afterwards, and the poster glides to its place more smoothly
+- **A detail page that arrives in one motion**: opening a movie or series brings in the backdrop, poster, logo, text and the “Trailer” button together, with no image popping in afterwards, even on a slow connection, and the poster glides to its place more smoothly
+- **The right trailers**: the official trailer of the exact title, dubbed in your language first, then subtitled; no more interviews, behind-the-scenes or videos of a same-name title (server 1.31.0)
 - **Quitting while picture-in-picture is open**: the app now closes cleanly, with no error message
 
 ## [1.30.0]
