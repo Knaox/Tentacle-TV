@@ -20,7 +20,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { BenchError, OUT_DIR, benchContext, capture, say, sleep, step, warn } from "./lib/config.mjs";
-import { agentRun, evaluate } from "./lib/remote.mjs";
+import { agentRun, evaluate, perform } from "./lib/remote.mjs";
+import { journalSeq, settle } from "./lib/observe.mjs";
 import { coldStart, prepare, sessionSummary } from "./lib/session.mjs";
 import { suites } from "./perf/suites.mjs";
 import { summarize } from "./perf/analyze.mjs";
@@ -62,7 +63,17 @@ function harness(ctx, session) {
     session,
     keys: (list) => agentRun(ctx, list, { timeoutMs: 120_000 }),
     sleep,
-    start: (start) => coldStart(ctx, session, start),
+    // Comme `runner.mjs` : démarrage à froid, route poussée, approche geste par geste (app immobile entre deux).
+    async start(start) {
+      await coldStart(ctx, session, start);
+      if (start.route) await evaluate(ctx, `globalThis.__navGolden.navigate(${JSON.stringify(start.route.name)}, ${JSON.stringify(start.route.params ?? null)}, false)`);
+      const seq0 = await journalSeq(ctx);
+      for (const gesture of start.keys ?? []) {
+        const extra = await perform(ctx, gesture);
+        await settle(ctx, { since: seq0, minMs: extra, quietMs: 300, timeoutMs: 6000 });
+      }
+      return settle(ctx, { since: seq0, minMs: 800, quietMs: 1500, timeoutMs: 30_000, nullQuietMs: 10_000 });
+    },
     obs: async () => { const o = await evaluate(ctx, "globalThis.__navGolden.observe()"); return { ...o, focus: o?.focus?.key ?? null, frame: o?.focus?.frame ?? null }; },
     eval: (expr) => evaluate(ctx, expr, { timeoutMs: 30_000 }),
     arm: (mode = "fps", watch = null) => probe(`arm(${JSON.stringify(mode)}, ${JSON.stringify(watch)})`),
