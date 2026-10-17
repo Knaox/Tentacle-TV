@@ -44,10 +44,19 @@ export interface CardModel {
   /** La qualité du titre — 4K, Dolby Vision, Dolby Atmos —, montrée au focus
    *  DANS l'image (`CardQualityBadges`). Absente : rien à montrer. */
   quality?: CardQuality;
-  /** De quoi la carte montrerait la bande-annonce quand son focus tient
-   *  (`trailerPreviewPort`) : le titre de la bibliothèque, ou son identité
-   *  TMDB hors bibliothèque. Absent : la carte ne grandit jamais. */
+  /** Ce que la ZONE D'APERÇU montre de ce titre, en grand : son fond (Backdrop,
+   *  sans titre incrusté) et son logo lisible sur la scène sombre. Absent : la
+   *  zone se rabat sur l'image 16:9 de la carte, puis sur son affiche. */
+  billboard?: CardBillboard;
+  /** De quoi la zone d'aperçu jouerait la bande-annonce quand le focus de la
+   *  carte tient (`trailerPreviewPort`) : le titre de la bibliothèque, ou son
+   *  identité TMDB hors bibliothèque. Absent : la zone ne montre que le fond. */
   trailer?: TrailerPreviewSubject;
+}
+
+export interface CardBillboard {
+  backdropUri?: string;
+  logoUri?: string;
 }
 
 /**

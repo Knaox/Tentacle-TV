@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import type { TrailerPreviewSubject } from "@tentacle-tv/shared";
 import { TV_MOTION, TV_STAGE } from "@tentacle-tv/theme";
 import { ArtworkHalo } from "../background/ArtworkHalo";
 import { SoftGradient } from "../background/SoftGradient";
@@ -68,6 +69,8 @@ export interface HeroModel {
   listToggle?: { label: string; active: boolean; focusKey: string };
   /** Position dans la rotation (points en bas à droite). */
   page?: { index: number; count: number };
+  /** Sa bande-annonce, jouée dans la zone d'aperçu quand ses boutons ont le focus. */
+  trailer?: TrailerPreviewSubject;
 }
 
 export interface HeroBannerProps {

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { TrailerPreviewProvider, type PreviewZoneRenderer } from "../../redesign/cards/trailerPreviewPort";
+import { TrailerPreviewProvider } from "../../redesign/cards/trailerPreviewPort";
+import { TrailerZone } from "./TrailerZone";
 import { useTvPreviewWarm } from "./usePreviewWarmTv";
 
 /**
@@ -11,8 +12,5 @@ import { useTvPreviewWarm } from "./usePreviewWarmTv";
  */
 export function TrailerPreviewHost({ children }: { children: ReactNode }) {
   const warm = useTvPreviewWarm();
-  return <TrailerPreviewProvider zone={NoZone} warm={warm}>{children}</TrailerPreviewProvider>;
+  return <TrailerPreviewProvider zone={TrailerZone} warm={warm}>{children}</TrailerPreviewProvider>;
 }
-
-/** TRANSITOIRE : la zone arrive au commit suivant. */
-const NoZone: PreviewZoneRenderer = () => null;
