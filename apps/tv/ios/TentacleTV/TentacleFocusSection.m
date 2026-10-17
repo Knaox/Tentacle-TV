@@ -127,6 +127,9 @@ static TentacleFocusSection *InnermostNeighborSection(UIView *view)
   } else {
     [_neighborGuides clear];
   }
+  if (_rowReveal) {
+    TentacleRowScrollerAttach(self, next);
+  }
   if (![_revealMode isEqualToString:@"none"]) {
     [[TentacleRevealScroller scrollerForSection:self] revealItem:next];
   }
@@ -153,6 +156,7 @@ RCT_EXPORT_VIEW_PROPERTY(revealTop, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(revealResponse, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(revealDamping, CGFloat)
 RCT_EXPORT_VIEW_PROPERTY(lineList, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(rowReveal, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(tvNeighbors, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(tvEntry, NSNumber)
 

@@ -45,6 +45,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// à la ligne du dessus au plus proche, comme BAS — rien ne la coiffe.
 @property (nonatomic, assign) BOOL lineList;
 
+/// Ses rangées gardent la carte focalisée loin des bords, au retrait de la
+/// rangée — jamais sous le rail (`TentacleRowScroller.m`, tv-core
+/// `rowRevealOffset`).
+@property (nonatomic, assign) BOOL rowReveal;
+
 /// La règle de voisinage vertical s'applique à cette section.
 @property (nonatomic, assign) BOOL tvNeighbors;
 /// L'entrée déclarée (numéro natif d'un de ses éléments), ou nil.
@@ -98,6 +103,10 @@ FOUNDATION_EXPORT BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView
 + (void)observeBridge:(nullable RCTBridge *)bridge;
 
 @end
+
+/// Attache le suivi de rangée à la ScrollView horizontale entre `item` et
+/// `section` (une fois par rangée) — `TentacleRowScroller.m`.
+FOUNDATION_EXPORT void TentacleRowScrollerAttach(TentacleFocusSection *section, UIView *item);
 
 /// Observe la télécommande sur `window` (une fois) : flèches enfoncées, pavé
 /// (`TentacleFocusInput.m`).

@@ -224,6 +224,7 @@ const Shelf = memo(function Shelf({
     <FocusSection
       focusKey={`section:${key}`}
       reveal={SHELF_REVEAL}
+      rowReveal
       onLayout={layout}
       style={[
         first === "afterHead" && styles.firstAfterHead,

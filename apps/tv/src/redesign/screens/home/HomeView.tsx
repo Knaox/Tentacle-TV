@@ -249,6 +249,7 @@ const HomeRow = memo(function HomeRow({
     <FocusSection
       focusKey={`section:${key}`}
       reveal={ROW_REVEAL}
+      rowReveal
       onLayout={layout}
       style={first === "afterHero" ? styles.firstAfterHero : first === "alone" ? styles.firstAlone : undefined}
     >

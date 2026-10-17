@@ -23,7 +23,10 @@
  * début, la dernière à la fin.
  *
  * Sur Android TV l'application est native (`RevealFollower.kt`) ; ce module
- * en est la spécification. Module pur : temps en millisecondes.
+ * en est la spécification. Sur Apple TV, `rowRevealOffset` seul, appliqué à
+ * la cible que tvOS propose pour la rangée (`TentacleRowScroller.m`, `base` =
+ * sa proposition) : tvOS posait la carte à SA marge (~80 pt), sous le rail en
+ * revenant vers la gauche. Module pur : temps en millisecondes.
  */
 
 export const BURST_FOLLOW = {
