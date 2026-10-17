@@ -10,6 +10,17 @@ export interface RowScrollState {
 
 const SCROLL_AMOUNT_PX = 600;
 
+/**
+ * Les flèches d'une rangée : ce qu'il reste à défiler de chaque côté.
+ *
+ * La piste se REMESURE quand sa taille change (ResizeObserver) ET quand ses
+ * enfants changent (MutationObserver) : une rangée se monte avec sa cale de
+ * hauteur réservée, SANS ses cartes (`useRowTrackReserve`, la fenêtre de
+ * `useRowWindow`) — leur arrivée ne change pas la boîte de la piste quand la
+ * cale avait déjà leur hauteur, et la mesure du montage (« rien à défiler »)
+ * restait : plus de flèche jusqu'au premier défilement. Une mesure par image
+ * au plus (elle lit `scrollWidth`, donc la mise en page).
+ */
 export function useRowScroll(): RowScrollState {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -37,9 +48,24 @@ export function useRowScroll(): RowScrollState {
     update();
     const el = scrollRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(update);
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+    const ro = new ResizeObserver(schedule);
     ro.observe(el);
-    return () => ro.disconnect();
+    // Les cartes montées, la fenêtre déplacée : les ENFANTS directs de la piste.
+    const mo = new MutationObserver(schedule);
+    mo.observe(el, { childList: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [update]);
 
   return { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll: update };
