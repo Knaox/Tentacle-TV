@@ -10,8 +10,12 @@
  *    (Accueil → Films → Accueil). Revenir d'une fiche n'est pas changer de
  *    page : la rangée est rendue exactement comme on l'a laissée ;
  * 3. RETOUR sur une carte qui n'est pas la première ramène le focus à la
- *    première (`rowBackTarget`) — la rangée défile, à la vue ; le Retour
- *    suivant fait ce qu'il faisait (le rail s'ouvre : `railScreenBackLayers`).
+ *    première (`rowBackTarget`) — la rangée revient au début D'UN COUP, puis
+ *    le focus s'y pose (`back`) ; le Retour suivant fait ce qu'il faisait (le
+ *    rail s'ouvre : `railScreenBackLayers`). Elle défilait à la vue, par tvOS :
+ *    ~1,5 s sur une rangée défilée loin (une carte en aperçu passée en tête),
+ *    le « gros lag » relevé par Damien le 17/10 — Retour est un geste de
+ *    retour, pas de parcours : il est instantané.
  *
  * Une rangée est DÉPLACÉE dès qu'une carte autre que la première a pris le
  * focus — c'est le focus qui fait défiler un carrousel de téléviseur ; elle
@@ -120,6 +124,12 @@ export interface RowRewind {
   startOf(focusKey: string): string;
   /** RETOUR : la première carte, quand le focus est sur une autre carte d'une rangée déclarée. */
   backTarget(focusKey: string | null): string | null;
+  /**
+   * RETOUR, appliqué : la rangée à remettre au début MAINTENANT (sans
+   * animation) et la clé où poser le focus ensuite — `null` hors d'une carte
+   * autre que la première. La rangée n'est plus déplacée.
+   */
+  back(focusKey: string | null): { row: string; claim: string } | null;
   /** Les rangées déplacées (pour les tests et le relevé). */
   moved(): string[];
 }
@@ -190,6 +200,12 @@ export function createRowRewind(): RowRewind {
     },
     startOf,
     backTarget: (focusKey) => rowBackTarget(focusKey, rows),
+    back(focusKey) {
+      const card = rowCardOf(focusKey, rows);
+      if (!card || card.index === 0) return null;
+      take([card.row]);
+      return { row: card.row, claim: rowStartKey(card.row) };
+    },
     moved: () => [...moved],
   };
 }

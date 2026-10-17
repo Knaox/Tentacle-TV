@@ -20,9 +20,12 @@ export function useRailBackLayers(screen: RedesignScreenModel): void {
   const onProfile = useKeyFocused(focus, RAIL_PROFILE_FOCUS_KEY);
   const awayFromRowStart = useAwayFromRowStart(focus, rows);
   const toProfile = useCallback(() => void focus.claim(RAIL_PROFILE_FOCUS_KEY), [focus]);
+  // La rangée revient au début d'un coup, puis le focus se pose TOUT DE SUITE
+  // sur sa première carte (déjà en place) — jamais par les minuteurs d'une
+  // réclamation, sauf si la carte n'est pas montée.
   const toRowStart = useCallback(() => {
-    const key = rows?.backTarget(focus.focusedKey());
-    if (key) focus.claim(key);
+    const key = rows?.back(focus.focusedKey());
+    if (key && !focus.focusNow(key)) focus.claim(key);
   }, [focus, rows]);
   const { cancelIfMoving, closeMenu } = arrange;
   const cancelMove = useCallback(() => void cancelIfMoving(), [cancelIfMoving]);

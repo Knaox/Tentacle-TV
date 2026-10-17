@@ -174,3 +174,23 @@ describe("createRowRewind — Retour dans une rangée défilée", () => {
     expect(rewind.backTarget("nextUp:0")).toBeNull();
   });
 });
+
+describe("createRowRewind — Retour appliqué (back)", () => {
+  it("une carte loin dans la rangée : la rangée revient au début d'un coup, puis le focus sur sa première carte", () => {
+    const rewind = page();
+    rewind.focus("nextUp:4");
+    expect(rewind.moved()).toEqual(["nextUp"]);
+    expect(rewind.back("nextUp:4")).toEqual({ row: "nextUp", claim: "nextUp:0" });
+    // Remise au début : plus déplacée, rien à refaire en sortant de l'écran.
+    expect(rewind.moved()).toEqual([]);
+  });
+
+  it("la première carte, une clé hors des rangées, rien : aucun Retour de rangée", () => {
+    const rewind = page();
+    rewind.focus("nextUp:0");
+    expect(rewind.back("nextUp:0")).toBeNull();
+    expect(rewind.back("hero:primary")).toBeNull();
+    expect(rewind.back(null)).toBeNull();
+    expect(rewind.back("episodes:7")).toBeNull();
+  });
+});
