@@ -1,5 +1,5 @@
 import { memo, useMemo, type ReactNode } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { SoftGradient } from "../background/SoftGradient";
 import { useFocusProgress } from "../focus/useFocusProgress";
@@ -82,6 +82,9 @@ export interface MediaCardProps {
   onPreviewCollapse?: () => void;
   /** Suit la page depuis le focus (une grille) : un focus dépassé ne demande pas d'aperçu. */
   previewWatch?: CardFocusWatch;
+  /** Un style de plus sur la cellule (`CardShell` `style`) — l'atténuation d'une affiche de grille
+   *  sortie sous la navigation. Animé seulement sur une carte qui peut grandir. */
+  cellStyle?: StyleProp<ViewStyle>;
 }
 
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
@@ -158,6 +161,7 @@ function CardBody({
   onLongPress,
   cardFocus,
   growth,
+  cellStyle,
 }: MediaCardProps & { cardFocus: CardFocused; growth: CardGrowth | null }) {
   const landscape = variant === "landscape";
   const frame = useCardMetrics()[variant];
@@ -180,6 +184,7 @@ function CardBody({
       onTargetFocusChange={onTargetFocusChange}
       accessibilityLabel={card.title}
       expansion={growth ? growth.expansion : undefined}
+      style={cellStyle}
       frame={
         <>
           <FrameUnder growth={growth}>
@@ -247,7 +252,9 @@ function CardBody({
             hold={focused && onLongPress !== undefined}
             preview={focused ? growth?.remote ?? null : null}
             previewWidth={growth?.tile.width}
-            width={Math.round(width * 1.6)}
+            // Pendant l'aperçu, toute la largeur de la grande carte : sous une petite affiche,
+            // « Maintenir OK » était tronqué à 1,6 × la carte.
+            width={growth?.expanded ? Math.max(Math.round(width * 1.6), growth.tile.width) : Math.round(width * 1.6)}
           />
         </Caption>
       )}

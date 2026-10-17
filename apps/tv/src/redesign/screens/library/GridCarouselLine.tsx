@@ -1,8 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
-import { ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
-import Animated, { useAnimatedRef, useReducedMotion, useSharedValue } from "react-native-reanimated";
+import { StyleSheet, View, type ScrollView, type StyleProp, type ViewStyle } from "react-native";
+import Animated, { interpolate, useAnimatedRef, useAnimatedScrollHandler, useAnimatedStyle, useReducedMotion, useSharedValue, type AnimatedRef, type SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { gridLineKey, gridLineReprises, gridLineReveal, gridLineTurns, reduceGridLine } from "@tentacle-tv/tv-core";
+import { gridLineKey, gridLineReprises, gridLineReveal, gridLineTurns, gridLineUnderRailFade, reduceGridLine } from "@tentacle-tv/tv-core";
 import { MediaCard } from "../../cards/MediaCard";
 import type { CardFocusWatch } from "../../cards/CardPreviewTile";
 import type { CardModel } from "../../cards/cardTypes";
@@ -30,6 +30,10 @@ import { GridReprise } from "./GridReprise";
  * déborde vers le bas, et les lignes du dessous descendent d'autant
  * (`gridLinePush`) — la liste recyclée ne relaie rien. La page descend si la
  * ligne agrandie dépasse en bas (le port `previewRevealPort` de la grille).
+ *
+ * Une affiche sortie à gauche, sous la navigation, s'atténue au fil du
+ * défilement de la ligne (tv-core `gridLineUnderRailFade`) — elle et sa
+ * légende ; jamais transparente : GAUCHE y mène. Focalisée, elle est pleine.
  *
  * Recyclée (FlashList), la ligne qui reçoit d'autres affiches revient à sa
  * première colonne, sans animation, et oublie la place posée au bout.
@@ -66,13 +70,17 @@ export interface GridCarouselLineProps {
 }
 
 export const GridCarouselLine = memo(function GridCarouselLine({ line, index, width, height, stride, focusPrefix, motion, push, ...handlers }: GridCarouselLineProps) {
-  const track = useAnimatedRef<ScrollView>();
-  const scrollX = useRef(0);
-  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollX.current = event.nativeEvent.contentOffset.x;
-  }, []);
+  const track = useAnimatedRef<Animated.ScrollView>();
+  // Le défilement de la piste, sur le fil d'interface : l'atténuation le suit image par image ;
+  // la règle de tête le relit côté JS au moment de ses évènements.
+  const offset = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    offset.value = event.contentOffset.x;
+  });
+  const scrollX = useMemo(() => ({ get current() { return offset.value; } }), [offset]);
   const cardCount = line.cards.length;
-  const room = useRowPreviewRoom({ track, scrollX, cardWidth: width, inset: TV_STAGE.contentLeft, cardCount, reduce: reduceGridLine });
+  // La règle des rangées joue sa piste par la même référence animée (`rowGlide`).
+  const room = useRowPreviewRoom({ track: track as unknown as AnimatedRef<ScrollView>, scrollX, cardWidth: width, inset: TV_STAGE.contentLeft, cardCount, reduce: reduceGridLine });
   // Les reprises paraissent avec une grande carte en tête, jamais avec celle de la dernière (en butée).
   const reduced = useReducedMotion();
   const repriseShown = useSharedValue(0);
@@ -113,14 +121,13 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
     <Animated.View style={[styles.line, drop]}>
       <FocusSection focusKey={gridLineKey(focusPrefix, index)} reveal={LINE_REVEALS[gridLineReveal(index)]}>
         <View ref={room.rowRef} collapsable={false} style={{ height }}>
-          <ScrollView
+          <Animated.ScrollView
             ref={track}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.track}
             onScroll={onScroll}
-            onMomentumScrollEnd={onScroll}
-            scrollEventThrottle={100}
+            scrollEventThrottle={16}
             onContentSizeChange={room.onContentSizeChange}
             contentContainerStyle={trackContent}
           >
@@ -134,6 +141,7 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
                 width={width}
                 focusPrefix={focusPrefix}
                 watch={watch}
+                offset={offset}
                 onCardFocus={onCardFocus}
                 onExpand={onExpand}
                 onCollapse={onCollapse}
@@ -143,7 +151,7 @@ export const GridCarouselLine = memo(function GridCarouselLine({ line, index, wi
             {reprises.map((column, i) => (
               <GridReprise key={`r${i}`} card={line.cards[column]} width={width} shown={repriseShown} />
             ))}
-          </ScrollView>
+          </Animated.ScrollView>
         </View>
       </FocusSection>
     </Animated.View>
@@ -156,22 +164,31 @@ interface CellProps extends Pick<GridCarouselLineProps, "onPressCard" | "onLongP
   /** Sa colonne : sa place dans la piste de la ligne. */
   column: number;
   watch: CardFocusWatch;
+  /** Le défilement de la ligne : sortie sous la navigation, l'affiche s'atténue. */
+  offset: SharedValue<number>;
   onCardFocus: (column: number, focused: boolean) => void;
   onExpand: (column: number, tileWidth: number, grow: number) => void;
   onCollapse: (column: number) => void;
 }
 
-const Cell = memo(function Cell({ card, index, column, width, focusPrefix, watch, onCardFocus, onExpand, onCollapse, onPressCard, onLongPressCard, onFocusCard, onWarm }: CellProps) {
+const Cell = memo(function Cell({ card, index, column, width, focusPrefix, watch, offset, onCardFocus, onExpand, onCollapse, onPressCard, onLongPressCard, onFocusCard, onWarm }: CellProps) {
   const onPress = useCallback(() => onPressCard?.(card), [card, onPressCard]);
   const onLongPress = useCallback(() => onLongPressCard?.(card), [card, onLongPressCard]);
+  const focusedNow = useSharedValue(false);
+  const fade = useMemo(() => gridLineUnderRailFade({ inset: TV_STAGE.contentLeft, cardWidth: width }), [width]);
+  const center = TV_STAGE.contentLeft + column * (width + TV_STAGE.row.gap) + width / 2;
+  const under = useAnimatedStyle(() => ({
+    opacity: focusedNow.value ? 1 : interpolate(center - offset.value, fade.centers, fade.opacities, "clamp"),
+  }));
   const onFocusChange = useCallback(
     (focused: boolean) => {
+      focusedNow.value = focused;
       onCardFocus(column, focused);
       if (!focused) return;
       onFocusCard?.(card);
       onWarm?.(index);
     },
-    [card, index, column, onCardFocus, onFocusCard, onWarm],
+    [card, index, column, onCardFocus, onFocusCard, onWarm, focusedNow],
   );
   const onPreviewExpand = useCallback((tileWidth: number, grow: number) => onExpand(column, tileWidth, grow), [onExpand, column]);
   const onPreviewCollapse = useCallback(() => onCollapse(column), [onCollapse, column]);
@@ -189,6 +206,7 @@ const Cell = memo(function Cell({ card, index, column, width, focusPrefix, watch
       previewWatch={watch}
       onPreviewExpand={onPreviewExpand}
       onPreviewCollapse={onPreviewCollapse}
+      cellStyle={under as StyleProp<ViewStyle>}
     />
   );
 });

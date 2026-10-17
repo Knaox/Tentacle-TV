@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CARD_SIZE_GRID_COLUMNS, CARD_SIZE_SCALE, CARD_SIZES } from "./cardSize";
 import { GRID_PREVIEW_SETTLE_MS, gridFocusOutrun, gridPreviewSettleDelay, gridTrailerPreviewWarmWindow } from "./trailerPreviewGrid";
-import { gridLineReprises, gridLineTurns, reduceGridLine } from "./trailerPreviewGridLine";
+import { gridLineReprises, gridLineTurns, gridLineUnderRailFade, reduceGridLine } from "./trailerPreviewGridLine";
 import { INITIAL_ROW_HEAD, type RowHeadContext } from "./trailerPreviewRowHead";
 import { trailerPreviewTileSize } from "./trailerPreviewTile";
 
@@ -143,5 +143,17 @@ describe("gridFocusOutrun — un focus dépassé par la page", () => {
   it("le défilement accéléré, loin du focus connu, le retient — dans les deux sens", () => {
     expect(gridFocusOutrun(0, 2 * stride, stride)).toBe(true);
     expect(gridFocusOutrun(5_000, 5_000 - 1.6 * stride, stride)).toBe(true);
+  });
+});
+
+describe("gridLineUnderRailFade — une affiche sortie sous la navigation s'atténue", () => {
+  it("pleine en tête, atténuée une colonne plus à gauche, jamais transparente", () => {
+    const w = posterWidth(6);
+    const { centers, opacities } = gridLineUnderRailFade({ inset: INSET, cardWidth: w });
+    const head = INSET + w / 2;
+    expect(head).toBeGreaterThanOrEqual(centers[1]);
+    expect(head - (w + GAP)).toBeLessThanOrEqual(centers[0]);
+    expect(opacities[0]).toBeGreaterThan(0.01);
+    expect(opacities[1]).toBe(1);
   });
 });

@@ -2,7 +2,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, type ReactElement } from
 import { StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX } from "@tentacle-tv/tv-core";
+import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, REVEAL_NEAREST_MARGIN, trailerPreviewTileSize } from "@tentacle-tv/tv-core";
+import { cardFocusFooterHeight } from "../../cards/CardFocusFooter";
 import { useCardMetrics } from "../../cards/cardSizeMode";
 import type { CardModel } from "../../cards/cardTypes";
 import { PreviewRevealProvider, type PreviewReveal } from "../../rows/previewRevealPort";
@@ -120,6 +121,7 @@ export const PosterGrid = memo(function PosterGrid({
 }: PosterGridProps) {
   const columns = useGridColumns(forcedColumns);
   const width = posterWidth(columns);
+  const content = useGridContent(width);
   const lines = useLines(cards, columns);
   const list = useRef<FlashList<Line>>(null);
   const focusCard = useGridAhead(list, cards, columns, onFocusCard);
@@ -184,7 +186,7 @@ export const PosterGrid = memo(function PosterGrid({
           ListEmptyComponent={empty}
           ListFooterComponent={footer}
           ItemSeparatorComponent={Separator}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={content}
           showsVerticalScrollIndicator={false}
           // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
           // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
@@ -204,6 +206,24 @@ export const PosterGrid = memo(function PosterGrid({
 });
 
 const lineKey = (line: Line) => line.cards[0].id;
+
+/**
+ * Le contenu de la liste : sa marge du bas fait la place de ce que la grande
+ * carte d'une affiche gagne (l'image, puis son pied) — la dernière ligne
+ * agrandie, la page peut encore descendre pour la montrer entière.
+ */
+function useGridContent(width: number) {
+  const { scale } = useCardMetrics();
+  return useMemo(() => {
+    const height = Math.round(width * 1.5);
+    const tile = trailerPreviewTileSize({ cardWidth: width, cardHeight: height, screenWidth: 1920, maxWidth: GRID_WIDTH, sizeScale: scale });
+    const grow = Math.max(0, tile.height - height) + cardFocusFooterHeight({ note: false, hold: true, preview: true });
+    return { ...styles.content, paddingBottom: Math.max(GRID_BOTTOM, grow + REVEAL_NEAREST_MARGIN) };
+  }, [width, scale]);
+}
+
+/** La marge du bas, au repos. */
+const GRID_BOTTOM = 160;
 
 /** La légende d'une affiche au repos (`MediaCard`) : 14 de marge, le titre (24)
  *  et l'année (22) à 1,21 em la ligne (Inter), 2 entre les deux. */
@@ -231,7 +251,7 @@ const styles = StyleSheet.create({
     paddingLeft: TV_STAGE.contentLeft,
     paddingRight: TV_STAGE.safe.x,
     paddingTop: TV_STAGE.safe.y,
-    paddingBottom: 160,
+    paddingBottom: GRID_BOTTOM,
   },
   separator: { height: GRID_ROW_GAP },
 });

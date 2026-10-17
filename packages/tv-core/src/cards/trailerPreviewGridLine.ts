@@ -74,3 +74,20 @@ export function gridLineReprises(trailing: number, cardCount: number, pitch: num
   if (trailing <= 0 || cardCount <= 0 || pitch <= 0) return [];
   return Array.from({ length: Math.ceil(trailing / pitch) }, (_, i) => i % cardCount);
 }
+
+/**
+ * L'opacité d'une affiche sortie à GAUCHE, sous la navigation (une ligne
+ * passée en tête) : atténuée comme les reprises, jamais transparente — tvOS ne
+ * focalise pas ce qui est à moins de 0,01, et GAUCHE doit y mener.
+ */
+export const GRID_UNDER_RAIL_OPACITY = 0.18;
+
+/**
+ * L'atténuation d'une affiche selon où est son CENTRE à l'écran : pleine dès
+ * le quart de la carte passé le retrait (la tête), atténuée quand son centre
+ * est sous la navigation. La vue interpole entre les deux, image par image,
+ * au défilement de la ligne ; l'affiche focalisée reste pleine.
+ */
+export function gridLineUnderRailFade(g: { inset: number; cardWidth: number }): { centers: [number, number]; opacities: [number, number] } {
+  return { centers: [g.inset - g.cardWidth / 2, g.inset + g.cardWidth / 4], opacities: [GRID_UNDER_RAIL_OPACITY, 1] };
+}
