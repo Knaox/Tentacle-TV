@@ -91,15 +91,23 @@ export function verifyDylibDir(dir) {
   return problems;
 }
 
-/** Charge réellement la dylib : l'erreur de dyld, telle quelle, ou rien. */
-export function dlopenProblem(file) {
-  const require = createRequire(import.meta.url);
-  const koffi = require("koffi");
+/**
+ * Charge réellement la dylib : l'erreur de dyld, telle quelle, ou rien.
+ *
+ * Dans un processus ENFANT, borné : un constructeur de dylib peut ouvrir une
+ * boîte modale et attendre un clic (le sdl2-compat de Homebrew, quand SDL3 lui
+ * manque) — le run de CI ne doit jamais rester pendu là-dessus.
+ */
+export function dlopenProblem(file, timeoutMs = 60_000) {
+  const koffiPath = createRequire(import.meta.url).resolve("koffi");
+  const script = `require(${JSON.stringify(koffiPath)}).load(${JSON.stringify(file)})`;
   try {
-    koffi.load(file);
+    execFileSync(process.execPath, ["-e", script], { stdio: ["ignore", "ignore", "pipe"], timeout: timeoutMs });
     return null;
   } catch (error) {
-    return error instanceof Error ? error.message : String(error);
+    if (error?.signal) return `chargement interrompu après ${timeoutMs / 1000} s (${error.signal})`;
+    const stderr = String(error?.stderr ?? "");
+    return stderr.match(/Error: (.+(?:\n\s+.+)*)/)?.[1] ?? (stderr.trim() || String(error));
   }
 }
 

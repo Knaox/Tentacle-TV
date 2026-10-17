@@ -54,6 +54,9 @@ if [ ! -f "$PREFIX/lib/libavcodec.dylib" ]; then
   # rejette App Store si libavcodec référence _lzma_code/_lzma_end/_lzma_stream_decoder
   # (« non-public API », cf. rejet Guideline 2.5.1 du 2026-06-17). lzma ne sert qu'au
   # décodage TIFF compressé LZMA dans FFmpeg → aucune perte pour un lecteur vidéo.
+  # --disable-sdl2 : libavdevice lierait la SDL2 de Homebrew (sortie SDL inutile
+  # à un lecteur). Devenue sdl2-compat, elle charge SDL3 à l'EXÉCUTION — hors de
+  # portée de la collecte — et, sans elle, ouvre une boîte modale à son chargement.
   ./configure \
     --prefix="$PREFIX" \
     --arch="$ARCH" \
@@ -61,6 +64,7 @@ if [ ! -f "$PREFIX/lib/libavcodec.dylib" ]; then
     --disable-programs --disable-doc --disable-debug \
     --disable-gpl --disable-nonfree \
     --disable-lzma \
+    --disable-sdl2 \
     --enable-videotoolbox --enable-audiotoolbox \
     --enable-libdav1d
   make -j"$(sysctl -n hw.ncpu)"
