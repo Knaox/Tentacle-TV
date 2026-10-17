@@ -25,10 +25,7 @@ export function useGridPreviewWarm(cards: readonly CardModel[], columns: number,
       pending.current = null;
       const list = latest.current;
       const [start, end] = gridTrailerPreviewWarmWindow(index, list.length, columns);
-      warm(
-        list.slice(start, end).flatMap((card) => (card.trailer ? [card.trailer] : [])),
-        { replace: true },
-      );
+      warm(list.slice(start, end), { replace: true });
     });
   }, [warm, columns, motion]);
   return useCallback(

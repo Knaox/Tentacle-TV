@@ -21,4 +21,5 @@ export * from "./trailerPreviewRowHead";
 export * from "./trailerPreviewTile";
 export * from "./trailerPreviewTv";
 export * from "./previewRemote";
+export * from "./previewZone";
 export * from "./trailerPreviewWarmTv";

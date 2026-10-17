@@ -127,7 +127,7 @@ export const MediaRow = memo(function MediaRow({
     },
     [rewind, expandRoom],
   );
-  // Les titres autour du focus : leur aperçu se prépare au serveur (`useCardPreviewWarm`).
+  // Les titres autour du focus : leur aperçu se prépare, leur fond se précharge (`useCardPreviewWarm`).
   const warm = useCardPreviewWarm();
   const latestCards = useRef(cards);
   latestCards.current = cards;
@@ -149,8 +149,7 @@ export const MediaRow = memo(function MediaRow({
       if (mountProfile().rowTails === "eager" || index > 0) demand();
       if (warm && variant !== "morph") {
         const [start, end] = trailerPreviewWarmWindow(index, latestCards.current.length);
-        const subjects = latestCards.current.slice(start, end).flatMap((neighbour) => (neighbour.trailer ? [neighbour.trailer] : []));
-        if (subjects.length > 0) warm(subjects);
+        warm(latestCards.current.slice(start, end));
       }
       onFocusCard?.(card);
     },

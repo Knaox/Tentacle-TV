@@ -1,69 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { TrailerPreviewSubject } from "@tentacle-tv/shared";
-import { previewSessionDwellLeft } from "@tentacle-tv/tv-core";
-import { TrailerPreviewProvider, type CardPreview } from "../../redesign/cards/trailerPreviewPort";
-import { useTrailerPreviewsEnabled } from "../../lib/trailerPreviewSettings";
-import { PreviewSession } from "./PreviewSession";
-import { usePreviewRemoteHint } from "./usePreviewRemote";
+import type { ReactNode } from "react";
+import { TrailerPreviewProvider, type PreviewZoneRenderer } from "../../redesign/cards/trailerPreviewPort";
 import { useTvPreviewWarm } from "./usePreviewWarmTv";
 
 /**
- * L'aperçu de bande-annonce au focus des cartes de rangée (Apple TV, Android
- * TV) — le fournisseur du port (`trailerPreviewPort`), UN pour l'app, monté
- * sous le client et le cache de requêtes (à côté de `QualityBadgeHost`).
- *
- * Chaque carte de rangée appelle `useTvTrailerPreview` : quelques états, rien
- * d'autre. Seule la carte FOCALISÉE (et le temps de son repli) monte une
- * session (`PreviewSession`) — la requête, la machine, la vidéo : une rangée
- * de vingt cartes n'en paie qu'une. Et seulement quand son focus a TENU
- * (tv-core `trailerPreviewDwell`) : une rafale de flèches ne monte rien, la
- * machine reste datée de l'arrivée du focus. Réglage coupé : aucune session.
- * Les titres autour du focus se préparent d'avance au serveur
- * (`useTvPreviewWarm`) : leur aperçu part sans attendre sa décision.
+ * La ZONE D'APERÇU des téléviseurs (Apple TV, Android TV) — le fournisseur du
+ * port (`trailerPreviewPort`), UN pour l'app, monté sous le client et le cache
+ * de requêtes (à côté de `QualityBadgeHost`). Chaque page pose sa zone
+ * (`PreviewZoneSlot`) ; les titres autour du focus se préparent d'avance au
+ * serveur (`useTvPreviewWarm`).
  */
 export function TrailerPreviewHost({ children }: { children: ReactNode }) {
   const warm = useTvPreviewWarm();
-  return <TrailerPreviewProvider usePreview={useTvTrailerPreview} warm={warm}>{children}</TrailerPreviewProvider>;
+  return <TrailerPreviewProvider zone={NoZone} warm={warm}>{children}</TrailerPreviewProvider>;
 }
 
-/** Le crochet du port, appelé par chaque carte de rangée à chaque rendu. */
-function useTvTrailerPreview(subject: TrailerPreviewSubject | null, focused: boolean): CardPreview | null {
-  const enabled = useTrailerPreviewsEnabled();
-  const [expanded, setExpanded] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const dwell = useFocusDwell(focused && enabled && subject !== null);
-  const active = enabled && subject !== null && (dwell.held || busy);
-  const video = useMemo(
-    () => (active && subject ? <PreviewSession subject={subject} focused={focused} since={dwell.since} onExpanded={setExpanded} onBusy={setBusy} /> : null),
-    [active, subject, focused, dwell.since],
-  );
-  // Le focus parti, la grande carte se replie dans le rendu MÊME du flou, sans attendre que la
-  // machine le constate (deux rendus de plus : l'ancienne architecture ne regroupe pas les états
-  // posés par les effets) ; la vidéo, elle, reste le temps de son fondu de sortie.
-  const shown = expanded && active && focused;
-  // Ce que la télécommande fait de l'aperçu qui joue, pour l'indice sous la carte.
-  const remote = usePreviewRemoteHint(shown);
-  return useMemo(() => (video ? { expanded: shown, video, remote } : null), [video, shown, remote]);
-}
-
-/**
- * L'arrivée du focus (`since`), et s'il a tenu (`held`, tv-core
- * `previewSessionDwellLeft`). Sans rendu au flou ni à l'arrivée : un seul,
- * quand le focus a tenu — la rafale qui passe ne coûte rien.
- */
-function useFocusDwell(focused: boolean): { since: number | null; held: boolean } {
-  const since = useRef<number | null>(null);
-  const [heldAt, setHeldAt] = useState<number | null>(null);
-  useEffect(() => {
-    if (!focused) {
-      since.current = null;
-      return undefined;
-    }
-    const at = Date.now();
-    since.current = at;
-    const id = setTimeout(() => setHeldAt(at), previewSessionDwellLeft(at, Date.now()));
-    return () => clearTimeout(id);
-  }, [focused]);
-  const at = focused ? since.current : null;
-  return { since: at, held: at !== null && heldAt === at };
-}
+/** TRANSITOIRE : la zone arrive au commit suivant. */
+const NoZone: PreviewZoneRenderer = () => null;

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { fetchTrailerPreviewWarm, seedTrailerPreviews, trailerPreviewSettled, useServerCapability } from "@tentacle-tv/api-client";
 import { uiLanguage, type TrailerPreviewSubject } from "@tentacle-tv/shared";
 import { createPreviewWarmQueue, type PreviewWarmWant } from "@tentacle-tv/tv-core";
+import type { CardModel } from "../../redesign/cards/cardTypes";
 import type { CardPreviewWarm } from "../../redesign/cards/trailerPreviewPort";
 import { useTrailerPreviewsEnabled } from "../../lib/trailerPreviewSettings";
 import { useAppActive } from "./previewDevice";
@@ -64,7 +65,9 @@ export function useTvPreviewWarm(): CardPreviewWarm | null {
       }
       if (alive.current) schedule();
     };
-    return (subjects: readonly TrailerPreviewSubject[], options?: PreviewWarmWant) => {
+    return (cards: readonly CardModel[], options?: PreviewWarmWant) => {
+      const subjects = cards.flatMap((card) => (card.trailer ? [card.trailer] : []));
+      if (subjects.length === 0 && !options?.replace) return;
       queue.want(subjects, Date.now(), options);
       schedule();
     };
