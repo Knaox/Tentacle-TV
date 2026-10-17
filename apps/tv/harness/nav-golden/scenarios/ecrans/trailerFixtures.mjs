@@ -59,7 +59,35 @@ function playable(player) {
   };
 }
 
+/**
+ * Le CATALOGUE d'un serveur 1.30+ (`trailers.catalog`) : une vidéo AlloCiné
+ * (Dailymotion), puis une bande-annonce TMDB (YouTube) — les extras que le
+ * bureau montre et que la fiche des téléviseurs ne lisait pas (régression
+ * d'octobre 2026). Dailymotion se relaie comme YouTube (`dmId`).
+ */
+const CATALOG = {
+  language: "fr",
+  complete: true,
+  entries: [
+    { scope: { kind: "movie" }, playback: { kind: "dailymotion", videoId: "x8banc1" }, name: "Bande-annonce VF (AlloCiné du banc)", version: "localized", type: "trailer", source: "allocine" },
+    { scope: { kind: "movie" }, playback: { kind: "youtube", ytId: "bancbancban" }, name: "Teaser TMDB du banc", version: "original", type: "teaser", source: "tmdb" },
+  ],
+};
+
+function catalogued(data) {
+  // Avant le jeu lisible : la première route qui correspond sert (sa `/api/config` n'a pas le catalogue).
+  data.route("GET", /^\/api\/config$/, (req, res, { json }) => json(res, 200, { capabilities: ["trailers.player", "trailers.catalog"] }));
+  data.route("GET", /^\/api\/trailers\/catalog$/, (req, res, { json }) => json(res, 200, CATALOG));
+  data.route("GET", /^\/api\/trailers\/resolve$/, (req, res, { url, json }) =>
+    json(res, 200, resolveBody(url.searchParams.get("ytId") ?? `dm-${url.searchParams.get("dmId")}`, true)));
+  playable(true)(data);
+}
+
 export default {
+  "catalogue-allocine": {
+    description: "le serveur déclare `trailers.catalog` : une vidéo AlloCiné (Dailymotion) et un teaser TMDB, lisibles par le relais",
+    apply: catalogued,
+  },
   "bande-annonce-lisible": {
     description: "une bande-annonce lisible (HLS), 4 hauteurs et 2 pistes de sous-titres ; le serveur déclare `trailers.player`",
     apply: playable(true),

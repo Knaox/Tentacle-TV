@@ -1,0 +1,72 @@
+{
+  "domain": "ecrans",
+  "reference": "6fc0b9cd8",
+  "defaults": {
+    "settleMs": 1000
+  },
+  "scenarios": [
+    {
+      "id": "fiche-extras-catalogue",
+      "title": "Film, serveur au catalogue : les Extras montrent ses vidéos (AlloCiné compris), et OK sur la vidéo AlloCiné ouvre la bande-annonce",
+      "why": "la fiche des téléviseurs lisait la liste d'avant (Jellyfin + TMDB, sans AlloCiné) quand le bureau suivait le catalogue",
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/catalogue-allocine"
+        ],
+        "route": {
+          "name": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          }
+        },
+        "keys": [
+          "wait:5"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "detail:primary",
+            "text": [
+              "Bande-annonce VF (AlloCiné du banc)",
+              "Teaser TMDB du banc"
+            ]
+          }
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "extra:0",
+            "label": "Bande-annonce VF (AlloCiné du banc)"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "extra:1",
+            "label": "Teaser TMDB du banc"
+          }
+        },
+        {
+          "do": "left"
+        },
+        {
+          "do": "select",
+          "settleMs": 3000,
+          "expect": {
+            "route": "Trailer",
+            "params": {
+              "url": "https://www.dailymotion.com/video/x8banc1"
+            }
+          },
+          "why": "l'écran de bande-annonce relaie Dailymotion (dmId)"
+        }
+      ]
+    }
+  ]
+}
