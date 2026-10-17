@@ -18,10 +18,12 @@ et Linux reçoivent l'ensemble.
 ### FR
 - **« Tendances actuelles » en tête de « Pour vous »** : ce qui se regarde le plus cette semaine, films et séries, sans tenir compte de vos goûts. À couper dans Réglages › Personnalisation (serveur 1.31.0)
 - **Une fiche qui arrive d'un seul geste** : en ouvrant un film ou une série, le décor, l'affiche, le logo et les textes apparaissent ensemble, sans image qui surgit après coup, et l'affiche vole jusqu'à sa place plus fluidement
+- **Quitter pendant l'image dans l'image** : l'application se ferme proprement, sans message d'erreur
 
 ### EN
 - **“Trending now” at the top of “For you”**: what everyone is watching this week, movies and shows, regardless of your tastes. Turn it off in Settings › Personalization (server 1.31.0)
 - **A detail page that arrives in one motion**: opening a movie or series brings in the backdrop, poster, logo and text together, with no image popping in afterwards, and the poster glides to its place more smoothly
+- **Quitting while picture-in-picture is open**: the app now closes cleanly, with no error message
 
 ## [1.30.0]
 <!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.30.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
