@@ -185,3 +185,6 @@ n'y touchent.
   Seule `trending` (goûtée) reste entière, pour l'accueil qui peut l'épingler ;
   « Pour vous » ne la montre pas (`forYouPageRows`, api-client).
 - **Le retrait** suit les règles 2 et 5 : c'est une rangée de la page.
+- **L'interrupteur est une frontière** (règle 5) : une page servie dont la tête
+  paraît ou part entre aussitôt (`servedPageVerdict`) — le web garde « Pour
+  vous » montée pendant qu'on est aux réglages, la page tenue ne bougerait pas.

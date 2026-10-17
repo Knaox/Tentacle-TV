@@ -45,11 +45,14 @@ export function recoPageFilterKey(page: RecoPage): string {
 
 export type ServedPageVerdict = "keep" | "adopt" | "hold";
 
+const hasTrendingHead = (page: RecoPage): boolean => page.rows.some((row) => row.key === RECO_TRENDING_NOW_ROW_KEY);
+
 /**
  * Pur : que faire de la page SERVIE (le cache), vu la page à l'écran ?
  *   • `keep`  — rien de neuf ;
  *   • `adopt` — elle remplace la page à l'écran (rien d'affiché encore,
- *     arrivée, filtre changé par l'utilisateur, page provisoire) ;
+ *     arrivée, filtre changé par l'utilisateur, page provisoire, « Tendances
+ *     actuelles » allumée ou coupée par l'utilisateur) ;
  *   • `hold`  — elle attend la frontière suivante ; l'écran ne bouge pas.
  */
 export function servedPageVerdict(
@@ -60,6 +63,9 @@ export function servedPageVerdict(
   if (!served || served === shown) return "keep";
   if (!shown || context.arriving) return "adopt";
   if (recoPageFilterKey(served) !== recoPageFilterKey(shown)) return "adopt";
+  // La tête « Tendances actuelles » paraît ou part : c'est l'interrupteur de
+  // l'utilisateur (le web garde la page montée pendant qu'il est aux réglages).
+  if (hasTrendingHead(served) !== hasTrendingHead(shown)) return "adopt";
   if (isProvisionalRecoPage(shown)) return "adopt";
   return "hold";
 }
