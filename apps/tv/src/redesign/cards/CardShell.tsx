@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, type ReactNode } from "react";
+import { memo, useCallback, type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { FocusTarget } from "../focus/FocusTarget";
@@ -27,7 +27,12 @@ import { FocusTarget } from "../focus/FocusTarget";
  * sections, native sur les deux plateformes) — depuis un aperçu, ils mènent
  * exactement où ils mèneraient depuis la carte à sa taille normale (demande
  * du 16/10 : la grande carte menait à la DEUXIÈME carte de la rangée du
- * dessus). Sous la légende, la cellule fait aussi la place du pied pendant
+ * dessus). Elle garde aussi sa HAUTEUR de repos (`TargetBox`) : la grande
+ * carte la déborde vers le bas. Le guide natif de BAS est accroché au bas de
+ * la cible — une cible qui grandissait le laissait DANS la grande carte, et
+ * tvOS choisissait seul, sans la règle des sections ni l'entrée déclarée
+ * (mesuré le 17/10 : dans une grille, BAS perdait la colonne pendant
+ * l'aperçu). Sous la légende, la cellule fait aussi la place du pied pendant
  * l'aperçu (`room`, « Maintenir OK », Lecture/Pause) : il reste visible, à
  * l'écart de la rangée du dessous. Sa présence ne change jamais pour une
  * carte donnée (une rangée en donne une à toutes ses cartes, une grille
@@ -72,13 +77,24 @@ export interface CardShellProps {
 export const CardShell = memo(function CardShell(props: CardShellProps) {
   const { width } = props;
   const { focusKey, frameHeight, frame, centerFrame = false, onPress, onLongPress, onTargetFocusChange, accessibilityLabel, children } = props;
-  // Une cellule qui grandit garde une cible à la largeur de la carte (cf. plus haut).
-  const expandable = props.expansion !== undefined;
-  const targetStyle = useMemo(() => (expandable ? [styles.target, { width }] : StyleSheet.absoluteFill), [expandable, width]);
   const renderFrame = useCallback(
     () => (centerFrame ? <View style={styles.center}>{frame}</View> : frame),
     [centerFrame, frame],
   );
+  const target = (
+    <FocusTarget
+      focusKey={focusKey}
+      form="card"
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onFocusChange={onTargetFocusChange}
+      accessibilityLabel={accessibilityLabel}
+      style={StyleSheet.absoluteFill}
+    >
+      {renderFrame}
+    </FocusTarget>
+  );
+  // Une cellule qui grandit garde une cible à la taille de la carte au repos (`TargetBox`).
   const body = (
     <>
       {/* La place de l'image : elle se dessine dans la cible, plus bas. */}
@@ -87,17 +103,7 @@ export const CardShell = memo(function CardShell(props: CardShellProps) {
       {props.expansion && props.expansion.room > 0 ? <ExpandingRoom expansion={props.expansion} /> : null}
       {/* En DERNIER : rien ne recouvre la cible. L'appui (OK enfoncé) qu'elle
           tient, l'image le lit (`usePressProgress`). */}
-      <FocusTarget
-        focusKey={focusKey}
-        form="card"
-        onPress={onPress}
-        onLongPress={onLongPress}
-        onFocusChange={onTargetFocusChange}
-        accessibilityLabel={accessibilityLabel}
-        style={targetStyle}
-      >
-        {renderFrame}
-      </FocusTarget>
+      {props.expansion ? <TargetBox width={width} frameHeight={frameHeight} expansion={props.expansion}>{target}</TargetBox> : target}
     </>
   );
   if (props.expansion) return <ExpandingCell {...props} expansion={props.expansion}>{body}</ExpandingCell>;
@@ -116,6 +122,22 @@ function ExpandingCell({ width, front, style, expansion, children }: CardShellPr
   const grow = useAnimatedStyle(() => ({ width: width + (wide - width) * progress.value }));
   return (
     <Animated.View collapsable={false} style={[{ width }, front && styles.front, style, grow]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/**
+ * La place de la cible dans une cellule qui grandit : la largeur de la carte,
+ * et la hauteur de la cellule AU REPOS — son bas remonte d'autant que la
+ * cellule gagne (l'image, puis le pied). Jamais aplatie : sur Android, la
+ * cible ne doit pas changer de parent.
+ */
+function TargetBox({ width, frameHeight, expansion, children }: { width: number; frameHeight: number; expansion: CardExpansion; children: ReactNode }) {
+  const { progress, height: tall, room } = expansion;
+  const keep = useAnimatedStyle(() => ({ bottom: (tall - frameHeight + room) * progress.value }));
+  return (
+    <Animated.View collapsable={false} style={[styles.target, { width }, keep]}>
       {children}
     </Animated.View>
   );
