@@ -49,3 +49,7 @@ done
 
 echo "==> $fusion dylibs universelles, $solo mono-architecture → $OUT"
 lipo -info "$OUT/libmpv.2.dylib"
+
+# Chaque tranche doit trouver ses voisines avec SA architecture : une
+# dépendance présente d'un seul côté ne vaut que pour ce côté-là.
+node "$(dirname "$0")/macosDylibs.mjs" verify "$OUT"

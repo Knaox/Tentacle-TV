@@ -46,6 +46,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
 import { sign, flat } from "@electron/osx-sign";
+import { assertDylibDir } from "./macosDylibs.mjs";
 import { placeLicenses } from "./macosLicenses.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -157,6 +158,9 @@ function placeDylibs(appPath) {
   const dylibs = readdirSync(libDir).filter((f) => f.endsWith(".dylib"));
   for (const dylib of dylibs) copyInto(path.join(libDir, dylib), path.join(frameworks, dylib), dylib);
   console.log(`[macos] ${dylibs.length} dylibs posées dans Contents/Frameworks`);
+  // Toutes leurs dépendances doivent être là, pour chaque architecture — et
+  // libmpv se charger pour de vrai (le 1.30.0 partait sans libbrotlicommon).
+  assertDylibDir(frameworks, { dlopen: "libmpv.2.dylib" });
 
   // ⚠️ Le chargeur Vulkan ne se lie pas à son pilote : il le cherche à
   // l'exécution dans un fichier ICD, dont le chemin par défaut est sous

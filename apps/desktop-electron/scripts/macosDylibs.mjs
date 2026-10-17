@@ -103,24 +103,36 @@ export function dlopenProblem(file) {
   }
 }
 
+/**
+ * Contrôle complet d'un dossier : les dépendances, puis — si `dlopen` nomme une
+ * dylib — son chargement réel. Lève une erreur qui liste tout ; rien sinon.
+ */
+export function assertDylibDir(dir, { dlopen } = {}) {
+  const problems = verifyDylibDir(dir);
+  if (dlopen) {
+    const failure = dlopenProblem(path.join(dir, dlopen));
+    if (failure) problems.push(`dlopen ${dlopen} (${process.arch}) : ${failure}`);
+    else console.log(`  ✓ dlopen ${dlopen} (${process.arch})`);
+  }
+  if (problems.length > 0) {
+    throw new Error(
+      `${problems.length} dépendance(s) non résolue(s) dans ${dir} :\n${problems.map((p) => `    ${p}`).join("\n")}`,
+    );
+  }
+  console.log(`  ✓ dépendances des dylibs résolues dans ${dir}`);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [command, dir] = process.argv.slice(2);
   if (command !== "verify" || !dir) {
     console.error("usage : node scripts/macosDylibs.mjs verify <dossier> [--dlopen <dylib>]");
     process.exit(2);
   }
-  const problems = verifyDylibDir(path.resolve(dir));
   const dlopenIndex = process.argv.indexOf("--dlopen");
-  if (dlopenIndex >= 0) {
-    const target = path.join(path.resolve(dir), process.argv[dlopenIndex + 1] ?? "libmpv.2.dylib");
-    const failure = dlopenProblem(target);
-    if (failure) problems.push(`dlopen ${path.basename(target)} (${process.arch}) : ${failure}`);
-    else console.log(`  ✓ dlopen ${path.basename(target)} (${process.arch})`);
-  }
-  if (problems.length > 0) {
-    console.error(`✗ ${problems.length} dépendance(s) non résolue(s) dans ${dir} :`);
-    for (const problem of problems) console.error(`    ${problem}`);
+  try {
+    assertDylibDir(path.resolve(dir), { dlopen: dlopenIndex >= 0 ? process.argv[dlopenIndex + 1] : undefined });
+  } catch (error) {
+    console.error(`✗ ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
-  console.log(`  ✓ dépendances des dylibs résolues dans ${dir}`);
 }

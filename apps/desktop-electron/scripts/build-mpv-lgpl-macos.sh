@@ -145,3 +145,9 @@ if nm -u "$OUT"/*.dylib 2>/dev/null | grep -q '_lzma_'; then
   exit 1
 fi
 echo "  ✓ aucun symbole _lzma_*"
+
+# 7. Garde-fou dépendances : chaque dylib trouve les siennes DANS le jeu (ou dans
+#    le système), et libmpv se charge pour de vrai. Le 1.30.0 (1468281) est
+#    parti sans libbrotlicommon (désignée par @rpath) : plus aucune lecture.
+echo "==> Vérification des dépendances (otool -L + dlopen)"
+node "$ROOT/scripts/macosDylibs.mjs" verify "$OUT" --dlopen libmpv.2.dylib
