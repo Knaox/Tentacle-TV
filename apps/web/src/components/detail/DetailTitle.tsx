@@ -59,9 +59,12 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount, lo
   const serverLogoUrl = detailLogoUrl(client, item);
   const logoUrl = isEpisode ? null : localLogoUrl === undefined ? serverLogoUrl : localLogoUrl;
   const { broken, reportFailure } = useBrokenImage(logoUrl);
-  const showLogo = logoUrl !== null && !broken;
+  const hasLogo = logoUrl !== null && !broken;
   // Arrivé après l'entrée (réseau lent) : il fond, il ne surgit pas.
-  const late = useLateReveal(showLogo ? logoUrl : null);
+  const late = useLateReveal(hasLogo ? logoUrl : null);
+  // Tant que le logo n'est pas là, le NOM en texte : jamais une fiche sans titre
+  // (relevé du lot 1017 : plus de 5 s sans titre sur un réseau lent).
+  const showLogo = hasLogo && late.shown;
   const kindKey = KIND_KEYS[item.Type];
   const kicker = [
     kindKey ? t(kindKey) : null,
@@ -87,11 +90,12 @@ export const DetailTitle = memo(function DetailTitle({ item, collectionCount, lo
       >
         {item.Name}
       </motion.h1>
-      {showLogo && (
+      {hasLogo && (
         // Le logo tient dans min(92 % de la colonne, 36rem) — dit avec une
         // largeur et un plafond, jamais `min()` : le socle Chrome 53 du
         // téléviseur ignorerait la déclaration entière (passe compat webOS).
-        <span className="block w-[92%] max-w-[36rem]" style={late.style}>
+        // Pas encore chargé : monté hors du flux, invisible (il se charge), le nom tient la place.
+        <span className={showLogo ? "block w-[92%] max-w-[36rem]" : "pointer-events-none absolute w-[92%] max-w-[36rem]"} style={late.style}>
           <motion.img
             variants={logoReveal}
             src={logoUrl}
