@@ -20,6 +20,13 @@ export const gridKey = (index: number): string => `${GRID_KEY_PREFIX}:${index}`;
 
 export const isGridKey = (key: string): boolean => key.startsWith(`${GRID_KEY_PREFIX}:`);
 
+/** L'index de l'affiche d'une clé `<préfixe>:<index>`, ou `null` (une ligne, une autre clé). */
+export function gridIndexOf(key: string, prefix: string = GRID_KEY_PREFIX): number | null {
+  if (!key.startsWith(`${prefix}:`)) return null;
+  const rest = key.slice(prefix.length + 1);
+  return /^\d+$/.test(rest) ? Number(rest) : null;
+}
+
 /**
  * Comment la page montre une ligne focalisée (GR-2) : la PREMIÈRE ramène la
  * page tout en haut, son titre et ses filtres avec elle — revenir sur la
@@ -29,6 +36,38 @@ export const isGridKey = (key: string): boolean => key.startsWith(`${GRID_KEY_PR
  */
 export function gridLineReveal(lineIndex: number): "start" | "nearest" {
   return lineIndex === 0 ? "start" : "nearest";
+}
+
+/** La section d'une ligne de grille : `<préfixe>:line:<n>` (`PosterGrid`). */
+export const gridLineKey = (prefix: string, lineIndex: number): string => `${prefix}:line:${lineIndex}`;
+
+/** Les entrées des deux lignes voisines de l'affiche focalisée (index d'affiches, `null` : pas de ligne). */
+export interface GridLineEntries {
+  /** La ligne du dessus et l'affiche par laquelle HAUT y entre. */
+  above: { line: number; index: number } | null;
+  /** La ligne du dessous et l'affiche par laquelle BAS y entre. */
+  below: { line: number; index: number } | null;
+}
+
+/**
+ * HAUT et BAS gardent la COLONNE (GR-7, 17/10) : chaque ligne est un
+ * carrousel, et l'affiche dont l'aperçu démarre passe en tête de la sienne
+ * (`cards/trailerPreviewGrid.ts`). Depuis elle, la règle de voisinage
+ * (`sections.ts`, le centre le plus proche) mènerait à la PREMIÈRE colonne
+ * de la ligne voisine, sous elle. Les lignes voisines déclarent donc leur
+ * ENTRÉE à la colonne de l'affiche focalisée — sans aperçu, c'est déjà
+ * l'affiche au centre le plus proche : rien ne change. Une ligne du dessous
+ * plus courte (la dernière) entre par sa dernière affiche, comme avant.
+ */
+export function gridLineEntries(index: number, columns: number, count: number): GridLineEntries {
+  const perLine = Math.max(1, Math.floor(columns));
+  if (index < 0 || index >= count) return { above: null, below: null };
+  const line = Math.floor(index / perLine);
+  const column = index - line * perLine;
+  const above = line > 0 ? { line: line - 1, index: (line - 1) * perLine + column } : null;
+  const belowStart = (line + 1) * perLine;
+  const below = belowStart < count ? { line: line + 1, index: Math.min(belowStart + column, count - 1) } : null;
+  return { above, below };
 }
 
 /**

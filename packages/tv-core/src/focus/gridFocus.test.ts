@@ -7,6 +7,9 @@ import {
   collectionEntryKey,
   GRID_END_REACHED_SCREENS,
   gridKey,
+  gridIndexOf,
+  gridLineEntries,
+  gridLineKey,
   gridLineReveal,
   isGridKey,
 } from "./gridFocus";
@@ -65,5 +68,36 @@ describe("Parcourir", () => {
     expect(browseClaimOnError({ ...base, failed: false })).toBeNull();
     expect(browseClaimOnError({ ...base, posterSeen: true })).toBeNull();
     expect(browseClaimOnError({ ...base, focusedKey: "grid:0" })).toBeNull();
+  });
+});
+
+describe("gridLineEntries — HAUT et BAS gardent la colonne (GR-7)", () => {
+  it("les deux voisines entrent par la même colonne", () => {
+    expect(gridLineEntries(10, 6, 30)).toEqual({ above: { line: 0, index: 4 }, below: { line: 2, index: 16 } });
+  });
+
+  it("aux bords : rien au-dessus de la première ligne, rien sous la dernière", () => {
+    expect(gridLineEntries(3, 6, 30).above).toBeNull();
+    expect(gridLineEntries(27, 6, 30).below).toBeNull();
+  });
+
+  it("une dernière ligne plus courte entre par sa dernière affiche", () => {
+    expect(gridLineEntries(11, 6, 15).below).toEqual({ line: 2, index: 14 });
+    expect(gridLineEntries(7, 6, 15).below).toEqual({ line: 2, index: 13 });
+  });
+
+  it("hors du catalogue, aucune entrée", () => {
+    expect(gridLineEntries(40, 6, 30)).toEqual({ above: null, below: null });
+  });
+
+  it("l'index d'une affiche, jamais celui d'une ligne", () => {
+    expect(gridIndexOf("grid:12")).toBe(12);
+    expect(gridIndexOf("grid:line:2")).toBeNull();
+    expect(gridIndexOf("nav:Home")).toBeNull();
+    expect(gridIndexOf("lib:3", "lib")).toBe(3);
+  });
+
+  it("la clé de la section d'une ligne", () => {
+    expect(gridLineKey("grid", 3)).toBe("grid:line:3");
   });
 });
