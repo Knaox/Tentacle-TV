@@ -3026,7 +3026,11 @@ bout, sortie de l'écran par le bas, ne revenait plus au début : depuis le
 plus qu'une fois (banc : `focus/rangees-bout`). Et la règle 1 des aperçus
 (« au départ du focus, la rangée reste où l'aperçu l'a laissée »,
 `trailerPreviewRowHead.ts`) ne vaut que tant qu'elle est à l'écran : sortie
-de l'écran, la règle 2 la remet au début, aperçu ou non.
+de l'écran, la règle 2 la remet au début, aperçu ou non. Mais le défilement
+DÛ à un aperçu (la grande carte pousse la page) ne fait sortir aucune rangée :
+celles à l'écran au moment où la page se pousse sont tenues tant que le focus
+reste dans la rangée de l'aperçu (`rowRewind.previewReveal`) — sinon HAUT
+retombait sur la première carte de la rangée d'où l'on venait (testeur, 17/10).
 
 **La carte focalisée au retrait de la rangée** (17/10) : tvOS défile une
 rangée à SA marge (~80 pt du bord de la ScrollView) ; à gauche, sous le rail.
