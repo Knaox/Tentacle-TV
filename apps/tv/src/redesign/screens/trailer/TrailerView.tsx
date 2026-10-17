@@ -95,7 +95,10 @@ export const TrailerView = memo(function TrailerView(props: TrailerViewProps) {
   const chromeOn = !playing || (chromeShown && !panel);
   const lit = useFocusProgress(chromeOn, 420);
   const timelineLit = useFocusProgress(playing && (props.timelineShown ?? chromeShown) && !panel, 420);
-  const croix = useAnimatedStyle(() => ({ opacity: 0.15 + 0.85 * lit.value }));
+  // Chrome éteint, la croix s'éteint avec lui, comme l'habillage d'un film —
+  // plus de reste à 15 % par-dessus la vidéo (lot 1017). `SWAP_FLOOR` : tvOS
+  // ne tient jamais pour caché ce qu'il vient de quitter.
+  const croix = useAnimatedStyle(() => ({ opacity: Math.max(SWAP_FLOOR, lit.value) }));
   const dim = useMotion(playing && !!props.paused && !panel, "veil");
   const dimStyle = useAnimatedStyle(() => ({ opacity: dim.value }));
   const backing = useNativeGlassBacking("strong");

@@ -4,6 +4,7 @@ import {
   TRAILER_IDLE_MS,
   TRAILER_UNAVAILABLE_RETURN_MS,
   trailerChromeShown,
+  trailerChromeSync,
   trailerLeavesAfter,
   trailerState,
 } from "./trailerChrome";
@@ -47,5 +48,18 @@ describe("ce qui est à l'écran", () => {
     expect(trailerChromeShown("playing", true, false)).toEqual({ chrome: true, timeline: true });
     expect(trailerChromeShown("playing", false, false)).toEqual({ chrome: false, timeline: false });
     expect(trailerChromeShown("playing", false, true)).toEqual({ chrome: false, timeline: true });
+  });
+});
+
+describe("la première image", () => {
+  it("la lecture commence habillage tu : le chrome ne paraît qu'à un geste", () => {
+    expect(trailerChromeSync("loading", "playing")).toBe("hide");
+    expect(trailerChromeSync(null, "playing")).toBe("hide");
+  });
+
+  it("toute autre transition le rallume : pause, panneau refermé (même état), chargement, indisponible", () => {
+    expect(trailerChromeSync("playing", "playing")).toBe("reveal");
+    expect(trailerChromeSync(null, "loading")).toBe("reveal");
+    expect(trailerChromeSync("loading", "unavailable")).toBe("reveal");
   });
 });

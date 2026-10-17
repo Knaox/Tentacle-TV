@@ -6,6 +6,7 @@ import {
   TRAILER_NO_SURFACE,
   trailerBackLayers,
   trailerChromeShown,
+  trailerChromeSync,
   trailerSelectAction,
   type SkipFlashState,
   type TrailerPanel,
@@ -89,9 +90,14 @@ export function useTrailerPlayback(args: TrailerPlaybackArgs) {
   }, { profile: SCRUB_INPUT, timers: PLAYER_TIMERS }));
   useEffect(() => () => controls.destroy(), [controls]);
 
-  // Le chrome se rallume aux transitions de lecture, de pause et de panneau.
+  // Le chrome se rallume aux transitions de pause et de panneau ; la première
+  // image l'éteint — la lecture commence nue (tv-core `trailerChromeSync`).
+  const lastState = useRef<TrailerState | null>(null);
   useEffect(() => {
-    controls.syncOverlay();
+    const sync = trailerChromeSync(lastState.current, state);
+    lastState.current = state;
+    if (sync === "hide") controls.hideOverlay();
+    else controls.syncOverlay();
     return () => controls.cancelHideTimer();
   }, [controls, state, paused, panel]);
 

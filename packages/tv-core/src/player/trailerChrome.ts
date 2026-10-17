@@ -7,6 +7,8 @@
  * - Les cibles, l'entrée et les voisins : `trailerFocus.ts` ; les contrôles
  *   (ceux du grand lecteur) : `trailerControls.ts` ; le Retour :
  *   `trailerBack.ts` ; les panneaux : `trailerPanels.ts`.
+ * - La lecture COMMENCE habillage tu (`trailerChromeSync`), comme le lecteur
+ *   d'un film : il ne paraît qu'à un geste.
  * - Le chrome (la croix, le titre, les boutons, la barre) s'estompe
  *   `TRAILER_IDLE_MS` après le dernier geste, en LECTURE seulement : jamais
  *   pendant le chargement ni sur « indisponible » (`trailerChromeShown`),
@@ -47,4 +49,20 @@ export function trailerChromeShown(state: TrailerState, chromeVisible: boolean, 
 /** L'écran rend la fiche de lui-même après ce délai, ou jamais (`null`) — seulement devant. */
 export function trailerLeavesAfter(state: TrailerState, screenFocused: boolean): number | null {
   return state === "unavailable" && screenFocused ? TRAILER_UNAVAILABLE_RETURN_MS : null;
+}
+
+/** Ce que fait le chrome quand l'écran change d'état, de pause ou de panneau. */
+export type TrailerChromeSync = "hide" | "reveal";
+
+/**
+ * Le chrome à chaque transition (`previous` : l'état d'avant, `null` à
+ * l'ouverture). La PREMIÈRE image éteint le chrome : la vidéo commence nue,
+ * comme le lecteur d'un film, et ne montre ses commandes qu'à un geste
+ * (flèche, OK, pavé, Lecture/Pause). Le passage « chargement → lecture » les
+ * rallumait jusqu'ici trois secondes — l'habillage paraissait par-dessus la
+ * première image, puis s'estompait (lot 1017). Toute autre transition (pause,
+ * panneau refermé, chargement) le rallume, comme avant.
+ */
+export function trailerChromeSync(previous: TrailerState | null, next: TrailerState): TrailerChromeSync {
+  return next === "playing" && previous !== "playing" ? "hide" : "reveal";
 }
