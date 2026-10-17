@@ -290,10 +290,12 @@ résultat.
   personne, s'empile ailleurs) ; appui maintenu → le panneau d'affiche (T6) ;
   focus → la lumière du fond (l'affiche focalisée, sinon la première).
 - **GR-6** Aperçu au focus (17/10) : chaque ligne est un carrousel de
-  l'accueil (piste horizontale, `GridCarouselLine`) — l'affiche dont l'aperçu
-  démarre passe en tête, collée au rail, ou en butée au bout ; sa légende
-  sous la grande carte ; les lignes du dessous descendent d'autant. Le focus
-  parti, la ligne revient à sa première colonne (`trailerPreviewRowHead`).
+  l'accueil (piste horizontale, `GridCarouselLine`) qui TOURNE : toute
+  affiche dont l'aperçu démarre passe en tête, collée au rail, la place au
+  bout remplie par le début de la ligne (reprises ↺, non focalisables) ; la
+  dernière reste en butée ; sa légende sous la grande carte ; les lignes du
+  dessous descendent d'autant. Le focus parti, la ligne revient à sa première
+  colonne (`trailerPreviewGridLine`, qui délègue à `trailerPreviewRowHead`).
 - **GR-7** HAUT / BAS gardent la colonne : au focus d'une affiche, les lignes
   voisines déclarent leur entrée (`tvEntry`) à sa colonne — la dernière ligne
   plus courte, par sa dernière affiche (`gridLineEntries`).
@@ -754,7 +756,7 @@ compter une attente dont la durée vient de tv-core. Le câblage
 | RE-1 à RE-8, RE-11 | `search/searchFocus` (clés, entrée, première touche après Menu, premier résultat, meilleur résultat, recherches récentes), `search/searchTopExit` (RE-3 bis), `search/searchSubmitFlow` (`searchSubmitStep`), `search/searchShelfReturn` (`shelfReturnStep`, `SEARCH_BAR_CLAIMS_MS`) | `screens/search.ts` (`useSearchGroups`, `useSearchKeyboard`, `useSearchTopExit`) |
 | RE-10 | `cards/cardPress`, `cards/cardHold` | `SearchRedesign` |
 | PA-1 à PA-3, GR-1 à GR-4, GR-7, CO-1 | `focus/gridFocus` | `screens/browse.ts`, `focus/gridLineEntries.ts` ; la vue `PosterGrid` lit `gridLineReveal`, `GRID_END_REACHED_SCREENS` |
-| GR-6 | `cards/trailerPreviewGrid`, `cards/trailerPreviewRowHead` | `GridCarouselLine` (`rowPreviewRoom`), `gridLinePush` |
+| GR-6 | `cards/trailerPreviewGridLine`, `cards/trailerPreviewRowHead` | `GridCarouselLine` (`rowPreviewRoom`), `gridLinePush` |
 | GR-5 | `cards/cardPress`, `cards/cardHold` | `usePosterGrid` |
 | CO-3, CO-4 | `focus/collectionFilters` ; la barre et les listes : `focus/libraryFocus` | `screens/library.ts` |
 | BI-1 à BI-11 | `focus/libraryFocus` (dont `filterSheetEntryKey`, `filterSheetFocusKeys`, `libraryPrefetchTarget`, `LIBRARY_PREFETCH_DWELL_MS`) ; l'entrée d'une liste en Modal : `panels/choiceEntry` (T6) | `screens/library.ts` |
