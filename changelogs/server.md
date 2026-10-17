@@ -10,6 +10,12 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.31.0]
+### FR
+- **Les bonnes bandes-annonces** : le serveur vise la bande-annonce officielle du titre exact, dans votre langue d'abord (VF, puis VOSTFR), la principale avant les suivantes, les teasers après. Plus jamais d'interview, de coulisses, d'extrait ni de vidéo d'un homonyme ; sans bande-annonce sûre, rien
+### EN
+- **The right trailers**: the server aims for the official trailer of the exact title, in your language first (dubbed, then subtitled), the main one before the next, teasers after. No more interviews, behind-the-scenes, clips or videos of a same-name title; without a reliable trailer, nothing is shown
+
 ## [1.30.0]
 <!-- Aperçus et « Qui regarde ? » : capacités trailers.preview et family.desktopProfiles (1.30.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR

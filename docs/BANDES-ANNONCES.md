@@ -774,6 +774,67 @@ maintien de Lecture/Pause : `createAndroidTvReader` le reconstruit (première
 répétition ≈ 500 ms). En build DEBUG sur tvOS, ce maintien ouvre le menu de
 développement (`RCTTVRemoteHandler`, `RCT_DEV`).
 
+## Le bon titre, la bonne vidéo (17/10, serveur 1.31.0)
+
+Retour de Damien : « parfois il récupère le mauvais contenu : des extras, des
+interviews, et parfois des bandes-annonces d'une autre série du même nom ».
+Relevé de ce qui laissait passer quoi :
+
+- **La fiche Apple TV / Android TV / LG suit encore la liste d'avant**
+  (`TRAILER_PLATFORM_LEGACY` : `RemoteTrailers` de Jellyfin + `/api/tmdb/trailers`,
+  fusionnés par `mergeTrailers`). Cette liste de Jellyseerr rend TOUTES les
+  vidéos liées — featurettes, coulisses, extraits, bêtisiers — et la fusion ne
+  les écartait pas : triée par langue d'abord, une featurette VF passait devant
+  la bande-annonce VO.
+- **Le type TMDB était cru sur parole** : une interview ou une « Trailer
+  Reaction » typée `Trailer` par la communauté de TMDB entrait au catalogue.
+- **AlloCiné est cherché par NOM** (Dailymotion n'a pas d'identifiant TMDB) :
+  une saison sans date connue prenait la fenêtre de toute la série, où un
+  homonyme qui compte plus de saisons pouvait se glisser.
+
+La règle, désormais (`trailerList.ts` et `trailerCatalogRank.ts`, partagés et
+recopiés ; `catalog/`, `allocine/`, `titleVideos.ts`) :
+
+1. **Le titre exact par son identifiant.** TMDB et Jellyseerr sont lus par
+   l'identifiant TMDB (`/movie/{id}`, `/tv/{id}`, `/tv/{id}/season/{n}`) ;
+   la vidéo d'un autre titre glissée dans la liste est écartée par son libellé
+   (`foreignTitleGuard.ts`). AlloCiné reste la seule recherche par nom : nom
+   EXACT normalisé, fenêtre de dates autour de la sortie, et désormais une
+   saison sans date n'est acceptée que si le titre l'a ou si c'est la suivante
+   (`allocineMatch.ts` : une « saison 7 » d'une série en trois saisons est un
+   homonyme). Dans le doute, rien.
+2. **Jamais un bonus.** Un mot de bonus dans le libellé l'emporte sur le type
+   TMDB (`trailerKind`) : featurette, coulisses, making-of, interview,
+   entretien, bêtisier, extrait, clip, réaction, critique, résumé, analyse,
+   Q&A, conférence de presse, tapis rouge, scènes coupées, générique, musique,
+   fausse bande-annonce de fan, « Honest Trailers »… Les noms du titre sont
+   retirés du libellé avant ce test (« The Interview - Official Trailer » reste
+   une bande-annonce, au catalogue où le serveur connaît ces noms ; la fusion
+   des clients, qui ne les a pas, l'écarterait — cas rare, assumé).
+   `mergeTrailers` n'admet plus que bandes-annonces et teasers, et
+   `/api/tmdb/trailers` les filtre AUSSI côté serveur : les téléviseurs déjà
+   livrés en profitent sans mise à jour.
+3. **L'ordre** — dans une portée (saison, série, film) et un groupe de langue
+   (celle du serveur — VF, VOSTFR — d'abord, la VO ensuite, inchangé) : la
+   bande-annonce LOCALE ; puis TOUTES les bandes-annonces avant les teasers
+   (« les vraies bandes-annonces en VF passent devant tout » : la VOSTFR de la
+   bande-annonce passe devant le teaser VF) ; puis la VF avant la VOSTFR
+   (AlloCiné d'abord à version égale) ; puis la bande-annonce 1 avant la 2
+   (`trailerOrdinal` : « Trailer 2 », « Bande-annonce (2) », « #2 » ; une
+   « finale » après les numérotées ; « Season 2 Trailer » n'est pas un rang).
+   À égalité chez TMDB : l'officielle, la plus haute définition, puis la PLUS
+   ANCIENNE (la bande-annonce de la sortie, pas celle d'une ressortie) — avant,
+   la plus récente. Les teasers restent proposés, après : une saison qui n'a
+   encore qu'un teaser garde quelque chose à montrer.
+4. **Rien de juste : rien.** Un titre dont TMDB n'a que des bonus n'a pas de
+   bouton ni d'aperçu.
+
+Inchangé : jamais de doublage par IA (`audioTracks.ts`,
+`playedTrailerVersion`), relais HLS. Aucune extraction de plus : tout se décide
+sur les listes, avant yt-dlp. Tests purs : `trailerList.test.ts`,
+`trailerCatalog.test.ts` (shared), `catalogEntries.test.ts`,
+`allocineMatch.test.ts`, `titleVideos.test.ts` (backend).
+
 ## Ce qui reste fragile, et comment le surveiller
 
 - **YouTube change.** `visionos` peut un jour exiger un jeton PO, comme
