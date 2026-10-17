@@ -66,6 +66,8 @@ export default {
   persoRecoCaption: "What the engine may suggest, and what it is allowed to use.",
   persoRecoPersonalized: "Personalized recommendations",
   persoRecoPersonalizedHint: "Suggestions built from your ratings, favorites and watch history.",
+  persoRecoTrending: "Trending now",
+  persoRecoTrendingHint: "The first row of “For you”: what everyone is watching this week, regardless of your tastes.",
   persoRecoVigie: "Include titles outside your library",
   persoRecoVigieHint: "Also suggests titles requestable through the Vigie catalog.",
   persoRecoCommunity: "Community recommendations",

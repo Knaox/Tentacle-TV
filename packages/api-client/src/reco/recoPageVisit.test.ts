@@ -65,6 +65,15 @@ describe("servedPageVerdict", () => {
     expect(servedPageVerdict(A, B, { arriving: true })).toBe("adopt");
   });
 
+  it("« Tendances actuelles » allumée ou coupée par l'utilisateur : la page entre", () => {
+    const withHead = page({ trendingNow: ["movie:20"], forYou: ["movie:1", "movie:2"] });
+    expect(servedPageVerdict(A, withHead, { arriving: false })).toBe("adopt");
+    expect(servedPageVerdict(withHead, A, { arriving: false })).toBe("adopt");
+    // Une tête recalculée (tendances de la semaine rafraîchies) attend, comme le reste.
+    const otherHead = page({ trendingNow: ["movie:21"], forYou: ["movie:1", "movie:2"] });
+    expect(servedPageVerdict(withHead, otherHead, { arriving: false })).toBe("hold");
+  });
+
   it("un filtre changé par l'utilisateur : sa page entre", () => {
     const filtered = page({ forYou: ["movie:5"] }, { filter: { providers: [8] } });
     expect(servedPageVerdict(A, filtered, { arriving: false })).toBe("adopt");

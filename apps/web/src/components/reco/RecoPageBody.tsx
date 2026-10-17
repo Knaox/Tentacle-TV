@@ -1,6 +1,6 @@
 import { Fragment, memo } from "react";
 import { useTranslation } from "react-i18next";
-import type { RecoPage } from "@tentacle-tv/api-client";
+import { RECO_GLOBAL_ROW_KEYS, forYouPageRows, type RecoPage } from "@tentacle-tv/api-client";
 import { LikedActorsPanel } from "./LikedActorsPanel";
 import { RecoFiltersMenu } from "./RecoFiltersMenu";
 import { RecoRefineTeaser } from "./RecoRefineTeaser";
@@ -8,9 +8,6 @@ import { RecoRowSkeleton } from "./RecoRowSkeleton";
 import { RecoRowSlot } from "./RecoRowSlot";
 import { RecoStatusBanner } from "./RecoStatusBanner";
 import { RecoSpotlight } from "./spotlight/RecoSpotlight";
-
-/** Les rangées servies dans TOUS les états du moteur (contrat backend). */
-const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
 
 interface RecoPageBodyProps {
   page: RecoPage;
@@ -35,14 +32,16 @@ export const RecoPageBody = memo(function RecoPageBody({
   onOpenColdStart,
 }: RecoPageBodyProps) {
   const { t } = useTranslation("reco");
-  const hasPersonalizedRows = page.rows.some((r) => !GLOBAL_ROW_KEYS.has(r.key));
+  // « Tendances actuelles » en tête : la rangée goûtée des tendances n'y est pas répétée.
+  const rows = forYouPageRows(page.rows);
+  const hasPersonalizedRows = rows.some((r) => !RECO_GLOBAL_ROW_KEYS.has(r.key));
   const canPersonalize = page.personalized !== false && page.tmdbConfigured !== false;
   const filtered = filterKey !== "all";
   // L'entrée vers « Affiner » se glisse après la deuxième rangée (ou la
   // dernière, s'il y en a moins) : assez haut pour être vue, assez bas pour
   // que les propositions passent d'abord. Pas sous perso coupée : un verdict
   // n'y changerait rien de visible.
-  const teaserAfter = page.personalized !== false ? Math.min(1, page.rows.length - 1) : -1;
+  const teaserAfter = page.personalized !== false ? Math.min(1, rows.length - 1) : -1;
 
   return (
     <div className="min-h-screen pb-20">
@@ -64,16 +63,16 @@ export const RecoPageBody = memo(function RecoPageBody({
 
       {/* Opacité seule (règle GPU) : l'échange de filtre atténue, ne blanchit pas. */}
       <div style={{ opacity: stale ? 0.6 : 1, transition: "opacity 200ms ease" }}>
-        {page.generating && page.rows.length === 0 ? (
+        {page.generating && rows.length === 0 ? (
           <>
             <RecoRowSkeleton />
             <RecoRowSkeleton />
             <RecoRowSkeleton />
           </>
-        ) : filtered && page.rows.length === 0 ? (
+        ) : filtered && rows.length === 0 ? (
           <p className="row-gutter mb-10 text-sm text-content-tertiary">{t("filterEmpty")}</p>
         ) : (
-          page.rows.map((row, i) => (
+          rows.map((row, i) => (
             <Fragment key={row.key}>
               <RecoRowSlot row={row} />
               {i === teaserAfter && <RecoRefineTeaser />}

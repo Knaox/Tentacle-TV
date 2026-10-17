@@ -162,3 +162,34 @@ demandent une clé TMDB. »
   (`useUpdateAdminMetadata`) : l'administrateur la voit changer aussitôt ;
   les autres comptes, au `reco:update` de leur profil ou à la péremption de
   la page.
+
+## « Tendances actuelles » en tête (serveur 1.31.0)
+
+La première rangée de « Pour vous », pour qui la laisse allumée (préférence du
+COMPTE `trendingNow`, allumée par défaut, capacité `reco.trending`) : les
+tendances TMDB de la semaine (`/trending/{movie,tv}/week`, langue du serveur,
+sentinelle globale rafraîchie toutes les 12 h par le job reco), films et séries
+entrelacés, **dans l'ordre de TMDB** — ni le profil de goût ni les statistiques
+n'y touchent.
+
+- **Où** : `GET /api/reco/page?trendingNow=1` (RECO_PAGE_TRENDING_PARAM), rangée
+  `trendingNow` ajoutée au SERVICE (jamais dans un snapshot) —
+  `services/reco/trendingHead.ts`. Le client ne l'envoie que si l'app sait
+  rendre la tête (web, bureau, TV ; ni le mobile ni webOS), que le serveur
+  déclare `reco.trending` et que la préférence est allumée
+  (`reco/trendingHeadRequest.ts`, api-client) — la page attend la configuration
+  et les réglages pour ne partir qu'une fois. Clé de cache à part
+  (`["reco-page", filtre, "trendingNow"]`, mémoire et disque) : coupée, la
+  requête et la clé sont exactement celles d'avant.
+- **Ce qui s'applique quand même** : les exclusions du compte (règle 1),
+  « bibliothèque seule », ses droits, le filtre de plateformes ; hors
+  bibliothèque, les cartes absentes (Vigie) comme partout ; sans clé TMDB,
+  rien. Moins de 6 titres : pas de rangée.
+- **Un titre une fois** : les rangées suivantes perdent les titres de la tête
+  (une rangée tombée sous 6 n'est plus servie) ; « À la une » est tiré avant.
+  Seule `trending` (goûtée) reste entière, pour l'accueil qui peut l'épingler ;
+  « Pour vous » ne la montre pas (`forYouPageRows`, api-client).
+- **Le retrait** suit les règles 2 et 5 : c'est une rangée de la page.
+- **L'interrupteur est une frontière** (règle 5) : une page servie dont la tête
+  paraît ou part entre aussitôt (`servedPageVerdict`) — le web garde « Pour
+  vous » montée pendant qu'on est aux réglages, la page tenue ne bougerait pas.

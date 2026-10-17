@@ -181,6 +181,12 @@ export const SERVER_CAPABILITIES = {
    *  rappel `familyPin` masqué du compte est réaffiché. Sans elle : aucun bouton, et les appareils
    *  gardent leur « Plus tard ». */
   "family.promptsReset": "1.30.0",
+  // ── Lot 1017 : « Tendances actuelles » en tête de « Pour vous » ──
+  /** La rangée `trendingNow` en TÊTE de la page reco (`?trendingNow=1`) : les tendances TMDB de
+   *  la semaine, films et séries, dans l'ordre de TMDB — ni le goût ni les statistiques du compte —,
+   *  et la préférence du COMPTE qui l'allume (`trendingNow` de `/api/preferences/reco`, allumée par
+   *  défaut). Sans elle, aucun interrupteur : un serveur d'avant ignore le paramètre. */
+  "reco.trending": "1.31.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

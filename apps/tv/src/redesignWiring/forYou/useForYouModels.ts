@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { reasonToText, recoRowTitleText, useRecoPageVisit, useRecoSettings, type RecoRowItem } from "@tentacle-tv/api-client";
+import { forYouPageRows, reasonToText, recoRowTitleText, useRecoPageVisit, useRecoSettings, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { tvRecoHero, tvRecoNotice, tvRecoServedCards, tvRecoShelves, type TvRecoNotice } from "@tentacle-tv/tv-core";
 import type { ForYouShelfModel } from "../../redesign/screens/forYou/ForYouView";
@@ -52,7 +52,9 @@ export function useForYouModels(gate: VigieGate | null): ForYouModels {
   // Le filtre du compte d'abord : sans cette garde, la page « toutes
   // plateformes » partirait avant la page filtrée (cf. TVRecoRow).
   const settingsReady = settings.isSuccess || settings.isError;
-  const { data: page, isError, refetch } = useRecoPageVisit(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady });
+  const { data: served, isError, refetch } = useRecoPageVisit(settings.data?.providerFilter ?? EMPTY, { enabled: settingsReady });
+  // « Tendances actuelles » en tête : la rangée goûtée des tendances n'y est pas répétée.
+  const page = useMemo(() => (served ? { ...served, rows: forYouPageRows(served.rows) } : served), [served]);
 
   const heroReco = useMemo(() => tvRecoHero(page), [page]);
   const external = gate !== null;

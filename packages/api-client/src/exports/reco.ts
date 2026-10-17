@@ -13,6 +13,11 @@ export {
   recoFilterKey, getRecoPageKey, RECO_PAGE_KEY, ALL_PROVIDERS_KEY, type RecoPage, type RecoPageRow,
 } from "../hooks/useRecoPage";
 export { useRecoLive } from "../hooks/useRecoLive";
+// « Tendances actuelles » en tête de « Pour vous » (capacité `reco.trending`)
+export { forYouPageRows, useTrendingNowSetting, type TrendingNowSetting } from "../reco/trendingHead";
+export {
+  acceptRecoTrendingHead, wantsTrendingHead, trendingHeadFromCache, type TrendingHeadRequest,
+} from "../reco/trendingHeadRequest";
 // Ce que l'écran MONTRE : la page de la visite, tenue tant qu'on y est — une
 // page recalculée attend la frontière suivante (cf. reco/useRecoPageVisit,
 // docs/RECO-POUR-VOUS.md, règle 5)

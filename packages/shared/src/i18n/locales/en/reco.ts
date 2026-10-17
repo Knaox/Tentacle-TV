@@ -68,6 +68,7 @@ export default {
   rowExploration: "Step outside your comfort zone",
   rowAnime: "Anime for you",
   rowTrending: "Trending",
+  rowTrendingNow: "Trending now",
   rowServerPulse: "What Tentacle users are watching",
   rowBestOfLibrary: "Top rated in your library",
 

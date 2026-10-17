@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { heroSelectionFromRows, useRecoPageVisit, useRequestedTitles } from "@tentacle-tv/api-client";
+import {
+  RECO_GLOBAL_ROW_KEYS,
+  forYouPageRows,
+  heroSelectionFromRows,
+  useRecoPageVisit,
+  useRequestedTitles,
+} from "@tentacle-tv/api-client";
 import { useRecoFilter } from "../../../hooks/useRecoFilter";
 import { hasColdStartAck, markColdStartAck } from "../../../lib/coldStartAck";
 
-/** Les rangées servies dans TOUS les états du moteur (contrat backend). */
-export const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
+/** Les rangées servies dans TOUS les états du moteur (contrat backend, api-client). */
+export const GLOBAL_ROW_KEYS = RECO_GLOBAL_ROW_KEYS;
 
 export type ColdStartPhase = "auto" | "hold" | "dismissed";
 
@@ -29,7 +35,9 @@ export function nextColdStartPhase(
 export function useRecoPageModel() {
   const { selected } = useRecoFilter();
   const query = useRecoPageVisit(selected);
-  const page = query.data;
+  // « Tendances actuelles » en tête : la rangée goûtée des tendances n'y est pas répétée.
+  const served = query.data;
+  const page = useMemo(() => (served ? { ...served, rows: forYouPageRows(served.rows) } : served), [served]);
   // Un titre demandé ailleurs (page de l'extension) sort des rangées au retour.
   useRequestedTitles();
 

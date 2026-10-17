@@ -61,6 +61,7 @@ const pool = (entries: PoolEntry[]): PoolPayload => ({
 
 const ctxOf = (state: ServeContext["state"]): ServeContext => ({
   state,
+  trendingNow: true,
   signalCount: 20,
   lambda: 0.7,
   includeVigie: true,

@@ -1,4 +1,4 @@
-import { acceptRecoPageThemes } from "@tentacle-tv/api-client";
+import { acceptRecoPageThemes, acceptRecoTrendingHead } from "@tentacle-tv/api-client";
 
 /**
  * Le téléviseur titre une rangée À THÈME par son `why` (`recoRowTitleText`) :
@@ -9,3 +9,6 @@ import { acceptRecoPageThemes } from "@tentacle-tv/api-client";
  * requête (`index.js`) : toutes les pages en cache sont demandées ainsi.
  */
 acceptRecoPageThemes();
+
+/** Et il rend « Tendances actuelles » en tête de « Pour vous » (`?trendingNow=1`, `reco.trending`). */
+acceptRecoTrendingHead();

@@ -610,6 +610,24 @@ tv-core) ; un membre garde son propre Vigie.
   le dit sans reproche, le bouton vers `/admin/metadata#tmdb` (la cible du
   tableau de bord) pour un administrateur en session personnelle seulement,
   les mots seuls sur TV et mobile. Poser la clé l'active pour tous (§ 6).
+- **« Tendances actuelles » en TÊTE de « Pour vous »** (serveur 1.31.0,
+  capacité `reco.trending`) : les tendances TMDB de la semaine, films et
+  séries, dans l'ordre de TMDB — JAMAIS passées par le goût ni les
+  statistiques (`services/reco/trendingHead.ts`, contrairement à la rangée
+  `trending` filtrée par `gateGlobalRow`). Servie DANS la page, au moment de
+  la requête, à qui la demande (`?trendingNow=1`, rangée `trendingNow`) — et le
+  client ne la demande que si l'app sait la rendre (`acceptRecoTrendingHead` :
+  web, bureau, Apple TV, Android TV — pas le mobile ni webOS), que le serveur
+  déclare `reco.trending` ET que la préférence est allumée
+  (`reco/trendingHeadRequest.ts`), sous une clé de cache À PART
+  (`["reco-page", filtre, "trendingNow"]`) : coupée, requête et clé d'avant ; exclusions, droits, « bibliothèque seule », filtre de
+  plateformes et cartes absentes Vigie comme toute rangée ; les rangées
+  suivantes perdent ses titres, sauf `trending`, gardée ENTIÈRE pour l'accueil
+  qui peut l'épingler — « Pour vous » ne la montre pas (`forYouPageRows`).
+  Préférence du COMPTE `trendingNow` (`/api/preferences/reco`, allumée par
+  défaut ; absente d'un PUT d'avant, elle est GARDÉE) ; l'interrupteur
+  (`useTrendingNowSetting`) : Réglages › Personnalisation (web, bureau,
+  miroir), Réglages › Accueil (TV). Sans clé TMDB, rien.
 
 ## Aide — un guide, une source ; un rappel, jamais une bannière
 

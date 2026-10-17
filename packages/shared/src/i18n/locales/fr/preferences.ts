@@ -66,6 +66,8 @@ export default {
   persoRecoCaption: "Ce que le moteur peut vous proposer, et ce qu'il a le droit d'utiliser.",
   persoRecoPersonalized: "Recommandations personnalisées",
   persoRecoPersonalizedHint: "Des suggestions construites sur vos notes, favoris et visionnages.",
+  persoRecoTrending: "Tendances actuelles",
+  persoRecoTrendingHint: "La première rangée de « Pour vous » : ce qui se regarde le plus cette semaine, sans tenir compte de vos goûts.",
   persoRecoVigie: "Inclure les titres hors bibliothèque",
   persoRecoVigieHint: "Propose aussi des titres demandables via le catalogue Vigie.",
   persoRecoCommunity: "Recommandations communautaires",

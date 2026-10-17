@@ -191,5 +191,8 @@ export interface SettingsHome {
   fixedTitle?: string | null;
   /** « Un titre choisi » demandé sans aucun favori : la section le dit. */
   noFavorites?: boolean;
+  /** « Tendances actuelles » en tête de « Pour vous » (préférence du compte) ;
+   *  absent face à un serveur qui ne déclare pas `reco.trending` : pas d'interrupteur. */
+  trendingNow?: boolean;
 }
 

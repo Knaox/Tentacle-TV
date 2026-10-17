@@ -20,6 +20,8 @@ export interface ServeContext {
   lambda: number;
   includeVigie: boolean;
   community: boolean;
+  /** « Tendances actuelles » en tête de page : le choix du compte (allumée par défaut). */
+  trendingNow: boolean;
   exclude: Set<string>;
   profile: TasteVector;
   /** Premier contact : le profil se construit EN FOND, l'état est provisoire. */
@@ -99,6 +101,7 @@ export async function serveContext(userId: string): Promise<ServeContext> {
     lambda: (settings?.explorationBalance ?? 70) / 100,
     includeVigie: effectiveIncludeVigie(settings?.includeVigie, getSeerrConfig() !== null),
     community: settings?.community ?? true,
+    trendingNow: settings?.trendingNow ?? true,
     exclude,
     profile: { facets, signalCount, animeShare: profileRow?.animeShare ?? 0 },
     bootstrapping,

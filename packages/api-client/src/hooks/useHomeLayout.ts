@@ -39,6 +39,9 @@ export interface RecoSettingsData {
   /** Filtre de plateformes de la page Recommandations (ids TMDB principaux,
    *  triés) — suit le compte ; le serveur précalcule la page de ce filtre. */
   providerFilter: number[];
+  /** « Tendances actuelles » en tête de « Pour vous » (capacité `reco.trending`) :
+   *  allumée par défaut. Absente chez un serveur d'avant, qui ne la sert pas. */
+  trendingNow?: boolean;
   /** Vigie utilisable POUR LES RECOS, selon le serveur : plugin installé,
    *  activé, intégration allumée ET service configuré. LECTURE seulement (le
    *  PUT ne la reçoit pas) : c'est elle qui décide si l'interrupteur « hors

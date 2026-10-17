@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { emitRecoDropped, hasRetiredReco, isRecoRetired } from "../reco/recoRetirementState";
 import { getSocketStatus } from "../socket/tentacleSocket";
-import { RECO_PAGE_THEMES_PARAM, type RecoPage, type RecoPageRow } from "@tentacle-tv/shared";
+import { RECO_PAGE_THEMES_PARAM, RECO_PAGE_TRENDING_PARAM, type RecoPage, type RecoPageRow } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "./usePreferences";
+import { trendingHeadFromCache, useTrendingHeadRequest } from "../reco/trendingHeadRequest";
 
 /** Le contrat de GET /api/reco/page — la page entière, en une réponse
  *  (shared, reco/recoPageTypes : `featured`, `why` des rangées, en optionnel). */
@@ -29,8 +30,12 @@ export function recoFilterKey(ids: readonly number[] | null | undefined): string
   return normalized.length > 0 ? normalized.join(",") : ALL_PROVIDERS_KEY;
 }
 
-export function getRecoPageKey(ids: readonly number[] | null | undefined): readonly [typeof RECO_PAGE_KEY, string] {
-  return [RECO_PAGE_KEY, recoFilterKey(ids)] as const;
+/** La clé de la page : celle d'avant sans la tête des tendances, un 3ᵉ élément avec —
+ *  la page avec tête et la page sans ne se servent jamais l'une pour l'autre
+ *  (mémoire, disque), cf. reco/trendingHeadRequest. */
+export function getRecoPageKey(ids: readonly number[] | null | undefined, trendingNow = false): readonly string[] {
+  const key = [RECO_PAGE_KEY, recoFilterKey(ids)];
+  return trendingNow ? [...key, RECO_PAGE_TRENDING_PARAM] : key;
 }
 
 /**
@@ -47,18 +52,20 @@ export function acceptRecoPageThemes(): void {
   themedRows = true;
 }
 
-/** La requête d'une page : le filtre de plateformes, et les rangées à thème si le client sait les titrer. */
-export function recoPageQuery(ids: readonly number[]): string {
+/** La requête d'une page : le filtre de plateformes, les rangées à thème si le client les
+ *  sait titrer, la tête des tendances si elle est demandée (reco/trendingHeadRequest). */
+export function recoPageQuery(ids: readonly number[], trendingNow = false): string {
   const params: string[] = [];
   const normalized = normalizeProviderFilter(ids);
   if (normalized.length > 0) params.push(`providers=${normalized.join(",")}`);
   if (themedRows) params.push(`${RECO_PAGE_THEMES_PARAM}=1`);
+  if (trendingNow) params.push(`${RECO_PAGE_TRENDING_PARAM}=1`);
   return params.length > 0 ? `?${params.join("&")}` : "";
 }
 
 /** Le fetcher partagé entre le hook et le préchargement. */
-export function buildRecoPageFetcher(ids: readonly number[]): () => Promise<RecoPage> {
-  const query = recoPageQuery(ids);
+export function buildRecoPageFetcher(ids: readonly number[], trendingNow = false): () => Promise<RecoPage> {
+  const query = recoPageQuery(ids, trendingNow);
   return () => tentacleApiFetch<RecoPage>(`/api/reco/page${query}`);
 }
 
@@ -115,11 +122,13 @@ export function useRecoPage(
   options: { enabled?: boolean } = {}
 ) {
   const ids = normalizeProviderFilter(filter);
+  // « Tendances actuelles » : décidée avant le premier envoi (capacité + préférence).
+  const head = useTrendingHeadRequest();
   return useQuery({
-    queryKey: [RECO_PAGE_KEY, recoFilterKey(ids)],
-    queryFn: buildRecoPageFetcher(ids),
+    queryKey: getRecoPageKey(ids, head.trendingNow),
+    queryFn: buildRecoPageFetcher(ids, head.trendingNow),
     staleTime: RECO_PAGE_STALE_TIME,
-    enabled: options.enabled ?? true,
+    enabled: (options.enabled ?? true) && head.ready,
     select: selectRecoPage,
     // Le socket (reco:update) fait foi ; on ne sonde qu'à défaut.
     refetchInterval: (...args: unknown[]) => recoPagePollInterval(getSocketStatus() === "open", ...args),
@@ -129,9 +138,13 @@ export function useRecoPage(
 
 export function prefetchRecoPage(qc: QueryClient, filter: readonly number[] | null | undefined): Promise<void> {
   const ids = normalizeProviderFilter(filter);
+  // Décision encore inconnue (configuration ou réglages pas lus) : rien à précharger,
+  // la page partira d'elle-même sous la bonne clé.
+  const head = trendingHeadFromCache(qc);
+  if (!head.ready) return Promise.resolve();
   return qc.prefetchQuery({
-    queryKey: [RECO_PAGE_KEY, recoFilterKey(ids)],
-    queryFn: buildRecoPageFetcher(ids),
+    queryKey: getRecoPageKey(ids, head.trendingNow),
+    queryFn: buildRecoPageFetcher(ids, head.trendingNow),
     staleTime: RECO_PAGE_STALE_TIME,
   });
 }

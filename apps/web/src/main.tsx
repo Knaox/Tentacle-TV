@@ -26,6 +26,7 @@ import {
   setRequestTimeoutMs,
   configureSessionChannel,
   acceptRecoPageThemes,
+  acceptRecoTrendingHead,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
@@ -143,6 +144,8 @@ if (isDesktop) setRequestTimeoutMs(12_000);
 // (`recoRowTitleText`) : ils demandent ces rangées au serveur (`?themes=1`).
 // Posé avant toute requête — la page en cache est toujours demandée ainsi.
 acceptRecoPageThemes();
+// …et rendent « Tendances actuelles » en tête de « Pour vous » (`?trendingNow=1`).
+acceptRecoTrendingHead();
 
 // Copie du stockage local dans la base SQLite de l'app, en vue de la migration
 // vers Electron. `localStorage` appartient au moteur web et est rangé par

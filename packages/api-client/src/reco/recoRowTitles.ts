@@ -12,6 +12,7 @@ export const RECO_ROW_TITLE_KEYS: Readonly<Record<string, string>> = {
   community: "rowCommunity",
   exploration: "rowExploration",
   trending: "rowTrending",
+  trendingNow: "rowTrendingNow",
   serverPulse: "rowServerPulse",
   bestOfLibrary: "rowBestOfLibrary",
   anime: "rowAnime",

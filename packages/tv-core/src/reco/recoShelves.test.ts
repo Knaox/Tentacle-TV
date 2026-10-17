@@ -41,6 +41,18 @@ describe("tvRecoShelves", () => {
     expect(shelves.map((s) => s.key)).toEqual(["forYou"]);
   });
 
+  it("« Tendances actuelles » en tête : la première étagère, titres à demander compris ; le héros reste de « Pour vous »", () => {
+    const p = page([
+      { key: "trendingNow", items: [outside("t1"), lib("t2"), outside("t3"), lib("t4")] },
+      { key: "forYou", items: [lib("a"), lib("b"), lib("c"), lib("d")] },
+    ]);
+    const hero = tvRecoHero(p);
+    expect(hero?.jellyfinItemId).toBe("a");
+    const shelves = tvRecoShelves(p, { hero, external: true });
+    expect(shelves.map((s) => s.key)).toEqual(["trendingNow", "forYou"]);
+    expect(shelves[0].items.map((i) => i.key)).toEqual(["movie:t1", "movie:t2", "movie:t3", "movie:t4"]);
+  });
+
   it("borne la longueur d'une étagère", () => {
     const items = Array.from({ length: 40 }, (_, i) => lib(`i${i}`));
     expect(tvRecoShelves(page([{ key: "forYou", items }]))[0].items).toHaveLength(24);
