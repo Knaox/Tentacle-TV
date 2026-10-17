@@ -19,6 +19,8 @@ export interface RowRewindPort {
   layout(rowKey: string, top: number, height: number): void;
   /** La page défile : son décalage et sa hauteur. */
   scroll(offset: number, height: number): void;
+  /** La page va défiler pour une grande carte d'aperçu : ce qui est à l'écran est tenu (tv-core `previewReveal`). */
+  previewReveal(): void;
 }
 
 const RowRewindContext = createContext<RowRewindPort | null>(null);
