@@ -49,6 +49,7 @@ import { registerVideoCommands, restoreDisplay, stopPlayer } from "./ipc/video";
 import { registerMediaWarmCommands } from "./ipc/mediaWarm";
 import { isRunning } from "./video/mpv";
 import { installCloseSequence } from "./closeSequence";
+import { closePipBeforeHost } from "./pip/pipQuit";
 import { claimSingleInstance, installContentSecurityPolicy, restrictPermissions } from "./security";
 import { installMenu } from "./menu";
 import { applySystemIdentity } from "./appIdentity";
@@ -255,6 +256,9 @@ function main(): void {
         if (process.platform === "linux") {
           installCloseSequence(window, isRunning, stopPlayer);
         }
+        // EN DERNIER : il lit `defaultPrevented`, que les deux gardes ci-dessus
+        // posent. Quitter pendant le PiP le ferme avant la fenêtre (`pipQuit.ts`).
+        closePipBeforeHost(window);
         void window.loadURL(`${APP_ORIGIN}/${startRoute()}`);
       };
 
