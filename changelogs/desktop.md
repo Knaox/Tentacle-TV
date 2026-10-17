@@ -13,6 +13,14 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.31.0]
+<!-- Bloc nu : les trois canaux partent de la 1.30.0. « Tendances actuelles » exige le serveur 1.31.0 (capacité reco.trending) : face à un serveur plus ancien, ni la rangée ni l'interrupteur. -->
+### FR
+- **« Tendances actuelles » en tête de « Pour vous »** : ce qui se regarde le plus cette semaine, films et séries, sans tenir compte de vos goûts. À couper dans Réglages › Personnalisation (serveur 1.31.0)
+
+### EN
+- **“Trending now” at the top of “For you”**: what everyone is watching this week, movies and shows, regardless of your tastes. Turn it off in Settings › Personalization (server 1.31.0)
+
 ## [1.30.0]
 <!-- Bloc nu : les trois canaux partent de la 1.28.2. Les aperçus de bande-annonce et « Qui regarde ? » exigent le serveur 1.30.0 (capacités trailers.preview et family.desktopProfiles) : face à un serveur plus ancien, l'app n'en montre rien, écran des nouveautés compris. -->
 ### FR

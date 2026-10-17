@@ -10,6 +10,14 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.31.0]
+<!-- « Tendances actuelles » : capacité reco.trending (1.31.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
+### FR
+- **« Tendances actuelles » en tête de « Pour vous »** : ce qui se regarde le plus cette semaine, films et séries, sans tenir compte des goûts du compte. Allumée par défaut, elle se coupe dans les réglages des recommandations
+
+### EN
+- **“Trending now” at the top of “For you”**: what everyone is watching this week, movies and shows, regardless of the account's tastes. On by default, it can be turned off in the recommendation settings
+
 ## [1.30.0]
 <!-- Aperçus et « Qui regarde ? » : capacités trailers.preview et family.desktopProfiles (1.30.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
