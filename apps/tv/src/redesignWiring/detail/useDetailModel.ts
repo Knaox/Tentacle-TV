@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import {
   useCardRatingTarget,
   useCardToggles,
-  TRAILER_PLATFORM_LEGACY,
   useItemTrailer,
   useJellyfinClient,
   useMediaItem,
@@ -14,7 +13,7 @@ import {
   type CardToggles,
   type ItemTrailer,
 } from "@tentacle-tv/api-client";
-import { lacksMetadata, type MediaItem, type NextEpisodeResult } from "@tentacle-tv/shared";
+import { lacksMetadata, trailerPublicUrl, type MediaItem, type NextEpisodeResult, type TrailerTarget } from "@tentacle-tv/shared";
 import { useTVUserScore } from "../../components/cards/actions/useTVUserScore";
 import { useTrailerPreparation } from "../../screens/trailer/useTrailerPreparation";
 import type { DetailViewProps } from "../../redesign/screens/detail/DetailView";
@@ -26,7 +25,7 @@ import { castOf, crewOf } from "./detailPeople";
 import type { VigieGate } from "../vigie/useVigieGate";
 import { useDetailCards, type DetailCards } from "./useDetailCards";
 import { useDetailEpisodes, type DetailEpisodes } from "./useDetailEpisodes";
-import { useDetailExtras, type DetailExtras } from "./useDetailExtras";
+import { TV_TRAILER_PLATFORM, useDetailExtras, type DetailExtras } from "./useDetailExtras";
 
 /**
  * Tout ce que la fiche refondue montre, tiré des hooks de l'app — les mêmes
@@ -90,10 +89,10 @@ export function useDetailModel(itemId: string, gate: VigieGate | null, openSeaso
 
   const watchQuery = useSeriesWatchState(isSeries ? item?.Id : undefined);
   const watch = watchQuery.data;
-  const trailer = useItemTrailer(item, lang, TRAILER_PLATFORM_LEGACY);
+  const trailer = useItemTrailer(item, lang, TV_TRAILER_PLATFORM);
   // La bande-annonce se prépare côté serveur pendant qu'on lit la fiche — une
   // fois les listes arrivées : celle de TMDB peut faire passer la VF devant.
-  useTrailerPreparation(trailer.settled && trailer.target?.kind === "remote" ? trailer.target.trailer.Url : undefined);
+  useTrailerPreparation(trailer.settled ? onlineTrailerUrl(trailer.target) : undefined);
   const hint = useTrailerHint({ itemType: item?.Type, trailerVisible: trailer.visible, trailerSettled: trailer.settled });
   // Titre que Jellyfin n'a pas trouvé : la phrase de l'en-tête, et la fiche
   // qui se relit seule à l'annonce de Jellyfin (socket ouvert par l'accueil).
@@ -172,3 +171,9 @@ export function useDetailModel(itemId: string, gate: VigieGate | null, openSeaso
 
 /** L'item vide d'une fiche qui se charge : `useCardToggles` n'y lit rien. */
 const PLACEHOLDER = { Id: "", Name: "", Type: "Movie" } as MediaItem;
+
+/** L'adresse de la bande-annonce en ligne que la fiche fait préparer (YouTube, Dailymotion). */
+function onlineTrailerUrl(target: TrailerTarget | null): string | undefined {
+  if (target?.kind === "remote") return target.trailer.Url;
+  return target?.kind === "relay" ? trailerPublicUrl(target.entry.playback) : undefined;
+}

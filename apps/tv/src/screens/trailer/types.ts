@@ -1,4 +1,4 @@
-import type { SubtitleCue } from "@tentacle-tv/shared";
+import type { RelayedTrailerPlayback, SubtitleCue } from "@tentacle-tv/shared";
 import type { TrailerTracks } from "@tentacle-tv/tv-core";
 
 export type { TrailerTracks } from "@tentacle-tv/tv-core";
@@ -12,8 +12,8 @@ export type { TrailerTracks } from "@tentacle-tv/tv-core";
  * en Auto, sans sous-titres, jusqu'au bout.
  */
 export interface TrailerPlayerProps {
-  /** ID YouTube (11 chars) — le serveur en résout le flux. */
-  ytId: string;
+  /** La vidéo (YouTube, ou Dailymotion pour AlloCiné) — le serveur en résout le flux. */
+  video: RelayedTrailerPlayback;
   /** URL de la page relais d'embed YouTube — plus lue (l'ancienne WebView Android). */
   embedUri: string;
   /** La première image est à l'écran : masque le chargement. */

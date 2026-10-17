@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TrailerEntry } from "../trailerCatalog";
 import {
   heardTrailerItem, isEmbedFallback, trailerFailureStep, trailerNeighborIndex, trailerOriginLabel, trailerQueueOf, trailerReportBody,
-  trailerResolveQuery, trailerVersionLabelKey,
+  trailerResolveQuery, trailerVersionLabelKey, relayedPlaybackOfUrl, trailerPublicUrl,
 } from "./trailerQueue";
 
 const yt = { kind: "youtube" as const, ytId: "Way9Dexny3w" };
@@ -73,5 +73,20 @@ describe("heardTrailerItem", () => {
     expect(heardTrailerItem(vf, {}, "fr")).toBe(vf);
     expect(heardTrailerItem(vf, null, "fr")).toBe(vf);
     expect(heardTrailerItem(vf, { audio: { content: "dubbed", lang: "fr" } }, "fr")).toBe(vf);
+  });
+});
+
+describe("relayedPlaybackOfUrl", () => {
+  it("relit l'adresse publique d'une vidéo YouTube ou Dailymotion", () => {
+    const yt = { kind: "youtube", ytId: "abcdefghijk" } as const;
+    const dm = { kind: "dailymotion", videoId: "x8abc12" } as const;
+    expect(relayedPlaybackOfUrl(trailerPublicUrl(yt))).toEqual(yt);
+    expect(relayedPlaybackOfUrl(trailerPublicUrl(dm))).toEqual(dm);
+    expect(relayedPlaybackOfUrl("https://www.dailymotion.com/embed/video/x8abc12")).toEqual(dm);
+  });
+
+  it("rien pour une adresse inconnue ou absente", () => {
+    expect(relayedPlaybackOfUrl("https://vimeo.com/123")).toBeNull();
+    expect(relayedPlaybackOfUrl(undefined)).toBeNull();
   });
 });

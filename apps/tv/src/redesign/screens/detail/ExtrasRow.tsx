@@ -18,13 +18,13 @@ import type { ExtraModel } from "./detailTypes";
 import { CARD_FOCUS_SCALE } from "../../cards/cardFocus";
 
 /**
- * Les extras : bandes-annonces locales, bonus, vidéos distantes — dans
- * l'ordre de toutes les plateformes (`buildExtraEntries`). Vignettes 16:9,
+ * Les extras : bandes-annonces locales, bonus, vidéos du catalogue du serveur
+ * (TMDB, AlloCiné) — le carrousel du bureau (`ficheExtraTiles`). Vignettes 16:9,
  * le titre et le genre dessous. Une vidéo retirée reste à sa place, grisée,
  * « Indisponible ».
  *
- * Contrat : `useItemExtras` (locaux), `useRemoteTrailers` (distants),
- * `buildExtraEntries` (l'ordre, les libellés), `seasonHasExtras` (saisons).
+ * Contrat : `useFicheExtras` (le carrousel de la fiche), `ficheExtraTiles`
+ * (l'ordre, les libellés, ce que lance chaque tuile).
  * Groupe de focus : `detail:extras` ; éléments `extra:<i>`.
  */
 

@@ -2,6 +2,7 @@ import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo,
 import { useTranslation } from "react-i18next";
 import Video, { type OnLoadData, type OnProgressData, type VideoRef } from "react-native-video";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { trailerItemKey } from "@tentacle-tv/shared";
 import { trailerQualityUrl, trailerSubtitleUrl } from "@tentacle-tv/tv-core";
 import { plog } from "../../utils/playerDiag";
 import { reportTrailerOutcome, resolveTrailerStream, type TrailerOutcome, type TrailerStream } from "./resolveTrailerStream";
@@ -11,7 +12,7 @@ import type { TrailerPlayerHandle, TrailerPlayerProps } from "./types";
 
 /**
  * Le lecteur de bande-annonce, Apple TV ET Android TV : le serveur résout
- * l'ID YouTube et relaie le flux (`GET /api/trailers/resolve`, yt-dlp), lu ici
+ * la vidéo (YouTube, Dailymotion) et relaie le flux (`GET /api/trailers/resolve`, yt-dlp), lu ici
  * avec `react-native-video` (AVPlayer sur tvOS, ExoPlayer media3 sur Android,
  * qui lit le même maître HLS). Android passait par l'embed YouTube d'une
  * WebView : il lit désormais le flux de l'Apple TV, avec le même chien de
@@ -55,7 +56,9 @@ interface PlayedSource {
 }
 
 function TrailerPlayer(props: TrailerPlayerProps, ref: React.Ref<TrailerPlayerHandle>) {
-  const { ytId, onLoadEnd, onError, onEnded, onWaitingChange, quality = null, subtitle = null, paused = false } = props;
+  const { video, onLoadEnd, onError, onEnded, onWaitingChange, quality = null, subtitle = null, paused = false } = props;
+  // La vidéo par sa clé : un nouvel objet pour la même vidéo ne relance rien.
+  const videoKey = trailerItemKey(video);
   const { storage } = useTentacleConfig();
   const { i18n } = useTranslation();
   const [stream, setStream] = useState<TrailerStream | null>(null);
@@ -82,9 +85,9 @@ function TrailerPlayer(props: TrailerPlayerProps, ref: React.Ref<TrailerPlayerHa
     if (outcome.ok) done.started = true;
     else done.failed = true;
     const ms = Date.now() - openedAt.current;
-    plog("trailer", `${ytId} : ${outcome.ok ? `première image en ${ms} ms` : `échec après ${ms} ms (${outcome.reason})`}`);
-    if (server.current.url) reportTrailerOutcome(server.current.url, server.current.token, ytId, { ...outcome, ms });
-  }, [ytId]);
+    plog("trailer", `${videoKey} : ${outcome.ok ? `première image en ${ms} ms` : `échec après ${ms} ms (${outcome.reason})`}`);
+    if (server.current.url) reportTrailerOutcome(server.current.url, server.current.token, latest.current.video, { ...outcome, ms });
+  }, [videoKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,15 +101,15 @@ function TrailerPlayer(props: TrailerPlayerProps, ref: React.Ref<TrailerPlayerHa
     jump.current = null;
     setStream(null);
     setPlayed(null);
-    if (!serverUrl || !ytId) {
+    if (!serverUrl) {
       onError();
       return;
     }
-    void resolveTrailerStream(serverUrl, token, ytId, lang.current).then((result) => {
+    void resolveTrailerStream(serverUrl, token, latest.current.video, lang.current).then((result) => {
       if (cancelled) return;
       if (result.ok) {
         const resolved = result.stream;
-        plog("trailer", `flux ${resolved.type ?? "progressif"} résolu pour ${ytId} en ${Date.now() - openedAt.current} ms (${resolved.qualities.length} qualités, ${resolved.subtitles.length} pistes)`);
+        plog("trailer", `flux ${resolved.type ?? "progressif"} résolu pour ${videoKey} en ${Date.now() - openedAt.current} ms (${resolved.qualities.length} qualités, ${resolved.subtitles.length} pistes)`);
         // Les pistes AVANT le flux : l'écran y pose sa qualité de lancement
         // (la plus haute) et ses sous-titres, et la première source en tient
         // déjà compte. Dans l'ordre inverse, l'ancienne architecture de React
@@ -123,7 +126,7 @@ function TrailerPlayer(props: TrailerPlayerProps, ref: React.Ref<TrailerPlayerHa
     return () => {
       cancelled = true;
     };
-  }, [ytId, storage, onError, report]);
+  }, [videoKey, storage, onError, report]);
 
   const watch = useTrailerPlaybackWatch(stream?.url ?? null, {
     onStarted: () => {

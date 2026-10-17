@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useResolvePlayTarget } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { trailerPublicUrl, type MediaItem, type TrailerTarget } from "@tentacle-tv/shared";
 import { cardPressOf, detailPlayPress, holdPanelOf, type HoldPanel } from "@tentacle-tv/tv-core";
 import type { RootStackParamList } from "../../navigation/types";
 import type { DetailCallbacks } from "../../redesign/screens/detail/detailTypes";
@@ -56,6 +56,13 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
     const nav = () => latest.current.navigation;
     const model = () => latest.current.model;
     const play = (itemId: string) => nav().navigate("Player", { itemId });
+    // Une bande-annonce ou un extra : le lecteur pour un fichier local, sinon
+    // l'écran de bande-annonce, qui relaie YouTube comme Dailymotion (AlloCiné).
+    const openTrailer = (target: TrailerTarget, itemId: string | undefined, name: string | undefined) => {
+      if (target.kind === "local") return play(target.itemId);
+      const url = target.kind === "remote" ? target.trailer.Url : trailerPublicUrl(target.entry.playback);
+      nav().navigate("Trailer", { url, name: name ?? (target.kind === "relay" ? target.entry.name : undefined), itemId });
+    };
     // Le panneau d'un titre de la bibliothèque, dans la variante que dit la règle.
     const openPanel = (panel: HoldPanel | null, item: MediaItem | undefined) => {
       if (!item || panel?.kind !== "media") return;
@@ -81,8 +88,7 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
         const { item, trailer } = model();
         const target = trailer.target;
         if (!target) return;
-        if (target.kind === "local") play(target.itemId);
-        else if (target.kind === "remote") nav().navigate("Trailer", { url: target.trailer.Url, name: target.trailer.Name, itemId: item?.Id });
+        openTrailer(target, item?.Id, target.kind === "remote" ? target.trailer.Name : undefined);
       },
       onToggleWatchlist: () => model().toggles.toggleList(),
       onToggleFavorite: () => model().toggles.toggleFavorite(),
@@ -103,10 +109,8 @@ export function useDetailActions(input: DetailActionsInput): DetailCallbacks {
       onOpenPerson: (person) => latest.current.open.openPerson(person),
       onOpenExtra: (extra) => {
         const { item, extras } = model();
-        const entry = extras.entryOf(extra.id);
-        if (!entry) return;
-        if (entry.source === "local") play(entry.itemId);
-        else nav().navigate("Trailer", { url: entry.trailer.Url, name: entry.title, itemId: item?.Id });
+        const target = extras.targetOf(extra.id);
+        if (target) openTrailer(target, item?.Id, extra.title);
       },
       onOpenSagaEntry: (entry) => {
         // « Cette fiche » : on y est. Un volet absent n'a pas de fiche : le
