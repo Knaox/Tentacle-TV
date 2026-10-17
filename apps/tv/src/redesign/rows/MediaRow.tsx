@@ -101,20 +101,21 @@ export const MediaRow = memo(function MediaRow({
   const { onRewind: rewindRoom, onCardFocus: focusRoom } = room;
   // La carte qui a le focus dans la rangée, ou null : jamais retirée sous le focus.
   const focusedIndex = useRef<number | null>(null);
-  useEffect(
-    () =>
-      rewind?.register(rowKey, () => {
-        track.current?.scrollTo({ x: 0, y: 0, animated: false });
-        rewindRoom();
-        // Sortie de l'écran (ou page quittée) : elle revient à sa tête (mode Lite),
-        // à l'image suivante — sauf si le focus est (revenu) sur sa queue.
-        if (!mountProfile().retireOffscreenRows) return;
-        requestAnimationFrame(() => {
-          if (focusedIndex.current === null || focusedIndex.current < head) retire();
-        });
-      }),
-    [rewind, rowKey, retire, head, rewindRoom, track],
-  );
+  // La remise au début, relue à l'appel : la rangée ne s'inscrit qu'UNE fois au
+  // port — s'y réinscrire (à chaque rendu, avant le 17/10) lui faisait oublier
+  // qu'elle était défilée, et elle ne revenait plus au début.
+  const toStart = useRef<() => void>(() => undefined);
+  toStart.current = () => {
+    track.current?.scrollTo({ x: 0, y: 0, animated: false });
+    rewindRoom();
+    // Sortie de l'écran (ou page quittée) : elle revient à sa tête (mode Lite),
+    // à l'image suivante — sauf si le focus est (revenu) sur sa queue.
+    if (!mountProfile().retireOffscreenRows) return;
+    requestAnimationFrame(() => {
+      if (focusedIndex.current === null || focusedIndex.current < head) retire();
+    });
+  };
+  useEffect(() => rewind?.register(rowKey, () => toStart.current()), [rewind, rowKey]);
   // Les titres autour du focus : leur aperçu se prépare au serveur (`useCardPreviewWarm`).
   const warm = useCardPreviewWarm();
   const latestCards = useRef(cards);
