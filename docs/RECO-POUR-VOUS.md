@@ -174,8 +174,13 @@ n'y touchent.
 
 - **Où** : `GET /api/reco/page?trendingNow=1` (RECO_PAGE_TRENDING_PARAM), rangée
   `trendingNow` ajoutée au SERVICE (jamais dans un snapshot) —
-  `services/reco/trendingHead.ts`. Un serveur d'avant ignore le paramètre ; le
-  mobile et webOS ne l'envoient pas.
+  `services/reco/trendingHead.ts`. Le client ne l'envoie que si l'app sait
+  rendre la tête (web, bureau, TV ; ni le mobile ni webOS), que le serveur
+  déclare `reco.trending` et que la préférence est allumée
+  (`reco/trendingHeadRequest.ts`, api-client) — la page attend la configuration
+  et les réglages pour ne partir qu'une fois. Clé de cache à part
+  (`["reco-page", filtre, "trendingNow"]`, mémoire et disque) : coupée, la
+  requête et la clé sont exactement celles d'avant.
 - **Ce qui s'applique quand même** : les exclusions du compte (règle 1),
   « bibliothèque seule », ses droits, le filtre de plateformes ; hors
   bibliothèque, les cartes absentes (Vigie) comme partout ; sans clé TMDB,

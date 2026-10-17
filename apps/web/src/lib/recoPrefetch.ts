@@ -1,10 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
 import {
-  RECO_PAGE_KEY,
+  getRecoPageKey,
   isDataSaverActive,
   prefetchRecoPage,
   prefetchWatchProviders,
-  recoFilterKey,
+  trendingHeadFromCache,
 } from "@tentacle-tv/api-client";
 import type { JellyfinClient, RecoPage } from "@tentacle-tv/api-client";
 import { recoBackdropUrl, recoPosterUrl } from "@tentacle-tv/api-client";
@@ -67,7 +67,7 @@ export async function runRecoPrefetch(deps: RecoPrefetchDeps): Promise<void> {
   ];
   if (savedFilter.length > 0) tasks.push(prefetchRecoPage(qc, savedFilter));
   await Promise.allSettled(tasks);
-  const page = qc.getQueryData<RecoPage>([RECO_PAGE_KEY, recoFilterKey(savedFilter)]);
+  const page = qc.getQueryData<RecoPage>(getRecoPageKey(savedFilter, trendingHeadFromCache(qc).trendingNow));
   if (page) void warmRecoImages(page, client);
 }
 

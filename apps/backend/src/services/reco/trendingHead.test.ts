@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withTrendingHead } from "./trendingHead";
+import { trendingHeadItems, withTrendingHead } from "./trendingHead";
 import type { RecoRowItem } from "./rowItem";
 
 const item = (key: string): RecoRowItem => ({
@@ -28,5 +28,18 @@ describe("withTrendingHead", () => {
   it("trop mince, la tête n'est pas servie : la page reste celle d'avant", () => {
     const rows = [row("forYou", 1, 2, 3, 4, 5, 6), row("trending", 20, 21, 22, 23, 24, 25)];
     expect(withTrendingHead(rows, keys(30, 31))).toEqual(rows);
+  });
+});
+
+describe("trendingHeadItems", () => {
+  const ctx = { exclude: new Set<string>(), includeVigie: true, tmdbConfigured: true, trendingNow: true };
+
+  it("préférence coupée ou sans clé TMDB : aucune tête, la page reste EXACTEMENT celle d'avant", async () => {
+    const rows = [row("forYou", 1, 2, 3, 4, 5, 6), row("trending", 20, 21, 22, 23, 24, 25)];
+    for (const off of [{ ...ctx, trendingNow: false }, { ...ctx, tmdbConfigured: false }]) {
+      const head = await trendingHeadItems("u1", off, null);
+      expect(head).toEqual([]);
+      expect(withTrendingHead(rows, head)).toEqual(rows);
+    }
   });
 });

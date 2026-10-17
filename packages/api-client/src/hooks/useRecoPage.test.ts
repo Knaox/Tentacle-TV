@@ -3,7 +3,7 @@ import type { RecoRowItem } from "./recoTypes";
 import {
   RECO_PAGE_FALLBACK_POLL_MS,
   acceptRecoPageThemes,
-  acceptRecoTrendingHead,
+  getRecoPageKey,
   recoPageQuery,
   normalizeProviderFilter,
   recoFilterKey,
@@ -51,10 +51,11 @@ describe("recoPageQuery", () => {
     expect(recoFilterKey([415, 283])).toBe("283,415");
   });
 
-  it("`trendingNow=1` une fois que le client sait rendre « Tendances actuelles » en tête", () => {
-    acceptRecoTrendingHead();
-    expect(recoPageQuery([283])).toBe("?providers=283&themes=1&trendingNow=1");
-    expect(recoFilterKey([283])).toBe("283");
+  it("`trendingNow=1` seulement quand la tête est demandée — et une clé à part", () => {
+    expect(recoPageQuery([283], true)).toBe("?providers=283&themes=1&trendingNow=1");
+    expect(recoPageQuery([283])).toBe("?providers=283&themes=1");
+    expect(getRecoPageKey([283])).toEqual(["reco-page", "283"]);
+    expect(getRecoPageKey([283], true)).toEqual(["reco-page", "283", "trendingNow"]);
   });
 });
 
