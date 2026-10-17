@@ -195,53 +195,6 @@ describe("createRowRewind — Retour appliqué (back)", () => {
   });
 });
 
-describe("createRowRewind — le défilement d'un aperçu ne fait sortir aucune rangée", () => {
-  it("la rangée du dessus, sortie de l'écran par la page qui se pousse, garde sa place", () => {
-    const rewind = page();
-    rewind.focus("resume:4");
-    rewind.focus("nextUp:2");
-    expect(rewind.scroll(view(860))).toEqual([]); // Reprendre (900-1300) à l'écran
-    rewind.previewReveal();
-    // La grande carte de « À suivre » pousse la page : Reprendre sort par le haut.
-    expect(rewind.scroll(view(1350))).toEqual([]);
-    // Un pas dans la même rangée (un autre aperçu) : toujours tenue.
-    rewind.focus("nextUp:3");
-    expect(rewind.scroll(view(1400))).toEqual([]);
-    expect(rewind.moved()).toContain("resume");
-  });
-
-  it("le focus quitte la rangée de l'aperçu : la règle 2 reprend au défilement suivant", () => {
-    const rewind = page();
-    rewind.focus("resume:4");
-    rewind.focus("nextUp:2");
-    rewind.scroll(view(860));
-    rewind.previewReveal();
-    expect(rewind.scroll(view(1350))).toEqual([]);
-    rewind.focus("reco:forYou:2");
-    expect(rewind.scroll(view(1650))).toEqual(["resume"]);
-  });
-
-  it("en remontant dans la rangée tenue, elle porte le focus : rien ne bouge", () => {
-    const rewind = page();
-    rewind.focus("resume:4");
-    rewind.focus("nextUp:2");
-    rewind.scroll(view(860));
-    rewind.previewReveal();
-    rewind.scroll(view(1350));
-    rewind.focus("resume:4");
-    expect(rewind.scroll(view(860))).toEqual([]);
-    expect(rewind.backTarget("resume:4")).toBe("resume:0");
-  });
-
-  it("sans focus dans une rangée, rien n'est tenu", () => {
-    const rewind = page();
-    rewind.focus("resume:4");
-    rewind.focus("hero:primary");
-    rewind.previewReveal();
-    expect(rewind.scroll(view(1350))).toEqual(["resume"]);
-  });
-});
-
 describe("createRowRewind — les voisines de la rangée du focus gardent leur place", () => {
   it("la rangée d'où l'on vient, sortie de 8 pt par une rangée suivante haute : gardée", () => {
     const rewind = page();

@@ -1,6 +1,7 @@
 import { memo, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
+import { BELOW_ZONE_VIEWPORT } from "@tentacle-tv/tv-core";
 import { AmbientBackdrop } from "../../background/AmbientBackdrop";
 import { useAmbientOf, type AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
@@ -190,8 +191,8 @@ const styles = StyleSheet.create({
   headerWithBar: { gap: 30, marginBottom: 44 },
   titleRow: { flexDirection: "row", alignItems: "baseline", gap: 22 },
   count: { color: "rgba(255, 255, 255, 0.62)" },
-  // Le vide occupe la hauteur restante de la scène, centré dedans.
-  empty: { height: 1080 - TV_STAGE.safe.y * 2 - 190, justifyContent: "center" },
+  // Le vide occupe la hauteur restante de la fenêtre sous la zone de l'aperçu, centré dedans.
+  empty: { height: BELOW_ZONE_VIEWPORT - TV_STAGE.safe.y * 2 - 190, justifyContent: "center" },
   noResults: { paddingTop: 40 },
   statusHeader: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.safe.y },
 });

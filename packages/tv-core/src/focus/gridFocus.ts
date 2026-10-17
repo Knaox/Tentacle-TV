@@ -27,16 +27,13 @@ export function gridIndexOf(key: string, prefix: string = GRID_KEY_PREFIX): numb
   return /^\d+$/.test(rest) ? Number(rest) : null;
 }
 
-/**
- * Comment la page montre une ligne focalisée (GR-2) : la PREMIÈRE ramène la
- * page tout en haut, son titre et ses filtres avec elle — revenir sur la
- * première ligne, c'est revenir en haut, y compris au bout d'une remontée
- * maintenue ou d'un glisser vif, où la plateforme pose la page où son
- * défilement rapide s'arrête ; les autres viennent au plus près.
+/*
+ * Comment la page montre une ligne focalisée (GR-2, 18/10) : TOUJOURS au même
+ * endroit, juste sous la zone fixe de l'aperçu (`previewZoneLayout.ts`,
+ * `BELOW_ZONE_REVEAL`) — la première comme les autres : la position
+ * verticale du focus ne change jamais. L'en-tête (titre, filtres) ramène la
+ * page tout en haut quand le focus y remonte (sa propre section).
  */
-export function gridLineReveal(lineIndex: number): "start" | "nearest" {
-  return lineIndex === 0 ? "start" : "nearest";
-}
 
 /** La section d'une ligne de grille : `<préfixe>:line:<n>` (`PosterGrid`). */
 export const gridLineKey = (prefix: string, lineIndex: number): string => `${prefix}:line:${lineIndex}`;
@@ -50,14 +47,12 @@ export interface GridLineEntries {
 }
 
 /**
- * HAUT et BAS gardent la COLONNE (GR-7, 17/10) : chaque ligne est un
- * carrousel, et l'affiche dont l'aperçu démarre passe en tête de la sienne
- * (`cards/trailerPreviewGrid.ts`). Depuis elle, la règle de voisinage
- * (`sections.ts`, le centre le plus proche) mènerait à la PREMIÈRE colonne
- * de la ligne voisine, sous elle. Les lignes voisines déclarent donc leur
- * ENTRÉE à la colonne de l'affiche focalisée — sans aperçu, c'est déjà
- * l'affiche au centre le plus proche : rien ne change. Une ligne du dessous
- * plus courte (la dernière) entre par sa dernière affiche, comme avant.
+ * HAUT et BAS gardent la COLONNE (GR-7) : les lignes voisines déclarent leur
+ * ENTRÉE à la colonne de l'affiche focalisée — sans écart de mise en page,
+ * c'est déjà l'affiche au centre le plus proche (`sections.ts`), mais
+ * l'entrée déclarée ne dépend ni de la règle de voisinage ni de ce que la
+ * plateforme a monté. Une ligne du dessous plus courte (la dernière) entre
+ * par sa dernière affiche.
  */
 export function gridLineEntries(index: number, columns: number, count: number): GridLineEntries {
   const perLine = Math.max(1, Math.floor(columns));
