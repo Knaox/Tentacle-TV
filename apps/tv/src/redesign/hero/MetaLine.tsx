@@ -28,7 +28,9 @@ export const MetaLine = memo(function MetaLine({ items, size = 24, singleLine = 
         const previous = items[index - 1];
         const needsDot = index > 0 && !(typeof item === "object" && "badge" in item && typeof previous === "object" && previous && "badge" in previous);
         return (
-          <Fragment key={`${index}-${JSON.stringify(item)}`}>
+          // Clé de PLACE : une ligne qui change de titre (la zone d'aperçu, à chaque flèche) met ses
+          // textes à jour sur place au lieu de les recréer ; seul un élément qui change de genre se remonte.
+          <Fragment key={index}>
             {needsDot ? <Text style={[styles.text, { fontSize: size }]}>·</Text> : null}
             {typeof item === "string" ? (
               <Text style={[styles.text, { fontSize: size }]}>{item}</Text>
