@@ -16,9 +16,14 @@ import { colors, fonts, white } from "../theme/tokens";
 
 export type MetaItem = string | { badge: string; strong?: boolean } | { rating: string };
 
-export const MetaLine = memo(function MetaLine({ items, size = 24 }: { items: MetaItem[]; size?: number }) {
+export const MetaLine = memo(function MetaLine({ items, size = 24, singleLine = false }: {
+  items: MetaItem[];
+  size?: number;
+  /** Une seule ligne : ce qui ne tient pas est coupé à droite, jamais renvoyé à la ligne (la zone d'aperçu). */
+  singleLine?: boolean;
+}) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, singleLine && styles.single]}>
       {items.map((item, index) => {
         const previous = items[index - 1];
         const needsDot = index > 0 && !(typeof item === "object" && "badge" in item && typeof previous === "object" && previous && "badge" in previous);
@@ -48,6 +53,7 @@ export const MetaLine = memo(function MetaLine({ items, size = 24 }: { items: Me
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", columnGap: 14, rowGap: 10 },
+  single: { flexWrap: "nowrap", overflow: "hidden" },
   text: { ...fonts.medium, color: white(0.84) },
   badge: {
     paddingHorizontal: 10,

@@ -15,9 +15,12 @@ import { ZONE, type PreviewZoneModel } from "./zoneModel";
  * l'échange en fondu bref (`useSwap` : il sort, change invisible, rentre) ;
  * les détails du même titre (synopsis, genres) s'y posent sur place.
  *
- * `room` : sous le héros de l'Accueil, le texte remonte au-dessus de ses
- * boutons et se resserre (synopsis sur deux lignes, logo moins haut) — tout
- * tient dans la zone.
+ * `heroRoom` : sous le héros, le texte remonte au-dessus de ses boutons et se
+ * resserre (logo moins haut, synopsis sur deux lignes, une avec une raison).
+ * La méta tient sur UNE ligne (coupée à droite, jamais d'orphelin à la ligne) :
+ * le gabarit est fixe, et le bloc ne dépasse jamais la marge sûre du haut — il
+ * est calé en bas, et ce qui ne tiendrait pas est coupé (lot 1 du testeur :
+ * une méta sur deux lignes poussait le surtitre hors de l'écran).
  */
 
 /** Le titre écrit (faute de logo) : deux lignes au plus, sans rétrécir. */
@@ -29,10 +32,13 @@ function titleSize(title: string, compact: boolean): number {
 export const ZoneText = memo(function ZoneText({ model, heroRoom }: { model: PreviewZoneModel; heroRoom: boolean }) {
   const { shown, progress } = useSwap(model.key, model, PREVIEW_ZONE_FADE.textMs, PREVIEW_ZONE_FADE.textMs);
   const fade = useAnimatedStyle(() => ({ opacity: progress.value }));
-  const compact = heroRoom || Boolean(shown.reason || shown.kicker);
+  const withReason = Boolean(shown.reason || shown.kicker);
+  const compact = heroRoom || withReason;
   const bottom = heroRoom ? ZONE.bottom + ZONE.heroActions + ZONE.heroActionsGap : ZONE.bottom;
+  const synopsisLines = heroRoom ? (shown.reason ? 1 : 2) : withReason ? 2 : 3;
   return (
     <Animated.View style={[styles.block, { bottom }, fade]}>
+      <View style={styles.stack}>
       {shown.kicker || shown.reason ? (
         <View style={styles.reason}>
           {shown.kicker ? <Text style={text.kicker} numberOfLines={1}>{shown.kicker}</Text> : null}
@@ -48,19 +54,22 @@ export const ZoneText = memo(function ZoneText({ model, heroRoom }: { model: Pre
         title={shown.title}
         logoUri={shown.logoUri}
         maxWidth={shown.logoUri ? 560 : ZONE.textWidth}
-        maxHeight={compact ? 96 : 124}
+        maxHeight={heroRoom ? 76 : compact ? 104 : 120}
         fontSize={titleSize(shown.title, compact)}
       />
-      {shown.meta.length > 0 ? <MetaLine items={shown.meta} /> : null}
+      {shown.meta.length > 0 ? <MetaLine items={shown.meta} singleLine /> : null}
       {shown.synopsis ? (
-        <Text style={[text.body, styles.synopsis]} numberOfLines={heroRoom ? 2 : 3}>{shown.synopsis}</Text>
+        <Text style={[text.body, styles.synopsis]} numberOfLines={synopsisLines}>{shown.synopsis}</Text>
       ) : null}
+      </View>
     </Animated.View>
   );
 });
 
 const styles = StyleSheet.create({
-  block: { position: "absolute", left: ZONE.left, width: ZONE.textWidth, gap: 14 },
+  // De la marge sûre du haut jusqu'à `bottom` : calé en bas, rien ne dépasse en haut.
+  block: { position: "absolute", left: ZONE.left, top: ZONE.top, width: ZONE.textWidth, justifyContent: "flex-end", overflow: "hidden" },
+  stack: { gap: 12 },
   reason: { gap: 8 },
   reasonLine: { flexDirection: "row", alignItems: "center", gap: 10 },
   reasonText: { ...fonts.semibold, fontSize: 25, color: white(0.92), flexShrink: 1 },

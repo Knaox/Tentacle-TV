@@ -11,6 +11,10 @@ import { motionTo } from "../motion/motion";
  * fois CHARGÉE : jamais un noir entre deux fonds. Préchargée par la page
  * (`useCardPreviewWarm`), elle est là au focus même.
  *
+ * Revenir à un fond resté chargé sur le calque de derrière (A → B → A) ne
+ * recharge rien : l'image y est déjà, elle entre aussitôt — sans cela, son
+ * `onLoad` ne revenait jamais et le fond restait figé (lot 1 du testeur).
+ *
  * Un changement qui arrive pendant un fondu attend sa fin, et seul le DERNIER
  * passe : une rafale de flèches ne fait pas défiler dix fonds empilés, la zone
  * rattrape le focus dès qu'il se pose. Seule l'opacité s'anime.
@@ -36,6 +40,8 @@ export const ZoneBackdrop = memo(function ZoneBackdrop({ uri }: { uri: string | 
   const latest = useRef(uri);
   latest.current = uri;
   const busy = useRef(false);
+  // L'image chargée de chaque calque.
+  const loaded = useRef<[string | null, string | null]>([null, null]);
 
   const begin = useCallback(() => {
     if (busy.current) return;
@@ -47,6 +53,8 @@ export const ZoneBackdrop = memo(function ZoneBackdrop({ uri }: { uri: string | 
     busy.current = true;
     (target === 0 ? opacity0 : opacity1).value = 0;
     setState({ ...current, uris: target === 0 ? [next, current.uris[1]] : [current.uris[0], next], incoming: target });
+    // Déjà chargée sur ce calque : aucun `onLoad` ne viendra, elle entre tout de suite.
+    if (loaded.current[target] === next) requestAnimationFrame(() => fadeIn.current(target));
   }, [opacity0, opacity1]);
 
   const settle = useCallback(
@@ -62,8 +70,9 @@ export const ZoneBackdrop = memo(function ZoneBackdrop({ uri }: { uri: string | 
   useLayoutEffect(begin, [uri, begin]);
 
   const onLoaded = useCallback(
-    (layer: Layer) => {
-      if (live.current.incoming !== layer) return;
+    (layer: Layer, uri: string) => {
+      loaded.current[layer] = uri;
+      if (live.current.incoming !== layer || live.current.uris[layer] !== uri) return;
       (layer === 0 ? opacity0 : opacity1).value = motionTo(1, PREVIEW_ZONE_FADE.backdropMs, reduced, (finished) => {
         "worklet";
         if (finished) runOnJS(settle)(layer);
@@ -71,14 +80,21 @@ export const ZoneBackdrop = memo(function ZoneBackdrop({ uri }: { uri: string | 
     },
     [opacity0, opacity1, reduced, settle],
   );
+  const fadeIn = useRef<(layer: Layer) => void>(() => undefined);
+  fadeIn.current = (layer) => {
+    const uri = live.current.uris[layer];
+    if (uri) onLoaded(layer, uri);
+  };
   // Une image qui ne vient pas : la précédente reste, la suivante pourra passer.
   const onFailed = useCallback(
     (layer: Layer) => {
       if (live.current.incoming !== layer) return;
       busy.current = false;
       setState((s) => ({ ...s, incoming: null }));
+      // Le dernier fond demandé entre-temps passe à son tour.
+      requestAnimationFrame(begin);
     },
-    [],
+    [begin],
   );
 
   // Le calque qui entre (ou qui se voit) au-dessus.
@@ -97,11 +113,13 @@ const BackdropLayer = memo(function BackdropLayer({ layer, uri, opacity, onLoade
   layer: Layer;
   uri: string | null;
   opacity: SharedValue<number>;
-  onLoaded: (layer: Layer) => void;
+  onLoaded: (layer: Layer, uri: string) => void;
   onFailed: (layer: Layer) => void;
 }) {
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const onLoad = useCallback(() => onLoaded(layer), [onLoaded, layer]);
+  const onLoad = useCallback(() => {
+    if (uri) onLoaded(layer, uri);
+  }, [onLoaded, layer, uri]);
   const onError = useCallback(() => onFailed(layer), [onFailed, layer]);
   if (!uri) return null;
   return (

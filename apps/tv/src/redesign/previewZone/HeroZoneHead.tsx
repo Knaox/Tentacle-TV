@@ -20,10 +20,11 @@ import { colors, white } from "../theme/tokens";
  * calque, hors de la liste : rien ne les recouvre.
  *
  * Un bouton focalisé le dit à la zone (`usePreviewZoneHero`) : elle remet le
- * titre mis en avant. Quand une carte a la zone, les boutons s'effacent —
- * jusqu'à `SWAP_FLOOR`, invisibles mais encore focalisables : HAUT depuis la
- * première rangée y mène toujours (une opacité nulle les rendrait cachés pour
- * tvOS).
+ * titre mis en avant. Quand une carte a la zone, les boutons sont VOILÉS
+ * (`veiled` : focalisables à leur place, rien de dessiné — le verre natif
+ * ignorait l'opacité, ils restaient en fantôme) et la rangée s'estompe
+ * jusqu'à `SWAP_FLOOR`, jamais à zéro : HAUT depuis la première rangée y mène
+ * toujours (une opacité nulle les rendrait cachés pour tvOS).
  */
 
 export interface HeroZoneHeadProps {
@@ -74,9 +75,9 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
   const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
     <Animated.View style={[styles.row, fade]}>
-      <PillButton variant="brand" {...hero.primary} onPress={onPrimary} onLongPress={onLongPress} onFocusChange={onFocusChange} />
+      <PillButton variant="brand" {...hero.primary} veiled={!shown} onPress={onPrimary} onLongPress={onLongPress} onFocusChange={onFocusChange} />
       {hero.secondary ? (
-        <PillButton variant="glass" {...hero.secondary} onPress={onSecondary} onLongPress={onLongPress} onFocusChange={onFocusChange} />
+        <PillButton variant="glass" {...hero.secondary} veiled={!shown} onPress={onSecondary} onLongPress={onLongPress} onFocusChange={onFocusChange} />
       ) : null}
       {hero.listToggle ? (
         <RoundButton
@@ -85,6 +86,7 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
           label={hero.listToggle.label}
           active={hero.listToggle.active}
           focusKey={hero.listToggle.focusKey}
+          veiled={!shown}
           onPress={onToggleList}
           onLongPress={onLongPress}
           onFocusChange={onFocusChange}

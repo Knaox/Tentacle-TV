@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
 import { PREVIEW_ZONE_FADE } from "@tentacle-tv/tv-core";
-import { SoftGradient } from "../background/SoftGradient";
+import { SoftGradient, STAGE_SIZE } from "../background/SoftGradient";
 import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
 import { scrim } from "../theme/tokens";
@@ -39,6 +39,8 @@ export interface PreviewZoneViewProps {
 }
 
 const { width: MEDIA_W, height: MEDIA_H } = ZONE.media;
+/** La hauteur d'une ligne d'indice (`ZoneRemoteHint`, comme `CardHoldHint`). */
+const HINT_HEIGHT = 26;
 
 export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, video, videoShown, remote }: PreviewZoneViewProps) {
   const reduced = useReducedMotion();
@@ -52,6 +54,9 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
   if (remote) lastRemote.current = remote;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {/* Le haut de la scène en NOIR, sur toute la largeur, qui s'efface vers le bas sur le fond de la
+          page : le fondu du fond et de la vidéo y aboutit sans arête (ni à gauche du fond, ni sous lui). */}
+      <SoftGradient width={STAGE_SIZE.width} height={STAGE_SIZE.height} colors={[scrim(1), scrim(1), scrim(0)]} locations={[0, 0.5, 0.86]} />
       <View style={styles.media}>
         <ZoneBackdrop uri={model?.backdropUri ?? null} />
         <Animated.View style={[StyleSheet.absoluteFill, videoFade]}>{video}</Animated.View>
@@ -64,7 +69,8 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
         />
-        <SoftGradient width={MEDIA_W} height={MEDIA_H} colors={[scrim(0), scrim(0.6), scrim(1)]} locations={[0.36, 0.62, 1]} />
+        {/* Le bas fini au noir AVANT le bord (vers 640), là où le voile de la scène est encore presque plein. */}
+        <SoftGradient width={MEDIA_W} height={MEDIA_H} colors={[scrim(0), scrim(0.6), scrim(1)]} locations={[0.34, 0.6, 0.88]} />
       </View>
       {model ? <ZoneText model={model} heroRoom={heroRoom} /> : null}
       <Reveal shown={remote !== null} style={styles.hint}>
@@ -76,5 +82,7 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
 
 const styles = StyleSheet.create({
   media: { position: "absolute", top: 0, right: 0, width: MEDIA_W, height: MEDIA_H, overflow: "hidden" },
-  hint: { position: "absolute", right: ZONE.right, top: ZONE.height - ZONE.bottom - 26 },
+  // Sur la ligne du bas de la zone — celle des boutons du héros, centrée sur eux : « Maintenir OK »
+  // (à droite des boutons) et Lecture/Pause (à droite de la zone) ne font qu'une ligne.
+  hint: { position: "absolute", right: ZONE.right, top: ZONE.height - ZONE.bottom - (ZONE.heroActions + HINT_HEIGHT) / 2 },
 });
