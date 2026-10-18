@@ -6,6 +6,8 @@ import {
   BELOW_ZONE_VIEWPORT,
   PREVIEW_STAGE_HEIGHT,
   PREVIEW_ZONE_HEIGHT,
+  PREVIEW_ZONE_MEDIA,
+  PREVIEW_ZONE_MEDIA_LEFT,
   PREVIEW_ZONE_VEIL_FADE,
   belowZoneBottomRoom,
   belowZoneFrameCap,
@@ -101,5 +103,16 @@ describe("previewZoneVeilStops — aucune arête sous le fond de la zone", () =>
 
   it("jamais au-delà de la scène", () => {
     expect(previewZoneVeilStops(1000)).toEqual([0, 1000 / 1080, 1]);
+  });
+});
+
+describe("PREVIEW_ZONE_MEDIA — rien de la page ne passe sur l'image", () => {
+  it("le fond et la vidéo tiennent dans la zone, en haut à droite", () => {
+    expect(PREVIEW_ZONE_MEDIA.height).toBeLessThanOrEqual(PREVIEW_ZONE_HEIGHT);
+    expect(PREVIEW_ZONE_MEDIA_LEFT + PREVIEW_ZONE_MEDIA.width).toBe(1920);
+  });
+
+  it("le voile est plein jusqu'au bas de la zone : la page commence sur le noir", () => {
+    expect(previewZoneVeilStops(PREVIEW_ZONE_MEDIA.height)[1] * PREVIEW_STAGE_HEIGHT).toBe(PREVIEW_ZONE_HEIGHT);
   });
 });

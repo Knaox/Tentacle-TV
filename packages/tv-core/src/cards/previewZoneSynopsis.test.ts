@@ -51,14 +51,13 @@ describe("synopsisBudget — la place mesurée", () => {
   });
 });
 
-describe("previewZoneWatching — la zone s'efface devant la vidéo", () => {
-  it("seulement quand la vidéo se montre et joue", () => {
-    expect(previewZoneWatching({ videoShown: true, paused: false })).toBe(true);
-    expect(previewZoneWatching({ videoShown: true, paused: true })).toBe(false);
-    expect(previewZoneWatching({ videoShown: false, paused: false })).toBe(false);
+describe("previewZoneWatching — la version allégée pendant la vidéo", () => {
+  it("dès que la vidéo se montre, pause comprise", () => {
+    expect(previewZoneWatching({ videoShown: true })).toBe(true);
+    expect(previewZoneWatching({ videoShown: false })).toBe(false);
   });
 
-  it("se retire plus posément qu'il ne revient", () => {
+  it("le repos cède plus posément qu'il ne revient", () => {
     expect(previewZoneWatchingMs(true)).toBe(PREVIEW_ZONE_PLAYBACK.recedeMs);
     expect(previewZoneWatchingMs(false)).toBeLessThan(previewZoneWatchingMs(true));
   });

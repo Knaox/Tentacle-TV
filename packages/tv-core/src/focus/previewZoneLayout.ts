@@ -34,6 +34,20 @@ export const PREVIEW_STAGE_HEIGHT = 1080;
 /** La zone de l'aperçu : 40 % de la hauteur de l'écran, en haut. */
 export const PREVIEW_ZONE_HEIGHT = 432;
 
+/**
+ * Le FOND et la VIDÉO de la zone : en haut à droite, et TOUT ENTIERS dans la
+ * zone — leur bas est celui de la zone. Retour de Damien (18/10, sur son
+ * Apple TV) : quand ils débordaient sous la zone (720 de haut), les cartes de
+ * la première rangée ou ligne masquaient le bas de la bande-annonce et du
+ * fond. Rien de la page ne passe sur l'image : elle se cadre au centre
+ * (« cover ») dans cette bande 1280 × 432, et se raccorde au noir de la scène
+ * à gauche et en bas, dans ses propres bords.
+ */
+export const PREVIEW_ZONE_MEDIA = { width: 1280, height: PREVIEW_ZONE_HEIGHT } as const;
+
+/** Le bord gauche du fond et de la vidéo, sur la scène (1920 de large). */
+export const PREVIEW_ZONE_MEDIA_LEFT = 1920 - PREVIEW_ZONE_MEDIA.width;
+
 /** La fenêtre de la page, sous la zone. */
 export const BELOW_ZONE_VIEWPORT = PREVIEW_STAGE_HEIGHT - PREVIEW_ZONE_HEIGHT;
 
@@ -82,8 +96,8 @@ export function belowZoneBottomRoom(lastSectionHeight: number, viewport: number 
 export const PREVIEW_ZONE_VEIL_FADE = 280;
 
 /**
- * Le VOILE NOIR de la scène sous la zone, plein jusqu'au bas du fond et de la
- * vidéo de la zone (`mediaHeight`, qui finissent en noir OPAQUE), puis effacé
+ * Le VOILE NOIR de la scène, plein jusqu'au bas du fond et de la vidéo de la
+ * zone (`mediaHeight` — `PREVIEW_ZONE_MEDIA`, qui finissent en noir), puis effacé
  * sur `fade` points vers le fond de la page. Plus tôt, la lumière de la page
  * (ses couleurs, vives dans une grille d'affiches) passait à côté et sous ce
  * noir opaque : des arêtes nettes au bord gauche du fond et sous lui (relevé
