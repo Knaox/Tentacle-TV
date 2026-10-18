@@ -25,26 +25,34 @@
  *   ligne dans la colonne retenue (`correct`) ;
  * - la dernière ligne, plus courte, est entrée par sa dernière affiche
  *   (GR-3) : ce focus-là est juste, et sa colonne devient la retenue ;
- * - sorti de la grille (les filtres, le rail), la colonne reste retenue tant
- *   que le mouvement dure — HAUT tenu jusqu'en haut, tvOS traverse les
- *   filtres au bout de sa course et revient sur la première ligne (relevé du
- *   18/10 : grid:0 au lieu de grid:3) ; la grille posée avec le focus HORS
- *   d'elle, plus rien n'est retenu : on y reviendra au plus proche.
+ * - sorti de la grille (les filtres, le rail), la colonne reste retenue si le
+ *   focus y REVIENT vite (`GRID_COLUMN_RETURN_MS`) — HAUT tenu jusqu'en haut,
+ *   tvOS traverse les filtres au bout de sa course et revient sur la première
+ *   ligne (relevé du 18/10 : grid:0 au lieu de grid:3), même après une pause
+ *   où la grille paraît posée (une machine chargée) ; resté plus longtemps
+ *   dehors, c'est une nouvelle entrée : au plus proche (GR-3).
  *
  * Module pur : l'adaptateur dit les focus et la grille posée, puis réclame la
  * clé rendue.
  */
 
 export interface GridColumnHoldState {
-  /** La colonne retenue ; `null` : aucune (hors de la grille, ou pas encore entrée). */
+  /** La colonne retenue ; `null` : aucune (pas encore entrée). */
   column: number | null;
-  /** Le dernier focus de la grille (son index) : sa ligne, et ce qu'on corrige. */
+  /** Le dernier focus de la grille (son index) : sa ligne, et ce qu'on corrige ; `null` : hors d'elle. */
   focused: number | null;
-  /** Le focus est sorti de la grille depuis : le mouvement n'est peut-être pas fini. */
-  outside: boolean;
+  /** Quand le focus est sorti de la grille ; `null` : il y est. */
+  leftAt: number | null;
 }
 
-export const GRID_COLUMN_HOLD_START: GridColumnHoldState = { column: null, focused: null, outside: false };
+export const GRID_COLUMN_HOLD_START: GridColumnHoldState = { column: null, focused: null, leftAt: null };
+
+/**
+ * Revenu dans la grille moins de tant après en être sorti, c'est le même
+ * mouvement (tvOS au bout d'un HAUT tenu) : la colonne tient. Plus tard, une
+ * nouvelle entrée (BAS depuis une pastille, voulu).
+ */
+export const GRID_COLUMN_RETURN_MS = 1_500;
 
 export interface GridColumnHoldStep {
   state: GridColumnHoldState;
@@ -61,32 +69,32 @@ function inColumn(index: number, column: number, perLine: number, count: number)
 const perLineOf = (columns: number) => Math.max(1, Math.floor(columns));
 
 /**
- * Le focus se pose : sur l'affiche `index` de la grille, ou hors d'elle
- * (`null`). `columns`, `count` : la grille telle qu'elle est. Rien ne se
+ * Le focus se pose, à `at` : sur l'affiche `index` de la grille, ou hors
+ * d'elle (`null`). `columns`, `count` : la grille telle qu'elle est. Rien ne se
  * corrige ici : la grille bouge encore.
  */
-export function gridColumnHoldFocus(state: GridColumnHoldState, index: number | null, columns: number, count: number): GridColumnHoldState {
+export function gridColumnHoldFocus(state: GridColumnHoldState, index: number | null, columns: number, count: number, at: number): GridColumnHoldState {
   if (index === null || index < 0 || index >= count) {
-    return state.column === null ? GRID_COLUMN_HOLD_START : { ...state, focused: null, outside: true };
+    return { ...state, focused: null, leftAt: state.leftAt ?? at };
   }
   const perLine = perLineOf(columns);
   const column = index % perLine;
-  // L'entrée dans la grille : la colonne voulue, c'est celle-ci.
-  if (state.column === null) return { column, focused: index, outside: false };
-  // De retour dans la grille au cours du même mouvement : la colonne reste celle d'avant.
-  if (state.outside || state.focused === null) return { ...state, focused: index, outside: false };
+  const entry = { column, focused: index, leftAt: null };
+  // L'entrée dans la grille, ou le retour après un vrai séjour dehors : la colonne voulue, c'est celle-ci.
+  if (state.column === null) return entry;
+  if (state.leftAt !== null) return at - state.leftAt <= GRID_COLUMN_RETURN_MS ? { ...state, focused: index, leftAt: null } : entry;
+  if (state.focused === null) return entry;
   // Un pas dans la même ligne : la colonne voulue change.
-  if (Math.floor(state.focused / perLine) === Math.floor(index / perLine)) return { column, focused: index, outside: false };
+  if (Math.floor(state.focused / perLine) === Math.floor(index / perLine)) return entry;
   return { ...state, focused: index };
 }
 
 /**
  * La grille est POSÉE (`gridPreviewSettleDelay`) : le dernier focus est rendu à
- * la colonne retenue s'il le faut ; posée avec le focus hors de la grille, on
- * oublie la colonne.
+ * la colonne retenue s'il le faut ; hors de la grille, rien (le retour en
+ * décidera, `gridColumnHoldFocus`).
  */
 export function gridColumnHoldSettle(state: GridColumnHoldState, columns: number, count: number): GridColumnHoldStep {
-  if (state.outside) return { state: GRID_COLUMN_HOLD_START, correct: null };
   if (state.column === null || state.focused === null || state.focused >= count) return { state, correct: null };
   const perLine = perLineOf(columns);
   const target = inColumn(state.focused, state.column, perLine, count);

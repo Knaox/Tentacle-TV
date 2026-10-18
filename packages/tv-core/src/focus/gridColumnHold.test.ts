@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { GRID_COLUMN_HOLD_START, gridColumnHoldFocus, gridColumnHoldSettle, type GridColumnHoldState } from "./gridColumnHold";
+import { GRID_COLUMN_HOLD_START, GRID_COLUMN_RETURN_MS, gridColumnHoldFocus, gridColumnHoldSettle, type GridColumnHoldState } from "./gridColumnHold";
 
 /** Une grille de 5 colonnes et 1 200 affiches (le jeu « grande bibliothèque » du banc : 420 → 425 → 430). */
 const COLUMNS = 5;
 const COUNT = 1_200;
 
-/** Une suite de focus (`null` : hors de la grille), depuis `state`. */
-const walk = (state: GridColumnHoldState, indexes: Array<number | null>, count = COUNT) =>
-  indexes.reduce((s, index) => gridColumnHoldFocus(s, index, COLUMNS, count), state);
+/** Une suite de focus (`null` : hors de la grille), un toutes les 100 ms depuis `from`, depuis `state`. */
+const walk = (state: GridColumnHoldState, indexes: Array<number | null>, count = COUNT, from = 0) =>
+  indexes.reduce((s, index, i) => gridColumnHoldFocus(s, index, COLUMNS, count, from + i * 100), state);
 const settle = (state: GridColumnHoldState, count = COUNT) => gridColumnHoldSettle(state, COLUMNS, count);
 
 describe("gridColumnHold — la colonne tenue pas à pas", () => {
@@ -62,6 +62,13 @@ describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
     expect(settle(state).correct).toBe(3);
   });
 
+  it("même si la grille paraît posée pendant le passage dans les filtres (machine chargée), le retour rapide garde la colonne", () => {
+    let state = walk(GRID_COLUMN_HOLD_START, [123, 60, null]);
+    state = settle(state).state; // une pause de plus de 300 ms, le focus dans les filtres
+    state = gridColumnHoldFocus(state, 0, COLUMNS, COUNT, 900);
+    expect(settle(state).correct).toBe(3);
+  });
+
   it("relevé intermittent : une longue séance, puis HAUT tenu depuis grid:259 (col 5) → grid:4, jamais grid:0", () => {
     // grid:13 → BAS → 168 → HAUT jusqu'en haut (par les filtres) → corrigé en 3 → BAS, DROITE → 9 → BAS → 259.
     let state = walk(GRID_COLUMN_HOLD_START, [13, 168, null, 0]);
@@ -74,16 +81,16 @@ describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
     expect(settle(state).correct).toBe(4);
   });
 
-  it("la grille posée avec le focus DANS les filtres : on y reste, plus rien n'est retenu — on reviendra au plus proche", () => {
+  it("arrêté dans les filtres : rien à corriger ; BAS plus tard depuis une pastille est une nouvelle entrée, au plus proche", () => {
     const stopped = settle(walk(GRID_COLUMN_HOLD_START, [123, 60, null]));
     expect(stopped.correct).toBeNull();
-    expect(stopped.state).toEqual(GRID_COLUMN_HOLD_START);
-    // BAS depuis la pastille : l'affiche au plus proche, gardée telle quelle.
-    expect(settle(walk(stopped.state, [1])).correct).toBeNull();
+    const back = gridColumnHoldFocus(stopped.state, 1, COLUMNS, COUNT, 200 + GRID_COLUMN_RETURN_MS + 1);
+    expect(back.column).toBe(1);
+    expect(settle(back).correct).toBeNull();
   });
 
   it("un index hors du catalogue vaut hors de la grille", () => {
-    expect(walk(GRID_COLUMN_HOLD_START, [2, COUNT]).outside).toBe(true);
+    expect(walk(GRID_COLUMN_HOLD_START, [2, COUNT]).leftAt).not.toBeNull();
   });
 });
 

@@ -7,7 +7,8 @@ import type { FocusStore } from "./focusStore";
  * `focus/gridColumnHold.ts`, GR-7 bis) : l'applicateur dit à la règle chaque
  * focus de l'écran, et, la grille posée (le rappel rendu, que la vue appelle :
  * `gridSettlePort`), réclame l'affiche qu'elle rend — dans la ligne où l'on
- * est. Ni durée ni seuil ici ; les mêmes gestes sur Android TV.
+ * est. Ni durée ni seuil ici (l'heure du focus seulement) ; les mêmes gestes
+ * sur Android TV.
  */
 export function useGridColumnHold(focus: FocusStore, count: number, columns: number, prefix: string = GRID_KEY_PREFIX): () => void {
   const live = useRef({ count, columns, prefix });
@@ -18,7 +19,7 @@ export function useGridColumnHold(focus: FocusStore, count: number, columns: num
       focus.subscribe((key, focused) => {
         if (!focused) return;
         const { count: total, columns: perLine, prefix: keys } = live.current;
-        state.current = gridColumnHoldFocus(state.current, gridIndexOf(key, keys), perLine, total);
+        state.current = gridColumnHoldFocus(state.current, gridIndexOf(key, keys), perLine, total, Date.now());
       }),
     [focus],
   );
