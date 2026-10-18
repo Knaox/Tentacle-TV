@@ -3,7 +3,7 @@
 // rejouables sans simulateur.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { THRESHOLDS, summarize, verdicts } from "../perf/analyze.mjs";
+import { THRESHOLDS, course, summarize, verdicts } from "../perf/analyze.mjs";
 
 const T0 = 1_000_000;
 const thread = (fps60, worst) => ({ fps60, dropped: 0, hitches: 0, long: worst ? [[T0, worst]] : [] });
@@ -100,4 +100,24 @@ test("mémoire : le tas JS jusqu'à +15 % de dev est vert, au-delà rouge, sans 
 test("une pastille ou un raccourci focalisé n'attend ni fond ni vidéo", () => {
   const [pill] = summarize("latence", { dwells: [{ label: "accueil, filtre", keys: ["down"], endFocus: "filter:remove", report: report({ focus: [[T0, 1]] }) }] });
   assert.deepEqual(verdicts("latence", [pill]).filter((v) => !v.ok), []);
+});
+
+test("course d'une rangée : 50 %, 90 %, posée, et un rebond se voit", () => {
+  const frames = (xs) => xs.map((x, k) => [T0 + k * 16, x, 500, 300, 200]);
+  const watched = [{ tag: 1, key: "resume:0" }];
+  // Un ressort critique : 430 pt vers la gauche, sans dépasser.
+  const smooth = [0, -60, -140, -220, -290, -340, -380, -405, -418, -425, -428, -430, -430, -430];
+  const c = course(report({ watched, ui: { ...thread(60, 0), trace: frames(smooth) } }), T0);
+  assert.equal(c.totalPt, -430);
+  assert.equal(c.t50, 48);
+  assert.equal(c.t90, 112);
+  assert.equal(c.settledMs, 176);
+  assert.equal(c.overshootPt, 0);
+  assert.equal(c.reversals, 0);
+  const bounce = [0, -200, -400, -460, -440, -430, -430];
+  const b = course(report({ watched, ui: { ...thread(60, 0), trace: frames(bounce) } }), T0);
+  assert.equal(b.overshootPt, 30);
+  assert.equal(b.reversals, 1);
+  const still = course(report({ watched, ui: { ...thread(60, 0), trace: frames([0, 0.4, 0.2, 0]) } }), T0);
+  assert.equal(still.moved, false);
 });
