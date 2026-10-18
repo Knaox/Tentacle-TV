@@ -119,7 +119,10 @@ static const CGFloat kLateStayDistance = 64;
 
 /// Annule une animation de défilement de tvOS en reposant, sans animation, la position du ressort
 /// — et celles qu'il aurait posées sur le calque de la rangée (le ressort, lui, n'en pose aucune :
-/// il écrit `contentOffset` image par image).
+/// il écrit `contentOffset` image par image). Relevé du 18/10 : rien d'autre ne vit sur CE calque
+/// (la ScrollView de `MediaRow`) — ni fondu ni recul de rangée (Reanimated écrit des propriétés,
+/// sur les cartes), ni animation d'entrée, ni parallaxe (celle de la carte focalisée) ; les
+/// sous-calques ne sont pas touchés. Une animation posée un jour sur ce calque serait coupée ici.
 - (void)cancelForeignAnimationIn:(UIScrollView *)scroll
 {
   if (_link == nil || scroll == nil) {
