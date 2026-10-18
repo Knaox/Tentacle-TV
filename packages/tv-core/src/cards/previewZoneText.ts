@@ -1,8 +1,11 @@
+import { PREVIEW_ZONE_HEIGHT } from "../focus/previewZoneLayout";
+
 /**
- * Le TEXTE de la zone d'aperçu dans la hauteur de la zone (tv-core
- * `focus/previewZoneLayout.ts`, 432 sur toutes les pages) : ce qui tient
- * au-dessus de son bord, ou des boutons du héros, selon ce que le titre a
- * (surtitre, raison, synopsis).
+ * Le TEXTE de la zone d'aperçu : ce qui tient dans la zone — UNE hauteur,
+ * `PREVIEW_ZONE_HEIGHT`, la même sur toutes les pages (ce sont les cartes des
+ * rangées qui se plafonnent dessous, `belowZoneFrameCap`) — au-dessus de son
+ * bord, ou des boutons du héros, selon ce que le titre a (surtitre, raison,
+ * synopsis).
  *
  * Le texte est calé en bas de la zone — au-dessus de son bord, ou des boutons
  * du héros — et ne dépasse jamais la marge sûre du haut. Quand la place
@@ -33,8 +36,6 @@ export const PREVIEW_ZONE_TEXT = {
 } as const;
 
 export interface PreviewZoneTextInput {
-  /** La hauteur de la zone. */
-  height: number;
   /** Le héros a la zone : le texte laisse la place de ses boutons. */
   hero: boolean;
   kicker: boolean;
@@ -56,7 +57,7 @@ const T = PREVIEW_ZONE_TEXT;
 
 export function previewZoneTextLayout(input: PreviewZoneTextInput): PreviewZoneTextLayout {
   const bottom = input.hero ? T.bottom + T.heroActions + T.heroActionsGap : T.bottom;
-  const available = input.height - T.safeTop - bottom;
+  const available = PREVIEW_ZONE_HEIGHT - T.safeTop - bottom;
   const head = (input.kicker ? T.kicker : 0) + (input.reason ? T.reason : 0) + (input.kicker && input.reason ? T.headGap : 0);
   const withHead = head > 0;
   const logo = input.hero ? { max: 76, min: 60 } : { max: withHead ? 104 : 120, min: 80 };
