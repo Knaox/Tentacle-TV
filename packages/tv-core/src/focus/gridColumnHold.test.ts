@@ -103,6 +103,24 @@ describe("gridColumnHold — les bords", () => {
     expect(focus(focus(GRID_COLUMN_HOLD_START, 13, 17).state, 15, 17).correct).toBe(16);
   });
 
+  it("HAUT tenu jusqu'en haut : tvOS traverse les filtres puis revient sur la 1re ligne — la colonne tient (grid:123 → grid:3)", () => {
+    let state = key(enter(123), "haut", "start").state;
+    state = focus(state, 60).state;
+    state = focus(state, null).state; // les filtres, au bout de la course
+    expect(state.column).toBe(3);
+    const back = focus(state, 0);
+    expect(back.correct).toBeNull(); // pas pendant le maintien
+    expect(key(back.state, "haut", "end").correct).toBe(3);
+  });
+
+  it("lâché dans les filtres au bout d'un HAUT tenu : on y reste, plus rien n'est retenu", () => {
+    let state = key(enter(123), "haut", "start").state;
+    state = focus(state, null).state;
+    const released = key(state, "haut", "end");
+    expect(released.correct).toBeNull();
+    expect(released.state).toEqual(GRID_COLUMN_HOLD_START);
+  });
+
   it("hors de la grille (filtres, rail) : plus rien n'est retenu — on y revient au plus proche", () => {
     const out = focus(enter(2), null);
     expect(out.state).toEqual(GRID_COLUMN_HOLD_START);
