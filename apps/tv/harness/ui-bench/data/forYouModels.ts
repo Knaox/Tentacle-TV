@@ -1,7 +1,7 @@
 import { reasonToText, recoRowTitle, type RecoRowItem } from "@tentacle-tv/api-client";
 import { familyOfProviderId, i18n, titleKey } from "@tentacle-tv/shared";
 import { tvRecoServedCards, type TvRecoPageLike, type TvRecoShelf } from "@tentacle-tv/tv-core";
-import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
+import type { HeroModel } from "../../../src/redesign/hero/heroTypes";
 import type { ForYouFilterModel, ForYouShelfModel } from "../../../src/redesign/screens/forYou/ForYouView";
 import { remoteHint } from "../../../src/platform/input";
 import { absentCard, absentTrailerOf, tmdbPosterUri } from "../../../src/redesignWiring/cards/absentCards";

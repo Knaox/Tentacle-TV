@@ -1,6 +1,6 @@
 import { TV_STAGE } from "@tentacle-tv/theme";
 import type { CardModel } from "../cards/cardTypes";
-import type { HeroModel } from "../hero/HeroBanner";
+import type { HeroModel } from "../hero/heroTypes";
 import type { MetaItem } from "../hero/MetaLine";
 
 /**

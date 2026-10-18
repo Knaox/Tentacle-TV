@@ -1,5 +1,5 @@
 import { extractMediaQuality, formatCommunityRating, formatDuration, i18n, type MediaItem } from "@tentacle-tv/shared";
-import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
+import type { HeroModel } from "../../../src/redesign/hero/heroTypes";
 import type { MetaItem } from "../../../src/redesign/hero/MetaLine";
 import type { NavRailProps } from "../../../src/redesign/nav/NavRail";
 import type { BenchData } from "./benchData";
