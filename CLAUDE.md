@@ -732,7 +732,8 @@ sa première carte (`rowRewind.back`, jamais le défilement de tvOS : ~1,4 s).
 Sur Apple TV, une rangée de l'accueil et de « Pour vous » garde la carte focalisée
 au retrait de la rangée, jamais sous le rail (`FocusSection rowReveal` →
 `TentacleRowScroller.m`, qui corrige la cible de tvOS par tv-core `rowRevealOffset`,
-la règle d'Android).
+la règle d'Android) ; un pas ISOLÉ s'y joue sur le ressort de la page (tvOS ne bouge
+rien : son animateur traînait jusqu'à +1,15 s), une rafale reste à tvOS (défilement rapide).
 Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir, collection), chaque LIGNE
 est FIXE (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) : ni défilement, ni
 rotation, ni tête collée au rail, ni reprise ; GAUCHE/DROITE ne déplacent que le focus,
