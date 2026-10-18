@@ -3038,6 +3038,14 @@ celles à l'écran au démarrage de l'aperçu sont tenues tant que le focus
 reste dans la rangée de l'aperçu (`rowRewind.previewReveal`) — sinon HAUT
 retombait sur la première carte de la rangée d'où l'on venait (testeur, 17/10).
 
+**Le 18/10, la grande carte est retirée** : l'aperçu se joue dans une ZONE FIXE
+en haut de l'écran (CLAUDE.md, « Aperçu au focus » ; tv-core
+`cards/previewZone.ts`, `focus/previewZoneLayout.ts`). Tête de rangée
+(`trailerPreviewRowHead.ts`), glissement, poussage de la page et
+`rowRewind.previewReveal` n'existent plus : ce qui précède sur eux est de
+l'histoire. La règle 2 (une rangée sortie de l'écran revient au début, ses
+voisines immédiates gardées) reste.
+
 **La carte focalisée au retrait de la rangée** (17/10) : tvOS défile une
 rangée à SA marge (~80 pt du bord de la ScrollView) ; à gauche, sous le rail.
 `ios/TentacleTV/TentacleRowScroller.m` corrige la cible qu'il propose

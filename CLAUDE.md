@@ -705,8 +705,24 @@ sur la TV — tv-core `TV_TRAILER_PREVIEW_DELAYS`, décision de Damien) : une r�
 capacité : fonction purement client. Pendant l'aperçu, Lecture/Pause le met
 VRAIMENT en pause, et MAINTENUE coupe le son de l'aperçu seul (le réglage « Son
 des aperçus ») — tv-core `cards/previewRemote.ts` ; sur Android le maintien est
-reconstruit par `createAndroidTvReader` ; l'indice sous la carte :
-`CardPreviewHint`.
+reconstruit par `createAndroidTvReader` ; l'indice, en bas à droite de la zone :
+`ZoneRemoteHint`.
+**La zone** (tv-core `cards/previewZone.ts` décide QUOI et QUAND, sans rien dessiner) :
+le sujet est la carte focalisée, AUSSITÔT (0 ms : son fond et son titre au focus), gardée
+quand le focus part ailleurs (filtres, rail) — la zone ne se vide jamais sous les yeux ;
+sur l'Accueil et « Pour vous », le héros VIT dans la zone (`HeroZone`, ses boutons dans
+`section:hero`, atténués quand une carte a la zone, toujours atteints par HAUT ; sa
+rotation se suspend quand il n'a pas la zone) ; avant tout focus, le héros, sinon le
+repli de la page. Les détails (synopsis, genres, qualité) se lisent au focus TENU
+(`PREVIEW_ZONE_DETAILS_MS`, 300 ms : une rafale ne lit rien). Fondus d'opacité seulement
+(`PREVIEW_ZONE_FADE` : fond 200, texte 160, vidéo 360 en entrée, 180 en sortie) ; le fond
+passe en fondu croisé sur deux calques (`previewZoneBackdropLayer`), jamais un noir entre
+deux. UNE portée par page (`PreviewZoneScope`, posée par `BelowZonePage`) : la carte dit
+son focus (`useCardZoneFocus`, daté au rendu qui le constate), la zone lit le magasin ;
+une page couverte (fiche, grille par-dessus) coupe son aperçu et démonte son lecteur
+(`useIsFocused`) — un seul lecteur vivant. Vue : `redesign/previewZone/` (fond 1280 × 720
+en haut à droite, fondu vers le noir à gauche et en bas, texte à gauche) ; intégration :
+`redesignWiring/trailerPreview/TrailerZone.tsx`.
 **La page sous la zone** (tv-core `focus/previewZoneLayout.ts`, cadre
 `redesign/rows/BelowZonePage.tsx`) : la zone occupe le haut (`PREVIEW_ZONE_HEIGHT`,
 432 : 40 %), la page défile DESSOUS, dans sa fenêtre (648), jamais sous la zone — tvOS
@@ -716,8 +732,9 @@ focalisée se pose TOUJOURS au même endroit, juste sous la zone (`BELOW_ZONE_RE
 mode `anchor` de `FocusSection`, natif sur les deux plateformes), la première comme la
 dernière (marge du bas : `belowZoneBottomRoom`, mesurée sur la dernière section) ; le
 héros et l'en-tête d'une grille ramènent la page en haut. Seule une carte d'une page à
-zone demande et prépare l'aperçu (`useInPreviewZone` ; `useCardPreviewFocus`, la seule
-couture de la carte) : la recherche et la fiche n'en demandent pas. Une rangée sortie de
+zone demande et prépare l'aperçu (`useInPreviewZone` : sous une `PreviewZoneScope` ;
+`useCardPreviewFocus`, la seule couture de la carte, qui passe au port `useCardZoneFocus`) :
+la recherche et la fiche n'en demandent pas. Une rangée sortie de
 l'écran revient au début comme toute rangée de l'accueil (tv-core `focus/rowRewind.ts`,
 ses voisines immédiates gardées), et Retour l'y remet D'UN COUP, le focus aussitôt sur
 sa première carte (`rowRewind.back`, jamais le défilement de tvOS : ~1,4 s).
@@ -733,12 +750,13 @@ voisines). Les titres autour du focus se préparent d'avance (`trailers.previewW
 tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** : la cellule d'une carte garde TOUJOURS sa
 taille de repos (`CardShell` : plus de cellule qui s'élargit, de cible gardée à part ni
-de place du pied) — HAUT et BAS partent du centre de la carte ; la vidéo finie de sortir
-reste GARÉE, en pause, et son lecteur ne se démonte qu'au calme de la télécommande
-(400 ms sans intention) ou quand un autre aperçu prend la place (tv-core
-`cards/trailerPreviewPark.ts`) — jamais au milieu d'une rafale de flèches ; la
-session d'aperçu d'une carte ne se monte qu'après 250 ms de focus tenu, datée de
-l'arrivée du focus (`trailerPreviewDwell.ts`). Android : l'aperçu a
+de place du pied) — HAUT et BAS partent du centre de la carte. La zone a UN LECTEUR
+(`ZoneVideo`) dont seule la SOURCE change d'un titre à l'autre — une rafale de flèches ne
+crée ni ne détruit aucun lecteur ; la vidéo sortie reste montée en pause dans ce lecteur,
+démonté après `PREVIEW_ZONE_PLAYER_IDLE_MS` (30 s) sans aperçu ou dès que la page est
+couverte. La session d'aperçu d'un titre (`ZoneSession`, la machine du bureau, sans
+lecteur à elle) ne se monte qu'après 250 ms de focus tenu, datée de l'arrivée du focus
+(`trailerPreviewDwell.ts`). Android : l'aperçu a
 son PROPRE lecteur natif (`TentaclePreviewVideo`, `exoplayer/PreviewVideoView.kt` :
 la PlayerView sans contrôleur, une TextureView, aucun focus possible, UN ExoPlayer
 partagé par tous les aperçus, `PreviewPlayerPool`, relâché après 60 s sans aperçu) — celle de
@@ -747,7 +765,7 @@ départ de l'aperçu suivant) dont le bouton volait le focus de la carte ; l'él
 vidéo passe par l'adaptateur `platform/tvos/player/previewVideoElement`.
 Rythme : tv-core `cards/trailerPreviewTv.ts` ;
 vue : port `redesign/cards/trailerPreviewPort.tsx` ; intégration :
-`redesignWiring/trailerPreview/` (une session, la carte focalisée seulement) ;
+`redesignWiring/trailerPreview/` (une session, le sujet focalisé de la zone seulement) ;
 banc : scènes `apercu/*` du banc UI.
 
 ## Famille — un contrat, et le serveur décide de tout

@@ -673,8 +673,9 @@ gardée dont la vidéo AlloCiné a été relue (après un redémarrage, ou son
 
 ## Aperçu au focus — Apple TV et Android TV (2026-10-14)
 
-Le même aperçu que le bureau, sur les téléviseurs, avec la carte qui devient
-GRANDE (façon Netflix) pendant qu'il se joue. Même contrat, même capacité
+Le même aperçu que le bureau, sur les téléviseurs, joué dans une ZONE FIXE en
+haut de l'écran, façon Netflix (depuis le 18/10 ; avant, la carte devenait
+GRANDE — voir « La grande carte » plus bas). Même contrat, même capacité
 (`trailers.preview`), même machine (`reduceTrailerPreview`, shared) : seul le
 déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
 
@@ -693,9 +694,15 @@ déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
   Image du titre d'abord, la vidéo dessus, le logo (ou le titre) en bas sur un
   voile.
 - **Le port** : la vue ne sait rien de la vidéo (`redesign/cards/trailerPreviewPort.tsx`) ;
-  l'intégration (`redesignWiring/trailerPreview/`) fournit le crochet. Seule la
-  carte FOCALISÉE monte une session (`PreviewSession` : la requête, la
-  machine, la vidéo) — une rangée de vingt cartes n'en paie qu'une.
+  une portée par page (`PreviewZoneScope`), la carte n'y dit que son focus
+  (`useCardZoneFocus`), la page pose sa zone (`PreviewZoneSlot`) ; l'intégration
+  (`redesignWiring/trailerPreview/TrailerZone.tsx`) la fournit. Seul le sujet
+  FOCALISÉ de la zone monte une session (`ZoneSession` : la requête, la
+  machine, sans lecteur à elle) — une rangée de vingt cartes n'en paie qu'une.
+- **Le lecteur unique** (`ZoneVideo`) : seule sa source change d'un titre à
+  l'autre ; la vidéo sortie reste montée en pause, et le lecteur se démonte
+  après `PREVIEW_ZONE_PLAYER_IDLE_MS` (30 s) sans aperçu ou dès que la page est
+  couverte (`useIsFocused`).
 - **La vidéo** (`PreviewVideo`, react-native-video) : chargée cachée et en
   pause, lue au relais du serveur (HLS, départ à 4 s, ou MP4). AVPlayer sur
   Apple TV ; ExoPlayer en `TextureView` sur Android TV (seule à suivre
