@@ -36,6 +36,8 @@ function burstSummary(b) {
   const r = b.report;
   return {
     focusRate: focusRate(r.focus),
+    // Touche maintenue : du LÂCHER au dernier focus posé (la colonne rendue) ; négatif = posé avant le lâcher.
+    afterReleaseMs: b.releasedAt && r.focus.length ? r.focus[r.focus.length - 1][0] - b.releasedAt : null,
     label: b.label,
     endFocus: b.endFocus,
     sentMs: b.sentMs,

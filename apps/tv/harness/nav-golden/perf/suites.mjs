@@ -153,16 +153,20 @@ export const suites = {
   // nav et design : touches MAINTENUES — BAS puis HAUT 3 s dans la grande bibliothèque, DROITE 3 s dans une rangée longue.
   async maintenu(h) {
     const out = [];
+    // `releasedAt` : l'agent rend la main au LÂCHER de la touche ; le dernier focus après lui dit quand la colonne est rendue.
     const hold = async (label, gesture) => {
       await h.arm("fps");
       await h.keys([gesture]);
+      const releasedAt = Date.now();
       await h.sleep(1500);
       const report = await h.disarm();
-      out.push({ label, keys: 1, sentMs: 0, endFocus: (await h.obs()).focus, report });
+      out.push({ label, keys: 1, sentMs: 0, releasedAt, endFocus: (await h.obs()).focus, report });
     };
-    await startAt(h, GRID_START, [], "grid:");
-    await hold("grille, BAS maintenu 3 s", "holddown:3");
-    await hold("grille, HAUT maintenu 3 s", "holdup:3");
+    await startAt(h, GRID_START, ["right", "right"], "grid:");
+    await hold("grille, BAS maintenu 3 s (3e colonne)", "holddown:3");
+    await hold("grille, HAUT maintenu 3 s (3e colonne)", "holdup:3");
+    await hold("grille, BAS maintenu 6 s (3e colonne)", "holddown:6");
+    await hold("grille, HAUT maintenu 6 s (3e colonne)", "holdup:6");
     await startAt(h, HOME_START, ["down", "down"], "");
     await hold("accueil, DROITE maintenue 3 s", "holdright:3");
     return { bursts: out };
