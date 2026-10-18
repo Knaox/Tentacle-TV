@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { REPEAT_PACING } from "../input/repeatPacing";
-import { BURST_FOLLOW } from "./burstFollow";
+import { BURST_FOLLOW, ROW_RAPID_STEP_MS } from "./burstFollow";
 
 /**
  * Les règles de focus que le natif APPLIQUE au geste (la géométrie n'est
@@ -45,6 +45,12 @@ describe.runIf(existsSync(KOTLIN) && existsSync(OBJC))("les miroirs natifs des r
     const kotlin = read(join(KOTLIN, "HoldPacer.kt"));
     const read_ = [...kotlin.matchAll(/num\("(\w+)"\)/g)].map((m) => m[1]).sort();
     expect(read_).toEqual(Object.keys(REPEAT_PACING).sort());
+  });
+
+  it("les pas rapprochés d'une rangée : TentacleRowScroller.m les rend à tvOS au même seuil que rowStepIsRapid", () => {
+    const objc = read(join(OBJC, "TentacleRowScroller.m"));
+    const seconds = Number(objc.match(/static const CFTimeInterval kRapidStep = (\d+(?:\.\d+)?)/)?.[1]);
+    expect(seconds * 1000).toBeCloseTo(ROW_RAPID_STEP_MS, 6);
   });
 
   it("le segment d'un pas de tenue : RevealScroller.kt borne comme burstSegmentMs", () => {
