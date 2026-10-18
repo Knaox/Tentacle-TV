@@ -32,8 +32,9 @@ for (const suite of ["rafale-accueil", "rafale-grille", "maintenu", "pendant-ape
     if (Array.isArray(s)) {
       for (const x of s) {
         const lat = x.fondMs !== undefined ? ` fond ${x.fondSetMs ?? "∅"}/${x.fondMs ?? "∅"} ms · vidéo ${x.videoSetMs ?? "∅"}/${x.videoMs ?? "∅"} ms · ${x.jumps?.movements ?? "∅"} mouvement(s), immobile +${x.jumps?.settledAtMs ?? "∅"} ms · saut ${x.jumps ? `${x.jumps.maxStepPt}/${x.jumps.maxPt} pt${x.jumps.jumped ? ` (${x.jumps.key} à +${x.jumps.atMsAfterFocus} ms)` : ""}` : "∅"} ·` : "";
+        const release = x.afterReleaseMs != null ? ` lâcher → focus ${x.afterReleaseMs} ms (${x.endFocus}) ·` : "";
         const rate = x.focusRate ? ` pas/s ${x.focusRate.min}-${x.focusRate.median}-${x.focusRate.max} (${x.focusRate.steps} pas) ·` : "";
-        console.log(`    ${x.label.padEnd(44)}${lat}${rate} UI ${th(x.ui)} | JS ${th(x.js)} | vues +${x.views.created}${x.views.video !== undefined ? ` (vidéo ${x.views.video})` : ""} −${x.views.removed}`);
+        console.log(`    ${x.label.padEnd(44)}${lat}${release}${rate} UI ${th(x.ui)} | JS ${th(x.js)} | vues +${x.views.created}${x.views.video !== undefined ? ` (vidéo ${x.views.video})` : ""} −${x.views.removed}`);
       }
     } else if (suite === "lecteur") {
       console.log(`    vues vidéo créées ${s.videoViewsCreated} (${s.videoClasses.join(",")}), montées par pas ${s.mountedPerStep.join(" ")} · vues +${s.createdViews} −${s.removedViews} · UI ${th(s.ui)} | JS ${th(s.js)}`);
