@@ -112,6 +112,22 @@ static const CGFloat kLateStayDistance = 64;
   targetContentOffset->x = scrollView.contentOffset.x;
   _stayAt = CACurrentMediaTime();
   [self moveTo:clamped in:scrollView];
+  // tvOS lance quand même SON animation vers cette position, qui reposerait l'ancienne pendant
+  // que le ressort avance : on l'annule au tour suivant, à la position du ressort.
+  __weak TentacleRowScroller *weakSelf = self;
+  __weak UIScrollView *weakScroll = scrollView;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [weakSelf cancelForeignAnimationIn:weakScroll];
+  });
+}
+
+/// Annule une animation de défilement de tvOS en reposant, sans animation, la position du ressort.
+- (void)cancelForeignAnimationIn:(UIScrollView *)scroll
+{
+  if (_link == nil || scroll == nil) {
+    return;
+  }
+  [scroll setContentOffset:CGPointMake(_lastSet, scroll.contentOffset.y) animated:NO];
 }
 
 /// Un défilement qui n'est pas le nôtre (tvOS, le retour au début de la rangée) : le ressort cède
