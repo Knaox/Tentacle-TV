@@ -717,7 +717,8 @@ mode `anchor` de `FocusSection`, natif sur les deux plateformes), la première c
 dernière (marge du bas : `belowZoneBottomRoom`, mesurée sur la dernière section). La
 zone garde ses 432 sur toutes les pages : ce sont les affiches d'une RANGÉE qui ne dépassent
 pas ce que la fenêtre peut montrer, rangée focalisée entière (tv-core `belowZoneFrameCap` —
-une affiche en taille Grande y est un peu réduite, une vignette jamais), et la raison d'une
+une affiche en taille Grande y est un peu réduite, voulu : la même taille réglée donne donc une
+affiche de rangée plus petite que celle d'une grille ; une vignette jamais), et la raison d'une
 reco se lit dans la zone, plus sous la carte ;
 l'en-tête d'une grille ramène la page en haut. Le héros de l'Accueil et de « Pour vous »
 vit DANS la zone (`previewZone/HeroZone`, section `section:hero` au-dessus de la page) :
