@@ -106,6 +106,7 @@ async function main() {
   const dir = path.join(OUT_DIR, "perf");
   fs.mkdirSync(dir, { recursive: true });
   const h = harness(ctx, session);
+  h.only = options.only ?? null;
   for (const suite of wanted) {
     for (let run = 1; run <= runs; run++) {
       const load = h.load();
