@@ -1,0 +1,84 @@
+{
+  "domain": "focus",
+  "reference": "33b237195",
+  "defaults": {
+    "settleMs": 1000
+  },
+  "scenarios": [
+    {
+      "id": "zone-accueil-depart",
+      "title": "Accueil, aperçus distincts par titre : point de départ des essais de la zone (héros focalisé)",
+      "start": {
+        "fixtures": [
+          "focus/home",
+          "focus/apercus-distincts"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "hero:primary"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zone-accueil-depart-lent",
+      "title": "Accueil, aperçus distincts, délai de 2 s : le fond se voit avant la vidéo",
+      "start": {
+        "fixtures": [
+          "focus/home",
+          "focus/apercus-distincts"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1"
+        ],
+        "storage": {
+          "tentacle_tv_trailer_preview_delay": "2000"
+        }
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "hero:primary"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zone-grande-bibliotheque",
+      "title": "1 200 films, aperçus distincts : départ des essais de défilement rapide",
+      "start": {
+        "fixtures": [
+          "focus/apercus-distincts",
+          "ecrans/grande-bibliotheque"
+        ],
+        "route": {
+          "name": "Home"
+        },
+        "keys": [
+          "wait:1"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "hero:primary"
+          }
+        }
+      ]
+    }
+  ]
+}
