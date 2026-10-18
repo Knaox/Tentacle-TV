@@ -29,17 +29,12 @@ function titleSize(title: string, compact: boolean): number {
   return compact ? size - 8 : size;
 }
 
-export const ZoneText = memo(function ZoneText({ model, heroRoom, height = ZONE.height }: {
-  model: PreviewZoneModel;
-  heroRoom: boolean;
-  /** La hauteur de la zone de la page (`usePreviewZoneHeight`) : le texte s'y resserre (tv-core `previewZoneTextLayout`). */
-  height?: number;
-}) {
+export const ZoneText = memo(function ZoneText({ model, heroRoom }: { model: PreviewZoneModel; heroRoom: boolean }) {
   const { shown, progress } = useSwap(model.key, model, PREVIEW_ZONE_FADE.textMs, PREVIEW_ZONE_FADE.textMs);
   const fade = useAnimatedStyle(() => ({ opacity: progress.value }));
   const compact = heroRoom || Boolean(shown.reason || shown.kicker);
   const layout = previewZoneTextLayout({
-    height,
+    height: ZONE.height,
     hero: heroRoom,
     kicker: Boolean(shown.kicker),
     reason: Boolean(shown.reason),

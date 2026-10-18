@@ -1,7 +1,8 @@
 /**
- * Le TEXTE de la zone d'aperçu selon la hauteur de la zone (tv-core
- * `focus/previewZoneLayout.ts` : elle descend sous 432 sur une page de
- * grandes affiches, pour que la rangée focalisée tienne entière dessous).
+ * Le TEXTE de la zone d'aperçu dans la hauteur de la zone (tv-core
+ * `focus/previewZoneLayout.ts`, 432 sur toutes les pages) : ce qui tient
+ * au-dessus de son bord, ou des boutons du héros, selon ce que le titre a
+ * (surtitre, raison, synopsis).
  *
  * Le texte est calé en bas de la zone — au-dessus de son bord, ou des boutons
  * du héros — et ne dépasse jamais la marge sûre du haut. Quand la place
