@@ -87,6 +87,7 @@ describe("relayedPlaybackOfUrl", () => {
 
   it("rien pour une adresse inconnue ou absente", () => {
     expect(relayedPlaybackOfUrl("https://vimeo.com/123")).toBeNull();
+    expect(relayedPlaybackOfUrl("https://dai.ly/x8abc12")).toBeNull();
     expect(relayedPlaybackOfUrl(undefined)).toBeNull();
   });
 });

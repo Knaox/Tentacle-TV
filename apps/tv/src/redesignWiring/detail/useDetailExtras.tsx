@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useFicheExtras, useItemsExtras, useJellyfinClient, type ItemTrailerOptions } from "@tentacle-tv/api-client";
@@ -67,14 +67,28 @@ function useDeadThumbs(tiles: readonly FicheExtraTile[]): ReadonlySet<string> {
   return dead;
 }
 
+/**
+ * Les extras locaux, STABLES d'un rendu à l'autre : `useItemsExtras` rend une
+ * liste neuve à chaque rendu — sans cette garde, les tuiles, la rangée et la
+ * mesure des vignettes se recalculaient à chaque rendu de la fiche.
+ */
+function useStableLocalExtras(owners: Parameters<typeof useItemsExtras>[0]) {
+  const { local, ownerOf } = useItemsExtras(owners);
+  const signature = local.map((extra) => `${extra.Id}:${ownerOf.get(extra.Id) ?? ""}:${extra.Name ?? ""}`).join("|");
+  const kept = useRef({ signature, local, ownerOf });
+  if (kept.current.signature !== signature) kept.current = { signature, local, ownerOf };
+  return kept.current;
+}
+
 /** Un visage vide tant que la fiche se charge : les hooks s'appellent toujours. */
 const PLACEHOLDER = { Id: "", Name: "", Type: "Movie" } as MediaItem;
+const NO_OWNERS: MediaItem[] = [];
 
 export function useDetailExtras(item: MediaItem | undefined, parentSeries: MediaItem | undefined, lang: string): DetailExtras {
   const client = useJellyfinClient();
   const { t } = useTranslation("common");
   const fiche = useFicheExtras(item ?? PLACEHOLDER, parentSeries, lang, TV_TRAILER_PLATFORM);
-  const { local, ownerOf } = useItemsExtras(item ? fiche.owners : []);
+  const { local, ownerOf } = useStableLocalExtras(item ? fiche.owners : NO_OWNERS);
   const tiles = useMemo(
     () => (item
       ? ficheExtraTiles(t, { local, ownerOf, remote: sortTrailersByLang(fiche.remote, lang), catalog: fiche.catalog, seasonNames: fiche.seasonNames })

@@ -36,7 +36,8 @@ export interface FicheExtraTilesInput {
  * Les tuiles du carrousel « Extras » d'une fiche (`useFicheExtras`), dans
  * l'ordre de toutes les plateformes : les extras locaux, puis les vidéos du
  * catalogue du serveur — AlloCiné compris —, sinon celles d'avant (Jellyfin
- * et TMDB). Le bureau, le miroir et les téléviseurs lisent la même liste.
+ * et TMDB) — la composition du bureau et du miroir (`ExtrasRow`, qui la
+ * recomposent encore à la main), lue telle quelle par les téléviseurs.
  */
 export function ficheExtraTiles(t: TFunction, input: FicheExtraTilesInput): FicheExtraTile[] {
   const { local, ownerOf, remote, catalog, seasonNames } = input;
