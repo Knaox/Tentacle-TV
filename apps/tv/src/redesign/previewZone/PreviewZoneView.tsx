@@ -33,8 +33,6 @@ export interface PreviewZoneViewProps {
   model: PreviewZoneModel | null;
   /** Le héros de l'Accueil a la zone : le texte laisse la place de ses boutons. */
   heroRoom: boolean;
-  /** La hauteur de la zone de la page : le texte s'y resserre. */
-  height?: number;
   video: ReactNode | null;
   videoShown: boolean;
   remote: { paused: boolean; muted: boolean } | null;
@@ -44,7 +42,7 @@ const { width: MEDIA_W, height: MEDIA_H } = ZONE.media;
 /** La hauteur d'un indice dans sa pastille (`ZoneRemoteHint` : une ligne de 26, 7 de marge en haut et en bas). */
 const HINT_HEIGHT = 26 + 2 * 7;
 
-export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, height, video, videoShown, remote }: PreviewZoneViewProps) {
+export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, video, videoShown, remote }: PreviewZoneViewProps) {
   const reduced = useReducedMotion();
   const videoOpacity = useSharedValue(0);
   useEffect(() => {
@@ -77,7 +75,7 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
         {/* Le bas fini au noir AVANT le bord (vers 640), là où le voile de la scène est encore presque plein. */}
         <SoftGradient width={MEDIA_W} height={MEDIA_H} colors={[scrim(0), scrim(0.6), scrim(1)]} locations={[0.34, 0.6, 0.88]} />
       </View>
-      {model ? <ZoneText model={model} heroRoom={heroRoom} height={height} /> : null}
+      {model ? <ZoneText model={model} heroRoom={heroRoom} /> : null}
       {/* En bas à droite ; sous le héros, sur la ligne AU-DESSUS de ses boutons (ses points de rotation
           et « Maintenir OK » occupent la leur). */}
       <Reveal shown={remote !== null} style={[styles.hint, heroRoom && styles.hintOverHero]}>
