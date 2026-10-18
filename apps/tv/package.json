@@ -9,7 +9,8 @@
     "ios": "react-native run-ios --simulator \"Apple TV\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
-    "bench:ui": "node harness/ui-bench/bench.mjs"
+    "bench:ui": "node harness/ui-bench/bench.mjs",
+    "sound:intro": "node scripts/render-intro-sound.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",
