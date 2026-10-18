@@ -39,6 +39,14 @@ export interface PillButtonProps {
   onFocusChange?: (focused: boolean) => void;
   /** Hors d'atteinte du focus (une page qui s'efface). */
   disabled?: boolean;
+  /**
+   * VOILÉ : focalisable, à sa place, mais rien ne se dessine tant qu'il n'a
+   * pas le focus — les boutons du héros quand une carte a la zone d'aperçu.
+   * Le verre natif et l'ombre ignorent l'opacité d'un parent : les estomper
+   * ne les cachait pas. Le focus arrivé, le bouton se dessine dans la MÊME
+   * cible (le focus ne la quitte pas).
+   */
+  veiled?: boolean;
 }
 
 const SIZES = {
@@ -79,13 +87,21 @@ export const PillButton = memo(function PillButton({
   onLongPress,
   onFocusChange,
   disabled,
+  veiled = false,
 }: PillButtonProps) {
   const s = SIZES[size];
   return (
     <FocusTarget focusKey={focusKey} onPress={onPress} onLongPress={onLongPress} onFocusChange={onFocusChange} accessibilityLabel={label} disabled={disabled}>
-      {(focused) => (
-        <Body focused={focused} variant={variant} s={s} label={label} icon={icon} progress={progress} />
-      )}
+      {(focused) =>
+        veiled && !focused ? (
+          // La place du bouton, sans rien de visible : son contenu, transparent.
+          <View style={styles.veiled}>
+            <Content label={label} icon={icon} color={colors.text} size={s} progress={progress} track={white(0.3)} fill={colors.text} />
+          </View>
+        ) : (
+          <Body focused={focused} variant={variant} s={s} label={label} icon={icon} progress={progress} />
+        )
+      }
     </FocusTarget>
   );
 });
@@ -135,6 +151,7 @@ function Body({ focused, variant, s, label, icon, progress }: {
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center" },
   label: { ...fonts.bold },
+  veiled: { opacity: 0 },
   track: { width: 84, height: 6, borderRadius: 3, overflow: "hidden" },
   fill: { height: 6, borderRadius: 3 },
   shadow: {

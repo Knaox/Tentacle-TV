@@ -34,8 +34,9 @@ export const ZONE = {
   height: 432,
   /** Le fond et la vidéo, en haut à droite : ils débordent sous la zone, fondus vers le noir. */
   media: { width: 1280, height: 720 },
-  /** Le texte, aligné sur le contenu des pages. */
+  /** Le texte, aligné sur le contenu des pages, jamais au-dessus de la marge sûre. */
   left: TV_STAGE.contentLeft,
+  top: TV_STAGE.safe.y,
   textWidth: 860,
   /** Le bas du texte : au-dessus du bord de la zone, ou des boutons du héros. */
   bottom: 40,

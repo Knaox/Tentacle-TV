@@ -1,16 +1,16 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { PREVIEW_ZONE_PLAYER_IDLE_MS, TV_TRAILER_PREVIEW_TIMING } from "@tentacle-tv/tv-core";
 import { useTrailerPreviewSound } from "../../lib/trailerPreviewSettings";
-import { PreviewVideo } from "./PreviewVideo";
+import { PREVIEW_VIDEO_SWAPS_SOURCE, PreviewVideo } from "./PreviewVideo";
 import type { ZoneVideoWant } from "./ZoneSession";
 
 /**
- * Le LECTEUR UNIQUE de la zone d'aperçu : monté à la première vidéo, il n'est
- * jamais démonté puis remonté d'un titre à l'autre — seule sa SOURCE change
- * (react-native-video sur Apple TV, le lecteur natif partagé sur Android TV,
- * `PreviewPlayerPool`). Une rafale de flèches ne crée ni ne détruit aucun
- * lecteur : la session du titre suivant lui donne sa source quand le focus a
- * tenu.
+ * Le LECTEUR UNIQUE de la zone d'aperçu : jamais deux à la fois, et rien ne se
+ * crée ni ne se détruit pendant une rafale de flèches — la session du titre
+ * suivant ne lui donne sa source que quand le focus a tenu. Sur Android TV, le
+ * lecteur natif CHANGE DE SOURCE sur place (l'ExoPlayer partagé,
+ * `PreviewPlayerPool`) ; sur Apple TV, react-native-video ne le sait pas
+ * (`PREVIEW_VIDEO_SWAPS_SOURCE`) : l'élément est remonté à chaque source.
  *
  * Sans rien à jouer, il garde sa dernière source, EN PAUSE, invisible (la zone
  * l'efface) ; resté ainsi `PREVIEW_ZONE_PLAYER_IDLE_MS`, il se démonte — la
@@ -55,6 +55,7 @@ export const ZoneVideo = memo(function ZoneVideo({ want }: { want: ZoneVideoWant
   if (!source) return null;
   return (
     <PreviewVideo
+      key={PREVIEW_VIDEO_SWAPS_SOURCE ? "zone" : source.uri}
       uri={source.uri}
       hls={source.hls}
       startAt={source.startAt}

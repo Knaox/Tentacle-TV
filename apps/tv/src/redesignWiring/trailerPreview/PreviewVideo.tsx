@@ -1,5 +1,7 @@
 import { memo, useCallback, useEffect, useRef } from "react";
-import { PreviewVideoElement } from "../../platform/tvos/player/previewVideoElement";
+import { PREVIEW_VIDEO_SWAPS_SOURCE, PreviewVideoElement } from "../../platform/tvos/player/previewVideoElement";
+
+export { PREVIEW_VIDEO_SWAPS_SOURCE };
 
 /**
  * La vidéo de l'aperçu (Apple TV : AVPlayer ; Android TV : ExoPlayer) — le

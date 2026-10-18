@@ -27,6 +27,8 @@ export interface RoundButtonProps {
   /** L'appui maintenu (le grand panneau du titre, sur le héros). */
   onLongPress?: () => void;
   onFocusChange?: (focused: boolean) => void;
+  /** Voilé : focalisable à sa place, rien de dessiné sans le focus (cf. `PillButton` `veiled`). */
+  veiled?: boolean;
 }
 
 export const RoundButton = memo(function RoundButton({
@@ -39,12 +41,17 @@ export const RoundButton = memo(function RoundButton({
   onPress,
   onLongPress,
   onFocusChange,
+  veiled = false,
 }: RoundButtonProps) {
   return (
     <FocusTarget focusKey={focusKey} onPress={onPress} onLongPress={onLongPress} onFocusChange={onFocusChange} accessibilityLabel={label}>
-      {(focused) => (
-        <Round focused={focused} icon={active && activeIcon ? activeIcon : icon} active={active} size={size} label={label} />
-      )}
+      {(focused) =>
+        veiled && !focused ? (
+          <View style={{ width: size, height: size }} />
+        ) : (
+          <Round focused={focused} icon={active && activeIcon ? activeIcon : icon} active={active} size={size} label={label} />
+        )
+      }
     </FocusTarget>
   );
 });

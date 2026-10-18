@@ -66,6 +66,13 @@ const NativeElement = memo(function NativeElement({
   );
 });
 
+/**
+ * Le lecteur natif d'aperçu change de source sur place (`PreviewVideoView.commit`,
+ * une fois par source, sur l'ExoPlayer du pool) ; le repli react-native-video,
+ * non (cf. Apple TV) : remonté à chaque source.
+ */
+export const PREVIEW_VIDEO_SWAPS_SOURCE = NativePreviewVideo != null;
+
 export const PreviewVideoElement = memo(function PreviewVideoElement(props: PreviewVideoElementProps) {
   return NativePreviewVideo ? <NativeElement {...props} /> : <RnvPreviewVideo {...props} />;
 });
