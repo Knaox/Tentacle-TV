@@ -237,6 +237,23 @@ export const THRESHOLDS = { uiFps: 57, worstFrameMs: 100, fondMs: 200, videoMs: 
 
 const check = (name, ok, value, target) => ({ name, ok, value, target });
 
+/**
+ * Le fond d'une tenue sur un titre, au vert dans trois cas :
+ * - posé (nouvelle source sur un calque de fond) dans le délai ;
+ * - sans nouvelle source, mais CHARGÉ dans le délai : il attendait déjà dans
+ *   l'autre calque du fondu croisé (un Retour, un titre revu) ;
+ * - ni posé ni chargé, mais la zone a servi ce titre (sa vidéo est là) : le
+ *   fond était DÉJÀ AFFICHÉ — un pas GAUCHE vers le titre d'avant.
+ * Rouge : posé trop tard, ou rien du tout — ni fond ni vidéo.
+ */
+function fondCheck(x, T) {
+  const name = `${x.label} : fond posé`;
+  const target = `≤ ${T.fondMs} ms`;
+  if (x.fondSetMs != null) return check(name, x.fondSetMs <= T.fondMs, x.fondSetMs, target);
+  if (x.fondMs != null) return check(name, x.fondMs <= T.fondMs, `chargé ${x.fondMs} (calque prêt)`, target);
+  return check(name, x.videoMs != null, x.videoMs != null ? "déjà affiché" : null, target);
+}
+
 /** Les verdicts d'une suite résumée ; `reference` (résumé de la même suite sur dev) pour la mémoire. */
 export function verdicts(suite, summary, reference = null) {
   const T = THRESHOLDS;
@@ -257,7 +274,7 @@ export function verdicts(suite, summary, reference = null) {
     }
     // Une pastille, un raccourci du rail, une tuile de bibliothèque : pas un titre, pas d'aperçu à attendre.
     if (x.fondSetMs !== undefined && !NOT_A_TITLE.test(x.endFocus ?? "")) {
-      out.push(check(`${x.label} : fond posé`, x.fondSetMs != null && x.fondSetMs <= T.fondMs, x.fondSetMs, `≤ ${T.fondMs} ms`));
+      out.push(fondCheck(x, T));
       out.push(check(`${x.label} : 1re image vidéo`, x.videoMs != null && x.videoMs <= T.videoMs, x.videoMs, `≤ ${T.videoMs} ms`));
       out.push(check(`${x.label} : saut`, Boolean(x.jumps) && !x.jumps.jumped, x.jumps?.maxStepPt ?? null, `≤ ${T.jumpPt} pt par image`));
     }

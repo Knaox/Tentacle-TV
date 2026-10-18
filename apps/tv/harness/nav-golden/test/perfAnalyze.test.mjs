@@ -44,7 +44,7 @@ test("fond : la source posée sur le calque de fond compte, jamais le logo du ti
   assert.equal(byName(verdicts("latence", [green]), "fond posé").ok, true);
   const [late] = dwell([[30, 11, "setSource"], [260, 10, "setSource"], [700, 20, "topReadyForDisplay"]]);
   assert.equal(byName(verdicts("latence", [late]), "fond posé").ok, false);
-  const [none] = dwell([[30, 11, "setSource"], [700, 20, "topReadyForDisplay"]]);
+  const [none] = dwell([[30, 11, "setSource"]]);
   assert.equal(none.fondSetMs, null);
   assert.equal(byName(verdicts("latence", [none]), "fond posé").ok, false);
 });
@@ -120,4 +120,20 @@ test("course d'une rangée : 50 %, 90 %, posée, et un rebond se voit", () => {
   assert.equal(b.reversals, 1);
   const still = course(report({ watched, ui: { ...thread(60, 0), trace: frames([0, 0.4, 0.2, 0]) } }), T0);
   assert.equal(still.moved, false);
+});
+
+test("fond déjà en place : chargé sans nouvelle source ou déjà affiché est vert ; ni fond ni vidéo reste rouge", () => {
+  const fondOf = (events) => byName(verdicts("latence", dwell(events)), "fond posé");
+  // Un Retour : le fond attendait dans l'autre calque, il se charge sans nouvelle source.
+  const reloaded = fondOf([[40, 10, "topLoad"], [700, 20, "topReadyForDisplay"]]);
+  assert.equal(reloaded.ok, true);
+  assert.match(String(reloaded.value), /chargé 40/);
+  // Un pas GAUCHE vers le titre d'avant : rien à reposer, la vidéo du titre arrive.
+  const shown = fondOf([[700, 20, "topReadyForDisplay"]]);
+  assert.equal(shown.ok, true);
+  assert.equal(shown.value, "déjà affiché");
+  // Chargé trop tard : rouge.
+  assert.equal(fondOf([[260, 10, "topLoad"], [700, 20, "topReadyForDisplay"]]).ok, false);
+  // Ni fond ni vidéo : la zone n'a rien servi.
+  assert.equal(fondOf([[30, 11, "setSource"]]).ok, false);
 });
