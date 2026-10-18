@@ -100,9 +100,10 @@ describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
   it("arrêté dans les filtres : rien à corriger ; BAS plus tard depuis une pastille est une nouvelle entrée, au plus proche", () => {
     const stopped = settle(walk(GRID_COLUMN_HOLD_START, [123, 60, null]));
     expect(stopped.correct).toBeNull();
-    const back = gridColumnHoldFocus(stopped.state, 1, COLUMNS, COUNT, 200 + GRID_COLUMN_RETURN_MS + 1);
-    expect(back.column).toBe(1);
-    expect(settle(back).correct).toBeNull();
+    const back = gridColumnHoldMove(gridColumnHoldFocus(stopped.state, 1, COLUMNS, COUNT, 200 + GRID_COLUMN_RETURN_MS + 1), "bas");
+    const step = settle(back);
+    expect(step.correct).toBeNull();
+    expect(step.state.column).toBe(1);
   });
 
   it("revue 21 : posée en colonne 3, HAUT vers les filtres, promenade de pastille en pastille, puis BAS en colonne 1 — gardée telle quelle, aucun saut", () => {
@@ -111,8 +112,10 @@ describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
     state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 1_800); // pill:years
     state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 2_600); // pill:platforms
     state = gridColumnHoldFocus(state, 0, COLUMNS, COUNT, 3_000); // BAS : l'affiche au plus proche
-    expect(state.column).toBe(0);
-    expect(settle(state).correct).toBeNull();
+    state = gridColumnHoldMove(state, "bas"); // l'appui, livré à son relâchement
+    const step = settle(state);
+    expect(step.correct).toBeNull();
+    expect(step.state.column).toBe(0);
   });
 
   it("revue 22 : HAUT, DROITE, BAS en moins de 1,5 s (deux filtres) : une entrée voulue, au plus proche, aucun saut", () => {
@@ -133,6 +136,19 @@ describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
   it("un pas de côté DANS la grille ne compte pas comme un passage par les filtres", () => {
     const state = gridColumnHoldMove(walk(GRID_COLUMN_HOLD_START, [2]), "droite");
     expect(state.sideways).toBe(false);
+  });
+
+  it("relevé de perf : HAUT tenu longtemps, tvOS reste dans les filtres plus de 1,5 s puis revient sur grid:0 au lâcher — sans appui BAS, la colonne tient", () => {
+    let state = walk(GRID_COLUMN_HOLD_START, [167, 60, null]);
+    state = gridColumnHoldFocus(state, 0, COLUMNS, COUNT, 200 + 4_000);
+    expect(settle(state).correct).toBe(2);
+  });
+
+  it("HAUT puis BAS aussitôt (moins de 1,5 s), sans pas de côté : la colonne d'avant tient", () => {
+    let state = settle(walk(GRID_COLUMN_HOLD_START, [4])).state;
+    state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 1_000);
+    state = gridColumnHoldMove(gridColumnHoldFocus(state, 3, COLUMNS, COUNT, 1_600), "bas");
+    expect(settle(state).correct).toBe(4);
   });
 
   it("un index hors du catalogue vaut hors de la grille", () => {
