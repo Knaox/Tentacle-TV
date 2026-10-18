@@ -17,7 +17,10 @@
 //  pour « là où elle va », la proposition de tvOS (ou la cible du ressort en
 //  cours) : la rangée bouge le moins possible pour garder la carte entre les
 //  deux marges. Qui la JOUE, comme la page (`TentacleRevealScroller.m`) :
-//  - une RAFALE (flèche maintenue, glisser du pavé) : tvOS, vers notre cible
+//  - une RAFALE (flèche maintenue, glisser du pavé, ou un pas qui suit le
+//    précédent de moins de `kRapidStep` — tv-core `rowStepIsRapid` : repris à
+//    chaque pas, le ressort perdait une image et reculait de quelques points,
+//    mesuré image par image le 18/10) : tvOS, vers notre cible
 //    (`scrollViewWillEndDragging:…targetContentOffset:`, aussi appelée pour un
 //    défilement de focus) — son animateur garde sa vitesse, une rafale passe
 //    en défilement rapide sans creux ;
@@ -50,6 +53,10 @@ static char kRowScrollerKey;
 /// rangée (Retour, sortie de l'écran) en est toujours bien plus loin : le ressort lui cède.
 static const CGFloat kLateStayDistance = 64;
 
+/// Deux pas plus rapprochés que ça forment une RAFALE, que tvOS joue (tv-core `burstFollow.ts`,
+/// `ROW_RAPID_STEP_MS`, `rowStepIsRapid` — même valeur).
+static const CFTimeInterval kRapidStep = 0.35;
+
 @interface TentacleRowScroller : NSObject <UIScrollViewDelegate>
 @end
 
@@ -62,6 +69,8 @@ static const CGFloat kLateStayDistance = 64;
   CFTimeInterval _t0;
   /// La dernière position posée : une autre (tvOS, le retour au début de la rangée) arrête le ressort.
   CGFloat _lastSet;
+  /// Le dernier pas de la rangée (`kRapidStep`) ; 0 : aucun.
+  CFTimeInterval _lastStepAt;
 }
 
 - (instancetype)initWithRow:(RCTScrollView *)row section:(TentacleFocusSection *)section
@@ -99,8 +108,11 @@ static const CGFloat kLateStayDistance = 64;
   CGFloat end = left + width + trailing - viewport;
   CGFloat target = end > base ? MIN(end, start) : (start < base ? start : base);
   CGFloat clamped = MIN(MAX(target, 0), MAX(0, contentWidth - viewport));
-  if (TentacleFocusInputIsBurst()) {
-    // Une rafale : tvOS défile, vers notre cible.
+  CFTimeInterval now = CACurrentMediaTime();
+  BOOL rapid = _lastStepAt > 0 && now - _lastStepAt < kRapidStep;
+  _lastStepAt = now;
+  if (TentacleFocusInputIsBurst() || rapid) {
+    // Une rafale — flèche maintenue, ou pas rapprochés : tvOS défile, vers notre cible.
     [self stop];
     targetContentOffset->x = clamped;
     return;
