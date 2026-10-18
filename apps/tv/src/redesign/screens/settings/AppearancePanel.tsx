@@ -27,7 +27,7 @@ import type { SettingsRenderTier } from "./settingsTypes";
  * Lite : rien n'y change.
  */
 
-export const AppearancePanel = memo(function AppearancePanel({ width, previewImageUri, onToggleLiquidGlass, liquidGlass = true, renderTier, onSelectLiteMode, onSelectCardSize }: {
+export const AppearancePanel = memo(function AppearancePanel({ width, previewImageUri, onToggleLiquidGlass, liquidGlass = true, renderTier, onSelectLiteMode, onSelectCardSize, bootSound }: {
   /** Largeur utile du panneau (l'aperçu s'y partage en deux). */
   width: number;
   previewImageUri?: string;
@@ -39,6 +39,8 @@ export const AppearancePanel = memo(function AppearancePanel({ width, previewIma
   onSelectLiteMode?: (mode: SettingsRenderTier["mode"]) => void;
   /** Écrit la taille des cartes de l'appareil (la valeur affichée est celle du fournisseur). */
   onSelectCardSize?: (size: CardSize) => void;
+  /** « Son au démarrage » (Apple TV, l'ouverture) ; absent : la section n'existe pas. */
+  bootSound?: { enabled: boolean; onToggle: (next: boolean) => void } | null;
 }) {
   const { t } = useTranslation("preferences");
   const liquid = useLiquidGlassEnabled();
@@ -63,6 +65,19 @@ export const AppearancePanel = memo(function AppearancePanel({ width, previewIma
       {liquidGlass ? <View>
         <SectionTitle title={t("previewTitle")} />
         <GlassPreview width={width} liquid={liquid} imageUri={previewImageUri} />
+      </View> : null}
+      {bootSound ? <View>
+        <SectionTitle title={t("opening")} />
+        <ToggleRow
+          icon="audio"
+          title={t("bootSoundTitle")}
+          description={t("bootSoundDescription")}
+          value={bootSound.enabled}
+          onLabel={t("reglageActive")}
+          offLabel={t("reglageDesactive")}
+          focusKey="settings:bootSound"
+          onToggle={bootSound.onToggle}
+        />
       </View> : null}
     </View>
   );

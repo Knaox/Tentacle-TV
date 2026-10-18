@@ -30,6 +30,10 @@ export default {
   // where this same key is displayed.
   liquidGlassDescription: "Adds refraction to translucent surfaces. When off, the app falls back to the classic glass effect.",
   liquidGlassUnavailable: "Not available on this rendering engine — the classic glass effect is used.",
+  // The startup opening (Apple TV): a DEVICE setting.
+  opening: "Opening",
+  bootSoundTitle: "Startup sound",
+  bootSoundDescription: "The opening's “ta-dum” when the app opens on Home. It blends with music already playing instead of stopping it.",
 
   // ── Settings shell sections ──
   // Umbrella title of the screen (mobile landing). `title` remains the
