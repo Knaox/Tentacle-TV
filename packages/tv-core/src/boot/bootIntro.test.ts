@@ -96,3 +96,17 @@ describe("le son calé à l'image", () => {
     expect(bootSoundStartAt(10_000, BOOT_SOUND_REQUEST_AT)).toBe(10_000 + BOOT_SOUND_FILE_AT - BOOT_SOUND_REQUEST_AT);
   });
 });
+
+describe("les plaques nettes de la plongée", () => {
+  it("prennent le relais une fois, pendant la plongée, et gardent l'arrivée", async () => {
+    const { plateGates, INTRO_PLATES } = await import("./index");
+    const plan = introCameraPlan(1920, 1080, geometry);
+    const samples = sampleIntro(geometry, plan);
+    const gates = plateGates(samples, plan.from.zoom);
+    const first = gates.late.indexOf(1);
+    expect(first * samples.step).toBeGreaterThan(INTRO_TIMING.zoom.at);
+    expect(gates.late.slice(first).every((value) => value === 1)).toBe(true);
+    expect(gates.early[first - 1]).toBe(1);
+    expect(INTRO_PLATES.late).toBeGreaterThan(INTRO_PLATES.early);
+  });
+});

@@ -126,3 +126,18 @@ export function loopValue(loop: IntroLoopSamples, values: readonly number[], idl
   if (local < 0) return base;
   return sampleValue(values, loop.period / (loop.count - 1), local % loop.period);
 }
+
+/**
+ * Les PLAQUES NETTES de la plongée : la tête, le visage et le chapeau, les bras
+ * arrière, immobiles pendant la plongée, ont une seconde copie rastérisée
+ * `late` fois plus grande que leur place (`early` pour la première). On passe
+ * de l'une à l'autre, d'une image, quand la caméra atteint leur moyenne
+ * géométrique : ni l'une ni l'autre n'y est trop agrandie ni trop réduite.
+ */
+export const INTRO_PLATES = { early: 2, late: 5 } as const;
+
+export function plateGates(samples: IntroSamples, baseZoom: number, plates = INTRO_PLATES): { early: number[]; late: number[] } {
+  const swap = baseZoom * Math.sqrt(plates.early * plates.late);
+  const late = samples.camera.zoom.map((zoom) => (zoom >= swap ? 1 : 0));
+  return { early: late.map((value) => 1 - value), late };
+}
