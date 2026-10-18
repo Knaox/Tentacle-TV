@@ -11,6 +11,7 @@ import { useGridPreviewWarm } from "./gridPreviewWarm";
 import { useGridAhead } from "./useGridAhead";
 import { mountProfile } from "../../render/mountProfile";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { PreviewZoneSlot } from "../../cards/trailerPreviewPort";
 import { BelowZonePage } from "../../rows/BelowZonePage";
 
 /**
@@ -157,7 +158,8 @@ export const PosterGrid = memo(function PosterGrid({
   // les lignes, elles, se posent sous la zone (`gridLineReveal`).
   const shownHeader = useMemo(() => (header ? <FocusSection reveal={HEADER_REVEAL}>{header}</FocusSection> : header), [header]);
   return (
-    <BelowZonePage zone={zone}>
+    // La zone d'aperçu de la grille : avant tout focus d'affiche, la première (`fallback`).
+    <BelowZonePage zone={zone ?? <PreviewZoneSlot fallback={cards[0] ?? null} />}>
       <FlashList
         ref={list}
         // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.

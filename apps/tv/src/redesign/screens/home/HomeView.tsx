@@ -1,7 +1,7 @@
-import { memo, useCallback, useMemo, useRef, type ReactNode } from "react";
+import { memo, useCallback, useMemo, type ReactNode } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL, HOME_LOADING_KEY, heroInView } from "@tentacle-tv/tv-core";
+import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL, HOME_LOADING_KEY } from "@tentacle-tv/tv-core";
 import { useTranslation } from "react-i18next";
 import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { AmbientSource } from "../../background/ambientSource";
@@ -10,7 +10,8 @@ import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { FocusTarget } from "../../focus/FocusTarget";
-import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
+import type { HeroModel } from "../../hero/HeroBanner";
+import { HeroZone } from "../../previewZone/HeroZone";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { BelowZonePage, useBelowZoneBottomRoom } from "../../rows/BelowZonePage";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
@@ -97,10 +98,7 @@ export interface HomeViewProps {
 }
 
 const LEFT = TV_STAGE.contentLeft;
-const HERO_WIDTH = 1920 - LEFT - 56;
-/** Le héros se montre la page tout en haut ; une rangée se pose toujours au même endroit, sous la
- *  zone (tv-core `previewZoneLayout.ts`). */
-const HERO_REVEAL: FocusSectionReveal = { mode: "start" };
+/** Une rangée se pose toujours au même endroit, sous la zone (tv-core `previewZoneLayout.ts`). */
 const ROW_REVEAL: FocusSectionReveal = BELOW_ZONE_REVEAL;
 
 export const HomeView = memo(function HomeView({
@@ -127,34 +125,27 @@ export const HomeView = memo(function HomeView({
   const { t } = useTranslation();
   const loadingLabel = t("common:loading");
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
-  const heroVisible = useRef(true);
   const rewind = useRowRewindPort();
   // La dernière rangée se pose sous la zone comme les autres : la marge du bas qu'il lui faut.
   const bottom = useBelowZoneBottomRoom(SCROLL_BOTTOM);
   const scrollContent = useMemo(() => ({ paddingTop: BELOW_ZONE_ANCHOR_TOP, paddingBottom: bottom.room }), [bottom.room]);
-  const heroSection = hero ? (
-    <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-      <HeroBanner
-        hero={hero}
-        width={HERO_WIDTH}
-        onPrimary={onHeroPrimary}
-        onSecondary={onHeroSecondary}
-        onToggleList={onHeroToggleList}
-        onLongPress={onHeroLongPress}
-      />
-    </FocusSection>
-  ) : null;
+  // Le héros vit dans la zone d'aperçu : ses boutons dans leur section, son titre dessiné par la zone.
+  const zoneNode = zone ?? (
+    <HeroZone
+      hero={hero}
+      onPrimary={onHeroPrimary}
+      onSecondary={onHeroSecondary}
+      onToggleList={onHeroToggleList}
+      onLongPress={onHeroLongPress}
+      onVisibleChange={onHeroVisibleChange}
+    />
+  );
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
       rewind?.scroll(contentOffset.y, layoutMeasurement.height);
-      // Plus de la moitié du héros hors de l'écran : il n'est plus dans le champ (tv-core).
-      const visible = heroInView(contentOffset.y, 0, TV_STAGE.hero.height);
-      if (visible === heroVisible.current) return;
-      heroVisible.current = visible;
-      onHeroVisibleChange?.(visible);
     },
-    [onHeroVisibleChange, rewind],
+    [rewind],
   );
   return (
     <View style={styles.root}>
@@ -166,7 +157,7 @@ export const HomeView = memo(function HomeView({
           <StatusPanel {...status} />
         ) : (
           <RowStageProvider>
-            <BelowZonePage zone={zone}>
+            <BelowZonePage zone={zoneNode}>
               <ScrollView
                 ref={scrollRef}
                 style={styles.fill}
@@ -176,13 +167,11 @@ export const HomeView = memo(function HomeView({
                 onScroll={handleScroll}
                 scrollEventThrottle={32}
               >
-                {heroSection}
                 {rows.map((row, index) => (
                   <HomeRow
                     key={row.key}
                     row={row}
                     rank={index}
-                    afterHero={index === 0 && hero !== null}
                     filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
                     onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
                     onMeasureLast={index === rows.length - 1 ? bottom.onLastLayout : undefined}
@@ -218,7 +207,6 @@ type RowHandler = (rowKey: string, card: CardModel) => void;
 const HomeRow = memo(function HomeRow({
   row,
   rank,
-  afterHero,
   filterLabel,
   onLayout,
   onMeasureLast,
@@ -230,8 +218,6 @@ const HomeRow = memo(function HomeRow({
   row: HomeRowModel;
   /** Sa place dans la page : son tour dans le montage échelonné (`rowStage`). */
   rank: number;
-  /** La première rangée, sous le héros : son écart à lui. */
-  afterHero?: boolean;
   filterLabel?: string;
   onLayout: (event: LayoutChangeEvent) => void;
   /** La dernière rangée : sa hauteur fait la marge du bas de la page (`useBelowZoneBottomRoom`). */
@@ -261,7 +247,6 @@ const HomeRow = memo(function HomeRow({
       reveal={ROW_REVEAL}
       rowReveal
       onLayout={layout}
-      style={afterHero ? styles.firstAfterHero : undefined}
     >
       <MediaRow
         rowKey={key}
@@ -292,6 +277,4 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
   // Le héros en tête de la fenêtre sous la zone : sans la marge d'avant, il y tient entier.
-  hero: { marginLeft: LEFT, marginTop: -BELOW_ZONE_ANCHOR_TOP },
-  firstAfterHero: { marginTop: 56 },
 });

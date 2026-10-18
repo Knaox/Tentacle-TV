@@ -3,7 +3,6 @@ import { StyleSheet, View } from "react-native";
 import { Reveal } from "../motion/Reveal";
 import { CardFocusNote } from "./CardFocusNote";
 import { CardHoldHint } from "./CardHoldHint";
-import { CardPreviewHint } from "./CardPreviewHint";
 
 /** Le pied : son écart à la légende, l'écart entre ses lignes. */
 const FOOTER_MARGIN_TOP = 6;
@@ -12,8 +11,8 @@ const FOOTER_GAP = 8;
 /**
  * Ce qui paraît SOUS la légende d'une carte focalisée : la phrase de focus
  * (`CardFocusNote`, la raison d'une recommandation), puis l'indication de
- * l'appui maintenu (`CardHoldHint`), et, tant que l'aperçu joue, ce que
- * Lecture/Pause en fait (`CardPreviewHint`).
+ * l'appui maintenu (`CardHoldHint`). Ce que Lecture/Pause fait de l'aperçu,
+ * c'est la zone d'aperçu qui le dit (`PreviewZoneView`).
  *
  * Posé en ABSOLU sous le bloc qui le porte — la légende, qu'il suit quand la
  * carte grandit au focus : il n'agrandit rien, la rangée ne bouge pas. Plus
@@ -27,14 +26,11 @@ const FOOTER_GAP = 8;
 export const CardFocusFooter = memo(function CardFocusFooter({
   note,
   hold,
-  preview = null,
   width,
 }: {
   note?: string;
   /** La carte s'ouvre par l'appui maintenu : le dire. */
   hold: boolean;
-  /** L'aperçu joue sous le focus : la pause et le son, pour dire Lecture/Pause (port `CardPreview.remote`). */
-  preview?: { paused: boolean; muted: boolean } | null;
   width: number;
 }) {
   // La phrase reste écrite le temps de sa sortie : `note` retombe avec le focus.
@@ -47,9 +43,6 @@ export const CardFocusFooter = memo(function CardFocusFooter({
       </Reveal>
       <Reveal shown={hold}>
         <CardHoldHint />
-      </Reveal>
-      <Reveal shown={preview !== null}>
-        {preview ? <CardPreviewHint paused={preview.paused} muted={preview.muted} /> : null}
       </Reveal>
     </View>
   );

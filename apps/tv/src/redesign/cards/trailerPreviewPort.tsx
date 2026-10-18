@@ -12,7 +12,8 @@ import type { CardModel } from "./cardTypes";
  * - `PreviewZoneScope` : la portée d'UNE page (Accueil, Pour vous, une
  *   grille) — son propre magasin de focus. Une page couverte par une autre
  *   garde le sien : au retour, sa zone montre SA dernière carte.
- * - `useCardPreviewFocus` : une carte focalisée le dit (sans rendu au repos).
+ * - `useCardZoneFocus` : une carte focalisée le dit (sans rendu au repos ;
+ *   `MediaCard` passe par `useCardPreviewFocus`, qui sait la page et la grille).
  * - `usePreviewZoneHero` : les boutons du héros de l'Accueil, de même.
  * - `PreviewZoneSlot` : où la page pose sa zone ; sans fournisseur (le banc),
  *   rien.
@@ -89,7 +90,7 @@ export function usePreviewZoneCard(store: PreviewZoneStore): CardModel | null {
  * dépassée par la page (le défilement accéléré d'une grille). Un modèle neuf
  * de la même carte (une coche) met la zone à jour sans relancer son aperçu.
  */
-export function useCardPreviewFocus(card: CardModel, active: boolean): void {
+export function useCardZoneFocus(card: CardModel, active: boolean): void {
   const store = useContext(ScopeContext);
   const latest = useRef(card);
   latest.current = card;
@@ -154,13 +155,4 @@ export function PreviewZoneSlot(props: PreviewZoneSlotProps) {
 /** La préparation, ou `null` (sans fournisseur : rien ne se prépare). */
 export function useCardPreviewWarm(): CardPreviewWarm | null {
   return useContext(WarmContext);
-}
-
-/**
- * TRANSITOIRE — la couture de la carte qui grandissait, le temps que la
- * session nav la retire de `MediaCard` (`CardPreviewTile` part avec elle) :
- * plus aucune carte ne grandit. À supprimer avec son dernier appel.
- */
-export function useCardPreview(_subject: unknown, _focused: boolean): { expanded: boolean; video: ReactNode | null; remote?: { paused: boolean; muted: boolean } | null } | null {
-  return null;
 }

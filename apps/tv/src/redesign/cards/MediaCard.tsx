@@ -105,13 +105,13 @@ function LogoLayer({ uri, width, height, bottom }: { uri: string; width: number;
 
 export const MediaCard = memo(function MediaCard(props: MediaCardProps) {
   const cardFocus = useCardFocused(props.focusKey, props.onFocusChange);
-  return props.previewable ? <PreviewableCard {...props} cardFocus={cardFocus} /> : <CardBody {...props} cardFocus={cardFocus} remote={null} />;
+  return props.previewable ? <PreviewableCard {...props} cardFocus={cardFocus} /> : <CardBody {...props} cardFocus={cardFocus} />;
 });
 
 /** Une carte de rangée (ou de ligne de grille) : son focus demande l'aperçu, joué dans la zone fixe. */
 function PreviewableCard(props: MediaCardProps & { cardFocus: CardFocused }) {
-  const preview = useCardPreviewFocus(props.card, props.cardFocus.focused, props.previewWatch);
-  return <CardBody {...props} remote={preview?.remote ?? null} />;
+  useCardPreviewFocus(props.card, props.cardFocus.focused, props.previewWatch);
+  return <CardBody {...props} />;
 }
 
 function cardHeight(variant: MediaCardProps["variant"], width: number): number {
@@ -131,8 +131,7 @@ function CardBody({
   onPress,
   onLongPress,
   cardFocus,
-  remote,
-}: MediaCardProps & { cardFocus: CardFocused; remote: { paused: boolean; muted: boolean } | null }) {
+}: MediaCardProps & { cardFocus: CardFocused }) {
   const landscape = variant === "landscape";
   const frame = useCardMetrics()[variant];
   const width = forcedWidth ?? frame.width;
@@ -209,7 +208,6 @@ function CardBody({
           <CardFocusFooter
             note={focused ? card.focusNote : undefined}
             hold={focused && onLongPress !== undefined}
-            preview={focused ? remote : null}
             width={Math.round(width * 1.6)}
           />
         </Caption>

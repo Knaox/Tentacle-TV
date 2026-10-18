@@ -105,7 +105,7 @@ export const MediaRow = memo(function MediaRow({
   };
   useEffect(() => rewind?.register(rowKey, () => toStart.current()), [rewind, rowKey]);
   // Les titres autour du focus : leur aperçu se prépare, leur fond se précharge (`useCardPreviewWarm`) —
-  // dans une page à zone seulement, la seule où il se joue.
+  // dans une page à zone seulement, la seule où ils se montrent.
   const portWarm = useCardPreviewWarm();
   const warm = useInPreviewZone() ? portWarm : null;
   const latestCards = useRef(cards);

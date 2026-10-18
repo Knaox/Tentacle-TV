@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useInPreviewZone } from "../rows/BelowZonePage";
 import type { CardModel } from "./cardTypes";
-import { useCardPreview, type CardPreview } from "./trailerPreviewPort";
+import { useCardZoneFocus } from "./trailerPreviewPort";
 
 /**
- * Le FOCUS d'une carte qui demande l'aperçu de sa bande-annonce
- * (`MediaCard` `previewable`) : la carte dit seulement QUAND (son focus) et
- * DE QUOI (`card.trailer`) au port de l'aperçu (`trailerPreviewPort`) ; la
- * vidéo se joue dans la zone fixe en haut de l'écran, jamais dans la carte —
- * la carte ne grandit pas, la rangée ne bouge pas.
+ * Le FOCUS d'une carte de page à zone (`MediaCard` `previewable`) : la carte
+ * dit seulement son focus à la zone d'aperçu de sa page (port
+ * `useCardZoneFocus`) ; la zone, en haut de l'écran, montre aussitôt son fond
+ * et son titre, puis joue sa bande-annonce — jamais dans la carte : la carte
+ * ne grandit pas, la rangée ne bouge pas.
  *
  * Hors d'une page à zone (la recherche, une fiche : `useInPreviewZone`),
  * rien ne se demande — rien ne le jouerait.
@@ -22,7 +22,7 @@ import { useCardPreview, type CardPreview } from "./trailerPreviewPort";
  *  défilement accéléré d'une grille) — son aperçu ne se demande pas. Rend l'arrêt. */
 export type CardFocusWatch = (onOutrun: (outrun: boolean) => void) => () => void;
 
-export function useCardPreviewFocus(card: CardModel, focused: boolean, watchFocus?: CardFocusWatch): CardPreview | null {
+export function useCardPreviewFocus(card: CardModel, focused: boolean, watchFocus?: CardFocusWatch): void {
   const [outrun, setOutrun] = useState(false);
   useEffect(() => {
     if (!focused || !watchFocus) return undefined;
@@ -33,5 +33,5 @@ export function useCardPreviewFocus(card: CardModel, focused: boolean, watchFocu
     };
   }, [focused, watchFocus]);
   const inZone = useInPreviewZone();
-  return useCardPreview(inZone ? card.trailer ?? null : null, inZone && focused && !outrun);
+  useCardZoneFocus(card, inZone && focused && !outrun);
 }

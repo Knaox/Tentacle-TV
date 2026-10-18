@@ -1,6 +1,7 @@
 import { createContext, memo, useCallback, useContext, useState, type ReactNode } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { BELOW_ZONE_VIEWPORT, PREVIEW_STAGE_HEIGHT, PREVIEW_ZONE_HEIGHT, belowZoneBottomRoom } from "@tentacle-tv/tv-core";
+import { PreviewZoneScope } from "../cards/trailerPreviewPort";
 
 /**
  * Le cadre d'une page À ZONE (tv-core `focus/previewZoneLayout.ts`) :
@@ -10,8 +11,11 @@ import { BELOW_ZONE_VIEWPORT, PREVIEW_STAGE_HEIGHT, PREVIEW_ZONE_HEIGHT, belowZo
  * elle — jamais sous la zone : tvOS ne focalise pas un élément recouvert par
  * ce qui dessine.
  *
- * La zone ne prend que ce qu'elle dessine (`box-none`) ; la navigation, le
- * fond et les panneaux de la page restent ses frères, hors du cadre.
+ * La zone ne prend que ce qu'elle dessine (`box-none`) ; son fond et sa vidéo
+ * débordent sous elle, DERRIÈRE la fenêtre (posée après, sans fond). La
+ * navigation, le fond et les panneaux de la page restent ses frères, hors du
+ * cadre. Tout le cadre est UNE portée de la zone (`PreviewZoneScope`) : ses
+ * cartes disent leur focus à SA zone.
  *
  * Seules les cartes d'une page à zone demandent l'aperçu de leur
  * bande-annonce (`useInPreviewZone`) : ailleurs (la recherche, une fiche),
@@ -19,14 +23,16 @@ import { BELOW_ZONE_VIEWPORT, PREVIEW_STAGE_HEIGHT, PREVIEW_ZONE_HEIGHT, belowZo
  */
 export const BelowZonePage = memo(function BelowZonePage({ zone, children }: { zone?: ReactNode; children: ReactNode }) {
   return (
-    <View style={styles.page} pointerEvents="box-none">
-      <View style={styles.zone} pointerEvents="box-none">
-        {zone}
+    <PreviewZoneScope>
+      <View style={styles.page} pointerEvents="box-none">
+        <View style={styles.zone} pointerEvents="box-none">
+          {zone}
+        </View>
+        <InZoneContext.Provider value>
+          <View style={styles.window}>{children}</View>
+        </InZoneContext.Provider>
       </View>
-      <InZoneContext.Provider value>
-        <View style={styles.window}>{children}</View>
-      </InZoneContext.Provider>
-    </View>
+    </PreviewZoneScope>
   );
 });
 

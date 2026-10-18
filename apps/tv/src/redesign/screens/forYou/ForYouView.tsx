@@ -9,7 +9,8 @@ import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
-import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
+import type { HeroModel } from "../../hero/HeroBanner";
+import { HeroZone } from "../../previewZone/HeroZone";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { BelowZonePage, useBelowZoneBottomRoom } from "../../rows/BelowZonePage";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
@@ -90,7 +91,6 @@ export interface ForYouViewProps {
 
 const LEFT = TV_STAGE.contentLeft;
 const HERO_WIDTH = 1920 - LEFT - 56;
-const HERO_REVEAL: FocusSectionReveal = { mode: "start" };
 /** Une étagère se pose toujours au même endroit, sous la zone (tv-core `previewZoneLayout.ts`). */
 const SHELF_REVEAL: FocusSectionReveal = BELOW_ZONE_REVEAL;
 
@@ -131,7 +131,14 @@ export const ForYouView = memo(function ForYouView({
         <StatusPanel {...status} />
       ) : (
         <RowStageProvider>
-          <BelowZonePage zone={zone}>
+          <BelowZonePage
+            zone={
+              zone ?? (
+                // Le héros vit dans la zone d'aperçu ; sans lui, la première carte en est le repli.
+                <HeroZone hero={hero} fallback={shelves[0]?.cards[0] ?? null} onPrimary={onHeroPrimary} onSecondary={onHeroSecondary} onToggleList={onHeroToggleList} />
+              )
+            }
+          >
             <ScrollView
               ref={scrollRef}
               style={styles.fill}
@@ -141,19 +148,8 @@ export const ForYouView = memo(function ForYouView({
               onScroll={onScroll}
               scrollEventThrottle={32}
             >
-              {hero ? (
-                <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-                  <HeroBanner
-                    hero={hero}
-                    width={HERO_WIDTH}
-                    onPrimary={onHeroPrimary}
-                    onSecondary={onHeroSecondary}
-                    onToggleList={onHeroToggleList}
-                  />
-                </FocusSection>
-              ) : null}
               {notice ? (
-                <View style={hero ? styles.noticeAfterHero : styles.noticeAlone}>
+                <View style={styles.noticeAlone}>
                   <ForYouNotice notice={notice} width={HERO_WIDTH} />
                 </View>
               ) : null}
@@ -162,7 +158,7 @@ export const ForYouView = memo(function ForYouView({
                   key={shelf.key}
                   shelf={shelf}
                   rank={index}
-                  first={index === 0 ? (hero || notice ? "afterHead" : "alone") : undefined}
+                  first={index === 0 ? (notice ? "afterHead" : "alone") : undefined}
                   filterLabel={index === 0 && filter ? filter.label : undefined}
                   onRemoveFilter={onRemoveFilter}
                   onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
@@ -267,9 +263,6 @@ const SCROLL_BOTTOM = 160;
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
-  // Le héros en tête de la fenêtre sous la zone : sans la marge d'avant, il y tient entier.
-  hero: { marginLeft: LEFT, marginTop: -BELOW_ZONE_ANCHOR_TOP },
-  noticeAfterHero: { marginLeft: LEFT, marginTop: 48 },
   noticeAlone: { marginLeft: LEFT },
   firstAfterHead: { marginTop: 72 },
   // Seule : sa place d'ancrage, sans défiler (la marge du haut de la page).
