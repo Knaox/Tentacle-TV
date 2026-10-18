@@ -144,7 +144,11 @@ RN.TVEventHandler.addListener((event) => {
     // Une source d'image ou de vidéo posée (création ou changement) : `setSource`, au même journal
     // que les événements natifs — l'instant où React a DIT d'afficher ce fond, ce flux.
     const sourceSet = (tag, viewName, props) => {
-      if (log.armed && props && (props.source || props.src) && /Image|Video/.test(viewName) && log.events.length < 8000) log.events.push([Date.now(), tag, "setSource"]);
+      if (log.armed && props && (props.source || props.src) && /Image|Video/.test(viewName) && log.events.length < 8000) {
+        log.events.push([Date.now(), tag, "setSource"]);
+        // Qui est cette vue, relevé APRÈS le rendu en cours : une image d'un fondu peut être démontée avant le rapport.
+        setTimeout(() => remember(tag), 0);
+      }
     };
     UIManager.createView = function (tag, viewName, rootTag, props) {
       log.viewOf.set(tag, viewName);
@@ -259,6 +263,14 @@ function tagsByKeyPrefix(prefix, max) {
 
 const nav = () => globalThis.__navGolden;
 
+/** L'identité d'une vue, gardée pour le rapport même si elle est démontée entre-temps. */
+const remembered = new Map();
+function remember(tag) {
+  if (remembered.has(tag)) return;
+  const fiber = hostIndex().get(tag);
+  if (fiber) remembered.set(tag, { view: log.viewOf.get(tag) ?? fiber.type, ...describe(fiber) });
+}
+
 globalThis.__perf = {
   /** `mode` : "fps" (images seules) ou "trace" (cadres des vues suivies). `watch` : préfixe de clé à suivre. */
   arm(mode = "fps", watch = null, max = 14) {
@@ -268,6 +280,7 @@ globalThis.__perf = {
     log.removes = 0;
     log.updates = 0;
     log.events = [];
+    remembered.clear();
     uiResult = null;
     let watched = [];
     if (mode === "trace") {
@@ -300,7 +313,7 @@ globalThis.__perf = {
     const about = {};
     for (const tag of tags) {
       const fiber = index.get(tag);
-      about[tag] = { view: log.viewOf.get(tag) ?? (fiber ? fiber.type : null), ...(fiber ? describe(fiber) : { key: null, names: [], gone: true }) };
+      about[tag] = remembered.get(tag) ?? { view: log.viewOf.get(tag) ?? (fiber ? fiber.type : null), ...(fiber ? describe(fiber) : { key: null, names: [], gone: true }) };
     }
     const byClass = {};
     for (const [, , name] of log.creates) byClass[name] = (byClass[name] || 0) + 1;
