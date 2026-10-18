@@ -194,4 +194,33 @@ export const suites = {
     }
     return { bursts: out };
   },
+
+  // nav (98ea322c2) : la course d'une RANGÉE — pas isolés, deux pas rapprochés, rafale, Retour, retour au début ; Accueil puis Pour vous.
+  async rangees(h) {
+    const steps = [];
+    const family = (key) => String(key ?? "").replace(/\d+$/, "");
+    const take = async (label, keys, { gapMs = 0, holdMs = 2000, mode = "trace", watch } = {}) => {
+      await h.arm(mode, watch);
+      const sentAt = Date.now();
+      for (const [i, k] of keys.entries()) {
+        if (i && gapMs) await h.sleep(gapMs);
+        await h.keys([k]);
+      }
+      await h.sleep(holdMs);
+      steps.push({ label, keys, sentAt, endFocus: (await h.obs()).focus, report: await h.disarm() });
+    };
+    const row = async (page, start, approach) => {
+      await startAt(h, start, approach, "");
+      const prefix = family((await h.obs()).focus);
+      for (let i = 1; i <= 5; i++) await take(`${page}, pas DROITE ${i}`, ["right"], { watch: prefix });
+      await take(`${page}, pas GAUCHE`, ["left"], { watch: prefix });
+      await take(`${page}, deux pas DROITE rapprochés`, ["right", "right"], { watch: prefix });
+      await take(`${page}, rafale DROITE ×6`, times("right", 6), { watch: prefix });
+      await take(`${page}, Retour (la rangée revient au début)`, ["menu"], { watch: prefix, holdMs: 2500 });
+    };
+    await row("accueil", HOME_START, ["down"]);
+    await row("pour vous", { fixtures: ["focus/foryou", "perf/apercus-distincts"], route: { name: "Recommendations" }, keys: ["wait:2"] }, ["down"]);
+    return { dwells: steps };
+  },
 };
+

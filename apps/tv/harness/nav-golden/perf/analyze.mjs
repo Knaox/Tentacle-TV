@@ -129,12 +129,47 @@ function jumps(r, watched) {
   return { movements, settledAtMs: settledAt, maxPt: max.pt, maxStepPt: step.pt, jumped: step.pt > JUMP_PT, key: step.pt > JUMP_PT ? step.key : max.key, atMsAfterFocus: step.pt > JUMP_PT ? step.at : max.at, watched: watched.length };
 }
 
+/**
+ * La COURSE de la rangée (la 1re vue suivie, la tête de la famille de clés),
+ * depuis l'envoi du 1er geste : où elle va, en combien de temps (50 %, 90 %,
+ * posée), et si elle dépasse, rebondit ou s'arrête en route (`reversals` :
+ * changements de sens de plus de 0,5 pt par image).
+ */
+export function course(r, sentAt) {
+  const trace = r.ui?.trace ?? [];
+  if (!trace.length || !r.watched?.length) return null;
+  const pts = trace.filter((row) => row[0] >= sentAt && row[1] != null).map((row) => [row[0] - sentAt, row[1]]);
+  if (pts.length < 2) return null;
+  const x0 = pts[0][1];
+  const xe = pts[pts.length - 1][1];
+  const total = xe - x0;
+  if (Math.abs(total) < 2) return { totalPt: Math.round(total), moved: false };
+  const at = (frac) => pts.find(([, x]) => Math.abs(x - x0) >= Math.abs(total) * frac)?.[0] ?? null;
+  let settled = 0;
+  let reversals = 0;
+  let lastSign = 0;
+  let maxStep = 0;
+  for (let k = 1; k < pts.length; k++) {
+    const dx = pts[k][1] - pts[k - 1][1];
+    if (Math.abs(dx) > 0.5) {
+      settled = pts[k][0];
+      const sign = Math.sign(dx);
+      if (lastSign && sign !== lastSign) reversals += 1;
+      lastSign = sign;
+    }
+    maxStep = Math.max(maxStep, Math.abs(dx));
+  }
+  const beyond = pts.map(([, x]) => (x - xe) * Math.sign(total)).reduce((m, v) => Math.max(m, v), 0);
+  return { totalPt: Math.round(total), moved: true, t50: at(0.5), t90: at(0.9), settledMs: settled, overshootPt: Math.round(beyond * 10) / 10, reversals, maxStepPt: Math.round(maxStep * 10) / 10 };
+}
+
 function dwellSummary(d) {
   const r = d.report;
   const lat = latencies(r);
   return {
     label: d.label,
     endFocus: d.endFocus,
+    course: d.sentAt ? course(r, d.sentAt) : undefined,
     fondMs: lat.fondMs,
     fondSetMs: lat.fondSetMs,
     videoSetMs: lat.videoSetMs,

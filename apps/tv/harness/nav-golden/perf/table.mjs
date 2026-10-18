@@ -14,7 +14,7 @@ const latest = (label, suite) => {
   return f ? JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) : null;
 };
 const th = (t) => (t ? `${String(t.fps60).padStart(4)} i/s ${String(t.dropped).padStart(3)} perdues pire ${String(t.worstMs).padStart(3)} ms` : "—");
-for (const suite of ["rafale-accueil", "rafale-grille", "maintenu", "pendant-apercu", "pas-bas", "latence", "lecteur", "memoire"]) {
+for (const suite of ["rafale-accueil", "rafale-grille", "maintenu", "pendant-apercu", "pas-bas", "rangees", "latence", "lecteur", "memoire"]) {
   console.log(`\n## ${suite}`);
   for (const label of labels) {
     const r = latest(label, suite);
@@ -32,9 +32,11 @@ for (const suite of ["rafale-accueil", "rafale-grille", "maintenu", "pendant-ape
     if (Array.isArray(s)) {
       for (const x of s) {
         const lat = x.fondMs !== undefined ? ` fond ${x.fondSetMs ?? "∅"}/${x.fondMs ?? "∅"} ms · vidéo ${x.videoSetMs ?? "∅"}/${x.videoMs ?? "∅"} ms · ${x.jumps?.movements ?? "∅"} mouvement(s), immobile +${x.jumps?.settledAtMs ?? "∅"} ms · saut ${x.jumps ? `${x.jumps.maxStepPt}/${x.jumps.maxPt} pt${x.jumps.jumped ? ` (${x.jumps.key} à +${x.jumps.atMsAfterFocus} ms)` : ""}` : "∅"} ·` : "";
+        const c = x.course;
+        const run = c === undefined ? "" : c?.moved ? ` course ${c.totalPt} pt : 50 % ${c.t50} · 90 % ${c.t90} · posée ${c.settledMs} ms · dépasse ${c.overshootPt} pt · rebonds ${c.reversals} ·` : " immobile ·";
         const release = x.afterReleaseMs != null ? ` lâcher → focus ${x.afterReleaseMs} ms (${x.endFocus}) ·` : "";
         const rate = x.focusRate ? ` pas/s ${x.focusRate.min}-${x.focusRate.median}-${x.focusRate.max} (${x.focusRate.steps} pas) ·` : "";
-        console.log(`    ${x.label.padEnd(44)}${lat}${release}${rate} UI ${th(x.ui)} | JS ${th(x.js)} | vues +${x.views.created}${x.views.video !== undefined ? ` (vidéo ${x.views.video})` : ""} −${x.views.removed}`);
+        console.log(`    ${x.label.padEnd(44)}${run}${lat}${release}${rate} UI ${th(x.ui)} | JS ${th(x.js)} | vues +${x.views.created}${x.views.video !== undefined ? ` (vidéo ${x.views.video})` : ""} −${x.views.removed}`);
       }
     } else if (suite === "lecteur") {
       console.log(`    vues vidéo créées ${s.videoViewsCreated} (${s.videoClasses.join(",")}), montées par pas ${s.mountedPerStep.join(" ")} · vues +${s.createdViews} −${s.removedViews} · UI ${th(s.ui)} | JS ${th(s.js)}`);
