@@ -7,7 +7,7 @@ const VIDEO_VIEW = /Video/i;
 const VIDEO_FIRST_FRAME = /ReadyForDisplay|FirstFrame|firstFrame|ExoEvent/;
 const IMAGE_LOADED = /^top(Load|LoadEnd)$|onLoad$/;
 /** Les composants de la zone d'aperçu (et de l'ancienne grande carte) : le fond y est une image. */
-const PREVIEW_COMPONENT = /Preview|Billboard|Spotlight|Stage|Zone/;
+const PREVIEW_COMPONENT = /Preview|Billboard|Spotlight|Stage|Zone|BackdropLayer/;
 /** Un cadre qui bouge de plus de 2 pt sans geste : un saut. */
 const JUMP_PT = 2;
 /** Le zoom du focus a fini de se poser : la référence des cadres pour les sauts. */
@@ -41,10 +41,11 @@ function latencies(r) {
   if (!focus) return { fondMs: null, videoMs: null };
   const [tf] = focus;
   const after = r.events.filter(([t]) => t >= tf);
-  const fond = after.find(([, tag, type]) => IMAGE_LOADED.test(type) && inPreview(r.about[tag]));
+  const fond = after.find(([, tag, type]) => IMAGE_LOADED.test(type) && inPreview(r.about[tag]) && !(r.about[tag]?.names ?? []).includes("TitleArt"));
   // Le fond DEMANDÉ (source posée sur une image de la zone) : sans gestionnaire `onLoad`, aucun
   // événement natif ne dit qu'il est chargé ; un fond en cache paraît à l'image suivante.
-  const fondSet = after.find(([, tag, type]) => type === "setSource" && /Image/.test(String(r.about[tag]?.view)) && inPreview(r.about[tag]));
+  const isBackdrop = (a) => inPreview(a) && !(a?.names ?? []).includes("TitleArt");
+  const fondSet = after.find(([, tag, type]) => type === "setSource" && /Image/.test(String(r.about[tag]?.view)) && isBackdrop(r.about[tag]));
   const videoSet = after.find(([, tag, type]) => type === "setSource" && VIDEO_VIEW.test(String(r.about[tag]?.view)));
   // Une vidéo encore MONTÉE au relevé (un lecteur démonté qui rend sa dernière image n'est pas l'aperçu du focus).
   const video = after.find(([, tag, type]) => VIDEO_FIRST_FRAME.test(type) && !r.about[tag]?.gone && (VIDEO_VIEW.test(String(r.about[tag]?.view)) || inPreview(r.about[tag])));

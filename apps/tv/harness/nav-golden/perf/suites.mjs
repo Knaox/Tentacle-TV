@@ -40,17 +40,19 @@ export const suites = {
     return { bursts: out };
   },
 
+  // La grille Films du banc : CINQ colonnes (grid:0 à grid:4 sur la 1re ligne).
   async "rafale-grille"(h) {
     await startAt(h, GRID_START, [], "grid:");
     const out = [];
-    out.push(await burst(h, "1re ligne DROITE ×9 (jusqu'à la dernière colonne)", times("right", 9)));
-    out.push(await burst(h, "1re ligne GAUCHE ×9", times("left", 9)));
+    out.push(await burst(h, "1re ligne DROITE ×4 (1re → dernière colonne)", times("right", 4)));
+    out.push(await burst(h, "1re ligne GAUCHE ×4 (dernière → 1re)", times("left", 4)));
     out.push(await burst(h, "BAS ×6 (1re colonne)", times("down", 6)));
-    out.push(await burst(h, "HAUT ×6", times("up", 6)));
-    await h.keys(["right", "right", "right"]);
+    out.push(await burst(h, "HAUT ×6 (1re colonne)", times("up", 6)));
+    await h.keys(["right", "right"]);
     await h.sleep(800);
     out.push(await burst(h, "BAS ×6 (colonne du milieu)", times("down", 6)));
     out.push(await burst(h, "HAUT ×6 (colonne du milieu)", times("up", 6)));
+    out.push(await burst(h, "va-et-vient D/G ×16 (milieu de ligne)", ["right", "right", "left", "left", "left", "left", "right", "right", "right", "right", "left", "left", "left", "left", "right", "right"]));
     return { bursts: out };
   },
 
@@ -72,10 +74,10 @@ export const suites = {
     // Grille : 1re, milieu, dernière colonne, puis la ligne du dessous.
     await startAt(h, GRID_START, [], "grid:");
     await dwell("grille, 2e colonne", ["right"], "grid:");
-    await dwell("grille, colonne du milieu", ["right", "right"], "grid:");
-    await dwell("grille, dernière colonne", times("right", 6), "grid:");
+    await dwell("grille, colonne du milieu", ["right"], "grid:");
+    await dwell("grille, dernière colonne", ["right", "right"], "grid:");
     await dwell("grille, ligne du dessous (dernière colonne)", ["down"], "grid:");
-    await dwell("grille, 1re colonne (retour)", times("left", 8), "grid:");
+    await dwell("grille, 1re colonne (rafale GAUCHE ×4)", times("left", 4), "grid:");
     return { dwells };
   },
 
