@@ -1,0 +1,90 @@
+{
+  "domain": "focus",
+  "reference": "72de16225",
+  "defaults": {
+    "settleMs": 1000
+  },
+  "scenarios": [
+    {
+      "id": "zone-grille-films",
+      "title": "Films, aperçus distincts : départ des essais de la zone au-dessus d'une grille",
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "focus/apercus-distincts"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          }
+        },
+        "keys": [
+          "wait:6"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "grid:0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zone-grille-series",
+      "title": "Séries, aperçus distincts : départ des essais de la zone au-dessus d'une grille",
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "focus/apercus-distincts"
+        ],
+        "route": {
+          "name": "Library",
+          "params": {
+            "libraryId": "d565273fd114d77bdf349a2896867069",
+            "libraryName": "Séries"
+          }
+        },
+        "keys": [
+          "wait:6"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "grid:0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zone-grille-ma-liste",
+      "title": "Ma liste variée, aperçus distincts : départ des essais de la zone au-dessus d'une grille",
+      "start": {
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/ma-liste-variee",
+          "focus/apercus-distincts"
+        ],
+        "route": {
+          "name": "Watchlist"
+        },
+        "keys": [
+          "wait:6"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "grid:0"
+          }
+        }
+      ]
+    }
+  ]
+}

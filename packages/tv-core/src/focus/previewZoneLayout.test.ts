@@ -6,8 +6,10 @@ import {
   BELOW_ZONE_VIEWPORT,
   PREVIEW_STAGE_HEIGHT,
   PREVIEW_ZONE_HEIGHT,
+  PREVIEW_ZONE_VEIL_FADE,
   belowZoneBottomRoom,
   belowZoneFrameCap,
+  previewZoneVeilStops,
 } from "./previewZoneLayout";
 import { revealOffset, type RevealPage } from "./reveal";
 
@@ -85,5 +87,19 @@ describe("belowZoneFrameCap — l'image d'une rangée tient sous la zone", () =>
 
   it("sans agrandissement au focus (Lite) : le plafond monte d'autant", () => {
     expect(belowZoneFrameCap(CHROME, 1)).toBeGreaterThan(belowZoneFrameCap(CHROME, FOCUS));
+  });
+});
+
+describe("previewZoneVeilStops — aucune arête sous le fond de la zone", () => {
+  it("plein jusqu'au bas du fond (720), effacé ensuite", () => {
+    const [top, solid, end] = previewZoneVeilStops(720);
+    expect(top).toBe(0);
+    expect(solid * PREVIEW_STAGE_HEIGHT).toBe(720);
+    expect(end * PREVIEW_STAGE_HEIGHT).toBe(720 + PREVIEW_ZONE_VEIL_FADE);
+    expect(end).toBeLessThanOrEqual(1);
+  });
+
+  it("jamais au-delà de la scène", () => {
+    expect(previewZoneVeilStops(1000)).toEqual([0, 1000 / 1080, 1]);
   });
 });

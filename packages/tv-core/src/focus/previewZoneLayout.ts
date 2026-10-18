@@ -77,3 +77,20 @@ export function belowZoneFrameCap(chrome: number, focusScale: number, viewport: 
 export function belowZoneBottomRoom(lastSectionHeight: number, viewport: number = BELOW_ZONE_VIEWPORT, anchorTop: number = BELOW_ZONE_ANCHOR_TOP): number {
   return Math.max(0, Math.ceil(viewport - anchorTop - lastSectionHeight));
 }
+
+/** L'effacement du voile sous le fond de la zone, en points. */
+export const PREVIEW_ZONE_VEIL_FADE = 280;
+
+/**
+ * Le VOILE NOIR de la scène sous la zone, plein jusqu'au bas du fond et de la
+ * vidéo de la zone (`mediaHeight`, qui finissent en noir OPAQUE), puis effacé
+ * sur `fade` points vers le fond de la page. Plus tôt, la lumière de la page
+ * (ses couleurs, vives dans une grille d'affiches) passait à côté et sous ce
+ * noir opaque : des arêtes nettes au bord gauche du fond et sous lui (relevé
+ * du 18/10, « un peu étrange » dans les bibliothèques et Ma liste). Rend les
+ * arrêts du dégradé vertical, en fractions de la scène.
+ */
+export function previewZoneVeilStops(mediaHeight: number, fade: number = PREVIEW_ZONE_VEIL_FADE, stage: number = PREVIEW_STAGE_HEIGHT): [number, number, number] {
+  const solid = Math.min(1, mediaHeight / stage);
+  return [0, solid, Math.min(1, (mediaHeight + fade) / stage)];
+}
