@@ -307,8 +307,9 @@ résultat.
   arrivé ailleurs, dans SA ligne, dès que la grille se pose — jamais pendant
   le mouvement, sans dépendre de la fin du maintien. HAUT tenu jusqu'en haut :
   tvOS traverse les filtres et revient, la colonne tient (retour en moins de
-  1,5 s) ; resté plus longtemps dans les filtres, BAS est une nouvelle entrée,
-  au plus proche (tv-core
+  1,5 s, sans pas de côté) ; resté plus longtemps dans les filtres, ou passé
+  d'un filtre à l'autre (GAUCHE / DROITE), BAS est une nouvelle entrée, au
+  plus proche (tv-core
   `focus/gridColumnHold`, `platform/tvos/focus/gridColumnHold.ts`, port
   `gridSettlePort`).
 
