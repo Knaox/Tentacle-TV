@@ -43,7 +43,31 @@ function previews(data) {
   });
 }
 
+/**
+ * La même chose, avec une vidéo PROPRE à chaque titre : `ytId` et adresse tirés
+ * de l'id (le flux du kit alterne `mha` et `spring`). Un lecteur unique indexé
+ * sur la vidéo voit enfin des vidéos différentes, comme en vrai — avec
+ * `apercus`, tous les titres rendent la même et rien ne la distingue.
+ */
+function distinctPreviews(data) {
+  // Avant `previews` : la première route qui correspond sert.
+  data.route("GET", /^\/api\/trailers\/preview$/, (req, res, { url, json }) => {
+    const id = (url.searchParams.get("itemId") ?? "banc").replace(/[^0-9a-f]/gi, "");
+    const clip = parseInt(id.slice(-1) || "0", 16) % 2 === 0 ? "mha" : "spring";
+    const base = `/api/trailers/sim/_net=relay/${clip}`;
+    json(res, 200, {
+      ytId: `${id}xxxxxxxxxxx`.slice(0, 11), version: "original", path: `${base}/master.m3u8?k=${id}`, mimeType: "application/vnd.apple.mpegurl",
+      expiresAt: Date.now() + 3_600_000, heights: [1080, 720, 360], qualities: [1080, 720, 360].map((height) => ({ height, path: `${base}/master-${height}.m3u8?k=${id}` })),
+    });
+  });
+  previews(data);
+}
+
 export default {
+  "apercus-distincts": {
+    description: "aperçus au focus : une vidéo propre à chaque titre (ytId et adresse par id ; flux `mha` ou `spring` du kit, port 3089)",
+    apply: distinctPreviews,
+  },
   home: {
     description: "accueil : filtre Netflix · Disney+ (pastille sur la rangée « Pour vous ») ; « Synopsis du héros N » sur les cinq reprises du héros",
     apply: (data) => {
