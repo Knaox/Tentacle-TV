@@ -24,7 +24,11 @@ import type { HoldKey, HoldPhase } from "../remote/intents";
  * Exceptions, celles de la règle des sections (GR-3) : la dernière ligne,
  * plus courte, est entrée par sa dernière affiche — ce focus-là est juste, et
  * la colonne retenue devient la sienne, comme avant. Hors de la grille (les
- * filtres, le rail), plus rien n'est retenu : on y revient au plus proche.
+ * filtres, le rail), plus rien n'est retenu : on y revient au plus proche —
+ * sauf PENDANT un maintien : HAUT tenu jusqu'en haut, tvOS traverse les
+ * filtres au bout de sa course et revient sur la première ligne (relevé du
+ * testeur, 18/10 : arrivée en grid:0 au lieu de grid:3) ; la colonne reste
+ * retenue jusqu'au lâcher.
  *
  * Module pur : l'adaptateur dit les focus et les maintiens, puis réclame la
  * clé rendue.
@@ -58,12 +62,17 @@ function inColumn(index: number, column: number, perLine: number, count: number)
  * (`null`). `columns`, `count` : la grille telle qu'elle est.
  */
 export function gridColumnHoldFocus(state: GridColumnHoldState, index: number | null, columns: number, count: number): GridColumnHoldStep {
-  if (index === null || index < 0 || index >= count) return { state: { ...GRID_COLUMN_HOLD_START, held: state.held }, correct: null };
+  if (index === null || index < 0 || index >= count) {
+    // Sorti de la grille PENDANT un maintien (HAUT tenu jusqu'aux filtres, que tvOS traverse au
+    // bout de sa course) : la colonne reste retenue, le retour dans la grille la retrouve.
+    return { state: state.held ? { ...state, focused: null } : GRID_COLUMN_HOLD_START, correct: null };
+  }
   const perLine = Math.max(1, Math.floor(columns));
   const column = index % perLine;
   const accept = { state: { ...state, column, focused: index }, correct: null };
-  // L'entrée dans la grille, ou un pas dans la même ligne : la colonne voulue, c'est celle-ci.
-  if (state.column === null || state.focused === null || Math.floor(state.focused / perLine) === Math.floor(index / perLine)) return accept;
+  // L'entrée dans la grille hors maintien, ou un pas dans la même ligne : la colonne voulue, c'est celle-ci.
+  if (state.column === null) return accept;
+  if (state.focused === null ? !state.held : Math.floor(state.focused / perLine) === Math.floor(index / perLine)) return accept;
   const target = inColumn(index, state.column, perLine, count);
   // Dans la colonne retenue, ou la dernière ligne plus courte entrée par sa dernière affiche.
   if (target === index) return accept;
@@ -78,7 +87,9 @@ export function gridColumnHoldFocus(state: GridColumnHoldState, index: number | 
  */
 export function gridColumnHoldRelease(state: GridColumnHoldState, columns: number, count: number): GridColumnHoldStep {
   const released = state.held ? { ...state, held: false } : state;
-  if (released.column === null || released.focused === null || released.focused >= count) return { state: released, correct: null };
+  // Lâché hors de la grille (les filtres, au bout d'un HAUT tenu) : on y reste, plus rien n'est retenu.
+  if (released.focused === null) return { state: GRID_COLUMN_HOLD_START, correct: null };
+  if (released.column === null || released.focused >= count) return { state: released, correct: null };
   const target = inColumn(released.focused, released.column, Math.max(1, Math.floor(columns)), count);
   return { state: released, correct: target === released.focused ? null : target };
 }
