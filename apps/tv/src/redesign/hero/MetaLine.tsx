@@ -1,5 +1,5 @@
-import { Fragment, memo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Fragment, memo, useCallback, useRef, useState } from "react";
+import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { STAR_PATH, STAR_VIEWBOX } from "@tentacle-tv/shared";
 import { colors, fonts, white } from "../theme/tokens";
@@ -19,33 +19,33 @@ export type MetaItem = string | { badge: string; strong?: boolean } | { rating: 
 export const MetaLine = memo(function MetaLine({ items, size = 24, singleLine = false }: {
   items: MetaItem[];
   size?: number;
-  /** Une seule ligne : ce qui ne tient pas est coupé à droite, jamais renvoyé à la ligne (la zone d'aperçu). */
+  /**
+   * Une seule ligne (la zone d'aperçu) : jamais renvoyé à la ligne, et ce qui ne
+   * tient pas ENTIER disparaît — un badge n'est jamais coupé en son milieu.
+   */
   singleLine?: boolean;
 }) {
+  const fit = useFit(singleLine);
   return (
-    <View style={[styles.row, singleLine && styles.single]}>
+    <View style={[styles.row, singleLine && styles.single]} onLayout={fit?.onRowLayout}>
       {items.map((item, index) => {
         const previous = items[index - 1];
         const needsDot = index > 0 && !(typeof item === "object" && "badge" in item && typeof previous === "object" && previous && "badge" in previous);
+        const dot = needsDot ? <Text style={[styles.text, { fontSize: size }]}>·</Text> : null;
+        // Clé de PLACE : une ligne qui change de titre (la zone d'aperçu, à chaque flèche) met ses
+        // textes à jour sur place au lieu de les recréer ; seul un élément qui change de genre se remonte.
+        if (fit) {
+          return (
+            <View key={index} style={[styles.cell, fit.hidden(index) && styles.cut]} onLayout={fit.onCellLayout(index)}>
+              {dot}
+              <Item item={item} size={size} />
+            </View>
+          );
+        }
         return (
-          // Clé de PLACE : une ligne qui change de titre (la zone d'aperçu, à chaque flèche) met ses
-          // textes à jour sur place au lieu de les recréer ; seul un élément qui change de genre se remonte.
           <Fragment key={index}>
-            {needsDot ? <Text style={[styles.text, { fontSize: size }]}>·</Text> : null}
-            {typeof item === "string" ? (
-              <Text style={[styles.text, { fontSize: size }]}>{item}</Text>
-            ) : "badge" in item ? (
-              <View style={[styles.badge, item.strong && styles.badgeStrong]}>
-                <Text style={[styles.badgeText, { fontSize: size - 3 }, item.strong && styles.badgeTextStrong]}>{item.badge}</Text>
-              </View>
-            ) : (
-              <View style={styles.rating}>
-                <Svg width={size - 2} height={size - 2} viewBox={STAR_VIEWBOX}>
-                  <Path d={STAR_PATH} fill={colors.accentLight} />
-                </Svg>
-                <Text style={[styles.text, styles.ratingText, { fontSize: size }]}>{item.rating}</Text>
-              </View>
-            )}
+            {dot}
+            <Item item={item} size={size} />
           </Fragment>
         );
       })}
@@ -53,9 +53,67 @@ export const MetaLine = memo(function MetaLine({ items, size = 24, singleLine = 
   );
 });
 
+function Item({ item, size }: { item: MetaItem; size: number }) {
+  if (typeof item === "string") return <Text style={[styles.text, { fontSize: size }]}>{item}</Text>;
+  if ("badge" in item) {
+    return (
+      <View style={[styles.badge, item.strong && styles.badgeStrong]}>
+        <Text style={[styles.badgeText, { fontSize: size - 3 }, item.strong && styles.badgeTextStrong]}>{item.badge}</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.rating}>
+      <Svg width={size - 2} height={size - 2} viewBox={STAR_VIEWBOX}>
+        <Path d={STAR_PATH} fill={colors.accentLight} />
+      </Svg>
+      <Text style={[styles.text, styles.ratingText, { fontSize: size }]}>{item.rating}</Text>
+    </View>
+  );
+}
+
+/**
+ * Ce qui tient sur la ligne : la largeur de la ligne et le bord droit de chaque
+ * élément, mesurés ; un élément qui dépasse est caché (avec son point). Une
+ * mesure par mise en page, jamais au focus.
+ */
+function useFit(on: boolean) {
+  const [rowWidth, setRowWidth] = useState<number | null>(null);
+  const [rights, setRights] = useState<ReadonlyMap<number, number>>(() => new Map());
+  const handlers = useRef(new Map<number, (event: LayoutChangeEvent) => void>());
+  const onRowLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = Math.round(event.nativeEvent.layout.width);
+    setRowWidth((before) => (before === width ? before : width));
+  }, []);
+  const onCellLayout = useCallback((index: number) => {
+    const known = handlers.current.get(index);
+    if (known) return known;
+    const handler = (event: LayoutChangeEvent) => {
+      const { x, width } = event.nativeEvent.layout;
+      const right = Math.ceil(x + width);
+      setRights((before) => {
+        if (before.get(index) === right) return before;
+        const next = new Map(before);
+        next.set(index, right);
+        return next;
+      });
+    };
+    handlers.current.set(index, handler);
+    return handler;
+  }, []);
+  if (!on) return null;
+  return {
+    onRowLayout,
+    onCellLayout,
+    hidden: (index: number) => rowWidth !== null && (rights.get(index) ?? 0) > rowWidth,
+  };
+}
+
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", columnGap: 14, rowGap: 10 },
   single: { flexWrap: "nowrap", overflow: "hidden" },
+  cell: { flexDirection: "row", alignItems: "center", columnGap: 14 },
+  cut: { opacity: 0 },
   text: { ...fonts.medium, color: white(0.84) },
   badge: {
     paddingHorizontal: 10,
