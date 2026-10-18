@@ -42,7 +42,8 @@ function latencies(r) {
   const [tf] = focus;
   const after = r.events.filter(([t]) => t >= tf);
   const fond = after.find(([, tag, type]) => IMAGE_LOADED.test(type) && inPreview(r.about[tag]));
-  const video = after.find(([, tag, type]) => VIDEO_FIRST_FRAME.test(type) && (VIDEO_VIEW.test(String(r.about[tag]?.view)) || inPreview(r.about[tag])));
+  // Une vidéo encore MONTÉE au relevé (un lecteur démonté qui rend sa dernière image n'est pas l'aperçu du focus).
+  const video = after.find(([, tag, type]) => VIDEO_FIRST_FRAME.test(type) && !r.about[tag]?.gone && (VIDEO_VIEW.test(String(r.about[tag]?.view)) || inPreview(r.about[tag])));
   const seen = new Map();
   for (const [t, tag, type] of after) {
     const a = r.about[tag] ?? {};
