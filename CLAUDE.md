@@ -725,7 +725,10 @@ au bas du bloc ; les voiles pleins vers le noir à gauche et en bas s'effacent, 
 reste posé (aucune arête). Tout revient au focus suivant, à la fin de l'aperçu et en PAUSE.
 **Jamais un « … » au milieu d'un mot** : le synopsis garde ses phrases entières, sinon une
 articulation, sinon rien (`previewZoneSynopsis.ts`, d'après ses lignes mesurées : `ZoneSynopsis`) ;
-surtitre et raison se resserrent. UNE portée par page (`PreviewZoneScope`, posée par `BelowZonePage`) : la carte dit
+surtitre et raison se resserrent ; un logo trop étroit (vertical, carré : `previewZoneUsesLogo`, < 1,2)
+cède au titre écrit. Le voile noir de la scène reste PLEIN jusqu'au bas du fond de la zone (720,
+`previewZoneVeilStops`) : sinon la lumière de la page (vive au-dessus d'une grille) longeait le noir
+opaque du fond en arêtes. UNE portée par page (`PreviewZoneScope`, posée par `BelowZonePage`) : la carte dit
 son focus (`useCardZoneFocus`, daté au rendu qui le constate), la zone lit le magasin ;
 une page couverte (fiche, grille par-dessus) coupe son aperçu et démonte son lecteur
 (`useIsFocused`) — un seul lecteur vivant. Vue : `redesign/previewZone/` (fond 1280 × 720

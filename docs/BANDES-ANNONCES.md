@@ -704,7 +704,10 @@ déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
   l'opacité tombe. Au repos, aucun « … » au milieu d'un mot : le synopsis complet est posé
   invisible à sa largeur, ses lignes mesurées donnent la place, et tv-core
   (`fitPreviewZoneSynopsis`) garde le texte entier, sinon ses phrases entières, sinon une
-  articulation suivie de « … », sinon rien.
+  articulation suivie de « … », sinon rien. Un logo trop étroit (rapport < 1,2 : `previewZoneUsesLogo`)
+  cède au titre écrit — un logo vertical n'y faisait qu'un point. Le voile noir de la scène reste
+  plein jusqu'au bas du fond (720, `previewZoneVeilStops`), puis s'efface sur 280 : la lumière de la
+  page ne longe plus le noir opaque du fond (arêtes nettes au-dessus des grilles, relevé du 18/10).
 - **Le port** : la vue ne sait rien de la vidéo (`redesign/cards/trailerPreviewPort.tsx`) ;
   une portée par page (`PreviewZoneScope`), la carte n'y dit que son focus
   (`useCardZoneFocus`), la page pose sa zone (`PreviewZoneSlot`) ; l'intégration
