@@ -218,8 +218,9 @@ export const suites = {
       await take(`${page}, rafale DROITE ×6`, times("right", 6), { watch: prefix });
       await take(`${page}, Retour (la rangée revient au début)`, ["menu"], { watch: prefix, holdMs: 2500 });
     };
-    await row("accueil", HOME_START, ["down"]);
-    await row("pour vous", { fixtures: ["focus/foryou", "perf/apercus-distincts"], route: { name: "Recommendations" }, keys: ["wait:2"] }, ["down"]);
+    if (h.only !== "pour-vous") await row("accueil", HOME_START, ["down"]);
+    // Pour vous : la pastille du filtre de plateformes est sous le héros ; la 1re étagère, un BAS plus bas.
+    await row("pour vous", { fixtures: ["focus/foryou", "perf/apercus-distincts"], route: { name: "Recommendations" }, keys: ["wait:2"] }, ["down", "down"]);
     return { dwells: steps };
   },
 };
