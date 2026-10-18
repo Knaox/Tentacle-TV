@@ -141,14 +141,21 @@ RN.TVEventHandler.addListener((event) => {
   const UIManager = RN.UIManager;
   const create = UIManager.createView;
   if (typeof create === "function" && !UIManager.__perfHooked) {
-    UIManager.createView = function (tag, viewName) {
+    // Une source d'image ou de vidéo posée (création ou changement) : `setSource`, au même journal
+    // que les événements natifs — l'instant où React a DIT d'afficher ce fond, ce flux.
+    const sourceSet = (tag, viewName, props) => {
+      if (log.armed && props && (props.source || props.src) && /Image|Video/.test(viewName) && log.events.length < 8000) log.events.push([Date.now(), tag, "setSource"]);
+    };
+    UIManager.createView = function (tag, viewName, rootTag, props) {
       log.viewOf.set(tag, viewName);
       if (log.armed && log.creates.length < 20000) log.creates.push([Date.now(), tag, viewName]);
+      sourceSet(tag, viewName, props);
       return create.apply(this, arguments);
     };
     const update = UIManager.updateView;
-    UIManager.updateView = function () {
+    UIManager.updateView = function (tag, viewName, props) {
       if (log.armed) log.updates += 1;
+      sourceSet(tag, viewName, props);
       return update.apply(this, arguments);
     };
     const manage = UIManager.manageChildren;
