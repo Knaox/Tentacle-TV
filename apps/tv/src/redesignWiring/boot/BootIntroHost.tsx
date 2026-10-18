@@ -90,6 +90,7 @@ export function BootIntroHost({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (phase !== "landed") return undefined;
     clock.landed.value = 1;
+    clock.stop();
     const timer = setTimeout(() => bootSound.dispose(), SOUND_TAIL_MS);
     return () => clearTimeout(timer);
   }, [phase, clock]);

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { runOnJS, useFrameCallback, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { INTRO_HOLD_AT, INTRO_TIMING } from "@tentacle-tv/shared/brandIntro";
 import {
@@ -34,6 +34,8 @@ export interface IntroClockControl extends IntroClock {
   /** Vrai : l'écran suivant est prêt — l'ouverture appuie, allume, plonge. */
   ready: SharedValue<boolean>;
   state: SharedValue<number>;
+  /** Arrivée ou renoncement : l'horloge ne compte plus aucune image. */
+  stop: () => void;
 }
 
 /**
@@ -103,8 +105,9 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
     scene.value = next;
   }, frozenAt === null);
 
-  // Arrivée ou renoncement : plus aucune image à compter.
   useEffect(() => () => frame.setActive(false), [frame]);
+  const stop = useCallback(() => frame.setActive(false), [frame]);
 
-  return { scene, idle, idleWeight, landed, ready, state };
+  // Un objet stable : les effets qui en dépendent ne se rejouent pas à chaque rendu.
+  return useMemo(() => ({ scene, idle, idleWeight, landed, ready, state, stop }), [scene, idle, idleWeight, landed, ready, state, stop]);
 }
