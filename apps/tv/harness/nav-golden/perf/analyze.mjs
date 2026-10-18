@@ -16,9 +16,26 @@ const SETTLE_MS = 700;
 const worst = (long) => (long?.length ? Math.max(...long.map((l) => l[1])) : 0);
 const thread = (r) => (r ? { fps60: r.fps60, dropped: r.dropped, hitches: r.hitches, worstMs: worst(r.long) } : null);
 
+/**
+ * Le RYTHME du focus pendant une touche maintenue : pas par 500 ms, du premier
+ * pas au dernier — un ralentissement au passage en défilement rapide se voit
+ * à un creux (`min` bien sous `median`).
+ */
+function focusRate(focus) {
+  if (focus.length < 4) return null;
+  const t0 = focus[0][0];
+  const t1 = focus[focus.length - 1][0];
+  const windows = [];
+  for (let t = t0; t + 500 <= t1; t += 500) windows.push(focus.filter(([at]) => at >= t && at < t + 500).length * 2);
+  if (!windows.length) return null;
+  const sorted = [...windows].sort((a, b) => a - b);
+  return { steps: focus.length, perSecond: windows, min: sorted[0], median: sorted[Math.floor(sorted.length / 2)], max: sorted[sorted.length - 1] };
+}
+
 function burstSummary(b) {
   const r = b.report;
   return {
+    focusRate: focusRate(r.focus),
     label: b.label,
     endFocus: b.endFocus,
     sentMs: b.sentMs,
@@ -79,6 +96,8 @@ function jumps(r, watched) {
   const tf = focus[0];
   const all = trace.filter((row) => row[0] >= tf);
   let settledAt = 0;
+  // Les MOUVEMENTS de la page : des suites d'images qui bougent (> 0,5 pt), séparées d'au moins 50 ms d'immobilité.
+  const moving = new Set();
   let max = { pt: 0, key: null, at: null };
   let step = { pt: 0, key: null, at: null };
   const from = tf + SETTLE_MS;
@@ -90,7 +109,10 @@ function jumps(r, watched) {
       const cur = at(all[k]);
       if (cur[0] == null || prev[0] == null) continue;
       const d = Math.max(Math.abs(cur[0] - prev[0]), Math.abs(cur[1] - prev[1]));
-      if (d > 0.5) settledAt = Math.max(settledAt, all[k][0] - tf);
+      if (d > 0.5) {
+        settledAt = Math.max(settledAt, all[k][0] - tf);
+        moving.add(all[k][0]);
+      }
       if (all[k][0] >= from && d > step.pt) step = { pt: Math.round(d * 10) / 10, key: w.key, at: all[k][0] - tf };
       if (base && all[k][0] >= from) {
         const b = at(base);
@@ -100,7 +122,9 @@ function jumps(r, watched) {
       }
     }
   });
-  return { settledAtMs: settledAt, maxPt: max.pt, maxStepPt: step.pt, jumped: step.pt > JUMP_PT, key: step.pt > JUMP_PT ? step.key : max.key, atMsAfterFocus: step.pt > JUMP_PT ? step.at : max.at, watched: watched.length };
+  const times = [...moving].sort((a, b) => a - b);
+  const movements = times.reduce((n, t, k) => (k === 0 || t - times[k - 1] > 50 ? n + 1 : n), 0);
+  return { movements, settledAtMs: settledAt, maxPt: max.pt, maxStepPt: step.pt, jumped: step.pt > JUMP_PT, key: step.pt > JUMP_PT ? step.key : max.key, atMsAfterFocus: step.pt > JUMP_PT ? step.at : max.at, watched: watched.length };
 }
 
 function dwellSummary(d) {
@@ -160,4 +184,43 @@ export function summarize(suite, raw) {
   if (suite === "lecteur") return playerSummary(raw);
   if (suite === "memoire") return memorySummary(raw);
   return raw;
+}
+
+/**
+ * Les SEUILS du « Validé fluidité » (cibles de design et nav, lot tvgrille) :
+ * - rafale : fil UI ≥ 57 i/s ramenées à 60 Hz, aucun écart d'image > 100 ms ;
+ * - tenue sur une carte : fond posé ≤ 200 ms, 1re image vidéo ≤ délai (800 ms) + 100 ms,
+ *   aucun pas de cadre > 2 pt d'une image à l'autre une fois le zoom posé ;
+ * - lecteur : jamais plus d'UNE vue vidéo montée à la fois ;
+ * - mémoire : le tas JS ne dépasse pas celui de la référence de plus de 15 %.
+ */
+export const THRESHOLDS = { uiFps: 57, worstFrameMs: 100, fondMs: 200, videoMs: 900, jumpPt: JUMP_PT, mountedVideos: 1, heapGrowth: 1.15 };
+
+const check = (name, ok, value, target) => ({ name, ok, value, target });
+
+/** Les verdicts d'une suite résumée ; `reference` (résumé de la même suite sur dev) pour la mémoire. */
+export function verdicts(suite, summary, reference = null) {
+  const T = THRESHOLDS;
+  if (suite === "lecteur") {
+    const most = Math.max(summary.mountedBefore, summary.mountedAfter, ...summary.mountedPerStep);
+    return [check("lecteur : vues vidéo montées à la fois", most <= T.mountedVideos, most, `≤ ${T.mountedVideos}`)];
+  }
+  if (suite === "memoire") {
+    if (!reference?.heapMb?.end || summary.heapMb?.end == null) return [check("mémoire : référence", false, summary.heapMb?.end, "relevé dev requis")];
+    const ratio = Math.round((summary.heapMb.end / reference.heapMb.end) * 100) / 100;
+    return [check("mémoire : tas JS face à dev", ratio <= T.heapGrowth, ratio, `≤ ×${T.heapGrowth}`)];
+  }
+  const out = [];
+  for (const x of summary) {
+    if (x.ui) {
+      out.push(check(`${x.label} : i/s UI`, x.ui.fps60 >= T.uiFps, x.ui.fps60, `≥ ${T.uiFps}`));
+      out.push(check(`${x.label} : pire image UI`, x.ui.worstMs <= T.worstFrameMs, x.ui.worstMs, `≤ ${T.worstFrameMs} ms`));
+    }
+    if (x.fondSetMs !== undefined) {
+      out.push(check(`${x.label} : fond posé`, x.fondSetMs != null && x.fondSetMs <= T.fondMs, x.fondSetMs, `≤ ${T.fondMs} ms`));
+      out.push(check(`${x.label} : 1re image vidéo`, x.videoMs != null && x.videoMs <= T.videoMs, x.videoMs, `≤ ${T.videoMs} ms`));
+      out.push(check(`${x.label} : saut`, Boolean(x.jumps) && !x.jumps.jumped, x.jumps?.maxStepPt ?? null, `≤ ${T.jumpPt} pt par image`));
+    }
+  }
+  return out;
 }
