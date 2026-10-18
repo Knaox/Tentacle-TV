@@ -2,21 +2,21 @@ import { memo, useCallback, useEffect, useMemo, useRef, type ReactElement } from
 import { StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, REVEAL_NEAREST_MARGIN, trailerPreviewTileSize } from "@tentacle-tv/tv-core";
-import { cardFocusFooterHeight } from "../../cards/CardFocusFooter";
+import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, belowZoneBottomRoom } from "@tentacle-tv/tv-core";
 import { useCardMetrics } from "../../cards/cardSizeMode";
 import type { CardModel } from "../../cards/cardTypes";
-import { PreviewRevealProvider, type PreviewReveal } from "../../rows/previewRevealPort";
-import { GridCarouselLine, type GridLineModel } from "./GridCarouselLine";
+import { GridLine, type GridLineModel } from "./GridLine";
 import { createGridMotion } from "./gridMotion";
-import { useGridLinePush } from "./gridLinePush";
 import { useGridPreviewWarm } from "./gridPreviewWarm";
 import { useGridAhead } from "./useGridAhead";
 import { mountProfile } from "../../render/mountProfile";
+import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { PreviewZoneSlot } from "../../cards/trailerPreviewPort";
+import { BelowZonePage } from "../../rows/BelowZonePage";
 
 /**
  * La grille d'affiches des pages de catalogue — bibliothèque, Ma liste,
- * Favoris, Parcourir : de grandes affiches 2:3, cinq ou six par ligne, leur
+ * Favoris, Parcourir, une collection : de grandes affiches 2:3, cinq ou six par ligne, leur
  * légende dessous. Au focus, l'affiche grandit depuis son centre (la légende
  * ne bouge pas) ; rien au centre de l'image.
  *
@@ -28,8 +28,10 @@ import { mountProfile } from "../../render/mountProfile";
  * Chaque LIGNE est une section (`FocusSection`, clé
  * `${focusPrefix}:line:<n>`) : BAS depuis une colonne que la dernière ligne
  * n'a pas atteint sa dernière affiche, au plus proche ; la ligne focalisée
- * vient entière à l'écran, « Maintenir OK » compris, en un seul mouvement —
- * la première, elle, ramène la page tout en haut (titre et filtres).
+ * se pose TOUJOURS au même endroit, juste sous la zone fixe de l'aperçu
+ * (`BelowZonePage`, tv-core `previewZoneLayout.ts`), en un seul mouvement —
+ * la première comme les autres ; l'en-tête, lui, ramène la page tout en haut
+ * (titre et filtres).
  *
  * Les lignes sont RECYCLÉES (FlashList) : une ligne qui sort de l'écran sert
  * à celle qui arrive, ses cartes reçoivent un autre titre au lieu d'être
@@ -38,13 +40,11 @@ import { mountProfile } from "../../render/mountProfile";
  * clées par leur PLACE, et une carte qui change de titre change d'image sans
  * jamais montrer la précédente (`MediaCard`).
  *
- * L'aperçu au focus (Apple TV, Android TV) : chaque ligne est un CARROUSEL
- * de l'accueil sans titre (`GridCarouselLine`, tv-core
- * `cards/trailerPreviewGrid.ts`) — l'affiche dont l'aperçu démarre devient la
- * grande carte, passe en tête de sa ligne (ou en butée au bout), sa légende
- * dessous ; les lignes du dessous descendent d'autant (`gridLinePush`), la
- * page aussi si la ligne dépasse en bas. HAUT et BAS gardent la colonne
- * (l'intégration déclare l'entrée des lignes voisines, tv-core
+ * L'aperçu au focus (Apple TV, Android TV) : chaque ligne est FIXE
+ * (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) — elle ne défile ni ne
+ * tourne, rien n'y grandit, GAUCHE et DROITE ne font que déplacer le focus ;
+ * l'aperçu se joue dans la zone fixe en haut de l'écran. HAUT et BAS gardent
+ * la colonne (l'intégration déclare l'entrée des lignes voisines, tv-core
  * `gridLineEntries`). Les aperçus de sa ligne et de la suivante se préparent
  * d'avance.
  */
@@ -63,6 +63,8 @@ export interface PosterGridProps {
   onFocusCard?: (card: CardModel) => void;
   /** La fin approche : la page suivante du catalogue. */
   onEndReached?: () => void;
+  /** La zone fixe de l'aperçu, en haut de l'écran (`BelowZonePage`). */
+  zone?: ReactElement | null;
 }
 
 /** La colonne de contenu : après la navigation repliée, jusqu'à la marge sûre. */
@@ -118,43 +120,29 @@ export const PosterGrid = memo(function PosterGrid({
   onLongPressCard,
   onFocusCard,
   onEndReached,
+  zone,
 }: PosterGridProps) {
   const columns = useGridColumns(forcedColumns);
   const width = posterWidth(columns);
-  const content = useGridContent(width);
   const lines = useLines(cards, columns);
   const list = useRef<FlashList<Line>>(null);
   const focusCard = useGridAhead(list, cards, columns, onFocusCard);
-  // Le mouvement de la grille : la préparation attend qu'elle se pose (`gridMotion`).
+  // Le mouvement de la grille — son focus, son défilement : la préparation attend qu'elle se pose (`gridMotion`).
   const motion = useMemo(() => createGridMotion(), []);
   useEffect(() => () => motion.dispose(), [motion]);
-  // Le défilement de la page, relevé sans rendu : la grande carte qui dépasse en bas l'y fait descendre.
-  const scrollY = useRef(0);
-  const onScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      scrollY.current = event.nativeEvent.contentOffset.y;
-      motion.scrolled(scrollY.current);
-    },
-    [motion],
-  );
-  const reveal = useMemo<PreviewReveal>(
-    () => ({ scrollBy: (by) => list.current?.scrollToOffset({ offset: scrollY.current + by, animated: true }) }),
-    [],
-  );
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => motion.scrolled(event.nativeEvent.contentOffset.y), [motion]);
   const warm = useGridPreviewWarm(cards, columns, motion);
-  const push = useGridLinePush();
   const height = lineHeight(width);
   const stride = lineStride(width);
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<Line>) => (
-      <GridCarouselLine
+      <GridLine
         line={item}
         index={index}
         width={width}
         height={height}
         stride={stride}
         motion={motion}
-        push={push}
         focusPrefix={focusPrefix}
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}
@@ -162,74 +150,64 @@ export const PosterGrid = memo(function PosterGrid({
         onWarm={warm}
       />
     ),
-    [motion, push, width, height, stride, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
+    [motion, width, height, stride, focusPrefix, onPressCard, onLongPressCard, focusCard, warm],
   );
+  // Assez de place sous la dernière ligne pour qu'elle se pose sous la zone, comme les autres.
+  const content = useMemo(() => ({ ...styles.content, paddingBottom: Math.max(GRID_BOTTOM, belowZoneBottomRoom(height)) }), [height]);
+  // L'en-tête (titre, filtres, Retour) ramène la page tout en haut quand le focus y remonte :
+  // les lignes, elles, se posent sous la zone (`gridLineReveal`).
+  const shownHeader = useMemo(() => (header ? <FocusSection reveal={HEADER_REVEAL}>{header}</FocusSection> : header), [header]);
   return (
-    // FlashList veut un parent de taille connue : la scène.
-    <PreviewRevealProvider reveal={reveal}>
-      <View style={styles.list}>
-        <FlashList
-          ref={list}
-          // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
-          key={`grid-${columns}`}
-          data={lines}
-          keyExtractor={lineKey}
-          renderItem={renderItem}
-          estimatedItemSize={stride}
-          // Deux lignes d'avance de chaque côté (la liste étend ensuite son
-          // avance par étapes) : une flèche maintenue trouve toujours la ligne
-          // suivante montée — la règle des sections la cherche parmi les
-          // lignes présentes. Le profil de montage la règle (`mountProfile` :
-          // une ligne en mode Lite).
-          drawDistance={mountProfile().gridDrawDistance}
-          ListHeaderComponent={header}
-          ListEmptyComponent={empty}
-          ListFooterComponent={footer}
-          ItemSeparatorComponent={Separator}
-          contentContainerStyle={content}
-          showsVerticalScrollIndicator={false}
-          // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
-          // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
-          // étiquettes comprises — à chaque lot de lignes ajouté et à chaque
-          // battement du défilement rapide. Mesuré au profileur : le premier
-          // poste du fil d'interface en défilement rapide.
-          overrideProps={SCROLL_PROPS}
-          onEndReached={onEndReached}
-          onScroll={onScroll}
-          // La page suivante part à trois écrans de la fin : quand le focus
-          // dévale (flèche maintenue, glisser vif), elle est là avant lui.
-          onEndReachedThreshold={GRID_END_REACHED_SCREENS}
-        />
-      </View>
-    </PreviewRevealProvider>
+    // La zone d'aperçu de la grille : avant tout focus d'affiche, la première (`fallback`).
+    <BelowZonePage zone={zone ?? <PreviewZoneSlot fallback={cards[0] ?? null} />}>
+      <FlashList
+        ref={list}
+        // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.
+        key={`grid-${columns}`}
+        data={lines}
+        keyExtractor={lineKey}
+        renderItem={renderItem}
+        estimatedItemSize={stride}
+        // Deux lignes d'avance de chaque côté (la liste étend ensuite son
+        // avance par étapes) : une flèche maintenue trouve toujours la ligne
+        // suivante montée — la règle des sections la cherche parmi les
+        // lignes présentes. Le profil de montage la règle (`mountProfile` :
+        // une ligne en mode Lite).
+        drawDistance={mountProfile().gridDrawDistance}
+        ListHeaderComponent={shownHeader}
+        ListEmptyComponent={empty}
+        ListFooterComponent={footer}
+        ItemSeparatorComponent={Separator}
+        contentContainerStyle={content}
+        showsVerticalScrollIndicator={false}
+        // Pas de barre d'index du défilement rapide de tvOS (flèche maintenue) :
+        // la grille n'en montre aucune, et tvOS la refabriquait pourtant —
+        // étiquettes comprises — à chaque lot de lignes ajouté et à chaque
+        // battement du défilement rapide. Mesuré au profileur : le premier
+        // poste du fil d'interface en défilement rapide.
+        overrideProps={SCROLL_PROPS}
+        onEndReached={onEndReached}
+        onScroll={onScroll}
+        // La page suivante part à trois écrans de la fin : quand le focus
+        // dévale (flèche maintenue, glisser vif), elle est là avant lui.
+        onEndReachedThreshold={GRID_END_REACHED_SCREENS}
+      />
+    </BelowZonePage>
   );
 });
 
 const lineKey = (line: Line) => line.cards[0].id;
 
-/**
- * Le contenu de la liste : sa marge du bas fait la place de ce que la grande
- * carte d'une affiche gagne (l'image, puis son pied) — la dernière ligne
- * agrandie, la page peut encore descendre pour la montrer entière.
- */
-function useGridContent(width: number) {
-  const { scale } = useCardMetrics();
-  return useMemo(() => {
-    const height = Math.round(width * 1.5);
-    const tile = trailerPreviewTileSize({ cardWidth: width, cardHeight: height, screenWidth: 1920, maxWidth: GRID_WIDTH, sizeScale: scale });
-    const grow = Math.max(0, tile.height - height) + cardFocusFooterHeight({ note: false, hold: true, preview: true });
-    return { ...styles.content, paddingBottom: Math.max(GRID_BOTTOM, grow + REVEAL_NEAREST_MARGIN) };
-  }, [width, scale]);
-}
-
-/** La marge du bas, au repos. */
+/** La marge du bas, au moins. */
 const GRID_BOTTOM = 160;
+
+const HEADER_REVEAL: FocusSectionReveal = { mode: "start" };
 
 /** La légende d'une affiche au repos (`MediaCard`) : 14 de marge, le titre (24)
  *  et l'année (22) à 1,21 em la ligne (Inter), 2 entre les deux. */
 const CAPTION_HEIGHT = 72;
 
-/** La hauteur d'une ligne au repos, fixe : ce que la grande carte gagne déborde (`GridCarouselLine`). */
+/** La hauteur d'une ligne au repos, fixe : la ligne ne grandit jamais (`GridLine`). */
 function lineHeight(width: number): number {
   return Math.round(width * 1.5) + CAPTION_HEIGHT;
 }
@@ -241,12 +219,7 @@ function lineStride(width: number): number {
 
 const SCROLL_PROPS = { showsScrollIndex: false };
 
-/** La hauteur de la scène : une hauteur explicite (un `flex: 1` peut écraser
- *  la grille à 1 point sous un guide de focus sans style). */
-const STAGE_HEIGHT = 1080;
-
 const styles = StyleSheet.create({
-  list: { height: STAGE_HEIGHT },
   content: {
     paddingLeft: TV_STAGE.contentLeft,
     paddingRight: TV_STAGE.safe.x,

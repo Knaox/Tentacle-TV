@@ -179,6 +179,17 @@ résolution de son écran. Une `Modal` fait de même :
   commentaires en français. Il lit des `RemoteIntent`, jamais un `eventType` ;
   il lit `RemoteTraits`, jamais `Platform.OS`.
 
+### Les pages à zone (18/10)
+
+L'Accueil, « Pour vous » et les grilles ont une ZONE FIXE en haut de l'écran,
+où se joue l'aperçu de la carte focalisée ; la page défile DESSOUS, jamais
+sous elle (`redesign/rows/BelowZonePage.tsx`). Rangées et lignes sont fixes :
+seul le focus bouge, rien ne grandit, et la section focalisée se pose toujours
+au même endroit, juste sous la zone — la règle est dans `focus/`
+(`previewZoneLayout.ts`, mode `anchor` de `reveal.ts`), appliquée par la
+section native des deux plateformes. Aucune règle de mise en page de carte
+(tête de rangée, poussage, grande carte) ne subsiste.
+
 ## L'adaptateur tvOS — `apps/tv/src/platform/tvos/`
 
 Il a le droit de contenir :

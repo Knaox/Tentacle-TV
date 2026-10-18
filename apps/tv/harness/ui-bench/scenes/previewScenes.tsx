@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { CARD_SIZE_GRID_COLUMNS, CARD_SIZES, type CardSize } from "@tentacle-tv/tv-core";
+import { CARD_SIZE_GRID_COLUMNS, CARD_SIZES, previewZoneShown, type CardSize } from "@tentacle-tv/tv-core";
 import { CardSizeProvider } from "../../../src/redesign/cards/cardSizeMode";
-import { TrailerPreviewProvider, type CardPreview, type CardPreviewHook } from "../../../src/redesign/cards/trailerPreviewPort";
+import {
+  TrailerPreviewProvider, usePreviewZoneCard, usePreviewZoneState, usePreviewZoneStore, type PreviewZoneRenderer,
+} from "../../../src/redesign/cards/trailerPreviewPort";
+import { PreviewZoneView } from "../../../src/redesign/previewZone/PreviewZoneView";
+import { zoneModelOfCard, zoneModelOfHero } from "../../../src/redesign/previewZone/zoneModel";
 import { HomeView } from "../../../src/redesign/screens/home/HomeView";
 import type { BenchData } from "../data/benchData";
 import { navOf } from "../data/screenModels";
@@ -12,16 +16,13 @@ import { rowsOf } from "./homeScenes";
 import type { BenchScene } from "./types";
 
 /**
- * L'aperçu de bande-annonce au focus — la GRANDE CARTE, sans serveur : une
- * fausse vidéo OPAQUE (`FAKE_VIDEO`) s'y montre dès que la carte a le focus.
- * Ce qu'on juge : rien de la carte ne dépasse de la grande carte (ni ses
- * bords agrandis, ni sa lueur), la dernière carte d'une rangée se montre
- * entière, la grande carte suit la taille des cartes, et une recommandation
- * hors bibliothèque grandit comme les autres. Dans une grille (`apercu/grille-*`),
- * chaque ligne se comporte comme une rangée : la grande carte, sa légende
- * dessous, les lignes du dessous descendues. Le passage en tête, lui, ne se
- * voit qu'au focus NATIF (`focus off`, la télécommande) : figé, le focus ne
- * fait pas défiler une rangée de l'accueil non plus.
+ * La ZONE D'APERÇU, sans serveur : la zone de la page montre la carte
+ * focalisée (fond, logo, titre, légende) et, `PREVIEW_DELAY_MS` après le
+ * focus, une fausse vidéo OPAQUE (`FAKE_VIDEO`) qui entre en fondu sur le fond,
+ * avec l'indice Lecture/Pause. Ce qu'on juge : la zone toujours au même
+ * endroit, quelle que soit la colonne ; le texte lisible sur le dégradé ; la
+ * rangée ou la ligne focalisée juste sous la zone ; rien de la zone ne
+ * recouvre une carte ; la carte ne grandit jamais.
  */
 
 const FAKE_VIDEO = (
@@ -31,25 +32,32 @@ const FAKE_VIDEO = (
   </View>
 );
 
-const FOCUSED_PREVIEW: CardPreview = { expanded: true, video: FAKE_VIDEO };
-
-/** La carte focalisée a sa vidéo, et grandit aussitôt. */
-const useFakePreview: CardPreviewHook = (subject, focused) => (subject && focused ? FOCUSED_PREVIEW : null);
-
-/** Comme dans l'app, l'aperçu démarre APRÈS le focus : la ligne apprend le focus d'abord. */
+/** Comme dans l'app, la vidéo paraît APRÈS le focus (le délai de l'utilisateur, plus court ici). */
 const PREVIEW_DELAY_MS = 600;
-const useDelayedFakePreview: CardPreviewHook = (subject, focused) => {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (!subject || !focused) {
-      setReady(false);
-      return undefined;
-    }
-    const timer = setTimeout(() => setReady(true), PREVIEW_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [subject, focused]);
-  return subject && focused && ready ? FOCUSED_PREVIEW : null;
+const PLAYING = { paused: false, muted: false };
+
+/** La zone du banc : la règle et la vue de l'app, une fausse vidéo à la place du lecteur. */
+const BenchZone: PreviewZoneRenderer = ({ hero = null, fallback = null }) => {
+  const store = usePreviewZoneStore();
+  if (!store) return null;
+  return <BenchZoneBody hero={hero} fallback={fallback} store={store} />;
 };
+
+function BenchZoneBody({ hero, fallback, store }: { hero: Parameters<typeof zoneModelOfHero>[0] | null; fallback: Parameters<typeof zoneModelOfCard>[0] | null; store: NonNullable<ReturnType<typeof usePreviewZoneStore>> }) {
+  const state = usePreviewZoneState(store);
+  const last = usePreviewZoneCard(store);
+  const shown = previewZoneShown(state, { hasHero: hero !== null, fallbackId: fallback?.id ?? null });
+  const card = shown?.kind === "card" ? (last?.id === shown.id ? last : fallback) : null;
+  const model = shown?.kind === "hero" && hero ? zoneModelOfHero(hero) : card ? zoneModelOfCard(card, null) : null;
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    setPlaying(false);
+    if (!state.focused) return undefined;
+    const timer = setTimeout(() => setPlaying(true), PREVIEW_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [state.focused, state.since]);
+  return <PreviewZoneView model={model} heroRoom={shown?.kind === "hero"} video={FAKE_VIDEO} videoShown={playing} remote={playing ? PLAYING : null} />;
+}
 
 const LABELS: Readonly<Record<CardSize, string>> = { small: "Petite", normal: "Normale", large: "Grande" };
 /** Six cartes par rangée : la dernière est `<rangée>:5`. */
@@ -66,10 +74,10 @@ function PreviewHome({ data }: { data: BenchData }) {
   return <HomeView nav={nav} hero={null} rows={rows} palette={palette} onLongPressCard={() => undefined} />;
 }
 
-function wrap(size: CardSize, child: React.ReactElement, usePreview: CardPreviewHook = useFakePreview) {
+function wrap(size: CardSize, child: React.ReactElement) {
   return (
     <CardSizeProvider size={size}>
-      <TrailerPreviewProvider usePreview={usePreview}>{child}</TrailerPreviewProvider>
+      <TrailerPreviewProvider zone={BenchZone}>{child}</TrailerPreviewProvider>
     </CardSizeProvider>
   );
 }
@@ -82,7 +90,7 @@ const forYouAbsent = FOR_YOU_SCENES.find((scene) => scene.id === "pour-vous/a-de
 export const PREVIEW_SCENES: BenchScene[] = CARD_SIZES.flatMap((size): BenchScene[] => [
   {
     id: `apercu/accueil-${size}`,
-    group: "Aperçu au focus",
+    group: "Zone d'aperçu",
     label: `Accueil, six cartes par rangée · ${LABELS[size]}`,
     focusKeys: ["resume:0", "resume:2", "resume:5", "nextUp:5"],
     settleMs: 1800,
@@ -90,17 +98,17 @@ export const PREVIEW_SCENES: BenchScene[] = CARD_SIZES.flatMap((size): BenchScen
   },
   {
     id: `apercu/grille-${size}`,
-    group: "Aperçu au focus",
-    label: `Grille (Films), chaque ligne un carrousel · ${LABELS[size]}`,
+    group: "Zone d'aperçu",
+    label: `Grille (Films), la zone quelle que soit la colonne · ${LABELS[size]}`,
     focusKeys: gridFocusKeys(CARD_SIZE_GRID_COLUMNS[size]),
     settleMs: 2400,
-    render: (data) => wrap(size, <LibraryScene data={data} setup={{ kind: "movies", trailers: true }} />, useDelayedFakePreview),
+    render: (data) => wrap(size, <LibraryScene data={data} setup={{ kind: "movies", trailers: true }} />),
   },
   ...(forYouAbsent
     ? [{
         ...forYouAbsent,
         id: `apercu/pour-vous-${size}`,
-        group: "Aperçu au focus",
+        group: "Zone d'aperçu",
         label: `Pour vous, hors bibliothèque · ${LABELS[size]}`,
         render: (data: BenchData) => wrap(size, forYouAbsent.render(data)),
       }]

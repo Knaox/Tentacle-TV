@@ -1,7 +1,7 @@
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useMemo, type ReactNode } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { HOME_LOADING_KEY, heroInView } from "@tentacle-tv/tv-core";
+import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL, HOME_LOADING_KEY } from "@tentacle-tv/tv-core";
 import { useTranslation } from "react-i18next";
 import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { AmbientSource } from "../../background/ambientSource";
@@ -10,11 +10,12 @@ import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
 import { FocusTarget } from "../../focus/FocusTarget";
-import { HeroBanner, type HeroModel } from "../../hero/HeroBanner";
+import type { HeroModel } from "../../hero/HeroBanner";
+import { HeroZone } from "../../previewZone/HeroZone";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
+import { BelowZonePage, useBelowZoneBottomRoom } from "../../rows/BelowZonePage";
 import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
-import { PreviewRevealProvider, usePagePreviewReveal } from "../../rows/previewRevealPort";
 import { RowStageProvider } from "../../rows/rowStage";
 import { ScreenReveal } from "../../motion/ScreenReveal";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
@@ -31,11 +32,14 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
  * `useNextUp`, `useWatchlist`, `useLatestItems`, `useRecoPageVisit` (cartes),
  * `useCardMarkers` (marqueurs) et `paletteFromBlurHash` (lumière).
  *
- * Le héros et chaque rangée sont des SECTIONS (`FocusSection`) : HAUT / BAS
- * passe de l'une à la voisine, au plus proche ; le focus qui entre dans une
- * rangée l'amène ENTIÈRE à l'écran — sa légende et l'indication de l'appui
- * long avec elle —, en un seul mouvement ; dans le héros, la page remonte tout
- * en haut. Au banc, la rangée de la clé figée (`useForcedFocusReveal`).
+ * La page est À ZONE (`BelowZonePage`, tv-core `previewZoneLayout.ts`) : en
+ * haut, la zone fixe de l'aperçu (`zone`), dessous, la page qui défile — le
+ * héros en tête, puis les rangées. Le héros et chaque rangée sont des
+ * SECTIONS (`FocusSection`) : HAUT / BAS passe de l'une à la voisine, au plus
+ * proche ; dans le héros, la page remonte tout en haut ; la rangée focalisée
+ * se pose TOUJOURS au même endroit, juste sous la zone, en un seul mouvement
+ * — seule la page bouge.
+ * Au banc, la rangée de la clé figée (`useForcedFocusReveal`).
  *
  * `filter` : la pastille du filtre de plateformes du compte, posée sur la
  * rangée `filterRowKey` — la première rangée recommandée réellement servie
@@ -89,13 +93,13 @@ export interface HomeViewProps {
   onFocusCard?: (rowKey: string, card: CardModel) => void;
   /** Le héros quitte l'écran (plus de la moitié défilée) ou y revient. */
   onHeroVisibleChange?: (visible: boolean) => void;
+  /** La zone fixe de l'aperçu, en haut (`BelowZonePage`). */
+  zone?: ReactNode;
 }
 
 const LEFT = TV_STAGE.contentLeft;
-const HERO_WIDTH = 1920 - LEFT - 56;
-/** Le héros se montre la page tout en haut ; une rangée, entière, au plus près. */
-const HERO_REVEAL: FocusSectionReveal = { mode: "start" };
-const ROW_REVEAL: FocusSectionReveal = { mode: "nearest" };
+/** Une rangée se pose toujours au même endroit, sous la zone (tv-core `previewZoneLayout.ts`). */
+const ROW_REVEAL: FocusSectionReveal = BELOW_ZONE_REVEAL;
 
 export const HomeView = memo(function HomeView({
   nav,
@@ -116,26 +120,32 @@ export const HomeView = memo(function HomeView({
   onLongPressCard,
   onFocusCard,
   onHeroVisibleChange,
+  zone,
 }: HomeViewProps) {
   const { t } = useTranslation();
   const loadingLabel = t("common:loading");
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
-  const heroVisible = useRef(true);
   const rewind = useRowRewindPort();
-  // La grande carte d'aperçu qui grandit vers le bas : la page la montre entière.
-  const { reveal, track: trackPreviewScroll } = usePagePreviewReveal(scrollRef);
+  // La dernière rangée se pose sous la zone comme les autres : la marge du bas qu'il lui faut.
+  const bottom = useBelowZoneBottomRoom(SCROLL_BOTTOM);
+  const scrollContent = useMemo(() => ({ paddingTop: BELOW_ZONE_ANCHOR_TOP, paddingBottom: bottom.room }), [bottom.room]);
+  // Le héros vit dans la zone d'aperçu : ses boutons dans leur section, son titre dessiné par la zone.
+  const zoneNode = zone ?? (
+    <HeroZone
+      hero={hero}
+      onPrimary={onHeroPrimary}
+      onSecondary={onHeroSecondary}
+      onToggleList={onHeroToggleList}
+      onLongPress={onHeroLongPress}
+      onVisibleChange={onHeroVisibleChange}
+    />
+  );
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
-      trackPreviewScroll(contentOffset.y);
       rewind?.scroll(contentOffset.y, layoutMeasurement.height);
-      // Plus de la moitié du héros hors de l'écran : il n'est plus dans le champ (tv-core).
-      const visible = heroInView(contentOffset.y, TV_STAGE.hero.top, TV_STAGE.hero.height);
-      if (visible === heroVisible.current) return;
-      heroVisible.current = visible;
-      onHeroVisibleChange?.(visible);
     },
-    [onHeroVisibleChange, rewind, trackPreviewScroll],
+    [rewind],
   );
   return (
     <View style={styles.root}>
@@ -147,39 +157,24 @@ export const HomeView = memo(function HomeView({
           <StatusPanel {...status} />
         ) : (
           <RowStageProvider>
-            <PreviewRevealProvider reveal={reveal}>
+            <BelowZonePage zone={zoneNode}>
               <ScrollView
                 ref={scrollRef}
                 style={styles.fill}
-                contentContainerStyle={styles.scroll}
+                contentContainerStyle={scrollContent}
                 showsVerticalScrollIndicator={false}
-                // La page descend AVANT que la rangée d'une grande carte d'aperçu ait grandi
-                // (`previewRevealPort`) : sans cela, iOS bornait le défilement au contenu d'avant.
-                scrollToOverflowEnabled
                 onLayout={onViewportLayout}
                 onScroll={handleScroll}
                 scrollEventThrottle={32}
               >
-                {hero ? (
-                  <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.hero} onLayout={sectionLayout("hero", ["hero"])}>
-                    <HeroBanner
-                      hero={hero}
-                      width={HERO_WIDTH}
-                      onPrimary={onHeroPrimary}
-                      onSecondary={onHeroSecondary}
-                      onToggleList={onHeroToggleList}
-                      onLongPress={onHeroLongPress}
-                    />
-                  </FocusSection>
-                ) : null}
                 {rows.map((row, index) => (
                   <HomeRow
                     key={row.key}
                     row={row}
                     rank={index}
-                    first={index === 0 ? (hero ? "afterHero" : "alone") : undefined}
                     filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
                     onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
+                    onMeasureLast={index === rows.length - 1 ? bottom.onLastLayout : undefined}
                     onRemoveFilter={onRemoveFilter}
                     onPressCard={onPressCard}
                     onLongPressCard={onLongPressCard}
@@ -187,7 +182,7 @@ export const HomeView = memo(function HomeView({
                   />
                 ))}
               </ScrollView>
-            </PreviewRevealProvider>
+            </BelowZonePage>
           </RowStageProvider>
         )}
         <NavRail {...nav} />
@@ -212,9 +207,9 @@ type RowHandler = (rowKey: string, card: CardModel) => void;
 const HomeRow = memo(function HomeRow({
   row,
   rank,
-  first,
   filterLabel,
   onLayout,
+  onMeasureLast,
   onRemoveFilter,
   onPressCard,
   onLongPressCard,
@@ -223,10 +218,10 @@ const HomeRow = memo(function HomeRow({
   row: HomeRowModel;
   /** Sa place dans la page : son tour dans le montage échelonné (`rowStage`). */
   rank: number;
-  /** La première rangée : son écart au héros, ou au haut de l'écran. */
-  first?: "afterHero" | "alone";
   filterLabel?: string;
   onLayout: (event: LayoutChangeEvent) => void;
+  /** La dernière rangée : sa hauteur fait la marge du bas de la page (`useBelowZoneBottomRoom`). */
+  onMeasureLast?: (event: LayoutChangeEvent) => void;
   onRemoveFilter?: () => void;
   onPressCard?: RowHandler;
   onLongPressCard?: RowHandler;
@@ -237,10 +232,11 @@ const HomeRow = memo(function HomeRow({
   const layout = useCallback(
     (event: LayoutChangeEvent) => {
       onLayout(event);
+      onMeasureLast?.(event);
       const { y, height } = event.nativeEvent.layout;
       rewind?.layout(key, y, height - MEDIA_ROW_TRAILING);
     },
-    [onLayout, rewind, key],
+    [onLayout, onMeasureLast, rewind, key],
   );
   const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
@@ -251,7 +247,6 @@ const HomeRow = memo(function HomeRow({
       reveal={ROW_REVEAL}
       rowReveal
       onLayout={layout}
-      style={first === "afterHero" ? styles.firstAfterHero : first === "alone" ? styles.firstAlone : undefined}
     >
       <MediaRow
         rowKey={key}
@@ -273,13 +268,13 @@ const HomeRow = memo(function HomeRow({
   );
 });
 
+/** La marge du bas, au moins. */
+const SCROLL_BOTTOM = 160;
+
 const styles = StyleSheet.create({
   // L'ancre du chargement : invisible, dans le contenu (en haut à gauche, hors du panneau centré).
   anchor: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.hero.top, width: 24, height: 24 },
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
-  scroll: { paddingBottom: 160 },
-  hero: { marginLeft: LEFT, marginTop: TV_STAGE.hero.top },
-  firstAfterHero: { marginTop: 56 },
-  firstAlone: { marginTop: TV_STAGE.safe.y + 40 },
+  // Le héros en tête de la fenêtre sous la zone : sans la marge d'avant, il y tient entier.
 });

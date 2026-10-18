@@ -11,14 +11,13 @@ import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
 import { SWAP_FLOOR } from "../motion/useSwap";
 import { colors, white } from "../theme/tokens";
-import { ZONE } from "./zoneModel";
 
 /**
  * Les BOUTONS du héros de l'Accueil, dans la zone d'aperçu — Lecture ou
  * Reprendre, Plus d'infos, Ma liste : le titre mis en avant, son texte et son
  * fond, c'est la zone qui les dessine (`PreviewZoneView`). La page les pose
- * dans la zone (`BelowZonePage` `zoneHead`), au-dessus de son calque, hors de
- * la liste : rien ne les recouvre.
+ * dans sa zone (`HeroZone`, dans sa section `section:hero`), au-dessus de son
+ * calque, hors de la liste : rien ne les recouvre.
  *
  * Un bouton focalisé le dit à la zone (`usePreviewZoneHero`) : elle remet le
  * titre mis en avant. Quand une carte a la zone, les boutons s'effacent —
@@ -33,6 +32,8 @@ export interface HeroZoneHeadProps {
   onSecondary?: () => void;
   onToggleList?: () => void;
   onLongPress?: () => void;
+  /** Le héros a la zone (ou la perd) : sa rotation s'y suspend. */
+  onVisibleChange?: (visible: boolean) => void;
 }
 
 export const HeroZoneHead = memo(function HeroZoneHead(props: HeroZoneHeadProps) {
@@ -59,11 +60,12 @@ const MUTE_STORE: PreviewZoneStore = {
   refresh: () => undefined,
 };
 
-function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, store }: HeroZoneHeadProps & { store: PreviewZoneStore | null }) {
+function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, onVisibleChange, store }: HeroZoneHeadProps & { store: PreviewZoneStore | null }) {
   const [focused, setFocused] = useState(false);
   const onFocusChange = useCallback((on: boolean) => setFocused(on), []);
   usePreviewZoneHero(focused);
   const shown = useHeroHasZone(store) || focused;
+  useEffect(() => onVisibleChange?.(shown), [shown, onVisibleChange]);
   const reduced = useReducedMotion();
   const opacity = useSharedValue(shown ? 1 : SWAP_FLOOR);
   useEffect(() => {
@@ -107,17 +109,8 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
 const DOT = 8;
 
 const styles = StyleSheet.create({
-  // Sur la ligne du bas de la zone, au retrait du contenu.
-  row: {
-    position: "absolute",
-    left: ZONE.left,
-    right: ZONE.right,
-    top: ZONE.height - ZONE.bottom - ZONE.heroActions,
-    height: ZONE.heroActions,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 18,
-  },
+  // La section qui la porte la place (`HeroZone`).
+  row: { flex: 1, flexDirection: "row", alignItems: "center", gap: 18 },
   // « Maintenir OK », à droite des boutons : sous eux, la page commence.
   hold: { marginLeft: 10 },
   dots: { marginLeft: "auto", flexDirection: "row", gap: 10 },
