@@ -182,6 +182,9 @@ static char kRowScrollerKey;
   [self setOffset:position in:scroll];
 }
 
+/// Le `CADisplayLink` RETIENT le scroller tant qu'il tourne (cycle voulu, le temps d'un
+/// mouvement) : seul `invalidate` le rompt — à l'arrêt du ressort, quand un autre défile, à
+/// une rafale, et quand la rangée quitte la fenêtre (`tick:`). Ne retirer aucun de ces arrêts.
 - (void)stop
 {
   [_link invalidate];
