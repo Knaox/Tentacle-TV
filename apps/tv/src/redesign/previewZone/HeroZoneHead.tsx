@@ -11,6 +11,7 @@ import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
 import { SWAP_FLOOR } from "../motion/useSwap";
 import { colors, white } from "../theme/tokens";
+import { ZONE_HINT_PILL } from "./zoneModel";
 
 /**
  * Les BOUTONS du héros de l'Accueil, dans la zone d'aperçu — Lecture ou
@@ -93,7 +94,9 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
       ) : null}
       {onLongPress ? (
         <Reveal shown={focused.any} style={styles.hold}>
-          <CardHoldHint />
+          <View style={styles.pill}>
+            <CardHoldHint />
+          </View>
         </Reveal>
       ) : null}
       {hero.page && hero.page.count > 1 ? (
@@ -153,6 +156,8 @@ const styles = StyleSheet.create({
   row: { flex: 1, flexDirection: "row", alignItems: "center", gap: 18 },
   // « Maintenir OK », à droite des boutons : sous eux, la page commence.
   hold: { marginLeft: 10 },
+  // Sur la vidéo : la pastille graphite des indices de la zone.
+  pill: ZONE_HINT_PILL,
   dots: { marginLeft: "auto", flexDirection: "row", gap: 10 },
   dot: { width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: white(0.4) },
   dotActive: { width: 34, backgroundColor: colors.text },

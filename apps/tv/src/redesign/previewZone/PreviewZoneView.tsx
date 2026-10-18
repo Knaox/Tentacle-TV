@@ -33,16 +33,18 @@ export interface PreviewZoneViewProps {
   model: PreviewZoneModel | null;
   /** Le héros de l'Accueil a la zone : le texte laisse la place de ses boutons. */
   heroRoom: boolean;
+  /** La hauteur de la zone de la page : le texte s'y resserre. */
+  height?: number;
   video: ReactNode | null;
   videoShown: boolean;
   remote: { paused: boolean; muted: boolean } | null;
 }
 
 const { width: MEDIA_W, height: MEDIA_H } = ZONE.media;
-/** La hauteur d'une ligne d'indice (`ZoneRemoteHint`, comme `CardHoldHint`). */
-const HINT_HEIGHT = 26;
+/** La hauteur d'un indice dans sa pastille (`ZoneRemoteHint` : une ligne de 26, 7 de marge en haut et en bas). */
+const HINT_HEIGHT = 26 + 2 * 7;
 
-export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, video, videoShown, remote }: PreviewZoneViewProps) {
+export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, height, video, videoShown, remote }: PreviewZoneViewProps) {
   const reduced = useReducedMotion();
   const videoOpacity = useSharedValue(0);
   useEffect(() => {
@@ -75,8 +77,10 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
         {/* Le bas fini au noir AVANT le bord (vers 640), là où le voile de la scène est encore presque plein. */}
         <SoftGradient width={MEDIA_W} height={MEDIA_H} colors={[scrim(0), scrim(0.6), scrim(1)]} locations={[0.34, 0.6, 0.88]} />
       </View>
-      {model ? <ZoneText model={model} heroRoom={heroRoom} /> : null}
-      <Reveal shown={remote !== null} style={styles.hint}>
+      {model ? <ZoneText model={model} heroRoom={heroRoom} height={height} /> : null}
+      {/* En bas à droite ; sous le héros, sur la ligne AU-DESSUS de ses boutons (ses points de rotation
+          et « Maintenir OK » occupent la leur). */}
+      <Reveal shown={remote !== null} style={[styles.hint, heroRoom && styles.hintOverHero]}>
         {lastRemote.current ? <ZoneRemoteHint paused={lastRemote.current.paused} muted={lastRemote.current.muted} /> : null}
       </Reveal>
     </View>
@@ -87,5 +91,6 @@ const styles = StyleSheet.create({
   media: { position: "absolute", top: 0, right: 0, width: MEDIA_W, height: MEDIA_H, overflow: "hidden" },
   // Sur la ligne du bas de la zone — celle des boutons du héros, centrée sur eux : « Maintenir OK »
   // (à droite des boutons) et Lecture/Pause (à droite de la zone) ne font qu'une ligne.
-  hint: { position: "absolute", right: ZONE.right, top: ZONE.height - ZONE.bottom - (ZONE.heroActions + HINT_HEIGHT) / 2 },
+  hint: { position: "absolute", right: ZONE.right, bottom: ZONE.bottom + (ZONE.heroActions - HINT_HEIGHT) / 2 },
+  hintOverHero: { bottom: ZONE.bottom + ZONE.heroActions + ZONE.heroActionsGap },
 });
