@@ -19,4 +19,6 @@ export * from "./trailerPreviewTv";
 export * from "./previewRemote";
 export * from "./previewZone";
 export * from "./previewZoneText";
+export * from "./previewZonePlayback";
+export * from "./previewZoneSynopsis";
 export * from "./trailerPreviewWarmTv";
