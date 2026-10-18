@@ -1,133 +1,101 @@
 import { describe, expect, it } from "vitest";
-import { GRID_COLUMN_HOLD_START, gridColumnHoldFocus, gridColumnHoldKey, gridColumnHoldRelease, type GridColumnHoldState } from "./gridColumnHold";
+import { GRID_COLUMN_HOLD_START, gridColumnHoldFocus, gridColumnHoldSettle, type GridColumnHoldState } from "./gridColumnHold";
 
 /** Une grille de 5 colonnes et 1 200 affiches (le jeu « grande bibliothèque » du banc : 420 → 425 → 430). */
 const COLUMNS = 5;
 const COUNT = 1_200;
 
-const focus = (state: GridColumnHoldState, index: number | null, count = COUNT) => gridColumnHoldFocus(state, index, COLUMNS, count);
-const key = (state: GridColumnHoldState, k: "haut" | "bas" | "gauche" | "select", phase: "start" | "update" | "end") => gridColumnHoldKey(state, k, phase, COLUMNS, COUNT);
-
-/** Entrée dans la grille sur `index`. */
-const enter = (index: number) => focus(GRID_COLUMN_HOLD_START, index).state;
+/** Une suite de focus (`null` : hors de la grille), depuis `state`. */
+const walk = (state: GridColumnHoldState, indexes: Array<number | null>, count = COUNT) =>
+  indexes.reduce((s, index) => gridColumnHoldFocus(s, index, COLUMNS, count), state);
+const settle = (state: GridColumnHoldState, count = COUNT) => gridColumnHoldSettle(state, COLUMNS, count);
 
 describe("gridColumnHold — la colonne tenue pas à pas", () => {
-  it("l'entrée dans la grille fixe la colonne, sans rien corriger", () => {
-    const step = focus(GRID_COLUMN_HOLD_START, 2);
-    expect(step.correct).toBeNull();
-    expect(step.state.column).toBe(2);
+  it("l'entrée dans la grille fixe la colonne ; posée là, rien à corriger", () => {
+    const state = walk(GRID_COLUMN_HOLD_START, [2]);
+    expect(state.column).toBe(2);
+    expect(settle(state).correct).toBeNull();
   });
 
   it("un pas BAS dans la même colonne : rien à faire", () => {
-    expect(focus(enter(2), 7).correct).toBeNull();
+    expect(settle(walk(GRID_COLUMN_HOLD_START, [2, 7])).correct).toBeNull();
   });
 
-  it("un focus arrivé dans une autre colonne par HAUT ou BAS est rendu à SA ligne, dans la colonne retenue", () => {
-    // Colonne 3 (index 2), arrivée en colonne 1 de la ligne 70 (index 420).
-    expect(focus(enter(2), 420).correct).toBe(422);
+  it("un focus arrivé dans une autre ligne et une autre colonne est rendu à SA ligne, la grille posée", () => {
+    expect(settle(walk(GRID_COLUMN_HOLD_START, [2, 420])).correct).toBe(422);
+  });
+
+  it("rien ne se corrige tant que la grille bouge : les focus ne font que suivre", () => {
+    const state = walk(GRID_COLUMN_HOLD_START, [2, 60, 186, 300]);
+    expect(state.column).toBe(2);
+    expect(state.focused).toBe(300);
   });
 
   it("un pas GAUCHE ou DROITE (la même ligne) change la colonne retenue, sans attendre d'intention", () => {
-    const step = focus(enter(2), 1);
-    expect(step.correct).toBeNull();
-    expect(step.state.column).toBe(1);
-    // Puis BAS tenu : la nouvelle colonne est tenue.
-    expect(focus(step.state, 420).correct).toBe(421);
+    const state = walk(GRID_COLUMN_HOLD_START, [2, 1]);
+    expect(state.column).toBe(1);
+    expect(settle(walk(state, [420])).correct).toBe(421);
   });
 });
 
 describe("gridColumnHold — le défilement accéléré (flèche tenue)", () => {
-  it("relevé du testeur : colonne 3 (grid:2), BAS tenu 6 s, arrivée en colonne 1 (425) → rendue en colonne 3 au lâcher, jamais pendant", () => {
-    let state = key(enter(2), "bas", "start").state;
-    for (const index of [60, 186, 300, 425]) {
-      const step = focus(state, index);
-      expect(step.correct).toBeNull();
-      state = step.state;
-    }
-    const released = key(state, "bas", "end");
-    expect(released.correct).toBe(427);
-    expect(released.state.held).toBe(false);
+  it("relevé du testeur : colonne 3 (grid:2), BAS tenu, arrivée en colonne 1 (425) → 427 à l'arrêt", () => {
+    expect(settle(walk(GRID_COLUMN_HOLD_START, [2, 60, 186, 300, 425])).correct).toBe(427);
   });
 
-  it("colonne 4 (grid:428), BAS tenu, arrivée en colonne 1 (585) → 588 ; HAUT tenu, arrivée en 420 → 423", () => {
-    let state = key(enter(428), "bas", "start").state;
-    state = focus(state, 585).state;
-    expect(key(state, "bas", "end").correct).toBe(588);
-    state = key(enter(428), "haut", "start").state;
-    state = focus(state, 420).state;
-    expect(key(state, "haut", "end").correct).toBe(423);
+  it("colonne 4 (grid:428), BAS tenu → 585 rendu en 588 ; HAUT tenu → 420 rendu en 423", () => {
+    expect(settle(walk(GRID_COLUMN_HOLD_START, [428, 585])).correct).toBe(588);
+    expect(settle(walk(GRID_COLUMN_HOLD_START, [428, 420])).correct).toBe(423);
   });
 
-  it("un focus qui arrive APRÈS le lâcher (tvOS finit son mouvement) est corrigé à son arrivée", () => {
-    const released = key(key(enter(2), "bas", "start").state, "bas", "end");
-    expect(released.correct).toBeNull();
-    expect(focus(released.state, 425).correct).toBe(427);
-  });
-
-  it("sans fin de maintien annoncée (Siri Remote), la grille POSÉE vaut le lâcher", () => {
-    let state = key(enter(2), "bas", "start").state;
-    state = focus(state, 425).state;
-    const settled = gridColumnHoldRelease(state, COLUMNS, COUNT);
-    expect(settled.correct).toBe(427);
-    expect(settled.state.held).toBe(false);
-  });
-
-  it("posée sans écart (un pas simple, ou déjà corrigée) : rien à faire", () => {
-    expect(gridColumnHoldRelease(focus(enter(2), 7).state, COLUMNS, COUNT).correct).toBeNull();
-    expect(gridColumnHoldRelease(GRID_COLUMN_HOLD_START, COLUMNS, COUNT).correct).toBeNull();
-  });
-
-  it("un maintien d'OK ou de GAUCHE ne retient rien", () => {
-    const state = enter(2);
-    expect(key(state, "select", "start").state.held).toBe(false);
-    expect(key(state, "gauche", "end").correct).toBeNull();
-  });
-
-  it("lâché dans la bonne colonne : rien à faire", () => {
-    let state = key(enter(2), "bas", "start").state;
-    state = focus(state, 427).state;
-    expect(key(state, "bas", "end").correct).toBeNull();
+  it("une fois corrigée, la grille posée de nouveau ne refait rien", () => {
+    const first = settle(walk(GRID_COLUMN_HOLD_START, [2, 425]));
+    expect(first.correct).toBe(427);
+    expect(settle(walk(first.state, [427])).correct).toBeNull();
   });
 });
 
-describe("gridColumnHold — les bords", () => {
-  it("la dernière ligne, plus courte, entrée par sa dernière affiche : juste, et sa colonne devient la retenue", () => {
-    // 17 affiches : la dernière ligne a 15 et 16 (colonnes 0 et 1).
-    const state = focus(GRID_COLUMN_HOLD_START, 13, 17).state;
-    const last = focus(state, 16, 17);
-    expect(last.correct).toBeNull();
-    expect(last.state.column).toBe(1);
-  });
-
-  it("une colonne que la dernière ligne n'a pas : rendue à sa dernière affiche, jamais au-delà", () => {
-    expect(focus(focus(GRID_COLUMN_HOLD_START, 13, 17).state, 15, 17).correct).toBe(16);
-  });
-
-  it("HAUT tenu jusqu'en haut : tvOS traverse les filtres puis revient sur la 1re ligne — la colonne tient (grid:123 → grid:3)", () => {
-    let state = key(enter(123), "haut", "start").state;
-    state = focus(state, 60).state;
-    state = focus(state, null).state; // les filtres, au bout de la course
+describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
+  it("tvOS traverse les filtres au bout de sa course puis revient sur la 1re ligne : la colonne tient (grid:123 → grid:3)", () => {
+    const state = walk(GRID_COLUMN_HOLD_START, [123, 60, null, 0]);
     expect(state.column).toBe(3);
-    const back = focus(state, 0);
-    expect(back.correct).toBeNull(); // pas pendant le maintien
-    expect(key(back.state, "haut", "end").correct).toBe(3);
+    expect(settle(state).correct).toBe(3);
   });
 
-  it("lâché dans les filtres au bout d'un HAUT tenu : on y reste, plus rien n'est retenu", () => {
-    let state = key(enter(123), "haut", "start").state;
-    state = focus(state, null).state;
-    const released = key(state, "haut", "end");
-    expect(released.correct).toBeNull();
-    expect(released.state).toEqual(GRID_COLUMN_HOLD_START);
+  it("relevé intermittent : une longue séance, puis HAUT tenu depuis grid:259 (col 5) → grid:4, jamais grid:0", () => {
+    // grid:13 → BAS → 168 → HAUT jusqu'en haut (par les filtres) → corrigé en 3 → BAS, DROITE → 9 → BAS → 259.
+    let state = walk(GRID_COLUMN_HOLD_START, [13, 168, null, 0]);
+    const corrected = settle(state);
+    expect(corrected.correct).toBe(3);
+    state = walk(corrected.state, [3, 8, 9, 259]);
+    expect(settle(state).correct).toBeNull();
+    // HAUT tenu 4 s : par les filtres, retour en grid:0 — rien ne se corrige avant l'arrêt.
+    state = walk(state, [130, 5, null, 0]);
+    expect(settle(state).correct).toBe(4);
   });
 
-  it("hors de la grille (filtres, rail) : plus rien n'est retenu — on y revient au plus proche", () => {
-    const out = focus(enter(2), null);
-    expect(out.state).toEqual(GRID_COLUMN_HOLD_START);
-    expect(focus(out.state, 3).correct).toBeNull();
+  it("la grille posée avec le focus DANS les filtres : on y reste, plus rien n'est retenu — on reviendra au plus proche", () => {
+    const stopped = settle(walk(GRID_COLUMN_HOLD_START, [123, 60, null]));
+    expect(stopped.correct).toBeNull();
+    expect(stopped.state).toEqual(GRID_COLUMN_HOLD_START);
+    // BAS depuis la pastille : l'affiche au plus proche, gardée telle quelle.
+    expect(settle(walk(stopped.state, [1])).correct).toBeNull();
   });
 
   it("un index hors du catalogue vaut hors de la grille", () => {
-    expect(focus(enter(2), COUNT).state.column).toBeNull();
+    expect(walk(GRID_COLUMN_HOLD_START, [2, COUNT]).outside).toBe(true);
+  });
+});
+
+describe("gridColumnHold — la dernière ligne, plus courte", () => {
+  it("entrée par sa dernière affiche : juste, et sa colonne devient la retenue", () => {
+    // 17 affiches : la dernière ligne a 15 et 16 (colonnes 0 et 1).
+    const step = settle(walk(GRID_COLUMN_HOLD_START, [13, 16], 17), 17);
+    expect(step.correct).toBeNull();
+    expect(step.state.column).toBe(1);
+  });
+
+  it("une colonne qu'elle n'a pas : rendue à sa dernière affiche, jamais au-delà", () => {
+    expect(settle(walk(GRID_COLUMN_HOLD_START, [13, 15], 17), 17).correct).toBe(16);
   });
 });
