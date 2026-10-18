@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
 import { PREVIEW_ZONE_FADE, previewZoneShown } from "@tentacle-tv/tv-core";
@@ -61,10 +61,10 @@ const MUTE_STORE: PreviewZoneStore = {
 };
 
 function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, onVisibleChange, store }: HeroZoneHeadProps & { store: PreviewZoneStore | null }) {
-  const [focused, setFocused] = useState(false);
-  const onFocusChange = useCallback((on: boolean) => setFocused(on), []);
-  usePreviewZoneHero(focused);
-  const shown = useHeroHasZone(store) || focused;
+  const focused = useAnyFocused();
+  const onFocusChange = focused.onFocusChange;
+  usePreviewZoneHero(focused.any);
+  const shown = useHeroHasZone(store) || focused.any;
   useEffect(() => onVisibleChange?.(shown), [shown, onVisibleChange]);
   const reduced = useReducedMotion();
   const opacity = useSharedValue(shown ? 1 : SWAP_FLOOR);
@@ -91,7 +91,7 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
         />
       ) : null}
       {onLongPress ? (
-        <Reveal shown={focused} style={styles.hold}>
+        <Reveal shown={focused.any} style={styles.hold}>
           <CardHoldHint />
         </Reveal>
       ) : null}
@@ -104,6 +104,32 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
       ) : null}
     </Animated.View>
   );
+}
+
+/**
+ * L'un des boutons a le focus. D'un bouton à son voisin, le flou du premier
+ * arrive avant le focus du second : il attend l'image suivante — sinon la zone
+ * croirait le héros quitté et relancerait le délai de sa bande-annonce.
+ */
+function useAnyFocused(): { any: boolean; onFocusChange: (on: boolean) => void } {
+  const [any, setAny] = useState(false);
+  const frame = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+  }, []);
+  const onFocusChange = useCallback((on: boolean) => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    if (on) {
+      setAny(true);
+      return;
+    }
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      setAny(false);
+    });
+  }, []);
+  return { any, onFocusChange };
 }
 
 const DOT = 8;
