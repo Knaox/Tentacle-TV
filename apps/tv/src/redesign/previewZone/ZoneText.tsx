@@ -34,7 +34,6 @@ export const ZoneText = memo(function ZoneText({ model, heroRoom }: { model: Pre
   const fade = useAnimatedStyle(() => ({ opacity: progress.value }));
   const compact = heroRoom || Boolean(shown.reason || shown.kicker);
   const layout = previewZoneTextLayout({
-    height: ZONE.height,
     hero: heroRoom,
     kicker: Boolean(shown.kicker),
     reason: Boolean(shown.reason),
