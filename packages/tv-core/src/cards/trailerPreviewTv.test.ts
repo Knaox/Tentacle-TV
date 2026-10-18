@@ -39,7 +39,7 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(run([{ type: "tick", at: 450 }], state).phase).toBe("fetching");
   });
 
-  it("la carte ne grandit qu'au délai par défaut (800 ms), et seulement avec la première image", () => {
+  it("la vidéo ne paraît dans la zone qu'au délai par défaut (800 ms), et seulement avec la première image", () => {
     const ready = run([
       { type: "hover", at: 0 },
       { type: "tick", at: 450 },
@@ -57,7 +57,7 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(trailerPreviewVisible(run([{ type: "videoReady", at: 1_300 }], late))).toBe(true);
   });
 
-  it("sans première image (flux bloqué), rien ne grandit jamais — échec à 8 s", () => {
+  it("sans première image (flux bloqué), rien ne paraît jamais — échec à 8 s", () => {
     const stalled = run([{ type: "hover", at: 0 }, { type: "tick", at: 1_000 }, { type: "streamFound", at: 1_100 }, { type: "tick", at: 5_000 }]);
     expect(trailerPreviewVisible(stalled)).toBe(false);
     const failed = run([{ type: "tick", at: 1_100 + TRAILER_PREVIEW_TIMING.readyTimeoutMs }], stalled);
@@ -65,7 +65,7 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(failed.failure).toBe("video");
   });
 
-  it("le focus qui part replie la carte : la vidéo reste le temps du fondu, puis rien", () => {
+  it("le focus qui part fait sortir la vidéo de la zone : elle reste le temps du fondu, puis rien", () => {
     const shown = run([{ type: "hover", at: 0 }, { type: "tick", at: 1_000 }, { type: "streamFound", at: 1_100 }, { type: "videoReady", at: 1_200 }, { type: "tick", at: 1_800 }]);
     const leaving = run([{ type: "unhover", at: 3_000 }], shown);
     expect(trailerPreviewVisible(leaving)).toBe(false);

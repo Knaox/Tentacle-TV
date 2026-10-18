@@ -36,7 +36,9 @@ export const TV_TRAILER_PREVIEW_TIMING: TrailerPreviewTiming = {
   intentStillMs: 0,
   /** La vidéo paraît dans la zone au plus tôt à ce moment, depuis l'arrivée du focus : le délai choisi (`tvTrailerPreviewTiming`). */
   revealMs: DEFAULT_TRAILER_PREVIEW_DELAY,
-  /** La vidéo sort de la zone un peu plus vite qu'elle n'y est entrée (le mouvement d'Apple TV). */
+  /** La vidéo sort de la zone un peu plus vite qu'elle n'y est entrée (le mouvement d'Apple TV) : la
+   *  machine la garde montée ce temps-là ; le fondu de la zone (`PREVIEW_ZONE_FADE.videoOutMs`, 180)
+   *  est plus bref, il finit AVANT — jamais une vidéo démontée encore visible. */
   exitMs: 220,
   /** Le son du salon : la bande-annonce s'entend, sans couvrir la pièce. */
   volume: 0.7,

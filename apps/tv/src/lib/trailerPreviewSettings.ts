@@ -14,7 +14,7 @@ export const TRAILER_PREVIEW_SOUND_KEY = "tentacle_tv_trailer_preview_sound";
 /** Le délai entre l'arrivée du focus et la première image de l'aperçu (shared `previewDelay.ts`). */
 export const TRAILER_PREVIEW_DELAY_KEY = "tentacle_tv_trailer_preview_delay";
 
-/** Coupé : aucune carte ne grandit, rien n'est demandé au serveur. */
+/** Coupé : la zone d'aperçu ne montre que le fond, rien n'est demandé au serveur. */
 export const trailerPreviewsStore = createBooleanStore(tvStorage, TRAILER_PREVIEWS_KEY, true);
 /** Coupé : l'aperçu se joue sans le son. */
 export const trailerPreviewSoundStore = createBooleanStore(tvStorage, TRAILER_PREVIEW_SOUND_KEY, true);
