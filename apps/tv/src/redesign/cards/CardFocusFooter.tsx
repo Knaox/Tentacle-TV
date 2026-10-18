@@ -8,6 +8,9 @@ import { CardHoldHint } from "./CardHoldHint";
 const FOOTER_MARGIN_TOP = 6;
 const FOOTER_GAP = 8;
 
+/** Ce que « Maintenir OK : plus d'options » occupe sous la légende : son écart et sa ligne (`CardHoldHint`, 26). */
+export const CARD_HOLD_FOOTER_HEIGHT = FOOTER_MARGIN_TOP + 26;
+
 /**
  * Ce qui paraît SOUS la légende d'une carte focalisée : la phrase de focus
  * (`CardFocusNote`, la raison d'une recommandation), puis l'indication de

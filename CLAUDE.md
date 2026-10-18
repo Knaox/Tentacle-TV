@@ -714,7 +714,11 @@ ne focalise pas un élément recouvert. Rangées et lignes sont FIXES : seul le 
 bouge, rien ne grandit, aucune remise en page au changement de focus. La section
 focalisée se pose TOUJOURS au même endroit, juste sous la zone (`BELOW_ZONE_REVEAL` :
 mode `anchor` de `FocusSection`, natif sur les deux plateformes), la première comme la
-dernière (marge du bas : `belowZoneBottomRoom`, mesurée sur la dernière section) ;
+dernière (marge du bas : `belowZoneBottomRoom`, mesurée sur la dernière section). La
+zone garde ses 432 sur toutes les pages : ce sont les affiches d'une RANGÉE qui ne dépassent
+pas ce que la fenêtre peut montrer, rangée focalisée entière (tv-core `belowZoneFrameCap` —
+une affiche en taille Grande y est un peu réduite, une vignette jamais), et la raison d'une
+reco se lit dans la zone, plus sous la carte ;
 l'en-tête d'une grille ramène la page en haut. Le héros de l'Accueil et de « Pour vous »
 vit DANS la zone (`previewZone/HeroZone`, section `section:hero` au-dessus de la page) :
 HAUT depuis la première rangée y mène ; ses boutons restent focalisables même quand une
@@ -732,7 +736,9 @@ Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir, collection), chaqu
 est FIXE (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) : ni défilement, ni
 rotation, ni tête collée au rail, ni reprise ; GAUCHE/DROITE ne déplacent que le focus,
 HAUT/BAS gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes
-voisines). Les titres autour du focus se préparent d'avance (`trailers.previewWarm`,
+voisines), même au défilement ACCÉLÉRÉ, où tvOS déplace le focus seul : la colonne retenue
+est rendue dans la ligne d'arrivée au lâcher, ou la grille posée (tv-core
+`focus/gridColumnHold`, port `gridSettlePort`). Les titres autour du focus se préparent d'avance (`trailers.previewWarm`,
 tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** : la cellule d'une carte garde TOUJOURS sa
 taille de repos (`CardShell` : plus de cellule qui s'élargit, de cible gardée à part ni

@@ -4,10 +4,12 @@ import { FlashList, type ListRenderItemInfo } from "@shopify/flash-list";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { GRID_END_REACHED_SCREENS, GRID_KEY_PREFIX, belowZoneBottomRoom } from "@tentacle-tv/tv-core";
 import { useCardMetrics } from "../../cards/cardSizeMode";
+import { MEDIA_CARD_CAPTION_HEIGHT } from "../../cards/MediaCard";
 import type { CardModel } from "../../cards/cardTypes";
 import { GridLine, type GridLineModel } from "./GridLine";
 import { createGridMotion } from "./gridMotion";
 import { useGridPreviewWarm } from "./gridPreviewWarm";
+import { useGridSettlePort } from "./gridSettlePort";
 import { useGridAhead } from "./useGridAhead";
 import { mountProfile } from "../../render/mountProfile";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
@@ -127,6 +129,9 @@ export const PosterGrid = memo(function PosterGrid({
   // Le mouvement de la grille — son focus, son défilement : la préparation attend qu'elle se pose (`gridMotion`).
   const motion = useMemo(() => createGridMotion(), []);
   useEffect(() => () => motion.dispose(), [motion]);
+  // La grille posée, l'intégration rend la colonne si un défilement accéléré l'a perdue (`gridSettlePort`).
+  const settled = useGridSettlePort();
+  useEffect(() => (settled ? motion.onSettled(settled) : undefined), [motion, settled]);
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => motion.scrolled(event.nativeEvent.contentOffset.y), [motion]);
   const warm = useGridPreviewWarm(cards, columns, motion);
   const height = lineHeight(width);
@@ -200,13 +205,10 @@ const GRID_BOTTOM = 160;
 
 const HEADER_REVEAL: FocusSectionReveal = { mode: "start" };
 
-/** La légende d'une affiche au repos (`MediaCard`) : 14 de marge, le titre (24)
- *  et l'année (22) à 1,21 em la ligne (Inter), 2 entre les deux. */
-const CAPTION_HEIGHT = 72;
 
 /** La hauteur d'une ligne au repos, fixe : la ligne ne grandit jamais (`GridLine`). */
 function lineHeight(width: number): number {
-  return Math.round(width * 1.5) + CAPTION_HEIGHT;
+  return Math.round(width * 1.5) + MEDIA_CARD_CAPTION_HEIGHT;
 }
 
 /** D'une ligne à la suivante : l'affiche, sa légende, l'espace. */

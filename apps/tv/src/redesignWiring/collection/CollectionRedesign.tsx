@@ -7,6 +7,7 @@ import { railNavigate } from "../../navigation/railNavigate";
 import { RENDER } from "../../redesign/render/renderProfile";
 import { CollectionView, type CollectionEmptyModel } from "../../redesign/screens/collection/CollectionView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
+import { GridSettleProvider } from "../../redesign/screens/library/gridSettlePort";
 import { useGridColumnEntries } from "../grid/useGridColumnEntries";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
@@ -74,7 +75,7 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
     railKey: watchlist ? "Watchlist" : "Favorites",
     entryKey: collectionEntryKey({ failed: status !== null, empty: empty !== null, cards: grid.cards.length, noResults: noResults !== null }),
   });
-  useGridColumnEntries(screen.focus, grid.cards.length);
+  const gridSettled = useGridColumnEntries(screen.focus, grid.cards.length);
   const filters = useCollectionFilterBar(t, sort, screen.focus);
   const { sheets, bar } = filters;
   // Ce que la liste ouverte COUVRE reste tel quel jusqu'à la fin de son fondu
@@ -86,36 +87,38 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
 
   return (
     <RedesignScreen screen={screen}>
-      <CollectionView
-        nav={screen.nav}
-        kicker={t(watchlist ? "watchlist:kicker" : "favorites:kicker")}
-        title={t(watchlist ? "common:myList" : "common:myFavorites")}
-        count={under.count}
-        cards={under.cards}
-        palette={grid.palette}
-        ambient={grid.ambient}
-        loading={loading}
-        empty={empty}
-        status={status}
-        onEmptyAction={goHome}
-        pills={under.pills}
-        activeFilters={under.active}
-        filterLabels={filters.labels}
-        noResults={under.noResults}
-        sheet={sheets.sheet}
-        onPressPill={bar.onPressPill}
-        onRemoveFilter={bar.onRemoveFilter}
-        onClearAll={bar.onClearAll}
-        onSheetOption={sheets.onSheetOption}
-        onSheetClear={sheets.onSheetClear}
-        onSheetApply={sheets.onSheetApply}
-        onSheetClose={sheets.closeSheet}
-        onSheetExited={sheets.onSheetExited}
-        onPressCard={grid.onPressCard}
-        onLongPressCard={grid.onLongPressCard}
-        onFocusCard={grid.onFocusCard}
-      />
-      {grid.sheet}
+      <GridSettleProvider value={gridSettled}>
+        <CollectionView
+          nav={screen.nav}
+          kicker={t(watchlist ? "watchlist:kicker" : "favorites:kicker")}
+          title={t(watchlist ? "common:myList" : "common:myFavorites")}
+          count={under.count}
+          cards={under.cards}
+          palette={grid.palette}
+          ambient={grid.ambient}
+          loading={loading}
+          empty={empty}
+          status={status}
+          onEmptyAction={goHome}
+          pills={under.pills}
+          activeFilters={under.active}
+          filterLabels={filters.labels}
+          noResults={under.noResults}
+          sheet={sheets.sheet}
+          onPressPill={bar.onPressPill}
+          onRemoveFilter={bar.onRemoveFilter}
+          onClearAll={bar.onClearAll}
+          onSheetOption={sheets.onSheetOption}
+          onSheetClear={sheets.onSheetClear}
+          onSheetApply={sheets.onSheetApply}
+          onSheetClose={sheets.closeSheet}
+          onSheetExited={sheets.onSheetExited}
+          onPressCard={grid.onPressCard}
+          onLongPressCard={grid.onLongPressCard}
+          onFocusCard={grid.onFocusCard}
+        />
+        {grid.sheet}
+      </GridSettleProvider>
     </RedesignScreen>
   );
 }

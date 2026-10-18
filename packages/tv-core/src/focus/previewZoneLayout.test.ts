@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL, BELOW_ZONE_VIEWPORT, PREVIEW_STAGE_HEIGHT, PREVIEW_ZONE_HEIGHT, belowZoneBottomRoom } from "./previewZoneLayout";
+import {
+  BELOW_ZONE_ANCHOR_TOP,
+  BELOW_ZONE_BOTTOM_MARGIN,
+  BELOW_ZONE_REVEAL,
+  BELOW_ZONE_VIEWPORT,
+  PREVIEW_STAGE_HEIGHT,
+  PREVIEW_ZONE_HEIGHT,
+  belowZoneBottomRoom,
+  belowZoneFrameCap,
+} from "./previewZoneLayout";
 import { revealOffset, type RevealPage } from "./reveal";
 
 /** Une page de `count` sections de `height`, espacées de `gap`, sous la zone, avec sa marge du bas. */
@@ -55,5 +64,26 @@ describe("belowZoneBottomRoom — la marge du bas", () => {
 
   it("jamais négative : une section plus haute que la fenêtre n'en demande aucune", () => {
     expect(belowZoneBottomRoom(BELOW_ZONE_VIEWPORT + 10)).toBe(0);
+  });
+});
+
+describe("belowZoneFrameCap — l'image d'une rangée tient sous la zone", () => {
+  // Le chrome d'une rangée d'affiches : titre 43, écarts 26, légende 72, « Maintenir OK » 32.
+  const CHROME = 43 + 26 + 72 + 32;
+  const FOCUS = 1.08;
+
+  it("une affiche en taille Grande (468) dépasse le plafond ; en Normale (360), non", () => {
+    const cap = belowZoneFrameCap(CHROME, FOCUS);
+    expect(468).toBeGreaterThan(cap);
+    expect(360).toBeLessThanOrEqual(cap);
+  });
+
+  it("au plafond, la section focalisée tient entière, ancrée, au-dessus du bas de l'écran", () => {
+    const cap = belowZoneFrameCap(CHROME, FOCUS);
+    expect(BELOW_ZONE_ANCHOR_TOP + CHROME + cap * FOCUS + BELOW_ZONE_BOTTOM_MARGIN).toBeLessThanOrEqual(BELOW_ZONE_VIEWPORT);
+  });
+
+  it("sans agrandissement au focus (Lite) : le plafond monte d'autant", () => {
+    expect(belowZoneFrameCap(CHROME, 1)).toBeGreaterThan(belowZoneFrameCap(CHROME, FOCUS));
   });
 });

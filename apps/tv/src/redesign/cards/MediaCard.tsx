@@ -16,6 +16,7 @@ import { CardQualityBadges } from "./CardQualityBadges";
 import type { CardModel } from "./cardTypes";
 import { useCardFocused, type CardFocused } from "./useCardFocused";
 import { useCardPreviewFocus, type CardFocusWatch } from "./useCardPreviewFocus";
+import { useInPreviewZone } from "../rows/BelowZonePage";
 import { CARD_FOCUS_SCALE } from "./cardFocus";
 import { useCardMetrics } from "./cardSizeMode";
 
@@ -79,6 +80,12 @@ export interface MediaCardProps {
   previewWatch?: CardFocusWatch;
 }
 
+/** La légende d'une carte, sous l'image : 14 de marge, le titre (24) et une
+ *  ligne de légende (22) à 1,21 em (Inter), 2 entre les deux. */
+export const MEDIA_CARD_CAPTION_HEIGHT = 72;
+/** Une ligne de légende de plus (`card.subtitleLines`). */
+export const MEDIA_CARD_SUBTITLE_LINE = 27;
+
 /** Ce que le pied de l'image descend quand elle grandit (et se soulève de 4) :
  *  la légende descend d'autant, l'image ne la recouvre jamais. */
 function captionShift(height: number, origin: "top" | "center" = "top"): number {
@@ -139,6 +146,8 @@ function CardBody({
   const radius = frame.radius;
   const uri = landscape ? card.landscapeUri ?? card.posterUri : card.posterUri ?? card.landscapeUri;
   const { focused, onTargetFocusChange } = cardFocus;
+  // Dans une page à zone, la raison d'une recommandation se lit dans la zone (`ZoneText`), pas sous la carte.
+  const inZone = useInPreviewZone();
   // Un seul ressort pour le cadre et la légende (`CardFrame focusProgress`).
   const progress = useFocusProgress(focused);
   const glow = useMemo(() => cardGlowOf(card.palette, glowTone), [card.palette, glowTone]);
@@ -206,7 +215,7 @@ function CardBody({
           <Text style={[styles.title, focused && styles.titleFocused]} numberOfLines={1}>{card.title}</Text>
           {card.subtitle ? <Text style={styles.subtitle} numberOfLines={card.subtitleLines ?? 1}>{card.subtitle}</Text> : null}
           <CardFocusFooter
-            note={focused ? card.focusNote : undefined}
+            note={focused && !inZone ? card.focusNote : undefined}
             hold={focused && onLongPress !== undefined}
             width={Math.round(width * 1.6)}
           />

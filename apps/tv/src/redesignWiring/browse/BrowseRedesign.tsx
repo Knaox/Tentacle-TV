@@ -11,6 +11,7 @@ import { useBrowseFocus } from "../../platform/tvos/screens/browse";
 import { BrowseView } from "../../redesign/screens/browse/BrowseView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
 import { imagePixels } from "../cards/imagePixels";
+import { GridSettleProvider } from "../../redesign/screens/library/gridSettlePort";
 import { useGridColumnEntries } from "../grid/useGridColumnEntries";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
@@ -76,31 +77,33 @@ export function BrowseRedesign({ kind, id, name }: Params) {
   // Une page poussée : Retour y recule, rail ouvert ou non (`BackScope`).
   const screen = useRedesignScreen({ railKey: "Search", entryKey, onReselect: goBack });
   const { focus } = screen;
-  useGridColumnEntries(focus, grid.cards.length);
+  const gridSettled = useGridColumnEntries(focus, grid.cards.length);
   useBrowseFocus(focus, { entryKey, items: items.length, failed });
 
   return (
     <RedesignScreen screen={screen}>
-      <BrowseView
-        nav={screen.nav}
-        kind={kind}
-        kicker={person ? t("search:filmographyTitle") : t(`search:${kind}`)}
-        name={name}
-        meta={meta}
-        portraitUri={portraitUri}
-        initials={person ? initials(name) : undefined}
-        cards={grid.cards}
-        palette={grid.palette}
-        ambient={grid.ambient}
-        loading={loading}
-        empty={empty}
-        status={status}
-        onBack={goBack}
-        onPressCard={grid.onPressCard}
-        onLongPressCard={grid.onLongPressCard}
-        onFocusCard={grid.onFocusCard}
-      />
-      {grid.sheet}
+      <GridSettleProvider value={gridSettled}>
+        <BrowseView
+          nav={screen.nav}
+          kind={kind}
+          kicker={person ? t("search:filmographyTitle") : t(`search:${kind}`)}
+          name={name}
+          meta={meta}
+          portraitUri={portraitUri}
+          initials={person ? initials(name) : undefined}
+          cards={grid.cards}
+          palette={grid.palette}
+          ambient={grid.ambient}
+          loading={loading}
+          empty={empty}
+          status={status}
+          onBack={goBack}
+          onPressCard={grid.onPressCard}
+          onLongPressCard={grid.onLongPressCard}
+          onFocusCard={grid.onFocusCard}
+        />
+        {grid.sheet}
+      </GridSettleProvider>
     </RedesignScreen>
   );
 }
