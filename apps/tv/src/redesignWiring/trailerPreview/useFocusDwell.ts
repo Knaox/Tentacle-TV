@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
  * Le focus arrivé à `since` a-t-il TENU ? `left` (une règle de tv-core) dit ce
  * qu'il reste à attendre. Sans rendu à l'arrivée ni au flou : un seul, quand
  * le focus a tenu — la rafale de flèches qui passe ne coûte rien.
+ *
+ * `left` est dans les dépendances de l'effet : une fonction de MODULE (tv-core
+ * `previewSessionDwellLeft`, `previewZoneDetailsLeft`), jamais une lambda —
+ * neuve à chaque rendu, elle relancerait l'attente à chaque rendu.
  */
 export function useFocusHeld(since: number | null, left: (since: number, now: number) => number): boolean {
   const [heldAt, setHeldAt] = useState<number | null>(null);

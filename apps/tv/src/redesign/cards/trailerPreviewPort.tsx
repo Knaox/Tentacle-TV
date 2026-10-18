@@ -55,11 +55,32 @@ export function createPreviewZoneStore(): PreviewZoneStore {
       emit();
     },
     refresh(model) {
-      if (card?.id !== model.id || card === model) return;
+      if (card?.id !== model.id || card === model || sameZoneCard(card, model)) return;
       card = model;
       emit();
     },
   };
+}
+
+/**
+ * Ce que la zone montre d'une carte n'a pas changé : un modèle neuf de la même
+ * carte (une rangée qui se redessine) ne la redessine pas. Les listes gardent
+ * déjà l'objet d'une carte inchangée (`stableCards`, `sameCard`) ; cette garde
+ * vaut pour celles qui ne le font pas.
+ */
+function sameZoneCard(a: CardModel, b: CardModel): boolean {
+  return (
+    a.title === b.title &&
+    a.subtitle === b.subtitle &&
+    a.focusNote === b.focusNote &&
+    a.landscapeUri === b.landscapeUri &&
+    a.posterUri === b.posterUri &&
+    a.logoUri === b.logoUri &&
+    a.absent === b.absent &&
+    a.billboard?.backdropUri === b.billboard?.backdropUri &&
+    a.billboard?.logoUri === b.billboard?.logoUri &&
+    a.trailer === b.trailer
+  );
 }
 
 const ScopeContext = createContext<PreviewZoneStore | null>(null);
@@ -89,15 +110,26 @@ export function usePreviewZoneCard(store: PreviewZoneStore): CardModel | null {
  * Une carte dit son focus à la zone de sa page : `active` — focalisée, et pas
  * dépassée par la page (le défilement accéléré d'une grille). Un modèle neuf
  * de la même carte (une coche) met la zone à jour sans relancer son aperçu.
+ *
+ * Le focus est DATÉ AU RENDU qui le constate (le premier où `active` vaut
+ * vrai, juste après l'évènement natif), pas dans l'effet qui suit le commit :
+ * la machine de l'aperçu part de l'arrivée du focus.
+ *
+ * Une cellule RECYCLÉE (clé de place d'une ligne de grille) qui reçoit une
+ * autre carte en gardant le focus : c'est bien la carte focalisée qui change
+ * sous la télécommande — la zone la suit.
  */
 export function useCardZoneFocus(card: CardModel, active: boolean): void {
   const store = useContext(ScopeContext);
   const latest = useRef(card);
   latest.current = card;
   const id = card.id;
+  const focusedAt = useRef<{ id: string; at: number } | null>(null);
+  if (!active) focusedAt.current = null;
+  else if (focusedAt.current?.id !== id) focusedAt.current = { id, at: Date.now() };
   useEffect(() => {
     if (!store || !active) return undefined;
-    store.dispatch({ type: "focusCard", id, at: Date.now() }, latest.current);
+    store.dispatch({ type: "focusCard", id, at: focusedAt.current?.at ?? Date.now() }, latest.current);
     return () => store.dispatch({ type: "blurCard", id, at: Date.now() });
   }, [store, active, id]);
   useEffect(() => {

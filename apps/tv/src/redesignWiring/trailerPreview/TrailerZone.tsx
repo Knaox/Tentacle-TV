@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import { useIsFocused } from "@react-navigation/native";
 import { trailerPreviewSubjectKey } from "@tentacle-tv/shared";
 import { previewSessionDwellLeft, previewZoneDetailsLeft, previewZoneShown } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
@@ -24,6 +25,12 @@ import { ZoneVideo } from "./ZoneVideo";
  * - la bande-annonce : une SESSION par titre, montée quand le focus a tenu
  *   (`ZoneSession`, la machine du bureau au délai de l'utilisateur), qui pilote
  *   le LECTEUR UNIQUE de la zone (`ZoneVideo`) ; aperçus coupés : le fond seul.
+ *
+ * Une zone par page, donc un lecteur par page — mais seulement pour la page À
+ * L'ÉCRAN : une page couverte (une fiche, une grille par-dessus l'Accueil)
+ * coupe aussitôt son aperçu et démonte son lecteur (`useIsFocused`), sans
+ * attendre ni le flou de la carte ni le délai d'inactivité. Il n'y a jamais
+ * qu'un lecteur vivant.
  */
 export const TrailerZone = memo(function TrailerZone(props: PreviewZoneSlotProps) {
   const store = usePreviewZoneStore();
@@ -38,8 +45,9 @@ function Zone({ hero = null, fallback = null, store }: PreviewZoneSlotProps & { 
   const card: CardModel | null =
     shown?.kind === "card" ? (lastCard?.id === shown.id ? lastCard : fallback?.id === shown.id ? fallback : null) : null;
   const heroShown = shown?.kind === "hero" && hero !== null;
-  // Le sujet a le focus EN CE MOMENT (le repli n'en a jamais).
-  const focused = state.focused && state.subject !== null && shown !== null && state.subject.kind === shown.kind;
+  // Le sujet a le focus EN CE MOMENT (le repli n'en a jamais), sur la page à l'écran.
+  const pageFocused = useIsFocused();
+  const focused = pageFocused && state.focused && state.subject !== null && shown !== null && state.subject.kind === shown.kind;
   const since = focused ? state.since : null;
 
   const detailsWanted = useFocusHeld(card && !card.absent ? since : null, previewZoneDetailsLeft);
@@ -64,7 +72,7 @@ function Zone({ hero = null, fallback = null, store }: PreviewZoneSlotProps & { 
   }, []);
   const mine = want !== null && want.key === subjectKey ? want.value : null;
   // Montée quand le focus a tenu, gardée tant que sa vidéo existe (sa sortie).
-  const sessionOn = subjectKey !== null && (held || mine !== null);
+  const sessionOn = pageFocused && subjectKey !== null && (held || mine !== null);
   const videoShown = sessionOn && shownBy === subjectKey;
   const remote = usePreviewRemoteHint(videoShown);
   return (
@@ -75,7 +83,7 @@ function Zone({ hero = null, fallback = null, store }: PreviewZoneSlotProps & { 
       <PreviewZoneView
         model={model}
         heroRoom={heroShown}
-        video={<ZoneVideo want={mine} />}
+        video={pageFocused ? <ZoneVideo want={mine} /> : null}
         videoShown={videoShown}
         remote={remote}
       />
