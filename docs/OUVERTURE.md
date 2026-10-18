@@ -103,6 +103,22 @@ Règle : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`).
   (`start`) et des captures `xcrun simctl io <udid> screenshot` en rafale
   (`recordVideo` ne marche pas sur tvOS).
 
+## Mesures (2026-10-18, simulateur Apple TV 4K 1080p, build Debug, faux backend du banc)
+
+| | Avant (72de16225) | Après |
+|---|---|---|
+| Accueil prêt (focus sur « Reprendre ») | 2,7 – 3,4 s | 2,95 – 3,2 s (préparatifs allégés : aucun retard mesurable) |
+| Accueil vu, dans l'écran du poulpe (« dum ») | — | ≈ 0,5 s après qu'il est prêt |
+| Accueil à l'échelle 1, utilisable | 3,2 – 3,5 s | 4,4 – 5,0 s (la plongée, ≈ 1,5 s après le « dum ») |
+| Fil d'interface pendant l'attente, l'appui et la plongée | — | 59,6 – 59,8 i/s, 1 à 2 images perdues sur 300 |
+
+En Debug, le paquet JS se charge depuis Metro : l'ouverture ne commence
+qu'à ≈ 1,8 s. Sur l'appareil (Release), elle part bien plus tôt : un accueil
+prêt avant l'appui (1,16 s) donne l'arrivée à ≈ 3 s de l'ouverture. Le banc
+nav-golden (accueil, héros, jumelage : 11 scénarios) reste identique à sa
+référence. L'ouverture ne rallonge l'attente que de sa traîne : appui, allumage
+et plongée, ≈ 2 s après que l'accueil est prêt.
+
 ## Restes
 
 - Android TV : le trait `brandIntro` à vrai, le jumeau `bootSound.android.ts`
