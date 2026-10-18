@@ -6,7 +6,9 @@ import { useImageAspect } from "./useImageAspect";
 /**
  * Le titre d'une œuvre en grand : son logo quand Jellyfin en a un (aligné à
  * gauche, à sa vraie proportion, borné en largeur ET en hauteur), sinon le
- * titre en toutes lettres, en très grand.
+ * titre en toutes lettres, en très grand — aussi quand `acceptsLogo` refuse
+ * son logo (la zone d'aperçu : trop étroit pour se lire, tv-core
+ * `previewZoneUsesLogo`).
  */
 export const TitleArt = memo(function TitleArt({
   title,
@@ -14,15 +16,18 @@ export const TitleArt = memo(function TitleArt({
   maxWidth,
   maxHeight,
   fontSize,
+  acceptsLogo,
 }: {
   title: string;
   logoUri?: string;
   maxWidth: number;
   maxHeight: number;
   fontSize?: number;
+  /** Le logo de ce rapport largeur / hauteur se pose ; sinon, le titre écrit. */
+  acceptsLogo?: (aspect: number) => boolean;
 }) {
   const aspect = useImageAspect(logoUri, 2.8);
-  if (logoUri) {
+  if (logoUri && (!acceptsLogo || acceptsLogo(aspect))) {
     const width = Math.min(maxWidth, maxHeight * aspect);
     return (
       <Image

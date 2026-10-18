@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, type SharedValue } from "react-native-reanimated";
-import { PREVIEW_ZONE_FADE, PREVIEW_ZONE_PLAYBACK, PREVIEW_ZONE_TEXT, previewZoneTextLayout } from "@tentacle-tv/tv-core";
+import { PREVIEW_ZONE_FADE, PREVIEW_ZONE_PLAYBACK, PREVIEW_ZONE_TEXT, previewZoneTextLayout, previewZoneUsesLogo } from "@tentacle-tv/tv-core";
 import { MetaLine } from "../hero/MetaLine";
 import { TitleArt } from "../hero/TitleArt";
 import { Icon } from "../icons/Icon";
@@ -89,6 +89,7 @@ export const ZoneText = memo(function ZoneText({ model, heroRoom, watch }: {
           maxWidth={shown.logoUri ? 560 : ZONE.textWidth}
           maxHeight={layout.logoMaxHeight}
           fontSize={Math.min(titleSize(shown.title, compact), layout.logoMaxHeight / 2)}
+          acceptsLogo={previewZoneUsesLogo}
         />
       </Animated.View>
       {hasDetails ? (

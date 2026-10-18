@@ -74,3 +74,17 @@ export function previewZoneTextLayout(input: PreviewZoneTextInput): PreviewZoneT
   }
   return { logoMaxHeight: logo.min, synopsisLines: 0, bottom };
 }
+
+/**
+ * Le LOGO d'un titre ne se pose dans la zone que s'il est assez LARGE : borné
+ * par la hauteur du bloc, un logo vertical ou carré (Jellyfin en sert : 800 ×
+ * 3904 pour « American Horror Story ») n'y faisait plus qu'un point de 24 de
+ * large (relevé du 18/10 dans la bibliothèque Séries). En dessous de ce
+ * rapport largeur / hauteur, le titre s'écrit en toutes lettres.
+ */
+export const PREVIEW_ZONE_LOGO_MIN_ASPECT = 1.2;
+
+/** Le logo, de rapport `aspect` (largeur / hauteur), se pose dans la zone. */
+export function previewZoneUsesLogo(aspect: number): boolean {
+  return Number.isFinite(aspect) && aspect >= PREVIEW_ZONE_LOGO_MIN_ASPECT;
+}

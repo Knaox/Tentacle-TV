@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PREVIEW_ZONE_HEIGHT } from "../focus/previewZoneLayout";
-import { PREVIEW_ZONE_TEXT as T, previewZoneTextLayout as layout, type PreviewZoneTextInput } from "./previewZoneText";
+import { PREVIEW_ZONE_TEXT as T, previewZoneTextLayout as layout, previewZoneUsesLogo, type PreviewZoneTextInput } from "./previewZoneText";
 
 const card = { hero: false, kicker: false, reason: false, synopsis: true };
 const hero = { hero: true, kicker: true, reason: false, synopsis: true };
@@ -42,5 +42,15 @@ describe("previewZoneTextLayout — le texte de la zone (432, toutes les pages)"
         }
       }
     }
+  });
+});
+
+describe("previewZoneUsesLogo — un logo trop étroit cède au titre écrit", () => {
+  it("un logo large se pose, un logo vertical ou carré non", () => {
+    expect(previewZoneUsesLogo(2.8)).toBe(true);
+    expect(previewZoneUsesLogo(1.2)).toBe(true);
+    expect(previewZoneUsesLogo(800 / 3904)).toBe(false);
+    expect(previewZoneUsesLogo(1)).toBe(false);
+    expect(previewZoneUsesLogo(Number.NaN)).toBe(false);
   });
 });
