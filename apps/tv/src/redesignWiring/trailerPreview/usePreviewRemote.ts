@@ -4,14 +4,14 @@ import { useRemoteContext } from "../../platform/input";
 import { trailerPreviewSoundStore } from "../../lib/trailerPreviewSettings";
 
 /**
- * La télécommande PENDANT l'aperçu d'une carte (Apple TV, Android TV) : un
- * contexte « écran » de l'entrée unique, actif tant que la grande carte joue
- * sous le focus. La décision est dans tv-core (`cards/previewRemote.ts`) :
+ * La télécommande PENDANT l'aperçu de la zone (Apple TV, Android TV) : un
+ * contexte « écran » de l'entrée unique, actif tant que la bande-annonce joue
+ * dans la zone sous le focus. La décision est dans tv-core (`cards/previewRemote.ts`) :
  * Lecture/Pause met en pause et reprend, Lecture et Pause séparées font ce
  * qu'elles disent, Lecture/Pause maintenue coupe ou remet le son.
  *
  * - La PAUSE vit avec l'aperçu : un seul joue à la fois (l'arbitre), elle
- *   retombe dès qu'il ne joue plus (focus parti, carte repliée).
+ *   retombe dès qu'il ne joue plus (focus parti, vidéo sortie de la zone).
  * - Le SON est le réglage « Son des aperçus » de l'appareil : retenu pour les
  *   suivants, et visible dans Réglages › Lecture — jamais le volume du
  *   téléviseur.
@@ -34,7 +34,7 @@ const pausedStore = {
     };
   },
   get: () => paused,
-  /** L'état d'une carte qui ne joue pas : jamais en pause. */
+  /** L'état d'un aperçu qui ne joue pas : jamais en pause. */
   idle: () => false,
 };
 
@@ -60,8 +60,8 @@ export function usePreviewRemote(active: boolean): boolean {
 }
 
 /**
- * Ce que l'indice sous la carte doit dire, pour la carte dont l'aperçu JOUE
- * (`shown`) : la pause et le son. `null` pour toutes les autres — elles ne se
+ * Ce que l'indice de la zone doit dire, quand son aperçu JOUE
+ * (`shown`) : la pause et le son. `null` sinon — les zones qui ne jouent pas ne se
  * redessinent pas quand l'état change.
  */
 export function usePreviewRemoteHint(shown: boolean): { paused: boolean; muted: boolean } | null {

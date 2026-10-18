@@ -4,14 +4,15 @@ import {
 } from "@tentacle-tv/shared";
 
 /**
- * L'aperçu de bande-annonce AU FOCUS d'une carte (Apple TV, Android TV) — les
+ * L'aperçu de bande-annonce AU FOCUS d'une carte, joué dans la zone d'aperçu
+ * (Apple TV, Android TV, tv-core `previewZone.ts`) — les
  * temps et la mémoire de l'appareil. La machine est celle du web et du bureau
  * (shared `reduceTrailerPreview`) : le focus y tient le rôle du survol, et il
  * n'y a pas de pointeur (aucun `move`).
  *
  * Les temps sont ceux du salon, pas ceux de la souris : une télécommande
  * avance d'un pas toutes les 300 à 600 ms quand on parcourt une rangée, et
- * répète un pas toutes les ~100 ms quand on la tient. La carte grandit au
+ * répète un pas toutes les ~100 ms quand on la tient. La vidéo paraît au
  * DÉLAI choisi sur l'appareil (Réglages › Lecture, shared `previewDelay.ts`),
  * 800 ms par défaut, le même que sur le bureau ; la demande part 350 ms avant
  * lui, JAMAIS avant 450 ms de focus tenu, quel que soit le délai : un
@@ -33,9 +34,9 @@ export const TV_TRAILER_PREVIEW_TIMING: TrailerPreviewTiming = {
   intentMs: 450,
   /** Pas de pointeur : l'intention ne dépend que du focus tenu. */
   intentStillMs: 0,
-  /** La carte grandit au plus tôt à ce moment, depuis l'arrivée du focus : le délai choisi (`tvTrailerPreviewTiming`). */
+  /** La vidéo paraît dans la zone au plus tôt à ce moment, depuis l'arrivée du focus : le délai choisi (`tvTrailerPreviewTiming`). */
   revealMs: DEFAULT_TRAILER_PREVIEW_DELAY,
-  /** La carte se replie un peu plus vite qu'elle n'a grandi (le mouvement d'Apple TV). */
+  /** La vidéo sort de la zone un peu plus vite qu'elle n'y est entrée (le mouvement d'Apple TV). */
   exitMs: 220,
   /** Le son du salon : la bande-annonce s'entend, sans couvrir la pièce. */
   volume: 0.7,
