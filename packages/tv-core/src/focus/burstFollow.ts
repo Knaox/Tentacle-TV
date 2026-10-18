@@ -26,8 +26,24 @@
  * en est la spécification. Sur Apple TV, `rowRevealOffset` seul, appliqué à
  * la cible que tvOS propose pour la rangée (`TentacleRowScroller.m`, `base` =
  * sa proposition) : tvOS posait la carte à SA marge (~80 pt), sous le rail en
- * revenant vers la gauche. Module pur : temps en millisecondes.
+ * revenant vers la gauche. Qui la joue sur Apple TV : un pas ISOLÉ, le ressort
+ * de la page ; un pas qui suit le précédent de moins de `ROW_RAPID_STEP_MS`
+ * (`rowStepIsRapid`), comme une flèche maintenue, l'animateur de tvOS. Module
+ * pur : temps en millisecondes.
  */
+
+/**
+ * Deux pas d'une rangée plus rapprochés que ça (GAUCHE / DROITE répétés à la
+ * main, ~3,7 pas/s) forment une RAFALE : tvOS les joue, comme une flèche
+ * maintenue — le ressort, repris à chaque pas, perdait une image par pas et
+ * reculait de quelques points (mesuré au banc de fluidité, 18/10).
+ */
+export const ROW_RAPID_STEP_MS = 350;
+
+/** Un pas de rangée arrivé `sincePreviousMs` après le précédent (`null` : le premier) : une rafale ? */
+export function rowStepIsRapid(sincePreviousMs: number | null): boolean {
+  return sincePreviousMs !== null && sincePreviousMs < ROW_RAPID_STEP_MS;
+}
 
 export const BURST_FOLLOW = {
   /** Le recouvrement : une image de plus que l'intervalle — les pas tombent sur

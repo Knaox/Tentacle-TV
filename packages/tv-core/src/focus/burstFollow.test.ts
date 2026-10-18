@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BURST_FOLLOW, burstSegmentMs, clampRowOffset, linearAt, rowRevealOffset, settleVelocity } from "./burstFollow";
+import { BURST_FOLLOW, ROW_RAPID_STEP_MS, burstSegmentMs, clampRowOffset, linearAt, rowRevealOffset, rowStepIsRapid, settleVelocity } from "./burstFollow";
 import { springAt } from "./revealMotion";
 
 describe("burstSegmentMs — la durée d'un segment de rafale", () => {
@@ -99,5 +99,18 @@ describe("rowRevealOffset — la rangée qui montre la carte focalisée", () => 
 
   it("une rangée plus courte que l'écran ne défile pas", () => {
     expect(rowRevealOffset({ left: 176, width: 300 }, { viewport: 1920, content: 800, leading: 176, trailing: 96 }, 0)).toBe(0);
+  });
+});
+
+describe("rowStepIsRapid — un pas de rangée qui suit le précédent de près est une rafale", () => {
+  it("le premier pas, ou un pas isolé : le ressort", () => {
+    expect(rowStepIsRapid(null)).toBe(false);
+    expect(rowStepIsRapid(ROW_RAPID_STEP_MS)).toBe(false);
+    expect(rowStepIsRapid(900)).toBe(false);
+  });
+
+  it("DROITE répété à la main (~3,7 pas/s, ~270 ms) : une rafale, que tvOS joue", () => {
+    expect(rowStepIsRapid(270)).toBe(true);
+    expect(rowStepIsRapid(ROW_RAPID_STEP_MS - 1)).toBe(true);
   });
 });
