@@ -118,7 +118,8 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
   logo passe AU-DESSUS de la pastille de note (`cardLogoBottom`, géométrie de
   `cardMarkerGeometry` : pied 12, ou 20 au-dessus de la barre de « Reprendre »,
   40 de haut, 12 d'écart) ; sans note, il garde sa place basse. Vignette 16:9
-  et carte qui se redresse — banc « briques/logos » et « briques/logos-redresse ».
+  et carte qui se redresse — banc « briques/logos » (« briques/logos-redresse » est
+  partie avec `MorphCard`, le 18/10).
 
 ## Le socle du branchement (`apps/tv/src/redesignWiring/`)
 
