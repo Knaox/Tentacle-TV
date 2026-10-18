@@ -756,7 +756,8 @@ est FIXE (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) : ni défilement, n
 rotation, ni tête collée au rail, ni reprise ; GAUCHE/DROITE ne déplacent que le focus,
 HAUT/BAS gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes
 voisines), même au défilement ACCÉLÉRÉ, où tvOS déplace le focus seul : la colonne retenue
-est rendue dans la ligne d'arrivée une fois la grille posée — jamais en mouvement, jamais
+est rendue dans la ligne d'arrivée dès que la page ralentit au bout de sa course (si la ligne du
+focus connu est à l'écran), sinon la grille posée — jamais en plein mouvement, jamais
 d'après la fin d'un maintien, que la Siri Remote n'annonce pas toujours (tv-core
 `focus/gridColumnHold`, port `gridSettlePort`). Les titres autour du focus se préparent d'avance (`trailers.previewWarm`,
 tv-core `trailerPreviewWarmTv.ts`).

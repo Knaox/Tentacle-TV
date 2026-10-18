@@ -304,8 +304,10 @@ résultat.
 - **GR-7 bis** (18/10) La colonne TENUE au défilement accéléré : flèche
   HAUT/BAS tenue, tvOS déplace le focus lui-même, sans guides ni entrées. La
   colonne retenue (celle du dernier pas dans une ligne) est rendue au focus
-  arrivé ailleurs, dans SA ligne, dès que la grille se pose — jamais pendant
-  le mouvement, sans dépendre de la fin du maintien. HAUT tenu jusqu'en haut :
+  arrivé ailleurs, dans SA ligne, dès que la page RALENTIT au bout de sa course
+  (sous `GRID_SLOW_SPEED`, si la ligne du focus connu est à l'écran), sinon la
+  grille posée — jamais en plein mouvement, sans dépendre de la fin du
+  maintien. HAUT tenu jusqu'en haut :
   tvOS traverse les filtres et revient, la colonne tient (retour en moins de
   1,5 s, sans pas de côté) ; resté plus longtemps dans les filtres, ou passé
   d'un filtre à l'autre (GAUCHE / DROITE), BAS est une nouvelle entrée, au

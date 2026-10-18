@@ -1,3 +1,4 @@
+import type { GridLineRange } from "@tentacle-tv/tv-core";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useGridColumnHold } from "../../platform/tvos/focus/gridColumnHold";
 import { useGridLineEntries } from "../../platform/tvos/focus/gridLineEntries";
@@ -11,7 +12,7 @@ import { useGridColumns } from "../../redesign/screens/library/PosterGrid";
  * `PosterGrid`. Rend le rappel « grille posée » que l'écran fournit à sa
  * grille (`GridSettleProvider`).
  */
-export function useGridColumnEntries(focus: FocusStore, count: number): () => void {
+export function useGridColumnEntries(focus: FocusStore, count: number): (visible?: GridLineRange) => void {
   const columns = useGridColumns();
   useGridLineEntries(focus, count, columns);
   return useGridColumnHold(focus, count, columns);

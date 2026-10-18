@@ -55,6 +55,22 @@ describe("gridColumnHold — le défilement accéléré (flèche tenue)", () => 
   });
 });
 
+describe("gridColumnHold — au ralenti, avant l'immobilité", () => {
+  it("la ligne du focus connu est à l'écran : corrigée dès le ralenti", () => {
+    const state = walk(GRID_COLUMN_HOLD_START, [2, 425]);
+    expect(gridColumnHoldSettle(state, COLUMNS, COUNT, { first: 84, last: 86 }).correct).toBe(427);
+  });
+
+  it("le focus connu est PÉRIMÉ (sa ligne n'est pas à l'écran) : rien, on attendra la grille posée", () => {
+    const state = walk(GRID_COLUMN_HOLD_START, [2, 300]);
+    const slowed = gridColumnHoldSettle(state, COLUMNS, COUNT, { first: 84, last: 86 });
+    expect(slowed.correct).toBeNull();
+    expect(slowed.state).toEqual(state);
+    // tvOS pose le focus final, la grille se pose : corrigé.
+    expect(settle(walk(state, [425])).correct).toBe(427);
+  });
+});
+
 describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
   it("tvOS traverse les filtres au bout de sa course puis revient sur la 1re ligne : la colonne tient (grid:123 → grid:3)", () => {
     const state = walk(GRID_COLUMN_HOLD_START, [123, 60, null, 0]);

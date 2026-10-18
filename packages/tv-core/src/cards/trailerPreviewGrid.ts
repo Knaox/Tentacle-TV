@@ -40,6 +40,41 @@ export function gridPreviewSettleDelay(lastMoveAt: number | null, now: number, s
   return Math.max(0, lastMoveAt + settleMs - now);
 }
 
+/**
+ * Sous cette vitesse (points par seconde), la page qui finissait un défilement
+ * RALENTIT : tvOS a posé le focus, il ne reste que la fin de sa course. La
+ * colonne tenue d'une grille s'y rend sans attendre l'immobilité
+ * (`gridColumnHoldSettle`).
+ */
+export const GRID_SLOW_SPEED = 400;
+
+/** Deux relevés de défilement plus rapprochés que ça ne disent pas une vitesse fiable. */
+const SPEED_MIN_INTERVAL_MS = 8;
+
+/** Un relevé du défilement de la page : sa position, et quand. */
+export interface GridScrollSample {
+  y: number;
+  at: number;
+}
+
+/** La vitesse de la page entre deux relevés (points par seconde) ; `null` : pas mesurable. */
+export function gridScrollSpeed(previous: GridScrollSample | null, next: GridScrollSample): number | null {
+  if (!previous || next.at - previous.at < SPEED_MIN_INTERVAL_MS) return null;
+  return (Math.abs(next.y - previous.y) * 1000) / (next.at - previous.at);
+}
+
+/**
+ * Les lignes de la grille à l'écran : `firstLineTop`, le haut de la première
+ * ligne dans le contenu (la marge du haut et l'en-tête), `stride` d'une ligne
+ * à la suivante, `viewport` la fenêtre de la page.
+ */
+export function gridVisibleLines(input: { scrollY: number; firstLineTop: number; stride: number; viewport: number }): { first: number; last: number } {
+  const stride = Math.max(1, input.stride);
+  const first = Math.max(0, Math.floor((input.scrollY - input.firstLineTop) / stride));
+  const last = Math.max(first, Math.floor((input.scrollY + input.viewport - input.firstLineTop) / stride));
+  return { first, last };
+}
+
 /** Au-delà de tant de lignes défilées depuis le focus qu'elle connaît, l'app est en retard sur la page. */
 export const GRID_FOCUS_OUTRUN_LINES = 1.5;
 

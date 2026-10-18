@@ -107,14 +107,28 @@ export function gridColumnHoldMove(state: GridColumnHoldState, direction: Direct
   return state.leftAt !== null && (direction === "gauche" || direction === "droite") ? { ...state, sideways: true } : state;
 }
 
+/** Les lignes de la grille à l'écran (`gridVisibleLines`, `trailerPreviewGrid.ts`). */
+export interface GridLineRange {
+  first: number;
+  last: number;
+}
+
 /**
- * La grille est POSÉE (`gridPreviewSettleDelay`) : le dernier focus est rendu à
- * la colonne retenue s'il le faut ; hors de la grille, rien (le retour en
- * décidera, `gridColumnHoldFocus`).
+ * La grille est POSÉE (`gridPreviewSettleDelay`), ou elle RALENTIT au bout
+ * d'un défilement (`gridScrollSlow` — tvOS a posé le focus, la page finit sa
+ * course : la colonne arrive ~1 s plus tôt, mesuré au banc de fluidité) : le
+ * dernier focus est rendu à la colonne retenue s'il le faut ; hors de la
+ * grille, rien (le retour en décidera, `gridColumnHoldFocus`). `visible` (au
+ * ralenti seulement) : les lignes à l'écran — un focus connu HORS d'elles est
+ * périmé (tvOS ne prévient l'app que de loin en loin pendant un défilement
+ * accéléré) : on attend la grille posée, jamais une réclamation loin de
+ * l'écran.
  */
-export function gridColumnHoldSettle(state: GridColumnHoldState, columns: number, count: number): GridColumnHoldStep {
+export function gridColumnHoldSettle(state: GridColumnHoldState, columns: number, count: number, visible?: GridLineRange): GridColumnHoldStep {
   if (state.column === null || state.focused === null || state.focused >= count) return { state, correct: null };
   const perLine = perLineOf(columns);
+  const line = Math.floor(state.focused / perLine);
+  if (visible && (line < visible.first || line > visible.last)) return { state, correct: null };
   const target = inColumn(state.focused, state.column, perLine, count);
   // Dans la colonne, ou la dernière ligne plus courte entrée par sa dernière affiche : sa colonne devient la retenue.
   if (target === state.focused) return { state: { ...state, column: state.focused % perLine }, correct: null };
