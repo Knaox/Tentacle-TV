@@ -14,7 +14,8 @@ import {
 } from "@tentacle-tv/api-client";
 import { cardRatingFor, missingSeriesRatingIds, resolveCardMarkers, trailerPreviewSubjectOfItem, type MediaItem } from "@tentacle-tv/shared";
 import type { CardModel } from "../../redesign/cards/cardTypes";
-import { landscapeOf, paletteOfItem, POSTER_FALLBACK_LANDSCAPE_WIDTH, posterUriOf, progressOf } from "./cardArtwork";
+import { legibleLogoOf } from "../hero/heroModel";
+import { backdropUriOf, landscapeOf, paletteOfItem, POSTER_FALLBACK_LANDSCAPE_WIDTH, posterUriOf, progressOf } from "./cardArtwork";
 import { cardQualityOf } from "./cardQuality";
 import { useCardArtwork } from "./useCardArtwork";
 import { sameCard } from "./sameCard";
@@ -113,7 +114,8 @@ export function useCardModelFactory(): CardModelFactory {
         badge: options.badge?.(item),
         palette: paletteOfItem(item),
         quality: cardQualityOf(item),
-        // L'aperçu au focus (rangées seulement : la carte décide si elle grandit).
+        // La zone d'aperçu : le grand fond et le logo lisible, puis la bande-annonce au focus tenu.
+        billboard: { backdropUri: backdropUriOf(client, item), logoUri: legibleLogoOf(client, item) },
         trailer: trailerPreviewSubjectOfItem(item) ?? undefined,
       };
     },

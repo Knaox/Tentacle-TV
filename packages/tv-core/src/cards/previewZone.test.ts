@@ -3,7 +3,7 @@ import {
   INITIAL_PREVIEW_ZONE as START,
   PREVIEW_ZONE_DETAILS_MS,
   previewZoneBackdropLayer,
-  previewZoneDetailsIn,
+  previewZoneDetailsLeft,
   previewZoneShown,
   reducePreviewZone as reduce,
   type PreviewZoneEvent,
@@ -62,12 +62,10 @@ describe("previewZoneShown — jamais vide sous les yeux", () => {
   });
 });
 
-describe("previewZoneDetailsIn — les détails quand le focus a tenu", () => {
-  it("rien sans focus ; le reste du délai, puis 0", () => {
-    expect(previewZoneDetailsIn(START, 0)).toBeNull();
-    const state = run({ type: "focusCard", id: "a", at: 100 });
-    expect(previewZoneDetailsIn(state, 100)).toBe(PREVIEW_ZONE_DETAILS_MS);
-    expect(previewZoneDetailsIn(state, 100 + PREVIEW_ZONE_DETAILS_MS + 50)).toBe(0);
+describe("previewZoneDetailsLeft — les détails quand le focus a tenu", () => {
+  it("le reste du délai, puis 0", () => {
+    expect(previewZoneDetailsLeft(100, 100)).toBe(PREVIEW_ZONE_DETAILS_MS);
+    expect(previewZoneDetailsLeft(100, 100 + PREVIEW_ZONE_DETAILS_MS + 50)).toBe(0);
   });
 });
 

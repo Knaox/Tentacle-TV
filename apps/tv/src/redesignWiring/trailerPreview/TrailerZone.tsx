@@ -1,0 +1,98 @@
+import { memo, useCallback, useMemo, useState } from "react";
+import { trailerPreviewSubjectKey } from "@tentacle-tv/shared";
+import { previewSessionDwellLeft, previewZoneDetailsLeft, previewZoneShown } from "@tentacle-tv/tv-core";
+import type { CardModel } from "../../redesign/cards/cardTypes";
+import {
+  usePreviewZoneCard, usePreviewZoneState, usePreviewZoneStore, type PreviewZoneSlotProps, type PreviewZoneStore,
+} from "../../redesign/cards/trailerPreviewPort";
+import { PreviewZoneView } from "../../redesign/previewZone/PreviewZoneView";
+import { zoneModelOfCard, zoneModelOfHero } from "../../redesign/previewZone/zoneModel";
+import { useTrailerPreviewsEnabled } from "../../lib/trailerPreviewSettings";
+import { useFocusHeld } from "./useFocusDwell";
+import { usePreviewRemoteHint } from "./usePreviewRemote";
+import { useZoneDetails } from "./useZoneDetails";
+import { ZoneSession, type ZoneVideoWant } from "./ZoneSession";
+import { ZoneVideo } from "./ZoneVideo";
+
+/**
+ * La ZONE D'APERÇU fournie au port (`PreviewZoneSlot`) — une par page, qui lit
+ * le magasin de focus de sa page (`PreviewZoneScope`) :
+ *
+ * - le sujet (tv-core `previewZoneShown`) : la carte focalisée, aussitôt —
+ *   son fond, son logo, son titre ; le héros de l'Accueil ; le repli ;
+ * - les détails quand le focus a tenu (`useZoneDetails`) ;
+ * - la bande-annonce : une SESSION par titre, montée quand le focus a tenu
+ *   (`ZoneSession`, la machine du bureau au délai de l'utilisateur), qui pilote
+ *   le LECTEUR UNIQUE de la zone (`ZoneVideo`) ; aperçus coupés : le fond seul.
+ */
+export const TrailerZone = memo(function TrailerZone(props: PreviewZoneSlotProps) {
+  const store = usePreviewZoneStore();
+  // Hors d'une portée (une page qui n'en pose pas) : la zone de repli, sans focus.
+  return <Zone {...props} store={store ?? FALLBACK_STORE} />;
+});
+
+function Zone({ hero = null, fallback = null, store }: PreviewZoneSlotProps & { store: PreviewZoneStore }) {
+  const state = usePreviewZoneState(store);
+  const lastCard = usePreviewZoneCard(store);
+  const shown = previewZoneShown(state, { hasHero: hero !== null, fallbackId: fallback?.id ?? null });
+  const card: CardModel | null =
+    shown?.kind === "card" ? (lastCard?.id === shown.id ? lastCard : fallback?.id === shown.id ? fallback : null) : null;
+  const heroShown = shown?.kind === "hero" && hero !== null;
+  // Le sujet a le focus EN CE MOMENT (le repli n'en a jamais).
+  const focused = state.focused && state.subject !== null && shown !== null && state.subject.kind === shown.kind;
+  const since = focused ? state.since : null;
+
+  const detailsWanted = useFocusHeld(card && !card.absent ? since : null, previewZoneDetailsLeft);
+  const details = useZoneDetails(card && !card.absent ? card.id : null, detailsWanted);
+  const model = useMemo(
+    () => (heroShown && hero ? zoneModelOfHero(hero) : card ? zoneModelOfCard(card, details) : null),
+    [heroShown, hero, card, details],
+  );
+
+  const enabled = useTrailerPreviewsEnabled();
+  const subject = enabled ? (heroShown ? hero?.trailer ?? null : card?.trailer ?? null) : null;
+  const subjectKey = subject ? trailerPreviewSubjectKey(subject) : null;
+  const held = useFocusHeld(subject ? since : null, previewSessionDwellLeft);
+  // Ce que veut la session, et si sa vidéo se montre — chacun marqué de la session qui le dit.
+  const [want, setWant] = useState<Owned<ZoneVideoWant> | null>(null);
+  const [shownBy, setShownBy] = useState<string | null>(null);
+  const onVideo = useCallback((key: string, next: ZoneVideoWant | null) => {
+    setWant((previous) => (next ? { key, value: next } : previous?.key === key ? null : previous));
+  }, []);
+  const onShown = useCallback((key: string, next: boolean) => {
+    setShownBy((previous) => (next ? key : previous === key ? null : previous));
+  }, []);
+  const mine = want !== null && want.key === subjectKey ? want.value : null;
+  // Montée quand le focus a tenu, gardée tant que sa vidéo existe (sa sortie).
+  const sessionOn = subjectKey !== null && (held || mine !== null);
+  const videoShown = sessionOn && shownBy === subjectKey;
+  const remote = usePreviewRemoteHint(videoShown);
+  return (
+    <>
+      {sessionOn && subject ? (
+        <ZoneSession key={subjectKey} sessionKey={subjectKey ?? ""} subject={subject} focused={focused} since={since} onShown={onShown} onVideo={onVideo} />
+      ) : null}
+      <PreviewZoneView
+        model={model}
+        heroRoom={heroShown}
+        video={<ZoneVideo want={mine} />}
+        videoShown={videoShown}
+        remote={remote}
+      />
+    </>
+  );
+}
+
+interface Owned<T> {
+  key: string;
+  value: T;
+}
+
+const FALLBACK_STATE = { subject: null, focused: false, since: null };
+const FALLBACK_STORE: PreviewZoneStore = {
+  getState: () => FALLBACK_STATE,
+  getCard: () => null,
+  subscribe: () => () => undefined,
+  dispatch: () => undefined,
+  refresh: () => undefined,
+};

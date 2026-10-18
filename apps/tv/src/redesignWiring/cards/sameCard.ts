@@ -33,6 +33,8 @@ export function sameCard(a: CardModel, b: CardModel): boolean {
     a.landscapeUri === b.landscapeUri &&
     a.posterUri === b.posterUri &&
     a.logoUri === b.logoUri &&
+    a.billboard?.backdropUri === b.billboard?.backdropUri &&
+    a.billboard?.logoUri === b.billboard?.logoUri &&
     a.progress === b.progress &&
     a.badge === b.badge &&
     a.focusNote === b.focusNote &&

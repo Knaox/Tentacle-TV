@@ -1,6 +1,6 @@
 import type { TFunction } from "i18next";
 import type { useJellyfinClient } from "@tentacle-tv/api-client";
-import { extractMediaQuality, formatCommunityRating, formatDuration, formatEpisodeCode, type MediaItem } from "@tentacle-tv/shared";
+import { extractMediaQuality, formatCommunityRating, formatDuration, formatEpisodeCode, trailerPreviewSubjectOfItem, type MediaItem } from "@tentacle-tv/shared";
 import { isLogoLegibleOnDark } from "../../redesign/color/artworkPalette";
 import type { HeroModel } from "../../redesign/hero/HeroBanner";
 import type { MetaItem } from "../../redesign/hero/MetaLine";
@@ -91,5 +91,6 @@ export function heroModelOf(client: ImageClient, t: TFunction, { item, art, kick
     secondary: { label: t("common:moreInfo"), icon: "info", focusKey: "hero:secondary" },
     listToggle: { label: t("common:myList"), active: inWatchlist, focusKey: "hero:list" },
     page,
+    trailer: trailerPreviewSubjectOfItem(art) ?? undefined,
   };
 }

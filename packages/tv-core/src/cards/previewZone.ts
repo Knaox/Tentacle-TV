@@ -103,10 +103,9 @@ export function previewZoneShown(
   return options.fallbackId ? { kind: "card", id: options.fallbackId } : null;
 }
 
-/** Le temps qui reste avant de lire les détails du sujet focalisé (0 : maintenant), ou `null` sans focus. */
-export function previewZoneDetailsIn(state: PreviewZoneState, now: number): number | null {
-  if (!state.focused || state.since === null) return null;
-  return Math.max(0, state.since + PREVIEW_ZONE_DETAILS_MS - now);
+/** Ce qu'il reste à attendre (ms) avant de lire les détails d'un focus arrivé à `since`. */
+export function previewZoneDetailsLeft(since: number, now: number): number {
+  return Math.max(0, since + PREVIEW_ZONE_DETAILS_MS - now);
 }
 
 /**

@@ -4,18 +4,20 @@ import { PreviewVideoElement } from "../../platform/tvos/player/previewVideoElem
 /**
  * La vidéo de l'aperçu (Apple TV : AVPlayer ; Android TV : ExoPlayer) — le
  * flux relayé par le serveur Tentacle, chargé CACHÉ et en pause jusqu'à ce que
- * la grande carte se montre, puis joué. Elle ne décide de rien : elle dit sa
- * première image (`onReady`), sa fin, son échec, et où elle en est.
+ * la zone le montre, puis joué. Elle ne décide de rien : elle dit sa première
+ * image (`onReady`), sa fin, son échec, et où elle en est. UN lecteur pour la
+ * zone (`ZoneVideo`) : sa SOURCE change d'un titre à l'autre, l'élément natif
+ * reste — chaque source neuve repart d'un « pas encore prête ».
  *
  * - La première image : AVPlayer la sert même en pause, ExoPlayer rend la
  *   première image d'un flux préparé. Faute de cet avis `READY_FALLBACK_MS`
- *   après le chargement, le chargement vaut prêt : la grande carte montre
- *   alors l'image du titre jusqu'à la première image — jamais un cadre noir
+ *   après le chargement, le chargement vaut prêt : la zone montre alors le
+ *   fond du titre jusqu'à la première image — jamais un cadre noir
  *   (la couche vidéo est transparente avant).
  * - Le lecteur vient de l'adaptateur de la plateforme (`previewVideoElement`) :
  *   react-native-video sur Apple TV ; sur Android TV, un lecteur d'aperçu natif
  *   sans contrôleur ni focus (celui de react-native-video bloquait le fil UI à
- *   chaque aperçu et volait le focus de la carte).
+ *   chaque aperçu et volait le focus des cartes).
  */
 
 /** Chargée sans avis de première image au-delà : elle est tenue pour prête. */
@@ -50,9 +52,15 @@ export const PreviewVideo = memo(function PreviewVideo({ uri, hls, startAt, play
     ready.current = true;
     onReady();
   }, [onReady]);
-  useEffect(() => () => {
-    if (fallback.current) clearTimeout(fallback.current);
-  }, []);
+  // Une source neuve (un autre titre, sur le même lecteur) : rien d'elle n'est encore prêt.
+  useEffect(() => {
+    ready.current = false;
+    duration.current = 0;
+    return () => {
+      if (fallback.current) clearTimeout(fallback.current);
+      fallback.current = null;
+    };
+  }, [uri, startAt]);
 
   const onLoad = useCallback((loaded: number) => {
     if (loaded > 0) duration.current = loaded;
