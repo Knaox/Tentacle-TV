@@ -3,11 +3,11 @@ import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
 import { PREVIEW_ZONE_FADE } from "@tentacle-tv/tv-core";
 import { SoftGradient } from "../background/SoftGradient";
-import { CardPreviewHint } from "../cards/CardPreviewHint";
 import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
 import { scrim } from "../theme/tokens";
 import { ZoneBackdrop } from "./ZoneBackdrop";
+import { ZoneRemoteHint } from "./ZoneRemoteHint";
 import { ZoneText } from "./ZoneText";
 import { ZONE, type PreviewZoneModel } from "./zoneModel";
 
@@ -68,7 +68,7 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
       </View>
       {model ? <ZoneText model={model} heroRoom={heroRoom} /> : null}
       <Reveal shown={remote !== null} style={styles.hint}>
-        {lastRemote.current ? <CardPreviewHint paused={lastRemote.current.paused} muted={lastRemote.current.muted} /> : null}
+        {lastRemote.current ? <ZoneRemoteHint paused={lastRemote.current.paused} muted={lastRemote.current.muted} /> : null}
       </Reveal>
     </View>
   );

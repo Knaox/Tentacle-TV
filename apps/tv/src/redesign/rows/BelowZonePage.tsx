@@ -1,7 +1,7 @@
-import { createContext, memo, useCallback, useContext, useState, type ReactNode } from "react";
+import { memo, useCallback, useState, type ReactNode } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { BELOW_ZONE_VIEWPORT, PREVIEW_STAGE_HEIGHT, PREVIEW_ZONE_HEIGHT, belowZoneBottomRoom } from "@tentacle-tv/tv-core";
-import { PreviewZoneScope } from "../cards/trailerPreviewPort";
+import { PreviewZoneScope, usePreviewZoneStore } from "../cards/trailerPreviewPort";
 
 /**
  * Le cadre d'une page À ZONE (tv-core `focus/previewZoneLayout.ts`) :
@@ -28,19 +28,15 @@ export const BelowZonePage = memo(function BelowZonePage({ zone, children }: { z
         <View style={styles.zone} pointerEvents="box-none">
           {zone}
         </View>
-        <InZoneContext.Provider value>
-          <View style={styles.window}>{children}</View>
-        </InZoneContext.Provider>
+        <View style={styles.window}>{children}</View>
       </View>
     </PreviewZoneScope>
   );
 });
 
-const InZoneContext = createContext(false);
-
-/** La carte est dans une page à zone : son focus peut demander l'aperçu. */
+/** La carte est dans une page à zone (sous sa portée) : son focus va à la zone. */
 export function useInPreviewZone(): boolean {
-  return useContext(InZoneContext);
+  return usePreviewZoneStore() !== null;
 }
 
 /**

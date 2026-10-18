@@ -7,17 +7,17 @@ import { colors, fonts } from "../theme/tokens";
 import { useRemoteHints } from "../remote/remoteHints";
 
 /**
- * « Lecture/Pause : pause · maintenir : couper le son » — sous la légende de la
- * carte dont l'APERÇU joue, dans la voix basse de « Maintenir OK : plus
- * d'options » (`CardHoldHint`) : une ligne, rien de focalisable. Le
+ * « Lecture/Pause : pause · maintenir : couper le son » — en bas à droite de
+ * la ZONE D'APERÇU tant que sa bande-annonce joue sous le focus, dans la voix
+ * basse de « Maintenir OK : plus d'options » (`CardHoldHint`) : une ligne,
+ * rien de focalisable. Le
  * pictogramme est celui de ce que fera la touche (pause, ou reprise) ; les
  * deux moitiés suivent l'état (tv-core `previewRemoteHintIds`), les mots
  * viennent de la table de la télécommande.
  *
- * Le contenu seul : c'est `CardFocusFooter` qui le montre, tant que l'aperçu
- * joue sous le focus.
+ * Le contenu seul : c'est `PreviewZoneView` qui le montre.
  */
-export const CardPreviewHint = memo(function CardPreviewHint({ paused, muted }: { paused: boolean; muted: boolean }) {
+export const ZoneRemoteHint = memo(function ZoneRemoteHint({ paused, muted }: { paused: boolean; muted: boolean }) {
   const { t } = useTranslation("cards");
   const hints = useRemoteHints();
   const [press, hold] = previewRemoteHintIds({ paused, muted });

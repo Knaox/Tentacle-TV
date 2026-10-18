@@ -41,7 +41,11 @@ export const PREVIEW_ZONE_FADE = {
 /**
  * Le lecteur de la zone reste monté (une seule vidéo, dont on change la
  * source — jamais démonté puis remonté entre deux cartes) ; resté sans rien à
- * jouer aussi longtemps, il se démonte (la mémoire d'un AVPlayer en pause).
+ * jouer aussi longtemps, il se démonte, sur les deux plateformes : la mémoire
+ * d'un lecteur en pause (AVPlayer, ExoPlayer). Démonté, Android rend son
+ * ExoPlayer au pool partagé de l'app (`PreviewPlayerPool`), qui le relâche
+ * lui-même 60 s plus tard — le pool sert aussi à remonter vite la zone d'une
+ * autre page ; tvOS n'a pas de pool : l'AVPlayer part avec la vue.
  */
 export const PREVIEW_ZONE_PLAYER_IDLE_MS = 30_000;
 
