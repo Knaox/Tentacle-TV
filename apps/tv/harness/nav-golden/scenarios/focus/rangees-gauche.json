@@ -139,7 +139,7 @@
         },
         {
           "do": "wait:4",
-          "why": "L'aperçu démarre (délai 0,8 s + le flux du kit) : la carte passe en tête"
+          "why": "L'aperçu démarre dans la zone (délai 0,8 s + le flux du kit) : la rangée ne bouge pas"
         },
         {
           "do": "menu",

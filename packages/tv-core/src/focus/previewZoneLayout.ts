@@ -38,10 +38,11 @@ export const PREVIEW_ZONE_HEIGHT = 432;
 export const BELOW_ZONE_VIEWPORT = PREVIEW_STAGE_HEIGHT - PREVIEW_ZONE_HEIGHT;
 
 /**
- * Le haut de la section focalisée, depuis le haut de la fenêtre : la place de
- * l'agrandissement de la carte au focus (une affiche de grille grandit depuis
- * son centre) et de sa lueur, sans toucher la zone. C'est aussi la marge du
- * haut minimale de la page.
+ * Le haut de la section focalisée, depuis le haut de la fenêtre : la place du
+ * léger agrandissement de la carte au FOCUS (`CARD_FOCUS_SCALE`, × 1,08 —
+ * une affiche de grille le prend depuis son centre, donc aussi vers le haut)
+ * et de sa lueur, sans toucher la zone. Rien à voir avec l'aperçu, qui ne
+ * fait rien grandir. C'est aussi la marge du haut minimale de la page.
  */
 export const BELOW_ZONE_ANCHOR_TOP = 32;
 

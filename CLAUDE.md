@@ -730,11 +730,14 @@ ne focalise pas un élément recouvert. Rangées et lignes sont FIXES : seul le 
 bouge, rien ne grandit, aucune remise en page au changement de focus. La section
 focalisée se pose TOUJOURS au même endroit, juste sous la zone (`BELOW_ZONE_REVEAL` :
 mode `anchor` de `FocusSection`, natif sur les deux plateformes), la première comme la
-dernière (marge du bas : `belowZoneBottomRoom`, mesurée sur la dernière section) ; le
-héros et l'en-tête d'une grille ramènent la page en haut. Seule une carte d'une page à
-zone demande et prépare l'aperçu (`useInPreviewZone` : sous une `PreviewZoneScope` ;
-`useCardPreviewFocus`, la seule couture de la carte, qui passe au port `useCardZoneFocus`) :
-la recherche et la fiche n'en demandent pas. Une rangée sortie de
+dernière (marge du bas : `belowZoneBottomRoom`, mesurée sur la dernière section) ;
+l'en-tête d'une grille ramène la page en haut. Le héros de l'Accueil et de « Pour vous »
+vit DANS la zone (`previewZone/HeroZone`, section `section:hero` au-dessus de la page) :
+HAUT depuis la première rangée y mène ; ses boutons restent focalisables même quand une
+carte a la zone. Seule une carte d'une page à zone demande et prépare l'aperçu
+(`useInPreviewZone` : sous une `PreviewZoneScope` ; `useCardPreviewFocus`, la seule
+couture de la carte, qui passe au port `useCardZoneFocus`) : la recherche et la fiche
+n'en demandent pas. Une rangée sortie de
 l'écran revient au début comme toute rangée de l'accueil (tv-core `focus/rowRewind.ts`,
 ses voisines immédiates gardées), et Retour l'y remet D'UN COUP, le focus aussitôt sur
 sa première carte (`rowRewind.back`, jamais le défilement de tvOS : ~1,4 s).

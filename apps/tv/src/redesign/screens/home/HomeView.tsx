@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, type ReactNode } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL, HOME_LOADING_KEY } from "@tentacle-tv/tv-core";
@@ -22,8 +22,8 @@ import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 
 /**
- * L'accueil : la carte héros plein format, puis les rangées dans l'ordre de
- * la mise en page du compte. La navigation flotte à gauche, et le fond prend
+ * L'accueil : le héros dans la zone d'aperçu, puis les rangées dans l'ordre
+ * de la mise en page du compte. La navigation flotte à gauche, et le fond prend
  * la lumière de ce qui a le focus. Aucun logo : la marque vit dans l'icône,
  * le Top Shelf, le démarrage et les illustrations (choix du 2026-10-02).
  *
@@ -33,20 +33,20 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
  * `useCardMarkers` (marqueurs) et `paletteFromBlurHash` (lumière).
  *
  * La page est À ZONE (`BelowZonePage`, tv-core `previewZoneLayout.ts`) : en
- * haut, la zone fixe de l'aperçu (`zone`), dessous, la page qui défile — le
- * héros en tête, puis les rangées. Le héros et chaque rangée sont des
- * SECTIONS (`FocusSection`) : HAUT / BAS passe de l'une à la voisine, au plus
- * proche ; dans le héros, la page remonte tout en haut ; la rangée focalisée
- * se pose TOUJOURS au même endroit, juste sous la zone, en un seul mouvement
- * — seule la page bouge.
- * Au banc, la rangée de la clé figée (`useForcedFocusReveal`).
+ * haut, la zone fixe de l'aperçu, qui porte le héros (`HeroZone` : ses
+ * boutons dans la section `section:hero`, au-dessus de la page) ; dessous,
+ * les rangées qui défilent. Le héros et chaque rangée sont des SECTIONS
+ * (`FocusSection`) : HAUT / BAS passe de l'une à la voisine, au plus proche —
+ * HAUT depuis la première rangée mène au héros ; la rangée focalisée se pose
+ * TOUJOURS au même endroit, juste sous la zone, en un seul mouvement — seule
+ * la page bouge. Au banc, la rangée de la clé figée (`useForcedFocusReveal`).
  *
  * `filter` : la pastille du filtre de plateformes du compte, posée sur la
  * rangée `filterRowKey` — la première rangée recommandée réellement servie
  * (`useRecoFilterChipRow`). Un appui la retire (`onRemoveFilter`).
  *
- * `onHeroVisibleChange` dit quand le héros quitte l'écran — plus de la
- * moitié défilée — et quand il y revient : sa rotation s'y suspend.
+ * `onHeroVisibleChange` dit quand le héros perd la zone (une carte a le
+ * focus) et quand il la reprend : sa rotation s'y suspend (`HeroZone`).
  *
  * Les rangées reviennent au début une fois sorties de l'écran : la page dit
  * au port des rangées (`rowRewindPort`) où elles sont et qu'elle défile.
@@ -93,8 +93,6 @@ export interface HomeViewProps {
   onFocusCard?: (rowKey: string, card: CardModel) => void;
   /** Le héros quitte l'écran (plus de la moitié défilée) ou y revient. */
   onHeroVisibleChange?: (visible: boolean) => void;
-  /** La zone fixe de l'aperçu, en haut (`BelowZonePage`). */
-  zone?: ReactNode;
 }
 
 const LEFT = TV_STAGE.contentLeft;
@@ -120,7 +118,6 @@ export const HomeView = memo(function HomeView({
   onLongPressCard,
   onFocusCard,
   onHeroVisibleChange,
-  zone,
 }: HomeViewProps) {
   const { t } = useTranslation();
   const loadingLabel = t("common:loading");
@@ -130,7 +127,7 @@ export const HomeView = memo(function HomeView({
   const bottom = useBelowZoneBottomRoom(SCROLL_BOTTOM);
   const scrollContent = useMemo(() => ({ paddingTop: BELOW_ZONE_ANCHOR_TOP, paddingBottom: bottom.room }), [bottom.room]);
   // Le héros vit dans la zone d'aperçu : ses boutons dans leur section, son titre dessiné par la zone.
-  const zoneNode = zone ?? (
+  const zoneNode = (
     <HeroZone
       hero={hero}
       onPrimary={onHeroPrimary}
@@ -276,5 +273,4 @@ const styles = StyleSheet.create({
   anchor: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.hero.top, width: 24, height: 24 },
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
-  // Le héros en tête de la fenêtre sous la zone : sans la marge d'avant, il y tient entier.
 });

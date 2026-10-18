@@ -199,8 +199,9 @@ Source : `TentacleRevealScroller.m`, `TentacleRevealMotion.m`,
   vous », grilles : la zone fixe de l'aperçu en haut, la page défile dessous,
   tv-core `focus/previewZoneLayout.ts`) — rangées et lignes `anchor` 32 dans
   la fenêtre sous la zone (`BELOW_ZONE_REVEAL`), la première comme la
-  dernière : le focus vertical est TOUJOURS au même endroit ; héros, en-tête
-  et barre de filtres `start`. Fiche — en-tête `start`, sections `anchor`
+  dernière : le focus vertical est TOUJOURS au même endroit ; en-tête et
+  barre de filtres `start` ; le héros vit dans la zone, hors de la page qui
+  défile (aucune révélation). Fiche — en-tête `start`, sections `anchor`
   72 ; recherche `nearest` ; réglages : une `list` sans révélation.
 - **V13 — Au banc** (focus figé) : `useForcedFocusReveal` — `scrollTo` SANS
   animation de la section qui couvre la clé figée (préfixes `id` /

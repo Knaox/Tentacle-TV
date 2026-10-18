@@ -63,8 +63,6 @@ export interface PosterGridProps {
   onFocusCard?: (card: CardModel) => void;
   /** La fin approche : la page suivante du catalogue. */
   onEndReached?: () => void;
-  /** La zone fixe de l'aperçu, en haut de l'écran (`BelowZonePage`). */
-  zone?: ReactElement | null;
 }
 
 /** La colonne de contenu : après la navigation repliée, jusqu'à la marge sûre. */
@@ -120,7 +118,6 @@ export const PosterGrid = memo(function PosterGrid({
   onLongPressCard,
   onFocusCard,
   onEndReached,
-  zone,
 }: PosterGridProps) {
   const columns = useGridColumns(forcedColumns);
   const width = posterWidth(columns);
@@ -155,11 +152,11 @@ export const PosterGrid = memo(function PosterGrid({
   // Assez de place sous la dernière ligne pour qu'elle se pose sous la zone, comme les autres.
   const content = useMemo(() => ({ ...styles.content, paddingBottom: Math.max(GRID_BOTTOM, belowZoneBottomRoom(height)) }), [height]);
   // L'en-tête (titre, filtres, Retour) ramène la page tout en haut quand le focus y remonte :
-  // les lignes, elles, se posent sous la zone (`gridLineReveal`).
+  // les lignes, elles, se posent sous la zone (`BELOW_ZONE_REVEAL`, `GridLine`).
   const shownHeader = useMemo(() => (header ? <FocusSection reveal={HEADER_REVEAL}>{header}</FocusSection> : header), [header]);
   return (
     // La zone d'aperçu de la grille : avant tout focus d'affiche, la première (`fallback`).
-    <BelowZonePage zone={zone ?? <PreviewZoneSlot fallback={cards[0] ?? null} />}>
+    <BelowZonePage zone={<PreviewZoneSlot fallback={cards[0] ?? null} />}>
       <FlashList
         ref={list}
         // Le nombre de colonnes ne change pas à chaud : une clé neuve remonte la liste.

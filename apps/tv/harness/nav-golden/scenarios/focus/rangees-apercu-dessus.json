@@ -7,8 +7,8 @@
   "scenarios": [
     {
       "id": "apercu-garde-la-rangee-du-dessus",
-      "title": "L'aperçu de la rangée du dessous ne remet pas au début la rangée d'où l'on vient",
-      "why": "Relevé du testeur (17/10) : Prochains épisodes défilée (One Piece en tête), BAS vers « Pour vous », son aperçu pousse la page — HAUT retombait sur la 1re carte de Prochains épisodes au lieu de One Piece.",
+      "title": "La rangée d'où l'on vient, sortie de l'écran par l'ancrage sous la zone, garde sa carte",
+      "why": "Pages à zone (18/10) : la rangée focalisée se pose juste sous la zone, celle du dessus sort donc toujours de l'écran. Prochains épisodes défilée jusqu'à sa 5e carte, BAS vers « Pour vous », l'aperçu joue dans la zone — HAUT doit retrouver la 5e carte (voisine immédiate gardée, tv-core rowRewind), jamais la 1re. Relevé d'origine : testeur, 17/10.",
       "start": {
         "fixtures": [
           "focus/apercus"
@@ -50,7 +50,7 @@
         },
         {
           "do": "wait:3.5",
-          "why": "L'aperçu de la carte : elle passe en tête"
+          "why": "L'aperçu de la carte joue dans la zone : la rangée ne bouge pas"
         },
         {
           "do": "down",
@@ -58,14 +58,14 @@
         },
         {
           "do": "wait:3.5",
-          "why": "Son aperçu pousse la page : Prochains épisodes sort par le haut"
+          "why": "Son aperçu joue dans la zone ; Prochains épisodes, au-dessus de la rangée ancrée, est hors de l'écran"
         },
         {
           "do": "up",
           "expect": {
             "focus": "nextUp:4"
           },
-          "why": "La rangée tenue : la carte d'où l'on venait"
+          "why": "La voisine immédiate gardée : la carte d'où l'on venait"
         }
       ]
     }

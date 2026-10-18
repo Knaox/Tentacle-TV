@@ -159,8 +159,8 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 #### `redesign/focus/nativeFocusSection.ts` — garde : `no-native-focus-calls`, `no-platform-branch`
 - L1, 26, 27, 31, 32 · requireNativeComponent, UIManager, Platform.OS/isTV · **ADAPTATEUR** · détection et montage de la section native → `platform/tvos/focus/`
 
-#### `redesign/hero/HeroBanner.tsx`
-- L80, 108, 166, 168, 178, 182 · onLongPress · **VUE** · rappel posé sur les 3 boutons ; « Maintenir OK » ne paraît que si un rappel est fourni
+#### `redesign/previewZone/HeroZoneHead.tsx` (ex-`HeroBanner.tsx`, 18/10)
+- onLongPress · **VUE** · rappel posé sur les boutons du héros, dans la zone d'aperçu ; « Maintenir OK » ne paraît que si un rappel est fourni
 
 #### `redesign/screens/forYou/ForYouView.tsx`
 - L9, 113, 121, 179, 204 · FocusSection · **VUE** · sections déclaratives

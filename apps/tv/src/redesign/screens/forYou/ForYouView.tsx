@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, type ReactNode } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL } from "@tentacle-tv/tv-core";
@@ -85,8 +85,6 @@ export interface ForYouViewProps {
   onPressCard?: (shelfKey: string, card: CardModel) => void;
   onLongPressCard?: (shelfKey: string, card: CardModel) => void;
   onFocusCard?: (shelfKey: string, card: CardModel) => void;
-  /** La zone fixe de l'aperçu, en haut (`BelowZonePage`). */
-  zone?: ReactNode;
 }
 
 const LEFT = TV_STAGE.contentLeft;
@@ -110,7 +108,6 @@ export const ForYouView = memo(function ForYouView({
   onPressCard,
   onLongPressCard,
   onFocusCard,
-  zone,
 }: ForYouViewProps) {
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const rewind = useRowRewindPort();
@@ -133,10 +130,8 @@ export const ForYouView = memo(function ForYouView({
         <RowStageProvider>
           <BelowZonePage
             zone={
-              zone ?? (
-                // Le héros vit dans la zone d'aperçu ; sans lui, la première carte en est le repli.
-                <HeroZone hero={hero} fallback={shelves[0]?.cards[0] ?? null} onPrimary={onHeroPrimary} onSecondary={onHeroSecondary} onToggleList={onHeroToggleList} />
-              )
+              // Le héros vit dans la zone d'aperçu ; sans lui, la première carte en est le repli.
+              <HeroZone hero={hero} fallback={shelves[0]?.cards[0] ?? null} onPrimary={onHeroPrimary} onSecondary={onHeroSecondary} onToggleList={onHeroToggleList} />
             }
           >
             <ScrollView
