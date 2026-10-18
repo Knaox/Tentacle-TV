@@ -117,6 +117,16 @@ export const LOGO_GRADIENTS: Readonly<Record<"gV" | "gHd" | "gA" | "gT" | "gS" |
 /** L'encre du visage (pupilles, sourire). */
 export const LOGO_INK = "#241040";
 
+/** Les couleurs à plat du dessin : joues, crâne du pavillon et ses yeux, ventouses. */
+export const LOGO_COLORS = {
+  cheek: "#DB2777",
+  cheekOpacity: 0.5,
+  skull: "#F5F0FF",
+  skullEyes: "#241145",
+  sucker: "#FBCFE8",
+  suckerOpacity: 0.8,
+} as const;
+
 /** La calotte du tricorne. */
 export const HAT_PATH =
   "M 120 17 C 141 17, 157 28, 164 45 C 173 37, 184 31, 194 28 C 201 26, 205 31, 202 38 C 196 52, 185 63, 171 70 C 156 77, 139 80, 120 80 C 101 80, 84 77, 69 70 C 55 63, 44 52, 38 38 C 35 31, 39 26, 46 28 C 56 31, 67 37, 76 45 C 83 28, 99 17, 120 17 Z";

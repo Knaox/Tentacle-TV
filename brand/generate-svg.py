@@ -88,6 +88,10 @@ GRADS = '''<linearGradient id="gV" x1="46" y1="26" x2="196" y2="214" gradientUni
 <linearGradient id="gH" x1="0" y1="14" x2="0" y2="78" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3C3450"/><stop offset="1" stop-color="#15111F"/></linearGradient>'''
 
 INK = "#241040"
+# Les couleurs à plat du dessin (joues, crâne du pavillon, ventouses) : une
+# seule source pour les SVG et les dessins natifs (`LOGO_COLORS`).
+COLORS = {"cheek": "#DB2777", "cheekOpacity": ".5", "skull": "#F5F0FF", "skullEyes": "#241145",
+          "sucker": "#FBCFE8", "suckerOpacity": ".8"}
 S = SCREEN
 
 def screen_rect(inset=0.0, fill="none", extra=""):
@@ -102,19 +106,19 @@ BODY = (
     + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#fff"/>' for cx, cy, r in EYE_WHITES)
     + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{INK}"/>' for cx, cy, r in EYE_PUPILS)
     + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#fff"/>' for cx, cy, r in EYE_GLINTS)
-    + "".join(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="#DB2777" opacity=".5"/>'
+    + "".join(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="{COLORS['cheek']}" opacity="{COLORS['cheekOpacity']}"/>'
               for cx, cy, rx, ry in CHEEKS)
     + f'<path d="{SMILE}" fill="none" stroke="{INK}" stroke-width="3.2" stroke-linecap="round"/>'
     + f'<path d="{PLAY}" fill="url(#gP)" stroke="url(#gP)" stroke-width="10" stroke-linejoin="round"/>')
 
 HAT_G = (f'<g transform="{HAT_T}"><path d="{HAT}" fill="url(#gH)"/>'
          f'<path d="{BAND}" fill="none" stroke="url(#gV)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
-         f'<path d="{SKULL}" fill="#F5F0FF"/>'
-         '<g fill="#241145"><circle cx="115" cy="39" r="3.2"/><circle cx="125" cy="39" r="3.2"/></g></g>')
+         f'<path d="{SKULL}" fill="{COLORS["skull"]}"/>'
+         f'<g fill="{COLORS["skullEyes"]}"><circle cx="115" cy="39" r="3.2"/><circle cx="125" cy="39" r="3.2"/></g></g>')
 
 FRONT_G = (
     f'<g fill="url(#gA)">{"".join(f"<path d=\"{d}\"/>" for d in FRONT_DS)}</g>'
-    '<g fill="#FBCFE8" opacity=".8">'
+    f'<g fill="{COLORS["sucker"]}" opacity="{COLORS["suckerOpacity"]}">'
     + "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}"/>' for x, y, r in CUPS)
     + "</g>")
 
@@ -273,7 +277,11 @@ def gradients_ts():
             " *  gT vitre, gS reflet, gP lecture, gH chapeau. */\n"
             "export const LOGO_GRADIENTS: Readonly<Record<\"gV\" | \"gHd\" | \"gA\" | \"gT\" | \"gS\" | \"gP\" | \"gH\", LinearGradientSpec>> = {\n"
             + "\n".join(rows) + "\n};\n\n"
-            f'/** L\'encre du visage (pupilles, sourire). */\nexport const LOGO_INK = "{INK}";\n\n')
+            f'/** L\'encre du visage (pupilles, sourire). */\nexport const LOGO_INK = "{INK}";\n\n'
+            "/** Les couleurs à plat du dessin : joues, crâne du pavillon et ses yeux, ventouses. */\n"
+            "export const LOGO_COLORS = {\n"
+            + "".join(f'  {k}: {float(v) if k.endswith("Opacity") else chr(34) + v + chr(34)},\n' for k, v in COLORS.items())
+            + "} as const;\n\n")
 
 def ts_module():
     def circles(name, items, doc):
