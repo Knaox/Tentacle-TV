@@ -60,6 +60,9 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
       <View style={styles.media}>
         <ZoneBackdrop uri={model?.backdropUri ?? null} />
         <Animated.View style={[StyleSheet.absoluteFill, videoFade]}>{video}</Animated.View>
+        {/* Le haut vers le noir : la bande noire d'une bande-annonce LETTERBOXÉE (incrustée dans le
+            fichier, « cover » n'y peut rien) s'y fond, comme le haut de la scène. */}
+        <SoftGradient width={MEDIA_W} height={MEDIA_H} colors={[scrim(1), scrim(0)]} locations={[0, 0.2]} />
         {/* Vers le noir à gauche (le texte s'y lit), puis en bas, sous la première rangée. */}
         <SoftGradient
           width={MEDIA_W}
