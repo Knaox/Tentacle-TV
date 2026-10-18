@@ -717,7 +717,15 @@ repli de la page. Les détails (synopsis, genres, qualité) se lisent au focus T
 (`PREVIEW_ZONE_DETAILS_MS`, 300 ms : une rafale ne lit rien). Fondus d'opacité seulement
 (`PREVIEW_ZONE_FADE` : fond 200, texte 160, vidéo 360 en entrée, 180 en sortie) ; le fond
 passe en fondu croisé sur deux calques (`previewZoneBackdropLayer`), jamais un noir entre
-deux. UNE portée par page (`PreviewZoneScope`, posée par `BelowZonePage`) : la carte dit
+deux. **Pendant la bande-annonce, la zone s'efface devant elle** (retour de Damien du 18/10 :
+« on ne voit pas bien la bande-annonce, le texte raccourci dérange ») — tv-core
+`cards/previewZonePlayback.ts` (`previewZoneWatching` : vidéo montrée ET pas en pause) : surtitre,
+raison, méta et synopsis en fondu (420 ms ; retour 240), le logo seul, réduit (0,66) et descendu
+au bas du bloc ; les voiles pleins vers le noir à gauche et en bas s'effacent, un raccord léger
+reste posé (aucune arête). Tout revient au focus suivant, à la fin de l'aperçu et en PAUSE.
+**Jamais un « … » au milieu d'un mot** : le synopsis garde ses phrases entières, sinon une
+articulation, sinon rien (`previewZoneSynopsis.ts`, d'après ses lignes mesurées : `ZoneSynopsis`) ;
+surtitre et raison se resserrent. UNE portée par page (`PreviewZoneScope`, posée par `BelowZonePage`) : la carte dit
 son focus (`useCardZoneFocus`, daté au rendu qui le constate), la zone lit le magasin ;
 une page couverte (fiche, grille par-dessus) coupe son aperçu et démonte son lecteur
 (`useIsFocused`) — un seul lecteur vivant. Vue : `redesign/previewZone/` (fond 1280 × 720

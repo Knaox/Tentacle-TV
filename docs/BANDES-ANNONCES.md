@@ -693,6 +693,18 @@ déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
   par-dessus les voisines : tvOS ne focaliserait plus une carte recouverte.
   Image du titre d'abord, la vidéo dessus, le logo (ou le titre) en bas sur un
   voile.
+- **La zone devant la vidéo** (18/10, après l'essai de Damien sur son Apple TV : « on
+  ne voit pas bien la bande-annonce, et le texte raccourci dérange ») : dès la première
+  image et tant que l'aperçu JOUE (tv-core `previewZoneWatching` : pas en pause), le texte
+  se retire en fondu (surtitre, raison, méta, synopsis — `PREVIEW_ZONE_PLAYBACK`, 420 ms,
+  retour 240) ; le logo reste, réduit à 0,66 et posé au bas du bloc (sa descente = la
+  hauteur mesurée de la méta et du synopsis : une transformation, aucune remise en page).
+  Chaque voile de la vidéo est en deux calques : un raccord LÉGER toujours posé (bord gauche
+  et bas fondus au noir de la page) et le voile PLEIN du repos par-dessus, dont seule
+  l'opacité tombe. Au repos, aucun « … » au milieu d'un mot : le synopsis complet est posé
+  invisible à sa largeur, ses lignes mesurées donnent la place, et tv-core
+  (`fitPreviewZoneSynopsis`) garde le texte entier, sinon ses phrases entières, sinon une
+  articulation suivie de « … », sinon rien.
 - **Le port** : la vue ne sait rien de la vidéo (`redesign/cards/trailerPreviewPort.tsx`) ;
   une portée par page (`PreviewZoneScope`), la carte n'y dit que son focus
   (`useCardZoneFocus`), la page pose sa zone (`PreviewZoneSlot`) ; l'intégration
