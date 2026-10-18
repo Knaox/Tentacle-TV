@@ -3,245 +3,30 @@
   "domain": "focus",
   "suite": "home-hero",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T3",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:18:50.070Z",
+  "recordedAt": "2026-10-18T03:03:20.386Z",
   "scenarios": {
-    "hero-beyond-edge": {
-      "hash": "e8481fa58e7e",
-      "durationMs": 23886,
-      "start": {
-        "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
-        "frame": [
-          248,
-          556,
-          339,
-          68
-        ],
-        "groups": [
-          "section:hero"
-        ],
-        "route": "Home",
-        "params": null,
-        "stack": [
-          "Home"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:secondary",
-          "label": "Plus d'infos",
-          "frame": [
-            605,
-            556,
-            260,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            883,
-            556,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "wait:0.6",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            883,
-            556,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            883,
-            556,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            883,
-            556,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            883,
-            556,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            883,
-            556,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "left",
-          "app": "foreground",
-          "focus": "hero:secondary",
-          "label": "Plus d'infos",
-          "frame": [
-            605,
-            556,
-            260,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "hero-rotation": {
       "hash": "e7d1173c6e8a",
-      "durationMs": 64572,
+      "durationMs": 62761,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
         "label": "Reprendre",
         "frame": [
-          248,
-          556,
+          176,
+          324,
           339,
           68
         ],
@@ -264,8 +49,8 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
             68
           ],
@@ -287,8 +72,8 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
             68
           ],
@@ -319,8 +104,8 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
             68
           ],
@@ -396,8 +181,8 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
             68
           ],
@@ -419,9 +204,224 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "hero-beyond-edge": {
+      "hash": "e8481fa58e7e",
+      "durationMs": 24892,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          176,
+          324,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:secondary",
+          "label": "Plus d'infos",
+          "frame": [
+            533,
+            324,
+            260,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            811,
+            324,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            811,
+            324,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            811,
+            324,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            811,
+            324,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            811,
+            324,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            811,
+            324,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "hero:secondary",
+          "label": "Plus d'infos",
+          "frame": [
+            533,
+            324,
+            260,
             68
           ],
           "groups": [

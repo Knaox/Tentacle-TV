@@ -7,7 +7,7 @@
   "scenarios": [
     {
       "id": "parcourir-personne",
-      "title": "La filmographie d'une personne : entrée sur la première affiche ; HAUT vers la croix de l'en-tête, BAS en revient ; la croix recule",
+      "title": "La filmographie d'une personne : entrée sur la première affiche ; HAUT vers la croix de l'en-tête ; BAS après un séjour → la plus proche, BAS aussitôt → celle d'où l'on vient ; la croix recule",
       "rules": [
         "PA-1",
         "PA-2",
@@ -65,11 +65,30 @@
           }
         },
         {
-          "do": "down",
+          "do": [
+            "wait:2",
+            "down"
+          ],
           "expect": {
             "focus": "grid:0"
           },
-          "why": "BAS depuis la croix : l'affiche la plus proche, sous elle — pas la dernière visitée"
+          "why": "BAS après un séjour de plus de 1,5 s sur la croix : l'affiche la plus proche, sous elle — pas la dernière visitée"
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "grid:1"
+          }
+        },
+        {
+          "do": [
+            "up",
+            "down"
+          ],
+          "expect": {
+            "focus": "grid:1"
+          },
+          "why": "HAUT puis BAS aussitôt (un seul geste) : l'affiche d'où l'on vient, colonne tenue comme depuis les filtres"
         },
         {
           "do": "up"

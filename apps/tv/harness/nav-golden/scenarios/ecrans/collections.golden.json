@@ -3,32 +3,104 @@
   "domain": "ecrans",
   "suite": "collections",
   "reference": {
-    "sha": "3ed2ec95e13f79d83f49a4e5384e568d23314878",
-    "label": "référence 3ed2ec95e"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "db6f477dbdf35e26",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "nav-lot1015-maliste",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-15T11:02:42.550Z",
+  "recordedAt": "2026-10-18T03:17:15.276Z",
   "scenarios": {
+    "collections-favoris-vides": {
+      "hash": "2b90f1da5f5b",
+      "durationMs": 21234,
+      "start": {
+        "app": "foreground",
+        "focus": "empty:primary",
+        "label": "Parcourir les bibliothèques",
+        "frame": [
+          793,
+          872,
+          414,
+          68
+        ],
+        "groups": [],
+        "route": "Favorites",
+        "params": null,
+        "stack": [
+          "Home",
+          "Favorites"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "empty:primary",
+          "label": "Parcourir les bibliothèques",
+          "frame": [
+            793,
+            872,
+            414,
+            68
+          ],
+          "groups": [],
+          "route": "Favorites",
+          "params": null,
+          "stack": [
+            "Home",
+            "Favorites"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            176,
+            324,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "collections-ma-liste": {
       "hash": "3c848d85d80e",
-      "durationMs": 30841,
+      "durationMs": 25159,
       "start": {
         "app": "foreground",
         "focus": "grid:0",
         "label": "Rick et Morty",
         "frame": [
           176,
-          302,
-          244,
-          439
+          464,
+          300,
+          523
         ],
         "groups": [
           "grid:line:0"
@@ -51,9 +123,9 @@
           "label": "Rick et Morty",
           "frame": [
             176,
-            302,
-            244,
-            439
+            464,
+            300,
+            523
           ],
           "groups": [
             "grid:line:0"
@@ -102,9 +174,9 @@
           "label": "Rick et Morty",
           "frame": [
             176,
-            302,
-            244,
-            439
+            464,
+            300,
+            523
           ],
           "groups": [
             "grid:line:0"
@@ -138,78 +210,6 @@
           "stack": [
             "Home",
             "Watchlist"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "collections-favoris-vides": {
-      "hash": "2b90f1da5f5b",
-      "durationMs": 31128,
-      "start": {
-        "app": "foreground",
-        "focus": "empty:primary",
-        "label": "Parcourir les bibliothèques",
-        "frame": [
-          793,
-          714,
-          414,
-          68
-        ],
-        "groups": [],
-        "route": "Favorites",
-        "params": null,
-        "stack": [
-          "Home",
-          "Favorites"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:1",
-          "app": "foreground",
-          "focus": "empty:primary",
-          "label": "Parcourir les bibliothèques",
-          "frame": [
-            793,
-            714,
-            414,
-            68
-          ],
-          "groups": [],
-          "route": "Favorites",
-          "params": null,
-          "stack": [
-            "Home",
-            "Favorites"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            248,
-            556,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
           ],
           "panel": null,
           "panelOwners": [],

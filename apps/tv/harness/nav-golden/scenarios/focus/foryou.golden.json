@@ -3,30 +3,30 @@
   "domain": "focus",
   "suite": "foryou",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "c9395c1a619df932",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T3",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T02:18:54.203Z",
+  "recordedAt": "2026-10-18T03:00:01.501Z",
   "scenarios": {
     "foryou-entry-shelves": {
       "hash": "ae71e51bee09",
-      "durationMs": 71835,
+      "durationMs": 36989,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
         "label": "Reprendre",
         "frame": [
-          248,
-          556,
+          176,
+          324,
           339,
           68
         ],
@@ -54,8 +54,8 @@
           "focus": "hero:list",
           "label": "Ma liste",
           "frame": [
-            883,
-            556,
+            811,
+            324,
             68,
             68
           ],
@@ -81,8 +81,8 @@
           "focus": "hero:list",
           "label": "Ma liste",
           "frame": [
-            883,
-            556,
+            811,
+            324,
             68,
             68
           ],
@@ -105,10 +105,10 @@
           "focus": "forYou:2",
           "label": "Spider-Man : Homecoming",
           "frame": [
-            728,
-            451,
-            240,
-            433
+            764,
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:forYou"
@@ -134,9 +134,9 @@
           "label": "Avatar : De feu et de cendres",
           "frame": [
             176,
-            451,
-            240,
-            433
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:forYou"
@@ -158,7 +158,7 @@
           "label": "Netflix · Disney+",
           "frame": [
             368,
-            373,
+            464,
             273,
             52
           ],
@@ -178,13 +178,13 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "forYou:1",
-          "label": "Iron Man 2",
+          "focus": "forYou:0",
+          "label": "Avatar : De feu et de cendres",
           "frame": [
-            452,
-            451,
-            240,
-            433
+            176,
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:forYou"
@@ -202,13 +202,13 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "inLibrary:1",
-          "label": "Avengers : Infinity War",
+          "focus": "inLibrary:0",
+          "label": "Supergirl",
           "frame": [
-            452,
-            451,
-            240,
-            433
+            176,
+            534,
+            258,
+            460
           ],
           "groups": [
             "section:inLibrary"
@@ -226,13 +226,13 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "anime:1",
-          "label": "Elfen Lied",
+          "focus": "anime:0",
+          "label": "Redo of Healer",
           "frame": [
-            452,
-            451,
-            240,
-            433
+            176,
+            534,
+            258,
+            460
           ],
           "groups": [
             "section:anime"
@@ -250,13 +250,13 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "inLibrary:1",
-          "label": "Avengers : Infinity War",
+          "focus": "inLibrary:0",
+          "label": "Supergirl",
           "frame": [
-            452,
-            126,
-            240,
-            433
+            176,
+            534,
+            258,
+            460
           ],
           "groups": [
             "section:inLibrary"
@@ -274,13 +274,13 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "forYou:1",
-          "label": "Iron Man 2",
+          "focus": "forYou:0",
+          "label": "Avatar : De feu et de cendres",
           "frame": [
-            452,
-            134,
-            240,
-            433
+            176,
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:forYou"
@@ -302,7 +302,7 @@
           "label": "Netflix · Disney+",
           "frame": [
             368,
-            56,
+            464,
             273,
             52
           ],

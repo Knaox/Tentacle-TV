@@ -3,30 +3,30 @@
   "domain": "focus",
   "suite": "rangees-bout",
   "reference": {
-    "sha": "ab60faff8e5158977078c0a467dd3a00a1d54a2c",
-    "label": "référence ab60faff8"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "23a559a5a8f82671",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "lot1017-a2",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-17T09:38:23.864Z",
+  "recordedAt": "2026-10-18T03:08:06.550Z",
   "scenarios": {
     "rangee-bout-sortie": {
       "hash": "2b0858acdb59",
-      "durationMs": 46870,
+      "durationMs": 40034,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
         "label": "Reprendre",
         "frame": [
-          248,
-          556,
+          176,
+          324,
           339,
           68
         ],
@@ -50,7 +50,7 @@
           "label": "Orgueil et Préjugés",
           "frame": [
             176,
-            609,
+            534,
             494,
             351
           ],
@@ -97,7 +97,7 @@
           "label": "The Punisher : One Last Kill",
           "frame": [
             1330,
-            609,
+            534,
             494,
             351
           ],
@@ -132,9 +132,9 @@
           "label": "Rick et Morty",
           "frame": [
             176,
-            419,
-            312,
-            541
+            534,
+            258,
+            460
           ],
           "groups": [
             "section:watchlist"
@@ -166,7 +166,7 @@
           "label": "Les Kassos",
           "frame": [
             176,
-            126,
+            534,
             494,
             351
           ],
@@ -189,7 +189,7 @@
           "label": "Orgueil et Préjugés",
           "frame": [
             176,
-            126,
+            534,
             494,
             351
           ],

@@ -3,187 +3,30 @@
   "domain": "focus",
   "suite": "foryou-puce",
   "reference": {
-    "sha": "65857ecfc6a9c3627645470c5594fbd07b5c4b5d",
-    "label": "référence 65857ecfc"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "f3fdc30de7d96417",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "lot1017-a2b",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-17T15:33:52.140Z",
+  "recordedAt": "2026-10-18T02:58:47.644Z",
   "scenarios": {
-    "foryou-puce-depuis-la-premiere-carte": {
-      "hash": "dbc8f9c35bbd",
-      "durationMs": 30262,
-      "start": {
-        "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
-        "frame": [
-          248,
-          556,
-          339,
-          68
-        ],
-        "groups": [
-          "section:hero"
-        ],
-        "route": "Recommendations",
-        "params": null,
-        "stack": [
-          "Home",
-          "Recommendations"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "trendingNow:0",
-          "label": "Avatar : De feu et de cendres",
-          "frame": [
-            176,
-            343,
-            312,
-            541
-          ],
-          "groups": [
-            "section:trendingNow"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "filter:remove",
-          "label": "Netflix · Disney+",
-          "frame": [
-            552,
-            265,
-            273,
-            52
-          ],
-          "groups": [
-            "section:trendingNow"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "trendingNow:0",
-          "label": "Avatar : De feu et de cendres",
-          "frame": [
-            176,
-            343,
-            312,
-            541
-          ],
-          "groups": [
-            "section:trendingNow"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "trendingNow:4",
-          "label": "28 Jours plus tard",
-          "frame": [
-            1512,
-            343,
-            312,
-            541
-          ],
-          "groups": [
-            "section:trendingNow"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            883,
-            556,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "foryou-puce-bas-premiere-carte": {
       "hash": "a55d33aedb15",
-      "durationMs": 39752,
+      "durationMs": 37067,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
         "label": "Reprendre",
         "frame": [
-          248,
-          556,
+          176,
+          324,
           339,
           68
         ],
@@ -208,9 +51,9 @@
           "label": "Avatar : De feu et de cendres",
           "frame": [
             176,
-            343,
-            312,
-            541
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:trendingNow"
@@ -232,7 +75,7 @@
           "label": "Netflix · Disney+",
           "frame": [
             552,
-            265,
+            464,
             273,
             52
           ],
@@ -256,9 +99,9 @@
           "label": "Avatar : De feu et de cendres",
           "frame": [
             176,
-            343,
-            312,
-            541
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:trendingNow"
@@ -293,10 +136,10 @@
           "focus": "trendingNow:7",
           "label": "Les Gardiens de la Galaxie : Volume 3",
           "frame": [
-            1512,
-            343,
-            312,
-            541
+            1566,
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:trendingNow"
@@ -323,10 +166,10 @@
           "focus": "trendingNow:4",
           "label": "28 Jours plus tard",
           "frame": [
-            468,
-            343,
-            312,
-            541
+            684,
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:trendingNow"
@@ -348,7 +191,7 @@
           "label": "Netflix · Disney+",
           "frame": [
             552,
-            265,
+            464,
             273,
             52
           ],
@@ -372,12 +215,169 @@
           "label": "Avatar : De feu et de cendres",
           "frame": [
             176,
-            343,
-            312,
-            541
+            542,
+            258,
+            460
           ],
           "groups": [
             "section:trendingNow"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "foryou-puce-depuis-la-premiere-carte": {
+      "hash": "dbc8f9c35bbd",
+      "durationMs": 27338,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          176,
+          324,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Recommendations",
+        "params": null,
+        "stack": [
+          "Home",
+          "Recommendations"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trendingNow:0",
+          "label": "Avatar : De feu et de cendres",
+          "frame": [
+            176,
+            542,
+            258,
+            460
+          ],
+          "groups": [
+            "section:trendingNow"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "filter:remove",
+          "label": "Netflix · Disney+",
+          "frame": [
+            552,
+            464,
+            273,
+            52
+          ],
+          "groups": [
+            "section:trendingNow"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "trendingNow:0",
+          "label": "Avatar : De feu et de cendres",
+          "frame": [
+            176,
+            542,
+            258,
+            460
+          ],
+          "groups": [
+            "section:trendingNow"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "trendingNow:4",
+          "label": "28 Jours plus tard",
+          "frame": [
+            1352,
+            542,
+            258,
+            460
+          ],
+          "groups": [
+            "section:trendingNow"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "hero:list",
+          "label": "Ma liste",
+          "frame": [
+            811,
+            324,
+            68,
+            68
+          ],
+          "groups": [
+            "section:hero"
           ],
           "route": "Recommendations",
           "params": null,

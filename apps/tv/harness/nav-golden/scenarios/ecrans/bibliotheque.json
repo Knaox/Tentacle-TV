@@ -51,36 +51,35 @@
             "right",
             "right",
             "right",
-            "right",
             "right"
           ],
           "settleMs": 800,
           "expect": {
-            "focus": "grid:5"
-          }
+            "focus": "grid:4"
+          },
+          "why": "cinq colonnes à la taille par défaut (déjà ainsi sur dev 2b9a97fa6)"
         },
         {
           "do": "right",
           "expect": {
-            "focus": "grid:5"
+            "focus": "grid:4"
           },
           "why": "le bout droit d'une ligne : rien à atteindre"
         },
         {
           "do": "down",
           "expect": {
-            "focus": "grid:11"
+            "focus": "grid:9"
           }
         },
         {
           "do": "up",
           "expect": {
-            "focus": "grid:5"
+            "focus": "grid:4"
           }
         },
         {
           "do": [
-            "left",
             "left",
             "left",
             "left",

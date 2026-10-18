@@ -3,30 +3,30 @@
   "domain": "focus",
   "suite": "rangees-gauche",
   "reference": {
-    "sha": "32e442ca062bf9262f8c15ddfa0640c4ddccc00c",
-    "label": "référence 32e442ca0"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "23a559a5a8f82671",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "lot1017-a2b",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-17T12:30:07.251Z",
+  "recordedAt": "2026-10-18T03:12:25.682Z",
   "scenarios": {
-    "rangee-gauche-retrait": {
-      "hash": "aaf959b46a10",
-      "durationMs": 31837,
+    "apercu-retour-premiere-carte": {
+      "hash": "4b1c323ac30f",
+      "durationMs": 26103,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
         "label": "Reprendre",
         "frame": [
-          248,
-          556,
+          176,
+          324,
           339,
           68
         ],
@@ -50,7 +50,141 @@
           "label": "Orgueil et Préjugés",
           "frame": [
             176,
-            609,
+            534,
+            494,
+            351
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/trailers/preview/warm"
+          ]
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right",
+            "wait:0.5",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:5",
+          "label": "Hors du temps",
+          "frame": [
+            1330,
+            534,
+            494,
+            351
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:4",
+          "app": "foreground",
+          "focus": "resume:5",
+          "label": "Hors du temps",
+          "frame": [
+            1330,
+            534,
+            494,
+            351
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [
+            "POST /api/trailers/preview/warm"
+          ]
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            534,
+            494,
+            351
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-gauche-retrait": {
+      "hash": "aaf959b46a10",
+      "durationMs": 29060,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Reprendre",
+        "frame": [
+          176,
+          324,
+          339,
+          68
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            176,
+            534,
             494,
             351
           ],
@@ -87,7 +221,7 @@
           "label": "Never Back Down",
           "frame": [
             1330,
-            609,
+            534,
             494,
             351
           ],
@@ -116,7 +250,7 @@
           "label": "Lovely Bones",
           "frame": [
             176,
-            609,
+            534,
             494,
             351
           ],
@@ -139,7 +273,7 @@
           "label": "Flight",
           "frame": [
             176,
-            609,
+            534,
             494,
             351
           ],
@@ -162,141 +296,7 @@
           "label": "Irréversible",
           "frame": [
             176,
-            609,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "apercu-retour-premiere-carte": {
-      "hash": "bab4a168e617",
-      "durationMs": 29028,
-      "start": {
-        "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
-        "frame": [
-          248,
-          556,
-          339,
-          68
-        ],
-        "groups": [
-          "section:hero"
-        ],
-        "route": "Home",
-        "params": null,
-        "stack": [
-          "Home"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            271,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": [
-            "POST /api/trailers/preview/warm"
-          ]
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.5",
-            "right",
-            "wait:0.5",
-            "right",
-            "wait:0.5",
-            "right",
-            "wait:0.5",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "resume:5",
-          "label": "Hors du temps",
-          "frame": [
-            176,
-            230,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "wait:4",
-          "app": "foreground",
-          "focus": "resume:5",
-          "label": "Hors du temps",
-          "frame": [
-            176,
-            230,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": [
-            "POST /api/trailers/preview/warm"
-          ]
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            230,
+            534,
             494,
             351
           ],

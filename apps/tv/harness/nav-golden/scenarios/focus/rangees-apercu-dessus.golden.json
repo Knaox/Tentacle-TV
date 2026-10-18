@@ -3,30 +3,30 @@
   "domain": "focus",
   "suite": "rangees-apercu-dessus",
   "reference": {
-    "sha": "a0c2a027bfa05137bc95ece3d5e7755325a7fd7a",
-    "label": "référence a0c2a027b"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "ac5241da1600bcd0",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "lot1017-a2b",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-17T13:41:59.474Z",
+  "recordedAt": "2026-10-18T03:07:26.512Z",
   "scenarios": {
     "apercu-garde-la-rangee-du-dessus": {
-      "hash": "1746188650f9",
-      "durationMs": 36779,
+      "hash": "1e8dca80ef19",
+      "durationMs": 33196,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
         "label": "Reprendre",
         "frame": [
-          248,
-          556,
+          176,
+          324,
           339,
           68
         ],
@@ -54,7 +54,7 @@
           "label": "Les Kassos",
           "frame": [
             176,
-            271,
+            534,
             494,
             351
           ],
@@ -86,8 +86,8 @@
           "focus": "nextUp:4",
           "label": "One Piece",
           "frame": [
-            176,
-            230,
+            1330,
+            534,
             494,
             351
           ],
@@ -109,8 +109,8 @@
           "focus": "nextUp:4",
           "label": "One Piece",
           "frame": [
-            176,
-            230,
+            1330,
+            534,
             494,
             351
           ],
@@ -131,13 +131,13 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "reco:forYou:0",
-          "label": "Spider-Man : No Way Home",
+          "focus": "reco:forYou:4",
+          "label": "Naruto Shippuden",
           "frame": [
-            176,
-            126,
-            312,
-            541
+            1352,
+            534,
+            258,
+            460
           ],
           "groups": [
             "section:reco:forYou"
@@ -154,13 +154,13 @@
         {
           "do": "wait:3.5",
           "app": "foreground",
-          "focus": "reco:forYou:0",
-          "label": "Spider-Man : No Way Home",
+          "focus": "reco:forYou:4",
+          "label": "Naruto Shippuden",
           "frame": [
-            176,
-            126,
-            312,
-            541
+            1352,
+            534,
+            258,
+            460
           ],
           "groups": [
             "section:reco:forYou"
@@ -180,8 +180,8 @@
           "focus": "nextUp:4",
           "label": "One Piece",
           "frame": [
-            176,
-            126,
+            1330,
+            534,
             494,
             351
           ],
@@ -195,19 +195,9 @@
           ],
           "panel": null,
           "panelOwners": [],
-          "writes": [
-            "POST /api/trailers/preview/warm"
-          ]
+          "writes": []
         }
-      ],
-      "unstable": {
-        "start": [],
-        "steps": {
-          "0": [
-            "frame"
-          ]
-        }
-      }
+      ]
     }
   }
 }

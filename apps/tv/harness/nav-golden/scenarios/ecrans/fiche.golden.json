@@ -3,23 +3,337 @@
   "domain": "ecrans",
   "suite": "fiche",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
+    "label": "référence 6ef1b2373"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "70628b6b97aea0f0",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T7",
+    "name": "tvgrille-test",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:39:34.127Z",
+  "recordedAt": "2026-10-18T03:23:54.964Z",
   "scenarios": {
+    "fiche-erreur": {
+      "hash": "4abc165c5933",
+      "durationMs": 22384,
+      "start": {
+        "app": "foreground",
+        "focus": "status:primary",
+        "label": "Réessayer",
+        "frame": [
+          838,
+          674,
+          244,
+          68
+        ],
+        "groups": [],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "status:primary",
+          "label": "Réessayer",
+          "frame": [
+            838,
+            674,
+            244,
+            68
+          ],
+          "groups": [],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "detail:back",
+          "label": "Retour",
+          "frame": [
+            120,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "detail:top"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "status:primary",
+          "label": "Réessayer",
+          "frame": [
+            838,
+            674,
+            244,
+            68
+          ],
+          "groups": [],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            176,
+            324,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "fiche-personne-remplace": {
+      "hash": "92a8f146021f",
+      "durationMs": 29893,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Reprendre",
+        "frame": [
+          120,
+          633,
+          339,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "e86346a08c2bb2900795777307b0a32d"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Reprendre",
+          "frame": [
+            120,
+            633,
+            339,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "cast:0",
+          "label": "Keira Knightley, Elizabeth Bennet",
+          "frame": [
+            102,
+            144,
+            212,
+            283
+          ],
+          "groups": [
+            "detail:cast"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "e86346a08c2bb2900795777307b0a32d"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Beauté cachée",
+          "frame": [
+            176,
+            464,
+            300,
+            523
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "wait:2",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Beauté cachée",
+          "frame": [
+            176,
+            464,
+            300,
+            523
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "9a502d69e1c2d64c451e42406a932f0b",
+            "kind": "person",
+            "name": "Keira Knightley"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "c3b96123efab5ca264060e808d34c384"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Reprendre",
+          "frame": [
+            176,
+            324,
+            339,
+            68
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "fiche-suite-de-fiches": {
       "hash": "b20b9a6287d2",
-      "durationMs": 57526,
+      "durationMs": 50045,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
@@ -106,8 +420,8 @@
           "frame": [
             120,
             142,
-            240,
-            433
+            312,
+            541
           ],
           "groups": [
             "detail:similar"
@@ -135,10 +449,10 @@
           "focus": "similar:4",
           "label": "‎Avatar Aang, le dernier maître de l'air",
           "frame": [
-            1224,
+            1512,
             142,
-            240,
-            433
+            312,
+            541
           ],
           "groups": [
             "detail:similar"
@@ -267,8 +581,8 @@
           "frame": [
             120,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -293,8 +607,8 @@
           "frame": [
             120,
             142,
-            240,
-            433
+            312,
+            541
           ],
           "groups": [
             "detail:similar"
@@ -369,8 +683,8 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
             68
           ],
@@ -388,67 +702,17 @@
         }
       ]
     },
-    "fiche-lente": {
-      "hash": "6e02a9ecee18",
-      "durationMs": 37020,
-      "start": {
-        "app": "foreground",
-        "focus": null,
-        "label": null,
-        "frame": null,
-        "groups": [],
-        "route": "MediaDetail",
-        "params": {
-          "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
-        },
-        "stack": [
-          "Home",
-          "MediaDetail"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:12",
-          "app": "foreground",
-          "focus": "detail:primary",
-          "label": "Lecture",
-          "frame": [
-            120,
-            674,
-            207,
-            68
-          ],
-          "groups": [
-            "detail:header"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "fiche-personne-remplace": {
-      "hash": "92a8f146021f",
-      "durationMs": 28542,
+    "fiche-episode-pastille": {
+      "hash": "8f27808e630c",
+      "durationMs": 35792,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
-        "label": "Reprendre",
+        "label": "Reprendre S2 · E3",
         "frame": [
           120,
           633,
-          339,
+          432,
           68
         ],
         "groups": [
@@ -456,7 +720,7 @@
         ],
         "route": "MediaDetail",
         "params": {
-          "itemId": "e86346a08c2bb2900795777307b0a32d"
+          "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
         },
         "stack": [
           "Home",
@@ -471,11 +735,11 @@
           "do": "wait:1",
           "app": "foreground",
           "focus": "detail:primary",
-          "label": "Reprendre",
+          "label": "Reprendre S2 · E3",
           "frame": [
             120,
             633,
-            339,
+            432,
             68
           ],
           "groups": [
@@ -483,7 +747,7 @@
           ],
           "route": "MediaDetail",
           "params": {
-            "itemId": "e86346a08c2bb2900795777307b0a32d"
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
           },
           "stack": [
             "Home",
@@ -496,20 +760,20 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "cast:0",
-          "label": "Keira Knightley, Elizabeth Bennet",
+          "focus": "season:1",
+          "label": "Saison 2",
           "frame": [
-            102,
-            144,
-            212,
-            283
+            344,
+            140,
+            217,
+            60
           ],
           "groups": [
-            "detail:cast"
+            "detail:seasons"
           ],
           "route": "MediaDetail",
           "params": {
-            "itemId": "e86346a08c2bb2900795777307b0a32d"
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
           },
           "stack": [
             "Home",
@@ -520,70 +784,135 @@
           "writes": []
         },
         {
-          "do": "select",
+          "do": "down",
           "app": "foreground",
-          "focus": "grid:0",
-          "label": "Beauté cachée",
+          "focus": "episode:1",
+          "label": "Le Plat d'étain (Brou)",
           "frame": [
-            176,
-            386,
-            244,
-            439
+            372,
+            240,
+            460,
+            438
           ],
           "groups": [
-            "grid:line:0"
+            "detail:episodes"
           ],
-          "route": "SearchBrowse",
+          "route": "MediaDetail",
           "params": {
-            "id": "9a502d69e1c2d64c451e42406a932f0b",
-            "kind": "person",
-            "name": "Keira Knightley"
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
           },
           "stack": [
             "Home",
-            "SearchBrowse"
+            "MediaDetail"
           ],
           "panel": null,
           "panelOwners": [],
           "writes": []
         },
         {
-          "do": "wait:2",
+          "do": "hold:1.2",
           "app": "foreground",
-          "focus": "grid:0",
-          "label": "Beauté cachée",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
           "frame": [
-            176,
-            386,
-            244,
-            439
+            908,
+            542,
+            104,
+            96
           ],
           "groups": [
-            "grid:line:0"
+            "sheet:scale"
           ],
-          "route": "SearchBrowse",
+          "route": "MediaDetail",
           "params": {
-            "id": "9a502d69e1c2d64c451e42406a932f0b",
-            "kind": "person",
-            "name": "Keira Knightley"
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
           },
           "stack": [
             "Home",
-            "SearchBrowse"
+            "MediaDetail"
           ],
-          "panel": null,
-          "panelOwners": [],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Reprendre, 10:23",
+          "frame": [
+            582,
+            721,
+            140,
+            156
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:action:details",
+          "label": "Plus d'infos",
+          "frame": [
+            1198,
+            721,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
           "writes": []
         },
         {
           "do": "select",
           "app": "foreground",
           "focus": "detail:primary",
-          "label": "Lecture",
+          "label": "Reprendre",
           "frame": [
             120,
-            674,
-            207,
+            633,
+            339,
             68
           ],
           "groups": [
@@ -591,7 +920,61 @@
           ],
           "route": "MediaDetail",
           "params": {
-            "itemId": "c3b96123efab5ca264060e808d34c384"
+            "itemId": "e014279fece9beeb2d9b8941ef5aa984"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "detail:series",
+          "label": "Cauchemar en cuisine avec Philippe Etchebest — S2 · E3",
+          "frame": [
+            120,
+            481,
+            738,
+            52
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "e014279fece9beeb2d9b8941ef5aa984"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "episode:1",
+          "label": "Le Plat d'étain (Brou)",
+          "frame": [
+            372,
+            240,
+            460,
+            438
+          ],
+          "groups": [
+            "detail:episodes"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
           },
           "stack": [
             "Home",
@@ -607,8 +990,8 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
             68
           ],
@@ -626,9 +1009,355 @@
         }
       ]
     },
+    "fiche-sections": {
+      "hash": "939eba5eb3c4",
+      "durationMs": 37052,
+      "start": {
+        "app": "foreground",
+        "focus": "detail:primary",
+        "label": "Lecture",
+        "frame": [
+          120,
+          674,
+          207,
+          68
+        ],
+        "groups": [
+          "detail:header"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "cast:0",
+          "label": "Eric Nam, Aang (voice)",
+          "frame": [
+            102,
+            144,
+            212,
+            310
+          ],
+          "groups": [
+            "detail:cast"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "cast:0",
+          "label": "Eric Nam, Aang (voice)",
+          "frame": [
+            102,
+            144,
+            212,
+            310
+          ],
+          "groups": [
+            "detail:cast"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "extra:0",
+          "label": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+          "frame": [
+            120,
+            142,
+            380,
+            289
+          ],
+          "groups": [
+            "detail:extras"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "saga:0",
+          "label": "‎Avatar Aang, le dernier maître de l'air",
+          "frame": [
+            120,
+            142,
+            312,
+            468
+          ],
+          "groups": [
+            "detail:saga"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "similar:0",
+          "label": "Dragons 2",
+          "frame": [
+            120,
+            142,
+            312,
+            541
+          ],
+          "groups": [
+            "detail:similar"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "similar:2",
+          "label": "Les Gardiens de la Galaxie : Volume 3",
+          "frame": [
+            816,
+            142,
+            312,
+            541
+          ],
+          "groups": [
+            "detail:similar"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "saga:1",
+          "label": "Untitled Avatar: The Last Airbender Film 2",
+          "frame": [
+            468,
+            142,
+            312,
+            468
+          ],
+          "groups": [
+            "detail:saga"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "extra:0",
+          "label": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
+          "frame": [
+            120,
+            142,
+            380,
+            289
+          ],
+          "groups": [
+            "detail:extras"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "cast:0",
+          "label": "Eric Nam, Aang (voice)",
+          "frame": [
+            102,
+            144,
+            212,
+            310
+          ],
+          "groups": [
+            "detail:cast"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "detail:primary",
+          "label": "Lecture",
+          "frame": [
+            120,
+            674,
+            207,
+            68
+          ],
+          "groups": [
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "detail:back",
+          "label": "Retour",
+          "frame": [
+            120,
+            68,
+            60,
+            60
+          ],
+          "groups": [
+            "detail:top"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "fiche-croix": {
       "hash": "22c36156b30d",
-      "durationMs": 34417,
+      "durationMs": 28175,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
@@ -817,8 +1546,8 @@
           "focus": "hero:primary",
           "label": "Reprendre",
           "frame": [
-            248,
-            556,
+            176,
+            324,
             339,
             68
           ],
@@ -836,25 +1565,18 @@
         }
       ]
     },
-    "fiche-sections": {
-      "hash": "939eba5eb3c4",
-      "durationMs": 43229,
+    "fiche-lente": {
+      "hash": "6e02a9ecee18",
+      "durationMs": 37020,
       "start": {
         "app": "foreground",
-        "focus": "detail:primary",
-        "label": "Lecture",
-        "frame": [
-          120,
-          674,
-          207,
-          68
-        ],
-        "groups": [
-          "detail:header"
-        ],
+        "focus": null,
+        "label": null,
+        "frame": null,
+        "groups": [],
         "route": "MediaDetail",
         "params": {
-          "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+          "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
         },
         "stack": [
           "Home",
@@ -866,7 +1588,7 @@
       },
       "steps": [
         {
-          "do": "wait:1",
+          "do": "wait:12",
           "app": "foreground",
           "focus": "detail:primary",
           "label": "Lecture",
@@ -881,296 +1603,7 @@
           ],
           "route": "MediaDetail",
           "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "cast:0",
-          "label": "Eric Nam, Aang (voice)",
-          "frame": [
-            102,
-            144,
-            212,
-            310
-          ],
-          "groups": [
-            "detail:cast"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "left",
-          "app": "foreground",
-          "focus": "cast:0",
-          "label": "Eric Nam, Aang (voice)",
-          "frame": [
-            102,
-            144,
-            212,
-            310
-          ],
-          "groups": [
-            "detail:cast"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "extra:0",
-          "label": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
-          "frame": [
-            120,
-            142,
-            380,
-            289
-          ],
-          "groups": [
-            "detail:extras"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "saga:0",
-          "label": "‎Avatar Aang, le dernier maître de l'air",
-          "frame": [
-            120,
-            142,
-            240,
-            360
-          ],
-          "groups": [
-            "detail:saga"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "similar:0",
-          "label": "Dragons 2",
-          "frame": [
-            120,
-            142,
-            240,
-            433
-          ],
-          "groups": [
-            "detail:similar"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "similar:2",
-          "label": "Les Gardiens de la Galaxie : Volume 3",
-          "frame": [
-            672,
-            142,
-            240,
-            433
-          ],
-          "groups": [
-            "detail:similar"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "saga:1",
-          "label": "Untitled Avatar: The Last Airbender Film 2",
-          "frame": [
-            396,
-            142,
-            240,
-            360
-          ],
-          "groups": [
-            "detail:saga"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "extra:0",
-          "label": "AVATAR AANG: LE DERNIER MAÎTRE DE L'AIR | Bande-annonce VOSTFR - Paramount+",
-          "frame": [
-            120,
-            142,
-            380,
-            289
-          ],
-          "groups": [
-            "detail:extras"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "cast:0",
-          "label": "Eric Nam, Aang (voice)",
-          "frame": [
-            102,
-            144,
-            212,
-            310
-          ],
-          "groups": [
-            "detail:cast"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "detail:primary",
-          "label": "Lecture",
-          "frame": [
-            120,
-            674,
-            207,
-            68
-          ],
-          "groups": [
-            "detail:header"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "detail:back",
-          "label": "Retour",
-          "frame": [
-            120,
-            68,
-            60,
-            60
-          ],
-          "groups": [
-            "detail:top"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "8691fdd93af7c11da75013ecc6a67ac0"
+            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
           },
           "stack": [
             "Home",
@@ -1737,439 +2170,6 @@
           "stack": [
             "Home",
             "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "fiche-episode-pastille": {
-      "hash": "8f27808e630c",
-      "durationMs": 41984,
-      "start": {
-        "app": "foreground",
-        "focus": "detail:primary",
-        "label": "Reprendre S2 · E3",
-        "frame": [
-          120,
-          633,
-          432,
-          68
-        ],
-        "groups": [
-          "detail:header"
-        ],
-        "route": "MediaDetail",
-        "params": {
-          "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-        },
-        "stack": [
-          "Home",
-          "MediaDetail"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:1",
-          "app": "foreground",
-          "focus": "detail:primary",
-          "label": "Reprendre S2 · E3",
-          "frame": [
-            120,
-            633,
-            432,
-            68
-          ],
-          "groups": [
-            "detail:header"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "season:1",
-          "label": "Saison 2",
-          "frame": [
-            344,
-            140,
-            217,
-            60
-          ],
-          "groups": [
-            "detail:seasons"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "episode:1",
-          "label": "Le Plat d'étain (Brou)",
-          "frame": [
-            372,
-            240,
-            460,
-            438
-          ],
-          "groups": [
-            "detail:episodes"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "hold:1.2",
-          "app": "foreground",
-          "focus": "sheet:scale:5",
-          "label": "Noter 5 sur 10",
-          "frame": [
-            908,
-            542,
-            104,
-            96
-          ],
-          "groups": [
-            "sheet:scale"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": [
-            "sheet:header"
-          ],
-          "panelOwners": [
-            "SheetBody"
-          ],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "sheet:action:play",
-          "label": "Reprendre, 10:23",
-          "frame": [
-            582,
-            721,
-            140,
-            156
-          ],
-          "groups": [
-            "sheet:actions"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": [
-            "sheet:header"
-          ],
-          "panelOwners": [
-            "SheetBody"
-          ],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "right",
-            "right",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "sheet:action:details",
-          "label": "Plus d'infos",
-          "frame": [
-            1198,
-            721,
-            140,
-            125
-          ],
-          "groups": [
-            "sheet:actions"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": [
-            "sheet:header"
-          ],
-          "panelOwners": [
-            "SheetBody"
-          ],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "detail:primary",
-          "label": "Reprendre",
-          "frame": [
-            120,
-            633,
-            339,
-            68
-          ],
-          "groups": [
-            "detail:header"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "e014279fece9beeb2d9b8941ef5aa984"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "detail:series",
-          "label": "Cauchemar en cuisine avec Philippe Etchebest — S2 · E3",
-          "frame": [
-            120,
-            481,
-            738,
-            52
-          ],
-          "groups": [
-            "detail:header"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "e014279fece9beeb2d9b8941ef5aa984"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "episode:1",
-          "label": "Le Plat d'étain (Brou)",
-          "frame": [
-            372,
-            240,
-            460,
-            438
-          ],
-          "groups": [
-            "detail:episodes"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "cb8aef1fd75cb53ac7aa4fe86fa25453"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            248,
-            556,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "fiche-erreur": {
-      "hash": "4abc165c5933",
-      "durationMs": 26465,
-      "start": {
-        "app": "foreground",
-        "focus": "status:primary",
-        "label": "Réessayer",
-        "frame": [
-          838,
-          674,
-          244,
-          68
-        ],
-        "groups": [],
-        "route": "MediaDetail",
-        "params": {
-          "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
-        },
-        "stack": [
-          "Home",
-          "MediaDetail"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:1",
-          "app": "foreground",
-          "focus": "status:primary",
-          "label": "Réessayer",
-          "frame": [
-            838,
-            674,
-            244,
-            68
-          ],
-          "groups": [],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "detail:back",
-          "label": "Retour",
-          "frame": [
-            120,
-            68,
-            60,
-            60
-          ],
-          "groups": [
-            "detail:top"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "status:primary",
-          "label": "Réessayer",
-          "frame": [
-            838,
-            674,
-            244,
-            68
-          ],
-          "groups": [],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "fcfbd7a81518be2f40de85b0d1ccd46f"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            248,
-            556,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
           ],
           "panel": null,
           "panelOwners": [],
