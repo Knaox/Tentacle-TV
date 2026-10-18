@@ -131,6 +131,8 @@ const DAILYMOTION_URL = /dailymotion\.com\/(?:video|embed\/video)\/([A-Za-z0-9]+
  * La vidéo d'une adresse publique (YouTube ou Dailymotion), l'inverse de
  * `trailerPublicUrl` : l'écran de bande-annonce des téléviseurs ne reçoit
  * qu'une adresse, et une entrée du catalogue (AlloCiné) y passe par elle.
+ * Seules les formes de `trailerPublicUrl` (et l'intégration Dailymotion) sont
+ * lues : un lien court `dai.ly/<id>` ne l'est pas.
  */
 export function relayedPlaybackOfUrl(url: string | undefined): RelayedTrailerPlayback | null {
   const ytId = parseYouTubeId(url);
