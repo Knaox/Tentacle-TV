@@ -6,7 +6,6 @@ import {
   BOOT_INTRO_RELEASE_DELAY_MS,
   BOOT_SOUND_FILE_AT,
   BOOT_SOUND_REQUEST_AT,
-  bootSoundStartAt,
 } from "@tentacle-tv/tv-core/boot";
 import type { IntroClock } from "./introWorklets";
 
@@ -94,7 +93,8 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
     }
     if (!soundAsked.value && ready.value && next >= BOOT_SOUND_REQUEST_AT) {
       soundAsked.value = true;
-      runOnJS(onSound)(bootSoundStartAt(now, next));
+      // `bootSoundStartAt` (tv-core) à la main : une fonction du fil JS ne s'appelle pas d'ici.
+      runOnJS(onSound)(now + (BOOT_SOUND_FILE_AT - next));
     }
     if (next >= INTRO_TIMING.end) {
       scene.value = INTRO_TIMING.end;
