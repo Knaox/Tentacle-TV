@@ -63,7 +63,6 @@ const MUTE_STORE: PreviewZoneStore = {
 
 function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, onVisibleChange, store }: HeroZoneHeadProps & { store: PreviewZoneStore | null }) {
   const focused = useAnyFocused();
-  const onFocusChange = focused.onFocusChange;
   usePreviewZoneHero(focused.any);
   const shown = useHeroHasZone(store) || focused.any;
   useEffect(() => onVisibleChange?.(shown), [shown, onVisibleChange]);
@@ -75,9 +74,9 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
   const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
     <Animated.View style={[styles.row, fade]}>
-      <PillButton variant="brand" {...hero.primary} veiled={!shown} onPress={onPrimary} onLongPress={onLongPress} onFocusChange={onFocusChange} />
+      <PillButton variant="brand" {...hero.primary} veiled={!shown} onPress={onPrimary} onLongPress={onLongPress} onFocusChange={focused.track("primary")} />
       {hero.secondary ? (
-        <PillButton variant="glass" {...hero.secondary} veiled={!shown} onPress={onSecondary} onLongPress={onLongPress} onFocusChange={onFocusChange} />
+        <PillButton variant="glass" {...hero.secondary} veiled={!shown} onPress={onSecondary} onLongPress={onLongPress} onFocusChange={focused.track("secondary")} />
       ) : null}
       {hero.listToggle ? (
         <RoundButton
@@ -89,7 +88,7 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
           veiled={!shown}
           onPress={onToggleList}
           onLongPress={onLongPress}
-          onFocusChange={onFocusChange}
+          onFocusChange={focused.track("list")}
         />
       ) : null}
       {onLongPress ? (
@@ -109,29 +108,42 @@ function HeroButtons({ hero, onPrimary, onSecondary, onToggleList, onLongPress, 
 }
 
 /**
- * L'un des boutons a le focus. D'un bouton à son voisin, le flou du premier
- * arrive avant le focus du second : il attend l'image suivante — sinon la zone
- * croirait le héros quitté et relancerait le délai de sa bande-annonce.
+ * L'un des boutons a le focus — tenu PAR BOUTON (`track(clé)`), jamais par un
+ * simple drapeau : d'un bouton à son voisin, tvOS peut dire le focus du second
+ * AVANT le flou du premier, et le flou tardif éteignait le héros alors qu'un
+ * bouton avait encore le focus (lot 2 du testeur : sa bande-annonce restait en
+ * pause). Le dernier flou attend l'image suivante : un focus qui arrive dans
+ * l'intervalle l'annule — la zone ne croit jamais le héros quitté.
  */
-function useAnyFocused(): { any: boolean; onFocusChange: (on: boolean) => void } {
+function useAnyFocused(): { any: boolean; track: (key: string) => (on: boolean) => void } {
   const [any, setAny] = useState(false);
+  const holders = useRef(new Set<string>());
   const frame = useRef<number | null>(null);
   useEffect(() => () => {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
   }, []);
-  const onFocusChange = useCallback((on: boolean) => {
-    if (frame.current !== null) cancelAnimationFrame(frame.current);
-    frame.current = null;
-    if (on) {
-      setAny(true);
-      return;
-    }
-    frame.current = requestAnimationFrame(() => {
+  const callbacks = useRef(new Map<string, (on: boolean) => void>());
+  const track = useCallback((key: string) => {
+    const known = callbacks.current.get(key);
+    if (known) return known;
+    const callback = (on: boolean) => {
+      if (on) holders.current.add(key);
+      else holders.current.delete(key);
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
       frame.current = null;
-      setAny(false);
-    });
+      if (holders.current.size > 0) {
+        setAny(true);
+        return;
+      }
+      frame.current = requestAnimationFrame(() => {
+        frame.current = null;
+        if (holders.current.size === 0) setAny(false);
+      });
+    };
+    callbacks.current.set(key, callback);
+    return callback;
   }, []);
-  return { any, onFocusChange };
+  return { any, track };
 }
 
 const DOT = 8;

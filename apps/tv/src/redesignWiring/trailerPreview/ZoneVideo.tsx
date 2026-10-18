@@ -37,9 +37,22 @@ export const ZoneVideo = memo(function ZoneVideo({ want }: { want: ZoneVideoWant
 
   const owns = useCallback((uri: string) => current.current?.uri === uri, []);
   const uri = source?.uri ?? null;
+  // La source dont la première image est déjà là : une session suivante qui veut la MÊME vidéo (une
+  // série puis sa saison, le héros puis sa carte) ne la recharge pas — aucun avis ne reviendrait. Elle
+  // l'apprend aussitôt.
+  const sourceKey = source ? sourceKeyOf(source) : null;
+  const readyKey = useRef<string | null>(null);
+  if (readyKey.current !== null && readyKey.current !== sourceKey) readyKey.current = null;
   const onReady = useCallback(() => {
-    if (uri && owns(uri)) current.current?.onReady();
-  }, [uri, owns]);
+    if (!uri) return;
+    readyKey.current = sourceKey;
+    if (owns(uri)) current.current?.onReady();
+  }, [uri, sourceKey, owns]);
+  const wantReady = want?.onReady;
+  const wantKey = want ? sourceKeyOf(want) : null;
+  useEffect(() => {
+    if (wantReady && wantKey !== null && readyKey.current === wantKey && sourceKey === wantKey) wantReady();
+  }, [wantReady, wantKey, sourceKey]);
   const onError = useCallback(() => {
     if (uri && owns(uri)) current.current?.onError();
   }, [uri, owns]);
@@ -56,7 +69,7 @@ export const ZoneVideo = memo(function ZoneVideo({ want }: { want: ZoneVideoWant
   if (!source) return null;
   return (
     <PreviewVideo
-      key={PREVIEW_VIDEO_SWAPS_SOURCE ? "zone" : source.uri}
+      key={PREVIEW_VIDEO_SWAPS_SOURCE ? "zone" : sourceKey ?? undefined}
       uri={source.uri}
       hls={source.hls}
       startAt={source.startAt}
@@ -70,3 +83,8 @@ export const ZoneVideo = memo(function ZoneVideo({ want }: { want: ZoneVideoWant
     />
   );
 });
+
+/** Une source : sa vidéo et d'où elle part (une reprise est une autre source). */
+function sourceKeyOf(source: { uri: string; startAt: number }): string {
+  return `${source.uri}#${source.startAt}`;
+}
