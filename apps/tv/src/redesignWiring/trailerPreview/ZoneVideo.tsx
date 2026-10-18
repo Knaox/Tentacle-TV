@@ -1,7 +1,8 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { PREVIEW_ZONE_PLAYER_IDLE_MS, TV_TRAILER_PREVIEW_TIMING } from "@tentacle-tv/tv-core";
 import { useTrailerPreviewSound } from "../../lib/trailerPreviewSettings";
-import { PREVIEW_VIDEO_SWAPS_SOURCE, PreviewVideo } from "./PreviewVideo";
+import { PREVIEW_VIDEO_SWAPS_SOURCE } from "../../platform/tvos/player/previewVideoElement";
+import { PreviewVideo } from "./PreviewVideo";
 import type { ZoneVideoWant } from "./ZoneSession";
 
 /**
