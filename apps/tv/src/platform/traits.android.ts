@@ -15,4 +15,6 @@ export const PLATFORM_TRAITS: PlatformTraits = {
   // Le mode Lite des Android TV peu puissantes (`platform/renderTier`).
   renderTierSetting: true,
   passingFocus: true,
+  // L'ouverture du démarrage : pas encore — la mascotte d'attente, comme avant.
+  brandIntro: false,
 };

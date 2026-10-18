@@ -11,4 +11,5 @@ export const PLATFORM_TRAITS: PlatformTraits = {
   playerAnnouncesFirstFrame: false,
   renderTierSetting: false,
   passingFocus: false,
+  brandIntro: true,
 };
