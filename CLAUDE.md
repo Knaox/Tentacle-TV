@@ -422,26 +422,30 @@ marque de héros. La mascotte n'y paraît qu'en ILLUSTRATION d'un état
 l'identité, c'est l'icône en couches, le Top Shelf et le violet → rose en
 touches. Détail : `docs/TV-REFONTE.md`, « Le logo dans l'app : aucun ».
 
-## Ouverture du démarrage (Apple TV) — l'écran du poulpe EST l'accueil
+## Ouverture du démarrage (Apple TV) — l'écran du poulpe EST le premier écran
 
-À CHAQUE démarrage À FROID d'une TV jumelée, d'elle-même (jamais l'attente d'un
-geste), le logo s'assemble pendant que l'app charge, appuie sur lecture (« ta »),
-son écran s'allume (« dum ») sur le PREMIER écran lui-même — l'accueil, « Qui
-regarde ? » sur une TV à profils, une fenêtre du démarrage —, puis la caméra
-plonge jusqu'à l'échelle 1 (conception : page `/survey/`
-du site). Carnet : `docs/OUVERTURE.md`.
+À CHAQUE démarrage à froid, d'elle-même (jamais l'attente d'un geste), QUEL QUE
+SOIT LE PREMIER ÉCRAN — accueil, « Qui regarde ? » et son PIN, jumelage, barre,
+code PIN conseillé, photo, hors ligne, migration, accès suspendu —, le logo
+s'assemble pendant que l'app charge, appuie sur lecture (« ta »), son écran
+s'allume (« dum ») sur cet écran-là, puis la caméra plonge dedans jusqu'à
+l'échelle 1 (conception : page `/survey/` du site ; règle de Damien du
+2026-10-18, après « Chambre » où, réservée à l'accueil, elle ne se jouait jamais
+sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
 
+- **Une seule fois par processus** (tv-core `bootIntroOnce`) : ni après profil,
+  jumelage ou PIN, ni au retour d'arrière-plan, ni à un changement de profil, ni
+  à un rechargement de l'arbre ou du JavaScript — mémoire NATIVE
+  (`TentacleBootSound.claimIntro`). Décidée au montage de l'app.
 - **Le pur est partagé** : `@tentacle-tv/shared/brandIntro` (courbes, géométrie
   TIRÉE des constantes générées du logo — jamais un SVG relu —, caméra,
   chorégraphie, attente, partition du son) ; la synthèse Web Audio à part
-  (`…/brandIntro/synth`). Quand la jouer, attendre, renoncer : tv-core `boot/`.
+  (`…/brandIntro/synth`). Quand la jouer, quand partir : tv-core `boot/`.
 - **Aiguillage par le trait `brandIntro`** (vrai sur tvOS, faux sur Android TV,
-  qui garde `BootView`). Jamais : mouvement réduit, jumelage, une relance de
-  lecture. Renoncement (rideau d'encre, sans son) devant hors ligne, migration,
-  accès suspendu, écran en échec. Le premier écran pas prêt (il le dit à la porte,
-  `useReportScreenToBootIntro`) : le poulpe attend sur son bouton lecture (8 s au
-  plus). Réservée à l'accueil, elle ne se jouait jamais sur une TV à profils
-  (« Chambre », 2026-10-18).
+  qui garde `BootView`). Jamais avec le mouvement réduit. Elle ne renonce
+  jamais ; le premier écran pas prêt (il le dit à la porte,
+  `useReportScreenToBootIntro` : accueil, « Qui regarde ? ») : le poulpe attend
+  sur son bouton lecture (8 s au plus).
 - **L'app est montée DANS l'écran** (`redesign/boot/IntroScreenPlane`) et n'en
   change jamais d'arbre : à l'arrivée, identité et découpe retirée. Rien que des
   transformations et des opacités, horloge Reanimated sur le fil d'interface,

@@ -1,6 +1,5 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { introCameraPlan, introGeometry } from "@tentacle-tv/shared/brandIntro";
 import { plateSwapAt, sampleIntro, sampleIntroHold } from "@tentacle-tv/tv-core/boot";
 import { partBoxes, type TentacleArt } from "./introArt";
@@ -39,12 +38,8 @@ export interface BootIntroViewProps {
   scene: IntroScene;
   clock: IntroClock;
   viewport: { width: number; height: number };
-  /** Arrivé (ou renoncé) : le décor se retire, l'écran reste l'app, à l'identité. */
+  /** Arrivé : le décor se retire, l'écran reste l'app, à l'identité. */
   landed: boolean;
-  /** Le rideau de l'encre (0 → 1) : le renoncement le monte, puis le baisse sur ce qui doit se voir. */
-  curtain: SharedValue<number>;
-  /** Le rideau n'existe que pendant le renoncement : une vue plein écran, même transparente, gênerait le focus. */
-  curtainShown: boolean;
   screenColor: string;
   /** L'app : l'accueil se monte DANS l'écran du poulpe. */
   children: ReactNode;
@@ -62,13 +57,12 @@ export interface BootIntroViewProps {
  * (visage, bouton, chapeau, bras avant). Rien que des transformations et des
  * opacités, lues sur le fil d'interface.
  */
-export const BootIntroView = memo(function BootIntroView({ art, scene, clock, viewport, landed, curtain, curtainShown, screenColor, children }: BootIntroViewProps) {
+export const BootIntroView = memo(function BootIntroView({ art, scene, clock, viewport, landed, screenColor, children }: BootIntroViewProps) {
   const frame = useMemo(
     () => ({ center: { x: viewport.width / 2, y: viewport.height / 2 }, target: scene.geometry.target, zoom: scene.plan.from.zoom }),
     [viewport.width, viewport.height, scene],
   );
   const stage = { art, geometry: scene.geometry, boxes: scene.boxes, samples: scene.samples, hold: scene.hold, swapAt: scene.swapAt, frame, clock };
-  const curtainStyle = useAnimatedStyle(() => ({ opacity: curtain.value }));
   return (
     <View style={styles.root}>
       {landed ? null : <View style={styles.night} />}
@@ -87,7 +81,6 @@ export const BootIntroView = memo(function BootIntroView({ art, scene, clock, vi
         {children}
       </IntroScreenPlane>
       {landed ? null : <IntroStageAbove {...stage} />}
-      {curtainShown ? <Animated.View style={[styles.curtain, curtainStyle]} pointerEvents="none" /> : null}
     </View>
   );
 });
@@ -95,5 +88,4 @@ export const BootIntroView = memo(function BootIntroView({ art, scene, clock, vi
 const styles = StyleSheet.create({
   root: { flex: 1 },
   night: { ...StyleSheet.absoluteFillObject, backgroundColor: BOOT_INK },
-  curtain: { ...StyleSheet.absoluteFillObject, backgroundColor: BOOT_INK },
 });

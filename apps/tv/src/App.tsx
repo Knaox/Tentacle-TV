@@ -52,7 +52,7 @@ import { TrailerPreviewHost } from "./redesignWiring/trailerPreview/TrailerPrevi
 import { ThemeProvider, useTheme } from "./theme";
 import { BootIntroHost } from "./redesignWiring/boot/BootIntroHost";
 import { bootIntroGate, useReportBlockedToBootIntro } from "./redesignWiring/boot/bootIntroGate";
-import { BOOT_PLAN_AT_START, bootPlanOf } from "./redesignWiring/boot/bootPlan";
+import { BOOT_PLAN_AT_START, bootPlanOf, claimColdStart } from "./redesignWiring/boot/bootPlan";
 
 // Instance unique, définie dans son module pour que le magasin d'épinglage du
 // rail puisse s'y brancher sans dépendre de ce fichier.
@@ -217,6 +217,10 @@ export function App() {
   const [client, setClient] = useState<JellyfinClient | null>(null);
   // L'ouverture du démarrage, ou la mascotte d'attente (`bootPlan`) — décidée dès le stockage relu.
   const [bootPlan, setBootPlan] = useState<BootIntroPlan | "pending">(BOOT_PLAN_AT_START);
+  // Décidée dès le montage, quel que soit le premier écran — au premier montage du processus seulement.
+  useEffect(() => {
+    if (BOOT_PLAN_AT_START === "pending") void bootPlanOf(claimColdStart()).then(setBootPlan);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -229,7 +233,6 @@ export function App() {
       leaveProfileAtBoot(storage);
       // Une session gardée par « Changer de profil » ne survit pas à l'app : sa révocation part.
       releaseHeldRevocations(storage, Date.now());
-      if (BOOT_PLAN_AT_START === "pending") setBootPlan(await bootPlanOf(storage, initialRouteOf(storage)));
       // Sans session, le cache persisté n'est à personne : ni en mémoire, ni
       // sur le disque.
       await cacheHydrated;

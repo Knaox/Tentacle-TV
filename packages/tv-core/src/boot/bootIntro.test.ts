@@ -4,7 +4,10 @@ import {
   BOOT_INTRO_MAX_HOLD_MS,
   BOOT_SOUND_FILE_AT,
   BOOT_SOUND_REQUEST_AT,
+  FRESH_PROCESS,
   bootIntroOutcome,
+  bootIntroTurn,
+  type BootIntroTrigger,
   bootSoundStartAt,
   decideBootIntro,
   loopValue,
@@ -23,51 +26,75 @@ const ART = {
 const geometry = introGeometry(ART);
 
 describe("quand jouer l'ouverture", () => {
-  const cold = { supported: true, reducedMotion: false, initialRoute: "Home", interruptedPlayback: false };
+  const cold = { supported: true, reducedMotion: false, coldStart: true };
 
-  it("au démarrage à froid qui mène à l'accueil", () => {
+  // Règle de Damien (2026-10-18, après « Chambre » : sa TV à profils ne la voyait jamais) :
+  // à chaque démarrage à froid, quel que soit le premier écran — la décision ne regarde plus la route.
+  it("à chaque démarrage à froid, d'elle-même", () => {
     expect(decideBootIntro(cold)).toBe("intro");
   });
 
-  // Régression du 2026-10-18 (« Chambre », build Release) : une TV passée aux profils
-  // démarre sur « Qui regarde ? » à chaque lancement — l'ouverture ne s'y jouait jamais.
-  it("d'elle-même aussi sur « Qui regarde ? » (TV à profils) et sur une fenêtre du démarrage", () => {
-    for (const initialRoute of ["Profiles", "PinSetup", "RailSetup", "PhotoSetup"]) {
-      expect(decideBootIntro({ ...cold, initialRoute })).toBe("intro");
-    }
-  });
-
-  it("jamais sur une plateforme qui ne l'a pas, avec le mouvement réduit, au jumelage, ni pour une relance", () => {
+  it("jamais hors d'un démarrage à froid, sur une plateforme qui ne l'a pas, ni avec le mouvement réduit", () => {
+    expect(decideBootIntro({ ...cold, coldStart: false })).toBe("boot");
     expect(decideBootIntro({ ...cold, supported: false })).toBe("boot");
     expect(decideBootIntro({ ...cold, reducedMotion: true })).toBe("boot");
-    expect(decideBootIntro({ ...cold, reducedMotion: true, initialRoute: "Profiles" })).toBe("boot");
-    expect(decideBootIntro({ ...cold, initialRoute: "PairCode" })).toBe("boot");
-    expect(decideBootIntro({ ...cold, interruptedPlayback: true })).toBe("boot");
   });
 });
 
-describe("attendre, partir, renoncer", () => {
+describe("une seule fois par processus", () => {
+  it("le premier montage est le démarrage à froid, et réclame l'ouverture", () => {
+    const first = bootIntroTurn(FRESH_PROCESS, "mount");
+    expect(first.coldStart).toBe(true);
+    expect(first.memory.claimed).toBe(true);
+  });
+
+  it("jamais deux fois : rechargement de l'arbre, retour d'arrière-plan, profil choisi ou changé, jumelage, code PIN", () => {
+    const after = bootIntroTurn(FRESH_PROCESS, "mount").memory;
+    const triggers: BootIntroTrigger[] = ["mount", "foreground", "profileChosen", "profileSwitched", "paired", "pinEntered"];
+    for (const trigger of triggers) {
+      const turn = bootIntroTurn(after, trigger);
+      expect(turn.coldStart, trigger).toBe(false);
+      expect(decideBootIntro({ supported: true, reducedMotion: false, coldStart: turn.coldStart }), trigger).toBe("boot");
+    }
+  });
+
+  it("rien d'autre qu'un montage ne démarre l'ouverture, même dans un processus neuf", () => {
+    for (const trigger of ["foreground", "profileChosen", "profileSwitched", "paired", "pinEntered"] as const) {
+      expect(bootIntroTurn(FRESH_PROCESS, trigger).coldStart, trigger).toBe(false);
+    }
+  });
+
+  it("un démarrage sous mouvement réduit la réclame quand même : la couper ensuite ne la rejoue pas", () => {
+    const first = bootIntroTurn(FRESH_PROCESS, "mount");
+    expect(decideBootIntro({ supported: true, reducedMotion: true, coldStart: first.coldStart })).toBe("boot");
+    expect(bootIntroTurn(first.memory, "mount").coldStart).toBe(false);
+  });
+});
+
+describe("attendre, partir — jamais renoncer", () => {
   const watch = { route: "Home", screen: null, blocked: false, heldMs: 0 } as const;
 
-  it("attend que la navigation et le premier écran soient prêts, part dès qu'il l'est, ou au bout de l'attente", () => {
+  it("attend que l'app soit montée et que le premier écran soit prêt, ou le bout de l'attente", () => {
     expect(bootIntroOutcome({ ...watch, route: null })).toBe("wait");
+    expect(bootIntroOutcome({ ...watch, route: null, blocked: true })).toBe("wait");
     expect(bootIntroOutcome(watch)).toBe("wait");
     expect(bootIntroOutcome({ ...watch, screen: "loading" })).toBe("wait");
     expect(bootIntroOutcome({ ...watch, screen: "ready" })).toBe("go");
     expect(bootIntroOutcome({ ...watch, heldMs: BOOT_INTRO_MAX_HOLD_MS })).toBe("go");
   });
 
-  it("« Qui regarde ? » attend sa rangée ; une fenêtre du démarrage part dès qu'elle est montée", () => {
+  it("plonge dans tout premier écran : « Qui regarde ? » prêt, jumelage, barre, code PIN, photo dès qu'ils sont montés", () => {
     expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "loading" })).toBe("wait");
     expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "ready" })).toBe("go");
-    expect(bootIntroOutcome({ ...watch, route: "RailSetup" })).toBe("go");
+    for (const route of ["PairCode", "RailSetup", "PinSetup", "PhotoSetup", "MediaDetail"]) {
+      expect(bootIntroOutcome({ ...watch, route }), route).toBe("go");
+    }
   });
 
-  it("renonce devant le hors ligne, une migration, un accès suspendu, un écran en échec ou le jumelage", () => {
-    expect(bootIntroOutcome({ ...watch, screen: "ready", blocked: true })).toBe("abort");
-    expect(bootIntroOutcome({ ...watch, screen: "failed" })).toBe("abort");
-    expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "failed" })).toBe("abort");
-    expect(bootIntroOutcome({ ...watch, route: "PairCode" })).toBe("abort");
+  it("plonge aussi dans un écran en échec, hors ligne, en migration ou « accès suspendu » : il dit lui-même ce qu'il en est", () => {
+    expect(bootIntroOutcome({ ...watch, screen: "failed" })).toBe("go");
+    expect(bootIntroOutcome({ ...watch, screen: "loading", blocked: true })).toBe("go");
+    expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "failed" })).toBe("go");
   });
 });
 

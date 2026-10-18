@@ -8,35 +8,41 @@
 
 ## Quand elle se joue
 
-Règle : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`).
+Règles : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`) et
+`boot/bootIntroOnce.ts` (`bootIntroTurn`, la mémoire du processus). Décision de
+Damien du 2026-10-18, après « Chambre » (sa TV passée aux profils ne la voyait
+jamais : la règle d'alors la réservait à l'accueil).
 
-- **À chaque démarrage À FROID d'une TV jumelée, d'elle-même** — aucun geste,
-  aucun appui attendu (une app native n'a pas de règle d'autolecture : seule
-  l'attente des DONNÉES existe) —, sur une plateforme qui a le trait
-  `brandIntro` (Apple TV seulement ; Android TV garde `BootView`). L'écran du
-  poulpe s'allume sur le PREMIER écran : l'accueil, « Qui regarde ? » sur une TV
-  passée aux profils de la Famille (chaque lancement y repasse, sauf un profil
-  retenu), ou une fenêtre du démarrage due (code PIN conseillé, barre, photo).
-  Régression payée le 2026-10-18 (« Chambre », Release) : réservée à l'accueil,
-  l'ouverture ne se jouait JAMAIS sur une TV à profils.
-- **Jamais** : mouvement réduit (tvOS › Accessibilité), jumelage (sans
-  session), une lecture interrompue à relancer (la fiche s'ouvre). Le retour
-  d'arrière-plan n'est pas un démarrage : rien ne se rejoue.
-  Sans ouverture, l'écran de lancement (l'encre seule) reste, et la mascotte
-  d'attente n'y paraît en fondu que si le démarrage traîne (400 ms).
+- **À CHAQUE démarrage à froid de l'app, d'elle-même** — aucun geste, aucun
+  appui attendu (une app native n'a pas de règle d'autolecture : seule
+  l'attente des DONNÉES existe) —, **quel que soit le premier écran** :
+  l'accueil, « Qui regarde ? » (et son code PIN), le jumelage d'une app neuve,
+  la préconfiguration de la barre, le code PIN conseillé, la photo, un écran
+  hors ligne, la migration de la base, « accès suspendu », la fiche d'une
+  lecture relancée. L'écran du poulpe s'allume sur CET écran-là, et la plongée y
+  entre. Elle part dès le montage de l'app, avant même la relecture du stockage.
+- **Une seule fois dans la vie d'un processus** : jamais après le choix du
+  profil, le jumelage ou le code PIN, ni au retour d'arrière-plan, ni à un
+  changement de profil, ni à un rechargement de l'arbre React ou du JavaScript.
+  La mémoire est NATIVE (`TentacleBootSound.claimIntro`, un drapeau que rien
+  ne recharge ; repli : celle du module JavaScript).
+- **Jamais** : sur une plateforme sans le trait `brandIntro` (Android TV garde
+  `BootView`), ni avec le mouvement réduit (tvOS › Accessibilité : le premier
+  écran directement ; l'écran de lancement, l'encre seule, reste, et la mascotte
+  d'attente n'y paraît en fondu que si le démarrage traîne, 400 ms).
 - **Elle camoufle le chargement** : l'app se monte DANS l'écran du poulpe dès
-  qu'elle est prête. Si l'accueil n'est pas prêt au moment d'appuyer
+  qu'elle est prête. Si le premier écran n'est pas prêt au moment d'appuyer
   (1 160 ms), le poulpe attend sur son bouton lecture, qui scintille (il bat,
   une onde en part, quatre étincelles, un clin d'œil) ; « ta », « dum » et la
-  plongée partent dès que le premier écran est prêt : l'accueil montré d'un bloc
-  (tv-core `homeLoading`), la rangée de « Qui regarde ? » ; une fenêtre du
-  démarrage l'est dès qu'elle est montée. Tout prêt : d'une traite, 3,01 s. Au bout de 8 s d'attente,
-  on plonge quand même dans l'accueil qui dit qu'il charge.
-- **Elle renonce** (rideau de l'encre, 160 + 280 ms, sans ta-dum) devant le
-  voile hors ligne, une migration de la base, « accès suspendu », un premier
-  écran en échec, ou une navigation vers un écran hors de ceux-là (le jumelage).
-  « Qui regarde ? » qui ouvre seul le profil retenu, puis l'accueil : l'ouverture
-  suit, l'écran du poulpe montre le dernier. L'app y paraît à l'identité.
+  plongée partent dès qu'il l'est : l'accueil montré d'un bloc (tv-core
+  `homeLoading`), la rangée de « Qui regarde ? » (les deux le disent à la porte,
+  `useReportScreenToBootIntro`) ; tout autre écran dès qu'il est monté ; un
+  écran en échec, hors ligne ou bloqué aussitôt (il dit lui-même ce qu'il en
+  est). Tout prêt : d'une traite, 3,01 s. Au bout de 8 s d'attente, on plonge
+  quand même dans l'écran qui dit qu'il charge.
+- **Elle ne renonce jamais.** Un premier écran qui en ouvre un autre (« Qui
+  regarde ? » qui ouvre seul le profil retenu, puis l'accueil ; la relance qui
+  ouvre une fiche) : l'ouverture suit, l'écran du poulpe montre le dernier.
 
 ## Où vit quoi
 
@@ -44,9 +50,9 @@ Règle : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`).
 |---|---|
 | Courbes, géométrie (tirée des constantes générées du logo), caméra, chorégraphie (règle WAAPI : remplissages, transformation et opacité à part), attente, partition du son | `packages/shared/src/brandIntro/` (`@tentacle-tv/shared/brandIntro`) |
 | Synthèse Web Audio (web et bureau, script de rendu) | `@tentacle-tv/shared/brandIntro/synth` (`introSynth.ts`) |
-| Quand la jouer, attendre, renoncer ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son | `packages/tv-core/src/boot/` |
+| Quand la jouer (une fois par processus), quand partir ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son | `packages/tv-core/src/boot/` |
 | La vue (calques, horloge Reanimated, écran qui montre l'app) | `apps/tv/src/redesign/boot/` |
-| Le branchement (décision, porte de l'accueil, son, renoncement) | `apps/tv/src/redesignWiring/boot/` |
+| Le branchement (décision au montage, porte du premier écran, son) | `apps/tv/src/redesignWiring/boot/` |
 | Le son natif | `apps/tv/ios/TentacleTV/TentacleBootSound.m`, adaptateur `platform/tvos/bootSound/` |
 | Le fichier du son (dérivé) | `apps/tv/assets/sound/boot-tadum.m4a` |
 

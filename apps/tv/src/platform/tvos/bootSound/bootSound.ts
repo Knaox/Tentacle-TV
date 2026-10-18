@@ -10,6 +10,7 @@ import { NativeModules } from "react-native";
  * l'ouverture.
  */
 interface NativeBootSound {
+  claimIntro(): boolean;
   prepare(): Promise<{ ready: boolean; now?: number }>;
   playAt(hostMs: number): void;
   fadeOut(ms: number): void;
@@ -19,6 +20,19 @@ interface NativeBootSound {
 const native = (NativeModules as { TentacleBootSound?: NativeBootSound }).TentacleBootSound ?? null;
 
 export const bootSound = {
+  /**
+   * La mémoire du processus (tv-core `bootIntroOnce`) : vrai au premier appel
+   * du PROCESSUS, faux ensuite — un rechargement du JavaScript n'y change rien.
+   * Sans module natif : null (l'appelant garde sa mémoire JavaScript).
+   */
+  claimIntro(): boolean | null {
+    if (!native) return null;
+    try {
+      return native.claimIntro() === true;
+    } catch {
+      return null;
+    }
+  },
   /** Décode le fichier d'avance ; vrai s'il est prêt. */
   async prepare(): Promise<boolean> {
     if (!native) return false;

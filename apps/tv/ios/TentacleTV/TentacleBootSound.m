@@ -16,6 +16,10 @@
 //    se MÉLANGE à une musique déjà en cours, il ne la coupe pas. Rendue à la
 //    catégorie par défaut au `dispose`, si elle n'a pas changé entre-temps
 //    (un lecteur vidéo pose la sienne).
+//  - `claimIntro` : la MÉMOIRE DU PROCESSUS de l'ouverture (tv-core
+//    `bootIntroOnce`) — vrai au premier appel du processus seulement. Un
+//    drapeau natif : un rechargement de l'arbre React ou du JavaScript ne
+//    l'efface pas, seul un nouveau processus (un démarrage à froid) le remet.
 //
 
 #import <React/RCTBridgeModule.h>
@@ -24,6 +28,8 @@
 
 @interface TentacleBootSound : NSObject <RCTBridgeModule>
 @end
+
+static BOOL sIntroClaimed = NO;
 
 @implementation TentacleBootSound {
   AVAudioPlayer *_player;
@@ -46,6 +52,15 @@ RCT_EXPORT_MODULE();
     queue = dispatch_queue_create("app.tentacletv.bootsound", DISPATCH_QUEUE_SERIAL);
   });
   return queue;
+}
+
+RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(claimIntro)
+{
+  @synchronized ([TentacleBootSound class]) {
+    BOOL first = !sIntroClaimed;
+    sIntroClaimed = YES;
+    return @(first);
+  }
 }
 
 RCT_EXPORT_METHOD(prepare:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)

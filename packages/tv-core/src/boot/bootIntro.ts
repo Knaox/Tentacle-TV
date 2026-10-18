@@ -1,54 +1,45 @@
 /**
- * L'OUVERTURE au démarrage de la TV — quand la jouer, quand partir, quand
- * renoncer. Module pur : l'adaptateur (apps/tv `redesignWiring/boot/`) lui
- * donne ce qu'il sait, la règle tranche.
+ * L'OUVERTURE au démarrage de la TV — quand la jouer, quand partir. Module
+ * pur : l'adaptateur (apps/tv `redesignWiring/boot/`) lui donne ce qu'il sait,
+ * la règle tranche.
  *
- * Elle se joue À CHAQUE démarrage à froid d'une TV jumelée, D'ELLE-MÊME —
- * aucun geste, aucun appui n'est attendu (une app native n'a pas la règle
- * d'autolecture d'un navigateur) : le poulpe s'assemble pendant que l'app
- * charge, attend sur son bouton lecture tant que le PREMIER ÉCRAN n'est pas
- * prêt, puis « ta » (l'appui), « dum » (l'écran s'allume SUR ce premier écran)
- * et la plongée. Ce premier écran est l'accueil, ou « Qui regarde ? » sur une
- * TV passée aux profils de la Famille (chaque lancement y repasse, sauf un
- * profil retenu), ou une fenêtre du démarrage due (code PIN conseillé, barre,
- * photo). Régression payée (2026-10-18, « Chambre ») : réservée à l'accueil,
- * elle ne se jouait JAMAIS sur une TV à profils.
+ * Elle se joue à CHAQUE démarrage à froid, D'ELLE-MÊME — aucun geste, aucun
+ * appui n'est attendu (une app native n'a pas la règle d'autolecture d'un
+ * navigateur) —, QUEL QUE SOIT LE PREMIER ÉCRAN : l'accueil, « Qui regarde ? »
+ * (et son code PIN), le jumelage d'une app neuve, la préconfiguration de la
+ * barre, le code PIN conseillé, la photo, un écran hors ligne, la migration de
+ * la base, « accès suspendu ». Le poulpe s'assemble pendant que l'app charge,
+ * attend sur son bouton lecture tant que ce premier écran n'est pas prêt, puis
+ * « ta » (l'appui), « dum » (l'écran s'allume SUR cet écran-là) et la plongée
+ * dedans. Une seule fois par processus (`bootIntroOnce`). Décision de Damien
+ * du 2026-10-18, après « Chambre » : réservée à l'accueil, elle ne se jouait
+ * jamais sur sa TV passée aux profils.
  *
  * Jamais : sur une plateforme qui ne l'a pas (le trait `brandIntro` : Android
- * TV garde sa mascotte), avec le mouvement réduit (le premier écran
- * directement), sans session (le jumelage), ni à la relance d'une lecture
- * interrompue (la fiche s'ouvre). Le retour d'arrière-plan n'est pas un
- * démarrage : rien ne se rejoue.
+ * TV garde sa mascotte), ni avec le mouvement réduit (réglage
+ * d'accessibilité : le premier écran directement).
  */
-
-/** Les premiers écrans où l'ouverture se joue (routes de la pile de la TV). */
-export const BOOT_INTRO_ROUTES = ["Home", "Profiles", "PinSetup", "RailSetup", "PhotoSetup"] as const;
-
-/**
- * Les écrans qui disent EUX-MÊMES quand ils sont prêts (leurs données
- * arrivent) ; les autres le sont dès qu'ils sont montés.
- */
-export const BOOT_INTRO_SELF_REPORTING: readonly string[] = ["Home", "Profiles"];
-
-const isIntroRoute = (route: string): boolean => (BOOT_INTRO_ROUTES as readonly string[]).includes(route);
 
 export interface BootIntroInput {
   /** Le trait de la plateforme : l'ouverture y existe. */
   supported: boolean;
   /** Le réglage d'accessibilité « Réduire les animations ». */
   reducedMotion: boolean;
-  /** La première route du démarrage (`initialRouteOf`). */
-  initialRoute: string;
-  /** Une lecture interrompue attend sa relance : la fiche va s'ouvrir sur l'accueil. */
-  interruptedPlayback: boolean;
+  /** Ce montage est le démarrage à froid du processus (`bootIntroTurn`). */
+  coldStart: boolean;
 }
 
 export type BootIntroPlan = "intro" | "boot";
 
 export function decideBootIntro(input: BootIntroInput): BootIntroPlan {
-  if (!input.supported || input.reducedMotion || input.interruptedPlayback) return "boot";
-  return isIntroRoute(input.initialRoute) ? "intro" : "boot";
+  return input.supported && !input.reducedMotion && input.coldStart ? "intro" : "boot";
 }
+
+/**
+ * Les écrans qui disent EUX-MÊMES quand ils sont prêts (leurs données
+ * arrivent) ; les autres le sont dès qu'ils sont montés.
+ */
+export const BOOT_INTRO_SELF_REPORTING: readonly string[] = ["Home", "Profiles"];
 
 /**
  * Au-delà, le premier écran n'est toujours pas prêt : on plonge quand même,
@@ -61,11 +52,11 @@ export type BootScreenState = "loading" | "ready" | "failed";
 
 /** Ce que l'adaptateur constate pendant l'ouverture. */
 export interface BootIntroWatch {
-  /** L'écran affiché (null : la navigation n'est pas encore prête). */
+  /** L'écran affiché (null : l'app n'est pas encore montée). */
   route: string | null;
   /** Ce que cet écran dit de lui-même (null : rien encore). */
   screen: BootScreenState | null;
-  /** Le voile hors ligne, la migration de la base, la page « accès suspendu » veulent paraître. */
+  /** Un voile ou une page qui recouvre tout (hors ligne, migration, accès suspendu) est là : c'est lui qu'on montre. */
   blocked: boolean;
   /** Depuis combien de temps l'ouverture attend sur le bouton lecture (0 : elle n'attend pas). */
   heldMs: number;
@@ -73,25 +64,20 @@ export interface BootIntroWatch {
 
 /**
  * `wait` : rester sur le bouton lecture ; `go` : appuyer (ta), allumer (dum),
- * plonger ; `abort` : renoncer — l'ouverture s'efface sur ce qui doit se voir
- * (hors ligne, migration, accès suspendu, écran en échec, jumelage), sans ta-dum.
- * Un premier écran qui en ouvre un autre (« Qui regarde ? » qui ouvre seul le
- * profil retenu, puis l'accueil) : l'ouverture suit, l'écran du poulpe montre
- * le dernier.
+ * plonger. Elle ne renonce jamais : l'écran du poulpe s'allume sur ce qui est
+ * là — un écran en échec, hors ligne ou bloqué compris, qui dit lui-même ce
+ * qu'il en est. Un premier écran qui en ouvre un autre (« Qui regarde ? » qui
+ * ouvre seul le profil retenu, puis l'accueil ; la relance d'une lecture qui
+ * ouvre sa fiche) : l'ouverture suit, l'écran du poulpe montre le dernier.
  */
-export type BootIntroOutcome = "wait" | "go" | "abort";
+export type BootIntroOutcome = "wait" | "go";
 
 export function bootIntroOutcome(watch: BootIntroWatch): BootIntroOutcome {
-  if (watch.blocked) return "abort";
   if (watch.route === null) return "wait";
-  if (!isIntroRoute(watch.route) || watch.screen === "failed") return "abort";
-  const reports = BOOT_INTRO_SELF_REPORTING.includes(watch.route);
-  if (!reports || watch.screen === "ready" || watch.heldMs >= BOOT_INTRO_MAX_HOLD_MS) return "go";
+  if (watch.blocked || watch.screen === "ready" || watch.screen === "failed") return "go";
+  if (!BOOT_INTRO_SELF_REPORTING.includes(watch.route) || watch.heldMs >= BOOT_INTRO_MAX_HOLD_MS) return "go";
   return "wait";
 }
-
-/** Le renoncement : un rideau de l'encre du démarrage monte, puis découvre l'écran. */
-export const BOOT_INTRO_ABORT = { coverMs: 160, revealMs: 280 } as const;
 
 /** La reprise après l'attente : les boucles du scintillement s'éteignent en douceur. */
 export const BOOT_INTRO_IDLE_FADE_MS = 150;

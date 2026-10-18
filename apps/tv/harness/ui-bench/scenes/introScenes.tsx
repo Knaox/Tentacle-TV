@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Dimensions } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
 import { INTRO_HOLD_AT, INTRO_TIMING } from "@tentacle-tv/shared/brandIntro";
 import * as TENTACLE_ART from "../../../src/components/icons/tentacleArt.generated";
 import { BootIntroView, useIntroScene } from "../../../src/redesign/boot/BootIntroView";
@@ -27,10 +26,9 @@ function IntroScene({ data, at, mode }: { data: BenchData; at: number | null; mo
   useEffect(() => {
     if (mode === "play") clock.ready.value = true;
   }, [mode, clock]);
-  const curtain = useSharedValue(0);
   const home = HOME_SCENES[0]?.render(data) ?? null;
   return (
-    <BootIntroView art={TENTACLE_ART} scene={scene} clock={clock} viewport={viewport} landed={false} curtain={curtain} curtainShown={false} screenColor="#000000">
+    <BootIntroView art={TENTACLE_ART} scene={scene} clock={clock} viewport={viewport} landed={false} screenColor="#000000">
       {home}
     </BootIntroView>
   );
