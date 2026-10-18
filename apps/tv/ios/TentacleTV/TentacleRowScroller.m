@@ -41,6 +41,16 @@
 
 static char kRowScrollerKey;
 
+/// Après qu'on lui a rendu la position courante (un pas isolé), tvOS l'APPLIQUE encore un
+/// instant plus tard — une image après notre ressort, qui a déjà avancé : la rangée reculait
+/// d'une image (4 à 5 pt) à chaque pas d'une suite rapprochée (mesuré au banc de fluidité,
+/// 18/10). Une position étrangère posée dans ce délai est la sienne, tardive : le ressort la
+/// recouvre aussitôt — si elle est à moins d'une image ou deux de mouvement de la nôtre : le
+/// retour au début de la rangée (Retour, sortie de l'écran) en est toujours bien plus loin.
+/// Au-delà, c'est un autre défilement : le ressort cède.
+static const CFTimeInterval kLateStayWindow = 0.1;
+static const CGFloat kLateStayDistance = 64;
+
 @interface TentacleRowScroller : NSObject <UIScrollViewDelegate>
 @end
 
@@ -53,6 +63,8 @@ static char kRowScrollerKey;
   CFTimeInterval _t0;
   /// La dernière position posée : une autre (tvOS, le retour au début de la rangée) arrête le ressort.
   CGFloat _lastSet;
+  /// Quand on a rendu à tvOS la position courante (`kLateStayWindow`).
+  CFTimeInterval _stayAt;
 }
 
 - (instancetype)initWithRow:(RCTScrollView *)row section:(TentacleFocusSection *)section
@@ -98,15 +110,23 @@ static char kRowScrollerKey;
   }
   // Un pas isolé : tvOS ne bouge rien, le ressort s'en charge.
   targetContentOffset->x = scrollView.contentOffset.x;
+  _stayAt = CACurrentMediaTime();
   [self moveTo:clamped in:scrollView];
 }
 
-/// Un défilement qui n'est pas le nôtre (tvOS, le retour au début de la rangée) : le ressort cède.
+/// Un défilement qui n'est pas le nôtre (tvOS, le retour au début de la rangée) : le ressort cède
+/// — sauf la position que tvOS applique en retard juste après un pas (`kLateStayWindow`) : le
+/// ressort la recouvre, la rangée ne recule pas.
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-  if (_link != nil && fabs(scrollView.contentOffset.x - _lastSet) > 1) {
-    [self stop];
+  if (_link == nil || fabs(scrollView.contentOffset.x - _lastSet) <= 1) {
+    return;
   }
+  if (CACurrentMediaTime() - _stayAt < kLateStayWindow && fabs(scrollView.contentOffset.x - _lastSet) < kLateStayDistance) {
+    [self setOffset:_lastSet in:scrollView];
+    return;
+  }
+  [self stop];
 }
 
 #pragma mark - Le ressort (tv-core `revealMotion.ts`)
