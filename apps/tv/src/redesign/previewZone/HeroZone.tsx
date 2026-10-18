@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 import { PreviewZoneSlot } from "../cards/trailerPreviewPort";
 import type { CardModel } from "../cards/cardTypes";
 import { FocusSection } from "../focus/FocusSection";
-import type { HeroModel } from "../hero/HeroBanner";
+import type { HeroModel } from "../hero/heroTypes";
 import { HeroZoneHead, type HeroZoneHeadProps } from "./HeroZoneHead";
 import { ZONE } from "./zoneModel";
 

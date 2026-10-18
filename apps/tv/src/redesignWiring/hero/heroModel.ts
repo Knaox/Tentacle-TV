@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 import type { useJellyfinClient } from "@tentacle-tv/api-client";
 import { extractMediaQuality, formatCommunityRating, formatDuration, formatEpisodeCode, trailerPreviewSubjectOfItem, type MediaItem } from "@tentacle-tv/shared";
 import { isLogoLegibleOnDark } from "../../redesign/color/artworkPalette";
-import type { HeroModel } from "../../redesign/hero/HeroBanner";
+import type { HeroModel } from "../../redesign/hero/heroTypes";
 import type { MetaItem } from "../../redesign/hero/MetaLine";
 import { backdropUriOf, blurHashOf, logoUriOf, paletteOfItem, progressOf } from "../cards/cardArtwork";
 

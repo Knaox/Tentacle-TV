@@ -37,7 +37,7 @@ const PREVIEW_DELAY_MS = 600;
 const PLAYING = { paused: false, muted: false };
 
 /** La zone du banc : la règle et la vue de l'app, une fausse vidéo à la place du lecteur. */
-const BenchZone: PreviewZoneRenderer = ({ hero = null, fallback = null }) => {
+export const BenchZone: PreviewZoneRenderer = ({ hero = null, fallback = null }) => {
   const store = usePreviewZoneStore();
   if (!store) return null;
   return <BenchZoneBody hero={hero} fallback={fallback} store={store} />;

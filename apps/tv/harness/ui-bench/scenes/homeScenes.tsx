@@ -4,7 +4,7 @@ import { cardIndexOf } from "../../../src/redesign/cards/cardFocusKeys";
 import type { CardModel } from "../../../src/redesign/cards/cardTypes";
 import type { ArtworkPalette } from "../../../src/redesign/color/artworkPalette";
 import { useForcedFocusKey } from "../../../src/redesign/focus/focusPreview";
-import type { HeroModel } from "../../../src/redesign/hero/HeroBanner";
+import type { HeroModel } from "../../../src/redesign/hero/heroTypes";
 import { HomeView, type HomeRowModel, type HomeViewProps } from "../../../src/redesign/screens/home/HomeView";
 import { episodeRowSubtitle } from "../../../src/redesignWiring/home/homeSubtitles";
 import type { BenchData } from "../data/benchData";

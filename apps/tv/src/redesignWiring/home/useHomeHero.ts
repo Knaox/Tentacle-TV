@@ -4,7 +4,7 @@ import { useIsFocused } from "@react-navigation/native";
 import { reasonToText, useCardToggles, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { heroEdgeKey, heroShown, holdPanelOf, nextHeroIndex } from "@tentacle-tv/tv-core";
-import type { HeroModel } from "../../redesign/hero/HeroBanner";
+import type { HeroModel } from "../../redesign/hero/heroTypes";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useBeyondEdge } from "../../platform/tvos/focus/useBeyondEdge";
 import { backdropUriOf } from "../cards/cardArtwork";

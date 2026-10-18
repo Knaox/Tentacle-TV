@@ -82,7 +82,8 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `screens/sheet/SheetPictos` | Les pictos du grand panneau, dans l'ordre du modèle partagé, chacun son geste écrit dessous ; la lecture et « Demander » au dégradé (`BrandPill`) |
 | `cards/CardFrame` | Le cadre et son focus, pour une carte sur mesure ; `glow` (`cardGlowOf`) : au focus, la lumière de l'œuvre autour de la carte au lieu d'une ombre noire — `MediaCard` la pose (`glowTone` : `art`, ou `neutral` pour une carte qui doit rester grise) |
 | `rows/MediaRow` | Titre + cartes horizontales, les voisines reculent |
-| `hero/HeroBanner`, `MetaLine`, `TitleArt` | Le héros, la ligne de métadonnées, le logo-titre |
+| `hero/heroTypes`, `MetaLine`, `TitleArt` | Le modèle du héros, la ligne de métadonnées, le logo-titre |
+| `previewZone/` | La zone d'aperçu en haut des pages (fond, vidéo, texte), les boutons du héros dedans |
 | `nav/NavRail` | La navigation flottante (repliée / ouverte sous un voile) |
 | `brand/BrandMark` | La mascotte des ILLUSTRATIONS (démarrage, jumelage, erreurs, hors ligne, À propos), toujours en couleurs (`brand/logo-color.svg`), `crying` pour une erreur — jamais un logo d'interface, ni la mono blanche, qui lisait « tête de mort » sur la TV |
 | `screens/shared/StatusPanel` | Chargement, erreur, vide |

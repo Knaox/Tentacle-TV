@@ -1,23 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { i18n } from "@tentacle-tv/shared";
-import { TV_STAGE } from "@tentacle-tv/theme";
 import { AmbientBackdrop } from "../../../src/redesign/background/AmbientBackdrop";
-import { HeroBanner } from "../../../src/redesign/hero/HeroBanner";
+import { PreviewZoneScope, TrailerPreviewProvider } from "../../../src/redesign/cards/trailerPreviewPort";
+import { HeroZone } from "../../../src/redesign/previewZone/HeroZone";
 import { HomeView } from "../../../src/redesign/screens/home/HomeView";
 import type { BenchData } from "../data/benchData";
 import { heroOf, navOf } from "../data/screenModels";
 import { heroItems, rowsOf } from "./homeScenes";
 import { MOTION_DETAIL_SCENE } from "./motionDetail";
 import { MOTION_PLAYER_SCENE } from "./motionPlayer";
+import { BenchZone } from "./previewScenes";
 import type { BenchScene } from "./types";
 
 /**
  * Le MOUVEMENT, à regarder et à mesurer (`bench.mjs fps`) : ce qui ne bouge
  * pas tout seul dans les autres scènes.
  * - `mouvement/heros` : le héros qui tourne toutes les 3,5 s sur les vraies
- *   reprises (8 s dans l'app) — image en fondu enchaîné, texte qui sort et
- *   rentre, halo qui passe d'une lumière à l'autre, fond vivant qui suit ;
+ *   reprises (8 s dans l'app), dans la zone d'aperçu — fond en fondu croisé,
+ *   texte qui sort et rentre, fond vivant qui suit ;
  * - `mouvement/navigation` : la navigation de l'accueil qui se déplie et se
  *   replie toutes les 1,2 s, sur le vrai contenu (le verre floute ce qui
  *   passe dessous) ;
@@ -29,7 +30,6 @@ import type { BenchScene } from "./types";
  */
 
 const t = (key: string) => i18n.t(key) as string;
-const LEFT = TV_STAGE.contentLeft;
 const ROTATE_MS = 3_500;
 
 function RotatingHero({ data }: { data: BenchData }) {
@@ -51,9 +51,11 @@ function RotatingHero({ data }: { data: BenchData }) {
   return (
     <View style={styles.root}>
       <AmbientBackdrop palette={hero.palette} />
-      <View style={styles.hero}>
-        <HeroBanner hero={hero} width={1920 - LEFT - 56} />
-      </View>
+      <TrailerPreviewProvider zone={BenchZone}>
+        <PreviewZoneScope>
+          <HeroZone hero={hero} />
+        </PreviewZoneScope>
+      </TrailerPreviewProvider>
     </View>
   );
 }
@@ -102,5 +104,4 @@ export const MOTION_SCENES: BenchScene[] = [
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
-  hero: { marginLeft: LEFT, marginTop: TV_STAGE.hero.top },
 });

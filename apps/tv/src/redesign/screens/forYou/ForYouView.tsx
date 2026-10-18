@@ -9,7 +9,7 @@ import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
-import type { HeroModel } from "../../hero/HeroBanner";
+import type { HeroModel } from "../../hero/heroTypes";
 import { HeroZone } from "../../previewZone/HeroZone";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { BelowZonePage, useBelowZoneBottomRoom } from "../../rows/BelowZonePage";

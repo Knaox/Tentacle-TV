@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import { INITIAL_PREVIEW_ZONE, reducePreviewZone, type PreviewWarmWant, type PreviewZoneEvent, type PreviewZoneState } from "@tentacle-tv/tv-core";
-import type { HeroModel } from "../hero/HeroBanner";
+import type { HeroModel } from "../hero/heroTypes";
 import type { CardModel } from "./cardTypes";
 
 /**

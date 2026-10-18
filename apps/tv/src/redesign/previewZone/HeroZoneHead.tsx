@@ -6,7 +6,7 @@ import { CardHoldHint } from "../cards/CardHoldHint";
 import { usePreviewZoneHero, usePreviewZoneState, usePreviewZoneStore, type PreviewZoneStore } from "../cards/trailerPreviewPort";
 import { PillButton } from "../controls/PillButton";
 import { RoundButton } from "../controls/RoundButton";
-import type { HeroModel } from "../hero/HeroBanner";
+import type { HeroModel } from "../hero/heroTypes";
 import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
 import { SWAP_FLOOR } from "../motion/useSwap";
