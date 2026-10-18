@@ -306,8 +306,9 @@ résultat.
   colonne retenue (celle du dernier pas dans une ligne) est rendue au focus
   arrivé ailleurs, dans SA ligne, dès que la grille se pose — jamais pendant
   le mouvement, sans dépendre de la fin du maintien. HAUT tenu jusqu'en haut :
-  tvOS traverse les filtres et revient, la colonne tient ; la grille posée
-  avec le focus dans les filtres, elle est oubliée (tv-core
+  tvOS traverse les filtres et revient, la colonne tient (retour en moins de
+  1,5 s) ; resté plus longtemps dans les filtres, BAS est une nouvelle entrée,
+  au plus proche (tv-core
   `focus/gridColumnHold`, `platform/tvos/focus/gridColumnHold.ts`, port
   `gridSettlePort`).
 
