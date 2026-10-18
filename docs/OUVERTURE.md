@@ -35,7 +35,7 @@ Règle : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`).
 |---|---|
 | Courbes, géométrie (tirée des constantes générées du logo), caméra, chorégraphie (règle WAAPI : remplissages, transformation et opacité à part), attente, partition du son | `packages/shared/src/brandIntro/` (`@tentacle-tv/shared/brandIntro`) |
 | Synthèse Web Audio (web et bureau, script de rendu) | `@tentacle-tv/shared/brandIntro/synth` (`introSynth.ts`) |
-| Quand la jouer, attendre, renoncer ; tableaux pour l'image (120 par seconde) ; plaques nettes ; heure du son | `packages/tv-core/src/boot/` |
+| Quand la jouer, attendre, renoncer ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son | `packages/tv-core/src/boot/` |
 | La vue (calques, horloge Reanimated, écran qui montre l'app) | `apps/tv/src/redesign/boot/` |
 | Le branchement (décision, porte de l'accueil, son, renoncement) | `apps/tv/src/redesignWiring/boot/` |
 | Le son natif | `apps/tv/ios/TentacleTV/TentacleBootSound.m`, adaptateur `platform/tvos/bootSound/` |
@@ -62,7 +62,7 @@ Règle : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`).
   2 fois plus grandes que leur place, et la tête, le visage, le chapeau et les
   bras arrière ont une PLAQUE 5 fois plus grande qui prend le relais, d'une
   image, quand la caméra atteint √10 fois son zoom de départ (tv-core
-  `plateGates`) ; au-delà de ×2 de réduction, le filtre linéaire de Core
+  `plateSwapAt`) ; au-delà de ×2 de réduction, le filtre linéaire de Core
   Animation crénèle. Les lumières (lueur, éclair) sont des dégradés doux,
   dessinés petits et agrandis.
 - **Une image qui traîne avant le son** (le fil d'interface pris par le

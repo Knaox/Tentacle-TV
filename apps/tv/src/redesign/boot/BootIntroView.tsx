@@ -2,7 +2,7 @@ import { memo, useMemo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { introCameraPlan, introGeometry } from "@tentacle-tv/shared/brandIntro";
-import { plateGates, sampleIntro, sampleIntroHold } from "@tentacle-tv/tv-core/boot";
+import { plateSwapAt, sampleIntro, sampleIntroHold } from "@tentacle-tv/tv-core/boot";
 import { partBoxes, type TentacleArt } from "./introArt";
 import { IntroScreenPlane } from "./IntroScreenPlane";
 import { IntroStageAbove, IntroStageBelow } from "./IntroStage";
@@ -27,7 +27,7 @@ export function useIntroScene(art: TentacleArt, viewport: { width: number; heigh
       samples,
       hold: sampleIntroHold(geometry),
       boxes: partBoxes(geometry),
-      gates: plateGates(samples, plan.from.zoom),
+      swapAt: plateSwapAt(samples, plan.from.zoom),
     };
   }, [art, viewport.width, viewport.height]);
 }
@@ -67,7 +67,7 @@ export const BootIntroView = memo(function BootIntroView({ art, scene, clock, vi
     () => ({ center: { x: viewport.width / 2, y: viewport.height / 2 }, target: scene.geometry.target, zoom: scene.plan.from.zoom }),
     [viewport.width, viewport.height, scene],
   );
-  const stage = { art, geometry: scene.geometry, boxes: scene.boxes, samples: scene.samples, hold: scene.hold, gates: scene.gates, frame, clock };
+  const stage = { art, geometry: scene.geometry, boxes: scene.boxes, samples: scene.samples, hold: scene.hold, swapAt: scene.swapAt, frame, clock };
   const curtainStyle = useAnimatedStyle(() => ({ opacity: curtain.value }));
   return (
     <View style={styles.root}>

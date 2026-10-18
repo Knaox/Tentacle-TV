@@ -15,7 +15,8 @@ export interface IntroStageProps {
   boxes: PartBoxes;
   samples: IntroSamples;
   hold: IntroHoldSamples;
-  gates: { early: readonly number[]; late: readonly number[] };
+  /** L'instant où les plaques nettes prennent le relais (tv-core `plateSwapAt`). */
+  swapAt: number;
   frame: StageFrame;
   clock: IntroClock;
 }
@@ -52,7 +53,7 @@ function Frame({ art, geometry, frame }: Pick<IntroStageProps, "art" | "geometry
  * par-dessus, dans l'arbre de l'app (`IntroScreenPlane`).
  */
 export const IntroStageBelow = memo(function IntroStageBelow(props: IntroStageProps) {
-  const { art, geometry, boxes, samples, gates, frame, clock } = props;
+  const { art, geometry, boxes, samples, swapAt, frame, clock } = props;
   const { step, parts } = samples;
   return (
     <CameraLayer camera={samples.camera} baseZoom={frame.zoom} clock={clock} step={step}>
@@ -73,7 +74,7 @@ export const IntroStageBelow = memo(function IntroStageBelow(props: IntroStagePr
             channels={channels}
             step={step}
             raster={raster}
-            gate={raster === INTRO_PLATES.early ? gates.early : gates.late}
+            {...(raster === INTRO_PLATES.early ? { visibleUntil: swapAt } : { visibleFrom: swapAt })}
           >
             {(size) => <ArmSvg art={art} box={box} d={d} {...size} />}
           </IntroPart>
@@ -89,7 +90,7 @@ export const IntroStageBelow = memo(function IntroStageBelow(props: IntroStagePr
           channels={parts.head}
           step={step}
           raster={raster}
-          gate={raster === INTRO_PLATES.early ? gates.early : gates.late}
+          {...(raster === INTRO_PLATES.early ? { visibleUntil: swapAt } : { visibleFrom: swapAt })}
         >
           {(size) => <HeadSvg art={art} box={boxes.head} {...size} />}
         </IntroPart>
@@ -120,7 +121,7 @@ function ArmsAway({ samples, frame, clock, children }: Pick<IntroStageProps, "sa
  * étincelles, le chapeau, puis les bras avant qui enlacent l'écran.
  */
 export const IntroStageAbove = memo(function IntroStageAbove(props: IntroStageProps) {
-  const { art, geometry, boxes, samples, hold, gates, frame, clock } = props;
+  const { art, geometry, boxes, samples, hold, swapAt, frame, clock } = props;
   const { step, parts } = samples;
   const faceHatBox = { x: boxes.hat.x, y: boxes.hat.y, width: boxes.hat.width, height: boxes.face.y + boxes.face.height - boxes.hat.y };
   return (
@@ -136,12 +137,12 @@ export const IntroStageAbove = memo(function IntroStageAbove(props: IntroStagePr
             channels={index ? parts.eye1 : parts.eye0}
             loop={hold.eyes[index]}
             step={step}
-            gate={gates.early}
+            visibleUntil={swapAt}
           >
             {(size) => <EyeSvg art={art} box={boxes.eyes[index] ?? boxes.face} index={index} {...size} />}
           </IntroPart>
         ))}
-        <IntroPart frame={frame} box={boxes.face} pivot={geometry.target} clock={clock} step={step} gate={gates.early}>
+        <IntroPart frame={frame} box={boxes.face} pivot={geometry.target} clock={clock} step={step} visibleUntil={swapAt}>
           {(size) => <FaceSvg art={art} box={boxes.face} {...size} />}
         </IntroPart>
         <IntroPart frame={frame} box={boxes.ring} pivot={geometry.play} clock={clock} channels={parts.ring} step={step}>
@@ -165,11 +166,11 @@ export const IntroStageAbove = memo(function IntroStageAbove(props: IntroStagePr
           );
         })}
       </IntroGroup>
-      <IntroPart frame={frame} box={boxes.hat} pivot={{ x: 120, y: 44 }} clock={clock} channels={parts.hat} step={step} gate={gates.early}>
+      <IntroPart frame={frame} box={boxes.hat} pivot={{ x: 120, y: 44 }} clock={clock} channels={parts.hat} step={step} visibleUntil={swapAt}>
         {(size) => <HatSvg art={art} box={boxes.hat} {...size} />}
       </IntroPart>
       {/* La plaque nette de la plongée : yeux, visage et chapeau d'un seul dessin, immobiles. */}
-      <IntroPart frame={frame} box={faceHatBox} pivot={geometry.target} clock={clock} step={step} raster={INTRO_PLATES.late} gate={gates.late}>
+      <IntroPart frame={frame} box={faceHatBox} pivot={geometry.target} clock={clock} step={step} raster={INTRO_PLATES.late} visibleFrom={swapAt}>
         {(size) => <FaceSvg art={art} box={faceHatBox} eyes hat {...size} />}
       </IntroPart>
       <ArmsAway samples={samples} frame={frame} clock={clock}>

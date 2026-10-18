@@ -441,7 +441,7 @@ du site). Carnet : `docs/OUVERTURE.md`.
 - **L'app est montée DANS l'écran** (`redesign/boot/IntroScreenPlane`) et n'en
   change jamais d'arbre : à l'arrivée, identité et découpe retirée. Rien que des
   transformations et des opacités, horloge Reanimated sur le fil d'interface,
-  tableaux de tv-core (`sampleIntro`), plaques 5× pour la plongée (`plateGates`).
+  tableaux de tv-core (`sampleIntro`), plaques 5× pour la plongée (`plateSwapAt`).
 - **Le son est un FICHIER DÉRIVÉ** de la synthèse (`pnpm --filter
   @tentacle-tv/tv sound:intro` : Chrome sans tête, `OfflineAudioContext`, crête
   −9 dBFS, AAC) — jamais retouché ; joué par `TentacleBootSound.m`

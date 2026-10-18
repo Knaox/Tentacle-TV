@@ -34,8 +34,9 @@ export interface IntroPartProps {
   step: number;
   /** La boucle de l'attente qui s'ajoute à la piste (le bouton qui bat, l'œil qui cligne). */
   loop?: IntroLoopSamples;
-  /** Une opacité de plus, lue sur le même instant (la plaque nette qui prend le relais pendant la plongée). */
-  gate?: readonly number[];
+  /** La pièce ne vaut que dans cette fenêtre de la chorégraphie (ms) : la plaque nette qui prend le relais pendant la plongée. */
+  visibleFrom?: number;
+  visibleUntil?: number;
   /**
    * Le dessin est rastérisé `raster` fois plus grand que sa place, puis
    * réduit : il reste net quand la caméra l'agrandit. 2 suffit à la scène ;
@@ -50,14 +51,17 @@ export interface IntroPartProps {
  * grandit autour de son PIVOT — rien d'autre ne bouge que sa transformation et
  * son opacité, lues image par image sur le fil d'interface.
  */
-export const IntroPart = memo(function IntroPart({ frame, box, pivot, clock, channels, step, loop, gate, raster = 2, children }: IntroPartProps) {
+export const IntroPart = memo(function IntroPart(props: IntroPartProps) {
+  const { frame, box, pivot, clock, channels, step, loop, raster = 2, children } = props;
+  const from = props.visibleFrom ?? Number.NEGATIVE_INFINITY;
+  const until = props.visibleUntil ?? Number.POSITIVE_INFINITY;
   const place = placeOf(frame, box);
   const origin = [(pivot.x - box.x) * frame.zoom, (pivot.y - box.y) * frame.zoom, 0];
   const zoom = frame.zoom;
   const main = useAnimatedStyle(() => {
     const t = clock.scene.value;
     const pose = channels ? partStyleAt(channels, step, t, zoom) : { opacity: 1, transform: [] };
-    const opacity = clock.landed.value ? 0 : pose.opacity * (gate ? sampleAt(gate, step, t) : 1);
+    const opacity = clock.landed.value || t < from || t >= until ? 0 : pose.opacity;
     return { opacity, transform: pose.transform };
   });
   const idle = useAnimatedStyle(() => (loop ? loopStyleAt(loop, clock.idle.value, clock.idleWeight.value, zoom) : {}));

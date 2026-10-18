@@ -62,8 +62,13 @@ export interface IntroHoldSamples {
   eyes: readonly IntroLoopSamples[];
 }
 
-/** 120 échantillons par seconde : entre deux, l'interpolation linéaire ne se voit pas. */
-export const INTRO_SAMPLE_STEP_MS = 1000 / 120;
+/**
+ * 60 échantillons par seconde, la cadence de l'écran : entre deux,
+ * l'interpolation linéaire ne se voit pas. Plus dense, le calcul (au
+ * démarrage, sous Hermes) et la copie vers le fil d'interface coûteraient
+ * d'autant plus, sur le chemin même que l'ouverture camoufle.
+ */
+export const INTRO_SAMPLE_STEP_MS = 1000 / 60;
 
 function channelsOf(order: readonly IntroTransformKey[], poses: readonly IntroPose[]): IntroChannels {
   const values: Partial<Record<IntroTransformKey, number[]>> = {};
@@ -133,11 +138,13 @@ export function loopValue(loop: IntroLoopSamples, values: readonly number[], idl
  * `late` fois plus grande que leur place (`early` pour la première). On passe
  * de l'une à l'autre, d'une image, quand la caméra atteint leur moyenne
  * géométrique : ni l'une ni l'autre n'y est trop agrandie ni trop réduite.
+ * Le zoom ne fait que croître : la bascule est UN instant de la chorégraphie
+ * (ms) — un nombre, pas un tableau, à porter au fil d'interface.
  */
 export const INTRO_PLATES = { early: 2, late: 5 } as const;
 
-export function plateGates(samples: IntroSamples, baseZoom: number, plates = INTRO_PLATES): { early: number[]; late: number[] } {
+export function plateSwapAt(samples: IntroSamples, baseZoom: number, plates = INTRO_PLATES): number {
   const swap = baseZoom * Math.sqrt(plates.early * plates.late);
-  const late = samples.camera.zoom.map((zoom) => (zoom >= swap ? 1 : 0));
-  return { early: late.map((value) => 1 - value), late };
+  const index = samples.camera.zoom.findIndex((zoom) => zoom >= swap);
+  return index < 0 ? Number.POSITIVE_INFINITY : index * samples.step;
 }

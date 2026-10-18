@@ -100,29 +100,48 @@ function lerpTransform(from: IntroTransform, to: IntroTransform, x: number): Int
   };
 }
 
+interface Keyed<T> {
+  value: T;
+  offset: number;
+}
+
+/** Les images clés d'un groupe, avec leurs positions — calculées UNE fois par liste d'images. */
+interface KeyedFrames {
+  transform: Keyed<IntroTransform>[];
+  opacity: Keyed<number>[];
+}
+
+const keyedCache = new WeakMap<readonly IntroFrame[], KeyedFrames>();
+
+function keyedOf(frames: readonly IntroFrame[]): KeyedFrames {
+  let keyed = keyedCache.get(frames);
+  if (!keyed) {
+    const offsets = computedOffsets(frames);
+    keyed = { transform: [], opacity: [] };
+    frames.forEach((frame, index) => {
+      const offset = offsets[index] as number;
+      if (frame.t) keyed?.transform.push({ value: fullTransform(frame.t), offset });
+      if (frame.opacity !== undefined) keyed?.opacity.push({ value: frame.opacity, offset });
+    });
+    keyedCache.set(frames, keyed);
+  }
+  return keyed;
+}
+
 /** La valeur d'un groupe à l'avancement p, entre ses images clés (interpolation linéaire, comme en CSS). */
-function sample<T>(
-  frames: readonly IntroFrame[],
-  offsets: readonly number[],
-  p: number,
-  pick: (frame: IntroFrame) => T | undefined,
-  mix: (from: T, to: T, x: number) => T,
-): T | undefined {
-  const keyed = frames
-    .map((frame, index) => ({ value: pick(frame), offset: offsets[index] as number }))
-    .filter((entry): entry is { value: T; offset: number } => entry.value !== undefined);
-  if (keyed.length === 0) return undefined;
-  const first = keyed[0] as { value: T; offset: number };
+function sample<T>(keyed: readonly Keyed<T>[], p: number, mix: (from: T, to: T, x: number) => T): T | undefined {
+  const first = keyed[0];
+  if (!first) return undefined;
   if (p <= first.offset) return first.value;
   for (let index = 1; index < keyed.length; index += 1) {
-    const to = keyed[index] as { value: T; offset: number };
+    const to = keyed[index] as Keyed<T>;
     if (p <= to.offset) {
-      const from = keyed[index - 1] as { value: T; offset: number };
+      const from = keyed[index - 1] as Keyed<T>;
       const span = to.offset - from.offset;
       return mix(from.value, to.value, span > 0 ? (p - from.offset) / span : 1);
     }
   }
-  return (keyed[keyed.length - 1] as { value: T; offset: number }).value;
+  return (keyed[keyed.length - 1] as Keyed<T>).value;
 }
 
 /** La pose d'une pièce à l'instant t (ms depuis le début de l'ouverture). */
@@ -133,11 +152,9 @@ export function poseAt(track: IntroTrack, t: number): IntroPose {
     const animation = track.animations[index] as IntroAnimation;
     const p = animationProgress(animation, t);
     if (p === null) continue;
-    const offsets = computedOffsets(animation.frames);
-    if (transform === undefined) {
-      transform = sample(animation.frames, offsets, p, (frame) => (frame.t ? fullTransform(frame.t) : undefined), lerpTransform);
-    }
-    if (opacity === undefined) opacity = sample(animation.frames, offsets, p, (frame) => frame.opacity, lerp);
+    const keyed = keyedOf(animation.frames);
+    if (transform === undefined) transform = sample(keyed.transform, p, lerpTransform);
+    if (opacity === undefined) opacity = sample(keyed.opacity, p, lerp);
   }
   return { transform: transform ?? { ...IDENTITY }, opacity: opacity ?? track.baseOpacity };
 }
@@ -159,9 +176,9 @@ export function loopPoseAt(loop: IntroLoop, idle: number): IntroPose {
   const local = idle - loop.delay;
   if (local < 0) return { transform: { ...IDENTITY }, opacity: loop.baseOpacity };
   const p = introEasing(loop.easing)((local % loop.period) / loop.period);
-  const offsets = computedOffsets(loop.frames);
+  const keyed = keyedOf(loop.frames);
   return {
-    transform: sample(loop.frames, offsets, p, (frame) => (frame.t ? fullTransform(frame.t) : undefined), lerpTransform) ?? { ...IDENTITY },
-    opacity: sample(loop.frames, offsets, p, (frame) => frame.opacity, lerp) ?? loop.baseOpacity,
+    transform: sample(keyed.transform, p, lerpTransform) ?? { ...IDENTITY },
+    opacity: sample(keyed.opacity, p, lerp) ?? loop.baseOpacity,
   };
 }
