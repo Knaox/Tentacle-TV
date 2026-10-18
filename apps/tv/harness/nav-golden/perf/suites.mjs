@@ -1,10 +1,10 @@
 // Les suites du banc de fluidité (`perf.mjs`) : chacune démarre à froid sur
-// les données figées du banc, aperçus simulés par le kit local (`focus/apercus`,
+// les données figées du banc, aperçus simulés par le kit local (`perf/apercus-distincts`,
 // flux HLS du port 3089 — aucune extraction YouTube), joue ses gestes et rend
 // les relevés bruts de la sonde ; `analyze.mjs` en tire les chiffres.
 const FILMS = { name: "Library", params: { libraryId: "db4c1708cbb5dd1676284a40f2950aba", libraryName: "Films" } };
-const HOME_START = { fixtures: ["focus/home", "focus/apercus"], route: { name: "Home" }, keys: ["wait:1", "left", "right"] };
-const GRID_START = { fixtures: ["base/vigie-off", "ecrans/grande-bibliotheque", "focus/apercus"], route: FILMS, keys: ["wait:6"] };
+const HOME_START = { fixtures: ["focus/home", "perf/apercus-distincts"], route: { name: "Home" }, keys: ["wait:1", "left", "right"] };
+const GRID_START = { fixtures: ["base/vigie-off", "ecrans/grande-bibliotheque", "perf/apercus-distincts"], route: FILMS, keys: ["wait:6"] };
 const times = (key, n) => Array.from({ length: n }, () => key);
 
 /** Démarre et vérifie la clé focalisée (une approche ratée ne se mesure pas). */

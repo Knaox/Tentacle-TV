@@ -42,6 +42,10 @@ function latencies(r) {
   const [tf] = focus;
   const after = r.events.filter(([t]) => t >= tf);
   const fond = after.find(([, tag, type]) => IMAGE_LOADED.test(type) && inPreview(r.about[tag]));
+  // Le fond DEMANDÉ (source posée sur une image de la zone) : sans gestionnaire `onLoad`, aucun
+  // événement natif ne dit qu'il est chargé ; un fond en cache paraît à l'image suivante.
+  const fondSet = after.find(([, tag, type]) => type === "setSource" && /Image/.test(String(r.about[tag]?.view)) && inPreview(r.about[tag]));
+  const videoSet = after.find(([, tag, type]) => type === "setSource" && VIDEO_VIEW.test(String(r.about[tag]?.view)));
   // Une vidéo encore MONTÉE au relevé (un lecteur démonté qui rend sa dernière image n'est pas l'aperçu du focus).
   const video = after.find(([, tag, type]) => VIDEO_FIRST_FRAME.test(type) && !r.about[tag]?.gone && (VIDEO_VIEW.test(String(r.about[tag]?.view)) || inPreview(r.about[tag])));
   const seen = new Map();
@@ -52,32 +56,50 @@ function latencies(r) {
   }
   return {
     fondMs: fond ? fond[0] - tf : null,
+    fondSetMs: fondSet ? fondSet[0] - tf : null,
+    videoSetMs: videoSet ? videoSet[0] - tf : null,
     videoMs: video ? video[0] - tf : null,
     // Pour caler les motifs : chaque (événement, vue, composants) vu après le focus, au plus tôt.
     events: [...seen.entries()].slice(0, 25).map(([k, ms]) => `${ms} ms  ${k}`),
   };
 }
 
-/** Le plus grand déplacement d'une vue suivie, après que le focus s'est posé. */
+/**
+ * Les cadres des vues suivies après le focus : `settledAtMs`, l'instant où plus
+ * rien ne bouge (dernier écart > 0,5 pt d'une image à l'autre) ; puis, une fois
+ * le zoom posé (`SETTLE_MS`), le plus grand déplacement (`maxPt`) et le plus
+ * grand pas d'une image à l'autre (`maxStepPt`) — un défilement qui finit sa
+ * course avance de moins de 2 pt par image, un saut de mise en page d'un coup.
+ */
 function jumps(r, watched) {
   const trace = r.ui?.trace ?? [];
   const focus = lastFocus(r);
   if (!trace.length || !focus) return null;
-  const from = focus[0] + SETTLE_MS;
-  const rows = trace.filter((row) => row[0] >= from);
-  if (rows.length < 2) return null;
+  const tf = focus[0];
+  const all = trace.filter((row) => row[0] >= tf);
+  let settledAt = 0;
   let max = { pt: 0, key: null, at: null };
+  let step = { pt: 0, key: null, at: null };
+  const from = tf + SETTLE_MS;
+  const base = all.find((row) => row[0] >= from);
   watched.forEach((w, i) => {
-    const base = rows[0].slice(1 + i * 4, 5 + i * 4);
-    if (base[0] == null) return;
-    for (const row of rows) {
-      const cur = row.slice(1 + i * 4, 5 + i * 4);
-      if (cur[0] == null) continue;
-      const d = Math.max(Math.abs(cur[0] - base[0]), Math.abs(cur[1] - base[1]));
-      if (d > max.pt) max = { pt: Math.round(d * 10) / 10, key: w.key, at: row[0] - focus[0] };
+    const at = (row) => row.slice(1 + i * 4, 5 + i * 4);
+    for (let k = 1; k < all.length; k++) {
+      const prev = at(all[k - 1]);
+      const cur = at(all[k]);
+      if (cur[0] == null || prev[0] == null) continue;
+      const d = Math.max(Math.abs(cur[0] - prev[0]), Math.abs(cur[1] - prev[1]));
+      if (d > 0.5) settledAt = Math.max(settledAt, all[k][0] - tf);
+      if (all[k][0] >= from && d > step.pt) step = { pt: Math.round(d * 10) / 10, key: w.key, at: all[k][0] - tf };
+      if (base && all[k][0] >= from) {
+        const b = at(base);
+        if (b[0] == null) continue;
+        const m = Math.max(Math.abs(cur[0] - b[0]), Math.abs(cur[1] - b[1]));
+        if (m > max.pt) max = { pt: Math.round(m * 10) / 10, key: w.key, at: all[k][0] - tf };
+      }
     }
   });
-  return { maxPt: max.pt, jumped: max.pt > JUMP_PT, key: max.key, atMsAfterFocus: max.at, watched: watched.length, frames: rows.length };
+  return { settledAtMs: settledAt, maxPt: max.pt, maxStepPt: step.pt, jumped: step.pt > JUMP_PT, key: step.pt > JUMP_PT ? step.key : max.key, atMsAfterFocus: step.pt > JUMP_PT ? step.at : max.at, watched: watched.length };
 }
 
 function dwellSummary(d) {
@@ -87,6 +109,8 @@ function dwellSummary(d) {
     label: d.label,
     endFocus: d.endFocus,
     fondMs: lat.fondMs,
+    fondSetMs: lat.fondSetMs,
+    videoSetMs: lat.videoSetMs,
     videoMs: lat.videoMs,
     jumps: jumps(r, r.watched ?? []),
     ui: thread(r.ui),
