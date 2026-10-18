@@ -1,5 +1,5 @@
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { PREVIEW_ZONE_HEIGHT, PREVIEW_ZONE_TEXT } from "@tentacle-tv/tv-core";
+import { PREVIEW_ZONE_HEIGHT, PREVIEW_ZONE_MEDIA, PREVIEW_ZONE_MEDIA_LEFT, PREVIEW_ZONE_TEXT } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../cards/cardTypes";
 import type { HeroModel } from "../hero/heroTypes";
 import type { MetaItem } from "../hero/MetaLine";
@@ -33,8 +33,9 @@ export interface PreviewZoneDetails {
 export const ZONE = {
   /** La hauteur de la zone (tv-core `PREVIEW_ZONE_HEIGHT`, la même sur toutes les pages) ; tout s'y cale par le BAS. */
   height: PREVIEW_ZONE_HEIGHT,
-  /** Le fond et la vidéo, en haut à droite : ils débordent sous la zone, fondus vers le noir. */
-  media: { width: 1280, height: 720 },
+  /** Le fond et la vidéo, en haut à droite, TOUT ENTIERS dans la zone (tv-core `PREVIEW_ZONE_MEDIA`). */
+  media: PREVIEW_ZONE_MEDIA,
+  mediaLeft: PREVIEW_ZONE_MEDIA_LEFT,
   /** Le texte, aligné sur le contenu des pages (sa hauteur : tv-core `previewZoneTextLayout`). */
   left: TV_STAGE.contentLeft,
   textWidth: 860,

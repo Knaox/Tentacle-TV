@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from "react";
-import { StyleSheet, Text, View, type NativeSyntheticEvent, type TextLayoutEventData } from "react-native";
+import { StyleSheet, Text, View, type NativeSyntheticEvent, type StyleProp, type TextLayoutEventData, type TextStyle } from "react-native";
 import { fitPreviewZoneSynopsis, synopsisBudget } from "@tentacle-tv/tv-core";
 import { text, white } from "../theme/tokens";
 
@@ -13,7 +13,14 @@ import { text, white } from "../theme/tokens";
 
 export const ZONE_SYNOPSIS_WIDTH = 780;
 
-export const ZoneSynopsis = memo(function ZoneSynopsis({ synopsis, lines }: { synopsis: string; lines: number }) {
+export const ZoneSynopsis = memo(function ZoneSynopsis({ synopsis, lines, width = ZONE_SYNOPSIS_WIDTH, textStyle }: {
+  synopsis: string;
+  lines: number;
+  /** La largeur du texte (la mesure se fait à la même). */
+  width?: number;
+  /** La police, si ce n'est pas celle du corps (`text.body`). */
+  textStyle?: StyleProp<TextStyle>;
+}) {
   // Les longueurs des lignes posées, pour CE synopsis (un autre titre remesure).
   const [measured, setMeasured] = useState<{ synopsis: string; lengths: number[] } | null>(null);
   const onTextLayout = useCallback(
@@ -27,12 +34,12 @@ export const ZoneSynopsis = memo(function ZoneSynopsis({ synopsis, lines }: { sy
   );
   const fitted = measured?.synopsis === synopsis ? fitPreviewZoneSynopsis(synopsis, synopsisBudget(measured.lengths, lines)) : null;
   return (
-    <View style={styles.box}>
-      <Text style={[text.body, styles.synopsis, styles.measure]} onTextLayout={onTextLayout} accessible={false}>
+    <View style={{ width }}>
+      <Text style={[text.body, styles.synopsis, textStyle, { width }, styles.measure]} onTextLayout={onTextLayout} accessible={false}>
         {synopsis}
       </Text>
       {fitted ? (
-        <Text style={[text.body, styles.synopsis]} numberOfLines={lines}>
+        <Text style={[text.body, styles.synopsis, textStyle, { width }]} numberOfLines={lines}>
           {fitted}
         </Text>
       ) : null}
@@ -45,8 +52,7 @@ function sameLengths(a: readonly number[], b: readonly number[]): boolean {
 }
 
 const styles = StyleSheet.create({
-  box: { width: ZONE_SYNOPSIS_WIDTH },
-  synopsis: { width: ZONE_SYNOPSIS_WIDTH, color: white(0.86) },
+  synopsis: { color: white(0.86) },
   // Hors du flux, invisible : seule sa mise en page compte.
   measure: { position: "absolute", top: 0, left: 0, opacity: 0 },
 });
