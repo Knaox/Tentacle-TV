@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import type { IntroPoint } from "@tentacle-tv/shared/brandIntro";
 import type { IntroChannels, IntroLoopSamples } from "@tentacle-tv/tv-core/boot";
 import type { PartBox } from "./introArt";
@@ -152,12 +152,6 @@ export const IntroGroup = memo(function IntroGroup({
   );
 });
 
-/** Une opacité lue sur l'horloge, par la pose d'une piste (la vitre suit le corps). */
-export function useTrackOpacity(channels: IntroChannels, clock: IntroClock, step: number) {
-  return useAnimatedStyle(() => ({ opacity: clock.landed.value ? 1 : sampleAt(channels.opacity, step, clock.scene.value) }));
-}
-
-export type { SharedValue };
 
 const styles = StyleSheet.create({
   part: { position: "absolute" },

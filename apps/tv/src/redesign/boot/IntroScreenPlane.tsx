@@ -5,7 +5,7 @@ import LinearGradient from "react-native-linear-gradient";
 import type { IntroGeometry } from "@tentacle-tv/shared/brandIntro";
 import type { IntroSamples } from "@tentacle-tv/tv-core/boot";
 import type { PartBoxes, TentacleArt } from "./introArt";
-import { CameraLayer, IntroGroup, IntroPart, useTrackOpacity, type StageFrame } from "./IntroPart";
+import { CameraLayer, IntroGroup, IntroPart, type StageFrame } from "./IntroPart";
 import { FLASH_STOPS, SoftDiscSvg } from "./IntroSvgs";
 import { sampleAt, type IntroClock } from "./introWorklets";
 
@@ -65,9 +65,12 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   const counterStyle = useAnimatedStyle(() => ({
     transform: [{ scale: clock.landed.value ? 1 : 1 / Math.max(IRIS_MIN, sampleAt(samples.reveal, step, clock.scene.value)) }],
   }));
-  const bodyOpacity = useTrackOpacity(samples.parts.body, clock, step);
-  // La vitre s'efface une fois le cercle au bout : il recouvre tout l'écran.
-  const glassStyle = useAnimatedStyle(() => ({ opacity: sampleAt(samples.reveal, step, clock.scene.value) >= 1 ? 0 : 1 }));
+  // La vitre paraît avec le corps, et s'efface une fois le cercle au bout : il recouvre tout l'écran.
+  const bodyOpacity = samples.parts.body.opacity;
+  const glassStyle = useAnimatedStyle(() => {
+    const t = clock.scene.value;
+    return { opacity: sampleAt(samples.reveal, step, t) >= 1 ? 0 : sampleAt(bodyOpacity, step, t) };
+  });
   const glass = art.LOGO_GRADIENTS.gT;
 
   return (
@@ -75,7 +78,7 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
       <IntroGroup frame={frame} pivot={{ x: 120, y: 132 }} channels={samples.parts.body} clock={clock} step={step} opacity={false}>
         <View style={[styles.clip, clip, landed ? styles.open : { borderRadius: inner.rx * finalZoom }]}>
           {landed ? null : (
-            <Animated.View style={[StyleSheet.absoluteFill, bodyOpacity, glassStyle]}>
+            <Animated.View style={[StyleSheet.absoluteFill, glassStyle]}>
               <LinearGradient
                 style={StyleSheet.absoluteFill}
                 colors={glass.stops.map((stop) => stop.color)}
