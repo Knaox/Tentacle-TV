@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { STAR_PATH, STAR_VIEWBOX } from "@tentacle-tv/shared";
@@ -74,38 +74,64 @@ function Item({ item, size }: { item: MetaItem; size: number }) {
 
 /**
  * Ce qui tient sur la ligne : la largeur de la ligne et le bord droit de chaque
- * élément, mesurés ; un élément qui dépasse est caché (avec son point). Une
- * mesure par mise en page, jamais au focus.
+ * élément, mesurés ; un élément qui dépasse est caché (avec son point). La
+ * mesure se refait à chaque mise en page — dans la zone d'aperçu, à chaque
+ * changement de titre : les bords mesurés s'accumulent et ne font qu'UN rendu
+ * par image (jamais un par élément). Un élément pas encore mesuré reste caché
+ * (la ligne connue) : rien ne s'allume une image à droite avant d'être caché.
  */
 function useFit(on: boolean) {
   const [rowWidth, setRowWidth] = useState<number | null>(null);
   const [rights, setRights] = useState<ReadonlyMap<number, number>>(() => new Map());
+  const pending = useRef(new Map<number, number>());
+  const frame = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+  }, []);
+  const flush = useCallback(() => {
+    frame.current = null;
+    const measured = pending.current;
+    pending.current = new Map();
+    setRights((before) => {
+      let changed = false;
+      const next = new Map(before);
+      measured.forEach((right, index) => {
+        if (next.get(index) === right) return;
+        next.set(index, right);
+        changed = true;
+      });
+      return changed ? next : before;
+    });
+  }, []);
   const handlers = useRef(new Map<number, (event: LayoutChangeEvent) => void>());
   const onRowLayout = useCallback((event: LayoutChangeEvent) => {
     const width = Math.round(event.nativeEvent.layout.width);
     setRowWidth((before) => (before === width ? before : width));
   }, []);
-  const onCellLayout = useCallback((index: number) => {
-    const known = handlers.current.get(index);
-    if (known) return known;
-    const handler = (event: LayoutChangeEvent) => {
-      const { x, width } = event.nativeEvent.layout;
-      const right = Math.ceil(x + width);
-      setRights((before) => {
-        if (before.get(index) === right) return before;
-        const next = new Map(before);
-        next.set(index, right);
-        return next;
-      });
-    };
-    handlers.current.set(index, handler);
-    return handler;
-  }, []);
+  const onCellLayout = useCallback(
+    (index: number) => {
+      const known = handlers.current.get(index);
+      if (known) return known;
+      const handler = (event: LayoutChangeEvent) => {
+        const { x, width } = event.nativeEvent.layout;
+        pending.current.set(index, Math.ceil(x + width));
+        if (frame.current === null) frame.current = requestAnimationFrame(flush);
+      };
+      handlers.current.set(index, handler);
+      return handler;
+    },
+    [flush],
+  );
   if (!on) return null;
   return {
     onRowLayout,
     onCellLayout,
-    hidden: (index: number) => rowWidth !== null && (rights.get(index) ?? 0) > rowWidth,
+    hidden: (index: number) => {
+      if (rowWidth === null) return false;
+      const right = rights.get(index);
+      return right === undefined || right > rowWidth;
+    },
   };
 }
 
