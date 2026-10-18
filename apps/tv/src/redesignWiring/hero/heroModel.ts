@@ -7,7 +7,7 @@ import type { MetaItem } from "../../redesign/hero/MetaLine";
 import { backdropUriOf, blurHashOf, logoUriOf, paletteOfItem, progressOf } from "../cards/cardArtwork";
 
 /**
- * Le héros d'une œuvre, tel que `HeroBanner` l'attend : son art (celui de la
+ * Le héros d'une œuvre, tel que la zone d'aperçu l'attend (`HeroZone`) : son art (celui de la
  * SÉRIE pour un épisode — logo, fond, genres), la ligne de métadonnées, la
  * reprise, et les trois gestes (Lecture ou Reprendre, Plus d'infos, Ma liste).
  */

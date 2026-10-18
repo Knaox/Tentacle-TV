@@ -2,7 +2,7 @@
  * Les cartes des téléviseurs : la qualité des titres, lue à la demande au
  * focus ; l'appui maintenu et le grand panneau qu'il ouvre — son entrée, ses
  * guides, ses pictos, l'échelle de la note — la garde anti-clic fantôme, et
- * l'aperçu de bande-annonce au focus (ses temps, sa grande carte).
+ * l'aperçu de bande-annonce au focus (ses temps, sa zone fixe en haut de l'écran).
  */
 export * from "./cardHold";
 export * from "./cardPress";
