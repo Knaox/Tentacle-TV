@@ -89,6 +89,16 @@ describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
     expect(settle(back).correct).toBeNull();
   });
 
+  it("revue 21 : posée en colonne 3, HAUT vers les filtres, promenade de pastille en pastille, puis BAS en colonne 1 — gardée telle quelle, aucun saut", () => {
+    let state = settle(walk(GRID_COLUMN_HOLD_START, [2])).state;
+    state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 1_000); // pill:status, page déjà en haut
+    state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 1_800); // pill:years
+    state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 2_600); // pill:platforms
+    state = gridColumnHoldFocus(state, 0, COLUMNS, COUNT, 3_000); // BAS : l'affiche au plus proche
+    expect(state.column).toBe(0);
+    expect(settle(state).correct).toBeNull();
+  });
+
   it("un index hors du catalogue vaut hors de la grille", () => {
     expect(walk(GRID_COLUMN_HOLD_START, [2, COUNT]).leftAt).not.toBeNull();
   });
