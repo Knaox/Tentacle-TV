@@ -217,6 +217,9 @@ export const suites = {
       await take(`${page}, deux pas DROITE rapprochés`, ["right", "right"], { watch: prefix });
       await take(`${page}, rafale DROITE ×6`, times("right", 6), { watch: prefix });
       await take(`${page}, Retour (la rangée revient au début)`, ["menu"], { watch: prefix, holdMs: 2500 });
+      await take(`${page}, rafale DROITE ×10`, times("right", 10), { watch: prefix });
+      await take(`${page}, Retour`, ["menu"], { watch: prefix, holdMs: 2500 });
+      await take(`${page}, Retour EN MOUVEMENT (≈ 150 ms après un pas)`, ["right", "right", "right", "menu"], { watch: prefix, gapMs: 0, holdMs: 2500 });
     };
     if (h.only !== "pour-vous") await row("accueil", HOME_START, ["down"]);
     // Pour vous : la pastille du filtre de plateformes est sous le héros ; la 1re étagère, un BAS plus bas.
