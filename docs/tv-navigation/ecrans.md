@@ -308,10 +308,10 @@ résultat.
   (sous `GRID_SLOW_SPEED`, si la ligne du focus connu est à l'écran), sinon la
   grille posée — jamais en plein mouvement, sans dépendre de la fin du
   maintien. HAUT tenu jusqu'en haut :
-  tvOS traverse les filtres et revient, la colonne tient (retour en moins de
-  1,5 s, sans pas de côté) ; resté plus longtemps dans les filtres, ou passé
-  d'un filtre à l'autre (GAUCHE / DROITE), BAS est une nouvelle entrée, au
-  plus proche (tv-core
+  tvOS traverse les filtres (il peut y rester tant que la flèche est tenue)
+  et revient au lâcher, la colonne tient ; une entrée VOULUE depuis les
+  filtres — après un pas GAUCHE / DROITE, ou un appui BAS après plus de 1,5 s
+  dehors — est au plus proche ; HAUT puis BAS aussitôt rend la colonne (tv-core
   `focus/gridColumnHold`, `platform/tvos/focus/gridColumnHold.ts`, port
   `gridSettlePort`).
 
