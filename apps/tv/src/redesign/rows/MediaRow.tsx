@@ -5,7 +5,6 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { ROW_STAGING, rowHeadCards, trailerPreviewWarmWindow } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
 import { MediaCard } from "../cards/MediaCard";
-import { MORPH_OVERFLOW, MorphCard } from "../cards/MorphCard";
 import type { CardModel } from "../cards/cardTypes";
 import { useCardPreviewWarm } from "../cards/trailerPreviewPort";
 import { useForcedFocusKey } from "../focus/focusPreview";
@@ -38,7 +37,7 @@ import { useStagedRow } from "./rowStage";
  * Ses vignettes et ses affiches demandent l'aperçu de leur bande-annonce au
  * focus (`MediaCard` `previewable`) ; il se joue dans la zone fixe en haut de
  * l'écran, jamais dans la rangée : rien n'y grandit, rien n'y défile de plus
- * que le focus. Une carte qui se redresse (`morph`) n'en demande pas.
+ * que le focus.
  */
 
 /** Le vide sous les cartes d'une rangée (sa marge et le bas de sa piste) : rien ne s'y voit au repos. */
@@ -48,8 +47,7 @@ export interface MediaRowProps {
   rowKey: string;
   title: string;
   cards: CardModel[];
-  /** `morph` : 16:9 au repos, affiche 2:3 au focus (`MorphCard`). */
-  variant: "landscape" | "poster" | "morph";
+  variant: "landscape" | "poster";
   cardWidth?: number;
   /** Retrait gauche du titre et de la première carte (la colonne de contenu). */
   inset: number;
@@ -83,10 +81,10 @@ export const MediaRow = memo(function MediaRow({
   const track = useRef<ScrollView>(null);
   // La largeur des cartes de la variante : celle de `MediaCard`, à la taille réglée.
   const metrics = useCardMetrics();
-  const width = cardWidth ?? (variant === "morph" ? metrics.landscape.width : metrics[variant].width);
+  const width = cardWidth ?? metrics[variant].width;
   const rewind = useRowRewindPort();
   // Mode Lite : la tête ajustée à ce que la piste montre (`rowHeadCards`).
-  const head = mountProfile().fitRowHeads && variant !== "morph" ? rowHeadCards(1920 - inset, width + TV_STAGE.row.gap) : ROW_STAGING.headCards;
+  const head = mountProfile().fitRowHeads ? rowHeadCards(1920 - inset, width + TV_STAGE.row.gap) : ROW_STAGING.headCards;
   const { shown, demand, retire } = useStagedRow(stageRank, cards.length, head);
   // La carte qui a le focus dans la rangée, ou null : jamais retirée sous le focus.
   const focusedIndex = useRef<number | null>(null);
@@ -125,13 +123,13 @@ export const MediaRow = memo(function MediaRow({
       // quitte la première carte — la rangée défile ; descendre de rangée en
       // rangée ne monte aucune queue.
       if (mountProfile().rowTails === "eager" || index > 0) demand();
-      if (warm && variant !== "morph") {
+      if (warm) {
         const [start, end] = trailerPreviewWarmWindow(index, latestCards.current.length);
         warm(latestCards.current.slice(start, end));
       }
       onFocusCard?.(card);
     },
-    [onFocusCard, onItemFocusChange, demand, warm, variant],
+    [onFocusCard, onItemFocusChange, demand, warm],
   );
 
   // Rien tant que l'échelonnement ne lui a rien libéré : jamais une piste
@@ -148,11 +146,7 @@ export const MediaRow = memo(function MediaRow({
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.track}
-        contentContainerStyle={[
-          styles.content,
-          { paddingLeft: inset, paddingRight: TV_STAGE.safe.x },
-          variant === "morph" && styles.morphContent,
-        ]}
+        contentContainerStyle={[styles.content, { paddingLeft: inset, paddingRight: TV_STAGE.safe.x }]}
       >
         <CullingTrack gap={TV_STAGE.row.gap} recede={nativeRecede}>
           {cards.slice(0, shown).map((card, index) => (
@@ -205,8 +199,9 @@ const RowCard = memo(function RowCard({
   const onPress = useMemo(() => (onPressCard ? () => onPressCard(card) : undefined), [onPressCard, card]);
   const onLongPress = useMemo(() => (onLongPressCard ? () => onLongPressCard(card) : undefined), [onLongPressCard, card]);
   const onFocusChange = useCallback((focused: boolean) => onItemFocus(index, focused, card), [onItemFocus, index, card]);
-  const common = { card, focusKey: `${rowKey}:${index}`, place, onPress, onLongPress, onFocusChange };
-  return variant === "morph" ? <MorphCard {...common} /> : <MediaCard {...common} variant={variant} width={width} previewable />;
+  return (
+    <MediaCard card={card} focusKey={`${rowKey}:${index}`} place={place} onPress={onPress} onLongPress={onLongPress} onFocusChange={onFocusChange} variant={variant} width={width} previewable />
+  );
 });
 
 const styles = StyleSheet.create({
@@ -215,6 +210,4 @@ const styles = StyleSheet.create({
   // Le débord laisse la place à l'agrandissement et à l'ombre des cartes.
   track: { overflow: "visible" },
   content: { gap: TV_STAGE.row.gap, paddingTop: 12, paddingBottom: 24 },
-  // La place que l'affiche d'une carte qui se redresse prend au-dessus.
-  morphContent: { paddingTop: MORPH_OVERFLOW, marginTop: -MORPH_OVERFLOW + 12 },
 });

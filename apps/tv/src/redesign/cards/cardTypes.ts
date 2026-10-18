@@ -34,7 +34,7 @@ export interface CardModel {
   badge?: string;
   /** La phrase dite sous la carte quand elle a le focus — la raison d'une
    *  recommandation (« Parce que vous avez aimé … »). Rendue sous la légende
-   *  d'une affiche (`MediaCard`, `CardFocusNote`) et par `MorphCard`. */
+   *  d'une affiche (`MediaCard`, `CardFocusNote`). */
   focusNote?: string;
   /** La lumière de l'œuvre, pour le fond quand la carte a le focus. */
   palette?: ArtworkPalette;

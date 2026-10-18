@@ -16,8 +16,8 @@ import { byName } from "../data/playerModels";
 import type { BenchScene } from "./types";
 
 /**
- * Les briques seules, sur les vraies images : cartes 16:9, affiches, cartes
- * qui se redressent, grille, boutons, pastilles et verre — chacune figée au
+ * Les briques seules, sur les vraies images : cartes 16:9, affiches,
+ * grille, boutons, pastilles et verre — chacune figée au
  * focus tour à tour. C'est la planche « Briques » de la refonte. Les cartes
  * s'ouvrent par l'appui maintenu, comme dans l'app : leur focus le dit.
  */
@@ -37,8 +37,6 @@ function Cards({ data }: { data: BenchData }) {
       <ScrollView contentContainerStyle={styles.page}>
         <MediaRow rowKey="land" title={t("common:resumeWatching")} variant="landscape" inset={96} onLongPressCard={HOLD}
           cards={data.list("resume", 6).map((it) => cardOf(data, it, resumeSubtitle(it)))} />
-        <MediaRow rowKey="morph" title={t("common:latestAdditionsShort")} variant="morph" inset={96}
-          cards={movies.map((it) => cardOf(data, it, yearOf(it)))} />
         <MediaRow rowKey="ep" title={t("common:nextEpisodes")} variant="landscape" inset={96} onLongPressCard={HOLD}
           cards={data.list("nextUp", 6).map((it) => cardOf(data, it, episodeLabel(it, true)))} />
       </ScrollView>
@@ -68,20 +66,18 @@ function logoCard(data: BenchData, item: MediaItem, rated: boolean, progress?: n
 }
 
 /** Deux rangées — avec la note, puis sans — de vignettes 16:9 (les deux
- *  premières avec la barre de « Reprendre ») ou de cartes qui se redressent. */
-function Logos({ data, morph }: { data: BenchData; morph: boolean }) {
+ *  premières avec la barre de « Reprendre »). */
+function Logos({ data }: { data: BenchData }) {
   const items = LOGO_TITLES.map((name) => byName(data, name)).filter((it): it is MediaItem => it !== undefined);
   if (items.length === 0) return null;
-  const cards = (rated: boolean) => items.map((it, i) => logoCard(data, it, rated, !morph && i < 2 ? 0.35 : undefined));
-  const key = morph ? "logoMorph" : "logo";
-  const variant = morph ? "morph" : "landscape";
+  const cards = (rated: boolean) => items.map((it, i) => logoCard(data, it, rated, i < 2 ? 0.35 : undefined));
   return (
     <View style={styles.fill}>
       <AmbientBackdrop palette={cardOf(data, items[0]).palette!} />
       <ScrollView contentContainerStyle={styles.page}>
-        <MediaRow rowKey={`${key}Note`} title={morph ? "Carte qui se redresse, avec note" : "Logo et note"} variant={variant} inset={96}
+        <MediaRow rowKey="logoNote" title="Logo et note" variant="landscape" inset={96}
           onLongPressCard={HOLD} cards={cards(true)} />
-        <MediaRow rowKey={`${key}Bare`} title={morph ? "Carte qui se redresse, sans note" : "Logo sans note"} variant={variant} inset={96}
+        <MediaRow rowKey="logoBare" title="Logo sans note" variant="landscape" inset={96}
           onLongPressCard={HOLD} cards={cards(false)} />
       </ScrollView>
     </View>
@@ -154,10 +150,8 @@ function Controls({ data }: { data: BenchData }) {
 }
 
 export const BRICK_SCENES: BenchScene[] = [
-  { id: "briques/cartes", group: "Briques", label: "Cartes 16:9 et redressées", focusKeys: ["land:1", "morph:1", "morph:3", "ep:0"], settleMs: 1400, render: (data) => <Cards data={data} /> },
-  { id: "briques/logos", group: "Briques", label: "Logo d'une vignette, avec ou sans note (exemple)", focusKeys: ["logoNote:0", "logoBare:1"], settleMs: 1400, render: (data) => <Logos data={data} morph={false} /> },
-  // Le focus sur la DERNIÈRE carte de l'autre rangée : les logos restent au repos (le focus montre l'affiche).
-  { id: "briques/logos-redresse", group: "Briques", label: "Logo d'une carte qui se redresse, avec ou sans note (exemple)", focusKeys: ["logoMorphBare:3", "logoMorphNote:3"], settleMs: 1400, render: (data) => <Logos data={data} morph /> },
+  { id: "briques/cartes", group: "Briques", label: "Cartes 16:9", focusKeys: ["land:1", "ep:0"], settleMs: 1400, render: (data) => <Cards data={data} /> },
+  { id: "briques/logos", group: "Briques", label: "Logo d'une vignette, avec ou sans note (exemple)", focusKeys: ["logoNote:0", "logoBare:1"], settleMs: 1400, render: (data) => <Logos data={data} /> },
   { id: "briques/affiches", group: "Briques", label: "Affiches, une raison de reco (exemple)", focusKeys: ["poster:2", "anime:0"], settleMs: 1400, render: (data) => <Posters data={data} /> },
   { id: "briques/grille", group: "Briques", label: "Grille d'affiches (6 colonnes)", focusKeys: ["grille:1", "grille:8"], settleMs: 1400, render: (data) => <Grid data={data} /> },
   {
