@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { PREVIEW_ZONE_FADE } from "@tentacle-tv/tv-core";
+import { PREVIEW_ZONE_FADE, PREVIEW_ZONE_TEXT, previewZoneTextLayout } from "@tentacle-tv/tv-core";
 import { MetaLine } from "../hero/MetaLine";
 import { TitleArt } from "../hero/TitleArt";
 import { Icon } from "../icons/Icon";
@@ -23,21 +23,30 @@ import { ZONE, type PreviewZoneModel } from "./zoneModel";
  * une méta sur deux lignes poussait le surtitre hors de l'écran).
  */
 
-/** Le titre écrit (faute de logo) : deux lignes au plus, sans rétrécir. */
+/** Le titre écrit (faute de logo) : deux lignes au plus, sans rétrécir ; borné par la hauteur du logo. */
 function titleSize(title: string, compact: boolean): number {
   const size = title.length <= 14 ? 68 : title.length <= 24 ? 60 : 52;
   return compact ? size - 8 : size;
 }
 
-export const ZoneText = memo(function ZoneText({ model, heroRoom }: { model: PreviewZoneModel; heroRoom: boolean }) {
+export const ZoneText = memo(function ZoneText({ model, heroRoom, height = ZONE.height }: {
+  model: PreviewZoneModel;
+  heroRoom: boolean;
+  /** La hauteur de la zone de la page (`usePreviewZoneHeight`) : le texte s'y resserre (tv-core `previewZoneTextLayout`). */
+  height?: number;
+}) {
   const { shown, progress } = useSwap(model.key, model, PREVIEW_ZONE_FADE.textMs, PREVIEW_ZONE_FADE.textMs);
   const fade = useAnimatedStyle(() => ({ opacity: progress.value }));
-  const withReason = Boolean(shown.reason || shown.kicker);
-  const compact = heroRoom || withReason;
-  const bottom = heroRoom ? ZONE.bottom + ZONE.heroActions + ZONE.heroActionsGap : ZONE.bottom;
-  const synopsisLines = heroRoom ? (shown.reason ? 1 : 2) : withReason ? 2 : 3;
+  const compact = heroRoom || Boolean(shown.reason || shown.kicker);
+  const layout = previewZoneTextLayout({
+    height,
+    hero: heroRoom,
+    kicker: Boolean(shown.kicker),
+    reason: Boolean(shown.reason),
+    synopsis: Boolean(shown.synopsis),
+  });
   return (
-    <Animated.View style={[styles.block, { bottom }, fade]}>
+    <Animated.View style={[styles.block, { bottom: layout.bottom }, fade]}>
       <View style={styles.stack}>
       {shown.kicker || shown.reason ? (
         <View style={styles.reason}>
@@ -54,12 +63,12 @@ export const ZoneText = memo(function ZoneText({ model, heroRoom }: { model: Pre
         title={shown.title}
         logoUri={shown.logoUri}
         maxWidth={shown.logoUri ? 560 : ZONE.textWidth}
-        maxHeight={heroRoom ? 76 : compact ? 104 : 120}
-        fontSize={titleSize(shown.title, compact)}
+        maxHeight={layout.logoMaxHeight}
+        fontSize={Math.min(titleSize(shown.title, compact), layout.logoMaxHeight / 2)}
       />
       {shown.meta.length > 0 ? <MetaLine items={shown.meta} singleLine /> : null}
-      {shown.synopsis ? (
-        <Text style={[text.body, styles.synopsis]} numberOfLines={synopsisLines}>{shown.synopsis}</Text>
+      {shown.synopsis && layout.synopsisLines > 0 ? (
+        <Text style={[text.body, styles.synopsis]} numberOfLines={layout.synopsisLines}>{shown.synopsis}</Text>
       ) : null}
       </View>
     </Animated.View>
@@ -68,8 +77,8 @@ export const ZoneText = memo(function ZoneText({ model, heroRoom }: { model: Pre
 
 const styles = StyleSheet.create({
   // De la marge sûre du haut jusqu'à `bottom` : calé en bas, rien ne dépasse en haut.
-  block: { position: "absolute", left: ZONE.left, top: ZONE.top, width: ZONE.textWidth, justifyContent: "flex-end", overflow: "hidden" },
-  stack: { gap: 12 },
+  block: { position: "absolute", left: ZONE.left, top: PREVIEW_ZONE_TEXT.safeTop, width: ZONE.textWidth, justifyContent: "flex-end", overflow: "hidden" },
+  stack: { gap: PREVIEW_ZONE_TEXT.gap },
   reason: { gap: 8 },
   reasonLine: { flexDirection: "row", alignItems: "center", gap: 10 },
   reasonText: { ...fonts.semibold, fontSize: 25, color: white(0.92), flexShrink: 1 },

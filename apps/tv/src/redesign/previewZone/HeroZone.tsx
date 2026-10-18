@@ -36,7 +36,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: ZONE.left,
     right: ZONE.right,
-    top: ZONE.height - ZONE.bottom - ZONE.heroActions,
+    // Calée sur le BAS de la zone : elle suit sa hauteur (celle de la page).
+    bottom: ZONE.bottom,
     height: ZONE.heroActions,
   },
 });
