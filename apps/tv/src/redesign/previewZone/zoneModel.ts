@@ -45,6 +45,14 @@ export const ZONE = {
   right: TV_STAGE.safe.x,
 } as const;
 
+/**
+ * La pastille d'un INDICE posé sur la vidéo de la zone (Lecture/Pause,
+ * « Maintenir OK ») : un graphite translucide, à la Apple — lisible sur une
+ * image claire, sans teinte de marque (le violet dans une surface posée sur la
+ * vidéo fait « bon marché »).
+ */
+export const ZONE_HINT_PILL = { backgroundColor: "rgba(12, 12, 14, 0.62)", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 7 } as const;
+
 /** Une carte, tout de suite : ce qu'elle porte déjà ; ses détails s'y ajoutent quand ils arrivent. */
 export function zoneModelOfCard(card: CardModel, details: PreviewZoneDetails | null): PreviewZoneModel {
   return {

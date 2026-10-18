@@ -5,6 +5,7 @@ import { previewRemoteHintIds } from "@tentacle-tv/tv-core";
 import { Icon } from "../icons/Icon";
 import { colors, fonts } from "../theme/tokens";
 import { useRemoteHints } from "../remote/remoteHints";
+import { ZONE_HINT_PILL } from "./zoneModel";
 
 /**
  * « Lecture/Pause : pause · maintenir : couper le son » — en bas à droite de
@@ -23,13 +24,14 @@ export const ZoneRemoteHint = memo(function ZoneRemoteHint({ paused, muted }: { 
   const [press, hold] = previewRemoteHintIds({ paused, muted });
   return (
     <View style={styles.hint}>
-      <Icon name={paused ? "play" : "pause"} size={22} color={colors.textTertiary} strokeWidth={1.8} />
+      <Icon name={paused ? "play" : "pause"} size={22} color={colors.textSecondary} strokeWidth={1.8} />
       <Text style={styles.text} numberOfLines={1}>{`${t(hints[press])} · ${t(hints[hold])}`}</Text>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  hint: { flexDirection: "row", alignItems: "center", gap: 8 },
-  text: { ...fonts.medium, flexShrink: 1, fontSize: 22, lineHeight: 26, color: colors.textTertiary },
+  // Sur la vidéo : sa pastille graphite (lisible sur une image claire).
+  hint: { ...ZONE_HINT_PILL, flexDirection: "row", alignItems: "center", gap: 8 },
+  text: { ...fonts.medium, flexShrink: 1, fontSize: 22, lineHeight: 26, color: colors.textSecondary },
 });
