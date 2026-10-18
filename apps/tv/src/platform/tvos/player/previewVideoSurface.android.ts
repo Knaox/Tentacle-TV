@@ -2,8 +2,8 @@ import { ViewType, type ReactVideoProps } from "react-native-video";
 
 /**
  * La surface de la vidéo d'aperçu, sur Android TV : une `TextureView` (pas la
- * `SurfaceView` du lecteur), seule à suivre l'opacité de la grande carte qui
- * la porte. Jamais focalisable — la télécommande reste à la carte. Ne sert
+ * `SurfaceView` du lecteur), seule à suivre l'opacité de la zone d'aperçu qui
+ * la porte. Jamais focalisable — la télécommande reste aux cartes. Ne sert
  * plus qu'au repli d'un binaire sans lecteur d'aperçu natif
  * (`previewVideoElement.android.tsx`).
  *
