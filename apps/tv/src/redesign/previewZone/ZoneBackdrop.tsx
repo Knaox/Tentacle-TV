@@ -1,4 +1,4 @@
-import { memo, useCallback, useLayoutEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Image, StyleSheet } from "react-native";
 import Animated, { runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { PREVIEW_ZONE_FADE, previewZoneBackdropLayer } from "@tentacle-tv/tv-core";
@@ -40,6 +40,23 @@ export const ZoneBackdrop = memo(function ZoneBackdrop({ uri }: { uri: string | 
   const latest = useRef(uri);
   latest.current = uri;
   const busy = useRef(false);
+  // Les images suivantes demandées (`nextFrame`) : annulées au démontage (une page couverte).
+  const frames = useRef(new Set<number>());
+  const alive = useRef(true);
+  const nextFrame = useCallback((run: () => void) => {
+    // Un fondu fini APRÈS le démontage (son rappel du fil d'interface) ne relance rien.
+    if (!alive.current) return;
+    const id = requestAnimationFrame(() => {
+      frames.current.delete(id);
+      run();
+    });
+    frames.current.add(id);
+  }, []);
+  useEffect(() => () => {
+    alive.current = false;
+    frames.current.forEach(cancelAnimationFrame);
+    frames.current.clear();
+  }, []);
   // L'image chargée de chaque calque.
   const loaded = useRef<[string | null, string | null]>([null, null]);
 
@@ -54,17 +71,17 @@ export const ZoneBackdrop = memo(function ZoneBackdrop({ uri }: { uri: string | 
     (target === 0 ? opacity0 : opacity1).value = 0;
     setState({ ...current, uris: target === 0 ? [next, current.uris[1]] : [current.uris[0], next], incoming: target });
     // Déjà chargée sur ce calque : aucun `onLoad` ne viendra, elle entre tout de suite.
-    if (loaded.current[target] === next) requestAnimationFrame(() => fadeIn.current(target));
-  }, [opacity0, opacity1]);
+    if (loaded.current[target] === next) nextFrame(() => fadeIn.current(target));
+  }, [opacity0, opacity1, nextFrame]);
 
   const settle = useCallback(
     (layer: Layer) => {
       busy.current = false;
       setState((s) => ({ ...s, front: layer, incoming: null }));
       // Le dernier fond demandé pendant le fondu passe à son tour.
-      requestAnimationFrame(begin);
+      nextFrame(begin);
     },
-    [begin],
+    [begin, nextFrame],
   );
 
   useLayoutEffect(begin, [uri, begin]);
@@ -92,9 +109,9 @@ export const ZoneBackdrop = memo(function ZoneBackdrop({ uri }: { uri: string | 
       busy.current = false;
       setState((s) => ({ ...s, incoming: null }));
       // Le dernier fond demandé entre-temps passe à son tour.
-      requestAnimationFrame(begin);
+      nextFrame(begin);
     },
-    [begin],
+    [begin, nextFrame],
   );
 
   // Le calque qui entre (ou qui se voit) au-dessus.
