@@ -96,3 +96,8 @@ test("mémoire : le tas JS jusqu'à +15 % de dev est vert, au-delà rouge, sans 
   assert.equal(verdicts("memoire", summarize("memoire", raw(220)), dev)[0].ok, false);
   assert.equal(verdicts("memoire", summarize("memoire", raw(172)))[0].ok, false);
 });
+
+test("une pastille ou un raccourci focalisé n'attend ni fond ni vidéo", () => {
+  const [pill] = summarize("latence", { dwells: [{ label: "accueil, filtre", keys: ["down"], endFocus: "filter:remove", report: report({ focus: [[T0, 1]] }) }] });
+  assert.deepEqual(verdicts("latence", [pill]).filter((v) => !v.ok), []);
+});
