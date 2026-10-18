@@ -1,7 +1,7 @@
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import { PREVIEW_ZONE_FADE, PREVIEW_ZONE_TEXT, previewZoneTextLayout, previewZoneUsesLogo } from "@tentacle-tv/tv-core";
+import { PREVIEW_ZONE_FADE, PREVIEW_ZONE_PLAYBACK, PREVIEW_ZONE_TEXT, previewZoneTextLayout, previewZoneUsesLogo } from "@tentacle-tv/tv-core";
 import { MetaLine } from "../hero/MetaLine";
 import { TitleArt } from "../hero/TitleArt";
 import { Icon } from "../icons/Icon";
@@ -28,8 +28,10 @@ import { ZoneWatchText, type ZoneHintState } from "./ZoneWatchText";
  * (`ZoneSynopsis`), le surtitre et la raison se resserrent plutôt que d'être
  * coupés. PENDANT LA BANDE-ANNONCE (`watch` : 0 au repos, 1 quand la vidéo
  * se montre — tv-core `previewZoneWatching`), le texte du repos passe en
- * fondu croisé à la version allégée mais remplie (`ZoneWatchText`), posée en
- * même temps, dans la colonne à gauche de la vidéo : des opacités seulement.
+ * fondu croisé à la version allégée mais remplie (`ZoneWatchText`), dans la
+ * colonne à gauche de la vidéo : des opacités seulement. Celle-ci n'est
+ * montée que pour la vidéo (`watching`) et le temps de son retour : une
+ * rafale de flèches, qui ne joue aucune vidéo, ne la crée jamais.
  */
 
 /** Le titre écrit (faute de logo) : deux lignes au plus, sans rétrécir ; borné par la hauteur du logo. */
@@ -38,16 +40,19 @@ function titleSize(title: string, compact: boolean): number {
   return compact ? size - 8 : size;
 }
 
-export const ZoneText = memo(function ZoneText({ model, heroRoom, watch, hint }: {
+export const ZoneText = memo(function ZoneText({ model, heroRoom, watching, watch, hint }: {
   model: PreviewZoneModel;
   heroRoom: boolean;
+  /** La vidéo se montre : la version allégée est montée (`watch` en porte le fondu). */
+  watching: boolean;
   watch: SharedValue<number>;
   hint: ZoneHintState | null;
 }) {
+  const watchMounted = useMountedWhile(watching, PREVIEW_ZONE_PLAYBACK.returnMs);
   const { shown, progress } = useSwap(model.key, model, PREVIEW_ZONE_FADE.textMs, PREVIEW_ZONE_FADE.textMs);
   // Le repos et la version allégée, en fondu croisé ; un titre neuf les échange tous deux.
   const rest = useAnimatedStyle(() => ({ opacity: progress.value * (1 - watch.value) }));
-  const watching = useAnimatedStyle(() => ({ opacity: progress.value * watch.value }));
+  const watchingFade = useAnimatedStyle(() => ({ opacity: progress.value * watch.value }));
   const compact = heroRoom || Boolean(shown.reason || shown.kicker);
   const layout = previewZoneTextLayout({
     hero: heroRoom,
@@ -89,10 +94,22 @@ export const ZoneText = memo(function ZoneText({ model, heroRoom, watch, hint }:
           ) : null}
         </View>
       </Animated.View>
-      <ZoneWatchText shown={shown} heroRoom={heroRoom} hint={hint} style={watching} />
+      {watchMounted ? <ZoneWatchText shown={shown} heroRoom={heroRoom} hint={hint} style={watchingFade} /> : null}
     </>
   );
 });
+
+/** Monté dès que `on`, gardé `exitMs` après (le temps de son fondu de sortie). */
+function useMountedWhile(on: boolean, exitMs: number): boolean {
+  const [mounted, setMounted] = useState(on);
+  if (on && !mounted) setMounted(true);
+  useEffect(() => {
+    if (on) return undefined;
+    const timer = setTimeout(() => setMounted(false), exitMs);
+    return () => clearTimeout(timer);
+  }, [on, exitMs]);
+  return mounted;
+}
 
 const styles = StyleSheet.create({
   // De la marge sûre du haut jusqu'à `bottom` : calé en bas, rien ne dépasse en haut.

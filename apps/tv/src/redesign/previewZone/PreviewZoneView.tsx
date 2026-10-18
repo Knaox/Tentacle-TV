@@ -89,7 +89,7 @@ export const PreviewZoneView = memo(function PreviewZoneView({ model, heroRoom, 
           <SoftGradient width={MEDIA_W} height={MEDIA_H} colors={[scrim(0), scrim(0.6), scrim(1)]} locations={[0.36, 0.72, 1]} />
         </Animated.View>
       </View>
-      {model ? <ZoneText model={model} heroRoom={heroRoom} watch={watch} hint={hint} /> : null}
+      {model ? <ZoneText model={model} heroRoom={heroRoom} watching={watching} watch={watch} hint={hint} /> : null}
     </View>
   );
 });
