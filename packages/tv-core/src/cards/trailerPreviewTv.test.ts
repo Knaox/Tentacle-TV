@@ -51,7 +51,7 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(trailerPreviewVisible(run([{ type: "tick", at: 800 }], ready))).toBe(true);
   });
 
-  it("une première image tardive : la carte grandit dès qu'elle est là", () => {
+  it("une première image tardive : la vidéo paraît dès qu'elle est là", () => {
     const late = run([{ type: "hover", at: 0 }, { type: "tick", at: 450 }, { type: "streamFound", at: 500 }, { type: "tick", at: 900 }]);
     expect(trailerPreviewVisible(late)).toBe(false);
     expect(trailerPreviewVisible(run([{ type: "videoReady", at: 1_300 }], late))).toBe(true);
@@ -126,7 +126,7 @@ describe("previewVideoKey / previewStartPosition", () => {
 });
 
 describe("le délai choisi sur le téléviseur", () => {
-  it("la carte grandit au délai ; la demande 350 ms avant, jamais sous 450 ms de focus tenu", () => {
+  it("la vidéo paraît au délai ; la demande 350 ms avant, jamais sous 450 ms de focus tenu", () => {
     expect(tvTrailerPreviewTiming(800)).toMatchObject({ revealMs: 800, intentMs: 450, intentStillMs: 0, volume: 0.7 });
     // 0,5 s n'est pas offert sur un téléviseur : une valeur d'avant vaut le défaut.
     expect(tvTrailerPreviewTiming(500)).toMatchObject({ revealMs: 800, intentMs: 450 });
