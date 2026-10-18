@@ -131,4 +131,63 @@ export const suites = {
     await sample("fin");
     return { minutes, cycles: cycle, samples };
   },
+
+  // nav : un pas BAS isolé (accueil, grille) — un seul mouvement de page, sans second défilement ni saut à l'arrivée.
+  async "pas-bas"(h) {
+    const steps = [];
+    const one = async (label, watch) => {
+      await h.arm("trace", watch);
+      await h.keys(["down"]);
+      await h.sleep(2500);
+      steps.push({ label, keys: ["down"], endFocus: (await h.obs()).focus, report: await h.disarm() });
+    };
+    await startAt(h, HOME_START, ["down"], "resume:");
+    await h.sleep(2500);
+    for (let i = 1; i <= 3; i++) await one(`accueil, rangée ${i + 1}`, "");
+    await startAt(h, GRID_START, ["right", "right"], "grid:");
+    await h.sleep(2500);
+    for (let i = 1; i <= 3; i++) await one(`grille, ligne ${i + 1} (milieu)`, "grid:");
+    return { dwells: steps };
+  },
+
+  // nav et design : touches MAINTENUES — BAS puis HAUT 3 s dans la grande bibliothèque, DROITE 3 s dans une rangée longue.
+  async maintenu(h) {
+    const out = [];
+    const hold = async (label, gesture) => {
+      await h.arm("fps");
+      await h.keys([gesture]);
+      await h.sleep(1500);
+      const report = await h.disarm();
+      out.push({ label, keys: 1, sentMs: 0, endFocus: (await h.obs()).focus, report });
+    };
+    await startAt(h, GRID_START, [], "grid:");
+    await hold("grille, BAS maintenu 3 s", "holddown:3");
+    await hold("grille, HAUT maintenu 3 s", "holdup:3");
+    await startAt(h, HOME_START, ["down", "down"], "");
+    await hold("accueil, DROITE maintenue 3 s", "holdright:3");
+    return { bursts: out };
+  },
+
+  // design : flèches PENDANT la lecture de l'aperçu, et une flèche qui tombe sur le MONTAGE du lecteur (450-900 ms après le focus).
+  async "pendant-apercu"(h) {
+    const out = [];
+    await startAt(h, HOME_START, ["down"], "resume:");
+    await h.keys(["right"]);
+    await h.sleep(2500);
+    out.push(await burst(h, "accueil, DROITE ×4 pendant la lecture", times("right", 4), 2500));
+    await startAt(h, GRID_START, [], "grid:");
+    for (const gap of [450, 600, 750, 900]) {
+      await h.keys(["right"]);
+      await h.sleep(2500);
+      await h.arm("fps");
+      await h.keys(["down"]);
+      await h.sleep(gap);
+      await h.keys(["right"]);
+      await h.sleep(1500);
+      out.push({ label: `grille, flèche ${gap} ms après le focus (montage du lecteur)`, keys: 2, sentMs: gap, endFocus: (await h.obs()).focus, report: await h.disarm() });
+      await h.keys(["up", "left"]);
+      await h.sleep(800);
+    }
+    return { bursts: out };
+  },
 };
