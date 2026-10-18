@@ -41,14 +41,13 @@
 
 static char kRowScrollerKey;
 
-/// Après qu'on lui a rendu la position courante (un pas isolé), tvOS l'APPLIQUE encore un
-/// instant plus tard — une image après notre ressort, qui a déjà avancé : la rangée reculait
-/// d'une image (4 à 5 pt) à chaque pas d'une suite rapprochée (mesuré au banc de fluidité,
-/// 18/10). Une position étrangère posée dans ce délai est la sienne, tardive : le ressort la
-/// recouvre aussitôt — si elle est à moins d'une image ou deux de mouvement de la nôtre : le
-/// retour au début de la rangée (Retour, sortie de l'écran) en est toujours bien plus loin.
-/// Au-delà, c'est un autre défilement : le ressort cède.
-static const CFTimeInterval kLateStayWindow = 0.1;
+/// Après qu'on lui a rendu la position courante (un pas isolé), tvOS l'APPLIQUE encore plus
+/// tard — jusqu'à ~150 ms après le pas, une image après notre ressort, qui a déjà avancé : la
+/// rangée reculait d'une image (4 à 5 pt) à chaque pas d'une suite rapprochée (mesuré image par
+/// image au banc de fluidité, 18/10 : deux écrivains dans la même période d'affichage). Tant
+/// que le ressort court, une position étrangère à moins d'une image ou deux de mouvement de la
+/// nôtre est la sienne, tardive : le ressort la recouvre aussitôt. Le retour au début de la
+/// rangée (Retour, sortie de l'écran) en est toujours bien plus loin : le ressort lui cède.
 static const CGFloat kLateStayDistance = 64;
 
 @interface TentacleRowScroller : NSObject <UIScrollViewDelegate>
@@ -63,8 +62,6 @@ static const CGFloat kLateStayDistance = 64;
   CFTimeInterval _t0;
   /// La dernière position posée : une autre (tvOS, le retour au début de la rangée) arrête le ressort.
   CGFloat _lastSet;
-  /// Quand on a rendu à tvOS la position courante (`kLateStayWindow`).
-  CFTimeInterval _stayAt;
 }
 
 - (instancetype)initWithRow:(RCTScrollView *)row section:(TentacleFocusSection *)section
@@ -110,7 +107,6 @@ static const CGFloat kLateStayDistance = 64;
   }
   // Un pas isolé : tvOS ne bouge rien, le ressort s'en charge.
   targetContentOffset->x = scrollView.contentOffset.x;
-  _stayAt = CACurrentMediaTime();
   [self moveTo:clamped in:scrollView];
   // tvOS lance quand même SON animation vers cette position, qui reposerait l'ancienne pendant
   // que le ressort avance : on l'annule au tour suivant, à la position du ressort.
@@ -121,24 +117,28 @@ static const CGFloat kLateStayDistance = 64;
   });
 }
 
-/// Annule une animation de défilement de tvOS en reposant, sans animation, la position du ressort.
+/// Annule une animation de défilement de tvOS en reposant, sans animation, la position du ressort
+/// — et celles qu'il aurait posées sur le calque de la rangée (le ressort, lui, n'en pose aucune :
+/// il écrit `contentOffset` image par image).
 - (void)cancelForeignAnimationIn:(UIScrollView *)scroll
 {
   if (_link == nil || scroll == nil) {
     return;
   }
+  [scroll.layer removeAllAnimations];
   [scroll setContentOffset:CGPointMake(_lastSet, scroll.contentOffset.y) animated:NO];
 }
 
-/// Un défilement qui n'est pas le nôtre (tvOS, le retour au début de la rangée) : le ressort cède
-/// — sauf la position que tvOS applique en retard juste après un pas (`kLateStayWindow`) : le
-/// ressort la recouvre, la rangée ne recule pas.
+/// Un défilement qui n'est pas le nôtre (le retour au début de la rangée) : le ressort cède —
+/// sauf la position que tvOS applique en retard après un pas (`kLateStayDistance`) : le ressort
+/// la recouvre, la rangée ne recule pas.
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
   if (_link == nil || fabs(scrollView.contentOffset.x - _lastSet) <= 1) {
     return;
   }
-  if (CACurrentMediaTime() - _stayAt < kLateStayWindow && fabs(scrollView.contentOffset.x - _lastSet) < kLateStayDistance) {
+  if (fabs(scrollView.contentOffset.x - _lastSet) < kLateStayDistance) {
+    [scrollView.layer removeAllAnimations];
     [self setOffset:_lastSet in:scrollView];
     return;
   }
