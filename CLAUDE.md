@@ -754,9 +754,12 @@ tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** : la cellule d'une carte garde TOUJOURS sa
 taille de repos (`CardShell` : plus de cellule qui s'élargit, de cible gardée à part ni
 de place du pied) — HAUT et BAS partent du centre de la carte. La zone a UN LECTEUR
-(`ZoneVideo`) dont seule la SOURCE change d'un titre à l'autre — une rafale de flèches ne
-crée ni ne détruit aucun lecteur ; la vidéo sortie reste montée en pause dans ce lecteur,
-démonté après `PREVIEW_ZONE_PLAYER_IDLE_MS` (30 s) sans aperçu ou dès que la page est
+(`ZoneVideo`), jamais deux à la fois, et une rafale de flèches ne crée ni ne détruit rien
+(la source ne change qu'au focus tenu). Android : l'ExoPlayer partagé CHANGE DE SOURCE sur
+place ; Apple TV : react-native-video ne le sait pas (une source posée pendant le
+chargement de la précédente reste coincée), l'élément est remonté à chaque source
+(`PREVIEW_VIDEO_SWAPS_SOURCE`, adaptateur `previewVideoElement`). La vidéo sortie reste montée en pause ;
+le lecteur se démonte après `PREVIEW_ZONE_PLAYER_IDLE_MS` (30 s) sans aperçu ou dès que la page est
 couverte. La session d'aperçu d'un titre (`ZoneSession`, la machine du bureau, sans
 lecteur à elle) ne se monte qu'après 250 ms de focus tenu, datée de l'arrivée du focus
 (`trailerPreviewDwell.ts`). Android : l'aperçu a

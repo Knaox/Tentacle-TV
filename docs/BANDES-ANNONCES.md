@@ -699,8 +699,11 @@ déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
   (`redesignWiring/trailerPreview/TrailerZone.tsx`) la fournit. Seul le sujet
   FOCALISÉ de la zone monte une session (`ZoneSession` : la requête, la
   machine, sans lecteur à elle) — une rangée de vingt cartes n'en paie qu'une.
-- **Le lecteur unique** (`ZoneVideo`) : seule sa source change d'un titre à
-  l'autre ; la vidéo sortie reste montée en pause, et le lecteur se démonte
+- **Le lecteur unique** (`ZoneVideo`) : jamais deux à la fois. Sur Android TV,
+  l'ExoPlayer partagé change de source sur place ; sur Apple TV, l'élément est
+  remonté à chaque source (react-native-video 6.19 coince une source posée
+  pendant le chargement de la précédente : `PREVIEW_VIDEO_SWAPS_SOURCE`). La
+  vidéo sortie reste montée en pause, et le lecteur se démonte
   après `PREVIEW_ZONE_PLAYER_IDLE_MS` (30 s) sans aperçu ou dès que la page est
   couverte (`useIsFocused`).
 - **La vidéo** (`PreviewVideo`, react-native-video) : chargée cachée et en
