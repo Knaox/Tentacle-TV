@@ -749,7 +749,9 @@ Dans une GRILLE (bibliothèque, Ma liste, Favoris, Parcourir, collection), chaqu
 est FIXE (`GridLine`, tv-core `cards/trailerPreviewGrid.ts`) : ni défilement, ni
 rotation, ni tête collée au rail, ni reprise ; GAUCHE/DROITE ne déplacent que le focus,
 HAUT/BAS gardent la COLONNE (tv-core `gridLineEntries` : entrée `tvEntry` des lignes
-voisines). Les titres autour du focus se préparent d'avance (`trailers.previewWarm`,
+voisines), même au défilement ACCÉLÉRÉ, où tvOS déplace le focus seul : la colonne retenue
+est rendue dans la ligne d'arrivée au lâcher, ou la grille posée (tv-core
+`focus/gridColumnHold`, port `gridSettlePort`). Les titres autour du focus se préparent d'avance (`trailers.previewWarm`,
 tv-core `trailerPreviewWarmTv.ts`).
 **L'aperçu ne gêne jamais la navigation** : la cellule d'une carte garde TOUJOURS sa
 taille de repos (`CardShell` : plus de cellule qui s'élargit, de cible gardée à part ni

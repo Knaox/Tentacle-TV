@@ -301,6 +301,12 @@ résultat.
 - **GR-7** HAUT / BAS gardent la colonne : au focus d'une affiche, les lignes
   voisines déclarent leur entrée (`tvEntry`) à sa colonne — la dernière ligne
   plus courte, par sa dernière affiche (`gridLineEntries`).
+- **GR-7 bis** (18/10) La colonne TENUE au défilement accéléré : flèche
+  HAUT/BAS tenue, tvOS déplace le focus lui-même, sans guides ni entrées. La
+  colonne retenue (celle du dernier pas dans une ligne) est rendue au focus
+  arrivé ailleurs, dans SA ligne, au lâcher de la touche ou dès que la grille
+  se pose — jamais pendant le défilement (tv-core `focus/gridColumnHold`,
+  `platform/tvos/focus/gridColumnHold.ts`, port `gridSettlePort`).
 
 ---
 
@@ -759,6 +765,7 @@ compter une attente dont la durée vient de tv-core. Le câblage
 | RE-10 | `cards/cardPress`, `cards/cardHold` | `SearchRedesign` |
 | PA-1 à PA-3, GR-1 à GR-4, GR-7, CO-1 | `focus/gridFocus`, `focus/previewZoneLayout` | `screens/browse.ts`, `focus/gridLineEntries.ts` ; la vue `PosterGrid` lit `BELOW_ZONE_REVEAL`, `belowZoneBottomRoom`, `GRID_END_REACHED_SCREENS` |
 | GR-6 | `cards/trailerPreviewGrid`, `focus/previewZoneLayout` | `GridLine`, `BelowZonePage` |
+| GR-7 bis | `focus/gridColumnHold` | `focus/gridColumnHold.ts` ; la vue `PosterGrid` appelle `gridSettlePort` |
 | GR-5 | `cards/cardPress`, `cards/cardHold` | `usePosterGrid` |
 | CO-3, CO-4 | `focus/collectionFilters` ; la barre et les listes : `focus/libraryFocus` | `screens/library.ts` |
 | BI-1 à BI-11 | `focus/libraryFocus` (dont `filterSheetEntryKey`, `filterSheetFocusKeys`, `libraryPrefetchTarget`, `LIBRARY_PREFETCH_DWELL_MS`) ; l'entrée d'une liste en Modal : `panels/choiceEntry` (T6) | `screens/library.ts` |

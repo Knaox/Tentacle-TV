@@ -10,6 +10,7 @@ import { useLibraryGroups, useLibraryLoadReprise } from "../../platform/tvos/scr
 import { RENDER } from "../../redesign/render/renderProfile";
 import { LibraryView } from "../../redesign/screens/library/LibraryView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
+import { GridSettleProvider } from "../../redesign/screens/library/gridSettlePort";
 import { useGridColumnEntries } from "../grid/useGridColumnEntries";
 import { usePosterGrid } from "../grid/usePosterGrid";
 import { RedesignScreen } from "../screen/RedesignScreen";
@@ -83,7 +84,7 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
     entryKey: libraryEntryKey({ status: status !== null, loading, items: items.length, noResults: noResults !== null }),
   });
   const { focus } = screen;
-  useGridColumnEntries(focus, grid.cards.length);
+  const gridSettled = useGridColumnEntries(focus, grid.cards.length);
   useLibraryGroups(focus);
 
   const span = useMemo(() => yearSpanOf(catalog.loaded), [catalog.loaded]);
@@ -125,37 +126,39 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
 
   return (
     <RedesignScreen screen={screen}>
-      <LibraryView
-        nav={screen.nav}
-        title={title}
-        count={under.count}
-        pills={under.pills}
-        activeFilters={under.active}
-        labels={labels}
-        cards={under.cards}
-        palette={under.palette}
-        ambient={grid.ambient}
-        loading={under.loading}
-        loadingMore={under.loadingMore}
-        noResults={under.noResults}
-        status={under.status}
-        sheet={sheets.sheet}
-        onPressPill={bar.onPressPill}
-        onRemoveFilter={bar.onRemoveFilter}
-        onClearAll={bar.onClearAll}
-        onPressCard={grid.onPressCard}
-        onLongPressCard={grid.onLongPressCard}
-        onFocusCard={grid.onFocusCard}
-        onEndReached={onEndReached}
-        onSheetOption={sheets.onSheetOption}
-        onSheetClear={sheets.onSheetClear}
-        onSheetApply={sheets.onSheetApply}
-        onSheetClose={sheets.closeSheet}
-        onSheetExited={sheets.onSheetExited}
-        onYearStep={sheets.onYearStep}
-        onRatingSelect={sheets.onRatingSelect}
-      />
-      {grid.sheet}
+      <GridSettleProvider value={gridSettled}>
+        <LibraryView
+          nav={screen.nav}
+          title={title}
+          count={under.count}
+          pills={under.pills}
+          activeFilters={under.active}
+          labels={labels}
+          cards={under.cards}
+          palette={under.palette}
+          ambient={grid.ambient}
+          loading={under.loading}
+          loadingMore={under.loadingMore}
+          noResults={under.noResults}
+          status={under.status}
+          sheet={sheets.sheet}
+          onPressPill={bar.onPressPill}
+          onRemoveFilter={bar.onRemoveFilter}
+          onClearAll={bar.onClearAll}
+          onPressCard={grid.onPressCard}
+          onLongPressCard={grid.onLongPressCard}
+          onFocusCard={grid.onFocusCard}
+          onEndReached={onEndReached}
+          onSheetOption={sheets.onSheetOption}
+          onSheetClear={sheets.onSheetClear}
+          onSheetApply={sheets.onSheetApply}
+          onSheetClose={sheets.closeSheet}
+          onSheetExited={sheets.onSheetExited}
+          onYearStep={sheets.onYearStep}
+          onRatingSelect={sheets.onRatingSelect}
+        />
+        {grid.sheet}
+      </GridSettleProvider>
     </RedesignScreen>
   );
 }

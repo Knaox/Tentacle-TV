@@ -45,6 +45,7 @@ export * from "./rowRewind";
 export * from "./focusReveal";
 export * from "./detailFocus";
 export * from "./gridFocus";
+export * from "./gridColumnHold";
 export * from "./previewZoneLayout";
 export * from "./libraryFocus";
 export * from "./collectionFilters";
