@@ -251,6 +251,30 @@ STORE_COUNT = store.write(OUT, ART)  # fiche Microsoft Store du serveur (store.p
 # ── Modules TypeScript : un SEUL contenu pour web, TV et mobile — les bras
 #    étant des formes pleines, `pathLength` et les dasharray ont disparu, et
 #    avec eux la différence web/natif. ──────────────────────────────────────
+def gradients_ts():
+    """Les dégradés du logo (GRADS), en données : les dessins natifs (mascotte,
+    ouverture du démarrage) les montent sans en recopier une couleur."""
+    import re
+    rows = []
+    for gid, attrs, body in re.findall(r'<linearGradient id="(\w+)"([^>]*)>(.*?)</linearGradient>', GRADS):
+        coords = dict(re.findall(r'(x1|y1|x2|y2)="([-\d.]+)"', attrs))
+        stops = []
+        for stop in re.findall(r'<stop ([^>]*)/>', body):
+            values = dict(re.findall(r'([\w-]+)="([^"]*)"', stop))
+            opacity = values.get("stop-opacity")
+            stops.append(f'{{ offset: {float(values["offset"])}, color: "{values["stop-color"]}"'
+                         + (f", opacity: {float(opacity)}" if opacity is not None else "") + " }")
+        rows.append(f"  {gid}: {{ x1: {coords['x1']}, y1: {coords['y1']}, x2: {coords['x2']}, y2: {coords['y2']}, "
+                    f"stops: [{', '.join(stops)}] }},")
+    return ("export interface GradientStop {\n  offset: number;\n  color: string;\n  opacity?: number;\n}\n\n"
+            "export interface LinearGradientSpec {\n  x1: number;\n  y1: number;\n  x2: number;\n  y2: number;\n"
+            "  stops: readonly GradientStop[];\n}\n\n"
+            "/** Les dégradés du logo (repère 240 × 240, userSpaceOnUse) : gV cadre et bande, gHd tête, gA bras,\n"
+            " *  gT vitre, gS reflet, gP lecture, gH chapeau. */\n"
+            "export const LOGO_GRADIENTS: Readonly<Record<\"gV\" | \"gHd\" | \"gA\" | \"gT\" | \"gS\" | \"gP\" | \"gH\", LinearGradientSpec>> = {\n"
+            + "\n".join(rows) + "\n};\n\n"
+            f'/** L\'encre du visage (pupilles, sourire). */\nexport const LOGO_INK = "{INK}";\n\n')
+
 def ts_module():
     def circles(name, items, doc):
         rows = ",\n".join(f"  {{ cx: {cx}, cy: {cy}, r: {r} }}" for cx, cy, r in items)
@@ -289,6 +313,7 @@ def ts_module():
             f'/** Sourire (encre, trait 3.2 arrondi), au ras du cadre de l\'écran. */\nexport const SMILE_PATH = "{SMILE}";\n\n'
             "/** Le chapeau vit dans son propre repère ; voici comment l'y ramener. */\n"
             f'export const HAT_TRANSFORM = "{HAT_T}";\n\n')
+    out += gradients_ts()
     for name, value, doc in (("HAT_PATH", HAT, "La calotte du tricorne."),
                              ("HAT_BAND_PATH", BAND, "La bande dégradée du chapeau."),
                              ("HAT_BRIM_PATH", BRIM, "Le bord bas de la calotte (séparation en mono)."),
