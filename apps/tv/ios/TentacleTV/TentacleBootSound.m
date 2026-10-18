@@ -14,7 +14,7 @@
 //    (la vague, qui part du silence) au lieu de décaler le « ta ».
 //  - Catégorie « ambient » (seulement si personne n'en a choisi une) : le son
 //    se MÉLANGE à une musique déjà en cours, il ne la coupe pas. Rendue à la
-//    catégorie par défaut au `release`, si elle n'a pas changé entre-temps
+//    catégorie par défaut au `dispose`, si elle n'a pas changé entre-temps
 //    (un lecteur vidéo pose la sienne).
 //
 
@@ -88,7 +88,7 @@ RCT_EXPORT_METHOD(fadeOut:(double)ms)
   });
 }
 
-RCT_EXPORT_METHOD(release)
+RCT_EXPORT_METHOD(dispose)
 {
   [_player stop];
   _player = nil;

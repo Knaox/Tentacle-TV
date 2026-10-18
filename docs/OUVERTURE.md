@@ -89,7 +89,7 @@ Règle : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`).
   retirée ; un départ en retard saute le début du fichier au lieu de décaler le
   « ta ».
 - **Catégorie « ambient »** (seulement si personne n'en a choisi une) : une
-  musique déjà en cours n'est pas coupée ; rendue au défaut au `release`, 5 s
+  musique déjà en cours n'est pas coupée ; rendue au défaut au `dispose`, 5 s
   après l'arrivée, si un lecteur n'en a pas posé une autre entre-temps.
 - **Réglage d'appareil** « Son au démarrage » (Réglages › Apparence ›
   Ouverture), clé `tentacle_tv_boot_sound`, allumé par défaut. Aucune capacité

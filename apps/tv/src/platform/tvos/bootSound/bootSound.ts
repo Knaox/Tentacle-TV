@@ -13,7 +13,7 @@ interface NativeBootSound {
   prepare(): Promise<{ ready: boolean; now?: number }>;
   playAt(hostMs: number): void;
   fadeOut(ms: number): void;
-  release(): void;
+  dispose(): void;
 }
 
 const native = (NativeModules as { TentacleBootSound?: NativeBootSound }).TentacleBootSound ?? null;
@@ -34,7 +34,7 @@ export const bootSound = {
   fadeOut(ms: number): void {
     native?.fadeOut(ms);
   },
-  release(): void {
-    native?.release();
+  dispose(): void {
+    native?.dispose();
   },
 };

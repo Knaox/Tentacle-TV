@@ -8,5 +8,5 @@ export const bootSound = {
   },
   playAt(_hostMs: number): void {},
   fadeOut(_ms: number): void {},
-  release(): void {},
+  dispose(): void {},
 };
