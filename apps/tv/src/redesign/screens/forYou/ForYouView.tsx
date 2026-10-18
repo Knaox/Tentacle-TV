@@ -4,7 +4,6 @@ import { TV_STAGE } from "@tentacle-tv/theme";
 import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL } from "@tentacle-tv/tv-core";
 import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { AmbientSource } from "../../background/ambientSource";
-import { CARD_NOTE_SPACE } from "../../cards/CardFocusNote";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
@@ -24,7 +23,7 @@ import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
  * « Pour vous » : en tête, notre meilleure suggestion et POURQUOI (le
  * surtitre et sa raison) ; sous elle, la ligne d'état quand il y a lieu ;
  * puis les étagères de la bibliothèque, dans l'ordre du moteur — des
- * affiches, la raison de la recommandation sous la carte focalisée,
+ * affiches, la raison de la recommandation dans la zone d'aperçu,
  * « Découverte » sur les titres d'exploration. La première étagère
  * porte la pastille du filtre de plateformes, qu'un appui retire. Le fond
  * prend la lumière de la carte focalisée.
@@ -153,7 +152,7 @@ export const ForYouView = memo(function ForYouView({
                   key={shelf.key}
                   shelf={shelf}
                   rank={index}
-                  first={index === 0 ? (notice ? "afterHead" : "alone") : undefined}
+                  afterNotice={index === 0 && Boolean(notice)}
                   filterLabel={index === 0 && filter ? filter.label : undefined}
                   onRemoveFilter={onRemoveFilter}
                   onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
@@ -182,7 +181,7 @@ type ShelfHandler = (shelfKey: string, card: CardModel) => void;
 const Shelf = memo(function Shelf({
   shelf,
   rank,
-  first,
+  afterNotice,
   filterLabel,
   onRemoveFilter,
   onLayout,
@@ -194,7 +193,8 @@ const Shelf = memo(function Shelf({
   shelf: ForYouShelfModel;
   /** Sa place dans la page : son tour dans le montage échelonné (`rowStage`). */
   rank: number;
-  first?: "afterHead" | "alone";
+  /** La première étagère, sous la ligne d'état : son écart à elle. */
+  afterNotice?: boolean;
   filterLabel?: string;
   onRemoveFilter?: () => void;
   onLayout: (event: LayoutChangeEvent) => void;
@@ -205,17 +205,16 @@ const Shelf = memo(function Shelf({
   onFocusCard?: ShelfHandler;
 }) {
   const key = shelf.key;
-  const withNotes = shelf.cards.some((card) => card.focusNote);
   const rewind = useRowRewindPort();
   const layout = useCallback(
     (event: LayoutChangeEvent) => {
       onLayout(event);
       onMeasureLast?.(event);
-      // Sous les cartes : la marge de la rangée, et la place de la raison (montrée au focus seulement).
+      // Sous les cartes : la marge de la rangée. La raison d'une reco se lit dans la zone, pas dessous.
       const { y, height } = event.nativeEvent.layout;
-      rewind?.layout(key, y, height - MEDIA_ROW_TRAILING - (withNotes ? CARD_NOTE_SPACE : 0));
+      rewind?.layout(key, y, height - MEDIA_ROW_TRAILING);
     },
-    [onLayout, onMeasureLast, rewind, key, withNotes],
+    [onLayout, onMeasureLast, rewind, key],
   );
   const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
@@ -226,11 +225,7 @@ const Shelf = memo(function Shelf({
       reveal={SHELF_REVEAL}
       rowReveal
       onLayout={layout}
-      style={[
-        first === "afterHead" && styles.firstAfterHead,
-        first === "alone" && styles.firstAlone,
-        withNotes && styles.withNotes,
-      ]}
+      style={afterNotice ? styles.afterNotice : undefined}
     >
       <MediaRow
         rowKey={key}
@@ -259,8 +254,5 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
   noticeAlone: { marginLeft: LEFT },
-  firstAfterHead: { marginTop: 72 },
-  // Seule : sa place d'ancrage, sans défiler (la marge du haut de la page).
-  firstAlone: {},
-  withNotes: { paddingBottom: CARD_NOTE_SPACE },
+  afterNotice: { marginTop: 72 },
 });

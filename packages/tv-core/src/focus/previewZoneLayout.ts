@@ -37,6 +37,9 @@ export const PREVIEW_ZONE_HEIGHT = 432;
 /** La fenêtre de la page, sous la zone. */
 export const BELOW_ZONE_VIEWPORT = PREVIEW_STAGE_HEIGHT - PREVIEW_ZONE_HEIGHT;
 
+/** Sous la section focalisée, jusqu'au bord bas de l'écran : rien ne s'y colle. */
+export const BELOW_ZONE_BOTTOM_MARGIN = 16;
+
 /**
  * Le haut de la section focalisée, depuis le haut de la fenêtre : la place du
  * léger agrandissement de la carte au FOCUS (`CARD_FOCUS_SCALE`, × 1,08 —
@@ -48,6 +51,23 @@ export const BELOW_ZONE_ANCHOR_TOP = 32;
 
 /** Comment la page montre une rangée ou une ligne de grille sous la zone : toujours au même endroit. */
 export const BELOW_ZONE_REVEAL = { mode: "anchor", top: BELOW_ZONE_ANCHOR_TOP } as const satisfies RevealSpec;
+
+/**
+ * La plus haute IMAGE de carte qu'une rangée peut montrer sous la zone
+ * (18/10, relevé du testeur : une étagère d'affiches de « Pour vous », en
+ * taille Grande, sortait par le bas — titre 43, affiche au focus 505,
+ * légende, « Maintenir OK » : ≈ 680 pour une fenêtre de 648). Sa section
+ * focalisée — `chrome`, tout sauf l'image (le titre de la rangée, ses
+ * écarts, la légende, le pied), plus l'image agrandie au focus
+ * (`focusScale`) — tient dans la fenêtre, ancrée, à `BELOW_ZONE_BOTTOM_MARGIN`
+ * du bas de l'écran. La zone garde sa hauteur sur toutes les pages (le texte
+ * du héros y tient) ; ce sont les affiches d'une rangée qui ne dépassent pas
+ * ce plafond, quelle que soit la taille des cartes réglée. Les vignettes 16:9
+ * et les grilles en sont loin.
+ */
+export function belowZoneFrameCap(chrome: number, focusScale: number, viewport: number = BELOW_ZONE_VIEWPORT, anchorTop: number = BELOW_ZONE_ANCHOR_TOP): number {
+  return Math.floor((viewport - anchorTop - BELOW_ZONE_BOTTOM_MARGIN - chrome) / Math.max(1, focusScale));
+}
 
 /**
  * La marge du bas d'une page sous la zone : ce qu'il faut sous la DERNIÈRE

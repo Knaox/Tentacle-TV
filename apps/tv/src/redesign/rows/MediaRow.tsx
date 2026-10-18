@@ -2,9 +2,11 @@ import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { ROW_STAGING, rowHeadCards, trailerPreviewWarmWindow } from "@tentacle-tv/tv-core";
+import { ROW_STAGING, belowZoneFrameCap, rowHeadCards, trailerPreviewWarmWindow } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
-import { MediaCard } from "../cards/MediaCard";
+import { CARD_FOCUS_SCALE } from "../cards/cardFocus";
+import { CARD_HOLD_FOOTER_HEIGHT } from "../cards/CardFocusFooter";
+import { MEDIA_CARD_CAPTION_HEIGHT, MEDIA_CARD_SUBTITLE_LINE, MediaCard } from "../cards/MediaCard";
 import type { CardModel } from "../cards/cardTypes";
 import { useCardPreviewWarm } from "../cards/trailerPreviewPort";
 import { useForcedFocusKey } from "../focus/focusPreview";
@@ -37,11 +39,29 @@ import { useStagedRow } from "./rowStage";
  * Ses vignettes et ses affiches demandent l'aperçu de leur bande-annonce au
  * focus (`MediaCard` `previewable`) ; il se joue dans la zone fixe en haut de
  * l'écran, jamais dans la rangée : rien n'y grandit, rien n'y défile de plus
- * que le focus.
+ * que le focus. Dans une page à zone, l'image de ses cartes ne dépasse pas
+ * ce que la fenêtre sous la zone peut montrer, rangée focalisée entière
+ * (tv-core `belowZoneFrameCap`) : une affiche en taille Grande y est un peu
+ * réduite, une vignette jamais.
  */
 
 /** Le vide sous les cartes d'une rangée (sa marge et le bas de sa piste) : rien ne s'y voit au repos. */
 export const MEDIA_ROW_TRAILING = TV_STAGE.row.spacing;
+
+/** Sous le titre de la rangée, et au-dessus des cartes dans la piste. */
+const HEADER_GAP = TV_STAGE.row.titleGap - 8;
+const TRACK_TOP = 12;
+/** La ligne du titre : le titre, ou la pastille d'un accessoire (52, `Chip` md) si elle est plus haute. */
+const HEADER_HEIGHT = Math.max(text.rowTitle.lineHeight, 52);
+
+/** La plus haute image d'une rangée de page à zone, pour des légendes de `lines` lignes. */
+function frameCapOf(lines: number): number {
+  const chrome = HEADER_HEIGHT + HEADER_GAP + TRACK_TOP + MEDIA_CARD_CAPTION_HEIGHT + (lines - 1) * MEDIA_CARD_SUBTITLE_LINE + CARD_HOLD_FOOTER_HEIGHT;
+  return belowZoneFrameCap(chrome, CARD_FOCUS_SCALE);
+}
+
+/** Le rapport hauteur / largeur de l'image d'une variante. */
+const RATIO = { landscape: 9 / 16, poster: 3 / 2 } as const;
 
 export interface MediaRowProps {
   rowKey: string;
@@ -79,9 +99,13 @@ export const MediaRow = memo(function MediaRow({
 }: MediaRowProps) {
   const forced = useForcedFocusKey();
   const track = useRef<ScrollView>(null);
-  // La largeur des cartes de la variante : celle de `MediaCard`, à la taille réglée.
+  // La largeur des cartes de la variante : celle de `MediaCard`, à la taille réglée — plafonnée
+  // dans une page à zone, pour que la rangée focalisée y tienne entière (`frameCapOf`).
   const metrics = useCardMetrics();
-  const width = cardWidth ?? metrics[variant].width;
+  const inZone = useInPreviewZone();
+  const lines = cards.some((card) => card.subtitleLines === 2) ? 2 : 1;
+  const natural = cardWidth ?? metrics[variant].width;
+  const width = inZone ? Math.min(natural, Math.floor(frameCapOf(lines) / RATIO[variant])) : natural;
   const rewind = useRowRewindPort();
   // Mode Lite : la tête ajustée à ce que la piste montre (`rowHeadCards`).
   const head = mountProfile().fitRowHeads ? rowHeadCards(1920 - inset, width + TV_STAGE.row.gap) : ROW_STAGING.headCards;
@@ -105,7 +129,7 @@ export const MediaRow = memo(function MediaRow({
   // Les titres autour du focus : leur aperçu se prépare, leur fond se précharge (`useCardPreviewWarm`) —
   // dans une page à zone seulement, la seule où ils se montrent.
   const portWarm = useCardPreviewWarm();
-  const warm = useInPreviewZone() ? portWarm : null;
+  const warm = inZone ? portWarm : null;
   const latestCards = useRef(cards);
   latestCards.current = cards;
   const { row, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
@@ -158,7 +182,7 @@ export const MediaRow = memo(function MediaRow({
               rowKey={rowKey}
               variant={variant}
               nativeRecede={nativeRecede}
-              width={cardWidth}
+              width={width}
               onPressCard={onPressCard}
               onLongPressCard={onLongPressCard}
               onItemFocus={onItemFocus}
@@ -206,8 +230,8 @@ const RowCard = memo(function RowCard({
 
 const styles = StyleSheet.create({
   row: { marginBottom: TV_STAGE.row.spacing - 24 },
-  header: { flexDirection: "row", alignItems: "center", gap: 18, marginBottom: TV_STAGE.row.titleGap - 8 },
+  header: { flexDirection: "row", alignItems: "center", gap: 18, marginBottom: HEADER_GAP },
   // Le débord laisse la place à l'agrandissement et à l'ombre des cartes.
   track: { overflow: "visible" },
-  content: { gap: TV_STAGE.row.gap, paddingTop: 12, paddingBottom: 24 },
+  content: { gap: TV_STAGE.row.gap, paddingTop: TRACK_TOP, paddingBottom: 24 },
 });
