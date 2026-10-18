@@ -22,7 +22,8 @@
     "./panels": "./src/panels/index.ts",
     "./render": "./src/render/index.ts",
     "./device": "./src/device/index.ts",
-    "./avatars": "./src/avatars/index.ts"
+    "./avatars": "./src/avatars/index.ts",
+    "./boot": "./src/boot/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
