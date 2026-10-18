@@ -16,6 +16,9 @@
  *    place, suivie de « … » — jamais au milieu d'un groupe de mots ;
  * 4. sinon, rien : pas de synopsis plutôt qu'un mot coupé.
  *
+ * `clauses: false` (la version allégée pendant la vidéo) saute l'étape 3 :
+ * des phrases entières ou rien, aucun « … ».
+ *
  * Module pur.
  */
 
@@ -50,12 +53,13 @@ function isAbbreviation(text: string, dot: number): boolean {
  * Le synopsis qui tient dans `budget` caractères (ceux des N lignes mesurées),
  * ou `null` quand rien ne tient sans couper un mot.
  */
-export function fitPreviewZoneSynopsis(synopsis: string, budget: number): string | null {
+export function fitPreviewZoneSynopsis(synopsis: string, budget: number, options: { clauses?: boolean } = {}): string | null {
   const text = synopsis.trim();
   if (text.length === 0 || budget <= 0) return null;
   if (text.length <= budget) return text;
   const sentences = synopsisSentenceEnds(text).filter((end) => end <= budget);
   if (sentences.length > 0) return text.slice(0, sentences[sentences.length - 1]).trimEnd();
+  if (options.clauses === false) return null;
   // Une articulation de la première phrase, avec la place du « … ».
   const room = budget - 1;
   const pattern = /\s*[,;:]\s|\s[—–-]\s/g;

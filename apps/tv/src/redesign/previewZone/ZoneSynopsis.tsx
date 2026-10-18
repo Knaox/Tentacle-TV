@@ -13,13 +13,15 @@ import { text, white } from "../theme/tokens";
 
 export const ZONE_SYNOPSIS_WIDTH = 780;
 
-export const ZoneSynopsis = memo(function ZoneSynopsis({ synopsis, lines, width = ZONE_SYNOPSIS_WIDTH, textStyle }: {
+export const ZoneSynopsis = memo(function ZoneSynopsis({ synopsis, lines, width = ZONE_SYNOPSIS_WIDTH, textStyle, clauses = true }: {
   synopsis: string;
   lines: number;
   /** La largeur du texte (la mesure se fait à la même). */
   width?: number;
   /** La police, si ce n'est pas celle du corps (`text.body`). */
   textStyle?: StyleProp<TextStyle>;
+  /** Une articulation suivie de « … » en dernier recours ; sinon, des phrases entières ou rien. */
+  clauses?: boolean;
 }) {
   // Les longueurs des lignes posées, pour CE synopsis (un autre titre remesure).
   const [measured, setMeasured] = useState<{ synopsis: string; lengths: number[] } | null>(null);
@@ -32,7 +34,7 @@ export const ZoneSynopsis = memo(function ZoneSynopsis({ synopsis, lines, width 
     },
     [synopsis],
   );
-  const fitted = measured?.synopsis === synopsis ? fitPreviewZoneSynopsis(synopsis, synopsisBudget(measured.lengths, lines)) : null;
+  const fitted = measured?.synopsis === synopsis ? fitPreviewZoneSynopsis(synopsis, synopsisBudget(measured.lengths, lines), { clauses }) : null;
   return (
     <View style={{ width }}>
       <Text style={[text.body, styles.synopsis, textStyle, { width }, styles.measure]} onTextLayout={onTextLayout} accessible={false}>

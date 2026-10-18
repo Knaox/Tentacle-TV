@@ -15,11 +15,12 @@ import { ZoneSynopsis } from "./ZoneSynopsis";
  * La version ALLÉGÉE mais REMPLIE de la zone, pendant la bande-annonce (tv-core
  * `previewZoneWatchLayout`) : dans la colonne à gauche de la vidéo — jamais
  * par-dessus —, le logo plus petit, la ligne de métadonnées, une description
- * courte en phrases entières, et l'indice de la télécommande, qui se lit au
- * départ puis s'efface (`hint`, tv-core `previewZoneHintShown`).
+ * courte en phrases entières (jamais un « … »), et l'indice de la
+ * télécommande, qui se lit au départ puis s'efface (`hint`, tv-core
+ * `previewZoneHintShown`).
  *
- * Posée en même temps que le texte du repos, invisible ; `style` porte le
- * fondu croisé (`PreviewZoneView`) : aucune remise en page à l'entrée de la
+ * Montée pour la vidéo seulement (`ZoneText`), à côté du texte du repos ;
+ * `style` porte le fondu croisé : aucune remise en page à l'entrée de la
  * vidéo.
  */
 
@@ -49,7 +50,7 @@ export const ZoneWatchText = memo(function ZoneWatchText({ shown, heroRoom, hint
         />
         {shown.meta.length > 0 ? <MetaLine items={shown.meta} size={22} singleLine /> : null}
         {shown.synopsis && layout.synopsisLines > 0 ? (
-          <ZoneSynopsis synopsis={shown.synopsis} lines={layout.synopsisLines} width={layout.width} textStyle={styles.synopsis} />
+          <ZoneSynopsis synopsis={shown.synopsis} lines={layout.synopsisLines} width={layout.width} textStyle={styles.synopsis} clauses={false} />
         ) : null}
         <View style={styles.hintRow}>
           <Reveal shown={hint?.shown ?? false} motion={PREVIEW_ZONE_HINT.fadeOutMs}>

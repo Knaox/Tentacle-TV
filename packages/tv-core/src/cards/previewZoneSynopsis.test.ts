@@ -21,6 +21,12 @@ describe("fitPreviewZoneSynopsis — jamais un mot coupé", () => {
     expect(fit(long, 40)).toBeNull();
   });
 
+  it("sans articulation (la version allégée) : des phrases entières ou rien", () => {
+    const long = "Walter White, professeur de chimie dans un lycée d'Albuquerque, apprend qu'il est atteint d'un cancer incurable.";
+    expect(fit(long, 70, { clauses: false })).toBeNull();
+    expect(fit(TWO, TWO.length - 1, { clauses: false })).toBe("Un professeur de chimie apprend qu'il est malade.");
+  });
+
   it("un deux-points à la française et un tiret valent une articulation", () => {
     expect(fit("Une seule règle : ne jamais revenir — même pour elle, même si tout brûle derrière eux.", 50)).toBe("Une seule règle : ne jamais revenir…");
   });
