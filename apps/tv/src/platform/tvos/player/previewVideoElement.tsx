@@ -3,5 +3,4 @@
  * Android : `previewVideoElement.android.tsx`, aux MÊMES noms.
  */
 export { RnvPreviewVideo as PreviewVideoElement } from "./previewVideoRnv";
-
 export type { PreviewVideoElementProps } from "./previewVideoTypes";
