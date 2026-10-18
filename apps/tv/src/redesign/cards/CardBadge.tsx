@@ -6,12 +6,12 @@ import { colors, fonts } from "../theme/tokens";
 /**
  * L'étiquette en haut à gauche d'une carte : « Découverte », « +3 » — la
  * pastille au dégradé de la marque, violet → rose (celle de `PosterTile` au
- * bureau), posée par `MediaCard` comme par `MorphCard`. Jamais au centre de
+ * bureau), posée par `MediaCard`. Jamais au centre de
  * l'image.
  */
-export const CardBadge = memo(function CardBadge({ label, compact = false }: { label: string; compact?: boolean }) {
+export const CardBadge = memo(function CardBadge({ label }: { label: string }) {
   return (
-    <View pointerEvents="none" style={[styles.badge, compact && styles.compact]}>
+    <View pointerEvents="none" style={styles.badge}>
       <BrandGradient style={styles.round} />
       <Text style={styles.text} numberOfLines={1}>{label}</Text>
     </View>
@@ -31,6 +31,5 @@ const styles = StyleSheet.create({
   },
   // Android ne rogne pas un dégradé enfant d'un parent arrondi sans fond : il prend l'arrondi lui-même.
   round: { borderRadius: 17 },
-  compact: { top: 10, left: 10, paddingHorizontal: 10 },
   text: { ...fonts.extrabold, fontSize: 22, color: colors.onAccent },
 });

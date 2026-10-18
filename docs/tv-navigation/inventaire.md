@@ -331,9 +331,6 @@ tâche qui en porte le plus ; une ligne d'une autre tâche le dit en tête).
 - L64, 105, 121 · `onLongPress` (transmis à CardShell) · **VUE** · relais
 - L178 · `hold={focused && onLongPress !== undefined}` · **VUE** · affichage de « Maintenir OK : plus d'options » (350 ms, purement visuel)
 
-#### `redesign/cards/MorphCard.tsx`
-- L64, 68, 78 · `onLongPress` (transmis à FocusTarget, sans `form`) · **VUE** · relais ; pas d'indication « Maintenir OK » (voir bugs)
-
 #### `redesign/controls/PillButton.tsx`
 - L37, 76, 81 · `onLongPress` transmis à FocusTarget · **VUE** · relais (grand panneau du titre, sur le héros)
 
@@ -710,7 +707,7 @@ fait). « À vérifier » : déduit du code, pas reproduit.
 4. ActionSheetRedesign.tsx:82 + sheetFocus.ts:57-58 : en mode `rate`, note encore `pending` au filet → entrée sur la croix au lieu de l'échelle (à vérifier).
 5. SeasonsSheetRedesign.tsx:140-152 : Retour pendant l'envoi, fondu fini avant la réponse → « Demande envoyée » et la mise à jour des listes perdues (`after.current` jamais exécuté).
 6. useTitleRequests.tsx:170 : `setTimeout` jamais annulé — écran quitté dans les 320 ms → `open(title)` sur un composant démonté.
-7. MorphCard.tsx:68-86 reçoit `onLongPress` mais n'affiche pas « Maintenir OK : plus d'options » (contredit MediaCard.tsx:31-34, CardHoldHint.tsx:8-9).
+7. ~~MorphCard.tsx:68-86 sans « Maintenir OK »~~ — sans objet : `MorphCard` supprimée le 18/10 (aucune rangée ne la montait depuis le 01/10).
 8. RequestsPanel.tsx:18-20, 52 (à vérifier) : garde anti-clic justifiée par « un OK encore enfoncé », or l'aperçu ouvre par `onPress` (au relâchement) ; les autres panneaux ouverts par OK n'en ont pas.
 9. RequestsEntry.tsx:41-42, RequestsPanel.tsx:84, 89 (via focusLocks.ts:19) : déverrouiller fait `focus.bind(key, null)` — efface TOUTES les extras de la clé ; RequestsEntry déverrouille dès le montage. Sans effet aujourd'hui, piège pour l'extraction.
 10. RequestsPanel.tsx:79-92 : verrous écrits (magasin + `setNativeProps`) pendant le RENDU — un rendu abandonné les appliquerait quand même.

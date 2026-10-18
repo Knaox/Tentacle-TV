@@ -74,7 +74,6 @@ stockage, et toute logique de focus : `TVFocusGuideView`, `nextFocus*`,
 | `controls/RoundButton` | Rond de verre (Ma liste, favori, vu, note), libellé au focus |
 | `controls/Chip` | Pastille (filtres, genres, choix), `selected`, `detail`, `trailingIcon` |
 | `cards/MediaCard` | Carte `landscape` (16:9) ou `poster` (2:3), marqueurs du modèle partagé ; aucune action sur la carte : l'appui maintenu ouvre le grand panneau |
-| `cards/MorphCard` | La carte qui se redresse (16:9 → affiche), ses marqueurs sur les deux faces |
 | `cards/CardFocusFooter` | Sous la légende d'une carte focalisée, en absolu : la raison d'une reco (`CardFocusNote`) puis « Maintenir OK : plus d'options » (`CardHoldHint`) — sur toute carte qui s'ouvre par l'appui maintenu, un temps après le focus |
 | `cards/ToggleGlyph` | Le glyphe d'un état (Ma liste, favori, vu), plein ou au trait : pastille, grand panneau |
 | `rating/RatingStars` | Une note en cinq étoiles, demi-étoiles comprises, au rose de la marque — affichage seul |
