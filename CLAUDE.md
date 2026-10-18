@@ -742,8 +742,8 @@ sur la TV — tv-core `TV_TRAILER_PREVIEW_DELAYS`, décision de Damien) : une r�
 capacité : fonction purement client. Pendant l'aperçu, Lecture/Pause le met
 VRAIMENT en pause, et MAINTENUE coupe le son de l'aperçu seul (le réglage « Son
 des aperçus ») — tv-core `cards/previewRemote.ts` ; sur Android le maintien est
-reconstruit par `createAndroidTvReader` ; l'indice, en bas à droite de la zone :
-`ZoneRemoteHint`.
+reconstruit par `createAndroidTvReader` ; l'indice, dans la colonne de gauche de la zone,
+jamais sur l'image : `ZoneRemoteHint`.
 **La zone** (tv-core `cards/previewZone.ts` décide QUOI et QUAND, sans rien dessiner) :
 le sujet est la carte focalisée, AUSSITÔT (0 ms : son fond et son titre au focus), gardée
 quand le focus part ailleurs (filtres, rail) — la zone ne se vide jamais sous les yeux ;
@@ -754,22 +754,26 @@ repli de la page. Les détails (synopsis, genres, qualité) se lisent au focus T
 (`PREVIEW_ZONE_DETAILS_MS`, 300 ms : une rafale ne lit rien). Fondus d'opacité seulement
 (`PREVIEW_ZONE_FADE` : fond 200, texte 160, vidéo 360 en entrée, 180 en sortie) ; le fond
 passe en fondu croisé sur deux calques (`previewZoneBackdropLayer`), jamais un noir entre
-deux. **Pendant la bande-annonce, la zone s'efface devant elle** (retour de Damien du 18/10 :
-« on ne voit pas bien la bande-annonce, le texte raccourci dérange ») — tv-core
-`cards/previewZonePlayback.ts` (`previewZoneWatching` : vidéo montrée ET pas en pause) : surtitre,
-raison, méta et synopsis en fondu (420 ms ; retour 240), le logo seul, réduit (0,66) et descendu
-au bas du bloc ; les voiles pleins vers le noir à gauche et en bas s'effacent, un raccord léger
-reste posé (aucune arête). Tout revient au focus suivant, à la fin de l'aperçu et en PAUSE.
-**Jamais un « … » au milieu d'un mot** : le synopsis garde ses phrases entières, sinon une
-articulation, sinon rien (`previewZoneSynopsis.ts`, d'après ses lignes mesurées : `ZoneSynopsis`) ;
-surtitre et raison se resserrent ; un logo trop étroit (vertical, carré : `previewZoneUsesLogo`, < 1,2)
-cède au titre écrit. Le voile noir de la scène reste PLEIN jusqu'au bas du fond de la zone (720,
-`previewZoneVeilStops`) : sinon la lumière de la page (vive au-dessus d'une grille) longeait le noir
-opaque du fond en arêtes. UNE portée par page (`PreviewZoneScope`, posée par `BelowZonePage`) : la carte dit
+deux. **L'image ne déborde jamais de la zone** (retour de Damien, 18/10 soir : les cartes de la
+première rangée masquaient le bas de la bande-annonce) : fond et vidéo cadrés au centre dans
+1280 × 432 (tv-core `PREVIEW_ZONE_MEDIA`), raccordés au noir à gauche et en bas dans leurs propres
+bords ; le voile noir de la scène est plein jusqu'au bas de la zone (`previewZoneVeilStops`), la page
+commence sur le noir. **Pendant la bande-annonce, une version ALLÉGÉE mais REMPLIE** (« la gauche
+devient une grande zone noire, c'est dommage ») — tv-core `cards/previewZonePlayback.ts`
+(`previewZoneWatching` : la vidéo se montre, pause comprise) : le repos (surtitre, raison, grand logo,
+synopsis long) cède en fondu croisé (420 ms ; retour 240) à une colonne À GAUCHE de la vidéo, jamais
+dessus (`previewZoneWatchLayout`, `ZoneWatchText`) : logo plus petit, méta, description courte en
+phrases entières, l'indice de la télécommande ; les voiles pleins du repos s'effacent, un raccord
+léger reste. **L'indice** (« Lecture/Pause : pause », « maintenir : couper le son », une ligne par
+geste, jamais coupé) se lit 4 s au départ et après chaque geste, puis s'efface ; il reste en PAUSE
+(`previewZoneHintShown`, `useZoneHint`). **Jamais un « … » au milieu d'un mot** : le synopsis garde
+ses phrases entières, sinon une articulation, sinon rien (`previewZoneSynopsis.ts`, d'après ses
+lignes mesurées : `ZoneSynopsis`) ; surtitre et raison se resserrent ; un logo trop étroit (vertical,
+carré : `previewZoneUsesLogo`, < 1,2) cède au titre écrit. UNE portée par page (`PreviewZoneScope`, posée par `BelowZonePage`) : la carte dit
 son focus (`useCardZoneFocus`, daté au rendu qui le constate), la zone lit le magasin ;
 une page couverte (fiche, grille par-dessus) coupe son aperçu et démonte son lecteur
-(`useIsFocused`) — un seul lecteur vivant. Vue : `redesign/previewZone/` (fond 1280 × 720
-en haut à droite, fondu vers le noir à gauche et en bas, texte à gauche) ; intégration :
+(`useIsFocused`) — un seul lecteur vivant. Vue : `redesign/previewZone/` (fond 1280 × 432
+en haut à droite, dans la zone, fondu vers le noir à gauche et en bas, texte à gauche) ; intégration :
 `redesignWiring/trailerPreview/TrailerZone.tsx`.
 **La page sous la zone** (tv-core `focus/previewZoneLayout.ts`, cadre
 `redesign/rows/BelowZonePage.tsx`) : la zone occupe le haut (`PREVIEW_ZONE_HEIGHT`,

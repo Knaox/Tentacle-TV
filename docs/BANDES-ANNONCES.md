@@ -693,21 +693,25 @@ déclencheur change — le FOCUS tenu d'une carte de rangée, pas le pointeur.
   par-dessus les voisines : tvOS ne focaliserait plus une carte recouverte.
   Image du titre d'abord, la vidéo dessus, le logo (ou le titre) en bas sur un
   voile.
-- **La zone devant la vidéo** (18/10, après l'essai de Damien sur son Apple TV : « on
-  ne voit pas bien la bande-annonce, et le texte raccourci dérange ») : dès la première
-  image et tant que l'aperçu JOUE (tv-core `previewZoneWatching` : pas en pause), le texte
-  se retire en fondu (surtitre, raison, méta, synopsis — `PREVIEW_ZONE_PLAYBACK`, 420 ms,
-  retour 240) ; le logo reste, réduit à 0,66 et posé au bas du bloc (sa descente = la
-  hauteur mesurée de la méta et du synopsis : une transformation, aucune remise en page).
-  Chaque voile de la vidéo est en deux calques : un raccord LÉGER toujours posé (bord gauche
-  et bas fondus au noir de la page) et le voile PLEIN du repos par-dessus, dont seule
-  l'opacité tombe. Au repos, aucun « … » au milieu d'un mot : le synopsis complet est posé
-  invisible à sa largeur, ses lignes mesurées donnent la place, et tv-core
-  (`fitPreviewZoneSynopsis`) garde le texte entier, sinon ses phrases entières, sinon une
-  articulation suivie de « … », sinon rien. Un logo trop étroit (rapport < 1,2 : `previewZoneUsesLogo`)
-  cède au titre écrit — un logo vertical n'y faisait qu'un point. Le voile noir de la scène reste
-  plein jusqu'au bas du fond (720, `previewZoneVeilStops`), puis s'efface sur 280 : la lumière de la
-  page ne longe plus le noir opaque du fond (arêtes nettes au-dessus des grilles, relevé du 18/10).
+- **La zone devant la vidéo** (18/10, deux essais de Damien sur son Apple TV) :
+  - *L'image tient dans la zone* : fond et vidéo cadrés au centre (« cover ») dans 1280 × 432
+    (tv-core `PREVIEW_ZONE_MEDIA`) — quand ils débordaient (720 de haut), les cartes de la
+    première rangée ou ligne masquaient le bas de la bande-annonce. Leurs bords gauche et bas se
+    fondent au noir ; le voile de la scène est plein jusqu'au bas de la zone (`previewZoneVeilStops`),
+    puis s'efface sur 280 : la page commence sur le noir, sans arête.
+  - *Version allégée mais remplie* : dès la première image (pause comprise : `previewZoneWatching`),
+    le texte du repos cède en fondu croisé (420 ms, retour 240) à une colonne à GAUCHE de la vidéo
+    (`previewZoneWatchLayout`, `ZoneWatchText`) : logo plus petit, ligne de méta, description
+    courte en phrases entières, indice. Deux calques posés ensemble : aucune remise en page.
+    Chaque voile de l'image est en deux calques : un raccord LÉGER toujours posé, le voile PLEIN
+    du repos par-dessus, dont seule l'opacité tombe.
+  - *L'indice* (« Lecture/Pause : pause » / « maintenir : couper le son », une ligne par geste) ne
+    va plus sur l'image : dans la colonne, 4 s au départ et après chaque geste, effacé ensuite,
+    toujours là en pause (`PREVIEW_ZONE_HINT`, `previewZoneHintShown`, `useZoneHint`).
+  - *Aucun « … » au milieu d'un mot* : le synopsis complet est posé invisible à sa largeur, ses
+    lignes mesurées donnent la place, et tv-core (`fitPreviewZoneSynopsis`) garde le texte entier,
+    sinon ses phrases entières, sinon une articulation suivie de « … », sinon rien. Un logo trop
+    étroit (rapport < 1,2 : `previewZoneUsesLogo`) cède au titre écrit.
 - **Le port** : la vue ne sait rien de la vidéo (`redesign/cards/trailerPreviewPort.tsx`) ;
   une portée par page (`PreviewZoneScope`), la carte n'y dit que son focus
   (`useCardZoneFocus`), la page pose sa zone (`PreviewZoneSlot`) ; l'intégration
