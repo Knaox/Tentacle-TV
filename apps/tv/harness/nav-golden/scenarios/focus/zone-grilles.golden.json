@@ -1,0 +1,198 @@
+{
+  "format": 1,
+  "domain": "focus",
+  "suite": "zone-grilles",
+  "reference": {
+    "sha": "c39de94226fc695059762210829e84c716464e85",
+    "label": "référence c39de9422"
+  },
+  "observation": 2,
+  "dataset": "48c6f354f1d7",
+  "native": "70628b6b97aea0f0",
+  "device": {
+    "kind": "simulateur",
+    "name": "tvzone-video2",
+    "model": "Apple-TV-4K-3rd-generation-1080p",
+    "runtime": "tvOS-26-2"
+  },
+  "recordedAt": "2026-10-18T15:32:35.974Z",
+  "scenarios": {
+    "zone-grille-films": {
+      "hash": "741fdd6cc9e1",
+      "durationMs": 19657,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "(500) jours ensemble",
+        "frame": [
+          176,
+          464,
+          300,
+          523
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+          "libraryName": "Films"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": [
+          "POST /api/trailers/preview/warm"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "(500) jours ensemble",
+          "frame": [
+            176,
+            464,
+            300,
+            523
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
+            "libraryName": "Films"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "zone-grille-series": {
+      "hash": "cd53c11c8dc1",
+      "durationMs": 19074,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "56 Jours",
+        "frame": [
+          176,
+          464,
+          300,
+          523
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Library",
+        "params": {
+          "libraryId": "d565273fd114d77bdf349a2896867069",
+          "libraryName": "Séries"
+        },
+        "stack": [
+          "Home",
+          "Library"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": [
+          "POST /api/trailers/preview/warm"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "56 Jours",
+          "frame": [
+            176,
+            464,
+            300,
+            523
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "d565273fd114d77bdf349a2896867069",
+            "libraryName": "Séries"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "zone-grille-ma-liste": {
+      "hash": "577f59bedd91",
+      "durationMs": 19242,
+      "start": {
+        "app": "foreground",
+        "focus": "grid:0",
+        "label": "Berserk",
+        "frame": [
+          176,
+          464,
+          300,
+          523
+        ],
+        "groups": [
+          "grid:line:0"
+        ],
+        "route": "Watchlist",
+        "params": null,
+        "stack": [
+          "Home",
+          "Watchlist"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": [
+          "POST /api/trailers/preview/warm"
+        ]
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "grid:0",
+          "label": "Berserk",
+          "frame": [
+            176,
+            464,
+            300,
+            523
+          ],
+          "groups": [
+            "grid:line:0"
+          ],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    }
+  }
+}
