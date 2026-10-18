@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Settings, Platform } from "react-native";
+import { Settings } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
 import {
   JellyfinClient,
   JellyfinClientContext,
   TentacleConfigContext,
-  setPreferencesToken,
   fetchInterfaceLanguage,
   hydrateQueryClient,
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
 } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
+import type { BootIntroPlan } from "@tentacle-tv/tv-core/boot";
 import { releaseHeldRevocations, resumeUnpair } from "@tentacle-tv/tv-core";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { rehydrateStores } from "./lib/stores";
@@ -24,7 +24,7 @@ import { RemoteHintsProvider } from "./redesign/remote/remoteHints";
 import { REMOTE_BINDINGS } from "./platform/input";
 import { PLATFORM_TRAITS } from "./platform/traits";
 import { reloadNavigationState } from "./platform/renderTier";
-import { applyBackendUrl } from "./lib/backendUrls";
+import { initializeBackend, navFonts } from "./appBackend";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator, initialRouteOf } from "./navigation/AppNavigator";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -34,7 +34,6 @@ import { useServerReachable } from "./hooks/useServerReachable";
 import { MigrationCurtain, MigrationRedesign, useMigrationScreen } from "./redesignWiring/overlays/MigrationRedesign";
 import { AccountAccessRedesign, useAccountAccessScreen } from "./redesignWiring/overlays/AccountAccessRedesign";
 import { navigationRef } from "./navigation/navigationRef";
-import { runAuthRefreshFlow } from "./auth/sessionFlow";
 import { wakeRevocationDrain } from "./auth/revocationQueue";
 import { leaveProfileAtBoot } from "./auth/profileSession";
 import { ForegroundSessionValidator } from "./components/ForegroundSessionValidator";
@@ -51,6 +50,9 @@ import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";
 import { QualityBadgeHost } from "./redesignWiring/cards/QualityBadgeHost";
 import { TrailerPreviewHost } from "./redesignWiring/trailerPreview/TrailerPreviewHost";
 import { ThemeProvider, useTheme } from "./theme";
+import { BootIntroHost } from "./redesignWiring/boot/BootIntroHost";
+import { bootIntroGate, useReportBlockedToBootIntro } from "./redesignWiring/boot/bootIntroGate";
+import { BOOT_PLAN_AT_START, bootPlanOf } from "./redesignWiring/boot/bootPlan";
 
 // Instance unique, définie dans son module pour que le magasin d'épinglage du
 // rail puisse s'y brancher sans dépendre de ce fichier.
@@ -100,43 +102,6 @@ attachQueryPersister(queryClient, tvPersistStorage, {
   canSave: () => storage.getItem("tentacle_token") !== null,
 });
 
-/** React Navigation theme — `#0a0a0f`, `#12121a`, `#1e1e2e` n'ont pas de token
- *  équivalent dans `@tentacle-tv/theme` (couleurs TV-spécifiques OLED) ; gardés
- *  en littéral pour rester strictement lossless. Les tokens qui MATCHENT sont
- *  lus dynamiquement via `useTheme()` dans `AppContent`. */
-const navFonts = {
-  regular: { fontFamily: "System", fontWeight: "400" as const },
-  medium: { fontFamily: "System", fontWeight: "500" as const },
-  bold: { fontFamily: "System", fontWeight: "700" as const },
-  heavy: { fontFamily: "System", fontWeight: "900" as const },
-};
-
-function initializeBackend(tentacleUrl: string | null): JellyfinClient {
-  const baseUrl = tentacleUrl || "http://localhost";
-  applyBackendUrl(baseUrl);
-
-  const jellyfinUrl = `${baseUrl}/api/jellyfin`;
-  const TV_VERSION: string = require("../../../versions.json").tv ?? "0.9.2";
-  // Nom de client rapporté à Jellyfin : « Apple TV » sur tvOS (l'app s'identifiait
-  // à tort comme AndroidTV). Android conservé EXACTEMENT (pas d'espace) pour ne
-  // pas changer l'identifiant des devices Android déjà appariés.
-  const clientName = Platform.OS === "ios" ? "Apple TV" : "AndroidTV";
-  const jfClient = new JellyfinClient(jellyfinUrl, storage, uuid, clientName, "Tentacle TV - TV", TV_VERSION);
-  jfClient.followLanguage(i18n); // Jellyfin 12 : les mentions des pistes dans la langue de l'interface.
-  const savedToken = storage.getItem("tentacle_token");
-  if (savedToken) {
-    jfClient.setAccessToken(savedToken);
-    setPreferencesToken(savedToken);
-  }
-
-  // setOnAuthExpired = preuve forte que le token actuel est mort (5×401 sur
-  // les requêtes Jellyfin) : le verdict du serveur tranche, et seule une
-  // révocation confirmée déjumelle.
-  jfClient.setOnAuthExpired(() => runAuthRefreshFlow(jfClient, storage, queryClient, { softFail: false }));
-
-  return jfClient;
-}
-
 /** Contenu principal — nécessite QueryClientProvider + ThemeProvider comme parents */
 /** Le serveur à surveiller : celui d'une SESSION. Sans jeton, rien n'est « hors
  *  ligne » — le jumelage traite lui-même ses erreurs de serveur, et un voile
@@ -179,9 +144,16 @@ function AppContent() {
       const state = navigationRef.getRootState();
       const route = state?.routes?.[state.index];
       setPlaybackShown(!!route && PLAYBACK_ROUTES.has(route.name));
+      bootIntroGate.reportRoute(route?.name);
     }
     setServerUrl(sessionServerUrl());
   }, []);
+  const offlineVeil = !isReachable && !playbackShown && migration.decision.offlineVeilAllowed && access.decision.offlineVeilAllowed;
+  // L'ouverture du démarrage renonce devant ce qui doit se voir : hors ligne, migration, accès suspendu.
+  useReportBlockedToBootIntro(offlineVeil || migration.decision.hideScreens || access.decision.hideScreens);
+  // Thème de React Navigation — `#0a0a0f`, `#12121a`, `#1e1e2e` n'ont pas de
+  // token équivalent dans `@tentacle-tv/theme` (couleurs TV-spécifiques OLED) :
+  // gardés en littéral ; les tokens qui MATCHENT sont lus via `useTheme()`.
   const navTheme = useMemo(
     () => ({
       dark: true as const,
@@ -223,7 +195,7 @@ function AppContent() {
           <MigrationCurtain hidden={migration.decision.hideScreens || access.decision.hideScreens}>
             <AppNavigator />
           </MigrationCurtain>
-          <OfflineBanner visible={!isReachable && !playbackShown && migration.decision.offlineVeilAllowed && access.decision.offlineVeilAllowed} onRetry={retry} />
+          <OfflineBanner visible={offlineVeil} onRetry={retry} />
           <MigrationRedesign state={migration} />
           <AccountAccessRedesign state={access} />
           <PairingExpiredBanner />
@@ -243,6 +215,8 @@ export function App() {
   const cardSize = useCardSizeSetting();
   const [ready, setReady] = useState(false);
   const [client, setClient] = useState<JellyfinClient | null>(null);
+  // L'ouverture du démarrage, ou la mascotte d'attente (`bootPlan`) — décidée dès le stockage relu.
+  const [bootPlan, setBootPlan] = useState<BootIntroPlan | "pending">(BOOT_PLAN_AT_START);
 
   useEffect(() => {
     (async () => {
@@ -255,6 +229,7 @@ export function App() {
       leaveProfileAtBoot(storage);
       // Une session gardée par « Changer de profil » ne survit pas à l'app : sa révocation part.
       releaseHeldRevocations(storage, Date.now());
+      if (BOOT_PLAN_AT_START === "pending") setBootPlan(await bootPlanOf(storage, initialRouteOf(storage)));
       // Sans session, le cache persisté n'est à personne : ni en mémoire, ni
       // sur le disque.
       await cacheHydrated;
@@ -269,7 +244,7 @@ export function App() {
       const tentacleUrl = storage.getItem("tentacle_server_url");
       const savedLang = storage.getItem("tentacle_language") ?? detectLanguage();
       initI18n({ lng: savedLang });
-      const jfClient = initializeBackend(tentacleUrl);
+      const jfClient = initializeBackend(tentacleUrl, { storage, uuid, queryClient });
 
       // Fetch authoritative language from backend (bidirectional sync)
       const token = storage.getItem("tentacle_token");
@@ -288,9 +263,7 @@ export function App() {
     })();
   }, []);
 
-  if (!ready || !client) return <BootScreen />;
-
-  return (
+  const app = ready && client ? (
     <LiquidGlassProvider enabled={PLATFORM_TRAITS.liquidGlass && liquidGlass}>
       <CardSizeProvider size={cardSize}>
         <RemoteHintsProvider hints={REMOTE_BINDINGS.hints}>
@@ -308,5 +281,8 @@ export function App() {
         </RemoteHintsProvider>
       </CardSizeProvider>
     </LiquidGlassProvider>
-  );
+  ) : null;
+  // L'app se monte DANS l'écran du poulpe ; sans ouverture, la mascotte jusqu'à ce qu'elle soit prête.
+  if (bootPlan === "intro") return <BootIntroHost>{app}</BootIntroHost>;
+  return app ?? <BootScreen waiting={bootPlan === "pending"} />;
 }

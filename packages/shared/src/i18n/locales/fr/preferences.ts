@@ -30,6 +30,10 @@ export default {
   // desktop, où cette même clé est affichée.
   liquidGlassDescription: "Ajoute une réfraction aux surfaces translucides. Désactivé, l'application revient à l'effet verre classique.",
   liquidGlassUnavailable: "Non disponible sur ce moteur de rendu — l'effet verre classique est utilisé.",
+  // L'ouverture du démarrage (Apple TV) : un réglage d'APPAREIL.
+  opening: "Ouverture",
+  bootSoundTitle: "Son au démarrage",
+  bootSoundDescription: "Le « ta-dum » de l'ouverture quand l'application s'ouvre sur l'accueil. Il se mêle à une musique déjà en cours, sans la couper.",
 
   // ── Sections de la coquille de réglages ──
   // Titre ombrelle de l'écran (atterrissage mobile). `title` reste le titre

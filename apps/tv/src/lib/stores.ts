@@ -2,6 +2,7 @@ import {
   initPlaybackSettingsStore, initStillWatchingStore, rehydratePlaybackSettings, rehydrateStillWatching,
 } from "@tentacle-tv/api-client";
 import { railPinningStore } from "../components/nav/railPinning";
+import { bootSoundStore } from "./bootSoundSetting";
 import { cardSizeStore } from "./cardSize";
 import { exoTunnelingStore } from "./exoSettings";
 import { liquidGlassStore } from "./liquidGlass";
@@ -28,6 +29,7 @@ export function rehydrateStores(): void {
   exoTunnelingStore.rehydrate();
   liquidGlassStore.rehydrate();
   cardSizeStore.rehydrate();
+  bootSoundStore.rehydrate();
   // Les aperçus au focus : sans cette relecture, un aperçu coupé (ou muet) se rallumait au démarrage.
   rehydrateTrailerPreviewSettings();
   initPlaybackSettingsStore(tvStorage);

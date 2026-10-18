@@ -59,10 +59,9 @@ import type {
  *   `useExoTunneling` / `useExoMatchFrameRate` et leurs magasins ;
  * - `choiceList` : le réglage ouvert (`onOpenLibrarySetting`), `onChoose` →
  *   `useSetLibraryPreference` (trio complet) ; Retour la remet à `null` ;
- * - Liquid Glass : lu sur `LiquidGlassProvider` (clé `tentacle_liquid_glass`),
- *   `onToggleLiquidGlass` écrit la clé ;
- * - taille des cartes : lue sur `CardSizeProvider` (clé `tentacle_tv_card_size`),
- *   `onSelectCardSize` écrit la clé — l'onglet Apparence existe donc partout ;
+ * - Liquid Glass (`LiquidGlassProvider`, `onToggleLiquidGlass`), taille des cartes
+ *   (`CardSizeProvider`, `onSelectCardSize` : l'onglet existe partout), « Son au
+ *   démarrage » (`bootSound`, Apple TV : l'ouverture) — des clés d'appareil ;
  * - `renderTier` (Android TV) : le mode Lite (`platform/renderTier`),
  *   `onSelectLiteMode` l'écrit et recharge l'interface ; absent, rien ;
  * - `home` : le bandeau principal de l'accueil, réglage du compte
@@ -140,6 +139,7 @@ export interface SettingsViewProps {
   renderTier?: SettingsRenderTier | null;
   onSelectLiteMode?: (mode: SettingsRenderTier["mode"]) => void;
   onSelectCardSize?: (size: CardSize) => void;
+  bootSound?: { enabled: boolean; onToggle: (next: boolean) => void } | null;
   onMoveNavEntry?: (key: string) => void;
   onToggleNavEntry?: (key: string) => void;
   onShowAllNav?: () => void;
@@ -258,6 +258,7 @@ export const SettingsView = memo(function SettingsView(props: SettingsViewProps)
                   renderTier={renderTier}
                   onSelectLiteMode={props.onSelectLiteMode}
                   onSelectCardSize={props.onSelectCardSize}
+                  bootSound={props.bootSound}
                 />
               ) : null}
               {tab === "navigation" && navigation ? (

@@ -14,6 +14,7 @@ import { usePreviewRemoteHint } from "./usePreviewRemote";
 import { useZoneDetails } from "./useZoneDetails";
 import { ZoneSession, type ZoneVideoWant } from "./ZoneSession";
 import { ZoneVideo } from "./ZoneVideo";
+import { useBootIntroPlaying } from "../boot/bootIntroGate";
 
 /**
  * La ZONE D'APERÇU fournie au port (`PreviewZoneSlot`) — une par page, qui lit
@@ -57,7 +58,10 @@ function Zone({ hero = null, fallback = null, store }: PreviewZoneSlotProps & { 
     [heroShown, hero, card, details],
   );
 
-  const enabled = useTrailerPreviewsEnabled();
+  const previewsOn = useTrailerPreviewsEnabled();
+  // Pendant l'ouverture du démarrage, aucun aperçu : le ta-dum d'abord.
+  const introPlaying = useBootIntroPlaying();
+  const enabled = previewsOn && !introPlaying;
   const subject = enabled ? (heroShown ? hero?.trailer ?? null : card?.trailer ?? null) : null;
   const subjectKey = subject ? trailerPreviewSubjectKey(subject) : null;
   const held = useFocusHeld(subject ? since : null, previewSessionDwellLeft);

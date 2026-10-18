@@ -11,6 +11,7 @@ import { FOR_YOU_SCENES } from "./forYouScenes";
 import { GAP_SCENES } from "./gapScenes";
 import { GLASS_SCENES } from "./glassScenes";
 import { HOME_SCENES } from "./homeScenes";
+import { INTRO_SCENES } from "./introScenes";
 import { LEGIBILITY_SCENES } from "./legibilityScenes";
 import { LIBRARY_SCENES } from "./libraryScenes";
 import { LIGHT_MEASURE_SCENES } from "./lightMeasureScenes";
@@ -45,6 +46,8 @@ import type { BenchScene } from "./types";
  * `bench.mjs next` et les planches les voient aussitôt.
  */
 export const SCENES: BenchScene[] = [
+  // L'ouverture du démarrage, avant tout (Apple TV) : figée étape par étape.
+  ...INTRO_SCENES,
   ...PAIRING_SCENES,
   // Le premier passage dans un profil, avant l'accueil : le code PIN conseillé, puis la barre.
   ...PIN_SETUP_SCENES,

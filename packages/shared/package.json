@@ -10,7 +10,9 @@
     ".": "./src/index.ts",
     "./theme": "./src/theme/index.ts",
     "./licenses": "./src/licenses/index.ts",
-    "./licenses/texts": "./src/licenses/texts.ts"
+    "./licenses/texts": "./src/licenses/texts.ts",
+    "./brandIntro": "./src/brandIntro/index.ts",
+    "./brandIntro/synth": "./src/brandIntro/introSynth.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

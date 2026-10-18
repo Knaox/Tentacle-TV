@@ -23,3 +23,4 @@ export * from "./panels";
 export * from "./render";
 export * from "./device";
 export * from "./avatars";
+export * from "./boot";

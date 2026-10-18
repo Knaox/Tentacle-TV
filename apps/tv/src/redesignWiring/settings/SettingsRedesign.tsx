@@ -24,6 +24,7 @@ import { useProfileActions } from "./useProfileActions";
 import { useRenderTierSetting } from "./useRenderTierSetting";
 import { useSettingsModel } from "./useSettingsModel";
 import { cardSizeStore } from "../../lib/cardSize";
+import { bootSoundStore, useBootSoundEnabled } from "../../lib/bootSoundSetting";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Settings">;
 
@@ -52,6 +53,12 @@ export function SettingsRedesign({ navigation, route }: Props) {
   const nav = useNavigationSettings(focus);
   // Android TV : le mode Lite, seul occupant de l'onglet Apparence ; rien sur l'Apple TV.
   const lite = useRenderTierSetting();
+  // « Son au démarrage » : là seulement où l'ouverture existe (trait `brandIntro`).
+  const bootSoundEnabled = useBootSoundEnabled();
+  const bootSound = useMemo(
+    () => (PLATFORM_TRAITS.brandIntro ? { enabled: bootSoundEnabled, onToggle: bootSoundStore.set } : null),
+    [bootSoundEnabled],
+  );
   // L'onglet « Licences » et son lecteur, communs aux deux téléviseurs.
   const legal = useLicensesSettings(model.about.version);
   // « Personnalisation » : le bandeau principal de l'accueil (réglage du compte).
@@ -124,6 +131,7 @@ export function SettingsRedesign({ navigation, route }: Props) {
           renderTier={lite.renderTier}
           onSelectLiteMode={lite.onSelectLiteMode}
           onSelectCardSize={cardSizeStore.set}
+          bootSound={bootSound}
           onMoveNavEntry={nav.onMoveNavEntry}
           onToggleNavEntry={nav.onToggleNavEntry}
           onShowAllNav={nav.onShowAllNav}

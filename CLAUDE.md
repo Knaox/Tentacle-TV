@@ -422,6 +422,35 @@ marque de héros. La mascotte n'y paraît qu'en ILLUSTRATION d'un état
 l'identité, c'est l'icône en couches, le Top Shelf et le violet → rose en
 touches. Détail : `docs/TV-REFONTE.md`, « Le logo dans l'app : aucun ».
 
+## Ouverture du démarrage (Apple TV) — l'écran du poulpe EST l'accueil
+
+Au démarrage À FROID qui mène à l'accueil, le logo s'assemble pendant que l'app
+charge, appuie sur lecture (« ta »), son écran s'allume (« dum ») sur l'accueil
+lui-même, puis la caméra plonge jusqu'à l'échelle 1 (conception : page `/survey/`
+du site). Carnet : `docs/OUVERTURE.md`.
+
+- **Le pur est partagé** : `@tentacle-tv/shared/brandIntro` (courbes, géométrie
+  TIRÉE des constantes générées du logo — jamais un SVG relu —, caméra,
+  chorégraphie, attente, partition du son) ; la synthèse Web Audio à part
+  (`…/brandIntro/synth`). Quand la jouer, attendre, renoncer : tv-core `boot/`.
+- **Aiguillage par le trait `brandIntro`** (vrai sur tvOS, faux sur Android TV,
+  qui garde `BootView`). Jamais : mouvement réduit, jumelage, « Qui regarde ? »,
+  une fenêtre du démarrage due, une relance de lecture. Renoncement (rideau
+  d'encre, sans son) devant hors ligne, migration, accès suspendu, accueil en
+  échec. L'accueil pas prêt : le poulpe attend sur son bouton lecture (8 s au plus).
+- **L'app est montée DANS l'écran** (`redesign/boot/IntroScreenPlane`) et n'en
+  change jamais d'arbre : à l'arrivée, identité et découpe retirée. Rien que des
+  transformations et des opacités, horloge Reanimated sur le fil d'interface,
+  tableaux de tv-core (`sampleIntro`), plaques 5× pour la plongée (`plateSwapAt`).
+- **Le son est un FICHIER DÉRIVÉ** de la synthèse (`pnpm --filter
+  @tentacle-tv/tv sound:intro` : Chrome sans tête, `OfflineAudioContext`, crête
+  −9 dBFS, AAC) — jamais retouché ; joué par `TentacleBootSound.m`
+  (AVAudioPlayer, `playAtTime:` à l'heure de l'image, catégorie « ambient » :
+  une musique en cours n'est pas coupée). Réglage d'appareil « Son au
+  démarrage » (`tentacle_tv_boot_sound`). Aucune capacité serveur.
+- **L'écran de lancement est l'encre seule** (`BOOT_INK`, #0D0B13) : la première
+  image de l'ouverture ; sans elle, la mascotte n'y paraît que si le démarrage traîne.
+
 ## Avatars — une troupe dessinée, envoyée comme photo Jellyfin
 
 La galerie des photos de profil (web, bureau, fenêtre étroite : `profiles/avatarGallery/`,

@@ -35,6 +35,8 @@
 		AB12CD34EF5601234567A105 /* TentacleRevealScroller.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */; };
 		D3F11E5C0DE0000000000001 /* TentacleFocusInput.m in Sources */ = {isa = PBXBuildFile; fileRef = D3F11E5C0DE0000000000002 /* TentacleFocusInput.m */; };
 		E2A7017C0DE0000000000001 /* TentacleRowScroller.m in Sources */ = {isa = PBXBuildFile; fileRef = E2A7017C0DE0000000000002 /* TentacleRowScroller.m */; };
+		B00750D0DE0000000000A001 /* TentacleBootSound.m in Sources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000A002 /* TentacleBootSound.m */; };
+		B00750D0DE0000000000A003 /* boot-tadum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000A004 /* boot-tadum.m4a */; };
 		D3F11E5C0DE0000000000003 /* TentacleRevealMotion.m in Sources */ = {isa = PBXBuildFile; fileRef = D3F11E5C0DE0000000000004 /* TentacleRevealMotion.m */; };
 		AB12CD34EF5601234567A108 /* TentacleNeighborGuides.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */; };
 		AB12CD34EF5601234567DE01 /* TentacleDesaturateView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567DE02 /* TentacleDesaturateView.m */; };
@@ -88,6 +90,8 @@
 		AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleRevealScroller.m; path = TentacleTV/TentacleRevealScroller.m; sourceTree = "<group>"; };
 		D3F11E5C0DE0000000000002 /* TentacleFocusInput.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleFocusInput.m; path = TentacleTV/TentacleFocusInput.m; sourceTree = "<group>"; };
 		E2A7017C0DE0000000000002 /* TentacleRowScroller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleRowScroller.m; path = TentacleTV/TentacleRowScroller.m; sourceTree = "<group>"; };
+		B00750D0DE0000000000A002 /* TentacleBootSound.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleBootSound.m; path = TentacleTV/TentacleBootSound.m; sourceTree = "<group>"; };
+		B00750D0DE0000000000A004 /* boot-tadum.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; name = "boot-tadum.m4a"; path = "../assets/sound/boot-tadum.m4a"; sourceTree = "<group>"; };
 		D3F11E5C0DE0000000000004 /* TentacleRevealMotion.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleRevealMotion.m; path = TentacleTV/TentacleRevealMotion.m; sourceTree = "<group>"; };
 		D3F11E5C0DE0000000000005 /* TentacleRevealScroller+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "TentacleRevealScroller+Private.h"; path = "TentacleTV/TentacleRevealScroller+Private.h"; sourceTree = "<group>"; };
 		AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleNeighborGuides.m; path = TentacleTV/TentacleNeighborGuides.m; sourceTree = "<group>"; };
@@ -152,6 +156,8 @@
 				AB12CD34EF5601234567A106 /* TentacleRevealScroller.m */,
 				D3F11E5C0DE0000000000002 /* TentacleFocusInput.m */,
 				D3F11E5C0DE0000000000004 /* TentacleRevealMotion.m */,
+				B00750D0DE0000000000A002 /* TentacleBootSound.m */,
+				B00750D0DE0000000000A004 /* boot-tadum.m4a */,
 				E2A7017C0DE0000000000002 /* TentacleRowScroller.m */,
 				D3F11E5C0DE0000000000005 /* TentacleRevealScroller+Private.h */,
 				AB12CD34EF5601234567A109 /* TentacleNeighborGuides.m */,
@@ -336,6 +342,7 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				57C010109388BEA9DAC690CB /* PrivacyInfo.xcprivacy in Resources */,
 				1F0A7E1000C0FFEE0000B100 /* Inter-Regular.ttf in Resources */,
+				B00750D0DE0000000000A003 /* boot-tadum.m4a in Resources */,
 				1F0A7E1100C0FFEE0000B101 /* Inter-Medium.ttf in Resources */,
 				1F0A7E1200C0FFEE0000B102 /* Inter-SemiBold.ttf in Resources */,
 				1F0A7E1300C0FFEE0000B103 /* Inter-Bold.ttf in Resources */,
@@ -505,6 +512,7 @@
 				AB12CD34EF5601234567A105 /* TentacleRevealScroller.m in Sources */,
 				D3F11E5C0DE0000000000001 /* TentacleFocusInput.m in Sources */,
 				D3F11E5C0DE0000000000003 /* TentacleRevealMotion.m in Sources */,
+				B00750D0DE0000000000A001 /* TentacleBootSound.m in Sources */,
 				E2A7017C0DE0000000000001 /* TentacleRowScroller.m in Sources */,
 				AB12CD34EF5601234567A108 /* TentacleNeighborGuides.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,

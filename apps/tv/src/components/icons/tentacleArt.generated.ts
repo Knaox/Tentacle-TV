@@ -88,6 +88,45 @@ export const SMILE_PATH = "M 114 95 C 117.5 100, 122.5 100, 126 95";
 /** Le chapeau vit dans son propre repère ; voici comment l'y ramener. */
 export const HAT_TRANSFORM = "translate(120 33) rotate(-8) scale(0.64) translate(-120 -48)";
 
+export interface GradientStop {
+  offset: number;
+  color: string;
+  opacity?: number;
+}
+
+export interface LinearGradientSpec {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  stops: readonly GradientStop[];
+}
+
+/** Les dégradés du logo (repère 240 × 240, userSpaceOnUse) : gV cadre et bande, gHd tête, gA bras,
+ *  gT vitre, gS reflet, gP lecture, gH chapeau. */
+export const LOGO_GRADIENTS: Readonly<Record<"gV" | "gHd" | "gA" | "gT" | "gS" | "gP" | "gH", LinearGradientSpec>> = {
+  gV: { x1: 46, y1: 26, x2: 196, y2: 214, stops: [{ offset: 0.0, color: "#A78BFA" }, { offset: 0.42, color: "#D946EF" }, { offset: 1.0, color: "#EC4899" }] },
+  gHd: { x1: 0, y1: 26, x2: 0, y2: 140, stops: [{ offset: 0.0, color: "#C4B5FD" }, { offset: 0.5, color: "#A855F7" }, { offset: 1.0, color: "#D946EF" }] },
+  gA: { x1: 0, y1: 118, x2: 0, y2: 230, stops: [{ offset: 0.0, color: "#9333EA" }, { offset: 0.4, color: "#D946EF" }, { offset: 1.0, color: "#EC4899" }] },
+  gT: { x1: 0, y1: 104, x2: 0, y2: 196, stops: [{ offset: 0.0, color: "#341054" }, { offset: 1.0, color: "#190933" }] },
+  gS: { x1: 0, y1: 34, x2: 0, y2: 86, stops: [{ offset: 0.0, color: "#fff", opacity: 0.28 }, { offset: 1.0, color: "#fff", opacity: 0.0 }] },
+  gP: { x1: 114, y1: 134, x2: 142, y2: 166, stops: [{ offset: 0.0, color: "#F0ABFC" }, { offset: 1.0, color: "#EC4899" }] },
+  gH: { x1: 0, y1: 14, x2: 0, y2: 78, stops: [{ offset: 0.0, color: "#3C3450" }, { offset: 1.0, color: "#15111F" }] },
+};
+
+/** L'encre du visage (pupilles, sourire). */
+export const LOGO_INK = "#241040";
+
+/** Les couleurs à plat du dessin : joues, crâne du pavillon et ses yeux, ventouses. */
+export const LOGO_COLORS = {
+  cheek: "#DB2777",
+  cheekOpacity: 0.5,
+  skull: "#F5F0FF",
+  skullEyes: "#241145",
+  sucker: "#FBCFE8",
+  suckerOpacity: 0.8,
+} as const;
+
 /** La calotte du tricorne. */
 export const HAT_PATH =
   "M 120 17 C 141 17, 157 28, 164 45 C 173 37, 184 31, 194 28 C 201 26, 205 31, 202 38 C 196 52, 185 63, 171 70 C 156 77, 139 80, 120 80 C 101 80, 84 77, 69 70 C 55 63, 44 52, 38 38 C 35 31, 39 26, 46 28 C 56 31, 67 37, 76 45 C 83 28, 99 17, 120 17 Z";
