@@ -23,9 +23,9 @@ describe("previewZoneWatchLayout — la version allégée, remplie, à gauche de
     expect(previewZoneWatchLayout(card)).toEqual({ width: 640 - W.gutter - 176, logoMaxHeight: W.logoMax, synopsisLines: 3, bottom: T.bottom });
   });
 
-  it("le héros garde la place de ses boutons : deux lignes", () => {
+  it("le héros garde la place de ses boutons : une ligne de description", () => {
     const l = previewZoneWatchLayout(hero);
-    expect(l.synopsisLines).toBe(2);
+    expect(l.synopsisLines).toBe(1);
     expect(l.bottom).toBe(T.bottom + T.heroActions + T.heroActionsGap);
   });
 

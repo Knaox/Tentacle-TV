@@ -57,8 +57,8 @@ export const PREVIEW_ZONE_WATCH = {
   meta: 30,
   /** Une ligne de la description courte (sa police : 23, interligne 31). */
   synopsisLine: 31,
-  /** La ligne de l'indice de la télécommande. */
-  hint: 28,
+  /** L'indice de la télécommande : deux lignes de 26 (un geste par ligne, jamais coupé). */
+  hint: 52,
   /** Le logo : sa plus grande et sa plus petite hauteur. */
   logoMax: 92,
   logoMin: 56,
