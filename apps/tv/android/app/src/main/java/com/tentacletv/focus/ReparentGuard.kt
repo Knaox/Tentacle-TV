@@ -13,7 +13,7 @@ import java.util.WeakHashMap
  * focalisé retiré perd le focus, qu'Android rend aussitôt au PREMIER
  * focalisable de la fenêtre (`rootViewRequestFocus` : le héros) — un BAS
  * remontait au héros. Les enveloppes connues ne s'aplatissent plus
- * (`collapsable={false}` : `CardShell`, `MorphCard`, `ProfileTile`) ; ce filet
+ * (`collapsable={false}` : `CardShell`, `ProfileTile`) ; ce filet
  * couvre les autres : le focus perdu par un élément DÉTACHÉ, que le même lot
  * a remis à sa place, lui revient — à moins que le focus ait été repris
  * ailleurs entre-temps. Un élément vraiment démonté reste démonté : rien.

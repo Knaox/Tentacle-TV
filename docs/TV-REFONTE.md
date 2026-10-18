@@ -84,7 +84,8 @@ navigation de l'app, sans lecteur. L'app actuelle ne les importe pas encore.
 - **La carte qui se redresse** (`MorphCard`) : 16:9 au repos, affiche 2:3 au
   focus, en fondu, sans recalcul de mise en page. L'affiche DESCEND (sur la
   légende, qui s'efface) : elle ne monte jamais sur le titre de la rangée.
-  Plus montée par l'accueil ni « Pour vous » depuis le 2026-10-01.
+  Plus montée par l'accueil ni « Pour vous » depuis le 2026-10-01 ; supprimée
+  le 2026-10-18 avec les cartes qui grandissent.
 - **Aucune action sur la carte, un GRAND PANNEAU à l'appui maintenu**
   (direction de l'utilisateur du 2026-10-01 : le plateau posé sur la carte
   était « trop peu visible », « ça ne se fait pas directement sur la card ») :

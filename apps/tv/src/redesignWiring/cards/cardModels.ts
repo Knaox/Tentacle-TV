@@ -35,8 +35,8 @@ import { sameCard } from "./sameCard";
  */
 
 export interface CardModelOptions {
-  /** La carte qui les rendra : vignette 16:9, affiche 2:3, ou carte qui se redresse. */
-  variant: "landscape" | "poster" | "morph";
+  /** La carte qui les rendra : vignette 16:9 ou affiche 2:3. */
+  variant: "landscape" | "poster";
   /** La légende sous la carte, titre par titre (fonction stable de préférence). */
   subtitle?: (item: MediaItem) => string | undefined;
   /** Ce que la carte montre, pour la note : l'item (vignette d'épisode) ou sa

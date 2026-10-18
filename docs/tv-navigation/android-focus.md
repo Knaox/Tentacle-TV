@@ -120,7 +120,7 @@ dans l'historique de la branche `lot-atv/a1` (« test(android) : … l'espion
 des écritures de focus »).
 
 - `collapsable={false}` sur les enveloppes qui changent au focus :
-  `CardShell`, `MorphCard`, `ProfileTile` (sans effet sur Apple TV) ;
+  `CardShell`, `ProfileTile` (sans effet sur Apple TV) ;
 - `ReparentGuard.kt`, le filet pour les autres : un focus effacé par un
   élément DÉTACHÉ que le même lot a remis lui revient — sauf si le focus a été
   repris ailleurs entre-temps. Un élément vraiment démonté reste démonté.

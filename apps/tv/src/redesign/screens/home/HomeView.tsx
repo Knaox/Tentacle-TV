@@ -60,7 +60,7 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 export interface HomeRowModel {
   key: string;
   title: string;
-  variant: "landscape" | "poster" | "morph";
+  variant: "landscape" | "poster";
   cards: CardModel[];
 }
 
