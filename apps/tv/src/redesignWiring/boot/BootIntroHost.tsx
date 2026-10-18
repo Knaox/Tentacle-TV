@@ -18,7 +18,7 @@ const SOUND_TAIL_MS = 5_000;
  * L'OUVERTURE du démarrage, branchée (Apple TV) : elle se joue pendant que
  * l'app charge — l'app (`children`) se monte DANS l'écran du poulpe dès
  * qu'elle est prête —, attend sur le bouton lecture tant que l'accueil n'est
- * pas prêt, joue le ta-dum à l'heure de l'image (réglage « Son au
+ * pas prêt — l'accueil, ou « Qui regarde ? » sur une TV à profils —, joue le ta-dum à l'heure de l'image (réglage « Son au
  * démarrage »), plonge, et rend l'app à l'identité. Renonce (rideau de
  * l'encre) devant un écran bloquant ou un accueil en échec (tv-core
  * `bootIntroOutcome`). La décision de la jouer est prise avant (`bootPlan`).
@@ -63,7 +63,12 @@ export function BootIntroHost({ children }: { children: ReactNode }) {
   }, [heldSince]);
 
   const report = useBootIntroReport();
-  const outcome = bootIntroOutcome({ ...report, heldMs: heldOut ? BOOT_INTRO_MAX_HOLD_MS : 0 });
+  const outcome = bootIntroOutcome({
+    route: report.route,
+    screen: report.route === null ? null : report.screens[report.route] ?? null,
+    blocked: report.blocked,
+    heldMs: heldOut ? BOOT_INTRO_MAX_HOLD_MS : 0,
+  });
 
   const reveal = useCallback(() => {
     clock.landed.value = 1;

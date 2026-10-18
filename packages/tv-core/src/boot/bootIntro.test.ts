@@ -29,32 +29,45 @@ describe("quand jouer l'ouverture", () => {
     expect(decideBootIntro(cold)).toBe("intro");
   });
 
-  it("jamais sur une plateforme qui ne l'a pas, ni avec le mouvement réduit", () => {
-    expect(decideBootIntro({ ...cold, supported: false })).toBe("boot");
-    expect(decideBootIntro({ ...cold, reducedMotion: true })).toBe("boot");
+  // Régression du 2026-10-18 (« Chambre », build Release) : une TV passée aux profils
+  // démarre sur « Qui regarde ? » à chaque lancement — l'ouverture ne s'y jouait jamais.
+  it("d'elle-même aussi sur « Qui regarde ? » (TV à profils) et sur une fenêtre du démarrage", () => {
+    for (const initialRoute of ["Profiles", "PinSetup", "RailSetup", "PhotoSetup"]) {
+      expect(decideBootIntro({ ...cold, initialRoute })).toBe("intro");
+    }
   });
 
-  it("jamais vers le jumelage, « Qui regarde ? », une fenêtre du démarrage ou une relance", () => {
-    for (const initialRoute of ["PairCode", "Profiles", "PinSetup", "RailSetup", "PhotoSetup"]) {
-      expect(decideBootIntro({ ...cold, initialRoute })).toBe("boot");
-    }
+  it("jamais sur une plateforme qui ne l'a pas, avec le mouvement réduit, au jumelage, ni pour une relance", () => {
+    expect(decideBootIntro({ ...cold, supported: false })).toBe("boot");
+    expect(decideBootIntro({ ...cold, reducedMotion: true })).toBe("boot");
+    expect(decideBootIntro({ ...cold, reducedMotion: true, initialRoute: "Profiles" })).toBe("boot");
+    expect(decideBootIntro({ ...cold, initialRoute: "PairCode" })).toBe("boot");
     expect(decideBootIntro({ ...cold, interruptedPlayback: true })).toBe("boot");
   });
 });
 
 describe("attendre, partir, renoncer", () => {
-  const watch = { homeReady: false, homeFailed: false, blocked: false, leftHome: false, heldMs: 0 };
+  const watch = { route: "Home", screen: null, blocked: false, heldMs: 0 } as const;
 
-  it("attend l'accueil, part dès qu'il est prêt, ou au bout de l'attente maximale", () => {
+  it("attend que la navigation et le premier écran soient prêts, part dès qu'il l'est, ou au bout de l'attente", () => {
+    expect(bootIntroOutcome({ ...watch, route: null })).toBe("wait");
     expect(bootIntroOutcome(watch)).toBe("wait");
-    expect(bootIntroOutcome({ ...watch, homeReady: true })).toBe("go");
+    expect(bootIntroOutcome({ ...watch, screen: "loading" })).toBe("wait");
+    expect(bootIntroOutcome({ ...watch, screen: "ready" })).toBe("go");
     expect(bootIntroOutcome({ ...watch, heldMs: BOOT_INTRO_MAX_HOLD_MS })).toBe("go");
   });
 
-  it("renonce devant le hors ligne, une migration, un accès suspendu, un accueil en échec ou quitté", () => {
-    expect(bootIntroOutcome({ ...watch, homeReady: true, blocked: true })).toBe("abort");
-    expect(bootIntroOutcome({ ...watch, homeFailed: true })).toBe("abort");
-    expect(bootIntroOutcome({ ...watch, leftHome: true })).toBe("abort");
+  it("« Qui regarde ? » attend sa rangée ; une fenêtre du démarrage part dès qu'elle est montée", () => {
+    expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "loading" })).toBe("wait");
+    expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "ready" })).toBe("go");
+    expect(bootIntroOutcome({ ...watch, route: "RailSetup" })).toBe("go");
+  });
+
+  it("renonce devant le hors ligne, une migration, un accès suspendu, un écran en échec ou le jumelage", () => {
+    expect(bootIntroOutcome({ ...watch, screen: "ready", blocked: true })).toBe("abort");
+    expect(bootIntroOutcome({ ...watch, screen: "failed" })).toBe("abort");
+    expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "failed" })).toBe("abort");
+    expect(bootIntroOutcome({ ...watch, route: "PairCode" })).toBe("abort");
   });
 });
 

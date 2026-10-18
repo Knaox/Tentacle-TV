@@ -14,6 +14,7 @@ import { startupRouteAfter, startupStackRoute } from "../../navigation/startupWi
 import { useBackLayer } from "../back/BackScope";
 import { pinMessageOf, refusalMessage, tileModelOf } from "./profilesModel";
 import { useProfilesFlow } from "./useProfilesFlow";
+import { useReportScreenToBootIntro } from "../boot/bootIntroGate";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profiles">;
 
@@ -41,6 +42,8 @@ export function ProfilesRedesign({ navigation, route }: Props) {
   );
   const flow = useProfilesFlow(route.params?.intent ?? "launch", go);
   const { listing, phase, remember, notice, entry, unpairArmed, entering } = flow;
+  // L'ouverture du démarrage attend la rangée pour allumer l'écran du poulpe dessus.
+  useReportScreenToBootIntro("Profiles", phase.kind === "loading" ? "loading" : phase.kind === "error" ? "failed" : "ready");
 
   const now = Date.now();
   const serverUrl = storage.getItem("tentacle_server_url");

@@ -424,9 +424,11 @@ touches. Détail : `docs/TV-REFONTE.md`, « Le logo dans l'app : aucun ».
 
 ## Ouverture du démarrage (Apple TV) — l'écran du poulpe EST l'accueil
 
-Au démarrage À FROID qui mène à l'accueil, le logo s'assemble pendant que l'app
-charge, appuie sur lecture (« ta »), son écran s'allume (« dum ») sur l'accueil
-lui-même, puis la caméra plonge jusqu'à l'échelle 1 (conception : page `/survey/`
+À CHAQUE démarrage À FROID d'une TV jumelée, d'elle-même (jamais l'attente d'un
+geste), le logo s'assemble pendant que l'app charge, appuie sur lecture (« ta »),
+son écran s'allume (« dum ») sur le PREMIER écran lui-même — l'accueil, « Qui
+regarde ? » sur une TV à profils, une fenêtre du démarrage —, puis la caméra
+plonge jusqu'à l'échelle 1 (conception : page `/survey/`
 du site). Carnet : `docs/OUVERTURE.md`.
 
 - **Le pur est partagé** : `@tentacle-tv/shared/brandIntro` (courbes, géométrie
@@ -434,10 +436,12 @@ du site). Carnet : `docs/OUVERTURE.md`.
   chorégraphie, attente, partition du son) ; la synthèse Web Audio à part
   (`…/brandIntro/synth`). Quand la jouer, attendre, renoncer : tv-core `boot/`.
 - **Aiguillage par le trait `brandIntro`** (vrai sur tvOS, faux sur Android TV,
-  qui garde `BootView`). Jamais : mouvement réduit, jumelage, « Qui regarde ? »,
-  une fenêtre du démarrage due, une relance de lecture. Renoncement (rideau
-  d'encre, sans son) devant hors ligne, migration, accès suspendu, accueil en
-  échec. L'accueil pas prêt : le poulpe attend sur son bouton lecture (8 s au plus).
+  qui garde `BootView`). Jamais : mouvement réduit, jumelage, une relance de
+  lecture. Renoncement (rideau d'encre, sans son) devant hors ligne, migration,
+  accès suspendu, écran en échec. Le premier écran pas prêt (il le dit à la porte,
+  `useReportScreenToBootIntro`) : le poulpe attend sur son bouton lecture (8 s au
+  plus). Réservée à l'accueil, elle ne se jouait jamais sur une TV à profils
+  (« Chambre », 2026-10-18).
 - **L'app est montée DANS l'écran** (`redesign/boot/IntroScreenPlane`) et n'en
   change jamais d'arbre : à l'arrivée, identité et découpe retirée. Rien que des
   transformations et des opacités, horloge Reanimated sur le fil d'interface,

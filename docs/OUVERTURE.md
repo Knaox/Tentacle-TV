@@ -10,24 +10,33 @@
 
 Règle : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`).
 
-- **À chaque démarrage À FROID qui mène à l'accueil**, sur une plateforme qui a
-  le trait `brandIntro` (Apple TV seulement ; Android TV garde `BootView`).
-- **Jamais** : mouvement réduit (tvOS › Accessibilité), jumelage, « Qui
-  regarde ? » (profil et code PIN), une fenêtre du démarrage due (code PIN
-  conseillé, barre, photo), une lecture interrompue à relancer (la fiche
-  s'ouvre). Le retour d'arrière-plan n'est pas un démarrage : rien ne se rejoue.
+- **À chaque démarrage À FROID d'une TV jumelée, d'elle-même** — aucun geste,
+  aucun appui attendu (une app native n'a pas de règle d'autolecture : seule
+  l'attente des DONNÉES existe) —, sur une plateforme qui a le trait
+  `brandIntro` (Apple TV seulement ; Android TV garde `BootView`). L'écran du
+  poulpe s'allume sur le PREMIER écran : l'accueil, « Qui regarde ? » sur une TV
+  passée aux profils de la Famille (chaque lancement y repasse, sauf un profil
+  retenu), ou une fenêtre du démarrage due (code PIN conseillé, barre, photo).
+  Régression payée le 2026-10-18 (« Chambre », Release) : réservée à l'accueil,
+  l'ouverture ne se jouait JAMAIS sur une TV à profils.
+- **Jamais** : mouvement réduit (tvOS › Accessibilité), jumelage (sans
+  session), une lecture interrompue à relancer (la fiche s'ouvre). Le retour
+  d'arrière-plan n'est pas un démarrage : rien ne se rejoue.
   Sans ouverture, l'écran de lancement (l'encre seule) reste, et la mascotte
   d'attente n'y paraît en fondu que si le démarrage traîne (400 ms).
 - **Elle camoufle le chargement** : l'app se monte DANS l'écran du poulpe dès
   qu'elle est prête. Si l'accueil n'est pas prêt au moment d'appuyer
   (1 160 ms), le poulpe attend sur son bouton lecture, qui scintille (il bat,
   une onde en part, quatre étincelles, un clin d'œil) ; « ta », « dum » et la
-  plongée partent dès que l'accueil s'est montré d'un bloc (tv-core
-  `homeLoading`). Tout prêt : d'une traite, 3,01 s. Au bout de 8 s d'attente,
+  plongée partent dès que le premier écran est prêt : l'accueil montré d'un bloc
+  (tv-core `homeLoading`), la rangée de « Qui regarde ? » ; une fenêtre du
+  démarrage l'est dès qu'elle est montée. Tout prêt : d'une traite, 3,01 s. Au bout de 8 s d'attente,
   on plonge quand même dans l'accueil qui dit qu'il charge.
 - **Elle renonce** (rideau de l'encre, 160 + 280 ms, sans ta-dum) devant le
-  voile hors ligne, une migration de la base, « accès suspendu », un accueil en
-  échec, ou une navigation qui quitte l'accueil. L'app y paraît à l'identité.
+  voile hors ligne, une migration de la base, « accès suspendu », un premier
+  écran en échec, ou une navigation vers un écran hors de ceux-là (le jumelage).
+  « Qui regarde ? » qui ouvre seul le profil retenu, puis l'accueil : l'ouverture
+  suit, l'écran du poulpe montre le dernier. L'app y paraît à l'identité.
 
 ## Où vit quoi
 

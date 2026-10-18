@@ -27,7 +27,7 @@ import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { useHomeHero } from "./useHomeHero";
 import { useHomeRowModels } from "./useHomeRowModels";
 import { useArrivalQuiet } from "./useArrivalQuiet";
-import { useReportHomeToBootIntro } from "../boot/bootIntroGate";
+import { useReportScreenToBootIntro } from "../boot/bootIntroGate";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -100,7 +100,7 @@ export function HomeRedesign({ navigation, route }: Props) {
   // Le mode de mesure (Android TV, éteint par défaut) : l'accueil est prêt.
   usePerfReady("accueil", !loading && !failed);
   // L'ouverture du démarrage attend l'accueil d'un bloc pour allumer l'écran du poulpe dessus.
-  useReportHomeToBootIntro(!loading && !failed, failed);
+  useReportScreenToBootIntro("Home", failed ? "failed" : loading ? "loading" : "ready");
   const entryKey = homeEntryKey({ failed, loading, empty, hasHero: hero.hero !== null, firstRowKey: home.rows[0]?.key ?? null });
 
   // Ses rangées reviennent au début : hors de l'écran, au changement de page, et par Retour.
