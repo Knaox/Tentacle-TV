@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GRID_COLUMN_HOLD_START, GRID_COLUMN_RETURN_MS, gridColumnHoldFocus, gridColumnHoldSettle, type GridColumnHoldState } from "./gridColumnHold";
+import { GRID_COLUMN_HOLD_START, GRID_COLUMN_RETURN_MS, gridColumnHoldFocus, gridColumnHoldMove, gridColumnHoldSettle, type GridColumnHoldState } from "./gridColumnHold";
 
 /** Une grille de 5 colonnes et 1 200 affiches (le jeu « grande bibliothèque » du banc : 420 → 425 → 430). */
 const COLUMNS = 5;
@@ -97,6 +97,26 @@ describe("gridColumnHold — HAUT tenu jusqu'en haut, et les filtres", () => {
     state = gridColumnHoldFocus(state, 0, COLUMNS, COUNT, 3_000); // BAS : l'affiche au plus proche
     expect(state.column).toBe(0);
     expect(settle(state).correct).toBeNull();
+  });
+
+  it("revue 22 : HAUT, DROITE, BAS en moins de 1,5 s (deux filtres) : une entrée voulue, au plus proche, aucun saut", () => {
+    let state = settle(walk(GRID_COLUMN_HOLD_START, [2])).state;
+    state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 1_000); // HAUT : pill:status
+    state = gridColumnHoldMove(state, "droite");
+    state = gridColumnHoldFocus(state, null, COLUMNS, COUNT, 1_400); // DROITE : pill:years
+    state = gridColumnHoldFocus(state, 4, COLUMNS, COUNT, 1_800); // BAS : sous pill:years
+    expect(state.column).toBe(4);
+    expect(settle(state).correct).toBeNull();
+  });
+
+  it("HAUT tenu à travers DEUX rangées de filtres (pastilles et filtres actifs), sans pas de côté : la colonne tient", () => {
+    const state = walk(GRID_COLUMN_HOLD_START, [123, 60, null, null, 0]);
+    expect(settle(state).correct).toBe(3);
+  });
+
+  it("un pas de côté DANS la grille ne compte pas comme un passage par les filtres", () => {
+    const state = gridColumnHoldMove(walk(GRID_COLUMN_HOLD_START, [2]), "droite");
+    expect(state.sideways).toBe(false);
   });
 
   it("un index hors du catalogue vaut hors de la grille", () => {

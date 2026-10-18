@@ -1,3 +1,5 @@
+import type { Direction } from "../input/keys";
+
 /**
  * La COLONNE TENUE d'une grille d'affiches (GR-7 bis, 18/10) : HAUT et BAS ne
  * changent jamais de colonne, même au DÉFILEMENT ACCÉLÉRÉ.
@@ -29,8 +31,12 @@
  *   focus y REVIENT vite (`GRID_COLUMN_RETURN_MS`) — HAUT tenu jusqu'en haut,
  *   tvOS traverse les filtres au bout de sa course et revient sur la première
  *   ligne (relevé du 18/10 : grid:0 au lieu de grid:3), même après une pause
- *   où la grille paraît posée (une machine chargée) ; resté plus longtemps
- *   dehors, c'est une nouvelle entrée : au plus proche (GR-3).
+ *   où la grille paraît posée (une machine chargée) — la traversée ne fait
+ *   aucun pas de côté (elle peut franchir deux rangées de filtres) ; resté
+ *   plus longtemps dehors, ou passé d'un filtre à l'autre (un pas GAUCHE ou
+ *   DROITE dehors, même vite : HAUT, DROITE, BAS — `gridColumnHoldMove`),
+ *   c'est une nouvelle entrée : au plus proche (GR-3). L'ordre des évènements
+ *   n'y gêne pas : le retour, qui décide, vient après le pas de côté.
  *
  * Module pur : l'adaptateur dit les focus et la grille posée, puis réclame la
  * clé rendue.
@@ -43,9 +49,11 @@ export interface GridColumnHoldState {
   focused: number | null;
   /** Quand le focus est sorti de la grille ; `null` : il y est. */
   leftAt: number | null;
+  /** Un pas GAUCHE ou DROITE depuis la sortie (d'un filtre à l'autre) : la traversée d'un HAUT tenu n'en fait aucun. */
+  sideways: boolean;
 }
 
-export const GRID_COLUMN_HOLD_START: GridColumnHoldState = { column: null, focused: null, leftAt: null };
+export const GRID_COLUMN_HOLD_START: GridColumnHoldState = { column: null, focused: null, leftAt: null, sideways: false };
 
 /**
  * Revenu dans la grille moins de tant après en être sorti, c'est le même
@@ -79,14 +87,24 @@ export function gridColumnHoldFocus(state: GridColumnHoldState, index: number | 
   }
   const perLine = perLineOf(columns);
   const column = index % perLine;
-  const entry = { column, focused: index, leftAt: null };
+  const entry = { column, focused: index, leftAt: null, sideways: false };
   // L'entrée dans la grille, ou le retour après un vrai séjour dehors : la colonne voulue, c'est celle-ci.
   if (state.column === null) return entry;
-  if (state.leftAt !== null) return at - state.leftAt <= GRID_COLUMN_RETURN_MS ? { ...state, focused: index, leftAt: null } : entry;
+  if (state.leftAt !== null) {
+    // La traversée d'un HAUT tenu : aucun pas de côté, et un retour rapide. Un pas de côté dehors
+    // (HAUT, DROITE, BAS : on a changé de filtre), ou un séjour : une entrée voulue, au plus proche.
+    const crossing = !state.sideways && at - state.leftAt <= GRID_COLUMN_RETURN_MS;
+    return crossing ? { ...state, focused: index, leftAt: null, sideways: false } : entry;
+  }
   if (state.focused === null) return entry;
   // Un pas dans la même ligne : la colonne voulue change.
   if (Math.floor(state.focused / perLine) === Math.floor(index / perLine)) return entry;
   return { ...state, focused: index };
+}
+
+/** Un pas (ou un glisser) vers `direction` : GAUCHE ou DROITE HORS de la grille, c'est un passage voulu par les filtres. */
+export function gridColumnHoldMove(state: GridColumnHoldState, direction: Direction): GridColumnHoldState {
+  return state.leftAt !== null && (direction === "gauche" || direction === "droite") ? { ...state, sideways: true } : state;
 }
 
 /**

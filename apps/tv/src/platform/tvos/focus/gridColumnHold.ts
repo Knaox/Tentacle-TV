@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useRef } from "react";
-import { GRID_COLUMN_HOLD_START, GRID_KEY_PREFIX, gridColumnHoldFocus, gridColumnHoldSettle, gridIndexOf, gridKey } from "@tentacle-tv/tv-core";
+import {
+  GRID_COLUMN_HOLD_START,
+  GRID_KEY_PREFIX,
+  directionOf,
+  gridColumnHoldFocus,
+  gridColumnHoldMove,
+  gridColumnHoldSettle,
+  gridIndexOf,
+  gridKey,
+} from "@tentacle-tv/tv-core";
+import { useRemoteIntents } from "../../input";
 import type { FocusStore } from "./focusStore";
 
 /**
@@ -7,8 +17,9 @@ import type { FocusStore } from "./focusStore";
  * `focus/gridColumnHold.ts`, GR-7 bis) : l'applicateur dit à la règle chaque
  * focus de l'écran, et, la grille posée (le rappel rendu, que la vue appelle :
  * `gridSettlePort`), réclame l'affiche qu'elle rend — dans la ligne où l'on
- * est. Ni durée ni seuil ici (l'heure du focus seulement) ; les mêmes gestes
- * sur Android TV.
+ * est. Les pas GAUCHE / DROITE de l'entrée unique lui disent un passage voulu
+ * par les filtres. Ni durée ni seuil ici (l'heure du focus seulement) ; les
+ * mêmes gestes sur Android TV.
  */
 export function useGridColumnHold(focus: FocusStore, count: number, columns: number, prefix: string = GRID_KEY_PREFIX): () => void {
   const live = useRef({ count, columns, prefix });
@@ -23,6 +34,10 @@ export function useGridColumnHold(focus: FocusStore, count: number, columns: num
       }),
     [focus],
   );
+  useRemoteIntents((event) => {
+    const direction = directionOf(event.intent);
+    if (direction) state.current = gridColumnHoldMove(state.current, direction);
+  });
   return useCallback(() => {
     const { count: total, columns: perLine, prefix: keys } = live.current;
     const step = gridColumnHoldSettle(state.current, perLine, total);
