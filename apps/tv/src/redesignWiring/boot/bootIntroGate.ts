@@ -9,13 +9,15 @@ import { useEffect, useSyncExternalStore } from "react";
  * (`bootIntroOutcome`). Hors ouverture, rien ne le lit.
  */
 export interface BootIntroReport {
+  /** L'ouverture se joue : rien d'autre ne doit sonner ni jouer (l'aperçu de la zone attend). */
+  playing: boolean;
   homeReady: boolean;
   homeFailed: boolean;
   blocked: boolean;
   leftHome: boolean;
 }
 
-let report: BootIntroReport = { homeReady: false, homeFailed: false, blocked: false, leftHome: false };
+let report: BootIntroReport = { playing: false, homeReady: false, homeFailed: false, blocked: false, leftHome: false };
 const listeners = new Set<() => void>();
 
 function update(patch: Partial<BootIntroReport>): void {
@@ -37,6 +39,10 @@ export const bootIntroGate = {
   reportHome(ready: boolean, failed: boolean): void {
     update({ homeReady: ready, homeFailed: failed });
   },
+  /** L'ouverture commence, ou est arrivée (renoncement compris). */
+  reportPlaying(playing: boolean): void {
+    update({ playing });
+  },
   reportBlocked(blocked: boolean): void {
     update({ blocked });
   },
@@ -48,6 +54,11 @@ export const bootIntroGate = {
 
 export function useBootIntroReport(): BootIntroReport {
   return useSyncExternalStore(bootIntroGate.subscribe, bootIntroGate.snapshot, bootIntroGate.snapshot);
+}
+
+/** L'ouverture se joue (l'aperçu de bande-annonce de la zone attend son arrivée). */
+export function useBootIntroPlaying(): boolean {
+  return useSyncExternalStore(bootIntroGate.subscribe, () => report.playing, () => report.playing);
 }
 
 /** L'accueil dit où il en est (un effet : la porte n'est pas lue pendant son rendu). */

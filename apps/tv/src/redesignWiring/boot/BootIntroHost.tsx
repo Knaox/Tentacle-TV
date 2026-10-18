@@ -9,7 +9,7 @@ import { bootSound } from "../../platform/tvos/bootSound/bootSound";
 import { BootIntroView, useIntroScene } from "../../redesign/boot/BootIntroView";
 import { CLOCK, useIntroClock } from "../../redesign/boot/useIntroClock";
 import { Colors } from "../../theme/colors";
-import { useBootIntroReport } from "./bootIntroGate";
+import { bootIntroGate, useBootIntroReport } from "./bootIntroGate";
 
 /** La traîne du son après l'arrivée (le bloom de l'accord, la vague) : le lecteur se libère ensuite. */
 const SOUND_TAIL_MS = 5_000;
@@ -86,6 +86,11 @@ export function BootIntroHost({ children }: { children: ReactNode }) {
       if (finished) runOnJS(reveal)();
     });
   }, [outcome, phase, clock, curtain, reveal]);
+
+  // Tant qu'elle se joue, l'aperçu de la zone attend : rien ne sonne par-dessus le ta-dum.
+  useEffect(() => {
+    bootIntroGate.reportPlaying(phase !== "landed");
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== "landed") return undefined;
