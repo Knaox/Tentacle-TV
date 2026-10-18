@@ -39,7 +39,7 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(run([{ type: "tick", at: 450 }], state).phase).toBe("fetching");
   });
 
-  it("la carte ne grandit qu'au délai par défaut (800 ms), et seulement avec la première image", () => {
+  it("la vidéo ne paraît dans la zone qu'au délai par défaut (800 ms), et seulement avec la première image", () => {
     const ready = run([
       { type: "hover", at: 0 },
       { type: "tick", at: 450 },
@@ -51,13 +51,13 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(trailerPreviewVisible(run([{ type: "tick", at: 800 }], ready))).toBe(true);
   });
 
-  it("une première image tardive : la carte grandit dès qu'elle est là", () => {
+  it("une première image tardive : la vidéo paraît dès qu'elle est là", () => {
     const late = run([{ type: "hover", at: 0 }, { type: "tick", at: 450 }, { type: "streamFound", at: 500 }, { type: "tick", at: 900 }]);
     expect(trailerPreviewVisible(late)).toBe(false);
     expect(trailerPreviewVisible(run([{ type: "videoReady", at: 1_300 }], late))).toBe(true);
   });
 
-  it("sans première image (flux bloqué), rien ne grandit jamais — échec à 8 s", () => {
+  it("sans première image (flux bloqué), rien ne paraît jamais — échec à 8 s", () => {
     const stalled = run([{ type: "hover", at: 0 }, { type: "tick", at: 1_000 }, { type: "streamFound", at: 1_100 }, { type: "tick", at: 5_000 }]);
     expect(trailerPreviewVisible(stalled)).toBe(false);
     const failed = run([{ type: "tick", at: 1_100 + TRAILER_PREVIEW_TIMING.readyTimeoutMs }], stalled);
@@ -65,7 +65,7 @@ describe("TV_TRAILER_PREVIEW_TIMING — la machine du bureau aux temps du salon"
     expect(failed.failure).toBe("video");
   });
 
-  it("le focus qui part replie la carte : la vidéo reste le temps du fondu, puis rien", () => {
+  it("le focus qui part fait sortir la vidéo de la zone : elle reste le temps du fondu, puis rien", () => {
     const shown = run([{ type: "hover", at: 0 }, { type: "tick", at: 1_000 }, { type: "streamFound", at: 1_100 }, { type: "videoReady", at: 1_200 }, { type: "tick", at: 1_800 }]);
     const leaving = run([{ type: "unhover", at: 3_000 }], shown);
     expect(trailerPreviewVisible(leaving)).toBe(false);
@@ -126,7 +126,7 @@ describe("previewVideoKey / previewStartPosition", () => {
 });
 
 describe("le délai choisi sur le téléviseur", () => {
-  it("la carte grandit au délai ; la demande 350 ms avant, jamais sous 450 ms de focus tenu", () => {
+  it("la vidéo paraît au délai ; la demande 350 ms avant, jamais sous 450 ms de focus tenu", () => {
     expect(tvTrailerPreviewTiming(800)).toMatchObject({ revealMs: 800, intentMs: 450, intentStillMs: 0, volume: 0.7 });
     // 0,5 s n'est pas offert sur un téléviseur : une valeur d'avant vaut le défaut.
     expect(tvTrailerPreviewTiming(500)).toMatchObject({ revealMs: 800, intentMs: 450 });
