@@ -9,7 +9,7 @@ import type { CardModel } from "../../cards/cardTypes";
 import { GridLine, type GridLineModel } from "./GridLine";
 import { createGridMotion } from "./gridMotion";
 import { useGridPreviewWarm } from "./gridPreviewWarm";
-import { useGridSettlePort } from "./gridSettlePort";
+import { useGridSettleSignals } from "./gridSettlePort";
 import { useGridAhead } from "./useGridAhead";
 import { mountProfile } from "../../render/mountProfile";
 import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
@@ -129,9 +129,6 @@ export const PosterGrid = memo(function PosterGrid({
   // Le mouvement de la grille — son focus, son défilement : la préparation attend qu'elle se pose (`gridMotion`).
   const motion = useMemo(() => createGridMotion(), []);
   useEffect(() => () => motion.dispose(), [motion]);
-  // La grille posée, l'intégration rend la colonne si un défilement accéléré l'a perdue (`gridSettlePort`).
-  const settled = useGridSettlePort();
-  useEffect(() => (settled ? motion.onSettled(settled) : undefined), [motion, settled]);
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => motion.scrolled(event.nativeEvent.contentOffset.y), [motion]);
   const warm = useGridPreviewWarm(cards, columns, motion);
   const height = lineHeight(width);
@@ -158,7 +155,12 @@ export const PosterGrid = memo(function PosterGrid({
   const content = useMemo(() => ({ ...styles.content, paddingBottom: Math.max(GRID_BOTTOM, belowZoneBottomRoom(height)) }), [height]);
   // L'en-tête (titre, filtres, Retour) ramène la page tout en haut quand le focus y remonte :
   // les lignes, elles, se posent sous la zone (`BELOW_ZONE_REVEAL`, `GridLine`).
-  const shownHeader = useMemo(() => (header ? <FocusSection reveal={HEADER_REVEAL}>{header}</FocusSection> : header), [header]);
+  // La grille posée ou ralentie, l'intégration rend la colonne si un défilement accéléré l'a perdue (`gridSettlePort`).
+  const onHeaderLayout = useGridSettleSignals(motion, stride);
+  const shownHeader = useMemo(
+    () => (header ? <FocusSection reveal={HEADER_REVEAL} onLayout={onHeaderLayout}>{header}</FocusSection> : header),
+    [header, onHeaderLayout],
+  );
   return (
     // La zone d'aperçu de la grille : avant tout focus d'affiche, la première (`fallback`).
     <BelowZonePage zone={<PreviewZoneSlot fallback={cards[0] ?? null} />}>
