@@ -96,7 +96,7 @@ function jumps(r, watched) {
   const tf = focus[0];
   const all = trace.filter((row) => row[0] >= tf);
   let settledAt = 0;
-  // Les MOUVEMENTS de la page : des suites d'images qui bougent (> 0,5 pt), séparées d'au moins 50 ms d'immobilité.
+  // Les MOUVEMENTS de la page : des suites d'images qui bougent (> 0,5 pt), séparées d'au moins 150 ms d'immobilité (une fin de course sous 0,5 pt par image n'est pas un arrêt).
   const moving = new Set();
   let max = { pt: 0, key: null, at: null };
   let step = { pt: 0, key: null, at: null };
@@ -123,7 +123,7 @@ function jumps(r, watched) {
     }
   });
   const times = [...moving].sort((a, b) => a - b);
-  const movements = times.reduce((n, t, k) => (k === 0 || t - times[k - 1] > 50 ? n + 1 : n), 0);
+  const movements = times.reduce((n, t, k) => (k === 0 || t - times[k - 1] > 150 ? n + 1 : n), 0);
   return { movements, settledAtMs: settledAt, maxPt: max.pt, maxStepPt: step.pt, jumped: step.pt > JUMP_PT, key: step.pt > JUMP_PT ? step.key : max.key, atMsAfterFocus: step.pt > JUMP_PT ? step.at : max.at, watched: watched.length };
 }
 
@@ -194,6 +194,8 @@ export function summarize(suite, raw) {
  * - lecteur : jamais plus d'UNE vue vidéo montée à la fois ;
  * - mémoire : le tas JS ne dépasse pas celui de la référence de plus de 15 %.
  */
+const NOT_A_TITLE = /^(filter|pill|nav|library|hero):/;
+
 export const THRESHOLDS = { uiFps: 57, worstFrameMs: 100, fondMs: 200, videoMs: 900, jumpPt: JUMP_PT, mountedVideos: 1, heapGrowth: 1.15 };
 
 const check = (name, ok, value, target) => ({ name, ok, value, target });
@@ -216,7 +218,8 @@ export function verdicts(suite, summary, reference = null) {
       out.push(check(`${x.label} : i/s UI`, x.ui.fps60 >= T.uiFps, x.ui.fps60, `≥ ${T.uiFps}`));
       out.push(check(`${x.label} : pire image UI`, x.ui.worstMs <= T.worstFrameMs, x.ui.worstMs, `≤ ${T.worstFrameMs} ms`));
     }
-    if (x.fondSetMs !== undefined) {
+    // Une pastille, un raccourci du rail, une tuile de bibliothèque : pas un titre, pas d'aperçu à attendre.
+    if (x.fondSetMs !== undefined && !NOT_A_TITLE.test(x.endFocus ?? "")) {
       out.push(check(`${x.label} : fond posé`, x.fondSetMs != null && x.fondSetMs <= T.fondMs, x.fondSetMs, `≤ ${T.fondMs} ms`));
       out.push(check(`${x.label} : 1re image vidéo`, x.videoMs != null && x.videoMs <= T.videoMs, x.videoMs, `≤ ${T.videoMs} ms`));
       out.push(check(`${x.label} : saut`, Boolean(x.jumps) && !x.jumps.jumped, x.jumps?.maxStepPt ?? null, `≤ ${T.jumpPt} pt par image`));
