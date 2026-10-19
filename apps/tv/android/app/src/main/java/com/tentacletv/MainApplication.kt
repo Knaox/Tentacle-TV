@@ -13,6 +13,7 @@ import com.facebook.react.shell.MainPackageConfig
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 import com.swmansion.rnscreens.ScreenStack
+import com.tentacletv.boot.BootSoundPackage
 import com.tentacletv.device.DevicePackage
 import com.tentacletv.device.DeviceSignals
 import com.tentacletv.device.RenderTierStore
@@ -40,7 +41,7 @@ class MainApplication : Application(), ReactApplication {
       object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
             // Fresco réglé pour la TV (`render/ImagePipelineTuning` : textures envoyées d'avance).
-            PackageList(this@MainApplication, MainPackageConfig(ImagePipelineTuning.config(this@MainApplication))).packages + listOf(VoiceRecognitionPackage(), MpvPackage(), ExoPackage(), TentacleFocusPackage(), PlayerProbePackage(), RenderPackage(), MediaCapabilitiesPackage(), DevicePackage())
+            PackageList(this@MainApplication, MainPackageConfig(ImagePipelineTuning.config(this@MainApplication))).packages + listOf(VoiceRecognitionPackage(), MpvPackage(), ExoPackage(), TentacleFocusPackage(), PlayerProbePackage(), RenderPackage(), MediaCapabilitiesPackage(), DevicePackage(), BootSoundPackage())
 
         override fun getJSMainModuleName(): String = "index"
 
