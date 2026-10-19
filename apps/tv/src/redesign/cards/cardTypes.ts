@@ -89,6 +89,9 @@ export interface AbsentModel {
    *  Le badge dit seul l'absence. Ailleurs (recherche, saga), grise au repos ;
    *  toujours en couleurs au focus. */
   inColor?: boolean;
+  /** Son résumé, quand l'extension le donne (`TitleState.overview`) : la carte
+   *  ouverte le montre comme celui d'un titre de la bibliothèque. */
+  overview?: string;
 }
 
 export const EMPTY_MARKERS: CardMarkers = { communityRating: null, userScore: null, statuses: [], device: null };

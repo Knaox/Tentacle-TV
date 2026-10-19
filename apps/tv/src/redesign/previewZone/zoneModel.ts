@@ -56,14 +56,18 @@ export const ZONE_HINT_PILL = { backgroundColor: "rgba(12, 12, 14, 0.62)", borde
 
 /** Une carte, tout de suite : ce qu'elle porte déjà ; ses détails s'y ajoutent quand ils arrivent. */
 export function zoneModelOfCard(card: CardModel, details: PreviewZoneDetails | null): PreviewZoneModel {
+  // Un titre absent : son année, l'état de sa demande (« Pas dans la bibliothèque »), le résumé de l'extension.
+  const meta: MetaItem[] = details?.meta.length
+    ? details.meta
+    : [card.subtitle, card.absent?.label].filter((item): item is string => Boolean(item));
   return {
     key: `card:${card.id}`,
     title: card.title,
     logoUri: card.billboard?.logoUri ?? card.logoUri,
     backdropUri: card.billboard?.backdropUri ?? card.landscapeUri ?? card.posterUri,
     reason: card.focusNote,
-    meta: details?.meta.length ? details.meta : card.subtitle ? [card.subtitle] : [],
-    synopsis: details?.synopsis,
+    meta,
+    synopsis: details?.synopsis ?? card.absent?.overview,
   };
 }
 

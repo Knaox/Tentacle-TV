@@ -66,6 +66,12 @@ export function absentOf(
   reading: ArrivalReading = STILL_READING,
   arrived = false,
 ): AbsentModel {
+  const model = badgeOf(t, mine, state, reading, arrived);
+  // Le résumé que l'extension joint (facultatif) : la carte ouverte n'a jamais une zone vide.
+  return state?.overview ? { ...model, overview: state.overview } : model;
+}
+
+function badgeOf(t: TFunction, mine: MyTitle | undefined, state: TitleState | null | undefined, reading: ArrivalReading, arrived: boolean): AbsentModel {
   if (mine) return absentFromMine(t, mine, reading);
   if (arrived) return absentArrived(t, reading);
   if (state?.badge) return { label: state.badge.label, tone: BADGE_TONE[state.badge.tone] };
