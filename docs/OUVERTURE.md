@@ -1,4 +1,4 @@
-# L'ouverture du démarrage (Apple TV)
+# L'ouverture du démarrage (Apple TV, Android TV)
 
 > Le logo s'assemble pendant que l'app charge, appuie sur lecture (« ta »),
 > son écran s'allume (« dum ») — et cet écran EST l'accueil, déjà prêt —, puis
@@ -26,8 +26,10 @@ jamais : la règle d'alors la réservait à l'accueil).
   changement de profil, ni à un rechargement de l'arbre React ou du JavaScript.
   La mémoire est NATIVE (`TentacleBootSound.claimIntro`, un drapeau que rien
   ne recharge ; repli : celle du module JavaScript).
-- **Jamais** : sur une plateforme sans le trait `brandIntro` (Android TV garde
-  `BootView`), ni avec le mouvement réduit (tvOS › Accessibilité : le premier
+- **Jamais** : sur une plateforme sans le trait `brandIntro` (elle garde
+  `BootView` ; Android TV l'a depuis le 2026-10-19), ni avec le mouvement réduit
+  (tvOS › Accessibilité ; Android : animations coupées dans les options pour les
+  développeurs ou l'accessibilité — le premier
   écran directement ; l'écran de lancement, l'encre seule, reste, et la mascotte
   d'attente n'y paraît en fondu que si le démarrage traîne, 400 ms).
 - **Elle camoufle le chargement** : l'app se monte DANS l'écran du poulpe dès
@@ -53,7 +55,7 @@ jamais : la règle d'alors la réservait à l'accueil).
 | Quand la jouer (une fois par processus), quand partir ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son | `packages/tv-core/src/boot/` |
 | La vue (calques, horloge Reanimated, écran qui montre l'app) | `apps/tv/src/redesign/boot/` |
 | Le branchement (décision au montage, porte du premier écran, son) | `apps/tv/src/redesignWiring/boot/` |
-| Le son natif | `apps/tv/ios/TentacleTV/TentacleBootSound.m`, adaptateur `platform/tvos/bootSound/` |
+| Le son natif | `apps/tv/ios/TentacleTV/TentacleBootSound.m` ; Android `apps/tv/android/app/src/main/java/com/tentacletv/boot/` ; adaptateur commun `platform/tvos/bootSound/` |
 | Le fichier du son (dérivé) | `apps/tv/assets/sound/boot-tadum.m4a` |
 
 ## Le rendu : net, fluide, sans peser sur le démarrage
@@ -110,6 +112,42 @@ jamais : la règle d'alors la réservait à l'accueil).
   Ouverture), clé `tentacle_tv_boot_sound`, allumé par défaut. Aucune capacité
   serveur : fonction purement client.
 
+## Android TV
+
+- **Le même fichier** : `build.gradle` ajoute `apps/tv/assets/sound` aux assets
+  de l'APK (`assets/boot-tadum.m4a`), aucune copie. Décodé d'avance en PCM
+  (`BootSoundDecoder`) : un MediaCodec brut ne retire pas l'amorce de l'encodeur
+  (2112 images, lue dans l'`iTunSMPB` du fichier) — on la retire, sinon le
+  « ta » tomberait 44 ms tard.
+- **Calé sur la SORTIE, pas sur `play()`** (`BootSoundStream`) : un AudioTrack
+  statique lancé à l'heure sortait 130 à 200 ms trop tard à l'émulateur
+  (`getLatency()` en annonçait 10). Le flux est ouvert dès la préparation et
+  joue du silence ; l'heure demandée (horloge de Choreographer, `System.nanoTime`,
+  celle de Reanimated) devient un numéro d'image d'après `getTimestamp`, et le
+  fichier est écrit à ce numéro. Mode faible latence, aucune demande de focus
+  audio (une musique en cours se mélange, comme « ambient »).
+- **L'avance de la sortie** : la Shield écrit ≈ 360 ms au-delà de ce qui sort.
+  Demandé 260 ms avant (160 après l'attente), le fichier perdait son début — la
+  vague ET le « ta » (123 ms sautés, mesuré). Le natif la mesure à la
+  préparation (`outputLeadMs`) ; tv-core `bootSoundLeads` en tire quand demander
+  le son et la reprise après l'attente. L'Apple TV ne mesure rien : avances
+  d'avant.
+- **Une fois par processus** : drapeau natif (`claimIntro`) — la relance de
+  l'interface du mode Lite et le retour d'arrière-plan ne la rejouent pas.
+- Journal : `adb logcat -s TentacleBootSound` (amorce, avance de la sortie,
+  départ, début sauté, écart mesuré).
+
+### Mesures (2026-10-19)
+
+| | Émulateur (API 31, release) | Shield (Android 11, release) |
+|---|---|---|
+| Accueil, « Qui regarde ? » | l'ouverture se joue, une fois par processus | à essayer par Damien |
+| Avance de la sortie | non datée en 500 ms, dérive (600 – 800 ms) : sans valeur | 364 ms |
+| Début du fichier sauté | — | 123 ms avant `bootSoundLeads`, 0 après |
+| Écart du « ta » à l'image (d'après la sortie) | ±0,2 ms | −0,6 ms |
+
+L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
+
 ## Vérifier
 
 - Banc UI : scènes `ouverture/*` (l'horloge figée à chaque étape, l'accueil du
@@ -136,8 +174,8 @@ et plongée, ≈ 2 s après que l'accueil est prêt.
 
 ## Restes
 
-- Android TV : le trait `brandIntro` à vrai, le jumeau `bootSound.android.ts`
-  (le même fichier dérivé, dans `res/raw`), et la mesure sur la Shield.
+- Android TV : la fluidité de la plongée mesurée sur la Shield (le mode de
+  mesure `debug.tentacle.perf`), et sur un appareil Lite.
 - Le web, le bureau, le mobile : le même pur et la même partition (plan :
   `docs/OUVERTURE-SON-PLAN.md` du dossier principal).
 - `LaunchLogo` (brand/tvos.py, Images.xcassets) n'est plus affiché par l'écran

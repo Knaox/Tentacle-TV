@@ -422,7 +422,7 @@ marque de héros. La mascotte n'y paraît qu'en ILLUSTRATION d'un état
 l'identité, c'est l'icône en couches, le Top Shelf et le violet → rose en
 touches. Détail : `docs/TV-REFONTE.md`, « Le logo dans l'app : aucun ».
 
-## Ouverture du démarrage (Apple TV) — l'écran du poulpe EST le premier écran
+## Ouverture du démarrage (Apple TV, Android TV) — l'écran du poulpe EST le premier écran
 
 À CHAQUE démarrage à froid, d'elle-même (jamais l'attente d'un geste), QUEL QUE
 SOIT LE PREMIER ÉCRAN — accueil, « Qui regarde ? » et son PIN, jumelage, barre,
@@ -441,8 +441,8 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   TIRÉE des constantes générées du logo — jamais un SVG relu —, caméra,
   chorégraphie, attente, partition du son) ; la synthèse Web Audio à part
   (`…/brandIntro/synth`). Quand la jouer, quand partir : tv-core `boot/`.
-- **Aiguillage par le trait `brandIntro`** (vrai sur tvOS, faux sur Android TV,
-  qui garde `BootView`). Jamais avec le mouvement réduit. Elle ne renonce
+- **Aiguillage par le trait `brandIntro`** (vrai sur tvOS et Android TV depuis
+  le 2026-10-19 ; sans lui, `BootView`). Jamais avec le mouvement réduit. Elle ne renonce
   jamais ; le premier écran pas prêt (il le dit à la porte,
   `useReportScreenToBootIntro` : accueil, « Qui regarde ? ») : le poulpe attend
   sur son bouton lecture (8 s au plus).
@@ -454,7 +454,13 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   @tentacle-tv/tv sound:intro` : Chrome sans tête, `OfflineAudioContext`, crête
   −9 dBFS, AAC) — jamais retouché ; joué par `TentacleBootSound.m`
   (AVAudioPlayer, `playAtTime:` à l'heure de l'image, catégorie « ambient » :
-  une musique en cours n'est pas coupée). Réglage d'appareil « Son au
+  une musique en cours n'est pas coupée). Android : le MÊME fichier, posé tel
+  quel dans les assets de l'APK (`build.gradle`), `boot/BootSoundModule.kt` —
+  un flux ouvert d'avance (silence) où le fichier s'écrit au numéro d'image de
+  la SORTIE (`getTimestamp`), sans focus audio. La sortie d'Android écrit loin
+  devant ce qui sort (Shield ≈ 360 ms) : le natif la mesure et l'horloge de
+  l'image demande le son d'autant plus tôt (tv-core `bootSoundLeads`) — sinon
+  le début du fichier, « ta » compris, est sauté. Réglage d'appareil « Son au
   démarrage » (`tentacle_tv_boot_sound`). Aucune capacité serveur.
 - **L'écran de lancement est l'encre seule** (`BOOT_INK`, #0D0B13) : la première
   image de l'ouverture ; sans elle, la mascotte n'y paraît que si le démarrage traîne.
