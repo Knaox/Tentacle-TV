@@ -33,7 +33,7 @@ export default {
   // The startup opening (Apple TV): a DEVICE setting.
   opening: "Opening",
   bootSoundTitle: "Startup sound",
-  bootSoundDescription: "The opening's “ta-dum” when the app opens on Home. It blends with music already playing instead of stopping it.",
+  bootSoundDescription: "The opening's “ta-dum” every time the app opens. It blends with music already playing instead of stopping it.",
 
   // ── Settings shell sections ──
   // Umbrella title of the screen (mobile landing). `title` remains the
