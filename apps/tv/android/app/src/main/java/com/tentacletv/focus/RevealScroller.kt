@@ -91,9 +91,9 @@ internal object RevealScroller {
       if (row != null) {
         val follower = RevealFollower.of(row, horizontal = true)
         if (row.scrollX != rowAt) row.scrollTo(rowAt, row.scrollY)
-        val spring = (revealing ?: FocusGeometry.innermostSection(focused))?.let { it.revealResponse to it.revealDamping }
-          ?: (DEFAULT_RESPONSE to 1f)
-        follower.moveTo(rowTarget(row, focused, follower.base()), spring, segment)
+        val section = revealing ?: FocusGeometry.innermostSection(focused)
+        val spring = section?.let { it.revealResponse to it.revealDamping } ?: (DEFAULT_RESPONSE to 1f)
+        follower.moveTo(rowTarget(row, focused, follower.base(), section?.rowRevealStart == true), spring, segment)
       }
     }
   }
@@ -147,7 +147,7 @@ internal object RevealScroller {
   }
 
   /** `rowRevealOffset` (burstFollow.ts), dans le repère du contenu de la rangée. */
-  private fun rowTarget(row: ReactHorizontalScrollView, focused: View, base: Float): Float {
+  private fun rowTarget(row: ReactHorizontalScrollView, focused: View, base: Float, alwaysStart: Boolean): Float {
     val content = row.getChildAt(0) as? ViewGroup ?: return base
     focused.getDrawingRect(rect)
     row.offsetDescendantRectToMyCoords(focused, rect)
@@ -160,7 +160,8 @@ internal object RevealScroller {
     val trailing = min(width - (last?.right?.toFloat() ?: width), leading)
     val start = rect.left - leading
     val end = rect.right + trailing - viewport
-    val target = if (end > base) min(end, start) else if (start < base) start else base
+    // La carte qui s'ouvre (`rowRevealStart`) : toujours au retrait de la rangée.
+    val target = if (alwaysStart) start else if (end > base) min(end, start) else if (start < base) start else base
     return min(max(target, 0f), max(0f, width - viewport))
   }
 }

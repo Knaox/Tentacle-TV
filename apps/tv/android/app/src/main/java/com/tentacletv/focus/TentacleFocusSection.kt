@@ -49,6 +49,9 @@ class TentacleFocusSection(context: Context) : ReactViewGroup(context) {
   var revealResponse: Float = 0.5f
   var revealDamping: Float = 1f
   var lineList: Boolean = false
+  /** Ses rangées posent TOUJOURS la carte focalisée au retrait — la carte qui s'ouvre
+   *  (tv-core `cards/openCard.ts`) ; sans elle, la rangée bouge le moins possible. */
+  var rowRevealStart: Boolean = false
   var tvNeighbors: Boolean = false
   /** Les pas d'une flèche TENUE ne sortent pas de la section (le rail : l'Apple
    *  TV s'arrête sur l'entrée, une tenue ne file pas au profil ni au contenu). */

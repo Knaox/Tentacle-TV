@@ -58,6 +58,11 @@ class TentacleFocusSectionManager : ReactViewManager() {
     view.holdInside = enabled
   }
 
+  @ReactProp(name = "rowRevealStart")
+  fun setRowRevealStart(view: TentacleFocusSection, enabled: Boolean) {
+    view.rowRevealStart = enabled
+  }
+
   @ReactProp(name = "tvNeighbors")
   fun setTvNeighbors(view: TentacleFocusSection, enabled: Boolean) {
     view.tvNeighbors = enabled

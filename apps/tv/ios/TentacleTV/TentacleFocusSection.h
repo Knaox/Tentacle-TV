@@ -50,6 +50,11 @@ NS_ASSUME_NONNULL_BEGIN
 /// `rowRevealOffset`).
 @property (nonatomic, assign) BOOL rowReveal;
 
+/// Ses rangées posent TOUJOURS la carte focalisée au retrait de la rangée — la
+/// carte qui s'ouvre (tv-core `cards/openCard.ts`, `rowRevealOffset` mode
+/// `start`) ; sans elle, la rangée bouge le moins possible.
+@property (nonatomic, assign) BOOL rowRevealStart;
+
 /// La règle de voisinage vertical s'applique à cette section.
 @property (nonatomic, assign) BOOL tvNeighbors;
 /// L'entrée déclarée (numéro natif d'un de ses éléments), ou nil.

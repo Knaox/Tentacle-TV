@@ -106,7 +106,8 @@ static const CFTimeInterval kRapidStep = 0.35;
   CGFloat base = _link != nil ? _target : targetContentOffset->x;
   CGFloat start = left - leading;
   CGFloat end = left + width + trailing - viewport;
-  CGFloat target = end > base ? MIN(end, start) : (start < base ? start : base);
+  // La carte qui s'ouvre (`rowRevealStart`) : toujours au retrait de la rangée.
+  CGFloat target = _section.rowRevealStart ? start : (end > base ? MIN(end, start) : (start < base ? start : base));
   CGFloat clamped = MIN(MAX(target, 0), MAX(0, contentWidth - viewport));
   CFTimeInterval now = CACurrentMediaTime();
   BOOL rapid = _lastStepAt > 0 && now - _lastStepAt < kRapidStep;

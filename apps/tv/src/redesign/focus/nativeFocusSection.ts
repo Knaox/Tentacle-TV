@@ -21,6 +21,8 @@ export interface NativeFocusSectionProps extends ViewProps {
   lineList?: boolean;
   /** Apple TV : la rangée garde la carte focalisée au retrait (`TentacleRowScroller.m`). */
   rowReveal?: boolean;
+  /** Les deux : la carte focalisée TOUJOURS au retrait de sa rangée (la carte qui s'ouvre). */
+  rowRevealStart?: boolean;
   /** Android : les pas d'une flèche tenue ne sortent pas de la section. */
   holdInside?: boolean;
 }

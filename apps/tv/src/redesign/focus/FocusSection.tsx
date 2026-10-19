@@ -52,13 +52,16 @@ export interface FocusSectionProps {
    * toute rangée.
    */
   rowReveal?: boolean;
+  /** Sa rangée pose TOUJOURS la carte focalisée au retrait — la carte qui
+   *  s'ouvre (tv-core `cards/openCard.ts`), sur les deux plateformes. */
+  rowRevealStart?: boolean;
   style?: StyleProp<ViewStyle>;
   pointerEvents?: ViewProps["pointerEvents"];
   onLayout?: (event: LayoutChangeEvent) => void;
   children?: ReactNode;
 }
 
-export const FocusSection = memo(function FocusSection({ focusKey, reveal, list, rowReveal, style, pointerEvents, onLayout, children }: FocusSectionProps) {
+export const FocusSection = memo(function FocusSection({ focusKey, reveal, list, rowReveal, rowRevealStart, style, pointerEvents, onLayout, children }: FocusSectionProps) {
   const binding = useFocusBinding(focusKey, "section");
   if (!NativeFocusSection) {
     return (
@@ -81,7 +84,8 @@ export const FocusSection = memo(function FocusSection({ focusKey, reveal, list,
       revealResponse={TV_MOTION.spring.scroll.response}
       revealDamping={TV_MOTION.spring.scroll.dampingFraction}
       lineList={list}
-      rowReveal={rowReveal}
+      rowReveal={rowReveal || rowRevealStart}
+      rowRevealStart={rowRevealStart}
     >
       {children}
     </NativeFocusSection>
