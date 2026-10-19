@@ -3,8 +3,8 @@
   "domain": "focus",
   "suite": "home-sections",
   "reference": {
-    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
-    "label": "référence b8a986506"
+    "sha": "e9e679d2c2fc1f3d5e09ef1f7f38d66124b9cbf8",
+    "label": "référence e9e679d2c"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
@@ -15,11 +15,11 @@
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-19T06:53:48.766Z",
+  "recordedAt": "2026-10-19T07:43:41.954Z",
   "scenarios": {
     "home-entry": {
       "hash": "33c9a215f993",
-      "durationMs": 17372,
+      "durationMs": 17011,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -184,8 +184,8 @@
       ]
     },
     "home-rows": {
-      "hash": "751336a0682d",
-      "durationMs": 49607,
+      "hash": "bd3fe595e846",
+      "durationMs": 50647,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
@@ -703,26 +703,35 @@
           "panel": null,
           "panelOwners": [],
           "writes": []
-        }
-      ],
-      "expectFailures": [
-        {
-          "step": 20,
-          "field": "focus",
-          "want": "nextUp:2",
-          "got": "filter:remove"
         },
         {
-          "step": 21,
-          "field": "focus",
-          "want": "resume:2",
-          "got": "nextUp:0"
+          "do": "up",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
         }
       ]
     },
     "home-row-end": {
       "hash": "7ff505a805c8",
-      "durationMs": 47736,
+      "durationMs": 48328,
       "start": {
         "app": "foreground",
         "focus": "watched:0",
@@ -917,8 +926,8 @@
       ]
     },
     "home-filter-chip": {
-      "hash": "6972a0ada841",
-      "durationMs": 36101,
+      "hash": "3b86e6f3be97",
+      "durationMs": 37886,
       "start": {
         "app": "foreground",
         "focus": "filter:remove",
@@ -1112,20 +1121,35 @@
           "panel": null,
           "panelOwners": [],
           "writes": []
-        }
-      ],
-      "expectFailures": [
+        },
         {
-          "step": 7,
-          "field": "focus",
-          "want": "nextUp:0",
-          "got": "filter:remove"
+          "do": "up",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
         }
       ]
     },
     "home-return": {
       "hash": "21e44fed2dd2",
-      "durationMs": 31407,
+      "durationMs": 30788,
       "start": {
         "app": "foreground",
         "focus": "reco:forYou:2",
@@ -1202,7 +1226,7 @@
     },
     "home-burst": {
       "hash": "322272b81db6",
-      "durationMs": 30446,
+      "durationMs": 31050,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
