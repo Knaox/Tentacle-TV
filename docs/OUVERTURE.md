@@ -134,6 +134,18 @@ jamais : la règle d'alors la réservait à l'accueil).
   d'avant.
 - **Une fois par processus** : drapeau natif (`claimIntro`) — la relance de
   l'interface du mode Lite et le retour d'arrière-plan ne la rejouent pas.
+- **Les coins arrondis** : sur Android, `overflow: "hidden"` + `borderRadius`
+  rognait en RECTANGLE — cadre et écran du poulpe carrés (retour de Damien du
+  19/10). Ils passent par `redesign/render/RoundClip` : sur Android la vue
+  native `TentacleRoundClip` (`render/TentacleRoundClip.kt`), rognée par son
+  contour (`clipToOutline`), la vue arrondie de RN sur Apple TV. Le cercle du
+  « dum » (une vue ronde transformée) se rognait déjà bien.
+- **« Son au démarrage »** se lit APRÈS le préchargement du stockage
+  (`readBootSoundSetting`) : l'ouverture se monte avant, et le cache
+  d'AsyncStorage d'Android rendait le défaut (allumé) — le son partait réglage
+  coupé. L'Apple TV lit `Settings`, synchrone.
+- **La fenêtre de lancement** est à l'encre (`@color/boot_ink`, #0D0B13), plus
+  au noir.
 - Journal : `adb logcat -s TentacleBootSound` (amorce, avance de la sortie,
   départ, début sauté, écart mesuré).
 
@@ -141,7 +153,9 @@ jamais : la règle d'alors la réservait à l'accueil).
 
 | | Émulateur (API 31, release) | Shield (Android 11, release) |
 |---|---|---|
-| Accueil, « Qui regarde ? » | l'ouverture se joue, une fois par processus | à essayer par Damien |
+| Accueil, « Qui regarde ? » | l'ouverture se joue, une fois par processus, coins arrondis | essayée par Damien (coins carrés, corrigés depuis) |
+| Mouvement réduit (animations de transition à 0) | l'encre, puis le premier écran ; aucun son | — |
+| « Son au démarrage » coupé | l'ouverture, aucun son | — |
 | Avance de la sortie | non datée en 500 ms, dérive (600 – 800 ms) : sans valeur | 364 ms |
 | Début du fichier sauté | — | 123 ms avant `bootSoundLeads`, 0 après |
 | Écart du « ta » à l'image (d'après la sortie) | ±0,2 ms | −0,6 ms |
