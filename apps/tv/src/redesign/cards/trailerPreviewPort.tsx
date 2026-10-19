@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { useSharedValue, type SharedValue } from "react-native-reanimated";
 import { INITIAL_PREVIEW_ZONE, reducePreviewZone, type PreviewWarmWant, type PreviewZoneEvent, type PreviewZoneState } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../hero/heroTypes";
 import type { PreviewZoneModel } from "../previewZone/zoneModel";
@@ -110,10 +111,29 @@ const ScopeContext = createContext<PreviewZoneStore | null>(null);
 /** Le contexte du magasin de la page (lecture sans abonnement : une carte s’y abonne seule, par sélecteur). */
 export const previewStoreContext = ScopeContext;
 
+/**
+ * L'opacité de la SCÈNE de la page (0 → 1), sur le fil d'interface : la scène l'écrit, ses
+ * surfaces (carte ouverte, bannière) la lisent dans leur opacité. Une coupure de la scène
+ * rend donc leur face À LA MÊME IMAGE, par construction — deux valeurs animées écrites dans
+ * le même rendu ne s'appliquaient pas toujours ensemble (un trou noir d'une image, Android TV).
+ */
+const StageShownContext = createContext<SharedValue<number> | null>(null);
+
 /** La portée d'une page : tout ce qu'elle enveloppe (sa zone, ses rangées) partage un magasin. */
 export function PreviewZoneScope({ children }: { children: ReactNode }) {
   const store = useMemo(createPreviewZoneStore, []);
-  return <ScopeContext.Provider value={store}>{children}</ScopeContext.Provider>;
+  const stageShown = useSharedValue(0);
+  return (
+    <ScopeContext.Provider value={store}>
+      <StageShownContext.Provider value={stageShown}>{children}</StageShownContext.Provider>
+    </ScopeContext.Provider>
+  );
+}
+
+/** L'opacité de la scène de la page ; hors d'une portée, `fallback` (une valeur à soi). */
+export function useStageShown(fallback: number): SharedValue<number> {
+  const local = useSharedValue(fallback);
+  return useContext(StageShownContext) ?? local;
 }
 
 /** Le magasin de la page, ou `null` hors d'une portée. */

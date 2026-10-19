@@ -6,6 +6,7 @@ import { SoftGradient } from "../background/SoftGradient";
 import { CardMarkerLayer } from "../cards/CardMarkerLayer";
 import { CardQualityBadges } from "../cards/CardQualityBadges";
 import type { CardModel } from "../cards/cardTypes";
+import { useStageShown } from "../cards/trailerPreviewPort";
 import { colors, fonts, scrim, white } from "../theme/tokens";
 
 /**
@@ -31,9 +32,11 @@ export const OpenVisual = memo(function OpenVisual({ card, metrics, open, watch,
   focused: boolean;
 }) {
   const { openWidth: width, height, openRadius: radius } = metrics;
-  const face = useAnimatedStyle(() => ({ opacity: open.value * (1 - watch.value) }));
-  const shadow = useAnimatedStyle(() => ({ opacity: open.value * (1 - watch.value) }));
-  const watchTitle = useAnimatedStyle(() => ({ opacity: open.value * watch.value }));
+  // La face ne s'efface que là où la scène montre sa vidéo : la scène coupée, elle revient à la même image.
+  const stage = useStageShown(1);
+  const face = useAnimatedStyle(() => ({ opacity: open.value * (1 - watch.value * stage.value) }));
+  const shadow = useAnimatedStyle(() => ({ opacity: open.value * (1 - watch.value * stage.value) }));
+  const watchTitle = useAnimatedStyle(() => ({ opacity: open.value * watch.value * stage.value }));
   const uri = card.billboard?.backdropUri ?? card.landscapeUri ?? card.posterUri;
   const logo = card.billboard?.logoUri ?? card.logoUri;
   return (

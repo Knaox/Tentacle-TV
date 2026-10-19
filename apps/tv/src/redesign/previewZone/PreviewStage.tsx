@@ -1,9 +1,9 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useReducedMotion } from "react-native-reanimated";
 import { OPEN_HERO_WATCH, PREVIEW_STAGE_RESHOW_MS, PREVIEW_ZONE_FADE, PREVIEW_ZONE_HINT, previewStageCut } from "@tentacle-tv/tv-core";
 import { SoftGradient } from "../background/SoftGradient";
-import type { StageRect } from "../cards/trailerPreviewPort";
+import { useStageShown, type StageRect } from "../cards/trailerPreviewPort";
 import { Icon } from "../icons/Icon";
 import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
@@ -50,7 +50,8 @@ export const PreviewStage = memo(function PreviewStage({ rect, subjectKey, video
   onLiveChange: (key: string | null) => void;
 }) {
   const reduced = useReducedMotion();
-  const shown = useSharedValue(0);
+  // L'opacité de la scène, partagée avec ses surfaces (`useStageShown`) : elles la lisent.
+  const shown = useStageShown(0);
   // Le sujet dont la vidéo se montre ; un autre sujet au rectangle : coupure.
   const [liveKey, setLiveKey] = useState<string | null>(null);
   // La coupure appliquée (la scène éteinte) pour ce sujet : le nouveau rectangle peut venir.
