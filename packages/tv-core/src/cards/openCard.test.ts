@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OPEN_CARD_HEIGHT, OPEN_ROW, openCardIsPast, openCardLeft, openCardMetricsOf, openRowShift } from "./openCard";
+import { OPEN_CARD_HEIGHT, OPEN_PAGE, OPEN_ROW, openCardIsPast, openCardLeft, openCardMetricsOf, openPageBottomRoom, openRowEntry, openRowShift, openStageRects } from "./openCard";
 import { CARD_SIZES, DEFAULT_CARD_SIZE } from "./cardSize";
 
 describe("la carte qui s'ouvre", () => {
@@ -27,6 +27,15 @@ describe("la carte qui s'ouvre", () => {
     expect(56 + m.rowHeight).toBeLessThan(1080 - 44);
   });
 
+  it("la scène : la carte ouverte toujours au même endroit, la bannière en haut", () => {
+    const m = openCardMetricsOf("large");
+    const { card, hero } = openStageRects(m, 176);
+    expect(card).toEqual({ x: 176, y: OPEN_PAGE.anchorTop + OPEN_ROW.titleHeight, width: 889, height: 500, radius: 22 });
+    expect(hero).toMatchObject({ x: 176, y: 48, width: 1920 - 176 - 96, height: 520 });
+    // La dernière rangée se pose à l'ancrage : la marge du bas complète l'écran.
+    expect(openPageBottomRoom(m) + OPEN_PAGE.anchorTop + m.rowHeight).toBe(1080);
+  });
+
   it("la carte focalisée se pose au bord gauche ; celles d'avant sont passées", () => {
     const m = openCardMetricsOf("large");
     expect(openRowShift(0, m)).toBe(0);
@@ -35,5 +44,13 @@ describe("la carte qui s'ouvre", () => {
     expect(openCardIsPast(1, 3)).toBe(true);
     expect(openCardIsPast(3, 3)).toBe(false);
     expect(openCardIsPast(4, 3)).toBe(false);
+  });
+
+  it("on entre dans une rangée par la carte posée à son retrait, jamais par celle d'en face", () => {
+    // Retrait 176 ; deux cartes passées à gauche, l'ouverte au retrait, les suivantes poussées.
+    expect(openRowEntry([-562, -193, 176, 1101, 1470], 176)).toBe(2);
+    // En plein mouvement de la rangée : la plus proche du retrait.
+    expect(openRowEntry([150, 519, 888], 176)).toBe(0);
+    expect(openRowEntry([], 176)).toBe(-1);
   });
 });

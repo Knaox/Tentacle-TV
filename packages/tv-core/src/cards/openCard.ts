@@ -39,8 +39,13 @@ export const OPEN_ROW = {
 /** Les durées : l'ouverture et le glissement vont ensemble, les détails suivent. */
 export const OPEN_CARD_MOTION = { openMs: 320, detailsInMs: 200, detailsDelayMs: 120, detailsOutMs: 120 } as const;
 
-/** Une carte passée (à gauche de la carte ouverte) : presque effacée, toujours focalisable. */
-export const OPEN_CARD_PAST_OPACITY = 0.06;
+/**
+ * Une carte passée (à gauche de la carte ouverte) : effacée comme au banc, mais
+ * toujours focalisable — tvOS ne focalise plus une vue d'opacité 0,01 ou moins
+ * (GAUCHE ne la trouverait pas) ; 0,02 ne se voit plus (mesuré au simulateur
+ * le 19/10 : 0,06 laissait un fantôme sous le rail).
+ */
+export const OPEN_CARD_PAST_OPACITY = 0.02;
 
 export interface OpenCardMetrics {
   size: CardSize;
@@ -90,4 +95,73 @@ export function openCardIsPast(index: number, focusedIndex: number): boolean {
 /** La place d'une carte dans sa piste : les affiches qui la précèdent, toutes fermées. */
 export function openCardLeft(index: number, m: OpenCardMetrics): number {
   return index * m.step;
+}
+
+/**
+ * La PAGE à cartes qui s'ouvrent (scène 1920 × 1080) : la rangée focalisée se
+ * pose TOUJOURS à `anchorTop` (la page défile seule, en un mouvement) ; la
+ * bannière, en haut de la page, la page au début.
+ */
+export const OPEN_PAGE = {
+  anchorTop: 56,
+  heroTop: 48,
+  heroHeight: 520,
+  heroGap: 56,
+  heroRadius: 28,
+  /** La marge sûre de droite. */
+  safeRight: 96,
+  width: 1920,
+  height: 1080,
+} as const;
+
+/** Où la page pose une rangée qui prend le focus (`FocusSection reveal`). */
+export const OPEN_ROW_REVEAL = { mode: "anchor", top: OPEN_PAGE.anchorTop } as const;
+
+export interface OpenStageRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  radius: number;
+}
+
+/**
+ * Les rectangles de la SCÈNE (le lecteur unique, posé derrière la page) : la
+ * carte ouverte — toujours au même endroit, sa rangée à l'ancrage, elle au bord
+ * gauche — et la bannière focalisée (la page au début).
+ */
+export function openStageRects(m: OpenCardMetrics, inset: number): { card: OpenStageRect; hero: OpenStageRect } {
+  return {
+    card: { x: inset, y: OPEN_PAGE.anchorTop + OPEN_ROW.titleHeight, width: m.openWidth, height: m.height, radius: m.openRadius },
+    hero: {
+      x: inset,
+      y: OPEN_PAGE.heroTop,
+      width: OPEN_PAGE.width - inset - OPEN_PAGE.safeRight,
+      height: OPEN_PAGE.heroHeight,
+      radius: OPEN_PAGE.heroRadius,
+    },
+  };
+}
+
+/** La marge du bas de la page : de quoi poser sa DERNIÈRE rangée à l'ancrage, comme les autres. */
+export function openPageBottomRoom(m: OpenCardMetrics): number {
+  return Math.max(0, OPEN_PAGE.height - OPEN_PAGE.anchorTop - m.rowHeight);
+}
+
+/**
+ * L'ENTRÉE d'une rangée qui s'ouvre, depuis une section voisine (HAUT / BAS) :
+ * la carte posée au RETRAIT de la rangée — celle qu'elle montre ouverte au
+ * bord gauche, la dernière focalisée —, jamais celle qui se trouve sous
+ * l'élément quitté (la bannière est large : son centre tombait sur la 3e
+ * carte, relevé au simulateur le 19/10). `lefts` : le bord gauche de chaque
+ * élément de la rangée, à l'écran ; `retrait` : celui de la rangée. -1 : vide.
+ * Appliquée par les sections natives (`TentacleFocusNeighbors.m`,
+ * `FocusNeighbors.kt`), à défaut d'entrée déclarée.
+ */
+export function openRowEntry(lefts: readonly number[], retrait: number): number {
+  let best = -1;
+  for (let i = 0; i < lefts.length; i++) {
+    if (best < 0 || Math.abs(lefts[i] - retrait) < Math.abs(lefts[best] - retrait)) best = i;
+  }
+  return best;
 }
