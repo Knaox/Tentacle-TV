@@ -165,3 +165,26 @@ export function openRowEntry(lefts: readonly number[], retrait: number): number 
   }
   return best;
 }
+
+/**
+ * Ce qu'une rangée qui s'ouvre MONTE de ses cartes : sa tête (ce qui tient à
+ * l'écran depuis le retrait, `head`), puis, quand le focus avance, jusqu'à
+ * `aheadCards` au-delà de lui — par paquets de `chunk`, pour ne pas redessiner
+ * la rangée à chaque pas. Une bibliothèque a une vingtaine de rangées de 24
+ * cartes : toutes montées, BAS ×6 créait 3 200 vues et le fil JS tombait à
+ * 14 i/s (banc de fluidité, 19/10).
+ */
+export const OPEN_ROW_MOUNT = { aheadCards: 4, chunk: 8 } as const;
+
+/** Les cartes à monter, le focus sur `focusedIndex` (-1 : aucun) ; jamais moins que déjà monté. */
+export function openRowMounted(mounted: number, head: number, focusedIndex: number, total: number): number {
+  const need = Math.max(head, focusedIndex + 1 + OPEN_ROW_MOUNT.aheadCards);
+  if (need <= mounted) return Math.min(mounted, total);
+  // Sous la tête (l'arrivée), la tête ; au-delà, un paquet au moins.
+  return Math.min(total, mounted < head ? need : Math.max(need, mounted + OPEN_ROW_MOUNT.chunk));
+}
+
+/** La tête d'une rangée qui s'ouvre : les affiches qui tiennent à l'écran depuis son retrait, et la suivante. */
+export function openRowHead(m: OpenCardMetrics, inset: number): number {
+  return Math.ceil((OPEN_PAGE.width - inset) / m.step) + 1;
+}

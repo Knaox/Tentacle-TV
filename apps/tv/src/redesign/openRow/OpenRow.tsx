@@ -1,7 +1,7 @@
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
-import { OPEN_ROW, ROW_STAGING, rowHeadCards, trailerPreviewWarmWindow, type OpenCardMetrics } from "@tentacle-tv/tv-core";
+import { OPEN_ROW, ROW_STAGING, openRowHead, openRowMounted, rowHeadCards, trailerPreviewWarmWindow, type OpenCardMetrics } from "@tentacle-tv/tv-core";
 import { cardIndexOf } from "../cards/cardFocusKeys";
 import type { CardModel } from "../cards/cardTypes";
 import { useCardPreviewWarm } from "../cards/trailerPreviewPort";
@@ -67,6 +67,11 @@ export const OpenRow = memo(function OpenRow({
   const { row: focused, onItemFocusChange } = useRowFocus(forced !== null, forced !== null ? cardIndexOf(forced, rowKey) : null);
   // La dernière carte focalisée : celle que la rangée pose au bord gauche ; celles d'avant sont passées.
   const anchor = useSharedValue(forced !== null ? cardIndexOf(forced, rowKey) ?? 0 : 0);
+  // Les cartes montées : la tête, puis quelques-unes d'avance à mesure que le focus avance (tv-core `openRowMounted`).
+  const openHead = openRowHead(metrics, inset);
+  const [mounted, setMounted] = useState(() => openRowMounted(0, openHead, forced !== null ? cardIndexOf(forced, rowKey) ?? -1 : -1, cards.length));
+  const mountedRef = useRef(mounted);
+  mountedRef.current = mounted;
   const rewind = useRowRewindPort();
   const toStart = useRef<() => void>(() => undefined);
   toStart.current = () => {
@@ -85,6 +90,8 @@ export const OpenRow = memo(function OpenRow({
       onItemFocusChange(index, isFocused);
       if (!isFocused) return;
       anchor.value = index;
+      const next = openRowMounted(mountedRef.current, openHead, index, latest.current.length);
+      if (next !== mountedRef.current) setMounted(next);
       if (mountProfile().rowTails === "eager" || index > 0) demand();
       if (index >= latest.current.length - NEAR_END) nearEnd.current?.();
       if (warm) {
@@ -93,7 +100,7 @@ export const OpenRow = memo(function OpenRow({
       }
       onFocusCard?.(card);
     },
-    [onItemFocusChange, anchor, demand, warm, onFocusCard],
+    [onItemFocusChange, anchor, openHead, demand, warm, onFocusCard],
   );
   const ids = useMemo(() => new Set(cards.map((card) => card.id)), [cards]);
 
@@ -114,7 +121,7 @@ export const OpenRow = memo(function OpenRow({
         contentContainerStyle={{ paddingLeft: inset, paddingRight: VIEWPORT - inset - metrics.posterWidth, gap: metrics.gap }}
       >
         <CullingTrack gap={metrics.gap}>
-          {cards.slice(0, shown).map((card, index) => (
+          {cards.slice(0, Math.min(shown, Math.max(mounted, Math.min(openHead, cards.length)))).map((card, index) => (
             <RowCard key={card.id} card={card} index={index} focused={focused} anchor={anchor} rowKey={rowKey} metrics={metrics} onPressCard={onPressCard} onLongPressCard={onLongPressCard} onItemFocus={onItemFocus} />
           ))}
         </CullingTrack>

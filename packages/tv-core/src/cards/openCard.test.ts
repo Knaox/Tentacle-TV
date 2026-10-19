@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OPEN_CARD_HEIGHT, OPEN_PAGE, OPEN_ROW, openCardIsPast, openCardLeft, openCardMetricsOf, openPageBottomRoom, openRowEntry, openRowShift, openStageRects } from "./openCard";
+import { OPEN_CARD_HEIGHT, OPEN_PAGE, OPEN_ROW, openCardIsPast, openCardLeft, openCardMetricsOf, openPageBottomRoom, openRowEntry, openRowHead, openRowMounted, openRowShift, openStageRects } from "./openCard";
 import { CARD_SIZES, DEFAULT_CARD_SIZE } from "./cardSize";
 
 describe("la carte qui s'ouvre", () => {
@@ -52,5 +52,21 @@ describe("la carte qui s'ouvre", () => {
     // En plein mouvement de la rangée : la plus proche du retrait.
     expect(openRowEntry([150, 519, 888], 176)).toBe(0);
     expect(openRowEntry([], 176)).toBe(-1);
+  });
+
+  it("une rangée ne monte que sa tête, puis quelques cartes d'avance, par paquets", () => {
+    // Au repos : la tête seule (6), jamais plus que la rangée.
+    expect(openRowMounted(0, 6, -1, 24)).toBe(6);
+    expect(openRowMounted(0, 6, -1, 3)).toBe(3);
+    // Le focus avance : rien tant qu'il reste quatre cartes d'avance.
+    expect(openRowMounted(6, 6, 1, 24)).toBe(6);
+    // Il s'en approche : un paquet de huit d'un coup.
+    expect(openRowMounted(6, 6, 2, 24)).toBe(14);
+    // Une rafale qui saute loin : jusqu'à elle, et quatre au-delà.
+    expect(openRowMounted(14, 6, 20, 24)).toBe(24);
+    // Ce qui est monté le reste.
+    expect(openRowMounted(14, 6, 0, 24)).toBe(14);
+    // La tête : ce qui tient à l'écran depuis le retrait (Grande : 333 + 36), et la suivante.
+    expect(openRowHead(openCardMetricsOf("large"), 176)).toBe(6);
   });
 });
