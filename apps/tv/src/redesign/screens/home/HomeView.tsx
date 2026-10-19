@@ -1,20 +1,20 @@
 import { memo, useCallback, useMemo } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
-import { TV_STAGE } from "@tentacle-tv/theme";
-import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL, HOME_LOADING_KEY } from "@tentacle-tv/tv-core";
 import { useTranslation } from "react-i18next";
+import { TV_STAGE } from "@tentacle-tv/theme";
+import { HOME_LOADING_KEY, OPEN_PAGE, OPEN_ROW_REVEAL, heroInView, openPageBottomRoom, type OpenCardMetrics } from "@tentacle-tv/tv-core";
 import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
-import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { FocusSection } from "../../focus/FocusSection";
 import { FocusTarget } from "../../focus/FocusTarget";
+import { HeroBanner } from "../../hero/HeroBanner";
 import type { HeroModel } from "../../hero/heroTypes";
-import { HeroZone } from "../../previewZone/HeroZone";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
-import { BelowZonePage, useBelowZoneBottomRoom } from "../../rows/BelowZonePage";
-import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
+import { OpenCardPage, useOpenCardMetrics } from "../../openRow/OpenCardPage";
+import { OpenRow } from "../../openRow/OpenRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
 import { RowStageProvider } from "../../rows/rowStage";
 import { ScreenReveal } from "../../motion/ScreenReveal";
@@ -22,39 +22,25 @@ import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
 import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 
 /**
- * L'accueil : le héros dans la zone d'aperçu, puis les rangées dans l'ordre
- * de la mise en page du compte. La navigation flotte à gauche, et le fond prend
- * la lumière de ce qui a le focus. Aucun logo : la marque vit dans l'icône,
- * le Top Shelf, le démarrage et les illustrations (choix du 2026-10-02).
- *
- * Contrat : tout arrive résolu. Alimenté plus tard par `useTVHomeRows`
- * (ordre des rangées), `useResumeItems` / `useFeaturedItems` (héros),
- * `useNextUp`, `useWatchlist`, `useLatestItems`, `useRecoPageVisit` (cartes),
- * `useCardMarkers` (marqueurs) et `paletteFromBlurHash` (lumière).
- *
- * La page est À ZONE (`BelowZonePage`, tv-core `previewZoneLayout.ts`) : en
- * haut, la zone fixe de l'aperçu, qui porte le héros (`HeroZone` : ses
- * boutons dans la section `section:hero`, au-dessus de la page) ; dessous,
- * les rangées qui défilent. Le héros et chaque rangée sont des SECTIONS
- * (`FocusSection`) : HAUT / BAS passe de l'une à la voisine, au plus proche —
- * HAUT depuis la première rangée mène au héros ; la rangée focalisée se pose
- * TOUJOURS au même endroit, juste sous la zone, en un seul mouvement — seule
- * la page bouge. Au banc, la rangée de la clé figée (`useForcedFocusReveal`).
+ * L'accueil (Apple TV, Android TV) — la carte qui S'OUVRE (banc validé par
+ * Damien le 19/10, tv-core `cards/openCard.ts`) : la BANNIÈRE d'abord, une
+ * seule cible (`HeroBanner`), puis les rangées dans l'ordre de la mise en page
+ * du compte. Dans la rangée focalisée, la carte s'ouvre en 16:9 au bord
+ * gauche, ses détails dessous ; la rangée se pose TOUJOURS au même endroit
+ * (`OPEN_ROW_REVEAL`), seule la page bouge. La bande-annonce se joue DERRIÈRE
+ * la carte ouverte ou la bannière (`OpenCardPage`, sa scène) : rien ne
+ * recouvre une cible. La navigation flotte à gauche ; le fond prend la lumière
+ * de ce qui a le focus. Aucun logo (choix du 2026-10-02).
  *
  * `filter` : la pastille du filtre de plateformes du compte, posée sur la
- * rangée `filterRowKey` — la première rangée recommandée réellement servie
- * (`useRecoFilterChipRow`). Un appui la retire (`onRemoveFilter`).
- *
- * `onHeroVisibleChange` dit quand le héros perd la zone (une carte a le
- * focus) et quand il la reprend : sa rotation s'y suspend (`HeroZone`).
+ * rangée `filterRowKey` (`useRecoFilterChipRow`). Un appui la retire.
  *
  * Les rangées reviennent au début une fois sorties de l'écran : la page dit
  * au port des rangées (`rowRewindPort`) où elles sont et qu'elle défile.
  *
- * Clés de focus : `hero:primary`, `hero:secondary`, `hero:list`,
- * `<rangée>:<index>` pour les cartes, `filter:remove`, `status:primary`,
- * `status:secondary`, et `nav:<entrée>` pour la navigation. Sections :
- * `section:hero`, `section:<rangée>`.
+ * Clés de focus : `hero:primary` (la bannière), `<rangée>:<index>` pour les
+ * cartes, `filter:remove`, `status:primary`, `status:secondary`, et
+ * `nav:<entrée>`. Sections : `section:hero`, `section:<rangée>`.
  */
 
 export interface HomeRowModel {
@@ -68,93 +54,59 @@ export interface HomeViewProps {
   nav: NavRailProps;
   hero: HeroModel | null;
   rows: HomeRowModel[];
-  /** La lumière du fond quand aucune carte n'impose la sienne : celle du héros. */
   palette: ArtworkPalette;
-  /** La lumière de la carte focalisée, que le fond suit seul (`ambientSource`). */
   ambient?: AmbientSource;
-  /** Chargement, erreur, accueil vide : le panneau remplace le contenu. */
   status?: StatusPanelProps | null;
-  /** Le chargement : une ancre invisible tient le focus (`home:loading`) ; la navigation et le contenu
-   *  ne paraissent qu'ensuite, ensemble, en fondu (`ScreenReveal`). */
   holdFocus?: boolean;
-  /** La pastille du filtre de plateformes (« Netflix · Disney+ »). */
   filter?: { label: string } | null;
-  /** La rangée qui la porte. */
   filterRowKey?: string | null;
   onRemoveFilter?: () => void;
+  /** OK sur la bannière : la fiche du titre, ou sa demande hors bibliothèque. */
   onHeroPrimary?: () => void;
+  /** Plus de bouton secondaire ni de rond « Ma liste » : la bannière est UNE cible (ignorés). */
   onHeroSecondary?: () => void;
-  /** Le rond « Ma liste » du héros. */
   onHeroToggleList?: () => void;
-  /** L'appui maintenu sur un bouton du héros : le grand panneau du titre. */
+  /** OK maintenu sur la bannière : le grand panneau du titre. */
   onHeroLongPress?: () => void;
+  /** Ce que fait OK sur la bannière (« OK : ouvrir la fiche ») ; défaut : la fiche. */
+  heroOkHint?: string;
   onPressCard?: (rowKey: string, card: CardModel) => void;
   onLongPressCard?: (rowKey: string, card: CardModel) => void;
   onFocusCard?: (rowKey: string, card: CardModel) => void;
-  /** Le héros quitte l'écran (plus de la moitié défilée) ou y revient. */
+  /** La bannière quitte l'écran (plus de la moitié défilée) ou y revient. */
   onHeroVisibleChange?: (visible: boolean) => void;
 }
 
 const LEFT = TV_STAGE.contentLeft;
-/** Une rangée se pose toujours au même endroit, sous la zone (tv-core `previewZoneLayout.ts`). */
-const ROW_REVEAL: FocusSectionReveal = BELOW_ZONE_REVEAL;
 
 export const HomeView = memo(function HomeView({
-  nav,
-  hero,
-  rows,
-  palette,
-  ambient,
-  status,
-  holdFocus = false,
-  filter,
-  filterRowKey,
-  onRemoveFilter,
-  onHeroPrimary,
-  onHeroSecondary,
-  onHeroToggleList,
-  onHeroLongPress,
-  onPressCard,
-  onLongPressCard,
-  onFocusCard,
-  onHeroVisibleChange,
+  nav, hero, rows, palette, ambient, status, holdFocus = false, filter, filterRowKey, onRemoveFilter,
+  onHeroPrimary, onHeroLongPress, heroOkHint, onPressCard, onLongPressCard, onFocusCard, onHeroVisibleChange,
 }: HomeViewProps) {
   const { t } = useTranslation();
   const loadingLabel = t("common:loading");
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const rewind = useRowRewindPort();
-  // La dernière rangée se pose sous la zone comme les autres : la marge du bas qu'il lui faut.
-  const bottom = useBelowZoneBottomRoom(SCROLL_BOTTOM);
-  const scrollContent = useMemo(() => ({ paddingTop: BELOW_ZONE_ANCHOR_TOP, paddingBottom: bottom.room }), [bottom.room]);
-  // Le héros vit dans la zone d'aperçu : ses boutons dans leur section, son titre dessiné par la zone.
-  const zoneNode = (
-    <HeroZone
-      hero={hero}
-      onPrimary={onHeroPrimary}
-      onSecondary={onHeroSecondary}
-      onToggleList={onHeroToggleList}
-      onLongPress={onHeroLongPress}
-      onVisibleChange={onHeroVisibleChange}
-    />
-  );
+  const metrics = useOpenCardMetrics();
+  const scrollContent = useMemo(() => ({ paddingTop: hero ? 0 : OPEN_PAGE.heroTop, paddingBottom: openPageBottomRoom(metrics) }), [hero, metrics]);
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
       rewind?.scroll(contentOffset.y, layoutMeasurement.height);
+      onHeroVisibleChange?.(heroInView(contentOffset.y, OPEN_PAGE.heroTop, OPEN_PAGE.heroHeight));
     },
-    [rewind],
+    [rewind, onHeroVisibleChange],
   );
   return (
     <View style={styles.root}>
       <LiveAmbientBackdrop source={ambient} palette={palette} />
-      {/* Le premier chargement se dit seul, sans navigation : elle paraît avec le contenu. */}
       {holdFocus && status ? <StatusPanel {...status} /> : null}
       <ScreenReveal ready={!holdFocus}>
         {holdFocus ? null : status ? (
           <StatusPanel {...status} />
         ) : (
           <RowStageProvider>
-            <BelowZonePage zone={zoneNode}>
+            <OpenCardPage hero={hero}>
               <ScrollView
                 ref={scrollRef}
                 style={styles.fill}
@@ -164,14 +116,15 @@ export const HomeView = memo(function HomeView({
                 onScroll={handleScroll}
                 scrollEventThrottle={32}
               >
+                {hero ? <HeroBanner hero={hero} okHint={heroOkHint} onPress={onHeroPrimary} onLongPress={onHeroLongPress} /> : null}
                 {rows.map((row, index) => (
                   <HomeRow
                     key={row.key}
                     row={row}
                     rank={index}
+                    metrics={metrics}
                     filterLabel={filter && row.key === filterRowKey ? filter.label : undefined}
                     onLayout={sectionLayout(row.key, row.key === filterRowKey ? [row.key, "filter"] : [row.key])}
-                    onMeasureLast={index === rows.length - 1 ? bottom.onLastLayout : undefined}
                     onRemoveFilter={onRemoveFilter}
                     onPressCard={onPressCard}
                     onLongPressCard={onLongPressCard}
@@ -179,12 +132,11 @@ export const HomeView = memo(function HomeView({
                   />
                 ))}
               </ScrollView>
-            </BelowZonePage>
+            </OpenCardPage>
           </RowStageProvider>
         )}
         <NavRail {...nav} />
       </ScreenReveal>
-      {/* Après le contenu (rien ne la recouvre : tvOS ne focalise jamais ce qui l'est), hors du panneau centré. */}
       {holdFocus ? (
         <FocusTarget focusKey={HOME_LOADING_KEY} style={styles.anchor} accessibilityLabel={loadingLabel}>
           {() => null}
@@ -196,67 +148,44 @@ export const HomeView = memo(function HomeView({
 
 type RowHandler = (rowKey: string, card: CardModel) => void;
 
-/**
- * Une rangée, mémoïsée sur son modèle : quand seule la lumière du fond change
- * (une carte prend le focus), l'accueil se redessine sans redessiner ses
- * rangées — leurs rappels restent les mêmes d'un rendu à l'autre.
- */
-const HomeRow = memo(function HomeRow({
-  row,
-  rank,
-  filterLabel,
-  onLayout,
-  onMeasureLast,
-  onRemoveFilter,
-  onPressCard,
-  onLongPressCard,
-  onFocusCard,
-}: {
+/** Une rangée, mémoïsée sur son modèle : la lumière du fond qui change ne la redessine pas. */
+const HomeRow = memo(function HomeRow({ row, rank, metrics, filterLabel, onLayout, onRemoveFilter, onPressCard, onLongPressCard, onFocusCard }: {
   row: HomeRowModel;
-  /** Sa place dans la page : son tour dans le montage échelonné (`rowStage`). */
   rank: number;
+  metrics: OpenCardMetrics;
   filterLabel?: string;
   onLayout: (event: LayoutChangeEvent) => void;
-  /** La dernière rangée : sa hauteur fait la marge du bas de la page (`useBelowZoneBottomRoom`). */
-  onMeasureLast?: (event: LayoutChangeEvent) => void;
   onRemoveFilter?: () => void;
   onPressCard?: RowHandler;
   onLongPressCard?: RowHandler;
   onFocusCard?: RowHandler;
 }) {
+  const { t } = useTranslation("cards");
   const key = row.key;
   const rewind = useRowRewindPort();
   const layout = useCallback(
     (event: LayoutChangeEvent) => {
       onLayout(event);
-      onMeasureLast?.(event);
       const { y, height } = event.nativeEvent.layout;
-      rewind?.layout(key, y, height - MEDIA_ROW_TRAILING);
+      rewind?.layout(key, y, height);
     },
-    [onLayout, onMeasureLast, rewind, key],
+    [onLayout, rewind, key],
   );
   const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
   return (
-    <FocusSection
-      focusKey={`section:${key}`}
-      reveal={ROW_REVEAL}
-      rowReveal
-      onLayout={layout}
-    >
-      <MediaRow
+    <FocusSection focusKey={`section:${key}`} reveal={OPEN_ROW_REVEAL} rowRevealStart onLayout={layout}>
+      <OpenRow
         rowKey={key}
         title={row.title}
         cards={row.cards}
-        variant={row.variant}
+        metrics={metrics}
         inset={LEFT}
         stageRank={rank}
-        accessory={
-          filterLabel ? (
-            <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />
-          ) : undefined
-        }
+        // Les rangées d'épisodes (Reprendre, Prochains épisodes) : OK lit (tv-core `cardPress`).
+        okHint={row.variant === "landscape" ? t("okPlay") : undefined}
+        accessory={filterLabel ? <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} /> : undefined}
         onPressCard={onPressCard ? press : undefined}
         onLongPressCard={onLongPressCard ? longPress : undefined}
         onFocusCard={onFocusCard ? focus : undefined}
@@ -265,11 +194,7 @@ const HomeRow = memo(function HomeRow({
   );
 });
 
-/** La marge du bas, au moins. */
-const SCROLL_BOTTOM = 160;
-
 const styles = StyleSheet.create({
-  // L'ancre du chargement : invisible, dans le contenu (en haut à gauche, hors du panneau centré).
   anchor: { position: "absolute", left: TV_STAGE.contentLeft, top: TV_STAGE.hero.top, width: 24, height: 24 },
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },

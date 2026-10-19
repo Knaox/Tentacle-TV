@@ -8,7 +8,6 @@ import {
   useRecoCardHold,
   useRecoLive,
   useSendRecoFeedback,
-  useSeriesWatchState,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -65,8 +64,6 @@ export function ForYouRedesign({ navigation }: Props) {
   const { data: heroData, isError: heroFailed } = useMediaItem(heroId);
   const heroItem = heroData && heroData.Id === heroId ? heroData : undefined;
   const toggles = useCardToggles(heroItem ?? ({ Id: "" } as MediaItem));
-  const isSeries = heroItem?.Type === "Series";
-  const { data: watchState } = useSeriesWatchState(isSeries ? heroItem?.Id : undefined);
 
   const fresh = useMemo(
     () =>
@@ -127,28 +124,24 @@ export function ForYouRedesign({ navigation }: Props) {
   const { ambient, onFocusCard } = useAmbientPalette(screen.focus);
   // HAUT depuis la 1re carte de la 1re étagère : la puce du filtre, où qu'elle soit (décision du 17/10).
   useSectionHead(screen.focus, firstShelf ? `section:${firstShelf.key}` : null, filter ? FOR_YOU_FILTER_KEY : null);
-  const cardActions = useTVCardActions();
 
   const detail = useCallback((itemId: string) => navigation.navigate("MediaDetail", { itemId }), [navigation]);
-  const play = useCallback((itemId: string) => navigation.navigate("Player", { itemId }), [navigation]);
+  const cardActions = useTVCardActions();
+  const { openReco } = cardActions;
   // Des gestes stables qui lisent l'état du moment.
-  const live = useRef({ heroItem, isSeries, watchState, toggles });
-  live.current = { heroItem, isSeries, watchState, toggles };
+  const live = useRef({ heroItem, heroReco: models.heroReco });
+  live.current = { heroItem, heroReco: models.heroReco };
+  // OK sur la bannière : la fiche (tv-core `cardPress`, surface « hero ») — la
+  // tête de « Pour vous » est toujours un titre de la bibliothèque.
   const onHeroPrimary = useCallback(() => {
-    const { heroItem: item, isSeries: series, watchState: state } = live.current;
-    if (!item) return;
-    if (!series) return play(item.Id);
-    // Une série se lit par l'épisode à reprendre ; terminée, sa fiche s'ouvre.
-    const episode = state && state.type !== "completed" ? state.episode : undefined;
-    if (episode) play(episode.Id);
-    else detail(item.Id);
-  }, [play, detail]);
-  const onHeroSecondary = useCallback(() => {
-    if (live.current.heroItem) detail(live.current.heroItem.Id);
+    const item = live.current.heroItem;
+    if (item && cardPressOf({ surface: "hero", fromResume: false, reco: true }) === "detail") detail(item.Id);
   }, [detail]);
-  const onHeroToggleList = useCallback(() => {
-    if (live.current.heroItem) live.current.toggles.toggleList();
-  }, []);
+  // OK maintenu : le grand panneau d'une recommandation (tv-core `cardHold`).
+  const onHeroLongPress = useCallback(() => {
+    const reco = live.current.heroReco;
+    if (reco && holdPanelOf({ surface: "hero", fromResume: false, reco: true })?.kind === "reco") openReco(reco);
+  }, [openReco]);
 
   const { targetOf } = models;
   const openRequest = requests?.open;
@@ -168,7 +161,6 @@ export function ForYouRedesign({ navigation }: Props) {
     (title: AbsentTitle) => sendFeedback({ itemKey: title.key, action: "dismissed" }),
     [sendFeedback],
   );
-  const { openReco } = cardActions;
   const onLongPressCard = useCallback(
     (shelfKey: string, card: CardModel) => {
       const target = targetOf(shelfKey, card.id);
@@ -196,8 +188,7 @@ export function ForYouRedesign({ navigation }: Props) {
         ambient={ambient}
         status={status}
         onHeroPrimary={onHeroPrimary}
-        onHeroSecondary={onHeroSecondary}
-        onHeroToggleList={onHeroToggleList}
+        onHeroLongPress={onHeroLongPress}
         onRemoveFilter={removeFilter}
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}

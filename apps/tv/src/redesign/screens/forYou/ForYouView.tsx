@@ -1,18 +1,18 @@
 import { memo, useCallback, useMemo } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { BELOW_ZONE_ANCHOR_TOP, BELOW_ZONE_REVEAL } from "@tentacle-tv/tv-core";
+import { OPEN_PAGE, OPEN_ROW_REVEAL, openPageBottomRoom, type OpenCardMetrics } from "@tentacle-tv/tv-core";
 import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
-import { FocusSection, type FocusSectionReveal } from "../../focus/FocusSection";
+import { FocusSection } from "../../focus/FocusSection";
+import { HeroBanner } from "../../hero/HeroBanner";
 import type { HeroModel } from "../../hero/heroTypes";
-import { HeroZone } from "../../previewZone/HeroZone";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
-import { BelowZonePage, useBelowZoneBottomRoom } from "../../rows/BelowZonePage";
-import { MEDIA_ROW_TRAILING, MediaRow } from "../../rows/MediaRow";
+import { OpenCardPage, useOpenCardMetrics } from "../../openRow/OpenCardPage";
+import { OpenRow } from "../../openRow/OpenRow";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
 import { RowStageProvider } from "../../rows/rowStage";
 import { StatusPanel, type StatusPanelProps } from "../shared/StatusPanel";
@@ -20,39 +20,20 @@ import { useForcedFocusReveal } from "../shared/useForcedFocusReveal";
 import { ForYouNotice, type ForYouNoticeModel } from "./ForYouNotice";
 
 /**
- * « Pour vous » : en tête, notre meilleure suggestion et POURQUOI (le
- * surtitre et sa raison) ; sous elle, la ligne d'état quand il y a lieu ;
- * puis les étagères de la bibliothèque, dans l'ordre du moteur — des
- * affiches, la raison de la recommandation dans la zone d'aperçu,
- * « Découverte » sur les titres d'exploration. La première étagère
- * porte la pastille du filtre de plateformes, qu'un appui retire. Le fond
- * prend la lumière de la carte focalisée.
+ * « Pour vous » — la carte qui S'OUVRE (tv-core `cards/openCard.ts`) : en tête,
+ * la BANNIÈRE de notre meilleure suggestion et POURQUOI (une seule cible :
+ * `HeroBanner`) ; sous elle, la ligne d'état quand il y a lieu ; puis les
+ * étagères dans l'ordre du moteur. Dans l'étagère focalisée, la carte s'ouvre
+ * en 16:9 au bord gauche, la raison de la recommandation dans ses détails ;
+ * « Découverte » sur les titres d'exploration ; les titres hors bibliothèque
+ * en couleurs, leur badge dit l'absence. La première étagère porte la pastille
+ * du filtre de plateformes. La bande-annonce se joue DERRIÈRE la carte ouverte
+ * ou la bannière (`OpenCardPage`).
  *
- * Contrat — tout arrive résolu :
- * - `hero` : `tvRecoHero(useRecoPageVisit(useRecoSettings().providerFilter))`
- *   (tv-core), l'œuvre par `useMediaItem`, `kicker` = `reco:heroKicker`,
- *   `reason` = la première raison verbalisée (`reasonToText`) ;
- * - `shelves` : `tvRecoShelves(page, { hero })`, titres par `recoRowTitle`,
- *   cartes par `useCardMarkers` / `useRecoMarkerItem`, `badge` =
- *   `reco:explorationBadge` si `item.exploration`, `focusNote` = la raison ;
- * - `notice` : `tvRecoNotice` → `disabled` (`reco:tvDisabledHint`), `cold`
- *   (`reco:tvColdHint`) ; `preparing` et la page vide passent par `status` ;
- * - `filter` : le filtre du compte (`useRecoSettings().providerFilter`,
- *   noms par `familyOfProviderId`) ; `onRemoveFilter` →
- *   `useSaveRecoProviderFilter().mutate([])` ;
- * - `status` : chargement (`!page && !isError`), erreur (`isError`,
- *   Réessayer), en préparation, vide ;
- * - `palette` : `paletteFromBlurHash` du héros (ou de la première carte) ;
- *   `ambient` : celle de la carte focalisée, que le fond suit seul.
- *
- * La page est À ZONE (`BelowZonePage`, tv-core `previewZoneLayout.ts`) : en
- * haut, la zone fixe de l'aperçu (`zone`), dessous, la page qui défile. Le
- * héros et chaque étagère sont des SECTIONS (`FocusSection`, clés
- * `section:hero`, `section:<étagère>`) : HAUT / BAS passe à la voisine, au plus
- * proche ; l'étagère focalisée se pose TOUJOURS au même endroit, juste sous la
- * zone, en un seul mouvement. Une étagère revient
- * au début une fois sortie de l'écran : la page dit au port des rangées
- * (`rowRewindPort`) où elles sont et qu'elle défile.
+ * Contrat — tout arrive résolu (`ForYouRedesign`) : `hero`, `shelves`,
+ * `notice`, `filter`, `status`, `palette`, `ambient`. Sections : `section:hero`,
+ * `section:<étagère>` ; chaque étagère se pose toujours au même endroit
+ * (`OPEN_ROW_REVEAL`) et revient au début une fois sortie de l'écran.
  */
 
 export interface ForYouShelfModel {
@@ -73,13 +54,17 @@ export interface ForYouViewProps {
   shelves: ForYouShelfModel[];
   filter?: ForYouFilterModel | null;
   palette: ArtworkPalette;
-  /** La lumière de la carte focalisée, que le fond suit seul (`ambientSource`). */
   ambient?: AmbientSource;
-  /** Chargement, erreur, en préparation, vide : le panneau remplace la page. */
   status?: StatusPanelProps | null;
+  /** OK sur la bannière : la fiche (ou la demande, hors bibliothèque). */
   onHeroPrimary?: () => void;
+  /** Plus de bouton secondaire ni de rond « Ma liste » : la bannière est UNE cible (ignorés). */
   onHeroSecondary?: () => void;
   onHeroToggleList?: () => void;
+  /** OK maintenu sur la bannière : le grand panneau d'une recommandation. */
+  onHeroLongPress?: () => void;
+  /** Ce que fait OK sur la bannière ; défaut : la fiche. */
+  heroOkHint?: string;
   onRemoveFilter?: () => void;
   onPressCard?: (shelfKey: string, card: CardModel) => void;
   onLongPressCard?: (shelfKey: string, card: CardModel) => void;
@@ -87,32 +72,16 @@ export interface ForYouViewProps {
 }
 
 const LEFT = TV_STAGE.contentLeft;
-const HERO_WIDTH = 1920 - LEFT - 56;
-/** Une étagère se pose toujours au même endroit, sous la zone (tv-core `previewZoneLayout.ts`). */
-const SHELF_REVEAL: FocusSectionReveal = BELOW_ZONE_REVEAL;
+const NOTICE_WIDTH = 1920 - LEFT - 56;
 
 export const ForYouView = memo(function ForYouView({
-  nav,
-  hero,
-  notice,
-  shelves,
-  filter,
-  palette,
-  ambient,
-  status,
-  onHeroPrimary,
-  onHeroSecondary,
-  onHeroToggleList,
-  onRemoveFilter,
-  onPressCard,
-  onLongPressCard,
-  onFocusCard,
+  nav, hero, notice, shelves, filter, palette, ambient, status, onHeroPrimary, onHeroLongPress, heroOkHint,
+  onRemoveFilter, onPressCard, onLongPressCard, onFocusCard,
 }: ForYouViewProps) {
   const { scrollRef, sectionLayout, onViewportLayout } = useForcedFocusReveal();
   const rewind = useRowRewindPort();
-  // La dernière étagère se pose sous la zone comme les autres : la marge du bas qu'il lui faut.
-  const bottom = useBelowZoneBottomRoom(SCROLL_BOTTOM);
-  const scrollContent = useMemo(() => ({ paddingTop: BELOW_ZONE_ANCHOR_TOP, paddingBottom: bottom.room }), [bottom.room]);
+  const metrics = useOpenCardMetrics();
+  const scrollContent = useMemo(() => ({ paddingTop: hero ? 0 : OPEN_PAGE.heroTop, paddingBottom: openPageBottomRoom(metrics) }), [hero, metrics]);
   const onScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
@@ -127,12 +96,7 @@ export const ForYouView = memo(function ForYouView({
         <StatusPanel {...status} />
       ) : (
         <RowStageProvider>
-          <BelowZonePage
-            zone={
-              // Le héros vit dans la zone d'aperçu ; sans lui, la première carte en est le repli.
-              <HeroZone hero={hero} fallback={shelves[0]?.cards[0] ?? null} onPrimary={onHeroPrimary} onSecondary={onHeroSecondary} onToggleList={onHeroToggleList} />
-            }
-          >
+          <OpenCardPage hero={hero}>
             <ScrollView
               ref={scrollRef}
               style={styles.fill}
@@ -142,9 +106,10 @@ export const ForYouView = memo(function ForYouView({
               onScroll={onScroll}
               scrollEventThrottle={32}
             >
+              {hero ? <HeroBanner hero={hero} okHint={heroOkHint} onPress={onHeroPrimary} onLongPress={onHeroLongPress} /> : null}
               {notice ? (
-                <View style={styles.noticeAlone}>
-                  <ForYouNotice notice={notice} width={HERO_WIDTH} />
+                <View style={styles.notice}>
+                  <ForYouNotice notice={notice} width={NOTICE_WIDTH} />
                 </View>
               ) : null}
               {shelves.map((shelf, index) => (
@@ -152,18 +117,17 @@ export const ForYouView = memo(function ForYouView({
                   key={shelf.key}
                   shelf={shelf}
                   rank={index}
-                  afterNotice={index === 0 && Boolean(notice)}
+                  metrics={metrics}
                   filterLabel={index === 0 && filter ? filter.label : undefined}
                   onRemoveFilter={onRemoveFilter}
                   onLayout={sectionLayout(shelf.key, index === 0 ? [shelf.key, "filter"] : [shelf.key])}
-                  onMeasureLast={index === shelves.length - 1 ? bottom.onLastLayout : undefined}
                   onPressCard={onPressCard}
                   onLongPressCard={onLongPressCard}
                   onFocusCard={onFocusCard}
                 />
               ))}
             </ScrollView>
-          </BelowZonePage>
+          </OpenCardPage>
         </RowStageProvider>
       )}
       <NavRail {...nav} />
@@ -173,33 +137,14 @@ export const ForYouView = memo(function ForYouView({
 
 type ShelfHandler = (shelfKey: string, card: CardModel) => void;
 
-/**
- * Une étagère, mémoïsée sur son modèle : quand seule la lumière du fond
- * change (une carte prend le focus), la page se redessine sans redessiner
- * ses étagères — leurs rappels restent les mêmes d'un rendu à l'autre.
- */
-const Shelf = memo(function Shelf({
-  shelf,
-  rank,
-  afterNotice,
-  filterLabel,
-  onRemoveFilter,
-  onLayout,
-  onMeasureLast,
-  onPressCard,
-  onLongPressCard,
-  onFocusCard,
-}: {
+/** Une étagère, mémoïsée sur son modèle : la lumière du fond qui change ne la redessine pas. */
+const Shelf = memo(function Shelf({ shelf, rank, metrics, filterLabel, onRemoveFilter, onLayout, onPressCard, onLongPressCard, onFocusCard }: {
   shelf: ForYouShelfModel;
-  /** Sa place dans la page : son tour dans le montage échelonné (`rowStage`). */
   rank: number;
-  /** La première étagère, sous la ligne d'état : son écart à elle. */
-  afterNotice?: boolean;
+  metrics: OpenCardMetrics;
   filterLabel?: string;
   onRemoveFilter?: () => void;
   onLayout: (event: LayoutChangeEvent) => void;
-  /** La dernière étagère : sa hauteur fait la marge du bas de la page (`useBelowZoneBottomRoom`). */
-  onMeasureLast?: (event: LayoutChangeEvent) => void;
   onPressCard?: ShelfHandler;
   onLongPressCard?: ShelfHandler;
   onFocusCard?: ShelfHandler;
@@ -209,36 +154,24 @@ const Shelf = memo(function Shelf({
   const layout = useCallback(
     (event: LayoutChangeEvent) => {
       onLayout(event);
-      onMeasureLast?.(event);
-      // Sous les cartes : la marge de la rangée. La raison d'une reco se lit dans la zone, pas dessous.
       const { y, height } = event.nativeEvent.layout;
-      rewind?.layout(key, y, height - MEDIA_ROW_TRAILING);
+      rewind?.layout(key, y, height);
     },
-    [onLayout, onMeasureLast, rewind, key],
+    [onLayout, rewind, key],
   );
   const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
   return (
-    <FocusSection
-      focusKey={`section:${key}`}
-      reveal={SHELF_REVEAL}
-      rowReveal
-      onLayout={layout}
-      style={afterNotice ? styles.afterNotice : undefined}
-    >
-      <MediaRow
+    <FocusSection focusKey={`section:${key}`} reveal={OPEN_ROW_REVEAL} rowRevealStart onLayout={layout}>
+      <OpenRow
         rowKey={key}
         title={shelf.title}
         cards={shelf.cards}
-        variant="poster"
+        metrics={metrics}
         inset={LEFT}
         stageRank={rank}
-        accessory={
-          filterLabel ? (
-            <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} />
-          ) : undefined
-        }
+        accessory={filterLabel ? <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} /> : undefined}
         onPressCard={onPressCard ? press : undefined}
         onLongPressCard={onLongPressCard ? longPress : undefined}
         onFocusCard={onFocusCard ? focus : undefined}
@@ -247,12 +180,8 @@ const Shelf = memo(function Shelf({
   );
 });
 
-/** La marge du bas, au moins. */
-const SCROLL_BOTTOM = 160;
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
   fill: { flex: 1 },
-  noticeAlone: { marginLeft: LEFT },
-  afterNotice: { marginTop: 72 },
+  notice: { marginLeft: LEFT, marginBottom: 40 },
 });

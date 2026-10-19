@@ -17,9 +17,9 @@ import { RENDER } from "../../redesign/render/renderProfile";
 const HERO_ROTATION_OFF = effectOff("heroRotation");
 
 /**
- * La rotation du héros de l'accueil, façon app TV d'Apple : il avance SEUL,
- * en fondu, même quand le focus est sur l'un de ses boutons. Les boutons
- * restent (clés stables) : le focus ne bouge pas. La règle — l'attente, ce
+ * La rotation de la bannière de l'accueil, façon Top Shelf d'Apple : elle avance
+ * SEULE, en fondu — mais jamais sous le focus (`heroFocused` : on la tourne alors
+ * à la main, tv-core `hero/heroNav.ts`). La règle — l'attente, ce
  * qui la relance, ce qui la suspend, quand rien ne tourne — est celle de
  * tv-core (`hero/rotation.ts`) ; ce crochet tient le minuteur :
  *
@@ -40,6 +40,8 @@ export interface HeroRotation {
   index: number;
   /** Le héros est à l'écran (écran devant, héros dans le champ). */
   shown: boolean;
+  /** La bannière a le focus : rien ne tourne. */
+  heroFocused: boolean;
   onAdvance: () => void;
 }
 
@@ -53,10 +55,10 @@ function useAppActive(): boolean {
   return active;
 }
 
-export function useHeroRotation({ focus, count, index, shown, onAdvance }: HeroRotation): void {
+export function useHeroRotation({ focus, count, index, shown, heroFocused, onAdvance }: HeroRotation): void {
   const reduced = useReducedMotion();
   const appActive = useAppActive();
-  const active = heroRotationActive({ shown, appActive, count }) && !HERO_ROTATION_OFF;
+  const active = heroRotationActive({ shown, appActive, count, focused: heroFocused }) && !HERO_ROTATION_OFF;
   // Profil Lite : une fois et demie plus espacée (`heroDelayFactor`).
   const delay = heroRotateDelay(reduced, RENDER.heroDelayFactor);
 

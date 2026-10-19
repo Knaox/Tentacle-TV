@@ -1,32 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsFocused } from "@react-navigation/native";
-import { reasonToText, useCardToggles, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
+import { reasonToText, useCardToggles, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { heroEdgeKey, heroShown, holdPanelOf, nextHeroIndex } from "@tentacle-tv/tv-core";
+import { cardPressOf, heroChevrons, heroShown, holdPanelOf, nextHeroIndex } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../../redesign/hero/heroTypes";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
 import { useBeyondEdge } from "../../platform/tvos/focus/useBeyondEdge";
+import { useHeroEdgeTrap } from "../../platform/tvos/screens/homeHero";
 import { backdropUriOf } from "../cards/cardArtwork";
 import { heroModelOf } from "../hero/heroModel";
 import { prefetchImage, useHeroImageReady } from "./heroImageReady";
 import { useHeroArts } from "./useHeroArts";
 import { useHeroSources } from "./useHeroSources";
+import { useHeroFocused } from "./useHeroFocused";
 import { useHeroRotation } from "./useHeroRotation";
 
 /**
- * Le héros de l'accueil : ses titres selon le mode que le compte a choisi et
- * que le serveur garde — reprise, sélection au hasard, titre fixe ou « Pour
+ * La bannière de l'accueil : ses titres selon le mode que le compte a choisi
+ * et que le serveur garde — reprise, sélection au hasard, titre fixe ou « Pour
  * vous », comme le web, le bureau et le mobile (`useHeroSources`, tv-core
- * `hero/heroSource.ts`) ; le suivant, le titre affiché et le bord : tv-core
- * `hero/rotation.ts`.
- * Il tourne seul, en fondu, même focalisé — le minuteur repart à chaque
- * geste, rien ne tourne hors champ
- * (`useHeroRotation`). Et on le tourne à la main : DROITE au-delà du dernier
- * bouton — clic sur le bord du pavé ou glisser, là où le focus ne va nulle
- * part, vers les points de la rotation — passe au titre suivant, en boucle,
- * un par geste (`useBeyondEdge`). Les boutons ne bougent pas : le focus
- * reste où il est.
+ * `hero/heroSource.ts`). Elle est UNE cible (tv-core `hero/heroNav.ts`) :
+ * DROITE au-delà de son bord, le titre suivant, en boucle ; GAUCHE, le
+ * précédent — le focus y est retenu tant qu'il y en a un (`useHeroEdgeTrap`),
+ * sur le premier GAUCHE va au rail. Elle tourne seule, en fondu, seulement à
+ * l'écran SANS le focus (`useHeroRotation`, `useHeroFocused`). OK : la fiche
+ * (tv-core `cardPress`) ; OK maintenu : le grand panneau (`cardHold`).
  *
  * Un épisode se montre sous l'art de sa SÉRIE (logo, fond, genres), chargé
  * par sa fiche (`useMediaItem`, le cache de la page de détail : les gestes de
@@ -73,7 +72,12 @@ export function useHomeHero(
   const safeIndex = items.length > 0 ? index % items.length : 0;
   const screenFocused = useIsFocused();
   const advance = useCallback(() => setIndex((i) => nextHeroIndex(i, items.length)), [items.length]);
-  useHeroRotation({ focus, count: items.length, index, shown: screenFocused && inView, onAdvance: advance });
+  const retreat = useCallback(() => setIndex((i) => Math.max(0, (i % Math.max(1, items.length)) - 1)), [items.length]);
+  const heroFocused = useHeroFocused(focus);
+  useHeroRotation({ focus, count: items.length, index, shown: screenFocused && inView, heroFocused, onAdvance: advance });
+  const chevrons = heroChevrons(safeIndex, items.length);
+  // GAUCHE retenu dans la bannière tant qu'il y a un titre avant (sinon : le rail).
+  useHeroEdgeTrap(focus, chevrons.back);
 
   // Les fonds en cache avant leur tour : le fondu n'attend pas le réseau.
   useEffect(() => {
@@ -93,8 +97,6 @@ export function useHomeHero(
   const current = shown.current;
   const face = current ? arts.artOf(current) ?? current : null;
   const toggles = useCardToggles(face ?? ({ Id: "" } as MediaItem));
-  const isSeries = current?.Type === "Series";
-  const { data: watchState } = useSeriesWatchState(isSeries ? current?.Id : undefined);
 
   const hero = useMemo(() => {
     if (!current || !face) return null;
@@ -113,16 +115,12 @@ export function useHomeHero(
 
   // Des gestes STABLES, qui lisent l'état du moment : le héros ne se
   // redessine pas quand seule la lumière du fond change.
-  const live = useRef({ current, face, isSeries, watchState, toggles, actions, fromResume });
-  live.current = { current, face, isSeries, watchState, toggles, actions, fromResume };
+  const live = useRef({ current, face, toggles, actions, fromResume });
+  live.current = { current, face, toggles, actions, fromResume };
+  // OK sur la bannière : la fiche du titre (tv-core `cardPress`, la bannière est une source de carte).
   const onPrimary = useCallback(() => {
-    const { current: item, isSeries: series, watchState: state, actions: act } = live.current;
-    if (!item) return;
-    if (!series) return act.play(item);
-    // Une série se lit par l'épisode à reprendre ; terminée, sa fiche s'ouvre.
-    const episode = state && state.type !== "completed" ? state.episode : undefined;
-    if (episode) act.play(episode);
-    else act.detail(item);
+    const { current: item, actions: act, fromResume: resumed } = live.current;
+    if (item && cardPressOf({ surface: "hero", fromResume: resumed }) === "detail") act.detail(item);
   }, []);
   const onSecondary = useCallback(() => {
     const { current: item, actions: act } = live.current;
@@ -138,12 +136,9 @@ export function useHomeHero(
     if (item && panel?.kind === "media") act.sheet(item, panel.variant);
   }, []);
 
-  useBeyondEdge(focus, {
-    edgeKey: heroEdgeKey([hero?.primary.focusKey, hero?.secondary?.focusKey, hero?.listToggle?.focusKey], items.length),
-    direction: "droite",
-    enabled: screenFocused,
-    onBeyond: advance,
-  });
+  const edgeKey = hero && items.length > 1 ? hero.primary.focusKey : null;
+  useBeyondEdge(focus, { edgeKey, direction: "droite", enabled: screenFocused, onBeyond: advance });
+  useBeyondEdge(focus, { edgeKey: chevrons.back ? edgeKey : null, direction: "gauche", enabled: screenFocused, onBeyond: retreat });
 
   // Son image d'abord : sans elle, le cadre du premier héros paraissait vide
   // et l'image tombait après les rangées (tv-core `homeLoading`).
