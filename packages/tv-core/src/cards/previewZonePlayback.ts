@@ -1,4 +1,5 @@
 import { PREVIEW_ZONE_HEIGHT } from "../focus/previewZoneLayout";
+import { OPEN_CARD_MOTION } from "./openCard";
 import { PREVIEW_ZONE_TEXT } from "./previewZoneText";
 
 /**
@@ -42,13 +43,36 @@ export function previewZoneWatching(input: PreviewZonePlaybackInput): boolean {
 /**
  * La durée du fondu vers l'état demandé. Une surface (carte ouverte, bannière)
  * qui PERD le focus pendant sa vidéo reprend son image d'un coup : la vidéo,
- * elle, se coupe au même instant — un fondu de retour y laissait une carte
- * transparente, un trou noir, le temps qu'elle s'en aille.
+ * elle, se coupe au même instant (`previewStageCut`) — un fondu de retour y
+ * laissait une carte transparente, un trou noir, le temps qu'elle s'en aille.
  */
 export function previewZoneWatchingMs(watching: boolean, focused = true): number {
   if (!watching && !focused) return 0;
   return watching ? PREVIEW_ZONE_PLAYBACK.recedeMs : PREVIEW_ZONE_PLAYBACK.returnMs;
 }
+
+/**
+ * La SCÈNE (le lecteur unique derrière la page) change de sujet : la vidéo se
+ * COUPE, elle ne passe jamais en fondu au rectangle du sujet suivant — la
+ * bande-annonce de la bannière s'y voyait derrière la carte qui s'ouvrait
+ * (retour de Damien du 19/10 : « pas de vidéo de l'ancienne carte au
+ * rectangle de la nouvelle »). Le fondu de sortie ne sert qu'à une vidéo qui
+ * finit SUR son sujet (fin de l'aperçu, erreur, page couverte).
+ *
+ * `liveKey` : le sujet dont la scène montre la vidéo ; `subjectKey` : celui
+ * dont elle tient le rectangle en ce moment.
+ */
+export function previewStageCut(liveKey: string | null, subjectKey: string | null): boolean {
+  return liveKey !== null && liveKey !== subjectKey;
+}
+
+/**
+ * Coupée au changement de surface, la vidéo qui continue (la MÊME bande-annonce :
+ * la bannière puis la carte du même titre) ne revient qu'une fois la carte
+ * ouverte : avant, sa face et la vidéo se mêlaient pendant l'ouverture. Elle
+ * revient alors en fondu, comme un aperçu qui part.
+ */
+export const PREVIEW_STAGE_RESHOW_MS = OPEN_CARD_MOTION.openMs;
 
 /**
  * La version allégée, en points de la scène : une colonne entre le texte de
