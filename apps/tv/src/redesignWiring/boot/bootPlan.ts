@@ -7,8 +7,8 @@ import { PLATFORM_TRAITS } from "../../platform/traits";
  * La décision de l'ouverture au démarrage (règles : tv-core `decideBootIntro`,
  * `bootIntroTurn`), prise dès le montage de l'app — avant même le stockage :
  * elle ne dépend plus du premier écran (l'écran du poulpe s'allume sur
- * celui-là, quel qu'il soit). Une plateforme sans ouverture (Android TV)
- * décide aussitôt : la mascotte, comme avant.
+ * celui-là, quel qu'il soit). Une plateforme sans ouverture (sans le trait
+ * `brandIntro`) décide aussitôt : la mascotte, comme avant.
  */
 export const BOOT_PLAN_AT_START: BootIntroPlan | "pending" = PLATFORM_TRAITS.brandIntro ? "pending" : "boot";
 

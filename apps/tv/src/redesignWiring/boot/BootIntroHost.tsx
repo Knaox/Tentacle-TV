@@ -14,7 +14,7 @@ import { bootIntroGate, useBootIntroReport } from "./bootIntroGate";
 const SOUND_TAIL_MS = 5_000;
 
 /**
- * L'OUVERTURE du démarrage, branchée (Apple TV) : elle part d'elle-même dès le
+ * L'OUVERTURE du démarrage, branchée (Apple TV, Android TV) : elle part d'elle-même dès le
  * montage — aucun geste attendu — et se joue pendant que l'app charge : l'app
  * (`children`) se monte DANS l'écran du poulpe dès qu'elle est prête ;
  * l'ouverture attend sur le bouton lecture tant que le PREMIER écran, quel

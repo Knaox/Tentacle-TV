@@ -3,7 +3,7 @@ import { createBooleanStore } from "@tentacle-tv/shared";
 import { tvStorage } from "../storage/RNStorageAdapter";
 
 /**
- * « Son au démarrage » : le ta-dum de l'ouverture (Apple TV). Un réglage
+ * « Son au démarrage » : le ta-dum de l'ouverture (Apple TV, Android TV). Un réglage
  * d'APPAREIL — le salon, pas le compte —, allumé par défaut.
  * Clé traversée par une chaîne — ne jamais la renommer (cf. CLAUDE.md).
  */

@@ -46,7 +46,7 @@ export interface BootIntroViewProps {
 }
 
 /**
- * L'OUVERTURE du démarrage (Apple TV) : le poulpe s'assemble sur l'encre,
+ * L'OUVERTURE du démarrage (Apple TV, Android TV) : le poulpe s'assemble sur l'encre,
  * appuie sur lecture (« ta »), son écran s'allume (« dum ») — et cet écran
  * EST l'accueil, déjà prêt —, puis la caméra plonge jusqu'à l'échelle 1.
  * Une illustration d'état de démarrage, comme la mascotte qu'elle remplace :
