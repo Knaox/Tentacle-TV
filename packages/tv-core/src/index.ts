@@ -19,6 +19,7 @@ export * from "./session";
 export * from "./playback";
 export * from "./titles";
 export * from "./cards";
+export * from "./groups";
 export * from "./panels";
 export * from "./render";
 export * from "./device";
