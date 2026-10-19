@@ -208,17 +208,23 @@ internal object FocusNeighbors {
    */
   private fun openRowEntry(section: TentacleFocusSection, items: List<View>): View? {
     if (!section.rowRevealStart || items.isEmpty()) return null
-    var v: Any? = items.first().parent
-    var row: ReactHorizontalScrollView? = null
-    while (v is View && v !== section) {
-      if (v is ReactHorizontalScrollView) { row = v; break }
-      v = v.parent
-    }
-    val scroller = row ?: return null
+    // La piste des cartes : la première trouvée depuis un élément — l'en-tête de la rangée peut
+    // porter une pastille (le filtre de « Pour vous »), hors de la piste.
+    val scroller = items.firstNotNullOfOrNull { rowOf(it, section) } ?: return null
     val content = scroller.getChildAt(0) as? ViewGroup ?: return null
     val first = content.getChildAt(0) ?: return null
     // Le retrait, à l'écran : le bord de la rangée plus son retrait de contenu (sans son défilement).
     val retrait = FocusGeometry.box(scroller).left + content.left + first.left
-    return items.minByOrNull { abs(FocusGeometry.box(it).left - retrait) }
+    return items.filter { FocusGeometry.isDescendant(it, content) }.minByOrNull { abs(FocusGeometry.box(it).left - retrait) }
+  }
+
+  /** La piste horizontale qui porte `item`, sous `section`. */
+  private fun rowOf(item: View, section: TentacleFocusSection): ReactHorizontalScrollView? {
+    var v: Any? = item.parent
+    while (v is View && v !== section) {
+      if (v is ReactHorizontalScrollView) return v
+      v = v.parent
+    }
+    return null
   }
 }

@@ -56,7 +56,15 @@ UIView *TentacleOpenRowEntry(TentacleFocusSection *section, NSArray<UIView *> *i
   if (!section.rowRevealStart || items.count == 0) {
     return nil;
   }
-  RCTScrollView *row = RowOf(items.firstObject, section);
+  // La piste des cartes : la première trouvée depuis un élément — l'en-tête de la rangée peut
+  // porter une pastille (le filtre de « Pour vous »), hors de la piste.
+  RCTScrollView *row = nil;
+  for (UIView *item in items) {
+    row = RowOf(item, section);
+    if (row != nil) {
+      break;
+    }
+  }
   UIView *content = row.contentView;
   if (row == nil || content == nil || content.subviews.count == 0) {
     return nil;
@@ -68,6 +76,9 @@ UIView *TentacleOpenRowEntry(TentacleFocusSection *section, NSArray<UIView *> *i
   UIView *best = nil;
   CGFloat bestGap = CGFLOAT_MAX;
   for (UIView *item in items) {
+    if (![item isDescendantOfView:content]) {
+      continue;
+    }
     CGFloat gap = fabs(CGRectGetMinX([item convertRect:item.bounds toView:nil]) - retrait);
     if (gap < bestGap) {
       best = item;
