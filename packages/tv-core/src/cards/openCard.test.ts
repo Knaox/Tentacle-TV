@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OPEN_CARD_HEIGHT, OPEN_PAGE, OPEN_ROW, openCardIsPast, openCardLeft, openCardMetricsOf, openPageBottomRoom, openRowEntry, openRowHead, openRowMounted, openRowShift, openStageRects } from "./openCard";
+import { OPEN_CARD_HEIGHT, OPEN_PAGE, OPEN_ROW, openCardIsPast, openCardLeft, openCardMetricsOf, openPageBottomRoom, openRowEntry, openRowHead, openRowMounted, openRowShift, openStageRects, OPEN_HERO_WATCH } from "./openCard";
 import { CARD_SIZES, DEFAULT_CARD_SIZE } from "./cardSize";
 
 describe("la carte qui s'ouvre", () => {
@@ -32,6 +32,9 @@ describe("la carte qui s'ouvre", () => {
     const { card, hero } = openStageRects(m, 176);
     expect(card).toEqual({ x: 176, y: OPEN_PAGE.anchorTop + OPEN_ROW.titleHeight, width: 889, height: 500, radius: 22 });
     expect(hero).toMatchObject({ x: 176, y: 48, width: 1920 - 176 - 96, height: 520 });
+    // La bande-annonce de la bannière : du 16:9 entier sur sa hauteur, jamais recadré.
+    expect(hero.mediaWidth).toBe(924);
+    expect(OPEN_HERO_WATCH.textWidth(hero.width) + OPEN_HERO_WATCH.textLeft + hero.mediaWidth!).toBeLessThan(hero.width);
     // La dernière rangée se pose à l'ancrage : la marge du bas complète l'écran.
     expect(openPageBottomRoom(m) + OPEN_PAGE.anchorTop + m.rowHeight).toBe(1080);
   });

@@ -193,6 +193,8 @@ export interface StageRect {
   width: number;
   height: number;
   radius: number;
+  /** La largeur de la vidéo, calée à droite (tv-core `OPEN_HERO_WATCH`) ; absente : elle remplit. */
+  mediaWidth?: number;
 }
 
 /** Ce que la page donne à sa zone. */

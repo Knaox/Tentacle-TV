@@ -1,13 +1,15 @@
 import { memo, useEffect, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
-import { PREVIEW_ZONE_FADE, PREVIEW_ZONE_HINT } from "@tentacle-tv/tv-core";
+import { OPEN_HERO_WATCH, PREVIEW_ZONE_FADE, PREVIEW_ZONE_HINT } from "@tentacle-tv/tv-core";
+import { SoftGradient } from "../background/SoftGradient";
 import type { StageRect } from "../cards/trailerPreviewPort";
 import { Icon } from "../icons/Icon";
 import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
 import { colors } from "../theme/tokens";
 import { useZoneHint } from "./useZoneHint";
+import { StageCornerContext } from "./stageCorner";
 import { ZONE_HINT_PILL } from "./zoneModel";
 import { ZoneRemoteHint } from "./ZoneRemoteHint";
 
@@ -20,7 +22,11 @@ import { ZoneRemoteHint } from "./ZoneRemoteHint";
  * RIEN ne dessine par-dessus une cible — tvOS ne focalise jamais un élément
  * recouvert (le PiP flottant du 19/10 l'avait appris à ses dépens).
  *
- * Dans ses coins, l'état : les raccourcis en bas à gauche (au départ, à chaque
+ * La vidéo remplit le cadre, sauf là où il dit sa largeur (`mediaWidth` : la
+ * bannière) : elle y est ENTIÈRE, en 16:9, calée à droite et fondue vers le
+ * noir sur sa gauche — la bannière écrit son texte dans le noir.
+ *
+ * Dans ses coins (ceux de la vidéo), l'état : les raccourcis en bas à gauche (au départ, à chaque
  * geste, toujours en pause : `useZoneHint`), les pictos pause et muet en bas à
  * droite tant que l'état dure. Rien de focalisable ; seules les opacités
  * s'animent, et le cadre change de place sans remonter le lecteur.
@@ -40,10 +46,21 @@ export const PreviewStage = memo(function PreviewStage({ rect, video, videoShown
   const hint = useZoneHint(remote);
   if (!rect) return null;
   const frame = { left: rect.x, top: rect.y, width: rect.width, height: rect.height, borderRadius: rect.radius };
+  const mediaWidth = rect.mediaWidth ?? rect.width;
+  const mediaLeft = rect.width - mediaWidth;
   return (
     <Animated.View pointerEvents="none" style={[styles.stage, frame, fade]}>
-      <View style={[StyleSheet.absoluteFill, styles.clip, { borderRadius: rect.radius }]}>{video}</View>
-      <Reveal shown={hint?.shown ?? false} motion={PREVIEW_ZONE_HINT.fadeOutMs} style={styles.hint}>
+      <View style={[StyleSheet.absoluteFill, styles.clip, { borderRadius: rect.radius }]}>
+        <View style={[styles.media, { left: mediaLeft, width: mediaWidth }]}>
+          <StageCornerContext.Provider value={rect.radius}>{video}</StageCornerContext.Provider>
+        </View>
+        {mediaLeft > 0 ? (
+          <View style={[styles.media, { left: mediaLeft, width: OPEN_HERO_WATCH.fadeWidth }]}>
+            <SoftGradient width={OPEN_HERO_WATCH.fadeWidth} height={rect.height} colors={["#000", "rgba(0,0,0,0)"]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} />
+          </View>
+        ) : null}
+      </View>
+      <Reveal shown={hint?.shown ?? false} motion={PREVIEW_ZONE_HINT.fadeOutMs} style={[styles.hint, { left: mediaLeft + CORNER }]}>
         {hint ? <View style={ZONE_HINT_PILL}><ZoneRemoteHint paused={hint.paused} muted={hint.muted} /></View> : null}
       </Reveal>
       <View style={styles.status}>
@@ -66,7 +83,8 @@ const CORNER = 22;
 const styles = StyleSheet.create({
   stage: { position: "absolute", backgroundColor: "#000" },
   clip: { overflow: "hidden" },
-  hint: { position: "absolute", left: CORNER, bottom: CORNER },
+  media: { position: "absolute", top: 0, bottom: 0 },
+  hint: { position: "absolute", bottom: CORNER },
   status: { position: "absolute", right: CORNER, bottom: CORNER, flexDirection: "row", gap: 12 },
   chip: {
     width: CHIP,

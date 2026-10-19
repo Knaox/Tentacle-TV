@@ -771,7 +771,11 @@ grille sous la zone) — tv-core `cards/openCard.ts`, vue `redesign/openRow/` :
 - **La bande-annonce se joue DERRIÈRE la page** (`PreviewStage` : le lecteur unique de
   `TrailerZone` en mode scène), au rectangle de la carte ouverte ou de la bannière
   (`openStageRects`) ; elles deviennent transparentes pendant la vidéo (`watching`) — jamais un
-  lecteur PAR-DESSUS une cible. Pendant celle de la bannière, seul le TITRE reste, en haut à gauche.
+  lecteur PAR-DESSUS une cible. Celle de la bannière se joue ENTIÈRE, en 16:9 sur sa hauteur, calée à
+  droite et fondue vers le noir (`OPEN_HERO_WATCH`, jamais recadrée), et la gauche n'est jamais vide :
+  logo, méta, résumé court ; celle d'une carte ouverte garde le titre en petit, en haut à gauche, jamais
+  au milieu de l'image. Sur Android, la TextureView se rogne elle-même à l'arrondi de la scène
+  (`StageCornerContext`) : un parent arrondi ne la rogne pas.
 - **« Ranger par » en tête de la barre** (pastille de tête `pill:group`, gardée par « Tout
   effacer ») : une bibliothèque par genre, décennie, lettres ou note — tv-core
   `groups/libraryGroups.ts` : un COMPTE par groupe d'abord (`useLibraryCatalogCounts`, aucun

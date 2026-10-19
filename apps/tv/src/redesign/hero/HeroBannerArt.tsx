@@ -1,7 +1,7 @@
 import { memo, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
-import { OPEN_PAGE, PREVIEW_ZONE_FADE, PREVIEW_ZONE_PLAYBACK, heroChevrons } from "@tentacle-tv/tv-core";
+import { OPEN_HERO_WATCH, OPEN_PAGE, PREVIEW_ZONE_FADE, PREVIEW_ZONE_PLAYBACK, heroChevrons, previewZoneUsesLogo } from "@tentacle-tv/tv-core";
 import { SoftGradient } from "../background/SoftGradient";
 import { Icon } from "../icons/Icon";
 import { motionTo } from "../motion/motion";
@@ -23,12 +23,15 @@ import { TitleArt } from "./TitleArt";
  * points de la position. Le focus se dit par l'ombre seule.
  *
  * Pendant la bande-annonce (`watching`, jouée par la scène DERRIÈRE la
- * bannière), tout s'efface sauf le TITRE, posé en haut à gauche (décision de
- * Damien du 19/10) : des opacités seulement.
+ * bannière, en 16:9 calée à droite : tv-core `OPEN_HERO_WATCH`), le repos
+ * cède en fondu à une colonne À GAUCHE de la vidéo, jamais dessus — logo,
+ * ligne de métadonnées, résumé court en phrases entières : jamais une zone
+ * vide (décision de Damien du 19/10). Des opacités seulement.
  */
 const W = OPEN_PAGE.width - 176 - OPEN_PAGE.safeRight;
 const H = OPEN_PAGE.heroHeight;
 const R = OPEN_PAGE.heroRadius;
+const WATCH_TEXT_WIDTH = OPEN_HERO_WATCH.textWidth(W);
 
 export const HeroBannerArt = memo(function HeroBannerArt({ hero, focused, watching, okHint, holdHint }: {
   hero: HeroModel;
@@ -94,9 +97,11 @@ export const HeroBannerArt = memo(function HeroBannerArt({ hero, focused, watchi
         </Reveal>
         <View style={styles.edge} />
       </Animated.View>
-      {/* Pendant la bande-annonce : le titre seul, en haut à gauche. */}
-      <Animated.View style={[styles.watchTitle, watchTitle]} pointerEvents="none">
-        <TitleArt title={shown.title} logoUri={shown.logoUri} maxWidth={420} maxHeight={84} fontSize={42} />
+      {/* Pendant la bande-annonce : la colonne de gauche, à côté de la vidéo. */}
+      <Animated.View style={[styles.watchText, watchTitle]} pointerEvents="none">
+        <TitleArt title={shown.title} logoUri={shown.logoUri} maxWidth={WATCH_TEXT_WIDTH} maxHeight={110} fontSize={46} acceptsLogo={previewZoneUsesLogo} />
+        {shown.meta.length > 0 ? <MetaLine items={shown.meta} size={22} singleLine /> : null}
+        {shown.synopsis ? <ZoneSynopsis synopsis={shown.synopsis} lines={5} width={WATCH_TEXT_WIDTH} textStyle={styles.watchSynopsis} clauses={false} /> : null}
       </Animated.View>
     </>
   );
@@ -128,5 +133,15 @@ const styles = StyleSheet.create({
   chevronRight: { right: 18 },
   chevronDisc: { width: 56, height: 56, borderRadius: 28, backgroundColor: ZONE_HINT_PILL.backgroundColor, alignItems: "center", justifyContent: "center" },
   edge: { ...StyleSheet.absoluteFillObject, borderRadius: R, borderWidth: 1, borderColor: white(0.12) },
-  watchTitle: { position: "absolute", left: 40, top: 34 },
+  watchText: {
+    position: "absolute",
+    left: OPEN_HERO_WATCH.textLeft,
+    top: 40,
+    bottom: OPEN_HERO_WATCH.textBottom,
+    width: WATCH_TEXT_WIDTH,
+    justifyContent: "flex-end",
+    gap: 14,
+    overflow: "hidden",
+  },
+  watchSynopsis: { ...fonts.regular, fontSize: 23, lineHeight: 32 },
 });

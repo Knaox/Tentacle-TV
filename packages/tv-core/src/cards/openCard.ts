@@ -123,7 +123,32 @@ export interface OpenStageRect {
   width: number;
   height: number;
   radius: number;
+  /** La largeur de la VIDÉO, calée à droite du rectangle (la bannière : du 16:9
+   *  sur sa hauteur) ; absente, la vidéo remplit le rectangle. */
+  mediaWidth?: number;
 }
+
+/**
+ * La bannière pendant SA bande-annonce (décision de Damien du 19/10, après la
+ * Shield : la vidéo remplissait 1648 × 520 en recadrant — « rendu zoomé ») :
+ * la vidéo ENTIÈRE en 16:9 sur toute la hauteur, calée à droite, fondue vers
+ * le noir sur sa gauche ; à gauche, jamais une zone vide — le logo, la ligne
+ * de métadonnées et un résumé court, en colonne (`HeroBannerArt`).
+ */
+export const OPEN_HERO_WATCH = (() => {
+  const mediaWidth = Math.round((OPEN_PAGE.heroHeight * 16) / 9);
+  const textLeft = 56;
+  return {
+    mediaWidth,
+    textLeft,
+    /** La colonne de texte s'arrête avant la vidéo. */
+    textWidth: (bannerWidth: number) => bannerWidth - mediaWidth - textLeft - 24,
+    /** Le fondu du bord gauche de la vidéo vers le noir. */
+    fadeWidth: 320,
+    /** Le bas de la colonne de texte. */
+    textBottom: 56,
+  } as const;
+})();
 
 /**
  * Les rectangles de la SCÈNE (le lecteur unique, posé derrière la page) : la
@@ -139,6 +164,7 @@ export function openStageRects(m: OpenCardMetrics, inset: number): { card: OpenS
       width: OPEN_PAGE.width - inset - OPEN_PAGE.safeRight,
       height: OPEN_PAGE.heroHeight,
       radius: OPEN_PAGE.heroRadius,
+      mediaWidth: OPEN_HERO_WATCH.mediaWidth,
     },
   };
 }
