@@ -33,7 +33,7 @@ export default {
   // L'ouverture du démarrage (Apple TV) : un réglage d'APPAREIL.
   opening: "Ouverture",
   bootSoundTitle: "Son au démarrage",
-  bootSoundDescription: "Le « ta-dum » de l'ouverture à chaque ouverture de l'application. Il se mêle à une musique déjà en cours, sans la couper.",
+  bootSoundDescription: "Le « ta-dum » joué à chaque lancement de l'application. Il se mêle à une musique déjà en cours, sans la couper.",
 
   // ── Sections de la coquille de réglages ──
   // Titre ombrelle de l'écran (atterrissage mobile). `title` reste le titre
