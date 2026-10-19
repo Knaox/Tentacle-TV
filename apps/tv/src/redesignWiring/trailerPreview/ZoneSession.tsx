@@ -14,7 +14,7 @@ import {
   uiLanguage,
   type TrailerPreviewSubject,
 } from "@tentacle-tv/shared";
-import { previewStartPosition, previewVideoKey } from "@tentacle-tv/tv-core";
+import { PREVIEW_VIDEO_ERROR_GRACE_MS, previewStartPosition, previewVideoKey } from "@tentacle-tv/tv-core";
 import { previewArbiter, previewMemory, useAppActive } from "./previewDevice";
 import { usePreviewRemote } from "./usePreviewRemote";
 import { useTvPreviewMachine } from "./useTvPreviewMachine";
@@ -178,11 +178,29 @@ export const ZoneSession = memo(function ZoneSession({ sessionKey, subject, focu
   // Un avis d'un cycle passé ne parle plus à la machine : elle vit déjà le suivant.
   const live = useRef(false);
   live.current = video !== null;
+  // Une erreur n'est un échec du titre que si le focus est resté et que rien n'est venu la démentir
+  // (tv-core `PREVIEW_VIDEO_ERROR_GRACE_MS`) : au départ du focus, ou celle de l'élément que la
+  // reprise remplace (première image aussitôt), elle ne compte pas.
+  const stillFocused = useRef(focused);
+  stillFocused.current = focused;
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const readyAt = useRef(0);
+  useEffect(() => () => {
+    if (errorTimer.current) clearTimeout(errorTimer.current);
+  }, []);
+  // Prête dans la grâce (avant ou après l'erreur) : l'erreur était celle de l'élément remplacé.
   const onReady = useCallback(() => {
+    readyAt.current = Date.now();
+    if (errorTimer.current) clearTimeout(errorTimer.current);
+    errorTimer.current = null;
     if (live.current) dispatch({ type: "videoReady", at: Date.now() });
   }, [dispatch]);
   const onError = useCallback(() => {
-    if (live.current) dispatch({ type: "videoFailed", at: Date.now() });
+    if (!live.current || errorTimer.current || Date.now() - readyAt.current < PREVIEW_VIDEO_ERROR_GRACE_MS) return;
+    errorTimer.current = setTimeout(() => {
+      errorTimer.current = null;
+      if (live.current && stillFocused.current) dispatch({ type: "videoFailed", at: Date.now() });
+    }, PREVIEW_VIDEO_ERROR_GRACE_MS);
   }, [dispatch]);
   const videoKey = video?.videoKey;
   const onEnded = useCallback(() => {

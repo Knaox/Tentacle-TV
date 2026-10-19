@@ -157,3 +157,13 @@ export function previewStartPosition(input: { resumeAt: number | null; hls: bool
   if (input.resumeAt !== null) return input.resumeAt;
   return input.hls ? TRAILER_PREVIEW_TIMING.startOffsetS : 0;
 }
+
+/**
+ * Une erreur du lecteur d'aperçu n'est un ÉCHEC du titre (retenu : il ne
+ * sera pas redemandé de sitôt) que si le focus est resté sur lui ce temps-là
+ * après elle. AVPlayer en émet une (CoreMedia −66681) à l'instant où le focus
+ * QUITTE une carte dont l'aperçu joue — avant que la session apprenne son
+ * départ : le titre passait en quarantaine, et ne rejouait plus ni dans sa
+ * carte ni dans la bannière (relevé au simulateur, 19/10).
+ */
+export const PREVIEW_VIDEO_ERROR_GRACE_MS = 400;
