@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import type { IntroGeometry } from "@tentacle-tv/shared/brandIntro";
 import type { IntroSamples } from "@tentacle-tv/tv-core/boot";
+import { RoundClip } from "../render/RoundClip";
 import type { PartBoxes, TentacleArt } from "./introArt";
 import { CameraLayer, IntroGroup, IntroPart, type StageFrame } from "./IntroPart";
 import { FLASH_STOPS, SoftDiscSvg } from "./IntroSvgs";
@@ -76,7 +77,7 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   return (
     <CameraLayer camera={samples.camera} baseZoom={finalZoom} clock={clock} step={step}>
       <IntroGroup frame={frame} pivot={{ x: 120, y: 132 }} channels={samples.parts.body} clock={clock} step={step} opacity={false}>
-        <View style={[styles.clip, clip, landed ? styles.open : { borderRadius: inner.rx * finalZoom }]}>
+        <RoundClip style={[styles.clip, clip]} radius={inner.rx * finalZoom} clip={!landed}>
           {landed ? null : (
             <Animated.View style={[StyleSheet.absoluteFill, glassStyle]}>
               <LinearGradient
@@ -113,14 +114,14 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
               {(size) => <SoftDiscSvg size={size.width} stops={FLASH_STOPS} />}
             </IntroPart>
           )}
-        </View>
+        </RoundClip>
       </IntroGroup>
     </CameraLayer>
   );
 });
 
 const styles = StyleSheet.create({
-  clip: { position: "absolute", overflow: "hidden" },
+  clip: { position: "absolute" },
   open: { overflow: "visible", borderRadius: 0 },
   iris: { position: "absolute", overflow: "hidden" },
   counter: { position: "absolute" },

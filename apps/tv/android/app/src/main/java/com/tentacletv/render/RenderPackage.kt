@@ -13,5 +13,5 @@ class RenderPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> = listOf(PerfModule(reactContext))
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
-    listOf(TentacleDesaturateViewManager(), TentacleShadowViewManager(), TentacleHaloViewManager(), TentacleGlowViewManager(), TentacleSpinnerViewManager(), TentacleCullTrackManager())
+    listOf(TentacleDesaturateViewManager(), TentacleShadowViewManager(), TentacleHaloViewManager(), TentacleGlowViewManager(), TentacleSpinnerViewManager(), TentacleCullTrackManager(), TentacleRoundClipManager())
 }

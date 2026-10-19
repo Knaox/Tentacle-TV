@@ -1,9 +1,10 @@
 import { memo } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { SPARKLES, sparkleCenter, type IntroGeometry } from "@tentacle-tv/shared/brandIntro";
 import { INTRO_PLATES, type IntroHoldSamples, type IntroSamples } from "@tentacle-tv/tv-core/boot";
+import { RoundClip } from "../render/RoundClip";
 import type { PartBoxes, TentacleArt } from "./introArt";
 import { CameraLayer, IntroGroup, IntroPart, type StageFrame } from "./IntroPart";
 import { ArmSvg, EyeSvg, FaceSvg, GLOW_STOPS, HatSvg, HeadSvg, PlaySvg, RingSvg, SoftDiscSvg, SparkleSvg } from "./IntroSvgs";
@@ -32,10 +33,9 @@ function Frame({ art, geometry, frame }: Pick<IntroStageProps, "art" | "geometry
     top: frame.center.y + (outer.y - frame.target.y) * frame.zoom,
     width: outer.width * frame.zoom,
     height: outer.height * frame.zoom,
-    borderRadius: outer.rx * frame.zoom,
   };
   return (
-    <View style={[styles.frame, style]}>
+    <RoundClip style={[styles.frame, style]} radius={outer.rx * frame.zoom}>
       <LinearGradient
         style={StyleSheet.absoluteFill}
         colors={spec.stops.map((stop) => stop.color)}
@@ -43,7 +43,7 @@ function Frame({ art, geometry, frame }: Pick<IntroStageProps, "art" | "geometry
         start={at(spec.x1, spec.y1)}
         end={at(spec.x2, spec.y2)}
       />
-    </View>
+    </RoundClip>
   );
 }
 
@@ -197,5 +197,5 @@ export const IntroStageAbove = memo(function IntroStageAbove(props: IntroStagePr
 });
 
 const styles = StyleSheet.create({
-  frame: { position: "absolute", overflow: "hidden" },
+  frame: { position: "absolute" },
 });
