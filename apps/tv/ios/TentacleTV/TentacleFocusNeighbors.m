@@ -354,7 +354,11 @@ UIView *TentacleNeighborTarget(TentacleFocusSection *from, UIView *focused, BOOL
     return nil;
   }
 
-  // 4. L'entrée déclarée, si elle est là et focalisable.
+  // 4. L'entrée déclarée, si elle est là et focalisable ; sinon, la carte qui s'ouvre.
   UIView *entry = keptSection.entryView;
-  return entry != nil && [keptItems containsObject:entry] ? entry : kept.view;
+  if (entry != nil && [keptItems containsObject:entry]) {
+    return entry;
+  }
+  UIView *openEntry = TentacleOpenRowEntry(keptSection, keptItems);
+  return openEntry != nil ? openEntry : kept.view;
 }

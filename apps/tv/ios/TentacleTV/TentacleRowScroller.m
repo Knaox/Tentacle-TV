@@ -93,6 +93,13 @@ static const CFTimeInterval kRapidStep = 0.35;
     [self stop];
     return;
   }
+  if (_section.rowRevealStart) {
+    // La carte qui s'ouvre : tvOS ne bouge rien, le focus a déjà mis la rangée en route (`revealStart:`).
+    targetContentOffset->x = scrollView.contentOffset.x;
+    [self revealStart:focused];
+    [self cancelForeignAnimationSoonIn:scrollView];
+    return;
+  }
   // La carte, sans sa transformation (l'agrandissement au focus) : son centre et sa largeur.
   CGPoint center = [focused.superview convertPoint:focused.center toView:content];
   CGFloat width = CGRectGetWidth(focused.bounds);
@@ -106,8 +113,7 @@ static const CFTimeInterval kRapidStep = 0.35;
   CGFloat base = _link != nil ? _target : targetContentOffset->x;
   CGFloat start = left - leading;
   CGFloat end = left + width + trailing - viewport;
-  // La carte qui s'ouvre (`rowRevealStart`) : toujours au retrait de la rangée.
-  CGFloat target = _section.rowRevealStart ? start : (end > base ? MIN(end, start) : (start < base ? start : base));
+  CGFloat target = end > base ? MIN(end, start) : (start < base ? start : base);
   CGFloat clamped = MIN(MAX(target, 0), MAX(0, contentWidth - viewport));
   CFTimeInterval now = CACurrentMediaTime();
   BOOL rapid = _lastStepAt > 0 && now - _lastStepAt < kRapidStep;
@@ -121,13 +127,29 @@ static const CFTimeInterval kRapidStep = 0.35;
   // Un pas isolé : tvOS ne bouge rien, le ressort s'en charge.
   targetContentOffset->x = scrollView.contentOffset.x;
   [self moveTo:clamped in:scrollView];
-  // tvOS lance quand même SON animation vers cette position, qui reposerait l'ancienne pendant
-  // que le ressort avance : on l'annule au tour suivant, à la position du ressort.
+  [self cancelForeignAnimationSoonIn:scrollView];
+}
+
+/// tvOS lance quand même SON animation vers la position qu'on lui rend, qui reposerait l'ancienne
+/// pendant que le ressort avance : on l'annule au tour suivant, à la position du ressort.
+- (void)cancelForeignAnimationSoonIn:(UIScrollView *)scrollView
+{
   __weak TentacleRowScroller *weakSelf = self;
   __weak UIScrollView *weakScroll = scrollView;
   dispatch_async(dispatch_get_main_queue(), ^{
     [weakSelf cancelForeignAnimationIn:weakScroll];
   });
+}
+
+/// La carte qui s'ouvre (`rowRevealStart`) : au retrait À CHAQUE focus, sur le ressort — tvOS ne
+/// défile pas une rangée dont la carte est visible, et la suivante l'est toujours (relevé du 19/10).
+- (void)revealStart:(UIView *)focused
+{
+  CGFloat offset = 0;
+  UIScrollView *scroll = _row.scrollView;
+  if (_row != nil && scroll != nil && TentacleOpenRowStart(_row, focused, &offset)) {
+    [self moveTo:offset in:scroll];
+  }
 }
 
 /// Annule une animation de défilement de tvOS en reposant, sans animation, la position du ressort
@@ -260,10 +282,14 @@ void TentacleRowScrollerAttach(TentacleFocusSection *section, UIView *item)
       continue;
     }
     RCTScrollView *row = (RCTScrollView *)v;
-    if (objc_getAssociatedObject(row, &kRowScrollerKey) == nil) {
-      TentacleRowScroller *scroller = [[TentacleRowScroller alloc] initWithRow:row section:section];
+    TentacleRowScroller *scroller = objc_getAssociatedObject(row, &kRowScrollerKey);
+    if (scroller == nil) {
+      scroller = [[TentacleRowScroller alloc] initWithRow:row section:section];
       objc_setAssociatedObject(row, &kRowScrollerKey, scroller, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
       [row addScrollListener:scroller];
+    }
+    if (section.rowRevealStart) {
+      [scroller revealStart:item];
     }
     return;
   }

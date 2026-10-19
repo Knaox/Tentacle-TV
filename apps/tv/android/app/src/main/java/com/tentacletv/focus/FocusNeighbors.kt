@@ -3,6 +3,7 @@ package com.tentacletv.focus
 import android.graphics.RectF
 import android.view.View
 import android.view.ViewGroup
+import com.facebook.react.views.scroll.ReactHorizontalScrollView
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -194,8 +195,30 @@ internal object FocusNeighbors {
     }
     val section = keptSection ?: return null
 
-    // 4. L'entrée déclarée, si elle est là et focalisable.
+    // 4. L'entrée déclarée, si elle est là et focalisable ; sinon, la carte qui s'ouvre.
     val entry = section.entryView()
-    return if (entry != null && keptItems.contains(entry)) entry else kept?.view
+    if (entry != null && keptItems.contains(entry)) return entry
+    return openRowEntry(section, keptItems) ?: kept?.view
+  }
+
+  /**
+   * La carte qui s'ouvre (`rowRevealStart`) : on entre dans sa rangée par la carte posée à son
+   * RETRAIT — celle qu'elle montre ouverte au bord gauche —, jamais par celle d'en face (tv-core
+   * `cards/openCard.ts`, `openRowEntry` : la plus proche du retrait). null : pas une telle rangée.
+   */
+  private fun openRowEntry(section: TentacleFocusSection, items: List<View>): View? {
+    if (!section.rowRevealStart || items.isEmpty()) return null
+    var v: Any? = items.first().parent
+    var row: ReactHorizontalScrollView? = null
+    while (v is View && v !== section) {
+      if (v is ReactHorizontalScrollView) { row = v; break }
+      v = v.parent
+    }
+    val scroller = row ?: return null
+    val content = scroller.getChildAt(0) as? ViewGroup ?: return null
+    val first = content.getChildAt(0) ?: return null
+    // Le retrait, à l'écran : le bord de la rangée plus son retrait de contenu (sans son défilement).
+    val retrait = FocusGeometry.box(scroller).left + content.left + first.left
+    return items.minByOrNull { abs(FocusGeometry.box(it).left - retrait) }
   }
 }

@@ -119,6 +119,14 @@ FOUNDATION_EXPORT BOOL TentacleNeighborExists(TentacleFocusSection *from, UIView
 /// `section` (une fois par rangée) — `TentacleRowScroller.m`.
 FOUNDATION_EXPORT void TentacleRowScrollerAttach(TentacleFocusSection *section, UIView *item);
 
+/// La carte qui s'ouvre (`rowRevealStart`, `TentacleOpenRow.m`) : la position de `row` qui pose
+/// `focused` au retrait (NO : elle n'y est pas).
+FOUNDATION_EXPORT BOOL TentacleOpenRowStart(RCTScrollView *row, UIView *focused, CGFloat *offset);
+
+/// … et l'élément par lequel on y entre depuis une section voisine : celui posé au retrait
+/// (tv-core `openRowEntry`) ; nil hors d'une telle rangée.
+FOUNDATION_EXPORT UIView *_Nullable TentacleOpenRowEntry(TentacleFocusSection *section, NSArray<UIView *> *items);
+
 /// Observe la télécommande sur `window` (une fois) : flèches enfoncées, pavé
 /// (`TentacleFocusInput.m`).
 FOUNDATION_EXPORT void TentacleFocusInputObserve(UIWindow *_Nullable window);
