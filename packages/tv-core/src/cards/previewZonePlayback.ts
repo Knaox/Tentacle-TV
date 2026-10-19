@@ -39,8 +39,14 @@ export function previewZoneWatching(input: PreviewZonePlaybackInput): boolean {
   return input.videoShown;
 }
 
-/** La durée du fondu vers l'état demandé. */
-export function previewZoneWatchingMs(watching: boolean): number {
+/**
+ * La durée du fondu vers l'état demandé. Une surface (carte ouverte, bannière)
+ * qui PERD le focus pendant sa vidéo reprend son image d'un coup : la vidéo,
+ * elle, se coupe au même instant — un fondu de retour y laissait une carte
+ * transparente, un trou noir, le temps qu'elle s'en aille.
+ */
+export function previewZoneWatchingMs(watching: boolean, focused = true): number {
+  if (!watching && !focused) return 0;
   return watching ? PREVIEW_ZONE_PLAYBACK.recedeMs : PREVIEW_ZONE_PLAYBACK.returnMs;
 }
 

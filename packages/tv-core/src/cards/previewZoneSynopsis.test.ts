@@ -67,4 +67,11 @@ describe("previewZoneWatching — la version allégée pendant la vidéo", () =>
     expect(previewZoneWatchingMs(true)).toBe(PREVIEW_ZONE_PLAYBACK.recedeMs);
     expect(previewZoneWatchingMs(false)).toBeLessThan(previewZoneWatchingMs(true));
   });
+
+  it("une surface qui perd le focus pendant sa vidéo reprend son image d'un coup", () => {
+    expect(previewZoneWatchingMs(false, false)).toBe(0);
+    expect(previewZoneWatchingMs(false, true)).toBe(PREVIEW_ZONE_PLAYBACK.returnMs);
+    // Un focus déjà parti n'empêche pas une vidéo qui se montre encore de rester montrée.
+    expect(previewZoneWatchingMs(true, false)).toBe(PREVIEW_ZONE_PLAYBACK.recedeMs);
+  });
 });

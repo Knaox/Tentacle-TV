@@ -139,6 +139,29 @@ export function usePreviewStageInfo(): PreviewStageInfo {
   return useSyncExternalStore(store ? store.subscribe : NO_STORE_SUBSCRIBE, store ? store.getInfo : () => NO_INFO);
 }
 
+/** La clé de la bannière sur la scène et dans `watching` (une carte y a son identifiant). */
+export const HERO_STAGE_KEY = "hero";
+
+/**
+ * Une surface de la scène (une carte par son id, la bannière par `HERO_STAGE_KEY`) :
+ * sa vidéo se montre (`watching`), elle est le sujet focalisé sans vidéo (`subject`),
+ * ou le focus l'a quittée (`away`). Lu dans le MÊME rendu que la scène — le même
+ * magasin, la même émission : la face d'une surface quittée revient à l'image même
+ * où la scène se coupe (tv-core `previewStageCut`), jamais une image plus tard.
+ */
+export type StageSurface = "watching" | "subject" | "away";
+
+export function useStageSurface(key: string): StageSurface {
+  const store = useContext(ScopeContext);
+  return useSyncExternalStore(store ? store.subscribe : NO_STORE_SUBSCRIBE, () => {
+    if (!store) return "away";
+    const { subject, focused } = store.getState();
+    const mine = focused && subject !== null && (key === HERO_STAGE_KEY ? subject.kind === "hero" : subject.kind === "card" && subject.id === key);
+    if (!mine) return "away";
+    return store.getInfo().watching === key ? "watching" : "subject";
+  });
+}
+
 /** Le sujet focalisé de la page (une carte, la bannière), suivi : `null` sans focus ou hors d'une portée. */
 export function usePreviewSubject(): PreviewZoneState["subject"] {
   const store = useContext(ScopeContext);
