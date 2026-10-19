@@ -3,7 +3,39 @@
 Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 `.github/workflows/tv.yml` : Play Console (max 500 caractères), App Store
 Connect tvOS (max 4000), Release GitHub (illimité). Les nouveautés vont
-directement dans le bloc de la prochaine version (`## [1.11.0]`).
+directement dans le bloc de la prochaine version (`## [1.20.0]`).
+
+## [1.20.0]
+<!-- Bloc nu : Android TV (Google Play, 500 caractères). Depuis la 1.11.0. -->
+### FR
+- **Nouvel accueil** : un grand héros qui défile à la télécommande, l'aperçu de la bande-annonce par-dessus
+- **Bibliothèques et Ma liste** : les lignes ne bougent plus, seul le focus se déplace
+- **Fiche** : tous les extras reviennent, épisodes compris
+- Navigation plus rapide et plus fluide
+
+### EN
+- **New home**: a large hero you browse with the remote, the trailer preview on top
+- **Libraries and My List**: rows stay still, only the focus moves
+- **Title page**: all extras are back, episodes included
+- Faster, smoother navigation
+
+## [atv-1.20.0]
+<!-- Bloc Apple TV (App Store Connect, 4000 caractères) : depuis la 1.11.0. -->
+### FR
+- **Une ouverture animée, avec son** : à chaque lancement, le poulpe s'assemble, appuie sur lecture et l'app s'ouvre dans son écran — le temps du chargement. Le son se coupe dans Réglages
+- **Un nouvel accueil** : un grand héros en plein écran qui se parcourt à la télécommande — gauche et droite au bord des boutons pour le titre précédent ou suivant, des points pour savoir où l'on est ; il ne tourne plus tout seul pendant qu'on le regarde
+- **L'aperçu de la bande-annonce** se joue par-dessus la page, toujours au même endroit, sans jamais gêner la navigation
+- **Bibliothèques, Ma liste et Favoris** : les lignes ne bougent plus, seul le focus se déplace, et haut et bas gardent la colonne
+- **La fiche montre tous les extras**, bandes-annonces, making-of et extraits, épisodes compris
+- **Une navigation plus rapide et plus fluide** : les rangées se posent plus vite, sans saut ni à-coup
+
+### EN
+- **An animated opening, with sound**: at every launch, the octopus comes together, presses play and the app opens inside its screen — while it loads. The sound can be turned off in Settings
+- **A new home**: a large full-screen hero you browse with the remote — left and right at the edge of the buttons for the previous or next title, dots to show where you are; it no longer rotates on its own while you look at it
+- **The trailer preview** plays on top of the page, always in the same place, never in the way of navigation
+- **Libraries, My List and Favorites**: rows stay still, only the focus moves, and up and down keep the column
+- **The title page shows every extra**, trailers, featurettes and clips, episodes included
+- **Faster, smoother navigation**: rows settle quicker, with no jumps or stutter
 
 ## [1.11.0]
 <!-- Bloc nu : Android TV (Google Play, 500 caractères). Depuis la 1.10.2. Le texte complet est dans [atv-1.11.0]. -->
@@ -11,7 +43,6 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **Choisissez vos bibliothèques** dans la barre, profil par profil
 - **Réglages › Accueil** : choisissez le bandeau principal, dont vos meilleures recommandations (serveur 1.30.0)
 - **Ma liste et Favoris** se trient et se filtrent par type
-- **Aperçu de bande-annonce au focus**, rapide, à la taille des cartes
 - **« Vous regardez encore ? »**, puis pause (serveur 1.30.0)
 - **Recommandations en couleurs**
 - Recherche : la flèche du bas mène à la première carte
@@ -21,7 +52,6 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **Pick your libraries** for the side bar, profile by profile
 - **Settings › Home**: choose the main banner, including your best recommendations (server 1.30.0)
 - **My List and Favorites** can be sorted and filtered by type
-- **Trailer preview on focus**, quick, sized to your cards
 - **“Still watching?”**, then pause (server 1.30.0)
 - **Recommendations in color**
 - Search: pressing down goes to the first card
@@ -33,7 +63,6 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **Vos bibliothèques dans la barre** : à la première ouverture de chaque profil, choisissez en un instant les bibliothèques épinglées dans la barre de gauche et leur ordre ; le propriétaire de la famille peut appliquer son choix à d'autres profils de ce téléviseur
 - **« Qui regarde ? »** : le profil retenu sur ce téléviseur ne montre plus de cadenas, puisqu'il s'ouvre sans code PIN
 - **Changer de profil puis revenir au sien** : plus de code PIN redemandé
-- **Aperçu de bande-annonce au focus** : rapide, à la taille des cartes choisie, jamais hors de l'écran — titres hors bibliothèque compris
 - **« Vous regardez encore ? »** : après un long moment de lecture sans toucher la télécommande, la question paraît en bas à droite, « Continuer » déjà sélectionné ; sans réponse, la lecture se met en pause. Réglable pour tout le compte dans Réglages › Lecture, comme sur le téléphone ou l'ordinateur (serveur 1.30.0)
 - **Recommandations en couleurs** ; un titre hors bibliothèque reprend ses couleurs au focus
 - **« Tendances actuelles » en tête de « Pour vous »** : ce qui se regarde le plus cette semaine, sans tenir compte de vos goûts ; à couper dans Réglages › Accueil (serveur 1.31.0)
@@ -45,7 +74,6 @@ directement dans le bloc de la prochaine version (`## [1.11.0]`).
 - **Your libraries in the side bar**: the first time each profile opens, pick in a moment which libraries are pinned to the left bar and in what order; the family owner can apply their choice to other profiles on this TV
 - **“Who's watching?”**: the profile remembered on this TV no longer shows a lock, since it opens without a PIN
 - **Switch profile, then back to yours**: no PIN asked again
-- **Trailer preview on focus**: quick, sized to your card size, never off-screen — titles outside the library included
 - **“Are you still watching?”**: after a long stretch of playback without touching the remote, the question shows up at the bottom right, “Continue” already selected; with no answer, playback pauses. Adjustable for the whole account in Settings › Playback, as on your phone or computer (server 1.30.0)
 - **Recommendations in color**; a title outside the library regains its colors on focus
 - **“Trending now” at the top of “For you”**: what everyone is watching this week, regardless of your tastes; turn it off in Settings › Home (server 1.31.0)
