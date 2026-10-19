@@ -54,9 +54,12 @@ function usePreviewZoneStateOrNull(store: PreviewZoneStore | null) {
 }
 
 const MUTE_STATE = { subject: null, focused: false, since: null };
+const MUTE_INFO = { model: null, watching: null };
 const MUTE_STORE: PreviewZoneStore = {
   getState: () => MUTE_STATE,
   getCard: () => null,
+  getInfo: () => MUTE_INFO,
+  setInfo: () => undefined,
   subscribe: () => () => undefined,
   dispatch: () => undefined,
   refresh: () => undefined,

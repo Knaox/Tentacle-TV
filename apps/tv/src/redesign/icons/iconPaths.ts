@@ -103,6 +103,7 @@ export const ICONS = {
   skipPrevious: { paths: ["M19 20 9 12 19 4z", "M5 19V5"] },
   subtitles: { rects: [[2, 5, 20, 14, 2]], paths: ["M7 15h4M15 15h2M7 11h2M13 11h4"] },
   audio: { paths: ["M11 5 6 9H2v6h4l5 4V5z", "M15.54 8.46a5 5 0 0 1 0 7.07", "M19.07 4.93a10 10 0 0 1 0 14.14"] },
+  muted: { paths: ["M11 5 6 9H2v6h4l5 4V5z", "M22 9l-6 6", "M16 9l6 6"] },
   mic: { rects: [[9, 2, 6, 13, 3]], paths: ["M19 10v2a7 7 0 0 1-14 0v-2", "M12 19v3"] },
   backspace: {
     paths: [

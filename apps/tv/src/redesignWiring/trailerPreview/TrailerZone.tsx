@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useIsFocused } from "@react-navigation/native";
 import { trailerPreviewSubjectKey } from "@tentacle-tv/shared";
 import { previewSessionDwellLeft, previewZoneDetailsLeft, previewZoneShown } from "@tentacle-tv/tv-core";
@@ -6,6 +6,7 @@ import type { CardModel } from "../../redesign/cards/cardTypes";
 import {
   usePreviewZoneCard, usePreviewZoneState, usePreviewZoneStore, type PreviewZoneSlotProps, type PreviewZoneStore,
 } from "../../redesign/cards/trailerPreviewPort";
+import { PreviewStage } from "../../redesign/previewZone/PreviewStage";
 import { PreviewZoneView } from "../../redesign/previewZone/PreviewZoneView";
 import { zoneModelOfCard, zoneModelOfHero } from "../../redesign/previewZone/zoneModel";
 import { useTrailerPreviewsEnabled } from "../../lib/trailerPreviewSettings";
@@ -39,7 +40,7 @@ export const TrailerZone = memo(function TrailerZone(props: PreviewZoneSlotProps
   return <Zone {...props} store={store ?? FALLBACK_STORE} />;
 });
 
-function Zone({ hero = null, fallback = null, store }: PreviewZoneSlotProps & { store: PreviewZoneStore }) {
+function Zone({ hero = null, fallback = null, stage, store }: PreviewZoneSlotProps & { store: PreviewZoneStore }) {
   const state = usePreviewZoneState(store);
   const lastCard = usePreviewZoneCard(store);
   const shown = previewZoneShown(state, { hasHero: hero !== null, fallbackId: fallback?.id ?? null });
@@ -79,18 +80,22 @@ function Zone({ hero = null, fallback = null, store }: PreviewZoneSlotProps & { 
   const sessionOn = pageFocused && subjectKey !== null && (held || mine !== null);
   const videoShown = sessionOn && shownBy === subjectKey;
   const remote = usePreviewRemoteHint(videoShown);
+  // La scène dit à sa page les détails du titre (sous sa carte ouverte) et ce qui joue sa vidéo.
+  const watching = videoShown ? (heroShown ? "hero" : card?.id ?? null) : null;
+  useEffect(() => {
+    if (stage) store.setInfo({ model, watching });
+  }, [stage, store, model, watching]);
+  const video = pageFocused ? <ZoneVideo want={mine} /> : null;
   return (
     <>
       {sessionOn && subject ? (
         <ZoneSession key={subjectKey} sessionKey={subjectKey ?? ""} subject={subject} focused={focused} since={since} onShown={onShown} onVideo={onVideo} />
       ) : null}
-      <PreviewZoneView
-        model={model}
-        heroRoom={heroShown}
-        video={pageFocused ? <ZoneVideo want={mine} /> : null}
-        videoShown={videoShown}
-        remote={remote}
-      />
+      {stage ? (
+        <PreviewStage rect={heroShown ? stage.hero ?? null : card ? stage.card : null} video={video} videoShown={videoShown} remote={remote} />
+      ) : (
+        <PreviewZoneView model={model} heroRoom={heroShown} video={video} videoShown={videoShown} remote={remote} />
+      )}
     </>
   );
 }
@@ -101,9 +106,12 @@ interface Owned<T> {
 }
 
 const FALLBACK_STATE = { subject: null, focused: false, since: null };
+const FALLBACK_INFO = { model: null, watching: null };
 const FALLBACK_STORE: PreviewZoneStore = {
   getState: () => FALLBACK_STATE,
   getCard: () => null,
+  getInfo: () => FALLBACK_INFO,
+  setInfo: () => undefined,
   subscribe: () => () => undefined,
   dispatch: () => undefined,
   refresh: () => undefined,

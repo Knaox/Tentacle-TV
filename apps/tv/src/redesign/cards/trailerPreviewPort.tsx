@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import { INITIAL_PREVIEW_ZONE, reducePreviewZone, type PreviewWarmWant, type PreviewZoneEvent, type PreviewZoneState } from "@tentacle-tv/tv-core";
 import type { HeroModel } from "../hero/heroTypes";
+import type { PreviewZoneModel } from "../previewZone/zoneModel";
 import type { CardModel } from "./cardTypes";
 
 /**
@@ -21,25 +22,47 @@ import type { CardModel } from "./cardTypes";
  *   bande-annonce se prépare au serveur, leur fond se précharge.
  */
 
+/**
+ * Ce que la SCÈNE d'une page à cartes qui s'ouvrent dit à la page (la zone l'écrit) :
+ * les détails du titre focalisé (sous sa carte ouverte), et le titre dont la vidéo se
+ * montre (`watching` : l'id de sa carte, ou « hero ») — sa carte devient transparente,
+ * la vidéo posée derrière elle se voit.
+ */
+export interface PreviewStageInfo {
+  model: PreviewZoneModel | null;
+  watching: string | null;
+}
+
 /** Le magasin de focus d'une page : l'état de la règle, et le modèle de la carte qui l'a eu en dernier. */
 export interface PreviewZoneStore {
   getState(): PreviewZoneState;
   /** Le modèle de la dernière carte focalisée (tenu à jour tant qu'elle reste montée). */
   getCard(): CardModel | null;
+  getInfo(): PreviewStageInfo;
+  setInfo(info: PreviewStageInfo): void;
   subscribe(listener: () => void): () => void;
   dispatch(event: PreviewZoneEvent, card?: CardModel): void;
   /** Le modèle de la carte a changé (une coche, une note) : sans évènement, la règle ne bouge pas. */
   refresh(card: CardModel): void;
 }
 
+const NO_INFO: PreviewStageInfo = { model: null, watching: null };
+
 export function createPreviewZoneStore(): PreviewZoneStore {
   let state = INITIAL_PREVIEW_ZONE;
   let card: CardModel | null = null;
+  let info = NO_INFO;
   const listeners = new Set<() => void>();
   const emit = () => listeners.forEach((listener) => listener());
   return {
     getState: () => state,
     getCard: () => card,
+    getInfo: () => info,
+    setInfo(next) {
+      if (next.model === info.model && next.watching === info.watching) return;
+      info = next;
+      emit();
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => {
@@ -84,6 +107,8 @@ function sameZoneCard(a: CardModel, b: CardModel): boolean {
 }
 
 const ScopeContext = createContext<PreviewZoneStore | null>(null);
+/** Le contexte du magasin de la page (lecture sans abonnement : une carte s’y abonne seule, par sélecteur). */
+export const previewStoreContext = ScopeContext;
 
 /** La portée d'une page : tout ce qu'elle enveloppe (sa zone, ses rangées) partage un magasin. */
 export function PreviewZoneScope({ children }: { children: ReactNode }) {
@@ -104,6 +129,20 @@ export function usePreviewZoneState(store: PreviewZoneStore): PreviewZoneState {
 /** Le modèle de la dernière carte focalisée, suivi (la zone). */
 export function usePreviewZoneCard(store: PreviewZoneStore): CardModel | null {
   return useSyncExternalStore(store.subscribe, store.getCard);
+}
+
+const NO_STORE_SUBSCRIBE = () => () => undefined;
+
+/** Les détails et la vidéo de la scène de la page, suivis (les cartes qui s'ouvrent, la bannière). */
+export function usePreviewStageInfo(): PreviewStageInfo {
+  const store = useContext(ScopeContext);
+  return useSyncExternalStore(store ? store.subscribe : NO_STORE_SUBSCRIBE, store ? store.getInfo : () => NO_INFO);
+}
+
+/** Le sujet focalisé de la page (une carte, la bannière), suivi : `null` sans focus ou hors d'une portée. */
+export function usePreviewSubject(): PreviewZoneState["subject"] {
+  const store = useContext(ScopeContext);
+  return useSyncExternalStore(store ? store.subscribe : NO_STORE_SUBSCRIBE, () => (store ? store.getState().subject : null));
 }
 
 /**
@@ -147,12 +186,27 @@ export function usePreviewZoneHero(active: boolean): void {
   }, [store, active]);
 }
 
+/** Un rectangle de la scène (1920 × 1080). */
+export interface StageRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  radius: number;
+}
+
 /** Ce que la page donne à sa zone. */
 export interface PreviewZoneSlotProps {
   /** Le titre mis en avant (Accueil) : montré avant tout focus et au focus de ses boutons. */
   hero?: HeroModel | null;
   /** Ce que la zone montre avant tout focus de carte, sans héros (la première affiche d'une grille). */
   fallback?: CardModel | null;
+  /**
+   * Une page à cartes qui S'OUVRENT (Accueil, « Pour vous », listes, bibliothèques) :
+   * pas de zone fixe — la vidéo se pose DERRIÈRE la page, au rectangle de la carte
+   * ouverte (toujours le même) ou de la bannière, et rien ne recouvre une cible.
+   */
+  stage?: { card: StageRect; hero?: StageRect };
 }
 
 /** La zone fournie par l'intégration : elle lit le magasin de la page (`usePreviewZoneStore`). */
