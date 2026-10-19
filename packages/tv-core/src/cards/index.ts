@@ -22,3 +22,4 @@ export * from "./previewZoneText";
 export * from "./previewZonePlayback";
 export * from "./previewZoneSynopsis";
 export * from "./trailerPreviewWarmTv";
+export * from "./openCard";

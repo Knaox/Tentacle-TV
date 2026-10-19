@@ -7,8 +7,10 @@ import type { RemoteIntent } from "../remote/intents";
  * - Les titres : ceux du mode que le compte a choisi (`heroSource.ts`) —
  *   `HERO_MAX_ITEMS` au plus.
  * - Il avance SEUL, toutes les `HERO_ROTATE_MS` (deux fois moins vite en
- *   mouvement réduit), même quand le focus est sur l'un de ses boutons : les
- *   boutons gardent leurs clés, le focus ne bouge pas.
+ *   mouvement réduit) — mais JAMAIS sous le focus (décision de Damien du
+ *   19/10) : la bannière est UNE cible, on la lit ou on la tourne à la main
+ *   (GAUCHE / DROITE, `heroNav.ts`) ; elle ne tourne seule qu'à l'écran SANS
+ *   le focus (le rail ouvert devant elle), comme la Top Shelf d'Apple.
  * - L'attente repart de zéro à chaque GESTE et à chaque prise ou perte du
  *   focus dans l'écran, et à chaque titre visé : qui lit le héros n'en voit
  *   pas le titre changer sous ses yeux. Un maintien qui COMMENCE la suspend ;
@@ -43,11 +45,13 @@ export interface HeroRotationConditions {
   appActive: boolean;
   /** Le nombre de titres. */
   count: number;
+  /** La bannière a le focus : on la lit, elle ne tourne pas. */
+  focused?: boolean;
 }
 
 /** La rotation est-elle en marche ? */
-export function heroRotationActive({ shown, appActive, count }: HeroRotationConditions): boolean {
-  return shown && appActive && count > 1;
+export function heroRotationActive({ shown, appActive, count, focused = false }: HeroRotationConditions): boolean {
+  return shown && appActive && count > 1 && !focused;
 }
 
 /** Le héros est dans le champ tant que moins de la moitié en est défilée. */

@@ -102,10 +102,13 @@ export function clampRowOffset(x: number, track: RowTrack): number {
  * Où la rangée doit être pour montrer la carte (`left`, `width`, dans son
  * contenu), depuis `base` — là où elle va déjà. Ni plus près du bord gauche
  * que `leading`, ni du bord droit que `trailing` ; rien si elle l'est déjà.
+ * `alwaysStart` (la carte qui s'ouvre, `cards/openCard.ts`) : la carte se pose
+ * TOUJOURS au retrait — appliqué tel quel par `TentacleRowScroller.m` et
+ * `RevealScroller.kt` (`rowRevealStart`).
  */
-export function rowRevealOffset(item: { left: number; width: number }, track: RowTrack, base: number): number {
+export function rowRevealOffset(item: { left: number; width: number }, track: RowTrack, base: number, alwaysStart = false): number {
   const start = item.left - track.leading;
   const end = item.left + item.width + track.trailing - track.viewport;
-  const target = end > base ? Math.min(end, start) : start < base ? start : base;
+  const target = alwaysStart ? start : end > base ? Math.min(end, start) : start < base ? start : base;
   return clampRowOffset(target, track);
 }

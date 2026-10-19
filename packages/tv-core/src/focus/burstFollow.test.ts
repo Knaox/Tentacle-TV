@@ -100,6 +100,16 @@ describe("rowRevealOffset — la rangée qui montre la carte focalisée", () => 
   it("une rangée plus courte que l'écran ne défile pas", () => {
     expect(rowRevealOffset({ left: 176, width: 300 }, { viewport: 1920, content: 800, leading: 176, trailing: 96 }, 0)).toBe(0);
   });
+
+  it("la carte qui s'ouvre : TOUJOURS au retrait, d'où que la rangée vienne", () => {
+    // Une piste qui laisse la place d'ancrer la dernière carte (sa marge de fin : la vue moins une carte).
+    const open = { ...track, content: 176 + 10 * 340 - 40 + (1920 - 176 - 300) };
+    expect(rowRevealOffset(card(2), open, 0, true)).toBe(card(2).left - 176);
+    expect(rowRevealOffset(card(5), open, 0, true)).toBe(card(5).left - 176);
+    expect(rowRevealOffset(card(4), open, 9999, true)).toBe(card(4).left - 176);
+    expect(rowRevealOffset(card(9), open, 0, true)).toBe(card(9).left - 176);
+    expect(rowRevealOffset(card(0), open, 500, true)).toBe(0);
+  });
 });
 
 describe("rowStepIsRapid — un pas de rangée qui suit le précédent de près est une rafale", () => {

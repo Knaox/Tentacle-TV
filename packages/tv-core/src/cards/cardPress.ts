@@ -15,17 +15,20 @@ import type { HoldSource } from "./cardHold";
  * - Un volet de saga absent qu'on ne peut pas demander : l'avis « pas dans
  *   la bibliothèque » — rien ne s'ouvre.
  *
- * Les boutons du héros ne sont pas des cartes : chacun a son action (la
- * lecture, « Plus d'infos », Ma liste) ; ils n'ont pas de source ici. Le volet
- * de saga AFFICHÉ (la fiche où l'on est) ne fait rien : l'intégration le
- * sait, pas la carte.
+ * - La BANNIÈRE (Accueil, Pour vous) est UNE cible, comme une carte (décision
+ *   de Damien du 19/10) : un titre de la bibliothèque, sa fiche ; un titre
+ *   hors bibliothèque, la demande (un film : « Demander » ; une série : la
+ *   feuille des saisons — l'offre de Vigie le dit).
+ *
+ * Le volet de saga AFFICHÉ (la fiche où l'on est) ne fait rien : l'intégration
+ * le sait, pas la carte.
  */
 
 /** Ce que fait OK sur une carte. */
 export type CardPress = "play" | "detail" | "request" | "notInLibrary";
 
-/** Les sources d'une carte : celles de l'appui maintenu, sauf le héros (des boutons). */
-export type PressSource = Exclude<HoldSource, { surface: "hero" }>;
+/** Les sources d'une carte : celles de l'appui maintenu, la bannière comprise. */
+export type PressSource = HoldSource;
 
 /** Les rangées d'épisodes de l'accueil sont des vignettes : OK les lit. */
 const PLAY_ROWS: ReadonlySet<string> = new Set(["resume", "nextUp", "watched"]);
@@ -36,6 +39,7 @@ export function cardPressOf(source: PressSource): CardPress {
       if (source.absent) return "request";
       return PLAY_ROWS.has(source.row) ? "play" : "detail";
     case "forYou":
+    case "hero":
       return source.absent ? "request" : "detail";
     case "grid":
       return "detail";

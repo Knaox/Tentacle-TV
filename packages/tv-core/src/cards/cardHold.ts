@@ -33,8 +33,9 @@ export type SearchCardKind = "episode" | "title" | "librarySeries" | "absentTitl
 export type HoldSource =
   /** `absent` : un titre recommandé HORS bibliothèque (rangée reco, garde Vigie ouverte). */
   | { surface: "homeRow"; row: HomeRowKind; absent?: boolean }
-  /** Les boutons du héros de l'accueil : le titre affiché, dans la forme de sa source. */
-  | { surface: "hero"; fromResume: boolean }
+  /** La bannière (Accueil, Pour vous), UNE cible : le titre affiché, dans la forme de sa source.
+   *  `absent` : hors bibliothèque (garde Vigie ouverte) ; `reco` : la bannière de « Pour vous ». */
+  | { surface: "hero"; fromResume: boolean; absent?: boolean; reco?: boolean }
   /** `absent` : un titre recommandé HORS bibliothèque (garde Vigie ouverte). */
   | { surface: "forYou"; absent?: boolean }
   /** `librarySeries` : une série de la bibliothèque à compléter, rangée « À demander ». */
@@ -59,6 +60,8 @@ export function holdPanelOf(source: HoldSource): HoldPanel | null {
       if (source.row === "reco") return source.absent ? ABSENT_RECO : RECO;
       return LANDSCAPE_ROWS.has(source.row) ? LANDSCAPE : POSTER;
     case "hero":
+      if (source.absent) return source.reco ? ABSENT_RECO : ABSENT;
+      if (source.reco) return RECO;
       return source.fromResume ? LANDSCAPE : POSTER;
     case "forYou":
       return source.absent ? ABSENT_RECO : RECO;

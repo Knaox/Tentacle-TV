@@ -5,3 +5,4 @@ export * from "./ambilight";
 export * from "./rotation";
 export * from "./heroSource";
 export * from "./heroSourceSettings";
+export * from "./heroNav";

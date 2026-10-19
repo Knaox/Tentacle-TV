@@ -27,9 +27,15 @@ describe("l'appui maintenu d'une carte", () => {
     expect(holdPanelOf({ surface: "forYou", absent: true })).toEqual({ kind: "absent", dismiss: true });
   });
 
-  it("sur un bouton du héros, ouvre le panneau dans la forme de sa source", () => {
+  it("sur la bannière, ouvre le panneau dans la forme de sa source", () => {
     expect(holdPanelOf({ surface: "hero", fromResume: true })).toEqual(landscape);
     expect(holdPanelOf({ surface: "hero", fromResume: false })).toEqual(poster);
+  });
+
+  it("la bannière de « Pour vous » : le panneau d'une reco, celui d'un titre absent hors bibliothèque", () => {
+    expect(holdPanelOf({ surface: "hero", fromResume: false, reco: true })).toEqual({ kind: "reco" });
+    expect(holdPanelOf({ surface: "hero", fromResume: false, reco: true, absent: true })).toEqual({ kind: "absent", dismiss: true });
+    expect(holdPanelOf({ surface: "hero", fromResume: false, absent: true })).toEqual({ kind: "absent" });
   });
 
   it("dans la recherche : la vignette d'un épisode, la série de la bibliothèque à compléter, le titre absent", () => {
