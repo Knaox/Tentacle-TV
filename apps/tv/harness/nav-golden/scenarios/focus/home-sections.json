@@ -248,15 +248,23 @@
         {
           "do": "up",
           "expect": {
-            "focus": "nextUp:2"
+            "focus": "filter:remove"
           },
-          "why": "la rangée garde sa carte au retrait"
+          "why": "la première carte : la pastille, à l'aplomb dans la section"
         },
         {
           "do": "up",
           "expect": {
-            "focus": "resume:2"
-          }
+            "focus": "nextUp:0"
+          },
+          "why": "À suivre est sortie de l'écran (deux rangées plus bas) : revenue au début (tv-core rowRewind)"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "resume:0"
+          },
+          "why": "Reprendre aussi"
         }
       ]
     },
@@ -374,8 +382,8 @@
     },
     {
       "id": "home-filter-chip",
-      "title": "La pastille du filtre : rejointe par HAUT depuis la première carte, jamais depuis plus loin dans la rangée",
-      "why": "Tête de section (tv-core headFromFirst) : HAUT depuis la PREMIÈRE carte de la ligne ; en descendant, la pastille n'est pas un arrêt (entrée par la carte au retrait) ; R11 : rien à sa droite. Ne JAMAIS valider sur la pastille (elle retirerait le filtre).",
+      "title": "La pastille du filtre : à l'aplomb de la carte ouverte, rejointe par HAUT ; jamais un arrêt en descendant",
+      "why": "R2 : en remontant, l'aplomb dans la section — la carte ouverte est toujours au retrait, sous la pastille de l'en-tête (« Pour vous », titre court) ; en descendant, on entre par la carte au retrait ; R11 : rien à sa droite. Ne JAMAIS valider sur la pastille (elle retirerait le filtre).",
       "rules": [
         "R1",
         "R2",
@@ -463,9 +471,16 @@
         {
           "do": "up",
           "expect": {
+            "focus": "filter:remove"
+          },
+          "why": "R2 : la carte ouverte est au retrait, la pastille à son aplomb"
+        },
+        {
+          "do": "up",
+          "expect": {
             "focus": "nextUp:0"
           },
-          "why": "depuis plus loin dans la rangée : À suivre — JAMAIS la pastille"
+          "why": "au-dessus de la pastille : À suivre, par sa carte au retrait"
         }
       ]
     },
