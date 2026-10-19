@@ -43,16 +43,16 @@ export function useLibraryGroups(focus: FocusStore): void {
  * Premier chargement : la pastille de tête a tenu le focus ; les affiches
  * arrivées, la première le reprend — si personne n'a bougé entre-temps.
  */
-export function useLibraryLoadReprise(focus: FocusStore, state: { loading: boolean; items: number }): void {
+export function useLibraryLoadReprise(focus: FocusStore, state: { loading: boolean; items: number }, first?: string): void {
   const moved = useRef(false);
   useEffect(() => focus.subscribe((key, focused) => {
     if (focused && libraryFocusMoved(key, isNavKey(key))) moved.current = true;
   }), [focus]);
   const { loading, items } = state;
   useEffect(() => {
-    const target = libraryClaimAfterLoad({ loading, items, moved: moved.current, focusedKey: focus.focusedKey() });
+    const target = libraryClaimAfterLoad({ loading, items, moved: moved.current, focusedKey: focus.focusedKey() }, first);
     return target ? focus.claim(target) : undefined;
-  }, [loading, items, focus]);
+  }, [loading, items, focus, first]);
 }
 
 /** Le focus après un geste de la barre : retirer un filtre, tout effacer. */

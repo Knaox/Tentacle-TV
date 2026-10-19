@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useGenres, useLibraries } from "@tentacle-tv/api-client";
-import { libraryEntryKey } from "@tentacle-tv/tv-core";
-import { hasPlatformFilter } from "../../hooks/libraryCatalogParams";
+import { GRID_FIRST_KEY, libraryEntryKey } from "@tentacle-tv/tv-core";
 import { useLibraryFilters } from "../../hooks/useLibraryFilters";
 import { railNavigate } from "../../navigation/railNavigate";
 import type { RootStackParamList } from "../../navigation/types";
@@ -10,155 +9,141 @@ import { useLibraryGroups, useLibraryLoadReprise } from "../../platform/tvos/scr
 import { RENDER } from "../../redesign/render/renderProfile";
 import { LibraryView } from "../../redesign/screens/library/LibraryView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
-import { GridSettleProvider } from "../../redesign/screens/library/gridSettlePort";
-import { useGridColumnEntries } from "../grid/useGridColumnEntries";
-import { usePosterGrid } from "../grid/usePosterGrid";
+import { LibraryGroupRows, groupRowKey } from "../groups/LibraryGroupRows";
+import { useLibraryRowGroups } from "../groups/useLibraryRowGroups";
+import { useRowCardActions } from "../groups/useRowCardActions";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useHeldWhile } from "../screen/useHeldWhile";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
-import { gridCatalogParams } from "./gridCatalogParams";
 import { activeFiltersOf, pillsOf, type GenreOption } from "./libraryFilterModel";
 import { yearSpanOf } from "./libraryFilterSheets";
 import { usePerfReady } from "../../platform/perf";
-import { useLibraryCatalogState } from "./useLibraryCatalogState";
 import { useLibraryFilterBar } from "./useLibraryFilterBar";
 import { useLibrarySheets } from "./useLibrarySheets";
+import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
 
 type Params = RootStackParamList["Library"];
-
-/** Moins d'affiches que ça, filtre de plateformes posé : la page suivante est
- *  demandée d'office — le filtre se pose sur ce qui est chargé, il doit voir
- *  tout le catalogue avant de dire « aucun titre ». */
-const PLATFORM_SCAN_BELOW = 18;
 
 /** Android TV : la page sous une liste de filtres ne suit pas chaque coche
  *  (profil `holdUnderPanels`) ; l'Apple TV la redessine comme avant. */
 const HOLD_UNDER_SHEET = RENDER.holdUnderPanels;
 
 const goHome = () => railNavigate("Home");
+const NO_SPAN: never[] = [];
+const NO_CARDS: never[] = [];
 
 /**
- * La bibliothèque, refondue (Apple TV) : son nom et son compte, la barre de
- * filtres façon Netflix (une pastille par critère, les filtres actifs dessous,
- * « Tout effacer »), les grandes listes par-dessus (dans une Modal : Menu les
- * ferme), puis la grille d'affiches, page après page. Mêmes filtres, mêmes
- * requêtes et même mémoire de session que l'écran d'Android TV
- * (`useLibraryFilters`, `catalogParams`) ; en plus : l'état d'erreur.
+ * La bibliothèque, refondue (Apple TV, Android TV) — EN RANGÉES depuis la
+ * carte qui s'ouvre (banc validé par Damien le 19/10) : son nom et son
+ * compte, la barre de filtres façon Netflix — « Ranger par » en tête (genre,
+ * décennie, lettres, note) —, puis une rangée par groupe, la carte focalisée
+ * ouverte en 16:9 au bord gauche, la même taille de carte que l'Accueil
+ * (`LibraryGroupRows`, tv-core `groups/libraryGroups.ts`). Les filtres
+ * s'appliquent dans chaque rangée ; mêmes filtres et même mémoire de session
+ * qu'avant (`useLibraryFilters`).
  *
- * L'arrivée vise la première affiche ; pendant un premier chargement, la
- * première pastille tient le focus, et la première affiche le reprend à son
- * arrivée si personne n'a bougé entre-temps. Décidé par tv-core
- * (`focus/libraryFocus.ts`), posé par `platform/tvos/screens/library.ts`.
+ * L'arrivée vise la première carte de la première rangée ; pendant un premier
+ * chargement, la pastille de tête tient le focus, et la première carte le
+ * reprend à son arrivée si personne n'a bougé entre-temps (tv-core
+ * `focus/libraryFocus.ts`, posé par `platform/tvos/screens/library.ts`).
  */
 export function LibraryRedesign({ libraryId, libraryName }: Params) {
   const { t } = useTranslation();
   const lf = useLibraryFilters(libraryId);
-  const params = useMemo(() => gridCatalogParams(lf.filters), [lf.filters]);
-  const catalog = useLibraryCatalogState(libraryId, lf.filters, params);
   const { data: genreList } = useGenres(libraryId);
   const { data: libraries } = useLibraries();
-  const genres = useMemo<GenreOption[]>(() => (genreList ?? []).map((g) => ({ id: g.Id, name: g.Name })), [genreList]);
+  const genres = useMemo<GenreOption[] | undefined>(() => genreList?.map((g) => ({ id: g.Id, name: g.Name })), [genreList]);
   const title = libraries?.find((library) => library.Id === libraryId)?.Name ?? libraryName;
-  const grid = usePosterGrid(catalog.items);
+  const rows = useLibraryRowGroups(libraryId, lf.filters, genres);
+  const actions = useRowCardActions();
 
-  const { items, loading, failed, hasMore, loadingMore, loadMore } = catalog;
-  const platforms = hasPlatformFilter(lf.filters);
-  const scanning = platforms && hasMore;
-  const status: StatusPanelProps | null = failed
+  const { groups, total } = rows;
+  const loading = groups === null && !rows.failed;
+  const nothing = !loading && (groups?.length ?? 0) === 0;
+  const status: StatusPanelProps | null = rows.failed
     ? {
         kind: "error",
         title: t("common:contentErrorTitle"),
         message: t("common:contentErrorMessage"),
-        primary: { label: t("common:retry"), icon: "refresh", onPress: catalog.retry },
+        primary: { label: t("common:retry"), icon: "refresh", onPress: rows.retry },
         secondary: { label: t("common:backHome"), icon: "home", onPress: goHome },
       }
-    : !loading && !scanning && items.length === 0 && !lf.hasActiveFilters
+    : nothing && !lf.hasActiveFilters
       ? { kind: "empty", title: t("library:emptyTitle"), message: t("library:emptyHint"), primary: { label: t("common:backHome"), icon: "home", onPress: goHome } }
       : null;
-  const noResults = !status && !loading && !scanning && items.length === 0
+  const noResults = !status && nothing
     ? { title: t("library:emptyFilteredTitle"), message: t("library:emptyFilteredHint"), actionLabel: t("library:clearAll") }
     : null;
 
+  const first = groups?.[0] ? `${groupRowKey(groups[0])}:0` : GRID_FIRST_KEY;
   const screen = useRedesignScreen({
     railKey: `Library_${libraryId}`,
-    entryKey: libraryEntryKey({ status: status !== null, loading, items: items.length, noResults: noResults !== null }),
+    entryKey: libraryEntryKey({ status: status !== null, loading, items: groups?.length ?? 0, noResults: noResults !== null }, first),
+    rewindRows: true,
   });
   const { focus } = screen;
-  const gridSettled = useGridColumnEntries(focus, grid.cards.length);
   useLibraryGroups(focus);
 
-  const span = useMemo(() => yearSpanOf(catalog.loaded), [catalog.loaded]);
-  const context = useMemo(() => ({ genres, resultCount: catalog.total ?? items.length, span }), [genres, catalog.total, items.length, span]);
+  const context = useMemo(() => ({ genres: genres ?? [], resultCount: total ?? 0, span: yearSpanOf(NO_SPAN) }), [genres, total]);
   const sheets = useLibrarySheets(t, lf.filters, lf.update, focus, context);
-  const active = useMemo(() => activeFiltersOf(t, lf.filters, genres), [t, lf.filters, genres]);
-  const pills = useMemo(() => pillsOf(t, lf.filters, genres), [t, lf.filters, genres]);
+  const active = useMemo(() => activeFiltersOf(t, lf.filters, genres ?? []), [t, lf.filters, genres]);
+  const pills = useMemo(() => pillsOf(t, lf.filters, genres ?? []), [t, lf.filters, genres]);
   const labels = useMemo(() => ({ activeFilters: t("library:activeFilters"), clearAll: t("library:clearAll") }), [t]);
-  const bar = useLibraryFilterBar(lf.update, active, focus, sheets.openSheet);
+  const bar = useLibraryFilterBar(lf.update, active, focus, sheets.openSheet, first);
 
-  useEffect(() => {
-    if (platforms && hasMore && !loadingMore && items.length < PLATFORM_SCAN_BELOW) loadMore();
-  }, [platforms, hasMore, loadingMore, items.length, loadMore]);
-
-  useLibraryLoadReprise(focus, { loading, items: items.length });
+  useLibraryLoadReprise(focus, { loading, items: groups?.length ?? 0 }, first);
   // Le mode de mesure (Android TV, éteint par défaut) : la bibliothèque est prête.
-  usePerfReady("bibliothèque", !loading && (items.length > 0 || status !== null));
+  usePerfReady("bibliothèque", !loading);
 
-  const onEndReached = useCallback(() => loadMore(), [loadMore]);
-
-  // Ce que la liste ouverte COUVRE — l'en-tête, la grille, le vide — reste tel
-  // quel jusqu'à la fin de son fondu de sortie : une coche ne redessine que la
-  // liste (et « Voir N titres »), plus la grille cachée dessous. Les mêmes
-  // références : la vue et la grille, mémoïsées, ne se redessinent pas.
+  // Ce que la liste ouverte COUVRE reste tel quel jusqu'à la fin de son fondu
+  // de sortie (Android TV) : une coche ne redessine que la liste.
   const under = useHeldWhile(
     {
-      count: loading ? t("library:loading") : t("library:titles", { count: catalog.total ?? items.length }),
+      count: loading ? t("library:loading") : t("library:titles", { count: total ?? 0 }),
       pills,
       active,
-      cards: grid.cards,
-      palette: grid.palette,
+      groups,
+      base: rows.base,
       loading,
-      loadingMore,
       noResults,
       status,
     },
     HOLD_UNDER_SHEET && sheets.covering,
   );
+  const rowsNode = useMemo(
+    () => (under.groups ? <LibraryGroupRows libraryId={libraryId} groups={under.groups} base={under.base} platformIds={lf.filters.platformIds} actions={actions} /> : null),
+    [libraryId, under.groups, under.base, lf.filters.platformIds, actions],
+  );
 
   return (
     <RedesignScreen screen={screen}>
-      <GridSettleProvider value={gridSettled}>
-        <LibraryView
-          nav={screen.nav}
-          title={title}
-          count={under.count}
-          pills={under.pills}
-          activeFilters={under.active}
-          labels={labels}
-          cards={under.cards}
-          palette={under.palette}
-          ambient={grid.ambient}
-          loading={under.loading}
-          loadingMore={under.loadingMore}
-          noResults={under.noResults}
-          status={under.status}
-          sheet={sheets.sheet}
-          onPressPill={bar.onPressPill}
-          onRemoveFilter={bar.onRemoveFilter}
-          onClearAll={bar.onClearAll}
-          onPressCard={grid.onPressCard}
-          onLongPressCard={grid.onLongPressCard}
-          onFocusCard={grid.onFocusCard}
-          onEndReached={onEndReached}
-          onSheetOption={sheets.onSheetOption}
-          onSheetClear={sheets.onSheetClear}
-          onSheetApply={sheets.onSheetApply}
-          onSheetClose={sheets.closeSheet}
-          onSheetExited={sheets.onSheetExited}
-          onYearStep={sheets.onYearStep}
-          onRatingSelect={sheets.onRatingSelect}
-        />
-        {grid.sheet}
-      </GridSettleProvider>
+      <LibraryView
+        nav={screen.nav}
+        title={title}
+        count={under.count}
+        pills={under.pills}
+        activeFilters={under.active}
+        labels={labels}
+        cards={NO_CARDS}
+        rows={rowsNode}
+        palette={NEUTRAL_PALETTE}
+        ambient={actions.ambient}
+        loading={under.loading}
+        noResults={under.noResults}
+        status={under.status}
+        sheet={sheets.sheet}
+        onPressPill={bar.onPressPill}
+        onRemoveFilter={bar.onRemoveFilter}
+        onClearAll={bar.onClearAll}
+        onSheetOption={sheets.onSheetOption}
+        onSheetClear={sheets.onSheetClear}
+        onSheetApply={sheets.onSheetApply}
+        onSheetClose={sheets.closeSheet}
+        onSheetExited={sheets.onSheetExited}
+        onYearStep={sheets.onYearStep}
+        onRatingSelect={sheets.onRatingSelect}
+      />
+      {actions.sheet}
     </RedesignScreen>
   );
 }

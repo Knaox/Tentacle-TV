@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TV_STAGE } from "@tentacle-tv/theme";
 import { BELOW_ZONE_VIEWPORT } from "@tentacle-tv/tv-core";
@@ -9,6 +9,7 @@ import type { ArtworkPalette } from "../../color/artworkPalette";
 import { FocusGroup } from "../../focus/FocusGroup";
 import type { IconName } from "../../icons/Icon";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
+import { OpenRowsBody } from "../../openRow/OpenRowsBody";
 import { text } from "../../theme/tokens";
 import { EmptyState } from "../library/EmptyState";
 import { FilterBar } from "../library/FilterBar";
@@ -81,6 +82,8 @@ export interface CollectionViewProps extends FilterSheetLayerProps {
   onPressCard?: (card: CardModel) => void;
   onLongPressCard?: (card: CardModel) => void;
   onFocusCard?: (card: CardModel) => void;
+  /** EN RANGÉES (la carte qui s'ouvre, « Ranger par ») : les rangées, à la place de la grille. */
+  rows?: ReactNode;
 }
 
 function Header({ kicker, title, count }: { kicker?: string; title: string; count?: string }) {
@@ -159,6 +162,8 @@ export const CollectionView = memo(function CollectionView(props: CollectionView
           </View>
           <StatusPanel {...status} />
         </>
+      ) : props.rows !== undefined ? (
+        <OpenRowsBody header={header} empty={placeholder}>{props.rows}</OpenRowsBody>
       ) : (
         <PosterGrid
           cards={loading ? NO_CARDS : cards}

@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { filterFocusAfterClearAll, filterPillPress } from "@tentacle-tv/tv-core";
 import { DEFAULT_FILTERS, type LibraryFilterState } from "../../hooks/libraryCatalogParams";
 import type { FocusStore } from "../../platform/tvos/focus/focusStore";
@@ -66,12 +66,16 @@ export function useFilterBar<S>(
   return { onPressPill, onRemoveFilter, onClearAll };
 }
 
-const LIBRARY_BAR: FilterBarModel<LibraryFilterState> = {
-  toggleOf: (key) => (filterPillPress(key) === "toggleFavorites" ? toggleFavorites : null),
-  remove: removeFilter,
-  clearAll: () => DEFAULT_FILTERS,
-  focusAfterClearAll: filterFocusAfterClearAll,
-};
+/** La barre de la bibliothèque ; `first` : la première carte (la grille, ou la première rangée). */
+function libraryBar(first?: string): FilterBarModel<LibraryFilterState> {
+  return {
+    toggleOf: (key) => (filterPillPress(key) === "toggleFavorites" ? toggleFavorites : null),
+    remove: removeFilter,
+    // « Ranger par » n'est pas un filtre : il reste.
+    clearAll: (f) => ({ ...DEFAULT_FILTERS, groupBy: f.groupBy }),
+    focusAfterClearAll: (key) => filterFocusAfterClearAll(key, first),
+  };
+}
 
 /** La barre de la bibliothèque : Favoris bascule, « Tout effacer » rend les défauts. */
 export function useLibraryFilterBar(
@@ -79,6 +83,8 @@ export function useLibraryFilterBar(
   active: ActiveFilterModel[],
   focus: FocusStore,
   openSheet: (key: LibraryFilterKey) => void,
+  first?: string,
 ) {
-  return useFilterBar(update, active, focus, openSheet, LIBRARY_BAR);
+  const model = useMemo(() => libraryBar(first), [first]);
+  return useFilterBar(update, active, focus, openSheet, model);
 }

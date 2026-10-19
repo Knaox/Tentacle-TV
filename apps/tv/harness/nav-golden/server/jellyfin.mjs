@@ -67,6 +67,16 @@ export function createJellyfin({ data, json, snapDir }) {
     if (genres.length) list = list.filter((item) => (item.GenreItems ?? []).some((g) => genres.includes(g.Id)));
     const genreNames = String(q.get("Genres") ?? "").split("|").filter(Boolean);
     if (genreNames.length) list = list.filter((item) => (item.Genres ?? []).some((g) => genreNames.includes(g)));
+    // Les rangées d'une bibliothèque (la carte qui s'ouvre) : décennies, lettres, paliers de note.
+    const years = ids(q.get("Years")).map(Number);
+    if (years.length) list = list.filter((item) => years.includes(item.ProductionYear));
+    const minRating = q.get("MinCommunityRating");
+    if (minRating) list = list.filter((item) => (item.CommunityRating ?? 0) >= Number(minRating));
+    const sortName = (item) => (item.SortName ?? item.Name ?? "").toLowerCase();
+    const from = q.get("NameStartsWithOrGreater");
+    if (from) list = list.filter((item) => sortName(item) >= from.toLowerCase());
+    const before = q.get("NameLessThan");
+    if (before) list = list.filter((item) => sortName(item) < before.toLowerCase());
     const term = (q.get("searchTerm") ?? q.get("SearchTerm") ?? "").toLowerCase();
     if (term) list = list.filter((item) => data.clean(item.Name).toLowerCase().includes(term));
     if (q.get("SortBy") && !q.get("Ids")) list = [...list].sort(sorter(q.get("SortBy"), q.get("SortOrder")));

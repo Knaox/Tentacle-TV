@@ -1,15 +1,15 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFavoritesAll, useWatchlistAll } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { collectionEntryKey } from "@tentacle-tv/tv-core";
+import { DEFAULT_LIST_GROUP, GRID_FIRST_KEY, collectionEntryKey, groupItems } from "@tentacle-tv/tv-core";
 import { railNavigate } from "../../navigation/railNavigate";
 import { RENDER } from "../../redesign/render/renderProfile";
 import { CollectionView, type CollectionEmptyModel } from "../../redesign/screens/collection/CollectionView";
 import type { StatusPanelProps } from "../../redesign/screens/shared/StatusPanel";
-import { GridSettleProvider } from "../../redesign/screens/library/gridSettlePort";
-import { useGridColumnEntries } from "../grid/useGridColumnEntries";
-import { usePosterGrid } from "../grid/usePosterGrid";
+import { NEUTRAL_PALETTE } from "../../redesign/color/artworkPalette";
+import { ListGroupRows, groupableOf, listRowKey } from "../groups/ListGroupRows";
+import { useRowCardActions } from "../groups/useRowCardActions";
 import { RedesignScreen } from "../screen/RedesignScreen";
 import { useHeldWhile } from "../screen/useHeldWhile";
 import { useRedesignScreen } from "../screen/useRedesignScreen";
@@ -23,14 +23,18 @@ interface CollectionQuery {
 }
 
 const goHome = () => railNavigate("Home");
+const NO_CARDS: never[] = [];
 
 /** Android TV : la grille sous une liste ouverte ne suit pas chaque choix
  *  (profil `holdUnderPanels`, comme la bibliothèque). */
 const HOLD_UNDER_SHEET = RENDER.holdUnderPanels;
 
 /**
- * Ma liste et Favoris, refondus (Apple TV) : toute la collection en grandes
- * affiches (`CollectionView`), sur les mêmes requêtes que l'écran d'Android
+ * Ma liste et Favoris, refondus (Apple TV, Android TV) : toute la collection
+ * EN RANGÉES depuis la carte qui s'ouvre (banc validé par Damien le 19/10) —
+ * « Ranger par » type, genre ou lettres, chaque titre dans une seule rangée
+ * (`ListGroupRows`, tv-core `groups/listGroups.ts`), la même taille de carte
+ * que l'Accueil —, sur les mêmes requêtes que l'écran d'Android
  * TV (`useWatchlistAll`, `Filters=Likes` ; `useFavoritesAll`,
  * `Filters=IsFavorite`). Ce que l'ancien écran n'avait pas : l'erreur, qui
  * s'y lisait comme une collection vide. Vide, la page offre une sortie
@@ -46,7 +50,11 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
   const { data, isLoading, isError, refetch } = query;
   const items = useMemo(() => data ?? [], [data]);
   const sort = useCollectionSort(kind, data);
-  const grid = usePosterGrid(sort.visible);
+  const actions = useRowCardActions();
+  const mode = sort.state.groupBy ?? DEFAULT_LIST_GROUP;
+  const groups = useMemo(() => groupItems(sort.visible.map(groupableOf), mode), [sort.visible, mode]);
+  const { register } = actions;
+  useEffect(() => register(sort.visible), [register, sort.visible]);
 
   const loading = isLoading && !data;
   const retry = useCallback(() => void refetch(), [refetch]);
@@ -71,54 +79,55 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
     ? { title: t("library:emptyFilteredTitle"), message: t("library:emptyFilteredHint"), actionLabel: t("library:clearAll") }
     : null;
 
+  const first = groups[0] ? `${listRowKey(groups[0])}:0` : GRID_FIRST_KEY;
   const screen = useRedesignScreen({
     railKey: watchlist ? "Watchlist" : "Favorites",
-    entryKey: collectionEntryKey({ failed: status !== null, empty: empty !== null, cards: grid.cards.length, noResults: noResults !== null }),
+    entryKey: collectionEntryKey({ failed: status !== null, empty: empty !== null, cards: sort.visible.length, noResults: noResults !== null }, first),
+    rewindRows: true,
   });
-  const gridSettled = useGridColumnEntries(screen.focus, grid.cards.length);
-  const filters = useCollectionFilterBar(t, sort, screen.focus);
+  const filters = useCollectionFilterBar(t, sort, screen.focus, first);
   const { sheets, bar } = filters;
   // Ce que la liste ouverte COUVRE reste tel quel jusqu'à la fin de son fondu
   // (cf. `LibraryRedesign`) : une coche ne redessine que la liste.
   const under = useHeldWhile(
-    { count: t("library:titles", { count: sort.visible.length }), cards: grid.cards, pills: filters.pills, active: filters.active, noResults },
+    { count: t("library:titles", { count: sort.visible.length }), groups, visible: sort.visible, pills: filters.pills, active: filters.active, noResults },
     HOLD_UNDER_SHEET && sheets.covering,
+  );
+  const rows = useMemo(
+    () => <ListGroupRows groups={under.groups} items={under.visible} actions={actions} />,
+    [under.groups, under.visible, actions],
   );
 
   return (
     <RedesignScreen screen={screen}>
-      <GridSettleProvider value={gridSettled}>
-        <CollectionView
-          nav={screen.nav}
-          kicker={t(watchlist ? "watchlist:kicker" : "favorites:kicker")}
-          title={t(watchlist ? "common:myList" : "common:myFavorites")}
-          count={under.count}
-          cards={under.cards}
-          palette={grid.palette}
-          ambient={grid.ambient}
-          loading={loading}
-          empty={empty}
-          status={status}
-          onEmptyAction={goHome}
-          pills={under.pills}
-          activeFilters={under.active}
-          filterLabels={filters.labels}
-          noResults={under.noResults}
-          sheet={sheets.sheet}
-          onPressPill={bar.onPressPill}
-          onRemoveFilter={bar.onRemoveFilter}
-          onClearAll={bar.onClearAll}
-          onSheetOption={sheets.onSheetOption}
-          onSheetClear={sheets.onSheetClear}
-          onSheetApply={sheets.onSheetApply}
-          onSheetClose={sheets.closeSheet}
-          onSheetExited={sheets.onSheetExited}
-          onPressCard={grid.onPressCard}
-          onLongPressCard={grid.onLongPressCard}
-          onFocusCard={grid.onFocusCard}
-        />
-        {grid.sheet}
-      </GridSettleProvider>
+      <CollectionView
+        nav={screen.nav}
+        kicker={t(watchlist ? "watchlist:kicker" : "favorites:kicker")}
+        title={t(watchlist ? "common:myList" : "common:myFavorites")}
+        count={under.count}
+        cards={NO_CARDS}
+        rows={rows}
+        palette={NEUTRAL_PALETTE}
+        ambient={actions.ambient}
+        loading={loading}
+        empty={empty}
+        status={status}
+        onEmptyAction={goHome}
+        pills={under.pills}
+        activeFilters={under.active}
+        filterLabels={filters.labels}
+        noResults={under.noResults}
+        sheet={sheets.sheet}
+        onPressPill={bar.onPressPill}
+        onRemoveFilter={bar.onRemoveFilter}
+        onClearAll={bar.onClearAll}
+        onSheetOption={sheets.onSheetOption}
+        onSheetClear={sheets.onSheetClear}
+        onSheetApply={sheets.onSheetApply}
+        onSheetClose={sheets.closeSheet}
+        onSheetExited={sheets.onSheetExited}
+      />
+      {actions.sheet}
     </RedesignScreen>
   );
 }

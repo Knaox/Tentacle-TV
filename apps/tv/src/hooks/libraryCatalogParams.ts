@@ -1,4 +1,5 @@
 import type { CatalogFilters } from "@tentacle-tv/api-client";
+import type { LibraryGroupMode } from "@tentacle-tv/tv-core";
 
 /**
  * Ce qu'on demande au serveur pour une bibliothèque — le MODÈLE, sans React.
@@ -28,6 +29,9 @@ export interface LibraryFilterState {
   isFavorite: boolean;
   sortBy: string;
   sortOrder: string;
+  /** « Ranger par » (la carte qui s'ouvre, tv-core `groups/`) : pas un filtre —
+   *  « Tout effacer » le garde, la requête ne le lit pas. Absent : le genre. */
+  groupBy?: LibraryGroupMode;
 }
 
 /**

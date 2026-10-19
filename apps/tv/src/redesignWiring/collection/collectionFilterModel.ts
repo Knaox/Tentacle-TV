@@ -2,13 +2,16 @@ import type { TFunction } from "i18next";
 import {
   COLLECTION_SORTS,
   COLLECTION_TYPES,
+  DEFAULT_LIST_GROUP,
+  LIST_GROUP_MODES,
   collectionActiveFilters,
   isDefaultCollectionSort,
   type CollectionFilterState,
   type CollectionTypeFilter,
 } from "@tentacle-tv/tv-core";
 import type { ActiveFilterModel, FilterPillModel, FilterSheetModel, LibraryFilterKey } from "../../redesign/screens/library/libraryTypes";
-import { SORT_ORDER_LABELS } from "../library/libraryFilterModel";
+import { SORT_ORDER_LABELS, groupPill } from "../library/libraryFilterModel";
+import { groupSheet } from "../library/libraryFilterSheets";
 
 /**
  * Le type et le tri de Ma liste et des Favoris, MIS EN MOTS pour la barre et
@@ -40,9 +43,10 @@ function sortValue(t: TFunction, state: CollectionFilterState): string {
   return t(state.sortOrder === "Descending" ? labels.desc : labels.asc);
 }
 
-/** Les deux pastilles : Type, puis Trier par (CO-3). */
+/** Les pastilles : « Ranger par » (les rangées), Type, puis Trier par (CO-3). */
 export function collectionPillsOf(t: TFunction, state: CollectionFilterState): FilterPillModel[] {
   return [
+    groupPill(t, state.groupBy ?? DEFAULT_LIST_GROUP),
     { key: "type", label: t("library:contentType"), value: t(TYPE_LABELS[state.type]), active: state.type !== "all" },
     { key: "sort", label: t("common:sortBy"), value: sortValue(t, state), active: !isDefaultCollectionSort(state) },
   ];
@@ -56,6 +60,7 @@ export function collectionActiveOf(t: TFunction, state: CollectionFilterState): 
 /** La liste d'une pastille ; « Voir N titres » compte ce que garde l'état courant. */
 export function collectionSheetOf(t: TFunction, key: LibraryFilterKey, state: CollectionFilterState, resultCount: number): FilterSheetModel | null {
   const base = { filter: key, applyLabel: t("common:showResultsCount", { count: resultCount }) };
+  if (key === "group") return groupSheet(t, LIST_GROUP_MODES, state.groupBy ?? DEFAULT_LIST_GROUP, base.applyLabel);
   if (key === "type") {
     return {
       ...base,

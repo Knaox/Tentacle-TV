@@ -1,4 +1,5 @@
 import { PLATFORMS } from "@tentacle-tv/shared";
+import { DEFAULT_LIBRARY_GROUP, type GroupMode } from "@tentacle-tv/tv-core";
 import type { TFunction } from "i18next";
 import { DEFAULT_FILTERS, type LibraryFilterState } from "../../hooks/libraryCatalogParams";
 import type { ActiveFilterModel, FilterPillModel } from "../../redesign/screens/library/libraryTypes";
@@ -57,12 +58,23 @@ const genreName = (genres: GenreOption[], id: string) => genres.find((g) => g.id
 const platformName = (id: number) => PLATFORMS.find((p) => p.id === id)?.name;
 const present = (name: string | undefined): name is string => !!name;
 
-/** Les sept pastilles, dans l'ordre de l'écran, chacune avec sa valeur. */
+/** « Genre », « Année », « A → Z », « Note », « Type » : la valeur de « Ranger par ». */
+export function groupModeLabel(t: TFunction, mode: GroupMode): string {
+  return t(`library:group_${mode}`);
+}
+
+/** « Ranger par » : en tête de la barre, jamais « active » (un rangement, pas un filtre). */
+export function groupPill(t: TFunction, mode: GroupMode): FilterPillModel {
+  return { key: "group", label: t("library:groupBy"), value: groupModeLabel(t, mode), active: false };
+}
+
+/** Les huit pastilles, dans l'ordre de l'écran, chacune avec sa valeur. */
 export function pillsOf(t: TFunction, f: LibraryFilterState, genres: GenreOption[]): FilterPillModel[] {
   const genreNames = f.genreIds.map((id) => genreName(genres, id)).filter(present);
   const platformNames = f.platformIds.map(platformName).filter(present);
   const years = yearsLabel(f);
   return [
+    groupPill(t, f.groupBy ?? DEFAULT_LIBRARY_GROUP),
     { key: "status", label: t("library:watchStatus"), value: statusLabel(t, f.statusFilter), active: f.statusFilter !== null },
     { key: "favorites", label: t("common:favorites"), toggle: true, active: f.isFavorite, icon: "heart", activeIcon: "heartFilled" },
     { key: "genres", label: t("common:genres"), value: manyLabel(genreNames, t("common:allGenres")), active: genreNames.length > 0 },

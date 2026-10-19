@@ -1,8 +1,9 @@
 import { PLATFORMS } from "@tentacle-tv/shared";
 import type { TFunction } from "i18next";
+import { DEFAULT_LIBRARY_GROUP, LIBRARY_GROUP_MODES, type GroupMode } from "@tentacle-tv/tv-core";
 import { DEFAULT_FILTERS, SORT_OPTIONS, type LibraryFilterState } from "../../hooks/libraryCatalogParams";
 import type { FilterSheetModel, LibraryFilterKey, RatingStop } from "../../redesign/screens/library/libraryTypes";
-import { ratingLabel, statusLabel, type GenreOption } from "./libraryFilterModel";
+import { groupModeLabel, ratingLabel, statusLabel, type GenreOption } from "./libraryFilterModel";
 
 /**
  * Les grandes listes en surimpression de la bibliothèque, tirées de l'état
@@ -65,10 +66,25 @@ function selectedSubtitle(t: TFunction, count: number): string {
   return count > 0 ? t("library:selected", { count }) : t("library:multipleChoice");
 }
 
+/** La liste de « Ranger par » : un choix, appliqué tout de suite (bibliothèque et listes). */
+export function groupSheet(t: TFunction, modes: readonly GroupMode[], current: GroupMode, applyLabel: string): FilterSheetModel {
+  return {
+    filter: "group",
+    applyLabel,
+    kind: "choice",
+    title: t("library:groupBy"),
+    multiple: false,
+    columns: 1,
+    options: modes.map((mode) => ({ id: mode, label: groupModeLabel(t, mode), selected: mode === current })),
+  };
+}
+
 export function sheetOf(t: TFunction, kind: LibraryFilterKey, f: LibraryFilterState, ctx: SheetContext): FilterSheetModel | null {
   const base = { filter: kind, applyLabel: t("common:showResultsCount", { count: ctx.resultCount }) };
   const clear = t("common:clear");
   switch (kind) {
+    case "group":
+      return groupSheet(t, LIBRARY_GROUP_MODES, f.groupBy ?? DEFAULT_LIBRARY_GROUP, base.applyLabel);
     case "genres":
       return {
         ...base,
@@ -160,6 +176,7 @@ const toggle = <T,>(list: T[], value: T) => (list.includes(value) ? list.filter(
 
 /** Une option choisie dans une liste — l'effet sur l'état des filtres. */
 export function applyOption(f: LibraryFilterState, filter: LibraryFilterKey, id: string): LibraryFilterState {
+  if (filter === "group") return (LIBRARY_GROUP_MODES as readonly string[]).includes(id) ? { ...f, groupBy: id as LibraryFilterState["groupBy"] } : f;
   if (filter === "genres") return { ...f, genreIds: toggle(f.genreIds, id) };
   if (filter === "platforms") return { ...f, platformIds: toggle(f.platformIds, Number(id)) };
   // Statut et Favoris s'excluent (parité `useLibraryFilters`).

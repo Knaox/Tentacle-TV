@@ -25,13 +25,6 @@ export type CollectionKind = "watchlist" | "favorites";
  *  redémarrer l'app l'oublie. Jamais sur le disque. */
 const memory = new Map<CollectionKind, CollectionFilterState>();
 
-const BAR: FilterBarModel<CollectionFilterState> = {
-  toggleOf: () => null,
-  remove: removeCollectionFilter,
-  clearAll: clearCollectionFilters,
-  focusAfterClearAll: collectionFocusAfterClearAll,
-};
-
 const NO_ITEMS: MediaItem[] = [];
 
 /**
@@ -75,7 +68,7 @@ export type CollectionSort = ReturnType<typeof useCollectionSort>;
  * le focus de la bibliothèque : mêmes groupes, même pied, même Retour, même
  * pastille rendue.
  */
-export function useCollectionFilterBar(t: TFunction, sort: CollectionSort, focus: FocusStore) {
+export function useCollectionFilterBar(t: TFunction, sort: CollectionSort, focus: FocusStore, first?: string) {
   const { state, update, visible } = sort;
   useLibraryGroups(focus);
   const count = visible.length;
@@ -91,6 +84,15 @@ export function useCollectionFilterBar(t: TFunction, sort: CollectionSort, focus
   const pills = useMemo(() => collectionPillsOf(t, state), [t, state]);
   const active = useMemo(() => collectionActiveOf(t, state), [t, state]);
   const labels = useMemo(() => ({ activeFilters: t("library:activeFilters"), clearAll: t("library:clearAll") }), [t]);
-  const bar = useFilterBar(update, active, focus, sheets.openSheet, BAR);
+  const model = useMemo<FilterBarModel<CollectionFilterState>>(
+    () => ({
+      toggleOf: () => null,
+      remove: removeCollectionFilter,
+      clearAll: clearCollectionFilters,
+      focusAfterClearAll: (key) => collectionFocusAfterClearAll(key, first),
+    }),
+    [first],
+  );
+  const bar = useFilterBar(update, active, focus, sheets.openSheet, model);
   return { pills, active, labels, sheets, bar };
 }
