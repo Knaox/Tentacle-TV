@@ -81,7 +81,9 @@ async function fetchAvatarPhoto(serverUrl: string | null, id: string): Promise<A
   if (!url) throw new Error("avatar : pas de serveur");
   const response = await fetch(url);
   if (!response.ok) throw new Error(`avatar ${response.status}`);
-  const photo = avatarPhotoFromDataUrl(await readAsDataUrl(await response.blob()));
+  // Le type vient de l'en-tête : le blob d'Android n'en porte aucun (tv-core `avatarPhotoFromDataUrl`).
+  const declaredType = response.headers.get("content-type");
+  const photo = avatarPhotoFromDataUrl(await readAsDataUrl(await response.blob()), declaredType);
   if (!photo) throw new Error("avatar : pas une image");
   return photo;
 }
