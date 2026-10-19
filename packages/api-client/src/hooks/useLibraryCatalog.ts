@@ -30,6 +30,17 @@ export interface CatalogFilters {
    *  cartes au focus ; "full" (web, défaut) : + ProviderIds/Studios (requis
    *  par le filtre plateforme). */
   fields?: "grid" | "light" | "full";
+  /** Les titres dont le titre de tri commence à cette chaîne ou après
+   *  (`NameStartsWithOrGreater`) — une rangée « A – C » des téléviseurs. */
+  nameStartsWithOrGreater?: string;
+  /** … et avant celle-ci (`NameLessThan`). */
+  nameLessThan?: string;
+  /** Une TRANCHE du catalogue trié (un palier de note des téléviseurs) : son
+   *  premier titre, et combien elle en compte au plus. */
+  offset?: number;
+  maxItems?: number;
+  /** `false` : rien ne part (une rangée encore loin de l'écran). */
+  enabled?: boolean;
 }
 
 const CATALOG_STALE_TIME = 10 * 60 * 1000;
@@ -42,8 +53,13 @@ export function getLibraryCatalogKey(libraryId: string | undefined, filters: Cat
     genreIds, years, statusFilter, searchTerm,
     limit = 30, minCommunityRating, isFavorite, studioIds,
     audioLanguages, subtitleLanguages, fields = "full",
+    nameStartsWithOrGreater, nameLessThan, offset, maxItems,
   } = filters;
-  return ["library", "catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm, limit, minCommunityRating, isFavorite, studioIds, audioLanguages, subtitleLanguages, fields];
+  const key: unknown[] = ["library", "catalog", libraryId, sortBy, sortOrder, genreIds, years, statusFilter, searchTerm, limit, minCommunityRating, isFavorite, studioIds, audioLanguages, subtitleLanguages, fields];
+  // Additif : la clé d'une grille d'avant ne change pas (préchargement du rail).
+  return nameStartsWithOrGreater !== undefined || nameLessThan !== undefined || offset !== undefined || maxItems !== undefined
+    ? [...key, nameStartsWithOrGreater, nameLessThan, offset, maxItems]
+    : key;
 }
 
 interface CatalogFetchClient {
@@ -63,9 +79,11 @@ export function catalogItemTypes(filters: CatalogFilters): string {
 export function catalogFilterParams(filters: CatalogFilters): string {
   const {
     genreIds, years, statusFilter, searchTerm, minCommunityRating, isFavorite, studioIds,
-    audioLanguages, subtitleLanguages,
+    audioLanguages, subtitleLanguages, nameStartsWithOrGreater, nameLessThan,
   } = filters;
   let params = "";
+  if (nameStartsWithOrGreater) params += `&NameStartsWithOrGreater=${encodeURIComponent(nameStartsWithOrGreater)}`;
+  if (nameLessThan) params += `&NameLessThan=${encodeURIComponent(nameLessThan)}`;
   if (genreIds && genreIds.length > 0) params += `&GenreIds=${genreIds.join(",")}`;
   if (years && years.length > 0) params += `&Years=${years.join(",")}`;
   if (statusFilter) params += `&Filters=${statusFilter}`;
@@ -97,7 +115,10 @@ function buildCatalogPageFetcher(
       : "PrimaryImageAspectRatio,ProviderIds,Studios,RecursiveItemCount,MediaSources";
 
   return ({ pageParam }: { pageParam?: unknown }) => {
-    const startIndex = typeof pageParam === "number" ? pageParam : 0;
+    const startIndex = typeof pageParam === "number" ? pageParam : filters.offset ?? 0;
+    // Une tranche ne déborde pas sur la suivante.
+    const end = filters.maxItems !== undefined ? (filters.offset ?? 0) + filters.maxItems : Infinity;
+    const take = Math.max(0, Math.min(limit, end - startIndex));
     const itemTypes = catalogItemTypes(filters);
     let url =
       `/Users/${userId}/Items?ParentId=${libraryId}` +
@@ -106,7 +127,7 @@ function buildCatalogPageFetcher(
       `&Fields=${fieldList}` +
       `&ExcludeLocationTypes=Virtual&IsMissing=false` +
       `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1` +
-      `&Limit=${limit}&StartIndex=${startIndex}` +
+      `&Limit=${take}&StartIndex=${startIndex}` +
       `&EnableTotalRecordCount=true&EnableUserData=true`;
     url += catalogFilterParams(filters);
     return client.fetch<{ Items: MediaItem[]; TotalRecordCount: number }>(url).then((res) => ({
@@ -119,6 +140,14 @@ function buildCatalogPageFetcher(
   };
 }
 
+/** La page suivante : après ce que le serveur a rendu, dans la tranche s'il y en a une. */
+export function catalogNextPage(filters: CatalogFilters, total: number, pages: readonly { _serverCount: number }[]): number | undefined {
+  const offset = filters.offset ?? 0;
+  const next = offset + pages.reduce((sum, p) => sum + p._serverCount, 0);
+  const end = filters.maxItems !== undefined ? Math.min(total, offset + filters.maxItems) : total;
+  return next < end ? next : undefined;
+}
+
 export function useLibraryCatalog(libraryId: string | undefined, filters: CatalogFilters = {}) {
   const client = useJellyfinClient();
   const userId = useUserId();
@@ -126,12 +155,9 @@ export function useLibraryCatalog(libraryId: string | undefined, filters: Catalo
   return useInfiniteQuery({
     queryKey: getLibraryCatalogKey(libraryId, filters),
     queryFn: buildCatalogPageFetcher(client, userId ?? "", libraryId ?? "", filters),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const serverLoaded = allPages.reduce((sum, p) => sum + p._serverCount, 0);
-      return serverLoaded < lastPage.TotalRecordCount ? serverLoaded : undefined;
-    },
-    enabled: !!userId && !!libraryId,
+    initialPageParam: filters.offset ?? 0,
+    getNextPageParam: (lastPage, allPages) => catalogNextPage(filters, lastPage.TotalRecordCount, allPages),
+    enabled: !!userId && !!libraryId && filters.enabled !== false,
     staleTime: CATALOG_STALE_TIME,
     // Garde la grille affichée pendant un changement de tri/filtre.
     // Double-compat : api-client est typé v5 (web) mais la TV résout la v4 au
@@ -159,7 +185,7 @@ export function prefetchLibraryCatalog(
   return qc.prefetchInfiniteQuery({
     queryKey: getLibraryCatalogKey(libraryId, filters),
     queryFn: buildCatalogPageFetcher(client, userId, libraryId, filters),
-    initialPageParam: 0,
+    initialPageParam: filters.offset ?? 0,
     staleTime: CATALOG_STALE_TIME,
   });
 }
