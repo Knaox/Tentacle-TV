@@ -116,11 +116,15 @@ export type Motion = MotionPreset | number;
  * L'animation qui mène une valeur à `target` selon `motion` — 1 : l'aller, 0 :
  * le retour (toute autre cible prend l'aller). À affecter à `.value`, depuis
  * le fil JS ou un worklet. `instant` (animations réduites, hors Apple TV) :
- * la valeur elle-même, sans animation — le rappel part quand même.
+ * la valeur elle-même, sans animation — le rappel part quand même. Une durée
+ * NULLE aussi : une animation de 0 ms ne s'applique qu'à l'image suivante, une
+ * image après une valeur posée dans le même rendu (la face d'une carte quittée
+ * revenait une image après la coupure de la scène — un trou noir, vu sur
+ * Android TV).
  */
 export function motionTo(target: number, motion: Motion, instant = false, done?: AnimationCallback) {
   "worklet";
-  if (instant || !MOTION_ENABLED) {
+  if (instant || !MOTION_ENABLED || (typeof motion === "number" && motion <= 0)) {
     if (done) done(true);
     return target;
   }
