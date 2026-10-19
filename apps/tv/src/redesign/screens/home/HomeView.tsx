@@ -2,19 +2,18 @@ import { memo, useCallback, useMemo } from "react";
 import { ScrollView, StyleSheet, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { useTranslation } from "react-i18next";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { HOME_LOADING_KEY, OPEN_PAGE, OPEN_ROW_REVEAL, heroInView, openPageBottomRoom, type OpenCardMetrics } from "@tentacle-tv/tv-core";
+import { HOME_LOADING_KEY, OPEN_PAGE, heroInView, openPageBottomRoom, type OpenCardMetrics } from "@tentacle-tv/tv-core";
 import { LiveAmbientBackdrop } from "../../background/AmbientBackdrop";
 import type { AmbientSource } from "../../background/ambientSource";
 import type { CardModel } from "../../cards/cardTypes";
 import type { ArtworkPalette } from "../../color/artworkPalette";
 import { Chip } from "../../controls/Chip";
-import { FocusSection } from "../../focus/FocusSection";
 import { FocusTarget } from "../../focus/FocusTarget";
 import { HeroBanner } from "../../hero/HeroBanner";
 import type { HeroModel } from "../../hero/heroTypes";
 import { NavRail, type NavRailProps } from "../../nav/NavRail";
 import { OpenCardPage, useOpenCardMetrics } from "../../openRow/OpenCardPage";
-import { OpenRow } from "../../openRow/OpenRow";
+import { OpenRowSection } from "../../openRow/OpenRowSection";
 import { useRowRewindPort } from "../../rows/rowRewindPort";
 import { RowStageProvider } from "../../rows/rowStage";
 import { ScreenReveal } from "../../motion/ScreenReveal";
@@ -74,7 +73,6 @@ export interface HomeViewProps {
   onHeroVisibleChange?: (visible: boolean) => void;
 }
 
-const LEFT = TV_STAGE.contentLeft;
 
 export const HomeView = memo(function HomeView({
   nav, hero, rows, palette, ambient, status, holdFocus = false, filter, filterRowKey, onRemoveFilter,
@@ -159,35 +157,24 @@ const HomeRow = memo(function HomeRow({ row, rank, metrics, filterLabel, onLayou
 }) {
   const { t } = useTranslation("cards");
   const key = row.key;
-  const rewind = useRowRewindPort();
-  const layout = useCallback(
-    (event: LayoutChangeEvent) => {
-      onLayout(event);
-      const { y, height } = event.nativeEvent.layout;
-      rewind?.layout(key, y, height);
-    },
-    [onLayout, rewind, key],
-  );
   const press = useCallback((card: CardModel) => onPressCard?.(key, card), [onPressCard, key]);
   const longPress = useCallback((card: CardModel) => onLongPressCard?.(key, card), [onLongPressCard, key]);
   const focus = useCallback((card: CardModel) => onFocusCard?.(key, card), [onFocusCard, key]);
   return (
-    <FocusSection focusKey={`section:${key}`} reveal={OPEN_ROW_REVEAL} rowRevealStart onLayout={layout}>
-      <OpenRow
-        rowKey={key}
-        title={row.title}
-        cards={row.cards}
-        metrics={metrics}
-        inset={LEFT}
-        stageRank={rank}
-        // Les rangées d'épisodes (Reprendre, Prochains épisodes) : OK lit (tv-core `cardPress`).
-        okHint={row.variant === "landscape" ? t("okPlay") : undefined}
-        accessory={filterLabel ? <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} /> : undefined}
-        onPressCard={onPressCard ? press : undefined}
-        onLongPressCard={onLongPressCard ? longPress : undefined}
-        onFocusCard={onFocusCard ? focus : undefined}
-      />
-    </FocusSection>
+    <OpenRowSection
+      rowKey={key}
+      title={row.title}
+      cards={row.cards}
+      metrics={metrics}
+      rank={rank}
+      // Les rangées d'épisodes (Reprendre, Prochains épisodes) : OK lit (tv-core `cardPress`).
+      okHint={row.variant === "landscape" ? t("okPlay") : undefined}
+      accessory={filterLabel ? <Chip label={filterLabel} trailingIcon="close" size="md" selected focusKey="filter:remove" onPress={onRemoveFilter} /> : undefined}
+      onLayout={onLayout}
+      onPressCard={onPressCard ? press : undefined}
+      onLongPressCard={onLongPressCard ? longPress : undefined}
+      onFocusCard={onFocusCard ? focus : undefined}
+    />
   );
 });
 
