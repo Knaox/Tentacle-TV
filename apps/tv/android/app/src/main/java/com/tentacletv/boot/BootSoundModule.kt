@@ -57,6 +57,10 @@ class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
       val result = Arguments.createMap()
       result.putBoolean("ready", ready)
       result.putDouble("now", System.nanoTime() / 1e6)
+      // Le temps que la sortie démarre et se date : la préparation part pendant que le poulpe s'assemble.
+      val lead = if (ready) stream?.outputLeadMs(LEAD_WAIT_MS) else null
+      if (lead != null) result.putDouble("outputLeadMs", lead)
+      Log.i(TAG, "avance de la sortie : ${lead?.let { "%.0f ms".format(it) } ?: "inconnue"}")
       promise.resolve(result)
     }
   }
@@ -124,6 +128,7 @@ class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
     private const val TAG = "TentacleBootSound"
     private const val ASSET = "boot-tadum.m4a"
     private const val FADE_STEP_MS = 20.0
+    private const val LEAD_WAIT_MS = 500L
 
     @Volatile private var introClaimed = false
   }

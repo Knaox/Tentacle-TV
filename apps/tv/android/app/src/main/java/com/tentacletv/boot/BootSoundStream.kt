@@ -37,6 +37,9 @@ class BootSoundStream(private val sound: BootSoundPcm) {
         .build(),
     )
     .setTransferMode(AudioTrack.MODE_STREAM)
+    // Hors du « deep buffer » de la sortie média (≈ 250 ms d'avance mesurés sur la
+    // Shield) : la piste rapide écrit au plus près de la sortie, le « ta » se demande à temps.
+    .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
     .setBufferSizeInBytes(bufferBytes(sound, frameBytes))
     .build()
 
@@ -44,7 +47,7 @@ class BootSoundStream(private val sound: BootSoundPcm) {
   @Volatile private var targetMs = Double.NaN
   @Volatile private var running = true
   @Volatile private var volume = 1f
-  private var written = 0L
+  @Volatile private var written = 0L
   private val writer = Thread(::loop, "tentacle-bootsound-writer")
 
   val ready: Boolean get() = track.state == AudioTrack.STATE_INITIALIZED
@@ -52,6 +55,21 @@ class BootSoundStream(private val sound: BootSoundPcm) {
   fun start() {
     track.play()
     writer.start()
+  }
+
+  /**
+   * L'avance de la sortie (ms) : ce qui est déjà écrit au-delà de ce qui sort —
+   * le son doit être demandé plus tôt que ça (tv-core `bootSoundLeads`). Attend
+   * que la sortie se date (au plus `waitMs`) ; null si elle ne dit rien.
+   */
+  fun outputLeadMs(waitMs: Long): Double? {
+    val until = System.nanoTime() + waitMs * 1_000_000
+    while (System.nanoTime() < until) {
+      val presented = frameAt(System.nanoTime() / 1e6)
+      if (presented != null) return (written - presented) * 1000.0 / sound.sampleRate
+      Thread.sleep(10)
+    }
+    return null
   }
 
   fun playAt(hostMs: Double) {
@@ -80,7 +98,9 @@ class BootSoundStream(private val sound: BootSoundPcm) {
       if (startFrame < 0 && !targetMs.isNaN()) {
         startFrame = frameAt(targetMs) ?: written
         skipped = (written - startFrame).coerceIn(0, sound.frames.toLong()).toInt()
-        Log.i(TAG, "départ à l'image ${startFrame} de la sortie (${written} écrites), début sauté ${skipped * 1000 / sound.sampleRate} ms")
+        val aheadMs = frameAt(System.nanoTime() / 1e6)?.let { (written - it) * 1000 / sound.sampleRate }
+        Log.i(TAG, "départ à l'image ${startFrame} de la sortie (${written} écrites, ${aheadMs} ms d'avance sur la sortie), " +
+          "demandé ${"%.0f".format(targetMs - System.nanoTime() / 1e6)} ms d'avance, début sauté ${skipped * 1000 / sound.sampleRate} ms")
       }
       if (startFrame < 0 || written < startFrame) {
         val frames = if (startFrame < 0) chunkFrames.toLong() else minOf(chunkFrames.toLong(), startFrame - written)

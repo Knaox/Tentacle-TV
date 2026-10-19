@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { runOnJS, useFrameCallback, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { INTRO_HOLD_AT, INTRO_TIMING } from "@tentacle-tv/shared/brandIntro";
-import {
-  BOOT_INTRO_IDLE_FADE_MS,
-  BOOT_INTRO_RELEASE_DELAY_MS,
-  BOOT_SOUND_FILE_AT,
-  BOOT_SOUND_REQUEST_AT,
-} from "@tentacle-tv/tv-core/boot";
+import { BOOT_INTRO_IDLE_FADE_MS, BOOT_SOUND_FILE_AT, bootSoundLeads } from "@tentacle-tv/tv-core/boot";
 import type { IntroClock } from "./introWorklets";
 
 /** Les états de l'horloge (des nombres : ils vivent sur le fil d'interface). */
@@ -33,6 +28,9 @@ export interface IntroClockControl extends IntroClock {
   /** Vrai : l'écran suivant est prêt — l'ouverture appuie, allume, plonge. */
   ready: SharedValue<boolean>;
   state: SharedValue<number>;
+  /** Quand demander le son, et la reprise après l'attente (tv-core `bootSoundLeads`, d'après la sortie). */
+  requestAt: SharedValue<number>;
+  releaseDelay: SharedValue<number>;
   /** Arrivée ou renoncement : l'horloge ne compte plus aucune image. */
   stop: () => void;
 }
@@ -55,6 +53,9 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
   const last = useSharedValue(-1);
   const releaseAt = useSharedValue(0);
   const soundAsked = useSharedValue(false);
+  const defaults = bootSoundLeads(null);
+  const requestAt = useSharedValue(defaults.requestAt);
+  const releaseDelay = useSharedValue(defaults.releaseDelayMs);
   const { onHold, onSound, onDone } = events;
 
   const frame = useFrameCallback((info) => {
@@ -69,14 +70,14 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       if (!ready.value) return;
       // L'accueil est prêt : le son est programmé d'abord, l'image reprend un peu après.
       state.value = CLOCK.releasing;
-      releaseAt.value = now + BOOT_INTRO_RELEASE_DELAY_MS;
+      releaseAt.value = now + releaseDelay.value;
       soundAsked.value = true;
-      runOnJS(onSound)(now + BOOT_INTRO_RELEASE_DELAY_MS + (BOOT_SOUND_FILE_AT - INTRO_HOLD_AT));
+      runOnJS(onSound)(now + releaseDelay.value + (BOOT_SOUND_FILE_AT - INTRO_HOLD_AT));
       return;
     }
     if (state.value === CLOCK.releasing) {
       idle.value += elapsed;
-      idleWeight.value = Math.max(0, 1 - (now - releaseAt.value + BOOT_INTRO_RELEASE_DELAY_MS) / BOOT_INTRO_IDLE_FADE_MS);
+      idleWeight.value = Math.max(0, 1 - (now - releaseAt.value + releaseDelay.value) / BOOT_INTRO_IDLE_FADE_MS);
       if (now < releaseAt.value) return;
       state.value = CLOCK.running;
       scene.value = INTRO_HOLD_AT + (now - releaseAt.value);
@@ -91,7 +92,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       runOnJS(onHold)();
       return;
     }
-    if (!soundAsked.value && ready.value && next >= BOOT_SOUND_REQUEST_AT) {
+    if (!soundAsked.value && ready.value && next >= requestAt.value) {
       soundAsked.value = true;
       // `bootSoundStartAt` (tv-core) à la main : une fonction du fil JS ne s'appelle pas d'ici.
       runOnJS(onSound)(now + (BOOT_SOUND_FILE_AT - next));
@@ -109,5 +110,8 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
   const stop = useCallback(() => frame.setActive(false), [frame]);
 
   // Un objet stable : les effets qui en dépendent ne se rejouent pas à chaque rendu.
-  return useMemo(() => ({ scene, idle, idleWeight, landed, ready, state, stop }), [scene, idle, idleWeight, landed, ready, state, stop]);
+  return useMemo(
+    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop }),
+    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop],
+  );
 }
