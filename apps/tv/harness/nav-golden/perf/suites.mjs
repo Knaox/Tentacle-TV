@@ -6,6 +6,8 @@ const FILMS = { name: "Library", params: { libraryId: "db4c1708cbb5dd1676284a40f
 const HOME_START = { fixtures: ["focus/home", "perf/apercus-distincts"], route: { name: "Home" }, keys: ["wait:1", "left", "right"] };
 const GRID_START = { fixtures: ["base/vigie-off", "ecrans/grande-bibliotheque", "perf/apercus-distincts"], route: FILMS, keys: ["wait:6"] };
 const times = (key, n) => Array.from({ length: n }, () => key);
+/** La bibliothèque Films : la grille d'avant (`grid:`), ou ses rangées depuis la carte qui s'ouvre (`group:`, 19/10) — les deux se mesurent. */
+const LIBRARY = /^(grid|group):/;
 
 /** Démarre et vérifie la clé focalisée (une approche ratée ne se mesure pas). */
 async function startAt(h, start, approach, expectPrefix) {
@@ -13,7 +15,9 @@ async function startAt(h, start, approach, expectPrefix) {
   if (approach.length) await h.keys(approach);
   await h.sleep(1500);
   const obs = await h.obs();
-  if (!String(obs.focus ?? "").startsWith(expectPrefix)) throw new Error(`approche ratée : focus ${obs.focus}, attendu ${expectPrefix}…`);
+  const focus = String(obs.focus ?? "");
+  const ok = expectPrefix instanceof RegExp ? expectPrefix.test(focus) : focus.startsWith(expectPrefix);
+  if (!ok) throw new Error(`approche ratée : focus ${obs.focus}, attendu ${expectPrefix}…`);
   return obs;
 }
 
@@ -42,7 +46,7 @@ export const suites = {
 
   // La grille Films du banc : CINQ colonnes (grid:0 à grid:4 sur la 1re ligne).
   async "rafale-grille"(h) {
-    await startAt(h, GRID_START, [], "grid:");
+    await startAt(h, GRID_START, [], LIBRARY);
     const out = [];
     out.push(await burst(h, "1re ligne DROITE ×4 (1re → dernière colonne)", times("right", 4)));
     out.push(await burst(h, "1re ligne GAUCHE ×4 (dernière → 1re)", times("left", 4)));
@@ -72,12 +76,12 @@ export const suites = {
     for (let i = 1; i <= 4; i++) await dwell(`accueil, carte ${i + 1}`, ["right"], "resume:");
     await dwell("accueil, rangée du dessous", ["down"], "");
     // Grille : 1re, milieu, dernière colonne, puis la ligne du dessous.
-    await startAt(h, GRID_START, [], "grid:");
-    await dwell("grille, 2e colonne", ["right"], "grid:");
-    await dwell("grille, colonne du milieu", ["right"], "grid:");
-    await dwell("grille, dernière colonne", ["right", "right"], "grid:");
-    await dwell("grille, ligne du dessous (dernière colonne)", ["down"], "grid:");
-    await dwell("grille, 1re colonne (rafale GAUCHE ×4)", times("left", 4), "grid:");
+    await startAt(h, GRID_START, [], LIBRARY);
+    await dwell("grille, 2e colonne", ["right"], "");
+    await dwell("grille, colonne du milieu", ["right"], "");
+    await dwell("grille, dernière colonne", ["right", "right"], "");
+    await dwell("grille, ligne du dessous (dernière colonne)", ["down"], "");
+    await dwell("grille, 1re colonne (rafale GAUCHE ×4)", times("left", 4), "");
     return { dwells };
   },
 
@@ -144,9 +148,9 @@ export const suites = {
     await startAt(h, HOME_START, ["down"], "resume:");
     await h.sleep(2500);
     for (let i = 1; i <= 3; i++) await one(`accueil, rangée ${i + 1}`, "");
-    await startAt(h, GRID_START, ["right", "right"], "grid:");
+    await startAt(h, GRID_START, ["right", "right"], LIBRARY);
     await h.sleep(2500);
-    for (let i = 1; i <= 3; i++) await one(`grille, ligne ${i + 1} (milieu)`, "grid:");
+    for (let i = 1; i <= 3; i++) await one(`grille, ligne ${i + 1} (milieu)`, "");
     return { dwells: steps };
   },
 
@@ -162,7 +166,7 @@ export const suites = {
       const report = await h.disarm();
       out.push({ label, keys: 1, sentMs: 0, releasedAt, endFocus: (await h.obs()).focus, report });
     };
-    await startAt(h, GRID_START, ["right", "right"], "grid:");
+    await startAt(h, GRID_START, ["right", "right"], LIBRARY);
     await hold("grille, BAS maintenu 3 s (3e colonne)", "holddown:3");
     await hold("grille, HAUT maintenu 3 s (3e colonne)", "holdup:3");
     await hold("grille, BAS maintenu 6 s (3e colonne)", "holddown:6");
@@ -179,7 +183,7 @@ export const suites = {
     await h.keys(["right"]);
     await h.sleep(2500);
     out.push(await burst(h, "accueil, DROITE ×4 pendant la lecture", times("right", 4), 2500));
-    await startAt(h, GRID_START, [], "grid:");
+    await startAt(h, GRID_START, [], LIBRARY);
     for (const gap of [450, 600, 750, 900]) {
       await h.keys(["right"]);
       await h.sleep(2500);
