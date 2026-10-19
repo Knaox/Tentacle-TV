@@ -29,7 +29,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -118,7 +118,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -160,13 +160,13 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
           "do": "right",
           "expect": {
-            "focus": "grid:1"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:1"
           }
         },
         {
@@ -212,7 +212,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -225,7 +225,7 @@
         {
           "do": "right",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
           },
           "why": "S2 : le pont de sortie vise la dernière cible de contenu"
         }

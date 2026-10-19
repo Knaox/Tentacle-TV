@@ -7,7 +7,7 @@
   "scenarios": [
     {
       "id": "collections-ma-liste",
-      "title": "Ma liste : entrée sur la première affiche ; OK ouvre la fiche, Menu y revient sur l'affiche",
+      "title": "Ma liste en rangées : entrée sur la première carte ; OK ouvre la fiche, Menu y revient sur la carte",
       "rules": [
         "CO-1",
         "GR-5",
@@ -28,7 +28,7 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0",
+            "focus": "group:type:anime:0",
             "route": "Watchlist"
           }
         },
@@ -43,8 +43,8 @@
           "do": "menu",
           "settleMs": 2000,
           "expect": {
-            "route": "Watchlist",
-            "focus": "grid:0"
+            "focus": "group:type:anime:0",
+            "route": "Watchlist"
           }
         },
         {

@@ -7,7 +7,7 @@
   "scenarios": [
     {
       "id": "bibliotheque-entree-et-bords",
-      "title": "Films : entrée sur la première affiche ; HAUT vers la barre de filtres ; les bords de la grille ne mènent nulle part",
+      "title": "Films en rangées : entrée sur la première carte de la première rangée ; HAUT vers la barre ; le bout d'une rangée ne mène nulle part",
       "rules": [
         "BI-1",
         "BI-2",
@@ -34,61 +34,102 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0",
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
             "route": "Library"
           }
         },
         {
           "do": "up",
-          "why": "la barre de filtres (section filters:pills, au plus proche)"
+          "expect": {
+            "focus": "pill:group"
+          },
+          "why": "la barre de filtres, par sa pastille de tête « Ranger par »"
         },
         {
           "do": "down",
-          "why": "la première ligne, au plus proche (relevé)"
+          "expect": {
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
+          },
+          "why": "la première rangée, par sa carte au retrait"
         },
         {
           "do": [
             "right",
+            "wait:0.4",
             "right",
+            "wait:0.4",
             "right",
+            "wait:0.4",
             "right"
           ],
           "settleMs": 800,
           "expect": {
-            "focus": "grid:4"
-          },
-          "why": "cinq colonnes à la taille par défaut (déjà ainsi sur dev 2b9a97fa6)"
-        },
-        {
-          "do": "right",
-          "expect": {
-            "focus": "grid:4"
-          },
-          "why": "le bout droit d'une ligne : rien à atteindre"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:4"
+          }
         },
         {
           "do": "down",
           "expect": {
-            "focus": "grid:9"
-          }
+            "focus": "group:genre:ce06903d834d2c3417e0889dd4049f3b:0"
+          },
+          "why": "la rangée suivante, par sa carte au retrait"
         },
         {
           "do": "up",
           "expect": {
-            "focus": "grid:4"
-          }
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:4"
+          },
+          "why": "la rangée garde sa carte au retrait"
         },
         {
           "do": [
-            "left",
-            "left",
-            "left",
-            "left"
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right"
           ],
           "settleMs": 800,
           "expect": {
-            "focus": "grid:0"
-          }
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:17"
+          },
+          "why": "la dernière carte de « Drame » (18 titres)"
+        },
+        {
+          "do": "right",
+          "settleMs": 600,
+          "expect": {
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:17"
+          },
+          "why": "le bout d'une rangée : rien à atteindre"
+        },
+        {
+          "do": "menu",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
+          },
+          "why": "Retour : la rangée revient au début, le focus sur sa première carte"
         },
         {
           "do": "left",
@@ -100,14 +141,15 @@
         {
           "do": "right",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
           }
         }
-      ]
+      ],
+      "why": "La carte qui s'ouvre (19/10) : la bibliothèque est rangée par genre (« Ranger par »), la carte focalisée toujours au retrait de sa rangée, et l'on entre dans une rangée par cette carte."
     },
     {
       "id": "bibliotheque-defilement",
-      "title": "1 200 films : flèche maintenue jusqu'au fond, puis jusqu'en haut — la page suivante est là avant le focus, la première ligne ramène la page tout en haut",
+      "title": "1 200 films en rangées : flèche maintenue jusqu'au fond puis jusqu'en haut — la première rangée ramène la page en haut",
       "rules": [
         "GR-2",
         "GR-4"
@@ -130,10 +172,7 @@
       },
       "steps": [
         {
-          "do": "wait:1",
-          "expect": {
-            "focus": "grid:0"
-          }
+          "do": "wait:1"
         },
         {
           "do": [
@@ -141,17 +180,14 @@
             "holdup:10"
           ],
           "settleMs": 2000,
-          "expect": {
-            "focus": "grid:0"
-          },
-          "why": "jusqu'au fond puis jusqu'en haut, dans la première colonne : la page suivante est là avant le focus ; relevé à la fin seulement (la position au fond dépend de la cadence)"
+          "why": "jusqu'à la dernière rangée puis jusqu'à la première : chaque rangée se charge à l'approche, en affiches fantômes à sa hauteur ; relevé à la fin seulement"
         },
         {
           "do": "up",
           "expect": {
-            "focus": "pill:status"
+            "focus": "pill:group"
           },
-          "why": "la première ligne a ramené la page tout en haut : la barre de filtres est là"
+          "why": "la première rangée a ramené la page tout en haut : la barre de filtres est là"
         }
       ]
     },
@@ -185,30 +221,34 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
           }
         },
         {
           "do": "up",
           "expect": {
-            "focus": "pill:status"
+            "focus": "pill:group"
           }
         },
         {
           "do": [
             "right",
+            "wait:0.3",
+            "right",
+            "wait:0.3",
             "right"
           ],
           "expect": {
             "focus": "pill:genres"
-          }
+          },
+          "why": "« Ranger par », Visionnage, Favoris, puis Genres"
         },
         {
           "do": "select",
           "settleMs": 1200,
           "expect": {
-            "panel": "open",
-            "focus": "sheet:option:0"
+            "focus": "sheet:option:0",
+            "panel": "open"
           },
           "why": "rien de retenu : le premier choix"
         },
@@ -238,8 +278,8 @@
           "do": "menu",
           "settleMs": 1500,
           "expect": {
-            "panel": "closed",
-            "focus": "pill:genres"
+            "focus": "pill:genres",
+            "panel": "closed"
           }
         },
         {
@@ -257,7 +297,7 @@
           "do": "select",
           "settleMs": 1200,
           "expect": {
-            "focus": "pill:status"
+            "focus": "pill:group"
           },
           "why": "« Tout effacer » rend la pastille de tête"
         }
@@ -288,18 +328,21 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
           }
         },
         {
           "do": "up",
           "expect": {
-            "focus": "pill:status"
+            "focus": "pill:group"
           }
         },
         {
           "do": [
             "right",
+            "wait:0.3",
+            "right",
+            "wait:0.3",
             "right"
           ],
           "expect": {
@@ -337,15 +380,18 @@
         {
           "do": [
             "left",
+            "wait:0.3",
+            "left",
+            "wait:0.3",
             "left"
           ],
           "expect": {
-            "focus": "pill:status"
+            "focus": "pill:group"
           }
         },
         {
           "do": "down",
-          "why": "la rangée des filtres actifs, au plus proche de la 1re pastille (relevé)"
+          "why": "la rangée des filtres actifs, au plus proche de la pastille de tête (relevé)"
         },
         {
           "do": "select",
@@ -389,20 +435,25 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
           }
         },
         {
           "do": "up",
           "expect": {
-            "focus": "pill:status"
+            "focus": "pill:group"
           }
         },
         {
           "do": [
             "right",
+            "wait:0.3",
             "right",
+            "wait:0.3",
             "right",
+            "wait:0.3",
+            "right",
+            "wait:0.3",
             "right"
           ],
           "expect": {
@@ -457,17 +508,21 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
           }
         },
         {
           "do": "up",
           "expect": {
-            "focus": "pill:status"
+            "focus": "pill:group"
           }
         },
         {
-          "do": "right",
+          "do": [
+            "right",
+            "wait:0.3",
+            "right"
+          ],
           "expect": {
             "focus": "pill:favorites"
           }

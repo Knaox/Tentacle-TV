@@ -45,7 +45,7 @@
           "do": "select",
           "expect": {
             "route": "Library",
-            "focus": "grid:0"
+            "focus": "group:genre:f89b4d4d7733020ed2721d8fec37f26c:0"
           },
           "settleMs": 1500
         },
@@ -97,7 +97,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {

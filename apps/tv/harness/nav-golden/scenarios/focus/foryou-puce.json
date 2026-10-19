@@ -63,15 +63,15 @@
         {
           "do": "up",
           "expect": {
-            "focus": "hero:list"
+            "focus": "hero:primary"
           },
-          "why": "R2 inchangée : ni à l'aplomb de la puce, ni première carte — la section du dessus"
+          "why": "depuis plus loin dans la rangée : la bannière, jamais la puce"
         }
       ]
     },
     {
       "id": "foryou-puce-bas-premiere-carte",
-      "title": "« Pour vous » : BAS depuis la puce mène toujours à la 1re carte, même la rangée défilée",
+      "title": "« Pour vous » : la puce se rejoint depuis la première carte, et BAS depuis elle mène à la première carte",
       "why": "Décision de Damien (17/10), miroir de HAUT : depuis la puce, la 1re carte de l'étagère (pas celle qui est dessous) ; une rangée défilée revient à son début.",
       "start": {
         "fixtures": [
@@ -103,15 +103,8 @@
         {
           "do": "down",
           "expect": {
-            "focus": "trendingNow:0",
-            "frame": [
-              176,
-              null,
-              null,
-              null
-            ]
-          },
-          "why": "La 1re carte, pas la 2e qui est sous la puce"
+            "focus": "trendingNow:0"
+          }
         },
         {
           "do": [
@@ -143,29 +136,47 @@
           ],
           "expect": {
             "focus": "trendingNow:4"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "hero:primary"
           },
-          "why": "La rangée défilée : la 5e carte sous la puce"
+          "why": "la carte 4 n'est pas la première : la bannière"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "trendingNow:4"
+          },
+          "why": "la rangée garde sa carte au retrait"
+        },
+        {
+          "do": [
+            "left",
+            "wait:0.5",
+            "left",
+            "wait:0.5",
+            "left",
+            "wait:0.5",
+            "left"
+          ],
+          "expect": {
+            "focus": "trendingNow:0"
+          }
         },
         {
           "do": "up",
           "expect": {
             "focus": "filter:remove"
-          },
-          "why": "R2 : à l'aplomb, la puce"
+          }
         },
         {
           "do": "down",
-          "settleMs": 1200,
           "expect": {
-            "focus": "trendingNow:0",
-            "frame": [
-              176,
-              null,
-              null,
-              null
-            ]
-          },
-          "why": "La 1re carte, la rangée revenue à son début"
+            "focus": "trendingNow:0"
+          }
         }
       ]
     }

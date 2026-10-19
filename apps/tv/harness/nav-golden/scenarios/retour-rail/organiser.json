@@ -30,7 +30,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -117,7 +117,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -232,7 +232,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -301,7 +301,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -416,7 +416,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -527,7 +527,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -644,7 +644,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -720,7 +720,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -754,7 +754,7 @@
         {
           "do": "right",
           "expect": {
-            "focus": "grid:0",
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
             "storage": {
               "tentacle_tv_rail_profiles": {
                 "banc-user": {
@@ -803,7 +803,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -900,7 +900,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -947,7 +947,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -995,7 +995,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {
@@ -1040,7 +1040,7 @@
         "keys": [
           "wait:3"
         ],
-        "focus": "grid:0"
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
       },
       "steps": [
         {

@@ -7,62 +7,260 @@
   "scenarios": [
     {
       "id": "collections-tri-titre",
-      "title": "Ma liste : HAUT mène à la barre, « Trier par » ouvre la liste du tri, Titre A→Z range la grille",
-      "rules": ["CO-3", "BI-7", "BI-10"],
+      "title": "Ma liste : HAUT mène à la barre (« Ranger par » en tête), « Trier par » ouvre la liste du tri, Titre A→Z range chaque rangée",
+      "rules": [
+        "CO-3",
+        "BI-7",
+        "BI-10"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off", "ecrans/ma-liste-variee"],
-        "route": { "name": "Watchlist" },
-        "keys": ["wait:6"]
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/ma-liste-variee"
+        ],
+        "route": {
+          "name": "Watchlist"
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
-        { "do": "wait:1", "expect": { "focus": "grid:0", "route": "Watchlist" } },
-        { "do": "up", "expect": { "focus": "pill:type" }, "why": "la barre au-dessus de la grille" },
-        { "do": "right", "expect": { "focus": "pill:sort" } },
-        { "do": "select", "settleMs": 1500, "expect": { "focus": "sheet:option:0", "panel": "open" }, "why": "l'entrée : le critère retenu, arrivée en bibliothèque" },
-        { "do": "down", "expect": { "focus": "sheet:option:1" } },
-        { "do": "select", "expect": { "focus": "sheet:option:1" } },
-        { "do": "menu", "settleMs": 1500, "expect": { "focus": "pill:sort", "panel": "closed" }, "why": "Menu referme la liste, la pastille reprend le focus" },
-        { "do": "down", "expect": { "focus": "grid:0", "label": "Barbie" }, "why": "Titre A→Z : Barbie en tête" }
+        {
+          "do": "wait:1",
+          "expect": {
+            "focus": "group:type:movies:0",
+            "route": "Watchlist"
+          }
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pill:group"
+          },
+          "why": "la barre au-dessus des rangées, par sa pastille de tête"
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.3",
+            "right"
+          ],
+          "expect": {
+            "focus": "pill:sort"
+          },
+          "why": "« Ranger par », Type, puis Trier par"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "sheet:option:0",
+            "panel": "open"
+          },
+          "why": "l'entrée : le critère retenu, arrivée en bibliothèque"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "sheet:option:1"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "sheet:option:1"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pill:sort",
+            "panel": "closed"
+          },
+          "why": "Menu referme la liste, la pastille reprend le focus"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "group:type:movies:0",
+            "label": "Barbie"
+          },
+          "why": "Titre A→Z : Barbie en tête des films"
+        }
       ]
     },
     {
       "id": "collections-type-series",
       "title": "Ma liste : Type › Séries ne garde que les séries ; la croix du filtre actif rend la pastille Type",
-      "rules": ["CO-3", "CO-4"],
+      "rules": [
+        "CO-3",
+        "CO-4"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off", "ecrans/ma-liste-variee"],
-        "route": { "name": "Watchlist" },
-        "keys": ["wait:6"]
+        "fixtures": [
+          "base/vigie-off",
+          "ecrans/ma-liste-variee"
+        ],
+        "route": {
+          "name": "Watchlist"
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
-        { "do": "up", "expect": { "focus": "pill:type" } },
-        { "do": "select", "settleMs": 1500, "expect": { "focus": "sheet:option:0", "panel": "open" } },
-        { "do": ["down", "down"], "expect": { "focus": "sheet:option:2" } },
-        { "do": "select", "expect": { "focus": "sheet:option:2" } },
-        { "do": "menu", "settleMs": 1500, "expect": { "focus": "pill:type", "panel": "closed" } },
-        { "do": "down", "expect": { "focus": "active:0" }, "why": "le filtre actif « Séries », sous les pastilles" },
-        { "do": "down", "expect": { "focus": "grid:0" } },
-        { "do": "up", "expect": { "focus": "active:0" } },
-        { "do": "select", "settleMs": 1200, "expect": { "focus": "pill:type" }, "why": "retirer le seul filtre : la pastille de son critère" }
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pill:group"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pill:type"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "sheet:option:0",
+            "panel": "open"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "sheet:option:2"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "sheet:option:2"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pill:type",
+            "panel": "closed"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "active:0"
+          },
+          "why": "le filtre actif « Séries », sous les pastilles"
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "group:type:series:0"
+          },
+          "why": "la première rangée : les séries (les animés suivent)"
+        },
+        {
+          "do": "up",
+          "expect": {
+            "focus": "active:0"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1200,
+          "expect": {
+            "focus": "pill:type"
+          },
+          "why": "retirer le seul filtre : la pastille de son critère"
+        }
       ]
     },
     {
       "id": "collections-type-vide",
-      "title": "Favoris : Type › Films ne garde rien — « Tout effacer » rend la première affiche",
-      "rules": ["CO-4"],
+      "title": "Favoris : Type › Films ne garde rien — « Tout effacer » rend la première carte de la liste effacée",
+      "rules": [
+        "CO-4"
+      ],
       "start": {
-        "fixtures": ["base/vigie-off"],
-        "route": { "name": "Favorites" },
-        "keys": ["wait:6"]
+        "fixtures": [
+          "base/vigie-off"
+        ],
+        "route": {
+          "name": "Favorites"
+        },
+        "keys": [
+          "wait:6"
+        ]
       },
       "steps": [
-        { "do": "up", "expect": { "focus": "pill:type" } },
-        { "do": "select", "settleMs": 1500, "expect": { "focus": "sheet:option:0", "panel": "open" } },
-        { "do": "down", "expect": { "focus": "sheet:option:1" } },
-        { "do": "select", "expect": { "focus": "sheet:option:1" } },
-        { "do": "menu", "settleMs": 1500, "expect": { "focus": "pill:type", "panel": "closed" } },
-        { "do": ["down", "down"], "expect": { "focus": "empty:primary" }, "why": "sous le filtre actif, le vide « Aucun titre ne correspond »" },
-        { "do": "select", "settleMs": 1500, "expect": { "focus": "grid:0", "label": "Rick et Morty" }, "why": "« Tout effacer » depuis le vide : la première affiche revenue" }
+        {
+          "do": "up",
+          "expect": {
+            "focus": "pill:group"
+          }
+        },
+        {
+          "do": "right",
+          "expect": {
+            "focus": "pill:type"
+          }
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "sheet:option:0",
+            "panel": "open"
+          }
+        },
+        {
+          "do": "down",
+          "expect": {
+            "focus": "sheet:option:1"
+          }
+        },
+        {
+          "do": "select",
+          "expect": {
+            "focus": "sheet:option:1"
+          }
+        },
+        {
+          "do": "menu",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "pill:type",
+            "panel": "closed"
+          }
+        },
+        {
+          "do": [
+            "down",
+            "down"
+          ],
+          "expect": {
+            "focus": "empty:primary"
+          },
+          "why": "sous le filtre actif, le vide « Aucun titre ne correspond »"
+        },
+        {
+          "do": "select",
+          "settleMs": 1500,
+          "expect": {
+            "focus": "group:type:anime:0",
+            "label": "Rick et Morty"
+          },
+          "why": "« Tout effacer » depuis le vide : la première carte revenue"
+        }
       ]
     }
   ]

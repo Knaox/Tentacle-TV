@@ -1,26 +1,99 @@
 {
   "domain": "focus",
   "reference": "84f3cedd0",
-  "defaults": { "settleMs": 900 },
+  "defaults": {
+    "settleMs": 900
+  },
   "scenarios": [
     {
       "id": "foryou-entry-shelves",
-      "title": "« Pour vous » : entrée sur la tête, héros fixe sans bord, étagères au plus proche",
+      "title": "« Pour vous » : entrée sur la bannière (un seul titre, aucun bord), étagères par la carte au retrait",
       "why": "A6 : une tête → hero:primary ; H6 : ni rotation ni bord ; R : les étagères comme les rangées de l'accueil ; W2 : la pastille du filtre (posé par le jeu focus/foryou) sur la 1re étagère. Ouverte par le rail, comme l'utilisateur (une navigation programmée par-dessus l'accueil arrive parfois sans focus).",
-      "rules": ["A1", "A3", "A6", "H6", "R1", "R2", "R6", "W1", "W2", "V2", "V4"],
-      "start": { "fixtures": ["focus/foryou"], "keys": ["left", "wait:0.8", "down", "wait:0.6", "select", "wait:2"], "focus": "hero:primary" },
+      "rules": [
+        "A1",
+        "A3",
+        "A6",
+        "H6",
+        "R1",
+        "R2",
+        "R6",
+        "W1",
+        "W2",
+        "V2",
+        "V4"
+      ],
+      "start": {
+        "fixtures": [
+          "focus/foryou"
+        ],
+        "keys": [
+          "left",
+          "wait:0.8",
+          "down",
+          "wait:0.6",
+          "select",
+          "wait:2"
+        ],
+        "focus": "hero:primary"
+      },
       "steps": [
-        { "do": ["right", "wait:0.4", "right"], "settleMs": 500, "expect": { "focus": "hero:list" } },
-        { "do": ["wait:0.6", "right"], "settleMs": 1200, "expect": { "focus": "hero:list" }, "why": "H6 : rien au-delà du bord (le titre ne change pas : relevé)" },
-        { "do": "down", "why": "R6 : l'affiche de la 1re étagère au centre le plus proche du rond" },
-        { "do": ["left", "wait:0.4", "left"], "settleMs": 500 },
-        { "do": "up", "why": "R2 : la pastille si elle est à l'aplomb, sinon la tête au plus proche" },
-        { "do": "down" },
-        { "do": "down" },
-        { "do": "down" },
-        { "do": "up" },
-        { "do": "up" },
-        { "do": "up", "why": "V4 : la tête, page tout en haut" }
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "settleMs": 500,
+          "expect": {
+            "focus": "hero:primary"
+          },
+          "why": "un seul titre : DROITE ne fait rien, le focus reste sur la bannière"
+        },
+        {
+          "do": [
+            "wait:0.6",
+            "right"
+          ],
+          "settleMs": 500,
+          "expect": {
+            "focus": "hero:primary"
+          }
+        },
+        {
+          "do": "down",
+          "why": "R6 : l'affiche de la 1re étagère au centre le plus proche du rond"
+        },
+        {
+          "do": [
+            "left",
+            "wait:0.4",
+            "left"
+          ],
+          "settleMs": 500
+        },
+        {
+          "do": "up",
+          "why": "R2 : la pastille si elle est à l'aplomb, sinon la tête au plus proche"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "down"
+        },
+        {
+          "do": "up"
+        },
+        {
+          "do": "up"
+        },
+        {
+          "do": "up",
+          "why": "V4 : la tête, page tout en haut"
+        }
       ]
     }
   ]

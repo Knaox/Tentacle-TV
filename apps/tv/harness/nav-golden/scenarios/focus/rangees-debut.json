@@ -180,20 +180,9 @@
         {
           "do": "up",
           "expect": {
-            "focus": "hero:list"
-          },
-          "why": "le héros, au plus proche ; Reprendre reste défilée, à l'écran"
-        },
-        {
-          "do": [
-            "left",
-            "wait:0.4",
-            "left"
-          ],
-          "settleMs": 500,
-          "expect": {
             "focus": "hero:primary"
-          }
+          },
+          "why": "la bannière ; Reprendre reste défilée, à l'écran"
         },
         {
           "do": "left",
@@ -468,12 +457,10 @@
             "wait:0.9",
             "down",
             "wait:0.9",
-            "down",
-            "wait:0.9",
             "down"
           ],
           "settleMs": 900,
-          "why": "Films, sous « Pour vous »"
+          "why": "Films, sous « Pour vous » (la pastille n'est pas un arrêt)"
         },
         {
           "do": [

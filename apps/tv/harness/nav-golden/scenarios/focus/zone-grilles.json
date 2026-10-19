@@ -7,7 +7,7 @@
   "scenarios": [
     {
       "id": "zone-grille-films",
-      "title": "Films, aperçus distincts : départ des essais de la zone au-dessus d'une grille",
+      "title": "Films, aperçus distincts : départ des essais de la carte qui s'ouvre, en rangées",
       "start": {
         "fixtures": [
           "base/vigie-off",
@@ -28,14 +28,14 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0"
           }
         }
       ]
     },
     {
       "id": "zone-grille-series",
-      "title": "Séries, aperçus distincts : départ des essais de la zone au-dessus d'une grille",
+      "title": "Séries, aperçus distincts : départ des essais de la carte qui s'ouvre, en rangées",
       "start": {
         "fixtures": [
           "base/vigie-off",
@@ -56,14 +56,14 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:genre:090eac6e9de4fe1fbc194e5b96691277:0"
           }
         }
       ]
     },
     {
       "id": "zone-grille-ma-liste",
-      "title": "Ma liste variée, aperçus distincts : départ des essais de la zone au-dessus d'une grille",
+      "title": "Ma liste variée, aperçus distincts : départ des essais de la carte qui s'ouvre, en rangées",
       "start": {
         "fixtures": [
           "base/vigie-off",
@@ -81,7 +81,7 @@
         {
           "do": "wait:1",
           "expect": {
-            "focus": "grid:0"
+            "focus": "group:type:movies:0"
           }
         }
       ]
