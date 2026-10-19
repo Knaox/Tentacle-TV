@@ -8,8 +8,9 @@ import { GRID_FIRST_KEY } from "./gridFocus";
  * plateforme pose le focus, verrouille, réclame.
  */
 
-/** La pastille de tête : elle tient le focus pendant un premier chargement. */
-export const LIBRARY_LOADING_ENTRY = "pill:status";
+/** La pastille de tête (« Ranger par », depuis les rangées de la carte qui
+ *  s'ouvre) : elle tient le focus pendant un premier chargement. */
+export const LIBRARY_LOADING_ENTRY = "pill:group";
 
 /** La barre de filtres (un groupe qui mémorise) et le vide des filtres trop serrés. */
 export const LIBRARY_FILTERS_GROUP = "filters";
@@ -22,10 +23,10 @@ export const isLibraryEmptyKey = (key: string): boolean => key.startsWith("empty
  * vide), la pastille de tête pendant le chargement, la première affiche, la
  * sortie du vide des filtres trop serrés (« Tout effacer »).
  */
-export function libraryEntryKey(state: { status: boolean; loading: boolean; items: number; noResults: boolean }): string {
+export function libraryEntryKey(state: { status: boolean; loading: boolean; items: number; noResults: boolean }, first: string = GRID_FIRST_KEY): string {
   if (state.status) return "status:primary";
   if (state.loading) return LIBRARY_LOADING_ENTRY;
-  if (state.items > 0) return GRID_FIRST_KEY;
+  if (state.items > 0) return first;
   return state.noResults ? LIBRARY_EMPTY_ACTION : LIBRARY_LOADING_ENTRY;
 }
 
@@ -38,9 +39,9 @@ export function libraryFocusMoved(focusedKey: string, inNavigation: boolean): bo
  * Premier chargement (BI-2) : les affiches arrivées, la première reprend le
  * focus à la pastille de tête — si personne n'a bougé entre-temps.
  */
-export function libraryClaimAfterLoad(state: { loading: boolean; items: number; moved: boolean; focusedKey: string | null }): string | null {
+export function libraryClaimAfterLoad(state: { loading: boolean; items: number; moved: boolean; focusedKey: string | null }, first: string = GRID_FIRST_KEY): string | null {
   if (state.loading || state.items === 0 || state.moved || state.focusedKey !== LIBRARY_LOADING_ENTRY) return null;
-  return GRID_FIRST_KEY;
+  return first;
 }
 
 /** OK sur une pastille (BI-5) : Favoris bascule, les autres ouvrent leur liste. */
@@ -68,8 +69,8 @@ export function filterFocusAfterRemove(activeIds: readonly string[], removedId: 
 }
 
 /** « Tout effacer » (BI-5) : la pastille de tête ; depuis le vide des filtres trop serrés, la première affiche revenue. */
-export function filterFocusAfterClearAll(focusedKey: string | null): string {
-  return focusedKey === LIBRARY_EMPTY_ACTION ? GRID_FIRST_KEY : LIBRARY_LOADING_ENTRY;
+export function filterFocusAfterClearAll(focusedKey: string | null, first: string = GRID_FIRST_KEY): string {
+  return focusedKey === LIBRARY_EMPTY_ACTION ? first : LIBRARY_LOADING_ENTRY;
 }
 
 /** Une grande liste, vue d'ici : ce qui y est retenu. */

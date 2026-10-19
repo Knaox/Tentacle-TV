@@ -1,3 +1,4 @@
+import { LIST_GROUP_MODES, type ListGroupMode } from "../groups/groupModel";
 import { GRID_FIRST_KEY } from "./gridFocus";
 import { LIBRARY_EMPTY_ACTION } from "./libraryFocus";
 
@@ -20,10 +21,13 @@ export interface CollectionFilterState {
   type: CollectionTypeFilter;
   sortBy: string;
   sortOrder: "Ascending" | "Descending";
+  /** « Ranger par » (les rangées de la carte qui s'ouvre, `groups/`) : pas un
+   *  filtre — « Tout effacer » le garde. Absent : par type. */
+  groupBy?: ListGroupMode;
 }
 
-/** Les pastilles de la barre, dans l'ordre de l'écran (CO-3). */
-export const COLLECTION_PILLS = ["type", "sort"] as const;
+/** Les pastilles de la barre, dans l'ordre de l'écran (CO-3) : « Ranger par » en tête. */
+export const COLLECTION_PILLS = ["group", "type", "sort"] as const;
 export type CollectionPill = (typeof COLLECTION_PILLS)[number];
 
 export const COLLECTION_TYPES: readonly CollectionTypeFilter[] = ["all", "Movie", "Series"];
@@ -48,7 +52,7 @@ export const DEFAULT_COLLECTION_FILTERS: CollectionFilterState = {
 };
 
 /** La pastille de tête : « Tout effacer » y rend le focus. */
-export const COLLECTION_HEAD_PILL = "pill:type";
+export const COLLECTION_HEAD_PILL = "pill:group";
 
 export const isDefaultCollectionSort = (state: CollectionFilterState): boolean =>
   state.sortBy === DEFAULT_COLLECTION_FILTERS.sortBy && state.sortOrder === DEFAULT_COLLECTION_FILTERS.sortOrder;
@@ -60,6 +64,10 @@ export function collectionActiveFilters(state: CollectionFilterState): string[] 
 
 /** Une option choisie dans une liste (Type, Tri) : l'effet sur l'état. */
 export function applyCollectionOption(state: CollectionFilterState, filter: string, id: string): CollectionFilterState {
+  if (filter === "group") {
+    const groupBy = LIST_GROUP_MODES.find((mode) => mode === id);
+    return groupBy ? { ...state, groupBy } : state;
+  }
   if (filter === "type") {
     const type = COLLECTION_TYPES.find((value) => value === id);
     return type ? { ...state, type } : state;
@@ -74,6 +82,7 @@ export function applyCollectionOption(state: CollectionFilterState, filter: stri
 
 /** « Effacer » dans une liste : ce critère revient à son défaut. */
 export function clearCollectionCriterion(state: CollectionFilterState, filter: string): CollectionFilterState {
+  if (filter === "group") return { ...state, groupBy: undefined };
   if (filter === "type") return { ...state, type: DEFAULT_COLLECTION_FILTERS.type };
   if (filter === "sort") return { ...state, sortBy: DEFAULT_COLLECTION_FILTERS.sortBy, sortOrder: DEFAULT_COLLECTION_FILTERS.sortOrder };
   return state;
@@ -93,6 +102,6 @@ export function clearCollectionFilters(state: CollectionFilterState): Collection
  * Le focus après « Tout effacer » (CO-4) : depuis le vide des filtres trop
  * serrés, la première affiche revenue ; depuis la barre, la pastille de tête.
  */
-export function collectionFocusAfterClearAll(focusedKey: string | null): string {
-  return focusedKey === LIBRARY_EMPTY_ACTION ? GRID_FIRST_KEY : COLLECTION_HEAD_PILL;
+export function collectionFocusAfterClearAll(focusedKey: string | null, first: string = GRID_FIRST_KEY): string {
+  return focusedKey === LIBRARY_EMPTY_ACTION ? first : COLLECTION_HEAD_PILL;
 }

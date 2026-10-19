@@ -24,9 +24,9 @@ describe("Ma liste et Favoris : type et tri", () => {
     expect(collectionActiveFilters(base)).toEqual([]);
   });
 
-  it("la barre : Type puis Trier par, chaque pastille ouvre sa liste", () => {
-    expect(COLLECTION_PILLS).toEqual(["type", "sort"]);
-    expect(COLLECTION_PILLS.map(filterPillPress)).toEqual(["openSheet", "openSheet"]);
+  it("la barre : Ranger par, Type puis Trier par, chaque pastille ouvre sa liste", () => {
+    expect(COLLECTION_PILLS).toEqual(["group", "type", "sort"]);
+    expect(COLLECTION_PILLS.map(filterPillPress)).toEqual(["openSheet", "openSheet", "openSheet"]);
     expect(COLLECTION_HEAD_PILL).toBe(filterPillKey(COLLECTION_PILLS[0]));
   });
 
@@ -75,5 +75,13 @@ describe("Ma liste et Favoris : type et tri", () => {
     const criteria = COLLECTION_SORTS.map((s) => ({ selected: s.value === "ProductionYear" }));
     expect(filterSheetEntryKey({ kind: "sort", criteria, orders: [0, 1] })).toBe("sheet:option:2");
     expect(filterSheetEntryKey({ kind: "choice", options: [{ selected: false }, { selected: false }, { selected: true }] })).toBe("sheet:option:2");
+  });
+
+  it("« Ranger par » : un choix de la liste, gardé par « Tout effacer », retiré par « Effacer »", () => {
+    const grouped = applyCollectionOption(DEFAULT_COLLECTION_FILTERS, "group", "alpha");
+    expect(grouped.groupBy).toBe("alpha");
+    expect(applyCollectionOption(grouped, "group", "rating")).toBe(grouped);
+    expect(clearCollectionFilters({ ...grouped, type: "Movie" })).toEqual(grouped);
+    expect(clearCollectionCriterion(grouped, "group").groupBy).toBeUndefined();
   });
 });

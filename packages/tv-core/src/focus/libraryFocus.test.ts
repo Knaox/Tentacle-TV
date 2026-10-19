@@ -20,14 +20,14 @@ describe("entrée de la bibliothèque", () => {
   const base = { status: false, loading: false, items: 0, noResults: false };
   it("le panneau d'état, puis la pastille de tête au chargement, puis la première affiche, puis « Tout effacer »", () => {
     expect(libraryEntryKey({ ...base, status: true, loading: true })).toBe("status:primary");
-    expect(libraryEntryKey({ ...base, loading: true })).toBe("pill:status");
+    expect(libraryEntryKey({ ...base, loading: true })).toBe("pill:group");
     expect(libraryEntryKey({ ...base, items: 12 })).toBe("grid:0");
     expect(libraryEntryKey({ ...base, noResults: true })).toBe("empty:primary");
-    expect(libraryEntryKey(base)).toBe("pill:status");
+    expect(libraryEntryKey(base)).toBe("pill:group");
   });
 
   it("premier chargement : la première affiche reprend le focus à la pastille de tête, si personne n'a bougé", () => {
-    const loaded = { loading: false, items: 12, moved: false, focusedKey: "pill:status" };
+    const loaded = { loading: false, items: 12, moved: false, focusedKey: "pill:group" };
     expect(libraryClaimAfterLoad(loaded)).toBe("grid:0");
     expect(libraryClaimAfterLoad({ ...loaded, moved: true })).toBeNull();
     expect(libraryClaimAfterLoad({ ...loaded, loading: true })).toBeNull();
@@ -35,9 +35,14 @@ describe("entrée de la bibliothèque", () => {
     expect(libraryClaimAfterLoad({ ...loaded, focusedKey: "nav:Home" })).toBeNull();
   });
 
+  it("en rangées (la carte qui s'ouvre) : la première carte de la première rangée", () => {
+    expect(libraryEntryKey({ ...base, items: 3 }, "genre:g-drame:0")).toBe("genre:g-drame:0");
+    expect(libraryClaimAfterLoad({ loading: false, items: 3, moved: false, focusedKey: "pill:group" }, "genre:g-drame:0")).toBe("genre:g-drame:0");
+  });
+
   it("seul un focus ailleurs que la pastille de tête, hors navigation, compte comme un geste", () => {
     expect(libraryFocusMoved("pill:genres", false)).toBe(true);
-    expect(libraryFocusMoved("pill:status", false)).toBe(false);
+    expect(libraryFocusMoved("pill:group", false)).toBe(false);
     expect(libraryFocusMoved("nav:Home", true)).toBe(false);
   });
 });
@@ -62,9 +67,9 @@ describe("barre de filtres", () => {
   });
 
   it("« Tout effacer » : la pastille de tête, ou la première affiche depuis le vide", () => {
-    expect(filterFocusAfterClearAll("active:clear")).toBe("pill:status");
+    expect(filterFocusAfterClearAll("active:clear")).toBe("pill:group");
     expect(filterFocusAfterClearAll("empty:primary")).toBe("grid:0");
-    expect(filterFocusAfterClearAll(null)).toBe("pill:status");
+    expect(filterFocusAfterClearAll(null)).toBe("pill:group");
   });
 });
 

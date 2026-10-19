@@ -77,10 +77,10 @@ export const GRID_END_REACHED_SCREENS = 3;
  * affiche ; rien pendant le chargement. Un type qui ne garde aucun titre
  * (`noResults`, CO-4) : « Tout effacer », la même clé que la sortie du vide.
  */
-export function collectionEntryKey(state: { failed: boolean; empty: boolean; cards: number; noResults?: boolean }): string | null {
+export function collectionEntryKey(state: { failed: boolean; empty: boolean; cards: number; noResults?: boolean }, first: string = GRID_FIRST_KEY): string | null {
   if (state.failed) return "status:primary";
   if (state.empty || (state.noResults && state.cards === 0)) return "empty:primary";
-  return state.cards > 0 ? GRID_FIRST_KEY : null;
+  return state.cards > 0 ? first : null;
 }
 
 /** La croix Retour de Parcourir, et l'en-tête qui y mène par HAUT. */
