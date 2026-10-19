@@ -1,12 +1,12 @@
 // Publie sur Google Play — ou promeut d'une piste à l'autre — en UNE édition.
 //
-//   Envoi :     --package <id> --track alpha --aab <fichier>
+//   Envoi :     --package <id> --track internal --aab <fichier>
 //               --changelog changelogs/mobile.md --version 1.8.1
-//   Promotion : --package <id> --promote-from alpha --track production
+//   Promotion : --package <id> --promote-from internal --track production
 //               --changelog changelogs/mobile.md --version 1.8.1
 //   Ajouter --dry-run pour tout jouer SAUF le commit (l'édition est jetée).
 //   Ajouter --also-track <piste> pour poser la MÊME release sur une seconde
-//   piste, dans la même édition (cran store : la production ET la piste fermée).
+//   piste, dans la même édition (cran store : la production ET la piste interne).
 //
 // POURQUOI PAS r0adkll/upload-google-play. Cette action publiait en
 // « status: draft » sur une piste fermée : il restait deux promotions à la
@@ -19,6 +19,12 @@
 // écriture. Les notes ne partent que dans les langues réellement présentes
 // dans le changelog.
 //
+// CONTRÔLE AVANT COMMIT. Chaque piste écrite est RELUE dans l'édition et
+// comparée à ce que la livraison voulait — nom de version, versionCode, notes,
+// et jamais une production qui recule (lib/release-check.mjs). Un écart : rien
+// n'est publié, l'édition est jetée. Ce que le PUT remplace (un brouillon
+// jamais publié, une release d'une autre version) est dit dans le journal.
+//
 // SÉRIALISATION. Android TV et Android mobile partagent la fiche
 // com.tentacletv.mobile : deux éditions concurrentes s'invalident l'une
 // l'autre. Les workflows posent une `concurrency` de job commune ; ce script
@@ -28,6 +34,7 @@ import fs from 'node:fs';
 import { createPlayClient } from './lib/play-api.mjs';
 import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
 import { promotableVersionCodes, releaseVersion } from './lib/promote.mjs';
+import { describePlayReleases, playReleaseProblems, playReplacedReleases } from './lib/release-check.mjs';
 import { maxVersion } from './lib/versions.mjs';
 
 const args = process.argv.slice(2);
@@ -123,12 +130,12 @@ async function publish(play) {
     }
 
     // Une piste inconnue donnerait un 404 opaque. Les pistes par form factor
-    // sont PRÉFIXÉES dans l'API (« tv:Alpha », « tv:production »), et le
+    // sont PRÉFIXÉES dans l'API (« tv:internal », « tv:production »), et le
     // préfixe exact ne se devine pas : on le vérifie, et on liste ce qui existe
     // vraiment si la cible n'y est pas.
     const known = ((await play.call(`${base}/edits/${editId}/tracks`)).tracks ?? []).map((t) => t.track);
     // La seconde piste n'a de sens que si elle ne sert pas DÉJÀ ce binaire : à
-    // la promotion depuis la piste fermée, elle le sert par définition.
+    // la promotion depuis la piste de test, elle le sert par définition.
     const extraTrack = alsoTrack && alsoTrack !== track && alsoTrack !== promoteFrom ? alsoTrack : null;
     for (const wanted of [track, extraTrack].filter(Boolean)) {
       if (known.includes(wanted)) continue;
@@ -139,7 +146,8 @@ async function publish(play) {
     }
     if (alsoTrack && !extraTrack) console.log(`[play] « ${alsoTrack} » sert déjà ce binaire : rien à y poser.`);
 
-    const notes = releaseNotes(changelog ? await servedInProduction(play, base, editId) : null);
+    const productionVersion = await servedInProduction(play, base, editId);
+    const notes = releaseNotes(changelog ? productionVersion : null);
     const release = {
       name: version,
       versionCodes,
@@ -149,16 +157,32 @@ async function publish(play) {
     if (notes.length === 0) console.log('[play] aucune note (pas de --changelog) — la piste garde les siennes.');
 
     // PUT sur les pistes demandées, et elles seules. La seconde reçoit la même
-    // release, publiée (`completed`) : les testeurs de la piste fermée ont la
+    // release, publiée (`completed`) : les testeurs de la piste interne ont la
     // version de production, comme TestFlight garde le build soumis à Apple.
     const writes = [[track, release], ...(extraTrack ? [[extraTrack, { ...release, status: 'completed' }]] : [])];
     for (const [name, rel] of writes) {
-      await play.call(`${base}/edits/${editId}/tracks/${encodeURIComponent(name)}`, {
-        method: 'PUT',
-        body: { track: name, releases: [rel] },
-      });
+      const trackUrl = `${base}/edits/${editId}/tracks/${encodeURIComponent(name)}`;
+      const replaced = playReplacedReleases(await play.call(trackUrl).catch(() => null), version);
+      if (replaced.length > 0) console.log(`[play] « ${name} » : remplacé par ${version} — ${describePlayReleases(replaced)}.`);
+      await play.call(trackUrl, { method: 'PUT', body: { track: name, releases: [rel] } });
       console.log(`[play] piste « ${name} » ← ${version} (${versionCodes.join(', ')}), statut « ${rel.status} », notes : ${notes.map((n) => n.language).join(' + ') || 'aucune'}.`);
     }
+
+    // Le contrôle : chaque piste écrite, relue dans l'édition, avant le commit.
+    const problems = [];
+    for (const [name] of writes) {
+      const trackData = await play.call(`${base}/edits/${editId}/tracks/${encodeURIComponent(name)}`);
+      problems.push(...playReleaseProblems({
+        track: name, trackData, version, versionCodes, notes, productionVersion, toProduction: /production/.test(name),
+      }));
+    }
+    if (problems.length > 0) {
+      await play.call(`${base}/edits/${editId}`, { method: 'DELETE' }).catch(() => {});
+      for (const p of problems) console.error(`::error::${p}`);
+      console.error('[play] contrôle avant publication refusé : édition jetée, RIEN n\'a été publié.');
+      process.exit(1);
+    }
+    console.log(`[play] contrôle ✓ — ${writes.map(([n]) => n).join(' + ')} : ${version}, versionCode ${versionCodes.join(', ')}, notes ${notes.map((n) => n.language).join(' + ') || 'gardées'}.`);
 
     if (dryRun) {
       await play.call(`${base}/edits/${editId}`, { method: 'DELETE' });
