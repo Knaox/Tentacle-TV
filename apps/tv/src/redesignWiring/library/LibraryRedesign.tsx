@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useGenres, useLibraries } from "@tentacle-tv/api-client";
-import { GRID_FIRST_KEY, libraryEntryKey } from "@tentacle-tv/tv-core";
+import { GRID_FIRST_KEY, LIBRARY_LOADING_ENTRY, libraryEntryKey } from "@tentacle-tv/tv-core";
 import { useLibraryFilters } from "../../hooks/useLibraryFilters";
 import { railNavigate } from "../../navigation/railNavigate";
 import type { RootStackParamList } from "../../navigation/types";
@@ -89,7 +89,9 @@ export function LibraryRedesign({ libraryId, libraryName }: Params) {
   const active = useMemo(() => activeFiltersOf(t, lf.filters, genres ?? []), [t, lf.filters, genres]);
   const pills = useMemo(() => pillsOf(t, lf.filters, genres ?? []), [t, lf.filters, genres]);
   const labels = useMemo(() => ({ activeFilters: t("library:activeFilters"), clearAll: t("library:clearAll") }), [t]);
-  const bar = useLibraryFilterBar(lf.update, active, focus, sheets.openSheet, first);
+  // « Tout effacer » depuis le vide : les rangées de la sélection effacée ne sont pas encore
+  // comptées — la pastille de tête ; BAS y mène à la première rangée.
+  const bar = useLibraryFilterBar(lf.update, active, focus, sheets.openSheet, groups?.[0] ? first : LIBRARY_LOADING_ENTRY);
 
   useLibraryLoadReprise(focus, { loading, items: groups?.length ?? 0 }, first);
   // Le mode de mesure (Android TV, éteint par défaut) : la bibliothèque est prête.

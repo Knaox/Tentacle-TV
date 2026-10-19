@@ -80,12 +80,15 @@ function CollectionRedesign({ kind, query }: { kind: Kind; query: CollectionQuer
     : null;
 
   const first = groups[0] ? `${listRowKey(groups[0])}:0` : GRID_FIRST_KEY;
+  // « Tout effacer » depuis le vide : la première carte de la liste effacée.
+  const clearedGroups = useMemo(() => (sort.cleared === sort.visible ? groups : groupItems(sort.cleared.map(groupableOf), mode)), [sort.cleared, sort.visible, groups, mode]);
+  const clearedFirst = clearedGroups[0] ? `${listRowKey(clearedGroups[0])}:0` : GRID_FIRST_KEY;
   const screen = useRedesignScreen({
     railKey: watchlist ? "Watchlist" : "Favorites",
     entryKey: collectionEntryKey({ failed: status !== null, empty: empty !== null, cards: sort.visible.length, noResults: noResults !== null }, first),
     rewindRows: true,
   });
-  const filters = useCollectionFilterBar(t, sort, screen.focus, first);
+  const filters = useCollectionFilterBar(t, sort, screen.focus, clearedFirst);
   const { sheets, bar } = filters;
   // Ce que la liste ouverte COUVRE reste tel quel jusqu'à la fin de son fondu
   // (cf. `LibraryRedesign`) : une coche ne redessine que la liste.

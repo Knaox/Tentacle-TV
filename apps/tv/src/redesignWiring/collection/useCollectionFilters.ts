@@ -43,11 +43,11 @@ export function useCollectionSort(kind: CollectionKind, items: MediaItem[] | und
     });
   }, [kind]);
 
-  const visible = useMemo(
-    () =>
+  const listOf = useCallback(
+    (type: CollectionFilterState["type"]) =>
       filterCollection(items ?? NO_ITEMS, {
         search: "",
-        type: state.type,
+        type,
         genres: [],
         yearFrom: null,
         yearTo: null,
@@ -56,9 +56,13 @@ export function useCollectionSort(kind: CollectionKind, items: MediaItem[] | und
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
       }),
-    [items, state],
+    [items, state.sortBy, state.sortOrder],
   );
-  return { state, update, visible };
+  const visible = useMemo(() => listOf(state.type), [listOf, state.type]);
+  // Ce que « Tout effacer » laissera (le type retiré ; tri et rangement gardés) : sa première
+  // carte est celle que le focus vise depuis le vide des filtres trop serrés.
+  const cleared = useMemo(() => (state.type === "all" ? visible : listOf("all")), [state.type, visible, listOf]);
+  return { state, update, visible, cleared };
 }
 
 export type CollectionSort = ReturnType<typeof useCollectionSort>;
