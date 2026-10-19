@@ -3,29 +3,29 @@
   "domain": "ecrans",
   "suite": "recherche-banniere",
   "reference": {
-    "sha": "0324eaf2c49eab755d1f8142b18ad0b9bb912cd9",
-    "label": "référence 0324eaf2c"
+    "sha": "3b0637eec681d3bad3d74be53a15df7b7e14e569",
+    "label": "référence 3b0637eec"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "db6f477dbdf35e26",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T1",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-15T10:26:06.780Z",
+  "recordedAt": "2026-10-19T09:52:08.684Z",
   "scenarios": {
     "recherche-banniere-bas": {
       "hash": "d8ce0a73722c",
-      "durationMs": 117936,
+      "durationMs": 40103,
       "start": {
         "app": "foreground",
         "focus": "key:A",
         "label": "A",
         "frame": [
-          176,
+          177,
           197,
           64,
           64
@@ -50,7 +50,7 @@
           "focus": "key:A",
           "label": "A",
           "frame": [
-            176,
+            177,
             197,
             64,
             64
@@ -74,7 +74,7 @@
           "focus": "search:field",
           "label": "Titres, acteurs, genres…",
           "frame": [
-            176,
+            177,
             54,
             424,
             80
@@ -115,7 +115,7 @@
           "focus": "top",
           "label": "American History X",
           "frame": [
-            672,
+            673,
             54,
             1248,
             320
@@ -140,10 +140,10 @@
           "focus": "movies:0",
           "label": "American Pie",
           "frame": [
-            672,
-            500,
-            240,
-            433
+            673,
+            419,
+            312,
+            541
           ],
           "groups": [
             "section:movies",
@@ -165,7 +165,7 @@
           "focus": "top",
           "label": "American History X",
           "frame": [
-            672,
+            673,
             54,
             1248,
             320
@@ -190,10 +190,10 @@
           "focus": "movies:0",
           "label": "American Pie",
           "frame": [
-            672,
-            500,
-            240,
-            433
+            673,
+            419,
+            312,
+            541
           ],
           "groups": [
             "section:movies",
@@ -215,10 +215,10 @@
           "focus": "movies:1",
           "label": "American Pie : Marions-les !",
           "frame": [
-            948,
-            500,
-            240,
-            433
+            1021,
+            419,
+            312,
+            541
           ],
           "groups": [
             "section:movies",
@@ -240,10 +240,10 @@
           "focus": "movies:2",
           "label": "American Pie 2",
           "frame": [
-            1224,
-            500,
-            240,
-            433
+            1369,
+            419,
+            312,
+            541
           ],
           "groups": [
             "section:movies",
@@ -265,7 +265,7 @@
           "focus": "top",
           "label": "American History X",
           "frame": [
-            672,
+            673,
             54,
             1248,
             320
@@ -290,10 +290,10 @@
           "focus": "movies:2",
           "label": "American Pie 2",
           "frame": [
-            1224,
-            500,
-            240,
-            433
+            1369,
+            419,
+            312,
+            541
           ],
           "groups": [
             "section:movies",
@@ -315,10 +315,10 @@
           "focus": "series:1",
           "label": "American Horror Story",
           "frame": [
-            948,
-            527,
-            240,
-            433
+            1021,
+            419,
+            312,
+            541
           ],
           "groups": [
             "section:series",
@@ -340,10 +340,10 @@
           "focus": "movies:1",
           "label": "American Pie : Marions-les !",
           "frame": [
-            948,
+            1021,
             126,
-            240,
-            433
+            312,
+            541
           ],
           "groups": [
             "section:movies",

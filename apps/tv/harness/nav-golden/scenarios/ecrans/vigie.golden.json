@@ -3,29 +3,29 @@
   "domain": "ecrans",
   "suite": "vigie",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "3b0637eec681d3bad3d74be53a15df7b7e14e569",
+    "label": "référence 3b0637eec"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T7",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:36:04.951Z",
+  "recordedAt": "2026-10-19T09:48:07.218Z",
   "scenarios": {
     "vigie-onglets-grises": {
       "hash": "81c9902d29a7",
-      "durationMs": 33845,
+      "durationMs": 30328,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Lecture S1 · E27",
         "frame": [
-          120,
+          121,
           674,
           310,
           68
@@ -52,7 +52,7 @@
           "focus": "detail:primary",
           "label": "Lecture S1 · E27",
           "frame": [
-            120,
+            121,
             674,
             310,
             68
@@ -78,7 +78,7 @@
           "focus": "season:0",
           "label": "Saison 1",
           "frame": [
-            120,
+            121,
             140,
             226,
             60
@@ -104,7 +104,7 @@
           "focus": "season:1",
           "label": "Spéciaux, À demander",
           "frame": [
-            360,
+            361,
             140,
             197,
             60
@@ -130,7 +130,7 @@
           "focus": "season:1",
           "label": "Spéciaux, En attente",
           "frame": [
-            360,
+            361,
             140,
             317,
             60
@@ -162,7 +162,7 @@
           "focus": "season:4",
           "label": "Saison 4, Demandée",
           "frame": [
-            1300,
+            1301,
             140,
             190,
             60
@@ -188,7 +188,7 @@
           "focus": "season:4",
           "label": "Saison 4, Demandée",
           "frame": [
-            1300,
+            1301,
             140,
             190,
             60
@@ -214,7 +214,7 @@
           "focus": "season:4",
           "label": "Saison 4, Demandée",
           "frame": [
-            1300,
+            1301,
             140,
             190,
             60
@@ -238,12 +238,12 @@
           "do": "menu",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -261,13 +261,13 @@
     },
     "vigie-saga-sans-vigie": {
       "hash": "67841ea3f959",
-      "durationMs": 26877,
+      "durationMs": 23984,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Lecture",
         "frame": [
-          120,
+          121,
           674,
           207,
           68
@@ -294,7 +294,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -320,10 +320,10 @@
           "focus": "saga:0",
           "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -346,10 +346,10 @@
           "focus": "saga:1",
           "label": "L'Attaque des Titans : Les Ailes de la liberté",
           "frame": [
-            396,
+            469,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -372,10 +372,10 @@
           "focus": "saga:1",
           "label": "L'Attaque des Titans : Les Ailes de la liberté",
           "frame": [
-            396,
+            469,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -396,13 +396,13 @@
     },
     "vigie-saga-demande": {
       "hash": "127895200b9e",
-      "durationMs": 34086,
+      "durationMs": 31875,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Lecture",
         "frame": [
-          120,
+          121,
           674,
           207,
           68
@@ -429,7 +429,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -455,10 +455,10 @@
           "focus": "saga:0",
           "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -481,10 +481,10 @@
           "focus": "saga:0",
           "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -507,10 +507,10 @@
           "focus": "saga:0",
           "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -535,10 +535,10 @@
           "focus": "saga:1",
           "label": "L'Attaque des Titans : Les Ailes de la liberté",
           "frame": [
-            396,
+            469,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -561,10 +561,10 @@
           "focus": "saga:1",
           "label": "L'Attaque des Titans : Les Ailes de la liberté",
           "frame": [
-            396,
+            469,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -589,10 +589,10 @@
           "focus": "saga:2",
           "label": "L'Attaque des Titans : Le Rugissement de l'éveil",
           "frame": [
-            672,
+            817,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -615,10 +615,10 @@
           "focus": "saga:2",
           "label": "L'Attaque des Titans : Le Rugissement de l'éveil",
           "frame": [
-            672,
+            817,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
