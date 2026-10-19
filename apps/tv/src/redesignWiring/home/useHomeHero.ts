@@ -40,10 +40,9 @@ export interface HomeHero {
   pending: boolean;
   /** Le premier héros attend son image (bornée) : l'écran se dit encore « en chargement ». */
   imagePending: boolean;
+  /** OK sur la bannière : la fiche du titre affiché. */
   onPrimary: () => void;
-  onSecondary: () => void;
-  onToggleList: () => void;
-  /** L'appui maintenu sur un bouton : le grand panneau du titre affiché. */
+  /** OK maintenu sur la bannière : le grand panneau du titre affiché. */
   onLongPress: () => void;
 }
 
@@ -115,19 +114,12 @@ export function useHomeHero(
 
   // Des gestes STABLES, qui lisent l'état du moment : le héros ne se
   // redessine pas quand seule la lumière du fond change.
-  const live = useRef({ current, face, toggles, actions, fromResume });
-  live.current = { current, face, toggles, actions, fromResume };
+  const live = useRef({ current, actions, fromResume });
+  live.current = { current, actions, fromResume };
   // OK sur la bannière : la fiche du titre (tv-core `cardPress`, la bannière est une source de carte).
   const onPrimary = useCallback(() => {
     const { current: item, actions: act, fromResume: resumed } = live.current;
     if (item && cardPressOf({ surface: "hero", fromResume: resumed }) === "detail") act.detail(item);
-  }, []);
-  const onSecondary = useCallback(() => {
-    const { current: item, actions: act } = live.current;
-    if (item) act.detail(item);
-  }, []);
-  const onToggleList = useCallback(() => {
-    if (live.current.face) live.current.toggles.toggleList();
   }, []);
   const onLongPress = useCallback(() => {
     const { current: item, actions: act, fromResume: resumed } = live.current;
@@ -151,8 +143,6 @@ export function useHomeHero(
     pending: source === null || (items.length > 0 && !hero),
     imagePending: hero !== null && !imageReady,
     onPrimary,
-    onSecondary,
-    onToggleList,
     onLongPress,
   };
 }

@@ -192,8 +192,6 @@ export function HomeRedesign({ navigation, route }: Props) {
         filterRowKey={filterRowKey}
         onRemoveFilter={removeFilter}
         onHeroPrimary={hero.onPrimary}
-        onHeroSecondary={hero.onSecondary}
-        onHeroToggleList={hero.onToggleList}
         onHeroLongPress={hero.onLongPress}
         onPressCard={onPressCard}
         onLongPressCard={onLongPressCard}

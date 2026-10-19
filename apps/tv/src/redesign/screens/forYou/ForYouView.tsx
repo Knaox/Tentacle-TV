@@ -58,9 +58,6 @@ export interface ForYouViewProps {
   status?: StatusPanelProps | null;
   /** OK sur la bannière : la fiche (ou la demande, hors bibliothèque). */
   onHeroPrimary?: () => void;
-  /** Plus de bouton secondaire ni de rond « Ma liste » : la bannière est UNE cible (ignorés). */
-  onHeroSecondary?: () => void;
-  onHeroToggleList?: () => void;
   /** OK maintenu sur la bannière : le grand panneau d'une recommandation. */
   onHeroLongPress?: () => void;
   /** Ce que fait OK sur la bannière ; défaut : la fiche. */

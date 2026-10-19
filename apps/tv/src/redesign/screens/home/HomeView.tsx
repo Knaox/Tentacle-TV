@@ -63,9 +63,6 @@ export interface HomeViewProps {
   onRemoveFilter?: () => void;
   /** OK sur la bannière : la fiche du titre, ou sa demande hors bibliothèque. */
   onHeroPrimary?: () => void;
-  /** Plus de bouton secondaire ni de rond « Ma liste » : la bannière est UNE cible (ignorés). */
-  onHeroSecondary?: () => void;
-  onHeroToggleList?: () => void;
   /** OK maintenu sur la bannière : le grand panneau du titre. */
   onHeroLongPress?: () => void;
   /** Ce que fait OK sur la bannière (« OK : ouvrir la fiche ») ; défaut : la fiche. */
