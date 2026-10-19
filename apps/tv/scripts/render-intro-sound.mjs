@@ -13,7 +13,8 @@
  *      vérifier la crête et le calage du début.
  *
  * Usage : node apps/tv/scripts/render-intro-sound.mjs [--keep-wav]
- * Sortie : apps/tv/assets/sound/boot-tadum.m4a (Copy Bundle Resources de l'app tvOS).
+ * Sortie : apps/tv/assets/sound/boot-tadum.m4a (Copy Bundle Resources de l'app tvOS ;
+ *   assets de l'APK Android TV, par `android/app/build.gradle`).
  */
 import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";

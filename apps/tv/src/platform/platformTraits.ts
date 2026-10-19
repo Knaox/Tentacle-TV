@@ -28,6 +28,6 @@ export interface PlatformTraits {
   passingFocus: boolean;
   /** L'OUVERTURE du démarrage (le logo qui s'assemble, le ta-dum, la plongée
    *  dans l'accueil — tv-core `boot/`) remplace la mascotte d'attente. Apple TV
-   *  seulement pour l'instant : Android TV garde `BootView`. */
+   *  et Android TV ; sans le trait, `BootView`. */
   brandIntro: boolean;
 }

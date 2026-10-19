@@ -103,6 +103,11 @@ def copyNdkLibcxx = tasks.register("copyNdkLibcxx", Copy) {
 android.sourceSets.main.jniLibs.srcDir(ndkLibcxxDir)
 preBuild.dependsOn(copyNdkLibcxx)
 
+// Le « ta-dum » de l'ouverture du démarrage : le MÊME fichier que l'Apple TV, dérivé de la
+// synthèse partagée (`pnpm --filter @tentacle-tv/tv sound:intro`), posé tel quel dans les
+// assets de l'APK (lu par `boot/BootSoundModule`) — jamais une copie à retoucher.
+android.sourceSets.main.assets.srcDir("$projectDir/../../assets/sound")
+
 // Mesurer sur une vraie Shield — deux drapeaux, que la CI ne passe jamais :
 // - `-PtentacleProfileable=1` rend la release profilable
 //   (`<profileable android:shell="true"/>`, src/profileable) : mêmes classes,

@@ -32,3 +32,35 @@ export function bootSoundStartAt(frameAt: number, sceneAt: number): number {
 
 /** L'instant où l'horloge de l'image demande le son (sans attente). */
 export const BOOT_SOUND_REQUEST_AT = Math.min(INTRO_HOLD_AT, BOOT_SOUND_FILE_AT - BOOT_SOUND_SCHEDULE_LEAD_MS);
+
+/** Le temps de traverser le pont et d'être posé dans le flux de sortie, en plus de l'avance de la sortie. */
+export const BOOT_SOUND_BRIDGE_MARGIN_MS = 80;
+
+/** Au-delà, une sortie qui se dit en avance se trompe (l'émulateur dérive) : on s'arrête là. */
+export const BOOT_SOUND_MAX_OUTPUT_LEAD_MS = 600;
+
+export interface BootSoundLeads {
+  /** L'instant de la chorégraphie où l'horloge de l'image demande le son (sans attente). */
+  requestAt: number;
+  /** Après l'attente, le délai entre la décision et la reprise de l'image. */
+  releaseDelayMs: number;
+}
+
+/**
+ * Les avances du son d'après celle de la SORTIE de l'appareil (ms : ce que le
+ * flux natif a déjà écrit au-delà de ce qui sort ; Android TV la mesure, la
+ * Shield ≈ 360 ms ; null : rien de mesuré, l'Apple TV). Un son demandé moins
+ * tôt que ce que la sortie a déjà en file perdrait son début — la vague, puis
+ * le « ta » —, le natif sautant ce qui est passé pour rester calé à l'image.
+ * Sans mesure, les valeurs d'avant (`BOOT_SOUND_REQUEST_AT`,
+ * `BOOT_INTRO_RELEASE_DELAY_MS`).
+ */
+export function bootSoundLeads(outputLeadMs: number | null): BootSoundLeads {
+  const lead = Math.min(Math.max(outputLeadMs ?? 0, 0), BOOT_SOUND_MAX_OUTPUT_LEAD_MS);
+  const needed = outputLeadMs === null ? 0 : lead + BOOT_SOUND_BRIDGE_MARGIN_MS;
+  return {
+    requestAt: Math.min(BOOT_SOUND_REQUEST_AT, BOOT_SOUND_FILE_AT - needed),
+    // Après l'attente, le fichier part `releaseDelay + (FILE_AT - HOLD_AT)` après la décision.
+    releaseDelayMs: Math.max(BOOT_INTRO_RELEASE_DELAY_MS, needed - (BOOT_SOUND_FILE_AT - INTRO_HOLD_AT)),
+  };
+}

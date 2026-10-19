@@ -6,8 +6,10 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
         <!-- Sur une box TV, uiMode « nuit » n'est pas défini : DayNight se résout en Jour et
              la fenêtre est peinte en #FAFAFA avant la première image React — un flash blanc
-             au démarrage à froid. L'app n'a pas de thème clair. -->
-        <item name="android:windowBackground">@android:color/black</item>
+             au démarrage à froid. L'app n'a pas de thème clair. L'encre de l'ouverture du
+             démarrage (`BOOT_INK`, redesign/boot/BootIntroView) : sa première image, sans saut
+             du noir à l'encre. -->
+        <item name="android:windowBackground">@color/boot_ink</item>
     </style>
 
 </resources>

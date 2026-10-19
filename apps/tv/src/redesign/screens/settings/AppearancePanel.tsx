@@ -39,7 +39,7 @@ export const AppearancePanel = memo(function AppearancePanel({ width, previewIma
   onSelectLiteMode?: (mode: SettingsRenderTier["mode"]) => void;
   /** Écrit la taille des cartes de l'appareil (la valeur affichée est celle du fournisseur). */
   onSelectCardSize?: (size: CardSize) => void;
-  /** « Son au démarrage » (Apple TV, l'ouverture) ; absent : la section n'existe pas. */
+  /** « Son au démarrage » (l'ouverture : trait `brandIntro`) ; absent : la section n'existe pas. */
   bootSound?: { enabled: boolean; onToggle: (next: boolean) => void } | null;
 }) {
   const { t } = useTranslation("preferences");

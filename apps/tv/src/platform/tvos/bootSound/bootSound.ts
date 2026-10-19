@@ -1,17 +1,18 @@
 import { NativeModules } from "react-native";
 
 /**
- * Le « ta-dum » de l'ouverture, par le module natif `TentacleBootSound`
- * (ios/TentacleTV/TentacleBootSound.m : AVAudioPlayer, catégorie « ambient »).
- * L'heure demandée est celle des images (ms, horloge du CADisplayLink, celle
- * que l'horloge Reanimated de l'ouverture lit) ; le module la tient à la
- * milliseconde. Sans module (un test, une app d'avant), rien ne se joue.
- * Le jumeau `bootSound.android.ts` ne joue rien : Android TV n'a pas encore
- * l'ouverture.
+ * Le « ta-dum » de l'ouverture, par le module natif `TentacleBootSound`, le
+ * même contrat sur les deux plateformes : tvOS
+ * (ios/TentacleTV/TentacleBootSound.m : AVAudioPlayer, catégorie « ambient »)
+ * et Android TV (android/…/boot/BootSoundModule.kt : PCM décodé d'avance,
+ * AudioTrack statique, sans focus audio). L'heure demandée est celle des images
+ * (ms, horloge que l'horloge Reanimated de l'ouverture lit : CADisplayLink,
+ * Choreographer) ; le module la tient à la milliseconde. Sans module (un test,
+ * une app d'avant), rien ne se joue.
  */
 interface NativeBootSound {
   claimIntro(): boolean;
-  prepare(): Promise<{ ready: boolean; now?: number }>;
+  prepare(): Promise<{ ready: boolean; now?: number; outputLeadMs?: number }>;
   playAt(hostMs: number): void;
   fadeOut(ms: number): void;
   dispose(): void;
@@ -33,13 +34,17 @@ export const bootSound = {
       return null;
     }
   },
-  /** Décode le fichier d'avance ; vrai s'il est prêt. */
-  async prepare(): Promise<boolean> {
-    if (!native) return false;
+  /**
+   * Décode le fichier d'avance. `outputLeadMs` : l'avance de la sortie, que le
+   * son doit précéder (Android TV la mesure ; null : l'Apple TV, rien à mesurer).
+   */
+  async prepare(): Promise<{ ready: boolean; outputLeadMs: number | null }> {
+    if (!native) return { ready: false, outputLeadMs: null };
     try {
-      return (await native.prepare()).ready;
+      const result = await native.prepare();
+      return { ready: result.ready, outputLeadMs: typeof result.outputLeadMs === "number" ? result.outputLeadMs : null };
     } catch {
-      return false;
+      return { ready: false, outputLeadMs: null };
     }
   },
   playAt(hostMs: number): void {
