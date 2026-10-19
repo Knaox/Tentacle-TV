@@ -70,6 +70,8 @@ export interface TitleState {
   request: TitleRequestOffer | null;
   /** Venue après : absente d'un plugin qui ne la déclare pas, et rien ne s'affiche. */
   page?: TitlePageLink;
+  /** Son résumé (venu après) : la carte ouverte d'un titre absent le montre, sinon sa raison et ses plateformes. */
+  overview?: string;
 }
 
 export type TitleRequestOutcome =
@@ -78,6 +80,8 @@ export type TitleRequestOutcome =
 
 /** Au plus autant de titres par question au plugin (longueur d'URL). */
 export const TITLE_STATE_BATCH = 60;
+/** Un résumé reste un résumé (Vigie le borne déjà à 600, en phrases entières). */
+const OVERVIEW_MAX = 700;
 
 const SAFE_PATH = /^\/[A-Za-z0-9_\-/]{1,100}$/;
 const KEY = /^(movie|tv):([1-9]\d{0,9})$/;
@@ -167,6 +171,9 @@ export function readTitleState(raw: unknown): TitleState | null {
   const pageLabel = pg ? text(pg.label, 60) : null;
   const pageHref = pg ? safeHref(pg.href) : null;
   if (pageLabel !== null && pageHref !== null) state.page = { label: pageLabel, href: pageHref };
+  // Le résumé (venu après) : du texte seul, borné ; un plugin qui ne le donne pas n'en a pas.
+  const overview = text(r.overview, OVERVIEW_MAX);
+  if (overview !== null) state.overview = overview;
   return state;
 }
 

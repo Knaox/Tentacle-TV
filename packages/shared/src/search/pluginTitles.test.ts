@@ -98,6 +98,22 @@ describe("la réponse du plugin", () => {
     expect(state && "page" in state).toBe(false);
   });
 
+  it("lit le résumé d'un titre absent quand le plugin le donne, en texte seul et borné", () => {
+    const long = "Une phrase. ".repeat(100);
+    const states = readTitleStates({
+      items: {
+        "movie:603": { badge: null, request: null, overview: "  Un hacker découvre la Matrice.  " },
+        "tv:1399": { badge: null, request: null, overview: 42 },
+        "movie:11": { badge: null, request: null, overview: long },
+      },
+    }, keys);
+    expect(states.get("movie:603")?.overview).toBe("Un hacker découvre la Matrice.");
+    expect(states.get("tv:1399")?.overview).toBeUndefined();
+    expect(states.get("movie:11")?.overview?.length).toBe(700);
+    // Un plugin d'avant le résumé : aucun champ.
+    expect("overview" in (readTitleStates({ items: { "movie:603": { badge: null, request: null } } }, keys).get("movie:603") ?? {})).toBe(false);
+  });
+
   it("rend une carte vide sur une réponse illisible", () => {
     expect(readTitleStates(null, keys).size).toBe(0);
     expect(readTitleStates({ items: [] }, keys).size).toBe(0);
