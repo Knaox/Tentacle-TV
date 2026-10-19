@@ -30,6 +30,8 @@ export default {
   // La télécommande : sur une carte horizontale (où OK lit), maintenir OK
   // ouvre la feuille d'actions — l'indication du focus (Apple TV).
   holdForOptions: "Hold OK for more options",
+  okOpenDetails: "OK: open details",
+  okPlay: "OK: play",
   previewPause: "Play/Pause to pause",
   previewResume: "Play/Pause to resume",
   previewMute: "hold to mute",
