@@ -3,6 +3,7 @@ package com.tentacletv.exoplayer
 import androidx.media3.common.util.UnstableApi
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.MapBuilder
+import com.facebook.react.uimanager.PixelUtil
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
@@ -22,6 +23,12 @@ class PreviewVideoViewManager : SimpleViewManager<PreviewVideoView>() {
         val hls = source.hasKey("hls") && source.getBoolean("hls")
         val startMs = if (source.hasKey("startMs")) source.getDouble("startMs").toLong() else 0L
         view.setSource(uri, hls, startMs)
+    }
+
+    /** L'arrondi du cadre de la scène (dp) : la vue se rogne elle-même. */
+    @ReactProp(name = "cornerRadius", defaultFloat = 0f)
+    fun setCornerRadius(view: PreviewVideoView, radius: Float) {
+        view.setCornerRadius(PixelUtil.toPixelFromDIP(radius))
     }
 
     @ReactProp(name = "paused", defaultBoolean = true)

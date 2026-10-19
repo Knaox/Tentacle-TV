@@ -1,9 +1,12 @@
 package com.tentacletv.exoplayer
 
+import android.graphics.Outline
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
+import android.view.View
 import android.view.View.MeasureSpec
+import android.view.ViewOutlineProvider
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.media3.common.C
@@ -112,6 +115,26 @@ class PreviewVideoView(private val reactContext: ThemedReactContext) : FrameLayo
             measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY))
             layout(left, top, right, bottom)
         }
+    }
+
+    /**
+     * L'arrondi du cadre de la scène (px) : la `TextureView` échappe au rognage
+     * d'un parent arrondi (`overflow: hidden`) — coins pointus relevés sur la
+     * Shield le 19/10. La vue se rogne elle-même, par son contour.
+     */
+    fun setCornerRadius(radius: Float) {
+        if (radius <= 0f) {
+            clipToOutline = false
+            outlineProvider = ViewOutlineProvider.BACKGROUND
+        } else {
+            outlineProvider = object : ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: Outline) {
+                    outline.setRoundRect(0, 0, view.width, view.height, radius)
+                }
+            }
+            clipToOutline = true
+        }
+        invalidateOutline()
     }
 
     fun setSource(uri: String?, hls: Boolean, startMs: Long) {

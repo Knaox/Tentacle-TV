@@ -1,5 +1,6 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useContext, useMemo } from "react";
 import { StyleSheet, UIManager, requireNativeComponent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from "react-native";
+import { StageCornerContext } from "../../../redesign/previewZone/stageCorner";
 import { RnvPreviewVideo } from "./previewVideoRnv";
 import type { PreviewVideoElementProps } from "./previewVideoTypes";
 
@@ -27,6 +28,8 @@ interface NativePreviewVideoProps {
   paused: boolean;
   muted: boolean;
   volume: number;
+  /** L'arrondi du cadre de la scène : la TextureView se rogne elle-même. */
+  cornerRadius: number;
   progressInterval: number;
   onExoEvent: (event: NativeSyntheticEvent<PreviewNativeEvent>) => void;
   style?: StyleProp<ViewStyle>;
@@ -41,6 +44,7 @@ const NativeElement = memo(function NativeElement({
   uri, hls, startAt, playing, muted, volume, progressIntervalMs, onFirstFrame, onLoad, onProgress, onError, onEnd,
 }: PreviewVideoElementProps) {
   const source = useMemo(() => ({ uri, hls, startMs: Math.round(startAt * 1000) }), [uri, hls, startAt]);
+  const cornerRadius = useContext(StageCornerContext);
   const onExoEvent = useCallback(
     (event: NativeSyntheticEvent<PreviewNativeEvent>) => {
       const { type, currentTime, duration } = event.nativeEvent;
@@ -59,6 +63,7 @@ const NativeElement = memo(function NativeElement({
       paused={!playing}
       muted={muted}
       volume={volume}
+      cornerRadius={cornerRadius}
       progressInterval={progressIntervalMs}
       onExoEvent={onExoEvent}
       style={StyleSheet.absoluteFill}
