@@ -6,7 +6,8 @@
 //   node promote-probe.mjs asc   — env ASC_KEY_ID, ASC_ISSUER, ASC_KEY_P8,
 //                                  BUNDLE_ID, PLATFORM (MAC_OS|IOS|TV_OS), VERSION
 //   node promote-probe.mjs play  — env PLAY_SERVICE_ACCOUNT_JSON, PLAY_PACKAGE,
-//                                  FORM_FACTOR (phone|tv), VERSION
+//                                  FORM_FACTOR (phone|tv), VERSION, et
+//                                  PLAY_SOURCE_TRACK (la piste d'où l'on promeut)
 //   LABEL (optionnel) nomme la cible dans les annotations.
 //
 // LECTURE SEULE, des deux côtés. Côté Apple, la version n'est PAS créée si
@@ -36,9 +37,9 @@ async function probeAsc() {
 }
 
 async function probePlay() {
-  const { PLAY_SERVICE_ACCOUNT_JSON, PLAY_PACKAGE, FORM_FACTOR } = process.env;
+  const { PLAY_SERVICE_ACCOUNT_JSON, PLAY_PACKAGE, FORM_FACTOR, PLAY_SOURCE_TRACK } = process.env;
   const tracks = await fetchReleaseTracks(PLAY_SERVICE_ACCOUNT_JSON, PLAY_PACKAGE);
-  return playPromoteVerdict(tracks, VERSION, FORM_FACTOR);
+  return playPromoteVerdict(tracks, VERSION, FORM_FACTOR, PLAY_SOURCE_TRACK || undefined);
 }
 
 const probes = { asc: probeAsc, play: probePlay };

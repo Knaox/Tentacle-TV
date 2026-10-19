@@ -79,7 +79,7 @@ Server pour Windows » de la page : un seul run, image Docker + paquet Windows) 
 | `channel` | Ce qui se passe |
 |-----------|-----------------|
 | `build` | Construit et archive les artefacts. **Rien ne part nulle part.** |
-| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest` · Tentacle Server pour Windows dans un VOL de paquet du Store. **Publié, sans aucun geste ensuite.** |
+| `test` | Piste Play INTERNE en `completed` (`internal`, `tv:internal` : sans examen de Google, comme TestFlight) · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`, image en `:vS-webos-X.Y.Z` sans bouger `:latest` · Tentacle Server pour Windows dans un VOL de paquet du Store. **Publié, sans aucun geste ensuite.** |
 | `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store (bureau, Tentacle Server pour Windows) · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé (par le serveur OU par webOS). **En ligne, sans un clic de plus.** |
 
 **Le cran `dev` (serveur seulement)** : l'image de la branche `dev`, pour qui
@@ -95,6 +95,21 @@ d'en reconstruire un autre. Windows fait exception : le Microsoft Store exige le
 paquet à chaque soumission. Une cible sans RIEN de testé pour cette version se
 construit : `prepare` le vérifie avant le moindre job (`promote-probe.mjs`), au
 lieu de laisser la reprise échouer pendant que Windows part seul au Store.
+Sur Play, la reprise part de la piste INTERNE, et d'elle seule
+(`PLAY_SOURCE_TRACK`) : plus de piste fermée (décision du 2026-10-20 — son
+examen retardait les testeurs de plusieurs jours à chaque version).
+
+**Contrôle avant publication** (`lib/release-check.mjs`, testé hors ligne) :
+juste avant le commit de l'édition Play et juste avant l'envoi à l'examen
+d'Apple, tout est RELU chez le store et comparé à la livraison — nom de
+version, binaire (versionCode ; build TestFlight traité de CETTE version et de
+CETTE plateforme), notes recalculées du changelog (reposées si elles
+diffèrent), jamais une production Play qui recule. Un écart : rien ne part.
+Une version App Store ouverte puis jamais soumise (une 1.10.2) est renommée et
+ne part jamais sous son ancien numéro ni avec ses anciennes notes ; une
+soumission Apple en cours pour une AUTRE version est un refus, plus un succès
+silencieux. Ce que la réécriture d'une piste Play remplace (un brouillon) est
+dit dans le journal.
 
 **Apple : le cran test ne touche jamais la version App Store** — il envoie le
 build et le distribue sur TestFlight, rien d'autre (`asc-await-build.mjs`). Une
@@ -270,7 +285,8 @@ la TV LG, dit à qui tire l'image). Fichier à part exprès : un `## [1.1.0]` de
   toute recherche de build exige le triple filtre `version` + `preReleaseVersion.version`
   + `preReleaseVersion.platform`.
 - Android TV et Android mobile partagent la fiche Play `com.tentacletv.mobile` :
-  les pistes par form factor sont PRÉFIXÉES dans l'API (`tv:Alpha` ≠ `alpha`), le
+  les pistes par form factor sont PRÉFIXÉES dans l'API (`tv:internal` ≠ `internal`, la
+  piste partagée du téléphone, qui refuse un AAB exigeant leanback), le
   versionCode TV vaut `2e9 + build`, et les deux workflows partagent un groupe de
   concurrence — deux éditions Play concurrentes s'invalident l'une l'autre.
 

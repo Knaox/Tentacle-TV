@@ -2,18 +2,22 @@
 #
 # TROIS CRANS, choisis au lancement (`channel`) :
 #   • build — construire et archiver les artefacts. Rien ne part nulle part.
-#   • test  — piste Play FERMÉE « alpha » en `completed` (donc PUBLIÉE, plus de
-#             draft à promouvoir à la main) et TestFlight distribué au groupe
-#             externe avec demande d'examen bêta.
+#   • test  — piste Play INTERNE « internal » en `completed` : sans examen de
+#             Google, les testeurs ont la mise à jour dès qu'elle est traitée,
+#             comme TestFlight (décision du 2026-10-20). Et TestFlight
+#             distribué au groupe externe avec demande d'examen bêta.
 #   • store — production Play à 100 %, et App Store soumis à l'examen avec
 #             mise en vente automatique à l'approbation. Aucun clic ensuite.
-#             La piste fermée « alpha » reçoit le même binaire : ses testeurs
-#             ont la version de production, comme TestFlight garde le build
-#             soumis à Apple.
+#             La piste interne « internal » reçoit le même binaire : ses
+#             testeurs ont la version de production, comme TestFlight garde le
+#             build soumis à Apple. Avant le commit Play et avant l'envoi à
+#             Apple, la release est RELUE chez le store et comparée à la
+#             livraison (version, binaire, notes) : un écart refuse tout
+#             (lib/release-check.mjs).
 #
 # `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
 # TESTÉ au lieu d'en reconstruire un autre : le versionCode servi par la piste
-# fermée passe en production, et la version App Store part à l'examen avec le
+# interne passe en production, et la version App Store part à l'examen avec le
 # DERNIER build TestFlight de la version. Décoché, tout est reconstruit. Une cible qui
 # n'a RIEN à reprendre (aucun run de test pour cette version) se construit
 # aussi : `prepare` le vérifie avant le moindre job (promote-probe.mjs).
@@ -80,11 +84,12 @@ env:
   IOS_WORKSPACE: "apps/mobile/ios/TentacleTV.xcworkspace"
   IOS_BUNDLE_ID: "com.tentacle.mobile"
   IOS_PROFILE_NAME: "Tentacle TV iOS App Store CI"
-  # Piste Play des tests FERMÉS mobile. « alpha » = piste MOBILE (id API standard),
-  # à ne pas confondre avec « tv:Alpha » (piste TV préfixée par form factor, même
-  # fiche com.tentacletv.mobile). Lister les identifiants exacts : workflow
+  # Piste Play des TESTS INTERNES mobile (cran test, et source de la reprise
+  # au cran store). « internal » = piste du téléphone, à ne pas confondre avec
+  # « tv:internal » (piste TV préfixée par form factor, même fiche
+  # com.tentacletv.mobile). Lister les identifiants exacts : workflow
   # « Play — lister les pistes » (play-tracks.yml).
-  PLAY_MOBILE_TRACK: "alpha"
+  PLAY_MOBILE_TRACK: "internal"
   PLAY_PACKAGE: "com.tentacletv.mobile"
 
 jobs:
@@ -210,7 +215,7 @@ jobs:
           # production le binaire de la version PRÉCÉDENTE sous le nouveau
           # numéro. Même règle que desktop.yml.
           if [ "$ANDROID" = promote ]; then
-            ANDROID=$(LABEL=Android PLAY_PACKAGE="$PLAY_PACKAGE" FORM_FACTOR=phone VERSION="$VERSION" node .github/scripts/promote-probe.mjs play)
+            ANDROID=$(LABEL=Android PLAY_PACKAGE="$PLAY_PACKAGE" FORM_FACTOR=phone PLAY_SOURCE_TRACK="$PLAY_MOBILE_TRACK" VERSION="$VERSION" node .github/scripts/promote-probe.mjs play)
           fi
           if [ "$IOS" = promote ]; then
             IOS=$(LABEL=iOS PLATFORM=IOS VERSION="$VERSION" node .github/scripts/promote-probe.mjs asc)
@@ -400,7 +405,7 @@ jobs:
           else
             SOURCE="--aab aab/app-release.aab"
           fi
-          # Au cran store, la piste fermée reçoit aussi le binaire de production
+          # Au cran store, la piste interne reçoit aussi le binaire de production
           # (sans effet à la promotion : elle le sert déjà).
           ALSO=""
           if [ "${{ needs.prepare.outputs.channel }}" = "store" ]; then

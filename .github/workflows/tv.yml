@@ -2,13 +2,19 @@
 #
 # TROIS CRANS, choisis au lancement (`channel`) :
 #   • build — construire et archiver les artefacts. Rien ne part nulle part.
-#   • test  — piste Play FERMÉE « tv:Alpha » en `completed` (donc PUBLIÉE, plus
-#             de draft à promouvoir à la main) et TestFlight tvOS distribué au
-#             groupe externe avec demande d'examen bêta.
+#   • test  — piste Play INTERNE « tv:internal » en `completed` : sans examen
+#             de Google, les testeurs ont la mise à jour dès qu'elle est
+#             traitée, comme TestFlight (décision du 2026-10-20 : la piste
+#             fermée attendait l'examen de Google plusieurs jours à chaque
+#             version). Et TestFlight tvOS distribué au groupe externe avec
+#             demande d'examen bêta.
 #   • store — production Play à 100 %, et App Store tvOS soumis à l'examen avec
 #             mise en vente automatique à l'approbation. Aucun clic ensuite.
-#             La piste fermée « tv:Alpha » reçoit le même binaire, comme
-#             TestFlight garde le build soumis à Apple.
+#             La piste interne « tv:internal » reçoit le même binaire, comme
+#             TestFlight garde le build soumis à Apple. Avant le commit Play et
+#             avant l'envoi à Apple, la release est RELUE chez le store et
+#             comparée à la livraison (version, binaire, notes) : un écart
+#             refuse tout (lib/release-check.mjs).
 #
 # `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
 # TESTÉ au lieu d'en reconstruire un autre. Une cible qui n'a RIEN à reprendre
@@ -78,11 +84,13 @@ env:
   APPLE_TEAM_ID: "96K3M57W49"
   TV_SCHEME: "TentacleTV"
   TV_WORKSPACE: "apps/tv/ios/TentacleTV.xcworkspace"
-  # Piste Play des tests fermés ANDROID TV. Les pistes par form factor sont
-  # PRÉFIXÉES dans l'API : « tv:Alpha » = piste fermée Alpha du form factor TV
-  # (≠ « alpha » qui est la piste MOBILE, homonyme dans l'UI de la console).
-  # Lister les identifiants exacts : workflow « Play — lister les pistes ».
-  PLAY_TV_TRACK: "tv:Alpha"
+  # Piste Play des TESTS INTERNES Android TV (cran test, et source de la
+  # reprise au cran store). Les pistes par form factor sont PRÉFIXÉES dans
+  # l'API : « tv:internal » = test interne du form factor TV — dédiée, elle
+  # accepte un AAB qui exige leanback (≠ « internal », la piste partagée du
+  # téléphone, qui le refuse). Lister les identifiants exacts : workflow
+  # « Play — lister les pistes ».
+  PLAY_TV_TRACK: "tv:internal"
   # Même règle pour la production : le form factor TV a la sienne. Le préfixe
   # exact NE SE DEVINE PAS — play-publish.mjs refuse une piste inconnue en
   # listant celles qui existent, et « Play — lister les pistes »
@@ -199,7 +207,7 @@ jobs:
           # Rien à reprendre (aucun run de test pour cette version) : la cible
           # se CONSTRUIT. Même règle que desktop.yml et mobile.yml.
           if [ "$ANDROID" = promote ]; then
-            ANDROID=$(LABEL="Android TV" PLAY_PACKAGE="$PLAY_PACKAGE" FORM_FACTOR=tv VERSION="$VERSION" node .github/scripts/promote-probe.mjs play)
+            ANDROID=$(LABEL="Android TV" PLAY_PACKAGE="$PLAY_PACKAGE" FORM_FACTOR=tv PLAY_SOURCE_TRACK="$PLAY_TV_TRACK" VERSION="$VERSION" node .github/scripts/promote-probe.mjs play)
           fi
           if [ "$APPLE" = promote ]; then
             APPLE=$(LABEL="Apple TV" PLATFORM=TV_OS VERSION="$VERSION" node .github/scripts/promote-probe.mjs asc)
@@ -394,7 +402,7 @@ jobs:
           else
             SOURCE="--aab aab/app-release.aab"
           fi
-          # Au cran store, la piste fermée reçoit aussi le binaire de production
+          # Au cran store, la piste interne reçoit aussi le binaire de production
           # (sans effet à la promotion : elle le sert déjà).
           ALSO=""
           if [ "${{ needs.prepare.outputs.channel }}" = "store" ]; then

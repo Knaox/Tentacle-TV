@@ -59,6 +59,19 @@ test('Play : seule une piste de TEST qui sert la version, au bon form factor, se
   assert.equal(playPromoteVerdict(undefined, '1.8.1', 'phone').plan, 'build');
 });
 
+test('Play : la piste SOURCE donnée, elle seule compte (la reprise part de la piste interne)', () => {
+  const tv = (n) => String(TV_VERSION_CODE_BASE + n);
+  const tracks = [
+    { type: 'CLOSED_TESTING', displayName: 'tv:Alpha', servingReleases: [{ displayName: '1.20.0', versionCodes: [tv(5)] }] },
+    { type: 'INTERNAL', displayName: 'tv:internal', servingReleases: [{ displayName: '1.11.0', versionCodes: [tv(3)] }] },
+  ];
+  // La piste fermée sert 1.20.0, mais la reprise part de « tv:internal » : rien à reprendre.
+  assert.equal(playPromoteVerdict(tracks, '1.20.0', 'tv', 'tv:internal').plan, 'build');
+  assert.equal(playPromoteVerdict(tracks, '1.11.0', 'tv', 'tv:internal').plan, 'promote');
+  // Sans piste source, l'ancien comportement : n'importe quelle piste de test.
+  assert.equal(playPromoteVerdict(tracks, '1.20.0', 'tv').plan, 'promote');
+});
+
 test('Play : la promotion ne reprend que la release qui porte la version', () => {
   const track = {
     releases: [

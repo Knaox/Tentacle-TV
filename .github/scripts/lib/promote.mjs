@@ -37,13 +37,20 @@ export function ascPromoteVerdict(ver, tested) {
  * nommée `version`, aux versionCodes du bon form factor : la fiche est
  * partagée, et la release TV n'est pas une release du téléphone.
  *
+ * `sourceTrack` : la piste d'où le cran store PROMEUT (« tv:internal »,
+ * « internal » — le nom affiché par l'API de rapports est l'identifiant de la
+ * piste). Donnée, elle seule compte : une autre piste de test qui sert la
+ * version ferait dire « promote » à tort, et la promotion échouerait ensuite.
+ *
  * @param {'phone'|'tv'} formFactor
+ * @param {string} [sourceTrack]
  */
-export function playPromoteVerdict(tracks, version, formFactor) {
+export function playPromoteVerdict(tracks, version, formFactor, sourceTrack) {
   const ofFormFactor = (codes) => codes.length > 0 && codes.every((c) =>
     formFactor === 'tv' ? c >= TV_VERSION_CODE_BASE : c < TV_VERSION_CODE_BASE);
   for (const track of tracks ?? []) {
     if (/production/i.test(`${track?.type ?? ''} ${track?.displayName ?? ''}`)) continue;
+    if (sourceTrack && track?.displayName !== sourceTrack) continue;
     for (const rel of track.servingReleases ?? []) {
       const codes = (rel?.versionCodes ?? []).map(Number).filter(Number.isFinite);
       if (releaseVersion(rel?.displayName) === version && ofFormFactor(codes)) {
@@ -51,7 +58,7 @@ export function playPromoteVerdict(tracks, version, formFactor) {
       }
     }
   }
-  return { plan: 'build', reason: `aucune piste de test ne sert ${version}` };
+  return { plan: 'build', reason: `${sourceTrack ? `« ${sourceTrack} »` : 'aucune piste de test'} ne sert ${sourceTrack ? 'pas ' : ''}${version}` };
 }
 
 /**
