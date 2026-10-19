@@ -759,7 +759,9 @@ grille sous la zone) — tv-core `cards/openCard.ts`, vue `redesign/openRow/` :
   « OK : ouvrir la fiche · Maintenir OK : plus d'options » (« OK : lire » sur Reprendre et
   Prochains épisodes) ; effacés quand le focus quitte la rangée. Le focus se dit par l'OMBRE seule.
   HAUT / BAS entrent dans une rangée par la carte posée à son retrait (`openRowEntry`, sections
-  natives des deux plateformes), jamais par celle d'en face.
+  natives des deux plateformes), jamais par celle d'en face. Une rangée ne MONTE que sa tête (ce
+  qui tient à l'écran depuis le retrait), puis quatre cartes au-delà du focus, par paquets de huit
+  (`openRowMounted`) : toutes montées, une bibliothèque créait 3 200 vues en six pas vers le bas.
 - **La BANNIÈRE** (Accueil, « Pour vous » : `hero/HeroBanner`) est UNE cible, comme la Top Shelf
   d'Apple (HIG : la bannière défilante à une cible ; des contrôles de page y rendent le focus
   difficile à garder) : DROITE / GAUCHE tournent les titres (GAUCHE retenu tant qu'il y en a un
