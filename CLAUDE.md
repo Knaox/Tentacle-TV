@@ -543,7 +543,10 @@ grandit et garde ses marqueurs — note, épingle Ma liste · j'aime · vu,
 progression — et dit sous sa légende, discrète, « Maintenir OK : plus
 d'options » (`CardFocusFooter`, sur toute carte qui s'ouvre par l'appui maintenu
 : c'est le seul chemin vers ses actions ; le nom de la touche vient de la table
-de la plateforme, tv-core `remote/bindings/hints`). L'appui maintenu ouvre le GRAND
+de la plateforme, tv-core `remote/bindings/hints`). Dans une RANGÉE QUI S'OUVRE
+(Accueil, « Pour vous », bibliothèques, Ma liste, Mes favoris — voir « La carte
+qui s'ouvre » plus bas), elle s'ouvre en 16:9 et ses détails disent « OK : ouvrir
+la fiche · Maintenir OK : plus d'options ». L'appui maintenu ouvre le GRAND
 PANNEAU centré (`screens/sheet/ActionSheetView`, câblé par
 `ActionSheetRedesign`) : l'en-tête, les étoiles en grand, l'ÉCHELLE HORIZONTALE
 de la note (`RatingRuler` : GAUCHE / DROITE, les valeurs du bureau —
@@ -725,12 +728,11 @@ jamais un MP4 doublé automatiquement. La version DITE est celle qu'on entend
 (`playedTrailerVersion`, shared ; `audio` de `/resolve` et de l'aperçu) : une
 « VF » doublée par IA est une VO, ni étiquetée ni classée VF. Seul le lecteur
 officiel de YouTube (repli quand l'extraction est refusée) choisit encore seul.
-**Aperçu au focus (Apple TV, Android TV)** : la carte focalisée (rangée de
-l'Accueil, de « Pour vous », ligne de grille) demande l'aperçu (`trailers.preview`,
-la machine partagée du bureau), qui se joue TOUJOURS AU MÊME ENDROIT, dans une ZONE
-FIXE en haut de l'écran, façon Netflix (18/10, décision qui remplace la carte qui
-grandissait : plus de grande carte, de tête de rangée, de butée, de ligne qui tourne,
-de poussage). **Le délai** (du début du survol ou du focus à
+**Aperçu au focus (Apple TV, Android TV)** : la carte focalisée demande l'aperçu
+(`trailers.preview`, la machine partagée du bureau) ; il se joue DANS LA CARTE OUVERTE
+(et la bannière) sur les pages en rangées (« La carte qui s'ouvre », ci-dessous, 19/10),
+et dans la ZONE FIXE en haut de l'écran sur Parcourir (la grille qui reste, 18/10).
+**Le délai** (du début du survol ou du focus à
 la première image) est le MÊME partout — web, bureau, Apple TV, Android TV,
 titres de Vigie compris (pont : `trailerPreview.delayMs`) — et se règle par
 l'UTILISATEUR sur son appareil (800 ms par défaut ; 0,5 · 0,8 · 1,2 · 2 s dans
@@ -744,13 +746,46 @@ VRAIMENT en pause, et MAINTENUE coupe le son de l'aperçu seul (le réglage « S
 des aperçus ») — tv-core `cards/previewRemote.ts` ; sur Android le maintien est
 reconstruit par `createAndroidTvReader` ; l'indice, dans la colonne de gauche de la zone,
 jamais sur l'image : `ZoneRemoteHint`.
-**La zone** (tv-core `cards/previewZone.ts` décide QUOI et QUAND, sans rien dessiner) :
-le sujet est la carte focalisée, AUSSITÔT (0 ms : son fond et son titre au focus), gardée
-quand le focus part ailleurs (filtres, rail) — la zone ne se vide jamais sous les yeux ;
-sur l'Accueil et « Pour vous », le héros VIT dans la zone (`HeroZone`, ses boutons dans
-`section:hero`, atténués quand une carte a la zone, toujours atteints par HAUT ; sa
-rotation se suspend quand il n'a pas la zone) ; avant tout focus, le héros, sinon le
-repli de la page. Les détails (synopsis, genres, qualité) se lisent au focus TENU
+**La carte qui s'ouvre** (décision de Damien du 19/10, sur banc web, à la place de la zone
+sur l'Accueil, « Pour vous », les bibliothèques, Ma liste et Mes favoris ; Parcourir garde sa
+grille sous la zone) — tv-core `cards/openCard.ts`, vue `redesign/openRow/` :
+- **Tout en RANGÉES, une seule taille de carte** : celle des trois préréglages (`OPEN_CARD_HEIGHT`
+  360 / 430 / 500, Grande par défaut). Au repos, des affiches ; la carte focalisée s'OUVRE en 16:9
+  à la même hauteur, au RETRAIT de la rangée — calée à CHAQUE focus par la section native
+  (`rowRevealStart` : `TentacleOpenRow.m`, `RevealScroller.kt` ; tvOS ne défile pas une rangée dont
+  la carte est visible) —, les suivantes glissent de la différence, les PASSÉES s'effacent (0,02 :
+  tvOS ne focalise plus une vue à 0,01 ou moins). Ses détails dessous, place RÉSERVÉE (hauteur de
+  rangée FIXE, `OPEN_ROW` : rien ne se remet en page) : raison, méta, résumé en phrases entières,
+  « OK : ouvrir la fiche · Maintenir OK : plus d'options » (« OK : lire » sur Reprendre et
+  Prochains épisodes) ; effacés quand le focus quitte la rangée. Le focus se dit par l'OMBRE seule.
+  HAUT / BAS entrent dans une rangée par la carte posée à son retrait (`openRowEntry`, sections
+  natives des deux plateformes), jamais par celle d'en face.
+- **La BANNIÈRE** (Accueil, « Pour vous » : `hero/HeroBanner`) est UNE cible, comme la Top Shelf
+  d'Apple (HIG : la bannière défilante à une cible ; des contrôles de page y rendent le focus
+  difficile à garder) : DROITE / GAUCHE tournent les titres (GAUCHE retenu tant qu'il y en a un
+  avant, puis le rail : tv-core `hero/heroNav.ts`, `useHeroEdgeTrap`), BAS mène aux rangées ; OK :
+  la fiche (hors bibliothèque : la demande), OK maintenu : le grand panneau (`cardPress`,
+  `cardHold`, surface `hero`). Rotation seulement visible et SANS focus (`heroRotationActive`).
+- **La bande-annonce se joue DERRIÈRE la page** (`PreviewStage` : le lecteur unique de
+  `TrailerZone` en mode scène), au rectangle de la carte ouverte ou de la bannière
+  (`openStageRects`) ; elles deviennent transparentes pendant la vidéo (`watching`) — jamais un
+  lecteur PAR-DESSUS une cible. Pendant celle de la bannière, seul le TITRE reste, en haut à gauche.
+- **« Ranger par » en tête de la barre** (pastille de tête `pill:group`, gardée par « Tout
+  effacer ») : une bibliothèque par genre, décennie, lettres ou note — tv-core
+  `groups/libraryGroups.ts` : un COMPTE par groupe d'abord (`useLibraryCatalogCounts`, aucun
+  titre), d'où des rangées jamais vides dans un ordre connu avant le premier dessin, puis chaque
+  rangée charge ses affiches à l'approche (deux rangées d'avance, `LibraryGroupRows`) ; la note en
+  comptes cumulés, chaque palier une TRANCHE de la liste triée par note (`offset`, `maxItems`). Ma
+  liste et Mes favoris par type, genre ou lettres, en mémoire, chaque titre dans UNE rangée
+  (`groups/listGroups.ts`). Les filtres s'appliquent dans chaque rangée. Un titre sans genre n'a
+  pas de rangée de genre (Jellyfin ne sait pas les demander).
+- **Un titre HORS bibliothèque dit son résumé** : Vigie le joint à `titles/state` (`overview`,
+  depuis la cache TMDB) ; un Vigie d'avant : sa raison et l'état de sa demande.
+**La zone** (Parcourir seulement depuis le 19/10 ; tv-core `cards/previewZone.ts` décide QUOI
+et QUAND, sans rien dessiner) : le sujet est la carte focalisée, AUSSITÔT (0 ms : son fond et son
+titre au focus), gardée quand le focus part ailleurs (filtres, rail) — la zone ne se vide jamais
+sous les yeux ; avant tout focus, le repli de la page (sa première carte). `HeroZone` (le héros
+qui vivait dans la zone) n'a plus d'écran : la bannière l'a remplacé. Les détails (synopsis, genres, qualité) se lisent au focus TENU
 (`PREVIEW_ZONE_DETAILS_MS`, 300 ms : une rafale ne lit rien). Fondus d'opacité seulement
 (`PREVIEW_ZONE_FADE` : fond 200, texte 160, vidéo 360 en entrée, 180 en sortie) ; le fond
 passe en fondu croisé sur deux calques (`previewZoneBackdropLayer`), jamais un noir entre
@@ -788,10 +823,7 @@ pas ce que la fenêtre peut montrer, rangée focalisée entière (tv-core `below
 une affiche en taille Grande y est un peu réduite, voulu : la même taille réglée donne donc une
 affiche de rangée plus petite que celle d'une grille ; une vignette jamais), et la raison d'une
 reco se lit dans la zone, plus sous la carte ;
-l'en-tête d'une grille ramène la page en haut. Le héros de l'Accueil et de « Pour vous »
-vit DANS la zone (`previewZone/HeroZone`, section `section:hero` au-dessus de la page) :
-HAUT depuis la première rangée y mène ; ses boutons restent focalisables même quand une
-carte a la zone. Seule une carte d'une page à zone demande et prépare l'aperçu
+l'en-tête d'une grille ramène la page en haut. Seule une carte d'une page à zone demande et prépare l'aperçu
 (`useInPreviewZone` : sous une `PreviewZoneScope` ; `useCardPreviewFocus`, la seule
 couture de la carte, qui passe au port `useCardZoneFocus`) : la recherche et la fiche
 n'en demandent pas. Une rangée sortie de

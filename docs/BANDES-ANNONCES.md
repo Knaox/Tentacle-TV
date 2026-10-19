@@ -866,6 +866,34 @@ sur les listes, avant yt-dlp. Tests purs : `trailerList.test.ts`,
 `trailerCatalog.test.ts` (shared), `catalogEntries.test.ts`,
 `allocineMatch.test.ts`, `titleVideos.test.ts` (backend).
 
+## La carte qui s'ouvre — l'aperçu dans la carte (TV, 19/10)
+
+Décision de Damien après un banc web (images et bandes-annonces réelles de
+Knaoxtest) : sur l'Accueil, « Pour vous », les bibliothèques, Ma liste et Mes
+favoris, la zone fixe du 18/10 cède à **la carte qui s'ouvre** — la carte
+focalisée s'ouvre en 16:9 au bord gauche de sa rangée, et sa bande-annonce s'y
+joue ; celle de la bannière, dans la bannière. Parcourir garde sa grille sous la
+zone.
+
+- **Un seul lecteur, DERRIÈRE la page** (`redesign/previewZone/PreviewStage.tsx`,
+  `TrailerZone` en mode scène) : il se pose au rectangle de la carte ouverte ou
+  de la bannière (tv-core `openStageRects` — la carte ouverte est toujours au
+  même endroit : sa rangée à l'ancrage, elle au retrait), et la carte ou la
+  bannière deviennent transparentes tant que la vidéo se montre (`watching`).
+  Jamais un lecteur par-dessus une cible : tvOS ne focalise pas un élément
+  recouvert (régression déjà payée).
+- **Rien d'autre ne change dans la machine** : délai choisi par l'utilisateur,
+  session montée au focus tenu, source seule changée d'un titre à l'autre,
+  lecteur démonté après 30 s sans aperçu, pause et muet à la télécommande,
+  indice 4 s — les règles des sections précédentes.
+- **Pendant la bande-annonce de la bannière**, seul le titre (logo, sinon écrit)
+  reste, en haut à gauche ; celle d'une carte garde ses détails dessous.
+- **Brevets** (relevé du 19/10, à confirmer par un conseil avant une sortie aux
+  États-Unis) : des dessins et modèles américains couvrent des interfaces
+  voisines (US D988,338 ; D1,001,142 ; D1,055,965), l'antériorité existe (Prime
+  Video 2022, Top Shelf d'Apple) ; nos choix — ombre seule, carte au retrait,
+  bannière à une cible, nos proportions — restent les nôtres.
+
 ## Ce qui reste fragile, et comment le surveiller
 
 - **YouTube change.** `visionos` peut un jour exiger un jeton PO, comme
