@@ -4,6 +4,7 @@ import { trailerPreviewSubjectKey } from "@tentacle-tv/shared";
 import { previewSessionDwellLeft, previewZoneDetailsLeft, previewZoneShown } from "@tentacle-tv/tv-core";
 import type { CardModel } from "../../redesign/cards/cardTypes";
 import {
+  HERO_STAGE_KEY,
   usePreviewZoneCard, usePreviewZoneState, usePreviewZoneStore, type PreviewZoneSlotProps, type PreviewZoneStore,
 } from "../../redesign/cards/trailerPreviewPort";
 import { PreviewStage } from "../../redesign/previewZone/PreviewStage";
@@ -80,8 +81,11 @@ function Zone({ hero = null, fallback = null, stage, store }: PreviewZoneSlotPro
   const sessionOn = pageFocused && subjectKey !== null && (held || mine !== null);
   const videoShown = sessionOn && shownBy === subjectKey;
   const remote = usePreviewRemoteHint(videoShown);
-  // La scène dit à sa page les détails du titre (sous sa carte ouverte) et ce qui joue sa vidéo.
-  const watching = videoShown ? (heroShown ? "hero" : card?.id ?? null) : null;
+  // La scène dit à sa page les détails du titre (sous sa carte ouverte) et ce qui joue sa vidéo —
+  // ce qu'elle montre VRAIMENT : coupée au changement de surface, la vidéo n'y est pas encore.
+  const stageKey = heroShown ? HERO_STAGE_KEY : card?.id ?? null;
+  const [stageLive, setStageLive] = useState<string | null>(null);
+  const watching = videoShown && stageLive === stageKey ? stageKey : null;
   useEffect(() => {
     if (stage) store.setInfo({ model, watching });
   }, [stage, store, model, watching]);
@@ -92,7 +96,14 @@ function Zone({ hero = null, fallback = null, stage, store }: PreviewZoneSlotPro
         <ZoneSession key={subjectKey} sessionKey={subjectKey ?? ""} subject={subject} focused={focused} since={since} onShown={onShown} onVideo={onVideo} />
       ) : null}
       {stage ? (
-        <PreviewStage rect={heroShown ? stage.hero ?? null : card ? stage.card : null} video={video} videoShown={videoShown} remote={remote} />
+        <PreviewStage
+          rect={heroShown ? stage.hero ?? null : card ? stage.card : null}
+          subjectKey={stageKey}
+          video={video}
+          videoShown={videoShown}
+          remote={remote}
+          onLiveChange={setStageLive}
+        />
       ) : (
         <PreviewZoneView model={model} heroRoom={heroShown} video={video} videoShown={videoShown} remote={remote} />
       )}

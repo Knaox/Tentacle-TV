@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fitPreviewZoneSynopsis as fit, synopsisBudget, synopsisSentenceEnds } from "./previewZoneSynopsis";
-import { PREVIEW_ZONE_PLAYBACK, previewZoneWatching, previewZoneWatchingMs } from "./previewZonePlayback";
+import { OPEN_CARD_MOTION } from "./openCard";
+import { PREVIEW_STAGE_RESHOW_MS, PREVIEW_ZONE_PLAYBACK, previewStageCut, previewZoneWatching, previewZoneWatchingMs } from "./previewZonePlayback";
 
 const TWO = "Un professeur de chimie apprend qu'il est malade. Il décide de fabriquer de la drogue pour sa famille.";
 
@@ -66,5 +67,29 @@ describe("previewZoneWatching — la version allégée pendant la vidéo", () =>
   it("le repos cède plus posément qu'il ne revient", () => {
     expect(previewZoneWatchingMs(true)).toBe(PREVIEW_ZONE_PLAYBACK.recedeMs);
     expect(previewZoneWatchingMs(false)).toBeLessThan(previewZoneWatchingMs(true));
+  });
+
+  it("une surface qui perd le focus pendant sa vidéo reprend son image d'un coup", () => {
+    expect(previewZoneWatchingMs(false, false)).toBe(0);
+    expect(previewZoneWatchingMs(false, true)).toBe(PREVIEW_ZONE_PLAYBACK.returnMs);
+    // Un focus déjà parti n'empêche pas une vidéo qui se montre encore de rester montrée.
+    expect(previewZoneWatchingMs(true, false)).toBe(PREVIEW_ZONE_PLAYBACK.recedeMs);
+  });
+});
+
+describe("previewStageCut — la scène qui change de sujet se coupe", () => {
+  it("la vidéo d'un sujet ne passe jamais au rectangle d'un autre", () => {
+    expect(previewStageCut("hero", "card-1")).toBe(true);
+    expect(previewStageCut("card-1", "card-2")).toBe(true);
+    expect(previewStageCut("card-1", null)).toBe(true);
+  });
+
+  it("le même sujet, ou rien à l'écran : pas de coupure (le fondu de sortie vaut)", () => {
+    expect(previewStageCut("card-1", "card-1")).toBe(false);
+    expect(previewStageCut(null, "card-1")).toBe(false);
+  });
+
+  it("la même bande-annonce ne revient qu'une fois la carte ouverte", () => {
+    expect(PREVIEW_STAGE_RESHOW_MS).toBe(OPEN_CARD_MOTION.openMs);
   });
 });

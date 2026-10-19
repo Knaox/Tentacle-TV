@@ -1,13 +1,13 @@
-import { memo, useContext, useEffect, useState, useSyncExternalStore } from "react";
+import { memo, useEffect, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedReaction, useAnimatedStyle, useReducedMotion, useSharedValue, type SharedValue } from "react-native-reanimated";
-import { OPEN_CARD_MOTION, OPEN_CARD_PAST_OPACITY, PREVIEW_ZONE_PLAYBACK, type OpenCardMetrics } from "@tentacle-tv/tv-core";
+import { OPEN_CARD_MOTION, OPEN_CARD_PAST_OPACITY, previewZoneWatchingMs, type OpenCardMetrics } from "@tentacle-tv/tv-core";
 import { AbsentArtwork } from "../cards/AbsentArtwork";
 import { CardMarkerLayer } from "../cards/CardMarkerLayer";
 import { CardShell } from "../cards/CardShell";
 import type { CardModel } from "../cards/cardTypes";
 import { useCardFocused } from "../cards/useCardFocused";
-import { previewStoreContext, useCardZoneFocus } from "../cards/trailerPreviewPort";
+import { useCardZoneFocus, useStageSurface } from "../cards/trailerPreviewPort";
 import { motionTo } from "../motion/motion";
 import { colors, fonts } from "../theme/tokens";
 import { OpenVisual } from "./OpenVisual";
@@ -47,7 +47,7 @@ export const OpenCard = memo(function OpenCard({ card, place, metrics, focusKey,
 }) {
   const { focused, onTargetFocusChange } = useCardFocused(focusKey, onFocusChange);
   useCardZoneFocus(card, focused);
-  const watching = useWatching(card.id);
+  const surface = useStageSurface(card.id);
   const reduced = useReducedMotion();
   const open = useSharedValue(0);
   const shift = useSharedValue(0);
@@ -68,9 +68,12 @@ export const OpenCard = memo(function OpenCard({ card, place, metrics, focusKey,
     },
     [index, reduced],
   );
+  // Quittée pendant sa vidéo, elle reprend son image d'un coup, à l'image même où la scène se
+  // coupe : sinon une carte transparente le temps qu'elle s'en aille.
   useEffect(() => {
-    watch.value = motionTo(watching ? 1 : 0, watching ? PREVIEW_ZONE_PLAYBACK.recedeMs : PREVIEW_ZONE_PLAYBACK.returnMs, reduced);
-  }, [watching, watch, reduced]);
+    const watched = surface === "watching";
+    watch.value = motionTo(watched ? 1 : 0, previewZoneWatchingMs(watched, surface !== "away"), reduced);
+  }, [surface, watch, reduced]);
   const cell = useAnimatedStyle(() => ({
     opacity: 1 - past.value * (1 - OPEN_CARD_PAST_OPACITY),
     transform: [{ translateX: shift.value * delta }],
@@ -114,17 +117,6 @@ export const OpenCard = memo(function OpenCard({ card, place, metrics, focusKey,
     </Animated.View>
   );
 });
-
-/** La vidéo de la scène se montre pour CETTE carte : seule la carte concernée se redessine. */
-function useWatching(id: string): boolean {
-  const store = useContext(previewStoreContext);
-  return useSyncExternalStore(
-    store ? store.subscribe : NO_SUBSCRIBE,
-    () => (store ? store.getInfo().watching === id : false),
-  );
-}
-
-const NO_SUBSCRIBE = () => () => undefined;
 
 /** Monté dès que `on`, gardé `exitMs` après. */
 function useMountedWhile(on: boolean, exitMs: number): boolean {

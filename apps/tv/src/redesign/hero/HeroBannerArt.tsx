@@ -1,8 +1,9 @@
 import { memo, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue } from "react-native-reanimated";
-import { OPEN_HERO_WATCH, OPEN_PAGE, PREVIEW_ZONE_FADE, PREVIEW_ZONE_PLAYBACK, heroChevrons, previewZoneUsesLogo } from "@tentacle-tv/tv-core";
+import { OPEN_HERO_WATCH, OPEN_PAGE, PREVIEW_ZONE_FADE, heroChevrons, previewZoneUsesLogo, previewZoneWatchingMs } from "@tentacle-tv/tv-core";
 import { SoftGradient } from "../background/SoftGradient";
+import { useStageShown, type StageSurface } from "../cards/trailerPreviewPort";
 import { Icon } from "../icons/Icon";
 import { motionTo } from "../motion/motion";
 import { Reveal } from "../motion/Reveal";
@@ -33,27 +34,33 @@ const H = OPEN_PAGE.heroHeight;
 const R = OPEN_PAGE.heroRadius;
 const WATCH_TEXT_WIDTH = OPEN_HERO_WATCH.textWidth(W);
 
-export const HeroBannerArt = memo(function HeroBannerArt({ hero, focused, watching, okHint, holdHint }: {
+export const HeroBannerArt = memo(function HeroBannerArt({ hero, focused, surface, okHint, holdHint }: {
   hero: HeroModel;
   focused: boolean;
-  watching: boolean;
+  /** La bannière sur la scène : sa vidéo se montre, elle est le sujet, ou le focus l'a quittée. */
+  surface: StageSurface;
   okHint: string;
   holdHint: string;
 }) {
   const reduced = useReducedMotion();
   const watch = useSharedValue(0);
   const lift = useSharedValue(0);
+  // Le focus parti pendant la vidéo, la bannière reprend son image d'un coup, à l'image même où
+  // la scène se coupe (tv-core `previewZoneWatchingMs`, `previewStageCut`).
   useEffect(() => {
-    watch.value = motionTo(watching ? 1 : 0, watching ? PREVIEW_ZONE_PLAYBACK.recedeMs : PREVIEW_ZONE_PLAYBACK.returnMs, reduced);
-  }, [watching, watch, reduced]);
+    const watched = surface === "watching";
+    watch.value = motionTo(watched ? 1 : 0, previewZoneWatchingMs(watched, surface !== "away"), reduced);
+  }, [surface, watch, reduced]);
   useEffect(() => {
     lift.value = motionTo(focused ? 1 : 0, "focus", reduced);
   }, [focused, lift, reduced]);
   const { shown, progress } = useSwap(hero.id, hero, PREVIEW_ZONE_FADE.textMs, PREVIEW_ZONE_FADE.textMs);
-  const rest = useAnimatedStyle(() => ({ opacity: 1 - watch.value }));
-  const shadow = useAnimatedStyle(() => ({ opacity: lift.value * (1 - watch.value) }));
+  // Le repos ne cède que là où la scène montre la vidéo : coupée, il revient à la même image.
+  const stage = useStageShown(1);
+  const rest = useAnimatedStyle(() => ({ opacity: 1 - watch.value * stage.value }));
+  const shadow = useAnimatedStyle(() => ({ opacity: lift.value * (1 - watch.value * stage.value) }));
   const textFade = useAnimatedStyle(() => ({ opacity: progress.value }));
-  const watchTitle = useAnimatedStyle(() => ({ opacity: watch.value * progress.value }));
+  const watchTitle = useAnimatedStyle(() => ({ opacity: watch.value * stage.value * progress.value }));
   const chevrons = heroChevrons(hero.page?.index ?? 0, hero.page?.count ?? 1);
   return (
     <>

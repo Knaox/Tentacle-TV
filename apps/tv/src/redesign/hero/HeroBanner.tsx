@@ -1,9 +1,9 @@
-import { memo, useCallback, useContext, useState, useSyncExternalStore } from "react";
+import { memo, useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { OPEN_PAGE } from "@tentacle-tv/tv-core";
 import { TV_STAGE } from "@tentacle-tv/theme";
-import { previewStoreContext, usePreviewZoneHero } from "../cards/trailerPreviewPort";
+import { HERO_STAGE_KEY, usePreviewZoneHero, useStageSurface } from "../cards/trailerPreviewPort";
 import { FocusSection, type FocusSectionReveal } from "../focus/FocusSection";
 import { FocusTarget } from "../focus/FocusTarget";
 import { useRemoteHints } from "../remote/remoteHints";
@@ -37,7 +37,7 @@ export const HeroBanner = memo(function HeroBanner({ hero, okHint, onPress, onLo
   const hints = useRemoteHints();
   const [focused, setFocused] = useState(false);
   usePreviewZoneHero(focused);
-  const watching = useHeroWatching();
+  const surface = useStageSurface(HERO_STAGE_KEY);
   const onFocusChange = useCallback((on: boolean) => setFocused(on), []);
   return (
     <FocusSection focusKey="section:hero" reveal={HERO_REVEAL} style={styles.section}>
@@ -52,21 +52,13 @@ export const HeroBanner = memo(function HeroBanner({ hero, okHint, onPress, onLo
           style={StyleSheet.absoluteFill}
         >
           {() => (
-            <HeroBannerArt hero={hero} focused={focused} watching={watching} okHint={okHint ?? t("okOpenDetails")} holdHint={t(hints.holdForOptions)} />
+            <HeroBannerArt hero={hero} focused={focused} surface={surface} okHint={okHint ?? t("okOpenDetails")} holdHint={t(hints.holdForOptions)} />
           )}
         </FocusTarget>
       </View>
     </FocusSection>
   );
 });
-
-const NO_SUBSCRIBE = () => () => undefined;
-
-/** La scène joue la bande-annonce de la bannière. */
-function useHeroWatching(): boolean {
-  const store = useContext(previewStoreContext);
-  return useSyncExternalStore(store ? store.subscribe : NO_SUBSCRIBE, () => (store ? store.getInfo().watching === "hero" : false));
-}
 
 const styles = StyleSheet.create({
   section: { paddingTop: OPEN_PAGE.heroTop, height: OPEN_PAGE.heroTop + OPEN_PAGE.heroHeight + OPEN_PAGE.heroGap },
