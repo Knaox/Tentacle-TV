@@ -468,6 +468,7 @@ jobs:
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: MAC_OS
           VERSION: ${{ needs.prepare.outputs.version }}
+          CHANGELOG: changelogs/desktop.md
         run: node .github/scripts/asc-submit-review.mjs
 
   # ── Windows : MSIX + soumission Microsoft Store ────────────────────────────

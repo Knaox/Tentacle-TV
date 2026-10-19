@@ -710,6 +710,7 @@ jobs:
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: IOS
           VERSION: ${{ needs.prepare.outputs.version }}
+          CHANGELOG: changelogs/mobile.md
         run: node .github/scripts/asc-submit-review.mjs
 
   # ── L'offre de sources (GPL / LGPL) : une Release « sources-<tag> » à part,

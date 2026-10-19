@@ -631,6 +631,7 @@ jobs:
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: TV_OS
           VERSION: ${{ needs.prepare.outputs.version }}
+          CHANGELOG: changelogs/tv.md
         run: node .github/scripts/asc-submit-review.mjs
 
   # ── L'offre de sources (GPL / LGPL) : une Release « sources-<tag> » à part,

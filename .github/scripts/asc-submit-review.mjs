@@ -2,7 +2,8 @@
 // l'approbation — le dernier geste manuel du cran « store » côté Apple.
 //
 // Env requis : ASC_KEY_ID, ASC_ISSUER, ASC_KEY_P8, BUNDLE_ID,
-//   PLATFORM (MAC_OS|IOS|TV_OS), VERSION (marketing).
+//   PLATFORM (MAC_OS|IOS|TV_OS), VERSION (marketing), CHANGELOG (chemin, les
+//   « Nouveautés » attendues). CHANNEL optionnel, comme asc-release-notes.mjs.
 // Env optionnel : RELEASE_TYPE (AFTER_APPROVAL par défaut ; MANUAL pour garder
 //   la main sur l'instant de la mise en vente).
 //
@@ -15,19 +16,32 @@
 // en poster une seconde donne 409. Et une version déjà partie en examen ou
 // déjà en vente est un succès, pas une erreur — c'est le cas d'un run rejoué.
 //
+// CONTRÔLÉ AVANT L'ENVOI (lib/release-check.mjs). Juste avant `submitted:
+// true`, tout est RELU chez Apple : le nom de la version (une 1.10.2 ouverte
+// puis jamais soumise est renommée — elle ne part jamais sous son ancien
+// numéro), le build rattaché (le dernier testé, traité, de CETTE version et de
+// CETTE plateforme) et les « Nouveautés » fr/en, recalculées depuis le
+// changelog comme asc-release-notes.mjs et reposées si elles diffèrent. Un
+// écart restant = refus, rien n'est envoyé. Et une soumission déjà en cours
+// qui porte une AUTRE version n'est plus un succès silencieux.
+//
 // BLOQUANT, contrairement aux scripts de notes : c'est la raison d'être du
 // cran « store ». Un échec silencieux laisserait croire que c'est publié.
 import {
-  createAscClient, findApp, ensureAppStoreVersion, findLatestTestedBuild,
-  EDITABLE_VERSION_STATES, SUBMITTED_VERSION_STATES, versionState,
+  createAscClient, findApp, ensureAppStoreVersion, findLatestTestedBuild, liveVersion, localePairs,
+  setAppStoreNotes, CHANNEL_BY_PLATFORM, EDITABLE_VERSION_STATES, SUBMITTED_VERSION_STATES, versionState,
 } from './lib/asc-api.mjs';
+import { describeNotesVersions, loadNotes } from './lib/changelog.mjs';
+import { ascNotesProblems, ascSubmissionProblems } from './lib/release-check.mjs';
 
 const {
   ASC_KEY_ID, ASC_ISSUER, ASC_KEY_P8, BUNDLE_ID,
-  PLATFORM = 'MAC_OS', VERSION, RELEASE_TYPE = 'AFTER_APPROVAL',
+  PLATFORM = 'MAC_OS', VERSION, RELEASE_TYPE = 'AFTER_APPROVAL', CHANGELOG,
 } = process.env;
+const CHANNEL = process.env.CHANNEL || CHANNEL_BY_PLATFORM[PLATFORM] || null;
 
 if (!VERSION) { console.error('::error::VERSION manquant.'); process.exit(1); }
+if (!CHANGELOG) { console.error('::error::CHANGELOG manquant : les « Nouveautés » ne pourraient pas être contrôlées.'); process.exit(1); }
 
 // Une soumission ENCORE OUVERTE, à réutiliser plutôt qu'à doubler : il ne peut
 // y en avoir qu'une par plateforme et par app, et en poster une seconde donne
@@ -41,6 +55,35 @@ const READY_WAIT_MS = Number(process.env.READY_TIMEOUT_MINUTES ?? 10) * 60_000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const api = createAscClient({ keyId: ASC_KEY_ID, issuer: ASC_ISSUER, p8: ASC_KEY_P8 });
+
+/**
+ * Les « Nouveautés » attendues, `[[locale, texte], …]` — le calcul même
+ * d'asc-release-notes.mjs (notes cumulées depuis la version en vente). Sans
+ * version en vente (une toute première version), Apple n'en accepte pas :
+ * rien à contrôler.
+ */
+async function expectedNotes(appId) {
+  const since = await liveVersion(api, appId, PLATFORM);
+  if (!since) {
+    console.log(`[review] aucune version en vente (${PLATFORM}) : pas de « Nouveautés » à contrôler.`);
+    return [];
+  }
+  const notes = loadNotes({ changelog: CHANGELOG, channel: CHANNEL, version: VERSION, since, format: 'asc' });
+  if (!notes || (!notes.fr && !notes.en)) throw new Error(`aucun bloc « ## [${VERSION}] » dans ${CHANGELOG}`);
+  console.log(`[review] « Nouveautés » attendues : ${describeNotesVersions(notes.versions)} (en vente : ${since}).`);
+  return localePairs(notes);
+}
+
+/** La version telle qu'Apple la tient : elle-même, son build, son train TestFlight, ses localisations. */
+async function readBack(verId) {
+  const ver = (await api('GET', `/v1/appStoreVersions/${verId}`)).data;
+  const rel = await api('GET', `/v1/appStoreVersions/${verId}/relationships/build`).catch(() => null);
+  const buildId = rel?.data?.id ?? null;
+  const b = buildId ? await api('GET', `/v1/builds/${buildId}?include=preReleaseVersion`) : null;
+  const preRelease = (b?.included ?? []).find((i) => i.type === 'preReleaseVersions') ?? null;
+  const localizations = (await api('GET', `/v1/appStoreVersions/${verId}/appStoreVersionLocalizations?limit=50`)).data ?? [];
+  return { ver, build: b?.data ?? null, preRelease, localizations };
+}
 
 const main = async () => {
   const app = await findApp(api, BUNDLE_ID);
@@ -81,13 +124,29 @@ const main = async () => {
   });
   console.log(`[review] releaseType = ${RELEASE_TYPE}.`);
 
+  // 1 bis) Les « Nouveautés » de CETTE version : reposées si elles diffèrent
+  //    (asc-release-notes.mjs, non bloquant, a pu échouer ; une version
+  //    renommée garde celles de son ancien numéro).
+  const notes = await expectedNotes(app.id);
+  const { localizations } = await readBack(ver.id);
+  if (ascNotesProblems(localizations, notes, VERSION).length > 0) {
+    await setAppStoreNotes(api, ver.id, notes, (m) => console.log(`[review] ${m}`));
+  }
+
   // 2) Une soumission ouverte, réutilisée ou créée. Pas de filter[state] dans
   //    la requête : le nom du paramètre a changé d'une génération d'API à
   //    l'autre, on trie côté client (même choix que asc-live-version.mjs).
   const open = await api('GET', `/v1/apps/${app.id}/reviewSubmissions?filter[platform]=${PLATFORM}&limit=50`);
   const inFlight = (open.data ?? []).find((s) => IN_FLIGHT_SUBMISSION_STATES.has(s.attributes?.state));
   if (inFlight) {
-    console.log(`[review] une soumission est déjà en cours (${inFlight.attributes.state}) — rien à envoyer.`);
+    // Seulement si c'est LA NÔTRE : une autre version en examen n'est pas un succès.
+    const items = await api('GET', `/v1/reviewSubmissions/${inFlight.id}/items?limit=50`);
+    const ours = (items.data ?? []).some((i) => i.relationships?.appStoreVersion?.data?.id === ver.id);
+    if (!ours) {
+      console.error(`::error::une soumission ${PLATFORM} est déjà en « ${inFlight.attributes.state} » pour une AUTRE version que ${VERSION} — rien n'est envoyé. Regarde App Store Connect.`);
+      process.exit(1);
+    }
+    console.log(`[review] ${VERSION} est déjà en examen (${inFlight.attributes.state}) — rien à envoyer.`);
     return;
   }
   let submission = (open.data ?? []).find((s) => REUSABLE_SUBMISSION_STATES.has(s.attributes?.state));
@@ -140,6 +199,20 @@ const main = async () => {
     console.log(`[review] version en « ${now} » — on attend « READY_FOR_REVIEW »…`);
     await sleep(30_000);
   }
+
+  // 4 bis) Le contrôle, juste avant d'envoyer : version, build, notes, relus chez Apple.
+  let seen = await readBack(ver.id);
+  if (ascNotesProblems(seen.localizations, notes, VERSION).length > 0) {
+    await setAppStoreNotes(api, ver.id, notes, (m) => console.log(`[review] ${m}`));
+    seen = await readBack(ver.id);
+  }
+  const problems = ascSubmissionProblems({ version: VERSION, platform: PLATFORM, expectedBuildId: tested.id, expectedNotes: notes, ...seen });
+  if (problems.length > 0) {
+    for (const p of problems) console.error(`::error::${p}`);
+    console.error(`[review] contrôle avant soumission refusé : ${VERSION} (${PLATFORM}) n'est PAS envoyée.`);
+    process.exit(1);
+  }
+  console.log(`[review] contrôle ✓ — ${VERSION} (${PLATFORM}), build ${tested.attributes.version}, « Nouveautés » ${notes.map(([l]) => l).join(' + ') || '—'}.`);
 
   // 5) Envoi.
   await api('PATCH', `/v1/reviewSubmissions/${submission.id}`, {
