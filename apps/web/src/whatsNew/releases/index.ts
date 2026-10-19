@@ -19,6 +19,7 @@ import { RELEASE_1_28_0 } from "./v1_28_0";
 import { RELEASE_1_28_1 } from "./v1_28_1";
 import { RELEASE_1_28_2 } from "./v1_28_2";
 import { RELEASE_1_29_0 } from "./v1_29_0";
+import { RELEASE_1_31_0 } from "./v1_31_0";
 
 /**
  * Le registre, du plus récent au plus ancien. L'ordre est vérifié par
@@ -27,6 +28,7 @@ import { RELEASE_1_29_0 } from "./v1_29_0";
  * entrée, vide — elle dit « rien », elle ne laisse pas supposer « oublié ».
  */
 export const WHATS_NEW_RELEASES: readonly WhatsNewRelease[] = [
+  RELEASE_1_31_0,
   RELEASE_1_29_0,
   RELEASE_1_28_2,
   RELEASE_1_28_1,
