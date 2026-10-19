@@ -19,7 +19,9 @@ import { colors, fonts, scrim, white } from "../theme/tokens";
  * la cible) — rien ne recouvre une cible. `open` (0 → 1) la fait entrer en
  * fondu pendant que les voisines glissent ; `watch` (0 → 1) l'efface quand la
  * bande-annonce se montre : la vidéo, posée DERRIÈRE la page au même endroit
- * (`PreviewStage`), se voit à travers.
+ * (`PreviewStage`), se voit à travers. Pendant la vidéo, le TITRE reste, en
+ * petit, en haut à gauche — jamais au milieu de l'image : on sait ce qu'on
+ * regarde (demande de Damien du 19/10, comme la bannière).
  */
 export const OpenVisual = memo(function OpenVisual({ card, metrics, open, watch, focused }: {
   card: CardModel;
@@ -31,6 +33,7 @@ export const OpenVisual = memo(function OpenVisual({ card, metrics, open, watch,
   const { openWidth: width, height, openRadius: radius } = metrics;
   const face = useAnimatedStyle(() => ({ opacity: open.value * (1 - watch.value) }));
   const shadow = useAnimatedStyle(() => ({ opacity: open.value * (1 - watch.value) }));
+  const watchTitle = useAnimatedStyle(() => ({ opacity: open.value * watch.value }));
   const uri = card.billboard?.backdropUri ?? card.landscapeUri ?? card.posterUri;
   const logo = card.billboard?.logoUri ?? card.logoUri;
   return (
@@ -59,6 +62,17 @@ export const OpenVisual = memo(function OpenVisual({ card, metrics, open, watch,
         ) : null}
         <View style={[styles.edge, { borderRadius: radius }]} />
       </Animated.View>
+      {/* Pendant la bande-annonce : le titre, en petit, en haut à gauche. */}
+      <Animated.View style={[styles.watch, { width, height, borderRadius: radius }, watchTitle]}>
+        <SoftGradient width={width} height={height} colors={[scrim(0.55), scrim(0)]} locations={[0, 0.3]} />
+        <View style={[styles.watchTitle, { maxWidth: Math.round(width * 0.4) }]}>
+          {logo ? (
+            <Image source={{ uri: logo }} style={[styles.logo, { width: Math.round(width * 0.26), height: Math.round(height * 0.12) }]} resizeMode="contain" fadeDuration={0} />
+          ) : (
+            <Text style={styles.watchTitleText} numberOfLines={1}>{card.title}</Text>
+          )}
+        </View>
+      </Animated.View>
     </View>
   );
 });
@@ -81,4 +95,7 @@ const styles = StyleSheet.create({
   absent: { position: "absolute", left: 14, bottom: 14, paddingHorizontal: 12, minHeight: 34, borderRadius: 14, backgroundColor: scrim(0.72), justifyContent: "center" },
   absentText: { ...fonts.bold, fontSize: 21, color: white(0.92) },
   edge: { ...StyleSheet.absoluteFillObject, borderWidth: 1, borderColor: white(0.12) },
+  watch: { position: "absolute", left: 0, top: 0, overflow: "hidden" },
+  watchTitle: { position: "absolute", left: 24, top: 20 },
+  watchTitleText: { ...fonts.extrabold, fontSize: 28, lineHeight: 32, color: colors.text, letterSpacing: -0.3 },
 });
