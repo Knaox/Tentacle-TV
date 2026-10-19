@@ -22,8 +22,19 @@ export const IS_TVOS = Platform.OS === "ios";
  */
 export class RNStorageAdapter implements StorageAdapter {
   private cache = new Map<string, string>();
+  private hydrated: Promise<void> | null = null;
 
-  async hydrate(): Promise<void> {
+  /**
+   * Un seul préchargement, partagé : `App.tsx` l'attend avant de lire la
+   * session, l'ouverture du démarrage (montée plus tôt) avant de lire « Son au
+   * démarrage » — sur Android, une lecture avant la fin rend le DÉFAUT.
+   */
+  hydrate(): Promise<void> {
+    this.hydrated ??= this.load();
+    return this.hydrated;
+  }
+
+  private async load(): Promise<void> {
     if (IS_TVOS) return; // Settings est synchrone + persistant
     const keys = await AsyncStorage.getAllKeys();
     if (keys.length === 0) return;

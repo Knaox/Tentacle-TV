@@ -3,7 +3,7 @@ import { Dimensions } from "react-native";
 import { BOOT_INTRO_MAX_HOLD_MS, bootIntroOutcome, bootSoundLeads } from "@tentacle-tv/tv-core/boot";
 // Le dessin du logo : ses constantes GÉNÉRÉES (brand/generate-svg.py), passées à la vue.
 import * as TENTACLE_ART from "../../components/icons/tentacleArt.generated";
-import { bootSoundStore } from "../../lib/bootSoundSetting";
+import { readBootSoundSetting } from "../../lib/bootSoundSetting";
 import { bootSound } from "../../platform/tvos/bootSound/bootSound";
 import { BootIntroView, useIntroScene } from "../../redesign/boot/BootIntroView";
 import { useIntroClock } from "../../redesign/boot/useIntroClock";
@@ -32,10 +32,11 @@ export function BootIntroHost({ children }: { children: ReactNode }) {
   const [heldOut, setHeldOut] = useState(false);
   const soundReady = useRef<Promise<{ ready: boolean; outputLeadMs: number | null }> | null>(null);
 
-  // Le son se décode pendant que le poulpe s'assemble — seulement s'il est voulu.
+  // Le son se décode pendant que le poulpe s'assemble — seulement s'il est voulu (réglage relu).
   if (soundReady.current === null) {
-    bootSoundStore.rehydrate();
-    soundReady.current = bootSoundStore.readSnapshot() ? bootSound.prepare() : Promise.resolve({ ready: false, outputLeadMs: null });
+    soundReady.current = readBootSoundSetting().then((wanted) =>
+      wanted ? bootSound.prepare() : { ready: false, outputLeadMs: null },
+    );
   }
 
   const land = useCallback(() => setLanded(true), []);

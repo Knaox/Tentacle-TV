@@ -11,6 +11,17 @@ export const BOOT_SOUND_KEY = "tentacle_tv_boot_sound";
 
 export const bootSoundStore = createBooleanStore(tvStorage, BOOT_SOUND_KEY, true);
 
+/**
+ * Le réglage tel que l'appareil l'a gardé, une fois le stockage relu : l'ouverture
+ * se monte avant la relecture, et sur Android une lecture plus tôt rend le défaut
+ * (allumé) — le son partait réglage coupé. Apple TV : aussitôt.
+ */
+export async function readBootSoundSetting(): Promise<boolean> {
+  await tvStorage.hydrate();
+  bootSoundStore.rehydrate();
+  return bootSoundStore.readSnapshot();
+}
+
 export function useBootSoundEnabled(): boolean {
   return useSyncExternalStore(bootSoundStore.subscribe, bootSoundStore.readSnapshot, bootSoundStore.readSnapshot);
 }
