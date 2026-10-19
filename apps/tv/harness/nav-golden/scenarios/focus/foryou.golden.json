@@ -3,32 +3,32 @@
   "domain": "focus",
   "suite": "foryou",
   "reference": {
-    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
-    "label": "référence 6ef1b2373"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "70628b6b97aea0f0",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "tvgrille-test",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-18T03:00:01.501Z",
+  "recordedAt": "2026-10-19T06:48:58.437Z",
   "scenarios": {
     "foryou-entry-shelves": {
-      "hash": "ae71e51bee09",
-      "durationMs": 36989,
+      "hash": "42b87f1bf7bb",
+      "durationMs": 34915,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Spider-Man : No Way Home",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -51,13 +51,13 @@
             "right"
           ],
           "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
+          "focus": "hero:primary",
+          "label": "Spider-Man : No Way Home",
           "frame": [
-            811,
-            324,
-            68,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -78,13 +78,13 @@
             "right"
           ],
           "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
+          "focus": "hero:primary",
+          "label": "Spider-Man : No Way Home",
           "frame": [
-            811,
-            324,
-            68,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -102,13 +102,13 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "forYou:2",
-          "label": "Spider-Man : Homecoming",
+          "focus": "forYou:0",
+          "label": "Avatar : De feu et de cendres",
           "frame": [
-            764,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:forYou"
@@ -130,16 +130,16 @@
             "left"
           ],
           "app": "foreground",
-          "focus": "forYou:0",
-          "label": "Avatar : De feu et de cendres",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Réglages",
           "frame": [
-            176,
-            542,
-            258,
-            460
+            57,
+            964,
+            276,
+            64
           ],
           "groups": [
-            "section:forYou"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,
@@ -154,16 +154,16 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "filter:remove",
-          "label": "Netflix · Disney+",
+          "focus": "nav:Requests",
+          "label": "Mes demandes, 1 demande",
           "frame": [
-            368,
-            464,
-            273,
-            52
+            57,
+            892,
+            276,
+            64
           ],
           "groups": [
-            "section:forYou"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,
@@ -178,16 +178,16 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "forYou:0",
-          "label": "Avatar : De feu et de cendres",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Réglages",
           "frame": [
-            176,
-            542,
-            258,
-            460
+            57,
+            964,
+            276,
+            64
           ],
           "groups": [
-            "section:forYou"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,
@@ -202,16 +202,16 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "inLibrary:0",
-          "label": "Supergirl",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Réglages",
           "frame": [
-            176,
-            534,
-            258,
-            460
+            57,
+            964,
+            276,
+            64
           ],
           "groups": [
-            "section:inLibrary"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,
@@ -226,16 +226,16 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "anime:0",
-          "label": "Redo of Healer",
+          "focus": "nav:Settings",
+          "label": "Knaoxtest, Réglages",
           "frame": [
-            176,
-            534,
-            258,
-            460
+            57,
+            964,
+            276,
+            64
           ],
           "groups": [
-            "section:anime"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,
@@ -250,16 +250,16 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "inLibrary:0",
-          "label": "Supergirl",
+          "focus": "nav:Requests",
+          "label": "Mes demandes, 1 demande",
           "frame": [
-            176,
-            534,
-            258,
-            460
+            57,
+            892,
+            276,
+            64
           ],
           "groups": [
-            "section:inLibrary"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,
@@ -274,16 +274,16 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "forYou:0",
-          "label": "Avatar : De feu et de cendres",
+          "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
+          "label": "Séries",
           "frame": [
-            176,
-            542,
-            258,
-            460
+            57,
+            765,
+            276,
+            64
           ],
           "groups": [
-            "section:forYou"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,
@@ -298,16 +298,16 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "filter:remove",
-          "label": "Netflix · Disney+",
+          "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
+          "label": "Films",
           "frame": [
-            368,
-            464,
-            273,
-            52
+            57,
+            693,
+            276,
+            64
           ],
           "groups": [
-            "section:forYou"
+            "rail:group"
           ],
           "route": "Recommendations",
           "params": null,

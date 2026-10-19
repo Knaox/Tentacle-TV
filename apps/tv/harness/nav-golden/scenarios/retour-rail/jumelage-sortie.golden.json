@@ -3,40 +3,38 @@
   "domain": "retour-rail",
   "suite": "jumelage-sortie",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T4",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T04:13:46.249Z",
+  "recordedAt": "2026-10-19T07:21:41.334Z",
   "scenarios": {
-    "bandeau-hors-ligne-sortie": {
-      "hash": "bdfd537f37f0",
-      "durationMs": 46702,
+    "jumelage-retour": {
+      "hash": "88fc75625092",
+      "durationMs": 19557,
       "start": {
         "app": "foreground",
-        "focus": "offline:retry",
-        "label": "Réessayer la connexion",
+        "focus": "pairing:showCode",
+        "label": "Afficher le code de jumelage",
         "frame": [
-          545,
-          722,
-          412,
+          496,
+          673,
+          473,
           68
         ],
-        "groups": [
-          "offline:panel"
-        ],
-        "route": "Home",
+        "groups": [],
+        "route": "PairCode",
         "params": null,
         "stack": [
-          "Home"
+          "PairCode"
         ],
         "panel": null,
         "panelOwners": [],
@@ -44,15 +42,80 @@
       },
       "steps": [
         {
+          "do": "right",
+          "app": "foreground",
+          "focus": "pairing:manual",
+          "label": "Configurer manuellement",
+          "frame": [
+            991,
+            673,
+            435,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "pairing:url",
+          "label": "Adresse du serveur",
+          "frame": [
+            411,
+            512,
+            1100,
+            108
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
           "do": "menu",
-          "app": "background",
+          "app": "foreground",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
+          "frame": [
+            496,
+            673,
+            473,
+            68
+          ],
+          "groups": [],
+          "route": "PairCode",
+          "params": null,
+          "stack": [
+            "PairCode"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
           "focus": null,
           "label": null,
           "frame": null,
           "groups": [],
-          "route": null,
+          "route": "PairCode",
           "params": null,
-          "stack": [],
+          "stack": [
+            "PairCode"
+          ],
           "panel": null,
           "panelOwners": [],
           "writes": []
@@ -60,37 +123,43 @@
         {
           "do": "activate",
           "app": "foreground",
-          "focus": "offline:retry",
-          "label": "Réessayer la connexion",
+          "focus": "pairing:showCode",
+          "label": "Afficher le code de jumelage",
           "frame": [
-            545,
-            722,
-            412,
+            496,
+            673,
+            473,
             68
           ],
-          "groups": [
-            "offline:panel"
-          ],
-          "route": "Home",
+          "groups": [],
+          "route": "PairCode",
           "params": null,
           "stack": [
-            "Home"
+            "PairCode"
           ],
           "panel": null,
           "panelOwners": [],
           "writes": []
         }
+      ],
+      "expectFailures": [
+        {
+          "step": 4,
+          "field": "app",
+          "want": "background",
+          "got": "foreground"
+        }
       ]
     },
     "changer-de-serveur-puis-retour": {
       "hash": "9cb5c5e4613d",
-      "durationMs": 36508,
+      "durationMs": 36028,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
         "label": "Compte",
         "frame": [
-          176,
+          177,
           164,
           340,
           100
@@ -115,7 +184,7 @@
           "focus": "settings:changeServer",
           "label": "Changer de serveur",
           "frame": [
-            612,
+            613,
             770,
             362,
             68
@@ -140,7 +209,7 @@
           "focus": "settings:changeServer",
           "label": "Confirmer — Changer de serveur",
           "frame": [
-            612,
+            613,
             770,
             530,
             68
@@ -165,7 +234,7 @@
           "focus": "pairing:showCode",
           "label": "Afficher le code de jumelage",
           "frame": [
-            495,
+            496,
             673,
             473,
             68
@@ -202,7 +271,7 @@
           "focus": "pairing:showCode",
           "label": "Afficher le code de jumelage",
           "frame": [
-            495,
+            496,
             673,
             473,
             68
@@ -219,24 +288,26 @@
         }
       ]
     },
-    "jumelage-retour": {
-      "hash": "88fc75625092",
-      "durationMs": 28496,
+    "bandeau-hors-ligne-sortie": {
+      "hash": "bdfd537f37f0",
+      "durationMs": 31701,
       "start": {
         "app": "foreground",
-        "focus": "pairing:showCode",
-        "label": "Afficher le code de jumelage",
+        "focus": "offline:retry",
+        "label": "Réessayer la connexion",
         "frame": [
-          495,
-          673,
-          473,
+          546,
+          638,
+          412,
           68
         ],
-        "groups": [],
-        "route": "PairCode",
+        "groups": [
+          "offline:panel"
+        ],
+        "route": "Home",
         "params": null,
         "stack": [
-          "PairCode"
+          "Home"
         ],
         "panel": null,
         "panelOwners": [],
@@ -244,78 +315,17 @@
       },
       "steps": [
         {
-          "do": "right",
-          "app": "foreground",
-          "focus": "pairing:manual",
-          "label": "Configurer manuellement",
-          "frame": [
-            990,
-            673,
-            435,
-            68
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "pairing:url",
-          "label": "Adresse du serveur",
-          "frame": [
-            410,
-            512,
-            1100,
-            108
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
           "do": "menu",
           "app": "foreground",
-          "focus": "pairing:showCode",
-          "label": "Afficher le code de jumelage",
-          "frame": [
-            495,
-            673,
-            473,
-            68
-          ],
-          "groups": [],
-          "route": "PairCode",
-          "params": null,
-          "stack": [
-            "PairCode"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "background",
           "focus": null,
           "label": null,
           "frame": null,
           "groups": [],
-          "route": null,
+          "route": "Home",
           "params": null,
-          "stack": [],
+          "stack": [
+            "Home"
+          ],
           "panel": null,
           "panelOwners": [],
           "writes": []
@@ -323,23 +333,33 @@
         {
           "do": "activate",
           "app": "foreground",
-          "focus": "pairing:showCode",
-          "label": "Afficher le code de jumelage",
+          "focus": "offline:retry",
+          "label": "Réessayer la connexion",
           "frame": [
-            495,
-            673,
-            473,
+            546,
+            638,
+            412,
             68
           ],
-          "groups": [],
-          "route": "PairCode",
+          "groups": [
+            "offline:panel"
+          ],
+          "route": "Home",
           "params": null,
           "stack": [
-            "PairCode"
+            "Home"
           ],
           "panel": null,
           "panelOwners": [],
           "writes": []
+        }
+      ],
+      "expectFailures": [
+        {
+          "step": 1,
+          "field": "app",
+          "want": "background",
+          "got": "foreground"
         }
       ]
     }

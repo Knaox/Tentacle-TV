@@ -3,32 +3,32 @@
   "domain": "focus",
   "suite": "rangees-apercu-dessus",
   "reference": {
-    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
-    "label": "référence 6ef1b2373"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "70628b6b97aea0f0",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "tvgrille-test",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-18T03:07:26.512Z",
+  "recordedAt": "2026-10-19T06:54:21.940Z",
   "scenarios": {
     "apercu-garde-la-rangee-du-dessus": {
       "hash": "1e8dca80ef19",
-      "durationMs": 33196,
+      "durationMs": 33170,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -53,10 +53,10 @@
           "focus": "nextUp:0",
           "label": "Les Kassos",
           "frame": [
-            176,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -86,10 +86,10 @@
           "focus": "nextUp:4",
           "label": "One Piece",
           "frame": [
-            1330,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -109,10 +109,10 @@
           "focus": "nextUp:4",
           "label": "One Piece",
           "frame": [
-            1330,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -131,13 +131,13 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
           "frame": [
-            1352,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -154,13 +154,13 @@
         {
           "do": "wait:3.5",
           "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
           "frame": [
-            1352,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -180,10 +180,10 @@
           "focus": "nextUp:4",
           "label": "One Piece",
           "frame": [
-            1330,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"

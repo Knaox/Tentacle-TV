@@ -3,35 +3,35 @@
   "domain": "retour-rail",
   "suite": "fiches",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T4",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:07:39.692Z",
+  "recordedAt": "2026-10-19T07:20:14.043Z",
   "scenarios": {
     "fiche-retour": {
-      "hash": "7fddcc953048",
-      "durationMs": 23581,
+      "hash": "3a5094c0d42d",
+      "durationMs": 21868,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -53,7 +53,7 @@
           "focus": "detail:primary",
           "label": "Reprendre",
           "frame": [
-            120,
+            121,
             633,
             339,
             68
@@ -77,16 +77,16 @@
         {
           "do": "menu",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
           "label": "(500) jours ensemble",
           "frame": [
-            176,
-            265,
-            244,
-            439
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:6a24d9a479675b918371054b545b59a0"
           ],
           "route": "Library",
           "params": {
@@ -105,13 +105,13 @@
     },
     "suite-de-fiches-similaires": {
       "hash": "cc8e2f72bc73",
-      "durationMs": 34061,
+      "durationMs": 31342,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Lecture",
         "frame": [
-          120,
+          121,
           674,
           207,
           68
@@ -142,10 +142,10 @@
           "focus": "similar:0",
           "label": "Interstellar",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            433
+            312,
+            541
           ],
           "groups": [
             "detail:similar"
@@ -168,7 +168,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -197,7 +197,7 @@
           "focus": "cast:0",
           "label": "Matthew McConaughey, Cooper",
           "frame": [
-            102,
+            103,
             144,
             212,
             283
@@ -223,10 +223,10 @@
           "focus": "grid:0",
           "label": "#Chef",
           "frame": [
-            176,
-            386,
-            244,
-            439
+            177,
+            464,
+            300,
+            523
           ],
           "groups": [
             "grid:line:0"
@@ -251,7 +251,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -275,12 +275,12 @@
           "do": "menu",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -298,13 +298,13 @@
     },
     "casting-puis-film": {
       "hash": "62483137ac86",
-      "durationMs": 27920,
+      "durationMs": 24290,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Lecture",
         "frame": [
-          120,
+          121,
           674,
           207,
           68
@@ -331,7 +331,7 @@
           "focus": "cast:0",
           "label": "Ryan Gosling, Ryland Grace",
           "frame": [
-            102,
+            103,
             144,
             212,
             283
@@ -357,10 +357,10 @@
           "focus": "grid:0",
           "label": "#Chef",
           "frame": [
-            176,
-            386,
-            244,
-            439
+            177,
+            464,
+            300,
+            523
           ],
           "groups": [
             "grid:line:0"
@@ -385,7 +385,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -409,12 +409,12 @@
           "do": "menu",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -432,13 +432,13 @@
     },
     "episode-vers-sa-serie": {
       "hash": "6f1ca5919c06",
-      "durationMs": 38651,
+      "durationMs": 31803,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Reprendre S2 · E3",
         "frame": [
-          120,
+          121,
           633,
           432,
           68
@@ -468,7 +468,7 @@
           "focus": "episode:1",
           "label": "Le Plat d'étain (Brou)",
           "frame": [
-            372,
+            373,
             240,
             460,
             438
@@ -560,7 +560,7 @@
           "focus": "detail:primary",
           "label": "Reprendre",
           "frame": [
-            120,
+            121,
             633,
             339,
             68
@@ -590,7 +590,7 @@
           "focus": "detail:series",
           "label": "Cauchemar en cuisine avec Philippe Etchebest — S2 · E3",
           "frame": [
-            120,
+            121,
             481,
             738,
             52
@@ -617,7 +617,7 @@
           "focus": "episode:1",
           "label": "Le Plat d'étain (Brou)",
           "frame": [
-            372,
+            373,
             240,
             460,
             438
@@ -641,12 +641,12 @@
           "do": "menu",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -664,13 +664,13 @@
     },
     "croix-de-la-fiche": {
       "hash": "9362b2f0f5c7",
-      "durationMs": 22787,
+      "durationMs": 18697,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Lecture",
         "frame": [
-          120,
+          121,
           674,
           207,
           68
@@ -697,7 +697,7 @@
           "focus": "detail:back",
           "label": "Retour",
           "frame": [
-            120,
+            121,
             68,
             60,
             60
@@ -723,7 +723,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -749,7 +749,7 @@
           "focus": "detail:back",
           "label": "Retour",
           "frame": [
-            120,
+            121,
             68,
             60,
             60
@@ -773,12 +773,12 @@
           "do": "select",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"

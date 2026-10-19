@@ -3,32 +3,32 @@
   "domain": "panneaux-cartes",
   "suite": "voile",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "c9395c1a619df932",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T6",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T02:29:36.481Z",
+  "recordedAt": "2026-10-19T07:39:33.232Z",
   "scenarios": {
     "pc-16": {
       "hash": "d1df32c125f3",
-      "durationMs": 37542,
+      "durationMs": 32742,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          248,
-          556,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -51,12 +51,12 @@
           ],
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -76,8 +76,8 @@
           "focus": "offline:retry",
           "label": "Réessayer la connexion",
           "frame": [
-            545,
-            722,
+            546,
+            638,
             412,
             68
           ],
@@ -99,8 +99,8 @@
           "focus": "offline:retry",
           "label": "Réessayer la connexion",
           "frame": [
-            545,
-            722,
+            546,
+            638,
             412,
             68
           ],
@@ -122,8 +122,8 @@
           "focus": "offline:retry",
           "label": "Réessayer la connexion",
           "frame": [
-            545,
-            722,
+            546,
+            638,
             412,
             68
           ],
@@ -145,8 +145,8 @@
           "focus": "offline:unpair",
           "label": "Déjumeler cet appareil",
           "frame": [
-            978,
-            722,
+            979,
+            638,
             396,
             68
           ],
@@ -168,8 +168,8 @@
           "focus": "offline:unpair",
           "label": "Confirmer le déjumelage",
           "frame": [
-            965,
-            722,
+            966,
+            638,
             423,
             68
           ],
@@ -191,8 +191,8 @@
           "focus": "offline:retry",
           "label": "Réessayer la connexion",
           "frame": [
-            545,
-            722,
+            546,
+            638,
             412,
             68
           ],
@@ -214,8 +214,8 @@
           "focus": "offline:unpair",
           "label": "Déjumeler cet appareil",
           "frame": [
-            978,
-            722,
+            979,
+            638,
             396,
             68
           ],

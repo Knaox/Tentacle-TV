@@ -3,32 +3,32 @@
   "domain": "retour-rail",
   "suite": "retour-pages",
   "reference": {
-    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
-    "label": "référence 562ae44a5"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — banc UI",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:50:25.511Z",
+  "recordedAt": "2026-10-19T07:31:56.855Z",
   "scenarios": {
     "accueil-retour-x3": {
       "hash": "5b8382e3de8f",
-      "durationMs": 28466,
+      "durationMs": 29344,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          248,
-          556,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -49,12 +49,14 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -70,12 +72,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -105,12 +109,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -123,20 +129,20 @@
       ]
     },
     "bibliotheque-retour-x3": {
-      "hash": "1499391cbb31",
-      "durationMs": 28331,
+      "hash": "35eb93864968",
+      "durationMs": 29309,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:f89b4d4d7733020ed2721d8fec37f26c:0",
         "label": "\"Omae Gotoki ga Maou ni Kateru to Omou na\" to Yuusha Party o Tsuihou Sareta node, Outo de Kimama ni Kurashitai",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:f89b4d4d7733020ed2721d8fec37f26c"
         ],
         "route": "Library",
         "params": {
@@ -158,12 +164,14 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
@@ -183,12 +191,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
@@ -222,12 +232,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "acf898949f3c87c958b3784cb05fd4d1",
@@ -245,13 +257,13 @@
     },
     "reglages-retour-x2": {
       "hash": "a288dc37d9f8",
-      "durationMs": 31004,
+      "durationMs": 32953,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
         "label": "Compte",
         "frame": [
-          176,
+          177,
           164,
           340,
           100
@@ -276,12 +288,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Settings",
           "params": null,
           "stack": [
@@ -312,12 +326,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Settings",
           "params": null,
           "stack": [
@@ -331,20 +347,20 @@
       ]
     },
     "rail-entree-vers-profil": {
-      "hash": "c0a06744b641",
-      "durationMs": 16567,
+      "hash": "13eaceb7bce6",
+      "durationMs": 17672,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -366,12 +382,14 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -395,12 +413,14 @@
           "focus": "nav:Watchlist",
           "label": "Ma liste",
           "frame": [
-            56,
+            57,
             477,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -420,12 +440,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",

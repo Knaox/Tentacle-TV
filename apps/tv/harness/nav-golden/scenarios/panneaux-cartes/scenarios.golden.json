@@ -3,213 +3,32 @@
   "domain": "panneaux-cartes",
   "suite": "scenarios",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "c9395c1a619df932",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T6",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T02:28:19.455Z",
+  "recordedAt": "2026-10-19T07:37:35.354Z",
   "scenarios": {
-    "pc-12": {
-      "hash": "bb36e6f5e228",
-      "durationMs": 32762,
-      "start": {
-        "app": "foreground",
-        "focus": "episode:1",
-        "label": "La casa du papier A4",
-        "frame": [
-          120,
-          240,
-          460,
-          342
-        ],
-        "groups": [
-          "detail:episodes"
-        ],
-        "route": "MediaDetail",
-        "params": {
-          "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
-        },
-        "stack": [
-          "Home",
-          "MediaDetail"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:0.6",
-          "app": "foreground",
-          "focus": "episode:1",
-          "label": "La casa du papier A4",
-          "frame": [
-            120,
-            240,
-            460,
-            342
-          ],
-          "groups": [
-            "detail:episodes"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": [],
-          "texts": [
-            true
-          ]
-        },
-        {
-          "do": "hold:2",
-          "app": "foreground",
-          "focus": "sheet:scale:5",
-          "label": "Noter 5 sur 10",
-          "frame": [
-            908,
-            544,
-            104,
-            96
-          ],
-          "groups": [
-            "sheet:scale"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": [
-            "sheet:header"
-          ],
-          "panelOwners": [
-            "SheetBody"
-          ],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "sheet:action:play",
-          "label": "Lire",
-          "frame": [
-            582,
-            723,
-            140,
-            125
-          ],
-          "groups": [
-            "sheet:actions"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": [
-            "sheet:header"
-          ],
-          "panelOwners": [
-            "SheetBody"
-          ],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "right",
-            "right",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "sheet:action:details",
-          "label": "Plus d'infos",
-          "frame": [
-            1198,
-            723,
-            140,
-            125
-          ],
-          "groups": [
-            "sheet:actions"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": [
-            "sheet:header"
-          ],
-          "panelOwners": [
-            "SheetBody"
-          ],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "episode:1",
-          "label": "La casa du papier A4",
-          "frame": [
-            120,
-            240,
-            460,
-            342
-          ],
-          "groups": [
-            "detail:episodes"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "pc-01": {
       "hash": "d9e57f43bef5",
-      "durationMs": 49463,
+      "durationMs": 29739,
       "start": {
         "app": "foreground",
         "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
         "label": "2001 : L'Odyssée de l'espace",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -230,10 +49,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -526,10 +345,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -547,16 +366,16 @@
     },
     "pc-02": {
       "hash": "87042157ad8a",
-      "durationMs": 40504,
+      "durationMs": 29341,
       "start": {
         "app": "foreground",
         "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
         "label": "2001 : L'Odyssée de l'espace",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -804,10 +623,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -825,16 +644,16 @@
     },
     "pc-03": {
       "hash": "1c8df9a05e83",
-      "durationMs": 37356,
+      "durationMs": 24620,
       "start": {
         "app": "foreground",
         "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
         "label": "2001 : L'Odyssée de l'espace",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1017,10 +836,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1038,16 +857,16 @@
     },
     "pc-04": {
       "hash": "503634d2629f",
-      "durationMs": 30788,
+      "durationMs": 21125,
       "start": {
         "app": "foreground",
         "focus": "resume:0",
         "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          673,
-          380,
-          287
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:resume"
@@ -1257,10 +1076,10 @@
           "focus": "resume:0",
           "label": "Orgueil et Préjugés",
           "frame": [
-            176,
-            673,
-            380,
-            287
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:resume"
@@ -1278,16 +1097,16 @@
     },
     "pc-05": {
       "hash": "4431bd7eb05b",
-      "durationMs": 28687,
+      "durationMs": 20411,
       "start": {
         "app": "foreground",
         "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
         "label": "2001 : L'Odyssée de l'espace",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1362,10 +1181,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1383,16 +1202,16 @@
     },
     "pc-06": {
       "hash": "167dc72594f6",
-      "durationMs": 42021,
+      "durationMs": 19386,
       "start": {
         "app": "foreground",
         "focus": "resume:0",
         "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          673,
-          380,
-          287
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:resume"
@@ -1552,10 +1371,10 @@
           "focus": "resume:0",
           "label": "Orgueil et Préjugés",
           "frame": [
-            176,
-            673,
-            380,
-            287
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:resume"
@@ -1573,16 +1392,16 @@
     },
     "pc-07": {
       "hash": "ddadb71f4d21",
-      "durationMs": 55298,
+      "durationMs": 26563,
       "start": {
         "app": "foreground",
         "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
         "label": "2001 : L'Odyssée de l'espace",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1801,10 +1620,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1822,16 +1641,16 @@
     },
     "pc-08": {
       "hash": "8b0adcbfc02e",
-      "durationMs": 55926,
+      "durationMs": 24695,
       "start": {
         "app": "foreground",
         "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
         "label": "2001 : L'Odyssée de l'espace",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1938,7 +1757,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -1964,10 +1783,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -1985,16 +1804,16 @@
     },
     "pc-09": {
       "hash": "d6087765a650",
-      "durationMs": 40543,
+      "durationMs": 23095,
       "start": {
         "app": "foreground",
         "focus": "reco:forYou:0",
         "label": "Spider-Man : No Way Home",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:reco:forYou"
@@ -2129,10 +1948,10 @@
           "focus": "reco:forYou:0",
           "label": "Spider-Man : No Way Home",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -2150,13 +1969,13 @@
     },
     "pc-10": {
       "hash": "fd263d13ed4b",
-      "durationMs": 50866,
+      "durationMs": 22863,
       "start": {
         "app": "foreground",
         "focus": "detail:rate",
         "label": "Noter ce titre",
         "frame": [
-          944,
+          945,
           674,
           68,
           68
@@ -2303,7 +2122,7 @@
           "focus": "detail:rate",
           "label": "Noter ce titre",
           "frame": [
-            944,
+            945,
             674,
             68,
             68
@@ -2327,13 +2146,13 @@
     },
     "pc-11": {
       "hash": "5880b7f77b8b",
-      "durationMs": 59016,
+      "durationMs": 20862,
       "start": {
         "app": "foreground",
         "focus": "detail:rate",
         "label": "Noter ce titre",
         "frame": [
-          944,
+          945,
           674,
           68,
           68
@@ -2420,7 +2239,7 @@
           "focus": "detail:rate",
           "label": "Votre note : 6/10",
           "frame": [
-            944,
+            945,
             674,
             68,
             68
@@ -2444,18 +2263,199 @@
         }
       ]
     },
+    "pc-12": {
+      "hash": "bb36e6f5e228",
+      "durationMs": 24950,
+      "start": {
+        "app": "foreground",
+        "focus": "episode:1",
+        "label": "La casa du papier A4",
+        "frame": [
+          121,
+          240,
+          460,
+          342
+        ],
+        "groups": [
+          "detail:episodes"
+        ],
+        "route": "MediaDetail",
+        "params": {
+          "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+        },
+        "stack": [
+          "Home",
+          "MediaDetail"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:0.6",
+          "app": "foreground",
+          "focus": "episode:1",
+          "label": "La casa du papier A4",
+          "frame": [
+            121,
+            240,
+            460,
+            342
+          ],
+          "groups": [
+            "detail:episodes"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": [],
+          "texts": [
+            true
+          ]
+        },
+        {
+          "do": "hold:2",
+          "app": "foreground",
+          "focus": "sheet:scale:5",
+          "label": "Noter 5 sur 10",
+          "frame": [
+            908,
+            544,
+            104,
+            96
+          ],
+          "groups": [
+            "sheet:scale"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "sheet:action:play",
+          "label": "Lire",
+          "frame": [
+            582,
+            723,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "right",
+            "right",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "sheet:action:details",
+          "label": "Plus d'infos",
+          "frame": [
+            1198,
+            723,
+            140,
+            125
+          ],
+          "groups": [
+            "sheet:actions"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": [
+            "sheet:header"
+          ],
+          "panelOwners": [
+            "SheetBody"
+          ],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "episode:1",
+          "label": "La casa du papier A4",
+          "frame": [
+            121,
+            240,
+            460,
+            342
+          ],
+          "groups": [
+            "detail:episodes"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "29ee5c86d39a9e0dc425acfa34609fa1"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
     "pc-13": {
       "hash": "5ca1573045bb",
-      "durationMs": 23979,
+      "durationMs": 14093,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          248,
-          556,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -2474,12 +2474,12 @@
           "do": "wait:0.6",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -2527,12 +2527,12 @@
           "do": "menu",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -2549,20 +2549,20 @@
       ]
     },
     "pc-14": {
-      "hash": "77f20dce02ae",
-      "durationMs": 19792,
+      "hash": "db5fe7007af1",
+      "durationMs": 17114,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -2610,16 +2610,16 @@
         {
           "do": "menu",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
           "label": "(500) jours ensemble",
           "frame": [
-            176,
-            265,
-            244,
-            439
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:6a24d9a479675b918371054b545b59a0"
           ],
           "route": "Library",
           "params": {
@@ -2637,16 +2637,16 @@
     },
     "pc-15": {
       "hash": "ea237119c866",
-      "durationMs": 20365,
+      "durationMs": 19630,
       "start": {
         "app": "foreground",
         "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
         "label": "2001 : L'Odyssée de l'espace",
         "frame": [
-          176,
-          527,
-          240,
-          433
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -2667,7 +2667,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -2693,10 +2693,10 @@
           "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
           "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            176,
-            527,
-            240,
-            433
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"

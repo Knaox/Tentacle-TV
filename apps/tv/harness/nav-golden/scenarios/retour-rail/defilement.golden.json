@@ -3,35 +3,35 @@
   "domain": "retour-rail",
   "suite": "defilement",
   "reference": {
-    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
-    "label": "référence 562ae44a5"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — banc UI",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:46:57.710Z",
+  "recordedAt": "2026-10-19T07:17:44.376Z",
   "scenarios": {
     "rail-24-bibliotheques": {
-      "hash": "b63f7199e5fe",
-      "durationMs": 28721,
+      "hash": "4213512ffd23",
+      "durationMs": 31157,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
-        "label": "(500) jours ensemble",
+        "focus": "group:alpha:0:0",
+        "label": "À couteaux tirés",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:alpha:0"
         ],
         "route": "Library",
         "params": {
@@ -53,12 +53,14 @@
           "focus": "nav:Library_rr000000000000000000000000000017",
           "label": "Bibliothèque 21",
           "frame": [
-            56,
+            57,
             682,
             289,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "rr000000000000000000000000000017",
@@ -78,12 +80,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             289,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "rr000000000000000000000000000017",
@@ -103,12 +107,14 @@
           "focus": "nav:Search",
           "label": "Rechercher",
           "frame": [
-            56,
+            57,
             60,
             289,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "rr000000000000000000000000000017",

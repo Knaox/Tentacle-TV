@@ -3,35 +3,35 @@
   "domain": "retour-rail",
   "suite": "raccourcis",
   "reference": {
-    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
-    "label": "référence 562ae44a5"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — banc UI",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:52:49.214Z",
+  "recordedAt": "2026-10-19T07:30:07.572Z",
   "scenarios": {
     "rail-butees": {
-      "hash": "63adb811e76f",
-      "durationMs": 23078,
+      "hash": "ffb6502afa42",
+      "durationMs": 25456,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -53,12 +53,14 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -85,12 +87,14 @@
           "focus": "nav:Search",
           "label": "Rechercher",
           "frame": [
-            56,
+            57,
             244,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -110,12 +114,14 @@
           "focus": "nav:Search",
           "label": "Rechercher",
           "frame": [
-            56,
+            57,
             244,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -135,12 +141,14 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -167,12 +175,14 @@
           "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
           "label": "Séries",
           "frame": [
-            56,
+            57,
             765,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -192,12 +202,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -217,12 +229,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -239,20 +253,20 @@
       ]
     },
     "gauche-arme": {
-      "hash": "49b8da1156c2",
-      "durationMs": 15896,
+      "hash": "70d5df1a01dc",
+      "durationMs": 16807,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -274,12 +288,14 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -302,12 +318,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -324,20 +342,20 @@
       ]
     },
     "gauche-maintenu": {
-      "hash": "f0fe56cc477f",
-      "durationMs": 18261,
+      "hash": "0f9be52e7eda",
+      "durationMs": 19822,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -356,16 +374,16 @@
         {
           "do": "right",
           "app": "foreground",
-          "focus": "grid:1",
-          "label": "#Chef",
+          "focus": "group:genre:6a24d9a479675b918371054b545b59a0:1",
+          "label": "1917",
           "frame": [
-            456,
-            265,
-            244,
-            439
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:6a24d9a479675b918371054b545b59a0"
           ],
           "route": "Library",
           "params": {
@@ -386,12 +404,14 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -414,12 +434,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -436,20 +458,20 @@
       ]
     },
     "pont-rail-contenu": {
-      "hash": "73f5cef2091b",
-      "durationMs": 14819,
+      "hash": "229552ebb0fc",
+      "durationMs": 15813,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -471,12 +493,14 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -493,16 +517,16 @@
         {
           "do": "right",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
           "label": "(500) jours ensemble",
           "frame": [
-            176,
-            265,
-            244,
-            439
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:6a24d9a479675b918371054b545b59a0"
           ],
           "route": "Library",
           "params": {

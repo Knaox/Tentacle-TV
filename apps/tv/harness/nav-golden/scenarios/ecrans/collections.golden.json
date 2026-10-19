@@ -3,107 +3,35 @@
   "domain": "ecrans",
   "suite": "collections",
   "reference": {
-    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
-    "label": "référence 6ef1b2373"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "70628b6b97aea0f0",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "tvgrille-test",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-18T03:17:15.276Z",
+  "recordedAt": "2026-10-19T07:13:13.412Z",
   "scenarios": {
-    "collections-favoris-vides": {
-      "hash": "2b90f1da5f5b",
-      "durationMs": 21234,
-      "start": {
-        "app": "foreground",
-        "focus": "empty:primary",
-        "label": "Parcourir les bibliothèques",
-        "frame": [
-          793,
-          872,
-          414,
-          68
-        ],
-        "groups": [],
-        "route": "Favorites",
-        "params": null,
-        "stack": [
-          "Home",
-          "Favorites"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "wait:1",
-          "app": "foreground",
-          "focus": "empty:primary",
-          "label": "Parcourir les bibliothèques",
-          "frame": [
-            793,
-            872,
-            414,
-            68
-          ],
-          "groups": [],
-          "route": "Favorites",
-          "params": null,
-          "stack": [
-            "Home",
-            "Favorites"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            176,
-            324,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "collections-ma-liste": {
-      "hash": "3c848d85d80e",
-      "durationMs": 25159,
+      "hash": "32ac6026aabe",
+      "durationMs": 26256,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:type:anime:0",
         "label": "Rick et Morty",
         "frame": [
-          176,
-          464,
-          300,
-          523
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:type:anime"
         ],
         "route": "Watchlist",
         "params": null,
@@ -119,16 +47,16 @@
         {
           "do": "wait:1",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:type:anime:0",
           "label": "Rick et Morty",
           "frame": [
-            176,
-            464,
-            300,
-            523
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:type:anime"
           ],
           "route": "Watchlist",
           "params": null,
@@ -146,7 +74,7 @@
           "focus": "detail:list",
           "label": "Retirer de ma liste",
           "frame": [
-            126,
+            127,
             674,
             68,
             68
@@ -170,16 +98,16 @@
         {
           "do": "menu",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:type:anime:0",
           "label": "Rick et Morty",
           "frame": [
-            176,
-            464,
-            300,
-            523
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:type:anime"
           ],
           "route": "Watchlist",
           "params": null,
@@ -197,7 +125,7 @@
           "focus": "nav:Watchlist",
           "label": "Ma liste",
           "frame": [
-            56,
+            57,
             477,
             276,
             64
@@ -210,6 +138,78 @@
           "stack": [
             "Home",
             "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "collections-favoris-vides": {
+      "hash": "2b90f1da5f5b",
+      "durationMs": 22482,
+      "start": {
+        "app": "foreground",
+        "focus": "empty:primary",
+        "label": "Parcourir les bibliothèques",
+        "frame": [
+          794,
+          510,
+          414,
+          68
+        ],
+        "groups": [],
+        "route": "Favorites",
+        "params": null,
+        "stack": [
+          "Home",
+          "Favorites"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "empty:primary",
+          "label": "Parcourir les bibliothèques",
+          "frame": [
+            794,
+            510,
+            414,
+            68
+          ],
+          "groups": [],
+          "route": "Favorites",
+          "params": null,
+          "stack": [
+            "Home",
+            "Favorites"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
           ],
           "panel": null,
           "panelOwners": [],

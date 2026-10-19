@@ -3,32 +3,32 @@
   "domain": "socle",
   "suite": "accueil-rail",
   "reference": {
-    "sha": "562ae44a5b5a72cbca12b8253f3b118659e10e98",
-    "label": "référence 562ae44a5"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "Tentacle TV — banc UI",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-04T19:36:58.990Z",
+  "recordedAt": "2026-10-19T07:01:49.553Z",
   "scenarios": {
     "socle-01": {
       "hash": "41acec5736d7",
-      "durationMs": 10829,
+      "durationMs": 10874,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          248,
-          556,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -47,12 +47,12 @@
           "do": "wait:0.5",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -70,16 +70,16 @@
     },
     "socle-02": {
       "hash": "159a0dd77876",
-      "durationMs": 13676,
+      "durationMs": 13211,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          248,
-          556,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -100,12 +100,14 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -121,12 +123,14 @@
           "focus": "nav:Recommendations",
           "label": "Pour vous",
           "frame": [
-            56,
+            57,
             405,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -142,12 +146,14 @@
           "focus": "nav:Watchlist",
           "label": "Ma liste",
           "frame": [
-            56,
+            57,
             477,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Home",
           "params": null,
           "stack": [
@@ -161,12 +167,12 @@
           "do": "right",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -183,19 +189,21 @@
       ]
     },
     "socle-03": {
-      "hash": "51c0ca57a227",
-      "durationMs": 21058,
+      "hash": "6478862b122c",
+      "durationMs": 19410,
       "start": {
         "app": "foreground",
         "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
         "label": "Films",
         "frame": [
-          56,
+          57,
           693,
           276,
           64
         ],
-        "groups": [],
+        "groups": [
+          "rail:group"
+        ],
         "route": "Home",
         "params": null,
         "stack": [
@@ -209,16 +217,16 @@
         {
           "do": "select",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
           "label": "(500) jours ensemble",
           "frame": [
-            176,
-            265,
-            244,
-            439
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:6a24d9a479675b918371054b545b59a0"
           ],
           "route": "Library",
           "params": {
@@ -239,12 +247,14 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",
@@ -264,12 +274,14 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
           ],
-          "groups": [],
+          "groups": [
+            "rail:group"
+          ],
           "route": "Library",
           "params": {
             "libraryId": "db4c1708cbb5dd1676284a40f2950aba",

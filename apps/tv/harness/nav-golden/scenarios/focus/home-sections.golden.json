@@ -3,32 +3,32 @@
   "domain": "focus",
   "suite": "home-sections",
   "reference": {
-    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
-    "label": "référence 6ef1b2373"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "70628b6b97aea0f0",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "tvgrille-test",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-18T03:06:53.314Z",
+  "recordedAt": "2026-10-19T06:53:48.766Z",
   "scenarios": {
-    "home-burst": {
-      "hash": "322272b81db6",
-      "durationMs": 30252,
+    "home-entry": {
+      "hash": "33c9a215f993",
+      "durationMs": 17372,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -44,18 +44,18 @@
       },
       "steps": [
         {
-          "do": "holddown:7",
+          "do": "left",
           "app": "foreground",
-          "focus": "watchlist:0",
-          "label": "Rick et Morty",
+          "focus": "nav:Home",
+          "label": "Accueil",
           "frame": [
-            176,
-            534,
-            258,
-            460
+            57,
+            333,
+            276,
+            64
           ],
           "groups": [
-            "section:watchlist"
+            "rail:group"
           ],
           "route": "Home",
           "params": null,
@@ -67,15 +67,107 @@
           "writes": []
         },
         {
-          "do": "holdup:7",
+          "do": "right",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            176,
-            324,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Les Chevaliers du ciel",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            57,
+            333,
+            276,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -91,21 +183,21 @@
         }
       ]
     },
-    "home-return": {
-      "hash": "61fc3108d7f7",
-      "durationMs": 29491,
+    "home-rows": {
+      "hash": "751336a0682d",
+      "durationMs": 49607,
       "start": {
         "app": "foreground",
-        "focus": "reco:forYou:2",
-        "label": "Iron Man 2",
+        "focus": "hero:primary",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          764,
-          542,
-          258,
-          460
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
-          "section:reco:forYou"
+          "section:hero"
         ],
         "route": "Home",
         "params": null,
@@ -118,44 +210,18 @@
       },
       "steps": [
         {
-          "do": "select",
+          "do": "down",
           "app": "foreground",
-          "focus": "detail:primary",
-          "label": "Lecture",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            120,
-            674,
-            207,
-            68
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "detail:header"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "d10a5876d64f3c97bbe432118aefb7a3"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "reco:forYou:2",
-          "label": "Iron Man 2",
-          "frame": [
-            764,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:reco:forYou"
+            "section:resume"
           ],
           "route": "Home",
           "params": null,
@@ -165,45 +231,17 @@
           "panel": null,
           "panelOwners": [],
           "writes": []
-        }
-      ]
-    },
-    "home-filter-chip": {
-      "hash": "122ed3dd2baa",
-      "durationMs": 36884,
-      "start": {
-        "app": "foreground",
-        "focus": "filter:remove",
-        "label": "Netflix · Disney+",
-        "frame": [
-          368,
-          464,
-          273,
-          52
-        ],
-        "groups": [
-          "section:reco:forYou"
-        ],
-        "route": "Home",
-        "params": null,
-        "stack": [
-          "Home"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
+        },
         {
-          "do": "up",
+          "do": "down",
           "app": "foreground",
           "focus": "nextUp:0",
           "label": "Les Kassos",
           "frame": [
-            176,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -220,36 +258,13 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "filter:remove",
-          "label": "Netflix · Disney+",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
           "frame": [
-            368,
-            464,
-            273,
-            52
-          ],
-          "groups": [
-            "section:reco:forYou"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "filter:remove",
-          "label": "Netflix · Disney+",
-          "frame": [
-            368,
-            464,
-            273,
-            52
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -266,16 +281,16 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "reco:forYou:1",
-          "label": "Avatar : De feu et de cendres",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            470,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "section:reco:forYou"
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
           ],
           "route": "Home",
           "params": null,
@@ -287,15 +302,61 @@
           "writes": []
         },
         {
-          "do": "left",
+          "do": "down",
+          "app": "foreground",
+          "focus": "watched:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:watched"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
           "app": "foreground",
           "focus": "reco:forYou:0",
           "label": "Spider-Man : No Way Home",
           "frame": [
-            176,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -315,8 +376,8 @@
           "focus": "filter:remove",
           "label": "Netflix · Disney+",
           "frame": [
-            368,
-            464,
+            365,
+            56,
             273,
             52
           ],
@@ -333,18 +394,64 @@
           "writes": []
         },
         {
-          "do": "down",
+          "do": "up",
           "app": "foreground",
-          "focus": "reco:forYou:1",
-          "label": "Avatar : De feu et de cendres",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
           "frame": [
-            470,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "section:reco:forYou"
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
           ],
           "route": "Home",
           "params": null,
@@ -358,25 +465,186 @@
         {
           "do": [
             "right",
-            "wait:0.35",
-            "right",
-            "wait:0.35",
-            "right",
-            "wait:0.35",
-            "right",
-            "wait:0.35",
-            "right",
-            "wait:0.35",
+            "wait:0.4",
             "right"
           ],
           "app": "foreground",
-          "focus": "reco:forYou:7",
-          "label": "Solar Opposites",
+          "focus": "hero:primary",
+          "label": "Irréversible",
           "frame": [
-            1566,
-            542,
-            258,
-            460
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:2",
+          "label": "Irréversible",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "nextUp:2",
+          "label": "GTO - Great Teacher Onizuka",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -393,13 +661,36 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "nextUp:2",
-          "label": "GTO - Great Teacher Onizuka",
+          "focus": "filter:remove",
+          "label": "Netflix · Disney+",
           "frame": [
-            1236,
-            534,
-            494,
-            351
+            365,
+            56,
+            273,
+            52
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -413,20 +704,34 @@
           "panelOwners": [],
           "writes": []
         }
+      ],
+      "expectFailures": [
+        {
+          "step": 20,
+          "field": "focus",
+          "want": "nextUp:2",
+          "got": "filter:remove"
+        },
+        {
+          "step": 21,
+          "field": "focus",
+          "want": "resume:2",
+          "got": "nextUp:0"
+        }
       ]
     },
     "home-row-end": {
-      "hash": "797aadb9667e",
-      "durationMs": 49572,
+      "hash": "7ff505a805c8",
+      "durationMs": 47736,
       "start": {
         "app": "foreground",
         "focus": "watched:0",
         "label": "Les Kassos",
         "frame": [
-          176,
-          534,
-          494,
-          351
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:watched"
@@ -477,10 +782,10 @@
           "focus": "watched:15",
           "label": "Will Hunting",
           "frame": [
-            1330,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:watched"
@@ -500,10 +805,10 @@
           "focus": "watched:15",
           "label": "Will Hunting",
           "frame": [
-            1330,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:watched"
@@ -523,10 +828,10 @@
           "focus": "watchlist:0",
           "label": "Rick et Morty",
           "frame": [
-            176,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:watchlist"
@@ -543,13 +848,13 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "watched:13",
-          "label": "Malcolm",
+          "focus": "watched:15",
+          "label": "Will Hunting",
           "frame": [
-            270,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:watched"
@@ -569,10 +874,10 @@
           "focus": "watchlist:0",
           "label": "Rick et Morty",
           "frame": [
-            176,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:watchlist"
@@ -592,10 +897,10 @@
           "focus": "watchlist:0",
           "label": "Rick et Morty",
           "frame": [
-            176,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:watchlist"
@@ -611,21 +916,21 @@
         }
       ]
     },
-    "home-rows": {
-      "hash": "c516a85d235a",
-      "durationMs": 49786,
+    "home-filter-chip": {
+      "hash": "6972a0ada841",
+      "durationMs": 36101,
       "start": {
         "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
+        "focus": "filter:remove",
+        "label": "Netflix · Disney+",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          365,
+          56,
+          273,
+          52
         ],
         "groups": [
-          "section:hero"
+          "section:reco:forYou"
         ],
         "route": "Home",
         "params": null,
@@ -638,38 +943,15 @@
       },
       "steps": [
         {
-          "do": "down",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
+          "do": "up",
           "app": "foreground",
           "focus": "nextUp:0",
           "label": "Les Kassos",
           "frame": [
-            176,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -685,129 +967,14 @@
         },
         {
           "do": "down",
-          "app": "foreground",
-          "focus": "filter:remove",
-          "label": "Netflix · Disney+",
-          "frame": [
-            368,
-            464,
-            273,
-            52
-          ],
-          "groups": [
-            "section:reco:forYou"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "reco:forYou:1",
-          "label": "Avatar : De feu et de cendres",
-          "frame": [
-            470,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:reco:forYou"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:1",
-          "label": "À couteaux tirés",
-          "frame": [
-            470,
-            534,
-            258,
-            460
-          ],
-          "groups": [
-            "section:library:db4c1708cbb5dd1676284a40f2950aba"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "watched:0",
-          "label": "Les Kassos",
-          "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:watched"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
-          "label": "2001 : L'Odyssée de l'espace",
-          "frame": [
-            176,
-            534,
-            258,
-            460
-          ],
-          "groups": [
-            "section:library:db4c1708cbb5dd1676284a40f2950aba"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
           "app": "foreground",
           "focus": "reco:forYou:0",
           "label": "Spider-Man : No Way Home",
           "frame": [
-            176,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -827,8 +994,8 @@
           "focus": "filter:remove",
           "label": "Netflix · Disney+",
           "frame": [
-            368,
-            464,
+            365,
+            56,
             273,
             52
           ],
@@ -845,211 +1012,15 @@
           "writes": []
         },
         {
-          "do": "up",
+          "do": "right",
           "app": "foreground",
-          "focus": "nextUp:0",
-          "label": "Les Kassos",
+          "focus": "filter:remove",
+          "label": "Netflix · Disney+",
           "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:nextUp"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            176,
-            324,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.4",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
-          "frame": [
-            811,
-            324,
-            68,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "resume:1",
-          "label": "Les Chevaliers du ciel",
-          "frame": [
-            706,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.4",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "resume:3",
-          "label": "Flight",
-          "frame": [
-            1330,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "nextUp:2",
-          "label": "GTO - Great Teacher Onizuka",
-          "frame": [
-            1236,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:nextUp"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.4",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "nextUp:4",
-          "label": "One Piece",
-          "frame": [
-            1330,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:nextUp"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
-          "frame": [
-            1352,
-            542,
-            258,
-            460
+            365,
+            56,
+            273,
+            52
           ],
           "groups": [
             "section:reco:forYou"
@@ -1066,16 +1037,16 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:4",
-          "label": "American Ultra",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
           "frame": [
-            1352,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+            "section:reco:forYou"
           ],
           "route": "Home",
           "params": null,
@@ -1087,15 +1058,25 @@
           "writes": []
         },
         {
-          "do": "up",
+          "do": [
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right",
+            "wait:0.35",
+            "right"
+          ],
           "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
+          "focus": "reco:forYou:5",
+          "label": "28 Jours plus tard",
           "frame": [
-            1352,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:reco:forYou"
@@ -1112,16 +1093,16 @@
         {
           "do": "up",
           "app": "foreground",
-          "focus": "nextUp:2",
-          "label": "GTO - Great Teacher Onizuka",
+          "focus": "filter:remove",
+          "label": "Netflix · Disney+",
           "frame": [
-            1236,
-            534,
-            494,
-            351
+            365,
+            56,
+            273,
+            52
           ],
           "groups": [
-            "section:nextUp"
+            "section:reco:forYou"
           ],
           "route": "Home",
           "params": null,
@@ -1131,20 +1112,82 @@
           "panel": null,
           "panelOwners": [],
           "writes": []
-        },
+        }
+      ],
+      "expectFailures": [
         {
-          "do": "up",
+          "step": 7,
+          "field": "focus",
+          "want": "nextUp:0",
+          "got": "filter:remove"
+        }
+      ]
+    },
+    "home-return": {
+      "hash": "21e44fed2dd2",
+      "durationMs": 31407,
+      "start": {
+        "app": "foreground",
+        "focus": "reco:forYou:2",
+        "label": "Iron Man 2",
+        "frame": [
+          177,
+          122,
+          333,
+          573
+        ],
+        "groups": [
+          "section:reco:forYou"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "select",
           "app": "foreground",
-          "focus": "resume:2",
-          "label": "Irréversible",
+          "focus": "detail:primary",
+          "label": "Lecture",
           "frame": [
-            1236,
-            534,
-            494,
-            351
+            121,
+            674,
+            207,
+            68
           ],
           "groups": [
-            "section:resume"
+            "detail:header"
+          ],
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "d10a5876d64f3c97bbe432118aefb7a3"
+          },
+          "stack": [
+            "Home",
+            "MediaDetail"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "reco:forYou:2",
+          "label": "Iron Man 2",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:reco:forYou"
           ],
           "route": "Home",
           "params": null,
@@ -1157,18 +1200,18 @@
         }
       ]
     },
-    "home-entry": {
-      "hash": "6f4a6ccd45a5",
-      "durationMs": 16929,
+    "home-burst": {
+      "hash": "322272b81db6",
+      "durationMs": 30446,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -1184,18 +1227,18 @@
       },
       "steps": [
         {
-          "do": "left",
+          "do": "holddown:7",
           "app": "foreground",
-          "focus": "nav:Home",
-          "label": "Accueil",
+          "focus": "watchlist:0",
+          "label": "Rick et Morty",
           "frame": [
-            56,
+            177,
+            122,
             333,
-            276,
-            64
+            573
           ],
           "groups": [
-            "rail:group"
+            "section:watchlist"
           ],
           "route": "Home",
           "params": null,
@@ -1207,107 +1250,15 @@
           "writes": []
         },
         {
-          "do": "right",
+          "do": "holdup:7",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            176,
-            324,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:secondary",
-          "label": "Plus d'infos",
-          "frame": [
-            533,
-            324,
-            260,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "left",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            176,
-            324,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "left",
-          "app": "foreground",
-          "focus": "nav:Home",
-          "label": "Accueil",
-          "frame": [
-            56,
-            333,
-            276,
-            64
-          ],
-          "groups": [
-            "rail:group"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "right",
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            176,
-            324,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"

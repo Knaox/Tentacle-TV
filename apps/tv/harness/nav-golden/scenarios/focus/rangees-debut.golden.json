@@ -3,32 +3,656 @@
   "domain": "focus",
   "suite": "rangees-debut",
   "reference": {
-    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
-    "label": "référence 6ef1b2373"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "70628b6b97aea0f0",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "tvgrille-test",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-18T03:11:30.515Z",
+  "recordedAt": "2026-10-19T06:58:29.546Z",
   "scenarios": {
-    "rangee-page-couverte": {
-      "hash": "28ab381d8187",
-      "durationMs": 37457,
+    "rangee-a-l-ecran": {
+      "hash": "18658417a555",
+      "durationMs": 22582,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-sortie": {
+      "hash": "dd8c4e83578d",
+      "durationMs": 32024,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          177,
+          48,
+          1648,
+          520
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "watched:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:watched"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "reco:forYou:0",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "filter:remove",
+          "label": "Netflix · Disney+",
+          "frame": [
+            365,
+            56,
+            273,
+            52
+          ],
+          "groups": [
+            "section:reco:forYou"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "nextUp:0",
+          "label": "Les Kassos",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:nextUp"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-changement-de-page": {
+      "hash": "610b0bf29dbd",
+      "durationMs": 31907,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          177,
+          48,
+          1648,
+          520
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Home",
+        "params": null,
+        "stack": [
+          "Home"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "resume:4",
+          "label": "Lovely Bones",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "up",
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Home",
+          "label": "Accueil",
+          "frame": [
+            57,
+            333,
+            276,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "down",
+            "wait:0.6",
+            "select"
+          ],
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Spider-Man : No Way Home",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "left",
+          "app": "foreground",
+          "focus": "nav:Recommendations",
+          "label": "Pour vous",
+          "frame": [
+            57,
+            405,
+            276,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "up",
+            "wait:0.6",
+            "select"
+          ],
+          "app": "foreground",
+          "focus": "hero:primary",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            48,
+            1648,
+            520
+          ],
+          "groups": [
+            "section:hero"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
+          "focus": "resume:0",
+          "label": "Orgueil et Préjugés",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:resume"
+          ],
+          "route": "Home",
+          "params": null,
+          "stack": [
+            "Home"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-retour-de-fiche": {
+      "hash": "8970b32bb73e",
+      "durationMs": 28494,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -51,18 +675,16 @@
             "wait:0.9",
             "down",
             "wait:0.9",
-            "down",
-            "wait:0.9",
             "down"
           ],
           "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:1",
-          "label": "À couteaux tirés",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            470,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -85,13 +707,13 @@
             "right"
           ],
           "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:4",
-          "label": "American Ultra",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:3",
+          "label": "American Pie",
           "frame": [
-            1352,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -111,7 +733,7 @@
           "focus": "detail:primary",
           "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
             207,
             68
@@ -121,7 +743,7 @@
           ],
           "route": "MediaDetail",
           "params": {
-            "itemId": "85dc32dc1fc9d1f9f83f0f36cc5c990c"
+            "itemId": "9d7cc6026ca738dd2dbe17799c03a07e"
           },
           "stack": [
             "Home",
@@ -132,128 +754,15 @@
           "writes": []
         },
         {
-          "do": [
-            "wait:1",
-            "down"
-          ],
+          "do": "menu",
           "app": "foreground",
-          "focus": "cast:0",
-          "label": "Jesse Eisenberg, Mike Howell",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:3",
+          "label": "American Pie",
           "frame": [
-            102,
-            144,
-            212,
-            283
-          ],
-          "groups": [
-            "detail:cast"
-          ],
-          "route": "MediaDetail",
-          "params": {
-            "itemId": "85dc32dc1fc9d1f9f83f0f36cc5c990c"
-          },
-          "stack": [
-            "Home",
-            "MediaDetail"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "grid:0",
-          "label": "#Chef",
-          "frame": [
-            176,
-            464,
-            300,
-            523
-          ],
-          "groups": [
-            "grid:line:0"
-          ],
-          "route": "SearchBrowse",
-          "params": {
-            "id": "660bbfab259519ff65acc7d387b73fa9",
-            "kind": "person",
-            "name": "Jesse Eisenberg"
-          },
-          "stack": [
-            "Home",
-            "SearchBrowse"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "left",
-          "app": "foreground",
-          "focus": "nav:Search",
-          "label": "Rechercher",
-          "frame": [
-            56,
-            244,
-            276,
-            64
-          ],
-          "groups": [
-            "rail:group"
-          ],
-          "route": "SearchBrowse",
-          "params": {
-            "id": "660bbfab259519ff65acc7d387b73fa9",
-            "kind": "person",
-            "name": "Jesse Eisenberg"
-          },
-          "stack": [
-            "Home",
-            "SearchBrowse"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "nav:Home",
-          "label": "Accueil",
-          "frame": [
-            56,
+            177,
+            122,
             333,
-            276,
-            64
-          ],
-          "groups": [
-            "rail:group"
-          ],
-          "route": "SearchBrowse",
-          "params": {
-            "id": "660bbfab259519ff65acc7d387b73fa9",
-            "kind": "person",
-            "name": "Jesse Eisenberg"
-          },
-          "stack": [
-            "Home",
-            "SearchBrowse"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
-          "label": "2001 : L'Odyssée de l'espace",
-          "frame": [
-            176,
-            534,
-            258,
-            460
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
@@ -269,155 +778,18 @@
         }
       ]
     },
-    "etagere-retour-premiere-carte": {
-      "hash": "ac2c237a336b",
-      "durationMs": 28334,
-      "start": {
-        "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
-        "frame": [
-          176,
-          324,
-          339,
-          68
-        ],
-        "groups": [
-          "section:hero"
-        ],
-        "route": "Recommendations",
-        "params": null,
-        "stack": [
-          "Home",
-          "Recommendations"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": [
-            "down",
-            "wait:0.9",
-            "down"
-          ],
-          "app": "foreground",
-          "focus": "forYou:0",
-          "label": "Avatar : De feu et de cendres",
-          "frame": [
-            176,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:forYou"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "forYou:4",
-          "label": "28 Jours plus tard",
-          "frame": [
-            1352,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:forYou"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "forYou:0",
-          "label": "Avatar : De feu et de cendres",
-          "frame": [
-            176,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:forYou"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "nav:Recommendations",
-          "label": "Pour vous",
-          "frame": [
-            56,
-            405,
-            276,
-            64
-          ],
-          "groups": [
-            "rail:group"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
     "rangee-retour-premiere-carte": {
       "hash": "9d67cd34f38e",
-      "durationMs": 25777,
+      "durationMs": 25528,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -442,10 +814,10 @@
           "focus": "nextUp:0",
           "label": "Les Kassos",
           "frame": [
-            176,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -475,10 +847,10 @@
           "focus": "nextUp:5",
           "label": "Les Griffin",
           "frame": [
-            1330,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -498,10 +870,10 @@
           "focus": "nextUp:0",
           "label": "Les Kassos",
           "frame": [
-            176,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -521,7 +893,7 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
@@ -544,10 +916,10 @@
           "focus": "nextUp:0",
           "label": "Les Kassos",
           "frame": [
-            176,
-            534,
-            494,
-            351
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:nextUp"
@@ -563,18 +935,155 @@
         }
       ]
     },
-    "rangee-retour-de-fiche": {
-      "hash": "8970b32bb73e",
-      "durationMs": 26712,
+    "etagere-retour-premiere-carte": {
+      "hash": "ac2c237a336b",
+      "durationMs": 28867,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Spider-Man : No Way Home",
         "frame": [
-          176,
-          324,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
+        ],
+        "groups": [
+          "section:hero"
+        ],
+        "route": "Recommendations",
+        "params": null,
+        "stack": [
+          "Home",
+          "Recommendations"
+        ],
+        "panel": null,
+        "panelOwners": [],
+        "writes": []
+      },
+      "steps": [
+        {
+          "do": [
+            "down",
+            "wait:0.9",
+            "down"
+          ],
+          "app": "foreground",
+          "focus": "inLibrary:0",
+          "label": "Supergirl",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:inLibrary"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right",
+            "wait:0.4",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "inLibrary:4",
+          "label": "L'attaque des Titans",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:inLibrary"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "inLibrary:0",
+          "label": "Supergirl",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:inLibrary"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "nav:Recommendations",
+          "label": "Pour vous",
+          "frame": [
+            57,
+            405,
+            276,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "Recommendations",
+          "params": null,
+          "stack": [
+            "Home",
+            "Recommendations"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        }
+      ]
+    },
+    "rangee-page-couverte": {
+      "hash": "91e0a00f26f1",
+      "durationMs": 36878,
+      "start": {
+        "app": "foreground",
+        "focus": "hero:primary",
+        "label": "Orgueil et Préjugés",
+        "frame": [
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -600,16 +1109,16 @@
             "down"
           ],
           "app": "foreground",
-          "focus": "reco:forYou:1",
-          "label": "Avatar : De feu et de cendres",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            470,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "section:reco:forYou"
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
           ],
           "route": "Home",
           "params": null,
@@ -629,16 +1138,16 @@
             "right"
           ],
           "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:3",
+          "label": "American Pie",
           "frame": [
-            1352,
-            542,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "section:reco:forYou"
+            "section:library:db4c1708cbb5dd1676284a40f2950aba"
           ],
           "route": "Home",
           "params": null,
@@ -652,12 +1161,12 @@
         {
           "do": "select",
           "app": "foreground",
-          "focus": "detail:trailer",
-          "label": "Bande-annonce",
+          "focus": "detail:primary",
+          "label": "Lecture",
           "frame": [
-            120,
+            121,
             674,
-            313,
+            207,
             68
           ],
           "groups": [
@@ -665,7 +1174,7 @@
           ],
           "route": "MediaDetail",
           "params": {
-            "itemId": "5a894256982e6b48c1d621f4eecb17dd"
+            "itemId": "9d7cc6026ca738dd2dbe17799c03a07e"
           },
           "stack": [
             "Home",
@@ -676,155 +1185,57 @@
           "writes": []
         },
         {
-          "do": "menu",
-          "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
-          "frame": [
-            1352,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:reco:forYou"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "rangee-changement-de-page": {
-      "hash": "3b9be831e2c2",
-      "durationMs": 32500,
-      "start": {
-        "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
-        "frame": [
-          176,
-          324,
-          339,
-          68
-        ],
-        "groups": [
-          "section:hero"
-        ],
-        "route": "Home",
-        "params": null,
-        "stack": [
-          "Home"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
           "do": [
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right"
+            "wait:1",
+            "down"
           ],
           "app": "foreground",
-          "focus": "resume:4",
-          "label": "Lovely Bones",
+          "focus": "cast:0",
+          "label": "Jason Biggs, Jim Levenstein",
           "frame": [
-            1330,
-            534,
-            494,
-            351
+            103,
+            144,
+            212,
+            283
           ],
           "groups": [
-            "section:resume"
+            "detail:cast"
           ],
-          "route": "Home",
-          "params": null,
+          "route": "MediaDetail",
+          "params": {
+            "itemId": "9d7cc6026ca738dd2dbe17799c03a07e"
+          },
           "stack": [
-            "Home"
+            "Home",
+            "MediaDetail"
           ],
           "panel": null,
           "panelOwners": [],
           "writes": []
         },
         {
-          "do": "up",
+          "do": "select",
           "app": "foreground",
-          "focus": "hero:list",
-          "label": "Ma liste",
+          "focus": "grid:0",
+          "label": "#Chef",
           "frame": [
-            811,
-            324,
-            68,
-            68
+            177,
+            464,
+            300,
+            523
           ],
           "groups": [
-            "section:hero"
+            "grid:line:0"
           ],
-          "route": "Home",
-          "params": null,
+          "route": "SearchBrowse",
+          "params": {
+            "id": "532e2da1fbabf2cb67c1d0ee802ea008",
+            "kind": "person",
+            "name": "Jason Biggs"
+          },
           "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "left",
-            "wait:0.4",
-            "left"
-          ],
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            176,
-            324,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
+            "Home",
+            "SearchBrowse"
           ],
           "panel": null,
           "panelOwners": [],
@@ -833,10 +1244,38 @@
         {
           "do": "left",
           "app": "foreground",
+          "focus": "nav:Search",
+          "label": "Rechercher",
+          "frame": [
+            57,
+            244,
+            276,
+            64
+          ],
+          "groups": [
+            "rail:group"
+          ],
+          "route": "SearchBrowse",
+          "params": {
+            "id": "532e2da1fbabf2cb67c1d0ee802ea008",
+            "kind": "person",
+            "name": "Jason Biggs"
+          },
+          "stack": [
+            "Home",
+            "SearchBrowse"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "down",
+          "app": "foreground",
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
@@ -844,501 +1283,33 @@
           "groups": [
             "rail:group"
           ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "down",
-            "wait:0.6",
-            "select"
-          ],
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            176,
-            324,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Recommendations",
-          "params": null,
+          "route": "SearchBrowse",
+          "params": {
+            "id": "532e2da1fbabf2cb67c1d0ee802ea008",
+            "kind": "person",
+            "name": "Jason Biggs"
+          },
           "stack": [
             "Home",
-            "Recommendations"
+            "SearchBrowse"
           ],
           "panel": null,
           "panelOwners": [],
           "writes": []
         },
         {
-          "do": "left",
+          "do": "select",
           "app": "foreground",
-          "focus": "nav:Recommendations",
-          "label": "Pour vous",
+          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:0",
+          "label": "2001 : L'Odyssée de l'espace",
           "frame": [
-            56,
-            405,
-            276,
-            64
-          ],
-          "groups": [
-            "rail:group"
-          ],
-          "route": "Recommendations",
-          "params": null,
-          "stack": [
-            "Home",
-            "Recommendations"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "up",
-            "wait:0.6",
-            "select"
-          ],
-          "app": "foreground",
-          "focus": "hero:primary",
-          "label": "Reprendre",
-          "frame": [
-            176,
-            324,
-            339,
-            68
-          ],
-          "groups": [
-            "section:hero"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "rangee-sortie": {
-      "hash": "dd8c4e83578d",
-      "durationMs": 31633,
-      "start": {
-        "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
-        "frame": [
-          176,
-          324,
-          339,
-          68
-        ],
-        "groups": [
-          "section:hero"
-        ],
-        "route": "Home",
-        "params": null,
-        "stack": [
-          "Home"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "resume:4",
-          "label": "Lovely Bones",
-          "frame": [
-            1330,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "nextUp:2",
-          "label": "GTO - Great Teacher Onizuka",
-          "frame": [
-            1236,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:nextUp"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
-          "frame": [
-            1352,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:reco:forYou"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:4",
-          "label": "American Ultra",
-          "frame": [
-            1352,
-            534,
-            258,
-            460
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:library:db4c1708cbb5dd1676284a40f2950aba"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "watched:2",
-          "label": "My Hero Academia",
-          "frame": [
-            1236,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:watched"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "library:db4c1708cbb5dd1676284a40f2950aba:4",
-          "label": "American Ultra",
-          "frame": [
-            1352,
-            534,
-            258,
-            460
-          ],
-          "groups": [
-            "section:library:db4c1708cbb5dd1676284a40f2950aba"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "reco:forYou:4",
-          "label": "Naruto Shippuden",
-          "frame": [
-            1352,
-            542,
-            258,
-            460
-          ],
-          "groups": [
-            "section:reco:forYou"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "nextUp:2",
-          "label": "GTO - Great Teacher Onizuka",
-          "frame": [
-            1236,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:nextUp"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "resume:2",
-          "label": "Irréversible",
-          "frame": [
-            1236,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        }
-      ]
-    },
-    "rangee-a-l-ecran": {
-      "hash": "18658417a555",
-      "durationMs": 21535,
-      "start": {
-        "app": "foreground",
-        "focus": "hero:primary",
-        "label": "Reprendre",
-        "frame": [
-          176,
-          324,
-          339,
-          68
-        ],
-        "groups": [
-          "section:hero"
-        ],
-        "route": "Home",
-        "params": null,
-        "stack": [
-          "Home"
-        ],
-        "panel": null,
-        "panelOwners": [],
-        "writes": []
-      },
-      "steps": [
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "resume:0",
-          "label": "Orgueil et Préjugés",
-          "frame": [
-            176,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": [
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right",
-            "wait:0.4",
-            "right"
-          ],
-          "app": "foreground",
-          "focus": "resume:4",
-          "label": "Lovely Bones",
-          "frame": [
-            1330,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "down",
-          "app": "foreground",
-          "focus": "nextUp:2",
-          "label": "GTO - Great Teacher Onizuka",
-          "frame": [
-            1236,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:nextUp"
-          ],
-          "route": "Home",
-          "params": null,
-          "stack": [
-            "Home"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "up",
-          "app": "foreground",
-          "focus": "resume:4",
-          "label": "Lovely Bones",
-          "frame": [
-            1330,
-            534,
-            494,
-            351
-          ],
-          "groups": [
-            "section:resume"
           ],
           "route": "Home",
           "params": null,

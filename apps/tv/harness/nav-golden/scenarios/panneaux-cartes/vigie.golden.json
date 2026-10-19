@@ -3,32 +3,32 @@
   "domain": "panneaux-cartes",
   "suite": "vigie",
   "reference": {
-    "sha": "84f3cedd073d5a9f19f6c9280922898c38c930cc",
-    "label": "référence 84f3cedd0"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "b2ce573070a3d2e4",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T6",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-03T03:19:51.103Z",
+  "recordedAt": "2026-10-19T07:39:00.485Z",
   "scenarios": {
     "pc-17": {
       "hash": "6d8ca52ccf1a",
-      "durationMs": 28628,
+      "durationMs": 25188,
       "start": {
         "app": "foreground",
         "focus": "saga:0",
         "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
         "frame": [
-          120,
+          121,
           142,
-          240,
-          360
+          312,
+          468
         ],
         "groups": [
           "detail:saga"
@@ -52,10 +52,10 @@
           "focus": "saga:0",
           "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -233,10 +233,10 @@
           "focus": "saga:0",
           "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -257,16 +257,16 @@
     },
     "pc-18": {
       "hash": "81da77f9b040",
-      "durationMs": 23590,
+      "durationMs": 20925,
       "start": {
         "app": "foreground",
         "focus": "saga:0",
         "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
         "frame": [
-          120,
+          121,
           142,
-          240,
-          360
+          312,
+          468
         ],
         "groups": [
           "detail:saga"
@@ -320,10 +320,10 @@
           "focus": "saga:0",
           "label": "L'Attaque des Titans : L’Arc et la flèche écarlates",
           "frame": [
-            120,
+            121,
             142,
-            240,
-            360
+            312,
+            468
           ],
           "groups": [
             "detail:saga"
@@ -346,16 +346,16 @@
     },
     "pc-19": {
       "hash": "0d6dfc5979f9",
-      "durationMs": 40385,
+      "durationMs": 39015,
       "start": {
         "app": "foreground",
         "focus": "absent:0",
         "label": "GTO - Great Teacher Onizuka",
         "frame": [
-          672,
-          527,
-          240,
-          433
+          673,
+          419,
+          312,
+          541
         ],
         "groups": [
           "section:absent",
@@ -628,10 +628,10 @@
           "focus": "absent:0",
           "label": "GTO - Great Teacher Onizuka",
           "frame": [
-            672,
-            527,
-            240,
-            433
+            673,
+            419,
+            312,
+            541
           ],
           "groups": [
             "section:absent",

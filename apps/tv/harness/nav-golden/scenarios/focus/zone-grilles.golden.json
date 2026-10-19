@@ -3,35 +3,35 @@
   "domain": "focus",
   "suite": "zone-grilles",
   "reference": {
-    "sha": "c39de94226fc695059762210829e84c716464e85",
-    "label": "référence c39de9422"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "70628b6b97aea0f0",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "tvzone-video2",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-18T15:32:35.974Z",
+  "recordedAt": "2026-10-19T07:01:06.055Z",
   "scenarios": {
     "zone-grille-films": {
-      "hash": "741fdd6cc9e1",
-      "durationMs": 19657,
+      "hash": "1b3c2a7a86ce",
+      "durationMs": 18879,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          464,
-          300,
-          523
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -52,16 +52,16 @@
         {
           "do": "wait:1",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
           "label": "(500) jours ensemble",
           "frame": [
-            176,
-            464,
-            300,
-            523
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:6a24d9a479675b918371054b545b59a0"
           ],
           "route": "Library",
           "params": {
@@ -79,20 +79,20 @@
       ]
     },
     "zone-grille-series": {
-      "hash": "cd53c11c8dc1",
-      "durationMs": 19074,
+      "hash": "6974eec9690a",
+      "durationMs": 19195,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:090eac6e9de4fe1fbc194e5b96691277:0",
         "label": "56 Jours",
         "frame": [
-          176,
-          464,
-          300,
-          523
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:090eac6e9de4fe1fbc194e5b96691277"
         ],
         "route": "Library",
         "params": {
@@ -113,16 +113,16 @@
         {
           "do": "wait:1",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:genre:090eac6e9de4fe1fbc194e5b96691277:0",
           "label": "56 Jours",
           "frame": [
-            176,
-            464,
-            300,
-            523
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:090eac6e9de4fe1fbc194e5b96691277"
           ],
           "route": "Library",
           "params": {
@@ -140,20 +140,20 @@
       ]
     },
     "zone-grille-ma-liste": {
-      "hash": "577f59bedd91",
-      "durationMs": 19242,
+      "hash": "3ebcf0b30dee",
+      "durationMs": 19310,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
-        "label": "Berserk",
+        "focus": "group:type:movies:0",
+        "label": "Barbie",
         "frame": [
-          176,
-          464,
-          300,
-          523
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:type:movies"
         ],
         "route": "Watchlist",
         "params": null,
@@ -171,16 +171,16 @@
         {
           "do": "wait:1",
           "app": "foreground",
-          "focus": "grid:0",
-          "label": "Berserk",
+          "focus": "group:type:movies:0",
+          "label": "Barbie",
           "frame": [
-            176,
-            464,
-            300,
-            523
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:type:movies"
           ],
           "route": "Watchlist",
           "params": null,

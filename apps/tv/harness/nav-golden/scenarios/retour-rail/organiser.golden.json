@@ -3,35 +3,35 @@
   "domain": "retour-rail",
   "suite": "organiser",
   "reference": {
-    "sha": "fe11490ffb1ada4d8e032ea632fc9f45439f0e67",
-    "label": "référence fe11490ff"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "0d02ee212ee3b5bf",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T6b",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-15T13:17:54.199Z",
+  "recordedAt": "2026-10-19T07:28:49.666Z",
   "scenarios": {
     "menu-entree-retour": {
-      "hash": "59eaa18d4ac1",
-      "durationMs": 22871,
+      "hash": "c9e50a79a31f",
+      "durationMs": 22844,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -56,7 +56,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -228,7 +228,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -252,20 +252,20 @@
       ]
     },
     "monter-x2-puis-retour": {
-      "hash": "aa075ff752e2",
-      "durationMs": 24508,
+      "hash": "ef674f236ec4",
+      "durationMs": 25052,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -290,7 +290,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -437,7 +437,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             477,
             276,
             64
@@ -464,7 +464,7 @@
           "focus": "nav:Recommendations",
           "label": "Pour vous",
           "frame": [
-            56,
+            57,
             405,
             276,
             64
@@ -494,7 +494,7 @@
           "focus": "nav:Watchlist",
           "label": "Ma liste",
           "frame": [
-            56,
+            57,
             549,
             276,
             64
@@ -518,20 +518,20 @@
       ]
     },
     "monter-puis-double-retour": {
-      "hash": "3f405ab37c59",
-      "durationMs": 21747,
+      "hash": "06918f0997a2",
+      "durationMs": 22329,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -556,7 +556,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -674,7 +674,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -698,20 +698,20 @@
       ]
     },
     "masquer-puis-tout-afficher": {
-      "hash": "47b0354416fa",
-      "durationMs": 23356,
+      "hash": "dde0916e3d8f",
+      "durationMs": 23912,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -736,7 +736,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -825,7 +825,7 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -859,7 +859,7 @@
           "focus": "nav:RailShowAll",
           "label": "Tout afficher",
           "frame": [
-            56,
+            57,
             765,
             276,
             64
@@ -886,7 +886,7 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
@@ -914,20 +914,20 @@
       ]
     },
     "tout-afficher-du-menu": {
-      "hash": "5379fc051e53",
-      "durationMs": 27605,
+      "hash": "44e718714a21",
+      "durationMs": 27904,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -952,7 +952,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1041,7 +1041,7 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1131,7 +1131,7 @@
           "focus": "nav:Library_db4c1708cbb5dd1676284a40f2950aba",
           "label": "Films",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
@@ -1159,20 +1159,20 @@
       ]
     },
     "deplacer-puis-poser": {
-      "hash": "862a0df4edc9",
-      "durationMs": 23016,
+      "hash": "61eef28a6b99",
+      "durationMs": 23386,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -1197,7 +1197,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1253,7 +1253,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1283,7 +1283,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
@@ -1310,7 +1310,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             765,
             276,
             64
@@ -1341,7 +1341,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             765,
             276,
             64
@@ -1372,7 +1372,7 @@
           "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
           "label": "Séries",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
@@ -1396,20 +1396,20 @@
       ]
     },
     "deplacer-puis-annuler": {
-      "hash": "51bb6191c676",
-      "durationMs": 24191,
+      "hash": "e3309f90c882",
+      "durationMs": 22479,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -1434,7 +1434,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1490,7 +1490,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1517,7 +1517,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             693,
             276,
             64
@@ -1544,7 +1544,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1574,7 +1574,7 @@
           "focus": "nav:Favorites",
           "label": "Mes favoris",
           "frame": [
-            56,
+            57,
             549,
             276,
             64
@@ -1598,20 +1598,20 @@
       ]
     },
     "deplacer-puis-sortir": {
-      "hash": "6040fe6a4a52",
-      "durationMs": 21037,
+      "hash": "1ba0be218e0f",
+      "durationMs": 21368,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -1636,7 +1636,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1692,7 +1692,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1719,7 +1719,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             549,
             276,
             64
@@ -1743,16 +1743,16 @@
         {
           "do": "right",
           "app": "foreground",
-          "focus": "grid:0",
+          "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
           "label": "(500) jours ensemble",
           "frame": [
-            176,
-            265,
-            244,
-            439
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:6a24d9a479675b918371054b545b59a0"
           ],
           "route": "Library",
           "params": {
@@ -1774,20 +1774,20 @@
       ]
     },
     "deplacer-butee-en-tete": {
-      "hash": "6528779e04f0",
-      "durationMs": 23307,
+      "hash": "12e391fad690",
+      "durationMs": 23726,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -1812,7 +1812,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1868,7 +1868,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -1901,7 +1901,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             405,
             276,
             64
@@ -1928,7 +1928,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             405,
             276,
             64
@@ -1959,7 +1959,7 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
@@ -1983,20 +1983,20 @@
       ]
     },
     "appui-long-accueil": {
-      "hash": "2b6eea423e90",
-      "durationMs": 21850,
+      "hash": "a38a7a782d3e",
+      "durationMs": 19657,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -2025,7 +2025,7 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
@@ -2052,7 +2052,7 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
@@ -2076,20 +2076,20 @@
       ]
     },
     "appui-long-rechercher": {
-      "hash": "8d53c414068e",
-      "durationMs": 21761,
+      "hash": "eca32f3d3a95",
+      "durationMs": 20181,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -2119,7 +2119,7 @@
           "focus": "nav:Search",
           "label": "Rechercher",
           "frame": [
-            56,
+            57,
             244,
             276,
             64
@@ -2146,7 +2146,7 @@
           "focus": "nav:Search",
           "label": "Rechercher",
           "frame": [
-            56,
+            57,
             244,
             276,
             64
@@ -2170,20 +2170,20 @@
       ]
     },
     "appui-long-profil": {
-      "hash": "a70ae37bcecb",
-      "durationMs": 22929,
+      "hash": "ee2d32fb1d66",
+      "durationMs": 18930,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -2209,7 +2209,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -2236,7 +2236,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -2260,20 +2260,20 @@
       ]
     },
     "menu-vers-reglages-navigation": {
-      "hash": "3e1b62d065b6",
-      "durationMs": 22053,
+      "hash": "d49f838c9f25",
+      "durationMs": 21768,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:6a24d9a479675b918371054b545b59a0:0",
         "label": "(500) jours ensemble",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:6a24d9a479675b918371054b545b59a0"
         ],
         "route": "Library",
         "params": {
@@ -2298,7 +2298,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -2388,7 +2388,7 @@
           "focus": "settings:tab:navigation",
           "label": "Navigation",
           "frame": [
-            176,
+            177,
             620,
             340,
             100
@@ -2412,13 +2412,13 @@
     },
     "reglages-navigation-deplacer": {
       "hash": "491823bc6f64",
-      "durationMs": 28038,
+      "durationMs": 29637,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:navigation",
         "label": "Navigation",
         "frame": [
-          176,
+          177,
           620,
           340,
           100
@@ -2445,7 +2445,7 @@
           "focus": "settings:nav:0",
           "label": "1. Pour vous, Affichée",
           "frame": [
-            612,
+            613,
             394,
             914,
             84
@@ -2472,7 +2472,7 @@
           "focus": "settings:nav:0",
           "label": "1. Pour vous, Affichée",
           "frame": [
-            612,
+            613,
             394,
             914,
             84
@@ -2499,7 +2499,7 @@
           "focus": "settings:nav:1",
           "label": "2. Pour vous, Affichée",
           "frame": [
-            612,
+            613,
             488,
             914,
             84
@@ -2526,7 +2526,7 @@
           "focus": "settings:nav:0",
           "label": "1. Pour vous, Affichée",
           "frame": [
-            612,
+            613,
             394,
             914,
             84
@@ -2557,7 +2557,7 @@
           "focus": "settings:nav:0",
           "label": "1. Pour vous, Affichée",
           "frame": [
-            612,
+            613,
             394,
             914,
             84
@@ -2584,7 +2584,7 @@
           "focus": "settings:nav:1",
           "label": "2. Pour vous, Affichée",
           "frame": [
-            612,
+            613,
             488,
             914,
             84
@@ -2611,7 +2611,7 @@
           "focus": "settings:nav:1",
           "label": "2. Pour vous, Affichée",
           "frame": [
-            612,
+            613,
             550,
             914,
             84

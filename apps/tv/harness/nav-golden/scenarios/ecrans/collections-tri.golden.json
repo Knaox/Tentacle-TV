@@ -3,41 +3,41 @@
   "domain": "ecrans",
   "suite": "collections-tri",
   "reference": {
-    "sha": "6ef1b23738b11ed15ea6bf3e3a30a5ee36308b8a",
-    "label": "référence 6ef1b2373"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "70628b6b97aea0f0",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "tvgrille-test",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-18T03:18:43.000Z",
+  "recordedAt": "2026-10-19T07:14:45.828Z",
   "scenarios": {
-    "collections-type-vide": {
-      "hash": "2ab0cfb1962b",
-      "durationMs": 28297,
+    "collections-tri-titre": {
+      "hash": "75d1e882dfae",
+      "durationMs": 30459,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
-        "label": "Rick et Morty",
+        "focus": "group:type:movies:0",
+        "label": "Barbie",
         "frame": [
-          176,
-          464,
-          300,
-          523
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:type:movies"
         ],
-        "route": "Favorites",
+        "route": "Watchlist",
         "params": null,
         "stack": [
           "Home",
-          "Favorites"
+          "Watchlist"
         ],
         "panel": null,
         "panelOwners": [],
@@ -45,25 +45,78 @@
       },
       "steps": [
         {
+          "do": "wait:1",
+          "app": "foreground",
+          "focus": "group:type:movies:0",
+          "label": "Barbie",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:group:type:movies"
+          ],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
           "do": "up",
           "app": "foreground",
-          "focus": "pill:type",
-          "label": "Type, Tous",
+          "focus": "pill:group",
+          "label": "Ranger par, Type",
           "frame": [
-            176,
-            614,
-            132,
+            177,
+            182,
+            186,
             76
           ],
           "groups": [
             "filters:pills",
             "filters"
           ],
-          "route": "Favorites",
+          "route": "Watchlist",
           "params": null,
           "stack": [
             "Home",
-            "Favorites"
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": [
+            "right",
+            "wait:0.3",
+            "right"
+          ],
+          "app": "foreground",
+          "focus": "pill:sort",
+          "label": "Trier par, Derniers arrivés",
+          "frame": [
+            519,
+            182,
+            272,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
           ],
           "panel": null,
           "panelOwners": [],
@@ -73,19 +126,19 @@
           "do": "select",
           "app": "foreground",
           "focus": "sheet:option:0",
-          "label": "Tous",
+          "label": "Arrivée en bibliothèque",
           "frame": [
-            628,
-            415,
-            664,
+            418,
+            395,
+            620,
             72
           ],
           "groups": [],
-          "route": "Favorites",
+          "route": "Watchlist",
           "params": null,
           "stack": [
             "Home",
-            "Favorites"
+            "Watchlist"
           ],
           "panel": [
             "sheet:option:0"
@@ -99,19 +152,19 @@
           "do": "down",
           "app": "foreground",
           "focus": "sheet:option:1",
-          "label": "Films",
+          "label": "Titre A→Z",
           "frame": [
-            628,
-            497,
-            664,
+            418,
+            477,
+            620,
             72
           ],
           "groups": [],
-          "route": "Favorites",
+          "route": "Watchlist",
           "params": null,
           "stack": [
             "Home",
-            "Favorites"
+            "Watchlist"
           ],
           "panel": [
             "sheet:option:0"
@@ -125,19 +178,19 @@
           "do": "select",
           "app": "foreground",
           "focus": "sheet:option:1",
-          "label": "Films",
+          "label": "Titre A→Z",
           "frame": [
-            628,
-            497,
-            664,
+            418,
+            477,
+            620,
             72
           ],
           "groups": [],
-          "route": "Favorites",
+          "route": "Watchlist",
           "params": null,
           "stack": [
             "Home",
-            "Favorites"
+            "Watchlist"
           ],
           "panel": [
             "sheet:option:0"
@@ -150,74 +203,47 @@
         {
           "do": "menu",
           "app": "foreground",
-          "focus": "pill:type",
-          "label": "Type, Films",
+          "focus": "pill:sort",
+          "label": "Trier par, Titre A→Z",
           "frame": [
-            176,
-            614,
-            138,
+            519,
+            182,
+            198,
             76
           ],
           "groups": [
             "filters:pills",
             "filters"
           ],
-          "route": "Favorites",
+          "route": "Watchlist",
           "params": null,
           "stack": [
             "Home",
-            "Favorites"
+            "Watchlist"
           ],
           "panel": null,
           "panelOwners": [],
           "writes": []
         },
         {
-          "do": [
-            "down",
-            "down"
-          ],
+          "do": "down",
           "app": "foreground",
-          "focus": "empty:primary",
-          "label": "Tout effacer",
+          "focus": "group:type:movies:0",
+          "label": "Barbie",
           "frame": [
-            867,
-            852,
-            266,
-            68
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "library:empty"
+            "section:group:type:movies"
           ],
-          "route": "Favorites",
+          "route": "Watchlist",
           "params": null,
           "stack": [
             "Home",
-            "Favorites"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
-          "do": "select",
-          "app": "foreground",
-          "focus": "grid:0",
-          "label": "Rick et Morty",
-          "frame": [
-            176,
-            464,
-            300,
-            523
-          ],
-          "groups": [
-            "grid:line:0"
-          ],
-          "route": "Favorites",
-          "params": null,
-          "stack": [
-            "Home",
-            "Favorites"
+            "Watchlist"
           ],
           "panel": null,
           "panelOwners": [],
@@ -226,20 +252,20 @@
       ]
     },
     "collections-type-series": {
-      "hash": "052e9aa486d9",
-      "durationMs": 30557,
+      "hash": "f57e67ca1f45",
+      "durationMs": 32572,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
-        "label": "Berserk",
+        "focus": "group:type:movies:0",
+        "label": "Barbie",
         "frame": [
-          176,
-          464,
-          300,
-          523
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:type:movies"
         ],
         "route": "Watchlist",
         "params": null,
@@ -255,11 +281,36 @@
         {
           "do": "up",
           "app": "foreground",
+          "focus": "pill:group",
+          "label": "Ranger par, Type",
+          "frame": [
+            177,
+            182,
+            186,
+            76
+          ],
+          "groups": [
+            "filters:pills",
+            "filters"
+          ],
+          "route": "Watchlist",
+          "params": null,
+          "stack": [
+            "Home",
+            "Watchlist"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "right",
+          "app": "foreground",
           "focus": "pill:type",
           "label": "Type, Tous",
           "frame": [
-            176,
-            614,
+            375,
+            182,
             132,
             76
           ],
@@ -364,8 +415,8 @@
           "focus": "pill:type",
           "label": "Type, Séries",
           "frame": [
-            176,
-            614,
+            375,
+            182,
             151,
             76
           ],
@@ -389,8 +440,8 @@
           "focus": "active:0",
           "label": "Séries",
           "frame": [
-            327,
-            716,
+            328,
+            284,
             155,
             52
           ],
@@ -411,16 +462,16 @@
         {
           "do": "down",
           "app": "foreground",
-          "focus": "grid:0",
-          "label": "Berserk",
+          "focus": "group:type:series:0",
+          "label": "Lucifer",
           "frame": [
-            176,
-            464,
-            300,
-            523
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:type:series"
           ],
           "route": "Watchlist",
           "params": null,
@@ -438,8 +489,8 @@
           "focus": "active:0",
           "label": "Séries",
           "frame": [
-            327,
-            716,
+            328,
+            284,
             155,
             52
           ],
@@ -463,8 +514,8 @@
           "focus": "pill:type",
           "label": "Type, Tous",
           "frame": [
-            176,
-            614,
+            375,
+            182,
             132,
             76
           ],
@@ -484,27 +535,27 @@
         }
       ]
     },
-    "collections-tri-titre": {
-      "hash": "a14a6d4ce9fb",
-      "durationMs": 28863,
+    "collections-type-vide": {
+      "hash": "3762b6453aee",
+      "durationMs": 29319,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
-        "label": "Berserk",
+        "focus": "group:type:anime:0",
+        "label": "Rick et Morty",
         "frame": [
-          176,
-          464,
-          300,
-          523
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:type:anime"
         ],
-        "route": "Watchlist",
+        "route": "Favorites",
         "params": null,
         "stack": [
           "Home",
-          "Watchlist"
+          "Favorites"
         ],
         "panel": null,
         "panelOwners": [],
@@ -512,49 +563,25 @@
       },
       "steps": [
         {
-          "do": "wait:1",
-          "app": "foreground",
-          "focus": "grid:0",
-          "label": "Berserk",
-          "frame": [
-            176,
-            464,
-            300,
-            523
-          ],
-          "groups": [
-            "grid:line:0"
-          ],
-          "route": "Watchlist",
-          "params": null,
-          "stack": [
-            "Home",
-            "Watchlist"
-          ],
-          "panel": null,
-          "panelOwners": [],
-          "writes": []
-        },
-        {
           "do": "up",
           "app": "foreground",
-          "focus": "pill:type",
-          "label": "Type, Tous",
+          "focus": "pill:group",
+          "label": "Ranger par, Type",
           "frame": [
-            176,
-            614,
-            132,
+            177,
+            182,
+            186,
             76
           ],
           "groups": [
             "filters:pills",
             "filters"
           ],
-          "route": "Watchlist",
+          "route": "Favorites",
           "params": null,
           "stack": [
             "Home",
-            "Watchlist"
+            "Favorites"
           ],
           "panel": null,
           "panelOwners": [],
@@ -563,23 +590,23 @@
         {
           "do": "right",
           "app": "foreground",
-          "focus": "pill:sort",
-          "label": "Trier par, Derniers arrivés",
+          "focus": "pill:type",
+          "label": "Type, Tous",
           "frame": [
-            320,
-            614,
-            272,
+            375,
+            182,
+            132,
             76
           ],
           "groups": [
             "filters:pills",
             "filters"
           ],
-          "route": "Watchlist",
+          "route": "Favorites",
           "params": null,
           "stack": [
             "Home",
-            "Watchlist"
+            "Favorites"
           ],
           "panel": null,
           "panelOwners": [],
@@ -589,19 +616,19 @@
           "do": "select",
           "app": "foreground",
           "focus": "sheet:option:0",
-          "label": "Arrivée en bibliothèque",
+          "label": "Tous",
           "frame": [
-            418,
-            395,
-            620,
+            628,
+            415,
+            664,
             72
           ],
           "groups": [],
-          "route": "Watchlist",
+          "route": "Favorites",
           "params": null,
           "stack": [
             "Home",
-            "Watchlist"
+            "Favorites"
           ],
           "panel": [
             "sheet:option:0"
@@ -615,19 +642,19 @@
           "do": "down",
           "app": "foreground",
           "focus": "sheet:option:1",
-          "label": "Titre A→Z",
+          "label": "Films",
           "frame": [
-            418,
-            477,
-            620,
+            628,
+            497,
+            664,
             72
           ],
           "groups": [],
-          "route": "Watchlist",
+          "route": "Favorites",
           "params": null,
           "stack": [
             "Home",
-            "Watchlist"
+            "Favorites"
           ],
           "panel": [
             "sheet:option:0"
@@ -641,19 +668,19 @@
           "do": "select",
           "app": "foreground",
           "focus": "sheet:option:1",
-          "label": "Titre A→Z",
+          "label": "Films",
           "frame": [
-            418,
-            477,
-            620,
+            628,
+            497,
+            664,
             72
           ],
           "groups": [],
-          "route": "Watchlist",
+          "route": "Favorites",
           "params": null,
           "stack": [
             "Home",
-            "Watchlist"
+            "Favorites"
           ],
           "panel": [
             "sheet:option:0"
@@ -666,47 +693,74 @@
         {
           "do": "menu",
           "app": "foreground",
-          "focus": "pill:sort",
-          "label": "Trier par, Titre A→Z",
+          "focus": "pill:type",
+          "label": "Type, Films",
           "frame": [
-            320,
-            614,
-            198,
+            375,
+            182,
+            138,
             76
           ],
           "groups": [
             "filters:pills",
             "filters"
           ],
-          "route": "Watchlist",
+          "route": "Favorites",
           "params": null,
           "stack": [
             "Home",
-            "Watchlist"
+            "Favorites"
           ],
           "panel": null,
           "panelOwners": [],
           "writes": []
         },
         {
-          "do": "down",
+          "do": [
+            "down",
+            "down"
+          ],
           "app": "foreground",
-          "focus": "grid:0",
-          "label": "Barbie",
+          "focus": "empty:primary",
+          "label": "Tout effacer",
           "frame": [
-            176,
-            464,
-            300,
-            523
+            868,
+            754,
+            266,
+            68
           ],
           "groups": [
-            "grid:line:0"
+            "library:empty"
           ],
-          "route": "Watchlist",
+          "route": "Favorites",
           "params": null,
           "stack": [
             "Home",
-            "Watchlist"
+            "Favorites"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "select",
+          "app": "foreground",
+          "focus": "group:type:anime:0",
+          "label": "Rick et Morty",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:group:type:anime"
+          ],
+          "route": "Favorites",
+          "params": null,
+          "stack": [
+            "Home",
+            "Favorites"
           ],
           "panel": null,
           "panelOwners": [],

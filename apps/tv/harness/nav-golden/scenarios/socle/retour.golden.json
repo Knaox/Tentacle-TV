@@ -3,32 +3,32 @@
   "domain": "socle",
   "suite": "retour",
   "reference": {
-    "sha": "67aca3e7c69dd8566e4b5e5b0bb5a5d31411b658",
-    "label": "référence 67aca3e7c"
+    "sha": "b8a986506e1b6f733eb4baea3668cf8386b2eccb",
+    "label": "référence b8a986506"
   },
   "observation": 2,
   "dataset": "48c6f354f1d7",
-  "native": "db6f477dbdf35e26",
+  "native": "d4d5739f8997a28e",
   "device": {
     "kind": "simulateur",
-    "name": "nav-T6",
+    "name": "nav-T5",
     "model": "Apple-TV-4K-3rd-generation-1080p",
     "runtime": "tvOS-26-2"
   },
-  "recordedAt": "2026-10-15T12:05:25.051Z",
+  "recordedAt": "2026-10-19T07:08:39.251Z",
   "scenarios": {
     "retour-accueil": {
       "hash": "ab039fb4ebaf",
-      "durationMs": 26175,
+      "durationMs": 15448,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Orgueil et Préjugés",
         "frame": [
-          248,
-          556,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -49,7 +49,7 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
@@ -72,7 +72,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -91,32 +91,42 @@
         },
         {
           "do": "menu",
-          "app": "background",
+          "app": "foreground",
           "focus": null,
           "label": null,
           "frame": null,
           "groups": [],
-          "route": null,
+          "route": "Home",
           "params": null,
-          "stack": [],
+          "stack": [
+            "Home"
+          ],
           "panel": null,
           "panelOwners": [],
           "writes": []
+        }
+      ],
+      "expectFailures": [
+        {
+          "step": 3,
+          "field": "app",
+          "want": "background",
+          "got": "foreground"
         }
       ]
     },
     "retour-pour-vous": {
       "hash": "78f78c543981",
-      "durationMs": 30734,
+      "durationMs": 27850,
       "start": {
         "app": "foreground",
         "focus": "hero:primary",
-        "label": "Reprendre",
+        "label": "Spider-Man : No Way Home",
         "frame": [
-          248,
-          556,
-          339,
-          68
+          177,
+          48,
+          1648,
+          520
         ],
         "groups": [
           "section:hero"
@@ -138,7 +148,7 @@
           "focus": "nav:Recommendations",
           "label": "Pour vous",
           "frame": [
-            56,
+            57,
             405,
             276,
             64
@@ -162,7 +172,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -198,19 +208,19 @@
     },
     "retour-ma-liste": {
       "hash": "2bdbba5a67f8",
-      "durationMs": 26583,
+      "durationMs": 27089,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:type:anime:0",
         "label": "Rick et Morty",
         "frame": [
-          176,
-          302,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:type:anime"
         ],
         "route": "Watchlist",
         "params": null,
@@ -229,7 +239,7 @@
           "focus": "nav:Watchlist",
           "label": "Ma liste",
           "frame": [
-            56,
+            57,
             477,
             276,
             64
@@ -253,7 +263,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -289,19 +299,19 @@
     },
     "retour-favoris": {
       "hash": "8d1fdc23be98",
-      "durationMs": 25916,
+      "durationMs": 27961,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:type:anime:0",
         "label": "Rick et Morty",
         "frame": [
-          176,
-          302,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:type:anime"
         ],
         "route": "Favorites",
         "params": null,
@@ -320,7 +330,7 @@
           "focus": "nav:Favorites",
           "label": "Mes favoris",
           "frame": [
-            56,
+            57,
             549,
             276,
             64
@@ -344,7 +354,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -380,19 +390,19 @@
     },
     "retour-animes": {
       "hash": "fd5d2555f9d5",
-      "durationMs": 30574,
+      "durationMs": 29205,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:f89b4d4d7733020ed2721d8fec37f26c:0",
         "label": "\"Omae Gotoki ga Maou ni Kateru to Omou na\" to Yuusha Party o Tsuihou Sareta node, Outo de Kimama ni Kurashitai",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:f89b4d4d7733020ed2721d8fec37f26c"
         ],
         "route": "Library",
         "params": {
@@ -414,7 +424,7 @@
           "focus": "nav:Library_acf898949f3c87c958b3784cb05fd4d1",
           "label": "Animés",
           "frame": [
-            56,
+            57,
             621,
             276,
             64
@@ -441,7 +451,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -479,20 +489,20 @@
       ]
     },
     "retour-series": {
-      "hash": "8a8ee6d37174",
-      "durationMs": 30921,
+      "hash": "52d171bf7562",
+      "durationMs": 33264,
       "start": {
         "app": "foreground",
-        "focus": "grid:0",
+        "focus": "group:genre:090eac6e9de4fe1fbc194e5b96691277:0",
         "label": "56 Jours",
         "frame": [
-          176,
-          265,
-          244,
-          439
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
-          "grid:line:0"
+          "section:group:genre:090eac6e9de4fe1fbc194e5b96691277"
         ],
         "route": "Library",
         "params": {
@@ -511,16 +521,43 @@
         {
           "do": "right",
           "app": "foreground",
-          "focus": "grid:1",
+          "focus": "group:genre:090eac6e9de4fe1fbc194e5b96691277:1",
           "label": "9-1-1",
           "frame": [
-            456,
-            265,
-            244,
-            439
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
-            "grid:line:0"
+            "section:group:genre:090eac6e9de4fe1fbc194e5b96691277"
+          ],
+          "route": "Library",
+          "params": {
+            "libraryId": "d565273fd114d77bdf349a2896867069",
+            "libraryName": "Séries"
+          },
+          "stack": [
+            "Home",
+            "Library"
+          ],
+          "panel": null,
+          "panelOwners": [],
+          "writes": []
+        },
+        {
+          "do": "menu",
+          "app": "foreground",
+          "focus": "group:genre:090eac6e9de4fe1fbc194e5b96691277:0",
+          "label": "56 Jours",
+          "frame": [
+            177,
+            122,
+            333,
+            573
+          ],
+          "groups": [
+            "section:group:genre:090eac6e9de4fe1fbc194e5b96691277"
           ],
           "route": "Library",
           "params": {
@@ -541,7 +578,7 @@
           "focus": "nav:Library_d565273fd114d77bdf349a2896867069",
           "label": "Séries",
           "frame": [
-            56,
+            57,
             765,
             276,
             64
@@ -568,7 +605,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -607,13 +644,13 @@
     },
     "retour-recherche": {
       "hash": "ff846e3cedc3",
-      "durationMs": 25434,
+      "durationMs": 26510,
       "start": {
         "app": "foreground",
         "focus": "key:A",
         "label": "A",
         "frame": [
-          176,
+          177,
           197,
           64,
           64
@@ -638,7 +675,7 @@
           "focus": "nav:Search",
           "label": "Rechercher",
           "frame": [
-            56,
+            57,
             244,
             276,
             64
@@ -662,7 +699,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -698,13 +735,13 @@
     },
     "retour-reglages": {
       "hash": "70d07834eb36",
-      "durationMs": 40066,
+      "durationMs": 39749,
       "start": {
         "app": "foreground",
         "focus": "settings:tab:account",
         "label": "Compte",
         "frame": [
-          176,
+          177,
           164,
           340,
           100
@@ -729,7 +766,7 @@
           "focus": "nav:Settings",
           "label": "Knaoxtest, Réglages",
           "frame": [
-            56,
+            57,
             964,
             276,
             64
@@ -779,13 +816,13 @@
     },
     "retour-fiche": {
       "hash": "1b241a1569c7",
-      "durationMs": 14090,
+      "durationMs": 13508,
       "start": {
         "app": "foreground",
         "focus": "detail:primary",
         "label": "Lecture",
         "frame": [
-          120,
+          121,
           674,
           207,
           68
@@ -810,12 +847,12 @@
           "do": "menu",
           "app": "foreground",
           "focus": "hero:primary",
-          "label": "Reprendre",
+          "label": "Orgueil et Préjugés",
           "frame": [
-            248,
-            556,
-            339,
-            68
+            177,
+            48,
+            1648,
+            520
           ],
           "groups": [
             "section:hero"
@@ -835,7 +872,7 @@
           "focus": "nav:Home",
           "label": "Accueil",
           "frame": [
-            56,
+            57,
             333,
             276,
             64
@@ -856,16 +893,16 @@
     },
     "retour-lecteur": {
       "hash": "fb7b4a4e077f",
-      "durationMs": 14003,
+      "durationMs": 14631,
       "start": {
         "app": "foreground",
         "focus": "resume:0",
         "label": "Orgueil et Préjugés",
         "frame": [
-          176,
-          673,
-          380,
-          287
+          177,
+          122,
+          333,
+          573
         ],
         "groups": [
           "section:resume"
@@ -886,7 +923,7 @@
           "focus": "player:playpause",
           "label": "Pause",
           "frame": [
-            597,
+            598,
             912,
             96,
             96
@@ -915,10 +952,10 @@
           "focus": "resume:0",
           "label": "Orgueil et Préjugés",
           "frame": [
-            176,
-            673,
-            380,
-            287
+            177,
+            122,
+            333,
+            573
           ],
           "groups": [
             "section:resume"
