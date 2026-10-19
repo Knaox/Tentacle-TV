@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { arrivalAfterFocus, isBeyondEdge, NO_FOCUS_ARRIVAL, type Direction, type FocusArrival } from "@tentacle-tv/tv-core";
-import { tvosInput, useRemoteIntents } from "../input";
+import { REMOTE_BINDINGS, useRemoteIntents } from "../../input";
 import type { FocusStore } from "./focusStore";
 
 /**
@@ -8,7 +8,7 @@ import type { FocusStore } from "./focusStore";
  * part — un clic sur le bord du pavé, une flèche, ou un glisser — alors que
  * le focus est sur l'élément du bord (`edgeKey`), et qu'il y était déjà AVANT
  * le geste. La décision est la règle de tv-core (`focus/beyondEdge.ts`), qui
- * lit les faits de la Siri Remote dans sa table : le moteur de focus a déjà
+ * lit les faits de la télécommande (Siri Remote, Android TV) dans sa table : le moteur de focus a déjà
  * déplacé le focus quand l'intention arrive, et un appui ne s'annonce qu'au
  * relâchement. Ce crochet date les arrivées du focus et écoute les
  * intentions de l'entrée unique. Un événement, un appel : un titre par geste.
@@ -39,7 +39,7 @@ export function useBeyondEdge(focus: FocusStore, { edgeKey, direction, enabled, 
   latest.current = { edgeKey, direction, onBeyond };
   useRemoteIntents((event) => {
     const { edgeKey: edge, direction: toward, onBeyond: beyond } = latest.current;
-    const input = { edgeKey: edge, direction: toward, focusedKey: focus.focusedKey(), arrival: arrival.current, traits: tvosInput.bindings.traits };
+    const input = { edgeKey: edge, direction: toward, focusedKey: focus.focusedKey(), arrival: arrival.current, traits: REMOTE_BINDINGS.traits };
     if (isBeyondEdge(event, input)) beyond();
   }, enabled && edgeKey !== null);
 }
