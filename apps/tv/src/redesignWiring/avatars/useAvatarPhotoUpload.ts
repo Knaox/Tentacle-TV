@@ -10,6 +10,7 @@ import {
   type AvatarPhotoPayload,
 } from "@tentacle-tv/tv-core";
 import { bumpOwnPhotoVersion } from "../../lib/ownPhotoVersion";
+import { TV_FAMILY_LISTING_KEY } from "../profiles/useTvFamilyListing";
 import { ownPhotoQueryKey } from "./ownPhoto";
 
 /** Le plus long qu'on attende l'image et son envoi : au-delà, l'échec se dit. */
@@ -21,8 +22,9 @@ const SEND_TIMEOUT_MS = 20_000;
  * - `self` : la photo Jellyfin du sujet de la session, par le proxy
  *   (`POST /Users/{soi}/Images/Primary`, capacité `avatars.devicePhoto`) —
  *   exactement comme une photo importée, elle suit le compte sur tous ses
- *   clients. Puis sa sonde se relit, son portrait change d'adresse, et
- *   « Qui regarde ? » se relit (`["tv-profiles"]`) ;
+ *   clients. Puis sa sonde se relit, son portrait change d'adresse, et la
+ *   famille de la TV se relit (`TV_FAMILY_LISTING_KEY` : la photo de
+ *   « Changer de profil » dans le rail d'une session de profil) ;
  * - `guest` : un invité de la Famille, que le SERVEUR habille (`setGuestPhoto`,
  *   `family.guestPhotos`) — depuis une session de profil de la TV, par le
  *   propriétaire ou un parent (`family.profileManage`) ; c'est le serveur qui
@@ -63,7 +65,9 @@ export function useAvatarPhotoUpload(target: AvatarGalleryTarget): (id: string) 
           bumpOwnPhotoVersion(userId);
           void queryClient.invalidateQueries({ queryKey: ownPhotoQueryKey(userId) });
         }
-        void queryClient.invalidateQueries({ queryKey: ["tv-profiles"] });
+        // Sous `["family"]` depuis le rail allégé : l'ancienne clé `["tv-profiles"]` ne relisait plus rien,
+        // et le rail gardait l'initiale du profil jusqu'à cinq minutes.
+        void queryClient.invalidateQueries({ queryKey: TV_FAMILY_LISTING_KEY });
         return true;
       } catch {
         return false;
@@ -81,7 +85,9 @@ async function fetchAvatarPhoto(serverUrl: string | null, id: string): Promise<A
   if (!url) throw new Error("avatar : pas de serveur");
   const response = await fetch(url);
   if (!response.ok) throw new Error(`avatar ${response.status}`);
-  const photo = avatarPhotoFromDataUrl(await readAsDataUrl(await response.blob()));
+  // Le type vient de l'en-tête : le blob d'Android n'en porte aucun (tv-core `avatarPhotoFromDataUrl`).
+  const declaredType = response.headers.get("content-type");
+  const photo = avatarPhotoFromDataUrl(await readAsDataUrl(await response.blob()), declaredType);
   if (!photo) throw new Error("avatar : pas une image");
   return photo;
 }
