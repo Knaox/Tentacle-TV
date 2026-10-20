@@ -67,6 +67,7 @@ export default {
   offline: {
     liveTransfers: "Live progress",
     liveTransfersHint: "Time remaining on the lock screen during a transfer",
+    liveTransfersDenied: "Notifications are off in the device settings: progress stays hidden.",
   },
   advanced: {
     row: "Advanced settings: in the desktop app",

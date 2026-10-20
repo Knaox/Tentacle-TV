@@ -77,6 +77,7 @@ export default {
   offline: {
     liveTransfers: "Suivi en direct",
     liveTransfersHint: "Temps restant sur l'écran verrouillé pendant un transfert",
+    liveTransfersDenied: "Notifications désactivées dans les réglages de l'appareil : le suivi reste invisible.",
   },
   advanced: {
     row: "Réglages avancés : sur l'app bureau",

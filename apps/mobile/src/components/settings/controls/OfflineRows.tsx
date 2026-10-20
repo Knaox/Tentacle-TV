@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Alert, Linking, StyleSheet, View } from "react-native";
+import { Alert, Linking, Platform, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUserId } from "@tentacle-tv/api-client";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
@@ -81,15 +81,32 @@ export function NotifyReadyRow({ scope, last }: RowProps) {
   );
 }
 
-/** « Suivi en direct » : le temps restant sur l'écran verrouillé pendant un transfert (adaptateur, branché à la fusion). */
+/**
+ * « Suivi en direct » : le temps restant sur l'écran verrouillé pendant un
+ * transfert (adaptateur, branché à la fusion). Sur Android 13+, l'activité EST
+ * une notification : l'allumer demande la permission ; refusée, le réglage
+ * reste allumé (la notification est seulement invisible) et la ligne mène aux
+ * réglages. iOS : rien à demander (les Activités en direct se coupent dans les
+ * réglages du système).
+ */
 export function LiveTransfersRow({ scope, last }: RowProps) {
   const { t } = useTranslation("settingsMobile");
   const { available, enabled, setEnabled } = useLiveTransfersSetting();
+  const [denied, setDenied] = useState(false);
+  const toggle = useCallback(async (on: boolean) => {
+    setEnabled(on);
+    if (on && Platform.OS === "android") setDenied(!(await ensureNotificationPermission()));
+  }, [setEnabled]);
   if (!available) return null;
   return (
-    <SwitchSettingRow
-      icon="activity" label={t("offline.liveTransfers")} description={t("offline.liveTransfersHint")}
-      scope={scope} value={enabled} onChange={setEnabled} last={last}
+    <SettingsRow
+      icon="activity"
+      label={t("offline.liveTransfers")}
+      description={denied ? t("offline.liveTransfersDenied") : t("offline.liveTransfersHint")}
+      scope={scope ?? undefined}
+      onPress={denied ? () => void Linking.openSettings() : undefined}
+      last={last}
+      trailing={<BrandSwitch value={enabled} onValueChange={(on) => void toggle(on)} accessibilityLabel={t("offline.liveTransfers")} />}
     />
   );
 }
