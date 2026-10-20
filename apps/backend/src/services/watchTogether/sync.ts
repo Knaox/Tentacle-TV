@@ -13,6 +13,7 @@ import {
   barrierParticipants, cancelResumeOnRelease, confirmReady, dropBarrier, joinBarrier, openBarrier,
   requestResumeOnRelease,
 } from "./syncBarrier";
+import { anyoneWatching, loadedDuringSeekBarrier } from "./syncGuards";
 import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
 import { armReadyGate, dropReadyGate } from "./syncReadyGate";
 import { isStaleWtSeekToken } from "./watchTogetherSeekToken";
@@ -39,7 +40,10 @@ function pruneWaiting(room: Room, userId: string, now: number): boolean {
 
 /** Anti-gel infini : les membres attendus depuis plus de WT_GROUP_WAIT_TIMEOUT_MS
  *  sont déclarés en échec de lecture et le groupe reprend sans eux. Appelé par
- *  le sweep périodique du gateway. */
+ *  le sweep périodique du gateway. Si plus PERSONNE ne regarde, la salle ne
+ *  repart pas : elle reste en pause — sinon son horloge tournait seule, au-delà
+ *  de la fin du titre, et les lecteurs s'y recalaient au réveil (défaut M4 du
+ *  banc : de 48 s à 1 069 s sur un épisode de 300 s, deux « épisode suivant »). */
 export function expireStaleWaits(room: Room, now: number): { expired: string[]; resumed: boolean } {
   const expired: string[] = [];
   for (const [userId, since] of room.waitingSince) {
@@ -54,8 +58,12 @@ export function expireStaleWaits(room: Room, now: number): { expired: string[]; 
       member.buffering = false;
       member.inPlayback = false;
     }
-    resumed = pruneWaiting(room, userId, now) || resumed;
   }
+  if (!anyoneWatching(room)) {
+    cancelResumeOnRelease(room);
+    room.pauseReason = "user";
+  }
+  for (const userId of expired) resumed = pruneWaiting(room, userId, now) || resumed;
   if (!resumed) touch(room, now);
   return { expired, resumed };
 }
@@ -242,13 +250,6 @@ export function applyCommand(
       return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
   }
-}
-
-/** Fin de chargement (sans identifiant de barrière) d'un lecteur v2 qu'une
- *  barrière de seek ou de saut attend : ce n'est pas un « posé sur la cible ». */
-function loadedDuringSeekBarrier(room: Room, member: RoomMember, barrierId: number | undefined): boolean {
-  return barrierId === undefined && member.protocolVersion >= WT_PROTOCOL_VERSION
-    && room.barrier !== null && room.barrier.cause !== "buffering" && room.waitingFor.has(member.userId);
 }
 
 /** Le socket d'un lecteur en séance s'est fermé : son attente est levée (il ne
