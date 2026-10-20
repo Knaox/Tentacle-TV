@@ -22,3 +22,5 @@ export const MirrorLogin = lazy(() => import("./screens/auth").then((m) => ({ de
 export const MirrorRegister = lazy(() => import("./screens/auth").then((m) => ({ default: m.MirrorRegister })));
 export const MirrorHome = lazy(() => import("./screens/home").then((m) => ({ default: m.MirrorHome })));
 export const MirrorForYou = lazy(() => import("./screens/forYou").then((m) => ({ default: m.MirrorForYou })));
+// Le premier lancement du web étroit (pas un écran de route, mais du miroir : même chargement à la demande).
+export const MirrorFirstRun = lazy(() => import("./firstRun/MirrorFirstRun").then((m) => ({ default: m.MirrorFirstRun })));
