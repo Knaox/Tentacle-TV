@@ -9,7 +9,6 @@ import {
   SHADOW_RN,
   useTheme,
   useThemedStyles,
-  withAlpha,
   type AppTheme,
 } from "@/theme";
 
@@ -92,9 +91,9 @@ export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCance
             <Feather
               name={allSelected ? "minus-square" : "check-square"}
               size={16}
-              color={colors.brand.light}
+              color={colors.text.secondary}
             />
-            <Text style={[styles.secondaryTxt, { color: colors.brand.light }]} numberOfLines={1}>
+            <Text style={[styles.secondaryTxt, { color: colors.text.secondary }]} numberOfLines={1}>
               {allSelected ? t("cancel") : t("selectAll")}
             </Text>
           </Pressable>
@@ -108,7 +107,7 @@ export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCance
             accessibilityState={{ disabled }}
             hitSlop={6}
           >
-            <Feather name="trash-2" size={16} color={disabled ? colors.text.quaternary : colors.cta.brandFg} />
+            <Feather name="trash-2" size={16} color={disabled ? colors.text.quaternary : colors.status.error} />
             <Text style={[styles.deleteTxt, disabled && styles.deleteTxtDisabled]} numberOfLines={1}>
               {removeLabel ?? t("removeCount", { count })}
             </Text>
@@ -187,21 +186,17 @@ const makeStyles = (t: AppTheme) =>
       height: 44,
       paddingHorizontal: spacing.md,
       borderRadius: 999,
-      backgroundColor: t.colors.status.error,
-      shadowColor: t.colors.status.error,
-      shadowOpacity: 0.45,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 6 },
+      // Le danger se dit par le LIBELLÉ rouge, sur la puce neutre de la barre :
+      // plus de pavé rouge plein ni d'ombre rouge (système de boutons).
+      backgroundColor: t.colors.fill.medium,
     },
     deleteBtnDisabled: {
-      backgroundColor: withAlpha(t.colors.status.error, 0.18, t.colors.danger.surface),
-      shadowOpacity: 0,
+      backgroundColor: t.colors.fill.subtle,
     },
     deleteTxt: {
       ...typography.small,
       fontFamily: FONT_FAMILY.bold,
-      // Blanc sur couleur status pleine — cta.brandFg = "sur couleur vive".
-      color: t.colors.cta.brandFg,
+      color: t.colors.status.error,
       letterSpacing: 0.2,
     },
     deleteTxtDisabled: {
