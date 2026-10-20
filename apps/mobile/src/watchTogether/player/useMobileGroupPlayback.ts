@@ -64,7 +64,8 @@ export function useMobileGroupPlayback({
 
   // Le refus d'un passage voyage avec le groupe (la croix d'un autre vaut pour moi).
   useGroupIntroSkip(sync.notifySkipIntroDismiss);
-  const { groupSkip, onSkipPropose } = useGroupSkipCountdown(itemId);
+  // « Tous prêts » : aucun saut de passage tant que la salle attend un membre.
+  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId);
 
   // Rechargement du flux : le groupe m'attend, gelé à la position VISÉE.
   const firstStream = useRef(true);
@@ -100,10 +101,11 @@ export function useMobileGroupPlayback({
   const overlay = useMemo<GroupOverlayInput | undefined>(() => (sync.onGroupItem ? {
     groupSession: true,
     groupSkip,
+    groupSkipHeld: skipHeld,
     onSkipPropose,
     onSegmentDismissNotify: sync.notifySkipIntroDismiss,
     onNextDismissNotify: sync.notifyAutoNextDismiss,
-  } : undefined), [sync.onGroupItem, groupSkip, onSkipPropose, sync.notifySkipIntroDismiss, sync.notifyAutoNextDismiss]);
+  } : undefined), [sync.onGroupItem, groupSkip, skipHeld, onSkipPropose, sync.notifySkipIntroDismiss, sync.notifyAutoNextDismiss]);
 
   const chrome = useWtPlayerChrome(itemId);
   return {
