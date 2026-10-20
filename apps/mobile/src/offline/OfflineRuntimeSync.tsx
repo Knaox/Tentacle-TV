@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useJellyfinClient, useServerCapability, useTentacleConfig } from "@tentacle-tv/api-client";
-import { offlineOwnerOf } from "@tentacle-tv/offline-core";
+import { offlineOwnerOf, wifiOnlyAction } from "@tentacle-tv/offline-core";
 import { refreshStoredUser } from "@/auth/storedUser";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import {
@@ -26,7 +26,6 @@ import { maybeRefreshOfflineCaches, refreshOfflineCaches } from "./prefsCache";
 import { syncPlaybackState } from "./resync";
 import { photographSession } from "./sessionPhoto";
 import { isBackgroundTransfers, useWifiOnly } from "./settings";
-import { wifiBlocked } from "./transferGate";
 import { useConnectivity } from "./useConnectivity";
 import { useStorageReady } from "@/providers/StorageReadyContext";
 import { useOfflineProfileSession } from "./rights/useOfflineOwner";
@@ -192,8 +191,12 @@ export function OfflineRuntimeSync() {
     if (networkType === "wifi") setCellularAck(false);
     const engine = offlineEngineIfStarted();
     if (engine === null) return;
-    if (wifiBlocked({ wifiOnly, networkType, cellularAck })) engine.suspendForSystem();
-    else if (reachable === true) engine.resumeSystemPauses();
+    // Wi-Fi reconnu avant la première sonde : ce qui attendait repart aussi
+    // (`wifiOnlyAction`, recette Android D3) ; le moteur remet de côté ce
+    // qu'il ne peut pas lancer.
+    const action = wifiOnlyAction({ wifiOnly, networkType, cellularAck, reachable });
+    if (action === "suspend") engine.suspendForSystem();
+    else if (action === "resume") engine.resumeSystemPauses();
   }, [wifiOnly, cellularAck, networkType, reachable, online]);
 
   return null;

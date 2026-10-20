@@ -29,14 +29,29 @@ class OfflineStorageModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("OfflineStorage")
 
-    Events("onTransferPause")
+    Events("onTransferPause", "onDefaultNetwork")
 
-    OnStartObserving {
+    // Un abonnement par évènement : sans filtre, retirer l'écoute du bouton
+    // « Pause » (fin des transferts) coupait aussi le suivi du réseau.
+    OnStartObserving("onTransferPause") {
       OfflineTransferService.onPauseRequested = { sendEvent("onTransferPause", mapOf<String, Any>()) }
     }
 
-    OnStopObserving {
+    OnStopObserving("onTransferPause") {
       OfflineTransferService.onPauseRequested = null
+    }
+
+    // Le réseau par défaut, pour « Wi-Fi seulement » (`DefaultNetworkWatch`).
+    OnStartObserving("onDefaultNetwork") {
+      DefaultNetworkWatch.start(context) { kind -> sendEvent("onDefaultNetwork", mapOf("kind" to kind)) }
+    }
+
+    OnStopObserving("onDefaultNetwork") {
+      appContext.reactContext?.let { DefaultNetworkWatch.stop(it) }
+    }
+
+    Function("defaultNetworkKind") {
+      DefaultNetworkWatch.current(context)
     }
 
     Function("setExcludedFromBackup") { _: String, _: Boolean -> false }
@@ -111,6 +126,7 @@ class OfflineStorageModule : Module() {
 
     OnDestroy {
       OfflineTransferService.onPauseRequested = null
+      appContext.reactContext?.let { DefaultNetworkWatch.stop(it) }
       // Le suivi d'abord : sinon l'arrêt du service le reposerait, orphelin.
       appContext.reactContext?.let {
         LiveTransferNotice.hide(it)

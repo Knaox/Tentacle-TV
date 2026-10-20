@@ -64,6 +64,7 @@ export {
 export * from "./connectivity/connectivityMachine";
 export * from "./connectivity/connectivityReducer";
 export * from "./connectivity/networkLink";
+export * from "./connectivity/wifiOnlyRule";
 export * from "./playback/localSegments";
 export * from "./playback/localPlaybackProgress";
 export * from "./playback/playbackFailure";
