@@ -25,6 +25,8 @@ export interface WatchTogetherContextValue {
   /** L'accès du compte (cf. le vrai fournisseur) : jamais, Watch Together n'existe pas ici. */
   mayJoin: boolean;
   mayCreate: boolean;
+  /** La salle du compte sur un autre appareil : jamais, ici. */
+  elsewhere: null;
   send: () => boolean;
   serverNow: () => number;
   actions: Record<string, () => Promise<never>>;
@@ -53,6 +55,7 @@ const OUT_OF_GROUP: WatchTogetherContextValue = {
   isHost: false,
   mayJoin: false,
   mayCreate: false,
+  elsewhere: null,
   send: () => false,
   serverNow: () => Date.now(),
   actions: {
@@ -61,6 +64,7 @@ const OUT_OF_GROUP: WatchTogetherContextValue = {
     respond: reject,
     leave: reject,
     kick: reject,
+    joinHere: reject,
   },
 };
 
