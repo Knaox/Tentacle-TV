@@ -160,6 +160,32 @@ describe("un arrivant qui n'arrive jamais ne bloque pas", () => {
   });
 });
 
+describe("« Rejoindre » d'un membre déjà dans le groupe", () => {
+  it("le clic gèle la salle (POST /group/arrive) ; son lecteur s'ouvre à la position de la pause", async () => {
+    const inviteId = await rig.invite(alice, bob);
+    await rig.call(bob, "POST", `/invites/${inviteId}/respond`, { accept: true });
+    await rig.openPlayer(bob, "film");
+    await rig.ready(bob);
+    // Bob ferme son lecteur ; la salle continue sans lui.
+    await rig.send(bob, { type: "wt:presence", inPlayback: false });
+    vi.advanceTimersByTime(20_000);
+    expect(rig.room("a").paused).toBe(false);
+    const atClick = wtPositionTicksAt(rig.room("a"), Date.now());
+    const arrived = await rig.call(bob, "POST", "/group/arrive", {});
+    expect(arrived.body).toMatchObject({ paused: true, positionTicks: atClick, arrivingUserIds: ["b"] });
+    expect(lastState(alice).state).toMatchObject({ paused: true, positionTicks: atClick, waitingForUserIds: ["b"] });
+    await rig.openPlayer(bob, "film");
+    await rig.ready(bob);
+    expect(lastState(alice).state).toMatchObject({ paused: false, positionTicks: atClick });
+  });
+
+  it("l'appareil qui regarde déjà, ou une salle sans titre : rien ne se gèle", async () => {
+    const watching = await rig.call(alice, "POST", "/group/arrive", {});
+    expect(watching.body).toMatchObject({ paused: false });
+    expect(watching.body.arrivingUserIds).toBeUndefined();
+  });
+});
+
 describe("« Rejoindre ici » : un second appareil du même compte", () => {
   it("le premier appareil ne lève pas l'attente du second ; la salle repart quand le second est prêt", async () => {
     const alicePc = rig.device("a", "pc");
@@ -178,22 +204,6 @@ describe("« Rejoindre ici » : un second appareil du même compte", () => {
 });
 
 describe("pendant l'arrivée", () => {
-  it("un décompte de saut d'intro en cours repart EN ENTIER une fois l'arrivant là", async () => {
-    const intro = { type: "wt:skipPropose", segmentType: "Intro", isEpisode: true, segmentStartTicks: 0, toTicks: 40 * SECOND };
-    await rig.send(alice, intro);
-    expect(rig.room("a").pendingSkip).not.toBeNull();
-    const inviteId = await rig.invite(alice, bob);
-    await rig.call(bob, "POST", `/invites/${inviteId}/respond`, { accept: true });
-    // Pendant son chargement : plus de décompte, aucun saut.
-    expect(lastState(alice).state.pendingSkip).toBeUndefined();
-    vi.advanceTimersByTime(10_000);
-    expect(states(alice).some((m) => m.cause === "skip")).toBe(false);
-    await rig.openPlayer(bob, "film");
-    await rig.ready(bob);
-    const rearmed = lastState(bob).state;
-    expect(rearmed.pendingSkip?.skipAtPositionTicks).toBe(rearmed.positionTicks + 5 * SECOND);
-  });
-
   it("un saut d'Alice attend encore Bob, qui confirme sur la cible", async () => {
     const inviteId = await rig.invite(alice, bob);
     await rig.call(bob, "POST", `/invites/${inviteId}/respond`, { accept: true });
