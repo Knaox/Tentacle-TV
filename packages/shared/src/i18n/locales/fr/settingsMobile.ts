@@ -46,6 +46,10 @@ export default {
     familyInvitesBadge_one: "{{count}} invitation",
     familyInvitesBadge_other: "{{count}} invitations",
     switchProfile: "Changer de profil",
+    askAtLaunch: "« Qui regarde ? » au démarrage",
+    askAtLaunchOn: "Proposé à chaque ouverture de l'app",
+    askAtLaunchStay: "Désactivé : l'app ouvre directement le profil {{name}}",
+    askAtLaunchOff: "Désactivé : l'app ouvre directement le dernier profil choisi",
     serverGroup: "Serveur",
   },
   playback: {

@@ -67,7 +67,7 @@ export type SettingsAbility = "tickets" | "manageAccount" | "pairDevices" | "pus
 
 /** Les réglages qui se font SUR PLACE ; leur portée est dans `settingsScopes.ts`. */
 export type SettingsControlId =
-  | "photo" | "userName" | "switchProfile"
+  | "photo" | "userName" | "switchProfile" | "askAtLaunch"
   | "intros" | "nextAutoPlay" | "stillWatching" | "language" | "trendingNow"
   | "theme" | "liquidGlass" | "subtitleSize" | "subtitlePosition" | "dataSaver" | "engine" | "engineOptions"
   | "bootIntro" | "bootSound"

@@ -56,7 +56,7 @@ export type WebBlockId = Exclude<SettingsBlockId, "offlineSpace">;
  * `paneRegistry.tsx`) ont le même type : l'un ne peut pas manquer à l'autre.
  */
 const CONTROLS_RENDERED = {
-  photo: true, userName: true, switchProfile: true, intros: true, nextAutoPlay: true, stillWatching: true,
+  photo: true, userName: true, switchProfile: true, askAtLaunch: true, intros: true, nextAutoPlay: true, stillWatching: true,
   language: true, trendingNow: true, theme: true, dataSaver: true, advancedOnDesktop: true,
 } as const satisfies Record<WebControlId, true>;
 const ACTIONS_RENDERED = { clearCache: true, deleteAccount: true, privacyPolicy: true } as const satisfies Record<WebActionId, true>;
