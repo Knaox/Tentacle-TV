@@ -24,7 +24,7 @@ interface Props {
  * Une carte de la rangée qui s'ouvre. Mise en page à la taille OUVERTE (l'image
  * reste nette), elle ne bouge que par transformation, sur le fil d'interface :
  * réduite au repos, ancrée en bas à gauche, poussée à droite quand la carte
- * d'avant s'ouvre (`openCardPlace`). Le toucher se décide au niveau de la
+ * d'avant s'ouvre (`openCardPlace`), effacée une fois passée. Le toucher se décide au niveau de la
  * rangée (`openCardAt`) : la carte n'en reçoit aucun, elle reste lisible par
  * VoiceOver.
  */
@@ -32,7 +32,10 @@ export const OpenCard = memo(function OpenCard({ entry, index, progress, step, r
   const placed = useAnimatedStyle(() => {
     const place = openCardPlace(index, progress.value, step, restWidth, openWidth);
     const shrink = 1 - place.scale;
+    // Passée (à gauche de la carte ouverte), elle s'efface : la rangée commence toujours par la carte ouverte.
+    const passed = Math.min(1, Math.max(0, progress.value - index));
     return {
+      opacity: 1 - Math.min(1, passed * 1.6),
       transform: [
         { translateX: place.left - index * step - (openWidth * shrink) / 2 },
         { translateY: (openHeight * shrink) / 2 },

@@ -26,6 +26,19 @@ export const EB = {
   androidSurface: "rgba(26, 26, 30, 0.98)",
   /** Le voile d'une image sous du texte. */
   scrim: (alpha: number) => `rgba(0, 0, 0, ${alpha})`,
+  /** La teinte posée sur le verre : le texte reste lisible sur une image claire. */
+  glassTint: "rgba(12, 12, 16, 0.38)",
+} as const;
+
+/**
+ * Le voile qui monte sous une étagère posée sur l'image : déjà dense à la
+ * hauteur des onglets (une image claire — un ciel — ne doit pas les avaler),
+ * presque noir sous les cartes.
+ */
+export const SHELF_SCRIM = {
+  lead: 120,
+  colors: ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.58)", "rgba(0, 0, 0, 0.86)", "rgba(0, 0, 0, 0.94)"] as [string, string, string, string],
+  locations: [0, 0.26, 0.6, 1] as [number, number, number, number],
 } as const;
 
 /** La marque, lue au rendu (le thème admin peut la changer). */

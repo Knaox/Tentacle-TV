@@ -16,9 +16,6 @@ import { useEpisodeWords } from "../useEpisodeWords";
 import { IndexRow } from "./IndexRow";
 import { IndexSeasonList } from "./IndexSeasonList";
 
-/** La hauteur d'une entrée repliée, pour ouvrir le sommaire sur l'épisode en cours. */
-const ROW_ESTIMATE = { phone: 128, tablet: 150 } as const;
-
 /**
  * Piste C — le sommaire. La liste prend tout l'écran, comme la table des
  * matières d'un livre : la série en grand, les saisons en colonne (paysage) ou
@@ -52,8 +49,14 @@ export function IndexBrowser(props: EpisodeBrowserProps) {
     totalEpisodes > 0 ? t("common:seasonTabEpisodes", { count: totalEpisodes }) : null,
   ].filter(Boolean).join(" · ");
   const opening = useMemo(() => openingEpisodeIndex(episodes), [episodes]);
-  const estimate = isTablet ? ROW_ESTIMATE.tablet : ROW_ESTIMATE.phone;
   const listRef = useRef<FlatList<EpisodeEntry>>(null);
+  const opened = useRef<string | undefined>(undefined);
+  const openOnce = useCallback(() => {
+    if (opened.current === activeSeasonId) return;
+    opened.current = activeSeasonId;
+    const index = Math.max(0, opening - 1);
+    if (index > 0) requestAnimationFrame(() => listRef.current?.scrollToIndex({ index, animated: false }));
+  }, [activeSeasonId, opening]);
   const renderItem = useCallback(({ item }: { item: EpisodeEntry }) => (
     <IndexRow entry={item} thumbWidth={geo.thumbWidth} large={isTablet} expanded={expanded.has(item.id)} artwork={renderArtwork(item)} words={words} onPlay={onPlay} onToggle={toggle} />
   ), [geo.thumbWidth, isTablet, expanded, renderArtwork, words, onPlay, toggle]);
@@ -75,8 +78,12 @@ export function IndexBrowser(props: EpisodeBrowserProps) {
       renderItem={renderItem}
       extraData={expanded}
       initialNumToRender={Math.min(60, Math.max(10, opening + 6))}
-      contentOffset={{ x: 0, y: Math.max(0, opening - (two ? 0 : 1)) * estimate }}
-      onScrollToIndexFailed={() => undefined}
+      // Ouvert au point près sur l'entrée d'avant l'épisode en cours (hauteurs variables : mesurées, pas estimées).
+      onLayout={openOnce}
+      onScrollToIndexFailed={(info) => {
+        listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
+        requestAnimationFrame(() => listRef.current?.scrollToIndex({ index: info.index, animated: false }));
+      }}
       showsVerticalScrollIndicator={false}
       ItemSeparatorComponent={Separator}
       contentContainerStyle={{ paddingBottom: padding.bottom + 12, paddingTop: two ? 0 : 4 }}
@@ -124,7 +131,7 @@ const st = StyleSheet.create({
   body: { flex: 1 },
   columns: { flex: 1, flexDirection: "row", gap: 28 },
   closeRow: { flexDirection: "row" },
-  headingBlock: { flexShrink: 1, gap: 4 },
+  headingBlock: { flex: 1, gap: 4 },
   series: { color: EB.label, fontSize: EB_TYPE.display, lineHeight: EB_TYPE.display + 4, fontWeight: "800", letterSpacing: -0.6 },
   seriesLarge: { fontSize: EB_TYPE.display + 6, lineHeight: EB_TYPE.display + 10 },
   meta: { color: EB.secondary, fontSize: EB_TYPE.kicker + 1, fontWeight: "500" },

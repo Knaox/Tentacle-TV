@@ -5,10 +5,12 @@ import { Play } from "lucide-react-native";
 import type { EpisodeEntry } from "../../../../player/episodes/episodeBrowserModel";
 import { EB, EB_HIT, EB_TYPE, brandInk } from "../browserTokens";
 import type { EpisodeWords } from "../useEpisodeWords";
+import { WholeText } from "../WholeText";
 
 interface Props {
   entry: EpisodeEntry | undefined;
   height: number;
+  titleLines: 1 | 2;
   overviewLines: 1 | 2;
   large: boolean;
   words: EpisodeWords;
@@ -21,7 +23,7 @@ interface Props {
  * « Reprendre » d'un épisode entamé — en pilule blanche. Un fondu bref à
  * chaque carte qui s'ouvre.
  */
-export const OpenDetails = memo(function OpenDetails({ entry, height, overviewLines, large, words, onPlay }: Props) {
+export const OpenDetails = memo(function OpenDetails({ entry, height, titleLines, overviewLines, large, words, onPlay }: Props) {
   const { t } = useTranslation(["player", "common"]);
   const fade = useRef(new Animated.Value(1)).current;
   const id = entry?.id;
@@ -37,8 +39,8 @@ export const OpenDetails = memo(function OpenDetails({ entry, height, overviewLi
         <Text numberOfLines={1} style={[st.kicker, large && st.kickerLarge, entry.current && { color: brandInk() }]}>
           {entry.current ? `${words.nowPlaying} · ${words.kicker(entry)}` : words.kicker(entry)}
         </Text>
-        <Text numberOfLines={1} style={[st.title, large && st.titleLarge]}>{entry.title}</Text>
-        {entry.overview ? <Text numberOfLines={overviewLines} style={[st.overview, large && st.overviewLarge]}>{entry.overview}</Text> : null}
+        <Text numberOfLines={titleLines} style={[st.title, large && st.titleLarge]}>{entry.title}</Text>
+        {entry.overview ? <WholeText key={entry.id} text={entry.overview} lines={overviewLines} style={[st.overview, large && st.overviewLarge]} /> : null}
       </View>
       <Pressable
         onPress={() => onPlay(entry)}

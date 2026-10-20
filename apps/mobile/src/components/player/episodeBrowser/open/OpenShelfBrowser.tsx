@@ -9,7 +9,7 @@ import { useChromeInsets } from "../../../../player/chrome/useChromeInsets";
 import { openingEpisodeIndex, type EpisodeEntry } from "../../../../player/episodes/episodeBrowserModel";
 import { openCardAt, openShelfGeometry } from "../../../../player/episodes/episodeBrowserLayout";
 import { BrowserCloseButton } from "../BrowserCloseButton";
-import { EB } from "../browserTokens";
+import { EB, SHELF_SCRIM } from "../browserTokens";
 import { ShelfSeasonTabs } from "../shelf/ShelfSeasonTabs";
 import type { EpisodeBrowserProps } from "../types";
 import { useBackCloses, useEntrance, useSeasonSwap } from "../useBrowserMotion";
@@ -18,7 +18,6 @@ import { OpenCard } from "./OpenCard";
 import { OpenDetails } from "./OpenDetails";
 
 const GAP = 12;
-const SCRIM_LEAD = 96;
 const TAP_SLOP = 8;
 
 /**
@@ -105,8 +104,8 @@ export function OpenShelfBrowser(props: EpisodeBrowserProps) {
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
       {!geo.belowVideo ? (
-        <RNAnimated.View pointerEvents="none" style={[st.scrim, { top: geo.top - SCRIM_LEAD, opacity: enter }]}>
-          <LinearGradient colors={[EB.scrim(0), EB.scrim(0.66), EB.scrim(0.9)]} locations={[0, 0.34, 1]} style={StyleSheet.absoluteFill} />
+        <RNAnimated.View pointerEvents="none" style={[st.scrim, { top: geo.top - SHELF_SCRIM.lead, opacity: enter }]}>
+          <LinearGradient colors={SHELF_SCRIM.colors} locations={SHELF_SCRIM.locations} style={StyleSheet.absoluteFill} />
         </RNAnimated.View>
       ) : null}
       <RNAnimated.View pointerEvents="box-none" style={[st.body, { top: geo.top, opacity: enter, transform: [{ translateY: lift }] }]}>
@@ -133,8 +132,8 @@ export function OpenShelfBrowser(props: EpisodeBrowserProps) {
                 onScroll={onScroll}
                 scrollEventThrottle={16}
                 getItemLayout={getItemLayout}
-                initialScrollIndex={opening > 0 ? opening : undefined}
-                initialNumToRender={8}
+                contentOffset={{ x: opening * step, y: 0 }}
+                initialNumToRender={Math.max(8, opening + 5)}
                 windowSize={5}
                 style={{ height: geo.openHeight + 12 }}
                 contentContainerStyle={{ paddingLeft: geo.inset, paddingRight: Math.max(geo.inset, width - geo.inset - geo.openWidth), gap: GAP, paddingTop: 12 }}
@@ -142,7 +141,7 @@ export function OpenShelfBrowser(props: EpisodeBrowserProps) {
             </View>
           )}
           <View style={{ paddingHorizontal: geo.inset, paddingTop: 12 }}>
-            <OpenDetails entry={loading ? undefined : shown} height={geo.detailsHeight} overviewLines={geo.overviewLines} large={isTablet} words={words} onPlay={onPlay} />
+            <OpenDetails entry={loading ? undefined : shown} height={geo.detailsHeight} titleLines={geo.titleLines} overviewLines={geo.overviewLines} large={isTablet} words={words} onPlay={onPlay} />
           </View>
         </RNAnimated.View>
       </RNAnimated.View>

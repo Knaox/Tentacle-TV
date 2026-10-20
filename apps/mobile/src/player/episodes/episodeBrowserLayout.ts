@@ -113,6 +113,7 @@ export interface OpenShelfGeometry {
   restWidth: number;
   /** La hauteur réservée aux détails de la carte ouverte (rien ne se remet en page). */
   detailsHeight: number;
+  titleLines: 1 | 2;
   overviewLines: 1 | 2;
   belowVideo: boolean;
 }
@@ -120,10 +121,10 @@ export interface OpenShelfGeometry {
 const OPEN_TABS = { phone: 40, tablet: 46 } as const;
 const OPEN_GAPS = { tabs: 12, details: 12 } as const;
 
-/** Les détails sous la carte ouverte : surtitre, titre sur une ligne, résumé. */
-export function openDetailsHeight(isTablet: boolean, overviewLines: 1 | 2): number {
+/** Les détails sous la carte ouverte : surtitre, titre (une ou deux lignes), résumé. */
+export function openDetailsHeight(isTablet: boolean, titleLines: 1 | 2, overviewLines: 1 | 2): number {
   const line = isTablet ? 19 : 17;
-  return (isTablet ? 18 : 16) + 4 + (isTablet ? 24 : 21) + 6 + line * overviewLines;
+  return (isTablet ? 18 : 16) + 4 + (isTablet ? 24 : 21) * titleLines + 6 + line * overviewLines;
 }
 
 export function openShelfGeometry(screen: BrowserScreen, video: Rect): OpenShelfGeometry {
@@ -131,26 +132,29 @@ export function openShelfGeometry(screen: BrowserScreen, video: Rect): OpenShelf
   const landscape = width > height;
   const inset = Math.max(isTablet ? 32 : 20, landscape ? Math.max(edges.left, edges.right, safe.left, safe.right) : 0);
   const bottom = Math.max(edges.bottom, safe.bottom) + (isTablet ? 22 : 12);
-  const openWidth = isTablet ? (landscape ? 340 : 300) : (landscape ? 200 : 220);
+  const openWidth = isTablet ? (landscape ? 340 : 300) : (landscape ? 200 : 208);
   const openHeight = Math.round((openWidth * 9) / 16);
   const restWidth = Math.round(openWidth * 0.6);
   const tabs = isTablet ? OPEN_TABS.tablet : OPEN_TABS.phone;
-  const content = (lines: 1 | 2) => tabs + OPEN_GAPS.tabs + openHeight + OPEN_GAPS.details + openDetailsHeight(isTablet, lines);
+  // Debout, le titre a deux lignes : le bouton « Lire » lui prend la largeur.
+  const titleLines: 1 | 2 = landscape ? 1 : 2;
+  const content = (lines: 1 | 2) => tabs + OPEN_GAPS.tabs + openHeight + OPEN_GAPS.details + openDetailsHeight(isTablet, titleLines, lines);
+  const place = (top: number, lines: 1 | 2, belowVideo: boolean): OpenShelfGeometry => ({
+    top, inset, bottom, openWidth, openHeight, restWidth,
+    detailsHeight: openDetailsHeight(isTablet, titleLines, lines), titleLines, overviewLines: lines, belowVideo,
+  });
 
   if (!landscape) {
     const room = height - bottom - (video.y + video.height);
     for (const lines of [2, 1] as const) {
       if (content(lines) <= room - 8) {
         const gap = Math.min(28, Math.max(8, Math.round((room - content(lines)) / 2)));
-        return { top: video.y + video.height + gap, inset, bottom, openWidth, openHeight, restWidth, detailsHeight: openDetailsHeight(isTablet, lines), overviewLines: lines, belowVideo: true };
+        return place(video.y + video.height + gap, lines, true);
       }
     }
   }
   const lines: 1 | 2 = isTablet ? 2 : 1;
-  return {
-    top: height - bottom - content(lines), inset, bottom, openWidth, openHeight, restWidth,
-    detailsHeight: openDetailsHeight(isTablet, lines), overviewLines: lines, belowVideo: false,
-  };
+  return place(height - bottom - content(lines), lines, false);
 }
 
 export interface OpenCardPlace {

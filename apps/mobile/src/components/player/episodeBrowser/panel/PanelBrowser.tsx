@@ -66,6 +66,7 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
   ), [rowHeight, geo.thumbWidth, geo.overviewLines, isTablet, renderArtwork, words, onPlay]);
 
   const inset = isTablet ? 22 : 18;
+  const compact = side && !isTablet;
   const plateStyle = side
     ? { top: geo.top, right: geo.right, bottom: geo.bottom, left: geo.left, borderRadius: geo.radius }
     : { top: geo.top, right: 0, bottom: 0, left: 0, borderTopLeftRadius: geo.radius, borderTopRightRadius: geo.radius };
@@ -81,10 +82,11 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
       <Animated.View style={[st.plate, plateStyle, { opacity: side ? enter : 1, transform: [side ? { translateX: slide } : { translateY: slide }] }]}>
         <BrowserGlass radius={geo.radius} solid={!side} />
         {!side ? <View style={st.grabber} /> : null}
-        <View style={[st.header, { paddingHorizontal: inset, paddingTop: side ? (isTablet ? 22 : 16) : 22 }]}>
-          <View style={st.headings}>
-            <Text accessibilityRole="header" numberOfLines={1} style={[st.title, isTablet && st.titleLarge]}>{t("panels.episodesTitle")}</Text>
-            <Text numberOfLines={1} style={st.series}>{seriesTitle}</Text>
+        <View style={[st.header, { paddingHorizontal: inset, paddingTop: side ? (isTablet ? 22 : 14) : 22 }, compact && st.headerCompact]}>
+          {/* Un téléphone couché n'a pas la hauteur de deux lignes de titre : la série suit « Épisodes ». */}
+          <View style={compact ? st.headingsInline : st.headings}>
+            <Text accessibilityRole="header" numberOfLines={1} style={[st.title, isTablet && st.titleLarge, compact && st.titleCompact]}>{t("panels.episodesTitle")}</Text>
+            <Text numberOfLines={1} style={[st.series, compact && st.seriesInline]}>{seriesTitle}</Text>
           </View>
           <BrowserCloseButton onPress={onClose} size={isTablet ? 34 : 30} />
         </View>
@@ -119,11 +121,15 @@ const st = StyleSheet.create({
   plate: { position: "absolute", overflow: "hidden" },
   grabber: { alignSelf: "center", marginTop: 8, width: 36, height: 5, borderRadius: 2.5, backgroundColor: "rgba(255, 255, 255, 0.28)" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 14 },
+  headerCompact: { paddingBottom: 10 },
   headings: { flex: 1, gap: 2 },
+  headingsInline: { flex: 1, flexDirection: "row", alignItems: "baseline", gap: 8 },
+  titleCompact: { fontSize: EB_TYPE.heading - 2 },
+  seriesInline: { flexShrink: 1 },
   title: { color: EB.label, fontSize: EB_TYPE.heading, fontWeight: "700", letterSpacing: -0.35 },
   titleLarge: { fontSize: EB_TYPE.heading + 4 },
   series: { color: EB.secondary, fontSize: EB_TYPE.title - 1, fontWeight: "500" },
-  rule: { height: StyleSheet.hairlineWidth, backgroundColor: EB.hairline, marginTop: 14 },
+  rule: { height: StyleSheet.hairlineWidth, backgroundColor: EB.hairline, marginTop: 12 },
   list: { flex: 1 },
   ghosts: { gap: ROW_GAP, paddingTop: 8 },
   ghost: { borderRadius: 16, backgroundColor: EB.fill },

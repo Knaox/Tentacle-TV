@@ -17,8 +17,10 @@ interface Props {
   radius: number;
   /** L'image de l'épisode ; `null` : son numéro sur un fond sombre. */
   artwork: ReactNode;
-  /** « En cours » posé dans l'image (étagère) plutôt que dans le texte. */
+  /** « En cours » posé dans l'image plutôt que dans le texte. */
   badge?: boolean;
+  /** Le badge resserré d'une petite vignette (une ligne de liste). */
+  compactBadge?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -27,7 +29,7 @@ interface Props {
  * la pastille « vu » en haut à droite, la jauge de la marque au pied d'un
  * épisode entamé. Sans image, son numéro, en grand, comme la TV.
  */
-export const EpisodeArtwork = memo(function EpisodeArtwork({ entry, width, radius, artwork, badge = false, style }: Props) {
+export const EpisodeArtwork = memo(function EpisodeArtwork({ entry, width, radius, artwork, badge = false, compactBadge = false, style }: Props) {
   const height = Math.round((width * 9) / 16);
   const large = width >= 200;
   return (
@@ -37,7 +39,7 @@ export const EpisodeArtwork = memo(function EpisodeArtwork({ entry, width, radiu
         <BrandGauge progress={entry.progress} style={[st.gauge, large && st.gaugeLarge]} height={large ? 4 : 3} />
       )}
       <CardStatusMarkers statuses={entry.watched ? WATCHED : NONE} style={st.status} />
-      {badge && entry.current && <NowPlayingBadge />}
+      {badge && entry.current && <NowPlayingBadge compact={compactBadge} />}
     </View>
   );
 });
@@ -65,12 +67,12 @@ export function BrandGauge({ progress, height = 3, style }: { progress: number; 
 }
 
 /** « En cours » : la seule pièce pleine de la marque, en version profonde (le blanc y tient 4,6:1). */
-export function NowPlayingBadge({ style }: { style?: StyleProp<ViewStyle> }) {
+export function NowPlayingBadge({ compact = false, style }: { compact?: boolean; style?: StyleProp<ViewStyle> }) {
   const { t } = useTranslation("player");
   return (
-    <LinearGradient colors={[BRAND.dark, BRAND.accentDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[st.badge, style]}>
-      <Play size={9} color={EB.label} fill={EB.label} strokeWidth={0} />
-      <Text style={st.badgeText} numberOfLines={1}>{t("panels.nowPlaying")}</Text>
+    <LinearGradient colors={[BRAND.dark, BRAND.accentDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[st.badge, compact && st.badgeCompact, style]}>
+      <Play size={compact ? 7 : 9} color={EB.label} fill={EB.label} strokeWidth={0} />
+      <Text style={[st.badgeText, compact && st.badgeTextCompact]} numberOfLines={1}>{t("panels.nowPlaying")}</Text>
     </LinearGradient>
   );
 }
@@ -84,5 +86,7 @@ const st = StyleSheet.create({
   gaugeLarge: { left: 10, right: 10, bottom: 9 },
   status: { top: 6, right: 6 },
   badge: { position: "absolute", top: 8, left: 8, height: 22, flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 8, borderRadius: 11 },
+  badgeCompact: { top: 6, left: 6, height: 18, gap: 4, paddingHorizontal: 6, borderRadius: 9 },
   badgeText: { color: EB.label, fontSize: 12, fontWeight: "700", letterSpacing: 0.1 },
+  badgeTextCompact: { fontSize: 10.5 },
 });

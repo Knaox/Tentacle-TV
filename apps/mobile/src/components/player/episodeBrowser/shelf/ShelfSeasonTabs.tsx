@@ -73,7 +73,8 @@ const st = StyleSheet.create({
   tab: { paddingTop: 6, gap: 7 },
   pressed: { opacity: 0.6 },
   labelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  label: { color: EB.secondary, fontWeight: "600", letterSpacing: -0.1 },
+  // Plus clair que le gris secondaire : sur une image claire, sous le voile, il doit rester lisible.
+  label: { color: "rgba(235, 235, 245, 0.74)", fontWeight: "600", letterSpacing: -0.1 },
   labelActive: { color: EB.label },
   dot: { width: 6, height: 6, borderRadius: 3 },
   underline: { height: 3, borderRadius: 1.5, width: "100%" },

@@ -16,20 +16,21 @@ export function BrowserGlass({ radius, solid = false }: { radius: number; solid?
     return <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, backgroundColor: solid ? EB.sheet : EB.androidSurface }]} />;
   }
   const glass = liquidGlass.enabled ? getLiquidGlassModule() : null;
+  // Une teinte sombre par-dessus la matière : sur une image claire, le verre grisait et le texte pâlissait.
+  const tint = <View style={[StyleSheet.absoluteFill, { backgroundColor: EB.glassTint }]} />;
   if (glass) {
     const { GlassView } = glass;
     return (
-      <GlassView
-        pointerEvents="none"
-        glassEffectStyle="regular"
-        colorScheme="dark"
-        style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: "hidden" }]}
-      />
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: "hidden" }]}>
+        <GlassView glassEffectStyle="regular" colorScheme="dark" style={StyleSheet.absoluteFill} />
+        {tint}
+      </View>
     );
   }
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: "hidden" }]}>
       <BlurView intensity={100} tint="systemChromeMaterialDark" style={StyleSheet.absoluteFill} />
+      {tint}
     </View>
   );
 }

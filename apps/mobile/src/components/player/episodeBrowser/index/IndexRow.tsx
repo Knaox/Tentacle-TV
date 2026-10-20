@@ -6,6 +6,7 @@ import type { EpisodeEntry } from "../../../../player/episodes/episodeBrowserMod
 import { EB, EB_TYPE, brandInk } from "../browserTokens";
 import { EpisodeArtwork } from "../EpisodeArtwork";
 import type { EpisodeWords } from "../useEpisodeWords";
+import { WholeText } from "../WholeText";
 
 interface Props {
   entry: EpisodeEntry;
@@ -52,7 +53,18 @@ export const IndexRow = memo(function IndexRow({ entry, thumbWidth, large, expan
           accessibilityLabel={expanded ? t("episodeBrowser.hideOverview") : t("episodeBrowser.showOverview")}
           style={({ pressed }) => [st.overviewRow, large && st.overviewRowLarge, pressed && st.overviewPressed]}
         >
-          <Text numberOfLines={expanded ? undefined : 1} style={[st.overview, large && st.overviewLarge]}>{entry.overview}</Text>
+          {expanded ? (
+            <Text style={[st.overview, large && st.overviewLarge]}>{entry.overview}</Text>
+          ) : (
+            <View style={st.overviewText}>
+              <WholeText
+                text={entry.overview}
+                lines={2}
+                style={[st.overview, large && st.overviewLarge]}
+                fallback={<Text style={[st.overview, st.overviewHint]}>{t("episodeBrowser.showOverview")}</Text>}
+              />
+            </View>
+          )}
           <ChevronDown size={16} color={EB.tertiary} strokeWidth={2.4} style={expanded ? st.chevronUp : undefined} />
         </Pressable>
       ) : null}
@@ -76,7 +88,9 @@ const st = StyleSheet.create({
   overviewRow: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginLeft: NUMERAL + 12, marginTop: 8, paddingVertical: 2 },
   overviewRowLarge: { marginLeft: NUMERAL + 24 },
   overviewPressed: { opacity: 0.6 },
-  overview: { flex: 1, color: EB.tertiary, fontSize: EB_TYPE.body, lineHeight: 18 },
+  overview: { flex: 1, color: "rgba(235, 235, 245, 0.5)", fontSize: EB_TYPE.body, lineHeight: 18 },
+  overviewText: { flex: 1 },
+  overviewHint: { color: EB.secondary },
   overviewLarge: { fontSize: EB_TYPE.body + 1, lineHeight: 20 },
   chevronUp: { transform: [{ rotate: "180deg" }] },
 });

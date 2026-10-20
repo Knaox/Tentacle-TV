@@ -8,7 +8,8 @@ import { useChromeInsets } from "../../../../player/chrome/useChromeInsets";
 import { openingEpisodeIndex, type EpisodeEntry } from "../../../../player/episodes/episodeBrowserModel";
 import { shelfGeometry } from "../../../../player/episodes/episodeBrowserLayout";
 import { BrowserCloseButton } from "../BrowserCloseButton";
-import { EB } from "../browserTokens";
+import { EB, SHELF_SCRIM } from "../browserTokens";
+import { LeadingFade } from "../LeadingFade";
 import type { EpisodeBrowserProps } from "../types";
 import { useBackCloses, useEntrance, useSeasonSwap } from "../useBrowserMotion";
 import { useEpisodeWords } from "../useEpisodeWords";
@@ -16,8 +17,6 @@ import { ShelfCard } from "./ShelfCard";
 import { ShelfSeasonTabs } from "./ShelfSeasonTabs";
 
 const GAP = 14;
-/** Le voile commence au-dessus de l'étagère : le texte des onglets n'est jamais sur l'image nue. */
-const SCRIM_LEAD = 96;
 
 /**
  * Piste A — l'étagère. L'image reste reine : aucune plaque, un voile qui monte
@@ -62,13 +61,12 @@ export function ShelfBrowser(props: EpisodeBrowserProps) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
-      <Animated.View pointerEvents="none" style={[st.scrim, { top: geo.belowVideo ? video.y + video.height : geo.top - SCRIM_LEAD, opacity: enter }]}>
-        {geo.belowVideo ? (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: EB.scrim(0.6) }]} />
-        ) : (
-          <LinearGradient colors={[EB.scrim(0), EB.scrim(0.62), EB.scrim(0.88)]} locations={[0, 0.34, 1]} style={StyleSheet.absoluteFill} />
-        )}
-      </Animated.View>
+      {geo.belowVideo ? null : (
+        // Posée sous l'image (debout), l'étagère est déjà sur du noir : aucun voile.
+        <Animated.View pointerEvents="none" style={[st.scrim, { top: geo.top - SHELF_SCRIM.lead, opacity: enter }]}>
+          <LinearGradient colors={SHELF_SCRIM.colors} locations={SHELF_SCRIM.locations} style={StyleSheet.absoluteFill} />
+        </Animated.View>
+      )}
       <Animated.View pointerEvents="box-none" style={[st.body, { top: geo.top, opacity: enter, transform: [{ translateY: lift }] }]}>
         <View style={[st.header, { paddingLeft: geo.inset, paddingRight: geo.inset - 4, height: isTablet ? 46 : 40 }]}>
           <ShelfSeasonTabs
@@ -98,11 +96,16 @@ export function ShelfBrowser(props: EpisodeBrowserProps) {
               snapToInterval={step}
               decelerationRate="fast"
               getItemLayout={getItemLayout}
-              initialScrollIndex={opening > 0 ? opening : undefined}
-              initialNumToRender={6}
+              // L'offset exact (le pas fixe) plutôt qu'`initialScrollIndex`, qui se décalait d'un écart.
+              contentOffset={{ x: opening * step, y: 0 }}
+              initialNumToRender={Math.max(6, opening + 4)}
               windowSize={5}
               contentContainerStyle={{ paddingLeft: geo.inset, paddingRight: geo.inset, gap: GAP, paddingTop: 12 }}
             />
+          )}
+          {loading ? null : (
+            // La carte passée ne laisse pas de lisière au bord : elle s'efface dans le noir.
+            <LeadingFade width={geo.inset} />
           )}
         </Animated.View>
       </Animated.View>

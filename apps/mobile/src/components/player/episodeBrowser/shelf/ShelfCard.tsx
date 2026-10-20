@@ -4,6 +4,7 @@ import type { EpisodeEntry } from "../../../../player/episodes/episodeBrowserMod
 import { SHELF_TYPE } from "../../../../player/episodes/episodeBrowserLayout";
 import { EB, EB_TYPE } from "../browserTokens";
 import { EpisodeArtwork } from "../EpisodeArtwork";
+import { WholeText } from "../WholeText";
 import type { EpisodeWords } from "../useEpisodeWords";
 
 interface Props {
@@ -35,7 +36,7 @@ export const ShelfCard = memo(function ShelfCard({ entry, width, overviewLines, 
         <Text numberOfLines={1} style={st.kicker}>{words.kicker(entry)}</Text>
         <Text numberOfLines={2} style={[st.title, large && st.titleLarge]}>{entry.title}</Text>
         {overviewLines > 0 && entry.overview ? (
-          <Text numberOfLines={overviewLines} style={st.overview}>{entry.overview}</Text>
+          <WholeText text={entry.overview} lines={overviewLines} style={st.overview} />
         ) : null}
       </View>
     </Pressable>
