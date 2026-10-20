@@ -2,7 +2,7 @@ import { getPrisma } from "../db";
 import { loadPushLangs, type PushLang } from "../pushLang";
 import { isPushPrefEnabled } from "../pushPreferences";
 import { sendToUser as sendPush } from "../pushService";
-import { sendToUser as sendSocket } from "../wsManager";
+import { connectedUserIds, sendToUser as sendSocket } from "../wsManager";
 import type { FamilyNotificationType, FamilyUpdateScope } from "../../family/familyProtocol";
 
 /**
@@ -16,6 +16,12 @@ import type { FamilyNotificationType, FamilyUpdateScope } from "../../family/fam
 /** Relire la Famille, chez chacun de ces comptes (une fois par compte). */
 export function familyUpdate(userIds: Iterable<string>, scope: FamilyUpdateScope): void {
   for (const userId of new Set(userIds)) sendSocket(userId, { type: "family:update", scope });
+}
+
+/** L'administration a changé ce que les comptes peuvent faire de la Famille : chaque compte
+ *  connecté relit (un compte SANS famille aussi — son « Créez votre famille » en dépend). */
+export function familySettingsChanged(): void {
+  familyUpdate(connectedUserIds(), "settings");
 }
 
 /** La famille PARTAGÉE a changé : son propriétaire et chacun de ses membres

@@ -6,6 +6,7 @@ import { accountFamilyRights, setAccountFamilyRights } from "../../services/fami
 import { getCreationDefaults, setCreationDefaults } from "../../services/family/familyCreationRights";
 import { endSessionsOfKinds } from "../../services/family/familySessions";
 import { notifyAllFamilies } from "../../services/family/familyGuestRequests";
+import { familySettingsChanged } from "../../services/family/familyNotify";
 import { hasRequestExtension } from "../../services/pluginRequests";
 import type { FamilyAdminSwitchesDto } from "../../family/familyContract";
 import { listTvProfiles, openTvSession, unlockManage } from "../../services/family/familyTv";
@@ -63,6 +64,9 @@ export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
     if (before.families && !after.families) await endSessionsOfKinds(["member", "guest"], "families_disabled");
     else if (after.families && before.guests && !after.guests) await endSessionsOfKinds(["guest"], "guests_disabled");
     if (before.guestRequests !== after.guestRequests) await notifyAllFamilies();
+    if (before.families !== after.families || before.guests !== after.guests || before.guestRequests !== after.guestRequests) {
+      familySettingsChanged();
+    }
     console.log(
       `[family] Interrupteurs : familles ${after.families ? "oui" : "non"}, invités ${after.guests ? "oui" : "non"}, ` +
         `demandes des invités ${after.guestRequests ? "oui" : "non"}`,
@@ -89,6 +93,7 @@ export const adminFamilyRoutes: FastifyPluginAsync = async (app) => {
     const defaults = await setCreationDefaults(creationDefaultsBodySchema.parse(request.body ?? {}));
     // Le défaut du droit de donner « peut demander » suspend ou rend des cases d'invités.
     if (before.grantGuestRequests !== defaults.grantGuestRequests) await notifyAllFamilies();
+    familySettingsChanged();
     console.log(
       `[family] ${actor.username} → défaut : famille ${defaults.createFamily ? "oui" : "non"}, invités ${defaults.createGuests ? "oui" : "non"}, ` +
         `demandes des invités ${defaults.grantGuestRequests ? "oui" : "non"}`,
