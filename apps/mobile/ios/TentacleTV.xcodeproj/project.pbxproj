@@ -15,6 +15,8 @@
 		BF4B73446E645D5303AD761F /* AirPlayModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 41459D7F00E9B1D3B5CDC4CF /* AirPlayModule.m */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		FC1019C406659A27CAED1231 /* libPods-TentacleTV.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */; };
+		B00750D0DE0000000000B001 /* TentacleBootSound.m in Sources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000B002 /* TentacleBootSound.m */; };
+		B00750D0DE0000000000B003 /* boot-tadum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000B004 /* boot-tadum.m4a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TentacleTV.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = TentacleTV/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* TentacleTV-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "TentacleTV-Bridging-Header.h"; path = "TentacleTV/TentacleTV-Bridging-Header.h"; sourceTree = "<group>"; };
+		B00750D0DE0000000000B002 /* TentacleBootSound.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleBootSound.m; path = ../../tv/ios/TentacleTV/TentacleBootSound.m; sourceTree = "<group>"; };
+		B00750D0DE0000000000B004 /* boot-tadum.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; name = "boot-tadum.m4a"; path = "../../tv/assets/sound/boot-tadum.m4a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +60,8 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				41459D7F00E9B1D3B5CDC4CF /* AirPlayModule.m */,
+				B00750D0DE0000000000B002 /* TentacleBootSound.m */,
+				B00750D0DE0000000000B004 /* boot-tadum.m4a */,
 				5D09CF3FDA6D0DDA9D0E0284 /* PrivacyInfo.xcprivacy */,
 			);
 			name = TentacleTV;
@@ -202,6 +208,7 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				0CC586631B812D1A40D3D265 /* PrivacyInfo.xcprivacy in Resources */,
+				B00750D0DE0000000000B003 /* boot-tadum.m4a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,6 +351,7 @@
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				BF4B73446E645D5303AD761F /* AirPlayModule.m in Sources */,
+				B00750D0DE0000000000B001 /* TentacleBootSound.m in Sources */,
 				7E645E1364FAC695E7FFBD3A /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

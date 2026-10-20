@@ -1,5 +1,7 @@
 package com.tentacletv.boot
 
+import android.content.Context
+import android.media.AudioManager
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -22,6 +24,9 @@ import com.facebook.react.bridge.ReactMethod
  *   `BootSoundStream` la tient sur la SORTIE, à l'image près, latence comprise.
  * - Aucune demande de focus audio : une musique déjà en cours n'est pas coupée,
  *   le son s'y MÉLANGE (la catégorie « ambient » de tvOS).
+ * - Le mode silencieux (ou vibreur) du téléphone le tait, comme le commutateur
+ *   de l'iPhone tait la catégorie « ambient » : le mobile compile ce même code
+ *   (apps/mobile/android/app/build.gradle). Une TV est toujours en mode normal.
  * - `claimIntro` : la MÉMOIRE DU PROCESSUS de l'ouverture (tv-core
  *   `bootIntroOnce`) — vrai au premier appel du processus seulement. Un drapeau
  *   natif : ni le rechargement du JavaScript ni la relance de l'interface du
@@ -102,6 +107,11 @@ class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
 
   private fun load(): Boolean {
     if (stream != null) return true
+    val audio = reactApplicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+    if (audio != null && audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
+      Log.i(TAG, "mode silencieux : aucun son")
+      return false
+    }
     val decoded = reactApplicationContext.assets.openFd(ASSET).use { BootSoundDecoder.decode(it) } ?: return false
     val next = BootSoundStream(decoded.sound)
     if (!next.ready) {
