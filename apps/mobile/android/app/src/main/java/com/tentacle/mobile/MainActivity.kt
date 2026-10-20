@@ -21,6 +21,11 @@ class MainActivity : ReactActivity() {
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
     super.onCreate(null)
+    // Le thème le dit déjà (`android:forceDarkAllowed`, styles.xml) ; certaines surcouches
+    // (ColorOS) forcent le sombre sans le lire : la vue racine refuse aussi, pour tout l'arbre.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      window.decorView.isForceDarkAllowed = false
+    }
   }
 
   /**
