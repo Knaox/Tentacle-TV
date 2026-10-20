@@ -3,8 +3,8 @@ import { getClockOffsetMs, getClockRttMs } from "../../socket/clockSync";
 import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
-  WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, isBarrierParticipant, needsStartCorrection, updatePlayLatency,
-  wtBufferingFreezeSeconds, wtPositionSecondsAt,
+  WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, isBarrierParticipant, isRoomWaitingForMe, needsStartCorrection,
+  updatePlayLatency, wtBufferingFreezeSeconds, wtPositionSecondsAt,
   type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
@@ -167,6 +167,12 @@ export function useGroupIntents({
     // part avec son identifiant — sans lui, le serveur n'y lit qu'une fin de
     // chargement (il me fera alors me caler, puis confirmer).
     const t = transportRef.current;
+    // Prêt pendant que la salle m'attend (arrivée, chargement) : je reste en pause
+    // jusqu'à la reprise planifiée, au lieu de jouer seul le temps qu'elle arrive.
+    if (!buffering && t && !t.isPaused() && isRoomWaitingForMe(r, selfId)) {
+      armEcho(shared);
+      t.pause();
+    }
     const barrierId = !buffering && r.barrierId !== undefined && isBarrierParticipant(r, selfId) && t
       && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
     if (barrierId !== undefined) shared.confirmedBarrierRef.current = barrierId;

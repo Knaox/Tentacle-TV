@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wtBufferingFreezeSeconds, wtJoinStartSeconds } from "./sessionRules";
+import { isRoomWaitingForMe, wtBufferingFreezeSeconds, wtJoinStartSeconds } from "./sessionRules";
 
 /**
  * L'arrivée côté lecteur (retour de Damien du 20/10) : où le nouveau ouvre son
@@ -37,5 +37,23 @@ describe("wtBufferingFreezeSeconds — la position d'un « je charge »", () => 
   it("calage en pleine lecture : la position du lecteur ; rechargement : celle qu'il vise", () => {
     expect(wtBufferingFreezeSeconds({ playerS: 95.4, wasReady: true })).toBe(95.4);
     expect(wtBufferingFreezeSeconds({ freezeAtS: 120, playerS: 0, wasReady: false })).toBe(120);
+  });
+});
+
+describe("isRoomWaitingForMe — prêt pendant qu'on m'attend : rester en pause", () => {
+  const room = (patch: Partial<Parameters<typeof isRoomWaitingForMe>[0] & object>) => ({
+    groupId: "g", hostUserId: "a", epoch: 1, itemId: "film", paused: true, positionTicks: 0, stateAtServerTime: 0,
+    pauseReason: "buffering" as const, waitingForUserIds: ["b"], members: [], ...patch,
+  });
+
+  it("la salle en pause m'attend (arrivée, chargement, barrière) : oui", () => {
+    expect(isRoomWaitingForMe(room({}), "b")).toBe(true);
+    expect(isRoomWaitingForMe(room({ pauseReason: "user", barrierId: 4 }), "b")).toBe(true);
+  });
+
+  it("elle attend un autre, elle joue, ou pas de salle : non", () => {
+    expect(isRoomWaitingForMe(room({}), "a")).toBe(false);
+    expect(isRoomWaitingForMe(room({ paused: false }), "b")).toBe(false);
+    expect(isRoomWaitingForMe(null, "b")).toBe(false);
   });
 });

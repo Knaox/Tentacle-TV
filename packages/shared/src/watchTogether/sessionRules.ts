@@ -22,6 +22,16 @@ export function isBarrierParticipant(room: WtRoomStateDto | null | undefined, se
 }
 
 /**
+ * La salle, en pause, m'attend encore (chargement, arrivée, barrière) : un
+ * lecteur qui devient prêt à cet instant reste en pause jusqu'à la reprise
+ * planifiée. Sinon il jouait seul le temps que la reprise arrive — 0,2 à
+ * 0,8 s sur mpv au banc du 20/10, puis un recalage visible.
+ */
+export function isRoomWaitingForMe(room: WtRoomStateDto | null | undefined, selfId: string | null): boolean {
+  return !!room && !!selfId && room.paused && room.waitingForUserIds.includes(selfId);
+}
+
+/**
  * Une séance est active sur CE média quand une salle existe VRAIMENT.
  *
  * Le drapeau `isInGroup` ne suffit pas : le shim webOS le pose à vrai sans
