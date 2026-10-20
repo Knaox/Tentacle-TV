@@ -42,6 +42,7 @@ vi.mock("./db", () => {
       findMany: async () => [
         { jellyfinUserId: "alice", libraryAdded: false, seerAvailable: true, tickets: true },
         { jellyfinUserId: "eve", libraryAdded: false, seerAvailable: true, tickets: true },
+        { jellyfinUserId: "charlie", libraryAdded: false, seerAvailable: true, tickets: true },
       ],
     },
     serverConfig: {
@@ -90,6 +91,11 @@ vi.mock("./seerAvailabilityGuard", async () => {
 vi.mock("./jellyfinTmdbLookup", () => ({
   findLibraryItemByTmdb: async (_tmdbId: number, _type: string, forUserId?: string) =>
     forUserId === "charlie" ? { kind: "missing" } : { kind: "found", id: "m-dune" },
+}));
+
+// Le départ d'une demande face aux droits d'aujourd'hui : « charlie » ne voit plus le titre.
+vi.mock("./seerDepartureRights", () => ({
+  departurePushAllowed: async (n: { jellyfinUserId: string }) => n.jellyfinUserId !== "charlie",
 }));
 
 import { deliverPendingNotifications } from "./notificationPushWorker";
@@ -147,6 +153,20 @@ describe("livraison push des demandes", () => {
 
   it("filet : une disponibilité que les droits du demandeur lui cachent ne part pas", async () => {
     const n = row("charlie", "request_status", "Dune", "« Dune » est sorti sur Tentacle TV");
+    store.notifications = [n];
+    await deliverPendingNotifications();
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(store.marked).toEqual([n.id]);
+  });
+
+  it("le départ d'une demande part en push", async () => {
+    store.notifications = [row("alice", "request_status", "Dune", "« Dune » est en route")];
+    await deliverPendingNotifications();
+    expect(sendToUser).toHaveBeenCalledWith("alice", expect.objectContaining({ body: "« Dune » est en route" }));
+  });
+
+  it("le départ d'un titre que les droits du demandeur cachent désormais reste dans la cloche", async () => {
+    const n = row("charlie", "request_status", "Dune", "« Dune » est en route");
     store.notifications = [n];
     await deliverPendingNotifications();
     expect(sendToUser).not.toHaveBeenCalled();

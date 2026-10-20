@@ -1286,3 +1286,102 @@ Serveur : `services/family/familyGuestRequests.ts`.
   `AccountFamilyRightsGroup.test.tsx`. Banc réel (Jellyfin 10.11 jetable, 2026-10-16) : 11
   vérifications de bout en bout, « TOUT EST PROUVÉ », et l'administration éprouvée dans le
   navigateur.
+
+## 9.10 Mobile et tablette : les droits s'appliquent partout, se règlent au bureau (lot du 20/10)
+
+Décision de Damien (20/10) : les droits de la Famille (profils, invités, contrôle parental,
+bibliothèques, « peut demander », Watch Together, hors ligne…) s'APPLIQUENT partout et se
+RÈGLENT à un seul endroit, le bureau ou le web. Le serveur décide ; un client ne fait que ne pas
+proposer ce qu'une capacité ou un droit refuse.
+
+### 9.10.1 Audit du mobile (deux modes : session personnelle, session de profil par « Qui regarde ? »)
+
+La session de profil du mobile est la MÊME que celle du bureau et de la TV (`tvProfile`,
+`profileSessionLimits.ts`, proxy à la clé prêtée + `userId`) : toutes les gardes du § 9.5
+s'y appliquent sans rien de propre au mobile. Accueil et rangées, bibliothèques, recherche,
+fiche (extras, saga, personnes, recos liées), Pour vous / Affiner, Ma liste, favoris,
+notifications, Watch Together (candidats : `withoutFamilyGuests`), Vigie
+(`guestExtensionAccess`), avatars (`deviceWrites.ts`), liens profonds (404 du proxy, aucun nom)
+et partage (`/api/share` fermé à un invité, liste partagée au nom du propriétaire) : déjà
+gardés côté serveur. Les titres gardés hors ligne sont réclamés PAR COMPTE (`claims`) : le profil
+d'un enfant ouvert sur le téléphone du parent ne liste pas ce que le parent a gardé.
+
+### 9.10.2 Fuites et manques fermés (un commit chacun, avec son test)
+
+1. **Push « … est en route »** (`seerDepartureRights.ts`) : le départ d'une demande partait en
+   push sans juger les droits D'AUJOURD'HUI (la cloche filtre à la lecture, l'écran verrouillé
+   non) ; une restriction posée depuis la demande la retient désormais.
+2. **Titres gardés avant le retrait d'un droit** : `POST /api/library/visibility` (capacité
+   `offline.verdicts`, 1.32.0, contrat `library/libraryVisibilityContract.ts` en miroir) juge
+   chaque titre gardé pour l'identité EN SESSION — visible, caché, ou disparu (lisible comme
+   avant pour une identité libre ; caché, fermé à l'échec, pour une identité restreinte).
+   Ouvert aux sessions de profil (`/api/downloads` leur reste fermé). Le mobile retire un
+   titre caché de la liste, de sa fiche locale et de ses sources de lecture
+   (`offline-core` › `rights/offlineHidden`, base locale : survit à « Vider le cache ») ; hors
+   ligne, le dernier verdict fait foi ; le droit rendu, il revient.
+3. **Un droit changé au bureau s'applique sans redémarrage** : `rights:changed` (capacité
+   `rights.live`) poussé aux sockets du compte — ou du PROFIL — à toute invalidation de politique
+   (`services/rightsLive/`), et aux invités dont « peut demander » change (case, interrupteur ou
+   droit de l'administration : la case ne touche pas Jellyfin). `useRightsLive` (api-client,
+   monté par `RightsLiveHost` sur le mobile) relit ce qui est à l'écran et oublie le reste ; la
+   requête du verdict hors ligne en fait partie.
+4. **« Partager mes statistiques »** : le mobile le proposait sans le droit « Partage public »
+   (le web le gardait déjà) ; derrière `usePublicSharingAllowed`.
+
+### 9.10.3 Vue en lecture seule (mobile, tablette, web étroit)
+
+Le panneau d'un profil (Réglages › Compte › Famille) ne porte plus d'interrupteur de droit :
+`familyRightsSummary` (shared, espace i18n `familyRightsSummary`) résume bibliothèques (lues à
+la demande pour un profil réglable), âge appliqué (le plus strict du voulu et du plafond), non
+classés, étiquettes, horaires, « peut demander » (ou suspendu), création d'invités, parent, et ce
+qui est fixé pour un invité ; puis « Modifier sur le bureau ou le web ». Restent sur le mobile :
+inviter, PIN, photo, accepter / refuser, retirer, quitter, dissoudre.
+
+### 9.10.4 Banc
+
+`bench:parental` passe aussi l'invité ouvert par « Qui regarde ? » du bureau ou du mobile
+(`PARENTAL_PICKER_PLATFORM`) et les requêtes propres au mobile (`probesMobile.ts`).
+Relevé du 2026-10-20 (Jellyfin 10.11 jetable, TMDB réel, Vigie absente, porte « Qui regarde ? »
+du bureau) : **3 147 vérifications, aucune fuite** — dont, pour chaque porte restreinte, 17 titres
+interdits jamais jugés lisibles par le verdict des titres gardés (les permis le restent), ce que
+chaque session peut faire, les droits d'administration retirés qui disparaissent, la plage
+fermée (page, lecture refusée 403) et la désactivation (session coupée, connexion refusée
+`account_disabled`).
+
+### 9.10.5 Tous les droits, pas seulement la Famille (demande de Damien, 20/10)
+
+« Tout ce que tu as le droit de faire, tu le vois ; tout ce que tu n'as pas le droit de faire, tu ne
+le vois pas. »
+
+- **Ce que la session peut faire** : `GET /api/account/abilities` (capacité `account.abilities`,
+  1.32.0, contrat `accountAbilities/accountAbilitiesContract.ts` en miroir), composé par
+  `accountAbilitiesOf` des droits que chaque porte applique déjà : administration, lecture, garder
+  hors ligne, Watch Together, partage public, suppression, tickets, extensions, compte, jumelage,
+  push, invitations — au nom du compte, du PROFIL ou du compte regardé, fermé à l'échec droit par
+  droit. Client : `useAccountAbilities` + `mayShow` / `watchTogetherAbility` (pas encore su : rien ne
+  s'affiche ; serveur d'avant : la règle d'avant de l'écran). Relue à `rights:changed`.
+- **Mobile** : « Garder hors ligne » par `keepOffline` ; les rubriques du profil (Support, mot de
+  passe, appareils, notifications, invitations) par la session reglages ; Watch Together par
+  wt-mobile ; les droits de lecture du lecteur par lecteur-mobile (§ 9.2.4) — chacun prévenu.
+- **Compte désactivé ou hors de ses heures** (`AccountAccessHost`, la règle de tous les clients) :
+  la page remplace l'app au-dessus de tout, le lecteur et la bande-annonce se ferment (une lecture
+  en cours est coupée à l'heure limite et ne redémarre pas ; le serveur refuse chaque flux et garde la
+  position), la page se lève seule à la réouverture ; une connexion refusée se dit par sa raison.
+  Il n'existe pas de plafond de DURÉE de visionnage dans Jellyfin 10.11 (aucun champ de
+  `UserPolicy`) : rien à appliquer.
+- **« Êtes-vous encore là ? »** : la pause tombe à l'expiration du délai (`useStillWatching`, battement
+  d'une seconde) ; en arrière-plan Android, au retour au premier plan.
+
+### 9.10.6 Restes
+
+- Les rangées de l'accueil PERSISTÉES (`HOME_PERSIST_WHITELIST`) d'avant un droit retiré
+  application fermée s'affichent au démarrage le temps de leur relecture (le serveur ne rend plus
+  rien d'interdit ; seule l'image gardée sur l'appareil traîne quelques instants).
+- Le bureau garde ses titres hors ligne sans verdict : la règle (`offline-core`) et la route
+  sont prêtes, l'adaptateur Electron reste à brancher.
+- **`EnableRemoteAccess` n'est pas appliqué derrière Tentacle** : Jellyfin le juge sur l'adresse
+  qui lui parle — celle de Tentacle, locale. Un compte « sans accès à distance » se sert de Tentacle
+  depuis Internet (téléphone en 4G). À fermer côté serveur (adresse réelle `getRealClientIp`, règle
+  locale de `playbackRights/localAddress`) avec un état d'accès dédié dans le contrat partagé.
+- Un titre gardé lu SANS réseau pendant les heures interdites n'est pas coupé (l'appareil ne
+  connaît pas les plages d'un compte « permis » ; Jellyfin non plus n'y a prise).

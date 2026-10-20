@@ -15,6 +15,7 @@
  */
 
 import { accountAccessRoutes } from "./accountAccess";
+import { accountAbilitiesRoutes } from "./accountAbilities";
 import type { FastifyInstance } from "fastify";
 import { authRoutes } from "./auth";
 import { inviteRoutes } from "./invites";
@@ -68,6 +69,7 @@ import { recoRoutes } from "./reco";
 import { recoPeopleRoutes } from "./recoPeople";
 import { searchRoutes } from "./search";
 import { libraryDeletionRoutes } from "./libraryDeletion";
+import { libraryVisibilityRoutes } from "./libraryVisibility";
 import { sagaRoutes } from "./sagas";
 import { recoPageRoutes } from "./recoPage";
 import { recoRowRoutes } from "./recoRows";
@@ -77,6 +79,7 @@ import { externalAccountRoutes } from "./externalAccounts";
 export async function registerApplicationRoutes(app: FastifyInstance): Promise<void> {
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(accountAccessRoutes, { prefix: "/api/account" });
+  await app.register(accountAbilitiesRoutes, { prefix: "/api/account" });
   await app.register(inviteRoutes, { prefix: "/api/invites" });
   await app.register(preferenceRoutes, { prefix: "/api/preferences" });
   await app.register(updateRoutes, { prefix: "/api/update" });
@@ -134,6 +137,7 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(searchRoutes, { prefix: "/api/search" });
   // Supprimer des titres par le jeton du compte : Jellyfin juge chacun (capacité `library.delete`).
   await app.register(libraryDeletionRoutes, { prefix: "/api/library" });
+  await app.register(libraryVisibilityRoutes, { prefix: "/api/library" });
   await app.register(sagaRoutes, { prefix: "/api/sagas" });
   await app.register(externalAccountRoutes, { prefix: "/api/external" });
   await app.register(configRoutes, { prefix: "/api" });

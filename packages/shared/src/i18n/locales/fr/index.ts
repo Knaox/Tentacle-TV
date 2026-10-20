@@ -55,6 +55,7 @@ import familyMobile from "./familyMobile";
 import metadataHint from "./metadataHint";
 import profilePicker from "./profilePicker";
 import settingsMobile from "./settingsMobile";
+import familyRightsSummary from "./familyRightsSummary";
 import avatars from "./avatars";
 import userRights from "./userRights";
 import libraryDelete from "./libraryDelete";
@@ -90,6 +91,7 @@ export default {
   metadataHint,
   profilePicker,
   settingsMobile,
+  familyRightsSummary,
   avatars,
   userRights,
   libraryDelete,

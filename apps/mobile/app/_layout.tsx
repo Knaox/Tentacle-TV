@@ -20,6 +20,8 @@ import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
 import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
 import { FamilyLaunchHosts } from "@/family/profiles/FamilyLaunchHosts";
+import { RightsLiveHost } from "@/rights/RightsLiveHost";
+import { AccountAccessHost } from "@/accountAccess/AccountAccessHost";
 import { AvatarInviteHost } from "@/avatars/invite/AvatarInviteHost";
 import { FamilyPinStartupHost } from "@/family/pinSuggest/FamilyPinStartupHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
@@ -202,6 +204,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {serverUrl && !showLoading ? <FamilyInvitationHost /> : null}
       {/* « Qui regarde ? » à l'ouverture, puis le premier lancement du profil (code PIN, accueil, photo). */}
       {serverUrl && !showLoading ? <FamilyLaunchHosts /> : null}
+      {/* Un droit changé au bureau s'applique ici sans redémarrage (`rights:changed`). */}
+      {serverUrl && !showLoading ? <RightsLiveHost /> : null}
       {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
           (l'affiche de la Famille d'abord), jamais sur le lecteur. */}
       {serverUrl && !showLoading ? <AvatarInviteHost /> : null}
@@ -209,6 +213,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {serverUrl && !showLoading ? <FamilyPinStartupHost /> : null}
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
+      {/* Compte désactivé ou hors de ses heures : la page remplace l'app, lecteur fermé. */}
+      {serverUrl && !showLoading ? <AccountAccessHost /> : null}
       {/* La migration de la base du serveur : au-dessus de tout, jamais un « hors ligne ». */}
       {!showLoading ? <DatabaseMigrationHost serverUrl={serverUrl} /> : null}
       {showLoading && (

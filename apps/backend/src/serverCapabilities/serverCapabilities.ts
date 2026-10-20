@@ -207,6 +207,20 @@ export const SERVER_CAPABILITIES = {
    *  profil de l'appareil, PIN vérifié par le serveur, comme le bureau. Sans elle, le mobile
    *  ne montre ni « Qui regarde ? » ni « Changer de profil ». */
   "family.mobileProfiles": "1.32.0",
+  // ── Lot mobile du 20/10 : les droits s'appliquent partout, sans redémarrage ──
+  /** Les droits d'un compte changés (fiche des droits, Famille, tableau de bord de Jellyfin)
+   *  s'annoncent à ses appareils : `rights:changed` sur le socket, et le client relit ce qu'il
+   *  montre (`useRightsLive`). Sans elle, la fraîcheur des requêtes, comme avant. */
+  "rights.live": "1.32.0",
+  /** Les titres gardés hors ligne jugés par le serveur pour l'identité EN SESSION (compte, ou
+   *  profil de la famille) : `POST /api/library/visibility` → visibles, cachés, disparus. Un
+   *  titre caché ne se lit plus, même gardé avant le retrait du droit. Sans elle, comme avant. */
+  "offline.verdicts": "1.32.0",
+  /** Ce que la SESSION peut faire, dit par le serveur (`GET /api/account/abilities` : lecture,
+   *  hors ligne, Watch Together, partage, suppression, tickets, extensions, compte, jumelage, push,
+   *  invitations) : un client ne montre aucun geste que la session n'a pas le droit de faire.
+   *  Sans elle, chaque client fait comme avant. */
+  "account.abilities": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

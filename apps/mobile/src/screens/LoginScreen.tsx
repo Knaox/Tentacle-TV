@@ -12,6 +12,7 @@ import { AuthScreenFrame } from "../components/auth/AuthScreenFrame";
 import { AuthTextField } from "../components/auth/AuthTextField";
 import { AuthLink, AuthNotice, AuthPrimaryButton } from "../components/auth/AuthControls";
 import { problemFromError } from "@tentacle-tv/shared";
+import { loginRefusalKey } from "@/accountAccess/accountAccessModel";
 import { FONT_FAMILY, useTheme } from "@/theme";
 
 /** Un refus que l'utilisateur peut corriger lui-même : il se dit tel quel. */
@@ -105,6 +106,9 @@ export function LoginScreen() {
       if (!response.ok) {
         if (response.status === 401 || response.status === 400) throw new LoginRefusal(t("invalidCredentials"));
         if (response.status === 429) throw new LoginRefusal(t("errors:loginRateLimited"));
+        // Désactivé, bloqué, hors de ses heures, trop de sessions : la raison, en mots.
+        const refusal = loginRefusalKey(response.status, await response.json().catch(() => null));
+        if (refusal) throw new LoginRefusal(t(refusal.key, refusal.options));
         throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
       }
 

@@ -8,12 +8,17 @@ import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
 import { haptic } from "@/utils/haptics";
 import { FamilyProfileSheet } from "./FamilyProfileSheet";
-import { GuestRightsSection } from "./GuestRightsSection";
-import { MemberRightsSection } from "./MemberRightsSection";
 import { GuestPinSheet } from "./PinSheet";
+import { ProfileRightsSummary } from "./rightsSummary/ProfileRightsSummary";
+
+/** Ce compte gère-t-il ce profil (un geste, un droit, ou son contrôle parental rendu par le serveur) ? */
+function managesProfile(actions: ProfileActions, profile: FamilyProfileDto): boolean {
+  return actions.right !== null || actions.pin || actions.remove || profile.parental !== undefined;
+}
 
 /**
- * Le panneau d'un profil et ses suites. Le panneau retient l'IDENTIFIANT du
+ * Le panneau d'un profil et ses suites. Ses DROITS n'y sont qu'en lecture
+ * (`ProfileRightsSummary`) : ils se règlent au bureau ou sur le web. Le panneau retient l'IDENTIFIANT du
  * profil et le relit dans la famille à chaque rendu : un droit réglé, un PIN
  * posé s'y voient aussitôt ; un profil disparu (retiré ailleurs) le referme.
  * La feuille du code PIN s'ouvre une fois le panneau retiré (une modale à la
@@ -77,8 +82,8 @@ export function useProfilePanel(
           onRemove={rights.remove ? () => confirmRemove(open) : undefined}
           onClose={close}
         >
-          {rights.right === "createGuests" ? <MemberRightsSection member={open} /> : null}
-          {rights.right === "requestTitles" ? <GuestRightsSection guest={open} /> : null}
+          {/* Les droits se RÈGLENT au bureau ou sur le web (décision du 20/10) : ici, leur résumé. */}
+          {managesProfile(rights, open) ? <ProfileRightsSummary profile={open} /> : null}
         </FamilyProfileSheet>
       ) : null}
       {pinGuest ? <GuestPinSheet guest={pinGuest} onClose={() => setPinGuestId(null)} /> : null}

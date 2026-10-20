@@ -42,11 +42,17 @@ export async function call(base: string, token: string, method: string, path: st
 }
 
 export async function personalToken(base: string, username: string): Promise<string> {
-  const res = await fetch(`${base}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password: BENCH_PASSWORD }),
-  });
+  // Le limiteur de la production (5 connexions par minute et par adresse) vaut aussi pour le banc : on attend.
+  let res: Response;
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(`${base}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: BENCH_PASSWORD }),
+    });
+    if (res.status !== 429 || attempt >= 6) break;
+    await new Promise((ok) => setTimeout(ok, 15_000));
+  }
   if (!res.ok) throw new Error(`Connexion Tentacle de ${username} refusée (${res.status})`);
   return ((await res.json()) as { AccessToken: string }).AccessToken;
 }
@@ -126,4 +132,18 @@ export async function guestProfileDoor(
   const token = (session.json as { token?: string } | null)?.token;
   if (!token) throw new Error(`Session de profil de l'invité refusée (${session.status} ${session.text.slice(0, 200)})`);
   return { label: "Petit · profil d'invité (TV)", token, guestId };
+}
+
+/**
+ * « Qui regarde ? » du BUREAU ou du MOBILE (`/api/family/picker/sessions`, jeton
+ * PERSONNEL du propriétaire) : la session de profil de l'invité sur cet appareil.
+ * `PARENTAL_PICKER_PLATFORM` : `desktop` (défaut), `mobile` dès que le serveur
+ * déclare `family.mobileProfiles`.
+ */
+export async function pickerProfileDoor(base: string, ownerPersonal: string, guestId: string): Promise<Door> {
+  const platform = process.env.PARENTAL_PICKER_PLATFORM === "mobile" ? "mobile" : "desktop";
+  const picked = await call(base, ownerPersonal, "POST", "/api/family/picker/sessions", { platform, profileId: guestId, deviceName: `Banc ${platform}` });
+  const token = (picked.json as { token?: string } | null)?.token;
+  if (!token) throw new Error(`Session de profil (${platform}) refusée (${picked.status} ${picked.text.slice(0, 200)})`);
+  return { label: `Petit · profil d'invité (${platform === "mobile" ? "mobile" : "bureau"})`, token };
 }

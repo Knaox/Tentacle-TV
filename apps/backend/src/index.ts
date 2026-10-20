@@ -42,6 +42,7 @@ import { announceProgress, announceReady, beginServerLifecycle, failStartup, sta
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { watchPlaybackPolicyWrites } from "./services/playbackRights";
 import { registerAccountAccessWatch } from "./services/accountAccess/accessWatch";
+import { watchRightsLive } from "./services/rightsLive/rightsLive";
 import { registerBodyParsers } from "./services/bodyParsers";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
 
@@ -252,6 +253,8 @@ async function main() {
   // Droits de lecture : relus aussitôt qu'une politique est écrite par Tentacle.
   watchPlaybackPolicyWrites();
   registerAccountAccessWatch();
+  // Les droits changés s'annoncent aux appareils du compte (`rights:changed`).
+  watchRightsLive();
 
   // Start background workers only when fully configured
   if (state === "running") {

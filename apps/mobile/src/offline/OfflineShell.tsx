@@ -7,6 +7,7 @@ import { OfflineOverlays } from "./OfflineOverlays";
 import { OfflineRouteGuard } from "./OfflineRouteGuard";
 import { OfflineSessionGate } from "./OfflineSessionGate";
 import { OfflineRuntimeSync } from "./OfflineRuntimeSync";
+import { OfflineRightsSync } from "./rights/OfflineRightsSync";
 
 /**
  * Point de montage UNIQUE du hors ligne dans `app/_layout.tsx`, sous
@@ -19,6 +20,7 @@ export function OfflineShell() {
       <ConnectivityBinding />
       <DataSaverBinding />
       <OfflineRuntimeSync />
+      <OfflineRightsSync />
       <OfflineEventsBinding />
       <OfflineReadyNotifier />
       <KeepOfflineHost />

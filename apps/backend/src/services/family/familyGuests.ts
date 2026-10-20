@@ -19,6 +19,7 @@ import type { Actor } from "./familyInvitations";
 import { closeIncomingInvitations } from "./familyInvitations";
 import { withFamilyLock } from "./familyLock";
 import { notifyFamily } from "./familyNotify";
+import { announceRightsChanged } from "../rightsLive/rightsLive";
 import { writePin } from "./familyPins";
 import { endProfileEverywhere } from "./familySessions";
 import { abandonGuestAccount, cleanupGuestAccount, retireGuestRow, settleCreatedGuest } from "./guestAccountCleanup";
@@ -181,6 +182,8 @@ export async function setGuestRights(owner: Actor, guestUserId: string, patch: S
     return getPrisma().familyMember.update({ where: { id: row.id }, data: { canRequestTitles: patch.requestTitles, requestTitlesGrantedBy: grantedBy } });
   });
   await notifyFamily(mine.family.id, [updated.userId]);
+  // Sa session relit aussi ce qu'elle montre (« Demander », les extensions) : `rights:changed`.
+  announceRightsChanged(updated.userId);
   console.log(`[family] Droits d'un invité réglés dans la famille ${mine.family.id}`);
   return (await guestRightsOf([updated], mine.family.ownerUserId)).get(updated.userId) ?? { requestTitles: false };
 }

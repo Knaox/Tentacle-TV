@@ -41,6 +41,9 @@ export type WsServerMessage =
    *  d'une session de profil de TV, `family:profile-ended` avant sa fermeture
    *  (4010) : la TV revient à « Qui regarde ? ». */
   | FamilyWsMessage
+  /** Les droits du compte (ou du profil de cette session) viennent de changer — au bureau, sur
+   *  le web, dans Jellyfin : relire ce qu'on montre (capacité `rights.live`, `useRightsLive`). */
+  | { type: "rights:changed" }
   | SessionServerMessage
   | WtServerMessage;
 
