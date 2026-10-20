@@ -2,7 +2,8 @@ import { useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import { usePathname, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  WatchTogetherContext, setWatchTogetherBackendUrl, setWatchTogetherToken, useTentacleConfig, useWatchTogetherSession,
+  WatchTogetherContext, setWatchTogetherBackendUrl, setWatchTogetherToken, setWtLogger, useTentacleConfig,
+  useWatchTogetherSession,
   type WtPlatformPort,
 } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
@@ -26,6 +27,9 @@ import { WtHost } from "./WtHost";
  * `WT_IDLE_CONTEXT`), même face à un serveur d'avant qui diffuserait encore
  * l'état de la salle du compte à tous ses appareils.
  */
+// Développement : le journal du moteur de synchro dans la console de Metro (« [wt:engine] … »).
+if (__DEV__) setWtLogger((scope, message, data) => console.log(`[wt:${scope}] ${message}`, data ?? ""));
+
 export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   const { enabled } = useWtAvailability();
   const router = useRouter();
