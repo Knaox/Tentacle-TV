@@ -1,9 +1,9 @@
-import { Alert, Pressable, Text, StyleSheet } from "react-native";
+import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useMyPairedDevices, useRevokeMyDevice } from "@tentacle-tv/api-client";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { Skeleton } from "@/components/ui";
-import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
+import { PlainButton } from "@/components/ui/buttons";
 
 /**
  * Les appareils jumelés au compte — le jumelage, lui, est au-dessus
@@ -13,7 +13,6 @@ import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from
  */
 export function PairedDevicesSection() {
   const { t } = useTranslation("pairing");
-  const st = useThemedStyles(makeStyles);
   const { data: devices, isLoading, isError } = useMyPairedDevices();
   const revokeMut = useRevokeMyDevice();
 
@@ -41,16 +40,14 @@ export function PairedDevicesSection() {
             description={t("lastActive", { date: new Date(device.lastSeen).toLocaleDateString() })}
             last={index === devices.length - 1}
             trailing={
-              <Pressable
+              <PlainButton
+                tone="destructive"
+                size="sm"
+                label={t("revoke")}
+                accessibilityLabel={`${t("revoke")} : ${device.name}`}
                 onPress={() => confirmRevoke(device.id, device.name)}
                 disabled={revokeMut.isPending}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={`${t("revoke")} : ${device.name}`}
-                style={({ pressed }) => [st.revoke, (pressed || revokeMut.isPending) && st.revokeDim]}
-              >
-                <Text style={st.revokeText}>{t("revoke")}</Text>
-              </Pressable>
+              />
             }
           />
         ))
@@ -58,9 +55,3 @@ export function PairedDevicesSection() {
     </SettingsSection>
   );
 }
-
-const makeStyles = (t: AppTheme) => StyleSheet.create({
-  revoke: { minHeight: 36, justifyContent: "center" as const, paddingHorizontal: spacing.sm },
-  revokeDim: { opacity: 0.5 },
-  revokeText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.status.error },
-});
