@@ -38,6 +38,7 @@ import {
   updateTransferService,
 } from "../../modules/offline-storage";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
+import { publicLog } from "../../modules/offline-storage/publicLog";
 import { holdJsAlive, releaseJsAlive } from "./androidKeepAlive";
 import { isBackgroundTransfers } from "./settings";
 
@@ -129,6 +130,7 @@ function notice(force: boolean): void {
 /** La bascule « au moins un transfert tourne » du moteur (`EngineDeps.onBusy`). */
 export function onEngineBusy(active: boolean): void {
   busy = active;
+  publicLog("transferts", active ? "moteur occupé" : "moteur libre");
   if (!active) {
     releaseKeepAwake();
     releaseService();

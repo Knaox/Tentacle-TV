@@ -21,7 +21,7 @@ public class OfflinePushWakeSubscriber: ExpoAppDelegateSubscriber {
       completionHandler(.noData)
       return
     }
-    NSLog("[hors-ligne-fond] réveil par le serveur : préparation prête (%@)", itemId)
+    OfflineLog.write("hors-ligne-fond", "réveil par le serveur : préparation prête (\(itemId))")
     PushWake.deliver(itemId)
     // Le temps de relancer les transferts ; la tâche remise au système, elle,
     // n'a pas besoin que l'application reste éveillée.

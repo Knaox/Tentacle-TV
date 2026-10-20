@@ -88,6 +88,12 @@ public class OfflineStorageModule: Module {
       return false
     }
 
+    // Le journal du hors ligne, lisible sur un téléphone de production (`OfflineLog.swift`).
+    Function("logPublic") { (category: String, message: String) -> Bool in
+      OfflineLog.write(category, message)
+      return true
+    }
+
     // Le délai d'arrière-plan du suivi en direct (`BackgroundTime.swift`).
     Function("holdBackgroundTime") { () -> Bool in
       BackgroundTime.hold()

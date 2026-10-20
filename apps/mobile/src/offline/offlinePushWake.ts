@@ -13,6 +13,7 @@
 
 import { useEffect } from "react";
 import { AppState } from "react-native";
+import { publicLog } from "../../modules/offline-storage/publicLog";
 import { onOfflinePrepared } from "../../modules/offline-storage/pushWake";
 import { setTransfersSuspended } from "./backgroundParallel";
 import { offlineEngineIfStarted } from "./engineRuntime";
@@ -33,7 +34,7 @@ export function useOfflinePushWake(): void {
   useEffect(
     () =>
       onOfflinePrepared((itemId) => {
-        console.log(`[hors-ligne-fond] réveil : préparation prête (${itemId})`);
+        publicLog("hors-ligne-fond", `réveil : préparation prête (${itemId}), relance des transferts`);
         wakeForPrepared();
       }),
     [],

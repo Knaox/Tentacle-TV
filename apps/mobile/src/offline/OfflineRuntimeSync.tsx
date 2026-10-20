@@ -14,6 +14,7 @@ import {
 import { syncAvatarCache } from "./avatarCache";
 import { setTransfersSuspended } from "./backgroundParallel";
 import { setServerPrepareEnabled } from "./serverPrepare";
+import { publicLog } from "../../modules/offline-storage/publicLog";
 import { useOfflinePushWake } from "./offlinePushWake";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
@@ -143,7 +144,9 @@ export function OfflineRuntimeSync() {
         // ces transferts à leur terme sans nous. Sans ça, la file s'arrêtait
         // au premier épisode achevé.
         setTransfersSuspended(true);
-        offlineEngineIfStarted()?.pump();
+        const engine = offlineEngineIfStarted();
+        engine?.pump();
+        if (engine !== null && engine.pending() > 0) publicLog("hors-ligne-fond", `app derrière : ${engine.pending()} transfert(s) en cours ou en file`);
         return;
       }
       if (status !== "active") return;

@@ -71,10 +71,10 @@ enum LiveActivityBridge {
   /// on ne la repose pas), `refused:<cause>` (iOS a refusé — le plus souvent
   /// une application déjà passée derrière, seule fenêtre où ActivityKit
   /// refuse un démarrage). Chaque refus est écrit au journal du système
-  /// (`[suivi-direct]`), lisible dans Console.app sur un vrai téléphone.
+  /// (`OfflineLog`, catégorie `suivi-direct`), lisible dans Console.app sur un vrai téléphone.
   static func present(_ raw: [String: Any]) async -> String {
     guard isEnabled() else {
-      NSLog("[suivi-direct] Activités en direct coupées pour Tentacle TV (réglages du téléphone)")
+      OfflineLog.write("suivi-direct", "Activités en direct coupées pour Tentacle TV (réglages du téléphone)")
       return "refused:disabled"
     }
     let state = state(from: raw)
@@ -93,13 +93,17 @@ enum LiveActivityBridge {
     // Celles que NOUS avons terminées passent aussi « dismissed » et ne
     // comptent pas — ni une balayée d'un lot d'AVANT (la fin du lot, `end`,
     // les marque toutes), ni une d'un LANCEMENT d'avant (`startedIds`).
-    if all.contains(where: { $0.activityState == .dismissed && dismissedByPerson($0.id) }) { return "dismissed" }
+    if all.contains(where: { $0.activityState == .dismissed && dismissedByPerson($0.id) }) {
+      OfflineLog.write("suivi-direct", "balayée par la personne pendant ce lot : pas reposée")
+      return "dismissed"
+    }
     do {
       let activity = try Activity.request(attributes: TransferActivityAttributes(), content: content, pushType: nil)
       markStarted(activity.id)
+      OfflineLog.write("suivi-direct", "activité démarrée (\(state.phase))")
       return "shown"
     } catch {
-      NSLog("[suivi-direct] démarrage refusé par ActivityKit : %@", String(describing: error))
+      OfflineLog.write("suivi-direct", "démarrage refusé par ActivityKit : \(error)")
       return "refused:\(error)"
     }
   }

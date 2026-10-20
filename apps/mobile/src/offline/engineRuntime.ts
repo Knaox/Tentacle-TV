@@ -23,6 +23,7 @@ import {
   userPausedFileIds,
 } from "@tentacle-tv/offline-core";
 import { finalizeMp4, setExcludedFromBackup } from "../../modules/offline-storage";
+import { publicLog } from "../../modules/offline-storage/publicLog";
 import {
   onEngineBusy,
   onEngineProgress,
@@ -148,7 +149,7 @@ export function offlineEngine(): DownloadEngine {
     onBusy: onEngineBusy,
     // Le statut en base ne dira que « imprévu » : la cause ne vit que là.
     onUnexpected: (context, error) => {
-      console.warn(`[transferts] ${context} : ${String(error)}`);
+      publicLog("transferts", `${context} : ${String(error)}`, "warn");
     },
     onStarted: (started) => {
       // Le bouton « Pause » de la notification passe par ici : le module des
