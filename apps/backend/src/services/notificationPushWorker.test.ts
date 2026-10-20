@@ -1,7 +1,7 @@
 /**
  * La livraison push des lignes de la cloche. Pour une demande, seule
  * l'annonce de DISPONIBILITÉ part — et pas si le notifier bibliothèque l'a
- * déjà faite à l'arrivée dans Jellyfin. « En cours de téléchargement »,
+ * déjà faite à l'arrivée dans Jellyfin — et une demande BLOQUÉE. « En cours de téléchargement »,
  * refus, échec : la cloche seule. Les tickets passent comme avant, et chaque
  * ligne balayée est marquée pour ne pas repasser.
  */
@@ -17,6 +17,7 @@ interface Notif {
   refId: string | null;
   createdAt: Date;
   pushedAt: Date | null;
+  state?: string | null;
 }
 
 const store = {
@@ -114,6 +115,20 @@ describe("livraison push des demandes", () => {
     store.notifications = [n];
     await deliverPendingNotifications();
     expect(sendToUser).not.toHaveBeenCalled();
+    expect(store.marked).toEqual([n.id]);
+  });
+
+  it("une demande BLOQUÉE part, telle que l'extension l'a écrite", async () => {
+    const n = {
+      ...row("alice", "request_status", "Votre demande est en attente", "« Dune » — Pas assez de personnes partagent ce fichier."),
+      state: "blocked",
+    };
+    store.notifications = [n];
+    await deliverPendingNotifications();
+    expect(sendToUser).toHaveBeenCalledWith("alice", expect.objectContaining({
+      title: "Votre demande est en attente",
+      body: "« Dune » — Pas assez de personnes partagent ce fichier.",
+    }));
     expect(store.marked).toEqual([n.id]);
   });
 

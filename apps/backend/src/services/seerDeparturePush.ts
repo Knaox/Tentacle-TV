@@ -18,3 +18,14 @@ export function parseSeerDeparture(n: { body: string | null }): string | null {
 export function departurePushBody(title: string, lang: string): string {
   return lang === "en" ? `“${title}” is on its way` : `« ${title} » est en route`;
 }
+
+/**
+ * Une demande qui n'avance plus (`state: "blocked"`, vocabulaire FERMÉ du cœur
+ * — `notifications/notificationTarget.ts`) : l'extension l'écrit UNE fois par
+ * blocage, avec la raison et ce qu'il faut en attendre. Poussée sous la même
+ * préférence que les arrivées : qui attend sa demande veut savoir qu'elle
+ * attend. Le cœur ne sait rien de la cause — il lit l'état, pas le texte.
+ */
+export function isBlockedRequestNotice(n: { type: string; state?: string | null }): boolean {
+  return n.type === "request_status" && n.state === "blocked";
+}
