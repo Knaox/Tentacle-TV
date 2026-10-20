@@ -68,9 +68,17 @@ export interface SkipCandidateInput {
   isEpisode: boolean;
   hasNextEpisode: boolean;
   settings: PlaybackSettings;
+  /**
+   * Watch Together : la salle n'est pas « tous prêts » (`wtSkipHeld`). Aucun
+   * saut de passage — ni bouton, ni décompte, ni proposition à la salle —
+   * tant que tous les membres attendus ne sont pas posés : sinon le premier
+   * arrivé sautait l'intro seul (bug du 20/10). Absent : hors séance.
+   */
+  groupHold?: boolean;
 }
 
 export function findSkipCandidate(input: SkipCandidateInput): SkipCandidate | null {
+  if (input.groupHold) return null;
   const active = findActiveSegment(input.segments, input.positionMs, input.hasStarted);
   if (!active) return null;
   const settings = segmentSettingsFor(input.settings, active.type, input.isEpisode);

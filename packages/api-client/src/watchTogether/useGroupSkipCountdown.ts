@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 import type { SkipProposal } from "../playback/playbackOverlay.types";
-import { TICKS_PER_MS, TICKS_PER_SECOND, isGroupSessionActive, wtPositionTicksAt, type SegmentType } from "@tentacle-tv/shared";
+import {
+  TICKS_PER_MS, TICKS_PER_SECOND, isGroupSessionActive, wtPositionTicksAt, wtSkipHeld, type SegmentType,
+} from "@tentacle-tv/shared";
 import { useWatchTogetherOrIdle } from "./context";
 
 /**
@@ -8,11 +10,15 @@ import { useWatchTogetherOrIdle } from "./context";
  * le serveur en position de média, il se lit sur la position extrapolée de
  * la salle — le même chiffre chez tous, figé pendant une pause. Et la
  * proposition inverse : ce lecteur entre dans un passage à sauter, il le
- * dit au serveur (qui arme, ou ignore s'il est réglé).
+ * dit au serveur (qui arme, ou ignore s'il est réglé). Et la garde : tant que
+ * la salle n'est pas « tous prêts », `skipHeld` — à passer à la coquille de
+ * lecture (`groupSkipHeld`), qui ne montre alors aucun saut.
  */
 export function useGroupSkipCountdown(itemId: string | undefined): {
   groupSkip: { segmentType: SegmentType; countdownSeconds: number } | null;
   onSkipPropose: (proposal: SkipProposal) => void;
+  /** La salle n'est pas « tous prêts » : aucun saut (→ `groupSkipHeld`). */
+  skipHeld: boolean;
 } {
   const { room, serverNow, send, isInGroup } = useWatchTogetherOrIdle();
   const active = isGroupSessionActive(isInGroup, room, itemId) && room?.itemId === itemId;
@@ -47,5 +53,8 @@ export function useGroupSkipCountdown(itemId: string | undefined): {
     });
   }, [active, send]);
 
-  return { groupSkip, onSkipPropose };
+  // « Tous prêts » : le serveur le dit (`allReady`), sinon l'état en juge.
+  const skipHeld = active && wtSkipHeld(room, itemId);
+
+  return { groupSkip, onSkipPropose, skipHeld };
 }

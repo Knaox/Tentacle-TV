@@ -43,6 +43,13 @@ export interface PlaybackOverlayInput {
    * décompte local (`countdownAllowed`) quand le passage affiché est le sien.
    */
   groupSkip?: { segmentType: SegmentType; countdownSeconds: number } | null;
+  /**
+   * En séance : la salle n'est pas « tous prêts » (`useGroupSkipCountdown` →
+   * `skipHeld`). Aucun saut de passage — ni bouton, ni décompte, ni
+   * proposition — et pas d'enchaînement, tant que tous les membres attendus
+   * ne sont pas posés. Ne vaut qu'avec `groupSession`.
+   */
+  groupSkipHeld?: boolean;
   /** TV : le décompte se suspend et rien ne s'affiche pendant le scrub. */
   scrubbing?: boolean;
   /**
