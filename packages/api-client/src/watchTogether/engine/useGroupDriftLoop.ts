@@ -1,15 +1,14 @@
 import { useEffect } from "react";
 import {
   WT_DRIFT_ENGAGE_MPV_S, WT_DRIFT_ENGAGE_WEB_S, WT_DRIFT_LOOP_MS, WT_DRIFT_SETTLE_MPV_S,
-  WT_DRIFT_SETTLE_WEB_S, decideDrift, wtPositionSecondsAt,
+  WT_DRIFT_SETTLE_WEB_S, decideDrift, isBarrierParticipant, isFutureAnchor, isWaitedForMe, updateSeekLatency,
+  wtPositionSecondsAt,
 } from "@tentacle-tv/shared";
-import type { PlayerTransportRef } from "./playerTransport";
+import type { PlayerTransportRef } from "../playerPort";
 import {
-  armEcho, hasPendingIntent, isAwaitingScheduledPlay, isBarrierParticipant, isWaitedForMe, seekLookaheadS,
-  setTransportRate, updateSeekLatency, type GroupSyncSharedRefs,
-} from "./groupSyncShared";
-import { isFutureAnchor } from "@tentacle-tv/shared";
-import { wtLog } from "./wtLog";
+  armEcho, hasPendingIntent, isAwaitingScheduledPlay, seekLookaheadS, setTransportRate, type GroupSyncSharedRefs,
+} from "./groupSyncRefs";
+import { wtLog } from "../wtLog";
 
 /** Un seek dur dont l'atterrissage n'est pas vu en ce délai ne mesure rien. */
 const HARD_SEEK_MEASURE_MAX_MS = 5_000;

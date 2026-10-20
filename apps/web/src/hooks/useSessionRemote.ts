@@ -1,5 +1,4 @@
-import { useSessionRemoteTarget } from "@tentacle-tv/api-client";
-import type { PlayerTransportRef } from "../watchTogether/playerTransport";
+import { useSessionRemoteTarget, type PlayerTransportRef } from "@tentacle-tv/api-client";
 
 /**
  * La télécommande de Jellyfin — son tableau de bord, ou celui de Tentacle —

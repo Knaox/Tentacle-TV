@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { subscribeSocket } from "@tentacle-tv/api-client";
+import { subscribeSocket } from "../../socket/tentacleSocket";
 import { WT_CHAT_MAX_LENGTH } from "@tentacle-tv/shared";
-import { useWatchTogether } from "../WatchTogetherProvider";
+import { useWatchTogether } from "../context";
 import {
   chatReducer, initialChatState,
   type WtChatAction, type WtChatState,

@@ -216,6 +216,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       libraryId: input.libraryId ?? null,
       controlsVisible: input.controlsVisible,
       postCreditsClaimed: postCredits.claimed,
+      groupHold: input.groupSession === true && input.groupSkipHeld === true,
       dismissed: {
         // Trois raisons de ne pas montrer la pilule, et une seule d'insister :
         // le saut demandé (la position rattrape la cible), le refus du passage

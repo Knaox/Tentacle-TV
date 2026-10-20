@@ -131,6 +131,8 @@ export interface ArbiterInput {
   dismissed: OverlayDismissals;
   /** Décomptes tenus par les réducteurs, déjà en secondes affichables. */
   countdowns: { skip: number | null; next: number | null };
+  /** Watch Together : salle pas « tous prêts » — aucun saut (cf. `SkipCandidateInput`). */
+  groupHold?: boolean;
 }
 
 function skipOverlay(

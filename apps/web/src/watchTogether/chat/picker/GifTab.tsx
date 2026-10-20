@@ -1,6 +1,6 @@
 import { memo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { WtChatApi } from "../useWtChat";
+import type { WtChatApi } from "@tentacle-tv/api-client";
 import { useGifSearch, type GifItem } from "./useGifSearch";
 
 /**

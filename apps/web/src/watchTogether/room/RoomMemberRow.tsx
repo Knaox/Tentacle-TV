@@ -5,7 +5,7 @@ import type { WtMemberDto } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar, memberStatus } from "../WatchTogetherRows";
-import type { WtPendingInvite } from "../usePendingInvites";
+import type { WtPendingInvite } from "@tentacle-tv/api-client";
 
 /**
  * Les lignes de la salle : un membre (avatar cerclé de son état, rôle, ce

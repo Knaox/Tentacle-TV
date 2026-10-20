@@ -675,3 +675,28 @@ describe("le générique de fin d'un FILM a son propre réglage", () => {
     expect(overlay).toEqual({ kind: "none" });
   });
 });
+
+describe("Watch Together — rien ne se saute avant « tous prêts » (bug de l'intro)", () => {
+  const intro = seg("Intro", 0, 90_000);
+  const outro = seg("Outro", 1_300_000, RUNTIME_MS, { endsAtMediaEnd: true });
+
+  it("une intro au tout début : ni bouton ni décompte tant que la salle attend", () => {
+    const input = makeInput({ positionMs: 2_000, segments: [intro], groupHold: true });
+    expect(findSkipCandidate(input)).toBeNull();
+    expect(arbitrateOverlay(input)).toEqual({ kind: "none" });
+  });
+
+  it("tous prêts : le bouton revient, le même qu'hors séance", () => {
+    const held = makeInput({ positionMs: 2_000, segments: [intro], groupHold: true });
+    const ready = { ...held, groupHold: false };
+    expect(arbitrateOverlay(ready)).toEqual(arbitrateOverlay({ ...held, groupHold: undefined }));
+    expect(arbitrateOverlay(ready).kind).toBe("skip");
+  });
+
+  it("le générique non plus : ni bouton, ni carte « à suivre » qui enchaînerait", () => {
+    const input = makeInput({ positionMs: 1_320_000, segments: [outro], groupHold: true });
+    expect(findSkipCandidate(input)).toBeNull();
+    expect(arbitrateOverlay(input).kind).not.toBe("skip");
+    expect(arbitrateOverlay(input).kind).not.toBe("nextCard");
+  });
+});

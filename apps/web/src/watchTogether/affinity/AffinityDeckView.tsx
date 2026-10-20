@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PartyPopper } from "lucide-react";
-import { swipeLangOf, useAffinityDeck, useSwipeCardDetails } from "@tentacle-tv/api-client";
-import type { SwipeVerdict } from "@tentacle-tv/api-client";
+import {
+  swipeLangOf, useAffinityDeck, useSwipeCardDetails, type SwipeVerdict, applyAffinityPush, showAffinityView,
+} from "@tentacle-tv/api-client";
 import type { WtAffinityStateDto } from "@tentacle-tv/shared";
 import { SwipeControls } from "../../components/swipe/SwipeControls";
 import { SwipeStack } from "../../components/swipe/SwipeStack";
@@ -10,7 +11,6 @@ import { SwipeErrorState, SwipeSaveFailedNotice, SwipeSkeleton } from "../../com
 import { useSwipeKeyboard } from "../../components/swipe/useSwipeKeyboard";
 import { AffinityHeader } from "./AffinityHeader";
 import { AffinityNotice } from "./AffinityNotice";
-import { applyAffinityPush, showAffinityView } from "./affinityStore";
 
 /**
  * La pile de l'affinité : la mécanique d'« Affiner » réduite à trois gestes —

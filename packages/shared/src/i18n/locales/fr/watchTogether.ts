@@ -96,6 +96,13 @@ export default {
   groupPlaybackActive: "Lecture de groupe en cours",
   rejoin: "Rejoindre",
 
+  // Adhésion par appareil : la salle du compte, vue d'un appareil qui n'y est pas
+  elsewhereActive: "Groupe en cours sur un autre appareil",
+  elsewhereActiveWithHost: "Groupe de {{name}} en cours sur un autre appareil",
+  elsewhereJoinHere: "Rejoindre ici",
+  elsewhereDismiss: "Masquer",
+  elsewhereJoinFailed: "Impossible de rejoindre le groupe depuis cet appareil",
+
   // Chat de groupe
   chatTitle: "Chat du groupe",
   chatPlaceholder: "Écrire un message…",

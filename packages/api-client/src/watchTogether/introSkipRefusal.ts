@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { subscribeSocket } from "@tentacle-tv/api-client";
+import { subscribeSocket } from "../socket/tentacleSocket";
 import type { SegmentType } from "@tentacle-tv/shared";
 import { wtLog } from "./wtLog";
 

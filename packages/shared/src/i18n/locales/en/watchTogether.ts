@@ -94,6 +94,13 @@ export default {
   groupPlaybackActive: "Group playback in progress",
   rejoin: "Rejoin",
 
+  // Per-device membership: the account's room, seen from a device that isn't in it
+  elsewhereActive: "Group session running on another device",
+  elsewhereActiveWithHost: "{{name}}'s group running on another device",
+  elsewhereJoinHere: "Join here",
+  elsewhereDismiss: "Hide",
+  elsewhereJoinFailed: "Couldn't join the group from this device",
+
   // Group chat
   chatTitle: "Group chat",
   chatPlaceholder: "Type a message…",

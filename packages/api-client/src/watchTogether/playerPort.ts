@@ -1,13 +1,23 @@
 import type { MutableRefObject } from "react";
 
 /**
- * Watch Together — surface de commande commune aux deux players (web HTML5 et
- * desktop MPV). Chaque player remplit une ref `PlayerTransport` (prop
- * `transportRef`) ; le moteur de sync (useGroupSyncEngine) ne parle qu'à cette
- * interface. Toutes les positions sont en secondes « position film »
- * (0 → durée), jamais en PTS.
+ * Watch Together — le PORT LECTEUR : la surface de commande que chaque
+ * lecteur implémente (web HTML5, bureau mpv, mobile mpv / AVPlayer /
+ * ExoPlayer). Chaque lecteur remplit une ref (`transportRef`) ; le moteur de
+ * synchronisation (`useGroupSyncEngine`) ne parle qu'à cette interface.
+ * Toutes les positions sont en secondes « position film » (0 → durée), jamais
+ * en PTS — un flux transcodé qui démarre à `startTicks` rend donc la position
+ * du FILM, offset du flux ajouté.
+ *
+ * Contrat des appels du lecteur VERS le moteur (rendus par `useGroupSyncEngine`) :
+ * `notifyBuffering(true)` au chargement / à la mise en mémoire tampon,
+ * `false` quand il est prêt ; `notifyPlayState(paused)` à chaque pause/lecture
+ * de l'utilisateur (les échos des commandes du moteur sont filtrés) ;
+ * `notifySeek(s, { explicit: true })` sur un geste de la barre ;
+ * `requestPlay()` d'abord sur le bouton lecture (vrai = ne pas jouer soi-même :
+ * la salle planifie la reprise, pour tous au même instant).
  */
-export interface PlayerTransport {
+export interface WtPlayerPort {
   /** Précision de `getPositionSeconds` : `coarse` = position extrapolée depuis
    *  une valeur étranglée (mpv) — la boucle de dérive élargit sa zone morte. */
   precision?: "fine" | "coarse";
@@ -39,4 +49,8 @@ export interface PlayerTransport {
   primeGesture?(): void;
 }
 
-export type PlayerTransportRef = MutableRefObject<PlayerTransport | null>;
+export type WtPlayerPortRef = MutableRefObject<WtPlayerPort | null>;
+
+/** Noms d'avant (web, bureau) — le même port. */
+export type PlayerTransport = WtPlayerPort;
+export type PlayerTransportRef = WtPlayerPortRef;

@@ -37,6 +37,7 @@ vi.mock("../services/itemAccess/itemVisibility", () => ({ isItemVisibleTo: async
 vi.mock("../services/watchTogether/hostSettings", () => ({ refreshHostSettings: async () => undefined }));
 
 import { watchTogetherRoutes } from "./watchTogether";
+import { watchTogetherAffinityRoutes } from "./watchTogetherAffinity";
 import { getRoomOf } from "../services/watchTogether/roomRegistry";
 import { removeMemberAndSync } from "../services/watchTogether/sync";
 import { invalidateJellyfinUsers } from "../services/watchTogether/usersCache";
@@ -69,6 +70,7 @@ async function makeApp() {
     return reply.status(500).send({ message: err instanceof Error ? err.message : "Erreur" });
   });
   await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
+  await app.register(watchTogetherAffinityRoutes, { prefix: "/api/watch-together" });
   return (device: string, method: "GET" | "POST", url: string, payload?: object) =>
     app.inject({ method, url: `/api/watch-together${url}`, headers: { "x-emby-token": `jeton-${device}` }, ...(payload ? { payload } : {}) });
 }
@@ -86,11 +88,13 @@ describe("Watch Together — l'adhésion par appareil (REST)", () => {
     });
   });
 
-  it("le web ne peut ni quitter la salle ni y inviter — rien ne bouge", async () => {
+  it("le web ne peut ni quitter la salle, ni y inviter, ni toucher à son affinité — rien ne bouge", async () => {
     const call = await makeApp();
     await call("a-pc", "POST", "/group", {});
     expect((await call("a-web", "POST", "/group/leave", {})).statusCode).toBe(404);
     expect((await call("a-web", "POST", "/group/invites", { userIds: ["b"] })).statusCode).toBe(404);
+    expect((await call("a-web", "GET", "/affinity")).json()).toEqual({ code: "not_in_group" });
+    expect((await call("a-web", "POST", "/affinity/leave", {})).statusCode).toBe(404);
     expect(getRoomOf("a")!.members.get("a")!.devices.size).toBe(1);
   });
 

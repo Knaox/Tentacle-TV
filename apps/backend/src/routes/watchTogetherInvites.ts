@@ -24,6 +24,7 @@ import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { accessIn, wtAccessOf } from "../services/watchTogether/accountAccess";
 import { WT_ACCESS_DENIED, wtMayCreate, wtMayJoin } from "../services/watchTogether/watchTogetherAccess";
 import { deviceKeyOf } from "../services/watchTogether/requestDevice";
+import { watchBoundDevice } from "../services/watchTogether/gatewayPresence";
 import { isDeviceBound } from "../services/watchTogether/memberDevices";
 
 /**
@@ -158,6 +159,7 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
       }, deviceKey);
       if (!member) return reply.status(409).send({ code: "already_in_group" });
     }
+    watchBoundDevice(user.userId, deviceKey);
     bumpEpoch(room);
     broadcastRoom(room, "join", user.userId);
     sendChatHistory(user.userId, room);

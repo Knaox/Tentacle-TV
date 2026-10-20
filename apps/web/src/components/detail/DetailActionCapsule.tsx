@@ -30,7 +30,7 @@ import { useToast } from "../../contexts/ToastContext";
 export function DetailActionCapsule({ item }: { item: MediaItem }) {
   const { t } = useTranslation(["common", "cards", "watchTogether"]);
   const { show } = useToast();
-  const { isInGroup, isHost, mayCreate, actions: wtActions } = useWatchTogether();
+  const { isInGroup, isHost, mayCreate, elsewhere: wtElsewhere, actions: wtActions } = useWatchTogether();
   const isEpisode = item.Type === "Episode";
   const { add: addFav, remove: removeFav } = useFavoriteForItem(item);
   const { add: addWatchlist, remove: removeWatchlist } = useToggleWatchlistForItem(item);
@@ -85,6 +85,11 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
           active={isInGroup}
           onClick={async () => {
             if (isInGroup) { openRoomModal("invite"); return; }
+            // En groupe sur un autre appareil : cet appareil s'y ajoute.
+            if (wtElsewhere) {
+              await wtActions.joinHere().catch(() => show("error", t("watchTogether:elsewhereJoinFailed")));
+              return;
+            }
             try {
               await wtActions.create(item.Id);
               openRoomModal("room", { fresh: true });
@@ -92,7 +97,7 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
               show("error", t("watchTogether:alreadyInGroup"));
             }
           }}
-          label={isInGroup ? t("watchTogether:invite") : t("watchTogether:watchTogetherAction")}
+          label={isInGroup ? t("watchTogether:invite") : wtElsewhere ? t("watchTogether:elsewhereJoinHere") : t("watchTogether:watchTogetherAction")}
         >
           <UsersIcon />
         </CapsuleButton>

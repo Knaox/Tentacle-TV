@@ -1,5 +1,5 @@
 import { useEffect, type MutableRefObject, type RefObject } from "react";
-import type { PlayerTransportRef } from "../watchTogether/playerTransport";
+import type { PlayerTransportRef } from "@tentacle-tv/api-client";
 import { wtLog } from "../watchTogether/wtLog";
 
 /**

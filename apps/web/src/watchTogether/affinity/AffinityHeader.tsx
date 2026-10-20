@@ -3,8 +3,7 @@ import { HeartHandshake, LogOut } from "lucide-react";
 import type { WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
-import { showAffinityView } from "./affinityStore";
-import { KIND_LABEL_KEY } from "./affinityText";
+import { showAffinityView, KIND_LABEL_KEY } from "@tentacle-tv/api-client";
 
 /**
  * L'en-tête de la pile : ce qu'on swipe (type, taille de la pile, « Changer »),

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronRight, Clapperboard, HeartHandshake, Sparkles, Tv, X, type LucideIcon } from "lucide-react";
-import { WtApiError, fetchAffinityKinds, startAffinity, type AffinityKinds } from "@tentacle-tv/api-client";
+import {
+  WtApiError, fetchAffinityKinds, startAffinity, type AffinityKinds, applyAffinityPush, closeAffinity, showAffinityView, AFFINITY_KINDS, KIND_LABEL_KEY,
+} from "@tentacle-tv/api-client";
 import type { WtAffinityKind, WtAffinityStateDto } from "@tentacle-tv/shared";
-import { applyAffinityPush, closeAffinity, showAffinityView } from "./affinityStore";
-import { AFFINITY_KINDS, KIND_LABEL_KEY } from "./affinityText";
 
 /**
  * Le choix du type : films, séries ou animés, chacun avec le nombre de titres

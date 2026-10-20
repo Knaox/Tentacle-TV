@@ -1,16 +1,16 @@
 import { useEffect, useRef } from "react";
-import { subscribeSocket } from "@tentacle-tv/api-client";
+import { subscribeSocket } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_BARRIER_CONFIRM_TIMEOUT_MS, WT_BARRIER_PRESEEK_MPV_S, WT_PRESEEK_TOLERANCE_S,
-  WT_SCHEDULED_PLAY_SETTLE_MS, wtPositionSecondsAt, type WtRoomStateDto,
+  WT_SCHEDULED_PLAY_SETTLE_MS, computePlayDelayMs, isBarrierParticipant, isFutureAnchor, needsPreseek,
+  wtPositionSecondsAt, type WtRoomStateDto,
 } from "@tentacle-tv/shared";
-import type { PlayerTransportRef } from "./playerTransport";
+import type { PlayerTransportRef } from "../playerPort";
 import {
-  armEcho, cancelScheduledPlay, clearPendingIntent, isBarrierParticipant, seekLookaheadS, sendBarrierReady,
+  armEcho, cancelScheduledPlay, clearPendingIntent, seekLookaheadS, sendBarrierReady,
   setTransportRate, REMOTE_JUMP_THRESHOLD_S, type GroupSyncSharedRefs, type ScheduledPlay,
-} from "./groupSyncShared";
-import { computePlayDelayMs, isFutureAnchor, needsPreseek } from "@tentacle-tv/shared";
-import { wtLog } from "./wtLog";
+} from "./groupSyncRefs";
+import { wtLog } from "../wtLog";
 
 /**
  * Watch Together — application des états distants au lecteur local :

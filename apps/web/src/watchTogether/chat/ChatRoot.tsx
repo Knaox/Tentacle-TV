@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useMotionValue } from "framer-motion";
-import { useWtChat } from "./useWtChat";
+import { useWtChat } from "@tentacle-tv/api-client";
 import { ChatOverlay } from "./ChatOverlay";
 import { ReactionLayer } from "./ReactionLayer";
 import { MessageToastLayer } from "./MessageToastLayer";

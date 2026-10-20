@@ -68,6 +68,14 @@ export function armGoodbye(userId: string, deviceKey: string | undefined): void 
   // Un appareil non lié qui se ferme ne fait rien quitter.
 }
 
+/** Un appareil vient d'être lié par un appel REST : sans socket ouverte, sa
+ *  grâce court tout de suite — il ne resterait sinon lié pour toujours. */
+export function watchBoundDevice(userId: string, deviceKey: string | undefined): void {
+  const member = getRoomOf(userId)?.members.get(userId);
+  if (!member || deviceKey === undefined || !member.devices.has(deviceKey) || isDeviceOnline(deviceKey)) return;
+  armDeviceGrace(member, deviceKey, (key) => onDeviceGraceExpired(userId, key));
+}
+
 /** Branche la présence (appelé une fois, par le gateway). */
 export function registerPresence(): void {
   onPresenceChange((userId, online) => {

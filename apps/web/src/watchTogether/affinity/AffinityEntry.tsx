@@ -2,8 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronRight, HeartHandshake } from "lucide-react";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { closeRoomModal } from "../roomModalStore";
-import { openAffinity, useAffinityStore } from "./affinityStore";
-import { KIND_LABEL_KEY } from "./affinityText";
+import { openAffinity, useAffinityStore, KIND_LABEL_KEY } from "@tentacle-tv/api-client";
 
 /**
  * L'entrée de l'affinité, là où l'on voit la salle : le panneau de la barre
