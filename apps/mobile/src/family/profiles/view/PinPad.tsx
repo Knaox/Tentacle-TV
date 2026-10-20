@@ -59,7 +59,8 @@ export const PinPad = memo(function PinPad({ pin, onDigit, onErase, onBack }: Pi
         {ROWS.map((row, rowIndex) => (
           <View key={rowIndex} style={st.row}>
             {row.map((key, keyIndex) => {
-              if (key === null) return <View key={keyIndex} style={st.key} />;
+              // La case vide : un espace, jamais un fond de touche (Q18).
+              if (key === null) return <View key={keyIndex} style={st.spacer} accessible={false} />;
               const disabled = checking || locked;
               if (key === "erase") {
                 return (
@@ -106,6 +107,7 @@ const makeStyles = (t: AppTheme) =>
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.colors.border.subtle,
     },
+    spacer: { width: KEY, height: KEY },
     keyGhost: { backgroundColor: "transparent", borderColor: "transparent" },
     keyPressed: { backgroundColor: t.colors.fill.medium },
     keyText: { fontSize: 28, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },

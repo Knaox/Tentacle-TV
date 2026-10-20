@@ -37,7 +37,7 @@ export default {
   },
   poster: {
     title: "{{owner}} vous invite à rejoindre sa famille",
-    profile: "Votre profil s'ouvrira sur les TV de {{owner}} sans mot de passe, sauf si vous posez un code PIN.",
+    profile: "Votre profil s'ouvrira sur les appareils de {{owner}} — TV, ordinateurs, téléphones et tablettes — sans mot de passe, sauf si vous posez un code PIN.",
     leave: "Vous pourrez quitter la famille à tout moment.",
     accept: "Accepter",
     decline: "Refuser",
@@ -95,10 +95,10 @@ export default {
   pinSuggest: {
     eyebrow: "Action recommandée",
     joinedTitle: "Bienvenue dans la famille de {{owner}}",
-    joinedBody: "Votre profil apparaît désormais dans « Qui regarde ? » sur ses téléviseurs et ses ordinateurs. Sans code PIN, n'importe qui devant l'écran peut l'ouvrir.",
+    joinedBody: "Votre profil apparaît désormais dans « Qui regarde ? » sur les appareils de la famille. Sans code PIN, n'importe qui devant l'écran peut l'ouvrir.",
     title: "Posez votre code PIN",
-    body: "Votre profil n'a pas de code PIN : sur les téléviseurs et les ordinateurs de la famille, n'importe qui peut l'ouvrir depuis « Qui regarde ? ».",
-    why: "Quatre chiffres protègent votre historique, vos reprises, Ma liste et vos notes. Ils vous ouvrent aussi la gestion de la famille depuis votre profil, sur une TV ou un ordinateur, avec les droits que le propriétaire vous donne. Il n'appartient qu'à vous, et vous pouvez le changer ou le retirer à tout moment dans Réglages › Famille.",
+    body: "Votre profil n'a pas de code PIN : sur les appareils de la famille, n'importe qui peut l'ouvrir depuis « Qui regarde ? ».",
+    why: "Quatre chiffres protègent votre historique, vos reprises, Ma liste et vos notes. Ils vous ouvrent aussi la gestion de la famille depuis votre profil, sur n'importe quel appareil de la famille, avec les droits que le propriétaire vous donne. Il n'appartient qu'à vous, et vous pouvez le changer ou le retirer à tout moment dans Réglages › Famille.",
     set: "Poser un code PIN",
     later: "Configurer plus tard",
   },

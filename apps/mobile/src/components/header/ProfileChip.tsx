@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { profilePhotoUrl } from "@/auth/storedUser";
 import { useStoredUser } from "@/auth/useStoredUser";
+import { profileColorStops } from "@tentacle-tv/shared";
+import { useAccountFaceColor } from "@/family/profiles/useAccountFaceColor";
 import { openProfileSwitcher } from "@/profileSwitch/profileSwitchEntry";
 import { FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
@@ -30,6 +32,8 @@ export const ProfileChip = memo(function ProfileChip({ compact }: { compact?: bo
   const st = useThemedStyles(makeStyles);
   const { storage } = useTentacleConfig();
   const user = useStoredUser();
+  // Sans photo : la couleur du profil, la même que « Qui regarde ? » et la Famille.
+  const faceColor = useAccountFaceColor();
   const [failed, setFailed] = useState<string | null>(null);
 
   const name = user?.Name ?? "";
@@ -49,7 +53,7 @@ export const ProfileChip = memo(function ProfileChip({ compact }: { compact?: bo
         <Image source={{ uri: shown }} style={st.photo} contentFit="cover" onError={() => setFailed(shown)} />
       ) : (
         <LinearGradient
-          colors={[theme.colors.brand.violet, theme.colors.brand.accent]}
+          colors={faceColor ? [...profileColorStops(faceColor)] : [theme.colors.brand.violet, theme.colors.brand.accent]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={st.photo}
@@ -93,7 +97,7 @@ const makeStyles = (t: AppTheme) =>
       justifyContent: "center",
       overflow: "hidden",
     },
-    initial: { fontSize: 12, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.brandFg },
+    initial: { fontSize: 12, fontFamily: FONT_FAMILY.bold, color: "#ffffff" },
     name: { maxWidth: NAME_MAX_WIDTH, fontSize: 14, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary },
     chevron: { marginTop: 1 },
   });

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MOBILE_PROFILE_STAY_KEY, readMobileStay, type KeyValueStore, type PickedProfileDto, type PickerProfileDto } from "@tentacle-tv/shared";
 import { commitMobilePick, endMobileProfileSession, forgetMobileStay } from "./switchSession";
 import { readActiveProfile } from "./profileSessionCore";
+import { subscribeStoredUser } from "../../auth/storedUser";
 
 function memory(initial: Record<string, string> = {}): KeyValueStore & { dump(): Record<string, string> } {
   const map = new Map(Object.entries(initial));
@@ -57,6 +58,16 @@ describe("les bascules de session du mobile", () => {
     const stash = JSON.parse(store.dump().tentacle_account_session!);
     expect(JSON.parse(stash.user)).toEqual({ Id: "damien", Name: "Damien", Policy: { IsAdministrator: true } });
     expect(store.dump().tentacle_account_session!.length).toBeLessThan(2048);
+  });
+
+  it("ceux qui affichent le compte stocké (la puce de l'en-tête, déjà montée) sont prévenus de la bascule", () => {
+    const store = memory({ tentacle_token: "perso", tentacle_user: DAMIEN });
+    let calls = 0;
+    const stop = subscribeStoredUser(() => void (calls += 1));
+    commitMobilePick(ZOE, deps(store));
+    stop();
+    expect(calls).toBeGreaterThan(0);
+    expect(JSON.parse(store.dump().tentacle_user!).Id).toBe("zoe");
   });
 
   it("revenir à son profil depuis celui d'un autre : la session personnelle reprend", () => {

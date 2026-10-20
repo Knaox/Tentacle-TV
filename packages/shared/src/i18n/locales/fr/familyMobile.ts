@@ -6,7 +6,7 @@
  */
 export default {
   inviteHint: "Un compte de ce serveur : il répond depuis son application.",
-  addGuestHint: "Un profil sans mot de passe, qui ne s'ouvre que sur vos TV.",
+  addGuestHint: "Un profil sans mot de passe, qui s'ouvre sur les appareils de la famille depuis « Qui regarde ? ».",
   /** La validation de la feuille « invité », à côté de son titre : un mot. */
   create: "Créer",
   openProfileHint: "Ouvre les réglages de ce profil",
@@ -33,7 +33,7 @@ export default {
     next: "Continuer",
     finish: "Terminer",
     pinTitle: "Protégez votre profil",
-    pinBody: "Un code PIN à quatre chiffres empêche les autres membres de la famille d'ouvrir votre profil, ici comme sur la TV.",
+    pinBody: "Un code PIN à quatre chiffres empêche les autres membres de la famille d'ouvrir votre profil, ici comme sur les autres appareils de la famille.",
     pinSet: "Poser un code PIN",
     pinDone: "Code PIN posé.",
     homeTitle: "Votre accueil",
@@ -41,7 +41,7 @@ export default {
     homeLoading: "Lecture de votre accueil…",
     homeUnavailable: "Votre accueil n'a pas pu être lu. Vous le réglerez plus tard dans Réglages.",
     photoTitle: "Votre photo",
-    photoBody: "Choisissez un personnage ou importez une photo : elle vous suit sur la TV et sur tous vos appareils.",
+    photoBody: "Choisissez un personnage ou importez une photo : elle vous suit sur tous vos appareils, TV comprises.",
     photoChoose: "Choisir ma photo",
     photoDone: "Photo choisie.",
   },

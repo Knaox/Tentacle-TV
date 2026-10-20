@@ -36,6 +36,7 @@ import {
   RECO_PAGE_KEY,
   resyncPlaybackSettings,
   resyncStillWatching,
+  notifyUserChange,
 } from "@tentacle-tv/api-client";
 import { i18n } from "@tentacle-tv/shared";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -147,6 +148,8 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
     if (sessionEpoch === 0 || !storageReady) return;
     resyncPlaybackSettings();
     resyncStillWatching();
+    // `useUserId` (api-client) relit le compte stocké : celui du nouveau profil.
+    notifyUserChange();
   }, [sessionEpoch, storageReady]);
 
   const configValue = useMemo(

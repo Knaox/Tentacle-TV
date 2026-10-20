@@ -6,7 +6,7 @@
  */
 export default {
   nav: "Famille",
-  description: "Partagez vos TV : chaque profil de la famille s'y ouvre avec sa propre lecture.",
+  description: "Partagez vos appareils : chaque profil de la famille s'y ouvre avec sa propre lecture.",
   loadError: "La Famille n'a pas pu être lue.",
   retry: "Réessayer",
   close: "Fermer",
@@ -33,7 +33,7 @@ export default {
   owned: {
     title: "Ma famille",
     emptyTitle: "Créez votre famille",
-    emptyBody: "Invitez des comptes de ce serveur ou créez des profils invités : ils s'ouvriront sur vos Apple TV, sans mot de passe, sauf code PIN.",
+    emptyBody: "Invitez des comptes de ce serveur ou créez des profils invités : ils s'ouvriront sur vos appareils, sans mot de passe, sauf code PIN.",
     capacity_one: "{{count}} profil sur {{max}}",
     capacity_other: "{{count}} profils sur {{max}}",
     guests_one: "{{count}} invité sur {{max}}",
@@ -58,15 +58,15 @@ export default {
     row: "Famille de {{owner}}",
     since: "Membre depuis le {{date}}",
     leave: "Quitter",
-    hint: "Votre profil s'ouvre sur les TV de votre famille. Un code PIN le protège.",
+    hint: "Votre profil s'ouvre sur les appareils de votre famille. Un code PIN le protège.",
   },
   myPin: {
     title: "Mon code PIN",
     on: "Code PIN actif",
     off: "Aucun code PIN",
-    hint: "Demandé à l'ouverture de votre profil sur une TV. Sans code, le profil s'ouvre directement.",
+    hint: "Demandé à l'ouverture de votre profil dans « Qui regarde ? », sur tous les appareils de la famille. Sans code, le profil s'ouvre directement.",
     /** Le serveur sait « Qui regarde ? » sur le bureau (`family.desktopProfiles`). */
-    hintDesktop: "Demandé à l'ouverture de votre profil sur une TV, et sur un ordinateur ou dans un navigateur dans « Qui regarde ? » — pour revenir à votre propre profil aussi. Sans code, le profil s'ouvre directement.",
+    hintDesktop: "Demandé à l'ouverture de votre profil dans « Qui regarde ? », sur tous les appareils de la famille — pour revenir à votre propre profil aussi. Sans code, le profil s'ouvre directement.",
     set: "Poser un code",
     change: "Changer",
     remove: "Retirer",
@@ -79,7 +79,7 @@ export default {
   },
   confirm: {
     removeTitle: "Retirer {{name}} de la famille ?",
-    removeBody: "Son profil disparaît aussitôt de vos TV. Son compte n'est pas touché : vous pourrez l'inviter de nouveau.",
+    removeBody: "Son profil disparaît aussitôt de vos appareils. Son compte n'est pas touché : vous pourrez l'inviter de nouveau.",
     removeAction: "Retirer",
     deleteGuestTitle: "Supprimer le profil invité « {{name}} » ?",
     deleteGuestBody: "Son compte est supprimé du serveur : sa lecture est perdue — reprises, vus, listes. C'est définitif.",
@@ -88,7 +88,7 @@ export default {
     cancelInviteBody: "Elle disparaît de sa cloche. Vous pourrez l'inviter de nouveau.",
     cancelInviteAction: "Annuler l'invitation",
     leaveTitle: "Quitter la famille de {{owner}} ?",
-    leaveBody: "Votre profil disparaît aussitôt de ses TV. Il faudra une nouvelle invitation pour revenir.",
+    leaveBody: "Votre profil disparaît aussitôt de ses appareils. Il faudra une nouvelle invitation pour revenir.",
     leaveAction: "Quitter",
     dissolveTitle: "Dissoudre votre famille ?",
     dissolveBody: "Les membres en sortent (leurs comptes ne sont pas touchés), les invitations en attente sont annulées, et les profils invités sont supprimés avec leur lecture. C'est définitif.",
@@ -104,7 +104,7 @@ export default {
     memberNotice: "Seul {{owner}} invite, retire et dissout la famille.",
     yourGuest: "Votre invité",
     leave: "Quitter la famille",
-    leaveHint: "Votre profil disparaît des TV de la famille, et ses profils des vôtres.",
+    leaveHint: "Votre profil disparaît des appareils de la famille, et ses profils des vôtres.",
     alreadyInFamily: "Vous faites déjà partie d'une famille : quittez-la pour accepter une autre invitation.",
   },
   invite: {
@@ -124,7 +124,7 @@ export default {
     namePlaceholder: "Léa",
     nameHint: "Vingt caractères au plus.",
     colorLabel: "Couleur",
-    explain: "Un profil invité n'a ni mot de passe ni accès à lui : il ne s'ouvre que sur vos TV, avec vos bibliothèques et vos restrictions, et garde sa propre lecture.",
+    explain: "Un profil invité n'a ni mot de passe ni accès à lui : il ne s'ouvre que sur les appareils de la famille, depuis « Qui regarde ? », avec vos bibliothèques et vos restrictions, et garde sa propre lecture.",
     create: "Créer le profil",
     created: "Profil « {{name}} » créé.",
     colors: {
@@ -144,7 +144,7 @@ export default {
     label: "Nouveau code",
     confirmLabel: "Confirmer le code",
     hint: "Quatre chiffres. Cinq essais ratés bloquent le profil un moment.",
-    effect: "Le profil sera fermé sur les TV où il est ouvert.",
+    effect: "Le profil sera fermé sur les appareils où il est ouvert.",
     mismatch: "Les deux codes ne sont pas identiques.",
     format: "Le code compte exactement quatre chiffres.",
     save: "Enregistrer",
@@ -165,7 +165,7 @@ export default {
   prompts: {
     reset: "Reproposer le code PIN et la photo",
     resetPhoto: "Reproposer la photo",
-    done: "C'est noté : {{name}} se verra reproposer ce qui manque encore à sa prochaine ouverture, sur une TV ou un ordinateur.",
+    done: "C'est noté : {{name}} se verra reproposer ce qui manque encore à sa prochaine ouverture, sur n'importe quel appareil.",
   },
   /** Les bibliothèques permises à un invité ou à un membre mineur (1.30.0, `family.libraryLimits`). */
   libraries: {
@@ -208,7 +208,7 @@ export default {
     title: "Familles",
     description: "Ce que les comptes peuvent faire de la Famille sur ce serveur.",
     families: "Familles",
-    familiesHint: "Chaque compte peut créer une famille et y inviter d'autres comptes du serveur. Couper ferme aussitôt les profils de famille ouverts sur les TV.",
+    familiesHint: "Chaque compte peut créer une famille et y inviter d'autres comptes du serveur. Couper ferme aussitôt les profils de famille ouverts sur les appareils.",
     guests: "Profils invités",
     guestsHint: "Les propriétaires peuvent créer des profils invités — de vrais comptes Jellyfin cachés, sans mot de passe connu. Couper ferme aussitôt les profils invités ouverts.",
     guestsNeedFamilies: "Sans les familles, aucun profil invité ne s'ouvre.",
@@ -220,10 +220,10 @@ export default {
     familiesLevel_off: "Coupées",
     familiesLevel_allowed: "Comptes permis",
     familiesLevel_everyone: "Tous les comptes",
-    familiesLevelDetail_off: "Personne ne fonde de famille ni n'invite, administrateurs compris, et les profils de famille ouverts sur les TV se ferment aussitôt. Rien n'est supprimé.",
+    familiesLevelDetail_off: "Personne ne fonde de famille ni n'invite, administrateurs compris, et les profils de famille ouverts sur les appareils se ferment aussitôt. Rien n'est supprimé.",
     familiesLevelDetail_allowed: "Les administrateurs, et les comptes permis dans leur fiche (Famille). Une famille déjà créée reste.",
     familiesLevelDetail_everyone: "Chaque compte, sauf ceux refusés dans leur fiche (Famille).",
-    guestsAccess: "Des profils pour les TV de la famille — de vrais comptes Jellyfin cachés, sans mot de passe connu.",
+    guestsAccess: "Des profils pour les appareils de la famille — de vrais comptes Jellyfin cachés, sans mot de passe connu.",
     guestsLevel_off: "Coupés",
     guestsLevel_allowed: "Comptes permis",
     guestsLevel_everyone: "Tous les comptes",

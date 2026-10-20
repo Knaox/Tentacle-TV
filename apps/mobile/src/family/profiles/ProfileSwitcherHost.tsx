@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import type { PickedProfileDto } from "@tentacle-tv/shared";
 import { showToast } from "@/notices/toastStore";
+import { whenNoModal } from "@/components/ui/modalGate";
 import { useCanSwitchProfile } from "../useCanSwitchProfile";
 import { useActiveProfile } from "./profileSessionState";
 import { closeProfileSwitcher, useProfileSwitcherOpen } from "./profileSwitcherStore";
@@ -43,7 +44,8 @@ export function ProfileSwitcherHost() {
   }, [commit, router, t]);
   const onManage = useCallback(() => {
     closeProfileSwitcher();
-    router.push("/family" as never);
+    // La page Famille s'ouvre une fois la feuille retirée : rien ne s'y présente par-dessus une sortie.
+    whenNoModal(() => router.push("/family" as never));
   }, [router]);
 
   if (!open || !canSwitch) return null;

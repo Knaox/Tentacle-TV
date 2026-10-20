@@ -4,7 +4,7 @@
  */
 export default {
   inviteHint: "An account on this server: they answer from their own app.",
-  addGuestHint: "A profile without a password, which only opens on your TVs.",
+  addGuestHint: "A profile without a password, which opens on the family's devices from “Who's watching?”.",
   /** La validation de la feuille « invité », à côté de son titre : un mot. */
   create: "Create",
   openProfileHint: "Opens this profile's settings",
@@ -31,7 +31,7 @@ export default {
     next: "Continue",
     finish: "Done",
     pinTitle: "Protect your profile",
-    pinBody: "A four-digit PIN keeps other family members from opening your profile, here and on the TV.",
+    pinBody: "A four-digit PIN keeps other family members from opening your profile, here and on the family's other devices.",
     pinSet: "Set a PIN",
     pinDone: "PIN set.",
     homeTitle: "Your home screen",
@@ -39,7 +39,7 @@ export default {
     homeLoading: "Loading your home screen…",
     homeUnavailable: "Your home screen couldn't be loaded. You can set it up later in Settings.",
     photoTitle: "Your photo",
-    photoBody: "Pick a character or import a photo: it follows you on the TV and on all your devices.",
+    photoBody: "Pick a character or import a photo: it follows you on all your devices, TVs included.",
     photoChoose: "Choose my photo",
     photoDone: "Photo chosen.",
   },

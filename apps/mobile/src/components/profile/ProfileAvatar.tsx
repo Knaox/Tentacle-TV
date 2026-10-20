@@ -11,6 +11,8 @@ import { useOfflineMode } from "@/offline/useOfflineMode";
 import { cachedAvatarUri } from "@/offline/avatarCache";
 import { pendingPhotoSnapshot, photoTagFor, subscribePendingPhoto } from "@/avatars/pendingPhoto";
 import { AvatarGallerySheet } from "@/avatars/gallery/AvatarGallerySheet";
+import { profileColorStops } from "@tentacle-tv/shared";
+import { useAccountFaceColor } from "@/family/profiles/useAccountFaceColor";
 
 interface Props {
   /** Le profil stocké, réactif (`useStoredUser`). */
@@ -42,6 +44,8 @@ export function ProfileAvatar({ user, initial }: Props) {
   // l'étiquette stockée reste l'ancienne (`pendingPhoto`, d'où que parte l'envoi).
   useSyncExternalStore(subscribePendingPhoto, pendingPhotoSnapshot, pendingPhotoSnapshot);
   const offline = useOfflineMode();
+  // Sans photo : la couleur du profil, la même que « Qui regarde ? » et la Famille.
+  const faceColor = useAccountFaceColor();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const userId = user?.Id ?? null;
@@ -83,7 +87,7 @@ export function ProfileAvatar({ user, initial }: Props) {
           />
         ) : (
           <LinearGradient
-            colors={[theme.colors.brand.dark, theme.colors.brand.violet, theme.colors.brand.light]}
+            colors={faceColor ? [...profileColorStops(faceColor)] : [theme.colors.brand.dark, theme.colors.brand.violet, theme.colors.brand.light]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={st.avatar}
           >
