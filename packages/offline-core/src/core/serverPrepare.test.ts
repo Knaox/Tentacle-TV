@@ -95,6 +95,20 @@ describe("le moteur et la préparation du serveur", () => {
     expect(server.released).toEqual([preparedReleaseUrl(CREDS.serverUrl, getFile(db, fileId)!)]);
   });
 
+  it("un morceau de la taille ESTIMÉE n'est pas pris pour un fichier complet", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const fileId = lightFile(db, "item1");
+    db.prepare("UPDATE files SET expected_size = 4 WHERE id = ?").run(fileId);
+    fs.writeFileSync(path.join(root, "media/item1/light-ms1.mp4.part"), "0123");
+    const server = preparedServer("0123456789");
+    const { engine } = makeEngine(db, root, server.net, { serverPrepare: () => PREPARE });
+    engine.start(CREDS);
+    await vi.waitFor(() => expect(getFile(db, fileId)?.status).toBe("complete"));
+    expect(server.opened).toHaveLength(1);
+    expect(fs.readFileSync(path.join(root, "media/item1/light-ms1.mp4"), "utf8")).toBe("0123456789");
+  });
+
   it("sans la capacité, un Allégé repart de zéro et n'efface rien — le comportement d'avant", async () => {
     const db = openInMemory();
     const root = rootWithThreeItems();

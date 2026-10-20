@@ -197,7 +197,9 @@ export async function run(
     // toute seule, et le moteur n'a jamais vu sa promesse se résoudre. Au
     // réveil, la file remet ce fichier en attente ; sans cette reconnaissance,
     // on retéléchargerait des gigaoctets déjà sur le disque.
-    if (job.expectedSize !== null && job.expectedSize > 0 && resumeFrom === job.expectedSize) {
+    // L'Original seul : la taille d'un Allégé n'est qu'une ESTIMATION, et sa
+    // préparation dit elle-même qu'il ne reste rien (une plage vide).
+    if (job.variant === "original" && job.expectedSize !== null && job.expectedSize > 0 && resumeFrom === job.expectedSize) {
       try {
         files.rename(part, job.finalPath);
       } catch {
