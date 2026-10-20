@@ -6,6 +6,8 @@ import { ensureNotificationPermission } from "./pushNotifications";
 export interface LocalNotificationData {
   [key: string]: unknown;
   type: "offline_ready" | "offline_disk_full";
+  /** Le titre prêt, quand le lot n'en comptait qu'un : le toucher l'ouvre. */
+  itemId?: string;
 }
 
 /**

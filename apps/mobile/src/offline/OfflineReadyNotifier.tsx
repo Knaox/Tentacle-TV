@@ -4,7 +4,7 @@ import { useUserId } from "@tentacle-tv/api-client";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { presentLocalNotification } from "@/services/localNotifications";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
-import { useNotifyReady } from "./deviceSettings";
+import { useLiveTransfers, useNotifyReady } from "./deviceSettings";
 import { entryTitle } from "./entryTitle";
 import { summarizeReady } from "./readySummary";
 import type { OfflineEntry } from "./engineApi";
@@ -18,7 +18,8 @@ function countActive(entries: Iterable<OfflineEntry>): number {
 }
 
 /**
- * La notification « Prêt hors ligne » : UNE par lot — quand la file se vide,
+ * La notification « Prêt à regarder hors ligne » : UNE par lot — celle qui
+ * reste quand le suivi en direct s'efface (`live/`) : quand la file se vide,
  * avec le titre et son numéro d'épisode s'il n'y en a qu'un, le nom de la
  * série et le compte si tout vient de la même, le compte seul sinon (voir
  * `summarizeReady`) —, plus une « Espace
@@ -30,6 +31,7 @@ export function OfflineReadyNotifier() {
   const { t } = useTranslation("offline");
   const userId = useUserId();
   const notifyReady = useNotifyReady();
+  const liveTransfers = useLiveTransfers();
   const { data: entries } = useOfflineList(userId);
   const previousRef = useRef<Map<number, OfflineEntry> | null>(null);
   const completedRef = useRef<OfflineEntry[]>([]);
@@ -44,7 +46,8 @@ export function OfflineReadyNotifier() {
 
     const activeBefore = countActive(previous.values());
     const activeNow = countActive(current.values());
-    if (notifyReady && activeBefore === 0 && activeNow > 0) void ensureNotificationPermission();
+    // Le suivi en direct est lui aussi une notification (Android 13+ la demande).
+    if ((notifyReady || liveTransfers) && activeBefore === 0 && activeNow > 0) void ensureNotificationPermission();
 
     for (const [id, entry] of current) {
       const before = previous.get(id);
@@ -61,11 +64,13 @@ export function OfflineReadyNotifier() {
       if (!notifyReady) return;
       const summary = summarizeReady(done);
       if (summary === null) return;
+      // Un seul titre : le toucher l'ouvre ; plusieurs : le catalogue de l'appareil.
       void presentLocalNotification(t("readyNotifTitle"), t(summary.key, summary.params), {
         type: "offline_ready",
+        ...(done.length === 1 ? { itemId: done[0]!.itemId } : {}),
       });
     }
-  }, [entries, notifyReady, t]);
+  }, [entries, notifyReady, liveTransfers, t]);
 
   return null;
 }

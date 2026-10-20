@@ -2,6 +2,7 @@ import { ConnectivityBinding } from "./ConnectivityBinding";
 import { DataSaverBinding } from "./DataSaverBinding";
 import { OfflineEventsBinding } from "./OfflineEventsBinding";
 import { OfflineReadyNotifier } from "./OfflineReadyNotifier";
+import { OfflineLiveActivity } from "./live/OfflineLiveActivity";
 import { KeepOfflineHost } from "./keep/KeepOfflineHost";
 import { OfflineOverlays } from "./OfflineOverlays";
 import { OfflineRouteGuard } from "./OfflineRouteGuard";
@@ -21,6 +22,7 @@ export function OfflineShell() {
       <OfflineRuntimeSync />
       <OfflineEventsBinding />
       <OfflineReadyNotifier />
+      <OfflineLiveActivity />
       <KeepOfflineHost />
       <OfflineRouteGuard />
       <OfflineOverlays />

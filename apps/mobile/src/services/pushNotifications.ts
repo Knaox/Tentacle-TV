@@ -68,6 +68,8 @@ export interface PushTapData {
   refId?: string;
   /** La cible posée par l'émetteur (contrat shared `notificationTarget`) — lue, jamais crue. */
   target?: unknown;
+  /** Notification locale « Prêt à regarder hors ligne » d'un seul titre : lequel. */
+  itemId?: unknown;
 }
 
 /** True si l'appareil a déjà accordé la permission de notifications. */
