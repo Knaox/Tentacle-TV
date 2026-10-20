@@ -469,7 +469,11 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   le 2026-10-19 ; sans lui, `BootView`). Jamais avec le mouvement réduit. Elle ne renonce
   jamais ; le premier écran pas prêt (il le dit à la porte,
   `useReportScreenToBootIntro` : accueil, « Qui regarde ? ») : le poulpe attend
-  sur son bouton lecture (8 s au plus).
+  sur son bouton lecture (8 s au plus). Mobile : route d'arrivée décidée avant
+  la plongée (`mobileBootArrival` : jamais une route qu'une garde remplace) ;
+  « Qui regarde ? », premier lancement, migration, accès suspendu nés pendant
+  l'ouverture se rendent DANS l'écran (`BootAwareModal`, `BootAwareOverlay`),
+  jamais en `Modal` par-dessus.
 - **L'app est montée DANS l'écran** (`IntroScreenPlane`) et n'en
   change jamais d'arbre : à l'arrivée, identité et découpe retirée. Rien que des
   transformations et des opacités, horloge Reanimated sur le fil d'interface,

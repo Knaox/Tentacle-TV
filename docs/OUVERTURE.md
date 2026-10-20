@@ -191,16 +191,35 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   l'écran couvre la fenêtre ENTIÈRE (l'app gère sa zone sûre elle-même).
   Fenêtre et zone sûre sont figées au montage ; arrivé, l'écran passe en plein
   cadre : un iPad qu'on tourne, l'app suit sans changer d'arbre.
-- **Le premier écran** : la route est le chemin expo-router, connue une fois
-  le stockage relu et les polices chargées (`BootIntroRouteReporter`). L'accueil
-  (`/`, héros compris) dit quand il est prêt ; tout autre écran (connexion,
-  serveur, fiche) dès qu'il est monté ; le mode hors ligne aussitôt. 8 s au plus.
-  « Qui regarde ? » n'est pas un premier écran sur le mobile : une modale
-  (`FamilyLaunchHosts`) qui s'ouvre après l'arrivée, sur l'accueil.
-- **Ce qui sort de l'écran** : une `Modal` ou une route en présentation modale
-  native se pose par-dessus l'ouverture. Les hôtes du lancement qui en ouvrent
-  (affiche de la Famille, avatars, code PIN conseillé, `FamilyLaunchHosts`) attendent
-  `useBootIntroLanded()` ; un premier écran ne doit jamais être une modale native.
+- **Le premier écran, LITTÉRALEMENT** (retour de Damien du 2026-10-21 : la
+  caméra plongeait dans le catalogue, puis « Qui regarde ? » ou la connexion
+  le remplaçaient sous les yeux). Règle pure `mobileBootArrival`
+  (`bootIntroRules.ts`), lue par `BootIntroRouteReporter` :
+  - rien tant que l'app relit son stockage, ni tant qu'une GARDE va remplacer
+    la route (`resolveAuthRoute` : choix du serveur à la première ouverture,
+    connexion ; garde du hors ligne) — l'accueil monté par défaut n'est pas
+    le premier écran d'une app neuve ;
+  - les RECOUVREMENTS DU PREMIER ÉCRAN (`BOOT_FIRST_SCREEN_OVERLAYS`, par
+    priorité : migration, accès suspendu, « Qui regarde ? » et son code,
+    premier lancement du profil) se déclarent au registre du démarrage
+    (`src/startup/`, clé `access` ajoutée). Tant que l'un est `pending` (n'a
+    pas tranché) ou `active` sans être encore À L'ÉCRAN, le poulpe attend sur
+    son bouton (`pending` de shared `bootIntroOutcome`, 8 s au plus) ; à
+    l'écran, la route est `overlay:<clé>` et la plongée se fait dans lui
+    (migration et accès suspendu : aussitôt, `blocked`) ;
+  - sinon le chemin expo-router ; l'accueil (`/`) dit quand il est prêt ; le
+    hors ligne plonge aussitôt.
+- **Ce qui est né pendant l'ouverture vit DANS l'écran** : une `Modal` ou une
+  `FullWindowOverlay` est une fenêtre native, posée PAR-DESSUS l'ouverture.
+  `BootAwareModal` (« Qui regarde ? », carte du premier lancement) et
+  `BootAwareOverlay` (migration, accès suspendu) choisissent UNE fois, à leur
+  naissance : nés pendant l'ouverture, une vue plein écran dans l'arbre de
+  l'app (au-dessus de la pile, Retour d'Android avalé) pour toute leur vie ;
+  nés après, la fenêtre native d'avant. Ils se déclarent « à l'écran »
+  (`bootOverlays.ts`). `FamilyLaunchHosts` est donc monté dès l'app prête,
+  sans attendre l'arrivée ; l'affiche de la Famille, les avatars et le code
+  PIN conseillé l'attendent toujours (`useBootIntroLanded`) — un premier
+  écran ne doit jamais être une modale native.
 - **Le son** : le MÊME code natif que la TV, compilé par le projet mobile —
   iOS par une référence du projet Xcode (`TentacleBootSound.m`, la ressource
   `boot-tadum.m4a`), Android par `sourceSets` (`com.tentacletv.boot`, et le

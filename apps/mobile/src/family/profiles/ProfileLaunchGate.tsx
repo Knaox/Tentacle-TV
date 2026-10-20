@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Modal } from "react-native";
 import { useRouter, useSegments } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { MOBILE_PROFILE_STAY_KEY, readMobileStay, type PickedProfileDto } from "@tentacle-tv/shared";
 import { retainModal } from "@/components/ui/modalGate";
+import { BootAwareModal } from "@/bootIntro/BootAwareModal";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 import { MODAL_ORIENTATIONS } from "../modalOrientations";
@@ -88,9 +88,12 @@ export function ProfileLaunchGate() {
 
   if (!show) return null;
   return (
-    <Modal visible animationType="fade" statusBarTranslucent supportedOrientations={[...MODAL_ORIENTATIONS]} onRequestClose={() => undefined}>
+    // Né pendant l'ouverture, « Qui regarde ? » est LE premier écran : rendu dans l'écran du poulpe.
+    <BootAwareModal bootOverlay="profiles" animationType="fade" statusBarTranslucent supportedOrientations={[...MODAL_ORIENTATIONS]} onRequestClose={noop}>
       <Retained />
       <WhoIsWatchingView listing={listing.data} mode="launch" onPicked={onPicked} onStale={onStale} />
-    </Modal>
+    </BootAwareModal>
   );
 }
+
+const noop = () => undefined;

@@ -33,6 +33,8 @@ export type StartupOverlayKey =
   | "messages"
   /** L'écran d'attente de la migration de la base du serveur. */
   | "migration"
+  /** La page « accès suspendu » (compte désactivé, hors de ses heures) qui remplace l'app. */
+  | "access"
   /** Le message du passage hors ligne. */
   | "connectivity"
   /** Une demande de permission du système (notifications). */
@@ -81,6 +83,11 @@ export function holdStartupOverlay(key: StartupOverlayKey): () => void {
     else holds.set(key, left);
     emit();
   };
+}
+
+/** Ce qu'un hôte a déclaré (l'ouverture du démarrage le lit : `bootIntro/`). */
+export function readStartupOverlay(key: StartupOverlayKey): StartupOverlayState {
+  return reported.get(key) ?? (holds.has(key) ? "active" : "quiet");
 }
 
 /** Les recouvrements qui ne se sont pas tus (diagnostic, tests). */

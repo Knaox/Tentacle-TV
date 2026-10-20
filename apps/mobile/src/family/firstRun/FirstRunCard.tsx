@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import { AccessibilityInfo, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { retainModal } from "@/components/ui/modalGate";
+import { BootAwareModal } from "@/bootIntro/BootAwareModal";
 import { PlainButton, PrimaryButton } from "@/components/ui/buttons";
 import { CONTENT_MAX_WIDTH, ctaGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { MODAL_ORIENTATIONS } from "../modalOrientations";
@@ -45,7 +46,7 @@ export function FirstRunCard({ step, position, total, onPrimary, onSkip }: First
   }, [copy.title]);
 
   return (
-    <Modal visible animationType="fade" statusBarTranslucent supportedOrientations={[...MODAL_ORIENTATIONS]} onRequestClose={onSkip ?? onPrimary}>
+    <BootAwareModal bootOverlay="firstRun" animationType="fade" statusBarTranslucent supportedOrientations={[...MODAL_ORIENTATIONS]} onRequestClose={onSkip ?? onPrimary}>
       <View style={[st.page, { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.md }]}>
         <LinearGradient pointerEvents="none" colors={[theme.colors.brand.glow, "transparent"]} style={st.halo} />
         <ScrollView style={st.body} contentContainerStyle={st.scroll}>
@@ -70,7 +71,7 @@ export function FirstRunCard({ step, position, total, onPrimary, onSkip }: First
           {onSkip ? <PlainButton label={t(FIRST_RUN_SKIP_KEY)} onPress={onSkip} style={st.skip} /> : null}
         </View>
       </View>
-    </Modal>
+    </BootAwareModal>
   );
 }
 
