@@ -3,6 +3,7 @@ import { guestRequestState, type FamilyGuestRights } from "../../family/familyCo
 import { creationAllowedFor, creationAllowedForMany } from "./familyCreationRights";
 import { FamilyFailure } from "./familyErrors";
 import { familyUpdate } from "./familyNotify";
+import { announceRightsChanged } from "../rightsLive/rightsLive";
 import { fold, type MemberRow } from "./familyStore";
 
 /**
@@ -59,6 +60,8 @@ export async function requireGuestRequestGrant(actorUserId: string): Promise<voi
  * d'une famille — invités compris, leur TV relit son droit — relit la Famille.
  */
 export async function notifyAllFamilies(): Promise<void> {
-  const rows = await getPrisma().familyMember.findMany({ select: { userId: true } });
+  const rows = await getPrisma().familyMember.findMany({ select: { userId: true, kind: true } });
   familyUpdate(rows.map((row) => row.userId), "family");
+  // Une case suspendue ou rendue change ce que l'invité peut faire : sa session relit tout.
+  for (const row of rows) if (row.kind === "guest") announceRightsChanged(row.userId);
 }

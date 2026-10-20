@@ -41,7 +41,12 @@ export function announceRightsChanged(userId: string | null): void {
   if (pending.has(key)) return;
   pending.set(key, setTimeout(() => {
     pending.delete(key);
-    for (const target of targets(userId)) sendToUser(target, { type: "rights:changed" });
+    try {
+      for (const target of targets(userId)) sendToUser(target, { type: "rights:changed" });
+    } catch (err) {
+      // Une annonce perdue n'ôte rien : la fraîcheur des requêtes reprend la main.
+      console.warn("[rights-live] annonce impossible :", err);
+    }
   }, RIGHTS_LIVE_DEBOUNCE_MS));
 }
 

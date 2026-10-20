@@ -12,7 +12,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 const h = vi.hoisted(() => ({
   state: null as null | import("./familyMocks").HarnessState,
   fetch: null as null | ((input: string | URL, init?: RequestInit) => Promise<Response>),
+  announced: [] as string[],
 }));
+vi.mock("../src/services/rightsLive/rightsLive", () => ({ announceRightsChanged: (userId: string) => h.announced.push(userId) }));
 vi.mock("../src/services/configStore", async () => (await import("./familyMocks")).configStoreMock(() => h.state!));
 vi.mock("../src/services/db", async () => (await import("./familyMocks")).dbMock(() => h.state!));
 vi.mock("../src/services/wsManager", async () => (await import("./familyMocks")).wsManagerMock(() => h.state!));
@@ -101,6 +103,8 @@ describe("le droit d'invité « peut demander »", () => {
     expect((await rights(tokens.damien, zoe, { requestTitles: false })).json()).toEqual({ requestTitles: false });
     expect((await send("GET", EXTENSION, session)).json().code).toBe("family.guest_account");
     expect(h.state!.socket.some((s) => s.userId === zoe && s.msg.type === "family:update")).toBe(true);
+    // … et relit ce qu'elle montre : « Demander » disparaît sans redémarrage.
+    expect(h.announced).toContain(zoe);
   });
 
   it("le propriétaire SEUL le règle ; un membre reste lui-même sur les extensions", async () => {
