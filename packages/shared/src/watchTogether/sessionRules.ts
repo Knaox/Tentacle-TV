@@ -89,3 +89,25 @@ export function wtBufferingFreezeSeconds(opts: { freezeAtS?: number; playerS: nu
   if (opts.freezeAtS !== undefined) return opts.freezeAtS;
   return opts.wasReady ? opts.playerS : undefined;
 }
+
+/**
+ * Au-delà, un lecteur « prêt » n'est pas à sa position de départ : il ne se dit
+ * pas prêt, il s'y pose d'abord. Large : un flux transcodé atterrit jusqu'à dix
+ * secondes à côté de sa cible (image clé) — la reprise commune s'en charge.
+ */
+export const WT_READY_PLACEMENT_TOLERANCE_S = 12;
+
+/**
+ * Le lecteur dit « prêt » LOIN de la salle qui l'attend : un Android prêt à 0 s
+ * quand la salle l'attendait à 276 s (banc du 21/10) — la salle repartait, lui
+ * jouait depuis 0, sautait, recalait, et la regelait. Il se pose d'abord.
+ */
+export function wtReadyMisplaced(
+  room: WtRoomStateDto,
+  serverNow: number,
+  playerS: number,
+  selfId: string | null,
+): boolean {
+  return isRoomWaitingForMe(room, selfId)
+    && Math.abs(playerS - wtPositionSecondsAt(room, serverNow)) > WT_READY_PLACEMENT_TOLERANCE_S;
+}
