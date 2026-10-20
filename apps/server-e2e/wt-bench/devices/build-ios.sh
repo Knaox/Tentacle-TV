@@ -12,9 +12,10 @@ cd "$REPO/apps/mobile/ios"
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 # Les pods suivent le Podfile.lock du dépôt construit (une branche native peut l'avoir changé).
 pod install
+# arm64 seul : MPVKit n'a pas de tranche x86_64 (le lien échoue sinon).
 xcodebuild -workspace TentacleTV.xcworkspace -scheme TentacleTV -configuration Debug \
   -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-  -derivedDataPath "$DD" CODE_SIGNING_ALLOWED=NO -quiet build
+  -derivedDataPath "$DD" CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=NO -quiet build
 APP=$DD/Build/Products/Debug-iphonesimulator/TentacleTV.app
 mkdir -p "$OUT"
 rsync -a --delete "$APP" "$OUT/"
