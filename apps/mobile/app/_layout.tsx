@@ -8,6 +8,7 @@ import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { setPreferencesBackendUrl, fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
+import { WatchTogetherProvider } from "@/watchTogether/WatchTogetherProvider";
 import { ServerUrlContext, useServerUrl } from "@/providers/ServerUrlContext";
 import { BrandSpinner } from "@/components/ui";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
@@ -115,7 +116,10 @@ export default function RootLayout() {
         <ServerUrlContext.Provider value={serverUrlValue}>
           <AuthRedirect storage={storage} ready={ready} />
           <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl} storageReady={ready}>
-            <ThemedShell showLoading={!ready || (!fontsLoaded && !fontError)} />
+            {/* Watch Together : TOUJOURS monté (porte fermée, la séance est inerte). */}
+            <WatchTogetherProvider>
+              <ThemedShell showLoading={!ready || (!fontsLoaded && !fontError)} />
+            </WatchTogetherProvider>
           </AppProviders>
         </ServerUrlContext.Provider>
       </SafeAreaProvider>
