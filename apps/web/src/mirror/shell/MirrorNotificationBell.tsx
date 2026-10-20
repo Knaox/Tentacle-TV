@@ -1,151 +1,101 @@
-import { Fragment, useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Fragment, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bell, BellOff } from "lucide-react";
-import {
-  groupNotificationsByDay,
-  useDeleteAllNotifications,
-  useDeleteNotification,
-  useDeleteNotifications,
-  useJellyfinClient,
-  useMarkAllRead,
-  useMarkRead,
-  useNotifications,
-  useNotificationOpener,
-  useNotificationsLive,
-  useUnreadCount,
-  type AppNotification,
-} from "@tentacle-tv/api-client";
-import { openFamilyNotification } from "../../family/familyPosterStore";
-import { useNotificationPlugins } from "../../components/notifications/useNotificationPlugins";
+import type { NotificationPeriod } from "@tentacle-tv/api-client";
 import { BottomSheet } from "../ui/BottomSheet";
 import { useFormFactor } from "../useFormFactor";
-import { NotifTabletPanel } from "./NotifTabletPanel";
-import { NotifSheetHeader } from "./NotifSheetHeader";
 import { MirrorNotifRow } from "./MirrorNotifRow";
+import { NotifSheetHeader } from "./NotifSheetHeader";
+import { NotifTabletPanel } from "./NotifTabletPanel";
+import { useMirrorNotifCenter } from "./useMirrorNotifCenter";
+
+const PERIOD_KEYS: Record<NotificationPeriod, string> = {
+  today: "groupToday",
+  yesterday: "groupYesterday",
+  week: "groupThisWeek",
+  earlier: "groupEarlier",
+};
 
 /**
  * La cloche de l'en-tête de l'app : une icône de 21 et sa pastille violette
- * (« 9+ » au-delà), qui ouvre la feuille des notifications (paliers 50 / 100 %)
- * sur téléphone, le panneau ancré sous la cloche sur tablette (comme le mobile).
- * Appui long sur une ligne : mode sélection, comme dans l'app.
+ * (« 9+ » au-delà), qui ouvre le centre de notifications refait par notifs —
+ * la feuille à crans (50 % puis plein écran) sur téléphone, le panneau ancré
+ * sous la cloche sur tablette. Filtres « Tout » / « Non lues », périodes
+ * (Aujourd'hui, Hier, Cette semaine, Plus tôt), glisser vers la droite pour
+ * marquer lue, vers la gauche pour supprimer ; appui long : sélection.
  */
 export function MirrorNotificationBell() {
   const { t } = useTranslation("notifications");
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const Surface = useFormFactor() === "tablet" ? NotifTabletPanel : BottomSheet;
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const { data: unread } = useUnreadCount();
-  const { data: notifications } = useNotifications();
-  const markAll = useMarkAllRead();
-  const markOne = useMarkRead();
-  const deleteOne = useDeleteNotification();
-  const deleteBatch = useDeleteNotifications();
-  const deleteAll = useDeleteAllNotifications();
-  const client = useJellyfinClient();
-  useNotificationsLive({ token: client.getAccessToken() || localStorage.getItem("tentacle_token") });
-
-  const plugins = useNotificationPlugins();
-
-  const count = unread?.count ?? 0;
-
-  const exitSelection = useCallback(() => {
-    setSelectionMode(false);
-    setSelected(new Set());
-  }, []);
-  const toggle = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-  const close = useCallback(() => {
-    setOpen(false);
-    exitSelection();
-  }, [exitSelection]);
-
-  // La destination exacte (cible de l'émetteur, sinon la route du type) : la
-  // même règle que la cloche du bureau et que le mobile.
-  const openTarget = useNotificationOpener({ platform: "web", plugins, navigate, onLeave: close });
-  const onPress = useCallback(
-    (n: AppNotification) => {
-      // « X vous invite… » : l'affiche de l'invitation, pas une page.
-      if (openFamilyNotification(n)) {
-        if (!n.read) markOne.mutate(n.id);
-        return close();
-      }
-      openTarget(n);
-    },
-    [markOne, close, openTarget],
-  );
-  const groups = useMemo(() => groupNotificationsByDay(notifications ?? []), [notifications]);
-
-  const onDeleteAll = useCallback(() => {
-    if (window.confirm(t("confirmDeleteAll"))) deleteAll.mutate();
-  }, [t, deleteAll]);
+  const close = useCallback(() => setOpen(false), []);
+  const c = useMirrorNotifCenter(open, close);
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={count > 0 ? `${t("title")}, ${count}` : t("title")}
+        aria-label={c.unread > 0 ? `${t("title")}, ${c.unread}` : t("title")}
         className="mirror-press relative -m-3 flex p-3 text-content-primary"
       >
         <Bell size={21} strokeWidth={2} aria-hidden />
-        {count > 0 && (
+        {c.unread > 0 && (
           <span className="absolute right-[6px] top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-extrabold text-cta-brand-fg">
-            {count > 9 ? "9+" : count}
+            {c.unread > 9 ? "9+" : c.unread}
           </span>
         )}
       </button>
 
       <Surface open={open} onClose={close} label={t("title")}>
         <NotifSheetHeader
-          selectionMode={selectionMode}
-          selectedCount={selected.size}
-          unread={count}
-          total={notifications?.length ?? 0}
-          onMarkAll={() => markAll.mutate()}
-          onSelect={() => setSelectionMode(true)}
-          onDeleteAll={onDeleteAll}
-          onDeleteSelected={() => deleteBatch.mutate([...selected], { onSettled: exitSelection })}
-          onCancel={exitSelection}
+          filter={c.filter}
+          onFilter={c.setFilter}
+          unread={c.unread}
+          total={c.total}
+          shown={c.visible.length}
+          selectionMode={c.selectionMode}
+          selectedCount={c.selected.size}
+          onMarkAll={c.markAll}
+          onSelect={() => c.startSelection()}
+          onSelectAll={c.selectAll}
+          onDeleteAll={c.askDeleteAll}
+          onDeleteSelected={c.deleteSelected}
+          onCancel={c.exitSelection}
         />
         <div className="px-4 pt-3">
-          {groups.length === 0 ? (
+          {c.periods.length === 0 ? (
             <div className="mt-12 flex flex-col items-center gap-2 px-6 text-center">
               <BellOff size={40} className="mb-2 text-content-quaternary" aria-hidden />
-              <p className="text-[15px] font-semibold text-content-primary">{t("emptyTitle")}</p>
-              <p className="text-[13px] leading-[18px] text-content-tertiary">{t("emptyHint")}</p>
+              <p className="text-[15px] font-semibold text-content-primary">{t(c.filter === "unread" ? "emptyUnreadTitle" : "emptyTitle")}</p>
+              <p className="text-[13px] leading-[18px] text-content-tertiary">{t(c.filter === "unread" ? "emptyUnreadHint" : "emptyHint")}</p>
+              {c.filter === "unread" && (
+                <button type="button" onClick={() => c.setFilter("all")} className="mt-1 min-h-9 text-[14px] font-semibold text-[var(--brand-light)]">
+                  {t("showAll")}
+                </button>
+              )}
             </div>
           ) : (
-            groups.map(({ group, items }) => (
-              <Fragment key={group}>
-                <p className="mb-2 mt-1 text-xs font-semibold uppercase tracking-wider text-content-quaternary">
-                  {t(group === "today" ? "groupToday" : "groupEarlier")}
-                </p>
-                {items.map((n) => (
-                  <MirrorNotifRow
-                    key={n.id}
-                    notif={n}
-                    selectionMode={selectionMode}
-                    isSelected={selected.has(n.id)}
-                    onPress={() => (selectionMode ? toggle(n.id) : onPress(n))}
-                    onLongPress={() => {
-                      setSelectionMode(true);
-                      toggle(n.id);
-                    }}
-                    onDelete={() => deleteOne.mutate(n.id)}
-                  />
-                ))}
-              </Fragment>
-            ))
+            <>
+              {c.periods.map(({ group, items }) => (
+                <Fragment key={group}>
+                  <p className="mb-2 mt-1 text-xs font-semibold uppercase tracking-wider text-content-quaternary">{t(PERIOD_KEYS[group])}</p>
+                  {items.map((n) => (
+                    <MirrorNotifRow
+                      key={n.id}
+                      notif={n}
+                      selectionMode={c.selectionMode}
+                      isSelected={c.selected.has(n.id)}
+                      onPress={() => (c.selectionMode ? c.toggle(n.id) : c.openOne(n))}
+                      onLongPress={() => c.startSelection(n.id)}
+                      onMarkRead={() => c.markRead(n.id)}
+                      onDelete={() => c.remove(n.id)}
+                    />
+                  ))}
+                </Fragment>
+              ))}
+              {!c.selectionMode && <p className="mb-2 mt-3 text-center text-[11.5px] text-content-quaternary">{t("swipeHintBoth")}</p>}
+            </>
           )}
         </div>
       </Surface>
