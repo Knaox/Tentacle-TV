@@ -6,6 +6,7 @@ import { broadcastRoom, roomToDto } from "../services/watchTogether/broadcast";
 import { sendChatHistory } from "../services/watchTogether/chat";
 import { deviceKeyOf } from "../services/watchTogether/requestDevice";
 import { bindDevice } from "../services/watchTogether/memberDevices";
+import { beginArrival } from "../services/watchTogether/arrival";
 import { elsewhereFor } from "../services/watchTogether/elsewhere";
 import { watchBoundDevice } from "../services/watchTogether/gatewayPresence";
 import { wtAccessOf } from "../services/watchTogether/accountAccess";
@@ -45,6 +46,8 @@ export const watchTogetherDeviceRoutes: FastifyPluginAsync = async (app) => {
     }
     bindDevice(member, deviceKey);
     watchBoundDevice(user.userId, deviceKey);
+    // La salle a un titre : elle se met en pause AU CLIC et attend cet appareil.
+    beginArrival(room, member, deviceKey, Date.now());
     bumpEpoch(room);
     // `join` : les autres appareils du compte apprennent qu'il y en a un de plus.
     broadcastRoom(room, "join", user.userId);

@@ -1,24 +1,25 @@
 import {
   clampTicks,
-  wtPositionTicksAt,
-  WT_GROUP_WAIT_TIMEOUT_MS,
   WT_PROTOCOL_VERSION,
   type WtClientMessage,
   type WtStateCause,
 } from "./protocol";
-import { removeMember } from "./roomStore";
-import type { RemovalResult, Room, RoomMember } from "./roomTypes";
+import type { Room, RoomMember } from "./roomTypes";
 import { anchorOnPlayingSender, computeLead, scheduleResume, touch } from "./syncSchedule";
 import {
-  barrierParticipants, cancelResumeOnRelease, confirmReady, dropBarrier, joinBarrier, openBarrier,
+  barrierParticipants, cancelResumeOnRelease, confirmReady, dropBarrier, joinBarrier, openBarrier, pruneWaiting,
   requestResumeOnRelease,
 } from "./syncBarrier";
-import { anyoneWatching, loadedDuringSeekBarrier } from "./syncGuards";
+import { loadedDuringSeekBarrier } from "./syncGuards";
 import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
-import { armReadyGate, dropReadyGate } from "./syncReadyGate";
+import { armReadyGate, isStartingMember } from "./syncReadyGate";
 import { isStaleWtSeekToken } from "./watchTogetherSeekToken";
+import { arrivingFreezeTicks, finishArrival, noteArrivalOnPresence } from "./arrival";
+import { arrivalHeldElsewhere, dropArrival, isArrivingDevice } from "./arrivalState";
 
 export { bumpEpoch } from "./syncSchedule";
+// Ce qui retire un lecteur de la salle (balayage, socket fermé, départ) : `syncLeave.ts`.
+export { expireStaleWaits, releaseMemberWait, removeMemberAndSync, type MemberRemoval } from "./syncLeave";
 
 /**
  * Watch Together — mutations de l'état de lecture d'une room.
@@ -30,43 +31,6 @@ export { bumpEpoch } from "./syncSchedule";
 export type SyncOutcome =
   | { kind: "broadcast"; cause: WtStateCause }
   | { kind: "ignore" };
-
-/** Retire un membre de l'attente ; libère la barrière s'il était le dernier
- *  (reprise planifiée si la salle jouait). */
-function pruneWaiting(room: Room, userId: string, now: number): boolean {
-  if (!room.waitingFor.has(userId)) return false;
-  return confirmReady(room, { userId }, now).resumed;
-}
-
-/** Anti-gel infini : les membres attendus depuis plus de WT_GROUP_WAIT_TIMEOUT_MS
- *  sont déclarés en échec de lecture et le groupe reprend sans eux. Appelé par
- *  le sweep périodique du gateway. Si plus PERSONNE ne regarde, la salle ne
- *  repart pas : elle reste en pause — sinon son horloge tournait seule, au-delà
- *  de la fin du titre, et les lecteurs s'y recalaient au réveil (défaut M4 du
- *  banc : de 48 s à 1 069 s sur un épisode de 300 s, deux « épisode suivant »). */
-export function expireStaleWaits(room: Room, now: number): { expired: string[]; resumed: boolean } {
-  const expired: string[] = [];
-  for (const [userId, since] of room.waitingSince) {
-    if (now - since >= WT_GROUP_WAIT_TIMEOUT_MS) expired.push(userId);
-  }
-  if (expired.length === 0) return { expired, resumed: false };
-  let resumed = false;
-  for (const userId of expired) {
-    const member = room.members.get(userId);
-    if (member) {
-      member.playbackError = true; // toast « X ne peut pas lire » côté clients
-      member.buffering = false;
-      member.inPlayback = false;
-    }
-  }
-  if (!anyoneWatching(room)) {
-    cancelResumeOnRelease(room);
-    room.pauseReason = "user";
-  }
-  for (const userId of expired) resumed = pruneWaiting(room, userId, now) || resumed;
-  if (!resumed) touch(room, now);
-  return { expired, resumed };
-}
 
 /** Un lecteur de la salle bufferise ou recharge : la salle l'attend. */
 function waitForMember(room: Room, member: RoomMember, now: number, frozenTicks: number): WtStateCause {
@@ -84,7 +48,9 @@ function waitForMember(room: Room, member: RoomMember, now: number, frozenTicks:
 }
 
 /** Applique une commande de lecture d'un membre. Validation de forme déjà faite
- *  (protocol.parseWtClientMessage) ; ici on applique les règles métier. */
+ *  (protocol.parseWtClientMessage) ; ici on applique les règles métier.
+ *  `deviceKey` : l'appareil qui parle (hash du jeton de son socket) — l'arrivée
+ *  d'un appareil est suivie par appareil (`arrival.ts`). */
 export function applyCommand(
   room: Room,
   member: RoomMember,
@@ -95,6 +61,7 @@ export function applyCommand(
     | { type: "wt:tick" } | { type: "wt:skipPropose" }
   >,
   isUserOnline: (userId: string) => boolean,
+  deviceKey?: string,
 ): SyncOutcome {
   const now = Date.now();
 
@@ -167,9 +134,10 @@ export function applyCommand(
       // changement — l'attendre gèlerait le groupe. Le lanceur (pas encore
       // inPlayback au moment du setItem) s'ajoute par son wt:buffering envoyé
       // juste après, sur le même socket (FIFO).
+      // Un arrivant en route suit le nouveau titre : il est attendu aussi.
       const waitFor: string[] = [];
       for (const m of room.members.values()) {
-        if (m.inPlayback && isUserOnline(m.userId)) waitFor.push(m.userId);
+        if ((m.inPlayback || room.arrivals.has(m.userId)) && isUserOnline(m.userId)) waitFor.push(m.userId);
         m.inPlayback = false;
         m.buffering = false;
         m.playbackError = false;
@@ -196,6 +164,12 @@ export function applyCommand(
     }
 
     case "wt:buffering": {
+      // Le « prêt » de l'appareil qui regardait déjà, pendant qu'un autre du
+      // même compte arrive : il ne lève pas l'attente de l'arrivant.
+      if (!msg.buffering && arrivalHeldElsewhere(room, member.userId, deviceKey)) {
+        touch(room, now);
+        return { kind: "broadcast", cause: "presence" };
+      }
       member.buffering = msg.buffering;
       if (msg.rttMs !== undefined) member.rttMs = msg.rttMs;
       if (msg.buffering) {
@@ -203,7 +177,7 @@ export function applyCommand(
           touch(room, now);
           return { kind: "broadcast", cause: "presence" };
         }
-        const frozen = msg.positionTicks ?? wtPositionTicksAt(room, now);
+        const frozen = arrivingFreezeTicks(room, member.userId, deviceKey, msg.positionTicks, now);
         return { kind: "broadcast", cause: waitForMember(room, member, now, clampTicks(frozen)) };
       }
       // Un lecteur v2 qui a FINI DE CHARGER pendant une barrière de seek ou de
@@ -213,11 +187,14 @@ export function applyCommand(
       // 40 s, lui à 0 s). L'état diffusé le fait se caler, puis confirmer
       // avec l'identifiant de la barrière.
       if (loadedDuringSeekBarrier(room, member, msg.barrierId)) {
+        finishArrival(room, member.userId, deviceKey);
         touch(room, now);
         return { kind: "broadcast", cause: "presence" };
       }
       const { released, resumed, stale } = confirmReady(room, member, now, msg.barrierId);
       if (stale) return { kind: "ignore" };
+      // Le premier « prêt » de l'appareil qui arrive : il est là.
+      finishArrival(room, member.userId, deviceKey);
       if (!released) touch(room, now);
       return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
@@ -228,12 +205,26 @@ export function applyCommand(
       if (msg.protocolVersion !== undefined) member.protocolVersion = msg.protocolVersion;
       if (msg.rttMs !== undefined) member.rttMs = msg.rttMs;
       const onCurrentItem = msg.itemId === undefined || msg.itemId === room.itemId;
+      const wasWatching = member.inPlayback;
       member.inPlayback = msg.inPlayback && onCurrentItem;
       if (member.inPlayback) {
         member.playbackError = false;
+        // Un lecteur qui s'ouvre sur le titre : l'arrivée d'un clic se déclare,
+        // un membre qui ne regardait pas commence la sienne (`arrival.ts`).
+        if (room.itemId) {
+          noteArrivalOnPresence(room, member, deviceKey, wasWatching, isStartingMember(room, member.userId, now), now);
+        }
         touch(room, now);
         return { kind: "broadcast", cause: "presence" };
       }
+      // L'appareil qui regardait déjà quitte son lecteur pendant qu'un autre du
+      // compte arrive : l'attente de l'arrivant reste.
+      if (arrivalHeldElsewhere(room, member.userId, deviceKey)) {
+        touch(room, now);
+        return { kind: "broadcast", cause: "presence" };
+      }
+      // L'arrivant ferme son lecteur avant d'être prêt (retour arrière) : il n'arrive plus.
+      if (isArrivingDevice(room, member.userId, deviceKey)) dropArrival(room, member.userId);
       member.buffering = false;
       const resumed = pruneWaiting(room, member.userId, now);
       if (!resumed) touch(room, now);
@@ -242,6 +233,9 @@ export function applyCommand(
 
     case "wt:playbackError": {
       if (msg.itemId !== room.itemId) return { kind: "ignore" };
+      // L'échec de l'appareil qui regardait déjà ne dit rien de celui qui arrive.
+      if (arrivalHeldElsewhere(room, member.userId, deviceKey)) return { kind: "ignore" };
+      dropArrival(room, member.userId);
       member.playbackError = true;
       member.buffering = false;
       member.inPlayback = false;
@@ -250,38 +244,4 @@ export function applyCommand(
       return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
   }
-}
-
-/** Le socket d'un lecteur en séance s'est fermé : son attente est levée (il ne
- *  peut plus rien confirmer) ; il se redéclarera à sa reconnexion. */
-export function releaseMemberWait(room: Room, member: RoomMember): boolean {
-  member.inPlayback = false;
-  member.buffering = false;
-  member.playbackSocket = null;
-  const now = Date.now();
-  const resumed = pruneWaiting(room, member.userId, now);
-  if (!resumed) touch(room, now);
-  return resumed;
-}
-
-export interface MemberRemoval extends RemovalResult {
-  /** La lecture a repris (le membre retiré était le dernier attendu du group-wait). */
-  resumed: boolean;
-}
-
-/** Retire un membre (leave/kick/grâce expirée) et répare le group-wait. */
-export function removeMemberAndSync(userId: string): MemberRemoval | null {
-  const result = removeMember(userId);
-  if (!result) return null;
-  const now = Date.now();
-  let resumed = false;
-  if (result.dissolved) {
-    resetSkips(result.room);
-    dropBarrier(result.room);
-    dropReadyGate(result.room);
-  } else {
-    resumed = pruneWaiting(result.room, userId, now);
-    if (!resumed) touch(result.room, now);
-  }
-  return { ...result, resumed };
 }

@@ -2,6 +2,7 @@ import { sendToUser } from "../wsManager";
 import type { Invite, Room, RoomMember } from "./roomTypes";
 import { isMemberOnline, sendToMember, sendToRoom } from "./memberDevices";
 import { wtAllReady } from "./syncReadyGate";
+import { visibleArrivals } from "./arrivalState";
 import { notifyElsewhereRoom } from "./elsewhere";
 import { getRoom } from "./roomRegistry";
 import type { WtDissolvedReason, WtInviteDto, WtRoomStateDto, WtStateCause } from "./protocol";
@@ -27,6 +28,7 @@ export function roomToDto(room: Room): WtRoomStateDto {
       ...(m.rttMs !== null ? { rttMs: m.rttMs } : {}),
       ...(m.driftMs !== null ? { driftMs: m.driftMs } : {}),
     }));
+  const arriving = visibleArrivals(room);
   return {
     groupId: room.groupId,
     hostUserId: room.hostUserId,
@@ -48,6 +50,8 @@ export function roomToDto(room: Room): WtRoomStateDto {
     ...(room.seekToken ? { seekToken: room.seekToken } : {}),
     // « Tous prêts » : seulement quand un titre est lancé (sinon rien à sauter).
     ...(room.itemId ? { allReady: wtAllReady(room) } : {}),
+    // Qui arrive (clic « Rejoindre », lecteur qui fait attendre la salle).
+    ...(arriving.length > 0 ? { arrivingUserIds: arriving } : {}),
   };
 }
 

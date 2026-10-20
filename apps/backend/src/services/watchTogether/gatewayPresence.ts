@@ -10,6 +10,8 @@ import { wtAccessOf } from "./accountAccess";
 import { wtMayJoin } from "./watchTogetherAccess";
 import { armDeviceGrace, cancelDeviceGrace } from "./memberDevices";
 import { notifyElsewhere, notifyElsewhereDevice } from "./elsewhere";
+import { abandonArrival } from "./arrival";
+import { isArrivingDevice } from "./arrivalState";
 import { wtSrvLog } from "./wtServerLog";
 import { onDeviceRevoked } from "../deviceRevokedEvents";
 
@@ -123,6 +125,8 @@ export function registerPresence(): void {
     if (!room || !member || member.devices.size > 0) return;
     wtSrvLog(`présence WS : ${userId} ${online ? "ONLINE (grâce annulée)" : "OFFLINE (grâce 120s armée)"}`);
     if (!online) armGrace(userId, onGraceExpired);
+    // Un arrivant hors ligne n'arrivera pas : la salle ne l'attend plus.
+    if (!online) abandonArrival(room, userId, Date.now());
     // Statut online/offline du membre visible par les autres.
     bumpEpoch(room);
     broadcastRoom(room, "presence", null);
@@ -140,6 +144,8 @@ export function registerPresence(): void {
     wtSrvLog(`présence appareil : ${userId} ${online ? "en ligne" : "hors ligne (grâce 120s)"}`);
     if (online) cancelDeviceGrace(member, deviceKey);
     else armDeviceGrace(member, deviceKey, (key) => onDeviceGraceExpired(userId, key));
+    // L'appareil qui arrivait est parti (appli tuée, réseau) : la salle ne l'attend plus.
+    if (!online && isArrivingDevice(room, userId, deviceKey)) abandonArrival(room, userId, Date.now());
     bumpEpoch(room);
     broadcastRoom(room, "presence", null);
   });

@@ -4,6 +4,8 @@ import { bumpEpoch, releaseMemberWait } from "./sync";
 import { broadcastRoom } from "./broadcast";
 import { unbindDevice } from "./memberDevices";
 import { notifyElsewhere } from "./elsewhere";
+import { abandonArrival } from "./arrival";
+import { isArrivingDevice } from "./arrivalState";
 
 /**
  * Watch Together — un appareil quitte la salle SANS que son compte la quitte
@@ -33,9 +35,11 @@ export function leaveFromDevice(
   let resumed = false;
   for (const key of leaving) {
     unbindDevice(member, key);
+    // Il arrivait : il n'arrivera plus, la salle ne l'attend plus.
+    if (isArrivingDevice(room, member.userId, key)) resumed = abandonArrival(room, member.userId, Date.now()).resumed || resumed;
     // Son lecteur était celui de la séance : la salle ne l'attend plus.
     if (member.playbackSocket !== null && deviceKeyOfSocket(member.playbackSocket) === key) {
-      resumed = releaseMemberWait(room, member) || resumed;
+      resumed = releaseMemberWait(room, member, key) || resumed;
     }
   }
   if (!resumed) bumpEpoch(room);

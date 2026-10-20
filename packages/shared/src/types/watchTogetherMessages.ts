@@ -134,6 +134,11 @@ export interface WtRoomStateDto {
    *  tant qu'aucun autre geste ne l'a déplacée — l'émetteur reconnaît l'écho
    *  d'un de SES seeks plus anciens et ne s'y recale pas (sauts rapides). */
   seekToken?: string;
+  /** Les membres dont un appareil ARRIVE sur le titre (20/10) : du clic
+   *  « Rejoindre » (invitation, « Rejoindre ici ») ou du lecteur ouvert,
+   *  jusqu'à son premier « prêt ». La salle les attend, gelée au clic.
+   *  Absent : personne n'arrive, ou serveur d'avant. */
+  arrivingUserIds?: string[];
 }
 
 export interface WtInviteDto {

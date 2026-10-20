@@ -36,6 +36,7 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     skipHistory: new Map(),
     skipTimer: null,
     readyGate: null,
+    arrivals: new Map(),
     seekToken: null,
     lastTickBroadcastAt: 0,
     members: new Map([

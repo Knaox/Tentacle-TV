@@ -7,6 +7,7 @@ import { allRooms, getRoomOf } from "./roomRegistry";
 import type { Room } from "./roomTypes";
 import { applyCommand, bumpEpoch, expireStaleWaits, releaseMemberWait } from "./sync";
 import { onBarrierExpired } from "./syncBarrier";
+import { onArrivalExpired } from "./arrival";
 import { cancelPendingSkip, onSkipExecuted, proposeSkip } from "./syncSkip";
 import { recordTick } from "./syncBeacon";
 import { broadcastRoom, sendRoomState } from "./broadcast";
@@ -35,6 +36,7 @@ function roomSnapshot(room: Room): Record<string, unknown> {
     reason: room.pauseReason,
     posS: (room.positionTicks / 10_000_000).toFixed(1),
     waiting: [...room.waitingFor],
+    arriving: [...room.arrivals.keys()],
   };
 }
 
@@ -185,7 +187,7 @@ export function handleWtMessage(
 function applyAndBroadcast(room: Room, user: JellyfinUser, msg: Parameters<typeof applyCommand>[2], socket: WebSocket): void {
   const member = room.members.get(user.userId);
   if (!member) return;
-  const outcome = applyCommand(room, member, msg, roomOnline(room));
+  const outcome = applyCommand(room, member, msg, roomOnline(room), deviceKeyOfSocket(socket));
   // La salle vient peut-être de devenir « tous prêts » : la proposition de saut
   // mise de côté part maintenant, dans le même état diffusé.
   const skipArmed = flushDeferredSkip(room);
@@ -219,7 +221,7 @@ export function handleSocketClosed(userId: string, socket: WebSocket): void {
   const room = getRoomOf(userId);
   const member = room?.members.get(userId);
   if (!room || !member || member.playbackSocket !== socket) return;
-  const resumed = releaseMemberWait(room, member);
+  const resumed = releaseMemberWait(room, member, deviceKeyOfSocket(socket));
   wtSrvLog(`socket de lecture fermé : ${userId} n'est plus attendu`, { resumed, ...roomSnapshot(room) });
   broadcastRoom(room, resumed ? "schedule" : "presence", null);
 }
@@ -240,6 +242,13 @@ export function registerWatchTogetherGateway(): void {
   // Barrière expirée : les retardataires sont lâchés, la salle repart.
   onBarrierExpired((room) => {
     wtSrvLog("barrière expirée : retardataires lâchés, la salle repart", roomSnapshot(room));
+    flushDeferredSkip(room);
+    broadcastRoom(room, room.paused ? "presence" : "schedule", null);
+  });
+
+  // Un clic « Rejoindre » dont le lecteur ne s'est jamais ouvert : la salle repart sans lui.
+  onArrivalExpired((room) => {
+    wtSrvLog("arrivée abandonnée (aucun lecteur ouvert à temps) : la salle repart", roomSnapshot(room));
     flushDeferredSkip(room);
     broadcastRoom(room, room.paused ? "presence" : "schedule", null);
   });

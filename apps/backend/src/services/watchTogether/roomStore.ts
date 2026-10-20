@@ -4,6 +4,7 @@ import { memberIndex, getRoomOf, rooms } from "./roomRegistry";
 import { deleteInvitesForGroup } from "./roomInvites";
 import type { RemovalResult, Room, RoomMember, UserBasic } from "./roomTypes";
 import { bindDevice, clearDeviceGraces } from "./memberDevices";
+import { dropArrival } from "./arrivalState";
 
 /**
  * Watch Together — composition des groupes : création, adhésion, retrait,
@@ -56,6 +57,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null, device
     pendingSkip: null,
     skipHistory: new Map(),
     readyGate: null,
+    arrivals: new Map(),
     seekToken: null,
     skipTimer: null,
     lastTickBroadcastAt: 0,
@@ -126,6 +128,7 @@ function detachMember(userId: string): RemovalResult | null {
   room.waitingFor.delete(userId);
   room.waitingSince.delete(userId);
   room.lastSeekAt.delete(userId);
+  dropArrival(room, userId);
   for (const key of room.chatRate.keys()) if (key.startsWith(`${userId}:`)) room.chatRate.delete(key);
   const typingTimer = room.typing.get(userId);
   if (typingTimer) clearTimeout(typingTimer);

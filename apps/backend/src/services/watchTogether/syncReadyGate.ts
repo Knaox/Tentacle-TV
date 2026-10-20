@@ -92,6 +92,13 @@ export function isReadyGateOpen(room: Room, now: number = Date.now()): boolean {
   return true;
 }
 
+/** Ce membre démarre-t-il le titre avec les autres (attendu par la porte, pas
+ *  encore ouverte) ? Il n'« arrive » pas : il était là au lancement. */
+export function isStartingMember(room: Room, userId: string, now: number = Date.now()): boolean {
+  const gate = room.readyGate;
+  return !!gate && gate.expected.has(userId) && !isReadyGateOpen(room, now);
+}
+
 /** `allReady` de l'état : la porte ouverte ET aucune barrière en cours. */
 export function wtAllReady(room: Room, now: number = Date.now()): boolean {
   return !!room.itemId && room.barrier === null && isReadyGateOpen(room, now);
