@@ -40,6 +40,11 @@ export interface IntroClockControl extends IntroClock {
    * `INTRO_FRAME_PHASES` — bilan par `introFrameReport`. Coût : deux nombres par image.
    */
   frameLog: SharedValue<number[]>;
+  /**
+   * Le relevé à l'heure MURALE (`Date.now()`) pour le banc : chaque trou de plus de 50 ms
+   * (`[début, durée, …]`) et les jalons — première image, fin de l'encre, ta-dum, arrivée.
+   */
+  wallTrace: SharedValue<IntroWallTrace>;
 }
 
 /**
@@ -50,6 +55,17 @@ export interface IntroClockControl extends IntroClock {
  * l'heure exacte de l'appui. Le JavaScript du démarrage n'y prend aucune part.
  * `frozenAt` (le banc) : l'horloge reste figée à cet instant.
  */
+export interface IntroWallTrace {
+  stalls: number[];
+  firstFrame: number;
+  start: number;
+  dive: number;
+  done: number;
+}
+
+/** Un trou de plus que ceci se relève à l'heure murale (le banc le met en face des étapes du démarrage). */
+const STALL_MS = 50;
+
 export interface IntroClockOptions {
   /**
    * Rester sur l'encre (immobile) tant que l'app démarre (`appReady`) et que le fil
@@ -73,14 +89,26 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
   const defaults = bootSoundLeads(null);
   const requestAt = useSharedValue(defaults.requestAt);
   const frameLog = useSharedValue<number[]>([]);
+  const wallTrace = useSharedValue<IntroWallTrace>({ stalls: [], firstFrame: 0, start: 0, dive: 0, done: 0 });
   const releaseDelay = useSharedValue(defaults.releaseDelayMs);
   const { onHold, onSound, onDone } = events;
+
+  const markWall = (key: "firstFrame" | "start" | "dive" | "done", at: number) => {
+    "worklet";
+    wallTrace.modify((trace) => {
+      "worklet";
+      trace[key] = at;
+      return trace;
+    }, false);
+  };
 
   const frame = useFrameCallback((info) => {
     "worklet";
     const now = info.timestamp;
     const previous = last.value;
     last.value = now;
+    const wall = Date.now();
+    if (previous < 0) markWall("firstFrame", wall);
     if (previous < 0 || state.value === CLOCK.done || state.value === CLOCK.stopped) return;
     const elapsed = now - previous;
     // 0 : l'assemblage ; 1 : l'attente sur le bouton (et la reprise) ; 2 : ta-dum et la plongée ; 3 : l'encre du début.
@@ -91,11 +119,19 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       log.push(phase, elapsed);
       return log;
     }, false);
+    if (elapsed > STALL_MS) wallTrace.modify((trace) => {
+      "worklet";
+      trace.stalls.push(wall - elapsed, elapsed);
+      return trace;
+    }, false);
     if (waiting) {
       // L'encre, immobile, tant que l'app démarre : le poulpe ne commence que sur un fil calme.
       const step = introStartStepWorklet(startState.value, elapsed, appReady.value, INTRO_START);
       startState.value = step.state;
-      if (step.start) state.value = CLOCK.running;
+      if (step.start) {
+        state.value = CLOCK.running;
+        markWall("start", wall);
+      }
       return;
     }
     if (state.value === CLOCK.holding) {
@@ -104,6 +140,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       // L'accueil est prêt : le son est programmé d'abord, l'image reprend un peu après.
       state.value = CLOCK.releasing;
       releaseAt.value = now + releaseDelay.value;
+      markWall("dive", wall);
       soundAsked.value = true;
       runOnJS(onSound)(now + releaseDelay.value + (BOOT_SOUND_FILE_AT - INTRO_HOLD_AT));
       return;
@@ -126,12 +163,14 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       return;
     }
     if (!soundAsked.value && ready.value && next >= requestAt.value) {
+      markWall("dive", wall);
       soundAsked.value = true;
       // `bootSoundStartAt` (tv-core) à la main : une fonction du fil JS ne s'appelle pas d'ici.
       runOnJS(onSound)(now + (BOOT_SOUND_FILE_AT - next));
     }
     if (next >= INTRO_TIMING.end) {
       scene.value = INTRO_TIMING.end;
+      markWall("done", wall);
       state.value = CLOCK.done;
       runOnJS(onDone)();
       return;
@@ -144,7 +183,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
 
   // Un objet stable : les effets qui en dépendent ne se rejouent pas à chaque rendu.
   return useMemo(
-    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady }),
-    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady],
+    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady, wallTrace }),
+    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady, wallTrace],
   );
 }

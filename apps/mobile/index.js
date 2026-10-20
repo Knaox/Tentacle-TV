@@ -1,5 +1,8 @@
 // Step-by-step entry with explicit error logging + theme bootstrap.
 import { AppRegistry, View, Text } from "react-native";
+// Le tout début du JavaScript : l'origine de la chronologie du démarrage (banc de l'ouverture).
+import { markBoot } from "./src/bootIntro/bootTimeline";
+markBoot("js");
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sanitizeThemeMode, setBootThemeMode } from "./src/theme/themeMode";
