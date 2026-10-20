@@ -96,4 +96,17 @@ export default {
   devicePermissionOff: "Turned off in the system settings.",
   devicePermissionAsk: "Not allowed on this device yet.",
   devicePermissionAllow: "Allow",
+  // Centre mobile refait : filtres, périodes, glissements.
+  markAllReadFull: "Mark all as read",
+  filterAll: "All",
+  filterUnread: "Unread",
+  groupYesterday: "Yesterday",
+  groupThisWeek: "This week",
+  emptyUnreadTitle: "All caught up",
+  emptyUnreadHint: "No unread notifications. The others stay under “All”.",
+  showAll: "Show all",
+  markRead: "Mark as read",
+  moreActions: "More actions",
+  swipeHintBoth: "Swipe right to mark as read, left to delete",
+  filtersA11y: "Filter notifications",
 } as const;

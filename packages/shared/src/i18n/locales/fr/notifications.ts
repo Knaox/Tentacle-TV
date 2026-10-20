@@ -101,4 +101,17 @@ export default {
   devicePermissionOff: "Désactivées dans les réglages du système.",
   devicePermissionAsk: "Pas encore autorisées sur cet appareil.",
   devicePermissionAllow: "Autoriser",
+  // Centre mobile refait : filtres, périodes, glissements.
+  markAllReadFull: "Tout marquer comme lu",
+  filterAll: "Tout",
+  filterUnread: "Non lues",
+  groupYesterday: "Hier",
+  groupThisWeek: "Cette semaine",
+  emptyUnreadTitle: "Tout est lu",
+  emptyUnreadHint: "Aucune notification non lue. Les autres restent dans « Tout ».",
+  showAll: "Tout afficher",
+  markRead: "Marquer comme lue",
+  moreActions: "Plus d'actions",
+  swipeHintBoth: "Glissez vers la droite pour marquer lue, vers la gauche pour supprimer",
+  filtersA11y: "Filtrer les notifications",
 } as const;

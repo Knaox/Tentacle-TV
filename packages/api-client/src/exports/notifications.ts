@@ -9,7 +9,10 @@ export {
   type LibraryTitleLookup, type NotificationPlatform,
 } from "@tentacle-tv/shared";
 export { NOTIFICATION_STATE_META, notificationStateMeta, type NotificationTone } from "@tentacle-tv/shared";
-export { groupNotificationsByDay, type NotificationDayGroup } from "@tentacle-tv/shared";
+export {
+  groupNotificationsByDay, groupNotificationsByPeriod, filterNotifications,
+  type NotificationDayGroup, type NotificationPeriod, type NotificationFilter,
+} from "@tentacle-tv/shared";
 export {
   decideNotificationTap, notificationNeedsPlugins, KNOWN_NOTIFICATION_TYPES, LOCAL_NOTIFICATION_TYPES,
   type NotificationTapAction, type KnownNotificationType,
