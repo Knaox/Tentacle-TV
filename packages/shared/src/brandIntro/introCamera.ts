@@ -5,7 +5,8 @@
  * `zoom` = points par unité du logo ; `offsetX/Y` = où se trouve le CENTRE DE
  * L'ÉCRAN du poulpe par rapport au centre de la fenêtre, en points.
  *
- * La plongée s'arrête quand l'INTÉRIEUR du cadre recouvre toute la fenêtre,
+ * La plongée s'arrête quand la fenêtre ALLUMÉE (`lit` : l'intérieur du cadre
+ * sur la TV) recouvre toute la fenêtre,
  * coins arrondis compris : à cet instant précis, la page qu'il montre est à
  * l'échelle 1 et à sa place.
  */
@@ -79,7 +80,7 @@ export function introCameraPlan(vw: number, vh: number, geometry: IntroGeometry,
       offsetX: (target.x - logo.center.x) * fromZoom + shiftX,
       offsetY: (target.y - logo.center.y) * fromZoom + shiftY,
     },
-    to: { zoom: coverZoom(vw, vh, geometry.inner), offsetX: 0, offsetY: 0 },
+    to: { zoom: coverZoom(vw, vh, geometry.lit), offsetX: 0, offsetY: 0 },
   };
 }
 

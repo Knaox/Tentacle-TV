@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { openProfileSwitcher } from "@/family/profiles/profileSwitcherStore";
+import { useAskAtLaunchSetting } from "@/family/profiles/useAskAtLaunchSetting";
 import { Alert, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
@@ -11,6 +12,7 @@ import { AvatarGallerySheet } from "@/avatars/gallery/AvatarGallerySheet";
 import { RADIUS, useThemedStyles, type AppTheme } from "@/theme";
 import type { SettingScope } from "../ScopeBadge";
 import { SettingsRow } from "../SettingsRow";
+import { SwitchSettingRow } from "./SettingRowKit";
 
 interface RowProps {
   scope: SettingScope | null;
@@ -75,6 +77,24 @@ export function SwitchProfileRow({ last }: RowProps) {
   const { t } = useTranslation("settingsMobile");
   const open = useOpenProfileSwitcher();
   return <SettingsRow icon="refresh-cw" label={t("account.switchProfile")} chevron last={last} onPress={open} />;
+}
+
+/**
+ * « Qui regarde ? » au démarrage — réglage de CET appareil, jumeau de la case
+ * « Ne plus proposer au démarrage » (`useAskAtLaunchSetting`).
+ */
+export function AskAtLaunchRow({ scope, last }: RowProps) {
+  const { t } = useTranslation("settingsMobile");
+  const setting = useAskAtLaunchSetting();
+  const description = setting.proposes
+    ? t("account.askAtLaunchOn")
+    : setting.stayName ? t("account.askAtLaunchStay", { name: setting.stayName }) : t("account.askAtLaunchOff");
+  return (
+    <SwitchSettingRow
+      icon="users" label={t("account.askAtLaunch")} description={description}
+      scope={scope} value={setting.proposes} onChange={setting.set} last={last}
+    />
+  );
 }
 
 /**

@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageChoiceRow, ThemeChoiceRow } from "../../profile/AppearanceRows";
-import { AdvancedOnDesktopRow, PhotoRow, SwitchProfileRow, UserNameRow } from "./controls/AccountControls";
+import { AdvancedOnDesktopRow, AskAtLaunchRow, PhotoRow, SwitchProfileRow, UserNameRow } from "./controls/AccountControls";
 import { DataSaverRow, IntrosRow, NextAutoPlayRow, TrendingNowRow } from "./controls/PlaybackControls";
 import { StillWatchingRows } from "./controls/StillWatchingRows";
 import type { ControlRowProps } from "./controls/SettingRowKit";
@@ -26,6 +26,7 @@ export const WEB_CONTROL_RENDERERS: Readonly<Record<WebControlId, ComponentType<
   photo: PhotoRow,
   userName: UserNameRow,
   switchProfile: SwitchProfileRow,
+  askAtLaunch: AskAtLaunchRow,
   intros: IntrosRow,
   nextAutoPlay: NextAutoPlayRow,
   stillWatching: StillWatchingRows,

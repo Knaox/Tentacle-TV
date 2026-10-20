@@ -63,3 +63,31 @@ export function withSubjectInvited(invited: readonly string[], subjectId: string
 export function withoutSubjectInvited(invited: readonly string[], subjectId: string): string[] {
   return invited.filter((id) => id !== subjectId);
 }
+
+/**
+ * Les TOURS de l'invitation sur un appareil. Un tour nouveau (une version qui
+ * veut reposer la question) oublie, une fois, les sujets déjà invités : chacun
+ * de ceux qui n'ont TOUJOURS pas de photo la reçoit encore une fois, à la
+ * prochaine ouverture ; ceux qui ont une photo ne sont jamais dérangés (la
+ * règle l'exige). Le mobile en est au tour 2 (décision de Damien, 21/10 : « tout
+ * compte ou profil sans photo la reçoit à la prochaine ouverture », y compris
+ * un appareil qui avait vu l'ancienne invitation sans choisir).
+ * ⚠️ Clé traversée par une chaîne : jamais renommée.
+ */
+export const AVATAR_INVITE_ROUND_KEY = "tentacle_avatar_invite_round";
+export const MOBILE_AVATAR_INVITE_ROUND = 2;
+
+interface RoundStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+/** Passe l'appareil au tour `round` s'il n'y est pas encore ; vrai si les invités ont été oubliés. */
+export function honorAvatarInviteRound(storage: RoundStorage, round: number): boolean {
+  const stored = Number.parseInt(storage.getItem(AVATAR_INVITE_ROUND_KEY) ?? "", 10);
+  if (Number.isFinite(stored) && stored >= round) return false;
+  const hadInvited = parseInvitedSubjects(storage.getItem(AVATAR_INVITE_SEEN_KEY)).length > 0;
+  storage.setItem(AVATAR_INVITE_SEEN_KEY, "[]");
+  storage.setItem(AVATAR_INVITE_ROUND_KEY, String(round));
+  return hadInvited;
+}

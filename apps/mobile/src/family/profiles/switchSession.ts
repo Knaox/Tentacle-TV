@@ -11,6 +11,7 @@ import {
   type PickedProfileDto,
 } from "@tentacle-tv/shared";
 import { accountUserId, notifyProfileSessionChange, readActiveProfile } from "./profileSessionCore";
+import { writeLaunchChoice } from "./launchChoice";
 import { bumpSessionEpoch, clearProfilePickerRequest, requestProfilePicker } from "./sessionEpoch";
 
 /**
@@ -29,6 +30,9 @@ export interface SwitchDeps {
 }
 
 export type SwitchResult = "stay" | "switched" | "failed";
+
+/** Ce que la case de « Qui regarde ? » à l'ouverture fixe : `stay` cochée, `ask` décochée. */
+export type LaunchChoice = "ask" | "stay";
 
 /**
  * La réserve du compte va au TROUSSEAU (`RNStorageAdapter`), qui borne ses
@@ -55,9 +59,16 @@ function compactStash(raw: string): string {
   }
 }
 
-/** Le profil choisi est retenu sur l'appareil (jamais redemandé tant qu'il vaut). */
-function rememberChoice(deps: SwitchDeps, accountId: string | null, picked: PickedProfileDto): void {
+/**
+ * Le profil choisi devient le DERNIER choisi de l'appareil ; `launch` — la
+ * case « Ne plus proposer au démarrage » de « Qui regarde ? » à l'ouverture —
+ * fixe aussi le choix de l'appareil (`stay` cochée, `ask` décochée). Sans
+ * elle (« Changer de profil »), le choix reste : case cochée hier, c'est le
+ * nouveau profil qui s'ouvrira au prochain démarrage.
+ */
+function rememberChoice(deps: SwitchDeps, accountId: string | null, picked: PickedProfileDto, launch: LaunchChoice | undefined): void {
   if (!accountId) return;
+  if (launch) writeLaunchChoice(deps, launch);
   deps.storage.setItem(
     MOBILE_PROFILE_STAY_KEY,
     writeMobileStay(deps.storage.getItem(MOBILE_PROFILE_STAY_KEY), deps.serverUrl, accountId, pickerStayOf(picked.profile)),
@@ -70,12 +81,12 @@ function rememberChoice(deps: SwitchDeps, accountId: string | null, picked: Pick
  * autre → la session personnelle reprend ; un autre profil → son jeton
  * devient celui de l'app.
  */
-export function commitMobilePick(picked: PickedProfileDto, deps: SwitchDeps): SwitchResult {
+export function commitMobilePick(picked: PickedProfileDto, deps: SwitchDeps, launch?: LaunchChoice): SwitchResult {
   const accountId = accountUserId(deps.storage);
   const held = readActiveProfile(deps.storage);
   clearProfilePickerRequest();
   if (picked.personal && !held) {
-    rememberChoice(deps, accountId, picked);
+    rememberChoice(deps, accountId, picked, launch);
     return "stay";
   }
   let swapped: boolean;
@@ -87,7 +98,7 @@ export function commitMobilePick(picked: PickedProfileDto, deps: SwitchDeps): Sw
     swapped = false;
   }
   if (!swapped) return "failed";
-  rememberChoice(deps, accountId, picked);
+  rememberChoice(deps, accountId, picked, launch);
   restart(deps);
   return "switched";
 }

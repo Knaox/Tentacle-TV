@@ -1,6 +1,5 @@
 import type { IncomingInvitationDto, FamilyCapability } from "./familyContract";
 import type { PickerProfilesDto } from "./familyPickerContract";
-import { pickerLaunch, type PickerLaunch } from "./familyPickerClient";
 import { pickerStayState, type PickerStay } from "./familyPickerStay";
 import { isFamilyAvailable } from "./familyClient";
 
@@ -11,14 +10,14 @@ import { isFamilyAvailable } from "./familyClient";
  * les mêmes routes que le bureau, plateforme `mobile`. Module pur :
  * `familyMobileProfiles.test.ts`.
  *
- * Décision de Damien (20/10) : le choix est MÉMORISÉ sur l'appareil et n'est
- * plus redemandé — sauf s'il ne vaut plus (profil disparu, code posé ou
- * retiré : `pickerStayState` → `stale` ; bloqué : `locked`). On change de
- * profil depuis Réglages › Compte. Le mobile ne lit pas la politique
- * d'ouverture du bureau (`launchPolicy`) : elle règle les ordinateurs.
+ * Le DERNIER profil choisi est mémorisé sur l'appareil (`MOBILE_PROFILE_STAY_KEY`)
+ * et oublié s'il ne vaut plus (profil disparu, code posé ou retiré :
+ * `pickerStayState` → `stale`). Depuis le 21/10, « Qui regarde ? » est
+ * proposé à chaque démarrage, sauf « Ne plus proposer au démarrage » : la
+ * règle d'ouverture est dans `familyMobileLaunch.ts`.
  */
 
-/** Le choix de l'appareil, par serveur et par compte (`{ "<serveur>|<compte>": PickerStay }`).
+/** Le dernier profil choisi sur l'appareil, par serveur et par compte (`{ "<serveur>|<compte>": PickerStay }`).
  *  ⚠️ Clé traversée par une chaîne : jamais renommée. */
 export const MOBILE_PROFILE_STAY_KEY = "tentacle_mobile_profile_stay";
 
@@ -43,7 +42,8 @@ export function canSwitchMobileProfile(gate: MobileProfilesGate, listing: Pick<P
   return mobileProfilesEnabled(gate) && listing?.pickerRequired === true;
 }
 
-function stayKey(serverUrl: string, accountId: string): string {
+/** La clé d'une mémoire du mobile par serveur et par compte (casse et tirets normalisés). */
+export function mobileMemoryKey(serverUrl: string, accountId: string): string {
   return `${serverUrl.replace(/\/+$/, "").toLowerCase()}|${accountId.replace(/-/g, "").toLowerCase()}`;
 }
 
@@ -64,35 +64,16 @@ function readAll(raw: string | null): Record<string, PickerStay> {
 
 /** Le profil retenu par cet appareil pour ce compte sur ce serveur, ou null. */
 export function readMobileStay(raw: string | null, serverUrl: string, accountId: string): PickerStay | null {
-  return readAll(raw)[stayKey(serverUrl, accountId)] ?? null;
+  return readAll(raw)[mobileMemoryKey(serverUrl, accountId)] ?? null;
 }
 
 /** La valeur à écrire : `stay` retenu, ou oublié (null). Les autres comptes et serveurs restent. */
 export function writeMobileStay(raw: string | null, serverUrl: string, accountId: string, stay: PickerStay | null): string {
   const all = readAll(raw);
-  const key = stayKey(serverUrl, accountId);
+  const key = mobileMemoryKey(serverUrl, accountId);
   if (stay) all[key] = { profileId: stay.profileId, hasPin: stay.hasPin };
   else delete all[key];
   return JSON.stringify(all);
-}
-
-/**
- * À l'ouverture : `picker` (« Qui regarde ? » plein écran), `resume` (la
- * session de profil que l'app garde, celle que le serveur dit en cours) ou
- * `personal` (le compte). La règle du bureau (`pickerLaunch`), « au
- * lancement » toujours demandé : seul un choix retenu qui vaut ENCORE, et qui
- * est le profil en cours sur l'appareil d'après le serveur, l'en dispense —
- * jamais le compte ouvert sans son code parce que la session d'un enfant a
- * pris fin. `held` : le profil dont l'app garde le jeton, ou null.
- */
-export function mobileProfileLaunch(
-  listing: Pick<PickerProfilesDto, "pickerRequired" | "currentProfileId" | "account" | "profiles">,
-  held: { profileId: string } | null,
-  stay: PickerStay | null,
-  now: number,
-): PickerLaunch {
-  const usable = stay !== null && pickerStayState(listing, stay, now) !== "stale" ? stay : null;
-  return pickerLaunch({ ...listing, atLaunch: true }, held, usable, now);
 }
 
 /** Le choix retenu ne vaut plus (profil disparu, code posé ou retiré) : à oublier. */

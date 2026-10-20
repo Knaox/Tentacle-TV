@@ -17,7 +17,9 @@ export default {
   memberMayCreate: "Le propriétaire vous permet de créer des invités : vous gérez ceux que vous créez.",
   /** « Qui regarde ? » sur le mobile et l'iPad (serveur 1.31.1, `family.mobileProfiles`). */
   launch: {
-    caption: "Cet appareil retiendra votre choix. Pour changer de profil : Réglages › Compte.",
+    caption: "Pour changer de profil plus tard : Réglages › Compte.",
+    stay: "Ne plus proposer au démarrage",
+    stayHint: "Cet appareil ouvrira directement le profil choisi. Pour le réactiver : Réglages › Compte.",
     switchCaption: "Le profil choisi s'ouvre sur cet appareil, et y reste jusqu'au prochain changement.",
     cancel: "Annuler",
     guest: "Invité",

@@ -51,7 +51,7 @@ jamais : la règle d'alors la réservait à l'accueil).
 
 | Pièce | Fichier |
 |---|---|
-| Courbes, géométrie (tirée des constantes générées du logo), caméra, chorégraphie (règle WAAPI : remplissages, transformation et opacité à part), attente, partition du son ; quand la jouer (une fois par processus), quand partir ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son ; écran aux proportions de l'appareil (`introFit`) | `packages/shared/src/brandIntro/` (`@tentacle-tv/shared/brandIntro` ; tv-core `boot/` le réexporte) |
+| Courbes, géométrie (tirée des constantes générées du logo), caméra, chorégraphie (règle WAAPI : remplissages, transformation et opacité à part), attente, partition du son ; quand la jouer (une fois par processus), quand partir ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son ; fenêtre allumée aux proportions de l'appareil, logo intact (`introLit`) | `packages/shared/src/brandIntro/` (`@tentacle-tv/shared/brandIntro` ; tv-core `boot/` le réexporte) |
 | Synthèse Web Audio (web et bureau, script de rendu) | `@tentacle-tv/shared/brandIntro/synth` (`introSynth.ts`) |
 | La vue (calques, horloge Reanimated, écran qui montre l'app), le déroulé (`useBootIntroRun`), la porte du premier écran, l'adaptateur du son | `packages/brand-intro-native/` (`@tentacle-tv/brand-intro-native`, TV et mobile) |
 | Le branchement TV (décision au montage, primitives, réglage du son) | `apps/tv/src/redesignWiring/boot/` |
@@ -171,30 +171,55 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   changement de profil, ni un rechargement du JavaScript ne la rejouent),
   jamais avec « Réduire les animations » du système, ni le réglage d'appareil
   « Animation d'ouverture » coupé.
-- **L'écran du poulpe aux proportions de la fenêtre** (shared `introFit`) :
-  l'écran de télévision du logo laisserait, sur un téléphone en portrait, l'app
-  entre deux bandes plus larges qu'elle. `fitIntroArt` tire des constantes
-  générées un poulpe qui tient un écran au rapport de la fenêtre (portrait,
-  paysage, iPad), à surface égale, largeur bornée (92 à 160 unités) : haut de
-  l'écran gardé (la tête y est posée), bras avant décalés et étirés le long
-  des côtés (seul leur tronçon droit, 112 → 160, s'étire : épaule et boucle
-  gardent leur dessin), pattes, bouton, dégradés qui suivent. Rien ne change
-  au rapport du logo (la TV).
+- **Le logo INTACT, seule la fenêtre allumée prend la forme de l'appareil**
+  (shared `introLit`, retour de Damien du 2026-10-21 sur un vrai téléphone) :
+  le poulpe garde ses proportions exactes sur tout écran — mise à l'échelle
+  UNIFORME par la caméra, centré, jamais redessiné. L'ancien `fitIntroArt`
+  (écran du logo allongé au rapport du téléphone, bras étirés) le
+  « dénaturait » : retiré. Dans la vitre de l'écran de télévision du logo,
+  c'est la FENÊTRE ALLUMÉE (`geometry.lit`, `introLitWindow`) qui prend le
+  rapport de la fenêtre : la plus grande qui tienne avec 3 unités de vitre
+  autour, centrée, coins arrondis à 10 % de son petit côté — une colonne sur
+  un téléphone en portrait, une bande en paysage, presque toute la vitre sur
+  l'iPad. La vitre reste autour (elle ne s'efface plus sous le cercle) ; la
+  plongée s'arrête quand la fenêtre allumée recouvre l'écran de l'appareil
+  (`coverZoom(…, geometry.lit)`). Sur la TV, `lit` = l'intérieur : rien ne
+  change. Test : `introLit.test.ts` (le dessin ne dépend jamais du format ;
+  aucun `scaleY` hors du clin d'œil ; la caméra n'a qu'un zoom).
 - **La zone sûre** : le logo de départ se centre dans la zone sûre (encoche,
   Dynamic Island, barre d'accueil), et sa hauteur s'y tient ; à l'arrivée,
   l'écran couvre la fenêtre ENTIÈRE (l'app gère sa zone sûre elle-même).
   Fenêtre et zone sûre sont figées au montage ; arrivé, l'écran passe en plein
   cadre : un iPad qu'on tourne, l'app suit sans changer d'arbre.
-- **Le premier écran** : la route est le chemin expo-router, connue une fois
-  le stockage relu et les polices chargées (`BootIntroRouteReporter`). L'accueil
-  (`/`, héros compris) dit quand il est prêt ; tout autre écran (connexion,
-  serveur, fiche) dès qu'il est monté ; le mode hors ligne aussitôt. 8 s au plus.
-  « Qui regarde ? » n'est pas un premier écran sur le mobile : une modale
-  (`FamilyLaunchHosts`) qui s'ouvre après l'arrivée, sur l'accueil.
-- **Ce qui sort de l'écran** : une `Modal` ou une route en présentation modale
-  native se pose par-dessus l'ouverture. Les hôtes du lancement qui en ouvrent
-  (affiche de la Famille, avatars, code PIN conseillé, `FamilyLaunchHosts`) attendent
-  `useBootIntroLanded()` ; un premier écran ne doit jamais être une modale native.
+- **Le premier écran, LITTÉRALEMENT** (retour de Damien du 2026-10-21 : la
+  caméra plongeait dans le catalogue, puis « Qui regarde ? » ou la connexion
+  le remplaçaient sous les yeux). Règle pure `mobileBootArrival`
+  (`bootIntroRules.ts`), lue par `BootIntroRouteReporter` :
+  - rien tant que l'app relit son stockage, ni tant qu'une GARDE va remplacer
+    la route (`resolveAuthRoute` : choix du serveur à la première ouverture,
+    connexion ; garde du hors ligne) — l'accueil monté par défaut n'est pas
+    le premier écran d'une app neuve ;
+  - les RECOUVREMENTS DU PREMIER ÉCRAN (`BOOT_FIRST_SCREEN_OVERLAYS`, par
+    priorité : migration, accès suspendu, « Qui regarde ? » et son code,
+    premier lancement du profil) se déclarent au registre du démarrage
+    (`src/startup/`, clé `access` ajoutée). Tant que l'un est `pending` (n'a
+    pas tranché) ou `active` sans être encore À L'ÉCRAN, le poulpe attend sur
+    son bouton (`pending` de shared `bootIntroOutcome`, 8 s au plus) ; à
+    l'écran, la route est `overlay:<clé>` et la plongée se fait dans lui
+    (migration et accès suspendu : aussitôt, `blocked`) ;
+  - sinon le chemin expo-router ; l'accueil (`/`) dit quand il est prêt ; le
+    hors ligne plonge aussitôt.
+- **Ce qui est né pendant l'ouverture vit DANS l'écran** : une `Modal` ou une
+  `FullWindowOverlay` est une fenêtre native, posée PAR-DESSUS l'ouverture.
+  `BootAwareModal` (« Qui regarde ? », carte du premier lancement) et
+  `BootAwareOverlay` (migration, accès suspendu) choisissent UNE fois, à leur
+  naissance : nés pendant l'ouverture, une vue plein écran dans l'arbre de
+  l'app (au-dessus de la pile, Retour d'Android avalé) pour toute leur vie ;
+  nés après, la fenêtre native d'avant. Ils se déclarent « à l'écran »
+  (`bootOverlays.ts`). `FamilyLaunchHosts` est donc monté dès l'app prête,
+  sans attendre l'arrivée ; l'affiche de la Famille, les avatars et le code
+  PIN conseillé l'attendent toujours (`useBootIntroLanded`) — un premier
+  écran ne doit jamais être une modale native.
 - **Le son** : le MÊME code natif que la TV, compilé par le projet mobile —
   iOS par une référence du projet Xcode (`TentacleBootSound.m`, la ressource
   `boot-tadum.m4a`), Android par `sourceSets` (`com.tentacletv.boot`, et le

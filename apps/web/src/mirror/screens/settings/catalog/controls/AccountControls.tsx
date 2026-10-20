@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AtSign, Camera, Monitor, RefreshCw } from "lucide-react";
+import { AtSign, Camera, Monitor, MonitorPlay, RefreshCw } from "lucide-react";
 import { DESKTOP_ONLY_SETTINGS } from "@tentacle-tv/shared";
 import { getUserInfo } from "../../../../../components/userMenu/menuItems";
 import { useAvatarUpload } from "../../../../../hooks/useAvatarUpload";
 import { useAvatarGallery } from "../../../../../profiles/avatarGallery/useAvatarGallery";
+import { useAskAtLaunch } from "../../../../../profiles/settings/useAskAtLaunch";
 import { openSwitchScreen } from "../../../../../profiles/switcher/switchScreenStore";
 import { SettingsRow } from "../../ui/SettingsRow";
-import type { ControlRowProps } from "./SettingRowKit";
+import { SwitchSettingRow, type ControlRowProps } from "./SettingRowKit";
 
 /**
  * « Photo de profil » — la photo du COMPTE Jellyfin : la galerie des
@@ -56,6 +57,23 @@ export function UserNameRow({ last }: ControlRowProps) {
 export function SwitchProfileRow({ last }: ControlRowProps) {
   const { t } = useTranslation("settingsMobile");
   return <SettingsRow icon={RefreshCw} label={t("account.switchProfile")} chevron last={last} onPress={() => openSwitchScreen()} />;
+}
+
+/**
+ * « Qui regarde ? » au démarrage — le réglage de CE navigateur (`useAskAtLaunch`,
+ * le même que Réglages › Famille). Coupé par l'administration : la phrase seule.
+ */
+export function AskAtLaunchRow({ scope, last }: ControlRowProps) {
+  const { t } = useTranslation("settingsMobile");
+  const setting = useAskAtLaunch();
+  if (!setting) return null;
+  if (!setting.allowed) return <SettingsRow icon={MonitorPlay} label={t("account.askAtLaunch")} description={setting.description} scope={scope} last={last} />;
+  return (
+    <SwitchSettingRow
+      icon={MonitorPlay} label={t("account.askAtLaunch")} description={setting.description}
+      scope={scope} value={setting.proposes} onChange={setting.toggle} last={last}
+    />
+  );
 }
 
 /**

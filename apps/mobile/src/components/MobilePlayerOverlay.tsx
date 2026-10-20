@@ -1,28 +1,23 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
-import { View, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
+import { Pressable, Animated, useWindowDimensions } from "react-native";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
-import { Captions, Settings, List } from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MediaItem, QualityDrop } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
 import { type QualityKey, type QualityPreset } from "../hooks/usePlayerPlayback";
 import type { PlaybackOverlayResult, StillWatchingController } from "@tentacle-tv/api-client";
-import { PlayerSeekBar } from "./player/PlayerSeekBar";
 import { CenterControls } from "./player/CenterControls";
 import { SkipIndicator } from "./player/SkipIndicator";
-import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { PlaybackOverlayMobile } from "./player/PlaybackOverlayMobile";
 import { StillWatchingCardMobile } from "./player/StillWatchingCardMobile";
-import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
 import type { LocalTrickplay } from "../hooks/offline/useLocalTrickplay";
 import type { NextEpisodeArtwork } from "../hooks/offline/useNextEpisodeArtwork";
-import { LocalPlayerEpisodePicker } from "./player/LocalPlayerEpisodePicker";
 import { PlayerTopBar } from "./player/PlayerTopBar";
-
-// AirPlay button — iOS only (native AVRoutePickerView)
-const AirPlaySection = Platform.OS === "ios"
-  ? require("./player/AirPlayButton").AirPlaySection
-  : () => null;
+import { PlayerBottomBar } from "./player/PlayerBottomBar";
+import { PlayerMenus } from "./player/panels/PlayerMenus";
+import { EpisodePanel } from "./player/panels/EpisodePanel";
+import { LocalEpisodePanel } from "./player/panels/LocalEpisodePanel";
+import { useChromeInsets } from "../player/chrome/useChromeInsets";
+import { playerMenusAvailable, type PlayerMenu } from "../player/panels/playerMenus";
 
 interface Track { index: number; label: string }
 
@@ -94,15 +89,14 @@ export function MobilePlayerOverlay({
   visible, onToggle, groupButton, onFadeStart, topActions,
 }: Props) {
   const { width: screenW, height: screenH } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const edges = useChromeInsets();
   // Contrôles agrandis sur grand écran (player iPad) — téléphone inchangé (ui = 1).
   const isTablet = Math.min(screenW, screenH) >= TABLET_MIN_WIDTH;
   const ui = isTablet ? 1.4 : 1;
   const playSize = Math.min(isTablet ? 92 : 60, Math.round(screenH * 0.08));
   const centerGap = Math.min(isTablet ? 76 : 36, Math.round(screenW * 0.05));
-  const [showSettings, setShowSettings] = useState(false);
-  const [showSubtitles, setShowSubtitles] = useState(false);
-  const [showEpisodes, setShowEpisodes] = useState(false);
+  // UN panneau à la fois : un menu (pistes, réglages) ou les épisodes.
+  const [panel, setPanel] = useState<PlayerMenu | "episodes" | null>(null);
   const opacity = useRef(new Animated.Value(1)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -118,6 +112,7 @@ export function MobilePlayerOverlay({
   useEffect(() => () => { if (skipFadeTimer.current) clearTimeout(skipFadeTimer.current); }, []);
 
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
+  const menus = playerMenusAvailable({ audio: audioTracks.length, subtitles: subtitleTracks.length, quality: qualityPresets.length });
 
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -128,6 +123,13 @@ export function MobilePlayerOverlay({
       }, 4000);
     }
   }, [paused, opacity, onToggle, onFadeStart]);
+
+  // Un panneau ouvert suspend l'effacement des commandes ; fermé, il le relance.
+  const openPanel = useCallback((next: PlayerMenu | "episodes") => {
+    setPanel(next);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+  }, []);
+  const closePanel = useCallback(() => { setPanel(null); resetHideTimer(); }, [resetHideTimer]);
 
   useEffect(() => {
     if (visible) {
@@ -179,59 +181,30 @@ export function MobilePlayerOverlay({
           {/* Indicateur de saut ±10/30 (boutons) */}
           <SkipIndicator side={skipSide} />
 
-          {/* Bottom bar: seek + track buttons — insets latéraux : en paysage,
-              la barre et la seek passaient sous l'îlot caméra. */}
-          <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: insets.left, paddingRight: Math.max(8, insets.right) }}>
-            <View style={{ flex: 1 }}>
-              <PlayerSeekBar
-                currentTime={currentTime}
-                duration={duration}
-                bufferedTime={bufferedTime}
-                trickplayLocalOnly={localSession}
-                onSeek={(s) => { onSeek(s); resetHideTimer(); }}
-                onScrubStateChange={(active) => {
-                  onScrubStateChange?.(active);
-                  if (active) {
-                    if (hideTimer.current) clearTimeout(hideTimer.current);
-                  } else {
-                    resetHideTimer();
-                  }
-                }}
-                item={item}
-                mediaSourceId={mediaSourceId}
-                localTrickplay={localTrickplay}
-              />
-            </View>
-            <View style={{ flexDirection: "row", gap: isTablet ? 10 : 6, marginBottom: Math.max(34, insets.bottom + 12) }}>
-              {groupButton}
-              <AirPlaySection />
-              {item?.SeriesId && (
-                <Pressable
-                  onPress={() => { setShowEpisodes(true); if (hideTimer.current) clearTimeout(hideTimer.current); }}
-                  hitSlop={12}
-                  style={{ padding: isTablet ? 12 : 8, backgroundColor: PLAYER.borderSubtle, borderRadius: 8 }}
-                >
-                  <List size={Math.round(18 * ui)} color={PLAYER.textSecondary} />
-                </Pressable>
-              )}
-              {subtitleTracks.length > 0 && (
-                <Pressable
-                  onPress={() => { setShowSubtitles(true); setShowSettings(false); if (hideTimer.current) clearTimeout(hideTimer.current); }}
-                  hitSlop={12}
-                  style={{ padding: isTablet ? 12 : 8, backgroundColor: PLAYER.borderSubtle, borderRadius: 8 }}
-                >
-                  <Captions size={Math.round(18 * ui)} color={PLAYER.textSecondary} />
-                </Pressable>
-              )}
-              <Pressable
-                onPress={() => { setShowSettings(true); setShowSubtitles(false); if (hideTimer.current) clearTimeout(hideTimer.current); }}
-                hitSlop={12}
-                style={{ padding: 8, backgroundColor: PLAYER.borderSubtle, borderRadius: 8 }}
-              >
-                <Settings size={Math.round(18 * ui)} color={PLAYER.textSecondary} />
-              </Pressable>
-            </View>
-          </View>
+          {/* Le bas : progression et outils, collés au bord (`chromeInsets`). */}
+          <PlayerBottomBar
+            ui={ui}
+            currentTime={currentTime}
+            duration={duration}
+            bufferedTime={bufferedTime}
+            item={item}
+            mediaSourceId={mediaSourceId}
+            localTrickplay={localTrickplay}
+            localSession={localSession}
+            onSeek={(s) => { onSeek(s); resetHideTimer(); }}
+            onScrubStateChange={(active) => {
+              onScrubStateChange?.(active);
+              if (active) {
+                if (hideTimer.current) clearTimeout(hideTimer.current);
+              } else {
+                resetHideTimer();
+              }
+            }}
+            groupButton={groupButton}
+            onEpisodes={item?.SeriesId ? () => openPanel("episodes") : undefined}
+            onTracks={menus.tracks ? () => openPanel("tracks") : undefined}
+            onSettings={menus.settings ? () => openPanel("settings") : undefined}
+          />
         </Animated.View>
       )}
 
@@ -245,15 +218,15 @@ export function MobilePlayerOverlay({
           nextArtwork={nextArtwork} ratingEnabled={!localSession} artworkLocalOnly={localSession}
           onSkip={playback.skipNow} onDismiss={playback.dismissOverlay}
           onPlayNow={playback.playNow} onRatingEngage={playback.cancelNextCountdown}
-          bottom={Math.max(110, insets.bottom + 86)} right={Math.max(20, insets.right + 16)}
+          bottom={edges.bottom + 76} right={edges.right}
         />
       )}
       {asking && <StillWatchingCardMobile controller={stillWatching} controlsVisible={visible} />}
 
-      {/* Pop-ups Réglages + Sous-titres (extraits pour rester sous 300 lignes). */}
-      <PlayerSettingsMenus
-        showSettings={showSettings}
-        showSubtitles={showSubtitles}
+      {/* Les panneaux — menus et épisodes, montés seulement ouverts, sans voile :
+          l'image reste visible autour (`panelLayout`). */}
+      <PlayerMenus
+        open={panel === "tracks" || panel === "settings" ? panel : null}
         audioTracks={audioTracks}
         subtitleTracks={subtitleTracks}
         selectedAudio={selectedAudio}
@@ -266,29 +239,15 @@ export function MobilePlayerOverlay({
         onSelectAudio={onSelectAudio}
         onSelectSubtitle={onSelectSubtitle}
         onSelectQuality={onSelectQuality}
-        onCloseSettings={() => { setShowSettings(false); resetHideTimer(); }}
-        onCloseSubtitles={() => { setShowSubtitles(false); resetHideTimer(); }}
+        onClose={closePanel}
       />
-
-      {/* Sélecteur saison/épisode (séries) — celui de l'appareil en lecture
-          locale (en ligne aussi : rien ne part), celui du serveur sinon. */}
-      {item?.SeriesId && localSession && (
-        <LocalPlayerEpisodePicker
-          visible={showEpisodes}
-          seriesId={item.SeriesId}
-          currentEpisodeId={item.Id}
-          onClose={() => { setShowEpisodes(false); resetHideTimer(); }}
-        />
-      )}
-      {item?.SeriesId && !localSession && (
-        <PlayerEpisodePicker
-          visible={showEpisodes}
-          seriesId={item.SeriesId}
-          currentEpisodeId={item.Id}
-          initialSeasonId={item.SeasonId}
-          onClose={() => { setShowEpisodes(false); resetHideTimer(); }}
-        />
-      )}
+      {/* Les épisodes : ceux de l'appareil en lecture locale (en ligne aussi :
+          rien ne part), ceux du serveur sinon. */}
+      {panel === "episodes" && item?.SeriesId && (localSession ? (
+        <LocalEpisodePanel seriesId={item.SeriesId} currentEpisodeId={item.Id} onClose={closePanel} />
+      ) : (
+        <EpisodePanel seriesId={item.SeriesId} currentEpisodeId={item.Id} initialSeasonId={item.SeasonId} onClose={closePanel} />
+      ))}
     </>
   );
 }

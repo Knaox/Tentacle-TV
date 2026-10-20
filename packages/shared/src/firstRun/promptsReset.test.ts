@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AVATAR_INVITE_SEEN_KEY } from "../avatars/avatarInvite";
 import { FIRST_RUN_SEEN_KEY, firstRunKey } from "./firstRunPlan";
-import { honorFirstRunPromptsReset } from "./promptsReset";
+import { firstRunPinDue, honorFirstRunPromptsReset } from "./promptsReset";
 
 const SERVER = "https://tv.exemple.fr";
 
@@ -34,5 +34,24 @@ describe("« Reproposer » sur le mobile", () => {
     const store = memory({ [FIRST_RUN_SEEN_KEY]: JSON.stringify([firstRunKey(SERVER, "lea")]) });
     expect(honorFirstRunPromptsReset(store, SERVER, "lea", undefined)).toBe(false);
     expect(honorFirstRunPromptsReset(store, SERVER, "lea", null)).toBe(false);
+  });
+});
+
+describe("l'étape du code PIN après « Reproposer »", () => {
+  const reminder = { settled: true, card: true, startup: false };
+  const base = { profileSession: false, familyAvailable: true, reminder, resetHonored: false };
+
+  it("« Passer » hier (rappel masqué) : plus proposée, sauf demande « Reproposer » honorée", () => {
+    expect(firstRunPinDue(base)).toBe(false);
+    expect(firstRunPinDue({ ...base, resetHonored: true })).toBe(true);
+  });
+  it("le code posé depuis : jamais, même reproposé", () => {
+    expect(firstRunPinDue({ ...base, resetHonored: true, reminder: { settled: true, card: false, startup: false } })).toBe(false);
+  });
+  it("session de profil, sans Famille, déjà couverte : jamais ; pas encore su : en attente", () => {
+    expect(firstRunPinDue({ ...base, resetHonored: true, profileSession: true })).toBe(false);
+    expect(firstRunPinDue({ ...base, resetHonored: true, familyAvailable: false })).toBe(false);
+    expect(firstRunPinDue({ ...base, resetHonored: true, covered: true })).toBe(false);
+    expect(firstRunPinDue({ ...base, reminder: { settled: false, card: true, startup: true } })).toBeNull();
   });
 });

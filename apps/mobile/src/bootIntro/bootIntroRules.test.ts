@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { BOOT_INTRO_MAX_HOLD_MS, bootIntroOutcome } from "@tentacle-tv/shared/brandIntro";
-import { MOBILE_BOOT_SELF_REPORTING, bootRouteOf, mobileBootPlan } from "./bootIntroRules";
+import {
+  MOBILE_BOOT_SELF_REPORTING,
+  mobileBootArrival,
+  mobileBootPlan,
+  overlayBootRoute,
+  type BootFirstScreenOverlay,
+  type MobileArrivalInput,
+} from "./bootIntroRules";
 import { DEFAULT_BOOT_INTRO_SETTINGS, readBootIntroSettings, settingOn } from "./bootIntroSettings";
 
 const cold = { coldStart: true, reducedMotion: false, settings: DEFAULT_BOOT_INTRO_SETTINGS };
@@ -35,24 +42,81 @@ describe("les réglages d'appareil", () => {
   });
 });
 
+const base: MobileArrivalInput = { appReady: true, pathname: "/", redirecting: false, offline: false, overlays: {}, shown: new Set() };
+const shown = (...overlays: BootFirstScreenOverlay[]) => new Set(overlays);
+
+describe("la route d'arrivée : le premier écran RÉEL, décidé avant la plongée", () => {
+  it("rien tant que l'app relit son stockage, ou qu'une garde va remplacer la route", () => {
+    expect(mobileBootArrival({ ...base, appReady: false }).route).toBeNull();
+    expect(mobileBootArrival({ ...base, pathname: null }).route).toBeNull();
+    // Première ouverture : l'accueil monté par défaut va céder la place au choix du serveur.
+    expect(mobileBootArrival({ ...base, redirecting: true }).route).toBeNull();
+  });
+
+  it("la connexion, le choix du serveur, une fiche restaurée : leur chemin", () => {
+    for (const pathname of ["/login", "/server-setup", "/media/abc", "/profile"]) {
+      expect(mobileBootArrival({ ...base, pathname })).toEqual({ route: pathname, pending: false, blocked: false });
+    }
+  });
+
+  it("« Qui regarde ? » pas encore tranché : on attend, l'accueil n'est pas le premier écran", () => {
+    expect(mobileBootArrival({ ...base, overlays: { profiles: "pending" } })).toEqual({ route: "/", pending: true, blocked: false });
+  });
+
+  it("décidé mais pas encore à l'écran (le premier lancement attend son calme) : on attend encore", () => {
+    expect(mobileBootArrival({ ...base, overlays: { firstRun: "active" } }).pending).toBe(true);
+  });
+
+  it("à l'écran : la plongée se fait DANS lui", () => {
+    const arrival = mobileBootArrival({ ...base, overlays: { profiles: "active" }, shown: shown("profiles") });
+    expect(arrival).toEqual({ route: overlayBootRoute("profiles"), pending: false, blocked: false });
+    expect(mobileBootArrival({ ...base, overlays: { firstRun: "active" }, shown: shown("firstRun") }).route).toBe("overlay:firstRun");
+  });
+
+  it("« Qui regarde ? » l'emporte sur le premier lancement qui attend derrière lui", () => {
+    const arrival = mobileBootArrival({ ...base, overlays: { profiles: "active", firstRun: "pending" }, shown: shown("profiles") });
+    expect(arrival.route).toBe("overlay:profiles");
+    expect(arrival.pending).toBe(false);
+  });
+
+  it("migration et accès suspendu recouvrent tout : la plongée aussitôt, dans eux", () => {
+    for (const overlay of ["migration", "access"] as const) {
+      const arrival = mobileBootArrival({ ...base, overlays: { [overlay]: "active", profiles: "pending" }, shown: shown(overlay, "profiles") });
+      expect(arrival).toEqual({ route: overlayBootRoute(overlay), pending: false, blocked: true });
+    }
+  });
+
+  it("hors ligne : le catalogue de l'appareil, aussitôt (une garde qui renvoie l'y attend d'abord)", () => {
+    expect(mobileBootArrival({ ...base, offline: true, overlays: { profiles: "pending" } })).toEqual({ route: "/", pending: false, blocked: true });
+    expect(mobileBootArrival({ ...base, offline: true, redirecting: true }).route).toBeNull();
+  });
+});
+
 describe("quand partir : le premier écran du mobile", () => {
-  const watch = (route: string | null, screen: "loading" | "ready" | "failed" | null = null, heldMs = 0) =>
-    bootIntroOutcome({ route, screen, blocked: false, heldMs, selfReporting: MOBILE_BOOT_SELF_REPORTING });
+  const watch = (arrival: ReturnType<typeof mobileBootArrival>, screen: "loading" | "ready" | "failed" | null = null, heldMs = 0) =>
+    bootIntroOutcome({ ...arrival, screen, heldMs, selfReporting: MOBILE_BOOT_SELF_REPORTING });
 
   it("attend tant que l'app relit son stockage : aucune route", () => {
-    expect(bootRouteOf("/", false)).toBeNull();
-    expect(watch(bootRouteOf("/", false))).toBe("wait");
+    expect(watch(mobileBootArrival({ ...base, appReady: false }))).toBe("wait");
   });
 
   it("l'accueil attend d'être prêt (montré d'un bloc), au plus 8 s ; en échec, aussitôt", () => {
-    expect(watch("/", "loading")).toBe("wait");
-    expect(watch("/")).toBe("wait");
-    expect(watch("/", "ready")).toBe("go");
-    expect(watch("/", "failed")).toBe("go");
-    expect(watch("/", "loading", BOOT_INTRO_MAX_HOLD_MS)).toBe("go");
+    const home = mobileBootArrival(base);
+    expect(watch(home, "loading")).toBe("wait");
+    expect(watch(home)).toBe("wait");
+    expect(watch(home, "ready")).toBe("go");
+    expect(watch(home, "failed")).toBe("go");
+    expect(watch(home, "loading", BOOT_INTRO_MAX_HOLD_MS)).toBe("go");
   });
 
-  it("la connexion, le choix du serveur, une fiche : dès qu'ils sont montés", () => {
-    for (const route of ["/login", "/server-setup", "/media/abc"]) expect(watch(bootRouteOf(route, true)), route).toBe("go");
+  it("un accueil prêt sous un « Qui regarde ? » qui n'a pas tranché : on attend, au plus 8 s", () => {
+    const pending = mobileBootArrival({ ...base, overlays: { profiles: "pending" } });
+    expect(watch(pending, "ready")).toBe("wait");
+    expect(watch(pending, "ready", BOOT_INTRO_MAX_HOLD_MS)).toBe("go");
+  });
+
+  it("la connexion, le choix du serveur, une fiche, « Qui regarde ? » à l'écran : dès qu'ils sont montés", () => {
+    for (const pathname of ["/login", "/server-setup", "/media/abc"]) expect(watch(mobileBootArrival({ ...base, pathname })), pathname).toBe("go");
+    expect(watch(mobileBootArrival({ ...base, overlays: { profiles: "active" }, shown: shown("profiles") }))).toBe("go");
   });
 });

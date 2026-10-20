@@ -5,6 +5,7 @@ import {
   honorPromptsReset,
   parsePromptsResetSeen,
   promptsResetDue,
+  promptsResetPending,
   withPromptsResetSeen,
 } from "./familyPromptsReset";
 
@@ -92,5 +93,17 @@ describe("le stockage des demandes honorées", () => {
 
   it("l'invitation aux avatars : retirer un sujet le rend de nouveau invitable", () => {
     expect(withoutSubjectInvited(["a", "zoe", "b"], "zoe")).toEqual(["a", "b"]);
+  });
+});
+
+describe("promptsResetPending — le premier lancement attend que la demande soit honorée", () => {
+  it("en attente avant l'honneur, plus après ; rien sans demande", () => {
+    const storage = memoryStorage();
+    expect(promptsResetPending(storage, "u1", T1)).toBe(true);
+    honorPromptsReset(storage, "u1", T1, () => undefined);
+    expect(promptsResetPending(storage, "u1", T1)).toBe(false);
+    expect(promptsResetPending(storage, "u1", T2)).toBe(true);
+    expect(promptsResetPending(storage, "u1", null)).toBe(false);
+    expect(promptsResetPending(storage, null, T1)).toBe(false);
   });
 });

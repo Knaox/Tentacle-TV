@@ -221,9 +221,10 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
             lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
             lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
         {serverUrl && !showLoading && introLanded ? <FamilyInvitationHost /> : null}
-        {/* « Qui regarde ? » (une feuille de cet hôte), puis le premier lancement du profil (code PIN,
-            accueil, photo) : après l'arrivée de l'ouverture, sur l'accueil (accord famille-mobile × ouverture-mobile). */}
-        {serverUrl && !showLoading && introLanded ? <FamilyLaunchHosts /> : null}
+        {/* « Qui regarde ? » et son code, puis le premier lancement du profil (code PIN, accueil, photo) :
+            montés PENDANT l'ouverture — nés pendant elle, ils se rendent dans l'écran du poulpe
+            (`BootAwareModal`), et c'est dans eux que la caméra plonge, jamais dans l'accueil qu'ils cachent. */}
+        {serverUrl && !showLoading ? <FamilyLaunchHosts /> : null}
         {/* Un droit changé au bureau s'applique ici sans redémarrage (`rights:changed`). */}
         {serverUrl && !showLoading ? <RightsLiveHost /> : null}
         {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage

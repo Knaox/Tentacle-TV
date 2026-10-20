@@ -3,6 +3,7 @@ import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { WtPlayerChrome } from "./useWtPlayerChrome";
+import { WtSheetLayer } from "../WtSheetLayer";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import {
   groupPanelLayout, OVERLAY_PANEL_WIDTH, SIDE_PANEL_WIDTH, videoHeightAbove,
@@ -15,12 +16,15 @@ import {
  * (téléphone paysage), feuille du bas (téléphone portrait). Hors séance ou
  * panneau fermé, la vidéo seule, exactement comme avant : l'arbre de la
  * vidéo ne change jamais de parent (aucun rechargement à l'ouverture).
+ * En séance, il porte aussi les feuilles du groupe et l'affinité
+ * (`WtSheetLayer`) : présentées depuis le lecteur, pas depuis la racine
+ * qu'il recouvre.
  */
 export function WtPlayerFrame({ chrome, children }: {
-  chrome: Pick<WtPlayerChrome, "open" | "close" | "panel">;
+  chrome: Pick<WtPlayerChrome, "active" | "open" | "close" | "panel">;
   children: ReactNode;
 }) {
-  const { open, close: onClose, panel } = chrome;
+  const { active, open, close: onClose, panel } = chrome;
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const layout = groupPanelLayout(width, height, TABLET_MIN_WIDTH);
@@ -46,6 +50,7 @@ export function WtPlayerFrame({ chrome, children }: {
           <View style={st.sheet}>{panel}</View>
         </BottomSheet>
       )}
+      {active && <WtSheetLayer />}
     </View>
   );
 }
