@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { usePathname, useRouter } from "expo-router";
-import { openAffinity, useJellyfinClient, useMediaItem, useWatchTogether } from "@tentacle-tv/api-client";
+import { useEffect, useMemo, useRef } from "react";
+import { usePathname } from "expo-router";
+import { openAffinity, useWatchTogether } from "@tentacle-tv/api-client";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { AffinityHost } from "./affinity/AffinityHost";
-import { WtInviteInboxSheet } from "./room/WtInviteInboxSheet";
-import { WtInviteSheet } from "./room/WtInviteSheet";
-import { WtRoomSheetView } from "./room/WtRoomSheetView";
+import { WtSheetLayer } from "./WtSheetLayer";
 import { isPlayerPath, shouldAutoOpenInbox } from "@tentacle-tv/shared";
-import { afterWtSheet, closeWtSheet, openWtSheet, takeWtLink, useWtLink, useWtSheet } from "./wtSheets";
+import { closeWtSheet, openWtSheet, takeWtLink, useWtLink, useWtSheet } from "./wtSheets";
 
 /** Un lien profond qui n'a rien à montrer au bout de ce délai est abandonné. */
 const LINK_TIMEOUT_MS = 10_000;
@@ -25,11 +23,9 @@ const LINK_TIMEOUT_MS = 10_000;
  */
 export function WtHost() {
   const wt = useWatchTogether();
-  const { room, invites, selfId, actions } = wt;
+  const { room, invites } = wt;
   const sheet = useWtSheet();
   const pathname = usePathname();
-  const router = useRouter();
-  const client = useJellyfinClient();
   const startupQuiet = useStartupOverlaysQuiet();
 
   const shown = useRef(new Set<string>());
@@ -59,50 +55,11 @@ export function WtHost() {
     if (sheet === "inbox" && invites.length === 0) closeWtSheet();
   }, [room, sheet, invites.length]);
 
-  const { data: item } = useMediaItem(room?.itemId ?? undefined, { enabled: !!room?.itemId && sheet === "room" });
-  const program = useMemo(() => {
-    if (!room?.itemId || !item) return null;
-    const title = item.SeriesName ? `${item.SeriesName} — ${item.Name}` : item.Name ?? "";
-    return { title, imageUrl: client.getImageUrl(item.Id, item.ImageTags?.Thumb ? "Thumb" : "Primary", { width: 320, quality: 80 }) };
-  }, [room?.itemId, item, client]);
-
-  const pendingUserIds = useMemo(() => new Set(wt.pendingInvites.map((p) => p.userId)), [wt.pendingInvites]);
-  const onStart = room?.itemId && !isPlayerPath(pathname)
-    ? () => { const id = room.itemId; afterWtSheet(() => router.push(`/watch/${id}`)); }
-    : undefined;
-  // La modale de l'affinité attend d'elle-même le retrait de la feuille.
-  const onAffinity = useCallback(() => { closeWtSheet(); openAffinity(); }, []);
-
+  // Dans le lecteur, c'est son cadre qui porte les feuilles (`WtPlayerFrame`).
   return (
     <>
-      {room && (
-        <WtRoomSheetView
-          visible={sheet === "room"}
-          onClose={closeWtSheet}
-          room={room}
-          selfId={selfId}
-          pendingInvites={wt.pendingInvites}
-          program={program}
-          mayInvite={wt.mayCreate}
-          affinityAvailable // seul, le choix du type le dit (« Invitez au moins une personne… »)
-          onStart={onStart}
-          onInvite={() => openWtSheet("invite")}
-          onAffinity={onAffinity}
-          onLeave={actions.leave}
-          onKick={actions.kick}
-        />
-      )}
-      {room && (
-        <WtInviteSheet
-          visible={sheet === "invite"}
-          onClose={() => openWtSheet("room")}
-          room={room}
-          pendingUserIds={pendingUserIds}
-          onSend={actions.invite}
-        />
-      )}
-      <WtInviteInboxSheet visible={sheet === "inbox"} invites={invites} onClose={closeWtSheet} onRespond={actions.respond} />
       {room && <AffinityHost key={room.groupId} />}
+      {!isPlayerPath(pathname) && <WtSheetLayer />}
     </>
   );
 }
