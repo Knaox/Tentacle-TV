@@ -232,6 +232,13 @@ export const SERVER_CAPABILITIES = {
    *  derrière son code PIN), la déconnexion qui coupe tout. Sans elle, le web ne montre ni
    *  « Qui regarde ? » ni « Changer de profil » (un serveur d'avant refuse la plateforme). */
   "family.webProfiles": "1.31.1",
+  // ── Retours de l'alpha mobile (21/10) : l'ouverture réglée simplement ──
+  /** « Qui regarde ? à l'ouverture » en UN interrupteur et des plateformes cochées (Ordinateurs,
+   *  Navigateur, Téléphones et tablettes, TV) : `enabled` et `platforms` dans
+   *  `GET/PUT /api/admin/family/picker`, `launchAsk` dans « Qui regarde ? » de chaque plateforme
+   *  (`/api/family/picker/profiles`). Sans elle : l'ancien réglage (`family.pickerPolicy`), et le
+   *  mobile demande comme avant. */
+  "family.launchPlatforms": "1.31.1",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

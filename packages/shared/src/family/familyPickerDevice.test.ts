@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { PickerProfileDto, PickerProfilesDto } from "./familyPickerContract";
-import { deviceProposes, launchAllowed, pickerStayInitial, withDeviceChoice } from "./familyPickerDevice";
+import { launchAskedOn, type PickerProfileDto, type PickerProfilesDto } from "./familyPickerContract";
+import { deviceProposes, launchAllowed, launchAskedByServer, pickerStayInitial, withDeviceChoice } from "./familyPickerDevice";
 
 const NOW = Date.parse("2026-10-15T12:00:00Z");
 
@@ -58,5 +58,25 @@ describe("« Qui regarde ? » à l'ouverture, par ordinateur", () => {
     expect(pickerStayInitial(listing({ launchPolicy: OFF_BY_DEFAULT }), "unset", null, NOW)).toBe(true);
     // Un profil retenu disparu (ou dont le code a changé) ne compte plus.
     expect(pickerStayInitial(base, "stay", { profileId: "zoe", hasPin: false }, NOW)).toBe(false);
+  });
+});
+
+describe("launchAskedByServer — la case de la plateforme (1.31.1)", () => {
+  it("le serveur qui le dit fait foi, quel que soit le défaut de la plateforme", () => {
+    expect(launchAskedByServer({ launchAsk: false }, true)).toBe(false);
+    expect(launchAskedByServer({ launchAsk: true, launchPolicy: { mode: "off", defaultOn: false } })).toBe(true);
+  });
+
+  it("un serveur d'avant : le comportement d'avant (le mobile demande, le bureau suit `launchPolicy`)", () => {
+    expect(launchAskedByServer({}, true)).toBe(true);
+    expect(launchAskedByServer({ launchPolicy: { mode: "off", defaultOn: true } })).toBe(false);
+    expect(launchAskedByServer({})).toBe(true);
+  });
+
+  it("la forme simple : l'interrupteur général et la case", () => {
+    const settings = { enabled: true, platforms: { desktop: true, web: false, mobile: true, tv: true } };
+    expect(launchAskedOn(settings, "web")).toBe(false);
+    expect(launchAskedOn(settings, "mobile")).toBe(true);
+    expect(launchAskedOn({ ...settings, enabled: false }, "mobile")).toBe(false);
   });
 });
