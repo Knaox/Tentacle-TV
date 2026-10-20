@@ -1286,3 +1286,66 @@ Serveur : `services/family/familyGuestRequests.ts`.
   `AccountFamilyRightsGroup.test.tsx`. Banc réel (Jellyfin 10.11 jetable, 2026-10-16) : 11
   vérifications de bout en bout, « TOUT EST PROUVÉ », et l'administration éprouvée dans le
   navigateur.
+
+## 9.10 Mobile et tablette : les droits s'appliquent partout, se règlent au bureau (lot du 20/10)
+
+Décision de Damien (20/10) : les droits de la Famille (profils, invités, contrôle parental,
+bibliothèques, « peut demander », Watch Together, hors ligne…) s'APPLIQUENT partout et se
+RÈGLENT à un seul endroit, le bureau ou le web. Le serveur décide ; un client ne fait que ne pas
+proposer ce qu'une capacité ou un droit refuse.
+
+### 9.10.1 Audit du mobile (deux modes : session personnelle, session de profil par « Qui regarde ? »)
+
+La session de profil du mobile est la MÊME que celle du bureau et de la TV (`tvProfile`,
+`profileSessionLimits.ts`, proxy à la clé prêtée + `userId`) : toutes les gardes du § 9.5
+s'y appliquent sans rien de propre au mobile. Accueil et rangées, bibliothèques, recherche,
+fiche (extras, saga, personnes, recos liées), Pour vous / Affiner, Ma liste, favoris,
+notifications, Watch Together (candidats : `withoutFamilyGuests`), Vigie
+(`guestExtensionAccess`), avatars (`deviceWrites.ts`), liens profonds (404 du proxy, aucun nom)
+et partage (`/api/share` fermé à un invité, liste partagée au nom du propriétaire) : déjà
+gardés côté serveur. Les titres gardés hors ligne sont réclamés PAR COMPTE (`claims`) : le profil
+d'un enfant ouvert sur le téléphone du parent ne liste pas ce que le parent a gardé.
+
+### 9.10.2 Fuites et manques fermés (un commit chacun, avec son test)
+
+1. **Push « … est en route »** (`seerDepartureRights.ts`) : le départ d'une demande partait en
+   push sans juger les droits D'AUJOURD'HUI (la cloche filtre à la lecture, l'écran verrouillé
+   non) ; une restriction posée depuis la demande la retient désormais.
+2. **Titres gardés avant le retrait d'un droit** : `POST /api/library/visibility` (capacité
+   `offline.verdicts`, 1.32.0, contrat `library/libraryVisibilityContract.ts` en miroir) juge
+   chaque titre gardé pour l'identité EN SESSION — visible, caché, ou disparu (lisible comme
+   avant pour une identité libre ; caché, fermé à l'échec, pour une identité restreinte).
+   Ouvert aux sessions de profil (`/api/downloads` leur reste fermé). Le mobile retire un
+   titre caché de la liste, de sa fiche locale et de ses sources de lecture
+   (`offline-core` › `rights/offlineHidden`, base locale : survit à « Vider le cache ») ; hors
+   ligne, le dernier verdict fait foi ; le droit rendu, il revient.
+3. **Un droit changé au bureau s'applique sans redémarrage** : `rights:changed` (capacité
+   `rights.live`) poussé aux sockets du compte — ou du PROFIL — à toute invalidation de politique
+   (`services/rightsLive/`), et aux invités dont « peut demander » change (case, interrupteur ou
+   droit de l'administration : la case ne touche pas Jellyfin). `useRightsLive` (api-client,
+   monté par `RightsLiveHost` sur le mobile) relit ce qui est à l'écran et oublie le reste ; la
+   requête du verdict hors ligne en fait partie.
+4. **« Partager mes statistiques »** : le mobile le proposait sans le droit « Partage public »
+   (le web le gardait déjà) ; derrière `usePublicSharingAllowed`.
+
+### 9.10.3 Vue en lecture seule (mobile, tablette, web étroit)
+
+Le panneau d'un profil (Réglages › Compte › Famille) ne porte plus d'interrupteur de droit :
+`familyRightsSummary` (shared, espace i18n `familyRightsSummary`) résume bibliothèques (lues à
+la demande pour un profil réglable), âge appliqué (le plus strict du voulu et du plafond), non
+classés, étiquettes, horaires, « peut demander » (ou suspendu), création d'invités, parent, et ce
+qui est fixé pour un invité ; puis « Modifier sur le bureau ou le web ». Restent sur le mobile :
+inviter, PIN, photo, accepter / refuser, retirer, quitter, dissoudre.
+
+### 9.10.4 Banc
+
+`bench:parental` passe aussi l'invité ouvert par « Qui regarde ? » du bureau ou du mobile
+(`PARENTAL_PICKER_PLATFORM`) et les requêtes propres au mobile (`probesMobile.ts`).
+
+### 9.10.5 Restes
+
+- Les rangées de l'accueil PERSISTÉES (`HOME_PERSIST_WHITELIST`) d'avant un droit retiré
+  application fermée s'affichent au démarrage le temps de leur relecture (le serveur ne rend plus
+  rien d'interdit ; seule l'image gardée sur l'appareil traîne quelques instants).
+- Le bureau garde ses titres hors ligne sans verdict : la règle (`offline-core`) et la route
+  sont prêtes, l'adaptateur Electron reste à brancher.
