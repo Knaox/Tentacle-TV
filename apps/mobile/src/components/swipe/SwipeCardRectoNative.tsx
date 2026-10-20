@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import type { SwipeCard } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, typography, useTheme } from "@/theme";
+import { useSwipeCardLarge } from "./swipeCardScale";
 
 interface Props {
   card: SwipeCard;
@@ -18,46 +19,49 @@ const SCRIM = ["transparent", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.92)"] as const;
 /**
  * Le texte du recto, posé sur l'affiche (blanc/noir constants) : l'origine
  * de la carte et sa note en haut ; en bas, sur un dégradé, le titre, le
- * format, les genres, la présence en bibliothèque et la raison.
+ * format, les genres, la présence en bibliothèque et la raison. Sur une
+ * grande carte (iPad), tout le texte grandit d'un tiers (`useSwipeCardLarge`).
  */
 export function SwipeCardRectoNative({ card, title, format, pageSlot = false }: Props) {
   const { t } = useTranslation("swipe");
   const theme = useTheme();
+  const L = useSwipeCardLarge() ? lg : null;
+  const icon = L ? 16 : 12;
   return (
     <>
-      <View style={st.topRow} pointerEvents="none">
+      <View style={[st.topRow, L?.topRow]} pointerEvents="none">
         {card.source !== "taste" ? (
-          <View style={st.chip}>
-            <Feather name={card.source === "popular" ? "trending-up" : "compass"} size={12} color="#fff" />
-            <Text style={st.chipText}>{card.source === "popular" ? t("sourcePopular") : t("sourceExplore")}</Text>
+          <View style={[st.chip, L?.chip]}>
+            <Feather name={card.source === "popular" ? "trending-up" : "compass"} size={icon} color="#fff" />
+            <Text style={[st.chipText, L?.text]}>{card.source === "popular" ? t("sourcePopular") : t("sourceExplore")}</Text>
           </View>
         ) : <View />}
         {card.voteAverage != null && card.voteAverage > 0 && (
-          <View style={st.chip}>
-            <Feather name="star" size={12} color={theme.colors.status.rating} />
-            <Text style={st.chipText}>{card.voteAverage.toFixed(1)}</Text>
+          <View style={[st.chip, L?.chip]}>
+            <Feather name="star" size={icon} color={theme.colors.status.rating} />
+            <Text style={[st.chipText, L?.text]}>{card.voteAverage.toFixed(1)}</Text>
           </View>
         )}
       </View>
 
-      <LinearGradient colors={SCRIM} locations={[0, 0.45, 1]} style={[st.bottom, pageSlot && st.bottomWithPage]} pointerEvents="none">
-        <Text style={st.title} numberOfLines={2}>{title}</Text>
-        {!!format && <Text style={st.format}>{format}</Text>}
+      <LinearGradient colors={SCRIM} locations={[0, 0.45, 1]} style={[st.bottom, L?.bottom, pageSlot && st.bottomWithPage]} pointerEvents="none">
+        <Text style={[st.title, L?.title]} numberOfLines={2}>{title}</Text>
+        {!!format && <Text style={[st.format, L?.format]}>{format}</Text>}
         {card.genres.length > 0 && (
           <View style={st.genres}>
             {card.genres.map((g) => (
-              <View key={g} style={st.genre}><Text style={st.genreText}>{g}</Text></View>
+              <View key={g} style={[st.genre, L?.genre]}><Text style={[st.genreText, L?.text]}>{g}</Text></View>
             ))}
           </View>
         )}
-        <View style={st.metaLine}>
-          <Feather name={card.jellyfinItemId ? "check" : "circle"} size={12} color="rgba(255,255,255,0.85)" />
-          <Text style={st.meta}>{card.jellyfinItemId ? t("inLibrary") : t("notInLibrary")}</Text>
+        <View style={[st.metaLine, L?.metaLine]}>
+          <Feather name={card.jellyfinItemId ? "check" : "circle"} size={icon} color="rgba(255,255,255,0.85)" />
+          <Text style={[st.meta, L?.text]}>{card.jellyfinItemId ? t("inLibrary") : t("notInLibrary")}</Text>
         </View>
         {card.reason && (
-          <View style={st.metaLine}>
-            <Feather name="zap" size={12} color="rgba(255,255,255,0.85)" />
-            <Text style={st.meta} numberOfLines={1}>{t("reason", { title: card.reason })}</Text>
+          <View style={[st.metaLine, L?.metaLine]}>
+            <Feather name="zap" size={icon} color="rgba(255,255,255,0.85)" />
+            <Text style={[st.meta, L?.text]} numberOfLines={1}>{t("reason", { title: card.reason })}</Text>
           </View>
         )}
       </LinearGradient>
@@ -78,4 +82,16 @@ const st = StyleSheet.create({
   genreText: { color: "#fff", fontSize: 12, fontFamily: FONT_FAMILY.medium, fontWeight: "500" },
   metaLine: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
   meta: { flexShrink: 1, color: "rgba(255,255,255,0.85)", fontSize: 12, fontFamily: FONT_FAMILY.medium, fontWeight: "500" },
+});
+
+// La grande carte (iPad) : un tiers de plus, marges comprises.
+const lg = StyleSheet.create({
+  topRow: { top: 16, left: 16, right: 16 },
+  chip: { gap: 6, paddingHorizontal: 12, paddingVertical: 6 },
+  text: { fontSize: 15 },
+  bottom: { paddingHorizontal: 26, paddingBottom: 26, paddingTop: 96 },
+  title: { fontSize: 30 },
+  format: { fontSize: 16, marginTop: 4 },
+  genre: { paddingHorizontal: 12, paddingVertical: 5 },
+  metaLine: { gap: 8, marginTop: 10 },
 });

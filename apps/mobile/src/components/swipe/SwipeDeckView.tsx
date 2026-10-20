@@ -6,6 +6,7 @@ import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api
 import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeCardView } from "./SwipeCardView";
 import { swipeCardWidth } from "./swipeCardSize";
+import { SWIPE_CARD_LARGE_FROM, SwipeCardLargeContext } from "./swipeCardScale";
 
 /** Cartes montées : celle du dessus et deux en attente (affiches chargées d'avance). */
 const VISIBLE = 3;
@@ -95,6 +96,7 @@ export function SwipeDeckView({
   return (
     <View style={st.area} onLayout={onLayout}>
       {cardW > 0 && (
+        <SwipeCardLargeContext.Provider value={cardW >= SWIPE_CARD_LARGE_FROM}>
         <View style={{ width: cardW, height: cardW * 1.5 }}>
           {rows.map(({ card, depth, exit, info, face }) => (
             <SwipeCardView
@@ -121,6 +123,7 @@ export function SwipeDeckView({
             />
           ))}
         </View>
+        </SwipeCardLargeContext.Provider>
       )}
     </View>
   );
