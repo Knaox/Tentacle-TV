@@ -121,7 +121,7 @@ export function VideoPlayer({
   });
 
   const { handleSeek, skipBy, skipFlash, seekWait } = useSmartSeek({
-    videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef, hlsRunStartRef,
+    videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef, transportRef, hlsRunStartRef,
     src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
     reportLoading: setLoading,
     // Sauter à la fin VAUT la fin : même canal que l'événement `ended` — la

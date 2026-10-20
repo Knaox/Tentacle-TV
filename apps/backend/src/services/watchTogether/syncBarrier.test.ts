@@ -208,3 +208,31 @@ describe("wt:setItem", () => {
     expect(room.positionTicks).toBe(0);
   });
 });
+
+describe("anti-gel : plus personne ne regarde", () => {
+  it("les attendus expirés et personne d'autre en lecture : la salle reste en pause, son horloge ne tourne pas (M4)", async () => {
+    const { expireStaleWaits } = await import("./sync");
+    // Tous en lecture, la salle joue ; tous se mettent à charger et ne reviennent jamais.
+    applyCommand(room, hostMember, { type: "wt:buffering", buffering: true }, isOnline);
+    applyCommand(room, guestMember, { type: "wt:buffering", buffering: true }, isOnline);
+    legacyMember.inPlayback = false; // le troisième ne regarde pas
+    const frozen = room.positionTicks;
+    const later = NOW + 61_000;
+    vi.setSystemTime(later);
+    const out = expireStaleWaits(room, later);
+    expect(out.expired.sort()).toEqual([guest.userId, host.userId].sort());
+    expect(out.resumed).toBe(false);
+    expect(room.paused).toBe(true);
+    expect(room.pauseReason).toBe("user");
+    expect(room.positionTicks).toBe(frozen);
+  });
+
+  it("quelqu'un regarde encore : la salle repart sans les retardataires, comme avant", async () => {
+    const { expireStaleWaits } = await import("./sync");
+    applyCommand(room, guestMember, { type: "wt:buffering", buffering: true }, isOnline);
+    const later = NOW + 61_000;
+    vi.setSystemTime(later);
+    expect(expireStaleWaits(room, later).resumed).toBe(true);
+    expect(room.paused).toBe(false);
+  });
+});

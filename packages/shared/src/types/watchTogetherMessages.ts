@@ -249,6 +249,9 @@ export type WtServerMessage =
   /** Idem pour le refus d'un passage — `segmentType` absent = « Intro ». */
   | { type: "wt:skipIntroDismiss"; originUserId: string; segmentType?: SegmentType }
   | { type: "wt:invite"; invite: WtInviteDto }
+  /** L'invitation a reçu sa réponse (sur n'importe quel appareil du compte) :
+   *  chaque appareil la retire de sa liste. Un client d'avant l'ignore. */
+  | { type: "wt:inviteGone"; inviteId: string }
   /** Notifie l'hôte du sort de son invitation. */
   | { type: "wt:inviteResult"; inviteId: string; toUserId: string; toUsername: string; accepted: boolean }
   /** Reçu quand on ne fait plus partie du groupe (kick, grâce expirée, accès retiré). */

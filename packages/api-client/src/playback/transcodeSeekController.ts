@@ -56,7 +56,7 @@ export function createTranscodeSeekController(host: TranscodeSeekHost): Transcod
   /** La cible appliquée au lecteur, en attente d'images. */
   let applied: number | null = null;
   let lastPosition: number | null = null;
-  /** Lecture directe : le dernier saut appliqué, base des appuis rapprochés. */
+  /** Lecture directe : le dernier saut RELATIF appliqué, base des appuis rapprochés. */
   let lastDirect: { target: number; at: number } | null = null;
   let commitTimer: ReturnType<typeof setTimeout> | undefined;
   let phaseTimer: ReturnType<typeof setTimeout> | undefined;
@@ -105,12 +105,15 @@ export function createTranscodeSeekController(host: TranscodeSeekHost): Transcod
       const t = now();
       if (!host.transcoding()) {
         // Lecture directe : les octets sont là, le lecteur saute tout de suite.
-        // Des appuis RAPPROCHÉS partent du saut précédent, pas de la position
-        // lue — un lecteur ne la rapporte qu'un peu plus tard (mpv à 8 Hz,
-        // `timeupdate` du web), et huit « +30 s » ne faisaient qu'une minute.
-        const base = lastDirect && t - lastDirect.at < SEEK_SETTLE_MS ? lastDirect.target : host.position();
-        const next = accumulateSeek(null, request, base, t, host.duration());
-        lastDirect = { target: next.target, at: t };
+        // Des appuis relatifs RAPPROCHÉS partent du saut précédent, pas de la
+        // position lue — un lecteur ne la rapporte qu'un peu plus tard (mpv à
+        // 8 Hz), et huit « +30 s » ne faisaient qu'une minute (B7). Une position
+        // ABSOLUE (la barre, un saut appliqué par Watch Together) rompt la
+        // chaîne : sinon le premier appui suivant repartait d'une cible distante
+        // déjà dépassée, et se perdait (B7-bis).
+        const chained = "by" in request && lastDirect && t - lastDirect.at < SEEK_SETTLE_MS;
+        const next = accumulateSeek(null, request, chained ? lastDirect!.target : host.position(), t, host.duration());
+        lastDirect = "by" in request ? { target: next.target, at: t } : null;
         host.apply(next.target);
         return;
       }

@@ -20,8 +20,9 @@ vi.mock("../services/jwt", () => ({
   verifyDeviceToken: async () => null,
   hashToken: (value: string) => value,
 }));
+const sent = vi.hoisted(() => [] as Array<{ to: string; msg: { type: string; inviteId?: string } }>);
 vi.mock("../services/wsManager", () => ({
-  sendToUser: () => undefined,
+  sendToUser: (to: string, msg: { type: string; inviteId?: string }) => sent.push({ to, msg }),
   sendToDevices: () => undefined,
   sendToOtherDevices: () => undefined,
   isUserOnline: () => true,
@@ -38,6 +39,7 @@ vi.mock("../services/watchTogether/hostSettings", () => ({ refreshHostSettings: 
 
 import { watchTogetherRoutes } from "./watchTogether";
 import { watchTogetherAffinityRoutes } from "./watchTogetherAffinity";
+import { watchTogetherInviteRoutes } from "./watchTogetherInvites";
 import { getRoomOf } from "../services/watchTogether/roomRegistry";
 import { removeMemberAndSync } from "../services/watchTogether/sync";
 import { invalidateJellyfinUsers } from "../services/watchTogether/usersCache";
@@ -71,6 +73,7 @@ async function makeApp() {
   });
   await app.register(watchTogetherRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherAffinityRoutes, { prefix: "/api/watch-together" });
+  await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });
   return (device: string, method: "GET" | "POST", url: string, payload?: object) =>
     app.inject({ method, url: `/api/watch-together${url}`, headers: { "x-emby-token": `jeton-${device}` }, ...(payload ? { payload } : {}) });
 }
@@ -110,6 +113,18 @@ describe("Watch Together — l'adhésion par appareil (REST)", () => {
     // Le dernier appareil : le compte quitte la salle.
     expect((await call("a-pc", "POST", "/group/leave", {})).json()).toEqual({ success: true });
     expect(getRoomOf("a")).toBeNull();
+  });
+
+  it("une invitation répondue sur un appareil est retirée de TOUS ceux du compte", async () => {
+    const call = await makeApp();
+    await call("a-pc", "POST", "/group", {});
+    sent.length = 0;
+    await call("a-pc", "POST", "/group/invites", { userIds: ["b"] });
+    const invite = sent.find((s) => s.msg.type === "wt:invite");
+    expect(invite?.to).toBe("b");
+    const inviteId = (invite!.msg as unknown as { invite: { inviteId: string } }).invite.inviteId;
+    expect((await call("b-web", "POST", `/invites/${inviteId}/respond`, { accept: false })).statusCode).toBe(200);
+    expect(sent).toContainEqual({ to: "b", msg: { type: "wt:inviteGone", inviteId } });
   });
 
   it("hors salle, rien à rejoindre", async () => {

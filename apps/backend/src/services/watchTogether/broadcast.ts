@@ -83,6 +83,12 @@ export function notifyInvite(invite: Invite): void {
   sendToUser(invite.toUserId, { type: "wt:invite", invite: inviteToDto(invite) });
 }
 
+/** L'invitation a reçu sa réponse : TOUS les appareils du compte la retirent
+ *  (sinon un autre gardait une invitation morte à l'écran — vu au banc). */
+export function notifyInviteGone(invite: Invite): void {
+  sendToUser(invite.toUserId, { type: "wt:inviteGone", inviteId: invite.inviteId });
+}
+
 /** Notifie l'émetteur de l'invitation (l'hôte) du sort de celle-ci. */
 export function notifyInviteResult(invite: Invite, toUsername: string, accepted: boolean): void {
   // À l'hôte, sur ses appareils liés à la salle (un autre appareil n'a rien à en dire).
