@@ -182,6 +182,7 @@ Sur mobile, tablette ET web, pour tous les droits.
 | W2 | Le web en fenêtre étroite (téléphone, iPad, bureau rétréci) REND ces catalogues : réglages en six rubriques avec pastilles et « réglages avancés : sur le bureau », premier lancement (Qui regarde ?, PIN, carrousels, photo), destinations des notifications, en-tête « Pour vous »/« Affinité » si modèle partagé | code + captures à 390 px et 820 px | ☐ |
 | W3 | Un test prouve que chaque entrée du catalogue est rendue par les deux clients, ou exclue d'un côté avec sa raison | test présent et vert | ☐ |
 | W4 | Fenêtre large du bureau inchangée ; cible webOS compile ; aucune clé `tentacle_*` ni i18n renommée | build webOS (par `heavy.sh`) + scan A11 | ☐ |
+| W6 | Décision du coordinateur (03:10) : reglages déplace lui-même `profileStructure`, `profileSections`, `profilePanes`, `settingsScopes` vers `packages/shared/src/settingsCatalog/` ; web-etroit consomme seulement (champs supplémentaires demandés à reglages) ; plus personne ne retouche l'ancien emplacement après le déplacement | `git log` des deux branches : aucun commit sur `apps/mobile/src/screens/profile/{profileStructure,profileSections,profilePanes,settingsScopes}.ts` après le commit de déplacement | ☐ |
 | W5 | Pas de conflit avec famille-web (apps/web) ni avec reglages (catalogue déplacé pendant que reglages travaille) | croisement A16 | ☐ |
 
 ## L. Boutons (boutons)
