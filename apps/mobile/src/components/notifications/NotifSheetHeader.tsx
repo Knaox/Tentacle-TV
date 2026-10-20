@@ -40,13 +40,15 @@ function Action({ icon, label, tone, disabled, onPress }: {
  * pastilles, « Tout marquer lu » et « Tout supprimer », ou « Supprimer » en
  * sélection. Une ligne d'indice rappelle le balayage vers la gauche.
  */
-export function NotifSheetHeader({ selectionMode, selectedCount, unread, total, onMarkAll, onSelect, onDeleteAll, onDeleteSelected, onCancel }: {
+export function NotifSheetHeader({ selectionMode, selectedCount, unread, total, onMarkAll, onSelect, onSelectAll, onDeleteAll, onDeleteSelected, onCancel }: {
   selectionMode: boolean;
   selectedCount: number;
   unread: number;
   total: number;
   onMarkAll: () => void;
   onSelect: () => void;
+  /** Tout cocher, ou tout décocher quand tout l'est déjà (comme le bureau). */
+  onSelectAll: () => void;
   onDeleteAll: () => void;
   onDeleteSelected: () => void;
   onCancel: () => void;
@@ -56,9 +58,12 @@ export function NotifSheetHeader({ selectionMode, selectedCount, unread, total, 
   return (
     <View style={st.wrap}>
       <View style={st.titleRow}>
-        <Text style={st.title} accessibilityRole="header" numberOfLines={1}>
-          {selectionMode ? t("selected", { count: selectedCount }) : t("title")}
-        </Text>
+        <View style={{ flexShrink: 1 }}>
+          <Text style={st.title} accessibilityRole="header" numberOfLines={1}>
+            {selectionMode ? t("selected", { count: selectedCount }) : t("title")}
+          </Text>
+          {!selectionMode && unread > 0 && <Text style={st.subtitle}>{t("unreadCount", { count: unread })}</Text>}
+        </View>
         {(selectionMode || total > 0) && (
           <Pressable onPress={selectionMode ? onCancel : onSelect} hitSlop={8} style={st.textButton} accessibilityRole="button">
             <Text style={st.textButtonLabel}>{selectionMode ? t("cancel") : t("select")}</Text>
@@ -68,7 +73,15 @@ export function NotifSheetHeader({ selectionMode, selectedCount, unread, total, 
       {(selectionMode || total > 0) && (
         <View style={st.actions}>
           {selectionMode ? (
+            <>
+            <Action
+              icon="check-square"
+              label={selectedCount === total ? t("deselectAll") : t("selectAll")}
+              tone="neutral"
+              onPress={onSelectAll}
+            />
             <Action icon="trash-2" label={selectedCount > 0 ? `${t("delete")} (${selectedCount})` : t("delete")} tone="danger" disabled={selectedCount === 0} onPress={onDeleteSelected} />
+            </>
           ) : (
             <>
               {unread > 0 && <Action icon="check-circle" label={t("markAllRead")} tone="brand" onPress={onMarkAll} />}
@@ -94,6 +107,7 @@ const makeStyles = (t: AppTheme) =>
     },
     titleRow: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, gap: spacing.md },
     title: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, flexShrink: 1 },
+    subtitle: { ...typography.caption, color: t.colors.text.tertiary, marginTop: 1 },
     textButton: { minHeight: 40, justifyContent: "center" as const, paddingHorizontal: 4 },
     textButtonLabel: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
     actions: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: spacing.sm },

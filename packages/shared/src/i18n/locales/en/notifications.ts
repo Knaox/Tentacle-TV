@@ -84,4 +84,16 @@ export default {
   permissionDeniedTitle: "Notifications disabled",
   permissionDeniedBody: "Allow notifications in Settings to receive alerts.",
   enableInSettings: "Open Settings",
+  // Centre mobile (accessibilité, sélection) et réglages par portée.
+  unreadA11y: "Unread",
+  selectAll: "Select all",
+  deselectAll: "Deselect all",
+  accountSectionTitle: "On this account",
+  accountSectionCaption: "These choices follow your account: they apply on all your devices.",
+  deviceSectionTitle: "This device",
+  devicePermissionTitle: "System permission",
+  devicePermissionOn: "Allowed: notifications reach this device.",
+  devicePermissionOff: "Turned off in the system settings.",
+  devicePermissionAsk: "Not allowed on this device yet.",
+  devicePermissionAllow: "Allow",
 } as const;

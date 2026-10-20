@@ -89,4 +89,16 @@ export default {
   permissionDeniedTitle: "Notifications désactivées",
   permissionDeniedBody: "Autorisez les notifications dans les Réglages pour recevoir les alertes.",
   enableInSettings: "Ouvrir les Réglages",
+  // Centre mobile (accessibilité, sélection) et réglages par portée.
+  unreadA11y: "Non lue",
+  selectAll: "Tout sélectionner",
+  deselectAll: "Tout désélectionner",
+  accountSectionTitle: "Sur ce compte",
+  accountSectionCaption: "Ces choix suivent votre compte : ils valent sur tous vos appareils.",
+  deviceSectionTitle: "Cet appareil",
+  devicePermissionTitle: "Autorisation du système",
+  devicePermissionOn: "Autorisées : les notifications arrivent sur cet appareil.",
+  devicePermissionOff: "Désactivées dans les réglages du système.",
+  devicePermissionAsk: "Pas encore autorisées sur cet appareil.",
+  devicePermissionAllow: "Autoriser",
 } as const;

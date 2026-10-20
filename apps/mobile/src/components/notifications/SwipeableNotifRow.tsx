@@ -6,6 +6,7 @@ import type { AppNotification } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, typography, useTheme, withAlpha } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { NotifStateBadgeMobile } from "./NotifStateBadgeMobile";
+import { NotifIconTile } from "./NotifIconTile";
 
 
 interface SwipeableNotifRowProps {
@@ -20,6 +21,8 @@ interface SwipeableNotifRowProps {
   isSelected: boolean;
   onToggleSelect: () => void;
   onLongPress: () => void;
+  /** Elle mène quelque part : un chevron le dit, comme sur le bureau. */
+  hasRoute: boolean;
 }
 
 /** Au-delà de cette part de la largeur, lâcher supprime. */
@@ -27,7 +30,7 @@ const SWIPE_RATIO = 0.3;
 
 export function SwipeableNotifRow({
   notif, formattedTitle, formattedBody, formattedAgo, onPress, onDelete,
-  selectionMode, isSelected, onToggleSelect, onLongPress,
+  selectionMode, isSelected, onToggleSelect, onLongPress, hasRoute,
 }: SwipeableNotifRowProps) {
   const { colors } = useTheme();
   const { t } = useTranslation("notifications");
@@ -70,84 +73,87 @@ export function SwipeableNotifRow({
     }
   }, [selectionMode, onToggleSelect, onPress]);
 
+  // Non lue : un fond teinté de la marque et un point, comme sur le bureau.
+  const unreadBg = withAlpha(colors.brand.violet, 0.08, colors.brand.ghost);
   return (
-    <View style={{ position: "relative", marginBottom: 8, overflow: "hidden" }}>
-      {/* Red delete background */}
+    <View style={{ position: "relative", marginBottom: 6, overflow: "hidden", borderRadius: 14 }}>
+      {/* Le fond rouge révélé par le balayage */}
       <View
         style={{
           position: "absolute", right: 0, top: 0, bottom: 0, width: "100%",
-          backgroundColor: colors.status.error, borderRadius: 12,
+          backgroundColor: colors.status.error, borderRadius: 14,
           justifyContent: "center", alignItems: "flex-end", paddingRight: 24,
         }}
       >
         <Feather name="trash-2" size={20} color={colors.cta.brandFg} />
       </View>
 
-      {/* Swipeable row */}
       <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
         <Pressable
           onPress={handlePress}
           onLongPress={onLongPress}
           delayLongPress={500}
           accessibilityRole={selectionMode ? "checkbox" : "button"}
+          accessibilityLabel={[!notif.read ? t("unreadA11y") : null, formattedTitle, formattedBody, formattedAgo].filter(Boolean).join(", ")}
           accessibilityState={selectionMode ? { checked: isSelected } : undefined}
           // Le balayage n'existe pas pour VoiceOver : la suppression est une action.
           accessibilityActions={selectionMode ? undefined : [{ name: "delete", label: t("delete") }]}
           onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === "delete") onDelete(); }}
           style={({ pressed }) => ({
+            // Un fond opaque sous la teinte : le rouge du balayage ne transparaît pas.
             backgroundColor: colors.surface.s2,
-            borderRadius: 12, padding: 16,
-            flexDirection: "row", gap: 10,
-            opacity: pressed ? 0.7 : 1,
+            borderRadius: 14,
+            opacity: pressed ? 0.75 : 1,
           })}
         >
-          {selectionMode ? (
-            <Pressable
-              onPress={onToggleSelect}
-              hitSlop={16}
-              style={{
-                width: 22, height: 22, borderRadius: 4, marginTop: 2,
-                borderWidth: 2,
-                borderColor: isSelected ? withAlpha(colors.brand.violet, 0.5, colors.brand.glow) : colors.fill.strong,
-                backgroundColor: isSelected ? colors.brand.soft : "transparent",
-                alignItems: "center", justifyContent: "center",
-              }}
-            >
-              {isSelected && <Feather name="check" size={14} color={colors.brand.light} />}
-            </Pressable>
-          ) : (
-            !notif.read && (
-              <View style={{
-                width: 8, height: 8, borderRadius: 4,
-                backgroundColor: colors.brand.ghost,
-                borderWidth: 1, borderColor: withAlpha(colors.brand.violet, 0.5, colors.brand.glow),
-                marginTop: 6,
-              }} />
-            )
-          )}
-
-          <View style={{ flex: 1, marginLeft: notif.read && !selectionMode ? 18 : 0 }}>
-            <Text
-              style={{
-                ...typography.caption,
-                fontSize: 14,
-                // La police (Inter) ne suit pas `fontWeight` : la graisse passe par la famille.
-                fontFamily: notif.read ? FONT_FAMILY.medium : FONT_FAMILY.bold,
-                color: notif.read ? colors.text.secondary : colors.text.primary,
-              }}
-              numberOfLines={2}
-            >
-              {formattedTitle}
-            </Text>
-            {formattedBody && (
-              <Text style={{ fontSize: 13, lineHeight: 18, color: colors.text.tertiary, marginTop: 4 }} numberOfLines={2}>
-                {formattedBody}
-              </Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 10, borderRadius: 14, backgroundColor: notif.read ? "transparent" : unreadBg }}>
+            {!notif.read && !selectionMode && (
+              <View style={{ position: "absolute", left: 4, top: "50%", marginTop: -3, width: 6, height: 6, borderRadius: 3, backgroundColor: colors.brand.violet }} />
             )}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
-              <NotifStateBadgeMobile state={notif.state} />
-              <Text style={{ fontSize: 12, color: colors.text.quaternary }}>{formattedAgo}</Text>
+            {selectionMode ? (
+              <View
+                style={{
+                  width: 22, height: 22, borderRadius: 6, marginTop: 7, marginHorizontal: 7,
+                  borderWidth: 2,
+                  borderColor: isSelected ? withAlpha(colors.brand.violet, 0.5, colors.brand.glow) : colors.fill.strong,
+                  backgroundColor: isSelected ? colors.brand.soft : "transparent",
+                  alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {isSelected && <Feather name="check" size={14} color={colors.brand.light} />}
+              </View>
+            ) : (
+              <NotifIconTile notif={notif} />
+            )}
+
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                style={{
+                  ...typography.caption,
+                  fontSize: 14,
+                  lineHeight: 19,
+                  // La police (Inter) ne suit pas `fontWeight` : la graisse passe par la famille.
+                  fontFamily: notif.read ? FONT_FAMILY.medium : FONT_FAMILY.semibold,
+                  color: notif.read ? colors.text.secondary : colors.text.primary,
+                }}
+                numberOfLines={2}
+              >
+                {formattedTitle}
+              </Text>
+              {formattedBody && (
+                <Text style={{ fontSize: 13, lineHeight: 18, color: colors.text.tertiary, marginTop: 2 }} numberOfLines={2}>
+                  {formattedBody}
+                </Text>
+              )}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 6 }}>
+                <NotifStateBadgeMobile state={notif.state} />
+                <Text style={{ fontSize: 12, color: colors.text.quaternary }}>{formattedAgo}</Text>
+              </View>
             </View>
+
+            {hasRoute && !selectionMode && (
+              <Feather name="chevron-right" size={18} color={colors.text.quaternary} style={{ alignSelf: "center" }} />
+            )}
           </View>
         </Pressable>
       </Animated.View>
