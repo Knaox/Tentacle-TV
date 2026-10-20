@@ -116,7 +116,10 @@ export function usePlayerHandlers({
     const pos = raw + pb.streamOffset;
     setCurrentTime(pos);
     setBufferedTime(data.playableDuration > 0 ? data.playableDuration + pb.streamOffset : 0);
-    pb.positionRef.current = pos;
+    // Avant le premier chargement, la progression part de 0 sur certains moteurs (Android) :
+    // elle ne remplace pas la position de départ voulue — une renégociation précoce
+    // (préférence de piste) repartait sinon du début (banc Watch Together du 21/10).
+    if (resumeApplied.current) pb.positionRef.current = pos;
     pb.reporting.updatePosition(pos, paused);
   }, [paused, pb.reporting, pb.streamOffset, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 

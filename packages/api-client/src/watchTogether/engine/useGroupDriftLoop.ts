@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import {
   WT_DRIFT_ENGAGE_MPV_S, WT_DRIFT_ENGAGE_WEB_S, WT_DRIFT_LOOP_MS, WT_DRIFT_SETTLE_MPV_S,
-  WT_DRIFT_SETTLE_WEB_S, decideDrift, hardSeekProgress, isBarrierParticipant, isFutureAnchor, isWaitedForMe,
-  updateSeekLatency,
+  WT_DRIFT_SETTLE_WEB_S, decideDrift, hardSeekProgress, isBarrierParticipant, isFutureAnchor, isRoomWaitingForMe,
+  isWaitedForMe, updateSeekLatency,
   wtPositionSecondsAt,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
@@ -11,6 +11,10 @@ import {
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
 
+
+/** Un lecteur dont la position avance de plus que ça entre deux battements
+ *  (200 ms) JOUE — il a donc ses images : le mettre en pause est sans risque. */
+const LOADING_PLAY_DELTA_S = 0.1;
 
 /**
  * Watch Together — boucle de correction de dérive (5 Hz).
@@ -52,12 +56,29 @@ export function useGroupDriftLoop({
       lastSkipLogged = reason;
       wtLog("engine", message, data);
     };
+    let loadingPos: number | null = null;
     const loop = setInterval(() => {
       const t = transportRef.current;
       const r = shared.roomRef.current;
-      // Pas de correction tant que le player n'a pas été prêt une première fois
-      // (chargement initial : le group-wait nous couvre).
-      if (!t || !r || r.itemId !== itemId || shared.lastBufferingSentRef.current !== false) return;
+      if (!t || !r || r.itemId !== itemId) return;
+      // Chargement déclaré : aucune correction (le group-wait nous couvre) — sauf
+      // un lecteur qui JOUE (sa position avance) pendant que la salle l'attend : il
+      // attend la reprise commune en pause. Banc mobile du 21/10 : un flux Android
+      // renégocié jouait 20 s seul, son « prêt » jamais dit, puis la salle reculait.
+      if (shared.lastBufferingSentRef.current === true) {
+        const pos = t.getPositionSeconds();
+        const moved = loadingPos !== null && pos - loadingPos > LOADING_PLAY_DELTA_S;
+        loadingPos = pos;
+        if (moved && !t.isPaused() && isRoomWaitingForMe(r, shared.selfIdRef.current)) {
+          wtLog("engine", "drift: lecteur qui joue pendant que la salle l'attend → pause jusqu'à la reprise", { posS: pos.toFixed(1) });
+          armEcho(shared);
+          t.pause();
+        }
+        return;
+      }
+      loadingPos = null;
+      // Jamais prêt depuis le montage, ou échec déclaré : aucune correction.
+      if (shared.lastBufferingSentRef.current !== false) return;
 
       if (isBarrierParticipant(r, shared.selfIdRef.current)) {
         skip("barrier", "drift: SKIP — la salle m'attend sur une cible (barrière)");
