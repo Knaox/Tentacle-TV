@@ -11,6 +11,7 @@ import { cancelPendingSkip, onSkipExecuted, proposeSkip } from "./syncSkip";
 import { recordTick } from "./syncBeacon";
 import { broadcastRoom, sendRoomState } from "./broadcast";
 import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
+import { handleTyping } from "./chatTyping";
 import type { WtErrorCode, WtServerMessage } from "./protocol";
 import { parseWtClientMessage } from "./protocolParse";
 import { inRoomOrder, membersBlindTo } from "./itemRights";
@@ -95,6 +96,11 @@ export function handleWtMessage(
 
   if (msg.type === "wt:gif") {
     handleGif(room, user, msg);
+    return;
+  }
+
+  if (msg.type === "wt:typing") {
+    handleTyping(room, user, msg.typing);
     return;
   }
 

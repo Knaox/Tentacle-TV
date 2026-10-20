@@ -83,7 +83,7 @@ export function applyCommand(
   msg: Exclude<
     WtClientMessage,
     | { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" } | { type: "wt:skipIntroDismiss" }
-    | { type: "wt:goodbye" } | { type: "wt:chat" } | { type: "wt:reaction" } | { type: "wt:gif" }
+    | { type: "wt:goodbye" } | { type: "wt:chat" } | { type: "wt:reaction" } | { type: "wt:gif" } | { type: "wt:typing" }
     | { type: "wt:tick" } | { type: "wt:skipPropose" }
   >,
   isUserOnline: (userId: string) => boolean,

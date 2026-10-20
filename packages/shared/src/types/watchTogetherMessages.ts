@@ -21,6 +21,7 @@ import type { WtElsewhereMessage } from "./watchTogetherDevices";
 export * from "./watchTogetherAffinity";
 export * from "./watchTogetherDevices";
 export * from "./watchTogetherSeekToken";
+export * from "./watchTogetherChat";
 
 /** Ticks Jellyfin par milliseconde (10 000 000 par seconde). */
 const TICKS_PER_MS = 10_000;
@@ -218,7 +219,10 @@ export type WtClientMessage =
   /** Réaction emoji éphémère (non stockée côté serveur). */
   | { type: "wt:reaction"; emoji: string }
   /** GIF éphémère (URL tinygif Klipy, allowlist d'hôtes côté serveur — jamais stocké). */
-  | { type: "wt:gif"; url: string; w?: number; h?: number };
+  | { type: "wt:gif"; url: string; w?: number; h?: number }
+  /** « Est en train d'écrire » (1.32.0, `watchTogether.typing`) : début, redit
+   *  toutes les 2 s tant qu'on tape, puis fin — rien au repos. */
+  | { type: "wt:typing"; typing: boolean };
 
 // ── Messages serveur → clients ──
 
@@ -256,6 +260,9 @@ export type WtServerMessage =
   | { type: "wt:reaction"; userId: string; username: string; emoji: string; at: number }
   /** GIF transient (même sémantique que wt:reaction — jamais stocké). */
   | { type: "wt:gif"; userId: string; username: string; url: string; w?: number; h?: number; at: number }
+  /** « Est en train d'écrire » d'un AUTRE membre (jamais relayé à soi-même) ;
+   *  le serveur l'éteint seul après WT_TYPING_TTL_MS sans nouvelle. */
+  | { type: "wt:typing"; userId: string; username: string; typing: boolean }
   /** Fil complet (ring buffer) — envoyé au join et à chaque syncRequest. */
   | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] }
   /** Séance d'affinité (swipe de groupe) — voir `watchTogetherAffinity.ts`.
