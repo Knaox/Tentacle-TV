@@ -49,7 +49,7 @@ export function useWebSegmentsOverlay({
   // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
   // coquille commune aux six surfaces. ──
   // Le décompte de saut de la salle (serveur) et la proposition de passage.
-  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId);
+  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId, positionSeconds);
 
   const playback = usePlaybackOverlay({
     itemId,

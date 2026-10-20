@@ -71,7 +71,7 @@ export function useMobileGroupPlayback({
   // Le refus d'un passage voyage avec le groupe (la croix d'un autre vaut pour moi).
   useGroupIntroSkip(sync.notifySkipIntroDismiss);
   // « Tous prêts » : aucun saut de passage tant que la salle attend un membre.
-  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId);
+  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId, pb.positionRef.current);
 
   // Rechargement du flux : le groupe m'attend, gelé à la position VISÉE.
   const firstStream = useRef(true);

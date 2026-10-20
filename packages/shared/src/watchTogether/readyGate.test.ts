@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WtMemberDto, WtRoomStateDto } from "../types/watchTogether";
-import { wtRoomAllReady, wtRoomAllReadyLocally, wtSkipHeld } from "./readyGate";
+import { wtPlayerAligned, wtRoomAllReady, wtRoomAllReadyLocally, wtSkipHeld } from "./readyGate";
 
 /**
  * « Tous prêts » avant tout saut de passage — le bug de l'intro : « Passer
@@ -57,5 +57,19 @@ describe("wtSkipHeld — un ARRIVANT n'est jamais prêt (ajout de Damien du 20/1
 
   it("serveur d'avant (sans `allReady`) : un membre qui n'est pas encore en lecture retient aussi", () => {
     expect(wtSkipHeld(room({ members: [member("a"), member("b", { inPlayback: false })] }), "film")).toBe(true);
+  });
+});
+
+describe("wtPlayerAligned — les passages se taisent tant que le lecteur n'est pas là où est la salle", () => {
+  it("l'arrivant ouvert à 0 s, la salle gelée à 272 s : pas aligné ; posé : aligné", () => {
+    const frozen = room({ paused: true, positionTicks: 272 * 10_000_000 });
+    expect(wtPlayerAligned(frozen, 0, 0)).toBe(false);
+    expect(wtPlayerAligned(frozen, 0, 272.05)).toBe(true);
+  });
+
+  it("en lecture, une dérive ordinaire reste alignée ; un saut en vol, non", () => {
+    const playing = room({ paused: false, positionTicks: 30 * 10_000_000, stateAtServerTime: 0 });
+    expect(wtPlayerAligned(playing, 10_000, 40.3)).toBe(true);
+    expect(wtPlayerAligned(playing, 10_000, 70)).toBe(false);
   });
 });

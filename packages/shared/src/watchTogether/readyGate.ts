@@ -1,4 +1,4 @@
-import type { WtRoomStateDto } from "../types/watchTogether";
+import { wtPositionSecondsAt, type WtRoomStateDto } from "../types/watchTogether";
 
 /**
  * Watch Together — « tous prêts » avant tout saut de passage.
@@ -34,6 +34,23 @@ export function wtRoomAllReadyLocally(room: WtRoomStateDto): boolean {
 export function wtRoomAllReady(room: WtRoomStateDto): boolean {
   if ((room.arrivingUserIds?.length ?? 0) > 0) return false;
   return room.allReady ?? wtRoomAllReadyLocally(room);
+}
+
+/** Au-delà, la position du lecteur n'est pas celle de la salle (il arrive, il
+ *  recharge, il saute) : un passage jugé d'après elle serait faux. */
+export const WT_SKIP_ALIGN_TOLERANCE_S = 2;
+
+/**
+ * Le lecteur est-il là où est la salle ? Sinon, ses passages se taisent : un
+ * arrivant ouvert à 0 s montrait « Passer l'intro » une demi-seconde avant de
+ * se poser à 272 s, et le proposait à la salle (banc du 20/10).
+ */
+export function wtPlayerAligned(
+  room: Pick<WtRoomStateDto, "paused" | "positionTicks" | "stateAtServerTime">,
+  serverNow: number,
+  playerS: number,
+): boolean {
+  return Math.abs(playerS - wtPositionSecondsAt(room, serverNow)) <= WT_SKIP_ALIGN_TOLERANCE_S;
 }
 
 /**

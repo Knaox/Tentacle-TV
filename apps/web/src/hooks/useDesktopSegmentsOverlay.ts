@@ -50,7 +50,7 @@ export function useDesktopSegmentsOverlay({
   onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession, onUserSeek,
 }: UseDesktopSegmentsOverlayArgs): PlaybackOverlayResult {
   // Le décompte de saut de la salle (serveur) et la proposition de passage.
-  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId);
+  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId, positionSeconds);
 
   const playback = usePlaybackOverlay({
     itemId,
