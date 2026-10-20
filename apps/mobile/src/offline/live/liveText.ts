@@ -10,8 +10,9 @@ export interface LiveTexts {
   readyInLabel: string;
   /**
    * Où mène un toucher : l'écran « Sur cet appareil », où sont les transferts
-   * (demande de Damien, 20/10 — le titre seul n'y montrait pas leur avancée).
-   * La notification « Prêt à regarder hors ligne », elle, mène au titre.
+   * (demande de Damien, 20/10 — le titre seul n'y montrait pas leur avancée),
+   * le titre concerné en tête quand il n'y en a qu'un (`?item=`). La
+   * notification « Prêt à regarder hors ligne », elle, mène au titre.
    */
   deepLink: string;
 }
@@ -60,6 +61,6 @@ export function liveTexts(
     headline,
     status,
     readyInLabel: t("offline:liveReadyIn"),
-    deepLink: "tentacle://on-device",
+    deepLink: single !== null ? `tentacle://on-device?item=${encodeURIComponent(single.itemId)}` : "tentacle://on-device",
   };
 }

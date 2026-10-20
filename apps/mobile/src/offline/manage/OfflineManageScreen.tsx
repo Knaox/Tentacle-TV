@@ -22,6 +22,7 @@ import { OfflineManageSection } from "./OfflineManageSection";
 import { OfflineOverviewCard } from "./OfflineOverviewCard";
 import { useOfflineSelection } from "./useOfflineSelection";
 import { WifiWaitCard } from "./WifiWaitCard";
+import { focusFirst } from "./focusEntry";
 
 /**
  * « Sur cet appareil » — l'écran de gestion : la carte de synthèse (états,
@@ -31,7 +32,7 @@ import { WifiWaitCard } from "./WifiWaitCard";
  * direct et ses actions. Vide : l'état d'accueil en trois étapes. Sur une
  * tablette assez large, les lignes passent sur deux colonnes.
  */
-export function OfflineManageScreen() {
+export function OfflineManageScreen({ focusItemId = null }: { focusItemId?: string | null } = {}) {
   const { t } = useTranslation("downloads");
   const { t: to } = useTranslation("offline");
   const st = useThemedStyles(makeStyles);
@@ -51,11 +52,12 @@ export function OfflineManageScreen() {
   const bulk = useBulkOfflineActions(userId, selection.selection, selection.exit);
 
   const groups = useMemo(() => {
-    const active = entries.filter((entry) => entry.status !== "complete");
+    // Le titre montré par le suivi en direct, en tête : en vue dès l'ouverture.
+    const active = focusFirst(entries.filter((entry) => entry.status !== "complete"), focusItemId);
     const complete = entries.filter((entry) => entry.status === "complete");
     const grouped = groupOfflineEntries(complete);
     return { active, movies: grouped.movies, series: groupSeasonsBySeries(grouped.seasons) };
-  }, [entries]);
+  }, [entries, focusItemId]);
 
   const onPlay = (entry: OfflineEntry) => router.push(`/watch/${entry.itemId}`);
   const onInfo = (entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never);

@@ -28,6 +28,8 @@ struct TransferLiveActivityWidget: Widget {
           if let end = countdownEnd(context.state, stale: context.isStale) {
             Text(timerInterval: Date()...end, countsDown: true)
               .monospacedDigit().font(.headline).frame(maxWidth: 72, alignment: .trailing)
+          } else if let percent = percentText(context.state) {
+            Text(percent).monospacedDigit().font(.headline)
           }
         }
         DynamicIslandExpandedRegion(.center) {
@@ -42,7 +44,11 @@ struct TransferLiveActivityWidget: Widget {
       } compactLeading: {
         Image(systemName: "arrow.down.circle.fill").foregroundStyle(violet)
       } compactTrailing: {
-        if let end = countdownEnd(context.state, stale: context.isStale) {
+        // Le pour-cent d'abord (Damien, 20/10) : l'île compacte n'a la place
+        // que d'une chose ; le compte à rebours reste en grand, déplié.
+        if let percent = percentText(context.state) {
+          Text(percent).monospacedDigit().font(.caption2).frame(maxWidth: 48)
+        } else if let end = countdownEnd(context.state, stale: context.isStale) {
           Text(timerInterval: Date()...end, countsDown: true)
             .monospacedDigit().frame(maxWidth: 48).font(.caption2)
         } else {

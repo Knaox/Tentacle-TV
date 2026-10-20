@@ -28,8 +28,8 @@ describe("liveTexts", () => {
     const single = { itemId: "abc", title: "Pilote", seriesName: "Dark", kind: "episode" };
     const texts = liveTexts(content({ remaining: 1, single }), 0, t, () => "S01E01 · Pilote");
     expect(texts.headline).toBe("S01E01 · Pilote");
-    // « Sur cet appareil », où l'on voit les transferts avancer (Damien, 20/10).
-    expect(texts.deepLink).toBe("tentacle://on-device");
+    // « Sur cet appareil », où l'on voit les transferts avancer, ce titre en tête (Damien, 20/10).
+    expect(texts.deepLink).toBe("tentacle://on-device?item=abc");
   });
 
   it("des épisodes d'une même série se disent sous son nom", () => {
