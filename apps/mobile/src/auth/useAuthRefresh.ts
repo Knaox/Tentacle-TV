@@ -7,6 +7,7 @@ import {
   setPairingToken,
   setPushToken,
   setShareLinkToken,
+  switchWtSession,
   type JellyfinClient,
   type StorageAdapter,
 } from "@tentacle-tv/api-client";
@@ -49,7 +50,7 @@ export function useAuthRefresh({ client, storage, serverUrl, queryClient }: Auth
    *  les identifiants, jamais le compte sans son code. */
   const endedProfile = useCallback((): boolean => {
     if (!serverUrl) return false;
-    if (!endMobileProfileSession({ storage, serverUrl, clearCache: () => queryClient.clear() }, "ended")) return false;
+    if (!endMobileProfileSession({ storage, serverUrl, clearCache: () => queryClient.clear(), followSession: switchWtSession }, "ended")) return false;
     // L'accueil : la porte du lancement montre « Qui regarde ? » d'elle-même (demande posée par la fin).
     router.replace("/(tabs)" as never);
     return true;

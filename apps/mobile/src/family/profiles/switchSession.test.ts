@@ -88,6 +88,18 @@ describe("les bascules de session du mobile", () => {
     expect(endMobileProfileSession(deps(store), "ended")).toBe(false);
   });
 
+  it("le temps réel suit chaque bascule, au jeton de la NOUVELLE session (Watch Together, socket)", () => {
+    const store = memory({ tentacle_token: "perso", tentacle_user: DAMIEN });
+    const followed: (string | null)[] = [];
+    const follow = { followSession: (token: string | null) => void followed.push(token) };
+    commitMobilePick(SELF, { ...deps(store), ...follow }); // rien ne bascule : rien ne suit
+    commitMobilePick(ZOE, { ...deps(store), ...follow });
+    commitMobilePick(SELF, { ...deps(store), ...follow });
+    commitMobilePick(ZOE, { ...deps(store), ...follow });
+    endMobileProfileSession({ ...deps(store), ...follow }, "ended");
+    expect(followed).toEqual(["jeton-zoe", "perso", "jeton-zoe", "perso"]);
+  });
+
   it("« Changer de profil » oublie le choix retenu", () => {
     const store = memory({ tentacle_token: "perso", tentacle_user: DAMIEN });
     commitMobilePick(SELF, deps(store));

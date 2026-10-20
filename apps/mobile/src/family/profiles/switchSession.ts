@@ -27,6 +27,10 @@ export interface SwitchDeps {
   serverUrl: string;
   /** Vide le cache des requêtes (`queryClient.clear`). */
   clearCache: () => void;
+  /** Le temps réel suit la nouvelle session (`switchWtSession`, api-client) :
+   *  l'ancienne quitte sa salle Watch Together, la socket se rouvre au nom de
+   *  la nouvelle — sans quoi un profil créait une salle tenue par le compte. */
+  followSession?: (token: string | null) => void;
 }
 
 export type SwitchResult = "stay" | "switched" | "failed";
@@ -134,6 +138,7 @@ export function forgetMobileProfileSession(storage: KeyValueStore): void {
 }
 
 function restart(deps: SwitchDeps): void {
+  deps.followSession?.(deps.storage.getItem("tentacle_token"));
   deps.clearCache();
   notifyProfileSessionChange();
   bumpSessionEpoch();
