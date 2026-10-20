@@ -13,6 +13,10 @@ import { modernJellyfinToken } from "../../test/jellyfinFakeAuth";
 
 type Sent = { type: string; reason?: string; invite?: unknown };
 const sent: Array<{ to: string; msg: Sent }> = [];
+/** L'appareil d'un compte, ici le jeton même (`hashToken` simulé) : « jeton-a » → « a ». */
+function ownerOf(deviceKey: string): string {
+  return deviceKey.replace("jeton-", "");
+}
 
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
@@ -25,8 +29,14 @@ vi.mock("../services/jwt", () => ({
 }));
 vi.mock("../services/wsManager", () => ({
   sendToUser: (to: string, msg: Sent) => sent.push({ to, msg }),
+  // Adhésion par appareil (1.32.0) : un appareil = le hash du jeton (ici le jeton même).
+  sendToDevices: (keys: Iterable<string>, msg: Sent) => { for (const key of keys) sent.push({ to: ownerOf(key), msg }); },
+  sendToOtherDevices: () => undefined,
   isUserOnline: () => true,
+  isDeviceOnline: () => true,
+  deviceKeyOfSocket: () => undefined,
   onPresenceChange: () => undefined,
+  onDevicePresenceChange: () => undefined,
 }));
 vi.mock("../services/family/familyGuestMarkers", () => ({
   withoutFamilyGuests: async <T>(list: T[]) => list,

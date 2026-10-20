@@ -1,4 +1,4 @@
-import { isUserOnline } from "../wsManager";
+import { isMemberOnline } from "./memberDevices";
 import { WT_BARRIER_TIMEOUT_MS, WT_PROTOCOL_VERSION, type WtWaitCause } from "./protocol";
 import type { Room, RoomMember } from "./roomTypes";
 import { scheduleResume } from "./syncSchedule";
@@ -48,7 +48,7 @@ function clearBarrier(room: Room): void {
 export function barrierParticipants(room: Room): string[] {
   const ids: string[] = [];
   for (const m of room.members.values()) {
-    if (m.inPlayback && m.protocolVersion >= WT_PROTOCOL_VERSION && isUserOnline(m.userId)) ids.push(m.userId);
+    if (m.inPlayback && m.protocolVersion >= WT_PROTOCOL_VERSION && isMemberOnline(m)) ids.push(m.userId);
   }
   return ids;
 }
