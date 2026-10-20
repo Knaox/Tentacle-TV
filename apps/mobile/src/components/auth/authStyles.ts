@@ -46,7 +46,11 @@ export const makeAuthStyles = (t: AppTheme) =>
       fontSize: 15,
       fontFamily: FONT_FAMILY.regular,
     },
-    /** CTA primaire — pill cta.primaryBg avec halo violet. */
+    /**
+     * CTA primaire — la pilule blanche (cta.primaryBg), sans halo : le halo
+     * violet de 22 pt faisait d'un formulaire un écran coloré (système de
+     * boutons, 20/10). Le contour du thème clair la détache du fond.
+     */
     primaryCta: {
       backgroundColor: t.colors.cta.primaryBg,
       borderRadius: RADIUS.md,
@@ -55,11 +59,8 @@ export const makeAuthStyles = (t: AppTheme) =>
       alignItems: "center",
       justifyContent: "center",
       minHeight: 46,
-      shadowColor: t.colors.brand.violet,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.55,
-      shadowRadius: 22,
-      elevation: 12,
+      borderWidth: t.colors.cta.primaryBorder ? 1 : 0,
+      borderColor: t.colors.cta.primaryBorder,
     },
     /** Lien brand.light Inter Medium. */
     link: {
