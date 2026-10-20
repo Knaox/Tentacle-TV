@@ -47,6 +47,8 @@ const STORAGE_KEYS = [
   // (`AVATAR_INVITE_SEEN_KEY`, même clé que le web) : absente d'ici,
   // l'invitation unique reviendrait à chaque lancement.
   "tentacle_avatar_invite_seen",
+  // Le tour de l'invitation (`AVATAR_INVITE_ROUND_KEY`) : absent d'ici, elle repasserait à chaque lancement.
+  "tentacle_avatar_invite_round",
   // La session de PROFIL de la Famille (`@tentacle-tv/shared` › `profileSessionStore`) :
   // la marque du profil actif, la réserve de la session du compte (un SECRET :
   // trousseau), le dernier profil choisi (`MOBILE_PROFILE_STAY_KEY`), le choix
