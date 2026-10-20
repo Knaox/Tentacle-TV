@@ -9,6 +9,7 @@ import { markLaunchPassed, noteCurrentProfile } from "../launch/launchState";
 import { askOnThisServer, forgetStayOnDevice, writeStayOnThisServer } from "../launch/stayOnDevice";
 import { honorDesktopPromptsReset } from "../avatarGallery/inviteRule";
 import { markArrival } from "./arrival";
+import { ACCOUNT_HELD_BY_SERVER } from "../pickerPlatform";
 import type { CurtainProfile } from "./ProfileCurtain";
 
 /**
@@ -110,12 +111,18 @@ function noteStay(profile: PickerProfileDto, accountId: string | null, stay: boo
   else askOnThisServer(accountId);
 }
 
-/** Les jetons échangés dans le stockage ; faux s'il n'a pas pu l'être (illisible, plein, bloqué). */
+/** Les jetons échangés dans le stockage ; faux s'il n'a pas pu l'être (illisible, plein, bloqué).
+ *  Le navigateur : le serveur a déjà réécrit ses cookies ; la page ne garde pas le
+ *  jeton du compte, et reprend celui qu'il rend au retour (`pickerPlatform.ts`). */
 function swapSession(picked: PickedProfileDto): boolean {
   try {
     return picked.personal
-      ? returnToAccount(localStorage)
-      : enterProfile(localStorage, { token: picked.token, user: picked.user, profile: activeProfileOf(picked.profile) });
+      ? returnToAccount(localStorage, picked.token)
+      : enterProfile(
+          localStorage,
+          { token: picked.token, user: picked.user, profile: activeProfileOf(picked.profile) },
+          { escrowed: ACCOUNT_HELD_BY_SERVER },
+        );
   } catch {
     return false;
   }

@@ -41,7 +41,6 @@ function listing(extra: Partial<PickerProfilesDto> = {}): PickerProfilesDto {
 const MIRROR: LaunchMirror = { server: "http://srv", accountId: "owner", capable: true, listing: listing() };
 
 const BASE: LaunchInputs = {
-  desktop: true,
   authed: true,
   passed: false,
   requested: false,
@@ -58,8 +57,7 @@ describe("« Qui regarde ? » à l'ouverture du bureau — la décision immédia
     expect(launchVerdict(BASE)).toBe("picker");
   });
 
-  it("jamais hors du bureau, sans session, ou une fois le profil choisi dans cette exécution", () => {
-    expect(launchVerdict({ ...BASE, desktop: false })).toBe("app");
+  it("jamais sans session, ou une fois le profil choisi dans cette exécution", () => {
     expect(launchVerdict({ ...BASE, authed: false })).toBe("app");
     expect(launchVerdict({ ...BASE, accountId: null })).toBe("app");
     expect(launchVerdict({ ...BASE, passed: true })).toBe("app");

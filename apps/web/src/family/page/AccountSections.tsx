@@ -13,8 +13,8 @@ import { SECONDARY_BUTTON, SMALL_BUTTON } from "./familyUi";
  *  de mes familles (et « Gérer les profils » sur celles de la mienne). */
 export function MyPinSection({ hasPin }: { hasPin: boolean }) {
   const { t } = useTranslation("familyWeb");
-  // « Qui regarde ? » sur le bureau : le code protège aussi son profil sur un
-  // ordinateur — à dire seulement si le serveur le sait faire.
+  // « Qui regarde ? » hors des TV : le code protège aussi son profil sur un
+  // ordinateur ou dans un navigateur — à dire seulement si le serveur le sait faire.
   const desktopProfiles = useServerCapability("family.desktopProfiles");
   const [open, setOpen] = useState(false);
   return (

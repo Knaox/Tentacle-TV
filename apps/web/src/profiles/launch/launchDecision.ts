@@ -6,7 +6,7 @@ import {
 } from "@tentacle-tv/shared";
 
 /**
- * « Qui regarde ? » à l'ouverture du bureau : les DÉCISIONS, pures
+ * « Qui regarde ? » à l'ouverture du bureau et du navigateur : les DÉCISIONS, pures
  * (`launchDecision.test.ts`). La règle du serveur est celle de shared
  * (`pickerLaunch`) ; ici, seulement ce que le bureau y ajoute :
  *
@@ -44,14 +44,13 @@ export interface LaunchMirror {
   server: string;
   /** Le compte de l'application à qui elle appartient. */
   accountId: string;
-  /** Le serveur déclare `family.desktopProfiles` (et la Famille). */
+  /** Le serveur déclare la capacité de cette coquille (`pickerPlatform.ts`) et la Famille. */
   capable: boolean;
   /** La famille et la préférence ; null sans la capacité. */
   listing: PickerProfilesDto | null;
 }
 
 export interface LaunchInputs {
-  desktop: boolean;
   /** Une session existe (personnelle ou de profil). */
   authed: boolean;
   /** Un profil a déjà été choisi dans cette exécution (ou une connexion par mot de passe). */
@@ -72,7 +71,7 @@ export interface LaunchInputs {
 }
 
 export function launchVerdict(input: LaunchInputs): LaunchVerdict {
-  if (!input.desktop || !input.authed || !input.accountId) return "app";
+  if (!input.authed || !input.accountId) return "app";
   if (input.requested) return "check";
   if (input.passed) return "app";
   const mirror = input.mirror?.accountId === input.accountId && input.mirror.server === input.server ? input.mirror : null;

@@ -2,15 +2,16 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppConfig, useServerCapability } from "@tentacle-tv/api-client";
 import { accountUserId } from "../../auth/profileSession";
-import { isDesktopApp } from "../../desktop/detect";
 import { getBackendBase } from "../../lib/backendBase";
 import { writeLaunchMirror } from "../launch/launchState";
 import { loadPickerProfiles, pickerProfilesKey } from "./pickerGateway";
+import { PICKER_CAPABILITY } from "../pickerPlatform";
 
 /**
  * La famille vue par « Qui regarde ? », pour l'application OUVERTE (le menu
- * de l'avatar, le réglage) : seulement sur le bureau, face à un serveur qui
- * déclare `family.desktopProfiles` et la Famille — sinon aucune requête. Chaque
+ * de l'avatar, le réglage) : sur le bureau comme dans le navigateur, face à un
+ * serveur qui déclare la capacité de cette coquille (`pickerPlatform.ts`) et la
+ * Famille — sinon aucune requête. Chaque
  * réponse rafraîchit le miroir de l'ouverture (`launchState.ts`) : la
  * prochaine ouverture décide d'après ce que l'application vient de lire.
  */
@@ -30,10 +31,10 @@ export function usePickerListing() {
  * compte (`face/useAccountFaceColor.ts`).
  */
 export function usePickerListingQuery() {
-  const capable = useServerCapability("family.desktopProfiles");
+  const capable = useServerCapability(PICKER_CAPABILITY);
   const { data: config } = useAppConfig();
   const accountId = accountUserId();
-  const enabled = isDesktopApp() && capable && config?.features.family !== undefined && accountId !== null;
+  const enabled = capable && config?.features.family !== undefined && accountId !== null;
 
   const listing = useQuery({
     queryKey: pickerProfilesKey(accountId),

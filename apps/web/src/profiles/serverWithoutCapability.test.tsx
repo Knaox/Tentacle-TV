@@ -3,8 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
 
 /**
- * Un serveur sans `family.desktopProfiles` (≤ 1.27) : AUCUNE trace des
- * profils du bureau — ni « Changer de profil » dans le menu de l'avatar, ni
+ * Un serveur sans la capacité de la coquille — `family.desktopProfiles` (≤ 1.27)
+ * pour le bureau, `family.webProfiles` (≤ 1.31) pour le navigateur : AUCUNE trace des
+ * profils — ni « Changer de profil » dans le menu de l'avatar, ni
  * réglage dans Réglages › Famille — et aucune requête vers ses routes.
  * Le même banc, capacité déclarée et famille de trois profils, prouve que le
  * rendu n'est pas vide par accident. React Query est remplacé par un cache de
@@ -12,7 +13,7 @@ import type { PickerProfileDto, PickerProfilesDto } from "@tentacle-tv/shared";
  * une requête « partie » est une requête activée.
  */
 
-const state = vi.hoisted(() => ({ capable: false, desktop: true, offline: false, active: null as { id: string } | null }));
+const state = vi.hoisted(() => ({ capable: false, capability: "family.desktopProfiles" as string, desktop: true, offline: false, active: null as { id: string } | null }));
 const loadPickerProfiles = vi.hoisted(() => vi.fn());
 const queries = vi.hoisted(() => ({ cache: new Map<string, unknown>(), started: [] as string[] }));
 
@@ -35,12 +36,26 @@ vi.mock("react-i18next", () => ({
 }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
 vi.mock("@tentacle-tv/api-client", () => ({
-  useServerCapability: () => state.capable,
+  useServerCapability: (key: string) => state.capable && key === state.capability,
   useAppConfig: () => ({ data: { features: { family: { v: 2, enabled: true, guests: true } } } }),
   useJellyfinClient: () => ({ getDeviceName: () => "Desktop", setAccessToken: () => undefined }),
   TentacleApiError: class extends Error {},
 }));
 vi.mock("../desktop/detect", () => ({ isDesktopApp: () => state.desktop }));
+vi.mock("./pickerPlatform", () => ({
+  get PICKER_CAPABILITY() {
+    return state.desktop ? "family.desktopProfiles" : "family.webProfiles";
+  },
+  get PICKER_PLATFORM() {
+    return state.desktop ? "desktop" : "web";
+  },
+  get IN_BROWSER() {
+    return !state.desktop;
+  },
+  get ACCOUNT_HELD_BY_SERVER() {
+    return !state.desktop;
+  },
+}));
 vi.mock("../auth/profileSession", () => ({ accountUserId: () => "owner", useActiveProfile: () => state.active }));
 vi.mock("../offline/useOfflineMode", () => ({ useOfflineMode: () => state.offline }));
 vi.mock("../watchTogether/WatchTogetherProvider", () => ({
@@ -53,7 +68,6 @@ vi.mock("./api/pickerGateway", () => ({
   pickerProfilesKey: (accountId: string | null) => ["family", "picker", accountId ?? "none"],
   loadPickerProfiles,
   pickProfile: vi.fn(),
-  savePickerPreference: vi.fn(),
   NoPersonalSession: class extends Error {},
 }));
 
@@ -106,6 +120,7 @@ describe("les profils du bureau face au serveur", () => {
     loadPickerProfiles.mockReset();
     queries.started.length = 0;
     state.capable = false;
+    state.capability = "family.desktopProfiles";
     state.desktop = true;
     state.offline = false;
     state.active = null;
@@ -117,11 +132,22 @@ describe("les profils du bureau face au serveur", () => {
     expect(loadPickerProfiles).not.toHaveBeenCalled();
   });
 
-  it("hors du bureau, même capacité déclarée : rien non plus", () => {
+  it("dans le navigateur, un serveur qui n'a que la capacité du bureau : rien non plus", () => {
     state.capable = true;
     state.desktop = false;
     expect(render()).toBe("<div></div>");
     expect(queries.started).not.toContain(PICKER_KEY);
+  });
+
+  it("dans le navigateur, serveur qui déclare family.webProfiles : « Changer de profil » et le réglage, mots du navigateur", () => {
+    state.capable = true;
+    state.desktop = false;
+    state.capability = "family.webProfiles";
+    const html = render();
+    expect(queries.started).toContain(PICKER_KEY);
+    expect(html).toContain('data-key="switchProfile"');
+    expect(html).toContain("launchSetting.sectionWeb");
+    expect(html).not.toContain("launchSetting.section<");
   });
 
   it("capacité déclarée, famille de trois profils : « Changer de profil » (une entrée, aucun profil listé) et le réglage", () => {

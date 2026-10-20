@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Le BUREAU : il garde lui-même la réserve du compte (le navigateur : `commitPickWeb.test.ts`).
+vi.mock("../pickerPlatform", () => ({ ACCOUNT_HELD_BY_SERVER: false }));
+
 import type { PickedProfileDto, PickerProfileDto } from "@tentacle-tv/shared";
 import { endProfileSession, beginProfileSwitch, cancelProfileSwitch, isProfileSwitching } from "../../auth/profileEnded";
 import { commitPick } from "./commitPick";
