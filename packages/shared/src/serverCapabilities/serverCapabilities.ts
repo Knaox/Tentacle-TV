@@ -239,6 +239,13 @@ export const SERVER_CAPABILITIES = {
    *  (`/api/family/picker/profiles`). Sans elle : l'ancien réglage (`family.pickerPolicy`), et le
    *  mobile demande comme avant. */
   "family.launchPlatforms": "1.31.1",
+  // ── Retours de l'alpha mobile (21/10) : garder hors ligne va au bout, application quittée ──
+  /** La préparation d'un fichier Allégé tenue par le SERVEUR (`/api/downloads/prepared/:itemId`) :
+   *  elle avance que le téléphone soit là ou non, se lit pendant qu'elle s'écrit, se reprend par
+   *  plage d'octets après une coupure, et une push silencieuse (`data.type = "offline:prepared"`)
+   *  réveille l'iPhone quand elle s'achève sans lui. Sans elle, le téléphone tire le transcodage
+   *  en direct (`/light`), comme avant. */
+  "offline.serverPrepare": "1.31.1",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

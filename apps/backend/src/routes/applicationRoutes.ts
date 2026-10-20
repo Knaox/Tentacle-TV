@@ -35,6 +35,7 @@ import { adminMetadataRoutes } from "./adminMetadata";
 import { adminTrailersRoutes } from "./adminTrailers";
 import { adminSegmentRoutes } from "./adminSegments";
 import { downloadRoutes } from "./downloads";
+import { preparedDownloadRoutes } from "./downloadsPrepared";
 import { pluginRoutes } from "./plugins";
 import { pairRoutes } from "./pair";
 import { familyRoutes } from "./family/familyRoutes";
@@ -93,6 +94,8 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(adminTrailersRoutes, { prefix: "/api/admin" });
   await app.register(adminSegmentRoutes, { prefix: "/api/admin" });
   await app.register(downloadRoutes, { prefix: "/api/downloads" });
+  // La préparation tenue par le serveur (`offline.serverPrepare`), à part : `downloads.ts` est le flux direct.
+  await app.register(preparedDownloadRoutes, { prefix: "/api/downloads" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
   // La Famille (docs/FAMILLE.md) : routes et appelants tirés du contrat.

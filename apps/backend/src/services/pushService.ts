@@ -150,3 +150,34 @@ export async function sendToUsers(
 
   return { sent, invalid: invalidTokens.size };
 }
+
+/**
+ * Une push SILENCIEUSE (iOS : `content-available`, rien d'affiché, aucun son)
+ * aux iPhone et iPad d'un compte : elle réveille l'application quelques
+ * secondes, le temps qu'elle reprenne un travail de fond. Android n'en a pas
+ * l'usage — son service de premier plan garde l'application vivante — et une
+ * push sans titre n'y apporterait rien.
+ *
+ * Mêmes coupures que les autres envois (dev, `TENTACLE_PUSH=off`). Les jetons
+ * morts sont laissés à la purge des envois ordinaires.
+ */
+export async function sendSilentToUser(jellyfinUserId: string, data: Record<string, unknown>): Promise<number> {
+  if (!hasPrisma() || pushDisabled() || !isPushDeliveryEnabled()) return 0;
+  const devices = await getPrisma().pushDevice.findMany({
+    where: { jellyfinUserId, platform: "ios" },
+  });
+  const messages: ExpoPushMessage[] = devices
+    .filter((d) => Expo.isExpoPushToken(d.expoPushToken))
+    // Priorité « normale » : APNs refuse la haute priorité à une push de fond.
+    .map((d) => ({ to: d.expoPushToken, data, _contentAvailable: true, priority: "normal" }));
+  let sent = 0;
+  for (const chunk of expo.chunkPushNotifications(messages)) {
+    try {
+      const tickets = await expo.sendPushNotificationsAsync(chunk);
+      sent += tickets.filter((ticket) => ticket.status === "ok").length;
+    } catch (err) {
+      console.error("[Push] Envoi silencieux échoué:", err);
+    }
+  }
+  return sent;
+}
