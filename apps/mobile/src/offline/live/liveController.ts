@@ -13,14 +13,19 @@
  * SQLite) ; une progression ne fait que relire le magasin des barres.
  */
 
+import { AppState, type AppStateStatus } from "react-native";
 import {
   INITIAL_LIVE_STATE,
+  liveAppStateAction,
+  liveRetryOnTick,
   liveTransferView,
   nextLiveBatch,
   nextLivePublish,
+  type LiveAppState,
   type LiveContent,
   type LiveNetworkWait,
   type LivePublishState,
+  type LiveSurfaceOutcome,
 } from "@tentacle-tv/offline-core";
 import { getProgressFor } from "@tentacle-tv/offline-core/react";
 import { i18n } from "@tentacle-tv/shared";
@@ -42,6 +47,19 @@ let state: LivePublishState = INITIAL_LIVE_STATE;
 /** Le texte d'état affiché : sur Android, « Prêt dans 12 min » se réécrit quand la minute change. */
 let shownStatus: string | null = null;
 let unsubscribers: Array<() => void> = [];
+/**
+ * Ce que le système a fait du dernier dessin. Un `refused` (iOS ne démarre une
+ * Live Activity qu'au premier plan) se retente : au retour au premier plan,
+ * et au fil des évènements tant que l'app est là (`liveSurfaceRepair.ts`).
+ */
+let outcome: LiveSurfaceOutcome = "pending";
+let lastAttemptMs = 0;
+/** Seul le verdict du DERNIER dessin compte : un plus ancien qui répond tard est ignoré. */
+let renderSeq = 0;
+
+function liveAppState(status: AppStateStatus | null | undefined): LiveAppState {
+  return status === "active" || status === "inactive" || status === "background" || status === "extension" ? status : "unknown";
+}
 
 /** Ce que le réseau impose au lot — la règle « Wi-Fi seulement » d'abord, puis le serveur injoignable. */
 function currentWait(): LiveNetworkWait {
@@ -60,17 +78,32 @@ const translate = (key: string, params?: Record<string, unknown>): string => Str
 function render(content: LiveContent, nowMs: number): void {
   const texts = liveTexts(content, nowMs, translate, titleOf);
   shownStatus = texts.status;
-  surface.show(content, texts, translate("offline:transferNotifChannel"));
+  lastAttemptMs = nowMs;
+  const seq = ++renderSeq;
+  outcome = "pending";
+  void surface.show(content, texts, translate("offline:transferNotifChannel")).then((result) => {
+    if (seq === renderSeq) outcome = result;
+  });
+}
+
+/** Plus d'activité : les verdicts en vol ne comptent plus. */
+function forgetSurface(): void {
+  renderSeq += 1;
+  outcome = "pending";
+  shownStatus = null;
 }
 
 function clear(): void {
   if (state.shown !== null) surface.end();
   state = INITIAL_LIVE_STATE;
-  shownStatus = null;
+  forgetSurface();
 }
 
-/** Un pas : relit l'état, décide, applique. `nowMs` injecté pour les tests. */
-export function recomputeLive(nowMs: number = Date.now()): void {
+/**
+ * Un pas : relit l'état, décide, applique. `nowMs` injecté pour les tests ;
+ * `force` redessine l'état du moment même sans changement notable.
+ */
+export function recomputeLive(nowMs: number = Date.now(), force = false): void {
   if (userId === null || !isLiveTransfers() || !surface.available()) {
     clear();
     batch = new Set();
@@ -78,14 +111,20 @@ export function recomputeLive(nowMs: number = Date.now()): void {
   }
   batch = nextLiveBatch(batch, entries);
   const view = liveTransferView({ entries, batch, progress: getProgressFor, wait: currentWait() });
-  const step = nextLivePublish(state, view, nowMs);
+  const step = nextLivePublish(state, view, nowMs, { force });
   state = step.state;
   const action = step.action;
   if (action.kind === "start" || action.kind === "update") {
     render(action.content, nowMs);
   } else if (action.kind === "end") {
     surface.end();
-    shownStatus = null;
+    forgetSurface();
+  } else if (
+    state.shown !== null &&
+    liveRetryOnTick({ appState: liveAppState(AppState.currentState), outcome, sinceLastAttemptMs: nowMs - lastAttemptMs })
+  ) {
+    // Démarrage refusé, app au premier plan : une nouvelle chance.
+    render(state.shown, nowMs);
   } else if (state.shown !== null && state.shown.phase === "transferring") {
     // Rien de neuf pour la règle ; la minute affichée en toutes lettres a pu changer.
     const status = liveTexts(state.shown, nowMs, translate, titleOf).status;
@@ -102,6 +141,19 @@ function reloadEntries(): void {
   }
 }
 
+/**
+ * Premier plan, arrière-plan : la Live Activity refusée se repose au retour
+ * (seule fenêtre où iOS l'accepte), l'état du moment se publie avant la
+ * suspension du JavaScript.
+ */
+function subscribeAppState(): () => void {
+  const subscription = AppState.addEventListener("change", (status) => {
+    const action = liveAppStateAction({ appState: liveAppState(status), wanted: state.shown !== null, outcome });
+    if (action === "republish") recomputeLive(Date.now(), true);
+  });
+  return () => subscription.remove();
+}
+
 /** Démarre le suivi pour ce compte ; une activité orpheline d'un lancement d'avant est effacée. */
 export function startLiveTransfers(nextUserId: string): () => void {
   stopLiveTransfers();
@@ -116,6 +168,7 @@ export function startLiveTransfers(nextUserId: string): () => void {
     subscribeConnectivity(() => recomputeLive()),
     subscribeOfflineSettings(() => recomputeLive()),
     subscribeDeviceSettings(() => recomputeLive()),
+    subscribeAppState(),
   ];
   recomputeLive();
   // Rien à suivre : une activité laissée par un lancement d'avant (l'app tuée

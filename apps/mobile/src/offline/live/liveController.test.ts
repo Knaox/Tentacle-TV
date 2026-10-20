@@ -9,14 +9,28 @@ const env = vi.hoisted(() => ({
   offline: false,
   live: true,
   changed: [] as Array<() => void>,
+  appState: "active" as string,
+  appListeners: [] as Array<(status: string) => void>,
+  outcome: "shown" as string,
 }));
 const surface = vi.hoisted(() => ({
   available: vi.fn(() => true),
-  show: vi.fn((_content: LiveContent, _texts: { status: string }) => undefined),
+  show: vi.fn((_content: LiveContent, _texts: { status: string }) => Promise.resolve(env.outcome)),
   end: vi.fn(),
 }));
 
 vi.mock("@tentacle-tv/shared", () => ({ i18n: { t: (key: string) => key } }));
+vi.mock("react-native", () => ({
+  AppState: {
+    get currentState() {
+      return env.appState;
+    },
+    addEventListener: (_event: string, listener: (status: string) => void) => {
+      env.appListeners.push(listener);
+      return { remove: () => undefined };
+    },
+  },
+}));
 vi.mock("@tentacle-tv/offline-core/react", () => ({ getProgressFor: (id: number) => env.progress.get(id) }));
 vi.mock("../connectivityStore", () => ({
   getConnectivitySnapshot: () => ({ networkType: env.networkType }),
@@ -63,6 +77,9 @@ beforeEach(() => {
   env.offline = false;
   env.live = true;
   env.changed = [];
+  env.appState = "active";
+  env.appListeners = [];
+  env.outcome = "shown";
   surface.show.mockClear();
   surface.end.mockClear();
 });
@@ -111,4 +128,70 @@ describe("suivi en direct des transferts", () => {
     recomputeLive();
     expect(surface.end).toHaveBeenCalled();
   });
+
+  it("démarrage refusé (app déjà derrière) : reposée au retour au premier plan", async () => {
+    env.appState = "background";
+    env.outcome = "refused";
+    env.entries = [entry(1, "downloading")];
+    env.progress.set(1, { bytesDone: 40 * MB, expectedSize: 100 * MB, rateBps: 2 * MB });
+    startLiveTransfers("u1");
+    await settle();
+    expect(surface.show).toHaveBeenCalledTimes(1);
+    env.appState = "active";
+    env.outcome = "shown";
+    appStateChange("active");
+    expect(surface.show).toHaveBeenCalledTimes(2);
+    expect(surface.show.mock.calls[1]![0].phase).toBe("transferring");
+  });
+
+  it("passage derrière : l'état du moment est republié avant la suspension", async () => {
+    env.entries = [entry(1, "downloading")];
+    env.progress.set(1, { bytesDone: 40 * MB, expectedSize: 100 * MB, rateBps: 2 * MB });
+    startLiveTransfers("u1");
+    await settle();
+    // 2 % de plus : sous le pas de 5 %, rien ne se republie de lui-même.
+    env.progress.set(1, { bytesDone: 42 * MB, expectedSize: 100 * MB, rateBps: 2 * MB });
+    recomputeLive();
+    expect(surface.show).toHaveBeenCalledTimes(1);
+    env.appState = "background";
+    appStateChange("background");
+    expect(surface.show).toHaveBeenCalledTimes(2);
+    expect(surface.show.mock.calls[1]![0].percent).toBe(42);
+  });
+
+  it("refus au premier plan : retenté au fil des évènements, au plus toutes les 10 s", async () => {
+    env.outcome = "refused";
+    env.entries = [entry(1, "downloading")];
+    env.progress.set(1, { bytesDone: 40 * MB, expectedSize: 100 * MB, rateBps: 2 * MB });
+    startLiveTransfers("u1");
+    await settle();
+    const startedAt = Date.now();
+    recomputeLive(startedAt + 2_000);
+    expect(surface.show).toHaveBeenCalledTimes(1);
+    env.outcome = "shown";
+    recomputeLive(startedAt + 11_000);
+    expect(surface.show).toHaveBeenCalledTimes(2);
+    await settle();
+    recomputeLive(startedAt + 30_000);
+    expect(surface.show).toHaveBeenCalledTimes(2);
+  });
+
+  it("balayée de l'écran verrouillé : jamais reposée pour ce lot", async () => {
+    env.outcome = "dismissed";
+    env.entries = [entry(1, "downloading")];
+    startLiveTransfers("u1");
+    await settle();
+    appStateChange("active");
+    recomputeLive(Date.now() + 60_000);
+    expect(surface.show).toHaveBeenCalledTimes(1);
+  });
 });
+
+/** Laisse répondre la surface (promesses du natif). */
+function settle(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function appStateChange(status: string): void {
+  for (const listener of env.appListeners) listener(status);
+}

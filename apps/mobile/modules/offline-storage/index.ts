@@ -42,7 +42,8 @@ interface OfflineStorageNative {
   ): boolean;
   hideLiveTransfer?(): boolean;
   liveActivitiesEnabled?(): boolean;
-  presentLiveActivity?(state: LiveActivityState): Promise<boolean>;
+  /** `shown`, `dismissed` ou `refused:<cause>` ; un build d'avant rend un booléen. */
+  presentLiveActivity?(state: LiveActivityState): Promise<string | boolean>;
   endLiveActivity?(): Promise<boolean>;
   addListener?(event: string, listener: () => void): { remove: () => void };
   /** Verdict `"ok" | "unusable" | "failed"` ; un ancien build rend encore un booléen. */
@@ -236,12 +237,28 @@ export function liveActivitiesEnabled(): boolean {
   }
 }
 
-export async function presentLiveActivity(state: LiveActivityState): Promise<boolean> {
-  if (Platform.OS !== "ios" || native === null || typeof native.presentLiveActivity !== "function") return false;
+/** Ce qu'iOS a fait de la Live Activity : visible, balayée par la personne, ou refusée (et pourquoi). */
+export type LiveActivityOutcome =
+  | { kind: "shown" }
+  | { kind: "dismissed" }
+  | { kind: "refused"; cause: string };
+
+/** Le verdict du natif, tel quel ; un build d'avant ne rendait qu'un booléen. */
+export function parseLiveActivityOutcome(raw: string | boolean): LiveActivityOutcome {
+  if (raw === true || raw === "shown") return { kind: "shown" };
+  if (raw === "dismissed") return { kind: "dismissed" };
+  if (typeof raw === "string" && raw.startsWith("refused:")) return { kind: "refused", cause: raw.slice("refused:".length) };
+  return { kind: "refused", cause: String(raw) };
+}
+
+export async function presentLiveActivity(state: LiveActivityState): Promise<LiveActivityOutcome> {
+  if (Platform.OS !== "ios" || native === null || typeof native.presentLiveActivity !== "function") {
+    return { kind: "refused", cause: "unavailable" };
+  }
   try {
-    return await native.presentLiveActivity(state);
-  } catch {
-    return false;
+    return parseLiveActivityOutcome(await native.presentLiveActivity(state));
+  } catch (error) {
+    return { kind: "refused", cause: String(error) };
   }
 }
 

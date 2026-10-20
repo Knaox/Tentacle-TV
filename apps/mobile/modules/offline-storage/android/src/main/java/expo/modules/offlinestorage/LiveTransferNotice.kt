@@ -39,7 +39,11 @@ object LiveTransferNotice {
   @Volatile var content: Content? = null
     private set
 
-  /** Pose ou met à jour le suivi ; `false` sans permission de notifier. */
+  /**
+   * Pose ou met à jour le suivi ; `false` sans permission de notifier — Android
+   * avale alors la notification sans rien dire, et le JavaScript la reposera
+   * au retour au premier plan (permission accordée entre-temps).
+   */
   fun show(context: Context, channelName: String, next: Content): Boolean {
     content = next
     return try {
@@ -51,7 +55,7 @@ object LiveTransferNotice {
       } else {
         manager.notify(OfflineTransferService.LIVE_NOTIFICATION_ID, OfflineTransferService.buildCurrent(context, withPause = false))
       }
-      true
+      manager.areNotificationsEnabled()
     } catch (e: SecurityException) {
       false
     }
