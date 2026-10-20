@@ -11,7 +11,7 @@ import { deviceKeyOf } from "../services/watchTogether/requestDevice";
 import { isDeviceBound } from "../services/watchTogether/memberDevices";
 import { notifyElsewhere } from "../services/watchTogether/elsewhere";
 import { leaveFromDevice } from "../services/watchTogether/deviceLeave";
-import { watchBoundDevice } from "../services/watchTogether/gatewayPresence";
+import { releaseFromDeadRoom, watchBoundDevice } from "../services/watchTogether/gatewayPresence";
 import { watchTogetherDeviceRoutes } from "./watchTogetherDevices";
 import { isItemVisibleTo } from "../services/itemAccess/itemVisibility";
 import { wtAccessOf } from "../services/watchTogether/accountAccess";
@@ -40,6 +40,10 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     const profile = await getUserBasic(user.userId);
     // Le titre de contexte passera dans les invitations : seulement s'il est visible à l'hôte.
     const contextItemId = body.itemId && (await isItemVisibleTo(user.userId, body.itemId)) ? body.itemId : null;
+    // Le compte est encore dans une salle, mais PAR DES APPAREILS ÉTEINTS (ils
+    // attendent la fin de leur grâce) : il la quitte maintenant, comme à leur
+    // expiration — un nouvel appareil n'attend pas deux minutes pour créer.
+    releaseFromDeadRoom(user.userId);
     // L'appareil qui crée est le seul lié à la salle (adhésion par appareil).
     const room = createRoom(
       { userId: user.userId, username: user.username, hasAvatar: profile?.hasAvatar ?? false },
@@ -87,7 +91,7 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     if (!room || !self || !isDeviceBound(self, deviceKeyOf(request))) {
       return reply.status(404).send({ code: "not_in_group" });
     }
-    if (leaveFromDevice(room, self, deviceKeyOf(request))) return { success: true };
+    if (leaveFromDevice(room, self, deviceKeyOf(request), { sweepOffline: true })) return { success: true };
     const result = removeMemberAndSync(user.userId);
     if (!result) return reply.status(404).send({ code: "not_in_group" });
     notifyElsewhere(user.userId);

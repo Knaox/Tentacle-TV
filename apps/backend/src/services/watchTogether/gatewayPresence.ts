@@ -76,6 +76,17 @@ export function watchBoundDevice(userId: string, deviceKey: string | undefined):
   armDeviceGrace(member, deviceKey, (key) => onDeviceGraceExpired(userId, key));
 }
 
+/** Le compte n'est plus dans sa salle que par des appareils éteints (en
+ *  grâce) : il la quitte maintenant, comme à leur expiration. Rien s'il y a un
+ *  appareil lié en ligne, ou un membre sans appareil lié (comportement d'avant). */
+export function releaseFromDeadRoom(userId: string): void {
+  const member = getRoomOf(userId)?.members.get(userId);
+  if (!member || member.devices.size === 0) return;
+  for (const key of member.devices.keys()) if (isDeviceOnline(key)) return;
+  wtSrvLog(`appareils liés tous éteints : ${userId} quitte sa salle pour en créer une`);
+  onGraceExpired(userId);
+}
+
 /** Branche la présence (appelé une fois, par le gateway). */
 export function registerPresence(): void {
   onPresenceChange((userId, online) => {
