@@ -1,4 +1,4 @@
-import type { SafeInsets } from "../chrome/chromeInsets";
+import { CHROME_BOTTOM_ROW, CHROME_TOP_ROW, type SafeInsets } from "../chrome/chromeInsets";
 
 /**
  * Où se pose un panneau du lecteur (pistes, réglages, épisodes) — la règle
@@ -6,7 +6,13 @@ import type { SafeInsets } from "../chrome/chromeInsets";
  * plein écran ni une feuille pleine largeur sur un téléphone couché.
  *
  * - `side` : un panneau flottant contre le bord droit, à la hauteur de son
- *   contenu, posé au-dessus des boutons qui l'ouvrent (paysage, iPad).
+ *   contenu, posé au-dessus des outils qui l'ouvrent et sous la rangée du
+ *   haut (paysage, iPad) — il ne recouvre ni « fermer » ni l'image dans l'image.
+ *
+ * Un panneau occupe le MILIEU de la hauteur, là où l'îlot d'un iPhone couché
+ * mord sur un côté : ses côtés suivent la marge sûre RÉELLE, pas l'écart d'un
+ * coin des barres (`chromeInsets`) — sinon titre et vignettes passaient sous
+ * l'îlot (banc du 21/10).
  * - `bottom` : une carte flottante en bas, décollée des bords (téléphone
  *   debout), plafonnée pour laisser voir le haut de l'image.
  * - `shelf` : une étagère en bas sur toute la largeur utile, qui défile de
@@ -22,6 +28,8 @@ export interface PanelLayoutInput {
   isTablet: boolean;
   /** Les marges des commandes (`chromeInsets`). */
   edges: SafeInsets;
+  /** Les marges sûres du système (îlot, encoche, indicateur d'accueil). */
+  insets: SafeInsets;
 }
 
 export interface PanelFrame {
@@ -43,15 +51,17 @@ export const BOTTOM_GAP = 8;
 const BOTTOM_IMAGE_SHARE = { menu: 0.38, episodes: 0.3 } as const;
 
 export function panelLayout(input: PanelLayoutInput): PanelFrame {
-  const { kind, width, height, isTablet, edges } = input;
+  const { kind, width, height, isTablet, edges, insets } = input;
   const landscape = width > height;
   const usableHeight = Math.max(0, height - edges.top - edges.bottom);
+  const left = Math.max(edges.left, insets.left);
+  const right = Math.max(edges.right, insets.right);
 
   if (kind === "episodes" && (landscape || isTablet)) {
     return {
       mode: "shelf",
-      left: edges.left,
-      right: edges.right,
+      left,
+      right,
       bottom: edges.bottom,
       // L'étagère ne monte jamais au-delà des quatre cinquièmes : le haut de l'image reste.
       maxHeight: Math.round(usableHeight * 0.8),
@@ -62,12 +72,14 @@ export function panelLayout(input: PanelLayoutInput): PanelFrame {
   if (kind === "menu" && (landscape || isTablet)) {
     const target = isTablet ? SIDE_WIDTH.tablet : SIDE_WIDTH.phone;
     const sideWidth = Math.min(target, Math.round(width * (landscape ? 0.46 : 0.6)));
+    const top = edges.top + CHROME_TOP_ROW + 8;
+    const bottom = edges.bottom + CHROME_BOTTOM_ROW + 8;
     return {
       mode: "side",
-      right: edges.right,
-      bottom: edges.bottom,
+      right,
+      bottom,
       width: sideWidth,
-      maxHeight: usableHeight,
+      maxHeight: Math.max(160, height - top - bottom),
       radius: 22,
     };
   }
