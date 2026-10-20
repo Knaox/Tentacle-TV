@@ -4,6 +4,7 @@ import { sameUserId } from "@tentacle-tv/shared";
 import { honorTvPromptsReset, readProfileRecord, tvSessionMode } from "@tentacle-tv/tv-core";
 import { useStoredToken } from "../hooks/useStoredToken";
 import { useTvFamilyListing } from "../redesignWiring/profiles/useTvFamilyListing";
+import { railPinningStore } from "./nav/railPinning";
 
 /**
  * La Famille EN DIRECT pendant une session de profil (Apple TV, Android TV),
@@ -30,7 +31,7 @@ export function TVFamilyLive() {
   useEffect(() => {
     const record = readProfileRecord(storage);
     const open = record ? listing?.profiles.find((profile) => sameUserId(profile.userId, record.profileId)) : undefined;
-    if (open) honorTvPromptsReset(storage, open);
+    if (open && honorTvPromptsReset(storage, open)) railPinningStore.reopenSetup(open.userId);
   }, [listing, storage]);
   return null;
 }
