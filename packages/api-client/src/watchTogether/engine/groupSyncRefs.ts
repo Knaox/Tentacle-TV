@@ -1,7 +1,8 @@
 import type { MutableRefObject } from "react";
 import {
   TICKS_PER_SECOND, WT_OWN_SEEK_ECHO_MS, WT_SEEK_LOOKAHEAD_S, pendingIntentUntil,
-  type PendingIntent, type PendingIntentKind, type WsClientMessage, type WtRoomStateDto, type WtSeekToken,
+  type HardSeekWatch, type PendingIntent, type PendingIntentKind, type WsClientMessage, type WtRoomStateDto,
+  type WtSeekToken,
 } from "@tentacle-tv/shared";
 import type { PlayerTransport } from "../playerPort";
 import { getClockRttMs } from "../../socket/clockSync";
@@ -73,8 +74,8 @@ export interface GroupSyncSharedRefs {
   /** Latence de seek mesurée (secondes, lissée), null tant qu'inconnue — le
    *  lookahead d'un seek dur en lecture. */
   seekLatencySRef: MutableRefObject<number | null>;
-  /** Seek dur en vol, pour mesurer sa latence à l'atterrissage. */
-  pendingHardSeekRef: MutableRefObject<{ at: number; targetS: number } | null>;
+  /** Seek dur en cours, suivi jusqu'à la reprise de la lecture (`hardSeekProgress`). */
+  pendingHardSeekRef: MutableRefObject<HardSeekWatch | null>;
   /** Le dernier seek DEMANDÉ par cet appareil (numéro du jeton, instant). */
   localSeekRef: MutableRefObject<{ seq: number; at: number } | null>;
   /** La dernière barrière confirmée par ce lecteur — remise à zéro quand il

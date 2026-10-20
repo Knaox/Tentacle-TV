@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import {
   WT_DRIFT_ENGAGE_MPV_S, WT_DRIFT_ENGAGE_WEB_S, WT_DRIFT_LOOP_MS, WT_DRIFT_SETTLE_MPV_S,
-  WT_DRIFT_SETTLE_WEB_S, decideDrift, isBarrierParticipant, isFutureAnchor, isWaitedForMe, updateSeekLatency,
+  WT_DRIFT_SETTLE_WEB_S, decideDrift, hardSeekProgress, isBarrierParticipant, isFutureAnchor, isWaitedForMe,
+  updateSeekLatency,
   wtPositionSecondsAt,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
@@ -10,10 +11,6 @@ import {
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
 
-/** Un seek dur dont l'atterrissage n'est pas vu en ce délai ne mesure rien. */
-const HARD_SEEK_MEASURE_MAX_MS = 5_000;
-/** Atterri : la position est revenue à moins de ça de la cible visée. */
-const HARD_SEEK_LANDED_S = 0.5;
 
 /**
  * Watch Together — boucle de correction de dérive (5 Hz).
@@ -49,6 +46,7 @@ export function useGroupDriftLoop({
     if (!enabled) return;
     // Anti-spam : les raisons de skip se loggent au changement, pas à 5 Hz.
     let lastSkipLogged: string | null = null;
+    let heldLoggedFor: number | null = null;
     const skip = (reason: string, message: string, data?: unknown) => {
       if (lastSkipLogged === reason) return;
       lastSkipLogged = reason;
@@ -87,16 +85,25 @@ export function useGroupDriftLoop({
       const expected = wtPositionSecondsAt(r, nowSrv);
       const pos = t.getPositionSeconds();
 
-      // Un seek dur vient d'atterrir : sa latence devient le lookahead du prochain.
+      // Un seek dur en cours : on attend que la lecture REPARTE (pas seulement
+      // l'atterrissage) — sa latence, attente des segments comprise, devient le
+      // lookahead du prochain ; d'ici là, aucun nouveau seek dur (un
+      // transcodage re-sautait sinon toutes les 1,8 s sans jamais reprendre).
+      let hardSeekHeld = false;
       const pending = shared.pendingHardSeekRef.current;
       if (pending) {
-        const elapsedMs = Date.now() - pending.at;
-        if (Math.abs(pos - pending.targetS) < HARD_SEEK_LANDED_S) {
-          shared.seekLatencySRef.current = updateSeekLatency(shared.seekLatencySRef.current, elapsedMs / 1000);
+        const progress = hardSeekProgress(pending, pos, Date.now());
+        if (progress.state === "resumed") {
+          shared.seekLatencySRef.current = updateSeekLatency(shared.seekLatencySRef.current, progress.latencyS);
           shared.pendingHardSeekRef.current = null;
-          wtLog("engine", "drift: seek dur atterri", { latencyMs: elapsedMs, emaS: shared.seekLatencySRef.current.toFixed(2) });
-        } else if (elapsedMs > HARD_SEEK_MEASURE_MAX_MS) {
+          wtLog("engine", "drift: seek dur — la lecture a repris", {
+            latencyS: progress.latencyS.toFixed(2), emaS: shared.seekLatencySRef.current.toFixed(2),
+          });
+        } else if (progress.state === "expired") {
           shared.pendingHardSeekRef.current = null;
+        } else {
+          pending.lastPosS = pos;
+          hardSeekHeld = true;
         }
       }
 
@@ -127,6 +134,12 @@ export function useGroupDriftLoop({
         wtLog("engine", "drift: recalage en pause", { posS: pos.toFixed(2), expectedS: expected.toFixed(2) });
         armEcho(shared);
         t.seekTo(expected);
+      } else if (decision.seek === "hard" && hardSeekHeld) {
+        // Une seule trace par seek retenu, pas une par battement.
+        if (heldLoggedFor !== pending?.at) {
+          heldLoggedFor = pending?.at ?? null;
+          wtLog("engine", "drift: seek dur retenu — le précédent n'a pas encore repris la lecture", { driftS: drift.toFixed(2) });
+        }
       } else if (decision.seek === "hard") {
         const lookahead = seekLookaheadS(shared);
         wtLog("engine", "drift: HARD — seek de recalage", {
@@ -134,7 +147,7 @@ export function useGroupDriftLoop({
         });
         armEcho(shared);
         t.seekTo(expected + lookahead);
-        shared.pendingHardSeekRef.current = { at: Date.now(), targetS: expected + lookahead };
+        shared.pendingHardSeekRef.current = { at: Date.now(), targetS: expected + lookahead, lastPosS: null };
       }
 
       if (decision.rate !== shared.currentRateRef.current) {
