@@ -1,8 +1,10 @@
-import { Pressable, StyleSheet, type ViewStyle } from "react-native";
+import { Platform, Pressable, StyleSheet, type ViewStyle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../../theme";
 import { haptic as playHaptic } from "../../utils/haptics";
+import { GlassFill } from "./buttons/GlassFill";
+import { MIN_TARGET } from "./buttons/buttonLook";
 
 const ICON_MAP: Record<string, keyof typeof Feather.glyphMap> = {
   "←": "arrow-left",
@@ -10,6 +12,8 @@ const ICON_MAP: Record<string, keyof typeof Feather.glyphMap> = {
   "✕": "x",
   "×": "x",
 };
+
+const PLATFORM = Platform.OS === "android" ? "android" : "ios";
 
 interface Props {
   icon: string;
@@ -21,31 +25,40 @@ interface Props {
   accessibilityLabel?: string;
   haptic?: boolean;
   /**
-   * Bouton posé sur une image (backdrop) : fond scrim SOMBRE + icône claire,
-   * dans les deux thèmes. Par défaut (false), rendu neutre subtil adapté aux
-   * surfaces planes (réglages, à propos…) — plus de gros cercle noir en clair.
+   * - `tonal` (défaut) : puce neutre translucide + liseré d'un cheveu, pour
+   *   les surfaces de l'app (réglages, en-têtes, feuilles).
+   * - `plain` : le pictogramme seul (barres d'outils, fermer une feuille).
+   * - `glass` : posé sur une IMAGE — Liquid Glass (iOS 26), flou (iOS
+   *   d'avant), voile sombre (Android).
    */
+  variant?: "tonal" | "plain" | "glass";
+  /** Ancien nom de `variant="glass"`. */
   onMedia?: boolean;
 }
 
 /**
- * Bouton rond avec icône Feather. Press anim Reanimated (scale spring),
- * haptic léger optionnel. Deux rendus : neutre subtil (surface plane, défaut)
- * ou scrim sombre (`onMedia`, sur backdrop). Touch target ≥ 44pt via hitSlop.
+ * Bouton rond à pictogramme Feather — le `IconButton` du système de boutons
+ * (`./buttons`). Cible tactile ≥ 44 pt / 48 dp par `hitSlop`, quelle que soit
+ * la taille dessinée. Appui : léger rétrécissement (ressort), haptique.
  */
 export function IconButton({
-  icon, onPress, size = 36, style, color, bgColor, accessibilityLabel, haptic = true, onMedia = false,
+  icon, onPress, size = 36, style, color, bgColor, accessibilityLabel, haptic = true, variant, onMedia = false,
 }: Props) {
   const theme = useTheme();
+  const kind = variant ?? (onMedia ? "glass" : "tonal");
   const featherName = ICON_MAP[icon] ?? (icon as keyof typeof Feather.glyphMap);
-  // Sur média : scrim sombre + icône claire (lisible sur affiche). Sinon : puce
-  // neutre translucide + bord hairline (élégant sur fond clair comme sombre).
-  const defaultBg = onMedia ? theme.colors.overlay.scrim : theme.colors.fill.soft;
-  const iconColor = color ?? (onMedia ? theme.colors.onMedia.primary : theme.colors.text.primary);
+  const iconColor = color ?? (kind === "glass" ? theme.colors.onMedia.primary : theme.colors.text.primary);
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const hitSlop = Math.max(0, Math.round((44 - size) / 2));
+  const hitSlop = Math.max(0, Math.round((MIN_TARGET[PLATFORM] - size) / 2));
+  const radius = size / 2;
+  const surface: ViewStyle | null =
+    bgColor
+      ? { backgroundColor: bgColor }
+      : kind === "tonal"
+        ? { backgroundColor: theme.colors.fill.soft, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.border.subtle }
+        : null;
 
   return (
     <Animated.View style={animStyle}>
@@ -62,12 +75,12 @@ export function IconButton({
         style={[{
           width: size,
           height: size,
-          borderRadius: size / 2,
-          backgroundColor: bgColor ?? defaultBg,
+          borderRadius: radius,
           justifyContent: "center" as const,
           alignItems: "center" as const,
-        }, !onMedia && !bgColor ? { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.border.subtle } : null, style]}
+        }, surface, style]}
       >
+        {kind === "glass" && !bgColor ? <GlassFill radius={radius} /> : null}
         <Feather name={featherName} size={Math.round(size * 0.5)} color={iconColor} />
       </Pressable>
     </Animated.View>
