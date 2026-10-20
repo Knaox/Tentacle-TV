@@ -217,6 +217,11 @@ Sur mobile, tablette ET web, pour tous les droits.
 | D1 | reglages | `settingsMobile.ts` FR 47/81, EN 37/71 | « ce téléphone / this phone » affiché aussi sur tablette | reglages 03:05 | corrigé 3a4cea2c8 (vérifié) |
 | D3 | lecteur-mobile | processus | build gradle hors `heavy.sh` (03:12, charge 31) | note partagée + coordinateur (rapport de fin de tour : messages bloqués par l'app) | ouvert |
 | D4 | notifs | processus | `tsc` sous `heavy.sh` au lieu de `check.sh` : bloque le verrou lourd | idem | ouvert |
+| Q5 | hors-ligne-live | `offline.ts` `liveFinalizing` FR/EN | « sur le téléphone / on the phone » affiché sur tablette | note `qualite-passe1.md` | ouvert |
+| Q6 | hors-ligne-live ⟷ reglages | `OnDeviceSettingsScreen.tsx`, `settingsCatalog` | réglage « Suivi en direct » posé hors du catalogue partagé et sur un écran réécrit par reglages → conflit + W3 | note | ouvert |
+| Q7 | hors-ligne-live (Vigie) | `stalled-research.ts` | retrait + liste noire automatiques d'un transfert bloqué 6 h : comportement nouveau, à valider par Damien | note + récap | décision |
+| Q8 | toutes | `shared/src/index.ts`, `serverCapabilities.ts` | ajouts concurrents sur 11 et 5 branches (conflits triviaux) ; index.ts > 300 dès dev | coordinateur | fusion |
+| Q9 | inconnue | processus | vitest `--maxWorkers=2` hors check.sh à 03:24 | note | relevé |
 | D2 | wt-socle | salle WT | 8 sauts rapides (+30 s) perdus (signalé par wt-banc) | coordinateur → wt-socle | ouvert |
 
 ## Décisions tranchées par les sessions
