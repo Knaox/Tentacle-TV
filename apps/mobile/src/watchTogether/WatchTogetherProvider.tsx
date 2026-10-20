@@ -11,7 +11,7 @@ import { showToast } from "@/notices/toastStore";
 import { useWtAvailability } from "./gate/useWtAvailability";
 import { pushWtNotice } from "./notices/wtNotices";
 import { useWtResume } from "./resume/useWtResume";
-import { isPlayerPath } from "./session/inboxRule";
+import { isPlayerPath } from "@tentacle-tv/shared";
 import { WtHost } from "./WtHost";
 
 /**
