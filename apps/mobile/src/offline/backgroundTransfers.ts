@@ -21,8 +21,10 @@
  * reprend au retour au premier plan. Tenir le service en attente du Wi-Fi
  * brûlerait le quota et afficherait une notification permanente.
  *
- * Aucun minuteur ici : RN Android gèle `setTimeout` en arrière-plan. Le
- * rythme des mises à jour se compare à l'horloge.
+ * Aucun minuteur ici : RN Android gèle `setTimeout` en arrière-plan — sauf
+ * pendant la tâche qui garde l'horloge en marche (`androidKeepAlive.ts`), que
+ * ce module tient le temps que le moteur s'occupe. Le rythme des mises à jour
+ * se compare quand même à l'horloge.
  */
 
 import { Platform } from "react-native";
@@ -36,6 +38,7 @@ import {
   updateTransferService,
 } from "../../modules/offline-storage";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
+import { holdJsAlive, releaseJsAlive } from "./androidKeepAlive";
 import { isBackgroundTransfers } from "./settings";
 
 const KEEP_AWAKE_TAG = "offline-transfer";
@@ -129,6 +132,7 @@ export function onEngineBusy(active: boolean): void {
   if (!active) {
     releaseKeepAwake();
     releaseService();
+    releaseJsAlive();
     seen.clear();
     lastNoticeAt = 0;
     return;
@@ -138,6 +142,9 @@ export function onEngineBusy(active: boolean): void {
     return;
   }
   if (Platform.OS !== "android") return;
+  // Les minuteurs survivent à l'activité en pause (`androidKeepAlive.ts`) :
+  // sans eux, une coupure écran éteint ne se relançait jamais.
+  holdJsAlive();
   // La permission n'est jamais attendue : le service tourne sans elle, seule
   // la notification resterait invisible.
   void ensureNotificationPermission();
@@ -176,6 +183,7 @@ export function stopBackgroundTransfers(): void {
   busy = false;
   releaseKeepAwake();
   releaseService();
+  releaseJsAlive();
   seen.clear();
   pending = 0;
 }

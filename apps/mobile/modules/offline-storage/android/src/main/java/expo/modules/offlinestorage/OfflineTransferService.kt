@@ -214,8 +214,14 @@ class OfflineTransferService : Service() {
     finish()
   }
 
+  /**
+   * L'application balayée des récentes : le service RESTE. C'est lui qui garde
+   * le processus — moteur JavaScript et flux compris — et l'arrêter ici tuait
+   * le transfert en cours (« quitter l'app pendant la préparation, tout
+   * s'arrête », alpha mobile, 21/10). Il s'arrête quand le moteur se libère, ou
+   * avec le module si le JavaScript meurt (`OfflineStorageModule.OnDestroy`).
+   */
   override fun onTaskRemoved(rootIntent: Intent?) {
-    finish()
     super.onTaskRemoved(rootIntent)
   }
 

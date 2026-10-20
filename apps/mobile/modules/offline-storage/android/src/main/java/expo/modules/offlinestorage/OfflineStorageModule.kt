@@ -53,6 +53,16 @@ class OfflineStorageModule : Module() {
       OfflineTransferService.stop(context)
     }
 
+    // Les minuteurs du JavaScript vivants application derrière (`JsKeepAlive`).
+    Function("holdJsAlive") {
+      JsKeepAlive.hold(context)
+    }
+
+    Function("releaseJsAlive") {
+      JsKeepAlive.release(context)
+      true
+    }
+
     // Le suivi en direct (`LiveTransferNotice`) : le JavaScript donne les mots,
     // la barre et la fin estimée ; le chronomètre natif décompte seul.
     Function("showLiveTransfer") {
@@ -105,6 +115,7 @@ class OfflineStorageModule : Module() {
       appContext.reactContext?.let {
         LiveTransferNotice.hide(it)
         OfflineTransferService.stop(it)
+        JsKeepAlive.release(it)
       }
     }
   }
