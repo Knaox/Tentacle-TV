@@ -80,7 +80,7 @@ describe("wt:seek en lecture", () => {
     expect(room.stateAtServerTime).toBeGreaterThan(NOW + 300);
   });
 
-  it("un « prêt » d'une barrière périmée ne libère rien ; sans identifiant, il compte", () => {
+  it("un « prêt » d'une barrière périmée ne libère rien", () => {
     applyCommand(room, guestMember, { type: "wt:seek", positionTicks: S(500) }, isOnline);
     applyCommand(room, guestMember, { type: "wt:buffering", buffering: false, barrierId: 1 }, isOnline);
     applyCommand(room, hostMember, { type: "wt:seek", positionTicks: S(600) }, isOnline);
@@ -89,10 +89,25 @@ describe("wt:seek en lecture", () => {
     expect(applyCommand(room, guestMember, { type: "wt:buffering", buffering: false, barrierId: 1 }, isOnline))
       .toEqual({ kind: "ignore" });
     expect(room.waitingFor.size).toBe(2);
-    applyCommand(room, guestMember, { type: "wt:buffering", buffering: false }, isOnline);
+    applyCommand(room, guestMember, { type: "wt:buffering", buffering: false, barrierId: 2 }, isOnline);
     applyCommand(room, hostMember, { type: "wt:buffering", buffering: false, barrierId: 2 }, isOnline);
     expect(room.paused).toBe(false);
     expect(room.positionTicks).toBe(S(600));
+  });
+
+  it("un lecteur v2 qui FINIT DE CHARGER pendant un seek n'est pas posé pour autant (banc : salle à 40 s, lui à 0 s)", () => {
+    applyCommand(room, guestMember, { type: "wt:buffering", buffering: true }, isOnline); // il charge
+    applyCommand(room, hostMember, { type: "wt:seek", positionTicks: S(40) }, isOnline);
+    applyCommand(room, hostMember, { type: "wt:buffering", buffering: false, barrierId: room.barrier!.id }, isOnline);
+    const loaded = applyCommand(room, guestMember, { type: "wt:buffering", buffering: false }, isOnline);
+    // Rien ne repart : l'état diffusé le fait se caler sur 40 s…
+    expect(loaded).toEqual({ kind: "broadcast", cause: "presence" });
+    expect(room.paused).toBe(true);
+    expect([...room.waitingFor]).toEqual([guest.userId]);
+    // … et c'est son « posé » qui libère la salle.
+    expect(applyCommand(room, guestMember, { type: "wt:buffering", buffering: false, barrierId: room.barrier!.id }, isOnline))
+      .toEqual({ kind: "broadcast", cause: "schedule" });
+    expect(room.positionTicks).toBe(S(40));
   });
 
   it("une salle de clients d'avant ne gèle pas : seek appliqué, reprise planifiée aussitôt", () => {

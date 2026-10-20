@@ -7,7 +7,7 @@ import {
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
 import {
-  armEcho, cancelScheduledPlay, clearPendingIntent, seekLookaheadS, sendBarrierReady,
+  armEcho, cancelScheduledPlay, clearPendingIntent, isSettledOn, seekLookaheadS, sendBarrierReady,
   setTransportRate, REMOTE_JUMP_THRESHOLD_S, type GroupSyncSharedRefs, type ScheduledPlay,
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
@@ -106,9 +106,7 @@ export function useGroupRemoteApply({
           const player = transportRef.current;
           const current = shared.roomRef.current;
           if (!player || !current || current.barrierId !== barrierId) { stopBarrierPoll(); return; }
-          const settled = player.isSettledAt
-            ? player.isSettledAt(targetS)
-            : !player.isSeeking?.() && player.isMediaReady?.() !== false;
+          const settled = isSettledOn(player, targetS);
           if (!settled && Date.now() - startedAt < WT_BARRIER_CONFIRM_TIMEOUT_MS) {
             // Prêt à être jugé (pas de seek en vol, média chargé) mais pas posé :
             // en lecture, ou hors de la cible → pause et re-calage.
