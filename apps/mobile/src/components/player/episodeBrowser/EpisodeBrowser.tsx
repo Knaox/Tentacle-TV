@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { TABLET_MIN_WIDTH } from "@/theme";
 import { useChromeInsets } from "../../../player/chrome/useChromeInsets";
 import { openingEpisodeIndex, type EpisodeEntry } from "../../../player/episodes/episodeBrowserModel";
-import { openCardAt, openIndexAt, openShelfGeometry } from "../../../player/episodes/episodeBrowserLayout";
+import { openCardAt, openIndexAt, openShelfGeometry, rowTrailingPadding } from "../../../player/episodes/episodeBrowserLayout";
 import { BrowserCloseButton } from "./BrowserCloseButton";
 import { EB, ROW_SCRIM } from "./browserTokens";
 import { SeasonWords } from "./SeasonWords";
@@ -144,7 +144,7 @@ export function EpisodeBrowser(props: EpisodeBrowserProps) {
                 initialNumToRender={Math.max(8, opening + 5)}
                 windowSize={5}
                 style={{ height: geo.openHeight + 12 }}
-                contentContainerStyle={{ paddingLeft: geo.inset, paddingRight: Math.max(geo.inset, width - geo.inset - geo.openWidth), gap: GAP, paddingTop: 12 }}
+                contentContainerStyle={{ paddingLeft: geo.inset, paddingRight: rowTrailingPadding(width, geo.inset, geo.restWidth), gap: GAP, paddingTop: 12 }}
               />
             </View>
           )}

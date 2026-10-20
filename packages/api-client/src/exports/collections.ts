@@ -8,7 +8,7 @@ export {
   watchStage, watchProgress, watchRemaining, summarizeWatchlist, filterByWatchStage, resumeQueue, parseWatchStageFilter,
   WATCH_STAGE_FILTERS, type WatchStage, type WatchStageFilter, type WatchlistSummary, type RemainingInfo,
 } from "../utils/watchlistProgress";
-export { useResolvePlayTarget } from "../hooks/useResolvePlayTarget";
+export { useResolvePlayTarget, useResolveSeriesPlay } from "../hooks/useResolvePlayTarget";
 export { useRestoreWatchlistItem } from "../hooks/useRestoreWatchlistItem";
 export { favoriteWatchState, summarizeFavorites, groupFavorites, favoritesGroupLabel, isFavoritesGroupMode, FAVORITES_GROUP_MODES, type FavoriteWatchState, type FavoritesSummary, type FavoritesGroup, type FavoritesGroupMode } from "../utils/favoritesOverview";
 export { useWatchedToggle } from "../hooks/useWatchedToggle";

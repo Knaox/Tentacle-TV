@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MediaItem } from "@tentacle-tv/shared";
 import {
-  openCardAt, openCardPlace, openDetailsHeight, openIndexAt, openShelfGeometry, videoAspectOf, videoRect, type BrowserScreen,
+  openCardAt, openCardPlace, openDetailsHeight, openIndexAt, openShelfGeometry, rowTrailingPadding, videoAspectOf, videoRect, type BrowserScreen,
 } from "./episodeBrowserLayout";
 
 // iPhone 17 Pro, debout puis couché ; iPad Pro 11 pouces, debout puis couché.
@@ -120,4 +120,22 @@ describe("la carte qui s'ouvre", () => {
     expect(openCardAt(4 * STEP + 80 + 10, 3, STEP, 120, 200, 12)).toBe(4);
     expect(openCardAt(99 * STEP, 3, STEP, 120, 200, 12)).toBeNull();
   });
+});
+
+describe("la fin de la rangée", () => {
+  // Ce que la rangée peut défiler : son contenu (cellules au REPOS, écarts, marges) moins l'écran.
+  const maxScroll = (screen: BrowserScreen, count: number) => {
+    const geo = openShelfGeometry(screen, video(screen));
+    const step = geo.restWidth + 12;
+    const content = geo.inset + count * geo.restWidth + (count - 1) * 12 + rowTrailingPadding(screen.width, geo.inset, geo.restWidth);
+    return { max: content - screen.width, step };
+  };
+
+  for (const [name, screen] of [["téléphone debout", PHONE_PORTRAIT], ["téléphone couché", PHONE_LANDSCAPE], ["iPad debout", PAD_PORTRAIT], ["iPad couché", PAD_LANDSCAPE]] as const) {
+    it(`${name} : le dernier épisode s'ouvre au retrait (trois épisodes, le troisième en cours)`, () => {
+      const { max, step } = maxScroll(screen, 3);
+      expect(max).toBeGreaterThanOrEqual(2 * step);
+      expect(openIndexAt(Math.min(max, 2 * step) / step, 3)).toBe(2);
+    });
+  }
 });

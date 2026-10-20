@@ -50,6 +50,17 @@ describe("toSeasonEntry", () => {
     const season = { Id: "s", Name: "Saison 2", ChildCount: 3, RecursiveItemCount: 10 } as MediaItem;
     expect(toSeasonEntry(season, "s")).toMatchObject({ count: 10, current: true });
   });
+
+  it("le libellé est dit dans les mots de l'interface, jamais le « Season 1 » brut", () => {
+    const season = { Id: "s", Name: "Season 1", IndexNumber: 1 } as MediaItem;
+    const title = (number: number, name: string | null | undefined) => (name === "Season 1" ? `Saison ${number}` : `Saison ${number} · ${name}`);
+    expect(toSeasonEntry(season, undefined, title).label).toBe("Saison 1");
+  });
+
+  it("sans numéro, le nom de Jellyfin reste", () => {
+    const season = { Id: "s", Name: "Extras" } as MediaItem;
+    expect(toSeasonEntry(season, undefined, () => "jamais").label).toBe("Extras");
+  });
 });
 
 describe("openingEpisodeIndex", () => {

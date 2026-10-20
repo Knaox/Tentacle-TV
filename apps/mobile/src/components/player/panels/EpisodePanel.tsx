@@ -1,6 +1,8 @@
 import { memo, useCallback, useMemo } from "react";
 import { useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { seasonTitle } from "@tentacle-tv/tv-core";
 import { useJellyfinClient, useMediaItem, useSeasonBrowser } from "@tentacle-tv/api-client";
 import { resolveCardMarkers, type MediaItem } from "@tentacle-tv/shared";
 import { CardStatusMarkers } from "@/components/cards/CardStatusMarkers";
@@ -34,6 +36,7 @@ export function EpisodePanel({ seriesId, currentEpisodeId, initialSeasonId, onCl
   const router = useRouter();
   const client = useJellyfinClient();
   const { width, height } = useWindowDimensions();
+  const { t } = useTranslation("requests");
   // Le titre en lecture est déjà en cache (le lecteur l'a lu) : son format pose la rangée sous l'image.
   const { data: current } = useMediaItem(currentEpisodeId);
   const browser = useSeasonBrowser({
@@ -46,8 +49,10 @@ export function EpisodePanel({ seriesId, currentEpisodeId, initialSeasonId, onCl
   const byId = useMemo(() => new Map(items.map((item) => [item.Id, item])), [items]);
   const episodes = useMemo(() => items.map((item) => toEpisodeEntry(item, currentEpisodeId)), [items, currentEpisodeId]);
   const seasons = useMemo(
-    () => (browser.seasons ?? []).map((season) => toSeasonEntry(season, browser.markedSeasonId)),
-    [browser.seasons, browser.markedSeasonId],
+    () => (browser.seasons ?? []).map((season) => toSeasonEntry(
+      season, browser.markedSeasonId, (number, name) => seasonTitle(t, number, name),
+    )),
+    [browser.seasons, browser.markedSeasonId, t],
   );
 
   const renderArtwork = useCallback((entry: EpisodeEntry) => {
