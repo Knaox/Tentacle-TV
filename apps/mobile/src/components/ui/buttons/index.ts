@@ -8,6 +8,7 @@ export {
   MIN_TARGET,
   buttonMetrics,
   resolveButtonLook,
+  selectedOptionLook,
   type ButtonLook,
   type ButtonKind,
   type ButtonSize,

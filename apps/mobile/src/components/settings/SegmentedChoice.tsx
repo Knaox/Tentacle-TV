@@ -1,18 +1,17 @@
 import { useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 
 import {
   spacing,
   typography,
   FONT_FAMILY,
-  ctlGradient,
   motion,
   useTheme,
   useThemedStyles,
   type AppTheme,
 } from "@/theme";
+import { selectedOptionLook } from "@/components/ui/buttons";
 
 export interface ChoiceOption {
   value: string;
@@ -39,9 +38,11 @@ const COMPACT_HIT_SLOP = { top: 6, bottom: 6 } as const;
 
 /**
  * Un choix parmi deux à quatre valeurs, dans UN cadre : le sélecteur segmenté
- * du web (`.ctl-segment`), au pixel. L'option retenue n'est pas un pavé plein
- * mais un CALQUE de dégradé de marque posé sous son libellé, présent sur
- * toutes les options à opacité nulle — passer de l'une à l'autre est un fondu
+ * du web (`.ctl-segment`) dans sa forme. L'option retenue n'est pas un pavé
+ * plein mais un CALQUE neutre (le pouce du segmenté d'Apple,
+ * `selectedOptionLook` — plus le dégradé de marque depuis le 20/10 : « si tout
+ * est en couleur on se perd ») posé sous son libellé, présent sur toutes les
+ * options à opacité nulle — passer de l'une à l'autre est un fondu
  * croisé, jamais un fond conditionnel (que Fabric Android rend sans rayon).
  *
  * Un `Switch` ne sait dire que oui ou non, et une liste modale pour trois
@@ -74,7 +75,7 @@ function SegmentOption({ label, active, wrap, compact, onPress }: {
 }) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const gradient = ctlGradient(theme.colors.brand);
+  const thumb = selectedOptionLook(theme.isDark, theme.colors);
   const lit = useSharedValue(active ? 1 : 0);
   useEffect(() => {
     lit.value = withTiming(active ? 1 : 0, { duration: motion.respectReducedMotion(SWAP_MS) });
@@ -90,14 +91,7 @@ function SegmentOption({ label, active, wrap, compact, onPress }: {
       hitSlop={compact ? COMPACT_HIT_SLOP : undefined}
       style={({ pressed }) => [st.option, wrap && st.optionWrap, compact && st.optionCompact, pressed && st.pressed]}
     >
-      <Animated.View style={[st.lit, litStyle]} collapsable={false}>
-        <LinearGradient
-          colors={gradient.colors}
-          locations={gradient.locations}
-          start={gradient.start}
-          end={gradient.end}
-          style={StyleSheet.absoluteFill}
-        />
+      <Animated.View style={[st.lit, { backgroundColor: thumb.bg, shadowOpacity: thumb.shadowOpacity }, litStyle]} collapsable={false}>
       </Animated.View>
       {/* Deux lignes, pas une : un libellé de choix doit se lire en entier. */}
       <Text style={[st.label, active && st.labelActive]} numberOfLines={compact ? 1 : 2}>
@@ -133,14 +127,14 @@ const makeStyles = (t: AppTheme) =>
     optionWrap: { flex: 0, flexGrow: 1, flexBasis: "48%" },
     optionCompact: { flex: 0, minHeight: 32, minWidth: 52, paddingVertical: 0, paddingHorizontal: spacing.md - 2 },
     pressed: { transform: [{ scale: 0.97 }] },
-    // Lueur discrète `--ctl-glow-segment`, sans liseré : un état, pas un bouton.
+    // Le pouce neutre (`selectedOptionLook`), ombre d'un cheveu en clair : un
+    // état, pas un bouton — jamais un pavé de marque.
     lit: {
       ...StyleSheet.absoluteFillObject,
       borderRadius: 6,
-      shadowColor: t.colors.brand.violet,
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.28,
-      shadowRadius: 6,
+      shadowRadius: 3,
     },
     label: {
       ...typography.small,
@@ -150,6 +144,6 @@ const makeStyles = (t: AppTheme) =>
     },
     labelActive: {
       fontFamily: FONT_FAMILY.semibold,
-      color: t.colors.cta.brandFg,
+      color: t.colors.text.primary,
     },
   });

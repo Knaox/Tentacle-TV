@@ -151,3 +151,15 @@ export function pressOverlayColor(kind: ButtonKind, tone: ButtonTone, isDark: bo
   if (kind === "glass") return "rgba(255, 255, 255, 0.14)";
   return isDark ? "rgba(255, 255, 255, 0.10)" : "rgba(0, 0, 0, 0.07)";
 }
+
+/**
+ * L'option CHOISIE d'un segmenté ou d'une rangée de puces de réglage : le
+ * « pouce » neutre du sélecteur segmenté d'Apple (blanc en clair, gris levé
+ * en sombre), libellé du thème — jamais le dégradé de marque. Une page de
+ * réglages en alignait une dizaine, autant de pavés violets à l'écran.
+ */
+export function selectedOptionLook(isDark: boolean, c: Pick<ButtonPaletteSlice, "text">): { bg: string; fg: string; shadowOpacity: number } {
+  return isDark
+    ? { bg: "rgba(255, 255, 255, 0.18)", fg: c.text.primary, shadowOpacity: 0 }
+    : { bg: "#FFFFFF", fg: c.text.primary, shadowOpacity: 0.12 };
+}
