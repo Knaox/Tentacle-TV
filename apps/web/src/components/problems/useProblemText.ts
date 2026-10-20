@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  AlertTriangle, Activity, Captions, Clock, File, Film, Lock, Package, Server, Shield, User, Users, WifiOff,
+  AlertTriangle, Activity, Bell, Captions, Cast, Clock, File, Film, HardDrive, Info, Lock, Package, Server, Shield, User, Users,
+  WifiOff,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -24,6 +25,10 @@ export const PROBLEM_ICONS: Record<ProblemIcon, LucideIcon> = {
   users: Users,
   puzzle: Package,
   alert: AlertTriangle,
+  bell: Bell,
+  cast: Cast,
+  storage: HardDrive,
+  info: Info,
 };
 
 export interface ProblemText {

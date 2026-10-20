@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { Sparkles } from "lucide-react-native";
 import { usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
+import { withScreenBoundary } from "@/components/problems/ScreenErrorBoundary";
 import { ExtensionPicker } from "@/components/extensions/ExtensionPicker";
 import { useExtensionNav } from "@/components/extensions/useExtensionNav";
 import { PersistentHeader } from "@/components/PersistentHeader";
@@ -84,6 +85,8 @@ export default function TabsLayout() {
       // Les barres sont maison (GlassTabBar, TabRail) : elles ne lisent aucune
       // option `tabBar*` de react-navigation — seule la position compte.
       screenOptions={screenOptions}
+      // Chaque onglet dans sa limite d'erreur : un onglet qui plante laisse la barre et les autres.
+      screenLayout={withScreenBoundary}
     >
       {/* Accueil — ou « Sur cet appareil » hors ligne */}
       <Tabs.Screen

@@ -20,13 +20,25 @@ export interface AppToast {
   text?: string;
   /** Absent : `failure` — les appels d'avant le ton restaient des échecs. */
   tone?: ToastTone;
+  /** Imposer couleur et pictogramme (un message du modèle d'erreurs : `problemBanner.ts`). */
+  appearance?: ToastAppearance;
+  /** Un geste, au plus deux (« Ouvrir les réglages », « Rejoindre de nouveau »). */
+  primary?: ToastAction;
+  secondary?: ToastAction;
+}
+
+export interface ToastAction {
+  label: string;
+  onPress: () => void;
+}
+
+export interface ToastAppearance {
+  severity: "blocking" | "recommendation" | "success" | "info";
+  icon: "alert-triangle" | "check" | "info" | "server" | "wifi-off" | "activity" | "key";
 }
 
 /** Ce que rend la carte pour chaque ton : sa couleur et son pictogramme. */
-export function toastAppearance(tone: ToastTone | undefined): {
-  severity: "blocking" | "success" | "info";
-  icon: "alert-triangle" | "check" | "info";
-} {
+export function toastAppearance(tone: ToastTone | undefined): ToastAppearance {
   if (tone === "success") return { severity: "success", icon: "check" };
   if (tone === "info") return { severity: "info", icon: "info" };
   return { severity: "blocking", icon: "alert-triangle" };

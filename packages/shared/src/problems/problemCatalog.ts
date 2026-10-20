@@ -1,4 +1,7 @@
-import type { ProblemActionKey, ProblemCause, ProblemContext, ProblemIcon } from "./problemTypes";
+import { MORE_CAUSES, type MoreProblemCause } from "./problemCatalogMore";
+import type {
+  ProblemActionKey, ProblemCause, ProblemContext, ProblemIcon, ProblemPresentation, ProblemSeverity,
+} from "./problemTypes";
 
 /**
  * Le catalogue des causes : pour chacune, son icône, sa phrase (clés de
@@ -18,9 +21,13 @@ export interface CauseEntry {
   actions: readonly ProblemActionKey[];
   /** Peut se réparer seule : réseau, serveur qui redémarre. */
   transient: boolean;
+  /** La gravité, quand elle n'est pas celle du défaut (`transient` → warning, sinon error). */
+  severity?: ProblemSeverity;
+  /** La forme, quand la cause l'impose quel que soit le contexte (`problemPresentation.ts`). */
+  presentation?: ProblemPresentation;
 }
 
-export const CAUSES: Record<ProblemCause, CauseEntry> = {
+const BASE_CAUSES: Record<Exclude<ProblemCause, MoreProblemCause>, CauseEntry> = {
   deviceOffline: {
     icon: "wifiOff", reason: "reasonDeviceOffline", hint: "hintDeviceOffline",
     actions: ["retry", "offlineLibrary", "back"], transient: true,
@@ -147,6 +154,14 @@ export const CAUSES: Record<ProblemCause, CauseEntry> = {
   },
 };
 
+/** Toutes les causes, celles du mobile comprises : une seule table. */
+export const CAUSES: Record<ProblemCause, CauseEntry> = { ...BASE_CAUSES, ...MORE_CAUSES };
+
+/** Une cause connue de ce catalogue ? (un code venu d'ailleurs — rapport, version d'avant). */
+export function isProblemCause(value: unknown): value is ProblemCause {
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(CAUSES, value);
+}
+
 /** QUOI : le titre de chaque contexte. */
 export const CONTEXT_TITLES: Record<ProblemContext, string> = {
   playbackStart: "titlePlaybackStart",
@@ -159,6 +174,12 @@ export const CONTEXT_TITLES: Record<ProblemContext, string> = {
   action: "titleAction",
   extension: "titleExtension",
   watchTogether: "titleWatchTogether",
+  offlineTransfer: "titleOfflineTransfer",
+  notifications: "titleNotifications",
+  cast: "titleCast",
+  pictureInPicture: "titlePictureInPicture",
+  profile: "titleProfile",
+  screen: "titleScreen",
 };
 
 /** Les libellés des actions ; « Retour » dit où l'on va quand c'est la fiche. */
@@ -173,6 +194,12 @@ export const ACTION_LABELS: Record<ProblemActionKey, string> = {
   signIn: "actionSignIn",
   editAddress: "actionEditAddress",
   back: "actionBack",
+  openSettings: "actionOpenSettings",
+  manageOffline: "actionManageOffline",
+  rejoin: "actionRejoin",
+  switchProfile: "actionSwitchProfile",
+  playHere: "actionPlayHere",
+  dismiss: "actionDismiss",
 };
 
 /** Les contextes de LECTURE : « Retour » y ramène à la fiche. */

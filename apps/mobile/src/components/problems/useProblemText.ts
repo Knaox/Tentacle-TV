@@ -24,6 +24,10 @@ export const PROBLEM_ICONS: Record<ProblemIcon, FeatherName> = {
   users: "users",
   puzzle: "package",
   alert: "alert-triangle",
+  bell: "bell-off",
+  cast: "cast",
+  storage: "hard-drive",
+  info: "info",
 };
 
 export interface ProblemText {
@@ -36,6 +40,8 @@ export interface ProblemText {
   copy: string;
   /** Ce que dit le lecteur d'écran à l'arrivée du message. */
   announcement: string;
+  /** « Code : playbackStart/transcodeFailed » — en petit, pour le support. */
+  code: string;
 }
 
 /** Le modèle, mis en mots dans la langue de l'interface. */
@@ -52,8 +58,9 @@ export function useProblemText(model: ProblemModel): ProblemText {
       hint,
       actions: model.actions.map((action) => ({ key: action.key, label: tr(action.labelKey) })),
       details: model.details.map((detail) => detailText(detail, tr)),
-      copy: problemCopyText(model, tr),
+      copy: [problemCopyText(model, tr), tr("supportCode", { code: model.code })].join("\n"),
       announcement: [title, reason, hint].filter(Boolean).join(" "),
+      code: tr("supportCode", { code: model.code }),
     };
   }, [model, t]);
 }

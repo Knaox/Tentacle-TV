@@ -1,6 +1,8 @@
 import { ACTION_LABELS, CAUSES, CONTEXT_TITLES, PLAYBACK_CONTEXTS } from "./problemCatalog";
+import { problemCode, problemPresentation, problemSeverity } from "./problemPresentation";
 import type {
   ProblemAction, ProblemActionKey, ProblemAvailability, ProblemCause, ProblemContext, ProblemDetail, ProblemModel,
+  ProblemPresentation,
 } from "./problemTypes";
 
 /** Trois gestes au plus : au-delà, plus personne ne lit. */
@@ -23,6 +25,12 @@ function available(key: ProblemActionKey, context: ProblemContext, can: ProblemA
     case "signIn": return true;
     case "editAddress": return ADDRESS_CONTEXTS.has(context);
     case "back": return can.canGoBack !== false;
+    case "openSettings": return can.canOpenSettings === true;
+    case "manageOffline": return true;
+    case "rejoin": return can.canRejoin === true;
+    case "switchProfile": return can.canSwitchProfile === true;
+    case "playHere": return true;
+    case "dismiss": return true;
   }
 }
 
@@ -39,6 +47,8 @@ export interface DescribeProblemInput {
   details?: ProblemDetail[];
   /** Valeurs des phrases : `measured` / `needed` (Mb/s) pour un débit mesuré. */
   values?: Record<string, string | number>;
+  /** Imposer une forme (un bandeau là où le contexte voudrait un écran, par exemple). */
+  presentation?: ProblemPresentation;
 }
 
 /**
@@ -68,5 +78,8 @@ export function describeProblem(input: DescribeProblemInput): ProblemModel {
     actions,
     details: input.details ?? [],
     transient: entry.transient,
+    code: problemCode(input.context, input.cause),
+    severity: problemSeverity(input.cause),
+    presentation: input.presentation ?? problemPresentation(input.cause, input.context),
   };
 }

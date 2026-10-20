@@ -24,7 +24,20 @@ export type ProblemContext =
   | "pairing"
   | "action"
   | "extension"
-  | "watchTogether";
+  | "watchTogether"
+  // ── Ajouts du mobile (20/10) ──
+  /** Un transfert pour garder un titre hors ligne. */
+  | "offlineTransfer"
+  /** Les notifications de l'app. */
+  | "notifications"
+  /** La diffusion vers une TV (Cast, AirPlay). */
+  | "cast"
+  /** L'image dans l'image. */
+  | "pictureInPicture"
+  /** La session de profil (Famille) de cet appareil. */
+  | "profile"
+  /** Un écran qui a planté en se dessinant (limite d'erreur). */
+  | "screen";
 
 /** Pourquoi — une cause, une phrase de spectateur. */
 export type ProblemCause =
@@ -64,6 +77,46 @@ export type ProblemCause =
   | "offlineMode"
   // Le reste
   | "extensionMissing"
+  // ── Ajouts du mobile (20/10) — catalogue : `problemCatalogMore.ts` ──
+  // La connexion au compte
+  | "wrongCredentials"
+  | "accountDisabled"
+  | "accountLockedOut"
+  | "accountOutsideSchedule"
+  | "accountMaxSessions"
+  | "tooManyAttempts"
+  | "databaseMigrating"
+  // Famille et droits
+  | "profileSessionExpired"
+  | "parentalBlocked"
+  // Watch Together
+  | "wtJoinFailed"
+  | "wtMemberLeft"
+  | "wtMemberDisconnected"
+  | "wtRoomClosed"
+  | "wtRemoved"
+  | "wtInviteExpired"
+  | "wtAccessRevoked"
+  | "wtAlreadyInGroup"
+  | "wtHostOnly"
+  | "wtTitleUnavailable"
+  | "wtDesync"
+  // Hors ligne
+  | "transferFailed"
+  | "storageFull"
+  | "wifiRequired"
+  | "transferSourceGone"
+  | "offlineRightsRevoked"
+  // Notifications
+  | "pushDenied"
+  | "pushUnavailable"
+  // Diffusion, image dans l'image
+  | "castFailed"
+  | "castLost"
+  | "castFormatUnsupported"
+  | "pipUnavailable"
+  // Un écran qui plante
+  | "renderCrash"
   | "unknown";
 
 /** Quoi faire. */
@@ -77,7 +130,20 @@ export type ProblemActionKey =
   | "goOnline"
   | "signIn"
   | "editAddress"
-  | "back";
+  | "back"
+  // ── Ajouts du mobile (20/10) ──
+  /** Les réglages du SYSTÈME (notifications, réseau). */
+  | "openSettings"
+  /** Les titres gardés hors ligne, pour faire de la place ou relancer. */
+  | "manageOffline"
+  /** Rejoindre de nouveau la séance Watch Together. */
+  | "rejoin"
+  /** Changer de profil (« Qui regarde ? »). */
+  | "switchProfile"
+  /** Lire sur cet appareil (la diffusion s'est arrêtée). */
+  | "playHere"
+  /** Fermer un message qui ne demande rien. */
+  | "dismiss";
 
 /** L'icône du message, dans un vocabulaire commun que chaque plateforme dessine. */
 export type ProblemIcon =
@@ -93,7 +159,12 @@ export type ProblemIcon =
   | "clock"
   | "users"
   | "puzzle"
-  | "alert";
+  | "alert"
+  // ── Ajouts du mobile (20/10) ──
+  | "bell"
+  | "cast"
+  | "storage"
+  | "info";
 
 /** Ce qui est possible ICI : une action n'est offerte que si elle peut aboutir. */
 export interface ProblemAvailability {
@@ -111,6 +182,12 @@ export interface ProblemAvailability {
   hasOfflineLibrary?: boolean;
   /** Il y a un écran où revenir (défaut : vrai). */
   canGoBack?: boolean;
+  /** La plateforme sait ouvrir les réglages du système (défaut : faux). */
+  canOpenSettings?: boolean;
+  /** La séance existe encore et cet appareil peut la rejoindre. */
+  canRejoin?: boolean;
+  /** Cet appareil a d'autres profils (Famille) à proposer. */
+  canSwitchProfile?: boolean;
 }
 
 export interface ProblemAction {
@@ -143,4 +220,25 @@ export interface ProblemModel {
   details: ProblemDetail[];
   /** La cause peut se réparer seule (réseau, serveur qui redémarre). */
   transient: boolean;
+  /**
+   * Le code lisible pour le support (« playbackStart/transcodeFailed ») —
+   * dit EN PETIT sous le message, jamais à sa place. Stable : il traverse les
+   * rapports, il ne se renomme jamais.
+   */
+  code: string;
+  /** La gravité : `info` (un constat), `warning` (gênant, ça peut repartir), `error` (bloqué). */
+  severity: ProblemSeverity;
+  /** La forme d'affichage (`problemPresentation.ts`). */
+  presentation: ProblemPresentation;
 }
+
+/** La gravité d'un message — sa couleur et son pictogramme. */
+export type ProblemSeverity = "info" | "warning" | "error";
+
+/**
+ * Les trois formes d'un message, les mêmes sur le téléphone et la tablette :
+ * - `banner` : bandeau discret, non bloquant, qui s'efface seul (« Léa a quitté la séance ») ;
+ * - `card` : carte dans le lecteur, sur l'image, avec ses actions ;
+ * - `screen` : écran plein — impossible de continuer ici.
+ */
+export type ProblemPresentation = "banner" | "card" | "screen";

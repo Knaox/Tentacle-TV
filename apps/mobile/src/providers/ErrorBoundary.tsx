@@ -1,6 +1,8 @@
 import React from "react";
 import { Appearance, Text, TouchableOpacity, View } from "react-native";
 import i18next from "i18next";
+import { describeProblem, problemDetails } from "@tentacle-tv/shared";
+import { recordProblem } from "@/problems/problemJournalStore";
 
 import { buildDarkPalette } from "@/theme/palette.dark";
 import { buildLightPalette } from "@/theme/palette.light";
@@ -22,6 +24,13 @@ interface ErrorBoundaryState {
  * répercuté au niveau OS par Appearance.setColorScheme) et la palette
  * construite par les builders partagés — aucun littéral couleur ici.
  */
+/** Le message du modèle commun : l'app entière n'a pas pu s'afficher. */
+const ROOT_CRASH = (error?: Error) => describeProblem({
+  cause: "renderCrash",
+  context: "screen",
+  details: error ? problemDetails({ message: `${error.name}: ${error.message}` }) : [],
+});
+
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
@@ -33,7 +42,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
-    console.error("[ErrorBoundary]", error, info.componentStack);
+    if (__DEV__) console.error("[ErrorBoundary]", error, info.componentStack);
+    recordProblem(ROOT_CRASH(error));
   }
 
   private handleRetry = () => {
@@ -64,7 +74,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               textAlign: "center",
             }}
           >
-            {i18next.t("errors:unexpectedError")}
+            {i18next.t("errors:titleScreen")}
+          </Text>
+          <Text style={{ color: palette.text.secondary, fontSize: 15, marginBottom: 20, textAlign: "center" }}>
+            {i18next.t("errors:reasonRenderCrash")} {i18next.t("errors:hintRenderCrash")}
           </Text>
           {__DEV__ && this.state.error && (
             <Text
@@ -95,6 +108,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               {i18next.t("common:retry")}
             </Text>
           </TouchableOpacity>
+          <Text selectable style={{ color: palette.text.tertiary, fontSize: 11, marginTop: 16 }}>
+            {i18next.t("errors:supportCode", { code: ROOT_CRASH().code })}
+          </Text>
         </View>
       );
     }

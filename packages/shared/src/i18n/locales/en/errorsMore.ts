@@ -1,0 +1,90 @@
+/**
+ * The rest of the `errors` namespace — causes added for phones and tablets
+ * (20/10, `problems/problemCatalogMore.ts`). Merged into `errors.ts`.
+ */
+export default {
+  // WHAT: the new contexts.
+  titleOfflineTransfer: "This title couldn't be kept offline",
+  titleNotifications: "Notifications can't reach you",
+  titleCast: "Casting to the TV stopped",
+  titlePictureInPicture: "Picture in picture isn't available",
+  titleProfile: "Your profile was closed",
+  titleScreen: "This screen couldn't be shown",
+  // WHY — signing in.
+  reasonWrongCredentials: "The username or password doesn't match.",
+  hintWrongCredentials: "Check capital letters, then try again.",
+  reasonAccountDisabled: "This account was disabled by the server's administrator.",
+  reasonAccountLockedOut: "This account is locked after too many attempts.",
+  hintAccountAdmin: "The server's administrator can re-enable it.",
+  reasonAccountOutsideSchedule: "This account can't sign in at this time of day.",
+  hintAccountOutsideSchedule: "The administrator has set its access hours.",
+  reasonAccountMaxSessions: "This account is already signed in on the maximum number of devices.",
+  hintAccountMaxSessions: "Sign out of another device, then try again.",
+  reasonTooManyAttempts: "Too many attempts in a row.",
+  hintTooManyAttempts: "Wait a minute, then try again.",
+  reasonDatabaseMigrating: "The Tentacle server is updating its database.",
+  hintDatabaseMigrating: "This takes a few minutes; the app will pick up on its own.",
+  // WHY — Family and rights.
+  reasonProfileSessionExpired: "This profile's session ended on this device.",
+  hintProfileSessionExpired: "Choose your profile again to continue.",
+  reasonParentalBlocked: "This title isn't allowed for this profile.",
+  hintParentalBlocked: "The family's parental controls hide it. The family owner can change this rule.",
+  // WHY — Watch Together.
+  reasonWtJoinFailed: "Couldn't join the session.",
+  hintWtJoinFailed: "The connection to the server may have dropped. Try again in a moment.",
+  reasonWtMemberLeft: "{{name}} left the session.",
+  reasonWtMemberDisconnected: "{{name}} lost their connection.",
+  hintWtMemberDisconnected: "The session waits for them for a moment.",
+  reasonWtRoomClosed: "The session has ended.",
+  hintWtRoomClosed: "You can keep watching on your own.",
+  reasonWtRemoved: "You were removed from the session.",
+  reasonWtInviteExpired: "This invitation is no longer valid.",
+  hintWtInviteExpired: "The session may have ended. Ask for a new invitation.",
+  reasonWtAccessRevoked: "This account no longer has access to Watch Together.",
+  reasonWtAlreadyInGroup: "You're already in another session.",
+  hintWtAlreadyInGroup: "Leave it first to join this one.",
+  reasonWtHostOnly: "Only the session's host can do this.",
+  reasonWtTitleUnavailable: "This title isn't available to everyone in the session.",
+  hintWtTitleUnavailable: "Pick one every member can watch.",
+  reasonWtDesync: "This device can't keep up with the session anymore.",
+  hintWtDesync: "Join it again: playback will line up with the others.",
+  // WHY — offline.
+  reasonTransferFailed: "The transfer to this device was interrupted.",
+  hintTransferFailed: "Try again: it will resume where it stopped.",
+  reasonStorageFull: "There isn't enough space left on this device.",
+  hintStorageFull: "Remove some offline titles or free up space, then try again.",
+  reasonWifiRequired: "The transfer is waiting for Wi-Fi.",
+  hintWifiRequired: "Your settings keep it to Wi-Fi: it will restart on its own once you're connected.",
+  reasonTransferSourceGone: "This title is no longer available on the server.",
+  hintTransferSourceGone: "It may have been removed from the library.",
+  reasonOfflineRightsRevoked: "This offline title is no longer allowed for this account.",
+  hintOfflineRightsRevoked: "It will be removed from this device the next time the server is reached.",
+  // WHY — notifications.
+  reasonPushDenied: "Tentacle notifications are turned off on this device.",
+  hintPushDenied: "Allow them in the device settings to be notified.",
+  reasonPushUnavailable: "This device couldn't sign up for notifications.",
+  hintPushUnavailable: "The notification service isn't responding right now. Try again later.",
+  // WHY — casting, picture in picture.
+  reasonCastFailed: "The TV couldn't start this title.",
+  hintCastFailed: "Check that the TV and this device are on the same network.",
+  reasonCastLost: "The connection to the TV was lost.",
+  hintCastLost: "Continue on this device, or start casting again.",
+  reasonCastFormatUnsupported: "The TV can't play this format.",
+  hintCastFormatUnsupported: "A lower quality has it converted to a simpler format.",
+  reasonPipUnavailable: "Picture in picture is turned off for Tentacle on this device.",
+  hintPipUnavailable: "You can allow it in the device settings.",
+  // WHY — a screen that crashed.
+  reasonRenderCrash: "An unexpected error interrupted the display.",
+  hintRenderCrash: "Try again. The rest of the app keeps working.",
+  // WHAT TO DO.
+  actionOpenSettings: "Open Settings",
+  actionManageOffline: "Manage offline titles",
+  actionRejoin: "Join again",
+  actionSwitchProfile: "Switch profile",
+  actionPlayHere: "Play on this device",
+  actionDismiss: "OK",
+  // The support code, in small print under the message.
+  supportCode: "Code: {{code}}",
+  // A message from another device or version: never a bare code.
+  genericTitle: "Something didn't work",
+} as const;
