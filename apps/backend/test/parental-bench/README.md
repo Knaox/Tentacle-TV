@@ -53,7 +53,11 @@ chaque fuite nommée (code 1) ; le relevé complet va dans `$PARENTAL_RUN/report
   saisons, pastilles, saisons manquantes, demandes) — `probesVigie.ts` ; les requêtes PROPRES au
   mobile (lot du 20/10) : verdict des titres gardés hors ligne (`/api/library/visibility` — aucun
   titre interdit jugé lisible, les permis le restent), droits lus par l'app (partage public,
-  Watch Together, lecture, accès, extensions), notes TMDB des épisodes — `probesMobile.ts`.
+  Watch Together, lecture, accès, extensions), notes TMDB des épisodes — `probesMobile.ts` ; ce que
+  chaque session peut faire (`/api/account/abilities` : invité, profil, « voir en tant que »), les
+  droits d'administration retirés par la fiche des droits qui en disparaissent, un compte hors de
+  ses heures dont la lecture est refusée, un compte désactivé coupé et refusé à la connexion avec sa
+  raison — `probesAccess.ts` (chaque réglage remis).
 
 ## Variables
 

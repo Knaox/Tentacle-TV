@@ -19,9 +19,10 @@ import { probeCore } from "./probesCore";
 import { probeRestrictionChange } from "./probesFreshness";
 import { probeLibrary } from "./probesLibrary";
 import { probeMobile } from "./probesMobile";
+import { probeAbilities, probeAdminRightsReflected, probeDisabledCut, probeScheduleCut } from "./probesAccess";
 import { probeVigie } from "./probesVigie";
 import { HISTORY_WITNESSES, seedJellyfinHistory } from "./historySeed";
-import { buildReference } from "./reference";
+import { buildReference, norm } from "./reference";
 import { tmdbKey, type TentacleBench } from "./tentacleBench";
 
 export interface CheckInput {
@@ -52,6 +53,7 @@ export async function runChecks(input: CheckInput): Promise<number> {
     await probeCore(ctx, door, jf.free.id);
     rec.section(`${jf.restricted.name} — porte « ${door.label} » : requêtes du mobile`);
     await probeMobile(ctx, door);
+    await probeAbilities(tentacle.url, rec, door, door === restrictedDoors[2] ? { session: "viewAs", administrator: false, push: false } : { administrator: false });
     if (tentacle.vigie) {
       rec.section(`${jf.restricted.name} — porte « ${door.label} » : Vigie`);
       await probeVigie(ctx, door, seerr);
@@ -102,6 +104,7 @@ export async function runChecks(input: CheckInput): Promise<number> {
   await probeLibrary(guestCtx, guest, jf.libraries);
   await probeCore(guestCtx, guest, jf.free.id);
   await probeMobile(guestCtx, guest);
+  await probeAbilities(tentacle.url, rec, guest, { session: "guest", watchTogether: "none", tickets: false, keepOffline: false, publicSharing: false, push: false, manageAccount: false });
   if (tentacle.vigie) await probeVigie(guestCtx, guest, seerr);
   // Le même invité ouvert par « Qui regarde ? » sur le téléphone (ou l'ordinateur) de `libre`.
   const picked = await pickerProfileDoor(tentacle.url, freePersonal, guest.guestId);
@@ -109,6 +112,7 @@ export async function runChecks(input: CheckInput): Promise<number> {
   await probeLibrary(guestCtx, picked, jf.libraries);
   await probeCore(guestCtx, picked, jf.free.id);
   await probeMobile(guestCtx, picked);
+  await probeAbilities(tentacle.url, rec, picked, { session: "guest", watchTogether: "none", tickets: false, keepOffline: false, publicSharing: false, push: false, manageAccount: false });
   if (tentacle.vigie) await probeVigie(guestCtx, picked, seerr);
 
   // Témoin : le compte libre voit bien, par les mêmes routes, ce que l'autre ne voit pas.
@@ -122,6 +126,13 @@ export async function runChecks(input: CheckInput): Promise<number> {
   const fight = await probe(freeCtx, free, "GET", "/api/search?q=fight&limit=20", { witness: true });
   rec.note(fight.text.includes("Fight Club"), `${jf.free.name} trouve « Fight Club »`);
   if (tentacle.vigie) await probeVigie(freeCtx, free, seerr, true);
+
+  // Les droits d'administration, l'accès du compte (heures, désactivation) : en dernier, chaque réglage remis.
+  rec.section("droits d'administration reflétés, heures et désactivation");
+  await probeAdminRightsReflected(tentacle.url, rec, adminPersonal, jf.filmsOnly);
+  const playable = restrictedRef.all.find((i) => i.type === "Movie" && restrictedRef.visible.has(norm(i.id)));
+  if (playable) await probeScheduleCut(tentacle.url, rec, adminPersonal, jf.restricted, personal, playable.id);
+  await probeDisabledCut(tentacle.url, rec, adminPersonal, jf.filmsOnly);
 
   writeFileSync(join(runDir, "report.txt"), rec.lines.join("\n"));
   log(`${rec.failures === 0 ? "AUCUNE FUITE" : `${rec.failures} ÉCHEC(S)`} — relevé : ${join(runDir, "report.txt")}`);
