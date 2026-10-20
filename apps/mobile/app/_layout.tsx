@@ -221,9 +221,9 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
             lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
             lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
         {serverUrl && !showLoading && introLanded ? <FamilyInvitationHost /> : null}
-        {/* « Qui regarde ? » à l'ouverture, puis le premier lancement du profil (code PIN, accueil, photo).
-            Sans attendre la fin de l'ouverture : c'est l'écran qu'elle dévoile. */}
-        {serverUrl && !showLoading ? <FamilyLaunchHosts /> : null}
+        {/* « Qui regarde ? » (une feuille de cet hôte), puis le premier lancement du profil (code PIN,
+            accueil, photo) : après l'arrivée de l'ouverture, sur l'accueil (accord famille-mobile × ouverture-mobile). */}
+        {serverUrl && !showLoading && introLanded ? <FamilyLaunchHosts /> : null}
         {/* Un droit changé au bureau s'applique ici sans redémarrage (`rights:changed`). */}
         {serverUrl && !showLoading ? <RightsLiveHost /> : null}
         {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage

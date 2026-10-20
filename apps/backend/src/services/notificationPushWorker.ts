@@ -136,7 +136,11 @@ export async function deliverPendingNotifications(): Promise<void> {
         // l'extension) : poussée telle quelle, dans les mots et la langue que
         // l'extension a écrits. Elle ne l'écrit qu'une fois par blocage.
         if (isBlockedRequestNotice(n)) {
-          const res = await sendToUser(n.jellyfinUserId, { title: n.title, body: n.body ?? "", data: pushTapData(n) });
+          const res = await sendToUser(n.jellyfinUserId, {
+            title: n.title, body: n.body ?? "", data: pushTapData(n),
+            // Pastille et catégorie « balayée = lue », comme les autres envois.
+            ...(await syncFields(n.jellyfinUserId)),
+          });
           console.log(`[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] demande en attente (sent:${res.sent}, invalid:${res.invalid})`);
           continue;
         }
