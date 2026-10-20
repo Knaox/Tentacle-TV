@@ -1,17 +1,19 @@
+import { useCallback } from "react";
+import { useActiveProfile } from "@/family/profiles/profileSessionState";
+import { useEndProfileSession } from "@/family/profiles/useEndProfileSession";
+
 /**
- * La session de profil de la Famille, vue de la page d'un compte bloqué.
- *
- * Branchement à la FUSION avec `claude/famille-20ba01` (famille-mobile, 7d0450914) :
- * - `useIsProfileSession` → `useActiveProfile() !== null` (`@/family/profiles/profileSessionState`) ;
- * - `useEndProfileSessionForAccess` → `const end = useEndProfileSession(); return () => end("access");`
- *   (`@/family/profiles/useEndProfileSession`) : retour à la session du compte, puis l'accueil,
- *   et « Qui regarde ? » s'affiche de lui-même.
- * D'ici là : jamais une session de profil, rien à quitter.
+ * La session de profil de la Famille, vue de la page d'un compte bloqué : en
+ * session de profil, « Changer de profil » ramène à la session du compte, puis
+ * à l'accueil, et « Qui regarde ? » s'affiche de lui-même (famille-mobile).
  */
 export function useIsProfileSession(): boolean {
-  return false;
+  return useActiveProfile() !== null;
 }
 
 export function useEndProfileSessionForAccess(): () => void {
-  return () => undefined;
+  const end = useEndProfileSession();
+  return useCallback(() => {
+    end("access");
+  }, [end]);
 }

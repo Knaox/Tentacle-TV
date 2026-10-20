@@ -1,8 +1,9 @@
 import type { useJellyfinClient } from "@tentacle-tv/api-client";
 import {
   buildCastDeviceProfile, castContentType, CAST_TEXT_SUBTITLES, TICKS_PER_SECOND,
-  type MediaItem, type MediaSource,
+  type MediaItem, type MediaSource, type PlaybackRights,
 } from "@tentacle-tv/shared";
+import { castRightsAfter, castRightsBefore } from "./castRights";
 import { buildStreamUrl, extractActualStartTicks } from "@/hooks/usePlaybackInfoFetch";
 import type { CastLoadRequest } from "../../../modules/tentacle-cast";
 import { castLoadStart, pickCastUrl, withCastAuth } from "./castPlan";
@@ -18,7 +19,8 @@ export interface CastNegotiation {
   mediaSourceId: string;
 }
 
-export type CastNegotiationFailure = "noSource" | "unreachable";
+/** `notAllowed` : les droits de lecture du compte refusent ce que la TV demanderait. */
+export type CastNegotiationFailure = "noSource" | "unreachable" | "notAllowed";
 
 interface Args {
   client: JfClient;
@@ -30,6 +32,8 @@ interface Args {
   subtitleIndex: number;
   /** La position du titre où la TV reprend. */
   startSeconds: number;
+  /** Les droits de lecture du compte (`usePlaybackRights`) : plafond, conversions. */
+  rights: PlaybackRights;
 }
 
 /**
@@ -40,8 +44,11 @@ interface Args {
 export async function negotiateCast(args: Args): Promise<CastNegotiation | CastNegotiationFailure> {
   const { client, userId, itemId, item, audioIndex, subtitleIndex, startSeconds } = args;
   const startTicks = Math.floor(startSeconds * TICKS_PER_SECOND);
+  const before = castRightsBefore(args.rights);
+  if (before.refused) return "notAllowed";
   const result = await client.getPlaybackInfo(itemId, {
-    userId, deviceProfile: buildCastDeviceProfile(), mediaSourceId: args.mediaSourceId,
+    userId, deviceProfile: buildCastDeviceProfile(before.maxBitrate), mediaSourceId: args.mediaSourceId,
+    maxStreamingBitrate: before.maxBitrate,
     audioStreamIndex: audioIndex >= 0 ? audioIndex : undefined,
     subtitleStreamIndex: subtitleIndex >= 0 ? subtitleIndex : undefined,
     startTimeTicks: startTicks > 0 ? startTicks : undefined,
@@ -49,6 +56,7 @@ export async function negotiateCast(args: Args): Promise<CastNegotiation | CastN
   const ms: MediaSource | undefined = result.MediaSources?.[0];
   if (!ms) return "noSource";
   const directPlay = ms.SupportsDirectPlay && !ms.TranscodingUrl;
+  if (castRightsAfter(args.rights, ms, directPlay)) return "notAllowed";
   const ds = client.getDirectStreaming() ?? null;
   const common = { itemId, ms, directPlay, baseUrl: client.getBaseUrl(), accessToken: client.getAccessToken(), subIdx: subtitleIndex };
   // Jellyfin en direct d'abord (son adresse réglée pour les applications, et

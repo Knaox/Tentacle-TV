@@ -20,7 +20,9 @@ export type PlaybackFailureReport =
   | { from: "request"; error: unknown; target: FailureTarget; request?: string }
   | { from: "marker"; marker: FailureMarker; jellyfinErrorCode?: string }
   /** Le fichier gardé sur l'appareil n'y est plus. */
-  | { from: "missingFile" };
+  | { from: "missingFile" }
+  /** Les droits de lecture du compte refusent ce flux (docs/DROITS-UTILISATEURS.md § 9.2). */
+  | { from: "refusal"; refusal: "playback_not_allowed" | "conversion_not_allowed" };
 
 function messageOf(error: unknown): string | undefined {
   if (typeof error === "string") return error;

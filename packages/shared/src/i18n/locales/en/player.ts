@@ -230,6 +230,7 @@ export default {
     hint: "This phone's controls drive the TV.",
     stop: "Stop casting",
     failed: "The TV couldn't play this title.",
+    notAllowed: "Your account can't send this title to the TV: it would have to be converted. The administrator can allow it in your account's playback rights.",
   },
   // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
   // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).

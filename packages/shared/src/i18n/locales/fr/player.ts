@@ -237,6 +237,7 @@ export default {
     hint: "Les commandes de ce téléphone pilotent la TV.",
     stop: "Arrêter la diffusion",
     failed: "La TV n'a pas pu lire ce titre.",
+    notAllowed: "Votre compte ne permet pas d'envoyer ce titre à la TV : il faudrait le convertir. L'administrateur peut l'autoriser dans les droits de lecture de votre compte.",
   },
   // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
   // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).

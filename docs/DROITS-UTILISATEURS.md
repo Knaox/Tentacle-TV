@@ -1346,7 +1346,9 @@ du bureau) : **3 147 vérifications, aucune fuite** — dont, pour chaque porte 
 interdits jamais jugés lisibles par le verdict des titres gardés (les permis le restent), ce que
 chaque session peut faire, les droits d'administration retirés qui disparaissent, la plage
 fermée (page, lecture refusée 403) et la désactivation (session coupée, connexion refusée
-`account_disabled`).
+`account_disabled`). Rejoué sur la branche d'intégration du lot avec
+`PARENTAL_PICKER_PLATFORM=mobile` (l'invité ouvert par « Qui regarde ? » du téléphone) :
+3 147 vérifications, aucune fuite.
 
 ### 9.10.5 Tous les droits, pas seulement la Famille (demande de Damien, 20/10)
 
