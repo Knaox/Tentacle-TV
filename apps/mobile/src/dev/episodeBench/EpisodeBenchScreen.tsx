@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState, type ComponentType } from "reac
 import { Animated, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { IndexBrowser } from "@/components/player/episodeBrowser/index/IndexBrowser";
 import { OpenShelfBrowser } from "@/components/player/episodeBrowser/open/OpenShelfBrowser";
 import { PanelBrowser } from "@/components/player/episodeBrowser/panel/PanelBrowser";
@@ -34,8 +35,14 @@ const ORIENTATION = { landscape: "landscape", portrait: "portrait_up" } as const
  */
 export function EpisodeBenchScreen() {
   const params = useLocalSearchParams() as BenchParams;
+  // Comme la route du lecteur : un fournisseur des marges sûres à la racine,
+  // mesurées dans la vraie orientation de l'écran (sinon, celles du portrait).
   // Un lien qui change les paramètres repart d'un banc neuf (état, saison, image).
-  return <BenchBody key={JSON.stringify(params)} params={params} />;
+  return (
+    <SafeAreaProvider style={st.root}>
+      <BenchBody key={JSON.stringify(params)} params={params} />
+    </SafeAreaProvider>
+  );
 }
 
 interface BenchParams {
