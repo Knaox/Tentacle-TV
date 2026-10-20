@@ -35,6 +35,9 @@ interface Props {
   /** Sa place, gardée sur toute carte hors bibliothèque dès qu'une extension est là. */
   pageSlot?: boolean;
   onOpenPage?: (href: string) => void;
+  /** Deux verdicts seulement (affinité de groupe) : la carte ne suit le doigt
+   *  qu'à l'horizontale, ce qu'elle montre juge, et elle ne se retourne pas. */
+  binary?: boolean;
 }
 
 const SPRING = { damping: 18, stiffness: 220 };
@@ -65,7 +68,7 @@ function toRest(reduced: boolean) {
  */
 export const SwipeCardView = memo(function SwipeCardView({
   card, depth, zIndex, posterUri, infoOpen, details, reducedMotion, label, screenWidth, exit,
-  onRelease, onExited, onToggleInfo, accessibilityActions, onAccessibilityAction, page = null, pageSlot = false, onOpenPage,
+  onRelease, onExited, onToggleInfo, accessibilityActions, onAccessibilityAction, page = null, pageSlot = false, onOpenPage, binary = false,
 }: Props) {
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
@@ -82,8 +85,8 @@ export const SwipeCardView = memo(function SwipeCardView({
   }, [appear, reducedMotion]);
 
   // Les rappels changent à chaque rendu : le PanResponder, lui, est créé une fois.
-  const latest = useRef({ onRelease, onExited, top, infoOpen, reducedMotion });
-  latest.current = { onRelease, onExited, top, infoOpen, reducedMotion };
+  const latest = useRef({ onRelease, onExited, top, infoOpen, reducedMotion, binary });
+  latest.current = { onRelease, onExited, top, infoOpen, reducedMotion, binary };
 
   const pan = useMemo(() => {
     const back = () => {
@@ -98,11 +101,13 @@ export const SwipeCardView = memo(function SwipeCardView({
       onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (_, g) => {
         tx.value = g.dx;
-        ty.value = g.dy;
+        ty.value = latest.current.binary ? 0 : g.dy;
       },
       onPanResponderRelease: (_, g) => {
         // PanResponder mesure la vitesse en px/ms ; la règle partagée, en px/s.
-        const verdict = verdictFromDrag(g.dx, g.dy, g.vx * 1000, g.vy * 1000);
+        const verdict = latest.current.binary
+          ? verdictFromDrag(g.dx, 0, g.vx * 1000, 0)
+          : verdictFromDrag(g.dx, g.dy, g.vx * 1000, g.vy * 1000);
         if (verdict) latest.current.onRelease(verdict);
         else back();
       },
@@ -159,7 +164,7 @@ export const SwipeCardView = memo(function SwipeCardView({
     >
       <Pressable
         style={st.fill}
-        onPress={top ? onToggleInfo : undefined}
+        onPress={top && !binary ? onToggleInfo : undefined}
         accessible={top}
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -167,7 +172,7 @@ export const SwipeCardView = memo(function SwipeCardView({
         onAccessibilityAction={(e) => onAccessibilityAction(e.nativeEvent.actionName)}
       >
         {/* La carte qui part garde sa face : verso ouvert au verdict, il le reste. */}
-        <SwipeCardFace card={card} posterUri={posterUri} interactive={depth === 0} infoOpen={depth === 0 && infoOpen} details={details} pageSlot={pageSlot} />
+        <SwipeCardFace card={card} posterUri={posterUri} interactive={depth === 0 && !binary} infoOpen={depth === 0 && infoOpen} details={details} pageSlot={pageSlot} />
       </Pressable>
       {/* Frère de la carte, pas enfant : la carte est UN élément pour VoiceOver,
           ce bouton doit rester atteignable. Un toucher l'ouvre ; un glisser
