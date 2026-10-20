@@ -20,6 +20,9 @@ export interface MobileGroupStart {
   override: boolean;
   /** Position de départ imposée par la séance (ticks), absente au début du titre. Un flux TRANSCODÉ démarre là. */
   ticks: number | undefined;
+  /** La même en secondes, 0 compris — absente hors séance : le premier chargement
+   *  du lecteur s'y pose au lieu de la reprise personnelle (`loadTargetSeconds`). */
+  startSeconds: number | undefined;
   /** Ce que rend la séance pour la position de départ et les épisodes. */
   group: ReturnType<typeof useGroupPlaybackHandlers>;
   episodes: { current: EpisodeHandlersRef };
@@ -52,6 +55,7 @@ export function useMobileGroupStart(itemId: string, pb: PlayerSessionCore): Mobi
     hold: group.groupActive && seconds === undefined,
     override: group.groupActive && seconds !== undefined,
     ticks: group.groupActive && seconds !== undefined && seconds > 1 ? Math.floor(seconds * TICKS_PER_SECOND) : undefined,
+    startSeconds: group.groupActive && seconds !== undefined ? seconds : undefined,
     group,
     episodes,
   }), [group, seconds]);

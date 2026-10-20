@@ -3,11 +3,11 @@ import type { RefObject } from "react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { playbackErrorsSuppressed, useWatchStopInvalidation } from "@tentacle-tv/api-client";
-import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { EngineLoadData, EngineProgressData, PlayerEngineHandle } from "@/player/engine/types";
 import { registerOpenPlayer } from "@/player/openPlayer";
 import { backOrHome } from "@/utils/backOrHome";
 import type { PlayerSessionCore } from "./usePlayerPlayback";
+import { loadTargetSeconds } from "./loadTarget";
 
 /**
  * Gestionnaires du lecteur mobile : chargement, progression, fin, erreur,
@@ -45,13 +45,16 @@ export interface PlayerHandlersOptions {
   onDirectPlayFailed?: () => boolean;
   /** Le flux est arrivé au bout — l'écran le donne à l'arbitre, qui décide. */
   onEnded: () => void;
+  /** En séance Watch Together, la position de départ du groupe (0 compris) :
+   *  elle remplace la reprise personnelle au premier chargement (`loadTargetSeconds`). */
+  startOverrideSeconds?: number;
 }
 
 export function usePlayerHandlers({
   itemId, pb, engineRef, paused,
   resumeApplied, retryCount, retryingRef, hasEverPlayed,
   setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, onFailure,
-  onDirectPlayFailed, onEnded,
+  onDirectPlayFailed, onEnded, startOverrideSeconds,
 }: PlayerHandlersOptions) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -80,10 +83,14 @@ export function usePlayerHandlers({
     setVideoReady(true);
     hasEverPlayed.current = true;
 
-    // First load: resume from metadata; subsequent loads (track change): use current position
-    const targetPosition = resumeApplied.current
-      ? pb.positionRef.current
-      : (pb.item?.UserData?.PlaybackPositionTicks ?? 0) / TICKS_PER_SECOND;
+    // Premier chargement : la position de départ (celle du groupe en séance, sinon
+    // la reprise personnelle) ; les suivants (piste, qualité) : la position courante.
+    const targetPosition = loadTargetSeconds({
+      firstLoad: !resumeApplied.current,
+      currentS: pb.positionRef.current,
+      resumeTicks: pb.item?.UserData?.PlaybackPositionTicks,
+      startOverrideSeconds,
+    });
     resumeApplied.current = true;
 
     if (targetPosition > 0) {
@@ -102,7 +109,7 @@ export function usePlayerHandlers({
     }
 
     pb.reporting.reportStart(targetPosition);
-  }, [pb.item, pb.reporting, pb.isDirectPlay, pb.streamOffset, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pb.item, pb.reporting, pb.isDirectPlay, pb.streamOffset, pb.positionRef, startOverrideSeconds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleProgress = useCallback((data: EngineProgressData) => {
     const raw = Math.max(0, data.currentTime);
