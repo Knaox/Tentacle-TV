@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FAMILY_GUEST_PHOTO_MAX_BASE64, FAMILY_GUEST_PHOTO_TYPES, FAMILY_PROFILE_COLORS } from "../../family/familyContract";
-import { FAMILY_PICKER_PLATFORMS } from "../../family/familyPickerContract";
+import { FAMILY_PICKER_PLATFORMS, FAMILY_PICKER_PREFERENCE_PLATFORMS } from "../../family/familyPickerContract";
 import { FAMILY_CREATION_RIGHT_VALUES } from "../../family/familyRoles";
 
 /**
@@ -91,7 +91,8 @@ export const pickProfileBodySchema = z.object({
   deviceName: z.string().max(200).optional(),
 });
 
-export const setPickerPreferenceBodySchema = z.object({ platform: pickerPlatformSchema, atLaunch: z.boolean() });
+/** L'ancienne préférence du compte : le bureau seul (`FAMILY_PICKER_PREFERENCE_PLATFORMS`). */
+export const setPickerPreferenceBodySchema = z.object({ platform: z.enum(FAMILY_PICKER_PREFERENCE_PLATFORMS), atLaunch: z.boolean() });
 
 export const adminSwitchesBodySchema = z.object({
   families: z.boolean().optional(),

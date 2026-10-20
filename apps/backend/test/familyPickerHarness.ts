@@ -41,12 +41,16 @@ export function sender(app: FastifyInstance) {
 }
 
 /** « Qui regarde ? » du bureau, avec ce jeton (la session personnelle, en principe). */
-export function pickerProfiles(app: FastifyInstance, token: string) {
-  return sender(app)("GET", "/api/family/picker/profiles?platform=desktop", token);
+export function pickerProfiles(app: FastifyInstance, token: string, platform: "desktop" | "mobile" = "desktop") {
+  return sender(app)("GET", `/api/family/picker/profiles?platform=${platform}`, token);
 }
 
 /** Choisit un profil sur le bureau de ce jeton. */
-export function pick(app: FastifyInstance, token: string, body: { profileId: string; pin?: string; deviceName?: string }) {
+export function pick(
+  app: FastifyInstance,
+  token: string,
+  body: { profileId: string; pin?: string; deviceName?: string; platform?: "desktop" | "mobile" },
+) {
   return sender(app)("POST", "/api/family/picker/sessions", token, { platform: "desktop", ...body });
 }
 
