@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useMediaItem } from "@tentacle-tv/api-client";
 import { describeProblem, type ProblemActionKey, type ProblemCause } from "@tentacle-tv/shared";
 import { PlayerLoadingScreen } from "@/components/player/loading/PlayerLoadingScreen";
@@ -44,6 +45,19 @@ function offlineCause(manual: boolean, reason: OfflineReason): ProblemCause {
  * muet, et si le flux cale, le lecteur le dit lui-même (cause, reprise).
  */
 export default function WatchRoute() {
+  // Le lecteur tourne dans SON contrôleur (`fullScreenModal`, orientation
+  // « all ») alors que l'app reste en portrait : le fournisseur racine des
+  // marges sûres y gardait celles du PORTRAIT (haut 59, côtés 0) en paysage —
+  // barre du haut à 59 pt du bord, panneaux sous l'îlot. Un fournisseur à la
+  // racine du lecteur les mesure dans sa vraie orientation.
+  return (
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: PLAYER.bg }}>
+      <WatchRouteContent />
+    </SafeAreaProvider>
+  );
+}
+
+function WatchRouteContent() {
   // `version` : la version choisie sur la fiche (`VERSION_QUERY_PARAM`), sinon celle de Jellyfin.
   const { itemId, version, source } = useLocalSearchParams<{ itemId: string; version?: string; source?: string }>();
   const router = useRouter();
