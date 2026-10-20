@@ -33,8 +33,16 @@ export async function thirdDeviceScenario(ctx: ScenarioContext): Promise<void> {
   const elsewhere = await a2.api<unknown>("GET", `${WT}/group/elsewhere`);
   ctx.check("A2 sait qu'une séance tourne ailleurs (GET /group/elsewhere)", elsewhere.status === 200 && elsewhere.json !== null,
     `HTTP ${elsewhere.status}`);
-  const banner = await waitFor(() => a2.isVisible(/autre appareil/i), 3_000);
+  // L'avis vit dans le panneau Watch Together (et sur la fiche) : on l'ouvre s'il ne paraît pas seul.
+  let banner = await waitFor(() => a2.isVisible(/autre appareil/i), 3_000);
+  if (banner === null) {
+    await a2.page.getByRole("button", { name: "Watch Together" }).first().click({ timeout: 5_000 }).catch(() => undefined);
+    banner = await waitFor(() => a2.isVisible(/autre appareil/i), 5_000);
+  }
   ctx.check("A2 affiche « Groupe en cours sur un autre appareil »", banner !== null);
+  const joinHere = await a2.page.getByRole("button", { name: /Rejoindre ici/ }).first().isVisible().catch(() => false);
+  ctx.check("A2 propose « Rejoindre ici »", joinHere);
+  await a2.page.keyboard.press("Escape").catch(() => undefined);
 
   // Un geste de A2 (une pause envoyée par une socket de SON appareil) ne touche pas la salle.
   const replies = await a2.page.evaluate(() => new Promise<string[]>((done) => {
