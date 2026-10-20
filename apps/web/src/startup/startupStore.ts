@@ -132,6 +132,13 @@ export function useStartupTurn(target: StartupWindow, state: StartupWindowState,
   return useStartupMayShow(target);
 }
 
+/** Les fenêtres du démarrage se sont toutes tues (aucune ouverte ni attendue) : ce
+ *  qui s'ouvre de soi-même après elles — la boîte des invitations — peut paraître. */
+export function useStartupQuiet(): boolean {
+  const current = useSyncExternalStore(subscribeStartup, readStartupSnapshot, readStartupSnapshot);
+  return startupHolder(current.states) === null;
+}
+
 /** Diagnostic (porte du débogage du web) : l'état des fenêtres et celle qui tient le démarrage. */
 export function describeStartup(): StartupSnapshot & { holder: StartupWindow | null } {
   return { ...snapshot, holder: startupHolder(snapshot.states) };

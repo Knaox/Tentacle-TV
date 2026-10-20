@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { getJellyfinUrl } from "../services/configStore";
 import { verifyImpersonationToken } from "../services/jwt";
 import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
-import { setSessionCookie } from "./authCookie";
+import { dropStraySessionCookie, offerSessionCookie } from "./authCookie";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { accountAccessReply } from "../services/accountAccess/accountAccessState";
 import { blockedJellyfinToken } from "../services/accountAccess/tokenOwners";
@@ -54,6 +54,8 @@ export const authRefreshRoutes: FastifyPluginAsync = async (app) => {
         return reply.status(503).send({ message: "Base de données indisponible" });
       }
       if (device.status === "paired") {
+        // Une app native peut encore renvoyer le cookie de sa connexion : retiré.
+        dropStraySessionCookie(request, reply);
         return {
           AccessToken: token,
           User: { Id: device.payload.userId, Name: device.payload.username },
@@ -87,7 +89,8 @@ export const authRefreshRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const user = await res.json();
-      setSessionCookie(reply, token);
+      // La fenêtre du cookie glisse pour un navigateur ; une app native le perd.
+      offerSessionCookie(request, reply, token);
       return { AccessToken: token, User: user };
     } catch {
       // Jellyfin unreachable — don't invalidate the token

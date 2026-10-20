@@ -10,7 +10,7 @@ import { buildAuthHeader, deviceIdForOpaque } from "../services/jellyfinIdentity
 import { authPasswordRoutes } from "./authPassword";
 import { authAccountRoutes } from "./authAccount";
 import { authRefreshRoutes } from "./authRefresh";
-import { clearAccountEscrowCookie, clearSessionCookie, setSessionCookie } from "./authCookie";
+import { clearAccountEscrowCookie, clearSessionCookie, offerSessionCookie, setSessionCookie } from "./authCookie";
 import { closeEscrowedHost, escrowLoggingOut, releaseEscrowOnLogout } from "./family/accountEscrow";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
@@ -101,8 +101,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         rememberTokenOwner(data.AccessToken, { userId: data.User.Id, username: data.User.Name, isAdmin: data.User.Policy?.IsAdministrator === true });
       }
 
-      // Set httpOnly cookie for web clients (XSS-proof token storage)
-      setSessionCookie(reply, data.AccessToken);
+      // Le cookie httpOnly de la page web — à un navigateur seulement : une app
+      // native le garderait et le renverrait même dans la session d'un profil.
+      offerSessionCookie(request, reply, data.AccessToken);
       // Une réserve de la Famille laissée par une session d'avant ne survit jamais à une connexion.
       clearAccountEscrowCookie(reply);
       // L'adresse de la maison par laquelle on se connecte entre dans les CorsHosts

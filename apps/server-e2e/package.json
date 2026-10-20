@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p wt-bench/tsconfig.json",
     "lint": "eslint src/ wt-bench/",
     "bench:wt": "tsx wt-bench/run.ts",
-    "bench:wt-profile": "tsx wt-bench/profile/profileBench.ts"
+    "bench:wt-profile": "tsx wt-bench/profile/profileBench.ts",
+    "bench:wt-profile-cookies": "tsx wt-bench/profile/cookieJarBench.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

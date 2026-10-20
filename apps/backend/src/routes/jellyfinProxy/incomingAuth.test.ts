@@ -35,10 +35,35 @@ describe("readIncomingAuth", () => {
     expect(auth.identityHeader).toBeUndefined();
   });
 
-  it("l'ordre du proxy : en-têtes Jellyfin, puis cookie, puis query, puis Bearer", () => {
+  it("l'ordre du proxy : en-têtes Jellyfin, puis le cookie départagé de la query, puis du Bearer", () => {
     expect(readIncomingAuth({ "x-emby-token": "h" }, "c", { api_key: "q" }).token).toBe("h");
-    expect(readIncomingAuth({}, "c", { api_key: "q" }).token).toBe("c");
+    expect(readIncomingAuth({}, "c", {}).token).toBe("c");
     expect(readIncomingAuth({ authorization: "Bearer b" }, undefined, { api_key: "q" }).token).toBe("q");
+  });
+
+  describe("le cookie face au jeton explicite (cf. sessionTokenChoice)", () => {
+    const ACCOUNT = "0f1e2d3c4b5a69788796a5b4c3d2e1f0"; // connexion du compte (le pot du téléphone)
+    const PROFILE = "eyJhbGciOiJIUzI1NiJ9.eyJzY29wZSI6InByb2ZpbGUifQ.c2ln"; // JWT d'une session de profil
+    const IMPERSONATION = "eyJhbGciOiJIUzI1NiJ9.eyJpbXAiOnRydWV9.c2ln";
+
+    it("AVPlayer en session de profil : l'`api_key` du profil, jamais le cookie du compte", () => {
+      expect(readIncomingAuth({}, ACCOUNT, { api_key: PROFILE }).token).toBe(PROFILE);
+      expect(readIncomingAuth({ authorization: `Bearer ${PROFILE}` }, ACCOUNT, {}).token).toBe(PROFILE);
+    });
+
+    it("la page web en session de profil (compte en réserve) : son cookie JWT l'emporte", () => {
+      expect(readIncomingAuth({}, PROFILE, { api_key: ACCOUNT }).token).toBe(PROFILE);
+      expect(readIncomingAuth({}, PROFILE, { api_key: PROFILE }).token).toBe(PROFILE);
+    });
+
+    it("« voir en tant que » : le cookie JWT de l'usurpation l'emporte", () => {
+      expect(readIncomingAuth({}, IMPERSONATION, { api_key: ACCOUNT }).token).toBe(IMPERSONATION);
+    });
+
+    it("le moteur hors ligne, qui présente VOLONTAIREMENT le jeton du compte : inchangé", () => {
+      expect(readIncomingAuth({}, ACCOUNT, { api_key: ACCOUNT }).token).toBe(ACCOUNT);
+      expect(readIncomingAuth({ authorization: `Bearer ${ACCOUNT}` }, ACCOUNT, {}).token).toBe(ACCOUNT);
+    });
   });
 
   it("une connexion (AuthenticateByName) : l'identité sans jeton", () => {

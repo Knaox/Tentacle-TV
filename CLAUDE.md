@@ -961,6 +961,16 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
   par COOKIE, qui l'emporte sur tout Bearer : ouvrir un profil réécrit donc les cookies côté
   serveur, et le jeton du COMPTE part en réserve httpOnly (`tentacle_account_token`,
   `routes/family/accountEscrow.ts`), jamais dans la page ; il ne revient que derrière SON code.
+- **Le cookie ne l'emporte que s'il porte une session posée par le serveur** (profil du web,
+  « voir en tant que » : un JWT). Un cookie de CONNEXION (jeton Jellyfin) cède au Bearer et au
+  message `auth` de la socket (`services/sessionTokenChoice.ts`) : React Native GARDE le cookie
+  que `/api/auth/login` pose (le compte) et le renvoie avec chaque requête ET chaque poignée de
+  main WebSocket — lu d'abord, il faisait du compte l'hôte et le présent de Watch Together d'un
+  profil (alpha mobile, 20/10). Une socket sans User-Agent « Mozilla/… » attend son `auth`. Le proxy
+  Jellyfin et la vignette trickplay suivent la même règle après les en-têtes (`incomingAuth.ts` :
+  l'`api_key` d'AVPlayer l'emporte). Et le cookie n'est plus donné qu'à un NAVIGATEUR :
+  `/api/auth/login` et `/api/auth/refresh` le RETIRENT à une app native (`offerSessionCookie`). Un
+  banc sous Node ne voit pas ce cookie sans pot : `bench:wt-profile-cookies` (`reactNativeJar.ts`).
 - **Le hors ligne appartient au COMPTE DE L'APPAREIL** (celui qui s'y est connecté, jamais le
   propriétaire de la Famille ni le profil ouvert ; règle du 21/10, `offline-core` ›
   `rights/offlineOwner.ts`, mobile ET bureau) : une session de profil n'en voit rien (ni bouton, ni

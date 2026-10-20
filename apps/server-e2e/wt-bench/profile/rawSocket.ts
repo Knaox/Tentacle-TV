@@ -22,8 +22,9 @@ export class RawSocket {
     };
   }
 
-  static async open(backendUrl: string, token: string): Promise<RawSocket> {
-    const ws = new WebSocket(`${backendUrl.replace(/^http/, "ws")}/api/ws`);
+  /** `connect` : la WebSocket de l'appareil (un téléphone y joint le cookie de son pot). */
+  static async open(backendUrl: string, token: string, connect: (url: string) => WebSocket = (url) => new WebSocket(url)): Promise<RawSocket> {
+    const ws = connect(`${backendUrl.replace(/^http/, "ws")}/api/ws`);
     const socket = new RawSocket(ws);
     await new Promise<void>((resolve, reject) => {
       ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token }));

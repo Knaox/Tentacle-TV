@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   setWtLogger, useWatchTogetherSession, WatchTogetherContext, type WtPlatformPort,
 } from "@tentacle-tv/api-client";
+import { shouldAutoOpenInbox } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
+import { useStartupQuiet } from "../startup/startupStore";
 import { GroupPlaybackPill } from "./GroupPlaybackPill";
 import { InviteInboxModal } from "./InviteInboxModal";
 import { ChatRoot } from "./chat/ChatRoot";
@@ -37,13 +39,18 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const pathname = location.pathname;
   /**
-   * La boîte aux invitations, ouverte d'office à l'ACCUEIL.
+   * La boîte aux invitations, ouverte d'office à l'ACCUEIL — la règle du mobile
+   * (`shouldAutoOpenInbox`, shared) : une fois par invitation, quand les
+   * fenêtres du démarrage se sont tues, d'après les invitations EN ATTENTE —
+   * celle qui arrive comme celle reçue avant « Qui regarde ? », app fermée.
    *
    * Là, on ne fait rien de précis : être interrompu ne coûte rien, et il ne
    * reste qu'à accepter. Ailleurs — une fiche qu'on lit, une lecture en cours —
    * l'invitation ne s'impose pas : le compteur du logo la garde sous la main.
    */
   const [inboxOpen, setInboxOpen] = useState(false);
+  const startupQuiet = useStartupQuiet();
+  const shownInvites = useRef(new Set<string>());
 
   const port = useMemo<WtPlatformPort>(() => ({
     socketToken: typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null,
@@ -55,7 +62,6 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     isWatching: () => pathname.startsWith("/watch/"),
     toast: show,
     t: (key, opts) => t(key, opts) as string,
-    onInviteArrived: () => { if (pathname === "/") setInboxOpen(true); },
     // Quitter Tentacle (fermeture d'onglet, d'app) = quitter le groupe vite.
     subscribeAppExit: (onExit) => {
       window.addEventListener("pagehide", onExit);
@@ -64,6 +70,12 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   }), [navigate, pathname, show, t]);
 
   const value = useWatchTogetherSession(port);
+  const inviteIds = useMemo(() => value.invites.map((invite) => invite.inviteId), [value.invites]);
+  useEffect(() => {
+    if (!value.mayJoin || !shouldAutoOpenInbox({ pathname, startupQuiet, inviteIds, shownIds: shownInvites.current })) return;
+    for (const id of inviteIds) shownInvites.current.add(id);
+    setInboxOpen(true);
+  }, [pathname, startupQuiet, inviteIds, value.mayJoin]);
   // Fenêtre étroite (téléphone, iPad) : les feuilles du mobile (`MirrorWtHost`) à la place de la
   // modale de salle et de la boîte des invitations du bureau ; la bande de l'accueil dit l'« ailleurs ».
   const mirror = useMirror();
