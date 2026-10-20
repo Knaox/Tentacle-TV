@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import type { WtPlayerChrome } from "./useWtPlayerChrome";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import {
   groupPanelLayout, OVERLAY_PANEL_WIDTH, SIDE_PANEL_WIDTH, videoHeightAbove,
@@ -15,12 +16,11 @@ import {
  * panneau fermé, la vidéo seule, exactement comme avant : l'arbre de la
  * vidéo ne change jamais de parent (aucun rechargement à l'ouverture).
  */
-export function WtPlayerFrame({ open, onClose, panel, children }: {
-  open: boolean;
-  onClose: () => void;
-  panel: ReactNode;
+export function WtPlayerFrame({ chrome, children }: {
+  chrome: Pick<WtPlayerChrome, "open" | "close" | "panel">;
   children: ReactNode;
 }) {
+  const { open, close: onClose, panel } = chrome;
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const layout = groupPanelLayout(width, height, TABLET_MIN_WIDTH);
