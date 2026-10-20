@@ -76,6 +76,16 @@ export function useGroupIntents({
     // wt:play parti d'ici forcerait la reprise du group-wait et éjecterait les
     // membres encore attendus (waitingFor.clear() côté serveur).
     if (shared.lastBufferingSentRef.current !== false) {
+      // Le média, chargé, s'est mis à jouer pendant son chargement déclaré (fin de la
+      // réserve de mpv) alors que la salle m'attend : il attend la reprise commune en
+      // pause, au lieu de jouer seul jusqu'à son « prêt » (banc bureau du 20/10).
+      const t = transportRef.current;
+      if (!paused && t && t.isMediaReady?.() === true && isRoomWaitingForMe(r, shared.selfIdRef.current)) {
+        wtLog("engine", "lecteur parti seul pendant que la salle m'attend → pause jusqu'à la reprise");
+        armEcho(shared);
+        t.pause();
+        return;
+      }
       wtLog("engine", `intent play/pause ignoré (player en chargement déclaré), paused=${paused}`);
       return;
     }
