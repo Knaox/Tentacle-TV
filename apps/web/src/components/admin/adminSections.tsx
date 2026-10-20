@@ -4,6 +4,7 @@ import {
   Database,
   Globe,
   HardDriveDownload,
+  HeartHandshake,
   LayoutDashboard,
   LifeBuoy,
   Mail,
@@ -13,8 +14,8 @@ import {
   Users,
 } from "lucide-react";
 import type { SettingsShellSection } from "@tentacle-tv/ui";
-import { useServerCapabilities } from "@tentacle-tv/api-client";
-import type { ServerCapability } from "@tentacle-tv/shared";
+import { useAppConfig, useServerCapabilities } from "@tentacle-tv/api-client";
+import { isFamilyAvailable, type ServerCapability } from "@tentacle-tv/shared";
 
 /**
  * Les sections de l'administration — une seule liste pour le rail de la
@@ -30,16 +31,19 @@ import type { ServerCapability } from "@tentacle-tv/shared";
  *
  * Une section qui exige une capacité du serveur (`capability`) n'existe que
  * s'il la déclare (`serverCapabilities.ts`) : un serveur d'avant ne la montre pas.
+ * « Famille » n'existe que si le serveur a la Famille (`features.family`).
  */
 
 export const OVERVIEW_ID = "overview";
 const ICON = 17;
 
-type AdminSection = SettingsShellSection & { capability?: ServerCapability };
+type AdminSection = SettingsShellSection & { capability?: ServerCapability; hidden?: boolean };
 
 export function useAdminSections(): SettingsShellSection[] {
   const { t } = useTranslation("admin");
   const { capabilities } = useServerCapabilities();
+  // L'administration est en ligne, en session personnelle : `features.family` suffit.
+  const family = isFamilyAvailable(useAppConfig().data?.features.family, false);
   return useMemo(() => {
     const activity = t("groupActivity");
     const accounts = t("groupAccounts");
@@ -49,6 +53,7 @@ export function useAdminSections(): SettingsShellSection[] {
       { id: "sessions", label: t("navSessions"), icon: <MonitorPlay size={ICON} />, group: activity },
       { id: "tickets", label: t("navTickets"), icon: <LifeBuoy size={ICON} />, group: activity },
       { id: "users", label: t("navUsers"), icon: <Users size={ICON} />, group: accounts },
+      { id: "family", label: t("navFamily"), icon: <HeartHandshake size={ICON} />, group: accounts, hidden: !family },
       { id: "invites", label: t("navInvites"), icon: <Mail size={ICON} />, group: accounts },
       { id: "downloads", label: t("navDownloads"), icon: <HardDriveDownload size={ICON} />, group: accounts },
       { id: "services", label: t("navServices"), icon: <Server size={ICON} />, group: server },
@@ -59,9 +64,9 @@ export function useAdminSections(): SettingsShellSection[] {
       { id: "plugins", label: t("navPlugins"), icon: <Puzzle size={ICON} />, group: server },
     ];
     return sections
-      .filter((section) => !section.capability || capabilities.has(section.capability))
-      .map(({ capability: _capability, ...section }) => section);
-  }, [t, capabilities]);
+      .filter((section) => !section.hidden && (!section.capability || capabilities.has(section.capability)))
+      .map(({ capability: _capability, hidden: _hidden, ...section }) => section);
+  }, [t, capabilities, family]);
 }
 
 /** La route d'une section : la vue d'ensemble est l'index `/admin`. */

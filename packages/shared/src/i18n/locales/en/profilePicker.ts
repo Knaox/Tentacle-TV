@@ -63,6 +63,27 @@ export default {
     stayHereWeb: "Off: this browser opens {{name}}'s profile directly.",
   },
   /** Admin › Users: “Who's watching?” at startup, set for everyone (`FamilyLaunchPolicySection`). */
+  /** Admin › Family (server `family.launchPlatforms`): `FamilyLaunchSettingsSection`. */
+  launchSettings: {
+    title: "“Who's watching?” at startup",
+    description: "Where the question shows by itself when the app opens. Each device can then tick “Don't ask at startup”, and “Switch profile” always stays available.",
+    enabled: "Ask “Who's watching?” at startup",
+    enabledHint: "Off: the question never shows by itself on any device, and TVs open the profile of the account that paired them.",
+    platformsLegend: "On these devices",
+    platform_desktop: "Computers",
+    platformHint_desktop: "The Tentacle app on Windows, macOS and Linux.",
+    platform_web: "Browser",
+    platformHint_web: "Tentacle opened in a web browser.",
+    platform_mobile: "Phones and tablets",
+    platformHint_mobile: "The Tentacle app on iPhone, iPad and Android.",
+    platform_tv: "TVs",
+    platformHint_tv: "Apple TV and Android TV. Unticked: they open the profile of the account that paired them directly, without a PIN.",
+    nowhere: "No device ticked: the question won't show by itself anywhere.",
+    save: "Save",
+    saving: "Saving…",
+    saved: "Saved. The rule applies the next time each device starts.",
+    unsaved: "Unsaved changes.",
+  },
   adminPolicy: {
     title: "“Who's watching?” at startup",
     description: "Platform by platform: can “Who's watching?” show when the app opens? “Switch profile” always stays available.",
