@@ -14,9 +14,12 @@
 import type { PlaybackSettings } from "../playback/playbackSettings";
 import type { SegmentType } from "../playback/segmentTypes";
 import type { WtAffinityMessage } from "./watchTogetherAffinity";
+import type { WtElsewhereMessage } from "./watchTogetherDevices";
 
-// L'affinité (swipe de groupe) a son propre contrat, recopié à part.
+// L'affinité (swipe de groupe) et l'adhésion par appareil ont leurs propres
+// contrats, recopiés à part.
 export * from "./watchTogetherAffinity";
+export * from "./watchTogetherDevices";
 
 /** Ticks Jellyfin par milliseconde (10 000 000 par seconde). */
 const TICKS_PER_MS = 10_000;
@@ -120,6 +123,11 @@ export interface WtRoomStateDto {
   waitCause?: WtWaitCause;
   /** Saut de passage armé (décompte serveur) — absent quand il n'y en a pas. */
   pendingSkip?: WtPendingSkipDto;
+  /** « Tous prêts » (1.32.0, `watchTogether.readyGate`) : les membres attendus
+   *  pour le titre sont tous posés (ou le délai est passé) et aucune barrière
+   *  n'est ouverte. Faux : aucun saut de passage, ni bouton ni décompte.
+   *  Absent : serveur d'avant, ou salle sans titre — le client en juge seul. */
+  allReady?: boolean;
 }
 
 export interface WtInviteDto {
@@ -244,7 +252,10 @@ export type WtServerMessage =
   | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] }
   /** Séance d'affinité (swipe de groupe) — voir `watchTogetherAffinity.ts`.
    *  Un client d'avant l'ignore : message inconnu. */
-  | WtAffinityMessage;
+  | WtAffinityMessage
+  /** Adhésion par appareil (1.32.0) : la salle du compte, dite aux appareils
+   *  qui n'y sont pas liés. Un client d'avant l'ignore : message inconnu. */
+  | WtElsewhereMessage;
 
 // ── Extrapolation (serveur ET clients) ──
 
