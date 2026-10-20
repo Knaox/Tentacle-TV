@@ -30,6 +30,11 @@ export class CookieJar {
     return this.cookies.get(name);
   }
 
+  /** Le pot tel qu'un serveur d'avant l'a laissé (il posait ce cookie à tout le monde). */
+  set(name: string, value: string): void {
+    this.cookies.set(name, value);
+  }
+
   /** L'en-tête `Cookie` que le téléphone enverrait, ou rien. */
   header(): string | undefined {
     return this.cookies.size > 0 ? [...this.cookies].map(([name, value]) => `${name}=${value}`).join("; ") : undefined;

@@ -3,10 +3,13 @@
  * (alpha mobile 1.20.0, 20/10) — le parcours de Damien, contre le VRAI backend
  * du dépôt et le Jellyfin jetable du banc Watch Together (`bench:wt up`) :
  *
- *   - chaque téléphone se connecte comme l'app, par `POST /api/auth/login` : le
- *     serveur lui pose le cookie `tentacle_token` (le jeton du COMPTE), que React
- *     Native garde et renvoie avec chaque requête et chaque poignée de main
- *     WebSocket (rejoué par `reactNativeJar.ts`) ;
+ *   - chaque téléphone se connecte comme l'app, par `POST /api/auth/login`. Un
+ *     serveur d'avant lui posait le cookie `tentacle_token` (le jeton du COMPTE),
+ *     que React Native garde et renvoie avec chaque requête et chaque poignée de
+ *     main WebSocket (rejoué par `reactNativeJar.ts`). Le serveur d'aujourd'hui
+ *     ne le donne plus à une app native : le pot est alors rempli comme un
+ *     serveur d'avant l'a laissé (le téléphone d'un utilisateur à la mise à
+ *     jour), et le rafraîchissement doit le vider ;
  *   - deux téléphones CROISÉS : A connecté en compat-admin, profil compat-user2
  *     ouvert (avec les modules du client : socket partagée, REST de Watch
  *     Together) ; B connecté en compat-user2, profil compat-admin ouvert.
@@ -53,6 +56,17 @@ async function login(doFetch: typeof fetch, username: string, device: string): P
   return { token: body.AccessToken, id: body.User.Id };
 }
 
+/**
+ * Le pot porte le cookie du COMPTE : posé par la connexion sur un serveur
+ * d'avant, ou — le serveur ne le donnant plus à une app native — remis comme un
+ * serveur d'avant l'a laissé (le téléphone d'un utilisateur, à la mise à jour).
+ */
+function accountCookieInJar(jar: CookieJar, accountToken: string): "posé par la connexion" | "laissé par un serveur d'avant" {
+  if (jar.get("tentacle_token") === accountToken) return "posé par la connexion";
+  jar.set("tentacle_token", accountToken);
+  return "laissé par un serveur d'avant";
+}
+
 /** « Qui regarde ? » (plateforme mobile), au jeton du compte : le jeton du profil choisi. */
 async function pickProfile(doFetch: typeof fetch, accountToken: string, profileId: string, deviceName: string): Promise<string> {
   const api = restClient(BACKEND, doFetch);
@@ -75,8 +89,9 @@ async function scenario({ check, log }: Bench, { http }: BenchContext): Promise<
   const jarB = new CookieJar();
   const fetchB = jarB.fetchFor(BACKEND, plainFetch);
   const accountB = await login(fetchB, USER2_NAME, "banc-telephone-b");
+  const originB = accountCookieInJar(jarB, accountB.token);
   const profileB = await pickProfile(fetchB, accountB.token, owner.id, "Banc téléphone B");
-  check("B garde le cookie du COMPTE compat-user2", jarB.get("tentacle_token") === accountB.token, { cookie: !!jarB.get("tentacle_token") });
+  check("le pot de B porte le cookie du COMPTE compat-user2", jarB.get("tentacle_token") === accountB.token, { origine: originB });
   const socketB = await RawSocket.open(BACKEND, profileB, (url) => jarB.socket(url));
 
   // Téléphone A (connecté en compat-admin, profil compat-user2) : les modules du client, sous son pot.
@@ -85,8 +100,9 @@ async function scenario({ check, log }: Bench, { http }: BenchContext): Promise<
   const inboxA: Msg[] = [];
   try {
     const accountA = await login(fetch, ADMIN_NAME, "banc-telephone-a");
+    const originA = accountCookieInJar(jarA, accountA.token);
     const profileA = await pickProfile(fetch, accountA.token, member.id, "Banc téléphone A");
-    check("A garde le cookie du COMPTE compat-admin", jarA.get("tentacle_token") === accountA.token, { cookie: !!jarA.get("tentacle_token") });
+    check("le pot de A porte le cookie du COMPTE compat-admin", jarA.get("tentacle_token") === accountA.token, { origine: originA });
     setWsBackendUrl(BACKEND);
     setWatchTogetherBackendUrl(BACKEND);
     setWatchTogetherToken(profileA);
@@ -123,6 +139,15 @@ async function scenario({ check, log }: Bench, { http }: BenchContext): Promise<
     socketB.close();
     await waitUntil(async () => inboxA.some((m) => m.type === "wt:state" && memberOf(stateOf(m), owner.id)?.online === false), 5_000, "B hors ligne", 50);
     check("B fermé : l'hôte le voit HORS LIGNE", true, { member: owner.id });
+
+    // Le rafraîchissement du retour au premier plan (`useAuthRefresh`) : le serveur
+    // retire au téléphone le cookie que son pot renvoyait.
+    await fetch(`${BACKEND}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: profileA }),
+    });
+    check("le rafraîchissement vide le pot de A", jarA.get("tentacle_token") === undefined, { reste: !!jarA.get("tentacle_token") });
   } catch (err) {
     check("le parcours va au bout", false, err instanceof Error ? err.message : String(err));
   } finally {
