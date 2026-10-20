@@ -69,3 +69,6 @@ export { usePlaybackRights, parsePlaybackRights, PLAYBACK_RIGHTS_KEY, type Playb
 export { useRightsLive, applyRightsChanged, type UseRightsLiveOptions } from "../rights/useRightsLive";
 // Les titres gardés jugés pour l'identité en session (`/api/library/visibility`, capacité `offline.verdicts`).
 export { fetchLibraryVisibility } from "../rights/libraryVisibility";
+// Ce que la session peut faire (`/api/account/abilities`, capacité `account.abilities`) : rien d'affiché sans le droit.
+export { useAccountAbilities, ACCOUNT_ABILITIES_KEY } from "../rights/useAccountAbilities";
+export { mayShow, watchTogetherAbility, type AccountAbilitiesState } from "../rights/accountAbilitiesGate";
