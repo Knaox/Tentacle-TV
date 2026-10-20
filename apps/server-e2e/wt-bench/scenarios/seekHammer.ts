@@ -1,9 +1,9 @@
 /**
- * Appuis martelés : cinq fois → (+30 s) à 80 ms d'écart. Mesuré le 20/10 : le
- * lecteur web SEUL n'avance que d'environ 30 s (les appuis rapprochés se
- * fondent) — c'est son comportement, pas celui de Watch Together. En séance,
- * la salle doit faire EXACTEMENT comme le lecteur seul, et les deux membres
- * finir au même endroit.
+ * Appuis martelés : cinq fois → (+30 s) à 80 ms d'écart. Mesuré le 20/10 sur
+ * `dev` : le lecteur web SEUL n'avançait que d'environ 30 s (les appuis
+ * rapprochés se fondaient). Règle du lot (B7, wt-socle 25c768931) : chaque
+ * « +30 s » part du saut précédent — cinq appuis valent +150 s, seul comme en
+ * séance, et les deux membres finissent au même endroit.
  */
 
 import { measureOnce, waitAligned, waitFor } from "../measure";
@@ -31,6 +31,7 @@ export async function seekHammerScenario(ctx: ScenarioContext): Promise<void> {
   const s1 = (await solo.sample()).pos ?? 0;
   const soloAdvance = s1 - s0 - 3;
   ctx.metric("seul : 5 appuis → martelés, avance", `${soloAdvance.toFixed(1)} s`);
+  ctx.check("seul : les 5 appuis comptent (≈ +150 s)", soloAdvance > 140, `${soloAdvance.toFixed(1)} s`);
   await ctx.release(solo);
 
   // En séance.
@@ -43,7 +44,7 @@ export async function seekHammerScenario(ctx: ScenarioContext): Promise<void> {
   await new Promise((ok) => setTimeout(ok, 1_000));
   const p = await measureOnce([s.a, s.b]);
   const advance = (p.pos.A ?? 0) - g0 - (p.at - at) / 1000;
-  ctx.check("en séance : 5 appuis → martelés font comme le lecteur seul (± 5 s)", Math.abs(advance - soloAdvance) < 5,
+  ctx.check("en séance : les 5 appuis comptent aussi (≈ +150 s, comme seul)", advance > 140 && Math.abs(advance - soloAdvance) < 5,
     `séance ${advance.toFixed(1)} s · seul ${soloAdvance.toFixed(1)} s · A ${p.pos.A?.toFixed(1)} s · B ${p.pos.B?.toFixed(1)} s`);
   ctx.check("en séance : les deux finissent au même endroit (< 100 ms)", Math.abs(p.drift.B ?? 1e9) < 100, `${p.drift.B} ms`);
 }
