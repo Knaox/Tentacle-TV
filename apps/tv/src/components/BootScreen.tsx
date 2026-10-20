@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import { BOOT_MASCOT_DELAY_MS } from "@tentacle-tv/tv-core/boot";
 import { PLATFORM_TRAITS } from "../platform/traits";
-import { BOOT_INK } from "../redesign/boot/BootIntroView";
+import { BOOT_INK } from "@tentacle-tv/brand-intro-native";
 import { BootView } from "../redesign/screens/overlays/BootView";
 
 /**

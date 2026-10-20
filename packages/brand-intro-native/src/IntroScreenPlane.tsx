@@ -1,13 +1,12 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import LinearGradient from "react-native-linear-gradient";
 import type { IntroGeometry } from "@tentacle-tv/shared/brandIntro";
-import type { IntroSamples } from "@tentacle-tv/tv-core/boot";
-import { RoundClip } from "../render/RoundClip";
+import type { IntroSamples } from "@tentacle-tv/shared/brandIntro";
 import type { PartBoxes, TentacleArt } from "./introArt";
 import { CameraLayer, IntroGroup, IntroPart, type StageFrame } from "./IntroPart";
 import { FLASH_STOPS, SoftDiscSvg } from "./IntroSvgs";
+import { useIntroPrimitives } from "./introPrimitives";
 import { sampleAt, type IntroClock } from "./introWorklets";
 
 /** Le cercle qui ouvre la vitre ne part jamais de zéro (une échelle nulle n'a pas d'inverse). */
@@ -46,6 +45,7 @@ export interface IntroScreenPlaneProps {
 export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScreenPlaneProps) {
   const { art, geometry, boxes, samples, clock, viewport, finalZoom, screenColor, landed, children } = props;
   const { step } = samples;
+  const { LinearGradient, RoundClip } = useIntroPrimitives();
   const center = { x: viewport.width / 2, y: viewport.height / 2 };
   const frame: StageFrame = { center, target: geometry.target, zoom: finalZoom };
   const { inner, play, reach } = geometry;

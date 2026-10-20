@@ -1,6 +1,6 @@
 import { AccessibilityInfo } from "react-native";
 import { bootIntroTurn, decideBootIntro, FRESH_PROCESS, type BootIntroMemory, type BootIntroPlan } from "@tentacle-tv/tv-core/boot";
-import { bootSound } from "../../platform/tvos/bootSound/bootSound";
+import { bootSound } from "@tentacle-tv/brand-intro-native";
 import { PLATFORM_TRAITS } from "../../platform/traits";
 
 /**

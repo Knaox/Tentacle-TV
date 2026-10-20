@@ -16,7 +16,7 @@ import { usePreviewRemoteHint } from "./usePreviewRemote";
 import { useZoneDetails } from "./useZoneDetails";
 import { ZoneSession, type ZoneVideoWant } from "./ZoneSession";
 import { ZoneVideo } from "./ZoneVideo";
-import { useBootIntroPlaying } from "../boot/bootIntroGate";
+import { useBootIntroPlaying } from "@tentacle-tv/brand-intro-native";
 
 /**
  * La ZONE D'APERÇU fournie au port (`PreviewZoneSlot`) — une par page, qui lit

@@ -14,7 +14,7 @@ import { startupRouteAfter, startupStackRoute } from "../../navigation/startupWi
 import { useBackLayer } from "../back/BackScope";
 import { pinMessageOf, refusalMessage, tileModelOf } from "./profilesModel";
 import { useProfilesFlow } from "./useProfilesFlow";
-import { useReportScreenToBootIntro } from "../boot/bootIntroGate";
+import { useReportScreenToBootIntro } from "@tentacle-tv/brand-intro-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Profiles">;
 

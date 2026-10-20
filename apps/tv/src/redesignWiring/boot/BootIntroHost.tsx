@@ -4,11 +4,9 @@ import { BOOT_INTRO_MAX_HOLD_MS, bootIntroOutcome, bootSoundLeads } from "@tenta
 // Le dessin du logo : ses constantes GÉNÉRÉES (brand/generate-svg.py), passées à la vue.
 import * as TENTACLE_ART from "../../components/icons/tentacleArt.generated";
 import { readBootSoundSetting } from "../../lib/bootSoundSetting";
-import { bootSound } from "../../platform/tvos/bootSound/bootSound";
-import { BootIntroView, useIntroScene } from "../../redesign/boot/BootIntroView";
-import { useIntroClock } from "../../redesign/boot/useIntroClock";
+import { BootIntroView, bootIntroGate, bootSound, useBootIntroReport, useIntroClock, useIntroScene } from "@tentacle-tv/brand-intro-native";
 import { Colors } from "../../theme/colors";
-import { bootIntroGate, useBootIntroReport } from "./bootIntroGate";
+import { TV_INTRO_PRIMITIVES } from "./introPrimitives";
 
 /** La traîne du son après l'arrivée (le bloom de l'accord, la vague) : le lecteur se libère ensuite. */
 const SOUND_TAIL_MS = 5_000;
@@ -94,7 +92,7 @@ export function BootIntroHost({ children }: { children: ReactNode }) {
   }, [landed, clock]);
 
   return (
-    <BootIntroView art={TENTACLE_ART} scene={scene} clock={clock} viewport={viewport} landed={landed} screenColor={Colors.bgDeep}>
+    <BootIntroView scene={scene} primitives={TV_INTRO_PRIMITIVES} clock={clock} viewport={viewport} landed={landed} screenColor={Colors.bgDeep}>
       {children}
     </BootIntroView>
   );

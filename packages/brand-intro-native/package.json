@@ -1,0 +1,19 @@
+{
+  "name": "@tentacle-tv/brand-intro-native",
+  "version": "1.0.0-beta",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tentacle-tv/shared": "workspace:*",
+    "@tentacle-tv/theme": "workspace:*"
+  }
+}

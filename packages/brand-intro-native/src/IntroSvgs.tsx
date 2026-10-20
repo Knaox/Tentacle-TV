@@ -1,7 +1,7 @@
 import { memo, type ReactNode } from "react";
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop } from "react-native-svg";
 import { SPARKLE_PATH } from "@tentacle-tv/shared/brandIntro";
-import { colors } from "../theme/tokens";
+import { TV_ACCENT } from "@tentacle-tv/theme";
 import type { LinearGradientSpec, PartBox, TentacleArt } from "./introArt";
 
 /**
@@ -160,16 +160,16 @@ export const SoftDiscSvg = memo(function SoftDiscSvg({ size, stops }: { size: nu
 
 /** La nuit : rose au cœur, violet de marque autour, puis rien. */
 export const GLOW_STOPS: readonly [number, string, number][] = [
-  [0, colors.accent, 0.3],
-  [0.45, colors.accentDeep, 0.13],
-  [1, colors.accentDeep, 0],
+  [0, TV_ACCENT.base, 0.3],
+  [0.45, TV_ACCENT.deep, 0.13],
+  [1, TV_ACCENT.deep, 0],
 ];
 
 /** L'éclair : blanc, rose clair, rose qui s'éteint. */
 export const FLASH_STOPS: readonly [number, string, number][] = [
   [0, "#FFFFFF", 1],
-  [0.35, colors.accentLight, 0.7],
-  [1, colors.accent, 0],
+  [0.35, TV_ACCENT.light, 0.7],
+  [1, TV_ACCENT.base, 0],
 ];
 
 /** Une étincelle (repère de l'étoile, rayon 1) : sa lueur et l'étoile, blanche ou rose clair. */
@@ -179,12 +179,12 @@ export const SparkleSvg = memo(function SparkleSvg({ size, pink }: { size: numbe
       <Defs>
         <RadialGradient id="spark" cx={0} cy={0} r={1.9} gradientUnits="userSpaceOnUse">
           <Stop offset={0} stopColor="#FFFFFF" stopOpacity={0.55} />
-          <Stop offset={0.4} stopColor={colors.accentLight} stopOpacity={0.28} />
-          <Stop offset={1} stopColor={colors.accentLight} stopOpacity={0} />
+          <Stop offset={0.4} stopColor={TV_ACCENT.light} stopOpacity={0.28} />
+          <Stop offset={1} stopColor={TV_ACCENT.light} stopOpacity={0} />
         </RadialGradient>
       </Defs>
       <Circle r={1.9} fill="url(#spark)" />
-      <Path d={SPARKLE_PATH} fill={pink ? colors.accentLight : "#FFFFFF"} />
+      <Path d={SPARKLE_PATH} fill={pink ? TV_ACCENT.light : "#FFFFFF"} />
     </Svg>
   );
 });

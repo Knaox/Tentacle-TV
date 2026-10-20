@@ -2,10 +2,11 @@ import { NativeModules } from "react-native";
 
 /**
  * Le « ta-dum » de l'ouverture, par le module natif `TentacleBootSound`, le
- * même contrat sur les deux plateformes : tvOS
- * (ios/TentacleTV/TentacleBootSound.m : AVAudioPlayer, catégorie « ambient »)
- * et Android TV (android/…/boot/BootSoundModule.kt : PCM décodé d'avance,
- * AudioTrack statique, sans focus audio). L'heure demandée est celle des images
+ * même contrat sur les deux plateformes — et le même CODE pour la TV et le
+ * mobile : iOS / tvOS (apps/tv/ios/TentacleTV/TentacleBootSound.m :
+ * AVAudioPlayer, catégorie « ambient ») et Android (apps/tv/android/…/boot/ :
+ * PCM décodé d'avance, flux calé sur la sortie, sans focus audio), que le
+ * projet mobile compile tels quels. L'heure demandée est celle des images
  * (ms, horloge que l'horloge Reanimated de l'ouverture lit : CADisplayLink,
  * Choreographer) ; le module la tient à la milliseconde. Sans module (un test,
  * une app d'avant), rien ne se joue.
