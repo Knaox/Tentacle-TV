@@ -45,8 +45,9 @@ export const PersonBubble = memo(function PersonBubble({ person, mode, pending, 
           size={28}
           onPress={pending ? () => {} : onAction}
           accessibilityLabel={label}
-          color={liked ? theme.colors.cta.brandFg : theme.colors.text.primary}
-          bgColor={liked ? theme.colors.brand.violet : theme.colors.surface.s2}
+          // L'anneau violet du portrait dit déjà « aimé » : le bouton reste neutre.
+          color={theme.colors.text.primary}
+          bgColor={theme.colors.surface.s2}
         />
       </View>
       <Text style={st.name} numberOfLines={1}>{person.name}</Text>
