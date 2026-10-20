@@ -60,6 +60,13 @@ let lastAttemptMs = 0;
 let renderSeq = 0;
 /** Le délai d'arrière-plan d'iOS est-il tenu ? */
 let timeHeld = false;
+/**
+ * Une session de PROFIL est ouverte : le hors ligne appartient au compte de
+ * l'appareil (règle de Damien, 20/10), le profil n'en voit rien — ni activité,
+ * ni notification. Le lot du compte, lui, continue en coulisse, et se montre
+ * à nouveau au retour sur le compte.
+ */
+let hidden = false;
 
 function liveAppState(status: AppStateStatus | null | undefined): LiveAppState {
   return status === "active" || status === "inactive" || status === "background" || status === "extension" ? status : "unknown";
@@ -116,6 +123,12 @@ function step(nowMs: number, force: boolean): void {
   if (userId === null || !isLiveTransfers() || !surface.available()) {
     clear();
     batch = new Set();
+    return;
+  }
+  if (hidden) {
+    // Le lot est gardé : il reprend sa place au retour sur le compte.
+    batch = nextLiveBatch(batch, entries);
+    clear();
     return;
   }
   batch = nextLiveBatch(batch, entries);
@@ -216,6 +229,13 @@ export function stopLiveTransfers(): void {
   entries = [];
   batch = new Set();
   syncBackgroundTime();
+}
+
+/** Session de profil ouverte (`true`) ou retour sur le compte : voir `hidden`. */
+export function setLiveHidden(next: boolean): void {
+  if (hidden === next) return;
+  hidden = next;
+  recomputeLive(Date.now(), true);
 }
 
 /** Tests seulement : une surface factice. */

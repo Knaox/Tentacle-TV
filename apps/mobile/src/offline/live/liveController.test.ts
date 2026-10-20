@@ -70,9 +70,10 @@ function entry(id: number, status: string, over: Record<string, unknown> = {}) {
   };
 }
 
-const { recomputeLive, startLiveTransfers, stopLiveTransfers } = await import("./liveController");
+const { recomputeLive, setLiveHidden, startLiveTransfers, stopLiveTransfers } = await import("./liveController");
 
 beforeEach(() => {
+  setLiveHidden(false);
   stopLiveTransfers();
   env.entries = [];
   env.progress.clear();
@@ -88,6 +89,25 @@ beforeEach(() => {
   surface.end.mockClear();
   surface.holdTime.mockClear();
   surface.releaseTime.mockClear();
+});
+
+describe("session de profil : le hors ligne est au compte de l'appareil", () => {
+  it("rien ne s'affiche pendant un profil, et le lot reparaît au retour sur le compte", () => {
+    env.entries = [entry(1, "downloading")];
+    env.progress.set(1, { bytesDone: 40 * MB, expectedSize: 100 * MB, rateBps: 2 * MB });
+    startLiveTransfers("compte");
+    expect(surface.show).toHaveBeenCalledTimes(1);
+
+    setLiveHidden(true);
+    expect(surface.end).toHaveBeenCalled();
+    surface.show.mockClear();
+    recomputeLive();
+    expect(surface.show).not.toHaveBeenCalled();
+
+    setLiveHidden(false);
+    expect(surface.show).toHaveBeenCalledTimes(1);
+    expect(surface.show.mock.calls[0]![0].remaining).toBe(1);
+  });
 });
 
 describe("suivi en direct des transferts", () => {
