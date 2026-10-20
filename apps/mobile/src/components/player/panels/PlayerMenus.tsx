@@ -45,9 +45,10 @@ export function PlayerMenus(props: Props) {
     if (!open) return [];
     const counts = { audio: audioTracks.length, subtitles: subtitleTracks.length, quality: qualityPresets.length };
     const drop = qualityDrop ? qualityDropText(qualityDrop, i18n.language) : null;
+    const words = { default: t("panels.trackDefault"), forced: t("panels.trackForced"), external: t("panels.trackExternal") };
     return playerMenuSections(open, counts).map((id): MenuSectionModel => {
-      if (id === "audio") return { id, options: audioTracks.map((track) => trackOption(track, selectedAudio)) };
-      if (id === "subtitles") return { id, options: subtitleOptions(subtitleTracks, selectedSubtitle, t("panels.subtitlesOff")) };
+      if (id === "audio") return { id, options: audioTracks.map((track) => trackOption(track, selectedAudio, words)) };
+      if (id === "subtitles") return { id, options: subtitleOptions(subtitleTracks, selectedSubtitle, t("panels.subtitlesOff"), words) };
       return {
         id,
         options: qualityOptions({

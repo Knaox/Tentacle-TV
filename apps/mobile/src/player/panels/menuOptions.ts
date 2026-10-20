@@ -1,5 +1,5 @@
 import { formatBitrateMbps, type QualityPreset, type SourceQuality } from "@tentacle-tv/shared";
-import { parseTrackLabel } from "../../lib/playerUtils";
+import { describeTrack, type TrackWords } from "./trackDescription";
 import type { PlayerMenuSection } from "./playerMenus";
 
 /** Une ligne de menu, sans rien de visuel (cf. `PanelOptionRow`). */
@@ -24,17 +24,16 @@ interface Track { index: number; label: string }
 /** « Désactivés » d'abord, puis les pistes — l'ordre du lecteur d'Apple. */
 export const SUBTITLES_OFF = -1;
 
-/** Une piste : son nom en titre, langue et format en détail (plus de pastilles colorées). */
-export function trackOption(track: Track, selected: number): MenuOption {
-  const { title, lang, codec } = parseTrackLabel(track.label);
-  const detail = [lang?.toUpperCase(), codec?.toUpperCase()].filter(Boolean).join(" · ");
-  return { key: track.index, title, detail: detail || undefined, selected: track.index === selected };
+/** Une piste : sa langue en titre, format et drapeaux en détail (plus de pastilles colorées). */
+export function trackOption(track: Track, selected: number, words: TrackWords): MenuOption {
+  const { title, detail } = describeTrack(track.label, words);
+  return { key: track.index, title, detail, selected: track.index === selected };
 }
 
-export function subtitleOptions(tracks: readonly Track[], selected: number, offLabel: string): MenuOption[] {
+export function subtitleOptions(tracks: readonly Track[], selected: number, offLabel: string, words: TrackWords): MenuOption[] {
   return [
     { key: SUBTITLES_OFF, title: offLabel, selected: selected === SUBTITLES_OFF },
-    ...tracks.map((track) => trackOption(track, selected)),
+    ...tracks.map((track) => trackOption(track, selected, words)),
   ];
 }
 

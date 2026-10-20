@@ -259,5 +259,8 @@ export default {
     quality: "Quality",
     nowPlaying: "Now playing",
     episodesTitle: "Episodes",
+    trackDefault: "Default",
+    trackForced: "Forced",
+    trackExternal: "External",
   },
 } as const;
