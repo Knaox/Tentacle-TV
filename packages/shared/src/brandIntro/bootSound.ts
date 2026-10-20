@@ -1,10 +1,12 @@
 /**
  * Le « ta-dum » de l'ouverture, calé à l'image. Le natif lit le FICHIER dérivé
- * de la partition (`@tentacle-tv/shared/brandIntro`, `INTRO_SCORE`) : il
+ * de la partition (`INTRO_SCORE`) : il
  * commence par la vague, un peu avant le « ta ». La règle dit à quel instant
  * de la chorégraphie le fichier doit partir, et quand le demander.
  */
-import { INTRO_HOLD_AT, INTRO_SOUND_TA_OFFSET_S, INTRO_TIMING } from "@tentacle-tv/shared/brandIntro";
+import { INTRO_HOLD_AT } from "./introHold";
+import { INTRO_SOUND_TA_OFFSET_S } from "./introScore";
+import { INTRO_TIMING } from "./introTimeline";
 
 /** L'instant de la chorégraphie où le fichier part : le « ta » tombe sur l'appui. */
 export const BOOT_SOUND_FILE_AT = INTRO_TIMING.press.at - INTRO_SOUND_TA_OFFSET_S * 1000;

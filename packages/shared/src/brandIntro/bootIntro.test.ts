@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { INTRO_HOLD_AT, INTRO_TIMING, introCameraPlan, introGeometry, introTracks, poseAt } from "@tentacle-tv/shared/brandIntro";
 import {
+  INTRO_HOLD_AT,
+  INTRO_TIMING,
+  introCameraPlan,
+  introGeometry,
+  introTracks,
+  poseAt,
   BOOT_INTRO_MAX_HOLD_MS,
   BOOT_SOUND_FILE_AT,
   BOOT_SOUND_REQUEST_AT,
@@ -38,6 +43,11 @@ describe("quand jouer l'ouverture", () => {
     expect(decideBootIntro({ ...cold, coldStart: false })).toBe("boot");
     expect(decideBootIntro({ ...cold, supported: false })).toBe("boot");
     expect(decideBootIntro({ ...cold, reducedMotion: true })).toBe("boot");
+  });
+
+  it("le réglage d'appareil « Animation d'ouverture » (mobile) la coupe ; absent, elle se joue", () => {
+    expect(decideBootIntro({ ...cold, enabled: false })).toBe("boot");
+    expect(decideBootIntro({ ...cold, enabled: true })).toBe("intro");
   });
 });
 
@@ -89,6 +99,16 @@ describe("attendre, partir — jamais renoncer", () => {
     for (const route of ["PairCode", "RailSetup", "PinSetup", "PhotoSetup", "MediaDetail"]) {
       expect(bootIntroOutcome({ ...watch, route }), route).toBe("go");
     }
+  });
+
+  it("le mobile a SES écrans qui disent quand ils sont prêts (accueil, « Qui regarde ? »)", () => {
+    const mobile = { ...watch, selfReporting: ["/", "/who-is-watching"] };
+    expect(bootIntroOutcome({ ...mobile, route: "/", screen: "loading" })).toBe("wait");
+    expect(bootIntroOutcome({ ...mobile, route: "/who-is-watching" })).toBe("wait");
+    expect(bootIntroOutcome({ ...mobile, route: "/who-is-watching", screen: "ready" })).toBe("go");
+    // Les routes de la TV n'y attendent plus : la connexion est prête dès qu'elle est montée.
+    expect(bootIntroOutcome({ ...mobile, route: "Home" })).toBe("go");
+    expect(bootIntroOutcome({ ...mobile, route: "/login" })).toBe("go");
   });
 
   it("plonge aussi dans un écran en échec, hors ligne, en migration ou « accès suspendu » : il dit lui-même ce qu'il en est", () => {
