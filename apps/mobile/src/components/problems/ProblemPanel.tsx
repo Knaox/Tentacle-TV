@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { ProblemActionKey, ProblemModel } from "@tentacle-tv/shared";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui";
 import { FONT_FAMILY, PLAYER, RADIUS, spacing, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { ProblemDetails, type ProblemTone } from "./ProblemDetails";
+import { recordProblem } from "@/problems/problemJournalStore";
 import { PROBLEM_ICONS, useProblemText } from "./useProblemText";
 
 interface Props {
@@ -38,6 +39,10 @@ export const ProblemPanel = memo(function ProblemPanel({ model, tone, align = "s
   const titleColor = player ? PLAYER.text : theme.colors.text.primary;
   const reasonColor = player ? "rgba(255, 255, 255, 0.88)" : theme.colors.text.primary;
   const hintColor = player ? PLAYER.textSecondary : theme.colors.text.secondary;
+  // Chaque message montré entre au journal local (« Signaler un problème », plus tard).
+  useEffect(() => {
+    recordProblem(model, { detailLines: text.details });
+  }, [model, text.details]);
 
   return (
     <View style={[st.root, centered && st.rootCentered]}>
@@ -97,6 +102,13 @@ export const ProblemPanel = memo(function ProblemPanel({ model, tone, align = "s
         })}
       </View>
       <ProblemDetails lines={text.details} copy={text.copy} tone={tone} align={align} />
+      <Text
+        selectable
+        style={[st.code, { color: hintColor }, centered && st.textCenter]}
+        accessibilityLabel={text.code}
+      >
+        {text.code}
+      </Text>
     </View>
   );
 });
@@ -138,4 +150,6 @@ const st = StyleSheet.create({
   pillTxt: { fontSize: 15, fontFamily: FONT_FAMILY.semibold },
   pillTxtPrimary: { color: PLAYER.textInverse },
   pillTxtGhost: { color: "rgba(255, 255, 255, 0.92)" },
+  // Le code du support : lisible, jamais à la place du message.
+  code: { alignSelf: "stretch", fontSize: 11, lineHeight: 15, fontFamily: FONT_FAMILY.regular, opacity: 0.7 },
 });
