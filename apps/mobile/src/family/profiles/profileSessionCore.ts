@@ -1,4 +1,4 @@
-import { accountTokenIn, accountUserIdIn, profileMarkerIn, type ActiveProfile, type KeyValueStore } from "@tentacle-tv/shared";
+import { PROFILE_SESSION_KEY, accountTokenIn, accountUserIdIn, profileMarkerIn, type ActiveProfile, type KeyValueStore } from "@tentacle-tv/shared";
 import { subscribeStoredUser } from "../../auth/storedUser";
 
 /**
@@ -43,4 +43,16 @@ export function personalToken(storage: Pick<KeyValueStore, "getItem">): string |
 /** Le compte de l'application (même pendant un profil), ou null. */
 export function accountUserId(storage: Pick<KeyValueStore, "getItem">): string | null {
   return accountUserIdIn(storage);
+}
+
+/**
+ * La nouvelle photo du profil ACTIF pendant sa session (une photo choisie dans
+ * la galerie) : la marque la porte aussitôt — le web fait de même
+ * (`rememberActiveProfilePhoto`). Hors session de profil : rien.
+ */
+export function rememberActiveProfilePhoto(storage: KeyValueStore, imageTag: string | null): void {
+  const profile = readActiveProfile(storage);
+  if (!profile || profile.imageTag === imageTag) return;
+  storage.setItem(PROFILE_SESSION_KEY, JSON.stringify({ ...profile, imageTag }));
+  notifyProfileSessionChange();
 }

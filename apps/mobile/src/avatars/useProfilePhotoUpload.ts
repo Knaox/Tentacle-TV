@@ -1,8 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { FAMILY_KEY, useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { refreshStoredUser } from "@/auth/storedUser";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { syncAvatarCache } from "@/offline/avatarCache";
+import { rememberActiveProfilePhoto } from "@/family/profiles/profileSessionCore";
+import { parseStoredUser, STORED_USER_KEY } from "@/auth/storedUser";
 import { markPhotoPending } from "./pendingPhoto";
 import type { PhotoPayload } from "./photoSources";
 
@@ -22,6 +25,7 @@ export function useProfilePhotoUpload() {
   const client = useJellyfinClient();
   const { storage } = useTentacleConfig();
   const user = useStoredUser();
+  const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const inFlight = useRef(false);
 
@@ -43,6 +47,9 @@ export function useProfilePhotoUpload() {
       // photo est alors forcée localement jusqu'à la prochaine relecture.
       const photoChanged = await refreshStoredUser(storage, client);
       if (!photoChanged) markPhotoPending(user.Id, user.PrimaryImageTag ?? null);
+      // Partout où le profil paraît : « Qui regarde ? », la Famille (relues), la marque d'une session de profil.
+      rememberActiveProfilePhoto(storage, parseStoredUser(storage.getItem(STORED_USER_KEY))?.PrimaryImageTag ?? null);
+      void queryClient.invalidateQueries({ queryKey: [...FAMILY_KEY] });
       const token = storage.getItem("tentacle_token");
       if (token) syncAvatarCache(user.Id, serverUrl, token, storage);
       return "sent";
@@ -52,7 +59,7 @@ export function useProfilePhotoUpload() {
       inFlight.current = false;
       setUploading(false);
     }
-  }, [client, storage, user]);
+  }, [client, storage, user, queryClient]);
 
   return { upload, uploading, canUpload: user !== null };
 }
