@@ -4,22 +4,25 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useCreateShareLink, type ShareListKind } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-import { typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, useTheme } from "@/theme";
+import { MIN_TARGET, useButtonLook } from "@/components/ui/buttons";
 
 /**
  * « Partager ma liste » ou « Partager mes titres likés » (mobile) — génère le
  * lien de partage et ouvre la feuille de partage native. Le lien ouvre la page
  * web /share/:token, la même pour les deux listes.
  *
- * Pilule de 36 au ton de la marque (aplat `brand.soft`, liseré `brand.glow`,
- * icône et texte `brand.light`) : repérable sous le titre sans être l'action
- * principale — pas de dégradé plein.
+ * Un petit bouton SECONDAIRE du système (`useButtonLook`, capsule grise sur
+ * iOS, contour fin sur Android) : repérable sous le titre sans tirer l'œil —
+ * la couleur reste aux actions principales. `Pressable` maison pour garder la
+ * référence d'ancrage du popover iPad.
  */
 export function ShareMyListButton({ kind = "watchlist" }: { kind?: ShareListKind }) {
   const { t } = useTranslation("common");
   const label = t(kind === "likes" ? "shareMyFavorites" : "shareMyList");
-  const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
+  const theme = useTheme();
+  const look = useButtonLook("secondary", "sm");
+  const slop = Math.ceil((MIN_TARGET[Platform.OS === "android" ? "android" : "ios"] - look.height) / 2);
   const { serverUrl } = useServerUrl();
   const create = useCreateShareLink(kind);
   const [busy, setBusy] = useState(false);
@@ -62,32 +65,18 @@ export function ShareMyListButton({ kind = "watchlist" }: { kind?: ShareListKind
       disabled={busy}
       accessibilityRole="button"
       accessibilityLabel={label}
-      hitSlop={{ top: 6, bottom: 6 }}
-      style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
+      hitSlop={{ top: slop, bottom: slop }}
+      android_ripple={{ color: theme.colors.fill.medium, foreground: true }}
+      style={({ pressed }) => [styles.btn, look.shape, pressed && Platform.OS === "ios" && styles.pressed]}
     >
-      <Feather name="share-2" size={15} color={colors.brand.light} />
-      <Text style={styles.label}>{label}</Text>
+      <Feather name="share-2" size={look.iconSize} color={look.fg} />
+      <Text style={[styles.label, { color: look.fg, fontSize: look.fontSize }]}>{label}</Text>
     </Pressable>
   );
 }
 
-const makeStyles = (t: AppTheme) =>
-  StyleSheet.create({
-    btn: {
-      height: 36,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 7,
-      paddingHorizontal: 14,
-      borderRadius: RADIUS.pill,
-      borderWidth: 1,
-      borderColor: t.colors.brand.glow,
-      backgroundColor: t.colors.brand.soft,
-    },
-    pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
-    label: {
-      ...typography.caption,
-      fontFamily: FONT_FAMILY.semibold,
-      color: t.colors.brand.light,
-    },
-  });
+const styles = StyleSheet.create({
+  btn: { flexDirection: "row", alignItems: "center", gap: 6, overflow: "hidden" },
+  pressed: { opacity: 0.7 },
+  label: { fontFamily: FONT_FAMILY.semibold },
+});
