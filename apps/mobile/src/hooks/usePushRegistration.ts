@@ -14,6 +14,7 @@ import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { openFamilyNotification } from "@/family/familyPosterStore";
 import { libraryTitleLookup } from "@/services/notificationDestination";
 import { readActiveProfile } from "@/family/profiles/profileSessionCore";
+import { STILL_WATCHING_NOTICE_TYPE } from "@/player/stillWatching/backgroundNotice";
 import {
   configureNotificationHandler,
   registerForPushToken,
@@ -78,6 +79,8 @@ export function PushRegistrationSync({
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
       const type = data?.type ?? "";
+      // « Vous regardez encore ? » (notification locale du lecteur) : revenir à l'app suffit, le lecteur y est.
+      if (type === STILL_WATCHING_NOTICE_TYPE) return;
       // Notifications LOCALES du hors ligne : l'écran « Sur cet appareil ».
       if (type === "offline_ready" || type === "offline_disk_full") {
         router.push("/on-device" as never);
