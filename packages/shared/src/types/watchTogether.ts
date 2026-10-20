@@ -37,7 +37,11 @@ export const WT_RATE_MAX_DEV = 0.05;
 /** Pas d'arrondi de la vitesse : au-dessous, un changement ne vaut pas l'IPC. */
 export const WT_RATE_STEP = 0.005;
 export const WT_DRIFT_ENGAGE_WEB_S = 0.04;
-export const WT_DRIFT_SETTLE_WEB_S = 0.025;
+/** Le web lit `currentTime` en direct : une fois engagée, la correction va
+ *  jusqu'à 8 ms (le plancher du pas de vitesse, 0,005 × 3 s / 2 ≈ 7,5 ms). À
+ *  25 ms, deux lecteurs relâchés de part et d'autre restaient à 50 ms l'un de
+ *  l'autre sans plus jamais se corriger (biais mesuré au banc le 20/10). */
+export const WT_DRIFT_SETTLE_WEB_S = 0.008;
 /** mpv lit son horloge AUDIO (`audio-pts`, continue) à 8 Hz : à peine moins
  *  fine que le `currentTime` du web — 60 ms de zone morte laissaient un écart
  *  audible tenir sans être corrigé. */
