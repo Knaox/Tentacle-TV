@@ -176,9 +176,12 @@ export function useDesktopTransport({
 
   // Relai lecture/pause : seulement une fois le média prêt — les transitoires
   // de chargement (pause forcée à false avant loadfile…) ne sont pas des
-  // intents utilisateur. Dédup et anti-écho côté moteur.
+  // intents utilisateur. Dédup et anti-écho côté moteur. Et à l'instant où le
+  // média devient prêt : un mpv qui part en lecture sans réserve à constituer
+  // le dit aussitôt — la salle qui l'attend le tient en pause jusqu'à la
+  // reprise commune, au lieu de 400 ms de lecture seule avant son « prêt ».
   useEffect(() => {
     if (mediaReadyRef.current) onPlayStateChange?.(state.paused);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.paused]);
+  }, [state.paused, mediaReady]);
 }

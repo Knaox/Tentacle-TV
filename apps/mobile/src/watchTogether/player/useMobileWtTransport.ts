@@ -106,6 +106,14 @@ export function useMobileWtTransport({ active, barrier, commands, paused, buffer
   useEffect(() => {
     if (activeRef.current && readyRef.current) signalsRef.current.notifyPlayState(paused, { echo: pausedEchoRef.current });
   }, [paused]);
+  // À l'instant où le média devient prêt, son état le dit aussi : un lecteur parti en
+  // lecture pendant que la salle l'attend y est tenu en pause jusqu'à la reprise
+  // commune, au lieu de jouer seul jusqu'à son « prêt » (le moteur en juge).
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  useEffect(() => {
+    if (videoReady && activeRef.current) signalsRef.current.notifyPlayState(pausedRef.current);
+  }, [videoReady]);
 
   const offsetRef = useRef(streamOffset);
   offsetRef.current = streamOffset;
