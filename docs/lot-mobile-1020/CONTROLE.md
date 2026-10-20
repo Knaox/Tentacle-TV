@@ -15,6 +15,9 @@ Branches suivies (une par worktree, `git worktree list`) :
 | design | `claude/design-887719` | `.claude/worktrees/design-887719` |
 | famille-mobile | `claude/famille-20ba01` | `.claude/worktrees/famille-20ba01` |
 | notifs | `claude/notifs-c5bb92` | `.claude/worktrees/notifs-c5bb92` |
+| lecteur-mobile | `claude/lecteur-959931` | `.claude/worktrees/lecteur-959931` |
+| hors-ligne-live | `claude/hors-ligne-live-5c07b6` (+ branche à part dans Tentacle-Plugin-Seer) | `.claude/worktrees/hors-ligne-live-5c07b6` |
+| boutons | `claude/boutons-517d48` | `.claude/worktrees/boutons-517d48` |
 
 ## A. Règles transverses du lot (toutes les branches)
 
@@ -108,6 +111,43 @@ Branches suivies (une par worktree, `git worktree list`) :
 | H2 | Chaque notification ouvre la bonne destination | table type → route, testée | ☐ |
 | H3 | Règle de destination partagée, pas dupliquée | code | ☐ |
 
+## J. Lecteur mobile (lecteur-mobile)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| J1 | Heure et batterie visibles quand les commandes du lecteur s'affichent (barre d'état du système ; sinon horloge intégrée) — masquées avec les commandes | code + capture lecteur commandes visibles / cachées | ☐ |
+| J2 | Android : PiP natif quand une lecture EN COURS passe en arrière-plan ; jamais en pause (comme iOS) | code (condition « en lecture ») + test de la règle | ☐ |
+| J3 | Bouton PiP dans le lecteur (Android, et iOS s'il manque) | code + capture | ☐ |
+| J4 | Android : diffusion vers une TV sans l'app (Google Cast, ou alternative libre si la licence bloque — décision écrite) | code + décision de licence (AGPL/LGPL, cf. audit licences) | ☐ |
+| J5 | iOS : AirPlay | code + capture du sélecteur | ☐ |
+| J6 | Règles de décision (quand PiP, quand afficher l'heure) pures et testées, pas de `Platform.OS` dans la règle | relecture + tests | ☐ |
+| J7 | iPad : PiP et AirPlay corrects en paysage/portrait | capture iPad | ☐ |
+
+## K. Hors ligne en direct + Vigie (hors-ligne-live)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| K1 | iOS : Live Activity avec temps restant pendant qu'un titre est gardé hors ligne | code (extension widget) + capture | ☐ |
+| K2 | Android : notification permanente avec temps restant | code + capture/journal | ☐ |
+| K3 | À la fin : remplacée par « Prêt à regarder » (plusieurs titres : comportement défini) | code + test de la règle | ☐ |
+| K4 | Aucun « téléchargement / download » dans ces textes (FR/EN) | grep i18n | ☐ |
+| K5 | Échec / annulation / perte réseau : activité terminée proprement, jamais figée | code + test | ☐ |
+| K6 | Vigie : notification « demande bloquée » avec la raison, et « ça se réglera tout seul » | code dans Tentacle-Plugin-Seer | ☐ |
+| K7 | Vigie : une demande bloquée n'est JAMAIS affichée « en cours » | test dans le dépôt de Vigie | ☐ |
+| K8 | Vigie sur SA branche, dans le dépôt Tentacle-Plugin-Seer ; rien de Vigie dans le cœur ni dans les changelogs des apps | `git log` des deux dépôts | ☐ |
+| K9 | Notification Vigie ouvre la bonne destination (cohérent avec H2) | code | ☐ |
+
+## L. Boutons (boutons)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| L1 | Boutons mobiles sobres, un composant commun (pas de styles recopiés écran par écran) | code | ☐ |
+| L2 | iOS : Liquid Glass façon Apple TV (repli propre sur iOS < 26) | code + capture | ☐ |
+| L3 | Android : version plus sobre (sans verre) | code + capture | ☐ |
+| L4 | Une seule action en couleur par écran | relecture des écrans touchés + captures | ☐ |
+| L5 | Aucune régression d'écran (tailles de cible ≥ 44 pt, états désactivé/chargement) | relecture + captures iPhone/iPad | ☐ |
+| L6 | Conflits avec reglages/famille/wt-mobile/notifs sur les mêmes écrans signalés | croisement A16 | ☐ |
+
 ## I. Essai d'ensemble (simulateur iPhone puis iPad, après fusion)
 
 | # | Parcours | Preuve | État |
@@ -117,7 +157,8 @@ Branches suivies (une par worktree, `git worktree list`) :
 | I3 | Notifications (liste, ouverture d'une destination) | captures | ☐ |
 | I4 | « Pour vous » (nouvel en-tête, Affinité) | captures | ☐ |
 | I5 | Watch Together de base (créer, rejoindre) | captures | ☐ |
-| I6 | Les mêmes sur iPad | captures | ☐ |
+| I6 | Lecteur : heure/batterie, PiP, AirPlay ; hors ligne : Live Activity ; boutons | captures | ☐ |
+| I7 | Les mêmes sur iPad | captures | ☐ |
 
 ## Défauts
 
