@@ -54,6 +54,7 @@ import parentalTv from "./parentalTv";
 import familyMobile from "./familyMobile";
 import metadataHint from "./metadataHint";
 import profilePicker from "./profilePicker";
+import familyRightsSummary from "./familyRightsSummary";
 import avatars from "./avatars";
 import userRights from "./userRights";
 import libraryDelete from "./libraryDelete";
@@ -88,6 +89,7 @@ export default {
   familyMobile,
   metadataHint,
   profilePicker,
+  familyRightsSummary,
   avatars,
   userRights,
   libraryDelete,
