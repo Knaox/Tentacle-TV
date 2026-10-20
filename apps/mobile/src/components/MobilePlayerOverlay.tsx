@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { View, Pressable, Animated, useWindowDimensions } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import type { MediaItem, QualityDrop } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
@@ -152,8 +153,18 @@ export function MobilePlayerOverlay({
       {visible && (
         <Animated.View style={{
           position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          opacity, backgroundColor: PLAYER.scrim,
+          // Liste des épisodes ouverte : pas de voile plein écran — l'image reste
+          // claire, un dégradé en haut seulement porte la barre du haut (la liste
+          // pose son propre voile en bas).
+          opacity, backgroundColor: panel === "episodes" ? "transparent" : PLAYER.scrim,
         }}>
+          {panel === "episodes" && (
+            <LinearGradient
+              pointerEvents="none"
+              colors={["rgba(0,0,0,0.6)", "rgba(0,0,0,0)"]}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, height: Math.max(120, edges.top + 90) }}
+            />
+          )}
           {/* Background tap to dismiss */}
           <Pressable
             onPress={onToggle}
