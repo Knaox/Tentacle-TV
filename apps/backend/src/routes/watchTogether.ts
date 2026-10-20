@@ -11,6 +11,7 @@ import { deviceKeyOf } from "../services/watchTogether/requestDevice";
 import { isDeviceBound } from "../services/watchTogether/memberDevices";
 import { notifyElsewhere } from "../services/watchTogether/elsewhere";
 import { leaveFromDevice } from "../services/watchTogether/deviceLeave";
+import { watchBoundDevice } from "../services/watchTogether/gatewayPresence";
 import { watchTogetherDeviceRoutes } from "./watchTogetherDevices";
 import { isItemVisibleTo } from "../services/itemAccess/itemVisibility";
 import { wtAccessOf } from "../services/watchTogether/accountAccess";
@@ -52,6 +53,7 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     // (et la réponse REST elle-même) les porte, sinon chaque invité garderait
     // les siens jusqu'au premier changement d'hôte.
     await refreshHostSettings(room);
+    watchBoundDevice(user.userId, deviceKeyOf(request));
     notifyElsewhere(user.userId);
     request.log.info({ groupId: room.groupId, host: user.username }, "[wt] groupe créé");
     return roomToDto(room);

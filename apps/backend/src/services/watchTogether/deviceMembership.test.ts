@@ -26,6 +26,7 @@ let registry: typeof import("./roomRegistry");
 let gateway: typeof import("./gateway");
 let broadcast: typeof import("./broadcast");
 let deviceLeave: typeof import("./deviceLeave");
+let presence: typeof import("./gatewayPresence");
 
 beforeAll(async () => {
   vi.useFakeTimers();
@@ -35,6 +36,7 @@ beforeAll(async () => {
   gateway = await import("./gateway");
   broadcast = await import("./broadcast");
   deviceLeave = await import("./deviceLeave");
+  presence = await import("./gatewayPresence");
   gateway.registerWatchTogetherGateway();
 });
 
@@ -135,5 +137,13 @@ describe("Watch Together — un troisième appareil du même compte", () => {
     broadcast.broadcastRoom(room, "join", damien.userId);
     expect(types(web)).toContain("wt:state");
     expect(room.members.get(damien.userId)!.devices.size).toBe(3);
+  });
+
+  it("un appareil lié par un appel REST sans socket ouverte se délie au bout de sa grâce", () => {
+    const room = registry.getRoomOf(damien.userId)!;
+    rooms.addMember(room, { ...damien, hasAvatar: false }, "tablette");
+    presence.watchBoundDevice(damien.userId, "tablette");
+    vi.advanceTimersByTime(121_000);
+    expect([...room.members.get(damien.userId)!.devices.keys()].sort()).toEqual(["pc1", "pc2"]);
   });
 });

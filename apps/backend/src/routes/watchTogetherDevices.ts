@@ -7,6 +7,7 @@ import { sendChatHistory } from "../services/watchTogether/chat";
 import { deviceKeyOf } from "../services/watchTogether/requestDevice";
 import { bindDevice } from "../services/watchTogether/memberDevices";
 import { elsewhereFor } from "../services/watchTogether/elsewhere";
+import { watchBoundDevice } from "../services/watchTogether/gatewayPresence";
 import { wtAccessOf } from "../services/watchTogether/accountAccess";
 import { WT_ACCESS_DENIED, wtMayJoin } from "../services/watchTogether/watchTogetherAccess";
 import { WT_NOT_ELSEWHERE } from "../services/watchTogether/protocol";
@@ -43,6 +44,7 @@ export const watchTogetherDeviceRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(403).send({ code: WT_ACCESS_DENIED, message: "Watch Together : non autorisé" });
     }
     bindDevice(member, deviceKey);
+    watchBoundDevice(user.userId, deviceKey);
     bumpEpoch(room);
     // `join` : les autres appareils du compte apprennent qu'il y en a un de plus.
     broadcastRoom(room, "join", user.userId);
