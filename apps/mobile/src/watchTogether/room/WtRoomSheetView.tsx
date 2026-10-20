@@ -78,14 +78,14 @@ export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetV
       <View style={s.sheet} testID="wt-room-sheet">
       <ScrollView style={s.scroll} contentContainerStyle={s.content}>
         <Text style={s.title} accessibilityRole="header">{t("yourRoom")}</Text>
-        <Text style={s.subtitle}>{t("roomHint")}</Text>
+        {!compact && <Text style={s.subtitle}>{t("roomHint")}</Text>}
 
-        <Text style={s.section}>{t("onTheProgram")}</Text>
+        <Text style={[s.section, compact && s.sectionCompact]}>{t("onTheProgram")}</Text>
         {program ? (
           <View style={s.program}>
             {program.imageUrl
-              ? <Image source={{ uri: program.imageUrl }} style={s.programImage} contentFit="cover" accessible={false} />
-              : <View style={[s.programImage, s.programPlaceholder]}><Film size={22} color={theme.colors.text.tertiary} /></View>}
+              ? <Image source={{ uri: program.imageUrl }} style={[s.programImage, compact && s.programImageCompact]} contentFit="cover" accessible={false} />
+              : <View style={[s.programImage, compact && s.programImageCompact, s.programPlaceholder]}><Film size={22} color={theme.colors.text.tertiary} /></View>}
             <Text style={s.programTitle} numberOfLines={2}>{program.title}</Text>
             {props.onStart && (
               <SecondaryButton label={t("rejoin")} onPress={props.onStart} size="sm" accessibilityLabel={`${t("rejoin")} — ${program.title}`} />
@@ -95,7 +95,7 @@ export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetV
           <Text style={s.empty}>{t("roomNoItem")}</Text>
         )}
 
-        <Text style={s.section}>{t("inTheRoom", { count: room.members.length })}</Text>
+        <Text style={[s.section, compact && s.sectionCompact]}>{t("inTheRoom", { count: room.members.length })}</Text>
         {rows.map((row) => <WtMemberRow key={row.member.userId} row={row} onKick={props.onKick} />)}
         {pendingInvites.map((p) => <WtPendingInviteRow key={p.userId} {...p} />)}
         {rows.length <= 1 && pendingInvites.length === 0 && <Text style={s.empty}>{t("roomAlone")}</Text>}
@@ -138,6 +138,9 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   },
   program: { flexDirection: "row", alignItems: "center", gap: 12 },
   programImage: { width: 96, height: 54, borderRadius: RADIUS.md, backgroundColor: t.colors.fill.subtle },
+  // Téléphone couché : le haut se resserre pour que les membres se voient d'emblée.
+  sectionCompact: { marginTop: 12, marginBottom: 6 },
+  programImageCompact: { width: 64, height: 36 },
   programPlaceholder: { alignItems: "center", justifyContent: "center" },
   programTitle: { flex: 1, color: t.colors.text.primary, fontSize: 15, fontFamily: FONT_FAMILY.semibold },
   empty: { color: t.colors.text.tertiary, fontSize: 14, lineHeight: 20, fontFamily: FONT_FAMILY.regular },
