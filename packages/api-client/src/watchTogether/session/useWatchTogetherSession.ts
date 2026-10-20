@@ -11,6 +11,7 @@ import { setGroupPlaybackSettings } from "../../hooks/usePlaybackSettings";
 import { useUserId } from "../../hooks/useUserId";
 import { useServerCapability } from "../../hooks/useServerCapabilities";
 import { useWatchTogetherAccess, WT_ACCESS_KEY } from "../../rights/useWatchTogetherAccess";
+import { resyncAfterReconnect, watchReconnects, type WtResyncDeps } from "./reconnectResync";
 import { consumeLaunchFollow } from "../affinity/affinityStore";
 import { WT_IDLE_CONTEXT, type WatchTogetherContextValue } from "../context";
 import { usePendingInvites } from "./usePendingInvites";
@@ -82,6 +83,21 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
     onElsewhere: setElsewhere,
   };
 
+  // Ce qu'une REconnexion relit par REST (cf. reconnectResync), tenu frais à chaque rendu.
+  const resyncRef = useRef<WtResyncDeps | null>(null);
+  resyncRef.current = {
+    inRoom: () => !!roomRef.current,
+    mayJoin,
+    deviceMembership,
+    fetchMyGroup,
+    fetchMyInvites,
+    fetchGroupElsewhere,
+    setRoom: (room) => dispatch({ type: "set_room", room }),
+    setInvites: (invites) => dispatch({ type: "set_invites", invites }),
+    setElsewhere,
+    refreshAccess: () => { void queryClient.invalidateQueries({ queryKey: [WT_ACCESS_KEY] }); },
+  };
+
   // Connexion + abonnements + resynchronisation d'état.
   const socketToken = port.socketToken;
   useEffect(() => {
@@ -93,10 +109,12 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
       if (msg.type === "wt:invite" && !mayJoinRef.current) return;
       if (h && msg.type.startsWith("wt:")) handleWtServerMessage(msg, h);
     });
-    // À chaque (re)connexion authentifiée : état frais du groupe.
-    const unsubStatus = onSocketStatus((status) => {
-      if (status === "open" && roomRef.current) sendSocketMessage({ type: "wt:syncRequest" });
-    });
+    // À chaque (re)connexion authentifiée : état frais du groupe. Une REconnexion
+    // (le serveur a pu redémarrer) relit aussi par REST ce que la socket ne redira pas.
+    const unsubStatus = onSocketStatus(watchReconnects((reconnected) => {
+      if (roomRef.current) sendSocketMessage({ type: "wt:syncRequest" });
+      if (reconnected && resyncRef.current) void resyncAfterReconnect(resyncRef.current);
+    }));
     // Quitter l'app = quitter le groupe vite (un refresh se reconnecte avant la grâce courte).
     const unsubExit = portRef.current.subscribeAppExit?.(() => {
       if (roomRef.current) sendSocketMessage({ type: "wt:goodbye" });
