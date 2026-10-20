@@ -45,17 +45,20 @@ describe("roomMemberRows", () => {
 
 describe("waitingNotice", () => {
   const members = [member("me"), member("a"), member("b")];
-  it("rien quand la salle n'attend pas", () => {
+  const wait = { paused: true, pauseReason: "buffering" as const };
+  it("rien quand la salle n'attend personne d'autre", () => {
     expect(waitingNotice(room(members), "me")).toBeNull();
     expect(waitingNotice(null, "me")).toBeNull();
+    expect(waitingNotice(room(members, { ...wait, waitingForUserIds: ["me"] }), "me")).toBeNull();
   });
-  it("nomme le seul membre attendu, compte les autres, s'efface soi-même", () => {
-    const wait = { paused: true, pauseReason: "buffering" as const };
+  it("nomme le seul membre attendu, compte les autres", () => {
     expect(waitingNotice(room(members, { ...wait, waitingForUserIds: ["a"] }), "me"))
       .toEqual({ key: "memberBuffering", params: { name: "A" } });
     expect(waitingNotice(room(members, { ...wait, waitingForUserIds: ["a", "b", "me"] }), "me"))
       .toEqual({ key: "membersBuffering", params: { count: 2 } });
-    expect(waitingNotice(room(members, { ...wait, waitingForUserIds: ["me"] }), "me"))
-      .toEqual({ key: "waitingForGroup" });
+  });
+  it("dit « Synchronisation… » pour une barrière, même en pause utilisateur", () => {
+    expect(waitingNotice(room(members, { paused: true, pauseReason: "user", waitCause: "seek", waitingForUserIds: ["a"] }), "me"))
+      .toEqual({ key: "syncing" });
   });
 });
