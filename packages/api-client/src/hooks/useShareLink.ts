@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MediaItem, SharedStatsView, StatsLocale } from "@tentacle-tv/shared";
+import { mayShow } from "../rights/accountAbilitiesGate";
+import { useAccountAbilities } from "../rights/useAccountAbilities";
 import { useServerCapabilities } from "./useServerCapabilities";
 
 /**
@@ -93,6 +95,8 @@ export function shareErrorCode(error: unknown): string | null {
  */
 export function usePublicSharingAllowed(): boolean {
   const { capabilities, settled } = useServerCapabilities();
+  // Ce que le serveur dit de la SESSION (`account.abilities`), relu à `rights:changed`.
+  const session = mayShow(useAccountAbilities(), "publicSharing");
   const governed = capabilities.has("share.publicRight");
   const access = useQuery({
     queryKey: ["share", "access"],
@@ -100,7 +104,7 @@ export function usePublicSharingAllowed(): boolean {
     enabled: governed,
     staleTime: 30_000,
   });
-  return publicSharingAllowed(settled, governed, access.data?.publicSharing);
+  return session && publicSharingAllowed(settled, governed, access.data?.publicSharing);
 }
 
 /** La règle, pure : rien tant que la configuration n'a pas répondu ; sans la capacité, comme avant. */
