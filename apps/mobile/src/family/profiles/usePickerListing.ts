@@ -21,7 +21,7 @@ export function pickerListingKey(serverUrl: string | null, accountId: string | n
 export function usePickerListing() {
   const { storage } = useTentacleConfig();
   const { serverUrl } = useServerUrl();
-  const { data: config } = useAppConfig();
+  const { data: config, isPending: configPending } = useAppConfig();
   const capable = useServerCapability("family.mobileProfiles");
   const offline = useOfflineMode();
   const accountId = useAccountUserId();
@@ -34,5 +34,6 @@ export function usePickerListing() {
     staleTime: 30_000,
     retry: 1,
   });
-  return { ...query, enabled, capable };
+  // `capable` ne vaut qu'une fois la configuration lue (`configSettled`) : avant, on ne conclut pas à l'absence.
+  return { ...query, enabled, capable, configSettled: !configPending };
 }
