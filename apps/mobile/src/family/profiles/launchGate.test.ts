@@ -10,11 +10,19 @@ const FAMILY: PickerProfilesDto = {
   v: 2, platform: "mobile", switches: { families: true, guests: true }, account: { userId: "damien", name: "Damien" },
   profiles: [p("damien", { kind: "owner", personal: true }), p("lea")], currentProfileId: "damien", pickerRequired: true, atLaunch: true,
 };
-const base: LaunchGateInput = { enabled: true, data: FAMILY, isError: false, request: null, held: null, choice: "unset", stay: null, now: NOW, asked: true };
+const base: LaunchGateInput = { configSettled: true, enabled: true, data: FAMILY, isError: false, request: null, held: null, choice: "unset", stay: null, now: NOW, asked: true };
 
 describe("la porte de « Qui regarde ? » du mobile", () => {
   it("un serveur qui ne déclare rien (capacité absente) : rien, sans erreur", () => {
     expect(launchGateState({ ...base, enabled: false, data: undefined })).toBe("none");
+  });
+  it("au démarrage à froid, la configuration pas encore lue : en attente, jamais « rien » (la décision se figerait)", () => {
+    // Monté pendant l'ouverture, avant /api/config : la capacité n'est pas encore lue.
+    const early = launchGateState({ ...base, configSettled: false, enabled: false, data: undefined });
+    expect(early).toBe("pending");
+    expect(nextLaunchDecision(null, { state: early, account: "damien", request: null })).toBeNull();
+    // Puis la configuration et la famille répondent : l'écran.
+    expect(launchGateState(base)).toBe("picker");
   });
   it("attend la famille, mais un serveur muet ne bloque jamais l'app", () => {
     expect(launchGateState({ ...base, data: undefined })).toBe("pending");

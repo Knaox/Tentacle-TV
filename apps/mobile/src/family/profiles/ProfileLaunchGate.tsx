@@ -60,6 +60,7 @@ export function ProfileLaunchGate() {
     [stayRaw, serverUrl, accountId],
   );
   const state = launchGateState({
+    configSettled: listing.configSettled,
     enabled: listing.enabled && rootSegment !== "(auth)",
     data: listing.data,
     isError: listing.isError,
