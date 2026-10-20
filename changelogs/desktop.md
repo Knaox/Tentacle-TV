@@ -13,6 +13,22 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.31.1]
+<!-- Bloc nu : les trois canaux partent de la 1.31.0. Tout le Watch Together nouveau exige le serveur 1.31.1 (capacités watchTogether.*) : face à un serveur plus ancien, comportement d'avant. -->
+### FR
+- **Watch Together avec le téléphone et la tablette** : l'app mobile rejoint maintenant vos séances, groupes et mode affinité compris, parfaitement synchronisée, même quand l'un d'entre vous regarde en qualité réduite (serveur 1.31.1)
+- **Une séance reste sur l'appareil qui l'a rejointe** : ouvrir Tentacle ailleurs avec le même compte ne vous fait plus entrer dans la séance, ne lance plus le film et, en quittant, ne fait plus sortir les autres ; l'appareil propose seulement « Rejoindre ici »
+- **Personne ne passe l'intro avant que tout le monde soit là** : le saut d'un passage attend que chaque membre soit prêt, puis se fait pour toute la séance
+- **Avancer vite reste synchronisé** : plusieurs appuis rapides sur « +30 s » arrivent tous, chez tout le monde
+- **Un chat vivant** : émojis, réactions et GIF à la chaîne, et « … est en train d'écrire »
+
+### EN
+- **Watch Together with phones and tablets**: the mobile app now joins your sessions, groups and affinity mode included, perfectly in sync, even when one of you watches at reduced quality (server 1.31.1)
+- **A session stays on the device that joined it**: opening Tentacle elsewhere with the same account no longer pulls you into the session, no longer starts the movie and, when you leave, no longer takes the others out; that device only offers "Join here"
+- **Nobody skips the intro before everyone is there**: skipping waits until every member is ready, then happens for the whole session
+- **Fast-forwarding stays in sync**: several quick "+30 s" presses all arrive, for everyone
+- **A lively chat**: emoji, reactions and GIFs in a row, and "… is typing"
+
 ## [1.31.0]
 <!-- Bloc nu : les trois canaux partent de la 1.30.0. « Tendances actuelles » exige le serveur 1.31.0 (capacité reco.trending) : face à un serveur plus ancien, ni la rangée ni l'interrupteur. -->
 ### FR

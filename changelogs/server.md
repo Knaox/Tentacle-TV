@@ -10,6 +10,24 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.31.1]
+<!-- Capacités 1.31.1 : watchTogether.deviceMembership, readyGate, typing ; family.mobileProfiles, family.webProfiles ; rights.live, offline.verdicts, account.abilities ; notifications.pushSync. Un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
+### FR
+- **Watch Together pour le mobile** : l'app pour téléphone et tablette rejoint les séances du web et de l'ordinateur. Une séance appartient désormais à l'APPAREIL qui l'a rejointe, plus au compte : un autre appareil du même compte n'y entre plus, propose seulement « Rejoindre ici »
+- **Aucun saut d'intro avant que toute la séance soit prête**, et des sauts rapides qui ne se perdent plus ; chat sans frein et « … est en train d'écrire »
+- **« Qui regarde ? » sur le mobile et dans le navigateur**, comme sur l'ordinateur : profils de la famille, code PIN vérifié par le serveur. Dans le navigateur, le jeton du compte reste en réserve côté serveur pendant un profil
+- **Les droits s'appliquent partout, tout de suite** : un droit changé dans l'administration ou la Famille s'annonce aux appareils du compte ; un titre gardé hors ligne puis retiré des droits ne se lit plus ; un compte désactivé ou hors de ses heures est coupé proprement
+- **Notifications du téléphone synchronisées** : lue ou balayée sur un appareil, lue partout, pastille de l'icône à jour
+- **Interface web** : Famille complète dans le navigateur, et sur téléphone ou tablette les mêmes réglages que l'app mobile
+
+### EN
+- **Watch Together for mobile**: the phone and tablet app joins web and computer sessions. A session now belongs to the DEVICE that joined it, no longer to the account: another device of the same account no longer enters it and only offers "Join here"
+- **No intro skip before the whole session is ready**, and quick skips that are no longer lost; unthrottled chat and "… is typing"
+- **"Who's watching?" on mobile and in the browser**, like on the computer: family profiles, PIN checked by the server. In the browser, the account token stays in reserve on the server while a profile is open
+- **Rights apply everywhere, right away**: a right changed in administration or Family is announced to the account's devices; a title kept offline then removed from the rights no longer plays; a disabled account or one outside its hours is signed out cleanly
+- **Phone notifications in sync**: read or swiped away on one device, read everywhere, app badge up to date
+- **Web interface**: full Family in the browser, and on phone or tablet the same settings as the mobile app
+
 ## [1.31.0]
 <!-- « Tendances actuelles » : capacité reco.trending (1.31.0) ; un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
