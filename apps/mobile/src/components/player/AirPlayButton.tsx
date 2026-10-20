@@ -7,27 +7,24 @@ const { AirPlayModule } = NativeModules;
 /**
  * AirPlay route picker button — iOS only.
  * Tapping opens the native AVRoutePickerView via AirPlayModule.showPicker().
- * Renders a Feather "airplay" icon styled like other player controls.
+ * Le pictogramme seul, blanc, comme les autres outils du lecteur (plus de boîte).
  */
-export function AirPlaySection() {
+export function AirPlaySection({ size = 20 }: { size?: number }) {
   if (Platform.OS !== "ios" || !AirPlayModule) return null;
 
   return (
     <Pressable
       onPress={() => AirPlayModule.showPicker()}
+      hitSlop={8}
       style={styles.button}
       accessibilityLabel="AirPlay"
       accessibilityRole="button"
     >
-      <Feather name="airplay" size={18} color={PLAYER.textSecondary} />
+      <Feather name="airplay" size={size} color={PLAYER.text} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    padding: 8,
-    backgroundColor: PLAYER.borderSubtle,
-    borderRadius: 8,
-  },
+  button: { padding: 8 },
 });

@@ -249,4 +249,15 @@ export default {
     pausedBody: "Nobody answered: playback is waiting for you, right where you left it.",
     resume: "Resume",
   },
+  // The mobile player panels (tracks, quality, episodes), Apple player style.
+  panels: {
+    tracksTitle: "Audio & Subtitles",
+    settingsTitle: "Settings",
+    audio: "Audio",
+    subtitles: "Subtitles",
+    subtitlesOff: "Off",
+    quality: "Quality",
+    nowPlaying: "Now playing",
+    episodesTitle: "Episodes",
+  },
 } as const;

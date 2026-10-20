@@ -256,4 +256,15 @@ export default {
     pausedBody: "Personne n'a répondu : la lecture vous attend, là où vous l'avez laissée.",
     resume: "Reprendre",
   },
+  // Les panneaux du lecteur mobile (pistes, qualité, épisodes), façon lecteur d'Apple.
+  panels: {
+    tracksTitle: "Audio et sous-titres",
+    settingsTitle: "Réglages",
+    audio: "Audio",
+    subtitles: "Sous-titres",
+    subtitlesOff: "Désactivés",
+    quality: "Qualité",
+    nowPlaying: "En cours",
+    episodesTitle: "Épisodes",
+  },
 } as const;
