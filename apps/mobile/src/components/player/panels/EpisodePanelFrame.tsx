@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconButton } from "@/components/ui/buttons";
 import { TABLET_MIN_WIDTH } from "@/theme";
 import { useChromeInsets } from "../../../player/chrome/useChromeInsets";
@@ -37,8 +38,9 @@ export function EpisodePanelFrame({ seasons, activeSeasonId, onSelectSeason, onS
   const { t } = useTranslation("player");
   const { width, height } = useWindowDimensions();
   const edges = useChromeInsets();
+  const insets = useSafeAreaInsets();
   const isTablet = Math.min(width, height) >= TABLET_MIN_WIDTH;
-  const frame = panelLayout({ kind: "episodes", width, height, isTablet, edges });
+  const frame = panelLayout({ kind: "episodes", width, height, isTablet, edges, insets });
   const horizontal = frame.mode === "shelf";
   const tabs = (
     <SeasonTabs seasons={seasons} activeId={activeSeasonId} onSelect={onSelectSeason} onIntent={onSeasonIntent} />

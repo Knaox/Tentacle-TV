@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { qualityDropText, type QualityDrop, type QualityPreset, type SourceQuality } from "@tentacle-tv/shared";
 import { TABLET_MIN_WIDTH } from "@/theme";
@@ -40,6 +41,7 @@ export function PlayerMenus(props: Props) {
   const { t, i18n } = useTranslation("player");
   const { width, height } = useWindowDimensions();
   const edges = useChromeInsets();
+  const insets = useSafeAreaInsets();
 
   const sections = useMemo<MenuSectionModel[]>(() => {
     if (!open) return [];
@@ -63,7 +65,7 @@ export function PlayerMenus(props: Props) {
 
   if (!open || sections.length === 0) return null;
   const frame = panelLayout({
-    kind: "menu", width, height, isTablet: Math.min(width, height) >= TABLET_MIN_WIDTH, edges,
+    kind: "menu", width, height, isTablet: Math.min(width, height) >= TABLET_MIN_WIDTH, edges, insets,
   });
   return (
     <PlayerMenuPanel

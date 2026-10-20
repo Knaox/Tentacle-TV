@@ -40,6 +40,10 @@ export const CHROME_CORNER = 24;
 export const CHROME_TOP_GAP = 6;
 /** L'air au-dessus du bord bas quand rien ne l'occupe. */
 export const CHROME_BOTTOM_GAP = 10;
+/** La hauteur de la rangée du haut (Retour, titre, actions) sous sa marge. */
+export const CHROME_TOP_ROW = 36;
+/** La hauteur de la rangée du bas (progression, minutages, outils) au-dessus de sa marge. */
+export const CHROME_BOTTOM_ROW = 44;
 
 /**
  * Un écran aux coins arrondis : sur iOS, tout appareil à Face ID (indicateur

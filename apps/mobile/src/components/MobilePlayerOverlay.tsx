@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
-import { Pressable, Animated, useWindowDimensions } from "react-native";
+import { View, Pressable, Animated, useWindowDimensions } from "react-native";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import type { MediaItem, QualityDrop } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
@@ -164,19 +164,23 @@ export function MobilePlayerOverlay({
 
           {/* Center controls — box-none : les zones vides laissent passer le tap
               vers le Pressable de fond (toggle overlay), seuls les boutons captent. */}
-          <CenterControls
-            paused={paused}
-            ui={ui}
-            centerGap={centerGap}
-            playSize={playSize}
-            hasPrevious={!!previousEpisode}
-            hasNext={!!nextEpisode}
-            onPrevious={onPreviousEpisode}
-            onNext={onNextEpisode}
-            onPlayPause={() => { onPlayPause(); resetHideTimer(); }}
-            onRewind={() => { if (onSkip) onSkip(-10); else onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }}
-            onForward={() => { if (onSkip) onSkip(30); else onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }}
-          />
+          {/* Panneau ouvert : les commandes du centre s'effacent (comme le lecteur
+              d'Apple) — un menu ne se pose plus sur « suivant ». Leur place reste. */}
+          {panel !== null ? <View pointerEvents="none" style={{ flex: 1 }} /> : (
+            <CenterControls
+              paused={paused}
+              ui={ui}
+              centerGap={centerGap}
+              playSize={playSize}
+              hasPrevious={!!previousEpisode}
+              hasNext={!!nextEpisode}
+              onPrevious={onPreviousEpisode}
+              onNext={onNextEpisode}
+              onPlayPause={() => { onPlayPause(); resetHideTimer(); }}
+              onRewind={() => { if (onSkip) onSkip(-10); else onSeek(currentTime - 10); flashSkip("left"); resetHideTimer(); }}
+              onForward={() => { if (onSkip) onSkip(30); else onSeek(currentTime + 30); flashSkip("right"); resetHideTimer(); }}
+            />
+          )}
 
           {/* Indicateur de saut ±10/30 (boutons) */}
           <SkipIndicator side={skipSide} />
