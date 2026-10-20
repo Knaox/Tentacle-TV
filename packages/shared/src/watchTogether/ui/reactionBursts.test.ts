@@ -26,4 +26,13 @@ describe("reactionBursts", () => {
     expect(reactionLane("a|emoji:🔥")).toBe(reactionLane("a|emoji:🔥"));
     expect(reactionLane("x", 3)).toBeLessThan(3);
   });
+
+  it("reprend le compte d'une rafale déjà fusionnée par le chat", () => {
+    const merged = { ...r("9", "a", "🔥"), count: 5 };
+    const bursts = reactionBursts([merged, r("10", "a", "🔥")]);
+    expect(bursts).toHaveLength(1);
+    expect(bursts[0]!.count).toBe(6);
+    expect(bursts[0]!.lastKey).toBe("10");
+  });
 });
+
