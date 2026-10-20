@@ -1,4 +1,5 @@
-import type { FastifyReply } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
+import { isBrowserAgent } from "../services/sessionTokenChoice";
 
 /**
  * Cookie de session web. Source unique : le bloc `setCookie` était recopié à
@@ -31,6 +32,26 @@ export function setSessionCookie(reply: FastifyReply, token: string, name = SESS
 
 export function clearSessionCookie(reply: FastifyReply, name = SESSION_COOKIE): void {
   reply.clearCookie(name, { path: "/" });
+}
+
+/**
+ * Le cookie de session n'est donné qu'à un NAVIGATEUR (cf. sessionTokenChoice).
+ * Une app native (React Native : mobile, TV) s'authentifie par son jeton, mais
+ * sa pile réseau garde et renvoie tout cookie reçu : celui de la connexion, au
+ * nom du compte, la suivait jusque dans la session d'un profil (alpha mobile,
+ * 20/10 ; la TV s'en gardait déjà côté client, `pairingTransport.ts`). À elle,
+ * on le retire au contraire, s'il lui en reste un d'avant.
+ */
+export function offerSessionCookie(request: FastifyRequest, reply: FastifyReply, token: string): void {
+  if (isBrowserAgent(request.headers)) setSessionCookie(reply, token);
+  else dropStraySessionCookie(request, reply);
+}
+
+/** Une app native qui renvoie encore un cookie de session : il lui est retiré. */
+export function dropStraySessionCookie(request: FastifyRequest, reply: FastifyReply): void {
+  if (isBrowserAgent(request.headers)) return;
+  const cookies = (request as { cookies?: Record<string, string | undefined> }).cookies;
+  if (cookies?.[SESSION_COOKIE]) clearSessionCookie(reply);
 }
 
 /**

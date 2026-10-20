@@ -48,7 +48,12 @@ export function chooseSessionToken(cookie: string | undefined, explicit: string 
  * provisoire : le message `auth` l'emporte de toute façon.
  */
 export function cookieDecidesAtOnce(cookie: string, headers: IncomingHttpHeaders): boolean {
-  if (isServerPlacedSession(cookie)) return true;
+  return isServerPlacedSession(cookie) || isBrowserAgent(headers);
+}
+
+/** Un navigateur — page web, Electron, TV web : tous s'annoncent « Mozilla/… ».
+ *  React Native jamais (pas de User-Agent sur iOS, celui d'OkHttp sur Android). */
+export function isBrowserAgent(headers: IncomingHttpHeaders): boolean {
   const agent = headers["user-agent"];
   return typeof agent === "string" && agent.startsWith("Mozilla/");
 }
