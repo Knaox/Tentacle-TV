@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enterProfile, forgetProfileSession, profileUserRecord, returnToAccount, type KeyValueStore, type ProfileGrant } from "./sessionSwap";
+import { enterProfile, forgetProfileSession, profileUserRecord, returnToAccount, type KeyValueStore, type ProfileGrant } from "./profileSessionStore";
 
 function memoryStore(initial: Record<string, string> = {}): KeyValueStore & { dump(): Record<string, string> } {
   const map = new Map(Object.entries(initial));
@@ -25,7 +25,7 @@ const ZOE: ProfileGrant = {
   profile: { id: "zoe", name: "Zoé", kind: "member", color: "teal", imageTag: "tag-zoe", hasPin: true },
 };
 
-describe("bascules de session du bureau", () => {
+describe("bascules de session hors TV (bureau, mobile)", () => {
   it("entrer dans un profil met la session personnelle de côté, identité adoptée comprise", () => {
     const store = memoryStore({ tentacle_token: "jeton-perso", tentacle_user: OWNER_USER, tentacle_device_id_jf: "dev-perso" });
     expect(enterProfile(store, LEA)).toBe(true);

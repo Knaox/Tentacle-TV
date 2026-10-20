@@ -199,6 +199,7 @@ export * from "./family/familyRolesClient";
 export * from "./family/familyPickerClient";
 export * from "./family/familyPickerStay";
 export * from "./family/familyPickerDevice";
+export * from "./family/profileSessionStore";
 export * from "./family/familyProfileRefusal";
 export * from "./family/familyPinEntry";
 export * from "./family/familyPinReminder";
