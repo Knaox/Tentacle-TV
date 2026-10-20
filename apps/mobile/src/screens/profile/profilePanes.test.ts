@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findSettingsSection, SETTINGS_PANE_SCOPES, SETTINGS_SECTIONS } from "@tentacle-tv/shared";
-import { FAMILY_ROUTE } from "../../../../../packages/api-client/src/utils/notificationRoute";
+// Par le paquet : la règle a déménagé dans shared (lot notifs), l'api-client la réexporte sous le même nom.
+import { FAMILY_ROUTE } from "@tentacle-tv/api-client";
 import { FAMILY_HREF, LEGACY_PANE_REDIRECTS, PROFILE_PANE_ROUTES, SETTINGS_SCREEN_ROUTES } from "./profilePanes";
 
 const allEntries = SETTINGS_SECTIONS.flatMap((s) => s.groups.flatMap((g) => g.entries));
