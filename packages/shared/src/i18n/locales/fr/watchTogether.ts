@@ -82,10 +82,16 @@ export default {
   /** Le compte a perdu Watch Together (SyncPlayAccess « Interdit ») : il est sorti du groupe. */
   accessRevoked: "Watch Together n'est plus autorisé pour votre compte : vous avez quitté le groupe",
   memberCantPlay: "{{name}} ne peut pas lire ce média",
+  // La lecture (pas le groupe) : qui y arrive, n'y arrive pas, la quitte.
+  memberArriving: "{{name}} rejoint la lecture",
+  memberArrivalCancelled: "{{name}} n'a pas rejoint la lecture",
+  memberLeftPlayback: "{{name}} a quitté la lecture",
 
   // Overlay player
   memberBuffering: "{{name}} met en mémoire tampon…",
   membersBuffering: "{{count}} membres mettent en mémoire tampon…",
+  /** Un membre qui arrive : la salle l'attend, il n'a encore rien chargé. */
+  waitingForMember: "En attente de {{name}}…",
   waitingForGroup: "En attente du groupe…",
   syncing: "Synchronisation…",
   skippedByGroup: "Passage sauté",

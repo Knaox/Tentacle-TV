@@ -80,10 +80,14 @@ export default {
   groupDissolved: "The group was dissolved",
   accessRevoked: "Watch Together is no longer allowed for your account: you left the group",
   memberCantPlay: "{{name}} can't play this media",
+  memberArriving: "{{name}} is joining playback",
+  memberArrivalCancelled: "{{name}} didn't join playback",
+  memberLeftPlayback: "{{name}} left playback",
 
   // Player overlay
   memberBuffering: "{{name}} is buffering…",
   membersBuffering: "{{count}} members are buffering…",
+  waitingForMember: "Waiting for {{name}}…",
   waitingForGroup: "Waiting for the group…",
   syncing: "Syncing…",
   skippedByGroup: "Segment skipped",
