@@ -19,7 +19,11 @@ import type { SettingsI18nRef, SettingsPlatform, SettingsCatalogSection } from "
  * (▸ = volet ; ▢ = écran ; | = groupe suivant.)
  */
 
-/** Ce que seul le mobile sait faire (lecteur natif, Liquid Glass, garder hors ligne). */
+/**
+ * Ce que seul le mobile sait faire : lecteur natif, Liquid Glass, garder hors
+ * ligne, notifications PUSH (un navigateur n'en reçoit pas), changer de serveur
+ * (dans un navigateur, le serveur EST l'adresse).
+ */
 const MOBILE: readonly SettingsPlatform[] = ["mobile"];
 
 const p = (key: string): SettingsI18nRef => ({ ns: "profile", key });
@@ -53,7 +57,7 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
       {
         title: s("account.serverGroup"),
         entries: [
-          { kind: "action", id: "changeServer", icon: "repeat", label: p("changeServer"), requires: ["online", "personal"] },
+          { kind: "action", id: "changeServer", icon: "repeat", label: p("changeServer"), requires: ["online", "personal"], platforms: MOBILE },
           { kind: "pane", id: "invites", icon: "mail", label: p("invitations"), requires: ["online", "admin", "personal"] },
           { kind: "screen", id: "sessions", icon: "activity", label: { ns: "sessions", key: "title" }, requires: ["online", "admin", "personal"] },
           { kind: "action", id: "clearCache", icon: "trash-2", label: p("clearCache"), destructive: true, requires: ["online"] },
@@ -137,7 +141,7 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
     label: s("sections.notifications"),
     summaries: [{ label: s("sections.notificationsSummary") }],
     groups: [
-      { entries: [{ kind: "pane", id: "notifications", icon: "bell", label: p("notifications"), requires: ["online", "personal"] }] },
+      { entries: [{ kind: "pane", id: "notifications", icon: "bell", label: p("notifications"), requires: ["online", "personal"], platforms: MOBILE }] },
     ],
   },
   {

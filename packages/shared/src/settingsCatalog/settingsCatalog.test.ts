@@ -126,7 +126,8 @@ describe("le web étroit rend le même catalogue", () => {
   it("sans ce que seul le mobile sait faire", () => {
     const shown = ids(section("playback"), web);
     for (const id of ["liquidGlass", "subtitleSize", "subtitlePosition", "engine", "engineOptions"]) expect(shown).not.toContain(id);
-    expect(visibleSections(web).map((s) => s.id)).toEqual(["account", "playback", "devices", "notifications", "help"]);
+    expect(visibleSections(web).map((s) => s.id)).toEqual(["account", "playback", "devices", "help"]);
+    expect(ids(section("account"), web)).not.toContain("changeServer");
   });
 
   it("les capacités du serveur décident, jamais une version", () => {
