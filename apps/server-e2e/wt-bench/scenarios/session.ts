@@ -16,7 +16,7 @@ export interface Session {
 
 /** Le premier point où les deux lisent : l'écart au départ. */
 function firstCommonPlay(points: DriftPoint[], labels: string[]): DriftPoint | undefined {
-  return points.find((p) => labels.every((l) => p.paused[l] === false && p.drift[l] !== null && (p.pos[l] ?? 0) > 0.05));
+  return points.find((p) => labels.every((l) => p.paused[l] === false && p.drift[l] !== null && (p.pos[l] ?? 0) > 0));
 }
 
 export async function startSession(ctx: ScenarioContext, opts: { b?: WebClientOptions; episode?: number } = {}): Promise<Session> {
@@ -31,7 +31,8 @@ export async function startSession(ctx: ScenarioContext, opts: { b?: WebClientOp
 
   // Départ : jusqu'à 60 s (un transcodage démarre lentement).
   const start = await waitAligned([a, b], { withinMs: 100, playing: true, since: launchAt, timeoutMs: 60_000, stable: 4 });
-  const first = firstCommonPlay(start.points, ["A", "B"]);
+  // Sans point où les deux lisent avant l'alignement (départ déjà aligné), le point d'alignement.
+  const first = firstCommonPlay(start.points, ["A", "B"]) ?? start.points[start.points.length - 1];
   ctx.metric("départ : écart au premier instant où les deux lisent", first ? `${first.drift.B} ms` : "—", first ? Math.abs(first.drift.B ?? 0) : null, "< 100 ms");
   ctx.metric("départ : du lancement à l'alignement (< 100 ms)", start.ms === null ? "jamais en 60 s" : `${start.ms} ms`, start.ms);
   return { a, b, launchAt };
