@@ -27,9 +27,10 @@ type ChatTray = "quick" | "emoji" | "gif";
 export const WtChatPanel = memo(function WtChatPanel({ messages, selfId, onSend, onReact, onSendGif, typingText, onTyping }: {
   messages: readonly WtChatMessageDto[];
   selfId: string | null;
-  onSend: (text: string) => void;
-  onReact: (emoji: string) => void;
-  onSendGif: (gif: GifItem) => void;
+  /** Faux : le débit partagé a refusé l'envoi — le brouillon reste. */
+  onSend: (text: string) => boolean;
+  onReact: (emoji: string) => boolean;
+  onSendGif: (gif: GifItem) => boolean;
   /** « X est en train d'écrire… », déjà dit en mots (null : personne). */
   typingText?: string | null;
   /** Une frappe : le crochet partagé en tire l'avis d'écriture (anti-rafale compris). */
@@ -44,13 +45,12 @@ export const WtChatPanel = memo(function WtChatPanel({ messages, selfId, onSend,
   const send = useCallback(() => {
     const text = draft.trim();
     if (!text) return;
-    onSend(text.slice(0, WT_CHAT_MAX_LENGTH));
-    setDraft("");
+    // Refusé par le débit partagé (rafale) : le brouillon reste, on réessaie.
+    if (onSend(text.slice(0, WT_CHAT_MAX_LENGTH))) setDraft("");
   }, [draft, onSend]);
 
   const react = useCallback((emoji: string) => {
-    haptic("select");
-    onReact(emoji);
+    if (onReact(emoji)) haptic("select");
   }, [onReact]);
 
   const type = useCallback((text: string) => {
@@ -92,7 +92,7 @@ export const WtChatPanel = memo(function WtChatPanel({ messages, selfId, onSend,
       {tray === "emoji" && <WtEmojiPicker onPick={react} />}
       {tray === "gif" && (
         <View style={st.gifTray}>
-          <WtGifPicker onSend={(gif) => { haptic("tap"); onSendGif(gif); }} onClose={() => setTray("quick")} />
+          <WtGifPicker onSend={(gif) => { if (onSendGif(gif)) haptic("tap"); }} onClose={() => setTray("quick")} />
         </View>
       )}
       {typingText ? (
