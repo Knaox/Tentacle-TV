@@ -109,9 +109,11 @@ gestes de l'utilisateur ; `notifySeek(s, { explicit: true })` sur la barre ;
   gelée jusqu'au délai après un saut automatique.
 - **Anti-gel sans personne (M4)** : un balayage qui laisse la salle sans aucun
   membre en lecture ne la relance pas — pause « user » à la position gelée.
-- **Recalage dur en transcodage** : aucun nouveau seek dur tant que le
-  précédent n'a pas fait REPARTIR la lecture (5 s au plus,
-  `hardSeekProgress`) ; la latence mesurée court jusqu'à la reprise.
+- **Recalage dur en transcodage** (garde de principe — la « spirale » vue au
+  banc venait du capot fermé du Mac : l'horloge média de Chrome suit l'audio) :
+  aucun nouveau seek dur tant que le précédent n'a pas fait REPARTIR la
+  lecture (5 s au plus, `hardSeekProgress`) ; la latence mesurée court jusqu'à
+  la reprise.
 - **Invitations** : `wt:inviteGone` à tous les appareils du compte quand une
   invitation reçoit sa réponse.
 

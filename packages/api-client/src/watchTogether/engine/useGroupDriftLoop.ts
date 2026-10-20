@@ -87,8 +87,8 @@ export function useGroupDriftLoop({
 
       // Un seek dur en cours : on attend que la lecture REPARTE (pas seulement
       // l'atterrissage) — sa latence, attente des segments comprise, devient le
-      // lookahead du prochain ; d'ici là, aucun nouveau seek dur (un
-      // transcodage re-sautait sinon toutes les 1,8 s sans jamais reprendre).
+      // lookahead du prochain ; d'ici là, aucun nouveau seek dur (un lecteur
+      // qui attend ses segments serait sinon re-sauté dans la même attente).
       let hardSeekHeld = false;
       const pending = shared.pendingHardSeekRef.current;
       if (pending) {

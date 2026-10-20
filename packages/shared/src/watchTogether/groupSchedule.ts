@@ -92,8 +92,9 @@ export const HARD_SEEK_WAIT_MAX_MS = 5_000;
  * Où en est un seek dur : `resumed` quand la lecture AVANCE de nouveau près
  * de la cible (la latence mesurée court jusque-là, attente des segments
  * comprise — c'est elle que le lookahead doit couvrir) ; `waiting` tant
- * qu'elle n'a pas repris : AUCUN nouveau seek dur (un transcodage, sinon,
- * re-sautait toutes les 1,8 s sans jamais reprendre — vu au banc) ;
+ * qu'elle n'a pas repris : AUCUN nouveau seek dur (un lecteur qui attend ses
+ * segments — transcodage — prend du retard sur la salle pendant l'attente ;
+ * le re-sauter le relancerait dans la même attente, sans fin) ;
  * `expired` passé HARD_SEEK_WAIT_MAX_MS.
  */
 export function hardSeekProgress(
