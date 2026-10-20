@@ -10,6 +10,7 @@ import { InviteInboxModal } from "./InviteInboxModal";
 import { ChatRoot } from "./chat/ChatRoot";
 import { WatchTogetherRoomModal } from "./room/WatchTogetherRoomModal";
 import { AffinityRoot } from "./affinity/AffinityRoot";
+import { ElsewhereNotice } from "./ElsewhereNotice";
 import { wtLog } from "./wtLog";
 
 /**
@@ -68,6 +69,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
       {inboxOpen && value.mayJoin && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
       <WatchTogetherRoomModal />
       <GroupPlaybackPill />
+      <ElsewhereNotice />
       {value.room && <ChatRoot />}
       {/* L'affinité (swipe de groupe) : remontée à chaque salle — ses numéros
           d'état repartent de zéro avec elle. */}
