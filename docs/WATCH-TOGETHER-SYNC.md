@@ -133,8 +133,15 @@ messages ne parlait que d'un membre qui quitte le GROUPE.
   réponse REST porte l'état gelé, le nouveau s'ouvre à la position exacte de
   la pause (`wtJoinStartSeconds`), tous repartent ensemble (reprise
   planifiée) à son premier « prêt ». « Rejoindre » d'un membre déjà du
-  groupe (navigation seule) : son lecteur qui s'ouvre est l'arrivée, la salle
-  se gèle à son « je charge ».
+  groupe (pilule, bande de l'accueil, feuille) passe par `joinPlayback` →
+  `POST /group/arrive` : la même pause au clic. Un lecteur qui s'ouvre sans
+  clic (lien, reconnexion) arrive aussi : la salle se gèle à son « je
+  charge ».
+- **Aucun passage tant qu'on arrive** (ajout de Damien) : du clic au premier
+  « prêt », l'arrivant n'est pas « tous prêts » (`wtAllReady` côté serveur,
+  `wtRoomAllReady` côté clients, barrière ou pas) — ni bouton « Passer », ni
+  décompte, ni saut automatique, ni enchaînement, chez personne ; un décompte
+  en cours au clic est mis de côté et rejoué EN ENTIER une fois tous prêts.
 - **Jamais de recul par l'arrivant** : tant qu'il n'a rien lu, sa position ne
   déplace pas la salle (serveur : `arrivingFreezeTicks` ; lecteurs : aucune
   position dans un « je charge » d'un lecteur jamais prêt,
@@ -154,7 +161,10 @@ messages ne parlait que d'un membre qui quitte le GROUPE.
   (`arrivingUserIds`, facultatif) ; le départ se lit aussi face à un serveur
   d'avant.
 - Un membre attendu qui quitte le groupe libère la salle (le retrait l'ôtait
-  de l'attente sans la lever : salle gelée).
+  de l'attente sans la lever : salle gelée). Un lecteur qui affiche un échec
+  (web, bureau, mobile) le dit au groupe tout de suite (`notifyFatalError`).
+- Mobile : le premier chargement se pose à la position du groupe, jamais à la
+  reprise personnelle (`loadTargetSeconds`) — c'était le recul de l'hôte.
 
 ## Le chat interactif (20/10)
 
