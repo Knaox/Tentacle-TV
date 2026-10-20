@@ -95,4 +95,16 @@ describe("nextLivePublish", () => {
     expect(end.state).toBe(INITIAL_LIVE_STATE);
     expect(nextLivePublish(end.state, null, 2_000).action.kind).toBe("none");
   });
+  it("forcé (passage derrière, démarrage à retenter) : l'état du moment est redessiné", () => {
+    const first = nextLivePublish(INITIAL_LIVE_STATE, view({ fraction: 0.4 }), 0);
+    const quiet = nextLivePublish(first.state, view({ fraction: 0.42 }), 1_000);
+    expect(quiet.action.kind).toBe("none");
+    const forced = nextLivePublish(first.state, view({ fraction: 0.42 }), 1_000, { force: true });
+    expect(forced.action).toMatchObject({ kind: "update", content: { percent: 42 } });
+  });
+
+  it("forcé sans rien à suivre : la fin, jamais un dessin", () => {
+    const first = nextLivePublish(INITIAL_LIVE_STATE, view(), 0);
+    expect(nextLivePublish(first.state, null, 1_000, { force: true }).action.kind).toBe("end");
+  });
 });

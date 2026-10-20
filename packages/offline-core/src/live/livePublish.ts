@@ -56,10 +56,16 @@ function structuralChange(a: LiveContent, b: LiveContent): boolean {
   );
 }
 
+/**
+ * `force` : redessiner l'état du moment même sans changement notable — au
+ * passage en arrière-plan (le JavaScript va être suspendu) ou pour retenter un
+ * démarrage refusé (`liveSurfaceRepair.ts`).
+ */
 export function nextLivePublish(
   state: LivePublishState,
   view: LiveTransferView | null,
   nowMs: number,
+  options: { force?: boolean } = {},
 ): { state: LivePublishState; action: LivePublishAction } {
   if (view === null) {
     const action: LivePublishAction = state.shown === null ? { kind: "none" } : { kind: "end" };
@@ -90,7 +96,7 @@ export function nextLivePublish(
       Math.abs(candidate.percent - shown.percent) >= LIVE_PERCENT_STEP) &&
     nowMs - state.shownAtMs >= LIVE_PROGRESS_MIN_INTERVAL_MS;
 
-  if (structuralChange(shown, candidate) || estimateMoved || percentMoved) {
+  if (options.force === true || structuralChange(shown, candidate) || estimateMoved || percentMoved) {
     return { state: { estimate, shown: candidate, shownAtMs: nowMs }, action: { kind: "update", content: candidate } };
   }
   // Rien d'assez neuf : la fin affichée reste celle qu'on garde comme référence.
