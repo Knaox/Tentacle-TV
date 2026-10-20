@@ -6,8 +6,12 @@
  * écart, par phase. Module pur, testé.
  */
 
-/** Les phases de l'ouverture, dans l'ordre : le poulpe s'assemble, attend sur son bouton, puis ta-dum et la plongée. */
-export const INTRO_FRAME_PHASES = ["assembly", "hold", "dive"] as const;
+/**
+ * Les phases de l'ouverture : le poulpe s'assemble, attend sur son bouton, puis ta-dum et la
+ * plongée ; `settle`, l'encre immobile avant le début (`introStart`) — ses écarts ne se voient
+ * pas, ils ne comptent pas dans le total. L'indice est le code noté par l'horloge : jamais réordonné.
+ */
+export const INTRO_FRAME_PHASES = ["assembly", "hold", "dive", "settle"] as const;
 export type IntroFramePhase = (typeof INTRO_FRAME_PHASES)[number];
 
 /** Un écart entre deux images (ms) et sa phase (indice dans `INTRO_FRAME_PHASES`) : deux nombres, à plat. */
@@ -20,6 +24,8 @@ export interface IntroPhaseFrames {
   dropped: number;
   /** Le pire écart entre deux images (ms). */
   worstMs: number;
+  /** La durée de la phase (ms). */
+  durationMs: number;
 }
 
 export interface IntroFrameReport {
@@ -28,7 +34,7 @@ export interface IntroFrameReport {
   /** Le pas d'une image (ms). */
   periodMs: number;
   phases: Record<IntroFramePhase, IntroPhaseFrames>;
-  /** Toute l'ouverture. */
+  /** Toute l'ouverture VISIBLE (l'encre du début exclue). */
   total: IntroPhaseFrames;
 }
 
@@ -51,23 +57,25 @@ export function droppedIn(gapMs: number, periodMs: number): number {
   return Math.max(0, Math.round(gapMs / periodMs) - 1);
 }
 
-const empty = (): IntroPhaseFrames => ({ frames: 0, dropped: 0, worstMs: 0 });
+const empty = (): IntroPhaseFrames => ({ frames: 0, dropped: 0, worstMs: 0, durationMs: 0 });
 
 /** Le bilan d'une ouverture, depuis le journal de l'horloge (`[phase, écart, phase, écart, …]`). */
 export function introFrameReport(log: IntroFrameLog): IntroFrameReport {
+  // Le pas de l'écran se lit sur les phases visibles (l'encre du début, ce sont justement les gros trous).
   const gaps: number[] = [];
-  for (let index = 1; index < log.length; index += 2) gaps.push(log[index] as number);
+  for (let index = 1; index < log.length; index += 2) if (INTRO_FRAME_PHASES[log[index - 1] as number] !== "settle") gaps.push(log[index] as number);
   const periodMs = introFramePeriod(gaps);
-  const phases = { assembly: empty(), hold: empty(), dive: empty() };
+  const phases = { assembly: empty(), hold: empty(), dive: empty(), settle: empty() };
   const total = empty();
   for (let index = 0; index + 1 < log.length; index += 2) {
     const phase = INTRO_FRAME_PHASES[log[index] as number];
     const gap = log[index + 1] as number;
     if (!phase) continue;
-    for (const bucket of [phases[phase], total]) {
+    for (const bucket of phase === "settle" ? [phases.settle] : [phases[phase], total]) {
       bucket.frames += 1;
       bucket.dropped += droppedIn(gap, periodMs);
       bucket.worstMs = Math.max(bucket.worstMs, gap);
+      bucket.durationMs += gap;
     }
   }
   return { hz: Math.round(1000 / periodMs), periodMs, phases, total };
@@ -80,5 +88,7 @@ export function formatIntroFrameReport(report: IntroFrameReport): string {
     return `${name} ${frames} img/${dropped} perdues/pire ${Math.round(worstMs)} ms`;
   };
   const { frames, dropped, worstMs } = report.total;
-  return `[ouverture] ${report.hz} Hz — ${frames} images, ${dropped} perdues, pire écart ${Math.round(worstMs)} ms (${INTRO_FRAME_PHASES.map(phase).join(" ; ")})`;
+  const visible = INTRO_FRAME_PHASES.filter((name) => name !== "settle").map(phase).join(" ; ");
+  const ink = `encre ${Math.round(report.phases.settle.durationMs)} ms, pire ${Math.round(report.phases.settle.worstMs)} ms`;
+  return `[ouverture] ${report.hz} Hz — ${frames} images, ${dropped} perdues, pire écart ${Math.round(worstMs)} ms (${visible} ; ${ink})`;
 }
