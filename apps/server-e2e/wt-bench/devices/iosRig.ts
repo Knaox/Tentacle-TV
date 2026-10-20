@@ -14,6 +14,13 @@ import { IosClient } from "../clients/iosClient";
 import { listTargets } from "../clients/hermes";
 
 export const METRO_PORT = Number(process.env.WT_METRO_PORT ?? 8095);
+/**
+ * Moteur de lecture des membres iOS (`tentacle_video_engine` : auto, native, mpv).
+ * « native » (AVPlayer) par défaut : capot du Mac fermé, la sortie audio du
+ * simulateur ne répond plus et mpv ABANDONNE au démarrage de l'audio
+ * (AURemoteIO::Start, délai RPC dépassé — plantage mesuré le 20/10).
+ */
+const IOS_ENGINE = process.env.WT_IOS_ENGINE ?? "native";
 const SIMS_FILE = join(RUN_DIR, "sims.json");
 const METRO_PID = join(RUN_DIR, "metro.pid");
 
@@ -71,6 +78,7 @@ export async function relaunchIosMember(udid: string, account: BenchAccount, lab
   const token = await injectSession(udid, state, account, deviceName, {
     tentacle_language: "fr",
     tentacle_avatar_invite_seen: JSON.stringify([account.id]),
+    tentacle_video_engine: IOS_ENGINE,
   });
   launch(udid);
   await waitForTarget(deviceName);
@@ -100,6 +108,7 @@ export async function prepareIosMember(udid: string, account: BenchAccount, labe
   const token = await injectSession(udid, state, account, deviceName, {
     tentacle_language: "fr",
     tentacle_avatar_invite_seen: JSON.stringify([account.id]),
+    tentacle_video_engine: IOS_ENGINE,
   });
   launch(udid);
   await waitForTarget(deviceName);
