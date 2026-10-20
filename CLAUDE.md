@@ -940,6 +940,11 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
   (dix minutes glissantes), sinon `tvManageUnlock`. « Qui regarde ? » ›
   « Gérer les profils » : le compte de l'appareil (TV : celui qui l'a jumelée).
   Accepter, refuser, quitter, dissoudre restent personnels.
+- **Le web a « Qui regarde ? » comme le bureau** (1.32.0, `family.webProfiles`, plateforme
+  `web`) — le même code, choisi par `apps/web/src/profiles/pickerPlatform.ts`. Le web s'authentifie
+  par COOKIE, qui l'emporte sur tout Bearer : ouvrir un profil réécrit donc les cookies côté
+  serveur, et le jeton du COMPTE part en réserve httpOnly (`tentacle_account_token`,
+  `routes/family/accountEscrow.ts`), jamais dans la page ; il ne revient que derrière SON code.
 - **Un invité n'apparaît dans AUCUNE liste** (Watch Together, candidats,
   utilisateurs, admin, classement, recommandations en fond) ; seulement dans
   les sessions en cours (`familyGuestOf`). Toute nouvelle liste de comptes

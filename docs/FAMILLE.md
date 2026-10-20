@@ -419,6 +419,48 @@ Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
 - La TV LG ne compile rien de tout cela : sa porte est substituée et
   `apps/web/src/profiles/` sort de sa feuille.
 
+## Le web : « Qui regarde ? » dans le navigateur (serveur 1.32.0)
+
+Le MÊME code que le bureau (`apps/web/src/profiles/`, `auth/`) ; seuls la
+plateforme, la capacité et la garde du jeton du compte changent, en UN endroit :
+`apps/web/src/profiles/pickerPlatform.ts`.
+
+- **Plateforme `web`** des routes `/api/family/picker/*`, capacité
+  `family.webProfiles`. Un serveur d'avant REFUSE `web` (`family.invalid_input`) :
+  jamais un profil à moitié ouvert. Hôte « Web » par défaut ; la politique
+  d'ouverture est celle des ORDINATEURS (`launchPolicy.desktop`, « Ordinateurs et
+  navigateurs » dans l'administration) ; chaque navigateur a son réglage
+  (« Dans ce navigateur »), gardé comme celui d'un ordinateur.
+- **Pourquoi pas tel quel** : le web s'authentifie par COOKIE (`tentacle_token`,
+  httpOnly), et le serveur lit le cookie AVANT tout Bearer. Le parcours du
+  bureau (jeton du profil dans le stockage) aurait laissé le cookie du COMPTE
+  agir pendant la session d'un enfant.
+- **La réserve du serveur** (`routes/family/accountEscrow.ts`) : choisir le
+  profil d'un autre (`platform: "web"`) réécrit les cookies — le profil devient
+  `tentacle_token`, le jeton du compte part dans `tentacle_account_token`
+  (httpOnly, `SameSite=Strict`). La page n'en garde AUCUNE copie
+  (`enterProfile(…, { escrowed: true })` : la réserve locale ne porte que le
+  compte et `held: "server"`) — un enfant devant le navigateur ne peut pas le
+  lire (outils de développement, extension) pour reprendre le compte de ses
+  parents. Choisir SON profil, derrière SON code vérifié par le serveur, le
+  rend (`PickedProfileDto.token`) et efface la réserve.
+- **Lecture de la réserve** : les routes de « Qui regarde ? » seulement
+  (lister, choisir), et seulement derrière une session de PROFIL (cookie de
+  session = JWT d'appareil) — jamais face à une session personnelle, jamais
+  sans session. La photo d'un invité (`setGuestPhoto`) ne la lit que pendant
+  la session de CET invité.
+- **Fin d'un profil** : rien n'est repris dans la page ; « Qui regarde ? » est
+  exigé et se joue par la réserve. **Déconnexion** : la réserve part avant que
+  les portes jugent la session (même un profil déjà terminé), l'hôte et ses
+  profils sont fermés, le compte est déconnecté de Jellyfin. Toute connexion
+  efface une réserve restée.
+- **Ce qui reste** : la session ACTIVE (celle du profil, ou du compte hors
+  profil) vit, comme avant, dans le stockage de la page et dans le cookie — une
+  extension malveillante lit ce que la page lit. Le compte n'y est plus pendant
+  un profil, c'est tout ce que garantit la réserve.
+- Preuves : `apps/backend/test/familyPickerWeb.test.ts` (cookies, PIN, réserve,
+  déconnexion), `profileSessionStore.test.ts` (shared), `commitPickWeb.test.ts`.
+
 ## Gérer depuis un profil (serveur 1.30.0, `family.profileManage`)
 
 Décisions de Damien du 2026-10-16. Le propriétaire ou un membre GÈRE la famille
@@ -682,9 +724,9 @@ Les clients ouvrent la galerie des avatars (personnages ou photo importée) :
 - **Administration** : les interrupteurs vivent dans Admin › Utilisateurs (un
   réglage, pas une alerte) ; les sessions en cours étiquettent l'invité
   (`FamilyGuestTag`).
-- **« Qui regarde ? » et « Changer de profil »** : le bureau seulement,
-  face à un serveur qui déclare `family.desktopProfiles` — voir « Le
-  bureau ».
+- **« Qui regarde ? » et « Changer de profil »** : le bureau face à un
+  serveur qui déclare `family.desktopProfiles`, le navigateur face à un
+  serveur qui déclare `family.webProfiles` — voir « Le bureau » et « Le web ».
 - Éprouvé en HTTP sur une IP du réseau : rien n'y dépend de `crypto.subtle`,
   `crypto.randomUUID` ni du presse-papiers ; le cookie de session part sans
   `Secure` sur HTTP.
