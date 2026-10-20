@@ -1,4 +1,4 @@
-import type { WtPlayerPort } from "./wtPlayerPort";
+import type { WtPlayerPort } from "@tentacle-tv/api-client";
 
 /**
  * Watch Together — l'adaptateur du port lecteur pour le mobile et l'iPad,
