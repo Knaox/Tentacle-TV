@@ -1,7 +1,6 @@
 import { useMemo } from "react";
-import { useFamilyOverview, useServerCapabilities, useUserId } from "@tentacle-tv/api-client";
+import { useAppConfig, useFamilyOverview, useServerCapabilities, useUserId } from "@tentacle-tv/api-client";
 import { editedSummaryKinds, familySimpleEditing, type FamilyProfileDto } from "@tentacle-tv/shared";
-import { useFamilyAvailability } from "../../useFamilyAvailability";
 import { ProfileRightsSummary } from "../ProfileRightsSummary";
 import { NarrowAgeSection } from "./NarrowAgeSection";
 import { NarrowLibrariesSection } from "./NarrowLibrariesSection";
@@ -19,7 +18,8 @@ export function NarrowRightsEditor({ profile }: { profile: FamilyProfileDto }) {
   const overview = useFamilyOverview().data ?? null;
   const viewer = useUserId();
   const { capabilities } = useServerCapabilities();
-  const guestRequests = useFamilyAvailability().capability?.guestRequests;
+  // La capacité Famille du serveur (`features.family`), lue telle quelle : la page est déjà gardée.
+  const guestRequests = useAppConfig().data?.features.family?.guestRequests;
   const editing = useMemo(
     () => (overview ? familySimpleEditing(overview, profile, viewer, capabilities, { guestRequests }) : null),
     [overview, profile, viewer, capabilities, guestRequests],
