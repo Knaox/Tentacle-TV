@@ -38,8 +38,10 @@ export class HermesSession {
   /** Se branche sur la cible dont l'appareil porte ce nom (un Metro, plusieurs simulateurs). */
   static async connect(metroPort: number, deviceName: string): Promise<HermesSession> {
     const targets = await listTargets(metroPort);
-    const target = targets.find((t) => (t.deviceName ?? t.description ?? t.title).includes(deviceName))
-      ?? (targets.length === 1 ? targets[0] : undefined);
+    // Deux cibles par appareil : le JS de l'app (« React Native Bridgeless ») et le
+    // moteur de Reanimated — seule la première porte l'app.
+    const js = targets.filter((t) => !(t.description ?? "").includes("Reanimated"));
+    const target = js.find((t) => (t.deviceName ?? t.title).includes(deviceName)) ?? (js.length === 1 ? js[0] : undefined);
     if (!target) throw new Error(`aucune cible Hermes pour « ${deviceName} » (${targets.map((t) => t.deviceName ?? t.title).join(", ")})`);
     const ws = new WebSocket(target.webSocketDebuggerUrl);
     await new Promise<void>((ok, ko) => {

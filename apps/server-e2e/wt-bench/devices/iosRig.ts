@@ -63,6 +63,28 @@ export function stopMetro(): void {
  * Un simulateur prêt : app installée, branchée sur le Metro, session de ce
  * compte posée, app lancée, cible Hermes connectée.
  */
+/** Un appareil déjà installé : session reposée (même jeton neuf), app relancée, Hermes rebranché. */
+export async function relaunchIosMember(udid: string, account: BenchAccount, label: string, deviceName: string): Promise<IosClient> {
+  const state = readState();
+  terminate(udid);
+  const token = await injectSession(udid, state, account, deviceName, {
+    tentacle_language: "fr",
+    tentacle_avatar_invite_seen: JSON.stringify([account.id]),
+  });
+  launch(udid);
+  await waitForTarget(deviceName);
+  return IosClient.attach(state, account, label, METRO_PORT, deviceName, token);
+}
+
+async function waitForTarget(deviceName: string): Promise<void> {
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    const targets = await listTargets(METRO_PORT).catch(() => []);
+    if (targets.some((t) => (t.deviceName ?? t.title).includes(deviceName) && !(t.description ?? "").includes("Reanimated"))) return;
+    await new Promise((ok) => setTimeout(ok, 2000));
+  }
+}
+
 export async function prepareIosMember(udid: string, account: BenchAccount, label: string, deviceName: string): Promise<IosClient> {
   const state = readState();
   bootIfNeeded(udid);
@@ -72,13 +94,13 @@ export async function prepareIosMember(udid: string, account: BenchAccount, labe
   launch(udid);
   await new Promise((ok) => setTimeout(ok, 4000));
   terminate(udid);
-  const token = await injectSession(udid, state, account, deviceName);
+  // L'interface en français (les libellés que vérifient les scénarios) et l'invitation
+  // « Choisis ton personnage » déjà vue : elle recouvrirait l'accueil.
+  const token = await injectSession(udid, state, account, deviceName, {
+    tentacle_language: "fr",
+    tentacle_avatar_invite_seen: JSON.stringify([account.id]),
+  });
   launch(udid);
-  const deadline = Date.now() + 120_000;
-  while (Date.now() < deadline) {
-    const targets = await listTargets(METRO_PORT).catch(() => []);
-    if (targets.some((t) => (t.deviceName ?? t.title).includes(deviceName.split(" ")[0]))) break;
-    await new Promise((ok) => setTimeout(ok, 2000));
-  }
+  await waitForTarget(deviceName);
   return IosClient.attach(state, account, label, METRO_PORT, deviceName, token);
 }

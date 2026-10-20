@@ -16,6 +16,16 @@ import { createGroup, inviteAndAccept, launch, waitOnItem } from "./group";
 const SLOW = { maxBitrate: 1_500_000, mediaDelayMs: 6_000, mediaDelayCount: 3 };
 const SKIP_LABEL = /Passer l.intro/;
 
+/**
+ * B « charge » : pas encore sur le lecteur du titre, ou son média pas prêt
+ * (readyState < 3). Prêt mais en pause, il attend le départ planifié : la
+ * salle peut alors proposer le saut — c'est voulu.
+ */
+async function bLoading(b: WebClient): Promise<boolean> {
+  const s = await b.sample();
+  return !s.path.startsWith("/watch/") || s.pos === null || s.readyState < 3;
+}
+
 /** Jusqu'à ce que B lise vraiment : ce que A a fait entre-temps. */
 async function watchUntilBPlays(a: WebClient, b: WebClient, timeoutMs: number) {
   let aMax = 0;
@@ -25,7 +35,7 @@ async function watchUntilBPlays(a: WebClient, b: WebClient, timeoutMs: number) {
   while (Date.now() - start < timeoutMs) {
     const p = await measureOnce([a, b]);
     if (!p.paused.A) aMax = Math.max(aMax, p.pos.A ?? 0);
-    if (await a.isVisible(SKIP_LABEL)) skipSeen = true;
+    if ((await a.isVisible(SKIP_LABEL)) && (await bLoading(b))) skipSeen = true;
     if (!p.paused.B && (p.pos.B ?? 0) > 0.05) {
       bPlaysAt = Date.now() - start;
       break;
@@ -101,10 +111,10 @@ export async function introGateScenario(ctx: ScenarioContext): Promise<void> {
     let clickedEarly = false;
     const start = Date.now();
     while (Date.now() - start < 90_000) {
-      const p = await measureOnce([a, b]);
-      const bReady = !p.paused.B && (p.pos.B ?? 0) > 0.05;
-      if (bReady) break;
+      if (!(await bLoading(b))) break;
       if (await a.isVisible(SKIP_LABEL)) {
+        const g = (await a.api<WtRoomStateDto | null>("GET", "/api/watch-together/group")).json;
+        ctx.log(`bouton vu chez A pendant que B charge — allReady=${String(g?.allReady)}`);
         clickedEarly = await a.clickText(SKIP_LABEL, 1_000);
         break;
       }
@@ -116,7 +126,8 @@ export async function introGateScenario(ctx: ScenarioContext): Promise<void> {
       const p = await measureOnce([a, b]);
       const g = (await a.api<WtRoomStateDto | null>("GET", "/api/watch-together/group")).json;
       ctx.log(`après le clic précoce : A ${p.pos.A?.toFixed(2)} s, B ${p.pos.B?.toFixed(2)} s, salle ${((g?.positionTicks ?? 0) / 1e7).toFixed(2)} s`);
-      ctx.check("[bouton] un clic précoce n'emmène pas la salle sans B", (p.pos.A ?? 0) < 2,
+      ctx.check("[bouton] un clic précoce n'emmène pas la salle sans B (les deux au même endroit)",
+        p.pos.A !== null && p.pos.B !== null && Math.abs(p.pos.A - p.pos.B) < 0.5,
         `A ${p.pos.A?.toFixed(2)} s · B ${p.pos.B?.toFixed(2)} s`);
     }
     await waitOnItem([a, b], ctx.state.episodeIds[1], 60_000);

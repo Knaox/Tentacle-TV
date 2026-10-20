@@ -76,6 +76,36 @@ export class IosClient {
     return { status: res.status, json: json as T };
   }
 
+  /** Navigation par le routeur d'expo-router (module trouvé par son nom) : aucun lien profond. */
+  async navigate(path: string): Promise<void> {
+    await this.hermes.eval(
+      "var id = null; __r.getModules().forEach(function(v, k){ if (v && v.verboseName && /expo-router\\/build\\/imperative-api\\.js$/.test(v.verboseName)) id = k; });"
+      + ` if (id === null) throw new Error("routeur introuvable"); __r(id).router.push(${JSON.stringify(path)}); return true;`,
+    );
+  }
+
+  /**
+   * Un élément de l'arbre React : par `testID` ou par texte affiché. `press`
+   * remonte jusqu'au premier `onPress` et l'appelle — le geste de l'écran,
+   * sans l'outil tactile du simulateur.
+   */
+  async find(what: { testID?: string; text?: string }, press = false): Promise<boolean> {
+    const pred = what.testID
+      ? `f.memoizedProps && f.memoizedProps.testID === ${JSON.stringify(what.testID)}`
+      : `f.memoizedProps && typeof f.memoizedProps.children === "string" && f.memoizedProps.children.indexOf(${JSON.stringify(what.text ?? "")}) >= 0`;
+    return this.hermes.eval<boolean>(
+      "var hook = globalThis.__REACT_DEVTOOLS_GLOBAL_HOOK__; var hit = null;"
+      + " hook.renderers.forEach(function(_, rid){ hook.getFiberRoots(rid).forEach(function(root){"
+      + "   var stack = [root.current]; while (stack.length && !hit) { var f = stack.pop();"
+      + `     if (${pred}) hit = f; if (f.sibling) stack.push(f.sibling); if (f.child) stack.push(f.child); } }); });`
+      + " if (!hit) return false;"
+      + (press
+        ? " var g = hit; while (g && !(g.memoizedProps && typeof g.memoizedProps.onPress === 'function')) g = g.return;"
+          + " if (!g) return false; g.memoizedProps.onPress(); return true;"
+        : " return true;"),
+    );
+  }
+
   /** Geste au lecteur par la sonde : les mêmes chemins que les boutons du lecteur mobile. */
   async action(kind: "play" | "pause" | "seekBy", value?: number): Promise<void> {
     await this.hermes.eval(`globalThis.__wtBench.action(${JSON.stringify(kind)}, ${JSON.stringify(value ?? null)}); return true;`);
