@@ -19,6 +19,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Les droits s'appliquent partout, tout de suite** : un droit changé dans l'administration ou la Famille s'annonce aux appareils du compte ; un titre gardé hors ligne puis retiré des droits ne se lit plus ; un compte désactivé ou hors de ses heures est coupé proprement
 - **Notifications du téléphone synchronisées** : lue ou balayée sur un appareil, lue partout, pastille de l'icône à jour
 - **Garder hors ligne va au bout, application quittée** : le serveur prépare le fichier lui-même et le téléphone le reprend là où il en était après une coupure
+- **Administration › Famille** : ce que les comptes peuvent faire et « Qui regarde ? » à l'ouverture, plateforme par plateforme
 - **Interface web** : Famille complète dans le navigateur, et sur téléphone ou tablette les mêmes réglages que l'app mobile
 
 ### EN
@@ -28,6 +29,7 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 - **Rights apply everywhere, right away**: a right changed in administration or Family is announced to the account's devices; a title kept offline then removed from the rights no longer plays; a disabled account or one outside its hours is signed out cleanly
 - **Phone notifications in sync**: read or swiped away on one device, read everywhere, app badge up to date
 - **Keeping offline finishes even with the app closed**: the server prepares the file itself and the phone resumes where it left off after a drop
+- **Administration › Family**: what accounts can do, and "Who's watching?" at launch, platform by platform
 - **Web interface**: full Family in the browser, and on phone or tablet the same settings as the mobile app
 
 ## [1.31.0]

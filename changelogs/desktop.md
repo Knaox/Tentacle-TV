@@ -21,6 +21,8 @@ et Linux reçoivent l'ensemble.
 - **Personne ne passe l'intro avant que tout le monde soit là** : le saut d'un passage attend que chaque membre soit prêt, puis se fait pour toute la séance
 - **Avancer vite reste synchronisé** : plusieurs appuis rapides sur « +30 s » arrivent tous, chez tout le monde
 - **Un chat vivant** : émojis, réactions et GIF à la chaîne, et « … est en train d'écrire »
+- **Le hors ligne appartient au compte connecté sur l'ordinateur** : un autre profil de la famille ne le voit pas, et sans connexion l'application revient d'elle-même à ce compte
+- **« Lecture » sur une série déjà vue** la reprend au premier épisode, au lieu de renvoyer à la fiche
 
 ### EN
 - **Watch Together with phones and tablets**: the mobile app now joins your sessions, groups and affinity mode included, perfectly in sync, even when one of you watches at reduced quality (server 1.31.1)
@@ -28,6 +30,8 @@ et Linux reçoivent l'ensemble.
 - **Nobody skips the intro before everyone is there**: skipping waits until every member is ready, then happens for the whole session
 - **Fast-forwarding stays in sync**: several quick "+30 s" presses all arrive, for everyone
 - **A lively chat**: emoji, reactions and GIFs in a row, and "… is typing"
+- **Offline belongs to the account signed in on the computer**: another family profile does not see it, and without a connection the app switches back to that account on its own
+- **"Play" on a series already watched** starts it again from the first episode, instead of opening its page
 
 ## [1.31.0]
 <!-- Bloc nu : les trois canaux partent de la 1.30.0. « Tendances actuelles » exige le serveur 1.31.0 (capacité reco.trending) : face à un serveur plus ancien, ni la rangée ni l'interrupteur. -->

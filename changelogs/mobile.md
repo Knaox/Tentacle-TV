@@ -13,9 +13,9 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Réglages** réorganisés : Compte ou Cet appareil
 - **Notifications** en plein écran, lues partout
 - **Image dans l'image** et diffusion vers la TV
-- Heure et batterie dans le lecteur
+- **Hors ligne** qui continue app fermée
+- Lecteur repensé, heure et batterie
 - Ouverture animée, erreurs claires
-- Sous-titres plus grands
 
 ### EN
 - **Watch Together** on phone and tablet: groups, affinity, chat
@@ -23,9 +23,9 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Settings** reorganized: Account or This device
 - **Notifications** full screen, read everywhere
 - **Picture-in-picture** and casting to a TV
-- Time and battery in the player
+- **Offline** that carries on with the app closed
+- Redesigned player, time and battery
 - Animated opening, clear error messages
-- Larger subtitles
 
 ## [ios-1.20.0]
 <!-- Bloc iOS (App Store Connect, 4000 caractères). Pas de diffusion Google Cast sur iOS : AirPlay. -->
@@ -33,13 +33,13 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Watch Together arrive sur l'iPhone et l'iPad** : créez une séance ou rejoignez celle d'un ami, en groupe ou en mode affinité, parfaitement synchronisés avec le web, l'ordinateur et les autres téléphones, même quand l'un d'entre vous regarde en qualité réduite. Le chat suit le rythme : émojis, réactions et GIF à volonté, et « … est en train d'écrire » (serveur 1.31.1)
 - **Une séance reste sur l'appareil qui l'a rejointe** : vos autres appareils ne se lancent plus tout seuls ; ils proposent seulement de rejoindre ici
 - **Personne ne passe l'intro avant que tout le monde soit là**
-- **« Qui regarde ? » dès l'ouverture** quand la famille compte plusieurs profils, avec le code PIN si le profil en a un ; votre choix est retenu. Puis, une seule fois : poser un code, choisir les rangées de l'accueil, choisir sa photo parmi 36 personnages ou la vôtre
+- **« Qui regarde ? » dès l'ouverture** quand la famille compte plusieurs profils, avec le code PIN si le profil en a un ; à chaque ouverture, sauf si vous cochez « Ne plus proposer au démarrage » sur cet appareil. Puis, une seule fois : poser un code, choisir les rangées de l'accueil, choisir sa photo parmi 36 personnages ou la vôtre
 - **Les invitations de la famille vous attendent à l'ouverture**, à accepter ou refuser d'un geste
 - **Réglages réorganisés** : Compte, Lecture et apparence, TV et appareils, Hors ligne, Notifications, Aide. Chaque réglage dit s'il suit votre compte sur tous vos appareils ou s'il reste sur cet appareil ; les réglages les plus fins restent sur l'app pour ordinateur
 - **Vos droits partout** : vous ne voyez que ce que vous avez le droit de regarder et de faire, et un changement fait sur l'ordinateur s'applique aussitôt
 - **Notifications repensées** : un centre qui s'ouvre en plein écran, et une notification lue ou balayée ici est lue partout
-- **Suivi en direct** sur l'écran verrouillé et la Dynamic Island pendant qu'un titre se prépare hors ligne, puis « Prêt à regarder »
-- **Lecteur** : l'heure et la batterie s'affichent avec les commandes, bouton image dans l'image, AirPlay, et « Vous regardez encore ? » qui met en pause comme sur l'ordinateur
+- **Garder hors ligne, même app fermée** : la préparation et le transfert continuent seuls, téléphone verrouillé compris (serveur 1.31.1), avec le suivi en direct et son pourcentage sur l'écran verrouillé et la Dynamic Island, puis « Prêt à regarder ». Le hors ligne appartient au compte connecté sur l'iPhone
+- **Lecteur repensé** : réglages, sous-titres et épisodes dans des panneaux clairs façon Apple, l'heure et la batterie avec les commandes, bouton image dans l'image, AirPlay, et « Vous regardez encore ? » qui met en pause comme sur l'ordinateur
 - **Une ouverture animée** : le logo s'assemble, appuie sur lecture et vous ouvre l'app
 - **Des erreurs claires** : chaque problème dit sa cause et ce que l'on peut faire
 - **Sous-titres plus grands par défaut**, nouvel en-tête de « Pour vous », boutons plus sobres
@@ -48,13 +48,13 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Watch Together comes to iPhone and iPad**: start a session or join a friend's, as a group or in affinity mode, perfectly in sync with the web, the computer and other phones, even when one of you watches at reduced quality. The chat keeps up: emoji, reactions and GIFs at will, and "… is typing" (server 1.31.1)
 - **A session stays on the device that joined it**: your other devices no longer start on their own; they only offer to join here
 - **Nobody skips the intro before everyone is there**
-- **"Who's watching?" at launch** when the family has several profiles, with the PIN if the profile has one; your choice is remembered. Then, just once: set a PIN, pick the home rows, choose your photo among 36 characters or your own
+- **"Who's watching?" at launch** when the family has several profiles, with the PIN if the profile has one; at every launch, unless you tick "Don't ask at startup" on this device. Then, just once: set a PIN, pick the home rows, choose your photo among 36 characters or your own
 - **Family invitations wait for you at launch**, to accept or decline in one tap
 - **Settings reorganized**: Account, Playback and appearance, TVs and devices, Offline, Notifications, Help. Each setting says whether it follows your account on all your devices or stays on this device; the finest settings stay in the computer app
 - **Your rights everywhere**: you only see what you are allowed to watch and do, and a change made on the computer applies at once
 - **Notifications redesigned**: a center that opens full screen, and a notification read or swiped away here is read everywhere
-- **Live tracking** on the Lock Screen and the Dynamic Island while a title gets ready offline, then "Ready to watch"
-- **Player**: time and battery show with the controls, picture-in-picture button, AirPlay, and "Still watching?" that pauses like on the computer
+- **Keep offline, even with the app closed**: preparing and transferring carry on by themselves, locked phone included (server 1.31.1), with live tracking and its percentage on the Lock Screen and the Dynamic Island, then "Ready to watch". Offline belongs to the account signed in on the iPhone
+- **Redesigned player**: settings, subtitles and episodes in clear Apple-style panels, time and battery with the controls, picture-in-picture button, AirPlay, and "Still watching?" that pauses like on the computer
 - **An animated opening**: the logo assembles, presses play and opens the app for you
 - **Clear errors**: every problem says its cause and what you can do
 - **Larger subtitles by default**, new "For you" header, calmer buttons
