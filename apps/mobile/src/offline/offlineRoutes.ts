@@ -30,3 +30,14 @@ export function isServerOnlyRoute(segments: readonly string[]): boolean {
   if (root === "settings") return second !== undefined && SERVER_ONLY_SETTINGS.has(second);
   return false;
 }
+
+/**
+ * Les routes du hors ligne du COMPTE de l'appareil (`offline-core` ›
+ * `offlineOwner`) : « Sur cet appareil » et ses fiches locales. Une session de
+ * profil n'y a rien — un lien (notification, ancien raccourci) l'y menant est
+ * renvoyé à l'accueil. La rubrique « Hors ligne » des réglages, elle, est tue
+ * par le catalogue (`personal`).
+ */
+export function isAccountOfflineRoute(segments: readonly string[]): boolean {
+  return segments[0] === "on-device";
+}

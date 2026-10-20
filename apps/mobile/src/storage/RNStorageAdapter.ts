@@ -35,6 +35,9 @@ const STORAGE_KEYS = [
   // « Wi-Fi seulement » vivent, eux, dans la base locale du hors ligne.
   "tentacle_offline_manual", "tentacle_data_saver", "tentacle_offline_notify_ready", "tentacle_offline_live_activity",
   "tentacle_offline_cellular_ack",
+  // Le dernier mot du serveur sur le droit `keepOffline` de chaque compte de
+  // l'appareil (`OFFLINE_KEEP_RIGHT_KEY`, offline-core) : hors ligne, il fait foi.
+  "tentacle_offline_keep_right",
   // Le lecteur — réglages D'APPAREIL (`player/engine/engineSettings.ts`) :
   // moteur vidéo, Atmos du système, sous-titres stylés, taille et position des
   // sous-titres, fréquence de l'écran calée sur le film. Un téléphone décode
