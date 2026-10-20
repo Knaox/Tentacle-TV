@@ -44,7 +44,7 @@ export default {
   },
   playback: {
     everywhere: "Sur tous vos appareils",
-    everywhereCaption: "Enregistrés dans votre compte : le bureau, la TV et ce téléphone les partagent.",
+    everywhereCaption: "Enregistrés dans votre compte : le bureau, la TV et cet appareil les partagent.",
     thisDevice: "Sur cet appareil",
     thisDeviceCaption: "Propres à cet appareil : son écran, sa puce et son réseau.",
     intros: "Intros et résumés",
@@ -78,8 +78,8 @@ export default {
     row: "Réglages avancés : sur l'app bureau",
     rowHint: "Délais, génériques, épisode suivant en détail…",
     title: "Réglages avancés",
-    body: "Les réglages fins de la lecture se font sur l'application de bureau (ou le site web) : délais avant chaque saut, génériques de fin des épisodes et des films, aperçus, fiche « à suivre » et affiche de fin, moment où l'épisode suivant est proposé, règles par bibliothèque. Ils sont enregistrés dans votre compte : ce téléphone les applique aussitôt.",
-    intro: "Ces réglages se font sur l'application de bureau (ou le site web). Ils sont enregistrés dans votre compte : ce téléphone les applique aussitôt.",
+    body: "Les réglages fins de la lecture se font sur l'application de bureau (ou le site web) : délais avant chaque saut, génériques de fin des épisodes et des films, aperçus, fiche « à suivre » et affiche de fin, moment où l'épisode suivant est proposé, règles par bibliothèque. Ils sont enregistrés dans votre compte : cet appareil les applique aussitôt.",
+    intro: "Ces réglages se font sur l'application de bureau (ou le site web). Ils sont enregistrés dans votre compte : cet appareil les applique aussitôt.",
     items: {
       skipDelays: "Délai avant chaque saut",
       skipCountdown: "Décompte visible avant un saut",

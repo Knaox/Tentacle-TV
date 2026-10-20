@@ -34,7 +34,7 @@ export default {
   },
   playback: {
     everywhere: "On all your devices",
-    everywhereCaption: "Saved in your account: the desktop app, the TV and this phone share them.",
+    everywhereCaption: "Saved in your account: the desktop app, the TV and this device share them.",
     thisDevice: "On this device",
     thisDeviceCaption: "Specific to this device: its screen, its chip and its network.",
     intros: "Intros and recaps",
@@ -68,8 +68,8 @@ export default {
     row: "Advanced settings: in the desktop app",
     rowHint: "Delays, credits, next episode in detail…",
     title: "Advanced settings",
-    body: "Fine-grained playback settings live in the desktop app (or the website): delay before each skip, end credits of episodes and films, previews, “up next” card and end poster, when the next episode is offered, per-library rules. They are saved in your account: this phone applies them right away.",
-    intro: "These settings live in the desktop app (or the website). They are saved in your account: this phone applies them right away.",
+    body: "Fine-grained playback settings live in the desktop app (or the website): delay before each skip, end credits of episodes and films, previews, “up next” card and end poster, when the next episode is offered, per-library rules. They are saved in your account: this device applies them right away.",
+    intro: "These settings live in the desktop app (or the website). They are saved in your account: this device applies them right away.",
     items: {
       skipDelays: "Delay before each skip",
       skipCountdown: "Countdown shown before a skip",
