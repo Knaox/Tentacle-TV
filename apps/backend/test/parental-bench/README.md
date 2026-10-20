@@ -39,8 +39,9 @@ chaque fuite nommée (code 1) ; le relevé complet va dans `$PARENTAL_RUN/report
 - **Les titres extérieurs** sont relus chez TMDB par un oracle indépendant du cœur
   (`externalOracle.ts`) : classification FR, sinon US, ≤ 6 ans, jamais `adult` ni sans
   classification.
-- **Chaque porte** (`doors.ts`) : session personnelle (web, bureau), TV jumelée par le vrai flux
-  d'appareil, « voir en tant que », session de profil d'un invité (TV).
+- **Chaque porte** (`doors.ts`) : session personnelle (web, bureau, mobile), TV jumelée par le vrai
+  flux d'appareil, « voir en tant que », session de profil d'un invité (TV), et le même invité
+  ouvert par « Qui regarde ? » du bureau ou du mobile (`PARENTAL_PICKER_PLATFORM`).
 - **Chaque chemin** : listes du proxy (vues, derniers ajouts, reprise, à suivre, recherche, par
   parent, par série, par ids), accès DIRECTS par id (fiche, PlaybackInfo, flux, manifeste,
   vignettes, semblables) — `probesLibrary.ts` ; Pour vous (pages, rangées, coldstart, personnes),
@@ -49,7 +50,10 @@ chaque fuite nommée (code 1) ; le relevé complet va dans `$PARENTAL_RUN/report
   `probesCore.ts` ; l'affinité de Watch Together dans un salon mixte (le compte restreint entre
   après les matchs de deux comptes libres : état, socket, cartes, lancement) — `probesAffinity.ts` ;
   Vigie (découverte, tendances, recherche, semblables, saga, filmographie, fiche,
-  saisons, pastilles, saisons manquantes, demandes) — `probesVigie.ts`.
+  saisons, pastilles, saisons manquantes, demandes) — `probesVigie.ts` ; les requêtes PROPRES au
+  mobile (lot du 20/10) : verdict des titres gardés hors ligne (`/api/library/visibility` — aucun
+  titre interdit jugé lisible, les permis le restent), droits lus par l'app (partage public,
+  Watch Together, lecture, accès, extensions), notes TMDB des épisodes — `probesMobile.ts`.
 
 ## Variables
 
@@ -59,6 +63,7 @@ chaque fuite nommée (code 1) ; le relevé complet va dans `$PARENTAL_RUN/report
 | `PARENTAL_VIGIE` | — | le dépôt de Vigie (construit : `server/index.mjs`) ; absent, Vigie n'est pas éprouvée |
 | `PARENTAL_RUN` | `$TMPDIR/tentacle-parental-bench` | dossier du passage (base, journal, `state.json` 0600, relevé) |
 | `PARENTAL_KEEP` | — | `1` : garder le Jellyfin jetable à la fin (sinon conteneur et volumes supprimés) |
+| `PARENTAL_PICKER_PLATFORM` | `desktop` | `mobile` : « Qui regarde ? » du mobile (serveur qui déclare `family.mobileProfiles`) |
 | `PARENTAL_PORT`, `PARENTAL_JF_PORT`, `PARENTAL_SEERR_PORT` | 3115, 8915, 8916 | |
 
 Sans clé TMDB, recommandations et titres extérieurs ne sont pas éprouvés (le banc le dit).

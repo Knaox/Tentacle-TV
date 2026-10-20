@@ -127,3 +127,17 @@ export async function guestProfileDoor(
   if (!token) throw new Error(`Session de profil de l'invité refusée (${session.status} ${session.text.slice(0, 200)})`);
   return { label: "Petit · profil d'invité (TV)", token, guestId };
 }
+
+/**
+ * « Qui regarde ? » du BUREAU ou du MOBILE (`/api/family/picker/sessions`, jeton
+ * PERSONNEL du propriétaire) : la session de profil de l'invité sur cet appareil.
+ * `PARENTAL_PICKER_PLATFORM` : `desktop` (défaut), `mobile` dès que le serveur
+ * déclare `family.mobileProfiles`.
+ */
+export async function pickerProfileDoor(base: string, ownerPersonal: string, guestId: string): Promise<Door> {
+  const platform = process.env.PARENTAL_PICKER_PLATFORM === "mobile" ? "mobile" : "desktop";
+  const picked = await call(base, ownerPersonal, "POST", "/api/family/picker/sessions", { platform, profileId: guestId, deviceName: `Banc ${platform}` });
+  const token = (picked.json as { token?: string } | null)?.token;
+  if (!token) throw new Error(`Session de profil (${platform}) refusée (${picked.status} ${picked.text.slice(0, 200)})`);
+  return { label: `Petit · profil d'invité (${platform === "mobile" ? "mobile" : "bureau"})`, token };
+}

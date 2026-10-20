@@ -9,7 +9,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { BLOCKED_TAG, RESTRICTED_MAX_RATING } from "./catalog";
-import { doorsFor, guestProfileDoor, pairedTvToken, personalToken, type Door } from "./doors";
+import { doorsFor, guestProfileDoor, pairedTvToken, personalToken, pickerProfileDoor, type Door } from "./doors";
 import { ExternalOracle } from "./externalOracle";
 import type { FakeSeerr } from "./fakeSeerr";
 import type { JellyfinBench } from "./jellyfinBench";
@@ -18,6 +18,7 @@ import { probeAffinity, probeAffinityPolicyChange } from "./probesAffinity";
 import { probeCore } from "./probesCore";
 import { probeRestrictionChange } from "./probesFreshness";
 import { probeLibrary } from "./probesLibrary";
+import { probeMobile } from "./probesMobile";
 import { probeVigie } from "./probesVigie";
 import { HISTORY_WITNESSES, seedJellyfinHistory } from "./historySeed";
 import { buildReference } from "./reference";
@@ -49,6 +50,8 @@ export async function runChecks(input: CheckInput): Promise<number> {
     await probeLibrary(ctx, door, jf.libraries);
     rec.section(`${jf.restricted.name} — porte « ${door.label} » : routes du cœur`);
     await probeCore(ctx, door, jf.free.id);
+    rec.section(`${jf.restricted.name} — porte « ${door.label} » : requêtes du mobile`);
+    await probeMobile(ctx, door);
     if (tentacle.vigie) {
       rec.section(`${jf.restricted.name} — porte « ${door.label} » : Vigie`);
       await probeVigie(ctx, door, seerr);
@@ -86,7 +89,8 @@ export async function runChecks(input: CheckInput): Promise<number> {
   }
 
   // Un invité de la Famille de `libre`, contrôle parental « 6 ans », ouvert sur une Apple TV.
-  const guest = await guestProfileDoor(tentacle.url, { id: jf.free.id, personal: await personalToken(tentacle.url, jf.free.name) }, adminPersonal, {
+  const freePersonal = await personalToken(tentacle.url, jf.free.name);
+  const guest = await guestProfileDoor(tentacle.url, { id: jf.free.id, personal: freePersonal }, adminPersonal, {
     maxParentalRating: RESTRICTED_MAX_RATING,
     blockUnratedItems: ["Movie", "Trailer", "Series", "Music", "Book", "LiveTvChannel", "LiveTvProgram", "ChannelContent", "Other"],
     blockedTags: [BLOCKED_TAG],
@@ -97,7 +101,15 @@ export async function runChecks(input: CheckInput): Promise<number> {
   rec.section(`invité « Petit » (≤ ${RESTRICTED_MAX_RATING}) — porte « ${guest.label} »`);
   await probeLibrary(guestCtx, guest, jf.libraries);
   await probeCore(guestCtx, guest, jf.free.id);
+  await probeMobile(guestCtx, guest);
   if (tentacle.vigie) await probeVigie(guestCtx, guest, seerr);
+  // Le même invité ouvert par « Qui regarde ? » sur le téléphone (ou l'ordinateur) de `libre`.
+  const picked = await pickerProfileDoor(tentacle.url, freePersonal, guest.guestId);
+  rec.section(`invité « Petit » (≤ ${RESTRICTED_MAX_RATING}) — porte « ${picked.label} »`);
+  await probeLibrary(guestCtx, picked, jf.libraries);
+  await probeCore(guestCtx, picked, jf.free.id);
+  await probeMobile(guestCtx, picked);
+  if (tentacle.vigie) await probeVigie(guestCtx, picked, seerr);
 
   // Témoin : le compte libre voit bien, par les mêmes routes, ce que l'autre ne voit pas.
   rec.section(`${jf.free.name} (témoin)`);
