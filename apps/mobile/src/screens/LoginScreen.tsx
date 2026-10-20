@@ -11,11 +11,8 @@ import { SubtleBackground } from "../components/auth/authStyles";
 import { AuthScreenFrame } from "../components/auth/AuthScreenFrame";
 import { AuthTextField } from "../components/auth/AuthTextField";
 import { AuthLink, AuthNotice, AuthPrimaryButton } from "../components/auth/AuthControls";
-import { problemFromError } from "@tentacle-tv/shared";
+import { signInErrorText, signInFailureOf } from "@/problems/signInMessage";
 import { FONT_FAMILY, useTheme } from "@/theme";
-
-/** Un refus que l'utilisateur peut corriger lui-même : il se dit tel quel. */
-class LoginRefusal extends Error {}
 
 export function LoginScreen() {
   const { t } = useTranslation("auth");
@@ -102,11 +99,8 @@ export function LoginScreen() {
         body: JSON.stringify({ username, password, ...loginIdentity(client) }),
       });
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 400) throw new LoginRefusal(t("invalidCredentials"));
-        if (response.status === 429) throw new LoginRefusal(t("errors:loginRateLimited"));
-        throw Object.assign(new Error(`HTTP ${response.status}`), { status: response.status });
-      }
+      // Le corps du refus dit POURQUOI (compte désactivé, bloqué, heures d'accès…).
+      if (!response.ok) throw await signInFailureOf(response);
 
       const data = await response.json();
       client.setAccessToken(data.AccessToken);
@@ -120,12 +114,8 @@ export function LoginScreen() {
 
       router.replace("/(tabs)");
     } catch (err) {
-      if (err instanceof LoginRefusal) setError(err.message);
-      else {
-        // Jamais « Network request failed » : la cause, en mots de spectateur.
-        const model = problemFromError(err, { target: "relayed", context: "signIn" });
-        setError([t(model.reasonKey), model.hintKey ? t(model.hintKey) : null].filter(Boolean).join(" "));
-      }
+      // Jamais « Network request failed » : la cause, en mots de spectateur.
+      setError(signInErrorText(err, t));
     } finally {
       setLoading(false);
     }
