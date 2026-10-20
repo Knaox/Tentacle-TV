@@ -22,6 +22,24 @@ famille de test : compat-user propriétaire, invités Léo — PIN — et Mia, s
 | Barre du haut du lecteur collée en haut (iPhone paysage) | ✘ ~60 pt sous le bord si la lecture a été lancée en portrait puis tournée | ✔ collée en haut après rotation en lecture | lecteur-apple e0b3b810e → 2f55f3f3f |
 | Feuilles du lecteur claires, façon Apple, sans voile noir | ✘ feuilles sombres, voile noir sur la vidéo (épisodes), panneaux sombres petits caractères | ✔ (2e passe, Liquid Glass allumé) plaques en verre lisibles, sans voile, commandes du centre effacées, panneau latéral entre les rangées en paysage ; 1re passe : panneaux TRANSPARENTS (corrigé) ; ✘ étagère des épisodes rognée à gauche (« pisodes ») en iPhone paysage — corrigé par lecteur-apple 2f55f3f3f, 3e passe NON faite | lecteur-apple |
 
+## Repasses de 12:30–12:55 (têtes : ouverture-v2 77a598b04, famille-demarrage 204c790bc, lecteur-apple 2f55f3f3f, wt-gel 2a17aa66e)
+
+- **Ouverture** : poulpe figé NON reproduit (compat-user2 → accueil ; compat-user avec session de profil périmée et liste en 401 →
+  accueil). Mesures Release : iPad **parfait** (0 image perdue, 17 ms, 6/6) ; iPhone : trou résiduel d'assemblage 20–26 perdues /
+  350–460 ms (contre 65–74 / 0,5–0,7 s avant), encre 1,5–1,65 s au plafond ; la `timeline` montre `hydrated` ~1 s après la première
+  image et un 2e montage (~0,4 s) qui tombe pile sur `intro:start` ([mesures-ouverture-release-apres4.txt](mesures-ouverture-release-apres4.txt)).
+- **Lecteur (3e passe)** : ✔ partout — portrait (barre sous l'îlot), paysage îlot à gauche et à droite (barre collée, « Épisodes »
+  entier, 1re vignette entière, panneaux à l'écart de l'îlot).
+- **Watch Together (wt-gel)** : ✔ tout le parcours sans gel, iPhone hôte + iPad invité : Regarder ensemble → feuille du groupe →
+  Inviter → la feuille revient ; sur l'iPad la galerie d'avatars puis la boîte des invitations s'ouvre d'elle-même ; Accepter ;
+  Trouver quoi regarder → Affinité chez les deux → match → lecture ensemble ; dans le lecteur, panneau du groupe → « Voir le groupe ».
+  ✘ **Damien : « sur iPad le mode Affinité n'est pas du tout adapté »** — mise en page du téléphone étirée
+  (`apres-wtgel-ipad-5-pile.jpg`), renvoyé à wt-gel.
+- **Famille, session de Mia** : pas de « Qui regarde ? » au démarrage depuis la session d'un profil — cause trouvée côté banc :
+  au simulateur `expo-secure-store` échoue (« A required entitlement isn't present », app de test non signée) → la réserve du compte
+  n'est jamais écrite → id du compte null. **Non vérifiable au simulateur** : à refaire sur un vrai iPhone (TestFlight).
+- **Galerie d'avatars pendant le lecteur** : ✔ elle paraît au retour à l'accueil (1cdbaa278).
+
 ## Défauts relevés et renvoyés (par session)
 
 - **famille-demarrage** : porte figée sur « rien » avant /api/config (corrigé 74cc8177a) ; galerie d'avatars ouverte
