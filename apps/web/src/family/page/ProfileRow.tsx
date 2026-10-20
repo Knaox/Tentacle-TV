@@ -16,6 +16,8 @@ import { useFamilyText } from "../useFamilyText";
 import { ResetPromptsButton } from "./ResetPromptsButton";
 import { RightToggle } from "./RightToggle";
 import { SMALL_BUTTON, SMALL_DANGER_BUTTON } from "./familyUi";
+import { useMirror } from "../../mirror/useFormFactor";
+import { ProfileRightsSummary } from "./ProfileRightsSummary";
 
 interface ProfileRowProps {
   profile: FamilyProfileDto;
@@ -69,14 +71,16 @@ export const ProfileRow = memo(function ProfileRow({
 }: ProfileRowProps) {
   const { t } = useTranslation(["familyWeb", "family", "avatars"]);
   const { formatDate } = useFamilyText();
+  // Fenêtre étroite : les droits se LISENT (résumé partagé), ils se règlent au bureau ou sur le web large.
+  const readOnly = useMirror();
   const isGuest = profile.kind === "guest";
   const suspended = isGuest && profile.guestRights?.suspended === true;
   // Mêmes droits que son PIN (`profileActions`, shared ; le serveur revérifie).
   const dressable = isGuest && actions.pin && onGuestPhoto !== undefined;
-  const parentalEditable = isGuest && actions.pin && onGuestParental !== undefined;
+  const parentalEditable = !readOnly && isGuest && actions.pin && onGuestParental !== undefined;
   const parent = isFamilyParent(profile);
-  const memberParental = roleActions.memberParental && onMemberParental !== undefined;
-  const librariesEditable = onLibraries !== undefined && ((isGuest && actions.pin) || roleActions.memberParental);
+  const memberParental = !readOnly && roleActions.memberParental && onMemberParental !== undefined;
+  const librariesEditable = !readOnly && onLibraries !== undefined && ((isGuest && actions.pin) || roleActions.memberParental);
   const parentalOn = isGuest ? hasGuestParental(guestParentalOf(profile)) : hasParentalControl(profile);
   const avatar = <FamilyAvatar userId={profile.userId} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={40} />;
 
@@ -177,7 +181,8 @@ export const ProfileRow = memo(function ProfileRow({
             )}
           </div>
         )}
-        {profile.kind === "member" && roleActions.role && onRoleChange && (
+        {readOnly && <ProfileRightsSummary profile={profile} />}
+        {!readOnly && profile.kind === "member" && roleActions.role && onRoleChange && (
           <RightToggle
             label={t("familyWeb:roles.parent")}
             hint={roleActions.roleBlockedByParental ? t("familyWeb:roles.parentBlocked") : t("familyWeb:roles.parentHint")}
@@ -187,7 +192,7 @@ export const ProfileRow = memo(function ProfileRow({
             onChange={(next) => onRoleChange(profile, next)}
           />
         )}
-        {profile.kind === "member" && !parent && (
+        {!readOnly && profile.kind === "member" && !parent && (
           <RightToggle
             label={t("family:rights.createGuests")}
             hint={t("family:rights.createGuestsHint")}
@@ -197,7 +202,7 @@ export const ProfileRow = memo(function ProfileRow({
             onChange={(next) => onRightChange(profile, next)}
           />
         )}
-        {isGuest && profile.guestRights !== undefined && (
+        {!readOnly && isGuest && profile.guestRights !== undefined && (
           <RightToggle
             label={t("family:rights.requestTitles")}
             // 1.30.0 : cochée, mais l'administration ne le permet plus — gardée, sans effet.
@@ -208,7 +213,7 @@ export const ProfileRow = memo(function ProfileRow({
             onChange={(next) => onRightChange(profile, next)}
           />
         )}
-        {suspended && actions.right !== "requestTitles" && (
+        {!readOnly && suspended && actions.right !== "requestTitles" && (
           <p className="mt-1 text-xs text-content-tertiary">
             {t("family:rights.requestTitles")} — {t("family:rights.requestTitlesSuspended")}
           </p>
