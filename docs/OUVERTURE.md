@@ -220,6 +220,22 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   sans attendre l'arrivée ; l'affiche de la Famille, les avatars et le code
   PIN conseillé l'attendent toujours (`useBootIntroLanded`) — un premier
   écran ne doit jamais être une modale native.
+- **Fluidité mesurée, pas regardée** (exigence de Damien, 21/10) : l'horloge note chaque image
+  sur le fil d'interface (shared `introFrames` : fréquence, images perdues, pire écart, par
+  phase) ; le mobile écrit le bilan de la dernière ouverture sous la clé AsyncStorage
+  `tentacle_debug_boot_intro_frames` (lisible en Release dans le conteneur de l'app), avec la
+  CHRONOLOGIE du démarrage (`markBoot` : début du JS, stockage relu, app prête, premier écran…)
+  et chaque trou de plus de 50 ms, à la même échelle. Constats (Release, simulateur 60 Hz) :
+  - le démarrage de l'app fige le fil d'interface (montage, ~0,5 s) : le poulpe reste sur
+    l'ENCRE, immobile, tant que l'app n'est pas prête et que 6 images régulières d'affilée
+    n'ont pas passé — 1,5 s au plus (shared `introStart`, jumeau worklet) ;
+  - le halo flouté du héros (`HeroAmbilightFilter`, <Filter> SVG rendu par CoreImage sur le fil
+    principal) attend l'arrivée (`useDeferredMount` + `useBootIntroLanded`) ;
+  - « Qui regarde ? » attend que l'accueil qu'il cache soit posé.
+  Résultat : 0 image perdue, pire écart 17 ms, iPhone et iPad, accueil et « Qui regarde ? »
+  (12/12 ; avant : 30 à 75 perdues, jusqu'à 0,7 s). Encre ≈ 1,2–1,4 s, lancement → arrivée
+  ≈ 4,8–5 s. 120 Hz : pas mesurable au simulateur (CADisableMinimumFrameDurationOnPhone posé,
+  Reanimated demande 120 i/s). Android : pas mesuré.
 - **Le son** : le MÊME code natif que la TV, compilé par le projet mobile —
   iOS par une référence du projet Xcode (`TentacleBootSound.m`, la ressource
   `boot-tadum.m4a`), Android par `sourceSets` (`com.tentacletv.boot`, et le
