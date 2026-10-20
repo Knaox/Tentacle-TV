@@ -72,6 +72,12 @@ export function subscribeStoredUser(listener: () => void): () => void {
   };
 }
 
+/** Le compte stocké a été réécrit hors d'une relecture (une bascule de profil de la Famille) :
+ *  ceux qui l'affichent — la puce de l'en-tête, déjà montée — le relisent. */
+export function notifyStoredUserChange(): void {
+  for (const listener of listeners) listener();
+}
+
 /** Horodatages que Jellyfin avance au fil des requêtes : ils ne font pas un profil neuf. */
 const VOLATILE_FIELDS = ["LastActivityDate", "LastLoginDate"] as const;
 

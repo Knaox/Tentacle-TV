@@ -1,5 +1,5 @@
 import { PROFILE_SESSION_KEY, accountTokenIn, accountUserIdIn, profileMarkerIn, type ActiveProfile, type KeyValueStore } from "@tentacle-tv/shared";
-import { subscribeStoredUser } from "../../auth/storedUser";
+import { notifyStoredUserChange, subscribeStoredUser } from "../../auth/storedUser";
 
 /**
  * Le cœur PUR de la session de profil du mobile (sans React ni React Native :
@@ -11,6 +11,8 @@ const listeners = new Set<() => void>();
 /** À appeler après toute bascule (`switchSession.ts`). */
 export function notifyProfileSessionChange(): void {
   for (const listener of listeners) listener();
+  // `tentacle_user` a changé avec la bascule : ceux qui lisent le compte stocké aussi (`useStoredUser`).
+  notifyStoredUserChange();
 }
 
 /** Abonnement aux bascules et aux réécritures de `tentacle_user`. */
