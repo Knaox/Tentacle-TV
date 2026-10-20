@@ -38,7 +38,9 @@ Branches suivies (une par worktree, `git worktree list`) :
 | A13 | Tablette (iPad) propre : mises en page larges, pas d'écran étiré ni coupé | relecture (largeurs bornées, `useWindowDimensions`) + capture iPad à l'essai d'ensemble | ☐ |
 | A14 | Lint, typecheck et tests des paquets touchés verts (vitest `--maxWorkers=2`) | `pnpm --filter <pkg> lint/typecheck/test` sur chaque branche | ☐ |
 | A15 | Comptes de test Knaoxtest / Knaoxtest2 seulement | relecture des bancs, fixtures, captures | ☐ |
-| A16 | Pas de conflit entre sessions sur les mêmes fichiers | croisement des `git diff --name-only` des 7 branches | ☐ |
+| A16 | Pas de conflit entre sessions sur les mêmes fichiers | croisement des `git diff --name-only` des branches | ☐ |
+| A17 | Mac saturé : tout travail lourd (xcodebuild, gradle, expo prebuild/run, pod install, build complet) passe par `~/.tentacle-lot-mob/heavy.sh <session> <commande>`, un seul à la fois ; vitest `--maxWorkers=1` | `~/.tentacle-lot-mob/journal.log` : chaque build lourd y a son START/END ; aucun `xcodebuild`/`gradle` hors verrou (`ps` aux passes de revue) | ☐ |
+| A18 | Appareils : wt-banc mène la matrice (`~/.tentacle-lot-mob/devices.txt`), deux appareils au plus en tout, builds réutilisés (`builds.txt`), jamais le simulateur de base | `xcrun simctl list devices booted` aux passes de revue + `devices.txt` | ☐ |
 
 ## B. Watch Together — socle partagé et serveur (wt-socle)
 
@@ -176,4 +178,4 @@ Branches suivies (une par worktree, `git worktree list`) :
 | api-client | vert | vert | 100 fichiers, 678 tests verts |
 | mobile | vert | vert (0 erreur, 7 avertissements préexistants) | 45 fichiers, 248 tests verts |
 
-Toute régression sur une branche se compare à cette base.
+Toute régression sur une branche se compare à cette base. Depuis la consigne de charge (02:55), les revues relisent les tests passés par les sessions et ne relancent que le paquet touché, par `heavy.sh`, `--maxWorkers=1`.
