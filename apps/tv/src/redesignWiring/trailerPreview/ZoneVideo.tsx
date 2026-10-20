@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { PREVIEW_ZONE_PLAYER_IDLE_MS, TV_TRAILER_PREVIEW_TIMING } from "@tentacle-tv/tv-core";
 import { useTrailerPreviewSound } from "../../lib/trailerPreviewSettings";
 import { PreviewVideo } from "./PreviewVideo";
+import { useAppActive } from "./previewDevice";
 import type { ZoneVideoWant } from "./ZoneSession";
 
 /**
@@ -15,15 +16,23 @@ import type { ZoneVideoWant } from "./ZoneSession";
  * Sans rien à jouer, il garde sa dernière source, EN PAUSE, invisible (la zone
  * l'efface) ; resté ainsi `PREVIEW_ZONE_PLAYER_IDLE_MS`, il se démonte — la
  * mémoire d'un lecteur en pause. Les avis du lecteur ne vont qu'à la session
- * qui le veut EN CE MOMENT : ceux d'une source quittée se perdent.
+ * qui le veut EN CE MOMENT : ceux d'une source quittée se perdent. L'app en
+ * arrière-plan, il n'existe pas.
  */
 export const ZoneVideo = memo(function ZoneVideo({ want }: { want: ZoneVideoWant | null }) {
   const sound = useTrailerPreviewSound();
   const [source, setSource] = useState<Pick<ZoneVideoWant, "uri" | "hls" | "startAt"> | null>(null);
   const current = useRef(want);
   current.current = want;
+  // L'app quittée (bouton TV, Menu à l'accueil, veille) : plus de lecteur, AUSSITÔT. Ni la sortie en
+  // fondu de la machine (une minuterie, que l'arrière-plan retient), ni la pause d'AVPlayer par
+  // react-native-video (sautée quand son « en lecture » est périmé, après un changement de source) ne
+  // suffisaient : l'aperçu continuait derrière l'écran d'accueil. Démonté, l'élément natif s'arrête.
+  // Au retour, la machine repart et redonne sa source (reprise à la position gardée).
+  const appActive = useAppActive();
+  if (!appActive && source !== null) setSource(null);
   // La source suit ce que veut la session ; sans vœu, la dernière reste.
-  if (want && (source?.uri !== want.uri || source.startAt !== want.startAt)) {
+  if (appActive && want && (source?.uri !== want.uri || source.startAt !== want.startAt)) {
     setSource({ uri: want.uri, hls: want.hls, startAt: want.startAt });
   }
   // Resté sans rien à jouer : démonté au bout du délai.
