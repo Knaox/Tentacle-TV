@@ -25,6 +25,12 @@ export interface IntroArt {
   FRONT_ARM_PATHS: readonly string[];
   BACK_ARM_PATHS: readonly string[];
   EYE_WHITES: readonly { cx: number; cy: number; r: number }[];
+  /**
+   * Le cadrage du logo entier (son centre, sa hauteur en unités), quand il
+   * n'est plus celui du dessin d'origine : l'écran adapté à l'appareil
+   * l'allonge (`fitIntroArt`). Absent : `LOGO_CENTER`, `LOGO_UNITS`.
+   */
+  LOGO_FRAME?: { cx: number; cy: number; height: number };
 }
 
 /** Le rectangle arrondi d'un écran (vitre, cadre, intérieur). */
@@ -55,6 +61,8 @@ export interface IntroGeometry {
   backArmBounds: readonly IntroBox[];
   /** Les centres des yeux (le clin d'œil s'y écrase). */
   eyes: readonly IntroPoint[];
+  /** Le cadrage du logo entier, chapeau compris : son centre et sa hauteur (unités). */
+  logo: { center: IntroPoint; units: number };
 }
 
 /** Le centre de l'encombrement du logo, chapeau compris (le cadrage de départ). */
@@ -116,5 +124,8 @@ export function introGeometry(art: IntroArt): IntroGeometry {
     frontArmPivots: frontArmBounds.map((box) => ({ x: box.x + box.width / 2, y: box.y + 8 })),
     backArmPivots: backArmBounds.map((box) => ({ x: box.x + box.width / 2, y: box.y + 6 })),
     eyes: art.EYE_WHITES.map((eye) => ({ x: eye.cx, y: eye.cy })),
+    logo: art.LOGO_FRAME
+      ? { center: { x: art.LOGO_FRAME.cx, y: art.LOGO_FRAME.cy }, units: art.LOGO_FRAME.height }
+      : { center: LOGO_CENTER, units: LOGO_UNITS },
   };
 }

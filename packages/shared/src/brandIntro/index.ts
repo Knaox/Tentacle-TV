@@ -10,6 +10,7 @@
 export * from "./easing";
 export * from "./introGeometry";
 export * from "./introCamera";
+export * from "./introFit";
 export * from "./introPose";
 export * from "./introTimeline";
 export * from "./introHold";
