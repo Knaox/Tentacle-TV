@@ -95,6 +95,21 @@ Branche `claude/wt-socle-686749` fusionnée dans le banc : serveur seul
 | Affinité : séance, match en direct, « Regarder ensemble » suivi, alignement | — | ✔ 2,1 s |
 | Départ commun : du lancement à < 100 ms | 5,4 s | 1,9 s |
 
+### Chat en rafale (wt-socle 7f894807a)
+
+| Vérification | Résultat |
+|---|---|
+| 25 réactions identiques en ~1,2 s | ✔ 25 envoyées, 25 reçues, UNE bulle « ×N » chez l'autre |
+| 12 messages d'affilée | ✔ 10 envoyés (plafond du client, avant l'envoi), 10 reçus |
+| « X est en train d'écrire… » chez l'autre | ✔ ~40 ms après la 1ʳᵉ frappe ; jamais chez soi |
+| … s'éteint à l'envoi / après la dernière frappe | ✔ 3 ms / 4,1 s |
+| Au repos, rien sur le réseau | ✔ 0 `wt:typing` |
+| GIF | non joués (Klipy hors d'atteinte du banc) |
+
+Défaut mineur (web, remonté) : une boîte « Invitations » reste ouverte
+par-dessus le lecteur quand l'invitation a été acceptée ailleurs ; l'invitation
+qu'elle montre est morte.
+
 Sous forte charge (construction Xcode en parallèle, Jellyfin dans colima
 transcodant sous le temps réel), le membre en transcodage est entré dans une
 boucle de « seek dur de recalage » toutes les 1,8 s : chaque saut se pose,
