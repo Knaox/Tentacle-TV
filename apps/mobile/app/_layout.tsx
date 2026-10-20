@@ -18,6 +18,7 @@ import { DatabaseMigrationHost } from "@/databaseMigration/DatabaseMigrationHost
 import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
 import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
+import { RightsLiveHost } from "@/rights/RightsLiveHost";
 import { AvatarInviteHost } from "@/avatars/invite/AvatarInviteHost";
 import { FamilyPinStartupHost } from "@/family/pinSuggest/FamilyPinStartupHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
@@ -194,6 +195,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
           lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
       {serverUrl && !showLoading ? <FamilyInvitationHost /> : null}
+      {/* Un droit changé au bureau s'applique ici sans redémarrage (`rights:changed`). */}
+      {serverUrl && !showLoading ? <RightsLiveHost /> : null}
       {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
           (l'affiche de la Famille d'abord), jamais sur le lecteur. */}
       {serverUrl && !showLoading ? <AvatarInviteHost /> : null}

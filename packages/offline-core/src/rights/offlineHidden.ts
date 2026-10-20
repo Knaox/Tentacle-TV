@@ -17,10 +17,11 @@
 
 import type { LibraryVisibilityDto } from "@tentacle-tv/shared";
 
-/** `{ [identité]: [titres cachés] }`, tel qu'on le range dans le stockage de l'appareil. */
+/** `{ [identité]: [titres cachés] }`, tel qu'on le range sur l'appareil. */
 export type OfflineHiddenMap = Readonly<Record<string, readonly string[]>>;
 
-export const OFFLINE_HIDDEN_STORAGE_KEY = "tentacle_offline_hidden";
+/** La clé dans la table `settings` de la base locale : elle survit à « Vider le cache », comme les titres. */
+export const OFFLINE_HIDDEN_SETTING_KEY = "rights_hidden";
 
 const norm = (id: string) => id.replace(/-/g, "").toLowerCase();
 

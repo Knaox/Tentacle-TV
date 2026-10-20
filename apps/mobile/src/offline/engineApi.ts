@@ -22,6 +22,8 @@ import {
   restartPlayback,
   scheduleOnPlayed,
   setAutoDelete,
+  settingGet,
+  settingSet,
   setPlaybackState,
   stateForItem,
   type DeleteOutcome,
@@ -37,6 +39,16 @@ import { clearNowPlaying, nowPlayingItemId } from "./nowPlaying";
 import { expoFileStore } from "./expoFileStore";
 import { localResourceUri } from "./localUri";
 import { offlineVolume } from "./volume";
+import { OFFLINE_HIDDEN_SETTING_KEY, configureOfflineHidden, filterHiddenOffline, isHiddenOffline } from "./rights/offlineHiddenStore";
+
+// Les titres que le serveur a jugés cachés à l'identité en session (droit retiré
+// depuis qu'ils ont été gardés) : tenus dans la base locale, retirés de la liste,
+// de l'état d'un titre et des sources de lecture ci-dessous.
+configureOfflineHidden({
+  read: () => settingGet(localDb(), OFFLINE_HIDDEN_SETTING_KEY),
+  write: (value) => settingSet(localDb(), OFFLINE_HIDDEN_SETTING_KEY, value),
+  changed: () => notifyOfflineChanged(),
+});
 
 /** Une entrée telle que les écrans la consomment (nom du cœur conservé en alias). */
 export type OfflineEntry = DownloadListEntry;
@@ -73,10 +85,11 @@ export function listOfflineEntries(userId: string): OfflineEntry[] {
       // Racine indisponible : les numéros manqueront, la liste sera là.
     }
   }
-  return listForUser(db, userId);
+  return filterHiddenOffline(userId, listForUser(db, userId));
 }
 
 export function offlineStateForItem(userId: string, itemId: string): OfflineEntry | null {
+  if (isHiddenOffline(userId, itemId)) return null;
   return stateForItem(localDb(), userId, itemId);
 }
 
@@ -144,6 +157,7 @@ export function offlineDiskInfo(): DiskInfo {
 
 /** Meilleur fichier local LISIBLE pour ce compte et ce titre — revérifié sur le disque. */
 export function localSourceForItem(userId: string, itemId: string): OfflineLocalSource | null {
+  if (isHiddenOffline(userId, itemId)) return null;
   const source = localSource(localDb(), offlineVolume(), userId, itemId, Date.now());
   if (source === null) return null;
   return {
