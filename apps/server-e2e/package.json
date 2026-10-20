@@ -8,7 +8,8 @@
     "test:e2e": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p wt-bench/tsconfig.json",
     "lint": "eslint src/ wt-bench/",
-    "bench:wt": "tsx wt-bench/run.ts"
+    "bench:wt": "tsx wt-bench/run.ts",
+    "bench:wt-profile": "tsx wt-bench/profile/profileBench.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

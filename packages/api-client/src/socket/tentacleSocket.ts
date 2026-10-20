@@ -190,13 +190,15 @@ function teardown(): void {
  *  Renvoie la fonction de release (idempotente). */
 export function acquireSocket(token?: string | null): () => void {
   if (token != null) {
-    const fresh = token !== authToken;
+    const previous = authToken;
     authToken = token;
-    // Ouverte mais pas encore authentifiée (ouverte sans jeton, cf. `auth_error`
-    // « timeout ») : le jeton part tout de suite, sans attendre que le serveur
-    // abandonne.
-    if (fresh && ws?.readyState === WebSocket.OPEN && status !== "open") {
-      ws.send(JSON.stringify({ type: "auth", token }));
+    // Ouverte SANS jeton (cf. `auth_error` « timeout ») : le jeton part tout de
+    // suite. Ouverte avec UN AUTRE (bascule de profil du mobile) : elle parlait
+    // au nom de l'ancienne session — Watch Together, présence — et le serveur
+    // ne ré-authentifie jamais une socket : elle se rouvre avec le nouveau.
+    if (token !== previous && ws) {
+      if (previous == null && ws.readyState === WebSocket.OPEN && status !== "open") ws.send(JSON.stringify({ type: "auth", token }));
+      else if (previous != null) teardown();
     }
   }
   refCount += 1;

@@ -15,6 +15,7 @@ import { consumeLaunchFollow } from "../affinity/affinityStore";
 import { WT_IDLE_CONTEXT, type WatchTogetherContextValue } from "../context";
 import { usePendingInvites } from "./usePendingInvites";
 import { handleWtServerMessage, type WtEventHelpers } from "./wtMessages";
+import { noteWtRoomHeld } from "./sessionSwitch";
 
 /**
  * Watch Together — la séance d'un appareil, sans interface : socket, état de
@@ -199,6 +200,10 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
   // Les réglages de lecture de l'HÔTE gouvernent la séance : posés tant qu'on
   // est dans un groupe sans en être l'hôte, retirés à la sortie. Le magasin
   // local n'est jamais écrit — les réglages du membre reviennent intacts.
+  // Une bascule de session (mobile) fait d'abord quitter la salle à l'ancienne (`sessionSwitch`).
+  const inRoom = enabled && !!state.room;
+  useEffect(() => { noteWtRoomHeld(inRoom); }, [inRoom]);
+
   const hostSettings = state.room?.hostPlaybackSettings ?? null;
   const selfIsHost = !!state.room && !!selfId && state.room.hostUserId === selfId;
   useEffect(() => {
