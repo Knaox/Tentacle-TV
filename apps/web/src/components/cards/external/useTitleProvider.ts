@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { useVisiblePlugins } from "../../../rights/useVisiblePlugins";
 import { useTitleState } from "@tentacle-tv/api-client";
 import { titleKey, titleProvider, type TitleKey, type TitleMediaType, type TitleProvider, type TitleState } from "@tentacle-tv/shared";
 
@@ -11,7 +11,7 @@ import { titleKey, titleProvider, type TitleKey, type TitleMediaType, type Title
  */
 export function useTitleProvider(): { provider: TitleProvider | null; lang: string } {
   const { i18n } = useTranslation();
-  const plugins = useActivePluginsMeta();
+  const plugins = useVisiblePlugins();
   const provider = useMemo(() => titleProvider(plugins), [plugins]);
   return { provider, lang: (i18n.language || "fr").slice(0, 2) };
 }
