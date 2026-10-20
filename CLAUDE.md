@@ -438,7 +438,7 @@ marque de héros. La mascotte n'y paraît qu'en ILLUSTRATION d'un état
 l'identité, c'est l'icône en couches, le Top Shelf et le violet → rose en
 touches. Détail : `docs/TV-REFONTE.md`, « Le logo dans l'app : aucun ».
 
-## Ouverture du démarrage (Apple TV, Android TV) — l'écran du poulpe EST le premier écran
+## Ouverture du démarrage (Apple TV, Android TV, mobile, iPad) — l'écran du poulpe EST le premier écran
 
 À CHAQUE démarrage à froid, d'elle-même (jamais l'attente d'un geste), QUEL QUE
 SOIT LE PREMIER ÉCRAN — accueil, « Qui regarde ? » et son PIN, jumelage, barre,
@@ -455,14 +455,21 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   (`TentacleBootSound.claimIntro`). Décidée au montage de l'app.
 - **Le pur est partagé** : `@tentacle-tv/shared/brandIntro` (courbes, géométrie
   TIRÉE des constantes générées du logo — jamais un SVG relu —, caméra,
-  chorégraphie, attente, partition du son) ; la synthèse Web Audio à part
-  (`…/brandIntro/synth`). Quand la jouer, quand partir : tv-core `boot/`.
+  chorégraphie, attente, partition du son, quand la jouer, quand partir ;
+  tv-core `boot/` le réexporte) ; la synthèse Web Audio à part
+  (`…/brandIntro/synth`). La VUE et le déroulé : `@tentacle-tv/brand-intro-native`,
+  les mêmes pour la TV et le mobile (chaque app passe son dégradé et sa découpe).
+- **Mobile, iPad** (`apps/mobile/src/bootIntro/`) : l'écran du poulpe prend le
+  rapport de la fenêtre (`fitIntroArt`), le logo de départ se cadre dans la zone
+  sûre ; réglages d'appareil « Animation d'ouverture » et « Son au démarrage » ;
+  les modales du lancement attendent `useBootIntroLanded()` ; le son natif est
+  celui de la TV, compilé tel quel par le projet mobile.
 - **Aiguillage par le trait `brandIntro`** (vrai sur tvOS et Android TV depuis
   le 2026-10-19 ; sans lui, `BootView`). Jamais avec le mouvement réduit. Elle ne renonce
   jamais ; le premier écran pas prêt (il le dit à la porte,
   `useReportScreenToBootIntro` : accueil, « Qui regarde ? ») : le poulpe attend
   sur son bouton lecture (8 s au plus).
-- **L'app est montée DANS l'écran** (`redesign/boot/IntroScreenPlane`) et n'en
+- **L'app est montée DANS l'écran** (`IntroScreenPlane`) et n'en
   change jamais d'arbre : à l'arrivée, identité et découpe retirée. Rien que des
   transformations et des opacités, horloge Reanimated sur le fil d'interface,
   tableaux de tv-core (`sampleIntro`), plaques 5× pour la plongée (`plateSwapAt`).
