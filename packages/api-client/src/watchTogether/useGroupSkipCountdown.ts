@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
-import type { SkipProposal } from "@tentacle-tv/api-client";
-import { TICKS_PER_MS, TICKS_PER_SECOND, wtPositionTicksAt, type SegmentType } from "@tentacle-tv/shared";
-import { useWatchTogether } from "./WatchTogetherProvider";
-import { isGroupSessionActive } from "./groupSyncShared";
+import type { SkipProposal } from "../playback/playbackOverlay.types";
+import { TICKS_PER_MS, TICKS_PER_SECOND, isGroupSessionActive, wtPositionTicksAt, type SegmentType } from "@tentacle-tv/shared";
+import { useWatchTogetherOrIdle } from "./context";
 
 /**
  * Le décompte de saut de la SALLE, tel que ce lecteur l'affiche : armé par
@@ -15,7 +14,7 @@ export function useGroupSkipCountdown(itemId: string | undefined): {
   groupSkip: { segmentType: SegmentType; countdownSeconds: number } | null;
   onSkipPropose: (proposal: SkipProposal) => void;
 } {
-  const { room, serverNow, send, isInGroup } = useWatchTogether();
+  const { room, serverNow, send, isInGroup } = useWatchTogetherOrIdle();
   const active = isGroupSessionActive(isInGroup, room, itemId) && room?.itemId === itemId;
   const pending = active ? room?.pendingSkip ?? null : null;
 

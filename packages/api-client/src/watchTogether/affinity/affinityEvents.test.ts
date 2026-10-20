@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WtAffinityMatchDto, WtAffinityMessage, WtAffinityStateDto } from "@tentacle-tv/shared";
 
 const closeRoomModal = vi.fn();
-vi.mock("../roomModalStore", () => ({ closeRoomModal: () => closeRoomModal() }));
 
 import { handleAffinityMessage, reconcileAffinity, type AffinityEventContext } from "./affinityEvents";
 import {
@@ -42,6 +41,7 @@ const ctx: AffinityEventContext = {
   toast: (_type, message) => toasts.push(message),
   t: (key, opts) => (opts ? `${key}:${JSON.stringify(opts)}` : key),
   isWatching: () => watching,
+  onDeckOpened: () => closeRoomModal(),
 };
 
 const notice = () => getAffinitySnapshot().notice?.text ?? null;

@@ -1,21 +1,17 @@
 import type { MutableRefObject } from "react";
 import {
-  TICKS_PER_SECOND, WT_SEEK_LOOKAHEAD_S,
-  type WsClientMessage, type WtRoomStateDto,
+  TICKS_PER_SECOND, WT_SEEK_LOOKAHEAD_S, pendingIntentUntil,
+  type PendingIntent, type PendingIntentKind, type WsClientMessage, type WtRoomStateDto,
 } from "@tentacle-tv/shared";
-import type { PlayerTransport } from "./playerTransport";
-import { getClockRttMs } from "@tentacle-tv/api-client";
-import { pendingIntentUntil, type PendingIntent, type PendingIntentKind } from "@tentacle-tv/shared";
-
-// Les règles pures vivent dans shared (`watchTogether/`) : ré-exportées pour
-// les imports d'avant.
-export { isBarrierParticipant, isGroupSessionActive, isWaitedForMe, updateSeekLatency } from "@tentacle-tv/shared";
+import type { PlayerTransport } from "../playerPort";
+import { getClockRttMs } from "../../socket/clockSync";
 
 /**
  * Watch Together — état et helpers partagés entre le moteur de sync
  * (useGroupSyncEngine : application d'états, intents) et la boucle de drift
  * (useGroupDriftLoop). Les refs sont créées par le moteur et passées en bundle
- * stable ; aucune logique React ici.
+ * stable ; aucune logique React ici. Les règles pures (qui attend qui, la
+ * reprise planifiée) vivent dans shared (`watchTogether/`).
  */
 
 /** Fenêtre pendant laquelle les événements player locaux sont considérés comme
@@ -23,7 +19,6 @@ export { isBarrierParticipant, isGroupSessionActive, isWaitedForMe, updateSeekLa
 export const APPLY_ECHO_WINDOW_MS = 400;
 /** Saut de position entre deux états serveur interprété comme un seek distant. */
 export const REMOTE_JUMP_THRESHOLD_S = 1;
-
 
 /** Un play() programmé pour l'instant de reprise de la salle. */
 export interface ScheduledPlay {
@@ -37,7 +32,6 @@ export interface ScheduledPlay {
    *  en lecture (la boucle de dérive reprend alors la main). */
   until: number;
 }
-
 
 /** Confirme au serveur que ce lecteur est posé sur la cible de la barrière. */
 export function sendBarrierReady(shared: GroupSyncSharedRefs, transport: PlayerTransport, barrierId: number): void {
@@ -79,7 +73,6 @@ export interface GroupSyncSharedRefs {
 export function seekLookaheadS(shared: GroupSyncSharedRefs): number {
   return shared.seekLatencySRef.current ?? WT_SEEK_LOOKAHEAD_S;
 }
-
 
 export function setPendingIntent(shared: GroupSyncSharedRefs, kind: PendingIntentKind, rttMs: number | null): void {
   shared.pendingIntentRef.current = { kind, until: pendingIntentUntil(Date.now(), rttMs) };

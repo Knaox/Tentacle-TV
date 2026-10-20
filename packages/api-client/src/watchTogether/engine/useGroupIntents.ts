@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
-import { getClockOffsetMs, getClockRttMs, getSocketStatus, onSocketStatus } from "@tentacle-tv/api-client";
+import { getClockOffsetMs, getClockRttMs } from "../../socket/clockSync";
+import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_LATE_START_SEEK_S, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
-  WT_SEEK_NOTIFY_DEBOUNCE_MS, wtPositionSecondsAt, type SegmentType,
+  WT_SEEK_NOTIFY_DEBOUNCE_MS, updatePlayLatency, wtPositionSecondsAt, type SegmentType,
 } from "@tentacle-tv/shared";
-import type { PlayerTransportRef } from "./playerTransport";
+import type { PlayerTransportRef } from "../playerPort";
 import {
   armEcho, clearPendingIntent, isApplying, seekLookaheadS, setPendingIntent, REMOTE_JUMP_THRESHOLD_S,
   type GroupSyncSharedRefs,
-} from "./groupSyncShared";
-import { updatePlayLatency } from "@tentacle-tv/shared";
-import { wtLog } from "./wtLog";
+} from "./groupSyncRefs";
+import { wtLog } from "../wtLog";
 
 /**
  * Watch Together — les intents locaux (observe & report) : le player agit, le

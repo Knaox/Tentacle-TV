@@ -7,10 +7,10 @@
  */
 
 import { useEffect, useRef } from "react";
-import { usePlaybackOverlay, type PlaybackOverlayResult } from "@tentacle-tv/api-client";
+import {
+  usePlaybackOverlay, type PlaybackOverlayResult, announceLocalRefusal, useIntroSkipRefusal, useGroupSkipCountdown,
+} from "@tentacle-tv/api-client";
 import type { ResolvedSegment } from "@tentacle-tv/shared";
-import { announceLocalRefusal, useIntroSkipRefusal } from "../watchTogether/introSkipRefusal";
-import { useGroupSkipCountdown } from "../watchTogether/useGroupSkipCountdown";
 
 interface UseWebSegmentsOverlayArgs {
   itemId: string;

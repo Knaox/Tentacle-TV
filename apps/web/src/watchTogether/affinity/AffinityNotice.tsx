@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Info } from "lucide-react";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
-import { clearAffinityNotice, useAffinityStore } from "./affinityStore";
+import { clearAffinityNotice, useAffinityStore } from "@tentacle-tv/api-client";
 
 /** Le temps d'un fait à l'écran (3 à 5 s, comme un toast). */
 const NOTICE_MS = 4_000;

@@ -1,5 +1,4 @@
 import type { WtAffinityMessage } from "@tentacle-tv/shared";
-import { closeRoomModal } from "../roomModalStore";
 import {
   applyAffinityPush, armLaunchFollow, closeAffinity, getAffinitySnapshot, openAffinity, showAffinityNotice,
   showAffinityView,
@@ -35,6 +34,9 @@ export interface AffinityEventContext {
   t: (key: string, options?: Record<string, unknown>) => string;
   /** Sur une page de lecture. */
   isWatching: () => boolean;
+  /** La séance vient de s'ouvrir chez moi, sur la pile : ce qui la couvrirait
+   *  se ferme (le web : la modale de salle). */
+  onDeckOpened?: () => void;
 }
 
 export function handleAffinityMessage(msg: WtAffinityMessage, ctx: AffinityEventContext): void {
@@ -74,7 +76,7 @@ export function handleAffinityMessage(msg: WtAffinityMessage, ctx: AffinityEvent
         return;
       }
       // Lancée chez l'un, ouverte chez tous : sur la pile, par-dessus la salle.
-      closeRoomModal();
+      ctx.onDeckOpened?.();
       if (wasOpen) showAffinityView("deck");
       else openAffinity("deck");
       showAffinityNotice(msg.originUserId, text);

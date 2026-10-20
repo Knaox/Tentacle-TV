@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { animate, AnimatePresence, motion, useDragControls, type MotionValue } from "framer-motion";
-import type { WtChatApi } from "./useWtChat";
+import type { WtChatApi } from "@tentacle-tv/api-client";
 import { ChatPanel } from "./ChatPanel";
 import { setChatResizeLock, useWatchOverlayState } from "./chatUiStore";
 import { useChatPanelSize } from "./useChatPanelSize";

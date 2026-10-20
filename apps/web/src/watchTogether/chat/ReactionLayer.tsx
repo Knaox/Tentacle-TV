@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { WtFloatingReaction } from "./chatState";
+import type { WtFloatingReaction } from "@tentacle-tv/api-client";
 
 /**
  * Watch Together — couche des réactions éphémères (emoji ou GIF) : chaque

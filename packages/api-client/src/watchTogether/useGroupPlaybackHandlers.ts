@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TICKS_PER_SECOND, wtPositionSecondsAt, type MediaItem } from "@tentacle-tv/shared";
-import { useWatchTogether } from "./WatchTogetherProvider";
-import { isGroupSessionActive } from "./groupSyncShared";
+import { TICKS_PER_SECOND, isGroupSessionActive, wtPositionSecondsAt, type MediaItem } from "@tentacle-tv/shared";
+import { useWatchTogetherOrIdle } from "./context";
 
 /**
  * Watch Together — adaptation de la session de lecture au mode groupe :
@@ -36,7 +35,7 @@ export function useGroupPlaybackHandlers({
   handlePreviousEpisode: () => void;
   setStartTicks: (ticks: number) => void;
 }) {
-  const { room, send, serverNow, isInGroup } = useWatchTogether();
+  const { room, send, serverNow, isInGroup } = useWatchTogetherOrIdle();
   // Une salle RÉELLE, pas seulement le drapeau : le shim webOS pose
   // `isInGroup: true` pour masquer deux boutons (le téléviseur n'a pas de
   // Watch Together), et le lecteur se croyait en séance — sans décompte de

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { WT_CHAT_MAX_LENGTH, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
-import type { WtChatApi } from "./useWtChat";
+import type { WtChatApi } from "@tentacle-tv/api-client";
 import { ReactionPicker, type PickerTab } from "./picker/ReactionPicker";
 
 /**

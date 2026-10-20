@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { getClockRttMs } from "@tentacle-tv/api-client";
+import { getClockRttMs } from "../../socket/clockSync";
 import { TICKS_PER_SECOND, WT_TICK_INTERVAL_MS } from "@tentacle-tv/shared";
-import type { PlayerTransportRef } from "./playerTransport";
-import type { GroupSyncSharedRefs } from "./groupSyncShared";
+import type { PlayerTransportRef } from "../playerPort";
+import type { GroupSyncSharedRefs } from "./groupSyncRefs";
 
 /**
  * Watch Together — la balise de ce lecteur, toutes les 5 s en séance : sa

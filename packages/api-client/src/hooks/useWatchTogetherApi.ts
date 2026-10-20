@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { WtInvitableUserDto, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
+import type { WtElsewhereDto, WtInvitableUserDto, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
 
 /**
  * Watch Together — accès REST au backend (composition du groupe).
@@ -26,10 +26,21 @@ export class WtApiError extends Error {
   }
 }
 
+/** Jeton posé par une plateforme sans localStorage (mobile) — sinon celui du
+ *  stockage du web/bureau, sinon le cookie. */
+let _token: string | null = null;
+
+export function setWatchTogetherToken(token: string | null) {
+  _token = token;
+}
+
+function currentToken(): string | null {
+  if (_token) return _token;
+  return typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null;
+}
+
 function getAuthHeader(): Record<string, string> {
-  const token = typeof localStorage !== "undefined"
-    ? localStorage.getItem("tentacle_token")
-    : null;
+  const token = currentToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -40,7 +51,7 @@ export async function wtFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
-  const hasToken = typeof localStorage !== "undefined" && !!localStorage.getItem("tentacle_token");
+  const hasToken = !!currentToken();
   const res = await fetch(`${_backendBase}${path}`, {
     ...init,
     headers,
@@ -104,6 +115,17 @@ export function respondToInvite(
 
 export function leaveGroup(): Promise<{ success: boolean }> {
   return wtFetch<{ success: boolean }>("/group/leave", { method: "POST", body: JSON.stringify({}) });
+}
+
+/** Adhésion par appareil (1.32.0) : la salle du compte, vue d'un appareil qui
+ *  n'y est pas lié — `null` s'il y est, ou s'il n'y a pas de salle. */
+export function fetchGroupElsewhere(): Promise<WtElsewhereDto | null> {
+  return wtFetch<WtElsewhereDto | null>("/group/elsewhere");
+}
+
+/** « Rejoindre ici » : AJOUTE cet appareil à la salle de son compte. */
+export function joinGroupHere(): Promise<WtRoomStateDto> {
+  return wtFetch<WtRoomStateDto>("/group/join-here", { method: "POST", body: JSON.stringify({}) });
 }
 
 export function kickGroupMember(userId: string): Promise<{ success: boolean }> {

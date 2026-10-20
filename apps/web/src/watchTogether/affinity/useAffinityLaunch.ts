@@ -1,8 +1,7 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { launchAffinityMatch, useResolvePlayTarget } from "@tentacle-tv/api-client";
+import { launchAffinityMatch, useResolvePlayTarget, closeAffinity } from "@tentacle-tv/api-client";
 import type { MediaItem, WtAffinityMatchDto } from "@tentacle-tv/shared";
-import { closeAffinity } from "./affinityStore";
 
 /**
  * « Regarder ensemble » : le serveur d'abord — il referme la séance chez

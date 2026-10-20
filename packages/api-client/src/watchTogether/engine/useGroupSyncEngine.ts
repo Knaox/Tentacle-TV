@@ -1,17 +1,18 @@
 import { useEffect, useRef } from "react";
-import { getClockRttMs, sampleClock, setClockSampling } from "@tentacle-tv/api-client";
+import { getClockRttMs } from "../../socket/clockSync";
+import { sampleClock, setClockSampling } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_CLOCK_BURST_COUNT, WT_CLOCK_BURST_SPACING_MS, WT_CLOCK_SAMPLE_MS,
-  WT_PROTOCOL_VERSION,
+  WT_PROTOCOL_VERSION, isGroupSessionActive,
 } from "@tentacle-tv/shared";
-import { useWatchTogether } from "./WatchTogetherProvider";
-import type { PlayerTransportRef } from "./playerTransport";
-import { cancelScheduledPlay, isGroupSessionActive, type GroupSyncSharedRefs } from "./groupSyncShared";
+import { useWatchTogetherOrIdle } from "../context";
+import type { PlayerTransportRef } from "../playerPort";
+import { cancelScheduledPlay, type GroupSyncSharedRefs } from "./groupSyncRefs";
 import { useGroupDriftLoop } from "./useGroupDriftLoop";
 import { useGroupRemoteApply } from "./useGroupRemoteApply";
 import { useGroupIntents } from "./useGroupIntents";
 import { useGroupTick } from "./useGroupTick";
-import { wtLog } from "./wtLog";
+import { wtLog } from "../wtLog";
 
 /**
  * Watch Together — moteur de synchronisation d'un player monté : la session
@@ -31,7 +32,7 @@ export function useGroupSyncEngine({
    *  connue : le `wt:setItem` est différé jusque-là. */
   claimStartSeconds?: number;
 }) {
-  const { room, send, serverNow, isInGroup, selfId } = useWatchTogether();
+  const { room, send, serverNow, isInGroup, selfId } = useWatchTogetherOrIdle();
   const active = isGroupSessionActive(isInGroup, room, itemId);
   const onGroupItem = active && room?.itemId === itemId;
 

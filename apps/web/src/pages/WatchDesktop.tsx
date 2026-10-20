@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { usePlaybackReporting } from "@tentacle-tv/api-client";
+import {
+  usePlaybackReporting, useGroupSyncEngine, useGroupIntroSkip, useGroupPlaybackHandlers, type PlayerTransport,
+} from "@tentacle-tv/api-client";
 import { formatEpisodeCode, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
@@ -18,12 +20,8 @@ import { playbackTitles } from "../hooks/watchSessionMedia";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { invoke } from "../desktop/bridge";
 import { useWatchSession } from "../hooks/useWatchSession";
-import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
-import { useGroupIntroSkip } from "../watchTogether/introSkipRefusal";
-import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import { JellyfinOutageNotice } from "../components/player/JellyfinOutageNotice";
-import type { PlayerTransport } from "../watchTogether/playerTransport";
 import { useApplyToSeries } from "../hooks/useApplyToSeries";
 import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
 import { wtLog } from "../watchTogether/wtLog";
