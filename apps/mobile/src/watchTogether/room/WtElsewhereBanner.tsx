@@ -7,12 +7,12 @@ import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@
 /**
  * Le compte est dans un groupe, mais par un AUTRE appareil : l'adhésion est
  * par appareil, celui-ci ignore la salle. Il n'en dit qu'une ligne —
- * « Groupe en cours sur un autre appareil » — et propose « Rejoindre ici »
- * (AJOUTE cet appareil, l'autre reste). Masquable pour la session.
+ * « Groupe de X en cours sur un autre appareil » — et propose « Rejoindre
+ * ici » (AJOUTE cet appareil, l'autre reste). Masquable pour la séance.
+ * Mêmes mots que le web (`ElsewhereNotice`).
  */
-export const WtElsewhereBanner = memo(function WtElsewhereBanner({ hostUsername, memberCount, onJoinHere, onDismiss }: {
+export const WtElsewhereBanner = memo(function WtElsewhereBanner({ hostUsername, onJoinHere, onDismiss }: {
   hostUsername: string;
-  memberCount: number;
   onJoinHere: () => Promise<void>;
   onDismiss: () => void;
 }) {
@@ -32,17 +32,17 @@ export const WtElsewhereBanner = memo(function WtElsewhereBanner({ hostUsername,
     <View style={s.banner} accessibilityRole="summary" testID="wt-elsewhere">
       <MonitorSmartphone size={22} color={theme.colors.brand.light} />
       <View style={s.text}>
-        <Text style={s.title}>{t("elsewhereNotice")}</Text>
-        <Text style={s.hint} numberOfLines={1}>
-          {failed ? t("errorGeneric") : t("elsewhereHint", { host: hostUsername, count: memberCount })}
+        <Text style={s.title} numberOfLines={2}>
+          {hostUsername ? t("elsewhereActiveWithHost", { name: hostUsername }) : t("elsewhereActive")}
         </Text>
+        {failed && <Text style={s.hint} accessibilityLiveRegion="polite">{t("elsewhereJoinFailed")}</Text>}
       </View>
       <Pressable onPress={join} disabled={joining} accessibilityRole="button" style={s.join} testID="wt-join-here">
         {joining
           ? <ActivityIndicator size="small" color={theme.colors.cta.brandFg} />
-          : <Text style={s.joinLabel}>{t("joinHere")}</Text>}
+          : <Text style={s.joinLabel}>{t("elsewhereJoinHere")}</Text>}
       </Pressable>
-      <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel={t("close")} hitSlop={8} style={s.close}>
+      <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel={t("elsewhereDismiss")} hitSlop={8} style={s.close}>
         <X size={18} color={theme.colors.text.tertiary} />
       </Pressable>
     </View>

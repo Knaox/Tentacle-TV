@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronRight, Clapperboard, HeartHandshake, Sparkles, Tv, X,
 import { WtApiError, fetchAffinityKinds, startAffinity, type AffinityKinds } from "@tentacle-tv/api-client";
 import type { WtAffinityKind, WtAffinityStateDto } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { AFFINITY_KINDS, KIND_LABEL_KEY } from "./affinityText";
+import { AFFINITY_KINDS, KIND_LABEL_KEY } from "@tentacle-tv/api-client";
 
 const ICONS: Record<WtAffinityKind, LucideIcon> = { movie: Clapperboard, series: Tv, anime: Sparkles };
 

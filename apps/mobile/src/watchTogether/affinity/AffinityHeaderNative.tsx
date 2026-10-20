@@ -5,7 +5,7 @@ import { HeartHandshake, LogOut } from "lucide-react-native";
 import type { WtAffinityStateDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { KIND_LABEL_KEY } from "./affinityText";
+import { KIND_LABEL_KEY } from "@tentacle-tv/api-client";
 
 /**
  * L'en-tête de la pile : le type et la taille de la pile (« Changer »),
