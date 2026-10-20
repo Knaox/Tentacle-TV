@@ -202,6 +202,11 @@ export const SERVER_CAPABILITIES = {
    *  par le serveur après 6 s sans nouvelle, jamais relayé à soi-même). Sans elle, rien n'est
    *  envoyé : un serveur d'avant répondrait `invalid` à chaque frappe. */
   "watchTogether.typing": "1.31.1",
+  /** L'ARRIVÉE dans une séance qui joue (20/10 soir) : « Rejoindre » d'un membre déjà dans le
+   *  groupe gèle la salle AU CLIC et l'attend (`POST /api/watch-together/group/arrive`), comme une
+   *  invitation acceptée. Sans elle, le lecteur s'ouvre comme avant (la salle se gèle à son
+   *  ouverture). Accepter, « Rejoindre ici » et les messages tirés des états n'en dépendent pas. */
+  "watchTogether.arrival": "1.31.1",
   /** « Qui regarde ? » sur le MOBILE (téléphone, tablette) : la plateforme `mobile` des routes
    *  `/api/family/picker/*` (`FAMILY_PICKER_PLATFORMS`) — profils de la famille, session de
    *  profil de l'appareil, PIN vérifié par le serveur, comme le bureau. Sans elle, le mobile
