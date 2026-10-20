@@ -3,6 +3,7 @@ import { Animated, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { IndexBrowser } from "@/components/player/episodeBrowser/index/IndexBrowser";
+import { OpenShelfBrowser } from "@/components/player/episodeBrowser/open/OpenShelfBrowser";
 import { PanelBrowser } from "@/components/player/episodeBrowser/panel/PanelBrowser";
 import { ShelfBrowser } from "@/components/player/episodeBrowser/shelf/ShelfBrowser";
 import type { EpisodeBrowserProps } from "@/components/player/episodeBrowser/types";
@@ -16,6 +17,7 @@ const DEFAULT_IMAGE_BASE = "http://127.0.0.1:18710";
 
 const BROWSERS: Record<EpisodeBrowserStyle, { view: ComponentType<EpisodeBrowserProps>; chrome: BenchChrome }> = {
   shelf: { view: ShelfBrowser, chrome: "top" },
+  open: { view: OpenShelfBrowser, chrome: "top" },
   panel: { view: PanelBrowser, chrome: "none" },
   index: { view: IndexBrowser, chrome: "none" },
 };
@@ -27,7 +29,7 @@ const ORIENTATION = { landscape: "landscape", portrait: "portrait_up" } as const
  * le lecteur figé en pause sur une image, sa liste des épisodes ouverte dans
  * la mise en page voulue, sur une vraie série (`benchSeries`).
  *
- * `tentacle://dev/episodes?v=shelf|panel|index&frame=light|dark
+ * `tentacle://dev/episodes?v=shelf|open|panel|index&frame=light|dark
  *   &orient=landscape|portrait&open=0&loading=1&img=<base des images>`
  */
 export function EpisodeBenchScreen() {
@@ -47,7 +49,7 @@ interface BenchParams {
 }
 
 function BenchBody({ params }: { params: BenchParams }) {
-  const style: EpisodeBrowserStyle = params.v === "panel" || params.v === "index" ? params.v : "shelf";
+  const style: EpisodeBrowserStyle = params.v === "open" || params.v === "panel" || params.v === "index" ? params.v : "shelf";
   const frame: BenchFrame = params.frame === "light" ? "light" : "dark";
   const base = params.img ?? DEFAULT_IMAGE_BASE;
   const scenario = useMemo(() => benchScenario(frame), [frame]);

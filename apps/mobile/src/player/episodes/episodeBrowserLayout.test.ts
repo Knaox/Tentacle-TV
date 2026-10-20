@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { indexGeometry, panelGeometry, shelfContentHeight, shelfGeometry, videoRect, type BrowserScreen } from "./episodeBrowserLayout";
+import { indexGeometry, openCardAt, openCardPlace, panelGeometry, shelfContentHeight, shelfGeometry, videoRect, type BrowserScreen } from "./episodeBrowserLayout";
 
 const NONE = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -84,5 +84,28 @@ describe("indexGeometry", () => {
     expect(geo.padding.left).toBeGreaterThanOrEqual(62);
     expect(geo.padding.right).toBeGreaterThanOrEqual(62);
     expect(indexGeometry({ ...PHONE_PORTRAIT, safe: NONE }).padding.bottom).toBeGreaterThan(0);
+  });
+});
+
+describe("la carte qui s'ouvre", () => {
+  const STEP = 132;
+  it("posée au retrait, la carte est ouverte et ses suivantes poussées de la différence", () => {
+    expect(openCardPlace(3, 3, STEP, 120, 200)).toEqual({ left: 3 * STEP, width: 200, scale: 1 });
+    expect(openCardPlace(4, 3, STEP, 120, 200).left).toBe(4 * STEP + 80);
+    expect(openCardPlace(2, 3, STEP, 120, 200).width).toBeCloseTo(120);
+  });
+
+  it("à mi-chemin, deux cartes à moitié ouvertes, jamais l'une sur l'autre", () => {
+    const a = openCardPlace(3, 3.5, STEP, 120, 200);
+    const b = openCardPlace(4, 3.5, STEP, 120, 200);
+    expect(a.width).toBeCloseTo(160);
+    expect(b.left).toBeGreaterThanOrEqual(a.left + a.width);
+  });
+
+  it("le toucher rend la carte sous le doigt, rien entre deux", () => {
+    expect(openCardAt(3 * STEP + 150, 3, STEP, 120, 200, 12)).toBe(3);
+    expect(openCardAt(3 * STEP + 205, 3, STEP, 120, 200, 12)).toBeNull();
+    expect(openCardAt(4 * STEP + 80 + 10, 3, STEP, 120, 200, 12)).toBe(4);
+    expect(openCardAt(99 * STEP, 3, STEP, 120, 200, 12)).toBeNull();
   });
 });

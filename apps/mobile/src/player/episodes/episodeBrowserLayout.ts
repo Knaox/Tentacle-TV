@@ -8,12 +8,14 @@ import type { SafeInsets } from "../chrome/chromeInsets";
  *
  * - `shelf` (l'étagère) : des cartes 16:9 qui défilent de côté, en bas ; sous
  *   l'image quand elle y tient (portrait), sur l'image sinon (paysage).
+ * - `open` (la carte qui s'ouvre) : la même place, mais la carte posée au
+ *   retrait grandit, ses détails dessous — la rangée qui s'ouvre de la TV.
  * - `panel` (le panneau) : une colonne de verre à droite (paysage) ; debout,
  *   une feuille sous l'image, que l'on remonte en haut de l'écran.
  * - `index` (le sommaire) : tout l'écran, les saisons en colonne à gauche
  *   (paysage) ou en bande (portrait), les épisodes en liste numérotée.
  */
-export type EpisodeBrowserStyle = "shelf" | "panel" | "index";
+export type EpisodeBrowserStyle = "shelf" | "open" | "panel" | "index";
 
 export interface BrowserScreen {
   width: number;
@@ -74,10 +76,11 @@ export function shelfContentHeight(isTablet: boolean, thumbHeight: number, overv
 export function shelfGeometry(screen: BrowserScreen, video: Rect): ShelfGeometry {
   const { width, height, isTablet, edges, safe } = screen;
   const landscape = width > height;
-  const inset = Math.max(isTablet ? 32 : 20, landscape ? Math.max(edges.left, edges.right) : 0);
+  // Couché, le repos de l'étagère s'écarte de l'îlot (marge sûre) ; le défilement passe dessous.
+  const inset = Math.max(isTablet ? 32 : 20, landscape ? Math.max(edges.left, edges.right, safe.left, safe.right) : 0);
   const bottom = Math.max(edges.bottom, safe.bottom) + (isTablet ? 22 : 12);
   const cardWidth = isTablet
-    ? (landscape ? 296 : 280)
+    ? (landscape ? 296 : 264)
     : (landscape ? 196 : Math.round((width - inset) * 0.62));
   const thumbHeight = Math.round((cardWidth * 9) / 16);
 
@@ -95,6 +98,94 @@ export function shelfGeometry(screen: BrowserScreen, video: Rect): ShelfGeometry
   const overviewLines: 0 | 2 = isTablet ? 2 : 0;
   const content = shelfContentHeight(isTablet, thumbHeight, overviewLines);
   return { top: height - bottom - content, inset, bottom, cardWidth, thumbHeight, overviewLines, belowVideo: false };
+}
+
+/* ------------------------------------------------------- carte qui s'ouvre */
+
+export interface OpenShelfGeometry {
+  top: number;
+  inset: number;
+  bottom: number;
+  /** La carte ouverte (16:9). */
+  openWidth: number;
+  openHeight: number;
+  /** Une carte au repos : la même image, plus petite. */
+  restWidth: number;
+  /** La hauteur réservée aux détails de la carte ouverte (rien ne se remet en page). */
+  detailsHeight: number;
+  overviewLines: 1 | 2;
+  belowVideo: boolean;
+}
+
+const OPEN_TABS = { phone: 40, tablet: 46 } as const;
+const OPEN_GAPS = { tabs: 12, details: 12 } as const;
+
+/** Les détails sous la carte ouverte : surtitre, titre sur une ligne, résumé. */
+export function openDetailsHeight(isTablet: boolean, overviewLines: 1 | 2): number {
+  const line = isTablet ? 19 : 17;
+  return (isTablet ? 18 : 16) + 4 + (isTablet ? 24 : 21) + 6 + line * overviewLines;
+}
+
+export function openShelfGeometry(screen: BrowserScreen, video: Rect): OpenShelfGeometry {
+  const { width, height, isTablet, edges, safe } = screen;
+  const landscape = width > height;
+  const inset = Math.max(isTablet ? 32 : 20, landscape ? Math.max(edges.left, edges.right, safe.left, safe.right) : 0);
+  const bottom = Math.max(edges.bottom, safe.bottom) + (isTablet ? 22 : 12);
+  const openWidth = isTablet ? (landscape ? 340 : 300) : (landscape ? 200 : 220);
+  const openHeight = Math.round((openWidth * 9) / 16);
+  const restWidth = Math.round(openWidth * 0.6);
+  const tabs = isTablet ? OPEN_TABS.tablet : OPEN_TABS.phone;
+  const content = (lines: 1 | 2) => tabs + OPEN_GAPS.tabs + openHeight + OPEN_GAPS.details + openDetailsHeight(isTablet, lines);
+
+  if (!landscape) {
+    const room = height - bottom - (video.y + video.height);
+    for (const lines of [2, 1] as const) {
+      if (content(lines) <= room - 8) {
+        const gap = Math.min(28, Math.max(8, Math.round((room - content(lines)) / 2)));
+        return { top: video.y + video.height + gap, inset, bottom, openWidth, openHeight, restWidth, detailsHeight: openDetailsHeight(isTablet, lines), overviewLines: lines, belowVideo: true };
+      }
+    }
+  }
+  const lines: 1 | 2 = isTablet ? 2 : 1;
+  return {
+    top: height - bottom - content(lines), inset, bottom, openWidth, openHeight, restWidth,
+    detailsHeight: openDetailsHeight(isTablet, lines), overviewLines: lines, belowVideo: false,
+  };
+}
+
+export interface OpenCardPlace {
+  /** Le bord gauche de la carte, dans le contenu de la rangée. */
+  left: number;
+  /** Sa largeur à l'écran. */
+  width: number;
+  /** Son échelle, de `restWidth / openWidth` (au repos) à 1 (ouverte). */
+  scale: number;
+}
+
+/**
+ * Où est la carte `index` quand la rangée a défilé de `progress` pas : la
+ * carte posée au retrait s'ouvre, ses voisines suivantes glissent d'autant —
+ * la règle de la rangée qui s'ouvre de la TV, en continu sous le doigt. Une
+ * fonction de travail (worklet) : la même sert au rendu, sur le fil
+ * d'interface, et au toucher.
+ */
+export function openCardPlace(index: number, progress: number, step: number, restWidth: number, openWidth: number): OpenCardPlace {
+  "worklet";
+  const rest = restWidth / openWidth;
+  const openness = Math.max(0, 1 - Math.abs(index - progress));
+  const scale = rest + (1 - rest) * openness;
+  const pushed = Math.min(1, Math.max(0, index - progress));
+  return { left: index * step + (openWidth - restWidth) * pushed, width: scale * openWidth, scale };
+}
+
+/** La carte sous le doigt (`x` dans le contenu de la rangée), ou `null` entre deux cartes. */
+export function openCardAt(x: number, progress: number, step: number, restWidth: number, openWidth: number, count: number): number | null {
+  for (let index = Math.max(0, Math.floor(progress) - 1); index < count; index++) {
+    const place = openCardPlace(index, progress, step, restWidth, openWidth);
+    if (x < place.left) return null;
+    if (x <= place.left + place.width) return index;
+  }
+  return null;
 }
 
 /* ---------------------------------------------------------------- panneau */
