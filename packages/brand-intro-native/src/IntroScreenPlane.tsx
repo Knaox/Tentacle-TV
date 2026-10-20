@@ -105,21 +105,27 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
               />
             </Animated.View>
           )}
+          {/* Les deux styles gardent la MÊME forme (autant de cases, l'animé à la même place) dans
+              les deux états : React compare un tableau de styles case par case, et Reanimated ne lui
+              donne que les valeurs du PREMIER rendu (iris 0,004, contre-iris ×250). Un tableau qui
+              raccourcit à l'arrivée renvoyait ce ×250 au natif — et Reanimated, déjà à 1, ne le
+              corrigeait plus : l'app restait agrandie 250 fois, écran noir (Android TV, 20/10).
+              Arrivé, l'identité est donc AUSSI posée par React (`LANDED_IDENTITY`, en dernier). */}
           <Animated.View
             style={[
-              landed
-                ? [StyleSheet.absoluteFill, styles.open]
-                : [styles.iris, { left: playAt.x - radius - clip.left, top: playAt.y - radius - clip.top, width: radius * 2, height: radius * 2, borderRadius: radius }],
+              landed ? styles.irisLanded : styles.iris,
+              landed ? null : { left: playAt.x - radius - clip.left, top: playAt.y - radius - clip.top, width: radius * 2, height: radius * 2, borderRadius: radius },
               irisStyle,
+              landed ? LANDED_IDENTITY : null,
             ]}
           >
             <Animated.View
               style={[
-                landed
-                  ? StyleSheet.absoluteFill
-                  : [styles.counter, { left: radius - playAt.x, top: radius - playAt.y, width: viewport.width, height: viewport.height }],
+                landed ? StyleSheet.absoluteFill : styles.counter,
+                landed ? null : { left: radius - playAt.x, top: radius - playAt.y, width: viewport.width, height: viewport.height },
                 { transformOrigin: [playAt.x, playAt.y, 0] },
                 counterStyle,
+                landed ? LANDED_IDENTITY : null,
               ]}
             >
               {landed ? null : (
@@ -145,9 +151,12 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   );
 });
 
+/** L'arrivée, dite par React lui-même : aucune valeur du premier rendu ne peut plus revenir. */
+const LANDED_IDENTITY = { transform: [{ scale: 1 }] };
+
 const styles = StyleSheet.create({
   clip: { position: "absolute" },
-  open: { overflow: "visible", borderRadius: 0 },
+  irisLanded: { ...StyleSheet.absoluteFillObject, overflow: "visible", borderRadius: 0 },
   iris: { position: "absolute", overflow: "hidden" },
   counter: { position: "absolute" },
   bars: { position: "absolute" },
