@@ -96,8 +96,20 @@ export default {
   groupPlaybackActive: "Lecture de groupe en cours",
   rejoin: "Rejoindre",
 
+  // Adhésion par appareil : la salle du compte, vue d'un appareil qui n'y est pas
+  elsewhereActive: "Groupe en cours sur un autre appareil",
+  elsewhereActiveWithHost: "Groupe de {{name}} en cours sur un autre appareil",
+  elsewhereJoinHere: "Rejoindre ici",
+  elsewhereDismiss: "Masquer",
+  elsewhereJoinFailed: "Impossible de rejoindre le groupe depuis cet appareil",
+
   // Chat de groupe
   chatTitle: "Chat du groupe",
+  // « Est en train d'écrire » (le pluriel _other se lit sur count)
+  typingOne: "{{name}} est en train d'écrire…",
+  typingTwo: "{{a}} et {{b}} écrivent…",
+  typingMany_one: "{{name}} et {{count}} autre personne écrivent…",
+  typingMany_other: "{{name}} et {{count}} autres personnes écrivent…",
   chatPlaceholder: "Écrire un message…",
   chatSend: "Envoyer",
   chatEmpty: "Aucun message pour l'instant. Dites bonjour !",

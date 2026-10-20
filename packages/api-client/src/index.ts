@@ -13,6 +13,7 @@ export * from "./exports/support"; // Tickets de support
 export * from "./exports/notifications"; // Notifications et push
 export * from "./exports/realtime"; // Socket partagé, canal de session, télécommande
 export * from "./exports/social"; // Watch Together (REST) et partage de liste
+export * from "./exports/watchTogether"; // Watch Together partagé : séance, moteur, chat, affinité
 export * from "./exports/pairing"; // Jumelage d'appareils, local et relais
 export * from "./exports/ratings"; // Notes et comptes externes
 export * from "./exports/reco"; // Recommandations

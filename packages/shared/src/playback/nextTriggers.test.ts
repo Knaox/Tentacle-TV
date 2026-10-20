@@ -125,6 +125,10 @@ describe("autoNextEligible — un candidat de saut ou un refus ferme la fenêtre
     expect(autoNextEligible({ ...base, segments: [outro(1_200_000, RUNTIME)] })).toBe(true);
   });
 
+  it("Watch Together, salle pas « tous prêts » : la fenêtre reste fermée", () => {
+    expect(autoNextEligible({ ...base, segments: [outro(1_200_000, RUNTIME)], groupHold: true })).toBe(false);
+  });
+
   it("au générique final, plus de candidat : la fenêtre rouvre", () => {
     const withFinal = [outro(1_200_000, 1_380_000, true), outro(1_410_000, RUNTIME)];
     expect(autoNextEligible({ ...base, segments: withFinal, positionMs: 1_415_000 })).toBe(true);

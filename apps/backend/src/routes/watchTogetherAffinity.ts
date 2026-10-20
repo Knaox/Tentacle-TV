@@ -5,6 +5,7 @@ import {
   affinityCards, affinityKinds, currentAffinity, dismissAffinityMatch, joinAffinity, launchAffinity, quitAffinity,
   startAffinity, undoAffinityVote, voteAffinity, type AffinityResult,
 } from "../services/watchTogether/affinity/affinityService";
+import { refuseUnboundDevice } from "../services/watchTogether/requestDevice";
 
 /**
  * Watch Together — l'AFFINITÉ, le swipe de groupe (REST, même préfixe
@@ -46,6 +47,8 @@ function reply<T>(res: FastifyReply, result: AffinityResult<T>): T | FastifyRepl
 
 export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
+  // Adhésion par appareil (1.32.0) : un autre appareil du compte n'y touche pas.
+  app.addHook("preHandler", refuseUnboundDevice);
 
   /** GET /affinity — la séance de la salle (reprise au montage), ou null. */
   app.get("/affinity", async (request) => ({ state: await currentAffinity(user(request).userId) }));

@@ -48,7 +48,7 @@ function rawSession(overrides: Record<string, unknown> = {}): Record<string, unk
 function member(userId: string, username: string): RoomMember {
   return {
     userId, username, hasAvatar: false, inPlayback: true, buffering: false, playbackError: false, joinedAt: 0,
-    graceTimer: null, protocolVersion: 2, rttMs: null, driftMs: 40, playbackSocket: null,
+    graceTimer: null, protocolVersion: 2, rttMs: null, driftMs: 40, playbackSocket: null, devices: new Map(),
   };
 }
 

@@ -1,4 +1,4 @@
-import { isUserOnline } from "../wsManager";
+import { isMemberOnline } from "./memberDevices";
 import {
   TICKS_PER_MS, WT_DEFAULT_RTT_MS, WT_SCHEDULE_MARGIN_MS, WT_SCHEDULE_MAX_MS, WT_SCHEDULE_MIN_MS,
   wtPositionTicksAt,
@@ -64,7 +64,7 @@ export function memberRtt(member: RoomMember): number {
 export function computeLead(room: Room): number {
   let slowest = 0;
   for (const m of room.members.values()) {
-    if (!m.inPlayback || !isUserOnline(m.userId)) continue;
+    if (!m.inPlayback || !isMemberOnline(m)) continue;
     slowest = Math.max(slowest, memberRtt(m));
   }
   if (slowest === 0) slowest = WT_DEFAULT_RTT_MS;

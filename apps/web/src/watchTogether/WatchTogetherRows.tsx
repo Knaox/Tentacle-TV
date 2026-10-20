@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { WtInviteDto, WtMemberDto } from "@tentacle-tv/shared";
+import { wtMemberStatus, wtMemberStatusLabelKey, type WtInviteDto, type WtMemberDto, type WtMemberStatus } from "@tentacle-tv/shared";
 import { getBackendBase } from "../lib/backendBase";
 
 /** Watch Together — briques partagées : avatar, ligne membre, ligne invitation. */
@@ -18,7 +18,8 @@ export function avatarUrl(userId: string): string {
   return `${base}/api/jellyfin/Users/${userId}/Images/Primary?maxWidth=64&quality=90`;
 }
 
-export type WtAvatarStatus = "none" | "watching" | "buffering" | "error" | "offline";
+/** L'anneau de l'avatar : l'état du membre (règle partagée, `wtMemberStatus`). */
+export type WtAvatarStatus = WtMemberStatus;
 
 const STATUS_RING: Record<Exclude<WtAvatarStatus, "none">, string> = {
   watching: "#34d399",
@@ -82,13 +83,8 @@ function signed(ms: number): string {
   return ms > 0 ? `+${ms}` : ms < 0 ? `−${Math.abs(ms)}` : "0";
 }
 
-export function memberStatus(m: WtMemberDto): WtAvatarStatus {
-  if (!m.online) return "offline";
-  if (m.playbackError) return "error";
-  if (m.buffering) return "buffering";
-  if (m.inPlayback) return "watching";
-  return "none";
-}
+/** L'état d'un membre — la règle partagée avec le mobile. */
+export const memberStatus = wtMemberStatus;
 
 export function MemberRow({
   member, isSelf, canKick, onKick,
@@ -100,10 +96,7 @@ export function MemberRow({
 }) {
   const { t } = useTranslation("watchTogether");
   const status = memberStatus(member);
-  const statusLabel = member.playbackError ? t("cantPlay")
-    : member.buffering ? t("bufferingStatus")
-    : member.inPlayback ? t("watching")
-    : member.online ? t("online") : t("offline");
+  const statusLabel = t(wtMemberStatusLabelKey(member));
 
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">

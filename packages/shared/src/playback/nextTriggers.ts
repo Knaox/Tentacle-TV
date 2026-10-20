@@ -134,6 +134,9 @@ export interface AutoNextEligibilityInput extends SkipCandidateInput {
 
 export function autoNextEligible(input: AutoNextEligibilityInput): boolean {
   if (input.postCreditsClaimed) return false;
+  // Watch Together, salle pas « tous prêts » : le générique ne se passe pas
+  // plus que l'intro — ni carte ni minuteur d'enchaînement.
+  if (input.groupHold) return false;
   // Un bouton occupe la surface — ni carte ni minuteur sous lui. La sourdine
   // est couverte : elle ne supprime pas le candidat.
   if (findSkipCandidate(input) !== null) return false;

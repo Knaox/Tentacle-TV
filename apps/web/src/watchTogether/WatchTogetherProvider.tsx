@@ -1,77 +1,39 @@
-import {
-  createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef,
-  useState, type ReactNode,
-} from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  acquireSocket, fetchMyGroup, fetchMyInvites, getClockOffsetMs, onSocketStatus,
-  respondToInvite, sendGroupInvites, sendSocketMessage, subscribeSocket, useUserId,
-  createGroup as apiCreateGroup, kickGroupMember, leaveGroup as apiLeaveGroup,
-  setGroupPlaybackSettings, useWatchTogetherAccess, WT_ACCESS_KEY,
+  setWtLogger, useWatchTogetherSession, WatchTogetherContext, type WtPlatformPort,
 } from "@tentacle-tv/api-client";
-import { useQueryClient } from "@tanstack/react-query";
-import type { WsClientMessage, WtInvitableUserDto, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
-import { handleWtServerMessage, wtReducer, type WtEventHelpers } from "./wtEvents";
 import { GroupPlaybackPill } from "./GroupPlaybackPill";
 import { InviteInboxModal } from "./InviteInboxModal";
 import { ChatRoot } from "./chat/ChatRoot";
 import { WatchTogetherRoomModal } from "./room/WatchTogetherRoomModal";
-import { usePendingInvites, type WtPendingInvite } from "./usePendingInvites";
 import { AffinityRoot } from "./affinity/AffinityRoot";
-import { consumeLaunchFollow } from "./affinity/affinityStore";
+import { ElsewhereNotice } from "./ElsewhereNotice";
+import { wtLog } from "./wtLog";
 
-/** Watch Together — état global du groupe (app-level, sous le Router). */
+/**
+ * Watch Together — la séance du web et du bureau, sous le Router. Tout ce qui
+ * n'est pas de l'interface vit dans `@tentacle-tv/api-client`
+ * (`useWatchTogetherSession`, le moteur, le chat, l'affinité), le même pour
+ * le mobile : ici, les gestes de la plateforme (navigation, toasts, fermeture
+ * de l'onglet) et les surfaces.
+ */
 
-export interface WatchTogetherContextValue {
-  room: WtRoomStateDto | null;
-  invites: WtInviteDto[];
-  selfId: string | null;
-  isInGroup: boolean;
-  isHost: boolean;
-  /** Invitations envoyées par l'hôte, sans réponse encore. */
-  pendingInvites: WtPendingInvite[];
-  /** L'accès du compte (SyncPlayAccess) : `mayJoin` faux = aucune trace de Watch Together ;
-   *  `mayCreate` faux = rien qui crée un salon ni invite (cf. useWatchTogetherAccess). */
-  mayJoin: boolean;
-  mayCreate: boolean;
-  /** Envoie un message wt:* sur le socket partagé (false si déconnecté). */
-  send: (msg: WsClientMessage) => boolean;
-  /** Horloge serveur estimée : Date.now() + offset (0 si non mesuré). */
-  serverNow: () => number;
-  actions: {
-    create: (itemId?: string) => Promise<WtRoomStateDto>;
-    /** Invite ces personnes ; rend le nombre d'invitations parties. */
-    invite: (users: WtInvitableUserDto[]) => Promise<number>;
-    respond: (inviteId: string, accept: boolean) => Promise<void>;
-    leave: () => Promise<void>;
-    kick: (userId: string) => Promise<void>;
-  };
-}
+// Les noms d'avant : chaque composant les lit d'ici (le client LG remplace ce
+// fichier par un faux fournisseur, cf. `substitutionTable.ts`).
+export { useWatchTogether, type WatchTogetherContextValue } from "@tentacle-tv/api-client";
 
-const Ctx = createContext<WatchTogetherContextValue | null>(null);
-
-export function useWatchTogether(): WatchTogetherContextValue {
-  const ctx = useContext(Ctx);
-  if (!ctx) throw new Error("useWatchTogether must be used within WatchTogetherProvider");
-  return ctx;
-}
+// Le journal du moteur partagé : la console du web, en développement seulement.
+setWtLogger(wtLog);
 
 export function WatchTogetherProvider({ children }: { children: ReactNode }) {
-  const selfId = useUserId();
   const { show } = useToast();
   const { t } = useTranslation("watchTogether");
   const navigate = useNavigate();
   const location = useLocation();
-  const { mayJoin, mayCreate } = useWatchTogetherAccess();
-  const queryClient = useQueryClient();
-  const mayJoinRef = useRef(mayJoin);
-  mayJoinRef.current = mayJoin;
-
-  const [state, dispatch] = useReducer(wtReducer, { room: null, invites: [] });
-  const pendingInvites = usePendingInvites(state.room);
-  const { add: addPending, resolve: resolvePending } = pendingInvites;
+  const pathname = location.pathname;
   /**
    * La boîte aux invitations, ouverte d'office à l'ACCUEIL.
    *
@@ -81,157 +43,37 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
    */
   const [inboxOpen, setInboxOpen] = useState(false);
 
-  // Refs stables pour les callbacks socket (pas de re-souscription par render).
-  const roomRef = useRef(state.room);
-  roomRef.current = state.room;
-  const locationRef = useRef(location.pathname);
-  locationRef.current = location.pathname;
-  const helpersRef = useRef<WtEventHelpers | null>(null);
-
-  helpersRef.current = {
-    selfId: selfId ?? "",
-    getRoom: () => roomRef.current,
-    dispatch,
+  const port = useMemo<WtPlatformPort>(() => ({
+    socketToken: typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null,
+    // Auto-follow : déjà sur un lecteur → REMPLACER l'entrée d'historique
+    // (sinon chaque épisode du groupe s'empile et le bouton retour du lecteur
+    // fait défiler les médias précédents au lieu de quitter la lecture).
+    navigateToWatch: (itemId) => navigate(`/watch/${itemId}`, { replace: pathname.startsWith("/watch/") }),
+    isOnWatchPage: (itemId) => pathname === `/watch/${itemId}`,
+    isWatching: () => pathname.startsWith("/watch/"),
     toast: show,
     t: (key, opts) => t(key, opts) as string,
-    // Auto-follow : déjà sur un player → REMPLACER l'entrée d'historique
-    // (sinon chaque épisode du groupe s'empile et le bouton retour du player
-    // fait défiler les médias précédents au lieu de quitter la lecture).
-    navigateToWatch: (itemId) => navigate(`/watch/${itemId}`, {
-      replace: locationRef.current.startsWith("/watch/"),
-    }),
-    isOnWatchPage: (itemId) => locationRef.current === `/watch/${itemId}`,
-    isWatching: () => locationRef.current.startsWith("/watch/"),
-    onInviteArrived: () => { if (locationRef.current === "/") setInboxOpen(true); },
-    onInviteResult: (toUserId) => resolvePending(toUserId),
-    followsLaunch: () => consumeLaunchFollow(),
-    onAccessRevoked: () => { void queryClient.invalidateQueries({ queryKey: [WT_ACCESS_KEY] }); },
-  };
-
-  // Connexion + abonnements + resynchronisation d'état.
-  useEffect(() => {
-    if (!selfId) return;
-    const token = typeof localStorage !== "undefined"
-      ? localStorage.getItem("tentacle_token")
-      : null;
-    const release = acquireSocket(token ?? undefined);
-
-    const unsubMessages = subscribeSocket((msg) => {
-      const h = helpersRef.current;
-      // « Interdit » : aucune invitation ne s'affiche (le serveur n'en envoie déjà plus).
-      if (msg.type === "wt:invite" && !mayJoinRef.current) return;
-      if (h && msg.type.startsWith("wt:")) handleWtServerMessage(msg, h);
-    });
-
-    const unsubStatus = onSocketStatus((status) => {
-      // À chaque (re)connexion authentifiée : état frais du groupe.
-      if (status === "open" && roomRef.current) {
-        sendSocketMessage({ type: "wt:syncRequest" });
-      }
-    });
-
-    // Quitter Tentacle (fermeture onglet/app) = quitter le groupe rapidement.
-    // Un refresh émet aussi pagehide mais la reconnexion annule la grâce courte.
-    const onPageHide = () => {
-      if (roomRef.current) sendSocketMessage({ type: "wt:goodbye" });
-    };
-    window.addEventListener("pagehide", onPageHide);
-
-    return () => {
-      window.removeEventListener("pagehide", onPageHide);
-      unsubMessages();
-      unsubStatus();
-      release();
-    };
-  }, [selfId]);
-
-  // Boot REST : groupe courant + invitations pendantes — rien pour un compte
-  // sans Watch Together (ou dont l'accès n'est pas encore connu).
-  useEffect(() => {
-    if (!selfId || !mayJoin) {
-      dispatch({ type: "set_invites", invites: [] });
-      return;
-    }
-    let cancelled = false;
-    fetchMyGroup()
-      .then((room) => { if (!cancelled) dispatch({ type: "set_room", room }); })
-      .catch(() => {});
-    fetchMyInvites()
-      .then((invites) => { if (!cancelled) dispatch({ type: "set_invites", invites }); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [selfId, mayJoin]);
-
-  const send = useCallback((msg: WsClientMessage) => sendSocketMessage(msg), []);
-  const serverNow = useCallback(() => Date.now() + (getClockOffsetMs() ?? 0), []);
-
-  const actions = useMemo<WatchTogetherContextValue["actions"]>(() => ({
-    async create(itemId) {
-      const room = await apiCreateGroup(itemId);
-      dispatch({ type: "set_room", room });
-      return room;
+    onInviteArrived: () => { if (pathname === "/") setInboxOpen(true); },
+    // Quitter Tentacle (fermeture d'onglet, d'app) = quitter le groupe vite.
+    subscribeAppExit: (onExit) => {
+      window.addEventListener("pagehide", onExit);
+      return () => window.removeEventListener("pagehide", onExit);
     },
-    async invite(users) {
-      const { invited } = await sendGroupInvites(users.map((u) => u.id));
-      addPending(users
-        .filter((u) => invited.includes(u.id))
-        .map((u) => ({ userId: u.id, username: u.name, hasAvatar: u.hasAvatar })));
-      return invited.length;
-    },
-    async respond(inviteId, accept) {
-      dispatch({ type: "remove_invite", inviteId });
-      const result = await respondToInvite(inviteId, accept);
-      if (accept && "groupId" in result) {
-        dispatch({ type: "set_room", room: result });
-        // Join en cours de lecture : rejoindre directement le player du groupe.
-        if (result.itemId && locationRef.current !== `/watch/${result.itemId}`) {
-          navigate(`/watch/${result.itemId}`);
-        }
-      }
-    },
-    async leave() {
-      await apiLeaveGroup();
-      dispatch({ type: "set_room", room: null });
-    },
-    async kick(userId) {
-      await kickGroupMember(userId);
-    },
-  }), [navigate, addPending]);
+  }), [navigate, pathname, show, t]);
 
-  // Les réglages de lecture de l'HÔTE gouvernent la séance : posés tant qu'on
-  // est dans un groupe sans en être l'hôte, retirés à la sortie. Le magasin
-  // local n'est jamais écrit — les réglages du membre reviennent intacts.
-  const hostSettings = state.room?.hostPlaybackSettings ?? null;
-  const selfIsHost = !!state.room && !!selfId && state.room.hostUserId === selfId;
-  useEffect(() => {
-    setGroupPlaybackSettings(state.room && !selfIsHost ? hostSettings : null);
-    return () => { setGroupPlaybackSettings(null); };
-  }, [state.room, selfIsHost, hostSettings]);
-
-  const value = useMemo<WatchTogetherContextValue>(() => ({
-    room: state.room,
-    invites: state.invites,
-    selfId,
-    isInGroup: !!state.room,
-    isHost: selfIsHost,
-    pendingInvites: pendingInvites.pending,
-    mayJoin,
-    mayCreate,
-    send,
-    serverNow,
-    actions,
-  }), [state.room, state.invites, selfId, selfIsHost, pendingInvites.pending, mayJoin, mayCreate, send, serverNow, actions]);
+  const value = useWatchTogetherSession(port);
 
   return (
-    <Ctx.Provider value={value}>
+    <WatchTogetherContext.Provider value={value}>
       {children}
-      {inboxOpen && mayJoin && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
+      {inboxOpen && value.mayJoin && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
       <WatchTogetherRoomModal />
       <GroupPlaybackPill />
-      {state.room && <ChatRoot />}
+      <ElsewhereNotice />
+      {value.room && <ChatRoot />}
       {/* L'affinité (swipe de groupe) : remontée à chaque salle — ses numéros
           d'état repartent de zéro avec elle. */}
-      {state.room && <AffinityRoot key={state.room.groupId} />}
-    </Ctx.Provider>
+      {value.room && <AffinityRoot key={value.room.groupId} />}
+    </WatchTogetherContext.Provider>
   );
 }

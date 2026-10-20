@@ -1,0 +1,145 @@
+import type { MutableRefObject } from "react";
+import {
+  TICKS_PER_SECOND, WT_OWN_SEEK_ECHO_MS, WT_SEEK_LOOKAHEAD_S, pendingIntentUntil,
+  type PendingIntent, type PendingIntentKind, type WsClientMessage, type WtRoomStateDto, type WtSeekToken,
+} from "@tentacle-tv/shared";
+import type { PlayerTransport } from "../playerPort";
+import { getClockRttMs } from "../../socket/clockSync";
+
+/**
+ * Watch Together — état et helpers partagés entre le moteur de sync
+ * (useGroupSyncEngine : application d'états, intents) et la boucle de drift
+ * (useGroupDriftLoop). Les refs sont créées par le moteur et passées en bundle
+ * stable ; aucune logique React ici. Les règles pures (qui attend qui, la
+ * reprise planifiée) vivent dans shared (`watchTogether/`).
+ */
+
+/** Fenêtre pendant laquelle les événements player locaux sont considérés comme
+ *  l'écho d'une commande distante que le moteur vient d'appliquer. */
+export const APPLY_ECHO_WINDOW_MS = 400;
+/** Saut de position entre deux états serveur interprété comme un seek distant. */
+export const REMOTE_JUMP_THRESHOLD_S = 1;
+
+/** Un play() programmé pour l'instant de reprise de la salle. */
+export interface ScheduledPlay {
+  /** Epoch de l'état qui l'a programmé — un autre epoch l'annule. */
+  epoch: number;
+  timer: ReturnType<typeof setTimeout> | null;
+  /** performance.now() de l'appel play(), null tant qu'il n'est pas parti —
+   *  la latence de démarrage se mesure d'ici à l'événement de lecture. */
+  playCalledAt: number | null;
+  /** Date.now() au-delà duquel on cesse d'attendre que le lecteur se déclare
+   *  en lecture (la boucle de dérive reprend alors la main). */
+  until: number;
+}
+
+/** Le lecteur est-il posé sur `targetS` (position film) ? Sa réponse s'il sait
+ *  la donner (`isSettledAt`), sinon : plus de seek en vol, média chargé. */
+export function isSettledOn(transport: PlayerTransport, targetS: number): boolean {
+  return transport.isSettledAt
+    ? transport.isSettledAt(targetS)
+    : !transport.isSeeking?.() && transport.isMediaReady?.() !== false;
+}
+
+/** Confirme au serveur que ce lecteur est posé sur la cible de la barrière. */
+export function sendBarrierReady(shared: GroupSyncSharedRefs, transport: PlayerTransport, barrierId: number): void {
+  const positionTicks = Math.max(0, Math.round(transport.getPositionSeconds() * TICKS_PER_SECOND));
+  shared.sendRef.current({
+    type: "wt:buffering", buffering: false, barrierId, positionTicks, rttMs: getClockRttMs() ?? undefined,
+  });
+}
+
+/** Refs partagées moteur ↔ boucle de drift (identités stables). */
+export interface GroupSyncSharedRefs {
+  roomRef: MutableRefObject<WtRoomStateDto | null>;
+  serverNowRef: MutableRefObject<() => number>;
+  selfIdRef: MutableRefObject<string | null>;
+  sendRef: MutableRefObject<(msg: WsClientMessage) => boolean>;
+  /** Timestamp jusqu'auquel les événements player locaux sont des échos. */
+  applyingUntilRef: MutableRefObject<number>;
+  /** Dernier wt:buffering émis (null = player jamais prêt depuis le montage —
+   *  la boucle de drift reste inerte tant que ce n'est pas `false`). */
+  lastBufferingSentRef: MutableRefObject<boolean | null>;
+  softCorrectionSinceRef: MutableRefObject<number | null>;
+  currentRateRef: MutableRefObject<number>;
+  /** Intent envoyé dont l'écho serveur n'est pas revenu : la boucle de dérive
+   *  ne réconcilie ni ne seeke contre lui (sinon elle relance la lecture entre
+   *  la pause locale et son écho, ou ramène l'auteur d'un seek en arrière). */
+  pendingIntentRef: MutableRefObject<PendingIntent | null>;
+  /** play() programmé pour une reprise planifiée. */
+  scheduledPlayRef: MutableRefObject<ScheduledPlay | null>;
+  /** Latence de démarrage mesurée de ce lecteur (ms), null tant qu'inconnue. */
+  playLatencyMsRef: MutableRefObject<number | null>;
+  /** Latence de seek mesurée (secondes, lissée), null tant qu'inconnue — le
+   *  lookahead d'un seek dur en lecture. */
+  seekLatencySRef: MutableRefObject<number | null>;
+  /** Seek dur en vol, pour mesurer sa latence à l'atterrissage. */
+  pendingHardSeekRef: MutableRefObject<{ at: number; targetS: number } | null>;
+  /** Le dernier seek DEMANDÉ par cet appareil (numéro du jeton, instant). */
+  localSeekRef: MutableRefObject<{ seq: number; at: number } | null>;
+}
+
+/** L'appareil des jetons de seek : un tirage par chargement de l'app (un
+ *  onglet = un appareil), minuscules et chiffres (cf. `watchTogetherSeekToken.ts`). */
+export const WT_SEEK_DEVICE = Math.random().toString(36).slice(2, 10) || "wt";
+
+/** Mon dernier seek, tant qu'on peut l'attendre — null au-delà de WT_OWN_SEEK_ECHO_MS. */
+export function latestLocalSeek(shared: GroupSyncSharedRefs, now: number = Date.now()): WtSeekToken | null {
+  const local = shared.localSeekRef.current;
+  return local && now - local.at < WT_OWN_SEEK_ECHO_MS ? { device: WT_SEEK_DEVICE, seq: local.seq } : null;
+}
+
+/** Lookahead d'un seek dur en lecture : la latence mesurée, sinon le repli. */
+export function seekLookaheadS(shared: GroupSyncSharedRefs): number {
+  return shared.seekLatencySRef.current ?? WT_SEEK_LOOKAHEAD_S;
+}
+
+export function setPendingIntent(shared: GroupSyncSharedRefs, kind: PendingIntentKind, rttMs: number | null): void {
+  shared.pendingIntentRef.current = { kind, until: pendingIntentUntil(Date.now(), rttMs) };
+}
+
+export function clearPendingIntent(shared: GroupSyncSharedRefs): void {
+  shared.pendingIntentRef.current = null;
+}
+
+/** Un intent est-il encore en vol ? (un intent expiré est oublié au passage) */
+export function hasPendingIntent(shared: GroupSyncSharedRefs, now: number = Date.now()): boolean {
+  const pending = shared.pendingIntentRef.current;
+  if (!pending) return false;
+  if (pending.until <= now) { shared.pendingIntentRef.current = null; return false; }
+  return true;
+}
+
+export function cancelScheduledPlay(shared: GroupSyncSharedRefs): void {
+  const scheduled = shared.scheduledPlayRef.current;
+  if (scheduled?.timer) clearTimeout(scheduled.timer);
+  shared.scheduledPlayRef.current = null;
+}
+
+/** Une reprise planifiée attend encore que le lecteur se déclare en lecture. */
+export function isAwaitingScheduledPlay(shared: GroupSyncSharedRefs, now: number = Date.now()): boolean {
+  const scheduled = shared.scheduledPlayRef.current;
+  if (!scheduled) return false;
+  if (scheduled.until <= now) { cancelScheduledPlay(shared); return false; }
+  return true;
+}
+
+export function armEcho(shared: GroupSyncSharedRefs): void {
+  shared.applyingUntilRef.current = Date.now() + APPLY_ECHO_WINDOW_MS;
+}
+
+export function isApplying(shared: GroupSyncSharedRefs): boolean {
+  return Date.now() < shared.applyingUntilRef.current;
+}
+
+/** Change la vitesse du player (dédupliqué — no-op si déjà à `rate`). */
+export function setTransportRate(
+  shared: GroupSyncSharedRefs,
+  transport: PlayerTransport | null,
+  rate: number,
+): void {
+  if (shared.currentRateRef.current === rate) return;
+  shared.currentRateRef.current = rate;
+  transport?.setRate(rate);
+}
+

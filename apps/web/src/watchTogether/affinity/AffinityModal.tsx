@@ -1,11 +1,10 @@
 import { useCallback, useId } from "react";
-import { leaveAffinity } from "@tentacle-tv/api-client";
+import { leaveAffinity, closeAffinity, getAffinitySnapshot, useAffinityStore } from "@tentacle-tv/api-client";
 import { Modal } from "../../components/ui/Modal";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { AffinityDeckView } from "./AffinityDeckView";
 import { AffinityKindsView } from "./AffinityKindsView";
 import { AffinityMatchView } from "./AffinityMatchView";
-import { closeAffinity, getAffinitySnapshot, useAffinityStore } from "./affinityStore";
 
 /**
  * La modale de l'affinité — une seule, montée par `AffinityRoot`. Ses vues :

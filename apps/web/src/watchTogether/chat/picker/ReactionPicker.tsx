@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import type { WtChatApi } from "../useWtChat";
+import type { WtChatApi } from "@tentacle-tv/api-client";
 import { EmojiTab } from "./EmojiTab";
 import { GifTab } from "./GifTab";
 

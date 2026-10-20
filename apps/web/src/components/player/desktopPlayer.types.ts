@@ -7,7 +7,7 @@
 import type { MediaItem, ResolvedSegment, QualityDrop, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../VideoPlayer";
 import type { LocalSubtitleFile } from "../../downloads/playbackApi";
-import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
+import type { PlayerTransportRef } from "@tentacle-tv/api-client";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 import type { PlaybackFailure } from "../../hooks/playbackFailure";
 

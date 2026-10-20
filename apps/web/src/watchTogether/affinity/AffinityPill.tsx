@@ -4,8 +4,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { HeartHandshake, X } from "lucide-react";
 import { useMirror } from "../../mirror/useFormFactor";
 import { useWatchTogether } from "../WatchTogetherProvider";
-import { dismissAffinityPill, openAffinity, useAffinityStore } from "./affinityStore";
-import { KIND_LABEL_KEY, memberName } from "./affinityText";
+import { dismissAffinityPill, openAffinity, useAffinityStore } from "@tentacle-tv/api-client";
+import { KIND_LABEL_KEY, memberName } from "@tentacle-tv/shared";
 
 /**
  * La pilule d'invitation : une séance d'affinité tourne dans la salle et je

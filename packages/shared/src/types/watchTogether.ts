@@ -37,7 +37,11 @@ export const WT_RATE_MAX_DEV = 0.05;
 /** Pas d'arrondi de la vitesse : au-dessous, un changement ne vaut pas l'IPC. */
 export const WT_RATE_STEP = 0.005;
 export const WT_DRIFT_ENGAGE_WEB_S = 0.04;
-export const WT_DRIFT_SETTLE_WEB_S = 0.025;
+/** Le web lit `currentTime` en direct : une fois engagée, la correction va
+ *  jusqu'à 8 ms (le plancher du pas de vitesse, 0,005 × 3 s / 2 ≈ 7,5 ms). À
+ *  25 ms, deux lecteurs relâchés de part et d'autre restaient à 50 ms l'un de
+ *  l'autre sans plus jamais se corriger (biais mesuré au banc le 20/10). */
+export const WT_DRIFT_SETTLE_WEB_S = 0.008;
 /** mpv lit son horloge AUDIO (`audio-pts`, continue) à 8 Hz : à peine moins
  *  fine que le `currentTime` du web — 60 ms de zone morte laissaient un écart
  *  audible tenir sans être corrigé. */
@@ -95,7 +99,10 @@ export const WT_BARRIER_PRESEEK_MPV_S = 0.1;
  *  nous aurait lâchés à 20 s de toute façon). */
 export const WT_BARRIER_CONFIRM_TIMEOUT_MS = 25_000;
 /** Seeks rapprochés (flèches martelées) : un seul wt:seek, le dernier (ms). */
-export const WT_SEEK_NOTIFY_DEBOUNCE_MS = 250;
+export const WT_SEEK_NOTIFY_DEBOUNCE_MS = 150;
+/** Un seek de CET appareil reste « en vol » ce délai au plus : au-delà, un écho
+ *  plus ancien n'est plus ignoré (le seek suivant s'est perdu, coupure). */
+export const WT_OWN_SEEK_ECHO_MS = 3_000;
 /** Lecture demandée au serveur sans réponse : on joue localement (ms). */
 export const WT_REQUEST_PLAY_WATCHDOG_MS = 2_000;
 /** Après un play() planifié, délai pour que le lecteur se déclare en lecture. */

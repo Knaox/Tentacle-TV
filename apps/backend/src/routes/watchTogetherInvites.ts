@@ -10,6 +10,7 @@ import {
   broadcastRoom,
   inviteToDto,
   notifyInvite,
+  notifyDissolved,
   notifyInviteResult,
   roomToDto,
 } from "../services/watchTogether/broadcast";
@@ -22,6 +23,9 @@ import { seesRoomItem } from "../services/watchTogether/itemRights";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { accessIn, wtAccessOf } from "../services/watchTogether/accountAccess";
 import { WT_ACCESS_DENIED, wtMayCreate, wtMayJoin } from "../services/watchTogether/watchTogetherAccess";
+import { deviceKeyOf } from "../services/watchTogether/requestDevice";
+import { watchBoundDevice } from "../services/watchTogether/gatewayPresence";
+import { isDeviceBound } from "../services/watchTogether/memberDevices";
 
 /**
  * Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation), vu
@@ -59,7 +63,8 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
     }).parse(request.body);
 
     const room = getRoomOf(user.userId);
-    if (!room) return reply.status(404).send({ code: "not_in_group" });
+    const self = room?.members.get(user.userId);
+    if (!room || !self || !isDeviceBound(self, deviceKeyOf(request))) return reply.status(404).send({ code: "not_in_group" });
     if (room.hostUserId !== user.userId) {
       return reply.status(403).send({ code: "not_host", message: "Seul l'hôte peut inviter" });
     }
@@ -129,15 +134,19 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const profile = await getUserBasic(user.userId);
+    // L'appareil qui accepte entre dans la salle — lui seul (adhésion par appareil).
+    const deviceKey = deviceKeyOf(request);
     let member = addMember(room, {
       userId: user.userId,
       username: user.username,
       hasAvatar: profile?.hasAvatar ?? false,
-    });
+    }, deviceKey);
     if (!member) {
       // Membre d'un AUTRE groupe : accepter = le quitter (transfert d'hôte/GC
       // + broadcast aux anciens co-membres) et rejoindre le nouveau.
       const removal = removeMemberAndSync(user.userId);
+      // Ses appareils liés à l'ancien groupe en sortent aussi : ils l'apprennent.
+      if (removal) notifyDissolved(removal.removed, removal.room.groupId, "dissolved");
       if (removal && !removal.dissolved) {
         // L'ancien groupe change d'hôte : ses réglages avant la diffusion.
         if (removal.newHostId) await refreshHostSettings(removal.room);
@@ -147,9 +156,10 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
         userId: user.userId,
         username: user.username,
         hasAvatar: profile?.hasAvatar ?? false,
-      });
+      }, deviceKey);
       if (!member) return reply.status(409).send({ code: "already_in_group" });
     }
+    watchBoundDevice(user.userId, deviceKey);
     bumpEpoch(room);
     broadcastRoom(room, "join", user.userId);
     sendChatHistory(user.userId, room);

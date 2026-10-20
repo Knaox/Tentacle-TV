@@ -1,5 +1,9 @@
-import { isUserOnline, sendToUser } from "../wsManager";
-import type { Invite, Room } from "./roomTypes";
+import { sendToUser } from "../wsManager";
+import type { Invite, Room, RoomMember } from "./roomTypes";
+import { isMemberOnline, sendToMember, sendToRoom } from "./memberDevices";
+import { wtAllReady } from "./syncReadyGate";
+import { notifyElsewhereRoom } from "./elsewhere";
+import { getRoom } from "./roomRegistry";
 import type { WtDissolvedReason, WtInviteDto, WtRoomStateDto, WtStateCause } from "./protocol";
 
 /** Watch Together — projection Room→DTO et diffusion aux membres. */
@@ -11,7 +15,7 @@ export function roomToDto(room: Room): WtRoomStateDto {
       userId: m.userId,
       username: m.username,
       hasAvatar: m.hasAvatar,
-      online: isUserOnline(m.userId),
+      online: isMemberOnline(m),
       inPlayback: m.inPlayback,
       buffering: m.buffering,
       playbackError: m.playbackError,
@@ -41,18 +45,27 @@ export function roomToDto(room: Room): WtRoomStateDto {
     ...(room.barrier ? { barrierId: room.barrier.id } : {}),
     ...(room.waitCause ? { waitCause: room.waitCause } : {}),
     ...(room.pendingSkip ? { pendingSkip: { ...room.pendingSkip } } : {}),
+    ...(room.seekToken ? { seekToken: room.seekToken } : {}),
+    // « Tous prêts » : seulement quand un titre est lancé (sinon rien à sauter).
+    ...(room.itemId ? { allReady: wtAllReady(room) } : {}),
   };
 }
 
-/** Diffuse l'état complet de la room à tous ses membres. */
+/** Diffuse l'état complet de la room à tous ses membres — à leurs appareils
+ *  liés seulement (1.32.0) : un autre appareil du compte n'en voit rien. */
 export function broadcastRoom(room: Room, cause: WtStateCause, originUserId: string | null): void {
-  const msg = { type: "wt:state" as const, state: roomToDto(room), originUserId, cause };
-  for (const userId of room.members.keys()) sendToUser(userId, msg);
+  sendToRoom(room, { type: "wt:state", state: roomToDto(room), originUserId, cause });
+  // Ce que voient les AUTRES appareils des membres : qui, quel titre, quel hôte.
+  if (ELSEWHERE_CAUSES.has(cause)) notifyElsewhereRoom(room);
 }
+
+/** Les changements qui modifient l'avis « groupe en cours sur un autre appareil ». */
+const ELSEWHERE_CAUSES: ReadonlySet<WtStateCause> = new Set(["join", "leave", "kick", "hostChange", "setItem"]);
 
 /** État ciblé à un seul membre (réponse à wt:syncRequest). */
 export function sendRoomState(userId: string, room: Room, cause: WtStateCause): void {
-  sendToUser(userId, { type: "wt:state", state: roomToDto(room), originUserId: null, cause });
+  const member = room.members.get(userId);
+  if (member) sendToMember(member, { type: "wt:state", state: roomToDto(room), originUserId: null, cause });
 }
 
 export function inviteToDto(invite: Invite): WtInviteDto {
@@ -72,7 +85,10 @@ export function notifyInvite(invite: Invite): void {
 
 /** Notifie l'émetteur de l'invitation (l'hôte) du sort de celle-ci. */
 export function notifyInviteResult(invite: Invite, toUsername: string, accepted: boolean): void {
-  sendToUser(invite.fromUserId, {
+  // À l'hôte, sur ses appareils liés à la salle (un autre appareil n'a rien à en dire).
+  const host = getRoom(invite.groupId)?.members.get(invite.fromUserId);
+  const send = (msg: Parameters<typeof sendToUser>[1]) => (host ? sendToMember(host, msg) : sendToUser(invite.fromUserId, msg));
+  send({
     type: "wt:inviteResult",
     inviteId: invite.inviteId,
     toUserId: invite.toUserId,
@@ -81,6 +97,8 @@ export function notifyInviteResult(invite: Invite, toUsername: string, accepted:
   });
 }
 
-export function notifyDissolved(userId: string, groupId: string, reason: WtDissolvedReason): void {
-  sendToUser(userId, { type: "wt:dissolved", groupId, reason });
+/** Le membre ne fait plus partie de la salle : à SES appareils liés (le
+ *  membre retiré garde la liste de ceux qu'il avait). */
+export function notifyDissolved(member: RoomMember, groupId: string, reason: WtDissolvedReason): void {
+  sendToMember(member, { type: "wt:dissolved", groupId, reason });
 }

@@ -12,6 +12,12 @@
  *     apps/backend/src/services/watchTogether/watchTogetherAffinity.ts
  *   cp packages/shared/src/types/watchTogetherAccess.ts \
  *     apps/backend/src/services/watchTogether/watchTogetherAccess.ts
+ *   cp packages/shared/src/types/watchTogetherDevices.ts \
+ *     apps/backend/src/services/watchTogether/watchTogetherDevices.ts
+ *   cp packages/shared/src/types/watchTogetherSeekToken.ts \
+ *     apps/backend/src/services/watchTogether/watchTogetherSeekToken.ts
+ *   cp packages/shared/src/types/watchTogetherChat.ts \
+ *     apps/backend/src/services/watchTogether/watchTogetherChat.ts
  *
  * Même esprit que `playback/sharedMirror.test.ts`, avec une tolérance : les
  * spécificateurs d'import sont normalisés avant comparaison, rien d'autre.
@@ -59,6 +65,30 @@ describe("miroir du contrat Watch Together", () => {
     const root = repoRoot();
     const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherAffinity.ts"), "utf8");
     const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/watchTogetherAffinity.ts"), "utf8");
+    expect(mirror).toBe(canonical);
+  });
+
+  // Le chat interactif (débit, « est en train d'écrire ») : aucun import, `cp` suffit.
+  it("watchTogetherChat.ts est identique des deux côtés", () => {
+    const root = repoRoot();
+    const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherChat.ts"), "utf8");
+    const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/watchTogetherChat.ts"), "utf8");
+    expect(mirror).toBe(canonical);
+  });
+
+  // Le jeton d'un seek (sauts rapides) : aucun import, `cp` suffit.
+  it("watchTogetherSeekToken.ts est identique des deux côtés", () => {
+    const root = repoRoot();
+    const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherSeekToken.ts"), "utf8");
+    const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/watchTogetherSeekToken.ts"), "utf8");
+    expect(mirror).toBe(canonical);
+  });
+
+  // L'adhésion par appareil (1.32.0) : aucun import, `cp` suffit.
+  it("watchTogetherDevices.ts est identique des deux côtés", () => {
+    const root = repoRoot();
+    const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherDevices.ts"), "utf8");
+    const mirror = readFileSync(join(root, "apps/backend/src/services/watchTogether/watchTogetherDevices.ts"), "utf8");
     expect(mirror).toBe(canonical);
   });
 });

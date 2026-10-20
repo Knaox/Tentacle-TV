@@ -55,14 +55,8 @@ export const WT_MAX_POSITION_TICKS = 1_000_000_000_000;
 export const WT_CHAT_MAX_LENGTH = 500;
 /** Chat : fil conservé en mémoire par room (renvoyé au join/resync). */
 export const WT_CHAT_HISTORY_SIZE = 50;
-/** Anti-spam : intervalle minimal entre deux messages / réactions d'un membre.
- *  Réactions volontairement permissives (~8/s) : le spam d'emojis est un usage voulu. */
-export const WT_MIN_CHAT_INTERVAL_MS = 400;
-export const WT_MIN_REACTION_INTERVAL_MS = 120;
 /** Réaction : longueur max (un emoji composé ZWJ tient en ≤ 16 unités UTF-16). */
 export const WT_REACTION_MAX_LENGTH = 16;
-/** GIF : intervalle minimal entre deux envois d'un membre (plus lourd qu'un emoji). */
-export const WT_MIN_GIF_INTERVAL_MS = 1_500;
 /** GIF : longueur max de l'URL broadcastée (une URL tinygif Klipy reste courte). */
 export const WT_GIF_URL_MAX_LENGTH = 512;
 

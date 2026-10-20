@@ -35,20 +35,21 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     pendingSkip: null,
     skipHistory: new Map(),
     skipTimer: null,
+    readyGate: null,
+    seekToken: null,
     lastTickBroadcastAt: 0,
     members: new Map([
       ["u-hote", {
         userId: "u-hote", username: "Hôte", hasAvatar: false, inPlayback: true,
         buffering: false, playbackError: false, joinedAt: 1, graceTimer: null,
-        protocolVersion: 1, rttMs: null, driftMs: null, playbackSocket: null,
+        protocolVersion: 1, rttMs: null, driftMs: null, playbackSocket: null, devices: new Map(),
       }],
     ]),
     lastSeekAt: new Map(),
     chat: [],
     chatSeq: 0,
-    lastChatAt: new Map(),
-    lastReactionAt: new Map(),
-    lastGifAt: new Map(),
+    chatRate: new Map(),
+    typing: new Map(),
     createdAt: 0,
   };
 }
@@ -97,5 +98,20 @@ describe("roomToDto — les champs du protocole v2 sont facultatifs", () => {
     const room = makeRoom(null);
     room.barrierId = 3;
     expect("barrierId" in roomToDto(room)).toBe(false);
+  });
+});
+
+describe("roomToDto — « tous prêts » (1.32.0)", () => {
+  it("dit `allReady` dès qu'un titre est lancé, faux tant que la porte n'est pas ouverte", () => {
+    const room = makeRoom(null);
+    expect(roomToDto(room).allReady).toBe(false);
+    room.readyGate = { itemId: "item-1", expected: new Set(), openedAt: Date.now(), open: true, timer: null, deferred: null };
+    expect(roomToDto(room).allReady).toBe(true);
+  });
+
+  it("pas de clé sans titre — rien à sauter", () => {
+    const room = makeRoom(null);
+    room.itemId = null;
+    expect("allReady" in roomToDto(room)).toBe(false);
   });
 });

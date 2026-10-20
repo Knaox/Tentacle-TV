@@ -7,6 +7,12 @@ import { removeMemberAndSync } from "../services/watchTogether/sync";
 import { broadcastRoom, notifyDissolved, roomToDto } from "../services/watchTogether/broadcast";
 import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { getUserBasic } from "../services/watchTogether/usersCache";
+import { deviceKeyOf } from "../services/watchTogether/requestDevice";
+import { isDeviceBound } from "../services/watchTogether/memberDevices";
+import { notifyElsewhere } from "../services/watchTogether/elsewhere";
+import { leaveFromDevice } from "../services/watchTogether/deviceLeave";
+import { releaseFromDeadRoom, watchBoundDevice } from "../services/watchTogether/gatewayPresence";
+import { watchTogetherDeviceRoutes } from "./watchTogetherDevices";
 import { isItemVisibleTo } from "../services/itemAccess/itemVisibility";
 import { wtAccessOf } from "../services/watchTogether/accountAccess";
 import { WT_ACCESS_DENIED, wtMayCreate } from "../services/watchTogether/watchTogetherAccess";
@@ -19,6 +25,8 @@ import { WT_ACCESS_DENIED, wtMayCreate } from "../services/watchTogether/watchTo
  */
 export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
+  // « Groupe en cours sur un autre appareil » et « Rejoindre ici » (1.32.0).
+  await app.register(watchTogetherDeviceRoutes);
 
   /** POST /group — crée un groupe (créateur = hôte). 409 si déjà en groupe. */
   app.post("/group", async (request, reply) => {
@@ -32,9 +40,15 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     const profile = await getUserBasic(user.userId);
     // Le titre de contexte passera dans les invitations : seulement s'il est visible à l'hôte.
     const contextItemId = body.itemId && (await isItemVisibleTo(user.userId, body.itemId)) ? body.itemId : null;
+    // Le compte est encore dans une salle, mais PAR DES APPAREILS ÉTEINTS (ils
+    // attendent la fin de leur grâce) : il la quitte maintenant, comme à leur
+    // expiration — un nouvel appareil n'attend pas deux minutes pour créer.
+    releaseFromDeadRoom(user.userId);
+    // L'appareil qui crée est le seul lié à la salle (adhésion par appareil).
     const room = createRoom(
       { userId: user.userId, username: user.username, hasAvatar: profile?.hasAvatar ?? false },
       contextItemId,
+      deviceKeyOf(request),
     );
     if (!room) {
       return reply.status(409).send({ code: "already_in_group", message: "Vous êtes déjà dans un groupe" });
@@ -43,6 +57,8 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     // (et la réponse REST elle-même) les porte, sinon chaque invité garderait
     // les siens jusqu'au premier changement d'hôte.
     await refreshHostSettings(room);
+    watchBoundDevice(user.userId, deviceKeyOf(request));
+    notifyElsewhere(user.userId);
     request.log.info({ groupId: room.groupId, host: user.username }, "[wt] groupe créé");
     return roomToDto(room);
   });
@@ -56,16 +72,29 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
    * `null` dit la même chose sans mentir sur la santé du serveur. Les clients
    * d'avant traduisent déjà le 404 en `null` : les deux formes se lisent.
    */
+  // Un appareil du compte qui n'est pas lié à la salle n'y est pas : `null`,
+  // comme hors salle (un client d'avant cesse ainsi d'y être entraîné).
   app.get("/group", async (request) => {
     const user = (request as any).user as JellyfinUser;
-    return getRoomOf(user.userId) ? roomToDto(getRoomOf(user.userId)!) : null;
+    const room = getRoomOf(user.userId);
+    const member = room?.members.get(user.userId);
+    return room && member && isDeviceBound(member, deviceKeyOf(request)) ? roomToDto(room) : null;
   });
 
-  /** POST /group/leave — quitte le groupe (transfert d'hôte / GC automatiques). */
+  /** POST /group/leave — CET appareil quitte le groupe ; le compte le quitte
+   *  avec son dernier appareil lié (transfert d'hôte / GC automatiques). */
   app.post("/group/leave", async (request, reply) => {
     const user = (request as any).user as JellyfinUser;
+    const room = getRoomOf(user.userId);
+    const self = room?.members.get(user.userId);
+    // Un appareil non lié ne fait rien quitter aux autres.
+    if (!room || !self || !isDeviceBound(self, deviceKeyOf(request))) {
+      return reply.status(404).send({ code: "not_in_group" });
+    }
+    if (leaveFromDevice(room, self, deviceKeyOf(request), { sweepOffline: true })) return { success: true };
     const result = removeMemberAndSync(user.userId);
     if (!result) return reply.status(404).send({ code: "not_in_group" });
+    notifyElsewhere(user.userId);
     if (!result.dissolved) {
       // Nouvel hôte = nouveaux réglages pour le groupe, avant la diffusion.
       if (result.newHostId) await refreshHostSettings(result.room);
@@ -83,7 +112,8 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const { userId: targetId } = z.object({ userId: z.string().min(1) }).parse(request.body);
     const room = getRoomOf(user.userId);
-    if (!room) return reply.status(404).send({ code: "not_in_group" });
+    const self = room?.members.get(user.userId);
+    if (!room || !self || !isDeviceBound(self, deviceKeyOf(request))) return reply.status(404).send({ code: "not_in_group" });
     if (room.hostUserId !== user.userId) {
       return reply.status(403).send({ code: "not_host", message: "Seul l'hôte peut expulser" });
     }
@@ -93,8 +123,10 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     if (!room.members.has(targetId)) {
       return reply.status(404).send({ code: "not_member" });
     }
+    // Expulser, c'est le compte entier : tous ses appareils liés l'apprennent.
     const result = removeMemberAndSync(targetId)!;
-    notifyDissolved(targetId, room.groupId, "kicked");
+    notifyDissolved(result.removed, room.groupId, "kicked");
+    notifyElsewhere(targetId);
     if (!result.dissolved) {
       // Nouvel hôte = nouveaux réglages pour le groupe.
       if (result.newHostId) await refreshHostSettings(result.room);

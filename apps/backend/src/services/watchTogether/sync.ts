@@ -14,6 +14,8 @@ import {
   requestResumeOnRelease,
 } from "./syncBarrier";
 import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
+import { armReadyGate, dropReadyGate } from "./syncReadyGate";
+import { isStaleWtSeekToken } from "./watchTogetherSeekToken";
 
 export { bumpEpoch } from "./syncSchedule";
 
@@ -68,6 +70,7 @@ function waitForMember(room: Room, member: RoomMember, now: number, frozenTicks:
   // Salle en lecture : gel à la position du membre qui bufferise (les autres
   // se recaleront dessus) ; en pause utilisateur : attente sans reprise.
   const resume = !room.paused;
+  if (resume) room.seekToken = null;
   openBarrier(room, now, "buffering", resume ? frozenTicks : room.positionTicks, [member.userId], resume, false);
   return resume ? "buffering" : "presence";
 }
@@ -80,7 +83,7 @@ export function applyCommand(
   msg: Exclude<
     WtClientMessage,
     | { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" } | { type: "wt:skipIntroDismiss" }
-    | { type: "wt:goodbye" } | { type: "wt:chat" } | { type: "wt:reaction" } | { type: "wt:gif" }
+    | { type: "wt:goodbye" } | { type: "wt:chat" } | { type: "wt:reaction" } | { type: "wt:gif" } | { type: "wt:typing" }
     | { type: "wt:tick" } | { type: "wt:skipPropose" }
   >,
   isUserOnline: (userId: string) => boolean,
@@ -90,6 +93,7 @@ export function applyCommand(
   switch (msg.type) {
     case "wt:play": {
       if (!room.paused) return { kind: "ignore" };
+      room.seekToken = null;
       if (room.barrier && !msg.force) {
         // Une attente est en cours : la reprise aura lieu quand tous seront
         // posés — jamais avant, sauf demande explicite de passer outre.
@@ -112,6 +116,7 @@ export function applyCommand(
 
     case "wt:pause": {
       if (room.paused && room.pauseReason === "user") return { kind: "ignore" };
+      room.seekToken = null;
       cancelResumeOnRelease(room);
       room.paused = true;
       room.pauseReason = "user";
@@ -124,6 +129,10 @@ export function applyCommand(
       // dernier déclenche la reprise planifiée — si la salle jouait, ou si une
       // reprise était déjà demandée. Un nouveau seek REMPLACE l'attente en
       // cours (coalescence) : jamais d'ignorance silencieuse.
+      // Un seek plus ancien du même appareil que celui de la salle (réseau
+      // réordonné) : ignoré — le plus récent a déjà posé la position.
+      if (msg.seekToken && isStaleWtSeekToken(msg.seekToken, room.seekToken)) return { kind: "ignore" };
+      room.seekToken = msg.seekToken ?? null;
       const resume = !room.paused || (room.barrier?.resumeOnRelease ?? false);
       const target = clampTicks(msg.positionTicks);
       room.lastSeekAt.set(member.userId, now);
@@ -140,8 +149,10 @@ export function applyCommand(
       // courant ; premier arrivé gagne, les suivants sont silencieusement ignorés.
       if (msg.fromItemId !== room.itemId) return { kind: "ignore" };
       if (msg.itemId === room.itemId) return { kind: "ignore" };
+      const firstLaunch = room.itemId === null;
       room.itemId = msg.itemId;
       room.contextItemId = msg.itemId;
+      room.seekToken = null;
       // Démarrage gelé : attente des membres qui REGARDAIENT (auto-follow →
       // rechargement), toutes versions — un chargement se signale même d'un
       // client d'avant. Un membre qui a quitté la lecture ne suit pas le
@@ -166,6 +177,12 @@ export function applyCommand(
       room.waitCause = "buffering";
       room.barrier = { id: room.barrierId, targetTicks: clampTicks(msg.startPositionTicks ?? 0), cause: "buffering", openedAt: now, resumeOnRelease: true, timer: null };
       for (const userId of waitFor) joinBarrier(room, userId, now);
+      // « Tous prêts » : au premier lancement, tous ceux en ligne suivent ;
+      // ensuite, ceux qui regardaient — et le lanceur, toujours.
+      const expected = firstLaunch
+        ? [...room.members.keys()].filter((userId) => isUserOnline(userId))
+        : [...waitFor, member.userId];
+      armReadyGate(room, msg.itemId, expected, now);
       touch(room, now, clampTicks(msg.startPositionTicks ?? 0));
       return { kind: "broadcast", cause: "setItem" };
     }
@@ -180,6 +197,16 @@ export function applyCommand(
         }
         const frozen = msg.positionTicks ?? wtPositionTicksAt(room, now);
         return { kind: "broadcast", cause: waitForMember(room, member, now, clampTicks(frozen)) };
+      }
+      // Un lecteur v2 qui a FINI DE CHARGER pendant une barrière de seek ou de
+      // saut n'est pas posé sur sa cible pour autant : son « prêt » sans
+      // identifiant ne la libère pas (sinon la salle repartait à la cible et
+      // lui restait là où son chargement l'avait mis — vu au banc : salle à
+      // 40 s, lui à 0 s). L'état diffusé le fait se caler, puis confirmer
+      // avec l'identifiant de la barrière.
+      if (loadedDuringSeekBarrier(room, member, msg.barrierId)) {
+        touch(room, now);
+        return { kind: "broadcast", cause: "presence" };
       }
       const { released, resumed, stale } = confirmReady(room, member, now, msg.barrierId);
       if (stale) return { kind: "ignore" };
@@ -217,6 +244,13 @@ export function applyCommand(
   }
 }
 
+/** Fin de chargement (sans identifiant de barrière) d'un lecteur v2 qu'une
+ *  barrière de seek ou de saut attend : ce n'est pas un « posé sur la cible ». */
+function loadedDuringSeekBarrier(room: Room, member: RoomMember, barrierId: number | undefined): boolean {
+  return barrierId === undefined && member.protocolVersion >= WT_PROTOCOL_VERSION
+    && room.barrier !== null && room.barrier.cause !== "buffering" && room.waitingFor.has(member.userId);
+}
+
 /** Le socket d'un lecteur en séance s'est fermé : son attente est levée (il ne
  *  peut plus rien confirmer) ; il se redéclarera à sa reconnexion. */
 export function releaseMemberWait(room: Room, member: RoomMember): boolean {
@@ -243,6 +277,7 @@ export function removeMemberAndSync(userId: string): MemberRemoval | null {
   if (result.dissolved) {
     resetSkips(result.room);
     dropBarrier(result.room);
+    dropReadyGate(result.room);
   } else {
     resumed = pruneWaiting(result.room, userId, now);
     if (!resumed) touch(result.room, now);

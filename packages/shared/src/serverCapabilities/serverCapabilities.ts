@@ -187,6 +187,21 @@ export const SERVER_CAPABILITIES = {
    *  et la préférence du COMPTE qui l'allume (`trendingNow` de `/api/preferences/reco`, allumée par
    *  défaut). Sans elle, aucun interrupteur : un serveur d'avant ignore le paramètre. */
   "reco.trending": "1.31.0",
+  // ── Lot « mobile = bureau » (2026-10-20) : Watch Together partagé ──
+  /** L'adhésion à une salle Watch Together est PAR APPAREIL (l'empreinte du jeton), plus par
+   *  compte : seuls les appareils liés reçoivent la séance ; un autre appareil du même compte
+   *  n'en reçoit que l'avis `wt:elsewhere` (`GET /api/watch-together/group/elsewhere`) et peut
+   *  s'y AJOUTER (`POST /api/watch-together/group/join-here`). Le mobile n'a Watch Together
+   *  qu'avec elle : sans elle, téléphone et bureau d'un même compte se marcheraient dessus. */
+  "watchTogether.deviceMembership": "1.32.0",
+  /** « Tous prêts » : l'état d'une salle porte `allReady`, et le serveur ignore `wt:skipPropose`
+   *  avant — aucun saut de passage (intro, résumé, générique) tant que les membres attendus pour
+   *  le titre ne sont pas tous posés. Sans elle, les clients en jugent d'après l'état seul. */
+  "watchTogether.readyGate": "1.32.0",
+  /** « X est en train d'écrire… » dans le chat d'une salle (`wt:typing`, début / fin, éteint
+   *  par le serveur après 6 s sans nouvelle, jamais relayé à soi-même). Sans elle, rien n'est
+   *  envoyé : un serveur d'avant répondrait `invalid` à chaque frappe. */
+  "watchTogether.typing": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

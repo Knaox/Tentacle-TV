@@ -7,10 +7,10 @@
  */
 
 import { useEffect, useRef } from "react";
-import { usePlaybackOverlay, type PlaybackOverlayResult } from "@tentacle-tv/api-client";
+import {
+  usePlaybackOverlay, type PlaybackOverlayResult, announceLocalRefusal, useIntroSkipRefusal, useGroupSkipCountdown,
+} from "@tentacle-tv/api-client";
 import type { ResolvedSegment } from "@tentacle-tv/shared";
-import { announceLocalRefusal, useIntroSkipRefusal } from "../watchTogether/introSkipRefusal";
-import { useGroupSkipCountdown } from "../watchTogether/useGroupSkipCountdown";
 
 interface UseWebSegmentsOverlayArgs {
   itemId: string;
@@ -49,7 +49,7 @@ export function useWebSegmentsOverlay({
   // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
   // coquille commune aux six surfaces. ──
   // Le décompte de saut de la salle (serveur) et la proposition de passage.
-  const { groupSkip, onSkipPropose } = useGroupSkipCountdown(itemId);
+  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId);
 
   const playback = usePlaybackOverlay({
     itemId,
@@ -64,7 +64,8 @@ export function useWebSegmentsOverlay({
     libraryId,
     scrubbing,
     groupSession: inGroupSession,
-    groupSkip, onSkipPropose,
+    // « Tous prêts » : aucun saut tant que la salle attend un membre.
+    groupSkip, onSkipPropose, groupSkipHeld: skipHeld,
     controlsVisible,
     onSeekSeconds,
     onNextEpisode: () => onNextEpisode?.(),

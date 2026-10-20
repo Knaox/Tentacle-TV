@@ -10,5 +10,7 @@ export function buildFrameInput(p: PlaybackOverlayInput, settings: PlaybackSetti
     isEpisode: p.isEpisode,
     hasNextEpisode: p.hasNextEpisode,
     settings,
+    // Watch Together : rien ne se saute avant « tous prêts ».
+    groupHold: p.groupSession === true && p.groupSkipHeld === true,
   };
 }

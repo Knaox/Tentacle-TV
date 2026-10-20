@@ -1,6 +1,6 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import type { MpvState } from "./useDesktopPlayer";
-import type { PlayerTransportRef } from "../watchTogether/playerTransport";
+import type { PlayerTransportRef } from "@tentacle-tv/api-client";
 import { createPositionClock } from "./mpvPositionClock";
 import { pickClockSample, type MpvClockRefs } from "./mpvClock";
 import { wtLog } from "../watchTogether/wtLog";

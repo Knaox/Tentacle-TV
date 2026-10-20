@@ -1,6 +1,7 @@
 import { isSegmentType } from "../../playback/segmentTypes";
 import { clampTicks, WT_CHAT_MAX_LENGTH, WT_GIF_URL_MAX_LENGTH, WT_REACTION_MAX_LENGTH } from "./protocol";
 import type { WtClientMessage, WtSetItemReason } from "./protocolMessages";
+import { formatWtSeekToken, parseWtSeekToken } from "./watchTogetherSeekToken";
 
 /**
  * Watch Together — validation de forme des messages entrants (payloads non
@@ -71,9 +72,12 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
         ...(msg.force === true ? { force: true } : {}),
       };
     case "wt:pause":
-    case "wt:seek":
+    case "wt:seek": {
       if (typeof msg.positionTicks !== "number" || !Number.isFinite(msg.positionTicks)) return null;
-      return { type: msg.type, positionTicks: clampTicks(msg.positionTicks) };
+      // Le jeton (sauts rapides) n'est gardé que bien formé : sinon, comme un client d'avant.
+      const token = parseWtSeekToken(msg.seekToken);
+      return { type: msg.type, positionTicks: clampTicks(msg.positionTicks), ...(token ? { seekToken: formatWtSeekToken(token) } : {}) };
+    }
     case "wt:setItem": {
       if (typeof msg.itemId !== "string" || !msg.itemId) return null;
       const from = msg.fromItemId;
@@ -160,6 +164,8 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
       if (!emoji || emoji.length > WT_REACTION_MAX_LENGTH) return null;
       return { type: "wt:reaction", emoji };
     }
+    case "wt:typing":
+      return typeof msg.typing === "boolean" ? { type: msg.type, typing: msg.typing } : null;
     case "wt:gif": {
       if (typeof msg.url !== "string") return null;
       const url = msg.url.trim();

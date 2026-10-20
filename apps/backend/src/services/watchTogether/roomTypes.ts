@@ -1,7 +1,9 @@
 import type { PlaybackSettings } from "../../playback/playbackSettings";
 import type { WebSocket } from "@fastify/websocket";
 import type { SegmentType } from "../../playback/segmentTypes";
-import type { WtChatMessageDto, WtPauseReason, WtWaitCause } from "./protocol";
+import type { WtChatMessageDto, WtPauseReason, WtRateBucket, WtWaitCause } from "./protocol";
+import type { MemberDevice } from "./memberDevices";
+import type { ReadyGate } from "./syncReadyGate";
 
 /**
  * Watch Together — les formes de l'état en mémoire (salles, membres,
@@ -30,6 +32,9 @@ export interface RoomMember {
    *  fermeture libère l'attente — un compte peut garder un autre socket ouvert
    *  (second onglet) alors que son lecteur est mort. */
   playbackSocket: WebSocket | null;
+  /** Les appareils LIÉS à la salle (hash de leur jeton) — 1.32.0, adhésion par
+   *  appareil (`memberDevices.ts`). Vide : comportement d'avant, tout le compte. */
+  devices: Map<string, MemberDevice>;
 }
 
 /**
@@ -94,6 +99,11 @@ export interface Room {
   skipHistory: Map<string, number>;
   /** Minuteur du saut armé (réarmé de lui-même tant que la salle est en pause). */
   skipTimer: ReturnType<typeof setTimeout> | null;
+  /** Le jeton du seek qui a posé la position (`appareil:numéro`), null dès
+   *  qu'un autre geste la déplace — cf. `watchTogetherSeekToken.ts`. */
+  seekToken: string | null;
+  /** « Tous prêts » pour le titre en cours (`syncReadyGate.ts`), null sans titre. */
+  readyGate: ReadyGate | null;
   /** Dernière diffusion due aux balises (`wt:tick`) — au plus une par 5 s. */
   lastTickBroadcastAt: number;
   members: Map<string, RoomMember>;
@@ -104,10 +114,11 @@ export interface Room {
   chat: WtChatMessageDto[];
   /** Compteur monotone d'ids de messages (`groupId:seq`). */
   chatSeq: number;
-  /** Anti-spam chat/réactions/GIFs : dernier envoi accepté par membre. */
-  lastChatAt: Map<string, number>;
-  lastReactionAt: Map<string, number>;
-  lastGifAt: Map<string, number>;
+  /** Débit du chat : un seau à jetons par membre et par sorte (`membre:sorte`),
+   *  cf. `watchTogetherChat.ts`. */
+  chatRate: Map<string, WtRateBucket>;
+  /** « Est en train d'écrire » : l'extinction programmée de chaque membre qui tape. */
+  typing: Map<string, ReturnType<typeof setTimeout>>;
   createdAt: number;
 }
 

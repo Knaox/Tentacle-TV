@@ -14,9 +14,14 @@
 import type { PlaybackSettings } from "../../playback/playbackSettings";
 import type { SegmentType } from "../../playback/segmentTypes";
 import type { WtAffinityMessage } from "./watchTogetherAffinity";
+import type { WtElsewhereMessage } from "./watchTogetherDevices";
 
-// L'affinité (swipe de groupe) a son propre contrat, recopié à part.
+// L'affinité (swipe de groupe) et l'adhésion par appareil ont leurs propres
+// contrats, recopiés à part.
 export * from "./watchTogetherAffinity";
+export * from "./watchTogetherDevices";
+export * from "./watchTogetherSeekToken";
+export * from "./watchTogetherChat";
 
 /** Ticks Jellyfin par milliseconde (10 000 000 par seconde). */
 const TICKS_PER_MS = 10_000;
@@ -120,6 +125,15 @@ export interface WtRoomStateDto {
   waitCause?: WtWaitCause;
   /** Saut de passage armé (décompte serveur) — absent quand il n'y en a pas. */
   pendingSkip?: WtPendingSkipDto;
+  /** « Tous prêts » (1.32.0, `watchTogether.readyGate`) : les membres attendus
+   *  pour le titre sont tous posés (ou le délai est passé) et aucune barrière
+   *  n'est ouverte. Faux : aucun saut de passage, ni bouton ni décompte.
+   *  Absent : serveur d'avant, ou salle sans titre — le client en juge seul. */
+  allReady?: boolean;
+  /** Le jeton du seek qui a posé la position de la salle (`appareil:numéro`),
+   *  tant qu'aucun autre geste ne l'a déplacée — l'émetteur reconnaît l'écho
+   *  d'un de SES seeks plus anciens et ne s'y recale pas (sauts rapides). */
+  seekToken?: string;
 }
 
 export interface WtInviteDto {
@@ -161,7 +175,10 @@ export type WtClientMessage =
    *  attente ne fait qu'en programmer la fin. */
   | { type: "wt:play"; positionTicks: number; force?: boolean }
   | { type: "wt:pause"; positionTicks: number }
-  | { type: "wt:seek"; positionTicks: number }
+  /** `seekToken` : `appareil:numéro`, croissant par appareil — absent d'un
+   *  client d'avant. Un jeton plus ancien que celui de la salle, du même
+   *  appareil, est ignoré (réseau réordonné). */
+  | { type: "wt:seek"; positionTicks: number; seekToken?: string }
   /** `fromItemId` = item courant vu par l'émetteur — sert à dédupliquer les
    *  auto-next concurrents : le serveur ignore si fromItemId ≠ state.itemId.
    *  `startPositionTicks` = position initiale du groupe (reprise Jellyfin du
@@ -202,7 +219,10 @@ export type WtClientMessage =
   /** Réaction emoji éphémère (non stockée côté serveur). */
   | { type: "wt:reaction"; emoji: string }
   /** GIF éphémère (URL tinygif Klipy, allowlist d'hôtes côté serveur — jamais stocké). */
-  | { type: "wt:gif"; url: string; w?: number; h?: number };
+  | { type: "wt:gif"; url: string; w?: number; h?: number }
+  /** « Est en train d'écrire » (1.32.0, `watchTogether.typing`) : début, redit
+   *  toutes les 2 s tant qu'on tape, puis fin — rien au repos. */
+  | { type: "wt:typing"; typing: boolean };
 
 // ── Messages serveur → clients ──
 
@@ -240,11 +260,17 @@ export type WtServerMessage =
   | { type: "wt:reaction"; userId: string; username: string; emoji: string; at: number }
   /** GIF transient (même sémantique que wt:reaction — jamais stocké). */
   | { type: "wt:gif"; userId: string; username: string; url: string; w?: number; h?: number; at: number }
+  /** « Est en train d'écrire » d'un AUTRE membre (jamais relayé à soi-même) ;
+   *  le serveur l'éteint seul après WT_TYPING_TTL_MS sans nouvelle. */
+  | { type: "wt:typing"; userId: string; username: string; typing: boolean }
   /** Fil complet (ring buffer) — envoyé au join et à chaque syncRequest. */
   | { type: "wt:chatHistory"; groupId: string; messages: WtChatMessageDto[] }
   /** Séance d'affinité (swipe de groupe) — voir `watchTogetherAffinity.ts`.
    *  Un client d'avant l'ignore : message inconnu. */
-  | WtAffinityMessage;
+  | WtAffinityMessage
+  /** Adhésion par appareil (1.32.0) : la salle du compte, dite aux appareils
+   *  qui n'y sont pas liés. Un client d'avant l'ignore : message inconnu. */
+  | WtElsewhereMessage;
 
 // ── Extrapolation (serveur ET clients) ──
 

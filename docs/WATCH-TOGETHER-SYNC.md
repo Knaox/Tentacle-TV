@@ -21,6 +21,101 @@ de terrain restent à consigner (voir « Vérification »).
    champ ajouté depuis la v1 est facultatif : un client d'avant (bureau de
    store en retard sur le serveur) continue de fonctionner.
 
+## Où vit le code (lot du 20/10)
+
+Tout ce qui n'est pas de l'interface est PARTAGÉ — web, bureau, mobile :
+
+- `packages/shared/src/watchTogether/` : les règles pures — état de salle et
+  effets d'un `wt:state` (`roomState.ts`), qui attend qui (`sessionRules.ts`),
+  « tous prêts » (`readyGate.ts`), l'arithmétique de la reprise planifiée
+  (`groupSchedule.ts`) ; la dérive reste dans `player/driftController.ts`.
+- `packages/api-client/src/watchTogether/` : les crochets React sans DOM — la
+  séance d'un appareil (`session/useWatchTogetherSession.ts`, posée dans
+  `WatchTogetherContext`), le moteur de synchronisation (`engine/`), la session
+  de lecture (`useGroupPlaybackHandlers`), le décompte de saut
+  (`useGroupSkipCountdown`), le chat, l'affinité (`useAffinitySession`).
+- La plateforme ne fournit que ses gestes (`WtPlatformPort` : navigation,
+  messages, fermeture de l'app, `enabled`) et son LECTEUR, par le port
+  `WtPlayerPort` (`playerPort.ts`).
+
+### Le port lecteur
+
+Positions en secondes « position FILM » (0 → durée), jamais en PTS : un flux
+transcodé parti de `startTicks` rend `startTicks + currentTime`, ATTERRISSAGE
+compris (le premier segment d'une copie vidéo part de l'image clé d'avant la
+cible — cf. « L'atterrissage de mpv en transcodage », et `hlsTimelineAttach.ts`
+côté web). Une position fausse ici est une dérive que la boucle ne voit pas.
+
+| Méthode | Contrat |
+|---|---|
+| `play()`, `pause()`, `seekTo(s)` | commandes du moteur (leurs échos sont filtrés) |
+| `getPositionSeconds()`, `isPaused()` | lus à 5 Hz par la boucle de dérive |
+| `setRate(r)` | 0,95 → 1,05, hauteur corrigée |
+| `precision` | `coarse` si la position est extrapolée d'une lecture étranglée (mpv 8 Hz) |
+| `isMediaReady()` | première image décodée — rejoindre avec un lecteur déjà prêt ne déclare pas de chargement |
+| `isSeeking()` | un seek en vol : la boucle ne recorrige pas (un far-seek HLS relancerait ffmpeg en spirale) |
+| `isSettledAt(s)` | posé à < 150 ms de la cible, données décodables : le « prêt » d'une barrière |
+| `cancelAutoNext()`, `primeGesture()` | carte « à suivre » masquée par un autre ; geste WebKit (web seul) |
+
+Et dans l'autre sens, ce que le lecteur appelle (`useGroupSyncEngine`) :
+`notifyBuffering(true)` au chargement et à chaque mise en mémoire tampon,
+`false` quand il est prêt — `notifyBuffering(true, cibleS)` quand il RECHARGE
+sa source (qualité, langue) : la salle se gèle sur la cible, pas sur la
+position d'un lecteur qui se détruit ; `notifyPlayState(paused)` sur les
+gestes de l'utilisateur ; `notifySeek(s, { explicit: true })` sur la barre ;
+`requestPlay()` d'abord sur le bouton lecture (vrai : ne pas jouer soi-même) ;
+`notifyFatalError()` si le titre est illisible ici.
+
+### En transcodage
+
+- **Départ** : `useGroupPlaybackHandlers` fige la position de la salle à
+  l'arrivée sur le titre et la pousse dans `startTicks` AVANT la négociation :
+  le transcodage démarre directement au bon endroit, sans double chargement.
+- **Démarrage du transcodage** : le lecteur déclare son chargement, la salle
+  se gèle sur sa position le temps que ffmpeg produise (attendre ici est
+  NÉCESSAIRE : sinon il arrive en retard de tout le démarrage et devrait
+  re-sauter — un nouveau ffmpeg). Prêt, il confirme ; la reprise est planifiée
+  pour tous au même instant serveur. Les autres ne dérivent pas : ils
+  attendent en pause, à la même image.
+- **Recalage dur** d'un lecteur transcodé : s'il sort du tampon produit, le
+  lecteur bufferise et la salle l'attend sur sa cible — UNE relance de ffmpeg
+  au lieu d'une spirale. Un retard sous 1,5 s se rattrape à la vitesse, sans
+  seek. Délais bornés : barrière 20 s, chargement 60 s (le membre est alors
+  déclaré en échec et la salle repart sans lui).
+
+### Les correctifs du banc (20/10, nuit)
+
+- **Départ** : un lecteur qui JOUE déjà (lecture automatique au chargement)
+  quand la reprise est planifiée se met en pause jusqu'à l'instant T ; la
+  correction unique d'après la reprise vaut dans les deux sens (|écart| >
+  250 ms, `needsStartCorrection`). Mesuré avant : 200 à 300 ms d'avance.
+- **Régime** : sur le web, la correction engagée descend jusqu'à 8 ms
+  (`WT_DRIFT_SETTLE_WEB_S`) — relâchée à 25 ms de part et d'autre, deux
+  lecteurs restaient à 50 ms l'un de l'autre.
+- **Prêt pendant un seek** : la fin de chargement d'un lecteur v2 (sans
+  `barrierId`) ne libère plus une barrière de seek ou de saut : il se cale,
+  puis confirme avec l'identifiant (vu au banc : salle à 40 s, lui à 0 s). À
+  la reconnexion, un lecteur posé renvoie son « prêt » avec l'identifiant.
+- **Sauts rapides (B7)** : les « +30 s » rapprochés partent du saut DÉJÀ
+  demandé (contrôleur de saut partagé, lecture directe comprise) ; chaque
+  `wt:seek` porte `seekToken` (`appareil:numéro`, pris à l'appui), renvoyé
+  par la salle tant que la position est la sienne ; l'émetteur ignore l'écho
+  de ses seeks plus anciens (ni recalage, ni intent soldé) ; regroupement
+  150 ms ; le serveur ignore un seek plus ancien du même appareil. Huit
+  « +30 s » en une seconde : +240 s pour tous.
+
+## Le chat interactif (20/10)
+
+Un seau à jetons par membre et par sorte (`watchTogetherChat.ts`, contrat
+partagé) : messages 10 d'affilée puis 2/s, réactions 20 puis 10/s, GIF 6
+puis 1/s. Le client applique la même règle AVANT d'envoyer (`false` : rien
+n'est parti, le brouillon reste) ; le serveur ignore en silence au-delà. Les
+rafales du même emoji d'un même membre se regroupent à l'écran (« 🔥 ×5 »).
+« X est en train d'écrire… » (`watchTogether.typing`) : `wt:typing` début /
+fin, redit toutes les 2 s en tapant, fin après 4 s sans frappe, rien au
+repos ; relayé aux autres membres seulement (jamais au compte qui tape),
+éteint par le serveur après 6 s sans nouvelle et à l'envoi d'un message.
+
 ## L'horloge
 
 Chaque ping porte `t = Date.now()` ; le pong renvoie `t` et `serverTime`.
@@ -179,7 +274,20 @@ UN décompte pour la salle — en position de média, pas en heure murale, une
 pause le fige —, dédupliqué par passage, et l'exécute par une barrière de
 seek. Chacun voit le même chiffre. Un clic saute tout de suite (c'est un
 seek), une croix (`wt:skipIntroDismiss`) éteint le décompte pour tous et
-règle le passage ; rembobiner avant son début le redemande. Les réglages de
+règle le passage ; rembobiner avant son début le redemande.
+
+**Tous prêts d'abord** (1.32.0, `watchTogether.readyGate`). Une intro au tout
+début du titre montrait « Passer l'intro » avant que tous soient arrivés : le
+premier posé sautait seul. À chaque titre lancé, le serveur retient les
+membres qu'il ATTEND (au premier lancement, tous ceux en ligne — ils suivent
+tous ; ensuite, ceux qui regardaient, et le lanceur) ; tant qu'ils ne sont
+pas posés, `allReady` est faux et une proposition de saut est mise de côté,
+rejouée à l'ouverture (`syncReadyGate.ts`). Ouverte, la porte le reste pour
+le titre ; une barrière en cours suspend seulement `allReady`. Délai : 60 s.
+Côté lecteurs, la règle est partagée (`groupHold` de `findSkipCandidate` et
+`autoNextEligible`, `wtSkipHeld`) : ni bouton, ni décompte, ni proposition,
+ni enchaînement tant que la salle attend. Face à un serveur d'avant, le
+client juge d'après l'état (personne en chargement ni attendu). Les réglages de
 l'hôte sont relus à la création du groupe, à chaque transfert d'hôte et
 quand l'hôte enregistre ses réglages ; un hôte sans réglages enregistrés
 impose les défauts.
@@ -191,7 +299,10 @@ version (v1) n'est jamais attendu dans une barrière (il ne saurait pas
 répondre « prêt » et gèlerait la salle 60 s), reçoit les mêmes états et se
 recale comme avant ; un `wt:play` venu de lui — il joue déjà — ancre la
 salle là où il SERA à l'instant de reprise. Aucune TV (tvOS, Android TV,
-webOS) n'a de Watch Together.
+webOS) n'a de Watch Together. Le mobile n'en a qu'avec un serveur qui
+déclare `watchTogether.deviceMembership` (sinon téléphone et bureau d'un même
+compte se marcheraient dessus) — sa session reste éteinte (`enabled: false`).
+L'adhésion PAR APPAREIL : `docs/WATCH-TOGETHER-APPAREILS.md`.
 
 ## Diagnostic
 

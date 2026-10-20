@@ -28,7 +28,7 @@ const SECONDARY = `${PILL} border border-line-subtle bg-fill-soft text-content-p
 export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
   const { t } = useTranslation("watchTogether");
   const { show } = useToast();
-  const { room, invites, selfId, isHost, pendingInvites, actions, mayCreate } = useWatchTogether();
+  const { room, invites, selfId, isHost, pendingInvites, actions, mayCreate, elsewhere } = useWatchTogether();
   const [busy, setBusy] = useState(false);
 
   const run = async (fn: () => Promise<unknown>, closeAfter = false) => {
@@ -119,6 +119,23 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
             </button>
           </div>
         </>
+      ) : elsewhere ? (
+        // Le compte est en groupe sur un AUTRE appareil : on n'en crée pas un
+        // second (le serveur le refuserait), on propose d'ajouter celui-ci.
+        <div className="px-4 py-6 text-center">
+          <p className="text-sm text-content-secondary">
+            {elsewhere.hostUsername ? t("elsewhereActiveWithHost", { name: elsewhere.hostUsername }) : t("elsewhereActive")}
+          </p>
+          <button
+            type="button"
+            onClick={() => run(() => actions.joinHere(), true)}
+            disabled={busy}
+            className={`${PRIMARY} mt-4 w-full`}
+          >
+            <DoorOpen aria-hidden className="h-4 w-4" />
+            {t("elsewhereJoinHere")}
+          </button>
+        </div>
       ) : (
         <div className="px-4 py-6 text-center">
           <p className="text-sm text-content-secondary">{t("noGroup")}</p>
