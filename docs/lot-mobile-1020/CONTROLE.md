@@ -174,11 +174,15 @@ Sur mobile, tablette ET web, pour tous les droits.
 | N5 | Bureau inchangé (même code, aucune régression) ; client LG non cassé (substitutions `App.tsx`) | tests web/bureau + build webOS si `App.tsx`/pages touchés | ☐ |
 | N6 | Capacités `family.*` respectées sur le web | test | ☐ |
 
-## O. Web étroit (web-etroit)
+## O. Web étroit (web-etroit) — « les changements du mobile arrivent sur le web étroit sans réécriture »
 
 | # | Exigence | Preuve | État |
 |---|----------|--------|------|
-| O1 | Exigences à préciser par le coordinateur (branche partie de reglages) | — | ☐ |
+| W1 | Structure du mobile en CATALOGUES PURS dans `packages/shared`, testés : réglages (pages, sections, ordre, portée Compte/Cet appareil, clé, type de contrôle, capacité, plateformes, « réservé au bureau »), étapes du premier lancement, destinations des notifications, résumé des droits | modules shared + tests ; plus de copie dans `apps/mobile` (`profileStructure.ts`, `settingsScopes.ts` deviennent des lecteurs du catalogue) | ☐ |
+| W2 | Le web en fenêtre étroite (téléphone, iPad, bureau rétréci) REND ces catalogues : réglages en six rubriques avec pastilles et « réglages avancés : sur le bureau », premier lancement (Qui regarde ?, PIN, carrousels, photo), destinations des notifications, en-tête « Pour vous »/« Affinité » si modèle partagé | code + captures à 390 px et 820 px | ☐ |
+| W3 | Un test prouve que chaque entrée du catalogue est rendue par les deux clients, ou exclue d'un côté avec sa raison | test présent et vert | ☐ |
+| W4 | Fenêtre large du bureau inchangée ; cible webOS compile ; aucune clé `tentacle_*` ni i18n renommée | build webOS (par `heavy.sh`) + scan A11 | ☐ |
+| W5 | Pas de conflit avec famille-web (apps/web) ni avec reglages (catalogue déplacé pendant que reglages travaille) | croisement A16 | ☐ |
 
 ## L. Boutons (boutons)
 
