@@ -38,12 +38,21 @@ export interface EngineSettings {
   matchFrameRate: boolean;
 }
 
+/**
+ * Les sous-titres d'un TÉLÉPHONE se lisent de plus loin que sa taille ne le
+ * laisse croire : 160 % par défaut (décision du 2026-10-20), position au bas
+ * de l'image. Défaut seulement : qui a déjà réglé garde sa valeur (la clé
+ * existe dès le premier geste sur le curseur).
+ */
+export const DEFAULT_SUBTITLE_SCALE = 1.6;
+export const DEFAULT_SUBTITLE_POSITION = 100;
+
 export const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
   engine: "auto",
   preferSystemAtmos: false,
   styledSubtitlesViaMpv: true,
-  subtitleScale: 1,
-  subtitlePosition: 100,
+  subtitleScale: DEFAULT_SUBTITLE_SCALE,
+  subtitlePosition: DEFAULT_SUBTITLE_POSITION,
   matchFrameRate: true,
 };
 
@@ -67,8 +76,8 @@ function read(adapter: StorageAdapter): EngineSettings {
     engine: engine === "native" || engine === "mpv" ? engine : "auto",
     preferSystemAtmos: adapter.getItem(SYSTEM_ATMOS_KEY) === "1",
     styledSubtitlesViaMpv: adapter.getItem(STYLED_SUBTITLES_KEY) !== "0",
-    subtitleScale: readNumber(adapter, SUBTITLE_SCALE_KEY, 1, 0.5, 2),
-    subtitlePosition: readNumber(adapter, SUBTITLE_POSITION_KEY, 100, 50, 100),
+    subtitleScale: readNumber(adapter, SUBTITLE_SCALE_KEY, DEFAULT_SUBTITLE_SCALE, 0.5, 2),
+    subtitlePosition: readNumber(adapter, SUBTITLE_POSITION_KEY, DEFAULT_SUBTITLE_POSITION, 50, 100),
     matchFrameRate: adapter.getItem(MATCH_FRAME_RATE_KEY) !== "0",
   };
 }
