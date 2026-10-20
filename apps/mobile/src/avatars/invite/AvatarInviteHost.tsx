@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { usePathname, useSegments } from "expo-router";
-import { useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { shouldInviteToAvatars } from "@tentacle-tv/shared";
-import { useAccountHasPhoto } from "@/auth/useAccountHasPhoto";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useReportStartupOverlay, useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { AvatarGallerySheet } from "../gallery/AvatarGallerySheet";
-import { inviteBusy, markSubjectInvited, readInvitedSubjects } from "./inviteGate";
+import { inviteBusy, inviteOnPlayer, markSubjectInvited, readInvitedSubjects } from "./inviteGate";
 import { firstRunCoveredPhoto } from "@/family/firstRun/firstRunCovered";
+import { useAvatarInviteSubject } from "./useAvatarInviteSubject";
 
 /** Le calme exigé avant d'inviter : l'app s'installe, un recouvrement qui se referme laisse la place. */
 const SETTLE_MS = 1500;
@@ -27,10 +27,11 @@ function useAppActive(): boolean {
 
 /**
  * L'invitation unique à choisir un personnage (règle partagée : `shared` ›
- * `avatarInvite`) : la galerie elle-même, en mode « invite », pour un compte
- * SANS photo d'après Jellyfin (`useAccountHasPhoto`), en ligne, une fois par
- * compte et par appareil — au lancement comme juste après la première
- * connexion. Jamais par-dessus un autre recouvrement du démarrage : elle
+ * `avatarInvite`) : la galerie elle-même, en mode « invite », pour un SUJET
+ * sans photo (`useAvatarInviteSubject` : le compte d'après Jellyfin, ou le
+ * profil de la session de profil d'après le serveur), en ligne, une fois par
+ * sujet et par appareil — au lancement, à l'entrée dans un profil, ou juste
+ * après la première connexion. Jamais par-dessus un autre recouvrement du démarrage : elle
  * attend qu'ils aient tous tranché et se soient tus (`startup/`), que
  * l'application soit au premier plan, hors du lecteur et de la connexion,
  * puis qu'aucune modale ne soit à l'écran (`whenNoModal`). Le compte est
@@ -38,11 +39,10 @@ function useAppActive(): boolean {
  * Monté une fois, à la racine.
  */
 export function AvatarInviteHost() {
-  const userId = useUserId();
   const user = useStoredUser();
   const { storage } = useTentacleConfig();
   const online = useConnectivity().state === "online";
-  const hasPhoto = useAccountHasPhoto();
+  const { subjectId: userId, hasPhoto, canChangePhoto } = useAvatarInviteSubject();
   // Elle attend les recouvrements d'avant elle, jamais le code PIN, qui la suit.
   const overlaysQuiet = useStartupOverlaysQuiet("avatars");
   const pathname = usePathname();
@@ -52,13 +52,17 @@ export function AvatarInviteHost() {
   const [open, setOpen] = useState(false);
 
   const busy = inviteBusy({ overlaysQuiet, pathname, rootSegment, appActive, galleryOpen: open });
+  // Relu au moment d'ouvrir : le lecteur a pu se présenter entre le calme et l'ouverture.
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  const onPlayer = inviteOnPlayer({ pathname, rootSegment });
   // Le premier lancement vient de proposer la photo : jamais deux fois de suite (`family/firstRun`).
   const covered = firstRunCoveredPhoto();
   const due = shouldInviteToAvatars({
     eligible: !covered,
     subjectId: userId,
-    // Session personnelle, ou session de profil (1.31.1) : sa photo passe par le proxy (`ownPhoto`, `avatars.devicePhoto`).
-    canChangePhoto: !!storage.getItem("tentacle_token"),
+    // Session de profil : sa photo passe par le proxy (`avatars.devicePhoto`).
+    canChangePhoto,
     online,
     hasPhoto,
     busy,
@@ -69,7 +73,7 @@ export function AvatarInviteHost() {
   // si elle va paraître (dès que le reste se tait) ou est ouverte, « pas
   // tranché » tant que la photo du compte n'est pas connue.
   const awaited = shouldInviteToAvatars({
-    eligible: !covered, subjectId: userId, canChangePhoto: !!storage.getItem("tentacle_token"),
+    eligible: !covered, subjectId: userId, canChangePhoto,
     online, hasPhoto, busy: false, invited,
   });
   const undecided = !covered && online && !!userId && hasPhoto === undefined && !invited.includes(userId);
@@ -80,7 +84,7 @@ export function AvatarInviteHost() {
     let cancelled = false;
     const timer = setTimeout(() => {
       whenNoModal(() => {
-        if (cancelled) return;
+        if (cancelled || busyRef.current) return;
         setInvited(markSubjectInvited(storage, userId));
         setOpen(true);
       });
@@ -94,5 +98,7 @@ export function AvatarInviteHost() {
   const close = useCallback(() => setOpen(false), []);
   const current = useMemo(() => ({ uri: null, initial: (user?.Name ?? "?").charAt(0).toUpperCase() }), [user?.Name]);
 
-  return <AvatarGallerySheet visible={open} mode="invite" current={current} onClose={close} />;
+  // Jamais présentée sur le lecteur : elle se retire, et revient au retour. (Pas l'arrière-plan :
+  // « Importer une photo » y passe par le sélecteur du système.)
+  return <AvatarGallerySheet visible={open && !onPlayer} mode="invite" current={current} onClose={close} />;
 }

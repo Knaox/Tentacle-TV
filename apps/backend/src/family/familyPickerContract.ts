@@ -82,10 +82,14 @@ export interface FamilyTvLaunchPolicy {
   mode: FamilyLaunchMode;
 }
 
-/** `GET` et `PUT /api/admin/family/picker` — la politique de l'administration. */
+/** `GET` et `PUT /api/admin/family/picker` — la politique de l'administration.
+ *  `desktop` et `tv` : sa forme d'avant, tirée de la forme simple (`enabled`,
+ *  `platforms` : présents dès `family.launchPlatforms`). */
 export interface FamilyLaunchPolicy {
   desktop: FamilyDesktopLaunchPolicy;
   tv: FamilyTvLaunchPolicy;
+  enabled?: boolean;
+  platforms?: FamilyLaunchPlatforms;
 }
 
 /** Sans réglage de l'administration : permis partout, le bureau activé par défaut. */
@@ -94,10 +98,45 @@ export const DEFAULT_FAMILY_LAUNCH_POLICY: Readonly<FamilyLaunchPolicy> = {
   tv: { mode: "choice" },
 };
 
-/** Le corps du `PUT` : seulement ce qui change. */
+/** Le corps du `PUT` : seulement ce qui change. `desktop` et `tv` : la forme
+ *  d'avant (un bureau d'avant la 1.31.1 l'envoie encore) ; `enabled` et
+ *  `platforms` : la forme simple (`family.launchPlatforms`). */
 export interface SetFamilyLaunchPolicyBody {
   desktop?: Partial<FamilyDesktopLaunchPolicy>;
   tv?: Partial<FamilyTvLaunchPolicy>;
+  enabled?: boolean;
+  platforms?: Partial<FamilyLaunchPlatforms>;
+}
+
+/**
+ * « Qui regarde ? » à l'ouverture, réglé SIMPLEMENT (serveur 1.31.1, capacité
+ * `family.launchPlatforms`) : un interrupteur général, puis les plateformes
+ * cochées — liste FERMÉE, dans l'ordre de l'administration. Cochée : la
+ * question s'affiche PAR DÉFAUT à l'ouverture de ses appareils, chacun gardant
+ * sa case « Ne plus proposer » ; décochée (ou l'interrupteur coupé) : jamais
+ * proposée d'office, « Changer de profil » reste. Pour les TV, décochée : elles
+ * ouvrent directement le profil du compte qui les a jumelées (`askAtLaunch`).
+ */
+export const FAMILY_LAUNCH_ASK_PLATFORMS = ["desktop", "web", "mobile", "tv"] as const;
+export type FamilyLaunchAskPlatform = (typeof FAMILY_LAUNCH_ASK_PLATFORMS)[number];
+export type FamilyLaunchPlatforms = Record<FamilyLaunchAskPlatform, boolean>;
+
+/** La forme simple de la politique, servie EN PLUS de `desktop` et `tv`. */
+export interface FamilyLaunchSettings {
+  enabled: boolean;
+  platforms: FamilyLaunchPlatforms;
+}
+
+/** Serveur neuf, ou jamais réglé : allumé, tout coché — les TV comprises,
+ *  comme avant (une TV ne s'ouvre jamais sans code à la mise à jour). */
+export const DEFAULT_FAMILY_LAUNCH_SETTINGS: Readonly<FamilyLaunchSettings> = {
+  enabled: true,
+  platforms: { desktop: true, web: true, mobile: true, tv: true },
+};
+
+/** La question est-elle proposée d'office sur cette plateforme ? */
+export function launchAskedOn(settings: FamilyLaunchSettings, platform: FamilyLaunchAskPlatform): boolean {
+  return settings.enabled && settings.platforms[platform];
 }
 
 /** Le nom d'appareil qu'un client peut donner (tableau de bord de Jellyfin). */
@@ -161,8 +200,15 @@ export interface PickerProfilesDto {
    *  défaut. Un bureau à jour décide d'après `launchPolicy` et l'appareil. */
   atLaunch: boolean;
   /** Le cadre de l'administration pour le bureau (`family.pickerPolicy`).
-   *  Absent (serveur d'avant) : permis, activé par défaut. */
+   *  Absent (serveur d'avant) : permis, activé par défaut. Dès
+   *  `family.launchPlatforms`, tiré de `launchAsk` pour la plateforme demandée
+   *  (`choice` activé par défaut, ou `off`). */
   launchPolicy?: FamilyDesktopLaunchPolicy;
+  /** 1.31.1 (`family.launchPlatforms`) : « Qui regarde ? » est proposé D'OFFICE
+   *  à l'ouverture sur la plateforme demandée (interrupteur général allumé ET
+   *  plateforme cochée). Faux : jamais d'office — ni question ni case « Ne plus
+   *  proposer », « Changer de profil » reste. Absent : serveur d'avant. */
+  launchAsk?: boolean;
 }
 
 /** `POST /api/family/picker/sessions` — avec le jeton PERSONNEL. */

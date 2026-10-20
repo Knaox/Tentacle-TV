@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -9,6 +9,7 @@ import { usePickFlow } from "../usePickFlow";
 import { usePickerPick } from "../usePickerPick";
 import { PinPad } from "./PinPad";
 import { ProfileTile } from "./ProfileTile";
+import { StayAtLaunchCheck } from "./StayAtLaunchCheck";
 import { PlainButton } from "@/components/ui/buttons";
 
 export type WhoIsWatchingMode = "launch" | "switch";
@@ -17,7 +18,12 @@ interface WhoIsWatchingViewProps {
   listing: PickerProfilesDto | undefined;
   /** `launch` : à l'ouverture, rien d'autre à faire ; `switch` : depuis Réglages, « Annuler » et le profil en cours. */
   mode: WhoIsWatchingMode;
-  onPicked: (picked: PickedProfileDto) => void;
+  /** `launch` : la case « Ne plus proposer au démarrage » est offerte (l'administration le propose d'office). */
+  stayOffered?: boolean;
+  /** `launch` : la case à l'arrivée (`mobileStayInitial`). */
+  stayInitial?: boolean;
+  /** `stayChecked` : la case, au moment du choix (toujours faux depuis Réglages, où elle n'est pas). */
+  onPicked: (picked: PickedProfileDto, stayChecked: boolean) => void;
   onStale: () => void;
   onCancel?: () => void;
 }
@@ -25,11 +31,12 @@ interface WhoIsWatchingViewProps {
 /**
  * « Qui regarde ? » du mobile et de l'iPad, en plein écran : les profils de la
  * famille (ceux de la TV, dits par le serveur), puis le pavé du code PIN si le
- * profil en a un. Aucun accès à la gestion des profils ici : elle vit dans
- * Réglages, une fois connecté. Centré, largeur bornée : propre en paysage sur
+ * profil en a un. À l'ouverture, la case « Ne plus proposer au démarrage ».
+ * Aucun accès à la gestion des profils ici : elle vit dans Réglages, une fois
+ * connecté. Centré, largeur bornée : propre en paysage sur
  * l'iPad comme sur le téléphone.
  */
-export function WhoIsWatchingView({ listing, mode, onPicked, onStale, onCancel }: WhoIsWatchingViewProps) {
+export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInitial = false, onPicked, onStale, onCancel }: WhoIsWatchingViewProps) {
   const { t } = useTranslation(["profilePicker", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -38,7 +45,13 @@ export function WhoIsWatchingView({ listing, mode, onPicked, onStale, onCancel }
   const profiles = useMemo(() => listing?.profiles ?? [], [listing]);
   // Depuis Réglages, le profil en cours se rouvre sans son code : on y est déjà.
   const opensWithoutPin = useMemo(() => (mode === "switch" && listing ? [listing.currentProfileId] : []), [mode, listing]);
-  const flow = usePickFlow({ profiles, opensWithoutPin, pick, onPicked, onStale });
+  const [stayChecked, setStayChecked] = useState(stayInitial);
+  // Lue au moment où le serveur répond (le PIN a pu passer entre-temps).
+  const stayRef = useRef(stayChecked);
+  stayRef.current = stayChecked;
+  const picked = useCallback((result: PickedProfileDto) => onPicked(result, mode === "launch" && stayOffered && stayRef.current), [onPicked, mode, stayOffered]);
+  const toggleStay = useCallback(() => setStayChecked((value) => !value), []);
+  const flow = usePickFlow({ profiles, opensWithoutPin, pick, onPicked: picked, onStale });
 
   return (
     <View style={[st.page, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -70,6 +83,9 @@ export function WhoIsWatchingView({ listing, mode, onPicked, onStale, onCancel }
                   <Text style={st.caption}>{t("familyMobile:launch.loading")}</Text>
                 </View>
               )}
+              {mode === "launch" && stayOffered && listing ? (
+                <StayAtLaunchCheck checked={stayChecked} disabled={flow.opening !== null} onToggle={toggleStay} />
+              ) : null}
               {flow.notice ? <Text style={st.notice} accessibilityLiveRegion="polite">{flow.notice}</Text> : null}
               <Text style={st.caption}>{t(mode === "switch" ? "familyMobile:launch.switchCaption" : "familyMobile:launch.caption")}</Text>
               {onCancel ? (

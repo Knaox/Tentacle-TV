@@ -22,6 +22,8 @@ import type {
  *   du mobile (`tentacle_sub_scale`, `tentacle_sub_pos`, `tentacle_video_engine`…) ;
  * - dataSaver → `tentacle_data_saver` (même clé sur le web) ;
  * - bootIntro, bootSound → `tentacle_boot_intro`, `tentacle_boot_sound` (« 0 » = coupé) ;
+ * - askAtLaunch → `tentacle_mobile_profile_launch` (mobile), `tentacle_profile_launch_ask` /
+ *   `tentacle_profile_launch_stay` (web) : « Qui regarde ? » au démarrage ;
  * - wifiOnly, backgroundTransfers → `offline/settings.ts` du mobile ;
  *   notifyReady, liveTransfers → `offline/deviceSettings.ts` du mobile
  *   (`tentacle_offline_live_activity` pour le suivi en direct).
@@ -32,6 +34,7 @@ export const SETTINGS_CONTROLS: Readonly<Record<SettingsControlId, { scope: Sett
   photo: { scope: "account", type: "sheet" },
   userName: { scope: null, type: "info" },
   switchProfile: { scope: null, type: "link" },
+  askAtLaunch: { scope: "device", type: "switch" },
   intros: { scope: "account", type: "segmented" },
   nextAutoPlay: { scope: "account", type: "switch" },
   stillWatching: { scope: "account", type: "switch" },

@@ -37,6 +37,8 @@ export interface SettingsI18nRef {
  * - `canGoOffline` : en ligne ET hors ligne permis (« Passer hors ligne ») ;
  * - `family` : le serveur annonce la Famille, activée, et l'écran est branché ;
  * - `canSwitchProfile` : en ligne, et la famille a au moins deux profils ;
+ * - `launchAsked` : l'administration propose « Qui regarde ? » d'office sur
+ *   cette plateforme (capacité `family.launchPlatforms`) ;
  * - `liquidGlass` : le rendu Liquid Glass existe sur cet appareil (iOS 26) ;
  * - `advancedEngine` : le lecteur avancé est dans ce binaire (moteur, sous-titres) ;
  * - `engineOptions` : la plateforme a au moins une option de lecteur ;
@@ -53,7 +55,7 @@ export interface SettingsI18nRef {
  * Ce qui dépend du CODE du serveur passe par `capability`, jamais par ici.
  */
 export type SettingsRequirement =
-  | "online" | "admin" | "offlineVisible" | "canGoOffline" | "family" | "canSwitchProfile"
+  | "online" | "admin" | "offlineVisible" | "canGoOffline" | "family" | "canSwitchProfile" | "launchAsked"
   | "liquidGlass" | "advancedEngine" | "engineOptions" | "bootIntro" | "liveTransfers" | "personal"
   | SettingsAbility;
 
@@ -67,7 +69,7 @@ export type SettingsAbility = "tickets" | "manageAccount" | "pairDevices" | "pus
 
 /** Les réglages qui se font SUR PLACE ; leur portée est dans `settingsScopes.ts`. */
 export type SettingsControlId =
-  | "photo" | "userName" | "switchProfile"
+  | "photo" | "userName" | "switchProfile" | "askAtLaunch"
   | "intros" | "nextAutoPlay" | "stillWatching" | "language" | "trendingNow"
   | "theme" | "liquidGlass" | "subtitleSize" | "subtitlePosition" | "dataSaver" | "engine" | "engineOptions"
   | "bootIntro" | "bootSound"
@@ -169,6 +171,8 @@ export interface SettingsCatalogContext {
   family: boolean;
   /** La famille a au moins deux profils et le serveur sait en changer. */
   canSwitchProfile: boolean;
+  /** « Qui regarde ? » proposé d'office sur cette plateforme ; absent : oui (serveur d'avant). */
+  launchAsked?: boolean;
   liquidGlass: boolean;
   advancedEngine: boolean;
   engineOptions: boolean;

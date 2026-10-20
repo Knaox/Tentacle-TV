@@ -1,4 +1,6 @@
-import { AVATAR_INVITE_SEEN_KEY, parseInvitedSubjects, withSubjectInvited } from "@tentacle-tv/shared";
+import {
+  AVATAR_INVITE_SEEN_KEY, MOBILE_AVATAR_INVITE_ROUND, honorAvatarInviteRound, parseInvitedSubjects, withSubjectInvited,
+} from "@tentacle-tv/shared";
 
 /**
  * Ce que le mobile ajoute à la règle partagée de l'invitation aux avatars
@@ -19,11 +21,20 @@ export interface InviteBusyContext {
   galleryOpen: boolean;
 }
 
+/**
+ * Le lecteur est à l'écran (`watch/[itemId]`, une présentation native plein
+ * écran que le portier des modales ne voit pas). Une feuille rendue visible
+ * pendant qu'il se présente n'est jamais présentée par iOS, et retient le
+ * portier : invisible, elle bloque toute autre feuille (essai iPad du 21/10).
+ */
+export function inviteOnPlayer(context: Pick<InviteBusyContext, "pathname" | "rootSegment">): boolean {
+  return context.pathname.startsWith("/watch") || context.rootSegment === "watch";
+}
+
 /** Le mobile est-il occupé ? Jamais par-dessus un recouvrement, le lecteur, la connexion ou le système. */
 export function inviteBusy(context: InviteBusyContext): boolean {
   return !context.overlaysQuiet
-    || context.pathname.startsWith("/watch")
-    || context.rootSegment === "watch"
+    || inviteOnPlayer(context)
     || context.rootSegment === "(auth)"
     || !context.appActive
     || context.galleryOpen;
@@ -34,9 +45,14 @@ interface InviteStorage {
   setItem(key: string, value: string): void;
 }
 
-/** Les comptes déjà invités sur cet appareil (AsyncStorage, préchargé). */
+/**
+ * Les sujets déjà invités sur cet appareil (AsyncStorage, préchargé) — après
+ * le passage au tour du mobile (`honorAvatarInviteRound`) : un appareil qui
+ * avait vu l'ancienne invitation sans choisir la reçoit une fois de plus.
+ */
 export function readInvitedSubjects(storage: InviteStorage): string[] {
   try {
+    honorAvatarInviteRound(storage, MOBILE_AVATAR_INVITE_ROUND);
     return parseInvitedSubjects(storage.getItem(AVATAR_INVITE_SEEN_KEY));
   } catch {
     return [];

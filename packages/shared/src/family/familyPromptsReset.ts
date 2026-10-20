@@ -88,3 +88,22 @@ export function honorPromptsReset(
     return false;
   }
 }
+
+/**
+ * Une demande du serveur attend-elle encore d'être honorée sur cet appareil ?
+ * Le premier lancement ne décide rien tant qu'elle attend : décidé dans le même
+ * rendu que l'oubli, il se figerait sur les « Plus tard » d'avant, et rien ne
+ * serait reproposé avant l'ouverture suivante.
+ */
+export function promptsResetPending(
+  storage: Pick<PromptsResetStorage, "getItem">,
+  userId: string | null | undefined,
+  resetAt: string | null | undefined,
+): boolean {
+  if (!userId || resetAt == null) return false;
+  try {
+    return promptsResetDue(resetAt, parsePromptsResetSeen(storage.getItem(PROMPTS_RESET_SEEN_KEY))[userId]);
+  } catch {
+    return false;
+  }
+}

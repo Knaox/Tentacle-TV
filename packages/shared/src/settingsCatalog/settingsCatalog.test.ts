@@ -98,13 +98,19 @@ describe("catalogue des réglages", () => {
   it("Compte : invitations et sessions réservées à un administrateur", () => {
     expect(ids(section("account"), user)).toEqual(["photo", "userName", "password", "changeServer", "clearCache", "deleteAccount"]);
     expect(ids(section("account"), full)).toEqual([
-      "photo", "userName", "password", "family", "switchProfile", "changeServer", "invites", "sessions", "clearCache", "deleteAccount",
+      "photo", "userName", "password", "family", "switchProfile", "askAtLaunch", "changeServer", "invites", "sessions", "clearCache", "deleteAccount",
     ]);
     expect(sectionSummary(section("account"), full)?.key).toBe("sections.accountSummaryFamily");
   });
 
   it("« Changer de profil » exige une famille d'au moins deux profils", () => {
     expect(ids(section("account"), { ...full, canSwitchProfile: false })).not.toContain("switchProfile");
+    expect(ids(section("account"), { ...full, canSwitchProfile: false })).not.toContain("askAtLaunch");
+  });
+
+  it("« Qui regarde ? » au démarrage : absent si l'administration ne le propose pas d'office", () => {
+    expect(ids(section("account"), { ...full, launchAsked: false })).not.toContain("askAtLaunch");
+    expect(ids(section("account"), { ...full, launchAsked: false })).toContain("switchProfile");
   });
 
   it("en session de profil, rien de ce que le serveur refuse", () => {

@@ -15,7 +15,9 @@ export default {
   memberMayCreate: "The owner lets you create guests: you manage the ones you create.",
   /** "Who's watching?" on phone and iPad (server 1.31.1, `family.mobileProfiles`). */
   launch: {
-    caption: "This device will remember your choice. To switch profiles: Settings › Account.",
+    caption: "To switch profiles later: Settings › Account.",
+    stay: "Don't ask again at startup",
+    stayHint: "This device will open the chosen profile directly. To turn it back on: Settings › Account.",
     switchCaption: "The chosen profile opens on this device and stays until you switch again.",
     cancel: "Cancel",
     guest: "Guest",

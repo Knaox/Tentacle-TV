@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { LanguageChoiceRow } from "@/components/profile/LanguageChoiceRow";
 import { LiquidGlassRow, ThemeChoiceRow } from "@/components/settings";
-import { AdvancedOnDesktopRow, PhotoRow, SwitchProfileRow, UserNameRow } from "@/components/settings/controls/AccountRows";
+import { AdvancedOnDesktopRow, AskAtLaunchRow, PhotoRow, SwitchProfileRow, UserNameRow } from "@/components/settings/controls/AccountRows";
 import { EngineOptionsRows } from "@/components/settings/controls/EngineOptionsRows";
 import { IntrosRow, NextAutoPlayRow, StillWatchingRows, TrendingNowRow } from "@/components/settings/controls/PlaybackAccountRows";
 import { BootIntroRow, BootSoundRow } from "@/components/settings/controls/BootRows";
@@ -24,6 +24,7 @@ export function ProfileControlRow({ id, last }: { id: SettingsControlId; last: b
     case "photo": return <PhotoRow {...common} />;
     case "userName": return <UserNameRow {...common} />;
     case "switchProfile": return <SwitchProfileRow {...common} />;
+    case "askAtLaunch": return <AskAtLaunchRow {...common} />;
     case "intros": return <IntrosRow {...common} />;
     case "nextAutoPlay": return <NextAutoPlayRow {...common} />;
     case "stillWatching": return <StillWatchingRows {...common} />;

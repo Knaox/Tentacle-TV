@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFamilyOverview, useUserId } from "@tentacle-tv/api-client";
 import {
-  FIRST_RUN_SEEN_KEY, honorFirstRunPromptsReset, parseFirstRunSeen, sameUserId, shouldInviteToAvatars, type FirstRunInput,
+  FIRST_RUN_SEEN_KEY, firstRunPinDue, honorFirstRunPromptsReset, promptsResetPending, parseFirstRunSeen, sameUserId, shouldInviteToAvatars, type FirstRunInput,
 } from "@tentacle-tv/shared";
 import { useActiveProfile } from "../../auth/profileSession";
 import { useHomeRowsEditorModel } from "../../components/settings/personalization/useHomeRowsEditorModel";
@@ -43,7 +43,8 @@ export function useWebFirstRunInputs(): FirstRunInput & { resetSettled: boolean 
   const home = useHomeRowsEditorModel();
   const { hasPhoto: accountHasPhoto } = useAvatarUpload();
   const guestTarget = useGuestSessionPhoto();
-  const [honored, setHonored] = useState(0);
+  // Le sujet dont « Reproposer » a été honoré pendant ce lancement : son code PIN revient, même passé hier.
+  const [honored, setHonored] = useState<string | null>(null);
 
   const subjectId = held ? held.id : userId;
   const serverUrl = getBackendBase() || window.location.origin;
@@ -53,13 +54,14 @@ export function useWebFirstRunInputs(): FirstRunInput & { resetSettled: boolean 
   const resetSettled = !!held || !family.available || overview.data !== undefined || overview.isError;
 
   useEffect(() => {
-    if (resetSettled && honorFirstRunPromptsReset(localStorage, serverUrl, subjectId, resetAt)) setHonored((value) => value + 1);
+    if (resetSettled && honorFirstRunPromptsReset(localStorage, serverUrl, subjectId, resetAt)) setHonored(subjectId);
   }, [resetSettled, serverUrl, subjectId, resetAt]);
 
   // Relus à chaque rendu (quelques octets) : `honored` en provoque un après l'oubli.
-  void honored;
   const hasPhoto = held ? held.imageTag !== null : accountHasPhoto;
-  const pinDue = held ? false : !family.available ? false : reminder.settled ? reminder.startup : null;
+  const pinDue = firstRunPinDue({
+    profileSession: !!held, familyAvailable: family.available, reminder, resetHonored: !!subjectId && honored === subjectId,
+  });
   const homeReady = home.ready ? true : home.failed ? false : null;
   const photoDue = hasPhoto === undefined
     ? null
@@ -73,5 +75,7 @@ export function useWebFirstRunInputs(): FirstRunInput & { resetSettled: boolean 
       invited: readInvitedSubjects(),
     });
 
-  return { subjectId, serverUrl, online, seen: readSeen(), pinDue, homeReady, photoDue, resetSettled };
+  // Une demande pas encore honorée : rien ne se décide avant (sinon sur les « Plus tard » d'avant).
+  const resetHonoredHere = resetSettled && !promptsResetPending(localStorage, subjectId, resetAt);
+  return { subjectId, serverUrl, online, seen: readSeen(), pinDue, homeReady, photoDue, resetSettled: resetHonoredHere };
 }

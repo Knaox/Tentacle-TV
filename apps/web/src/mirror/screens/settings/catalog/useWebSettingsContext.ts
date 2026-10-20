@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { settingsAbilitiesOf, useAccountAbilities, useServerCapabilities } from "@tentacle-tv/api-client";
-import type { SettingsCatalogContext } from "@tentacle-tv/shared";
+import { launchAskedByServer, type SettingsCatalogContext } from "@tentacle-tv/shared";
 import { useActiveProfile } from "../../../../auth/profileSession";
 import { getUserInfo } from "../../../../components/userMenu/menuItems";
 import { useFamilySettingsAvailability } from "../../../../family/useFamilyAvailability";
 import { useOfflineMode } from "../../../../offline/useOfflineMode";
+import { usePickerListingQuery } from "../../../../profiles/api/usePickerListing";
 import { useProfileSwitchOffered } from "../../../shell/useProfileSwitchOffered";
 
 /**
@@ -16,7 +17,9 @@ import { useProfileSwitchOffered } from "../../../shell/useProfileSwitchOffered"
  * (`useProfileMenuItems`) : une famille d'au moins deux profils à choisir.
  * Les droits de la session (`account.abilities`) : la règle partagée
  * `settingsAbilitiesOf` — serveur d'avant, comportement d'avant ; pas encore
- * lus, rien.
+ * lus, rien. « Qui regarde ? » au démarrage : seulement si l'administration
+ * le propose d'office dans le navigateur (`launchAskedByServer` : `launchAsk`,
+ * sinon la politique d'avant) ; la famille pas encore lue, oui.
  */
 export function useWebSettingsContext(): SettingsCatalogContext {
   const offline = useOfflineMode();
@@ -32,6 +35,8 @@ export function useWebSettingsContext(): SettingsCatalogContext {
   const { capabilities } = useServerCapabilities();
   const profileSession = useActiveProfile() !== null;
   const canSwitchProfile = useProfileSwitchOffered();
+  const picker = usePickerListingQuery().listing.data;
+  const launchAsked = picker ? launchAskedByServer(picker) : true;
 
   return useMemo(() => ({
     platform: "web",
@@ -42,6 +47,7 @@ export function useWebSettingsContext(): SettingsCatalogContext {
     canGoOffline: false,
     family,
     canSwitchProfile,
+    launchAsked,
     liquidGlass: false,
     advancedEngine: false,
     engineOptions: false,
@@ -49,5 +55,5 @@ export function useWebSettingsContext(): SettingsCatalogContext {
     bootIntro: false,
     abilities,
     profileSession,
-  }), [capabilities, offline, isAdmin, abilities, family, canSwitchProfile, profileSession]);
+  }), [capabilities, offline, isAdmin, abilities, family, canSwitchProfile, launchAsked, profileSession]);
 }

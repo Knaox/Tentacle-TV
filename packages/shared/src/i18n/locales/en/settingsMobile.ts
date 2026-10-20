@@ -36,6 +36,10 @@ export default {
     familyInvitesBadge_one: "{{count}} invitation",
     familyInvitesBadge_other: "{{count}} invitations",
     switchProfile: "Switch profile",
+    askAtLaunch: "“Who's watching?” at startup",
+    askAtLaunchOn: "Shown every time the app opens",
+    askAtLaunchStay: "Off: the app opens {{name}}'s profile directly",
+    askAtLaunchOff: "Off: the app opens the last chosen profile directly",
     serverGroup: "Server",
   },
   playback: {
