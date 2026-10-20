@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
-import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode, seriesPlayTarget } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroEyebrow } from "./HeroEyebrow";
 import { HeroMetaLine } from "./HeroMetaLine";
@@ -77,8 +77,9 @@ export function HeroContent({ item, animationKey, imageUrl }: HeroContentProps) 
 
   const handlePlay = () => {
     if (isSeries) {
-      const epId = watchState?.type !== "completed" ? watchState?.episode?.Id : undefined;
-      navigate(epId ? `/watch/${epId}` : `/media/${item.Id}`);
+      // La règle des bannières : l'épisode à suivre, une série vue se revoit depuis le premier.
+      const target = seriesPlayTarget(watchState);
+      navigate(target.kind === "detail" ? `/media/${item.Id}` : `/watch/${target.episodeId}`);
     } else {
       navigate(`/watch/${item.Id}`);
     }

@@ -11,6 +11,7 @@ import {
   useLibraries,
   useNextUp,
   useResumeItems,
+  useResolveSeriesPlay,
   useUserId,
   useWatchlist,
 } from "@tentacle-tv/api-client";
@@ -71,7 +72,14 @@ export function MirrorHome() {
   const { openMedia, openReco, sheets } = useItemSheets();
 
   const handlePress = useCallback((item: MediaItem) => navigate(`/media/${item.Id}`), [navigate]);
-  const handlePlay = useCallback((item: MediaItem) => navigate(`/watch/${item.Id}`), [navigate]);
+  // « Lecture » de la bannière : une série se lance par son épisode (une série vue
+  // se revoit depuis le premier) — jamais l'identifiant de la série au lecteur.
+  const resolveSeriesPlay = useResolveSeriesPlay();
+  const handlePlay = useCallback((item: MediaItem) => {
+    void resolveSeriesPlay(item).then((target) => {
+      navigate(target.kind === "detail" ? `/media/${item.Id}` : `/watch/${target.episodeId}`);
+    });
+  }, [navigate, resolveSeriesPlay]);
   const { slides, loading: heroLoading } = useHomeHero({
     layout,
     // Une source en échec ne s'attend plus : elle vaut « rien ».

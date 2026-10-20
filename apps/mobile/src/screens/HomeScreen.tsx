@@ -7,7 +7,7 @@ import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useUserId,
   useWatchlist,
-  useHomeWebSocket, usePreferencesLive, useRecoLive, useTentacleConfig,
+  useHomeWebSocket, usePreferencesLive, useRecoLive, useTentacleConfig, useResolveSeriesPlay,
 } from "@tentacle-tv/api-client";
 import { describeProblem, latestAdditionsDetailQuery, libraryHasNoTitles, type MediaItem } from "@tentacle-tv/shared";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
@@ -96,7 +96,14 @@ export function HomeScreen() {
 
   // Une carte regroupée des « Derniers ajouts » ouvre la série sur la saison de son dernier ajout.
   const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}${latestAdditionsDetailQuery(item)}`); }, [router]);
-  const handlePlay = useCallback((item: MediaItem) => { router.push(`/watch/${item.Id}`); }, [router]);
+  // « Lecture » de la bannière : une série se lance par son épisode (une série vue
+  // se revoit depuis le premier) — jamais l'identifiant de la série au lecteur.
+  const resolveSeriesPlay = useResolveSeriesPlay();
+  const handlePlay = useCallback((item: MediaItem) => {
+    void resolveSeriesPlay(item).then((target) => {
+      router.push(target.kind === "detail" ? `/media/${item.Id}` : `/watch/${target.episodeId}`);
+    });
+  }, [router, resolveSeriesPlay]);
   // Le bandeau suit le mode du compte (reprise, aléatoire, titre fixe, reco).
   const { slides: heroSlides, loading: heroLoading } = useHomeHero({
     layout,
