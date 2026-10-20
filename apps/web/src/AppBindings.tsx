@@ -11,6 +11,7 @@ import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { ProfileSessionBinding } from "./auth/ProfileSessionBinding";
 import { MutationFailureBinding } from "./components/notices/MutationFailureBinding";
 import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
+import { RightsLiveBinding } from "./rights/RightsLiveBinding";
 import { PreferencesLiveBinding } from "./components/reco/PreferencesLiveBinding";
 import { RecoFilterBinding } from "./components/reco/RecoFilterBinding";
 import { RecoPrefetchBoot } from "./components/reco/RecoPrefetchBoot";
@@ -83,6 +84,8 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit
           en silence quand le serveur l'a reconstruite. */}
       {authed && <RecoLiveBinding />}
+      {/* Un droit changé ailleurs s'applique ici sans rechargement (`rights:changed`). */}
+      {authed && <RightsLiveBinding />}
       {/* Un réglage enregistré sur un autre appareil arrive en direct :
           accueil et réglages de recommandation se relisent en silence. */}
       {authed && <PreferencesLiveBinding />}
