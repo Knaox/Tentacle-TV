@@ -65,6 +65,10 @@ const STORAGE_KEYS = [
   "tentacle_prompts_reset_seen",
   // Les réglages d'appareil de l'ouverture du démarrage (src/bootIntro/bootIntroSettings.ts).
   "tentacle_boot_intro", "tentacle_boot_sound",
+  // Les invitations de Watch Together que la boîte a déjà présentées d'elle-même
+  // (`WT_INVITES_SHOWN_KEY`, shared, même clé que le web) : absente d'ici,
+  // une invitation refermée sans réponse reviendrait à chaque lancement.
+  "tentacle_wt_invites_shown",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

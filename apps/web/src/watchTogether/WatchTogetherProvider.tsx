@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  setWtLogger, useWatchTogetherSession, WatchTogetherContext, type WtPlatformPort,
+  setWtLogger, useInboxAutoOpen, useWatchTogetherSession, WatchTogetherContext, type WtPlatformPort,
 } from "@tentacle-tv/api-client";
-import { shouldAutoOpenInbox } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
 import { useStartupQuiet } from "../startup/startupStore";
 import { GroupPlaybackPill } from "./GroupPlaybackPill";
@@ -40,9 +39,9 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   const pathname = location.pathname;
   /**
    * La boîte aux invitations, ouverte d'office à l'ACCUEIL — la règle du mobile
-   * (`shouldAutoOpenInbox`, shared) : une fois par invitation, quand les
-   * fenêtres du démarrage se sont tues, d'après les invitations EN ATTENTE —
-   * celle qui arrive comme celle reçue avant « Qui regarde ? », app fermée.
+   * (`useInboxAutoOpen`, api-client) : une fois par invitation SUR CET APPAREIL,
+   * quand les fenêtres du démarrage se sont tues, d'après les invitations EN
+   * ATTENTE — celle qui arrive comme celle reçue avant « Qui regarde ? ».
    *
    * Là, on ne fait rien de précis : être interrompu ne coûte rien, et il ne
    * reste qu'à accepter. Ailleurs — une fiche qu'on lit, une lecture en cours —
@@ -50,7 +49,6 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
    */
   const [inboxOpen, setInboxOpen] = useState(false);
   const startupQuiet = useStartupQuiet();
-  const shownInvites = useRef(new Set<string>());
 
   const port = useMemo<WtPlatformPort>(() => ({
     socketToken: typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null,
@@ -71,11 +69,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
 
   const value = useWatchTogetherSession(port);
   const inviteIds = useMemo(() => value.invites.map((invite) => invite.inviteId), [value.invites]);
-  useEffect(() => {
-    if (!value.mayJoin || !shouldAutoOpenInbox({ pathname, startupQuiet, inviteIds, shownIds: shownInvites.current })) return;
-    for (const id of inviteIds) shownInvites.current.add(id);
-    setInboxOpen(true);
-  }, [pathname, startupQuiet, inviteIds, value.mayJoin]);
+  useInboxAutoOpen({ pathname, startupQuiet, inviteIds, enabled: value.mayJoin, open: () => setInboxOpen(true) });
   // Fenêtre étroite (téléphone, iPad) : les feuilles du mobile (`MirrorWtHost`) à la place de la
   // modale de salle et de la boîte des invitations du bureau ; la bande de l'accueil dit l'« ailleurs ».
   const mirror = useMirror();

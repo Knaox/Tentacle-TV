@@ -10,6 +10,7 @@ export { useWatchTogetherSession, type WtPlatformPort } from "../watchTogether/s
 export { switchWtSession } from "../watchTogether/session/sessionSwitch";
 export { handleWtServerMessage, type WtEventHelpers } from "../watchTogether/session/wtMessages";
 export { usePendingInvites, type WtPendingInvite } from "../watchTogether/session/usePendingInvites";
+export { useInboxAutoOpen } from "../watchTogether/session/useInboxAutoOpen";
 
 // Le lecteur : son port, le moteur de synchronisation, la session de lecture.
 export type { WtPlayerPort, WtPlayerPortRef, PlayerTransport, PlayerTransportRef } from "../watchTogether/playerPort";

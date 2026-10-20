@@ -6,5 +6,6 @@ export * from "./inviteModel";
 export * from "./homeStrip";
 export * from "./groupPanelLayout";
 export * from "./inboxRule";
+export * from "./inboxShown";
 export * from "./reactionBursts";
 export * from "./elsewhereLabel";

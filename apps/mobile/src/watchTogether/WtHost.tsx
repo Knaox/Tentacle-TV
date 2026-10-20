@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { usePathname } from "expo-router";
-import { openAffinity, useWatchTogether } from "@tentacle-tv/api-client";
+import { openAffinity, useInboxAutoOpen, useWatchTogether } from "@tentacle-tv/api-client";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { AffinityHost } from "./affinity/AffinityHost";
 import { WtSheetLayer } from "./WtSheetLayer";
-import { isPlayerPath, shouldAutoOpenInbox } from "@tentacle-tv/shared";
+import { isPlayerPath } from "@tentacle-tv/shared";
 import { closeWtSheet, openWtSheet, takeWtLink, useWtLink, useWtSheet } from "./wtSheets";
 
 /** Un lien profond qui n'a rien à montrer au bout de ce délai est abandonné. */
@@ -16,8 +16,9 @@ const LINK_TIMEOUT_MS = 10_000;
  * fournisseur (porte ouverte) : la feuille du groupe, « Inviter des
  * membres », les invitations reçues — une à la fois (`wtSheets`) — et
  * l'affinité de la salle. La boîte des invitations s'ouvre d'elle-même à
- * l'accueil seulement (`shouldAutoOpenInbox`), après le démarrage, une fois
- * par invitation, jamais par-dessus une autre modale. Passer d'une feuille à
+ * l'accueil seulement (`useInboxAutoOpen`, la règle du web), après le
+ * démarrage, une fois par invitation sur cet appareil, jamais par-dessus une
+ * autre modale. Passer d'une feuille à
  * l'autre, à l'affinité ou au lecteur ENCHAÎNE : fermer, attendre le retrait,
  * puis présenter (`afterWtSheet`, `useGatedModal`).
  */
@@ -28,13 +29,8 @@ export function WtHost() {
   const pathname = usePathname();
   const startupQuiet = useStartupOverlaysQuiet();
 
-  const shown = useRef(new Set<string>());
   const inviteIds = useMemo(() => invites.map((i) => i.inviteId), [invites]);
-  useEffect(() => {
-    if (!shouldAutoOpenInbox({ pathname, startupQuiet, inviteIds, shownIds: shown.current })) return;
-    for (const id of inviteIds) shown.current.add(id);
-    whenNoModal(() => openWtSheet("inbox"));
-  }, [pathname, startupQuiet, inviteIds]);
+  useInboxAutoOpen({ pathname, startupQuiet, inviteIds, enabled: true, open: () => whenNoModal(() => openWtSheet("inbox")) });
 
   // Lien profond : la feuille du groupe (ou les invitations), ou l'affinité.
   const link = useWtLink();
