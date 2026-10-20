@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActionSheetIOS, Alert, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
+import { centerShouldFillUnread, centerShowsEmpty, centerUnreadCount } from "@tentacle-tv/shared";
 import {
   filterNotifications,
   groupNotificationsByPeriod,
@@ -15,7 +17,9 @@ import {
   useDeleteNotificationsMobile,
   useMarkAllReadMobile,
   useMarkReadMobile,
-  useNotificationsMobile,
+  useNotificationPagesMobile,
+  useUnreadCountMobile,
+  trimNotificationPages,
 } from "@/hooks/useNotificationsMobile";
 import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
 import { useOpenNotification } from "@/notifications/useOpenNotification";
@@ -23,7 +27,9 @@ import { useOpenNotification } from "@/notifications/useOpenNotification";
 /**
  * L'état et les gestes du centre, à part de son rendu : filtre, sélection,
  * ouverture (la même que pour une push), suppressions, menu. Fermé
- * (`open` faux), le centre oublie sa sélection et revient sur « Tout ».
+ * (`open` faux), le centre oublie sa sélection, revient sur « Tout » et ne
+ * garde que sa première page ; ouvert, il se relit aussitôt (liste et
+ * compteur) — on ne l'ouvre jamais sur un état vieux de trente secondes.
  */
 export function useNotificationCenter({ open, onLeave }: { open: boolean; onLeave: () => void }) {
   const { t } = useTranslation("notifications");
@@ -31,7 +37,9 @@ export function useNotificationCenter({ open, onLeave }: { open: boolean; onLeav
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const query = useNotificationsMobile();
+  const qc = useQueryClient();
+  const query = useNotificationPagesMobile(open);
+  const { data: unreadData, refetch: refetchUnread } = useUnreadCountMobile();
   const markAll = useMarkAllReadMobile();
   const markOne = useMarkReadMobile();
   const deleteOne = useDeleteNotificationMobile();
@@ -41,8 +49,22 @@ export function useNotificationCenter({ open, onLeave }: { open: boolean; onLeav
   const pluginMeta = useMemo(() => toNotifPluginMeta(plugins ?? []), [plugins]);
   const openNotification = useOpenNotification();
 
-  const all = useMemo(() => query.data ?? [], [query.data]);
+  const all = useMemo(() => query.data?.pages.flatMap((p) => p.items) ?? [], [query.data]);
   const visible = useMemo(() => filterNotifications(all, filter), [all, filter]);
+  const unread = centerUnreadCount(unreadData?.count, all);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage, refetch } = query;
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  // « Non lues » va chercher plus bas les non lues que le serveur compte.
+  const filling = centerShouldFillUnread({
+    filter, serverCount: unreadData?.count, loaded: all, hasMore: !!hasNextPage, loading: isFetchingNextPage,
+  });
+  useEffect(() => { if (open && filling) void fetchNextPage(); }, [open, filling, fetchNextPage]);
+  const showsEmpty = centerShowsEmpty({ visibleCount: visible.length, loaded: !!query.data, filling: filling || isFetchingNextPage });
+  const refresh = useCallback(async () => {
+    await Promise.all([refetch(), refetchUnread()]);
+  }, [refetch, refetchUnread]);
   const sections = useMemo(
     () => groupNotificationsByPeriod(visible).map(({ group, items }) => ({ key: group, data: items })),
     [visible],
@@ -53,11 +75,18 @@ export function useNotificationCenter({ open, onLeave }: { open: boolean; onLeav
     setSelected(new Set());
   }, []);
 
+  // À l'ouverture et à la fermeture seulement (les gestes lus par une référence).
+  const onOpenChange = useRef({ refresh, exitSelection });
+  onOpenChange.current = { refresh, exitSelection };
   useEffect(() => {
-    if (open) return;
-    exitSelection();
+    if (open) {
+      void onOpenChange.current.refresh();
+      return;
+    }
+    onOpenChange.current.exitSelection();
     setFilter("all");
-  }, [open, exitSelection]);
+    qc.setQueriesData({ queryKey: ["notifications", "pages"] }, trimNotificationPages);
+  }, [open, qc]);
 
   const toggle = useCallback((id: string) => {
     setSelected((prev) => {
@@ -121,7 +150,7 @@ export function useNotificationCenter({ open, onLeave }: { open: boolean; onLeav
   }, [t, startSelection, askDeleteAll]);
 
   return {
-    query, all, visible, sections, filter, setFilter,
+    query, all, visible, sections, filter, setFilter, unread, showsEmpty, loadMore, refresh,
     selectionMode, selected, toggle, startSelection, selectAll, exitSelection, deleteSelected,
     hasRoute, openOne, markRead, remove, markAll: () => markAll.mutate(), openMenu,
   };

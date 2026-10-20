@@ -42,9 +42,10 @@ export function isAllowedOrigin(origin: string | undefined, ctx: CorsContext): b
  * Les en-têtes de réponse qu'une page d'une AUTRE origine peut lire. Hors
  * de la liste sûre du navigateur, `headers.get()` rend `null` : le bureau
  * (`tentacle://app`) ne savait pas dans combien de temps redemander un aperçu
- * refusé (429) ni quand revenir pendant une migration (503).
+ * refusé (429) ni quand revenir pendant une migration (503) ; ni la page
+ * suivante de la cloche (`X-Notifications-Next`).
  */
-export const EXPOSED_RESPONSE_HEADERS = ["Retry-After"];
+export const EXPOSED_RESPONSE_HEADERS = ["Retry-After", "X-Notifications-Next"];
 
 /** Les options de `@fastify/cors`, décidées requête par requête — serveur principal comme serveur de maintenance. */
 export function tentacleCorsDelegator(listed: readonly string[]) {

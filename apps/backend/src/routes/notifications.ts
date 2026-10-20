@@ -2,25 +2,35 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
-import { broadcastToUser } from "../services/wsManager";
 import { toNotificationDto } from "../notifications/notificationDto";
 import { notificationsFiltered, visibleNotificationRows } from "../notifications/notificationRights";
+import { notifyNotificationsChanged } from "./notifications.notify";
+
+/** Le curseur de la page suivante de la cloche (voir `notifications.paging`). */
+export const NOTIFICATIONS_NEXT_HEADER = "X-Notifications-Next";
 
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
-  // GET /api/notifications — User's notifications
-  app.get("/", async (request) => {
+  // GET /api/notifications — User's notifications, page par page (capacité `notifications.paging`)
+  app.get("/", async (request, reply) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const query = request.query as Record<string, string>;
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+    // Le curseur : la dernière notification de la page d'avant (jamais celle d'un autre compte,
+    // le filtre par compte reste). Disparue entre-temps : page vide, la relecture suivante recolle.
+    const before = typeof query.before === "string" && query.before.length > 0 ? query.before : null;
 
     const notifications = await prisma.notification.findMany({
       where: { jellyfinUserId: user.userId },
-      orderBy: { createdAt: "desc" },
+      // L'identifiant départage les lignes écrites dans la même milliseconde : pages stables.
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit,
+      ...(before ? { cursor: { id: before }, skip: 1 } : {}),
     });
+    // Une page pleine en annonce peut-être une autre — avant le filtre des droits, qui la raccourcit.
+    if (notifications.length === limit) reply.header(NOTIFICATIONS_NEXT_HEADER, notifications[notifications.length - 1].id);
 
     // Un avis dont le titre est caché au compte AUJOURD'HUI ne se lit plus (cf. notificationRights).
     return (await visibleNotificationRows(user.userId, notifications)).map(toNotificationDto);
@@ -43,11 +53,12 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
 
-    await prisma.notification.updateMany({
+    const { count } = await prisma.notification.updateMany({
       where: { jellyfinUserId: user.userId, read: false },
       data: { read: true },
     });
 
+    if (count > 0) notifyNotificationsChanged(request, user.userId);
     return { success: true };
   });
 
@@ -62,10 +73,13 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(404).send({ message: "Notification introuvable" });
     }
 
-    await prisma.notification.update({
-      where: { id },
-      data: { read: true },
-    });
+    if (!notif.read) {
+      await prisma.notification.update({
+        where: { id },
+        data: { read: true },
+      });
+      notifyNotificationsChanged(request, user.userId);
+    }
 
     return { success: true };
   });
@@ -79,7 +93,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       where: { jellyfinUserId: user.userId },
     });
 
-    broadcastToUser(user.userId, "notifications");
+    if (result.count > 0) notifyNotificationsChanged(request, user.userId);
     return { deleted: result.count };
   });
 
@@ -99,7 +113,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       where: { id: { in: parsed.data.ids }, jellyfinUserId: user.userId },
     });
 
-    broadcastToUser(user.userId, "notifications");
+    if (result.count > 0) notifyNotificationsChanged(request, user.userId);
     return { deleted: result.count };
   });
 
@@ -116,7 +130,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
 
     await prisma.notification.delete({ where: { id } });
 
-    broadcastToUser(user.userId, "notifications");
+    notifyNotificationsChanged(request, user.userId);
     return { deleted: 1 };
   });
 };

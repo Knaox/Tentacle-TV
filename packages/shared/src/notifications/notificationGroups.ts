@@ -30,20 +30,22 @@ export function groupNotificationsByDay<T extends { createdAt: string }>(
 export type NotificationPeriod = "today" | "yesterday" | "week" | "earlier";
 
 const PERIODS: readonly NotificationPeriod[] = ["today", "yesterday", "week", "earlier"];
-const DAY_MS = 86_400_000;
 
 export function groupNotificationsByPeriod<T extends { createdAt: string }>(
   list: readonly T[],
   now: Date = new Date(),
 ): Array<{ group: NotificationPeriod; items: T[] }> {
-  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  // Des minuits du CALENDRIER local, jamais « minuit moins 24 h » : un passage à l'heure
+  // d'été ou d'hiver fait un jour de 23 ou 25 h, et « Hier » débordait d'une heure.
+  const midnightOf = (daysBack: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysBack).getTime();
+  const [today, yesterday, weekStart] = [midnightOf(0), midnightOf(1), midnightOf(6)];
   const buckets: Record<NotificationPeriod, T[]> = { today: [], yesterday: [], week: [], earlier: [] };
   for (const n of list) {
     const at = Date.parse(n.createdAt);
     const period: NotificationPeriod = !Number.isFinite(at) ? "earlier"
-      : at >= midnight ? "today"
-      : at >= midnight - DAY_MS ? "yesterday"
-      : at >= midnight - 6 * DAY_MS ? "week"
+      : at >= today ? "today"
+      : at >= yesterday ? "yesterday"
+      : at >= weekStart ? "week"
       : "earlier";
     buckets[period].push(n);
   }

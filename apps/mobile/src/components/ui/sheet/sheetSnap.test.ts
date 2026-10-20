@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideSheetRelease, sheetCapturesFromContent, sheetDragOffset } from "./sheetSnap";
+import { decideSheetRelease, sheetCapturesFromContent, sheetDragOffset, sheetHeaderClaimsMove } from "./sheetSnap";
 
 describe("decideSheetRelease", () => {
   it("au premier cran : vers le haut agrandit, vers le bas ferme, un petit geste reste", () => {
@@ -53,5 +53,21 @@ describe("sheetCapturesFromContent", () => {
     expect(sheetCapturesFromContent({ snap: 1, dx: 0, dy: 20, canExpand: true, scrollTop: false })).toBe(false);
     expect(sheetCapturesFromContent({ snap: 1, dx: 0, dy: 20, canExpand: true, scrollTop: null })).toBe(false);
     expect(sheetCapturesFromContent({ snap: 1, dx: 0, dy: -20, canExpand: true, scrollTop: true })).toBe(false);
+  });
+});
+
+describe("sheetHeaderClaimsMove", () => {
+  it("un toucher qui tremble reste au bouton de l'en-tête (« Tout marquer comme lu »)", () => {
+    expect(sheetHeaderClaimsMove({ dx: 1, dy: 5 })).toBe(false);
+    expect(sheetHeaderClaimsMove({ dx: 0, dy: -7 })).toBe(false);
+  });
+
+  it("un vrai glissement vertical est à la feuille", () => {
+    expect(sheetHeaderClaimsMove({ dx: 2, dy: 12 })).toBe(true);
+    expect(sheetHeaderClaimsMove({ dx: -3, dy: -20 })).toBe(true);
+  });
+
+  it("un geste plutôt horizontal (les filtres) n'est pas à la feuille", () => {
+    expect(sheetHeaderClaimsMove({ dx: 30, dy: 12 })).toBe(false);
   });
 });

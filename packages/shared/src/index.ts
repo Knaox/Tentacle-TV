@@ -108,6 +108,7 @@ export * from "./notifications/notificationGroups";
 export * from "./notifications/notificationTap";
 export * from "./notifications/notificationVisual";
 export * from "./notifications/rowSwipe";
+export * from "./notifications/notificationCenter";
 export * from "./help/trailerHint";
 // Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
 // fiches — et « Réanalyser maintenant » (contrat de /api/admin/library/rescan,
