@@ -1,0 +1,17 @@
+// Le banc Watch Together importe le harnais du backend (jellyfin-compat) :
+// il a son propre contrôle de types, joué par `pnpm typecheck` du paquet.
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "rootDir": "../../.."
+  },
+  "include": ["./**/*.ts"]
+}
