@@ -22,6 +22,8 @@
  *   jusqu'au prochain lot.
  */
 
+import type { LiveTransferPhase } from "./liveTransfer";
+
 /** Ce que la surface de la plateforme a fait du dernier dessin demandé. */
 export type LiveSurfaceOutcome =
   /** Visible : posée ou mise à jour. */
@@ -69,3 +71,20 @@ export function liveRetryOnTick(input: {
     input.sinceLastAttemptMs >= LIVE_RETRY_MIN_INTERVAL_MS
   );
 }
+
+/**
+ * Le délai d'arrière-plan (iOS) : juste après « Garder hors ligne », le débit
+ * n'est pas encore mesuré, et l'activité figée par la suspension du
+ * JavaScript dirait « Calcul du temps restant… » jusqu'à la fin. Derrière,
+ * tant qu'elle ESTIME (ou finalise : la fin du lot et « Prêt à regarder hors
+ * ligne » sont à quelques secondes), on garde quelques secondes de plus ;
+ * dès qu'un temps restant est publié — compte à rebours et barre avancent
+ * seuls —, on rend la main.
+ */
+export function liveWantsBackgroundTime(input: { appState: LiveAppState; shownPhase: LiveTransferPhase | null }): boolean {
+  if (input.appState !== "background" && input.appState !== "inactive") return false;
+  return input.shownPhase === "estimating" || input.shownPhase === "finalizing";
+}
+
+/** Le délai rendu, on laisse au dernier dessin le temps d'atteindre ActivityKit. */
+export const LIVE_BACKGROUND_RELEASE_DELAY_MS = 2_000;

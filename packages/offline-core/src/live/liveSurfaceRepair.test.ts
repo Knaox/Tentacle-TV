@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LIVE_RETRY_MIN_INTERVAL_MS, liveAppStateAction, liveRetryOnTick } from "./liveSurfaceRepair";
+import { LIVE_RETRY_MIN_INTERVAL_MS, liveAppStateAction, liveRetryOnTick, liveWantsBackgroundTime } from "./liveSurfaceRepair";
 
 describe("liveAppStateAction", () => {
   it("retour au premier plan après un démarrage refusé : on repose l'activité", () => {
@@ -41,5 +41,31 @@ describe("liveRetryOnTick", () => {
 
   it("une activité visible ne se redemande pas", () => {
     expect(liveRetryOnTick({ appState: "active", outcome: "shown", sinceLastAttemptMs: 60_000 })).toBe(false);
+  });
+});
+
+describe("liveWantsBackgroundTime", () => {
+  it("derrière, encore « Calcul du temps restant » : quelques secondes de plus pour mesurer le débit", () => {
+    expect(liveWantsBackgroundTime({ appState: "background", shownPhase: "estimating" })).toBe(true);
+    expect(liveWantsBackgroundTime({ appState: "inactive", shownPhase: "estimating" })).toBe(true);
+  });
+
+  it("derrière, en finalisation : la fin du lot est à quelques secondes", () => {
+    expect(liveWantsBackgroundTime({ appState: "background", shownPhase: "finalizing" })).toBe(true);
+  });
+
+  it("un temps restant publié avance seul : on rend la main", () => {
+    expect(liveWantsBackgroundTime({ appState: "background", shownPhase: "transferring" })).toBe(false);
+  });
+
+  it("une attente (Wi-Fi, réseau, pause) n'a rien à mesurer", () => {
+    for (const shownPhase of ["waitingWifi", "waitingNetwork", "paused", "retrying"] as const) {
+      expect(liveWantsBackgroundTime({ appState: "background", shownPhase })).toBe(false);
+    }
+  });
+
+  it("au premier plan ou sans activité : jamais", () => {
+    expect(liveWantsBackgroundTime({ appState: "active", shownPhase: "estimating" })).toBe(false);
+    expect(liveWantsBackgroundTime({ appState: "background", shownPhase: null })).toBe(false);
   });
 });
