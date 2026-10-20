@@ -39,7 +39,7 @@ export function CastControlView({ cast, item, mediaSourceId, onBack }: Props) {
   const label = cast.phase === "connecting"
     ? t("cast.connecting", { device: cast.deviceName ?? "" })
     : cast.deviceName ? t("cast.playingOn", { device: cast.deviceName }) : t("cast.playingOnTv");
-  const failure = cast.failure ? t("cast.failed") : null;
+  const failure = cast.failure === "notAllowed" ? t("cast.notAllowed") : cast.failure ? t("cast.failed") : null;
 
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: PLAYER.bg }]}>

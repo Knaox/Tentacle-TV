@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePlaybackReporting, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { usePlaybackReporting, usePlaybackRights, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, type MediaItem } from "@tentacle-tv/shared";
 import {
   TentacleCast, type CastAvailability, type CastStatusEvent,
@@ -33,7 +33,7 @@ export interface CastSession {
   active: boolean;
   phase: CastPhase;
   deviceName: string | null;
-  failure: "noSource" | "unreachable" | "failed" | null;
+  failure: "noSource" | "unreachable" | "notAllowed" | "failed" | null;
   /** Secondes du TITRE. */
   position: number;
   duration: number;
@@ -56,6 +56,7 @@ export interface CastSession {
 export function useCastSession({ itemId, item, pb, setPaused, onFinished }: Args): CastSession {
   const client = useJellyfinClient();
   const userId = useUserId();
+  const { rights } = usePlaybackRights();
   const [availability, setAvailability] = useState<CastAvailability>("unavailable");
   const [deviceName, setDeviceName] = useState<string | null>(null);
   const [status, setStatus] = useState<CastStatusEvent | null>(null);
@@ -96,7 +97,7 @@ export function useCastSession({ itemId, item, pb, setPaused, onFinished }: Args
     try {
       const next = await negotiateCast({
         client, userId, itemId, item, mediaSourceId: local.mediaSourceId,
-        audioIndex: local.audioIndex, subtitleIndex: local.subtitleIndex, startSeconds: itemSeconds,
+        audioIndex: local.audioIndex, subtitleIndex: local.subtitleIndex, startSeconds: itemSeconds, rights,
       });
       if (typeof next === "string") { setFailure(next); return; }
       live.current.started = false;
@@ -108,7 +109,7 @@ export function useCastSession({ itemId, item, pb, setPaused, onFinished }: Args
     } finally {
       setLoading(false);
     }
-  }, [client, userId, itemId, item]);
+  }, [client, userId, itemId, item, rights]);
 
   // Une TV vient d'être reliée : le téléphone se tait, la TV prend la suite.
   const connected = availability === "connected";
