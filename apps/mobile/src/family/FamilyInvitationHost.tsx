@@ -7,7 +7,7 @@ import {
   useSnoozeFamilyInvitation,
   useTentacleConfig,
 } from "@tentacle-tv/api-client";
-import { pickPosterInvitation } from "@tentacle-tv/shared";
+import { answerableInvitations, pickPosterInvitation } from "@tentacle-tv/shared";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { clearFamilyPosterRequest, useFamilyPosterRequest } from "./familyPosterStore";
 import { FamilyInvitationPoster } from "./FamilyInvitationPoster";
@@ -58,7 +58,8 @@ export function FamilyInvitationHost() {
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
 
-  const incoming = overview.data?.incoming;
+  // Familles coupées par l'administration : aucune affiche (l'accepter serait refusé).
+  const incoming = overview.data ? answerableInvitations(overview.data) : undefined;
   const invitation = useMemo(
     () => (incoming ? pickPosterInvitation(incoming, { now: Date.now(), dismissed, requestedId }) : null),
     [incoming, dismissed, requestedId],

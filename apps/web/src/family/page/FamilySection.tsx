@@ -15,6 +15,7 @@ import {
 import {
   FAMILY_LIMITS,
   familyActions,
+  familyGrowth,
   familyCounts,
   isOwnProfile,
   profileActions,
@@ -130,11 +131,14 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
     else removeMember.mutate(confirming.profile.userId, done);
   };
 
+  // Ce que l'administration ou le rôle refuse n'a pas de bouton (shared `familyGrowth`) ; seul un
+  // refus passager (famille pleine, quota) garde le sien, grisé.
+  const growth = useMemo(() => familyGrowth(overview), [overview]);
+  const showInvite = personal && growth.invite;
+  const showAddGuest = personal && growth.addGuest;
   // L'obstacle le plus parlant — sauf ceux que la page dit déjà ailleurs.
-  const blocked = (owner ? actions.invite : null) ?? actions.addGuest;
+  const blocked = (showInvite ? actions.invite : null) ?? (showAddGuest ? actions.addGuest : null);
   const blockedText = blocked && !UNSPOKEN.has(blocked) ? codeText(blocked) : null;
-  const showInvite = personal && owner;
-  const showAddGuest = personal && (owner || actions.addGuest !== "family.guest_right_required");
 
   const buttons = (showInvite || showAddGuest) && (
     <div className="flex flex-wrap gap-2">

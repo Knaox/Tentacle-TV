@@ -8,7 +8,7 @@ import { BRAND_BUTTON, BRAND_BUTTON_STYLE } from "./familyUi";
 
 /** Les invitations reçues : « Répondre » rouvre l'AFFICHE (même remise à plus
  *  tard) — une seule façon de répondre, qui dit ce qu'accepter implique. */
-export function IncomingInvitationsSection({ incoming }: { incoming: IncomingInvitationDto[] }) {
+export function IncomingInvitationsSection({ incoming }: { incoming: readonly IncomingInvitationDto[] }) {
   const { t } = useTranslation("familyWeb");
   const { formatDate } = useFamilyText();
   if (incoming.length === 0) return null;

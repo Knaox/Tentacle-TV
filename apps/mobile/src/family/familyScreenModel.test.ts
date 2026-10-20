@@ -96,10 +96,38 @@ describe("familyScreenModel — encarts", () => {
     expect(familyScreenModel(overview({ switches: { families: true, guests: false } }))).toMatchObject({ notices: ["notice.guestsDisabled"], blocked: null });
   });
 
-  it("le compte de démonstration n'ajoute rien ; hors session personnelle, rien ne se gère", () => {
-    expect(familyScreenModel(overview({}, { reviewAccount: true })).blocked).toBe("family.review_account");
+  it("le compte de démonstration n'ajoute rien (aucun bouton, aucun appel à créer) ; hors session personnelle, rien ne se gère", () => {
+    expect(familyScreenModel(overview({}, { reviewAccount: true }))).toMatchObject({ showInvite: false, showAddGuest: false, showFamily: false, blocked: null });
     expect(familyScreenModel(overview({}, { personalSession: false }))).toMatchObject({
       notices: ["notice.personalOnly"], showInvite: false, showAddGuest: false, showMyPin: false, blocked: null,
     });
   });
 });
+
+describe("familyScreenModel — les droits de la Famille du serveur (un test par droit)", () => {
+  const creation = (patch: Record<string, boolean>) => ({ creation: { createFamily: true, createGuests: true, ...patch } }) as Partial<FamilyOverviewDto["account"]>;
+
+  it("fonder une famille refusé : sans famille, ni « Inviter », ni « Ajouter un invité », ni section", () => {
+    expect(familyScreenModel(overview({}, creation({ createFamily: false })))).toMatchObject({ showInvite: false, showAddGuest: false, showFamily: false });
+  });
+
+  it("créer des profils invités refusé (ou coupé) : « Ajouter un invité » disparaît, « Inviter » reste", () => {
+    expect(familyScreenModel(overview({}, creation({ createGuests: false })))).toMatchObject({ showInvite: true, showAddGuest: false, showFamily: true });
+    expect(familyScreenModel(overview({ switches: { families: true, guests: false } }))).toMatchObject({ showInvite: true, showAddGuest: false });
+  });
+
+  it("familles coupées : rien qui fait grandir ; une invitation reçue se tait", () => {
+    const model = familyScreenModel(overview({ switches: { families: false, guests: true }, incoming: [INVITATION] }));
+    expect(model).toMatchObject({ showInvite: false, showAddGuest: false, showFamily: false, showIncoming: false });
+  });
+
+  it("propriétaire d'une famille coupée : la famille reste (quitter, retirer, dissoudre), sans « Inviter »", () => {
+    const model = familyScreenModel(overview({ family: family("owner"), switches: { families: false, guests: true } }));
+    expect(model).toMatchObject({ showFamily: true, showInvite: false, showAddGuest: false, showDissolve: true });
+  });
+
+  it("serveur qui ne déclare rien des droits de création : comme avant", () => {
+    expect(familyScreenModel(overview())).toMatchObject({ showInvite: true, showAddGuest: true, showFamily: true });
+  });
+});
+

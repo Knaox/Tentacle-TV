@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ExternalLink } from "lucide-react";
 import { useFamilyOverview } from "@tentacle-tv/api-client";
 import {
-  SETTINGS_PANE_SCOPES, pendingInvitationCount, settingScopeOf,
+  SETTINGS_PANE_SCOPES, answerableInvitations, pendingInvitationCount, settingScopeOf,
   type SettingsActionEntry, type SettingsCatalogEntry, type SettingsScreenEntry,
 } from "@tentacle-tv/shared";
 import { useFamilySettingsAvailability } from "../../../../family/useFamilyAvailability";
@@ -78,7 +78,7 @@ function FamilyRow({ entry, last }: { entry: SettingsScreenEntry; last: boolean 
   const { t } = useTranslation("settingsMobile");
   const { available } = useFamilySettingsAvailability();
   const overview = useFamilyOverview({ enabled: available });
-  const count = available ? pendingInvitationCount(overview.data?.incoming, Date.now()) : 0;
+  const count = available ? pendingInvitationCount(answerableInvitations(overview.data), Date.now()) : 0;
   return <ScreenRow entry={entry} last={last} value={count > 0 ? t("account.familyInvitesBadge", { count }) : undefined} />;
 }
 
