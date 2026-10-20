@@ -13,6 +13,8 @@ vi.mock("expo-device", () => ({ isDevice: true }));
 vi.mock("expo-constants", () => ({ default: { expoConfig: {} } }));
 vi.mock("./notificationChannels", () => ({ retireLegacyChannels: async () => undefined }));
 vi.mock("@/startup/startupOverlays", () => ({ holdStartupOverlay: () => () => undefined }));
+// L'ouverture du démarrage : le module natif (React Native) ne se charge pas sous vitest ; elle est déjà arrivée.
+vi.mock("@tentacle-tv/brand-intro-native", () => ({ whenBootIntroLanded: async () => undefined }));
 
 function response(id: string, data: Record<string, unknown>) {
   return { notification: { request: { identifier: id, content: { data } } } };
