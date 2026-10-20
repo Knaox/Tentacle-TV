@@ -7,6 +7,7 @@ import type { GroupOverlayInput } from "@/hooks/usePlaybackOverlayMobile";
 import type { PlayerSessionCore } from "@/hooks/usePlayerPlayback";
 import type { MobileGroupStart } from "./useMobileGroupStart";
 import { useMobileWtTransport } from "./useMobileWtTransport";
+import { benchRaw, installBenchProbe } from "./benchProbe";
 import { useWtPlayerChrome } from "./useWtPlayerChrome";
 
 /**
@@ -113,6 +114,24 @@ export function useMobileGroupPlayback({
     onSegmentDismissNotify: sync.notifySkipIntroDismiss,
     onNextDismissNotify: sync.notifyAutoNextDismiss,
   } : undefined), [active, sync.onGroupItem, groupSkip, skipHeld, onSkipPropose, sync.notifySkipIntroDismiss, sync.notifyAutoNextDismiss]);
+
+  // Sonde du banc (développement seulement) : lecture de la position, gestes du lecteur.
+  const probeRef = useRef({ paused, videoReady, rate: transport.rate, setPausedIntent, seekBy });
+  probeRef.current = { paused, videoReady, rate: transport.rate, setPausedIntent, seekBy };
+  useEffect(() => installBenchProbe({
+    sample: () => ({
+      pos: transport.transportRef.current?.getPositionSeconds() ?? null,
+      raw: { ...benchRaw },
+      paused: probeRef.current.paused,
+      rate: probeRef.current.rate,
+      ready: probeRef.current.videoReady,
+      route: `/watch/${itemId}`,
+    }),
+    action: (kind, value) => {
+      if (kind === "seekBy") probeRef.current.seekBy(value ?? 0);
+      else probeRef.current.setPausedIntent(kind === "pause");
+    },
+  }), [itemId, transport.transportRef]);
 
   const chrome = useWtPlayerChrome(itemId);
   return {

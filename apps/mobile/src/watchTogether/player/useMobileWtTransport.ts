@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState, type MutableRefOb
 import type { EngineProgressData } from "@/player/engine/types";
 import { createMobileTransport, type MobileTransport, type MobileTransportCommands } from "./mobileTransport";
 import { planReadySignal } from "./readySignal";
+import { benchRaw } from "./benchProbe";
 import type { WtPlayerPort } from "@tentacle-tv/api-client";
 
 /** Ce que le moteur de synchro partagé attend du lecteur (`useGroupSyncEngine`). */
@@ -107,6 +108,10 @@ export function useMobileWtTransport({ active, barrier, commands, paused, buffer
   offsetRef.current = streamOffset;
   const wrapProgress = useCallback((handler: (data: EngineProgressData) => void) => (data: EngineProgressData) => {
     t.reports.progress(data.currentTime + offsetRef.current);
+    if (__DEV__) {
+      benchRaw.pos = data.currentTime + offsetRef.current;
+      benchRaw.atMs = Date.now();
+    }
     handler(data);
   }, [t]);
 
