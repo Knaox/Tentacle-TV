@@ -99,6 +99,9 @@ export interface Room {
   skipHistory: Map<string, number>;
   /** Minuteur du saut armé (réarmé de lui-même tant que la salle est en pause). */
   skipTimer: ReturnType<typeof setTimeout> | null;
+  /** Le jeton du seek qui a posé la position (`appareil:numéro`), null dès
+   *  qu'un autre geste la déplace — cf. `watchTogetherSeekToken.ts`. */
+  seekToken: string | null;
   /** « Tous prêts » pour le titre en cours (`syncReadyGate.ts`), null sans titre. */
   readyGate: ReadyGate | null;
   /** Dernière diffusion due aux balises (`wt:tick`) — au plus une par 5 s. */
