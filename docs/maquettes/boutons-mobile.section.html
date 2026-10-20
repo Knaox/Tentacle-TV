@@ -122,6 +122,23 @@
     </div>
 
     <div class="bt-card">
+      <h3>Avant / après — les options d'un réglage</h3>
+      <div class="bt-pair">
+        <div class="bt-pane">
+          <span class="tag was">Avant</span>
+          <div class="seg"><span class="on">Auto</span><span>Système</span><span>Avancé</span></div>
+          <div class="bt-row"><span class="b sm" style="background:var(--grad)"><svg class="ic"><use href="#check"/></svg>Français</span><span class="b sm sec">English</span></div>
+        </div>
+        <div class="bt-pane">
+          <span class="tag ok">Après</span>
+          <div class="seg"><span class="on" style="background:rgba(255,255,255,.18);box-shadow:none">Auto</span><span>Système</span><span>Avancé</span></div>
+          <div class="bt-row"><span class="b sm" style="background:rgba(255,255,255,.18)"><svg class="ic"><use href="#check"/></svg>Français</span><span class="b sm sec">English</span></div>
+        </div>
+      </div>
+      <p>L'option choisie prend le « pouce » du segmenté d'Apple — gris levé en sombre, blanc en clair — au lieu du dégradé : une page de réglages n'aligne plus dix pavés violets. Interrupteurs et curseurs gardent la marque, en petit.</p>
+    </div>
+
+    <div class="bt-card">
       <h3>Avant / après — une feuille d'action</h3>
       <div class="bt-pair">
         <div class="bt-pane">
@@ -169,5 +186,5 @@
   </table>
   </div>
 
-  <div class="decision"><b>Ce qui est codé</b> (branche <code>claude/boutons-517d48</code>) : la règle pure <code>buttonLook.ts</code> et ses tests (cible tactile tenue à toutes les tailles, dégradé réservé au principal, danger jamais en fond rouge), les cinq composants, l'ancien <code>Button</code> rebranché dessus (22 écrans suivent sans retouche : <code>primary</code> garde la pilule blanche sans son ombre, <code>danger</code> devient un libellé rouge), puis les écrans repris un à un — voir le rapport de la session.</div>
+  <div class="decision"><b>Ce qui est codé</b> (branche <code>claude/boutons-517d48</code>) : la règle pure <code>buttonLook.ts</code> et ses tests (cible tactile tenue à toutes les tailles, dégradé réservé au principal, danger jamais en fond rouge), les cinq composants, l'ancien <code>Button</code> rebranché dessus (22 écrans suivent sans retouche : <code>primary</code> garde la pilule blanche sans son ombre, <code>danger</code> devient un libellé rouge), l'option choisie des segmentés et pastilles en neutre (<code>selectedOptionLook</code>), puis les écrans repris un à un : feuille d'appui long, partage de Ma liste, tableau des sessions, demandes Vigie et saisons, barre de sélection, états vides, jumelage TV, voile « serveur injoignable », partage des statistiques, fiche (verre), connexion, Famille, hors ligne, « Pour vous ».</div>
 </section>
