@@ -243,6 +243,16 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   commutateur silencieux le tait, une musique en cours n'est pas coupée).
   Android : aucun focus audio ; le mode silencieux le tait, le vibreur non (il ne
   tait pas le média sur Android : le volume média décide).
+  **Téléphone Android : la demande part 450 ms plus tôt** que l'avance de la
+  sortie (`BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS`, contre 80 sur la TV) : elle passe
+  par le fil JavaScript, occupé par le premier écran qui se monte pendant
+  l'ouverture. Relevé à l'émulateur (API 36, 20/10) avec 80 ms : demande arrivée
+  au natif 41 à 218 ms après son départ, sortie ≈ 155 ms en file → 9 puis 119 ms
+  sautés au début du fichier, le « ta » (à 40 ms) avec. Et le mobile n'appuie
+  qu'une fois le son PRÉPARÉ (`waitForSound`, au plus `BOOT_SOUND_PREPARE_MAX_MS`,
+  1,5 s, puis sans son) : avant, une préparation tardive faisait demander le son
+  avec les avances par défaut. iPhone, iPad, TV : inchangés (`outputLeadMs` nul
+  sur iOS ; la TV garde ses options par défaut).
   Réglage d'appareil « Son au démarrage » (`tentacle_boot_sound`) ; « Animation
   d'ouverture » (`tentacle_boot_intro`) ; lus sur le disque AVANT l'hydratation
   du stockage (la décision précède tout), libellés `preferences.bootIntro*`.
