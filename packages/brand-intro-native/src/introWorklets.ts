@@ -16,6 +16,12 @@ export interface IntroClock {
   idleWeight: SharedValue<number>;
   /** L'écran est arrivé (ou l'ouverture a renoncé) : tout vaut l'identité. */
   landed: SharedValue<number>;
+  /**
+   * 1 tant que l'ouverture reste sur l'encre (mobile, `waitForApp`) : la scène et l'app se
+   * dessinent déjà, entières, SOUS un voile d'encre opaque — accueil enregistré, textures et
+   * plaques envoyées au processeur graphique avant que rien ne bouge. 0 ensuite (la TV : toujours).
+   */
+  prewarm: SharedValue<number>;
 }
 
 export function sampleAt(values: readonly number[], step: number, t: number): number {

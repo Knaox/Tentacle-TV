@@ -27,6 +27,8 @@ export interface BootIntroRunOptions {
   onFrameReport?: (report: IntroFrameReport, trace: IntroWallTrace) => void;
   /** Rester sur l'encre tant que l'app démarre (mobile : `bootIntroGate.reportAppReady`, shared `introStart`). */
   waitForApp?: boolean;
+  /** Pendant cette encre, tout dessiner d'avance sous un voile (`useIntroClock` › `prewarmOnInk`). */
+  prewarmOnInk?: boolean;
   /**
    * Le temps que la demande du son met à joindre le natif (shared `bootSoundLeads`) :
    * la TV garde `BOOT_SOUND_BRIDGE_MARGIN_MS`, le mobile prend `BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS`.
@@ -61,6 +63,7 @@ export function useBootIntroRun({
   selfReporting,
   onFrameReport,
   waitForApp = false,
+  prewarmOnInk = false,
   soundBridgeMarginMs = BOOT_SOUND_BRIDGE_MARGIN_MS,
   waitForSound = false,
 }: BootIntroRunOptions): BootIntroRun {
@@ -91,7 +94,7 @@ export function useBootIntroRun({
     }),
     [land],
   );
-  const clock = useIntroClock(events, null, { waitForApp });
+  const clock = useIntroClock(events, null, { waitForApp, prewarmOnInk });
 
   useEffect(() => {
     void soundReady.current?.then(({ ready, outputLeadMs }) => {

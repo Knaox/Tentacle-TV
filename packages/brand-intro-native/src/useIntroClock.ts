@@ -72,6 +72,11 @@ export interface IntroClockOptions {
    * d'interface n'a pas rendu quelques images régulières — shared `introStart`. Mobile.
    */
   waitForApp?: boolean;
+  /**
+   * Pendant l'encre, tout dessiner d'avance sous un voile (`IntroClock.prewarm`) : Android, où
+   * l'accueil découvert à l'allumage figeait la plongée. Seulement avec `waitForApp`.
+   */
+  prewarmOnInk?: boolean;
 }
 
 export function useIntroClock(events: IntroClockEvents, frozenAt: number | null = null, options: IntroClockOptions = {}): IntroClockControl {
@@ -82,6 +87,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
   const ready = useSharedValue(false);
   const state = useSharedValue<number>(frozenAt !== null ? CLOCK.stopped : options.waitForApp ? CLOCK.waiting : CLOCK.running);
   const appReady = useSharedValue(false);
+  const prewarm = useSharedValue(frozenAt === null && options.waitForApp && options.prewarmOnInk ? 1 : 0);
   const startState = useSharedValue({ ...INTRO_START_FRESH });
   const last = useSharedValue(-1);
   const releaseAt = useSharedValue(0);
@@ -130,6 +136,8 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       startState.value = step.state;
       if (step.start) {
         state.value = CLOCK.running;
+        // Le voile d'encre se lève et le dessin d'avance cesse dans la MÊME image que le départ.
+        prewarm.value = 0;
         markWall("start", wall);
       }
       return;
@@ -183,7 +191,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
 
   // Un objet stable : les effets qui en dépendent ne se rejouent pas à chaque rendu.
   return useMemo(
-    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady, wallTrace }),
-    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady, wallTrace],
+    () => ({ scene, idle, idleWeight, landed, prewarm, ready, state, requestAt, releaseDelay, stop, frameLog, appReady, wallTrace }),
+    [scene, idle, idleWeight, landed, prewarm, ready, state, requestAt, releaseDelay, stop, frameLog, appReady, wallTrace],
   );
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS, type IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, Platform, StyleSheet, View } from "react-native";
 import { SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -48,6 +48,8 @@ export function BootIntroHost({ sound, screenColor, children }: BootIntroHostPro
     selfReporting: MOBILE_BOOT_SELF_REPORTING,
     onFrameReport,
     waitForApp: true,
+    // Android : l'accueil et les plaques se dessinent pendant l'encre, pas à l'allumage (iOS : déjà fluide).
+    prewarmOnInk: Platform.OS === "android",
     soundBridgeMarginMs: BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS,
     waitForSound: true,
   });

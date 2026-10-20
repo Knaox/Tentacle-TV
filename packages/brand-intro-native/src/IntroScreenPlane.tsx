@@ -72,11 +72,14 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   const litFillsGlass = lit.width >= inner.width - 0.01 && lit.height >= inner.height - 0.01;
   const inClip: StageFrame = { center: { x: center.x - clip.left, y: center.y - clip.top }, target: geometry.target, zoom: finalZoom };
 
+  // Sur l'encre (mobile, `prewarm`), le cercle grand ouvert : l'app se dessine déjà entière sous le
+  // voile — enregistrée, ses images envoyées au processeur graphique — et l'allumage ne la découvre
+  // plus pour la première fois en pleine animation (Android : 117 à 200 ms de trou à l'allumage).
   const irisStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: clock.landed.value ? 1 : Math.max(IRIS_MIN, sampleAt(samples.reveal, step, clock.scene.value)) }],
+    transform: [{ scale: clock.landed.value || clock.prewarm.value ? 1 : Math.max(IRIS_MIN, sampleAt(samples.reveal, step, clock.scene.value)) }],
   }));
   const counterStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: clock.landed.value ? 1 : 1 / Math.max(IRIS_MIN, sampleAt(samples.reveal, step, clock.scene.value)) }],
+    transform: [{ scale: clock.landed.value || clock.prewarm.value ? 1 : 1 / Math.max(IRIS_MIN, sampleAt(samples.reveal, step, clock.scene.value)) }],
   }));
   // La vitre paraît avec le corps ; sur la TV, elle s'efface une fois le cercle au bout (il recouvre
   // tout l'écran) — sur le mobile, elle reste autour de la fenêtre allumée.

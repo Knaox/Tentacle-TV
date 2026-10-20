@@ -106,6 +106,7 @@ export const IntroStageBelow = memo(function IntroStageBelow(props: IntroStagePr
 function ArmsAway({ samples, frame, clock, children }: Pick<IntroStageProps, "samples" | "frame" | "clock"> & { children: React.ReactNode }) {
   const { step, armsAway } = samples;
   const style = useAnimatedStyle(() => {
+    if (clock.prewarm.value) return { opacity: 1, transform: [{ scale: 1 }] };
     const t = clock.scene.value;
     return { opacity: sampleAt(armsAway.opacity, step, t), transform: [{ scale: sampleAt(armsAway.scale, step, t) }] };
   });

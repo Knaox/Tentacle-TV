@@ -261,6 +261,14 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   du stockage (la décision précède tout), libellés `preferences.bootIntro*`.
 - **L'écran de lancement** est l'encre seule (#0D0B13) : storyboard iOS sans
   image, icône transparente d'Android 12+, fenêtre de l'app à l'encre.
+- **Tout se dessine pendant l'encre (Android, `prewarmOnInk`)** : tant que
+  l'ouverture attend sur l'encre, la scène entière (plaques ×2 et ×5 comprises)
+  et l'app (cercle grand ouvert) se dessinent SOUS un voile d'encre opaque
+  (`InkVeil`, qui arrête aussi les touchers) ; voile levé et poses de la
+  chorégraphie reprises dans la MÊME image que le départ (`IntroClock.prewarm`).
+  Relevé d'android-test (émulateur, 20/10) : 117 à 200 ms de trou ≈ 90 ms après
+  l'allumage, quand l'accueil se dessinait pour la première fois en pleine
+  plongée. iOS (déjà à 0 image perdue) et la TV n'en ont pas.
 - **Jamais le sombre forcé (Android)** : ColorOS (« appliquer aux apps
   tierces »), One UI ou MIUI savent forcer le sombre sur une app ; HWUI recolore
   alors ce que les vues peignent. Mesuré à l'émulateur (API 36, 1440×3216,
