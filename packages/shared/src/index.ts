@@ -292,6 +292,7 @@ export * from "./playback/playbackRights";
 export * from "./playback/rightsQuality";
 export * from "./playback/rightsVerdict";
 export * from "./playback/engineProfiles";
+export * from "./playback/castProfile";
 export * from "./playback/deviceMediaProfile";
 export * from "./playback/simulatedDeviceProfiles";
 export * from "./playback/deviceEngines";

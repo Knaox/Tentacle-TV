@@ -53,6 +53,8 @@ export function MpvVideoSurface({
     },
     getTechnicalInfo: async () => ({ ...(await viewRef.current?.getTechnicalInfo()) }),
     release: () => { void viewRef.current?.release(); },
+    // iOS seulement : sur Android, l'image dans l'image est celle de l'activité.
+    enterPictureInPicture: () => { if (Platform.OS === "ios") void viewRef.current?.startPictureInPicture(); },
   }), []);
 
   // La source, mémoïsée sur ses valeurs (une prop identique ne recharge rien).

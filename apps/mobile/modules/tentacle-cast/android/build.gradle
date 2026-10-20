@@ -1,0 +1,33 @@
+// La diffusion vers une TV sans l'app, sur Android : Google Cast, récepteur
+// média par défaut de Google (rien à enregistrer, rien à héberger).
+//
+// LICENCE. Le SDK Google Cast (`play-services-cast-framework`) fait partie des
+// Google Play services : propriétaire, comme Firebase déjà présent dans l'APK
+// du mobile. Le code de Tentacle s'y lie par la permission additionnelle §2
+// de `LICENSE-EXCEPTIONS` (bibliothèque de plateforme non libre, utilisée
+// seulement pour accéder à un service de la plateforme) ; l'APK du mobile ne
+// contient plus aucun GPL (lecteurs LGPL) : la garde
+// `check-android-player-license.mjs` reste verte. MediaRouter : Apache-2.0.
+// iOS n'en a pas besoin (AirPlay) : ce module n'existe que sur Android.
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.tentaclecast'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.tentaclecast"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  implementation "com.google.android.gms:play-services-cast-framework:22.1.0"
+  implementation "androidx.mediarouter:mediarouter:1.7.0"
+  implementation "androidx.appcompat:appcompat:1.7.0"
+}

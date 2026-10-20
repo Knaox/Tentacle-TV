@@ -1,0 +1,24 @@
+// L'image dans l'image du lecteur mobile sur Android, au niveau de l'ACTIVITÉ :
+// les deux moteurs (ExoPlayer, libmpv) y passent de la même façon. iOS a la
+// sienne dans chaque moteur (AVKit) : ce module n'existe pas là-bas.
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.playerpip'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.playerpip"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // `ComponentActivity` : écoute du mode image dans l'image et de `onUserLeaveHint`.
+  implementation "androidx.activity:activity-ktx:1.9.3"
+}

@@ -17,9 +17,16 @@ declare class MpvPlayerNativeModule extends NativeModule<MpvPlayerModuleEvents> 
   isAirPlayRouteActive(): boolean;
   supportsAv1HardwareDecode(): boolean;
   isSimulator(): boolean;
+  batteryStatus?(): BatteryStatus;
   /** Android seulement. */
   getDisplayModes?(): DisplaySnapshot;
   setPreferredDisplayMode?(modeId: number): Promise<void>;
+}
+
+/** La batterie de l'appareil : `level` de 0 à 1 (-1 : inconnu). */
+export interface BatteryStatus {
+  level: number;
+  charging: boolean;
 }
 
 /** L'écran de l'activité, tel qu'Android le décrit (cf. `DisplayModeBridge.kt`). */
@@ -91,4 +98,14 @@ export function getDisplayModes(): DisplaySnapshot | null {
 export function setPreferredDisplayMode(modeId: number): void {
   if (Platform.OS !== "android") return;
   native?.setPreferredDisplayMode?.(modeId)?.catch(() => {});
+}
+
+/** La batterie, pour l'heure du lecteur ; `null` sans le module ou sans mesure. */
+export function getBatteryStatus(): BatteryStatus | null {
+  try {
+    const status = native?.batteryStatus?.() ?? null;
+    return status && status.level >= 0 ? status : null;
+  } catch {
+    return null;
+  }
 }

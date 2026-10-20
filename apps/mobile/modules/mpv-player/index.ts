@@ -4,12 +4,14 @@
 export * from "./src/MpvPlayer.types";
 export {
   addMpvLogListener,
+  getBatteryStatus,
   getDisplayModes,
   isAirPlayRouteActive,
   isMpvAvailable,
   isMpvSimulator,
   setPreferredDisplayMode,
   supportsAv1HardwareDecode,
+  type BatteryStatus,
   type DisplaySnapshot,
 } from "./src/MpvPlayerModule";
 export { MpvPlayerView } from "./src/MpvPlayerView";

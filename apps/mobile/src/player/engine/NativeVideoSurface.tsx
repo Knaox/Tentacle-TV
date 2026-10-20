@@ -19,7 +19,7 @@ export function NativeVideoSurface({
   engineRef, streamUrl, headers, startPositionMs, isDirectPlay, textTracks, title, artist,
   paused, rate, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
   overlayVisible, onLoad, onProgress, onEnd, onError, onBuffering, onExternalPlaybackChange,
-  onSeek, onSeekComplete, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
+  onPipChange, onSeek, onSeekComplete, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
 }: EngineSurfaceProps) {
   const videoRef = useRef<VideoRef>(null);
   useImperativeHandle(engineRef, () => ({
@@ -27,6 +27,7 @@ export function NativeVideoSurface({
     // react-native-video s'éteint seul au démontage ; d'ici là, plus un son —
     // et plus d'image dans l'image automatique pendant la fermeture.
     release: () => videoRef.current?.pause(),
+    enterPictureInPicture: () => videoRef.current?.enterPictureInPicture(),
   }), []);
 
   // La source est MÉMOÏSÉE sur ses valeurs : react-native-video (Android,
@@ -102,7 +103,10 @@ export function NativeVideoSurface({
         // La position à rétablir quand AirPlay s'allume est l'affaire de
         // l'écran : lui seul connaît le décalage du flux (transcodage).
         onExternalPlaybackChange={({ isExternalPlaybackActive }) => onExternalPlaybackChange(isExternalPlaybackActive)}
-        // iOS: background playback + PiP for AirPlay continuity
+        onPictureInPictureStatusChanged={({ isActive }) => onPipChange?.(isActive)}
+        // iOS : lecture en fond et image dans l'image en quittant l'app — AVKit
+        // ne l'ouvre que pour une lecture qui avance (règle `pipPolicy.ts`).
+        // Android : celle de l'ACTIVITÉ (module `player-pip`), pas celle-ci.
         {...(Platform.OS === "ios" ? {
           playInBackground: true,
           playWhenInactive: true,

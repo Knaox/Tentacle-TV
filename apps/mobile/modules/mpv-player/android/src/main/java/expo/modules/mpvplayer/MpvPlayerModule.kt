@@ -44,6 +44,9 @@ class MpvPlayerModule : Module() {
             DisplayModeBridge.apply(appContext.currentActivity, modeId)
         }.runOnQueue(Queues.MAIN)
 
+        // La batterie (même contrat qu'iOS) : `level` de 0 à 1, -1 inconnu.
+        Function("batteryStatus") { batteryStatus(appContext.reactContext) }
+
         View(MpvPlayerView::class) {
             Events(
                 "onLoad", "onProgress", "onBuffering", "onEnd", "onError", "onTracksChanged",

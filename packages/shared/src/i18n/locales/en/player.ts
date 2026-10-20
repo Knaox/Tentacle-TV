@@ -220,6 +220,16 @@ export default {
     pause: "Pause",
     back10: "Back 10 seconds",
     forward30: "Forward 30 seconds",
+    forward10: "Skip forward 10 seconds",
+  },
+  cast: {
+    button: "Cast to a TV",
+    connecting: "Connecting to {{device}}…",
+    playingOn: "Playing on {{device}}",
+    playingOnTv: "Playing on the TV",
+    hint: "This phone's controls drive the TV.",
+    stop: "Stop casting",
+    failed: "The TV couldn't play this title.",
   },
   // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
   // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).
