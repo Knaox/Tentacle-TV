@@ -185,8 +185,9 @@ export function MobilePlayerOverlay({
           {/* Indicateur de saut ±10/30 (boutons) */}
           <SkipIndicator side={skipSide} />
 
-          {/* Le bas : progression et outils, collés au bord (`chromeInsets`). */}
-          <PlayerBottomBar
+          {/* Le bas : progression et outils, collés au bord (`chromeInsets`). La
+              liste des épisodes prend sa place : rien ne passe sous elle. */}
+          {panel !== "episodes" && <PlayerBottomBar
             ui={ui}
             currentTime={currentTime}
             duration={duration}
@@ -208,7 +209,7 @@ export function MobilePlayerOverlay({
             onEpisodes={item?.SeriesId ? () => openPanel("episodes") : undefined}
             onTracks={menus.tracks ? () => openPanel("tracks") : undefined}
             onSettings={menus.settings ? () => openPanel("settings") : undefined}
-          />
+          />}
         </Animated.View>
       )}
 
