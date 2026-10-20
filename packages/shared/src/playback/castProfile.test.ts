@@ -28,10 +28,13 @@ describe("profil de diffusion (Google Cast)", () => {
     expect(byProp).toMatchObject({ Height: "1080", Width: "1920", VideoBitDepth: "8", VideoRangeType: "SDR" });
   });
 
-  it("garde le WebVTT en piste séparée et grave tout autre sous-titre", () => {
-    const subs = buildCastDeviceProfile().SubtitleProfiles;
-    expect(subs.find((s) => s.Format === "vtt")?.Method).toBe("External");
-    expect(subs.filter((s) => s.Format !== "vtt").every((s) => s.Method === "Encode")).toBe(true);
+  it("garde un sous-titre texte en piste séparée et grave une image", () => {
+    const method = (format: string) => buildCastDeviceProfile().SubtitleProfiles.find((s) => s.Format === format)?.Method;
+    expect(method("vtt")).toBe("External");
+    expect(method("subrip")).toBe("External");
+    expect(method("ass")).toBe("External");
+    expect(method("pgssub")).toBe("Encode");
+    expect(method("dvdsub")).toBe("Encode");
   });
 
   it("prend le débit demandé, sinon un débit de Wi-Fi domestique", () => {

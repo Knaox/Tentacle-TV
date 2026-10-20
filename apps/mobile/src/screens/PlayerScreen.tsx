@@ -19,19 +19,18 @@ import { usePlayerEngine } from "../player/engine/usePlayerEngine";
 import { usePlayerScreenDevHook } from "../player/engine/usePlayerScreenDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
-import { PlayerQualityNotice, useMobileQualityDrop } from "../components/player/PlayerQualityNotice";
-import { JellyfinOutageBanner } from "../components/player/JellyfinOutageBanner";
-import { SeekWaitIndicator } from "../components/player/SeekWaitIndicator";
+import { useMobileQualityDrop } from "../components/player/PlayerQualityNotice";
+import { PlayerNotices } from "../components/player/PlayerNotices";
 import { usePlayerSeekGate } from "../hooks/usePlayerSeekGate";
-import { PlayerStallNotice } from "../components/player/PlayerStallNotice";
 import { PlayerLoadingScreen } from "../components/player/loading/PlayerLoadingScreen";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlaybackProblemView } from "../components/problems/PlaybackProblemView";
 import type { PlaybackFailureReport } from "../player/problems/playbackFailure";
 import { usePlayerProblem } from "../player/problems/usePlayerProblem";
 import { PlayerStatusBar, useChromeVisibility } from "../player/chrome/PlayerStatusBar";
-import { usePlayerScreenPip } from "../player/pip/usePlayerScreenPip";
 import { PlayerTopActions } from "../components/player/PlayerTopActions";
+import { CastControlView } from "../components/player/CastControlView";
+import { usePlayerModes } from "../player/usePlayerModes";
 
 interface Props { itemId: string; version?: string }
 
@@ -154,9 +153,9 @@ export function PlayerScreen({ itemId, version }: Props) {
   const seek = usePlayerSeekGate({ transcoding: !pb.isDirectPlay, duration: pb.jellyfinDuration || 0, positionRef: pb.positionRef,
     currentTime, buffering: isBuffering, seek: handleSeek, report: failure.report });
   const qualityDrop = useMobileQualityDrop(pb);
-  // Image dans l'image (iOS : AVKit ; Android : l'activité) — l'habillage n'y a rien à faire.
-  const pip = usePlayerScreenPip({ engineRef, paused, started, ended, failed: failure.problem !== null, remote: isAirPlaying,
-    streams: pb.streams, setPaused, seekBy: seek.seekBy, onClosed: leavePlayer, hideOverlay: () => setOverlayVisible(false) });
+  // L'image ailleurs : sur une TV (Google Cast, Android), ou en image dans l'image (sans habillage).
+  const { cast, pip } = usePlayerModes({ itemId, item: pb.item, pb, engineRef, paused, setPaused, seekBy: seek.seekBy, started, ended,
+    failed: failure.problem !== null, airPlaying: isAirPlaying, leave: leavePlayer, hideOverlay: () => setOverlayVisible(false) });
 
   // Rien de chargé en 20 s : relance transcodée, puis le message.
   usePlayerLoadingWatchdog({
@@ -178,7 +177,7 @@ export function PlayerScreen({ itemId, version }: Props) {
 
   // Android : libère l'encodage après un arrière-plan prolongé, et relance le
   // flux au retour. iOS ne bouge pas — la lecture en fond y est voulue.
-  usePlayerBackground(pb, () => pip.active);
+  usePlayerBackground(pb, () => pip.active || cast.active);
 
   // La télécommande de Jellyfin — tableau de bord Tentacle ou Jellyfin.
   usePlayerRemote({
@@ -196,7 +195,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   // « Vous regardez encore ? » — tout toucher sur le lecteur est une présence.
   const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started, setPaused });
 
-  const statusBar = <PlayerStatusBar controlsVisible={chrome.shown && started} pipActive={pip.active} />;
+  const statusBar = <PlayerStatusBar controlsVisible={(chrome.shown || cast.active) && started} pipActive={pip.active} />;
   // Le message — quoi, pourquoi, quoi faire —, une fois l'échec diagnostiqué.
   if (failure.problem) {
     return (
@@ -252,7 +251,8 @@ export function PlayerScreen({ itemId, version }: Props) {
       onSwipeDown={leavePlayer}
     >
       {statusBar}
-      {!pip.active && <>
+      {cast.active && <CastControlView cast={cast} item={pb.item} mediaSourceId={pb.mediaSourceId} onBack={leavePlayer} />}
+      {!pip.active && !cast.active && <>
       <MobilePlayerOverlay
         title={pb.item?.Name ?? ""}
         currentTime={seek.target ?? currentTime}
@@ -281,14 +281,11 @@ export function PlayerScreen({ itemId, version }: Props) {
         visible={overlayVisible}
         onToggle={toggleOverlay}
         onFadeStart={chrome.onFadeStart}
-        topActions={<PlayerTopActions onPip={pip.available ? pip.enter : null} />}
+        topActions={<PlayerTopActions pip={pip} cast={cast} />}
       />
 
-      <PlayerQualityNotice drop={qualityDrop} started={started} itemId={itemId} />
-      <JellyfinOutageBanner onRetry={failure.reopen} />
-      <SeekWaitIndicator phase={seek.phase} />
-      <PlayerStallNotice buffering={isBuffering && seek.phase === "idle"} started={started} paused={paused} transcoding={!pb.isDirectPlay}
-        canLowerQuality={failure.canLowerQuality} onLowerQuality={pb.lowerQuality} />
+      <PlayerNotices itemId={itemId} qualityDrop={qualityDrop} started={started} paused={paused} buffering={isBuffering} transcoding={!pb.isDirectPlay}
+        seekPhase={seek.phase} canLowerQuality={failure.canLowerQuality} onLowerQuality={pb.lowerQuality} onRetryOutage={failure.reopen} />
 
       {/* Jusqu'à ce que la lecture AVANCE : l'écran de chargement, au-dessus
           des contrôles, puis un fondu. */}

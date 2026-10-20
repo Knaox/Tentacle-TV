@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- Les options de Google Cast (récepteur par défaut, notification) : lues par CastContext. -->
+    <meta-data
+      android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+      android:value="expo.modules.tentaclecast.CastOptionsProvider" />
+  </application>
+</manifest>

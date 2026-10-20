@@ -64,4 +64,11 @@ export const ANDROID_MEDIA: readonly ThirdPartyComponent[] = [
     source: "https://developer.android.com/studio/terms", platforms: ["android"],
     note: "Push notifications only. Not free software: see LICENSE-EXCEPTIONS, section 2.",
   },
+  {
+    name: "Google Cast SDK (play-services-cast-framework), Google Play services", version: "22.1.0", license: "LicenseRef-Android-SDK", texts: [],
+    notice: "Copyright © Google LLC. Proprietary platform library (Android Software Development Kit License).",
+    source: "https://developers.google.com/cast/docs/terms", platforms: ["android"],
+    note: "Casting to a TV only. Not free software: see LICENSE-EXCEPTIONS, section 2.",
+  },
+  { name: "AndroidX MediaRouter", version: "1.7.0", license: "Apache-2.0", texts: ["Apache-2.0"], notice: "Copyright © The Android Open Source Project.", source: "https://developer.android.com/jetpack/androidx/releases/mediarouter", platforms: ["android"] },
 ];

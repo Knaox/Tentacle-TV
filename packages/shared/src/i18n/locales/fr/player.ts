@@ -228,6 +228,16 @@ export default {
     // Les gestes de la petite fenêtre du mobile Android (±10 s, comme AVKit).
     forward10: "Avancer de 10 secondes",
   },
+  // La diffusion du mobile Android vers une TV sans l'app (Google Cast).
+  cast: {
+    button: "Diffuser sur une TV",
+    connecting: "Connexion à {{device}}…",
+    playingOn: "Lecture sur {{device}}",
+    playingOnTv: "Lecture sur la TV",
+    hint: "Les commandes de ce téléphone pilotent la TV.",
+    stop: "Arrêter la diffusion",
+    failed: "La TV n'a pas pu lire ce titre.",
+  },
   // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
   // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).
   deviceNotice: {

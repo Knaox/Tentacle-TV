@@ -69,8 +69,10 @@ d'un artefact GPL à côté de Firebase.
 | Décodeur FFmpeg de Media3, construction LGPL (`app.tentacletv:media3-decoder-ffmpeg`) : `decoder_ffmpeg` d'androidx/media avec FFmpeg 6.0 sans `--enable-gpl`, décodeurs audio seulement | 1.9.0 | **Apache-2.0 + LGPL-2.1-or-later** | https://github.com/androidx/media |
 | Media3 / ExoPlayer | 1.9.0 | Apache-2.0 | https://github.com/androidx/media |
 | Firebase Cloud Messaging + Google Play services (notifications) | 24.0.1 | Apache-2.0 / **propriétaire** (Android SDK License) | — |
+| Google Cast SDK (`play-services-cast-framework`, Google Play services) — diffusion vers une TV | 22.1.0 | **propriétaire** (Android SDK License, conditions du SDK Google Cast) | — |
+| AndroidX MediaRouter (fenêtres de choix de la TV) | 1.7.0 | Apache-2.0 | https://developer.android.com/jetpack/androidx/releases/mediarouter |
 
-Le code de Tentacle se lie à Firebase par la permission de `LICENSE-EXCEPTIONS` §2 ; les
+Le code de Tentacle se lie à Firebase et au SDK Google Cast par la permission de `LICENSE-EXCEPTIONS` §2 ; les
 composants LGPL l'admettent (bibliothèques remplaçables : AAR et `.so` séparés, sources
 publiées).
 

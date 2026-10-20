@@ -57,6 +57,7 @@ est celle de VLC, de Streamyfin et d'Infuse ; elle n'a pas été tranchée par u
 | libmpv-android 1.0.0 — livré en 1.10.x : mpv GPL-2+, FFmpeg `--enable-gpl --enable-version3` (le POM dit « MIT » : licence des scripts) | GPL-3.0-or-later | 🛠 reconstruit en LGPL (mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl`) : `android/maven-local`, `app.tentacletv:libmpv-lgpl` |
 | Décodeur FFmpeg de Jellyfin pour Media3 1.9.0+1 | GPL-3.0 | 🛠 remplacé par `decoder_ffmpeg` d'androidx/media 1.9.0 construit avec un FFmpeg LGPL (mêmes classes, points d'entrée JNI et décodeurs) |
 | **Firebase Messaging + Play services** (propriétaires) | propriétaire | ✅ ne côtoie plus aucun GPL ; le code de Tentacle s'y lie par `LICENSE-EXCEPTIONS` §2 ; garde `check-android-player-license.mjs` dans `mobile.yml` |
+| **SDK Google Cast** (`play-services-cast-framework`, Play services, propriétaire) — diffusion vers une TV, `modules/tentacle-cast` (20/10) | propriétaire | ✅ même régime que Firebase : bibliothèque de plateforme utilisée seulement pour accéder à un service de la plateforme (`LICENSE-EXCEPTIONS` §2) ; aucun GPL dans l'APK, garde verte. MediaRouter : Apache-2.0. Alternative libre écartée (DLNA/UPnP : pas de transcodage piloté, pas de notification système, récepteurs inégaux) |
 | Media3 / ExoPlayer, Fresco, React Native, Expo | Apache / MIT | 🛠 listés |
 
 ### Apple TV (App Store) — `apps/tv`

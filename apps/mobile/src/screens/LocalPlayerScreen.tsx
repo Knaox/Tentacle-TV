@@ -261,7 +261,7 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
         visible={overlayVisible}
         onToggle={toggleOverlay}
         onFadeStart={chrome.onFadeStart}
-        topActions={<PlayerTopActions onPip={pip.available ? pip.enter : null} />}
+        topActions={<PlayerTopActions pip={pip} />}
       />
       <LocalPlaybackBadge visible={overlayVisible} />
       </>}

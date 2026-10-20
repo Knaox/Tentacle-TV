@@ -30,6 +30,9 @@ export const CAST_MAX_WIDTH = 1920;
 export const CAST_MAX_HEIGHT = 1080;
 const CAST_H264_MAX_LEVEL = "41";
 
+/** Les sous-titres texte que Jellyfin sert en WebVTT au récepteur. */
+export const CAST_TEXT_SUBTITLES: readonly string[] = ["vtt", "webvtt", "srt", "subrip", "ass", "ssa"];
+
 /** Débit par défaut vers le récepteur : un Wi-Fi domestique, pas un câble. */
 export const CAST_DEFAULT_MAX_BITRATE = 20_000_000;
 
@@ -38,9 +41,10 @@ export const CAST_DEFAULT_MAX_BITRATE = 20_000_000;
  * d'un MP4 H.264 + AAC/MP3 seulement ; tout le reste se transcode en HLS
  * (TS, H.264, AAC) — le seul format que le récepteur par défaut lit partout.
  *
- * Sous-titres : le récepteur affiche du WebVTT séparé (`External`, posé en
- * piste texte du média) ; tout autre format est gravé par le serveur
- * (`Encode`) — jamais un format qu'il ignorerait en silence.
+ * Sous-titres : un sous-titre TEXTE (SRT, ASS, WebVTT…) reste séparé
+ * (`External`) — Jellyfin le convertit en WebVTT à la volée, le récepteur
+ * l'affiche en piste texte ; une image (PGS, VobSub, DVB) est gravée par le
+ * serveur (`Encode`) — jamais un format que la TV ignorerait en silence.
  */
 export function buildCastDeviceProfile(maxBitrate?: number): DeviceProfile {
   const directPlayProfiles: DirectPlayProfile[] = [
@@ -68,8 +72,8 @@ export function buildCastDeviceProfile(maxBitrate?: number): DeviceProfile {
     },
   ];
   const subtitleProfiles: SubtitleProfile[] = [
-    { Format: "vtt", Method: "External" },
-    ...["srt", "subrip", "ass", "ssa", "pgssub", "dvdsub", "dvbsub"].map((format): SubtitleProfile => ({ Format: format, Method: "Encode" })),
+    ...CAST_TEXT_SUBTITLES.map((format): SubtitleProfile => ({ Format: format, Method: "External" })),
+    ...["pgssub", "dvdsub", "dvbsub"].map((format): SubtitleProfile => ({ Format: format, Method: "Encode" })),
   ];
   const bitrate = maxBitrate && maxBitrate > 0 ? maxBitrate : CAST_DEFAULT_MAX_BITRATE;
   return {
