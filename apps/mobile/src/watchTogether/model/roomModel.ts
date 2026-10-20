@@ -48,19 +48,29 @@ export function roomMemberRows(room: WtRoomStateDto, selfId: string | null): WtM
     });
 }
 
-/** Membres en train de charger, pour le voile « … met en mémoire tampon ». */
-export function waitingMembers(room: WtRoomStateDto, selfId: string | null): WtMemberDto[] {
-  if (!room.paused || room.pauseReason !== "buffering") return [];
-  const waiting = new Set(room.waitingForUserIds);
-  return room.members.filter((m) => waiting.has(m.userId) && m.userId !== selfId);
+/**
+ * Les AUTRES membres que la salle attend (mon propre chargement a déjà son
+ * indicateur) — règle de `GroupPlaybackOverlay` (web).
+ */
+export function waitingOthers(room: WtRoomStateDto, selfId: string | null): WtMemberDto[] {
+  return room.waitingForUserIds
+    .filter((id) => id !== selfId)
+    .map((id) => room.members.find((m) => m.userId === id))
+    .filter((m): m is WtMemberDto => !!m);
 }
 
-/** Le voile d'attente du lecteur : une clé `watchTogether` et ses paramètres, ou rien. */
+/**
+ * Le voile d'attente du lecteur : une clé `watchTogether` et ses paramètres,
+ * ou rien. Toute attente d'autres lecteurs se montre, même en pause : une
+ * barrière (saut, reprise, passage) dit « Synchronisation… », un chargement
+ * nomme qui charge. Un serveur d'avant n'envoie pas `waitCause` : chargement.
+ */
 export function waitingNotice(room: WtRoomStateDto | null, selfId: string | null):
   { key: string; params?: Record<string, string | number> } | null {
-  if (!room || !room.paused || room.pauseReason !== "buffering") return null;
-  const others = waitingMembers(room, selfId);
+  if (!room || !room.paused) return null;
+  const others = waitingOthers(room, selfId);
+  if (others.length === 0) return null;
+  if (room.waitCause !== undefined && room.waitCause !== "buffering") return { key: "syncing" };
   if (others.length === 1) return { key: "memberBuffering", params: { name: others[0]!.username } };
-  if (others.length > 1) return { key: "membersBuffering", params: { count: others.length } };
-  return { key: "waitingForGroup" };
+  return { key: "membersBuffering", params: { count: others.length } };
 }
