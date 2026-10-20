@@ -62,8 +62,12 @@ export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetV
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} snapPoints={[0.62, 0.94]}>
-      <ScrollView contentContainerStyle={s.content} testID="wt-room-sheet">
+    // Haute dès l'ouverture, et les ACTIONS dans un pied fixe : « Quitter le
+    // groupe » se voit sans défiler, téléphone comme iPad (défaut Q17). Seuls
+    // le programme et la liste des membres défilent.
+    <BottomSheet visible={visible} onClose={onClose} snapPoints={[0.8, 0.94]}>
+      <View style={s.sheet} testID="wt-room-sheet">
+      <ScrollView style={s.scroll} contentContainerStyle={s.content}>
         <Text style={s.title} accessibilityRole="header">{t("yourRoom")}</Text>
         <Text style={s.subtitle}>{t("roomHint")}</Text>
 
@@ -86,7 +90,9 @@ export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetV
         {rows.map((row) => <WtMemberRow key={row.member.userId} row={row} onKick={props.onKick} />)}
         {pendingInvites.map((p) => <WtPendingInviteRow key={p.userId} {...p} />)}
         {rows.length <= 1 && pendingInvites.length === 0 && <Text style={s.empty}>{t("roomAlone")}</Text>}
+      </ScrollView>
 
+      <View style={s.footer}>
         <View style={s.actions}>
           {mayInvite && (
             <PrimaryButton label={t("inviteMembers")} icon="user-plus" onPress={props.onInvite} fullWidth testID="wt-invite" />
@@ -99,13 +105,20 @@ export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetV
         <View style={s.separator} />
         <PlainButton label={t("leaveGroup")} icon="log-out" tone="destructive" onPress={confirmLeave}
           loading={leaving} disabled={leaving} fullWidth testID="wt-leave" />
-      </ScrollView>
+      </View>
+      </View>
     </BottomSheet>
   );
 });
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  content: { paddingHorizontal: 20, paddingBottom: 32 },
+  sheet: { flex: 1 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingBottom: 16 },
+  footer: {
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.colors.border.subtle,
+  },
   title: { color: t.colors.text.primary, fontSize: 22, fontFamily: FONT_FAMILY.extrabold },
   subtitle: { marginTop: 4, color: t.colors.text.secondary, fontSize: 14, lineHeight: 20, fontFamily: FONT_FAMILY.regular },
   section: {
@@ -117,6 +130,6 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   programPlaceholder: { alignItems: "center", justifyContent: "center" },
   programTitle: { flex: 1, color: t.colors.text.primary, fontSize: 15, fontFamily: FONT_FAMILY.semibold },
   empty: { color: t.colors.text.tertiary, fontSize: 14, lineHeight: 20, fontFamily: FONT_FAMILY.regular },
-  actions: { marginTop: 24, gap: 8 },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: t.colors.border.subtle, marginVertical: 16 },
+  actions: { gap: 8 },
+  separator: { height: StyleSheet.hairlineWidth, backgroundColor: t.colors.border.subtle, marginVertical: 8 },
 });
