@@ -68,6 +68,11 @@ export default {
     engineOptionsHint: "Pour les cas particuliers : laisse-les tels quels si tout se lit bien.",
     subtitleSize: "Taille des sous-titres",
     subtitlePosition: "Position des sous-titres",
+    engineAuto: "Auto",
+    engineSystem: "Système",
+    engineAdvanced: "Avancé",
+    subtitleSizeHint: "Lecteur avancé ; 160 % par défaut",
+    subtitlePositionHint: "100 % = tout en bas de l'image",
   },
   advanced: {
     row: "Réglages avancés : sur l'app bureau",

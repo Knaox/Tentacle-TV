@@ -58,6 +58,11 @@ export default {
     engineOptionsHint: "For special cases: leave them as they are if everything plays fine.",
     subtitleSize: "Subtitle size",
     subtitlePosition: "Subtitle position",
+    engineAuto: "Auto",
+    engineSystem: "System",
+    engineAdvanced: "Advanced",
+    subtitleSizeHint: "Advanced player; 160% by default",
+    subtitlePositionHint: "100% = at the very bottom of the picture",
   },
   advanced: {
     row: "Advanced settings: in the desktop app",

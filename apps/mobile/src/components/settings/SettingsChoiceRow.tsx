@@ -5,6 +5,7 @@ import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTh
 import { ChoiceChips } from "./ChoiceChips";
 import type { ChoiceOption } from "./SegmentedChoice";
 import type { SettingsIcon } from "./SettingsRow";
+import { ScopeBadge, type SettingScope } from "./ScopeBadge";
 
 interface Props {
   icon?: SettingsIcon;
@@ -17,6 +18,8 @@ interface Props {
   /** Un choix plus riche que des pastilles (les aperçus du thème) ; remplace `options`. */
   children?: ReactNode;
   last?: boolean;
+  /** La portée du réglage : pastille sous le libellé. */
+  scope?: SettingScope;
 }
 
 /** Icône 22 + écart : les pastilles s'alignent sur le libellé, pas sur l'icône. */
@@ -29,7 +32,7 @@ const LABEL_INSET = 22 + spacing.sm;
  * bout de la ligne. Les choix longs ou expliqués passent par
  * `SettingsOptionList` ou `SettingsPickerRow`.
  */
-export function SettingsChoiceRow({ icon, label, description, options, value, onChange, children, last }: Props) {
+export function SettingsChoiceRow({ icon, label, description, options, value, onChange, children, last, scope }: Props) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   return (
@@ -39,6 +42,7 @@ export function SettingsChoiceRow({ icon, label, description, options, value, on
         <View style={st.texts}>
           <Text style={st.label} numberOfLines={2}>{label}</Text>
           {description ? <Text style={st.description}>{description}</Text> : null}
+          {scope ? <View style={st.scope}><ScopeBadge scope={scope} /></View> : null}
         </View>
       </View>
       <View style={icon ? st.controlInset : undefined}>
@@ -67,5 +71,6 @@ const makeStyles = (t: AppTheme) =>
     texts: { flex: 1 },
     label: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.primary },
     description: { ...typography.small, color: t.colors.text.tertiary, marginTop: 2, lineHeight: 16 },
+    scope: { marginTop: spacing.xs },
     controlInset: { marginLeft: LABEL_INSET },
   });

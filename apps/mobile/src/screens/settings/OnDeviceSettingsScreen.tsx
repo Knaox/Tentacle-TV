@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { Alert, Linking, StyleSheet, View } from "react-native";
-import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useUserId } from "@tentacle-tv/api-client";
 import { BrandSwitch, SettingsRow, SettingsSection } from "@/components/settings";
@@ -9,29 +8,19 @@ import { removeOfflineEntry } from "@/offline/engineApi";
 import { setNotifyReady, useNotifyReady } from "@/offline/deviceSettings";
 import { OfflineSpaceBar } from "@/offline/manage/OfflineSpaceBar";
 import { setBackgroundTransfers, setWifiOnly, useBackgroundTransfers, useWifiOnly } from "@/offline/settings";
-import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
 import { spacing } from "@/theme";
 
 /**
- * Réglages « Sur cet appareil » : l'espace (jauge — les titres vivent dans
- * l'espace de l'application, aucun dossier à choisir), les transferts
- * (Wi-Fi seulement, continuer en arrière-plan, notification « prêt »), les
- * titres (gérer, tout retirer).
+ * Les réglages hors ligne, tous de CET appareil : l'espace (jauge — les titres
+ * vivent dans l'espace de l'application, aucun dossier à choisir), les
+ * transferts (Wi-Fi seulement, continuer en arrière-plan, notification
+ * « prêt »), « Tout retirer ». Un bloc de la rubrique « Hors ligne », sous
+ * « Mes titres hors ligne » (qui mène à leur gestion) : comportement d'avant.
  */
-export function OnDeviceSettingsScreen() {
-  const { t } = useTranslation("offline");
-  return (
-    <SettingsScaffold title={t("profileRowSettings")}>
-      <OnDeviceSettingsPane />
-    </SettingsScaffold>
-  );
-}
-
 export function OnDeviceSettingsPane() {
   const { t } = useTranslation("offline");
   const { t: tc } = useTranslation("common");
-  const router = useRouter();
   const userId = useUserId();
   const wifiOnly = useWifiOnly();
   const background = useBackgroundTransfers();
@@ -81,18 +70,21 @@ export function OnDeviceSettingsPane() {
           icon="wifi"
           label={t("wifiOnly")}
           description={t("wifiOnlyDesc")}
+          scope="device"
           trailing={<BrandSwitch value={wifiOnly} onValueChange={setWifiOnly} accessibilityLabel={t("wifiOnly")} />}
         />
         <SettingsRow
           icon="moon"
           label={t("backgroundTransfers")}
           description={t("backgroundTransfersDesc")}
+          scope="device"
           trailing={<BrandSwitch value={background} onValueChange={setBackgroundTransfers} accessibilityLabel={t("backgroundTransfers")} />}
         />
         <SettingsRow
           icon="bell"
           label={t("notifyReady")}
           description={denied ? t("notifyReadyDenied") : t("notifyReadyDesc")}
+          scope="device"
           onPress={denied ? () => void Linking.openSettings() : undefined}
           last
           trailing={<BrandSwitch value={notifyReady} onValueChange={(on) => void toggleNotify(on)} accessibilityLabel={t("notifyReady")} />}
@@ -100,7 +92,6 @@ export function OnDeviceSettingsPane() {
       </SettingsSection>
 
       <SettingsSection title={t("sectionTitles")}>
-        <SettingsRow icon="smartphone" label={t("manageTitles")} chevron onPress={() => router.push("/on-device")} />
         <SettingsRow icon="trash-2" label={t("removeAll")} destructive last disabled={removing || count === 0} onPress={removeAll} />
       </SettingsSection>
     </>

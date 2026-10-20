@@ -19,9 +19,9 @@ const SPLIT_MIN_WIDTH = 720;
 const BOTTOM_CLEARANCE = 120;
 
 /**
- * Profil — l'identité en tête, « Mes statistiques », puis SEPT rubriques au
- * plus (Compte, Appareils et TV, Lecture, Apparence, Notifications, Serveur,
- * Aide), et « Se déconnecter » en dernier. La structure — ce que chaque rubrique contient,
+ * Profil et réglages — l'identité en tête, « Mes statistiques », puis six
+ * rubriques (Compte, Lecture et apparence, TV et appareils, Hors ligne,
+ * Notifications, Aide et à propos), et « Se déconnecter » en dernier. La structure — ce que chaque rubrique contient,
  * et quand — vit dans `profile/profileSections.ts` ; cet écran n'est qu'une
  * mise en page.
  *

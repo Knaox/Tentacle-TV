@@ -1,5 +1,6 @@
-import { DataSettingsScreen } from "@/screens/settings/DataSettingsScreen";
+import { Redirect } from "expo-router";
 
-export default function DataRoute() {
-  return <DataSettingsScreen />;
+/** Ancien volet, fondu dans « Lecture et apparence » : les liens d'avant y mènent. */
+export default function LegacySettingsRedirect() {
+  return <Redirect href="/profile/playback" />;
 }

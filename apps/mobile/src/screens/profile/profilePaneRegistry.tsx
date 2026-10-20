@@ -1,12 +1,10 @@
 import type { ComponentType } from "react";
-import { DataPane } from "@/screens/settings/DataSettingsScreen";
 import { DevicesPane } from "@/screens/settings/DevicesScreen";
 import { InvitesPane } from "@/screens/settings/InvitesScreen";
+import { MediaLanguagesPane } from "@/screens/settings/MediaLanguagesScreen";
 import { NotificationsPane } from "@/screens/settings/NotificationsScreen";
-import { OnDeviceSettingsPane } from "@/screens/settings/OnDeviceSettingsScreen";
 import { PasswordPane } from "@/screens/settings/PasswordScreen";
 import { PersonalizationPane } from "@/screens/settings/PersonalizationScreen";
-import { PlaybackPane } from "@/screens/settings/PlaybackScreen";
 import type { ProfilePaneId } from "./profilePanes";
 
 interface PaneEntry {
@@ -16,12 +14,10 @@ interface PaneEntry {
 }
 
 export const PROFILE_PANE_REGISTRY: Record<ProfilePaneId, PaneEntry> = {
-  personalization: { Component: PersonalizationPane, title: { ns: "profile", key: "homeAndRecommendations" } },
-  playback: { Component: PlaybackPane, title: { ns: "profile", key: "player" } },
-  notifications: { Component: NotificationsPane, title: { ns: "notifications", key: "title" } },
-  data: { Component: DataPane, title: { ns: "profile", key: "dataSaver" } },
-  onDevice: { Component: OnDeviceSettingsPane, title: { ns: "offline", key: "profileRowSettings" } },
-  devices: { Component: DevicesPane, title: { ns: "profile", key: "devicesAndTv" } },
-  invites: { Component: InvitesPane, title: { ns: "profile", key: "invitations" } },
   password: { Component: PasswordPane, title: { ns: "preferences", key: "changePasswordTitle" } },
+  mediaLanguages: { Component: MediaLanguagesPane, title: { ns: "settingsMobile", key: "playback.mediaLanguages" } },
+  personalization: { Component: PersonalizationPane, title: { ns: "profile", key: "homeAndRecommendations" } },
+  devices: { Component: DevicesPane, title: { ns: "settingsMobile", key: "sections.tv" } },
+  notifications: { Component: NotificationsPane, title: { ns: "notifications", key: "title" } },
+  invites: { Component: InvitesPane, title: { ns: "profile", key: "invitations" } },
 };

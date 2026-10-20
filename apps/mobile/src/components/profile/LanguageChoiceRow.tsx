@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig, useInterfaceLanguage, useSetInterfaceLanguage } from "@tentacle-tv/api-client";
 import { SettingsChoiceRow } from "../settings/SettingsChoiceRow";
+import type { SettingScope } from "../settings/ScopeBadge";
 
 /** Chaque langue sous SON nom, comme sur l'Apple TV : qui cherche l'anglais lit « English ». */
 const LANGUAGES = [
@@ -15,7 +16,7 @@ const LANGUAGES = [
  * stockée côté serveur (changée depuis un autre appareil) et la persiste au
  * changement.
  */
-export function LanguageChoiceRow({ last }: { last?: boolean }) {
+export function LanguageChoiceRow({ last, scope, label }: { last?: boolean; scope?: SettingScope; label?: string }) {
   const { t, i18n } = useTranslation("profile");
   const { storage } = useTentacleConfig();
   const { data: dbLang } = useInterfaceLanguage();
@@ -40,11 +41,12 @@ export function LanguageChoiceRow({ last }: { last?: boolean }) {
   return (
     <SettingsChoiceRow
       icon="globe"
-      label={t("language")}
+      label={label ?? t("language")}
       options={LANGUAGES}
       value={currentLang}
       onChange={switchLanguage}
       last={last}
+      scope={scope}
     />
   );
 }

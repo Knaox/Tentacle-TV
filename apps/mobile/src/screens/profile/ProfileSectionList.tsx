@@ -17,8 +17,8 @@ interface Props {
 
 /**
  * Les rubriques du profil, une carte : pictogramme, nom et, dessous, ce
- * qu'on y trouve — ou, pour l'Apparence, ce qui est réglé (« Sombre ·
- * Français ») : on lit l'état sans ouvrir, comme les onglets des réglages de
+ * qu'on y trouve — ou, pour « Lecture et apparence », ce qui est réglé
+ * (« Sombre · Français ») : on lit l'état sans ouvrir, comme les onglets des réglages de
  * l'Apple TV. Téléphone : la ligne ouvre la page de la rubrique ; tablette :
  * elle la pose dans la colonne de droite.
  */
@@ -38,7 +38,7 @@ export function ProfileSectionList({ ctx, selected, onSelect }: Props) {
     <SettingsSection>
       {sections.map((section, index) => {
         const summary = sectionSummary(section, ctx);
-        const caption = section.id === "appearance" ? appearance : summary ? t(summary.key, { ns: summary.ns }) : undefined;
+        const caption = section.id === "playback" ? appearance : summary ? t(summary.key, { ns: summary.ns }) : undefined;
         return (
           <SettingsRow
             key={section.id}
