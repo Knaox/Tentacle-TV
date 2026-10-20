@@ -1342,10 +1342,40 @@ inviter, PIN, photo, accepter / refuser, retirer, quitter, dissoudre.
 `bench:parental` passe aussi l'invité ouvert par « Qui regarde ? » du bureau ou du mobile
 (`PARENTAL_PICKER_PLATFORM`) et les requêtes propres au mobile (`probesMobile.ts`).
 
-### 9.10.5 Restes
+### 9.10.5 Tous les droits, pas seulement la Famille (demande de Damien, 20/10)
+
+« Tout ce que tu as le droit de faire, tu le vois ; tout ce que tu n'as pas le droit de faire, tu ne
+le vois pas. »
+
+- **Ce que la session peut faire** : `GET /api/account/abilities` (capacité `account.abilities`,
+  1.32.0, contrat `accountAbilities/accountAbilitiesContract.ts` en miroir), composé par
+  `accountAbilitiesOf` des droits que chaque porte applique déjà : administration, lecture, garder
+  hors ligne, Watch Together, partage public, suppression, tickets, extensions, compte, jumelage,
+  push, invitations — au nom du compte, du PROFIL ou du compte regardé, fermé à l'échec droit par
+  droit. Client : `useAccountAbilities` + `mayShow` / `watchTogetherAbility` (pas encore su : rien ne
+  s'affiche ; serveur d'avant : la règle d'avant de l'écran). Relue à `rights:changed`.
+- **Mobile** : « Garder hors ligne » par `keepOffline` ; les rubriques du profil (Support, mot de
+  passe, appareils, notifications, invitations) par la session reglages ; Watch Together par
+  wt-mobile ; les droits de lecture du lecteur par lecteur-mobile (§ 9.2.4) — chacun prévenu.
+- **Compte désactivé ou hors de ses heures** (`AccountAccessHost`, la règle de tous les clients) :
+  la page remplace l'app au-dessus de tout, le lecteur et la bande-annonce se ferment (une lecture
+  en cours est coupée à l'heure limite et ne redémarre pas ; le serveur refuse chaque flux et garde la
+  position), la page se lève seule à la réouverture ; une connexion refusée se dit par sa raison.
+  Il n'existe pas de plafond de DURÉE de visionnage dans Jellyfin 10.11 (aucun champ de
+  `UserPolicy`) : rien à appliquer.
+- **« Êtes-vous encore là ? »** : la pause tombe à l'expiration du délai (`useStillWatching`, battement
+  d'une seconde) ; en arrière-plan Android, au retour au premier plan.
+
+### 9.10.6 Restes
 
 - Les rangées de l'accueil PERSISTÉES (`HOME_PERSIST_WHITELIST`) d'avant un droit retiré
   application fermée s'affichent au démarrage le temps de leur relecture (le serveur ne rend plus
   rien d'interdit ; seule l'image gardée sur l'appareil traîne quelques instants).
 - Le bureau garde ses titres hors ligne sans verdict : la règle (`offline-core`) et la route
   sont prêtes, l'adaptateur Electron reste à brancher.
+- **`EnableRemoteAccess` n'est pas appliqué derrière Tentacle** : Jellyfin le juge sur l'adresse
+  qui lui parle — celle de Tentacle, locale. Un compte « sans accès à distance » se sert de Tentacle
+  depuis Internet (téléphone en 4G). À fermer côté serveur (adresse réelle `getRealClientIp`, règle
+  locale de `playbackRights/localAddress`) avec un état d'accès dédié dans le contrat partagé.
+- Un titre gardé lu SANS réseau pendant les heures interdites n'est pas coupé (l'appareil ne
+  connaît pas les plages d'un compte « permis » ; Jellyfin non plus n'y a prise).
