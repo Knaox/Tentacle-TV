@@ -7,7 +7,9 @@ import { mobileProfileLaunch, mobileStayIsStale, type PickerDeviceChoice, type P
  * - `none` : rien à montrer (pas de capacité, hors ligne, seul dans la
  *   famille, « Ne plus proposer au démarrage » sur un profil qui vaut, serveur
  *   muet — l'app reste comme avant) ;
- * - `pending` : la famille n'a pas encore répondu ;
+ * - `pending` : la configuration du serveur ou la famille n'ont pas encore
+ *   répondu (sans la configuration, la capacité n'est pas lue : conclure à
+ *   son absence figerait « rien » pour tout le processus) ;
  * - `picker` : « Qui regarde ? » plein écran.
  *
  * `request` : une session de profil a pris fin — « Qui regarde ? » exigé,
@@ -17,6 +19,8 @@ import { mobileProfileLaunch, mobileStayIsStale, type PickerDeviceChoice, type P
 export type LaunchGateState = "none" | "pending" | "picker";
 
 export interface LaunchGateInput {
+  /** La configuration du serveur a répondu (ou échoué) : `enabled` dit vrai. */
+  configSettled: boolean;
   enabled: boolean;
   data: PickerProfilesDto | undefined;
   isError: boolean;
@@ -30,6 +34,7 @@ export interface LaunchGateInput {
 }
 
 export function launchGateState(input: LaunchGateInput): LaunchGateState {
+  if (!input.configSettled) return "pending";
   if (!input.enabled) return "none";
   if (!input.data) return input.isError ? "none" : "pending";
   if (input.request !== null && input.data.pickerRequired) return "picker";
