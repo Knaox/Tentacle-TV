@@ -14,7 +14,8 @@ import { openWtSheet } from "../wtSheets";
  * bande-annonce, même gabarit (la rangée d'actions est en quatre colonnes
  * fixes). La règle du web (`DetailActionCapsule`) : hors groupe, elle crée
  * le groupe avec CE titre au programme et ouvre sa feuille ; l'hôte d'un
- * groupe y invite. Un membre qui n'est pas l'hôte, un compte « rejoindre
+ * groupe y invite ; un groupe en cours sur un AUTRE appareil du compte :
+ * « Rejoindre ici » (jamais un second groupe). Un membre qui n'est pas l'hôte, un compte « rejoindre
  * seulement » ou sans Watch Together : rien.
  */
 export const WtDetailPill = memo(function WtDetailPill({ item, animStyle }: {
@@ -23,19 +24,26 @@ export const WtDetailPill = memo(function WtDetailPill({ item, animStyle }: {
 }) {
   const { t } = useTranslation("watchTogether");
   const { colors } = useTheme();
-  const { isInGroup, isHost, mayCreate, actions } = useWatchTogetherOrIdle();
+  const { isInGroup, isHost, mayCreate, elsewhere, actions } = useWatchTogetherOrIdle();
   const [busy, setBusy] = useState(false);
   if (item.Type === "BoxSet" || !mayCreate || (isInGroup && !isHost)) return null;
 
   const press = (): void => {
     if (isInGroup) { openWtSheet("invite"); return; }
     setBusy(true);
+    if (elsewhere) {
+      actions.joinHere().then(
+        () => setBusy(false),
+        () => { setBusy(false); showToast({ title: t("elsewhereJoinFailed") }); },
+      );
+      return;
+    }
     actions.create(item.Id).then(
       () => { setBusy(false); openWtSheet("room"); },
       () => { setBusy(false); showToast({ title: t("alreadyInGroup") }); },
     );
   };
-  const label = isInGroup ? t("inviteMembers") : t("watchTogetherAction");
+  const label = isInGroup ? t("inviteMembers") : elsewhere ? t("elsewhereJoinHere") : t("watchTogetherAction");
 
   return (
     <Animated.View style={[{ marginTop: spacing.md, alignItems: "center" }, animStyle]}>

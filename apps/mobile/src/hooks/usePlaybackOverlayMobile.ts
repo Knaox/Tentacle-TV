@@ -23,7 +23,7 @@ import type { PlayerSessionCore } from "./usePlayerPlayback";
  */
 /** Ce que la séance Watch Together impose à l'arbitre (décompte commun, refus partagés). */
 export type GroupOverlayInput = Pick<PlaybackOverlayInput,
-  "groupSession" | "groupSkip" | "onSegmentDismissNotify" | "onNextDismissNotify" | "onSkipPropose">;
+  "groupSession" | "groupSkip" | "groupSkipHeld" | "onSegmentDismissNotify" | "onNextDismissNotify" | "onSkipPropose">;
 
 interface Options {
   itemId: string;
