@@ -23,8 +23,10 @@ interface Props {
  * Matière : le Liquid Glass d'iOS 26 quand il est allumé, sinon le matériau
  * des menus d'iOS (`systemChromeMaterialDark`) ; un fond plein sur Android.
  * Le panneau n'existe que s'il est ouvert (démonté à la fermeture) : aucun
- * verre masqué par l'opacité. L'entrée n'anime que la translation et
- * l'opacité, sur le fil natif.
+ * verre masqué par l'opacité. L'entrée glisse la plaque et fond le CONTENU
+ * seul : un verre natif (UIVisualEffectView) sous un parent à alpha < 1 ne
+ * rend pas son effet — il restait transparent, textes illisibles sur la
+ * vidéo (banc du 21/10). Fil natif seulement.
  */
 export function PanelSurface({ frame, onClose, fill = false, children }: Props) {
   const { t } = useTranslation("player");
@@ -54,14 +56,11 @@ export function PanelSurface({ frame, onClose, fill = false, children }: Props) 
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
       <Animated.View
         accessibilityViewIsModal
-        style={[st.plate, position, {
-          opacity: enter,
-          transform: [fromSide ? { translateX: offset } : { translateY: offset }],
-        }]}
+        style={[st.plate, position, { transform: [fromSide ? { translateX: offset } : { translateY: offset }] }]}
       >
         <View style={[st.clip, { borderRadius: frame.radius, maxHeight: frame.maxHeight }, fill && { height: frame.maxHeight }]}>
           <PanelMaterial radius={frame.radius} />
-          {children}
+          <Animated.View style={[st.content, fill && st.fill, { opacity: enter }]}>{children}</Animated.View>
         </View>
       </Animated.View>
     </View>
@@ -81,6 +80,8 @@ function PanelMaterial({ radius }: { radius: number }) {
         pointerEvents="none"
         glassEffectStyle="regular"
         colorScheme="dark"
+        // Une teinte sombre sous le verre : lisible sur une image claire.
+        tintColor={PANEL.glassTint}
         style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: "hidden" }]}
       />
     );
@@ -98,4 +99,6 @@ const st = StyleSheet.create({
   plate: { position: "absolute" },
   android: { backgroundColor: PANEL.androidSurface, borderWidth: StyleSheet.hairlineWidth, borderColor: PANEL.androidBorder },
   clip: { overflow: "hidden" },
+  content: { flexShrink: 1 },
+  fill: { flex: 1 },
 });

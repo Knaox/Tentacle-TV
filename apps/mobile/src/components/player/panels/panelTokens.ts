@@ -22,6 +22,8 @@ export const PANEL = {
   progressTrack: "rgba(255, 255, 255, 0.28)",
   progressFill: "#FFFFFF",
   thumbFallback: "rgba(255, 255, 255, 0.08)",
+  /** La teinte du Liquid Glass : assez sombre pour lire du blanc sur une image claire. */
+  glassTint: "rgba(18, 18, 22, 0.55)",
 } as const;
 
 /** Les tailles de texte d'iOS (body 17, subheadline 15, footnote 13) ; un cran de moins sur Android. */
