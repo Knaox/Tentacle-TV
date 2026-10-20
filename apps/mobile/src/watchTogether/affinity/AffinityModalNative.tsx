@@ -60,7 +60,7 @@ export function AffinityModalNative({ onStale, onOpenTitle }: {
     throw err;
   }, [t]);
 
-  const presented = useGatedModal(modal.open, SLIDE_EXIT_MS);
+  const { presented, onShow } = useGatedModal(modal.open, SLIDE_EXIT_MS);
   if (!presented) return null;
   const participant = !!state && state.participants.some((p) => p.userId === selfId);
   const proposal = participant && state ? (state.proposals[0] ?? null) : null;
@@ -73,6 +73,7 @@ export function AffinityModalNative({ onStale, onOpenTitle }: {
       animationType="slide"
       presentationStyle={IS_TABLET_DEVICE ? "pageSheet" : "fullScreen"}
       onRequestClose={view === "kinds" && state ? () => showAffinityView("deck") : quit}
+      onShow={onShow}
       supportedOrientations={["portrait", "landscape"]}
     >
       <SafeAreaView style={[st.root, { backgroundColor: theme.colors.surface.s0 }]} edges={["top", "bottom", "left", "right"]}>

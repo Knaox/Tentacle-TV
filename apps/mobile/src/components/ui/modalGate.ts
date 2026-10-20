@@ -43,6 +43,35 @@ export function retainModal(exitMs: number = SETTLE_MS): () => void {
   };
 }
 
+/**
+ * Au-delà, une modale montée que le natif n'a jamais présentée (`onShow`
+ * jamais reçu) ne compte plus : iOS refuse de présenter depuis un contrôleur
+ * qui présente déjà autre chose (le lecteur), et une telle modale retenait
+ * le portier pour toujours — toute feuille gardée attendait sans fin (boîte
+ * des invitations, banc du 21/10).
+ */
+export const PRESENT_TIMEOUT_MS = 1500;
+
+export interface PresentedModalHold {
+  /** Le natif l'a présentée (`onShow` de la `Modal`). */
+  shown(): void;
+  release(): void;
+}
+
+/** Comme `retainModal`, mais libérée d'elle-même si `shown` n'arrive pas à temps. */
+export function holdPresentedModal(exitMs: number = SETTLE_MS): PresentedModalHold {
+  const release = retainModal(exitMs);
+  let timer: ReturnType<typeof setTimeout> | null = setTimeout(release, PRESENT_TIMEOUT_MS);
+  const stop = (): void => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+  return {
+    shown: stop,
+    release: () => { stop(); release(); },
+  };
+}
+
 function drain(): void {
   if (waiting.length === 0) return;
   const pending = waiting;
