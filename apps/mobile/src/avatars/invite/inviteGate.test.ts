@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { AVATAR_INVITE_SEEN_KEY, shouldInviteToAvatars } from "@tentacle-tv/shared";
-import { inviteBusy, markSubjectInvited, readInvitedSubjects, type InviteBusyContext } from "./inviteGate";
+import { inviteBusy, inviteOnPlayer, markSubjectInvited, readInvitedSubjects, type InviteBusyContext } from "./inviteGate";
 
 const calm: InviteBusyContext = {
   overlaysQuiet: true,
@@ -55,5 +55,12 @@ describe("l'invitation aux avatars sur le mobile", () => {
 
   it("une valeur abîmée vaut « personne »", () => {
     expect(readInvitedSubjects(memoryStorage({ [AVATAR_INVITE_SEEN_KEY]: "{oups" }))).toEqual([]);
+  });
+});
+
+describe("jamais sur le lecteur", () => {
+  it("le lecteur à l'écran : la galerie ne se présente pas (elle reviendra au retour)", () => {
+    expect(inviteOnPlayer({ pathname: "/watch/abc", rootSegment: "watch" })).toBe(true);
+    expect(inviteOnPlayer({ pathname: "/", rootSegment: "(tabs)" })).toBe(false);
   });
 });
