@@ -11,6 +11,7 @@ import { forgetAvatar } from "@/offline/avatarCache";
 import { removeOfflineEntry } from "@/offline/engineApi";
 import { stopOfflineRuntime } from "@/offline/engineRuntime";
 import { useServerUrl } from "@/providers/ServerUrlContext";
+import { endAccountProfiles } from "@/family/profiles/accountLogout";
 
 /**
  * L'identité affichée par le profil et ses quatre actions de compte
@@ -46,15 +47,16 @@ export function useProfileActions() {
   // ferait rien.
   const handleLogout = useCallback(() => {
     const leave = () => { clearCredentials(storage); router.replace("/(auth)/login"); };
-    logout.mutate(undefined, {
+    // Pendant une session de profil (Famille) : le serveur coupe d'abord les profils de l'appareil.
+    void endAccountProfiles(storage, serverUrl || null).finally(() => logout.mutate(undefined, {
       onSuccess: leave,
       onError: () => {
         storage.removeItem("tentacle_token");
         storage.removeItem("tentacle_user");
         leave();
       },
-    });
-  }, [logout, storage, router]);
+    }));
+  }, [logout, storage, router, serverUrl]);
 
   const handleChangeServer = useCallback(() => {
     const leave = (): void => {

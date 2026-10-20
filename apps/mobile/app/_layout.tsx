@@ -18,6 +18,7 @@ import { DatabaseMigrationHost } from "@/databaseMigration/DatabaseMigrationHost
 import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
 import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
+import { FamilyLaunchHosts } from "@/family/profiles/FamilyLaunchHosts";
 import { AvatarInviteHost } from "@/avatars/invite/AvatarInviteHost";
 import { FamilyPinStartupHost } from "@/family/pinSuggest/FamilyPinStartupHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
@@ -170,6 +171,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           <Stack.Screen name="license-text" options={{ presentation: "card" }} />
           <Stack.Screen name="profile/[section]" options={{ presentation: "card" }} />
           <Stack.Screen name="family" options={{ presentation: "card" }} />
+          <Stack.Screen name="who-is-watching" options={{ presentation: "fullScreenModal", orientation: "all", gestureEnabled: false }} />
           <Stack.Screen name="settings/password" options={{ presentation: "card" }} />
           <Stack.Screen name="settings/playback" options={{ presentation: "card" }} />
           <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
@@ -194,6 +196,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
           lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
           lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
       {serverUrl && !showLoading ? <FamilyInvitationHost /> : null}
+      {/* « Qui regarde ? » à l'ouverture, puis le premier lancement du profil (code PIN, accueil, photo). */}
+      {serverUrl && !showLoading ? <FamilyLaunchHosts /> : null}
       {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
           (l'affiche de la Famille d'abord), jamais sur le lecteur. */}
       {serverUrl && !showLoading ? <AvatarInviteHost /> : null}

@@ -5,6 +5,7 @@ import { clearCredentials } from "@/auth/credentialManager";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import { setManualOffline } from "./connectivityStore";
 import { useProbeRetry } from "./useProbeRetry";
+import { endAccountProfiles } from "@/family/profiles/accountLogout";
 
 /**
  * Les gestes communs aux voiles du hors ligne — serveur injoignable, session
@@ -20,7 +21,8 @@ export function useOfflineVeilActions() {
   const router = useRouter();
 
   const handleLogout = useCallback(() => {
-    logout.mutate(undefined, {
+    // Hors ligne, le serveur ne répond pas : la session de profil (Famille) s'oublie quand même.
+    void endAccountProfiles(storage, storage.getItem("tentacle_server_url")).finally(() => logout.mutate(undefined, {
       onSuccess: () => {
         clearCredentials(storage);
         router.replace("/(auth)/login");
@@ -31,7 +33,7 @@ export function useOfflineVeilActions() {
         clearCredentials(storage);
         router.replace("/(auth)/login");
       },
-    });
+    }));
   }, [logout, storage, router]);
 
   const handleChangeServer = useCallback(() => {

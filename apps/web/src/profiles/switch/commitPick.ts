@@ -1,5 +1,7 @@
-import { pickerStayOf, type PickedProfileDto, type PickerProfileDto } from "@tentacle-tv/shared";
-import { accountUserId, readActiveProfile, type ActiveProfile } from "../../auth/profileSession";
+import { activeProfileOf, pickerStayOf, type PickedProfileDto, type PickerProfileDto } from "@tentacle-tv/shared";
+
+export { activeProfileOf };
+import { accountUserId, readActiveProfile } from "../../auth/profileSession";
 import { cancelProfileSwitch, clearPickerRequest } from "../../auth/profileEnded";
 import { enterProfile, returnToAccount } from "../../auth/sessionSwap";
 import { endPipSession } from "../../pictureInPicture/pictureInPictureStore";
@@ -59,17 +61,6 @@ export function curtainOf(profile: Pick<PickerProfileDto, "userId" | "name" | "c
   return { id: profile.userId, name: profile.name, color: profile.color, imageTag: profile.imageTag };
 }
 
-export function activeProfileOf(profile: PickerProfileDto): ActiveProfile {
-  return {
-    id: profile.userId,
-    name: profile.name,
-    kind: profile.kind,
-    color: profile.color,
-    imageTag: profile.imageTag,
-    hasPin: profile.hasPin,
-    photoEditable: profile.photoEditable === true,
-  };
-}
 
 export async function commitPick(picked: PickedProfileDto, context: CommitContext = {}): Promise<CommitResult> {
   const held = readActiveProfile();

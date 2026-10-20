@@ -6,8 +6,8 @@ import { withFamilyLock } from "./familyLock";
 import { isUniqueViolation } from "./familyStore";
 
 /**
- * L'HÔTE de profils d'un appareil hors TV — le bureau (docs/FAMILLE.md,
- * « Le bureau »). Une ligne `paired_devices` SANS parent, marquée par sa
+ * L'HÔTE de profils d'un appareil hors TV — le bureau, le mobile depuis la
+ * 1.32.0 (docs/FAMILLE.md, « Le bureau »). Une ligne `paired_devices` SANS parent, marquée par sa
  * plateforme (`platform`), propre à UNE session personnelle de cet appareil :
  * son empreinte est DÉRIVÉE du jeton personnel, sous un préfixe de domaine —
  * jamais l'empreinte d'un jeton qu'une porte reconnaîtrait. Aucun jeton ne
@@ -27,7 +27,8 @@ const HOST_DOMAIN = "tentacle:family-picker-host:";
  *  est abandonné (session du compte expirée, appareil disparu) : le balayage
  *  le révoque, ses sessions de profil avec. */
 export const PICKER_HOST_IDLE_MS = 30 * 24 * 3_600_000;
-const DEFAULT_DEVICE_NAME = "Desktop";
+/** Le nom d'un appareil qui n'en donne pas, par plateforme. */
+const DEFAULT_DEVICE_NAMES: Readonly<Record<FamilyPickerPlatform, string>> = { desktop: "Desktop", mobile: "Mobile" };
 
 export interface PickerHost {
   id: string;
@@ -44,7 +45,7 @@ export function pickerHostHash(personalToken: string): string {
 }
 
 /** Le nom de l'appareil tel que Jellyfin le montrera : visible, resserré, borné. */
-export function pickerDeviceName(raw: string | undefined): string {
+export function pickerDeviceName(raw: string | undefined, platform: FamilyPickerPlatform = "desktop"): string {
   // Les blancs (retours à la ligne compris) deviennent des espaces ; les
   // caractères de contrôle et les marques invisibles disparaissent.
   const visible = Array.from((raw ?? "").replace(/\s+/g, " ")).filter((char) => {
@@ -52,7 +53,7 @@ export function pickerDeviceName(raw: string | undefined): string {
     return code >= 0x20 && !(code >= 0x7f && code <= 0x9f) && !(code >= 0x200b && code <= 0x206f) && code !== 0xfeff;
   });
   const name = visible.join("").replace(/ {2,}/g, " ").trim();
-  return Array.from(name).slice(0, FAMILY_PICKER_DEVICE_NAME_MAX).join("").trim() || DEFAULT_DEVICE_NAME;
+  return Array.from(name).slice(0, FAMILY_PICKER_DEVICE_NAME_MAX).join("").trim() || DEFAULT_DEVICE_NAMES[platform];
 }
 
 function asHost(row: { id: string; name: string; jellyfinUserId: string; platform: string | null; parentId: string | null } | null): PickerHost | null {
@@ -76,7 +77,7 @@ export async function ensurePickerHost(
 ): Promise<PickerHost> {
   const prisma = getPrisma();
   const tokenHash = pickerHostHash(personalToken);
-  const name = pickerDeviceName(deviceName);
+  const name = pickerDeviceName(deviceName, platform);
   const existing = await findPickerHost(personalToken);
   if (existing) {
     await prisma.pairedDevice.update({ where: { id: existing.id }, data: { name, lastSeen: new Date(now) } });

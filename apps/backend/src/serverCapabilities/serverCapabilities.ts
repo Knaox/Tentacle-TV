@@ -187,6 +187,11 @@ export const SERVER_CAPABILITIES = {
    *  et la préférence du COMPTE qui l'allume (`trendingNow` de `/api/preferences/reco`, allumée par
    *  défaut). Sans elle, aucun interrupteur : un serveur d'avant ignore le paramètre. */
   "reco.trending": "1.31.0",
+  /** « Qui regarde ? » sur le MOBILE (téléphone, tablette) : la plateforme `mobile` des routes
+   *  `/api/family/picker/*` (`FAMILY_PICKER_PLATFORMS`) — profils de la famille, session de
+   *  profil de l'appareil, PIN vérifié par le serveur, comme le bureau. Sans elle, le mobile
+   *  ne montre ni « Qui regarde ? » ni « Changer de profil ». */
+  "family.mobileProfiles": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

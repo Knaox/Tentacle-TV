@@ -13,6 +13,7 @@ import { activePluginsQueryOptions, toNotifPluginMeta } from "@/hooks/useActiveP
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { openFamilyNotification } from "@/family/familyPosterStore";
 import { libraryTitleLookup } from "@/services/notificationDestination";
+import { readActiveProfile } from "@/family/profiles/profileSessionCore";
 import {
   configureNotificationHandler,
   registerForPushToken,
@@ -36,7 +37,9 @@ export function PushRegistrationSync({
   storage: StorageAdapter;
   serverUrl: string | null;
 }) {
-  const token = storage.getItem("tentacle_token");
+  // Une session de PROFIL (Famille) ne s'abonne pas : le serveur lui refuse
+  // `/api/push` ; l'abonnement du compte de l'appareil reste celui d'avant.
+  const token = readActiveProfile(storage) ? null : storage.getItem("tentacle_token");
   const register = useRegisterPushDevice();
   const router = useRouter();
   const queryClient = useQueryClient();

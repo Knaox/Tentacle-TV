@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from "react";
-import type { FamilyProfileColor, FamilyProfileKind } from "@tentacle-tv/shared";
 
 /**
  * La SESSION DE PROFIL du bureau — l'application ouverte au nom d'un autre
@@ -25,28 +24,21 @@ import type { FamilyProfileColor, FamilyProfileKind } from "@tentacle-tv/shared"
  * ⚠️ Ces clés sont traversées par une chaîne : jamais renommées.
  */
 
-export const PROFILE_SESSION_KEY = "tentacle_profile_session";
-export const ACCOUNT_SESSION_KEY = "tentacle_account_session";
+import {
+  ACCOUNT_SESSION_KEY,
+  PROFILE_SESSION_KEY,
+  PROFILE_SESSION_STORAGE_KEYS,
+  accountSessionIn,
+  profileMarkerIn,
+  storedUserIdOf,
+  type AccountSession,
+  type ActiveProfile,
+  type ProfileMarkerState,
+} from "@tentacle-tv/shared";
 
-/** Le profil dont la session est active. */
-export interface ActiveProfile {
-  /** Le compte Jellyfin du profil. */
-  id: string;
-  name: string;
-  kind: FamilyProfileKind;
-  color: FamilyProfileColor;
-  imageTag: string | null;
-  hasPin: boolean;
-  /** Un invité que la session personnelle de l'appareil peut habiller (photo) ;
-   *  absent d'une marque d'avant la 1.30.0. */
-  photoEditable?: boolean;
-}
-
-/** La session personnelle mise de côté : son jeton, et son `tentacle_user` tel quel. */
-export interface AccountSession {
-  token: string;
-  user: string;
-}
+// Le pur (clés, marque, réserve) est partagé avec le mobile : `@tentacle-tv/shared` › `family/profileSessionStore.ts`.
+export { ACCOUNT_SESSION_KEY, PROFILE_SESSION_KEY, PROFILE_SESSION_STORAGE_KEYS, profileMarkerIn };
+export type { AccountSession, ActiveProfile, ProfileMarkerState };
 
 function read(key: string): string | null {
   try {
@@ -54,50 +46,6 @@ function read(key: string): string | null {
   } catch {
     return null;
   }
-}
-
-function isActiveProfile(value: unknown): value is ActiveProfile {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<ActiveProfile>;
-  return typeof candidate.id === "string" && !!candidate.id && typeof candidate.name === "string"
-    && typeof candidate.kind === "string" && typeof candidate.color === "string";
-}
-
-/** Le compte (`Id`) d'un `tentacle_user` ; null s'il est absent ou illisible. */
-function userIdOf(raw: string | null): string | null {
-  try {
-    const id = raw ? (JSON.parse(raw) as { Id?: unknown }).Id : null;
-    return typeof id === "string" && id ? id : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * La marque du profil (`tentacle_profile_session`) face à la session ACTIVE :
- *
- * - `none` : aucune marque — la session personnelle ;
- * - `active` : la marque d'un profil, et la session active est la sienne ;
- * - `stale` : la marque d'un profil, mais la session active est celle d'un
- *   AUTRE compte — un reste qu'une sortie passée à côté de ces clés a laissé
- *   (`useAuth().logout`, un changement de serveur, puis une connexion) :
- *   personne ne s'en sert, et la prochaine entrée dans un profil la remplace ;
- * - `unreadable` : une marque illisible.
- */
-export type ProfileMarkerState = "none" | "active" | "stale" | "unreadable";
-
-export function profileMarkerIn(store: Pick<Storage, "getItem">): { state: ProfileMarkerState; profile: ActiveProfile | null } {
-  const raw = store.getItem(PROFILE_SESSION_KEY);
-  if (raw === null) return { state: "none", profile: null };
-  let parsed: unknown = null;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    /* illisible */
-  }
-  if (!isActiveProfile(parsed)) return { state: "unreadable", profile: null };
-  if (userIdOf(store.getItem("tentacle_user")) !== parsed.id) return { state: "stale", profile: null };
-  return { state: "active", profile: { ...parsed, imageTag: parsed.imageTag ?? null, hasPin: parsed.hasPin === true } };
 }
 
 const safeLocalStorage: Pick<Storage, "getItem"> = { getItem: read };
@@ -122,12 +70,7 @@ export function readActiveProfile(): ActiveProfile | null {
 
 /** La session personnelle mise de côté pendant un profil ; null sinon. */
 export function readAccountSession(): AccountSession | null {
-  try {
-    const parsed = JSON.parse(read(ACCOUNT_SESSION_KEY) ?? "null") as Partial<AccountSession> | null;
-    return parsed && typeof parsed.token === "string" && parsed.token && typeof parsed.user === "string" ? { token: parsed.token, user: parsed.user } : null;
-  } catch {
-    return null;
-  }
+  return accountSessionIn(safeLocalStorage);
 }
 
 /** Le jeton de la session PERSONNELLE : celui mis de côté pendant un profil, sinon le jeton actif. */
@@ -138,7 +81,7 @@ export function accountToken(): string | null {
 
 /** Le compte de l'application (celui qui s'y est connecté), même pendant un profil. */
 export function accountUserId(): string | null {
-  return userIdOf(readActiveProfile() ? readAccountSession()?.user ?? null : read("tentacle_user"));
+  return storedUserIdOf(readActiveProfile() ? readAccountSession()?.user ?? null : read("tentacle_user"));
 }
 
 const listeners = new Set<() => void>();
@@ -178,6 +121,3 @@ export function rememberActiveProfilePhoto(imageTag: string | null): void {
   notifyProfileSessionChange();
 }
 
-/** Les clés de la session de profil : effacées avec elle (déconnexion, changement
- *  de serveur), GARDÉES avec la session active quand on vide le cache. */
-export const PROFILE_SESSION_STORAGE_KEYS: readonly string[] = [PROFILE_SESSION_KEY, ACCOUNT_SESSION_KEY];

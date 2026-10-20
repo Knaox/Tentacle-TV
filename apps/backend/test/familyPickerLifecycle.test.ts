@@ -207,7 +207,9 @@ describe("la préférence « Qui regarde ? » au lancement", () => {
       const res = await send("PUT", "/api/family/picker/preference", tokens.damien, { platform, atLaunch: true });
       expect(res.statusCode).toBe(400);
       expect(res.json().code).toBe("family.invalid_input");
-      expect((await send("GET", `/api/family/picker/profiles?platform=${encodeURIComponent(platform)}`, tokens.damien)).statusCode).toBe(400);
+      // Le mobile liste ses profils depuis la 1.32.0, mais n'a pas cette préférence.
+      const listed = (await send("GET", `/api/family/picker/profiles?platform=${encodeURIComponent(platform)}`, tokens.damien)).statusCode;
+      expect(listed).toBe(platform === "mobile" ? 200 : 400);
     }
     expect(h.state!.db.data.serverConfig).toEqual([]);
   });

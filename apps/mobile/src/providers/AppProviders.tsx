@@ -43,6 +43,7 @@ import { ThemeProvider } from "@/theme";
 import { PushRegistrationSync } from "@/hooks/usePushRegistration";
 import { TranscodeCleanupSync } from "@/providers/TranscodeCleanupSync";
 import { SessionChannelSync } from "@/session/SessionChannelSync";
+import { useSessionEpoch } from "@/family/profiles/sessionEpoch";
 import { StorageReadyContext } from "./StorageReadyContext";
 import { MOBILE_BITRATE_MEASURE } from "@/utils/bitrateMeasureOptions";
 
@@ -85,6 +86,9 @@ attachQueryPersister(queryClient, mobilePersistStorage, {
 });
 
 export function AppProviders({ storage, uuid, serverUrl, storageReady, children }: AppProvidersProps) {
+  // Une bascule de profil (Famille, `family/profiles/switchSession.ts`) fait avancer l'époque :
+  // le client renaît au nom du nouveau jeton, comme le rechargement de page du bureau.
+  const sessionEpoch = useSessionEpoch();
   const client = useMemo(() => {
     const jellyfinBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
     const MOBILE_VERSION: string = require("../../package.json").version ?? "1.0.0";
@@ -96,7 +100,7 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
     if (token) c.setAccessToken(token);
     return c;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverUrl]);
+  }, [serverUrl, sessionEpoch]);
 
   // L'hydratation du stockage finit APRÈS la construction du client (premier
   // rendu) : il relit ici la graine et l'identité adoptée persistées — sans

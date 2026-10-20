@@ -1,10 +1,14 @@
 import { getPrisma } from "../db";
 import {
-  FAMILY_PICKER_PLATFORMS,
-  isPickerPlatform,
-  type FamilyPickerPlatform,
+  FAMILY_PICKER_PREFERENCE_PLATFORMS as FAMILY_PICKER_PLATFORMS,
+  type FamilyPickerPreferencePlatform as FamilyPickerPlatform,
   type PickerPreferenceDto,
 } from "../../family/familyPickerContract";
+
+// Le bureau seul (1.32.0) : le mobile n'a jamais eu cette préférence.
+function isPickerPlatform(value: unknown): value is FamilyPickerPlatform {
+  return typeof value === "string" && (FAMILY_PICKER_PLATFORMS as readonly string[]).includes(value);
+}
 
 /**
  * « Qui regarde ? » au lancement — l'ANCIENNE préférence du COMPTE, par
