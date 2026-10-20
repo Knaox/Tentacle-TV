@@ -18,7 +18,7 @@ const { SOURCES, TARGET } = (await import(join(mobile, "plugins/withTransferLive
 };
 
 /** Les clés que `liveSurface.ts` envoie (`LiveActivityState`). */
-const SENT_KEYS = ["headline", "status", "readyInLabel", "phase", "fraction", "endsAtMs", "deepLink"];
+const SENT_KEYS = ["headline", "status", "readyInLabel", "phase", "fraction", "endsAtMs", "barStartMs", "deepLink"];
 
 describe("Live Activity des transferts", () => {
   it("l'état est le MÊME dans le module natif et dans l'extension", () => {

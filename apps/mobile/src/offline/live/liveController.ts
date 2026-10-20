@@ -16,9 +16,11 @@
 import { AppState, type AppStateStatus } from "react-native";
 import {
   INITIAL_LIVE_STATE,
+  LIVE_BACKGROUND_RELEASE_DELAY_MS,
   liveAppStateAction,
   liveRetryOnTick,
   liveTransferView,
+  liveWantsBackgroundTime,
   nextLiveBatch,
   nextLivePublish,
   type LiveAppState,
@@ -56,6 +58,8 @@ let outcome: LiveSurfaceOutcome = "pending";
 let lastAttemptMs = 0;
 /** Seul le verdict du DERNIER dessin compte : un plus ancien qui répond tard est ignoré. */
 let renderSeq = 0;
+/** Le délai d'arrière-plan d'iOS est-il tenu ? */
+let timeHeld = false;
 
 function liveAppState(status: AppStateStatus | null | undefined): LiveAppState {
   return status === "active" || status === "inactive" || status === "background" || status === "extension" ? status : "unknown";
@@ -81,7 +85,7 @@ function render(content: LiveContent, nowMs: number): void {
   lastAttemptMs = nowMs;
   const seq = ++renderSeq;
   outcome = "pending";
-  void surface.show(content, texts, translate("offline:transferNotifChannel")).then((result) => {
+  void surface.show(content, texts, translate("offline:transferNotifChannel"), nowMs).then((result) => {
     if (seq === renderSeq) outcome = result;
   });
 }
@@ -104,6 +108,11 @@ function clear(): void {
  * `force` redessine l'état du moment même sans changement notable.
  */
 export function recomputeLive(nowMs: number = Date.now(), force = false): void {
+  step(nowMs, force);
+  syncBackgroundTime();
+}
+
+function step(nowMs: number, force: boolean): void {
   if (userId === null || !isLiveTransfers() || !surface.available()) {
     clear();
     batch = new Set();
@@ -111,9 +120,9 @@ export function recomputeLive(nowMs: number = Date.now(), force = false): void {
   }
   batch = nextLiveBatch(batch, entries);
   const view = liveTransferView({ entries, batch, progress: getProgressFor, wait: currentWait() });
-  const step = nextLivePublish(state, view, nowMs, { force });
-  state = step.state;
-  const action = step.action;
+  const decision = nextLivePublish(state, view, nowMs, { force });
+  state = decision.state;
+  const action = decision.action;
   if (action.kind === "start" || action.kind === "update") {
     render(action.content, nowMs);
   } else if (action.kind === "end") {
@@ -129,6 +138,24 @@ export function recomputeLive(nowMs: number = Date.now(), force = false): void {
     // Rien de neuf pour la règle ; la minute affichée en toutes lettres a pu changer.
     const status = liveTexts(state.shown, nowMs, translate, titleOf).status;
     if (status !== shownStatus) render(state.shown, nowMs);
+  }
+}
+
+/**
+ * Derrière, tant que l'activité estime encore (ou finalise), quelques
+ * secondes de plus ; rendues dès qu'un temps restant est publié.
+ */
+function syncBackgroundTime(status: AppStateStatus | null | undefined = AppState.currentState): void {
+  const wants = userId !== null && liveWantsBackgroundTime({ appState: liveAppState(status), shownPhase: state.shown?.phase ?? null });
+  if (wants === timeHeld) return;
+  timeHeld = wants;
+  if (wants) {
+    surface.holdTime();
+  } else {
+    const held = surface;
+    setTimeout(() => {
+      if (!timeHeld) held.releaseTime();
+    }, LIVE_BACKGROUND_RELEASE_DELAY_MS);
   }
 }
 
@@ -149,7 +176,8 @@ function reloadEntries(): void {
 function subscribeAppState(): () => void {
   const subscription = AppState.addEventListener("change", (status) => {
     const action = liveAppStateAction({ appState: liveAppState(status), wanted: state.shown !== null, outcome });
-    if (action === "republish") recomputeLive(Date.now(), true);
+    if (action === "republish") step(Date.now(), true);
+    syncBackgroundTime(status);
   });
   return () => subscription.remove();
 }
@@ -184,6 +212,7 @@ export function stopLiveTransfers(): void {
   userId = null;
   entries = [];
   batch = new Set();
+  syncBackgroundTime();
 }
 
 /** Tests seulement : une surface factice. */

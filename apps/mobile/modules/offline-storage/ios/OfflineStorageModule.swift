@@ -64,6 +64,17 @@ public class OfflineStorageModule: Module {
       return false
     }
 
+    // Le délai d'arrière-plan du suivi en direct (`BackgroundTime.swift`).
+    Function("holdBackgroundTime") { () -> Bool in
+      BackgroundTime.hold()
+      return true
+    }
+
+    Function("releaseBackgroundTime") { () -> Bool in
+      BackgroundTime.release()
+      return true
+    }
+
     // La finalisation d'un fichier Allégé, et son verdict :
     //
     //   `unusable` — aucun `moov` : le transfert s'est achevé avant que

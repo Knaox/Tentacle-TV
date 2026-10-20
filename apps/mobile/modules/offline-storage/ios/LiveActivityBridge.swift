@@ -33,6 +33,7 @@ enum LiveActivityBridge {
 
   static func state(from raw: [String: Any]) -> TransferActivityAttributes.ContentState {
     let endsAtMs = raw["endsAtMs"] as? Double ?? 0
+    let barStartMs = raw["barStartMs"] as? Double ?? 0
     return TransferActivityAttributes.ContentState(
       headline: raw["headline"] as? String ?? "",
       status: raw["status"] as? String ?? "",
@@ -40,6 +41,7 @@ enum LiveActivityBridge {
       phase: raw["phase"] as? String ?? "estimating",
       fraction: raw["fraction"] as? Double ?? -1,
       endsAt: endsAtMs > 0 ? Date(timeIntervalSince1970: endsAtMs / 1000) : nil,
+      barStart: barStartMs > 0 ? Date(timeIntervalSince1970: barStartMs / 1000) : nil,
       deepLink: raw["deepLink"] as? String ?? "tentacle://on-device"
     )
   }

@@ -45,6 +45,8 @@ interface OfflineStorageNative {
   /** `shown`, `dismissed` ou `refused:<cause>` ; un build d'avant rend un booléen. */
   presentLiveActivity?(state: LiveActivityState): Promise<string | boolean>;
   endLiveActivity?(): Promise<boolean>;
+  holdBackgroundTime?(): boolean;
+  releaseBackgroundTime?(): boolean;
   addListener?(event: string, listener: () => void): { remove: () => void };
   /** Verdict `"ok" | "unusable" | "failed"` ; un ancien build rend encore un booléen. */
   finalizeMp4?(path: string): Promise<string | boolean>;
@@ -224,6 +226,8 @@ export interface LiveActivityState {
   fraction: number;
   /** Fin estimée (epoch ms) ; 0 : pas de compte à rebours. */
   endsAtMs: number;
+  /** Départ virtuel de la barre qui avance seule (epoch ms) ; 0 : barre fixe. */
+  barStartMs: number;
   deepLink: string;
 }
 
@@ -268,5 +272,28 @@ export async function endLiveActivity(): Promise<boolean> {
     return await native.endLiveActivity();
   } catch {
     return false;
+  }
+}
+
+/**
+ * iOS : demande au système un délai d'exécution en arrière-plan (une
+ * trentaine de secondes), le temps que le suivi en direct publie un temps
+ * restant mesuré avant que le JavaScript soit suspendu. Ailleurs : `false`.
+ */
+export function holdBackgroundTime(): boolean {
+  if (Platform.OS !== "ios" || native === null || typeof native.holdBackgroundTime !== "function") return false;
+  try {
+    return native.holdBackgroundTime();
+  } catch {
+    return false;
+  }
+}
+
+export function releaseBackgroundTime(): void {
+  if (Platform.OS !== "ios" || native === null || typeof native.releaseBackgroundTime !== "function") return;
+  try {
+    native.releaseBackgroundTime();
+  } catch {
+    // Rien à rendre.
   }
 }

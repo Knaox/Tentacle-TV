@@ -10,13 +10,15 @@
  */
 
 import { Platform } from "react-native";
-import type { LiveContent, LiveSurfaceOutcome } from "@tentacle-tv/offline-core";
+import { liveBarStartMs, type LiveContent, type LiveSurfaceOutcome } from "@tentacle-tv/offline-core";
 import {
   canShowLiveTransfer,
   endLiveActivity,
   hideLiveTransfer,
+  holdBackgroundTime,
   liveActivitiesEnabled,
   presentLiveActivity,
+  releaseBackgroundTime,
   showLiveTransfer,
 } from "../../../modules/offline-storage";
 import type { LiveTexts } from "./liveText";
@@ -25,8 +27,15 @@ export interface LiveSurface {
   /** Le build et l'appareil savent-ils l'afficher ? */
   available(): boolean;
   /** Dessine ; la promesse dit ce que le système en a fait (`refused` : à retenter). */
-  show(content: LiveContent, texts: LiveTexts, channelName: string): Promise<LiveSurfaceOutcome>;
+  show(content: LiveContent, texts: LiveTexts, channelName: string, nowMs: number): Promise<LiveSurfaceOutcome>;
   end(): void;
+  /**
+   * iOS : quelques secondes d'exécution de plus derrière, le temps de publier
+   * un temps restant mesuré avant la suspension du JavaScript. Android : rien,
+   * le service de premier plan garde le JavaScript vivant.
+   */
+  holdTime(): void;
+  releaseTime(): void;
 }
 
 /**
@@ -44,7 +53,8 @@ function enqueueIos<T>(run: () => Promise<T>): Promise<T> {
 
 const iosSurface: LiveSurface = {
   available: liveActivitiesEnabled,
-  show(content, texts) {
+  show(content, texts, _channelName, nowMs) {
+    const barStartMs = liveBarStartMs(content, nowMs) ?? 0;
     return enqueueIos(async () => {
       const outcome = await presentLiveActivity({
         headline: texts.headline,
@@ -53,6 +63,7 @@ const iosSurface: LiveSurface = {
         phase: content.phase,
         fraction: content.percent === null ? -1 : content.percent / 100,
         endsAtMs: content.endsAtMs ?? 0,
+        barStartMs,
         deepLink: texts.deepLink,
       });
       if (outcome.kind === "refused") console.warn(`[suivi-direct] Live Activity refusée : ${outcome.cause}`);
@@ -62,6 +73,8 @@ const iosSurface: LiveSurface = {
   end() {
     void enqueueIos(endLiveActivity);
   },
+  holdTime: holdBackgroundTime,
+  releaseTime: releaseBackgroundTime,
 };
 
 const androidSurface: LiveSurface = {
@@ -82,9 +95,17 @@ const androidSurface: LiveSurface = {
   end() {
     hideLiveTransfer();
   },
+  holdTime() {},
+  releaseTime() {},
 };
 
-const noSurface: LiveSurface = { available: () => false, show: () => Promise.resolve("refused"), end() {} };
+const noSurface: LiveSurface = {
+  available: () => false,
+  show: () => Promise.resolve("refused"),
+  end() {},
+  holdTime() {},
+  releaseTime() {},
+};
 
 export function platformLiveSurface(): LiveSurface {
   if (Platform.OS === "ios") return iosSurface;

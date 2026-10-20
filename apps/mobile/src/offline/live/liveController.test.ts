@@ -17,6 +17,8 @@ const surface = vi.hoisted(() => ({
   available: vi.fn(() => true),
   show: vi.fn((_content: LiveContent, _texts: { status: string }) => Promise.resolve(env.outcome)),
   end: vi.fn(),
+  holdTime: vi.fn(),
+  releaseTime: vi.fn(),
 }));
 
 vi.mock("@tentacle-tv/shared", () => ({ i18n: { t: (key: string) => key } }));
@@ -82,6 +84,8 @@ beforeEach(() => {
   env.outcome = "shown";
   surface.show.mockClear();
   surface.end.mockClear();
+  surface.holdTime.mockClear();
+  surface.releaseTime.mockClear();
 });
 
 describe("suivi en direct des transferts", () => {
@@ -184,6 +188,51 @@ describe("suivi en direct des transferts", () => {
     appStateChange("active");
     recomputeLive(Date.now() + 60_000);
     expect(surface.show).toHaveBeenCalledTimes(1);
+  });
+  it("derrière avant la première mesure : quelques secondes de plus, rendues dès qu'un temps restant est publié", async () => {
+    vi.useFakeTimers();
+    try {
+      env.entries = [entry(1, "downloading")];
+      startLiveTransfers("u1");
+      expect(surface.show.mock.calls[0]![0].phase).toBe("estimating");
+      env.appState = "background";
+      appStateChange("background");
+      expect(surface.holdTime).toHaveBeenCalledTimes(1);
+      // Le débit arrive pendant ce délai : le temps restant part, puis la main est rendue.
+      env.progress.set(1, { bytesDone: 10 * MB, expectedSize: 100 * MB, rateBps: 2 * MB });
+      recomputeLive();
+      expect(surface.show.mock.calls.at(-1)![0].phase).toBe("transferring");
+      expect(surface.releaseTime).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(surface.releaseTime).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("derrière avec un temps restant déjà publié : rien à retenir", () => {
+    env.entries = [entry(1, "downloading")];
+    env.progress.set(1, { bytesDone: 40 * MB, expectedSize: 100 * MB, rateBps: 2 * MB });
+    startLiveTransfers("u1");
+    env.appState = "background";
+    appStateChange("background");
+    expect(surface.holdTime).not.toHaveBeenCalled();
+  });
+
+  it("retour au premier plan : le délai est rendu", async () => {
+    vi.useFakeTimers();
+    try {
+      env.entries = [entry(1, "downloading")];
+      startLiveTransfers("u1");
+      env.appState = "background";
+      appStateChange("background");
+      env.appState = "active";
+      appStateChange("active");
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(surface.releaseTime).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

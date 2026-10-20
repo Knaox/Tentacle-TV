@@ -21,6 +21,9 @@ public struct TransferActivityAttributes: ActivityAttributes {
     public var fraction: Double
     /// Fin estimée : un compte à rebours SEULEMENT si elle est là.
     public var endsAt: Date?
+    /// Le départ VIRTUEL de la barre (avancement nul au débit mesuré) : avec
+    /// `endsAt`, la barre avance seule, application suspendue comprise.
+    public var barStart: Date?
     /// Où mène un toucher.
     public var deepLink: String
   }
