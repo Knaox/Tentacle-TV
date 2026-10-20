@@ -47,7 +47,8 @@ describe("journaux sans secret", () => {
 
   it("masque les champs secrets, où qu'un appel de journal les mette", () => {
     const lines: string[] = [];
-    const log = pino({ redact: { paths: LOG_REDACT_PATHS, censor: "[redacted]" } }, new Writable({ write: (c, _e, done) => void (lines.push(String(c)), done()) }));
+    // Sans heure ni pid : leurs chiffres croisaient parfois les codes cherchés (« 2468 » dans un horodatage).
+    const log = pino({ base: null, timestamp: false, redact: { paths: LOG_REDACT_PATHS, censor: "[redacted]" } }, new Writable({ write: (c, _e, done) => void (lines.push(String(c)), done()) }));
     log.info({ password: "p1", body: { apiKey: "k1", Pw: "p2", inviteKey: "i1", pin: "1357", currentPin: "2468" }, user: "Damien" }, "essai");
     expect(lines.join("")).not.toMatch(/p1|k1|p2|i1|1357|2468/);
     expect(lines.join("")).toContain("Damien");
