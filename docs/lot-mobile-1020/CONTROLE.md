@@ -210,6 +210,7 @@ Sur mobile, tablette ET web, pour tous les droits.
 | I5 | Watch Together de base (créer, rejoindre) | captures | ☐ |
 | I6 | Lecteur : heure/batterie, PiP, AirPlay ; hors ligne : Live Activity ; boutons | captures | ☐ |
 | I0 | App de test : celle de wt-banc (`~/.tentacle-lot-mob/builds/ios/TentacleTV.app`, natif = dev + batteryStatus) ne contient PAS l'extension Live Activity (hors-ligne-live) : la reconstruire après fusion pour K1/I6 | `BUILT_FROM.txt` après fusion | ☐ |
+| I0b | Capot fermé cette nuit : aucune sortie audio → toute LECTURE au simulateur plante (mpv) ou cale (AVPlayer). Aucun verdict de lecteur ni de synchro au simulateur cette nuit ; lecture et Watch Together synchronisé à refaire par Damien, capot ouvert | relevé de wt-banc (`devices.txt`) | — |
 | I7 | iPad PORTRAIT ET PAYSAGE, TOUS les rendus de toutes les sessions : réglages, premier lancement, galerie, Famille, droits en lecture seule, notifications, Live Activity, « Pour vous », boutons, lecteur (heure/batterie, PiP), Watch Together | une capture par rendu et par orientation dans `docs/lot-mobile-1020/` (nommées `ipad-<portrait|paysage>-<rendu>.png`) | ☐ |
 
 ## Défauts
