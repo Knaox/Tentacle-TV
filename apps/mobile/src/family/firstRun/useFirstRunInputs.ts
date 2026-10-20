@@ -3,9 +3,10 @@ import {
   useFamilyOverview, useHomeLayout, useLibraries, useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import {
-  AVATAR_INVITE_SEEN_KEY, FIRST_RUN_SEEN_KEY, honorFirstRunPromptsReset, parseFirstRunSeen, parseInvitedSubjects, sameUserId,
+  FIRST_RUN_SEEN_KEY, firstRunPinDue, honorFirstRunPromptsReset, promptsResetPending, parseFirstRunSeen, sameUserId,
   shouldInviteToAvatars, type FirstRunInput,
 } from "@tentacle-tv/shared";
+import { readInvitedSubjects } from "@/avatars/invite/inviteGate";
 import { useAvatarInviteSubject } from "@/avatars/invite/useAvatarInviteSubject";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useServerUrl } from "@/providers/ServerUrlContext";
@@ -39,7 +40,8 @@ export function useFirstRunInputs(): FirstRunInput & { resetSettled: boolean } {
   const reminder = useFamilyPinReminder();
   const layout = useHomeLayout();
   const libraries = useLibraries();
-  const [honored, setHonored] = useState(0);
+  // Le sujet dont « Reproposer » a été honoré pendant ce lancement : son code PIN revient, même passé hier.
+  const [honored, setHonored] = useState<string | null>(null);
 
   // La demande du serveur pour CE profil : la liste de « Qui regarde ? » pendant une session
   // de profil, la Famille du compte sinon. `undefined` : pas encore su.
@@ -51,20 +53,23 @@ export function useFirstRunInputs(): FirstRunInput & { resetSettled: boolean } {
     : !family.available || overview.data !== undefined || overview.isError;
 
   useEffect(() => {
-    if (resetSettled && honorFirstRunPromptsReset(storage, serverUrl, subjectId, resetAt)) setHonored((value) => value + 1);
+    if (resetSettled && honorFirstRunPromptsReset(storage, serverUrl, subjectId, resetAt)) setHonored(subjectId);
   }, [resetSettled, storage, serverUrl, subjectId, resetAt]);
 
   // Relus à chaque rendu (une poignée d'octets préchargés) : `honored` en provoque un après l'oubli.
-  void honored;
   const seen = parseFirstRunSeen(storage.getItem(FIRST_RUN_SEEN_KEY));
-  const invited = parseInvitedSubjects(storage.getItem(AVATAR_INVITE_SEEN_KEY));
+  const invited = readInvitedSubjects(storage);
 
   // Déjà proposé pendant ce lancement (« Bienvenue dans la famille ») : pas une seconde fois.
-  const pinDue = held || firstRunCoveredPin() ? false : !family.available ? false : reminder.settled ? reminder.startup : null;
+  const pinDue = firstRunPinDue({
+    profileSession: !!held, familyAvailable: family.available, covered: firstRunCoveredPin(), reminder, resetHonored: !!subjectId && honored === subjectId,
+  });
   const homeReady = layout.data && libraries.data ? true : layout.isError || libraries.isError ? false : null;
   const photoDue = hasPhoto === undefined
     ? null
     : shouldInviteToAvatars({ eligible: true, subjectId, canChangePhoto, online, hasPhoto, busy: false, invited });
 
-  return { subjectId, serverUrl, online, seen, pinDue, homeReady, photoDue, resetSettled };
+  // Une demande pas encore honorée : rien ne se décide avant (sinon sur les « Plus tard » d'avant).
+  const resetHonoredHere = resetSettled && !promptsResetPending(storage, subjectId, resetAt);
+  return { subjectId, serverUrl, online, seen, pinDue, homeReady, photoDue, resetSettled: resetHonoredHere };
 }
