@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("react", () => ({ useSyncExternalStore: vi.fn() }));
-const { closeWtSheet, currentWtSheet, openWtSheet } = await import("./wtSheets");
+const { closeWtSheet, currentWtSheet, openWtSheet, peekWtLink, requestWtLink, takeWtLink } = await import("./wtSheets");
 
 describe("wtSheets", () => {
   afterEach(() => closeWtSheet());
@@ -13,5 +13,12 @@ describe("wtSheets", () => {
     expect(currentWtSheet()).toBe("invite");
     closeWtSheet();
     expect(currentWtSheet()).toBeNull();
+  });
+
+  it("un lien profond se note et ne se prend qu'une fois", () => {
+    requestWtLink("affinity");
+    expect(peekWtLink()).toBe("affinity");
+    expect(takeWtLink()).toBe("affinity");
+    expect(takeWtLink()).toBeNull();
   });
 });
