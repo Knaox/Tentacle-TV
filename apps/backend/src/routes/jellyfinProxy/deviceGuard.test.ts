@@ -30,6 +30,19 @@ describe("la session de profil d'une TV (invité comme membre) ne pose que SA ph
   });
 });
 
+describe("la photo d'un AUTRE compte, en lecture (membres d'une séance de Watch Together)", () => {
+  it("se lit — Jellyfin la sert sans jeton —, quelle que soit la casse", () => {
+    expect(deviceRefusal("GET", `Users/${OTHER}/Images/Primary`, ME, { tag: "abc", maxWidth: "96" })).toBeNull();
+    expect(deviceRefusal("HEAD", `users/${OTHER}/images/primary`, ME, {})).toBeNull();
+  });
+
+  it("ne s'écrit jamais, et l'exception ne couvre rien d'autre du compte", () => {
+    expect(deviceRefusal("POST", `Users/${OTHER}/Images/Primary`, ME, {})).toMatch(/perimetre/);
+    expect(deviceRefusal("GET", `Users/${OTHER}/Items`, ME, {})).toMatch(/perimetre/);
+    expect(deviceRefusal("GET", `Users/${OTHER}/Views`, ME, {})).toMatch(/perimetre/);
+  });
+});
+
 describe("la photo du compte depuis un appareil", () => {
   it("passe pour son propre compte, quelle que soit la forme de l'identifiant", () => {
     expect(deviceRefusal("POST", `Users/${ME}/Images/Primary`, ME, {})).toBeNull();

@@ -115,6 +115,16 @@ describe("SEC-F-50 : la session de profil du bureau ne parle que pour SON compte
     expect(h.hits.length).toBe(before);
   });
 
+  it("lit la photo des AUTRES membres (sa séance de Watch Together la montre), sans jamais la poser", async () => {
+    const { token } = await guestOnDesktop();
+    expect((await proxy("GET", `Users/${IDS.damien}/Images/Primary?tag=t&maxWidth=96`, token)).statusCode).toBe(200);
+    // Relayée sous sa forme moderne (`/UserImage?userId=`, cf. modernRoutes).
+    expect(h.hits.at(-1)?.url).toMatch(new RegExp(`^/UserImage\\?.*userId=${IDS.damien}`));
+    const before = h.hits.length;
+    expect((await proxy("POST", `Users/${IDS.damien}/Images/Primary`, token, {})).statusCode).toBe(403);
+    expect(h.hits.length).toBe(before);
+  });
+
   it("une requête SANS utilisateur ne lit jamais pour la clé prêtée : elle est bornée à SON compte", async () => {
     const { zoe, token } = await guestOnDesktop();
     for (const path of ["Items?Recursive=true&IncludeItemTypes=Movie", `Items/${ITEM}`, "Shows/NextUp?Limit=5", "Search/Hints?searchTerm=a"]) {
