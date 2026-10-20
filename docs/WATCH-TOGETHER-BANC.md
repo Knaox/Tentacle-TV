@@ -52,7 +52,7 @@ audio factice).
 | Pause → les deux en pause à < 50 ms | 117–147 ms | 122–129 ms | 119 ms |
 | Lecture → les deux repartis à < 100 ms | 421–435 ms | 422–431 ms | 422–430 ms |
 | Seek +30 s / −10 s → réalignés à < 100 ms | 734–767 ms | 692–1 111 ms | 688–1 509 ms |
-| Scrub → ← → en 600 ms | 652–1 450 ms | ✘ (défaut B7-bis, corrigé depuis) | 1 941 ms |
+| Scrub → ← → en 600 ms | 652–1 450 ms | 1 261 ms (après le correctif B7-bis) | 1 941 ms |
 | Onglet caché 20 s / page gelée 10 s → réaligné | — | 0 ms / 8 ms | 0 ms / 3 ms |
 | Membre lent (transcode + 6 s de retard) : A n'avance pas sans lui | ✔ 0,02 s | ✔ 0,06 s | |
 | … puis régime, seek | 0–6 ms, 742 ms | 3–9 ms, 707 ms | |
@@ -76,7 +76,7 @@ nouveaux segments de Jellyfin (0,7–1,5 s).
 | … bandeau « Groupe en cours sur un autre appareil » + « Rejoindre ici » (ajout, pas transfert) | — | ✔ |
 | **Intro au tout début** [auto] : rien avant « tous prêts », saut commun ensuite | ✘ bouton visible | ✔ réaligné 519 ms |
 | **Intro** [proposer] : bouton absent tant que B charge, présent une fois tous prêts | ✘ (B laissé à 0 s) | ✔ |
-| **Intro** [proposer] : le clic emmène les deux | — | à confirmer (voir § 5) |
+| **Intro** [proposer] : le clic de B emmène les deux après l'intro | — | ✔ A 40,2 s · B 40,1 s, réalignés en 1,4 s |
 | Appuis +30 s martelés (5 en 400 ms) | ✘ +30 s | ✔ +147 s seul et en séance, 0 ms d'écart |
 | Affinité : séance, match en direct, « Regarder ensemble » suivi | — | ✔ aligné en 2,1 s |
 | Chat en rafale : 25 réactions → 25 reçues, UNE bulle « ×N » | — | ✔ |
@@ -92,7 +92,7 @@ nouveaux segments de Jellyfin (0,7–1,5 s).
 | 3 | 3ᵉ appareil : suit le lancement, sa pause arrête la salle, son départ éjecte le compte | wt-socle | corrigé (adhésion par appareil) |
 | 4 | « Passer l'intro » avant que tous soient prêts ; un clic précoce emmène la salle sans B | wt-socle | corrigé (allReady, garde du « prêt » sans barrierId) |
 | 5 | Appuis +30 s rapprochés perdus (seul comme en séance) | wt-socle (B7) | corrigé (25c768931) |
-| B7-bis | Après un saut DISTANT, le premier « +30 s » d'un membre partait de la cible de ce saut : appui perdu | wt-socle | corrigé (3c430087b), à reconfirmer (§ 5) |
+| B7-bis | Après un saut DISTANT, le premier « +30 s » d'un membre partait de la cible de ce saut : appui perdu | wt-socle | corrigé (3c430087b) — ✔ scrub réaligné en 1,26 s |
 | 6 | Boîte « Invitations » restée ouverte par-dessus le lecteur après une acceptation faite ailleurs | wt-socle | corrigé (bbfb410eb, `wt:inviteGone`) |
 | M1 | Mobile : après le saut automatique de l'intro, aucun « prêt » → salle gelée 60 s puis membres déclarés « ne peut pas lire » ; « prêt » sans barrierId | wt-mobile + wt-socle | corrigé (a23e7a1e8, a45a727b4) |
 | M2 | Mobile : « Passer l'intro » affiché avant le chargement | wt-mobile | corrigé (b63c0ee3f) |
@@ -134,10 +134,10 @@ app iOS simulateur arm64 (05:34) et APK debug (05:39). Chemins :
 - **iOS au calme, capot ouvert** : `ios-pair` puis `ios-web` (étapes a et d).
 - **Android** (étapes b, c) : non joué — émulateur lent sous la charge, et même
   piège audio probable capot fermé. APK partagé prêt.
-- **Intro [proposer] : le clic de B** sur « Passer l'intro » n'a déplacé
-  personne au passage de 05:52 ; le scénario consigne désormais si le bouton
-  était visible et si le clic est parti (à relire au prochain passage).
-- **B7-bis** (scrub après un saut distant) : corrigé par wt-socle, à
-  reconfirmer.
+- Dernier passage web (06:05, wt-socle 5a1f78504 + wt-mobile 3e31c1b91 :
+  invitation, synchro directe, intro, 3ᵉ appareil, appuis martelés, chat,
+  affinité) : **58 vérifications ✔, 0 ✘**. Transcodage, membre lent, réseau,
+  épisode suivant et groupe à trois mesurés au passage précédent (7f894807a),
+  pas rejoués sur la toute dernière tête.
 - GIF du chat non joués (Klipy hors d'atteinte du banc) ; Electron (bureau)
   non joué — le web en tient lieu.
