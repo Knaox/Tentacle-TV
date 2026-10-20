@@ -44,11 +44,11 @@ export function ProfileLaunchGate() {
   // La décision, figée par compte (et rouverte par une fin de session de profil).
   const [decided, setDecided] = useState<{ account: string | null; show: boolean } | null>(null);
 
+  // Relu à chaque rendu (préchargé) : la liste qui répond, ou une fin de session, le relisent.
+  const stayRaw = serverUrl && accountId ? storage.getItem(MOBILE_PROFILE_STAY_KEY) : null;
   const stay = useMemo(
-    () => (serverUrl && accountId ? readMobileStay(storage.getItem(MOBILE_PROFILE_STAY_KEY), serverUrl, accountId) : null),
-    // Relu à chaque décision : la liste qui répond, ou une fin de session.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [storage, serverUrl, accountId, listing.data, request],
+    () => (serverUrl && accountId ? readMobileStay(stayRaw, serverUrl, accountId) : null),
+    [stayRaw, serverUrl, accountId],
   );
   const state = launchGateState({
     enabled: listing.enabled && rootSegment !== "(auth)",
