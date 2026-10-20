@@ -33,6 +33,9 @@ export type WsServerMessage =
   | FamilyWsMessage
   /** L'accès du compte vient de changer (désactivé, hors plage, rouvert) — § 9.1. */
   | AccountAccessWsMessage
+  /** Les droits du compte viennent de changer (politique Jellyfin écrite par Tentacle ou
+   *  constatée changée) : relire ce qu'on montre — capacité `rights.live`. */
+  | { type: "rights:changed" }
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */

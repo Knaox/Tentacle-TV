@@ -187,6 +187,11 @@ export const SERVER_CAPABILITIES = {
    *  et la préférence du COMPTE qui l'allume (`trendingNow` de `/api/preferences/reco`, allumée par
    *  défaut). Sans elle, aucun interrupteur : un serveur d'avant ignore le paramètre. */
   "reco.trending": "1.31.0",
+  // ── Lot mobile du 20/10 : les droits s'appliquent partout, sans redémarrage ──
+  /** Les droits d'un compte changés (fiche des droits, Famille, tableau de bord de Jellyfin)
+   *  s'annoncent à ses appareils : `rights:changed` sur le socket, et le client relit ce qu'il
+   *  montre (`useRightsLive`). Sans elle, la fraîcheur des requêtes, comme avant. */
+  "rights.live": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
