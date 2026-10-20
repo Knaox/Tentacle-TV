@@ -14,6 +14,7 @@ import { FamilyInvitationPoster } from "./FamilyInvitationPoster";
 import { FamilyPinJoined } from "./pinSuggest/FamilyPinJoined";
 import { useFamilyAvailability } from "./useFamilyAvailability";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
+import { markFirstRunCovered } from "./firstRun/firstRunCovered";
 
 /**
  * L'hôte de l'AFFICHE d'invitation — monté une fois, à la racine, jamais
@@ -47,6 +48,11 @@ export function FamilyInvitationHost() {
   const [shownId, setShownId] = useState<string | null>(null);
   const [joinedOwner, setJoinedOwner] = useState<string | null>(null);
   const closeJoined = useCallback(() => setJoinedOwner(null), []);
+  // « Bienvenue dans la famille » propose déjà le code : le premier lancement ne le redemande pas derrière.
+  const accepted = useCallback((owner: string) => {
+    markFirstRunCovered("pin");
+    setJoinedOwner(owner);
+  }, []);
   const inPlayer = pathname.startsWith("/watch");
   // Lue par l'effet de la demande sans le relancer à chaque navigation.
   const pathnameRef = useRef(pathname);
@@ -124,7 +130,7 @@ export function FamilyInvitationHost() {
       invitation={invitation}
       onLater={later}
       onDone={dismiss}
-      onAccepted={setJoinedOwner}
+      onAccepted={accepted}
     />
   );
 }

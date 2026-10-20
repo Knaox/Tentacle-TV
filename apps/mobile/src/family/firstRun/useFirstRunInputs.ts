@@ -12,6 +12,7 @@ import { useActiveProfile } from "../profiles/profileSessionState";
 import { usePickerListing } from "../profiles/usePickerListing";
 import { FIRST_RUN_SEEN_KEY, parseFirstRunSeen, type FirstRunInput } from "./firstRunPlan";
 import { honorMobilePromptsReset } from "./promptsReset";
+import { firstRunCoveredPin } from "./firstRunCovered";
 
 /**
  * Ce que le premier lancement lit, branché sur le mobile : le profil actif, la
@@ -58,7 +59,8 @@ export function useFirstRunInputs(): FirstRunInput & { resetSettled: boolean } {
   const seen = parseFirstRunSeen(storage.getItem(FIRST_RUN_SEEN_KEY));
   const invited = parseInvitedSubjects(storage.getItem(AVATAR_INVITE_SEEN_KEY));
 
-  const pinDue = held ? false : !family.available ? false : reminder.settled ? reminder.startup : null;
+  // Déjà proposé pendant ce lancement (« Bienvenue dans la famille ») : pas une seconde fois.
+  const pinDue = held || firstRunCoveredPin() ? false : !family.available ? false : reminder.settled ? reminder.startup : null;
   const homeReady = layout.data && libraries.data ? true : layout.isError || libraries.isError ? false : null;
   const canChangePhoto = !held || devicePhoto;
   const photoDue = hasPhoto === undefined
