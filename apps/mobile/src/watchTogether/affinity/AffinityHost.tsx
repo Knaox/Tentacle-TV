@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAffinitySession, useWatchTogether } from "@tentacle-tv/api-client";
 import { memberName } from "@tentacle-tv/shared";
+import { whenNoModal } from "@/components/ui/modalGate";
 import { showToast } from "@/notices/toastStore";
 import { closeWtSheet } from "../wtSheets";
 import { pushWtNotice } from "../notices/wtNotices";
@@ -35,9 +36,13 @@ export function AffinityHost() {
     onDeckOpened: closeWtSheet,
   });
 
+  // Le lecteur se présente en plein écran : seulement une fois la modale de
+  // l'affinité retirée, jamais pendant sa sortie.
   const openTitle = useCallback((target: { watchId: string } | { detailId: string }) => {
-    if ("watchId" in target) router.push(`/watch/${target.watchId}`);
-    else router.push(`/media/${target.detailId}`);
+    whenNoModal(() => {
+      if ("watchId" in target) router.push(`/watch/${target.watchId}`);
+      else router.push(`/media/${target.detailId}`);
+    });
   }, [router]);
 
   return <AffinityModalNative onStale={refresh} onOpenTitle={openTitle} />;

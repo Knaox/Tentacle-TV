@@ -8,7 +8,7 @@ import { WtInviteInboxSheet } from "./room/WtInviteInboxSheet";
 import { WtInviteSheet } from "./room/WtInviteSheet";
 import { WtRoomSheetView } from "./room/WtRoomSheetView";
 import { isPlayerPath, shouldAutoOpenInbox } from "@tentacle-tv/shared";
-import { closeWtSheet, openWtSheet, takeWtLink, useWtLink, useWtSheet } from "./wtSheets";
+import { afterWtSheet, closeWtSheet, openWtSheet, takeWtLink, useWtLink, useWtSheet } from "./wtSheets";
 
 /** Un lien profond qui n'a rien à montrer au bout de ce délai est abandonné. */
 const LINK_TIMEOUT_MS = 10_000;
@@ -19,7 +19,9 @@ const LINK_TIMEOUT_MS = 10_000;
  * membres », les invitations reçues — une à la fois (`wtSheets`) — et
  * l'affinité de la salle. La boîte des invitations s'ouvre d'elle-même à
  * l'accueil seulement (`shouldAutoOpenInbox`), après le démarrage, une fois
- * par invitation, jamais par-dessus une autre modale.
+ * par invitation, jamais par-dessus une autre modale. Passer d'une feuille à
+ * l'autre, à l'affinité ou au lecteur ENCHAÎNE : fermer, attendre le retrait,
+ * puis présenter (`afterWtSheet`, `useGatedModal`).
  */
 export function WtHost() {
   const wt = useWatchTogether();
@@ -49,10 +51,13 @@ export function WtHost() {
     return () => clearTimeout(timer);
   }, [link, room, invites.length]);
 
-  // La salle disparaît (quittée, dissoute, expulsé) : ses feuilles se ferment.
+  // La salle disparaît (quittée, dissoute, expulsé) : ses feuilles se ferment ;
+  // la dernière invitation honorée referme la boîte (sinon elle se rouvrirait
+  // d'elle-même à la prochaine).
   useEffect(() => {
     if (!room && (sheet === "room" || sheet === "invite")) closeWtSheet();
-  }, [room, sheet]);
+    if (sheet === "inbox" && invites.length === 0) closeWtSheet();
+  }, [room, sheet, invites.length]);
 
   const { data: item } = useMediaItem(room?.itemId ?? undefined, { enabled: !!room?.itemId && sheet === "room" });
   const program = useMemo(() => {
@@ -63,8 +68,9 @@ export function WtHost() {
 
   const pendingUserIds = useMemo(() => new Set(wt.pendingInvites.map((p) => p.userId)), [wt.pendingInvites]);
   const onStart = room?.itemId && !isPlayerPath(pathname)
-    ? () => { closeWtSheet(); router.push(`/watch/${room.itemId}`); }
+    ? () => { const id = room.itemId; afterWtSheet(() => router.push(`/watch/${id}`)); }
     : undefined;
+  // La modale de l'affinité attend d'elle-même le retrait de la feuille.
   const onAffinity = useCallback(() => { closeWtSheet(); openAffinity(); }, []);
 
   return (

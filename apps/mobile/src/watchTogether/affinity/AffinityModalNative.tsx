@@ -8,6 +8,7 @@ import {
 import type { MediaItem, WtAffinityMatchDto, WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
+import { useGatedModal } from "@/components/ui/useGatedModal";
 import { AffinityDeckScreen } from "./AffinityDeckScreen";
 import { AffinityKindsView } from "./AffinityKindsView";
 import { AffinityMatchNative } from "./AffinityMatchNative";
@@ -19,7 +20,14 @@ import { AffinityNoticeNative } from "./AffinityNoticeNative";
  * qui ne se choisit pas (le premier en attente s'affiche chez tous à la fois).
  * Sous le match, la pile reste MONTÉE (cachée) : rien ne se recharge.
  * Fermer (Retour Android, glisser sur iPad), c'est QUITTER l'affinité.
+ * Elle ne se présente qu'une fois la feuille du groupe retirée
+ * (`useGatedModal`) : présentée pendant sa sortie, iOS la refusait et l'app
+ * restait figée (« Trouver quoi regarder », alpha du 21/10).
  */
+
+/** La sortie « slide » d'UIKit, à laisser finir avant de présenter autre chose. */
+const SLIDE_EXIT_MS = 450;
+
 export function AffinityModalNative({ onStale, onOpenTitle }: {
   onStale: () => void;
   onOpenTitle: (target: { watchId: string } | { detailId: string }) => void;
@@ -52,7 +60,8 @@ export function AffinityModalNative({ onStale, onOpenTitle }: {
     throw err;
   }, [t]);
 
-  if (!modal.open) return null;
+  const presented = useGatedModal(modal.open, SLIDE_EXIT_MS);
+  if (!presented) return null;
   const participant = !!state && state.participants.some((p) => p.userId === selfId);
   const proposal = participant && state ? (state.proposals[0] ?? null) : null;
   const view = !state ? "kinds" : proposal ? "match" : modal.view;
