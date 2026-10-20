@@ -9,11 +9,12 @@ import type { BootIntroSettings } from "./bootIntroSettings";
 /**
  * Les écrans du mobile qui disent EUX-MÊMES quand ils sont prêts (leurs
  * données arrivent), par leur chemin expo-router : l'accueil, montré d'un bloc
- * (`HomeScreen`), et « Qui regarde ? », sa rangée de profils chargée. Tout
- * autre premier écran (connexion, choix du serveur, accueil hors ligne, une
- * fiche) est prêt dès qu'il est monté.
+ * (`HomeScreen`). Tout autre premier écran (connexion, choix du serveur,
+ * accueil hors ligne, une fiche) est prêt dès qu'il est monté. « Qui
+ * regarde ? » n'en est jamais un : c'est une modale de `FamilyLaunchHosts`,
+ * qui s'ouvre APRÈS l'arrivée (`useBootIntroLanded`), sur l'accueil.
  */
-export const MOBILE_BOOT_SELF_REPORTING: readonly string[] = ["/", "/who-is-watching"];
+export const MOBILE_BOOT_SELF_REPORTING: readonly string[] = ["/"];
 
 /**
  * L'écran que l'ouverture regarde : aucun tant que l'app n'est pas prête

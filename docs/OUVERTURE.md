@@ -187,12 +187,13 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   cadre : un iPad qu'on tourne, l'app suit sans changer d'arbre.
 - **Le premier écran** : la route est le chemin expo-router, connue une fois
   le stockage relu et les polices chargées (`BootIntroRouteReporter`). L'accueil
-  (`/`, héros compris) et « Qui regarde ? » (`/who-is-watching`) disent quand ils
-  sont prêts ; tout autre écran (connexion, serveur, fiche) dès qu'il est monté ;
-  le mode hors ligne aussitôt. 8 s au plus.
+  (`/`, héros compris) dit quand il est prêt ; tout autre écran (connexion,
+  serveur, fiche) dès qu'il est monté ; le mode hors ligne aussitôt. 8 s au plus.
+  « Qui regarde ? » n'est pas un premier écran sur le mobile : une modale
+  (`FamilyLaunchHosts`) qui s'ouvre après l'arrivée, sur l'accueil.
 - **Ce qui sort de l'écran** : une `Modal` ou une route en présentation modale
   native se pose par-dessus l'ouverture. Les hôtes du lancement qui en ouvrent
-  (affiche de la Famille, avatars, code PIN conseillé) attendent
+  (affiche de la Famille, avatars, code PIN conseillé, `FamilyLaunchHosts`) attendent
   `useBootIntroLanded()` ; un premier écran ne doit jamais être une modale native.
 - **Le son** : le MÊME code natif que la TV, compilé par le projet mobile —
   iOS par une référence du projet Xcode (`TentacleBootSound.m`, la ressource

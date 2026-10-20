@@ -44,11 +44,11 @@ describe("quand partir : le premier écran du mobile", () => {
     expect(watch(bootRouteOf("/", false))).toBe("wait");
   });
 
-  it("l'accueil et « Qui regarde ? » attendent d'être prêts, au plus 8 s", () => {
+  it("l'accueil attend d'être prêt (montré d'un bloc), au plus 8 s ; en échec, aussitôt", () => {
     expect(watch("/", "loading")).toBe("wait");
+    expect(watch("/")).toBe("wait");
     expect(watch("/", "ready")).toBe("go");
-    expect(watch("/who-is-watching")).toBe("wait");
-    expect(watch("/who-is-watching", "failed")).toBe("go");
+    expect(watch("/", "failed")).toBe("go");
     expect(watch("/", "loading", BOOT_INTRO_MAX_HOLD_MS)).toBe("go");
   });
 
