@@ -14,6 +14,7 @@ export default {
   onDevice: "On this device",
   goOffline: "Go offline",
   profile: "Profile",
+  profileChipLabel: "Switch profile, current profile: {{name}}",
   search: "Search",
   discover: "Discover",
   request: "Request",
