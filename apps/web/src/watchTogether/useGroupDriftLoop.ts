@@ -8,7 +8,7 @@ import {
   armEcho, hasPendingIntent, isAwaitingScheduledPlay, isBarrierParticipant, isWaitedForMe, seekLookaheadS,
   setTransportRate, updateSeekLatency, type GroupSyncSharedRefs,
 } from "./groupSyncShared";
-import { isFutureAnchor } from "./groupSchedule";
+import { isFutureAnchor } from "@tentacle-tv/shared";
 import { wtLog } from "./wtLog";
 
 /** Un seek dur dont l'atterrissage n'est pas vu en ce délai ne mesure rien. */
