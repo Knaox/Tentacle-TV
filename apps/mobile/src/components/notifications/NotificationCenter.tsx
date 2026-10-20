@@ -85,6 +85,7 @@ export function NotificationCenter({ open, onClose, frame }: Props) {
       onFilter={c.setFilter}
       unread={c.unread}
       total={c.visible.length}
+      hasAny={c.all.length > 0}
       selectionMode={c.selectionMode}
       selectedCount={c.selected.size}
       onMarkAll={c.markAll}
