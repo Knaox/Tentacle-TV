@@ -34,6 +34,7 @@ import { BootIntroShell } from "@/bootIntro/BootIntroShell";
 import { BootIntroRouteReporter } from "@/bootIntro/BootIntroRouteReporter";
 import { bootDecision } from "@/bootIntro/bootPlan";
 import { configureBootIntroSettings } from "@/bootIntro/bootIntroSettings";
+import { markBoot } from "@/bootIntro/bootTimeline";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -70,6 +71,7 @@ export default function RootLayout() {
       } catch (e) {
         console.warn("[RootLayout] Hydration failed:", e);
       }
+      markBoot("hydrated");
       // L'ouverture du démarrage est décidée (quelques millisecondes, partie au
       // chargement) : la navigation ne se monte jamais avant qu'on sache si
       // l'app vit dans l'écran du poulpe.
@@ -98,6 +100,7 @@ export default function RootLayout() {
 
       setServerUrl(url);
       setReady(true);
+      markBoot("ready");
     }
 
     init();
@@ -107,6 +110,7 @@ export default function RootLayout() {
   // Hide splash only when storage hydrated AND fonts loaded (or font error —
   // fallback system font is acceptable). Prevents flash of unstyled text.
   useEffect(() => {
+    if (fontsLoaded || fontError) markBoot("fonts");
     if (ready && (fontsLoaded || fontError)) {
       SplashScreen.hideAsync().catch(() => {});
     }

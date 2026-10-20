@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BOOT_INTRO_MAX_HOLD_MS, bootIntroOutcome, bootSoundLeads, introFrameReport, type IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
 import { bootIntroGate, useBootIntroReport } from "./bootIntroGate";
 import { bootSound } from "./bootSound";
-import { useIntroClock, type IntroClockControl } from "./useIntroClock";
+import { useIntroClock, type IntroClockControl, type IntroWallTrace } from "./useIntroClock";
 
 /** La traîne du son après l'arrivée (le bloom de l'accord, la vague) : le lecteur se libère ensuite. */
 const SOUND_TAIL_MS = 5_000;
@@ -13,7 +13,7 @@ export interface BootIntroRunOptions {
   /** Les écrans qui disent eux-mêmes quand ils sont prêts (défaut : ceux de la TV). */
   selfReporting?: readonly string[];
   /** À l'arrivée : le bilan des images de l'ouverture (shared `introFrameReport`). */
-  onFrameReport?: (report: IntroFrameReport) => void;
+  onFrameReport?: (report: IntroFrameReport, trace: IntroWallTrace) => void;
   /** Rester sur l'encre tant que l'app démarre (mobile : `bootIntroGate.reportAppReady`, shared `introStart`). */
   waitForApp?: boolean;
 }
@@ -102,7 +102,7 @@ export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport, wai
     clock.landed.value = 1;
     clock.stop();
     // Le bilan des images (images perdues, pire écart, par phase) : à qui le demande (le banc).
-    frameReportRef.current?.(introFrameReport(clock.frameLog.value));
+    frameReportRef.current?.(introFrameReport(clock.frameLog.value), clock.wallTrace.value);
     const timer = setTimeout(() => bootSound.dispose(), SOUND_TAIL_MS);
     return () => clearTimeout(timer);
   }, [landed, clock]);

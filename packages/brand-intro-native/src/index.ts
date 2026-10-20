@@ -3,7 +3,7 @@
  * `docs/OUVERTURE.md`). Le pur est dans `@tentacle-tv/shared/brandIntro`.
  */
 export { BOOT_INK, BootIntroView, useIntroScene, type BootIntroViewProps, type IntroScene, type IntroSceneOptions } from "./BootIntroView";
-export { CLOCK, useIntroClock, type IntroClockControl, type IntroClockEvents } from "./useIntroClock";
+export { CLOCK, useIntroClock, type IntroClockControl, type IntroClockEvents, type IntroWallTrace } from "./useIntroClock";
 export type { IntroClock } from "./introWorklets";
 export type { TentacleArt, LinearGradientSpec, GradientStop } from "./introArt";
 export {
@@ -19,6 +19,7 @@ export {
   useBootIntroReport,
   useReportBlockedToBootIntro,
   useReportScreenToBootIntro,
+  whenBootIntroLanded,
   type BootIntroReport,
 } from "./bootIntroGate";
 export { bootSound } from "./bootSound";

@@ -1,15 +1,17 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
 import { Dimensions, StyleSheet, View } from "react-native";
 import { SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BootIntroView, useBootIntroRun, useIntroScene } from "@tentacle-tv/brand-intro-native";
+import { BootIntroView, bootIntroGate, useBootIntroRun, useIntroScene, type IntroWallTrace } from "@tentacle-tv/brand-intro-native";
 // Le dessin du logo : ses constantes GÉNÉRÉES (brand/generate-svg.py), passées à la vue.
 import * as TENTACLE_ART from "@/components/tentacleArt.generated";
 import { MOBILE_INTRO_PRIMITIVES } from "./introPrimitives";
 import { MOBILE_BOOT_SELF_REPORTING } from "./bootIntroRules";
-import { recordBootIntroFrames } from "./bootIntroFrames";
+import { BOOT_INTRO_STUCK_MS, recordBootIntroFrames, recordStuckBootIntro } from "./bootIntroFrames";
+import { busyStartupOverlays } from "@/startup/startupOverlays";
+import { markBoot } from "./bootTimeline";
 
 export interface BootIntroHostProps {
   /** Le « ta-dum » l'accompagne (réglage « Son au démarrage »). */
@@ -31,12 +33,33 @@ export interface BootIntroHostProps {
  */
 export function BootIntroHost({ sound, screenColor, children }: BootIntroHostProps) {
   const [viewport] = useState(() => Dimensions.get("window"));
+  markBoot("intro:host");
   const insets = useSafeAreaInsets();
   const [safe] = useState(() => ({ top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left }));
   const scene = useIntroScene(TENTACLE_ART, viewport, { deviceWindow: true, safe });
   const [soundWanted] = useState(() => Promise.resolve(sound));
-  const onFrameReport = useCallback((report: IntroFrameReport) => recordBootIntroFrames(report, viewport), [viewport]);
+  const onFrameReport = useCallback(
+    (report: IntroFrameReport, trace: IntroWallTrace) => recordBootIntroFrames(report, trace, viewport),
+    [viewport],
+  );
   const { clock, landed } = useBootIntroRun({ soundWanted, selfReporting: MOBILE_BOOT_SELF_REPORTING, onFrameReport, waitForApp: true });
+
+  // Jamais arrivée au bout de 12 s : l'état est relevé pour le banc (rien ne part sinon).
+  useEffect(() => {
+    if (landed) return undefined;
+    const timer = setTimeout(() => {
+      const snapshot = {
+        gate: bootIntroGate.snapshot(),
+        clockState: clock.state.value,
+        scene: Math.round(clock.scene.value),
+        ready: clock.ready.value,
+        appReady: clock.appReady.value,
+        startupOverlays: busyStartupOverlays(),
+      };
+      recordStuckBootIntro(snapshot, clock.wallTrace.value, viewport);
+    }, BOOT_INTRO_STUCK_MS);
+    return () => clearTimeout(timer);
+  }, [landed, clock, viewport]);
 
   // La première image de l'ouverture est l'encre de l'écran de lancement : on retire celui-ci dessous.
   const hideSplash = () => {

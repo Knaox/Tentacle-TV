@@ -71,6 +71,22 @@ export const bootIntroGate = {
   },
 };
 
+/**
+ * Résolue quand l'ouverture est arrivée (aussitôt si elle ne se joue pas) :
+ * pour ce qui ouvre une fenêtre du SYSTÈME (demande de permission), qui se
+ * poserait par-dessus le poulpe et rendrait l'app inactive en pleine ouverture.
+ */
+export function whenBootIntroLanded(): Promise<void> {
+  if (!report.playing) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = bootIntroGate.subscribe(() => {
+      if (report.playing) return;
+      unsubscribe();
+      resolve();
+    });
+  });
+}
+
 export function useBootIntroReport(): BootIntroReport {
   return useSyncExternalStore(bootIntroGate.subscribe, bootIntroGate.snapshot, bootIntroGate.snapshot);
 }

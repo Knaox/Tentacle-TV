@@ -17,6 +17,7 @@ import {
   type BootOverlayStates,
 } from "./bootIntroRules";
 import { useShownBootOverlays } from "./bootOverlays";
+import { markBoot } from "./bootTimeline";
 
 /** L'état des recouvrements du premier écran, en une chaîne stable (le magasin rend une valeur par lecture). */
 const overlayKey = (): string => BOOT_FIRST_SCREEN_OVERLAYS.map((overlay) => readStartupOverlay(overlay)).join(",");
@@ -88,6 +89,15 @@ export function BootIntroRouteReporter({ appReady }: { appReady: boolean }) {
   // Le démarrage de l'app (stockage, polices, premier montage) passé : le poulpe peut commencer (`introStart`).
   useEffect(() => {
     bootIntroGate.reportAppReady(appReady);
+    if (appReady) markBoot("appReady");
   }, [appReady]);
+  // La chronologie du banc : le premier écran connu, l'accueil posé, l'attente levée.
+  useEffect(() => {
+    if (arrival.route !== null) markBoot(`route ${arrival.route}`);
+  }, [arrival.route]);
+  const homeState = screens["/"];
+  useEffect(() => {
+    if (homeState) markBoot(`home ${homeState}`);
+  }, [homeState]);
   return null;
 }

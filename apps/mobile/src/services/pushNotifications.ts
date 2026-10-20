@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { retireLegacyChannels } from "./notificationChannels";
+import { whenBootIntroLanded } from "@tentacle-tv/brand-intro-native";
 import { holdStartupOverlay } from "@/startup/startupOverlays";
 
 // Côté client Expo : permissions, obtention de l'ExpoPushToken, handler
@@ -22,8 +23,13 @@ export function configureNotificationHandler(): void {
 /**
  * La demande au système, déclarée comme recouvrement de démarrage le temps de
  * sa réponse : rien d'autre ne s'ouvre pendant que sa fenêtre est à l'écran.
+ * Jamais pendant l'ouverture du démarrage : l'alerte d'iOS se posait sur le
+ * poulpe au premier lancement après installation (testeur-mobile, 20/10) —
+ * elle attend son arrivée.
  */
 async function requestPermission(): Promise<Notifications.NotificationPermissionsStatus> {
+  // L'attente AVANT de se déclarer : déclarée, la demande retiendrait le premier lancement, que l'ouverture attend.
+  await whenBootIntroLanded();
   const release = holdStartupOverlay("permission");
   try {
     return await Notifications.requestPermissionsAsync();
