@@ -24,8 +24,15 @@ export function wtRoomAllReadyLocally(room: WtRoomStateDto): boolean {
   return room.members.every((m) => !m.online || m.playbackError || (m.inPlayback && !m.buffering));
 }
 
-/** La salle est-elle « tous prêts » ? Le serveur fait foi quand il le dit. */
+/**
+ * La salle est-elle « tous prêts » ? Le serveur fait foi quand il le dit — mais
+ * quelqu'un qui ARRIVE (du clic « Rejoindre » à son premier « prêt »,
+ * `arrivingUserIds`) n'est jamais prêt : ajout de Damien du 20/10, « une intro,
+ * un générique ne doivent jamais être passés tant que les membres du groupe ne
+ * sont pas dedans » — ni bouton, ni décompte, ni saut, ni enchaînement.
+ */
 export function wtRoomAllReady(room: WtRoomStateDto): boolean {
+  if ((room.arrivingUserIds?.length ?? 0) > 0) return false;
   return room.allReady ?? wtRoomAllReadyLocally(room);
 }
 

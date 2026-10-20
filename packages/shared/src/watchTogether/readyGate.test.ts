@@ -45,3 +45,17 @@ describe("wtSkipHeld — en séance, rien ne se saute avant « tous prêts »", 
     expect(wtRoomAllReadyLocally(room({ itemId: null }))).toBe(false);
   });
 });
+
+describe("wtSkipHeld — un ARRIVANT n'est jamais prêt (ajout de Damien du 20/10)", () => {
+  it("du clic à son premier « prêt » : retenu chez tous, même si le serveur dit « prêt »", () => {
+    const arriving = room({ allReady: true, arrivingUserIds: ["b"] });
+    expect(wtRoomAllReady(arriving)).toBe(false);
+    expect(wtSkipHeld(arriving, "film")).toBe(true);
+    // Arrivé : tout revient.
+    expect(wtSkipHeld(room({ allReady: true }), "film")).toBe(false);
+  });
+
+  it("serveur d'avant (sans `allReady`) : un membre qui n'est pas encore en lecture retient aussi", () => {
+    expect(wtSkipHeld(room({ members: [member("a"), member("b", { inPlayback: false })] }), "film")).toBe(true);
+  });
+});
