@@ -192,6 +192,10 @@ export const SERVER_CAPABILITIES = {
    *  s'annoncent à ses appareils : `rights:changed` sur le socket, et le client relit ce qu'il
    *  montre (`useRightsLive`). Sans elle, la fraîcheur des requêtes, comme avant. */
   "rights.live": "1.32.0",
+  /** Les titres gardés hors ligne jugés par le serveur pour l'identité EN SESSION (compte, ou
+   *  profil de la famille) : `POST /api/library/visibility` → visibles, cachés, disparus. Un
+   *  titre caché ne se lit plus, même gardé avant le retrait du droit. Sans elle, comme avant. */
+  "offline.verdicts": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
