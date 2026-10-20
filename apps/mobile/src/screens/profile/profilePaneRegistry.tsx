@@ -5,7 +5,7 @@ import { MediaLanguagesPane } from "@/screens/settings/MediaLanguagesScreen";
 import { NotificationsPane } from "@/screens/settings/NotificationsScreen";
 import { PasswordPane } from "@/screens/settings/PasswordScreen";
 import { PersonalizationPane } from "@/screens/settings/PersonalizationScreen";
-import type { ProfilePaneId } from "./profilePanes";
+import type { SettingsPaneId } from "@tentacle-tv/shared";
 
 interface PaneEntry {
   Component: ComponentType;
@@ -13,7 +13,7 @@ interface PaneEntry {
   title: { ns: string; key: string };
 }
 
-export const PROFILE_PANE_REGISTRY: Record<ProfilePaneId, PaneEntry> = {
+export const PROFILE_PANE_REGISTRY: Record<SettingsPaneId, PaneEntry> = {
   password: { Component: PasswordPane, title: { ns: "preferences", key: "changePasswordTitle" } },
   mediaLanguages: { Component: MediaLanguagesPane, title: { ns: "settingsMobile", key: "playback.mediaLanguages" } },
   personalization: { Component: PersonalizationPane, title: { ns: "profile", key: "homeAndRecommendations" } },

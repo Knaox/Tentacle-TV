@@ -4,15 +4,15 @@ import { SettingsRow, SettingsSection, THEME_MODE_LABEL_KEYS, type SettingsIcon 
 import { useThemeMode } from "@/theme";
 import { PROFILE_PANE_ROUTES } from "./profilePanes";
 import {
-  sectionSummary, sectionTarget, visibleSections,
-  type ProfileContext, type ProfileSection, type ProfileSectionId,
-} from "./profileStructure";
+  settingsSectionSummary, settingsSectionTarget, visibleSettingsSections,
+  type SettingsCatalogContext, type SettingsCatalogSection, type SettingsSectionId,
+} from "@tentacle-tv/shared";
 
 interface Props {
-  ctx: ProfileContext;
+  ctx: SettingsCatalogContext;
   /** Tablette : la rubrique affichée à droite, et le choix d'une autre. */
-  selected?: ProfileSectionId | null;
-  onSelect?: (id: ProfileSectionId) => void;
+  selected?: SettingsSectionId | null;
+  onSelect?: (id: SettingsSectionId) => void;
 }
 
 /**
@@ -25,19 +25,19 @@ interface Props {
 export function ProfileSectionList({ ctx, selected, onSelect }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
-  const sections = visibleSections(ctx);
+  const sections = visibleSettingsSections(ctx);
   const appearance = useAppearanceCaption();
 
-  const open = (section: ProfileSection) => {
+  const open = (section: SettingsCatalogSection) => {
     if (onSelect) return onSelect(section.id);
-    const target = sectionTarget(section, ctx);
+    const target = settingsSectionTarget(section, ctx);
     router.push((target.kind === "pane" ? PROFILE_PANE_ROUTES[target.id] : `/profile/${section.id}`) as Href);
   };
 
   return (
     <SettingsSection>
       {sections.map((section, index) => {
-        const summary = sectionSummary(section, ctx);
+        const summary = settingsSectionSummary(section, ctx);
         const caption = section.id === "playback" ? appearance : summary ? t(summary.key, { ns: summary.ns }) : undefined;
         return (
           <SettingsRow

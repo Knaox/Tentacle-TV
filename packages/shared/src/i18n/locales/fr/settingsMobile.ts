@@ -79,5 +79,18 @@ export default {
     rowHint: "Délais, génériques, épisode suivant en détail…",
     title: "Réglages avancés",
     body: "Les réglages fins de la lecture se font sur l'application de bureau (ou le site web) : délais avant chaque saut, génériques de fin des épisodes et des films, aperçus, fiche « à suivre » et affiche de fin, moment où l'épisode suivant est proposé, règles par bibliothèque. Ils sont enregistrés dans votre compte : ce téléphone les applique aussitôt.",
+    intro: "Ces réglages se font sur l'application de bureau (ou le site web). Ils sont enregistrés dans votre compte : ce téléphone les applique aussitôt.",
+    items: {
+      skipDelays: "Délai avant chaque saut",
+      skipCountdown: "Décompte visible avant un saut",
+      episodeCredits: "Génériques de fin des épisodes",
+      filmCredits: "Génériques de fin des films",
+      previews: "Aperçus en fin d'épisode",
+      nextCard: "Fiche « À suivre »",
+      finalPoster: "Affiche de fin",
+      nextTrigger: "Moment où l'épisode suivant est proposé",
+      libraryRules: "Règles par bibliothèque",
+      nextCountdown: "Durée du décompte de l'épisode suivant",
+    },
   },
 };

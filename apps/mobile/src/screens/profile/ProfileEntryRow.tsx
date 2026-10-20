@@ -10,14 +10,14 @@ import { usePendingFamilyInvitationCount } from "./familyEntryHooks";
 import { ProfileBlock } from "./ProfileBlock";
 import { ProfileControlRow } from "./ProfileControlRow";
 import { ProfilePaneRow } from "./ProfilePaneRow";
-import type { ActionEntry, ProfileEntry, ScreenEntry } from "./profileStructure";
 import { useProfileEntryActions } from "./ProfileEntryActions";
-import { PANE_SCOPES } from "./settingsScopes";
+import { SETTINGS_PANE_SCOPES, type SettingsActionEntry, type SettingsCatalogEntry, type SettingsScreenEntry } from "@tentacle-tv/shared";
+import { SETTINGS_SCREEN_ROUTES } from "./profilePanes";
 
 const PRIVACY_POLICY_URL = "https://github.com/Knaox/Tentacle-TV/blob/main/PRIVACY.md";
 
 interface Props {
-  entry: ProfileEntry;
+  entry: SettingsCatalogEntry;
   last: boolean;
 }
 
@@ -39,7 +39,7 @@ export function ProfileEntryRow({ entry, last }: Props) {
           pane={entry.id}
           icon={entry.icon as SettingsIcon}
           label={t(entry.label.key, { ns: entry.label.ns })}
-          scope={PANE_SCOPES[entry.id] ?? undefined}
+          scope={SETTINGS_PANE_SCOPES[entry.id] ?? undefined}
           last={last}
         />
       );
@@ -54,7 +54,7 @@ export function ProfileEntryRow({ entry, last }: Props) {
   }
 }
 
-function ScreenRow({ entry, last, description, value }: { entry: ScreenEntry; last: boolean; description?: string; value?: string }) {
+function ScreenRow({ entry, last, description, value }: { entry: SettingsScreenEntry; last: boolean; description?: string; value?: string }) {
   const { t } = useTranslation();
   const router = useRouter();
   return (
@@ -65,13 +65,13 @@ function ScreenRow({ entry, last, description, value }: { entry: ScreenEntry; la
       value={value}
       chevron
       last={last}
-      onPress={() => router.push(entry.href as Href)}
+      onPress={() => router.push(SETTINGS_SCREEN_ROUTES[entry.id] as Href)}
     />
   );
 }
 
 /** « Mes titres hors ligne » : « 12 titres · 1 en cours ». */
-function OfflineTitlesRow({ entry, last }: { entry: ScreenEntry; last: boolean }) {
+function OfflineTitlesRow({ entry, last }: { entry: SettingsScreenEntry; last: boolean }) {
   const { t } = useTranslation("offline");
   const { active, total } = useOfflineActivity();
   const parts = [t("countTitles", { count: total })];
@@ -80,13 +80,13 @@ function OfflineTitlesRow({ entry, last }: { entry: ScreenEntry; last: boolean }
 }
 
 /** « Famille » : le nombre d'invitations reçues qui attendent une réponse. */
-function FamilyRow({ entry, last }: { entry: ScreenEntry; last: boolean }) {
+function FamilyRow({ entry, last }: { entry: SettingsScreenEntry; last: boolean }) {
   const { t } = useTranslation("settingsMobile");
   const count = usePendingFamilyInvitationCount();
   return <ScreenRow entry={entry} last={last} value={count > 0 ? t("account.familyInvitesBadge", { count }) : undefined} />;
 }
 
-function ActionRow({ entry, last }: { entry: ActionEntry; last: boolean }) {
+function ActionRow({ entry, last }: { entry: SettingsActionEntry; last: boolean }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const actions = useProfileEntryActions();

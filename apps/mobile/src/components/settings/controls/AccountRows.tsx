@@ -4,6 +4,7 @@ import { useRouter, type Href } from "expo-router";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { DESKTOP_ONLY_SETTINGS } from "@tentacle-tv/shared";
 import { profilePhotoUrl } from "@/auth/storedUser";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { AvatarGallerySheet } from "@/avatars/gallery/AvatarGallerySheet";
@@ -81,7 +82,11 @@ export function AdvancedOnDesktopRow({ last }: RowProps) {
       label={t("advanced.row")}
       description={t("advanced.rowHint")}
       last={last}
-      onPress={() => Alert.alert(t("advanced.title"), t("advanced.body"))}
+      onPress={() => {
+        // La liste vient du catalogue partagé (« réservé au bureau »), la même que celle du web étroit.
+        const items = DESKTOP_ONLY_SETTINGS.map((ref) => `• ${t(ref.key, { ns: ref.ns })}`).join("\n");
+        Alert.alert(t("advanced.title"), `${t("advanced.intro")}\n\n${items}`);
+      }}
     />
   );
 }

@@ -69,5 +69,18 @@ export default {
     rowHint: "Delays, credits, next episode in detail…",
     title: "Advanced settings",
     body: "Fine-grained playback settings live in the desktop app (or the website): delay before each skip, end credits of episodes and films, previews, “up next” card and end poster, when the next episode is offered, per-library rules. They are saved in your account: this phone applies them right away.",
+    intro: "These settings live in the desktop app (or the website). They are saved in your account: this phone applies them right away.",
+    items: {
+      skipDelays: "Delay before each skip",
+      skipCountdown: "Countdown shown before a skip",
+      episodeCredits: "Episode end credits",
+      filmCredits: "Film end credits",
+      previews: "Previews at the end of an episode",
+      nextCard: "“Up next” card",
+      finalPoster: "End poster",
+      nextTrigger: "When the next episode is offered",
+      libraryRules: "Per-library rules",
+      nextCountdown: "Next-episode countdown length",
+    },
   },
 };

@@ -6,16 +6,16 @@ import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTh
 import { ProfilePaneContext } from "./ProfilePaneContext";
 import { KeyboardAvoidingArea } from "@/components/ui";
 import { PROFILE_PANE_REGISTRY } from "./profilePaneRegistry";
-import type { ProfilePaneId } from "./profilePanes";
+import type { SettingsPaneId } from "@tentacle-tv/shared";
 import { ProfileSectionBody } from "./ProfileSectionBody";
-import { sectionTarget, type ProfileContext, type ProfileSection } from "./profileStructure";
+import { settingsSectionTarget, type SettingsCatalogContext, type SettingsCatalogSection } from "@tentacle-tv/shared";
 
 /** Au-delà, une ligne de réglage devient une piste d'atterrissage. */
 const DETAIL_MAX_WIDTH = 680;
 
 interface Props {
-  section: ProfileSection;
-  ctx: ProfileContext;
+  section: SettingsCatalogSection;
+  ctx: SettingsCatalogContext;
   topInset: number;
   bottomInset: number;
 }
@@ -30,8 +30,8 @@ interface Props {
 export function ProfileDetailPane({ section, ctx, topInset, bottomInset }: Props) {
   const { t } = useTranslation();
   const st = useThemedStyles(makeStyles);
-  const [opened, setOpened] = useState<ProfilePaneId | null>(null);
-  const target = sectionTarget(section, ctx);
+  const [opened, setOpened] = useState<SettingsPaneId | null>(null);
+  const target = settingsSectionTarget(section, ctx);
   const direct = target.kind === "pane" ? target.id : null;
   const pane = direct ?? opened;
   const sectionLabel = t(section.label.key, { ns: section.label.ns });

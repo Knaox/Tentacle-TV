@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAppConfig, useServerCapability } from "@tentacle-tv/api-client";
+import { useAppConfig, useServerCapabilities } from "@tentacle-tv/api-client";
 import { isFamilyAvailable } from "@tentacle-tv/shared";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { useOfflineVisibility } from "@/hooks/offline/useOfflineVisibility";
@@ -9,7 +9,7 @@ import { useThemeMode } from "@/theme";
 import { engineOptionsFor } from "@/components/settings/controls/EngineOptionsRows";
 import { useCanSwitchProfileFlag, useIsProfileSession } from "./familyEntryHooks";
 import { playerSettingsContext } from "./playerSettingsContext";
-import type { ProfileContext } from "./profileStructure";
+import type { SettingsCatalogContext } from "@tentacle-tv/shared";
 
 /**
  * L'écran de la Famille du mobile est-il branché ? Tant qu'il ne l'est pas,
@@ -19,7 +19,7 @@ import type { ProfileContext } from "./profileStructure";
 export const FAMILY_SCREEN_READY = true;
 
 /** Le contexte qui décide de ce que la structure du profil montre (`profileStructure.ts`). */
-export function useProfileContext(): ProfileContext {
+export function useProfileContext(): SettingsCatalogContext {
   const offline = useOfflineMode();
   // Réactif : une relecture du profil (droits) re-rend la structure.
   const isAdmin = useStoredUser()?.Policy?.IsAdministrator === true;
@@ -33,14 +33,15 @@ export function useProfileContext(): ProfileContext {
   const familyOn = isFamilyAvailable(config?.features.family, offline);
   const canSwitchProfile = useCanSwitchProfileFlag();
   const profileSession = useIsProfileSession();
-  const stillWatching = useServerCapability("playback.stillWatching");
-  const trendingNow = useServerCapability("reco.trending");
+  const { capabilities } = useServerCapabilities();
   // La build et la plateforme ne changent pas pendant la vie de l'app.
   const player = useMemo(() => {
     const ctx = playerSettingsContext();
     return { advancedEngine: ctx.advancedEngine, engineOptions: engineOptionsFor(ctx).length > 0 };
   }, []);
   return useMemo(() => ({
+    platform: "mobile",
+    capabilities,
     offline,
     isAdmin,
     offlineVisible,
@@ -49,10 +50,8 @@ export function useProfileContext(): ProfileContext {
     family: FAMILY_SCREEN_READY && familyOn,
     canSwitchProfile,
     liquidGlass: liquidGlass.supported,
-    stillWatching,
-    trendingNow,
     advancedEngine: player.advancedEngine,
     engineOptions: player.engineOptions,
     profileSession,
-  }), [offline, isAdmin, connectivity, offlineVisible, familyOn, canSwitchProfile, liquidGlass.supported, stillWatching, trendingNow, player, profileSession]);
+  }), [offline, isAdmin, connectivity, offlineVisible, familyOn, canSwitchProfile, liquidGlass.supported, capabilities, player, profileSession]);
 }
