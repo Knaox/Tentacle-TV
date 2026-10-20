@@ -196,6 +196,11 @@ export const SERVER_CAPABILITIES = {
    *  profil de la famille) : `POST /api/library/visibility` → visibles, cachés, disparus. Un
    *  titre caché ne se lit plus, même gardé avant le retrait du droit. Sans elle, comme avant. */
   "offline.verdicts": "1.32.0",
+  /** Ce que la SESSION peut faire, dit par le serveur (`GET /api/account/abilities` : lecture,
+   *  hors ligne, Watch Together, partage, suppression, tickets, extensions, compte, jumelage, push,
+   *  invitations) : un client ne montre aucun geste que la session n'a pas le droit de faire.
+   *  Sans elle, chaque client fait comme avant. */
+  "account.abilities": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

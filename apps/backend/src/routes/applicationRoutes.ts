@@ -15,6 +15,7 @@
  */
 
 import { accountAccessRoutes } from "./accountAccess";
+import { accountAbilitiesRoutes } from "./accountAbilities";
 import type { FastifyInstance } from "fastify";
 import { authRoutes } from "./auth";
 import { inviteRoutes } from "./invites";
@@ -78,6 +79,7 @@ import { externalAccountRoutes } from "./externalAccounts";
 export async function registerApplicationRoutes(app: FastifyInstance): Promise<void> {
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(accountAccessRoutes, { prefix: "/api/account" });
+  await app.register(accountAbilitiesRoutes, { prefix: "/api/account" });
   await app.register(inviteRoutes, { prefix: "/api/invites" });
   await app.register(preferenceRoutes, { prefix: "/api/preferences" });
   await app.register(updateRoutes, { prefix: "/api/update" });

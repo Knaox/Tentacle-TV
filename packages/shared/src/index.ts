@@ -197,6 +197,7 @@ export * from "./family/familyLabels";
 export * from "./family/familyClient";
 export * from "./family/familyRightsSummary";
 export * from "./library/libraryVisibilityContract";
+export * from "./accountAbilities/accountAbilitiesContract";
 export * from "./family/familyRolesClient";
 export * from "./family/familyPickerClient";
 export * from "./family/familyPickerStay";
