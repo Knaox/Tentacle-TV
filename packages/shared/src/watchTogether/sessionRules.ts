@@ -1,4 +1,4 @@
-import { parseWtSeekToken, type WtRoomStateDto, type WtSeekToken } from "../types/watchTogether";
+import { parseWtSeekToken, wtPositionSecondsAt, type WtRoomStateDto, type WtSeekToken } from "../types/watchTogether";
 
 /**
  * Watch Together — ce qu'un lecteur conclut de l'état de la salle, sans
@@ -48,4 +48,34 @@ export function isGroupSessionActive(
 export function isOwnOlderSeekEcho(roomToken: string | undefined, latest: WtSeekToken | null): boolean {
   const echoed = parseWtSeekToken(roomToken);
   return !!echoed && !!latest && echoed.device === latest.device && echoed.seq < latest.seq;
+}
+
+/**
+ * La position où ouvrir le lecteur d'un membre qui REJOINT le titre de la
+ * salle. Gelée (pause, attente — la salle se gèle AU CLIC « Rejoindre » depuis
+ * le serveur du 20/10) : sa position exacte. En lecture (serveur d'avant,
+ * lecteur rouvert) : là où la salle sera quand le serveur recevra ma
+ * déclaration, un aller simple plus tard — c'est là qu'il la gèle pour
+ * m'attendre ; partir de « maintenant » m'ouvrait derrière la pause.
+ */
+export function wtJoinStartSeconds(
+  room: Pick<WtRoomStateDto, "paused" | "positionTicks" | "stateAtServerTime">,
+  serverNow: number,
+  rttMs: number | null,
+): number {
+  const oneWayMs = room.paused ? 0 : Math.max(0, rttMs ?? 0) / 2;
+  return Math.max(0, wtPositionSecondsAt(room, serverNow + oneWayMs));
+}
+
+/**
+ * La position à joindre à « je charge » (`wt:buffering true`) : celle où
+ * geler la salle. Un rechargement dit celle qu'il VISE (`freezeAtS`) ; un
+ * lecteur qui cale en pleine lecture, la sienne. Un lecteur qui n'a encore
+ * rien lu (premier chargement, reconnexion en plein chargement) n'en dit
+ * AUCUNE : la salle se gèle sur la sienne — sa position de départ, ou 0, la
+ * ramenait en arrière (retour de Damien du 20/10).
+ */
+export function wtBufferingFreezeSeconds(opts: { freezeAtS?: number; playerS: number; wasReady: boolean }): number | undefined {
+  if (opts.freezeAtS !== undefined) return opts.freezeAtS;
+  return opts.wasReady ? opts.playerS : undefined;
 }

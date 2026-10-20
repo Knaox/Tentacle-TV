@@ -4,7 +4,7 @@ import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
   WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, isBarrierParticipant, needsStartCorrection, updatePlayLatency,
-  wtPositionSecondsAt,
+  wtBufferingFreezeSeconds, wtPositionSecondsAt,
   type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
@@ -151,10 +151,14 @@ export function useGroupIntents({
       sendPresence();
     }
     if (shared.lastBufferingSentRef.current === buffering) return;
+    // « Je charge » : la position où geler la salle — jamais celle d'un lecteur
+    // qui n'a encore rien lu (elle la ramenait en arrière, `wtBufferingFreezeSeconds`).
+    const wasReady = shared.lastBufferingSentRef.current === false;
     shared.lastBufferingSentRef.current = buffering;
-    const positionTicks = freezeAtSeconds !== undefined
-      ? Math.max(0, Math.round(freezeAtSeconds * TICKS_PER_SECOND))
-      : posTicks();
+    const freezeS = buffering
+      ? wtBufferingFreezeSeconds({ freezeAtS: freezeAtSeconds, playerS: posTicks() / TICKS_PER_SECOND, wasReady })
+      : posTicks() / TICKS_PER_SECOND;
+    const positionTicks = freezeS === undefined ? undefined : Math.max(0, Math.round(freezeS * TICKS_PER_SECOND));
     // « Je cale » pendant une barrière : la salle m'attend de nouveau — ma
     // confirmation d'avant ne vaut plus, je re-confirmerai (défaut M1 du banc :
     // sans cela, la barrière restait gelée jusqu'à son délai).
@@ -166,9 +170,10 @@ export function useGroupIntents({
     const barrierId = !buffering && r.barrierId !== undefined && isBarrierParticipant(r, selfId) && t
       && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
     if (barrierId !== undefined) shared.confirmedBarrierRef.current = barrierId;
-    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: (positionTicks / TICKS_PER_SECOND).toFixed(1), barrierId });
+    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: freezeS?.toFixed(1) ?? "salle", barrierId });
     shared.sendRef.current({
-      type: "wt:buffering", buffering, positionTicks, rttMs: rtt(), ...(barrierId !== undefined ? { barrierId } : {}),
+      type: "wt:buffering", buffering, rttMs: rtt(),
+      ...(positionTicks !== undefined ? { positionTicks } : {}), ...(barrierId !== undefined ? { barrierId } : {}),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks, sendPresence]);
@@ -256,9 +261,11 @@ export function useGroupIntents({
       const t = transportRef.current;
       const barrierId = last === false && r?.barrierId !== undefined && t
         && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
+      // En plein chargement, aucune position : celle d'un lecteur qui n'a rien
+      // lu ramènerait la salle en arrière (`wtBufferingFreezeSeconds`).
       shared.sendRef.current({
-        type: "wt:buffering", buffering: last, positionTicks: posTicks(), rttMs: rtt(),
-        ...(barrierId !== undefined ? { barrierId } : {}),
+        type: "wt:buffering", buffering: last, rttMs: rtt(),
+        ...(last ? {} : { positionTicks: posTicks() }), ...(barrierId !== undefined ? { barrierId } : {}),
       });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

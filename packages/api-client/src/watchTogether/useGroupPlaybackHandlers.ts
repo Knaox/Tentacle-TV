@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TICKS_PER_SECOND, isGroupSessionActive, wtPositionSecondsAt, type MediaItem } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, isGroupSessionActive, wtJoinStartSeconds, type MediaItem } from "@tentacle-tv/shared";
+import { getClockRttMs } from "../socket/clockSync";
 import { useWatchTogetherOrIdle } from "./context";
 
 /**
@@ -51,8 +52,9 @@ export function useGroupPlaybackHandlers({
     if (!active || !room || !itemId || groupStart?.forItemId === itemId) return;
     if (room.itemId === itemId) {
       // Join du média en cours (ou item déjà broadcasté — épisode suivant) :
-      // position vraie du groupe.
-      setGroupStart({ forItemId: itemId, seconds: Math.max(0, wtPositionSecondsAt(room, serverNow())) });
+      // la position où la salle m'attend — celle de sa pause, ou, si elle joue
+      // encore, celle où ma déclaration la gèlera (`wtJoinStartSeconds`).
+      setGroupStart({ forItemId: itemId, seconds: wtJoinStartSeconds(room, serverNow(), getClockRttMs()) });
     } else if (itemReady) {
       // Lancement d'un média pour le groupe : SA reprise (0 sinon).
       setGroupStart({ forItemId: itemId, seconds: Math.max(0, resumePositionSeconds ?? 0) });
