@@ -125,6 +125,10 @@ export class WebClient {
     });
   }
 
+  get jellyfinUrl(): string {
+    return this.state.jellyfinUrl;
+  }
+
   async login(): Promise<void> {
     await this.page.goto(`${this.state.webUrl}/login`, { waitUntil: "domcontentloaded" });
     await this.page.fill("#username", this.account.name);

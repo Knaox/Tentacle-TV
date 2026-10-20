@@ -56,7 +56,12 @@ export async function slowStartScenario(ctx: ScenarioContext): Promise<void> {
   ctx.drift("membre lent, régime (20 s)", await measureWindow([a, b], 20_000));
   // Un seek tombe hors du tampon du transcodage : le lent recharge, l'autre attend.
   const since = Date.now();
+  const before = (await measureOnce([a, b])).pos.A ?? 0;
   await a.press("ArrowRight");
+  await waitFor(async () => {
+    const p = await measureOnce([a, b]);
+    return (p.pos.A ?? 0) > before + 20 && (p.pos.B ?? 0) > before + 20;
+  }, 30_000, 50);
   const back = await waitAligned([a, b], { withinMs: 100, playing: true, since, timeoutMs: 30_000, stable: 3 });
   ctx.metric("seek +30 s avec un membre en transcodage : réaligné", back.ms === null ? "jamais en 30 s" : `${back.ms} ms`, back.ms, "< 1 000 ms");
 }
@@ -116,9 +121,10 @@ export async function introGateScenario(ctx: ScenarioContext): Promise<void> {
         `A ${p.pos.A?.toFixed(2)} s · B ${p.pos.B?.toFixed(2)} s`);
     }
     await waitOnItem([a, b], ctx.state.episodeIds[1], 60_000);
-    const shown = await waitFor(() => a.isVisible(SKIP_LABEL), 20_000);
-    ctx.check("[bouton] « Passer l'intro » paraît une fois tous prêts", shown !== null);
-    if (shown !== null && !clickedEarly) {
+    // Après un clic précoce, l'intro est déjà passée : plus rien à proposer.
+    const shown = clickedEarly ? null : await waitFor(() => a.isVisible(SKIP_LABEL), 20_000);
+    if (!clickedEarly) ctx.check("[bouton] « Passer l'intro » paraît une fois tous prêts", shown !== null);
+    if (shown !== null) {
       const since = Date.now();
       await b.clickText(SKIP_LABEL, 3_000);
       const res = await waitAligned([a, b], { withinMs: 100, playing: true, since, timeoutMs: 15_000 });

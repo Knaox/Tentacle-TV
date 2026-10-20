@@ -49,8 +49,25 @@ export async function inviteAndAccept(ctx: ScenarioContext, host: WebClient, gue
   if (joined === null) throw new Error("l'invité n'apparaît pas dans le groupe");
 }
 
-/** Le lanceur ouvre le titre : `wt:setItem`, la salle suit. */
+/**
+ * Remet à zéro la reprise Jellyfin des épisodes pour ce compte : sans elle, un
+ * lancement repart là où le passage précédent s'était arrêté (et un seek
+ * tombe après la fin). Par Jellyfin directement, avec le jeton de la session.
+ */
+export async function resetResume(c: WebClient, jellyfinUrl: string, itemIds: string[]): Promise<void> {
+  const token = await c.page.evaluate(() => localStorage.getItem("tentacle_token"));
+  if (!token) return;
+  const headers = { Authorization: `MediaBrowser Client="wt-bench", Device="wt-bench", DeviceId="wt-bench-${c.label}", Version="1.0.0", Token="${token}"`, "Content-Type": "application/json" };
+  for (const id of itemIds) {
+    await fetch(`${jellyfinUrl}/UserItems/${id}/UserData?userId=${c.account.id}`, {
+      method: "POST", headers, body: JSON.stringify({ PlaybackPositionTicks: 0, Played: false }),
+    }).catch(() => undefined);
+  }
+}
+
+/** Le lanceur ouvre le titre : `wt:setItem`, la salle suit — depuis le début. */
 export async function launch(launcher: WebClient, itemId: string): Promise<number> {
+  await resetResume(launcher, launcher.jellyfinUrl, [itemId]);
   const at = Date.now();
   await launcher.goto(`/watch/${itemId}`);
   return at;
