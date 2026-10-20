@@ -36,6 +36,7 @@ export function useWebSettingsContext(): SettingsCatalogContext {
     liquidGlass: false,
     advancedEngine: false,
     engineOptions: false,
+    liveTransfers: false,
     profileSession,
   }), [capabilities, offline, isAdmin, family, canSwitchProfile, profileSession]);
 }

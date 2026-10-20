@@ -36,6 +36,7 @@ const base: SettingsCatalogContext = {
   liquidGlass: false,
   advancedEngine: false,
   engineOptions: false,
+  liveTransfers: false,
   profileSession: false,
 };
 

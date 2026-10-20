@@ -26,17 +26,25 @@ export const WEB_UNRENDERED: Readonly<Record<string, string>> = {
   "control:engineOptions": "Options du lecteur natif (Atmos d'iOS, sous-titres stylés et fréquence d'Android).",
   "screen:offlineTitles": "Garder des titres hors ligne : le navigateur ne le sait pas (seules les apps).",
   "action:goOffline": "Passer hors ligne : le navigateur n'a pas de mode hors ligne.",
-  "block:offlineSettings": "Réglages des titres gardés sur l'appareil : sans objet dans un navigateur.",
+  "block:offlineSpace": "Espace occupé par les titres gardés sur l'appareil : sans objet dans un navigateur.",
+  "control:wifiOnly": "Transferts hors ligne en Wi-Fi seulement : le navigateur ne garde pas de titres.",
+  "control:backgroundTransfers": "Transferts en arrière-plan : propres aux apps qui gardent des titres.",
+  "control:notifyReady": "Notification « prêt hors ligne » : notification LOCALE des apps.",
+  "control:liveTransfers": "Activité en direct des transferts (île dynamique, notification Android) : natif.",
+  "action:removeAllOffline": "Tout retirer de l'appareil : le navigateur ne garde pas de titres.",
   "pane:notifications": "Catégories des notifications PUSH : un navigateur n'en reçoit pas (la cloche reste).",
   "action:changeServer": "Dans un navigateur, le serveur EST l'adresse ; le web étroit ne se monte jamais dans l'app de bureau.",
 };
 
 /** Les réglages sur place que le web rend (le registre des composants les couvre tous : le type le tient). */
-export type WebControlId = Exclude<SettingsControlId, "liquidGlass" | "subtitleSize" | "subtitlePosition" | "engine" | "engineOptions">;
+export type WebControlId = Exclude<
+  SettingsControlId,
+  "liquidGlass" | "subtitleSize" | "subtitlePosition" | "engine" | "engineOptions" | "wifiOnly" | "backgroundTransfers" | "notifyReady" | "liveTransfers"
+>;
 export type WebPaneId = Exclude<SettingsPaneId, "notifications">;
 export type WebScreenId = Exclude<SettingsScreenId, "offlineTitles">;
-export type WebActionId = Exclude<SettingsActionId, "goOffline" | "changeServer">;
-export type WebBlockId = Exclude<SettingsBlockId, "offlineSettings">;
+export type WebActionId = Exclude<SettingsActionId, "goOffline" | "changeServer" | "removeAllOffline">;
+export type WebBlockId = Exclude<SettingsBlockId, "offlineSpace">;
 
 /**
  * Ce que le web rend, en DONNÉES (le test de couverture les lit sans monter
