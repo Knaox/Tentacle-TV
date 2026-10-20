@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
+import { openProfileSwitcher } from "@/family/profiles/profileSwitcherStore";
 import { Alert, StyleSheet, View } from "react-native";
-import { useRouter, type Href } from "expo-router";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
@@ -62,14 +62,12 @@ export function UserNameRow({ last }: RowProps) {
 
 /**
  * Ouvre le changement de profil — le SEUL endroit qui sait comment : la ligne
- * de Compte et le bouton sous le nom passent par ici. Aujourd'hui « Qui
- * regarde ? » ; après la fusion du lot, la feuille de la session design
- * (`openProfileSwitcher()` de `profileSwitch/profileSwitchEntry.ts`) se
- * branche ici, sans toucher aux appelants.
+ * de Compte et le bouton sous le nom passent par ici. La feuille « Changer de
+ * profil » de la Famille mobile (`openProfileSwitcher()`, montée à la racine) ;
+ * `/who-is-watching` reste son repli.
  */
 export function useOpenProfileSwitcher(): () => void {
-  const router = useRouter();
-  return useCallback(() => router.push(WHO_IS_WATCHING_HREF as Href), [router]);
+  return openProfileSwitcher;
 }
 
 /** « Changer de profil » : « Qui regarde ? », là où la famille a plusieurs profils. */

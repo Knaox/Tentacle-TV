@@ -1,11 +1,11 @@
+import { useBootIntroSetting, useBootSoundSetting } from "@/bootIntro/bootIntroSettings";
+
 /**
  * Ce que les réglages lisent de l'OUVERTURE animée du logo — l'ADAPTATEUR vers
- * les réglages de la session « ouverture-mobile » (lot du 2026-10-20) :
+ * les réglages de la session « ouverture-mobile » (lot du 2026-10-20), BRANCHÉ :
  * `useBootIntroSetting()` et `useBootSoundSetting()` dans
  * `bootIntro/bootIntroSettings.ts` (→ `[value, set]`, clés `tentacle_boot_intro`
- * et `tentacle_boot_sound`, « 0 » = coupé, allumés par défaut). Tant qu'ils ne
- * sont pas fusionnés, ce module répond « indisponible » : le groupe « Ouverture »
- * ne paraît pas — jamais une erreur.
+ * et `tentacle_boot_sound`, « 0 » = coupé, allumés par défaut).
  */
 
 export interface BootSetting {
@@ -20,9 +20,8 @@ export interface BootSettings {
   sound: BootSetting;
 }
 
-const OFF: BootSetting = { value: false, set: () => undefined };
-const UNAVAILABLE: BootSettings = { available: false, intro: OFF, sound: OFF };
-
 export function useBootSettings(): BootSettings {
-  return UNAVAILABLE;
+  const [intro, setIntro] = useBootIntroSetting();
+  const [sound, setSound] = useBootSoundSetting();
+  return { available: true, intro: { value: intro, set: setIntro }, sound: { value: sound, set: setSound } };
 }
