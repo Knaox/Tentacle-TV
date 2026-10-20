@@ -3,6 +3,7 @@ import type { ProblemActionKey, ProblemModel } from "@tentacle-tv/shared";
 import { Spinner } from "../ui/Spinner";
 import { ProblemDetails, type ProblemTone } from "./ProblemDetails";
 import { PROBLEM_ICONS, useProblemText } from "./useProblemText";
+import { useMirror } from "../../mirror/useFormFactor";
 
 interface Props {
   model: ProblemModel;
@@ -28,6 +29,7 @@ export const ProblemPanel = memo(function ProblemPanel({
   model, tone, center = false, onAction, busy = null, showIcon = true, autoFocus = false,
 }: Props) {
   const text = useProblemText(model);
+  const mirror = useMirror();
   const player = tone === "player";
   const Icon = PROBLEM_ICONS[model.icon];
   const chip = model.transient
@@ -71,6 +73,8 @@ export const ProblemPanel = memo(function ProblemPanel({
         </div>
       )}
       <ProblemDetails lines={text.details} copy={text.copy} tone={tone} center={center} />
+      {/* Le code du support, en petit, comme le mobile — dans la fenêtre étroite (le bureau large le garde dans « Détails »). */}
+      {mirror && <p className={`text-[11px] ${player ? "text-white/45" : "text-content-quaternary"}`}>{text.code}</p>}
     </div>
   );
 });
