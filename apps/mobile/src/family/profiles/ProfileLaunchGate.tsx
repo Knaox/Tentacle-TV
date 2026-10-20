@@ -60,7 +60,8 @@ export function ProfileLaunchGate() {
     [stayRaw, serverUrl, accountId],
   );
   const state = launchGateState({
-    configSettled: listing.configSettled,
+    // Sur la connexion, rien à attendre : jamais « Qui regarde ? » là.
+    configSettled: listing.configSettled || rootSegment === "(auth)",
     enabled: listing.enabled && rootSegment !== "(auth)",
     data: listing.data,
     isError: listing.isError,
