@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -7,6 +7,7 @@ import { Cast } from "lucide-react-native";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
+import { GlassButton } from "@/components/ui/buttons";
 import type { CastSession } from "../../player/cast/useCastSession";
 import { loadingArt } from "./loading/loadingArt";
 import { CenterControls } from "./CenterControls";
@@ -75,13 +76,9 @@ export function CastControlView({ cast, item, mediaSourceId, onBack }: Props) {
         <PlayerSeekBar currentTime={cast.position} duration={cast.duration} onSeek={cast.seekTo} item={item} mediaSourceId={mediaSourceId} />
       </View>
       <View style={{ alignItems: "center", paddingBottom: Math.max(24, insets.bottom + 12), paddingTop: 8 }}>
-        <Pressable
-          onPress={cast.stop}
-          accessibilityRole="button"
-          style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 999, backgroundColor: PLAYER.controlBg, borderWidth: 1, borderColor: PLAYER.border }}
-        >
-          <Text style={{ color: PLAYER.text, fontSize: Math.round(14 * ui), fontWeight: "600" }}>{t("cast.stop")}</Text>
-        </Pressable>
+        {/* Sur l'image du titre, et toujours à l'écran : le bouton de verre du
+            système (voile sombre sur Android, seule plateforme de la diffusion). */}
+        <GlassButton label={t("cast.stop")} onPress={cast.stop} size={ui > 1 ? "lg" : "md"} />
       </View>
     </View>
   );
