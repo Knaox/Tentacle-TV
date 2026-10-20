@@ -18,6 +18,9 @@ Branches suivies (une par worktree, `git worktree list`) :
 | lecteur-mobile | `claude/lecteur-959931` | `.claude/worktrees/lecteur-959931` |
 | hors-ligne-live | `claude/hors-ligne-live-5c07b6` (+ branche à part dans Tentacle-Plugin-Seer) | `.claude/worktrees/hors-ligne-live-5c07b6` |
 | boutons | `claude/boutons-517d48` | `.claude/worktrees/boutons-517d48` |
+| droits-mobile | `claude/droits-06ed6b` | `.claude/worktrees/droits-06ed6b` |
+| famille-web | `claude/famille-web-350294` | `.claude/worktrees/famille-web-350294` |
+| web-etroit | `claude/web-etroit-3b7800` (partie de reglages) | `.claude/worktrees/web-etroit-3b7800` |
 
 ## A. Règles transverses du lot (toutes les branches)
 
@@ -51,6 +54,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | B3 | Types de messages `wt:*` jamais renommés | `grep "wt:"` : aucune chaîne supprimée | ☐ |
 | B4 | Serveur : adhésion PAR APPAREIL (deux appareils d'un même compte = deux participants distincts) | test backend dédié | ☐ |
 | B5 | Serveur : pas de saut d'intro avant « tous prêts » | test backend/partagé dédié | ☐ |
+| B7 | Sauts rapides répétés (8 × +30 s) jamais perdus dans la salle : tous les participants finissent à la même position (signalé par wt-banc, à corriger par wt-socle) | test serveur/partagé qui rejoue la rafale + banc wt-banc rejoué vert | ✗ |
 | B6 | Correctifs serveur rétrocompatibles (anciens clients bureau continuent) ; capacité si le comportement visible change | test d'un client sans le nouveau champ | ☐ |
 
 ## C. Watch Together — mobile (wt-mobile)
@@ -138,6 +142,43 @@ Branches suivies (une par worktree, `git worktree list`) :
 | K7 | Vigie : une demande bloquée n'est JAMAIS affichée « en cours » | test dans le dépôt de Vigie | ☐ |
 | K8 | Vigie sur SA branche, dans le dépôt Tentacle-Plugin-Seer ; rien de Vigie dans le cœur ni dans les changelogs des apps | `git log` des deux dépôts | ☐ |
 | K9 | Notification Vigie ouvre la bonne destination (cohérent avec H2) | code | ☐ |
+
+## M. Droits visibles = droits réels (droits-mobile, et web)
+
+Règle de Damien : « tout ce que tu as le droit de faire, tu le vois ; le reste, tu ne le vois pas ».
+Sur mobile, tablette ET web, pour tous les droits.
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| M1 | Une source unique des droits effectifs (shared/api-client) lue par mobile et web, jamais recalculée par écran | code | ☐ |
+| M2 | Garder hors ligne : absent sans le droit (mobile, tablette) | test (sans droit → entrée absente) | ☐ |
+| M3 | Watch Together : absent sans le droit (mobile, tablette, web) | test | ☐ |
+| M4 | Gérer les bibliothèques : absent sans le droit | test | ☐ |
+| M5 | Administration : absente pour un non-administrateur, et pour une session de profil | test | ☐ |
+| M6 | Demandes (Vigie) : absentes sans le droit (invité sans « Peut demander », Vigie éteint ou trop ancien) | test | ☐ |
+| M7 | Droits de la Famille (invité, membre) appliqués de même sur mobile, tablette et web | test | ☐ |
+| M8 | Utilisateur désactivé : plus de connexion possible, et une session ouverte coupée proprement (message clair, pas d'écran cassé ni de boucle) | test serveur + client | ☐ |
+| M9 | Horaires du contrôle parental : la lecture est coupée à l'heure (pas seulement refusée au démarrage) | test de la règle + lecteur | ☐ |
+| M10 | « Êtes-vous encore là ? » coupe bien la lecture après le délai sans réponse | test de la règle + lecteur | ☐ |
+| M11 | Mobile : droits en LECTURE SEULE + « Modifier sur le bureau ou le web » | capture + i18n | ☐ |
+| M12 | Contrôle côté serveur : un client qui appelle quand même la route sans droit est refusé (masquer ne suffit pas) | tests backend existants / ajoutés | ☐ |
+
+## N. Famille sur le web (famille-web)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| N1 | Famille complète sur le WEB (pas seulement le bureau) et activable depuis le web | code + capture | ☐ |
+| N2 | « Qui regarde ? » sur le web | code + capture | ☐ |
+| N3 | Sessions de profil sur le web (PIN vérifié par le serveur) | code + test | ☐ |
+| N4 | Gestion des droits de la Famille sur le web | code + capture | ☐ |
+| N5 | Bureau inchangé (même code, aucune régression) ; client LG non cassé (substitutions `App.tsx`) | tests web/bureau + build webOS si `App.tsx`/pages touchés | ☐ |
+| N6 | Capacités `family.*` respectées sur le web | test | ☐ |
+
+## O. Web étroit (web-etroit)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| O1 | Exigences à préciser par le coordinateur (branche partie de reglages) | — | ☐ |
 
 ## L. Boutons (boutons)
 
