@@ -46,11 +46,12 @@ public class OfflineStorageModule: Module {
       return false
     }
 
-    AsyncFunction("presentLiveActivity") { (state: [String: Any]) async -> Bool in
+    // Rend `shown`, `dismissed` ou `refused:<cause>` (voir `LiveActivityBridge.present`).
+    AsyncFunction("presentLiveActivity") { (state: [String: Any]) async -> String in
       #if canImport(ActivityKit) && os(iOS)
       if #available(iOS 16.2, *) { return await LiveActivityBridge.present(state) }
       #endif
-      return false
+      return "refused:unsupported"
     }
 
     AsyncFunction("endLiveActivity") { () async -> Bool in
@@ -61,6 +62,17 @@ public class OfflineStorageModule: Module {
       }
       #endif
       return false
+    }
+
+    // Le délai d'arrière-plan du suivi en direct (`BackgroundTime.swift`).
+    Function("holdBackgroundTime") { () -> Bool in
+      BackgroundTime.hold()
+      return true
+    }
+
+    Function("releaseBackgroundTime") { () -> Bool in
+      BackgroundTime.release()
+      return true
     }
 
     // La finalisation d'un fichier Allégé, et son verdict :

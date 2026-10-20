@@ -42,8 +42,11 @@ interface OfflineStorageNative {
   ): boolean;
   hideLiveTransfer?(): boolean;
   liveActivitiesEnabled?(): boolean;
-  presentLiveActivity?(state: LiveActivityState): Promise<boolean>;
+  /** `shown`, `dismissed` ou `refused:<cause>` ; un build d'avant rend un booléen. */
+  presentLiveActivity?(state: LiveActivityState): Promise<string | boolean>;
   endLiveActivity?(): Promise<boolean>;
+  holdBackgroundTime?(): boolean;
+  releaseBackgroundTime?(): boolean;
   addListener?(event: string, listener: () => void): { remove: () => void };
   /** Verdict `"ok" | "unusable" | "failed"` ; un ancien build rend encore un booléen. */
   finalizeMp4?(path: string): Promise<string | boolean>;
@@ -223,6 +226,8 @@ export interface LiveActivityState {
   fraction: number;
   /** Fin estimée (epoch ms) ; 0 : pas de compte à rebours. */
   endsAtMs: number;
+  /** Départ virtuel de la barre qui avance seule (epoch ms) ; 0 : barre fixe. */
+  barStartMs: number;
   deepLink: string;
 }
 
@@ -236,12 +241,28 @@ export function liveActivitiesEnabled(): boolean {
   }
 }
 
-export async function presentLiveActivity(state: LiveActivityState): Promise<boolean> {
-  if (Platform.OS !== "ios" || native === null || typeof native.presentLiveActivity !== "function") return false;
+/** Ce qu'iOS a fait de la Live Activity : visible, balayée par la personne, ou refusée (et pourquoi). */
+export type LiveActivityOutcome =
+  | { kind: "shown" }
+  | { kind: "dismissed" }
+  | { kind: "refused"; cause: string };
+
+/** Le verdict du natif, tel quel ; un build d'avant ne rendait qu'un booléen. */
+export function parseLiveActivityOutcome(raw: string | boolean): LiveActivityOutcome {
+  if (raw === true || raw === "shown") return { kind: "shown" };
+  if (raw === "dismissed") return { kind: "dismissed" };
+  if (typeof raw === "string" && raw.startsWith("refused:")) return { kind: "refused", cause: raw.slice("refused:".length) };
+  return { kind: "refused", cause: String(raw) };
+}
+
+export async function presentLiveActivity(state: LiveActivityState): Promise<LiveActivityOutcome> {
+  if (Platform.OS !== "ios" || native === null || typeof native.presentLiveActivity !== "function") {
+    return { kind: "refused", cause: "unavailable" };
+  }
   try {
-    return await native.presentLiveActivity(state);
-  } catch {
-    return false;
+    return parseLiveActivityOutcome(await native.presentLiveActivity(state));
+  } catch (error) {
+    return { kind: "refused", cause: String(error) };
   }
 }
 
@@ -251,5 +272,28 @@ export async function endLiveActivity(): Promise<boolean> {
     return await native.endLiveActivity();
   } catch {
     return false;
+  }
+}
+
+/**
+ * iOS : demande au système un délai d'exécution en arrière-plan (une
+ * trentaine de secondes), le temps que le suivi en direct publie un temps
+ * restant mesuré avant que le JavaScript soit suspendu. Ailleurs : `false`.
+ */
+export function holdBackgroundTime(): boolean {
+  if (Platform.OS !== "ios" || native === null || typeof native.holdBackgroundTime !== "function") return false;
+  try {
+    return native.holdBackgroundTime();
+  } catch {
+    return false;
+  }
+}
+
+export function releaseBackgroundTime(): void {
+  if (Platform.OS !== "ios" || native === null || typeof native.releaseBackgroundTime !== "function") return;
+  try {
+    native.releaseBackgroundTime();
+  } catch {
+    // Rien à rendre.
   }
 }

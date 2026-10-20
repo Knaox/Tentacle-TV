@@ -36,7 +36,7 @@ struct TransferLiveActivityWidget: Widget {
         DynamicIslandExpandedRegion(.bottom) {
           VStack(alignment: .leading, spacing: 6) {
             StatusLine(state: context.state, stale: context.isStale)
-            Bar(fraction: context.state.fraction)
+            Bar(state: context.state, stale: context.isStale)
           }
         }
       } compactLeading: {
@@ -88,7 +88,7 @@ private struct LockScreenView: View {
         }
       }
       StatusLine(state: state, stale: stale)
-      Bar(fraction: state.fraction)
+      Bar(state: state, stale: stale)
     }
   }
 }
@@ -108,12 +108,24 @@ private struct StatusLine: View {
   }
 }
 
+/// La barre : pendant un compte à rebours, elle AVANCE SEULE jusqu'à la fin
+/// estimée (`ProgressView(timerInterval:)`) — le JavaScript est suspendu
+/// derrière, iOS ne réveille l'application qu'à la fin du transfert. Sinon,
+/// l'avancement publié, tel quel.
 private struct Bar: View {
-  let fraction: Double
+  let state: TransferActivityAttributes.ContentState
+  let stale: Bool
+
+  private var tint: LinearGradient {
+    LinearGradient(colors: [violet, pink], startPoint: .leading, endPoint: .trailing)
+  }
 
   var body: some View {
-    if fraction >= 0 {
-      ProgressView(value: min(1, fraction)).tint(LinearGradient(colors: [violet, pink], startPoint: .leading, endPoint: .trailing))
+    if let end = countdownEnd(state, stale: stale), let start = state.barStart, start < end {
+      ProgressView(timerInterval: start...end, countsDown: false) { EmptyView() } currentValueLabel: { EmptyView() }
+        .tint(tint)
+    } else if state.fraction >= 0 {
+      ProgressView(value: min(1, state.fraction)).tint(tint)
     } else {
       ProgressView(value: 0).tint(violet).opacity(0.4)
     }
