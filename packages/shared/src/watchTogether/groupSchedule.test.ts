@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  computePlayDelayMs, isFutureAnchor, needsPreseek, needsStartCorrection, pendingIntentUntil, updatePlayLatency,
+  HARD_SEEK_WAIT_MAX_MS, computePlayDelayMs, hardSeekProgress, isFutureAnchor, needsPreseek, needsStartCorrection,
+  pendingIntentUntil, updatePlayLatency,
 } from "./groupSchedule";
 
 describe("isFutureAnchor", () => {
@@ -53,5 +54,23 @@ describe("needsStartCorrection", () => {
     expect(needsStartCorrection(-0.3)).toBe(true);
     expect(needsStartCorrection(0.2)).toBe(false);
     expect(needsStartCorrection(-0.2)).toBe(false);
+  });
+});
+
+describe("hardSeekProgress — un seek dur attend la reprise de la lecture", () => {
+  const watch = (lastPosS: number | null) => ({ at: 1_000, targetS: 100, lastPosS });
+
+  it("posé mais figé (segments pas encore là) : on attend, aucun nouveau seek", () => {
+    expect(hardSeekProgress(watch(100), 100, 2_800)).toEqual({ state: "waiting" });
+    expect(hardSeekProgress(watch(null), 100, 1_200)).toEqual({ state: "waiting" });
+  });
+
+  it("la lecture repart près de la cible : la latence court jusqu'à la reprise", () => {
+    expect(hardSeekProgress(watch(100), 100.1, 2_800)).toEqual({ state: "resumed", latencyS: 1.8 });
+  });
+
+  it("un lecteur resté loin derrière n'a pas « repris » ; passé le délai, on peut re-seeker", () => {
+    expect(hardSeekProgress(watch(40), 40.2, 2_000)).toEqual({ state: "waiting" });
+    expect(hardSeekProgress(watch(100), 100, 1_000 + HARD_SEEK_WAIT_MAX_MS + 1)).toEqual({ state: "expired" });
   });
 });

@@ -68,6 +68,12 @@ describe("handleWtServerMessage", () => {
     expect(toasts.filter((m) => m === "seekedBy")).toHaveLength(1);
   });
 
+  it("une invitation répondue ailleurs disparaît de la liste", () => {
+    const { h, actions } = helpers(null);
+    handleWtServerMessage({ type: "wt:inviteGone", inviteId: "i1" }, h);
+    expect(actions).toEqual([{ type: "remove_invite", inviteId: "i1" }]);
+  });
+
   it("not_in_group (salle disparue, appareil délié) : purge locale", () => {
     const { h, actions } = helpers(room());
     handleWtServerMessage({ type: "wt:error", code: "not_in_group" }, h);

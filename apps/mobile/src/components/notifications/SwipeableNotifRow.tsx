@@ -7,7 +7,7 @@ import { FONT_FAMILY, typography, useTheme, withAlpha } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { NotifStateBadgeMobile } from "./NotifStateBadgeMobile";
 import { NotifIconTile } from "./NotifIconTile";
-import { decideRowSwipe, ROW_SWIPE_SLOP } from "./rowSwipe";
+import { decideRowSwipe, ROW_SWIPE_SLOP } from "@tentacle-tv/shared";
 
 interface SwipeableNotifRowProps {
   notif: AppNotification;

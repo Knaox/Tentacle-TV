@@ -11,6 +11,7 @@ import {
   inviteToDto,
   notifyInvite,
   notifyDissolved,
+  notifyInviteGone,
   notifyInviteResult,
   roomToDto,
 } from "../services/watchTogether/broadcast";
@@ -118,6 +119,7 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
 
     const invite = takeInvite(inviteId, user.userId);
     if (!invite) return reply.status(404).send({ code: "invite_gone" });
+    notifyInviteGone(invite);
 
     const room = getRoom(invite.groupId);
     if (!room) return reply.status(404).send({ code: "group_gone" });

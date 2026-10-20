@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -67,6 +67,14 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   // Fenêtre étroite (téléphone, iPad) : les feuilles du mobile (`MirrorWtHost`) à la place de la
   // modale de salle et de la boîte des invitations du bureau ; la bande de l'accueil dit l'« ailleurs ».
   const mirror = useMirror();
+
+  // Plus rien à répondre (réponse donnée ici ou sur un autre appareil) : la
+  // boîte se referme — sinon elle restait « ouverte » et la prochaine
+  // invitation la faisait surgir par-dessus le lecteur.
+  const noInvites = value.invites.length === 0;
+  useEffect(() => {
+    if (noInvites) setInboxOpen(false);
+  }, [noInvites]);
 
   return (
     <WatchTogetherContext.Provider value={value}>

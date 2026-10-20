@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
-import { useTranscodeSeek, type TranscodeSeek } from "@tentacle-tv/api-client";
+import { useTranscodeSeek, type PlayerTransportRef, type TranscodeSeek } from "@tentacle-tv/api-client";
 import type { SkipFlash } from "../components/SkipBadge";
 import { observeSeek, EMPTY_SEEK, SEEK_WATCH_PERIOD_MS } from "./seekLanding";
 import { hlsSeekOutsideRun } from "./hlsTimeline";
@@ -11,6 +11,9 @@ interface UseSmartSeekOptions {
   /** Veille de calage du saut — un INTERVALLE, cf. `seekLanding.ts`. */
   seekStallTimer: MutableRefObject<ReturnType<typeof setInterval> | undefined>;
   currentTimeRef: MutableRefObject<number>;
+  /** Le port Watch Together du lecteur, s'il y en a un : sa position est lue EN
+   *  DIRECT sur l'élément (`currentTimeRef` suit le rendu, avec du retard). */
+  transportRef?: PlayerTransportRef;
   /** Début de la passe ffmpeg de la session hls.js (temps élément), null sinon
    *  — un saut hors de la passe renégocie une session (cf. `hlsTimeline.ts`). */
   hlsRunStartRef?: MutableRefObject<number | null>;
@@ -65,7 +68,7 @@ function bufferEnd(video: HTMLVideoElement): number | null {
 }
 
 export function useSmartSeek({
-  videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef, hlsRunStartRef,
+  videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef, transportRef, hlsRunStartRef,
   src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, reportLoading, onSeekToEnd,
 }: UseSmartSeekOptions) {
   // 3-level smart seek — handles direct play, HLS, and progressive transcode streams.
@@ -232,7 +235,9 @@ export function useSmartSeek({
   // Converti par le serveur (ni lecture directe) : des appuis rapides font UN
   // saut, depuis la cible en cours — un seul ffmpeg relancé par Jellyfin.
   const gate = useTranscodeSeek({
-    transcoding: !isDirectPlay, duration: 0, position: () => currentTimeRef.current, apply: handleSeek,
+    transcoding: !isDirectPlay, duration: 0, apply: handleSeek,
+    // La base d'un appui relatif : la position du moment, lue en direct si possible.
+    position: () => transportRef?.current?.getPositionSeconds() ?? currentTimeRef.current,
   });
   gateRef.current = gate;
 

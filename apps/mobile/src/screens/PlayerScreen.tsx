@@ -142,7 +142,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   const group = useMobileGroupPlayback({ itemId, start: groupStart, pb, paused, setPaused, buffering: isBuffering, videoReady,
     seek, handleNextEpisode, handlePrevEpisode, failed: failure.problem !== null });
   // L'image ailleurs : sur une TV (Google Cast, Android), ou en image dans l'image (sans habillage).
-  const { cast, pip } = usePlayerModes({ itemId, item: pb.item, pb, engineRef, paused, setPaused, seekBy: group.seekBy, started, ended,
+  const { cast, pip } = usePlayerModes({ itemId, item: pb.item, pb, engineRef, paused, setPaused: group.setPaused, seekBy: group.seekBy, started, ended,
     failed: failure.problem !== null, airPlaying: isAirPlaying, leave: leavePlayer, hideOverlay: () => { setOverlayVisible(false); group.chrome.close(); } });
 
   // Rien de chargé en 20 s : relance transcodée, puis le message.
@@ -168,11 +168,11 @@ export function PlayerScreen({ itemId, version }: Props) {
   // flux au retour. iOS ne bouge pas — la lecture en fond y est voulue.
   usePlayerBackground(pb, () => pip.active || cast.active);
 
-  // La télécommande de Jellyfin — tableau de bord Tentacle ou Jellyfin.
+  // La télécommande de Jellyfin — tableau de bord Tentacle ou Jellyfin (en séance, par le groupe).
   usePlayerRemote({
-    stop: leavePlayer, next: handleNextEpisode, previous: handlePrevEpisode,
-    pause: () => setPaused(true), play: () => setPaused(false), isPaused: () => paused,
-    seekTo: seek.seekTo, positionSeconds: () => pb.positionRef.current,
+    stop: leavePlayer, next: group.handleNextEpisode, previous: group.handlePrevEpisode,
+    pause: () => group.setPaused(true), play: () => group.setPaused(false), isPaused: () => paused,
+    seekTo: group.seekTo, positionSeconds: () => pb.positionRef.current,
     audio: handleSelectAudio, subtitle: (index) => handleSelectSubtitle(index ?? -1),
   });
 
@@ -181,8 +181,8 @@ export function PlayerScreen({ itemId, version }: Props) {
     seek: handleSeek, setPaused, simulateAirPlay: onAirPlayRoute, leave: leavePlayer });
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
-  // « Vous regardez encore ? » — tout toucher sur le lecteur est une présence.
-  const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started, setPaused });
+  // « Vous regardez encore ? » — tout toucher est une présence ; muet pendant une séance Watch Together.
+  const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started, setPaused, enabled: !group.active });
 
   const statusBar = <PlayerStatusBar controlsVisible={(chrome.shown || cast.active) && started} pipActive={pip.active} />;
   // Le message — quoi, pourquoi, quoi faire —, une fois l'échec diagnostiqué.

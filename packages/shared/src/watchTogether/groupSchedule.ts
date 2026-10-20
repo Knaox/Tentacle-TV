@@ -72,3 +72,39 @@ export function updateSeekLatency(previous: number | null, measuredS: number): n
 export function needsStartCorrection(behindS: number): boolean {
   return Math.abs(behindS) > WT_LATE_START_SEEK_S;
 }
+
+/** Un seek dur de la boucle de dérive, suivi jusqu'à la REPRISE de la lecture. */
+export interface HardSeekWatch {
+  /** Instant du seek (ms). */
+  at: number;
+  /** Cible visée (secondes film). */
+  targetS: number;
+  /** Position lue au battement précédent, null au premier. */
+  lastPosS: number | null;
+}
+
+/** Posé : à moins de ça de la cible, ou au-delà (secondes). */
+export const HARD_SEEK_LANDED_S = 0.5;
+/** Au-delà, on cesse d'attendre la reprise : un nouveau seek redevient possible. */
+export const HARD_SEEK_WAIT_MAX_MS = 5_000;
+
+/**
+ * Où en est un seek dur : `resumed` quand la lecture AVANCE de nouveau près
+ * de la cible (la latence mesurée court jusque-là, attente des segments
+ * comprise — c'est elle que le lookahead doit couvrir) ; `waiting` tant
+ * qu'elle n'a pas repris : AUCUN nouveau seek dur (un lecteur qui attend ses
+ * segments — transcodage — prend du retard sur la salle pendant l'attente ;
+ * le re-sauter le relancerait dans la même attente, sans fin) ;
+ * `expired` passé HARD_SEEK_WAIT_MAX_MS.
+ */
+export function hardSeekProgress(
+  watch: HardSeekWatch,
+  posS: number,
+  now: number,
+): { state: "resumed"; latencyS: number } | { state: "waiting" } | { state: "expired" } {
+  const advancing = watch.lastPosS !== null && posS - watch.lastPosS > 0.02;
+  if (advancing && posS >= watch.targetS - HARD_SEEK_LANDED_S) {
+    return { state: "resumed", latencyS: (now - watch.at) / 1000 };
+  }
+  return now - watch.at > HARD_SEEK_WAIT_MAX_MS ? { state: "expired" } : { state: "waiting" };
+}

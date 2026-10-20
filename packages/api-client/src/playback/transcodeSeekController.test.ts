@@ -112,6 +112,14 @@ describe("createTranscodeSeekController", () => {
     expect(applied).toEqual([130, 160, 190, 220, 250, 280, 310, 340]);
   });
 
+  it("lecture directe : un saut ABSOLU (barre, saut de la salle) rompt la chaîne — l'appui suivant part de la position (B7-bis)", () => {
+    const { controller, applied, setPosition } = setup({ transcoding: false, position: 100 });
+    controller.request({ to: 113 }); // saut distant appliqué par le moteur
+    setPosition(143); // puis la salle l'a posé plus loin, par un autre chemin
+    controller.request({ by: 30 });
+    expect(applied).toEqual([113, 173]);
+  });
+
   it("lecture directe : après un calme, la base redevient la position lue", () => {
     const { controller, applied, setPosition } = setup({ transcoding: false, position: 100 });
     controller.request({ by: 30 });
