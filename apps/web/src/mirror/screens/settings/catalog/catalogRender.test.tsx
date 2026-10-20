@@ -37,6 +37,8 @@ const web: SettingsCatalogContext = {
   advancedEngine: false,
   engineOptions: false,
   liveTransfers: false,
+  bootIntro: false,
+  abilities: new Set(["tickets", "manageAccount", "pairDevices", "push", "invites"]),
   profileSession: false,
 };
 

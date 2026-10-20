@@ -37,6 +37,8 @@ const base: SettingsCatalogContext = {
   advancedEngine: false,
   engineOptions: false,
   liveTransfers: false,
+  bootIntro: false,
+  abilities: new Set(["tickets", "manageAccount", "pairDevices", "push", "invites"]),
   profileSession: false,
 };
 
@@ -46,7 +48,7 @@ describe("le web étroit rend le catalogue partagé des réglages", () => {
       const key = entryKey(entry);
       const mobileOnly = entry.platforms !== undefined && !entry.platforms.includes("web");
       if (mobileOnly) {
-        expect(WEB_UNRENDERED[key], `${key} : raison manquante dans WEB_UNRENDERED`).toMatch(/\S{10,}/);
+        expect(WEB_UNRENDERED[key], `${key} : raison manquante dans WEB_UNRENDERED`).toSatisfy((reason: string | undefined) => (reason?.trim().length ?? 0) >= 20);
       } else {
         expect(WEB_UNRENDERED[key], `${key} : le catalogue le donne au web`).toBeUndefined();
         expect(webRenders(entry), `${key} : aucun composant web`).toBe(true);

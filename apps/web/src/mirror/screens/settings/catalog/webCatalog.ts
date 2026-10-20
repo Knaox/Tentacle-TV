@@ -31,6 +31,8 @@ export const WEB_UNRENDERED: Readonly<Record<string, string>> = {
   "control:backgroundTransfers": "Transferts en arrière-plan : propres aux apps qui gardent des titres.",
   "control:notifyReady": "Notification « prêt hors ligne » : notification LOCALE des apps.",
   "control:liveTransfers": "Activité en direct des transferts (île dynamique, notification Android) : natif.",
+  "control:bootIntro": "Ouverture animée du logo au démarrage : propre aux apps natives.",
+  "control:bootSound": "Son de l'ouverture au démarrage : propre aux apps natives.",
   "action:removeAllOffline": "Tout retirer de l'appareil : le navigateur ne garde pas de titres.",
   "pane:notifications": "Catégories des notifications PUSH : un navigateur n'en reçoit pas (la cloche reste).",
   "action:changeServer": "Dans un navigateur, le serveur EST l'adresse ; le web étroit ne se monte jamais dans l'app de bureau.",
@@ -40,6 +42,7 @@ export const WEB_UNRENDERED: Readonly<Record<string, string>> = {
 export type WebControlId = Exclude<
   SettingsControlId,
   "liquidGlass" | "subtitleSize" | "subtitlePosition" | "engine" | "engineOptions" | "wifiOnly" | "backgroundTransfers" | "notifyReady" | "liveTransfers"
+  | "bootIntro" | "bootSound"
 >;
 export type WebPaneId = Exclude<SettingsPaneId, "notifications">;
 export type WebScreenId = Exclude<SettingsScreenId, "offlineTitles">;
