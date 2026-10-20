@@ -75,12 +75,9 @@ export function PushRegistrationSync({
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
       const type = data?.type ?? "";
-      // Notifications LOCALES du hors ligne : le titre prêt s'il est seul,
-      // sinon le catalogue de l'appareil ; « Espace insuffisant », la gestion.
+      // Notifications LOCALES du hors ligne : l'écran « Sur cet appareil ».
       if (type === "offline_ready" || type === "offline_disk_full") {
-        const itemId = typeof data?.itemId === "string" ? data.itemId : null;
-        const route = type === "offline_disk_full" ? "/on-device" : itemId ? `/on-device/item/${itemId}` : "/on-device/library";
-        router.push(route as never);
+        router.push("/on-device" as never);
         return;
       }
       // Une invitation de la Famille : le push ne fait qu'OUVRIR l'affiche, qui
