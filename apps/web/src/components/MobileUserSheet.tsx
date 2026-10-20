@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
+import { useAccountAbilities } from "@tentacle-tv/api-client";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -49,7 +50,9 @@ export function MobileUserSheet({ onClose }: Props) {
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
+  const abilities = useAccountAbilities();
   const groups = buildUserMenuGroups({
+    abilities,
     t,
     isAdmin,
     navigate: navigateTo,
