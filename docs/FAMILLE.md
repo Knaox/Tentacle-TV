@@ -541,7 +541,12 @@ plateforme, la capacité et la garde du jeton du compte changent, en UN endroit 
   socket : le téléphone garde dans son pot le cookie que `/api/auth/login` lui
   a posé (le compte) et le renvoie partout, y compris pendant la session d'un
   profil. Pour la page web, rien ne change : elle présente le même jeton des
-  deux façons.
+  deux façons. Le proxy Jellyfin et la vignette trickplay suivent la règle
+  après les en-têtes (le flux d'AVPlayer, `api_key` du profil). Et le serveur
+  ne donne plus ce cookie qu'aux navigateurs : il le retire à une app native à
+  sa connexion ou à son rafraîchissement (`authCookie.ts` ›
+  `offerSessionCookie`). La WebView des extensions sur Android partageait ce
+  pot : une demande de Vigie dans un profil partait au nom du compte.
 - **La réserve du serveur** (`routes/family/accountEscrow.ts`) : choisir le
   profil d'un autre (`platform: "web"`) réécrit les cookies — le profil devient
   `tentacle_token`, le jeton du compte part dans `tentacle_account_token`
