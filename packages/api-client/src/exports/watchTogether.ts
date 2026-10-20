@@ -34,4 +34,4 @@ export { useGifSearch, type GifItem, type GifsPayload } from "../watchTogether/c
 export * from "../watchTogether/affinity/affinityStore";
 export { handleAffinityMessage, reconcileAffinity, type AffinityEventContext } from "../watchTogether/affinity/affinityEvents";
 export { useAffinitySession } from "../watchTogether/affinity/useAffinitySession";
-export { AFFINITY_KINDS, KIND_LABEL_KEY, formatNames, memberName } from "../watchTogether/affinity/affinityText";
+export { launchAffinityMatchFor, type AffinityLaunchTarget } from "../watchTogether/affinity/launchAffinityMatchFor";

@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { memberName, useAffinitySession } from "@tentacle-tv/api-client";
+import { useAffinitySession } from "@tentacle-tv/api-client";
+import { memberName } from "@tentacle-tv/shared";
 import { useToast } from "../../contexts/ToastContext";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { closeRoomModal } from "../roomModalStore";

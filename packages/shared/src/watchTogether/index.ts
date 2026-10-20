@@ -8,3 +8,6 @@ export * from "./readyGate";
 export * from "./groupSchedule";
 // Le sélecteur d'emojis du chat : les mêmes réactions partout.
 export * from "./emojiData";
+// Ce qu'on dit d'un membre, et de l'affinité (types, noms).
+export * from "./memberPresentation";
+export * from "./affinityText";
