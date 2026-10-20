@@ -2,6 +2,8 @@ import type { PlaybackSettings } from "../../playback/playbackSettings";
 import type { WebSocket } from "@fastify/websocket";
 import type { SegmentType } from "../../playback/segmentTypes";
 import type { WtChatMessageDto, WtPauseReason, WtWaitCause } from "./protocol";
+import type { MemberDevice } from "./memberDevices";
+import type { ReadyGate } from "./syncReadyGate";
 
 /**
  * Watch Together — les formes de l'état en mémoire (salles, membres,
@@ -30,6 +32,9 @@ export interface RoomMember {
    *  fermeture libère l'attente — un compte peut garder un autre socket ouvert
    *  (second onglet) alors que son lecteur est mort. */
   playbackSocket: WebSocket | null;
+  /** Les appareils LIÉS à la salle (hash de leur jeton) — 1.32.0, adhésion par
+   *  appareil (`memberDevices.ts`). Vide : comportement d'avant, tout le compte. */
+  devices: Map<string, MemberDevice>;
 }
 
 /**
@@ -94,6 +99,8 @@ export interface Room {
   skipHistory: Map<string, number>;
   /** Minuteur du saut armé (réarmé de lui-même tant que la salle est en pause). */
   skipTimer: ReturnType<typeof setTimeout> | null;
+  /** « Tous prêts » pour le titre en cours (`syncReadyGate.ts`), null sans titre. */
+  readyGate: ReadyGate | null;
   /** Dernière diffusion due aux balises (`wt:tick`) — au plus une par 5 s. */
   lastTickBroadcastAt: number;
   members: Map<string, RoomMember>;

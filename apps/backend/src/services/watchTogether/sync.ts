@@ -14,6 +14,7 @@ import {
   requestResumeOnRelease,
 } from "./syncBarrier";
 import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
+import { armReadyGate, dropReadyGate } from "./syncReadyGate";
 
 export { bumpEpoch } from "./syncSchedule";
 
@@ -140,6 +141,7 @@ export function applyCommand(
       // courant ; premier arrivé gagne, les suivants sont silencieusement ignorés.
       if (msg.fromItemId !== room.itemId) return { kind: "ignore" };
       if (msg.itemId === room.itemId) return { kind: "ignore" };
+      const firstLaunch = room.itemId === null;
       room.itemId = msg.itemId;
       room.contextItemId = msg.itemId;
       // Démarrage gelé : attente des membres qui REGARDAIENT (auto-follow →
@@ -166,6 +168,12 @@ export function applyCommand(
       room.waitCause = "buffering";
       room.barrier = { id: room.barrierId, targetTicks: clampTicks(msg.startPositionTicks ?? 0), cause: "buffering", openedAt: now, resumeOnRelease: true, timer: null };
       for (const userId of waitFor) joinBarrier(room, userId, now);
+      // « Tous prêts » : au premier lancement, tous ceux en ligne suivent ;
+      // ensuite, ceux qui regardaient — et le lanceur, toujours.
+      const expected = firstLaunch
+        ? [...room.members.keys()].filter((userId) => isUserOnline(userId))
+        : [...waitFor, member.userId];
+      armReadyGate(room, msg.itemId, expected, now);
       touch(room, now, clampTicks(msg.startPositionTicks ?? 0));
       return { kind: "broadcast", cause: "setItem" };
     }
@@ -243,6 +251,7 @@ export function removeMemberAndSync(userId: string): MemberRemoval | null {
   if (result.dissolved) {
     resetSkips(result.room);
     dropBarrier(result.room);
+    dropReadyGate(result.room);
   } else {
     resumed = pruneWaiting(result.room, userId, now);
     if (!resumed) touch(result.room, now);

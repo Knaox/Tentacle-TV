@@ -3,6 +3,7 @@ import { WT_GRACE_PERIOD_MS } from "./protocol";
 import { memberIndex, getRoomOf, rooms } from "./roomRegistry";
 import { deleteInvitesForGroup } from "./roomInvites";
 import type { RemovalResult, Room, RoomMember, UserBasic } from "./roomTypes";
+import { bindDevice, clearDeviceGraces } from "./memberDevices";
 
 /**
  * Watch Together — composition des groupes : création, adhésion, retrait,
@@ -25,13 +26,15 @@ function newMember(user: UserBasic, now: number): RoomMember {
     rttMs: null,
     driftMs: null,
     playbackSocket: null,
+    devices: new Map(),
   };
 }
 
 // ── Rooms ──
 
-/** Crée un groupe avec `user` comme hôte. Renvoie null si déjà en groupe. */
-export function createRoom(user: UserBasic, contextItemId: string | null): Room | null {
+/** Crée un groupe avec `user` comme hôte. Renvoie null si déjà en groupe.
+ *  `deviceKey` : l'appareil qui crée — le seul lié au départ (1.32.0). */
+export function createRoom(user: UserBasic, contextItemId: string | null, deviceKey?: string): Room | null {
   if (memberIndex.has(user.userId)) return null;
   const now = Date.now();
   const room: Room = {
@@ -52,6 +55,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     waitCause: null,
     pendingSkip: null,
     skipHistory: new Map(),
+    readyGate: null,
     skipTimer: null,
     lastTickBroadcastAt: 0,
     members: new Map([[user.userId, newMember(user, now)]]),
@@ -63,18 +67,25 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     lastGifAt: new Map(),
     createdAt: now,
   };
+  if (deviceKey) bindDevice(room.members.get(user.userId)!, deviceKey, now);
   rooms.set(room.groupId, room);
   memberIndex.set(user.userId, room.groupId);
   return room;
 }
 
-/** Ajoute un membre (idempotent). Renvoie null si le user est dans un AUTRE groupe. */
-export function addMember(room: Room, user: UserBasic): RoomMember | null {
+/** Ajoute un membre (idempotent). Renvoie null si le user est dans un AUTRE groupe.
+ *  `deviceKey` : l'appareil qui entre — lié à la salle, à côté des autres
+ *  appareils déjà liés du compte s'il y était déjà. */
+export function addMember(room: Room, user: UserBasic, deviceKey?: string): RoomMember | null {
   const existing = room.members.get(user.userId);
-  if (existing) return existing;
+  if (existing) {
+    if (deviceKey) bindDevice(existing, deviceKey);
+    return existing;
+  }
   const current = memberIndex.get(user.userId);
   if (current && current !== room.groupId) return null;
   const member = newMember(user, Date.now());
+  if (deviceKey) bindDevice(member, deviceKey);
   room.members.set(user.userId, member);
   memberIndex.set(user.userId, room.groupId);
   return member;
@@ -109,6 +120,7 @@ function detachMember(userId: string): RemovalResult | null {
   if (!room) return null;
   const removed = room.members.get(userId)!;
   cancelGrace(userId);
+  clearDeviceGraces(removed);
   removed.playbackSocket = null;
   room.members.delete(userId);
   room.waitingFor.delete(userId);

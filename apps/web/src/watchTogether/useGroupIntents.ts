@@ -9,7 +9,7 @@ import {
   armEcho, clearPendingIntent, isApplying, seekLookaheadS, setPendingIntent, REMOTE_JUMP_THRESHOLD_S,
   type GroupSyncSharedRefs,
 } from "./groupSyncShared";
-import { updatePlayLatency } from "./groupSchedule";
+import { updatePlayLatency } from "@tentacle-tv/shared";
 import { wtLog } from "./wtLog";
 
 /**

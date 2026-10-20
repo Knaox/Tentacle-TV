@@ -9,7 +9,7 @@ import {
   armEcho, cancelScheduledPlay, clearPendingIntent, isBarrierParticipant, seekLookaheadS, sendBarrierReady,
   setTransportRate, REMOTE_JUMP_THRESHOLD_S, type GroupSyncSharedRefs, type ScheduledPlay,
 } from "./groupSyncShared";
-import { computePlayDelayMs, isFutureAnchor, needsPreseek } from "./groupSchedule";
+import { computePlayDelayMs, isFutureAnchor, needsPreseek } from "@tentacle-tv/shared";
 import { wtLog } from "./wtLog";
 
 /**

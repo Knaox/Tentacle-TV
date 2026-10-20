@@ -7,6 +7,9 @@ import {
   type FamilyWsMessage,
 } from "../family/familyProtocol";
 import type { AccountAccessWsMessage } from "../accountAccess/accountAccessContract";
+import { bindDeviceSocket, deviceKeyOfSocket, deviceSocketsOf, unbindDeviceSocket } from "./wsDeviceSockets";
+
+export { deviceKeyOfSocket, isDeviceOnline, onDevicePresenceChange } from "./wsDeviceSockets";
 
 /** Carousel identifiers for home:update events. */
 export type CarouselId = string;
@@ -38,12 +41,9 @@ export type WsServerMessage =
 /** Map of userId -> active WebSocket connections */
 const connections = new Map<string, Set<WebSocket>>();
 
-/** Map of device tokenHash -> its active WebSocket connection(s).
- *  Permet de cibler UNE seule socket d'appareil (TV appairée) à la révocation,
- *  sans toucher les autres appareils du même compte. Les tokens « user »
- *  (web/mobile connectés directement) y figurent aussi mais leur hash ne
- *  correspond à aucun pairedDevice, donc ils ne sont jamais ciblés. */
-const deviceSockets = new Map<string, Set<WebSocket>>();
+/** Les sockets par appareil (hash du jeton) vivent dans `wsDeviceSockets.ts` :
+ *  la révocation d'un jumelage y cible UNE socket d'appareil, Watch Together y
+ *  lit l'adhésion par appareil. */
 
 /**
  * Au plus une annonce par (compte, rangée) toutes les 5 s — mais jamais une
@@ -133,14 +133,7 @@ export function addConnection(userId: string, ws: WebSocket, tokenHash?: string)
   set.add(ws);
   if (wasOffline) emitPresence(userId, true);
 
-  if (tokenHash) {
-    let dset = deviceSockets.get(tokenHash);
-    if (!dset) {
-      dset = new Set();
-      deviceSockets.set(tokenHash, dset);
-    }
-    dset.add(ws);
-  }
+  if (tokenHash) bindDeviceSocket(userId, ws, tokenHash);
 }
 
 export function removeConnection(userId: string, ws: WebSocket, tokenHash?: string): void {
@@ -153,13 +146,7 @@ export function removeConnection(userId: string, ws: WebSocket, tokenHash?: stri
     }
   }
 
-  if (tokenHash) {
-    const dset = deviceSockets.get(tokenHash);
-    if (dset) {
-      dset.delete(ws);
-      if (dset.size === 0) deviceSockets.delete(tokenHash);
-    }
-  }
+  if (tokenHash) unbindDeviceSocket(userId, ws, tokenHash);
 }
 
 /** Révocation d'un appareil appairé : pousse `session:revoked` à sa/ses
@@ -167,8 +154,7 @@ export function removeConnection(userId: string, ws: WebSocket, tokenHash?: stri
  *  immédiatement (sinon la détection ne survient que passivement, au prochain
  *  échec d'auth — jamais si l'appareil reste inactif sur un écran en cache). */
 export function revokeDeviceByTokenHash(tokenHash: string): void {
-  const dset = deviceSockets.get(tokenHash);
-  if (!dset) return;
+  const dset = deviceSocketsOf(tokenHash);
   for (const ws of dset) {
     send(ws, { type: "session:revoked" });
     if (ws.readyState === 1 /* OPEN */) ws.close(4009, "Device revoked");
@@ -179,8 +165,7 @@ export function revokeDeviceByTokenHash(tokenHash: string): void {
  *  à « Qui regarde ? » (elle ne se déjumelle pas : ce n'est pas
  *  `session:revoked`). Poussé puis fermé (4010). */
 export function endProfileSessionSockets(tokenHash: string, reason: FamilyProfileEndReason): void {
-  const dset = deviceSockets.get(tokenHash);
-  if (!dset) return;
+  const dset = deviceSocketsOf(tokenHash);
   for (const ws of dset) {
     send(ws, { type: "family:profile-ended", reason });
     if (ws.readyState === 1 /* OPEN */) ws.close(FAMILY_PROFILE_ENDED_CLOSE_CODE, "Profile session ended");
@@ -191,8 +176,7 @@ export function endProfileSessionSockets(tokenHash: string, reason: FamilyProfil
  *  d'une TV contre son jeton « profils seuls ») : fermées sans un mot — la TV
  *  qui vient de l'échanger les a déjà quittées. */
 export function closeDeviceSockets(tokenHash: string, code: number, reason: string): void {
-  const dset = deviceSockets.get(tokenHash);
-  if (!dset) return;
+  const dset = deviceSocketsOf(tokenHash);
   for (const ws of dset) if (ws.readyState === 1 /* OPEN */) ws.close(code, reason);
 }
 
@@ -246,7 +230,7 @@ export function sendToUser(
 ): void {
   const set = connections.get(userId);
   if (!set) return;
-  const skip = opts?.exceptTokenHash ? deviceSockets.get(opts.exceptTokenHash) : undefined;
+  const skip = opts?.exceptTokenHash ? deviceSocketsOf(opts.exceptTokenHash) : undefined;
   for (const ws of set) {
     if (ws === opts?.exceptSocket || skip?.has(ws)) continue;
     send(ws, msg);
@@ -258,4 +242,31 @@ export function getConnectionCount(): number {
   let total = 0;
   for (const set of connections.values()) total += set.size;
   return total;
+}
+
+/** Watch Together (1.32.0) : les seules sockets du compte ouvertes par ces
+ *  APPAREILS (hash de leur jeton) — l'adhésion à une salle est par appareil.
+ *  `exceptSocket` : la connexion qui vient d'écrire (relais des refus). */
+export function sendToDevices(
+  deviceKeys: Iterable<string>,
+  msg: WsServerMessage,
+  opts?: { exceptSocket?: WebSocket },
+): void {
+  for (const key of deviceKeys) {
+    for (const ws of deviceSocketsOf(key)) {
+      if (ws !== opts?.exceptSocket) send(ws, msg);
+    }
+  }
+}
+
+/** Watch Together (1.32.0) : les sockets du compte qui n'appartiennent PAS à ces
+ *  appareils — l'avis « groupe en cours sur un autre appareil ». */
+export function sendToOtherDevices(userId: string, deviceKeys: ReadonlySet<string> | ReadonlyMap<string, unknown>, msg: WsServerMessage): void {
+  const set = connections.get(userId);
+  if (!set) return;
+  for (const ws of set) {
+    const key = deviceKeyOfSocket(ws);
+    if (key !== undefined && deviceKeys.has(key)) continue;
+    send(ws, msg);
+  }
 }

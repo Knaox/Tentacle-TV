@@ -1,4 +1,4 @@
-import { sendToUser } from "../../wsManager";
+import { sendToMember } from "../memberDevices";
 import type { WtAffinityCause, WtAffinityStateDto, WtServerMessage } from "../protocol";
 import { createRoomQueue } from "../roomQueue";
 import type { Room } from "../roomTypes";
@@ -40,7 +40,9 @@ export function broadcastAffinity(
   const state = session ? sessionToDto(session, bumpAffinitySeq(room)) : null;
   const match = extra.match ? matchToDto(extra.match) : null;
   const matchKeys = extra.matchKeys ?? [];
-  const recipients = [...room.members.keys()];
+  // Aux appareils liés de chaque membre (1.32.0) : un autre appareil du compte n'en voit rien.
+  const members = [...room.members.values()];
+  const recipients = members.map((member) => member.userId);
   const judged = [...(state?.proposals ?? []), ...(match ? [match] : [])];
 
   const send = (seen: ReadonlySet<string>) => {
@@ -53,7 +55,7 @@ export function broadcastAffinity(
       ...(fresh.length > 0 ? { matchKeys: fresh } : {}),
       ...(match && seen.has(match.key) ? { match } : {}),
     };
-    for (const userId of recipients) sendToUser(userId, message);
+    for (const member of members) sendToMember(member, message);
   };
   if (judged.length === 0) inBroadcastOrder(room, () => send(new Set()));
   else inBroadcastOrder(room, async () => send(await keysSeenByAll(recipients, judged)), true);

@@ -219,6 +219,8 @@ export * from "./adminSessions/explain";
 // Les invitations : le contrat de `/api/invites`, ses bornes, le statut et le lien.
 export * from "./adminInvites/invites";
 export * from "./types/watchTogether";
+// Watch Together : règles pures (état de salle, « tous prêts », synchronisation).
+export * from "./watchTogether";
 export * from "./constants";
 // Familles de plateformes de streaming (ids TMDB frères, motifs de nom) :
 // la source unique des filtres « selon vos abonnements », reflétée dans le

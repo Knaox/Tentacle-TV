@@ -1,5 +1,6 @@
 import type { JellyfinUser } from "../../middleware/auth";
-import { sendToUser } from "../wsManager";
+import type { WsServerMessage } from "../wsManager";
+import { sendToMember, sendToRoom } from "./memberDevices";
 import type { Room } from "./roomTypes";
 import {
   WT_CHAT_HISTORY_SIZE,
@@ -22,10 +23,9 @@ import {
 
 /** Diffuse un message serveur à TOUS les membres de la room (émetteur inclus —
  *  l'écho sert d'accusé de réception côté client). */
-function broadcastToMembers(room: Room, msg: Parameters<typeof sendToUser>[1]): void {
-  for (const memberId of room.members.keys()) {
-    sendToUser(memberId, msg);
-  }
+function broadcastToMembers(room: Room, msg: WsServerMessage): void {
+  // Aux appareils liés seulement (1.32.0, adhésion par appareil).
+  sendToRoom(room, msg);
 }
 
 /** Message texte : rate limit, ajout au fil, diffusion. */
@@ -91,5 +91,6 @@ export function handleGif(
 /** Envoie le fil complet à UN membre (join, syncRequest). Envoyé même vide :
  *  le client remet son état de chat à zéro sur ce message. */
 export function sendChatHistory(userId: string, room: Room): void {
-  sendToUser(userId, { type: "wt:chatHistory", groupId: room.groupId, messages: room.chat });
+  const member = room.members.get(userId);
+  if (member) sendToMember(member, { type: "wt:chatHistory", groupId: room.groupId, messages: room.chat });
 }

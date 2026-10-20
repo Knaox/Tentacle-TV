@@ -1,5 +1,6 @@
 import { allRooms, getRoomOf } from "./roomRegistry";
 import { broadcastRoom, notifyDissolved } from "./broadcast";
+import { notifyElsewhere } from "./elsewhere";
 import { refreshHostSettings } from "./hostSettings";
 import { removeMemberAndSync } from "./sync";
 import { forgetAccessOnPolicyWrites, revokedMembers } from "./accountAccess";
@@ -28,7 +29,8 @@ export async function ejectFromRoom(userId: string, reason: WtDissolvedReason): 
   if (!room) return false;
   const result = removeMemberAndSync(userId);
   if (!result) return false;
-  notifyDissolved(userId, room.groupId, reason);
+  notifyDissolved(result.removed, room.groupId, reason);
+  notifyElsewhere(userId);
   if (!result.dissolved) {
     // Nouvel hôte : ses réglages d'abord, puis le départ diffusé.
     if (result.newHostId) await refreshHostSettings(result.room);
