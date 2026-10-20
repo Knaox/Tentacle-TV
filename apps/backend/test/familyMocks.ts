@@ -17,6 +17,8 @@ export interface HarnessState {
   unpaired: string[];
   closed: string[];
   pushes: Array<{ userId: string; title: string; body: string; data?: Record<string, unknown> }>;
+  /** Les comptes dont un socket est ouvert (`connectedUserIds`). */
+  online: string[];
 }
 
 export function freshState(): HarnessState {
@@ -35,6 +37,7 @@ export function freshState(): HarnessState {
     unpaired: [],
     closed: [],
     pushes: [],
+    online: [],
   };
 }
 
@@ -65,6 +68,7 @@ export function wsManagerMock(get: Get) {
     closeDeviceSockets: (hash: string) => void get().closed.push(hash),
     broadcastToUser: () => undefined,
     isUserOnline: () => false,
+    connectedUserIds: () => [...get().online],
   };
 }
 

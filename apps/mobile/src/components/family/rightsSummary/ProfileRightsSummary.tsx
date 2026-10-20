@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useFamilyLibraries, useServerCapability } from "@tentacle-tv/api-client";
+import { useAppConfig, useFamilyLibraries, useServerCapability } from "@tentacle-tv/api-client";
 import { familyRightsSummary, type FamilyProfileDto, type RightsSummaryKind } from "@tentacle-tv/shared";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { RIGHTS_SUMMARY_ICONS, readsProfileLibraries } from "./rightsSummaryIcons";
@@ -22,9 +22,11 @@ export function ProfileRightsSummary({ profile, omit = [] }: {
   const capable = useServerCapability("family.libraryLimits");
   const reads = readsProfileLibraries({ capable, parentalShown: profile.parental !== undefined });
   const libraries = useFamilyLibraries(profile.userId, { enabled: reads });
+  // Ce que l'administration a coupé (demandes des invités, profils invités) n'a pas de ligne.
+  const family = useAppConfig().data?.features.family;
   const summary = useMemo(
-    () => familyRightsSummary({ profile, libraries: reads ? libraries.data ?? null : null }),
-    [profile, reads, libraries.data],
+    () => familyRightsSummary({ profile, libraries: reads ? libraries.data ?? null : null, family }),
+    [profile, reads, libraries.data, family],
   );
   const partial = omit.length > 0;
   const lines = summary.lines.filter((line) => !omit.includes(line.kind));

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { familyErrorFromApi, useFamilyOverview } from "@tentacle-tv/api-client";
-import type { FamilyOverviewDto } from "@tentacle-tv/shared";
+import { familyEntryShown, type FamilyOverviewDto } from "@tentacle-tv/shared";
 import { DissolveSection, FamilyNotice, LeaveSection, MyPinSection } from "@/components/family/AccountSections";
 import { FamilySection } from "@/components/family/FamilySection";
 import { IncomingInvitationsSection } from "@/components/family/MembershipSections";
@@ -36,7 +36,8 @@ export function FamilyScreen() {
   const router = useRouter();
   const { available, settled } = useFamilyAvailability();
   const overview = useFamilyOverview({ enabled: available });
-  const gone = (settled && !available) || overview.data === null;
+  // Rien à y faire (pas de famille, aucune invitation, la fonder refusé) : la page n'existe pas.
+  const gone = (settled && !available) || familyEntryShown(overview.data, Date.now()) === false;
 
   useEffect(() => {
     if (gone) backOrHome(router);
@@ -67,7 +68,7 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
       <FamilyPinCard />
       {model.notices.map((key) => <FamilyNotice key={key} text={t(key)} />)}
       {model.showIncoming ? <IncomingInvitationsSection incoming={overview.incoming} /> : null}
-      <FamilySection overview={overview} model={model} />
+      {model.showFamily ? <FamilySection overview={overview} model={model} /> : null}
       {model.showMyPin ? <MyPinSection hasPin={overview.account.hasPin} /> : null}
       {model.showLeave && overview.family ? <LeaveSection familyId={overview.family.id} ownerName={overview.family.owner.name} /> : null}
       {model.showDissolve ? <DissolveSection /> : null}

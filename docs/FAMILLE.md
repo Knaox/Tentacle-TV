@@ -300,6 +300,8 @@ même compte : deux hôtes, deux sessions.
 
 ### « Qui regarde ? » au lancement (serveur 1.30.0, `family.pickerPolicy`)
 
+> Depuis la 1.31.1, la forme simple ci-dessous fait foi ; ce paragraphe décrit les bureaux 1.30.
+
 **Par APPAREIL**, dans le cadre de l'**administration**. Chaque ordinateur
 garde SON choix, sur la machine (shared `familyPickerDevice.ts`) : jamais
 choisi, « proposer » (`tentacle_profile_launch_ask`) ou « ne plus proposer » —
@@ -325,6 +327,39 @@ ne décide d'après elle. Sans objet sous deux profils (`pickerRequired`).
 Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
 (mot de passe réinitialisé par un administrateur) n'a pas de « Qui regarde ? »
 (`family.guest_account`).
+
+### « Qui regarde ? à l'ouverture », réglé simplement (serveur 1.31.1, `family.launchPlatforms`)
+
+Retour de l'alpha (21/10) : « permis, activé par défaut, téléviseur permis… » était confus.
+L'administration a UNE section (Admin › Famille, `/admin/family`, servie par le module de la
+page Utilisateurs) : un interrupteur « Proposer « Qui regarde ? » à l'ouverture », puis
+Ordinateurs, Navigateur, Téléphones et tablettes, Téléviseurs à cocher, et « Enregistrer ».
+- **Cochée** : la question s'affiche PAR DÉFAUT à l'ouverture de ses appareils ; chacun garde sa
+  case « Ne plus proposer ». **Décochée** (ou l'interrupteur coupé) : jamais d'office,
+  « Changer de profil » reste. Téléviseurs décochés = l'ancien `tv.mode = off` (le profil du
+  compte qui a jumelé, sans PIN).
+- **Contrat** : `FamilyLaunchSettings { enabled, platforms }` dans `GET/PUT /api/admin/family/picker`,
+  EN PLUS de `desktop` / `tv` (tirés d'elle : `desktop.mode` = Ordinateurs, `defaultOn` toujours
+  vrai) ; un `PUT` de la forme d'avant s'applique aux cases (le bureau règle aussi le navigateur).
+  `PickerProfilesDto.launchAsk` pour la plateforme demandée ; `launchPolicy` et `atLaunch` en sont
+  tirés (bureaux 1.30) — le bureau et le web n'ont rien changé. Le mobile lit
+  `launchAskedByServer(listing, true)` (absent : il demande, comme avant).
+- **Défauts** (serveur neuf, jamais réglé) : tout coché, TV comprise — une TV ne s'ouvre jamais
+  sans code à la mise à jour. **Reprise** d'un réglage d'avant : bureau coupé ou « pas activé par
+  défaut » → Ordinateurs ET Navigateur décochés (le web suivait les ordinateurs ; la case « proposer »
+  qu'un ordinateur avait cochée sous un défaut désactivé n'existe plus) ; TV coupées → décochées ;
+  mobile coché. `family_launch_policy` garde les DEUX formes (un serveur ramené en arrière relit la sienne).
+
+### Ce que l'administration coupe n'existe pas chez les clients (21/10)
+
+shared `familyGestures.ts` : `familyGrowth` (« Inviter », « Ajouter un invité » — un refus de
+l'administration ou du rôle les RETIRE, seul un refus passager, famille pleine ou quota, les grise),
+`familyEntryShown` (l'entrée « Famille » des réglages : sa famille, une invitation reçue, ou une
+famille qu'il peut fonder ; condition `familyEntry` du catalogue), `answerableInvitations` (familles
+coupées : ni affiche ni badge ; le serveur ne les rend plus). Le résumé des droits d'un profil perd
+« demander des films » sans `features.family.guestRequests` et « créer des invités » sans
+`features.family.guests` ; « peut créer des invités » ne se donne plus sans profils invités (serveur :
+`family.guests_disabled`). Mobile, web, web étroit, bureau : la même règle.
 
 ### La séquence du bureau (pour le client)
 

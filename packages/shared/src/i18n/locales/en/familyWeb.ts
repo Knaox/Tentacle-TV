@@ -203,8 +203,8 @@ export default {
     youParent: "You are a parent: you look after the family's children.",
   },
   admin: {
-    title: "Families",
-    description: "What accounts can do with Family on this server.",
+    title: "What accounts can do",
+    description: "Found a family, invite to it, create guest profiles, let guests request movies.",
     families: "Families",
     familiesHint: "Every account can create a family and invite other accounts of this server. Turning it off immediately closes family profiles open on any device.",
     guests: "Guest profiles",

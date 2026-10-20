@@ -28,6 +28,7 @@ export function meetsSettingsRequirement(requirement: SettingsRequirement, ctx: 
     case "offlineVisible": return ctx.offlineVisible;
     case "canGoOffline": return !ctx.offline && ctx.canGoOffline;
     case "family": return !ctx.offline && ctx.family;
+    case "familyEntry": return ctx.familyEntry !== false;
     case "canSwitchProfile": return !ctx.offline && ctx.canSwitchProfile;
     case "launchAsked": return ctx.launchAsked !== false;
     case "liquidGlass": return ctx.liquidGlass;

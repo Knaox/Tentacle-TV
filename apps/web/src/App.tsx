@@ -221,6 +221,9 @@ export function App() {
               <Route index element={<AdminHome />} />
               <Route path="sessions" element={<AdminSessions />} />
               <Route path="users" element={<AdminUsers />} />
+              {/* La Famille du serveur passe par le module de la page Utilisateurs : aucune
+                  entrée de plus dans `lazyPages.ts` (la cible webOS le remplace). */}
+              <Route path="family" element={<AdminUsers section="family" />} />
               <Route path="downloads" element={<AdminDownloads />} />
               <Route path="invites" element={<AdminInvites />} />
               <Route path="tickets" element={<AdminTicketsPage />} />

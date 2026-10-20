@@ -36,6 +36,9 @@ export interface SettingsI18nRef {
  * - `offlineVisible` : le droit de garder des titres, ou des titres déjà là ;
  * - `canGoOffline` : en ligne ET hors ligne permis (« Passer hors ligne ») ;
  * - `family` : le serveur annonce la Famille, activée, et l'écran est branché ;
+ * - `familyEntry` : la page de la Famille mène à quelque chose pour ce compte —
+ *   sa famille, une invitation reçue, ou une famille qu'il peut fonder (shared
+ *   `familyEntryShown` : un droit coupé par l'administration n'y laisse rien) ;
  * - `canSwitchProfile` : en ligne, et la famille a au moins deux profils ;
  * - `launchAsked` : l'administration propose « Qui regarde ? » d'office sur
  *   cette plateforme (capacité `family.launchPlatforms`) ;
@@ -55,7 +58,7 @@ export interface SettingsI18nRef {
  * Ce qui dépend du CODE du serveur passe par `capability`, jamais par ici.
  */
 export type SettingsRequirement =
-  | "online" | "admin" | "offlineVisible" | "canGoOffline" | "family" | "canSwitchProfile" | "launchAsked"
+  | "online" | "admin" | "offlineVisible" | "canGoOffline" | "family" | "familyEntry" | "canSwitchProfile" | "launchAsked"
   | "liquidGlass" | "advancedEngine" | "engineOptions" | "bootIntro" | "liveTransfers" | "personal"
   | SettingsAbility;
 
@@ -169,6 +172,9 @@ export interface SettingsCatalogContext {
   /** Hors ligne permis par le serveur et l'appareil. */
   canGoOffline: boolean;
   family: boolean;
+  /** La page de la Famille a quelque chose à montrer à ce compte (`familyEntryShown`). Absent : oui
+   *  (le comportement d'avant). */
+  familyEntry?: boolean;
   /** La famille a au moins deux profils et le serveur sait en changer. */
   canSwitchProfile: boolean;
   /** « Qui regarde ? » proposé d'office sur cette plateforme ; absent : oui (serveur d'avant). */

@@ -1,5 +1,5 @@
 import { useFamilyOverview } from "@tentacle-tv/api-client";
-import { pendingInvitationCount } from "@tentacle-tv/shared";
+import { answerableInvitations, pendingInvitationCount } from "@tentacle-tv/shared";
 import { useFamilyAvailability } from "./useFamilyAvailability";
 
 /**
@@ -13,5 +13,5 @@ import { useFamilyAvailability } from "./useFamilyAvailability";
 export function usePendingFamilyInvitations(): { count: number } {
   const { available } = useFamilyAvailability();
   const overview = useFamilyOverview({ enabled: available });
-  return { count: available ? pendingInvitationCount(overview.data?.incoming, Date.now()) : 0 };
+  return { count: available ? pendingInvitationCount(answerableInvitations(overview.data), Date.now()) : 0 };
 }

@@ -7,7 +7,7 @@ import { useConnectivity } from "@/offline/useConnectivity";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useThemeMode } from "@/theme";
 import { engineOptionsFor } from "@/components/settings/controls/EngineOptionsRows";
-import { useCanSwitchProfileFlag, useIsProfileSession } from "./familyEntryHooks";
+import { useCanSwitchProfileFlag, useFamilyEntryShown, useIsProfileSession } from "./familyEntryHooks";
 import { useLiveTransfersSetting } from "./offlineEntryHooks";
 import { useBootSettings } from "./bootEntryHooks";
 import { useSessionAbilities } from "./abilityEntryHooks";
@@ -36,6 +36,7 @@ export function useProfileContext(): SettingsCatalogContext {
   // coupées par l'administrateur laissent la page — on peut encore quitter,
   // retirer, supprimer un invité ou dissoudre.
   const familyOn = isFamilyAvailable(config?.features.family, offline);
+  const familyEntry = useFamilyEntryShown();
   const canSwitchProfile = useCanSwitchProfileFlag();
   const launchAsked = useMobileLaunchAsked();
   const profileSession = useIsProfileSession();
@@ -57,6 +58,7 @@ export function useProfileContext(): SettingsCatalogContext {
     // « Passer hors ligne » : seulement quand le serveur répond.
     canGoOffline: connectivity === "online" && offlineVisible,
     family: FAMILY_SCREEN_READY && familyOn,
+    familyEntry,
     canSwitchProfile,
     launchAsked,
     liquidGlass: liquidGlass.supported,
@@ -65,5 +67,5 @@ export function useProfileContext(): SettingsCatalogContext {
     bootIntro,
     liveTransfers,
     profileSession,
-  }), [offline, isAdmin, abilities, connectivity, offlineVisible, familyOn, canSwitchProfile, launchAsked, liquidGlass.supported, capabilities, player, bootIntro, liveTransfers, profileSession]);
+  }), [offline, isAdmin, abilities, connectivity, offlineVisible, familyOn, familyEntry, canSwitchProfile, launchAsked, liquidGlass.supported, capabilities, player, bootIntro, liveTransfers, profileSession]);
 }

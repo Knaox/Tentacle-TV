@@ -4,6 +4,7 @@ import { launchAskedByServer, type SettingsCatalogContext } from "@tentacle-tv/s
 import { useActiveProfile } from "../../../../auth/profileSession";
 import { getUserInfo } from "../../../../components/userMenu/menuItems";
 import { useFamilySettingsAvailability } from "../../../../family/useFamilyAvailability";
+import { useFamilyEntryShown } from "../../../../family/useFamilyEntryShown";
 import { useOfflineMode } from "../../../../offline/useOfflineMode";
 import { usePickerListingQuery } from "../../../../profiles/api/usePickerListing";
 import { useProfileSwitchOffered } from "../../../shell/useProfileSwitchOffered";
@@ -32,6 +33,7 @@ export function useWebSettingsContext(): SettingsCatalogContext {
     [abilityState.kind, known, legacyIsAdmin],
   );
   const { available: family } = useFamilySettingsAvailability();
+  const familyEntry = useFamilyEntryShown();
   const { capabilities } = useServerCapabilities();
   const profileSession = useActiveProfile() !== null;
   const canSwitchProfile = useProfileSwitchOffered();
@@ -46,6 +48,7 @@ export function useWebSettingsContext(): SettingsCatalogContext {
     offlineVisible: false,
     canGoOffline: false,
     family,
+    familyEntry,
     canSwitchProfile,
     launchAsked,
     liquidGlass: false,
@@ -55,5 +58,5 @@ export function useWebSettingsContext(): SettingsCatalogContext {
     bootIntro: false,
     abilities,
     profileSession,
-  }), [capabilities, offline, isAdmin, abilities, family, canSwitchProfile, launchAsked, profileSession]);
+  }), [capabilities, offline, isAdmin, abilities, family, familyEntry, canSwitchProfile, launchAsked, profileSession]);
 }

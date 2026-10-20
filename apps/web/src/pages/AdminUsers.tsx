@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { usePairedDevices } from "@tentacle-tv/api-client";
+import { AdminFamilyView } from "../components/admin/family/AdminFamilyView";
 import { AdminPage } from "../components/admin/kit";
-import { FamilyLaunchPolicySection } from "../components/admin/users/FamilyLaunchPolicySection";
-import { FamilySwitchesSection } from "../components/admin/users/FamilySwitchesSection";
+import { useFamilyAvailability } from "../family/useFamilyAvailability";
 import { UserSheet } from "../components/admin/users/UserSheet";
 import { UsersGrid } from "../components/admin/users/UsersGrid";
 import { UsersSummary } from "../components/admin/users/UsersSummary";
@@ -34,13 +35,20 @@ function currentUserId(): string | undefined {
  * résumé chiffré, la recherche, un filtre et un tri, puis une grille de
  * cartes qui occupe toute la largeur. Une carte ouvre la fiche du compte
  * (`?user=`) : activité, droits de téléchargement, appareils jumelés, et
- * « Voir en tant que ». Sous la grille, les interrupteurs de la Famille.
+ * « Voir en tant que ». Les réglages de la Famille pour tout le serveur ont
+ * leur section (`/admin/family`, servie par ce module : `section="family"`) ;
+ * sous la grille, une ligne y mène.
  *
  * Le garde admin est celui d'`AdminLayout`, et la coquille pose marges et
  * largeur : la page n'apporte que son contenu.
  */
-export function AdminUsers() {
+export function AdminUsers({ section = "users" }: { section?: "users" | "family" }) {
+  return section === "family" ? <AdminFamilyView /> : <AdminUsersView />;
+}
+
+function AdminUsersView() {
   const { t, i18n } = useTranslation("admin");
+  const family = useFamilyAvailability().available;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<UserFilter>("all");
   const [sort, setSort] = useState<UserSort>("name");
@@ -107,10 +115,15 @@ export function AdminUsers() {
         onRetry={retry}
         onShowAll={showAll}
       />
-      {/* Qui peut former une famille : un réglage du serveur, sous la liste des comptes. */}
-      <FamilySwitchesSection />
-      {/* « Qui regarde ? » à l'ouverture, plateforme par plateforme (serveur `family.pickerPolicy`). */}
-      <FamilyLaunchPolicySection />
+      {/* Ils vivaient ici : la ligne mène à leur nouvelle place. */}
+      {family && (
+        <p className="mt-8 text-sm text-content-tertiary">
+          {t("usersFamilyMoved")}{" "}
+          <Link to="/admin/family" className="font-medium text-content-primary underline-offset-4 hover:underline">
+            {t("usersFamilyMovedLink")}
+          </Link>
+        </p>
+      )}
       <UserSheet
         user={openUser}
         isSelf={sameUserId(openUser?.id, selfId)}

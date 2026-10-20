@@ -6,7 +6,7 @@ import {
   useJellyfinClient,
   useSnoozeFamilyInvitation,
 } from "@tentacle-tv/api-client";
-import { pickPosterInvitation } from "@tentacle-tv/shared";
+import { answerableInvitations, pickPosterInvitation } from "@tentacle-tv/shared";
 import type { StartupWindowState } from "../startup/startupOrder";
 import { useStartupMayShow, usePublishStartupWindow } from "../startup/startupStore";
 import { clearFamilyPosterRequest, useFamilyPosterRequest } from "./familyPosterStore";
@@ -53,7 +53,8 @@ export function FamilyInvitationHost() {
   const [joinedOwner, setJoinedOwner] = useState<string | null>(null);
   const closeJoined = useCallback(() => setJoinedOwner(null), []);
 
-  const incoming = overview.data?.incoming;
+  // Familles coupées par l'administration : aucune affiche (l'accepter serait refusé).
+  const incoming = overview.data ? answerableInvitations(overview.data) : undefined;
   const invitation = useMemo(
     () => (incoming ? pickPosterInvitation(incoming, { now: Date.now(), dismissed, requestedId }) : null),
     [incoming, dismissed, requestedId],

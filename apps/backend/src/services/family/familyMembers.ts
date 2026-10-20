@@ -1,6 +1,6 @@
 import { getPrisma } from "../db";
 import type { FamilyMemberRights, SetMemberRightsBody } from "../../family/familyContract";
-import { refuseReviewAccount } from "./familyConfig";
+import { refuseReviewAccount, requireGuests } from "./familyConfig";
 import { FamilyFailure } from "./familyErrors";
 import { forgetFamilyGuests } from "./familyGuestMarkers";
 import type { Actor } from "./familyInvitations";
@@ -75,6 +75,8 @@ export async function leaveFamily(caller: Actor, familyId: string): Promise<{ le
 /** Le propriétaire règle les droits d'un membre (v2). Retirer un droit ne
  *  supprime rien : le membre ne peut plus, c'est tout. */
 export async function setMemberRights(owner: Actor, memberUserId: string, patch: SetMemberRightsBody): Promise<FamilyMemberRights> {
+  // Profils invités coupés par l'administration : le droit d'en créer ne se donne pas (le retirer, si).
+  if (patch.createGuests === true) requireGuests();
   const family = await ownedBy(owner, memberUserId);
   const updated = await withFamilyLock(owner.userId, async () => {
     const row = (await familyProfiles(family.id)).find((entry) => fold(entry.userId) === fold(memberUserId));

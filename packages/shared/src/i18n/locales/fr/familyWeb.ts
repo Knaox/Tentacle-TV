@@ -205,8 +205,8 @@ export default {
     youParent: "Vous êtes parent : vous gérez les enfants de la famille.",
   },
   admin: {
-    title: "Familles",
-    description: "Ce que les comptes peuvent faire de la Famille sur ce serveur.",
+    title: "Ce que les comptes peuvent faire",
+    description: "Fonder une famille, y inviter, créer des profils invités, les laisser demander des films.",
     families: "Familles",
     familiesHint: "Chaque compte peut créer une famille et y inviter d'autres comptes du serveur. Couper ferme aussitôt les profils de famille ouverts sur les appareils.",
     guests: "Profils invités",

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Clock, EyeOff, Film, Folder, Info, Monitor, Shield, Smartphone, Tag, Tv, UserPlus, Users, type LucideIcon,
 } from "lucide-react";
-import { useFamilyLibraries, useServerCapability } from "@tentacle-tv/api-client";
+import { useAppConfig, useFamilyLibraries, useServerCapability } from "@tentacle-tv/api-client";
 import { familyRightsSummary, type FamilyProfileDto, type RightsSummaryKind, type RightsSummaryTone } from "@tentacle-tv/shared";
 
 /** Le repère de chaque ligne (le texte dit le sens) — les icônes du mobile, en Lucide. */
@@ -45,9 +45,11 @@ export function ProfileRightsSummary({ profile, omit = [] }: {
   const capable = useServerCapability("family.libraryLimits");
   const reads = capable && profile.parental !== undefined;
   const libraries = useFamilyLibraries(profile.userId, { enabled: reads });
+  // Ce que l'administration a coupé (demandes des invités, profils invités) n'a pas de ligne.
+  const family = useAppConfig().data?.features.family;
   const summary = useMemo(
-    () => familyRightsSummary({ profile, libraries: reads ? libraries.data ?? null : null }),
-    [profile, reads, libraries.data],
+    () => familyRightsSummary({ profile, libraries: reads ? libraries.data ?? null : null, family }),
+    [profile, reads, libraries.data, family],
   );
   const partial = omit.length > 0;
   const lines = summary.lines.filter((line) => !omit.includes(line.kind));

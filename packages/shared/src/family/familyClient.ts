@@ -183,7 +183,8 @@ export function profileActions(
   if (profile.kind === "owner" || isOwnProfile(profile, viewerUserId)) return NO_ACTIONS;
   if (profile.kind === "member") {
     const owner = family.rights.manageMembers;
-    return { pin: false, remove: owner, right: owner ? "createGuests" : null };
+    // Profils invités coupés par l'administration : « peut créer des invités » n'existe pas.
+    return { pin: false, remove: owner, right: owner && overview.switches.guests ? "createGuests" : null };
   }
   const manage = canManageGuest(family.rights, profile.createdBy, viewerUserId);
   return { pin: manage, remove: manage, right: guestRightOf(overview, capability) };

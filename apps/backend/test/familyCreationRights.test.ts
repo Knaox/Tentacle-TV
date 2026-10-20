@@ -152,3 +152,18 @@ describe("les routes d'administration", () => {
     });
   });
 });
+
+describe("en direct : l'administration change ce que les comptes peuvent faire", () => {
+  it("chaque compte connecté relit (`family:update` portée `settings`), un compte sans famille compris", async () => {
+    h.state!.online = [IDS.damien, IDS.hugo];
+    await send("PUT", "/api/admin/family", tokens.damien, { guests: false });
+    const settings = () => h.state!.socket.filter((s) => s.msg.type === "family:update" && s.msg.scope === "settings").map((s) => s.userId);
+    expect(settings().sort()).toEqual([IDS.damien, IDS.hugo].sort());
+    h.state!.socket.length = 0;
+    // Rien de changé : aucun avis.
+    await send("PUT", "/api/admin/family", tokens.damien, { guests: false });
+    expect(settings()).toEqual([]);
+    await send("PUT", "/api/admin/family/creation", tokens.damien, { createFamily: false });
+    expect(settings().sort()).toEqual([IDS.damien, IDS.hugo].sort());
+  });
+});

@@ -77,4 +77,17 @@ describe("familyRightsSummary", () => {
   it("un champ absent (serveur d'avant, appelant qui ne règle pas) ne donne aucune ligne d'âge", () => {
     expect(keys(base).some((k) => k.startsWith("age."))).toBe(false);
   });
+
+  it("ce que l'administration a coupé n'a pas de ligne ; `features.family` absent : comme avant", () => {
+    const guest = { ...base, guestRights: { requestTitles: true } };
+    const lines = (profile: FamilyProfileDto, family: { guests: boolean; guestRequests?: boolean }) =>
+      familyRightsSummary({ profile, family }).lines.map((l) => l.key);
+    expect(lines(guest, { guests: true, guestRequests: false })).not.toContain("requestTitles.on");
+    expect(lines(guest, { guests: true })).toEqual(["watchTogether.guest", "offline.guest"]);
+    expect(lines(guest, { guests: true, guestRequests: true })[0]).toBe("requestTitles.on");
+    const member: FamilyProfileDto = { ...base, kind: "member", createdBy: null, rights: { createGuests: true } };
+    expect(lines(member, { guests: false })).not.toContain("createGuests.on");
+    expect(lines(member, { guests: true })).toContain("createGuests.on");
+    expect(keys(member)).toContain("createGuests.on");
+  });
 });

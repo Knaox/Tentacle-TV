@@ -213,6 +213,7 @@ export * from "./family/familyRules";
 export * from "./family/familyRights";
 export * from "./family/familyLabels";
 export * from "./family/familyClient";
+export * from "./family/familyGestures";
 export * from "./family/familyRightsSummary";
 export * from "./family/familyParentalAge";
 export * from "./family/familyParentalLibraries";

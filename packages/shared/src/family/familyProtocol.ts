@@ -96,8 +96,11 @@ export type FamilyInvitationStatus = "pending" | "accepted" | "declined" | "canc
 /** `family` : la famille de ce compte (v2 — partagée : propriétaire et membres
  *  relisent ensemble) ; `invitations` : les invitations reçues (l'affiche se
  *  montre en direct). `owned` et `memberships` : v1, encore émis tant que des
- *  clients les attendent. Tout client relit la Famille, quelle que soit la portée. */
-export type FamilyUpdateScope = "family" | "owned" | "memberships" | "invitations";
+ *  clients les attendent. `settings` (1.31.1) : l'administration a changé ce que les comptes
+ *  peuvent faire (interrupteurs, droits de création par défaut) — envoyé à TOUS les comptes
+ *  connectés, qui relisent aussi la configuration (`features.family`). Tout client relit la
+ *  Famille, quelle que soit la portée. */
+export type FamilyUpdateScope = "family" | "owned" | "memberships" | "invitations" | "settings";
 
 /** Pourquoi une session de profil a cessé (poussé sur ses sockets, puis fermeture 4010). */
 export type FamilyProfileEndReason =

@@ -1,4 +1,4 @@
-import { familyActions, type FamilyErrorCode, type FamilyOverviewDto, type FamilyRole } from "@tentacle-tv/shared";
+import { answerableInvitations, familyActions, familyGrowth, type FamilyErrorCode, type FamilyOverviewDto, type FamilyRole } from "@tentacle-tv/shared";
 
 /**
  * La page Famille du mobile (v2 : UNE famille par compte, partagée) — ce
@@ -7,6 +7,8 @@ import { familyActions, type FamilyErrorCode, type FamilyOverviewDto, type Famil
  * toute la famille, crée des invités si on le lui permet, et quitte ; un
  * compte sans famille répond aux invitations ou crée la sienne. Rien n'y est
  * décidé à la place du serveur : un geste masqué ici serait refusé là-bas.
+ * Un geste que l'administration ou le rôle refuse N'EXISTE PAS ici (shared
+ * `familyGrowth`) : ni bouton grisé, ni « Créez votre famille ».
  * Module pur : `familyScreenModel.test.ts`.
  */
 
@@ -26,6 +28,8 @@ export interface FamilyScreenModel {
   showInvite: boolean;
   /** « Ajouter un invité » : le propriétaire, qui crée sa famille, ou un membre qui en a le droit. */
   showAddGuest: boolean;
+  /** La section de la famille : la sienne, ou l'appel à la créer s'il peut la fonder. */
+  showFamily: boolean;
   /** Inviter / créer un invité : null si permis, sinon le refus qu'on dirait. */
   invite: FamilyErrorCode | null;
   addGuest: FamilyErrorCode | null;
@@ -47,11 +51,14 @@ export function familyScreenModel(overview: FamilyOverviewDto): FamilyScreenMode
   else if (!switches.guests) notices.push("notice.guestsDisabled");
 
   const actions = familyActions(overview);
-  const showInvite = personal && role !== "member";
+  const growth = familyGrowth(overview);
+  const showInvite = personal && growth.invite;
   // Un membre sans le droit ne voit pas le bouton : la page lui dit pourquoi.
-  const memberMayCreate = role === "member" && family?.rights.createGuests === true;
-  const showAddGuest = personal && (role !== "member" || memberMayCreate);
-  const obstacle = role === "member"
+  const showAddGuest = personal && growth.addGuest;
+  // Un membre sans le droit du propriétaire apprend pourquoi (une règle de SA famille, pas de
+  // l'administration) ; sinon, l'obstacle d'un geste montré seulement.
+  const memberWithoutRight = role === "member" && actions.addGuest === "family.guest_right_required";
+  const obstacle = memberWithoutRight
     ? actions.addGuest
     : (showInvite ? actions.invite : null) ?? (showAddGuest ? actions.addGuest : null);
 
@@ -59,9 +66,10 @@ export function familyScreenModel(overview: FamilyOverviewDto): FamilyScreenMode
     notices,
     personal,
     role,
-    showIncoming: personal && family === null && overview.incoming.length > 0,
+    showIncoming: personal && family === null && answerableInvitations(overview).length > 0,
     showInvite,
     showAddGuest,
+    showFamily: family !== null || showInvite || showAddGuest,
     invite: actions.invite,
     addGuest: actions.addGuest,
     blocked: personal && obstacle && !NOTICED.has(obstacle) ? obstacle : null,

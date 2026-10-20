@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { Info } from "lucide-react";
 import { Shimmer } from "@tentacle-tv/ui";
 import { familyErrorFromApi, useFamilyOverview } from "@tentacle-tv/api-client";
-import { sessionManages, type FamilyOverviewDto } from "@tentacle-tv/shared";
+import { answerableInvitations, familyEntryShown, familyGrowth, sessionManages, type FamilyOverviewDto } from "@tentacle-tv/shared";
 import { PageTransition } from "../../components/PageTransition";
 import { useFamilySettingsAvailability } from "../../family/useFamilyAvailability";
 import { useFamilyText } from "../../family/useFamilyText";
@@ -40,7 +40,8 @@ export function SettingsFamily() {
   const overview = useFamilyOverview({ enabled: available });
   const refusal = overview.isError ? familyErrorFromApi(overview.error)?.code : undefined;
 
-  if ((settled && !available) || overview.data === null) return <Navigate to="/settings" replace />;
+  // Rien à y faire (pas de famille, aucune invitation, la fonder refusé par l'administration) : la page n'existe pas.
+  if ((settled && !available) || familyEntryShown(overview.data, Date.now()) === false) return <Navigate to="/settings" replace />;
 
   return (
     <PageTransition>
@@ -70,6 +71,8 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
   const personal = account.personalSession;
   // Un profil qui gère (1.30.0) : les gestes de son rôle, jamais les gestes personnels.
   const manages = sessionManages(account);
+  // Ce que l'administration refuse n'existe pas ici : sans famille ni geste permis, pas d'appel à la créer.
+  const growth = familyGrowth(overview);
   const notices = [
     !manages && t("notice.personalOnly"),
     account.managing === true && t("notice.profileManage"),
@@ -84,8 +87,8 @@ function FamilyContent({ overview }: { overview: FamilyOverviewDto }) {
       {notices.map((notice) => (
         <Notice key={notice} text={notice} />
       ))}
-      {personal && !family && <IncomingInvitationsSection incoming={overview.incoming} />}
-      <FamilySection overview={overview} />
+      {personal && !family && <IncomingInvitationsSection incoming={answerableInvitations(overview)} />}
+      {(family !== null || growth.invite || growth.addGuest) && <FamilySection overview={overview} />}
       {/* Bureau : « Qui regarde ? » à l'ouverture, pour tous ses ordinateurs (famille de deux profils et plus). */}
       {personal && family !== null && <AskAtLaunchSection />}
       {personal && (account.canJoin || family !== null) && <MyPinSection hasPin={account.hasPin} />}

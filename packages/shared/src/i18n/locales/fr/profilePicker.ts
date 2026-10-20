@@ -67,6 +67,27 @@ export default {
     stayHereWeb: "Désactivé : ce navigateur ouvre directement le profil {{name}}.",
   },
   /** Admin › Utilisateurs : « Qui regarde ? » à l'ouverture, réglé pour tous (`FamilyLaunchPolicySection`). */
+  /** Admin › Famille (serveur `family.launchPlatforms`) : `FamilyLaunchSettingsSection`. */
+  launchSettings: {
+    title: "« Qui regarde ? » à l'ouverture",
+    description: "Où la question s'affiche d'elle-même quand l'application s'ouvre. Chaque appareil peut ensuite cocher « Ne plus proposer au démarrage », et « Changer de profil » reste toujours là.",
+    enabled: "Proposer « Qui regarde ? » à l'ouverture",
+    enabledHint: "Coupé : la question ne s'affiche d'elle-même sur aucun appareil, et les téléviseurs ouvrent le profil du compte qui les a jumelés.",
+    platformsLegend: "Sur ces appareils",
+    platform_desktop: "Ordinateurs",
+    platformHint_desktop: "L'application Tentacle sur Windows, macOS et Linux.",
+    platform_web: "Navigateur",
+    platformHint_web: "Tentacle ouvert dans un navigateur web.",
+    platform_mobile: "Téléphones et tablettes",
+    platformHint_mobile: "L'application Tentacle sur iPhone, iPad et Android.",
+    platform_tv: "Téléviseurs",
+    platformHint_tv: "Apple TV et Android TV. Décoché : ils ouvrent directement le profil du compte qui les a jumelés, sans code PIN.",
+    nowhere: "Aucun appareil coché : la question ne s'affichera nulle part d'elle-même.",
+    save: "Enregistrer",
+    saving: "Enregistrement…",
+    saved: "Enregistré. La règle vaut au prochain lancement de chaque appareil.",
+    unsaved: "Modifications non enregistrées.",
+  },
   adminPolicy: {
     title: "« Qui regarde ? » à l'ouverture",
     description: "Plateforme par plateforme : « Qui regarde ? » peut-il s'afficher à l'ouverture de l'application ? « Changer de profil » reste toujours là.",

@@ -171,3 +171,14 @@ describe("le compte de démonstration", () => {
     expect(listing.json().canManage).toBe(false);
   });
 });
+
+describe("familles coupées par l'administration", () => {
+  it("une invitation reçue se tait (l'accepter serait refusé) et revient quand on les rallume", async () => {
+    const id = (await invite(tokens.damien, IDS.lea)).json().id;
+    h.state!.config.set("family_enabled", "false");
+    expect((await overview(tokens.lea)).incoming).toEqual([]);
+    expect((await post("/api/family/invitations/accept", tokens.lea, { id })).json().code).toBe("family.disabled");
+    h.state!.config.set("family_enabled", "true");
+    expect((await overview(tokens.lea)).incoming).toEqual([expect.objectContaining({ id })]);
+  });
+});

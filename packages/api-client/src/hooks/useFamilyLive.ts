@@ -32,7 +32,11 @@ export function useFamilyLive(options: UseFamilyLiveOptions = {}): void {
     const release = acquireSocket(token ?? undefined);
     const refresh = () => void qc.invalidateQueries({ queryKey: [...FAMILY_KEY] });
     const offMessage = subscribeSocket((msg: WsServerMessage) => {
-      if (msg.type === "family:update") refresh();
+      if (msg.type === "family:update") {
+        refresh();
+        // L'administration a changé ce que les comptes peuvent faire : `features.family` aussi.
+        if (msg.scope === "settings") void qc.invalidateQueries({ queryKey: ["app-config"] });
+      }
       else if (msg.type === "family:profile-ended") endedRef.current?.(msg.reason);
     });
     let hadOpen = false;
