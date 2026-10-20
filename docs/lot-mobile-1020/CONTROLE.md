@@ -74,7 +74,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 |---|----------|--------|------|
 | E1 | Sections : Compte · Lecture et apparence · TV et appareils · Hors ligne · Notifications · Aide | capture de l'écran Réglages | ☐ |
 | E2 | Pastilles « Compte » / « Cet appareil » sur chaque réglage (où il s'enregistre) | capture + code (source unique de la portée) | ☐ |
-| E3 | Sous-titres : taille par défaut 160 %, et 100 % (opacité/fond ou deuxième valeur selon la demande) par défaut — conforme au bureau | test sur les valeurs par défaut ; utilisateur existant gardant sa valeur | ☐ |
+| E3 | Sous-titres par défaut : taille 160 % (`subtitleScale` 1,6, clé `tentacle_sub_scale`) et position 100 % (`subtitlePosition` 100, `tentacle_sub_pos`) — `engineSettings.ts` (dev : 1 / 100) | test sur les valeurs par défaut ; un utilisateur qui a déjà réglé garde sa valeur (clé lue telle quelle) ; borne max ≥ 1,6 | ☐ |
 | E4 | « Réglages avancés : sur le bureau » (renvoi, pas de copie des réglages avancés) | capture | ☐ |
 | E5 | Aucun réglage perdu à la restructuration (clés `tentacle_*` lues identiques) | diff des clés de stockage | ☐ |
 | E6 | Section Hors ligne sans le mot « téléchargement » | grep + capture | ☐ |
@@ -126,3 +126,13 @@ Branches suivies (une par worktree, `git worktree list`) :
 ## Décisions tranchées par les sessions
 
 (à demander à chaque session pour le récapitulatif du matin)
+
+## Base mesurée sur dev (`064890d94`, 20/10 02:45)
+
+| Paquet | typecheck | lint | tests (`--maxWorkers=2`) |
+|--------|-----------|------|--------------------------|
+| shared | vert | vert | 219 fichiers, 1 939 tests verts |
+| api-client | vert | vert | 100 fichiers, 678 tests verts |
+| mobile | vert | vert (0 erreur, 7 avertissements préexistants) | 45 fichiers, 248 tests verts |
+
+Toute régression sur une branche se compare à cette base.
