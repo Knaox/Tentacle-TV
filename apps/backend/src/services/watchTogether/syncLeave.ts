@@ -1,8 +1,9 @@
 import { WT_GROUP_WAIT_TIMEOUT_MS } from "./protocol";
 import { removeMember } from "./roomStore";
+import { getRoomOf } from "./roomRegistry";
 import type { RemovalResult, Room, RoomMember } from "./roomTypes";
 import { touch } from "./syncSchedule";
-import { cancelResumeOnRelease, dropBarrier, pruneWaiting } from "./syncBarrier";
+import { cancelResumeOnRelease, confirmReady, dropBarrier, pruneWaiting } from "./syncBarrier";
 import { anyoneWatching } from "./syncGuards";
 import { resetSkips } from "./syncSkip";
 import { dropReadyGate } from "./syncReadyGate";
@@ -70,8 +71,12 @@ export interface MemberRemoval extends RemovalResult {
   resumed: boolean;
 }
 
-/** Retire un membre (leave/kick/grâce expirée) et répare le group-wait. */
+/** Retire un membre (leave/kick/grâce expirée) et répare le group-wait : s'il
+ *  était le dernier attendu, la salle repart. Le retrait l'efface déjà de
+ *  l'attente — la barrière se libère donc ici, sans quoi une salle qui
+ *  attendait un partant restait gelée (« Quitter » pendant son chargement). */
 export function removeMemberAndSync(userId: string): MemberRemoval | null {
+  const wasAwaited = getRoomOf(userId)?.waitingFor.has(userId) ?? false;
   const result = removeMember(userId);
   if (!result) return null;
   const now = Date.now();
@@ -81,7 +86,7 @@ export function removeMemberAndSync(userId: string): MemberRemoval | null {
     dropBarrier(result.room);
     dropReadyGate(result.room);
   } else {
-    resumed = pruneWaiting(result.room, userId, now);
+    resumed = wasAwaited && confirmReady(result.room, { userId }, now).resumed;
     if (!resumed) touch(result.room, now);
   }
   return { ...result, resumed };
