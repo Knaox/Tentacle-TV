@@ -34,9 +34,19 @@ export const NETWORK_RETRY_DELAYS_MS: readonly number[] = [5_000, 15_000, 30_000
 /**
  * Le délai de la tentative `attempt` (0 = la première) : la dernière marche de
  * l'échelle se répète. Échelle vide : aucune relance (`null`).
+ *
+ * `immediate` : les premières tentatives repartent SANS délai. C'est le cas de
+ * l'iPhone derrière : un minuteur n'y sonnerait jamais (JavaScript suspendu),
+ * alors que la tâche remise tout de suite à la session d'arrière-plan attend
+ * elle-même le retour du réseau, sans nous.
  */
-export function networkRetryDelay(attempt: number, delays: readonly number[] = NETWORK_RETRY_DELAYS_MS): number | null {
+export function networkRetryDelay(
+  attempt: number,
+  delays: readonly number[] = NETWORK_RETRY_DELAYS_MS,
+  immediate = 0,
+): number | null {
   if (delays.length === 0) return null;
+  if (Math.max(0, attempt) < immediate) return 0;
   const index = Math.min(Math.max(0, Math.trunc(attempt)), delays.length - 1);
   return delays[index] ?? null;
 }

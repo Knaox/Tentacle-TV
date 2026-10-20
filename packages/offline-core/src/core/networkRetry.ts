@@ -15,7 +15,11 @@ import type { TransferEnd } from "./transfer";
 export class NetworkRetryLadder {
   private readonly attempts = new Map<number, number>();
 
-  constructor(private readonly delays: readonly number[] = NETWORK_RETRY_DELAYS_MS) {}
+  constructor(
+    private readonly delays: readonly number[] = NETWORK_RETRY_DELAYS_MS,
+    /** Combien de tentatives repartent sans délai, MAINTENANT — voir `networkRetryDelay`. */
+    private readonly immediate: () => number = () => 0,
+  ) {}
 
   /** L'échéance de la relance d'une fin de transfert, `null` s'il n'y en a pas. */
   dueAt(fileId: number, end: TransferEnd, opts: { moved: boolean; systemSuspended: boolean; nowMs: number }): number | null {
@@ -26,7 +30,7 @@ export class NetworkRetryLadder {
     if (opts.systemSuspended) return null;
     const attempt = opts.moved ? 0 : (this.attempts.get(fileId) ?? 0);
     this.attempts.set(fileId, attempt + 1);
-    const delay = networkRetryDelay(attempt, this.delays);
+    const delay = networkRetryDelay(attempt, this.delays, this.immediate());
     return delay === null ? null : opts.nowMs + delay;
   }
 }

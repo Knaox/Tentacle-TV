@@ -34,6 +34,13 @@ export interface EngineDeps {
    */
   networkRetryDelaysMs?: readonly number[];
   /**
+   * Combien de relances d'une coupure repartent SANS délai, maintenant.
+   * Consultée à chaque coupure. L'iPhone derrière en veut quelques-unes : son
+   * JavaScript, suspendu, ne verrait jamais sonner un minuteur, et la tâche
+   * remise aussitôt au système attend le réseau toute seule. Absente : aucune.
+   */
+  immediateNetworkRetries?: () => number;
+  /**
    * Défaillance INATTENDUE : une exception qu'aucun chemin prévu n'explique.
    * Le transfert est déjà retombé sur ses pieds quand ceci est appelé — c'est
    * une TRACE, pas une gestion d'erreur. Sans elle, le code `unexpected` reste

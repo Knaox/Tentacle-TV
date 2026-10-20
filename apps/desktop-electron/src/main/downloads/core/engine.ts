@@ -67,7 +67,7 @@ export class DownloadEngine {
 
   constructor(private readonly deps: EngineDeps) {
     this.retries = new RetryScheduler(deps.db, deps.now, () => this.sweepRetries());
-    this.networkRetries = new NetworkRetryLadder(deps.networkRetryDelaysMs);
+    this.networkRetries = new NetworkRetryLadder(deps.networkRetryDelaysMs, deps.immediateNetworkRetries);
   }
 
   isActive(fileId: number): boolean {
@@ -274,6 +274,9 @@ export class DownloadEngine {
       retryDelaysMs: this.deps.retryDelaysMs ?? RETRY_DELAYS_MS,
       networkRetryAt: this.networkRetries.dueAt(fileId, end, { moved, systemSuspended: this.systemSuspended, nowMs: now }),
     });
+    // Une relance déjà échue (sans délai) repart dans CE tour : un minuteur,
+    // même à zéro, ne sonnerait pas sur un iPhone qui se rendort.
+    this.retries.sweep();
     this.notifyChanged();
     this.pump();
   }

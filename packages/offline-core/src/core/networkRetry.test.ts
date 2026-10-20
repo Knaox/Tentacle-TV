@@ -49,6 +49,12 @@ describe("échelle des relances réseau", () => {
     expect(networkRetryDelay(-3)).toBe(5_000);
   });
 
+  it("les premières tentatives peuvent repartir sans délai (iPhone derrière)", () => {
+    expect(networkRetryDelay(0, NETWORK_RETRY_DELAYS_MS, 2)).toBe(0);
+    expect(networkRetryDelay(1, NETWORK_RETRY_DELAYS_MS, 2)).toBe(0);
+    expect(networkRetryDelay(2, NETWORK_RETRY_DELAYS_MS, 2)).toBe(30_000);
+  });
+
   it("une échelle vide ne relance rien", () => {
     expect(networkRetryDelay(0, [])).toBeNull();
   });
@@ -128,6 +134,18 @@ describe("le moteur relance une coupure de lui-même", () => {
     engine.sweepRetries();
     // Des octets sont arrivés pendant l'essai : 10 ms encore, pas 40.
     await vi.waitFor(() => expect(getFile(db, fileId)?.nextRetryAt).toBe(1_020));
+  });
+
+  it("une relance sans délai repart dans le même tour, sans minuteur", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const flaky = flakyNet(1);
+    // Horloge FIGÉE : seul le tour de la fin du transfert peut relancer.
+    const { engine } = makeEngine(db, root, flaky.net, { networkRetryDelaysMs: [60_000], immediateNetworkRetries: () => 1 });
+    engine.start(CREDS);
+    await vi.waitFor(() => expect(getFile(db, fileId)?.status).toBe("complete"));
+    expect(flaky.opened()).toBe(2);
   });
 
   it("sans échelle, la coupure attend un évènement, comme avant", async () => {
