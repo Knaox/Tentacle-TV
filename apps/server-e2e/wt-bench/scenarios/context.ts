@@ -140,6 +140,12 @@ export async function launchBrowser(): Promise<Browser> {
       // le règle lui-même, membre par membre.
       "--disable-renderer-backgrounding",
       "--mute-audio",
+      // Sortie audio FACTICE : l'horloge média de Chrome suit la sortie audio, et
+      // capot fermé (la nuit) celle du Mac ne consomme plus — la vidéo calait,
+      // puis avançait par sauts de ~1,8 s (mesuré le 20/10 : lecteur seul figé à
+      // 40,000 s ; avec ce drapeau, 0 échantillon figé sur 40).
+      "--disable-audio-output",
+      ...(process.env.WT_CHROME_ARGS ? process.env.WT_CHROME_ARGS.split(" ") : []),
     ],
   });
 }
