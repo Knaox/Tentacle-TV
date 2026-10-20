@@ -1,5 +1,6 @@
-import { memo, useMemo, type ReactNode } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
+import Animated, { runOnJS, useAnimatedReaction, useAnimatedStyle } from "react-native-reanimated";
 import {
   introCameraPlan,
   introGeometry,
@@ -112,9 +113,28 @@ export const BootIntroView = memo(function BootIntroView({ scene, primitives, cl
           {children}
         </IntroScreenPlane>
         {landed ? null : <IntroStageAbove {...stage} />}
+        {landed ? null : <InkVeil clock={clock} />}
       </View>
     </IntroPrimitivesProvider>
   );
+});
+
+/**
+ * Le voile d'encre, opaque tant que l'ouverture attend sur l'encre (`prewarm`) : dessous, la
+ * scène et l'app se dessinent déjà, entières — l'écran montre la même encre qu'avant. Il se
+ * lève dans l'image du départ. La TV ne l'emploie pas (`prewarm` y vaut toujours 0).
+ */
+const InkVeil = memo(function InkVeil({ clock }: { clock: IntroClock }) {
+  const style = useAnimatedStyle(() => ({ opacity: clock.prewarm.value }));
+  // Posé, il arrête aussi les touchers : l'app dessinée dessous ne se touche pas à l'aveugle.
+  const [blocking, setBlocking] = useState(false);
+  useAnimatedReaction(
+    () => clock.prewarm.value === 1,
+    (next, previous) => {
+      if (next !== previous) runOnJS(setBlocking)(next);
+    },
+  );
+  return <Animated.View style={[styles.night, style]} pointerEvents={blocking ? "auto" : "none"} />;
 });
 
 const styles = StyleSheet.create({

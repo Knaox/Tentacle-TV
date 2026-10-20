@@ -24,15 +24,20 @@ import com.facebook.react.bridge.ReactMethod
  *   `BootSoundStream` la tient sur la SORTIE, à l'image près, latence comprise.
  * - Aucune demande de focus audio : une musique déjà en cours n'est pas coupée,
  *   le son s'y MÉLANGE (la catégorie « ambient » de tvOS).
- * - Le mode silencieux (ou vibreur) du téléphone le tait, comme le commutateur
- *   de l'iPhone tait la catégorie « ambient » : le mobile compile ce même code
- *   (apps/mobile/android/app/build.gradle). Une TV est toujours en mode normal.
+ * - Le mode SILENCIEUX du téléphone le tait, comme le commutateur de l'iPhone
+ *   tait la catégorie « ambient » : le mobile compile ce même code
+ *   (apps/mobile/android/app/build.gradle). Le VIBREUR, non : sur Android, il
+ *   ne tait que la sonnerie et les notifications, jamais le média (une vidéo,
+ *   un jeu) — le son suit alors le volume média, à zéro il ne s'entend pas.
+ *   Couper au vibreur taisait l'ouverture chez presque tous les téléphones,
+ *   que l'on laisse en vibreur. Une TV est toujours en mode normal.
  * - `claimIntro` : la MÉMOIRE DU PROCESSUS de l'ouverture (tv-core
  *   `bootIntroOnce`) — vrai au premier appel du processus seulement. Un drapeau
  *   natif : ni le rechargement du JavaScript ni la relance de l'interface du
  *   mode Lite ne l'effacent, seul un nouveau processus le remet.
  *
- * Journal : `adb logcat -s TentacleBootSound` (amorce, départ, écart mesuré à la sortie).
+ * Journal : `adb logcat -s TentacleBootSound` (amorce, départ, écart mesuré à la sortie,
+ * « libéré sans départ » quand le son préparé n'a jamais été demandé).
  */
 class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
   // Une file à elle : ni le fil d'interface ni celui du JavaScript ne décodent le fichier.
@@ -108,7 +113,7 @@ class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
   private fun load(): Boolean {
     if (stream != null) return true
     val audio = reactApplicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-    if (audio != null && audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
+    if (audio != null && audio.ringerMode == AudioManager.RINGER_MODE_SILENT) {
       Log.i(TAG, "mode silencieux : aucun son")
       return false
     }
@@ -129,6 +134,8 @@ class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
 
   private fun release() {
     handler.removeCallbacksAndMessages(null)
+    // Le cas muet, lisible en Release : préparé, jamais demandé (le JS a renoncé au son).
+    if (stream != null && !started) Log.i(TAG, "libéré sans départ : playAt jamais reçu")
     stream?.release()
     stream = null
     started = false

@@ -59,6 +59,8 @@ export const IntroPart = memo(function IntroPart(props: IntroPartProps) {
   const origin = [(pivot.x - box.x) * frame.zoom, (pivot.y - box.y) * frame.zoom, 0];
   const zoom = frame.zoom;
   const main = useAnimatedStyle(() => {
+    // Sur l'encre (mobile) : la pièce entière, à sa place, sous le voile — sa plaque est prête.
+    if (clock.prewarm.value && !clock.landed.value) return { opacity: 1, transform: [] };
     const t = clock.scene.value;
     const pose = channels ? partStyleAt(channels, step, t, zoom) : { opacity: 1, transform: [] };
     const opacity = clock.landed.value || t < from || t >= until ? 0 : pose.opacity;
@@ -145,7 +147,7 @@ export const IntroGroup = memo(function IntroGroup({
   const origin = [frame.center.x + (pivot.x - frame.target.x) * frame.zoom, frame.center.y + (pivot.y - frame.target.y) * frame.zoom, 0];
   const zoom = frame.zoom;
   const style = useAnimatedStyle(() => {
-    if (clock.landed.value) return { opacity: 1, transform: [{ translateY: 0 }, { scale: 1 }] };
+    if (clock.landed.value || clock.prewarm.value) return { opacity: 1, transform: [{ translateY: 0 }, { scale: 1 }] };
     const pose = partStyleAt(channels, step, clock.scene.value, zoom);
     return { opacity: opacity ? pose.opacity : 1, transform: pose.transform };
   });

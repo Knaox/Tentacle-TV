@@ -241,12 +241,44 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   `boot-tadum.m4a`), Android par `sourceSets` (`com.tentacletv.boot`, et le
   fichier dans les assets) ; aucune copie. iOS : catégorie « ambient » (le
   commutateur silencieux le tait, une musique en cours n'est pas coupée).
-  Android : aucun focus audio ; le mode silencieux ou vibreur le tait.
+  Android : aucun focus audio ; le mode silencieux le tait, le vibreur non (il ne
+  tait pas le média sur Android : le volume média décide).
+  **Téléphone Android : la demande part 450 ms plus tôt** que l'avance de la
+  sortie (`BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS`, contre 80 sur la TV) : elle passe
+  par le fil JavaScript, occupé par le premier écran qui se monte pendant
+  l'ouverture. Relevé à l'émulateur (API 36, 20/10) avec 80 ms : demande arrivée
+  au natif 41 à 218 ms après son départ, sortie ≈ 155 ms en file → 9 puis 119 ms
+  sautés au début du fichier, le « ta » (à 40 ms) avec. Et le mobile n'appuie
+  qu'une fois le son PRÉPARÉ (`waitForSound`) : l'écran prêt, au plus
+  `BOOT_SOUND_PREPARE_MAX_MS` (2,5 s) d'attente de plus sur le bouton, puis sans
+  son — ce délai ne court QUE de là (compté depuis le montage, il taisait le son
+  des premiers lancements après installation : préparation 3 à 8 s après
+  l'affichage). La préparation part dès la décision de l'ouverture (`bootPlan`,
+  `bootSound.prepare` rend la même ensuite). iPhone, iPad, TV : inchangés (`outputLeadMs` nul
+  sur iOS ; la TV garde ses options par défaut).
   Réglage d'appareil « Son au démarrage » (`tentacle_boot_sound`) ; « Animation
   d'ouverture » (`tentacle_boot_intro`) ; lus sur le disque AVANT l'hydratation
   du stockage (la décision précède tout), libellés `preferences.bootIntro*`.
 - **L'écran de lancement** est l'encre seule (#0D0B13) : storyboard iOS sans
   image, icône transparente d'Android 12+, fenêtre de l'app à l'encre.
+- **Tout se dessine pendant l'encre (Android, `prewarmOnInk`)** : tant que
+  l'ouverture attend sur l'encre, la scène entière (plaques ×2 et ×5 comprises)
+  et l'app (cercle grand ouvert) se dessinent SOUS un voile d'encre opaque
+  (`InkVeil`, qui arrête aussi les touchers) ; voile levé et poses de la
+  chorégraphie reprises dans la MÊME image que le départ (`IntroClock.prewarm`).
+  Relevé d'android-test (émulateur, 20/10) : 117 à 200 ms de trou ≈ 90 ms après
+  l'allumage, quand l'accueil se dessinait pour la première fois en pleine
+  plongée. iOS (déjà à 0 image perdue) et la TV n'en ont pas.
+- **Jamais le sombre forcé (Android)** : ColorOS (« appliquer aux apps
+  tierces »), One UI ou MIUI savent forcer le sombre sur une app ; HWUI recolore
+  alors ce que les vues peignent. Mesuré à l'émulateur (API 36, 1440×3216,
+  `debug.hwui.force_dark` sur un thème clair, 20/10) : la vitre SOMBRE de
+  l'écran du poulpe — un dégradé natif — devenait BLANCHE, l'accueil délavé ;
+  les pièces dessinées (bitmaps de react-native-svg) ne bougeaient pas. C'est le
+  « pas le même logo » de Damien (Oppo Find X3 Pro, ColorOS 14).
+  `android:forceDarkAllowed="false"` sur les deux thèmes (styles.xml) et
+  `isForceDarkAllowed = false` sur la vue racine (MainActivity), pour les
+  surcouches qui ne lisent pas le thème : même essai, logo intact.
 - **La racine attend la décision** (quelques millisecondes) avant de se dire
   prête : la navigation n'est jamais montée hors de l'écran du poulpe.
 

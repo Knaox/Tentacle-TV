@@ -38,3 +38,26 @@ index 623d90c8b3ea080edd16a14fa0a494b1547d9dd7..4e2f4fc4b9bc8953205668c8332d230d
                          .setEnableDecoderFallback(true)
                          .forceEnableMediaCodecAsynchronousQueueing();
  
+diff --git a/android/src/main/java/com/brentvatne/exoplayer/PictureInPictureUtil.kt b/android/src/main/java/com/brentvatne/exoplayer/PictureInPictureUtil.kt
+index 5e36ef2..eb03fdc 100644
+--- a/android/src/main/java/com/brentvatne/exoplayer/PictureInPictureUtil.kt
++++ b/android/src/main/java/com/brentvatne/exoplayer/PictureInPictureUtil.kt
+@@ -117,13 +117,11 @@ object PictureInPictureUtil {
+     }
+ 
+     private fun updatePictureInPictureActions(context: ThemedReactContext, pipParams: PictureInPictureParams) {
+-        if (!isSupportPictureInPictureAction()) return
+-        if (!isSupportPictureInPicture(context)) return
+-        try {
+-            context.findActivity().setPictureInPictureParams(pipParams)
+-        } catch (e: IllegalStateException) {
+-            DebugLog.e(TAG, e.toString())
+-        }
++        // Tentacle TV : l'image dans l'image de l'ACTIVITÉ appartient au module `player-pip` de
++        // l'app (entrée automatique pendant une lecture, gestes de la fenêtre, format) — la
++        // bibliothèque n'y écrit plus. Ses paramètres à elle (`autoEnter` faux, ses boutons)
++        // écrasaient les nôtres à chaque lecture/pause et à chaque mise en page : quitter l'app
++        // pendant une lecture n'ouvrait plus la petite fenêtre.
+     }
+ 
+     @JvmStatic

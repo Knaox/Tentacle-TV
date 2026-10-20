@@ -28,7 +28,7 @@ describe("quand le poulpe commence (mobile)", () => {
   });
 
   it("jamais plus longtemps que l'attente maximale sur l'encre, même si l'app ne se dit jamais prête", () => {
-    const { startedAt, state } = run(steady(200, false));
+    const { startedAt, state } = run(steady(Math.ceil(INTRO_START.maxWaitMs / 16.7) + 50, false));
     expect(startedAt).toBe(Math.ceil(INTRO_START.maxWaitMs / 16.7) - 1);
     expect(state.waitedMs).toBeGreaterThanOrEqual(INTRO_START.maxWaitMs);
     expect(state.periodMs).toBeCloseTo(16.7, 6);
@@ -36,5 +36,11 @@ describe("quand le poulpe commence (mobile)", () => {
 
   it("à 120 Hz, le pas est celui de l'écran", () => {
     expect(run(steady(10, true, 8.3)).startedAt).toBe(INTRO_START.calmFrames - 1);
+  });
+
+  it("un téléphone Android lent : l'encre attend l'app prête (relevé 20/10), le poulpe ne part pas pendant son montage", () => {
+    // ≈ 1,9 s d'encre (un trou de 300 ms compris), puis l'app se dit prête et rend la main.
+    const frames: [number, boolean][] = [[300, false], ...steady(96, false), [533, true], ...steady(10, true)];
+    expect(run(frames).startedAt).toBe(1 + 96 + 1 + INTRO_START.calmFrames - 1);
   });
 });

@@ -38,6 +38,28 @@ export const BOOT_SOUND_REQUEST_AT = Math.min(INTRO_HOLD_AT, BOOT_SOUND_FILE_AT 
 /** Le temps de traverser le pont et d'être posé dans le flux de sortie, en plus de l'avance de la sortie. */
 export const BOOT_SOUND_BRIDGE_MARGIN_MS = 80;
 
+/**
+ * La même marge sur un TÉLÉPHONE Android : la demande du son passe par le fil
+ * JavaScript, que le démarrage à froid tient occupé (le premier écran se monte
+ * DANS l'écran du poulpe pendant l'ouverture). Mesuré à l'émulateur (API 36,
+ * Mac M) : de 41 à 218 ms entre la demande et son arrivée au natif — un vrai
+ * téléphone est plus lent. Avec 80 ms, la demande arrivait après ce que la
+ * sortie avait déjà en file (≈ 155 ms) : le natif sautait le début du fichier
+ * (119 ms), et le « ta », à 40 ms, avec lui.
+ */
+export const BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS = 450;
+
+/**
+ * Le mobile attend que le son soit préparé (décodé, sortie datée) avant
+ * d'appuyer sur lecture : une préparation tardive ferait demander le son à
+ * l'aveugle, trop tard. Une fois l'écran prêt, il l'attend sur le bouton au plus
+ * ce temps-là, puis l'ouverture continue sans lui. Le délai ne court qu'à partir
+ * de là : compté depuis le montage (1,5 s, 20/10), il taisait le son des
+ * démarrages lents — premier lancement après installation, préparation finie
+ * 3 à 8 s après l'affichage, fil JS occupé qui laissait gagner la minuterie.
+ */
+export const BOOT_SOUND_PREPARE_MAX_MS = 2_500;
+
 /** Au-delà, une sortie qui se dit en avance se trompe (l'émulateur dérive) : on s'arrête là. */
 export const BOOT_SOUND_MAX_OUTPUT_LEAD_MS = 600;
 
@@ -55,11 +77,13 @@ export interface BootSoundLeads {
  * tôt que ce que la sortie a déjà en file perdrait son début — la vague, puis
  * le « ta » —, le natif sautant ce qui est passé pour rester calé à l'image.
  * Sans mesure, les valeurs d'avant (`BOOT_SOUND_REQUEST_AT`,
- * `BOOT_INTRO_RELEASE_DELAY_MS`).
+ * `BOOT_INTRO_RELEASE_DELAY_MS`). `bridgeMarginMs` : le temps que la demande met
+ * à joindre le natif (la TV : `BOOT_SOUND_BRIDGE_MARGIN_MS` ; un téléphone
+ * Android : `BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS`).
  */
-export function bootSoundLeads(outputLeadMs: number | null): BootSoundLeads {
+export function bootSoundLeads(outputLeadMs: number | null, bridgeMarginMs = BOOT_SOUND_BRIDGE_MARGIN_MS): BootSoundLeads {
   const lead = Math.min(Math.max(outputLeadMs ?? 0, 0), BOOT_SOUND_MAX_OUTPUT_LEAD_MS);
-  const needed = outputLeadMs === null ? 0 : lead + BOOT_SOUND_BRIDGE_MARGIN_MS;
+  const needed = outputLeadMs === null ? 0 : lead + Math.max(bridgeMarginMs, 0);
   return {
     requestAt: Math.min(BOOT_SOUND_REQUEST_AT, BOOT_SOUND_FILE_AT - needed),
     // Après l'attente, le fichier part `releaseDelay + (FILE_AT - HOLD_AT)` après la décision.

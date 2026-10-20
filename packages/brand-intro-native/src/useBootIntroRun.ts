@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BOOT_INTRO_MAX_HOLD_MS, bootIntroOutcome, bootSoundLeads, introFrameReport, type IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
+import {
+  BOOT_INTRO_MAX_HOLD_MS,
+  BOOT_SOUND_BRIDGE_MARGIN_MS,
+  BOOT_SOUND_PREPARE_MAX_MS,
+  bootIntroOutcome,
+  bootSoundLeads,
+  introFrameReport,
+  type IntroFrameReport,
+} from "@tentacle-tv/shared/brandIntro";
 import { bootIntroGate, useBootIntroReport } from "./bootIntroGate";
 import { bootSound } from "./bootSound";
 import { useIntroClock, type IntroClockControl, type IntroWallTrace } from "./useIntroClock";
 
 /** La traîne du son après l'arrivée (le bloom de l'accord, la vague) : le lecteur se libère ensuite. */
 const SOUND_TAIL_MS = 5_000;
+
+type SoundPrepared = { ready: boolean; outputLeadMs: number | null };
+const NO_SOUND: SoundPrepared = { ready: false, outputLeadMs: null };
 
 export interface BootIntroRunOptions {
   /** Le « ta-dum » est voulu (réglage d'appareil) : relu au départ, il peut arriver un peu après. */
@@ -16,6 +27,19 @@ export interface BootIntroRunOptions {
   onFrameReport?: (report: IntroFrameReport, trace: IntroWallTrace) => void;
   /** Rester sur l'encre tant que l'app démarre (mobile : `bootIntroGate.reportAppReady`, shared `introStart`). */
   waitForApp?: boolean;
+  /** Pendant cette encre, tout dessiner d'avance sous un voile (`useIntroClock` › `prewarmOnInk`). */
+  prewarmOnInk?: boolean;
+  /**
+   * Le temps que la demande du son met à joindre le natif (shared `bootSoundLeads`) :
+   * la TV garde `BOOT_SOUND_BRIDGE_MARGIN_MS`, le mobile prend `BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS`.
+   */
+  soundBridgeMarginMs?: number;
+  /**
+   * N'appuyer sur lecture qu'une fois le son préparé — l'écran prêt, au plus
+   * `BOOT_SOUND_PREPARE_MAX_MS` d'attente de plus sur le bouton, puis sans son : sinon il
+   * serait demandé avant que sa sortie soit mesurée, avec une avance trop courte (mobile).
+   */
+  waitForSound?: boolean;
 }
 
 export interface BootIntroRun {
@@ -34,17 +58,29 @@ export interface BootIntroRun {
  * s'allume. Le son se décode pendant que le poulpe s'assemble, seulement s'il
  * est voulu ; la sortie mesurée (Android) dit quand le demander.
  */
-export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport, waitForApp = false }: BootIntroRunOptions): BootIntroRun {
+export function useBootIntroRun({
+  soundWanted,
+  selfReporting,
+  onFrameReport,
+  waitForApp = false,
+  prewarmOnInk = false,
+  soundBridgeMarginMs = BOOT_SOUND_BRIDGE_MARGIN_MS,
+  waitForSound = false,
+}: BootIntroRunOptions): BootIntroRun {
   const [landed, setLanded] = useState(false);
+  // Sans attente du son (la TV), il est réglé d'emblée : l'ouverture ne l'attend jamais.
+  const [soundSettled, setSoundSettled] = useState(!waitForSound);
   const [heldSince, setHeldSince] = useState<number | null>(null);
   const [heldOut, setHeldOut] = useState(false);
   // Lu à l'arrivée seulement : sa dernière valeur, sans rejouer l'effet.
   const frameReportRef = useRef(onFrameReport);
   frameReportRef.current = onFrameReport;
-  const soundReady = useRef<Promise<{ ready: boolean; outputLeadMs: number | null }> | null>(null);
+  const soundReady = useRef<Promise<SoundPrepared> | null>(null);
+  // Le son abandonné (préparé trop tard) : il ne se jouera plus, même s'il finit par répondre.
+  const soundDropped = useRef(false);
 
   if (soundReady.current === null) {
-    soundReady.current = soundWanted.then((wanted) => (wanted ? bootSound.prepare() : { ready: false, outputLeadMs: null }));
+    soundReady.current = soundWanted.then((wanted) => (wanted ? bootSound.prepare() : NO_SOUND));
   }
 
   const land = useCallback(() => setLanded(true), []);
@@ -52,22 +88,25 @@ export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport, wai
     () => ({
       onHold: () => setHeldSince(Date.now()),
       onSound: (startAt: number) => {
-        void soundReady.current?.then(({ ready }) => (ready ? bootSound.playAt(startAt) : undefined));
+        void soundReady.current?.then(({ ready }) => (ready && !soundDropped.current ? bootSound.playAt(startAt) : undefined));
       },
       onDone: land,
     }),
     [land],
   );
-  const clock = useIntroClock(events, null, { waitForApp });
+  const clock = useIntroClock(events, null, { waitForApp, prewarmOnInk });
 
   useEffect(() => {
     void soundReady.current?.then(({ ready, outputLeadMs }) => {
-      if (!ready) return;
-      const leads = bootSoundLeads(outputLeadMs);
-      clock.requestAt.value = leads.requestAt;
-      clock.releaseDelay.value = leads.releaseDelayMs;
+      if (ready && !soundDropped.current) {
+        const leads = bootSoundLeads(outputLeadMs, soundBridgeMarginMs);
+        clock.requestAt.value = leads.requestAt;
+        clock.releaseDelay.value = leads.releaseDelayMs;
+      }
+      // Les avances posées AVANT que l'appui ne soit permis : le son se demande à temps.
+      setSoundSettled(true);
     });
-  }, [clock]);
+  }, [clock, soundBridgeMarginMs]);
 
   // Au bout de l'attente maximale, on plonge quand même : l'écran dit qu'il charge.
   useEffect(() => {
@@ -89,8 +128,22 @@ export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport, wai
     ...(selfReporting ? { selfReporting } : {}),
   });
   useEffect(() => {
-    if (!landed && outcome === "go") clock.ready.value = true;
-  }, [outcome, landed, clock]);
+    if (!landed && soundSettled && outcome === "go") clock.ready.value = true;
+  }, [outcome, landed, soundSettled, clock]);
+
+  // L'écran est prêt mais le son se prépare encore (un démarrage lent : premier lancement,
+  // appareil occupé) : l'ouverture l'attend sur le bouton, au plus `BOOT_SOUND_PREPARE_MAX_MS`.
+  // Le délai ne court qu'à partir d'ici — jamais depuis le montage, où un fil JS occupé ferait
+  // gagner la minuterie et tairait le son à tort.
+  const waitingForSound = !landed && !soundSettled && outcome === "go";
+  useEffect(() => {
+    if (!waitingForSound) return undefined;
+    const timer = setTimeout(() => {
+      soundDropped.current = true;
+      setSoundSettled(true);
+    }, BOOT_SOUND_PREPARE_MAX_MS);
+    return () => clearTimeout(timer);
+  }, [waitingForSound]);
 
   // Tant qu'elle se joue, rien ne sonne ni ne s'ouvre par-dessus (aperçus, modales du lancement).
   useEffect(() => {

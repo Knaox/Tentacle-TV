@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import type { IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS, type IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
+import { Dimensions, Platform, StyleSheet, View } from "react-native";
 import { SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,7 +42,17 @@ export function BootIntroHost({ sound, screenColor, children }: BootIntroHostPro
     (report: IntroFrameReport, trace: IntroWallTrace) => recordBootIntroFrames(report, trace, viewport),
     [viewport],
   );
-  const { clock, landed } = useBootIntroRun({ soundWanted, selfReporting: MOBILE_BOOT_SELF_REPORTING, onFrameReport, waitForApp: true });
+  // Le son se demande assez tôt pour traverser le fil JavaScript du démarrage (Android), une fois préparé.
+  const { clock, landed } = useBootIntroRun({
+    soundWanted,
+    selfReporting: MOBILE_BOOT_SELF_REPORTING,
+    onFrameReport,
+    waitForApp: true,
+    // Android : l'accueil et les plaques se dessinent pendant l'encre, pas à l'allumage (iOS : déjà fluide).
+    prewarmOnInk: Platform.OS === "android",
+    soundBridgeMarginMs: BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS,
+    waitForSound: true,
+  });
 
   // Jamais arrivée au bout de 12 s : l'état est relevé pour le banc (rien ne part sinon).
   useEffect(() => {
