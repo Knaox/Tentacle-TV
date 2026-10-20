@@ -419,6 +419,48 @@ Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
 - La TV LG ne compile rien de tout cela : sa porte est substituée et
   `apps/web/src/profiles/` sort de sa feuille.
 
+## Le mobile et l'iPad : « Qui regarde ? » et le premier lancement (serveur 1.32.0)
+
+Capacité **`family.mobileProfiles`** : la plateforme `mobile` des routes du
+bureau (`/api/family/picker/*`, `FAMILY_PICKER_PLATFORMS`) — mêmes règles, même
+hôte par session personnelle (nommé « Mobile » par défaut, sinon le nom de
+l'appareil), même session de profil qui REGARDE (le serveur l'appelle
+`desktopProfile` : « session de profil hors TV »). L'ancienne préférence du
+compte (`PickerPreferenceDto`) reste au bureau seul. Un serveur qui ne déclare
+pas la capacité : ni « Qui regarde ? », ni « Changer de profil », sans erreur.
+
+- **Le stockage** est celui du bureau, passé dans shared
+  (`family/profileSessionStore.ts`) : `tentacle_profile_session`,
+  `tentacle_account_session` (au TROUSSEAU sur le mobile, allégée de
+  `Configuration`), `tentacle_device_id_jf` qui suit la session. Pas de
+  rechargement de page : la bascule vide le cache et fait avancer l'ÉPOQUE de
+  session, sur laquelle `AppProviders` reconstruit son client
+  (`apps/mobile/src/family/profiles/`).
+- **Le choix est MÉMORISÉ** (décision de Damien, 20/10) : « Qui regarde ? »
+  plein écran au premier lancement d'une famille d'au moins deux profils, puis
+  plus jamais sur cet appareil (`tentacle_mobile_profile_stay`, par serveur et
+  par compte), sauf choix caduc (profil disparu, code posé ou retiré), profil
+  bloqué, ou session de profil terminée. Jamais le compte ouvert sans son code
+  parce que la session d'un autre profil a pris fin (shared
+  `mobileProfileLaunch`). On change de profil dans Réglages › Compte
+  (`/who-is-watching`) ; la gestion des profils n'est jamais sur le sélecteur.
+- **Fin d'une session de profil** : un 401 au rafraîchissement ramène en
+  coulisse à la session personnelle, puis « Qui regarde ? » — jamais une
+  reconnexion par les identifiants. La déconnexion du compte prévient le
+  serveur par la session personnelle (`POST /api/auth/logout`). Une session de
+  profil ne s'abonne pas au push.
+- **Le premier lancement** (`apps/mobile/src/family/firstRun/`) : l'ordre de la
+  TV (tv-core `startupWindows`) — le code PIN conseillé (session personnelle
+  seulement : `setOwnPin`), les RANGÉES de l'accueil (la préférence du compte,
+  même accueil que le web et le bureau), la photo. Une fois par profil et par
+  appareil (`tentacle_first_run_seen`), chaque étape se passe, une seule
+  surface à la fois (`firstRunFlow`). Le premier des recouvrements tardifs du
+  démarrage ; l'invitation aux avatars et le rappel du code ne reposent pas
+  derrière lui ce qu'il a proposé.
+- **« Reproposer le code PIN et la photo »** (`promptsResetAt`) rouvre tout le
+  premier lancement au lancement suivant (`honorMobilePromptsReset`) ; sur la
+  TV, la barre aussi repasse (`railProfileStore.reopenSetup`).
+
 ## Gérer depuis un profil (serveur 1.30.0, `family.profileManage`)
 
 Décisions de Damien du 2026-10-16. Le propriétaire ou un membre GÈRE la famille
