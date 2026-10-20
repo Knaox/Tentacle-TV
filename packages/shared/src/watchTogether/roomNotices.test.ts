@@ -65,6 +65,10 @@ describe("arrivée dans la lecture", () => {
       .toEqual(["memberArriving:B"]);
   });
 
+  it("son second appareil arrive (« Rejoindre ici ») alors qu'il regarde déjà : la puce seule, aucun message", () => {
+    expect(keys(room(), room({ epoch: 2, ...frozenForBob }), "join", "a")).toEqual([]);
+  });
+
   it("un NOUVEAU membre qui arrive : « a rejoint le groupe », une fois", () => {
     const prev = room({ members: [member("a"), member("c")] });
     expect(keys(prev, room({ epoch: 2, members: bobAway, ...frozenForBob }), "join", "c")).toEqual(["memberJoined:B"]);

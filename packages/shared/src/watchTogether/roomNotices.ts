@@ -35,7 +35,8 @@ export function playbackPresenceToasts(
     if (member.userId === selfId || !before) continue;
     const name = { name: member.username };
     if (arrivingNow.has(member.userId) && !arrivingBefore.has(member.userId)) {
-      toasts.push({ kind: "info", key: "memberArriving", params: name });
+      // Il regardait déjà sur un autre appareil (« Rejoindre ici ») : la puce suffit.
+      if (!before.inPlayback) toasts.push({ kind: "info", key: "memberArriving", params: name });
     } else if (arrivingBefore.has(member.userId) && !arrivingNow.has(member.userId)) {
       if (!member.inPlayback && !member.playbackError) {
         toasts.push({ kind: "info", key: "memberArrivalCancelled", params: name });
