@@ -187,6 +187,12 @@ export const SERVER_CAPABILITIES = {
    *  et la préférence du COMPTE qui l'allume (`trendingNow` de `/api/preferences/reco`, allumée par
    *  défaut). Sans elle, aucun interrupteur : un serveur d'avant ignore le paramètre. */
   "reco.trending": "1.31.0",
+  // ── Lot mobile 20/10 : notifications du téléphone synchronisées ──
+  /** Une push d'une notification porte son identifiant (`data.notificationId`), la catégorie
+   *  `tentacle.notification` (iOS : balayer la bannière = la marquer lue) et la pastille de
+   *  l'icône (le nombre de non lues). Le mobile réconcilie alors le centre du système et le
+   *  serveur : lue ou balayée n'importe où = lue partout. Sans elle, rien ne se synchronise. */
+  "notifications.pushSync": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

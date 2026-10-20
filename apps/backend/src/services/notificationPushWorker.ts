@@ -8,6 +8,7 @@ import { ticketPushText } from "./ticketPushText";
 import { loadPushLangs } from "./pushLang";
 import { departurePushBody, parseSeerDeparture } from "./seerDeparturePush";
 import { pushTapData } from "../notifications/notificationDto";
+import { createPushSyncFields } from "./pushSync";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -104,6 +105,8 @@ export async function deliverPendingNotifications(): Promise<void> {
       claimsByUser.set(c.jellyfinUserId, list);
     }
 
+    // Pastille et catégorie de chaque push (capacité `notifications.pushSync`).
+    const syncFields = createPushSyncFields();
     const deferredIds = new Set<string>();
     for (const n of notifications) {
       const prefKey = PUSHABLE[n.type];
@@ -114,6 +117,7 @@ export async function deliverPendingNotifications(): Promise<void> {
         const res = await sendToUser(n.jellyfinUserId, {
           ...text,
           data: pushTapData(n),
+          ...(await syncFields(n.jellyfinUserId)),
         });
         console.log(
           `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] ticket ${n.type} (sent:${res.sent}, invalid:${res.invalid})`,
@@ -134,6 +138,7 @@ export async function deliverPendingNotifications(): Promise<void> {
             title: n.title,
             body: departurePushBody(departing, langByUser.get(n.jellyfinUserId) ?? "fr"),
             data: pushTapData(n),
+          ...(await syncFields(n.jellyfinUserId)),
           });
           console.log(`[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] départ « ${departing} » (sent:${res.sent}, invalid:${res.invalid})`);
         }
@@ -154,6 +159,7 @@ export async function deliverPendingNotifications(): Promise<void> {
         title: n.title,
         body: en ? englishAvailabilityBody(plan.seasons) : plan.body,
         data: pushTapData(n),
+          ...(await syncFields(n.jellyfinUserId)),
       });
       console.log(
         `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] « ${n.title} » (sent:${res.sent}, invalid:${res.invalid})`,

@@ -35,7 +35,8 @@ describe("contrat des notifications (cible, état)", () => {
 
   it("une notification d'avant (sans colonnes) se sert sans cible ni état", () => {
     expect(toNotificationDto(row)).toMatchObject({ target: null, state: null, createdAt: "2026-10-15T09:00:00.000Z" });
-    expect(pushTapData(row)).toEqual({ type: "request_status", refId: "r1" });
+    expect(pushTapData(row)).toEqual({ type: "request_status", refId: "r1", notificationId: "n1" });
+    expect(pushTapData({ type: "x", refId: null, target: null })).toEqual({ type: "x", refId: undefined });
   });
 
   it("une cible stockée est servie lue, une cible abîmée devient null", () => {
@@ -43,7 +44,7 @@ describe("contrat des notifications (cible, état)", () => {
     const dto = toNotificationDto({ ...row, target: JSON.stringify(target), state: "progress" });
     expect(dto.target).toEqual(target);
     expect(dto.state).toBe("progress");
-    expect(pushTapData({ ...row, target: JSON.stringify(target) })).toEqual({ type: "request_status", refId: "r1", target });
+    expect(pushTapData({ ...row, target: JSON.stringify(target) })).toEqual({ type: "request_status", refId: "r1", notificationId: "n1", target });
     expect(toNotificationDto({ ...row, target: "{oops", state: "downloading" })).toMatchObject({ target: null, state: null });
   });
 });

@@ -33,6 +33,8 @@ vi.mock("./db", () => {
     $transaction: async (run: (tx: unknown) => Promise<unknown>) => run(db),
     notification: {
       findMany: async () => store.notifications.filter((n) => n.pushedAt === null),
+      // La pastille de la push : les non lues du compte.
+      count: async () => 3,
       updateMany: async (args: { where: { id: { in: string[] } } }) => {
         store.marked.push(...args.where.id.in);
         return { count: args.where.id.in.length };
@@ -166,5 +168,11 @@ describe("livraison push des tickets", () => {
     store.notifications = [row("alice", "ticket_reply", "Lecture qui coupe", "Essayez la lecture directe")];
     await deliverPendingNotifications();
     expect(sendToUser).toHaveBeenCalledWith("alice", expect.objectContaining({ title: "Réponse sur « Lecture qui coupe »" }));
+    // Synchro du téléphone : l'identifiant, la catégorie « balayée = lue », la pastille.
+    expect(sendToUser).toHaveBeenCalledWith("alice", expect.objectContaining({
+      badge: 3,
+      categoryId: "tentacle.notification",
+      data: expect.objectContaining({ notificationId: expect.any(String) }),
+    }));
   });
 });
