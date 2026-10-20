@@ -166,6 +166,14 @@ messages ne parlait que d'un membre qui quitte le GROUPE.
   (web, bureau, mobile) le dit au groupe tout de suite (`notifyFatalError`).
 - Mobile : le premier chargement se pose à la position du groupe, jamais à la
   reprise personnelle (`loadTargetSeconds`) — c'était le recul de l'hôte.
+- **L'arrivant ne lit jamais seul** : un lecteur prêt, ou relancé, pendant que
+  la salle l'attend est tenu en pause jusqu'à la reprise commune (relais dès
+  le média prêt, `isRoomWaitingForMe`) ; en séance, la fin de la réserve de
+  mpv ne relance plus rien (`useMpvPrebuffer`, `resume`). Le mobile reconnaît
+  l'écho de SES commandes de pause sans délai (`mobileTransport`), sinon un
+  rendu lent d'Android envoyait une `wt:pause` qui bloquait le groupe. Un
+  lecteur à plus de 2 s de la salle ne montre ni ne propose aucun passage
+  (`wtPlayerAligned`).
 
 ## Le chat interactif (20/10)
 
