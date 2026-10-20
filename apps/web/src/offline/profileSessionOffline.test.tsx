@@ -33,6 +33,9 @@ vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({ data: state.entries
 vi.mock("@tentacle-tv/offline-core/react", () => ({ LOCAL_QUERY: {} }));
 vi.mock("@tentacle-tv/api-client", () => ({
   useUserId: () => "lea",
+  // Les droits de la session : un serveur qui ne les dit pas (règle d'avant de chaque écran).
+  useAccountAbilities: () => ({ kind: "legacy" }),
+  mayShow: (_state: unknown, _ability: unknown, legacy = true) => legacy,
   useConnectivityNotice: () => ({
     kind: "server",
     titleKey: "errors:connectivityServerTitle",
