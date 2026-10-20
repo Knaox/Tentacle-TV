@@ -53,7 +53,20 @@ describe("openNotification — la même destination depuis le centre et depuis u
   it("une notification locale du hors ligne ouvre l'écran de l'appareil", async () => {
     const p = ports();
     await openNotification({ type: "offline_ready" }, "push", p);
-    expect(p.openOnDevice).toHaveBeenCalledOnce();
+    expect(p.openOnDevice).toHaveBeenCalledWith(null);
+  });
+
+  it("« Prêt à regarder hors ligne » d'un seul titre ouvre CE titre ; « Espace insuffisant », jamais", async () => {
+    const p = ports();
+    expect(await openNotification({ type: "offline_ready", itemId: "abc 1" }, "push", p)).toBe("/on-device/item/abc%201");
+    expect(p.openOnDevice).toHaveBeenCalledWith("abc 1");
+    const full = ports();
+    expect(await openNotification({ type: "offline_disk_full", itemId: "abc" }, "push", full)).toBe("/on-device");
+    expect(full.openOnDevice).toHaveBeenCalledWith(null);
+    // Une donnée illisible ne mène nulle part d'inventé.
+    const odd = ports();
+    await openNotification({ type: "offline_ready", itemId: 42 }, "push", odd);
+    expect(odd.openOnDevice).toHaveBeenCalledWith(null);
   });
 });
 

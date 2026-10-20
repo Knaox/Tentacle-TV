@@ -69,7 +69,7 @@ export function PushRegistrationSync({
       for (const queryKey of NOTIFICATION_LIVE_KEYS) {
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
-      await open({ type: data?.type, refId: data?.refId ?? null, target: data?.target }, "push");
+      await open({ type: data?.type, refId: data?.refId ?? null, target: data?.target, itemId: data?.itemId }, "push");
     },
     [queryClient, open, markRead],
   );

@@ -72,6 +72,8 @@ export interface PushTapData {
   notificationId?: string;
   /** Le geste du système : toucher (défaut) ou balayage (iOS, catégorie à `customDismissAction`). */
   actionIdentifier?: string;
+  /** Notification locale « Prêt à regarder hors ligne » d'un seul titre : lequel. */
+  itemId?: unknown;
 }
 
 function tapDataOf(response: Notifications.NotificationResponse): PushTapData {

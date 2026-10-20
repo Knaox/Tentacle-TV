@@ -19,8 +19,11 @@ export type NotificationOrigin = "center" | "push";
 export interface NotificationOpenPorts {
   /** Aller à une route (onglet rejoint sans empiler, fiche empilée). */
   goTo: (route: string) => void;
-  /** L'écran « Sur cet appareil » (notifications locales du hors ligne). */
-  openOnDevice: () => void;
+  /**
+   * Les notifications locales du hors ligne : le titre prêt quand le lot n'en
+   * comptait qu'un (`itemId`), sinon l'écran « Sur cet appareil ».
+   */
+  openOnDevice: (itemId: string | null) => void;
   /** L'affiche d'une invitation de la Famille, relue au serveur par sa session. */
   openFamilyPoster: (invitationId: string) => void;
   /** Les métadonnées des extensions actives ; un échec ou un délai vaut « aucune ». */
@@ -33,6 +36,13 @@ export interface OpenableNotification {
   type?: string;
   refId?: string | null;
   target?: unknown;
+  /** « Prêt à regarder hors ligne » d'un seul titre : lequel (notification locale, lue, jamais crue). */
+  itemId?: unknown;
+}
+
+/** La fiche locale d'un titre gardé hors ligne. */
+export function onDeviceItemRoute(itemId: string): string {
+  return `/on-device/item/${encodeURIComponent(itemId)}`;
 }
 
 /** Une push sans destination ouvre l'accueil : l'app vient de s'ouvrir, il faut bien un écran. */
@@ -52,8 +62,9 @@ export async function openNotification(
   const n = { type: input.type ?? "", refId: input.refId ?? null, target: parseNotificationTarget(input.target ?? null) };
   const action = decideNotificationTap(n);
   if (action.kind === "onDevice") {
-    ports.openOnDevice();
-    return "/on-device";
+    const itemId = n.type === "offline_ready" && typeof input.itemId === "string" && input.itemId !== "" ? input.itemId : null;
+    ports.openOnDevice(itemId);
+    return itemId === null ? "/on-device" : onDeviceItemRoute(itemId);
   }
   if (action.kind === "familyPoster") {
     ports.openFamilyPoster(action.invitationId);

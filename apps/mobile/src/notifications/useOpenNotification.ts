@@ -6,7 +6,7 @@ import { activePluginsQueryOptions, toNotifPluginMeta } from "@/hooks/useActiveP
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { libraryTitleLookup } from "@/services/notificationDestination";
 import { openFamilyNotification } from "@/family/familyPosterStore";
-import { openNotification, type NotificationOpenPorts, type NotificationOrigin, type OpenableNotification } from "./openNotification";
+import { onDeviceItemRoute, openNotification, type NotificationOpenPorts, type NotificationOrigin, type OpenableNotification } from "./openNotification";
 
 /** Un geste ne doit jamais rester figé : au-delà, on part sans les extensions. */
 const PLUGIN_META_TIMEOUT_MS = 3000;
@@ -39,7 +39,7 @@ export function useOpenNotification(): (n: OpenableNotification & { id?: string 
       });
     return {
       goTo: (route) => openNotificationRoute(router, route),
-      openOnDevice: () => openNotificationRoute(router, "/on-device"),
+      openOnDevice: (itemId) => openNotificationRoute(router, itemId === null ? "/on-device" : onDeviceItemRoute(itemId)),
       openFamilyPoster: (invitationId) => { openFamilyNotification(router, { type: "family_invite", refId: invitationId }); },
       loadPlugins: async () => {
         if (!serverUrl || !token) return [];
