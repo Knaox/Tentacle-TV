@@ -1,10 +1,7 @@
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
-import { validateToken, type JellyfinUser } from "../middleware/auth";
-import { addConnection, removeConnection } from "../services/wsManager";
-import { isDeviceRevoked } from "../services/pairedDeviceStatus";
-import { jellyfinHealth } from "../services/jellyfinHealth";
-import { hashToken } from "../services/jwt";
+import type { JellyfinUser } from "../middleware/auth";
+import { removeConnection } from "../services/wsManager";
 import { handleSocketClosed, handleWtMessage } from "../services/watchTogether/gateway";
 import {
   handleSessionClosed,
@@ -12,11 +9,11 @@ import {
   type ChannelConnection,
 } from "../services/deviceSessions/gateway";
 import { isSessionMessageType } from "../services/deviceSessions/protocolParse";
-import { FAMILY_PROFILE_ENDED_CLOSE_CODE } from "../family/familyProtocol";
 import { canUseWatchTogether } from "../services/family/profileSessionLimits";
-import { blockedSocketAccess, refuseBlockedSocket } from "../services/accountAccess/socketAccess";
+import { cookieDecidesAtOnce } from "../services/sessionTokenChoice";
+import { authenticateAndBind, type BoundSession } from "./wsSessionAuth";
+import { createSocketAnnouncement } from "./wsAnnouncement";
 
-const AUTH_TIMEOUT_MS = 15_000;
 /** Ping protocolaire toutes les 10 s ; deux pongs manqués = socket mort,
  *  fermé d'office — une séance ne doit pas attendre un lecteur disparu
  *  jusqu'à ce que TCP s'en aperçoive. */
@@ -97,58 +94,16 @@ function setupPing(ws: WebSocket): ReturnType<typeof setInterval> {
   }, PING_INTERVAL_MS);
 }
 
-interface BoundSession {
-  user: JellyfinUser;
-  /** sha256 du token — clé de ciblage pour la révocation d'appareil. */
-  tokenHash: string;
-  /** Le token lui-même : le canal de session en tire le jeton Jellyfin. */
-  token: string;
-}
-
-async function authenticateAndBind(
-  ws: WebSocket,
-  token: string,
-): Promise<BoundSession | null> {
-  const result = await validateToken(token);
-  const tokenHash = hashToken(token);
-  // Révoqué pendant la validation : la révocation a poussé AVANT que cette
-  // socket ne soit connue — elle ne l'aurait jamais fermée.
-  const revoked = result.ok ? isDeviceRevoked(tokenHash) : "revoked" in result && result.revoked === true;
-  const profileEnded = result.ok ? result.user.session === "tvProfile" : "profileEnded" in result && result.profileEnded === true;
-  // Désactivé ou hors plage : refusé avec l'état, sans reconnexion en boucle (cf. socketAccess).
-  const blocked = revoked ? null : await blockedSocketAccess(result);
-  if (blocked) {
-    refuseBlockedSocket(ws, blocked);
-    return null;
+/** Le cookie de session de la poignée de main (web ; le pot d'une app native aussi). */
+function sessionCookieOf(request: FastifyRequest): string | undefined {
+  const cookies = (request as unknown as { cookies?: Record<string, string> }).cookies;
+  // Fallback: parse cookie manually from raw header if @fastify/cookie didn't run
+  let cookieToken = cookies?.tentacle_token;
+  if (!cookieToken && request.headers.cookie) {
+    const match = request.headers.cookie.match(/(?:^|;\s*)tentacle_token=([^;]*)/);
+    if (match) cookieToken = decodeURIComponent(match[1]);
   }
-  if (!result.ok || revoked) {
-    if (revoked && profileEnded) {
-      // Une session de profil (Famille) terminée : la TV revient à « Qui
-      // regarde ? » — surtout pas `revoked`, qui la déjumellerait.
-      ws.send(JSON.stringify({ type: "auth_error", reason: "profile_ended" }));
-      ws.close(FAMILY_PROFILE_ENDED_CLOSE_CODE, "Profile session ended");
-    } else if (revoked) {
-      // Le jumelage n'existe plus — typiquement une TV éteinte pendant qu'on la
-      // déjumelait : elle l'apprend dès qu'elle se reconnecte.
-      ws.send(JSON.stringify({ type: "auth_error", reason: "revoked" }));
-      ws.close(4009, "Device revoked");
-    } else if (!result.ok && result.reason === "unreachable") {
-      // Jellyfin absent : impossible de juger ce jeton — mais on dit pourquoi,
-      // pour que le lecteur montre « Jellyfin redémarre » plutôt qu'une erreur.
-      const health = jellyfinHealth();
-      if (health.state !== "up") ws.send(JSON.stringify({ type: "server:jellyfin", state: health.state, since: health.since }));
-      ws.send(JSON.stringify({ type: "auth_error", reason: "server_unreachable" }));
-      ws.close(4003, "Server unreachable");
-    } else {
-      ws.send(JSON.stringify({ type: "auth_error", reason: "invalid_token" }));
-      ws.close(4001, "Authentication failed");
-    }
-    return null;
-  }
-
-  ws.send(JSON.stringify({ type: "auth_ok" }));
-  addConnection(result.user.userId, ws, tokenHash);
-  return { user: result.user, tokenHash, token };
+  return cookieToken || undefined;
 }
 
 export const wsRoutes: FastifyPluginAsync = async (app) => {
@@ -157,9 +112,23 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
     let tokenHash: string | null = null;
     let bound: BoundChannel | null = null;
     let pingInterval: ReturnType<typeof setInterval> | null = null;
+    let closed = false;
 
-    const cleanup = () => {
-      if (pingInterval) clearInterval(pingInterval);
+    /** La socket parle au nom de cette session. Fermée pendant la vérification :
+     *  elle n'est pas gardée parmi les connexions du compte (présence fausse). */
+    const adopt = (session: BoundSession) => {
+      if (closed) {
+        removeConnection(session.user.userId, socket, session.tokenHash);
+        return;
+      }
+      user = session.user;
+      tokenHash = session.tokenHash;
+      bound = bindChannel(socket, session.user, session.token);
+      pingInterval = setupPing(socket);
+    };
+    /** Plus de session : socket fermée, ou une session en remplace une autre. */
+    const release = () => {
+      if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
       if (bound) {
         handleSessionClosed(bound.channel);
         bound = null;
@@ -167,31 +136,19 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
       if (user) {
         handleSocketClosed(user.userId, socket);
         removeConnection(user.userId, socket, tokenHash ?? undefined);
+        user = null;
+        tokenHash = null;
       }
     };
 
-    socket.on("close", cleanup);
-    socket.on("error", cleanup);
-
-    // 1. Try cookie auth first (web clients — cookie sent on upgrade)
-    const cookies = (request as unknown as { cookies?: Record<string, string> }).cookies;
-    // Fallback: parse cookie manually from raw header if @fastify/cookie didn't run
-    let cookieToken = cookies?.tentacle_token;
-    if (!cookieToken && request.headers.cookie) {
-      const match = request.headers.cookie.match(/(?:^|;\s*)tentacle_token=([^;]*)/);
-      if (match) cookieToken = decodeURIComponent(match[1]);
-    }
-
-    if (cookieToken) {
-      authenticateAndBind(socket, cookieToken).then((u) => {
-        if (u) {
-          user = u.user;
-          tokenHash = u.tokenHash;
-          bound = bindChannel(socket, u.user, u.token);
-          pingInterval = setupPing(socket);
-        }
-      });
-
+    // 1. Le cookie d'un navigateur (la page web, cookie envoyé à la poignée
+    //    de main), ou une session que le serveur y a posée : il décide aussitôt.
+    const cookieToken = sessionCookieOf(request);
+    if (cookieToken && cookieDecidesAtOnce(cookieToken, request.headers)) {
+      const cleanup = () => { closed = true; release(); };
+      socket.on("close", cleanup);
+      socket.on("error", cleanup);
+      authenticateAndBind(socket, cookieToken).then((session) => { if (session) adopt(session); });
       // Ping keepalive + messages métier des clients cookie-authentifiés
       socket.on("message", (raw: Buffer) => {
         const msg = tryParseMessage(String(raw));
@@ -200,31 +157,24 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
       return;
     }
 
-    // 2. Wait for auth message (mobile/TV/desktop)
-    const authTimeout = setTimeout(() => {
-      if (!user) {
-        socket.send(JSON.stringify({ type: "auth_error", reason: "timeout" }));
-        socket.close(4001, "Auth timeout");
-      }
-    }, AUTH_TIMEOUT_MS);
+    // 2. Le message `auth` (mobile, TV, bureau). Le cookie de connexion qu'une
+    //    app native garde dans son pot n'est qu'un repli : son message l'emporte.
+    const announcement = createSocketAnnouncement({ socket, cookie: cookieToken, adopt, release });
+    const cleanup = () => {
+      closed = true;
+      announcement.dispose();
+      release();
+    };
+    socket.on("close", cleanup);
+    socket.on("error", cleanup);
 
     socket.on("message", (raw: Buffer) => {
       const msg = tryParseMessage(String(raw));
       if (!msg) return;
-
-      if (msg.type === "auth" && !user && typeof msg.token === "string") {
-        clearTimeout(authTimeout);
-        authenticateAndBind(socket, msg.token).then((u) => {
-          if (u) {
-            user = u.user;
-            tokenHash = u.tokenHash;
-            bound = bindChannel(socket, u.user, u.token);
-            pingInterval = setupPing(socket);
-          }
-        });
+      if (msg.type === "auth") {
+        if (typeof msg.token === "string") announcement.announce(msg.token);
         return;
       }
-
       handleParsedMessage(socket, msg, () => user, () => bound);
     });
   });

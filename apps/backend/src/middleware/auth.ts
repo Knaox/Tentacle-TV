@@ -6,6 +6,7 @@ import { pairedDeviceStatus, PROFILE_ENDED_REPLY, REVOKED_REPLY } from "../servi
 import { profileSessionScope } from "../services/family/profileSessionLimits";
 import { accountAccessReply, sessionAccessRefusal } from "../services/accountAccess/accountAccessState";
 import { blockedJellyfinToken, forgetTokenOwner, rememberTokenOwner } from "../services/accountAccess/tokenOwners";
+import { chooseSessionToken } from "../services/sessionTokenChoice";
 import type { AccountAccessBlocked } from "../accountAccess/accountAccessContract";
 
 /**
@@ -153,13 +154,17 @@ function rejection(result: Extract<ValidationResult, { ok: false }>) {
  *  Exporté : les routes de téléchargement relisent le token BRUT pour
  *  interroger la policy Jellyfin de l'utilisateur lui-même (Users/Me). */
 export function getTokenFromRequest(request: FastifyRequest): string | null {
-  // 1. Cookie (web — httpOnly, XSS-proof)
-  const cookieToken = (request as any).cookies?.tentacle_token;
-  if (cookieToken) return cookieToken;
-  // 2. Authorization: Bearer header (mobile/desktop)
+  // 1. Cookie (web — httpOnly) et `Authorization: Bearer` (mobile, bureau) :
+  //    le Bearer l'emporte sur un cookie de CONNEXION que le pot d'une app
+  //    native a gardé (le compte, pendant la session d'un profil) ; une session
+  //    posée par le serveur dans le cookie (profil du web, « voir en tant
+  //    que ») l'emporte toujours — cf. sessionTokenChoice.
+  const cookieToken = (request as { cookies?: Record<string, string | undefined> }).cookies?.tentacle_token;
   const authHeader = request.headers.authorization;
-  if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
-  // 3. En-têtes Jellyfin : `X-Emby-Token` des clients anciens, ou le `Token="…"`
+  const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const chosen = chooseSessionToken(cookieToken, bearer);
+  if (chosen) return chosen;
+  // 2. En-têtes Jellyfin : `X-Emby-Token` des clients anciens, ou le `Token="…"`
   //    d'un en-tête `MediaBrowser` (Authorization ou X-Emby-Authorization).
   return tokenFromAuthHeaders(request.headers) ?? null;
 }
