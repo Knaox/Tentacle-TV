@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { activeFamilyCount, buildPlatformCatalog, useJellyfinClient, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import { SwipeSection } from "../../../lazyPages";
-import { RecoSectionSwitch } from "../../../components/reco/RecoSectionSwitch";
 import { RecoRefineTeaser } from "../../../components/reco/RecoRefineTeaser";
 import { useRecoNavigation } from "../../../lib/recoNavigation";
 import { recoSectionOf } from "../../../lib/recoSections";
@@ -11,6 +10,7 @@ import { HeroBanner } from "../../hero/HeroBanner";
 import { SkeletonHeroScreen } from "../../hero/Skeletons";
 import { SubtleBackground } from "../../hero/SubtleBackground";
 import { ColdStartScreen } from "./ColdStartScreen";
+import { RecoSectionBar } from "./RecoSectionBar";
 import { LikedActorsPanel } from "./LikedActorsPanel";
 import { recoHeroSlides } from "./RecoHeroContent";
 import { RecoFilterSheet } from "./RecoFilterSheet";
@@ -20,16 +20,14 @@ import { useRecoPageModel } from "./useRecoPageModel";
 import "../../mirror.css";
 
 /**
- * L'onglet Pour vous : ses deux sections sous un segment — « Pour vous »
+ * L'onglet Pour vous : ses deux sections sous une pastille fixée — « Pour vous »
  * (ci-dessous) et « Affiner », la pile de swipe partagée avec le bureau.
  */
 export function MirrorForYou() {
   const section = recoSectionOf(useLocation().pathname);
   return (
     <SubtleBackground>
-      <div className="px-4 pb-3 pt-3">
-        <RecoSectionSwitch section={section} />
-      </div>
+      <RecoSectionBar section={section} />
       {section === "refine" ? (
         <Suspense fallback={<div className="min-h-[60vh]" />}>
           <SwipeSection />
