@@ -1,12 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
+import { waitingNotice } from "@tentacle-tv/shared";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { memberStatus, WtAvatar } from "./WatchTogetherRows";
 
 /**
  * Overlay discret du player en mode groupe : rangée d'avatars des membres
  * (ring de statut : lecture/buffering/erreur/hors ligne) en haut à droite, et
- * chip centrale « X met en mémoire tampon… » pendant un group-wait.
+ * chip centrale pendant une attente (« En attente de X… », « X met en mémoire
+ * tampon… », « Synchronisation… »).
  * Les avatars suivent la visibilité des contrôles du player (`controlsVisible`) ;
  * la chip group-wait reste toujours affichée (information de blocage).
  *
@@ -27,18 +29,11 @@ export function GroupPlaybackOverlay({
 
   if (!room || !itemId || room.itemId !== itemId) return null;
 
-  // Membres attendus par le group-wait, moi exclu (mon propre buffering a déjà
-  // son spinner) — la chip ne concerne que l'attente DES AUTRES.
-  const waitingOthers = room.waitingForUserIds
-    .filter((id) => id !== selfId)
-    .map((id) => room.members.find((m) => m.userId === id))
-    .filter((m): m is NonNullable<typeof m> => !!m);
-  // Toute attente d'autres lecteurs se montre — group-wait d'un chargement
-  // (« X met en mémoire tampon… ») ou barrière de synchronisation (seek,
-  // saut, reprise : « Synchronisation… »), même quand la salle est en pause
-  // utilisateur. Un serveur d'avant n'envoie pas `waitCause` : chargement.
-  const groupWait = room.paused && waitingOthers.length > 0;
-  const syncing = room.waitCause !== undefined && room.waitCause !== "buffering";
+  // L'attente DES AUTRES (mon propre chargement a déjà son spinner), dite par la
+  // règle commune au mobile (`waitingNotice`, shared) : « En attente de X… »
+  // pour un arrivant, « X met en mémoire tampon… », « Synchronisation… » pour
+  // une barrière — même quand la salle est en pause utilisateur.
+  const notice = waitingNotice(room, selfId);
 
   return (
     <>
@@ -59,7 +54,7 @@ export function GroupPlaybackOverlay({
 
       {/* Chip group-wait */}
       <AnimatePresence>
-        {groupWait && (
+        {notice && (
           <motion.div
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -77,13 +72,7 @@ export function GroupPlaybackOverlay({
               }}
             >
               <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-400/40 border-t-amber-400" />
-              <span className="text-sm text-white/85">
-                {syncing
-                  ? t("syncing")
-                  : waitingOthers.length === 1
-                    ? t("memberBuffering", { name: waitingOthers[0].username })
-                    : t("membersBuffering", { count: waitingOthers.length })}
-              </span>
+              <span className="text-sm text-white/85">{t(notice.key, notice.params)}</span>
             </div>
           </motion.div>
         )}
