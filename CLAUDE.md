@@ -1252,6 +1252,33 @@ natif, `exoPlayerEngineFor` / `mpvEngineFor`, verdict `devicePlaybackVerdict`) :
 le décodage logiciel d'une image ; l'AV1 sans décodeur est converti par le serveur, et
 le lecteur le dit. Profil simulé du banc : `debug.tentacle.media_profile` (app `.perf`).
 
+## Watch Together — partagé, et PAR APPAREIL
+
+Le web, le bureau et le mobile ne rendent que l'INTERFACE : règles pures dans
+`packages/shared/src/watchTogether/` (état de salle et ses effets, « tous
+prêts », reprise planifiée ; la dérive dans `player/driftController.ts`),
+crochets sans DOM dans `packages/api-client/src/watchTogether/` — la séance
+d'un appareil (`useWatchTogetherSession(port)` → `WatchTogetherContext`), le
+moteur de synchronisation (`engine/`), le décompte de saut, le chat,
+l'affinité. Un lecteur se branche par le PORT `WtPlayerPort` (positions en
+secondes FILM, atterrissage du transcodage compris). Carnet :
+`docs/WATCH-TOGETHER-SYNC.md`.
+
+- **L'adhésion est PAR APPAREIL** (serveur 1.32.0, `watchTogether.deviceMembership`) :
+  un appareil = le hash de son jeton. Seuls les appareils LIÉS (créé, invitation
+  acceptée, « Rejoindre ici ») reçoivent la séance ; un autre appareil du même
+  compte n'en a que l'avis `wt:elsewhere`, ne fait rien quitter, et peut s'y
+  AJOUTER (`POST /group/join-here`). Tout nouvel envoi de la séance passe par
+  `sendToMember` / `sendToRoom` (`memberDevices.ts`), jamais `sendToUser`.
+  Carnet : `docs/WATCH-TOGETHER-APPAREILS.md`.
+- **Aucun saut de passage avant « tous prêts »** (`watchTogether.readyGate`,
+  `allReady`) : ni bouton, ni décompte, ni enchaînement (`groupHold` de
+  `findSkipCandidate` / `autoNextEligible`, `groupSkipHeld` de la coquille de
+  lecture) ; ensuite le clic est un `wt:seek` (barrière), l'auto-saut un
+  décompte serveur.
+- **Le mobile** n'a Watch Together qu'avec `watchTogether.deviceMembership` ;
+  sans elle, sa séance reste éteinte (`WtPlatformPort.enabled: false`).
+
 ## Préconfiguration de la barre (TV) — par profil, sur l'appareil
 
 Apple TV et Android TV : chaque profil choisit UNE fois, sur CET appareil, les bibliothèques
