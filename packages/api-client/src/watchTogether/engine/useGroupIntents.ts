@@ -7,7 +7,7 @@ import {
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
 import {
-  armEcho, clearPendingIntent, isApplying, seekLookaheadS, setPendingIntent, REMOTE_JUMP_THRESHOLD_S,
+  armEcho, clearPendingIntent, isApplying, isSettledOn, seekLookaheadS, setPendingIntent, REMOTE_JUMP_THRESHOLD_S,
   type GroupSyncSharedRefs,
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
@@ -224,7 +224,18 @@ export function useGroupIntents({
       wtLog("engine", "reconnexion : re-déclaration presence + buffering");
       sendPresence();
       const last = shared.lastBufferingSentRef.current;
-      if (last !== null) shared.sendRef.current({ type: "wt:buffering", buffering: last, positionTicks: posTicks(), rttMs: rtt() });
+      if (last === null) return;
+      // Posé sur la cible d'une barrière : le « prêt » a pu se perdre pendant la
+      // coupure — il repart AVEC l'identifiant (sans lui, le serveur n'y lit
+      // qu'une fin de chargement, pas un « posé »).
+      const r = shared.roomRef.current;
+      const t = transportRef.current;
+      const barrierId = last === false && r?.barrierId !== undefined && t
+        && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
+      shared.sendRef.current({
+        type: "wt:buffering", buffering: last, positionTicks: posTicks(), rttMs: rtt(),
+        ...(barrierId !== undefined ? { barrierId } : {}),
+      });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, sendPresence, posTicks]);

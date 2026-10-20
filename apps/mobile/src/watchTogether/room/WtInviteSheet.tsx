@@ -6,9 +6,10 @@ import { useInvitableUsers } from "@tentacle-tv/api-client";
 import type { WtInvitableUserDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Button } from "@/components/ui/Button";
+import { PrimaryButton } from "@/components/ui/buttons";
+import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { inviteCandidates, toggleSelection, type InviteCandidate } from "../model/inviteModel";
+import { inviteCandidates, toggleSelection, type InviteCandidate } from "@tentacle-tv/shared";
 
 /**
  * Inviter une ou plusieurs personnes : recherche, liste cochable (en ligne
@@ -50,6 +51,7 @@ export function WtInviteSheet({ visible, onClose, room, pendingUserIds, onSend }
 
   return (
     <BottomSheet visible={visible} onClose={close} snapPoints={[0.8, 0.94]}>
+      <KeyboardAvoidingArea>
       <View style={s.wrap} testID="wt-invite-sheet">
         <Text style={s.title} accessibilityRole="header">{t("inviteTitle")}</Text>
         <Text style={s.hint}>{t("inviteHint")}</Text>
@@ -82,8 +84,8 @@ export function WtInviteSheet({ visible, onClose, room, pendingUserIds, onSend }
         )}
         <View style={s.footer}>
           {failed && <Text style={s.error} accessibilityLiveRegion="polite">{t("errorGeneric")}</Text>}
-          <Button
-            title={selection.size > 0 ? t("sendInvitesCount", { count: selection.size }) : t("sendInvites")}
+          <PrimaryButton
+            label={selection.size > 0 ? t("sendInvitesCount", { count: selection.size }) : t("sendInvites")}
             onPress={send}
             loading={sending}
             disabled={selection.size === 0 || sending}
@@ -91,6 +93,7 @@ export function WtInviteSheet({ visible, onClose, room, pendingUserIds, onSend }
           />
         </View>
       </View>
+      </KeyboardAvoidingArea>
     </BottomSheet>
   );
 }

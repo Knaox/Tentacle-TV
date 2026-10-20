@@ -7,7 +7,7 @@ import { AffinityHost } from "./affinity/AffinityHost";
 import { WtInviteInboxSheet } from "./room/WtInviteInboxSheet";
 import { WtInviteSheet } from "./room/WtInviteSheet";
 import { WtRoomSheetView } from "./room/WtRoomSheetView";
-import { isPlayerPath, shouldAutoOpenInbox } from "./session/inboxRule";
+import { isPlayerPath, shouldAutoOpenInbox } from "@tentacle-tv/shared";
 import { closeWtSheet, openWtSheet, takeWtLink, useWtLink, useWtSheet } from "./wtSheets";
 
 /** Un lien profond qui n'a rien à montrer au bout de ce délai est abandonné. */

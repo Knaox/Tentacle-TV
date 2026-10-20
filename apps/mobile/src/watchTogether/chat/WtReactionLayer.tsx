@@ -1,56 +1,74 @@
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { useReducedMotion } from "react-native-reanimated";
+import { reactionBursts, type ReactionBurst, type ReactionLike } from "@tentacle-tv/shared";
 import { FONT_FAMILY, PLAYER } from "@/theme";
 
-/** Une réaction flottante (forme de `WtFloatingReaction`, chat partagé). */
-export interface WtReactionView {
-  key: string;
-  username: string;
-  emoji?: string;
-  gif?: { url: string; w?: number; h?: number };
-}
-
-/** Durée de la montée — l'expiration (TTL) est tenue par le chat partagé. */
-const RISE_MS = 2_400;
-const RISE_PX = 220;
+/** Après la dernière réaction d'une rafale : tenue, puis fondu (avant l'expiration du chat, 2,6 s). */
+const HOLD_MS = 1_700;
+const FADE_MS = 600;
+const RISE_PX = 60;
 const GIF_SIZE = 120;
 
 /**
- * Les réactions du groupe, qui montent sur la vidéo en bas à droite et
- * s'effacent. Rien que des transformations et des opacités (pilote natif) ;
- * avec le mouvement réduit, un simple fondu sur place. Ne capte aucun toucher.
+ * Les réactions du groupe sur la vidéo, en bas à droite — FLUIDES MÊME EN
+ * RAFALE : la règle partagée (`reactionBursts`) regroupe les réactions
+ * identiques d'un même membre en UNE bulle « 🔥 ×10 », bornée aux plus
+ * récentes, chacune dans sa voie. Une bulle monte un peu en entrant, pulse à
+ * chaque nouvelle réaction, puis s'efface. Rien que des transformations et des
+ * opacités (pilote natif) ; avec le mouvement réduit, des fondus seulement.
+ * Ne capte aucun toucher.
  */
-export const WtReactionLayer = memo(function WtReactionLayer({ reactions }: { reactions: readonly WtReactionView[] }) {
+export const WtReactionLayer = memo(function WtReactionLayer({ reactions }: { reactions: readonly ReactionLike[] }) {
+  const bursts = useMemo(() => reactionBursts(reactions), [reactions]);
   return (
     <View pointerEvents="none" style={st.layer}>
-      {reactions.map((r, i) => <FloatingReaction key={r.key} reaction={r} lane={i % 3} />)}
+      {bursts.map((b) => <Bubble key={b.id} burst={b} />)}
     </View>
   );
 });
 
-const FloatingReaction = memo(function FloatingReaction({ reaction, lane }: { reaction: WtReactionView; lane: number }) {
+const Bubble = memo(function Bubble({ burst }: { burst: ReactionBurst }) {
   const reduced = useReducedMotion();
-  const progress = useRef(new Animated.Value(0)).current;
+  const enter = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
+  const fade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const animation = Animated.timing(progress, {
-      toValue: 1, duration: RISE_MS, easing: Easing.out(Easing.cubic), useNativeDriver: true,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [progress]);
+    const anim = Animated.timing(enter, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    anim.start();
+    return () => anim.stop();
+  }, [enter]);
 
-  const opacity = progress.interpolate({ inputRange: [0, 0.1, 0.75, 1], outputRange: [0, 1, 1, 0] });
-  const translateY = reduced ? 0 : progress.interpolate({ inputRange: [0, 1], outputRange: [0, -RISE_PX] });
+  // Chaque nouvelle réaction : une pulsation, et le fondu repart de zéro.
+  useEffect(() => {
+    fade.setValue(1);
+    const seq = Animated.sequence([
+      reduced
+        ? Animated.delay(0)
+        : Animated.sequence([
+          Animated.timing(pulse, { toValue: 1.22, duration: 90, useNativeDriver: true }),
+          Animated.spring(pulse, { toValue: 1, damping: 9, stiffness: 260, useNativeDriver: true }),
+        ]),
+      Animated.delay(HOLD_MS),
+      Animated.timing(fade, { toValue: 0, duration: FADE_MS, useNativeDriver: true }),
+    ]);
+    seq.start();
+    return () => seq.stop();
+  }, [burst.lastKey, pulse, fade, reduced]);
+
+  const translateY = reduced ? 0 : enter.interpolate({ inputRange: [0, 1], outputRange: [0, -RISE_PX] });
+  const opacity = Animated.multiply(enter, fade);
 
   return (
-    <Animated.View style={[st.item, { right: 16 + lane * 40, opacity, transform: [{ translateY }] }]}>
-      {reaction.gif
-        ? <Image source={{ uri: reaction.gif.url }} style={st.gif} contentFit="cover" accessible={false} />
-        : <Text style={st.emoji}>{reaction.emoji}</Text>}
-      <Text style={st.name} numberOfLines={1}>{reaction.username}</Text>
+    <Animated.View style={[st.item, { right: 16 + burst.lane * 64, opacity, transform: [{ translateY }, { scale: pulse }] }]}>
+      {burst.gif
+        ? <Image source={{ uri: burst.gif.url }} style={st.gif} contentFit="cover" accessible={false} />
+        : <Text style={st.emoji}>{burst.emoji}</Text>}
+      <Text style={st.name} numberOfLines={1}>
+        {burst.username}{burst.count > 1 ? ` ×${burst.count}` : ""}
+      </Text>
     </Animated.View>
   );
 });
@@ -61,7 +79,7 @@ const st = StyleSheet.create({
   emoji: { fontSize: 36 },
   gif: { width: GIF_SIZE, height: GIF_SIZE, borderRadius: 12 },
   name: {
-    marginTop: 2, maxWidth: 96, color: PLAYER.text, fontSize: 11, fontFamily: FONT_FAMILY.semibold,
-    textShadowColor: PLAYER.scrim, textShadowRadius: 4,
+    marginTop: 2, maxWidth: 110, color: PLAYER.text, fontSize: 11, fontFamily: FONT_FAMILY.semibold,
+    textShadowColor: PLAYER.scrim, textShadowRadius: 4, fontVariant: ["tabular-nums"],
   },
 });

@@ -189,6 +189,16 @@ export function applyCommand(
         const frozen = msg.positionTicks ?? wtPositionTicksAt(room, now);
         return { kind: "broadcast", cause: waitForMember(room, member, now, clampTicks(frozen)) };
       }
+      // Un lecteur v2 qui a FINI DE CHARGER pendant une barrière de seek ou de
+      // saut n'est pas posé sur sa cible pour autant : son « prêt » sans
+      // identifiant ne la libère pas (sinon la salle repartait à la cible et
+      // lui restait là où son chargement l'avait mis — vu au banc : salle à
+      // 40 s, lui à 0 s). L'état diffusé le fait se caler, puis confirmer
+      // avec l'identifiant de la barrière.
+      if (loadedDuringSeekBarrier(room, member, msg.barrierId)) {
+        touch(room, now);
+        return { kind: "broadcast", cause: "presence" };
+      }
       const { released, resumed, stale } = confirmReady(room, member, now, msg.barrierId);
       if (stale) return { kind: "ignore" };
       if (!released) touch(room, now);
@@ -223,6 +233,13 @@ export function applyCommand(
       return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
   }
+}
+
+/** Fin de chargement (sans identifiant de barrière) d'un lecteur v2 qu'une
+ *  barrière de seek ou de saut attend : ce n'est pas un « posé sur la cible ». */
+function loadedDuringSeekBarrier(room: Room, member: RoomMember, barrierId: number | undefined): boolean {
+  return barrierId === undefined && member.protocolVersion >= WT_PROTOCOL_VERSION
+    && room.barrier !== null && room.barrier.cause !== "buffering" && room.waitingFor.has(member.userId);
 }
 
 /** Le socket d'un lecteur en séance s'est fermé : son attente est levée (il ne

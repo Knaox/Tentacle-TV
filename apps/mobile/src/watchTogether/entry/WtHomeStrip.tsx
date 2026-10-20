@@ -6,11 +6,12 @@ import { HeartHandshake, Inbox, Users } from "lucide-react-native";
 import {
   dismissAffinityPill, openAffinity, useAffinityStore, useWatchTogetherOrIdle,
 } from "@tentacle-tv/api-client";
+import { PlainButton, SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { KIND_LABEL_KEY, memberName } from "@tentacle-tv/api-client";
+import { KIND_LABEL_KEY, memberName } from "@tentacle-tv/shared";
 import { WtElsewhereBanner } from "../room/WtElsewhereBanner";
 import { openWtSheet } from "../wtSheets";
-import { homeStripKind } from "./homeStripModel";
+import { homeStripKind } from "@tentacle-tv/shared";
 
 /**
  * La bande Watch Together de l'accueil — UNE ligne (`homeStripKind`) :
@@ -70,13 +71,9 @@ export const WtHomeStrip = memo(function WtHomeStrip() {
           {line.icon}
           <Text style={s.text} numberOfLines={1}>{line.text}</Text>
         </Pressable>
-        <Pressable onPress={line.press} accessibilityRole="button" style={s.action} hitSlop={6} testID="wt-home-action">
-          <Text style={s.actionLabel}>{line.action}</Text>
-        </Pressable>
+        <SecondaryButton label={line.action} onPress={line.press} size="sm" testID="wt-home-action" />
         {"dismiss" in line && line.dismiss && (
-          <Pressable onPress={line.dismiss} accessibilityRole="button" style={s.dismiss}>
-            <Text style={s.dismissLabel}>{t("affinityDismiss")}</Text>
-          </Pressable>
+          <PlainButton label={t("affinityDismiss")} onPress={line.dismiss} size="sm" />
         )}
       </View>
     </View>
@@ -93,8 +90,4 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   main: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48 },
   pressed: { opacity: 0.7 },
   text: { flex: 1, color: t.colors.text.primary, fontSize: 15, fontFamily: FONT_FAMILY.semibold },
-  action: { minHeight: 40, minWidth: 44, paddingHorizontal: 14, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", backgroundColor: t.colors.cta.brandBg },
-  actionLabel: { color: t.colors.cta.brandFg, fontSize: 14, fontFamily: FONT_FAMILY.semibold },
-  dismiss: { minHeight: 40, paddingHorizontal: 10, justifyContent: "center" },
-  dismissLabel: { color: t.colors.text.tertiary, fontSize: 13, fontFamily: FONT_FAMILY.medium },
 });

@@ -5,10 +5,10 @@ import { Image } from "expo-image";
 import { useReducedMotion } from "react-native-reanimated";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { WtAffinityMatchDto, WtRoomStateDto } from "@tentacle-tv/shared";
-import { Button } from "@/components/ui/Button";
+import { PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useThemedStyles, type AppTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
-import { formatNames, memberName } from "@tentacle-tv/api-client";
+import { formatNames, memberName } from "@tentacle-tv/shared";
 
 type Answer = "watch" | "continue";
 
@@ -68,9 +68,9 @@ export function AffinityMatchNative({ match, room, selfId, participantCount, onW
       <Text style={s.subtitle}>{subtitle}</Text>
       {meta !== "" && <Text style={s.meta}>{meta}</Text>}
       <View style={s.actions}>
-        <Button title={t("affinityWatchTogether")} onPress={answer("watch", onWatch)} loading={answering === "watch"}
-          disabled={answering !== null} fullWidth />
-        <Button title={t("affinityKeepSwiping")} onPress={answer("continue", onKeepSwiping)} variant="secondary"
+        <PrimaryButton label={t("affinityWatchTogether")} icon="play" onPress={answer("watch", onWatch)}
+          loading={answering === "watch"} disabled={answering !== null} fullWidth size="lg" />
+        <SecondaryButton label={t("affinityKeepSwiping")} onPress={answer("continue", onKeepSwiping)}
           loading={answering === "continue"} disabled={answering !== null} fullWidth />
       </View>
       <Text style={s.small}>{t("affinityFirstAnswer", { count: Math.max(1, participantCount - 1) })}</Text>

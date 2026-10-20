@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useWatchTogetherOrIdle, useWtChat } from "@tentacle-tv/api-client";
 import { TABLET_MIN_WIDTH } from "@/theme";
 import { WtReactionLayer } from "../chat/WtReactionLayer";
-import { waitingNotice } from "../model/roomModel";
+import { waitingNotice } from "@tentacle-tv/shared";
 import { WtNoticeLayer } from "../notices/WtNoticeLayer";
 import { openWtSheet } from "../wtSheets";
 import { WtGroupPanel, type WtGroupPanelTab } from "./WtGroupPanel";
@@ -72,6 +72,7 @@ export function useWtPlayerChrome(itemId: string): WtPlayerChrome {
         messages={chat.state.messages}
         onSend={chat.sendChat}
         onReact={chat.sendReaction}
+        onSendGif={chat.sendGif}
         onOpenRoom={() => openWtSheet("room")}
         onClose={close}
       />

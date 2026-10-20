@@ -146,4 +146,31 @@ describe("Watch Together — un troisième appareil du même compte", () => {
     vi.advanceTimersByTime(121_000);
     expect([...room.members.get(damien.userId)!.devices.keys()].sort()).toEqual(["pc1", "pc2"]);
   });
+
+  it("« Quitter » d'un appareil vivant emporte les appareils ÉTEINTS du compte (pas 120 s d'attente)", () => {
+    ws.addConnection(damien.userId, web as never, "web");
+    const room = registry.getRoomOf(damien.userId)!;
+    rooms.addMember(room, { ...damien, hasAvatar: false }, "web");
+    ws.removeConnection(damien.userId, pc2 as never, "pc2"); // pc2 éteint, en grâce
+    const member = room.members.get(damien.userId)!;
+    expect(deviceLeave.leaveFromDevice(room, member, "pc1", { sweepOffline: true })).toBe(true);
+    expect([...member.devices.keys()]).toEqual(["web"]);
+    // Le dernier appareil vivant qui quitte : le compte quitte la salle.
+    ws.removeConnection(damien.userId, pc1 as never, "pc1");
+    expect(deviceLeave.leaveFromDevice(room, member, "web", { sweepOffline: true })).toBe(false);
+  });
+
+  it("tous les appareils liés éteints : un nouvel appareil peut créer, le compte quitte l'ancienne salle", () => {
+    ws.removeConnection(damien.userId, pc1 as never, "pc1");
+    ws.removeConnection(damien.userId, pc2 as never, "pc2");
+    presence.releaseFromDeadRoom(damien.userId);
+    expect(registry.getRoomOf(damien.userId)).toBeNull();
+    expect(registry.getRoomOf(ami.userId)!.members.size).toBe(1);
+  });
+
+  it("un appareil lié encore en ligne : rien n'est libéré", () => {
+    ws.removeConnection(damien.userId, pc1 as never, "pc1");
+    presence.releaseFromDeadRoom(damien.userId);
+    expect(registry.getRoomOf(damien.userId)!.members.get(damien.userId)!.devices.size).toBe(2);
+  });
 });

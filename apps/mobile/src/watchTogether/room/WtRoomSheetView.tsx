@@ -1,13 +1,13 @@
-import { memo, useMemo, useState, type ReactNode } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { memo, useMemo, useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Image } from "expo-image";
-import { Film, Heart, LogOut, UserPlus } from "lucide-react-native";
+import { Film } from "lucide-react-native";
 import type { WtRoomStateDto } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Button } from "@/components/ui/Button";
+import { PlainButton, PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { roomMemberRows } from "../model/roomModel";
+import { roomMemberRows } from "@tentacle-tv/shared";
 import { WtMemberRow, WtPendingInviteRow } from "./WtMemberRow";
 
 export interface WtPendingInviteView { userId: string; username: string; hasAvatar: boolean }
@@ -36,8 +36,9 @@ export interface WtRoomSheetViewProps {
  * La feuille du groupe — le « salon » du mobile et de l'iPad (form-sheet
  * centrée de 520 pt sur grand écran, `BottomSheet`). De haut en bas : le
  * groupe, ce qu'il regarde, qui est là (états dits en mots), puis UNE action
- * principale (« Inviter des membres »), l'affinité, et, séparée, rouge,
- * « Quitter le groupe » (confirmée). Vue pure : le contexte la nourrit.
+ * principale (« Inviter des membres », le seul bouton en couleur), l'affinité
+ * en secondaire, et, séparée, en libellé rouge, « Quitter le groupe »
+ * (confirmée) — les boutons du lot (`components/ui/buttons`). Vue pure : le contexte la nourrit.
  */
 export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetViewProps) {
   const { visible, onClose, room, selfId, pendingInvites, program, mayInvite, affinityAvailable } = props;
@@ -74,7 +75,7 @@ export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetV
               : <View style={[s.programImage, s.programPlaceholder]}><Film size={22} color={theme.colors.text.tertiary} /></View>}
             <Text style={s.programTitle} numberOfLines={2}>{program.title}</Text>
             {props.onStart && (
-              <Button title={t("rejoin")} onPress={props.onStart} variant="secondary" accessibilityLabel={`${t("rejoin")} — ${program.title}`} />
+              <SecondaryButton label={t("rejoin")} onPress={props.onStart} size="sm" accessibilityLabel={`${t("rejoin")} — ${program.title}`} />
             )}
           </View>
         ) : (
@@ -88,42 +89,20 @@ export const WtRoomSheetView = memo(function WtRoomSheetView(props: WtRoomSheetV
 
         <View style={s.actions}>
           {mayInvite && (
-            <ActionRow icon={<UserPlus size={20} color={theme.colors.cta.brandFg} />} label={t("inviteMembers")}
-              onPress={props.onInvite} primary testID="wt-invite" />
+            <PrimaryButton label={t("inviteMembers")} icon="user-plus" onPress={props.onInvite} fullWidth testID="wt-invite" />
           )}
           {affinityAvailable && (
-            <ActionRow icon={<Heart size={20} color={theme.colors.text.primary} />} label={t("affinityFind")}
-              onPress={props.onAffinity} testID="wt-affinity" />
+            <SecondaryButton label={t("affinityFind")} icon="heart" onPress={props.onAffinity} fullWidth testID="wt-affinity" />
           )}
         </View>
 
         <View style={s.separator} />
-        <ActionRow icon={<LogOut size={20} color={theme.colors.status.error} />} label={t("leaveGroup")}
-          onPress={confirmLeave} danger disabled={leaving} testID="wt-leave" />
+        <PlainButton label={t("leaveGroup")} icon="log-out" tone="destructive" onPress={confirmLeave}
+          loading={leaving} disabled={leaving} fullWidth testID="wt-leave" />
       </ScrollView>
     </BottomSheet>
   );
 });
-
-function ActionRow({ icon, label, onPress, primary, danger, disabled, testID }: {
-  icon: ReactNode; label: string; onPress: () => void;
-  primary?: boolean; danger?: boolean; disabled?: boolean; testID?: string;
-}) {
-  const s = useThemedStyles(makeStyles);
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
-      testID={testID}
-      style={({ pressed }) => [s.action, primary && s.actionPrimary, pressed && s.actionPressed, disabled && s.actionDisabled]}
-    >
-      {icon}
-      <Text style={[s.actionLabel, primary && s.actionLabelPrimary, danger && s.actionLabelDanger]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   content: { paddingHorizontal: 20, paddingBottom: 32 },
@@ -139,15 +118,5 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   programTitle: { flex: 1, color: t.colors.text.primary, fontSize: 15, fontFamily: FONT_FAMILY.semibold },
   empty: { color: t.colors.text.tertiary, fontSize: 14, lineHeight: 20, fontFamily: FONT_FAMILY.regular },
   actions: { marginTop: 24, gap: 8 },
-  action: {
-    flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 16,
-    borderRadius: RADIUS.lg, backgroundColor: t.colors.fill.subtle,
-  },
-  actionPrimary: { backgroundColor: t.colors.cta.brandBg },
-  actionPressed: { opacity: 0.75 },
-  actionDisabled: { opacity: 0.45 },
-  actionLabel: { flex: 1, color: t.colors.text.primary, fontSize: 16, fontFamily: FONT_FAMILY.semibold },
-  actionLabelPrimary: { color: t.colors.cta.brandFg },
-  actionLabelDanger: { color: t.colors.status.error },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: t.colors.border.subtle, marginVertical: 16 },
 });

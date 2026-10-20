@@ -33,6 +33,14 @@ export interface ScheduledPlay {
   until: number;
 }
 
+/** Le lecteur est-il posé sur `targetS` (position film) ? Sa réponse s'il sait
+ *  la donner (`isSettledAt`), sinon : plus de seek en vol, média chargé. */
+export function isSettledOn(transport: PlayerTransport, targetS: number): boolean {
+  return transport.isSettledAt
+    ? transport.isSettledAt(targetS)
+    : !transport.isSeeking?.() && transport.isMediaReady?.() !== false;
+}
+
 /** Confirme au serveur que ce lecteur est posé sur la cible de la barrière. */
 export function sendBarrierReady(shared: GroupSyncSharedRefs, transport: PlayerTransport, barrierId: number): void {
   const positionTicks = Math.max(0, Math.round(transport.getPositionSeconds() * TICKS_PER_SECOND));

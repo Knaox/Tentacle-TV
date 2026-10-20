@@ -31,7 +31,7 @@ export function usePlayerStartFetch({
     setPaused(false);
     setBufferedTime(0);
 
-    const resumeTicks = groupStart.ticks ?? pb.item.UserData?.PlaybackPositionTicks;
+    const resumeTicks = groupStart.override ? groupStart.ticks : pb.item.UserData?.PlaybackPositionTicks;
     const resumeSeconds = resumeTicks && resumeTicks > 0 ? resumeTicks / TICKS_PER_SECOND : 0;
     // La position de reprise, gardée : changer d'audio ou de sous-titres la préserve.
     // `currentTime` n'est pas posé ici : la progression dira la vraie position.

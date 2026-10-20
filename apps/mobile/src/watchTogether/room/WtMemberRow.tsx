@@ -4,17 +4,17 @@ import { useTranslation } from "react-i18next";
 import { Hourglass, UserMinus } from "lucide-react-native";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { MEMBER_STATE_LABEL, type WtMemberRowModel, type WtMemberState } from "../model/roomModel";
+import type { WtMemberRowModel, WtMemberStatus } from "@tentacle-tv/shared";
 
 const AVATAR = 40;
 
 /** La couleur du point d'état — toujours doublée du mot qui le dit. */
-function stateColor(theme: AppTheme, state: WtMemberState): string {
+function stateColor(theme: AppTheme, state: WtMemberStatus): string {
   switch (state) {
     case "error": return theme.colors.status.error;
     case "buffering": return theme.colors.status.warning;
     case "watching": return theme.colors.status.success;
-    case "online": return theme.colors.brand.light;
+    case "none": return theme.colors.brand.light;
     default: return theme.colors.text.quaternary;
   }
 }
@@ -32,8 +32,8 @@ export const WtMemberRow = memo(function WtMemberRow({ row, onKick }: {
   const theme = useTheme();
   const s = useThemedStyles(makeStyles);
   const [kicking, setKicking] = useState(false);
-  const { member, isSelf, state, canKick } = row;
-  const label = t(MEMBER_STATE_LABEL[state]);
+  const { member, isSelf, status: state, labelKey, canKick } = row;
+  const label = t(labelKey);
 
   const kick = (): void => {
     setKicking(true);
