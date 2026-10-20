@@ -87,7 +87,7 @@ describe("Watch Together — l'adhésion par appareil (REST)", () => {
     expect((await call("a-web", "GET", "/group")).json()).toBeNull();
     expect((await call("a-pc", "GET", "/group/elsewhere")).json()).toBeNull();
     expect((await call("a-web", "GET", "/group/elsewhere")).json()).toEqual({
-      groupId: created.json().groupId, hostUsername: "Alice", itemId: null, memberCount: 1, deviceCount: 1,
+      groupId: created.json().groupId, hostUsername: "Alice", hostUserId: "a", itemId: null, memberCount: 1, deviceCount: 1,
     });
   });
 
