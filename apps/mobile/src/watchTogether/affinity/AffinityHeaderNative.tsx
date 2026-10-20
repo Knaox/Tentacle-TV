@@ -11,14 +11,16 @@ import { KIND_LABEL_KEY } from "@tentacle-tv/shared";
 /**
  * L'en-tête de la pile : le type et la taille de la pile (« Changer »),
  * « Quitter » NOMMÉ (la séance est partagée : à deux, la quitter la referme
- * chez l'autre), puis qui participe et combien chacun a jugé.
+ * chez l'autre), puis qui participe et combien chacun a jugé. `large` :
+ * les tailles de l'iPad (titre, pastilles des membres).
  */
-export const AffinityHeaderNative = memo(function AffinityHeaderNative({ state, room, selfId, onChangeKind, onQuit }: {
+export const AffinityHeaderNative = memo(function AffinityHeaderNative({ state, room, selfId, onChangeKind, onQuit, large = false }: {
   state: WtAffinityStateDto;
   room: WtRoomStateDto | null;
   selfId: string | null;
   onChangeKind: () => void;
   onQuit: () => void;
+  large?: boolean;
 }) {
   const { t } = useTranslation("watchTogether");
   const s = useThemedStyles(makeStyles);
@@ -27,15 +29,15 @@ export const AffinityHeaderNative = memo(function AffinityHeaderNative({ state, 
   return (
     <View style={s.wrap}>
       <View style={s.row}>
-        <View style={s.badge}><HeartHandshake size={20} color="#ffffff" /></View>
+        <View style={[s.badge, large && s.badgeLarge]}><HeartHandshake size={large ? 24 : 20} color="#ffffff" /></View>
         <View style={s.text}>
-          <Text style={s.title} accessibilityRole="header">{t("affinityTitle")}</Text>
+          <Text style={[s.title, large && s.titleLarge]} accessibilityRole="header">{t("affinityTitle")}</Text>
           <View style={s.metaRow}>
-            <Text style={s.meta}>
+            <Text style={[s.meta, large && s.metaLarge]}>
               {t(KIND_LABEL_KEY[state.kind])} · {t("affinityDeckCount", { count: state.deckSize })} ·{" "}
             </Text>
             <Pressable onPress={onChangeKind} accessibilityRole="button" hitSlop={12} testID="wt-affinity-change">
-              <Text style={s.change}>{t("affinityChange")}</Text>
+              <Text style={[s.change, large && s.metaLarge]}>{t("affinityChange")}</Text>
             </Pressable>
           </View>
         </View>
@@ -48,10 +50,10 @@ export const AffinityHeaderNative = memo(function AffinityHeaderNative({ state, 
             const count = judged.get(m.userId);
             const joined = count !== undefined;
             return (
-              <View key={m.userId} style={[s.person, !joined && s.absent]}>
-                <UserAvatar userId={m.userId} name={m.username} hasAvatar={m.hasAvatar} size={24} />
-                <Text style={s.personName}>{m.userId === selfId ? t("affinityYou") : m.username}</Text>
-                <Text style={s.personMeta}>{joined ? t("affinityJudged", { count }) : t("affinityNotJoined")}</Text>
+              <View key={m.userId} style={[s.person, large && s.personLarge, !joined && s.absent]}>
+                <UserAvatar userId={m.userId} name={m.username} hasAvatar={m.hasAvatar} size={large ? 32 : 24} />
+                <Text style={[s.personName, large && s.personTextLarge]}>{m.userId === selfId ? t("affinityYou") : m.username}</Text>
+                <Text style={[s.personMeta, large && s.personTextLarge]}>{joined ? t("affinityJudged", { count }) : t("affinityNotJoined")}</Text>
               </View>
             );
           })}
@@ -76,6 +78,11 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     borderRadius: RADIUS.pill, backgroundColor: t.colors.fill.faint, borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle,
   },
   absent: { opacity: 0.6 },
+  badgeLarge: { width: 48, height: 48 },
+  titleLarge: { fontSize: 22 },
+  metaLarge: { fontSize: 15 },
+  personLarge: { gap: 8, paddingRight: 14, paddingVertical: 4 },
+  personTextLarge: { fontSize: 14 },
   personName: { color: t.colors.text.primary, fontSize: 12, fontFamily: FONT_FAMILY.medium },
   personMeta: { color: t.colors.text.tertiary, fontSize: 12, fontFamily: FONT_FAMILY.regular, fontVariant: ["tabular-nums"] },
 });
