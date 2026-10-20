@@ -13,6 +13,7 @@ import com.facebook.react.common.ReleaseLevel
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 import com.facebook.react.defaults.DefaultReactNativeHost
 
+import com.tentacletv.boot.BootSoundPackage
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
@@ -25,6 +26,8 @@ class MainApplication : Application(), ReactApplication {
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
+              // Le « ta-dum » de l'ouverture (code partagé avec l'Android TV, build.gradle).
+              add(BootSoundPackage())
             }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"

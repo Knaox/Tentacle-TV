@@ -1,13 +1,12 @@
 import { memo } from "react";
 import { StyleSheet } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import LinearGradient from "react-native-linear-gradient";
 import { SPARKLES, sparkleCenter, type IntroGeometry } from "@tentacle-tv/shared/brandIntro";
-import { INTRO_PLATES, type IntroHoldSamples, type IntroSamples } from "@tentacle-tv/tv-core/boot";
-import { RoundClip } from "../render/RoundClip";
+import { INTRO_PLATES, type IntroHoldSamples, type IntroSamples } from "@tentacle-tv/shared/brandIntro";
 import type { PartBoxes, TentacleArt } from "./introArt";
 import { CameraLayer, IntroGroup, IntroPart, type StageFrame } from "./IntroPart";
 import { ArmSvg, EyeSvg, FaceSvg, GLOW_STOPS, HatSvg, HeadSvg, PlaySvg, RingSvg, SoftDiscSvg, SparkleSvg } from "./IntroSvgs";
+import { useIntroPrimitives } from "./introPrimitives";
 import { sampleAt, type IntroClock } from "./introWorklets";
 
 export interface IntroStageProps {
@@ -25,6 +24,7 @@ export interface IntroStageProps {
 /** Le cadre de l'écran : un rectangle arrondi au dégradé du logo, que l'écran (au-dessus) découpe. */
 function Frame({ art, geometry, frame }: Pick<IntroStageProps, "art" | "geometry" | "frame">) {
   const { outer } = geometry;
+  const { LinearGradient, RoundClip } = useIntroPrimitives();
   const spec = art.LOGO_GRADIENTS.gV;
   // Le dégradé du logo est en unités du logo : rapporté à la boîte du cadre.
   const at = (x: number, y: number) => ({ x: (x - outer.x) / outer.width, y: (y - outer.y) / outer.height });

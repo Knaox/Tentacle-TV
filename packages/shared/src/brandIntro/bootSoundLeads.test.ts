@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INTRO_HOLD_AT } from "@tentacle-tv/shared/brandIntro";
+import { INTRO_HOLD_AT } from "./introHold";
 import {
   BOOT_INTRO_RELEASE_DELAY_MS,
   BOOT_SOUND_BRIDGE_MARGIN_MS,

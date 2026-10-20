@@ -56,6 +56,8 @@ const STORAGE_KEYS = [
   "tentacle_first_run_seen",
   // « Reproposer le code PIN et la photo » : la dernière demande du serveur honorée ici (`PROMPTS_RESET_SEEN_KEY`).
   "tentacle_prompts_reset_seen",
+  // Les réglages d'appareil de l'ouverture du démarrage (src/bootIntro/bootIntroSettings.ts).
+  "tentacle_boot_intro", "tentacle_boot_sound",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

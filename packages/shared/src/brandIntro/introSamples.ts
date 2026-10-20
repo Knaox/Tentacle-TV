@@ -3,29 +3,16 @@
  * des tableaux réguliers (un échantillon toutes les `step` ms) que la vue lit
  * sur le fil d'interface, image par image, sans rien recalculer — ni courbe,
  * ni caméra, ni JavaScript du démarrage dérangé. Calculés UNE fois, ici, à
- * partir du pur partagé (`@tentacle-tv/shared/brandIntro`).
+ * partir du pur partagé (ce dossier).
  *
  * Unités : déplacements en UNITÉS DU LOGO (la vue les multiplie par le zoom de
  * sa pièce), rotations en degrés, zoom de la caméra en points par unité.
  */
-import {
-  INTRO_TIMING,
-  cameraAtTime,
-  frontArmsAway,
-  introHoldLoops,
-  introTracks,
-  loopPoseAt,
-  poseAt,
-  revealAt,
-  zoomEasedAt,
-  type IntroCameraPlan,
-  type IntroGeometry,
-  type IntroLoop,
-  type IntroPartId,
-  type IntroPose,
-  type IntroTrack,
-  type IntroTransformKey,
-} from "@tentacle-tv/shared/brandIntro";
+import { cameraAtTime, zoomEasedAt, type IntroCameraPlan } from "./introCamera";
+import type { IntroGeometry } from "./introGeometry";
+import { introHoldLoops } from "./introHold";
+import { loopPoseAt, poseAt, type IntroLoop, type IntroPose, type IntroTrack, type IntroTransformKey } from "./introPose";
+import { INTRO_TIMING, frontArmsAway, introTracks, revealAt, type IntroPartId } from "./introTimeline";
 
 /** Un canal par fonction de transformation de la pièce, et son opacité. */
 export interface IntroChannels {

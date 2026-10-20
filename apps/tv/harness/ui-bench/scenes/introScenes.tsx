@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Dimensions } from "react-native";
 import { INTRO_HOLD_AT, INTRO_TIMING } from "@tentacle-tv/shared/brandIntro";
 import * as TENTACLE_ART from "../../../src/components/icons/tentacleArt.generated";
-import { BootIntroView, useIntroScene } from "../../../src/redesign/boot/BootIntroView";
-import { useIntroClock } from "../../../src/redesign/boot/useIntroClock";
+import { BootIntroView, useIntroClock, useIntroScene } from "@tentacle-tv/brand-intro-native";
+import { TV_INTRO_PRIMITIVES } from "../../../src/redesignWiring/boot/introPrimitives";
 import type { BenchData } from "../data/benchData";
 import { HOME_SCENES } from "./homeScenes";
 import type { BenchScene } from "./types";
@@ -28,7 +28,7 @@ function IntroScene({ data, at, mode }: { data: BenchData; at: number | null; mo
   }, [mode, clock]);
   const home = HOME_SCENES[0]?.render(data) ?? null;
   return (
-    <BootIntroView art={TENTACLE_ART} scene={scene} clock={clock} viewport={viewport} landed={false} screenColor="#000000">
+    <BootIntroView scene={scene} primitives={TV_INTRO_PRIMITIVES} clock={clock} viewport={viewport} landed={false} screenColor="#000000">
       {home}
     </BootIntroView>
   );

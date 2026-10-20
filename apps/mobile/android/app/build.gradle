@@ -175,6 +175,14 @@ android {
     }
 }
 
+// L'ouverture du démarrage (docs/OUVERTURE.md) : le « ta-dum » est joué par le MÊME code
+// natif que l'Android TV (`com.tentacletv.boot` : décodage d'avance, flux calé sur la
+// sortie, sans focus audio), compilé ici tel quel depuis apps/tv — jamais une copie —,
+// et le MÊME fichier dérivé de la synthèse (`pnpm --filter @tentacle-tv/tv sound:intro`),
+// posé dans les assets de l'APK.
+android.sourceSets.main.java.srcDir("$projectDir/../../../tv/android/app/src/main/java/com/tentacletv/boot")
+android.sourceSets.main.assets.srcDir("$projectDir/../../../tv/assets/sound")
+
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")

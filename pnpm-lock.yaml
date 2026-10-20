@@ -204,6 +204,9 @@ importers:
       '@tentacle-tv/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@tentacle-tv/brand-intro-native':
+        specifier: workspace:*
+        version: link:../../packages/brand-intro-native
       '@tentacle-tv/offline-core':
         specifier: workspace:*
         version: link:../../packages/offline-core
@@ -426,6 +429,9 @@ importers:
       '@tentacle-tv/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@tentacle-tv/brand-intro-native':
+        specifier: workspace:*
+        version: link:../../packages/brand-intro-native
       '@tentacle-tv/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -685,6 +691,15 @@ importers:
       vitest:
         specifier: ^3.2.0
         version: 3.2.4(@types/debug@4.1.13)(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/brand-intro-native:
+    dependencies:
+      '@tentacle-tv/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tentacle-tv/theme':
+        specifier: workspace:*
+        version: link:../theme
 
   packages/offline-core:
     dependencies:

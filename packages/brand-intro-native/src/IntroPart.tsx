@@ -2,7 +2,7 @@ import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import type { IntroPoint } from "@tentacle-tv/shared/brandIntro";
-import type { IntroChannels, IntroLoopSamples } from "@tentacle-tv/tv-core/boot";
+import type { IntroChannels, IntroLoopSamples } from "@tentacle-tv/shared/brandIntro";
 import type { PartBox } from "./introArt";
 import { loopStyleAt, partStyleAt, sampleAt, type IntroClock } from "./introWorklets";
 

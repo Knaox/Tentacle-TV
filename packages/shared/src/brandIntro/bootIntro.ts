@@ -1,7 +1,8 @@
 /**
- * L'OUVERTURE au démarrage de la TV — quand la jouer, quand partir. Module
- * pur : l'adaptateur (apps/tv `redesignWiring/boot/`) lui donne ce qu'il sait,
- * la règle tranche.
+ * L'OUVERTURE au démarrage (Apple TV, Android TV, mobile, iPad) — quand la
+ * jouer, quand partir. Module pur : l'adaptateur (apps/tv
+ * `redesignWiring/boot/`, apps/mobile `src/bootIntro/`) lui donne ce qu'il
+ * sait, la règle tranche.
  *
  * Elle se joue à CHAQUE démarrage à froid, D'ELLE-MÊME — aucun geste, aucun
  * appui n'est attendu (une app native n'a pas la règle d'autolecture d'un
@@ -15,9 +16,10 @@
  * du 2026-10-18, après « Chambre » : réservée à l'accueil, elle ne se jouait
  * jamais sur sa TV passée aux profils.
  *
- * Jamais : sur une plateforme qui ne l'a pas (le trait `brandIntro` : Android
- * TV garde sa mascotte), ni avec le mouvement réduit (réglage
- * d'accessibilité : le premier écran directement).
+ * Jamais : sur une plateforme qui ne l'a pas (le trait `brandIntro` de la
+ * TV), ni avec le mouvement réduit (réglage d'accessibilité : le premier
+ * écran directement), ni quand l'appareil l'a coupée (réglage du mobile
+ * « Animation d'ouverture »).
  */
 
 export interface BootIntroInput {
@@ -27,17 +29,20 @@ export interface BootIntroInput {
   reducedMotion: boolean;
   /** Ce montage est le démarrage à froid du processus (`bootIntroTurn`). */
   coldStart: boolean;
+  /** Le réglage d'appareil « Animation d'ouverture » (mobile ; absent : allumée). */
+  enabled?: boolean;
 }
 
 export type BootIntroPlan = "intro" | "boot";
 
 export function decideBootIntro(input: BootIntroInput): BootIntroPlan {
-  return input.supported && !input.reducedMotion && input.coldStart ? "intro" : "boot";
+  return input.supported && input.enabled !== false && !input.reducedMotion && input.coldStart ? "intro" : "boot";
 }
 
 /**
- * Les écrans qui disent EUX-MÊMES quand ils sont prêts (leurs données
- * arrivent) ; les autres le sont dès qu'ils sont montés.
+ * Les écrans de la TV qui disent EUX-MÊMES quand ils sont prêts (leurs
+ * données arrivent) ; les autres le sont dès qu'ils sont montés. Le mobile a
+ * les siens (`BootIntroWatch.selfReporting`).
  */
 export const BOOT_INTRO_SELF_REPORTING: readonly string[] = ["Home", "Profiles"];
 
@@ -60,6 +65,8 @@ export interface BootIntroWatch {
   blocked: boolean;
   /** Depuis combien de temps l'ouverture attend sur le bouton lecture (0 : elle n'attend pas). */
   heldMs: number;
+  /** Les écrans qui disent eux-mêmes quand ils sont prêts (défaut : ceux de la TV). */
+  selfReporting?: readonly string[];
 }
 
 /**
@@ -75,7 +82,8 @@ export type BootIntroOutcome = "wait" | "go";
 export function bootIntroOutcome(watch: BootIntroWatch): BootIntroOutcome {
   if (watch.route === null) return "wait";
   if (watch.blocked || watch.screen === "ready" || watch.screen === "failed") return "go";
-  if (!BOOT_INTRO_SELF_REPORTING.includes(watch.route) || watch.heldMs >= BOOT_INTRO_MAX_HOLD_MS) return "go";
+  const selfReporting = watch.selfReporting ?? BOOT_INTRO_SELF_REPORTING;
+  if (!selfReporting.includes(watch.route) || watch.heldMs >= BOOT_INTRO_MAX_HOLD_MS) return "go";
   return "wait";
 }
 

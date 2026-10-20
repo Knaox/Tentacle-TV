@@ -27,7 +27,7 @@ import { useRedesignScreen } from "../screen/useRedesignScreen";
 import { useHomeHero } from "./useHomeHero";
 import { useHomeRowModels } from "./useHomeRowModels";
 import { useArrivalQuiet } from "./useArrivalQuiet";
-import { useReportScreenToBootIntro } from "../boot/bootIntroGate";
+import { useReportScreenToBootIntro } from "@tentacle-tv/brand-intro-native";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 

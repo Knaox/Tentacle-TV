@@ -29,6 +29,11 @@ import { FamilyPinStartupHost } from "@/family/pinSuggest/FamilyPinStartupHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
+import { useBootIntroLanded } from "@tentacle-tv/brand-intro-native";
+import { BootIntroShell } from "@/bootIntro/BootIntroShell";
+import { BootIntroRouteReporter } from "@/bootIntro/BootIntroRouteReporter";
+import { bootDecision } from "@/bootIntro/bootPlan";
+import { configureBootIntroSettings } from "@/bootIntro/bootIntroSettings";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -65,6 +70,11 @@ export default function RootLayout() {
       } catch (e) {
         console.warn("[RootLayout] Hydration failed:", e);
       }
+      // L'ouverture du démarrage est décidée (quelques millisecondes, partie au
+      // chargement) : la navigation ne se monte jamais avant qu'on sache si
+      // l'app vit dans l'écran du poulpe.
+      await bootDecision();
+      configureBootIntroSettings(storage);
 
       if (!mounted) return;
 
@@ -140,6 +150,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
   const theme = useTheme();
   const { serverUrl } = useServerUrl();
   const surface = theme.colors.surface.s0;
+  // Ce qui s'ouvre en MODALE au lancement sort de l'écran du poulpe : il attend l'arrivée de l'ouverture.
+  const introLanded = useBootIntroLanded();
   const screenOptions = useMemo(() => ({
     headerShown: false,
     gestureEnabled: true,
@@ -153,79 +165,84 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
   return (
     <>
       <StatusBar style={theme.statusBarStyle} />
-      {/* La feuille d'appui long des cartes, pour tous les écrans empilés (la
-          recherche, modale, a la sienne). */}
-      <CardSheetScope>
-        <Stack screenOptions={screenOptions} screenLayout={withScreenBoundary}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
-          <Stack.Screen name="person/[personId]" options={{ presentation: "card" }} />
-          <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
-          <Stack.Screen name="trailer" options={{ presentation: "fullScreenModal", orientation: "all" }} />
-          <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
-          <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
-          <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
-          <Stack.Screen name="favorites" options={{ presentation: "card" }} />
-          <Stack.Screen name="stats" options={{ presentation: "card" }} />
-          {/* Recherche : plein écran sur iPad (le page-sheet laisse l'accueil
-              visible derrière et son swipe-pour-fermer est capricieux). */}
-          <Stack.Screen name="search" options={{ presentation: IS_TABLET_DEVICE ? "fullScreenModal" : "modal" }} />
-          <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
-          <Stack.Screen name="support" options={{ presentation: "card" }} />
-          <Stack.Screen name="about" options={{ presentation: "card" }} />
-          <Stack.Screen name="credits" options={{ presentation: "card" }} />
-          <Stack.Screen name="licenses" options={{ presentation: "card" }} />
-          <Stack.Screen name="license-text" options={{ presentation: "card" }} />
-          <Stack.Screen name="profile/[section]" options={{ presentation: "card" }} />
-          <Stack.Screen name="family" options={{ presentation: "card" }} />
-          <Stack.Screen name="who-is-watching" options={{ presentation: "fullScreenModal", orientation: "all", gestureEnabled: false }} />
-          <Stack.Screen name="settings/password" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings/playback" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings/devices" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
-          <Stack.Screen name="admin/sessions" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings/data" options={{ presentation: "card" }} />
-          <Stack.Screen name="on-device/index" options={{ presentation: "card" }} />
-          <Stack.Screen name="on-device/series/[seriesKey]" options={{ presentation: "card" }} />
-          <Stack.Screen name="on-device/item/[itemId]" options={{ presentation: "card" }} />
-          <Stack.Screen name="on-device/library" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings/on-device" options={{ presentation: "card" }} />
+      {/* L'ouverture du démarrage : l'app entière est montée DANS l'écran du poulpe. */}
+      <BootIntroShell screenColor={surface}>
+        <BootIntroRouteReporter appReady={!showLoading} />
+        {/* La feuille d'appui long des cartes, pour tous les écrans empilés (la
+            recherche, modale, a la sienne). */}
+        <CardSheetScope>
+          <Stack screenOptions={screenOptions} screenLayout={withScreenBoundary}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
+            <Stack.Screen name="person/[personId]" options={{ presentation: "card" }} />
+            <Stack.Screen name="watch/[itemId]" options={{ presentation: "fullScreenModal", orientation: "all" }} />
+            <Stack.Screen name="trailer" options={{ presentation: "fullScreenModal", orientation: "all" }} />
+            <Stack.Screen name="plugin/[pluginId]" options={{ presentation: "card" }} />
+            <Stack.Screen name="library/[libraryId]" options={{ presentation: "card" }} />
+            <Stack.Screen name="watchlist" options={{ presentation: "card" }} />
+            <Stack.Screen name="favorites" options={{ presentation: "card" }} />
+            <Stack.Screen name="stats" options={{ presentation: "card" }} />
+            {/* Recherche : plein écran sur iPad (le page-sheet laisse l'accueil
+                visible derrière et son swipe-pour-fermer est capricieux). */}
+            <Stack.Screen name="search" options={{ presentation: IS_TABLET_DEVICE ? "fullScreenModal" : "modal" }} />
+            <Stack.Screen name="pair-tv" options={{ presentation: "card" }} />
+            <Stack.Screen name="support" options={{ presentation: "card" }} />
+            <Stack.Screen name="about" options={{ presentation: "card" }} />
+            <Stack.Screen name="credits" options={{ presentation: "card" }} />
+            <Stack.Screen name="licenses" options={{ presentation: "card" }} />
+            <Stack.Screen name="license-text" options={{ presentation: "card" }} />
+            <Stack.Screen name="profile/[section]" options={{ presentation: "card" }} />
+            <Stack.Screen name="family" options={{ presentation: "card" }} />
+            <Stack.Screen name="who-is-watching" options={{ presentation: "fullScreenModal", orientation: "all", gestureEnabled: false }} />
+            <Stack.Screen name="settings/password" options={{ presentation: "card" }} />
+            <Stack.Screen name="settings/playback" options={{ presentation: "card" }} />
+            <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
+            <Stack.Screen name="settings/devices" options={{ presentation: "card" }} />
+            <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
+            <Stack.Screen name="admin/sessions" options={{ presentation: "card" }} />
+            <Stack.Screen name="settings/data" options={{ presentation: "card" }} />
+            <Stack.Screen name="on-device/index" options={{ presentation: "card" }} />
+            <Stack.Screen name="on-device/series/[seriesKey]" options={{ presentation: "card" }} />
+            <Stack.Screen name="on-device/item/[itemId]" options={{ presentation: "card" }} />
+            <Stack.Screen name="on-device/library" options={{ presentation: "card" }} />
+            <Stack.Screen name="settings/on-device" options={{ presentation: "card" }} />
 
-          <Stack.Screen name="settings/personalization" options={{ presentation: "card" }} />
-        </Stack>
-      </CardSheetScope>
-      <OfflineShell />
-      {/* Les avertissements (serveur, TMDB, clé d'administration) : un à la fois, jamais sur le lecteur. */}
-      <NoticeHost />
-      <MutationFailureBinding />
-      {/* Le journal local des erreurs (écran, version du serveur, erreurs non attrapées). */}
-      <ProblemJournalBinding />
-      {/* L'affiche d'invitation de la Famille : au lancement et en direct, jamais sur le
-          lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
-          lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
-      {serverUrl && !showLoading ? <FamilyInvitationHost /> : null}
-      {/* « Qui regarde ? » à l'ouverture, puis le premier lancement du profil (code PIN, accueil, photo). */}
-      {serverUrl && !showLoading ? <FamilyLaunchHosts /> : null}
-      {/* Un droit changé au bureau s'applique ici sans redémarrage (`rights:changed`). */}
-      {serverUrl && !showLoading ? <RightsLiveHost /> : null}
-      {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
-          (l'affiche de la Famille d'abord), jamais sur le lecteur. */}
-      {serverUrl && !showLoading ? <AvatarInviteHost /> : null}
-      {/* « Action recommandée : posez votre code PIN » : après l'invitation aux avatars. */}
-      {serverUrl && !showLoading ? <FamilyPinStartupHost /> : null}
-      {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
-      <SessionMessageHost />
-      {/* Compte désactivé ou hors de ses heures : la page remplace l'app, lecteur fermé. */}
-      {serverUrl && !showLoading ? <AccountAccessHost /> : null}
-      {/* La migration de la base du serveur : au-dessus de tout, jamais un « hors ligne ». */}
-      {!showLoading ? <DatabaseMigrationHost serverUrl={serverUrl} /> : null}
-      {showLoading && (
-        <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
-          <BrandSpinner size="large" />
-        </View>
-      )}
+            <Stack.Screen name="settings/personalization" options={{ presentation: "card" }} />
+          </Stack>
+        </CardSheetScope>
+        <OfflineShell />
+        {/* Les avertissements (serveur, TMDB, clé d'administration) : un à la fois, jamais sur le lecteur. */}
+        <NoticeHost />
+        <MutationFailureBinding />
+        {/* Le journal local des erreurs (écran, version du serveur, erreurs non attrapées). */}
+        <ProblemJournalBinding />
+        {/* L'affiche d'invitation de la Famille : au lancement et en direct, jamais sur le
+            lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
+            lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
+        {serverUrl && !showLoading && introLanded ? <FamilyInvitationHost /> : null}
+        {/* « Qui regarde ? » à l'ouverture, puis le premier lancement du profil (code PIN, accueil, photo).
+            Sans attendre la fin de l'ouverture : c'est l'écran qu'elle dévoile. */}
+        {serverUrl && !showLoading ? <FamilyLaunchHosts /> : null}
+        {/* Un droit changé au bureau s'applique ici sans redémarrage (`rights:changed`). */}
+        {serverUrl && !showLoading ? <RightsLiveHost /> : null}
+        {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
+            (l'affiche de la Famille d'abord), jamais sur le lecteur. */}
+        {serverUrl && !showLoading && introLanded ? <AvatarInviteHost /> : null}
+        {/* « Action recommandée : posez votre code PIN » : après l'invitation aux avatars. */}
+        {serverUrl && !showLoading && introLanded ? <FamilyPinStartupHost /> : null}
+        {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
+        <SessionMessageHost />
+        {/* Compte désactivé ou hors de ses heures : la page remplace l'app, lecteur fermé. */}
+        {serverUrl && !showLoading ? <AccountAccessHost /> : null}
+        {/* La migration de la base du serveur : au-dessus de tout, jamais un « hors ligne ». */}
+        {!showLoading ? <DatabaseMigrationHost serverUrl={serverUrl} /> : null}
+        {showLoading && (
+          <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
+            <BrandSpinner size="large" />
+          </View>
+        )}
+      </BootIntroShell>
     </>
   );
 }

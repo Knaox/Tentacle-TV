@@ -51,7 +51,7 @@ import { QualityBadgeHost } from "./redesignWiring/cards/QualityBadgeHost";
 import { TrailerPreviewHost } from "./redesignWiring/trailerPreview/TrailerPreviewHost";
 import { ThemeProvider, useTheme } from "./theme";
 import { BootIntroHost } from "./redesignWiring/boot/BootIntroHost";
-import { bootIntroGate, useReportBlockedToBootIntro } from "./redesignWiring/boot/bootIntroGate";
+import { bootIntroGate, useReportBlockedToBootIntro } from "@tentacle-tv/brand-intro-native";
 import { BOOT_PLAN_AT_START, bootPlanOf, claimColdStart } from "./redesignWiring/boot/bootPlan";
 
 // Instance unique, définie dans son module pour que le magasin d'épinglage du

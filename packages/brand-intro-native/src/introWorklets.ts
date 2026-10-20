@@ -1,4 +1,4 @@
-import type { IntroChannels, IntroLoopSamples } from "@tentacle-tv/tv-core/boot";
+import type { IntroChannels, IntroLoopSamples } from "@tentacle-tv/shared/brandIntro";
 import type { SharedValue } from "react-native-reanimated";
 
 /**

@@ -1,18 +1,18 @@
 import { useEffect, useSyncExternalStore } from "react";
-import type { BootScreenState } from "@tentacle-tv/tv-core/boot";
+import type { BootScreenState } from "@tentacle-tv/shared/brandIntro";
 
 /**
  * Ce que l'app DIT à l'ouverture du démarrage pendant qu'elle se joue :
  * l'écran affiché, ce que les écrans qui chargent disent d'eux-mêmes (prêt, en
  * échec), si un écran bloquant veut paraître (hors ligne, migration de la
  * base, accès suspendu). Un magasin à part (les écrans ne connaissent pas
- * l'ouverture) ; la règle qui en tire « attendre, partir, renoncer » est dans
- * tv-core (`bootIntroOutcome`). Hors ouverture, rien ne le lit.
+ * l'ouverture) ; la règle qui en tire « attendre, partir » est dans shared
+ * (`bootIntroOutcome`). Hors ouverture, rien ne le lit.
  */
 export interface BootIntroReport {
   /** L'ouverture se joue : rien d'autre ne doit sonner ni jouer (l'aperçu de la zone attend). */
   playing: boolean;
-  /** L'écran affiché (null : la navigation n'est pas encore prête). */
+  /** L'écran affiché (null : la navigation n'est pas encore prête) : le nom de route de la TV, le chemin du mobile. */
   route: string | null;
   /** Ce que disent d'eux-mêmes les écrans qui chargent (l'accueil, « Qui regarde ? »), par route. */
   screens: Readonly<Record<string, BootScreenState>>;
@@ -56,6 +56,15 @@ export const bootIntroGate = {
 
 export function useBootIntroReport(): BootIntroReport {
   return useSyncExternalStore(bootIntroGate.subscribe, bootIntroGate.snapshot, bootIntroGate.snapshot);
+}
+
+/**
+ * L'ouverture est arrivée, ou ne se joue pas : ce qui s'ouvre PAR-DESSUS
+ * l'app au lancement (une modale, une feuille — elles sortent de l'écran du
+ * poulpe) attend ce moment.
+ */
+export function useBootIntroLanded(): boolean {
+  return !useBootIntroPlaying();
 }
 
 /** L'ouverture se joue (l'aperçu de bande-annonce de la zone attend son arrivée). */

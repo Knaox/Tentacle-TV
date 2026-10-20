@@ -5,8 +5,8 @@
  * changement de profil, ni à un rechargement de l'arbre React (le mode Lite
  * d'Android TV relance l'interface dans le même processus ; un rechargement du
  * JavaScript aussi). Règle pure : la MÉMOIRE du processus est passée en
- * entrée — l'adaptateur la tient hors du JavaScript (apps/tv
- * `platform/tvos/bootSound` : un drapeau natif, que rien ne recharge).
+ * entrée — l'adaptateur la tient hors du JavaScript (`TentacleBootSound.claimIntro` :
+ * un drapeau natif, que rien ne recharge — TV et mobile).
  */
 
 /** Ce qui demande à l'ouverture si elle doit se jouer. */

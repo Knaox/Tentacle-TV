@@ -10,7 +10,7 @@
  * l'échelle 1 et à sa place.
  */
 import { clamp, introEasing, progressOf, smoothstep } from "./easing";
-import { LOGO_CENTER, LOGO_UNITS, type IntroGeometry, type IntroRoundedRect } from "./introGeometry";
+import type { IntroGeometry, IntroRoundedRect } from "./introGeometry";
 import { INTRO_TIMING } from "./introTimeline";
 
 export interface IntroCamera {
@@ -50,16 +50,35 @@ export function coverZoom(vw: number, vh: number, inner: IntroRoundedRect, margi
   return high * margin;
 }
 
+/** Ce que l'encoche, la Dynamic Island, la barre d'accueil prennent sur chaque bord (points). */
+export interface IntroSafeInsets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+const NO_INSETS: IntroSafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+
 /**
  * Le cadrage de départ et d'arrivée pour une fenêtre vw × vh : le logo entier,
- * centré sur son encombrement (220 à 420 points de haut), puis l'écran qui
- * recouvre la fenêtre.
+ * centré sur son encombrement DANS LA ZONE SÛRE (220 à 420 points de haut,
+ * jamais sous l'encoche ni la Dynamic Island), puis l'écran qui recouvre la
+ * fenêtre ENTIÈRE — l'app y gère elle-même sa zone sûre.
  */
-export function introCameraPlan(vw: number, vh: number, geometry: IntroGeometry): IntroCameraPlan {
-  const fromZoom = clamp(Math.min(vw * 0.78, vh * 0.5), 220, 420) / LOGO_UNITS;
-  const { target } = geometry;
+export function introCameraPlan(vw: number, vh: number, geometry: IntroGeometry, safe: IntroSafeInsets = NO_INSETS): IntroCameraPlan {
+  const safeWidth = vw - safe.left - safe.right;
+  const safeHeight = vh - safe.top - safe.bottom;
+  const fromZoom = clamp(Math.min(safeWidth * 0.78, safeHeight * 0.5), 220, 420) / geometry.logo.units;
+  const { target, logo } = geometry;
+  const shiftX = (safe.left - safe.right) / 2;
+  const shiftY = (safe.top - safe.bottom) / 2;
   return {
-    from: { zoom: fromZoom, offsetX: (target.x - LOGO_CENTER.x) * fromZoom, offsetY: (target.y - LOGO_CENTER.y) * fromZoom },
+    from: {
+      zoom: fromZoom,
+      offsetX: (target.x - logo.center.x) * fromZoom + shiftX,
+      offsetY: (target.y - logo.center.y) * fromZoom + shiftY,
+    },
     to: { zoom: coverZoom(vw, vh, geometry.inner), offsetX: 0, offsetY: 0 },
   };
 }

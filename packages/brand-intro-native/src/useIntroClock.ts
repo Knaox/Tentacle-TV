@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { runOnJS, useFrameCallback, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { INTRO_HOLD_AT, INTRO_TIMING } from "@tentacle-tv/shared/brandIntro";
-import { BOOT_INTRO_IDLE_FADE_MS, BOOT_SOUND_FILE_AT, bootSoundLeads } from "@tentacle-tv/tv-core/boot";
+import { BOOT_INTRO_IDLE_FADE_MS, BOOT_SOUND_FILE_AT, bootSoundLeads } from "@tentacle-tv/shared/brandIntro";
 import type { IntroClock } from "./introWorklets";
 
 /** Les états de l'horloge (des nombres : ils vivent sur le fil d'interface). */

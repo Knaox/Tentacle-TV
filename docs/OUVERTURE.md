@@ -1,4 +1,4 @@
-# L'ouverture du démarrage (Apple TV, Android TV)
+# L'ouverture du démarrage (Apple TV, Android TV, mobile, iPad)
 
 > Le logo s'assemble pendant que l'app charge, appuie sur lecture (« ta »),
 > son écran s'allume (« dum ») — et cet écran EST l'accueil, déjà prêt —, puis
@@ -8,8 +8,9 @@
 
 ## Quand elle se joue
 
-Règles : tv-core `boot/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`) et
-`boot/bootIntroOnce.ts` (`bootIntroTurn`, la mémoire du processus). Décision de
+Règles : shared `brandIntro/bootIntro.ts` (`decideBootIntro`, `bootIntroOutcome`)
+et `brandIntro/bootIntroOnce.ts` (`bootIntroTurn`, la mémoire du processus) —
+tv-core `boot/` les réexporte pour la TV. Décision de
 Damien du 2026-10-18, après « Chambre » (sa TV passée aux profils ne la voyait
 jamais : la règle d'alors la réservait à l'accueil).
 
@@ -50,12 +51,12 @@ jamais : la règle d'alors la réservait à l'accueil).
 
 | Pièce | Fichier |
 |---|---|
-| Courbes, géométrie (tirée des constantes générées du logo), caméra, chorégraphie (règle WAAPI : remplissages, transformation et opacité à part), attente, partition du son | `packages/shared/src/brandIntro/` (`@tentacle-tv/shared/brandIntro`) |
+| Courbes, géométrie (tirée des constantes générées du logo), caméra, chorégraphie (règle WAAPI : remplissages, transformation et opacité à part), attente, partition du son ; quand la jouer (une fois par processus), quand partir ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son ; écran aux proportions de l'appareil (`introFit`) | `packages/shared/src/brandIntro/` (`@tentacle-tv/shared/brandIntro` ; tv-core `boot/` le réexporte) |
 | Synthèse Web Audio (web et bureau, script de rendu) | `@tentacle-tv/shared/brandIntro/synth` (`introSynth.ts`) |
-| Quand la jouer (une fois par processus), quand partir ; tableaux pour l'image (60 par seconde) ; plaques nettes ; heure du son | `packages/tv-core/src/boot/` |
-| La vue (calques, horloge Reanimated, écran qui montre l'app) | `apps/tv/src/redesign/boot/` |
-| Le branchement (décision au montage, porte du premier écran, son) | `apps/tv/src/redesignWiring/boot/` |
-| Le son natif | `apps/tv/ios/TentacleTV/TentacleBootSound.m` ; Android `apps/tv/android/app/src/main/java/com/tentacletv/boot/` ; adaptateur commun `platform/tvos/bootSound/` |
+| La vue (calques, horloge Reanimated, écran qui montre l'app), le déroulé (`useBootIntroRun`), la porte du premier écran, l'adaptateur du son | `packages/brand-intro-native/` (`@tentacle-tv/brand-intro-native`, TV et mobile) |
+| Le branchement TV (décision au montage, primitives, réglage du son) | `apps/tv/src/redesignWiring/boot/` |
+| Le branchement mobile (décision, enveloppe, rapport de route, réglages d'appareil) | `apps/mobile/src/bootIntro/` |
+| Le son natif (UN code, compilé par les deux apps) | `apps/tv/ios/TentacleTV/TentacleBootSound.m` ; Android `apps/tv/android/app/src/main/java/com/tentacletv/boot/` |
 | Le fichier du son (dérivé) | `apps/tv/assets/sound/boot-tadum.m4a` |
 
 ## Le rendu : net, fluide, sans peser sur le démarrage
@@ -69,7 +70,7 @@ jamais : la règle d'alors la réservait à l'accueil).
   (visage, onde, bouton, étincelles, chapeau, bras avant). La caméra est une
   transformation de chaque couche autour du centre de la fenêtre.
 - **L'écran est l'app** : l'arbre de l'app est monté dans
-  `IntroScreenPlane` — une découpe arrondie (l'intérieur du cadre, plus grand
+  `IntroScreenPlane` (paquet `brand-intro-native`) — une découpe arrondie (l'intérieur du cadre, plus grand
   que la fenêtre à l'arrivée), un cercle qui l'ouvre (une vue ronde agrandie,
   son contenu réduit d'autant, sur le même pivot). À l'arrivée tout vaut
   l'identité et la découpe se retire : les vues de l'app ne changent JAMAIS
@@ -162,6 +163,52 @@ jamais : la règle d'alors la réservait à l'accueil).
 
 L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
 
+## Mobile et iPad (2026-10-20)
+
+- **La même ouverture**, par le même paquet et le même déroulé
+  (`useBootIntroRun`) : à chaque démarrage à froid, une fois par processus
+  (le drapeau natif `claimIntro` : ni le retour d'arrière-plan, ni un
+  changement de profil, ni un rechargement du JavaScript ne la rejouent),
+  jamais avec « Réduire les animations » du système, ni le réglage d'appareil
+  « Animation d'ouverture » coupé.
+- **L'écran du poulpe aux proportions de la fenêtre** (shared `introFit`) :
+  l'écran de télévision du logo laisserait, sur un téléphone en portrait, l'app
+  entre deux bandes plus larges qu'elle. `fitIntroArt` tire des constantes
+  générées un poulpe qui tient un écran au rapport de la fenêtre (portrait,
+  paysage, iPad), à surface égale, largeur bornée (92 à 160 unités) : haut de
+  l'écran gardé (la tête y est posée), bras avant décalés et étirés le long
+  des côtés (seul leur tronçon droit, 112 → 160, s'étire : épaule et boucle
+  gardent leur dessin), pattes, bouton, dégradés qui suivent. Rien ne change
+  au rapport du logo (la TV).
+- **La zone sûre** : le logo de départ se centre dans la zone sûre (encoche,
+  Dynamic Island, barre d'accueil), et sa hauteur s'y tient ; à l'arrivée,
+  l'écran couvre la fenêtre ENTIÈRE (l'app gère sa zone sûre elle-même).
+  Fenêtre et zone sûre sont figées au montage ; arrivé, l'écran passe en plein
+  cadre : un iPad qu'on tourne, l'app suit sans changer d'arbre.
+- **Le premier écran** : la route est le chemin expo-router, connue une fois
+  le stockage relu et les polices chargées (`BootIntroRouteReporter`). L'accueil
+  (`/`, héros compris) dit quand il est prêt ; tout autre écran (connexion,
+  serveur, fiche) dès qu'il est monté ; le mode hors ligne aussitôt. 8 s au plus.
+  « Qui regarde ? » n'est pas un premier écran sur le mobile : une modale
+  (`FamilyLaunchHosts`) qui s'ouvre après l'arrivée, sur l'accueil.
+- **Ce qui sort de l'écran** : une `Modal` ou une route en présentation modale
+  native se pose par-dessus l'ouverture. Les hôtes du lancement qui en ouvrent
+  (affiche de la Famille, avatars, code PIN conseillé, `FamilyLaunchHosts`) attendent
+  `useBootIntroLanded()` ; un premier écran ne doit jamais être une modale native.
+- **Le son** : le MÊME code natif que la TV, compilé par le projet mobile —
+  iOS par une référence du projet Xcode (`TentacleBootSound.m`, la ressource
+  `boot-tadum.m4a`), Android par `sourceSets` (`com.tentacletv.boot`, et le
+  fichier dans les assets) ; aucune copie. iOS : catégorie « ambient » (le
+  commutateur silencieux le tait, une musique en cours n'est pas coupée).
+  Android : aucun focus audio ; le mode silencieux ou vibreur le tait.
+  Réglage d'appareil « Son au démarrage » (`tentacle_boot_sound`) ; « Animation
+  d'ouverture » (`tentacle_boot_intro`) ; lus sur le disque AVANT l'hydratation
+  du stockage (la décision précède tout), libellés `preferences.bootIntro*`.
+- **L'écran de lancement** est l'encre seule (#0D0B13) : storyboard iOS sans
+  image, icône transparente d'Android 12+, fenêtre de l'app à l'encre.
+- **La racine attend la décision** (quelques millisecondes) avant de se dire
+  prête : la navigation n'est jamais montée hors de l'écran du poulpe.
+
 ## Vérifier
 
 - Banc UI : scènes `ouverture/*` (l'horloge figée à chaque étape, l'accueil du
@@ -190,8 +237,12 @@ et plongée, ≈ 2 s après que l'accueil est prêt.
 
 - Android TV : la fluidité de la plongée mesurée sur la Shield (le mode de
   mesure `debug.tentacle.perf`), et sur un appareil Lite.
-- Le web, le bureau, le mobile : le même pur et la même partition (plan :
+- Le web, le bureau : le même pur et la même partition (plan :
   `docs/OUVERTURE-SON-PLAN.md` du dossier principal).
+- Mobile : essais iPhone et iPad (portrait, paysage, encoche), Android (coins
+  arrondis de la découpe en nouvelle architecture, avance de la sortie),
+  ressenti du poulpe à l'écran de téléphone (étirement des bras) — non vus à
+  l'image au 2026-10-20.
 - `LaunchLogo` (brand/tvos.py, Images.xcassets) n'est plus affiché par l'écran
   de lancement (l'encre seule) : à retirer du générateur si l'on n'y revient pas.
 - Le reflet qui balaie le bouton pendant l'attente (site : un masque à la forme

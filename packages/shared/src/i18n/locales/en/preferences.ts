@@ -34,6 +34,10 @@ export default {
   opening: "Opening",
   bootSoundTitle: "Startup sound",
   bootSoundDescription: "The opening's “ta-dum” every time the app opens. It blends with music already playing instead of stopping it.",
+  // Mobile (iPhone, iPad, Android): the animation can be turned off too, and the sound follows silent mode.
+  bootIntroTitle: "Opening animation",
+  bootIntroDescription: "The logo comes to life when the app starts, then opens onto your first screen. Never with the system's Reduce Motion.",
+  bootSoundDescriptionMobile: "The opening animation's “ta-dum”. It respects silent mode and blends with your music instead of stopping it.",
 
   // ── Settings shell sections ──
   // Umbrella title of the screen (mobile landing). `title` remains the
