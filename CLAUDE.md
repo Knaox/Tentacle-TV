@@ -492,8 +492,8 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   démarrage » (`tentacle_tv_boot_sound`). Aucune capacité serveur.
 - **L'écran de lancement est l'encre seule** (`BOOT_INK`, #0D0B13) : la première
   image de l'ouverture ; sans elle, la mascotte n'y paraît que si le démarrage traîne.
-- **Téléphone Android** : jamais le sombre forcé (`android:forceDarkAllowed="false"`,
-  ColorOS recoloriait les pièces du poulpe, des images) ; le son se demande
+- **Téléphone Android** : jamais le sombre forcé (`android:forceDarkAllowed="false"` ;
+  ColorOS blanchissait la vitre sombre de l'écran du poulpe) ; le son se demande
   `BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS` plus tôt (le fil JS du démarrage le retarde),
   une fois préparé ; le vibreur ne le tait pas, seul le mode silencieux.
 

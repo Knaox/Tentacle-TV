@@ -7,9 +7,9 @@
     <!-- Jamais un blanc entre l'écran de lancement et la première image de l'ouverture. -->
     <item name="android:windowBackground">@color/boot_ink</item>
     <!-- L'app a ses propres couleurs sombres : jamais le « mode sombre » forcé du système ou du
-         constructeur (ColorOS « appliquer aux apps tierces », One UI, MIUI). Il inverse la clarté
-         des images qu'il juge claires — les pièces du poulpe de l'ouverture sont des images
-         (react-native-svg les rastérise) : yeux, tête et dégradés recolorés, « pas le même logo ». -->
+         constructeur (ColorOS « appliquer aux apps tierces », One UI, MIUI). Il recolore ce que
+         les vues peignent — mesuré à l'émulateur (sombre forcé) : la vitre SOMBRE de l'écran du
+         poulpe (un dégradé natif) devenait blanche, l'accueil délavé : « pas le même logo ». -->
     <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
   </style>
   <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
