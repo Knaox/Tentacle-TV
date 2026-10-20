@@ -5,6 +5,7 @@
  *
  *   tsx wt-bench/phones/drive.ts <appareil> texts | labels
  *   tsx wt-bench/phones/drive.ts <appareil> press "<texte>" [n] | press-exact "<texte>" [n] | press-id <testID> | press-label "<accessibilityLabel>" [n]
+ *   tsx wt-bench/phones/drive.ts <appareil> type "<placeholder|testID>" "<valeur>"
  *   tsx wt-bench/phones/drive.ts <appareil> nav /watch/<id>
  *   tsx wt-bench/phones/drive.ts <appareil> eval "<expression avec return>"
  *
@@ -49,6 +50,13 @@ export function pressExpr(what: { text?: string; testID?: string; exact?: boolea
     + " if (!g) return 'sans onPress'; g.memoizedProps.onPress({ nativeEvent: {} }); return 'ok';";
 }
 
+/** Saisir : le n-ième champ (`onChangeText`) dont le placeholder, le testID ou le libellé contient `field`. */
+export function typeExpr(field: string, value: string, nth = 0): string {
+  const f = JSON.stringify(field);
+  return WALK.replace("VISIT", "var p = f.memoizedProps; if (p && typeof p.onChangeText === 'function' && [p.placeholder, p.testID, p.accessibilityLabel].some(function(x){ return typeof x === 'string' && x.indexOf(" + f + ") >= 0; })) out.push(f);")
+    + ` var hit = out[${nth}]; if (!hit) return "absent"; hit.memoizedProps.onChangeText(${JSON.stringify(value)}); return "ok";`;
+}
+
 export function navExpr(path: string): string {
   return "var id = null; __r.getModules().forEach(function(v, k){ if (v && v.verboseName && /expo-router\\/build\\/imperative-api\\.js$/.test(v.verboseName)) id = k; });"
     + ` if (id === null) return "routeur introuvable"; __r(id).router.push(${JSON.stringify(path)}); return "ok";`;
@@ -62,6 +70,7 @@ async function main(): Promise<void> {
       : cmd === "labels" ? labelsExpr()
       : cmd === "press" ? pressExpr({ text: arg }, Number(nth ?? 0))
         : cmd === "press-exact" ? pressExpr({ text: arg, exact: true }, Number(nth ?? 0))
+      : cmd === "type" ? typeExpr(arg, nth ?? "")
       : cmd === "press-label" ? pressExpr({ label: arg }, Number(nth ?? 0))
       : cmd === "press-id" ? pressExpr({ testID: arg }, Number(nth ?? 0))
           : cmd === "nav" ? navExpr(arg)
