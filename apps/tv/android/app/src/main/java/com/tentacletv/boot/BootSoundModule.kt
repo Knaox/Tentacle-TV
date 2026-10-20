@@ -36,7 +36,8 @@ import com.facebook.react.bridge.ReactMethod
  *   natif : ni le rechargement du JavaScript ni la relance de l'interface du
  *   mode Lite ne l'effacent, seul un nouveau processus le remet.
  *
- * Journal : `adb logcat -s TentacleBootSound` (amorce, départ, écart mesuré à la sortie).
+ * Journal : `adb logcat -s TentacleBootSound` (amorce, départ, écart mesuré à la sortie,
+ * « libéré sans départ » quand le son préparé n'a jamais été demandé).
  */
 class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
   // Une file à elle : ni le fil d'interface ni celui du JavaScript ne décodent le fichier.
@@ -133,6 +134,8 @@ class BootSoundModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
 
   private fun release() {
     handler.removeCallbacksAndMessages(null)
+    // Le cas muet, lisible en Release : préparé, jamais demandé (le JS a renoncé au son).
+    if (stream != null && !started) Log.i(TAG, "libéré sans départ : playAt jamais reçu")
     stream?.release()
     stream = null
     started = false
