@@ -205,7 +205,10 @@ Sur mobile, tablette ET web, pour tous les droits.
 
 ## Défauts
 
-(à remplir au fil des passes : n°, branche, fichier:ligne, repro, envoyé à, état)
+| N° | Branche | Où | Défaut | Envoyé | État |
+|----|---------|----|--------|--------|------|
+| D1 | reglages | `settingsMobile.ts` FR 47/81, EN 37/71 | « ce téléphone / this phone » affiché aussi sur tablette | reglages 03:05 | ouvert |
+| D2 | wt-socle | salle WT | 8 sauts rapides (+30 s) perdus (signalé par wt-banc) | coordinateur → wt-socle | ouvert |
 
 ## Décisions tranchées par les sessions
 
