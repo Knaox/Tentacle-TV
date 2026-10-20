@@ -19,6 +19,11 @@
  * ici par `onTransferPause`. iOS rend `false` : sa session d'arrière-plan
  * suffit, et le système n'y autorise pas de notification permanente.
  *
+ * Le SUIVI EN DIRECT d'un lot (`src/offline/live/`) passe aussi par ici :
+ * sur Android, la notification des transferts (`showLiveTransfer`) ; sur iOS,
+ * la Live Activity (`presentLiveActivity`, ActivityKit, iOS 16.2+), dessinée
+ * par l'extension `targets/TransferLiveActivity/`.
+ *
  * Chargé en optionnel : sans le module (Expo Go, ancien build), tout marche,
  * seule l'exclusion manque — et la CI construit toujours avec.
  */
