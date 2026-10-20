@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { usePathname, useSegments } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { bootIntroGate, useBootIntroReport } from "@tentacle-tv/brand-intro-native";
@@ -38,15 +38,23 @@ export function BootIntroRouteReporter({ appReady }: { appReady: boolean }) {
   const shown = useShownBootOverlays();
   const reported = useSyncExternalStore(subscribeStartupOverlays, overlayKey, overlayKey);
 
-  const authRedirect = appReady
-    ? resolveAuthRoute({
-        segments,
-        serverUrl: storage.getItem("tentacle_server_url"),
-        token: storage.getItem("tentacle_token"),
-        user: storage.getItem(STORED_USER_KEY),
-        sessionExpired: isSessionExpired(),
-      })
-    : null;
+  // CE QUE LA GARDE VA FAIRE, pas ce que le stockage dit à l'instant : `AuthRedirect` ne tranche qu'à
+  // l'app prête et à chaque changement de route. Relu à chaque rendu, un jeton effacé après coup (un 401)
+  // faisait croire à une redirection qui ne viendrait jamais — premier écran inconnu, poulpe figé.
+  const routeKey = segments.join("/");
+  const authRedirect = useMemo(
+    () =>
+      appReady
+        ? resolveAuthRoute({
+            segments: routeKey.split("/"),
+            serverUrl: storage.getItem("tentacle_server_url"),
+            token: storage.getItem("tentacle_token"),
+            user: storage.getItem(STORED_USER_KEY),
+            sessionExpired: isSessionExpired(),
+          })
+        : null,
+    [appReady, routeKey, storage],
+  );
   const overlays: BootOverlayStates = {};
   reported.split(",").forEach((state, index) => {
     const overlay = BOOT_FIRST_SCREEN_OVERLAYS[index] as BootFirstScreenOverlay;
