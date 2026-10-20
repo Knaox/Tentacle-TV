@@ -146,6 +146,8 @@ export function useCastSession({ itemId, item, pb, setPaused, onFinished }: Args
     setNegotiation(null);
     setStatus(null);
     setFailure(null);
+    // Le titre est allé au bout sur la TV : on quitte le lecteur, rien à relancer.
+    if (live.current.ended) return;
     const ticks = Math.floor(live.current.pb.positionRef.current * TICKS_PER_SECOND);
     live.current.pb.fetchPlaybackInfo({ startTimeTicks: ticks > 0 ? ticks : undefined });
   }, [connected, availability, negotiation]);
