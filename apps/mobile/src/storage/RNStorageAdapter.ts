@@ -47,13 +47,20 @@ const STORAGE_KEYS = [
   // (`AVATAR_INVITE_SEEN_KEY`, même clé que le web) : absente d'ici,
   // l'invitation unique reviendrait à chaque lancement.
   "tentacle_avatar_invite_seen",
+  // La session de PROFIL de la Famille (`@tentacle-tv/shared` › `profileSessionStore`) :
+  // la marque du profil actif, la réserve de la session du compte (un SECRET :
+  // trousseau), le profil retenu par l'appareil (`MOBILE_PROFILE_STAY_KEY`) et
+  // le premier lancement déjà vu par profil (`FIRST_RUN_SEEN_KEY`). Absentes d'ici,
+  // l'app rouvrirait au nom du profil sans pouvoir revenir au compte.
+  "tentacle_profile_session", "tentacle_account_session", "tentacle_mobile_profile_stay",
+  "tentacle_first_run_seen",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */
 const SECURE_RETRY_MS = 300;
 
 /** Keys stored in Keychain via SecureStore instead of AsyncStorage. */
-const SECURE_KEYS = new Set(["tentacle_token", "tentacle_credentials"]);
+const SECURE_KEYS = new Set(["tentacle_token", "tentacle_credentials", "tentacle_account_session"]);
 
 // Dynamic import: expo-secure-store requires native module, unavailable in Expo Go
 let SecureStore: {
