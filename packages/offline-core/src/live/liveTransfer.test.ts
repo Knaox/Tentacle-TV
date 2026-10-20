@@ -78,6 +78,13 @@ describe("liveTransferView", () => {
     expect(view([failed])?.phase).toBe("retrying");
   });
 
+  it("une coupure réseau datée attend sa relance — elle ne se dit pas « estimation »", () => {
+    const cut = entry({ status: "paused", pausedByUser: false, nextRetryAt: 456 });
+    expect(view([cut])?.phase).toBe("retrying");
+    // Sans échéance (Wi-Fi perdu, conditions absentes), c'est l'attente du moment qui se dit.
+    expect(view([entry({ status: "paused", pausedByUser: false })])?.phase).toBe("estimating");
+  });
+
   it("une taille inconnue : estimation en cours, pas de chiffre", () => {
     const a = entry({ status: "downloading", expectedSize: null });
     const v = view([a], { [a.id]: { bytesDone: 10 * MB, expectedSize: null, rateBps: MB } });
