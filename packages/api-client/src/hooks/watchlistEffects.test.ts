@@ -128,7 +128,7 @@ describe("le retrait automatique d'une série entièrement vue", () => {
     expect(await retireSeriesFromWatchlistIfFullyWatched(qc, client, "u1", "s1")).toBe(true);
 
     expect(deletes(client)).toEqual([RATING_PATH]);
-    expect(qc.getQueryData(STATE_KEY)).toEqual({ type: "completed" });
+    expect(qc.getQueryData(STATE_KEY)).toMatchObject({ type: "completed" });
   });
 
   it("croit le serveur, pas le cache : un état périmé ne décide rien", async () => {

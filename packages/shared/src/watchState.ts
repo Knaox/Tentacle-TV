@@ -7,7 +7,8 @@ export type WatchStatus = "unwatched" | "in_progress" | "watched";
 
 /** Result of the getNextEpisode algorithm for a series. */
 export type NextEpisodeResult =
-  | { type: "completed" }
+  /** Tout est vu ; `first` : le premier épisode, pour « Revoir depuis le début ». */
+  | { type: "completed"; first?: MediaItem }
   | { type: "start"; episode: MediaItem }
   | { type: "continue"; episode: MediaItem; positionTicks: number }
   | { type: "next"; episode: MediaItem };
@@ -92,8 +93,26 @@ export function getNextEpisode(episodes: MediaItem[]): NextEpisodeResult {
     : finished[finished.length - 1];
 
   const nextIndex = episodes.indexOf(anchor) + 1;
-  if (nextIndex >= episodes.length) return { type: "completed" };
+  if (nextIndex >= episodes.length) return { type: "completed", first: episodes[0] };
   return { type: "next", episode: episodes[nextIndex] };
+}
+
+/**
+ * Ce que « Lecture » lance pour une SÉRIE — jamais la série elle-même, que le
+ * lecteur ne sait pas lire (PlaybackInfo d'un identifiant de série : 500 de
+ * Jellyfin, recette Android du 21/10) : l'épisode à reprendre ou à suivre ;
+ * une série entièrement vue se REVOIT depuis son premier épisode ; sans
+ * épisode connu, la fiche.
+ */
+export type SeriesPlayTarget =
+  | { kind: "episode"; episodeId: string }
+  | { kind: "rewatch"; episodeId: string }
+  | { kind: "detail" };
+
+export function seriesPlayTarget(result: NextEpisodeResult | null | undefined): SeriesPlayTarget {
+  if (!result) return { kind: "detail" };
+  if (result.type !== "completed") return { kind: "episode", episodeId: result.episode.Id };
+  return result.first ? { kind: "rewatch", episodeId: result.first.Id } : { kind: "detail" };
 }
 
 /**

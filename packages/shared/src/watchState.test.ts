@@ -123,7 +123,7 @@ describe("getNextEpisode — l'ancre est la dernière lecture", () => {
     const episodes = Array.from({ length: SEASON_LENGTH }, (_, i) =>
       ep({ episode: i + 1, played: true, playedAt: `2026-08-0${i + 1}T10:00:00Z` }),
     );
-    expect(getNextEpisode(episodes)).toEqual({ type: "completed" });
+    expect(getNextEpisode(episodes)).toEqual({ type: "completed", first: episodes[0] });
   });
 
   it("une liste vide ne casse pas", () => {
