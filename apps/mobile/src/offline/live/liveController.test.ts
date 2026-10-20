@@ -33,7 +33,10 @@ vi.mock("react-native", () => ({
     },
   },
 }));
-vi.mock("@tentacle-tv/offline-core/react", () => ({ getProgressFor: (id: number) => env.progress.get(id) }));
+vi.mock("@tentacle-tv/offline-core/react", () => ({
+  getProgressFor: (id: number) => env.progress.get(id),
+  subscribeProgress: () => () => undefined,
+}));
 vi.mock("../connectivityStore", () => ({
   getConnectivitySnapshot: () => ({ networkType: env.networkType }),
   isOfflineMode: () => env.offline,
@@ -50,7 +53,6 @@ vi.mock("../engineRuntime", () => ({
     env.changed.push(listener);
     return () => undefined;
   },
-  subscribeOfflineProgress: () => () => undefined,
 }));
 vi.mock("../entryTitle", () => ({ entryTitle: (entry: { title: string }) => entry.title }));
 vi.mock("../settings", () => ({ isWifiOnly: () => env.wifiOnly, subscribeOfflineSettings: () => () => undefined }));

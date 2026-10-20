@@ -29,12 +29,12 @@ import {
   type LivePublishState,
   type LiveSurfaceOutcome,
 } from "@tentacle-tv/offline-core";
-import { getProgressFor } from "@tentacle-tv/offline-core/react";
+import { getProgressFor, subscribeProgress } from "@tentacle-tv/offline-core/react";
 import { i18n } from "@tentacle-tv/shared";
 import { getConnectivitySnapshot, isOfflineMode, subscribeConnectivity } from "../connectivityStore";
 import { isCellularAcked, isLiveTransfers, subscribeDeviceSettings } from "../deviceSettings";
 import { listOfflineEntries, type OfflineEntry } from "../engineApi";
-import { subscribeOfflineChanged, subscribeOfflineProgress } from "../engineRuntime";
+import { subscribeOfflineChanged } from "../engineRuntime";
 import { entryTitle } from "../entryTitle";
 import { isWifiOnly, subscribeOfflineSettings } from "../settings";
 import { wifiBlocked } from "../transferGate";
@@ -192,7 +192,10 @@ export function startLiveTransfers(nextUserId: string): () => void {
       reloadEntries();
       recomputeLive();
     }),
-    subscribeOfflineProgress(() => recomputeLive()),
+    // Le MAGASIN des barres, pas l'évènement brut du moteur : celui-ci nourrit
+    // le magasin par un autre abonné, et l'ordre des abonnés décidait si l'on
+    // lisait le débit à jour ou celui d'avant.
+    subscribeProgress(() => recomputeLive()),
     subscribeConnectivity(() => recomputeLive()),
     subscribeOfflineSettings(() => recomputeLive()),
     subscribeDeviceSettings(() => recomputeLive()),
