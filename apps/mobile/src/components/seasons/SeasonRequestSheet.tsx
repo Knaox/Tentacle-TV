@@ -7,7 +7,7 @@ import { useRequestTitleSeasons, useSeasons, useTitleSeasons } from "@tentacle-t
 import { librarySeasonNumbers, seasonPick, type TitleKey } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui";
 import { useTitleProvider } from "@/components/external/useExternalTitle";
-import { FONT_FAMILY, RADIUS, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { ctaGradient, FONT_FAMILY, RADIUS, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { SeasonSheetRows } from "./SeasonSheetRows";
 
 /** La série dont on demande les saisons. */
@@ -87,6 +87,7 @@ function SheetBody({ target }: { target: SeasonRequestTarget }) {
 
   const disabled = pick.chosen.length === 0 || request.isPending;
   const fg = theme.colors.cta.brandFg;
+  const gradient = ctaGradient(theme.colors.brand);
   return (
     <ScrollView contentContainerStyle={st.body} showsVerticalScrollIndicator={false}>
       <Text style={st.title} numberOfLines={2} accessibilityRole="header">{target.name}</Text>
@@ -109,12 +110,9 @@ function SheetBody({ target }: { target: SeasonRequestTarget }) {
         accessibilityLabel={`${pick.submitLabel ?? t("seasonsSubmitIdle")} — ${target.name}`}
         style={({ pressed }) => [st.ctaWrap, disabled && st.ctaDisabled, pressed && !disabled && { opacity: 0.86 }]}
       >
-        <LinearGradient
-          colors={[theme.colors.brand.violet, theme.colors.brand.accent]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={st.cta}
-        >
+        {/* Le dégradé des boutons d'action (`ctaGradient`, libellé ≥ 4,5:1) : le
+            violet → rose vif tombait à 3,5:1 sous le libellé blanc. */}
+        <LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={st.cta}>
           <View style={st.ctaIcon}>
             {request.isPending ? <ActivityIndicator size="small" color={fg} /> : <Feather name="plus" size={18} color={fg} />}
           </View>

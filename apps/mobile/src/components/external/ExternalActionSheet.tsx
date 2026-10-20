@@ -11,7 +11,7 @@ import { ActionCell } from "@/components/ActionCell";
 import { BookmarkGlyph, HeartGlyph } from "@/components/cards/cardGlyphs";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
 import { RatingPanelMobile } from "@/components/rating/RatingPanelMobile";
-import { FONT_FAMILY, RADIUS, SHADOW_RN, progressGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, SHADOW_RN, ctaGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useExternalTitleActions, type ExternalTitle } from "./useExternalTitle";
 
 /** Ce que la feuille montre d'un titre hors bibliothèque. */
@@ -70,7 +70,9 @@ function SheetBody({ target, variant, onClose, reasons, onDismiss, openHref }: P
   });
   const entries = externalCardActionEntries(overlay, { watchlist: actions.pending, favorite: actions.favorite });
   const request = entries.find((e) => e.kind === "request");
-  const gradient = progressGradient(theme.colors.brand);
+  // Le dégradé des boutons d'action (`ctaGradient`, libellé ≥ 4,5:1), pas le
+  // vif des barres de progression : la demande est l'action de la feuille.
+  const gradient = ctaGradient(theme.colors.brand);
   const type = target.title.mediaType === "tv" ? tc("series") : tc("movie");
 
   return (
