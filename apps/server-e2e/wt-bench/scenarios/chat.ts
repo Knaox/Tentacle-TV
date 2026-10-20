@@ -15,8 +15,14 @@ import { createGroup, inviteAndAccept, launch, waitOnItem } from "./group";
 const CHAT_OPEN = /Ouvrir le chat du groupe/;
 const TYPING = /est en train d'écrire/;
 
+/** Les commandes du lecteur se cachent au repos : un mouvement de souris les rappelle. */
+async function wake(c: WebClient): Promise<void> {
+  await c.page.mouse.move(600 + Math.random() * 80, 380 + Math.random() * 40);
+}
+
 async function openChat(c: WebClient): Promise<boolean> {
-  await c.page.mouse.move(640, 400);
+  await wake(c);
+  if (await c.page.getByPlaceholder("Écrire un message…").first().isVisible().catch(() => false)) return true;
   return c.clickText(CHAT_OPEN, 8_000);
 }
 
@@ -26,7 +32,7 @@ export async function chatScenario(ctx: ScenarioContext): Promise<void> {
   const a = await ctx.member(ctx.state.users.a, "A");
   const b = await ctx.member(ctx.state.users.b, "B");
   await createGroup(a);
-  await inviteAndAccept(ctx, a, b, false);
+  await inviteAndAccept(ctx, a, b);
   await launch(a, ctx.state.episodeIds[2]);
   await waitOnItem([a, b], ctx.state.episodeIds[2], 60_000);
   ctx.check("A ouvre le chat", await openChat(a));
@@ -37,8 +43,9 @@ export async function chatScenario(ctx: ScenarioContext): Promise<void> {
   const firstQuick = a.page.locator("button[aria-label]").filter({ hasText: /^\p{Extended_Pictographic}/u }).first();
   const emoji = (await firstQuick.getAttribute("aria-label").catch(() => null)) ?? "?";
   let t0 = Date.now();
+  await openChat(a);
   for (let i = 0; i < 25; i += 1) {
-    await firstQuick.click({ timeout: 2_000 }).catch(() => undefined);
+    await firstQuick.click({ timeout: 2_000, force: true }).catch(() => undefined);
     await new Promise((ok) => setTimeout(ok, 35));
   }
   await new Promise((ok) => setTimeout(ok, 1_500));
@@ -47,6 +54,7 @@ export async function chatScenario(ctx: ScenarioContext): Promise<void> {
   ctx.metric(`réactions « ${emoji} » : 25 appuis en ~1 s`, `${sentR} envoyées, ${gotR} reçues chez B`);
   ctx.check("rafale de réactions : le client plafonne avant l'envoi (≤ 20 + 10/s)", sentR <= 31 && sentR >= 15, `${sentR}`);
   ctx.check("rafale de réactions : tout ce qui part arrive chez B", gotR === sentR, `${gotR}/${sentR}`);
+  await wake(b);
   const bubble = await waitFor(() => b.isVisible(/×\s?\d+/), 3_000);
   ctx.check("B voit UNE bulle « ×N » pour la rafale", bubble !== null);
   await ctx.dump("reactions");
@@ -67,6 +75,8 @@ export async function chatScenario(ctx: ScenarioContext): Promise<void> {
   await new Promise((ok) => setTimeout(ok, 6_000));
 
   // 3) « est en train d'écrire » : chez l'autre dans la seconde, jamais chez soi.
+  await openChat(a);
+  await openChat(b);
   t0 = Date.now();
   await input.fill("").catch(() => undefined);
   await input.pressSequentially("je tape", { delay: 80 }).catch(() => undefined);
@@ -83,7 +93,8 @@ export async function chatScenario(ctx: ScenarioContext): Promise<void> {
   const goneIdle = await waitFor(async () => !(await b.isVisible(TYPING)), 10_000, 200);
   ctx.metric("arrêt de frappe → l'indication s'éteint chez B", goneIdle === null ? "jamais en 10 s" : `${Date.now() - lastKey} ms`, null, "≈ 4 000 ms");
 
-  // 4) Au repos : rien sur le réseau.
+  // 4) Au repos : rien sur le réseau (la « fin de frappe » est partie au bout de 4 s).
+  await new Promise((ok) => setTimeout(ok, Math.max(0, lastKey + 5_000 - Date.now())));
   t0 = Date.now();
   await new Promise((ok) => setTimeout(ok, 6_000));
   ctx.check("au repos, aucun wt:typing envoyé", out(a, "wt:typing", t0) === 0, `${out(a, "wt:typing", t0)} trame(s)`);
