@@ -84,7 +84,8 @@ export function FirstRunHost() {
   }, [subject, decision?.subject, inputs.resetSettled, late, planKind, planSteps]);
 
   const ours = decision !== null && decision.subject === subject && decision.steps.length > 0;
-  const busy = !quietBefore || pathname.startsWith("/watch") || rootSegment === "watch" || rootSegment === "(auth)" || !appActive;
+  // Jamais sur le lecteur, la connexion, ni un banc de développement (`app/dev/`).
+  const busy = !quietBefore || pathname.startsWith("/watch") || rootSegment === "watch" || rootSegment === "(auth)" || rootSegment === "dev" || !appActive;
 
   // Le départ : tout le reste s'est tu, puis aucune modale à l'écran.
   useEffect(() => {
