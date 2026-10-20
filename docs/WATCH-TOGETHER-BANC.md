@@ -96,10 +96,37 @@ Constat (voulu ?) : un appareil FERMÉ garde le compte dans la salle le temps
 de sa grâce (120 s) ; pendant ce temps un nouvel appareil du compte reçoit
 409 en créant un groupe, et « rejoindre ici » + « quitter » ne le libère pas.
 
-## 4. iPhone, iPad, Android
+## 4. iPhone et iPad (simulateurs) — premier passage
 
-_À compléter : app iOS de dev partagée en construction ; clients mobiles de
-wt-mobile pas encore lançables de bout en bout._
+Simulateurs « WT banc iPhone (Claude) » (iPhone 17 Pro) et « WT banc iPad
+(Claude) » (iPad Pro 11 M5), iOS 26.3, app de dev PARTAGÉE du lot, JS du Metro
+du banc (wt-mobile 0bf18ba25 + sonde), serveur de wt-socle. Session posée sans
+geste (manifeste AsyncStorage), lecture par Hermes, navigation par le routeur
+d'expo-router, gestes par l'arbre React.
+
+| Vérification | Résultat |
+|---|---|
+| Les deux apps parlent au backend avec leur session | ✔ |
+| L'iPad reçoit l'invitation (feuille « Invitations », « Accepter / Refuser / Plus tard ») | ✔ |
+| L'iPad suit le lancement de l'iPhone jusqu'au lecteur | ✔ 556 ms |
+| Départ aligné à < 100 ms | ✘ 46,8 s |
+| Régime, gestes | non mesurables (gels répétés, voir défauts M1–M5) |
+
+| # | Défaut mobile (remonté à wt-mobile avec le journal serveur) | État |
+|---|---|---|
+| M1 | Après le saut AUTOMATIQUE de l'intro (barrière à 40 s), aucun « prêt » des mobiles : salle gelée 60 s, puis le balayage anti-gel les marque tous deux « ne peut pas lire ». Leurs « prêt » n'ont jamais de `barrierId` | corrigé (a23e7a1e8), à rejouer |
+| M2 | « Passer l'intro » affiché à l'arrivée sur le lecteur, vidéo pas encore chargée | corrigé (b63c0ee3f + a23e7a1e8), à rejouer |
+| M3 | Toutes les ~5 s, « je cale » des deux mobiles sans retour « prêt » → trois gels de 60 s d'affilée | corrigé (edc785ba4), à rejouer |
+| M4 | Position aberrante 1 069,5 s sur un épisode de 300 s → « épisode suivant » envoyé par les deux | cause : gels + horloge de salle relancée par le balayage (signalé à wt-socle) |
+| M5 | Épisode 2 : les mobiles à 41,7 s (reprise Jellyfin personnelle) quand la salle est à 0 → interblocage, chacun affiche « l'autre met en mémoire tampon… » | corrigé (867cd3698) ; le banc garde exprès une reprise de 41,7 s chez le compte qui suit |
+
+## Incident de nuit : veille du Mac
+
+De 04:56 à 05:14 le Mac est passé en veille profonde (`pmset -g log` : « DarkWake
+from Deep Idle »). Tout le lot a été gelé ; le passage web de 04:55 est jeté
+(pics de 1,7 s, réalignements négatifs). Depuis, `run` tient un `caffeinate -s`,
+et les pages datent leurs mesures à `Date.now()` (l'horloge monotone d'une page
+s'arrête pendant la veille).
 
 ## 5. Ce qui reste
 
