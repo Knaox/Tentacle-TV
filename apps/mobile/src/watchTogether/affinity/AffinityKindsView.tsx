@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronRight, Clapperboard, HeartHandshake, Sparkles, Tv, X,
 import { WtApiError, fetchAffinityKinds, startAffinity, type AffinityKinds } from "@tentacle-tv/api-client";
 import type { WtAffinityKind, WtAffinityStateDto } from "@tentacle-tv/shared";
 import { SecondaryButton } from "@/components/ui/buttons";
-import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { AFFINITY_KINDS, KIND_LABEL_KEY } from "@tentacle-tv/shared";
 
 const ICONS: Record<WtAffinityKind, LucideIcon> = { movie: Clapperboard, series: Tv, anime: Sparkles };
@@ -27,6 +27,8 @@ export function AffinityKindsView({ state, onStarted, onBack, onClose }: {
   const { t } = useTranslation("watchTogether");
   const theme = useTheme();
   const s = useThemedStyles(makeStyles);
+  // iPad : le choix tient au milieu de l'écran, pas collé en haut.
+  const { isTablet } = useResponsive();
   const [kinds, setKinds] = useState<AffinityKinds | null>(null);
   const [failed, setFailed] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export function AffinityKindsView({ state, onStarted, onBack, onClose }: {
   };
 
   return (
-    <ScrollView contentContainerStyle={s.content} testID="wt-affinity-kinds">
+    <ScrollView contentContainerStyle={[s.content, isTablet && s.centered]} testID="wt-affinity-kinds">
       <View style={s.header}>
         {switching ? (
           <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel={t("back")} style={s.iconButton}>
@@ -129,6 +131,7 @@ export function AffinityKindsView({ state, onStarted, onBack, onClose }: {
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   content: { padding: 20, gap: 10 },
+  centered: { flexGrow: 1, justifyContent: "center" },
   header: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 8 },
   headerText: { flex: 1, minWidth: 0 },
   badge: { width: 44, height: 44, borderRadius: RADIUS.lg, alignItems: "center", justifyContent: "center", backgroundColor: t.colors.brand.violet },
