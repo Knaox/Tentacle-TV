@@ -11,7 +11,7 @@ import { useSourceSwitch } from "./useSourceSwitch";
  * Watch Together — un lecteur qui remplit sa réserve n'est pas « prêt ».
  */
 export function useDesktopLoadingOverlay({
-  state, mediaReady, sourceChanging, hasStarted, setPause, src, currentQuality, onQualityChange,
+  state, mediaReady, sourceChanging, hasStarted, setPause, src, currentQuality, onQualityChange, heldByGroup,
 }: {
   state: MpvState;
   mediaReady: boolean;
@@ -21,6 +21,9 @@ export function useDesktopLoadingOverlay({
   src: string;
   currentQuality?: QualityKey;
   onQualityChange?: (key: QualityKey) => void;
+  /** En séance Watch Together : la fin de la réserve ne relance pas la lecture, le
+   *  moteur de synchro s'en charge (reprise commune, ou recalage s'il est seul en retard). */
+  heldByGroup?: boolean;
 }): { prebuffering: boolean; showLoadingOverlay: boolean; onQualityChange?: (key: QualityKey) => void } {
   // Le choix d'une qualité allume l'écran de chargement AU CLIC : l'arrêt de
   // l'ancien encodage et la nouvelle URL laissaient l'image figée sans rien dire.
@@ -35,7 +38,7 @@ export function useDesktopLoadingOverlay({
   const playbackStarted = startPosRef.current !== null && state.position > startPosRef.current + 0.25;
   // Réserve constituée avant de lancer l'image, l'écran de chargement couvrant
   // l'attente : un seul chargement, et il ne recommence pas derrière.
-  const prebuffering = useMpvPrebuffer({ mediaReady, buffered: state.buffered, eof: state.eof, setPause });
+  const prebuffering = useMpvPrebuffer({ mediaReady, buffered: state.buffered, eof: state.eof, setPause, resume: !heldByGroup });
   // Un changement de source se montre même en plein film : `playbackStarted`
   // ne garde que le démarrage (il était vrai pour toujours après la première
   // image, et masquait tout rechargement).
