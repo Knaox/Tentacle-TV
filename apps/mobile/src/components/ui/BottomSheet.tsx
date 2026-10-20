@@ -94,10 +94,17 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
   }, [translateY, overlayOpacity]);
 
   const prevVisibleRef = useRef(false);
+  // Chaque changement de `visible` ouvre une génération : la sortie d'une
+  // génération passée ne démonte pas la feuille rouverte entre-temps. Un
+  // ressort INTERROMPU rappelle quand même `start` (finished: false) — sans
+  // ce jeton, une feuille fermée puis rouverte vite restait `visible` sans
+  // aucune Modal (boîte des invitations jamais ouverte, banc du 21/10).
+  const generationRef = useRef(0);
 
   useEffect(() => {
     const wasVisible = prevVisibleRef.current;
     prevVisibleRef.current = visible;
+    const generation = ++generationRef.current;
 
     if (visible && !wasVisible) {
       setMounted(true);
@@ -117,7 +124,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
     } else if (!visible) {
       let gone = false;
       const unmount = (): void => {
-        if (gone) return;
+        if (gone || generation !== generationRef.current) return;
         gone = true;
         setMounted(false);
       };
