@@ -37,7 +37,9 @@ export interface IntroScreenPlaneProps {
  * bouton lecture (« dum »), puis la caméra plonge jusqu'à l'échelle 1 — il n'y
  * a pas de transition, c'est l'accueil. Les vues de l'app ne bougent jamais
  * d'arbre : à l'arrivée, chaque transformation vaut l'identité et la découpe
- * se retire (`landed`), sans rien remonter.
+ * se retire (`landed`), sans rien remonter. Arrivé, l'écran suit la FENÊTRE
+ * (plein cadre, plus ses dimensions du départ) : un iPad qu'on tourne, une
+ * fenêtre redimensionnée, l'app suit — toujours sans changer d'arbre.
  *
  * Le cercle est une vue ronde agrandie (`scale`), son contenu réduit d'autant
  * (l'inverse, sur le même pivot) : rien que des transformations.
@@ -77,7 +79,7 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   return (
     <CameraLayer camera={samples.camera} baseZoom={finalZoom} clock={clock} step={step}>
       <IntroGroup frame={frame} pivot={{ x: 120, y: 132 }} channels={samples.parts.body} clock={clock} step={step} opacity={false}>
-        <RoundClip style={[styles.clip, clip]} radius={inner.rx * finalZoom} clip={!landed}>
+        <RoundClip style={landed ? StyleSheet.absoluteFill : [styles.clip, clip]} radius={inner.rx * finalZoom} clip={!landed}>
           {landed ? null : (
             <Animated.View style={[StyleSheet.absoluteFill, glassStyle]}>
               <LinearGradient
@@ -91,16 +93,17 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
           )}
           <Animated.View
             style={[
-              styles.iris,
-              { left: playAt.x - radius - clip.left, top: playAt.y - radius - clip.top, width: radius * 2, height: radius * 2 },
-              landed ? styles.open : { borderRadius: radius },
+              landed
+                ? [StyleSheet.absoluteFill, styles.open]
+                : [styles.iris, { left: playAt.x - radius - clip.left, top: playAt.y - radius - clip.top, width: radius * 2, height: radius * 2, borderRadius: radius }],
               irisStyle,
             ]}
           >
             <Animated.View
               style={[
-                styles.counter,
-                { left: radius - playAt.x, top: radius - playAt.y, width: viewport.width, height: viewport.height },
+                landed
+                  ? StyleSheet.absoluteFill
+                  : [styles.counter, { left: radius - playAt.x, top: radius - playAt.y, width: viewport.width, height: viewport.height }],
                 { transformOrigin: [playAt.x, playAt.y, 0] },
                 counterStyle,
               ]}

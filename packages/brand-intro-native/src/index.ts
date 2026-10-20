@@ -22,3 +22,4 @@ export {
   type BootIntroReport,
 } from "./bootIntroGate";
 export { bootSound } from "./bootSound";
+export { useBootIntroRun, type BootIntroRun, type BootIntroRunOptions } from "./useBootIntroRun";
