@@ -142,7 +142,7 @@ export function joinGroupHere(): Promise<WtRoomStateDto> {
 }
 
 /** « Rejoindre » la lecture du groupe : la salle se gèle au clic et attend cet
- *  appareil ; rend l'état gelé (serveur du 20/10 — d'avant : 404). */
+ *  appareil ; rend l'état gelé. Seulement face à `watchTogether.arrival`. */
 export function arriveInGroup(): Promise<WtRoomStateDto> {
   return wtFetch<WtRoomStateDto>("/group/arrive", { method: "POST", body: JSON.stringify({}) });
 }

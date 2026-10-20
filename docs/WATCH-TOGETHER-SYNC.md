@@ -134,7 +134,8 @@ messages ne parlait que d'un membre qui quitte le GROUPE.
   la pause (`wtJoinStartSeconds`), tous repartent ensemble (reprise
   planifiée) à son premier « prêt ». « Rejoindre » d'un membre déjà du
   groupe (pilule, bande de l'accueil, feuille) passe par `joinPlayback` →
-  `POST /group/arrive` : la même pause au clic. Un lecteur qui s'ouvre sans
+  `POST /group/arrive` (capacité `watchTogether.arrival` ; sans elle, le
+  lecteur s'ouvre comme avant) : la même pause au clic. Un lecteur qui s'ouvre sans
   clic (lien, reconnexion) arrive aussi : la salle se gèle à son « je
   charge ».
 - **Aucun passage tant qu'on arrive** (ajout de Damien) : du clic au premier

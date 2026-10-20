@@ -63,8 +63,8 @@ export const watchTogetherDeviceRoutes: FastifyPluginAsync = async (app) => {
    * l'accueil, feuille, pilule) : comme une invitation acceptée, la salle se gèle
    * au clic et attend CET appareil (`beginArrival`) ; la réponse porte l'état
    * gelé, le lecteur s'ouvre à la position de la pause. Rien sans titre, ni pour
-   * l'appareil qui regarde déjà. Un client face à un serveur d'avant (404) ouvre
-   * son lecteur comme avant.
+   * l'appareil qui regarde déjà. Capacité `watchTogether.arrival` : un client ne
+   * l'appelle que si le serveur la déclare.
    */
   app.post("/group/arrive", async (request, reply) => {
     const user = (request as any).user as JellyfinUser;
