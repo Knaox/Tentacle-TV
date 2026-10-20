@@ -168,8 +168,6 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
       async leave() {
         await leaveGroup();
         dispatch({ type: "set_room", room: null });
-        // Les autres appareils du compte peuvent y être encore : l'avis le dira.
-        if (deviceMembership) fetchGroupElsewhere().then(setElsewhere).catch(() => {});
       },
       async kick(userId) {
         await kickGroupMember(userId);
@@ -180,7 +178,23 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
         enter(room);
       },
     };
-  }, [addPending, deviceMembership]);
+  }, [addPending]);
+
+  // Sortie de salle, quelle qu'en soit la voie (quitter, expulsé, dissoute,
+  // appareil délié pendant une coupure) : les autres appareils du compte y
+  // sont peut-être encore — l'avis se relit. Celui que le serveur a poussé
+  // pendant qu'on se croyait dedans a été ignoré.
+  const hadRoomRef = useRef(false);
+  useEffect(() => {
+    const hadRoom = hadRoomRef.current;
+    hadRoomRef.current = !!state.room;
+    if (!hadRoom || state.room || !enabled || !mayJoin || !deviceMembership) return;
+    let cancelled = false;
+    fetchGroupElsewhere()
+      .then((found) => { if (!cancelled && !roomRef.current) setElsewhere(found); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [state.room, enabled, mayJoin, deviceMembership]);
 
   // Les réglages de lecture de l'HÔTE gouvernent la séance : posés tant qu'on
   // est dans un groupe sans en être l'hôte, retirés à la sortie. Le magasin
