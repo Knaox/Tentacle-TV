@@ -133,7 +133,7 @@ export function OfflineEntryRow({ entry, onPlay, onMore, wait = null, selection,
             titre et la barre de la ligne en échec. */}
         {retry && !selection && (
           <Pressable onPress={retry} hitSlop={6} accessibilityRole="button" accessibilityLabel={to("retry")} style={({ pressed }) => [st.retryBtn, pressed && { opacity: 0.7 }]}>
-            <Feather name="rotate-cw" size={13} color={colors.brand.light} />
+            <Feather name="rotate-cw" size={13} color={colors.text.primary} />
             <Text style={st.retryText}>{to("retry")}</Text>
           </Pressable>
         )}
@@ -204,9 +204,11 @@ const makeStyles = (t: AppTheme) =>
       minHeight: 36,
       paddingHorizontal: 12,
       borderRadius: RADIUS.pill,
-      backgroundColor: withAlpha(t.colors.brand.violet, 0.16, t.colors.brand.soft),
+      // Capsule NEUTRE du système de boutons : une liste en échec ne se
+      // couvre plus de pilules violettes.
+      backgroundColor: t.colors.fill.medium,
     },
-    retryText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
+    retryText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
     progressText: { ...typography.small, color: t.colors.text.quaternary, fontVariant: ["tabular-nums"], minWidth: 88, textAlign: "right" },
     pace: { ...typography.small, color: t.colors.text.quaternary, fontVariant: ["tabular-nums"], marginTop: 2 },
     retry: { ...typography.small, color: t.colors.text.quaternary, fontVariant: ["tabular-nums"] },

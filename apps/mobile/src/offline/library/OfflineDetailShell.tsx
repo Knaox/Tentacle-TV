@@ -81,8 +81,7 @@ export function OfflineDetailShell({ backdropUri, title, anims, metrics, stage, 
             size={isTablet ? 42 : 36}
             onPress={() => backOrHome(router)}
             accessibilityLabel={t("back")}
-            bgColor={isTablet ? theme.colors.glass.tintStrong : theme.colors.glass.backdrop}
-            style={isTablet ? { borderWidth: 1, borderColor: theme.colors.border.strong } : undefined}
+            variant="glass"
           />
         </View>
         <View style={{ flex: 1, flexDirection: "row", width: "100%", maxWidth: 1180, alignSelf: "center", paddingTop: topInset + 8 }}>
