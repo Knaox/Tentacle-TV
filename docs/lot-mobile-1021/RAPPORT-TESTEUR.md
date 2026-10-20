@@ -40,6 +40,20 @@ famille de test : compat-user propriétaire, invités Léo — PIN — et Mia, s
   n'est jamais écrite → id du compte null. **Non vérifiable au simulateur** : à refaire sur un vrai iPhone (TestFlight).
 - **Galerie d'avatars pendant le lecteur** : ✔ elle paraît au retour à l'accueil (1cdbaa278).
 
+## Fin de journée (13:00–13:20)
+
+- **Ouverture, mesure Release apres5** (ouverture-v2 2ae84348f + famille-demarrage 1bd615f46) : **12/12 démarrages à 0 image
+  perdue, pire écart 17 ms**, iPhone et iPad, accueil et « Qui regarde ? » ; plus aucun trou après le départ de l'animation.
+  Cause du dernier trou trouvée au Time Profiler : le halo flouté du héros de l'accueil (`HeroAmbilightFilter`, filtre SVG rendu
+  par CoreImage) dessiné au départ de l'animation ([mesures-ouverture-release-apres5.txt](mesures-ouverture-release-apres5.txt)).
+  Encre : 1,2 s (iPhone) à 1,4 s (iPad) ; du JS à l'arrivée ≈ 4,8–5,0 s.
+- **Affinité sur iPad (wt-gel 7e6d0cc1e)** : ✔ portrait et paysage (colonne centrée, carte à la hauteur, boutons dessous, match
+  centré), iPhone inchangé ; restes mineurs : choix du type collé en haut, texte de la carte en taille téléphone ; panneau du
+  groupe translucide dans le lecteur en paysage.
+- **Pas fait** : Inviter / Trouver / Quitter depuis le lecteur en paysage, essai admin-famille, points 5–6 de famille-demarrage
+  et politique admin, deux lots Live Activity de live-fix, mesure de synchronisation Watch Together iOS (banc `ios-pair` bloqué
+  plus tôt par l'ouverture ; à relancer).
+
 ## Défauts relevés et renvoyés (par session)
 
 - **famille-demarrage** : porte figée sur « rien » avant /api/config (corrigé 74cc8177a) ; galerie d'avatars ouverte
