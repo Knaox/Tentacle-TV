@@ -34,9 +34,10 @@ export function OfflineCatalog() {
   const profileSession = useActiveProfile() !== null;
   const offline = useOfflineMode();
   if (!profileSession) return <DeviceCatalog />;
-  // Bureau, session d'un PROFIL : rien n'est gardé sur la machine pour lui (le
-  // serveur lui refuse les téléchargements) — le disque n'est même pas lu. En
-  // ligne, « Sur cet appareil » n'existe pas pour lui ; hors ligne, l'attente.
+  // Session d'un PROFIL : le hors ligne est au compte de l'appareil — le disque
+  // n'est même pas lu. En ligne, « Sur cet appareil » n'existe pas pour lui ;
+  // hors ligne, le bureau revient au compte (`offline/accountFallback.ts`) et le
+  // navigateur, qui ne le peut pas sans le serveur, attend.
   return offline ? <ProfileOfflineScreen /> : <Navigate to="/" replace />;
 }
 
