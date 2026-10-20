@@ -4,6 +4,7 @@ import { LiquidGlassRow, ThemeChoiceRow } from "@/components/settings";
 import { AdvancedOnDesktopRow, PhotoRow, SwitchProfileRow, UserNameRow } from "@/components/settings/controls/AccountRows";
 import { EngineOptionsRows } from "@/components/settings/controls/EngineOptionsRows";
 import { IntrosRow, NextAutoPlayRow, StillWatchingRows, TrendingNowRow } from "@/components/settings/controls/PlaybackAccountRows";
+import { BootIntroRow, BootSoundRow } from "@/components/settings/controls/BootRows";
 import { BackgroundTransfersRow, LiveTransfersRow, NotifyReadyRow, WifiOnlyRow } from "@/components/settings/controls/OfflineRows";
 import { DataSaverRow, EngineRow, SubtitlePositionRow, SubtitleSizeRow } from "@/components/settings/controls/PlaybackDeviceRows";
 import { playerSettingsContext } from "./playerSettingsContext";
@@ -35,6 +36,8 @@ export function ProfileControlRow({ id, last }: { id: SettingsControlId; last: b
     case "dataSaver": return <DataSaverRow {...common} />;
     case "engine": return <EngineRow {...common} />;
     case "engineOptions": return <EngineOptionsRows ctx={playerSettingsContext()} {...common} />;
+    case "bootIntro": return <BootIntroRow {...common} />;
+    case "bootSound": return <BootSoundRow {...common} />;
     case "wifiOnly": return <WifiOnlyRow {...common} />;
     case "backgroundTransfers": return <BackgroundTransfersRow {...common} />;
     case "notifyReady": return <NotifyReadyRow {...common} />;

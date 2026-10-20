@@ -11,6 +11,7 @@ import type { SettingsI18nRef, SettingsPlatform, SettingsRequirement, SettingsCa
  *   Lecture et apparence — (phrase de portée) | SUR TOUS VOS APPAREILS : intros, épisode suivant,
  *                          « encore là ? », langues▸, langue, accueil▸, tendances
  *                          | SUR CET APPAREIL : thème, Liquid Glass, sous-titres, données, lecteur
+ *                          | OUVERTURE : animation, son
  *                          | Réglages avancés : sur l'app bureau
  *   TV et appareils      — (le volet lui-même)
  *   Hors ligne           — Mes titres ▢ · Passer hors ligne | (espace) | TRANSFERTS : Wi-Fi seulement,
@@ -109,6 +110,15 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
           { kind: "control", id: "dataSaver" },
           { kind: "control", id: "engine", requires: ["advancedEngine"], platforms: MOBILE },
           { kind: "control", id: "engineOptions", requires: ["engineOptions"], platforms: MOBILE },
+        ],
+      },
+      {
+        // L'ouverture animée du logo, au lancement (session ouverture-mobile).
+        title: s("boot.group"),
+        scope: "device",
+        entries: [
+          { kind: "control", id: "bootIntro", requires: ["bootIntro"], platforms: MOBILE },
+          { kind: "control", id: "bootSound", requires: ["bootIntro"], platforms: MOBILE },
         ],
       },
       { entries: [{ kind: "control", id: "advancedOnDesktop" }] },

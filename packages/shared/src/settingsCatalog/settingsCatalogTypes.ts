@@ -40,6 +40,7 @@ export interface SettingsI18nRef {
  * - `liquidGlass` : le rendu Liquid Glass existe sur cet appareil (iOS 26) ;
  * - `advancedEngine` : le lecteur avancé est dans ce binaire (moteur, sous-titres) ;
  * - `engineOptions` : la plateforme a au moins une option de lecteur ;
+ * - `bootIntro` : l'ouverture animée du logo existe dans ce binaire ;
  * - `liveTransfers` : l'appareil sait montrer un transfert en direct (Live
  *   Activity d'iOS, notification permanente d'Android) ;
  * - `personal` : la session PERSONNELLE du compte, pas une session de profil
@@ -50,13 +51,14 @@ export interface SettingsI18nRef {
  */
 export type SettingsRequirement =
   | "online" | "admin" | "offlineVisible" | "canGoOffline" | "family" | "canSwitchProfile"
-  | "liquidGlass" | "advancedEngine" | "engineOptions" | "liveTransfers" | "personal";
+  | "liquidGlass" | "advancedEngine" | "engineOptions" | "bootIntro" | "liveTransfers" | "personal";
 
 /** Les réglages qui se font SUR PLACE ; leur portée est dans `settingsScopes.ts`. */
 export type SettingsControlId =
   | "photo" | "userName" | "switchProfile"
   | "intros" | "nextAutoPlay" | "stillWatching" | "language" | "trendingNow"
   | "theme" | "liquidGlass" | "subtitleSize" | "subtitlePosition" | "dataSaver" | "engine" | "engineOptions"
+  | "bootIntro" | "bootSound"
   | "wifiOnly" | "backgroundTransfers" | "notifyReady" | "liveTransfers"
   | "advancedOnDesktop";
 
@@ -158,6 +160,8 @@ export interface SettingsCatalogContext {
   liquidGlass: boolean;
   advancedEngine: boolean;
   engineOptions: boolean;
+  /** L'ouverture animée du logo (et son son) existe dans ce binaire. */
+  bootIntro: boolean;
   /** L'appareil sait montrer un transfert en direct (écran verrouillé, notification permanente). */
   liveTransfers: boolean;
   /** L'app est ouverte au nom d'un autre profil de la famille. */

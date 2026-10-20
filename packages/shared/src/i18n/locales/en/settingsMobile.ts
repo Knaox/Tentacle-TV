@@ -64,6 +64,13 @@ export default {
     subtitleSizeHint: "Advanced player; 160% by default",
     subtitlePositionHint: "100% = at the very bottom of the picture",
   },
+  boot: {
+    group: "Opening",
+    intro: "Opening animation",
+    introHint: "The logo animation when the app starts. Never with the system's Reduce Motion.",
+    sound: "Startup sound",
+    soundHint: "Respects silent mode and never stops your music.",
+  },
   offline: {
     liveTransfers: "Live progress",
     liveTransfersHint: "Time remaining on the lock screen during a transfer",

@@ -24,11 +24,11 @@ const ALL_CAPS = new Set(["playback.stillWatching", "reco.trending"] as const);
 const user: ProfileContext = {
   platform: "mobile", capabilities: new Set(),
   offline: false, isAdmin: false, offlineVisible: false, canGoOffline: false, family: false, canSwitchProfile: false,
-  liquidGlass: false, advancedEngine: false, engineOptions: false, liveTransfers: false, profileSession: false,
+  liquidGlass: false, advancedEngine: false, engineOptions: false, bootIntro: false, liveTransfers: false, profileSession: false,
 };
 const full: ProfileContext = {
   ...user, isAdmin: true, offlineVisible: true, canGoOffline: true, family: true, canSwitchProfile: true,
-  liquidGlass: true, advancedEngine: true, engineOptions: true, liveTransfers: true, capabilities: ALL_CAPS,
+  liquidGlass: true, advancedEngine: true, engineOptions: true, bootIntro: true, liveTransfers: true, capabilities: ALL_CAPS,
 };
 const web: ProfileContext = { ...full, platform: "web", liquidGlass: false, advancedEngine: false, engineOptions: false };
 const offline: ProfileContext = { ...full, offline: true };
@@ -81,6 +81,7 @@ describe("catalogue des réglages", () => {
       "scopeIntro",
       "intros", "nextAutoPlay", "stillWatching", "mediaLanguages", "language", "personalization", "trendingNow",
       "theme", "liquidGlass", "subtitleSize", "subtitlePosition", "dataSaver", "engine", "engineOptions",
+      "bootIntro", "bootSound",
       "advancedOnDesktop",
     ]);
   });
