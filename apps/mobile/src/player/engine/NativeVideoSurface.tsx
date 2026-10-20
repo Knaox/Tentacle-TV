@@ -1,6 +1,6 @@
 import { useImperativeHandle, useMemo, useRef } from "react";
 import { Platform, View } from "react-native";
-import Video, { type OnLoadData, type OnProgressData, type VideoRef, SelectedTrackType } from "react-native-video";
+import Video, { type OnLoadData, type OnProgressData, type OnSeekData, type VideoRef, SelectedTrackType } from "react-native-video";
 import { PLAYER } from "@/theme";
 import { AirPlayIndicator } from "@/components/player/AirPlayIndicator";
 import { PlayerGestures } from "@/components/player/PlayerGestures";
@@ -17,9 +17,9 @@ import type { EngineSurfaceProps } from "./types";
  */
 export function NativeVideoSurface({
   engineRef, streamUrl, headers, startPositionMs, isDirectPlay, textTracks, title, artist,
-  paused, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
+  paused, rate, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
   overlayVisible, onLoad, onProgress, onEnd, onError, onBuffering, onExternalPlaybackChange,
-  onSeek, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
+  onSeek, onSeekComplete, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
 }: EngineSurfaceProps) {
   const videoRef = useRef<VideoRef>(null);
   useImperativeHandle(engineRef, () => ({
@@ -61,6 +61,7 @@ export function NativeVideoSurface({
         style={{ flex: 1 }}
         resizeMode="contain"
         paused={paused}
+        rate={rate ?? 1}
         // Android ExoPlayer buffer config — larger buffer for smoother playback
         {...(Platform.OS === "android" ? {
           bufferConfig: {
@@ -90,6 +91,7 @@ export function NativeVideoSurface({
           playableDuration: data.playableDuration,
         })}
         onEnd={onEnd}
+        onSeek={(data: OnSeekData) => onSeekComplete?.(data.currentTime)}
         onError={onError}
         onBuffer={({ isBuffering }) => onBuffering(isBuffering)}
         onReadyForDisplay={() => onBuffering(false)}

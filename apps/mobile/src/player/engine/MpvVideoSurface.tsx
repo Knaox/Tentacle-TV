@@ -24,10 +24,10 @@ import type { EngineSurfaceProps } from "./types";
  */
 export function MpvVideoSurface({
   engineRef, streamUrl, headers, streams, startPositionMs, selectedAudioIndex, selectedSubtitleIndex,
-  externalSubtitles, title, artist, paused, currentTime, isAirPlaying, showLoading, overlayVisible,
+  externalSubtitles, title, artist, paused, rate, currentTime, isAirPlaying, showLoading, overlayVisible,
   reloadToken, subtitleScale, subtitlePosition, subtitleDelay, audioDelay,
   onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute, onPipChange,
-  onSeek, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
+  onSeek, onSeekComplete, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
 }: EngineSurfaceProps) {
   const viewRef = useRef<MpvPlayerViewHandle>(null);
   const [tracks, setTracks] = useState<readonly MpvTrack[]>([]);
@@ -39,8 +39,18 @@ export function MpvVideoSurface({
   /** Externes déjà demandés à mpv, pour ne pas les ajouter deux fois. */
   const requestedRef = useRef<Set<number>>(new Set());
 
+  // Le saut terminé, relu chez mpv : en pause, aucune progression ne le dirait.
+  const seekCompleteRef = useRef(onSeekComplete);
+  seekCompleteRef.current = onSeekComplete;
   useImperativeHandle(engineRef, () => ({
-    seek: (seconds: number) => { void viewRef.current?.seekTo(seconds); },
+    seek: (seconds: number) => {
+      const view = viewRef.current;
+      if (!view) return;
+      view.seekTo(seconds)
+        .then(() => view.getPosition())
+        .then((position) => seekCompleteRef.current?.(position))
+        .catch(() => undefined);
+    },
     getTechnicalInfo: async () => ({ ...(await viewRef.current?.getTechnicalInfo()) }),
     release: () => { void viewRef.current?.release(); },
   }), []);
@@ -124,6 +134,7 @@ export function MpvVideoSurface({
         style={{ flex: 1 }}
         source={source}
         paused={paused}
+        speed={rate}
         nowPlaying={{ title, artist }}
         subtitleScale={subtitleScale}
         subtitlePosition={subtitlePosition}

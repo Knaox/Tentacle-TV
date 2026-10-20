@@ -11,6 +11,7 @@ import { DetailActionsRow } from "./DetailActionsRow";
 import { DetailPlayCta } from "./DetailPlayCta";
 import { DetailStageBlock } from "./DetailStageBlock";
 import { DetailTrailerButton } from "./DetailTrailerButton";
+import { WtDetailPill } from "@/watchTogether/entry/WtDetailPill";
 import { DetailVersionPicker } from "./DetailVersionPicker";
 import { DetailPosterFallback } from "./DetailArtFallback";
 import { detailPlayCta } from "./computeBadges";
@@ -66,6 +67,7 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
         </Animated.View>
       )}
       <DetailTrailerButton item={item} belowPlay={!!cta.targetId} animStyle={anims.actionsStyle} />
+      <WtDetailPill item={item} animStyle={anims.actionsStyle} />
     </>
   );
   const actionsEl = (

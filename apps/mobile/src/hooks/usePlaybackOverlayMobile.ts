@@ -1,5 +1,5 @@
 import { usePlaybackOverlay } from "@tentacle-tv/api-client";
-import type { PlaybackOverlayResult } from "@tentacle-tv/api-client";
+import type { PlaybackOverlayInput, PlaybackOverlayResult } from "@tentacle-tv/api-client";
 import type { PlayerSessionCore } from "./usePlayerPlayback";
 
 /**
@@ -21,6 +21,10 @@ import type { PlayerSessionCore } from "./usePlayerPlayback";
  *   fichier, elle, est une ENTRÉE (`ended`) — c'est ce qui permet à l'écran de
  *   fin d'exister au lieu de renvoyer sèchement à la fiche.
  */
+/** Ce que la séance Watch Together impose à l'arbitre (décompte commun, refus partagés). */
+export type GroupOverlayInput = Pick<PlaybackOverlayInput,
+  "groupSession" | "groupSkip" | "groupSkipHeld" | "onSegmentDismissNotify" | "onNextDismissNotify" | "onSkipPropose">;
+
 interface Options {
   itemId: string;
   pb: PlayerSessionCore;
@@ -37,11 +41,13 @@ interface Options {
   onSeek: (seconds: number) => void;
   onNextEpisode: () => void;
   onEndOfPlayback: () => void;
+  /** En séance Watch Together (`useMobileGroupPlayback`) ; absent hors séance. */
+  group?: GroupOverlayInput;
 }
 
 export function usePlaybackOverlayMobile({
   itemId, pb, currentTime, ended, hasStarted, controlsVisible, scrubbing,
-  onSeek, onNextEpisode, onEndOfPlayback,
+  onSeek, onNextEpisode, onEndOfPlayback, group,
 }: Options): PlaybackOverlayResult {
   return usePlaybackOverlay({
     itemId,
@@ -65,5 +71,6 @@ export function usePlaybackOverlayMobile({
     onSeekSeconds: onSeek,
     onNextEpisode,
     onEndOfPlayback,
+    ...group,
   });
 }

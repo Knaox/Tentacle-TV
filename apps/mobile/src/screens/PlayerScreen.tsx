@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StatusBar } from "react-native";
 import { PLAYER } from "@/theme";
-import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useMediaItem, useUserId } from "@tentacle-tv/api-client";
 import { usePlayerPlayback, startTicksOf } from "../hooks/usePlayerPlayback";
+import { usePlayerStartFetch } from "../hooks/usePlayerStartFetch";
+import { WtPlayerFrame, useMobileGroupPlayback, useMobileGroupStart } from "../watchTogether/player";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
@@ -67,25 +68,9 @@ export function PlayerScreen({ itemId, version }: Props) {
     return () => { StatusBar.setHidden(false); };
   }, []);
 
-  // Fetch PlaybackInfo once the item metadata is ready
-  useEffect(() => {
-    if (!pb.item) return;
-    resumeApplied.current = false;
-    retryCount.current = 0;
-    setIsBuffering(true);
-    setPaused(false);
-    setBufferedTime(0);
-
-    const resumeTicks = pb.item.UserData?.PlaybackPositionTicks;
-    const resumeSeconds = resumeTicks && resumeTicks > 0 ? resumeTicks / TICKS_PER_SECOND : 0;
-    // Store resume position so changeAudio/changeSubtitle preserves it
-    pb.positionRef.current = resumeSeconds;
-    // Don't set currentTime here — let handleProgress determine the real position
-
-    pb.fetchPlaybackInfo({
-      startTimeTicks: resumeTicks && resumeTicks > 0 ? resumeTicks : undefined,
-    });
-  }, [itemId, pb.item?.Id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // La première négociation du flux — à la position du groupe en séance Watch Together.
+  const groupStart = useMobileGroupStart(itemId, pb);
+  usePlayerStartFetch({ itemId, pb, groupStart, resumeApplied, retryCount, setIsBuffering, setPaused, setBufferedTime });
 
   // Nouveau flux (ou même URL relancée) : gardes réarmées, sinon spinner sans fin.
   useEffect(() => {
@@ -158,6 +143,9 @@ export function PlayerScreen({ itemId, version }: Props) {
   const seek = usePlayerSeekGate({ transcoding: !pb.isDirectPlay, duration: pb.jellyfinDuration || 0, positionRef: pb.positionRef,
     currentTime, buffering: isBuffering, seek: handleSeek, report: failure.report });
   const qualityDrop = useMobileQualityDrop(pb);
+  // Watch Together : le port lecteur, les gestes du groupe, l'habillage (transparent hors séance).
+  const group = useMobileGroupPlayback({ itemId, start: groupStart, pb, paused, setPaused, buffering: isBuffering, videoReady,
+    seek, handleNextEpisode, handlePrevEpisode, failed: failure.problem !== null });
 
   // Rien de chargé en 20 s : relance transcodée, puis le message.
   usePlayerLoadingWatchdog({
@@ -172,9 +160,10 @@ export function PlayerScreen({ itemId, version }: Props) {
     itemId, pb, currentTime, ended, hasStarted: videoReady,
     controlsVisible: overlayVisible,
     scrubbing,
-    onSeek: seek.seekTo,
-    onNextEpisode: handleNextEpisode,
+    onSeek: group.seekTo,
+    onNextEpisode: group.handleNextEpisode,
     onEndOfPlayback: leavePlayer,
+    group: group.overlay,
   });
 
   // Android : libère l'encodage après un arrière-plan prolongé, et relance le
@@ -220,6 +209,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   }
 
   return (
+    <WtPlayerFrame chrome={group.chrome}>
     <PlayerVideoSurface
       engine={pb.engine}
       engineRef={engineRef}
@@ -235,7 +225,7 @@ export function PlayerScreen({ itemId, version }: Props) {
       audioTrackSelectedIndex={pb.audioTrackSelectedIndex}
       title={pb.item?.Name ?? ""}
       artist={pb.item?.SeriesName ?? ""}
-      paused={paused}
+      paused={paused} rate={group.rate}
       videoReady={videoReady}
       currentTime={currentTime}
       subtitleVttUrl={pb.subtitleVttUrl}
@@ -245,14 +235,14 @@ export function PlayerScreen({ itemId, version }: Props) {
       reloadToken={String(pb.retryNonce)}
       subtitleScale={engineSettings.subtitleScale}
       subtitlePosition={engineSettings.subtitlePosition}
-      onLoad={handleLoad} onProgress={handleProgress}
+      onLoad={handleLoad} onProgress={group.wrapProgress(handleProgress)}
       onEnd={handleEnd} onError={handleError}
       onBuffering={setIsBuffering}
       onExternalPlaybackChange={onExternalPlaybackChange}
       onPausedChange={stillWatching.onPausedChange}
       onAirPlayRoute={onAirPlayRoute}
       onPipChange={onPipChange}
-      onSeek={seek.seekTo} onSkip={seek.seekBy}
+      onSeek={group.seekTo} onSkip={group.seekBy} onSeekComplete={group.onSeekComplete}
       onToggleOverlay={toggleOverlay} onActivity={stillWatching.reportActivity}
       onSwipeDown={leavePlayer}
     >
@@ -273,13 +263,13 @@ export function PlayerScreen({ itemId, version }: Props) {
         nextEpisode={pb.episodeNav.nextEpisode} previousEpisode={pb.episodeNav.previousEpisode}
         item={pb.item}
         mediaSourceId={pb.mediaSourceId}
-        onPlayPause={() => setPaused((p) => !p)}
-        onSeek={seek.seekTo} onSkip={seek.seekBy}
+        onPlayPause={group.onPlayPause} groupButton={group.chrome.button}
+        onSeek={group.seekTo} onSkip={group.seekBy}
         onBack={leavePlayer}
         onSelectAudio={handleSelectAudio} onSelectSubtitle={handleSelectSubtitle}
         onSelectQuality={pb.changeQuality}
-        onNextEpisode={handleNextEpisode}
-        onPreviousEpisode={handlePrevEpisode}
+        onNextEpisode={group.handleNextEpisode}
+        onPreviousEpisode={group.handlePrevEpisode}
         onScrubStateChange={setScrubbing}
         visible={overlayVisible}
         onToggle={toggleOverlay}
@@ -294,6 +284,8 @@ export function PlayerScreen({ itemId, version }: Props) {
       {/* Jusqu'à ce que la lecture AVANCE : l'écran de chargement, au-dessus
           des contrôles, puis un fondu. */}
       {!started && <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />}
+      {group.chrome.layers}
     </PlayerVideoSurface>
+    </WtPlayerFrame>
   );
 }

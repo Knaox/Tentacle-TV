@@ -83,6 +83,8 @@ export interface EngineSurfaceProps {
   title: string;
   artist: string;
   paused: boolean;
+  /** Vitesse de lecture (1 par défaut) : le rattrapage doux de Watch Together (0,95 → 1,05). */
+  rate?: number;
   videoReady: boolean;
   currentTime: number;
   /** VTT dessiné par l'overlay du lecteur natif ; le lecteur avancé rend ses sous-titres lui-même. */
@@ -111,6 +113,8 @@ export interface EngineSurfaceProps {
   /** L'image dans l'image s'est ouverte ou fermée. */
   onPipChange?: (active: boolean) => void;
   onSeek: (seconds: number) => void;
+  /** Le moteur a TERMINÉ un saut, à cette position de FLUX (Watch Together : un saut en pause s'y voit atterrir). */
+  onSeekComplete?: (streamSeconds: number) => void;
   /** Un écart depuis la cible en cours (double toucher) : des appuis rapides font un seul saut. */
   onSkip?: (delta: number) => void;
   onToggleOverlay: () => void;

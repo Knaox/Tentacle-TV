@@ -11,14 +11,18 @@ interface Props {
   canUndo: boolean;
   onJudge: (verdict: SwipeVerdict) => void;
   onUndo: () => void;
+  /** L'affinité de groupe : pas pour moi, annuler, j'aime — dans cet ordre (comme le web). */
+  binary?: boolean;
 }
+
+const BINARY_ORDER = ["dislike", "undo", "like"] as const;
 
 /**
  * Les cinq gestes en boutons — l'alternative visible au glisser. Les trois
  * verdicts font 60 pt, annuler et passer 46 pt (cibles ≥ 44 pt), chacun
  * avec son libellé lu par VoiceOver et un libellé court visible dessous.
  */
-export const SwipeControls = memo(function SwipeControls({ disabled, canUndo, onJudge, onUndo }: Props) {
+export const SwipeControls = memo(function SwipeControls({ disabled, canUndo, onJudge, onUndo, binary = false }: Props) {
   const { t } = useTranslation("swipe");
   const theme = useTheme();
   const c = theme.colors;
@@ -30,9 +34,11 @@ export const SwipeControls = memo(function SwipeControls({ disabled, canUndo, on
     { key: "skip", icon: "skip-forward" as const, size: 46, color: c.text.secondary, label: t("skip"), a11y: t("skip"), off: disabled, press: () => onJudge("skip") },
   ];
 
+  const shown = binary ? BINARY_ORDER.map((key) => specs.find((s) => s.key === key)!) : specs;
+
   return (
     <View style={st.row}>
-      {specs.map((s) => (
+      {shown.map((s) => (
         <View key={s.key} style={st.col}>
           <Pressable
             onPress={s.press}
