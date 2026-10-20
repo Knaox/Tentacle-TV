@@ -6,7 +6,7 @@ import { useUserId } from "@tentacle-tv/api-client";
 import { BrandSwitch, SettingsRow, SettingsSection } from "@/components/settings";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { removeOfflineEntry } from "@/offline/engineApi";
-import { setNotifyReady, useNotifyReady } from "@/offline/deviceSettings";
+import { setLiveTransfers, setNotifyReady, useLiveTransfers, useNotifyReady } from "@/offline/deviceSettings";
 import { OfflineSpaceBar } from "@/offline/manage/OfflineSpaceBar";
 import { setBackgroundTransfers, setWifiOnly, useBackgroundTransfers, useWifiOnly } from "@/offline/settings";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
@@ -16,7 +16,8 @@ import { spacing } from "@/theme";
 /**
  * Réglages « Sur cet appareil » : l'espace (jauge — les titres vivent dans
  * l'espace de l'application, aucun dossier à choisir), les transferts
- * (Wi-Fi seulement, continuer en arrière-plan, notification « prêt »), les
+ * (Wi-Fi seulement, continuer en arrière-plan, notification « prêt », suivi
+ * en direct), les
  * titres (gérer, tout retirer).
  */
 export function OnDeviceSettingsScreen() {
@@ -36,6 +37,7 @@ export function OnDeviceSettingsPane() {
   const wifiOnly = useWifiOnly();
   const background = useBackgroundTransfers();
   const notifyReady = useNotifyReady();
+  const liveTransfers = useLiveTransfers();
   const [denied, setDenied] = useState(false);
   const [removing, setRemoving] = useState(false);
   const { data: entries } = useOfflineList(userId);
@@ -94,8 +96,14 @@ export function OnDeviceSettingsPane() {
           label={t("notifyReady")}
           description={denied ? t("notifyReadyDenied") : t("notifyReadyDesc")}
           onPress={denied ? () => void Linking.openSettings() : undefined}
-          last
           trailing={<BrandSwitch value={notifyReady} onValueChange={(on) => void toggleNotify(on)} accessibilityLabel={t("notifyReady")} />}
+        />
+        <SettingsRow
+          icon="clock"
+          label={t("liveTransfers")}
+          description={t("liveTransfersDesc")}
+          last
+          trailing={<BrandSwitch value={liveTransfers} onValueChange={setLiveTransfers} accessibilityLabel={t("liveTransfers")} />}
         />
       </SettingsSection>
 

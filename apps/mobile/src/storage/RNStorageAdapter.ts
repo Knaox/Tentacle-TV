@@ -33,7 +33,7 @@ const STORAGE_KEYS = [
   // web) : mode hors ligne manuel, économie de données, notification « prêt »,
   // accusé « continuer en données mobiles ». Les caches de langues et
   // « Wi-Fi seulement » vivent, eux, dans la base locale du hors ligne.
-  "tentacle_offline_manual", "tentacle_data_saver", "tentacle_offline_notify_ready",
+  "tentacle_offline_manual", "tentacle_data_saver", "tentacle_offline_notify_ready", "tentacle_offline_live_activity",
   "tentacle_offline_cellular_ack",
   // Le lecteur — réglages D'APPAREIL (`player/engine/engineSettings.ts`) :
   // moteur vidéo, Atmos du système, sous-titres stylés, taille et position des
