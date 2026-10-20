@@ -57,6 +57,15 @@ struct TransferLiveActivityWidget: Widget {
   }
 }
 
+/// L'avancement publié, en pour-cent à la manière de la langue du téléphone
+/// (« 43 % », « 43% ») ; rien tant qu'aucune taille n'est connue. Il ne bouge
+/// qu'aux mises à jour de l'application — la barre et le compte à rebours,
+/// eux, avancent seuls.
+func percentText(_ state: TransferActivityAttributes.ContentState) -> String? {
+  guard state.fraction >= 0 else { return nil }
+  return min(1, state.fraction).formatted(.percent.precision(.fractionLength(0)))
+}
+
 /// Le compte à rebours n'existe qu'en phase `transferring`, avec une fin à venir et une activité fraîche.
 func countdownEnd(_ state: TransferActivityAttributes.ContentState, stale: Bool) -> Date? {
   guard state.phase == "transferring", !stale, let end = state.endsAt, end > Date() else { return nil }
@@ -98,12 +107,19 @@ private struct StatusLine: View {
   let stale: Bool
 
   var body: some View {
-    if countdownEnd(state, stale: stale) != nil {
-      Text(state.readyInLabel).font(.subheadline).foregroundStyle(.white.opacity(0.7))
-    } else {
-      // Attente, pause, estimation, ou fin estimée dépassée : on DIT, on ne décompte pas.
-      Label(state.status, systemImage: waitingSymbol(state.phase))
-        .font(.subheadline).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+    HStack(alignment: .firstTextBaseline) {
+      if countdownEnd(state, stale: stale) != nil {
+        Text(state.readyInLabel).font(.subheadline).foregroundStyle(.white.opacity(0.7))
+      } else {
+        // Attente, pause, estimation, ou fin estimée dépassée : on DIT, on ne décompte pas.
+        Label(state.status, systemImage: waitingSymbol(state.phase))
+          .font(.subheadline).foregroundStyle(.white.opacity(0.85)).lineLimit(1)
+      }
+      Spacer(minLength: 8)
+      // Le pour-cent demandé par Damien (20/10), à droite de la ligne d'état.
+      if let percent = percentText(state) {
+        Text(percent).monospacedDigit().font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
+      }
     }
   }
 }

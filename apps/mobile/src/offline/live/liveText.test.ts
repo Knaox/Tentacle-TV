@@ -24,11 +24,12 @@ describe("liveTexts", () => {
     expect(texts.deepLink).toBe("tentacle://on-device");
   });
 
-  it("un seul titre se nomme (avec son code d'épisode) et le toucher l'ouvre", () => {
+  it("un seul titre se nomme (avec son code d'épisode) ; le toucher mène aux transferts", () => {
     const single = { itemId: "abc", title: "Pilote", seriesName: "Dark", kind: "episode" };
     const texts = liveTexts(content({ remaining: 1, single }), 0, t, () => "S01E01 · Pilote");
     expect(texts.headline).toBe("S01E01 · Pilote");
-    expect(texts.deepLink).toBe("tentacle://on-device/item/abc");
+    // « Sur cet appareil », où l'on voit les transferts avancer (Damien, 20/10).
+    expect(texts.deepLink).toBe("tentacle://on-device");
   });
 
   it("des épisodes d'une même série se disent sous son nom", () => {

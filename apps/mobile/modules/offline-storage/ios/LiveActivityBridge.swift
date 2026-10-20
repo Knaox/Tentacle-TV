@@ -13,17 +13,30 @@ enum LiveActivityBridge {
   /// à la file (`liveSurface.ts`) : jamais deux à la fois — le verrou ne
   /// fait que le garantir.
   nonisolated(unsafe) private static var endedIds = Set<String>()
+  /// Les activités démarrées par CE lancement de l'application. Seule l'une
+  /// d'elles, balayée, dit un geste de la personne : celles d'un lancement
+  /// d'avant — que nous avions terminées nous-mêmes — restent un moment dans
+  /// `Activity.activities`, en `dismissed`, et une mémoire neuve les prenait
+  /// pour un refus. Plus AUCUNE Live Activity pour tout le lot (iPhone de
+  /// Damien, 20/10 : démarrée cinq minutes trop tard, ou jamais).
+  nonisolated(unsafe) private static var startedIds = Set<String>()
   private static let endedLock = NSLock()
 
-  private static func endedHere(_ id: String) -> Bool {
+  private static func dismissedByPerson(_ id: String) -> Bool {
     endedLock.lock()
     defer { endedLock.unlock() }
-    return endedIds.contains(id)
+    return startedIds.contains(id) && !endedIds.contains(id)
   }
 
   private static func markEnded(_ id: String) {
     endedLock.lock()
     endedIds.insert(id)
+    endedLock.unlock()
+  }
+
+  private static func markStarted(_ id: String) {
+    endedLock.lock()
+    startedIds.insert(id)
     endedLock.unlock()
   }
 
@@ -78,11 +91,12 @@ enum LiveActivityBridge {
     }
     // Balayée de l'écran verrouillé pendant ce lot : la personne n'en veut pas.
     // Celles que NOUS avons terminées passent aussi « dismissed » et ne
-    // comptent pas — y compris une balayée d'un lot d'AVANT : la fin du lot
-    // (`end`) les marque toutes, le lot suivant repart à neuf.
-    if all.contains(where: { $0.activityState == .dismissed && !endedHere($0.id) }) { return "dismissed" }
+    // comptent pas — ni une balayée d'un lot d'AVANT (la fin du lot, `end`,
+    // les marque toutes), ni une d'un LANCEMENT d'avant (`startedIds`).
+    if all.contains(where: { $0.activityState == .dismissed && dismissedByPerson($0.id) }) { return "dismissed" }
     do {
-      _ = try Activity.request(attributes: TransferActivityAttributes(), content: content, pushType: nil)
+      let activity = try Activity.request(attributes: TransferActivityAttributes(), content: content, pushType: nil)
+      markStarted(activity.id)
       return "shown"
     } catch {
       NSLog("[suivi-direct] démarrage refusé par ActivityKit : %@", String(describing: error))

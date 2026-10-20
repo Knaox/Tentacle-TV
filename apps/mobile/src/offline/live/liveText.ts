@@ -8,7 +8,11 @@ export interface LiveTexts {
   status: string;
   /** Le libellé posé devant le compte à rebours natif (« Prêt dans »). */
   readyInLabel: string;
-  /** Où mène un toucher : le titre s'il n'y en a qu'un, sinon l'écran « Sur cet appareil ». */
+  /**
+   * Où mène un toucher : l'écran « Sur cet appareil », où sont les transferts
+   * (demande de Damien, 20/10 — le titre seul n'y montrait pas leur avancée).
+   * La notification « Prêt à regarder hors ligne », elle, mène au titre.
+   */
   deepLink: string;
 }
 
@@ -56,6 +60,6 @@ export function liveTexts(
     headline,
     status,
     readyInLabel: t("offline:liveReadyIn"),
-    deepLink: single !== null ? `tentacle://on-device/item/${encodeURIComponent(single.itemId)}` : "tentacle://on-device",
+    deepLink: "tentacle://on-device",
   };
 }
