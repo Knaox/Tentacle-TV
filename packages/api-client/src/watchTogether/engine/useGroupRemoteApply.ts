@@ -44,10 +44,12 @@ export function useGroupRemoteApply({
 }) {
   /** Dernier état de lecture appliqué — détection des seeks distants (sauts). */
   const appliedSnapshotRef = useRef<{ positionTicks: number; stateAtServerTime: number; paused: boolean } | null>(null);
-  /** Sondage de barrière en cours, et la dernière barrière confirmée. */
+  /** Sondage de barrière en cours, et la barrière qu'il sonde. */
   const barrierPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const barrierPollIdRef = useRef<number | null>(null);
   const stopBarrierPoll = () => {
     if (barrierPollRef.current) { clearInterval(barrierPollRef.current); barrierPollRef.current = null; }
+    barrierPollIdRef.current = null;
   };
 
   useEffect(() => {
@@ -94,6 +96,10 @@ export function useGroupRemoteApply({
     // ── Barrière : la salle m'attend sur la cible ──
     if (barrierForMe && room.barrierId !== undefined) {
       const barrierId = room.barrierId;
+      // Une NOUVELLE barrière remplace celle qu'on sondait (sauts rapprochés) :
+      // on se recale sur sa cible tout de suite — attendre que l'ancien sondage
+      // s'en aperçoive laissait la nouvelle sans pré-calage ni confirmation.
+      if (barrierPollRef.current && barrierPollIdRef.current !== barrierId) stopBarrierPoll();
       if (shared.confirmedBarrierRef.current !== barrierId && !barrierPollRef.current) {
         const targetS = room.positionTicks / TICKS_PER_SECOND;
         if (!t.isPaused()) { armEcho(shared); t.pause(); }
@@ -109,6 +115,7 @@ export function useGroupRemoteApply({
         }
         const startedAt = Date.now();
         let realignedAt = 0;
+        barrierPollIdRef.current = barrierId;
         barrierPollRef.current = setInterval(() => {
           const player = transportRef.current;
           const current = shared.roomRef.current;
