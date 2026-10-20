@@ -131,6 +131,7 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
   const fetchPlaybackInfo = useCallback(async (opts?: PlaybackFetchOptions) => {
     if (!userId) return;
     const currentFetch = ++fetchIdRef.current;
+    const fail = (error: PlaybackFailureReport) => setState((prev) => ({ ...prev, isLoading: false, error }));
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     if (opts?.maxBitrate === undefined) await quality.settleBitrate();
     if (fetchIdRef.current !== currentFetch) return;
@@ -138,7 +139,8 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     // Palier servi : celui des opts (changement/retry explicites), sinon la
     // photographie du moment — cap auto compris quand le mode est armé.
     const preset = opts?.maxBitrate !== undefined ? null : quality.presetForFetch();
-    const bitrate = opts?.maxBitrate ?? preset?.bitrate ?? 0;
+    // Les droits de lecture du compte : le plafond de ce client borne le débit demandé.
+    const bitrate = quality.rights.capBitrate(opts?.maxBitrate ?? preset?.bitrate ?? 0);
     const maxWidth = opts?.maxWidth ?? preset?.width ?? 0;
     const maxHeight = opts?.maxHeight ?? preset?.height ?? 0;
     const targetEngine = opts?.engine ?? engineRef.current;
@@ -147,6 +149,8 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
     const sentAudioCodec = streams.find((s) => s.Type === "Audio" && s.Index === sentAudio)?.Codec;
     const profile = buildPlatformDeviceProfile(targetEngine, bitrate, opts?.isRetry ?? false, sentAudioCodec);
     const sentSubtitle = opts?.subtitleStreamIndex ?? (subtitleIndexRef.current >= 0 ? subtitleIndexRef.current : undefined);
+    const upfront = quality.rights.refusalBefore();
+    if (upfront) return fail({ from: "refusal", refusal: upfront });
 
     try {
       const result = await client.getPlaybackInfo(itemId, {
@@ -162,14 +166,13 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
       if (fetchIdRef.current !== currentFetch) return;
 
       const ms = result.MediaSources?.[0];
-      if (!ms) {
-        // Le refus de Jellyfin (`ErrorCode`) dit pourquoi ; sans lui, aucune source.
-        const error: PlaybackFailureReport = { from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode };
-        setState((prev) => ({ ...prev, isLoading: false, error }));
-        return;
-      }
+      // Le refus de Jellyfin (`ErrorCode`) dit pourquoi ; sans lui, aucune source.
+      if (!ms) return fail({ from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode });
 
       const directPlay = ms.SupportsDirectPlay && !ms.TranscodingUrl;
+      // Une conversion que le compte n'a pas le droit de demander ne part pas : le lecteur le dit.
+      const refusal = quality.rights.refusalOf(ms, directPlay);
+      if (refusal) return fail({ from: "refusal", refusal });
       const directStream = ms.SupportsDirectStream && !directPlay;
       const subIdx = opts?.subtitleStreamIndex ?? subtitleIndexRef.current;
 
@@ -178,12 +181,8 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
         itemId, ms, directPlay, ds: ds ?? null, quality: bitrate > 0 ? { bitrate, height: maxHeight } : null,
         baseUrl: client.getBaseUrl(), accessToken: client.getAccessToken(), subIdx,
       });
-      if (!url) {
-        // Ni lecture directe ni conversion proposées : rien de lisible ici.
-        const error: PlaybackFailureReport = { from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode ?? "NoCompatibleStream" };
-        setState((prev) => ({ ...prev, isLoading: false, error }));
-        return;
-      }
+      // Ni lecture directe ni conversion proposées : rien de lisible ici.
+      if (!url) return fail({ from: "marker", marker: "noMediaSource", jellyfinErrorCode: result.ErrorCode ?? "NoCompatibleStream" });
 
       const actualOffsetTicks = directPlay ? 0 : extractActualStartTicks(ms);
       const streamOffset = actualOffsetTicks > 0 ? actualOffsetTicks / 10_000_000 : 0;
@@ -231,10 +230,7 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind, vers
       console.error(DBG, "PlaybackInfo failed", err);
       // Une réponse (statut) vient de Jellyfin, direct ou relayé ; une panne de
       // transport finit toujours par le relais du serveur Tentacle.
-      const error: PlaybackFailureReport = {
-        from: "request", error: err, target: "relayed", request: `POST /Items/${itemId}/PlaybackInfo`,
-      };
-      setState((prev) => ({ ...prev, isLoading: false, error }));
+      fail({ from: "request", error: err, target: "relayed", request: `POST /Items/${itemId}/PlaybackInfo` });
     }
   }, [client, userId, itemId, mediaSourceId, quality, streams]);
 

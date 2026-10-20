@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { bitrateForItem, cachedBitrate, primeBitrateMeasure, useJellyfinClient } from "@tentacle-tv/api-client";
-import { buildQualityLadder, capForBitrate, findPreset, isPresetOffered } from "@tentacle-tv/shared";
+import { bitrateForItem, cachedBitrate, primeBitrateMeasure, useJellyfinClient, usePlaybackRights } from "@tentacle-tv/api-client";
+import { buildQualityLadder, capForBitrate, findPreset, isPresetOffered, offeredQualityPresets } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
+import { playerRightsOf, type PlayerRights } from "@/player/rights/playerRights";
 import { MOBILE_BITRATE_MEASURE } from "@/utils/bitrateMeasureOptions";
 
 /**
@@ -15,7 +16,10 @@ import { MOBILE_BITRATE_MEASURE } from "@/utils/bitrateMeasureOptions";
  *    lecture continue ; mesure absente/périmée, ou prise sur une AUTRE voie
  *    que celle du flux (direct coupé, hors du réseau local) → aucun cap,
  *    jamais de blocage ;
- *  - la clé AFFICHÉE au menu est le palier servi, cap compris.
+ *  - la clé AFFICHÉE au menu est le palier servi, cap compris ;
+ *  - les DROITS de lecture du compte (`usePlaybackRights`, § 9.2) : sans le droit
+ *    de réencoder, « Originale » seule ; le plafond d'un client distant borne le
+ *    menu et impose son palier, même en « Originale » (`playerRights.ts`).
  */
 export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSource | undefined }): {
   qualityPresets: QualityPreset[];
@@ -39,9 +43,13 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
   /** Descente d'un palier pour un retry de transcodage (logique historique) —
    *  part du palier SERVI (cap compris), et vaut choix explicite. */
   degradeOneTier: () => QualityPreset | undefined;
+  /** Les droits de lecture appliqués à la négociation (débit, refus). */
+  rights: PlayerRights;
 } {
   const { itemId, mediaSource } = args;
   const client = useJellyfinClient();
+  const { rights: playbackRights } = usePlaybackRights();
+  const rights = useMemo(() => playerRightsOf(playbackRights, mediaSource), [playbackRights, mediaSource]);
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   /** Cap réellement appliqué au DERNIER flux résolu — pour l'UI seulement. */
   const [appliedCap, setAppliedCap] = useState<QualityPreset | null>(null);
@@ -58,7 +66,10 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
 
   // Paliers calculés d'après la source : jamais au-dessus de son débit ni de
   // sa définition (cf. buildQualityLadder).
-  const qualityPresets = useMemo(() => buildQualityLadder(mediaSource), [mediaSource]);
+  const qualityPresets = useMemo(
+    () => offeredQualityPresets(buildQualityLadder(mediaSource), playbackRights),
+    [mediaSource, playbackRights],
+  );
 
   // Garde-fou : l'échelle dépend de la source, un palier peut disparaître d'un
   // média à l'autre. Retomber sur « Originale » plutôt que sur une clé fantôme.
@@ -78,14 +89,14 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
     const manual = findPreset(qualityKey, qualityPresets);
     if (!(qualityKey === "original" && disarmedRef.current !== itemId)) {
       setAppliedCap(null);
-      return manual;
+      return rights.withCap(manual);
     }
     const measured = cachedBitrate(client, MOBILE_BITRATE_MEASURE);
     const cap = capForBitrate(mediaSource, measured);
     setAppliedCap(cap);
     setCapMeasured(measured);
-    return cap ?? manual;
-  }, [qualityKey, qualityPresets, itemId, mediaSource, client]);
+    return rights.withCap(cap ?? manual);
+  }, [qualityKey, qualityPresets, itemId, mediaSource, client, rights]);
 
   const settleBitrate = useCallback(async () => {
     await bitrateForItem(client, itemId, MOBILE_BITRATE_MEASURE);
@@ -124,5 +135,6 @@ export function usePlayerQuality(args: { itemId: string; mediaSource: MediaSourc
     settleBitrate,
     selectQualityManual,
     degradeOneTier,
+    rights,
   };
 }
