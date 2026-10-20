@@ -19,3 +19,13 @@ describe("groupNotificationsByPeriod", () => {
     expect(groupNotificationsByDay([at(20), at(19)], now).map((g) => g.group)).toEqual(["today", "earlier"]);
   });
 });
+
+describe("groupNotificationsByPeriod au changement d'heure", () => {
+  // Le 25/10/2026 dure 25 h en Europe (retour à l'heure d'hiver) ; ailleurs, rien à prouver.
+  const longDay = new Date(2026, 9, 26).getTime() - new Date(2026, 9, 25).getTime() !== 86_400_000;
+  it.runIf(longDay)("une notification d'hier, juste après minuit, reste « Hier »", () => {
+    const afterSwitch = new Date(2026, 9, 26, 0, 30);
+    const item = { createdAt: new Date(2026, 9, 25, 0, 30).toISOString() };
+    expect(groupNotificationsByPeriod([item], afterSwitch)).toEqual([{ group: "yesterday", items: [item] }]);
+  });
+});
