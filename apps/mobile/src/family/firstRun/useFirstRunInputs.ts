@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  useFamilyOverview, useHomeLayout, useLibraries, useServerCapability, useTentacleConfig, useUserId,
+  useFamilyOverview, useHomeLayout, useLibraries, useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import {
   AVATAR_INVITE_SEEN_KEY, FIRST_RUN_SEEN_KEY, honorFirstRunPromptsReset, parseFirstRunSeen, parseInvitedSubjects, sameUserId,
   shouldInviteToAvatars, type FirstRunInput,
 } from "@tentacle-tv/shared";
-import { useAccountHasPhoto } from "@/auth/useAccountHasPhoto";
+import { useAvatarInviteSubject } from "@/avatars/invite/useAvatarInviteSubject";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import { useFamilyPinReminder } from "../pinSuggest/useFamilyPinReminder";
@@ -24,12 +24,13 @@ import { firstRunCoveredPin } from "./firstRunCovered";
  *
  * Une session de profil ne pose pas son code ici (le serveur réserve
  * `setOwnPin` à la session personnelle et aux TV) ; sa photo, si le serveur
- * sait l'écrire par l'appareil (`avatars.devicePhoto`).
+ * sait l'écrire par l'appareil (`avatars.devicePhoto`) — dite par le serveur
+ * (`useAvatarInviteSubject`), jamais par `/Users/Me`, muet pour un profil.
  */
 export function useFirstRunInputs(): FirstRunInput & { resetSettled: boolean } {
   const { storage } = useTentacleConfig();
   const { serverUrl } = useServerUrl();
-  const subjectId = useUserId();
+  const { subjectId, hasPhoto, canChangePhoto } = useAvatarInviteSubject();
   const held = useActiveProfile();
   const online = useConnectivity().state === "online";
   const family = useFamilyAvailability();
@@ -38,8 +39,6 @@ export function useFirstRunInputs(): FirstRunInput & { resetSettled: boolean } {
   const reminder = useFamilyPinReminder();
   const layout = useHomeLayout();
   const libraries = useLibraries();
-  const hasPhoto = useAccountHasPhoto();
-  const devicePhoto = useServerCapability("avatars.devicePhoto");
   const [honored, setHonored] = useState(0);
 
   // La demande du serveur pour CE profil : la liste de « Qui regarde ? » pendant une session
@@ -63,7 +62,6 @@ export function useFirstRunInputs(): FirstRunInput & { resetSettled: boolean } {
   // Déjà proposé pendant ce lancement (« Bienvenue dans la famille ») : pas une seconde fois.
   const pinDue = held || firstRunCoveredPin() ? false : !family.available ? false : reminder.settled ? reminder.startup : null;
   const homeReady = layout.data && libraries.data ? true : layout.isError || libraries.isError ? false : null;
-  const canChangePhoto = !held || devicePhoto;
   const photoDue = hasPhoto === undefined
     ? null
     : shouldInviteToAvatars({ eligible: true, subjectId, canChangePhoto, online, hasPhoto, busy: false, invited });
