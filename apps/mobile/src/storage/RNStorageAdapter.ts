@@ -47,6 +47,8 @@ const STORAGE_KEYS = [
   // (`AVATAR_INVITE_SEEN_KEY`, même clé que le web) : absente d'ici,
   // l'invitation unique reviendrait à chaque lancement.
   "tentacle_avatar_invite_seen",
+  // Les réglages d'appareil de l'ouverture du démarrage (src/bootIntro/bootIntroSettings.ts).
+  "tentacle_boot_intro", "tentacle_boot_sound",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

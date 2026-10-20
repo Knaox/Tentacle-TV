@@ -11,6 +11,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { describeProblem, latestAdditionsDetailQuery, libraryHasNoTitles, type MediaItem } from "@tentacle-tv/shared";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
+import { useReportScreenToBootIntro } from "@tentacle-tv/brand-intro-native";
 import { HeroBanner } from "@/components/HeroBanner";
 import { useHeroMetrics } from "@/components/heroMetrics";
 import { useHeroInView } from "@/components/hero/useHeroInView";
@@ -135,7 +136,11 @@ export function HomeScreen() {
   }), [renderCard, router, recoNav]);
 
   const anyFetching = featured.isFetching || resume.isFetching;
-  if (isLoading || (!userId && anyFetching)) {
+  const skeleton = isLoading || (!userId && anyFetching);
+  // L'ouverture du démarrage plonge dans l'accueil montré d'un bloc : héros compris, ou en échec.
+  const bootFailed = featured.isError && resume.isError;
+  useReportScreenToBootIntro("/", bootFailed ? "failed" : skeleton || heroLoading ? "loading" : "ready");
+  if (skeleton) {
     return (
       <SubtleBackground ambient>
         <SkeletonHero />
