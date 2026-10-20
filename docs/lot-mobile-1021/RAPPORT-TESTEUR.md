@@ -69,6 +69,16 @@ famille de test : compat-user propriétaire, invités Léo — PIN — et Mia, s
   (Allégé, puis Original 220 Mio) n'ont reçu aucun octet en 3 min — l'activité reste sur « Calcul du temps restant… ». Probablement
   le banc (serveur/URL de transfert), à vérifier sur un vrai appareil ; live-fix a arrêté ses essais.
 
+## Mesure de synchronisation Watch Together iOS (banc `ios-pair`, 13:50–14:00) — NON OBTENUE
+
+Quatre passages : ✔ session de l'iPhone, ✔ création du groupe (après remise à zéro du backend : un groupe de l'essai manuel restait
+tenu par d'anciens appareils, 409), ✔ invitation reçue sur l'iPad, ✔ l'iPhone (A) lance et lit la lecture ; ✘ l'iPad (B) ne suit pas :
+il reste sur « Qui regarde ? » de la famille de compat-user alors que le banc y a posé compat-user2
+(`captures/banc-wt-ios-pair-ipad-bloque-qui-regarde.png`). Cause côté banc : l'app de test non signée ne peut pas écrire dans le
+trousseau (« A required entitlement isn't present »), donc la session posée par le banc ne remplace pas proprement celle d'avant.
+→ Pour mesurer la synchro iOS : deux simulateurs NEUFS (jamais connectés à compat-user), ou un build simulateur signé.
+Parcours Watch Together à la main : ✔ de bout en bout, sans gel (voir plus haut).
+
 ## Défauts relevés et renvoyés (par session)
 
 - **famille-demarrage** : porte figée sur « rien » avant /api/config (corrigé 74cc8177a) ; galerie d'avatars ouverte
