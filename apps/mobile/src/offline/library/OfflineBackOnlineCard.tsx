@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { Button, GlassSurface } from "@/components/ui";
+import { GlassSurface } from "@/components/ui";
+import { SecondaryButton } from "@/components/ui/buttons";
 import { setManualOffline } from "@/offline/connectivityStore";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
@@ -32,7 +33,7 @@ export function OfflineBackOnlineCard() {
             </View>
           </View>
           <View style={st.ctaRow}>
-            <Button title={t("downloads:offlineGoOnline")} onPress={() => setManualOffline(false)} />
+            <SecondaryButton size="sm" label={t("downloads:offlineGoOnline")} onPress={() => setManualOffline(false)} />
           </View>
         </View>
       </GlassSurface>

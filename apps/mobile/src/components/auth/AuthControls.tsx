@@ -15,7 +15,7 @@ interface AuthPrimaryButtonProps {
 }
 
 /**
- * Le CTA des écrans d'avant connexion : pilule `cta.primaryBg` et halo violet
+ * Le CTA des écrans d'avant connexion : pilule `cta.primaryBg`, sans halo
  * (`makeAuthStyles.primaryCta`). En cours de requête, l'anneau ET un libellé
  * — un anneau seul ne dit rien au lecteur d'écran.
  */

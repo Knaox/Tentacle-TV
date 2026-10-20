@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildDarkPalette, buildLightPalette } from "@tentacle-tv/theme";
-import { MIN_TARGET, resolveButtonLook, type ButtonKind, type ButtonPlatform, type ButtonSize } from "./buttonLook";
+import { MIN_TARGET, resolveButtonLook, selectedOptionLook, type ButtonKind, type ButtonPlatform, type ButtonSize } from "./buttonLook";
 
 const dark = buildDarkPalette();
 const light = buildLightPalette();
@@ -72,5 +72,17 @@ describe("resolveButtonLook", () => {
     expect(android.weight).toBe("medium");
     expect(ios.radius).toBe(ios.height / 2);
     expect(android.radius).toBe(android.height / 2);
+  });
+});
+
+describe("selectedOptionLook", () => {
+  it("l'option choisie est neutre dans les deux thèmes, libellé du thème", () => {
+    const d = selectedOptionLook(true, dark);
+    const l = selectedOptionLook(false, light);
+    expect(d.fg).toBe(dark.text.primary);
+    expect(l.fg).toBe(light.text.primary);
+    for (const v of [d.bg, l.bg]) {
+      expect([dark.brand.violet, dark.brand.accent, light.brand.violet]).not.toContain(v);
+    }
   });
 });

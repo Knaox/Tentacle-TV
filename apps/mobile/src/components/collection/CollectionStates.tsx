@@ -1,9 +1,10 @@
 import { memo, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { Skeleton } from "@/components/ui";
-import { ctlGradient, FONT_FAMILY, RADIUS, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { PlainButton, PrimaryButton } from "@/components/ui/buttons";
+import { ctlGradient, FONT_FAMILY, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 type FeatherName = keyof typeof Feather.glyphMap;
 
@@ -33,8 +34,8 @@ interface EmptyAction {
 
 /**
  * Une collection VIDE : l'emblème du catalogue, titre, promesse, les étapes
- * éventuelles en lignes de 48, puis la sortie pleine (`cta.primary`, 48) et
- * la sortie fantôme. `extra` : ce qui garde un sens sur une liste vide (le
+ * éventuelles en lignes de 48, puis la sortie (`PrimaryButton` blanc, à la
+ * taille de son libellé, centré) et la sortie secondaire en texte seul. `extra` : ce qui garde un sens sur une liste vide (le
  * partage des titres likés).
  */
 export const CollectionEmptyState = memo(function CollectionEmptyState({ icon, title, body, steps, primary, secondary, extra }: {
@@ -68,16 +69,8 @@ export const CollectionEmptyState = memo(function CollectionEmptyState({ icon, t
       )}
 
       <View style={st.actions}>
-        <Pressable onPress={primary.onPress} accessibilityRole="button" style={({ pressed }) => [st.cta, pressed && st.pressed]}>
-          {primary.icon && <Feather name={primary.icon} size={18} color={colors.cta.primaryFg} />}
-          <Text style={st.ctaText}>{primary.label}</Text>
-        </Pressable>
-        {secondary && (
-          <Pressable onPress={secondary.onPress} accessibilityRole="button" style={({ pressed }) => [st.cta, st.ghost, pressed && st.pressed]}>
-            {secondary.icon && <Feather name={secondary.icon} size={18} color={colors.text.secondary} />}
-            <Text style={[st.ctaText, st.ghostText]}>{secondary.label}</Text>
-          </Pressable>
-        )}
+        <PrimaryButton tone="contrast" size="lg" label={primary.label} icon={primary.icon} onPress={primary.onPress} />
+        {secondary && <PlainButton label={secondary.label} icon={secondary.icon} onPress={secondary.onPress} />}
       </View>
       {extra ? <View style={st.extra}>{extra}</View> : null}
     </View>
@@ -98,9 +91,7 @@ export const CollectionNarrowEmpty = memo(function CollectionNarrowEmpty({ messa
     <View style={st.empty}>
       <Emblem icon="filter" />
       <Text style={st.body}>{message}</Text>
-      <Pressable onPress={onAction} accessibilityRole="button" style={({ pressed }) => [st.cta, st.ctaCompact, pressed && st.pressed]}>
-        <Text style={st.ctaText}>{actionLabel}</Text>
-      </Pressable>
+      <PrimaryButton tone="contrast" label={actionLabel} onPress={onAction} style={st.ctaCompact} />
     </View>
   );
 });
@@ -135,22 +126,8 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   },
   stepIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: t.colors.brand.soft },
   stepText: { flex: 1, fontSize: 14, fontFamily: FONT_FAMILY.regular, color: t.colors.text.secondary },
-  actions: { alignSelf: "stretch", gap: spacing.sm, marginTop: spacing.md },
-  cta: {
-    minHeight: 48,
-    flexDirection: "row",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    borderRadius: RADIUS.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: t.colors.cta.primaryBg,
-  },
-  ctaCompact: { minHeight: 44, marginTop: spacing.md },
-  ctaText: { ...typography.body, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.primaryFg },
-  ghost: { backgroundColor: "transparent", borderWidth: 1, borderColor: t.colors.border.subtle },
-  ghostText: { color: t.colors.text.secondary, fontFamily: FONT_FAMILY.semibold },
+  actions: { alignItems: "center", gap: spacing.xs, marginTop: spacing.md },
+  ctaCompact: { marginTop: spacing.md },
   extra: { marginTop: spacing.md },
   listSkeleton: { paddingHorizontal: spacing.screenPadding, gap: spacing.sm },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
 });

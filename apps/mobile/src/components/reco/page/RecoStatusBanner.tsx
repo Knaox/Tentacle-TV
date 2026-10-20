@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { RecoPage } from "@tentacle-tv/api-client";
-import { Button } from "@/components/ui";
+import { SecondaryButton } from "@/components/ui/buttons";
 import { spacing, typography, RADIUS, useThemedStyles, type AppTheme } from "@/theme";
 
 interface Props {
@@ -26,12 +26,13 @@ export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart, o
   const cold = page.state === "cold";
 
   const hint = (text: string) => <Text style={st.hint}>{text}</Text>;
-  // Le bloc du web : texte à gauche, pilule BLANCHE à droite, sur une rangée
+  // Le bloc du web : texte à gauche, petit bouton secondaire à droite (le héros
+  // garde la couleur de la page), sur une rangée
   // qui replie le bouton dessous quand la place manque.
   const actionable = (text: string, cta: string, onPress: () => void) => (
     <View style={st.actionable}>
       <Text style={st.actionableTxt}>{text}</Text>
-      <Button title={cta} variant="primary" onPress={onPress} style={st.cta} />
+      <SecondaryButton size="sm" label={cta} onPress={onPress} style={st.cta} />
     </View>
   );
 

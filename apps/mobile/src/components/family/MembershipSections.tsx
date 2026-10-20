@@ -33,7 +33,7 @@ export function IncomingInvitationsSection({ incoming }: { incoming: IncomingInv
             accessibilityLabel={`${t("incoming.open")} — ${t("incoming.row", { owner: invitation.ownerName })}`}
             style={({ pressed }) => [st.pill, pressed && st.dim]}
           >
-            <Text style={st.actionText}>{t("incoming.open")}</Text>
+            <Text style={st.pillText}>{t("incoming.open")}</Text>
           </Pressable>
         </View>
       ))}

@@ -1,9 +1,8 @@
 import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { mediaVersions, pickMediaSource, type MediaItem } from "@tentacle-tv/shared";
-import { FONT_FAMILY, RADIUS, seasonTabGradient, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 interface Props {
   item: MediaItem;
@@ -52,8 +51,7 @@ const VersionPill = memo(function VersionPill({ id, label, active, onChange }: {
       accessibilityLabel={label}
       style={({ pressed }) => [st.pill, active && st.pillActive, pressed && st.pressed]}
     >
-      {active && <LinearGradient {...seasonTabGradient(colors.brand)} style={StyleSheet.absoluteFill} />}
-      <Text style={[st.label, { color: active ? colors.cta.brandFg : colors.text.primary }, active && st.labelActive]}>{label}</Text>
+      <Text style={[st.label, { color: active ? colors.cta.primaryFg : colors.text.primary }, active && st.labelActive]}>{label}</Text>
     </Pressable>
   );
 });
@@ -73,7 +71,9 @@ const makeStyles = (t: AppTheme) =>
       borderWidth: StyleSheet.hairlineWidth * 2,
       borderColor: t.colors.border.strong,
     },
-    pillActive: { borderColor: "transparent" },
+    // La version retenue : la pilule blanche des onglets (comme les saisons) —
+    // sur la fiche, la couleur reste à « Lire ».
+    pillActive: { borderColor: "transparent", backgroundColor: t.colors.cta.primaryBg },
     pressed: { transform: [{ scale: 0.97 }] },
     label: { fontSize: 14, fontFamily: FONT_FAMILY.medium, letterSpacing: 0.1 },
     labelActive: { fontFamily: FONT_FAMILY.semibold },

@@ -1,10 +1,9 @@
 import { memo, useCallback, useEffect, useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent, type LayoutRectangle } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { useTranslation } from "react-i18next";
 import { CARD_GLYPH_VIEWBOX, WATCHED_FILLED_PATH, type MediaItem } from "@tentacle-tv/shared";
-import { FONT_FAMILY, RADIUS, seasonTabGradient, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /** Ce qu'une pastille lit d'une saison — en ligne, ou gardée sur l'appareil. */
 type SeasonPillItem = Pick<MediaItem, "Id" | "Name" | "RecursiveItemCount" | "ChildCount" | "UserData">;
@@ -123,10 +122,12 @@ const SeasonPill = memo(function SeasonPill({ season, active, marked, onSelect, 
   const watched = !marked && season.UserData?.Played === true && count !== 0;
   const status = marked ? t("seasonTabCurrent") : watched ? t("seasonTabWatched") : null;
   const label = [season.Name, count ? t("seasonTabEpisodes", { count }) : null, status].filter(Boolean).join(", ");
-  const fg = active ? colors.cta.brandFg : colors.text.primary;
-  const soft = active ? colors.cta.brandFg : colors.text.secondary;
+  // L'onglet retenu est la pilule BLANCHE des onglets de l'Apple TV, plus le
+  // dégradé de marque : sur la fiche, la couleur reste à « Lire ».
+  const fg = active ? colors.cta.primaryFg : colors.text.primary;
+  const soft = active ? colors.cta.primaryFg : colors.text.secondary;
   // L'accent clair tient 3:1 sur le verre sombre, l'accent profond sur le clair.
-  const dot = active ? colors.cta.brandFg : isDark ? colors.brand.accentLight : colors.brand.accent;
+  const dot = active ? colors.cta.primaryFg : isDark ? colors.brand.accentLight : colors.brand.accent;
 
   return (
     <Pressable
@@ -138,7 +139,6 @@ const SeasonPill = memo(function SeasonPill({ season, active, marked, onSelect, 
       accessibilityLabel={label}
       style={({ pressed }) => [st.pill, active && st.pillActive, pressed && st.pressed]}
     >
-      {active && <LinearGradient {...seasonTabGradient(colors.brand)} style={StyleSheet.absoluteFill} />}
       {marked && <View style={[st.dot, { backgroundColor: dot }]} />}
       {watched && (
         <Svg width={15} height={15} viewBox={CARD_GLYPH_VIEWBOX}>
@@ -171,12 +171,12 @@ const makeStyles = (t: AppTheme) =>
       borderWidth: StyleSheet.hairlineWidth * 2,
       borderColor: t.colors.border.strong,
     },
-    pillActive: { borderColor: "transparent" },
+    pillActive: { borderColor: "transparent", backgroundColor: t.colors.cta.primaryBg },
     pressed: { transform: [{ scale: 0.97 }] },
     label: { fontSize: 14, fontFamily: FONT_FAMILY.medium, letterSpacing: 0.1 },
     labelActive: { fontFamily: FONT_FAMILY.semibold },
     dot: { width: 7, height: 7, borderRadius: 3.5 },
     count: { minWidth: 24, paddingHorizontal: 6, paddingVertical: 2, borderRadius: RADIUS.pill, backgroundColor: t.colors.fill.soft, alignItems: "center" },
-    countActive: { backgroundColor: "rgba(255, 255, 255, 0.2)" },
+    countActive: { backgroundColor: "rgba(0, 0, 0, 0.08)" },
     countText: { fontSize: 12, fontFamily: FONT_FAMILY.semibold, fontVariant: ["tabular-nums"] },
   });

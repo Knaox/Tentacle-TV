@@ -1,14 +1,16 @@
 import { memo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, spacing, useTheme } from "@/theme";
+import { useButtonLook } from "@/components/ui/buttons";
 
 /**
  * « Demander les saisons manquantes » d'une série incomplète, sous la lecture
- * de la feuille d'appui long (`overlay.request`) : au ton de la marque mais
- * EN RETRAIT d'elle — un verre teinté et cerclé, la lecture restant la seule
- * action pleine au dégradé — et le nombre de saisons à demander à droite.
+ * de la feuille d'appui long (`overlay.request`) : un bouton SECONDAIRE du
+ * système (capsule grise sur iOS, contour fin sur Android) — la lecture reste
+ * la seule action en couleur de la feuille — avec le nombre de saisons à
+ * demander à droite.
  */
 export const SheetRequestButton = memo(function SheetRequestButton({ count, title, onPress }: {
   count: number;
@@ -18,50 +20,50 @@ export const SheetRequestButton = memo(function SheetRequestButton({ count, titl
 }) {
   const { t } = useTranslation("requests");
   const theme = useTheme();
-  const st = useThemedStyles(makeStyles);
-  const color = theme.colors.brand.light;
+  const look = useButtonLook("secondary", "lg");
+  const color = look.fg;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${t("requestMissing")} — ${title}`}
       accessibilityHint={t("missingSeasons", { count })}
-      style={({ pressed }) => [st.pill, pressed && { opacity: 0.8 }]}
+      android_ripple={{ color: theme.colors.fill.medium, foreground: true }}
+      style={({ pressed }) => [
+        st.pill,
+        look.shape,
+        pressed && Platform.OS === "ios" && st.pressed,
+      ]}
     >
-      <Feather name="plus" size={18} color={color} />
-      <Text style={[st.label, { color }]} numberOfLines={1}>{t("requestMissing")}</Text>
-      <View style={st.count}>
+      <Feather name="plus" size={look.iconSize} color={color} />
+      <Text style={[st.label, { color, fontSize: look.fontSize }]} numberOfLines={1}>{t("requestMissing")}</Text>
+      <View style={[st.count, { backgroundColor: theme.colors.fill.medium }]}>
         <Text style={[st.countText, { color }]}>{count}</Text>
       </View>
     </Pressable>
   );
 });
 
-const makeStyles = (t: AppTheme) =>
-  StyleSheet.create({
-    pill: {
-      minHeight: 48,
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      justifyContent: "center" as const,
-      gap: 10,
-      marginHorizontal: spacing.lg,
-      marginBottom: spacing.md,
-      paddingHorizontal: spacing.lg,
-      borderRadius: RADIUS.pill,
-      backgroundColor: t.colors.brand.soft,
-      borderWidth: 1,
-      borderColor: t.colors.brand.glow,
-    },
-    label: { flexShrink: 1, fontSize: 15, fontFamily: FONT_FAMILY.bold },
-    count: {
-      minWidth: 24,
-      height: 24,
-      paddingHorizontal: 7,
-      borderRadius: 12,
-      alignItems: "center" as const,
-      justifyContent: "center" as const,
-      backgroundColor: t.colors.fill.soft,
-    },
-    countText: { fontSize: 13, fontFamily: FONT_FAMILY.bold, fontVariant: ["tabular-nums"] },
-  });
+const st = StyleSheet.create({
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    overflow: "hidden",
+  },
+  pressed: { opacity: 0.7 },
+  label: { flexShrink: 1, fontFamily: FONT_FAMILY.semibold },
+  count: {
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 7,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countText: { fontSize: 13, fontFamily: FONT_FAMILY.semibold, fontVariant: ["tabular-nums"] },
+});

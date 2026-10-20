@@ -175,14 +175,15 @@ const makeStyles = (t: AppTheme) =>
     nameColumn: { flex: 1 },
     name: { ...typography.body, fontFamily: FONT_FAMILY.medium, color: t.colors.text.primary },
     status: { ...typography.small, color: t.colors.text.tertiary, marginTop: 1 },
+    // Répété sur chaque candidat : une capsule NEUTRE, jamais N pilules violettes.
     invite: {
-      minHeight: 36,
+      minHeight: 34,
       paddingHorizontal: spacing.md,
       borderRadius: RADIUS.pill,
       justifyContent: "center",
-      backgroundColor: t.colors.brand.soft,
+      backgroundColor: t.colors.fill.medium,
     },
-    inviteText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
+    inviteText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
     done: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 36 },
     doneText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.status.success },
     dim: { opacity: 0.5 },

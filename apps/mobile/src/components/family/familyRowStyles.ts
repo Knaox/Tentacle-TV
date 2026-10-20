@@ -29,7 +29,10 @@ export const makeFamilyRowStyles = (t: AppTheme) =>
     action: { minHeight: 44, minWidth: 44, justifyContent: "center", paddingHorizontal: spacing.sm },
     actionText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
     dangerText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.status.error },
-    pill: { minHeight: 36, justifyContent: "center", paddingHorizontal: spacing.md, borderRadius: RADIUS.pill, backgroundColor: t.colors.brand.soft },
+    // Le petit bouton secondaire d'une ligne (Ouvrir, Code PIN) : capsule
+    // NEUTRE, libellé `pillText` — la couleur reste aux actions principales.
+    pill: { minHeight: 34, justifyContent: "center", paddingHorizontal: spacing.md, borderRadius: RADIUS.pill, backgroundColor: t.colors.fill.medium },
+    pillText: { ...typography.small, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
     dim: { opacity: 0.5 },
     pressed: { backgroundColor: t.colors.fill.subtle },
   });

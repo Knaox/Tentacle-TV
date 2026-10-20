@@ -1,10 +1,11 @@
 import { useCallback, useRef } from "react";
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { FONT_FAMILY, RADIUS, useThemedStyles, useTheme, withAlpha, type AppTheme } from "../../theme";
+import { FONT_FAMILY, useThemedStyles, useTheme, type AppTheme } from "../../theme";
 import { GlassCard } from "../ui";
+import { PrimaryButton, SecondaryButton } from "../ui/buttons";
 import { ProblemState } from "../problems/ProblemState";
 import { usePageProblem } from "../problems/usePageProblem";
 import { usePairingAvailability } from "../../hooks/usePairingAvailability";
@@ -59,14 +60,7 @@ export function PairTvCard({ allowAnother = false, autoFocus = true }: Props) {
         </View>
         <Text style={st.successText}>{t("tvPairedSuccess")}</Text>
         {allowAnother ? (
-          <Pressable
-            onPress={handleReset}
-            accessibilityRole="button"
-            accessibilityLabel={t("pairAnotherTv")}
-            style={({ pressed }) => [st.secondary, st.another, pressed && st.pressed]}
-          >
-            <Text style={st.secondaryText}>{t("pairAnotherTv")}</Text>
-          </Pressable>
+          <SecondaryButton size="lg" fullWidth label={t("pairAnotherTv")} onPress={handleReset} style={st.another} />
         ) : null}
       </View>
     );
@@ -81,29 +75,17 @@ export function PairTvCard({ allowAnother = false, autoFocus = true }: Props) {
           </View>
         ) : null}
         {status === "error" ? (
-          <Pressable
-            onPress={handleReset}
-            accessibilityRole="button"
-            accessibilityLabel={t("common:retry")}
-            style={({ pressed }) => [st.secondary, pressed && st.pressed]}
-          >
-            <Text style={st.secondaryText}>{t("common:retry")}</Text>
-          </Pressable>
+          <SecondaryButton size="lg" fullWidth label={t("common:retry")} onPress={handleReset} />
         ) : (
-          <Pressable
+          <PrimaryButton
+            tone="contrast"
+            size="lg"
+            fullWidth
+            label={t("pairTV")}
             onPress={submit}
             disabled={!canSubmit}
-            accessibilityRole="button"
-            accessibilityLabel={t("pairTV")}
-            accessibilityState={{ disabled: !canSubmit, busy: status === "pairing" }}
-            style={({ pressed }) => [st.primary, !canSubmit && st.primaryOff, canSubmit && pressed && st.pressed]}
-          >
-            {status === "pairing" ? (
-              <ActivityIndicator color={theme.colors.cta.primaryFg} size="small" />
-            ) : (
-              <Text style={st.primaryText}>{t("pairTV")}</Text>
-            )}
-          </Pressable>
+            loading={status === "pairing"}
+          />
         )}
       </>
     );
@@ -124,22 +106,4 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   another: { alignSelf: "stretch" as const, marginTop: 20 },
   errorRow: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const, gap: 8, marginBottom: 14 },
   errorText: { color: t.colors.status.error, fontSize: 13, fontFamily: FONT_FAMILY.medium, textAlign: "center" as const, flexShrink: 1 },
-  secondary: {
-    backgroundColor: t.colors.brand.ghost,
-    borderWidth: 1,
-    borderColor: withAlpha(t.colors.brand.violet, 0.4, t.colors.brand.glow),
-    borderRadius: RADIUS.md, paddingVertical: 13, minHeight: 46,
-    alignItems: "center" as const, justifyContent: "center" as const,
-  },
-  secondaryText: { color: t.colors.text.primary, fontSize: 15, fontFamily: FONT_FAMILY.semibold },
-  primary: {
-    backgroundColor: t.colors.cta.primaryBg,
-    borderRadius: RADIUS.md, paddingVertical: 13, minHeight: 46,
-    alignItems: "center" as const, justifyContent: "center" as const,
-    shadowColor: t.colors.brand.violet, shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.55, shadowRadius: 22, elevation: 12,
-  },
-  primaryOff: { opacity: 0.45, shadowOpacity: 0 },
-  primaryText: { color: t.colors.cta.primaryFg, fontSize: 15, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.2 },
-  pressed: { opacity: 0.88 },
 });

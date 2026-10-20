@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useCancelFamilyInvitation, useServerCapability, useUserId } from "@tentacle-tv/api-client";
@@ -19,7 +18,7 @@ import type { FamilyScreenModel } from "@/family/familyScreenModel";
 import { useFamilyAvailability } from "@/family/useFamilyAvailability";
 import { useFamilyText } from "@/family/useFamilyText";
 import { showToast } from "@/notices/toastStore";
-import { ctaGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { FamilyProfileRow } from "./FamilyProfileRow";
 import { GuestPhotoGallery } from "./GuestPhotoGallery";
 import { GuestSheet } from "./GuestSheet";
@@ -92,7 +91,6 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
     model.blocked && codeText(model.blocked),
   ].filter(Boolean).join("\n");
   const hasActions = model.showInvite || model.showAddGuest;
-  const gradient = ctaGradient(theme.colors.brand);
 
   return (
     <>
@@ -111,9 +109,9 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
           ))
         ) : (
           <View style={[st.empty, hasActions && st.emptyBordered]}>
-            <LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={st.emptyIcon}>
-              <Feather name="users" size={22} color={theme.colors.cta.brandFg} />
-            </LinearGradient>
+            <View style={st.emptyIcon}>
+              <Feather name="users" size={22} color={theme.colors.brand.light} />
+            </View>
             <View style={st.emptyBody}>
               <Text style={st.emptyTitle}>{t("familyWeb:owned.emptyTitle")}</Text>
               <Text style={st.emptyText}>{t("familyWeb:owned.emptyBody")}</Text>
@@ -162,7 +160,8 @@ const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     empty: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md, padding: spacing.lg },
     emptyBordered: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.colors.border.subtle },
-    emptyIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+    // Un pictogramme d'état vide, pas un bouton : sur une puce neutre.
+    emptyIcon: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: t.colors.fill.soft },
     emptyBody: { flex: 1 },
     emptyTitle: { ...typography.bodyBold, color: t.colors.text.primary },
     emptyText: { ...typography.small, color: t.colors.text.tertiary, marginTop: 4, lineHeight: 18 },

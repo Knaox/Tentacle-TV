@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { FONT_FAMILY, spacing, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { FONT_FAMILY, spacing, typography, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { GradientOverlay, IconButton } from "@/components/ui";
 import { HEADER_BAR_HEIGHT } from "@/components/PersistentHeader";
 
@@ -35,7 +35,6 @@ export function DetailTopBar({ title, scrollY, revealAt, onBack, onOpenImages }:
   const { t: tm } = useTranslation("media");
   const { t } = useTranslation("common");
   const insets = useSafeAreaInsets();
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const topInset = Math.max(insets.top, 24);
   const height = topInset + HEADER_BAR_HEIGHT;
@@ -65,12 +64,12 @@ export function DetailTopBar({ title, scrollY, revealAt, onBack, onOpenImages }:
         <View style={st.hairline} />
       </Animated.View>
       <View style={[st.row, { paddingTop: topInset }]}>
-        <IconButton icon="←" size={36} onPress={onBack} accessibilityLabel={t("back")} bgColor={theme.colors.glass.backdrop} />
+        <IconButton icon="←" size={36} onPress={onBack} accessibilityLabel={t("back")} variant="glass" />
         <Animated.View style={[st.titleWrap, titleStyle]} pointerEvents="none">
           <Text style={st.title} numberOfLines={1} accessibilityRole="header">{title}</Text>
         </Animated.View>
         {onOpenImages && (
-          <IconButton icon="image" size={36} onPress={onOpenImages} accessibilityLabel={tm("detailViewImages")} bgColor={theme.colors.glass.backdrop} />
+          <IconButton icon="image" size={36} onPress={onOpenImages} accessibilityLabel={tm("detailViewImages")} variant="glass" />
         )}
       </View>
     </View>
