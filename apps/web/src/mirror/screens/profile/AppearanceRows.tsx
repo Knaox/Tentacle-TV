@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Globe, Sun } from "lucide-react";
 import { useSetInterfaceLanguage } from "@tentacle-tv/api-client";
 import type { ThemeMode } from "@tentacle-tv/theme";
+import type { SettingScope } from "@tentacle-tv/shared";
 import { useThemeMode } from "../../../theme/useThemeMode";
 import { clearPendingInterfaceLanguage, markInterfaceLanguagePending } from "../../../offline/pendingPrefs";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
@@ -16,7 +17,7 @@ const MODE_KEYS: Record<ThemeMode, string> = { light: "themeLight", dark: "theme
  * `ThemeChoiceRow` de l'app : « Thème [Clair | Sombre | Auto] », réglage par
  * appareil — le même magasin que la page web Apparence (`useThemeMode`).
  */
-export function ThemeChoiceRow() {
+export function ThemeChoiceRow({ scope, last }: { scope?: SettingScope | null; last?: boolean } = {}) {
   const { t } = useTranslation("preferences");
   const { mode, setMode } = useThemeMode();
   return (
@@ -26,6 +27,8 @@ export function ThemeChoiceRow() {
       options={MODES.map((value) => ({ value, label: t(MODE_KEYS[value]) }))}
       value={mode}
       onChange={(value) => setMode(value as ThemeMode)}
+      scope={scope}
+      last={last}
     />
   );
 }
@@ -35,7 +38,7 @@ export function ThemeChoiceRow() {
  * celui de la page Lecture du web (`pages/Preferences.tsx`) : langue locale
  * aussitôt, envoi au serveur en ligne, file d'attente hors ligne.
  */
-export function LanguageChoiceRow({ last }: { last?: boolean }) {
+export function LanguageChoiceRow({ last, scope, label }: { last?: boolean; scope?: SettingScope | null; label?: string }) {
   const { t, i18n } = useTranslation("profile");
   const queryClient = useQueryClient();
   const offline = useOfflineMode();
@@ -57,11 +60,12 @@ export function LanguageChoiceRow({ last }: { last?: boolean }) {
   return (
     <SettingsChoiceRow
       icon={Globe}
-      label={t("language")}
+      label={label ?? t("language")}
       options={[{ value: "fr", label: t("french") }, { value: "en", label: t("english") }]}
       value={current}
       onChange={change}
       last={last}
+      scope={scope}
     />
   );
 }

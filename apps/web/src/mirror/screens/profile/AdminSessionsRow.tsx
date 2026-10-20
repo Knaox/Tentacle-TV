@@ -12,7 +12,7 @@ import { SettingsRow } from "../settings/ui/SettingsRow";
  * (le hook web `useAdminSessions` relit toutes les 3 s : c'est la page qui en
  * a besoin, pas la ligne). Clé distincte : ses données n'ont pas l'horloge.
  */
-export function AdminSessionsRow() {
+export function AdminSessionsRow({ last }: { last?: boolean } = {}) {
   const { t } = useTranslation("sessions");
   const navigate = useNavigate();
   const { data } = useQuery({
@@ -32,6 +32,7 @@ export function AdminSessionsRow() {
       label={t("title")}
       description={playing === undefined ? undefined : t("playingCount", { count: playing })}
       chevron
+      last={last}
       onPress={() => navigate("/admin/sessions")}
     />
   );

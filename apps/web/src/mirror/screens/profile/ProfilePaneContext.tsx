@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { paneRoute, type MirrorPaneId } from "../settings/panes";
+import { webPaneRoute, type WebPaneId } from "../settings/catalog/webCatalog";
 
 interface PaneSelection {
-  selected: MirrorPaneId;
-  select: (id: MirrorPaneId) => void;
+  /** Le volet ouvert dans la colonne de détail ; `null` : la page de la rubrique. */
+  selected: WebPaneId | null;
+  select: (id: WebPaneId) => void;
 }
 
 /**
@@ -14,12 +15,12 @@ interface PaneSelection {
  */
 export const ProfilePaneContext = createContext<PaneSelection | null>(null);
 
-export function useProfilePane(id: MirrorPaneId): { open: () => void; selected: boolean; inline: boolean } {
+export function useProfilePane(id: WebPaneId): { open: () => void; selected: boolean; inline: boolean } {
   const selection = useContext(ProfilePaneContext);
   const navigate = useNavigate();
   const open = useCallback(() => {
     if (selection) selection.select(id);
-    else navigate(paneRoute(id));
+    else navigate(webPaneRoute(id));
   }, [selection, id, navigate]);
   return { open, selected: selection?.selected === id, inline: selection !== null };
 }

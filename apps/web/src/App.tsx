@@ -210,6 +210,8 @@ export function App() {
             {/* Le chemin de la Famille commun aux clients (cloche, liens) : sa section des réglages. */}
             <Route path="family" element={<Navigate to="/settings/family" replace />} />
             <Route path="profile" element={onlineOnly(<ByFormFactor desktop={<MobileProfile />} mirror={<MirrorProfile />} />)} />
+            {/* Une rubrique du catalogue des réglages (`/profile/playback`…) : la page de l'app. */}
+            <Route path="profile/:section" element={onlineOnly(<ByFormFactor desktop={<MobileProfile />} mirror={<MirrorProfile />} />)} />
             <Route path="pair-device" element={onlineOnly(<ByFormFactor desktop={<PairDevice />} mirror={<MirrorPairDevice />} />)} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.
                 Les URLs restent identiques a l'avant (`/admin/users`,

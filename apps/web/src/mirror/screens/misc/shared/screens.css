@@ -21,14 +21,6 @@
   animation-delay: var(--fade-delay, 0ms);
 }
 
-/* Le halo violet des CTA principaux (`primaryCta` : ombre violette 0/8, 22). */
-.mirror-cta-halo {
-  box-shadow: 0 8px 22px rgba(var(--brand-rgb), 0.55);
-}
-.mirror-cta-halo:disabled {
-  box-shadow: none;
-}
-
 /* `pressed && { opacity: 0.85 }` des Pressable de l'app. */
 .mirror-dim:active:not(:disabled) {
   opacity: 0.85;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAutoUpdate } from "../hooks/useAutoUpdate";
 import type { WhatsNewSelection } from "../whatsNew/selectFeatures";
@@ -10,6 +10,8 @@ import { isWebDebugEnabled } from "../lib/webDebug";
 import { useConnectivity } from "../offline/useConnectivity";
 import { AvatarInvite } from "../profiles/avatarGallery/AvatarInvite";
 import { FamilyPinStartup } from "../family/pinSuggest/FamilyPinStartup";
+import { MirrorFirstRun } from "../mirror/screens";
+import { useMirror } from "../mirror/useFormFactor";
 import type { StartupWindowState } from "../startup/startupOrder";
 import { describeStartup, setStartupReady, useStartupMayShow, usePublishStartupWindow } from "../startup/startupStore";
 import { UpdateModal } from "./UpdateModal";
@@ -23,7 +25,10 @@ interface StartupOverlaysProps {
  * (`startup/startupOrder.ts`) : « Qui regarde ? » (porte d'`App`, rideau,
  * « Changer de profil »), le code PIN conseillé (`FamilyPinStartup`),
  * l'affiche d'une invitation de la Famille (coquille), les nouveautés, la
- * pop-up de mise à jour, l'invitation aux avatars (`AvatarInvite`). Chacune
+ * pop-up de mise à jour, l'invitation aux avatars (`AvatarInvite`). Dans le
+ * miroir (web étroit), le premier lancement du mobile (`MirrorFirstRun` :
+ * code PIN, accueil, photo, d'après le catalogue partagé) prend la place du
+ * code PIN conseillé et de l'invitation aux avatars. Chacune
  * publie son état et attend son tour ; celle qui attend paraît après, rien ne
  * se perd. Jamais sur /watch, jamais avant la session (`ready`).
  *
@@ -67,13 +72,19 @@ export function StartupOverlays({ authed }: StartupOverlaysProps) {
   usePublishStartupWindow("update", "update", updateState);
 
   useStartupDebugHook();
+  const mirror = useMirror();
 
   return (
     <>
       <WhatsNewScreen open={whatsNewOpen} selection={forced ?? gate.selection} onClose={forced ? clearForced : gate.close} />
       <UpdateModal update={update} suspended={!updateShown} />
-      {authed && <AvatarInvite desktop={desktopLike || isDesktopApp()} />}
-      {authed && <FamilyPinStartup />}
+      {authed && !mirror && <AvatarInvite desktop={desktopLike || isDesktopApp()} />}
+      {authed && !mirror && <FamilyPinStartup />}
+      {authed && mirror && (
+        <Suspense fallback={null}>
+          <MirrorFirstRun />
+        </Suspense>
+      )}
     </>
   );
 }

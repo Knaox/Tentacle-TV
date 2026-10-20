@@ -6,7 +6,7 @@ import { AmbientGlow } from "../shared/AmbientGlow";
 import { useBackOrHome } from "../shared/backOrHome";
 import { FadeIn } from "../shared/FadeIn";
 import { GlassCard } from "../shared/GlassCard";
-import { PrimaryCta } from "../shared/PrimaryCta";
+import { PrimaryCta, SecondaryCta } from "../shared/PrimaryCta";
 import { BackButton } from "../shared/ScreenTitle";
 import { PairCodeInputs, type PairCodeInputsHandle } from "./PairCodeInputs";
 import { PairSuccess, PairUnavailable } from "./PairCardStates";
@@ -18,7 +18,7 @@ import "../shared/screens.css";
  * `PairTVScreen` de l'app (`/pair-device`) : chevron 40 à 16 du bord ; médaillon
  * TV de 96 (halo violet) ; titre 28 centré, sous-titre 14 `brand.light` ;
  * carte de verre (padding 24) dans la colonne de 640 : cases du code, erreur,
- * CTA « Jumeler » ou « Réessayer » (fantôme violet) ; note d'expiration 12.
+ * CTA « Jumeler » (pilule blanche) ou « Réessayer » (capsule neutre) ; note d'expiration 12.
  */
 export function MirrorPairDevice() {
   const { t } = useTranslation("pairing");
@@ -81,20 +81,7 @@ export function MirrorPairDevice() {
                   </p>
                 )}
                 {flow.status === "error" ? (
-                  <button
-                    type="button"
-                    onClick={retry}
-                    className="mirror-dim flex w-full items-center justify-center rounded-lg border font-semibold text-content-primary"
-                    style={{
-                      minHeight: 46,
-                      padding: "13px 0",
-                      fontSize: 15,
-                      background: "rgba(var(--brand-rgb), 0.18)",
-                      borderColor: "rgba(var(--brand-rgb), 0.4)",
-                    }}
-                  >
-                    {t("common:retry")}
-                  </button>
+                  <SecondaryCta onPress={retry}>{t("common:retry")}</SecondaryCta>
                 ) : (
                   <PrimaryCta onPress={() => void flow.submit()} disabled={!flow.canSubmit} loading={flow.status === "pairing"}>
                     {t("pairTV")}

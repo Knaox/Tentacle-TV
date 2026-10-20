@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { MirrorScreenBoundary } from "./MirrorScreenBoundary";
 import { NoticeHost } from "../../components/notices/NoticeHost";
 import { useLeaderboardOpen, closeLeaderboard } from "../../components/easterEggs/logoEggStore";
 import { RAIL_WIDTH } from "../responsive";
@@ -51,7 +52,9 @@ export function MirrorLayout() {
     return (
       <MirrorChromeContext.Provider value="stacked">
         <div className="min-h-screen bg-surface-0">
-          <Outlet />
+          <MirrorScreenBoundary>
+            <Outlet />
+          </MirrorScreenBoundary>
         </div>
       </MirrorChromeContext.Provider>
     );
@@ -68,7 +71,9 @@ export function MirrorLayout() {
             paddingRight: "env(safe-area-inset-right, 0px)",
           }}
         >
-          <Outlet />
+          <MirrorScreenBoundary>
+            <Outlet />
+          </MirrorScreenBoundary>
         </div>
       </MirrorChromeContext.Provider>
     );
@@ -106,7 +111,9 @@ function TabsLayout() {
             paddingLeft: sideNav ? `calc(${RAIL_WIDTH}px + env(safe-area-inset-left, 0px))` : undefined,
           }}
         >
-          <Outlet />
+          <MirrorScreenBoundary>
+            <Outlet />
+          </MirrorScreenBoundary>
         </div>
 
         <NoticeHost top={`calc(${HEADER_TOTAL} + 12px)`} />

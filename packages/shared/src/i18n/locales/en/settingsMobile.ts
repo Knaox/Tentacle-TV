@@ -7,6 +7,12 @@ export default {
     deviceA11y: "Device setting: it only applies here",
     intro: "Settings marked “Account” follow you on all your devices; those marked “This device” only apply here.",
   },
+  // Le web étroit (navigateur d'un téléphone, d'une tablette) : les phrases qui disent « ce téléphone ».
+  web: {
+    everywhereCaption: "Saved in your account: the desktop app, the TV, the phone and this browser share them.",
+    thisDeviceCaption: "Specific to this browser, on this device.",
+    advancedIntro: "These settings live in the desktop app, or on this website from a computer. They are saved in your account: this device applies them right away.",
+  },
   sections: {
     account: "Account",
     accountSummary: "Photo, password, server",
