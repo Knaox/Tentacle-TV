@@ -54,6 +54,21 @@ famille de test : compat-user propriétaire, invités Léo — PIN — et Mia, s
   et politique admin, deux lots Live Activity de live-fix, mesure de synchronisation Watch Together iOS (banc `ios-pair` bloqué
   plus tôt par l'ouverture ; à relancer).
 
+## Notes de l'après-midi (13:15–13:45)
+
+- **Couleurs du lecteur faussées au simulateur** (bleu/magenta/cyan qui virent au vert et à l'orangé, par blocs, sur certaines
+  captures iPhone) : cause trouvée par banc-episodes — c'est le **décodeur vidéo du simulateur** (Safari montre la même corruption
+  sur le même flux ; ffmpeg et VideoToolbox du Mac le décodent juste). Les captures de lecture au simulateur ne disent rien des
+  couleurs : seul un vrai appareil fait foi.
+- **Alerte d'autorisation des notifications d'iOS** : restée en attente au simulateur, invisible, elle a capté les touchers et
+  figé l'ouverture (faux bloquants retirés après redémarrage du simulateur). ouverture-v2 fait maintenant attendre la demande
+  jusqu'à l'arrivée de l'ouverture (6bc5ac63b) ; vérifié : deux démarrages après réinstallation sans blocage, 0 image perdue.
+- **Watch Together, orientation** (wt-gel 14a3af7ce) : ✔ « Voir le groupe » et la confirmation de sortie restent en paysage depuis
+  le lecteur ; ✔ la feuille reste en portrait sur une page verrouillée en portrait. Reste : feuille du groupe tassée en paysage.
+- **Live Activity (live-fix)** : l'activité est créée et s'affiche sur l'écran verrouillé ; mais au banc, deux transferts
+  (Allégé, puis Original 220 Mio) n'ont reçu aucun octet en 3 min — l'activité reste sur « Calcul du temps restant… ». Probablement
+  le banc (serveur/URL de transfert), à vérifier sur un vrai appareil ; live-fix a arrêté ses essais.
+
 ## Défauts relevés et renvoyés (par session)
 
 - **famille-demarrage** : porte figée sur « rien » avant /api/config (corrigé 74cc8177a) ; galerie d'avatars ouverte
