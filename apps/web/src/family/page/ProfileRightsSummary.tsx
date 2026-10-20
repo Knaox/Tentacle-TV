@@ -30,13 +30,17 @@ const TONES: Readonly<Record<RightsSummaryTone, string>> = {
 
 /**
  * Les droits d'un profil EN LECTURE SEULE, dans la fenêtre étroite (téléphone,
- * iPad) — décision de Damien (20/10) : ils se règlent au bureau ou sur le web
- * large, s'appliquent partout. Le résumé est le modèle partagé du mobile
+ * iPad) — ceux que l'écran ne règle pas (`omit` : ce que `NarrowRightsEditor`
+ * règle déjà) ; le reste se règle au bureau ou sur le web large. Le résumé est le modèle partagé du mobile
  * (`familyRightsSummary`, droits-mobile) ; les bibliothèques ne sont lues que
  * pour un profil que ce compte peut régler (le serveur rend alors son
  * contrôle parental) et face à un serveur qui les borne.
  */
-export function ProfileRightsSummary({ profile }: { profile: FamilyProfileDto }) {
+export function ProfileRightsSummary({ profile, omit = [] }: {
+  profile: FamilyProfileDto;
+  /** Les lignes que l'écran règle déjà (`editedSummaryKinds`) : elles quittent le résumé. */
+  omit?: readonly RightsSummaryKind[];
+}) {
   const { t } = useTranslation("familyRightsSummary");
   const capable = useServerCapability("family.libraryLimits");
   const reads = capable && profile.parental !== undefined;
@@ -45,13 +49,15 @@ export function ProfileRightsSummary({ profile }: { profile: FamilyProfileDto })
     () => familyRightsSummary({ profile, libraries: reads ? libraries.data ?? null : null }),
     [profile, reads, libraries.data],
   );
-  if (summary.lines.length === 0) return null;
+  const partial = omit.length > 0;
+  const lines = summary.lines.filter((line) => !omit.includes(line.kind));
+  if (lines.length === 0 && !(partial && summary.editElsewhere)) return null;
 
   return (
     <div className="mt-2 w-full">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.3px] text-content-tertiary">{t("title")}</p>
+      {lines.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-[0.3px] text-content-tertiary">{t(partial ? "otherTitle" : "title")}</p>}
       <ul className="mt-1 flex flex-col gap-1">
-        {summary.lines.map((line) => {
+        {lines.map((line) => {
           const Icon = ICONS[line.kind];
           return (
             <li key={`${line.kind}:${line.key}`} className={`flex items-start gap-2 text-[13px] leading-[18px] ${TONES[line.tone]}`}>
@@ -60,12 +66,12 @@ export function ProfileRightsSummary({ profile }: { profile: FamilyProfileDto })
             </li>
           );
         })}
-        {reads && libraries.isLoading && <li className="text-[13px] text-content-tertiary">{t("loading")}</li>}
+        {reads && libraries.isLoading && !omit.includes("libraries") && <li className="text-[13px] text-content-tertiary">{t("loading")}</li>}
       </ul>
       {summary.editElsewhere && (
         <p className="mt-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand-light)]">
           <Monitor size={13} aria-hidden />
-          {t("editElsewhere")}
+          {t(partial ? "moreElsewhere" : "editElsewhere")}
         </p>
       )}
     </div>
