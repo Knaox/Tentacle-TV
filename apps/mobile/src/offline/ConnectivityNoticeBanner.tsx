@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSegments } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import { useScreenReaderEnabled } from "@/hooks/useScreenReaderEnabled";
 import { Banner } from "@/notices/NoticeHost";
 import { useConnectivity } from "./useConnectivity";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
+import { clearAccountFallbackNotice, useAccountFallbackNotice } from "./rights/accountFallbackNotice";
 
 /**
  * Le passage hors ligne, DIT — jamais un voile : l'application est déjà sur
@@ -19,15 +20,22 @@ import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
  * puis s'efface ; il reparaît à la bascule suivante, ou si la cause change.
  * Jamais en mode manuel : l'utilisateur l'a demandé lui-même. Sur le lecteur,
  * il attend la sortie (comme les autres avertissements) ; lecteur d'écran
- * actif, pas de compte à rebours.
+ * actif, pas de compte à rebours. Une session de profil vient de revenir au
+ * compte de l'appareil (`OfflineAccountFallback`) : une ligne de plus le dit.
  */
 export const ConnectivityNoticeBanner = memo(function ConnectivityNoticeBanner() {
-  const { t } = useTranslation("errors");
+  const { t } = useTranslation(["errors", "offline"]);
   const insets = useSafeAreaInsets();
   const { state, reason } = useConnectivity();
   const notice = useConnectivityNotice(state === "offline-auto", reason);
   const screenReader = useScreenReaderEnabled();
   const [root] = useSegments();
+  const fallbackName = useAccountFallbackNotice();
+  const noticeDone = notice?.done;
+  const onDone = useCallback(() => {
+    clearAccountFallbackNotice();
+    noticeDone?.();
+  }, [noticeDone]);
   useReportStartupOverlay("connectivity", notice ? "active" : "quiet");
   // Sur le lecteur, il attend la sortie : le lecteur a ses propres messages.
   if (!notice || root === "watch") return null;
@@ -42,9 +50,13 @@ export const ConnectivityNoticeBanner = memo(function ConnectivityNoticeBanner()
           severity="info"
           icon={notice.kind === "device" ? "wifi-off" : "server"}
           title={t(notice.titleKey)}
-          lines={[t(notice.hintKey), t(CONNECTIVITY_OFFLINE_MODE_KEY)]}
+          lines={[
+            t(notice.hintKey),
+            ...(fallbackName === null ? [] : [fallbackName ? t("offline:accountFallback", { name: fallbackName }) : t("offline:accountFallbackUnnamed")]),
+            t(CONNECTIVITY_OFFLINE_MODE_KEY),
+          ]}
           durationMs={screenReader ? null : notice.durationMs}
-          onDone={notice.done}
+          onDone={onDone}
         />
       </View>
     </View>

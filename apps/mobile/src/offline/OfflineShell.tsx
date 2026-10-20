@@ -9,6 +9,7 @@ import { OfflineRouteGuard } from "./OfflineRouteGuard";
 import { OfflineSessionGate } from "./OfflineSessionGate";
 import { OfflineRuntimeSync } from "./OfflineRuntimeSync";
 import { OfflineRightsSync } from "./rights/OfflineRightsSync";
+import { OfflineAccountFallback } from "./rights/OfflineAccountFallback";
 
 /**
  * Point de montage UNIQUE du hors ligne dans `app/_layout.tsx`, sous
@@ -19,6 +20,7 @@ export function OfflineShell() {
   return (
     <>
       <ConnectivityBinding />
+      <OfflineAccountFallback />
       <DataSaverBinding />
       <OfflineRuntimeSync />
       <OfflineRightsSync />
