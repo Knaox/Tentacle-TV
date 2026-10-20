@@ -74,6 +74,7 @@ export function useBootIntroRun({ soundWanted, selfReporting }: BootIntroRunOpti
     route: report.route,
     screen: report.route === null ? null : report.screens[report.route] ?? null,
     blocked: report.blocked,
+    pending: report.pending,
     heldMs: heldOut ? BOOT_INTRO_MAX_HOLD_MS : 0,
     ...(selfReporting ? { selfReporting } : {}),
   });

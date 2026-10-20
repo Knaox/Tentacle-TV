@@ -63,6 +63,12 @@ export interface BootIntroWatch {
   screen: BootScreenState | null;
   /** Un voile ou une page qui recouvre tout (hors ligne, migration, accès suspendu) est là : c'est lui qu'on montre. */
   blocked: boolean;
+  /**
+   * Un écran qui PEUT recouvrir le premier (« Qui regarde ? » sur le mobile,
+   * le premier lancement d'un profil) n'a pas encore tranché : on ne sait pas
+   * encore lequel montrer. Le poulpe attend, au plus `BOOT_INTRO_MAX_HOLD_MS`.
+   */
+  pending?: boolean;
   /** Depuis combien de temps l'ouverture attend sur le bouton lecture (0 : elle n'attend pas). */
   heldMs: number;
   /** Les écrans qui disent eux-mêmes quand ils sont prêts (défaut : ceux de la TV). */
@@ -81,7 +87,9 @@ export type BootIntroOutcome = "wait" | "go";
 
 export function bootIntroOutcome(watch: BootIntroWatch): BootIntroOutcome {
   if (watch.route === null) return "wait";
-  if (watch.blocked || watch.screen === "ready" || watch.screen === "failed") return "go";
+  if (watch.blocked) return "go";
+  if (watch.pending && watch.heldMs < BOOT_INTRO_MAX_HOLD_MS) return "wait";
+  if (watch.screen === "ready" || watch.screen === "failed") return "go";
   const selfReporting = watch.selfReporting ?? BOOT_INTRO_SELF_REPORTING;
   if (!selfReporting.includes(watch.route) || watch.heldMs >= BOOT_INTRO_MAX_HOLD_MS) return "go";
   return "wait";

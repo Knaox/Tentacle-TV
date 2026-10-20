@@ -116,6 +116,15 @@ describe("attendre, partir — jamais renoncer", () => {
     expect(bootIntroOutcome({ ...watch, screen: "loading", blocked: true })).toBe("go");
     expect(bootIntroOutcome({ ...watch, route: "Profiles", screen: "failed" })).toBe("go");
   });
+
+  it("un écran qui peut recouvrir le premier n'a pas tranché : on attend, même un écran prêt — au plus 8 s", () => {
+    const pending = { ...watch, route: "/login", pending: true };
+    expect(bootIntroOutcome(pending)).toBe("wait");
+    expect(bootIntroOutcome({ ...pending, route: "Home", screen: "ready" })).toBe("wait");
+    expect(bootIntroOutcome({ ...pending, heldMs: BOOT_INTRO_MAX_HOLD_MS })).toBe("go");
+    // Une page bloquante l'emporte : c'est elle qu'on montre.
+    expect(bootIntroOutcome({ ...pending, blocked: true })).toBe("go");
+  });
 });
 
 describe("les tableaux de l'image", () => {
