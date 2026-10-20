@@ -12,6 +12,7 @@ import type { SheetSnap } from "./sheet/sheetSnap";
 /** Au-delà, la sortie est tenue pour finie : un ressort interrompu n'appelle jamais son rappel. */
 const EXIT_GUARD_MS = 600;
 const HANDLE_H = 34; // paddingTop(14) + paddingBottom(16) + trait(4)
+const SUPPORTED_ORIENTATIONS = ["portrait", "landscape"] as const;
 
 interface BottomSheetProps {
   visible: boolean;
@@ -183,7 +184,11 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
   if (!mounted) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={dismiss} onShow={onShow} statusBarTranslucent>
+    // Les deux orientations : sans elles, iOS présente la modale en PORTRAIT et
+    // fait pivoter toute l'interface (feuille du groupe ouverte depuis le
+    // lecteur en paysage). Elle suit l'orientation de l'écran qui l'ouvre.
+    <Modal visible transparent animationType="none" onRequestClose={dismiss} onShow={onShow} statusBarTranslucent
+      supportedOrientations={[...SUPPORTED_ORIENTATIONS]}>
       <View style={{ flex: 1 }}>
         {/* Backdrop: blur + scrim (intensity 28 = valeur pixel-perfect historique) */}
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
