@@ -103,6 +103,33 @@ describe("tentacleSocket", () => {
     late();
   });
 
+  it("bascule de profil (mobile) : une socket authentifiée au nom du compte se rouvre au nom du profil", () => {
+    socket.setWsBackendUrl("http://backend.test");
+    const account = socket.acquireSocket("jeton-compte"); // un autre consommateur la garde
+    const watch = socket.acquireSocket("jeton-compte");
+    const first = FakeWebSocket.instances[0];
+    first.readyState = FakeWebSocket.OPEN;
+    first.onopen?.();
+    first.onmessage?.({ data: JSON.stringify({ type: "auth_ok" }) });
+    expect(socket.getSocketStatus()).toBe("open");
+
+    watch(); // Watch Together relâche l'ancien jeton et reprend le nouveau
+    const profile = socket.acquireSocket("jeton-profil");
+    expect(first.closed).toBe(true);
+    expect(FakeWebSocket.instances).toHaveLength(2);
+    const second = FakeWebSocket.instances[1];
+    second.readyState = FakeWebSocket.OPEN;
+    second.onopen?.();
+    expect(second.sent[0]).toBe(JSON.stringify({ type: "auth", token: "jeton-profil" }));
+
+    // Le même jeton redemandé ne rouvre rien.
+    const again = socket.acquireSocket("jeton-profil");
+    expect(FakeWebSocket.instances).toHaveLength(2);
+    account();
+    profile();
+    again();
+  });
+
   it("le serveur a cessé d'attendre (« timeout ») : ce n'est pas un refus, elle se rouvre avec le jeton", () => {
     vi.useFakeTimers();
     socket.setWsBackendUrl("http://backend.test");
