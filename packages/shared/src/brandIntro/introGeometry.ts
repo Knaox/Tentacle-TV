@@ -6,6 +6,8 @@
  * 240 × 240 unités.
  */
 
+import { introLitWindow } from "./introLit";
+
 export interface IntroPoint {
   x: number;
   y: number;
@@ -25,12 +27,6 @@ export interface IntroArt {
   FRONT_ARM_PATHS: readonly string[];
   BACK_ARM_PATHS: readonly string[];
   EYE_WHITES: readonly { cx: number; cy: number; r: number }[];
-  /**
-   * Le cadrage du logo entier (son centre, sa hauteur en unités), quand il
-   * n'est plus celui du dessin d'origine : l'écran adapté à l'appareil
-   * l'allonge (`fitIntroArt`). Absent : `LOGO_CENTER`, `LOGO_UNITS`.
-   */
-  LOGO_FRAME?: { cx: number; cy: number; height: number };
 }
 
 /** Le rectangle arrondi d'un écran (vitre, cadre, intérieur). */
@@ -43,8 +39,14 @@ export interface IntroGeometry {
   screen: IntroRoundedRect;
   /** L'épaisseur du cadre. */
   frame: number;
-  /** L'INTÉRIEUR du cadre : ce que la page remplit à l'arrivée. */
+  /** L'INTÉRIEUR du cadre : la vitre. */
   inner: IntroRoundedRect;
+  /**
+   * La fenêtre qui S'ALLUME sur le premier écran, que la page remplit à
+   * l'arrivée : l'intérieur entier (la TV), ou une fenêtre aux proportions de
+   * l'appareil dans la vitre (mobile, `introLitWindow`).
+   */
+  lit: IntroRoundedRect;
   /** Le bord EXTÉRIEUR du cadre. */
   outer: IntroRoundedRect;
   /** Le centre de l'écran : le point que la caméra vise. */
@@ -96,7 +98,12 @@ const inset = (rect: IntroRoundedRect, by: number): IntroRoundedRect => ({
   rx: Math.max(0, rect.rx - by),
 });
 
-export function introGeometry(art: IntroArt): IntroGeometry {
+/**
+ * `litAspect` : le rapport largeur / hauteur de la fenêtre de l'appareil,
+ * quand l'écran allumé en prend la forme (mobile). Le DESSIN n'en dépend
+ * jamais : seule la fenêtre allumée change.
+ */
+export function introGeometry(art: IntroArt, litAspect?: number | null): IntroGeometry {
   const { SCREEN } = art;
   const screen: IntroRoundedRect = { x: SCREEN.x, y: SCREEN.y, width: SCREEN.width, height: SCREEN.height, rx: SCREEN.rx };
   const half = SCREEN.frameWidth / 2;
@@ -110,10 +117,12 @@ export function introGeometry(art: IntroArt): IntroGeometry {
   const reach = Math.max(...corners.map(([x, y]) => Math.hypot(x - play.x, y - play.y))) + 4;
   const frontArmBounds = art.FRONT_ARM_PATHS.map(pathBounds);
   const backArmBounds = art.BACK_ARM_PATHS.map(pathBounds);
+  const inner = inset(screen, half);
   return {
     screen,
     frame: SCREEN.frameWidth,
-    inner: inset(screen, half),
+    inner,
+    lit: introLitWindow(inner, litAspect),
     outer: inset(screen, -half),
     target: { x: screen.x + screen.width / 2, y: screen.y + screen.height / 2 },
     play,
@@ -124,8 +133,6 @@ export function introGeometry(art: IntroArt): IntroGeometry {
     frontArmPivots: frontArmBounds.map((box) => ({ x: box.x + box.width / 2, y: box.y + 8 })),
     backArmPivots: backArmBounds.map((box) => ({ x: box.x + box.width / 2, y: box.y + 6 })),
     eyes: art.EYE_WHITES.map((eye) => ({ x: eye.cx, y: eye.cy })),
-    logo: art.LOGO_FRAME
-      ? { center: { x: art.LOGO_FRAME.cx, y: art.LOGO_FRAME.cy }, units: art.LOGO_FRAME.height }
-      : { center: LOGO_CENTER, units: LOGO_UNITS },
+    logo: { center: LOGO_CENTER, units: LOGO_UNITS },
   };
 }

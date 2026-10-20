@@ -459,8 +459,9 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   tv-core `boot/` le réexporte) ; la synthèse Web Audio à part
   (`…/brandIntro/synth`). La VUE et le déroulé : `@tentacle-tv/brand-intro-native`,
   les mêmes pour la TV et le mobile (chaque app passe son dégradé et sa découpe).
-- **Mobile, iPad** (`apps/mobile/src/bootIntro/`) : l'écran du poulpe prend le
-  rapport de la fenêtre (`fitIntroArt`), le logo de départ se cadre dans la zone
+- **Mobile, iPad** (`apps/mobile/src/bootIntro/`) : le logo garde SES proportions
+  (jamais étiré) ; seule la fenêtre allumée dans sa vitre prend le rapport de la
+  fenêtre (`introLitWindow`), le logo de départ se cadre dans la zone
   sûre ; réglages d'appareil « Animation d'ouverture » et « Son au démarrage » ;
   les modales du lancement attendent `useBootIntroLanded()` ; le son natif est
   celui de la TV, compilé tel quel par le projet mobile.

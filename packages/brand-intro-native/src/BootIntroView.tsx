@@ -1,7 +1,6 @@
 import { memo, useMemo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import {
-  fitIntroArt,
   introCameraPlan,
   introGeometry,
   plateSwapAt,
@@ -25,25 +24,27 @@ export const BOOT_INK = "#0D0B13";
 
 export interface IntroSceneOptions {
   /**
-   * L'écran du poulpe prend le rapport de la fenêtre (mobile, iPad :
-   * `fitIntroArt`). Faux : l'écran de télévision du logo (la TV).
+   * L'écran qui s'allume prend le rapport de la fenêtre (mobile, iPad :
+   * `introLitWindow`), dans la vitre d'un logo INTACT. Faux : toute la vitre
+   * (la TV).
    */
-  fitScreen?: boolean;
+  deviceWindow?: boolean;
   /** La zone sûre (encoche, Dynamic Island) : le logo de départ s'y centre. */
   safe?: IntroSafeInsets;
 }
 
 /** Tout ce que l'ouverture calcule une fois, pour une fenêtre et un logo. */
 export function useIntroScene(source: TentacleArt, viewport: { width: number; height: number }, options: IntroSceneOptions = {}) {
-  const { fitScreen = false, safe } = options;
+  const { deviceWindow = false, safe } = options;
   // Les bords, un à un : un objet neuf aux mêmes bords ne recalcule rien.
   const top = safe?.top ?? 0;
   const right = safe?.right ?? 0;
   const bottom = safe?.bottom ?? 0;
   const left = safe?.left ?? 0;
   return useMemo(() => {
-    const art = fitScreen ? fitIntroArt(source, viewport.width / viewport.height) : source;
-    const geometry = introGeometry(art);
+    // Le dessin est TOUJOURS celui des constantes générées : jamais redessiné ni étiré.
+    const art = source;
+    const geometry = introGeometry(art, deviceWindow ? viewport.width / viewport.height : null);
     const plan = introCameraPlan(viewport.width, viewport.height, geometry, { top, right, bottom, left });
     const samples = sampleIntro(geometry, plan);
     return {
@@ -55,7 +56,7 @@ export function useIntroScene(source: TentacleArt, viewport: { width: number; he
       boxes: partBoxes(geometry),
       swapAt: plateSwapAt(samples, plan.from.zoom),
     };
-  }, [source, viewport.width, viewport.height, fitScreen, top, right, bottom, left]);
+  }, [source, viewport.width, viewport.height, deviceWindow, top, right, bottom, left]);
 }
 
 export type IntroScene = ReturnType<typeof useIntroScene>;

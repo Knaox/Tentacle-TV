@@ -24,7 +24,7 @@ export interface IntroScreenPlaneProps {
   viewport: { width: number; height: number };
   /** Le zoom d'arrivée : l'écran du poulpe recouvre la fenêtre, l'accueil à l'échelle 1. */
   finalZoom: number;
-  /** Le fond de l'écran autour de l'accueil (ses bandes, tant que l'écran est plus haut que lui). */
+  /** Le fond de la fenêtre allumée autour de l'app (ses bandes, tant que la fenêtre est plus grande qu'elle). */
   screenColor: string;
   /** Arrivé : plus de découpe — l'écran EST l'accueil, à sa place. */
   landed: boolean;
@@ -50,7 +50,7 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   const { LinearGradient, RoundClip } = useIntroPrimitives();
   const center = { x: viewport.width / 2, y: viewport.height / 2 };
   const frame: StageFrame = { center, target: geometry.target, zoom: finalZoom };
-  const { inner, play, reach } = geometry;
+  const { inner, lit, play, reach } = geometry;
   // L'intérieur de l'écran, à l'arrivée : plus grand que la fenêtre, centré sur elle.
   const clip = {
     left: center.x + (inner.x - geometry.target.x) * finalZoom,
@@ -60,6 +60,16 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   };
   const playAt = { x: center.x + (play.x - geometry.target.x) * finalZoom, y: center.y + (play.y - geometry.target.y) * finalZoom };
   const radius = reach * finalZoom;
+  // La fenêtre allumée (aux proportions de l'appareil sur le mobile), dans le repère de la découpe.
+  const litBox = {
+    left: (lit.x - inner.x) * finalZoom,
+    top: (lit.y - inner.y) * finalZoom,
+    width: lit.width * finalZoom,
+    height: lit.height * finalZoom,
+    borderRadius: lit.rx * finalZoom,
+  };
+  // Sur la TV, la fenêtre allumée EST la vitre : celle-ci s'efface sous le cercle arrivé au bout.
+  const litFillsGlass = lit.width >= inner.width - 0.01 && lit.height >= inner.height - 0.01;
   const inClip: StageFrame = { center: { x: center.x - clip.left, y: center.y - clip.top }, target: geometry.target, zoom: finalZoom };
 
   const irisStyle = useAnimatedStyle(() => ({
@@ -68,11 +78,12 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
   const counterStyle = useAnimatedStyle(() => ({
     transform: [{ scale: clock.landed.value ? 1 : 1 / Math.max(IRIS_MIN, sampleAt(samples.reveal, step, clock.scene.value)) }],
   }));
-  // La vitre paraît avec le corps, et s'efface une fois le cercle au bout : il recouvre tout l'écran.
+  // La vitre paraît avec le corps ; sur la TV, elle s'efface une fois le cercle au bout (il recouvre
+  // tout l'écran) — sur le mobile, elle reste autour de la fenêtre allumée.
   const bodyOpacity = samples.parts.body.opacity;
   const glassStyle = useAnimatedStyle(() => {
     const t = clock.scene.value;
-    return { opacity: sampleAt(samples.reveal, step, t) >= 1 ? 0 : sampleAt(bodyOpacity, step, t) };
+    return { opacity: litFillsGlass && sampleAt(samples.reveal, step, t) >= 1 ? 0 : sampleAt(bodyOpacity, step, t) };
   });
   const glass = art.LOGO_GRADIENTS.gT;
 
@@ -108,7 +119,15 @@ export const IntroScreenPlane = memo(function IntroScreenPlane(props: IntroScree
                 counterStyle,
               ]}
             >
-              {landed ? null : <View style={[styles.bars, { left: clip.left, top: clip.top, width: clip.width, height: clip.height, backgroundColor: screenColor }]} />}
+              {landed ? null : (
+                <View
+                  style={[
+                    styles.bars,
+                    { left: clip.left + litBox.left, top: clip.top + litBox.top, width: litBox.width, height: litBox.height },
+                    { borderRadius: litBox.borderRadius, backgroundColor: screenColor },
+                  ]}
+                />
+              )}
               {children}
             </Animated.View>
           </Animated.View>

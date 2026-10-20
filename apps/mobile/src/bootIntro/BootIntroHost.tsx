@@ -19,8 +19,9 @@ export interface BootIntroHostProps {
 
 /**
  * L'OUVERTURE du démarrage sur le mobile (iPhone, iPad, Android) : la même que
- * la TV (`useBootIntroRun`), avec un écran du poulpe aux proportions de la
- * fenêtre (portrait, paysage, iPad) et le logo de départ centré dans la zone
+ * la TV (`useBootIntroRun`), le logo INTACT (jamais étiré : mise à l'échelle
+ * uniforme), une fenêtre allumée aux proportions de la fenêtre dans sa vitre
+ * (portrait, paysage, iPad) et le logo de départ centré dans la zone
  * sûre (encoche, Dynamic Island, barre d'accueil). L'app (`children`) est
  * montée DANS cet écran dès le premier rendu et n'en change jamais d'arbre.
  * Fenêtre et zone sûre sont figées au montage : à l'arrivée, l'app suit la
@@ -30,7 +31,7 @@ export function BootIntroHost({ sound, screenColor, children }: BootIntroHostPro
   const [viewport] = useState(() => Dimensions.get("window"));
   const insets = useSafeAreaInsets();
   const [safe] = useState(() => ({ top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left }));
-  const scene = useIntroScene(TENTACLE_ART, viewport, { fitScreen: true, safe });
+  const scene = useIntroScene(TENTACLE_ART, viewport, { deviceWindow: true, safe });
   const [soundWanted] = useState(() => Promise.resolve(sound));
   const { clock, landed } = useBootIntroRun({ soundWanted, selfReporting: MOBILE_BOOT_SELF_REPORTING });
 
