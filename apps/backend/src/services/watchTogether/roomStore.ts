@@ -56,6 +56,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null, device
     pendingSkip: null,
     skipHistory: new Map(),
     readyGate: null,
+    seekToken: null,
     skipTimer: null,
     lastTickBroadcastAt: 0,
     members: new Map([[user.userId, newMember(user, now)]]),

@@ -59,20 +59,18 @@ export function useDesktopSkip({
   // Un +30 s dont la cible atteint la fin — ou la dépasse — TERMINE la
   // lecture au lieu de se caler sur le bord. Un recul ne termine jamais.
   const skipRelativeOrEnd = useCallback((delta: number) => {
-    if (transcoding) { seekBy(delta); return; }
+    // Converti, ou en séance : la règle partagée — des appuis rapprochés
+    // partent de la cible DÉJÀ DEMANDÉE, jamais d'une position que mpv ne
+    // rapporte qu'à 8 Hz (huit « +30 s » ne faisaient qu'une minute, B7) ; en
+    // séance, chaque saut est un seek ABSOLU rapporté à la salle (`apply`).
+    if (transcoding || groupActive) { seekBy(delta); return; }
     const filmPos = state.position + effectiveMpvOffset.current;
     if (delta > 0 && dur > 0 && filmPos + delta >= dur - SEEK_END_EPS_S) {
       seekToMpvEnd();
       return;
     }
-    if (groupActive) {
-      const target = Math.max(0, filmPos + delta);
-      void seek(Math.max(0, target - effectiveMpvOffset.current));
-      onUserSeek?.(target);
-      return;
-    }
     void seekRelative(delta);
-  }, [dur, state.position, effectiveMpvOffset, seek, seekRelative, seekToMpvEnd, groupActive, onUserSeek, transcoding, seekBy]);
+  }, [dur, state.position, effectiveMpvOffset, seekRelative, seekToMpvEnd, groupActive, transcoding, seekBy]);
 
   // La poignée glissée seeke à chaque mouvement pour l'aperçu : sur un flux
   // converti, chacun relançait un ffmpeg. Regroupés, seul le dernier part.

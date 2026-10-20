@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WtRoomStateDto } from "../types/watchTogether";
-import { isBarrierParticipant, isGroupSessionActive, isWaitedForMe } from "./sessionRules";
+import { isBarrierParticipant, isGroupSessionActive, isOwnOlderSeekEcho, isWaitedForMe } from "./sessionRules";
 
 const room = { groupId: "g", itemId: "item" } as WtRoomStateDto;
 
@@ -34,5 +34,19 @@ describe("isWaitedForMe / isBarrierParticipant — ce que la salle attend de moi
     expect(isBarrierParticipant({ ...waiting, barrierId: 4 }, "moi")).toBe(true);
     expect(isBarrierParticipant(waiting, "moi")).toBe(false);
     expect(isBarrierParticipant({ ...waiting, barrierId: 4 }, null)).toBe(false);
+  });
+});
+
+describe("isOwnOlderSeekEcho — sauts rapides (B7)", () => {
+  it("l'écho d'un de MES seeks plus anciens est ignoré ; le dernier, ou celui d'un autre, s'applique", () => {
+    const latest = { device: "moi", seq: 8 };
+    expect(isOwnOlderSeekEcho("moi:3", latest)).toBe(true);
+    expect(isOwnOlderSeekEcho("moi:8", latest)).toBe(false);
+    expect(isOwnOlderSeekEcho("autre:3", latest)).toBe(false);
+  });
+
+  it("sans jeton (serveur ou client d'avant), ou sans seek en vol : rien d'ignoré", () => {
+    expect(isOwnOlderSeekEcho(undefined, { device: "moi", seq: 2 })).toBe(false);
+    expect(isOwnOlderSeekEcho("moi:1", null)).toBe(false);
   });
 });

@@ -3,11 +3,13 @@ import { getClockOffsetMs, getClockRttMs } from "../../socket/clockSync";
 import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
-  WT_SEEK_NOTIFY_DEBOUNCE_MS, needsStartCorrection, updatePlayLatency, wtPositionSecondsAt, type SegmentType,
+  WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, needsStartCorrection, updatePlayLatency, wtPositionSecondsAt,
+  type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
 import {
   armEcho, clearPendingIntent, isApplying, isSettledOn, seekLookaheadS, setPendingIntent, REMOTE_JUMP_THRESHOLD_S,
+  WT_SEEK_DEVICE,
   type GroupSyncSharedRefs,
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
@@ -107,12 +109,20 @@ export function useGroupIntents({
     // local (ex. fallback niveau 3 différé d'un seek distant), pas un intent.
     const nearGroup = Math.abs(seconds - wtPositionSecondsAt(r, shared.serverNowRef.current()));
     if (nearGroup < (opts?.explicit ? 0.3 : REMOTE_JUMP_THRESHOLD_S)) return;
-    wtLog("engine", "intent → wt:seek (dé-bouncé)", { toS: seconds.toFixed(1), explicit: !!opts?.explicit });
+    // Le numéro est pris à l'APPUI, pas à l'envoi : un écho de seek plus ancien
+    // qui arrive pendant le regroupement est déjà reconnu comme tel (B7).
+    const seq = (shared.localSeekRef.current?.seq ?? 0) + 1;
+    shared.localSeekRef.current = { seq, at: Date.now() };
+    wtLog("engine", "intent → wt:seek (regroupé)", { toS: seconds.toFixed(1), explicit: !!opts?.explicit, seq });
     setPendingIntent(shared, "seek", getClockRttMs());
     if (seekDebounceRef.current) clearTimeout(seekDebounceRef.current);
     seekDebounceRef.current = setTimeout(() => {
       seekDebounceRef.current = null;
-      shared.sendRef.current({ type: "wt:seek", positionTicks: Math.max(0, Math.round(seconds * TICKS_PER_SECOND)) });
+      shared.sendRef.current({
+        type: "wt:seek",
+        positionTicks: Math.max(0, Math.round(seconds * TICKS_PER_SECOND)),
+        seekToken: formatWtSeekToken({ device: WT_SEEK_DEVICE, seq }),
+      });
     }, WT_SEEK_NOTIFY_DEBOUNCE_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId]);

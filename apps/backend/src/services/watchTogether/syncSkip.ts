@@ -107,6 +107,7 @@ export function executeSkip(room: Room, now: number): void {
   clearTimer(room);
   room.skipHistory.set(skipKey(room.itemId, pending.segmentType, pending.segmentStartTicks), pending.segmentStartTicks);
   room.pendingSkip = null;
+  room.seekToken = null; // la position n'est plus celle d'un seek
   openBarrier(room, now, "skip", pending.toTicks, barrierParticipants(room), true, true);
 }
 

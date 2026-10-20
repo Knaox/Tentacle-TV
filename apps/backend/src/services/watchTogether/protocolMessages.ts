@@ -20,6 +20,7 @@ import type { WtElsewhereMessage } from "./watchTogetherDevices";
 // contrats, recopiés à part.
 export * from "./watchTogetherAffinity";
 export * from "./watchTogetherDevices";
+export * from "./watchTogetherSeekToken";
 
 /** Ticks Jellyfin par milliseconde (10 000 000 par seconde). */
 const TICKS_PER_MS = 10_000;
@@ -128,6 +129,10 @@ export interface WtRoomStateDto {
    *  n'est ouverte. Faux : aucun saut de passage, ni bouton ni décompte.
    *  Absent : serveur d'avant, ou salle sans titre — le client en juge seul. */
   allReady?: boolean;
+  /** Le jeton du seek qui a posé la position de la salle (`appareil:numéro`),
+   *  tant qu'aucun autre geste ne l'a déplacée — l'émetteur reconnaît l'écho
+   *  d'un de SES seeks plus anciens et ne s'y recale pas (sauts rapides). */
+  seekToken?: string;
 }
 
 export interface WtInviteDto {
@@ -169,7 +174,10 @@ export type WtClientMessage =
    *  attente ne fait qu'en programmer la fin. */
   | { type: "wt:play"; positionTicks: number; force?: boolean }
   | { type: "wt:pause"; positionTicks: number }
-  | { type: "wt:seek"; positionTicks: number }
+  /** `seekToken` : `appareil:numéro`, croissant par appareil — absent d'un
+   *  client d'avant. Un jeton plus ancien que celui de la salle, du même
+   *  appareil, est ignoré (réseau réordonné). */
+  | { type: "wt:seek"; positionTicks: number; seekToken?: string }
   /** `fromItemId` = item courant vu par l'émetteur — sert à dédupliquer les
    *  auto-next concurrents : le serveur ignore si fromItemId ≠ state.itemId.
    *  `startPositionTicks` = position initiale du groupe (reprise Jellyfin du

@@ -45,6 +45,7 @@ export function roomToDto(room: Room): WtRoomStateDto {
     ...(room.barrier ? { barrierId: room.barrier.id } : {}),
     ...(room.waitCause ? { waitCause: room.waitCause } : {}),
     ...(room.pendingSkip ? { pendingSkip: { ...room.pendingSkip } } : {}),
+    ...(room.seekToken ? { seekToken: room.seekToken } : {}),
     // « Tous prêts » : seulement quand un titre est lancé (sinon rien à sauter).
     ...(room.itemId ? { allReady: wtAllReady(room) } : {}),
   };

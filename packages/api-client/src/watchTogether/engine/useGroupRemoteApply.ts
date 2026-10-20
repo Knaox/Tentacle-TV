@@ -2,12 +2,12 @@ import { useEffect, useRef } from "react";
 import { subscribeSocket } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_BARRIER_CONFIRM_TIMEOUT_MS, WT_BARRIER_PRESEEK_MPV_S, WT_PRESEEK_TOLERANCE_S,
-  WT_SCHEDULED_PLAY_SETTLE_MS, computePlayDelayMs, isBarrierParticipant, isFutureAnchor, needsPreseek,
+  WT_SCHEDULED_PLAY_SETTLE_MS, computePlayDelayMs, isBarrierParticipant, isFutureAnchor, isOwnOlderSeekEcho, needsPreseek,
   wtPositionSecondsAt, type WtRoomStateDto,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
 import {
-  armEcho, cancelScheduledPlay, clearPendingIntent, isSettledOn, seekLookaheadS, sendBarrierReady,
+  armEcho, cancelScheduledPlay, clearPendingIntent, isSettledOn, latestLocalSeek, seekLookaheadS, sendBarrierReady,
   setTransportRate, REMOTE_JUMP_THRESHOLD_S, type GroupSyncSharedRefs, type ScheduledPlay,
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
@@ -66,6 +66,14 @@ export function useGroupRemoteApply({
     // Tout nouvel état annule le play() programmé par le précédent ; si
     // l'ancre est la même (garde serveur), il est simplement reprogrammé.
     cancelScheduledPlay(shared);
+
+    // L'écho d'un de MES seeks plus anciens (sauts rapides) : la salle va se
+    // poser sur le suivant, déjà parti — m'y recaler me ramènerait en arrière,
+    // et l'appui suivant repartirait de là (B7).
+    if (isOwnOlderSeekEcho(room.seekToken, latestLocalSeek(shared))) {
+      wtLog("engine", "état ignoré : écho d'un seek plus ancien de cet appareil", { token: room.seekToken });
+      return;
+    }
 
     // (Re)chargement local déclaré encore en cours (mon player charge ou
     // bufferise, rebuild de source…) : ne m'appliquer NI pause NI seek — mpv
@@ -232,6 +240,8 @@ export function useGroupRemoteApply({
       } else if (
         msg.type === "wt:state" && msg.originUserId === shared.selfIdRef.current
         && (msg.cause === "play" || msg.cause === "pause" || msg.cause === "seek")
+        // L'écho d'un seek plus ancien ne solde pas l'intent : le suivant est en vol.
+        && !isOwnOlderSeekEcho(msg.state.seekToken, latestLocalSeek(shared))
       ) {
         clearPendingIntent(shared);
       }

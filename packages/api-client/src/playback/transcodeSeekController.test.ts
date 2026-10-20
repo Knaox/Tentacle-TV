@@ -103,6 +103,24 @@ describe("createTranscodeSeekController", () => {
     expect(states).toEqual([]);
   });
 
+  it("lecture directe : huit « +30 s » en une seconde font +240 s, même si la position lue ne bouge pas encore (B7)", () => {
+    const { controller, applied } = setup({ transcoding: false, position: 100 });
+    for (let i = 0; i < 8; i += 1) {
+      controller.request({ by: 30 });
+      vi.advanceTimersByTime(125);
+    }
+    expect(applied).toEqual([130, 160, 190, 220, 250, 280, 310, 340]);
+  });
+
+  it("lecture directe : après un calme, la base redevient la position lue", () => {
+    const { controller, applied, setPosition } = setup({ transcoding: false, position: 100 });
+    controller.request({ by: 30 });
+    vi.advanceTimersByTime(SEEK_SETTLE_MS + 50);
+    setPosition(500); // l'utilisateur a laissé jouer, ou la barre l'a déplacé ailleurs
+    controller.request({ by: 30 });
+    expect(applied).toEqual([130, 530]);
+  });
+
   it("reset éteint tout, minuteurs compris", () => {
     const { controller, applied } = setup();
     controller.request({ to: 900 });

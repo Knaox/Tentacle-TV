@@ -15,6 +15,7 @@ import {
 } from "./syncBarrier";
 import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
 import { armReadyGate, dropReadyGate } from "./syncReadyGate";
+import { isStaleWtSeekToken } from "./watchTogetherSeekToken";
 
 export { bumpEpoch } from "./syncSchedule";
 
@@ -69,6 +70,7 @@ function waitForMember(room: Room, member: RoomMember, now: number, frozenTicks:
   // Salle en lecture : gel à la position du membre qui bufferise (les autres
   // se recaleront dessus) ; en pause utilisateur : attente sans reprise.
   const resume = !room.paused;
+  if (resume) room.seekToken = null;
   openBarrier(room, now, "buffering", resume ? frozenTicks : room.positionTicks, [member.userId], resume, false);
   return resume ? "buffering" : "presence";
 }
@@ -91,6 +93,7 @@ export function applyCommand(
   switch (msg.type) {
     case "wt:play": {
       if (!room.paused) return { kind: "ignore" };
+      room.seekToken = null;
       if (room.barrier && !msg.force) {
         // Une attente est en cours : la reprise aura lieu quand tous seront
         // posés — jamais avant, sauf demande explicite de passer outre.
@@ -113,6 +116,7 @@ export function applyCommand(
 
     case "wt:pause": {
       if (room.paused && room.pauseReason === "user") return { kind: "ignore" };
+      room.seekToken = null;
       cancelResumeOnRelease(room);
       room.paused = true;
       room.pauseReason = "user";
@@ -125,6 +129,10 @@ export function applyCommand(
       // dernier déclenche la reprise planifiée — si la salle jouait, ou si une
       // reprise était déjà demandée. Un nouveau seek REMPLACE l'attente en
       // cours (coalescence) : jamais d'ignorance silencieuse.
+      // Un seek plus ancien du même appareil que celui de la salle (réseau
+      // réordonné) : ignoré — le plus récent a déjà posé la position.
+      if (msg.seekToken && isStaleWtSeekToken(msg.seekToken, room.seekToken)) return { kind: "ignore" };
+      room.seekToken = msg.seekToken ?? null;
       const resume = !room.paused || (room.barrier?.resumeOnRelease ?? false);
       const target = clampTicks(msg.positionTicks);
       room.lastSeekAt.set(member.userId, now);
@@ -144,6 +152,7 @@ export function applyCommand(
       const firstLaunch = room.itemId === null;
       room.itemId = msg.itemId;
       room.contextItemId = msg.itemId;
+      room.seekToken = null;
       // Démarrage gelé : attente des membres qui REGARDAIENT (auto-follow →
       // rechargement), toutes versions — un chargement se signale même d'un
       // client d'avant. Un membre qui a quitté la lecture ne suit pas le
