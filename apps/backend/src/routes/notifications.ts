@@ -2,9 +2,9 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
-import { broadcastToUser } from "../services/wsManager";
 import { toNotificationDto } from "../notifications/notificationDto";
 import { notificationsFiltered, visibleNotificationRows } from "../notifications/notificationRights";
+import { notifyNotificationsChanged } from "./notifications.notify";
 
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
@@ -43,11 +43,12 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
 
-    await prisma.notification.updateMany({
+    const { count } = await prisma.notification.updateMany({
       where: { jellyfinUserId: user.userId, read: false },
       data: { read: true },
     });
 
+    if (count > 0) notifyNotificationsChanged(request, user.userId);
     return { success: true };
   });
 
@@ -62,10 +63,13 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(404).send({ message: "Notification introuvable" });
     }
 
-    await prisma.notification.update({
-      where: { id },
-      data: { read: true },
-    });
+    if (!notif.read) {
+      await prisma.notification.update({
+        where: { id },
+        data: { read: true },
+      });
+      notifyNotificationsChanged(request, user.userId);
+    }
 
     return { success: true };
   });
@@ -79,7 +83,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       where: { jellyfinUserId: user.userId },
     });
 
-    broadcastToUser(user.userId, "notifications");
+    if (result.count > 0) notifyNotificationsChanged(request, user.userId);
     return { deleted: result.count };
   });
 
@@ -99,7 +103,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
       where: { id: { in: parsed.data.ids }, jellyfinUserId: user.userId },
     });
 
-    broadcastToUser(user.userId, "notifications");
+    if (result.count > 0) notifyNotificationsChanged(request, user.userId);
     return { deleted: result.count };
   });
 
@@ -116,7 +120,7 @@ export const notificationRoutes: FastifyPluginAsync = async (app) => {
 
     await prisma.notification.delete({ where: { id } });
 
-    broadcastToUser(user.userId, "notifications");
+    notifyNotificationsChanged(request, user.userId);
     return { deleted: 1 };
   });
 };
