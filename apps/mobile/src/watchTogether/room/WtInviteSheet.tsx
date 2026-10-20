@@ -7,6 +7,7 @@ import type { WtInvitableUserDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
+import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { inviteCandidates, toggleSelection, type InviteCandidate } from "../model/inviteModel";
 
@@ -50,6 +51,7 @@ export function WtInviteSheet({ visible, onClose, room, pendingUserIds, onSend }
 
   return (
     <BottomSheet visible={visible} onClose={close} snapPoints={[0.8, 0.94]}>
+      <KeyboardAvoidingArea>
       <View style={s.wrap} testID="wt-invite-sheet">
         <Text style={s.title} accessibilityRole="header">{t("inviteTitle")}</Text>
         <Text style={s.hint}>{t("inviteHint")}</Text>
@@ -91,6 +93,7 @@ export function WtInviteSheet({ visible, onClose, room, pendingUserIds, onSend }
           />
         </View>
       </View>
+      </KeyboardAvoidingArea>
     </BottomSheet>
   );
 }
