@@ -51,9 +51,18 @@ export function useMarkAllReadMobile() {
   const qc = useQueryClient();
   const fetcher = useNotifFetch();
 
+  // Optimiste : tout passe lu à l'instant, le serveur confirme ensuite.
   return useMutation({
     mutationFn: () => fetcher<{ success: boolean }>("/read-all", { method: "POST" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const snap = snapshotNotifs(qc);
+      for (const [key, data] of snap.lists) if (data) qc.setQueryData(key, data.map((n) => ({ ...n, read: true })));
+      qc.setQueryData(["notifications", "unread-count"], { count: 0 });
+      return snap;
+    },
+    onError: (_err, _vars, ctx) => { if (ctx) rollback(qc, ctx); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
   });
 }
 
@@ -61,9 +70,23 @@ export function useMarkReadMobile() {
   const qc = useQueryClient();
   const fetcher = useNotifFetch();
 
+  // Optimiste : la ligne passe lue (et la pastille baisse) sous le doigt.
   return useMutation({
     mutationFn: (id: string) => fetcher<{ success: boolean }>(`/${id}/read`, { method: "POST" }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ["notifications"] });
+      const snap = snapshotNotifs(qc);
+      let wasUnread = false;
+      for (const [key, data] of snap.lists) {
+        if (!data) continue;
+        if (data.some((n) => n.id === id && !n.read)) wasUnread = true;
+        qc.setQueryData(key, data.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      }
+      if (wasUnread && snap.unread) qc.setQueryData(["notifications", "unread-count"], { count: Math.max(0, snap.unread.count - 1) });
+      return snap;
+    },
+    onError: (_err, _id, ctx) => { if (ctx) rollback(qc, ctx); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
   });
 }
 

@@ -41,9 +41,17 @@ export function toNotificationDto(row: NotificationRow): NotificationDto {
 
 /**
  * Ce qu'un push emporte pour mener au bon endroit : le type et la référence
- * (comportement d'avant), plus la cible si l'émetteur en a posé une.
+ * (comportement d'avant), plus la cible si l'émetteur en a posé une, et
+ * l'identifiant de la ligne (`notificationId`, capacité
+ * `notifications.pushSync`) — le téléphone marque lue la notification
+ * balayée dans son centre, et retire du centre celle lue ailleurs.
  */
-export function pushTapData(row: Pick<NotificationRow, "type" | "refId" | "target">): Record<string, unknown> {
+export function pushTapData(row: Pick<NotificationRow, "type" | "refId" | "target"> & { id?: string }): Record<string, unknown> {
   const target = parseNotificationTarget(row.target ?? null);
-  return { type: row.type, refId: row.refId ?? undefined, ...(target ? { target } : {}) };
+  return {
+    type: row.type,
+    refId: row.refId ?? undefined,
+    ...(row.id ? { notificationId: row.id } : {}),
+    ...(target ? { target } : {}),
+  };
 }

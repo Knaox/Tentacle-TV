@@ -1,4 +1,4 @@
-import type { NotificationExtensionTarget, NotificationItemTarget, NotificationTarget } from "@tentacle-tv/shared";
+import type { NotificationExtensionTarget, NotificationItemTarget, NotificationTarget } from "./notificationTarget";
 import { resolveNotificationRoute, type NotifPluginMeta } from "./notificationRoute";
 
 /**

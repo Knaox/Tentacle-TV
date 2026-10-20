@@ -25,6 +25,10 @@ export interface PushPayload {
   title: string;
   body: string;
   data?: Record<string, unknown>;
+  /** La pastille de l'icône (iOS) : le nombre de non lues du compte, ou rien. */
+  badge?: number;
+  /** La catégorie (iOS) : celle des notifications de la cloche porte l'action « balayée ». */
+  categoryId?: string;
 }
 
 export interface SendResult {
@@ -99,6 +103,8 @@ export async function sendToUsers(
       title: payload.title,
       body: payload.body,
       data: payload.data ?? {},
+      ...(payload.badge !== undefined ? { badge: payload.badge } : {}),
+      ...(payload.categoryId ? { categoryId: payload.categoryId } : {}),
       // Android : AUCUN canal nommé. Le canal « default » des apps est en
       // importance DEFAULT — la notification n'arrivait que dans la liste,
       // jamais en bandeau — et une app ne relève pas l'importance d'un canal

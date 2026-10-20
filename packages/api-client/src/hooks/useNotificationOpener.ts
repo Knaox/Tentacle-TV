@@ -2,13 +2,13 @@ import { useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AppNotification } from "./useNotifications";
 import { backendFetch, useMarkRead } from "./useNotifications";
-import type { NotifPluginMeta } from "../utils/notificationRoute";
 import {
   immediateTargetRoute,
   resolveNotificationDestination,
   type LibraryTitleLookup,
+  type NotifPluginMeta,
   type NotificationPlatform,
-} from "../utils/notificationDestination";
+} from "@tentacle-tv/shared";
 
 /** Un titre de la bibliothèque par son TMDB — la route du serveur que la fiche Vigie emploie déjà. */
 export const lookupLibraryTitle: LibraryTitleLookup = async (mediaType, tmdbId) => {

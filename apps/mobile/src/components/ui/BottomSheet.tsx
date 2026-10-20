@@ -1,32 +1,40 @@
 import { useRef, useEffect, useCallback, useState, type ReactNode } from "react";
-import {
-  Animated, Modal, PanResponder, Pressable, StyleSheet, View, useWindowDimensions,
-  type GestureResponderEvent, type PanResponderGestureState,
-} from "react-native";
+import { AccessibilityInfo, Animated, Modal, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { GlassBackdrop } from "./GlassSurface";
 import { retainModal } from "./modalGate";
+import { useSheetGestures } from "./sheet/useSheetGestures";
+import { SheetScrollContext } from "./sheet/sheetScroll";
+import type { SheetSnap } from "./sheet/sheetSnap";
 
-const DISMISS_THRESHOLD = 80;
 /** Au-delà, la sortie est tenue pour finie : un ressort interrompu n'appelle jamais son rappel. */
 const EXIT_GUARD_MS = 600;
-const HANDLE_H = 24; // paddingTop(12) + paddingBottom(8) + bar(4)
+const HANDLE_H = 34; // paddingTop(14) + paddingBottom(16) + trait(4)
 
 interface BottomSheetProps {
   visible: boolean;
   onClose: () => void;
   snapPoints?: [number, number];
+  /**
+   * L'en-tête FIXE de la feuille (titre, actions) : posé sous la poignée, il
+   * prend le glissement comme elle — une cible bien plus grande qu'un trait.
+   */
+  header?: ReactNode;
   children: ReactNode;
 }
 
 /**
- * Bottom sheet Netflix-style — drag handle slim, BlurView backdrop, surface
- * SURFACE.s1 avec border-top subtle, animation spring damping/stiffness pour
- * un feel naturel. APIs préservées : visible / onClose / snapPoints / children.
+ * La feuille du bas du mobile, à DEUX crans (`snapPoints`, parts de l'écran) :
+ * on la tire vers le haut pour l'agrandir, vers le bas pour la réduire ou la
+ * fermer — par la poignée, l'en-tête, ou le contenu (agrandir d'abord ;
+ * réduire depuis le haut d'une liste branchée par `useBottomSheetScroll`).
+ * Le lâcher suit la distance ET la vitesse (`sheet/sheetSnap.ts`). La poignée
+ * a son équivalent accessible (toucher : agrandir / réduire). Voile flouté,
+ * largeur bornée sur tablette (520), entrée en ressort.
  */
-export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], children }: BottomSheetProps) {
+export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header, children }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation("common");
   const theme = useTheme();
@@ -43,6 +51,9 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
   const translateY = useRef(new Animated.Value(maxH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isExpanded, setIsExpanded] = useState(false);
+  const canExpand = maxH - minH > 24;
+  // L'en-tête mesuré : au premier cran, le contenu tient sous lui dans la part visible.
+  const [headerH, setHeaderH] = useState(0);
   // La feuille reste montée le temps de sa sortie : une fermeture venue du
   // dehors (`visible` qui retombe) s'anime comme un glissement vers le bas,
   // au lieu de faire disparaître la modale d'un seul coup.
@@ -131,34 +142,21 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
     return retainModal();
   }, [mounted]);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_: GestureResponderEvent, g: PanResponderGestureState) => Math.abs(g.dy) > 5,
-      onPanResponderMove: (_: GestureResponderEvent, g: PanResponderGestureState) => {
-        const { currentSnap, minH: mH, maxH: xH } = ref.current;
-        const base = currentSnap === 0 ? xH - mH : 0;
-        const next = Math.max(0, base + g.dy);
-        translateY.setValue(next);
-      },
-      onPanResponderRelease: (_: GestureResponderEvent, g: PanResponderGestureState) => {
-        const { currentSnap, minH: mH, maxH: xH } = ref.current;
+  const setSnap = useCallback((snap: SheetSnap) => {
+    ref.current.currentSnap = snap;
+    setIsExpanded(snap === 1);
+    animateTo(snap === 1 ? 0 : ref.current.maxH - ref.current.minH);
+  }, [animateTo]);
 
-        if (g.dy > DISMISS_THRESHOLD && currentSnap === 0) { setIsExpanded(false); dismiss(); return; }
-        if (g.dy > DISMISS_THRESHOLD && currentSnap === 1) {
-          ref.current.currentSnap = 0; setIsExpanded(false);
-          animateTo(xH - mH); return;
-        }
-        if (g.dy < -DISMISS_THRESHOLD && currentSnap === 0) {
-          ref.current.currentSnap = 1; setIsExpanded(true);
-          animateTo(0); return;
-        }
+  const { handleHandlers, contentHandlers, bridge } = useSheetGestures(translateY, {
+    snap: isExpanded ? 1 : 0, minH, maxH, canExpand, setSnap, dismiss,
+  });
 
-        const snapTo = currentSnap === 0 ? xH - mH : 0;
-        animateTo(snapTo);
-      },
-    })
-  ).current;
+  const toggleSnap = useCallback(() => {
+    const next: SheetSnap = ref.current.currentSnap === 1 ? 0 : 1;
+    setSnap(next);
+    AccessibilityInfo.announceForAccessibility(next === 1 ? t("sheetExpand") : t("sheetCollapse"));
+  }, [setSnap, t]);
 
   if (!mounted) return null;
 
@@ -188,18 +186,28 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
           >
             {isExpanded && <View style={{ height: insets.top }} />}
 
-            {/* Drag handle area (gesture target) */}
-            <View {...panResponder.panHandlers} style={styles.handleArea}>
-              <View style={[styles.handle, themed.handle]} />
+            {/* Poignée et en-tête : la cible du glissement */}
+            <View {...handleHandlers}>
+              <Pressable
+                onPress={canExpand ? toggleSnap : undefined}
+                disabled={!canExpand}
+                accessibilityRole="button"
+                accessibilityLabel={isExpanded ? t("sheetCollapse") : t("sheetExpand")}
+                accessibilityHint={t("sheetHandleHint")}
+                accessibilityElementsHidden={!canExpand}
+                importantForAccessibility={canExpand ? "auto" : "no-hide-descendants"}
+                style={styles.handleArea}
+              >
+                <View style={[styles.handle, themed.handle]} />
+              </Pressable>
+              {header ? <View onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>{header}</View> : null}
             </View>
 
             <View
-              style={{
-                flex: 1,
-                maxHeight: (isExpanded ? maxH : minH) - HANDLE_H - (isExpanded ? insets.top : 0) - insets.bottom,
-              }}
+              {...contentHandlers}
+              style={{ flex: 1, maxHeight: isExpanded ? undefined : Math.max(0, minH - HANDLE_H - insets.bottom - headerH) }}
             >
-              {children}
+              <SheetScrollContext.Provider value={bridge}>{children}</SheetScrollContext.Provider>
             </View>
           </Animated.View>
         </View>

@@ -221,6 +221,12 @@ export const SERVER_CAPABILITIES = {
    *  invitations) : un client ne montre aucun geste que la session n'a pas le droit de faire.
    *  Sans elle, chaque client fait comme avant. */
   "account.abilities": "1.32.0",
+  // ── Lot mobile 20/10 : notifications du téléphone synchronisées ──
+  /** Une push d'une notification porte son identifiant (`data.notificationId`), la catégorie
+   *  `tentacle.notification` (iOS : balayer la bannière = la marquer lue) et la pastille de
+   *  l'icône (le nombre de non lues). Le mobile réconcilie alors le centre du système et le
+   *  serveur : lue ou balayée n'importe où = lue partout. Sans elle, rien ne se synchronise. */
+  "notifications.pushSync": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

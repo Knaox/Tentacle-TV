@@ -46,6 +46,8 @@ describe("capacités du serveur", () => {
     expect(resolveServerCapabilities({ version: "1.31.0" }).has("watchTogether.deviceMembership")).toBe(false);
     // « Qui regarde ? » sur le mobile (1.32.0) n'est pas dans un 1.31.0 qui ne déclarerait rien.
     expect(resolveServerCapabilities({ version: "1.31.0" }).has("family.mobileProfiles")).toBe(false);
+    // La synchro des notifications du téléphone (1.32.0) non plus en 1.31.0.
+    expect(resolveServerCapabilities({ version: "1.31.0" }).has("notifications.pushSync")).toBe(false);
     expect(resolveServerCapabilities({ version: "1.32.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 

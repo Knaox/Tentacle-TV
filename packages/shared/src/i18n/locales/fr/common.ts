@@ -320,4 +320,8 @@ export default {
   seasonTabEpisodes_other: "{{count}} épisodes",
   seasonTabCurrent: "en cours",
   seasonTabWatched: "vue",
+  // Poignée des feuilles du bas (mobile) : le glissement a son équivalent accessible.
+  sheetExpand: "Agrandir",
+  sheetCollapse: "Réduire",
+  sheetHandleHint: "Glissez vers le haut pour agrandir, vers le bas pour réduire ou fermer",
 } as const;

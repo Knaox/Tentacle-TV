@@ -1,139 +1,43 @@
-import { useState, useCallback, useMemo } from "react";
-import { View, Text, Pressable, SectionList, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import { useState, useCallback } from "react";
+import { View, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import type { AppNotification } from "@tentacle-tv/api-client";
-import {
-  formatNotifTitle,
-  notifBodyText,
-  groupNotificationsByDay,
-  resolveNotificationDestination,
-  useNotificationsLive,
-  useTentacleConfig,
-} from "@tentacle-tv/api-client";
-import {
-  useNotificationsMobile,
-  useUnreadCountMobile,
-  useMarkAllReadMobile,
-  useMarkReadMobile,
-  useDeleteNotificationMobile,
-  useDeleteNotificationsMobile,
-  useDeleteAllNotificationsMobile,
-} from "@/hooks/useNotificationsMobile";
-import { ProblemState } from "@/components/problems/ProblemState";
-import { usePageProblem } from "@/components/problems/usePageProblem";
-import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
-import { openNotificationRoute } from "@/utils/openNotificationRoute";
-import { libraryTitleLookup } from "@/services/notificationDestination";
-import { openFamilyNotification } from "@/family/familyPosterStore";
+import { useNotificationsLive, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useNotificationsMobile, useUnreadCountMobile } from "@/hooks/useNotificationsMobile";
 import { BottomSheet } from "./ui";
-import { SwipeableNotifRow } from "./notifications/SwipeableNotifRow";
-import { NotifSheetHeader } from "./notifications/NotifSheetHeader";
-import { spacing, typography, useTheme } from "@/theme";
+import { NotificationCenter } from "./notifications/NotificationCenter";
+import { NotificationPanelTablet } from "./notifications/NotificationPanelTablet";
+import { useResponsive, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 
-
-// ── Helpers ──
-// Le titre vient du formatage PARTAGÉ (api-client/utils/notificationText),
-// le même que la cloche web ; seul « il y a … » reste ici (ses clés diffèrent).
-
-function formatAgo(dateStr: string, t: (k: string, opts?: Record<string, unknown>) => string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return t("justNow");
-  if (mins < 60) return t("minutesAgo", { count: mins });
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return t("hoursAgo", { count: hours });
-  const days = Math.floor(hours / 24);
-  return t("daysAgo", { count: days });
-}
-
-// ── Component ──
-
+/**
+ * La cloche de l'en-tête et son centre : une feuille à crans sur le téléphone
+ * (moitié, puis plein écran), un panneau latéral à droite sur la tablette.
+ * Le contenu est le même (`NotificationCenter`) ; la pastille dit les non
+ * lues, rafraîchies à l'instant où une notification s'écrit (socket partagé).
+ */
 export function NotificationBell() {
   const { t } = useTranslation("notifications");
   const { colors } = useTheme();
-  const router = useRouter();
+  const { isTablet } = useResponsive();
   const [visible, setVisible] = useState(false);
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: unread } = useUnreadCountMobile();
-  const { data: notifications, error: notifError, refetch: refetchNotifs, isRefetching } = useNotificationsMobile();
-  // Une liste qui n'a pas pu se lire n'est pas « aucune notification ».
-  const failure = usePageProblem(notifications ? null : notifError, {
-    target: "tentacle", availability: { canGoBack: false }, onRetry: () => void refetchNotifs(),
-  });
-  const markAll = useMarkAllReadMobile();
-  const markOne = useMarkReadMobile();
-  const deleteOne = useDeleteNotificationMobile();
-  const deleteBatch = useDeleteNotificationsMobile();
-  const deleteAll = useDeleteAllNotificationsMobile();
-  const { data: plugins } = useActivePlugins();
-
-  // Rafraîchissement à l'instant où une notification est écrite (socket
-  // partagé), quel que soit l'onglet ouvert.
+  // La liste se lit d'avance (même clé que le centre) : elle est là à l'ouverture.
+  useNotificationsMobile();
   const { storage } = useTentacleConfig();
   useNotificationsLive({ token: storage.getItem("tentacle_token") });
 
-  const pluginNavMeta = useMemo(() => toNotifPluginMeta(plugins ?? []), [plugins]);
-  const serverUrl = storage.getItem("tentacle_server_url") ?? "";
-  const token = storage.getItem("tentacle_token") ?? "";
-  const lookup = useMemo(() => libraryTitleLookup(serverUrl, token), [serverUrl, token]);
-  const sections = useMemo(
-    () => groupNotificationsByDay(notifications ?? []).map(({ group, items }) => ({ key: group, data: items })),
-    [notifications],
-  );
-
   const count = unread?.count ?? 0;
-
-  const toggle = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const exitSelection = useCallback(() => {
-    setSelectionMode(false);
-    setSelected(new Set());
-  }, []);
-
-  const openSheet = useCallback(() => {
+  const openCenter = useCallback(() => {
     haptic("tap");
     setVisible(true);
   }, []);
-
-  const handleNotifPress = useCallback((n: AppNotification) => {
-    setVisible(false);
-    exitSelection();
-    if (!n.read) markOne.mutate(n.id);
-    // « X vous invite… » ouvre l'affiche de l'invitation, une fois la feuille retirée.
-    if (openFamilyNotification(router, n)) return;
-    // La destination EXACTE : la cible posée par l'émetteur (fiche, page
-    // d'extension avec ses paramètres), sinon la route de son type.
-    void resolveNotificationDestination(n, "mobile", pluginNavMeta, lookup).then((route) => {
-      // Une destination d'onglet se rejoint sans empiler.
-      if (route) openNotificationRoute(router, route);
-    });
-  }, [markOne, router, pluginNavMeta, exitSelection, lookup]);
-
-  const handleDeleteAll = useCallback(() => {
-    Alert.alert(t("deleteAll"), t("confirmDeleteAll"), [
-      { text: t("cancel"), style: "cancel" },
-      { text: t("confirm"), style: "destructive", onPress: () => deleteAll.mutate() },
-    ]);
-  }, [t, deleteAll]);
-
-  const handleDeleteSelected = useCallback(() => {
-    deleteBatch.mutate([...selected], { onSettled: exitSelection });
-  }, [selected, deleteBatch, exitSelection]);
+  const close = useCallback(() => setVisible(false), []);
 
   return (
     <>
-      <Pressable onPress={openSheet} hitSlop={12} style={{ position: "relative" }} accessibilityRole="button" accessibilityLabel={count > 0 ? `${t("title")}, ${count}` : t("title")}>
+      <Pressable onPress={openCenter} hitSlop={12} style={{ position: "relative" }} accessibilityRole="button" accessibilityLabel={count > 0 ? `${t("title")}, ${t("unreadCount", { count })}` : t("title")}>
         <Feather name="bell" size={21} color={colors.text.primary} />
         {count > 0 && (
           <View style={{ position: "absolute", top: -4, right: -6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: colors.brand.violet, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 }}>
@@ -142,54 +46,17 @@ export function NotificationBell() {
         )}
       </Pressable>
 
-      <BottomSheet visible={visible} onClose={() => { setVisible(false); exitSelection(); }} snapPoints={[0.5, 1.0]}>
-        <NotifSheetHeader
-          selectionMode={selectionMode}
-          selectedCount={selected.size}
-          unread={count}
-          total={notifications?.length ?? 0}
-          onMarkAll={() => markAll.mutate()}
-          onSelect={() => setSelectionMode(true)}
-          onDeleteAll={handleDeleteAll}
-          onDeleteSelected={handleDeleteSelected}
-          onCancel={exitSelection}
-        />
-
-        <SectionList
-          sections={sections}
-          keyExtractor={(n) => n.id}
-          stickySectionHeadersEnabled={false}
-          renderSectionHeader={({ section }) => (
-            <Text style={{ fontSize: 12, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", color: colors.text.quaternary, marginBottom: 8, marginTop: 4 }}>
-              {t(section.key === "today" ? "groupToday" : "groupEarlier")}
-            </Text>
-          )}
-          contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, paddingTop: 12 }}
-          ListEmptyComponent={failure.model ? (
-            <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />
-          ) : (
-            <View style={{ alignItems: "center", marginTop: 48 }}>
-              <Feather name="bell-off" size={40} color={colors.text.quaternary} />
-              <Text style={{ ...typography.body, color: colors.text.primary, fontWeight: "700", textAlign: "center", marginTop: 16 }}>{t("emptyTitle")}</Text>
-              <Text style={{ ...typography.caption, color: colors.text.tertiary, textAlign: "center", marginTop: 6, paddingHorizontal: 32 }}>{t("emptyHint")}</Text>
-            </View>
-          )}
-          renderItem={({ item: n }) => (
-            <SwipeableNotifRow
-              notif={n}
-              formattedTitle={formatNotifTitle(n, t)}
-              formattedBody={notifBodyText(n)}
-              formattedAgo={formatAgo(n.createdAt, t)}
-              onPress={() => handleNotifPress(n)}
-              onDelete={() => deleteOne.mutate(n.id)}
-              selectionMode={selectionMode}
-              isSelected={selected.has(n.id)}
-              onToggleSelect={() => toggle(n.id)}
-              onLongPress={() => { setSelectionMode(true); toggle(n.id); }}
-            />
-          )}
-        />
-      </BottomSheet>
+      <NotificationCenter
+        open={visible}
+        unread={count}
+        onClose={close}
+        frame={(header, body) => (isTablet ? (
+          <NotificationPanelTablet visible={visible} onClose={close} header={header}>{body}</NotificationPanelTablet>
+        ) : (
+          // Moitié de l'écran, puis plein écran en la tirant vers le haut.
+          <BottomSheet visible={visible} onClose={close} snapPoints={[0.55, 1.0]} header={header}>{body}</BottomSheet>
+        ))}
+      />
     </>
   );
 }

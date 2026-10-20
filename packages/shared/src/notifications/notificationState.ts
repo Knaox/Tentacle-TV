@@ -1,4 +1,4 @@
-import { parseNotificationState, type NotificationState } from "@tentacle-tv/shared";
+import { parseNotificationState, type NotificationState } from "./notificationTarget";
 
 /**
  * La pastille d'une notification : un MOT et un TON (jamais la couleur seule).

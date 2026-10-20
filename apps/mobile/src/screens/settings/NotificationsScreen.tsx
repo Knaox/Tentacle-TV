@@ -16,9 +16,14 @@ import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { useFamilyAvailability } from "@/family/useFamilyAvailability";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { ensureNotificationPermission, registerForPushToken } from "@/services/pushNotifications";
+import { NotificationPermissionSection } from "@/components/notifications/NotificationPermissionSection";
 
 /**
- * Sous-écran « Notifications » : les préférences push. Ajouts bibliothèque et
+ * Sous-écran « Notifications », en deux portées. « Sur ce compte » : les
+ * catégories push, tenues par le serveur (`/api/push/preferences`) et donc
+ * suivies sur tous les appareils du compte — pastille « Compte ». « Cet
+ * appareil » : l'autorisation du système (`NotificationPermissionSection`).
+ * Ajouts bibliothèque et
  * Seer sont opt-in ; « Tickets de support » et « Famille » (les invitations
  * reçues, face à un serveur qui a la Famille) sont ACTIVÉES par défaut (même
  * table de défauts que le serveur, PUSH_PREF_DEFAULTS — un serveur ancien qui
@@ -105,12 +110,13 @@ export function NotificationsPane() {
 
   return (
     <>
-      <SettingsSection title={t("pushSectionTitle")}>
+      <SettingsSection title={t("accountSectionTitle")} caption={t("accountSectionCaption")}>
         <SettingsRow
           icon="film"
           label={t("libraryAddedTitle")}
           description={t("libraryAddedDesc")}
           trailing={renderSwitch("libraryAdded")}
+          scope="account"
         />
         {seerActive ? (
           <SettingsRow
@@ -118,6 +124,7 @@ export function NotificationsPane() {
             label={t("seerAvailableTitle")}
             description={t("seerAvailableDesc")}
             trailing={renderSwitch("seerAvailable")}
+            scope="account"
           />
         ) : null}
         <SettingsRow
@@ -125,6 +132,7 @@ export function NotificationsPane() {
           label={t("ticketsTitle")}
           description={t("ticketsDesc")}
           trailing={renderSwitch("tickets")}
+          scope="account"
           last={!familyAvailable}
         />
         {familyAvailable ? (
@@ -133,10 +141,13 @@ export function NotificationsPane() {
             label={t("familyTitle")}
             description={t("familyDesc")}
             trailing={renderSwitch("family")}
+            scope="account"
             last
           />
         ) : null}
       </SettingsSection>
+
+      <NotificationPermissionSection />
 
       {/* Outil de diagnostic : une ligne, pas un bouton de marque plein cadre. */}
       {showTestButton ? (

@@ -98,6 +98,15 @@ export * from "./accountAccess/accountAccessContract";
 export * from "./accountAccess/accountAccessRule";
 export * from "./accountAccess/accountAccessView";
 export * from "./notifications/notificationTarget";
+// Le catalogue PUR des notifications : destination de chaque type, geste
+// d'ouverture, visuel, groupes par jour — rendu par le mobile, le web et le bureau.
+export * from "./notifications/extensionSection";
+export * from "./notifications/notificationRoute";
+export * from "./notifications/notificationDestination";
+export * from "./notifications/notificationState";
+export * from "./notifications/notificationGroups";
+export * from "./notifications/notificationTap";
+export * from "./notifications/notificationVisual";
 export * from "./help/trailerHint";
 // Un titre que Jellyfin n'a pas (encore) trouvé — le message discret des
 // fiches — et « Réanalyser maintenant » (contrat de /api/admin/library/rescan,

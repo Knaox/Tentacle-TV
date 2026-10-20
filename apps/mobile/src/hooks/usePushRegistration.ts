@@ -1,18 +1,13 @@
 import { useCallback, useEffect } from "react";
 import { Platform } from "react-native";
-import { useRootNavigationState, useRouter } from "expo-router";
+import { useRootNavigationState } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  NOTIFICATION_LIVE_KEYS,
-  resolveNotificationDestination,
-  useRegisterPushDevice,
-} from "@tentacle-tv/api-client";
-import { parseNotificationTarget } from "@tentacle-tv/shared";
-import type { NotifPluginMeta, StorageAdapter } from "@tentacle-tv/api-client";
-import { activePluginsQueryOptions, toNotifPluginMeta } from "@/hooks/useActivePlugins";
-import { openNotificationRoute } from "@/utils/openNotificationRoute";
-import { openFamilyNotification } from "@/family/familyPosterStore";
-import { libraryTitleLookup } from "@/services/notificationDestination";
+import { NOTIFICATION_LIVE_KEYS, useRegisterPushDevice } from "@tentacle-tv/api-client";
+import type { StorageAdapter } from "@tentacle-tv/api-client";
+import { useOpenNotification } from "@/notifications/useOpenNotification";
+import { usePushSync } from "@/notifications/usePushSync";
+import { DISMISS_ACTION_IDENTIFIER } from "@/notifications/pushSyncRules";
+import { useMarkReadMobile } from "@/hooks/useNotificationsMobile";
 import { readActiveProfile } from "@/family/profiles/profileSessionCore";
 import { STILL_WATCHING_NOTICE_TYPE } from "@/player/stillWatching/backgroundNotice";
 import {
@@ -22,9 +17,6 @@ import {
   getInitialNotificationTap,
   type PushTapData,
 } from "@/services/pushNotifications";
-
-/** Un tap ne doit jamais rester figé : au-delà, on part sans les plugins. */
-const PLUGIN_META_TIMEOUT_MS = 3000;
 
 // Composant sans rendu, monté sous les providers. Après login (token + serverUrl
 // présents), configure le handler et enregistre l'ExpoPushToken auprès du
@@ -42,7 +34,6 @@ export function PushRegistrationSync({
   // `/api/push` ; l'abonnement du compte de l'appareil reste celui d'avant.
   const token = readActiveProfile(storage) ? null : storage.getItem("tentacle_token");
   const register = useRegisterPushDevice();
-  const router = useRouter();
   const queryClient = useQueryClient();
   // expo-router refuse de naviguer avant le montage de la racine : le tap de
   // démarrage à froid attend qu'elle existe.
@@ -68,55 +59,29 @@ export function PushRegistrationSync({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverUrl, token]);
 
-  // Tap sur une notification → la même résolution de route que la cloche. Un
-  // changement d'état de demande a besoin des métadonnées des plugins : le
-  // cache s'il est chaud, sinon un fetch borné (serveur injoignable → accueil).
-  // La donnée fraîche est invalidée avant d'arriver : la fiche et la cloche se
-  // rechargent.
+  // Tap sur une notification → la MÊME ouverture que la cloche
+  // (`useOpenNotification`). La donnée fraîche est invalidée avant d'arriver :
+  // la fiche et la cloche se rechargent.
+  const open = useOpenNotification();
+  const markRead = useMarkReadMobile().mutate;
   const handleTap = useCallback(
     async (data: PushTapData) => {
+      // Touchée ou balayée : lue partout (capacité `notifications.pushSync`).
+      if (data?.notificationId) markRead(data.notificationId);
+      // Balayée (iOS) : rien à ouvrir.
+      if (data?.actionIdentifier === DISMISS_ACTION_IDENTIFIER) return;
       for (const queryKey of NOTIFICATION_LIVE_KEYS) {
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
-      const type = data?.type ?? "";
       // « Vous regardez encore ? » (notification locale du lecteur) : revenir à l'app suffit, le lecteur y est.
-      if (type === STILL_WATCHING_NOTICE_TYPE) return;
-      // Notifications LOCALES du hors ligne : l'écran « Sur cet appareil ».
-      if (type === "offline_ready" || type === "offline_disk_full") {
-        router.push("/on-device" as never);
-        return;
-      }
-      // Une invitation de la Famille : le push ne fait qu'OUVRIR l'affiche, qui
-      // relit l'invitation au serveur avec la session de l'utilisateur.
-      if (openFamilyNotification(router, { type, refId: data?.refId ?? null })) return;
-      // La cible de l'émetteur (fiche, page d'extension, titre cherché au tap).
-      const target = parseNotificationTarget(data?.target);
-      const needsPlugins = type === "request_status" || target?.kind === "extension"
-        || (target?.kind === "title" && target.fallback?.kind === "extension");
-      let meta: NotifPluginMeta[] = [];
-      if (needsPlugins && serverUrl && token) {
-        try {
-          const plugins = await Promise.race([
-            queryClient.ensureQueryData(activePluginsQueryOptions(serverUrl, token)),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("plugins timeout")), PLUGIN_META_TIMEOUT_MS),
-            ),
-          ]);
-          meta = toNotifPluginMeta(plugins);
-        } catch {
-          // Repli : l'accueil.
-        }
-      }
-      const route = await resolveNotificationDestination(
-        { type, refId: data?.refId ?? null, target },
-        "mobile",
-        meta,
-        libraryTitleLookup(serverUrl ?? "", token ?? ""),
-      );
-      openNotificationRoute(router, route);
+      if (data?.type === STILL_WATCHING_NOTICE_TYPE) return;
+      await open({ type: data?.type, refId: data?.refId ?? null, target: data?.target, itemId: data?.itemId }, "push");
     },
-    [queryClient, router, serverUrl, token],
+    [queryClient, open, markRead],
   );
+
+  // Le centre du système et le serveur d'accord (balayée = lue, lue ailleurs = retirée, pastille).
+  usePushSync(!!serverUrl && !!token);
 
   useEffect(() => addNotificationListeners(handleTap), [handleTap]);
 

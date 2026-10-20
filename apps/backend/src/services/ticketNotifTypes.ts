@@ -1,7 +1,7 @@
 /**
  * Types de notification émis par les tickets de support — miroir strict de ce
- * que les clients résolvent (packages/api-client/src/utils/notificationRoute.ts
- * et notificationText.ts). Ce sont des chaînes STOCKÉES en base : ne jamais
+ * que les clients résolvent (packages/shared/src/notifications/notificationRoute.ts
+ * et packages/api-client/src/utils/notificationText.ts). Ce sont des chaînes STOCKÉES en base : ne jamais
  * les renommer.
  *
  * Invariant des lignes : `title` = sujet du ticket, `refId` = id du ticket.

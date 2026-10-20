@@ -68,6 +68,31 @@ export interface PushTapData {
   refId?: string;
   /** La cible posée par l'émetteur (contrat shared `notificationTarget`) — lue, jamais crue. */
   target?: unknown;
+  /** L'identifiant de la notification sur le serveur (capacité `notifications.pushSync`). */
+  notificationId?: string;
+  /** Le geste du système : toucher (défaut) ou balayage (iOS, catégorie à `customDismissAction`). */
+  actionIdentifier?: string;
+  /** Notification locale « Prêt à regarder hors ligne » d'un seul titre : lequel. */
+  itemId?: unknown;
+}
+
+function tapDataOf(response: Notifications.NotificationResponse): PushTapData {
+  const data = (response.notification.request.content.data ?? {}) as PushTapData;
+  return { ...data, actionIdentifier: response.actionIdentifier };
+}
+
+/**
+ * L'état de la permission sur CET appareil : accordée, refusée (seuls les
+ * Réglages du système la rendent), ou pas encore demandée.
+ */
+export type NotificationPermissionState = "granted" | "denied" | "undetermined";
+
+export async function getNotificationPermissionState(): Promise<NotificationPermissionState> {
+  const { status, canAskAgain } = await Notifications.getPermissionsAsync();
+  if (status === "granted") return "granted";
+  // Un refus qui peut encore se redemander (Android) vaut « pas encore » : la
+  // demande du système reviendra. Sinon, seuls les Réglages la rendent.
+  return status === "denied" && !canAskAgain ? "denied" : "undetermined";
 }
 
 /** True si l'appareil a déjà accordé la permission de notifications. */
@@ -90,11 +115,10 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   return next === "granted";
 }
 
-/** Écoute les taps sur notification ; appelle onTap avec les data. Renvoie un cleanup. */
+/** Écoute les réponses (toucher, balayage iOS) ; appelle onTap avec les data et le geste. Renvoie un cleanup. */
 export function addNotificationListeners(onTap: (data: PushTapData) => void): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = (response.notification.request.content.data ?? {}) as PushTapData;
-    onTap(data);
+    onTap(tapDataOf(response));
   });
   return () => sub.remove();
 }
@@ -115,5 +139,5 @@ export async function getInitialNotificationTap(): Promise<PushTapData | null> {
   if (id && id === lastInitialResponseId) return null;
   lastInitialResponseId = id;
   await Notifications.clearLastNotificationResponseAsync().catch(() => {});
-  return (response.notification.request.content.data ?? {}) as PushTapData;
+  return tapDataOf(response);
 }

@@ -140,3 +140,11 @@ export function serializeNotificationTarget(target: NotificationTarget): string 
 export function parseNotificationState(raw: unknown): NotificationState | null {
   return typeof raw === "string" && (NOTIFICATION_STATES as readonly string[]).includes(raw) ? (raw as NotificationState) : null;
 }
+
+/**
+ * La catégorie de toute push d'une notification de la cloche (iOS :
+ * `categoryIdentifier`, déclarée par l'app avec `customDismissAction` — balayer
+ * la bannière dans le centre du système la marque LUE sur le serveur). La
+ * chaîne traverse le réseau : elle ne se renomme jamais.
+ */
+export const NOTIFICATION_PUSH_CATEGORY = "tentacle.notification";
