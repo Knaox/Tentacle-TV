@@ -18,6 +18,7 @@ import { nextEpisodeScenario } from "./nextEpisode";
 import { affinityScenario } from "./affinity";
 import { seekHammerScenario } from "./seekHammer";
 import { iosPairScenario, iosWebScenario } from "./mixed";
+import { chatScenario } from "./chat";
 
 export interface Scenario {
   id: string;
@@ -37,6 +38,7 @@ export const SCENARIOS: Scenario[] = [
   { id: "three-members", title: "Groupe à trois, deux groupes en parallèle", run: threeMembersScenario },
   { id: "network", title: "Départ et retour réseau d'un membre", run: networkScenario },
   { id: "next-episode", title: "Fin d'épisode et épisode suivant", run: nextEpisodeScenario },
+  { id: "chat", title: "Chat en rafale : réactions, messages, « est en train d'écrire »", run: chatScenario },
   { id: "ios-pair", title: "iPhone + iPad (simulateurs, app partagée, Hermes)", run: iosPairScenario },
   { id: "ios-web", title: "iPhone + web", run: iosWebScenario },
   { id: "affinity", title: "Mode affinité : séance, votes, lancement commun", run: affinityScenario },
