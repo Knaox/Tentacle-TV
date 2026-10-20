@@ -12,7 +12,7 @@
  * <appareil> : un morceau du nom de la cible Hermes (« iPhone », « sdk_gphone »).
  */
 
-import { HermesSession } from "../clients/hermes";
+import { HermesSession, listTargets } from "../clients/hermes";
 
 const METRO_PORT = Number(process.env.WT_METRO_PORT ?? 8731);
 
@@ -64,6 +64,10 @@ export function navExpr(path: string): string {
 
 async function main(): Promise<void> {
   const [device, cmd, arg, nth] = process.argv.slice(2);
+  // Jamais le repli de `HermesSession.connect` sur la seule cible présente : un appareil
+  // pas encore branché ferait toucher l'AUTRE téléphone.
+  const targets = await listTargets(METRO_PORT);
+  if (!targets.some((t) => (t.deviceName ?? t.title).includes(device))) throw new Error(`aucune cible Hermes pour « ${device} »`);
   const h = await HermesSession.connect(METRO_PORT, device);
   try {
     const expr = cmd === "texts" ? textsExpr()
