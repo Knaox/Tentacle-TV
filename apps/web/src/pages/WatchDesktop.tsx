@@ -172,6 +172,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     restartAt: (seconds) => { setStartTicks(Math.floor(seconds * TICKS_PER_SECOND)); setAttempt((n) => n + 1); },
     setQuality: (key) => { void handleQualityChange(key); }, dropSubtitles: () => { void handleSubtitleChange(null); },
     leave: () => { void handleMediaBack(); }, onBufferingChange: groupSync.notifyBuffering, streamLost: () => desktopStreamLost(!isDirectPlay),
+    onFailed: groupSync.notifyFatalError,
   });
   const handlePlayerFailure = useCallback((failure: PlaybackFailure) => {
     if (isLocalPlayback) { onFallbackToWeb?.(); return; }

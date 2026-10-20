@@ -41,6 +41,10 @@ export interface WebPlaybackProblemArgs {
   onBufferingChange?: (buffering: boolean) => void;
   /** Le moteur a-t-il perdu son flux sans erreur (mpv du bureau) ? Lu au retour de Jellyfin. */
   streamLost?: () => Promise<boolean>;
+  /** Un échec est affiché : en séance Watch Together, la salle ne l'attend plus
+   *  (`notifyFatalError` — la règle du mobile). Sans elle, l'hôte restait en
+   *  pause jusqu'au balayage de 60 s (constat du 20/10 : 35 s d'écart). */
+  onFailed?: () => void;
 }
 
 /** `started` : la lecture avait démarré ; `fallback` (bureau) : la bascule vers le lecteur web. */
@@ -160,6 +164,8 @@ export function useWebPlaybackProblem(args: WebPlaybackProblemArgs) {
     () => (diagnosed ? describeProblem({ ...diagnosed, availability }) : null),
     [diagnosed, availabilityKey], // eslint-disable-line react-hooks/exhaustive-deps
   );
+  const failed = problem !== null;
+  useEffect(() => { if (failed) argsRef.current.onFailed?.(); }, [failed]);
 
   const onAction = useCallback((key: ProblemActionKey) => {
     const a = argsRef.current;
