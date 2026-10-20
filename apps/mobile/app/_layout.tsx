@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { setPreferencesBackendUrl, fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
+import { withScreenBoundary } from "@/components/problems/ScreenErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { WatchTogetherProvider } from "@/watchTogether/WatchTogetherProvider";
 import { ServerUrlContext, useServerUrl } from "@/providers/ServerUrlContext";
@@ -18,6 +19,7 @@ import { SessionMessageHost } from "@/session/SessionMessageHost";
 import { DatabaseMigrationHost } from "@/databaseMigration/DatabaseMigrationHost";
 import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
+import { ProblemJournalBinding } from "@/problems/ProblemJournalBinding";
 import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
 import { FamilyLaunchHosts } from "@/family/profiles/FamilyLaunchHosts";
 import { RightsLiveHost } from "@/rights/RightsLiveHost";
@@ -154,7 +156,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {/* La feuille d'appui long des cartes, pour tous les écrans empilés (la
           recherche, modale, a la sienne). */}
       <CardSheetScope>
-        <Stack screenOptions={screenOptions}>
+        <Stack screenOptions={screenOptions} screenLayout={withScreenBoundary}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="media/[itemId]" options={{ presentation: "card" }} />
@@ -198,6 +200,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {/* Les avertissements (serveur, TMDB, clé d'administration) : un à la fois, jamais sur le lecteur. */}
       <NoticeHost />
       <MutationFailureBinding />
+      {/* Le journal local des erreurs (écran, version du serveur, erreurs non attrapées). */}
+      <ProblemJournalBinding />
       {/* L'affiche d'invitation de la Famille : au lancement et en direct, jamais sur le
           lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
           lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}

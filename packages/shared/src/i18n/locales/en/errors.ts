@@ -1,3 +1,5 @@
+import errorsMore from "./errorsMore";
+
 export default {
   serverUnavailable: "Server unavailable",
   serverUnavailableMessage: "The Tentacle TV backend is not responding. Check that the service is running and review the server logs.",
@@ -153,4 +155,6 @@ export default {
   dbMigrationReasonMissing: "This installation used a MariaDB database that is no longer configured: its data is still there. Put the database service and its variables (DB_HOST, DB_PASSWORD_FILE or DATABASE_URL) back for the migration, then restart Tentacle. To start from scratch instead, see the documentation.",
   dbMigrationReasonDiskSpace: "There is not enough space on the server's disk. Free some space: the next attempt will start again.",
   dbMigrationReasonOther: "The server log ([db-migration] lines) says why.",
+  // Les causes du mobile et de la tablette (20/10).
+  ...errorsMore,
 } as const;

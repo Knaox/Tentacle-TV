@@ -146,6 +146,11 @@ export * from "./problems/engineErrors";
 export * from "./problems/diagnose";
 export * from "./problems/fromError";
 export * from "./problems/playbackDiagnosis";
+export * from "./problems/problemPresentation";
+export * from "./problems/problemSources";
+export * from "./problems/problemDiagnostics";
+export * from "./problems/problemJournal";
+export { CAUSES as PROBLEM_CAUSES, isProblemCause } from "./problems/problemCatalog";
 // Les liens du serveur : le lien public et la lecture directe, sondés par le
 // serveur (contrat de /api/admin/server-links, miroir backend), et leur
 // verdict — lu par la vue d'ensemble et par l'assistant d'installation.

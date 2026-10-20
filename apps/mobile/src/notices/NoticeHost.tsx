@@ -128,9 +128,11 @@ export function NoticeHost() {
       {toasts.map((toast) => (
         <Banner
           key={`toast-${toast.id}`}
-          {...toastAppearance(toast.tone)}
+          {...(toast.appearance ?? toastAppearance(toast.tone))}
           title={toast.title}
           lines={toast.text ? [toast.text] : []}
+          primary={toast.primary && { label: toast.primary.label, onPress: () => { dismissToast(toast.id); toast.primary?.onPress(); } }}
+          secondary={toast.secondary && { label: toast.secondary.label, onPress: () => { dismissToast(toast.id); toast.secondary?.onPress(); } }}
           durationMs={NOTICE_AUTO_HIDE_MS}
           onDone={() => dismissToast(toast.id)}
         />

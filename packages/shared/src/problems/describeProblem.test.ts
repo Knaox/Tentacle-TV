@@ -41,7 +41,8 @@ describe("le modèle commun des messages d'erreur", () => {
       const model = describeProblem({ cause, context: "playbackStart", availability: everything });
       expect(model.actions.length).toBeLessThanOrEqual(MAX_PROBLEM_ACTIONS);
       expect(new Set(model.actions.map((action) => action.key)).size).toBe(model.actions.length);
-      expect(model.actions.length).toBeGreaterThan(0);
+      // Seul un bandeau peut n'être qu'un constat (« Léa a quitté la séance »).
+      if (model.presentation !== "banner") expect(model.actions.length).toBeGreaterThan(0);
     }
   });
 
