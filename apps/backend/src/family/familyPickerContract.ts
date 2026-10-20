@@ -40,9 +40,13 @@ import type { FamilyProfileColor, FamilyProfileKind, FamilyRights, FamilySwitche
  *  (son hôte, ses sessions de profil — le serveur les appelle `desktopProfile`,
  *  nom interne de « session de profil hors TV »). Le mobile ne lit pas la
  *  politique d'ouverture du bureau (`launchPolicy`) : il retient le profil
- *  choisi sur l'appareil et ne redemande plus. Le web pourra suivre, avec sa
- *  capacité. */
-export const FAMILY_PICKER_PLATFORMS = ["desktop", "mobile"] as const;
+ *  choisi sur l'appareil et ne redemande plus. Le WEB (le navigateur) depuis
+ *  la 1.32.0, capacité `family.webProfiles` : les mêmes routes, la politique
+ *  d'ouverture des ordinateurs (`launchPolicy`), et le jeton du compte mis en
+ *  RÉSERVE par le serveur pendant un profil (cookie httpOnly, jamais lisible
+ *  par la page : docs/FAMILLE.md, « Le web »). Un serveur d'avant refuse
+ *  `web` : un navigateur n'y ouvre jamais un profil à moitié. */
+export const FAMILY_PICKER_PLATFORMS = ["desktop", "mobile", "web"] as const;
 export type FamilyPickerPlatform = (typeof FAMILY_PICKER_PLATFORMS)[number];
 
 export function isPickerPlatform(value: unknown): value is FamilyPickerPlatform {
@@ -169,7 +173,7 @@ export interface PickProfileBody {
   pin?: string;
   /** Le nom de cet appareil, montré par le tableau de bord de Jellyfin
    *  (`FAMILY_PICKER_DEVICE_NAME_MAX` caractères au plus) ; absent : « Desktop »
-   *  (« Mobile » pour la plateforme `mobile`). */
+   *  (« Mobile » pour la plateforme `mobile`, « Web » pour `web`). */
   deviceName?: string;
 }
 
@@ -180,7 +184,14 @@ export interface PickProfileBody {
  * l'application tant qu'elle dure (la précédente de cet appareil est fermée).
  */
 export type PickedProfileDto =
-  | { personal: true; profile: PickerProfileDto }
+  | {
+      personal: true;
+      profile: PickerProfileDto;
+      /** Le web (`web`), de retour à son compte depuis la session d'un profil : le
+       *  jeton de la session personnelle que le serveur gardait en réserve, rendu
+       *  après SON code PIN — la page le reprend. Absent ailleurs. */
+      token?: string;
+    }
   | { personal: false; token: string; user: { id: string; name: string }; profile: PickerProfileDto };
 
 /** `GET` et `PUT /api/family/picker/preference` — avec le jeton PERSONNEL. */

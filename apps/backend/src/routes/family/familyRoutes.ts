@@ -29,6 +29,7 @@ import {
 } from "../../services/family/familySchemas";
 import { FAMILY_GUEST_PHOTO_MAX_BASE64 } from "../../family/familyContract";
 import { actorOf, registerFamilyRoute } from "./familyRouting";
+import { guestPhotoTokenFromRequest } from "./accountEscrow";
 
 /**
  * Les routes de la Famille sous `/api/family` — sessions personnelles (web,
@@ -111,7 +112,7 @@ export const familyRoutes: FastifyPluginAsync = async (app) => {
         userIdSchema.parse(param(request.params, "userId")),
         setGuestPhotoBodySchema.parse(request.body),
       ),
-    { bodyLimit: FAMILY_GUEST_PHOTO_MAX_BASE64 + 4096 },
+    { bodyLimit: FAMILY_GUEST_PHOTO_MAX_BASE64 + 4096, tokenOf: guestPhotoTokenFromRequest },
   );
 
   // Le contrôle parental d'un invité (1.30.0) : le corps est validé par le service (cinq champs exacts).

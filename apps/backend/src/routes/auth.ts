@@ -10,7 +10,8 @@ import { buildAuthHeader, deviceIdForOpaque } from "../services/jellyfinIdentity
 import { authPasswordRoutes } from "./authPassword";
 import { authAccountRoutes } from "./authAccount";
 import { authRefreshRoutes } from "./authRefresh";
-import { clearSessionCookie, setSessionCookie } from "./authCookie";
+import { clearAccountEscrowCookie, clearSessionCookie, setSessionCookie } from "./authCookie";
+import { closeEscrowedHost, escrowLoggingOut, releaseEscrowOnLogout } from "./family/accountEscrow";
 import { jellyfinAuthHeaders } from "../services/jellyfinAuth";
 import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
 import { lockedOutRefusal, loginRefusal } from "../services/accountAccess/connectRefusal";
@@ -102,6 +103,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
       // Set httpOnly cookie for web clients (XSS-proof token storage)
       setSessionCookie(reply, data.AccessToken);
+      // Une réserve de la Famille laissée par une session d'avant ne survit jamais à une connexion.
+      clearAccountEscrowCookie(reply);
       // L'adresse de la maison par laquelle on se connecte entre dans les CorsHosts
       // de Jellyfin (une origine publique inconnue, jamais) : sans attendre.
       void syncJellyfinCors({ requestOrigin: requestPageOrigin(request) });
@@ -149,10 +152,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
   /** POST /api/auth/logout — Invalidate Jellyfin session + clear cookie. */
   // Ouverte à un compte bloqué (désactivé, hors plage) : il doit pouvoir partir.
-  app.post("/logout", { preHandler: [requireSessionAnyAccess] }, async (request, reply) => {
+  // Le web en session de profil : son compte, en réserve, part avec (`accountEscrow.ts`).
+  app.post("/logout", { preHandler: [releaseEscrowOnLogout, requireSessionAnyAccess], onResponse: closeEscrowedHost }, async (request, reply) => {
     const jellyfinUrl = getJellyfinUrl();
     const authHeader = request.headers.authorization;
-    const token = authHeader?.slice(7)
+    const token = escrowLoggingOut(request)
+      || authHeader?.slice(7)
       || (request as any).cookies?.tentacle_token;
 
     // Un appareil jumelé qui se déconnecte se déjumelle : sa sortie vaut

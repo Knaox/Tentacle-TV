@@ -192,6 +192,11 @@ export const SERVER_CAPABILITIES = {
    *  profil de l'appareil, PIN vérifié par le serveur, comme le bureau. Sans elle, le mobile
    *  ne montre ni « Qui regarde ? » ni « Changer de profil ». */
   "family.mobileProfiles": "1.32.0",
+  /** « Qui regarde ? » dans le NAVIGATEUR : la plateforme `web` des routes `/api/family/picker/*`,
+   *  le jeton du compte mis en réserve par le serveur pendant un profil (cookie httpOnly, rendu
+   *  derrière son code PIN), la déconnexion qui coupe tout. Sans elle, le web ne montre ni
+   *  « Qui regarde ? » ni « Changer de profil » (un serveur d'avant refuse la plateforme). */
+  "family.webProfiles": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
