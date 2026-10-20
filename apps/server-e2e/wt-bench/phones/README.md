@@ -19,3 +19,9 @@ Pièges : Metro n'accepte qu'UN client CDP par appareil (un second reste muet 8 
 dans `timeline.ts`. La feuille Watch Together se ferme/ouvre par le module `wtSheets`
 (`drive.ts … eval` : `__r(id).closeWtSheet()`). Ne jamais `bench:wt down` si `wtbench-jf` est
 partagé avec d'autres sessions.
+
+Raccourcis du lot WT du 20/10 (simulateur « WT banc iPhone (Testeur) » et emulator-5580 codés en dur) :
+`login.sh` (apps neuves + connexion PAR MOT DE PASSE, donc cookie du compte), `pick.sh <appareil> <profil>`
+(« Qui regarde ? » + accueil guidé), `reset.sh` (relance + profils croisés). Metro tourne en mode CI : il ne voit
+pas les fichiers changer — après un changement de commit, le relancer avec `--clear`. L'iPhone simulé (app non
+signée) perd le jeton de profil à chaque relance : SecureStore y échoue.
