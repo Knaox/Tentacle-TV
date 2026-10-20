@@ -26,7 +26,8 @@ vi.mock("@tentacle-tv/api-client", () => ({
 }));
 
 const { StillWatchingSetting } = await import("./StillWatchingSetting");
-const { StillWatchingSection } = await import("../../mirror/screens/settings/panes/StillWatchingSection");
+const { StillWatchingRows } = await import("../../mirror/screens/settings/catalog/controls/StillWatchingRows");
+const StillWatchingSection = () => <StillWatchingRows scope="account" last />;
 
 const TRIAL = "stillWatchingTrialTitle";
 

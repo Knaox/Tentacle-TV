@@ -1,7 +1,7 @@
 /**
  * Les choix de « Vous regardez encore ? » dits en mots — une seule table pour
  * les Réglages du web et du bureau (`StillWatchingSetting`) et le panneau du
- * miroir (`PlaybackPane`). La règle des libellés est partagée avec le mobile
+ * miroir (`StillWatchingRows`, rubrique « Lecture et apparence »). La règle des libellés est partagée avec le mobile
  * et les téléviseurs (`stillWatchingChoices.ts`, shared) ; les valeurs
  * voyagent en chaînes, la forme qu'attendent les contrôles segmentés.
  */

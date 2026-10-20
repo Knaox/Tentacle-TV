@@ -1,12 +1,10 @@
 import type { ComponentType } from "react";
-import { DataPane } from "./panes/DataPane";
 import { DevicesPane } from "./panes/DevicesPane";
-import { SettingsFamily } from "../../../pages/settings/SettingsFamily";
 import { InvitesPane } from "./panes/InvitesPane";
+import { LibraryPrefsSection } from "./panes/LibraryPrefsSection";
 import { PasswordPane } from "./panes/PasswordPane";
 import { PersonalizationPane } from "./panes/PersonalizationPane";
-import { PlaybackPane } from "./panes/PlaybackPane";
-import type { MirrorPaneId } from "./panes";
+import type { WebPaneId } from "./catalog/webCatalog";
 
 interface PaneEntry {
   Component: ComponentType;
@@ -16,14 +14,15 @@ interface PaneEntry {
   maxWidth?: number;
 }
 
-/** `profilePaneRegistry.tsx` de l'app, réduit aux volets que le web sait servir. */
-export const PANE_REGISTRY: Record<MirrorPaneId, PaneEntry> = {
-  personalization: { Component: PersonalizationPane, title: { ns: "preferences", key: "sectionPersonalization" } },
-  playback: { Component: PlaybackPane, title: { ns: "profile", key: "playback" } },
-  data: { Component: DataPane, title: { ns: "offline", key: "dataTitle" } },
-  devices: { Component: DevicesPane, title: { ns: "profile", key: "pairedDevices" } },
-  // La page Famille du bureau, telle quelle : mêmes sections, même affiche.
-  family: { Component: SettingsFamily, title: { ns: "familyWeb", key: "nav" } },
-  invites: { Component: InvitesPane, title: { ns: "profile", key: "invitations" } },
+/**
+ * Le composant web de chaque VOLET du catalogue partagé des réglages
+ * (`profilePaneRegistry.tsx` du mobile). Le type force une entrée pour chaque
+ * volet que le web ne déclare pas réservé au mobile (`WEB_UNRENDERED`).
+ */
+export const PANE_REGISTRY: Readonly<Record<WebPaneId, PaneEntry>> = {
   password: { Component: PasswordPane, title: { ns: "preferences", key: "changePasswordTitle" }, maxWidth: 560 },
+  mediaLanguages: { Component: LibraryPrefsSection, title: { ns: "settingsMobile", key: "playback.mediaLanguages" } },
+  personalization: { Component: PersonalizationPane, title: { ns: "profile", key: "homeAndRecommendations" } },
+  devices: { Component: DevicesPane, title: { ns: "settingsMobile", key: "sections.tv" } },
+  invites: { Component: InvitesPane, title: { ns: "profile", key: "invitations" } },
 };

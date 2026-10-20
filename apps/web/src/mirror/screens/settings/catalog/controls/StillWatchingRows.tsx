@@ -1,46 +1,42 @@
 import { useTranslation } from "react-i18next";
 import { Hourglass, Play, Timer, TimerReset, X } from "lucide-react";
 import { useStillWatchingSettings, useStillWatchingTrial } from "@tentacle-tv/api-client";
-import { ToggleSwitch } from "../../../../components/settings/ToggleSwitch";
-import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "../../../../components/settings/stillWatchingChoices";
-import { isWebDebugEnabled } from "../../../../lib/webDebug";
-import { SettingsChoiceRow } from "../ui/SettingsChoiceRow";
-import { SettingsRow } from "../ui/SettingsRow";
-import { SettingsSection } from "../ui/SettingsSection";
+import { stillWatchingAfterChoices, stillWatchingCountdownChoices } from "../../../../../components/settings/stillWatchingChoices";
+import { isWebDebugEnabled } from "../../../../../lib/webDebug";
+import { SettingsChoiceRow } from "../../ui/SettingsChoiceRow";
+import { SettingsRow } from "../../ui/SettingsRow";
+import { SwitchSettingRow, type ControlRowProps } from "./SettingRowKit";
 
 /**
- * « Vous regardez encore ? » dans le panneau Lecture du miroir — le même
- * réglage du COMPTE que les Réglages du web (`StillWatchingSetting`), dans les
- * lignes de l'app : l'interrupteur, puis les deux durées en segmentés compacts
- * tant que la question est activée, et « Voir la question maintenant » — une
- * ligne d'action, l'idiome de l'app (`StillWatchingTrialRow` côté bureau),
- * derrière la porte du débogage du web seulement (`lib/webDebug.ts`).
- * Rien face à un serveur qui ne déclare pas `playback.stillWatching`.
+ * « Êtes-vous encore là ? » — le réglage du COMPTE
+ * (`/api/preferences/still-watching`), que le catalogue ne pose que face à un
+ * serveur qui déclare `playback.stillWatching` : l'interrupteur, puis les deux
+ * durées tant que la question est activée, et « Voir la question
+ * maintenant » derrière la porte du débogage du web seulement
+ * (`lib/webDebug.ts`).
  */
-export function StillWatchingSection() {
+export function StillWatchingRows({ scope, last }: ControlRowProps) {
   const { t } = useTranslation(["preferences", "player"]);
   const { available, settings, set } = useStillWatchingSettings();
   const trial = useStillWatchingTrial();
   if (!available) return null;
   const trialShown = isWebDebugEnabled();
   const trialText = trial.armed ? t("preferences:stillWatchingTrialArmed") : t("preferences:stillWatchingTrialHint");
+  const trialLabel = trial.armed ? t("preferences:stillWatchingTrialCancel") : t("preferences:stillWatchingTrialTitle");
 
   return (
-    <SettingsSection title={t("player:stillWatching.title")} caption={t("preferences:stillWatchingHint")}>
-      <SettingsRow
+    <>
+      <SwitchSettingRow
         icon={Hourglass}
         label={t("preferences:stillWatchingTitle")}
-        last={!settings.enabled}
-        trailing={
-          <ToggleSwitch
-            checked={settings.enabled}
-            onChange={(enabled) => {
-              if (!enabled) trial.cancel();
-              set({ enabled });
-            }}
-            label={t("preferences:stillWatchingTitle")}
-          />
-        }
+        description={t("preferences:stillWatchingHint")}
+        scope={scope}
+        value={settings.enabled}
+        onChange={(enabled) => {
+          if (!enabled) trial.cancel();
+          set({ enabled });
+        }}
+        last={last && !settings.enabled}
       />
       {settings.enabled && (
         <>
@@ -57,18 +53,18 @@ export function StillWatchingSection() {
             options={stillWatchingCountdownChoices(t)}
             value={String(settings.countdownMs)}
             onChange={(value) => set({ countdownMs: Number(value) })}
-            last={!trialShown}
+            last={last && !trialShown}
           />
           {trialShown && (
             <>
               <SettingsRow
                 icon={trial.armed ? X : Play}
-                label={trial.armed ? t("preferences:stillWatchingTrialCancel") : t("preferences:stillWatchingTrialTitle")}
+                label={trialLabel}
                 description={trialText}
                 accent={!trial.armed}
                 onPress={trial.armed ? trial.cancel : trial.arm}
-                ariaLabel={`${trial.armed ? t("preferences:stillWatchingTrialCancel") : t("preferences:stillWatchingTrialTitle")}. ${trialText}`}
-                last
+                ariaLabel={`${trialLabel}. ${trialText}`}
+                last={last}
               />
               {/* L'état armé, annoncé : la ligne est un bouton, son libellé ne se relit pas seul. */}
               <span role="status" className="sr-only">{trial.armed ? t("preferences:stillWatchingTrialArmed") : ""}</span>
@@ -76,6 +72,6 @@ export function StillWatchingSection() {
           )}
         </>
       )}
-    </SettingsSection>
+    </>
   );
 }
