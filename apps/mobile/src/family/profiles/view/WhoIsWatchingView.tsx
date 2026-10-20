@@ -18,7 +18,9 @@ interface WhoIsWatchingViewProps {
   listing: PickerProfilesDto | undefined;
   /** `launch` : à l'ouverture, rien d'autre à faire ; `switch` : depuis Réglages, « Annuler » et le profil en cours. */
   mode: WhoIsWatchingMode;
-  /** `launch` : la case « Ne plus proposer au démarrage » à l'arrivée (`mobileStayInitial`). */
+  /** `launch` : la case « Ne plus proposer au démarrage » est offerte (l'administration le propose d'office). */
+  stayOffered?: boolean;
+  /** `launch` : la case à l'arrivée (`mobileStayInitial`). */
   stayInitial?: boolean;
   /** `stayChecked` : la case, au moment du choix (toujours faux depuis Réglages, où elle n'est pas). */
   onPicked: (picked: PickedProfileDto, stayChecked: boolean) => void;
@@ -34,7 +36,7 @@ interface WhoIsWatchingViewProps {
  * connecté. Centré, largeur bornée : propre en paysage sur
  * l'iPad comme sur le téléphone.
  */
-export function WhoIsWatchingView({ listing, mode, stayInitial = false, onPicked, onStale, onCancel }: WhoIsWatchingViewProps) {
+export function WhoIsWatchingView({ listing, mode, stayOffered = false, stayInitial = false, onPicked, onStale, onCancel }: WhoIsWatchingViewProps) {
   const { t } = useTranslation(["profilePicker", "familyMobile"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -47,7 +49,7 @@ export function WhoIsWatchingView({ listing, mode, stayInitial = false, onPicked
   // Lue au moment où le serveur répond (le PIN a pu passer entre-temps).
   const stayRef = useRef(stayChecked);
   stayRef.current = stayChecked;
-  const picked = useCallback((result: PickedProfileDto) => onPicked(result, mode === "launch" && stayRef.current), [onPicked, mode]);
+  const picked = useCallback((result: PickedProfileDto) => onPicked(result, mode === "launch" && stayOffered && stayRef.current), [onPicked, mode, stayOffered]);
   const toggleStay = useCallback(() => setStayChecked((value) => !value), []);
   const flow = usePickFlow({ profiles, opensWithoutPin, pick, onPicked: picked, onStale });
 
@@ -81,7 +83,7 @@ export function WhoIsWatchingView({ listing, mode, stayInitial = false, onPicked
                   <Text style={st.caption}>{t("familyMobile:launch.loading")}</Text>
                 </View>
               )}
-              {mode === "launch" && listing ? (
+              {mode === "launch" && stayOffered && listing ? (
                 <StayAtLaunchCheck checked={stayChecked} disabled={flow.opening !== null} onToggle={toggleStay} />
               ) : null}
               {flow.notice ? <Text style={st.notice} accessibilityLiveRegion="polite">{flow.notice}</Text> : null}

@@ -25,13 +25,15 @@ export interface LaunchGateInput {
   choice: PickerDeviceChoice;
   stay: PickerStay | null;
   now: number;
+  /** L'administration le propose d'office sur le mobile (`mobileLaunchAsked`). */
+  asked: boolean;
 }
 
 export function launchGateState(input: LaunchGateInput): LaunchGateState {
   if (!input.enabled) return "none";
   if (!input.data) return input.isError ? "none" : "pending";
   if (input.request !== null && input.data.pickerRequired) return "picker";
-  return mobileProfileLaunch(input.data, input.held, input.choice, input.stay, input.now) === "picker" ? "picker" : "none";
+  return mobileProfileLaunch(input.data, input.held, input.choice, input.stay, input.now, input.asked) === "picker" ? "picker" : "none";
 }
 
 /** Le choix retenu est à oublier (profil disparu, code posé ou retiré). */

@@ -108,6 +108,11 @@ describe("catalogue des réglages", () => {
     expect(ids(section("account"), { ...full, canSwitchProfile: false })).not.toContain("askAtLaunch");
   });
 
+  it("« Qui regarde ? » au démarrage : absent si l'administration ne le propose pas d'office", () => {
+    expect(ids(section("account"), { ...full, launchAsked: false })).not.toContain("askAtLaunch");
+    expect(ids(section("account"), { ...full, launchAsked: false })).toContain("switchProfile");
+  });
+
   it("en session de profil, rien de ce que le serveur refuse", () => {
     expect(ids(section("account"), profileSession)).toEqual(["photo", "userName", "switchProfile", "clearCache"]);
     const sections = visibleSections(profileSession).map((s) => s.id);

@@ -60,8 +60,9 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
           { kind: "screen", id: "family", icon: "users", label: p("family"), requires: ["family", "personal"] },
           { kind: "control", id: "switchProfile", requires: ["family", "canSwitchProfile"] },
           // « Qui regarde ? » au démarrage, réglé par l'appareil (shared `familyMobileLaunch.ts`, web :
-          // `familyPickerDevice.ts`) — en session personnelle, comme sur le bureau.
-          { kind: "control", id: "askAtLaunch", requires: ["family", "canSwitchProfile", "personal"] },
+          // `familyPickerDevice.ts`) — en session personnelle, comme sur le bureau, et si
+          // l'administration le propose d'office sur la plateforme.
+          { kind: "control", id: "askAtLaunch", requires: ["family", "canSwitchProfile", "personal", "launchAsked"] },
         ],
       },
       {

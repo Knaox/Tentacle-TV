@@ -452,10 +452,12 @@ pas la capacité : ni « Qui regarde ? », ni « Changer de profil », sans erre
   son profil retenu reste le dernier choisi. Choix caduc (profil disparu, code
   posé ou retiré), profil bloqué, session de profil terminée : « Qui regarde ? »
   quand même. Jamais le compte ouvert sans son code parce que la session d'un
-  autre profil a pris fin. La politique d'ouverture de l'administration ne
-  règle que les ordinateurs et les TV : le serveur n'en porte aucune pour le
-  mobile (le jour où il en déclarera une, elle remplacera
-  `MOBILE_LAUNCH_POLICY`). On change de profil dans Réglages › Compte ; la
+  autre profil a pris fin. L'administration décide si « Téléphones et
+  tablettes » le proposent d'office (capacité `family.launchPlatforms`,
+  `PickerProfilesDto.launchAsk`, lu par `mobileLaunchAsked`) : décochés, ni
+  écran à l'ouverture, ni case, ni réglage — « Changer de profil » reste, une
+  session de profil gardée reprend, et le choix de l'appareil est gardé pour le
+  jour où elle recoche. Serveur sans la capacité : proposé. On change de profil dans Réglages › Compte ; la
   gestion des profils n'est jamais sur le sélecteur.
 - **La photo d'un profil sans photo** est proposée à son entrée (galerie en mode
   « invite », une fois par sujet et par appareil, après les autres

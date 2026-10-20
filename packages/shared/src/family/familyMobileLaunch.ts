@@ -1,6 +1,6 @@
 import type { FamilyDesktopLaunchPolicy, PickerProfilesDto } from "./familyPickerContract";
 import { pickerLaunch, type PickerLaunch } from "./familyPickerClient";
-import { pickerStayInitial, withDeviceChoice, type PickerDeviceChoice } from "./familyPickerDevice";
+import { launchAskedByServer, pickerStayInitial, withDeviceChoice, type PickerDeviceChoice } from "./familyPickerDevice";
 import { pickerStayState, type PickerStay } from "./familyPickerStay";
 import { mobileMemoryKey } from "./familyMobileProfiles";
 
@@ -21,23 +21,32 @@ import { mobileMemoryKey } from "./familyMobileProfiles";
  * pas encore de choix — `unset`, donc le nouveau défaut (proposer) ; le
  * profil retenu reste le « dernier choisi » qu'une case cochée rouvrira.
  *
- * La politique d'ouverture de l'administration ne règle que les ordinateurs
- * (`launchPolicy`, `FAMILY_LAUNCH_PLATFORMS` : bureau, TV) : le serveur n'en
- * porte aucune pour le mobile. Le jour où il en déclarera une (une capacité,
- * un champ de la liste), elle remplacera `MOBILE_LAUNCH_POLICY` dans
- * `framed` — d'ici là, permis et activé par défaut.
+ * L'administration décide si la plateforme `mobile` propose « Qui regarde ? »
+ * D'OFFICE (serveur 1.31.1, capacité `family.launchPlatforms` :
+ * `PickerProfilesDto.launchAsk`, lu par `mobileLaunchAsked`). Non : ni écran
+ * à l'ouverture, ni case, ni réglage — « Changer de profil » reste, et une
+ * session de profil gardée reprend. Un serveur sans la capacité : proposé
+ * (le comportement du mobile avant elle). La `launchPolicy` de la liste est
+ * celle des ordinateurs : jamais lue ici.
  */
 
 /** Le choix de l'appareil, par serveur et par compte (`{ "<serveur>|<compte>": "ask" | "stay" }`).
  *  ⚠️ Clé traversée par une chaîne : jamais renommée. */
 export const MOBILE_PROFILE_LAUNCH_KEY = "tentacle_mobile_profile_launch";
 
-/** Le cadre du mobile : aucune politique du serveur pour lui — permis, proposé par défaut. */
-export const MOBILE_LAUNCH_POLICY: Readonly<FamilyDesktopLaunchPolicy> = { mode: "choice", defaultOn: true };
+/**
+ * L'administration fait-elle proposer « Qui regarde ? » d'office sur le
+ * mobile ? Seulement lu sous la capacité `family.launchPlatforms` ; sans elle,
+ * oui (le comportement d'avant).
+ */
+export function mobileLaunchAsked(listing: Partial<Pick<PickerProfilesDto, "launchAsk">>, capable: boolean): boolean {
+  return capable ? launchAskedByServer(listing, true) : true;
+}
 
 /** La liste vue par la règle du bureau, dans le cadre du mobile (jamais `launchPolicy`, celle des ordinateurs). */
-function framed<T extends Pick<PickerProfilesDto, "atLaunch">>(listing: T): T & { launchPolicy: FamilyDesktopLaunchPolicy } {
-  return { ...listing, atLaunch: false, launchPolicy: MOBILE_LAUNCH_POLICY };
+function framed<T extends Pick<PickerProfilesDto, "atLaunch">>(listing: T, asked: boolean): T & { launchPolicy: FamilyDesktopLaunchPolicy } {
+  const launchPolicy: FamilyDesktopLaunchPolicy = { mode: asked ? "choice" : "off", defaultOn: true };
+  return { ...listing, atLaunch: false, launchPolicy };
 }
 
 function readChoices(raw: string | null): Record<string, "ask" | "stay"> {
@@ -77,7 +86,8 @@ export function mobileProposesAtLaunch(choice: PickerDeviceChoice): boolean {
  * choisi ne dispense de l'écran que si l'appareil ne propose plus (`stay`),
  * qu'il vaut encore ET qu'il est le profil en cours d'après le serveur —
  * jamais le compte ouvert sans son code parce que la session d'un enfant a
- * pris fin. `held` : le profil dont l'app garde le jeton, ou null.
+ * pris fin. `held` : le profil dont l'app garde le jeton, ou null. `asked` :
+ * `mobileLaunchAsked` — non, l'écran ne vient que pour une session sans jeton.
  */
 export function mobileProfileLaunch(
   listing: Pick<PickerProfilesDto, "atLaunch" | "pickerRequired" | "currentProfileId" | "account" | "profiles">,
@@ -85,9 +95,10 @@ export function mobileProfileLaunch(
   choice: PickerDeviceChoice,
   lastPicked: PickerStay | null,
   now: number,
+  asked = true,
 ): PickerLaunch {
-  const usable = choice === "stay" && lastPicked !== null && pickerStayState(listing, lastPicked, now) !== "stale" ? lastPicked : null;
-  return pickerLaunch(withDeviceChoice(framed(listing), choice), held, usable, now);
+  const usable = asked && choice === "stay" && lastPicked !== null && pickerStayState(listing, lastPicked, now) !== "stale" ? lastPicked : null;
+  return pickerLaunch(withDeviceChoice(framed(listing, asked), choice), held, usable, now);
 }
 
 /** La case « Ne plus proposer au démarrage » à l'arrivée sur l'écran : cochée si l'appareil ne propose déjà plus. */
@@ -96,6 +107,7 @@ export function mobileStayInitial(
   choice: PickerDeviceChoice,
   lastPicked: PickerStay | null,
   now: number,
+  asked = true,
 ): boolean {
-  return pickerStayInitial(framed(listing), choice, lastPicked, now);
+  return pickerStayInitial(framed(listing, asked), choice, lastPicked, now);
 }

@@ -8,6 +8,7 @@ import { useServerUrl } from "@/providers/ServerUrlContext";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 import { MODAL_ORIENTATIONS } from "../modalOrientations";
 import { readLaunchChoice, subscribeLaunchChoice } from "./launchChoice";
+import { useMobileLaunchAsked } from "./useMobileLaunchAsked";
 import { launchGateState, launchStayToForget, nextLaunchDecision, type LaunchDecision } from "./launchGate";
 import { useActiveProfile, useAccountUserId } from "./profileSessionState";
 import { clearProfilePickerRequest, useProfilePickerRequest } from "./sessionEpoch";
@@ -28,7 +29,9 @@ function Retained() {
  * famille compte plus d'une personne — sauf « Ne plus proposer au
  * démarrage » (la case de l'écran, ou Réglages › Compte), qui ouvre le
  * dernier profil choisi tant qu'il vaut (règle partagée
- * `familyMobileLaunch.ts`). Décidé UNE fois par compte et par processus
+ * `familyMobileLaunch.ts`). L'administration peut ne pas le proposer d'office
+ * sur le mobile (`useMobileLaunchAsked`) : il ne vient alors que pour une
+ * session de profil terminée, sans la case. Décidé UNE fois par compte et par processus
  * (`nextLaunchDecision`) : un retour d'arrière-plan, la liste qui se relit,
  * ne le rouvrent pas ; une session de profil terminée, si. Un recouvrement
  * ordinaire du démarrage : l'invitation aux avatars et le reste l'attendent.
@@ -48,6 +51,7 @@ export function ProfileLaunchGate() {
   const [decided, setDecided] = useState<LaunchDecision | null>(null);
   const readChoice = useCallback(() => readLaunchChoice({ storage, serverUrl: serverUrl ?? "" }), [storage, serverUrl]);
   const choice = useSyncExternalStore(subscribeLaunchChoice, readChoice, readChoice);
+  const asked = useMobileLaunchAsked();
 
   // Relu à chaque rendu (préchargé) : la liste qui répond, ou une fin de session, le relisent.
   const stayRaw = serverUrl && accountId ? storage.getItem(MOBILE_PROFILE_STAY_KEY) : null;
@@ -64,6 +68,7 @@ export function ProfileLaunchGate() {
     choice,
     stay,
     now: Date.now(),
+    asked,
   });
 
   useEffect(() => {
@@ -80,19 +85,20 @@ export function ProfileLaunchGate() {
   const { refetch } = listing;
   const onStale = useCallback(() => void refetch(), [refetch]);
   const onPicked = useCallback((picked: PickedProfileDto, stayChecked: boolean) => {
-    const result = commit(picked, stayChecked ? "stay" : "ask");
+    // Sans la case (l'administration ne propose pas d'office), le choix de l'appareil reste tel quel.
+    const result = commit(picked, !asked ? undefined : stayChecked ? "stay" : "ask");
     if (result === "failed") return;
     clearProfilePickerRequest();
     setDecided({ account: accountId, show: false });
     if (result === "switched") router.replace("/(tabs)" as never);
-  }, [commit, accountId, router]);
+  }, [commit, accountId, router, asked]);
 
   if (!show) return null;
-  const stayInitial = listing.data ? mobileStayInitial(listing.data, choice, stay, Date.now()) : false;
+  const stayInitial = listing.data ? mobileStayInitial(listing.data, choice, stay, Date.now(), asked) : false;
   return (
     <Modal visible animationType="fade" statusBarTranslucent supportedOrientations={[...MODAL_ORIENTATIONS]} onRequestClose={() => undefined}>
       <Retained />
-      <WhoIsWatchingView listing={listing.data} mode="launch" stayInitial={stayInitial} onPicked={onPicked} onStale={onStale} />
+      <WhoIsWatchingView listing={listing.data} mode="launch" stayOffered={asked} stayInitial={stayInitial} onPicked={onPicked} onStale={onStale} />
     </Modal>
   );
 }

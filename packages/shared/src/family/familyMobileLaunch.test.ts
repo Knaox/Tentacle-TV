@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PickerProfileDto, PickerProfilesDto } from "./familyPickerContract";
 import {
   MOBILE_PROFILE_LAUNCH_KEY,
+  mobileLaunchAsked,
   mobileProfileLaunch,
   mobileProposesAtLaunch,
   mobileStayInitial,
@@ -75,6 +76,22 @@ describe("« Qui regarde ? » au démarrage du mobile", () => {
     const desktopOff = listing({ launchPolicy: { mode: "off", defaultOn: false }, atLaunch: false });
     expect(mobileProfileLaunch(desktopOff, null, "unset", null, NOW)).toBe("picker");
     expect(mobileStayInitial(desktopOff, "unset", null, NOW)).toBe(false);
+  });
+
+  it("l'administration ne le propose pas d'office sur le mobile : ni écran, ni case — une session gardée reprend", () => {
+    expect(mobileLaunchAsked({ launchAsk: false }, true)).toBe(false);
+    expect(mobileProfileLaunch(listing(), null, "unset", null, NOW, false)).toBe("personal");
+    expect(mobileProfileLaunch(listing(), null, "stay", damien, NOW, false)).toBe("personal");
+    expect(mobileProfileLaunch(listing({ currentProfileId: "lea" }), lea, "ask", null, NOW, false)).toBe("resume");
+    // Jamais une session sans jeton : « Qui regarde ? » quand même.
+    expect(mobileProfileLaunch(listing({ currentProfileId: "lea" }), null, "unset", null, NOW, false)).toBe("picker");
+    expect(mobileStayInitial(listing(), "stay", damien, NOW, false)).toBe(true);
+  });
+
+  it("la politique n'est lue que sous la capacité ; un serveur d'avant (champ absent) : proposé", () => {
+    expect(mobileLaunchAsked({ launchAsk: false }, false)).toBe(true);
+    expect(mobileLaunchAsked({}, true)).toBe(true);
+    expect(mobileLaunchAsked({ launchAsk: true }, true)).toBe(true);
   });
 
   it("l'interrupteur de Réglages : allumé sauf « ne plus proposer »", () => {
