@@ -9,11 +9,18 @@
  * proxy les accepte TOUTES en entrée — et n'en relaie qu'une seule à Jellyfin
  * (cf. `buildForwardHeaders`), la seule que 12.x garde.
  *
- * Ordre de préférence, celui qu'avait déjà le proxy : en-têtes Jellyfin, puis
- * cookie, puis jeton en query ; le `Bearer` vient en dernier.
+ * Ordre de préférence : en-têtes Jellyfin d'abord ; puis le cookie, départagé
+ * du jeton EXPLICITE de la query (puis du `Bearer`) par la règle commune
+ * (`sessionTokenChoice`) : un cookie de CONNEXION cède — AVPlayer sur iOS lit
+ * le flux d'un profil avec `api_key=<jeton du profil>`, et le pot de React
+ * Native y joint le cookie du COMPTE de l'appareil, qui faisait relayer le flux
+ * au nom du compte, avec ses droits ; un cookie posé par le serveur à la place
+ * du compte (profil du web, « voir en tant que ») l'emporte toujours. La page
+ * web, elle, présente le même jeton des deux façons.
  */
 
 import { incomingMediaBrowserAuth, tokenFromAuthHeaders, tokenFromQuery } from "../../services/jellyfinAuth";
+import { chooseSessionToken } from "../../services/sessionTokenChoice";
 
 type HeaderBag = Record<string, string | string[] | undefined>;
 
@@ -37,10 +44,7 @@ export function readIncomingAuth(headers: HeaderBag, cookieToken: string | undef
   const identityHeader = identity
     ? (authorization && !bearer ? authorization : first(headers["x-emby-authorization"]))
     : undefined;
-  const token = tokenFromAuthHeaders(headers)
-    || cookieToken
-    || tokenFromQuery(query as Record<string, unknown> | undefined)
-    || bearer
-    || undefined;
+  const explicit = tokenFromQuery(query as Record<string, unknown> | undefined) || bearer || undefined;
+  const token = tokenFromAuthHeaders(headers) || chooseSessionToken(cookieToken || undefined, explicit);
   return { token, identity, identityHeader };
 }

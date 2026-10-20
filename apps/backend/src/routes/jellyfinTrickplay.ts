@@ -6,6 +6,7 @@ import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceStatus";
 import { jellyfinAuthHeaders, tokenFromAuthHeaders, tokenFromQuery } from "../services/jellyfinAuth";
 import { itemRefused } from "./jellyfinProxy/streamAccess";
+import { chooseSessionToken } from "../services/sessionTokenChoice";
 
 const ParamsSchema = z.object({
   itemId: z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/),
@@ -39,13 +40,14 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
     const params = ParamsSchema.parse(request.params);
     const query = QuerySchema.parse(request.query);
 
-    // Auth : en-têtes Jellyfin (anciens ou `MediaBrowser`), cookie, ou jeton en
-    // query. Un JWT Tentacle est remplacé par la clé admin ; un jeton Jellyfin
-    // natif passe tel quel.
+    // Auth : en-têtes Jellyfin (anciens ou `MediaBrowser`), puis le cookie ou le
+    // jeton en query, départagés comme au proxy (cf. incomingAuth : la tuile d'un
+    // profil, `api_key=<son jeton>`, l'emporte sur le cookie de connexion du
+    // compte que garde le téléphone). Un JWT Tentacle est remplacé par la clé
+    // admin ; un jeton Jellyfin natif passe tel quel.
     const cookieToken = (request as { cookies?: Record<string, string> }).cookies?.tentacle_token;
     const incomingToken = tokenFromAuthHeaders(request.headers)
-      || cookieToken
-      || tokenFromQuery(request.query as Record<string, unknown>);
+      || chooseSessionToken(cookieToken || undefined, tokenFromQuery(request.query as Record<string, unknown>));
     if (!incomingToken) {
       return reply.status(401).send({ message: "Unauthorized" });
     }
