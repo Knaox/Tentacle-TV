@@ -53,6 +53,21 @@ class OfflineStorageModule : Module() {
       OfflineTransferService.stop(context)
     }
 
+    // Le suivi en direct (`LiveTransferNotice`) : le JavaScript donne les mots,
+    // la barre et la fin estimée ; le chronomètre natif décompte seul.
+    Function("showLiveTransfer") {
+        channelName: String, title: String, text: String, subText: String?, progress: Int, endsAtMs: Double, deepLink: String? ->
+      LiveTransferNotice.show(
+        context,
+        channelName,
+        LiveTransferNotice.Content(title, text, subText, progress, endsAtMs.toLong(), deepLink),
+      )
+    }
+
+    Function("hideLiveTransfer") {
+      LiveTransferNotice.hide(context)
+    }
+
     // La finalisation d'un fichier Allégé, et son verdict — long (quelques
     // secondes par centaine de Mo) : fonction asynchrone, hors du fil
     // JavaScript.
@@ -86,7 +101,11 @@ class OfflineStorageModule : Module() {
 
     OnDestroy {
       OfflineTransferService.onPauseRequested = null
-      appContext.reactContext?.let { OfflineTransferService.stop(it) }
+      // Le suivi d'abord : sinon l'arrêt du service le reposerait, orphelin.
+      appContext.reactContext?.let {
+        LiveTransferNotice.hide(it)
+        OfflineTransferService.stop(it)
+      }
     }
   }
 }

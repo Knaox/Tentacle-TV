@@ -7,26 +7,59 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		063ED555517F4A438730025B /* TransferLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE4C6AC4A104916B7ED273F /* TransferLiveActivityWidget.swift */; };
 		0CC586631B812D1A40D3D265 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 5D09CF3FDA6D0DDA9D0E0284 /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		7E645E1364FAC695E7FFBD3A /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8029AE2D9D2E8123E10C1431 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		BF4B73446E645D5303AD761F /* AirPlayModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 41459D7F00E9B1D3B5CDC4CF /* AirPlayModule.m */; };
+		E08C1C3BDC0C421FB45FECCD /* TransferLiveActivityBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE64ED6F2C964D7681186676 /* TransferLiveActivityBundle.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F495ED325C5C49BC81DE82C4 /* TransferLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 072450C50C6146A4B065799C /* TransferLiveActivity.appex */; };
+		F6543E95431449B6877AA653 /* TransferActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B243179AA9649A089EDF344 /* TransferActivityAttributes.swift */; };
 		FC1019C406659A27CAED1231 /* libPods-TentacleTV.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		D4424B83E7AD4C3A91778A2E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 940C726239B04F8395ABAF19;
+			remoteInfo = TransferLiveActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B735BCD504894135AF4C509C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F495ED325C5C49BC81DE82C4 /* TransferLiveActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		072450C50C6146A4B065799C /* TransferLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = TransferLiveActivity.appex; path = TransferLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07F961A680F5B00A75B9A /* TentacleTV.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TentacleTV.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = TentacleTV/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = TentacleTV/Info.plist; sourceTree = "<group>"; };
+		3CE4C6AC4A104916B7ED273F /* TransferLiveActivityWidget.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = TransferLiveActivityWidget.swift; path = TransferLiveActivityWidget.swift; sourceTree = "<group>"; };
 		41459D7F00E9B1D3B5CDC4CF /* AirPlayModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = TentacleTV/AirPlayModule.m; sourceTree = "<group>"; };
 		5D09CF3FDA6D0DDA9D0E0284 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = TentacleTV/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		7B243179AA9649A089EDF344 /* TransferActivityAttributes.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = TransferActivityAttributes.swift; path = TransferActivityAttributes.swift; sourceTree = "<group>"; };
 		8029AE2D9D2E8123E10C1431 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-TentacleTV/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		97F563BCF7504D668FB024D2 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = TentacleTV/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B3623126F3CD714FF7C0FDFC /* Pods-TentacleTV.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV.release.xcconfig"; path = "Target Support Files/Pods-TentacleTV/Pods-TentacleTV.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		DE64ED6F2C964D7681186676 /* TransferLiveActivityBundle.swift */ = {isa = PBXFileReference; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = TransferLiveActivityBundle.swift; path = TransferLiveActivityBundle.swift; sourceTree = "<group>"; };
 		EA12ED91C779A3636DC15047 /* Pods-TentacleTV.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV.debug.xcconfig"; path = "Target Support Files/Pods-TentacleTV/Pods-TentacleTV.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TentacleTV.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -40,6 +73,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				FC1019C406659A27CAED1231 /* libPods-TentacleTV.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9DC113907D474AEE91564E06 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -68,6 +108,18 @@
 				EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		3235D5FE48FF4BBE87A8583E /* TransferLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				7B243179AA9649A089EDF344 /* TransferActivityAttributes.swift */,
+				DE64ED6F2C964D7681186676 /* TransferLiveActivityBundle.swift */,
+				3CE4C6AC4A104916B7ED273F /* TransferLiveActivityWidget.swift */,
+				97F563BCF7504D668FB024D2 /* Info.plist */,
+			);
+			name = TransferLiveActivity;
+			path = TransferLiveActivity;
 			sourceTree = "<group>";
 		};
 		3CC615C0F37BB3E971F4A05F /* Pods */ = {
@@ -104,6 +156,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				3CC615C0F37BB3E971F4A05F /* Pods */,
 				AE7C689690156DC55481F30C /* ExpoModulesProviders */,
+				3235D5FE48FF4BBE87A8583E /* TransferLiveActivity */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,6 +167,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* TentacleTV.app */,
+				072450C50C6146A4B065799C /* TransferLiveActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -150,15 +204,34 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				E220F241D2BAADC17DB5678C /* [CP] Embed Pods Frameworks */,
+				B735BCD504894135AF4C509C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				9AC53DD3FFE3436A957BBF3E /* PBXTargetDependency */,
 			);
 			name = TentacleTV;
 			productName = TentacleTV;
 			productReference = 13B07F961A680F5B00A75B9A /* TentacleTV.app */;
 			productType = "com.apple.product-type.application";
+		};
+		940C726239B04F8395ABAF19 /* TransferLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 24310353C4F241ABABF2D040 /* Build configuration list for PBXNativeTarget "TransferLiveActivity" */;
+			buildPhases = (
+				4F36AB7B18DC430ABAA2352E /* Sources */,
+				0F973A9FA3DA466F8C5399C3 /* Resources */,
+				9DC113907D474AEE91564E06 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TransferLiveActivity;
+			productName = TransferLiveActivity;
+			productReference = 072450C50C6146A4B065799C /* TransferLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -189,11 +262,19 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* TentacleTV */,
+				940C726239B04F8395ABAF19 /* TransferLiveActivity */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0F973A9FA3DA466F8C5399C3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		13B07F8E1A680F5B00A75B9A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -348,9 +429,52 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4F36AB7B18DC430ABAA2352E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F6543E95431449B6877AA653 /* TransferActivityAttributes.swift in Sources */,
+				E08C1C3BDC0C421FB45FECCD /* TransferLiveActivityBundle.swift in Sources */,
+				063ED555517F4A438730025B /* TransferLiveActivityWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		9AC53DD3FFE3436A957BBF3E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 940C726239B04F8395ABAF19 /* TransferLiveActivity */;
+			targetProxy = D4424B83E7AD4C3A91778A2E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		0076CCA8D6084F4F80A61360 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 96K3M57W49;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TransferLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile.TransferLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EA12ED91C779A3636DC15047 /* Pods-TentacleTV.debug.xcconfig */;
@@ -420,6 +544,31 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		63D1F7AEC334463BB0EBC214 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 96K3M57W49;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = TransferLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile.TransferLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -549,6 +698,15 @@
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
 				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		24310353C4F241ABABF2D040 /* Build configuration list for PBXNativeTarget "TransferLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0076CCA8D6084F4F80A61360 /* Debug */,
+				63D1F7AEC334463BB0EBC214 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

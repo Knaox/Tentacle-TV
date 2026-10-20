@@ -46,6 +46,7 @@ export { snapshot } from "./core/snapshot";
 // Hors du cœur miroir : la logique pure que l'interface (web comme mobile)
 // partage — catalogue, navigation d'épisode locale, sélection, connectivité,
 // segments locaux, droits, resynchronisation.
+export * from "./live";
 export * from "./catalog/offlineGroups";
 export { seasonKey } from "./catalog/seasonKey";
 export * from "./catalog/localEpisodeNav";

@@ -84,6 +84,10 @@ env:
   IOS_WORKSPACE: "apps/mobile/ios/TentacleTV.xcworkspace"
   IOS_BUNDLE_ID: "com.tentacle.mobile"
   IOS_PROFILE_NAME: "Tentacle TV iOS App Store CI"
+  # L'extension de widget de la Live Activity des transferts (embarquée dans
+  # l'app) : son propre identifiant, son propre profil.
+  IOS_EXT_BUNDLE_ID: "com.tentacle.mobile.TransferLiveActivity"
+  IOS_EXT_PROFILE_NAME: "Tentacle TV iOS Live Activity App Store CI"
   # Piste Play des TESTS INTERNES mobile (cran test, et source de la reprise
   # au cran store). « internal » = piste du téléphone, à ne pas confondre avec
   # « tv:internal » (piste TV préfixée par form factor, même fiche
@@ -526,33 +530,49 @@ jobs:
             else echo "::error::Certificat Distribution du keychain (serial $SERIAL) introuvable côté API ($COUNT candidats)"; exit 1; fi
           fi
 
-          BUNDLE_DB_ID=$(api "$BASE/bundleIds?filter%5Bidentifier%5D=$IOS_BUNDLE_ID&limit=200" \
-            | jq -r --arg b "$IOS_BUNDLE_ID" '[.data[] | select(.attributes.identifier == $b)][0].id')
-          [ -n "$BUNDLE_DB_ID" ] && [ "$BUNDLE_DB_ID" != "null" ] || { echo "::error::bundleId $IOS_BUNDLE_ID introuvable"; exit 1; }
+          # Un profil par identifiant : l'app, puis l'extension de la Live
+          # Activity (son identifiant est créé s'il n'existe pas encore).
+          provision() {
+            local bundle="$1" name="$2" file="$3" create="${4:-}"
+            local bid
+            bid=$(api "$BASE/bundleIds?filter%5Bidentifier%5D=$bundle&limit=200" \
+              | jq -r --arg b "$bundle" '[.data[] | select(.attributes.identifier == $b)][0].id')
+            if { [ -z "$bid" ] || [ "$bid" = "null" ]; } && [ -n "$create" ]; then
+              bid=$(api -X POST "$BASE/bundleIds" -d "$(jq -n --arg id "$bundle" --arg n "$create" \
+                '{data:{type:"bundleIds",attributes:{identifier:$id,name:$n,platform:"IOS"}}}')" | jq -r '.data.id')
+              echo "Identifiant $bundle créé"
+            fi
+            [ -n "$bid" ] && [ "$bid" != "null" ] || { echo "::error::bundleId $bundle introuvable"; exit 1; }
 
-          # Idempotent : purge l'ancien profil du même nom puis (re)crée
-          NAME_ENC=$(python3 -c 'import urllib.parse,os;print(urllib.parse.quote(os.environ["IOS_PROFILE_NAME"]))')
-          OLD_ID=$(api "$BASE/profiles?filter%5Bname%5D=$NAME_ENC" | jq -r '.data[0].id // empty')
-          [ -n "$OLD_ID" ] && api -X DELETE "$BASE/profiles/$OLD_ID" >/dev/null || true
-          PROFILE=$(api -X POST "$BASE/profiles" -d "$(jq -n \
-            --arg name "$IOS_PROFILE_NAME" --arg bid "$BUNDLE_DB_ID" --arg cid "$CERT_ID" \
-            '{data:{type:"profiles",attributes:{name:$name,profileType:"IOS_APP_STORE"},
-              relationships:{bundleId:{data:{type:"bundleIds",id:$bid}},
-                             certificates:{data:[{type:"certificates",id:$cid}]}}}}')")
-
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          echo "$PROFILE" | jq -r '.data.attributes.profileContent' | base64 --decode \
-            > "$HOME/Library/MobileDevice/Provisioning Profiles/tentacle-ios-ci.mobileprovision"
-          echo "Profil « $IOS_PROFILE_NAME » installé (cert $CERT_ID)"
+            # Idempotent : purge l'ancien profil du même nom puis (re)crée
+            local enc old profile
+            enc=$(NAME="$name" python3 -c 'import urllib.parse,os;print(urllib.parse.quote(os.environ["NAME"]))')
+            old=$(api "$BASE/profiles?filter%5Bname%5D=$enc" | jq -r '.data[0].id // empty')
+            [ -n "$old" ] && api -X DELETE "$BASE/profiles/$old" >/dev/null || true
+            profile=$(api -X POST "$BASE/profiles" -d "$(jq -n \
+              --arg name "$name" --arg bid "$bid" --arg cid "$CERT_ID" \
+              '{data:{type:"profiles",attributes:{name:$name,profileType:"IOS_APP_STORE"},
+                relationships:{bundleId:{data:{type:"bundleIds",id:$bid}},
+                               certificates:{data:[{type:"certificates",id:$cid}]}}}}')")
+            mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+            echo "$profile" | jq -r '.data.attributes.profileContent' | base64 --decode \
+              > "$HOME/Library/MobileDevice/Provisioning Profiles/$file"
+            echo "Profil « $name » installé (cert $CERT_ID)"
+          }
+          provision "$IOS_BUNDLE_ID" "$IOS_PROFILE_NAME" tentacle-ios-ci.mobileprovision
+          provision "$IOS_EXT_BUNDLE_ID" "$IOS_EXT_PROFILE_NAME" tentacle-ios-ext-ci.mobileprovision "Tentacle TV Live Activity"
 
       # L'Info.plist code la version EN DUR (pas de $(MARKETING_VERSION)) → on la
       # patche directement depuis le job `version` (versions.json + build auto).
       - name: Set version / build (Info.plist)
         run: |
           PLIST=apps/mobile/ios/TentacleTV/Info.plist
-          plutil -replace CFBundleShortVersionString -string "${{ needs.prepare.outputs.version }}" "$PLIST"
-          plutil -replace CFBundleVersion -string "${{ needs.prepare.outputs.build }}" "$PLIST"
-          plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
+          # L'extension de la Live Activity porte EXACTEMENT la version de l'app (App Store l'exige).
+          for PLIST in "$PLIST" apps/mobile/ios/TransferLiveActivity/Info.plist; do
+            plutil -replace CFBundleShortVersionString -string "${{ needs.prepare.outputs.version }}" "$PLIST"
+            plutil -replace CFBundleVersion -string "${{ needs.prepare.outputs.build }}" "$PLIST"
+            plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
+          done
 
       # Build de diffusion (TestFlight/App Store) → APNs production. L'entitlement
       # committé est `development` (pour les builds Xcode locaux) ; on force
@@ -562,6 +582,13 @@ jobs:
           ENT=apps/mobile/ios/TentacleTV/TentacleTV.entitlements
           plutil -replace aps-environment -string production "$ENT"
           plutil -p "$ENT" | grep aps-environment
+
+      # Un profil PAR CIBLE : passé en ligne de commande, PROVISIONING_PROFILE_SPECIFIER
+      # vaudrait aussi pour l'extension, que le profil de l'app ne couvre pas.
+      - name: Profils par cible (app, extension Live Activity)
+        run: |
+          node .github/scripts/ios-target-profiles.mjs apps/mobile/ios/TentacleTV.xcodeproj/project.pbxproj \
+            "TentacleTV=$IOS_PROFILE_NAME" "TransferLiveActivity=$IOS_EXT_PROFILE_NAME"
 
       - name: Archive (xcodebuild, signature manuelle Distribution)
         run: |
@@ -573,7 +600,6 @@ jobs:
             -archivePath "$RUNNER_TEMP/TentacleTV.xcarchive" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_NAME" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
 
       - name: Export .ipa (App Store)
@@ -590,6 +616,7 @@ jobs:
             <key>provisioningProfiles</key>
             <dict>
               <key>${IOS_BUNDLE_ID}</key><string>${IOS_PROFILE_NAME}</string>
+              <key>${IOS_EXT_BUNDLE_ID}</key><string>${IOS_EXT_PROFILE_NAME}</string>
             </dict>
             <key>destination</key><string>export</string>
             <key>uploadSymbols</key><true/>

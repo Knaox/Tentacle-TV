@@ -38,6 +38,8 @@ class OfflineTransferService : Service() {
   companion object {
     const val CHANNEL_ID = "offline_transfers"
     const val NOTIFICATION_ID = 4471
+    /** Le suivi en direct posé SEUL, service arrêté : un autre numéro, que l'arrêt du service ne retire pas. */
+    const val LIVE_NOTIFICATION_ID = 4472
     /** L'action du bouton « Pause » de la notification, relayée au JavaScript. */
     const val ACTION_PAUSE = "expo.modules.offlinestorage.PAUSE_TRANSFERS"
     private const val EXTRA_CHANNEL_NAME = "channelName"
@@ -51,6 +53,7 @@ class OfflineTransferService : Service() {
     @Volatile var running = false
       private set
     @Volatile private var lastTitle = ""
+    @Volatile private var lastBody = ""
     @Volatile private var lastChannelName = ""
     @Volatile private var lastPauseLabel = ""
     @Volatile private var lastProgress = PROGRESS_UNKNOWN
@@ -82,6 +85,9 @@ class OfflineTransferService : Service() {
     fun update(context: Context, body: String, progress: Int): Boolean {
       if (!running) return false
       lastProgress = progress
+      lastBody = body
+      // Le suivi en direct tient la notification : son texte l'emporte.
+      if (LiveTransferNotice.content != null) return true
       return try {
         NotificationManagerCompat.from(context)
           .notify(NOTIFICATION_ID, build(context, lastTitle, body, progress))
@@ -94,14 +100,21 @@ class OfflineTransferService : Service() {
     fun stop(context: Context): Boolean {
       return try {
         context.stopService(Intent(context, OfflineTransferService::class.java))
-        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+        val manager = NotificationManagerCompat.from(context)
+        manager.cancel(NOTIFICATION_ID)
+        // Le lot attend (Wi-Fi, réseau) : le suivi en direct le dit, seul.
+        if (LiveTransferNotice.content != null) manager.notify(LIVE_NOTIFICATION_ID, buildCurrent(context, withPause = false))
         true
       } catch (e: Exception) {
         false
       }
     }
 
-    private fun ensureChannel(context: Context, name: String) {
+    /** La notification telle qu'elle doit être maintenant : suivi en direct, sinon le texte simple. */
+    fun buildCurrent(context: Context, withPause: Boolean = running): Notification =
+      build(context, lastTitle, lastBody, lastProgress, withPause)
+
+    fun ensureChannel(context: Context, name: String) {
       if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
       val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
       val channel = NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_LOW).apply {
@@ -117,6 +130,7 @@ class OfflineTransferService : Service() {
       title: String,
       body: String,
       progress: Int = PROGRESS_UNKNOWN,
+      withPause: Boolean = true,
     ): Notification {
       val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
       val pending = launch?.let {
@@ -136,7 +150,9 @@ class OfflineTransferService : Service() {
         // mentir sur une avance qu'on ne sait pas mesurer.
         .setProgress(100, progress.coerceIn(0, 100), progress < 0)
       if (pending != null) builder.setContentIntent(pending)
-      if (lastPauseLabel.isNotEmpty()) {
+      LiveTransferNotice.apply(context, builder)
+      // Sans service, personne n'écoute le bouton : il n'est pas posé.
+      if (withPause && lastPauseLabel.isNotEmpty()) {
         val pause = PendingIntent.getBroadcast(
           context,
           1,
@@ -165,6 +181,7 @@ class OfflineTransferService : Service() {
     val body = intent?.getStringExtra(EXTRA_BODY) ?: ""
     lastChannelName = channelName
     lastTitle = title
+    lastBody = body
     intent?.getStringExtra(EXTRA_PAUSE_LABEL)?.let { lastPauseLabel = it }
     val progress = intent?.getIntExtra(EXTRA_PROGRESS, PROGRESS_UNKNOWN) ?: lastProgress
     lastProgress = progress
@@ -180,8 +197,10 @@ class OfflineTransferService : Service() {
         receiverRegistered = true
       }
       val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
-      ServiceCompat.startForeground(this, NOTIFICATION_ID, build(this, title, body, progress), type)
       running = true
+      ServiceCompat.startForeground(this, NOTIFICATION_ID, build(this, title, body, progress), type)
+      // Le suivi passe sur la notification du service : plus de doublon.
+      NotificationManagerCompat.from(this).cancel(LIVE_NOTIFICATION_ID)
     } catch (e: Exception) {
       running = false
       stopSelf()

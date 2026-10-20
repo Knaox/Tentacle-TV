@@ -36,6 +36,33 @@ public class OfflineStorageModule: Module {
       false
     }
 
+    // La Live Activity des transferts (écran verrouillé, Dynamic Island) —
+    // iOS 16.2 et plus, et seulement si l'utilisateur ne l'a pas coupée dans
+    // les réglages du téléphone. Ailleurs : `false`, sans bruit.
+    Function("liveActivitiesEnabled") { () -> Bool in
+      #if canImport(ActivityKit) && os(iOS)
+      if #available(iOS 16.2, *) { return LiveActivityBridge.isEnabled() }
+      #endif
+      return false
+    }
+
+    AsyncFunction("presentLiveActivity") { (state: [String: Any]) async -> Bool in
+      #if canImport(ActivityKit) && os(iOS)
+      if #available(iOS 16.2, *) { return await LiveActivityBridge.present(state) }
+      #endif
+      return false
+    }
+
+    AsyncFunction("endLiveActivity") { () async -> Bool in
+      #if canImport(ActivityKit) && os(iOS)
+      if #available(iOS 16.2, *) {
+        await LiveActivityBridge.end()
+        return true
+      }
+      #endif
+      return false
+    }
+
     // La finalisation d'un fichier Allégé, et son verdict :
     //
     //   `unusable` — aucun `moov` : le transfert s'est achevé avant que

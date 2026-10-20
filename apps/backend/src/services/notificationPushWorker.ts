@@ -6,7 +6,7 @@ import { isPushPrefEnabled, type PushPrefKey } from "./pushPreferences";
 import { isTicketNotifType } from "./ticketNotifTypes";
 import { ticketPushText } from "./ticketPushText";
 import { loadPushLangs } from "./pushLang";
-import { departurePushBody, parseSeerDeparture } from "./seerDeparturePush";
+import { departurePushBody, isBlockedRequestNotice, parseSeerDeparture } from "./seerDeparturePush";
 import { pushTapData } from "../notifications/notificationDto";
 import { departurePushAllowed } from "./seerDepartureRights";
 import { createPushSyncFields } from "./pushSync";
@@ -18,8 +18,9 @@ import { createPushSyncFields } from "./pushSync";
 // (le plugin Seer, lui, continue d'écrire ses lignes `request_status` sans
 // aucune modification — on ne fait que les livrer).
 //
-// Demandes (`request_status`) : l'annonce de DISPONIBILITÉ part en push, et
-// le départ (« est en route », cf. seerDeparturePush.ts).
+// Demandes (`request_status`) : l'annonce de DISPONIBILITÉ part en push, le
+// départ (« est en route », cf. seerDeparturePush.ts) et le BLOCAGE (état
+// `blocked` de la ligne : « Votre demande est en attente »).
 // Et d'ordinaire elle est déjà partie : le notifier bibliothèque annonce au
 // demandeur l'arrivée constatée dans Jellyfin, sans attendre que Jellyseerr la
 // voie — la ligne du plugin, plus tardive, reste dans la cloche et ce chemin
@@ -131,6 +132,14 @@ export async function deliverPendingNotifications(): Promise<void> {
       const userClaims = claimsByUser.get(n.jellyfinUserId) ?? [];
       const plan = await planSeerAvailabilityPush(n, userClaims);
       if (!plan) {
+        // Une demande BLOQUÉE (état `blocked` du vocabulaire du cœur, posé par
+        // l'extension) : poussée telle quelle, dans les mots et la langue que
+        // l'extension a écrits. Elle ne l'écrit qu'une fois par blocage.
+        if (isBlockedRequestNotice(n)) {
+          const res = await sendToUser(n.jellyfinUserId, { title: n.title, body: n.body ?? "", data: pushTapData(n) });
+          console.log(`[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] demande en attente (sent:${res.sent}, invalid:${res.invalid})`);
+          continue;
+        }
         // Départ d'une demande (« est en route ») : poussé tel quel. Les
         // autres états (refusée, échec) restent dans la cloche.
         const departing = parseSeerDeparture(n);

@@ -11,6 +11,9 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
+  # La Live Activity des transferts : ActivityKit n'existe qu'à partir d'iOS
+  # 16.1 — lié FAIBLEMENT, l'application démarre toujours sur iOS 15.
+  s.ios.weak_frameworks = 'ActivityKit'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {

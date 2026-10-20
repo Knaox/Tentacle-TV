@@ -182,12 +182,30 @@ export default {
   changeServerRemoveTitles: "Retirer les titres et changer",
 
   // Les notifications
-  readyNotifTitle: "Prêt hors ligne",
+  readyNotifTitle: "Prêt à regarder hors ligne",
   readyNotifBody_one: "« {{title}} » est sur votre appareil.",
   readyNotifBody_other: "{{count}} titres sont prêts sur votre appareil.",
   readyNotifBodySeries: "{{series}} : {{count}} épisodes sont prêts sur votre appareil.",
   diskFullNotifTitle: "Espace insuffisant",
   diskFullNotifBody: "Le transfert de « {{title}} » s'est arrêté.",
+
+  // Le suivi en direct (Live Activity d'iOS, notification permanente d'Android)
+  liveChannel: "Suivi des transferts",
+  liveCount_one: "{{count}} titre",
+  liveCount_other: "{{count}} titres",
+  liveSeries_one: "{{series}} · {{count}} épisode",
+  liveSeries_other: "{{series}} · {{count}} épisodes",
+  liveReadyIn: "Prêt dans",
+  liveReadyInText: "Prêt dans {{time}}",
+  liveDurationMinutes: "{{minutes}} min",
+  liveDurationHours: "{{hours}} h {{minutes}} min",
+  liveDurationSoon: "moins d'une minute",
+  liveEstimating: "Calcul du temps restant…",
+  liveFinalizing: "Dernière étape sur cet appareil…",
+  liveWaitingWifi: "En attente du Wi-Fi",
+  liveWaitingNetwork: "En attente du réseau",
+  livePaused: "En pause",
+  liveRetrying: "Nouvel essai dans un instant",
 
   // Le lecteur
   notOnDeviceTitle: "Ce titre n'est pas sur l'appareil",

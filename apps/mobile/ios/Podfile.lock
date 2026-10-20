@@ -2531,7 +2531,7 @@ SPEC CHECKSUMS:
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   MPVKit: 5382ee89e84d909257b0d0f37bca5ef51c448fa0
   MpvPlayer: b4121bfa1bc159cbeae4acabd60061cdd1258293
-  OfflineStorage: c882207f3bb5ec280c81aa1bf585ab68f487d7a3
+  OfflineStorage: 7f40df7d70a3bd610706004527a9f279949519c0
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
   RCTRequired: 8f3cfc90cc25cf6e420ddb3e7caaaabc57df6043
   RCTTypeSafety: 16a4144ca3f959583ab019b57d5633df10b5e97c
