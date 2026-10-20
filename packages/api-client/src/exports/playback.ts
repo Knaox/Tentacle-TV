@@ -72,3 +72,4 @@ export { fetchLibraryVisibility } from "../rights/libraryVisibility";
 // Ce que la session peut faire (`/api/account/abilities`, capacité `account.abilities`) : rien d'affiché sans le droit.
 export { useAccountAbilities, ACCOUNT_ABILITIES_KEY } from "../rights/useAccountAbilities";
 export { mayShow, watchTogetherAbility, type AccountAbilitiesState } from "../rights/accountAbilitiesGate";
+export { settingsAbilitiesOf, type SettingsSessionAbilities } from "../rights/settingsAbilities";
