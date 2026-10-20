@@ -1,5 +1,7 @@
 import { memo } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { SettingScope } from "@tentacle-tv/shared";
+import { ScopeBadge } from "./ScopeBadge";
 
 export interface ChoiceOption {
   value: string;
@@ -48,9 +50,11 @@ export const CompactSegmented = memo(function CompactSegmented({ options, value,
  * validité) posés à droite d'une ligne ordinaire. Le libellé garde au moins
  * 132 ; en deçà, le segmenté passe dessous (retour à la ligne flex).
  */
-export function SettingsChoiceRow({ icon: Icon, label, options, value, onChange, last }: {
+export function SettingsChoiceRow({ icon: Icon, label, options, value, onChange, last, scope }: {
   icon?: LucideIcon;
   label: string;
+  /** La portée du réglage : la pastille sous le libellé. */
+  scope?: SettingScope | null;
   options: readonly ChoiceOption[];
   value: string;
   onChange: (value: string) => void;
@@ -64,7 +68,10 @@ export function SettingsChoiceRow({ icon: Icon, label, options, value, onChange,
             <Icon size={19} strokeWidth={2} />
           </span>
         ) : null}
-        <span className="line-clamp-2 shrink text-[15px] font-medium tracking-[-0.075px] text-content-primary">{label}</span>
+        <span className="flex min-w-0 shrink flex-col">
+          <span className="line-clamp-2 text-[15px] font-medium tracking-[-0.075px] text-content-primary">{label}</span>
+          {scope ? <ScopeBadge scope={scope} /> : null}
+        </span>
       </div>
       <div className="ml-auto">
         <CompactSegmented options={options} value={value} onChange={onChange} label={label} />

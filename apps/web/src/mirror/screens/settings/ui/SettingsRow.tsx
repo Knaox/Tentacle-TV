@@ -1,11 +1,15 @@
 import { memo, type ReactNode } from "react";
 import { Check, ChevronRight, type LucideIcon } from "lucide-react";
+import type { SettingScope } from "@tentacle-tv/shared";
+import { ScopeBadge } from "./ScopeBadge";
 
 export interface SettingsRowProps {
   /** Icône Lucide à gauche (l'équivalent du nom Feather de l'app). */
   icon?: LucideIcon;
   label: string;
   description?: string;
+  /** La portée du réglage : la pastille « Compte » / « Cet appareil » sous le libellé. */
+  scope?: SettingScope | null;
   /** Valeur courante à droite (ex. « Auto »). */
   value?: string;
   /** Contrôle à droite (interrupteur, bouton) — prioritaire sur `value`. */
@@ -23,6 +27,8 @@ export interface SettingsRowProps {
   last?: boolean;
   disabled?: boolean;
   ariaLabel?: string;
+  /** Ligne qui déplie un contenu sous elle : l'état annoncé. */
+  ariaExpanded?: boolean;
 }
 
 /**
@@ -32,8 +38,8 @@ export interface SettingsRowProps {
  * `border.subtle` sous chaque ligne sauf la dernière. Sélection : `brand.soft`.
  */
 export const SettingsRow = memo(function SettingsRow({
-  icon: Icon, label, description, value, trailing, onPress, chevron, checked,
-  selected, destructive, accent, last, disabled, ariaLabel,
+  icon: Icon, label, description, scope, value, trailing, onPress, chevron, checked,
+  selected, destructive, accent, last, disabled, ariaLabel, ariaExpanded,
 }: SettingsRowProps) {
   const tint = destructive ? "text-[var(--status-error)]" : accent ? "text-[var(--brand-light)]" : "text-content-primary";
   const iconTint = destructive
@@ -61,6 +67,7 @@ export const SettingsRow = memo(function SettingsRow({
         {description ? (
           <span className="mt-0.5 text-[11px] font-semibold leading-4 text-content-tertiary">{description}</span>
         ) : null}
+        {scope ? <ScopeBadge scope={scope} /> : null}
       </span>
       {trailing ?? (
         <span className="flex shrink-0 items-center gap-1">
@@ -83,6 +90,7 @@ export const SettingsRow = memo(function SettingsRow({
       role={isOption ? "radio" : undefined}
       aria-checked={isOption ? checked : undefined}
       aria-current={selected ? "page" : undefined}
+      aria-expanded={ariaExpanded}
       aria-label={ariaLabel ?? label}
       className={`${rowClass} transition-colors duration-150 active:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:outline-none`}
       style={{ WebkitTapHighlightColor: "transparent" }}

@@ -17,6 +17,12 @@ export default {
     deviceA11y: "Réglage de cet appareil : il ne vaut qu'ici",
     intro: "Les réglages marqués « Compte » vous suivent sur tous vos appareils ; ceux marqués « Cet appareil » ne valent qu'ici.",
   },
+  // Le web étroit (navigateur d'un téléphone, d'une tablette) : les phrases qui disent « ce téléphone ».
+  web: {
+    everywhereCaption: "Enregistrés dans votre compte : le bureau, la TV, le téléphone et ce navigateur les partagent.",
+    thisDeviceCaption: "Propres à ce navigateur, sur cet appareil.",
+    advancedIntro: "Ces réglages se font sur l'application de bureau, ou sur ce site depuis un ordinateur. Ils sont enregistrés dans votre compte : cet appareil les applique aussitôt.",
+  },
   sections: {
     account: "Compte",
     accountSummary: "Photo, mot de passe, serveur",
