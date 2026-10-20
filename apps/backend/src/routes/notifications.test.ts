@@ -57,6 +57,43 @@ const othersWarned = () => expect(spies.sendToUser).toHaveBeenCalledWith(
   "u1", { type: "notifications:update", action: "refresh" }, { exceptTokenHash: "jeton-banc" },
 );
 
+describe("GET /api/notifications (pages)", () => {
+  it("page après page, sans doublon ni trou, jusqu'à la dernière (sans curseur)", async () => {
+    store.rows = Array.from({ length: 45 }, (_, i) => row(`n${String(i).padStart(2, "0")}`, i));
+    store.rows.push(row("autre", 1, false, "u2"));
+    const app = await makeApp();
+    const seen: string[] = [];
+    let before: string | undefined;
+    for (let page = 0; page < 5; page++) {
+      const res = await app.inject({ method: "GET", url: `/api/notifications?limit=20${before ? `&before=${before}` : ""}`, headers });
+      seen.push(...(res.json() as Array<{ id: string }>).map((n) => n.id));
+      before = res.headers["x-notifications-next"] as string | undefined;
+      if (!before) break;
+    }
+    expect(seen).toEqual(store.rows.filter((n) => n.jellyfinUserId === "u1").map((n) => n.id));
+    expect(before).toBeUndefined();
+    await app.close();
+  });
+
+  it("à date égale, l'ordre ne bouge pas d'une page à l'autre", async () => {
+    store.rows = ["c", "a", "d", "b"].map((id) => row(id, 5));
+    const app = await makeApp();
+    const first = await app.inject({ method: "GET", url: "/api/notifications?limit=2", headers });
+    const next = first.headers["x-notifications-next"] as string;
+    const second = await app.inject({ method: "GET", url: `/api/notifications?limit=2&before=${next}`, headers });
+    expect([...first.json(), ...second.json()].map((n: { id: string }) => n.id)).toEqual(["d", "c", "b", "a"]);
+    await app.close();
+  });
+
+  it("le curseur d'un autre compte ne lui ouvre rien", async () => {
+    store.rows = [row("x", 1, false, "u2"), row("y", 2, false, "u2")];
+    const app = await makeApp();
+    const res = await app.inject({ method: "GET", url: "/api/notifications?before=x", headers });
+    expect(res.json()).toEqual([]);
+    await app.close();
+  });
+});
+
 describe("POST /api/notifications/read-all", () => {
   it("lit TOUTES les notifications du compte, au-delà de la première page, jamais celles d'un autre", async () => {
     store.rows = Array.from({ length: 45 }, (_, i) => row(`n${i}`, i));

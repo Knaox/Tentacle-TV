@@ -6,21 +6,31 @@ import { toNotificationDto } from "../notifications/notificationDto";
 import { notificationsFiltered, visibleNotificationRows } from "../notifications/notificationRights";
 import { notifyNotificationsChanged } from "./notifications.notify";
 
+/** Le curseur de la page suivante de la cloche (voir `notifications.paging`). */
+export const NOTIFICATIONS_NEXT_HEADER = "X-Notifications-Next";
+
 export const notificationRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
-  // GET /api/notifications — User's notifications
-  app.get("/", async (request) => {
+  // GET /api/notifications — User's notifications, page par page (capacité `notifications.paging`)
+  app.get("/", async (request, reply) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const query = request.query as Record<string, string>;
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+    // Le curseur : la dernière notification de la page d'avant (jamais celle d'un autre compte,
+    // le filtre par compte reste). Disparue entre-temps : page vide, la relecture suivante recolle.
+    const before = typeof query.before === "string" && query.before.length > 0 ? query.before : null;
 
     const notifications = await prisma.notification.findMany({
       where: { jellyfinUserId: user.userId },
-      orderBy: { createdAt: "desc" },
+      // L'identifiant départage les lignes écrites dans la même milliseconde : pages stables.
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit,
+      ...(before ? { cursor: { id: before }, skip: 1 } : {}),
     });
+    // Une page pleine en annonce peut-être une autre — avant le filtre des droits, qui la raccourcit.
+    if (notifications.length === limit) reply.header(NOTIFICATIONS_NEXT_HEADER, notifications[notifications.length - 1].id);
 
     // Un avis dont le titre est caché au compte AUJOURD'HUI ne se lit plus (cf. notificationRights).
     return (await visibleNotificationRows(user.userId, notifications)).map(toNotificationDto);
