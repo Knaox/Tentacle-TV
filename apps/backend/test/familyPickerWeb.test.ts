@@ -152,6 +152,19 @@ describe("le web : entrer dans le profil d'un autre", () => {
   });
 });
 
+describe("le web : la session de profil a les limites de toute session de profil", () => {
+  it("un invité ouvert depuis le navigateur : ni push, ni hors ligne, ni Watch Together, ni tickets, ni extensions", async () => {
+    const { jar } = await inZoe();
+    for (const path of ["/api/push/register", "/api/downloads/capabilities", "/api/watch-together/group", "/api/tickets/mine", "/api/plugins/seer/requests"]) {
+      expect((await browser("GET", path, jar)).statusCode, path).toBe(403);
+    }
+    // Jamais les gestes de la session personnelle (inviter, dissoudre…), même avec la réserve en cookie.
+    expect((await browser("POST", "/api/family/invitations", jar, { userId: IDS.lea })).statusCode).toBe(403);
+    const dissolve = await app.inject({ method: "DELETE", url: "/api/family", cookies: jar, payload: { confirm: "dissolve" } });
+    expect(dissolve.statusCode).toBe(403);
+  });
+});
+
 describe("le web : une réserve ne vaut que derrière une session de profil", () => {
   it("face à une session personnelle (un autre compte connecté), elle est ignorée", async () => {
     await seedFamily(app, tokens);
