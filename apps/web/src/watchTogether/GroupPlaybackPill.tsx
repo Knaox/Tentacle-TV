@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { useWatchTogether } from "./WatchTogetherProvider";
@@ -9,16 +9,16 @@ import { useWatchTogether } from "./WatchTogetherProvider";
  * en cours — au moins un membre regarde (ou est attendu par le group-wait :
  * lecture en train de démarrer). Si plus personne ne regarde, pas de pilule ;
  * dès que quelqu'un relance une lecture, elle apparaît en temps réel (presence
- * diffusée). Clic → resynchronisation.
+ * diffusée). Clic → `joinPlayback` : la salle se gèle au clic et attend cet
+ * appareil, puis le lecteur s'ouvre à la position de la pause.
  *
  * Couleurs volontairement en dur : barre flottante au même verre sombre que
  * l'overlay de chat en lecture (rgba(15,15,25,…) + liseré marque) — reste
  * identique quel que soit le thème de la page qu'elle survole.
  */
 export function GroupPlaybackPill() {
-  const { room } = useWatchTogether();
+  const { room, actions } = useWatchTogether();
   const { t } = useTranslation("watchTogether");
-  const navigate = useNavigate();
   const location = useLocation();
 
   const itemId = room?.itemId ?? null;
@@ -52,7 +52,7 @@ export function GroupPlaybackPill() {
             </span>
             <span className="text-sm text-white/85">{t("groupPlaybackActive")}</span>
             <button
-              onClick={() => navigate(`/watch/${itemId}`)}
+              onClick={() => { void actions.joinPlayback(); }}
               className="rounded-full bg-white px-3.5 py-1.5 text-xs font-bold text-black transition-colors duration-150 hover:bg-white/85"
             >
               {t("rejoin")}

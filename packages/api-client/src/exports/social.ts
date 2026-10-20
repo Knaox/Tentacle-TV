@@ -2,7 +2,7 @@
 export {
   fetchMyGroup, fetchMyInvites, createGroup, sendGroupInvites, respondToInvite,
   leaveGroup, kickGroupMember, useInvitableUsers, setWatchTogetherBackendUrl, WtApiError,
-  setWatchTogetherToken, fetchGroupElsewhere, joinGroupHere,
+  setWatchTogetherToken, fetchGroupElsewhere, joinGroupHere, arriveInGroup,
 } from "../hooks/useWatchTogetherApi";
 
 // Share link ("Partager ma liste")

@@ -4,8 +4,8 @@ import { WT_INITIAL_STATE, wtReducer, type WsClientMessage, type WtElsewhereDto,
 import { acquireSocket, onSocketStatus, sendSocketMessage, subscribeSocket } from "../../socket/tentacleSocket";
 import { getClockOffsetMs } from "../../socket/clockSync";
 import {
-  createGroup, fetchGroupElsewhere, fetchMyGroup, fetchMyInvites, joinGroupHere, kickGroupMember, leaveGroup,
-  respondToInvite, sendGroupInvites,
+  arriveInGroup, createGroup, fetchGroupElsewhere, fetchMyGroup, fetchMyInvites, joinGroupHere, kickGroupMember,
+  leaveGroup, respondToInvite, sendGroupInvites,
 } from "../../hooks/useWatchTogetherApi";
 import { setGroupPlaybackSettings } from "../../hooks/usePlaybackSettings";
 import { useUserId } from "../../hooks/useUserId";
@@ -177,6 +177,16 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
         const room = await joinGroupHere();
         dispatch({ type: "set_room", room });
         enter(room);
+      },
+      async joinPlayback() {
+        const itemId = roomRef.current?.itemId;
+        if (!itemId) return;
+        // La salle se gèle AU CLIC et m'attend ; son état gelé fixe ma position de
+        // départ. Serveur d'avant (404), réseau : le lecteur s'ouvre comme avant.
+        await arriveInGroup()
+          .then((room) => dispatch({ type: "room_state", state: room }))
+          .catch(() => {});
+        portRef.current.navigateToWatch(itemId);
       },
     };
   }, [addPending]);

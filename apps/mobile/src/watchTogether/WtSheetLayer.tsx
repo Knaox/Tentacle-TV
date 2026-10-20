@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { usePathname, useRouter } from "expo-router";
+import { usePathname } from "expo-router";
 import { openAffinity, useJellyfinClient, useMediaItem, useWatchTogether } from "@tentacle-tv/api-client";
 import { isPlayerPath } from "@tentacle-tv/shared";
 import { AffinityModalLayer } from "./affinity/AffinityHost";
@@ -22,7 +22,6 @@ export function WtSheetLayer() {
   const { room, invites, selfId, actions } = wt;
   const sheet = useWtSheet();
   const pathname = usePathname();
-  const router = useRouter();
   const client = useJellyfinClient();
 
   const { data: item } = useMediaItem(room?.itemId ?? undefined, { enabled: !!room?.itemId && sheet === "room" });
@@ -34,8 +33,9 @@ export function WtSheetLayer() {
 
   const pendingUserIds = useMemo(() => new Set(wt.pendingInvites.map((p) => p.userId)), [wt.pendingInvites]);
   // Le lecteur se présente en plein écran : seulement une fois la feuille retirée.
+  // « Rejoindre » : la salle se gèle au clic et m'attend (`joinPlayback`).
   const onStart = room?.itemId && !isPlayerPath(pathname)
-    ? () => { const id = room.itemId; afterWtSheet(() => router.push(`/watch/${id}`)); }
+    ? () => { afterWtSheet(() => { void actions.joinPlayback(); }); }
     : undefined;
   // La modale de l'affinité attend d'elle-même le retrait de la feuille (`useGatedModal`).
   const onAffinity = useCallback(() => { closeWtSheet(); openAffinity(); }, []);

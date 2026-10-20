@@ -141,6 +141,12 @@ export function joinGroupHere(): Promise<WtRoomStateDto> {
   return wtFetch<WtRoomStateDto>("/group/join-here", { method: "POST", body: JSON.stringify({}) });
 }
 
+/** « Rejoindre » la lecture du groupe : la salle se gèle au clic et attend cet
+ *  appareil ; rend l'état gelé (serveur du 20/10 — d'avant : 404). */
+export function arriveInGroup(): Promise<WtRoomStateDto> {
+  return wtFetch<WtRoomStateDto>("/group/arrive", { method: "POST", body: JSON.stringify({}) });
+}
+
 export function kickGroupMember(userId: string): Promise<{ success: boolean }> {
   return wtFetch<{ success: boolean }>("/group/kick", {
     method: "POST",

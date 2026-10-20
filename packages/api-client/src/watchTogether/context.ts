@@ -40,6 +40,9 @@ export interface WatchTogetherContextValue {
     kick: (userId: string) => Promise<void>;
     /** « Rejoindre ici » : AJOUTE cet appareil à la salle de son compte. */
     joinHere: () => Promise<void>;
+    /** « Rejoindre » la lecture du groupe (membre déjà dans le groupe) : la salle
+     *  se gèle au clic et attend cet appareil, puis son lecteur s'ouvre. */
+    joinPlayback: () => Promise<void>;
   };
 }
 
@@ -78,6 +81,7 @@ export const WT_IDLE_CONTEXT: WatchTogetherContextValue = {
     leave: () => Promise.resolve(),
     kick: () => Promise.resolve(),
     joinHere: () => Promise.resolve(),
+    joinPlayback: () => Promise.resolve(),
   },
 };
 
