@@ -1,35 +1,22 @@
 import type { WtMemberDto, WtRoomStateDto } from "../../types/watchTogether";
+import {
+  wtMemberStatus, wtMemberStatusLabelKey, type WtMemberStatus, type WtMemberStatusLabelKey,
+} from "../memberPresentation";
 
 /**
  * Watch Together — ce que montre la feuille du groupe sur le mobile et
  * l'iPad, en module PUR (testé sans React Native) : l'ordre des membres,
  * l'état de chacun DIT EN MOTS (jamais la couleur seule), qui peut expulser.
- * Mêmes règles que les lignes du web (`RoomMemberRow`, `memberStatus`).
+ * L'état d'un membre et ses mots : les règles communes (`memberPresentation`).
  */
-
-/** L'état d'un membre : la pastille ET la clé i18n (`watchTogether`) qui le dit. */
-export type WtMemberState = "error" | "buffering" | "watching" | "online" | "offline";
-
-export const MEMBER_STATE_LABEL: Record<WtMemberState, string> = {
-  error: "cantPlay",
-  buffering: "bufferingStatus",
-  watching: "watching",
-  online: "online",
-  offline: "offline",
-};
-
-export function memberState(member: WtMemberDto): WtMemberState {
-  if (!member.online) return "offline";
-  if (member.playbackError) return "error";
-  if (member.buffering) return "buffering";
-  if (member.inPlayback) return "watching";
-  return "online";
-}
 
 export interface WtMemberRowModel {
   member: WtMemberDto;
   isSelf: boolean;
-  state: WtMemberState;
+  /** La pastille d'état… */
+  status: WtMemberStatus;
+  /** … et la clé i18n (`watchTogether`) qui la dit en mots. */
+  labelKey: WtMemberStatusLabelKey;
   canKick: boolean;
 }
 
@@ -44,7 +31,9 @@ export function roomMemberRows(room: WtRoomStateDto, selfId: string | null): WtM
     .sort((a, b) => rank(a) - rank(b) || a.joinedAt - b.joinedAt)
     .map((member) => {
       const isSelf = member.userId === selfId;
-      return { member, isSelf, state: memberState(member), canKick: selfIsHost && !isSelf };
+      return {
+        member, isSelf, status: wtMemberStatus(member), labelKey: wtMemberStatusLabelKey(member), canKick: selfIsHost && !isSelf,
+      };
     });
 }
 

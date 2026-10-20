@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WtMemberDto, WtRoomStateDto } from "../../types/watchTogether";
-import { memberState, roomMemberRows, waitingNotice } from "./roomModel";
+import { roomMemberRows, waitingNotice } from "./roomModel";
 
 const member = (userId: string, over: Partial<WtMemberDto> = {}): WtMemberDto => ({
   userId, username: userId.toUpperCase(), hasAvatar: false, online: true, inPlayback: false,
@@ -13,13 +13,11 @@ const room = (members: WtMemberDto[], over: Partial<WtRoomStateDto> = {}): WtRoo
   members, ...over,
 });
 
-describe("memberState", () => {
-  it("dit l'état le plus utile d'abord", () => {
-    expect(memberState(member("a", { online: false, playbackError: true }))).toBe("offline");
-    expect(memberState(member("a", { playbackError: true, buffering: true }))).toBe("error");
-    expect(memberState(member("a", { buffering: true, inPlayback: true }))).toBe("buffering");
-    expect(memberState(member("a", { inPlayback: true }))).toBe("watching");
-    expect(memberState(member("a"))).toBe("online");
+describe("roomMemberRows — états", () => {
+  it("porte la pastille et ses mots, règles communes", () => {
+    const [row] = roomMemberRows(room([member("a", { buffering: true, inPlayback: true })]), "me");
+    expect(row!.status).toBe("buffering");
+    expect(row!.labelKey).toBe("bufferingStatus");
   });
 });
 
