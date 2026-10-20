@@ -19,6 +19,7 @@ import { NoticeHost } from "@/notices/NoticeHost";
 import { MutationFailureBinding } from "@/notices/MutationFailureBinding";
 import { FamilyInvitationHost } from "@/family/FamilyInvitationHost";
 import { RightsLiveHost } from "@/rights/RightsLiveHost";
+import { AccountAccessHost } from "@/accountAccess/AccountAccessHost";
 import { AvatarInviteHost } from "@/avatars/invite/AvatarInviteHost";
 import { FamilyPinStartupHost } from "@/family/pinSuggest/FamilyPinStartupHost";
 import { CardSheetScope } from "@/components/cards/sheet/CardSheetScope";
@@ -204,6 +205,8 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       {serverUrl && !showLoading ? <FamilyPinStartupHost /> : null}
       {/* Les messages de l'administrateur, au-dessus de tout — lecteur compris. */}
       <SessionMessageHost />
+      {/* Compte désactivé ou hors de ses heures : la page remplace l'app, lecteur fermé. */}
+      {serverUrl && !showLoading ? <AccountAccessHost /> : null}
       {/* La migration de la base du serveur : au-dessus de tout, jamais un « hors ligne ». */}
       {!showLoading ? <DatabaseMigrationHost serverUrl={serverUrl} /> : null}
       {showLoading && (
