@@ -71,12 +71,16 @@ export function useMobileWtTransport({ active, commands, paused, buffering, vide
   }, [active, videoReady, buffering, seeking]);
 
   // Lecture / pause relayées une fois le média prêt — les transitoires de
-  // chargement ne sont pas des intentions de l'utilisateur.
+  // chargement ne sont pas des intentions de l'utilisateur. Seulement un
+  // CHANGEMENT de pause (comme le bureau) : une séance qui s'ouvre en pleine
+  // lecture n'envoie rien à une salle en pause.
   const readyRef = useRef(videoReady);
   readyRef.current = videoReady;
+  const activeRef = useRef(active);
+  activeRef.current = active;
   useEffect(() => {
-    if (active && readyRef.current) signalsRef.current.notifyPlayState(paused);
-  }, [active, paused]);
+    if (activeRef.current && readyRef.current) signalsRef.current.notifyPlayState(paused);
+  }, [paused]);
 
   const offsetRef = useRef(streamOffset);
   offsetRef.current = streamOffset;
