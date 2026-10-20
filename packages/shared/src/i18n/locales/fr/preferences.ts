@@ -34,6 +34,10 @@ export default {
   opening: "Ouverture",
   bootSoundTitle: "Son au démarrage",
   bootSoundDescription: "Le « ta-dum » joué à chaque lancement de l'application. Il se mêle à une musique déjà en cours, sans la couper.",
+  // Le mobile (iPhone, iPad, Android) : l'animation se coupe aussi, et le son suit le mode silencieux.
+  bootIntroTitle: "Animation d'ouverture",
+  bootIntroDescription: "Le logo s'anime au lancement de l'application, puis s'ouvre sur votre premier écran. Jamais avec « Réduire les animations » du système.",
+  bootSoundDescriptionMobile: "Le « ta-dum » de l'animation d'ouverture. Il respecte le mode silencieux et se mêle à votre musique sans la couper.",
 
   // ── Sections de la coquille de réglages ──
   // Titre ombrelle de l'écran (atterrissage mobile). `title` reste le titre
