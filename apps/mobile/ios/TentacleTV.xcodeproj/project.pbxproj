@@ -11,12 +11,12 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		7E645E1364FAC695E7FFBD3A /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8029AE2D9D2E8123E10C1431 /* ExpoModulesProvider.swift */; };
+		B00750D0DE0000000000B001 /* TentacleBootSound.m in Sources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000B002 /* TentacleBootSound.m */; };
+		B00750D0DE0000000000B003 /* boot-tadum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000B004 /* boot-tadum.m4a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		BF4B73446E645D5303AD761F /* AirPlayModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 41459D7F00E9B1D3B5CDC4CF /* AirPlayModule.m */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 		FC1019C406659A27CAED1231 /* libPods-TentacleTV.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */; };
-		B00750D0DE0000000000B001 /* TentacleBootSound.m in Sources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000B002 /* TentacleBootSound.m */; };
-		B00750D0DE0000000000B003 /* boot-tadum.m4a in Resources */ = {isa = PBXBuildFile; fileRef = B00750D0DE0000000000B004 /* boot-tadum.m4a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +27,8 @@
 		5D09CF3FDA6D0DDA9D0E0284 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = TentacleTV/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8029AE2D9D2E8123E10C1431 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-TentacleTV/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = TentacleTV/SplashScreen.storyboard; sourceTree = "<group>"; };
+		B00750D0DE0000000000B002 /* TentacleBootSound.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleBootSound.m; path = ../../tv/ios/TentacleTV/TentacleBootSound.m; sourceTree = "<group>"; };
+		B00750D0DE0000000000B004 /* boot-tadum.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; name = "boot-tadum.m4a"; path = "../../tv/assets/sound/boot-tadum.m4a"; sourceTree = "<group>"; };
 		B3623126F3CD714FF7C0FDFC /* Pods-TentacleTV.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV.release.xcconfig"; path = "Target Support Files/Pods-TentacleTV/Pods-TentacleTV.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		EA12ED91C779A3636DC15047 /* Pods-TentacleTV.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV.debug.xcconfig"; path = "Target Support Files/Pods-TentacleTV/Pods-TentacleTV.debug.xcconfig"; sourceTree = "<group>"; };
@@ -34,8 +36,6 @@
 		EF37660A8EC88928F869F748 /* libPods-TentacleTV.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TentacleTV.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = TentacleTV/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* TentacleTV-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "TentacleTV-Bridging-Header.h"; path = "TentacleTV/TentacleTV-Bridging-Header.h"; sourceTree = "<group>"; };
-		B00750D0DE0000000000B002 /* TentacleBootSound.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TentacleBootSound.m; path = ../../tv/ios/TentacleTV/TentacleBootSound.m; sourceTree = "<group>"; };
-		B00750D0DE0000000000B004 /* boot-tadum.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; name = "boot-tadum.m4a"; path = "../../tv/assets/sound/boot-tadum.m4a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
