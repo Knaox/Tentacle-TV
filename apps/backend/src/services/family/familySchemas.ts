@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FAMILY_GUEST_PHOTO_MAX_BASE64, FAMILY_GUEST_PHOTO_TYPES, FAMILY_PROFILE_COLORS } from "../../family/familyContract";
-import { FAMILY_PICKER_PLATFORMS, FAMILY_PICKER_PREFERENCE_PLATFORMS } from "../../family/familyPickerContract";
+import { FAMILY_LAUNCH_ASK_PLATFORMS, FAMILY_PICKER_PLATFORMS, FAMILY_PICKER_PREFERENCE_PLATFORMS } from "../../family/familyPickerContract";
 import { FAMILY_CREATION_RIGHT_VALUES } from "../../family/familyRoles";
 
 /**
@@ -102,8 +102,14 @@ export const adminSwitchesBodySchema = z.object({
 
 const launchModeSchema = z.enum(["off", "choice"]);
 
-/** La politique de l'administration : seulement ce qui change (le bureau a un défaut, les TV non). */
+/** La politique de l'administration : seulement ce qui change — la forme d'avant (le bureau a un
+ *  défaut, les TV non) ou la forme simple (1.31.1 : l'interrupteur général, les plateformes cochées). */
 export const adminLaunchPolicyBodySchema = z.object({
   desktop: z.object({ mode: launchModeSchema.optional(), defaultOn: z.boolean().optional() }).optional(),
   tv: z.object({ mode: launchModeSchema.optional() }).optional(),
+  enabled: z.boolean().optional(),
+  platforms: z.object(
+    Object.fromEntries(FAMILY_LAUNCH_ASK_PLATFORMS.map((platform) => [platform, z.boolean().optional()])) as
+      Record<(typeof FAMILY_LAUNCH_ASK_PLATFORMS)[number], z.ZodOptional<z.ZodBoolean>>,
+  ).strict().optional(),
 });

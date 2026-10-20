@@ -262,11 +262,13 @@ export const FAMILY_ROUTES = {
   /** `Partial<FamilySwitches>` → `FamilySwitches`. Couper coupe les sessions de profil concernées. */
   adminSetSwitches: { method: "PUT", path: "/api/admin/family", callers: ["admin"] },
   /** → `FamilyLaunchPolicy`. « Qui regarde ? » à l'ouverture, plateforme par
-   *  plateforme (1.30.0, `family.pickerPolicy`). */
+   *  plateforme (1.30.0, `family.pickerPolicy`) ; sa forme simple, un
+   *  interrupteur et des cases (1.31.1, `family.launchPlatforms`). */
   adminLaunchPolicy: { method: "GET", path: "/api/admin/family/picker", callers: ["admin"] },
-  /** `SetFamilyLaunchPolicyBody` → `FamilyLaunchPolicy`. `off` : coupé pour tous
-   *  (les choix des appareils reviennent si on le rouvre) ; `choice` : au choix
-   *  de chaque appareil — le bureau `defaultOn` chez qui n'a jamais choisi.
+  /** `SetFamilyLaunchPolicyBody` → `FamilyLaunchPolicy`. Forme simple : `enabled`
+   *  et les `platforms` cochées (proposé d'office ; chaque appareil garde sa case
+   *  « Ne plus proposer »). Forme d'avant, appliquée aux cases : `off` décoche,
+   *  `choice` coche selon `defaultOn` — le bureau règle aussi le navigateur.
    *  Aucune session n'est fermée : la règle vaut au PROCHAIN lancement. */
   adminSetLaunchPolicy: {
     method: "PUT",

@@ -10,7 +10,7 @@ const FAMILY: PickerProfilesDto = {
   v: 2, platform: "mobile", switches: { families: true, guests: true }, account: { userId: "damien", name: "Damien" },
   profiles: [p("damien", { kind: "owner", personal: true }), p("lea")], currentProfileId: "damien", pickerRequired: true, atLaunch: true,
 };
-const base: LaunchGateInput = { enabled: true, data: FAMILY, isError: false, request: null, held: null, choice: "unset", stay: null, now: NOW };
+const base: LaunchGateInput = { enabled: true, data: FAMILY, isError: false, request: null, held: null, choice: "unset", stay: null, now: NOW, asked: true };
 
 describe("la porte de « Qui regarde ? » du mobile", () => {
   it("un serveur qui ne déclare rien (capacité absente) : rien, sans erreur", () => {
@@ -30,6 +30,10 @@ describe("la porte de « Qui regarde ? » du mobile", () => {
   });
   it("« Ne plus proposer au démarrage » : le dernier profil choisi s'ouvre, sans écran", () => {
     expect(launchGateState({ ...base, choice: "stay", stay: { profileId: "damien", hasPin: false } })).toBe("none");
+  });
+  it("l'administration ne le propose pas d'office sur le mobile : rien, sauf une session de profil terminée", () => {
+    expect(launchGateState({ ...base, asked: false })).toBe("none");
+    expect(launchGateState({ ...base, asked: false, request: "ended" })).toBe("picker");
   });
   it("une session de profil terminée : « Qui regarde ? » exigé, même case cochée", () => {
     expect(launchGateState({ ...base, choice: "stay", stay: { profileId: "damien", hasPin: false }, request: "ended" })).toBe("picker");

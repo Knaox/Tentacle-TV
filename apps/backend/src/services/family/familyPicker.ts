@@ -1,12 +1,13 @@
 import { FAMILY_CONTRACT_VERSION, type FamilySwitches, type FamilyRights } from "../../family/familyContract";
-import type {
-  FamilyPickerPlatform,
-  PickProfileBody,
-  PickedProfileDto,
-  PickerPreferenceDto,
-  PickerProfileDto,
-  PickerProfilesDto,
-  SetPickerPreferenceBody,
+import {
+  launchAskedOn,
+  type FamilyPickerPlatform,
+  type PickProfileBody,
+  type PickedProfileDto,
+  type PickerPreferenceDto,
+  type PickerProfileDto,
+  type PickerProfilesDto,
+  type SetPickerPreferenceBody,
 } from "../../family/familyPickerContract";
 import type { TvProfileDto } from "../../family/familyTvContract";
 import { canManageGuest, familyRightsOf } from "../../family/familyRights";
@@ -20,7 +21,7 @@ import { familyUpdate } from "./familyNotify";
 import { checkProfilePin } from "./familyPins";
 import { closeProfileSessions, startProfileSession } from "./familyProfileSession";
 import { currentProfileOf, ensurePickerHost, findPickerHost, pickerHostLock, touchPickerHost } from "./familyPickerHosts";
-import { desktopAtLaunchByDefault, getFamilyLaunchPolicy } from "./familyLaunchPolicy";
+import { getFamilyLaunchSettings } from "./familyLaunchPolicy";
 import { readPickerPreference, writePickerPreference } from "./familyPickerPreference";
 import { manageUntilAtOpen, unavailableFor, visibleProfiles } from "./familyTv";
 import { syncGuestPolicy } from "./guestPolicySync";
@@ -92,7 +93,9 @@ export async function listPickerProfiles(caller: PickerCaller, platform: FamilyP
     visibleProfiles(caller.userId, caller.username, now),
     findPickerHost(caller.token),
   ]);
-  const policy = getFamilyLaunchPolicy();
+  // « Qui regarde ? » proposé d'office sur CETTE plateforme (1.31.1) : le bureau et le web
+  // décident ensuite par appareil (`launchPolicy`, tiré d'elle), le mobile aussi (`launchAsk`).
+  const launchAsk = launchAskedOn(getFamilyLaunchSettings(), platform);
   const own = profiles.find((profile) => sameUserId(profile.userId, caller.userId));
   const account = { userId: own?.userId ?? caller.userId, name: own?.name ?? caller.username };
   const rights = accountRights(profiles, roleRights, caller.userId, switches);
@@ -110,9 +113,10 @@ export async function listPickerProfiles(caller: PickerCaller, platform: FamilyP
     profiles: profiles.map((profile) => toPickerProfile(profile, caller.userId, rights)),
     currentProfileId,
     pickerRequired: isPickerRequired(profiles.length),
-    // Le bureau décide par APPAREIL dans ce cadre ; `atLaunch` sert les bureaux d'avant (ordinateur « jamais choisi »).
-    atLaunch: desktopAtLaunchByDefault(policy),
-    launchPolicy: policy.desktop,
+    // `atLaunch` sert les bureaux d'avant (ordinateur « jamais choisi ») ; `launchPolicy`, ceux de la 1.30.
+    atLaunch: launchAsk,
+    launchPolicy: { mode: launchAsk ? "choice" : "off", defaultOn: true },
+    launchAsk,
   };
 }
 

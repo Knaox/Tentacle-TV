@@ -13,6 +13,7 @@ import { useBootSettings } from "./bootEntryHooks";
 import { useSessionAbilities } from "./abilityEntryHooks";
 import { playerSettingsContext } from "./playerSettingsContext";
 import type { SettingsCatalogContext } from "@tentacle-tv/shared";
+import { useMobileLaunchAsked } from "@/family/profiles/useMobileLaunchAsked";
 
 /**
  * L'écran de la Famille du mobile est-il branché ? Tant qu'il ne l'est pas,
@@ -36,6 +37,7 @@ export function useProfileContext(): SettingsCatalogContext {
   // retirer, supprimer un invité ou dissoudre.
   const familyOn = isFamilyAvailable(config?.features.family, offline);
   const canSwitchProfile = useCanSwitchProfileFlag();
+  const launchAsked = useMobileLaunchAsked();
   const profileSession = useIsProfileSession();
   const liveTransfers = useLiveTransfersSetting().available;
   const bootIntro = useBootSettings().available;
@@ -56,11 +58,12 @@ export function useProfileContext(): SettingsCatalogContext {
     canGoOffline: connectivity === "online" && offlineVisible,
     family: FAMILY_SCREEN_READY && familyOn,
     canSwitchProfile,
+    launchAsked,
     liquidGlass: liquidGlass.supported,
     advancedEngine: player.advancedEngine,
     engineOptions: player.engineOptions,
     bootIntro,
     liveTransfers,
     profileSession,
-  }), [offline, isAdmin, abilities, connectivity, offlineVisible, familyOn, canSwitchProfile, liquidGlass.supported, capabilities, player, bootIntro, liveTransfers, profileSession]);
+  }), [offline, isAdmin, abilities, connectivity, offlineVisible, familyOn, canSwitchProfile, launchAsked, liquidGlass.supported, capabilities, player, bootIntro, liveTransfers, profileSession]);
 }
