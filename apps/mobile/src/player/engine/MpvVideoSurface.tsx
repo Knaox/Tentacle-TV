@@ -24,7 +24,7 @@ import type { EngineSurfaceProps } from "./types";
  */
 export function MpvVideoSurface({
   engineRef, streamUrl, headers, streams, startPositionMs, selectedAudioIndex, selectedSubtitleIndex,
-  externalSubtitles, title, artist, paused, currentTime, isAirPlaying, showLoading, overlayVisible,
+  externalSubtitles, title, artist, paused, rate, currentTime, isAirPlaying, showLoading, overlayVisible,
   reloadToken, subtitleScale, subtitlePosition, subtitleDelay, audioDelay,
   onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute, onPipChange,
   onSeek, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
@@ -124,6 +124,7 @@ export function MpvVideoSurface({
         style={{ flex: 1 }}
         source={source}
         paused={paused}
+        speed={rate}
         nowPlaying={{ title, artist }}
         subtitleScale={subtitleScale}
         subtitlePosition={subtitlePosition}

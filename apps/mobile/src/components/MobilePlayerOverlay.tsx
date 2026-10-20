@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
 import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import { ArrowLeft, Captions, Settings, List } from "lucide-react-native";
@@ -74,6 +74,8 @@ interface Props {
   onScrubStateChange?: (active: boolean) => void;
   visible: boolean;
   onToggle: () => void;
+  /** Watch Together : le bouton du groupe, en tête de la rangée d'outils (absent hors séance). */
+  groupButton?: ReactNode;
 }
 
 export function MobilePlayerOverlay({
@@ -84,7 +86,7 @@ export function MobilePlayerOverlay({
   onPlayPause, onSeek, onSkip, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode, onScrubStateChange,
-  visible, onToggle,
+  visible, onToggle, groupButton,
 }: Props) {
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -200,6 +202,7 @@ export function MobilePlayerOverlay({
               />
             </View>
             <View style={{ flexDirection: "row", gap: isTablet ? 10 : 6, marginBottom: Math.max(34, insets.bottom + 12) }}>
+              {groupButton}
               <AirPlaySection />
               {item?.SeriesId && (
                 <Pressable
