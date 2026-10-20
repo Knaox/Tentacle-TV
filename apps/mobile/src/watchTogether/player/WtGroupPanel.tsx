@@ -29,9 +29,11 @@ export const WtGroupPanel = memo(function WtGroupPanel(props: {
   selfId: string | null;
   unread: number;
   messages: readonly WtChatMessageDto[];
-  onSend: (text: string) => void;
-  onReact: (emoji: string) => void;
-  onSendGif: (gif: GifItem) => void;
+  onSend: (text: string) => boolean;
+  onReact: (emoji: string) => boolean;
+  onSendGif: (gif: GifItem) => boolean;
+  typingText: string | null;
+  onTyping: () => void;
   onOpenRoom: () => void;
   /** Absent : le panneau ne se ferme pas d'ici (la feuille a son geste). */
   onClose?: () => void;
@@ -54,7 +56,8 @@ export const WtGroupPanel = memo(function WtGroupPanel(props: {
         )}
       </View>
       {tab === "chat" ? (
-        <WtChatPanel messages={props.messages} selfId={selfId} onSend={props.onSend} onReact={props.onReact} onSendGif={props.onSendGif} />
+        <WtChatPanel messages={props.messages} selfId={selfId} onSend={props.onSend} onReact={props.onReact} onSendGif={props.onSendGif}
+          typingText={props.typingText} onTyping={props.onTyping} />
       ) : (
         <ScrollView contentContainerStyle={st.members}>
           {rows.map(({ member, isSelf, status: state, labelKey }) => (
