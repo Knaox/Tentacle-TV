@@ -81,7 +81,6 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
       ) : null}
       <Animated.View style={[st.plate, plateStyle, { opacity: side ? enter : 1, transform: [side ? { translateX: slide } : { translateY: slide }] }]}>
         <BrowserGlass radius={geo.radius} solid={!side} />
-        {!side ? <View style={st.grabber} /> : null}
         <View style={[st.header, { paddingHorizontal: inset, paddingTop: side ? (isTablet ? 22 : 14) : 22 }, compact && st.headerCompact]}>
           {/* Un téléphone couché n'a pas la hauteur de deux lignes de titre : la série suit « Épisodes ». */}
           <View style={compact ? st.headingsInline : st.headings}>
@@ -119,7 +118,6 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
 
 const st = StyleSheet.create({
   plate: { position: "absolute", overflow: "hidden" },
-  grabber: { alignSelf: "center", marginTop: 8, width: 36, height: 5, borderRadius: 2.5, backgroundColor: "rgba(255, 255, 255, 0.28)" },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 14 },
   headerCompact: { paddingBottom: 10 },
   headings: { flex: 1, gap: 2 },
