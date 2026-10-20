@@ -11,12 +11,14 @@ import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { ChromeVeilLayer } from "@/components/navigation/ChromeVeilLayer";
 import { HeaderContentMenu } from "@/components/header/HeaderContentMenu";
+import { ProfileChip } from "@/components/header/ProfileChip";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { DataSaverPill } from "@/offline/DataSaverPill";
 import { OnDeviceHeaderButton } from "@/offline/entry/OnDeviceHeaderButton";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useDataSaverActive } from "@/offline/useDataSaver";
 import { useOfflineMode } from "@/offline/useOfflineMode";
+import { useProfileSwitchOffered } from "@/profileSwitch/profileSwitchEntry";
 import { spacing, useTheme, withAlpha } from "@/theme";
 
 /** Hauteur de la barre de contenu du header (hors safe-area). */
@@ -61,6 +63,10 @@ export const PersistentHeader = memo(function PersistentHeader() {
   // En ligne, la pastille « Économie » prend elle aussi la place du titre :
   // l'en-tête d'un petit iPhone n'a pas la place pour les deux.
   const saver = useDataSaverActive();
+  // Famille de plusieurs profils : la puce du profil actif remplace le titre —
+  // la toucher propose aussitôt les autres profils. Hors ligne, rien à changer
+  // (la bascule passe par le serveur) : la pastille garde sa place.
+  const profileChip = useProfileSwitchOffered() && !localNav;
 
   // Compaction au défilement : la barre remonte de huit points, et c'est tout —
   // le logo, le titre et les actions restent visibles (demandé : l'identité ne
@@ -90,7 +96,12 @@ export const PersistentHeader = memo(function PersistentHeader() {
           {offline ? (
             <ConnectivityPill variant="header" />
           ) : saver ? (
-            <DataSaverPill />
+            <>
+              {profileChip && <ProfileChip compact />}
+              <DataSaverPill />
+            </>
+          ) : profileChip ? (
+            <ProfileChip />
           ) : (
             <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
           )}
