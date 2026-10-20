@@ -10,9 +10,7 @@
     "scheme": "tentacle",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#080812"
+      "backgroundColor": "#0D0B13"
     },
     "ios": {
       "supportsTablet": true,

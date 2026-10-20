@@ -1,5 +1,7 @@
 <resources>
-  <color name="splashscreen_background">#080812</color>
+  <!-- L'encre de l'ouverture du démarrage (BOOT_INK) : l'écran de lancement est elle seule. -->
+  <color name="splashscreen_background">#0D0B13</color>
+  <color name="boot_ink">#0D0B13</color>
   <color name="iconBackground">#080812</color>
   <color name="colorPrimary">#8B5CF6</color>
   <color name="colorPrimaryDark">#080812</color>
