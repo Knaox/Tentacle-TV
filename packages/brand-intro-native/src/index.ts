@@ -19,6 +19,7 @@ export {
   useBootIntroReport,
   useReportBlockedToBootIntro,
   useReportScreenToBootIntro,
+  whenBootIntroLanded,
   type BootIntroReport,
 } from "./bootIntroGate";
 export { bootSound } from "./bootSound";
