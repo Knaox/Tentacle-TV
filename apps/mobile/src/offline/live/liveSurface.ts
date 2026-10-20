@@ -71,3 +71,12 @@ export function platformLiveSurface(): LiveSurface {
   if (Platform.OS === "android") return androidSurface;
   return noSurface;
 }
+
+/**
+ * Cet appareil sait-il montrer le suivi en direct ? Android avec un build
+ * récent ; iOS 16.2+ avec les Activités en direct permises dans les réglages
+ * du système. Le réglage « Suivi en direct » ne se montre qu'à cette condition.
+ */
+export function liveTransfersSupported(): boolean {
+  return platformLiveSurface().available();
+}

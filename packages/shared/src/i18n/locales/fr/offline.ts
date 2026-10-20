@@ -190,8 +190,6 @@ export default {
   diskFullNotifBody: "Le transfert de « {{title}} » s'est arrêté.",
 
   // Le suivi en direct (Live Activity d'iOS, notification permanente d'Android)
-  liveTransfers: "Suivi en direct",
-  liveTransfersDesc: "Le temps restant sur l'écran verrouillé pendant qu'un titre se prépare.",
   liveChannel: "Suivi des transferts",
   liveCount_one: "{{count}} titre",
   liveCount_other: "{{count}} titres",
@@ -203,7 +201,7 @@ export default {
   liveDurationHours: "{{hours}} h {{minutes}} min",
   liveDurationSoon: "moins d'une minute",
   liveEstimating: "Calcul du temps restant…",
-  liveFinalizing: "Dernière étape sur le téléphone…",
+  liveFinalizing: "Dernière étape sur cet appareil…",
   liveWaitingWifi: "En attente du Wi-Fi",
   liveWaitingNetwork: "En attente du réseau",
   livePaused: "En pause",

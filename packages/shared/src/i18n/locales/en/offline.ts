@@ -171,8 +171,6 @@ export default {
   diskFullNotifTitle: "Not enough space",
   diskFullNotifBody: "The transfer of \"{{title}}\" stopped.",
 
-  liveTransfers: "Live progress",
-  liveTransfersDesc: "Time left on the Lock Screen while a title is being prepared.",
   liveChannel: "Transfer progress",
   liveCount_one: "{{count}} title",
   liveCount_other: "{{count}} titles",
@@ -184,7 +182,7 @@ export default {
   liveDurationHours: "{{hours}} h {{minutes}} min",
   liveDurationSoon: "under a minute",
   liveEstimating: "Working out the time left…",
-  liveFinalizing: "Finishing up on the phone…",
+  liveFinalizing: "Finishing up on this device…",
   liveWaitingWifi: "Waiting for Wi-Fi",
   liveWaitingNetwork: "Waiting for a connection",
   livePaused: "Paused",
