@@ -1,4 +1,5 @@
 import { readActiveProfile } from "./profileSession";
+import { accountEscrowedIn } from "@tentacle-tv/shared";
 import { forgetProfileSession, returnToAccount } from "./sessionSwap";
 
 /**
@@ -11,6 +12,10 @@ import { forgetProfileSession, returnToAccount } from "./sessionSwap";
  *
  * Pendant une bascule voulue (`beginProfileSwitch`), la fin de l'ancienne
  * session est attendue (le serveur la ferme, « replaced ») : on l'ignore.
+ *
+ * Le navigateur (plateforme `web`) n'a rien à reprendre : le jeton du compte est
+ * dans la réserve du SERVEUR, qui ne le rendra que derrière son code. La page
+ * garde donc tout tel quel et rouvre sur « Qui regarde ? », joué par la réserve.
  *
  * Hors d'une session de profil, rien n'est fait ici (`false`) : l'appelant
  * garde son comportement d'avant.
@@ -64,7 +69,9 @@ export function endProfileSession(reason: string): boolean {
   if (!readActiveProfile()) return false;
   switching = true;
   try {
-    if (returnToAccount(localStorage)) {
+    if (accountEscrowedIn(localStorage)) {
+      sessionStorage.setItem(PICKER_REQUEST_KEY, reason || "ended");
+    } else if (returnToAccount(localStorage)) {
       sessionStorage.setItem(PICKER_REQUEST_KEY, reason || "ended");
     } else {
       // Aucune session personnelle à reprendre (réserve perdue) : rien ne doit

@@ -1,7 +1,7 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import { FAMILY_ROUTES, splitFamilyPath, type FamilyRouteName } from "../../family/familyRoutes";
-import { familyGuard, type FamilyActor } from "../../services/family/familyCaller";
+import { familyGuard, type FamilyActor, type FamilyTokenSource } from "../../services/family/familyCaller";
 import { FamilyFailure, sendFamilyFailure } from "../../services/family/familyErrors";
 
 /**
@@ -11,11 +11,13 @@ import { FamilyFailure, sendFamilyFailure } from "../../services/family/familyEr
  * formé, `family.invalid_input`.
  */
 
-export type FamilyHandler = (request: FastifyRequest, actor: FamilyActor, now: number) => Promise<unknown>;
+export type FamilyHandler = (request: FastifyRequest, actor: FamilyActor, now: number, reply: FastifyReply) => Promise<unknown>;
 
 export interface FamilyRouteOptions {
   /** Corps le plus lourd accepté (octets) ; au-delà, 413 avant toute lecture. */
   bodyLimit?: number;
+  /** Où lire le jeton de l'appelant (la réserve du compte, pour « Qui regarde ? » du web). */
+  tokenOf?: FamilyTokenSource;
 }
 
 export function registerFamilyRoute(
@@ -30,14 +32,14 @@ export function registerFamilyRoute(
   app.route({
     method: spec.method,
     url: rest,
-    preHandler: [familyGuard(spec)],
+    preHandler: [familyGuard(spec, options.tokenOf)],
     ...(options.bodyLimit && { bodyLimit: options.bodyLimit }),
     ...(rateLimit && { config: { rateLimit: { max: rateLimit.max, timeWindow: rateLimit.windowMs } } }),
     handler: async (request, reply) => {
       const actor = request.familyActor;
       if (!actor) return reply.status(401).send({ message: "Unauthorized" });
       try {
-        return await handler(request, actor, Date.now());
+        return await handler(request, actor, Date.now(), reply);
       } catch (error) {
         if (error instanceof FamilyFailure) return sendFamilyFailure(reply, error);
         if (error instanceof ZodError) return sendFamilyFailure(reply, new FamilyFailure("family.invalid_input", "Requête invalide"));

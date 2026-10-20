@@ -4,6 +4,7 @@ import { FAMILY_KEY, setFamilyGuestPhoto, setPickerGuestPhoto, useJellyfinClient
 import { useAvatarUpload } from "../../hooks/useAvatarUpload";
 import { getUserInfo } from "../../components/userMenu/menuItems";
 import { accountToken, readActiveProfile, rememberActiveProfilePhoto } from "../../auth/profileSession";
+import { ACCOUNT_HELD_BY_SERVER } from "../pickerPlatform";
 import { getBackendBase } from "../../lib/backendBase";
 import { imageToJpegBase64 } from "../../lib/imageToJpegBase64";
 
@@ -47,8 +48,9 @@ export function useAvatarTarget(target: AvatarTarget): AvatarTargetState {
       const photo = { image: base64, type: mime };
       let imageTag: string | null;
       if (guest.through === "personal") {
-        const token = accountToken();
-        if (!token) return false;
+        // Le navigateur : ses cookies, le serveur lit la réserve du compte (`pickerPlatform.ts`).
+        const token = ACCOUNT_HELD_BY_SERVER ? null : accountToken();
+        if (!token && !ACCOUNT_HELD_BY_SERVER) return false;
         ({ imageTag } = await setPickerGuestPhoto({ serverUrl: getBackendBase(), personalToken: token }, guest.userId, photo));
       } else {
         ({ imageTag } = await setFamilyGuestPhoto({ userId: guest.userId, photo }));

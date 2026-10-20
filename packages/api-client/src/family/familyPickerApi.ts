@@ -28,13 +28,15 @@ import { TentacleApiError } from "../hooks/usePreferences";
 export interface PickerCall {
   /** L'adresse du serveur Tentacle, sans `/` final. */
   serverUrl: string;
-  /** Le jeton de la session PERSONNELLE (jamais celui d'une session de profil). */
-  personalToken: string;
+  /** Le jeton de la session PERSONNELLE (jamais celui d'une session de profil).
+   *  Null : le navigateur (plateforme `web`) — l'appel part avec ses cookies,
+   *  et le serveur lit la session personnelle, ou sa réserve pendant un profil. */
+  personalToken: string | null;
   signal?: AbortSignal;
 }
 
 async function pickerCall<T>(call: PickerCall, path: string, method: "GET" | "POST" | "PUT", body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { Authorization: `Bearer ${call.personalToken}` };
+  const headers: Record<string, string> = call.personalToken ? { Authorization: `Bearer ${call.personalToken}` } : {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   let res: Response;
   try {
@@ -42,6 +44,7 @@ async function pickerCall<T>(call: PickerCall, path: string, method: "GET" | "PO
       method,
       headers,
       signal: call.signal,
+      ...(call.personalToken === null && { credentials: "include" as const }),
       ...(body !== undefined && { body: JSON.stringify(body) }),
     });
   } catch (error) {

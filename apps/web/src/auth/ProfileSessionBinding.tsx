@@ -3,6 +3,7 @@ import { acquireSocket, subscribeSocket, useJellyfinClient, useStreamingConfig }
 import type { WsServerMessage } from "@tentacle-tv/shared";
 import { endProfileSession } from "./profileEnded";
 import { useActiveProfile } from "./profileSession";
+import { useCrossTabProfileReload } from "./crossTabProfile";
 import { useConnectivity } from "../offline/useConnectivity";
 import { setManualOffline } from "../offline/connectivityStore";
 
@@ -19,10 +20,13 @@ import { setManualOffline } from "../offline/connectivityStore";
  *   session personnelle retrouvera la sienne au retour (`sessionSwap.ts`) ;
  * - jamais de hors ligne manuel : rien n'est gardé sur la machine pour lui.
  *
- * En session personnelle, et partout hors du bureau : rien.
+ * En session personnelle : rien, sauf suivre un autre onglet qui change de
+ * profil (le navigateur).
  */
 export function ProfileSessionBinding() {
   const profile = useActiveProfile();
+  // Un autre onglet du navigateur change de profil : celui-ci suit (`crossTabProfile.ts`).
+  useCrossTabProfileReload();
   return profile ? <ProfileSessionWatch /> : null;
 }
 

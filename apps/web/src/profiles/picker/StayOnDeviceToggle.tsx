@@ -1,6 +1,7 @@
 import { memo, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
+import { IN_BROWSER } from "../pickerPlatform";
 
 interface StayOnDeviceToggleProps {
   checked: boolean;
@@ -44,7 +45,7 @@ export const StayOnDeviceToggle = memo(function StayOnDeviceToggle({ checked, di
         {t("stayOnDevice")}
       </label>
       <p id={hintId} aria-live="polite" className="mt-1 min-h-[2.5rem] max-w-sm text-center text-xs leading-5 text-content-tertiary">
-        {checked ? t("stayOnDeviceHint") : ""}
+        {checked ? (IN_BROWSER ? t("stayOnDeviceHintWeb") : t("stayOnDeviceHint")) : ""}
       </p>
     </div>
   );

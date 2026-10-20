@@ -17,6 +17,11 @@ import type { PickerProfileDto } from "./familyPickerContract";
  * - `tentacle_profile_session` : la marque du profil actif (nom, couleur,
  *   rôle), qui dit à l'interface ce qu'elle doit taire.
  *
+ * Le WEB (plateforme `web`, 1.32.0) ne garde PAS le jeton du compte : le serveur
+ * le tient en réserve dans un cookie httpOnly le temps du profil, et le rend
+ * derrière SON code (`PickedProfileDto.token`). La réserve de la page ne porte
+ * alors que le compte (`tentacle_user`) et la marque `held: "server"`.
+ *
  * L'identité Jellyfin adoptée (`tentacle_device_id_jf`) suit la session : un
  * profil reçoit la sienne du serveur (`/api/config/streaming` › `deviceId`),
  * le compte retrouve la sienne au retour.
@@ -54,9 +59,10 @@ export interface ActiveProfile {
   photoEditable?: boolean;
 }
 
-/** La session personnelle mise de côté : son jeton, et son `tentacle_user` tel quel. */
+/** La session personnelle mise de côté : son jeton, et son `tentacle_user` tel quel.
+ *  `token` null : le serveur la garde (le web, `held: "server"`). */
 export interface AccountSession {
-  token: string;
+  token: string | null;
   user: string;
 }
 
@@ -70,6 +76,13 @@ export interface ProfileGrant {
 interface StoredAccount extends AccountSession {
   /** L'identité Jellyfin adoptée par la session personnelle, à rendre au retour. */
   deviceId?: string | null;
+  /** `server` : le jeton est dans la réserve du serveur (le web), jamais ici. */
+  held?: "server";
+}
+
+/** Comment entrer dans un profil : `escrowed`, le serveur garde le jeton du compte (le web). */
+export interface EnterProfileOptions {
+  escrowed?: boolean;
 }
 
 function isActiveProfile(value: unknown): value is ActiveProfile {
@@ -118,11 +131,19 @@ export function profileMarkerIn(store: Pick<KeyValueStore, "getItem">): { state:
 function readStash(store: Pick<KeyValueStore, "getItem">): StoredAccount | null {
   try {
     const parsed = JSON.parse(store.getItem(ACCOUNT_SESSION_KEY) ?? "null") as Partial<StoredAccount> | null;
-    if (!parsed || typeof parsed.token !== "string" || !parsed.token || typeof parsed.user !== "string") return null;
-    return { token: parsed.token, user: parsed.user, deviceId: typeof parsed.deviceId === "string" ? parsed.deviceId : null };
+    if (!parsed || typeof parsed.user !== "string") return null;
+    const deviceId = typeof parsed.deviceId === "string" ? parsed.deviceId : null;
+    if (parsed.held === "server") return { token: null, user: parsed.user, deviceId, held: "server" };
+    if (typeof parsed.token !== "string" || !parsed.token) return null;
+    return { token: parsed.token, user: parsed.user, deviceId };
   } catch {
     return null;
   }
+}
+
+/** Pendant un profil, le jeton du compte est-il dans la réserve du SERVEUR (le web) ? */
+export function accountEscrowedIn(store: Pick<KeyValueStore, "getItem">): boolean {
+  return profileMarkerIn(store).profile !== null && readStash(store)?.held === "server";
 }
 
 /** La session personnelle mise de côté pendant un profil ; null sinon. */
@@ -175,13 +196,16 @@ export function activeProfileOf(profile: PickerProfileDto): ActiveProfile {
  * celle d'un autre compte) vaut la session personnelle : c'est la session
  * ACTIVE qui part en réserve, jamais l'ancienne réserve qui traînait.
  */
-export function enterProfile(store: KeyValueStore, grant: ProfileGrant): boolean {
+export function enterProfile(store: KeyValueStore, grant: ProfileGrant, options: EnterProfileOptions = {}): boolean {
   const marker = profileMarkerIn(store).state;
   if (marker === "none" || marker === "stale") {
     const token = store.getItem(TOKEN_KEY);
     const user = store.getItem(USER_KEY);
-    if (!token || !user) return false;
-    const stash: StoredAccount = { token, user, deviceId: store.getItem(DEVICE_ID_KEY) };
+    if (!user || (!token && !options.escrowed)) return false;
+    // Le web : le serveur a mis le jeton en réserve, la page n'en garde aucune copie.
+    const stash: StoredAccount = options.escrowed
+      ? { token: null, user, deviceId: store.getItem(DEVICE_ID_KEY), held: "server" }
+      : { token, user, deviceId: store.getItem(DEVICE_ID_KEY) };
     store.setItem(ACCOUNT_SESSION_KEY, JSON.stringify(stash));
   } else if (!readStash(store)) {
     return false;
@@ -197,12 +221,15 @@ export function enterProfile(store: KeyValueStore, grant: ProfileGrant): boolean
 
 /**
  * Revient à la session personnelle mise de côté. Faux sans réserve (déjà en
- * session personnelle, ou réserve illisible) : rien n'est touché.
+ * session personnelle, ou réserve illisible) : rien n'est touché. Une réserve
+ * du serveur (le web) exige le jeton qu'il vient de rendre (`restoredToken`,
+ * après le code du compte) : sans lui, faux.
  */
-export function returnToAccount(store: KeyValueStore): boolean {
+export function returnToAccount(store: KeyValueStore, restoredToken?: string): boolean {
   const stash = readStash(store);
-  if (!stash) return false;
-  store.setItem(TOKEN_KEY, stash.token);
+  const token = stash?.token ?? restoredToken ?? null;
+  if (!stash || !token) return false;
+  store.setItem(TOKEN_KEY, token);
   store.setItem(USER_KEY, stash.user);
   if (stash.deviceId) store.setItem(DEVICE_ID_KEY, stash.deviceId);
   else store.removeItem(DEVICE_ID_KEY);

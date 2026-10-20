@@ -1,5 +1,5 @@
 /**
- * Les profils de la Famille sur l'application de BUREAU — « Qui regarde ? » à
+ * Les profils de la Famille sur l'application de BUREAU et dans le NAVIGATEUR — « Qui regarde ? » à
  * l'ouverture, le code PIN, le changement de profil depuis la barre du haut,
  * la session d'un profil et le réglage « Demander qui regarde à l'ouverture ».
  * Les mots communs à tous les clients (rôles, refus du serveur) restent dans
@@ -12,6 +12,8 @@ export default {
   manageProfiles: "Gérer les profils",
   stayOnDevice: "Ne plus proposer à la prochaine ouverture",
   stayOnDeviceHint: "Cet ordinateur ouvrira directement le profil choisi. Pour en changer : changez de profil depuis le menu de votre avatar.",
+  /** Le navigateur (plateforme `web`) : le choix est gardé par CE navigateur. */
+  stayOnDeviceHintWeb: "Ce navigateur ouvrira directement le profil choisi. Pour en changer : changez de profil depuis le menu de votre avatar.",
   lockedUntil: "Bloqué jusqu'à {{time}}",
   loadFailed: "Impossible de lire les profils de la famille.",
   retry: "Réessayer",
@@ -58,18 +60,23 @@ export default {
     off: "Désactivé sur cet ordinateur",
     stayHere: "Désactivé : cet ordinateur ouvre directement le profil {{name}}.",
     adminOff: "Désactivé par l'administrateur du serveur",
+    sectionWeb: "Dans ce navigateur",
+    captionWeb: "Tentacle s'ouvre sur « Qui regarde ? » : chacun choisit son profil, derrière son code PIN s'il en a un. Chaque navigateur a son propre réglage ; « Changer de profil » reste dans le menu de votre avatar.",
+    onWeb: "Activé dans ce navigateur",
+    offWeb: "Désactivé dans ce navigateur",
+    stayHereWeb: "Désactivé : ce navigateur ouvre directement le profil {{name}}.",
   },
   /** Admin › Utilisateurs : « Qui regarde ? » à l'ouverture, réglé pour tous (`FamilyLaunchPolicySection`). */
   adminPolicy: {
     title: "« Qui regarde ? » à l'ouverture",
     description: "Plateforme par plateforme : « Qui regarde ? » peut-il s'afficher à l'ouverture de l'application ? « Changer de profil » reste toujours là.",
-    desktop: "Ordinateurs",
+    desktop: "Ordinateurs et navigateurs",
     tv: "Téléviseurs",
     allowed: "Permis",
-    allowedHintDesktop: "Chaque ordinateur l'active ou non (Réglages › Famille, ou « Ne plus proposer à la prochaine ouverture »). Coupé : jamais à l'ouverture des ordinateurs, pour personne.",
+    allowedHintDesktop: "Chaque ordinateur ou navigateur l'active ou non (Réglages › Famille, ou « Ne plus proposer à la prochaine ouverture »). Coupé : jamais à l'ouverture, ni sur un ordinateur ni dans un navigateur, pour personne.",
     allowedHintTv: "Chaque téléviseur peut retenir un profil (« Ne plus proposer à l'ouverture »). Coupé : les téléviseurs ouvrent directement le profil du compte qui les a jumelés, sans code PIN.",
     defaultOn: "Activé par défaut",
-    defaultOnHint: "Pour les ordinateurs qui n'ont encore rien choisi ; un choix déjà fait est gardé.",
+    defaultOnHint: "Pour les ordinateurs et navigateurs qui n'ont encore rien choisi ; un choix déjà fait est gardé.",
     saveError: "Le réglage n'a pas pu être enregistré. Réessayez.",
     loadError: "Impossible de lire ce réglage.",
   },

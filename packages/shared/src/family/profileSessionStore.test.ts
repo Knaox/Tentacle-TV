@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { enterProfile, forgetProfileSession, profileUserRecord, returnToAccount, type KeyValueStore, type ProfileGrant } from "./profileSessionStore";
+import {
+  accountEscrowedIn,
+  accountTokenIn,
+  accountUserIdIn,
+  enterProfile,
+  forgetProfileSession,
+  profileUserRecord,
+  returnToAccount,
+  type KeyValueStore,
+  type ProfileGrant,
+} from "./profileSessionStore";
 
 function memoryStore(initial: Record<string, string> = {}): KeyValueStore & { dump(): Record<string, string> } {
   const map = new Map(Object.entries(initial));
@@ -95,5 +105,48 @@ describe("bascules de session hors TV (bureau, mobile)", () => {
 
   it("le compte d'une session de profil porte la photo du profil, jamais l'administration", () => {
     expect(JSON.parse(profileUserRecord(ZOE))).toEqual({ Id: "zoe", Name: "Zoé", PrimaryImageTag: "tag-zoe", Policy: { IsAdministrator: false } });
+  });
+});
+
+describe("le web : le jeton du compte en réserve chez le serveur", () => {
+  it("entrer dans un profil ne garde AUCUNE copie du jeton du compte dans la page", () => {
+    const store = memoryStore({ tentacle_token: "jeton-perso", tentacle_user: OWNER_USER });
+    expect(enterProfile(store, LEA, { escrowed: true })).toBe(true);
+    const state = store.dump();
+    expect(JSON.stringify(state)).not.toContain("jeton-perso");
+    expect(JSON.parse(state.tentacle_account_session!)).toEqual({ token: null, user: OWNER_USER, deviceId: null, held: "server" });
+    expect(accountEscrowedIn(store)).toBe(true);
+    expect(accountTokenIn(store)).toBeNull();
+    expect(accountUserIdIn(store)).toBe("owner");
+  });
+
+  it("entrer sans jeton dans la page (session par cookie) reste possible avec la réserve du serveur", () => {
+    const store = memoryStore({ tentacle_user: OWNER_USER });
+    expect(enterProfile(store, LEA)).toBe(false);
+    expect(enterProfile(store, LEA, { escrowed: true })).toBe(true);
+  });
+
+  it("revenir exige le jeton rendu par le serveur (après le code du compte)", () => {
+    const store = memoryStore({ tentacle_token: "jeton-perso", tentacle_user: OWNER_USER });
+    enterProfile(store, ZOE, { escrowed: true });
+    expect(returnToAccount(store)).toBe(false);
+    expect(store.dump().tentacle_token).toBe("jeton-zoe");
+    expect(returnToAccount(store, "jeton-perso-rendu")).toBe(true);
+    expect(store.dump()).toEqual({ tentacle_token: "jeton-perso-rendu", tentacle_user: OWNER_USER });
+    expect(accountEscrowedIn(store)).toBe(false);
+  });
+
+  it("d'un profil à l'autre, la réserve du serveur reste celle du compte", () => {
+    const store = memoryStore({ tentacle_token: "jeton-perso", tentacle_user: OWNER_USER });
+    enterProfile(store, LEA, { escrowed: true });
+    expect(enterProfile(store, ZOE, { escrowed: true })).toBe(true);
+    expect(JSON.parse(store.dump().tentacle_account_session!)).toMatchObject({ user: OWNER_USER, held: "server" });
+  });
+
+  it("le bureau et le mobile gardent leur réserve eux-mêmes (rien ne change)", () => {
+    const store = memoryStore({ tentacle_token: "jeton-perso", tentacle_user: OWNER_USER });
+    enterProfile(store, LEA);
+    expect(accountEscrowedIn(store)).toBe(false);
+    expect(accountTokenIn(store)).toBe("jeton-perso");
   });
 });

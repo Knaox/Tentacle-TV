@@ -66,7 +66,7 @@ export default {
     off: "Aucun code PIN",
     hint: "Demandé à l'ouverture de votre profil sur une TV. Sans code, le profil s'ouvre directement.",
     /** Le serveur sait « Qui regarde ? » sur le bureau (`family.desktopProfiles`). */
-    hintDesktop: "Demandé à l'ouverture de votre profil sur une TV, et sur un ordinateur dans « Qui regarde ? » — pour revenir à votre propre profil aussi. Sans code, le profil s'ouvre directement.",
+    hintDesktop: "Demandé à l'ouverture de votre profil sur une TV, et sur un ordinateur ou dans un navigateur dans « Qui regarde ? » — pour revenir à votre propre profil aussi. Sans code, le profil s'ouvre directement.",
     set: "Poser un code",
     change: "Changer",
     remove: "Retirer",

@@ -75,11 +75,16 @@ async function manageVerdict(token: string, userId: string, callers: ReadonlySet
   return { role };
 }
 
-/** Une `preHandler` par route : pose `request.familyActor`, ou répond le refus. */
-export function familyGuard(spec: FamilyRouteSpec) {
+/** Où une route lit le jeton de son appelant ; par défaut, celui des portes. */
+export type FamilyTokenSource = (request: FastifyRequest) => string | null | Promise<string | null>;
+
+/** Une `preHandler` par route : pose `request.familyActor`, ou répond le refus.
+ *  `tokenOf` : les routes de « Qui regarde ? » lisent d'abord la réserve du
+ *  compte d'un navigateur en session de profil (`routes/family/accountEscrow.ts`). */
+export function familyGuard(spec: FamilyRouteSpec, tokenOf: FamilyTokenSource = getTokenFromRequest) {
   const callers = new Set<string>(spec.callers);
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const token = getTokenFromRequest(request);
+    const token = await tokenOf(request);
     if (!token) return reply.status(401).send({ message: "Unauthorized" });
 
     const pairing = await verifyTvPairingToken(token);

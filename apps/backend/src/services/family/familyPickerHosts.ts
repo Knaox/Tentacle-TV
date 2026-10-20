@@ -28,7 +28,7 @@ const HOST_DOMAIN = "tentacle:family-picker-host:";
  *  le révoque, ses sessions de profil avec. */
 export const PICKER_HOST_IDLE_MS = 30 * 24 * 3_600_000;
 /** Le nom d'un appareil qui n'en donne pas, par plateforme. */
-const DEFAULT_DEVICE_NAMES: Readonly<Record<FamilyPickerPlatform, string>> = { desktop: "Desktop", mobile: "Mobile" };
+const DEFAULT_DEVICE_NAMES: Readonly<Record<FamilyPickerPlatform, string>> = { desktop: "Desktop", mobile: "Mobile", web: "Web" };
 
 export interface PickerHost {
   id: string;

@@ -53,12 +53,13 @@ describe("les routes picker ne portent aucun identifiant ni secret dans leur che
 // ── SEC-F-52 : plateforme d'une LISTE FERMÉE ──────────────────────────────────
 
 describe("SEC-F-52 (contrat) : la plateforme de « Qui regarde ? » est une liste fermée", () => {
-  it("le bureau et le mobile (1.32.0), rien d'autre aujourd'hui", () => {
-    expect(FAMILY_PICKER_PLATFORMS).toEqual(["desktop", "mobile"]);
+  it("le bureau, le mobile et le web (1.32.0), rien d'autre aujourd'hui", () => {
+    expect(FAMILY_PICKER_PLATFORMS).toEqual(["desktop", "mobile", "web"]);
     expect(SERVER_CAPABILITIES["family.mobileProfiles"]).toBe("1.32.0");
+    expect(SERVER_CAPABILITIES["family.webProfiles"]).toBe("1.32.0");
   });
   it("toute autre valeur est rejetée (le serveur rend family.invalid_input)", () => {
-    for (const other of ["web", "tv", "", "__proto__", "constructor", "desktop ", "DESKTOP", "Mobile", null, 1]) {
+    for (const other of ["tv", "webos", "", "__proto__", "constructor", "desktop ", "DESKTOP", "Mobile", "Web", null, 1]) {
       expect(isPickerPlatform(other)).toBe(false);
     }
     expect(FAMILY_ERROR_STATUS["family.invalid_input"]).toBe(400);

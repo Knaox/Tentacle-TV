@@ -7,10 +7,10 @@ import { pickerStayState, resolveServerCapabilities, type PickerProfilesDto } fr
 import { accountUserId, readActiveProfile } from "../../auth/profileSession";
 import { endProfileSession, readPickerRequest } from "../../auth/profileEnded";
 import { dropAllSessions } from "../../auth/dropSessions";
-import { isDesktopApp } from "../../desktop/detect";
 import { getBackendBase } from "../../lib/backendBase";
 import { NoPersonalSession, loadPickerProfiles, pickerProfilesKey } from "../api/pickerGateway";
 import { WhoIsWatchingView } from "../picker/WhoIsWatchingView";
+import { PICKER_CAPABILITY } from "../pickerPlatform";
 import { afterFresh, initialGate, type FreshAnswer, type GateState } from "./gateMachine";
 import { LAUNCH_CHECK_BUDGET_MS, launchVerdict } from "./launchDecision";
 import { launchPassed, noteFreshLogin, noteLoggedOut, readLaunchMirror, writeLaunchMirror } from "./launchState";
@@ -20,7 +20,7 @@ import { LaunchSplash } from "./LaunchSplash";
 import { publishStartupWindow, usePublishStartupWindow } from "../../startup/startupStore";
 
 /**
- * « Qui regarde ? » à l'ouverture du BUREAU — la porte qu'`App.tsx` consulte
+ * « Qui regarde ? » à l'ouverture du BUREAU et du NAVIGATEUR — la porte qu'`App.tsx` consulte
  * avant TOUT le reste (fournisseurs, liaisons, routes) : tant qu'elle rend un
  * écran, rien de l'application n'est monté, aucune requête ne part pour un
  * profil qu'on ne choisira peut-être pas. `null` : l'application.
@@ -28,8 +28,9 @@ import { publishStartupWindow, usePublishStartupWindow } from "../../startup/sta
  * Décision immédiate depuis le miroir (`launchDecision.ts`), puis la réponse
  * fraîche du serveur (`gateMachine.ts`) — seule la fin d'un profil fait
  * attendre (`LaunchSplash`) ; une connexion par mot de passe dans
- * cette exécution vaut choix fait (session personnelle, sans sélecteur). Hors
- * du bureau : `null`, sans rien lire. Le client LG ne la compile pas
+ * cette exécution vaut choix fait (session personnelle, sans sélecteur). Le
+ * navigateur suit le bureau, derrière SA capacité (`pickerPlatform.ts`) : le
+ * miroir n'y existe que si le serveur l'a. Le client LG ne la compile pas
  * (substituée, `apps/tv-webos/config/substitutionTableSession.ts`).
  */
 export function useProfileLaunchGate(authed: boolean): ReactElement | null {
@@ -40,7 +41,7 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   const [initialListing] = useState(() => readLaunchMirror()?.listing ?? null);
   const gateRef = useRef(gate);
   gateRef.current = gate;
-  const eligible = useRef(isDesktopApp() && authed);
+  const eligible = useRef(authed);
   // L'attente bornée : l'application s'ouvre sur la foi du miroir (`late`), et
   // la réponse du serveur peut encore imposer le sélecteur — qui démonterait
   // tout. Tant qu'elle court, aucune fenêtre du démarrage ne paraît
@@ -121,7 +122,6 @@ function initialState(authed: boolean): GateState {
   const accountId = accountUserId();
   const stay = readStayOnDevice(server, accountId);
   const verdict = launchVerdict({
-    desktop: isDesktopApp(),
     authed,
     passed,
     requested,
@@ -148,7 +148,7 @@ async function freshAnswer(queryClient: QueryClient): Promise<FreshAnswer> {
   if (!accountId) return { kind: "accountLost" };
   try {
     const config = await queryClient.fetchQuery(appConfigQuery());
-    const capable = resolveServerCapabilities(config).has("family.desktopProfiles") && config.features?.family !== undefined;
+    const capable = resolveServerCapabilities(config).has(PICKER_CAPABILITY) && config.features?.family !== undefined;
     if (!capable) {
       writeLaunchMirror({ server, accountId, capable: false, listing: null });
       return { kind: "incapable" };
