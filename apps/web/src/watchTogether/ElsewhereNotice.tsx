@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "../contexts/ToastContext";
@@ -8,8 +9,9 @@ import { useWatchTogether } from "./WatchTogetherProvider";
  * « Groupe en cours sur un autre appareil — Rejoindre ici » (1.32.0,
  * adhésion par appareil). Ce compte regarde en groupe AILLEURS ; cet appareil
  * n'en reçoit rien — ni lancement, ni état — et le dit discrètement, une
- * pilule en bas d'écran, masquable pour ce groupe. « Rejoindre ici » AJOUTE
- * cet appareil à la salle (les autres y restent).
+ * pilule en bas d'écran, masquable pour ce groupe — jamais sur un lecteur,
+ * où elle couvrirait la barre de lecture. « Rejoindre ici » AJOUTE cet
+ * appareil à la salle (les autres y restent).
  *
  * Même verre que la pilule « Lecture de groupe en cours » (`GroupPlaybackPill`),
  * qu'elle ne croise jamais : l'une est pour un appareil DANS la salle, l'autre
@@ -21,8 +23,9 @@ export function ElsewhereNotice() {
   const { show } = useToast();
   const [dismissedGroup, setDismissedGroup] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const onPlayer = useLocation().pathname.startsWith("/watch/");
 
-  const visible = !!elsewhere && dismissedGroup !== elsewhere.groupId;
+  const visible = !!elsewhere && dismissedGroup !== elsewhere.groupId && !onPlayer;
   const label = elsewhere?.hostUsername
     ? t("elsewhereActiveWithHost", { name: elsewhere.hostUsername })
     : t("elsewhereActive");

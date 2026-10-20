@@ -20,6 +20,8 @@ vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
   motion: { div: ({ children }: { children?: ReactNode }) => <div>{children}</div> },
 }));
+const location = vi.hoisted(() => ({ pathname: "/" }));
+vi.mock("react-router-dom", () => ({ useLocation: () => location }));
 vi.mock("../contexts/ToastContext", () => ({ useToast: () => ({ show: () => undefined }) }));
 vi.mock("./WatchTogetherProvider", () => ({
   useWatchTogether: () => ({ elsewhere: state.elsewhere, actions: { joinHere: async () => undefined } }),
@@ -39,5 +41,12 @@ describe("ElsewhereNotice", () => {
     expect(html).toContain("elsewhereActiveWithHost:Damien");
     expect(html).toContain("elsewhereJoinHere");
     expect(html).toContain('aria-label="elsewhereDismiss"');
+  });
+
+  it("jamais sur un lecteur : elle couvrirait la barre de lecture", () => {
+    state.elsewhere = { groupId: "g", hostUsername: "Damien", itemId: "film", memberCount: 2, deviceCount: 2 };
+    location.pathname = "/watch/autre";
+    expect(renderToStaticMarkup(<ElsewhereNotice />)).toBe("");
+    location.pathname = "/";
   });
 });
