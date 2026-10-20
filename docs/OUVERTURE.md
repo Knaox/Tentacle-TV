@@ -241,7 +241,8 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   `boot-tadum.m4a`), Android par `sourceSets` (`com.tentacletv.boot`, et le
   fichier dans les assets) ; aucune copie. iOS : catégorie « ambient » (le
   commutateur silencieux le tait, une musique en cours n'est pas coupée).
-  Android : aucun focus audio ; le mode silencieux ou vibreur le tait.
+  Android : aucun focus audio ; le mode silencieux le tait, le vibreur non (il ne
+  tait pas le média sur Android : le volume média décide).
   Réglage d'appareil « Son au démarrage » (`tentacle_boot_sound`) ; « Animation
   d'ouverture » (`tentacle_boot_intro`) ; lus sur le disque AVANT l'hydratation
   du stockage (la décision précède tout), libellés `preferences.bootIntro*`.
