@@ -1,5 +1,8 @@
 import { useMemo } from "react";
-import type { FamilyProfileColor, PickerProfilesDto } from "@tentacle-tv/shared";
+import { personalColorOf, type FamilyProfileColor, type PickerProfilesDto } from "@tentacle-tv/shared";
+
+// La règle est partagée avec le mobile (shared `family/familyFaceColor.ts`).
+export { personalColorOf };
 import { useActiveProfile } from "../../auth/profileSession";
 import { getBackendBase } from "../../lib/backendBase";
 import { usePickerListingQuery } from "../api/usePickerListing";
@@ -33,13 +36,6 @@ export function useAccountFaceColor(): FamilyProfileColor | null {
   return personalColorOf(fresh ?? mirrored);
 }
 
-/** La couleur du profil du compte, s'il y a une famille à montrer (deux profils au moins). */
-export function personalColorOf(
-  listing: Pick<PickerProfilesDto, "pickerRequired" | "profiles"> | null | undefined,
-): FamilyProfileColor | null {
-  if (!listing?.pickerRequired) return null;
-  return listing.profiles.find((profile) => profile.personal)?.color ?? null;
-}
 
 function mirroredListing(accountId: string | null): PickerProfilesDto | null {
   const mirror = readLaunchMirror();
