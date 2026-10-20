@@ -2,11 +2,10 @@ import { memo, useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { useTranslation } from "react-i18next";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { GlassSurface } from "@/components/ui";
 import { HEADER_COLLAPSE_SHIFT, useHeaderHeight } from "@/components/PersistentHeader";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
-import { FONT_FAMILY, ctlGradient, motion, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, motion, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import type { RecoSection } from "./useRecoSection";
 
@@ -38,8 +37,10 @@ interface Props {
  * deux moitiés égales, toujours visible : l'ancien segment compact défilait
  * avec la page et passait sous l'en-tête dès le premier geste.
  *
- * Le curseur au dégradé de marque GLISSE d'une moitié à l'autre (transform
- * seul, aucune remise en page). Le verre n'est jamais masqué : il est là
+ * Le pouce NEUTRE GLISSE d'une moitié à l'autre (transform seul, aucune
+ * remise en page) : celui des segmentés de réglage, comme le sélecteur
+ * segmenté d'Apple — gris levé en sombre, blanc en clair, jamais le dégradé
+ * de marque (mêmes valeurs que `selectedOptionLook` des boutons du mobile). Le verre n'est jamais masqué : il est là
  * parce que la page défile dessous. Pas de pages qu'on fait glisser : la pile
  * d'« Affiner » se juge déjà d'un glisser horizontal, les deux gestes se
  * seraient battus.
@@ -49,7 +50,7 @@ export const RecoSectionBar = memo(function RecoSectionBar({ section, onChange }
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const headerH = useHeaderHeight();
-  const gradient = ctlGradient(theme.colors.brand);
+  const thumbLook = theme.isDark ? st.thumbDark : st.thumbLight;
 
   const [half, setHalf] = useState(0);
   const onLayout = useCallback((e: LayoutChangeEvent) => {
@@ -80,15 +81,7 @@ export const RecoSectionBar = memo(function RecoSectionBar({ section, onChange }
       <GlassSurface tier="dropdown" radius={PILL_HEIGHT / 2} style={st.pill}>
         <View style={st.track} onLayout={onLayout} accessibilityRole="tablist" accessibilityLabel={t("sectionsLabel")}>
           {half > 0 && (
-            <Animated.View style={[st.thumb, { width: half }, thumbStyle]} pointerEvents="none">
-              <LinearGradient
-                colors={gradient.colors}
-                locations={gradient.locations}
-                start={gradient.start}
-                end={gradient.end}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
+            <Animated.View style={[st.thumb, thumbLook, { width: half }, thumbStyle]} pointerEvents="none" />
           )}
           {SECTIONS.map((value) => {
             const active = value === section;
@@ -130,10 +123,17 @@ const makeStyles = (t: AppTheme) =>
       bottom: PILL_PADDING,
       left: PILL_PADDING,
       borderRadius: (PILL_HEIGHT - PILL_PADDING * 2) / 2,
-      overflow: "hidden",
+    },
+    thumbDark: { backgroundColor: "rgba(255, 255, 255, 0.18)" },
+    thumbLight: {
+      backgroundColor: "#FFFFFF",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
     },
     segment: { flex: 1, alignItems: "center", justifyContent: "center", borderRadius: PILL_HEIGHT / 2 },
     pressed: { opacity: 0.6 },
     label: { ...typography.small, fontFamily: FONT_FAMILY.medium, color: t.colors.text.secondary },
-    labelActive: { fontFamily: FONT_FAMILY.semibold, color: t.colors.cta.brandFg },
+    labelActive: { fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
   });
