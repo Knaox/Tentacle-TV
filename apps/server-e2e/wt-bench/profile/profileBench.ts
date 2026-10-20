@@ -19,90 +19,28 @@
  * par son PID. Jamais lancé par `pnpm test`.
  */
 
-import { spawn } from "node:child_process";
-import { mkdirSync, openSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
 import type { WtInviteDto, WtRoomStateDto } from "../../../../packages/shared/src/types/watchTogetherMessages";
-import { JellyfinHttp, waitUntil } from "../../../backend/test/jellyfin-compat/jellyfinHttp";
-import { ADMIN_NAME, USER2_NAME, authenticate, ensureApiKey, ensureUser, waitForServer } from "../../../backend/test/jellyfin-compat/provision";
-import { seedBackendConfig, startDatabase } from "../../../backend/test/jellyfin-compat/backendEnv";
+import type { JellyfinHttp } from "../../../backend/test/jellyfin-compat/jellyfinHttp";
+import { waitUntil } from "../../../backend/test/jellyfin-compat/jellyfinHttp";
+import { ADMIN_NAME, USER2_NAME, authenticate } from "../../../backend/test/jellyfin-compat/provision";
 import {
   createGroup, fetchMyGroup, leaveGroup, sendGroupInvites, setWatchTogetherBackendUrl, setWatchTogetherToken,
 } from "../../../../packages/api-client/src/hooks/useWatchTogetherApi";
 import { acquireSocket, getSocketStatus, setWsBackendUrl } from "../../../../packages/api-client/src/socket/tentacleSocket";
 import { noteWtRoomHeld, switchWtSession } from "../../../../packages/api-client/src/watchTogether/session/sessionSwitch";
 import { RawSocket } from "./rawSocket";
+import { restClient, runBench, type Bench } from "./benchKit";
 
-const REPO = resolve(__dirname, "../../../..");
-const RUN_DIR = resolve(__dirname, "../../.runs/wt-profile");
-const JF_URL = process.env.WT_JF_URL ?? "http://127.0.0.1:18830";
 const PORT = Number(process.env.WT_PROFILE_PORT ?? 3832);
 const BACKEND = `http://127.0.0.1:${PORT}`;
 const FRIEND_NAME = "wtbench-user3";
-
-const log = (line: string): void => console.log(`[wt-profile] ${line}`);
-const checks: Array<{ step: string; ok: boolean; detail: string }> = [];
-function check(step: string, ok: boolean, detail: unknown): void {
-  checks.push({ step, ok, detail: JSON.stringify(detail) });
-  log(`${ok ? "✔" : "✘"} ${step} — ${JSON.stringify(detail)}`);
-}
-
-async function api<T>(method: string, path: string, token: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${BACKEND}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, ...(body !== undefined && { "Content-Type": "application/json" }) },
-    ...(body !== undefined && { body: JSON.stringify(body) }),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${text}`);
-  return (text ? JSON.parse(text) : null) as T;
-}
-
-function startBackend(dataDir: string): number {
-  const out = openSync(join(RUN_DIR, "backend.log"), "a");
-  const child = spawn(process.execPath, [require.resolve("tsx/cli"), "src/index.ts"], {
-    cwd: join(REPO, "apps/backend"),
-    env: {
-      ...process.env, PORT: String(PORT), HOST: "127.0.0.1", DATABASE_URL: "", DB_HOST: "", TENTACLE_DATA_DIR: dataDir,
-      NODE_ENV: "development", WT_DEBUG: "1", PAIRING_RELAY_URL: "http://127.0.0.1:9", TMDB_API_KEY: "", TENTACLE_DEV_PUSH: "",
-    },
-    detached: true,
-    stdio: ["ignore", out, out],
-  });
-  child.unref();
-  return child.pid!;
-}
+const api = restClient(BACKEND);
 
 const memberOf = (room: WtRoomStateDto | null, userId: string) => room?.members.find((member) => member.userId === userId);
 const stateOf = (msg: unknown): WtRoomStateDto => (msg as { state: WtRoomStateDto }).state;
 const waitOpen = (what: string) => waitUntil(async () => getSocketStatus() === "open", 15_000, what, 100);
 
-async function main(): Promise<void> {
-  mkdirSync(RUN_DIR, { recursive: true });
-  const http = new JellyfinHttp(JF_URL);
-  await waitForServer(http, 20_000);
-  const admin = await authenticate(http, ADMIN_NAME);
-  const apiKey = await ensureApiKey(http, admin.token);
-  for (const name of [USER2_NAME, FRIEND_NAME]) await ensureUser(http, admin.token, name);
-  const db = startDatabase(RUN_DIR, log);
-  seedBackendConfig(db, { jellyfinUrl: JF_URL, apiKey, adminUserId: admin.id });
-  const pid = startBackend(db.dataDir);
-  log(`backend (PID ${pid}) sur ${BACKEND}`);
-  try {
-    await waitUntil(async () => (await fetch(`${BACKEND}/api/health`).catch(() => null))?.ok === true, 120_000, "le backend répond", 1000);
-    await scenario(http);
-  } finally {
-    try {
-      process.kill(-pid, "SIGTERM");
-    } catch { /* déjà arrêté */ }
-  }
-  writeFileSync(join(RUN_DIR, "report.json"), `${JSON.stringify(checks, null, 2)}\n`);
-  const failed = checks.filter((c) => !c.ok).length;
-  log(`${checks.length - failed} ✔ / ${failed} ✘ — rapport : ${join(RUN_DIR, "report.json")}`);
-  process.exitCode = failed === 0 ? 0 : 1;
-}
-
-async function scenario(http: JellyfinHttp): Promise<void> {
+async function scenario({ check }: Bench, http: JellyfinHttp): Promise<void> {
   // Trois appareils, trois jetons Jellyfin : le téléphone du compte, le compte de Léa (pour accepter), l'ami.
   const account = await authenticate(http, ADMIN_NAME, "wtprofile-phone");
   const lea = await authenticate(http, USER2_NAME, "wtprofile-lea");
@@ -161,7 +99,7 @@ async function scenario(http: JellyfinHttp): Promise<void> {
   friendSocket.close();
 }
 
-main().catch((err) => {
+runBench("wt-profile", { port: PORT, users: [USER2_NAME, FRIEND_NAME] }, (bench, { http }) => scenario(bench, http)).catch((err) => {
   console.error(err instanceof Error ? err.stack : err);
   process.exit(1);
 });
