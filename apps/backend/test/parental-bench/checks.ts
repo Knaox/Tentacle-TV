@@ -117,7 +117,7 @@ export async function runChecks(input: CheckInput): Promise<number> {
 
   // Témoin : le compte libre voit bien, par les mêmes routes, ce que l'autre ne voit pas.
   rec.section(`${jf.free.name} (témoin)`);
-  const free: Door = { label: `${jf.free.name} · personnelle`, token: await personalToken(tentacle.url, jf.free.name) };
+  const free: Door = { label: `${jf.free.name} · personnelle`, token: freePersonal };
   const freeCtx: JudgeContext = { base: tentacle.url, ref: freeRef, oracle: null, rec };
   const all = await probe(freeCtx, free, "GET", `/api/jellyfin/Users/${jf.free.id}/Items?Recursive=true&IncludeItemTypes=Movie,Series`);
   rec.note(itemIdsOf(all.json).length === freeRef.all.filter((i) => i.type === "Movie" || i.type === "Series").length, `${jf.free.name} voit toute la bibliothèque (${itemIdsOf(all.json).length})`);

@@ -42,11 +42,17 @@ export async function call(base: string, token: string, method: string, path: st
 }
 
 export async function personalToken(base: string, username: string): Promise<string> {
-  const res = await fetch(`${base}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password: BENCH_PASSWORD }),
-  });
+  // Le limiteur de la production (5 connexions par minute et par adresse) vaut aussi pour le banc : on attend.
+  let res: Response;
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(`${base}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: BENCH_PASSWORD }),
+    });
+    if (res.status !== 429 || attempt >= 6) break;
+    await new Promise((ok) => setTimeout(ok, 15_000));
+  }
   if (!res.ok) throw new Error(`Connexion Tentacle de ${username} refusée (${res.status})`);
   return ((await res.json()) as { AccessToken: string }).AccessToken;
 }
