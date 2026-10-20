@@ -73,7 +73,7 @@ async function loginLikeMobile(state: BenchState, account: BenchAccount, deviceS
  * Pose la session dans le manifeste AsyncStorage (app arrêtée). L'app doit
  * avoir été lancée UNE fois (le conteneur et son dossier existent).
  */
-export async function injectSession(udid: string, state: BenchState, account: BenchAccount, deviceName: string, extra: Record<string, string> = {}): Promise<void> {
+export async function injectSession(udid: string, state: BenchState, account: BenchAccount, deviceName: string, extra: Record<string, string> = {}): Promise<string> {
   const seed = `wtbench-${deviceName.replace(/\W+/g, "-").toLowerCase()}-${account.name}`;
   const auth = await loginLikeMobile(state, account, seed, deviceName);
   terminate(udid);
@@ -102,6 +102,7 @@ export async function injectSession(udid: string, state: BenchState, account: Be
   writeFileSync(file, JSON.stringify(manifest));
   // Un jeton resté au trousseau (session d'avant) l'emporterait sur le nôtre.
   simctl("keychain", udid, "reset");
+  return auth.AccessToken;
 }
 
 export function screenshot(udid: string, path: string): void {

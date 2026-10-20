@@ -72,7 +72,7 @@ export async function prepareIosMember(udid: string, account: BenchAccount, labe
   launch(udid);
   await new Promise((ok) => setTimeout(ok, 4000));
   terminate(udid);
-  await injectSession(udid, state, account, deviceName);
+  const token = await injectSession(udid, state, account, deviceName);
   launch(udid);
   const deadline = Date.now() + 120_000;
   while (Date.now() < deadline) {
@@ -80,5 +80,5 @@ export async function prepareIosMember(udid: string, account: BenchAccount, labe
     if (targets.some((t) => (t.deviceName ?? t.title).includes(deviceName.split(" ")[0]))) break;
     await new Promise((ok) => setTimeout(ok, 2000));
   }
-  return IosClient.attach(state, account, label, METRO_PORT, deviceName);
+  return IosClient.attach(state, account, label, METRO_PORT, deviceName, token);
 }
