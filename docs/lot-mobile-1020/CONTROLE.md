@@ -20,6 +20,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | boutons | `claude/boutons-517d48` | `.claude/worktrees/boutons-517d48` |
 | droits-mobile | `claude/droits-06ed6b` | `.claude/worktrees/droits-06ed6b` |
 | famille-web | `claude/famille-web-350294` | `.claude/worktrees/famille-web-350294` |
+| erreurs-mobile | `claude/erreurs-7bb316` (exigences à préciser) | `.claude/worktrees/erreurs-7bb316` |
 | web-etroit | `claude/web-etroit-3b7800` (partie de reglages) | `.claude/worktrees/web-etroit-3b7800` |
 
 ## A. Règles transverses du lot (toutes les branches)
@@ -208,6 +209,7 @@ Sur mobile, tablette ET web, pour tous les droits.
 | I4 | « Pour vous » (nouvel en-tête, Affinité) | captures | ☐ |
 | I5 | Watch Together de base (créer, rejoindre) | captures | ☐ |
 | I6 | Lecteur : heure/batterie, PiP, AirPlay ; hors ligne : Live Activity ; boutons | captures | ☐ |
+| I0 | App de test : celle de wt-banc (`~/.tentacle-lot-mob/builds/ios/TentacleTV.app`, natif = dev + batteryStatus) ne contient PAS l'extension Live Activity (hors-ligne-live) : la reconstruire après fusion pour K1/I6 | `BUILT_FROM.txt` après fusion | ☐ |
 | I7 | iPad PORTRAIT ET PAYSAGE, TOUS les rendus de toutes les sessions : réglages, premier lancement, galerie, Famille, droits en lecture seule, notifications, Live Activity, « Pour vous », boutons, lecteur (heure/batterie, PiP), Watch Together | une capture par rendu et par orientation dans `docs/lot-mobile-1020/` (nommées `ipad-<portrait|paysage>-<rendu>.png`) | ☐ |
 
 ## Défauts
