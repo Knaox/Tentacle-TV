@@ -19,7 +19,7 @@ import { useAccountUserId } from "@/family/profiles/profileSessionState";
  * et du moteur hors ligne, la garde de route et les voiles. Tout ce que le hors ligne ajoutera à la coquille passe par ici.
  */
 export function OfflineShell() {
-  // Le hors ligne est au compte de l'appareil : son suivi en direct aussi, qui se tait
+  // Le hors ligne est au compte de l'appareil : son suivi en direct et ses annonces aussi, muets
   // pendant une session de profil (le lot du compte continue en coulisse).
   const ownerUserId = useAccountUserId();
   const hidden = useOfflineProfileSession();
@@ -31,7 +31,7 @@ export function OfflineShell() {
       <OfflineRuntimeSync />
       <OfflineRightsSync />
       <OfflineEventsBinding />
-      <OfflineReadyNotifier />
+      <OfflineReadyNotifier ownerUserId={ownerUserId} hidden={hidden} />
       <OfflineLiveActivity ownerUserId={ownerUserId} hidden={hidden} />
       <KeepOfflineHost />
       <OfflineRouteGuard />
