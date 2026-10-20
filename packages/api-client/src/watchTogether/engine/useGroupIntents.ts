@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
+import { useCallback, useRef, type MutableRefObject } from "react";
 import { getClockOffsetMs, getClockRttMs } from "../../socket/clockSync";
-import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
+import { getSocketStatus } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
   WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, isBarrierParticipant, isRoomWaitingForMe, needsStartCorrection,
@@ -14,6 +14,7 @@ import {
   type GroupSyncSharedRefs,
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
+import { useGroupReconnect } from "./useGroupReconnect";
 
 /**
  * Watch Together — les intents locaux (observe & report) : le player agit, le
@@ -260,38 +261,8 @@ export function useGroupIntents({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks]);
 
-  // ── Reconnexion : ce qui a pu se perdre pendant la coupure ──
-  // `sendSocketMessage` jette les messages tant que le socket est fermé ; un
-  // « prêt » perdu gèlerait la salle jusqu'au sweep. À chaque réouverture, on
-  // redit où l'on en est (le provider ne redemande, lui, que l'état).
-  const wasOpenRef = useRef(getSocketStatus() === "open");
-  useEffect(() => {
-    if (!active) return;
-    return onSocketStatus((status) => {
-      const open = status === "open";
-      const reopened = open && !wasOpenRef.current;
-      wasOpenRef.current = open;
-      if (!reopened || !declaredRef.current) return;
-      wtLog("engine", "reconnexion : re-déclaration presence + buffering");
-      sendPresence();
-      const last = shared.lastBufferingSentRef.current;
-      if (last === null) return;
-      // Posé sur la cible d'une barrière : le « prêt » a pu se perdre pendant la
-      // coupure — il repart AVEC l'identifiant (sans lui, le serveur n'y lit
-      // qu'une fin de chargement, pas un « posé »).
-      const r = shared.roomRef.current;
-      const t = transportRef.current;
-      const barrierId = last === false && r?.barrierId !== undefined && t
-        && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
-      // En plein chargement, aucune position : celle d'un lecteur qui n'a rien
-      // lu ramènerait la salle en arrière (`wtBufferingFreezeSeconds`).
-      shared.sendRef.current({
-        type: "wt:buffering", buffering: last, rttMs: rtt(),
-        ...(last ? {} : { positionTicks: posTicks() }), ...(barrierId !== undefined ? { barrierId } : {}),
-      });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, sendPresence, posTicks]);
+  // ── Reconnexion : ce qui a pu se perdre pendant la coupure (`useGroupReconnect`) ──
+  useGroupReconnect({ active, shared, transportRef, declaredRef, sendPresence, posTicks });
 
   return {
     notifyPlayState, notifySeek, notifyBuffering, notifyFatalError,
