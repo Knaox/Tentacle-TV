@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Réglages mobiles — maquettes</title>
+<meta name="description" content="Tentacle TV — les nouveaux réglages mobiles et tablette, le premier lancement, les nouvelles versions, Watch Together et « Pour vous · Affiner ». Lot de nuit du 20/10.">
+<style>
+/* ——— Jetons : ceux de l'app (packages/shared/src/theme/colors.ts, packages/theme/src/schemes/dark.ts) ——— */
+:root{
+  --s0:#000;--s1:#0a0a0a;--s2:#141414;--s3:#1c1c22;
+  --violet:#8B5CF6;--mid:#A855F7;--pink:#EC4899;
+  --grad:linear-gradient(135deg,var(--violet) 0%,var(--mid) 55%,var(--pink) 100%);
+  --t1:#fff;--t2:rgba(255,255,255,.80);--t3:rgba(255,255,255,.55);--t4:rgba(255,255,255,.30);
+  --b1:rgba(255,255,255,.05);--b2:rgba(255,255,255,.08);--b3:rgba(255,255,255,.12);
+  --glass:rgba(20,20,26,.6);--glass2:rgba(10,10,18,.72);
+  --danger:#EF4444;--ok:#22C55E;--warn:#F59E0B;
+  --page:#06060b;--ink:#ECEAF4;--ink2:#A8A4B8;--card:#0f0e16;--line:rgba(255,255,255,.08);
+  --chosen:#22C55E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--page)}
+body{background:var(--page);color:var(--ink);font:15px/1.55 Inter,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#C4B5FD}
+.ic{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ——— La page ——— */
+.top{position:sticky;top:0;z-index:50;background:rgba(6,6,11,.92);border-bottom:1px solid var(--line)}
+.top nav{max-width:1240px;margin:0 auto;padding:10px 16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.top nav a{white-space:nowrap;color:var(--ink2);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid transparent}
+.top nav a:hover{color:var(--ink);border-color:var(--line)}
+main{max-width:1240px;margin:0 auto;padding:0 16px 120px}
+.hero{padding:56px 0 24px}
+.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#C4B5FD;font-weight:600}
+h1{font-size:clamp(30px,5vw,48px);line-height:1.08;letter-spacing:-.02em;margin:10px 0 14px;font-weight:800}
+h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{max-width:760px;color:var(--ink2);font-size:17px}
+section.ch{padding-top:64px;scroll-margin-top:56px}
+h2{font-size:26px;letter-spacing:-.01em;margin-bottom:6px}
+h2 small{font-size:13px;color:var(--ink2);font-weight:500;margin-left:8px}
+.intro{color:var(--ink2);max-width:780px;margin-bottom:24px}
+.board{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.shot{display:flex;flex-direction:column;gap:12px;width:300px}
+.shot.wide{width:min(100%,760px)}
+.shot.land{width:min(100%,640px)}
+.note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:13.5px;color:var(--ink2)}
+.note b{color:var(--ink);display:block;font-size:14px;margin-bottom:2px}
+.note .why{display:block;margin-top:6px;color:var(--ink2)}
+.note .why::before{content:"Pourquoi — ";color:#C4B5FD;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 0}
+.legend div{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--ink2)}
+.decision{border:1px solid rgba(34,197,94,.35);background:rgba(34,197,94,.06);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--ink2);max-width:860px;margin-top:22px}
+.decision b{color:var(--ink)}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;margin-right:6px;vertical-align:1px}
+.tag.ok{background:rgba(34,197,94,.15);color:#86EFAC}
+.tag.no{background:rgba(239,68,68,.14);color:#FCA5A5}
+.tag.was{background:rgba(255,255,255,.08);color:var(--ink2)}
+.decisions li{margin:6px 0 6px 18px;color:var(--ink2)}
+.decisions li b{color:var(--ink)}
+
+/* ——— L'appareil : un iPhone de 390 pt à l'échelle 0,77 (300 px) ——— */
+.phone{position:relative;width:300px;height:650px;border-radius:46px;background:var(--s0);border:7px solid #1d1b24;box-shadow:0 0 0 1px #2c2935,0 30px 60px -20px rgba(0,0,0,.8);overflow:hidden;font-size:12.5px;color:var(--t1)}
+.phone.land{width:640px;height:300px}
+.island{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:88px;height:25px;border-radius:20px;background:#000;z-index:30}
+.land .island{display:none}
+.sb{position:absolute;top:0;left:0;right:0;height:40px;display:flex;justify-content:space-between;align-items:center;padding:4px 26px 0;font-weight:600;font-size:12px;z-index:29}
+.screen{position:absolute;inset:0;overflow:hidden;background:radial-gradient(120% 50% at 50% -10%,rgba(139,92,246,.16),transparent 60%),var(--s0)}
+.scroll{position:absolute;inset:0;padding:96px 14px 90px;overflow:hidden}
+.scroll.nohead{padding-top:52px}
+/* L'en-tête flottant en verre (PersistentHeader) */
+.hd{position:absolute;top:0;left:0;right:0;height:84px;padding:46px 14px 0;display:flex;align-items:center;justify-content:space-between;background:var(--glass2);border-bottom:1px solid rgba(139,92,246,.12);z-index:20;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.hd .brand{display:flex;align-items:center;gap:7px;font-weight:800;font-size:16px}
+.logo{width:22px;height:22px;border-radius:7px;background:var(--grad);display:grid;place-items:center}
+.logo::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff;opacity:.9}
+.hd .acts{display:flex;gap:16px;font-size:16px;color:var(--t1)}
+/* En-tête de page empilée (réglages) */
+.nav{position:absolute;top:0;left:0;right:0;height:84px;padding:46px 12px 0;display:flex;align-items:center;gap:6px;background:var(--glass2);border-bottom:1px solid var(--b2);z-index:20;font-weight:700;font-size:15px}
+.nav .back{display:flex;align-items:center;color:#C4B5FD;font-weight:500;font-size:13px;gap:1px}
+.nav .ttl{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+/* La barre d'onglets en verre */
+.tb{position:absolute;left:12px;right:12px;bottom:14px;height:56px;border-radius:28px;background:rgba(14,14,20,.86);border:1px solid var(--b2);display:flex;justify-content:space-around;align-items:center;z-index:20;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.tb div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;color:var(--t3)}
+.tb div .ic{font-size:17px}
+.tb div.on{color:#C4B5FD}
+.home-ind{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:110px;height:4px;border-radius:3px;background:rgba(255,255,255,.5);z-index:31}
+
+/* ——— Briques de réglages ——— */
+.h-big{font-size:24px;font-weight:800;letter-spacing:-.01em;margin:2px 2px 12px}
+.sec{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--t3);font-weight:700;margin:16px 4px 6px}
+.grp{background:rgba(255,255,255,.035);border:1px solid var(--b1);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border-top:1px solid var(--b1)}
+.row:first-child{border-top:0}
+.row .tile{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;background:rgba(139,92,246,.16);color:#C4B5FD;flex:none}
+.row .lbl{flex:1;min-width:0}
+.row .lbl b{display:block;font-weight:600;font-size:12.5px}
+.row .lbl span{display:block;color:var(--t3);font-size:10.5px;line-height:1.35;margin-top:1px}
+.row .lbl span.pill{display:inline-flex;margin-top:0}
+.row .lbl span.scope{display:flex;width:max-content;margin:3px 0 1px}
+.row .val{color:var(--t3);font-size:11.5px}
+.row .chev{color:var(--t4);font-size:14px}
+.row.danger b{color:#FCA5A5}
+.row.sel{background:rgba(139,92,246,.14)}
+.cnt{min-width:18px;height:18px;border-radius:9px;background:var(--pink);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.scope{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:600;padding:1px 6px 1px 5px;border-radius:999px;vertical-align:1px;margin-left:5px;white-space:nowrap;line-height:1.3}
+.scope .ic{font-size:9px;stroke-width:2.4}
+.scope.acc{background:rgba(139,92,246,.16);color:#C4B5FD;border:1px solid rgba(139,92,246,.28)}
+.scope.dev{background:rgba(255,255,255,.06);color:var(--t2);border:1px solid var(--b3)}
+.scope.big{font-size:12px;padding:3px 10px 3px 8px;margin:0}
+.scope.big .ic{font-size:12px}
+.phr{font-size:10.5px;color:var(--t3);margin:0 4px 4px;line-height:1.45}
+.sw{width:38px;height:23px;border-radius:12px;background:var(--grad);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;right:2px;width:19px;height:19px;border-radius:50%;background:#fff}
+.sw.off{background:rgba(255,255,255,.16)}
+.sw.off::after{right:auto;left:2px}
+.seg{display:flex;gap:2px;padding:2px;border-radius:10px;background:var(--s1);border:1px solid var(--b1);margin-top:6px}
+.seg span{flex:1;text-align:center;padding:6px 4px;border-radius:7px;font-size:10.5px;color:var(--t3);font-weight:500}
+.seg span.on{background:rgba(255,255,255,.18);color:#fff;font-weight:600;box-shadow:none}
+.rowcol{display:block}
+.rowcol .head{display:flex;align-items:center;gap:8px}
+.slider{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin:12px 2px 4px;position:relative}
+.slider i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--grad)}
+.slider i::after{content:"";position:absolute;right:-8px;top:-6px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.themes{display:flex;gap:8px;margin-top:8px}
+.themes div{flex:1;height:42px;border-radius:9px;border:1px solid var(--b3);display:flex;align-items:flex-end;justify-content:center;font-size:9.5px;padding-bottom:3px;color:var(--t2)}
+.themes .dk{background:linear-gradient(#111,#000)}
+.themes .lt{background:linear-gradient(#f3f2f7,#dcdae4);color:#333}
+.themes .au{background:linear-gradient(90deg,#111 50%,#e6e4ec 50%)}
+.themes .on{outline:2px solid var(--violet);outline-offset:1px}
+.me{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:rgba(255,255,255,.035);border:1px solid var(--b1)}
+.av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:800;font-size:17px;color:#fff;position:relative}
+.av.s{width:30px;height:30px;font-size:12px}
+.av.xl{width:84px;height:84px;font-size:30px;border-radius:24px}
+.a1{background:linear-gradient(135deg,#7C3AED,#EC4899)}
+.a2{background:linear-gradient(135deg,#0EA5E9,#6366F1)}
+.a3{background:linear-gradient(135deg,#F59E0B,#EF4444)}
+.a4{background:linear-gradient(135deg,#10B981,#0EA5E9)}
+.a5{background:linear-gradient(135deg,#F472B6,#FB923C)}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:14px;font-weight:700;font-size:13px}
+.btn.pri{background:var(--grad);color:#fff;box-shadow:0 6px 18px -6px rgba(236,72,153,.55)}
+.btn.alt{background:rgba(255,255,255,.07);border:1px solid var(--b3);color:var(--t1)}
+.btn.ghost{color:var(--t2);font-weight:600}
+.btn.red{color:#FCA5A5;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)}
+.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:24px 24px 0 0;background:#111018;border-top:1px solid var(--b3);padding:10px 14px 26px;z-index:25}
+.sheet::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:0 auto 12px}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:24}
+.poster{border-radius:9px;background:linear-gradient(160deg,#3b2a5c,#1a1426 60%,#120e1a);border:1px solid var(--b1);position:relative;overflow:hidden}
+.poster.p2{background:linear-gradient(160deg,#5c2a45,#1f1020)}
+.poster.p3{background:linear-gradient(160deg,#1f3b5c,#0d1626)}
+.poster.p4{background:linear-gradient(160deg,#4d4320,#1c180c)}
+.poster.p5{background:linear-gradient(160deg,#2a5c4f,#0c1f1a)}
+.rowh{display:flex;justify-content:space-between;align-items:baseline;margin:14px 2px 8px;font-weight:700;font-size:13px}
+.rowh span{font-size:10.5px;color:var(--t3);font-weight:500}
+.rail{display:flex;gap:8px}
+.rail .poster{width:78px;height:117px;flex:none}
+.heroimg{height:190px;border-radius:16px;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.85)),linear-gradient(120deg,#4c1d95,#831843 60%,#1e1b4b);position:relative;padding:12px;display:flex;flex-direction:column;justify-content:flex-end}
+.heroimg b{font-size:18px;font-weight:800}
+.heroimg span{font-size:10.5px;color:var(--t2)}
+.dots{display:flex;gap:5px;justify-content:center;margin-top:8px}
+.dots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.25)}
+.dots i.on{width:18px;background:var(--grad)}
+/* Le sélecteur « Pour vous · Affiner » */
+.sbar{position:absolute;left:14px;right:14px;top:92px;height:40px;border-radius:20px;background:rgba(20,20,26,.62);border:1px solid var(--b2);display:flex;padding:3px;z-index:19;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.sbar span{flex:1;display:grid;place-items:center;font-size:12px;color:var(--t2);font-weight:500;border-radius:17px}
+.sbar span.on{background:rgba(255,255,255,.18);color:#fff;font-weight:600}
+.ubar{position:absolute;left:0;right:0;top:84px;height:40px;display:flex;gap:22px;padding:0 16px;align-items:flex-end;background:rgba(10,10,18,.72);border-bottom:1px solid var(--b2);z-index:19}
+.ubar span{padding-bottom:9px;font-size:13px;font-weight:600;color:var(--t3);position:relative}
+.ubar span.on{color:#fff}
+.ubar span.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:2px;background:var(--grad)}
+.oldseg{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--s1);border:1px solid var(--b1)}
+.oldseg span{padding:5px 11px;border-radius:6px;font-size:10.5px;color:var(--t3)}
+.oldseg span.on{background:var(--grad);color:#fff}
+.pin{display:flex;gap:12px;justify-content:center;margin:18px 0 26px}
+.pin i{width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(255,255,255,.4)}
+.pin i.f{background:var(--grad);border-color:transparent}
+.pad{display:grid;grid-template-columns:repeat(3,62px);gap:12px 20px;justify-content:center}
+.pad span{height:62px;border-radius:50%;background:rgba(255,255,255,.07);display:grid;place-items:center;font-size:22px;font-weight:500}
+.pad span.n{background:none}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:18px 14px;padding:0 14px}
+.who div{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12px;font-weight:600}
+.who .av{width:92px;height:92px;border-radius:26px;font-size:32px}
+.who .lk{position:absolute;right:-4px;bottom:-4px;width:24px;height:24px;border-radius:50%;background:#1d1b24;border:2px solid var(--s0);display:grid;place-items:center;font-size:11px;color:var(--t2)}
+.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.gal .av{width:auto;height:auto;aspect-ratio:1;border-radius:16px;font-size:16px}
+.gal .on{outline:2.5px solid var(--pink);outline-offset:2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--t2)}
+.pill.ok{background:rgba(34,197,94,.14);color:#86EFAC}
+.pill.br{background:rgba(139,92,246,.18);color:#C4B5FD}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.notif{position:absolute;top:44px;left:8px;right:8px;border-radius:20px;background:rgba(36,34,44,.92);border:1px solid var(--b3);padding:10px 12px;display:flex;gap:10px;z-index:28;box-shadow:0 10px 30px rgba(0,0,0,.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.notif .logo{width:34px;height:34px;border-radius:9px}
+.notif b{font-size:12px}
+.notif p{font-size:11px;color:var(--t2);line-height:1.35}
+.notif small{color:var(--t3);font-size:10px;margin-left:auto}
+.pchip{display:flex;align-items:center;gap:6px;height:32px;padding:0 9px 0 3px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid var(--b3);font-weight:700;font-size:13px}
+.pchip .av{width:26px;height:26px;font-size:11px}
+.pchip .ic{font-size:13px;color:var(--t2);transform:rotate(90deg)}
+.ptiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 8px;margin:14px 0 6px}
+.ptiles div{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;font-weight:600;text-align:center}
+.ptiles .av{width:70px;height:70px;border-radius:20px;font-size:26px}
+.ptiles .cur .av{outline:2.5px solid var(--violet);outline-offset:2px}
+.ptiles small{font-size:9.5px;color:#C4B5FD;font-weight:600;margin-top:-3px}
+.ptiles .ck{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;background:var(--violet);border:2px solid #111018;display:grid;place-items:center;font-size:11px}
+.toast{position:absolute;left:16px;right:16px;bottom:86px;z-index:26;border-radius:14px;background:rgba(30,28,38,.95);border:1px solid var(--b3);padding:10px 12px;display:flex;gap:9px;align-items:center;font-size:11.5px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+/* L'iPad (1180 × 820 pt, échelle 0,64) */
+.ipad{position:relative;width:760px;max-width:100%;aspect-ratio:1180/820;border-radius:30px;border:9px solid #1d1b24;box-shadow:0 0 0 1px #2c2935,0 30px 60px -20px rgba(0,0,0,.8);background:var(--s0);overflow:hidden;font-size:12px;color:var(--t1)}
+.ipad .sb{height:26px;padding:0 20px;font-size:11px}
+.ipad .split{position:absolute;inset:26px 0 0 0;display:flex}
+.ipad .rail-nav{width:64px;border-right:1px solid var(--b1);display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:24px;color:var(--t3);font-size:18px}
+.ipad .rail-nav .on{color:#C4B5FD}
+.ipad .master{width:34%;min-width:220px;max-width:256px;border-right:1px solid var(--b2);padding:14px 10px;overflow:hidden;background:rgba(255,255,255,.015)}
+.ipad .detail{flex:1;overflow:hidden;padding:18px 0}
+.ipad .col{max-width:435px;margin:0 auto;padding:0 18px}
+.ipad .crumb{font-size:11px;color:#C4B5FD;margin-bottom:6px}
+@media (max-width:820px){.ipad{font-size:10px}}
+@media (max-width:680px){.phone.land{width:100%}.shot{width:100%;align-items:center}.shot .note{width:100%}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></symbol>
+  <symbol id="tv" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></symbol>
+  <symbol id="phone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+  <symbol id="help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="cloud" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></symbol>
+  <symbol id="monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+  <symbol id="film" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></symbol>
+  <symbol id="spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+  <symbol id="heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="server" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+  <symbol id="out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="chart" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+  <symbol id="gift" viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></symbol>
+  <symbol id="del" viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></symbol>
+  <symbol id="cam" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="disk" viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
+  <symbol id="pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+  <symbol id="sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+</svg>
+
+<header class="top"><nav aria-label="Chapitres">
+  <a href="#portee">Compte / Cet appareil</a><a href="#reglages">Réglages (téléphone)</a><a href="#ipad">Réglages (iPad)</a>
+  <a href="#premier">Premier lancement</a><a href="#profil">Changer de profil</a><a href="#version">Nouvelle version</a><a href="#wt">Watch Together</a>
+  <a href="#reco">Pour vous · Affiner</a><a href="#boutons">Boutons</a><a href="#decisions">Décisions</a>
+</nav></header>
+
+<main>
+<div class="hero">
+  <div class="kicker">Tentacle TV · mobile et tablette · lot de nuit du 20/10</div>
+  <h1>Le mobile, <em>rangé comme le bureau</em></h1>
+  <p class="lead">Les nouveaux réglages écran par écran, sur iPhone et sur iPad en maître-détail ; le premier lancement ; l'annonce d'une nouvelle version ; Watch Together ; et le nouveau sélecteur « Pour vous · Affiner », déjà codé dans <code>apps/mobile</code>. Sous chaque écran, ce qui change et pourquoi. Les libellés sont ceux que les sessions du lot posent dans le code.</p>
+</div>
+
+<!-- ═══════════════ PORTÉE ═══════════════ -->
+<section class="ch" id="portee">
+  <h2>Compte ou Cet appareil — une pastille à chaque réglage</h2>
+  <p class="intro">Le mobile mélangeait sans le dire des préférences tenues par le serveur et d'autres gardées dans le téléphone. Désormais chaque réglage porte sa pastille, texte et icône (jamais la couleur seule), et les pages mixtes s'ouvrent sur une phrase qui l'explique.</p>
+  <div class="legend">
+    <div><span class="scope acc big"><svg class="ic"><use href="#cloud"/></svg>Compte</span> vous suit sur tous vos appareils (le serveur le garde)</div>
+    <div><span class="scope dev big"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span> ne vaut qu'ici (gardé dans le téléphone)</div>
+  </div>
+</section>
+
+<!-- ═══════════════ RÉGLAGES TÉLÉPHONE ═══════════════ -->
+<section class="ch" id="reglages">
+  <h2>Réglages, sur le téléphone <small>onglet Profil</small></h2>
+  <p class="intro">Six rubriques au lieu d'une longue liste à plat. On arrive sur la liste, on entre dans une rubrique, on en revient — rien de plus profond que deux niveaux, sauf les volets qui existaient déjà (galerie d'avatars, langues par bibliothèque).</p>
+  <div class="board">
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div>Tentacle TV</div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll">
+          <div class="me" style="padding:9px 12px"><div class="av s a1" style="width:38px;height:38px">D</div><div style="flex:1"><b style="font-size:13.5px">Damien</b><div style="color:var(--t3);font-size:10.5px">tentacle.maison.fr · propriétaire</div></div><span class="pill"><svg class="ic"><use href="#chart"/></svg>Mes statistiques</span></div>
+          <div class="grp" style="margin-top:10px">
+            <div class="row"><div class="tile"><svg class="ic"><use href="#user"/></svg></div><div class="lbl"><b>Compte</b><span>Photo, mot de passe, Famille</span></div><span class="cnt">1</span><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#play"/></svg></div><div class="lbl"><b>Lecture et apparence</b><span>Sombre · Français · Lecteur auto</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#tv"/></svg></div><div class="lbl"><b>TV et appareils</b><span>2 TV jumelées</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#phone"/></svg></div><div class="lbl"><b>Hors ligne</b><span>4 titres · 12,3 Go</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#bell"/></svg></div><div class="lbl"><b>Notifications</b><span>Autorisées</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#help"/></svg></div><div class="lbl"><b>Aide et à propos</b><span>Support, version 1.11.0</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+          </div>
+          <div class="grp" style="margin-top:10px"><div class="row"><div class="tile" style="background:rgba(255,255,255,.06);color:var(--t2)"><svg class="ic"><use href="#monitor"/></svg></div><div class="lbl"><b>Réglages avancés : sur l'app bureau</b><span>Délais de saut, génériques, aperçus…</span></div><svg class="ic" style="color:var(--t4)"><use href="#info"/></svg></div></div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div class="on"><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>La liste principale</b>Le profil en tête (et « Mes statistiques »), puis six rubriques, puis « Se déconnecter » et la version plus bas avec leur résumé en une ligne (on voit l'état sans entrer). La pastille rose sur Compte compte les invitations Famille en attente.<span class="why">l'ancienne page empilait une trentaine de lignes : on y cherchait au lieu d'y trouver.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="nav"><span class="back"><svg class="ic"><use href="#back"/></svg>Profil</span><span class="ttl">Compte</span></div>
+        <div class="scroll">
+          <div class="grp">
+            <div class="row"><div class="av s a1">D</div><div class="lbl"><b>Photo de profil</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="lbl"><b>Nom d'utilisateur</b></div><span class="val">damien</span></div>
+            <div class="row"><div class="lbl"><b>Mot de passe</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+          </div>
+          <div class="sec">Famille</div>
+          <div class="grp">
+            <div class="row"><div class="tile"><svg class="ic"><use href="#users"/></svg></div><div class="lbl"><b>Famille</b><span>Propriétaire · 4 profils</span></div><span class="cnt">1</span><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#user"/></svg></div><div class="lbl"><b>Changer de profil</b><span>Ouvre « Qui regarde ? »</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+          </div>
+          <div class="sec">Serveur</div>
+          <div class="grp">
+            <div class="row"><div class="lbl"><b>Changer de serveur</b></div><span class="val">tentacle.maison.fr</span><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="lbl"><b>Invitations</b><span>Administrateur</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="lbl"><b>Sessions en direct</b><span>Administrateur</span></div><span class="val">2</span><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="lbl"><b>Vider le cache et réinitialiser</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div></div>
+          </div>
+          <div class="grp" style="margin-top:14px"><div class="row danger"><div class="lbl"><b>Supprimer mon compte</b></div></div></div>
+        </div>
+      </div></div>
+      <div class="note"><b>Compte</b>Tout ce qui est au titulaire du compte et à son serveur : photo, mot de passe, Famille et ses invitations, changer de serveur, les outils d'administrateur. « Supprimer mon compte » est isolé en bas, en rouge.<span class="why">la Famille vivait dans un écran à part qu'on trouvait par hasard ; les invitations reçues méritent un compteur visible dès la liste.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="nav"><span class="back"><svg class="ic"><use href="#back"/></svg>Profil</span><span class="ttl">Lecture et apparence</span></div>
+        <div class="scroll" style="padding-top:92px">
+          <p class="phr">Les réglages marqués « <b style="color:#C4B5FD">Compte</b> » vous suivent sur tous vos appareils ; ceux marqués « <b>Cet appareil</b> » ne valent qu'ici.</p>
+          <div class="sec">Sur tous vos appareils</div>
+          <div class="grp">
+            <div class="row rowcol"><div class="head"><div class="lbl"><b>Intros et résumés</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div></div><div class="seg"><span>Proposer</span><span class="on">Passer</span><span>Laisser</span></div></div>
+            <div class="row"><div class="lbl"><b>Épisode suivant automatique</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><div class="sw"></div></div>
+            <div class="row"><div class="lbl"><b>Êtes-vous encore là ?</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span><span>Après 3 épisodes · 60 s pour répondre</span></div><div class="sw"></div></div>
+            <div class="row"><div class="lbl"><b>Langues audio et sous-titres</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row rowcol"><div class="lbl"><b>Langue de l'interface</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><div class="seg"><span class="on">Français</span><span>English</span></div></div>
+          </div>
+          <div class="sec">Sur cet appareil</div>
+          <div class="grp">
+            <div class="row rowcol"><div class="lbl"><b>Thème</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="themes"><div class="dk on">Sombre</div><div class="lt">Clair</div><div class="au">Auto</div></div></div>
+            <div class="row rowcol"><div class="lbl"><b>Taille des sous-titres</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span><span>160 %</span></div><div class="slider"><i style="width:73%"></i></div></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="note"><b>Lecture et apparence — le haut</b>Deux sections nommées par leur portée : « Sur tous vos appareils » puis « Sur cet appareil ». La langue de l'interface passe côté Compte (le serveur la synchronise).<span class="why">régler « Passer les intros » sur le téléphone et le retrouver sur la TV, c'est ce que l'utilisateur attend — encore faut-il qu'on le lui dise.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="nav"><span class="back"><svg class="ic"><use href="#back"/></svg>Profil</span><span class="ttl">Lecture et apparence</span></div>
+        <div class="scroll" style="padding-top:92px">
+          <div class="grp">
+            <div class="row rowcol"><div class="lbl"><b>Position des sous-titres</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span><span>Bas</span></div><div class="slider"><i style="width:96%"></i></div></div>
+            <div class="row rowcol"><div class="lbl"><b>Économie de données</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="seg"><span class="on">Auto</span><span>Activée</span><span>Désactivée</span></div><p class="phr" style="margin:6px 0 0">Plus léger en données mobiles, pleine qualité en Wi-Fi.</p></div>
+            <div class="row rowcol"><div class="lbl"><b>Lecteur vidéo</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="seg"><span class="on">Auto</span><span>Système</span><span>Avancé</span></div><p class="phr" style="margin:6px 0 0">Le meilleur lecteur pour chaque titre.</p></div>
+            <div class="row"><div class="lbl"><b>Options du lecteur</b><span>Atmos du système</span></div><svg class="ic chev" style="transform:rotate(90deg)"><use href="#chev"/></svg></div>
+          </div>
+          <div class="grp" style="margin-top:14px">
+            <div class="row"><div class="tile" style="background:rgba(255,255,255,.06);color:var(--t2)"><svg class="ic"><use href="#monitor"/></svg></div><div class="lbl"><b>Réglages avancés : sur l'app bureau</b><span>Ils suivent votre compte, donc valent aussi ici</span></div><svg class="ic" style="color:var(--t4)"><use href="#info"/></svg></div>
+          </div>
+        </div>
+        <div class="scrim" style="top:auto;height:0"></div>
+        <div class="sheet" style="padding-bottom:30px">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><div class="tile" style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(139,92,246,.16);color:#C4B5FD"><svg class="ic"><use href="#monitor"/></svg></div><b style="font-size:14px">Sur l'app bureau</b></div>
+          <p style="font-size:11.5px;color:var(--t2);line-height:1.5">Délais de saut par passage, génériques de fin, aperçus, fiche « à suivre », règles par bibliothèque… Ces réglages fins se font sur l'ordinateur ; comme ils suivent votre compte, ils s'appliquent aussi sur ce téléphone.</p>
+          <div class="btn alt" style="margin-top:12px">Compris</div>
+        </div>
+      </div></div>
+      <div class="note"><b>Lecture et apparence — le bas, et l'explication</b>Les réglages de l'appareil, dont les choix à trois valeurs, avec la phrase de l'option choisie. En bas, la ligne « Réglages avancés : sur l'app bureau » ouvre une feuille courte.<span class="why">les réglages trop fins encombraient l'écran d'un téléphone ; on ne les supprime pas, on dit où ils sont.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="nav"><span class="back"><svg class="ic"><use href="#back"/></svg>Profil</span><span class="ttl">TV et appareils</span></div>
+        <div class="scroll">
+          <div class="grp" style="padding:14px;text-align:center">
+            <div style="width:44px;height:44px;border-radius:13px;margin:0 auto 8px;background:var(--grad);display:grid;place-items:center;font-size:20px"><svg class="ic"><use href="#tv"/></svg></div>
+            <b style="font-size:13px">Jumeler une TV</b>
+            <p style="font-size:10.5px;color:var(--t3);margin:4px 0 10px">Ouvrez Tentacle sur la TV, puis tapez le code qu'elle affiche.</p>
+            <div style="display:flex;gap:5px;justify-content:center">
+              <span style="width:30px;height:38px;border-radius:8px;border:1.5px solid var(--violet);display:grid;place-items:center;font-weight:700;font-size:15px">K</span>
+              <span style="width:30px;height:38px;border-radius:8px;border:1.5px solid var(--violet);display:grid;place-items:center;font-weight:700;font-size:15px">7</span>
+              <span style="width:30px;height:38px;border-radius:8px;border:1px solid var(--b3)"></span><span style="width:30px;height:38px;border-radius:8px;border:1px solid var(--b3)"></span><span style="width:30px;height:38px;border-radius:8px;border:1px solid var(--b3)"></span><span style="width:30px;height:38px;border-radius:8px;border:1px solid var(--b3)"></span>
+            </div>
+          </div>
+          <div class="sec">Appareils jumelés</div>
+          <div class="grp">
+            <div class="row"><div class="tile"><svg class="ic"><use href="#tv"/></svg></div><div class="lbl"><b>Salon</b><span>Android TV · jumelée le 12 oct.</span></div><span class="val" style="color:#FCA5A5">Révoquer</span></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#tv"/></svg></div><div class="lbl"><b>Chambre</b><span>Apple TV · jumelée le 3 oct.</span></div><span class="val" style="color:#FCA5A5">Révoquer</span></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="note"><b>TV et appareils</b>Le geste le plus fréquent en tête (jumeler par le code, cases du code), puis « Appareils jumelés » avec « Révoquer ». Pas de liste des appareils connectés : le serveur n'en a pas pour son propre compte (hors admin).<span class="why">jumeler une TV était rangé avec les outils serveur ; c'est pourtant le premier geste d'un nouvel utilisateur.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="nav"><span class="back"><svg class="ic"><use href="#back"/></svg>Profil</span><span class="ttl">Hors ligne</span></div>
+        <div class="scroll">
+          <div class="grp" style="padding:12px">
+            <div style="display:flex;justify-content:space-between;font-size:11px"><b>Sur cet appareil</b><span style="color:var(--t3)">12,3 Go sur 128 Go</span></div>
+            <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:8px;overflow:hidden;display:flex"><i style="width:10%;background:var(--grad)"></i></div>
+          </div>
+          <div class="grp" style="margin-top:12px"><div class="row"><div class="tile"><svg class="ic"><use href="#film"/></svg></div><div class="lbl"><b>Mes titres hors ligne</b><span>4 titres · 1 en transfert</span></div><svg class="ic chev"><use href="#chev"/></svg></div></div>
+          <div class="sec">Transferts</div>
+          <div class="grp">
+            <div class="row"><div class="lbl"><b>Wi-Fi seulement</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="sw"></div></div>
+            <div class="row"><div class="lbl"><b>Continuer en arrière-plan</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="sw"></div></div>
+            <div class="row"><div class="lbl"><b>Prévenir quand c'est prêt</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="sw off"></div></div>
+          </div>
+          <div class="grp" style="margin-top:14px">
+            <div class="row"><div class="tile"><svg class="ic"><use href="#wifi"/></svg></div><div class="lbl"><b>Passer hors ligne</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span><span>Ne plus joindre le serveur</span></div><div class="sw off"></div></div>
+            <div class="row danger"><div class="lbl"><b>Tout retirer de cet appareil</b></div></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="note"><b>Hors ligne</b>L'espace en tête, les titres gardés, puis les règles de transfert. Le mot interdit n'apparaît nulle part : « garder hors ligne », « transfert », « sur cet appareil ».<span class="why">c'était éclaté entre l'en-tête, le profil et la lecture ; une rubrique suffit.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="nav"><span class="back"><svg class="ic"><use href="#back"/></svg>Profil</span><span class="ttl">Notifications</span></div>
+        <div class="scroll">
+          <div class="sec" style="margin-top:4px">Sur ce compte</div>
+          <div class="grp">
+            <div class="row"><div class="lbl"><b>Ajouts en bibliothèque</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span><span>Être notifié des nouveaux contenus ajoutés au serveur</span></div><div class="sw off"></div></div>
+            <div class="row"><div class="lbl"><b>Contenu demandé disponible</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span><span>Quand une de vos demandes devient disponible</span></div><div class="sw"></div></div>
+            <div class="row"><div class="lbl"><b>Tickets de support</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span><span>Réponses et changements de statut de vos tickets</span></div><div class="sw"></div></div>
+            <div class="row"><div class="lbl"><b>Famille</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span><span>Quand quelqu'un vous invite à rejoindre sa famille</span></div><div class="sw"></div></div>
+            <div class="row"><div class="lbl"><b>Watch Together</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span><span>Quand quelqu'un vous invite à regarder ensemble</span></div><div class="sw"></div></div>
+          </div>
+          <div class="sec">Cet appareil</div>
+          <div class="grp">
+            <div class="row"><div class="lbl"><b>Autorisation de cet appareil</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span><span>Autorisées</span></div><span class="pill ok"><svg class="ic"><use href="#check"/></svg>Autorisées</span></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="note"><b>Notifications</b>Les catégories du bureau, une à une, tenues par le compte ; l'autorisation du système à part, car elle ne vaut que pour ce téléphone (sinon, « Ouvrir les Réglages »).<span class="why">couper « Ajouts » sur le bureau doit le couper ici aussi.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="nav"><span class="back"><svg class="ic"><use href="#back"/></svg>Profil</span><span class="ttl">Aide et à propos</span></div>
+        <div class="scroll">
+          <div class="grp">
+            <div class="row"><div class="tile"><svg class="ic"><use href="#chat"/></svg></div><div class="lbl"><b>Support</b><span>Mes tickets · 1 réponse</span></div><span class="cnt">1</span><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#info"/></svg></div><div class="lbl"><b>À propos</b><span>Version 1.11.0 · serveur 1.31.0</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#lock"/></svg></div><div class="lbl"><b>Politique de confidentialité</b></div><svg class="ic" style="color:var(--t4)"><use href="#ext"/></svg></div>
+          </div>
+          <div class="grp" style="margin-top:14px"><div class="row"><div class="tile" style="background:rgba(255,255,255,.06);color:var(--t2)"><svg class="ic"><use href="#monitor"/></svg></div><div class="lbl"><b>Réglages avancés : sur l'app bureau</b></div><svg class="ic" style="color:var(--t4)"><use href="#info"/></svg></div></div>
+        </div>
+      </div></div>
+      <div class="note"><b>Aide et à propos</b>Support, versions, confidentialité. Pas de guide des bandes-annonces : le mobile ne les règle pas (décision du 06/10).<span class="why">un rangement court, en fin de liste, là où on cherche l'aide.</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ IPAD ═══════════════ -->
+<section class="ch" id="ipad">
+  <h2>Réglages, sur l'iPad <small>maître-détail dès 720 pt de largeur utile</small></h2>
+  <p class="intro">À gauche la liste principale (entre 320 et 400 pt, 34 % de l'écran), à droite la rubrique dans une colonne de lecture de 680 pt au plus, centrée. Un volet ouvert depuis la rubrique s'affiche dans le détail avec « ‹ Rubrique » pour remonter. En Split View étroit, l'iPad retombe sur le téléphone.</p>
+  <div class="board">
+    <div class="shot wide">
+      <div class="ipad">
+        <div class="sb"><span>21:41  lun. 20 oct.</span><span>Wi-Fi 100 %</span></div>
+        <div class="split">
+          <div class="rail-nav"><div class="logo" style="width:28px;height:28px"></div><svg class="ic"><use href="#home"/></svg><svg class="ic"><use href="#spark"/></svg><svg class="ic"><use href="#film"/></svg><svg class="ic on"><use href="#user"/></svg></div>
+          <div class="master">
+            <div class="h-big" style="font-size:20px">Réglages</div>
+            <div class="me" style="padding:9px"><div class="av s a1">D</div><div><b>Damien</b><div style="color:var(--t3);font-size:10px">tentacle.maison.fr</div></div></div>
+            <div class="grp" style="margin-top:10px">
+              <div class="row"><div class="tile"><svg class="ic"><use href="#user"/></svg></div><div class="lbl"><b>Compte</b></div><span class="cnt">1</span></div>
+              <div class="row sel"><div class="tile"><svg class="ic"><use href="#play"/></svg></div><div class="lbl"><b>Lecture et apparence</b></div></div>
+              <div class="row"><div class="tile"><svg class="ic"><use href="#tv"/></svg></div><div class="lbl"><b>TV et appareils</b></div></div>
+              <div class="row"><div class="tile"><svg class="ic"><use href="#phone"/></svg></div><div class="lbl"><b>Hors ligne</b></div></div>
+              <div class="row"><div class="tile"><svg class="ic"><use href="#bell"/></svg></div><div class="lbl"><b>Notifications</b></div></div>
+              <div class="row"><div class="tile"><svg class="ic"><use href="#help"/></svg></div><div class="lbl"><b>Aide et à propos</b></div></div>
+            </div>
+            <div class="grp" style="margin-top:10px"><div class="row"><div class="lbl"><b style="font-size:11px">Réglages avancés : sur l'app bureau</b></div><svg class="ic" style="color:var(--t4)"><use href="#info"/></svg></div></div>
+          </div>
+          <div class="detail"><div class="col">
+            <div class="h-big" style="font-size:20px">Lecture et apparence</div>
+            <p class="phr">Les réglages marqués « <b style="color:#C4B5FD">Compte</b> » vous suivent sur tous vos appareils ; ceux marqués « <b>Cet appareil</b> » ne valent qu'ici.</p>
+            <div class="sec">Sur tous vos appareils</div>
+            <div class="grp">
+              <div class="row"><div class="lbl"><b>Intros et résumés</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><div class="seg" style="margin:0;width:190px"><span>Proposer</span><span class="on">Passer</span><span>Laisser</span></div></div>
+              <div class="row"><div class="lbl"><b>Épisode suivant automatique</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><div class="sw"></div></div>
+              <div class="row"><div class="lbl"><b>Langues audio et sous-titres</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+              <div class="row"><div class="lbl"><b>Langue de l'interface</b><span class="scope acc"><svg class="ic"><use href="#cloud"/></svg>Compte</span></div><div class="seg" style="margin:0;width:150px"><span class="on">Français</span><span>English</span></div></div>
+            </div>
+            <div class="sec">Sur cet appareil</div>
+            <div class="grp">
+              <div class="row"><div class="lbl"><b>Thème</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="themes" style="margin:0;width:180px"><div class="dk on">Sombre</div><div class="lt">Clair</div><div class="au">Auto</div></div></div>
+              <div class="row"><div class="lbl"><b>Lecteur vidéo</b><span class="scope dev"><svg class="ic"><use href="#phone"/></svg>Cet appareil</span></div><div class="seg" style="margin:0;width:190px"><span class="on">Auto</span><span>Système</span><span>Avancé</span></div></div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <div class="note"><b>iPad paysage</b>La rubrique choisie reste surlignée dans la liste ; les choix courts passent à droite de leur ligne (la place le permet), les longs gardent leur rangée.<span class="why">sur iPad, une page de réglages étirée sur 1 180 pt se lit mal et oblige à revenir en arrière à chaque rubrique.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PREMIER LANCEMENT ═══════════════ -->
+<section class="ch" id="premier">
+  <h2>Le premier lancement <small>Qui regarde ? → PIN → accueil → photo</small></h2>
+  <p class="intro">Comme sur le bureau et la TV : l'app s'ouvre sur les profils de la Famille, derrière un code PIN s'il y en a un ; trois pages présentent l'app une seule fois ; puis l'invitation unique à choisir une photo (un personnage de la troupe ou une photo importée). Aligné sur la session famille-mobile — détail final dans son code.</p>
+  <div class="board">
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="scroll nohead" style="padding-top:96px">
+          <div style="text-align:center;font-size:22px;font-weight:800;margin-bottom:26px">Qui regarde ?</div>
+          <div class="who">
+            <div><div class="av a1" style="position:relative">D<span class="lk"><svg class="ic"><use href="#lock"/></svg></span></div>Damien</div>
+            <div><div class="av a2">C</div>Camille</div>
+            <div><div class="av a3">L</div>Léo</div>
+            <div><div class="av a4" style="position:relative">I<span class="lk"><svg class="ic"><use href="#lock"/></svg></span></div>Invité</div>
+          </div>
+          <div class="btn ghost" style="margin-top:28px"><svg class="ic"><use href="#sliders"/></svg>Gérer les profils</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>Qui regarde ?</b>Grandes tuiles (92 pt), cadenas sur les profils protégés. « Gérer les profils » en bas, discret.<span class="why">sur un téléphone partagé en famille, chacun retrouve ses reprises et ses recommandations.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="scroll nohead" style="padding-top:84px;text-align:center">
+          <div class="av xl a1" style="margin:0 auto 12px">D</div>
+          <b style="font-size:16px">Damien</b>
+          <div style="color:var(--t3);font-size:11px;margin-top:3px">Entrez votre code PIN</div>
+          <div class="pin"><i class="f"></i><i class="f"></i><i></i><i></i></div>
+          <div class="pad"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="n"></span><span>0</span><span class="n"><svg class="ic" style="font-size:20px"><use href="#del"/></svg></span></div>
+          <div class="btn ghost" style="margin-top:6px;font-size:12px">Retour aux profils</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>Code PIN</b>Pavé natif à grandes touches, quatre points en dégradé. Le serveur vérifie, l'app ne garde rien.<span class="why">même code que sur la TV ; jamais envoyé ailleurs qu'au serveur.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="scroll nohead" style="padding:60px 18px 30px;display:flex;flex-direction:column">
+          <div style="text-align:right;color:var(--t3);font-size:12px;font-weight:600">Passer</div>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:14px">
+            <div class="rail" style="transform:rotate(-6deg);margin-bottom:18px"><div class="poster p2" style="width:70px;height:105px"></div><div class="poster" style="width:82px;height:123px;box-shadow:0 10px 30px rgba(139,92,246,.4)"></div><div class="poster p3" style="width:70px;height:105px"></div></div>
+            <b style="font-size:20px;line-height:1.2">Pour vous, et rien que pour vous</b>
+            <p style="color:var(--t2);font-size:12px;max-width:230px">Des propositions tirées de ce que vous regardez. Jugez-les d'un glisser dans « Affiner ».</p>
+          </div>
+          <div class="dots"><i></i><i class="on"></i><i></i></div>
+          <div class="btn pri" style="margin-top:16px">Suivant</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>Les pages d'accueil (2 sur 3)</b>Trois pages, une idée chacune : votre bibliothèque partout · Pour vous · hors ligne et Watch Together. « Passer » toujours visible, jamais rejouées.<span class="why">l'app a beaucoup grandi ; trois phrases évitent qu'on passe à côté de l'essentiel.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="scrim"></div>
+        <div class="sheet" style="top:120px">
+          <div style="text-align:center"><b style="font-size:16px">Choisissez votre photo</b><p style="color:var(--t3);font-size:11px;margin-top:3px">Elle s'affiche sur vos TV et dans « Qui regarde ? ».</p></div>
+          <div class="btn alt" style="margin:12px 0"><svg class="ic"><use href="#cam"/></svg>Importer une photo</div>
+          <div class="sec" style="margin-top:4px">La troupe</div>
+          <div class="gal">
+            <div class="av a1">Ba</div><div class="av a2 on">Bi</div><div class="av a3">Br</div><div class="av a4">Bu</div>
+            <div class="av a5">Ca</div><div class="av a2">Cp</div><div class="av a1">Ce</div><div class="av a4">Co</div>
+            <div class="av a3">Da</div><div class="av a5">Él</div><div class="av a4">Fa</div><div class="av a1">Fi</div>
+          </div>
+          <div style="margin-top:12px;font-size:11px;text-align:center;color:var(--t2)"><b style="color:#fff">Bip</b> — touchez encore pour le choisir</div>
+          <div class="btn ghost" style="margin-top:6px">Plus tard</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>La photo</b>La galerie existante en feuille, une seule fois par profil sans photo, après l'accueil et jamais par-dessus une autre fenêtre.<span class="why">un profil sans visage ne se reconnaît pas dans « Qui regarde ? ».</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CHANGER DE PROFIL ═══════════════ -->
+<section class="ch" id="profil">
+  <h2>Changer de profil, en un geste <small>demande de Damien du 20/10</small></h2>
+  <p class="intro">On touche son nom, et les autres profils sont là. Le profil actif est toujours visible en haut de l'écran, avec son chevron : on comprend sans explication que c'est là qu'on en change. Une feuille, pas une page : on reste où l'on était, et la bascule se fait sur place.</p>
+  <div class="board">
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg"><b>Dark</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster"></div></div></div>
+        <div class="tb"><div class="on"><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>1 · Le nom, en haut, partout</b>À côté du logo, la puce du profil actif : sa photo, son prénom, un chevron. Sur tous les onglets. Elle n'apparaît que si la famille compte au moins deux profils et que le serveur sait ouvrir un profil sur mobile.<span class="why">« je clique sur mon nom et bam » : le nom est le bouton, il n'y a rien à chercher.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg"><b>Dark</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster"></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet" style="top:250px">
+          <div style="text-align:center"><b style="font-size:16px">Changer de profil</b><p style="color:var(--t3);font-size:11px;margin-top:2px">Qui regarde ?</p></div>
+          <div class="ptiles">
+            <div class="cur"><div class="av a1" style="position:relative">D<span class="ck"><svg class="ic"><use href="#check"/></svg></span></div>Damien<small>Profil actuel</small></div>
+            <div><div class="av a2">C</div>Camille</div>
+            <div><div class="av a3">L</div>Léo</div>
+            <div><div class="av a4" style="position:relative">I<span class="lk" style="position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;background:#1d1b24;border:2px solid #111018;display:grid;place-items:center;font-size:10px;color:var(--t2)"><svg class="ic"><use href="#lock"/></svg></span></div>Invité</div>
+            <div><div class="av a5">M</div>Maman</div>
+          </div>
+          <div class="btn ghost" style="font-size:12px;margin-top:6px"><svg class="ic"><use href="#sliders"/></svg>Gérer les profils</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>2 · La feuille « Changer de profil »</b>Titre explicite, tous les profils en grandes tuiles, l'actuel coché et dit « Profil actuel », un cadenas sur ceux qui ont un code. Un toucher sur une tuile change de profil. « Gérer les profils » en pied, seulement depuis la session personnelle.<span class="why">un seul geste de plus que d'ouvrir l'app ; on la ferme d'un glisser vers le bas.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg"><b>Dark</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster"></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet" style="top:150px;text-align:center">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="color:#C4B5FD;font-size:12px;display:flex;align-items:center"><svg class="ic"><use href="#back"/></svg>Profils</span><b style="font-size:14px">Invité</b><span style="width:48px"></span></div>
+          <div class="av xl a4" style="margin:14px auto 8px;width:64px;height:64px;font-size:24px;border-radius:19px">I</div>
+          <div style="color:var(--t3);font-size:11px">Entrez le code PIN de ce profil</div>
+          <div class="pin" style="margin:12px 0 16px"><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div>
+          <div class="pad" style="grid-template-columns:repeat(3,54px);gap:9px 18px"><span style="height:54px">1</span><span style="height:54px">2</span><span style="height:54px">3</span><span style="height:54px">4</span><span style="height:54px">5</span><span style="height:54px">6</span><span style="height:54px">7</span><span style="height:54px">8</span><span style="height:54px">9</span><span class="n" style="height:54px"></span><span style="height:54px">0</span><span class="n" style="height:54px"><svg class="ic"><use href="#del"/></svg></span></div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>3 · Un profil protégé</b>Le pavé s'ouvre DANS la feuille, avec « ‹ Profils » pour revenir. Le serveur vérifie le code, comme partout.<span class="why">pas de page qui s'empile : on ne se perd pas en route.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a2">C</div>Camille<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.85)),linear-gradient(120deg,#0c4a6e,#3730a3 60%,#1e1b4b)"><b>Bluey</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p5"></div><div class="poster p4"></div><div class="poster p3"></div></div></div>
+        <div class="toast"><div class="av s a2" style="width:26px;height:26px;font-size:11px">C</div><span style="flex:1">Vous regardez sur le profil de <b>Camille</b></span></div>
+        <div class="tb"><div class="on"><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>4 · C'est fait</b>La feuille se ferme, l'accueil se recharge pour Camille, un message bref le dit. La puce affiche désormais Camille : on sait toujours sur quel profil on est.<span class="why">changer de profil sans le voir changer, c'est douter.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll">
+          <div class="me" style="flex-direction:column;align-items:stretch;gap:10px"><div style="display:flex;align-items:center;gap:12px"><div class="av a1">D</div><div style="flex:1"><b style="font-size:14px">Damien</b><div style="color:var(--t3);font-size:10.5px">tentacle.maison.fr · propriétaire</div></div></div><div class="btn alt" style="height:38px;font-size:12px"><svg class="ic"><use href="#users"/></svg>Changer de profil</div></div>
+          <div class="grp" style="margin-top:12px">
+            <div class="row"><div class="tile"><svg class="ic"><use href="#user"/></svg></div><div class="lbl"><b>Compte</b><span>Photo, mot de passe, Famille</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#play"/></svg></div><div class="lbl"><b>Lecture et apparence</b></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#tv"/></svg></div><div class="lbl"><b>TV et appareils</b></div><svg class="ic chev"><use href="#chev"/></svg></div>
+          </div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div class="on"><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>5 · Aussi dans l'onglet Profil</b>Sous son nom, un bouton « Changer de profil » ouvre la MÊME feuille. Deux portes, un seul écran.<span class="why">c'est là qu'on le cherche quand on n'a pas vu la puce.</span></div>
+    </div>
+  </div>
+  <div class="decision"><b>Cas limites</b> — hors ligne : la pastille hors ligne garde sa place et la puce s'efface (changer de profil passe par le serveur). Économie de données active : la puce se réduit à la photo et au chevron, la pastille reste. Famille d'un seul profil, ou serveur qui ne sait pas ouvrir un profil sur mobile : ni puce ni bouton, l'en-tête d'avant. Lecteurs d'écran : « Changer de profil, profil actuel : Damien ».</div>
+</section>
+
+<!-- ═══════════════ NOUVELLE VERSION ═══════════════ -->
+<section class="ch" id="version">
+  <h2>Une nouvelle version de l'app <small>proposition — pas une entrée de la cloche</small></h2>
+  <p class="intro">Le serveur n'écrit aucune notification pour une version d'app (session notifs) : l'annonce vient de l'app elle-même, à partir de la version servie par sa boutique. Deux moments, comme sur le bureau : « une version est disponible », puis « voici ce qui change » au premier lancement après la mise à jour.</p>
+  <div class="board">
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div>Tentacle TV</div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg"><b>Dark</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster"></div></div></div>
+        <div style="position:absolute;left:12px;right:12px;bottom:84px;z-index:22;border-radius:16px;background:rgba(24,22,32,.94);border:1px solid rgba(139,92,246,.3);padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.5)">
+          <div style="width:30px;height:30px;border-radius:9px;background:var(--grad);display:grid;place-items:center;flex:none"><svg class="ic"><use href="#gift"/></svg></div>
+          <div style="flex:1"><b style="font-size:12px">Tentacle 1.12 est disponible</b><div style="font-size:10.5px;color:var(--t3)">Watch Together arrive sur l'iPhone</div></div>
+          <span style="font-size:11.5px;font-weight:700;color:#C4B5FD">Voir</span>
+          <svg class="ic" style="color:var(--t4)"><use href="#x"/></svg>
+        </div>
+        <div class="tb"><div class="on"><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>« Disponible »</b>Un bandeau au-dessus de la barre d'onglets, une fois par version, fermable. « Voir » ouvre la fiche de la boutique.<span class="why">jamais par-dessus le lecteur, jamais une fenêtre bloquante : ce n'est pas une alerte.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="scroll nohead" style="padding:58px 16px 30px">
+          <div class="kicker" style="font-size:10px">Version 1.12</div>
+          <div class="h-big" style="margin-top:4px">Les nouveautés</div>
+          <div class="grp" style="padding:12px;margin-bottom:10px">
+            <div style="height:110px;border-radius:10px;background:linear-gradient(120deg,#4c1d95,#831843);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:-8px"><div class="av s a1"></div><div class="av s a2" style="margin-left:-8px"></div><div class="av s a3" style="margin-left:-8px"></div></div>
+            <span class="pill br">Nouveau</span>
+            <b style="display:block;font-size:13px;margin:6px 0 3px">Watch Together sur l'iPhone</b>
+            <p style="font-size:11px;color:var(--t2)">Regardez à plusieurs, en même temps, avec le chat du groupe.</p>
+            <div style="font-size:11.5px;font-weight:700;color:#C4B5FD;margin-top:8px">Voir dans l'app ›</div>
+          </div>
+          <div class="grp" style="padding:12px"><span class="pill">Amélioré</span><b style="display:block;font-size:13px;margin:6px 0 3px">Des réglages mieux rangés</b><p style="font-size:11px;color:var(--t2)">Six rubriques, et chaque réglage dit s'il suit votre compte.</p></div>
+          <div class="btn pri" style="margin-top:14px">C'est parti</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>« Les nouveautés »</b>Au premier lancement de la nouvelle version, le modèle du bureau : une carte par nouveauté (Nouveau, Amélioré, Corrigé), « Voir dans l'app ». Une nouveauté que le serveur ne sait pas faire n'est pas montrée.<span class="why">les notes de la boutique ne sont lues par personne ; ici on montre et on emmène.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ WATCH TOGETHER ═══════════════ -->
+<section class="ch" id="wt">
+  <h2>Watch Together, sur le téléphone et l'iPad</h2>
+  <p class="intro">Le groupe est une feuille du bas sur le téléphone, une fenêtre de 520 pt centrée sur l'iPad ; pendant la lecture, le chat se pose à droite en paysage. Aligné sur la session wt-mobile — libellés de l'espace <code>watchTogether</code>.</p>
+  <div class="board">
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="scroll" style="padding-top:60px"><div class="heroimg" style="height:240px;opacity:.6"><b>Arcane</b></div></div>
+        <div class="scrim"></div>
+        <div class="sheet" style="top:110px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:16px">Votre groupe</b><span style="color:var(--t3);font-size:11px">3 membres</span></div>
+          <div class="grp" style="display:flex;gap:10px;padding:10px;margin:10px 0"><div class="poster p2" style="width:44px;height:66px;flex:none"></div><div style="flex:1"><div style="font-size:10px;color:var(--t3)">Au programme</div><b style="font-size:12.5px">Arcane · S2 É1</b></div><div class="btn pri" style="height:34px;padding:0 14px;align-self:center;font-size:12px">Lancer</div></div>
+          <div class="sec" style="margin-top:6px">Dans le groupe · 3</div>
+          <div class="grp">
+            <div class="row"><div class="av s a1">D</div><div class="lbl"><b>Damien <span class="pill br" style="font-size:9px">Hôte</span> <span class="pill" style="font-size:9px">Vous</span></b><span><i class="dot" style="background:var(--ok)"></i> En lecture</span></div></div>
+            <div class="row"><div class="av s a2">C</div><div class="lbl"><b>Camille</b><span><i class="dot" style="background:var(--warn)"></i> Mise en mémoire tampon…</span></div><span style="color:var(--t3)">⋯</span></div>
+            <div class="row"><div class="av s a3">L</div><div class="lbl"><b>Léo</b><span>Invitation envoyée · en attente</span></div></div>
+          </div>
+          <div class="btn pri" style="margin-top:12px"><svg class="ic"><use href="#plus"/></svg>Inviter des membres</div>
+          <div class="btn alt" style="margin-top:8px"><svg class="ic"><use href="#heart"/></svg>Trouver quoi regarder</div>
+          <div class="btn ghost" style="color:#FCA5A5;margin-top:4px">Quitter le groupe</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>Le groupe (téléphone)</b>Ce qui se joue en tête avec « Lancer », les membres avec leur état écrit (pas seulement une couleur), une seule action principale.<span class="why">sur un petit écran, on veut savoir en un coup d'œil qui est prêt.</span></div>
+    </div>
+    <div class="shot land">
+      <div class="phone land"><div class="screen" style="background:linear-gradient(120deg,#2b1747,#4a1530 60%,#0d0b13)">
+        <div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:5px 6px 5px 10px;border-radius:999px;background:rgba(10,10,18,.6);border:1px solid var(--b2)"><div style="display:flex"><div class="av s a1" style="width:20px;height:20px;font-size:9px"></div><div class="av s a2" style="width:20px;height:20px;margin-left:-6px"></div><div class="av s a3" style="width:20px;height:20px;margin-left:-6px"></div></div><span style="font-size:11px;font-weight:600">3</span><span style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);display:grid;place-items:center;position:relative"><svg class="ic"><use href="#chat"/></svg><i style="position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--pink)"></i></span></div>
+        <div style="position:absolute;left:18px;bottom:46px;font-size:11px;background:rgba(0,0,0,.45);padding:5px 9px;border-radius:10px">Camille : trop bien ce passage 😄</div>
+        <div style="position:absolute;left:18px;right:258px;bottom:18px;height:4px;border-radius:2px;background:rgba(255,255,255,.2)"><i style="display:block;width:38%;height:100%;border-radius:2px;background:var(--grad)"></i></div>
+        <div style="position:absolute;top:0;right:0;bottom:0;width:240px;background:rgba(12,11,18,.88);border-left:1px solid var(--b2);padding:14px 12px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between"><b style="font-size:12.5px">Chat du groupe</b><svg class="ic" style="color:var(--t3)"><use href="#x"/></svg></div>
+          <div style="font-size:10.5px;color:var(--t2)"><b style="color:#93C5FD">Camille</b> on reprend à 12:40 ?</div>
+          <div style="font-size:10.5px;color:var(--t2)"><b style="color:#C4B5FD">Vous</b> oui go</div>
+          <div style="margin-top:auto;display:flex;gap:6px;font-size:15px">😂 ❤️ 🔥 👏</div>
+          <div style="height:32px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid var(--b3);font-size:10.5px;color:var(--t3);display:flex;align-items:center;padding:0 12px">Écrire au groupe…</div>
+        </div>
+      </div></div>
+      <div class="note"><b>Le lecteur en groupe, téléphone en paysage</b>La pilule du groupe en haut au centre (pastille de non-lus), le chat en panneau de 320 pt à droite, fermable ; en portrait il devient une feuille du bas.<span class="why">la vidéo garde la plus grande part ; le chat ne la recouvre que si on l'ouvre.</span></div>
+    </div>
+    <div class="shot wide">
+      <div class="ipad"><div class="sb"><span>21:41</span><span>Wi-Fi 100 %</span></div>
+        <div class="split">
+          <div style="flex:1;background:linear-gradient(120deg,#2b1747,#4a1530 60%,#0d0b13);position:relative">
+            <div style="position:absolute;left:20px;right:20px;bottom:22px;height:4px;border-radius:2px;background:rgba(255,255,255,.2)"><i style="display:block;width:38%;height:100%;border-radius:2px;background:var(--grad)"></i></div>
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.4);display:grid;place-items:center;font-size:22px"><svg class="ic"><use href="#pause"/></svg></div>
+          </div>
+          <div style="width:31%;background:rgba(12,11,18,.94);border-left:1px solid var(--b2);padding:14px">
+            <div class="seg" style="margin:0 0 12px"><span class="on">Groupe</span><span>Chat du groupe</span></div>
+            <div class="grp">
+              <div class="row"><div class="av s a1">D</div><div class="lbl"><b>Damien</b><span><i class="dot" style="background:var(--ok)"></i> En lecture</span></div><span class="pill br" style="font-size:9px">Hôte</span></div>
+              <div class="row"><div class="av s a2">C</div><div class="lbl"><b>Camille</b><span><i class="dot" style="background:var(--ok)"></i> En lecture</span></div></div>
+              <div class="row"><div class="av s a3">L</div><div class="lbl"><b>Léo</b><span><i class="dot" style="background:var(--danger)"></i> Ne peut pas lire ce média</span></div></div>
+            </div>
+            <div class="btn alt" style="margin-top:12px;height:38px;font-size:12px"><svg class="ic"><use href="#plus"/></svg>Inviter des membres</div>
+          </div>
+        </div>
+      </div>
+      <div class="note"><b>iPad paysage : deux colonnes</b>La vidéo à gauche, un panneau de 360 pt à droite avec « Groupe » et « Chat du groupe » ; on le replie et la vidéo reprend toute la largeur. En portrait : la vidéo en haut, le panneau dessous.<span class="why">sur un grand écran, voir le groupe et la vidéo ensemble est le cas normal, pas l'exception.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ POUR VOUS · AFFINER ═══════════════ -->
+<section class="ch" id="reco">
+  <h2>« Pour vous · Affiner » — trois pistes, une retenue</h2>
+  <p class="intro">Aujourd'hui, les deux sections de l'onglet Pour vous se choisissent par un petit segment calé à gauche, EN TÊTE de page : il défile avec elle et passe sous l'en-tête en verre dès le premier geste — à moitié caché, puis introuvable.</p>
+  <div class="board">
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div>Tentacle TV</div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll" style="padding-top:72px">
+          <div class="oldseg" style="opacity:.55;margin-bottom:8px"><span class="on">Pour vous</span><span>Affiner</span></div>
+          <div class="heroimg"><b>Severance</b><span>Parce que vous avez aimé Dark</span></div>
+          <div class="rowh">Parce que vous avez aimé Dark<span>Tout voir</span></div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster p4"></div></div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div class="on"><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><span class="tag was">Avant</span><b style="display:inline">Le segment qui fuit</b><br>32 pt de haut, deux mots serrés, et sous le verre de l'en-tête après quelques points de défilement.<span class="why">rien n'indique qu'« Affiner » existe une fois la page défilée.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div>Tentacle TV</div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="sbar"><span class="on">Pour vous</span><span>Affiner</span></div>
+        <div class="scroll" style="padding-top:142px">
+          <div class="heroimg"><b>Severance</b><span>Parce que vous avez aimé Dark</span></div>
+          <div class="dots"><i class="on"></i><i></i><i></i></div>
+          <div class="rowh">Parce que vous avez aimé Dark<span>Tout voir</span></div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster p4"></div></div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div class="on"><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><span class="tag ok">Retenue · codée</span><b style="display:inline">A — la pastille en verre, fixée</b><br>Sous l'en-tête, pleine largeur (420 pt au plus), deux moitiés égales de 44 pt ; le pouce neutre (celui des segmentés du lot « boutons ») glisse de l'une à l'autre (transform seul). La page défile dessous, elle ne bouge jamais.<span class="why">toujours visible, une cible deux fois plus grande, le geste du contrôle segmenté d'iOS.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div>Tentacle TV</div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="ubar"><span>Pour vous</span><span class="on">Affiner</span></div>
+        <div class="scroll" style="padding-top:140px;display:flex;flex-direction:column;align-items:center">
+          <div class="poster" style="width:200px;height:290px;border-radius:20px;transform:rotate(4deg) translateX(20px);box-shadow:0 20px 40px rgba(0,0,0,.6)"></div>
+          <div style="display:flex;gap:14px;margin-top:18px"><span style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;color:#FCA5A5"><svg class="ic"><use href="#x"/></svg></span><span style="width:44px;height:44px;border-radius:50%;background:var(--grad);display:grid;place-items:center"><svg class="ic"><use href="#heart"/></svg></span></div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div class="on"><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><span class="tag no">Écartée</span><b style="display:inline">B — deux pages qu'on fait glisser, soulignées</b><br>Joli et familier (App Store, Netflix)…<span class="why">mais « Affiner » se joue déjà d'un glisser horizontal sur la carte, et les rangées de « Pour vous » défilent de côté : trois gestes horizontaux superposés, la carte partirait vers la page voisine.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div>Tentacle TV</div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll" style="padding-top:96px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:22px;font-weight:800;margin:0 2px 10px">Pour vous <svg class="ic" style="font-size:16px;transform:rotate(90deg);color:var(--t3)"><use href="#chev"/></svg></div>
+          <div style="position:absolute;left:14px;top:132px;width:170px;border-radius:14px;background:#17151f;border:1px solid var(--b3);box-shadow:0 14px 30px rgba(0,0,0,.6);z-index:5;overflow:hidden">
+            <div class="row" style="min-height:38px"><svg class="ic" style="color:#C4B5FD"><use href="#check"/></svg><b style="font-size:12px">Pour vous</b></div>
+            <div class="row" style="min-height:38px"><span style="width:12px"></span><b style="font-size:12px;font-weight:500">Affiner</b></div>
+          </div>
+          <div class="heroimg" style="opacity:.5"><b>Severance</b></div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div class="on"><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><span class="tag no">Écartée</span><b style="display:inline">C — le grand titre qui ouvre un menu</b><br>Très propre visuellement.<span class="why">« Affiner » disparaît derrière un geste ; or tout l'intérêt est qu'on le VOIE pour y aller juger quelques titres.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="screen" style="background:var(--s0)">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div>Tentacle TV</div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="sbar"><span>Pour vous</span><span class="on">Affiner</span></div>
+        <div class="scroll" style="padding-top:150px;display:flex;flex-direction:column;align-items:center">
+          <div style="font-size:10.5px;color:var(--t3);margin-bottom:10px">12 jugés · 4 aimés</div>
+          <div class="poster p5" style="width:206px;height:300px;border-radius:22px;box-shadow:0 20px 40px rgba(0,0,0,.6)"></div>
+          <div style="display:flex;gap:12px;margin-top:16px"><span style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;color:#FCA5A5"><svg class="ic"><use href="#x"/></svg></span><span style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center"><svg class="ic"><use href="#spark"/></svg></span><span style="width:40px;height:40px;border-radius:50%;background:var(--grad);display:grid;place-items:center"><svg class="ic"><use href="#heart"/></svg></span></div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div class="on"><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><span class="tag ok">Retenue</span><b style="display:inline">A, côté « Affiner »</b><br>La même barre, à la même place : changer de section ne fait rien bouger d'autre que le curseur. La pile se juge toujours d'un glisser, sans conflit.<span class="why">la barre ne se démonte pas d'une section à l'autre.</span></div>
+    </div>
+
+    <div class="shot wide">
+      <div class="ipad"><div class="sb"><span>21:41</span><span>Wi-Fi 100 %</span></div>
+        <div class="split">
+          <div class="rail-nav"><div class="logo" style="width:28px;height:28px"></div><svg class="ic"><use href="#home"/></svg><svg class="ic on"><use href="#spark"/></svg><svg class="ic"><use href="#film"/></svg><svg class="ic"><use href="#user"/></svg></div>
+          <div style="flex:1;position:relative;overflow:hidden;padding:64px 22px 0">
+            <div class="sbar" style="top:14px;left:50%;right:auto;width:270px;transform:translateX(-50%)"><span class="on">Pour vous</span><span>Affiner</span></div>
+            <div class="heroimg" style="height:200px"><b style="font-size:22px">Severance</b><span>Parce que vous avez aimé Dark</span></div>
+            <div class="rowh">Parce que vous avez aimé Dark<span>Tout voir</span></div>
+            <div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster p4"></div><div class="poster"></div><div class="poster p5"></div><div class="poster p3"></div><div class="poster p2"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="note"><b>A sur l'iPad</b>La pastille ne traverse pas l'écran : 420 pt au plus, centrée sur la colonne de contenu, rail compris. Même chose en paysage sur le téléphone.<span class="why">deux mots n'ont pas à occuper 1 000 pt de large.</span></div>
+    </div>
+  </div>
+
+  <div class="decision"><b>Ce qui est codé</b> (branche <code>claude/design-887719</code>, commit « Pour vous · Affiner — une pastille en verre fixée sous l'en-tête ») : <code>RecoSectionBar</code> remplace <code>RecoSectionSwitch</code>, posée par <code>ForYouScreen</code> par-dessus les deux sections ; chacune réserve sa place en tête (<code>RECO_SECTION_BAR_SPACE</code>), démarrage à froid compris. Le verre n'est pas masqué : il est là parce que la page défile dessous (règle GPU n° 1 respectée). Elle suit la compaction de l'en-tête (−8 pt), un léger retour haptique au changement, les rôles d'accessibilité « onglets ». Rien ne change dans les rangées.</div>
+</section>
+
+<!-- ═══════════════ BOUTONS ═══════════════
+     Section autonome de la session « boutons » (20/10 nuit), à insérer dans
+     docs/maquettes/reglages-mobile.html avant « Décisions » (lien de nav :
+     <a href="#boutons">Boutons</a>). Elle n'emploie que les jetons :root de la
+     page et ses propres classes, toutes préfixées « bt- ». -->
+<style>
+.bt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:22px;margin-top:8px}
+.bt-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.bt-card h3{font-size:15px;font-weight:700}
+.bt-card p{font-size:13px;color:var(--ink2)}
+.bt-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bt-pane{border-radius:14px;padding:14px 12px;background:var(--s0);border:1px solid var(--b2);display:flex;flex-direction:column;gap:9px;align-items:stretch;min-width:0;position:relative}
+.bt-pane .tag{align-self:flex-start}
+.bt-pane.bt-media{background:linear-gradient(160deg,#3b2a55 0%,#1b2a3a 45%,#0a0a10 100%)}
+.bt-pane.bt-media::after{content:"";position:absolute;inset:0;border-radius:14px;background:radial-gradient(70% 50% at 70% 25%,rgba(236,72,153,.28),transparent 70%);pointer-events:none}
+.bt-pane > *{position:relative;z-index:1}
+.bt-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bt-cap{font-size:10.5px;color:var(--t3);letter-spacing:.04em}
+/* Les boutons — mêmes mesures que buttonLook.ts (iOS 34 / 44 / 50 ; Android 32 / 40 / 48), à l'échelle 0,77 */
+.bx{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;font-weight:600;font-size:12.5px;white-space:nowrap;border:0;color:var(--t1);height:34px;padding:0 16px;letter-spacing:-.01em}
+.bx .ic{font-size:13px}
+.bx.bx-sm{height:26px;padding:0 11px;font-size:11.5px}
+.bx.bx-lg{height:38px;padding:0 18px;font-size:13px}
+.bx.bx-full{width:100%}
+.bx.bx-pri{background:linear-gradient(110deg,#6D28D9,#BE185D);color:#fff}
+.bx.bx-con{background:#fff;color:#111}
+.bx.bx-sec{background:rgba(255,255,255,.12)}
+.bx.bx-pla{background:none;padding:0 8px}
+.bx.bx-lnk{color:#C4B5FD}
+.bx.bx-red{color:#F87171}
+.bx.bx-gl{background:rgba(255,255,255,.16);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.bx.bx-rd{width:34px;padding:0}
+.bx.bx-rd.bx-sm{width:28px}
+/* Android : Material 3 discret — contour fin, medium, pas de verre */
+.bt-and .bx{font-weight:500;letter-spacing:.01em;height:31px;font-size:11.5px}
+.bt-and .bx.bx-lg{height:37px}
+.bt-and .bx.bx-sec{background:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.bt-and .bx.bx-gl{background:rgba(16,16,22,.62);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.14)}
+/* L'AVANT : ce que Damien a relevé — des pavés pleins, colorés, partout */
+.bx.bx-old{height:40px;border-radius:12px;font-weight:700;background:var(--grad);color:#fff;box-shadow:0 6px 18px -4px rgba(139,92,246,.6)}
+.bx.bx-old.bx-pink{background:linear-gradient(135deg,#EC4899,#F472B6)}
+.bx.bx-old.bx-redfill{background:rgba(239,68,68,.16);color:#F87171;box-shadow:inset 0 0 0 1px rgba(239,68,68,.3)}
+.bx.bx-old.bx-white{background:#fff;color:#7C3AED;box-shadow:0 6px 16px rgba(0,0,0,.5)}
+/* Dans les colonnes étroites des avant/après : le libellé passe à la ligne au lieu de déborder */
+.bt-pair .bx{white-space:normal;text-align:center;height:auto;min-height:34px;padding-top:6px;padding-bottom:6px;max-width:100%}
+.bt-pair .bx.bx-pla{min-height:28px}
+.bt-pair .seg span{font-size:9.5px;padding:6px 2px}
+.bt-hit{outline:1px dashed rgba(196,181,253,.55);outline-offset:5px}
+.bt-spec{width:100%;border-collapse:collapse;font-size:13px;color:var(--ink2);margin-top:14px}
+.bt-spec th,.bt-spec td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+.bt-spec th{color:var(--ink);font-weight:600;white-space:nowrap}
+.bt-spec code{font-size:12px}
+.bt-scroll{overflow-x:auto}
+</style>
+
+<section class="ch" id="boutons">
+  <h2>Boutons — une couleur, une fois <small>iPhone, iPad, Android</small></h2>
+  <p class="intro">« Si tout est en couleur, on se perd. » Les boutons d'option étaient de gros pavés violets ou roses, souvent trois sur le même écran. Désormais : <b>une seule</b> action au dégradé de marque par écran, le reste neutre ; les options deviennent des lignes ou du texte ; le verre ne sert qu'aux contrôles posés sur une image. Composants : <code>apps/mobile/src/components/ui/buttons/</code>.</p>
+
+  <div class="bt-grid">
+
+    <div class="bt-card">
+      <h3>La hiérarchie, sur iPhone</h3>
+      <div class="bt-pane">
+        <span class="bt-cap">PRINCIPAL — un par écran</span>
+        <div class="bt-row"><span class="bx bx-lg bx-pri bx-full"><svg class="ic"><use href="#play"/></svg>Lire</span></div>
+        <span class="bt-cap">PRINCIPAL « contrast » — quand la lecture a déjà le dégradé</span>
+        <div class="bt-row"><span class="bx bx-con">Continuer</span></div>
+        <span class="bt-cap">SECONDAIRE — capsule grise</span>
+        <div class="bt-row"><span class="bx bx-sec">Réessayer</span><span class="bx bx-sec bx-sm"><svg class="ic"><use href="#plus"/></svg>Ma liste</span></div>
+        <span class="bt-cap">TEXTE SEUL — options, sorties, liens, danger</span>
+        <div class="bt-row"><span class="bx bx-pla">Plus tard</span><span class="bx bx-pla bx-lnk">En savoir plus</span><span class="bx bx-pla bx-red">Quitter le groupe</span></div>
+      </div>
+      <p>Hauteurs 34 / 44 / 50 pt, capsules, semi-gras. Un bouton petit garde une cible de 44 pt (pointillés : la zone qu'on touche) : <span class="bx bx-sec bx-sm bt-hit">Ma liste</span></p>
+    </div>
+
+    <div class="bt-card bt-and">
+      <h3>La même chose, sur Android</h3>
+      <div class="bt-pane">
+        <span class="bt-cap">PRINCIPAL</span>
+        <div class="bt-row"><span class="bx bx-lg bx-pri bx-full"><svg class="ic"><use href="#play"/></svg>Lire</span></div>
+        <span class="bt-cap">SECONDAIRE — contour fin (M3 « outlined »)</span>
+        <div class="bt-row"><span class="bx bx-sec">Réessayer</span><span class="bx bx-sec bx-sm">Ma liste</span></div>
+        <span class="bt-cap">TEXTE SEUL</span>
+        <div class="bt-row"><span class="bx bx-pla">Plus tard</span><span class="bx bx-pla bx-lnk">En savoir plus</span><span class="bx bx-pla bx-red">Quitter le groupe</span></div>
+      </div>
+      <p>Material 3 discret : 32 / 40 / 48 dp, police medium, ondulation à l'appui, cible de 48 dp. Pas de verre ni de flou sur Android.</p>
+    </div>
+
+    <div class="bt-card">
+      <h3>Sur une image : le verre</h3>
+      <div class="bt-pair">
+        <div class="bt-pane bt-media">
+          <span class="bt-cap" style="color:rgba(255,255,255,.7)">iOS 26 · Liquid Glass</span>
+          <div class="bt-row"><span class="bx bx-rd bx-gl"><svg class="ic"><use href="#back"/></svg></span><span class="bx bx-rd bx-gl" style="margin-left:auto"><svg class="ic"><use href="#sliders"/></svg></span></div>
+          <div class="bt-row" style="margin-top:34px"><span class="bx bx-gl">Passer l'intro</span></div>
+        </div>
+        <div class="bt-pane bt-media bt-and">
+          <span class="bt-cap" style="color:rgba(255,255,255,.7)">Android · voile sombre</span>
+          <div class="bt-row"><span class="bx bx-rd bx-gl"><svg class="ic"><use href="#back"/></svg></span><span class="bx bx-rd bx-gl" style="margin-left:auto"><svg class="ic"><use href="#sliders"/></svg></span></div>
+          <div class="bt-row" style="margin-top:34px"><span class="bx bx-gl">Passer l'intro</span></div>
+        </div>
+      </div>
+      <p><code>GlassButton</code> et <code>IconButton variant="glass"</code> : le verre natif d'Apple sur iOS 26 (réglage Liquid Glass), un flou natif avant, un voile sombre plein sur Android. Libellé blanc dans les deux thèmes : l'image ne suit pas le thème. Monté seulement quand il est affiché (règle GPU).</p>
+    </div>
+
+    <div class="bt-card">
+      <h3>Avant / après — un volet de réglage</h3>
+      <div class="bt-pair">
+        <div class="bt-pane">
+          <span class="tag was">Avant</span>
+          <span class="bx bx-old bx-full">Jumeler une TV</span>
+          <span class="bx bx-old bx-pink bx-full">Vider le cache</span>
+          <span class="bx bx-old bx-redfill bx-full">Se déconnecter</span>
+        </div>
+        <div class="bt-pane">
+          <span class="tag ok">Après</span>
+          <div class="grp">
+            <div class="row"><div class="lbl"><b>Jumeler une TV</b></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="lbl"><b>Vider le cache</b></div><svg class="ic chev"><use href="#chev"/></svg></div>
+          </div>
+          <div class="grp"><div class="row danger"><div class="lbl"><b>Se déconnecter</b></div></div></div>
+        </div>
+      </div>
+      <p>Une option de réglage est une <b>ligne de liste</b>, pas un bouton. Le danger est un libellé rouge, isolé dans son groupe — jamais un pavé rouge.</p>
+    </div>
+
+    <div class="bt-card">
+      <h3>Avant / après — les options d'un réglage</h3>
+      <div class="bt-pair">
+        <div class="bt-pane">
+          <span class="tag was">Avant</span>
+          <div class="seg"><span class="on">Auto</span><span>Système</span><span>Avancé</span></div>
+          <div class="bt-row"><span class="bx bx-sm" style="background:var(--grad)"><svg class="ic"><use href="#check"/></svg>Français</span><span class="bx bx-sm bx-sec">English</span></div>
+        </div>
+        <div class="bt-pane">
+          <span class="tag ok">Après</span>
+          <div class="seg"><span class="on" style="background:rgba(255,255,255,.18);box-shadow:none">Auto</span><span>Système</span><span>Avancé</span></div>
+          <div class="bt-row"><span class="bx bx-sm" style="background:rgba(255,255,255,.18)"><svg class="ic"><use href="#check"/></svg>Français</span><span class="bx bx-sm bx-sec">English</span></div>
+        </div>
+      </div>
+      <p>L'option choisie prend le « pouce » du segmenté d'Apple — gris levé en sombre, blanc en clair — au lieu du dégradé : une page de réglages n'aligne plus dix pavés violets. Interrupteurs et curseurs gardent la marque, en petit.</p>
+    </div>
+
+    <div class="bt-card">
+      <h3>Avant / après — une feuille d'action</h3>
+      <div class="bt-pair">
+        <div class="bt-pane">
+          <span class="tag was">Avant</span>
+          <span class="bx bx-old bx-full">Inviter des membres</span>
+          <span class="bx bx-old bx-pink bx-full">Trouver quoi regarder</span>
+          <span class="bx bx-old bx-redfill bx-full">Quitter le groupe</span>
+        </div>
+        <div class="bt-pane">
+          <span class="tag ok">Après</span>
+          <span class="bx bx-lg bx-pri bx-full">Inviter des membres</span>
+          <span class="bx bx-lg bx-sec bx-full">Trouver quoi regarder</span>
+          <span class="bx bx-pla bx-red" style="align-self:center">Quitter le groupe</span>
+        </div>
+      </div>
+      <p>Trois pavés colorés deviennent une hiérarchie : le dégradé dit « c'est ici », le gris « c'est possible », le texte rouge « attention ».</p>
+    </div>
+
+    <div class="bt-card">
+      <h3>Avant / après — un état vide</h3>
+      <div class="bt-pair">
+        <div class="bt-pane">
+          <span class="tag was">Avant</span>
+          <span class="bx bx-old bx-white bx-full">Parcourir le catalogue</span>
+          <span class="bx bx-old bx-full">Passer en ligne</span>
+        </div>
+        <div class="bt-pane">
+          <span class="tag ok">Après</span>
+          <span class="bx bx-con" style="align-self:center">Parcourir le catalogue</span>
+          <span class="bx bx-pla" style="align-self:center">Passer en ligne</span>
+        </div>
+      </div>
+      <p>À la taille de son contenu, centré, sans ombre lourde. La sortie secondaire passe en texte.</p>
+    </div>
+  </div>
+
+  <div class="bt-scroll">
+  <table class="bt-spec">
+    <tr><th>Composant</th><th>Quand</th><th>iOS / iPadOS</th><th>Android</th></tr>
+    <tr><th><code>PrimaryButton</code></th><td>L'action de l'écran — une seule</td><td>Dégradé de marque profond (libellé ≥ 4,5:1), ou pilule blanche (<code>contrast</code>)</td><td>Pareil, ondulation à l'appui</td></tr>
+    <tr><th><code>SecondaryButton</code></th><td>Une action à côté</td><td>Capsule grise translucide (le <code>.bordered</code> d'Apple)</td><td>Contour fin 1 dp, sans fond</td></tr>
+    <tr><th><code>PlainButton</code></th><td>Options, sorties, liens, danger</td><td colspan="2">Texte seul ; <code>accent</code> pour un lien, <code>destructive</code> pour un danger</td></tr>
+    <tr><th><code>GlassButton</code></th><td>Sur une image</td><td>Liquid Glass (iOS 26), flou avant</td><td>Voile sombre plein</td></tr>
+    <tr><th><code>IconButton</code></th><td>Un pictogramme</td><td colspan="2"><code>tonal</code> (puce neutre) · <code>plain</code> (pictogramme seul) · <code>glass</code> (sur image)</td></tr>
+  </table>
+  </div>
+
+  <div class="decision"><b>Ce qui est codé</b> (branche <code>claude/boutons-517d48</code>) : la règle pure <code>buttonLook.ts</code> et ses tests (cible tactile tenue à toutes les tailles, dégradé réservé au principal, danger jamais en fond rouge), les cinq composants, l'ancien <code>Button</code> rebranché dessus (22 écrans suivent sans retouche : <code>primary</code> garde la pilule blanche sans son ombre, <code>danger</code> devient un libellé rouge), l'option choisie des segmentés et pastilles en neutre (<code>selectedOptionLook</code>), puis les écrans repris un à un : feuille d'appui long, partage de Ma liste, tableau des sessions, demandes Vigie et saisons, barre de sélection, états vides, jumelage TV, voile « serveur injoignable », partage des statistiques, fiche (verre), connexion, Famille, hors ligne, « Pour vous ».</div>
+</section>
+
+<!-- ═══════════════ DÉCISIONS ═══════════════ -->
+<section class="ch" id="decisions">
+  <h2>Décisions prises cette nuit</h2>
+  <ul class="decisions">
+    <li><b>Le libellé reste « Affiner »</b> (pas « Affinité ») : « Affinité », c'est la recherche à plusieurs de Watch Together (« Trouver quoi regarder ») ; deux mots proches pour deux fonctions auraient semé le doute.</li>
+    <li><b>Piste A retenue</b> pour « Pour vous · Affiner » ; B écartée pour le conflit de gestes avec la pile, C parce qu'elle cache « Affiner ».</li>
+    <li><b>Structure des réglages</b> : celle de la session reglages, sans écart (« Changer de serveur », Invitations, Sessions et « Vider le cache » rangés dans Compte › Serveur ; langue de l'interface côté Compte).</li>
+    <li><b>Changer de profil</b> (consigne de Damien, 20/10) : la puce du profil actif dans l'en-tête de tous les onglets, un toucher → la feuille « Changer de profil », PIN dans la feuille ; aussi un bouton dans l'onglet Profil. Sur mobile, cela remplace la règle du bureau « jamais la liste des profils dans le menu ».</li>
+    <li><b>Vouvoiement</b> dans tous les textes de l'app, comme partout ailleurs ; la pastille de portée se pose sous le libellé de CHAQUE réglage, jamais dans un en-tête de section.</li>
+    <li><b>Nouvelle version</b> : pas d'entrée de la cloche (le serveur n'en écrit pas) ; proposée ici comme bandeau de l'app + écran « Les nouveautés » sur le modèle du bureau. Non codé cette nuit : à confirmer.</li>
+    <li><b>Maquettes en HTML seul</b>, sans image externe : avatars et affiches sont des aplats dessinés, la page s'ouvre hors ligne.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>

@@ -14,6 +14,7 @@ export default {
   onDevice: "Sur cet appareil",
   goOffline: "Passer hors ligne",
   profile: "Profil",
+  profileChipLabel: "Changer de profil, profil actuel : {{name}}",
   search: "Rechercher",
   discover: "Découvrir",
   request: "Demander",

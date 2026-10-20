@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "expo-router";
@@ -34,7 +34,7 @@ function outsideTitle(card: SwipeCard | undefined) {
  * gauche, haut, bas) ou d'un bouton. La logique (file, annulation, écritures) est
  * celle du web (useSwipeDeck) ; seuls le geste et le rendu sont natifs.
  */
-export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
+export function SwipeScreen({ topInset = 0 }: { topInset?: number }) {
   const { t, i18n } = useTranslation("swipe");
   const theme = useTheme();
   const headerH = useHeaderHeight();
@@ -101,8 +101,7 @@ export function SwipeScreen({ sectionSwitch }: { sectionSwitch?: ReactNode }) {
   const onToggleInfo = useCallback(() => setInfoOpen((v) => !v), []);
 
   return (
-    <View style={[st.screen, { backgroundColor: theme.colors.surface.s0, paddingTop: headerH, paddingBottom: tabBarH + 12 }]}>
-      {sectionSwitch}
+    <View style={[st.screen, { backgroundColor: theme.colors.surface.s0, paddingTop: headerH + topInset, paddingBottom: tabBarH + 12 }]}>
       <SwipeHeaderNative counts={deck.counts} libraryOnly={!deck.tmdbConfigured} />
       {deck.loading ? (
         <View style={st.skeleton}>
