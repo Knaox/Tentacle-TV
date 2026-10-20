@@ -72,29 +72,35 @@ sauf le scrub en lecture directe (1,45 s). Le **départ** dépasse la cible
 | 4 | « Passer l'intro » avant que tous soient prêts | scénario `intro-gate` | wt-socle | serveur : saut automatique gardé ✔ ; clic manuel encore accepté (un `wt:seek`) — attend le client web |
 | 5 | ~~Appuis → martelés perdus en séance~~ : PAS un défaut de Watch Together — le lecteur web SEUL fond aussi cinq appuis à 80 ms en un seul saut (+29,6 s) ; en séance, +28,6 s, les deux membres au même endroit | scénario `seek-hammer` | — | clos (comportement du lecteur, à juger par Damien) |
 
-## 3. Rejeu sur le serveur de wt-socle (adhésion par appareil, « tous prêts »)
+## 3. Rejeu sur wt-socle (serveur puis client web)
 
-Branche `claude/wt-socle-686749` (a6df368da) fusionnée dans le banc ; client
-web encore celui de `dev`.
+Branche `claude/wt-socle-686749` fusionnée dans le banc : serveur seul
+(a6df368da), puis serveur + client web (c19df6592 → 5e23d1866).
 
-| Vérification | Référence | wt-socle (serveur) |
+| Vérification | Référence (`dev`) | wt-socle |
 |---|---|---|
 | Le 3ᵉ appareil ne suit pas le lancement | ✘ | ✔ |
 | … ne reçoit aucun `wt:state` | ✘ 20 trames | ✔ 0 |
 | … `GET /group` → `null`, `GET /group/elsewhere` → la salle | ✘ | ✔ |
+| … affiche « Groupe en cours sur un autre appareil » et « Rejoindre ici » | — | ✔ (client web) |
 | … sa pause n'arrête pas la salle | ✘ | ✔ `wt:error not_in_group` |
 | … son « quitter » ne retire personne | ✘ | ✔ 404 |
 | … sa fermeture n'éjecte personne (15 s) | ✘ | ✔ |
 | « Rejoindre ici » ajoute l'appareil sans retirer le premier | — | ✔ |
-| Bandeau « Groupe en cours sur un autre appareil » (web) | — | ✘ client web pas encore livré |
-| Intro [auto] : la salle ne saute pas sans B | ✔ | ✔ |
-| Intro [auto] : pas de bouton avant « tous prêts » | ✘ | ✘ client web pas encore livré |
-| Intro [proposer] : un clic précoce n'emmène pas la salle | ✘ | ✘ le clic est un `wt:seek`, accepté |
-| Affinité : séance, match en direct, « Regarder ensemble » suivi par les deux | — | ✔ (lancement → alignement 12 s, sous charge 40+) |
+| Intro [auto] : pas de bouton avant « tous prêts », la salle ne saute pas sans B | ✘ / ✔ | ✔ / ✔ |
+| Intro [auto] : saut commun une fois tous prêts, réaligné | ✔ 418 ms | ✔ 107 ms |
+| Intro [proposer] : bouton absent tant que B charge, présent une fois tous prêts | ✘ | ✔ |
+| Intro [proposer] : un clic emmène les deux après l'intro | ✘ (B laissé à 0 s) | à rejouer au calme (voir ci-dessous) |
+| Appuis +30 s martelés (5 en 400 ms) : chacun compte | ✘ (+30 s) | ✔ +147 s seul, +147,7 s en séance, 0 ms d'écart |
+| Affinité : séance, match en direct, « Regarder ensemble » suivi, alignement | — | ✔ 2,1 s |
+| Départ commun : du lancement à < 100 ms | 5,4 s | 1,9 s |
 
-Constat (voulu ?) : un appareil FERMÉ garde le compte dans la salle le temps
-de sa grâce (120 s) ; pendant ce temps un nouvel appareil du compte reçoit
-409 en créant un groupe, et « rejoindre ici » + « quitter » ne le libère pas.
+Sous forte charge (construction Xcode en parallèle, Jellyfin dans colima
+transcodant sous le temps réel), le membre en transcodage est entré dans une
+boucle de « seek dur de recalage » toutes les 1,8 s : chaque saut se pose,
+puis la vidéo n'avance plus 1,6 s et la boucle re-saute. À rejouer sur Mac
+calme ; si elle persiste, la boucle devrait se taire (et déclarer « je cale »)
+tant qu'un saut posé n'a pas repris la lecture.
 
 ## 4. iPhone et iPad (simulateurs) — premier passage
 
