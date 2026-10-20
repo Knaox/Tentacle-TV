@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { WtInviteDto } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Button } from "@/components/ui/Button";
+import { PlainButton, PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
@@ -39,7 +39,7 @@ export function WtInviteInboxSheet({ visible, invites, onClose, onRespond }: {
           <InviteCard key={invite.inviteId} invite={invite} busy={busy === invite.inviteId} onRespond={respond} />
         ))}
         {failed && <Text style={s.error} accessibilityLiveRegion="polite">{t("errorGeneric")}</Text>}
-        <Button title={t("later")} onPress={onClose} variant="ghost" fullWidth />
+        <PlainButton label={t("later")} onPress={onClose} fullWidth />
       </ScrollView>
     </BottomSheet>
   );
@@ -59,9 +59,9 @@ const InviteCard = memo(function InviteCard({ invite, busy, onRespond }: {
     <View style={s.card} testID={`wt-invite-${invite.inviteId}`}>
       <Text style={s.cardText}>{text}</Text>
       <View style={s.buttons}>
-        <Button title={t("decline")} onPress={() => onRespond(invite.inviteId, false)} variant="secondary"
+        <SecondaryButton label={t("decline")} onPress={() => onRespond(invite.inviteId, false)}
           disabled={busy} style={s.button} />
-        <Button title={t("accept")} onPress={() => onRespond(invite.inviteId, true)} variant="primary"
+        <PrimaryButton label={t("accept")} onPress={() => onRespond(invite.inviteId, true)}
           loading={busy} disabled={busy} style={s.button} />
       </View>
     </View>

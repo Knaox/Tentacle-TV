@@ -6,7 +6,7 @@ import { useInvitableUsers } from "@tentacle-tv/api-client";
 import type { WtInvitableUserDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Button } from "@/components/ui/Button";
+import { PrimaryButton } from "@/components/ui/buttons";
 import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { inviteCandidates, toggleSelection, type InviteCandidate } from "@tentacle-tv/shared";
@@ -84,8 +84,8 @@ export function WtInviteSheet({ visible, onClose, room, pendingUserIds, onSend }
         )}
         <View style={s.footer}>
           {failed && <Text style={s.error} accessibilityLiveRegion="polite">{t("errorGeneric")}</Text>}
-          <Button
-            title={selection.size > 0 ? t("sendInvitesCount", { count: selection.size }) : t("sendInvites")}
+          <PrimaryButton
+            label={selection.size > 0 ? t("sendInvitesCount", { count: selection.size }) : t("sendInvites")}
             onPress={send}
             loading={sending}
             disabled={selection.size === 0 || sending}

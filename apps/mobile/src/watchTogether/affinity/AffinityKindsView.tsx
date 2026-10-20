@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronRight, Clapperboard, HeartHandshake, Sparkles, Tv, X, type LucideIcon } from "lucide-react-native";
 import { WtApiError, fetchAffinityKinds, startAffinity, type AffinityKinds } from "@tentacle-tv/api-client";
 import type { WtAffinityKind, WtAffinityStateDto } from "@tentacle-tv/shared";
+import { SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { AFFINITY_KINDS, KIND_LABEL_KEY } from "@tentacle-tv/api-client";
 
@@ -84,9 +85,7 @@ export function AffinityKindsView({ state, onStarted, onBack, onClose }: {
       {failed ? (
         <View style={s.errorBox} accessibilityRole="alert">
           <Text style={s.hint}>{t("affinityKindsError")}</Text>
-          <Pressable onPress={() => setAttempt((n) => n + 1)} accessibilityRole="button" style={s.retry}>
-            <Text style={s.retryLabel}>{t("affinityRetry")}</Text>
-          </Pressable>
+          <SecondaryButton label={t("affinityRetry")} onPress={() => setAttempt((n) => n + 1)} size="sm" />
         </View>
       ) : (
         AFFINITY_KINDS.map((kind) => {
@@ -150,8 +149,6 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
     backgroundColor: t.colors.fill.soft, color: t.colors.text.secondary, fontSize: 11, fontFamily: FONT_FAMILY.semibold,
   },
   errorBox: { padding: 16, alignItems: "center", gap: 12, borderRadius: RADIUS.xl, borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle },
-  retry: { minHeight: 44, paddingHorizontal: 18, borderRadius: RADIUS.pill, justifyContent: "center", backgroundColor: t.colors.fill.soft },
-  retryLabel: { color: t.colors.text.primary, fontSize: 14, fontFamily: FONT_FAMILY.semibold },
   problem: { color: t.colors.status.error, fontSize: 13, lineHeight: 18, fontFamily: FONT_FAMILY.regular },
   small: { color: t.colors.text.tertiary, fontSize: 12, lineHeight: 17, fontFamily: FONT_FAMILY.regular },
 });

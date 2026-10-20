@@ -1,7 +1,8 @@
 import { memo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { MonitorSmartphone, X } from "lucide-react-native";
+import { SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
@@ -37,11 +38,7 @@ export const WtElsewhereBanner = memo(function WtElsewhereBanner({ hostUsername,
         </Text>
         {failed && <Text style={s.hint} accessibilityLiveRegion="polite">{t("elsewhereJoinFailed")}</Text>}
       </View>
-      <Pressable onPress={join} disabled={joining} accessibilityRole="button" style={s.join} testID="wt-join-here">
-        {joining
-          ? <ActivityIndicator size="small" color={theme.colors.cta.brandFg} />
-          : <Text style={s.joinLabel}>{t("elsewhereJoinHere")}</Text>}
-      </Pressable>
+      <SecondaryButton label={t("elsewhereJoinHere")} onPress={join} loading={joining} disabled={joining} size="sm" testID="wt-join-here" />
       <Pressable onPress={onDismiss} accessibilityRole="button" accessibilityLabel={t("elsewhereDismiss")} hitSlop={8} style={s.close}>
         <X size={18} color={theme.colors.text.tertiary} />
       </Pressable>
@@ -57,10 +54,5 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   text: { flex: 1, minWidth: 0 },
   title: { color: t.colors.text.primary, fontSize: 15, fontFamily: FONT_FAMILY.semibold },
   hint: { color: t.colors.text.tertiary, fontSize: 13, fontFamily: FONT_FAMILY.regular },
-  join: {
-    minHeight: 44, minWidth: 44, paddingHorizontal: 14, borderRadius: RADIUS.pill,
-    alignItems: "center", justifyContent: "center", backgroundColor: t.colors.cta.brandBg,
-  },
-  joinLabel: { color: t.colors.cta.brandFg, fontSize: 14, fontFamily: FONT_FAMILY.semibold },
   close: { width: 32, height: 44, alignItems: "center", justifyContent: "center" },
 });
