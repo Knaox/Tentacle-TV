@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { retainModal } from "@/components/ui/modalGate";
-import { CONTENT_MAX_WIDTH, ctaGradient, FONT_FAMILY, RADIUS, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { PlainButton, PrimaryButton } from "@/components/ui/buttons";
+import { CONTENT_MAX_WIDTH, ctaGradient, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { MODAL_ORIENTATIONS } from "../modalOrientations";
 import { FIRST_RUN_PROGRESS_KEY, FIRST_RUN_SKIP_KEY, firstRunPrimaryKey, firstRunStepOf, type FirstRunStep } from "@tentacle-tv/shared";
 import { HomeRowsStep } from "./HomeRowsStep";
@@ -64,16 +65,9 @@ export function FirstRunCard({ step, position, total, onPrimary, onSkip }: First
           </View>
         </ScrollView>
         <View style={st.footer}>
-          <Pressable onPress={onPrimary} accessibilityRole="button" style={({ pressed }) => [st.primaryWrap, pressed && st.dim]}>
-            <LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={st.primary}>
-              <Text style={st.primaryText}>{copy.primary}</Text>
-            </LinearGradient>
-          </Pressable>
-          {onSkip ? (
-            <Pressable onPress={onSkip} accessibilityRole="button" style={({ pressed }) => [st.ghost, pressed && st.ghostPressed]}>
-              <Text style={st.ghostText}>{t(FIRST_RUN_SKIP_KEY)}</Text>
-            </Pressable>
-          ) : null}
+          {/* Le système de boutons : l'action de l'étape au dégradé, « Passer » en texte seul. */}
+          <PrimaryButton size="lg" fullWidth label={copy.primary} onPress={onPrimary} />
+          {onSkip ? <PlainButton label={t(FIRST_RUN_SKIP_KEY)} onPress={onSkip} style={st.skip} /> : null}
         </View>
       </View>
     </Modal>
@@ -95,11 +89,5 @@ const makeStyles = (t: AppTheme) =>
     text: { ...typography.body, color: t.colors.text.secondary, textAlign: "center", lineHeight: 22, marginTop: spacing.sm, maxWidth: 480 },
     content: { width: "100%", marginTop: spacing.xl },
     footer: { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center", paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-    primaryWrap: { borderRadius: RADIUS.lg, overflow: "hidden" },
-    primary: { minHeight: 52, alignItems: "center", justifyContent: "center", paddingHorizontal: spacing.lg },
-    primaryText: { ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.brandFg },
-    ghost: { minHeight: 48, marginTop: spacing.sm, borderRadius: RADIUS.lg, alignItems: "center", justifyContent: "center" },
-    ghostPressed: { backgroundColor: t.colors.fill.subtle },
-    ghostText: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.secondary },
-    dim: { opacity: 0.55 },
+    skip: { alignSelf: "center", marginTop: spacing.sm },
   });

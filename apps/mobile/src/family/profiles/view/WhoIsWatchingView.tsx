@@ -1,14 +1,15 @@
 import { useMemo } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { pickerShowsPinLock, type PickedProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
-import { CONTENT_MAX_WIDTH, FONT_FAMILY, RADIUS, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { CONTENT_MAX_WIDTH, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { usePickFlow } from "../usePickFlow";
 import { usePickerPick } from "../usePickerPick";
 import { PinPad } from "./PinPad";
 import { ProfileTile } from "./ProfileTile";
+import { PlainButton } from "@/components/ui/buttons";
 
 export type WhoIsWatchingMode = "launch" | "switch";
 
@@ -72,9 +73,7 @@ export function WhoIsWatchingView({ listing, mode, onPicked, onStale, onCancel }
               {flow.notice ? <Text style={st.notice} accessibilityLiveRegion="polite">{flow.notice}</Text> : null}
               <Text style={st.caption}>{t(mode === "switch" ? "familyMobile:launch.switchCaption" : "familyMobile:launch.caption")}</Text>
               {onCancel ? (
-                <Pressable onPress={onCancel} disabled={flow.opening !== null} accessibilityRole="button" style={({ pressed }) => [st.cancel, pressed && st.pressed]}>
-                  <Text style={st.cancelText}>{t("familyMobile:launch.cancel")}</Text>
-                </Pressable>
+                <PlainButton label={t("familyMobile:launch.cancel")} onPress={onCancel} disabled={flow.opening !== null} style={st.cancel} />
               ) : null}
             </>
           )}
@@ -95,7 +94,6 @@ const makeStyles = (t: AppTheme) =>
     loading: { alignItems: "center", gap: spacing.sm, minHeight: 140, justifyContent: "center" },
     notice: { ...typography.body, color: t.colors.status.error, textAlign: "center", marginTop: spacing.lg },
     caption: { ...typography.small, color: t.colors.text.tertiary, textAlign: "center", marginTop: spacing.xl, maxWidth: 420 },
-    cancel: { minHeight: 48, paddingHorizontal: spacing.xl, marginTop: spacing.lg, borderRadius: RADIUS.lg, alignItems: "center", justifyContent: "center" },
-    cancelText: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.secondary },
+    cancel: { marginTop: spacing.lg },
     pressed: { backgroundColor: t.colors.fill.subtle },
   });
