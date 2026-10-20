@@ -3,8 +3,8 @@ import { getClockOffsetMs, getClockRttMs } from "../../socket/clockSync";
 import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
-  WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, isBarrierParticipant, needsStartCorrection, updatePlayLatency,
-  wtPositionSecondsAt,
+  WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, isBarrierParticipant, isRoomWaitingForMe, needsStartCorrection,
+  updatePlayLatency, wtBufferingFreezeSeconds, wtPositionSecondsAt,
   type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
@@ -43,7 +43,9 @@ export function useGroupIntents({
 
   const rtt = () => getClockRttMs() ?? undefined;
 
-  const notifyPlayState = useCallback((paused: boolean) => {
+  /** `echo` : le lecteur SAIT que ce changement répond à une commande du moteur
+   *  (mobile : `mobileTransport`) — jamais un geste, quel que soit son retard. */
+  const notifyPlayState = useCallback((paused: boolean, opts?: { echo?: boolean }) => {
     const r = shared.roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
     // Le play() d'une reprise planifiée vient de prendre : c'est la latence de
@@ -74,7 +76,21 @@ export function useGroupIntents({
     // wt:play parti d'ici forcerait la reprise du group-wait et éjecterait les
     // membres encore attendus (waitingFor.clear() côté serveur).
     if (shared.lastBufferingSentRef.current !== false) {
+      // Le média, chargé, s'est mis à jouer pendant son chargement déclaré (fin de la
+      // réserve de mpv) alors que la salle m'attend : il attend la reprise commune en
+      // pause, au lieu de jouer seul jusqu'à son « prêt » (banc bureau du 20/10).
+      const t = transportRef.current;
+      if (!paused && t && t.isMediaReady?.() === true && isRoomWaitingForMe(r, shared.selfIdRef.current)) {
+        wtLog("engine", "lecteur parti seul pendant que la salle m'attend → pause jusqu'à la reprise");
+        armEcho(shared);
+        t.pause();
+        return;
+      }
       wtLog("engine", `intent play/pause ignoré (player en chargement déclaré), paused=${paused}`);
+      return;
+    }
+    if (opts?.echo) {
+      wtLog("engine", `intent play/pause ignoré (écho reconnu par le lecteur), paused=${paused}`);
       return;
     }
     if (isApplying(shared)) {
@@ -151,10 +167,14 @@ export function useGroupIntents({
       sendPresence();
     }
     if (shared.lastBufferingSentRef.current === buffering) return;
+    // « Je charge » : la position où geler la salle — jamais celle d'un lecteur
+    // qui n'a encore rien lu (elle la ramenait en arrière, `wtBufferingFreezeSeconds`).
+    const wasReady = shared.lastBufferingSentRef.current === false;
     shared.lastBufferingSentRef.current = buffering;
-    const positionTicks = freezeAtSeconds !== undefined
-      ? Math.max(0, Math.round(freezeAtSeconds * TICKS_PER_SECOND))
-      : posTicks();
+    const freezeS = buffering
+      ? wtBufferingFreezeSeconds({ freezeAtS: freezeAtSeconds, playerS: posTicks() / TICKS_PER_SECOND, wasReady })
+      : posTicks() / TICKS_PER_SECOND;
+    const positionTicks = freezeS === undefined ? undefined : Math.max(0, Math.round(freezeS * TICKS_PER_SECOND));
     // « Je cale » pendant une barrière : la salle m'attend de nouveau — ma
     // confirmation d'avant ne vaut plus, je re-confirmerai (défaut M1 du banc :
     // sans cela, la barrière restait gelée jusqu'à son délai).
@@ -163,12 +183,19 @@ export function useGroupIntents({
     // part avec son identifiant — sans lui, le serveur n'y lit qu'une fin de
     // chargement (il me fera alors me caler, puis confirmer).
     const t = transportRef.current;
+    // Prêt pendant que la salle m'attend (arrivée, chargement) : je reste en pause
+    // jusqu'à la reprise planifiée, au lieu de jouer seul le temps qu'elle arrive.
+    if (!buffering && t && !t.isPaused() && isRoomWaitingForMe(r, selfId)) {
+      armEcho(shared);
+      t.pause();
+    }
     const barrierId = !buffering && r.barrierId !== undefined && isBarrierParticipant(r, selfId) && t
       && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
     if (barrierId !== undefined) shared.confirmedBarrierRef.current = barrierId;
-    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: (positionTicks / TICKS_PER_SECOND).toFixed(1), barrierId });
+    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: freezeS?.toFixed(1) ?? "salle", barrierId });
     shared.sendRef.current({
-      type: "wt:buffering", buffering, positionTicks, rttMs: rtt(), ...(barrierId !== undefined ? { barrierId } : {}),
+      type: "wt:buffering", buffering, rttMs: rtt(),
+      ...(positionTicks !== undefined ? { positionTicks } : {}), ...(barrierId !== undefined ? { barrierId } : {}),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks, sendPresence]);
@@ -256,9 +283,11 @@ export function useGroupIntents({
       const t = transportRef.current;
       const barrierId = last === false && r?.barrierId !== undefined && t
         && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
+      // En plein chargement, aucune position : celle d'un lecteur qui n'a rien
+      // lu ramènerait la salle en arrière (`wtBufferingFreezeSeconds`).
       shared.sendRef.current({
-        type: "wt:buffering", buffering: last, positionTicks: posTicks(), rttMs: rtt(),
-        ...(barrierId !== undefined ? { barrierId } : {}),
+        type: "wt:buffering", buffering: last, rttMs: rtt(),
+        ...(last ? {} : { positionTicks: posTicks() }), ...(barrierId !== undefined ? { barrierId } : {}),
       });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

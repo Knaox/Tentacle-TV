@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 import type { SkipProposal } from "../playback/playbackOverlay.types";
 import {
-  TICKS_PER_MS, TICKS_PER_SECOND, isGroupSessionActive, wtPositionTicksAt, wtSkipHeld, type SegmentType,
+  TICKS_PER_MS, TICKS_PER_SECOND, isGroupSessionActive, wtPlayerAligned, wtPositionTicksAt, wtSkipHeld,
+  type SegmentType,
 } from "@tentacle-tv/shared";
 import { useWatchTogetherOrIdle } from "./context";
 
@@ -12,9 +13,11 @@ import { useWatchTogetherOrIdle } from "./context";
  * proposition inverse : ce lecteur entre dans un passage à sauter, il le
  * dit au serveur (qui arme, ou ignore s'il est réglé). Et la garde : tant que
  * la salle n'est pas « tous prêts », `skipHeld` — à passer à la coquille de
- * lecture (`groupSkipHeld`), qui ne montre alors aucun saut.
+ * lecture (`groupSkipHeld`), qui ne montre alors aucun saut. Ni tant que CE
+ * lecteur n'est pas là où est la salle (`playerPositionSeconds`, position
+ * film : un arrivant pas encore posé, un rechargement, un saut en vol).
  */
-export function useGroupSkipCountdown(itemId: string | undefined): {
+export function useGroupSkipCountdown(itemId: string | undefined, playerPositionSeconds?: number): {
   groupSkip: { segmentType: SegmentType; countdownSeconds: number } | null;
   onSkipPropose: (proposal: SkipProposal) => void;
   /** La salle n'est pas « tous prêts » : aucun saut (→ `groupSkipHeld`). */
@@ -53,8 +56,11 @@ export function useGroupSkipCountdown(itemId: string | undefined): {
     });
   }, [active, send]);
 
-  // « Tous prêts » : le serveur le dit (`allReady`), sinon l'état en juge.
-  const skipHeld = active && wtSkipHeld(room, itemId);
+  // « Tous prêts » : le serveur le dit (`allReady`), sinon l'état en juge ; et le
+  // lecteur doit être là où est la salle.
+  const misaligned = !!room && playerPositionSeconds !== undefined
+    && !wtPlayerAligned(room, serverNow(), playerPositionSeconds);
+  const skipHeld = active && (wtSkipHeld(room, itemId) || misaligned);
 
   return { groupSkip, onSkipPropose, skipHeld };
 }

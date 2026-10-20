@@ -44,11 +44,14 @@ function clearBarrier(room: Room): void {
   room.waitingSince.clear();
 }
 
-/** Les membres qu'une barrière de seek/saut attend : en lecture, en ligne, v2. */
+/** Les membres qu'une barrière de seek/saut attend : en lecture, en ligne, v2 —
+ *  et ceux qui ARRIVENT (`arrival.ts`) : un saut pendant leur chargement ne les
+ *  laisse pas en route. */
 export function barrierParticipants(room: Room): string[] {
   const ids: string[] = [];
   for (const m of room.members.values()) {
-    if (m.inPlayback && m.protocolVersion >= WT_PROTOCOL_VERSION && isMemberOnline(m)) ids.push(m.userId);
+    const watching = m.inPlayback && m.protocolVersion >= WT_PROTOCOL_VERSION;
+    if ((watching || room.arrivals.has(m.userId)) && isMemberOnline(m)) ids.push(m.userId);
   }
   return ids;
 }
@@ -127,6 +130,13 @@ export function confirmReady(
     return { released: false, resumed: false, stale: false };
   }
   return { ...releaseBarrier(room, now), stale: false };
+}
+
+/** Retire un membre de l'attente (départ, échec) ; libère la barrière s'il
+ *  était le dernier (reprise planifiée si la salle jouait). Vrai si elle reprend. */
+export function pruneWaiting(room: Room, userId: string, now: number): boolean {
+  if (!room.waitingFor.has(userId)) return false;
+  return confirmReady(room, { userId }, now).resumed;
 }
 
 /** La reprise est demandée pendant une attente : elle aura lieu à la libération. */

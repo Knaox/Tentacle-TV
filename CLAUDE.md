@@ -1300,6 +1300,13 @@ secondes FILM, atterrissage du transcodage compris). Carnet :
   AJOUTER (`POST /group/join-here`). Tout nouvel envoi de la séance passe par
   `sendToMember` / `sendToRoom` (`memberDevices.ts`), jamais `sendToUser`.
   Carnet : `docs/WATCH-TOGETHER-APPAREILS.md`.
+- **L'arrivée met la salle en pause AU CLIC** (invitation acceptée, « Rejoindre
+  ici » : `arrival.ts`, par appareil, borne 15 s) ; le nouveau s'ouvre à la
+  position de la pause, la position d'un lecteur qui n'a rien lu ne déplace
+  jamais la salle. « Rejoindre » d'un membre du groupe : `joinPlayback` →
+  `POST /group/arrive`, même pause au clic. Un arrivant n'est jamais « tous
+  prêts » : aucun passage ni enchaînement tant qu'il n'est pas là. Arrivée et
+  départ de la LECTURE se disent par la règle commune `roomNotices.ts`.
 - **Aucun saut de passage avant « tous prêts »** (`watchTogether.readyGate`,
   `allReady`) : ni bouton, ni décompte, ni enchaînement (`groupHold` de
   `findSkipCandidate` / `autoNextEligible`, `groupSkipHeld` de la coquille de

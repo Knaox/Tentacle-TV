@@ -53,7 +53,9 @@ export interface MobileTransportReports {
   progress(filmSeconds: number): void;
   /** Le moteur dit son saut terminé (`onSeek` du lecteur système, position relue de mpv). */
   seekComplete(filmSeconds: number): void;
-  paused(paused: boolean): void;
+  /** L'état de pause de l'écran a changé. Vrai : c'est l'ÉCHO d'une pause ou d'une lecture
+   *  commandée par le moteur de synchro (`pause()`, `play()`), pas un geste. */
+  paused(paused: boolean): boolean;
   buffering(buffering: boolean): void;
   /** Le média courant est chargé (première image) — faux à chaque nouveau flux. */
   ready(ready: boolean): void;
@@ -77,6 +79,16 @@ export function createMobileTransport(
   let rate = 1;
   /** `from` : la position d'avant l'ordre — une annonce ne prouve l'atterrissage que si elle s'en est éloignée. */
   let seek: { target: number; at: number; from: number } | null = null;
+  /**
+   * La dernière pause / lecture COMMANDÉE par le moteur et pas encore revue
+   * dans l'état de l'écran. Son écho n'est pas un geste, quel que soit son
+   * retard : un rendu lent d'Android dépassait la fenêtre d'écho du moteur
+   * (400 ms), et la pause tenue jusqu'à la reprise planifiée partait au groupe
+   * en `wt:pause` — salle bloquée (banc du 20/10). Une commande sans effet
+   * (déjà dans cet état) ne laisse qu'une attente égale à l'état courant :
+   * le changement suivant, forcément l'inverse, n'est jamais pris pour elle.
+   */
+  let commanded: boolean | null = null;
 
   /** Le saut est-il encore en vol ? (un saut trop vieux est oublié au passage) */
   const seekInFlight = (t: number): boolean => {
@@ -123,6 +135,9 @@ export function createMobileTransport(
       position = estimate(now());
       positionAt = now();
       paused = value;
+      const echo = commanded === value;
+      commanded = null;
+      return echo;
     },
     buffering(value) {
       position = estimate(now());
@@ -144,12 +159,14 @@ export function createMobileTransport(
       position = estimate(now());
       positionAt = now();
       paused = false;
+      commanded = false;
       commands.setPaused(false);
     },
     pause() {
       position = estimate(now());
       positionAt = now();
       paused = true;
+      commanded = true;
       commands.setPaused(true);
     },
     seekTo(seconds) {

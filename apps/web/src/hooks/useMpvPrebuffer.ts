@@ -52,11 +52,15 @@ interface UseMpvPrebufferOptions {
   buffered: number;
   eof: boolean;
   setPause: (paused: boolean) => Promise<void>;
+  /** Relancer la lecture une fois la réserve constituée (défaut : oui). En séance
+   *  Watch Together, non : c'est le moteur qui relance, à la reprise commune — sinon
+   *  mpv jouait seul ~0,4 s avant son « prêt » (banc bureau du 21/10). */
+  resume?: boolean;
 }
 
 /** @returns vrai tant qu'on retient la lecture. */
 export function useMpvPrebuffer({
-  mediaReady, buffered, eof, setPause,
+  mediaReady, buffered, eof, setPause, resume = true,
 }: UseMpvPrebufferOptions): boolean {
   // Une seule fois par média — le hook vit dans un lecteur remonté à chaque
   // épisode (`key={itemId}`), donc les refs repartent naturellement à zéro.
@@ -84,7 +88,7 @@ export function useMpvPrebuffer({
     if (!waitRef.current) return;
     waitRef.current = false;
     traceCommand("pré-remplissage terminé", reason);
-    void setPause(false);
+    if (resume) void setPause(false);
     rerender((n) => n + 1);
   };
 

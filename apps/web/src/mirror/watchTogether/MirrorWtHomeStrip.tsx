@@ -1,5 +1,4 @@
 import { memo, useState, type ComponentType } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { HeartHandshake, Inbox, Users } from "lucide-react";
 import { dismissAffinityPill, openAffinity, useAffinityStore } from "@tentacle-tv/api-client";
@@ -28,7 +27,6 @@ interface StripLine {
 
 export const MirrorWtHomeStrip = memo(function MirrorWtHomeStrip() {
   const { t } = useTranslation("watchTogether");
-  const navigate = useNavigate();
   const wt = useWatchTogether();
   const { state: affinity, pillDismissed } = useAffinityStore();
   const [elsewhereDismissed, setElsewhereDismissed] = useState(false);
@@ -51,7 +49,7 @@ export const MirrorWtHomeStrip = memo(function MirrorWtHomeStrip() {
       ? { Icon: HeartHandshake, text: t("affinityPillInvite", { name: memberName(room, affinity.startedBy), kind: t(KIND_LABEL_KEY[affinity.kind]) }),
         action: t("affinityJoin"), press: () => openAffinity("deck"), dismiss: () => dismissAffinityPill(affinity.sessionId), dismissLabel: t("affinityDismiss") }
       : kind === "playing" && room?.itemId
-        ? { Icon: Users, text: t("groupPlaybackActive"), action: t("rejoin"), press: () => navigate(`/watch/${room.itemId}`), main: () => openRoomModal("room") }
+        ? { Icon: Users, text: t("groupPlaybackActive"), action: t("rejoin"), press: () => void wt.actions.joinPlayback(), main: () => openRoomModal("room") }
         : kind === "group"
           ? { Icon: Users, text: t("yourGroup"), action: t("openRoom"), press: () => openRoomModal("room") }
           : { Icon: Inbox, text: t("invitations"), action: String(wt.invites.length), press: openMirrorWtInbox };

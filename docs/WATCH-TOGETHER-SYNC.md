@@ -117,6 +117,56 @@ gestes de l'utilisateur ; `notifySeek(s, { explicit: true })` sur la barre ;
 - **Invitations** : `wt:inviteGone` à tous les appareils du compte quand une
   invitation reçoit sa réponse.
 
+## L'arrivée et le départ (20/10, soir)
+
+Retour de Damien (iPhone + Android, mobile 1.20.0) : l'arrivant cliquait
+« Rejoindre », l'hôte continuait pendant tout son chargement, puis se mettait
+en pause et RECULAIT ; et un membre qui fermait son lecteur ne disait rien aux
+autres. Cause : la salle n'attendait l'arrivant qu'une fois SON lecteur monté
+(la route du lecteur mobile vérifie d'abord la source locale), se gelait
+parfois à la position d'un lecteur qui n'avait rien lu, et la règle des
+messages ne parlait que d'un membre qui quitte le GROUPE.
+
+- **La pause part AU CLIC.** Accepter une invitation, « Rejoindre ici » :
+  la salle se gèle dans la requête même, à sa position courante
+  (`arrival.ts` → `beginArrival`), et attend l'appareil qui arrive ; la
+  réponse REST porte l'état gelé, le nouveau s'ouvre à la position exacte de
+  la pause (`wtJoinStartSeconds`), tous repartent ensemble (reprise
+  planifiée) à son premier « prêt ». « Rejoindre » d'un membre déjà du
+  groupe (pilule, bande de l'accueil, feuille) passe par `joinPlayback` →
+  `POST /group/arrive` (capacité `watchTogether.arrival` ; sans elle, le
+  lecteur s'ouvre comme avant) : la même pause au clic. Un lecteur qui s'ouvre sans
+  clic (lien, reconnexion) arrive aussi : la salle se gèle à son « je
+  charge ».
+- **Aucun passage tant qu'on arrive** (ajout de Damien) : du clic au premier
+  « prêt », l'arrivant n'est pas « tous prêts » (`wtAllReady` côté serveur,
+  `wtRoomAllReady` côté clients, barrière ou pas) — ni bouton « Passer », ni
+  décompte, ni saut automatique, ni enchaînement, chez personne ; un décompte
+  en cours au clic est mis de côté et rejoué EN ENTIER une fois tous prêts.
+- **Jamais de recul par l'arrivant** : tant qu'il n'a rien lu, sa position ne
+  déplace pas la salle (serveur : `arrivingFreezeTicks` ; lecteurs : aucune
+  position dans un « je charge » d'un lecteur jamais prêt,
+  `wtBufferingFreezeSeconds`). Il reste le recalage d'une pause reçue
+  (latence, quelques dizaines de ms), comme pour toute pause distante.
+- **Par appareil** : l'arrivée est celle d'un appareil ; un autre appareil du
+  même compte (« Rejoindre ici ») qui confirme pour lui-même ne la lève pas.
+- **Bornes** : 15 s sans lecteur ouvert (`WT_ARRIVAL_TIMEOUT_MS`), appareil
+  hors ligne (appli tuée), retour arrière, échec → la salle repart sans lui ;
+  un lecteur ouvert qui charge garde le délai du balayage (60 s, « ne peut pas
+  lire »). Un saut pendant l'arrivée l'attend aussi.
+- **Ce qui se dit** (règle commune `roomNotices.ts`, mots `watchTogether`) :
+  « X a rejoint le groupe » / « X rejoint la lecture » et la puce « En attente
+  de X… » ; « X n'a pas rejoint la lecture » ; « X a quitté la lecture »
+  (lecteur fermé, appli tuée — dès la fermeture du socket, sans attendre la
+  grâce), puis « X a quitté le groupe ». L'état dit les arrivants
+  (`arrivingUserIds`, facultatif) ; le départ se lit aussi face à un serveur
+  d'avant.
+- Un membre attendu qui quitte le groupe libère la salle (le retrait l'ôtait
+  de l'attente sans la lever : salle gelée). Un lecteur qui affiche un échec
+  (web, bureau, mobile) le dit au groupe tout de suite (`notifyFatalError`).
+- Mobile : le premier chargement se pose à la position du groupe, jamais à la
+  reprise personnelle (`loadTargetSeconds`) — c'était le recul de l'hôte.
+
 ## Le chat interactif (20/10)
 
 Un seau à jetons par membre et par sorte (`watchTogetherChat.ts`, contrat

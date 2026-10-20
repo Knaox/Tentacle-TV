@@ -1,4 +1,5 @@
 import type { WtInviteDto, WtRoomStateDto, WtStateCause } from "../types/watchTogether";
+import { playbackPresenceToasts } from "./roomNotices";
 
 /**
  * Watch Together — l'état de salle d'un appareil et ce qu'un nouvel état y
@@ -101,6 +102,8 @@ export function wtStateEffects(
         toasts.push({ kind: "error", key: "memberCantPlay", params: { name: m.username } });
       }
     }
+    // Qui rejoint la lecture, n'y arrive pas, ou la quitte (`roomNotices.ts`).
+    toasts.push(...playbackPresenceToasts(prev, next, cause, selfId));
   }
 
   if (originUserId !== selfId) {

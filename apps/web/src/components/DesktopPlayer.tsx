@@ -222,7 +222,7 @@ export function DesktopPlayer({
     onAutoNextDismiss, inGroupSession, onUserSeek: reportUserSeek,
   });
   // Écran de chargement et réserve avant l'image (cf. hook dédié) — dans le PiP aussi.
-  const { prebuffering, showLoadingOverlay, onQualityChange: chooseQuality } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause, src, currentQuality, onQualityChange });
+  const { prebuffering, showLoadingOverlay, onQualityChange: chooseQuality } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause, src, currentQuality, onQualityChange, heldByGroup: !!inGroupSession });
   const { fullTitle, pipLoading } = usePipLoading(showLoadingOverlay, posterUrl, title, subtitle);
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause. `wt:cancelAutoNext`

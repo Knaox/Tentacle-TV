@@ -21,6 +21,13 @@ export const WT_MIN_SEEK_INTERVAL_MS = 200;
 /** Group-wait : au-delà, un membre encore attendu est déclaré en échec de
  *  lecture et le groupe reprend sans lui (anti-gel infini). */
 export const WT_GROUP_WAIT_TIMEOUT_MS = 60_000;
+/** Arrivée : un clic « Rejoindre » dont le lecteur ne s'ouvre pas dans ce délai
+ *  (appli tuée, navigation abandonnée) ne retient plus la salle. Une fois le
+ *  lecteur ouvert, son chargement a le délai de WT_GROUP_WAIT_TIMEOUT_MS. */
+export const WT_ARRIVAL_TIMEOUT_MS = 15_000;
+/** Arrivée : un lecteur fermé avant d'être prêt — retour arrière, ou remontage
+ *  qui se redéclare aussitôt — retient encore la salle ce délai. */
+export const WT_ARRIVAL_LEAVE_GRACE_MS = 1_500;
 /** Nombre max d'utilisateurs invitables en une requête. */
 export const WT_MAX_INVITES_PER_REQUEST = 20;
 /**

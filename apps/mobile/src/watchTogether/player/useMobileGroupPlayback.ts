@@ -59,7 +59,7 @@ export function useMobileGroupPlayback({
     streamOffset: pb.streamOffset,
     signals: {
       notifyBuffering: (b) => syncRef.current?.notifyBuffering(b),
-      notifyPlayState: (p) => syncRef.current?.notifyPlayState(p),
+      notifyPlayState: (p, opts) => syncRef.current?.notifyPlayState(p, opts),
     },
   });
   const sync = useGroupSyncEngine({
@@ -71,7 +71,7 @@ export function useMobileGroupPlayback({
   // Le refus d'un passage voyage avec le groupe (la croix d'un autre vaut pour moi).
   useGroupIntroSkip(sync.notifySkipIntroDismiss);
   // « Tous prêts » : aucun saut de passage tant que la salle attend un membre.
-  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId);
+  const { groupSkip, onSkipPropose, skipHeld } = useGroupSkipCountdown(itemId, pb.positionRef.current);
 
   // Rechargement du flux : le groupe m'attend, gelé à la position VISÉE.
   const firstStream = useRef(true);

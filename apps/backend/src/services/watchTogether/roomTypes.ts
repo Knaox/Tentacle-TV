@@ -55,6 +55,26 @@ export interface Barrier {
   timer: ReturnType<typeof setTimeout> | null;
 }
 
+/**
+ * L'arrivée d'un appareil sur le titre de la salle (`arrival.ts`) : du clic
+ * « Rejoindre » ou de l'ouverture de son lecteur jusqu'à son premier « prêt ».
+ */
+export interface Arrival {
+  userId: string;
+  /** L'appareil qui arrive (hash de son jeton) ; null : tout le compte
+   *  (membre sans appareil lié, comportement d'avant). */
+  deviceKey: string | null;
+  since: number;
+  /** Venue d'un clic (invitation, « Rejoindre ici ») : la salle s'est gelée
+   *  pour elle tout de suite. Sinon, un lecteur ouvert : rien n'est dit tant
+   *  qu'il ne fait pas attendre la salle. */
+  explicit: boolean;
+  /** Son lecteur s'est ouvert (`wt:presence inPlayback`) : il charge. */
+  declared: boolean;
+  /** Borne d'un clic sans lecteur ouvert (WT_ARRIVAL_TIMEOUT_MS). */
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
 /** Saut de passage armé par le serveur (voir `WtPendingSkipDto`). */
 export interface PendingSkip {
   segmentType: SegmentType;
@@ -62,6 +82,9 @@ export interface PendingSkip {
   toTicks: number;
   skipAtPositionTicks: number;
   byUserId: string | null;
+  /** Épisode ou film (le réglage du générique en dépend) — gardé pour rejouer la
+   *  proposition à l'arrivée d'un membre (`holdPendingSkip`), jamais diffusé. */
+  isEpisode: boolean;
 }
 
 export interface Room {
@@ -104,6 +127,8 @@ export interface Room {
   seekToken: string | null;
   /** « Tous prêts » pour le titre en cours (`syncReadyGate.ts`), null sans titre. */
   readyGate: ReadyGate | null;
+  /** Les arrivées en cours, par membre (`arrival.ts`). */
+  arrivals: Map<string, Arrival>;
   /** Dernière diffusion due aux balises (`wt:tick`) — au plus une par 5 s. */
   lastTickBroadcastAt: number;
   members: Map<string, RoomMember>;

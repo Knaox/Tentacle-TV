@@ -36,6 +36,7 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     skipHistory: new Map(),
     skipTimer: null,
     readyGate: null,
+    arrivals: new Map(),
     seekToken: null,
     lastTickBroadcastAt: 0,
     members: new Map([
@@ -84,13 +85,14 @@ describe("roomToDto — les champs du protocole v2 sont facultatifs", () => {
     room.barrier = { id: 3, targetTicks: 900, cause: "seek", openedAt: 0, resumeOnRelease: true, timer: null };
     room.waitingFor.add("u-hote");
     room.waitCause = "seek";
-    room.pendingSkip = { segmentType: "Intro", segmentStartTicks: 10, toTicks: 900, skipAtPositionTicks: 60, byUserId: "u-hote" };
+    room.pendingSkip = { segmentType: "Intro", segmentStartTicks: 10, toTicks: 900, skipAtPositionTicks: 60, byUserId: "u-hote", isEpisode: true };
     const m = room.members.get("u-hote")!;
     m.protocolVersion = 2; m.rttMs = 42; m.driftMs = -12;
     const dto = roomToDto(room);
     expect(dto.barrierId).toBe(3);
     expect(dto.waitCause).toBe("seek");
-    expect(dto.pendingSkip).toEqual(room.pendingSkip);
+    // Ce que le serveur garde pour lui (le genre du titre) ne part pas.
+    expect(dto.pendingSkip).toEqual({ segmentType: "Intro", segmentStartTicks: 10, toTicks: 900, skipAtPositionTicks: 60, byUserId: "u-hote" });
     expect(dto.members[0]).toMatchObject({ protocolVersion: 2, rttMs: 42, driftMs: -12 });
   });
 

@@ -87,6 +87,9 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
       break;
     case "wt:inviteResult":
       h.onInviteResult?.(msg.toUserId, msg.accepted);
+      // Acceptée : l'état de la salle (envoyé juste avant) a déjà dit « X a rejoint le
+      // groupe » — un seul avis pour une arrivée (banc mobile du 20/10).
+      if (msg.accepted && h.getRoom()?.members.some((m) => m.userId === msg.toUserId)) break;
       h.toast(msg.accepted ? "success" : "info", h.t(
         msg.accepted ? "inviteAccepted" : "inviteDeclined",
         { name: msg.toUsername },

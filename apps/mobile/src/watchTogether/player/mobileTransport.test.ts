@@ -175,3 +175,33 @@ describe("createMobileTransport", () => {
   });
 });
 
+
+describe("createMobileTransport — l'écho d'une commande du moteur", () => {
+  it("la pause commandée, revue même TARD dans l'état de l'écran, est un écho ; un geste ne l'est pas", () => {
+    const { transport, advance, playing } = setup();
+    playing(257.9);
+    transport.pause();
+    advance(2_000); // rendu lent d'Android : bien au-delà de la fenêtre d'écho du moteur (400 ms)
+    expect(transport.reports.paused(true)).toBe(true);
+    // Le geste suivant (lecture par l'utilisateur) n'est pas un écho.
+    expect(transport.reports.paused(false)).toBe(false);
+    expect(transport.reports.paused(true)).toBe(false);
+  });
+
+  it("une commande sans effet (déjà en pause) ne prend jamais le geste suivant pour son écho", () => {
+    const { transport, playing } = setup();
+    playing(10);
+    expect(transport.reports.paused(true)).toBe(false); // l'utilisateur met en pause
+    transport.pause(); // le moteur aussi : l'écran ne change pas, aucun rapport
+    expect(transport.reports.paused(false)).toBe(false); // l'utilisateur relance : un geste
+  });
+
+  it("pause puis lecture commandées avant le rendu : seule la lecture est revue, et c'est un écho", () => {
+    const { transport, playing } = setup();
+    playing(10);
+    expect(transport.reports.paused(true)).toBe(false);
+    transport.pause();
+    transport.play();
+    expect(transport.reports.paused(false)).toBe(true);
+  });
+});

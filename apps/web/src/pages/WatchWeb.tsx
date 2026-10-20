@@ -207,7 +207,7 @@ export function WatchWeb() {
     burningSubtitles: burnInSubtitleIndex != null, subtitlesActive: subtitleIndex != null,
     mediaSourceId, qualityKey, qualityPresets, positionRef,
     restartAt: handleSeekRequest, setQuality: handleQualityChange, dropSubtitles: () => handleSubtitleChange(null), leave: cancelLoading,
-    onBufferingChange: groupSync.notifyBuffering,
+    onBufferingChange: groupSync.notifyBuffering, onFailed: groupSync.notifyFatalError,
   });
 
   const [showResumeIndicator, setShowResumeIndicator] = useState(false);

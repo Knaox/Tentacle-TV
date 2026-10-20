@@ -65,6 +65,7 @@ const OUT_OF_GROUP: WatchTogetherContextValue = {
     leave: reject,
     kick: reject,
     joinHere: reject,
+    joinPlayback: reject,
   },
 };
 

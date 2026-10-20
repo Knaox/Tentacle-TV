@@ -80,3 +80,18 @@ describe("handleWtServerMessage", () => {
     expect(actions).toEqual([{ type: "set_room", room: null }]);
   });
 });
+
+describe("handleWtServerMessage — un seul avis pour une arrivée par invitation", () => {
+  it("acceptée : « a rejoint le groupe » (dit par l'état) suffit ; refusée, ou état pas encore là : l'avis de la réponse", () => {
+    const joined = helpers(room({ members: [member("a"), member("b"), member("c")] }));
+    joined.h.selfId = "a";
+    handleWtServerMessage({ type: "wt:inviteResult", inviteId: "i", toUserId: "c", toUsername: "C", accepted: true }, joined.h);
+    expect(joined.toasts).toEqual([]);
+    const notYet = helpers(room());
+    handleWtServerMessage({ type: "wt:inviteResult", inviteId: "i", toUserId: "c", toUsername: "C", accepted: true }, notYet.h);
+    expect(notYet.toasts).toEqual(["inviteAccepted"]);
+    const declined = helpers(room());
+    handleWtServerMessage({ type: "wt:inviteResult", inviteId: "i", toUserId: "c", toUsername: "C", accepted: false }, declined.h);
+    expect(declined.toasts).toEqual(["inviteDeclined"]);
+  });
+});

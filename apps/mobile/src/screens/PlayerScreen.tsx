@@ -121,6 +121,7 @@ export function PlayerScreen({ itemId, version }: Props) {
     onFailure: (error) => reportRef.current({ from: "engine", engine: pb.engine, error }),
     onDirectPlayFailed,
     onEnded: () => { setEnded(true); },
+    startOverrideSeconds: groupStart.startSeconds,
   });
 
   // Chaque échec — négociation, fiche, moteur, attente sans fin — devient UN

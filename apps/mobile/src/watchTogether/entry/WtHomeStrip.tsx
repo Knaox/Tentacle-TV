@@ -1,6 +1,5 @@
 import { memo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { HeartHandshake, Inbox, Users } from "lucide-react-native";
 import {
@@ -24,7 +23,6 @@ export const WtHomeStrip = memo(function WtHomeStrip() {
   const { t } = useTranslation("watchTogether");
   const theme = useTheme();
   const s = useThemedStyles(makeStyles);
-  const router = useRouter();
   const wt = useWatchTogetherOrIdle();
   const { state: affinity, pillDismissed } = useAffinityStore();
   const [elsewhereDismissed, setElsewhereDismissed] = useState(false);
@@ -53,7 +51,7 @@ export const WtHomeStrip = memo(function WtHomeStrip() {
       action: t("affinityJoin"), press: () => openAffinity("deck"), dismiss: () => dismissAffinityPill(affinity.sessionId) }
     : kind === "playing" && room?.itemId
       ? { icon: <Users size={20} color={theme.colors.brand.light} />, text: t("groupPlaybackActive"),
-        action: t("rejoin"), press: () => router.push(`/watch/${room.itemId}`), secondary: () => openWtSheet("room") }
+        action: t("rejoin"), press: () => void wt.actions.joinPlayback(), secondary: () => openWtSheet("room") }
       : kind === "group"
         ? { icon: <Users size={20} color={theme.colors.brand.light} />, text: t("yourGroup"),
           action: t("openRoom"), press: () => openWtSheet("room") }

@@ -4,8 +4,8 @@ import { WT_INITIAL_STATE, wtReducer, type WsClientMessage, type WtElsewhereDto,
 import { acquireSocket, onSocketStatus, sendSocketMessage, subscribeSocket } from "../../socket/tentacleSocket";
 import { getClockOffsetMs } from "../../socket/clockSync";
 import {
-  createGroup, fetchGroupElsewhere, fetchMyGroup, fetchMyInvites, joinGroupHere, kickGroupMember, leaveGroup,
-  respondToInvite, sendGroupInvites,
+  arriveInGroup, createGroup, fetchGroupElsewhere, fetchMyGroup, fetchMyInvites, joinGroupHere, kickGroupMember,
+  leaveGroup, respondToInvite, sendGroupInvites,
 } from "../../hooks/useWatchTogetherApi";
 import { setGroupPlaybackSettings } from "../../hooks/usePlaybackSettings";
 import { useUserId } from "../../hooks/useUserId";
@@ -16,6 +16,7 @@ import { WT_IDLE_CONTEXT, type WatchTogetherContextValue } from "../context";
 import { usePendingInvites } from "./usePendingInvites";
 import { handleWtServerMessage, type WtEventHelpers } from "./wtMessages";
 import { noteWtRoomHeld } from "./sessionSwitch";
+import { joinGroupPlayback } from "./joinPlayback";
 
 /**
  * Watch Together — la séance d'un appareil, sans interface : socket, état de
@@ -51,6 +52,10 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
   const selfId = useUserId();
   const { mayJoin, mayCreate } = useWatchTogetherAccess();
   const deviceMembership = useServerCapability("watchTogether.deviceMembership");
+  // « Rejoindre » gèle la salle au clic (`POST /group/arrive`) — route nouvelle, lue par sa capacité.
+  const arrival = useServerCapability("watchTogether.arrival");
+  const arrivalRef = useRef(arrival);
+  arrivalRef.current = arrival;
   const queryClient = useQueryClient();
   const portRef = useRef(port);
   portRef.current = port;
@@ -177,6 +182,16 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
         const room = await joinGroupHere();
         dispatch({ type: "set_room", room });
         enter(room);
+      },
+      async joinPlayback() {
+        // La salle se gèle AU CLIC et m'attend (serveur qui déclare `watchTogether.arrival`).
+        await joinGroupPlayback({
+          arrival: arrivalRef.current,
+          itemId: roomRef.current?.itemId,
+          arrive: arriveInGroup,
+          onFrozen: (room) => dispatch({ type: "room_state", state: room }),
+          navigate: (itemId) => portRef.current.navigateToWatch(itemId),
+        });
       },
     };
   }, [addPending]);

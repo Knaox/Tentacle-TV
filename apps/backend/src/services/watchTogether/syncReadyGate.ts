@@ -1,6 +1,7 @@
 import type { SegmentType } from "../../playback/segmentTypes";
 import { isMemberOnline } from "./memberDevices";
 import type { Room } from "./roomTypes";
+import { visibleArrivals } from "./arrivalState";
 
 /**
  * Watch Together — « tous prêts » (1.31.1, `watchTogether.readyGate`).
@@ -92,9 +93,18 @@ export function isReadyGateOpen(room: Room, now: number = Date.now()): boolean {
   return true;
 }
 
-/** `allReady` de l'état : la porte ouverte ET aucune barrière en cours. */
+/** Ce membre démarre-t-il le titre avec les autres (attendu par la porte, pas
+ *  encore ouverte) ? Il n'« arrive » pas : il était là au lancement. */
+export function isStartingMember(room: Room, userId: string, now: number = Date.now()): boolean {
+  const gate = room.readyGate;
+  return !!gate && gate.expected.has(userId) && !isReadyGateOpen(room, now);
+}
+
+/** `allReady` de l'état : la porte ouverte, aucune barrière en cours, et personne
+ *  qui ARRIVE (du clic « Rejoindre » à son premier « prêt » — ajout de Damien du
+ *  20/10 : aucun passage sauté tant que les membres ne sont pas dedans). */
 export function wtAllReady(room: Room, now: number = Date.now()): boolean {
-  return !!room.itemId && room.barrier === null && isReadyGateOpen(room, now);
+  return !!room.itemId && room.barrier === null && visibleArrivals(room).length === 0 && isReadyGateOpen(room, now);
 }
 
 /** Met de côté une proposition de saut arrivée trop tôt (la plus récente gagne). */
