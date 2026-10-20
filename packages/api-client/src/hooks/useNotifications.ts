@@ -105,8 +105,9 @@ export function useUnreadCount() {
 }
 
 // Lire ou supprimer se voit tout de suite (le point disparaît au clic) ; le serveur suit.
-// Le cache optimiste est celui du mobile aussi : `notifications/notificationCache`.
-function useNotificationMutation<V>(request: (vars: V) => Promise<unknown>, patch: (vars: V) => Parameters<typeof applyNotificationPatch>[1]) {
+// Le cache optimiste est celui du mobile aussi (`notifications/notificationCache`) : le mobile
+// passe ses propres requêtes à `useNotificationMutation`.
+export function useNotificationMutation<V>(request: (vars: V) => Promise<unknown>, patch: (vars: V) => Parameters<typeof applyNotificationPatch>[1]) {
   const qc = useQueryClient();
   return useMutation({
     mutationKey: NOTIFICATION_MUTATION_KEY,

@@ -1,7 +1,7 @@
 // Notifications — le catalogue pur vit dans shared (`notifications/`) ; réexporté ici pour les clients.
 export {
   useNotifications, useUnreadCount, useMarkAllRead, useMarkRead, useDeleteNotification, useDeleteNotifications,
-  useDeleteAllNotifications, setNotificationsBackendUrl, backendFetch, notificationsBackendRoot, type AppNotification,
+  useDeleteAllNotifications, useNotificationMutation, setNotificationsBackendUrl, backendFetch, notificationsBackendRoot, type AppNotification,
 } from "../hooks/useNotifications";
 export {
   applyNotificationPatch, restoreNotificationSnapshot, settleNotifications, notificationsOf,

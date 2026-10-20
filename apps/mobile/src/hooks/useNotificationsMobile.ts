@@ -1,180 +1,143 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
-import type { AppNotification } from "@tentacle-tv/api-client";
+import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
+import {
+  useNotificationMutation,
+  useServerCapability,
+  useTentacleConfig,
+  useUserId,
+  type AppNotification,
+  type NotificationPage,
+} from "@tentacle-tv/api-client";
 
-function useNotifFetch() {
+/** L'en-tête qui annonce la page suivante (capacité `notifications.paging`). */
+const NEXT_HEADER = "X-Notifications-Next";
+/** Une page du centre : ce qu'un écran de téléphone montre, et un peu plus. */
+export const CENTER_PAGE_SIZE = 20;
+
+/**
+ * Le serveur et le compte en session, relus à chaque rendu. Le compte entre
+ * dans CHAQUE clé : la cloche d'un autre profil (bascule de la Famille) ne
+ * peut jamais s'afficher, même le temps d'une relecture.
+ */
+function useNotifAuth() {
   const { storage } = useTentacleConfig();
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const token = storage.getItem("tentacle_token") ?? "";
-
-  return async <T>(path: string, init?: RequestInit): Promise<T> => {
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers as Record<string, string>),
-    };
-    if (init?.body) headers["Content-Type"] = "application/json";
-    const res = await fetch(`${serverUrl}/api/notifications${path}`, { ...init, headers });
-    if (!res.ok) throw new Error(`${res.status}`);
-    return res.json();
-  };
+  const account = useUserId() ?? "";
+  return { serverUrl, token, account, enabled: !!token };
 }
 
-export function useNotificationsMobile(limit = 20) {
-  const fetcher = useNotifFetch();
-  const { storage } = useTentacleConfig();
-  const hasToken = !!storage.getItem("tentacle_token");
+async function request(auth: { serverUrl: string; token: string }, path: string, init?: RequestInit): Promise<Response> {
+  const headers: Record<string, string> = { Authorization: `Bearer ${auth.token}`, ...(init?.headers as Record<string, string>) };
+  if (init?.body) headers["Content-Type"] = "application/json";
+  const res = await fetch(`${auth.serverUrl}/api/notifications${path}`, { ...init, headers });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res;
+}
 
+async function requestJson<T>(auth: { serverUrl: string; token: string }, path: string, init?: RequestInit): Promise<T> {
+  return (await request(auth, path, init)).json() as Promise<T>;
+}
+
+/** Les dernières notifications (la synchro du centre du système, la lecture d'avance de la cloche). */
+export function useNotificationsMobile(limit = 20) {
+  const auth = useNotifAuth();
   return useQuery({
-    queryKey: ["notifications", limit],
-    queryFn: () => fetcher<AppNotification[]>(`/?limit=${limit}`),
-    enabled: hasToken,
+    queryKey: ["notifications", "list", auth.account, limit],
+    queryFn: () => requestJson<AppNotification[]>(auth, `/?limit=${limit}`),
+    enabled: auth.enabled,
     staleTime: 15_000,
     refetchInterval: 30_000,
   });
 }
 
-export function useUnreadCountMobile() {
-  const fetcher = useNotifFetch();
-  const { storage } = useTentacleConfig();
-  const hasToken = !!storage.getItem("tentacle_token");
+/**
+ * Le centre, page par page : toutes les notifications du compte en défilant.
+ * Un serveur sans `notifications.paging` : la première page seulement, comme
+ * avant. Lu d'avance (le centre s'ouvre sur sa liste), relevé toutes les 30 s
+ * seulement centre ouvert (`active`) ; fermé, le centre se ramène à sa
+ * première page (`trimNotificationPages`) : un évènement du socket n'en relit
+ * qu'une.
+ */
+export function useNotificationPagesMobile(active: boolean) {
+  const auth = useNotifAuth();
+  const paging = useServerCapability("notifications.paging");
+  return useInfiniteQuery({
+    queryKey: ["notifications", "pages", auth.account],
+    queryFn: async ({ pageParam }): Promise<NotificationPage> => {
+      const cursor = pageParam ? `&before=${encodeURIComponent(pageParam)}` : "";
+      const res = await request(auth, `/?limit=${CENTER_PAGE_SIZE}${cursor}`);
+      const items = (await res.json()) as AppNotification[];
+      return { items, next: paging ? res.headers.get(NEXT_HEADER) : null };
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.next ?? undefined,
+    enabled: auth.enabled,
+    staleTime: 15_000,
+    refetchInterval: active ? 30_000 : false,
+  });
+}
 
+/** Centre refermé : il ne garde que sa première page. */
+export function trimNotificationPages(data: InfiniteData<NotificationPage, string | null> | undefined) {
+  if (!data || data.pages.length <= 1) return data;
+  return { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) };
+}
+
+export function useUnreadCountMobile() {
+  const auth = useNotifAuth();
   return useQuery({
-    queryKey: ["notifications", "unread-count"],
-    queryFn: () => fetcher<{ count: number }>("/unread-count"),
-    enabled: hasToken,
+    queryKey: ["notifications", "unread-count", auth.account],
+    queryFn: () => requestJson<{ count: number }>(auth, "/unread-count"),
+    enabled: auth.enabled,
     staleTime: 10_000,
     refetchInterval: 30_000,
   });
 }
 
-export function useMarkAllReadMobile() {
-  const qc = useQueryClient();
-  const fetcher = useNotifFetch();
+// Les gestes : le cache optimiste partagé avec le web (api-client), les requêtes du mobile.
 
-  // Optimiste : tout passe lu à l'instant, le serveur confirme ensuite.
-  return useMutation({
-    mutationFn: () => fetcher<{ success: boolean }>("/read-all", { method: "POST" }),
-    onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ["notifications"] });
-      const snap = snapshotNotifs(qc);
-      for (const [key, data] of snap.lists) if (data) qc.setQueryData(key, data.map((n) => ({ ...n, read: true })));
-      qc.setQueryData(["notifications", "unread-count"], { count: 0 });
-      return snap;
-    },
-    onError: (_err, _vars, ctx) => { if (ctx) rollback(qc, ctx); },
-    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
-  });
+export function useMarkAllReadMobile() {
+  const auth = useNotifAuth();
+  return useNotificationMutation<void>(
+    () => requestJson(auth, "/read-all", { method: "POST" }),
+    () => ({ read: () => true, allRead: true }),
+  );
 }
 
 export function useMarkReadMobile() {
-  const qc = useQueryClient();
-  const fetcher = useNotifFetch();
-
-  // Optimiste : la ligne passe lue (et la pastille baisse) sous le doigt.
-  return useMutation({
-    mutationFn: (id: string) => fetcher<{ success: boolean }>(`/${id}/read`, { method: "POST" }),
-    onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: ["notifications"] });
-      const snap = snapshotNotifs(qc);
-      let wasUnread = false;
-      for (const [key, data] of snap.lists) {
-        if (!data) continue;
-        if (data.some((n) => n.id === id && !n.read)) wasUnread = true;
-        qc.setQueryData(key, data.map((n) => (n.id === id ? { ...n, read: true } : n)));
-      }
-      if (wasUnread && snap.unread) qc.setQueryData(["notifications", "unread-count"], { count: Math.max(0, snap.unread.count - 1) });
-      return snap;
-    },
-    onError: (_err, _id, ctx) => { if (ctx) rollback(qc, ctx); },
-    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
-  });
-}
-
-// ---------- Delete hooks (optimistic) ----------
-
-type NotifSnapshot = {
-  lists: Array<[readonly unknown[], AppNotification[] | undefined]>;
-  unread: { count: number } | undefined;
-};
-
-function snapshotNotifs(qc: ReturnType<typeof useQueryClient>): NotifSnapshot {
-  const lists: NotifSnapshot["lists"] = [];
-  const cache = qc.getQueriesData<AppNotification[]>({ queryKey: ["notifications"] });
-  for (const [key, data] of cache) {
-    if (Array.isArray(data)) lists.push([key, data]);
-  }
-  const unread = qc.getQueryData<{ count: number }>(["notifications", "unread-count"]);
-  return { lists, unread };
-}
-
-function rollback(qc: ReturnType<typeof useQueryClient>, snap: NotifSnapshot): void {
-  for (const [key, data] of snap.lists) qc.setQueryData(key, data);
-  if (snap.unread) qc.setQueryData(["notifications", "unread-count"], snap.unread);
+  const auth = useNotifAuth();
+  return useNotificationMutation<string>(
+    (id) => requestJson(auth, `/${encodeURIComponent(id)}/read`, { method: "POST" }),
+    (id) => ({ read: (n) => n.id === id }),
+  );
 }
 
 export function useDeleteNotificationMobile() {
-  const qc = useQueryClient();
-  const fetcher = useNotifFetch();
-  return useMutation({
-    mutationFn: (id: string) => fetcher<{ deleted: number }>(`/${id}`, { method: "DELETE" }),
-    onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: ["notifications"] });
-      const snap = snapshotNotifs(qc);
-      let wasUnread = false;
-      for (const [key, data] of snap.lists) {
-        if (!data) continue;
-        const target = data.find((n) => n.id === id);
-        if (target && !target.read) wasUnread = true;
-        qc.setQueryData(key, data.filter((n) => n.id !== id));
-      }
-      if (wasUnread && snap.unread) {
-        qc.setQueryData(["notifications", "unread-count"], { count: Math.max(0, snap.unread.count - 1) });
-      }
-      return snap;
-    },
-    onError: (_err, _id, ctx) => { if (ctx) rollback(qc, ctx); },
-    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
-  });
+  const auth = useNotifAuth();
+  return useNotificationMutation<string>(
+    (id) => requestJson(auth, `/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    (id) => ({ remove: (n) => n.id === id }),
+  );
 }
 
+/** Le serveur prend cent identifiants par appel : une sélection plus longue part en plusieurs. */
+const BATCH_MAX = 100;
+
 export function useDeleteNotificationsMobile() {
-  const qc = useQueryClient();
-  const fetcher = useNotifFetch();
-  return useMutation({
-    mutationFn: (ids: string[]) => fetcher<{ deleted: number }>("/batch", { method: "DELETE", body: JSON.stringify({ ids }) }),
-    onMutate: async (ids) => {
-      await qc.cancelQueries({ queryKey: ["notifications"] });
-      const snap = snapshotNotifs(qc);
-      const idSet = new Set(ids);
-      let unreadRemoved = 0;
-      for (const [key, data] of snap.lists) {
-        if (!data) continue;
-        for (const n of data) { if (idSet.has(n.id) && !n.read) unreadRemoved++; }
-        qc.setQueryData(key, data.filter((n) => !idSet.has(n.id)));
-      }
-      if (unreadRemoved > 0 && snap.unread) {
-        qc.setQueryData(["notifications", "unread-count"], { count: Math.max(0, snap.unread.count - unreadRemoved) });
-      }
-      return snap;
-    },
-    onError: (_err, _ids, ctx) => { if (ctx) rollback(qc, ctx); },
-    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
-  });
+  const auth = useNotifAuth();
+  return useNotificationMutation<string[]>(
+    (ids) => Promise.all(
+      Array.from({ length: Math.ceil(ids.length / BATCH_MAX) }, (_, i) => ids.slice(i * BATCH_MAX, (i + 1) * BATCH_MAX))
+        .map((chunk) => requestJson(auth, "/batch", { method: "DELETE", body: JSON.stringify({ ids: chunk }) })),
+    ),
+    (ids) => { const set = new Set(ids); return { remove: (n) => set.has(n.id) }; },
+  );
 }
 
 export function useDeleteAllNotificationsMobile() {
-  const qc = useQueryClient();
-  const fetcher = useNotifFetch();
-  return useMutation({
-    mutationFn: () => fetcher<{ deleted: number }>("/all", { method: "DELETE" }),
-    onMutate: async () => {
-      await qc.cancelQueries({ queryKey: ["notifications"] });
-      const snap = snapshotNotifs(qc);
-      for (const [key] of snap.lists) qc.setQueryData(key, []);
-      qc.setQueryData(["notifications", "unread-count"], { count: 0 });
-      return snap;
-    },
-    onError: (_err, _vars, ctx) => { if (ctx) rollback(qc, ctx); },
-    onSettled: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); },
-  });
+  const auth = useNotifAuth();
+  return useNotificationMutation<void>(
+    () => requestJson(auth, "/all", { method: "DELETE" }),
+    () => ({ remove: () => true, allRemoved: true }),
+  );
 }
