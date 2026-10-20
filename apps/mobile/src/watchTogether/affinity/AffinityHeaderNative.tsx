@@ -1,10 +1,11 @@
 import { memo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { HeartHandshake, LogOut } from "lucide-react-native";
+import { HeartHandshake } from "lucide-react-native";
 import type { WtAffinityStateDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
-import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { SecondaryButton } from "@/components/ui/buttons";
+import { FONT_FAMILY, RADIUS, useThemedStyles, type AppTheme } from "@/theme";
 import { KIND_LABEL_KEY } from "@tentacle-tv/api-client";
 
 /**
@@ -20,7 +21,6 @@ export const AffinityHeaderNative = memo(function AffinityHeaderNative({ state, 
   onQuit: () => void;
 }) {
   const { t } = useTranslation("watchTogether");
-  const theme = useTheme();
   const s = useThemedStyles(makeStyles);
   const judged = new Map(state.participants.map((p) => [p.userId, p.judged]));
 
@@ -39,11 +39,8 @@ export const AffinityHeaderNative = memo(function AffinityHeaderNative({ state, 
             </Pressable>
           </View>
         </View>
-        <Pressable onPress={onQuit} accessibilityRole="button" accessibilityLabel={t("affinityQuitLabel")}
-          style={({ pressed }) => [s.quit, pressed && s.pressed]} testID="wt-affinity-quit">
-          <LogOut size={16} color={theme.colors.text.primary} />
-          <Text style={s.quitLabel}>{t("affinityQuit")}</Text>
-        </Pressable>
+        <SecondaryButton label={t("affinityQuit")} icon="log-out" onPress={onQuit} size="sm"
+          accessibilityLabel={t("affinityQuitLabel")} testID="wt-affinity-quit" />
       </View>
       {room && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.people}>
@@ -73,12 +70,6 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   metaRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap" },
   meta: { color: t.colors.text.tertiary, fontSize: 13, fontFamily: FONT_FAMILY.regular },
   change: { color: t.colors.brand.light, fontSize: 13, fontFamily: FONT_FAMILY.semibold },
-  quit: {
-    flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 14, borderRadius: RADIUS.pill,
-    backgroundColor: t.colors.fill.soft,
-  },
-  pressed: { opacity: 0.7 },
-  quitLabel: { color: t.colors.text.primary, fontSize: 13, fontFamily: FONT_FAMILY.semibold },
   people: { gap: 8 },
   person: {
     flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 3, paddingRight: 10, paddingVertical: 3,
