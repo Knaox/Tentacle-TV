@@ -3,9 +3,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { FAMILY_PIN_LENGTH, type PinDigit } from "@tentacle-tv/shared";
-import { FONT_FAMILY, RADIUS, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { FamilyAvatar } from "../../FamilyAvatar";
 import type { PickPin } from "../usePickFlow";
+import { PlainButton } from "@/components/ui/buttons";
 
 const ROWS: readonly (readonly (PinDigit | "erase" | null)[])[] = [
   ["1", "2", "3"],
@@ -79,10 +80,7 @@ export const PinPad = memo(function PinPad({ pin, onDigit, onErase, onBack }: Pi
         ))}
       </View>
 
-      <Pressable onPress={onBack} disabled={checking} accessibilityRole="button" style={({ pressed }) => [st.back, pressed && st.keyPressed]}>
-        <Feather name="chevron-left" size={18} color={theme.colors.text.secondary} />
-        <Text style={st.backText}>{t("pin.back")}</Text>
-      </Pressable>
+      <PlainButton icon="chevron-left" label={t("pin.back")} onPress={onBack} disabled={checking} style={st.back} />
     </View>
   );
 });
@@ -112,6 +110,5 @@ const makeStyles = (t: AppTheme) =>
     keyPressed: { backgroundColor: t.colors.fill.medium },
     keyText: { fontSize: 28, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
     dim: { opacity: 0.45 },
-    back: { flexDirection: "row", alignItems: "center", gap: 4, minHeight: 44, paddingHorizontal: spacing.md, marginTop: spacing.lg, borderRadius: RADIUS.lg },
-    backText: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.secondary },
+    back: { marginTop: spacing.lg },
   });
