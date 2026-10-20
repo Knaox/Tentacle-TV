@@ -56,7 +56,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | B3 | Types de messages `wt:*` jamais renommés | `grep "wt:"` : aucune chaîne supprimée | ☐ |
 | B4 | Serveur : adhésion PAR APPAREIL (deux appareils d'un même compte = deux participants distincts) | test backend dédié | ☐ |
 | B5 | Serveur : pas de saut d'intro avant « tous prêts » | test backend/partagé dédié | ☑ `readyGate.ts` + `syncReadyGate.test.ts` (relus) |
-| B7 | Sauts rapides répétés (8 × +30 s) jamais perdus dans la salle : tous les participants finissent à la même position (signalé par wt-banc, à corriger par wt-socle) | test serveur/partagé qui rejoue la rafale + banc wt-banc rejoué vert | ✗ |
+| B7 | Sauts rapides répétés (8 × +30 s) jamais perdus dans la salle : tous les participants finissent à la même position (signalé par wt-banc, à corriger par wt-socle) | test serveur/partagé qui rejoue la rafale + banc wt-banc rejoué vert | ◐ wt-socle 5e23d1866 + 25c768931 + f2f60151f (jeton de seek, regroupement 150 ms) — à prouver par le banc wt-banc rejoué |
 | B6 | Correctifs serveur rétrocompatibles (anciens clients bureau continuent) ; capacité si le comportement visible change | test d'un client sans le nouveau champ | ☐ |
 
 ## C. Watch Together — mobile (wt-mobile)
@@ -138,7 +138,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 |---|----------|--------|------|
 | K1 | iOS : Live Activity avec temps restant pendant qu'un titre est gardé hors ligne | code (extension widget) + capture | ☐ |
 | K2 | Android : notification permanente avec temps restant | code + capture/journal | ☐ |
-| K3 | À la fin : remplacée par « Prêt à regarder » (plusieurs titres : comportement défini) | code + test de la règle | ☐ |
+| K3 | À la fin : remplacée par « Prêt à regarder » (plusieurs titres : comportement défini) | code + test de la règle | ◐ « Prêt à regarder hors ligne », un titre ouvre ce titre, plusieurs la bibliothèque |
 | K4 | Aucun « téléchargement / download » dans ces textes (FR/EN) | grep i18n | ☐ |
 | K5 | Échec / annulation / perte réseau : activité terminée proprement, jamais figée | code + test | ☐ |
 | K6 | Vigie : notification « demande bloquée » avec la raison, et « ça se réglera tout seul » | code dans Tentacle-Plugin-Seer | ☐ |
@@ -160,10 +160,10 @@ Sur mobile, tablette ET web, pour tous les droits.
 | M5 | Administration : absente pour un non-administrateur, et pour une session de profil | test | ☐ |
 | M6 | Demandes (Vigie) : absentes sans le droit (invité sans « Peut demander », Vigie éteint ou trop ancien) | test | ☐ |
 | M7 | Droits de la Famille (invité, membre) appliqués de même sur mobile, tablette et web | test | ☐ |
-| M8 | Utilisateur désactivé : plus de connexion possible, et une session ouverte coupée proprement (message clair, pas d'écran cassé ni de boucle) | test serveur + client | ☐ |
-| M9 | Horaires du contrôle parental : la lecture est coupée à l'heure (pas seulement refusée au démarrage) | test de la règle + lecteur | ☐ |
-| M10 | « Êtes-vous encore là ? » coupe bien la lecture après le délai sans réponse | test de la règle + lecteur | ☐ |
-| M11 | Mobile : droits en LECTURE SEULE + « Modifier sur le bureau ou le web » | capture + i18n | ☐ |
+| M8 | Utilisateur désactivé : plus de connexion possible, et une session ouverte coupée proprement (message clair, pas d'écran cassé ni de boucle) | test serveur + client | ◐ `AccountAccessHost` (droits 6a08ce7b8) — adaptateur de session de profil à brancher APRÈS fusion |
+| M9 | Horaires du contrôle parental : la lecture est coupée à l'heure (pas seulement refusée au démarrage) | test de la règle + lecteur | ◐ lecteur fermé à l'heure limite (6a08ce7b8) — idem |
+| M10 | « Êtes-vous encore là ? » coupe bien la lecture après le délai sans réponse | test de la règle + lecteur | ◐ famille 95f0fdd44 : PAUSE à la fin du décompte (pas un arrêt) — décision à confirmer (« coupe ») |
+| M11 | Mobile : droits en LECTURE SEULE + « Modifier sur le bureau ou le web » | capture + i18n | ◐ d6d88bbd4 (mobile), c9407ddc5 (web étroit) |
 | M12 | Contrôle côté serveur : un client qui appelle quand même la route sans droit est refusé (masquer ne suffit pas) | tests backend existants / ajoutés | ☐ |
 
 ## N. Famille sur le web (famille-web)
@@ -181,11 +181,11 @@ Sur mobile, tablette ET web, pour tous les droits.
 
 | # | Exigence | Preuve | État |
 |---|----------|--------|------|
-| W1 | Structure du mobile en CATALOGUES PURS dans `packages/shared`, testés : réglages (pages, sections, ordre, portée Compte/Cet appareil, clé, type de contrôle, capacité, plateformes, « réservé au bureau »), étapes du premier lancement, destinations des notifications, résumé des droits | modules shared + tests ; plus de copie dans `apps/mobile` (`profileStructure.ts`, `settingsScopes.ts` deviennent des lecteurs du catalogue) | ☐ |
+| W1 | Structure du mobile en CATALOGUES PURS dans `packages/shared`, testés : réglages (pages, sections, ordre, portée Compte/Cet appareil, clé, type de contrôle, capacité, plateformes, « réservé au bureau »), étapes du premier lancement, destinations des notifications, résumé des droits | modules shared + tests ; plus de copie dans `apps/mobile` (`profileStructure.ts`, `settingsScopes.ts` deviennent des lecteurs du catalogue) | ◐ réglages (settingsCatalog), premier lancement (5c9ac04fc), notifications (shared/notifications), droits (familyRightsSummary) dans shared |
 | W2 | Le web en fenêtre étroite (téléphone, iPad, bureau rétréci) REND ces catalogues : réglages en six rubriques avec pastilles et « réglages avancés : sur le bureau », premier lancement (Qui regarde ?, PIN, carrousels, photo), destinations des notifications, en-tête « Pour vous »/« Affinité » si modèle partagé | code + captures à 390 px et 820 px | ☐ |
-| W3 | Un test prouve que chaque entrée du catalogue est rendue par les deux clients, ou exclue d'un côté avec sa raison | test présent et vert | ☐ |
+| W3 | Un test prouve que chaque entrée du catalogue est rendue par les deux clients, ou exclue d'un côté avec sa raison | test présent et vert | ◐ `webCoverage.test.ts` + `catalogRender.test.tsx` présents (web-etroit 5f1e126bd) — à relire vert après fusion |
 | W4 | Fenêtre large du bureau inchangée ; cible webOS compile ; aucune clé `tentacle_*` ni i18n renommée | build webOS (par `heavy.sh`) + scan A11 | ☐ |
-| W6 | Décision du coordinateur (03:10) : reglages déplace lui-même `profileStructure`, `profileSections`, `profilePanes`, `settingsScopes` vers `packages/shared/src/settingsCatalog/` ; web-etroit consomme seulement (champs supplémentaires demandés à reglages) ; plus personne ne retouche l'ancien emplacement après le déplacement | `git log` des deux branches : aucun commit sur `apps/mobile/src/screens/profile/{profileStructure,profileSections,profilePanes,settingsScopes}.ts` après le commit de déplacement | ☐ |
+| W6 | Décision du coordinateur (03:10) : reglages déplace lui-même `profileStructure`, `profileSections`, `profilePanes`, `settingsScopes` vers `packages/shared/src/settingsCatalog/` ; web-etroit consomme seulement (champs supplémentaires demandés à reglages) ; plus personne ne retouche l'ancien emplacement après le déplacement | `git log` des deux branches : aucun commit sur `apps/mobile/src/screens/profile/{profileStructure,profileSections,profilePanes,settingsScopes}.ts` après le commit de déplacement | ☑ déplacement 6576292c4 ; hors-ligne-live a retiré son écran (2a5f6f115), reglages porte « Suivi en direct » au catalogue (252cd9144) |
 | W5 | Pas de conflit avec famille-web (apps/web) ni avec reglages (catalogue déplacé pendant que reglages travaille) | croisement A16 | ☐ |
 
 ## L. Boutons (boutons)
@@ -223,6 +223,11 @@ Sur mobile, tablette ET web, pour tous les droits.
 | Q6 | hors-ligne-live ⟷ reglages | `OnDeviceSettingsScreen.tsx`, `settingsCatalog` | réglage « Suivi en direct » posé hors du catalogue partagé et sur un écran réécrit par reglages → conflit + W3 | note | ouvert |
 | Q7 | hors-ligne-live (Vigie) | `stalled-research.ts` | retrait + liste noire automatiques d'un transfert bloqué 6 h : comportement nouveau, à valider par Damien | note + récap | décision |
 | Q8 | toutes | `shared/src/index.ts`, `serverCapabilities.ts` | ajouts concurrents sur 11 et 5 branches (conflits triviaux) ; index.ts > 300 dès dev | coordinateur | fusion |
+| Q5 | → | | corrigé 0542d1691 (vérifié 05:35) | | fermé |
+| Q6 | → | | résolu : 2a5f6f115 + 252cd9144 (vérifié) | | fermé |
+| Q10 | droits-mobile + reglages, wt-mobile, famille, lecteur | après fusion | BRANCHEMENTS À FAIRE APRÈS FUSION (listés dans `droits-mobile.md`) : `useSessionAbilities`, `useWtAvailability`, `profileSessionAdapter`, débit/qualité/cast du lecteur — sans eux M2–M9 ne sont pas tenus | coordinateur | ouvert |
+| Q11 | ouverture | `tv-core` → `shared/brandIntro`, paquet `brand-intro-native` | l'ouverture de la TV est déplacée : tests tv-core/tv et lint TV (`eslint/tvNavigation`) à rejouer ; aucune régression Apple TV / Android TV permise | coordinateur | à vérifier |
+| Q12 | outillage | `heavy.sh` | un TERM pendant l'attente retire le verrou sans quitter → commande lancée hors verrou (relevé par droits-mobile) | coordinateur | ouvert |
 | Q9 | inconnue | processus | vitest `--maxWorkers=2` hors check.sh à 03:24 | note | relevé |
 | D2 | wt-socle | salle WT | 8 sauts rapides (+30 s) perdus (signalé par wt-banc) | coordinateur → wt-socle | ouvert |
 
