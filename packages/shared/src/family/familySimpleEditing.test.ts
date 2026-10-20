@@ -3,7 +3,7 @@ import type { ServerCapability } from "../serverCapabilities/serverCapabilities"
 import type { FamilyDto, FamilyOverviewDto, FamilyProfileDto, FamilyRole } from "./familyContract";
 import { GUEST_PARENTAL_NONE } from "./familyParental";
 import { familyRightsOf } from "./familyRights";
-import { familySimpleEditing } from "./familySimpleEditing";
+import { editedSummaryKinds, familySimpleEditing } from "./familySimpleEditing";
 
 /**
  * Ce qu'un écran simple (mobile, tablette) règle sur un profil : les droits de
@@ -70,5 +70,10 @@ describe("familySimpleEditing", () => {
 
   it("hors session personnelle (et sans gestion ouverte) : rien", () => {
     expect(familySimpleEditing(overview("owner", false), GUEST, OWNER, ALL, { guestRequests: true }).any).toBe(false);
+  });
+
+  it("les lignes réglées ici quittent le résumé en lecture seule", () => {
+    const edit = familySimpleEditing(overview("owner"), GUEST, OWNER, ALL, { guestRequests: true });
+    expect(editedSummaryKinds(edit).sort()).toEqual(["age", "libraries", "requestTitles"]);
   });
 });

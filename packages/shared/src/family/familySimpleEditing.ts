@@ -2,6 +2,7 @@ import type { ServerCapability } from "../serverCapabilities/serverCapabilities"
 import type { FamilyOverviewDto, FamilyProfileDto } from "./familyContract";
 import { profileActions, sessionManages, type ProfileActionsCapability } from "./familyClient";
 import { profileRoleActions } from "./familyRolesClient";
+import type { RightsSummaryKind } from "./familyRightsSummary";
 
 /**
  * Ce qu'un écran SIMPLE (mobile, tablette, web étroit) peut régler sur UN
@@ -67,4 +68,15 @@ export function familySimpleEditing(
   };
   out.any = out.requestTitles || out.createGuests || out.parent || out.age || out.libraries;
   return out;
+}
+
+/** Les lignes du résumé que l'écran règle déjà (elles quittent le résumé en lecture seule). */
+export function editedSummaryKinds(editing: FamilySimpleEditing): RightsSummaryKind[] {
+  const kinds: RightsSummaryKind[] = [];
+  if (editing.requestTitles) kinds.push("requestTitles");
+  if (editing.createGuests) kinds.push("createGuests");
+  if (editing.parent) kinds.push("parent");
+  if (editing.age) kinds.push("age");
+  if (editing.libraries) kinds.push("libraries");
+  return kinds;
 }

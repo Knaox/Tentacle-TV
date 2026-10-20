@@ -5,6 +5,9 @@
 export default {
   title: "Their rights",
   editElsewhere: "Edit on desktop or web",
+  otherTitle: "Other rights",
+  moreElsewhere: "More settings on desktop or web",
+  moreHint: "Unrated titles, tags and hours are set in Settings › Family, from the desktop app or your server's website.",
   editHint: "Rights are set in Settings › Family, from the desktop app or your server's website. They apply right away on all their devices.",
   loading: "Reading rights…",
   libraries: {
