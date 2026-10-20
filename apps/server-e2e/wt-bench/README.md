@@ -30,8 +30,8 @@ son PID dans `.runs/wt/state.json` : `down` n'arrête que les siens.
 
 Chaque membre est un contexte Chrome sans tête À LUI (un appareil). Toutes
 les pages tournent sur le même Mac : `sample()` lit DANS la page, au même
-instant, `video.currentTime` et l'heure murale (`performance.timeOrigin +
-now()`). Les positions sont ramenées à un instant commun (extrapolées à la
+instant, `video.currentTime` et l'heure murale (`Date.now()`). Les
+positions sont ramenées à un instant commun (extrapolées à la
 vitesse du lecteur) : la dérive est l'écart à la référence (le membre A), en
 ms, sans faire confiance à l'horloge synchronisée des lecteurs — la vérité
 terrain, pas le `driftMs` qu'ils déclarent.
@@ -50,6 +50,13 @@ requêtes média sont retardées (6 s). Arrière-plan : Chrome sans tête garde
 tout onglet visible — le banc simule l'onglet caché (`visibilityState`) et le
 gel de la page (`Page.setWebLifecycleState`), le cas d'une app iOS en
 arrière-plan. Réseau : `context.setOffline` (requêtes et socket).
+
+## Veille du Mac
+
+`run` et `up` tiennent un `caffeinate -s` le temps du passage : une veille
+profonde (capot fermé, sur secteur) a gelé tout le banc 18 min dans la nuit du
+20/10 et faussé chaque mesure. Vérifier après coup : `pmset -g log | grep -E
+"Sleep|DarkWake"`.
 
 ## Sorties
 

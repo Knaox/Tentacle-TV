@@ -5,7 +5,7 @@
  * donne tout le tableau d'un coup.
  */
 
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type Browser } from "playwright-core";
 import { RUN_DIR, readState, type BenchAccount, type BenchState } from "../env";
@@ -46,6 +46,8 @@ export class ScenarioContext {
   constructor(readonly id: string, readonly browser: Browser) {
     this.state = readState();
     this.outDir = join(RUN_DIR, "out", id);
+    // Un passage = un dossier propre : les journaux d'un passage d'avant ne s'y mêlent pas.
+    rmSync(this.outDir, { recursive: true, force: true });
     mkdirSync(this.outDir, { recursive: true });
   }
 

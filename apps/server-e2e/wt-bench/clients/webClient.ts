@@ -4,7 +4,7 @@
  * appareils de ce compte (le cas du 3ᵉ appareil).
  *
  * Mesure : `sample()` lit DANS la page, au même instant, la position de
- * l'élément vidéo et l'heure murale (`performance.timeOrigin + now()`). Tous
+ * l'élément vidéo et l'heure murale (`Date.now()`). Tous
  * les clients tournent sur le même Mac : l'heure murale est commune, l'écart
  * entre deux lecteurs se calcule sans faire confiance à leur propre horloge
  * synchronisée — c'est la vérité terrain, pas le `driftMs` que le lecteur
@@ -173,7 +173,10 @@ export class WebClient {
     const s = await this.page.evaluate(() => {
       const v = document.querySelector("video");
       return {
-        wallMs: performance.timeOrigin + performance.now(),
+        // Heure MURALE (Date.now) et non performance.timeOrigin + now() : l'horloge
+        // monotone d'une page s'arrête pendant une veille du Mac, et deux pages
+        // chargées de part et d'autre d'une veille divergeaient de plusieurs minutes.
+        wallMs: Date.now(),
         pos: v ? v.currentTime : null,
         paused: v ? v.paused : true,
         rate: v ? v.playbackRate : 1,
@@ -231,11 +234,14 @@ export class WebClient {
       await cdp.send("Page.setWebLifecycleState", { state: "frozen" });
     } else {
       await cdp.send("Page.setWebLifecycleState", { state: "active" }).catch(() => undefined);
-      await this.page.evaluate((hidden) => {
-        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (hidden ? "hidden" : "visible") });
-        Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden });
+      // Une chaîne, pas une fonction : tsx transpile les fonctions avec un
+      // assistant `__name` qui n'existe pas dans la page.
+      const hidden = mode === "hidden";
+      await this.page.evaluate(`(() => {
+        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => ${hidden ? '"hidden"' : '"visible"'} });
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => ${hidden} });
         document.dispatchEvent(new Event("visibilitychange"));
-      }, mode === "hidden");
+      })()`);
     }
     await cdp.detach().catch(() => undefined);
   }

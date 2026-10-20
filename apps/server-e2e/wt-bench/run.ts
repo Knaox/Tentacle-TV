@@ -10,11 +10,23 @@
  * Jamais lancé par `pnpm test`.
  */
 
+import { spawn } from "node:child_process";
 import { down, restartBackend, up } from "./env";
 import { runScenarios, SCENARIOS } from "./scenarios";
 
+/**
+ * Pas de veille du Mac pendant un passage : une veille profonde (capot fermé,
+ * vu le 20/10 de 04:56 à 05:14) gèle tout le banc et fausse chaque mesure.
+ * `caffeinate -s` tient tant que ce processus vit (`-w`).
+ */
+function keepAwake(): void {
+  if (process.platform !== "darwin") return;
+  spawn("caffeinate", ["-s", "-w", String(process.pid)], { detached: true, stdio: "ignore" }).unref();
+}
+
 async function main(): Promise<void> {
   const [cmd = "run", ...rest] = process.argv.slice(2);
+  if (cmd === "run" || cmd === "up") keepAwake();
   if (cmd === "up") await up();
   else if (cmd === "down") down({ purge: rest.includes("--purge") });
   else if (cmd === "restart-backend") await restartBackend();

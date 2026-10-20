@@ -1,7 +1,7 @@
 /**
  * Un membre iOS du banc : l'app mobile au simulateur (iPhone ou iPad), lue
  * par Hermes. Le simulateur partage l'horloge du Mac : `Date.now()` lu dans
- * Hermes est l'heure murale commune, comme `performance.timeOrigin` côté web.
+ * Hermes est l'heure murale commune, comme côté web.
  *
  * La position vient de la sonde de développement de l'app
  * (`globalThis.__wtBench`, posée en __DEV__ par le transport Watch Together
