@@ -1,4 +1,6 @@
-import { FAMILY_NOTIFICATION_TYPES, familyPosterRequestOf, type NotificationTarget } from "@tentacle-tv/shared";
+import { FAMILY_NOTIFICATION_TYPES } from "../family/familyProtocol";
+import { familyPosterRequestOf } from "../family/familyClient";
+import type { NotificationTarget } from "./notificationTarget";
 
 /**
  * Le GESTE d'ouverture d'une notification, décidé une fois pour tous les

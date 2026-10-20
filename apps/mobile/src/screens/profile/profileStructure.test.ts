@@ -7,7 +7,7 @@ import frProfile from "../../../../../packages/shared/src/i18n/locales/fr/profil
 import enProfile from "../../../../../packages/shared/src/i18n/locales/en/profile";
 import frSessions from "../../../../../packages/shared/src/i18n/locales/fr/sessions";
 import enSessions from "../../../../../packages/shared/src/i18n/locales/en/sessions";
-import { FAMILY_ROUTE } from "../../../../../packages/api-client/src/utils/notificationRoute";
+import { FAMILY_ROUTE } from "../../../../../packages/shared/src/notifications/notificationRoute";
 import { PROFILE_PANES, PROFILE_PANE_ROUTES } from "./profilePanes";
 import { FAMILY_HREF, PROFILE_SECTIONS } from "./profileSections";
 import {

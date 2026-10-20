@@ -1,4 +1,5 @@
-import { isFamilyNotificationType, type NotificationState, type NotificationTarget } from "@tentacle-tv/shared";
+import { isFamilyNotificationType } from "../family/familyLabels";
+import type { NotificationState, NotificationTarget } from "./notificationTarget";
 import { notificationStateMeta, type NotificationTone } from "./notificationState";
 
 /**
