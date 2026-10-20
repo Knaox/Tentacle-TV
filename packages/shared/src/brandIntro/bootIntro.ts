@@ -86,6 +86,9 @@ export interface BootIntroWatch {
 export type BootIntroOutcome = "wait" | "go";
 
 export function bootIntroOutcome(watch: BootIntroWatch): BootIntroOutcome {
+  // Au bout de l'attente, on plonge dans ce qui est là, quoi qu'on sache (ou pas) du premier écran :
+  // jamais une attente sans fin (21/10 : une garde de route jamais tranchée tenait le poulpe 3 min).
+  if (watch.heldMs >= BOOT_INTRO_MAX_HOLD_MS) return "go";
   if (watch.route === null) return "wait";
   if (watch.blocked) return "go";
   if (watch.pending && watch.heldMs < BOOT_INTRO_MAX_HOLD_MS) return "wait";
