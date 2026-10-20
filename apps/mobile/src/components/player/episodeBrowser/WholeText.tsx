@@ -9,6 +9,8 @@ interface Props {
   style: StyleProp<TextStyle>;
   /** Ce qui s'affiche quand rien ne tient sans couper un mot. */
   fallback?: ReactNode;
+  /** Réserver la hauteur des lignes : la place ne change pas à la mesure (une liste ouverte au point près). */
+  reserve?: number;
 }
 
 /**
@@ -18,14 +20,14 @@ interface Props {
  * mesuré une fois, invisible, à la largeur de la place ; seul ce qui tient est
  * dessiné. Avant la mesure, la place reste vide (aucune coupure entrevue).
  */
-export const WholeText = memo(function WholeText({ text, lines, style, fallback = null }: Props) {
+export const WholeText = memo(function WholeText({ text, lines, style, fallback = null, reserve }: Props) {
   const [fitted, setFitted] = useState<string | null | undefined>(undefined);
   const onTextLayout = useCallback((e: NativeSyntheticEvent<TextLayoutEventData>) => {
     const budget = synopsisBudget(e.nativeEvent.lines.map((line) => line.text.length), lines);
     setFitted(fitPreviewZoneSynopsis(text, budget));
   }, [text, lines]);
   return (
-    <View>
+    <View style={reserve !== undefined ? { minHeight: reserve } : undefined}>
       <Text style={[style, st.measure]} onTextLayout={onTextLayout} accessible={false} importantForAccessibility="no-hide-descendants">{text}</Text>
       {fitted ? <Text style={style} numberOfLines={lines}>{fitted}</Text> : fitted === null ? fallback : null}
     </View>

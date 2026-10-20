@@ -64,7 +64,7 @@ export function IndexBrowser(props: EpisodeBrowserProps) {
   const two = geo.columns === 2;
   const { padding } = geo;
   const heading = (
-    <View style={st.headingBlock}>
+    <View style={[st.headingBlock, !two && st.headingFill]}>
       <Text accessibilityRole="header" numberOfLines={2} style={[st.series, isTablet && st.seriesLarge]}>{seriesTitle}</Text>
       {meta ? <Text style={st.meta}>{meta}</Text> : null}
     </View>
@@ -131,7 +131,9 @@ const st = StyleSheet.create({
   body: { flex: 1 },
   columns: { flex: 1, flexDirection: "row", gap: 28 },
   closeRow: { flexDirection: "row" },
-  headingBlock: { flex: 1, gap: 4 },
+  headingBlock: { gap: 4 },
+  // Debout, l'en-tête partage sa ligne avec la croix : il prend la place, la croix va au bout.
+  headingFill: { flex: 1 },
   series: { color: EB.label, fontSize: EB_TYPE.display, lineHeight: EB_TYPE.display + 4, fontWeight: "800", letterSpacing: -0.6 },
   seriesLarge: { fontSize: EB_TYPE.display + 6, lineHeight: EB_TYPE.display + 10 },
   meta: { color: EB.secondary, fontSize: EB_TYPE.kicker + 1, fontWeight: "500" },

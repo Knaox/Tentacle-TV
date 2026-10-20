@@ -60,6 +60,7 @@ export const IndexRow = memo(function IndexRow({ entry, thumbWidth, large, expan
               <WholeText
                 text={entry.overview}
                 lines={2}
+                reserve={2 * (large ? 20 : 18)}
                 style={[st.overview, large && st.overviewLarge]}
                 fallback={<Text style={[st.overview, st.overviewHint]}>{t("episodeBrowser.showOverview")}</Text>}
               />
