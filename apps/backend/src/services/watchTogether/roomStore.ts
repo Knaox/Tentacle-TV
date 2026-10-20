@@ -63,9 +63,8 @@ export function createRoom(user: UserBasic, contextItemId: string | null, device
     lastSeekAt: new Map(),
     chat: [],
     chatSeq: 0,
-    lastChatAt: new Map(),
-    lastReactionAt: new Map(),
-    lastGifAt: new Map(),
+    chatRate: new Map(),
+    typing: new Map(),
     createdAt: now,
   };
   if (deviceKey) bindDevice(room.members.get(user.userId)!, deviceKey, now);
@@ -127,9 +126,10 @@ function detachMember(userId: string): RemovalResult | null {
   room.waitingFor.delete(userId);
   room.waitingSince.delete(userId);
   room.lastSeekAt.delete(userId);
-  room.lastChatAt.delete(userId);
-  room.lastReactionAt.delete(userId);
-  room.lastGifAt.delete(userId);
+  for (const key of room.chatRate.keys()) if (key.startsWith(`${userId}:`)) room.chatRate.delete(key);
+  const typingTimer = room.typing.get(userId);
+  if (typingTimer) clearTimeout(typingTimer);
+  room.typing.delete(userId);
   memberIndex.delete(userId);
 
   if (room.members.size === 0) {

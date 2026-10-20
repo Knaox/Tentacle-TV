@@ -1,7 +1,7 @@
 import type { PlaybackSettings } from "../../playback/playbackSettings";
 import type { WebSocket } from "@fastify/websocket";
 import type { SegmentType } from "../../playback/segmentTypes";
-import type { WtChatMessageDto, WtPauseReason, WtWaitCause } from "./protocol";
+import type { WtChatMessageDto, WtPauseReason, WtRateBucket, WtWaitCause } from "./protocol";
 import type { MemberDevice } from "./memberDevices";
 import type { ReadyGate } from "./syncReadyGate";
 
@@ -114,10 +114,11 @@ export interface Room {
   chat: WtChatMessageDto[];
   /** Compteur monotone d'ids de messages (`groupId:seq`). */
   chatSeq: number;
-  /** Anti-spam chat/réactions/GIFs : dernier envoi accepté par membre. */
-  lastChatAt: Map<string, number>;
-  lastReactionAt: Map<string, number>;
-  lastGifAt: Map<string, number>;
+  /** Débit du chat : un seau à jetons par membre et par sorte (`membre:sorte`),
+   *  cf. `watchTogetherChat.ts`. */
+  chatRate: Map<string, WtRateBucket>;
+  /** « Est en train d'écrire » : l'extinction programmée de chaque membre qui tape. */
+  typing: Map<string, ReturnType<typeof setTimeout>>;
   createdAt: number;
 }
 

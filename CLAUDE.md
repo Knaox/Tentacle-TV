@@ -1278,6 +1278,11 @@ secondes FILM, atterrissage du transcodage compris). Carnet :
   décompte serveur.
 - **Le mobile** n'a Watch Together qu'avec `watchTogether.deviceMembership` ;
   sans elle, sa séance reste éteinte (`WtPlatformPort.enabled: false`).
+- **Le chat est interactif** : débit par seau à jetons PARTAGÉ client/serveur
+  (`watchTogetherChat.ts` — jamais un intervalle minimal entre deux envois),
+  rafales d'emojis regroupées à l'affichage, « est en train d'écrire »
+  derrière `watchTogether.typing`. Un saut relatif part de la cible déjà
+  demandée, et chaque `wt:seek` porte son `seekToken` (sauts rapides).
 
 ## Préconfiguration de la barre (TV) — par profil, sur l'appareil
 

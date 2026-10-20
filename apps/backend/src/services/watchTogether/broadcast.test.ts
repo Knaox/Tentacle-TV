@@ -48,9 +48,8 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     lastSeekAt: new Map(),
     chat: [],
     chatSeq: 0,
-    lastChatAt: new Map(),
-    lastReactionAt: new Map(),
-    lastGifAt: new Map(),
+    chatRate: new Map(),
+    typing: new Map(),
     createdAt: 0,
   };
 }

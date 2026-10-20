@@ -198,6 +198,10 @@ export const SERVER_CAPABILITIES = {
    *  avant — aucun saut de passage (intro, résumé, générique) tant que les membres attendus pour
    *  le titre ne sont pas tous posés. Sans elle, les clients en jugent d'après l'état seul. */
   "watchTogether.readyGate": "1.32.0",
+  /** « X est en train d'écrire… » dans le chat d'une salle (`wt:typing`, début / fin, éteint
+   *  par le serveur après 6 s sans nouvelle, jamais relayé à soi-même). Sans elle, rien n'est
+   *  envoyé : un serveur d'avant répondrait `invalid` à chaque frappe. */
+  "watchTogether.typing": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

@@ -13,3 +13,5 @@ export * from "./memberPresentation";
 export * from "./affinityText";
 // Les modèles purs de l'interface (feuilles, bande d'accueil, panneau du lecteur).
 export * from "./ui";
+// « X est en train d'écrire… » : le libellé.
+export * from "./typingLabel";

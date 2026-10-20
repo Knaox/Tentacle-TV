@@ -44,7 +44,11 @@ appareil du compte :
    de Damien restent tous deux dans la salle : c'est le cas qui a fait naître
    la règle. Pour quitter sur un appareil, « Quitter » sur celui-là.
 2. **« Quitter » est par appareil.** Le compte quitte la salle avec son
-   DERNIER appareil lié (transfert d'hôte, dissolution comme avant).
+   DERNIER appareil lié (transfert d'hôte, dissolution comme avant). Un
+   « Quitter » explicite emporte aussi les appareils liés HORS LIGNE (en grâce) :
+   un appareil éteint ne garde pas le compte dans la salle (constat du banc).
+   Et créer un groupe quand TOUS les appareils liés du compte sont éteints
+   libère l'ancienne salle au lieu de répondre 409.
 3. **La grâce de déconnexion est par appareil** (120 s ; 10 s après
    `wt:goodbye`, et seulement si l'appareil n'a plus aucune socket ouverte : un
    autre onglet du même navigateur le tient). Un appareil lié qui ne revient

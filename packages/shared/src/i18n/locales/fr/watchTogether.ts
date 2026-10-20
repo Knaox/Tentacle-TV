@@ -105,6 +105,11 @@ export default {
 
   // Chat de groupe
   chatTitle: "Chat du groupe",
+  // « Est en train d'écrire » (le pluriel _other se lit sur count)
+  typingOne: "{{name}} est en train d'écrire…",
+  typingTwo: "{{a}} et {{b}} écrivent…",
+  typingMany_one: "{{name}} et {{count}} autre personne écrivent…",
+  typingMany_other: "{{name}} et {{count}} autres personnes écrivent…",
   chatPlaceholder: "Écrire un message…",
   chatSend: "Envoyer",
   chatEmpty: "Aucun message pour l'instant. Dites bonjour !",

@@ -1,4 +1,4 @@
-import type { WtChatMessageDto } from "@tentacle-tv/shared";
+import { WT_REACTION_GROUP_MS, WT_TYPING_TTL_MS, type WtChatMessageDto } from "@tentacle-tv/shared";
 
 /**
  * Watch Together — état du chat de groupe (reducer pur, hors React).
@@ -15,6 +15,17 @@ export interface WtFloatingReaction {
   /** Un seul des deux est renseigné. */
   emoji?: string;
   gif?: { url: string; w?: number; h?: number };
+  /** La même réaction du même membre, en rafale : une seule, comptée (« 🔥 ×5 »). */
+  count?: number;
+  /** Arrivée (horloge locale) — le regroupement des rafales s'y lit. */
+  addedAt?: number;
+}
+
+/** Un AUTRE membre qui tape, jusqu'à `expiresAt` (horloge locale). */
+export interface WtTypingMember {
+  userId: string;
+  username: string;
+  expiresAt: number;
 }
 
 export interface WtChatState {
@@ -28,6 +39,8 @@ export interface WtChatState {
   /** Aperçus éphémères des messages d'autrui reçus panneau fermé (affichés
    *  discrètement à l'écran comme les réactions, purgés par TTL). */
   toasts: WtChatMessageDto[];
+  /** Les autres membres qui tapent (« X est en train d'écrire… »). */
+  typing: WtTypingMember[];
 }
 
 /** Nombre max d'aperçus empilés simultanément. */
@@ -45,6 +58,7 @@ export const initialChatState: WtChatState = {
   open: false,
   reactions: [],
   toasts: [],
+  typing: [],
 };
 
 export type WtChatAction =
@@ -53,6 +67,8 @@ export type WtChatAction =
   | { type: "reaction_add"; reaction: WtFloatingReaction }
   | { type: "reaction_expire"; key: string }
   | { type: "toast_expire"; id: string }
+  | { type: "typing"; userId: string; username: string; typing: boolean; now: number }
+  | { type: "typing_prune"; now: number }
   | { type: "set_open"; open: boolean }
   | { type: "clear" };
 
@@ -74,6 +90,8 @@ export function chatReducer(state: WtChatState, action: WtChatAction): WtChatSta
       const showToast = !state.open && !action.fromSelf;
       return {
         ...state,
+        // Le message est parti : son auteur n'« écrit » plus.
+        typing: state.typing.filter((m) => m.userId !== action.message.userId),
         messages: [...state.messages, action.message],
         unread: showToast ? state.unread + 1 : state.unread,
         toasts: showToast
@@ -82,7 +100,17 @@ export function chatReducer(state: WtChatState, action: WtChatAction): WtChatSta
       };
     }
     case "reaction_add":
-      return { ...state, reactions: [...state.reactions, action.reaction].slice(-WT_FLOAT_MAX) };
+      return { ...state, reactions: addReaction(state.reactions, action.reaction) };
+    case "typing": {
+      const others = state.typing.filter((m) => m.userId !== action.userId);
+      if (!action.typing) return others.length === state.typing.length ? state : { ...state, typing: others };
+      const entry = { userId: action.userId, username: action.username, expiresAt: action.now + WT_TYPING_TTL_MS };
+      return { ...state, typing: [...others, entry] };
+    }
+    case "typing_prune": {
+      const alive = state.typing.filter((m) => m.expiresAt > action.now);
+      return alive.length === state.typing.length ? state : { ...state, typing: alive };
+    }
     case "reaction_expire":
       return { ...state, reactions: state.reactions.filter((r) => r.key !== action.key) };
     case "toast_expire":
@@ -100,4 +128,25 @@ export function chatReducer(state: WtChatState, action: WtChatAction): WtChatSta
     default:
       return state;
   }
+}
+
+/**
+ * Une réaction de plus à l'écran. La MÊME réaction du même membre, arrivée
+ * moins de WT_REACTION_GROUP_MS après la précédente encore à l'écran, la
+ * remplace avec son compte + 1 (« 🔥 ×5 ») : une rafale s'enchaîne sans
+ * remplir l'écran ni évincer celles des autres. Nouvelle clé : l'animation
+ * repart, le compte saute aux yeux.
+ */
+function addReaction(reactions: WtFloatingReaction[], next: WtFloatingReaction): WtFloatingReaction[] {
+  if (next.emoji && next.addedAt !== undefined) {
+    let previous: WtFloatingReaction | undefined;
+    for (let i = reactions.length - 1; i >= 0 && !previous; i -= 1) {
+      if (reactions[i].userId === next.userId && reactions[i].emoji === next.emoji) previous = reactions[i];
+    }
+    if (previous?.addedAt !== undefined && next.addedAt - previous.addedAt < WT_REACTION_GROUP_MS) {
+      const merged = { ...next, count: (previous.count ?? 1) + 1 };
+      return [...reactions.filter((r) => r !== previous), merged].slice(-WT_FLOAT_MAX);
+    }
+  }
+  return [...reactions, next].slice(-WT_FLOAT_MAX);
 }

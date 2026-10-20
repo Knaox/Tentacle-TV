@@ -164,6 +164,8 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
       if (!emoji || emoji.length > WT_REACTION_MAX_LENGTH) return null;
       return { type: "wt:reaction", emoji };
     }
+    case "wt:typing":
+      return typeof msg.typing === "boolean" ? { type: msg.type, typing: msg.typing } : null;
     case "wt:gif": {
       if (typeof msg.url !== "string") return null;
       const url = msg.url.trim();
