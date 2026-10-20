@@ -50,7 +50,8 @@ export function useAuthRefresh({ client, storage, serverUrl, queryClient }: Auth
   const endedProfile = useCallback((): boolean => {
     if (!serverUrl) return false;
     if (!endMobileProfileSession({ storage, serverUrl, clearCache: () => queryClient.clear() }, "ended")) return false;
-    router.replace("/who-is-watching" as never);
+    // L'accueil : la porte du lancement montre « Qui regarde ? » d'elle-même (demande posée par la fin).
+    router.replace("/(tabs)" as never);
     return true;
   }, [storage, serverUrl, queryClient, router]);
 
