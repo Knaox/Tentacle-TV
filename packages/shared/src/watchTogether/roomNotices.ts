@@ -41,7 +41,12 @@ export function playbackPresenceToasts(
       if (!member.inPlayback && !member.playbackError) {
         toasts.push({ kind: "info", key: "memberArrivalCancelled", params: name });
       }
-    } else if (sameItem && cause !== "setItem" && before.inPlayback && !member.inPlayback && !member.playbackError) {
+    } else if (
+      // Toujours en route (son lecteur se remonte : React en développement,
+      // changement de route) : il n'a rien quitté, la salle l'attend encore.
+      !arrivingNow.has(member.userId)
+      && sameItem && cause !== "setItem" && before.inPlayback && !member.inPlayback && !member.playbackError
+    ) {
       toasts.push({ kind: "info", key: "memberLeftPlayback", params: name });
     }
   }

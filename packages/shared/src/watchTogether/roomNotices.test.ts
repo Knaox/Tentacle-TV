@@ -80,6 +80,13 @@ describe("arrivée dans la lecture", () => {
     expect(keys(waiting, room({ epoch: 3, members: bobAway }), "schedule", "a")).toEqual(["memberArrivalCancelled:B"]);
   });
 
+  it("son lecteur se remonte pendant l'arrivée (fermé puis rouvert) : ni « a quitté la lecture » ni « n'a pas rejoint »", () => {
+    const declared = room({ epoch: 2, members: [member("a"), member("b", { buffering: true }), member("c")], ...frozenForBob });
+    const remounting = room({ epoch: 3, members: bobAway, ...frozenForBob });
+    expect(keys(declared, remounting, "presence", "a")).toEqual([]);
+    expect(keys(remounting, room({ epoch: 4, members: [member("a"), member("b", { buffering: true }), member("c")], ...frozenForBob }), "presence", "a")).toEqual([]);
+  });
+
   it("le voile du lecteur dit qui on attend : « En attente de Bob… », puis « met en mémoire tampon » une fois qu'il charge sans arriver", () => {
     expect(waitingNotice(room({ members: bobAway, ...frozenForBob }), "a")).toEqual({ key: "waitingForMember", params: { name: "B" } });
     expect(waitingNotice(room({ ...frozenForBob, arrivingUserIds: undefined }), "a")).toEqual({ key: "memberBuffering", params: { name: "B" } });
