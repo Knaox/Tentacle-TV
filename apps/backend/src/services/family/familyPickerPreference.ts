@@ -5,7 +5,7 @@ import {
   type PickerPreferenceDto,
 } from "../../family/familyPickerContract";
 
-// Le bureau seul (1.32.0) : le mobile n'a jamais eu cette préférence.
+// Le bureau seul (1.31.1) : le mobile n'a jamais eu cette préférence.
 function isPickerPlatform(value: unknown): value is FamilyPickerPlatform {
   return typeof value === "string" && (FAMILY_PICKER_PLATFORMS as readonly string[]).includes(value);
 }

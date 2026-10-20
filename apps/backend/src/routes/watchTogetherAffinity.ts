@@ -47,7 +47,7 @@ function reply<T>(res: FastifyReply, result: AffinityResult<T>): T | FastifyRepl
 
 export const watchTogetherAffinityRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
-  // Adhésion par appareil (1.32.0) : un autre appareil du compte n'y touche pas.
+  // Adhésion par appareil (1.31.1) : un autre appareil du compte n'y touche pas.
   app.addHook("preHandler", refuseUnboundDevice);
 
   /** GET /affinity — la séance de la salle (reprise au montage), ou null. */

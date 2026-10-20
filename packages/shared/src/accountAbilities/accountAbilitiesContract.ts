@@ -1,6 +1,6 @@
 /**
  * Ce que la SESSION en cours peut faire — décidé par le serveur, lu par les
- * clients (capacité `account.abilities`, serveur 1.32.0). Règle de Damien
+ * clients (capacité `account.abilities`, serveur 1.31.1). Règle de Damien
  * (20/10) : « tout ce que tu as le droit de faire, tu le vois ; tout ce que tu
  * n'as pas le droit de faire, tu ne le vois pas », pour TOUS les droits. Ils
  * se RÈGLENT au bureau ou sur le web (fiche des droits, Famille) ; chaque

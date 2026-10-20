@@ -5,7 +5,7 @@ import type { WebSocket } from "@fastify/websocket";
  * la socket (`hashToken`). Sorti de `wsManager.ts` (plafond des 300 lignes) :
  * la révocation d'un jumelage y cible UNE socket d'appareil sans toucher les
  * autres appareils du compte, et Watch Together y lit l'adhésion par appareil
- * (1.32.0) : qui est en ligne, à quelles sockets parler, quand un appareil
+ * (1.31.1) : qui est en ligne, à quelles sockets parler, quand un appareil
  * passe en ligne ou hors ligne.
  *
  * Les jetons « personnels » (web, bureau, mobile connectés directement) y

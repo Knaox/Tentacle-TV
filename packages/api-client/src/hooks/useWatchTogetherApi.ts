@@ -130,7 +130,7 @@ export function leaveGroup(): Promise<{ success: boolean }> {
   return wtFetch<{ success: boolean }>("/group/leave", { method: "POST", body: JSON.stringify({}) });
 }
 
-/** Adhésion par appareil (1.32.0) : la salle du compte, vue d'un appareil qui
+/** Adhésion par appareil (1.31.1) : la salle du compte, vue d'un appareil qui
  *  n'y est pas lié — `null` s'il y est, ou s'il n'y a pas de salle. */
 export function fetchGroupElsewhere(): Promise<WtElsewhereDto | null> {
   return wtFetch<WtElsewhereDto | null>("/group/elsewhere");

@@ -84,7 +84,7 @@ describe("miroir du contrat Watch Together", () => {
     expect(mirror).toBe(canonical);
   });
 
-  // L'adhésion par appareil (1.32.0) : aucun import, `cp` suffit.
+  // L'adhésion par appareil (1.31.1) : aucun import, `cp` suffit.
   it("watchTogetherDevices.ts est identique des deux côtés", () => {
     const root = repoRoot();
     const canonical = readFileSync(join(root, "packages/shared/src/types/watchTogetherDevices.ts"), "utf8");

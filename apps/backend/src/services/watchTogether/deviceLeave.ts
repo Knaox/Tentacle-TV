@@ -7,7 +7,7 @@ import { notifyElsewhere } from "./elsewhere";
 
 /**
  * Watch Together — un appareil quitte la salle SANS que son compte la quitte
- * (1.32.0) : il lui reste un autre appareil lié. « Quitter » sur l'un des deux
+ * (1.31.1) : il lui reste un autre appareil lié. « Quitter » sur l'un des deux
  * PC, ou la grâce d'un appareil éteint : l'autre reste dans la séance, les
  * autres membres ne voient personne partir.
  *

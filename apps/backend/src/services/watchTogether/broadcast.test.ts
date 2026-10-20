@@ -101,7 +101,7 @@ describe("roomToDto — les champs du protocole v2 sont facultatifs", () => {
   });
 });
 
-describe("roomToDto — « tous prêts » (1.32.0)", () => {
+describe("roomToDto — « tous prêts » (1.31.1)", () => {
   it("dit `allReady` dès qu'un titre est lancé, faux tant que la porte n'est pas ouverte", () => {
     const room = makeRoom(null);
     expect(roomToDto(room).allReady).toBe(false);

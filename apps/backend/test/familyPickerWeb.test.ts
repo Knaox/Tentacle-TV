@@ -1,5 +1,5 @@
 /**
- * « Qui regarde ? » dans le NAVIGATEUR (serveur 1.32.0, capacité `family.webProfiles`) :
+ * « Qui regarde ? » dans le NAVIGATEUR (serveur 1.31.1, capacité `family.webProfiles`) :
  * le web s'authentifie par cookie (`tentacle_token`, qui l'emporte sur tout Bearer).
  * Ouvrir le profil d'un autre réécrit donc les cookies — le profil devient la session,
  * le jeton du compte part en RÉSERVE httpOnly (`tentacle_account_token`), jamais lisible
@@ -81,7 +81,7 @@ async function inZoe() {
 
 describe("le web : la capacité et la plateforme", () => {
   it("le serveur déclare la capacité", () => {
-    expect(SERVER_CAPABILITIES["family.webProfiles"]).toBe("1.32.0");
+    expect(SERVER_CAPABILITIES["family.webProfiles"]).toBe("1.31.1");
     expect(declaredServerCapabilities()).toContain("family.webProfiles");
   });
 

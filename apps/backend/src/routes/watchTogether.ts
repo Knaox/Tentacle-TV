@@ -25,7 +25,7 @@ import { WT_ACCESS_DENIED, wtMayCreate } from "../services/watchTogether/watchTo
  */
 export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
-  // « Groupe en cours sur un autre appareil » et « Rejoindre ici » (1.32.0).
+  // « Groupe en cours sur un autre appareil » et « Rejoindre ici » (1.31.1).
   await app.register(watchTogetherDeviceRoutes);
 
   /** POST /group — crée un groupe (créateur = hôte). 409 si déjà en groupe. */

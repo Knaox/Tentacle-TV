@@ -13,7 +13,7 @@ export default {
   pinHide: "Hide digits",
   // v2 — ce que seul le mobile dit (les mots communs vivent dans `family`).
   memberMayCreate: "The owner lets you create guests: you manage the ones you create.",
-  /** "Who's watching?" on phone and iPad (server 1.32.0, `family.mobileProfiles`). */
+  /** "Who's watching?" on phone and iPad (server 1.31.1, `family.mobileProfiles`). */
   launch: {
     caption: "This device will remember your choice. To switch profiles: Settings › Account.",
     switchCaption: "The chosen profile opens on this device and stays until you switch again.",

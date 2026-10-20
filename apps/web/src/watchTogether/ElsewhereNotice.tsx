@@ -6,7 +6,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useWatchTogether } from "./WatchTogetherProvider";
 
 /**
- * « Groupe en cours sur un autre appareil — Rejoindre ici » (1.32.0,
+ * « Groupe en cours sur un autre appareil — Rejoindre ici » (1.31.1,
  * adhésion par appareil). Ce compte regarde en groupe AILLEURS ; cet appareil
  * n'en reçoit rien — ni lancement, ni état — et le dit discrètement, une
  * pilule en bas d'écran, masquable pour ce groupe — jamais sur un lecteur,

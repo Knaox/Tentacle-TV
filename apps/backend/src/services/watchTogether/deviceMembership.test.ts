@@ -1,5 +1,5 @@
 /**
- * L'adhésion PAR APPAREIL (1.32.0) — le cas qui l'a fait naître : Damien
+ * L'adhésion PAR APPAREIL (1.31.1) — le cas qui l'a fait naître : Damien
  * regarde en groupe sur ses deux PC avec un ami, puis ouvre le web sur le même
  * compte. Ce web n'est PAS membre : il ne reçoit ni l'état ni le lancement, ce
  * qu'il envoie est refusé, et le fermer ne fait rien quitter à personne. Il

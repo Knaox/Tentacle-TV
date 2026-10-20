@@ -276,7 +276,7 @@ seek. Chacun voit le même chiffre. Un clic saute tout de suite (c'est un
 seek), une croix (`wt:skipIntroDismiss`) éteint le décompte pour tous et
 règle le passage ; rembobiner avant son début le redemande.
 
-**Tous prêts d'abord** (1.32.0, `watchTogether.readyGate`). Une intro au tout
+**Tous prêts d'abord** (1.31.1, `watchTogether.readyGate`). Une intro au tout
 début du titre montrait « Passer l'intro » avant que tous soient arrivés : le
 premier posé sautait seul. À chaque titre lancé, le serveur retient les
 membres qu'il ATTEND (au premier lancement, tous ceux en ligne — ils suivent

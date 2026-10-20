@@ -35,13 +35,13 @@ import type { FamilyProfileColor, FamilyProfileKind, FamilyRights, FamilySwitche
 
 /** Les plateformes où « Qui regarde ? » existe hors des TV — liste FERMÉE :
  *  le serveur refuse toute autre valeur (`family.invalid_input`). Le mobile
- *  (téléphone, tablette) depuis le serveur 1.32.0, capacité
+ *  (téléphone, tablette) depuis le serveur 1.31.1, capacité
  *  `family.mobileProfiles` : les MÊMES routes, les mêmes règles que le bureau
  *  (son hôte, ses sessions de profil — le serveur les appelle `desktopProfile`,
  *  nom interne de « session de profil hors TV »). Le mobile ne lit pas la
  *  politique d'ouverture du bureau (`launchPolicy`) : il retient le profil
  *  choisi sur l'appareil et ne redemande plus. Le WEB (le navigateur) depuis
- *  la 1.32.0, capacité `family.webProfiles` : les mêmes routes, la politique
+ *  la 1.31.1, capacité `family.webProfiles` : les mêmes routes, la politique
  *  d'ouverture des ordinateurs (`launchPolicy`), et le jeton du compte mis en
  *  RÉSERVE par le serveur pendant un profil (cookie httpOnly, jamais lisible
  *  par la page : docs/FAMILLE.md, « Le web »). Un serveur d'avant refuse

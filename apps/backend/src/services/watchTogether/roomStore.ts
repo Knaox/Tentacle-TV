@@ -33,7 +33,7 @@ function newMember(user: UserBasic, now: number): RoomMember {
 // ── Rooms ──
 
 /** Crée un groupe avec `user` comme hôte. Renvoie null si déjà en groupe.
- *  `deviceKey` : l'appareil qui crée — le seul lié au départ (1.32.0). */
+ *  `deviceKey` : l'appareil qui crée — le seul lié au départ (1.31.1). */
 export function createRoom(user: UserBasic, contextItemId: string | null, deviceKey?: string): Room | null {
   if (memberIndex.has(user.userId)) return null;
   const now = Date.now();

@@ -247,7 +247,7 @@ export function getConnectionCount(): number {
   return total;
 }
 
-/** Watch Together (1.32.0) : les seules sockets du compte ouvertes par ces
+/** Watch Together (1.31.1) : les seules sockets du compte ouvertes par ces
  *  APPAREILS (hash de leur jeton) — l'adhésion à une salle est par appareil.
  *  `exceptSocket` : la connexion qui vient d'écrire (relais des refus). */
 export function sendToDevices(
@@ -262,7 +262,7 @@ export function sendToDevices(
   }
 }
 
-/** Watch Together (1.32.0) : les sockets du compte qui n'appartiennent PAS à ces
+/** Watch Together (1.31.1) : les sockets du compte qui n'appartiennent PAS à ces
  *  appareils — l'avis « groupe en cours sur un autre appareil ». */
 export function sendToOtherDevices(userId: string, deviceKeys: ReadonlySet<string> | ReadonlyMap<string, unknown>, msg: WsServerMessage): void {
   const set = connections.get(userId);

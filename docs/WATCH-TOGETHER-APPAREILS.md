@@ -1,4 +1,4 @@
-# Watch Together — l'adhésion PAR APPAREIL (serveur 1.32.0)
+# Watch Together — l'adhésion PAR APPAREIL (serveur 1.31.1)
 
 Capacité `watchTogether.deviceMembership`. Lot « mobile = bureau » du 20/10.
 

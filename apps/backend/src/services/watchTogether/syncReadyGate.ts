@@ -3,7 +3,7 @@ import { isMemberOnline } from "./memberDevices";
 import type { Room } from "./roomTypes";
 
 /**
- * Watch Together — « tous prêts » (1.32.0, `watchTogether.readyGate`).
+ * Watch Together — « tous prêts » (1.31.1, `watchTogether.readyGate`).
  *
  * Le bug : une vidéo qui commence par une intro montrait « Passer l'intro »
  * avant que tous les membres soient arrivés — le premier posé sautait seul,

@@ -1,5 +1,5 @@
 /**
- * « Tous prêts » (1.32.0) : le bug de l'intro — « Passer l'intro » paraissait
+ * « Tous prêts » (1.31.1) : le bug de l'intro — « Passer l'intro » paraissait
  * avant que tous les membres soient arrivés, et le premier posé sautait seul.
  * La salle retient qui elle attend pour le titre ; tant qu'ils ne sont pas
  * posés, `allReady` est faux et une proposition de saut attend. Une barrière

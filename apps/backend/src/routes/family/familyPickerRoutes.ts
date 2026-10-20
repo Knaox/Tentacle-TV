@@ -11,7 +11,7 @@ import { registerFamilyRoute } from "./familyRouting";
  * jamais une session de profil, ni « voir en tant que ». Son jeton désigne
  * l'hôte des sessions de profil de cet appareil (docs/FAMILLE.md, « Le bureau »).
  *
- * Le WEB (plateforme `web`, 1.32.0) : pendant un profil, le navigateur n'a plus
+ * Le WEB (plateforme `web`, 1.31.1) : pendant un profil, le navigateur n'a plus
  * le jeton du compte — ces routes le lisent dans la réserve que le serveur a
  * posée en ouvrant le profil (`accountEscrow.ts`), et le choix d'un profil
  * réécrit les cookies : le profil devient la session (le compte en réserve),

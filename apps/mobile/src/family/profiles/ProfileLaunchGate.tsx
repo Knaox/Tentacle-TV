@@ -22,7 +22,7 @@ function Retained() {
 }
 
 /**
- * « Qui regarde ? » à l'OUVERTURE du mobile (serveur 1.32.0,
+ * « Qui regarde ? » à l'OUVERTURE du mobile (serveur 1.31.1,
  * `family.mobileProfiles`) : plein écran, si la famille compte plus d'une
  * personne et qu'aucun choix retenu ne vaut — puis plus jamais sur cet
  * appareil, sauf si le choix ne vaut plus ou si une session de profil a pris

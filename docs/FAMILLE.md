@@ -419,7 +419,7 @@ Le compte de démonstration n'ouvre que son propre profil ; un compte d'invité
 - La TV LG ne compile rien de tout cela : sa porte est substituée et
   `apps/web/src/profiles/` sort de sa feuille.
 
-## Le mobile et l'iPad : « Qui regarde ? » et le premier lancement (serveur 1.32.0)
+## Le mobile et l'iPad : « Qui regarde ? » et le premier lancement (serveur 1.31.1)
 
 Capacité **`family.mobileProfiles`** : la plateforme `mobile` des routes du
 bureau (`/api/family/picker/*`, `FAMILY_PICKER_PLATFORMS`) — mêmes règles, même
@@ -460,7 +460,7 @@ pas la capacité : ni « Qui regarde ? », ni « Changer de profil », sans erre
 - **« Reproposer le code PIN et la photo »** (`promptsResetAt`) rouvre tout le
   premier lancement au lancement suivant (`honorMobilePromptsReset`) ; sur la
   TV, la barre aussi repasse (`railProfileStore.reopenSetup`).
-## Le web : « Qui regarde ? » dans le navigateur (serveur 1.32.0)
+## Le web : « Qui regarde ? » dans le navigateur (serveur 1.31.1)
 
 Le MÊME code que le bureau (`apps/web/src/profiles/`, `auth/`) ; seuls la
 plateforme, la capacité et la garde du jeton du compte changent, en UN endroit :

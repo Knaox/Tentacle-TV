@@ -1,5 +1,5 @@
 /**
- * L'adhésion par appareil, côté REST (1.32.0) : un appareil = le jeton qui
+ * L'adhésion par appareil, côté REST (1.31.1) : un appareil = le jeton qui
  * appelle. Le compte d'Alice a deux jetons (son PC « pc », son web « web ») :
  * la salle créée depuis le PC n'existe pas pour le web (`GET /group` → null),
  * qui en reçoit l'avis (`/group/elsewhere`), ne peut ni la quitter ni y

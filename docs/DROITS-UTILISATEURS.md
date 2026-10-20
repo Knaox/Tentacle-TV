@@ -1312,7 +1312,7 @@ d'un enfant ouvert sur le téléphone du parent ne liste pas ce que le parent a 
    push sans juger les droits D'AUJOURD'HUI (la cloche filtre à la lecture, l'écran verrouillé
    non) ; une restriction posée depuis la demande la retient désormais.
 2. **Titres gardés avant le retrait d'un droit** : `POST /api/library/visibility` (capacité
-   `offline.verdicts`, 1.32.0, contrat `library/libraryVisibilityContract.ts` en miroir) juge
+   `offline.verdicts`, 1.31.1, contrat `library/libraryVisibilityContract.ts` en miroir) juge
    chaque titre gardé pour l'identité EN SESSION — visible, caché, ou disparu (lisible comme
    avant pour une identité libre ; caché, fermé à l'échec, pour une identité restreinte).
    Ouvert aux sessions de profil (`/api/downloads` leur reste fermé). Le mobile retire un
@@ -1354,7 +1354,7 @@ fermée (page, lecture refusée 403) et la désactivation (session coupée, conn
 le vois pas. »
 
 - **Ce que la session peut faire** : `GET /api/account/abilities` (capacité `account.abilities`,
-  1.32.0, contrat `accountAbilities/accountAbilitiesContract.ts` en miroir), composé par
+  1.31.1, contrat `accountAbilities/accountAbilitiesContract.ts` en miroir), composé par
   `accountAbilitiesOf` des droits que chaque porte applique déjà : administration, lecture, garder
   hors ligne, Watch Together, partage public, suppression, tickets, extensions, compte, jumelage,
   push, invitations — au nom du compte, du PROFIL ou du compte regardé, fermé à l'échec droit par

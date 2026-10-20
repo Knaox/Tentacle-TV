@@ -29,7 +29,7 @@ vi.mock("../services/jwt", () => ({
 }));
 vi.mock("../services/wsManager", () => ({
   sendToUser: (to: string, msg: Sent) => sent.push({ to, msg }),
-  // Adhésion par appareil (1.32.0) : un appareil = le hash du jeton (ici le jeton même).
+  // Adhésion par appareil (1.31.1) : un appareil = le hash du jeton (ici le jeton même).
   sendToDevices: (keys: Iterable<string>, msg: Sent) => { for (const key of keys) sent.push({ to: ownerOf(key), msg }); },
   sendToOtherDevices: () => undefined,
   isUserOnline: () => true,

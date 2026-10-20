@@ -27,7 +27,7 @@ export type StartupOverlayKey =
   | "notices"
   /** L'affiche d'invitation de la Famille. */
   | "family"
-  /** « Qui regarde ? » à l'ouverture (session de profil, serveur 1.32.0). */
+  /** « Qui regarde ? » à l'ouverture (session de profil, serveur 1.31.1). */
   | "profiles"
   /** Les messages envoyés par l'administrateur à cet appareil. */
   | "messages"

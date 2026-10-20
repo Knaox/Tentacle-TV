@@ -21,7 +21,7 @@ import { stopTyping } from "./chatTyping";
 /** Diffuse un message serveur à TOUS les membres de la room (émetteur inclus —
  *  l'écho sert d'accusé de réception côté client). */
 function broadcastToMembers(room: Room, msg: WsServerMessage): void {
-  // Aux appareils liés seulement (1.32.0, adhésion par appareil).
+  // Aux appareils liés seulement (1.31.1, adhésion par appareil).
   sendToRoom(room, msg);
 }
 

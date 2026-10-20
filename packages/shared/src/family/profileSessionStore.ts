@@ -17,7 +17,7 @@ import type { PickerProfileDto } from "./familyPickerContract";
  * - `tentacle_profile_session` : la marque du profil actif (nom, couleur,
  *   rôle), qui dit à l'interface ce qu'elle doit taire.
  *
- * Le WEB (plateforme `web`, 1.32.0) ne garde PAS le jeton du compte : le serveur
+ * Le WEB (plateforme `web`, 1.31.1) ne garde PAS le jeton du compte : le serveur
  * le tient en réserve dans un cookie httpOnly le temps du profil, et le rend
  * derrière SON code (`PickedProfileDto.token`). La réserve de la page ne porte
  * alors que le compte (`tentacle_user`) et la marque `held: "server"`.

@@ -14,7 +14,7 @@ import { wtSrvLog } from "./wtServerLog";
 
 /**
  * Watch Together — la présence : grâce de déconnexion (un F5 ne fait pas
- * quitter), délivrance différée des invitations, et — depuis 1.32.0 —
+ * quitter), délivrance différée des invitations, et — depuis 1.31.1 —
  * l'adhésion PAR APPAREIL : la grâce court par appareil lié ; le dernier
  * appareil parti, le compte quitte la salle. Sorti de `gateway.ts`.
  */

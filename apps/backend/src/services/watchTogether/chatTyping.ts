@@ -6,7 +6,7 @@ import type { Room } from "./roomTypes";
 import { allowChat } from "./chatRate";
 
 /**
- * Watch Together — « X est en train d'écrire… » (1.32.0, `watchTogether.typing`).
+ * Watch Together — « X est en train d'écrire… » (1.31.1, `watchTogether.typing`).
  *
  * Un message de protocole léger : le client dit `typing: true` à la frappe
  * (redit toutes les 2 s tant qu'il tape), puis `false` ; rien au repos. Le

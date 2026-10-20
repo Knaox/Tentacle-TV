@@ -1,5 +1,5 @@
 /**
- * « Qui regarde ? » sur le MOBILE (serveur 1.32.0, capacité `family.mobileProfiles`) :
+ * « Qui regarde ? » sur le MOBILE (serveur 1.31.1, capacité `family.mobileProfiles`) :
  * les routes du bureau sous la plateforme `mobile` — la même famille, une session
  * de profil qui regarde et n'administre rien, son hôte à part (« Mobile » par
  * défaut), le PIN vérifié ici, et un téléphone à côté d'un bureau du même compte.
@@ -50,7 +50,7 @@ const hostsOf = (platform: string) => h.state!.db.data.pairedDevice.filter((row)
 
 describe("le mobile", () => {
   it("le serveur déclare la capacité", () => {
-    expect(SERVER_CAPABILITIES["family.mobileProfiles"]).toBe("1.32.0");
+    expect(SERVER_CAPABILITIES["family.mobileProfiles"]).toBe("1.31.1");
     expect(declaredServerCapabilities()).toContain("family.mobileProfiles");
   });
 

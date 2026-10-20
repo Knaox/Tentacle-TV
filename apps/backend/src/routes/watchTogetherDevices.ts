@@ -13,7 +13,7 @@ import { WT_ACCESS_DENIED, wtMayJoin } from "../services/watchTogether/watchToge
 import { WT_NOT_ELSEWHERE } from "../services/watchTogether/protocol";
 
 /**
- * Watch Together — l'adhésion par appareil, côté REST (1.32.0, capacité
+ * Watch Together — l'adhésion par appareil, côté REST (1.31.1, capacité
  * `watchTogether.deviceMembership`). Montées sous `/api/watch-together` par
  * `watchTogether.ts`, dont elles héritent l'authentification.
  *

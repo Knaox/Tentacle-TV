@@ -52,7 +52,7 @@ export function roomToDto(room: Room): WtRoomStateDto {
 }
 
 /** Diffuse l'état complet de la room à tous ses membres — à leurs appareils
- *  liés seulement (1.32.0) : un autre appareil du compte n'en voit rien. */
+ *  liés seulement (1.31.1) : un autre appareil du compte n'en voit rien. */
 export function broadcastRoom(room: Room, cause: WtStateCause, originUserId: string | null): void {
   sendToRoom(room, { type: "wt:state", state: roomToDto(room), originUserId, cause });
   // Ce que voient les AUTRES appareils des membres : qui, quel titre, quel hôte.

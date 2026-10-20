@@ -5,7 +5,7 @@ import type { WtElsewhereDto } from "./protocol";
 
 /**
  * Watch Together — l'avis « Groupe en cours sur un autre appareil »
- * (1.32.0, adhésion par appareil). Un appareil NON lié d'un compte membre ne
+ * (1.31.1, adhésion par appareil). Un appareil NON lié d'un compte membre ne
  * reçoit rien de la séance ; il apprend seulement qu'elle existe, pour
  * proposer discrètement « Rejoindre ici » (`POST /group/join-here`, qui
  * AJOUTE cet appareil). L'avis part à chaque changement qui le modifie

@@ -7,7 +7,7 @@ import { isDesktopApp } from "../desktop/detect";
  *
  * - le bureau (`desktop`, `family.desktopProfiles`, 1.30.0) garde lui-même le
  *   jeton du compte le temps d'un profil — aucune page tierce ne lit son stockage ;
- * - le navigateur (`web`, `family.webProfiles`, 1.32.0) s'authentifie par
+ * - le navigateur (`web`, `family.webProfiles`, 1.31.1) s'authentifie par
  *   cookie : c'est le SERVEUR qui met le jeton du compte en réserve (httpOnly) et
  *   le rend derrière son code — la page n'en garde jamais de copie, et ses appels
  *   de « Qui regarde ? » partent avec les cookies, sans Bearer. Un serveur d'avant

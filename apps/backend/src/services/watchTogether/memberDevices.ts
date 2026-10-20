@@ -4,7 +4,7 @@ import { WT_GRACE_PERIOD_MS } from "./protocol";
 import type { Room, RoomMember } from "./roomTypes";
 
 /**
- * Watch Together — l'adhésion PAR APPAREIL (1.32.0, `watchTogether.deviceMembership`).
+ * Watch Together — l'adhésion PAR APPAREIL (1.31.1, `watchTogether.deviceMembership`).
  *
  * Un appareil, c'est le hash du jeton qui ouvre sa socket et ses appels REST
  * (le cookie du web, l'`Authorization` du bureau et du mobile) : le serveur le

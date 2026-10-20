@@ -40,7 +40,7 @@ export function broadcastAffinity(
   const state = session ? sessionToDto(session, bumpAffinitySeq(room)) : null;
   const match = extra.match ? matchToDto(extra.match) : null;
   const matchKeys = extra.matchKeys ?? [];
-  // Aux appareils liés de chaque membre (1.32.0) : un autre appareil du compte n'en voit rien.
+  // Aux appareils liés de chaque membre (1.31.1) : un autre appareil du compte n'en voit rien.
   const members = [...room.members.values()];
   const recipients = members.map((member) => member.userId);
   const judged = [...(state?.proposals ?? []), ...(match ? [match] : [])];

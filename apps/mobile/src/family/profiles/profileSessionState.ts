@@ -6,7 +6,7 @@ import { readActiveProfile, subscribeProfileSession } from "./profileSessionCore
 export { accountUserId, notifyProfileSessionChange, personalToken, readActiveProfile } from "./profileSessionCore";
 
 /**
- * La SESSION DE PROFIL du mobile (serveur 1.32.0, `family.mobileProfiles`) —
+ * La SESSION DE PROFIL du mobile (serveur 1.31.1, `family.mobileProfiles`) —
  * l'app ouverte au nom d'un autre profil de la famille que le compte qui s'y
  * est connecté, exactement comme le bureau : mêmes clés, même module pur
  * (`@tentacle-tv/shared` › `family/profileSessionStore.ts`), lus sur le

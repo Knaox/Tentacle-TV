@@ -32,7 +32,7 @@ export interface RoomMember {
    *  fermeture libère l'attente — un compte peut garder un autre socket ouvert
    *  (second onglet) alors que son lecteur est mort. */
   playbackSocket: WebSocket | null;
-  /** Les appareils LIÉS à la salle (hash de leur jeton) — 1.32.0, adhésion par
+  /** Les appareils LIÉS à la salle (hash de leur jeton) — 1.31.1, adhésion par
    *  appareil (`memberDevices.ts`). Vide : comportement d'avant, tout le compte. */
   devices: Map<string, MemberDevice>;
 }

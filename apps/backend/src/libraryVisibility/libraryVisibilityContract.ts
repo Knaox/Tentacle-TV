@@ -1,7 +1,7 @@
 /**
  * Les titres gardés sur l'appareil, jugés par le SERVEUR pour l'identité en
  * session — le compte, ou le profil de la famille ouvert par « Qui regarde ? »
- * (capacité `offline.verdicts`, serveur 1.32.0). Décision de Damien (20/10) :
+ * (capacité `offline.verdicts`, serveur 1.31.1). Décision de Damien (20/10) :
  * les droits s'appliquent partout ; un titre gardé hors ligne AVANT le retrait
  * d'un droit (note maximale, bibliothèque retirée par la famille) ne se lit
  * plus. Le fichier reste sur l'appareil : seul le verdict change, et il revient

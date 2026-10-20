@@ -5,7 +5,7 @@ import { pickerStayState, type PickerStay } from "./familyPickerStay";
 import { isFamilyAvailable } from "./familyClient";
 
 /**
- * « Qui regarde ? » sur le MOBILE (téléphone, tablette ; serveur 1.32.0,
+ * « Qui regarde ? » sur le MOBILE (téléphone, tablette ; serveur 1.31.1,
  * capacité `family.mobileProfiles`) — ce que l'app MONTRE d'après la réponse du
  * serveur. Le serveur décide de tout le reste (profils permis, PIN, session) :
  * les mêmes routes que le bureau, plateforme `mobile`. Module pur :

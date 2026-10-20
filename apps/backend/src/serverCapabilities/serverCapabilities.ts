@@ -193,45 +193,45 @@ export const SERVER_CAPABILITIES = {
    *  n'en reçoit que l'avis `wt:elsewhere` (`GET /api/watch-together/group/elsewhere`) et peut
    *  s'y AJOUTER (`POST /api/watch-together/group/join-here`). Le mobile n'a Watch Together
    *  qu'avec elle : sans elle, téléphone et bureau d'un même compte se marcheraient dessus. */
-  "watchTogether.deviceMembership": "1.32.0",
+  "watchTogether.deviceMembership": "1.31.1",
   /** « Tous prêts » : l'état d'une salle porte `allReady`, et le serveur ignore `wt:skipPropose`
    *  avant — aucun saut de passage (intro, résumé, générique) tant que les membres attendus pour
    *  le titre ne sont pas tous posés. Sans elle, les clients en jugent d'après l'état seul. */
-  "watchTogether.readyGate": "1.32.0",
+  "watchTogether.readyGate": "1.31.1",
   /** « X est en train d'écrire… » dans le chat d'une salle (`wt:typing`, début / fin, éteint
    *  par le serveur après 6 s sans nouvelle, jamais relayé à soi-même). Sans elle, rien n'est
    *  envoyé : un serveur d'avant répondrait `invalid` à chaque frappe. */
-  "watchTogether.typing": "1.32.0",
+  "watchTogether.typing": "1.31.1",
   /** « Qui regarde ? » sur le MOBILE (téléphone, tablette) : la plateforme `mobile` des routes
    *  `/api/family/picker/*` (`FAMILY_PICKER_PLATFORMS`) — profils de la famille, session de
    *  profil de l'appareil, PIN vérifié par le serveur, comme le bureau. Sans elle, le mobile
    *  ne montre ni « Qui regarde ? » ni « Changer de profil ». */
-  "family.mobileProfiles": "1.32.0",
+  "family.mobileProfiles": "1.31.1",
   // ── Lot mobile du 20/10 : les droits s'appliquent partout, sans redémarrage ──
   /** Les droits d'un compte changés (fiche des droits, Famille, tableau de bord de Jellyfin)
    *  s'annoncent à ses appareils : `rights:changed` sur le socket, et le client relit ce qu'il
    *  montre (`useRightsLive`). Sans elle, la fraîcheur des requêtes, comme avant. */
-  "rights.live": "1.32.0",
+  "rights.live": "1.31.1",
   /** Les titres gardés hors ligne jugés par le serveur pour l'identité EN SESSION (compte, ou
    *  profil de la famille) : `POST /api/library/visibility` → visibles, cachés, disparus. Un
    *  titre caché ne se lit plus, même gardé avant le retrait du droit. Sans elle, comme avant. */
-  "offline.verdicts": "1.32.0",
+  "offline.verdicts": "1.31.1",
   /** Ce que la SESSION peut faire, dit par le serveur (`GET /api/account/abilities` : lecture,
    *  hors ligne, Watch Together, partage, suppression, tickets, extensions, compte, jumelage, push,
    *  invitations) : un client ne montre aucun geste que la session n'a pas le droit de faire.
    *  Sans elle, chaque client fait comme avant. */
-  "account.abilities": "1.32.0",
+  "account.abilities": "1.31.1",
   // ── Lot mobile 20/10 : notifications du téléphone synchronisées ──
   /** Une push d'une notification porte son identifiant (`data.notificationId`), la catégorie
    *  `tentacle.notification` (iOS : balayer la bannière = la marquer lue) et la pastille de
    *  l'icône (le nombre de non lues). Le mobile réconcilie alors le centre du système et le
    *  serveur : lue ou balayée n'importe où = lue partout. Sans elle, rien ne se synchronise. */
-  "notifications.pushSync": "1.32.0",
+  "notifications.pushSync": "1.31.1",
   /** « Qui regarde ? » dans le NAVIGATEUR : la plateforme `web` des routes `/api/family/picker/*`,
    *  le jeton du compte mis en réserve par le serveur pendant un profil (cookie httpOnly, rendu
    *  derrière son code PIN), la déconnexion qui coupe tout. Sans elle, le web ne montre ni
    *  « Qui regarde ? » ni « Changer de profil » (un serveur d'avant refuse la plateforme). */
-  "family.webProfiles": "1.32.0",
+  "family.webProfiles": "1.31.1",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

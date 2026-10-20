@@ -34,7 +34,7 @@ const WT_CAUSES: Record<string, ProblemCause> = {
   group_gone: "wtRoomClosed",
   not_member: "wtRoomClosed",
   unknown_title: "wtTitleUnavailable",
-  // Adhésion par appareil (serveur 1.32.0) : rien à rejoindre ici.
+  // Adhésion par appareil (serveur 1.31.1) : rien à rejoindre ici.
   not_elsewhere: "wtRoomClosed",
 };
 

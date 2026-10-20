@@ -68,7 +68,7 @@ export function handleWtMessage(
   }
 
   const room = getRoomOf(user.userId);
-  // Adhésion PAR APPAREIL (1.32.0) : un appareil du compte qui n'est pas lié à
+  // Adhésion PAR APPAREIL (1.31.1) : un appareil du compte qui n'est pas lié à
   // la salle n'y parle pas — pour lui, il n'y a pas de groupe.
   const self = room?.members.get(user.userId);
   if (!room || !self || !isDeviceBound(self, deviceKeyOfSocket(socket))) {
@@ -133,7 +133,7 @@ export function handleWtMessage(
 
   if (msg.type === "wt:skipPropose") {
     const proposer = room.members.get(user.userId)!;
-    // « Tous prêts » (1.32.0) : avant, aucun saut — la proposition attend la porte.
+    // « Tous prêts » (1.31.1) : avant, aucun saut — la proposition attend la porte.
     if (!wtAllReady(room)) {
       const { segmentType, isEpisode, segmentStartTicks, toTicks } = msg;
       deferSkip(room, { userId: user.userId, proposal: { segmentType, isEpisode, segmentStartTicks, toTicks } });

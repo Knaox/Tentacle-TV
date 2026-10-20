@@ -7,7 +7,7 @@ import { isUniqueViolation } from "./familyStore";
 
 /**
  * L'HÔTE de profils d'un appareil hors TV — le bureau, le mobile depuis la
- * 1.32.0 (docs/FAMILLE.md, « Le bureau »). Une ligne `paired_devices` SANS parent, marquée par sa
+ * 1.31.1 (docs/FAMILLE.md, « Le bureau »). Une ligne `paired_devices` SANS parent, marquée par sa
  * plateforme (`platform`), propre à UNE session personnelle de cet appareil :
  * son empreinte est DÉRIVÉE du jeton personnel, sous un préfixe de domaine —
  * jamais l'empreinte d'un jeton qu'une porte reconnaîtrait. Aucun jeton ne

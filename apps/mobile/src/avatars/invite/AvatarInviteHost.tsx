@@ -57,7 +57,7 @@ export function AvatarInviteHost() {
   const due = shouldInviteToAvatars({
     eligible: !covered,
     subjectId: userId,
-    // Session personnelle, ou session de profil (1.32.0) : sa photo passe par le proxy (`ownPhoto`, `avatars.devicePhoto`).
+    // Session personnelle, ou session de profil (1.31.1) : sa photo passe par le proxy (`ownPhoto`, `avatars.devicePhoto`).
     canChangePhoto: !!storage.getItem("tentacle_token"),
     online,
     hasPhoto,

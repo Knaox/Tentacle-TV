@@ -15,7 +15,7 @@ export default {
   pinHide: "Masquer les chiffres",
   // v2 — ce que seul le mobile dit (les mots communs vivent dans `family`).
   memberMayCreate: "Le propriétaire vous permet de créer des invités : vous gérez ceux que vous créez.",
-  /** « Qui regarde ? » sur le mobile et l'iPad (serveur 1.32.0, `family.mobileProfiles`). */
+  /** « Qui regarde ? » sur le mobile et l'iPad (serveur 1.31.1, `family.mobileProfiles`). */
   launch: {
     caption: "Cet appareil retiendra votre choix. Pour changer de profil : Réglages › Compte.",
     switchCaption: "Le profil choisi s'ouvre sur cet appareil, et y reste jusqu'au prochain changement.",

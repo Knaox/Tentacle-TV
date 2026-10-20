@@ -125,7 +125,7 @@ export interface WtRoomStateDto {
   waitCause?: WtWaitCause;
   /** Saut de passage armé (décompte serveur) — absent quand il n'y en a pas. */
   pendingSkip?: WtPendingSkipDto;
-  /** « Tous prêts » (1.32.0, `watchTogether.readyGate`) : les membres attendus
+  /** « Tous prêts » (1.31.1, `watchTogether.readyGate`) : les membres attendus
    *  pour le titre sont tous posés (ou le délai est passé) et aucune barrière
    *  n'est ouverte. Faux : aucun saut de passage, ni bouton ni décompte.
    *  Absent : serveur d'avant, ou salle sans titre — le client en juge seul. */
@@ -220,7 +220,7 @@ export type WtClientMessage =
   | { type: "wt:reaction"; emoji: string }
   /** GIF éphémère (URL tinygif Klipy, allowlist d'hôtes côté serveur — jamais stocké). */
   | { type: "wt:gif"; url: string; w?: number; h?: number }
-  /** « Est en train d'écrire » (1.32.0, `watchTogether.typing`) : début, redit
+  /** « Est en train d'écrire » (1.31.1, `watchTogether.typing`) : début, redit
    *  toutes les 2 s tant qu'on tape, puis fin — rien au repos. */
   | { type: "wt:typing"; typing: boolean };
 
@@ -268,7 +268,7 @@ export type WtServerMessage =
   /** Séance d'affinité (swipe de groupe) — voir `watchTogetherAffinity.ts`.
    *  Un client d'avant l'ignore : message inconnu. */
   | WtAffinityMessage
-  /** Adhésion par appareil (1.32.0) : la salle du compte, dite aux appareils
+  /** Adhésion par appareil (1.31.1) : la salle du compte, dite aux appareils
    *  qui n'y sont pas liés. Un client d'avant l'ignore : message inconnu. */
   | WtElsewhereMessage;
 

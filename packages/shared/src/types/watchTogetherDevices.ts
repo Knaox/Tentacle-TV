@@ -1,5 +1,5 @@
 /**
- * Watch Together — l'adhésion PAR APPAREIL (serveur 1.32.0, capacité
+ * Watch Together — l'adhésion PAR APPAREIL (serveur 1.31.1, capacité
  * `watchTogether.deviceMembership`).
  *
  * Un compte membre d'une salle n'y entre plus avec TOUS ses appareils : seuls

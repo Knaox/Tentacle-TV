@@ -23,7 +23,7 @@ export interface WatchTogetherContextValue {
    *  `mayCreate` faux = rien qui crée un salon ni invite (cf. useWatchTogetherAccess). */
   mayJoin: boolean;
   mayCreate: boolean;
-  /** Adhésion par appareil (1.32.0) : la salle du compte vue d'ICI quand cet
+  /** Adhésion par appareil (1.31.1) : la salle du compte vue d'ICI quand cet
    *  appareil n'y est pas lié — « Groupe en cours sur un autre appareil ».
    *  `null` : il y est, ou il n'y en a pas, ou le serveur ne le sait pas. */
   elsewhere: WtElsewhereDto | null;

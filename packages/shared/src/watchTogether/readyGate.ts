@@ -11,7 +11,7 @@ import type { WtRoomStateDto } from "../types/watchTogether";
  * de SALLE : le clic est un `wt:seek` (barrière : tous se calent, tous
  * repartent ensemble), le saut automatique un décompte armé par le serveur.
  *
- * Le serveur 1.32.0 le dit (`allReady`, capacité `watchTogether.readyGate`) :
+ * Le serveur 1.31.1 le dit (`allReady`, capacité `watchTogether.readyGate`) :
  * il sait QUI la salle attend pour le titre, y compris ceux qui ne sont pas
  * encore arrivés sur la page de lecture. Face à un serveur d'avant, le client
  * en juge d'après l'état seul (`wtRoomAllReadyLocally`) — moins fin : un
