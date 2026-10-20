@@ -191,6 +191,16 @@ h2 small{font-size:13px;color:var(--ink2);font-weight:500;margin-left:8px}
 .notif b{font-size:12px}
 .notif p{font-size:11px;color:var(--t2);line-height:1.35}
 .notif small{color:var(--t3);font-size:10px;margin-left:auto}
+.pchip{display:flex;align-items:center;gap:6px;height:32px;padding:0 9px 0 3px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid var(--b3);font-weight:700;font-size:13px}
+.pchip .av{width:26px;height:26px;font-size:11px}
+.pchip .ic{font-size:13px;color:var(--t2);transform:rotate(90deg)}
+.ptiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 8px;margin:14px 0 6px}
+.ptiles div{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;font-weight:600;text-align:center}
+.ptiles .av{width:70px;height:70px;border-radius:20px;font-size:26px}
+.ptiles .cur .av{outline:2.5px solid var(--violet);outline-offset:2px}
+.ptiles small{font-size:9.5px;color:#C4B5FD;font-weight:600;margin-top:-3px}
+.ptiles .ck{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;background:var(--violet);border:2px solid #111018;display:grid;place-items:center;font-size:11px}
+.toast{position:absolute;left:16px;right:16px;bottom:86px;z-index:26;border-radius:14px;background:rgba(30,28,38,.95);border:1px solid var(--b3);padding:10px 12px;display:flex;gap:9px;align-items:center;font-size:11.5px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 /* L'iPad (1180 × 820 pt, échelle 0,64) */
 .ipad{position:relative;width:760px;max-width:100%;aspect-ratio:1180/820;border-radius:30px;border:9px solid #1d1b24;box-shadow:0 0 0 1px #2c2935,0 30px 60px -20px rgba(0,0,0,.8);background:var(--s0);overflow:hidden;font-size:12px;color:var(--t1)}
 .ipad .sb{height:26px;padding:0 20px;font-size:11px}
@@ -245,7 +255,7 @@ h2 small{font-size:13px;color:var(--ink2);font-weight:500;margin-left:8px}
 
 <header class="top"><nav aria-label="Chapitres">
   <a href="#portee">Compte / Cet appareil</a><a href="#reglages">Réglages (téléphone)</a><a href="#ipad">Réglages (iPad)</a>
-  <a href="#premier">Premier lancement</a><a href="#version">Nouvelle version</a><a href="#wt">Watch Together</a>
+  <a href="#premier">Premier lancement</a><a href="#profil">Changer de profil</a><a href="#version">Nouvelle version</a><a href="#wt">Watch Together</a>
   <a href="#reco">Pour vous · Affiner</a><a href="#decisions">Décisions</a>
 </nav></header>
 
@@ -588,6 +598,91 @@ h2 small{font-size:13px;color:var(--ink2);font-weight:500;margin-left:8px}
   </div>
 </section>
 
+<!-- ═══════════════ CHANGER DE PROFIL ═══════════════ -->
+<section class="ch" id="profil">
+  <h2>Changer de profil, en un geste <small>demande de Damien du 20/10</small></h2>
+  <p class="intro">On touche son nom, et les autres profils sont là. Le profil actif est toujours visible en haut de l'écran, avec son chevron : on comprend sans explication que c'est là qu'on en change. Une feuille, pas une page : on reste où l'on était, et la bascule se fait sur place.</p>
+  <div class="board">
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg"><b>Dark</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster"></div></div></div>
+        <div class="tb"><div class="on"><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>1 · Le nom, en haut, partout</b>À côté du logo, la puce du profil actif : sa photo, son prénom, un chevron. Sur tous les onglets. Elle n'apparaît que si la famille compte au moins deux profils et que le serveur sait ouvrir un profil sur mobile.<span class="why">« je clique sur mon nom et bam » : le nom est le bouton, il n'y a rien à chercher.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg"><b>Dark</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster"></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet" style="top:250px">
+          <div style="text-align:center"><b style="font-size:16px">Changer de profil</b><p style="color:var(--t3);font-size:11px;margin-top:2px">Qui regarde ?</p></div>
+          <div class="ptiles">
+            <div class="cur"><div class="av a1" style="position:relative">D<span class="ck"><svg class="ic"><use href="#check"/></svg></span></div>Damien<small>Profil actuel</small></div>
+            <div><div class="av a2">C</div>Camille</div>
+            <div><div class="av a3">L</div>Léo</div>
+            <div><div class="av a4" style="position:relative">I<span class="lk" style="position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;background:#1d1b24;border:2px solid #111018;display:grid;place-items:center;font-size:10px;color:var(--t2)"><svg class="ic"><use href="#lock"/></svg></span></div>Invité</div>
+            <div><div class="av a5">M</div>Maman</div>
+          </div>
+          <div class="btn ghost" style="font-size:12px;margin-top:6px"><svg class="ic"><use href="#sliders"/></svg>Gérer les profils</div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>2 · La feuille « Changer de profil »</b>Titre explicite, tous les profils en grandes tuiles, l'actuel coché et dit « Profil actuel », un cadenas sur ceux qui ont un code. Un toucher sur une tuile change de profil. « Gérer les profils » en pied, seulement depuis la session personnelle.<span class="why">un seul geste de plus que d'ouvrir l'app ; on la ferme d'un glisser vers le bas.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg"><b>Dark</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p3"></div><div class="poster p2"></div><div class="poster"></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet" style="top:150px;text-align:center">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="color:#C4B5FD;font-size:12px;display:flex;align-items:center"><svg class="ic"><use href="#back"/></svg>Profils</span><b style="font-size:14px">Invité</b><span style="width:48px"></span></div>
+          <div class="av xl a4" style="margin:14px auto 8px;width:64px;height:64px;font-size:24px;border-radius:19px">I</div>
+          <div style="color:var(--t3);font-size:11px">Entrez le code PIN de ce profil</div>
+          <div class="pin" style="margin:12px 0 16px"><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div>
+          <div class="pad" style="grid-template-columns:repeat(3,54px);gap:9px 18px"><span style="height:54px">1</span><span style="height:54px">2</span><span style="height:54px">3</span><span style="height:54px">4</span><span style="height:54px">5</span><span style="height:54px">6</span><span style="height:54px">7</span><span style="height:54px">8</span><span style="height:54px">9</span><span class="n" style="height:54px"></span><span style="height:54px">0</span><span class="n" style="height:54px"><svg class="ic"><use href="#del"/></svg></span></div>
+        </div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>3 · Un profil protégé</b>Le pavé s'ouvre DANS la feuille, avec « ‹ Profils » pour revenir. Le serveur vérifie le code, comme partout.<span class="why">pas de page qui s'empile : on ne se perd pas en route.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a2">C</div>Camille<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll"><div class="heroimg" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.85)),linear-gradient(120deg,#0c4a6e,#3730a3 60%,#1e1b4b)"><b>Bluey</b><span>Série · 3 saisons</span></div><div class="rowh">Reprendre</div><div class="rail"><div class="poster p5"></div><div class="poster p4"></div><div class="poster p3"></div></div></div>
+        <div class="toast"><div class="av s a2" style="width:26px;height:26px;font-size:11px">C</div><span style="flex:1">Vous regardez sur le profil de <b>Camille</b></span></div>
+        <div class="tb"><div class="on"><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>4 · C'est fait</b>La feuille se ferme, l'accueil se recharge pour Camille, un message bref le dit. La puce affiche désormais Camille : on sait toujours sur quel profil on est.<span class="why">changer de profil sans le voir changer, c'est douter.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="island"></div><div class="sb"><span>21:41</span><span>●●● 5G</span></div>
+        <div class="hd"><div class="brand"><div class="logo"></div><div class="pchip"><div class="av s a1">D</div>Damien<svg class="ic"><use href="#chev"/></svg></div></div><div class="acts"><svg class="ic"><use href="#grid"/></svg><svg class="ic"><use href="#search"/></svg><svg class="ic"><use href="#bell"/></svg></div></div>
+        <div class="scroll">
+          <div class="me" style="flex-direction:column;align-items:stretch;gap:10px"><div style="display:flex;align-items:center;gap:12px"><div class="av a1">D</div><div style="flex:1"><b style="font-size:14px">Damien</b><div style="color:var(--t3);font-size:10.5px">tentacle.maison.fr · propriétaire</div></div></div><div class="btn alt" style="height:38px;font-size:12px"><svg class="ic"><use href="#users"/></svg>Changer de profil</div></div>
+          <div class="grp" style="margin-top:12px">
+            <div class="row"><div class="tile"><svg class="ic"><use href="#user"/></svg></div><div class="lbl"><b>Compte</b><span>Photo, mot de passe, Famille</span></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#play"/></svg></div><div class="lbl"><b>Lecture et apparence</b></div><svg class="ic chev"><use href="#chev"/></svg></div>
+            <div class="row"><div class="tile"><svg class="ic"><use href="#tv"/></svg></div><div class="lbl"><b>TV et appareils</b></div><svg class="ic chev"><use href="#chev"/></svg></div>
+          </div>
+        </div>
+        <div class="tb"><div><svg class="ic"><use href="#home"/></svg>Accueil</div><div><svg class="ic"><use href="#spark"/></svg>Pour vous</div><div><svg class="ic"><use href="#film"/></svg>Bibliothèque</div><div class="on"><svg class="ic"><use href="#user"/></svg>Profil</div></div>
+        <div class="home-ind"></div>
+      </div></div>
+      <div class="note"><b>5 · Aussi dans l'onglet Profil</b>Sous son nom, un bouton « Changer de profil » ouvre la MÊME feuille. Deux portes, un seul écran.<span class="why">c'est là qu'on le cherche quand on n'a pas vu la puce.</span></div>
+    </div>
+  </div>
+  <div class="decision"><b>Cas limites</b> — hors ligne : la pastille hors ligne garde sa place et la puce s'efface (changer de profil passe par le serveur). Économie de données active : la puce se réduit à la photo et au chevron, la pastille reste. Famille d'un seul profil, ou serveur qui ne sait pas ouvrir un profil sur mobile : ni puce ni bouton, l'en-tête d'avant. Lecteurs d'écran : « Changer de profil, profil actuel : Damien ».</div>
+</section>
+
 <!-- ═══════════════ NOUVELLE VERSION ═══════════════ -->
 <section class="ch" id="version">
   <h2>Une nouvelle version de l'app <small>proposition — pas une entrée de la cloche</small></h2>
@@ -808,6 +903,7 @@ h2 small{font-size:13px;color:var(--ink2);font-weight:500;margin-left:8px}
     <li><b>Le libellé reste « Affiner »</b> (pas « Affinité ») : « Affinité », c'est la recherche à plusieurs de Watch Together (« Trouver quoi regarder ») ; deux mots proches pour deux fonctions auraient semé le doute.</li>
     <li><b>Piste A retenue</b> pour « Pour vous · Affiner » ; B écartée pour le conflit de gestes avec la pile, C parce qu'elle cache « Affiner ».</li>
     <li><b>Structure des réglages</b> : celle de la session reglages, sans écart (« Changer de serveur », Invitations, Sessions et « Vider le cache » rangés dans Compte › Serveur ; langue de l'interface côté Compte).</li>
+    <li><b>Changer de profil</b> (consigne de Damien, 20/10) : la puce du profil actif dans l'en-tête de tous les onglets, un toucher → la feuille « Changer de profil », PIN dans la feuille ; aussi un bouton dans l'onglet Profil. Sur mobile, cela remplace la règle du bureau « jamais la liste des profils dans le menu ».</li>
     <li><b>Vouvoiement</b> dans tous les textes de l'app, comme partout ailleurs ; la pastille de portée se pose sous le libellé de CHAQUE réglage, jamais dans un en-tête de section.</li>
     <li><b>Nouvelle version</b> : pas d'entrée de la cloche (le serveur n'en écrit pas) ; proposée ici comme bandeau de l'app + écran « Les nouveautés » sur le modèle du bureau. Non codé cette nuit : à confirmer.</li>
     <li><b>Maquettes en HTML seul</b>, sans image externe : avatars et affiches sont des aplats dessinés, la page s'ouvre hors ligne.</li>
