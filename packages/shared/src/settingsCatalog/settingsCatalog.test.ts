@@ -24,11 +24,11 @@ const ALL_CAPS = new Set(["playback.stillWatching", "reco.trending"] as const);
 const user: ProfileContext = {
   platform: "mobile", capabilities: new Set(),
   offline: false, isAdmin: false, offlineVisible: false, canGoOffline: false, family: false, canSwitchProfile: false,
-  liquidGlass: false, advancedEngine: false, engineOptions: false, profileSession: false,
+  liquidGlass: false, advancedEngine: false, engineOptions: false, liveTransfers: false, profileSession: false,
 };
 const full: ProfileContext = {
   ...user, isAdmin: true, offlineVisible: true, canGoOffline: true, family: true, canSwitchProfile: true,
-  liquidGlass: true, advancedEngine: true, engineOptions: true, capabilities: ALL_CAPS,
+  liquidGlass: true, advancedEngine: true, engineOptions: true, liveTransfers: true, capabilities: ALL_CAPS,
 };
 const web: ProfileContext = { ...full, platform: "web", liquidGlass: false, advancedEngine: false, engineOptions: false };
 const offline: ProfileContext = { ...full, offline: true };
@@ -64,7 +64,9 @@ describe("catalogue des réglages", () => {
 
   it("hors ligne, il ne reste que ce qui vit sur l'appareil", () => {
     expect(visibleSections(offline).map((s) => s.id)).toEqual(["playback", "offline", "help"]);
-    expect(ids(section("offline"), offline)).toEqual(["offlineTitles", "offlineSettings"]);
+    expect(ids(section("offline"), offline)).toEqual([
+      "offlineTitles", "offlineSpace", "wifiOnly", "backgroundTransfers", "notifyReady", "liveTransfers", "removeAllOffline",
+    ]);
     expect(ids(section("help"), offline)).toEqual(["about", "privacyPolicy", "advancedOnDesktop"]);
     expect(ids(section("playback"), offline)).not.toContain("personalization");
     expect(ids(section("playback"), offline)).not.toContain("trendingNow");
@@ -119,6 +121,13 @@ describe("catalogue des réglages", () => {
     expect(resolveSection(null, user)).toBe("account");
     expect(resolveSection("devices", user)).toBe("devices");
     expect(resolveSection("devices", offline)).toBe("playback");
+  });
+});
+
+describe("hors ligne", () => {
+  it("le suivi en direct n'existe que là où l'appareil sait le montrer", () => {
+    expect(ids(section("offline"), { ...full, liveTransfers: false })).not.toContain("liveTransfers");
+    expect(ids(section("offline"), full).indexOf("liveTransfers")).toBe(ids(section("offline"), full).indexOf("notifyReady") + 1);
   });
 });
 

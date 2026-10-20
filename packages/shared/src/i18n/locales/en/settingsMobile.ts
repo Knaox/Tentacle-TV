@@ -70,6 +70,10 @@ export default {
     subtitleSizeHint: "Advanced player; 160% by default",
     subtitlePositionHint: "100% = at the very bottom of the picture",
   },
+  offline: {
+    liveTransfers: "Live progress",
+    liveTransfersHint: "Time remaining on the lock screen during a transfer",
+  },
   advanced: {
     row: "Advanced settings: in the desktop app",
     rowHint: "Delays, credits, next episode in detail…",

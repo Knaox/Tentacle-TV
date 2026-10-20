@@ -1,17 +1,17 @@
 import { Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { OnDeviceSettingsPane } from "@/screens/settings/OnDeviceSettingsScreen";
+import { OfflineSpaceBlock } from "@/components/settings/controls/OfflineRows";
 import { spacing, typography, useThemedStyles, type AppTheme } from "@/theme";
 import type { SettingsBlockId } from "@tentacle-tv/shared";
 
 /**
  * Un BLOC de la structure, posé hors carte : la phrase de portée en tête des
- * pages mixtes, ou un contenu qui a déjà ses cartes (les réglages hors ligne).
+ * pages mixtes, ou un contenu qui a déjà sa carte (la jauge de l'espace hors ligne).
  */
 export function ProfileBlock({ id }: { id: SettingsBlockId }) {
   switch (id) {
     case "scopeIntro": return <ScopeIntro />;
-    case "offlineSettings": return <OnDeviceSettingsPane />;
+    case "offlineSpace": return <OfflineSpaceBlock />;
   }
 }
 

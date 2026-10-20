@@ -3,6 +3,7 @@ import { useRouter, type Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { SettingsRow, type SettingsIcon } from "@/components/settings";
+import { RemoveAllOfflineRow } from "@/components/settings/controls/OfflineRows";
 import { useOfflineActivity } from "@/hooks/offline/useOfflineList";
 import { setManualOffline } from "@/offline/connectivityStore";
 import { spacing, useTheme } from "@/theme";
@@ -97,6 +98,8 @@ function ActionRow({ entry, last }: { entry: SettingsActionEntry; last: boolean 
       return <SettingsRow {...common} description={actions.serverUrl || undefined} chevron onPress={actions.handleChangeServer} />;
     case "goOffline":
       return <SettingsRow {...common} description={t("offline:goOfflineHint")} onPress={() => setManualOffline(true)} />;
+    case "removeAllOffline":
+      return <RemoveAllOfflineRow last={last} />;
     case "clearCache":
       return <SettingsRow {...common} onPress={actions.handleClearCache} />;
     case "deleteAccount":
