@@ -1,13 +1,16 @@
 /**
  * Hooks d'état des téléchargements (desktop uniquement — inertes ailleurs).
  * - liste par utilisateur, état par item (badges/boutons de fiche), espace ;
- * - visibilité de la fonctionnalité : droits (capabilities) OU contenu local
- *   existant (décision « droit retiré → l'existant reste lisible ») ; un
- *   compte sans droit ET sans contenu ne voit RIEN.
+ * - visibilité de la fonctionnalité : le hors ligne appartient au COMPTE de
+ *   l'appareil (`offline-core` › `offlineSurfaceOf`, la règle du mobile) —
+ *   rien pendant une session de profil, rien pour un compte à qui le serveur
+ *   refuse `keepOffline` (les fichiers restent : le droit revenu, tout
+ *   reparaît) ; serveur d'avant : les capacités OU le contenu, comme avant.
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { mayShow, useAccountAbilities, useUserId } from "@tentacle-tv/api-client";
+import { useUserId } from "@tentacle-tv/api-client";
+import { offlineSurfaceOf } from "@tentacle-tv/offline-core";
 import { supportsDownloads } from "../desktop/bridge";
 import { getDiskFree, getDiskUsage, listDownloads, downloadStateForItem, type DownloadEntry } from "./api";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
@@ -15,6 +18,7 @@ import { LOCAL_QUERY } from "@tentacle-tv/offline-core/react";
 
 import { DISK_INFO_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DOWNLOADS_LIST_QUERY_KEY } from "./queryKeys";
 import { useActiveProfile } from "../auth/profileSession";
+import { useAccountKeepRight } from "../offline/offlineOwner";
 
 export { DISK_INFO_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DOWNLOADS_LIST_QUERY_KEY };
 
@@ -83,32 +87,25 @@ export interface DownloadsVisibility {
 }
 
 /**
- * LE commutateur d'invisibilité :
- * - jamais de droit ET aucun contenu → rien n'est rendu, nulle part ;
- * - droit retiré mais contenu présent → l'écran Téléchargements et la lecture
- *   restent, AUCUN bouton de téléchargement (canDownload=false) ;
- * - hors ligne → droits depuis la photo locale (capabilities en cache).
+ * LE commutateur d'invisibilité (`offlineSurfaceOf`) :
+ * - session d'un PROFIL : rien, nulle part — le contenu gardé et le hors ligne
+ *   sont ceux du compte de l'appareil ;
+ * - compte à qui le serveur refuse `keepOffline` : rien (dernier mot retenu
+ *   hors ligne) ;
+ * - droit jamais su (hors ligne d'emblée) : le contenu déjà là, sans bouton ;
+ * - hors ligne → capacités depuis la photo locale (capabilities en cache).
  */
 export function useDownloadsVisibility(): DownloadsVisibility {
   const { capabilities } = useDownloadCapabilities();
   const list = useDownloadsList();
-  const hasContent = list.length > 0;
-  // Bureau, session d'un PROFIL : le contenu gardé et le hors ligne sont ceux
-  // du compte, connecté ou non — le serveur refuse les téléchargements à un
-  // profil, l'interface n'en montre aucune trace.
   const profileSession = useActiveProfile() !== null;
-  // Ce que le serveur dit de la SESSION (`account.abilities`, relu à
-  // `rights:changed`) : sans `keepOffline`, plus aucun bouton — le contenu
-  // déjà gardé reste lisible.
-  const mayKeep = mayShow(useAccountAbilities(), "keepOffline");
-  if (!supportsDownloads() || profileSession) {
-    return { visible: false, canDownload: false, canLight: false, hasContent: false };
-  }
-  const canDownload = capabilities.downloads && mayKeep;
+  const keepRight = useAccountKeepRight(profileSession);
+  if (!supportsDownloads()) return { visible: false, canDownload: false, canLight: false, hasContent: false };
+  const surface = offlineSurfaceOf({ profileSession, keepRight, engineCanKeep: capabilities.downloads, hasContent: list.length > 0 });
   return {
-    visible: canDownload || hasContent,
-    canDownload,
-    canLight: capabilities.lightDownloads && mayKeep,
-    hasContent,
+    visible: surface.visible,
+    canDownload: surface.canKeep,
+    canLight: surface.canKeep && capabilities.lightDownloads,
+    hasContent: surface.visible && list.length > 0,
   };
 }
