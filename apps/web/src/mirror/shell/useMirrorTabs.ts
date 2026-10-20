@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { useVisiblePlugins } from "../../rights/useVisiblePlugins";
 import { Film, House, Puzzle, Smartphone, Sparkles, User, type LucideIcon } from "lucide-react";
 import { lucideIconFor, resolvePluginLabel } from "../../components/lucideIcon";
 import { useOfflineMode } from "../../offline/useOfflineMode";
@@ -37,7 +37,8 @@ export interface MirrorTab {
 }
 
 export function useExtensionPlugins(): ExtensionPlugin[] {
-  const plugins = useActivePluginsMeta();
+  // Les extensions que la session a le droit de voir (`extensions` de account.abilities).
+  const plugins = useVisiblePlugins();
   const { i18n } = useTranslation();
   return useMemo(() => {
     const out: ExtensionPlugin[] = [];
