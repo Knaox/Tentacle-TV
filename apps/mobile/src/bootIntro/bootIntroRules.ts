@@ -3,17 +3,18 @@
  * (`@tentacle-tv/shared/brandIntro` : quand la jouer, quand partir). Module
  * PUR (ni React Native ni Expo) : testé sous vitest.
  */
-import { decideBootIntro, type BootIntroPlan } from "@tentacle-tv/shared/brandIntro";
+import { decideBootIntro, type BootIntroPlan, type BootScreenState } from "@tentacle-tv/shared/brandIntro";
 import type { BootIntroSettings } from "./bootIntroSettings";
 
 /**
  * Les écrans du mobile qui disent EUX-MÊMES quand ils sont prêts (leurs
  * données arrivent), par leur chemin expo-router : l'accueil, montré d'un bloc
  * (`HomeScreen`). Tout autre premier écran (connexion, choix du serveur,
- * accueil hors ligne, une fiche, « Qui regarde ? » — monté une fois sa liste
- * arrivée) est prêt dès qu'il est monté.
+ * accueil hors ligne, une fiche) est prêt dès qu'il est monté. « Qui
+ * regarde ? » et le premier lancement le sont quand l'écran qu'ils CACHENT
+ * l'est (`overlayScreenState`).
  */
-export const MOBILE_BOOT_SELF_REPORTING: readonly string[] = ["/"];
+export const MOBILE_BOOT_SELF_REPORTING: readonly string[] = ["/", "overlay:profiles", "overlay:firstRun"];
 
 /**
  * Les recouvrements du démarrage qui REMPLACENT le premier écran (plein écran,
@@ -30,6 +31,24 @@ const BLOCKING: readonly BootFirstScreenOverlay[] = ["migration", "access"];
 
 /** Le nom de route que l'ouverture regarde quand un recouvrement est le premier écran. */
 export const overlayBootRoute = (overlay: BootFirstScreenOverlay): string => `overlay:${overlay}`;
+
+/**
+ * Où en est un recouvrement non bloquant (« Qui regarde ? », premier
+ * lancement) pour l'ouverture : où en est l'écran qu'il CACHE. Monté sous lui,
+ * l'accueil du compte charge quand même ; plonger avant qu'il soit posé, c'est
+ * laisser son gros montage tomber EN PLEINE PLONGÉE — le fil d'interface s'y
+ * fige et la plongée saute (constat de testeur-mobile, 21/10 : une image
+ * d'écran allumé, puis « Qui regarde ? » plein écran). Un écran qui ne dit
+ * rien de lui-même est posé dès qu'il est monté.
+ */
+export function overlayScreenState(
+  beneath: string | null | undefined,
+  screens: Readonly<Record<string, BootScreenState>>,
+): BootScreenState | null {
+  if (!beneath) return null;
+  if (!MOBILE_BOOT_SELF_REPORTING.includes(beneath)) return "ready";
+  return screens[beneath] ?? null;
+}
 
 export interface MobileArrivalInput {
   /** Le stockage est relu et les polices chargées : la navigation est montée. */
