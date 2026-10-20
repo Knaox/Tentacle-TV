@@ -94,10 +94,10 @@ describe("familyEntryShown — l'entrée « Famille » des réglages", () => {
     expect(familyEntryShown(overview({ ...closed, family: family("member") }), NOW)).toBe(true);
   });
 
-  it("sans famille et rien de permis : non — sauf une invitation reçue encore valable", () => {
+  it("sans famille et rien de permis : non, même avec une invitation reçue (les familles coupées, le serveur la refuserait)", () => {
     expect(familyEntryShown(overview(closed), NOW)).toBe(false);
     expect(familyEntryShown(overview({ ...closed, incoming: [invitation(NOW - 1)] }), NOW)).toBe(false);
-    expect(familyEntryShown(overview({ ...closed, incoming: [invitation(NOW + 60_000)] }), NOW)).toBe(true);
+    expect(familyEntryShown(overview({ ...closed, incoming: [invitation(NOW + 60_000)] }), NOW)).toBe(false);
   });
 
   it("sans famille, la fonder permis : oui", () => {
