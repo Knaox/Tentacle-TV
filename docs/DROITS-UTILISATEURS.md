@@ -1341,6 +1341,12 @@ inviter, PIN, photo, accepter / refuser, retirer, quitter, dissoudre.
 
 `bench:parental` passe aussi l'invité ouvert par « Qui regarde ? » du bureau ou du mobile
 (`PARENTAL_PICKER_PLATFORM`) et les requêtes propres au mobile (`probesMobile.ts`).
+Relevé du 2026-10-20 (Jellyfin 10.11 jetable, TMDB réel, Vigie absente, porte « Qui regarde ? »
+du bureau) : **3 147 vérifications, aucune fuite** — dont, pour chaque porte restreinte, 17 titres
+interdits jamais jugés lisibles par le verdict des titres gardés (les permis le restent), ce que
+chaque session peut faire, les droits d'administration retirés qui disparaissent, la plage
+fermée (page, lecture refusée 403) et la désactivation (session coupée, connexion refusée
+`account_disabled`).
 
 ### 9.10.5 Tous les droits, pas seulement la Famille (demande de Damien, 20/10)
 
