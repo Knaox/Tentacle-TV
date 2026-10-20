@@ -103,6 +103,17 @@ gestes de l'utilisateur ; `notifySeek(s, { explicit: true })` sur la barre ;
   de ses seeks plus anciens (ni recalage, ni intent soldé) ; regroupement
   150 ms ; le serveur ignore un seek plus ancien du même appareil. Huit
   « +30 s » en une seconde : +240 s pour tous.
+- **« Je cale » pendant une barrière (M1)** : la confirmation du lecteur se
+  remet à zéro (partagée entre les parties du moteur) ; son « prêt » suivant,
+  s'il est posé sur la cible, part avec l'identifiant — la salle ne reste plus
+  gelée jusqu'au délai après un saut automatique.
+- **Anti-gel sans personne (M4)** : un balayage qui laisse la salle sans aucun
+  membre en lecture ne la relance pas — pause « user » à la position gelée.
+- **Recalage dur en transcodage** : aucun nouveau seek dur tant que le
+  précédent n'a pas fait REPARTIR la lecture (5 s au plus,
+  `hardSeekProgress`) ; la latence mesurée court jusqu'à la reprise.
+- **Invitations** : `wt:inviteGone` à tous les appareils du compte quand une
+  invitation reçoit sa réponse.
 
 ## Le chat interactif (20/10)
 
