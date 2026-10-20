@@ -83,6 +83,8 @@ export interface EngineSurfaceProps {
   title: string;
   artist: string;
   paused: boolean;
+  /** Vitesse de lecture (1 par défaut) : le rattrapage doux de Watch Together (0,95 → 1,05). */
+  rate?: number;
   videoReady: boolean;
   currentTime: number;
   /** VTT dessiné par l'overlay du lecteur natif ; le lecteur avancé rend ses sous-titres lui-même. */
