@@ -266,5 +266,8 @@ export default {
     quality: "Qualité",
     nowPlaying: "En cours",
     episodesTitle: "Épisodes",
+    trackDefault: "Par défaut",
+    trackForced: "Forcé",
+    trackExternal: "Externe",
   },
 } as const;

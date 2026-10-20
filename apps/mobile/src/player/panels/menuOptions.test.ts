@@ -9,17 +9,28 @@ const presets: QualityPreset[] = [
 ];
 const source = { resolution: "4K" as const, isHDR: true, isDolbyVision: true, isDolbyAtmos: true };
 const label = (key: string) => key;
+const words = { default: "Par défaut", forced: "Forcé", external: "Externe" };
 
 describe("options des menus du lecteur", () => {
-  it("une piste : le nom en titre, langue et format en détail", () => {
-    const option = trackOption({ index: 2, label: "Français - Dolby Digital 5.1 - AC3" }, 2);
+  it("une piste : la langue en titre, format et drapeaux lisibles en détail", () => {
+    const option = trackOption({ index: 2, label: "English - SUBRIP - External" }, 2, words);
     expect(option.selected).toBe(true);
-    expect(option.title).not.toContain("AC3");
-    expect(option.detail).toContain("AC3");
+    expect(option.title).toBe("English");
+    expect(option.detail).toBe("SRT · Externe");
+  });
+
+  it("une piste audio : le codec entre parenthèses devient son nom", () => {
+    const option = trackOption({ index: 1, label: "Français - 5.1 - Default (AC3)" }, 0, words);
+    expect(option.title).toBe("Français");
+    expect(option.detail).toBe("5.1 · Par défaut · Dolby Digital");
+  });
+
+  it("une piste sans détail garde son nom", () => {
+    expect(trackOption({ index: 0, label: "Commentaire" }, 0, words)).toMatchObject({ title: "Commentaire", detail: undefined });
   });
 
   it("sous-titres : « Désactivés » d'abord, coché quand rien n'est choisi", () => {
-    const options = subtitleOptions([{ index: 4, label: "English" }], SUBTITLES_OFF, "Off");
+    const options = subtitleOptions([{ index: 4, label: "English" }], SUBTITLES_OFF, "Off", words);
     expect(options.map((o) => o.title)).toEqual(["Off", "English"]);
     expect(options[0].selected).toBe(true);
     expect(options[1].selected).toBe(false);
