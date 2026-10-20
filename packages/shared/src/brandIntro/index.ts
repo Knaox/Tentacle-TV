@@ -20,3 +20,4 @@ export * from "./bootIntro";
 export * from "./bootIntroOnce";
 export * from "./bootSound";
 export * from "./introFrames";
+export * from "./introStart";

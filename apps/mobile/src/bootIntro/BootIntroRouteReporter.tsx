@@ -85,5 +85,9 @@ export function BootIntroRouteReporter({ appReady }: { appReady: boolean }) {
   useEffect(() => {
     bootIntroGate.reportPending(arrival.pending);
   }, [arrival.pending]);
+  // Le démarrage de l'app (stockage, polices, premier montage) passé : le poulpe peut commencer (`introStart`).
+  useEffect(() => {
+    bootIntroGate.reportAppReady(appReady);
+  }, [appReady]);
   return null;
 }
