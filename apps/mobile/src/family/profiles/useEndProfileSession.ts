@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { switchWtSession, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import { endMobileProfileSession } from "./switchSession";
 
@@ -19,7 +19,7 @@ export function useEndProfileSession(): (reason: string) => boolean {
   const router = useRouter();
   return useCallback((reason: string) => {
     if (!serverUrl) return false;
-    if (!endMobileProfileSession({ storage, serverUrl, clearCache: () => queryClient.clear() }, reason)) return false;
+    if (!endMobileProfileSession({ storage, serverUrl, clearCache: () => queryClient.clear(), followSession: switchWtSession }, reason)) return false;
     router.replace("/(tabs)" as never);
     return true;
   }, [storage, serverUrl, queryClient, router]);

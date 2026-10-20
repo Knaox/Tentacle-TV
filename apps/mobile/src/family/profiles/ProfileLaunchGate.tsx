@@ -16,6 +16,7 @@ import { forgetMobileStay } from "./switchSession";
 import { useCommitPick } from "./useCommitPick";
 import { usePickerListing } from "./usePickerListing";
 import { WhoIsWatchingView } from "./view/WhoIsWatchingView";
+import { accountFallbackHappened } from "@/offline/rights/accountFallbackNotice";
 
 const noop = () => undefined;
 
@@ -61,7 +62,7 @@ export function ProfileLaunchGate() {
     () => (serverUrl && accountId ? readMobileStay(stayRaw, serverUrl, accountId) : null),
     [stayRaw, serverUrl, accountId],
   );
-  const state = launchGateState({
+  const asLaunched = launchGateState({
     // Sur la connexion, rien à attendre : jamais « Qui regarde ? » là.
     configSettled: listing.configSettled || rootSegment === "(auth)",
     enabled: listing.enabled && rootSegment !== "(auth)",
@@ -74,6 +75,9 @@ export function ProfileLaunchGate() {
     now: Date.now(),
     asked,
   });
+  // Une session de profil revenue au compte faute de connexion (`OfflineAccountFallback`) : au
+  // retour du réseau, rien ne s'impose — « Qui regarde ? » suit sa règle au prochain démarrage.
+  const state = accountFallbackHappened() && request === null ? "none" : asLaunched;
 
   useEffect(() => {
     if (serverUrl && launchStayToForget({ data: listing.data, stay, now: Date.now() })) forgetMobileStay({ storage, serverUrl });

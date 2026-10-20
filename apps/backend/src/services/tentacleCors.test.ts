@@ -42,7 +42,7 @@ describe("le CORS de Tentacle", () => {
       await app.register(cors, { delegator: tentacleCorsDelegator(listed) });
       app.get("/x", async (_request, reply) => reply.status(429).header("Retry-After", "5").send({ error: "rate_limited" }));
       const res = await app.inject({ url: "/x", headers: { origin: "tentacle://app" } });
-      expect([res.headers["access-control-allow-origin"], res.headers["access-control-expose-headers"]]).toEqual(["tentacle://app", "Retry-After"]);
+      expect([res.headers["access-control-allow-origin"], res.headers["access-control-expose-headers"]]).toEqual(["tentacle://app", "Retry-After, X-Notifications-Next"]);
     }
     const app = Fastify();
     await app.register(cors, { delegator: tentacleCorsDelegator(["https://ancien.example.com"]) });

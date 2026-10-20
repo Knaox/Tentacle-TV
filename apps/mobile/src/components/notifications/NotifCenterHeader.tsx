@@ -10,6 +10,8 @@ interface Props {
   onFilter: (filter: NotificationFilter) => void;
   unread: number;
   total: number;
+  /** Le compte a des notifications (quel que soit le filtre) : le menu « … » a de quoi agir. */
+  hasAny: boolean;
   selectionMode: boolean;
   selectedCount: number;
   onMarkAll: () => void;
@@ -61,15 +63,21 @@ export const NotifCenterHeader = memo(function NotifCenterHeader(p: Props) {
           <Text style={st.title} accessibilityRole="header" numberOfLines={1}>{t("title")}</Text>
           <Text style={st.subtitle} numberOfLines={1}>{p.unread > 0 ? t("unreadCount", { count: p.unread }) : t("emptyUnreadTitle")}</Text>
         </View>
-        {p.total > 0 && <IconButton icon="more-horizontal" variant="plain" onPress={p.onMore} accessibilityLabel={t("moreActions")} />}
+        {p.hasAny && <IconButton icon="more-horizontal" variant="plain" onPress={p.onMore} accessibilityLabel={t("moreActions")} />}
         <IconButton icon="x" variant="plain" onPress={p.onClose} accessibilityLabel={tc("close")} />
       </View>
-      <View style={st.row}>
+      {/* Les filtres, puis « Tout marquer comme lu » calé à droite : sur un iPhone de 375 pt
+          (ou en grand texte), le bouton passe à la ligne plutôt que de chevaucher « Non lues ». */}
+      <View style={st.filterRow}>
         <View style={st.segments} accessibilityRole="tablist" accessibilityLabel={t("filtersA11y")}>
           <Segment label={t("filterAll")} active={p.filter === "all"} onPress={() => p.onFilter("all")} />
           <Segment label={p.unread > 0 ? `${t("filterUnread")} · ${p.unread}` : t("filterUnread")} active={p.filter === "unread"} onPress={() => p.onFilter("unread")} />
         </View>
-        {p.unread > 0 && <PlainButton size="sm" tone="accent" icon="check-circle" label={t("markAllReadFull")} onPress={p.onMarkAll} />}
+        {p.unread > 0 && (
+          <View style={st.markAll}>
+            <PlainButton size="sm" tone="accent" icon="check-circle" label={t("markAllReadFull")} onPress={p.onMarkAll} />
+          </View>
+        )}
       </View>
     </View>
   );
@@ -104,7 +112,9 @@ const makeStyles = (t: AppTheme) =>
     title: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary },
     subtitle: { ...typography.caption, color: t.colors.text.tertiary, marginTop: 1 },
     actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.sm, marginLeft: -8 },
-    segments: { flexDirection: "row", gap: 6, flex: 1 },
+    filterRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: spacing.sm, rowGap: 6 },
+    segments: { flexDirection: "row", gap: 6 },
+    markAll: { marginLeft: "auto" },
     segment: {
       minHeight: 32, paddingHorizontal: 14, borderRadius: 999, justifyContent: "center",
       backgroundColor: t.colors.fill.subtle, borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle,

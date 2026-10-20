@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { centerUnreadCount } from "@tentacle-tv/shared";
 import {
   filterNotifications,
   groupNotificationsByPeriod,
@@ -93,7 +94,8 @@ export function useMirrorNotifCenter(open: boolean, onLeave: () => void) {
   }, [t, deleteAll]);
 
   return {
-    unread: unread?.count ?? 0,
+    // La règle du mobile : jamais moins que les non lues à l'écran (« Tout marquer comme lu » reste là).
+    unread: centerUnreadCount(unread?.count, all),
     total: all.length,
     visible,
     periods,

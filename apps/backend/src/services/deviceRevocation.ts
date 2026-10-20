@@ -7,6 +7,7 @@ import { forgetJellyfinTokenOwner } from "./deviceTokenHealth";
 import { cleanupJellyfinDevice } from "./jellyfinDeviceCleanup";
 import { markDeviceRevoked } from "./pairedDeviceStatus";
 import { endProfileSessionSockets, revokeDeviceByTokenHash } from "./wsManager";
+import { announceDeviceRevoked } from "./deviceRevokedEvents";
 import type { FamilyProfileEndReason } from "../family/familyProtocol";
 
 /**
@@ -111,6 +112,8 @@ export async function revokePairedDevice(
     forgetValidatedToken(device.jellyfinAccessToken);
     forgetJellyfinTokenOwner(device.jellyfinAccessToken);
   }
+  // Watch Together : l'appareil quitte sa salle avant que ses sockets ne se ferment.
+  announceDeviceRevoked(device.jellyfinUserId, device.tokenHash);
   if (device.parentId) {
     const profileEnd = options.profileEnd ?? "closed";
     // Quitter un profil de soi-même ôte « Rester sur ce profil ».

@@ -239,6 +239,12 @@ export const SERVER_CAPABILITIES = {
    *  (`/api/family/picker/profiles`). Sans elle : l'ancien réglage (`family.pickerPolicy`), et le
    *  mobile demande comme avant. */
   "family.launchPlatforms": "1.31.1",
+  // ── Retours de l'alpha mobile (21/10) : le centre de notifications ──
+  /** La liste de la cloche se PAGINE : `GET /api/notifications?before=<id>` rend la page qui
+   *  suit cette notification, et l'en-tête `X-Notifications-Next` dit le curseur de la suivante
+   *  (absent : c'était la dernière). Le centre du mobile charge alors toutes les notifications
+   *  du compte en défilant (et « Non lues » les trouve toutes). Sans elle : les vingt dernières. */
+  "notifications.paging": "1.31.1",
   // ── Retours de l'alpha mobile (21/10) : garder hors ligne va au bout, application quittée ──
   /** La préparation d'un fichier Allégé tenue par le SERVEUR (`/api/downloads/prepared/:itemId`) :
    *  elle avance que le téléphone soit là ou non, se lit pendant qu'elle s'écrit, se reprend par

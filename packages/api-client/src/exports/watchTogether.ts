@@ -7,6 +7,7 @@ export {
   type WatchTogetherContextValue,
 } from "../watchTogether/context";
 export { useWatchTogetherSession, type WtPlatformPort } from "../watchTogether/session/useWatchTogetherSession";
+export { switchWtSession } from "../watchTogether/session/sessionSwitch";
 export { handleWtServerMessage, type WtEventHelpers } from "../watchTogether/session/wtMessages";
 export { usePendingInvites, type WtPendingInvite } from "../watchTogether/session/usePendingInvites";
 

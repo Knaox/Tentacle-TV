@@ -6,6 +6,9 @@ import { useActiveProfile } from "./profileSession";
 import { useCrossTabProfileReload } from "./crossTabProfile";
 import { useConnectivity } from "../offline/useConnectivity";
 import { setManualOffline } from "../offline/connectivityStore";
+import { offlineSessionFallback } from "@tentacle-tv/offline-core";
+import { fallBackToAccount } from "../offline/accountFallback";
+import { readOfflineOwner } from "../offline/offlineOwner";
 
 /**
  * Ce que la SESSION D'UN PROFIL du bureau écoute pendant toute sa vie, sur
@@ -18,7 +21,11 @@ import { setManualOffline } from "../offline/connectivityStore";
  * - l'identité Jellyfin du profil : `/api/config/streaming` la donne (le
  *   canal de session la présente pour lui), comme à une TV jumelée ; la
  *   session personnelle retrouvera la sienne au retour (`sessionSwap.ts`) ;
- * - jamais de hors ligne manuel : rien n'est gardé sur la machine pour lui.
+ * - le hors ligne appartient au COMPTE de l'appareil (`offline-core` ›
+ *   `offlineSessionFallback`) : jamais de hors ligne manuel pour un profil, et
+ *   plus de connexion → retour d'office au compte (`offline/accountFallback.ts`) ;
+ *   le navigateur, dont le serveur tient le jeton du compte, attend
+ *   (`ProfileOfflineScreen`).
  *
  * En session personnelle : rien, sauf suivre un autre onglet qui change de
  * profil (le navigateur).
@@ -47,12 +54,17 @@ function ProfileSessionWatch() {
     };
   }, [token]);
 
-  // Le hors ligne MANUEL n'existe pas pour un profil (rien n'est gardé pour
-  // lui) : un choix laissé par la session personnelle ne l'y enferme pas.
-  const { manual } = useConnectivity();
+  const { state } = useConnectivity();
+  const fallback = offlineSessionFallback({
+    profileSession: true,
+    connectivity: state,
+    accountRestorable: readOfflineOwner()?.token != null,
+  });
   useEffect(() => {
-    if (manual) setManualOffline(false);
-  }, [manual]);
+    // Le hors ligne MANUEL est un choix du compte : un reste de sa session n'y enferme pas un profil.
+    if (fallback === "cancelManual") setManualOffline(false);
+    else if (fallback === "returnToAccount") fallBackToAccount();
+  }, [fallback]);
 
   const deviceId = data?.deviceId;
   useEffect(() => {

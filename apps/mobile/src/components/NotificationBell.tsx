@@ -3,7 +3,7 @@ import { View, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useNotificationsLive, useTentacleConfig } from "@tentacle-tv/api-client";
-import { useNotificationsMobile, useUnreadCountMobile } from "@/hooks/useNotificationsMobile";
+import { useUnreadCountMobile } from "@/hooks/useNotificationsMobile";
 import { BottomSheet } from "./ui";
 import { NotificationCenter } from "./notifications/NotificationCenter";
 import { NotificationPanelTablet } from "./notifications/NotificationPanelTablet";
@@ -23,8 +23,6 @@ export function NotificationBell() {
   const [visible, setVisible] = useState(false);
 
   const { data: unread } = useUnreadCountMobile();
-  // La liste se lit d'avance (même clé que le centre) : elle est là à l'ouverture.
-  useNotificationsMobile();
   const { storage } = useTentacleConfig();
   useNotificationsLive({ token: storage.getItem("tentacle_token") });
 
@@ -48,7 +46,6 @@ export function NotificationBell() {
 
       <NotificationCenter
         open={visible}
-        unread={count}
         onClose={close}
         frame={(header, body) => (isTablet ? (
           <NotificationPanelTablet visible={visible} onClose={close} header={header}>{body}</NotificationPanelTablet>

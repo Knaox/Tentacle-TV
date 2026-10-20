@@ -258,4 +258,8 @@ export default {
   detailEpisodes: "Épisodes",
   detailSubtitlesKept: "Sous-titres gardés",
   detailSubtitlesKeptValue: "{{done}} sur {{total}}",
+  // Plus de connexion pendant la session d'un profil : l'appareil revient au compte qui s'y est
+  // connecté (le hors ligne est le sien, aucun code ne se vérifie sans serveur).
+  accountFallback: "Retour au compte de cet appareil, {{name}}.",
+  accountFallbackUnnamed: "Retour au compte de cet appareil.",
 };

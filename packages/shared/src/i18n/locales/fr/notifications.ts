@@ -7,6 +7,7 @@ export default {
   install: "Installer",
   later: "Plus tard",
   justNow: "À l'instant",
+  loadingMore: "Chargement des notifications…",
   minutesAgo: "il y a {{count}}min",
   hoursAgo: "il y a {{count}}h",
   daysAgo: "il y a {{count}}j",

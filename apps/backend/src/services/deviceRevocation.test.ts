@@ -28,6 +28,7 @@ vi.mock("./pairedDeviceStatus", () => ({ markDeviceRevoked: (hash: string) => vo
 
 import { revokePairedDevice } from "./deviceRevocation";
 import { sweepJellyfinDevices } from "./jellyfinDeviceCleanup";
+import { onDeviceRevoked } from "./deviceRevokedEvents";
 
 const USER = "b52628a704304f06a682f6037183b976";
 let jf: FakeJellyfin;
@@ -65,6 +66,15 @@ describe("une TV révoquée", () => {
     ]);
     expect(jf.devices.size).toBe(0);
     expect(h.db!.state.cleanups).toEqual([]);
+  });
+
+  it("est annoncée (Watch Together la fait quitter sa salle) avant que ses sockets ne se ferment", async () => {
+    const stop = onDeviceRevoked((userId, hash) => void h.events.push(`annoncée ${userId === USER ? "compte" : userId} ${hash}`));
+    const id = await tv("salon");
+    await (await revokePairedDevice({ id }, "user"))!.settled;
+    stop();
+    expect(h.events.indexOf("annoncée compte salon")).toBeGreaterThan(-1);
+    expect(h.events.indexOf("annoncée compte salon")).toBeLessThan(h.events.indexOf("socket salon"));
   });
 
   it("ne touche ni la ligne ni l'appareil Jellyfin de l'autre TV du compte", async () => {

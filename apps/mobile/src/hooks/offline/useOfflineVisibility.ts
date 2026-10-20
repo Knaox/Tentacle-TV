@@ -1,6 +1,6 @@
-import type { DownloadCapabilities } from "@tentacle-tv/offline-core";
-import { mayShow, useAccountAbilities } from "@tentacle-tv/api-client";
+import { offlineSurfaceOf, type DownloadCapabilities } from "@tentacle-tv/offline-core";
 import { useHasLocalContent } from "@/offline/useOfflineMode";
+import { useAccountKeepRight, useOfflineProfileSession } from "@/offline/rights/useOfflineOwner";
 import { useOfflineCapabilities } from "./useOfflineCapabilities";
 
 export interface OfflineVisibility {
@@ -12,14 +12,19 @@ export interface OfflineVisibility {
   capabilities: DownloadCapabilities;
 }
 
-/** Ce que les points d'entrée (fiche, épisode, profil, en-tête) consultent. Garder hors ligne
- *  exige le droit du compte (`EnableContentDownloading`) ET la session qui le permet (jamais une
- *  session de profil) : `account.abilities`, sinon les capacités de téléchargement comme avant. */
+/** Ce que les points d'entrée (fiche, épisode, profil, en-tête) consultent. Le hors ligne
+ *  appartient au COMPTE de l'appareil (`offline-core` › `offlineSurfaceOf`) : rien pendant une
+ *  session de profil (membre ou invité), rien pour un compte à qui le serveur refuse
+ *  `keepOffline` (dernier mot retenu hors ligne) ; serveur d'avant : les capacités, comme avant. */
 export function useOfflineVisibility(): OfflineVisibility {
   const { capabilities } = useOfflineCapabilities();
   const hasContent = useHasLocalContent() === true;
-  const abilities = useAccountAbilities();
-  const canKeep = capabilities.downloads && mayShow(abilities, "keepOffline");
-  const canLight = canKeep && capabilities.lightDownloads;
-  return { visible: canKeep || hasContent, canKeep, canLight, hasContent, capabilities };
+  const surface = offlineSurfaceOf({
+    profileSession: useOfflineProfileSession(),
+    keepRight: useAccountKeepRight(),
+    engineCanKeep: capabilities.downloads,
+    hasContent,
+  });
+  const canLight = surface.canKeep && capabilities.lightDownloads;
+  return { visible: surface.visible, canKeep: surface.canKeep, canLight, hasContent: surface.visible && hasContent, capabilities };
 }

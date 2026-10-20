@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MOBILE_PROFILE_STAY_KEY, readMobileStay, type KeyValueStore, type PickedProfileDto, type PickerProfileDto } from "@tentacle-tv/shared";
-import { commitMobilePick, endMobileProfileSession, forgetMobileStay } from "./switchSession";
+import { commitMobilePick, endMobileProfileSession, forgetMobileStay, returnToAccountOffline } from "./switchSession";
 import { readActiveProfile } from "./profileSessionCore";
 import { subscribeStoredUser } from "../../auth/storedUser";
 
@@ -88,10 +88,37 @@ describe("les bascules de session du mobile", () => {
     expect(endMobileProfileSession(deps(store), "ended")).toBe(false);
   });
 
+  it("le temps réel suit chaque bascule, au jeton de la NOUVELLE session (Watch Together, socket)", () => {
+    const store = memory({ tentacle_token: "perso", tentacle_user: DAMIEN });
+    const followed: (string | null)[] = [];
+    const follow = { followSession: (token: string | null) => void followed.push(token) };
+    commitMobilePick(SELF, { ...deps(store), ...follow }); // rien ne bascule : rien ne suit
+    commitMobilePick(ZOE, { ...deps(store), ...follow });
+    commitMobilePick(SELF, { ...deps(store), ...follow });
+    commitMobilePick(ZOE, { ...deps(store), ...follow });
+    endMobileProfileSession({ ...deps(store), ...follow }, "ended");
+    expect(followed).toEqual(["jeton-zoe", "perso", "jeton-zoe", "perso"]);
+  });
+
   it("« Changer de profil » oublie le choix retenu", () => {
     const store = memory({ tentacle_token: "perso", tentacle_user: DAMIEN });
     commitMobilePick(SELF, deps(store));
     forgetMobileStay({ storage: store, serverUrl: SERVER });
     expect(readMobileStay(store.getItem(MOBILE_PROFILE_STAY_KEY), SERVER, "damien")).toBeNull();
+  });
+
+  it("plus de connexion pendant un profil : retour au compte de l'appareil, le choix de « Qui regarde ? » intact", () => {
+    const store = memory({ tentacle_token: "perso", tentacle_user: DAMIEN });
+    commitMobilePick(ZOE, deps(store));
+    const d = deps(store);
+    expect(returnToAccountOffline(d)).toBe("Damien");
+    expect(store.dump().tentacle_token).toBe("perso");
+    expect(readActiveProfile(store)).toBeNull();
+    expect(store.dump().tentacle_account_session).toBeUndefined();
+    expect(d.cleared()).toBe(1);
+    // Rien n'est rouvert au nom du profil : le choix retenu suivra sa règle au prochain démarrage.
+    expect(readMobileStay(store.getItem(MOBILE_PROFILE_STAY_KEY), SERVER, "damien")).toEqual({ profileId: "zoe", hasPin: false });
+    // Déjà sur le compte : rien.
+    expect(returnToAccountOffline(deps(store))).toBeNull();
   });
 });

@@ -1,8 +1,12 @@
 // Notifications — le catalogue pur vit dans shared (`notifications/`) ; réexporté ici pour les clients.
 export {
   useNotifications, useUnreadCount, useMarkAllRead, useMarkRead, useDeleteNotification, useDeleteNotifications,
-  useDeleteAllNotifications, setNotificationsBackendUrl, backendFetch, notificationsBackendRoot, type AppNotification,
+  useDeleteAllNotifications, useNotificationMutation, setNotificationsBackendUrl, backendFetch, notificationsBackendRoot, type AppNotification,
 } from "../hooks/useNotifications";
+export {
+  applyNotificationPatch, restoreNotificationSnapshot, settleNotifications, notificationsOf,
+  NOTIFICATIONS_KEY, UNREAD_COUNT_KEY, NOTIFICATION_MUTATION_KEY, type NotificationPage, type NotificationPatch,
+} from "../notifications/notificationCache";
 export { useNotificationOpener, lookupLibraryTitle } from "../hooks/useNotificationOpener";
 export {
   resolveNotificationDestination, immediateTargetRoute, notificationHasDestination, extensionRoute, itemRoute,
