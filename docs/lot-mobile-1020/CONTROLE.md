@@ -1,0 +1,128 @@
+# Contrôle du lot de nuit « mobile = bureau » (20/10)
+
+Contrôleur : session **qualite**. Base commune : `dev` = `064890d94`.
+Une ligne par exigence ; « Preuve » dit ce qui la coche. Légende : ☐ à faire ·
+☑ prouvé · ✗ défaut ouvert (voir « Défauts ») · — sans objet.
+
+Branches suivies (une par worktree, `git worktree list`) :
+
+| Session | Branche | Worktree |
+|---------|---------|----------|
+| wt-socle | `claude/wt-socle-686749` | `.claude/worktrees/wt-socle-686749` |
+| wt-mobile | `claude/wt-mobile-f7c020` | `.claude/worktrees/wt-mobile-f7c020` |
+| wt-banc | `claude/wt-banc-7d7150` | `.claude/worktrees/wt-banc-7d7150` |
+| reglages | `claude/reglages-b5e8c7` | `.claude/worktrees/reglages-b5e8c7` |
+| design | `claude/design-887719` | `.claude/worktrees/design-887719` |
+| famille-mobile | `claude/famille-20ba01` | `.claude/worktrees/famille-20ba01` |
+| notifs | `claude/notifs-c5bb92` | `.claude/worktrees/notifs-c5bb92` |
+
+## A. Règles transverses du lot (toutes les branches)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| A1 | Un commit par étape (pas de fourre-tout) | `git log dev..branche` : commits ciblés, chacun lisible seul | ☐ |
+| A2 | Code en anglais, commentaires et commits en français | relecture du diff (identifiants nouveaux en anglais, commentaires/commits FR) | ☐ |
+| A3 | 300 lignes max par fichier touché | `wc -l` sur chaque fichier ajouté/modifié (hors générés, i18n, JSON, tests tolérés si signalés) | ☐ |
+| A4 | Règles dans `shared` / `api-client`, pas dupliquées dans un client | relecture : aucune logique de décision recopiée mobile ↔ web/bureau | ☐ |
+| A5 | Toute nouveauté serveur derrière une capacité (`serverCapabilities.ts` shared + copie backend, test miroir vert) | diff shared/backend + `capabilitiesMirror.test.ts` vert | ☐ |
+| A6 | Serveur qui ne déclare rien → fonction absente sans erreur | un test par capacité nouvelle (client face à un serveur sans `capabilities`) | ☐ |
+| A7 | Aucun bump de version ; `versions.json` et les `version` des `package.json` intouchés | `git diff dev..branche -- versions.json '**/package.json'` sans changement de `version` | ☐ |
+| A8 | Pas de push, de tag, de dispatch CI | `git ls-remote origin` inchangé pour ces branches ; aucun tag nouveau | ☐ |
+| A9 | i18n FR + EN complets pour toute clé ajoutée | clés ajoutées présentes dans `fr/` ET `en/` (script de comparaison) | ☐ |
+| A10 | Zéro « téléchargement / télécharger / téléchargé / download » visible sur le mobile | `grep -i` sur les chaînes visibles du mobile et les clés i18n qu'il lit (hors noms d'icônes, statuts, identifiants) | ☐ |
+| A11 | Clés `tentacle_*` et clés i18n jamais renommées | diff : aucune clé supprimée/renommée (seulement ajoutées) | ☐ |
+| A12 | Bureau et web inchangés hors extraction Watch Together, sans régression | diff `apps/web` / `apps/desktop-electron` limité à l'extraction WT ; tests web verts | ☐ |
+| A13 | Tablette (iPad) propre : mises en page larges, pas d'écran étiré ni coupé | relecture (largeurs bornées, `useWindowDimensions`) + capture iPad à l'essai d'ensemble | ☐ |
+| A14 | Lint, typecheck et tests des paquets touchés verts (vitest `--maxWorkers=2`) | `pnpm --filter <pkg> lint/typecheck/test` sur chaque branche | ☐ |
+| A15 | Comptes de test Knaoxtest / Knaoxtest2 seulement | relecture des bancs, fixtures, captures | ☐ |
+| A16 | Pas de conflit entre sessions sur les mêmes fichiers | croisement des `git diff --name-only` des 7 branches | ☐ |
+
+## B. Watch Together — socle partagé et serveur (wt-socle)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| B1 | Logique Watch Together extraite dans `shared` / `api-client`, consommée par le web/bureau ET le mobile | diff : modules partagés + imports des deux côtés ; tests unitaires dans le paquet partagé | ☐ |
+| B2 | Bureau/web : comportement WT identique après extraction | tests web/bureau verts ; types `wt:*` inchangés | ☐ |
+| B3 | Types de messages `wt:*` jamais renommés | `grep "wt:"` : aucune chaîne supprimée | ☐ |
+| B4 | Serveur : adhésion PAR APPAREIL (deux appareils d'un même compte = deux participants distincts) | test backend dédié | ☐ |
+| B5 | Serveur : pas de saut d'intro avant « tous prêts » | test backend/partagé dédié | ☐ |
+| B6 | Correctifs serveur rétrocompatibles (anciens clients bureau continuent) ; capacité si le comportement visible change | test d'un client sans le nouveau champ | ☐ |
+
+## C. Watch Together — mobile (wt-mobile)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| C1 | Watch Together disponible sur iPhone, iPad et Android | écran(s) + entrée dans l'app ; capture iPhone et iPad | ☐ |
+| C2 | Groupes (créer/rejoindre, liste des participants) | code + capture | ☐ |
+| C3 | Affinité (même règle que le bureau, depuis le partagé) | import de la règle partagée, aucune copie | ☐ |
+| C4 | Transcodage : le mobile déclare son moteur (`engineCapabilities`) ; tous synchrones même si un participant transcode | code + test | ☐ |
+| C5 | Entrée gardée par la capacité serveur WT ; serveur sans capacité → aucune trace | test | ☐ |
+| C6 | Mise en page iPad propre | capture iPad | ☐ |
+
+## D. Banc multi-clients Watch Together (wt-banc)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| D1 | Banc qui rejoue plusieurs clients (bureau + mobile, deux appareils d'un même compte) | script + README | ☐ |
+| D2 | Couvre l'adhésion par appareil et « tous prêts » avant saut d'intro | sortie du banc jointe | ☐ |
+| D3 | Jamais lancé par `pnpm test` ; comptes Knaoxtest/Knaoxtest2 | relecture | ☐ |
+| D4 | Simulateurs : au plus 2 en tout avec qualite ; jamais « Apple TV 4K (at 1080p) » | coordination | ☐ |
+
+## E. Réglages mobiles restructurés (reglages)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| E1 | Sections : Compte · Lecture et apparence · TV et appareils · Hors ligne · Notifications · Aide | capture de l'écran Réglages | ☐ |
+| E2 | Pastilles « Compte » / « Cet appareil » sur chaque réglage (où il s'enregistre) | capture + code (source unique de la portée) | ☐ |
+| E3 | Sous-titres : taille par défaut 160 %, et 100 % (opacité/fond ou deuxième valeur selon la demande) par défaut — conforme au bureau | test sur les valeurs par défaut ; utilisateur existant gardant sa valeur | ☐ |
+| E4 | « Réglages avancés : sur le bureau » (renvoi, pas de copie des réglages avancés) | capture | ☐ |
+| E5 | Aucun réglage perdu à la restructuration (clés `tentacle_*` lues identiques) | diff des clés de stockage | ☐ |
+| E6 | Section Hors ligne sans le mot « téléchargement » | grep + capture | ☐ |
+| E7 | iPad : réglages en colonne bornée ou maître-détail | capture iPad | ☐ |
+
+## F. Design (design)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| F1 | Maquette `docs/maquettes/reglages-mobile.html` | fichier présent, cohérent avec E1–E4 | ☐ |
+| F2 | Nouvel en-tête « Pour vous » / « Affinité » sur le mobile | code + capture | ☐ |
+| F3 | Cohérent entre maquette et implémentation de reglages | comparaison | ☐ |
+
+## G. Famille mobile (famille-mobile)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| G1 | « Qui regarde ? » = session de profil (comme le bureau) | code + capture | ☐ |
+| G2 | Code PIN vérifié par le serveur (jamais sur le client) | code | ☐ |
+| G3 | Carrousels d'accueil synchronisés (même ordre/contenu que le bureau, préférence du compte) | code + capture | ☐ |
+| G4 | Photo de profil (galerie / avatars) depuis la session de profil | code + capture | ☐ |
+| G5 | Invitations Famille visibles à l'ouverture de l'app (registre des recouvrements du démarrage, sans écraser un autre recouvrement) | code + capture | ☐ |
+| G6 | « Êtes-vous encore là ? » (même règle que le bureau, partagée) | code + test | ☐ |
+| G7 | Capacités Famille respectées (`family.*`) ; serveur sans capacité → rien | test | ☐ |
+
+## H. Notifications (notifs)
+
+| # | Exigence | Preuve | État |
+|---|----------|--------|------|
+| H1 | Notifications mobiles = celles du bureau (mêmes types) | liste des types comparée | ☐ |
+| H2 | Chaque notification ouvre la bonne destination | table type → route, testée | ☐ |
+| H3 | Règle de destination partagée, pas dupliquée | code | ☐ |
+
+## I. Essai d'ensemble (simulateur iPhone puis iPad, après fusion)
+
+| # | Parcours | Preuve | État |
+|---|----------|--------|------|
+| I1 | Premier lancement (connexion, Qui regarde ?, invitations) | captures `docs/lot-mobile-1020/` | ☐ |
+| I2 | Réglages (sections, pastilles, sous-titres) | captures | ☐ |
+| I3 | Notifications (liste, ouverture d'une destination) | captures | ☐ |
+| I4 | « Pour vous » (nouvel en-tête, Affinité) | captures | ☐ |
+| I5 | Watch Together de base (créer, rejoindre) | captures | ☐ |
+| I6 | Les mêmes sur iPad | captures | ☐ |
+
+## Défauts
+
+(à remplir au fil des passes : n°, branche, fichier:ligne, repro, envoyé à, état)
+
+## Décisions tranchées par les sessions
+
+(à demander à chaque session pour le récapitulatif du matin)
