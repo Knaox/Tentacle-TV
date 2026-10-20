@@ -83,6 +83,39 @@ gestes de l'utilisateur ; `notifySeek(s, { explicit: true })` sur la barre ;
   seek. Délais bornés : barrière 20 s, chargement 60 s (le membre est alors
   déclaré en échec et la salle repart sans lui).
 
+### Les correctifs du banc (20/10, nuit)
+
+- **Départ** : un lecteur qui JOUE déjà (lecture automatique au chargement)
+  quand la reprise est planifiée se met en pause jusqu'à l'instant T ; la
+  correction unique d'après la reprise vaut dans les deux sens (|écart| >
+  250 ms, `needsStartCorrection`). Mesuré avant : 200 à 300 ms d'avance.
+- **Régime** : sur le web, la correction engagée descend jusqu'à 8 ms
+  (`WT_DRIFT_SETTLE_WEB_S`) — relâchée à 25 ms de part et d'autre, deux
+  lecteurs restaient à 50 ms l'un de l'autre.
+- **Prêt pendant un seek** : la fin de chargement d'un lecteur v2 (sans
+  `barrierId`) ne libère plus une barrière de seek ou de saut : il se cale,
+  puis confirme avec l'identifiant (vu au banc : salle à 40 s, lui à 0 s). À
+  la reconnexion, un lecteur posé renvoie son « prêt » avec l'identifiant.
+- **Sauts rapides (B7)** : les « +30 s » rapprochés partent du saut DÉJÀ
+  demandé (contrôleur de saut partagé, lecture directe comprise) ; chaque
+  `wt:seek` porte `seekToken` (`appareil:numéro`, pris à l'appui), renvoyé
+  par la salle tant que la position est la sienne ; l'émetteur ignore l'écho
+  de ses seeks plus anciens (ni recalage, ni intent soldé) ; regroupement
+  150 ms ; le serveur ignore un seek plus ancien du même appareil. Huit
+  « +30 s » en une seconde : +240 s pour tous.
+
+## Le chat interactif (20/10)
+
+Un seau à jetons par membre et par sorte (`watchTogetherChat.ts`, contrat
+partagé) : messages 10 d'affilée puis 2/s, réactions 20 puis 10/s, GIF 6
+puis 1/s. Le client applique la même règle AVANT d'envoyer (`false` : rien
+n'est parti, le brouillon reste) ; le serveur ignore en silence au-delà. Les
+rafales du même emoji d'un même membre se regroupent à l'écran (« 🔥 ×5 »).
+« X est en train d'écrire… » (`watchTogether.typing`) : `wt:typing` début /
+fin, redit toutes les 2 s en tapant, fin après 4 s sans frappe, rien au
+repos ; relayé aux autres membres seulement (jamais au compte qui tape),
+éteint par le serveur après 6 s sans nouvelle et à l'envoi d'un message.
+
 ## L'horloge
 
 Chaque ping porte `t = Date.now()` ; le pong renvoie `t` et `serverTime`.
