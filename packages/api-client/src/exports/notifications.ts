@@ -10,6 +10,11 @@ export {
 } from "../utils/notificationDestination";
 export { NOTIFICATION_STATE_META, notificationStateMeta, type NotificationTone } from "../utils/notificationState";
 export { groupNotificationsByDay, type NotificationDayGroup } from "../utils/notificationGroups";
+export {
+  decideNotificationTap, notificationNeedsPlugins, KNOWN_NOTIFICATION_TYPES, LOCAL_NOTIFICATION_TYPES,
+  type NotificationTapAction, type KnownNotificationType,
+} from "../utils/notificationTap";
+export { notificationVisual, notificationAgo, type NotificationGlyph, type NotificationAgo } from "../utils/notificationVisual";
 
 // Notification route resolution
 export { resolveNotificationRoute, FAMILY_ROUTE, type NotifPluginMeta } from "../utils/notificationRoute";
