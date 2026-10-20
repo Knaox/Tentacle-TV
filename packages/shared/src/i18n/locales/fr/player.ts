@@ -225,6 +225,8 @@ export default {
     pause: "Pause",
     back10: "Reculer de 10 secondes",
     forward30: "Avancer de 30 secondes",
+    // Les gestes de la petite fenêtre du mobile Android (±10 s, comme AVKit).
+    forward10: "Avancer de 10 secondes",
   },
   // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
   // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).

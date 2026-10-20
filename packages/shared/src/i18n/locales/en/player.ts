@@ -220,6 +220,7 @@ export default {
     pause: "Pause",
     back10: "Back 10 seconds",
     forward30: "Forward 30 seconds",
+    forward10: "Skip forward 10 seconds",
   },
   // Ce que l'appareil ne décode pas et que le serveur convertit, dit une fois,
   // discrètement, à l'ouverture (`devicePlaybackVerdict`, Android TV).

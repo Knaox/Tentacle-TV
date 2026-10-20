@@ -29,11 +29,14 @@ const GRACE_DELAY_MS = 60_000;
  * tout code JS : c'est le filet au lancement suivant qui le rattrape, sur les
  * deux plateformes.
  */
-export function usePlayerBackground(pb: PlayerPlayback): void {
+/** `isPipActive` : en image dans l'image, la lecture CONTINUE — rien à libérer. */
+export function usePlayerBackground(pb: PlayerPlayback, isPipActive: () => boolean = () => false): void {
   // L'effet n'est monté qu'une fois : la lecture passe par un ref, sans quoi
   // on se réabonnerait à `AppState` à chaque rendu du lecteur.
   const pbRef = useRef(pb);
   pbRef.current = pb;
+  const pipRef = useRef(isPipActive);
+  pipRef.current = isPipActive;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const releasedRef = useRef(false);
 
@@ -67,6 +70,8 @@ export function usePlayerBackground(pb: PlayerPlayback): void {
 
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
+        // La petite fenêtre lit encore : l'encodage sert toujours.
+        if (pipRef.current()) return;
         releasedRef.current = true;
         console.log(DBG, "arrière-plan prolongé — encodage libéré");
         void pbRef.current.reporting.reportStop();

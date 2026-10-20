@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { View } from "react-native";
 import { PLAYER } from "@/theme";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
@@ -16,7 +16,7 @@ import { usePlayerRemote } from "../session/usePlayerRemote";
 import { useMobileStillWatching } from "../player/stillWatching/useMobileStillWatching";
 import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
-import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
+import { usePlayerScreenDevHook } from "../player/engine/usePlayerScreenDevHook";
 import type { PlayerEngineHandle } from "../player/engine/types";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { PlayerQualityNotice, useMobileQualityDrop } from "../components/player/PlayerQualityNotice";
@@ -30,6 +30,8 @@ import { PlaybackProblemView } from "../components/problems/PlaybackProblemView"
 import type { PlaybackFailureReport } from "../player/problems/playbackFailure";
 import { usePlayerProblem } from "../player/problems/usePlayerProblem";
 import { PlayerStatusBar, useChromeVisibility } from "../player/chrome/PlayerStatusBar";
+import { usePlayerScreenPip } from "../player/pip/usePlayerScreenPip";
+import { PlayerTopActions } from "../components/player/PlayerTopActions";
 
 interface Props { itemId: string; version?: string }
 
@@ -64,7 +66,6 @@ export function PlayerScreen({ itemId, version }: Props) {
 
   // Orientation : `app/_layout.tsx` ("all"). La barre d'état suit les commandes (`PlayerStatusBar`).
   const chrome = useChromeVisibility(overlayVisible);
-  const [pipActive, setPipActive] = useState(false);
 
   // Fetch PlaybackInfo once the item metadata is ready
   useEffect(() => {
@@ -125,8 +126,6 @@ export function PlayerScreen({ itemId, version }: Props) {
     eng, pb, engineRef, videoReady, retryCount,
   });
 
-  // Image dans l'image : l'habillage n'a rien à faire dans la petite fenêtre.
-  const onPipChange = useCallback((active: boolean) => { setPipActive(active); if (active) setOverlayVisible(false); }, []);
 
   const {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
@@ -155,6 +154,9 @@ export function PlayerScreen({ itemId, version }: Props) {
   const seek = usePlayerSeekGate({ transcoding: !pb.isDirectPlay, duration: pb.jellyfinDuration || 0, positionRef: pb.positionRef,
     currentTime, buffering: isBuffering, seek: handleSeek, report: failure.report });
   const qualityDrop = useMobileQualityDrop(pb);
+  // Image dans l'image (iOS : AVKit ; Android : l'activité) — l'habillage n'y a rien à faire.
+  const pip = usePlayerScreenPip({ engineRef, paused, started, ended, failed: failure.problem !== null, remote: isAirPlaying,
+    streams: pb.streams, setPaused, seekBy: seek.seekBy, onClosed: leavePlayer, hideOverlay: () => setOverlayVisible(false) });
 
   // Rien de chargé en 20 s : relance transcodée, puis le message.
   usePlayerLoadingWatchdog({
@@ -176,7 +178,7 @@ export function PlayerScreen({ itemId, version }: Props) {
 
   // Android : libère l'encodage après un arrière-plan prolongé, et relance le
   // flux au retour. iOS ne bouge pas — la lecture en fond y est voulue.
-  usePlayerBackground(pb);
+  usePlayerBackground(pb, () => pip.active);
 
   // La télécommande de Jellyfin — tableau de bord Tentacle ou Jellyfin.
   usePlayerRemote({
@@ -187,20 +189,14 @@ export function PlayerScreen({ itemId, version }: Props) {
   });
 
   // Développement : le lecteur pilotable depuis l'inspecteur (voir le crochet).
-  usePlayerDevHook(useMemo(() => ({
-    engine: pb.engine, audioIndex: pb.audioIndex, subtitleIndex: pb.subtitleIndex, isDirectPlay: pb.isDirectPlay,
-    changeAudio: handleSelectAudio, changeSubtitle: handleSelectSubtitle, seek: handleSeek, setPaused,
-    simulateAirPlay: onAirPlayRoute,
-    changeQuality: (key) => pb.changeQuality(key as Parameters<typeof pb.changeQuality>[0]),
-    technicalInfo: () => engineRef.current?.getTechnicalInfo?.() ?? Promise.resolve({}),
-    leave: leavePlayer,
-  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, pb.changeQuality, handleSelectAudio, handleSelectSubtitle, handleSeek, onAirPlayRoute, leavePlayer]));
+  usePlayerScreenDevHook({ pb, engineRef, changeAudio: handleSelectAudio, changeSubtitle: handleSelectSubtitle,
+    seek: handleSeek, setPaused, simulateAirPlay: onAirPlayRoute, leave: leavePlayer });
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
   // « Vous regardez encore ? » — tout toucher sur le lecteur est une présence.
   const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started, setPaused });
 
-  const statusBar = <PlayerStatusBar controlsVisible={chrome.shown && started} pipActive={pipActive} />;
+  const statusBar = <PlayerStatusBar controlsVisible={chrome.shown && started} pipActive={pip.active} />;
   // Le message — quoi, pourquoi, quoi faire —, une fois l'échec diagnostiqué.
   if (failure.problem) {
     return (
@@ -250,12 +246,13 @@ export function PlayerScreen({ itemId, version }: Props) {
       onExternalPlaybackChange={onExternalPlaybackChange}
       onPausedChange={stillWatching.onPausedChange}
       onAirPlayRoute={onAirPlayRoute}
-      onPipChange={onPipChange}
+      onPipChange={pip.onEngineChange}
       onSeek={seek.seekTo} onSkip={seek.seekBy}
       onToggleOverlay={toggleOverlay} onActivity={stillWatching.reportActivity}
       onSwipeDown={leavePlayer}
     >
       {statusBar}
+      {!pip.active && <>
       <MobilePlayerOverlay
         title={pb.item?.Name ?? ""}
         currentTime={seek.target ?? currentTime}
@@ -284,6 +281,7 @@ export function PlayerScreen({ itemId, version }: Props) {
         visible={overlayVisible}
         onToggle={toggleOverlay}
         onFadeStart={chrome.onFadeStart}
+        topActions={<PlayerTopActions onPip={pip.available ? pip.enter : null} />}
       />
 
       <PlayerQualityNotice drop={qualityDrop} started={started} itemId={itemId} />
@@ -295,6 +293,7 @@ export function PlayerScreen({ itemId, version }: Props) {
       {/* Jusqu'à ce que la lecture AVANCE : l'écran de chargement, au-dessus
           des contrôles, puis un fondu. */}
       {!started && <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />}
+      </>}
     </PlayerVideoSurface>
   );
 }

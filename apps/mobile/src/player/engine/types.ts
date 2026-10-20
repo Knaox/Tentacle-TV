@@ -52,6 +52,8 @@ export interface PlayerEngineHandle {
    * la fermeture de l'écran ne démonte la vue.
    */
   release(): void;
+  /** iOS : ouvrir l'image dans l'image du moteur (AVKit). Android passe par l'activité. */
+  enterPictureInPicture?(): void;
 }
 
 /**

@@ -20,6 +20,8 @@ import { PlaybackProblemView } from "../components/problems/PlaybackProblemView"
 import { localExists, type OfflineLocalSource } from "../offline/engineApi";
 import { usePlaybackFailure, usePlaybackProblemModel } from "../player/problems/usePlaybackFailure";
 import { PlayerStatusBar, useChromeVisibility } from "../player/chrome/PlayerStatusBar";
+import { usePlayerScreenPip } from "../player/pip/usePlayerScreenPip";
+import { PlayerTopActions } from "../components/player/PlayerTopActions";
 
 interface Props {
   itemId: string;
@@ -68,7 +70,6 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
   const [scrubbing, setScrubbing] = useState(false);
   // La barre d'état du système suit les commandes (`PlayerStatusBar`).
   const chrome = useChromeVisibility(overlayVisible);
-  const [pipActive, setPipActive] = useState(false);
 
 
   // Nouveau titre : remise à zéro des gardes ; la position de départ vient de la source locale.
@@ -160,6 +161,10 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
   }), [eng.engine, pb.audioIndex, pb.subtitleIndex, pb.changeAudio, pb.changeSubtitle, handleSeek, leavePlayer]));
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
+  // Image dans l'image : même règle que le lecteur serveur (`pipPolicy.ts`).
+  const pip = usePlayerScreenPip({ engineRef, paused, started: videoReady, ended, failed, remote: isAirPlaying,
+    streams: pb.streams, setPaused, seekBy: (delta) => handleSeek(pb.positionRef.current + delta), onClosed: leavePlayer,
+    hideOverlay: () => setOverlayVisible(false) });
   // « Vous regardez encore ? » — hors ligne aussi : le réglage a sa copie sur l'appareil.
   const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started: videoReady, setPaused });
 
@@ -219,9 +224,10 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
       onSeek={handleSeek}
       onToggleOverlay={toggleOverlay} onActivity={stillWatching.reportActivity}
       onSwipeDown={leavePlayer}
-      onPipChange={(active) => { setPipActive(active); if (active) setOverlayVisible(false); }}
+      onPipChange={pip.onEngineChange}
     >
-      <PlayerStatusBar controlsVisible={chrome.shown && videoReady} pipActive={pipActive} />
+      <PlayerStatusBar controlsVisible={chrome.shown && videoReady} pipActive={pip.active} />
+      {!pip.active && <>
       <MobilePlayerOverlay
         title={pb.item?.Name ?? ""}
         currentTime={currentTime}
@@ -255,8 +261,10 @@ export function LocalPlayerScreen({ itemId, localSource }: Props) {
         visible={overlayVisible}
         onToggle={toggleOverlay}
         onFadeStart={chrome.onFadeStart}
+        topActions={<PlayerTopActions onPip={pip.available ? pip.enter : null} />}
       />
       <LocalPlaybackBadge visible={overlayVisible} />
+      </>}
     </PlayerVideoSurface>
   );
 }
