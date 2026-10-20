@@ -43,3 +43,17 @@ export function recordBootIntroFrames(report: IntroFrameReport, trace: IntroWall
     AsyncStorage.setItem(BOOT_INTRO_FRAMES_KEY, JSON.stringify(entry)).catch(() => {});
   }, WRITE_DELAY_MS);
 }
+
+/** Au-delà, une ouverture qui n'est pas arrivée est figée : son état est relevé pour le banc. */
+export const BOOT_INTRO_STUCK_MS = 12_000;
+
+/**
+ * Le relevé d'une ouverture FIGÉE (jamais arrivée) : l'état de l'horloge, ce que dit la porte, la
+ * chronologie et les trous — sous la même clé, `stuck: true`. Sans lui, rien n'est écrit : le
+ * bilan ne part qu'à l'arrivée.
+ */
+export function recordStuckBootIntro(snapshot: Record<string, unknown>, trace: IntroWallTrace, viewport: { width: number; height: number }): void {
+  const entry = { at: new Date().toISOString(), stuck: true, viewport, snapshot, timeline: timelineOf(trace) };
+  if (__DEV__) console.log(`[ouverture] FIGÉE : ${JSON.stringify(entry)}`);
+  AsyncStorage.setItem(BOOT_INTRO_FRAMES_KEY, JSON.stringify(entry)).catch(() => {});
+}
