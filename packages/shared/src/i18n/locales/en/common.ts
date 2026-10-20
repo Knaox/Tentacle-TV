@@ -310,4 +310,8 @@ export default {
   seasonTabEpisodes_other: "{{count}} episodes",
   seasonTabCurrent: "in progress",
   seasonTabWatched: "watched",
+  // Poignée des feuilles du bas (mobile) : le glissement a son équivalent accessible.
+  sheetExpand: "Expand",
+  sheetCollapse: "Collapse",
+  sheetHandleHint: "Swipe up to expand, down to collapse or close",
 } as const;
