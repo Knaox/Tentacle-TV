@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { getClockOffsetMs, getClockRttMs } from "../../socket/clockSync";
 import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
 import {
-  TICKS_PER_SECOND, WT_LATE_START_SEEK_S, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
-  WT_SEEK_NOTIFY_DEBOUNCE_MS, updatePlayLatency, wtPositionSecondsAt, type SegmentType,
+  TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
+  WT_SEEK_NOTIFY_DEBOUNCE_MS, needsStartCorrection, updatePlayLatency, wtPositionSecondsAt, type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
 import {
@@ -50,16 +50,17 @@ export function useGroupIntents({
       const measured = performance.now() - scheduled.playCalledAt;
       shared.playLatencyMsRef.current = updatePlayLatency(shared.playLatencyMsRef.current, measured);
       shared.scheduledPlayRef.current = null;
-      // Parti en retard (onglet en arrière-plan, sortie audio lente) : à +5 %,
-      // une seconde prendrait vingt secondes — UN seek correctif, tout de suite.
+      // Parti en retard (onglet en arrière-plan, sortie audio lente) ou en
+      // avance (lecture automatique) : à ±5 %, une seconde prendrait vingt
+      // secondes — UN seek correctif, tout de suite.
       const t = transportRef.current;
       const behind = wtPositionSecondsAt(r, shared.serverNowRef.current()) - (t?.getPositionSeconds() ?? 0);
       wtLog("engine", "reprise planifiée : lecture effective", {
         latencyMs: Math.round(measured), emaMs: shared.playLatencyMsRef.current, behindS: behind.toFixed(2),
       });
-      if (t && !r.paused && behind > WT_LATE_START_SEEK_S) {
+      if (t && !r.paused && needsStartCorrection(behind)) {
         const target = wtPositionSecondsAt(r, shared.serverNowRef.current()) + seekLookaheadS(shared);
-        wtLog("engine", "reprise planifiée : départ tardif → seek correctif", { toS: target.toFixed(2) });
+        wtLog("engine", "reprise planifiée : départ décalé → seek correctif", { toS: target.toFixed(2), behindS: behind.toFixed(2) });
         armEcho(shared);
         t.seekTo(target);
       }

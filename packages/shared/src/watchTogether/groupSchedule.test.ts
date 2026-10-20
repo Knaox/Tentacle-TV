@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  computePlayDelayMs, isFutureAnchor, needsPreseek, pendingIntentUntil, updatePlayLatency,
+  computePlayDelayMs, isFutureAnchor, needsPreseek, needsStartCorrection, pendingIntentUntil, updatePlayLatency,
 } from "./groupSchedule";
 
 describe("isFutureAnchor", () => {
@@ -44,5 +44,14 @@ describe("needsPreseek", () => {
   it("la tolérance de mpv est plus large : posé par la barrière, il ne rejoue pas son seek", () => {
     expect(needsPreseek(10, 10.08, 0.1)).toBe(false);
     expect(needsPreseek(10, 10.12, 0.1)).toBe(true);
+  });
+});
+
+describe("needsStartCorrection", () => {
+  it("un seek correctif dans les DEUX sens au-delà de 250 ms, rien en deçà", () => {
+    expect(needsStartCorrection(0.3)).toBe(true);
+    expect(needsStartCorrection(-0.3)).toBe(true);
+    expect(needsStartCorrection(0.2)).toBe(false);
+    expect(needsStartCorrection(-0.2)).toBe(false);
   });
 });

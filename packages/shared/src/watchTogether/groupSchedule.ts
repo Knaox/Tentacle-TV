@@ -1,6 +1,6 @@
 import {
-  WT_PENDING_INTENT_MIN_MS, WT_PLAY_LATENCY_MAX_MS, WT_PRESEEK_TOLERANCE_S, WT_SEEK_LATENCY_MAX_S,
-  WT_SEEK_LATENCY_MIN_S, type WtRoomStateDto,
+  WT_LATE_START_SEEK_S, WT_PENDING_INTENT_MIN_MS, WT_PLAY_LATENCY_MAX_MS, WT_PRESEEK_TOLERANCE_S,
+  WT_SEEK_LATENCY_MAX_S, WT_SEEK_LATENCY_MIN_S, type WtRoomStateDto,
 } from "../types/watchTogether";
 
 /**
@@ -60,4 +60,15 @@ export function needsPreseek(positionS: number, targetS: number, toleranceS: num
 export function updateSeekLatency(previous: number | null, measuredS: number): number {
   const clamped = Math.min(WT_SEEK_LATENCY_MAX_S, Math.max(WT_SEEK_LATENCY_MIN_S, measuredS));
   return previous === null ? clamped : previous * 0.7 + clamped * 0.3;
+}
+
+/**
+ * Juste après une reprise planifiée, l'écart à la salle (secondes, > 0 = en
+ * retard) se corrige-t-il d'UN seek ? Dans les DEUX sens : à ±5 %, une
+ * seconde prendrait vingt secondes, en avance comme en retard (défaut mesuré
+ * au banc le 20/10 : un membre qui arrive partait 200 à 300 ms en avance et
+ * mettait 10 s à passer sous 100 ms).
+ */
+export function needsStartCorrection(behindS: number): boolean {
+  return Math.abs(behindS) > WT_LATE_START_SEEK_S;
 }
