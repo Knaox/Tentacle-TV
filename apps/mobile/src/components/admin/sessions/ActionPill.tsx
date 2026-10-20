@@ -8,8 +8,10 @@ export type PillStatus = "idle" | "busy" | "done" | "error";
 /**
  * Un geste du tableau de bord, qui se voit jusqu'au bout : il travaille
  * (anneau, et il ne se relance pas), puis dit « Envoyé » ou « Échec » le
- * temps de le lire (`buttonStatus`, partagé avec le bureau). Trois tons : neutre, marque
- * (écrire), danger (arrêter).
+ * temps de le lire (`buttonStatus`, partagé avec le bureau). Trois tons : neutre,
+ * marque (écrire), danger (arrêter) — tous sur la même puce neutre : seul le
+ * libellé du danger rougit. Une carte de session portait une pilule grise, une
+ * violette et une rouge côte à côte ; la couleur ne dit plus que le danger.
  */
 export const ActionPill = memo(function ActionPill({
   label, icon, tone = "neutral", status = "idle", doneLabel, errorLabel, iconOnly = false, onPress,
@@ -28,8 +30,8 @@ export const ActionPill = memo(function ActionPill({
   const st = useThemedStyles(makeStyles);
   const colors = {
     neutral: { bg: theme.colors.fill.soft, fg: theme.colors.text.primary, border: theme.colors.border.subtle },
-    brand: { bg: theme.colors.brand.soft, fg: theme.colors.brand.light, border: theme.colors.brand.glow },
-    danger: { bg: theme.colors.danger.surface, fg: theme.colors.status.error, border: theme.colors.danger.border },
+    brand: { bg: theme.colors.fill.soft, fg: theme.colors.text.primary, border: theme.colors.border.subtle },
+    danger: { bg: theme.colors.fill.soft, fg: theme.colors.status.error, border: theme.colors.border.subtle },
   }[tone];
   const busy = status === "busy";
   const shown = status === "done" && doneLabel ? doneLabel : status === "error" && errorLabel ? errorLabel : label;
