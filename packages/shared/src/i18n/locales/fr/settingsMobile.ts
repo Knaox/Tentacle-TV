@@ -80,9 +80,17 @@ export default {
     subtitleSizeHint: "Lecteur avancé ; 160 % par défaut",
     subtitlePositionHint: "100 % = tout en bas de l'image",
   },
+  boot: {
+    group: "Ouverture",
+    intro: "Animation d'ouverture",
+    introHint: "Le logo qui s'anime au lancement de l'app. Jamais avec « Réduire les animations » du système.",
+    sound: "Son au démarrage",
+    soundHint: "Respecte le mode silencieux et ne coupe pas votre musique.",
+  },
   offline: {
     liveTransfers: "Suivi en direct",
     liveTransfersHint: "Temps restant sur l'écran verrouillé pendant un transfert",
+    liveTransfersDenied: "Notifications désactivées dans les réglages de l'appareil : le suivi reste invisible.",
   },
   advanced: {
     row: "Réglages avancés : sur l'app bureau",

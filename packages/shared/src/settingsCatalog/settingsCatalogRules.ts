@@ -32,8 +32,15 @@ export function meetsSettingsRequirement(requirement: SettingsRequirement, ctx: 
     case "liquidGlass": return ctx.liquidGlass;
     case "advancedEngine": return ctx.advancedEngine;
     case "engineOptions": return ctx.engineOptions;
+    case "bootIntro": return ctx.bootIntro;
     case "liveTransfers": return ctx.liveTransfers;
     case "personal": return !ctx.profileSession;
+    case "tickets":
+    case "manageAccount":
+    case "pairDevices":
+    case "push":
+    case "invites":
+      return ctx.abilities.has(requirement);
   }
 }
 

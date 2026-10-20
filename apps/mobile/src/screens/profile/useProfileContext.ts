@@ -9,6 +9,8 @@ import { useThemeMode } from "@/theme";
 import { engineOptionsFor } from "@/components/settings/controls/EngineOptionsRows";
 import { useCanSwitchProfileFlag, useIsProfileSession } from "./familyEntryHooks";
 import { useLiveTransfersSetting } from "./offlineEntryHooks";
+import { useBootSettings } from "./bootEntryHooks";
+import { useSessionAbilities } from "./abilityEntryHooks";
 import { playerSettingsContext } from "./playerSettingsContext";
 import type { SettingsCatalogContext } from "@tentacle-tv/shared";
 
@@ -23,7 +25,8 @@ export const FAMILY_SCREEN_READY = true;
 export function useProfileContext(): SettingsCatalogContext {
   const offline = useOfflineMode();
   // Réactif : une relecture du profil (droits) re-rend la structure.
-  const isAdmin = useStoredUser()?.Policy?.IsAdministrator === true;
+  const legacyIsAdmin = useStoredUser()?.Policy?.IsAdministrator === true;
+  const { abilities, isAdmin } = useSessionAbilities(legacyIsAdmin);
   const { state: connectivity } = useConnectivity();
   const { visible: offlineVisible } = useOfflineVisibility();
   const { liquidGlass } = useThemeMode();
@@ -35,6 +38,7 @@ export function useProfileContext(): SettingsCatalogContext {
   const canSwitchProfile = useCanSwitchProfileFlag();
   const profileSession = useIsProfileSession();
   const liveTransfers = useLiveTransfersSetting().available;
+  const bootIntro = useBootSettings().available;
   const { capabilities } = useServerCapabilities();
   // La build et la plateforme ne changent pas pendant la vie de l'app.
   const player = useMemo(() => {
@@ -44,6 +48,7 @@ export function useProfileContext(): SettingsCatalogContext {
   return useMemo(() => ({
     platform: "mobile",
     capabilities,
+    abilities,
     offline,
     isAdmin,
     offlineVisible,
@@ -54,7 +59,8 @@ export function useProfileContext(): SettingsCatalogContext {
     liquidGlass: liquidGlass.supported,
     advancedEngine: player.advancedEngine,
     engineOptions: player.engineOptions,
+    bootIntro,
     liveTransfers,
     profileSession,
-  }), [offline, isAdmin, connectivity, offlineVisible, familyOn, canSwitchProfile, liquidGlass.supported, capabilities, player, liveTransfers, profileSession]);
+  }), [offline, isAdmin, abilities, connectivity, offlineVisible, familyOn, canSwitchProfile, liquidGlass.supported, capabilities, player, bootIntro, liveTransfers, profileSession]);
 }

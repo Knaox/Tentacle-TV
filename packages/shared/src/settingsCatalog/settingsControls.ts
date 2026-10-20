@@ -21,6 +21,7 @@ import type {
  * - subtitleSize, subtitlePosition, engine, engineOptions → réglages du lecteur
  *   du mobile (`tentacle_sub_scale`, `tentacle_sub_pos`, `tentacle_video_engine`…) ;
  * - dataSaver → `tentacle_data_saver` (même clé sur le web) ;
+ * - bootIntro, bootSound → `tentacle_boot_intro`, `tentacle_boot_sound` (« 0 » = coupé) ;
  * - wifiOnly, backgroundTransfers → `offline/settings.ts` du mobile ;
  *   notifyReady, liveTransfers → `offline/deviceSettings.ts` du mobile
  *   (`tentacle_offline_live_activity` pour le suivi en direct).
@@ -43,6 +44,8 @@ export const SETTINGS_CONTROLS: Readonly<Record<SettingsControlId, { scope: Sett
   dataSaver: { scope: "device", type: "segmented" },
   engine: { scope: "device", type: "segmented" },
   engineOptions: { scope: "device", type: "disclosure" },
+  bootIntro: { scope: "device", type: "switch" },
+  bootSound: { scope: "device", type: "switch" },
   wifiOnly: { scope: "device", type: "switch" },
   backgroundTransfers: { scope: "device", type: "switch" },
   notifyReady: { scope: "device", type: "switch" },
