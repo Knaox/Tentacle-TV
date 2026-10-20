@@ -31,3 +31,30 @@ function subscribe(listener: () => void): () => void {
 export function useWtSheet(): WtSheet {
   return useSyncExternalStore(subscribe, currentWtSheet, currentWtSheet);
 }
+
+/**
+ * Un lien profond (`tentacle://watch-together`, `…/affinity`) arrive souvent
+ * à froid, avant que la séance soit connue : la route le NOTE et rend la main
+ * à l'accueil ; l'hôte l'honore dès qu'il peut (`takeWtLink`), une fois.
+ */
+export type WtLink = "room" | "affinity";
+let pendingLink: WtLink | null = null;
+
+export function requestWtLink(link: WtLink): void {
+  pendingLink = link;
+  for (const listener of listeners) listener();
+}
+
+/** La demande en attente, retirée au passage. */
+export function takeWtLink(): WtLink | null {
+  const link = pendingLink;
+  pendingLink = null;
+  return link;
+}
+
+export function peekWtLink(): WtLink | null { return pendingLink; }
+
+/** La demande de lien en attente, suivie (l'hôte la prend quand il peut). */
+export function useWtLink(): WtLink | null {
+  return useSyncExternalStore(subscribe, peekWtLink, peekWtLink);
+}
