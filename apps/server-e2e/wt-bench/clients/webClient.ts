@@ -47,6 +47,8 @@ export interface WebClientOptions {
   mediaDelayCount?: number;
 }
 
+let deviceSeq = Math.floor(Math.random() * 5000);
+
 export class WebClient {
   readonly frames: WsFrame[] = [];
   readonly console: string[] = [];
@@ -85,6 +87,13 @@ export class WebClient {
       ws.on("framereceived", (f) => record("in")(f.payload));
       ws.on("framesent", (f) => record("out")(f.payload));
     });
+    // Une adresse privée par appareil, sur la seule connexion : la route de
+    // connexion est limitée à 5 par minute et par adresse, et tout le banc
+    // part de 127.0.0.1 (le backend croit X-Forwarded-For venu de la boucle locale).
+    const ip = `10.77.${Math.floor(deviceSeq / 250)}.${(deviceSeq % 250) + 1}`;
+    deviceSeq += 1;
+    await context.route(/\/api\/auth\/login$/, (route) =>
+      route.continue({ headers: { ...route.request().headers(), "x-forwarded-for": ip } }));
     if (opts.maxBitrate) await client.capBitrate(opts.maxBitrate);
     if (opts.mediaDelayMs) await client.delayMedia(opts.mediaDelayMs, opts.mediaDelayCount ?? 4);
     return client;

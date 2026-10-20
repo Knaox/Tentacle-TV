@@ -101,9 +101,29 @@ export class ScenarioContext {
     }
   }
 
+  /**
+   * Fin de scénario : chaque appareil QUITTE sa salle avant de fermer — sinon,
+   * adhésion par appareil oblige, l'appareil fermé tient le compte dans la
+   * salle le temps de sa grâce (120 s) et le scénario suivant ne peut plus
+   * créer de groupe pour ce compte.
+   */
   async close(): Promise<void> {
     await this.dump("fin");
-    for (const c of this.clients) await c.close();
+    await this.release(...this.clients);
+  }
+
+  /** Fait quitter puis ferme ces membres (au milieu d'un scénario aussi). */
+  async release(...clients: WebClient[]): Promise<void> {
+    for (const c of [...clients]) {
+      for (let i = 0; i < 4; i += 1) {
+        const g = await c.api<unknown>("GET", "/api/watch-together/group").catch(() => null);
+        if (!g?.json) break;
+        await c.api("POST", "/api/watch-together/group/leave").catch(() => null);
+      }
+      await c.close();
+      const at = this.clients.indexOf(c);
+      if (at >= 0) this.clients.splice(at, 1);
+    }
   }
 }
 

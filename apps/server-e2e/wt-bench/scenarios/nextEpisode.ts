@@ -26,15 +26,17 @@ export async function nextEpisodeScenario(ctx: ScenarioContext): Promise<void> {
   const al2 = await waitAligned([s.a, s.b], { withinMs: 100, playing: true, since: askAt, timeoutMs: 45_000, stable: 4 });
   ctx.metric("épisode suivant (manuel) : de la demande à l'alignement", al2.ms === null ? "jamais" : `${al2.ms} ms`, al2.ms);
 
-  // 2) Fin naturelle de l'épisode 2 : un saut près de la fin (touches → rapprochées, un seul seek).
+  // 2) Fin naturelle de l'épisode 2 : des sauts ESPACÉS (un appui martelé se perd,
+  // cf. scénario seek-hammer) jusqu'à 30 s de la fin.
   await settlePast(ctx, s, INTRO_END_S + 2);
-  for (let i = 0; i < 8; i += 1) {
+  for (let i = 0; i < 12; i += 1) {
+    const p0 = await measureOnce([s.a, s.b]);
+    if ((p0.pos.A ?? 0) > 262) break;
     await s.a.press("ArrowRight");
-    await new Promise((ok) => setTimeout(ok, 80));
+    await waitAligned([s.a, s.b], { withinMs: 150, playing: true, since: Date.now(), timeoutMs: 10_000, stable: 2 });
   }
-  const near = await waitAligned([s.a, s.b], { withinMs: 100, playing: true, since: Date.now(), timeoutMs: 20_000 });
   const p = await measureOnce([s.a, s.b]);
-  ctx.log(`après les huit sauts : A ${p.pos.A?.toFixed(1)} s, B ${p.pos.B?.toFixed(1)} s (réaligné en ${near.ms ?? "—"} ms)`);
+  ctx.log(`avant la fin : A ${p.pos.A?.toFixed(1)} s, B ${p.pos.B?.toFixed(1)} s`);
   const endAt = Date.now();
   const both3 = await waitFor(async () => {
     const [sa, sb] = await Promise.all([s.a.sample(), s.b.sample()]);

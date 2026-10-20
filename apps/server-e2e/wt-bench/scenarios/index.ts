@@ -16,6 +16,7 @@ import { introGateScenario, slowStartScenario } from "./slowMember";
 import { networkScenario } from "./network";
 import { nextEpisodeScenario } from "./nextEpisode";
 import { affinityScenario } from "./affinity";
+import { seekHammerScenario } from "./seekHammer";
 
 export interface Scenario {
   id: string;
@@ -28,6 +29,7 @@ export const SCENARIOS: Scenario[] = [
   { id: "invite-race", title: "Invitation arrivée pendant le chargement de l'accueil", run: inviteRaceScenario },
   { id: "sync-direct", title: "Synchro en lecture directe : départ, régime, pause, lecture, seek, arrière-plan", run: (c) => syncScenario(c, false) },
   { id: "sync-transcode", title: "Synchro avec B en transcodage (1,5 Mb/s)", run: (c) => syncScenario(c, true) },
+  { id: "seek-hammer", title: "Appuis → martelés : seul, puis en séance", run: seekHammerScenario },
   { id: "slow-start", title: "Membre lent à démarrer (transcodage + segments retardés)", run: slowStartScenario },
   { id: "intro-gate", title: "Intro au tout début : « Passer l'intro » tant que tous ne sont pas prêts", run: introGateScenario },
   { id: "third-device", title: "3ᵉ appareil du même compte", run: thirdDeviceScenario },

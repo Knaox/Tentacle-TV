@@ -10,10 +10,23 @@ import type { ScenarioContext } from "./context";
 
 const WT = "/api/watch-together";
 
-/** Quitte tout groupe laissé par un passage précédent (état serveur en mémoire). */
+/**
+ * Quitte tout groupe laissé par un passage précédent (état serveur en mémoire).
+ * Avec l'adhésion par appareil (serveur 1.32.0), un nouveau contexte est un
+ * AUTRE appareil : la salle du compte lui est « ailleurs » — il la rejoint ici
+ * pour pouvoir la quitter, jusqu'à ce que le compte n'en ait plus.
+ */
 export async function leaveAny(c: WebClient): Promise<void> {
-  const mine = await c.api<WtRoomStateDto | null>("GET", `${WT}/group`);
-  if (mine.json) await c.api("POST", `${WT}/group/leave`);
+  for (let i = 0; i < 6; i += 1) {
+    const mine = await c.api<WtRoomStateDto | null>("GET", `${WT}/group`);
+    if (mine.json) {
+      await c.api("POST", `${WT}/group/leave`);
+      continue;
+    }
+    const elsewhere = await c.api<unknown>("GET", `${WT}/group/elsewhere`);
+    if (elsewhere.status !== 200 || !elsewhere.json) return;
+    await c.api("POST", `${WT}/group/join-here`);
+  }
 }
 
 export async function createGroup(host: WebClient, itemId?: string): Promise<WtRoomStateDto> {

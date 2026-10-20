@@ -85,8 +85,7 @@ export async function introGateScenario(ctx: ScenarioContext): Promise<void> {
       ctx.metric("[auto] après le saut commun : réaligné", res.ms === null ? "jamais" : `${res.ms} ms`, res.ms, "< 1 000 ms");
     }
     await ctx.dump("auto");
-    for (const c of [a, b]) await c.close();
-    ctx.clients.length = 0;
+    await ctx.release(a, b);
   }
   // 2) L'hôte « propose » (bouton) : A clique « Passer l'intro » dès qu'il le voit.
   {

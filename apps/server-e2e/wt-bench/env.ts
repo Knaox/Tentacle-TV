@@ -100,6 +100,7 @@ async function upJellyfin(): Promise<Omit<BenchState, "backendUrl" | "webUrl" | 
   const userC = await ensureUser(http, admin.token, USER3_NAME);
   const userD = await ensureUser(http, admin.token, USER4_NAME);
   const { seriesId, episodeIds } = await scanShow(http, admin.token, admin.id);
+  await ensureTmdbId(http, admin.token, admin.id, seriesId);
   return {
     jellyfinUrl: url, apiKey, adminId: admin.id, seriesId, episodeIds,
     users: {
@@ -133,6 +134,17 @@ async function scanShow(http: JellyfinHttp, token: string, adminId: string): Pro
   const series = await http.get<Items>(`/Items?userId=${adminId}&Recursive=true&IncludeItemTypes=Series`, token);
   const eps = (await episodes()).Items.sort((x, y) => (x.IndexNumber ?? 0) - (y.IndexNumber ?? 0));
   return { seriesId: series.Items[0].Id, episodeIds: eps.map((e) => e.Id) };
+}
+
+/**
+ * L'affinité (et la reco) ne retiennent que les titres qui ont un identifiant
+ * TMDB. La série synthétique n'en a pas (fournisseurs coupés) : on lui en
+ * pose un, fictif — le banc ne parle jamais à TMDB.
+ */
+async function ensureTmdbId(http: JellyfinHttp, token: string, adminId: string, itemId: string): Promise<void> {
+  const item = await http.get<Record<string, unknown> & { ProviderIds?: Record<string, string> }>(`/Items/${itemId}?userId=${adminId}`, token);
+  if (item.ProviderIds?.Tmdb) return;
+  await http.post(`/Items/${itemId}`, { ...item, ProviderIds: { ...(item.ProviderIds ?? {}), Tmdb: "990001" } }, token);
 }
 
 /** Lance un processus détaché, journal dans un fichier ; rend son PID. */
