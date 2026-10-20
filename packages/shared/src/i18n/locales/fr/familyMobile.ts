@@ -45,4 +45,10 @@ export default {
     photoChoose: "Choisir ma photo",
     photoDone: "Photo choisie.",
   },
+  /** La feuille « Changer de profil » (en-tête, Réglages › Compte, onglet Profil). */
+  switcher: {
+    back: "Profils",
+    switched: "Vous regardez sur le profil de {{name}}",
+    close: "Fermer",
+  },
 } as const;

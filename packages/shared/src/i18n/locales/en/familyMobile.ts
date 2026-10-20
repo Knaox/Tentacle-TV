@@ -43,4 +43,10 @@ export default {
     photoChoose: "Choose my photo",
     photoDone: "Photo chosen.",
   },
+  /** The "Switch profile" sheet (header, Settings › Account, Profile tab). */
+  switcher: {
+    back: "Profiles",
+    switched: "You're now watching as {{name}}",
+    close: "Close",
+  },
 } as const;

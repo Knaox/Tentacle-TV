@@ -1,16 +1,19 @@
 import { FirstRunHost } from "../firstRun/FirstRunHost";
 import { ProfileLaunchGate } from "./ProfileLaunchGate";
+import { ProfileSwitcherHost } from "./ProfileSwitcherHost";
 
 /**
  * Les hôtes du lancement de la Famille, montés une fois à la racine : « Qui
  * regarde ? » (`ProfileLaunchGate`), puis le premier lancement du profil
- * (`FirstRunHost`) — l'ordre de la TV : profil et PIN, puis l'accueil, puis la photo.
+ * (`FirstRunHost`) — l'ordre de la TV : profil et PIN, puis l'accueil, puis la photo —,
+ * et la feuille « Changer de profil » (`openProfileSwitcher()`).
  */
 export function FamilyLaunchHosts() {
   return (
     <>
       <ProfileLaunchGate />
       <FirstRunHost />
+      <ProfileSwitcherHost />
     </>
   );
 }
