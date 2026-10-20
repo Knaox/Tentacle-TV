@@ -258,6 +258,14 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   du stockage (la décision précède tout), libellés `preferences.bootIntro*`.
 - **L'écran de lancement** est l'encre seule (#0D0B13) : storyboard iOS sans
   image, icône transparente d'Android 12+, fenêtre de l'app à l'encre.
+- **Jamais le sombre forcé (Android)** : ColorOS (« appliquer aux apps
+  tierces »), One UI ou MIUI savent forcer le sombre sur une app ; le sombre
+  forcé de HWUI inverse la clarté des IMAGES qu'il juge claires, et chaque
+  pièce du poulpe en est une (react-native-svg la rastérise) — yeux, tête,
+  dégradés recolorés, « pas le même logo » (retour de Damien, Oppo Find X3 Pro,
+  ColorOS 14, 20/10). `android:forceDarkAllowed="false"` sur les deux thèmes
+  (styles.xml) et `isForceDarkAllowed = false` sur la vue racine
+  (MainActivity), pour les surcouches qui ne lisent pas le thème.
 - **La racine attend la décision** (quelques millisecondes) avant de se dire
   prête : la navigation n'est jamais montée hors de l'écran du poulpe.
 
