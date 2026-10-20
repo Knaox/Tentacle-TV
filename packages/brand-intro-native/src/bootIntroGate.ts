@@ -19,9 +19,11 @@ export interface BootIntroReport {
   blocked: boolean;
   /** Un écran qui peut recouvrir le premier n'a pas encore tranché (mobile : « Qui regarde ? », premier lancement). */
   pending: boolean;
+  /** L'app a fini de démarrer (mobile : stockage relu, polices chargées) : l'encre peut céder au poulpe. */
+  appReady: boolean;
 }
 
-let report: BootIntroReport = { playing: false, route: null, screens: {}, blocked: false, pending: false };
+let report: BootIntroReport = { playing: false, route: null, screens: {}, blocked: false, pending: false, appReady: false };
 const listeners = new Set<() => void>();
 
 function update(next: BootIntroReport): void {
@@ -30,7 +32,8 @@ function update(next: BootIntroReport): void {
     next.route === report.route &&
     next.screens === report.screens &&
     next.blocked === report.blocked &&
-    next.pending === report.pending
+    next.pending === report.pending &&
+    next.appReady === report.appReady
   ) return;
   report = next;
   listeners.forEach((listener) => listener());
@@ -58,6 +61,9 @@ export const bootIntroGate = {
   },
   reportPending(pending: boolean): void {
     update({ ...report, pending });
+  },
+  reportAppReady(appReady: boolean): void {
+    update({ ...report, appReady });
   },
   /** L'écran affiché, à chaque changement de la navigation. */
   reportRoute(name: string | undefined): void {

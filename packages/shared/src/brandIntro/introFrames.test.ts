@@ -4,6 +4,7 @@ import { droppedIn, formatIntroFrameReport, introFramePeriod, introFrameReport }
 const ASSEMBLY = 0;
 const HOLD = 1;
 const DIVE = 2;
+const SETTLE = 3;
 const log = (phase: number, gaps: number[]) => gaps.flatMap((gap) => [phase, gap]);
 
 describe("le compte des images de l'ouverture", () => {
@@ -24,7 +25,7 @@ describe("le compte des images de l'ouverture", () => {
     const steady = Array.from({ length: 60 }, () => 16.7);
     const report = introFrameReport([...log(ASSEMBLY, steady), ...log(HOLD, steady), ...log(DIVE, [16.7, 1000, 16.7])]);
     expect(report.hz).toBe(60);
-    expect(report.phases.assembly).toEqual({ frames: 60, dropped: 0, worstMs: 16.7 });
+    expect(report.phases.assembly).toMatchObject({ frames: 60, dropped: 0, worstMs: 16.7 });
     expect(report.phases.dive.dropped).toBe(59);
     expect(report.total.dropped).toBe(59);
     expect(report.total.worstMs).toBe(1000);
@@ -34,7 +35,15 @@ describe("le compte des images de l'ouverture", () => {
     const steady = Array.from({ length: 120 }, (_, index) => (index % 2 ? 8.2 : 8.5));
     const report = introFrameReport([...log(ASSEMBLY, steady), ...log(DIVE, steady)]);
     expect(report.hz).toBe(120);
-    expect(report.total).toEqual({ frames: 240, dropped: 0, worstMs: 8.5 });
+    expect(report.total).toMatchObject({ frames: 240, dropped: 0, worstMs: 8.5 });
     expect(formatIntroFrameReport(report)).toContain("120 Hz — 240 images, 0 perdues");
+  });
+
+  it("l'encre immobile du début ne compte pas : ses trous ne se voient pas", () => {
+    const report = introFrameReport([...log(SETTLE, [16.7, 600, 16.7]), ...log(ASSEMBLY, Array.from({ length: 30 }, () => 16.7))]);
+    expect(report.total).toMatchObject({ frames: 30, dropped: 0 });
+    expect(report.phases.settle).toMatchObject({ frames: 3, worstMs: 600 });
+    expect(report.phases.settle.durationMs).toBeCloseTo(633.4, 6);
+    expect(formatIntroFrameReport(report)).toContain("encre 633 ms, pire 600 ms");
   });
 });

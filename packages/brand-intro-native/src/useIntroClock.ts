@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { runOnJS, useFrameCallback, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { INTRO_HOLD_AT, INTRO_TIMING } from "@tentacle-tv/shared/brandIntro";
-import { BOOT_INTRO_IDLE_FADE_MS, BOOT_SOUND_FILE_AT, bootSoundLeads } from "@tentacle-tv/shared/brandIntro";
-import type { IntroClock } from "./introWorklets";
+import { BOOT_INTRO_IDLE_FADE_MS, BOOT_SOUND_FILE_AT, INTRO_START, INTRO_START_FRESH, bootSoundLeads } from "@tentacle-tv/shared/brandIntro";
+import { introStartStepWorklet, type IntroClock } from "./introWorklets";
 
 /** Les états de l'horloge (des nombres : ils vivent sur le fil d'interface). */
-export const CLOCK = { running: 0, holding: 1, releasing: 2, done: 3, stopped: 4 } as const;
+export const CLOCK = { running: 0, holding: 1, releasing: 2, done: 3, stopped: 4, waiting: 5 } as const;
 
 /**
  * Avant que le son ne soit demandé, une image qui traîne (le fil d'interface
@@ -33,6 +33,8 @@ export interface IntroClockControl extends IntroClock {
   releaseDelay: SharedValue<number>;
   /** Arrivée ou renoncement : l'horloge ne compte plus aucune image. */
   stop: () => void;
+  /** L'app a fini de démarrer (mobile, `waitForApp`) : l'encre peut céder au poulpe. */
+  appReady: SharedValue<boolean>;
   /**
    * Le journal des images (fil d'interface) : `[phase, écart en ms, …]`, phases de shared
    * `INTRO_FRAME_PHASES` — bilan par `introFrameReport`. Coût : deux nombres par image.
@@ -48,13 +50,23 @@ export interface IntroClockControl extends IntroClock {
  * l'heure exacte de l'appui. Le JavaScript du démarrage n'y prend aucune part.
  * `frozenAt` (le banc) : l'horloge reste figée à cet instant.
  */
-export function useIntroClock(events: IntroClockEvents, frozenAt: number | null = null): IntroClockControl {
+export interface IntroClockOptions {
+  /**
+   * Rester sur l'encre (immobile) tant que l'app démarre (`appReady`) et que le fil
+   * d'interface n'a pas rendu quelques images régulières — shared `introStart`. Mobile.
+   */
+  waitForApp?: boolean;
+}
+
+export function useIntroClock(events: IntroClockEvents, frozenAt: number | null = null, options: IntroClockOptions = {}): IntroClockControl {
   const scene = useSharedValue(frozenAt ?? 0);
   const idle = useSharedValue(0);
   const idleWeight = useSharedValue(0);
   const landed = useSharedValue(0);
   const ready = useSharedValue(false);
-  const state = useSharedValue<number>(frozenAt === null ? CLOCK.running : CLOCK.stopped);
+  const state = useSharedValue<number>(frozenAt !== null ? CLOCK.stopped : options.waitForApp ? CLOCK.waiting : CLOCK.running);
+  const appReady = useSharedValue(false);
+  const startState = useSharedValue({ ...INTRO_START_FRESH });
   const last = useSharedValue(-1);
   const releaseAt = useSharedValue(0);
   const soundAsked = useSharedValue(false);
@@ -71,13 +83,21 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
     last.value = now;
     if (previous < 0 || state.value === CLOCK.done || state.value === CLOCK.stopped) return;
     const elapsed = now - previous;
-    // 0 : l'assemblage ; 1 : l'attente sur le bouton (et la reprise) ; 2 : ta-dum et la plongée.
-    const phase = state.value === CLOCK.holding || state.value === CLOCK.releasing ? 1 : soundAsked.value || scene.value >= INTRO_HOLD_AT ? 2 : 0;
+    // 0 : l'assemblage ; 1 : l'attente sur le bouton (et la reprise) ; 2 : ta-dum et la plongée ; 3 : l'encre du début.
+    const waiting = state.value === CLOCK.waiting;
+    const phase = waiting ? 3 : state.value === CLOCK.holding || state.value === CLOCK.releasing ? 1 : soundAsked.value || scene.value >= INTRO_HOLD_AT ? 2 : 0;
     frameLog.modify((log) => {
       "worklet";
       log.push(phase, elapsed);
       return log;
     }, false);
+    if (waiting) {
+      // L'encre, immobile, tant que l'app démarre : le poulpe ne commence que sur un fil calme.
+      const step = introStartStepWorklet(startState.value, elapsed, appReady.value, INTRO_START);
+      startState.value = step.state;
+      if (step.start) state.value = CLOCK.running;
+      return;
+    }
     if (state.value === CLOCK.holding) {
       idle.value += elapsed;
       if (!ready.value) return;
@@ -124,7 +144,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
 
   // Un objet stable : les effets qui en dépendent ne se rejouent pas à chaque rendu.
   return useMemo(
-    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog }),
-    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog],
+    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady }),
+    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog, appReady],
   );
 }

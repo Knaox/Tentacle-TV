@@ -36,7 +36,7 @@ export function BootIntroHost({ sound, screenColor, children }: BootIntroHostPro
   const scene = useIntroScene(TENTACLE_ART, viewport, { deviceWindow: true, safe });
   const [soundWanted] = useState(() => Promise.resolve(sound));
   const onFrameReport = useCallback((report: IntroFrameReport) => recordBootIntroFrames(report, viewport), [viewport]);
-  const { clock, landed } = useBootIntroRun({ soundWanted, selfReporting: MOBILE_BOOT_SELF_REPORTING, onFrameReport });
+  const { clock, landed } = useBootIntroRun({ soundWanted, selfReporting: MOBILE_BOOT_SELF_REPORTING, onFrameReport, waitForApp: true });
 
   // La première image de l'ouverture est l'encre de l'écran de lancement : on retire celui-ci dessous.
   const hideSplash = () => {

@@ -14,6 +14,8 @@ export interface BootIntroRunOptions {
   selfReporting?: readonly string[];
   /** À l'arrivée : le bilan des images de l'ouverture (shared `introFrameReport`). */
   onFrameReport?: (report: IntroFrameReport) => void;
+  /** Rester sur l'encre tant que l'app démarre (mobile : `bootIntroGate.reportAppReady`, shared `introStart`). */
+  waitForApp?: boolean;
 }
 
 export interface BootIntroRun {
@@ -32,7 +34,7 @@ export interface BootIntroRun {
  * s'allume. Le son se décode pendant que le poulpe s'assemble, seulement s'il
  * est voulu ; la sortie mesurée (Android) dit quand le demander.
  */
-export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport }: BootIntroRunOptions): BootIntroRun {
+export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport, waitForApp = false }: BootIntroRunOptions): BootIntroRun {
   const [landed, setLanded] = useState(false);
   const [heldSince, setHeldSince] = useState<number | null>(null);
   const [heldOut, setHeldOut] = useState(false);
@@ -56,7 +58,7 @@ export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport }: B
     }),
     [land],
   );
-  const clock = useIntroClock(events);
+  const clock = useIntroClock(events, null, { waitForApp });
 
   useEffect(() => {
     void soundReady.current?.then(({ ready, outputLeadMs }) => {
@@ -75,6 +77,9 @@ export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport }: B
   }, [heldSince]);
 
   const report = useBootIntroReport();
+  useEffect(() => {
+    if (report.appReady) clock.appReady.value = true;
+  }, [report.appReady, clock]);
   const outcome = bootIntroOutcome({
     route: report.route,
     screen: report.route === null ? null : report.screens[report.route] ?? null,
