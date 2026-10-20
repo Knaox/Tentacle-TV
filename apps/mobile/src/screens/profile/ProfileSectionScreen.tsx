@@ -5,7 +5,7 @@ import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { ProfileActionsProvider } from "./ProfileEntryActions";
 import { PROFILE_PANE_REGISTRY } from "./profilePaneRegistry";
 import { ProfileSectionBody } from "./ProfileSectionBody";
-import { findSection, sectionTarget, visibleGroups } from "./profileStructure";
+import { findSettingsSection, settingsSectionTarget, visibleSettingsGroups } from "@tentacle-tv/shared";
 import { useProfileContext } from "./useProfileContext";
 
 /**
@@ -18,10 +18,10 @@ export function ProfileSectionScreen() {
   const { t } = useTranslation();
   const ctx = useProfileContext();
   const actions = useProfileActions();
-  const section = id ? findSection(id) : undefined;
-  if (!section || visibleGroups(section, ctx).length === 0) return <Redirect href="/profile" />;
+  const section = id ? findSettingsSection(id) : undefined;
+  if (!section || visibleSettingsGroups(section, ctx).length === 0) return <Redirect href="/profile" />;
 
-  const target = sectionTarget(section, ctx);
+  const target = settingsSectionTarget(section, ctx);
   const Pane = target.kind === "pane" ? PROFILE_PANE_REGISTRY[target.id].Component : null;
   return (
     <SettingsScaffold title={t(section.label.key, { ns: section.label.ns })}>

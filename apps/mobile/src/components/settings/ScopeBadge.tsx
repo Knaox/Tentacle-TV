@@ -2,16 +2,11 @@ import { memo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import type { SettingScope } from "@tentacle-tv/shared";
 import { RADIUS, spacing, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
-/**
- * La PORTÉE d'un réglage : `account` suit le compte (préférence enregistrée
- * par le serveur, `/api/preferences/*` — le bureau, la TV et ce téléphone la
- * partagent), `device` ne vit que dans le stockage de cet appareil. La
- * pastille doit dire la VÉRITÉ : l'inventaire de chaque réglage est dans
- * `screens/profile/settingsScopes.ts`.
- */
-export type SettingScope = "account" | "device";
+/** La portée d'un réglage — le type du catalogue partagé (`settingsCatalog`), qui fait l'inventaire. */
+export type { SettingScope } from "@tentacle-tv/shared";
 
 interface Props {
   scope: SettingScope;

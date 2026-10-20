@@ -4,6 +4,7 @@ import { useRouter, type Href } from "expo-router";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
+import { DESKTOP_ONLY_SETTINGS } from "@tentacle-tv/shared";
 import { profilePhotoUrl } from "@/auth/storedUser";
 import { useStoredUser } from "@/auth/useStoredUser";
 import { AvatarGallerySheet } from "@/avatars/gallery/AvatarGallerySheet";
@@ -59,13 +60,23 @@ export function UserNameRow({ last }: RowProps) {
   return <SettingsRow icon="at-sign" label={t("account.name")} value={user?.Name ?? t("profile:defaultUsername")} last={last} />;
 }
 
+/**
+ * Ouvre le changement de profil — le SEUL endroit qui sait comment : la ligne
+ * de Compte et le bouton sous le nom passent par ici. Aujourd'hui « Qui
+ * regarde ? » ; après la fusion du lot, la feuille de la session design
+ * (`openProfileSwitcher()` de `profileSwitch/profileSwitchEntry.ts`) se
+ * branche ici, sans toucher aux appelants.
+ */
+export function useOpenProfileSwitcher(): () => void {
+  const router = useRouter();
+  return useCallback(() => router.push(WHO_IS_WATCHING_HREF as Href), [router]);
+}
+
 /** « Changer de profil » : « Qui regarde ? », là où la famille a plusieurs profils. */
 export function SwitchProfileRow({ last }: RowProps) {
   const { t } = useTranslation("settingsMobile");
-  const router = useRouter();
-  return (
-    <SettingsRow icon="refresh-cw" label={t("account.switchProfile")} chevron last={last} onPress={() => router.push(WHO_IS_WATCHING_HREF as Href)} />
-  );
+  const open = useOpenProfileSwitcher();
+  return <SettingsRow icon="refresh-cw" label={t("account.switchProfile")} chevron last={last} onPress={open} />;
 }
 
 /**
@@ -81,7 +92,11 @@ export function AdvancedOnDesktopRow({ last }: RowProps) {
       label={t("advanced.row")}
       description={t("advanced.rowHint")}
       last={last}
-      onPress={() => Alert.alert(t("advanced.title"), t("advanced.body"))}
+      onPress={() => {
+        // La liste vient du catalogue partagé (« réservé au bureau »), la même que celle du web étroit.
+        const items = DESKTOP_ONLY_SETTINGS.map((ref) => `• ${t(ref.key, { ns: ref.ns })}`).join("\n");
+        Alert.alert(t("advanced.title"), `${t("advanced.intro")}\n\n${items}`);
+      }}
     />
   );
 }

@@ -11,7 +11,7 @@ import { ProfileDetailPane } from "./profile/ProfileDetailPane";
 import { ProfileFooter, ProfileStatsCard } from "./profile/ProfileFooter";
 import { ProfileHero } from "./profile/ProfileHero";
 import { ProfileSectionList } from "./profile/ProfileSectionList";
-import { findSection, resolveSection, type ProfileSectionId } from "./profile/profileStructure";
+import { findSettingsSection, resolveSettingsSection, type SettingsSectionId } from "@tentacle-tv/shared";
 import { useProfileContext } from "./profile/useProfileContext";
 
 /** Sous cette largeur utile, deux colonnes écraseraient le détail : une seule liste. */
@@ -45,14 +45,14 @@ export function ProfileScreen() {
   const { width, isTablet } = useResponsive();
   const railWidth = useRailWidth();
   const split = isTablet && width - railWidth >= SPLIT_MIN_WIDTH;
-  const [chosen, setChosen] = useState<ProfileSectionId | null>(null);
-  const sectionId = resolveSection(chosen, ctx);
-  const section = sectionId ? findSection(sectionId) : undefined;
+  const [chosen, setChosen] = useState<SettingsSectionId | null>(null);
+  const sectionId = resolveSettingsSection(chosen, ctx);
+  const section = sectionId ? findSettingsSection(sectionId) : undefined;
 
   const list = (
     <>
       <FadeIn delay={0}>
-        <ProfileHero user={user} userName={userName} initial={initial} isAdmin={isAdmin} serverUrl={serverUrl} />
+        <ProfileHero user={user} userName={userName} initial={initial} isAdmin={isAdmin} serverUrl={serverUrl} canSwitchProfile={ctx.canSwitchProfile && !ctx.offline && ctx.family} />
       </FadeIn>
       <FadeIn delay={40}>
         <ProfileStatsCard ctx={ctx} />

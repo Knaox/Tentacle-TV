@@ -1,13 +1,14 @@
-import type { I18nRef, ProfileSection } from "./profileStructure";
+import type { SettingsI18nRef, SettingsPlatform, SettingsCatalogSection } from "./settingsCatalogTypes";
 
 /**
  * Les rubriques des réglages, dans l'ordre de la liste — LA source de la
- * structure (règles et types : `profileStructure.ts` ; portée de chaque
- * réglage : `settingsScopes.ts`). Une entrée nouvelle s'ajoute ici, dans la
- * rubrique dont elle parle ; jamais une ligne en dur dans un écran.
+ * structure, rendue par le mobile ET le web étroit (règles :
+ * `settingsCatalogRules.ts` ; portée et type de contrôle de chaque réglage :
+ * `settingsControls.ts`). Une entrée nouvelle s'ajoute ici, dans la rubrique
+ * dont elle parle ; jamais une ligne en dur dans un écran.
  *
  *   Compte               — Photo · Nom · Mot de passe▸ | Famille ▢ · Changer de profil | Serveur… | Supprimer mon compte
- *   Lecture et apparence — (phrase de portée) | SUR TOUS TES APPAREILS : intros, épisode suivant,
+ *   Lecture et apparence — (phrase de portée) | SUR TOUS VOS APPAREILS : intros, épisode suivant,
  *                          « encore là ? », langues▸, langue, accueil▸, tendances
  *                          | SUR CET APPAREIL : thème, Liquid Glass, sous-titres, données, lecteur
  *                          | Réglages avancés : sur l'app bureau
@@ -15,18 +16,20 @@ import type { I18nRef, ProfileSection } from "./profileStructure";
  *   Hors ligne           — Mes titres ▢ · Passer hors ligne | (espace, transferts, tout retirer)
  *   Notifications        — (le volet lui-même)
  *   Aide et à propos     — Support ▢ · À propos ▢ · Confidentialité ↗ · Réglages avancés
- * (▸ = volet ; ▢ = écran ; | = groupe suivant.) « Mes statistiques » et
- * « Se déconnecter » ne sont pas des rubriques : la carte sous l'identité,
- * et la dernière ligne de la liste.
+ * (▸ = volet ; ▢ = écran ; | = groupe suivant.)
  */
 
-const p = (key: string): I18nRef => ({ ns: "profile", key });
-const s = (key: string): I18nRef => ({ ns: "settingsMobile", key });
+/**
+ * Ce que seul le mobile sait faire : lecteur natif, Liquid Glass, garder hors
+ * ligne, notifications PUSH (un navigateur n'en reçoit pas), changer de serveur
+ * (dans un navigateur, le serveur EST l'adresse).
+ */
+const MOBILE: readonly SettingsPlatform[] = ["mobile"];
 
-/** L'écran de la Famille — `FAMILY_ROUTE` de l'api-client, le même chemin partout. */
-export const FAMILY_HREF = "/family";
+const p = (key: string): SettingsI18nRef => ({ ns: "profile", key });
+const s = (key: string): SettingsI18nRef => ({ ns: "settingsMobile", key });
 
-export const PROFILE_SECTIONS: readonly ProfileSection[] = [
+export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
   {
     id: "account",
     icon: "user",
@@ -47,16 +50,16 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
         title: s("account.familyGroup"),
         entries: [
           // Cachée face à un serveur sans Famille (ou Famille coupée).
-          { kind: "screen", id: "family", href: FAMILY_HREF, icon: "users", label: p("family"), requires: ["family", "personal"] },
+          { kind: "screen", id: "family", icon: "users", label: p("family"), requires: ["family", "personal"] },
           { kind: "control", id: "switchProfile", requires: ["family", "canSwitchProfile"] },
         ],
       },
       {
         title: s("account.serverGroup"),
         entries: [
-          { kind: "action", id: "changeServer", icon: "repeat", label: p("changeServer"), requires: ["online", "personal"] },
+          { kind: "action", id: "changeServer", icon: "repeat", label: p("changeServer"), requires: ["online", "personal"], platforms: MOBILE },
           { kind: "pane", id: "invites", icon: "mail", label: p("invitations"), requires: ["online", "admin", "personal"] },
-          { kind: "screen", id: "sessions", href: "/admin/sessions", icon: "activity", label: { ns: "sessions", key: "title" }, requires: ["online", "admin", "personal"] },
+          { kind: "screen", id: "sessions", icon: "activity", label: { ns: "sessions", key: "title" }, requires: ["online", "admin", "personal"] },
           { kind: "action", id: "clearCache", icon: "trash-2", label: p("clearCache"), destructive: true, requires: ["online"] },
         ],
       },
@@ -82,11 +85,11 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
         entries: [
           { kind: "control", id: "intros" },
           { kind: "control", id: "nextAutoPlay" },
-          { kind: "control", id: "stillWatching", requires: ["stillWatching"] },
+          { kind: "control", id: "stillWatching", capability: "playback.stillWatching" },
           { kind: "pane", id: "mediaLanguages", icon: "message-square", label: s("playback.mediaLanguages") },
           { kind: "control", id: "language" },
           { kind: "pane", id: "personalization", icon: "sliders", label: p("homeAndRecommendations"), requires: ["online"] },
-          { kind: "control", id: "trendingNow", requires: ["trendingNow"] },
+          { kind: "control", id: "trendingNow", requires: ["online"], capability: "reco.trending" },
         ],
       },
       {
@@ -95,12 +98,12 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
         scope: "device",
         entries: [
           { kind: "control", id: "theme" },
-          { kind: "control", id: "liquidGlass", requires: ["liquidGlass"] },
-          { kind: "control", id: "subtitleSize", requires: ["advancedEngine"] },
-          { kind: "control", id: "subtitlePosition", requires: ["advancedEngine"] },
+          { kind: "control", id: "liquidGlass", requires: ["liquidGlass"], platforms: MOBILE },
+          { kind: "control", id: "subtitleSize", requires: ["advancedEngine"], platforms: MOBILE },
+          { kind: "control", id: "subtitlePosition", requires: ["advancedEngine"], platforms: MOBILE },
           { kind: "control", id: "dataSaver" },
-          { kind: "control", id: "engine", requires: ["advancedEngine"] },
-          { kind: "control", id: "engineOptions", requires: ["engineOptions"] },
+          { kind: "control", id: "engine", requires: ["advancedEngine"], platforms: MOBILE },
+          { kind: "control", id: "engineOptions", requires: ["engineOptions"], platforms: MOBILE },
         ],
       },
       { entries: [{ kind: "control", id: "advancedOnDesktop" }] },
@@ -125,11 +128,11 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
     groups: [
       {
         entries: [
-          { kind: "screen", id: "offlineTitles", href: "/on-device", icon: "smartphone", label: { ns: "offline", key: "myOfflineTitles" }, requires: ["offlineVisible", "personal"] },
-          { kind: "action", id: "goOffline", icon: "wifi-off", label: { ns: "nav", key: "goOffline" }, requires: ["canGoOffline", "personal"] },
+          { kind: "screen", id: "offlineTitles", icon: "smartphone", label: { ns: "offline", key: "myOfflineTitles" }, requires: ["offlineVisible", "personal"], platforms: MOBILE },
+          { kind: "action", id: "goOffline", icon: "wifi-off", label: { ns: "nav", key: "goOffline" }, requires: ["canGoOffline", "personal"], platforms: MOBILE },
         ],
       },
-      { entries: [{ kind: "block", id: "offlineSettings", requires: ["offlineVisible", "personal"] }] },
+      { entries: [{ kind: "block", id: "offlineSettings", requires: ["offlineVisible", "personal"], platforms: MOBILE }] },
     ],
   },
   {
@@ -138,7 +141,7 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
     label: s("sections.notifications"),
     summaries: [{ label: s("sections.notificationsSummary") }],
     groups: [
-      { entries: [{ kind: "pane", id: "notifications", icon: "bell", label: p("notifications"), requires: ["online", "personal"] }] },
+      { entries: [{ kind: "pane", id: "notifications", icon: "bell", label: p("notifications"), requires: ["online", "personal"], platforms: MOBILE }] },
     ],
   },
   {
@@ -152,8 +155,8 @@ export const PROFILE_SECTIONS: readonly ProfileSection[] = [
     groups: [
       {
         entries: [
-          { kind: "screen", id: "support", href: "/support", icon: "life-buoy", label: p("support"), requires: ["online"] },
-          { kind: "screen", id: "about", href: "/about", icon: "info", label: p("about") },
+          { kind: "screen", id: "support", icon: "life-buoy", label: p("support"), requires: ["online"] },
+          { kind: "screen", id: "about", icon: "info", label: p("about") },
           { kind: "action", id: "privacyPolicy", icon: "shield", label: p("privacyPolicy") },
         ],
       },

@@ -4,7 +4,7 @@ import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
 import { SettingsRow, SettingsSection } from "@/components/settings";
 import { spacing, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
-import type { ProfileContext } from "./profileStructure";
+import type { SettingsCatalogContext } from "@tentacle-tv/shared";
 
 // Version du binaire natif (patchée par les CI par plateforme) ; app.json = repli.
 const appVersion: string = Application.nativeApplicationVersion ?? require("../../../app.json").expo?.version ?? "1.0.0";
@@ -13,7 +13,7 @@ const appVersion: string = Application.nativeApplicationVersion ?? require("../.
  * « Mes statistiques », sous l'identité : un écran plein, pas une rubrique —
  * ce qu'on vient regarder, pas régler. Il parle au serveur : absent hors ligne.
  */
-export function ProfileStatsCard({ ctx }: { ctx: ProfileContext }) {
+export function ProfileStatsCard({ ctx }: { ctx: SettingsCatalogContext }) {
   const { t } = useTranslation("profile");
   const router = useRouter();
   if (ctx.offline) return null;

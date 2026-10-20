@@ -1,9 +1,9 @@
 import { SettingsRow, type SettingScope, type SettingsIcon } from "@/components/settings";
 import { useOpenProfilePane } from "./ProfilePaneContext";
-import type { ProfilePaneId } from "./profilePanes";
+import type { SettingsPaneId } from "@tentacle-tv/shared";
 
 interface Props {
-  pane: ProfilePaneId;
+  pane: SettingsPaneId;
   icon: SettingsIcon;
   label: string;
   description?: string;

@@ -6,18 +6,17 @@ import { EngineOptionsRows } from "@/components/settings/controls/EngineOptionsR
 import { IntrosRow, NextAutoPlayRow, StillWatchingRows, TrendingNowRow } from "@/components/settings/controls/PlaybackAccountRows";
 import { DataSaverRow, EngineRow, SubtitlePositionRow, SubtitleSizeRow } from "@/components/settings/controls/PlaybackDeviceRows";
 import { playerSettingsContext } from "./playerSettingsContext";
-import type { ProfileControlId } from "./profileStructure";
-import { CONTROL_SCOPES } from "./settingsScopes";
+import { settingScopeOf, type SettingsControlId } from "@tentacle-tv/shared";
 
 /**
  * Un réglage SUR PLACE de la structure, rendu par son composant, avec la
- * pastille de sa portée (`CONTROL_SCOPES`, l'inventaire : jamais une portée
+ * pastille de sa portée (`settingScopeOf`, l'inventaire : jamais une portée
  * écrite à la main dans une ligne). Chacun ne monte ses crochets que là où il
  * paraît.
  */
-export function ProfileControlRow({ id, last }: { id: ProfileControlId; last: boolean }) {
+export function ProfileControlRow({ id, last }: { id: SettingsControlId; last: boolean }) {
   const { t } = useTranslation("settingsMobile");
-  const scope = CONTROL_SCOPES[id];
+  const scope = settingScopeOf(id);
   const common = { scope, last };
   switch (id) {
     case "photo": return <PhotoRow {...common} />;

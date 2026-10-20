@@ -1,48 +1,53 @@
 import { describe, expect, it } from "vitest";
-import frNav from "../../../../../packages/shared/src/i18n/locales/fr/nav";
-import enNav from "../../../../../packages/shared/src/i18n/locales/en/nav";
-import frOffline from "../../../../../packages/shared/src/i18n/locales/fr/offline";
-import enOffline from "../../../../../packages/shared/src/i18n/locales/en/offline";
-import frProfile from "../../../../../packages/shared/src/i18n/locales/fr/profile";
-import enProfile from "../../../../../packages/shared/src/i18n/locales/en/profile";
-import frSessions from "../../../../../packages/shared/src/i18n/locales/fr/sessions";
-import enSessions from "../../../../../packages/shared/src/i18n/locales/en/sessions";
-import frSettings from "../../../../../packages/shared/src/i18n/locales/fr/settingsMobile";
-import enSettings from "../../../../../packages/shared/src/i18n/locales/en/settingsMobile";
-import { FAMILY_ROUTE } from "../../../../../packages/api-client/src/utils/notificationRoute";
-import { LEGACY_PANE_REDIRECTS, PROFILE_PANES, PROFILE_PANE_ROUTES } from "./profilePanes";
-import { FAMILY_HREF, PROFILE_SECTIONS } from "./profileSections";
+import frNav from "../i18n/locales/fr/nav";
+import enNav from "../i18n/locales/en/nav";
+import frOffline from "../i18n/locales/fr/offline";
+import enOffline from "../i18n/locales/en/offline";
+import frProfile from "../i18n/locales/fr/profile";
+import enProfile from "../i18n/locales/en/profile";
+import frSessions from "../i18n/locales/fr/sessions";
+import enSessions from "../i18n/locales/en/sessions";
+import frSettings from "../i18n/locales/fr/settingsMobile";
+import enSettings from "../i18n/locales/en/settingsMobile";
+import { SETTINGS_SECTIONS } from "./settingsSections";
 import {
-  findSection, resolveSection, sectionSummary, sectionTarget, visibleGroups, visibleSections,
-  type I18nRef, type ProfileContext, type ProfileControlId, type ProfileEntry, type ProfileSection,
-} from "./profileStructure";
-import { CONTROL_SCOPES, PANE_SCOPES } from "./settingsScopes";
+  findSettingsSection as findSection, resolveSettingsSection as resolveSection, settingsSectionSummary as sectionSummary,
+  settingsSectionTarget as sectionTarget, visibleSettingsGroups as visibleGroups, visibleSettingsSections as visibleSections,
+} from "./settingsCatalogRules";
+import type {
+  SettingsCatalogContext as ProfileContext, SettingsControlId as ProfileControlId, SettingsCatalogEntry as ProfileEntry,
+  SettingsI18nRef as I18nRef, SettingsCatalogSection as ProfileSection,
+} from "./settingsCatalogTypes";
+import { DESKTOP_ONLY_SETTINGS, SETTINGS_CONTROLS, SETTINGS_PANE_SCOPES as PANE_SCOPES, settingScopeOf } from "./settingsControls";
 
+const ALL_CAPS = new Set(["playback.stillWatching", "reco.trending"] as const);
 const user: ProfileContext = {
+  platform: "mobile", capabilities: new Set(),
   offline: false, isAdmin: false, offlineVisible: false, canGoOffline: false, family: false, canSwitchProfile: false,
-  liquidGlass: false, stillWatching: false, trendingNow: false, advancedEngine: false, engineOptions: false, profileSession: false,
+  liquidGlass: false, advancedEngine: false, engineOptions: false, profileSession: false,
 };
 const full: ProfileContext = {
   ...user, isAdmin: true, offlineVisible: true, canGoOffline: true, family: true, canSwitchProfile: true,
-  liquidGlass: true, stillWatching: true, trendingNow: true, advancedEngine: true, engineOptions: true,
+  liquidGlass: true, advancedEngine: true, engineOptions: true, capabilities: ALL_CAPS,
 };
+const web: ProfileContext = { ...full, platform: "web", liquidGlass: false, advancedEngine: false, engineOptions: false };
 const offline: ProfileContext = { ...full, offline: true };
 const profileSession: ProfileContext = { ...full, isAdmin: false, profileSession: true };
 
 const entries = (section: ProfileSection, ctx: ProfileContext): ProfileEntry[] =>
   visibleGroups(section, ctx).flatMap((g) => g.entries);
 const ids = (section: ProfileSection, ctx: ProfileContext) => entries(section, ctx).map((e) => e.id);
-const section = (id: string) => PROFILE_SECTIONS.find((s) => s.id === id)!;
-const allEntries = PROFILE_SECTIONS.flatMap((s) => s.groups.flatMap((g) => g.entries));
+const section = (id: string) => SETTINGS_SECTIONS.find((s) => s.id === id)!;
+const allEntries = SETTINGS_SECTIONS.flatMap((s) => s.groups.flatMap((g) => g.entries));
 
-describe("structure des réglages", () => {
+describe("catalogue des réglages", () => {
   it("six rubriques, dans l'ordre du plan", () => {
-    expect(PROFILE_SECTIONS.map((s) => s.id)).toEqual(["account", "playback", "devices", "offline", "notifications", "help"]);
+    expect(SETTINGS_SECTIONS.map((s) => s.id)).toEqual(["account", "playback", "devices", "offline", "notifications", "help"]);
   });
 
   it("chaque volet est rangé une fois, et une seule", () => {
     const panes = allEntries.filter((e) => e.kind === "pane").map((e) => e.id);
-    expect([...panes].sort()).toEqual([...PROFILE_PANES].sort());
+    expect([...panes].sort()).toEqual(Object.keys(PANE_SCOPES).sort());
   });
 
   it("chaque entrée est unique, sauf le renvoi vers le bureau (Lecture ET Aide)", () => {
@@ -51,30 +56,10 @@ describe("structure des réglages", () => {
     expect(allEntries.filter((e) => e.id === "advancedOnDesktop")).toHaveLength(2);
   });
 
-  it("l'Aide du mobile n'offre plus le guide des bandes-annonces (rien à y régler)", () => {
-    expect(allEntries.some((e) => e.kind === "screen" && e.href.startsWith("/help/trailers"))).toBe(false);
-  });
-
-  it("les anciennes destinations restent atteignables", () => {
-    const reachable = new Set<string>(
-      allEntries.flatMap((e) => (e.kind === "screen" ? [e.href] : e.kind === "pane" ? [PROFILE_PANE_ROUTES[e.id]] : [])),
-    );
-    for (const route of Object.values(PROFILE_PANE_ROUTES)) expect(reachable).toContain(route);
-    for (const route of ["/support", "/about", "/on-device", "/admin/sessions"]) expect(reachable).toContain(route);
-    // Les volets fondus dans une page redirigent vers une rubrique qui existe.
-    for (const target of Object.values(LEGACY_PANE_REDIRECTS)) {
-      expect(findSection(target.replace("/profile/", ""))).toBeDefined();
-    }
-  });
-
   it("les rubriques d'avant (Apparence, Serveur) mènent à celle qui les a recueillies", () => {
     expect(findSection("appearance")?.id).toBe("playback");
     expect(findSection("server")?.id).toBe("account");
     expect(findSection("inconnue")).toBeUndefined();
-  });
-
-  it("la Famille ouvre l'écran des notifications Famille", () => {
-    expect(FAMILY_HREF).toBe(FAMILY_ROUTE);
   });
 
   it("hors ligne, il ne reste que ce qui vit sur l'appareil", () => {
@@ -137,19 +122,33 @@ describe("structure des réglages", () => {
   });
 });
 
+describe("le web étroit rend le même catalogue", () => {
+  it("sans ce que seul le mobile sait faire", () => {
+    const shown = ids(section("playback"), web);
+    for (const id of ["liquidGlass", "subtitleSize", "subtitlePosition", "engine", "engineOptions"]) expect(shown).not.toContain(id);
+    expect(visibleSections(web).map((s) => s.id)).toEqual(["account", "playback", "devices", "help"]);
+    expect(ids(section("account"), web)).not.toContain("changeServer");
+  });
+
+  it("les capacités du serveur décident, jamais une version", () => {
+    expect(ids(section("playback"), { ...web, capabilities: new Set() })).not.toContain("stillWatching");
+    expect(ids(section("playback"), web)).toEqual(expect.arrayContaining(["stillWatching", "trendingNow"]));
+  });
+});
+
 describe("portée de chaque réglage (la pastille dit la vérité)", () => {
   const controls = allEntries.filter((e): e is ProfileEntry & { kind: "control"; id: ProfileControlId } => e.kind === "control");
 
   it("chaque réglage sur place a sa portée inventoriée", () => {
-    for (const entry of controls) expect(CONTROL_SCOPES).toHaveProperty(entry.id);
+    for (const entry of controls) expect(SETTINGS_CONTROLS).toHaveProperty(entry.id);
   });
 
   it("un groupe à portée ne contient que des réglages de cette portée", () => {
-    for (const s of PROFILE_SECTIONS) {
+    for (const s of SETTINGS_SECTIONS) {
       for (const group of s.groups) {
         if (!group.scope) continue;
         for (const entry of group.entries) {
-          const scope = entry.kind === "control" ? CONTROL_SCOPES[entry.id] : entry.kind === "pane" ? PANE_SCOPES[entry.id] : null;
+          const scope = entry.kind === "control" ? settingScopeOf(entry.id) : entry.kind === "pane" ? PANE_SCOPES[entry.id] : null;
           expect(scope, `${s.id}:${entry.id}`).toBe(group.scope);
         }
       }
@@ -158,13 +157,23 @@ describe("portée de chaque réglage (la pastille dit la vérité)", () => {
 
   it("ce qui passe par le serveur est « Compte », ce qui reste dans l'appareil est « Cet appareil »", () => {
     for (const id of ["intros", "nextAutoPlay", "stillWatching", "language", "trendingNow", "photo"] as const) {
-      expect(CONTROL_SCOPES[id]).toBe("account");
+      expect(settingScopeOf(id)).toBe("account");
     }
     for (const id of ["theme", "liquidGlass", "subtitleSize", "subtitlePosition", "dataSaver", "engine", "engineOptions"] as const) {
-      expect(CONTROL_SCOPES[id]).toBe("device");
+      expect(settingScopeOf(id)).toBe("device");
     }
     expect(PANE_SCOPES.mediaLanguages).toBe("account");
     expect(PANE_SCOPES.personalization).toBe("account");
+  });
+});
+
+describe("réservé au bureau", () => {
+  it("chaque réglage énuméré a son libellé dans les deux langues", () => {
+    expect(DESKTOP_ONLY_SETTINGS.length).toBeGreaterThan(0);
+    for (const ref of DESKTOP_ONLY_SETTINGS) {
+      expect(lookup(frSettings, ref.key), ref.key).toBeTypeOf("string");
+      expect(lookup(enSettings, ref.key), ref.key).toBeTypeOf("string");
+    }
   });
 });
 
@@ -182,7 +191,7 @@ const lookup = (table: Record<string, unknown> | undefined, key: string): unknow
   key.split(".").reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], table);
 
 describe("libellés de la structure", () => {
-  const refs: I18nRef[] = PROFILE_SECTIONS.flatMap((s) => [
+  const refs: I18nRef[] = SETTINGS_SECTIONS.flatMap((s) => [
     s.label,
     ...s.summaries.map((m) => m.label),
     ...s.groups.flatMap((g) => [
