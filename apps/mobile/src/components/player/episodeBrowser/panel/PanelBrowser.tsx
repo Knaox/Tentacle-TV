@@ -79,8 +79,11 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
           <LinearGradient colors={[EB.scrim(0.12), EB.scrim(0.38), EB.scrim(0.62)]} locations={[0, 0.5, 1]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
         </Animated.View>
       ) : null}
-      <Animated.View style={[st.plate, plateStyle, { opacity: side ? enter : 1, transform: [side ? { translateX: slide } : { translateY: slide }] }]}>
+      {/* La plaque ne fait que glisser : un Liquid Glass sous une opacité animée reste transparent
+          (iOS 26, relevé par lecteur-apple). Seul le contenu se fond. */}
+      <Animated.View style={[st.plate, plateStyle, { transform: [side ? { translateX: slide } : { translateY: slide }] }]}>
         <BrowserGlass radius={geo.radius} solid={!side} />
+        <Animated.View style={[st.content, { opacity: enter }]}>
         <View style={[st.header, { paddingHorizontal: inset, paddingTop: side ? (isTablet ? 22 : 14) : 22 }, compact && st.headerCompact]}>
           {/* Un téléphone couché n'a pas la hauteur de deux lignes de titre : la série suit « Épisodes ». */}
           <View style={compact ? st.headingsInline : st.headings}>
@@ -111,6 +114,7 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
             />
           )}
         </Animated.View>
+        </Animated.View>
       </Animated.View>
     </View>
   );
@@ -118,6 +122,7 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
 
 const st = StyleSheet.create({
   plate: { position: "absolute", overflow: "hidden" },
+  content: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingBottom: 14 },
   headerCompact: { paddingBottom: 10 },
   headings: { flex: 1, gap: 2 },
