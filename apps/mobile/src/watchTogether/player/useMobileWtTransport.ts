@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import type { EngineProgressData } from "@/player/engine/types";
 import { createMobileTransport, type MobileTransport, type MobileTransportCommands } from "./mobileTransport";
 import { planReadySignal } from "./readySignal";
-import type { WtPlayerPort } from "./wtPlayerPort";
+import type { WtPlayerPort } from "@tentacle-tv/api-client";
 
 /** Ce que le moteur de synchro partagé attend du lecteur (`useGroupSyncEngine`). */
 export interface WtTransportSignals {
