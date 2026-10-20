@@ -90,6 +90,10 @@ export function useProfilePanel(
     </>
   );
 
-  const openProfile = useCallback((profile: FamilyProfileDto) => setOpenId(profile.userId), []);
+  // Une modale à la fois : présenté pendant que la précédente se retire (feuille « Changer de profil »
+  // qui mène ici, galerie d'un invité), le panneau restait monté mais invisible (Q15, `modalGate`).
+  const openProfile = useCallback((profile: FamilyProfileDto) => {
+    whenNoModal(() => setOpenId(profile.userId));
+  }, []);
   return { open: openProfile, element };
 }
