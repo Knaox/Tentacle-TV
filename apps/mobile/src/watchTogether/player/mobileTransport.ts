@@ -24,6 +24,12 @@ export const SEEK_LAND_BEFORE_S = 0.5;
 export const SEEK_LAND_AFTER_S = 3;
 /** Posé sur la cible de la barrière : à moins de ça (cf. `isSettledAt`). */
 export const SETTLED_TOLERANCE_S = 0.15;
+/**
+ * En PAUSE, un moteur n'annonce plus sa progression : un saut posé là (la
+ * barrière d'un saut de passage) ne serait jamais vu atterrir. Chargé, hors
+ * tampon, en pause depuis ce délai après l'ordre : il est tenu pour atterri.
+ */
+export const SEEK_PAUSED_SETTLE_MS = 1_000;
 
 /** Ce que l'adaptateur commande à l'écran du lecteur. */
 export interface MobileTransportCommands {
@@ -39,6 +45,8 @@ export interface MobileTransportCommands {
 /** Ce que l'écran rapporte à l'adaptateur, au fil des évènements du moteur. */
 export interface MobileTransportReports {
   progress(filmSeconds: number): void;
+  /** Le moteur dit son saut terminé (`onSeek` du lecteur système, position relue de mpv). */
+  seekComplete(filmSeconds: number): void;
   paused(paused: boolean): void;
   buffering(buffering: boolean): void;
   /** Le média courant est chargé (première image) — faux à chaque nouveau flux. */
@@ -67,6 +75,13 @@ export function createMobileTransport(
   const seekInFlight = (t: number): boolean => {
     if (!seek) return false;
     if (t - seek.at > SEEK_GIVE_UP_MS) { seek = null; return false; }
+    // En pause, posé et hors tampon depuis un moment : atterri à la cible.
+    if (paused && ready && !buffering && t - seek.at >= SEEK_PAUSED_SETTLE_MS) {
+      position = seek.target;
+      positionAt = t;
+      seek = null;
+      return false;
+    }
     return true;
   };
 
@@ -87,6 +102,11 @@ export function createMobileTransport(
       }
       position = filmSeconds;
       positionAt = t;
+    },
+    seekComplete(filmSeconds) {
+      position = filmSeconds;
+      positionAt = now();
+      seek = null;
     },
     paused(value) {
       // Le flux s'arrête ou repart : la position extrapolée devient la référence.
