@@ -207,7 +207,11 @@ async function publish(play) {
  * passagère. Un compte de service invalide ne guérit pas en vingt secondes —
  * le rejouer ne ferait que doubler le message d'erreur.
  */
-const isTransient = (e) => /→ (409|429|5\d\d) |editAlreadyCommitted|editExpired|fetch failed|ECONN|ETIMEDOUT/i.test(e.message);
+// « A change was made to the application outside of this Edit » (400) : une autre
+// écriture sur la fiche — la Play Console, l'autre workflow de la fiche partagée
+// (Android TV), un brouillon — a invalidé l'édition entre son ouverture et son
+// commit. Rien n'est publié ; une édition neuve, rouverte de zéro, passe.
+const isTransient = (e) => /→ (409|429|5\d\d) |editAlreadyCommitted|editExpired|outside of this Edit|fetch failed|ECONN|ETIMEDOUT/i.test(e.message);
 
 const play = await createPlayClient(process.env.PLAY_SERVICE_ACCOUNT_JSON);
 let result;
