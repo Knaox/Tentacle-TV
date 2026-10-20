@@ -107,7 +107,7 @@ describe("catalogue des réglages", () => {
   });
 
   it("en session de profil, rien de ce que le serveur refuse", () => {
-    expect(ids(section("account"), profileSession)).toEqual(["userName", "switchProfile", "clearCache"]);
+    expect(ids(section("account"), profileSession)).toEqual(["photo", "userName", "switchProfile", "clearCache"]);
     const sections = visibleSections(profileSession).map((s) => s.id);
     expect(sections).toEqual(["account", "playback", "help"]);
   });

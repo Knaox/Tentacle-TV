@@ -47,7 +47,8 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
     groups: [
       {
         entries: [
-          { kind: "control", id: "photo", requires: ["online", "personal"] },
+          // La photo passe aussi en session de profil (le proxy pose celle du profil).
+          { kind: "control", id: "photo", requires: ["online"] },
           { kind: "control", id: "userName", requires: ["online"] },
           { kind: "pane", id: "password", icon: "lock", label: p("password"), requires: ["online", "personal"] },
         ],
