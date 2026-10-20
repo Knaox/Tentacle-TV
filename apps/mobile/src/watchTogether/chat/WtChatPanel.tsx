@@ -5,6 +5,7 @@ import { SendHorizontal } from "lucide-react-native";
 import type { GifItem } from "@tentacle-tv/api-client";
 import { WT_CHAT_MAX_LENGTH, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { FONT_FAMILY, PLAYER, RADIUS } from "@/theme";
+import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { haptic } from "@/utils/haptics";
 import { WtGifPicker } from "./WtGifPicker";
 
@@ -47,13 +48,15 @@ export const WtChatPanel = memo(function WtChatPanel({ messages, selfId, onSend,
 
   if (gifOpen) {
     return (
-      <View style={st.panel}>
+      <KeyboardAvoidingArea style={st.panel}>
         <WtGifPicker onSend={(gif) => { haptic("tap"); onSendGif(gif); setGifOpen(false); }} onClose={() => setGifOpen(false)} />
-      </View>
+      </KeyboardAvoidingArea>
     );
   }
 
   return (
+    // La saisie reste au-dessus du clavier (feuille, colonne de l'iPad, panneau en paysage).
+    <KeyboardAvoidingArea style={st.panel}>
     <View style={st.panel} testID="wt-chat">
       <FlatList
         data={reversed}
@@ -108,6 +111,7 @@ export const WtChatPanel = memo(function WtChatPanel({ messages, selfId, onSend,
         </Pressable>
       </View>
     </View>
+    </KeyboardAvoidingArea>
   );
 });
 
