@@ -99,6 +99,11 @@ async function runPair(ctx: ScenarioContext, a: Member, b: Member, episode: stri
     return sa.path === `/watch/${episode}` && sb.path === `/watch/${episode}` && sa.pos !== null && sb.pos !== null;
   }, 60_000, 300);
   ctx.check("B suit le lancement de A jusqu'au lecteur", onItem !== null, onItem === null ? undefined : `${onItem} ms`);
+  // B a une reprise personnelle à 41,7 s : il doit partir de la position de la salle (0 s).
+  const firstB = await waitFor(async () => !(await b.sample()).paused, 60_000, 200);
+  const sb = await b.sample();
+  ctx.check("B part de la position de la salle, pas de sa reprise (41,7 s)", firstB !== null && (sb.pos ?? 99) < 30,
+    `B à ${sb.pos?.toFixed(1)} s au départ`);
   await a.shot("lancement");
   await b.shot("lancement");
   if (onItem === null) return;
@@ -171,9 +176,17 @@ export async function iosWebScenario(ctx: ScenarioContext): Promise<void> {
   }
 }
 
-/** La reprise Jellyfin du compte A remise à zéro (le lancement part du début). */
+/**
+ * Les reprises Jellyfin avant le lancement : celle du LANCEUR (A) à zéro, la
+ * séance part du début ; celle du compte qui SUIT (B) à 41,7 s — en séance, la
+ * position de la salle doit l'emporter sur sa reprise personnelle (défaut M5).
+ */
+const FOLLOWER_RESUME_S = 41.7;
 async function resetResumeForToken(ctx: ScenarioContext, itemId: string): Promise<void> {
-  const helper = await ctx.member(ctx.state.users.a, "RESET");
-  await resetResume(helper, ctx.state.jellyfinUrl, [itemId]);
-  await ctx.release(helper);
+  const helperA = await ctx.member(ctx.state.users.a, "RESET-A");
+  await resetResume(helperA, ctx.state.jellyfinUrl, [itemId]);
+  await ctx.release(helperA);
+  const helperB = await ctx.member(ctx.state.users.b, "RESET-B");
+  await resetResume(helperB, ctx.state.jellyfinUrl, [itemId], FOLLOWER_RESUME_S);
+  await ctx.release(helperB);
 }

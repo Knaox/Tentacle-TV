@@ -51,8 +51,8 @@ export async function inviteScenario(ctx: ScenarioContext): Promise<void> {
 
   // Lancement depuis la fiche de l'épisode : « Lire dans le groupe ».
   await a.goto(`/media/${ctx.state.episodeIds[0]}`);
-  const play = await a.clickText(/Lire dans le groupe|^Lire$|Reprendre/, 15_000);
-  ctx.check("A lance depuis la fiche (« Lire dans le groupe »)", play);
+  const play = await a.clickText(/Lire dans le groupe|^Lire$|^Lecture$|Reprendre/, 15_000);
+  ctx.check("A lance depuis la fiche (« Lecture »)", play);
   const onItem = await waitOnItem([a, b], ctx.state.episodeIds[0], 60_000);
   ctx.check("B suit le lancement sur son lecteur", onItem !== null, onItem === null ? undefined : `${onItem} ms`);
   await ctx.dump("lancement");

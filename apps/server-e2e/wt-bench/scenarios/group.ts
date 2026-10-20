@@ -67,13 +67,13 @@ export async function inviteAndAccept(ctx: ScenarioContext, host: WebClient, gue
  * lancement repart là où le passage précédent s'était arrêté (et un seek
  * tombe après la fin). Par Jellyfin directement, avec le jeton de la session.
  */
-export async function resetResume(c: WebClient, jellyfinUrl: string, itemIds: string[]): Promise<void> {
+export async function resetResume(c: WebClient, jellyfinUrl: string, itemIds: string[], seconds = 0): Promise<void> {
   const token = await c.page.evaluate(() => localStorage.getItem("tentacle_token"));
   if (!token) return;
   const headers = { Authorization: `MediaBrowser Client="wt-bench", Device="wt-bench", DeviceId="wt-bench-${c.label}", Version="1.0.0", Token="${token}"`, "Content-Type": "application/json" };
   for (const id of itemIds) {
     await fetch(`${jellyfinUrl}/UserItems/${id}/UserData?userId=${c.account.id}`, {
-      method: "POST", headers, body: JSON.stringify({ PlaybackPositionTicks: 0, Played: false }),
+      method: "POST", headers, body: JSON.stringify({ PlaybackPositionTicks: Math.round(seconds * 1e7), Played: false }),
     }).catch(() => undefined);
   }
 }
