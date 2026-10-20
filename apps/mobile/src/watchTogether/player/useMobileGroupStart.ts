@@ -12,7 +12,13 @@ export interface EpisodeHandlersRef {
 export interface MobileGroupStart {
   /** En séance, la position de départ du groupe n'est pas encore connue : ne pas négocier le flux. */
   hold: boolean;
-  /** Position de départ imposée par la séance (ticks) — un flux TRANSCODÉ démarre directement là. */
+  /**
+   * La séance impose la position de départ — y compris 0 : la reprise
+   * Jellyfin PERSONNELLE ne vaut plus (défaut M5 du banc : un épisode repris à
+   * 41,7 s chez soi, la salle à 0).
+   */
+  override: boolean;
+  /** Position de départ imposée par la séance (ticks), absente au début du titre. Un flux TRANSCODÉ démarre là. */
   ticks: number | undefined;
   /** Ce que rend la séance pour la position de départ et les épisodes. */
   group: ReturnType<typeof useGroupPlaybackHandlers>;
@@ -44,6 +50,7 @@ export function useMobileGroupStart(itemId: string, pb: PlayerSessionCore): Mobi
   const seconds = group.groupStartPositionSeconds;
   return useMemo(() => ({
     hold: group.groupActive && seconds === undefined,
+    override: group.groupActive && seconds !== undefined,
     ticks: group.groupActive && seconds !== undefined && seconds > 1 ? Math.floor(seconds * TICKS_PER_SECOND) : undefined,
     group,
     episodes,
