@@ -215,6 +215,8 @@ Sur mobile, tablette ET web, pour tous les droits.
 | N° | Branche | Où | Défaut | Envoyé | État |
 |----|---------|----|--------|--------|------|
 | D1 | reglages | `settingsMobile.ts` FR 47/81, EN 37/71 | « ce téléphone / this phone » affiché aussi sur tablette | reglages 03:05 | corrigé 3a4cea2c8 (vérifié) |
+| D3 | lecteur-mobile | processus | build gradle hors `heavy.sh` (03:12, charge 31) | note partagée + coordinateur (rapport de fin de tour : messages bloqués par l'app) | ouvert |
+| D4 | notifs | processus | `tsc` sous `heavy.sh` au lieu de `check.sh` : bloque le verrou lourd | idem | ouvert |
 | D2 | wt-socle | salle WT | 8 sauts rapides (+30 s) perdus (signalé par wt-banc) | coordinateur → wt-socle | ouvert |
 
 ## Décisions tranchées par les sessions
