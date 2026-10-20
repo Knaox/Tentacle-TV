@@ -24,6 +24,10 @@ export const PROBLEM_ICONS: Record<ProblemIcon, FeatherName> = {
   users: "users",
   puzzle: "package",
   alert: "alert-triangle",
+  bell: "bell-off",
+  cast: "cast",
+  storage: "hard-drive",
+  info: "info",
 };
 
 export interface ProblemText {
