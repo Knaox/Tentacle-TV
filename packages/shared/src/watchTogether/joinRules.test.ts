@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isRoomWaitingForMe, wtBufferingFreezeSeconds, wtJoinStartSeconds } from "./sessionRules";
+import { isRoomWaitingForMe, wtBufferingFreezeSeconds, wtJoinStartSeconds, wtReadyMisplaced } from "./sessionRules";
 
 /**
  * L'arrivée côté lecteur (retour de Damien du 20/10) : où le nouveau ouvre son
@@ -55,5 +55,23 @@ describe("isRoomWaitingForMe — prêt pendant qu'on m'attend : rester en pause"
     expect(isRoomWaitingForMe(room({}), "a")).toBe(false);
     expect(isRoomWaitingForMe(room({ paused: false }), "b")).toBe(false);
     expect(isRoomWaitingForMe(null, "b")).toBe(false);
+  });
+});
+
+describe("wtReadyMisplaced — « prêt » seulement une fois posé à sa position de départ", () => {
+  const waiting = {
+    groupId: "g", hostUserId: "a", epoch: 1, itemId: "film", paused: true, positionTicks: 276.4 * SECOND,
+    stateAtServerTime: 0, pauseReason: "buffering" as const, waitingForUserIds: ["b"], members: [],
+  };
+
+  it("prêt à 0 s quand la salle l'attend à 276 s : non ; à côté (atterrissage d'un flux transcodé) : oui", () => {
+    expect(wtReadyMisplaced(waiting, NOW, 0, "b")).toBe(true);
+    expect(wtReadyMisplaced(waiting, NOW, 270.1, "b")).toBe(false);
+    expect(wtReadyMisplaced(waiting, NOW, 276.5, "b")).toBe(false);
+  });
+
+  it("la salle ne l'attend pas (elle attend un autre, elle joue) : rien à retenir", () => {
+    expect(wtReadyMisplaced(waiting, NOW, 0, "a")).toBe(false);
+    expect(wtReadyMisplaced({ ...waiting, paused: false }, NOW, 0, "b")).toBe(false);
   });
 });

@@ -15,6 +15,7 @@ import {
 } from "./groupSyncRefs";
 import { wtLog } from "../wtLog";
 import { useGroupReconnect } from "./useGroupReconnect";
+import { useReadyPlacement } from "./useReadyPlacement";
 
 /**
  * Watch Together — les intents locaux (observe & report) : le player agit, le
@@ -154,6 +155,8 @@ export function useGroupIntents({
   /** `freezeAtSeconds` : la position à laquelle geler la salle quand c'est un
    *  rechargement qui commence — celle que le rechargement VISE (la page la
    *  connaît), pas celle qu'un lecteur en train de se détruire rapporte. */
+  const placement = useReadyPlacement(shared, transportRef, itemId);
+  const notifyBufferingRef = useRef<(buffering: boolean, freezeAtSeconds?: number) => void>(() => undefined);
   const notifyBuffering = useCallback((buffering: boolean, freezeAtSeconds?: number) => {
     const r = shared.roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
@@ -168,6 +171,9 @@ export function useGroupIntents({
       sendPresence();
     }
     if (shared.lastBufferingSentRef.current === buffering) return;
+    // « Prêt » LOIN de la salle qui m'attend : il se pose d'abord à sa position (`useReadyPlacement`).
+    if (!buffering && placement.holdUntilPlaced(r, () => notifyBufferingRef.current(false))) return;
+    if (buffering) placement.reset();
     // « Je charge » : la position où geler la salle — jamais celle d'un lecteur
     // qui n'a encore rien lu (elle la ramenait en arrière, `wtBufferingFreezeSeconds`).
     const wasReady = shared.lastBufferingSentRef.current === false;
@@ -200,6 +206,7 @@ export function useGroupIntents({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks, sendPresence]);
+  notifyBufferingRef.current = notifyBuffering;
 
   const notifyFatalError = useCallback(() => {
     if (!active || !itemId) return;
