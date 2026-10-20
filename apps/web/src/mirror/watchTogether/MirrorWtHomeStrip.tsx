@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { HeartHandshake, Inbox, Users } from "lucide-react";
 import { dismissAffinityPill, openAffinity, useAffinityStore } from "@tentacle-tv/api-client";
-import { KIND_LABEL_KEY, homeStripKind, memberName } from "@tentacle-tv/shared";
+import { KIND_LABEL_KEY, elsewhereLabel, homeStripKind, memberName } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { openRoomModal } from "../../watchTogether/roomModalStore";
 import { openMirrorWtInbox } from "./mirrorWtInbox";
@@ -44,7 +44,7 @@ export const MirrorWtHomeStrip = memo(function MirrorWtHomeStrip() {
   if (!kind) return null;
 
   const line: StripLine = kind === "elsewhere" && wt.elsewhere
-    ? { Icon: Users, text: wt.elsewhere.hostUsername ? t("elsewhereActiveWithHost", { name: wt.elsewhere.hostUsername }) : t("elsewhereActive"),
+    ? { Icon: Users, text: elsewhereText(wt.elsewhere, wt.selfId, t),
       action: t("elsewhereJoinHere"), press: () => void wt.actions.joinHere(),
       dismiss: () => setElsewhereDismissed(true), dismissLabel: t("elsewhereDismiss") }
     : kind === "affinity" && affinity
@@ -73,3 +73,11 @@ export const MirrorWtHomeStrip = memo(function MirrorWtHomeStrip() {
     </div>
   );
 });
+
+/** « Votre groupe… » quand l'hôte est ce compte, sinon « Groupe de X… » (règle partagée). */
+function elsewhereText(
+  elsewhere: Parameters<typeof elsewhereLabel>[0], selfId: string | null, t: (key: string, params?: Record<string, unknown>) => string,
+): string {
+  const said = elsewhereLabel(elsewhere, selfId);
+  return "params" in said ? t(said.key, said.params) : t(said.key);
+}

@@ -19,6 +19,11 @@ export interface WtElsewhereDto {
   groupId: string;
   /** Nom de l'hôte de la salle (« Groupe d'Alice »). */
   hostUsername: string;
+  /**
+   * Compte de l'hôte : quand c'est le compte de l'appareil lui-même, l'avis dit
+   * « Votre groupe… » plutôt que son propre nom. Facultatif (additif).
+   */
+  hostUserId?: string;
   /** Titre en cours dans la salle (null : salle sans lecture lancée). */
   itemId: string | null;
   /** Nombre de comptes dans la salle. */

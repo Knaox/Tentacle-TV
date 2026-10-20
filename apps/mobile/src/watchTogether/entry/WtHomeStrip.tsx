@@ -41,7 +41,7 @@ export const WtHomeStrip = memo(function WtHomeStrip() {
   if (kind === "elsewhere" && wt.elsewhere) {
     return (
       <View style={s.wrap}>
-        <WtElsewhereBanner hostUsername={wt.elsewhere.hostUsername}
+        <WtElsewhereBanner elsewhere={wt.elsewhere} selfId={wt.selfId}
           onJoinHere={wt.actions.joinHere} onDismiss={() => setElsewhereDismissed(true)} />
       </View>
     );
