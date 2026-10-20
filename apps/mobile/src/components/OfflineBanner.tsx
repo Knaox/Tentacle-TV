@@ -3,6 +3,7 @@ import { View, Text, Animated, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { CryingTentacle } from "./CryingTentacle";
 import { Button } from "@/components/ui";
+import { PlainButton } from "@/components/ui/buttons";
 import { useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface OfflineBannerProps {
@@ -55,16 +56,14 @@ export function OfflineBanner({
             loading={isChecking}
             fullWidth
           />
-          {/* La seule issue non destructive : avant « Se déconnecter », en rouge. */}
+          {/* La seule issue qui garde l'app utilisable : juste sous Réessayer. */}
           {onGoOffline && (
             <Button title={t("nav:goOffline")} onPress={onGoOffline} variant="secondary" fullWidth />
           )}
-          {onLogout && (
-            <Button title={t("offlineLogout")} onPress={onLogout} variant="danger" fullWidth />
-          )}
-          {onChangeServer && (
-            <Button title={t("changeServer")} onPress={onChangeServer} variant="secondary" fullWidth />
-          )}
+          {/* Les sorties : du texte seul, la déconnexion en rouge — plus deux
+              pavés de plus sous les deux vraies actions. */}
+          {onChangeServer && <PlainButton label={t("changeServer")} onPress={onChangeServer} style={styles.exit} />}
+          {onLogout && <PlainButton tone="destructive" label={t("offlineLogout")} onPress={onLogout} style={styles.exit} />}
         </View>
       </View>
     </Animated.View>
@@ -112,4 +111,5 @@ const makeStyles = (t: AppTheme) =>
       gap: 12,
       marginTop: 28,
     },
+    exit: { alignSelf: "center" },
   });

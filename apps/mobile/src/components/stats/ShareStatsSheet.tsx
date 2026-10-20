@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { statsShareFailure, useMyStatsShare, useRevokeStatsShare, useSaveStatsShare } from "@tentacle-tv/api-client";
 import { VIEWING_STATS_PERIODS, type ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { BottomSheet, Button } from "@/components/ui";
+import { PlainButton } from "@/components/ui/buttons";
 import { SegmentedChoice } from "@/components/settings/SegmentedChoice";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -143,7 +144,7 @@ export function ShareStatsSheet({ visible, onClose, defaultPeriod }: Props) {
               <Button title={t("shareLink")} onPress={() => void shareLink()} loading={save.isPending && !link} fullWidth />
             </View>
             <Button title={t("preview")} variant="secondary" onPress={() => void preview()} disabled={save.isPending} fullWidth />
-            {link && <Button title={t("revoke")} variant="danger" onPress={confirmRevoke} loading={revoke.isPending} fullWidth style={st.revoke} />}
+            {link && <PlainButton tone="destructive" label={t("revoke")} onPress={confirmRevoke} loading={revoke.isPending} style={st.revoke} />}
           </View>
         )}
       </ScrollView>
@@ -164,5 +165,5 @@ const makeStyles = (t: AppTheme) =>
     outdated: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, padding: spacing.md, borderRadius: 12, backgroundColor: t.colors.fill.faint },
     outdatedText: { ...typography.caption, flex: 1, lineHeight: 18, color: t.colors.text.secondary },
     actions: { gap: spacing.sm, marginTop: spacing.xs },
-    revoke: { marginTop: spacing.xs },
+    revoke: { marginTop: spacing.xs, alignSelf: "center" },
   });
