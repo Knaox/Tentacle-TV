@@ -2,10 +2,14 @@
  * Le travail d'UN transfert : photographier l'item, récupérer ses side-cars,
  * puis tirer le média.
  *
- * L'ordre compte. Le snapshot et les sous-titres passent AVANT le média : ce
- * sont quelques centaines de kilo-octets, et ils décident si la fiche sera
- * présentable hors ligne. Les faire après voudrait dire qu'un transfert
- * interrompu à 90 % laisse un film sans titre ni affiche.
+ * L'ordre compte. Le média est confié au pilote D'ABORD, puis le snapshot et
+ * les sous-titres partent PENDANT qu'il avance. Ils passaient avant : sur
+ * l'iPhone, l'application quittée juste après « Garder hors ligne », le
+ * JavaScript était suspendu au milieu d'une extraction de sous-titres, et le
+ * média n'était JAMAIS remis à la session d'arrière-plan — « tout s'arrête
+ * à la préparation » (alpha mobile, 21/10). Quelques centaines de kilo-octets,
+ * ils arrivent bien avant le média ; un transfert interrompu à 90 % garde donc
+ * sa fiche présentable comme avant.
  *
  * Portage de `run_worker` (`apps/desktop/src-tauri/src/downloads/engine.rs`).
  */
@@ -34,21 +38,43 @@ export interface WorkerDeps {
   onExpected: (fileId: number, totalBytes: number) => void;
   /** Trace d'une défaillance inattendue — voir `EngineDeps.onUnexpected`. */
   onUnexpected?: ((context: string, error: unknown) => void) | undefined;
+  /** La préparation tenue par le serveur — voir `EngineDeps.serverPrepare`. */
+  serverPrepare?: ServerPrepare | null | undefined;
   now: Clock;
 }
 
-/** URL de téléchargement du média, selon la variante. */
-export function mediaUrl(serverUrl: string, file: FileRow): string {
+/** La préparation tenue par le serveur (`offline.serverPrepare`), quand il la sait faire. */
+export interface ServerPrepare {
+  /** L'étiquette de CET appareil : seule une préparation qu'il a déjà lue lui est reprise par plage. */
+  tag: string;
+}
+
+/** Les paramètres d'un fichier Allégé : palier et pistes. */
+function lightQuery(file: FileRow): string {
+  let query = `?mediaSourceId=${file.mediaSourceId}&preset=${file.preset ?? "p720"}`;
+  if (file.audioStreamIndex !== null) query += `&audioStreamIndex=${file.audioStreamIndex}`;
+  if (file.burnSubtitleIndex !== null) query += `&burnSubtitleIndex=${file.burnSubtitleIndex}`;
+  return query;
+}
+
+/**
+ * URL de téléchargement du média, selon la variante. Un Allégé passe par la
+ * préparation du serveur quand il la sait faire (`prepared`), sinon par le
+ * transcodage tiré en direct (`light`).
+ */
+export function mediaUrl(serverUrl: string, file: FileRow, prepare: ServerPrepare | null = null): string {
   if (file.variant === "original") {
     return `${serverUrl}/api/downloads/original/${file.itemId}?mediaSourceId=${file.mediaSourceId}`;
   }
-  const preset = file.preset ?? "p720";
-  let url =
-    `${serverUrl}/api/downloads/light/${file.itemId}` +
-    `?mediaSourceId=${file.mediaSourceId}&preset=${preset}`;
-  if (file.audioStreamIndex !== null) url += `&audioStreamIndex=${file.audioStreamIndex}`;
-  if (file.burnSubtitleIndex !== null) url += `&burnSubtitleIndex=${file.burnSubtitleIndex}`;
-  return url;
+  if (prepare !== null) {
+    return `${serverUrl}/api/downloads/prepared/${file.itemId}${lightQuery(file)}&tag=${encodeURIComponent(prepare.tag)}`;
+  }
+  return `${serverUrl}/api/downloads/light/${file.itemId}${lightQuery(file)}`;
+}
+
+/** Ce que le serveur efface quand le fichier est chez nous : la préparation de CE fichier. */
+export function preparedReleaseUrl(serverUrl: string, file: FileRow): string {
+  return `${serverUrl}/api/downloads/prepared/${file.itemId}${lightQuery(file)}`;
 }
 
 export async function runWorker(
@@ -58,8 +84,48 @@ export async function runWorker(
   flags: TransferFlags,
   nowMs: number,
 ): Promise<TransferEnd> {
-  // Les à-côtés sont best-effort : leur échec ne doit jamais empêcher le média
-  // de se télécharger, et la réparation repassera derrière.
+  let finalPath: string;
+  try {
+    finalPath = safeJoin(deps.volume, file.relPath);
+  } catch {
+    return { kind: "failed", code: "io", bytesDone: 0 };
+  }
+
+  const prepare = file.variant === "original" ? null : (deps.serverPrepare ?? null);
+  const job: TransferJob = {
+    url: mediaUrl(creds.serverUrl, file, prepare),
+    token: creds.token,
+    finalPath,
+    variant: file.variant,
+    expectedSize: file.expectedSize,
+    serverUrl: creds.serverUrl,
+    // Le bureau lit la session dans les en-têtes de réponse ; le client n'en
+    // choisit pas encore. La préparation du serveur n'en a pas : elle est à lui.
+    transcodeSession: null,
+    resumable: file.variant === "original" || prepare !== null,
+    releaseUrl: prepare === null ? null : preparedReleaseUrl(creds.serverUrl, file),
+  };
+  // Le média d'abord : remis au pilote (la session d'arrière-plan d'iOS) avant
+  // le moindre aller-retour des à-côtés — voir l'en-tête.
+  const media = run(
+    deps.driver,
+    deps.volume,
+    job,
+    flags,
+    (bytes) => deps.onProgress(file.id, bytes),
+    deps.now,
+    {
+      onExpected: (totalBytes) => deps.onExpected(file.id, totalBytes),
+      onUnexpected: deps.onUnexpected,
+    },
+  );
+  await fetchSidecars(deps, creds, file, nowMs);
+  return await media;
+}
+
+/** Snapshot et sous-titres, best-effort : leur échec n'empêche jamais le média. */
+async function fetchSidecars(deps: WorkerDeps, creds: Creds, file: FileRow, nowMs: number): Promise<void> {
+  // La réparation repassera derrière ce qui manque.
   if (!snapshotExists(deps.volume, file.itemId)) {
     const spec = getSpec(deps.db, file.itemId);
     if (spec !== null) {
@@ -94,34 +160,4 @@ export async function runWorker(
     }
   }
 
-  let finalPath: string;
-  try {
-    finalPath = safeJoin(deps.volume, file.relPath);
-  } catch {
-    return { kind: "failed", code: "io", bytesDone: 0 };
-  }
-
-  const job: TransferJob = {
-    url: mediaUrl(creds.serverUrl, file),
-    token: creds.token,
-    finalPath,
-    variant: file.variant,
-    expectedSize: file.expectedSize,
-    serverUrl: creds.serverUrl,
-    // Le bureau lit la session dans les en-têtes de réponse ; le client n'en
-    // choisit pas encore.
-    transcodeSession: null,
-  };
-  return await run(
-    deps.driver,
-    deps.volume,
-    job,
-    flags,
-    (bytes) => deps.onProgress(file.id, bytes),
-    deps.now,
-    {
-      onExpected: (totalBytes) => deps.onExpected(file.id, totalBytes),
-      onUnexpected: deps.onUnexpected,
-    },
-  );
 }

@@ -215,6 +215,7 @@ export class DownloadEngine {
               setExpectedSize(this.deps.db, id, totalBytes, this.deps.now());
             },
             onUnexpected: this.deps.onUnexpected,
+            serverPrepare: this.deps.serverPrepare?.() ?? null,
             now: this.deps.now,
           },
           creds,

@@ -113,6 +113,18 @@ export interface TransferJob {
    * quand ils arrivent, la remplacent.
    */
   transcodeSession: TranscodeSession | null;
+  /**
+   * Le fichier se reprend-il par plage d'octets ? Absent : l'Original seul. Une
+   * préparation tenue par le serveur (`offline.serverPrepare`) aussi : ses
+   * octets sont sur le disque du serveur, ils ne bougent plus.
+   */
+  resumable?: boolean;
+  /**
+   * À appeler (DELETE) quand le fichier est arrivé ou que le transfert est
+   * annulé : le serveur efface sa préparation. Jamais à une pause ni à une
+   * coupure — elle continue de se préparer pour la reprise.
+   */
+  releaseUrl?: string | null;
 }
 
 function transcodeUrl(job: TransferJob, session: TranscodeSession): string {
@@ -173,10 +185,12 @@ export async function run(
     return { kind: "failed", code: "io", bytesDone: 0 };
   }
 
-  // Reprise : Original uniquement. Un transcodage n'est pas rejouable, et
-  // reprendre son flux à mi-course donnerait un fichier incohérent.
+  // Reprise : l'Original, et la préparation tenue par le serveur. Un
+  // transcodage tiré en direct n'est pas rejouable, et reprendre son flux à
+  // mi-course donnerait un fichier incohérent.
   let resumeFrom = 0;
-  if (job.variant === "original") {
+  const resumable = job.resumable ?? job.variant === "original";
+  if (resumable) {
     resumeFrom = files.size(part) ?? 0;
     // Le `.part` est DÉJÀ complet : le transfert s'est achevé pendant que le
     // JavaScript dormait — iPhone verrouillé, la session d'arrière-plan a fini
@@ -212,6 +226,11 @@ export async function run(
   const stopTranscode = async (): Promise<void> => {
     if (session === null) return;
     await driver.stopTranscode(transcodeUrl(job, session), { "X-Emby-Token": job.token });
+  };
+  // La préparation du serveur n'est plus utile : arrivée chez nous, ou abandonnée.
+  const release = async (): Promise<void> => {
+    if (!job.releaseUrl) return;
+    await driver.stopTranscode(job.releaseUrl, { Authorization: `Bearer ${job.token}` });
   };
 
   let outcome: TransferOutcome;
@@ -255,6 +274,7 @@ export async function run(
     if (flags.cancel) {
       discard(files, part);
       await stopTranscode();
+      await release();
       return { kind: "canceled" };
     }
     if (flags.pause) {
@@ -273,6 +293,7 @@ export async function run(
     case "canceled":
       discard(files, part);
       await stopTranscode();
+      await release();
       return { kind: "canceled" };
     case "paused":
       await stopTranscode();
@@ -334,5 +355,6 @@ export async function run(
   } catch {
     return { kind: "failed", code: "io", bytesDone: written };
   }
+  await release();
   return { kind: "complete", finalSize: written };
 }

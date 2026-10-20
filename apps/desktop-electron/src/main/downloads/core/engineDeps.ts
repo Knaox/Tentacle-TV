@@ -9,7 +9,7 @@
 
 import type { DatabaseHandle, EngineEvent, TransferDriver, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
-import type { Creds } from "./worker";
+import type { Creds, ServerPrepare } from "./worker";
 
 /** Ce que la plateforme rend d'une finalisation : voir `EngineDeps.finalizeMedia`. */
 export type FinalizeVerdict = "ok" | "unusable" | "noaudio" | void;
@@ -69,6 +69,14 @@ export interface EngineDeps {
    * aboutir. Absente (bureau) : `MAX_PARALLEL`.
    */
   parallelLimit?: () => number;
+  /**
+   * Le serveur sait-il préparer un fichier Allégé lui-même (capacité
+   * `offline.serverPrepare`) ? Consultée à chaque transfert. Oui : le fichier
+   * se prépare sur le serveur que l'application soit là ou non, se lit pendant
+   * qu'il s'écrit et se reprend par plage (`worker.ts`). `null` ou absente
+   * (bureau, serveur d'avant) : le transcodage tiré en direct, comme avant.
+   */
+  serverPrepare?: () => ServerPrepare | null;
   /**
    * Finalise un fichier ALLÉGÉ avant `complete`. Le transcodage progressif de
    * Jellyfin est un MP4 fragmenté (sans index ni durée) : mpv s'en accommode,
