@@ -2,9 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   isVigieRecoAvailable,
-  mergeHiddenHomeRows,
-  recoRowTitle,
-  reconcileHomeRows,
   useFavoritesAll,
   useHomeLayout,
   useLibraries,
@@ -12,11 +9,10 @@ import {
   useResetTasteProfile,
   useSaveHomeLayoutPatch,
   useSaveRecoSettingsPatch,
-  visibleHomeRows,
   useServerCapabilities,
   useTrendingNowSetting,
 } from "@tentacle-tv/api-client";
-import type { CardDensity, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
+import type { CardDensity, HomeLayoutData, RecoSettingsData } from "@tentacle-tv/api-client";
 import { heroModesOffered } from "@tentacle-tv/shared";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
@@ -24,6 +20,7 @@ import { SegmentedChoice } from "../../components/settings/SegmentedChoice";
 import { SettingToggleRow } from "../../components/settings/SettingToggleRow";
 import { HeroSourcePicker } from "../../components/settings/personalization/HeroSourcePicker";
 import { HomeRowsEditor } from "../../components/settings/personalization/HomeRowsEditor";
+import { useHomeRowsEditorModel } from "../../components/settings/personalization/useHomeRowsEditorModel";
 import { LinkedAccounts } from "../../components/settings/personalization/LinkedAccounts";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { rangeFill } from "../../lib/rangeFill";
@@ -45,7 +42,6 @@ const BALANCE_SAVE_MS = 300;
 export function SettingsPersonalization() {
   const { t } = useTranslation("preferences");
   const { t: tCommon } = useTranslation("common");
-  const { t: tReco } = useTranslation("reco");
   const { t: tHome } = useTranslation("homeSettings");
   const { data: layout } = useHomeLayout();
   const { data: settings } = useRecoSettings();
@@ -83,60 +79,16 @@ export function SettingsPersonalization() {
   // La liste des plugins ne reste que le repli des serveurs d'avant ce champ.
   const vigie = isVigieRecoAvailable(settings?.vigieAvailable, useActivePluginsMeta());
 
-  // La liste COMPLÈTE (clés hors catalogue comprises : elles restent
-  // stockées) et la liste VISIBLE que l'éditeur manipule — seules les rangées
-  // que ce serveur sait servir se proposent.
-  const rows = useMemo(
-    () =>
-      layout
-        ? reconcileHomeRows(layout.rows, libs, {
-            // Même ancre que l'accueil : l'éditeur doit montrer l'ordre RÉEL.
-            anchorNewLibraries: layout.stored === false,
-            catalog: layout.catalog,
-          })
-        : [],
-    [layout, libs]
-  );
-  // « Films pour vous » n'est proposée que si le serveur la déclare (`reco.moviesRow`).
   const serverCaps = useServerCapabilities();
-  const editorCapabilities = serverCaps.known ? serverCaps.capabilities : undefined;
-  const editorRows = useMemo(
-    () => visibleHomeRows(rows, layout?.catalog, editorCapabilities),
-    [rows, layout?.catalog, editorCapabilities],
-  );
+  const homeRows = useHomeRowsEditorModel();
 
   if (!layout || !settings) return null;
 
   const patchLayout = (patch: Partial<Omit<HomeLayoutData, "stored" | "catalog">>) => {
     saveLayout.mutate(patch);
   };
-  // Les rangées cachées reprennent leur place derrière celles que l'éditeur a
-  // ordonnées : une clé TMDB retirée puis remise ne perd rien. Patch
-  // FONCTIONNEL : appliqué sur la copie fraîche du serveur, réconciliée.
-  const changeRows = (next: HomeRowDescriptor[]) => {
-    saveLayout.mutate((fresh) => ({ rows: mergeHiddenHomeRows(fresh.rows, next, fresh.catalog) }));
-  };
   const patchSettings = (patch: Partial<RecoSettingsData>) => {
     saveSettings.mutate(patch);
-  };
-
-  const librariesById = new Map((libraries ?? []).map((l) => [l.Id, l.Name]));
-  const labelFor = (key: string): string => {
-    if (key === "resume") return tCommon("common:resumeWatching");
-    if (key === "nextUp") return tCommon("common:nextEpisodes");
-    if (key === "watchlist") return tCommon("common:myList");
-    if (key === "watched") return tCommon("common:alreadyWatched");
-    if (key === "favorites") return tCommon("common:myFavorites");
-    if (key.startsWith("library:")) {
-      return tCommon("common:latestAdditions", {
-        name: librariesById.get(key.slice("library:".length)) ?? "?",
-      });
-    }
-    if (key.startsWith("reco:")) {
-      // Même table que les rangées elles-mêmes (tendances, pouls, mieux notés compris).
-      return tReco(recoRowTitle({ key: key.slice("reco:".length) }).key);
-    }
-    return key;
   };
 
   // Les sources que CE serveur sait servir ; la valeur en vigueur reste lisible.
@@ -180,7 +132,7 @@ export function SettingsPersonalization() {
           <div>
             <p className="mb-1 text-sm font-medium text-content-primary">{t("persoRowsTitle")}</p>
             <p className="mb-3 text-xs leading-relaxed text-content-tertiary">{t("persoRowsHint")}</p>
-            <HomeRowsEditor rows={editorRows} labelFor={labelFor} onChange={changeRows} />
+            <HomeRowsEditor rows={homeRows.rows} labelFor={homeRows.labelFor} onChange={homeRows.onChange} />
           </div>
         </div>
       </SettingsSection>
