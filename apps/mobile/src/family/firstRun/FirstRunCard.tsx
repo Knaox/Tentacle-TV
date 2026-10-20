@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { retainModal } from "@/components/ui/modalGate";
 import { CONTENT_MAX_WIDTH, ctaGradient, FONT_FAMILY, RADIUS, spacing, typography, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { MODAL_ORIENTATIONS } from "../modalOrientations";
-import type { FirstRunStep } from "./firstRunPlan";
+import { FIRST_RUN_PROGRESS_KEY, FIRST_RUN_SKIP_KEY, firstRunPrimaryKey, firstRunStepOf, type FirstRunStep } from "@tentacle-tv/shared";
 import { HomeRowsStep } from "./HomeRowsStep";
 
 interface FirstRunCardProps {
@@ -21,12 +21,6 @@ interface FirstRunCardProps {
   onSkip?: () => void;
 }
 
-const ICONS: Readonly<Record<FirstRunStep, keyof typeof Feather.glyphMap>> = {
-  pinSetup: "lock",
-  railSetup: "layout",
-  photoSetup: "smile",
-};
-
 /**
  * Une étape du premier lancement, en PLEIN ÉCRAN : l'avancée (« Étape 2 sur
  * 3 »), le titre, l'explication, le contenu de l'étape, puis le pied fixe —
@@ -34,17 +28,15 @@ const ICONS: Readonly<Record<FirstRunStep, keyof typeof Feather.glyphMap>> = {
  * propre en paysage sur l'iPad. Une modale à la fois (`modalGate`).
  */
 export function FirstRunCard({ step, position, total, onPrimary, onSkip }: FirstRunCardProps) {
-  const { t } = useTranslation("familyMobile");
+  const { t } = useTranslation(["familyMobile", "profilePicker"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const gradient = ctaGradient(theme.colors.brand);
   const last = position === total;
-  const copy = step === "pinSetup"
-    ? { title: t("firstRun.pinTitle"), body: t("firstRun.pinBody"), primary: t("firstRun.pinSet") }
-    : step === "railSetup"
-      ? { title: t("firstRun.homeTitle"), body: t("firstRun.homeBody"), primary: last ? t("firstRun.finish") : t("firstRun.next") }
-      : { title: t("firstRun.photoTitle"), body: t("firstRun.photoBody"), primary: t("firstRun.photoChoose") };
+  // Textes, icône, contenu : le catalogue partagé (shared `firstRun/firstRunCatalog.ts`).
+  const descriptor = firstRunStepOf(step);
+  const copy = { title: t(descriptor.titleKey), body: t(descriptor.bodyKey), primary: t(firstRunPrimaryKey(step, last)) };
 
   useEffect(() => retainModal(), []);
   useEffect(() => {
@@ -57,18 +49,18 @@ export function FirstRunCard({ step, position, total, onPrimary, onSkip }: First
         <LinearGradient pointerEvents="none" colors={[theme.colors.brand.glow, "transparent"]} style={st.halo} />
         <ScrollView style={st.body} contentContainerStyle={st.scroll}>
           <View style={st.column}>
-            <Text style={st.progress}>{t("firstRun.step", { current: position, total })}</Text>
+            <Text style={st.progress}>{t(FIRST_RUN_PROGRESS_KEY, { current: position, total })}</Text>
             <View style={st.dots} accessible={false}>
               {Array.from({ length: total }, (_, index) => (
                 <View key={index} style={[st.dot, index < position && { backgroundColor: theme.colors.brand.light }]} />
               ))}
             </View>
             <LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={st.badge}>
-              <Feather name={ICONS[step]} size={26} color={theme.colors.cta.brandFg} />
+              <Feather name={descriptor.icon} size={26} color={theme.colors.cta.brandFg} />
             </LinearGradient>
             <Text style={st.title} accessibilityRole="header">{copy.title}</Text>
             <Text style={st.text}>{copy.body}</Text>
-            {step === "railSetup" ? <View style={st.content}><HomeRowsStep /></View> : null}
+            {descriptor.inline === "homeRowsEditor" ? <View style={st.content}><HomeRowsStep /></View> : null}
           </View>
         </ScrollView>
         <View style={st.footer}>
@@ -79,7 +71,7 @@ export function FirstRunCard({ step, position, total, onPrimary, onSkip }: First
           </Pressable>
           {onSkip ? (
             <Pressable onPress={onSkip} accessibilityRole="button" style={({ pressed }) => [st.ghost, pressed && st.ghostPressed]}>
-              <Text style={st.ghostText}>{t("firstRun.skip")}</Text>
+              <Text style={st.ghostText}>{t(FIRST_RUN_SKIP_KEY)}</Text>
             </Pressable>
           ) : null}
         </View>

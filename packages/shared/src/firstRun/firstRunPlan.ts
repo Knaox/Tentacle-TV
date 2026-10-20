@@ -1,18 +1,16 @@
-import { STARTUP_WINDOWS, type StartupWindow } from "@tentacle-tv/tv-core";
+import { FIRST_RUN_STEP_IDS, type FirstRunStep } from "./firstRunCatalog";
 
 /**
- * Le PREMIER LANCEMENT d'un profil sur le mobile et l'iPad — l'ordre de la TV
- * (tv-core `nav/startupWindows`, décision du 16/10) : le code PIN conseillé,
- * puis l'accueil (la TV règle sa barre ; le mobile, qui n'en a pas, les
- * RANGÉES de l'accueil — la préférence du compte), puis la photo. Une seule
- * fois par profil et par appareil (`FIRST_RUN_SEEN_KEY`), chaque étape se
- * passe. Module PUR, testé sous vitest.
+ * Le PREMIER LANCEMENT d'un profil hors TV (mobile, iPad, web étroit) — ce
+ * qu'il montre, d'après le catalogue (`firstRunCatalog.ts`) : l'ordre de la TV
+ * (tv-core `nav/startupWindows`), une fois par profil et par appareil
+ * (`FIRST_RUN_SEEN_KEY`), chaque étape se passe. Module PUR.
  */
 
 /** `["<serveur>|<profil>", …]` — les profils qui ont vu leur premier lancement ici. ⚠️ Clé stockée : jamais renommée. */
 export const FIRST_RUN_SEEN_KEY = "tentacle_first_run_seen";
 
-export type FirstRunStep = StartupWindow;
+export type { FirstRunStep } from "./firstRunCatalog";
 
 export interface FirstRunInput {
   /** Le profil actif (le compte, ou le profil de la session de profil) ; null : pas de session. */
@@ -62,7 +60,7 @@ export function firstRunPlan(input: FirstRunInput): FirstRunPlan {
   if (!input.subjectId || !input.serverUrl || !input.online) return { kind: "none" };
   if (input.seen.includes(firstRunKey(input.serverUrl, input.subjectId))) return { kind: "none" };
   if (input.pinDue === null || input.homeReady === null || input.photoDue === null) return { kind: "pending" };
-  const due: Record<FirstRunStep, boolean> = { pinSetup: input.pinDue, railSetup: input.homeReady, photoSetup: input.photoDue };
-  const steps = STARTUP_WINDOWS.filter((step) => due[step]);
+  const due: Record<FirstRunStep, boolean> = { pinSetup: input.pinDue, homeRows: input.homeReady, photoSetup: input.photoDue };
+  const steps = FIRST_RUN_STEP_IDS.filter((step) => due[step]);
   return steps.length > 0 ? { kind: "show", steps } : { kind: "none" };
 }

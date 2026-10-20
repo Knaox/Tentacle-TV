@@ -6,10 +6,10 @@ const base: FirstRunInput = { subjectId: "damien", serverUrl: SERVER, online: tr
 
 describe("le premier lancement du mobile", () => {
   it("l'ordre de la TV : code PIN, accueil, photo", () => {
-    expect(firstRunPlan(base)).toEqual({ kind: "show", steps: ["pinSetup", "railSetup", "photoSetup"] });
+    expect(firstRunPlan(base)).toEqual({ kind: "show", steps: ["pinSetup", "homeRows", "photoSetup"] });
   });
   it("seulement les étapes dues", () => {
-    expect(firstRunPlan({ ...base, pinDue: false, photoDue: false })).toEqual({ kind: "show", steps: ["railSetup"] });
+    expect(firstRunPlan({ ...base, pinDue: false, photoDue: false })).toEqual({ kind: "show", steps: ["homeRows"] });
     expect(firstRunPlan({ ...base, pinDue: false, homeReady: false, photoDue: false })).toEqual({ kind: "none" });
   });
   it("attend ce qui manque, jamais hors ligne", () => {

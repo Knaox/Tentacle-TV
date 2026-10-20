@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { usePathname, useSegments } from "expo-router";
 import { useSetHintDismissed, useTentacleConfig } from "@tentacle-tv/api-client";
-import { FAMILY_PIN_HINT } from "@tentacle-tv/shared";
+import {
+  FAMILY_PIN_HINT, FIRST_RUN_SEEN_KEY, currentStep, firstRunKey, firstRunPlan, firstRunStepOf, parseFirstRunSeen, reduceFirstRun,
+  startFirstRun, withFirstRunSeen, type FirstRunAction, type FirstRunFlow, type FirstRunStep,
+} from "@tentacle-tv/shared";
 import { OwnPinSheet } from "@/components/family/PinSheet";
 import { whenNoModal } from "@/components/ui/modalGate";
 import { useStoredUser } from "@/auth/useStoredUser";
@@ -11,8 +14,6 @@ import { markSubjectInvited } from "@/avatars/invite/inviteGate";
 import { useReportStartupOverlay, useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { FirstRunCard } from "./FirstRunCard";
 import { markFirstRunCovered } from "./firstRunCovered";
-import { currentStep, reduceFirstRun, startFirstRun, type FirstRunAction, type FirstRunFlow } from "./firstRunFlow";
-import { FIRST_RUN_SEEN_KEY, firstRunKey, firstRunPlan, parseFirstRunSeen, withFirstRunSeen, type FirstRunStep } from "./firstRunPlan";
 import { useFirstRunInputs } from "./useFirstRunInputs";
 
 /** Au-delà, une réponse qui manque compte pour « non » : le premier lancement ne retient jamais l'app. */
@@ -32,7 +33,7 @@ function useAppActive(): boolean {
 /**
  * Le PREMIER LANCEMENT d'un profil sur le mobile et l'iPad — après « Qui
  * regarde ? » et son code, l'ordre de la TV : le code PIN conseillé, les
- * rangées de l'accueil, la photo (`firstRunPlan`). Une fois par profil et par
+ * rangées de l'accueil, la photo — le catalogue partagé (shared `firstRun/`). Une fois par profil et par
  * appareil ; « Reproposer » du serveur le rouvre (`promptsReset`). Le premier
  * des recouvrements TARDIFS du démarrage : il attend que tout le reste se soit
  * tu, jamais sur le lecteur ni la connexion, et l'invitation aux avatars et le
@@ -135,7 +136,7 @@ export function FirstRunHost() {
       markFirstRunCovered("photo");
       markSubjectInvited(storage, subject);
     }
-    dispatch(step === "railSetup" ? "next" : "openSheet");
+    dispatch(step && firstRunStepOf(step).sheet ? "openSheet" : "next");
   }, [step, subject, storage, dispatch]);
 
   const onSkip = useCallback(() => {
@@ -164,7 +165,7 @@ export function FirstRunHost() {
       position={flow.index + 1}
       total={flow.steps.length}
       onPrimary={onPrimary}
-      onSkip={step === "railSetup" ? undefined : onSkip}
+      onSkip={firstRunStepOf(step).skippable ? onSkip : undefined}
     />
   );
 }

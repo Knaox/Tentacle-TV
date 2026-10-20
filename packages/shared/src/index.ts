@@ -201,6 +201,7 @@ export * from "./family/familyPickerStay";
 export * from "./family/familyPickerDevice";
 export * from "./family/profileSessionStore";
 export * from "./family/familyMobileProfiles";
+export * from "./firstRun";
 export * from "./family/familyProfileRefusal";
 export * from "./family/familyPinEntry";
 export * from "./family/familyPinReminder";

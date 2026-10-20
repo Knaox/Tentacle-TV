@@ -1,9 +1,10 @@
-import { AVATAR_INVITE_SEEN_KEY, honorPromptsReset, parseInvitedSubjects, withoutSubjectInvited, type PromptsResetStorage } from "@tentacle-tv/shared";
+import { AVATAR_INVITE_SEEN_KEY, parseInvitedSubjects, withoutSubjectInvited } from "../avatars/avatarInvite";
+import { honorPromptsReset, type PromptsResetStorage } from "../family/familyPromptsReset";
 import { FIRST_RUN_SEEN_KEY, firstRunKey, parseFirstRunSeen } from "./firstRunPlan";
 
 /**
  * « Reproposer le code PIN et la photo » (serveur 1.30.0, `family.promptsReset`)
- * sur le mobile : une demande du serveur plus récente que la dernière honorée
+ * hors TV (mobile, iPad, web étroit) : une demande du serveur plus récente que la dernière honorée
  * ICI fait oublier le premier lancement de ce profil (code PIN, rangées de
  * l'accueil, photo : tout repasse, étape par étape, au prochain lancement) et
  * l'invitation aux avatars. La règle est celle de tous les appareils (shared
@@ -12,7 +13,7 @@ import { FIRST_RUN_SEEN_KEY, firstRunKey, parseFirstRunSeen } from "./firstRunPl
  * photo seulement si elle manque). Un serveur d'avant ne rend pas la date :
  * rien. Module PUR, testé sous vitest.
  */
-export function honorMobilePromptsReset(
+export function honorFirstRunPromptsReset(
   storage: PromptsResetStorage,
   serverUrl: string | null,
   subjectId: string | null,

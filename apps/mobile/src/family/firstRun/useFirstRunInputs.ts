@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import {
   useFamilyOverview, useHomeLayout, useLibraries, useServerCapability, useTentacleConfig, useUserId,
 } from "@tentacle-tv/api-client";
-import { AVATAR_INVITE_SEEN_KEY, parseInvitedSubjects, sameUserId, shouldInviteToAvatars } from "@tentacle-tv/shared";
+import {
+  AVATAR_INVITE_SEEN_KEY, FIRST_RUN_SEEN_KEY, honorFirstRunPromptsReset, parseFirstRunSeen, parseInvitedSubjects, sameUserId,
+  shouldInviteToAvatars, type FirstRunInput,
+} from "@tentacle-tv/shared";
 import { useAccountHasPhoto } from "@/auth/useAccountHasPhoto";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useServerUrl } from "@/providers/ServerUrlContext";
@@ -10,8 +13,6 @@ import { useFamilyPinReminder } from "../pinSuggest/useFamilyPinReminder";
 import { useFamilyAvailability } from "../useFamilyAvailability";
 import { useActiveProfile } from "../profiles/profileSessionState";
 import { usePickerListing } from "../profiles/usePickerListing";
-import { FIRST_RUN_SEEN_KEY, parseFirstRunSeen, type FirstRunInput } from "./firstRunPlan";
-import { honorMobilePromptsReset } from "./promptsReset";
 import { firstRunCoveredPin } from "./firstRunCovered";
 
 /**
@@ -19,7 +20,7 @@ import { firstRunCoveredPin } from "./firstRunCovered";
  * Famille (le code PIN conseillé : la règle partagée `familyPinReminder`), la
  * préférence d'accueil du compte, la photo (règle partagée `avatarInvite`) —
  * et, AVANT toute décision, la demande « Reproposer » du serveur
- * (`promptsResetAt`), honorée une fois (`honorMobilePromptsReset`).
+ * (`promptsResetAt`), honorée une fois (`honorFirstRunPromptsReset`).
  *
  * Une session de profil ne pose pas son code ici (le serveur réserve
  * `setOwnPin` à la session personnelle et aux TV) ; sa photo, si le serveur
@@ -51,7 +52,7 @@ export function useFirstRunInputs(): FirstRunInput & { resetSettled: boolean } {
     : !family.available || overview.data !== undefined || overview.isError;
 
   useEffect(() => {
-    if (resetSettled && honorMobilePromptsReset(storage, serverUrl, subjectId, resetAt)) setHonored((value) => value + 1);
+    if (resetSettled && honorFirstRunPromptsReset(storage, serverUrl, subjectId, resetAt)) setHonored((value) => value + 1);
   }, [resetSettled, storage, serverUrl, subjectId, resetAt]);
 
   // Relus à chaque rendu (une poignée d'octets préchargés) : `honored` en provoque un après l'oubli.
