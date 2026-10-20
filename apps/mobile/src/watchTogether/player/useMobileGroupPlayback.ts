@@ -59,7 +59,7 @@ export function useMobileGroupPlayback({
     streamOffset: pb.streamOffset,
     signals: {
       notifyBuffering: (b) => syncRef.current?.notifyBuffering(b),
-      notifyPlayState: (p) => syncRef.current?.notifyPlayState(p),
+      notifyPlayState: (p, opts) => syncRef.current?.notifyPlayState(p, opts),
     },
   });
   const sync = useGroupSyncEngine({

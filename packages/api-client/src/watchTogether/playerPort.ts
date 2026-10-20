@@ -12,7 +12,9 @@ import type { MutableRefObject } from "react";
  * Contrat des appels du lecteur VERS le moteur (rendus par `useGroupSyncEngine`) :
  * `notifyBuffering(true)` au chargement / à la mise en mémoire tampon,
  * `false` quand il est prêt ; `notifyPlayState(paused)` à chaque pause/lecture
- * de l'utilisateur (les échos des commandes du moteur sont filtrés) ;
+ * de l'utilisateur (les échos des commandes du moteur sont filtrés — par une
+ * fenêtre de temps, ou, mieux, `{ echo: true }` quand le lecteur reconnaît
+ * lui-même l'écho d'une commande, comme le mobile) ;
  * `notifySeek(s, { explicit: true })` sur un geste de la barre ;
  * `requestPlay()` d'abord sur le bouton lecture (vrai = ne pas jouer soi-même :
  * la salle planifie la reprise, pour tous au même instant).

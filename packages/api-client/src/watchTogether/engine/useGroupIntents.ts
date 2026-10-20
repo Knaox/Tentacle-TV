@@ -43,7 +43,9 @@ export function useGroupIntents({
 
   const rtt = () => getClockRttMs() ?? undefined;
 
-  const notifyPlayState = useCallback((paused: boolean) => {
+  /** `echo` : le lecteur SAIT que ce changement répond à une commande du moteur
+   *  (mobile : `mobileTransport`) — jamais un geste, quel que soit son retard. */
+  const notifyPlayState = useCallback((paused: boolean, opts?: { echo?: boolean }) => {
     const r = shared.roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
     // Le play() d'une reprise planifiée vient de prendre : c'est la latence de
@@ -75,6 +77,10 @@ export function useGroupIntents({
     // membres encore attendus (waitingFor.clear() côté serveur).
     if (shared.lastBufferingSentRef.current !== false) {
       wtLog("engine", `intent play/pause ignoré (player en chargement déclaré), paused=${paused}`);
+      return;
+    }
+    if (opts?.echo) {
+      wtLog("engine", `intent play/pause ignoré (écho reconnu par le lecteur), paused=${paused}`);
       return;
     }
     if (isApplying(shared)) {

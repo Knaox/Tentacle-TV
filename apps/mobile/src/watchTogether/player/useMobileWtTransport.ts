@@ -8,7 +8,8 @@ import type { WtPlayerPort } from "@tentacle-tv/api-client";
 /** Ce que le moteur de synchro partagé attend du lecteur (`useGroupSyncEngine`). */
 export interface WtTransportSignals {
   notifyBuffering: (buffering: boolean) => void;
-  notifyPlayState: (paused: boolean) => void;
+  /** `echo` : l'écho d'une commande du moteur, jamais un geste (cf. `notifyPlayState`). */
+  notifyPlayState: (paused: boolean, opts?: { echo?: boolean }) => void;
 }
 
 /**
@@ -63,7 +64,9 @@ export function useMobileWtTransport({ active, barrier, commands, paused, buffer
   const transportRef = useRef<WtPlayerPort | null>(transport.current);
   const t = transport.current;
 
-  useEffect(() => { t.reports.paused(paused); }, [t, paused]);
+  // L'écho d'une pause / lecture commandée par le moteur, lu au même rendu que le relais (plus bas).
+  const pausedEchoRef = useRef(false);
+  useEffect(() => { pausedEchoRef.current = t.reports.paused(paused); }, [t, paused]);
   useEffect(() => { t.reports.buffering(buffering); }, [t, buffering]);
   useEffect(() => { t.reports.ready(videoReady); }, [t, videoReady]);
 
@@ -101,7 +104,7 @@ export function useMobileWtTransport({ active, barrier, commands, paused, buffer
   const activeRef = useRef(active);
   activeRef.current = active;
   useEffect(() => {
-    if (activeRef.current && readyRef.current) signalsRef.current.notifyPlayState(paused);
+    if (activeRef.current && readyRef.current) signalsRef.current.notifyPlayState(paused, { echo: pausedEchoRef.current });
   }, [paused]);
 
   const offsetRef = useRef(streamOffset);
