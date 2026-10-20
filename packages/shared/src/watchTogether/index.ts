@@ -6,3 +6,5 @@ export * from "./roomState";
 export * from "./sessionRules";
 export * from "./readyGate";
 export * from "./groupSchedule";
+// Le sélecteur d'emojis du chat : les mêmes réactions partout.
+export * from "./emojiData";

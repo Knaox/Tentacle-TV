@@ -1,6 +1,6 @@
 import { memo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { EMOJI_CATEGORIES } from "./emojiData";
+import { EMOJI_CATEGORIES } from "@tentacle-tv/shared";
 
 /**
  * Watch Together — onglet Emojis du sélecteur : chips de catégories (saut par

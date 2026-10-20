@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "react-i18next";
-import { getBackendBase } from "../../../lib/backendBase";
+import { wtAuthInit, wtBackendRoot } from "../../hooks/useWatchTogetherApi";
 
 /**
  * Watch Together — recherche de GIFs via le proxy backend `/api/gifs`
  * (clé Klipy côté serveur uniquement). Requête vide → tendances (featured),
- * sinon recherche plein texte. Fetch direct : `getBackendBase()` + le Bearer
- * du `localStorage`.
+ * sinon recherche plein texte. Même serveur et même authentification que le
+ * reste de Watch Together (`setWatchTogetherBackendUrl`, jeton) : web, bureau
+ * et mobile.
  */
 
 export interface GifItem {
@@ -25,10 +25,6 @@ export interface GifsPayload {
   error?: boolean;
 }
 
-function getToken(): string {
-  return localStorage.getItem("tentacle_token") ?? "";
-}
-
 /** Valeur debouncée — évite une requête Klipy à chaque frappe. */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -39,19 +35,19 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
-export function useGifSearch(rawQuery: string) {
-  const { i18n } = useTranslation();
+/** `language` : la langue de l'interface (« fr », « en-US »…) — Klipy cherche dans la sienne. */
+export function useGifSearch(rawQuery: string, language: string | undefined) {
   const query = useDebouncedValue(rawQuery.trim(), 350);
-  const locale = i18n.language?.toLowerCase().startsWith("fr") ? "fr_FR" : "en_US";
+  const locale = language?.toLowerCase().startsWith("fr") ? "fr_FR" : "en_US";
 
   return useQuery({
     queryKey: ["wt-gifs", query, locale],
     queryFn: async (): Promise<GifsPayload> => {
-      const base = `${getBackendBase()}/api/gifs`;
+      const base = `${wtBackendRoot()}/api/gifs`;
       const url = query
         ? `${base}/search?q=${encodeURIComponent(query)}&locale=${locale}`
         : `${base}/featured?locale=${locale}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(url, wtAuthInit());
       // 404 (vieux serveur sans la route) ou autre échec → même UX que non configuré.
       if (!res.ok) return { configured: false, results: [] };
       return (await res.json()) as GifsPayload;

@@ -1,7 +1,6 @@
 import { memo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { WtChatApi } from "@tentacle-tv/api-client";
-import { useGifSearch, type GifItem } from "./useGifSearch";
+import { useGifSearch, type GifItem, type WtChatApi } from "@tentacle-tv/api-client";
 
 /**
  * Watch Together — onglet GIF du sélecteur : recherche debouncée + grille de
@@ -45,9 +44,9 @@ const GifCell = memo(function GifCell({
 });
 
 export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
-  const { t } = useTranslation("watchTogether");
+  const { t, i18n } = useTranslation("watchTogether");
   const [query, setQuery] = useState("");
-  const { data, isLoading } = useGifSearch(query);
+  const { data, isLoading } = useGifSearch(query, i18n.language);
   const lastSentRef = useRef(0);
   const [sentId, setSentId] = useState<string | null>(null);
 

@@ -28,6 +28,7 @@ export {
   chatReducer, initialChatState, WT_CHAT_TOAST_MAX, WT_FLOAT_MAX,
   type WtChatAction, type WtChatState, type WtFloatingReaction,
 } from "../watchTogether/chat/chatState";
+export { useGifSearch, type GifItem, type GifsPayload } from "../watchTogether/chat/useGifSearch";
 
 // L'affinité (swipe de groupe) : magasin, effets des messages, mots.
 export * from "../watchTogether/affinity/affinityStore";
