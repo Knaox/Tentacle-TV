@@ -21,11 +21,20 @@ export interface InviteBusyContext {
   galleryOpen: boolean;
 }
 
+/**
+ * Le lecteur est à l'écran (`watch/[itemId]`, une présentation native plein
+ * écran que le portier des modales ne voit pas). Une feuille rendue visible
+ * pendant qu'il se présente n'est jamais présentée par iOS, et retient le
+ * portier : invisible, elle bloque toute autre feuille (essai iPad du 21/10).
+ */
+export function inviteOnPlayer(context: Pick<InviteBusyContext, "pathname" | "rootSegment">): boolean {
+  return context.pathname.startsWith("/watch") || context.rootSegment === "watch";
+}
+
 /** Le mobile est-il occupé ? Jamais par-dessus un recouvrement, le lecteur, la connexion ou le système. */
 export function inviteBusy(context: InviteBusyContext): boolean {
   return !context.overlaysQuiet
-    || context.pathname.startsWith("/watch")
-    || context.rootSegment === "watch"
+    || inviteOnPlayer(context)
     || context.rootSegment === "(auth)"
     || !context.appActive
     || context.galleryOpen;

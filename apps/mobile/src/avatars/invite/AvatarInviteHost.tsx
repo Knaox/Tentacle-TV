@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { usePathname, useSegments } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
@@ -8,7 +8,7 @@ import { whenNoModal } from "@/components/ui/modalGate";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useReportStartupOverlay, useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { AvatarGallerySheet } from "../gallery/AvatarGallerySheet";
-import { inviteBusy, markSubjectInvited, readInvitedSubjects } from "./inviteGate";
+import { inviteBusy, inviteOnPlayer, markSubjectInvited, readInvitedSubjects } from "./inviteGate";
 import { firstRunCoveredPhoto } from "@/family/firstRun/firstRunCovered";
 import { useAvatarInviteSubject } from "./useAvatarInviteSubject";
 
@@ -52,6 +52,10 @@ export function AvatarInviteHost() {
   const [open, setOpen] = useState(false);
 
   const busy = inviteBusy({ overlaysQuiet, pathname, rootSegment, appActive, galleryOpen: open });
+  // Relu au moment d'ouvrir : le lecteur a pu se présenter entre le calme et l'ouverture.
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  const onPlayer = inviteOnPlayer({ pathname, rootSegment });
   // Le premier lancement vient de proposer la photo : jamais deux fois de suite (`family/firstRun`).
   const covered = firstRunCoveredPhoto();
   const due = shouldInviteToAvatars({
@@ -80,7 +84,7 @@ export function AvatarInviteHost() {
     let cancelled = false;
     const timer = setTimeout(() => {
       whenNoModal(() => {
-        if (cancelled) return;
+        if (cancelled || busyRef.current) return;
         setInvited(markSubjectInvited(storage, userId));
         setOpen(true);
       });
@@ -94,5 +98,7 @@ export function AvatarInviteHost() {
   const close = useCallback(() => setOpen(false), []);
   const current = useMemo(() => ({ uri: null, initial: (user?.Name ?? "?").charAt(0).toUpperCase() }), [user?.Name]);
 
-  return <AvatarGallerySheet visible={open} mode="invite" current={current} onClose={close} />;
+  // Jamais présentée sur le lecteur : elle se retire, et revient au retour. (Pas l'arrière-plan :
+  // « Importer une photo » y passe par le sélecteur du système.)
+  return <AvatarGallerySheet visible={open && !onPlayer} mode="invite" current={current} onClose={close} />;
 }
