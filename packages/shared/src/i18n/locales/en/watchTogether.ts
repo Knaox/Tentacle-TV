@@ -103,6 +103,11 @@ export default {
 
   // Group chat
   chatTitle: "Group chat",
+  // Typing indicator (plural on count)
+  typingOne: "{{name}} is typing…",
+  typingTwo: "{{a}} and {{b}} are typing…",
+  typingMany_one: "{{name}} and {{count}} other are typing…",
+  typingMany_other: "{{name}} and {{count}} others are typing…",
   chatPlaceholder: "Type a message…",
   chatSend: "Send",
   chatEmpty: "No messages yet. Say hi!",
