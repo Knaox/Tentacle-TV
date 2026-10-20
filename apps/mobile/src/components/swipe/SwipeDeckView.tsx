@@ -35,6 +35,8 @@ interface Props {
   topPage?: TitlePageLink | null;
   pageSlotOf?: (card: SwipeCard) => boolean;
   onOpenPage?: (href: string) => void;
+  /** L'affinité de groupe : j'aime / pas pour moi seulement (voir `SwipeCardView`). */
+  binary?: boolean;
 }
 
 /**
@@ -47,7 +49,7 @@ interface Props {
  */
 export function SwipeDeckView({
   cards, exiting, infoOpen, details, nextDetails, reducedMotion, onRelease, onExited, onToggleInfo,
-  topPage = null, pageSlotOf, onOpenPage,
+  topPage = null, pageSlotOf, onOpenPage, binary = false,
 }: Props) {
   const { t } = useTranslation("swipe");
   const client = useJellyfinClient();
@@ -64,12 +66,14 @@ export function SwipeDeckView({
 
   // VoiceOver : balayer vers le haut / le bas choisit le verdict ; le double
   // toucher (onPress) retourne la carte.
-  const actions = [
-    { name: "like", label: t("like") },
-    { name: "superlike", label: t("superlike") },
-    { name: "dislike", label: t("dislike") },
-    { name: "skip", label: t("skip") },
-  ];
+  const actions = binary
+    ? [{ name: "like", label: t("like") }, { name: "dislike", label: t("dislike") }]
+    : [
+      { name: "like", label: t("like") },
+      { name: "superlike", label: t("superlike") },
+      { name: "dislike", label: t("dislike") },
+      { name: "skip", label: t("skip") },
+    ];
   const onAction = (name: string) => onRelease(name as SwipeVerdict);
 
   const visible = cards.slice(0, VISIBLE);
@@ -111,6 +115,7 @@ export function SwipeDeckView({
               page={depth === 0 && !exit ? topPage : null}
               pageSlot={pageSlotOf?.(card) ?? false}
               onOpenPage={onOpenPage}
+              binary={binary}
             />
           ))}
         </View>
