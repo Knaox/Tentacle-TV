@@ -36,7 +36,7 @@ export default {
   },
   poster: {
     title: "{{owner}} invites you to join their family",
-    profile: "Your profile will open on {{owner}}'s TVs without a password, unless you set a PIN code.",
+    profile: "Your profile will open on {{owner}}'s devices — TVs, computers, phones and tablets — without a password, unless you set a PIN code.",
     leave: "You can leave the family at any time.",
     accept: "Accept",
     decline: "Decline",
@@ -94,10 +94,10 @@ export default {
   pinSuggest: {
     eyebrow: "Recommended action",
     joinedTitle: "Welcome to {{owner}}'s family",
-    joinedBody: "Your profile now shows up in “Who's watching?” on their TVs and computers. Without a PIN, anyone in front of the screen can open it.",
+    joinedBody: "Your profile now shows up in “Who's watching?” on the family's devices. Without a PIN, anyone in front of the screen can open it.",
     title: "Set your PIN",
-    body: "Your profile has no PIN: on the family's TVs and computers, anyone can open it from “Who's watching?”.",
-    why: "Four digits protect your history, your resume points, My List and your ratings. They also let you manage the family from your profile, on a TV or a computer, with the rights the owner gives you. Only you enter it, and you can change or remove it at any time in Settings › Family.",
+    body: "Your profile has no PIN: on the family's devices, anyone can open it from “Who's watching?”.",
+    why: "Four digits protect your history, your resume points, My List and your ratings. They also let you manage the family from your profile, on any of the family's devices, with the rights the owner gives you. Only you enter it, and you can change or remove it at any time in Settings › Family.",
     set: "Set a PIN",
     later: "Set up later",
   },
