@@ -40,6 +40,18 @@ export function sheetDragOffset(input: { snap: SheetSnap; dy: number; minH: numb
 }
 
 /**
+ * La poignée et l'en-tête prennent-ils le geste ? Un glissement VERTICAL
+ * franc seulement (`SHEET_DRAG_SLOP`, et plus vertical qu'horizontal) : un
+ * doigt qui tremble de quelques points en touchant un bouton de l'en-tête
+ * (« Tout marquer comme lu », un filtre, la croix) laisse le toucher au
+ * bouton — prendre le geste dès 4 pt l'annulait sans rien dire.
+ */
+export function sheetHeaderClaimsMove(input: { dx: number; dy: number }): boolean {
+  const { dx, dy } = input;
+  return Math.abs(dy) >= SHEET_DRAG_SLOP && Math.abs(dy) > Math.abs(dx);
+}
+
+/**
  * Le contenu prend-il le geste à la feuille ? Au premier cran, tout geste
  * vertical vers le HAUT agrandit d'abord (comme iOS) ; vers le bas, seulement
  * si la liste est en haut. Au plein, vers le bas seulement si la liste est en

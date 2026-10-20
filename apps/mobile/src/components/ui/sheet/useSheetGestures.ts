@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { Animated, PanResponder, type GestureResponderEvent, type PanResponderGestureState } from "react-native";
-import { decideSheetRelease, sheetCapturesFromContent, sheetDragOffset, SHEET_DRAG_SLOP, type SheetSnap } from "./sheetSnap";
+import { decideSheetRelease, sheetCapturesFromContent, sheetDragOffset, sheetHeaderClaimsMove, type SheetSnap } from "./sheetSnap";
 import type { SheetScrollBridge } from "./sheetScroll";
 
 interface Live {
@@ -46,7 +46,7 @@ export function useSheetGestures(translateY: Animated.Value, live: Live) {
     const handle = PanResponder.create({
       ...base,
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dy) > SHEET_DRAG_SLOP / 2,
+      onMoveShouldSetPanResponder: (_e, g) => sheetHeaderClaimsMove({ dx: g.dx, dy: g.dy }),
     });
     const content = PanResponder.create({
       ...base,
