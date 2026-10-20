@@ -58,7 +58,7 @@ export interface ProblemDiagnostic {
 }
 
 /** Un identifiant n'a que ces caractères : le reste est coupé, pas de texte libre qui s'y glisse. */
-const SAFE_ID = /[^A-Za-z0-9._:/@+\[\]()-]/g;
+const SAFE_ID = /[^A-Za-z0-9._:/@+[\]()-]/g;
 
 /** Un secret écrit en clair dans un texte libre (« token=… », « password: … »). */
 const LOOSE_SECRET = /\b(token|access_token|api_?key|password|passwd|pwd|secret|pin)(\s*[=:]\s*)("[^"]*"|[^\s,;&]+)/gi;
