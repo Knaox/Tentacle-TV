@@ -28,6 +28,10 @@ interface Props {
   localTrickplay?: LocalTrickplay | null;
   /** Lecture locale : jamais de planche demandée au serveur. */
   trickplayLocalOnly?: boolean;
+  /** Air sous les minutages (le bord bas est déjà écarté par le parent). */
+  bottomGap?: number;
+  /** Air de part et d'autre de la piste. */
+  sideGap?: number;
 }
 
 function formatTime(s: number): string {
@@ -41,7 +45,7 @@ function formatTime(s: number): string {
 
 export function PlayerSeekBar({
   currentTime, duration, bufferedTime, onSeek, onSeeking, onScrubStateChange,
-  item, mediaSourceId, localTrickplay, trickplayLocalOnly,
+  item, mediaSourceId, localTrickplay, trickplayLocalOnly, bottomGap = 36, sideGap = 16,
 }: Props) {
   const { width: winW, height: winH } = useWindowDimensions();
   const isTablet = Math.min(winW, winH) >= TABLET_MIN_WIDTH;
@@ -108,7 +112,7 @@ export function PlayerSeekBar({
   }, [currentFrame, trickplay]);
 
   return (
-    <View style={{ paddingHorizontal: 16, paddingBottom: 36 }}>
+    <View style={{ paddingHorizontal: sideGap, paddingBottom: bottomGap }}>
       {/* Trickplay / timestamp preview lives in the bar's coordinate space so
           left + parentWidth math from the web port works unchanged. */}
       <View style={{ position: "relative" }}>

@@ -256,4 +256,26 @@ export default {
     pausedBody: "Personne n'a répondu : la lecture vous attend, là où vous l'avez laissée.",
     resume: "Reprendre",
   },
+  // Les panneaux du lecteur mobile (pistes, qualité, épisodes), façon lecteur d'Apple.
+  panels: {
+    tracksTitle: "Audio et sous-titres",
+    settingsTitle: "Réglages",
+    audio: "Audio",
+    subtitles: "Sous-titres",
+    subtitlesOff: "Désactivés",
+    quality: "Qualité",
+    nowPlaying: "En cours",
+    episodesTitle: "Épisodes",
+    trackDefault: "Par défaut",
+    trackForced: "Forcé",
+    trackExternal: "Externe",
+  },
+  // La liste des épisodes du lecteur mobile : la carte qui s'ouvre.
+  episodeBrowser: {
+    watched: "vu",
+    remaining_one: "Reste {{count}} min",
+    remaining_other: "Reste {{count}} min",
+    seasonWatched: "Saison vue",
+    seasonPlaying: "Saison en cours",
+  },
 } as const;

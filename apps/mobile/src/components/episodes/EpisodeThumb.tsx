@@ -9,10 +9,12 @@ interface Props {
   ep: MediaItem;
   seriesId: string;
   client: ReturnType<typeof useJellyfinClient>;
+  /** La largeur demandée au serveur (px) : 300 pour une ligne, plus pour une grande carte. */
+  width?: number;
 }
 
 /** La vignette d'un épisode : son image, sinon la bannière de la série, sinon son numéro. */
-export function EpisodeThumb({ ep, seriesId, client }: Props) {
+export function EpisodeThumb({ ep, seriesId, client, width = 300 }: Props) {
   const st = useThemedStyles(makeStyles);
   // Chaîne 16:9 du web et de la TV : image de l'épisode, backdrop propre,
   // backdrop du parent, affiche de la série. L'ancien repli visait le backdrop
@@ -20,11 +22,11 @@ export function EpisodeThumb({ ep, seriesId, client }: Props) {
   const resolved = resolveBannerImage(ep);
   const thumbUrl = resolved
     ? client.getImageUrl(resolved.id, resolved.type, {
-        width: 300,
+        width,
         quality: 70,
         ...(resolved.tag ? { tag: resolved.tag } : {}),
       })
-    : client.getImageUrl(seriesId, "Backdrop", { width: 300, quality: 70 });
+    : client.getImageUrl(seriesId, "Backdrop", { width, quality: 70 });
   const image = useResilientImage(thumbUrl);
   const uri = image.uri;
 
