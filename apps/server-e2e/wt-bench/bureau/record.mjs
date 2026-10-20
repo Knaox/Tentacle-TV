@@ -64,7 +64,7 @@ const SAMPLE = `(async () => {
   const notes = [...document.querySelectorAll('[role=status],[role=alert],[data-sonner-toast],.toast,[class*="toast"]')]
     .map((n) => n.innerText.trim()).filter(Boolean).join(" ¦ ").slice(0, 400);
   // Les messages de Watch Together, où qu'ils s'affichent (voile du lecteur, avis, bande de l'accueil).
-  const msgs = [...new Set((document.body.innerText.match(/[^\\n]*(rejoint la lecture|rejoint le groupe|n'a pas rejoint|a quitté la lecture|a quitté le groupe|En attente de|est maintenant l'hôte|ne peut pas lire)[^\\n]*/g) ?? []))].join(" ¦ ").slice(0, 400);
+  const msgs = [...new Set((document.body.innerText.match(/[^\\n]*(rejoint la lecture|rejoint le groupe|n'a pas rejoint|a quitté la lecture|a quitté le groupe|En attente de|est maintenant l'hôte|ne peut pas lire|Passer|Lire maintenant|À SUIVRE|intro dans|générique dans)[^\\n]*/g) ?? []))].join(" ¦ ").slice(0, 400);
   return { route: location.pathname + location.search, pos, paused, src, notes, msgs };
 })()`;
 

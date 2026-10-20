@@ -5,10 +5,12 @@
  * chargement d'un téléphone sur un réseau moyen, rejoué au bureau.
  *
  *   node slow.mjs <port> <delayMs> <seconds>
+ *   node slow.mjs <port> fail <seconds>     # le flux est REFUSÉ (PlaybackInfo passe) : un arrivant en échec
  */
 
 const [port, delayS, secondsS] = process.argv.slice(2);
-const delayMs = Number(delayS);
+const fail = delayS === "fail";
+const delayMs = fail ? 0 : Number(delayS);
 const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
 const page = targets.find((t) => t.type === "page" && /^(tentacle|https?):/.test(t.url));
 const ws = new WebSocket(page.webSocketDebuggerUrl);
@@ -20,7 +22,13 @@ ws.onmessage = (event) => {
   const msg = JSON.parse(String(event.data));
   if (msg.method !== "Fetch.requestPaused") return;
   held += 1;
-  console.log(`${Date.now()} retenue ${delayMs} ms : ${msg.params.request.url.replace(/api_key=[^&]+/, "api_key=…").slice(0, 140)}`);
+  const url = msg.params.request.url;
+  if (fail && !/PlaybackInfo/.test(url)) {
+    console.log(`${Date.now()} refusée : ${url.slice(0, 140)}`);
+    send("Fetch.failRequest", { requestId: msg.params.requestId, errorReason: "ConnectionRefused" });
+    return;
+  }
+  console.log(`${Date.now()} retenue ${delayMs} ms : ${url.replace(/api_key=[^&]+/, "api_key=…").slice(0, 140)}`);
   setTimeout(() => send("Fetch.continueRequest", { requestId: msg.params.requestId }), delayMs);
 };
 send("Fetch.enable", {
