@@ -41,9 +41,9 @@ describe("capacités du serveur", () => {
     // « Tendances actuelles » (1.31.0) n'est pas dans un 1.30.0 qui ne déclarerait rien.
     expect(resolveServerCapabilities({ version: "1.30.0" }).size).toBe(since(["1.31.0", "1.32.0"]).length);
     expect(resolveServerCapabilities({ version: "1.30.0" }).has("reco.trending")).toBe(false);
-    // L'adhésion par appareil et « tous prêts » de Watch Together (1.32.0) non plus en 1.31.0.
+    // La synchro des notifications du téléphone (1.32.0) non plus en 1.31.0.
     expect(resolveServerCapabilities({ version: "1.31.0" }).size).toBe(since(["1.32.0"]).length);
-    expect(resolveServerCapabilities({ version: "1.31.0" }).has("watchTogether.deviceMembership")).toBe(false);
+    expect(resolveServerCapabilities({ version: "1.31.0" }).has("notifications.pushSync")).toBe(false);
     expect(resolveServerCapabilities({ version: "1.32.0" }).size).toBe(SERVER_CAPABILITY_KEYS.length);
   });
 
