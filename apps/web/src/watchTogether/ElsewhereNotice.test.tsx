@@ -24,7 +24,7 @@ const location = vi.hoisted(() => ({ pathname: "/" }));
 vi.mock("react-router-dom", () => ({ useLocation: () => location }));
 vi.mock("../contexts/ToastContext", () => ({ useToast: () => ({ show: () => undefined }) }));
 vi.mock("./WatchTogetherProvider", () => ({
-  useWatchTogether: () => ({ elsewhere: state.elsewhere, actions: { joinHere: async () => undefined } }),
+  useWatchTogether: () => ({ elsewhere: state.elsewhere, selfId: "me", actions: { joinHere: async () => undefined } }),
 }));
 
 const { ElsewhereNotice } = await import("./ElsewhereNotice");
@@ -41,6 +41,13 @@ describe("ElsewhereNotice", () => {
     expect(html).toContain("elsewhereActiveWithHost:Damien");
     expect(html).toContain("elsewhereJoinHere");
     expect(html).toContain('aria-label="elsewhereDismiss"');
+  });
+
+  it("dit « Votre groupe… » quand l'hôte est ce compte (Q19)", () => {
+    state.elsewhere = { groupId: "g", hostUsername: "Damien", hostUserId: "me", itemId: "film", memberCount: 2, deviceCount: 2 };
+    const html = renderToStaticMarkup(<ElsewhereNotice />);
+    expect(html).toContain("elsewhereActiveOwn");
+    expect(html).not.toContain("elsewhereActiveWithHost");
   });
 
   it("jamais sur un lecteur : elle couvrirait la barre de lecture", () => {

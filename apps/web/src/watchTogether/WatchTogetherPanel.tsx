@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { elsewhereLabel } from "@tentacle-tv/shared";
 import { DoorOpen, Hourglass, LogOut, Plus, UserPlus } from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
 import { useWatchTogether } from "./WatchTogetherProvider";
@@ -30,6 +31,9 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
   const { show } = useToast();
   const { room, invites, selfId, isHost, pendingInvites, actions, mayCreate, elsewhere } = useWatchTogether();
   const [busy, setBusy] = useState(false);
+  // « Votre groupe… » quand l'hôte est ce compte, sinon « Groupe de X… » (règle partagée).
+  const said = elsewhere ? elsewhereLabel(elsewhere, selfId) : null;
+  const elsewhereText = !said ? "" : "params" in said ? t(said.key, said.params) : t(said.key);
 
   const run = async (fn: () => Promise<unknown>, closeAfter = false) => {
     setBusy(true);
@@ -124,7 +128,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
         // second (le serveur le refuserait), on propose d'ajouter celui-ci.
         <div className="px-4 py-6 text-center">
           <p className="text-sm text-content-secondary">
-            {elsewhere.hostUsername ? t("elsewhereActiveWithHost", { name: elsewhere.hostUsername }) : t("elsewhereActive")}
+            {elsewhereText}
           </p>
           <button
             type="button"

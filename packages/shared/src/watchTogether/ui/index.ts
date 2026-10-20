@@ -7,3 +7,4 @@ export * from "./homeStrip";
 export * from "./groupPanelLayout";
 export * from "./inboxRule";
 export * from "./reactionBursts";
+export * from "./elsewhereLabel";

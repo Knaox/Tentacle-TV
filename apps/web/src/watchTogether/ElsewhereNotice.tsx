@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { elsewhereLabel } from "@tentacle-tv/shared";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "../contexts/ToastContext";
 import { useWatchTogether } from "./WatchTogetherProvider";
@@ -18,7 +19,7 @@ import { useWatchTogether } from "./WatchTogetherProvider";
  * pour un appareil hors d'elle.
  */
 export function ElsewhereNotice() {
-  const { elsewhere, actions } = useWatchTogether();
+  const { elsewhere, actions, selfId } = useWatchTogether();
   const { t } = useTranslation("watchTogether");
   const { show } = useToast();
   const [dismissedGroup, setDismissedGroup] = useState<string | null>(null);
@@ -26,9 +27,9 @@ export function ElsewhereNotice() {
   const onPlayer = useLocation().pathname.startsWith("/watch/");
 
   const visible = !!elsewhere && dismissedGroup !== elsewhere.groupId && !onPlayer;
-  const label = elsewhere?.hostUsername
-    ? t("elsewhereActiveWithHost", { name: elsewhere.hostUsername })
-    : t("elsewhereActive");
+  // « Votre groupe… » quand l'hôte est ce compte, sinon « Groupe de X… » (règle partagée).
+  const said = elsewhere ? elsewhereLabel(elsewhere, selfId) : null;
+  const label = !said ? "" : "params" in said ? t(said.key, said.params) : t(said.key);
 
   const joinHere = () => {
     setJoining(true);

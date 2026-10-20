@@ -99,6 +99,7 @@ export default {
   // Adhésion par appareil : la salle du compte, vue d'un appareil qui n'y est pas
   elsewhereActive: "Groupe en cours sur un autre appareil",
   elsewhereActiveWithHost: "Groupe de {{name}} en cours sur un autre appareil",
+  elsewhereActiveOwn: "Votre groupe est en cours sur un autre appareil",
   elsewhereJoinHere: "Rejoindre ici",
   elsewhereDismiss: "Masquer",
   elsewhereJoinFailed: "Impossible de rejoindre le groupe depuis cet appareil",

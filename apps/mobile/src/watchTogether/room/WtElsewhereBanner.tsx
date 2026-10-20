@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { MonitorSmartphone, X } from "lucide-react-native";
+import { elsewhereLabel, type WtElsewhereDto } from "@tentacle-tv/shared";
 import { SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
@@ -10,10 +11,11 @@ import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@
  * par appareil, celui-ci ignore la salle. Il n'en dit qu'une ligne —
  * « Groupe de X en cours sur un autre appareil » — et propose « Rejoindre
  * ici » (AJOUTE cet appareil, l'autre reste). Masquable pour la séance.
- * Mêmes mots que le web (`ElsewhereNotice`).
+ * Mêmes mots que le web (`ElsewhereNotice`), règle partagée `elsewhereLabel`.
  */
-export const WtElsewhereBanner = memo(function WtElsewhereBanner({ hostUsername, onJoinHere, onDismiss }: {
-  hostUsername: string;
+export const WtElsewhereBanner = memo(function WtElsewhereBanner({ elsewhere, selfId, onJoinHere, onDismiss }: {
+  elsewhere: Pick<WtElsewhereDto, "hostUsername" | "hostUserId">;
+  selfId: string | null;
   onJoinHere: () => Promise<void>;
   onDismiss: () => void;
 }) {
@@ -21,6 +23,9 @@ export const WtElsewhereBanner = memo(function WtElsewhereBanner({ hostUsername,
   const theme = useTheme();
   const s = useThemedStyles(makeStyles);
   const [joining, setJoining] = useState(false);
+  // « Votre groupe… » quand l'hôte est ce compte, sinon « Groupe de X… » (règle partagée).
+  const label = elsewhereLabel(elsewhere, selfId);
+  const title = "params" in label ? t(label.key, label.params) : t(label.key);
   const [failed, setFailed] = useState(false);
 
   const join = (): void => {
@@ -34,7 +39,7 @@ export const WtElsewhereBanner = memo(function WtElsewhereBanner({ hostUsername,
       <MonitorSmartphone size={22} color={theme.colors.brand.light} />
       <View style={s.text}>
         <Text style={s.title} numberOfLines={2}>
-          {hostUsername ? t("elsewhereActiveWithHost", { name: hostUsername }) : t("elsewhereActive")}
+          {title}
         </Text>
         {failed && <Text style={s.hint} accessibilityLiveRegion="polite">{t("elsewhereJoinFailed")}</Text>}
       </View>

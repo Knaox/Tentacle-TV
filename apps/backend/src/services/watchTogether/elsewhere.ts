@@ -24,6 +24,7 @@ export function elsewhereFor(userId: string, deviceKey?: string): WtElsewhereDto
   return {
     groupId: room.groupId,
     hostUsername: room.members.get(room.hostUserId)?.username ?? "",
+    hostUserId: room.hostUserId,
     itemId: room.itemId,
     memberCount: room.members.size,
     deviceCount: member.devices.size,
