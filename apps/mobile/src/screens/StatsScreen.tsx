@@ -3,7 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } fro
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRefreshViewingStats, useViewingStats, viewingStatsFailure } from "@tentacle-tv/api-client";
+import { usePublicSharingAllowed, useRefreshViewingStats, useViewingStats, viewingStatsFailure } from "@tentacle-tv/api-client";
 import { statsLocale, VIEWING_STATS_PERIODS, type ViewingStatsPeriod } from "@tentacle-tv/shared";
 import { SubtleBackground } from "@/components/ui";
 import { FloatingBackButton } from "@/components/navigation/FloatingBackButton";
@@ -43,6 +43,8 @@ export function StatsScreen() {
   const refresh = useRefreshViewingStats();
   const [pulling, setPulling] = useState(false);
   const [sharing, setSharing] = useState(false);
+  // Le droit « Partage public » du compte (refusé aussi à un invité de la Famille) : sans lui, aucun bouton.
+  const shareAllowed = usePublicSharingAllowed();
   const { width } = useWindowDimensions();
   const padding = useContentPadding(1000);
   const wide = width - padding * 2 >= WIDE_MIN;
@@ -90,12 +92,12 @@ export function StatsScreen() {
             topInset={top}
             inset={padding}
             // Rien à partager avant la première séance, ni tant que l'écran n'a pas ses chiffres.
-            action={stats?.hasHistory ? <ShareStatsButton onPress={() => setSharing(true)} /> : undefined}
+            action={stats?.hasHistory && shareAllowed ? <ShareStatsButton onPress={() => setSharing(true)} /> : undefined}
           />
           <View style={{ paddingHorizontal: padding }}>{body}</View>
         </ScrollView>
         <FloatingBackButton top={top} onPress={() => backOrHome(router)} />
-        <ShareStatsSheet visible={sharing} onClose={() => setSharing(false)} defaultPeriod={period} />
+        <ShareStatsSheet visible={sharing && shareAllowed} onClose={() => setSharing(false)} defaultPeriod={period} />
       </View>
     </SubtleBackground>
   );
