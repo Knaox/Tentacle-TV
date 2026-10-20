@@ -28,20 +28,20 @@ Branches suivies (une par worktree, `git worktree list`) :
 |---|----------|--------|------|
 | A1 | Un commit par étape (pas de fourre-tout) | `git log dev..branche` : commits ciblés, chacun lisible seul | ☐ |
 | A2 | Code en anglais, commentaires et commits en français | relecture du diff (identifiants nouveaux en anglais, commentaires/commits FR) | ☐ |
-| A3 | 300 lignes max par fichier touché | `wc -l` sur chaque fichier ajouté/modifié (hors générés, i18n, JSON, tests tolérés si signalés) | ☐ |
+| A3 | 300 lignes max par fichier touché | `wc -l` sur chaque fichier ajouté/modifié (hors générés, i18n, JSON, tests tolérés si signalés) | ✗ index.ts de shared (Q8) ; sinon aucun fichier ajouté > 300 |
 | A4 | Règles dans `shared` / `api-client`, pas dupliquées dans un client | relecture : aucune logique de décision recopiée mobile ↔ web/bureau | ☐ |
-| A5 | Toute nouveauté serveur derrière une capacité (`serverCapabilities.ts` shared + copie backend, test miroir vert) | diff shared/backend + `capabilitiesMirror.test.ts` vert | ☐ |
+| A5 | Toute nouveauté serveur derrière une capacité (`serverCapabilities.ts` shared + copie backend, test miroir vert) | diff shared/backend + `capabilitiesMirror.test.ts` vert | ☑ passe 1 : 7 capacités 1.32.0 (deviceMembership, readyGate, mobileProfiles, webProfiles, rights.live, offline.verdicts), miroir backend copié ; serveur en 1.31.0 |
 | A6 | Serveur qui ne déclare rien → fonction absente sans erreur | un test par capacité nouvelle (client face à un serveur sans `capabilities`) | ☐ |
-| A7 | Aucun bump de version ; `versions.json` et les `version` des `package.json` intouchés | `git diff dev..branche -- versions.json '**/package.json'` sans changement de `version` | ☐ |
+| A7 | Aucun bump de version ; `versions.json` et les `version` des `package.json` intouchés | `git diff dev..branche -- versions.json '**/package.json'` sans changement de `version` | ☑ passe 1 (03:25) : aucune version touchée sur 13 branches |
 | A8 | Pas de push, de tag, de dispatch CI | `git ls-remote origin` inchangé pour ces branches ; aucun tag nouveau | ☐ |
-| A9 | i18n FR + EN complets pour toute clé ajoutée | clés ajoutées présentes dans `fr/` ET `en/` (script de comparaison) | ☐ |
-| A10 | Zéro « téléchargement / télécharger / téléchargé / download » visible sur le mobile | `grep -i` sur les chaînes visibles du mobile et les clés i18n qu'il lit (hors noms d'icônes, statuts, identifiants) | ☐ |
-| A11 | Clés `tentacle_*` et clés i18n jamais renommées | diff : aucune clé supprimée/renommée (seulement ajoutées) | ☐ |
+| A9 | i18n FR + EN complets pour toute clé ajoutée | clés ajoutées présentes dans `fr/` ET `en/` (script de comparaison) | ☑ passe 1 : parité des clés FR/EN sur 11 branches |
+| A10 | Zéro « téléchargement / télécharger / téléchargé / download » visible sur le mobile | `grep -i` sur les chaînes visibles du mobile et les clés i18n qu'il lit (hors noms d'icônes, statuts, identifiants) | ☑ passe 1 : aucun mot interdit ajouté dans un texte visible (seulement statuts et tests de garde) |
+| A11 | Clés `tentacle_*` et clés i18n jamais renommées | diff : aucune clé supprimée/renommée (seulement ajoutées) | ☑ passe 1 : aucune clé i18n ni `tentacle_*` supprimée (`readyNotifTitle` : valeur changée, clé gardée) |
 | A12 | Bureau et web inchangés hors extraction Watch Together, sans régression | diff `apps/web` / `apps/desktop-electron` limité à l'extraction WT ; tests web verts | ☐ |
 | A13 | Tablette (iPad) propre : mises en page larges, pas d'écran étiré ni coupé | relecture (largeurs bornées, `useWindowDimensions`) + capture iPad à l'essai d'ensemble | ☐ |
 | A14 | Lint, typecheck et tests des paquets touchés verts (vitest `--maxWorkers=2`) | `pnpm --filter <pkg> lint/typecheck/test` sur chaque branche | ☐ |
 | A15 | Comptes de test Knaoxtest / Knaoxtest2 seulement | relecture des bancs, fixtures, captures | ☐ |
-| A16 | Pas de conflit entre sessions sur les mêmes fichiers | croisement des `git diff --name-only` des branches | ☐ |
+| A16 | Pas de conflit entre sessions sur les mêmes fichiers | croisement des `git diff --name-only` des branches | ✗ Q6, Q8 (voir défauts) |
 | A17 | Mac saturé : tout travail lourd (xcodebuild, gradle, expo prebuild/run, pod install, build complet) passe par `~/.tentacle-lot-mob/heavy.sh <session> <commande>`, un seul à la fois ; vitest `--maxWorkers=1` | `~/.tentacle-lot-mob/journal.log` : chaque build lourd y a son START/END ; aucun `xcodebuild`/`gradle` hors verrou (`ps` aux passes de revue) | ☐ |
 | A19 | Contrôles (tsc, vitest, eslint, pnpm typecheck/lint/test) par `~/.tentacle-lot-mob/check.sh`, deux au plus pour tout le lot, paquet touché seulement, vitest `--maxWorkers=1` ; gradle par heavy.sh puis `./gradlew --stop` (consigne 03:10) | à chaque passe : `ps` (aucun tsc/vitest/eslint hors d'un parent `check.sh`, jamais plus de deux), fichiers `~/.tentacle-lot-mob/check-*.lock` | ☐ |
 | A18 | Appareils : wt-banc mène la matrice (`~/.tentacle-lot-mob/devices.txt`), deux appareils au plus en tout, builds réutilisés (`builds.txt`), jamais le simulateur de base | `xcrun simctl list devices booted` aux passes de revue + `devices.txt` | ☐ |
@@ -54,7 +54,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | B2 | Bureau/web : comportement WT identique après extraction | tests web/bureau verts ; types `wt:*` inchangés | ☐ |
 | B3 | Types de messages `wt:*` jamais renommés | `grep "wt:"` : aucune chaîne supprimée | ☐ |
 | B4 | Serveur : adhésion PAR APPAREIL (deux appareils d'un même compte = deux participants distincts) | test backend dédié | ☐ |
-| B5 | Serveur : pas de saut d'intro avant « tous prêts » | test backend/partagé dédié | ☐ |
+| B5 | Serveur : pas de saut d'intro avant « tous prêts » | test backend/partagé dédié | ☑ `readyGate.ts` + `syncReadyGate.test.ts` (relus) |
 | B7 | Sauts rapides répétés (8 × +30 s) jamais perdus dans la salle : tous les participants finissent à la même position (signalé par wt-banc, à corriger par wt-socle) | test serveur/partagé qui rejoue la rafale + banc wt-banc rejoué vert | ✗ |
 | B6 | Correctifs serveur rétrocompatibles (anciens clients bureau continuent) ; capacité si le comportement visible change | test d'un client sans le nouveau champ | ☐ |
 
@@ -84,7 +84,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 |---|----------|--------|------|
 | E1 | Sections : Compte · Lecture et apparence · TV et appareils · Hors ligne · Notifications · Aide | capture de l'écran Réglages | ☐ |
 | E2 | Pastilles « Compte » / « Cet appareil » sur chaque réglage (où il s'enregistre) | capture + code (source unique de la portée) | ☐ |
-| E3 | Sous-titres par défaut : taille 160 % (`subtitleScale` 1,6, clé `tentacle_sub_scale`) et position 100 % (`subtitlePosition` 100, `tentacle_sub_pos`) — `engineSettings.ts` (dev : 1 / 100) | test sur les valeurs par défaut ; un utilisateur qui a déjà réglé garde sa valeur (clé lue telle quelle) ; borne max ≥ 1,6 | ☐ |
+| E3 | Sous-titres par défaut : taille 160 % (`subtitleScale` 1,6, clé `tentacle_sub_scale`) et position 100 % (`subtitlePosition` 100, `tentacle_sub_pos`) — `engineSettings.ts` (dev : 1 / 100) | test sur les valeurs par défaut ; un utilisateur qui a déjà réglé garde sa valeur (clé lue telle quelle) ; borne max ≥ 1,6 | ☑ `engineSettings.ts` 1,6 / 100, clés gardées, borne 2 ; mpv seulement (comme avant) |
 | E4 | « Réglages avancés : sur le bureau » (renvoi, pas de copie des réglages avancés) | capture | ☐ |
 | E5 | Aucun réglage perdu à la restructuration (clés `tentacle_*` lues identiques) | diff des clés de stockage | ☐ |
 | E6 | Section Hors ligne sans le mot « téléchargement » | grep + capture | ☐ |
@@ -95,7 +95,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | # | Exigence | Preuve | État |
 |---|----------|--------|------|
 | F1 | Maquette `docs/maquettes/reglages-mobile.html` | fichier présent, cohérent avec E1–E4 | ☐ |
-| F2 | Nouvel en-tête « Pour vous » / « Affinité » sur le mobile | code + capture | ☐ |
+| F2 | Nouvel en-tête « Pour vous » / « Affinité » sur le mobile | code + capture | ✗ décision à confirmer : design a posé « Pour vous · Affiner », pas « Affinité » (Affinité = Watch Together) |
 | F3 | Cohérent entre maquette et implémentation de reglages | comparaison | ☐ |
 
 ## G. Famille mobile (famille-mobile)
@@ -126,7 +126,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | J1 | Heure et batterie visibles quand les commandes du lecteur s'affichent (barre d'état du système ; sinon horloge intégrée) — masquées avec les commandes | code + capture lecteur commandes visibles / cachées | ☐ |
 | J2 | Android : PiP natif quand une lecture EN COURS passe en arrière-plan ; jamais en pause (comme iOS) | code (condition « en lecture ») + test de la règle | ☐ |
 | J3 | Bouton PiP dans le lecteur (Android, et iOS s'il manque) | code + capture | ☐ |
-| J4 | Android : diffusion vers une TV sans l'app (Google Cast, ou alternative libre si la licence bloque — décision écrite) | code + décision de licence (AGPL/LGPL, cf. audit licences) | ☐ |
+| J4 | Android : diffusion vers une TV sans l'app (Google Cast, ou alternative libre si la licence bloque — décision écrite) | code + décision de licence (AGPL/LGPL, cf. audit licences) | ☑ Google Cast, licence justifiée (Play services, LICENSE-EXCEPTIONS §2), garde licence verte d'après lecteur-mobile — à confirmer par Damien |
 | J5 | iOS : AirPlay | code + capture du sélecteur | ☐ |
 | J6 | Règles de décision (quand PiP, quand afficher l'heure) pures et testées, pas de `Platform.OS` dans la règle | relecture + tests | ☐ |
 | J7 | iPad : PiP et AirPlay corrects en paysage/portrait | capture iPad | ☐ |
