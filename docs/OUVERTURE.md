@@ -249,9 +249,12 @@ L'audio de l'émulateur ne suit pas le temps réel : n'y juger que l'image.
   l'ouverture. Relevé à l'émulateur (API 36, 20/10) avec 80 ms : demande arrivée
   au natif 41 à 218 ms après son départ, sortie ≈ 155 ms en file → 9 puis 119 ms
   sautés au début du fichier, le « ta » (à 40 ms) avec. Et le mobile n'appuie
-  qu'une fois le son PRÉPARÉ (`waitForSound`, au plus `BOOT_SOUND_PREPARE_MAX_MS`,
-  1,5 s, puis sans son) : avant, une préparation tardive faisait demander le son
-  avec les avances par défaut. iPhone, iPad, TV : inchangés (`outputLeadMs` nul
+  qu'une fois le son PRÉPARÉ (`waitForSound`) : l'écran prêt, au plus
+  `BOOT_SOUND_PREPARE_MAX_MS` (2,5 s) d'attente de plus sur le bouton, puis sans
+  son — ce délai ne court QUE de là (compté depuis le montage, il taisait le son
+  des premiers lancements après installation : préparation 3 à 8 s après
+  l'affichage). La préparation part dès la décision de l'ouverture (`bootPlan`,
+  `bootSound.prepare` rend la même ensuite). iPhone, iPad, TV : inchangés (`outputLeadMs` nul
   sur iOS ; la TV garde ses options par défaut).
   Réglage d'appareil « Son au démarrage » (`tentacle_boot_sound`) ; « Animation
   d'ouverture » (`tentacle_boot_intro`) ; lus sur le disque AVANT l'hydratation

@@ -51,10 +51,14 @@ export const BOOT_SOUND_MOBILE_BRIDGE_MARGIN_MS = 450;
 
 /**
  * Le mobile attend que le son soit préparé (décodé, sortie datée) avant
- * d'appuyer sur lecture — au plus ce temps-là, puis l'ouverture continue sans
- * lui : une préparation tardive ferait demander le son à l'aveugle, trop tard.
+ * d'appuyer sur lecture : une préparation tardive ferait demander le son à
+ * l'aveugle, trop tard. Une fois l'écran prêt, il l'attend sur le bouton au plus
+ * ce temps-là, puis l'ouverture continue sans lui. Le délai ne court qu'à partir
+ * de là : compté depuis le montage (1,5 s, 20/10), il taisait le son des
+ * démarrages lents — premier lancement après installation, préparation finie
+ * 3 à 8 s après l'affichage, fil JS occupé qui laissait gagner la minuterie.
  */
-export const BOOT_SOUND_PREPARE_MAX_MS = 1_500;
+export const BOOT_SOUND_PREPARE_MAX_MS = 2_500;
 
 /** Au-delà, une sortie qui se dit en avance se trompe (l'émulateur dérive) : on s'arrête là. */
 export const BOOT_SOUND_MAX_OUTPUT_LEAD_MS = 600;

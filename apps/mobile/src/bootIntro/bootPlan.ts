@@ -36,7 +36,11 @@ export function claimColdStart(): boolean {
 
 async function bootPlanOf(coldStart: boolean): Promise<MobileBootPlan> {
   const [motion, stored] = await Promise.all([reducedMotion, settings]);
-  return mobileBootPlan({ coldStart, reducedMotion: motion, settings: stored });
+  const plan = mobileBootPlan({ coldStart, reducedMotion: motion, settings: stored });
+  // Le son se décode dès maintenant, pendant que l'app monte : un démarrage lent (premier
+  // lancement, appareil occupé) n'a plus à attendre sa préparation sur le bouton lecture.
+  if (plan.sound) void bootSound.prepare();
+  return plan;
 }
 
 let decision: Promise<MobileBootPlan> | null = null;

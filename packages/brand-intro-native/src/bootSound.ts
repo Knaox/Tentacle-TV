@@ -21,6 +21,20 @@ interface NativeBootSound {
 
 const native = (NativeModules as { TentacleBootSound?: NativeBootSound }).TentacleBootSound ?? null;
 
+type Prepared = { ready: boolean; outputLeadMs: number | null };
+/** La préparation en cours ou faite : une seule par processus (le mobile la lance dès sa décision). */
+let preparing: Promise<Prepared> | null = null;
+
+async function prepareOnce(): Promise<Prepared> {
+  if (!native) return { ready: false, outputLeadMs: null };
+  try {
+    const result = await native.prepare();
+    return { ready: result.ready, outputLeadMs: typeof result.outputLeadMs === "number" ? result.outputLeadMs : null };
+  } catch {
+    return { ready: false, outputLeadMs: null };
+  }
+}
+
 export const bootSound = {
   /**
    * La mémoire du processus (tv-core `bootIntroOnce`) : vrai au premier appel
@@ -38,15 +52,12 @@ export const bootSound = {
   /**
    * Décode le fichier d'avance. `outputLeadMs` : l'avance de la sortie, que le
    * son doit précéder (Android TV la mesure ; null : l'Apple TV, rien à mesurer).
+   * Un second appel rend la MÊME préparation : le mobile la lance dès que
+   * l'ouverture est décidée, le déroulé la reprend au montage.
    */
-  async prepare(): Promise<{ ready: boolean; outputLeadMs: number | null }> {
-    if (!native) return { ready: false, outputLeadMs: null };
-    try {
-      const result = await native.prepare();
-      return { ready: result.ready, outputLeadMs: typeof result.outputLeadMs === "number" ? result.outputLeadMs : null };
-    } catch {
-      return { ready: false, outputLeadMs: null };
-    }
+  prepare(): Promise<Prepared> {
+    preparing ??= prepareOnce();
+    return preparing;
   },
   playAt(hostMs: number): void {
     native?.playAt(hostMs);
@@ -55,6 +66,7 @@ export const bootSound = {
     native?.fadeOut(ms);
   },
   dispose(): void {
+    preparing = null;
     native?.dispose();
   },
 };

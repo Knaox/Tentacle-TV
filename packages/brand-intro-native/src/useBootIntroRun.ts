@@ -18,12 +18,6 @@ const SOUND_TAIL_MS = 5_000;
 type SoundPrepared = { ready: boolean; outputLeadMs: number | null };
 const NO_SOUND: SoundPrepared = { ready: false, outputLeadMs: null };
 
-/** La préparation, ou rien si elle tarde au-delà de `BOOT_SOUND_PREPARE_MAX_MS` (shared). */
-function withinPrepareLimit(prepared: Promise<SoundPrepared>): Promise<SoundPrepared> {
-  const late = new Promise<SoundPrepared>((resolve) => setTimeout(() => resolve(NO_SOUND), BOOT_SOUND_PREPARE_MAX_MS));
-  return Promise.race([prepared, late]);
-}
-
 export interface BootIntroRunOptions {
   /** Le « ta-dum » est voulu (réglage d'appareil) : relu au départ, il peut arriver un peu après. */
   soundWanted: Promise<boolean>;
@@ -39,8 +33,9 @@ export interface BootIntroRunOptions {
    */
   soundBridgeMarginMs?: number;
   /**
-   * N'appuyer sur lecture qu'une fois le son préparé (au plus `BOOT_SOUND_PREPARE_MAX_MS`) :
-   * sinon il serait demandé avant que sa sortie soit mesurée, avec une avance trop courte (mobile).
+   * N'appuyer sur lecture qu'une fois le son préparé — l'écran prêt, au plus
+   * `BOOT_SOUND_PREPARE_MAX_MS` d'attente de plus sur le bouton, puis sans son : sinon il
+   * serait demandé avant que sa sortie soit mesurée, avec une avance trop courte (mobile).
    */
   waitForSound?: boolean;
 }
@@ -78,10 +73,11 @@ export function useBootIntroRun({
   const frameReportRef = useRef(onFrameReport);
   frameReportRef.current = onFrameReport;
   const soundReady = useRef<Promise<SoundPrepared> | null>(null);
+  // Le son abandonné (préparé trop tard) : il ne se jouera plus, même s'il finit par répondre.
+  const soundDropped = useRef(false);
 
   if (soundReady.current === null) {
-    const prepared = soundWanted.then((wanted) => (wanted ? bootSound.prepare() : NO_SOUND));
-    soundReady.current = waitForSound ? withinPrepareLimit(prepared) : prepared;
+    soundReady.current = soundWanted.then((wanted) => (wanted ? bootSound.prepare() : NO_SOUND));
   }
 
   const land = useCallback(() => setLanded(true), []);
@@ -89,7 +85,7 @@ export function useBootIntroRun({
     () => ({
       onHold: () => setHeldSince(Date.now()),
       onSound: (startAt: number) => {
-        void soundReady.current?.then(({ ready }) => (ready ? bootSound.playAt(startAt) : undefined));
+        void soundReady.current?.then(({ ready }) => (ready && !soundDropped.current ? bootSound.playAt(startAt) : undefined));
       },
       onDone: land,
     }),
@@ -99,7 +95,7 @@ export function useBootIntroRun({
 
   useEffect(() => {
     void soundReady.current?.then(({ ready, outputLeadMs }) => {
-      if (ready) {
+      if (ready && !soundDropped.current) {
         const leads = bootSoundLeads(outputLeadMs, soundBridgeMarginMs);
         clock.requestAt.value = leads.requestAt;
         clock.releaseDelay.value = leads.releaseDelayMs;
@@ -131,6 +127,20 @@ export function useBootIntroRun({
   useEffect(() => {
     if (!landed && soundSettled && outcome === "go") clock.ready.value = true;
   }, [outcome, landed, soundSettled, clock]);
+
+  // L'écran est prêt mais le son se prépare encore (un démarrage lent : premier lancement,
+  // appareil occupé) : l'ouverture l'attend sur le bouton, au plus `BOOT_SOUND_PREPARE_MAX_MS`.
+  // Le délai ne court qu'à partir d'ici — jamais depuis le montage, où un fil JS occupé ferait
+  // gagner la minuterie et tairait le son à tort.
+  const waitingForSound = !landed && !soundSettled && outcome === "go";
+  useEffect(() => {
+    if (!waitingForSound) return undefined;
+    const timer = setTimeout(() => {
+      soundDropped.current = true;
+      setSoundSettled(true);
+    }, BOOT_SOUND_PREPARE_MAX_MS);
+    return () => clearTimeout(timer);
+  }, [waitingForSound]);
 
   // Tant qu'elle se joue, rien ne sonne ni ne s'ouvre par-dessus (aperçus, modales du lancement).
   useEffect(() => {
