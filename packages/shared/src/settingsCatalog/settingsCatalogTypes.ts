@@ -47,11 +47,23 @@ export interface SettingsI18nRef {
  *   de la Famille (l'app ouverte au nom d'un autre profil) — le serveur y
  *   refuse push, hors ligne, jumelage, mot de passe, compte, administration et
  *   gestes personnels de la Famille : leurs lignes disparaissent.
+ * - `tickets`, `manageAccount`, `pairDevices`, `push`, `invites` : ce que le
+ *   serveur dit que CETTE session peut faire (droits du compte, `SettingsAbility`) —
+ *   « rien d'affiché sans le droit » (décision de Damien, 2026-10-20).
  * Ce qui dépend du CODE du serveur passe par `capability`, jamais par ici.
  */
 export type SettingsRequirement =
   | "online" | "admin" | "offlineVisible" | "canGoOffline" | "family" | "canSwitchProfile"
-  | "liquidGlass" | "advancedEngine" | "engineOptions" | "bootIntro" | "liveTransfers" | "personal";
+  | "liquidGlass" | "advancedEngine" | "engineOptions" | "bootIntro" | "liveTransfers" | "personal"
+  | SettingsAbility;
+
+/**
+ * Les DROITS de la session que les réglages lisent (le serveur les déclare,
+ * `useAccountAbilities` ; face à un serveur d'avant, le comportement d'avant :
+ * tout vrai) : écrire au support, gérer son compte (mot de passe, suppression),
+ * jumeler une TV, recevoir des notifications push, créer des invitations.
+ */
+export type SettingsAbility = "tickets" | "manageAccount" | "pairDevices" | "push" | "invites";
 
 /** Les réglages qui se font SUR PLACE ; leur portée est dans `settingsScopes.ts`. */
 export type SettingsControlId =
@@ -160,6 +172,8 @@ export interface SettingsCatalogContext {
   liquidGlass: boolean;
   advancedEngine: boolean;
   engineOptions: boolean;
+  /** Les droits de cette session (vides tant qu'ils ne sont pas connus : rien ne s'affiche). */
+  abilities: ReadonlySet<SettingsAbility>;
   /** L'ouverture animée du logo (et son son) existe dans ce binaire. */
   bootIntro: boolean;
   /** L'appareil sait montrer un transfert en direct (écran verrouillé, notification permanente). */

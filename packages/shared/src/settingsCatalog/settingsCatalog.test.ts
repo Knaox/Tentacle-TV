@@ -21,8 +21,9 @@ import type {
 import { DESKTOP_ONLY_SETTINGS, SETTINGS_CONTROLS, SETTINGS_PANE_SCOPES as PANE_SCOPES, settingScopeOf } from "./settingsControls";
 
 const ALL_CAPS = new Set(["playback.stillWatching", "reco.trending"] as const);
+const ALL_ABILITIES = new Set(["tickets", "manageAccount", "pairDevices", "push", "invites"] as const);
 const user: ProfileContext = {
-  platform: "mobile", capabilities: new Set(),
+  platform: "mobile", capabilities: new Set(), abilities: ALL_ABILITIES,
   offline: false, isAdmin: false, offlineVisible: false, canGoOffline: false, family: false, canSwitchProfile: false,
   liquidGlass: false, advancedEngine: false, engineOptions: false, bootIntro: false, liveTransfers: false, profileSession: false,
 };
@@ -122,6 +123,23 @@ describe("catalogue des réglages", () => {
     expect(resolveSection(null, user)).toBe("account");
     expect(resolveSection("devices", user)).toBe("devices");
     expect(resolveSection("devices", offline)).toBe("playback");
+  });
+});
+
+describe("droits de la session (rien d'affiché sans le droit)", () => {
+  it("un invité de la Famille sans droits ne voit ni support, ni compte, ni jumelage, ni push, ni invitations", () => {
+    const guest: ProfileContext = { ...full, abilities: new Set() };
+    expect(ids(section("account"), guest)).not.toEqual(expect.arrayContaining(["password"]));
+    expect(ids(section("account"), guest)).not.toContain("deleteAccount");
+    expect(ids(section("account"), guest)).not.toContain("invites");
+    expect(ids(section("help"), guest)).not.toContain("support");
+    expect(visibleSections(guest).map((s) => s.id)).not.toEqual(expect.arrayContaining(["devices"]));
+    expect(visibleSections(guest).map((s) => s.id)).not.toContain("notifications");
+  });
+
+  it("droits inconnus (serveur pas encore répondu) : rien de ce qui en dépend", () => {
+    const pending: ProfileContext = { ...full, abilities: new Set() };
+    expect(visibleSections(pending).map((s) => s.id)).toEqual(["account", "playback", "offline", "help"]);
   });
 });
 

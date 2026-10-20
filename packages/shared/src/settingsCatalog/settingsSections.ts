@@ -50,7 +50,7 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
           // La photo passe aussi en session de profil (le proxy pose celle du profil).
           { kind: "control", id: "photo", requires: ["online"] },
           { kind: "control", id: "userName", requires: ["online"] },
-          { kind: "pane", id: "password", icon: "lock", label: p("password"), requires: ["online", "personal"] },
+          { kind: "pane", id: "password", icon: "lock", label: p("password"), requires: ["online", "personal", "manageAccount"] },
         ],
       },
       {
@@ -65,14 +65,14 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
         title: s("account.serverGroup"),
         entries: [
           { kind: "action", id: "changeServer", icon: "repeat", label: p("changeServer"), requires: ["online", "personal"], platforms: MOBILE },
-          { kind: "pane", id: "invites", icon: "mail", label: p("invitations"), requires: ["online", "admin", "personal"] },
+          { kind: "pane", id: "invites", icon: "mail", label: p("invitations"), requires: ["online", "admin", "personal", "invites"] },
           { kind: "screen", id: "sessions", icon: "activity", label: { ns: "sessions", key: "title" }, requires: ["online", "admin", "personal"] },
           { kind: "action", id: "clearCache", icon: "trash-2", label: p("clearCache"), destructive: true, requires: ["online"] },
         ],
       },
       {
         entries: [
-          { kind: "action", id: "deleteAccount", icon: "user-x", label: p("deleteAccount"), destructive: true, requires: ["online", "personal"] },
+          { kind: "action", id: "deleteAccount", icon: "user-x", label: p("deleteAccount"), destructive: true, requires: ["online", "personal", "manageAccount"] },
         ],
       },
     ],
@@ -133,7 +133,7 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
     label: s("sections.tv"),
     summaries: [{ label: s("sections.tvSummary") }],
     groups: [
-      { entries: [{ kind: "pane", id: "devices", icon: "tv", label: s("sections.tv"), requires: ["online", "personal"] }] },
+      { entries: [{ kind: "pane", id: "devices", icon: "tv", label: s("sections.tv"), requires: ["online", "personal", "pairDevices"] }] },
     ],
   },
   {
@@ -173,7 +173,7 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
     label: s("sections.notifications"),
     summaries: [{ label: s("sections.notificationsSummary") }],
     groups: [
-      { entries: [{ kind: "pane", id: "notifications", icon: "bell", label: p("notifications"), requires: ["online", "personal"], platforms: MOBILE }] },
+      { entries: [{ kind: "pane", id: "notifications", icon: "bell", label: p("notifications"), requires: ["online", "personal", "push"], platforms: MOBILE }] },
     ],
   },
   {
@@ -187,7 +187,7 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
     groups: [
       {
         entries: [
-          { kind: "screen", id: "support", icon: "life-buoy", label: p("support"), requires: ["online"] },
+          { kind: "screen", id: "support", icon: "life-buoy", label: p("support"), requires: ["online", "tickets"] },
           { kind: "screen", id: "about", icon: "info", label: p("about") },
           { kind: "action", id: "privacyPolicy", icon: "shield", label: p("privacyPolicy") },
         ],
