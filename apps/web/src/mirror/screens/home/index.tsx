@@ -27,6 +27,7 @@ import { useItemSheets } from "../forYou/useItemSheets";
 import { HomeRow, type HomeRowActions, type HomeRowData } from "./homeRowRegistry";
 import { useHomeHero } from "./useHomeHero";
 import { useHomeRows } from "./useHomeRows";
+import { MirrorWtHomeStrip } from "../../watchTogether/MirrorWtHomeStrip";
 import "../../mirror.css";
 
 /** Une source du héros en échec : rien (identité stable). */
@@ -148,6 +149,8 @@ export function MirrorHome() {
     <SubtleBackground>
       <CardDensityContext.Provider value={layout?.cardDensity ?? "normal"}>
         {heroLoading ? <SkeletonHero /> : slides.length > 0 && <HeroBanner slides={slides} />}
+        {/* Watch Together sous la main (le mobile n'a pas d'entrée dans l'en-tête) : une ligne, ou rien. */}
+        <MirrorWtHomeStrip />
         {rows.map((row, index) => (
           <HomeRow key={row.key} rowKey={row.key} index={index} data={rowData} actions={rowActions} />
         ))}

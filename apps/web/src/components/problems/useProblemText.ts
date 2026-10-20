@@ -39,6 +39,8 @@ export interface ProblemText {
   details: string[];
   /** Ce que « Copier » met dans le presse-papiers. */
   copy: string;
+  /** « Code : playbackStart/transcodeFailed » — en petit, pour le support (le mobile le montre). */
+  code: string;
 }
 
 /** Le modèle, mis en mots dans la langue de l'interface — même lecture que le mobile. */
@@ -53,6 +55,7 @@ export function useProblemText(model: ProblemModel): ProblemText {
       actions: model.actions.map((action) => ({ key: action.key, label: tr(action.labelKey) })),
       details: model.details.map((detail) => detailText(detail, tr)),
       copy: problemCopyText(model, tr),
+      code: tr("supportCode", { code: model.code }),
     };
   }, [model, t]);
 }

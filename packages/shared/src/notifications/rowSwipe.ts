@@ -1,5 +1,5 @@
 /**
- * Le lâcher d'une ligne de notification, en règle pure : vers la droite,
+ * Le lâcher d'une ligne de notification (centre du mobile, web étroit), en règle pure : vers la droite,
  * marquer lue (si elle ne l'est pas) ; vers la gauche, supprimer. Distance
  * (un quart de la largeur, 96 pt au plus) ou coup bref.
  */

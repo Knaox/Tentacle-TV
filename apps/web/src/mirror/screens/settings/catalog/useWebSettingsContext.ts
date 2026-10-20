@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useServerCapabilities } from "@tentacle-tv/api-client";
-import type { SettingsAbility, SettingsCatalogContext } from "@tentacle-tv/shared";
+import { settingsAbilitiesOf, useAccountAbilities, useServerCapabilities } from "@tentacle-tv/api-client";
+import type { SettingsCatalogContext } from "@tentacle-tv/shared";
 import { useActiveProfile } from "../../../../auth/profileSession";
 import { getUserInfo } from "../../../../components/userMenu/menuItems";
 import { useFamilySettingsAvailability } from "../../../../family/useFamilyAvailability";
@@ -14,17 +14,20 @@ import { useProfileSwitchOffered } from "../../../shell/useProfileSwitchOffered"
  * conditions valent `false` (et le catalogue réserve déjà ces entrées au
  * mobile). « Changer de profil » suit le menu de l'avatar
  * (`useProfileMenuItems`) : une famille d'au moins deux profils à choisir.
+ * Les droits de la session (`account.abilities`) : la règle partagée
+ * `settingsAbilitiesOf` — serveur d'avant, comportement d'avant ; pas encore
+ * lus, rien.
  */
-/**
- * Ce que la session peut faire. En attendant la fusion de droits-mobile
- * (`useAccountAbilities` + `mayShow`, branche claude/droits-06ed6b), le web
- * donne les cinq : le comportement d'avant, rien de retiré.
- */
-const ALL_ABILITIES: ReadonlySet<SettingsAbility> = new Set(["tickets", "manageAccount", "pairDevices", "push", "invites"]);
-
 export function useWebSettingsContext(): SettingsCatalogContext {
   const offline = useOfflineMode();
-  const { isAdmin } = getUserInfo();
+  const { isAdmin: legacyIsAdmin } = getUserInfo();
+  const abilityState = useAccountAbilities();
+  // L'état est un objet neuf à chaque rendu : la mémoire suit son genre et la réponse (stable) du serveur.
+  const known = abilityState.kind === "known" ? abilityState.abilities : null;
+  const { abilities, isAdmin } = useMemo(
+    () => settingsAbilitiesOf(known ? { kind: "known", abilities: known } : { kind: abilityState.kind } as typeof abilityState, legacyIsAdmin),
+    [abilityState.kind, known, legacyIsAdmin],
+  );
   const { available: family } = useFamilySettingsAvailability();
   const { capabilities } = useServerCapabilities();
   const profileSession = useActiveProfile() !== null;
@@ -44,7 +47,7 @@ export function useWebSettingsContext(): SettingsCatalogContext {
     engineOptions: false,
     liveTransfers: false,
     bootIntro: false,
-    abilities: ALL_ABILITIES,
+    abilities,
     profileSession,
-  }), [capabilities, offline, isAdmin, family, canSwitchProfile, profileSession]);
+  }), [capabilities, offline, isAdmin, abilities, family, canSwitchProfile, profileSession]);
 }

@@ -12,6 +12,8 @@ import { WatchTogetherRoomModal } from "./room/WatchTogetherRoomModal";
 import { AffinityRoot } from "./affinity/AffinityRoot";
 import { ElsewhereNotice } from "./ElsewhereNotice";
 import { wtLog } from "./wtLog";
+import { MirrorWtHost } from "../mirror/watchTogether/MirrorWtHost";
+import { useMirror } from "../mirror/useFormFactor";
 
 /**
  * Watch Together — la séance du web et du bureau, sous le Router. Tout ce qui
@@ -62,6 +64,9 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   }), [navigate, pathname, show, t]);
 
   const value = useWatchTogetherSession(port);
+  // Fenêtre étroite (téléphone, iPad) : les feuilles du mobile (`MirrorWtHost`) à la place de la
+  // modale de salle et de la boîte des invitations du bureau ; la bande de l'accueil dit l'« ailleurs ».
+  const mirror = useMirror();
 
   // Plus rien à répondre (réponse donnée ici ou sur un autre appareil) : la
   // boîte se referme — sinon elle restait « ouverte » et la prochaine
@@ -74,10 +79,16 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   return (
     <WatchTogetherContext.Provider value={value}>
       {children}
-      {inboxOpen && value.mayJoin && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
-      <WatchTogetherRoomModal />
+      {mirror ? (
+        <MirrorWtHost autoInbox={inboxOpen} onAutoInboxClose={() => setInboxOpen(false)} />
+      ) : (
+        <>
+          {inboxOpen && value.mayJoin && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
+          <WatchTogetherRoomModal />
+          <ElsewhereNotice />
+        </>
+      )}
       <GroupPlaybackPill />
-      <ElsewhereNotice />
       {value.room && <ChatRoot />}
       {/* L'affinité (swipe de groupe) : remontée à chaque salle — ses numéros
           d'état repartent de zéro avec elle. */}
