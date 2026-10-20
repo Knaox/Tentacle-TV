@@ -9,6 +9,8 @@ const PHONE_PORTRAIT: BrowserScreen = { width: 402, height: 874, isTablet: false
 const PHONE_LANDSCAPE: BrowserScreen = { width: 874, height: 402, isTablet: false, edges: { top: 10, right: 24, bottom: 21, left: 24 }, safe: { top: 0, right: 62, bottom: 21, left: 62 } };
 const PAD_PORTRAIT: BrowserScreen = { width: 834, height: 1210, isTablet: true, edges: { top: 30, right: 16, bottom: 20, left: 16 }, safe: { top: 24, right: 0, bottom: 20, left: 0 } };
 const PAD_LANDSCAPE: BrowserScreen = { width: 1210, height: 834, isTablet: true, edges: { top: 30, right: 16, bottom: 20, left: 16 }, safe: { top: 24, right: 0, bottom: 20, left: 0 } };
+// iPad mini, debout : le moins de noir sous l'image.
+const PAD_MINI: BrowserScreen = { width: 744, height: 1133, isTablet: true, edges: { top: 30, right: 16, bottom: 20, left: 16 }, safe: { top: 24, right: 0, bottom: 20, left: 0 } };
 
 const video = (screen: BrowserScreen) => videoRect(screen.width, screen.height);
 
@@ -41,13 +43,28 @@ describe("videoAspectOf", () => {
 });
 
 describe("openShelfGeometry", () => {
-  it("debout, la rangée se pose sous l'image sans la couvrir", () => {
-    const rect = video(PHONE_PORTRAIT);
-    const geo = openShelfGeometry(PHONE_PORTRAIT, rect);
+  it.each([
+    ["un téléphone", PHONE_PORTRAIT, 40],
+    ["un iPad", PAD_PORTRAIT, 46],
+    ["un iPad mini", PAD_MINI, 46],
+  ] as const)("debout, sur %s, la rangée se pose sous l'image sans la couvrir", (_name, screen, tabs) => {
+    const rect = video(screen);
+    const geo = openShelfGeometry(screen, rect);
     expect(geo.belowVideo).toBe(true);
     expect(geo.top).toBeGreaterThanOrEqual(rect.y + rect.height);
-    const content = 40 + 12 + geo.openHeight + 12 + openDetailsHeight(false, geo.titleLines, geo.overviewLines);
-    expect(geo.top + content).toBeLessThanOrEqual(PHONE_PORTRAIT.height - geo.bottom);
+    const content = tabs + 12 + geo.openHeight + 12 + openDetailsHeight(screen.isTablet, geo.titleLines, geo.overviewLines);
+    expect(geo.top + content).toBeLessThanOrEqual(screen.height - geo.bottom);
+  });
+
+  it("debout, la carte rétrécit d'un dixième au plus plutôt que de couvrir l'image", () => {
+    const pad = openShelfGeometry(PAD_PORTRAIT, video(PAD_PORTRAIT));
+    expect(pad.openWidth).toBeLessThan(300);
+    expect(pad.openWidth).toBeGreaterThanOrEqual(270);
+    expect(pad.restWidth).toBe(Math.round(pad.openWidth * 0.6));
+    // Le mini n'a la place que d'une ligne de résumé : la carte garde presque sa taille.
+    const mini = openShelfGeometry(PAD_MINI, video(PAD_MINI));
+    expect(mini.overviewLines).toBe(1);
+    expect(mini.openWidth).toBeGreaterThanOrEqual(270);
   });
 
   it("couché, sur l'image, à l'écart de l'îlot et en laissant voir le haut", () => {
@@ -59,9 +76,12 @@ describe("openShelfGeometry", () => {
     expect(geo.titleLines).toBe(1);
   });
 
-  it("l'iPad garde deux lignes de résumé, debout comme couché", () => {
-    expect(openShelfGeometry(PAD_PORTRAIT, video(PAD_PORTRAIT)).overviewLines).toBe(2);
-    expect(openShelfGeometry(PAD_LANDSCAPE, video(PAD_LANDSCAPE)).overviewLines).toBe(2);
+  it("l'iPad garde deux lignes de résumé, debout comme couché, et un titre sur une ligne", () => {
+    for (const screen of [PAD_PORTRAIT, PAD_LANDSCAPE]) {
+      const geo = openShelfGeometry(screen, video(screen));
+      expect(geo.overviewLines).toBe(2);
+      expect(geo.titleLines).toBe(1);
+    }
   });
 
   it("une image plus large laisse plus de place dessous : la rangée y tient toujours", () => {

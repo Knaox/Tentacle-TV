@@ -61,6 +61,8 @@ export interface OpenShelfGeometry {
 
 const OPEN_TABS = { phone: 40, tablet: 46 } as const;
 const OPEN_GAPS = { tabs: 12, details: 12 } as const;
+/** Debout, la carte ouverte rétrécit d'un dixième au plus pour rester sous l'image. */
+const MIN_OPEN_SHARE = 0.9;
 
 /** Les détails sous la carte ouverte : surtitre, titre (une ou deux lignes), résumé. */
 export function openDetailsHeight(isTablet: boolean, titleLines: 1 | 2, overviewLines: 1 | 2): number {
@@ -68,35 +70,41 @@ export function openDetailsHeight(isTablet: boolean, titleLines: 1 | 2, overview
   return (isTablet ? 18 : 16) + 4 + (isTablet ? 24 : 21) * titleLines + 6 + line * overviewLines;
 }
 
+const cardHeight = (openWidth: number) => Math.round((openWidth * 9) / 16);
+
 export function openShelfGeometry(screen: BrowserScreen, video: Rect): OpenShelfGeometry {
   const { width, height, isTablet, edges, safe } = screen;
   const landscape = width > height;
   // Couché, la rangée occupe le milieu de la hauteur, où est l'îlot : elle prend la marge sûre.
   const inset = Math.max(isTablet ? 32 : 20, landscape ? Math.max(edges.left, edges.right, safe.left, safe.right) : 0);
   const bottom = Math.max(edges.bottom, safe.bottom) + (isTablet ? 22 : 12);
-  const openWidth = isTablet ? (landscape ? 340 : 300) : (landscape ? 200 : 208);
-  const openHeight = Math.round((openWidth * 9) / 16);
-  const restWidth = Math.round(openWidth * 0.6);
+  const preferred = isTablet ? (landscape ? 340 : 300) : (landscape ? 200 : 208);
   const tabs = isTablet ? OPEN_TABS.tablet : OPEN_TABS.phone;
-  // Debout, le titre a deux lignes : le bouton « Lire » lui prend la largeur.
-  const titleLines: 1 | 2 = landscape ? 1 : 2;
-  const content = (lines: 1 | 2) => tabs + OPEN_GAPS.tabs + openHeight + OPEN_GAPS.details + openDetailsHeight(isTablet, titleLines, lines);
-  const place = (top: number, lines: 1 | 2, belowVideo: boolean): OpenShelfGeometry => ({
-    top, inset, bottom, openWidth, openHeight, restWidth,
+  // Une ligne de titre, sauf sur un téléphone debout : le bouton « Lire » lui prend la largeur.
+  const titleLines: 1 | 2 = landscape || isTablet ? 1 : 2;
+  // Tout ce qui n'est pas l'image de la carte : les saisons, les détails, leurs écarts.
+  const around = (lines: 1 | 2) => tabs + OPEN_GAPS.tabs + OPEN_GAPS.details + openDetailsHeight(isTablet, titleLines, lines);
+  const place = (top: number, openWidth: number, lines: 1 | 2, belowVideo: boolean): OpenShelfGeometry => ({
+    top, inset, bottom, openWidth, openHeight: cardHeight(openWidth), restWidth: Math.round(openWidth * 0.6),
     detailsHeight: openDetailsHeight(isTablet, titleLines, lines), titleLines, overviewLines: lines, belowVideo,
   });
 
   if (!landscape) {
-    const room = height - bottom - (video.y + video.height);
+    // Debout, sous l'image : deux lignes de résumé si la carte n'y perd pas plus d'un
+    // dixième, sinon une ; la rangée ne se pose sur l'image qu'en dernier recours.
+    const videoBottom = video.y + video.height;
+    const room = height - bottom - videoBottom;
     for (const lines of [2, 1] as const) {
-      if (content(lines) <= room - 8) {
-        const gap = Math.min(28, Math.max(8, Math.round((room - content(lines)) / 2)));
-        return place(video.y + video.height + gap, lines, true);
+      const openWidth = Math.min(preferred, Math.floor(((room - 8 - around(lines)) * 16) / 9));
+      if (openWidth >= preferred * MIN_OPEN_SHARE) {
+        const content = around(lines) + cardHeight(openWidth);
+        const gap = Math.min(28, Math.max(8, Math.round((room - content) / 2)));
+        return place(videoBottom + gap, openWidth, lines, true);
       }
     }
   }
   const lines: 1 | 2 = isTablet ? 2 : 1;
-  return place(height - bottom - content(lines), lines, false);
+  return place(height - bottom - around(lines) - cardHeight(preferred), preferred, lines, false);
 }
 
 export interface OpenCardPlace {
