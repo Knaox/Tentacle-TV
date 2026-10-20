@@ -10,6 +10,9 @@
  */
 
 import { AppState, type AppStateStatus } from "react-native";
+import { preferDefaultNetwork } from "@tentacle-tv/offline-core";
+import { publicLog } from "../../modules/offline-storage/publicLog";
+import { defaultNetworkKind, onDefaultNetworkChange } from "../../modules/offline-storage/defaultNetwork";
 import { isLinkLost, mapNetworkType, Network, type NetworkState, type NetworkType } from "./networkState";
 
 export interface NetworkHandlers {
@@ -31,10 +34,20 @@ export function startNetworkListeners(handlers: NetworkHandlers): () => void {
     if (status === "active") handlers.onForeground();
   });
 
+  // Android : le réseau PAR DÉFAUT suivi par le module l'emporte sur le type
+  // d'expo-network, relu trop tôt à l'arrivée du Wi-Fi (`wifiOnlyRule.ts`).
+  let lastType: NetworkType | null = null;
+  const settleType = (type: NetworkType): void => {
+    if (type !== lastType) publicLog("transferts", `réseau : ${type}`);
+    lastType = type;
+    handlers.onType(type);
+  };
+  const stopDefault = onDefaultNetworkChange((type) => settleType(preferDefaultNetwork(type, lastType ?? "unknown")));
+
   let network: { remove(): void } | null = null;
   if (Network !== null) {
     const apply = (state: NetworkState, fromListener: boolean): void => {
-      handlers.onType(mapNetworkType(state));
+      settleType(preferDefaultNetwork(defaultNetworkKind(), mapNetworkType(state)));
       if (isLinkLost(state)) {
         handlers.onLinkLost(fromListener);
         return;
@@ -46,14 +59,15 @@ export function startNetworkListeners(handlers: NetworkHandlers): () => void {
       .then((state) => apply(state, false))
       // Sans réponse d'expo-network, le réseau vaut « autre » plutôt que
       // « inconnu » : « inconnu » retient les transferts sous Wi-Fi seulement.
-      .catch(() => handlers.onType("other"));
+      .catch(() => settleType(preferDefaultNetwork(defaultNetworkKind(), "other")));
     network = Network.addNetworkStateListener((state) => apply(state, true));
   } else {
-    handlers.onType("other");
+    settleType(preferDefaultNetwork(defaultNetworkKind(), "other"));
   }
 
   return () => {
     appState.remove();
     network?.remove();
+    stopDefault();
   };
 }
