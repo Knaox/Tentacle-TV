@@ -78,3 +78,4 @@ export * from "./sync/reportBody";
 export * from "./core/reconcile";
 export * from "./variants/platformSupport";
 export * from "./variants/offlineVariants";
+export * from "./rights/offlineHidden";
