@@ -14,8 +14,14 @@
 export const INTRO_START = {
   /** Images régulières d'affilée, l'app prête, avant de commencer. */
   calmFrames: 6,
-  /** Au-delà, on commence quand même (une app lente à démarrer n'immobilise pas l'encre). */
-  maxWaitMs: 1500,
+  /**
+   * Au-delà, on commence quand même (une app lente à démarrer n'immobilise pas l'encre).
+   * 1,5 s suffisait à l'iPhone ; un téléphone Android démarre plus lentement (émulateur
+   * API 36, 20/10 : app prête 1,9 à 2,1 s après la première image) — parti à 1,5 s, le
+   * poulpe s'assemblait PENDANT le montage de l'app : 60 images perdues, un trou de 533 ms.
+   * L'encre immobile ne se voit pas saccader ; le poulpe, si.
+   */
+  maxWaitMs: 4000,
   /** Un écart de plus d'une image et demie n'est pas régulier. */
   calmRatio: 1.5,
 } as const;
