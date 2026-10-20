@@ -70,6 +70,20 @@ export interface PushTapData {
   target?: unknown;
 }
 
+/**
+ * L'état de la permission sur CET appareil : accordée, refusée (seuls les
+ * Réglages du système la rendent), ou pas encore demandée.
+ */
+export type NotificationPermissionState = "granted" | "denied" | "undetermined";
+
+export async function getNotificationPermissionState(): Promise<NotificationPermissionState> {
+  const { status, canAskAgain } = await Notifications.getPermissionsAsync();
+  if (status === "granted") return "granted";
+  // Un refus qui peut encore se redemander (Android) vaut « pas encore » : la
+  // demande du système reviendra. Sinon, seuls les Réglages la rendent.
+  return status === "denied" && !canAskAgain ? "denied" : "undetermined";
+}
+
 /** True si l'appareil a déjà accordé la permission de notifications. */
 export async function hasNotificationPermission(): Promise<boolean> {
   const { status } = await Notifications.getPermissionsAsync();
