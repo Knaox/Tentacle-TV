@@ -52,7 +52,7 @@ export function ProfileScreen() {
   const list = (
     <>
       <FadeIn delay={0}>
-        <ProfileHero user={user} userName={userName} initial={initial} isAdmin={isAdmin} serverUrl={serverUrl} />
+        <ProfileHero user={user} userName={userName} initial={initial} isAdmin={isAdmin} serverUrl={serverUrl} canSwitchProfile={ctx.canSwitchProfile && !ctx.offline && ctx.family} />
       </FadeIn>
       <FadeIn delay={40}>
         <ProfileStatsCard ctx={ctx} />

@@ -60,13 +60,23 @@ export function UserNameRow({ last }: RowProps) {
   return <SettingsRow icon="at-sign" label={t("account.name")} value={user?.Name ?? t("profile:defaultUsername")} last={last} />;
 }
 
+/**
+ * Ouvre le changement de profil — le SEUL endroit qui sait comment : la ligne
+ * de Compte et le bouton sous le nom passent par ici. Aujourd'hui « Qui
+ * regarde ? » ; après la fusion du lot, la feuille de la session design
+ * (`openProfileSwitcher()` de `profileSwitch/profileSwitchEntry.ts`) se
+ * branche ici, sans toucher aux appelants.
+ */
+export function useOpenProfileSwitcher(): () => void {
+  const router = useRouter();
+  return useCallback(() => router.push(WHO_IS_WATCHING_HREF as Href), [router]);
+}
+
 /** « Changer de profil » : « Qui regarde ? », là où la famille a plusieurs profils. */
 export function SwitchProfileRow({ last }: RowProps) {
   const { t } = useTranslation("settingsMobile");
-  const router = useRouter();
-  return (
-    <SettingsRow icon="refresh-cw" label={t("account.switchProfile")} chevron last={last} onPress={() => router.push(WHO_IS_WATCHING_HREF as Href)} />
-  );
+  const open = useOpenProfileSwitcher();
+  return <SettingsRow icon="refresh-cw" label={t("account.switchProfile")} chevron last={last} onPress={open} />;
 }
 
 /**
