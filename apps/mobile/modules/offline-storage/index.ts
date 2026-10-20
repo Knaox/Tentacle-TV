@@ -32,6 +32,13 @@ interface OfflineStorageNative {
   /** `progress` en pour-cent ; négatif quand la taille attendue est inconnue. */
   updateTransferService?(body: string, progress: number): boolean;
   stopTransferService?(): Promise<boolean>;
+  showLiveTransfer?(
+    channelName: string, title: string, text: string, subText: string | null, progress: number, endsAtMs: number, deepLink: string | null,
+  ): boolean;
+  hideLiveTransfer?(): boolean;
+  liveActivitiesEnabled?(): boolean;
+  presentLiveActivity?(state: LiveActivityState): Promise<boolean>;
+  endLiveActivity?(): Promise<boolean>;
   addListener?(event: string, listener: () => void): { remove: () => void };
   /** Verdict `"ok" | "unusable" | "failed"` ; un ancien build rend encore un booléen. */
   finalizeMp4?(path: string): Promise<string | boolean>;
@@ -158,6 +165,85 @@ export async function promoteHevcTag(path: string): Promise<boolean> {
   if (native === null || typeof native.promoteHevcTag !== "function") return false;
   try {
     return await native.promoteHevcTag(path);
+  } catch {
+    return false;
+  }
+}
+
+/** Le suivi en direct d'Android : ce que la notification des transferts affiche. */
+export interface LiveTransferNotice {
+  channelName: string;
+  title: string;
+  text: string;
+  subText: string | null;
+  /** Pour-cent, négatif sans taille connue. */
+  progress: number;
+  /** Fin estimée (epoch ms) pour le chronomètre décroissant ; 0 sans compte à rebours. */
+  endsAtMs: number;
+  deepLink: string | null;
+}
+
+/** Le build sait-il tenir le suivi en direct ? (Android, build récent.) */
+export function canShowLiveTransfer(): boolean {
+  return Platform.OS === "android" && native !== null && typeof native.showLiveTransfer === "function";
+}
+
+export function showLiveTransfer(notice: LiveTransferNotice): boolean {
+  if (!canShowLiveTransfer()) return false;
+  try {
+    return native!.showLiveTransfer!(
+      notice.channelName, notice.title, notice.text, notice.subText, Math.round(notice.progress), notice.endsAtMs, notice.deepLink,
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function hideLiveTransfer(): boolean {
+  if (!canShowLiveTransfer()) return false;
+  try {
+    return native!.hideLiveTransfer!();
+  } catch {
+    return false;
+  }
+}
+
+/** L'état de la Live Activity d'iOS — miroir de `TransferActivityAttributes.ContentState`. */
+export interface LiveActivityState {
+  headline: string;
+  status: string;
+  readyInLabel: string;
+  phase: string;
+  /** 0…1, négatif sans taille connue. */
+  fraction: number;
+  /** Fin estimée (epoch ms) ; 0 : pas de compte à rebours. */
+  endsAtMs: number;
+  deepLink: string;
+}
+
+/** iOS 16.2+, build récent, et Live Activities permises par l'utilisateur. */
+export function liveActivitiesEnabled(): boolean {
+  if (Platform.OS !== "ios" || native === null || typeof native.liveActivitiesEnabled !== "function") return false;
+  try {
+    return native.liveActivitiesEnabled();
+  } catch {
+    return false;
+  }
+}
+
+export async function presentLiveActivity(state: LiveActivityState): Promise<boolean> {
+  if (Platform.OS !== "ios" || native === null || typeof native.presentLiveActivity !== "function") return false;
+  try {
+    return await native.presentLiveActivity(state);
+  } catch {
+    return false;
+  }
+}
+
+export async function endLiveActivity(): Promise<boolean> {
+  if (Platform.OS !== "ios" || native === null || typeof native.endLiveActivity !== "function") return false;
+  try {
+    return await native.endLiveActivity();
   } catch {
     return false;
   }
