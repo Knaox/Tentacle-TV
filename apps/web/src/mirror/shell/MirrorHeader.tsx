@@ -9,6 +9,8 @@ import { ConnectivityChip } from "../../offline/ConnectivityChip";
 import { useConnectivity } from "../../offline/useConnectivity";
 import { HeaderContentMenu } from "./HeaderContentMenu";
 import { MirrorNotificationBell } from "./MirrorNotificationBell";
+import { ProfileChip } from "./ProfileChip";
+import { useProfileSwitchOffered } from "./useProfileSwitchOffered";
 
 /** De combien l'en-tête remonte au repli. */
 const COLLAPSE_SHIFT = 8;
@@ -19,7 +21,8 @@ const COLLAPSE_SHIFT = 8;
  * TV » (22, graisse 800) ; à droite, espacés de 22, « Mes contenus », la
  * recherche et la cloche. Un filet violet à 12 % le souligne.
  * Hors ligne, la pastille de connexion prend la place du titre et les actions
- * serveur disparaissent.
+ * serveur disparaissent. Famille de plusieurs profils : la puce du profil
+ * actif remplace le titre (comme le mobile) — la toucher change de profil.
  */
 export const MirrorHeader = memo(function MirrorHeader({ collapsed }: { collapsed: boolean }) {
   const { t } = useTranslation("nav");
@@ -27,6 +30,7 @@ export const MirrorHeader = memo(function MirrorHeader({ collapsed }: { collapse
   const localNav = useOfflineMode();
   const { state } = useConnectivity();
   const offline = state === "offline-auto" || state === "offline-manual";
+  const profileChip = useProfileSwitchOffered();
 
   return (
     <header
@@ -43,14 +47,23 @@ export const MirrorHeader = memo(function MirrorHeader({ collapsed }: { collapse
             paddingRight: "max(16px, env(safe-area-inset-right, 0px))",
           }}
         >
-          <Link to="/" onClick={countLogoClick} className="flex items-center gap-2" aria-label="Tentacle TV">
-            <TentacleSvg size={28} />
-            {offline ? (
-              <ConnectivityChip />
-            ) : (
-              <span className="text-[22px] font-extrabold leading-7 text-content-primary">Tentacle TV</span>
-            )}
-          </Link>
+          {profileChip && !offline ? (
+            <div className="flex min-w-0 items-center gap-2">
+              <Link to="/" onClick={countLogoClick} aria-label="Tentacle TV">
+                <TentacleSvg size={28} />
+              </Link>
+              <ProfileChip />
+            </div>
+          ) : (
+            <Link to="/" onClick={countLogoClick} className="flex items-center gap-2" aria-label="Tentacle TV">
+              <TentacleSvg size={28} />
+              {offline ? (
+                <ConnectivityChip />
+              ) : (
+                <span className="text-[22px] font-extrabold leading-7 text-content-primary">Tentacle TV</span>
+              )}
+            </Link>
+          )}
 
           {!localNav && (
             <div className="flex items-center gap-[22px]">

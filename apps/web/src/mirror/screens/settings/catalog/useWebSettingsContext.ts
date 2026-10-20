@@ -5,7 +5,7 @@ import { useActiveProfile } from "../../../../auth/profileSession";
 import { getUserInfo } from "../../../../components/userMenu/menuItems";
 import { useFamilySettingsAvailability } from "../../../../family/useFamilyAvailability";
 import { useOfflineMode } from "../../../../offline/useOfflineMode";
-import { usePickerListing } from "../../../../profiles/api/usePickerListing";
+import { useProfileSwitchOffered } from "../../../shell/useProfileSwitchOffered";
 
 /**
  * Le contexte du web étroit pour le catalogue partagé des réglages : ce que
@@ -21,8 +21,7 @@ export function useWebSettingsContext(): SettingsCatalogContext {
   const { available: family } = useFamilySettingsAvailability();
   const { capabilities } = useServerCapabilities();
   const profileSession = useActiveProfile() !== null;
-  const { listing, enabled } = usePickerListing();
-  const canSwitchProfile = enabled && listing.data?.pickerRequired === true && listing.data.profiles.length >= 2;
+  const canSwitchProfile = useProfileSwitchOffered();
 
   return useMemo(() => ({
     platform: "web",
