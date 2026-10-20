@@ -106,7 +106,11 @@ function phaseOf(
     if (wait === "wifi") return "waitingWifi";
     if (wait === "network") return "waitingNetwork";
     if (pending.every((entry) => entry.status === "paused" && entry.pausedByUser)) return "paused";
-    if (pending.some((entry) => entry.status === "error")) return "retrying";
+    // Une erreur relancée, ou une coupure réseau datée (pause système en
+    // attente de sa relance) : « Nouvel essai bientôt », pas une estimation.
+    if (pending.some((entry) => entry.status === "error" || (entry.status === "paused" && !entry.pausedByUser && entry.nextRetryAt !== null))) {
+      return "retrying";
+    }
     return "estimating";
   }
   // Le remux vient après le dernier octet : rien à compter à rebours.

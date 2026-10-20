@@ -10,7 +10,7 @@
 import type { DatabaseHandle, Volume } from "./adapters";
 import { safeJoin } from "./paths";
 import { getFile, isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
-import { clearRetry, recordFailure } from "./retry";
+import { clearRetry, recordFailure, scheduleNetworkRetry } from "./retry";
 import type { TransferEnd } from "./transfer";
 import type { FinalizeVerdict } from "./engineDeps";
 
@@ -21,6 +21,12 @@ export interface EndContext {
   canTransfer?: (() => boolean) | undefined;
   /** Échelle des relances automatiques ; vide = aucune. */
   retryDelaysMs: readonly number[];
+  /**
+   * L'échéance de relance d'une coupure réseau (`networkRetryDelay`), décidée
+   * par le moteur qui tient le compte des tentatives ; `null` : aucune, la
+   * pause attend un évènement (premier plan, réseau, redémarrage).
+   */
+  networkRetryAt?: number | null;
 }
 
 /**
@@ -66,6 +72,9 @@ export function applyEnd(db: DatabaseHandle, fileId: number, end: TransferEnd, c
         // incident qui se résout tout seul.
         setPausedByUser(db, fileId, false);
         setStatus(db, fileId, "paused", null, now);
+        // Elle se relance aussi d'elle-même : en arrière-plan, aucun des
+        // évènements qui la relevaient n'arrive (voir `NETWORK_RETRY_DELAYS_MS`).
+        scheduleNetworkRetry(db, fileId, ctx.networkRetryAt ?? null, now);
       } else {
         setStatus(db, fileId, "error", end.code, now);
         // Une coupure réseau n'arrive pas ici : elle est déjà une pause

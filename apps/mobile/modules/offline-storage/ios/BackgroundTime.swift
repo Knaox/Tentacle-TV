@@ -16,25 +16,30 @@ import UIKit
 /// avant que le système ne le reprenne (gestionnaire d'expiration).
 /// Appelé depuis le fil du JavaScript : tout se passe sur le fil principal
 /// (UIApplication), dans l'ordre des appels.
+///
+/// Plusieurs détenteurs, chacun son nom : le suivi en direct
+/// (`liveTransfer`) et la finalisation d'un fichier Allégé réveillée en
+/// arrière-plan (`OfflineStorageModule.finalizeMp4`) ne se rendent pas le
+/// délai l'un de l'autre.
 enum BackgroundTime {
-  @MainActor private static var task: UIBackgroundTaskIdentifier = .invalid
+  static let liveTransfer = "tentacle-live-transfer"
+  @MainActor private static var tasks: [String: UIBackgroundTaskIdentifier] = [:]
 
-  static func hold() {
+  static func hold(_ name: String = liveTransfer) {
     Task { @MainActor in
-      guard task == .invalid else { return }
-      task = UIApplication.shared.beginBackgroundTask(withName: "tentacle-live-transfer") {
-        BackgroundTime.endOnMain()
+      guard tasks[name] == nil else { return }
+      tasks[name] = UIApplication.shared.beginBackgroundTask(withName: name) {
+        BackgroundTime.endOnMain(name)
       }
     }
   }
 
-  static func release() {
-    Task { @MainActor in endOnMain() }
+  static func release(_ name: String = liveTransfer) {
+    Task { @MainActor in endOnMain(name) }
   }
 
-  @MainActor private static func endOnMain() {
-    let identifier = task
-    task = .invalid
+  @MainActor private static func endOnMain(_ name: String) {
+    guard let identifier = tasks.removeValue(forKey: name) else { return }
     if identifier != .invalid { UIApplication.shared.endBackgroundTask(identifier) }
   }
 }

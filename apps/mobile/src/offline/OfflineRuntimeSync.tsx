@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useServerCapability, useTentacleConfig } from "@tentacle-tv/api-client";
 import { offlineOwnerOf } from "@tentacle-tv/offline-core";
 import { refreshStoredUser } from "@/auth/storedUser";
 import { useServerUrl } from "@/providers/ServerUrlContext";
@@ -14,6 +14,9 @@ import {
 } from "./engineRuntime";
 import { syncAvatarCache } from "./avatarCache";
 import { setTransfersSuspended } from "./backgroundParallel";
+import { setServerPrepareEnabled } from "./serverPrepare";
+import { publicLog } from "../../modules/offline-storage/publicLog";
+import { useOfflinePushWake } from "./offlinePushWake";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { configureEngineSettings } from "@/player/engine/engineSettings";
@@ -69,6 +72,11 @@ export function OfflineRuntimeSync() {
   const client = useJellyfinClient();
   // Développement : le hors ligne pilotable depuis l'inspecteur (voir le crochet).
   useOfflineDevHook(client, userId);
+  // La préparation tenue par le serveur : lue par le moteur à chaque transfert.
+  const serverPrepare = useServerCapability("offline.serverPrepare");
+  useEffect(() => setServerPrepareEnabled(serverPrepare), [serverPrepare]);
+  // L'iPhone réveillé par le serveur quand une préparation s'achève sans lui.
+  useOfflinePushWake();
   const { state, networkType, reachable } = useConnectivity();
   const wifiOnly = useWifiOnly();
   const cellularAck = useCellularAck();
@@ -148,7 +156,9 @@ export function OfflineRuntimeSync() {
         // ces transferts à leur terme sans nous. Sans ça, la file s'arrêtait
         // au premier épisode achevé.
         setTransfersSuspended(true);
-        offlineEngineIfStarted()?.pump();
+        const engine = offlineEngineIfStarted();
+        engine?.pump();
+        if (engine !== null && engine.pending() > 0) publicLog("hors-ligne-fond", `app derrière : ${engine.pending()} transfert(s) en cours ou en file`);
         return;
       }
       if (status !== "active") return;

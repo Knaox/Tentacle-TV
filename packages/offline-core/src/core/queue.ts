@@ -95,7 +95,7 @@ export function setBytesDone(
  */
 export function normalizeOnEngineStart(db: DatabaseHandle, nowMs: number): void {
   db.prepare(
-    `UPDATE files SET status = 'queued', updated_at = ?
+    `UPDATE files SET status = 'queued', next_retry_at = NULL, updated_at = ?
      WHERE status = 'downloading'
         OR (status = 'paused' AND paused_by_user = 0)`,
   ).run(nowMs);
@@ -112,7 +112,7 @@ export function normalizeOnEngineStart(db: DatabaseHandle, nowMs: number): void 
 export function requeueSystemPauses(db: DatabaseHandle, nowMs: number): number {
   const done = db
     .prepare(
-      `UPDATE files SET status = 'queued', updated_at = ?
+      `UPDATE files SET status = 'queued', next_retry_at = NULL, updated_at = ?
        WHERE status = 'paused' AND paused_by_user = 0`,
     )
     .run(nowMs);

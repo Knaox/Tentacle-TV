@@ -10,6 +10,8 @@ import { OfflineSessionGate } from "./OfflineSessionGate";
 import { OfflineRuntimeSync } from "./OfflineRuntimeSync";
 import { OfflineRightsSync } from "./rights/OfflineRightsSync";
 import { OfflineAccountFallback } from "./rights/OfflineAccountFallback";
+import { useOfflineProfileSession } from "./rights/useOfflineOwner";
+import { useAccountUserId } from "@/family/profiles/profileSessionState";
 
 /**
  * Point de montage UNIQUE du hors ligne dans `app/_layout.tsx`, sous
@@ -17,6 +19,10 @@ import { OfflineAccountFallback } from "./rights/OfflineAccountFallback";
  * et du moteur hors ligne, la garde de route et les voiles. Tout ce que le hors ligne ajoutera à la coquille passe par ici.
  */
 export function OfflineShell() {
+  // Le hors ligne est au compte de l'appareil : son suivi en direct aussi, qui se tait
+  // pendant une session de profil (le lot du compte continue en coulisse).
+  const ownerUserId = useAccountUserId();
+  const hidden = useOfflineProfileSession();
   return (
     <>
       <ConnectivityBinding />
@@ -26,7 +32,7 @@ export function OfflineShell() {
       <OfflineRightsSync />
       <OfflineEventsBinding />
       <OfflineReadyNotifier />
-      <OfflineLiveActivity />
+      <OfflineLiveActivity ownerUserId={ownerUserId} hidden={hidden} />
       <KeepOfflineHost />
       <OfflineRouteGuard />
       <OfflineOverlays />

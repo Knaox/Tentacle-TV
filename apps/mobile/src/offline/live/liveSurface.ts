@@ -21,6 +21,7 @@ import {
   releaseBackgroundTime,
   showLiveTransfer,
 } from "../../../modules/offline-storage";
+import { publicLog } from "../../../modules/offline-storage/publicLog";
 import type { LiveTexts } from "./liveText";
 
 export interface LiveSurface {
@@ -66,7 +67,8 @@ const iosSurface: LiveSurface = {
         barStartMs,
         deepLink: texts.deepLink,
       });
-      if (outcome.kind === "refused") console.warn(`[suivi-direct] Live Activity refusée : ${outcome.cause}`);
+      if (outcome.kind === "refused") publicLog("suivi-direct", `Live Activity refusée : ${outcome.cause}`, "warn");
+      else publicLog("suivi-direct", `Live Activity ${outcome.kind === "shown" ? "posée" : "balayée"} (${content.phase}${content.percent === null ? "" : `, ${content.percent} %`})`);
       return outcome.kind === "refused" ? "refused" : outcome.kind;
     });
   },

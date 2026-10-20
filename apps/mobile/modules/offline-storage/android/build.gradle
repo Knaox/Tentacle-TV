@@ -14,3 +14,9 @@ android {
     abortOnError false
   }
 }
+
+dependencies {
+  // `JsKeepAlive` : la tâche headless qui garde les minuteurs du JavaScript en
+  // marche pendant un transfert (HeadlessJsTaskContext). Version tenue par l'app.
+  implementation 'com.facebook.react:react-android'
+}

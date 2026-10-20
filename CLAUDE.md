@@ -1378,6 +1378,23 @@ MÊMES comportements ; seuls changent les indications de touches et le verre
   (`apps/tv/src/platform/<plateforme>/`), la portée du lint étendue à son
   chemin. Aucun comportement à réécrire : ceux de tv-core sont déjà les siens.
 
+## Garder hors ligne, application quittée — le serveur prépare, le système transfère
+
+Un titre gardé hors ligne va au bout application quittée ou téléphone verrouillé
+(carnet : `docs/HORS-LIGNE-FOND.md`). Trois règles à ne pas défaire :
+- **L'Allégé se prépare sur le SERVEUR** (capacité `offline.serverPrepare`,
+  `/api/downloads/prepared/:itemId`, `services/offlinePrepare/`) et se lit PENDANT qu'il
+  s'écrit ; reprise par plage seulement pour l'appareil qui l'a déjà lu (`?tag=`) ; le
+  téléphone l'efface (`DELETE`) à l'arrivée ou à l'annulation, jamais à une pause ; push
+  silencieuse iOS `offline:prepared` quand elle s'achève sans lecteur. Sans la capacité :
+  `/light`, comme avant.
+- **Le média est remis au pilote AVANT les à-côtés** (`worker.ts`), et une coupure réseau se
+  relance SEULE (`NETWORK_RETRY_DELAYS_MS`, relances immédiates sur l'iPhone derrière) —
+  jamais une pause qui attend le premier plan.
+- **Android : service de premier plan gardé au balayage, et tâche headless
+  `TentacleOfflineTransfers`** tant que le moteur s'occupe (sans elle, RN gèle tous les
+  minuteurs en arrière-plan).
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded

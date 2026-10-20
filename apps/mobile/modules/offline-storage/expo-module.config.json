@@ -1,9 +1,19 @@
 {
-  "platforms": ["apple", "android"],
+  "platforms": [
+    "apple",
+    "android"
+  ],
   "apple": {
-    "modules": ["OfflineStorageModule"]
+    "modules": [
+      "OfflineStorageModule"
+    ],
+    "appDelegateSubscribers": [
+      "OfflinePushWakeSubscriber"
+    ]
   },
   "android": {
-    "modules": ["expo.modules.offlinestorage.OfflineStorageModule"]
+    "modules": [
+      "expo.modules.offlinestorage.OfflineStorageModule"
+    ]
   }
 }

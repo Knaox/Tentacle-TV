@@ -9,7 +9,7 @@
 
 import type { DatabaseHandle, EngineEvent, TransferDriver, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
-import type { Creds } from "./worker";
+import type { Creds, ServerPrepare } from "./worker";
 
 /** Ce que la plateforme rend d'une finalisation : voir `EngineDeps.finalizeMedia`. */
 export type FinalizeVerdict = "ok" | "unusable" | "noaudio" | void;
@@ -27,6 +27,19 @@ export interface EngineDeps {
    * `RETRY_DELAYS_MS`. Tableau vide : aucune relance (le banc d'essai).
    */
   retryDelaysMs?: readonly number[];
+  /**
+   * Échelle des relances d'une COUPURE réseau (pause système). Absente :
+   * `NETWORK_RETRY_DELAYS_MS`, dont la dernière marche se répète. Tableau vide :
+   * aucune relance seule, la pause attend un évènement (le banc d'essai).
+   */
+  networkRetryDelaysMs?: readonly number[];
+  /**
+   * Combien de relances d'une coupure repartent SANS délai, maintenant.
+   * Consultée à chaque coupure. L'iPhone derrière en veut quelques-unes : son
+   * JavaScript, suspendu, ne verrait jamais sonner un minuteur, et la tâche
+   * remise aussitôt au système attend le réseau toute seule. Absente : aucune.
+   */
+  immediateNetworkRetries?: () => number;
   /**
    * Défaillance INATTENDUE : une exception qu'aucun chemin prévu n'explique.
    * Le transfert est déjà retombé sur ses pieds quand ceci est appelé — c'est
@@ -63,6 +76,14 @@ export interface EngineDeps {
    * aboutir. Absente (bureau) : `MAX_PARALLEL`.
    */
   parallelLimit?: () => number;
+  /**
+   * Le serveur sait-il préparer un fichier Allégé lui-même (capacité
+   * `offline.serverPrepare`) ? Consultée à chaque transfert. Oui : le fichier
+   * se prépare sur le serveur que l'application soit là ou non, se lit pendant
+   * qu'il s'écrit et se reprend par plage (`worker.ts`). `null` ou absente
+   * (bureau, serveur d'avant) : le transcodage tiré en direct, comme avant.
+   */
+  serverPrepare?: () => ServerPrepare | null;
   /**
    * Finalise un fichier ALLÉGÉ avant `complete`. Le transcodage progressif de
    * Jellyfin est un MP4 fragmenté (sans index ni durée) : mpv s'en accommode,
