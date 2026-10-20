@@ -7,6 +7,10 @@
 export default {
   title: "Ses droits",
   editElsewhere: "Modifier sur le bureau ou le web",
+  /** Une partie se règle ici (âge, bibliothèques, interrupteurs) : le reste. */
+  otherTitle: "Autres droits",
+  moreElsewhere: "Plus de réglages sur le bureau ou le web",
+  moreHint: "Titres sans classification, étiquettes et horaires se règlent dans Réglages › Famille, depuis l'app pour ordinateur ou le site de votre serveur.",
   editHint: "Les droits se règlent dans Réglages › Famille, depuis l'app pour ordinateur ou le site de votre serveur. Ils s'appliquent aussitôt sur tous ses appareils.",
   loading: "Lecture des droits…",
   libraries: {

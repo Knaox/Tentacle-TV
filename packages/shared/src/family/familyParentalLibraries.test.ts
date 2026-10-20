@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parentalLibrariesCount, parentalLibraryRows, toggleParentalLibrary } from "./parentalLibraries";
+import { parentalLibrariesCount, parentalLibraryRows, toggleParentalLibrary } from "./familyParentalLibraries";
 
 const AVAILABLE = [
   { id: "aaaa-1111", name: "Films", collectionType: "movies" },

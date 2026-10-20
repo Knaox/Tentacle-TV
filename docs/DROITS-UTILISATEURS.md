@@ -1328,7 +1328,23 @@ d'un enfant ouvert sur le téléphone du parent ne liste pas ce que le parent a 
 4. **« Partager mes statistiques »** : le mobile le proposait sans le droit « Partage public »
    (le web le gardait déjà) ; derrière `usePublicSharingAllowed`.
 
-### 9.10.3 Vue en lecture seule (mobile, tablette, web étroit)
+### 9.10.3 Régler la Famille sur le mobile, lire le reste (mobile, tablette, web étroit)
+
+**Décision de Damien (20/10, au matin), qui remplace la lecture seule pour la FAMILLE** : les droits
+de la Famille qui tiennent dans un interrupteur, une liste ou un choix se RÈGLENT aussi sur le
+mobile et la tablette ; ceux de l'ADMINISTRATION restent au bureau ou sur le web. Règle partagée
+`family/familySimpleEditing.ts` (bâtie sur `profileActions` et `profileRoleActions` : mêmes
+appelants, mêmes routes `FAMILY_ROUTES`, aucune route nouvelle) : « Peut demander des films »,
+« Peut créer des invités », le rôle de parent, l'âge maximal par paliers et les bibliothèques
+(`familyParentalAge`, `familyParentalLibraries`, déplacées de tv-core vers shared — la TV les
+ré-exporte). Non classés, étiquettes, horaires et sous-notes : « Plus de réglages sur le bureau ou
+le web ». Watch Together et hors ligne ne sont pas des droits de la Famille (un invité n'en a
+jamais, un membre suit son compte) : en lecture seule. Le code PIN de gestion
+(`family.profileManage`) ne s'applique pas au mobile : la Famille n'y est ouverte qu'en session
+personnelle (catalogue des réglages, condition `personal`), et la règle ne permet rien à une
+session qui ne gère pas. Chaque geste annonce `rights:changed` au profil (`test/familyRightsLive.test.ts`).
+
+Ce qui suit vaut pour ce qui reste en lecture seule :
 
 Le panneau d'un profil (Réglages › Compte › Famille) ne porte plus d'interrupteur de droit :
 `familyRightsSummary` (shared, espace i18n `familyRightsSummary`) résume bibliothèques (lues à

@@ -1,4 +1,4 @@
-import { GUEST_PARENTAL_NONE, type GuestParentalControls } from "@tentacle-tv/shared";
+import { GUEST_PARENTAL_NONE, type GuestParentalControls } from "./familyParental";
 import { describe, expect, it } from "vitest";
 import {
   cappedByCeiling,
@@ -9,7 +9,7 @@ import {
   parentalAgeSlots,
   withParentalAge,
   type ParentalAgeChoice,
-} from "./parentalAge";
+} from "./familyParentalAge";
 
 /** Une table française de Jellyfin 10.11 (relevée sur le banc parental), plus deux entrées à sous-note au score 12 :
  *  la sous-note 1 n'y couvre pas tout le score (« 12 – avertissement » passe au-dessus). */

@@ -103,7 +103,7 @@ export function FamilySection({ overview, model }: { overview: FamilyOverviewDto
               last={index === family.profiles.length - 1 && !hasActions}
               you={isOwnProfile(profile, me)}
               yours={family.role === "member" && profile.createdBy !== null && isOwnProfile({ userId: profile.createdBy }, me)}
-              onOpen={hasPanel(actionsOf(profile)) ? panel.open : undefined}
+              onOpen={hasPanel(actionsOf(profile)) || profile.parental !== undefined ? panel.open : undefined}
               onPhoto={guestPhotos && profile.kind === "guest" && actionsOf(profile).pin ? openGuestPhoto : undefined}
             />
           ))
