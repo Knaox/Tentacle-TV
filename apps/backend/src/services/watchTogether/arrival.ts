@@ -1,4 +1,4 @@
-import { WT_ARRIVAL_TIMEOUT_MS, wtPositionTicksAt } from "./protocol";
+import { WT_ARRIVAL_LEAVE_GRACE_MS, WT_ARRIVAL_TIMEOUT_MS, wtPositionTicksAt } from "./protocol";
 import type { Arrival, Room, RoomMember } from "./roomTypes";
 import { confirmReady, joinBarrier, openBarrier } from "./syncBarrier";
 import { touch } from "./syncSchedule";
@@ -113,6 +113,26 @@ export function arrivingFreezeTicks(
 ): number {
   if (reported === undefined || isArrivingDevice(room, userId, deviceKey)) return wtPositionTicksAt(room, now);
   return reported;
+}
+
+/**
+ * L'arrivant ferme son lecteur avant d'être prêt : un retour arrière (il
+ * n'arrivera pas), ou un REMONTAGE du lecteur qui se redéclare aussitôt (React
+ * en développement, changement de route) — la salle l'attend encore
+ * WT_ARRIVAL_LEAVE_GRACE_MS, puis repart sans lui. Vrai si l'attente tient.
+ */
+export function holdArrivalLeave(room: Room, userId: string): boolean {
+  const arrival = room.arrivals.get(userId);
+  if (!arrival) return false;
+  if (arrival.timer) clearTimeout(arrival.timer);
+  arrival.declared = false;
+  arrival.timer = setTimeout(() => {
+    arrival.timer = null;
+    if (room.arrivals.get(userId) !== arrival || arrival.declared) return;
+    abandonArrival(room, userId, Date.now());
+    expiryHandler?.(room);
+  }, WT_ARRIVAL_LEAVE_GRACE_MS);
+  return true;
 }
 
 /** Le premier « prêt » de l'appareil qui arrive : il est arrivé. */

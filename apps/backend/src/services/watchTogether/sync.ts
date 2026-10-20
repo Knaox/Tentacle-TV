@@ -14,7 +14,7 @@ import { loadedDuringSeekBarrier } from "./syncGuards";
 import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
 import { armReadyGate, isStartingMember } from "./syncReadyGate";
 import { isStaleWtSeekToken } from "./watchTogetherSeekToken";
-import { arrivingFreezeTicks, finishArrival, noteArrivalOnPresence } from "./arrival";
+import { arrivingFreezeTicks, finishArrival, holdArrivalLeave, noteArrivalOnPresence } from "./arrival";
 import { arrivalHeldElsewhere, dropArrival, isArrivingDevice } from "./arrivalState";
 
 export { bumpEpoch } from "./syncSchedule";
@@ -223,8 +223,13 @@ export function applyCommand(
         touch(room, now);
         return { kind: "broadcast", cause: "presence" };
       }
-      // L'arrivant ferme son lecteur avant d'être prêt (retour arrière) : il n'arrive plus.
-      if (isArrivingDevice(room, member.userId, deviceKey)) dropArrival(room, member.userId);
+      // L'arrivant ferme son lecteur avant d'être prêt : retour arrière, ou
+      // remontage qui se redéclare aussitôt — la salle l'attend encore un instant.
+      if (isArrivingDevice(room, member.userId, deviceKey) && holdArrivalLeave(room, member.userId)) {
+        member.buffering = false;
+        touch(room, now);
+        return { kind: "broadcast", cause: "presence" };
+      }
       member.buffering = false;
       const resumed = pruneWaiting(room, member.userId, now);
       if (!resumed) touch(room, now);

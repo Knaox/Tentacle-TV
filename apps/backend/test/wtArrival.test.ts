@@ -8,9 +8,10 @@
  */
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { flush, lastState, loadWtRig, stubJellyfin, useWtClock, type Device, type WtRig } from "./wtRig";
-import { wtPositionTicksAt } from "../src/services/watchTogether/protocol";
-import { WT_ARRIVAL_TIMEOUT_MS } from "../src/services/watchTogether/protocol";
+import { flush, lastState, loadWtRig, states, stubJellyfin, useWtClock, type Device, type WtRig } from "./wtRig";
+import {
+  WT_ARRIVAL_LEAVE_GRACE_MS, WT_ARRIVAL_TIMEOUT_MS, wtPositionTicksAt,
+} from "../src/services/watchTogether/protocol";
 
 vi.mock("../src/services/configStore", () => ({ getJellyfinUrl: () => "http://jf.test", getJellyfinApiKey: () => "cle-admin" }));
 vi.mock("../src/services/jwt", () => ({
@@ -123,14 +124,28 @@ describe("un arrivant qui n'arrive jamais ne bloque pas", () => {
     expect(lastState(alice).state.arrivingUserIds).toBeUndefined();
   });
 
-  it("retour arrière pendant son chargement : reprise aussitôt", async () => {
+  it("retour arrière pendant son chargement : reprise en 1,5 s", async () => {
     const inviteId = await rig.invite(alice, bob);
     await rig.call(bob, "POST", `/invites/${inviteId}/respond`, { accept: true });
     await rig.openPlayer(bob, "film");
     vi.advanceTimersByTime(3_000);
     await rig.send(bob, { type: "wt:presence", inPlayback: false });
+    vi.advanceTimersByTime(WT_ARRIVAL_LEAVE_GRACE_MS);
     expect(lastState(alice).state).toMatchObject({ paused: false, waitingForUserIds: [] });
     expect(lastState(alice).state.arrivingUserIds).toBeUndefined();
+  });
+
+  it("son lecteur se remonte (fermé puis rouvert aussitôt) : l'attente continue, rien ne repart", async () => {
+    const inviteId = await rig.invite(alice, bob);
+    await rig.call(bob, "POST", `/invites/${inviteId}/respond`, { accept: true });
+    alice.socket.send.mockClear();
+    await rig.openPlayer(bob, "film");
+    await rig.send(bob, { type: "wt:presence", inPlayback: false });
+    await rig.openPlayer(bob, "film");
+    vi.advanceTimersByTime(5_000);
+    expect(lastState(alice).state).toMatchObject({ paused: true, arrivingUserIds: ["b"] });
+    // Aucune reprise diffusée entre-temps.
+    expect(states(alice).filter((m) => !m.state.paused).length).toBe(0);
   });
 
   it("chargement trop long : le balayage le dit « ne peut pas lire » et la salle repart", async () => {
