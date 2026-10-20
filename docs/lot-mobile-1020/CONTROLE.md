@@ -105,6 +105,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | G2 | Code PIN vérifié par le serveur (jamais sur le client) | code | ☐ |
 | G3 | Carrousels d'accueil synchronisés (même ordre/contenu que le bureau, préférence du compte) | code + capture | ☐ |
 | G4 | Photo de profil (galerie / avatars) depuis la session de profil | code + capture | ☐ |
+| G4b | Photo de profil changeable À TOUT MOMENT sur mobile et iPad : Réglages › Compte › « Changer la photo » (galerie existante) ; photo des invités par le propriétaire ou un parent ; photo affichée partout où le profil apparaît (en-tête, Qui regarde ?, Famille, Watch Together…) | code + captures iPhone/iPad | ☐ |
 | G5 | Invitations Famille visibles à l'ouverture de l'app (registre des recouvrements du démarrage, sans écraser un autre recouvrement) | code + capture | ☐ |
 | G6 | « Êtes-vous encore là ? » (même règle que le bureau, partagée) | code + test | ☐ |
 | G7 | Capacités Famille respectées (`family.*`) ; serveur sans capacité → rien | test | ☐ |
@@ -206,7 +207,7 @@ Sur mobile, tablette ET web, pour tous les droits.
 | I4 | « Pour vous » (nouvel en-tête, Affinité) | captures | ☐ |
 | I5 | Watch Together de base (créer, rejoindre) | captures | ☐ |
 | I6 | Lecteur : heure/batterie, PiP, AirPlay ; hors ligne : Live Activity ; boutons | captures | ☐ |
-| I7 | Les mêmes sur iPad | captures | ☐ |
+| I7 | iPad PORTRAIT ET PAYSAGE, TOUS les rendus de toutes les sessions : réglages, premier lancement, galerie, Famille, droits en lecture seule, notifications, Live Activity, « Pour vous », boutons, lecteur (heure/batterie, PiP), Watch Together | une capture par rendu et par orientation dans `docs/lot-mobile-1020/` (nommées `ipad-<portrait|paysage>-<rendu>.png`) | ☐ |
 
 ## Défauts
 
