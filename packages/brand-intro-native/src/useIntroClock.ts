@@ -33,8 +33,11 @@ export interface IntroClockControl extends IntroClock {
   releaseDelay: SharedValue<number>;
   /** Arrivée ou renoncement : l'horloge ne compte plus aucune image. */
   stop: () => void;
-  /** Le plus long écart entre deux images une fois le son programmé (ms), et l'instant de la scène où il tombe. */
-  longestGap: SharedValue<{ ms: number; at: number }>;
+  /**
+   * Le journal des images (fil d'interface) : `[phase, écart en ms, …]`, phases de shared
+   * `INTRO_FRAME_PHASES` — bilan par `introFrameReport`. Coût : deux nombres par image.
+   */
+  frameLog: SharedValue<number[]>;
 }
 
 /**
@@ -57,7 +60,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
   const soundAsked = useSharedValue(false);
   const defaults = bootSoundLeads(null);
   const requestAt = useSharedValue(defaults.requestAt);
-  const longestGap = useSharedValue({ ms: 0, at: 0 });
+  const frameLog = useSharedValue<number[]>([]);
   const releaseDelay = useSharedValue(defaults.releaseDelayMs);
   const { onHold, onSound, onDone } = events;
 
@@ -68,6 +71,13 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
     last.value = now;
     if (previous < 0 || state.value === CLOCK.done || state.value === CLOCK.stopped) return;
     const elapsed = now - previous;
+    // 0 : l'assemblage ; 1 : l'attente sur le bouton (et la reprise) ; 2 : ta-dum et la plongée.
+    const phase = state.value === CLOCK.holding || state.value === CLOCK.releasing ? 1 : soundAsked.value || scene.value >= INTRO_HOLD_AT ? 2 : 0;
+    frameLog.modify((log) => {
+      "worklet";
+      log.push(phase, elapsed);
+      return log;
+    }, false);
     if (state.value === CLOCK.holding) {
       idle.value += elapsed;
       if (!ready.value) return;
@@ -86,8 +96,6 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       scene.value = INTRO_HOLD_AT + (now - releaseAt.value);
       return;
     }
-    // Une image qui traîne APRÈS le son se voit : la plongée saute d'autant (mesure du banc).
-    if (soundAsked.value && elapsed > longestGap.value.ms) longestGap.value = { ms: elapsed, at: scene.value };
     const next = scene.value + (soundAsked.value ? elapsed : Math.min(elapsed, MAX_FRAME_MS));
     if (!soundAsked.value && !ready.value && next >= INTRO_HOLD_AT) {
       scene.value = INTRO_HOLD_AT;
@@ -116,7 +124,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
 
   // Un objet stable : les effets qui en dépendent ne se rejouent pas à chaque rendu.
   return useMemo(
-    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, longestGap }),
-    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, longestGap],
+    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog }),
+    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, frameLog],
   );
 }

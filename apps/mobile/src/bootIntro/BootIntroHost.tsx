@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import type { IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
 import { Dimensions, StyleSheet, View } from "react-native";
 import { SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -8,6 +9,7 @@ import { BootIntroView, useBootIntroRun, useIntroScene } from "@tentacle-tv/bran
 import * as TENTACLE_ART from "@/components/tentacleArt.generated";
 import { MOBILE_INTRO_PRIMITIVES } from "./introPrimitives";
 import { MOBILE_BOOT_SELF_REPORTING } from "./bootIntroRules";
+import { recordBootIntroFrames } from "./bootIntroFrames";
 
 export interface BootIntroHostProps {
   /** Le « ta-dum » l'accompagne (réglage « Son au démarrage »). */
@@ -33,7 +35,8 @@ export function BootIntroHost({ sound, screenColor, children }: BootIntroHostPro
   const [safe] = useState(() => ({ top: insets.top, right: insets.right, bottom: insets.bottom, left: insets.left }));
   const scene = useIntroScene(TENTACLE_ART, viewport, { deviceWindow: true, safe });
   const [soundWanted] = useState(() => Promise.resolve(sound));
-  const { clock, landed } = useBootIntroRun({ soundWanted, selfReporting: MOBILE_BOOT_SELF_REPORTING });
+  const onFrameReport = useCallback((report: IntroFrameReport) => recordBootIntroFrames(report, viewport), [viewport]);
+  const { clock, landed } = useBootIntroRun({ soundWanted, selfReporting: MOBILE_BOOT_SELF_REPORTING, onFrameReport });
 
   // La première image de l'ouverture est l'encre de l'écran de lancement : on retire celui-ci dessous.
   const hideSplash = () => {
