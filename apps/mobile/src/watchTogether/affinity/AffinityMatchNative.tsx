@@ -6,7 +6,7 @@ import { useReducedMotion } from "react-native-reanimated";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { WtAffinityMatchDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
-import { FONT_FAMILY, RADIUS, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, useResponsive, useThemedStyles, type AppTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 import { formatNames, memberName } from "@tentacle-tv/shared";
 
@@ -32,6 +32,7 @@ export function AffinityMatchNative({ match, room, selfId, participantCount, onW
   const s = useThemedStyles(makeStyles);
   const client = useJellyfinClient();
   const reduced = useReducedMotion();
+  const { isTablet } = useResponsive();
   const [answering, setAnswering] = useState<Answer | null>(null);
   const enter = useRef(new Animated.Value(0)).current;
 
@@ -62,7 +63,7 @@ export function AffinityMatchNative({ match, room, selfId, participantCount, onW
   return (
     <View style={s.wrap} accessibilityViewIsModal testID="wt-affinity-match">
       <Animated.View style={{ opacity: enter, transform: [{ scale }] }}>
-        <Image source={{ uri: poster }} style={s.poster} contentFit="cover" accessibilityLabel={match.title} />
+        <Image source={{ uri: poster }} style={[s.poster, isTablet && s.posterLarge]} contentFit="cover" accessibilityLabel={match.title} />
       </Animated.View>
       <Text style={s.title} accessibilityRole="header">{t("affinityMatchTitle")}</Text>
       <Text style={s.subtitle}>{subtitle}</Text>
@@ -81,9 +82,11 @@ export function AffinityMatchNative({ match, room, selfId, participantCount, onW
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   wrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10 },
   poster: { width: 180, height: 270, borderRadius: RADIUS.xl, backgroundColor: t.colors.fill.subtle },
+  posterLarge: { width: 260, height: 390 },
   title: { marginTop: 12, color: t.colors.text.primary, fontSize: 26, fontFamily: FONT_FAMILY.extrabold, textAlign: "center" },
   subtitle: { color: t.colors.text.secondary, fontSize: 15, lineHeight: 21, textAlign: "center", fontFamily: FONT_FAMILY.regular },
   meta: { color: t.colors.text.tertiary, fontSize: 13, fontFamily: FONT_FAMILY.regular },
-  actions: { alignSelf: "stretch", maxWidth: 420, width: "100%", marginTop: 12, gap: 10 },
+  // Centrés : `stretch` avec un plafond les calait à gauche sur iPad.
+  actions: { alignSelf: "center", maxWidth: 420, width: "100%", marginTop: 12, gap: 10 },
   small: { color: t.colors.text.tertiary, fontSize: 12, textAlign: "center", fontFamily: FONT_FAMILY.regular },
 });

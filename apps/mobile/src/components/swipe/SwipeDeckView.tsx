@@ -5,6 +5,8 @@ import { recoPosterUrl, swipeStackZ, useJellyfinClient } from "@tentacle-tv/api-
 import type { SwipeCard, SwipeCardDetails, SwipeVerdict } from "@tentacle-tv/api-client";
 import type { TitlePageLink } from "@tentacle-tv/shared";
 import { SwipeCardView } from "./SwipeCardView";
+import { swipeCardWidth } from "./swipeCardSize";
+import { SWIPE_CARD_LARGE_FROM, SwipeCardLargeContext } from "./swipeCardScale";
 
 /** Cartes montées : celle du dessus et deux en attente (affiches chargées d'avance). */
 const VISIBLE = 3;
@@ -37,6 +39,8 @@ interface Props {
   onOpenPage?: (href: string) => void;
   /** L'affinité de groupe : j'aime / pas pour moi seulement (voir `SwipeCardView`). */
   binary?: boolean;
+  /** Le plafond de largeur de la carte (défaut 420 ; la colonne sur iPad). */
+  maxCardWidth?: number;
 }
 
 /**
@@ -49,7 +53,7 @@ interface Props {
  */
 export function SwipeDeckView({
   cards, exiting, infoOpen, details, nextDetails, reducedMotion, onRelease, onExited, onToggleInfo,
-  topPage = null, pageSlotOf, onOpenPage, binary = false,
+  topPage = null, pageSlotOf, onOpenPage, binary = false, maxCardWidth,
 }: Props) {
   const { t } = useTranslation("swipe");
   const client = useJellyfinClient();
@@ -59,8 +63,7 @@ export function SwipeDeckView({
     const { width, height } = e.nativeEvent.layout;
     setBox({ w: width, h: height });
   }, []);
-  // 24 pt de marge pour les cartes en attente, qui dépassent en bas.
-  const cardW = Math.max(0, Math.min(box.w, (box.h - 24) * (2 / 3), 420));
+  const cardW = swipeCardWidth(box, maxCardWidth);
   const posterOf = (card: SwipeCard) =>
     recoPosterUrl(card, (id) => client.getImageUrl(id, "Primary", { width: 700, quality: 85 }), "w500");
 
@@ -93,6 +96,7 @@ export function SwipeDeckView({
   return (
     <View style={st.area} onLayout={onLayout}>
       {cardW > 0 && (
+        <SwipeCardLargeContext.Provider value={cardW >= SWIPE_CARD_LARGE_FROM}>
         <View style={{ width: cardW, height: cardW * 1.5 }}>
           {rows.map(({ card, depth, exit, info, face }) => (
             <SwipeCardView
@@ -119,6 +123,7 @@ export function SwipeDeckView({
             />
           ))}
         </View>
+        </SwipeCardLargeContext.Provider>
       )}
     </View>
   );

@@ -18,20 +18,57 @@
  */
 
 /** Le temps laissé au natif pour retirer la modale précédente, une fois démontée. */
-const SETTLE_MS = 60;
+export const SETTLE_MS = 60;
 
 let openCount = 0;
 let waiting: Array<() => void> = [];
+/** Avant cet instant, le natif retire encore la dernière modale démontée. */
+let quietAt = 0;
 
-/** À appeler quand une modale se monte ; le retour la libère (idempotent). */
-export function retainModal(): () => void {
+/**
+ * À appeler quand une modale se monte ; le retour la libère (idempotent).
+ * `exitMs` : une modale dont le natif ANIME la sortie (`animationType`
+ * « slide ») dit combien de temps UIKit la retire encore après son démontage
+ * — présenter une autre vue pendant cette sortie coince la pile de même.
+ */
+export function retainModal(exitMs: number = SETTLE_MS): () => void {
   openCount += 1;
   let released = false;
   return () => {
     if (released) return;
     released = true;
     openCount = Math.max(0, openCount - 1);
+    quietAt = Math.max(quietAt, Date.now() + exitMs);
     if (openCount === 0) drain();
+  };
+}
+
+/**
+ * Au-delà, une modale montée que le natif n'a jamais présentée (`onShow`
+ * jamais reçu) ne compte plus : iOS refuse de présenter depuis un contrôleur
+ * qui présente déjà autre chose (le lecteur), et une telle modale retenait
+ * le portier pour toujours — toute feuille gardée attendait sans fin (boîte
+ * des invitations, banc du 21/10).
+ */
+export const PRESENT_TIMEOUT_MS = 1500;
+
+export interface PresentedModalHold {
+  /** Le natif l'a présentée (`onShow` de la `Modal`). */
+  shown(): void;
+  release(): void;
+}
+
+/** Comme `retainModal`, mais libérée d'elle-même si `shown` n'arrive pas à temps. */
+export function holdPresentedModal(exitMs: number = SETTLE_MS): PresentedModalHold {
+  const release = retainModal(exitMs);
+  let timer: ReturnType<typeof setTimeout> | null = setTimeout(release, PRESENT_TIMEOUT_MS);
+  const stop = (): void => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+  return {
+    shown: stop,
+    release: () => { stop(); release(); },
   };
 }
 
@@ -40,17 +77,22 @@ function drain(): void {
   const pending = waiting;
   waiting = [];
   setTimeout(() => {
-    for (const run of pending) run();
-  }, SETTLE_MS);
+    // Une modale montée entre-temps : on attend aussi SA fermeture.
+    for (const run of pending) whenNoModal(run);
+  }, Math.max(0, quietAt - Date.now()));
 }
 
-/** Exécute `run` dès qu'aucune modale n'est montée — tout de suite si c'est déjà le cas. */
+/** Exécute `run` dès qu'aucune modale n'est montée ni ne se retire — au tick suivant si c'est déjà le cas. */
 export function whenNoModal(run: () => void): void {
-  if (openCount === 0) {
-    setTimeout(run, 0);
+  if (openCount > 0) {
+    waiting.push(run);
     return;
   }
-  waiting.push(run);
+  setTimeout(() => {
+    if (openCount > 0) waiting.push(run);
+    else if (quietAt > Date.now()) whenNoModal(run);
+    else run();
+  }, Math.max(0, quietAt - Date.now()));
 }
 
 /** Y a-t-il une modale à l'écran ? (diagnostic, tests) */

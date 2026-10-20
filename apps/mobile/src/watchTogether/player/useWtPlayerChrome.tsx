@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useWatchTogetherOrIdle, useWtChat } from "@tentacle-tv/api-client";
 import { TABLET_MIN_WIDTH } from "@/theme";
 import { WtReactionLayer } from "../chat/WtReactionLayer";
-import { typingLabelKey, waitingNotice } from "@tentacle-tv/shared";
+import { groupPanelLayout, typingLabelKey, waitingNotice } from "@tentacle-tv/shared";
 import { WtNoticeLayer } from "../notices/WtNoticeLayer";
 import { openWtSheet } from "../wtSheets";
 import { WtGroupPanel, type WtGroupPanelTab } from "./WtGroupPanel";
@@ -50,6 +50,14 @@ export function useWtPlayerChrome(itemId: string): WtPlayerChrome {
     setOpen((v) => !v);
   }, [open, chat.state.unread]);
 
+  // Sur téléphone en portrait, le panneau est lui-même une feuille : il se
+  // referme, et la feuille du groupe lui succède une fois retiré (`wtSheets`).
+  const sheetLayout = groupPanelLayout(width, height, TABLET_MIN_WIDTH) === "sheet";
+  const openRoom = useCallback(() => {
+    if (sheetLayout) setOpen(false);
+    openWtSheet("room");
+  }, [sheetLayout]);
+
   if (!active || !room) {
     return { active: false, open: false, close, button: null, panel: null, layers: null };
   }
@@ -79,7 +87,7 @@ export function useWtPlayerChrome(itemId: string): WtPlayerChrome {
         onSendGif={chat.sendGif}
         typingText={typingText}
         onTyping={chat.notifyTyping}
-        onOpenRoom={() => openWtSheet("room")}
+        onOpenRoom={openRoom}
         onClose={close}
       />
     ),
