@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { PanelFrame } from "../../../player/panels/panelLayout";
@@ -30,11 +30,18 @@ export function PlayerMenuPanel({ menu, frame, sections, onSelect, onClose }: Pr
   const titled = showSectionTitles(ids);
   // En-tête ≈ 52 pt : le reste défile si la liste est longue (vingt pistes de sous-titres).
   const listMax = Math.max(120, Math.min(frame.maxHeight, height) - 52);
+  // Une liste plus longue que le panneau le montre d'emblée : iOS fait
+  // clignoter l'indicateur de défilement (« French » était sous le bord, sans indice).
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => scrollRef.current?.flashScrollIndicators(), 350);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <PanelSurface frame={frame} onClose={onClose}>
       <PanelHeader title={t(menuTitleKey(menu, ids))} onClose={onClose} />
-      <ScrollView style={{ maxHeight: listMax }} contentContainerStyle={st.content} showsVerticalScrollIndicator={false} bounces={false}>
+      <ScrollView ref={scrollRef} style={{ maxHeight: listMax }} contentContainerStyle={st.content} indicatorStyle="white" bounces={false}>
         {sections.map((section, index) => (
           <Fragment key={section.id}>
             {index > 0 && <View style={st.sectionGap} />}
