@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, PairIcon, SettingsIcon, StatsIcon } from "../userMenu/icons";
+import { useAccountAbilities } from "@tentacle-tv/api-client";
+import { abilityRefusals } from "../userMenu/abilityRefusals";
 import { profileSessionRefusals } from "../userMenu/menuItems";
 import { useActiveProfile } from "../../auth/profileSession";
 import { useProfileMenuItems } from "../../profiles/switcher/useProfileMenuItems";
@@ -26,13 +28,17 @@ interface LinkDef {
  * famille : « Changer de profil » en tête, dans son propre bloc, comme dans
  * le menu de l'avatar (`useProfileMenuItems`) — sur macOS, la barre du haut
  * d'une fenêtre étroite passe sous la bande de la fenêtre : cette page est
- * alors le seul chemin vers « Qui regarde ? ».
+ * alors le seul chemin vers « Qui regarde ? ». Les droits de la SESSION
+ * (`abilityRefusals`, ceux du menu de l'avatar) taisent en plus admin,
+ * jumelage et Aide quand le serveur les refuse.
  */
 export function ProfileLinks({ isAdmin }: Props) {
   const { t } = useTranslation("nav");
   const navigate = useNavigate();
   const active = useActiveProfile();
-  const refused = active ? profileSessionRefusals({ guest: active.kind === "guest" }) : null;
+  const byProfile = active ? profileSessionRefusals({ guest: active.kind === "guest" }) : null;
+  const byAbilities = abilityRefusals(useAccountAbilities());
+  const refused = new Set([...(byProfile ?? []), ...byAbilities]);
   const profileItems = useProfileMenuItems(noop);
 
   const links: LinkDef[] = [
@@ -65,7 +71,7 @@ export function ProfileLinks({ isAdmin }: Props) {
         aria-label={t("profile")}
       >
         <ul className="divide-y divide-line-subtle">
-          {links.filter((link) => !refused?.has(link.key)).map((link) => (
+          {links.filter((link) => !refused.has(link.key)).map((link) => (
             <li key={link.key}>
               <LinkRow icon={link.icon} label={link.label} onClick={() => navigate(link.path)} />
             </li>

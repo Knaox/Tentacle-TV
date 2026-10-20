@@ -16,7 +16,12 @@ const state = vi.hoisted(() => ({
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ clear: () => undefined }) }));
-vi.mock("@tentacle-tv/api-client", () => ({ useAuth: () => ({ logout: { mutate: () => undefined } }) }));
+vi.mock("@tentacle-tv/api-client", () => ({
+  useAuth: () => ({ logout: { mutate: () => undefined } }),
+  // Un serveur qui ne dit rien des droits de la session : les règles d'avant suffisent.
+  useAccountAbilities: () => ({ kind: "legacy" }),
+  mayShow: (_state: unknown, _ability: string, legacy = true) => legacy,
+}));
 vi.mock("../../desktop/bridge", () => ({ isDesktopApp: () => true }));
 vi.mock("../../auth/profileSession", () => ({
   useActiveProfile: () => state.profile,
