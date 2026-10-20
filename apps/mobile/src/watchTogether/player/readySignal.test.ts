@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planReadySignal, READY_STABLE_MS, SEEK_STALL_MS } from "./readySignal";
+import { planReadySignal, READY_STABLE_MS } from "./readySignal";
 
 describe("planReadySignal", () => {
   it("se tait tant que le média n'est pas chargé", () => {
@@ -10,8 +10,8 @@ describe("planReadySignal", () => {
     expect(planReadySignal({ ready: true, buffering: true, seeking: true })).toEqual({ buffering: true, delayMs: 0 });
   });
 
-  it("dit « je cale » après un saut qui traîne", () => {
-    expect(planReadySignal({ ready: true, buffering: false, seeking: true })).toEqual({ buffering: true, delayMs: SEEK_STALL_MS });
+  it("ne dit rien pendant un saut en vol (ni « je cale », ni « prêt »)", () => {
+    expect(planReadySignal({ ready: true, buffering: false, seeking: true })).toBeNull();
   });
 
   it("dit « prêt » après une lecture stable", () => {

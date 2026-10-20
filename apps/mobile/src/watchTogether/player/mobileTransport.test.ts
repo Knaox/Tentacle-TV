@@ -152,4 +152,26 @@ describe("createMobileTransport", () => {
     advance(SEEK_PAUSED_SETTLE_MS * 3);
     expect(transport.isSeeking!()).toBe(true);
   });
+
+  it("un saut HLS atterrit sur l'image clé d'avant la cible", () => {
+    const { transport, advance, playing } = setup();
+    playing(10);
+    transport.seekTo(40);
+    advance(300);
+    transport.reports.progress(35.2);
+    expect(transport.isSeeking!()).toBe(false);
+  });
+
+  it("un petit saut de correction n'atterrit pas sur une annonce d'avant l'ordre", () => {
+    const { transport, advance, playing } = setup();
+    playing(48);
+    transport.seekTo(49.5);
+    advance(200);
+    transport.reports.progress(48.1);
+    expect(transport.isSeeking!()).toBe(true);
+    advance(250);
+    transport.reports.progress(49.4);
+    expect(transport.isSeeking!()).toBe(false);
+  });
 });
+
