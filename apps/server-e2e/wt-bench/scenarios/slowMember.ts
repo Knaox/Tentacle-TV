@@ -136,7 +136,11 @@ export async function introGateScenario(ctx: ScenarioContext): Promise<void> {
     if (!clickedEarly) ctx.check("[bouton] « Passer l'intro » paraît une fois tous prêts", shown !== null);
     if (shown !== null) {
       const since = Date.now();
-      await b.clickText(SKIP_LABEL, 3_000);
+      await b.page.mouse.move(640, 400);
+      await ctx.dump("avant-clic");
+      const visibleB = await b.isVisible(SKIP_LABEL);
+      const clicked = await b.clickText(SKIP_LABEL, 3_000);
+      ctx.log(`clic de B sur « Passer l'intro » : bouton visible chez B=${visibleB}, clic=${clicked}`);
       const res = await waitAligned([a, b], { withinMs: 100, playing: true, since, timeoutMs: 15_000 });
       const p = await measureOnce([a, b]);
       ctx.check("[bouton] le saut de B emmène les deux après l'intro", (p.pos.A ?? 0) >= INTRO_END_S - 1 && (p.pos.B ?? 0) >= INTRO_END_S - 1,
