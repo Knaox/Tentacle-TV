@@ -225,6 +225,7 @@ export * from "./family/familyPickerStay";
 export * from "./family/familyPickerDevice";
 export * from "./family/profileSessionStore";
 export * from "./family/familyMobileProfiles";
+export * from "./family/familyMobileLaunch";
 export * from "./family/familyFaceColor";
 export * from "./firstRun";
 export * from "./family/familyProfileRefusal";

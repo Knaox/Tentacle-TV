@@ -436,14 +436,35 @@ pas la capacité : ni « Qui regarde ? », ni « Changer de profil », sans erre
   rechargement de page : la bascule vide le cache et fait avancer l'ÉPOQUE de
   session, sur laquelle `AppProviders` reconstruit son client
   (`apps/mobile/src/family/profiles/`).
-- **Le choix est MÉMORISÉ** (décision de Damien, 20/10) : « Qui regarde ? »
-  plein écran au premier lancement d'une famille d'au moins deux profils, puis
-  plus jamais sur cet appareil (`tentacle_mobile_profile_stay`, par serveur et
-  par compte), sauf choix caduc (profil disparu, code posé ou retiré), profil
-  bloqué, ou session de profil terminée. Jamais le compte ouvert sans son code
-  parce que la session d'un autre profil a pris fin (shared
-  `mobileProfileLaunch`). On change de profil dans Réglages › Compte
-  (`/who-is-watching`) ; la gestion des profils n'est jamais sur le sélecteur.
+- **Proposé à CHAQUE démarrage** (décision de Damien, 21/10, après l'alpha —
+  remplace le choix mémorisé du 20/10) : « Qui regarde ? » plein écran à chaque
+  démarrage À FROID d'une famille d'au moins deux profils, jamais au retour
+  d'arrière-plan (une décision par compte et par processus,
+  `nextLaunchDecision`). La case « Ne plus proposer au démarrage », ou
+  Réglages › Compte › « Qui regarde ? » au démarrage (portée Cet appareil,
+  ligne `askAtLaunch` du catalogue, rendue aussi par le web étroit), ouvre
+  directement le DERNIER profil choisi. La règle est celle du bureau
+  (`familyPickerDevice.ts`), dans le cadre du mobile : shared
+  `familyMobileLaunch.ts`. Deux mémoires par serveur et par compte : le dernier
+  profil choisi (`tentacle_mobile_profile_stay`, écrit à chaque choix) et le
+  choix de l'appareil (`tentacle_mobile_profile_launch` : `ask` / `stay`). Un
+  appareil d'avant le 21/10 n'a pas de choix : il reçoit le défaut (proposer),
+  son profil retenu reste le dernier choisi. Choix caduc (profil disparu, code
+  posé ou retiré), profil bloqué, session de profil terminée : « Qui regarde ? »
+  quand même. Jamais le compte ouvert sans son code parce que la session d'un
+  autre profil a pris fin. La politique d'ouverture de l'administration ne
+  règle que les ordinateurs et les TV : le serveur n'en porte aucune pour le
+  mobile (le jour où il en déclarera une, elle remplacera
+  `MOBILE_LAUNCH_POLICY`). On change de profil dans Réglages › Compte ; la
+  gestion des profils n'est jamais sur le sélecteur.
+- **La photo d'un profil sans photo** est proposée à son entrée (galerie en mode
+  « invite », une fois par sujet et par appareil, après les autres
+  recouvrements — jamais par-dessus « Qui regarde ? » ni le PIN). Le sujet et
+  sa photo : shared `avatarInviteSubject` — en session de profil, la photo dite
+  par le SERVEUR (liste de « Qui regarde ? », sinon la marque du profil),
+  jamais `/Users/Me`, que le jeton d'appareil d'un profil ne lit pas (l'alpha
+  du 21/10 : l'invitation et l'étape « Votre photo » attendaient un constat
+  qui ne venait jamais).
 - **Fin d'une session de profil** : un 401 au rafraîchissement ramène en
   coulisse à la session personnelle, puis « Qui regarde ? » — jamais une
   reconnexion par les identifiants. La déconnexion du compte prévient le
