@@ -60,7 +60,8 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "./plugins/withTransferLiveActivity"
     ],
     "extra": {
       "router": {
