@@ -57,7 +57,7 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
         title: s("account.familyGroup"),
         entries: [
           // Cachée face à un serveur sans Famille (ou Famille coupée).
-          { kind: "screen", id: "family", icon: "users", label: p("family"), requires: ["family", "personal"] },
+          { kind: "screen", id: "family", icon: "users", label: p("family"), requires: ["family", "familyEntry", "personal"] },
           { kind: "control", id: "switchProfile", requires: ["family", "canSwitchProfile"] },
         ],
       },

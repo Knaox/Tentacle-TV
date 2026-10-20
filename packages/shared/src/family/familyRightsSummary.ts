@@ -10,12 +10,16 @@
  * rien : un champ absent (serveur d'avant, appelant qui ne peut pas régler ce
  * profil) ne donne pas de ligne, jamais une valeur supposée.
  *
+ * Ce que l'administration a coupé n'a PAS de ligne (retours de l'alpha, 21/10) :
+ * « Peut demander des films » sans `features.family.guestRequests`, « Peut créer
+ * des invités » sans les profils invités (`features.family.guests`).
+ *
  * Âge : le contrôle VOULU recoupé par le PLAFOND (créateur d'un invité, base de
  * l'administrateur d'un membre) — ce que Jellyfin applique vraiment. Les
  * scores de Jellyfin 10.11 sont des âges (docs/DROITS-UTILISATEURS.md § 9.8.2).
  */
 
-import type { FamilyProfileDto } from "./familyContract";
+import type { FamilyCapability, FamilyProfileDto } from "./familyContract";
 import type { FamilyLibrariesDto } from "./familyLibraries";
 import type { GuestParentalControls } from "./familyParental";
 
@@ -53,6 +57,9 @@ export interface FamilyRightsSummaryInput {
   profile: FamilyProfileDto;
   /** Les bibliothèques du profil (`GET /api/family/profiles/:userId/libraries`) ; absent : pas de ligne. */
   libraries?: FamilyLibrariesDto | null;
+  /** `GET /api/config` › `features.family` : ce que l'administration permet. Absent : toutes les
+   *  lignes, comme avant. */
+  family?: Pick<FamilyCapability, "guests" | "guestRequests">;
 }
 
 /** La note maximale que Jellyfin applique : la plus stricte du voulu et du plafond (null : aucune). */
@@ -101,7 +108,7 @@ function parentalLines(profile: FamilyProfileDto): RightsSummaryLine[] {
   return lines;
 }
 
-function guestLines(profile: FamilyProfileDto): RightsSummaryLine[] {
+function guestLines(profile: FamilyProfileDto, family: FamilyRightsSummaryInput["family"]): RightsSummaryLine[] {
   const rights = profile.guestRights ?? null;
   const request: RightsSummaryLine = rights?.suspended
     ? { kind: "requestTitles", tone: "denied", key: "requestTitles.suspended" }
@@ -109,17 +116,17 @@ function guestLines(profile: FamilyProfileDto): RightsSummaryLine[] {
       ? { kind: "requestTitles", tone: "allowed", key: "requestTitles.on" }
       : { kind: "requestTitles", tone: "denied", key: "requestTitles.off" };
   return [
-    request,
+    ...(family && family.guestRequests !== true ? [] : [request]),
     // Fixés par le serveur pour tout invité (`profileSessionLimits.ts`) : dits, jamais réglables.
     { kind: "watchTogether", tone: "denied", key: "watchTogether.guest" },
     { kind: "offline", tone: "denied", key: "offline.guest" },
   ];
 }
 
-function memberLines(profile: FamilyProfileDto): RightsSummaryLine[] {
+function memberLines(profile: FamilyProfileDto, family: FamilyRightsSummaryInput["family"]): RightsSummaryLine[] {
   const lines: RightsSummaryLine[] = [];
   if (profile.parent) lines.push({ kind: "parent", tone: "allowed", key: "parent" });
-  if (profile.rights) {
+  if (profile.rights && family?.guests !== false) {
     lines.push(profile.rights.createGuests
       ? { kind: "createGuests", tone: "allowed", key: "createGuests.on" }
       : { kind: "createGuests", tone: "denied", key: "createGuests.off" });
@@ -133,11 +140,11 @@ function memberLines(profile: FamilyProfileDto): RightsSummaryLine[] {
  * Le résumé d'un profil. Le propriétaire n'a rien à résumer : ses droits sont
  * ceux de son compte, que seule l'administration règle (aucune ligne).
  */
-export function familyRightsSummary({ profile, libraries }: FamilyRightsSummaryInput): FamilyRightsSummary {
+export function familyRightsSummary({ profile, libraries, family }: FamilyRightsSummaryInput): FamilyRightsSummary {
   if (profile.kind === "owner") return { lines: [], editElsewhere: false };
   const lines: RightsSummaryLine[] = [];
   if (libraries) lines.push(librariesLine(libraries));
   lines.push(...parentalLines(profile));
-  lines.push(...(profile.kind === "guest" ? guestLines(profile) : memberLines(profile)));
+  lines.push(...(profile.kind === "guest" ? guestLines(profile, family) : memberLines(profile, family)));
   return { lines, editElsewhere: lines.some((line) => line.tone !== "info") };
 }

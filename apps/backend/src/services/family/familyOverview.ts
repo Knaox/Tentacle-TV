@@ -200,9 +200,10 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
       ? [{ familyId: family.id, ownerUserId: family.owner.userId, ownerName: family.owner.name, since: family.since ?? "" }]
       : [];
 
+  const switches = getFamilySwitches();
   return {
     v: FAMILY_CONTRACT_VERSION,
-    switches: getFamilySwitches(),
+    switches,
     account: {
       canOwn: !guest && !review && mine?.role !== "member",
       canJoin: !guest && !review && mine === null,
@@ -215,7 +216,9 @@ export async function buildOverview(caller: OverviewCaller, now: number): Promis
     family,
     owned,
     memberships,
-    incoming: caller.personal && mine === null ? await incomingOf(caller, users, now) : [],
+    // Familles coupées : une invitation ne s'accepte plus (`requireFamilies`) — elle se tait, gardée
+    // pour le jour où l'administration les rallume.
+    incoming: caller.personal && mine === null && switches.families ? await incomingOf(caller, users, now) : [],
     limits: { maxProfiles: FAMILY_MAX_PROFILES, maxGuests: FAMILY_MAX_GUESTS },
   };
 }

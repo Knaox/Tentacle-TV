@@ -106,3 +106,15 @@ describe("les droits d'un membre", () => {
     expect(h.state!.db.data.familyMember.find((m) => m.userId === IDS.lea)?.canCreateGuests ?? false).toBe(false);
   });
 });
+
+describe("profils invités coupés par l'administration", () => {
+  it("« peut créer des invités » ne se donne plus (refus `family.guests_disabled`) ; il se retire toujours", async () => {
+    await leaMember();
+    expect((await setRights(tokens.damien, IDS.lea, { createGuests: true })).statusCode).toBe(200);
+    h.state!.config.set("family_guests_enabled", "false");
+    const refused = await setRights(tokens.damien, IDS.lea, { createGuests: true });
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json().code).toBe("family.guests_disabled");
+    expect((await setRights(tokens.damien, IDS.lea, { createGuests: false })).statusCode).toBe(200);
+  });
+});
