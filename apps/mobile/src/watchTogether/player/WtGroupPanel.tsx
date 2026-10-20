@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Settings2, X } from "lucide-react-native";
+import type { GifItem } from "@tentacle-tv/api-client";
 import type { WtChatMessageDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { FONT_FAMILY, PLAYER, RADIUS } from "@/theme";
@@ -30,6 +31,7 @@ export const WtGroupPanel = memo(function WtGroupPanel(props: {
   messages: readonly WtChatMessageDto[];
   onSend: (text: string) => void;
   onReact: (emoji: string) => void;
+  onSendGif: (gif: GifItem) => void;
   onOpenRoom: () => void;
   /** Absent : le panneau ne se ferme pas d'ici (la feuille a son geste). */
   onClose?: () => void;
@@ -52,7 +54,7 @@ export const WtGroupPanel = memo(function WtGroupPanel(props: {
         )}
       </View>
       {tab === "chat" ? (
-        <WtChatPanel messages={props.messages} selfId={selfId} onSend={props.onSend} onReact={props.onReact} />
+        <WtChatPanel messages={props.messages} selfId={selfId} onSend={props.onSend} onReact={props.onReact} onSendGif={props.onSendGif} />
       ) : (
         <ScrollView contentContainerStyle={st.members}>
           {rows.map(({ member, isSelf, state }) => (

@@ -72,6 +72,7 @@ export function useWtPlayerChrome(itemId: string): WtPlayerChrome {
         messages={chat.state.messages}
         onSend={chat.sendChat}
         onReact={chat.sendReaction}
+        onSendGif={chat.sendGif}
         onOpenRoom={() => openWtSheet("room")}
         onClose={close}
       />
