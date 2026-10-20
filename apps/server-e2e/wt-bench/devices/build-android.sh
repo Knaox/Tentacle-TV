@@ -10,6 +10,8 @@ cd "$REPO/apps/mobile/android"
 # google-services.json est ignoré par git : repris du dépôt principal s'il manque.
 MAIN_GS="$HOME/Desktop/Projet - local/Tentacle-TV/apps/mobile/android/app/google-services.json"
 [[ -f app/google-services.json || ! -f "$MAIN_GS" ]] || cp "$MAIN_GS" app/
+# local.properties est ignoré par git : le SDK Android du Mac.
+[[ -f local.properties ]] || echo "sdk.dir=${ANDROID_HOME:-$HOME/Library/Android/sdk}" > local.properties
 ./gradlew --no-daemon -q assembleDebug
 ./gradlew --stop >/dev/null 2>&1 || true
 mkdir -p "$OUT"
