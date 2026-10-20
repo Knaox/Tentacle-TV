@@ -11,8 +11,8 @@ import { useResponsive, useTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
 
 /**
- * La cloche de l'en-tête et son centre : une feuille du bas sur le téléphone,
- * un panneau ancré sous la cloche sur la tablette (comme le menu du bureau).
+ * La cloche de l'en-tête et son centre : une feuille à crans sur le téléphone
+ * (moitié, puis plein écran), un panneau latéral à droite sur la tablette.
  * Le contenu est le même (`NotificationCenter`) ; la pastille dit les non
  * lues, rafraîchies à l'instant où une notification s'écrit (socket partagé).
  */
@@ -35,8 +35,6 @@ export function NotificationBell() {
   }, []);
   const close = useCallback(() => setVisible(false), []);
 
-  const center = <NotificationCenter unread={count} onLeave={close} />;
-
   return (
     <>
       <Pressable onPress={openCenter} hitSlop={12} style={{ position: "relative" }} accessibilityRole="button" accessibilityLabel={count > 0 ? `${t("title")}, ${t("unreadCount", { count })}` : t("title")}>
@@ -48,11 +46,17 @@ export function NotificationBell() {
         )}
       </Pressable>
 
-      {isTablet ? (
-        <NotificationPanelTablet visible={visible} onClose={close}>{visible ? center : null}</NotificationPanelTablet>
-      ) : (
-        <BottomSheet visible={visible} onClose={close} snapPoints={[0.5, 1.0]}>{center}</BottomSheet>
-      )}
+      <NotificationCenter
+        open={visible}
+        unread={count}
+        onClose={close}
+        frame={(header, body) => (isTablet ? (
+          <NotificationPanelTablet visible={visible} onClose={close} header={header}>{body}</NotificationPanelTablet>
+        ) : (
+          // Moitié de l'écran, puis plein écran en la tirant vers le haut.
+          <BottomSheet visible={visible} onClose={close} snapPoints={[0.55, 1.0]} header={header}>{body}</BottomSheet>
+        ))}
+      />
     </>
   );
 }

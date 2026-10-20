@@ -1,33 +1,30 @@
-import { useCallback, useMemo, useState } from "react";
-import { Alert, SectionList, Text, View } from "react-native";
+import { useCallback, type ReactNode } from "react";
+import { SectionList, Text, type SectionListProps } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Feather } from "@expo/vector-icons";
 import {
   formatNotifTitle,
-  groupNotificationsByDay,
   notificationAgo,
-  notificationHasDestination,
-  notificationNeedsPlugins,
   notifBodyText,
   type AppNotification,
+  type NotificationPeriod,
 } from "@tentacle-tv/api-client";
-import {
-  useDeleteAllNotificationsMobile,
-  useDeleteNotificationMobile,
-  useDeleteNotificationsMobile,
-  useMarkAllReadMobile,
-  useMarkReadMobile,
-  useNotificationsMobile,
-} from "@/hooks/useNotificationsMobile";
-import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
 import { ProblemState } from "@/components/problems/ProblemState";
 import { usePageProblem } from "@/components/problems/usePageProblem";
-import { useOpenNotification } from "@/notifications/useOpenNotification";
-import { spacing, typography, useTheme } from "@/theme";
-import { NotifSheetHeader } from "./NotifSheetHeader";
+import { useBottomSheetScroll } from "@/components/ui/sheet/sheetScroll";
+import { spacing, useTheme } from "@/theme";
+import { NotifCenterHeader } from "./NotifCenterHeader";
+import { NotifEmptyState } from "./NotifEmptyState";
 import { SwipeableNotifRow } from "./SwipeableNotifRow";
+import { useNotificationCenter } from "./useNotificationCenter";
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+const PERIOD_KEY: Record<NotificationPeriod, string> = {
+  today: "groupToday",
+  yesterday: "groupYesterday",
+  week: "groupThisWeek",
+  earlier: "groupEarlier",
+};
 
 /** « il y a … » des clés du mobile, la date au-delà d'une semaine (règle partagée). */
 function formatAgo(createdAt: string, t: Translate, locale: string): string {
@@ -41,138 +38,100 @@ function formatAgo(createdAt: string, t: Translate, locale: string): string {
   }
 }
 
-/**
- * Le centre des notifications — le même contenu dans la feuille du téléphone
- * et dans le panneau de la tablette : l'en-tête (non lues, tout marquer lu,
- * sélection, tout supprimer), puis les notifications par jour. Toucher une
- * ligne la marque lue et ouvre SA destination (`useOpenNotification`, la même
- * que pour une push) ; `onLeave` retire la feuille juste avant.
- */
-export function NotificationCenter({ unread, onLeave }: { unread: number; onLeave: () => void }) {
-  const { t, i18n } = useTranslation("notifications");
-  const { colors } = useTheme();
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const { data: notifications, error, refetch, isRefetching } = useNotificationsMobile();
-  // Une liste qui n'a pas pu se lire n'est pas « aucune notification ».
-  const failure = usePageProblem(notifications ? null : error, {
-    target: "tentacle", availability: { canGoBack: false }, onRetry: () => void refetch(),
-  });
-  const markAll = useMarkAllReadMobile();
-  const markOne = useMarkReadMobile();
-  const deleteOne = useDeleteNotificationMobile();
-  const deleteBatch = useDeleteNotificationsMobile();
-  const deleteAll = useDeleteAllNotificationsMobile();
-  const { data: plugins } = useActivePlugins();
-  const pluginMeta = useMemo(() => toNotifPluginMeta(plugins ?? []), [plugins]);
-  const open = useOpenNotification();
-
-  const list = useMemo(() => notifications ?? [], [notifications]);
-  const sections = useMemo(
-    () => groupNotificationsByDay(list).map(({ group, items }) => ({ key: group, data: items })),
-    [list],
-  );
-
-  const toggle = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const exitSelection = useCallback(() => {
-    setSelectionMode(false);
-    setSelected(new Set());
-  }, []);
-
-  const selectAll = useCallback(() => {
-    setSelected((prev) => (prev.size === list.length ? new Set() : new Set(list.map((n) => n.id))));
-  }, [list]);
-
-  const handlePress = useCallback((n: AppNotification) => {
-    if (!n.read) markOne.mutate(n.id);
-    // Sans destination, elle se marque lue et la feuille reste (le bureau fait
-    // de même). Extensions pas encore lues : on ne sait pas, l'ouverture les lira.
-    const leads = notificationHasDestination(n, "mobile", pluginMeta) || n.target?.kind === "title"
-      || (!plugins && notificationNeedsPlugins(n));
-    if (!leads) return;
-    onLeave();
-    exitSelection();
-    void open(n, "center");
-  }, [markOne, pluginMeta, plugins, onLeave, exitSelection, open]);
-
-  const handleDeleteAll = useCallback(() => {
-    Alert.alert(t("deleteAll"), t("confirmDeleteAll"), [
-      { text: t("cancel"), style: "cancel" },
-      { text: t("confirm"), style: "destructive", onPress: () => deleteAll.mutate() },
-    ]);
-  }, [t, deleteAll]);
-
-  const handleDeleteSelected = useCallback(() => {
-    deleteBatch.mutate([...selected], { onSettled: exitSelection });
-  }, [selected, deleteBatch, exitSelection]);
-
-  return (
-    <>
-      <NotifSheetHeader
-        selectionMode={selectionMode}
-        selectedCount={selected.size}
-        unread={unread}
-        total={list.length}
-        onMarkAll={() => markAll.mutate()}
-        onSelect={() => setSelectionMode(true)}
-        onSelectAll={selectAll}
-        onDeleteAll={handleDeleteAll}
-        onDeleteSelected={handleDeleteSelected}
-        onCancel={exitSelection}
-      />
-      <SectionList
-        sections={sections}
-        keyExtractor={(n) => n.id}
-        stickySectionHeadersEnabled={false}
-        renderSectionHeader={({ section }) => (
-          <Text style={{ fontSize: 12, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", color: colors.text.quaternary, marginBottom: 8, marginTop: 10 }}>
-            {t(section.key === "today" ? "groupToday" : "groupEarlier")}
-          </Text>
-        )}
-        contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, paddingTop: 4, paddingBottom: 24 }}
-        ListEmptyComponent={failure.model ? (
-          <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={isRefetching ? "retry" : null} />
-        ) : (
-          <EmptyNotifications t={t} />
-        )}
-        renderItem={({ item: n }) => (
-          <SwipeableNotifRow
-            notif={n}
-            formattedTitle={formatNotifTitle(n, t)}
-            formattedBody={notifBodyText(n)}
-            formattedAgo={formatAgo(n.createdAt, t, i18n.language)}
-            hasRoute={notificationHasDestination(n, "mobile", pluginMeta)}
-            onPress={() => handlePress(n)}
-            onDelete={() => deleteOne.mutate(n.id)}
-            selectionMode={selectionMode}
-            isSelected={selected.has(n.id)}
-            onToggleSelect={() => toggle(n.id)}
-            onLongPress={() => { setSelectionMode(true); toggle(n.id); }}
-          />
-        )}
-      />
-    </>
-  );
+interface Props {
+  open: boolean;
+  unread: number;
+  /** Retirer le centre (avant une navigation, ou par la croix). */
+  onClose: () => void;
+  /** Le cadre qui le présente : feuille du téléphone, panneau de la tablette. L'en-tête est à part (il prend le glissement de la feuille). */
+  frame: (header: ReactNode, body: ReactNode) => ReactNode;
 }
 
-/** L'état vide du bureau : une cloche sur un aplat du dégradé de marque, deux lignes. */
-function EmptyNotifications({ t }: { t: Translate }) {
+/**
+ * Le centre des notifications, le même dans la feuille et dans le panneau :
+ * en-tête fixe (filtres, tout marquer comme lu, menu), puis les
+ * notifications par période. Toucher ouvre SA destination ; glisser marque
+ * lue ou supprime ; l'appui long sélectionne.
+ */
+export function NotificationCenter({ open, unread, onClose, frame }: Props) {
+  const { t, i18n } = useTranslation("notifications");
   const { colors } = useTheme();
-  return (
-    <View style={{ alignItems: "center", marginTop: 40, paddingHorizontal: 32 }}>
-      <View style={{ width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: colors.brand.soft, marginBottom: 16 }}>
-        <Feather name="bell" size={24} color={colors.brand.light} />
-      </View>
-      <Text style={{ ...typography.body, color: colors.text.primary, fontWeight: "700", textAlign: "center" }}>{t("emptyTitle")}</Text>
-      <Text style={{ ...typography.caption, color: colors.text.tertiary, textAlign: "center", marginTop: 6 }}>{t("emptyHint")}</Text>
-    </View>
+  const c = useNotificationCenter({ open, onLeave: onClose });
+  // Une liste qui n'a pas pu se lire n'est pas « aucune notification ».
+  const failure = usePageProblem(c.query.data ? null : c.query.error, {
+    target: "tentacle", availability: { canGoBack: false }, onRetry: () => void c.query.refetch(),
+  });
+
+  const { hasRoute, openOne, markRead, remove, selectionMode, selected, toggle, startSelection } = c;
+  const renderItem = useCallback(({ item: n }: { item: AppNotification }) => (
+    <SwipeableNotifRow
+      notif={n}
+      title={formatNotifTitle(n, t)}
+      body={notifBodyText(n)}
+      ago={formatAgo(n.createdAt, t, i18n.language)}
+      hasRoute={hasRoute(n)}
+      onOpen={openOne}
+      onMarkRead={markRead}
+      onDelete={remove}
+      selectionMode={selectionMode}
+      isSelected={selected.has(n.id)}
+      onToggleSelect={toggle}
+      onLongPress={startSelection}
+    />
+  ), [t, i18n.language, hasRoute, openOne, markRead, remove, selectionMode, selected, toggle, startSelection]);
+
+  const header = (
+    <NotifCenterHeader
+      filter={c.filter}
+      onFilter={c.setFilter}
+      unread={unread}
+      total={c.visible.length}
+      selectionMode={c.selectionMode}
+      selectedCount={c.selected.size}
+      onMarkAll={c.markAll}
+      onMore={c.openMenu}
+      onSelectAll={c.selectAll}
+      onDeleteSelected={c.deleteSelected}
+      onCancelSelection={c.exitSelection}
+      onClose={onClose}
+    />
   );
+
+  const body = (
+    <SheetSectionList
+      sections={c.sections}
+      keyExtractor={(n) => n.id}
+      renderItem={renderItem}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) => (
+        <Text
+          accessibilityRole="header"
+          style={{ fontSize: 12, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", color: colors.text.quaternary, marginBottom: 8, marginTop: 14 }}
+        >
+          {t(PERIOD_KEY[section.key as NotificationPeriod])}
+        </Text>
+      )}
+      ListHeaderComponent={c.visible.length > 0 && !c.selectionMode ? (
+        <Text style={{ fontSize: 11.5, color: colors.text.quaternary, marginTop: 10 }}>{t("swipeHintBoth")}</Text>
+      ) : null}
+      contentContainerStyle={{ paddingHorizontal: spacing.screenPadding, paddingBottom: 32 }}
+      ListEmptyComponent={failure.model ? (
+        <ProblemState embedded model={failure.model} onAction={failure.onAction} busy={c.query.isRefetching ? "retry" : null} />
+      ) : c.query.data ? (
+        <NotifEmptyState filter={c.filter} onShowAll={() => c.setFilter("all")} />
+      ) : null}
+      keyboardShouldPersistTaps="handled"
+    />
+  );
+
+  return <>{frame(header, body)}</>;
+}
+
+/**
+ * La liste, branchée sur la feuille qui la porte (le crochet doit être lu
+ * SOUS la feuille : le corps y est rendu, le centre au-dessus).
+ */
+function SheetSectionList(props: SectionListProps<AppNotification>) {
+  const sheetScroll = useBottomSheetScroll();
+  return <SectionList {...props} {...sheetScroll} />;
 }
