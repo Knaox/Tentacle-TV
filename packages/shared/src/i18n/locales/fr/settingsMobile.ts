@@ -1,7 +1,7 @@
 /**
  * Les RÉGLAGES du mobile et de la tablette (structure de 2026-10-20) : les
  * rubriques, la pastille de portée « Compte » / « Cet appareil », les
- * sections « Sur tous tes appareils » / « Sur cet appareil » et la ligne
+ * sections « Sur tous vos appareils » / « Sur cet appareil » et la ligne
  * « Réglages avancés : sur l'app bureau ». Les libellés déjà posés ailleurs
  * (`profile`, `preferences`, `offline`) y restent : on ne renomme jamais une
  * clé existante.
@@ -13,9 +13,9 @@ export default {
   scope: {
     account: "Compte",
     device: "Cet appareil",
-    accountA11y: "Réglage du compte : il te suit sur tous tes appareils",
+    accountA11y: "Réglage du compte : il vous suit sur tous vos appareils",
     deviceA11y: "Réglage de cet appareil : il ne vaut qu'ici",
-    intro: "Les réglages marqués « Compte » te suivent sur tous tes appareils ; ceux marqués « Cet appareil » ne valent qu'ici.",
+    intro: "Les réglages marqués « Compte » vous suivent sur tous vos appareils ; ceux marqués « Cet appareil » ne valent qu'ici.",
   },
   sections: {
     account: "Compte",
@@ -43,8 +43,8 @@ export default {
     serverGroup: "Serveur",
   },
   playback: {
-    everywhere: "Sur tous tes appareils",
-    everywhereCaption: "Enregistrés dans ton compte : le bureau, la TV et ce téléphone les partagent.",
+    everywhere: "Sur tous vos appareils",
+    everywhereCaption: "Enregistrés dans votre compte : le bureau, la TV et ce téléphone les partagent.",
     thisDevice: "Sur cet appareil",
     thisDeviceCaption: "Propres à cet appareil : son écran, sa puce et son réseau.",
     intros: "Intros et résumés",
@@ -65,7 +65,7 @@ export default {
     dataSaver: "Économie de données",
     engine: "Lecteur vidéo",
     engineOptions: "Options du lecteur",
-    engineOptionsHint: "Pour les cas particuliers : laisse-les tels quels si tout se lit bien.",
+    engineOptionsHint: "Pour les cas particuliers : laissez-les tels quels si tout se lit bien.",
     subtitleSize: "Taille des sous-titres",
     subtitlePosition: "Position des sous-titres",
     engineAuto: "Auto",
@@ -78,6 +78,6 @@ export default {
     row: "Réglages avancés : sur l'app bureau",
     rowHint: "Délais, génériques, épisode suivant en détail…",
     title: "Réglages avancés",
-    body: "Les réglages fins de la lecture se font sur l'application de bureau (ou le site web) : délais avant chaque saut, génériques de fin des épisodes et des films, aperçus, fiche « à suivre » et affiche de fin, moment où l'épisode suivant est proposé, règles par bibliothèque. Ils sont enregistrés dans ton compte : ce téléphone les applique aussitôt.",
+    body: "Les réglages fins de la lecture se font sur l'application de bureau (ou le site web) : délais avant chaque saut, génériques de fin des épisodes et des films, aperçus, fiche « à suivre » et affiche de fin, moment où l'épisode suivant est proposé, règles par bibliothèque. Ils sont enregistrés dans votre compte : ce téléphone les applique aussitôt.",
   },
 };
