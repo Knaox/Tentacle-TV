@@ -19,9 +19,15 @@ export const EXTRAPOLATE_MAX_MS = 1_500;
 export const SEEK_SETTLE_MS = 150;
 /** Un saut sans atterrissage vu au-delà est tenu pour fini : la position seule fait foi. */
 export const SEEK_GIVE_UP_MS = 15_000;
-/** Atterri : la position annoncée dans cette fenêtre autour de la cible. */
-export const SEEK_LAND_BEFORE_S = 0.5;
+/**
+ * Atterri : la position annoncée dans cette fenêtre autour de la cible. Large
+ * AVANT la cible : un flux HLS repart de l'image clé du segment, jusqu'à
+ * quelques secondes plus tôt.
+ */
+export const SEEK_LAND_BEFORE_S = 8;
 export const SEEK_LAND_AFTER_S = 3;
+/** Atterri sans conteste : à moins de ça de la cible. */
+export const SEEK_LAND_EXACT_S = 0.5;
 /** Posé sur la cible de la barrière : à moins de ça (cf. `isSettledAt`). */
 export const SETTLED_TOLERANCE_S = 0.15;
 /**
@@ -69,7 +75,8 @@ export function createMobileTransport(
   let buffering = true;
   let ready = false;
   let rate = 1;
-  let seek: { target: number; at: number } | null = null;
+  /** `from` : la position d'avant l'ordre — une annonce ne prouve l'atterrissage que si elle s'en est éloignée. */
+  let seek: { target: number; at: number; from: number } | null = null;
 
   /** Le saut est-il encore en vol ? (un saut trop vieux est oublié au passage) */
   const seekInFlight = (t: number): boolean => {
@@ -96,9 +103,12 @@ export function createMobileTransport(
     progress(filmSeconds) {
       const t = now();
       if (seek && t - seek.at >= SEEK_SETTLE_MS) {
-        const landed = filmSeconds >= seek.target - SEEK_LAND_BEFORE_S
-          && filmSeconds <= seek.target + SEEK_LAND_AFTER_S;
-        if (landed) seek = null;
+        const off = Math.abs(filmSeconds - seek.target);
+        const inWindow = filmSeconds >= seek.target - SEEK_LAND_BEFORE_S && filmSeconds <= seek.target + SEEK_LAND_AFTER_S;
+        // Une annonce encore d'AVANT le saut (petit saut de correction) n'atterrit pas :
+        // à la cible, ou nettement plus près d'elle qu'avant l'ordre.
+        const moved = off <= SEEK_LAND_EXACT_S || off < Math.abs(seek.from - seek.target) - 0.25;
+        if (inWindow && moved) seek = null;
       }
       position = filmSeconds;
       positionAt = t;
@@ -144,7 +154,7 @@ export function createMobileTransport(
     },
     seekTo(seconds) {
       const target = Math.max(0, seconds);
-      seek = { target, at: now() };
+      seek = { target, at: now(), from: estimate(now()) };
       position = target;
       positionAt = now();
       commands.seek(target);
