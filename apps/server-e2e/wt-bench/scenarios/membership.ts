@@ -4,7 +4,7 @@
  */
 
 import type { WtRoomStateDto } from "../../../../packages/shared/src/types/watchTogether";
-import { measureWindow, stats, waitAligned, waitFor } from "../measure";
+import { measureWindow, waitAligned, waitFor } from "../measure";
 import type { ScenarioContext } from "./context";
 import { createGroup, inviteAndAccept, launch, leaveAny, waitOnItem } from "./group";
 
@@ -76,7 +76,7 @@ export async function threeMembersScenario(ctx: ScenarioContext): Promise<void> 
   const start = await waitAligned([a, b, c], { withinMs: 100, playing: true, since: launchAt, timeoutMs: 60_000, stable: 4 });
   ctx.metric("à trois : du lancement à l'alignement (< 100 ms)", start.ms === null ? "jamais" : `${start.ms} ms`, start.ms);
   await new Promise((ok) => setTimeout(ok, 45_000 - Math.min(45_000, Date.now() - launchAt)));
-  ctx.drift("à trois, régime (20 s)", stats(await measureWindow([a, b, c], 20_000)));
+  ctx.drift("à trois, régime (20 s)", await measureWindow([a, b, c], 20_000));
 
   // D, seul dans son propre groupe : aucune trame de la salle de A.
   const d = await ctx.member(users.d, "D");
@@ -100,4 +100,25 @@ export async function threeMembersScenario(ctx: ScenarioContext): Promise<void> 
   const g = (await a.api<WtRoomStateDto | null>("GET", `${WT}/group`)).json;
   ctx.check("le groupe garde A comme hôte, à deux", g?.hostUserId === users.a.id && g.members.length === 2);
   await leaveAny(d);
+}
+
+/**
+ * Invitation qui arrive PENDANT le chargement de l'accueil de l'invité (il
+ * vient d'ouvrir l'app) : la boîte aux invitations doit s'ouvrir comme si
+ * elle était arrivée une seconde plus tard. Trois essais.
+ */
+export async function inviteRaceScenario(ctx: ScenarioContext): Promise<void> {
+  const a = await ctx.member(ctx.state.users.a, "A");
+  const b = await ctx.member(ctx.state.users.b, "B");
+  for (let i = 1; i <= 3; i += 1) {
+    await leaveAny(b);
+    await createGroup(a);
+    await b.page.goto(`${ctx.state.webUrl}/`, { waitUntil: "commit" });
+    await a.api("POST", `${WT}/group/invites`, { userIds: [b.account.id] });
+    const shown = await waitFor(() => b.isVisible(/^Accepter$/), 8_000);
+    ctx.check(`essai ${i} : invitation reçue au chargement → boîte ouverte (« Accepter »)`, shown !== null);
+    const pending = await b.api<unknown[]>("GET", `${WT}/invites`);
+    ctx.log(`essai ${i} : invitations en attente côté B = ${Array.isArray(pending.json) ? pending.json.length : "?"}`);
+    await ctx.dump(`essai-${i}`);
+  }
 }

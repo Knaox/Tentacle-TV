@@ -5,7 +5,7 @@
  */
 
 import type { WtRoomStateDto } from "../../../../packages/shared/src/types/watchTogether";
-import { measureOnce, measureWindow, stats, waitAligned } from "../measure";
+import { measureOnce, measureWindow, waitAligned } from "../measure";
 import { INTRO_END_S } from "../media";
 import type { ScenarioContext } from "./context";
 import { settlePast, startSession } from "./session";
@@ -33,6 +33,6 @@ export async function networkScenario(ctx: ScenarioContext): Promise<void> {
     ctx.check(`coupure de ${outageS} s : A n'a pas été arrêté par la coupure de B`, !during.paused.A);
     const diss = s.b.received("wt:dissolved");
     ctx.check(`coupure de ${outageS} s : B n'a pas reçu « dissous »`, diss.length === 0);
-    if (res.ms !== null) ctx.drift(`après la coupure de ${outageS} s (10 s)`, stats(await measureWindow([s.a, s.b], 10_000)));
+    if (res.ms !== null) ctx.drift(`après la coupure de ${outageS} s (10 s)`, await measureWindow([s.a, s.b], 10_000));
   }
 }

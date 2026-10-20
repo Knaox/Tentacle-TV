@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { RUN_DIR } from "../env";
 import { launchBrowser, ScenarioContext, type ScenarioResult } from "./context";
 import { syncScenario } from "./sync";
-import { inviteScenario, threeMembersScenario } from "./membership";
+import { inviteRaceScenario, inviteScenario, threeMembersScenario } from "./membership";
 import { thirdDeviceScenario } from "./thirdDevice";
 import { introGateScenario, slowStartScenario } from "./slowMember";
 import { networkScenario } from "./network";
@@ -25,6 +25,7 @@ export interface Scenario {
 
 export const SCENARIOS: Scenario[] = [
   { id: "invite", title: "Création, invitation, acceptation (interface)", run: inviteScenario },
+  { id: "invite-race", title: "Invitation arrivée pendant le chargement de l'accueil", run: inviteRaceScenario },
   { id: "sync-direct", title: "Synchro en lecture directe : départ, régime, pause, lecture, seek, arrière-plan", run: (c) => syncScenario(c, false) },
   { id: "sync-transcode", title: "Synchro avec B en transcodage (1,5 Mb/s)", run: (c) => syncScenario(c, true) },
   { id: "slow-start", title: "Membre lent à démarrer (transcodage + segments retardés)", run: slowStartScenario },

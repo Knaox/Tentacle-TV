@@ -10,7 +10,7 @@
  */
 
 import type { WtRoomStateDto } from "../../../../packages/shared/src/types/watchTogether";
-import { measureWindow, stats, waitAligned, waitFor } from "../measure";
+import { measureWindow, waitAligned, waitFor } from "../measure";
 import type { ScenarioContext } from "./context";
 import { settlePast, startSession } from "./session";
 import { INTRO_END_S } from "../media";
@@ -63,7 +63,7 @@ export async function thirdDeviceScenario(ctx: ScenarioContext): Promise<void> {
   await a2.page.goto("about:blank");
   await a2.close();
   ctx.log("A2 fermé ; 15 s d'attente (grâce de goodbye : 10 s)");
-  const during = stats(await measureWindow([s.a, s.b], 15_000));
+  const during = await measureWindow([s.a, s.b], 15_000);
   const after = await s.b.api<WtRoomStateDto | null>("GET", `${WT}/group`);
   ctx.check("15 s après la fermeture de A2, A est toujours dans la salle",
     Boolean(after.json?.members.some((m) => m.userId === ctx.state.users.a.id)),

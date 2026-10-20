@@ -8,7 +8,7 @@
 
 import type { WtRoomStateDto } from "../../../../packages/shared/src/types/watchTogether";
 import type { WebClient } from "../clients/webClient";
-import { measureOnce, measureWindow, stats, waitAligned, waitFor } from "../measure";
+import { measureOnce, measureWindow, waitAligned, waitFor } from "../measure";
 import { INTRO_END_S } from "../media";
 import type { ScenarioContext } from "./context";
 import { createGroup, inviteAndAccept, launch, waitOnItem } from "./group";
@@ -53,7 +53,7 @@ export async function slowStartScenario(ctx: ScenarioContext): Promise<void> {
   const res = await waitAligned([a, b], { withinMs: 100, playing: true, since: launchAt, timeoutMs: 90_000, stable: 4 });
   ctx.metric("membre lent : du lancement à l'alignement (< 100 ms)", res.ms === null ? "jamais" : `${res.ms} ms`, res.ms);
   await waitFor(async () => ((await measureOnce([a, b])).pos.A ?? 0) > INTRO_END_S + 2, 60_000, 500);
-  ctx.drift("membre lent, régime (20 s)", stats(await measureWindow([a, b], 20_000)));
+  ctx.drift("membre lent, régime (20 s)", await measureWindow([a, b], 20_000));
   // Un seek tombe hors du tampon du transcodage : le lent recharge, l'autre attend.
   const since = Date.now();
   await a.press("ArrowRight");

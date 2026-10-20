@@ -205,6 +205,28 @@ export class WebClient {
     await this.press("Space");
   }
 
+  /**
+   * Arrière-plan. Chrome sans tête garde toute page « visible » (un autre
+   * onglet au premier plan n'y change rien) : `hidden` simule l'onglet caché
+   * (visibilityState + visibilitychange, ce que lisent l'app et hls.js) ;
+   * `frozen` gèle la page comme Chrome le fait d'un onglet en arrière-plan
+   * prolongé — et comme iOS le fait d'une app (CDP Page.setWebLifecycleState).
+   */
+  async background(mode: "hidden" | "frozen" | "active"): Promise<void> {
+    const cdp = await this.context.newCDPSession(this.page);
+    if (mode === "frozen") {
+      await cdp.send("Page.setWebLifecycleState", { state: "frozen" });
+    } else {
+      await cdp.send("Page.setWebLifecycleState", { state: "active" }).catch(() => undefined);
+      await this.page.evaluate((hidden) => {
+        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (hidden ? "hidden" : "visible") });
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden });
+        document.dispatchEvent(new Event("visibilitychange"));
+      }, mode === "hidden");
+    }
+    await cdp.detach().catch(() => undefined);
+  }
+
   async setOffline(offline: boolean): Promise<void> {
     await this.context.setOffline(offline);
   }

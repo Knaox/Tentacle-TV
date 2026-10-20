@@ -50,19 +50,35 @@ export async function settlePast(ctx: ScenarioContext, s: Session, afterS: numbe
   await waitAligned([s.a, s.b], { withinMs: 60, playing: true, since: Date.now(), timeoutMs: 15_000 });
 }
 
-/** Un geste d'un membre, puis le délai jusqu'au réalignement (et l'état voulu). */
+/**
+ * Un geste d'un membre, puis le délai jusqu'au réalignement (et l'état voulu).
+ * `jumpS` : un seek — l'alignement ne compte qu'une fois que les DEUX lecteurs
+ * ont quitté leur position d'avant d'au moins la moitié du saut (sinon deux
+ * lecteurs encore alignés AVANT le saut passeraient pour réalignés).
+ */
 export async function gestureRealign(
   ctx: ScenarioContext,
   s: Session,
   name: string,
   gesture: () => Promise<void>,
-  expect: { playing: boolean; withinMs?: number },
+  expect: { playing: boolean; withinMs?: number; jumpS?: number },
 ): Promise<number | null> {
+  const before = await measureOnce([s.a, s.b]);
   const since = Date.now();
   await gesture();
+  if (expect.jumpS) {
+    const jumped = await waitFor(async () => {
+      const p = await measureOnce([s.a, s.b]);
+      const elapsed = (p.at - before.at) / 1000;
+      return (["A", "B"] as const).every((l) => {
+        const was = (before.pos[l] ?? 0) + (before.paused[l] ? 0 : elapsed);
+        return p.pos[l] !== null && Math.abs((p.pos[l] ?? 0) - was) > Math.abs(expect.jumpS!) / 2;
+      });
+    }, 20_000, 50);
+    if (jumped === null) ctx.log(`${name} : le saut n'a pas eu lieu chez les deux en 20 s`);
+  }
   const res = await waitAligned([s.a, s.b], { withinMs: expect.withinMs ?? 100, playing: expect.playing, since, timeoutMs: 20_000, stable: 3 });
   ctx.metric(`${name} : réaligné (${expect.playing ? "lecture" : "pause"}, < ${expect.withinMs ?? 100} ms)`,
     res.ms === null ? "jamais en 20 s" : `${res.ms} ms`, res.ms, expect.playing ? "< 1 000 ms" : undefined);
-  // Les points qui suivent l'alignement : la dérive résiduelle juste après.
   return res.ms;
 }

@@ -5,12 +5,12 @@
  * donne tout le tableau d'un coup.
  */
 
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type Browser } from "playwright-core";
 import { RUN_DIR, readState, type BenchAccount, type BenchState } from "../env";
 import { WebClient, type WebClientOptions } from "../clients/webClient";
-import { fmt, type DriftStats } from "../measure";
+import { fmt, stats, type DriftPoint } from "../measure";
 
 export interface CheckResult {
   name: string;
@@ -66,8 +66,21 @@ export class ScenarioContext {
     this.log(`◆ ${name} : ${value}${target ? ` (cible ${target})` : ""}`);
   }
 
-  drift(name: string, s: DriftStats, target = "< 100 ms"): void {
-    this.metric(name, fmt(s), s.p95, target);
+  /**
+   * Une fenêtre de régime : |dérive| du pire membre (p50, p95, max), plus le
+   * BIAIS de chacun (médiane signée, > 0 en avance) — un biais constant n'est
+   * pas du bruit : la boucle le croit corrigé. Les points sont gardés.
+   */
+  drift(name: string, points: DriftPoint[], target = "< 100 ms"): void {
+    const s = stats(points);
+    const labels = points.length ? Object.keys(points[0].drift).slice(1) : [];
+    const bias = labels.map((l) => {
+      const v = points.map((p) => p.drift[l]).filter((x): x is number => x !== null).sort((x, y) => x - y);
+      return v.length ? `${l} ${v[Math.floor(v.length / 2)] > 0 ? "+" : ""}${v[Math.floor(v.length / 2)]}` : `${l} —`;
+    });
+    this.metric(name, `${fmt(s)} · biais ${bias.join(", ")} ms`, s.p95, target);
+    const slug = name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    writeFileSync(join(this.outDir, `points-${slug}.json`), JSON.stringify(points));
   }
 
   async member(account: BenchAccount, label: string, opts: WebClientOptions = {}): Promise<WebClient> {
