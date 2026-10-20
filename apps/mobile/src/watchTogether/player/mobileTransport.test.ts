@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { createMobileTransport, EXTRAPOLATE_MAX_MS, SEEK_GIVE_UP_MS, type MobileTransportCommands } from "./mobileTransport";
+import {
+  createMobileTransport, EXTRAPOLATE_MAX_MS, SEEK_GIVE_UP_MS, SEEK_PAUSED_SETTLE_MS, type MobileTransportCommands,
+} from "./mobileTransport";
 
 function setup() {
   let t = 1_000;
@@ -117,5 +119,37 @@ describe("createMobileTransport", () => {
     const transport = createMobileTransport({ setPaused: vi.fn(), seek: vi.fn(), setRate: vi.fn(), cancelAutoNext: cancel });
     transport.cancelAutoNext?.();
     expect(cancel).toHaveBeenCalled();
+  });
+
+  it("atterrit à l'annonce de fin de saut du moteur, même en pause", () => {
+    const { transport, playing } = setup();
+    playing(10);
+    transport.pause();
+    transport.seekTo(40);
+    transport.reports.seekComplete(40.02);
+    expect(transport.isSeeking!()).toBe(false);
+    expect(transport.isSettledAt!(40)).toBe(true);
+  });
+
+  it("en pause, sans aucune annonce, un saut posé est tenu pour atterri (barrière)", () => {
+    const { transport, advance, playing } = setup();
+    playing(10);
+    transport.pause();
+    transport.seekTo(40);
+    advance(SEEK_PAUSED_SETTLE_MS - 1);
+    expect(transport.isSeeking!()).toBe(true);
+    advance(1);
+    expect(transport.isSeeking!()).toBe(false);
+    expect(transport.isSettledAt!(40)).toBe(true);
+  });
+
+  it("en pause mais en tampon, le saut reste en vol", () => {
+    const { transport, advance, playing } = setup();
+    playing(10);
+    transport.pause();
+    transport.seekTo(40);
+    transport.reports.buffering(true);
+    advance(SEEK_PAUSED_SETTLE_MS * 3);
+    expect(transport.isSeeking!()).toBe(true);
   });
 });

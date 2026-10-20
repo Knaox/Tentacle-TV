@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useGroupIntroSkip, useGroupSkipCountdown, useGroupSyncEngine, type TranscodeSeek } from "@tentacle-tv/api-client";
+import {
+  useGroupIntroSkip, useGroupSkipCountdown, useGroupSyncEngine, useWatchTogetherOrIdle, type TranscodeSeek,
+} from "@tentacle-tv/api-client";
+import { isBarrierParticipant } from "@tentacle-tv/shared";
 import type { GroupOverlayInput } from "@/hooks/usePlaybackOverlayMobile";
 import type { PlayerSessionCore } from "@/hooks/usePlayerPlayback";
 import type { MobileGroupStart } from "./useMobileGroupStart";
@@ -46,8 +49,10 @@ export function useMobileGroupPlayback({
   // Les signaux vers le moteur passent par une ref : le moteur a besoin du
   // port, le port a besoin du moteur.
   const syncRef = useRef<ReturnType<typeof useGroupSyncEngine> | null>(null);
+  const { room, selfId } = useWatchTogetherOrIdle();
   const transport = useMobileWtTransport({
     active: group.groupActive,
+    barrier: isBarrierParticipant(room, selfId),
     commands: { setPaused, seek: seek.seekTo, cancelAutoNext },
     paused, buffering, videoReady,
     streamOffset: pb.streamOffset,
@@ -98,14 +103,16 @@ export function useMobileGroupPlayback({
     seekTo(target);
   }, [active, seek, seekTo, pb.jellyfinDuration, pb.positionRef]);
 
-  const overlay = useMemo<GroupOverlayInput | undefined>(() => (sync.onGroupItem ? {
+  // En séance, aucun saut de passage avant « tous prêts » — et pas davantage
+  // tant que la salle n'est pas encore sur CE titre (lancement pour le groupe).
+  const overlay = useMemo<GroupOverlayInput | undefined>(() => (active ? {
     groupSession: true,
     groupSkip,
-    groupSkipHeld: skipHeld,
+    groupSkipHeld: !sync.onGroupItem || skipHeld,
     onSkipPropose,
     onSegmentDismissNotify: sync.notifySkipIntroDismiss,
     onNextDismissNotify: sync.notifyAutoNextDismiss,
-  } : undefined), [sync.onGroupItem, groupSkip, skipHeld, onSkipPropose, sync.notifySkipIntroDismiss, sync.notifyAutoNextDismiss]);
+  } : undefined), [active, sync.onGroupItem, groupSkip, skipHeld, onSkipPropose, sync.notifySkipIntroDismiss, sync.notifyAutoNextDismiss]);
 
   const chrome = useWtPlayerChrome(itemId);
   return {
@@ -113,6 +120,8 @@ export function useMobileGroupPlayback({
     /** Vitesse de lecture à poser sur la surface (rattrapage doux). */
     rate: transport.rate,
     wrapProgress: transport.wrapProgress,
+    /** À poser sur la surface (`onSeekComplete`) : un saut en pause s'y voit atterrir. */
+    onSeekComplete: transport.onSeekComplete,
     setPaused: setPausedIntent,
     onPlayPause: () => setPausedIntent(!paused),
     seekTo,
