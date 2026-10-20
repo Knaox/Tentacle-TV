@@ -12,6 +12,7 @@ import {
 import { describeProblem, latestAdditionsDetailQuery, libraryHasNoTitles, type MediaItem } from "@tentacle-tv/shared";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
+import { WtHomeStrip } from "@/watchTogether/entry/WtHomeStrip";
 import { useHeroMetrics } from "@/components/heroMetrics";
 import { useHeroInView } from "@/components/hero/useHeroInView";
 import { useHomeHero } from "@/components/home/useHomeHero";
@@ -176,6 +177,8 @@ export function HomeScreen() {
 
         {/* Le bandeau : le mode du compte, la reprise en repli — jamais vide. */}
         {empty ? null : heroLoading ? <SkeletonHero /> : heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
+        {/* Watch Together : la lecture de groupe, les invitations, l'autre appareil (rien sans lui). */}
+        <WtHomeStrip />
 
         {/* Les rangées, dans l'ordre du compte (mise en page partagée avec le
             web et la TV) ; chaque clé se rend depuis le registre. */}
