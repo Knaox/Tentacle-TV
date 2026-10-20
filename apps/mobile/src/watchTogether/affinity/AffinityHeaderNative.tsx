@@ -6,7 +6,7 @@ import type { WtAffinityStateDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useThemedStyles, type AppTheme } from "@/theme";
-import { KIND_LABEL_KEY } from "@tentacle-tv/api-client";
+import { KIND_LABEL_KEY } from "@tentacle-tv/shared";
 
 /**
  * L'en-tête de la pile : le type et la taille de la pile (« Changer »),

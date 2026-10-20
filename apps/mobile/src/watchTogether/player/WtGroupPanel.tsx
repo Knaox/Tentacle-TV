@@ -6,14 +6,14 @@ import type { GifItem } from "@tentacle-tv/api-client";
 import type { WtChatMessageDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { FONT_FAMILY, PLAYER, RADIUS } from "@/theme";
-import { MEMBER_STATE_LABEL, roomMemberRows, type WtMemberState } from "@tentacle-tv/shared";
+import { roomMemberRows, type WtMemberStatus } from "@tentacle-tv/shared";
 import { WtChatPanel } from "../chat/WtChatPanel";
 
 export type WtGroupPanelTab = "group" | "chat";
 
 /** Le point d'état, sur la vidéo (couleurs fixes du lecteur) — doublé du mot. */
-const STATE_DOT: Record<WtMemberState, string> = {
-  error: PLAYER.error, buffering: PLAYER.warning, watching: PLAYER.accent, online: PLAYER.textSecondary, offline: PLAYER.textDim,
+const STATE_DOT: Record<WtMemberStatus, string> = {
+  error: PLAYER.error, buffering: PLAYER.warning, watching: PLAYER.accent, none: PLAYER.textSecondary, offline: PLAYER.textDim,
 };
 
 /**
@@ -57,9 +57,9 @@ export const WtGroupPanel = memo(function WtGroupPanel(props: {
         <WtChatPanel messages={props.messages} selfId={selfId} onSend={props.onSend} onReact={props.onReact} onSendGif={props.onSendGif} />
       ) : (
         <ScrollView contentContainerStyle={st.members}>
-          {rows.map(({ member, isSelf, state }) => (
+          {rows.map(({ member, isSelf, status: state, labelKey }) => (
             <View key={member.userId} style={st.member} accessible
-              accessibilityLabel={`${member.username}, ${t(MEMBER_STATE_LABEL[state])}`}>
+              accessibilityLabel={`${member.username}, ${t(labelKey)}`}>
               <UserAvatar userId={member.userId} name={member.username} hasAvatar={member.hasAvatar} size={36} />
               <View style={st.memberText}>
                 <Text style={st.name} numberOfLines={1}>
@@ -67,7 +67,7 @@ export const WtGroupPanel = memo(function WtGroupPanel(props: {
                 </Text>
                 <View style={st.stateLine}>
                   <View style={[st.dot, { backgroundColor: STATE_DOT[state] }]} />
-                  <Text style={st.state} numberOfLines={1}>{t(MEMBER_STATE_LABEL[state])}</Text>
+                  <Text style={st.state} numberOfLines={1}>{t(labelKey)}</Text>
                 </View>
               </View>
             </View>

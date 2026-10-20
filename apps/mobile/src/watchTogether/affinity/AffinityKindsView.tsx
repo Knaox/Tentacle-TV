@@ -6,7 +6,7 @@ import { WtApiError, fetchAffinityKinds, startAffinity, type AffinityKinds } fro
 import type { WtAffinityKind, WtAffinityStateDto } from "@tentacle-tv/shared";
 import { SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { AFFINITY_KINDS, KIND_LABEL_KEY } from "@tentacle-tv/api-client";
+import { AFFINITY_KINDS, KIND_LABEL_KEY } from "@tentacle-tv/shared";
 
 const ICONS: Record<WtAffinityKind, LucideIcon> = { movie: Clapperboard, series: Tv, anime: Sparkles };
 

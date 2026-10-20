@@ -8,7 +8,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { PlainButton, SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { KIND_LABEL_KEY, memberName } from "@tentacle-tv/api-client";
+import { KIND_LABEL_KEY, memberName } from "@tentacle-tv/shared";
 import { WtElsewhereBanner } from "../room/WtElsewhereBanner";
 import { openWtSheet } from "../wtSheets";
 import { homeStripKind } from "@tentacle-tv/shared";

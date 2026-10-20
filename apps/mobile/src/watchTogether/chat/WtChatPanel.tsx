@@ -3,15 +3,13 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import { useTranslation } from "react-i18next";
 import { SendHorizontal } from "lucide-react-native";
 import type { GifItem } from "@tentacle-tv/api-client";
-import { WT_CHAT_MAX_LENGTH, type WtChatMessageDto } from "@tentacle-tv/shared";
+import { WT_CHAT_MAX_LENGTH, WT_QUICK_REACTIONS, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { FONT_FAMILY, PLAYER, RADIUS } from "@/theme";
 import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { haptic } from "@/utils/haptics";
 import { WtEmojiPicker } from "./WtEmojiPicker";
 import { WtGifPicker } from "./WtGifPicker";
 
-/** Les réactions d'un toucher — les mêmes que le panneau du web (`ChatPanel`). */
-export const QUICK_REACTIONS = ["😂", "❤️", "🔥", "😮", "👍", "😭"] as const;
 
 /** Ce qui occupe le bas du panneau, sous le fil : réactions rapides, grille d'emojis ou GIF. */
 type ChatTray = "quick" | "emoji" | "gif";
@@ -77,7 +75,7 @@ export const WtChatPanel = memo(function WtChatPanel({ messages, selfId, onSend,
       />
       {tray === "quick" && (
         <View style={st.reactions}>
-          {QUICK_REACTIONS.map((emoji) => (
+          {WT_QUICK_REACTIONS.map((emoji) => (
             <Pressable
               key={emoji}
               onPress={() => react(emoji)}

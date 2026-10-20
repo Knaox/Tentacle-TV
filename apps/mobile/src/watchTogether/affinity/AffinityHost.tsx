@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 import { usePathname, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { memberName, useAffinitySession, useWatchTogether } from "@tentacle-tv/api-client";
+import { useAffinitySession, useWatchTogether } from "@tentacle-tv/api-client";
+import { memberName } from "@tentacle-tv/shared";
 import { showToast } from "@/notices/toastStore";
 import { closeWtSheet } from "../wtSheets";
 import { pushWtNotice } from "../notices/wtNotices";

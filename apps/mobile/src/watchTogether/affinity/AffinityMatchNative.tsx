@@ -8,7 +8,7 @@ import type { WtAffinityMatchDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
 import { FONT_FAMILY, RADIUS, useThemedStyles, type AppTheme } from "@/theme";
 import { haptic } from "@/utils/haptics";
-import { formatNames, memberName } from "@tentacle-tv/api-client";
+import { formatNames, memberName } from "@tentacle-tv/shared";
 
 type Answer = "watch" | "continue";
 
