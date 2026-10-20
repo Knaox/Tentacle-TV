@@ -242,7 +242,7 @@ export function PlayerScreen({ itemId, version }: Props) {
       onPausedChange={stillWatching.onPausedChange}
       onAirPlayRoute={onAirPlayRoute}
       onPipChange={onPipChange}
-      onSeek={group.seekTo} onSkip={group.seekBy}
+      onSeek={group.seekTo} onSkip={group.seekBy} onSeekComplete={group.onSeekComplete}
       onToggleOverlay={toggleOverlay} onActivity={stillWatching.reportActivity}
       onSwipeDown={leavePlayer}
     >
