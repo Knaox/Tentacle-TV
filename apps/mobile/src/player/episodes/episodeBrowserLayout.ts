@@ -132,6 +132,19 @@ export function openCardPlace(index: number, progress: number, step: number, res
   return { left: index * step + (openWidth - restWidth) * pushed, width: scale * openWidth, scale };
 }
 
+/**
+ * La marge de fin de la rangée : de quoi faire défiler la DERNIÈRE carte
+ * jusqu'au retrait. Une cellule n'occupe dans la rangée que sa largeur au
+ * REPOS (la carte ouverte déborde par transformation) : la marge se compte
+ * donc depuis `restWidth`. Comptée depuis la carte ouverte, elle manquait de
+ * la différence — la rangée butait avant le dernier épisode, et l'épisode en
+ * cours, souvent le dernier vu, s'ouvrait sur son prédécesseur, coupé et voilé
+ * (recette Android du 21/10).
+ */
+export function rowTrailingPadding(width: number, inset: number, restWidth: number): number {
+  return Math.max(inset, width - inset - restWidth);
+}
+
 /** La carte ouverte quand la rangée a défilé de `progress` pas : la plus proche, dans la saison. */
 export function openIndexAt(progress: number, count: number): number {
   "worklet";
