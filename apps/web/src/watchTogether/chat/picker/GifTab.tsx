@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGifSearch, type GifItem, type WtChatApi } from "@tentacle-tv/api-client";
 
@@ -13,9 +13,6 @@ import { useGifSearch, type GifItem, type WtChatApi } from "@tentacle-tv/api-cli
  * Couleurs volontairement en dur : section du panneau de chat (ChatPanel),
  * qui garde son verre sombre quel que soit le thème.
  */
-
-/** Aligné sur WT_MIN_GIF_INTERVAL_MS (serveur) — évite les drops silencieux. */
-const GIF_SEND_COOLDOWN_MS = 1_500;
 
 const GifCell = memo(function GifCell({
   gif, sent, onSend, sendLabel,
@@ -47,14 +44,11 @@ export const GifTab = memo(function GifTab({ chat }: { chat: WtChatApi }) {
   const { t, i18n } = useTranslation("watchTogether");
   const [query, setQuery] = useState("");
   const { data, isLoading } = useGifSearch(query, i18n.language);
-  const lastSentRef = useRef(0);
   const [sentId, setSentId] = useState<string | null>(null);
 
   const sendGif = (gif: GifItem) => {
-    const now = Date.now();
-    if (now - lastSentRef.current < GIF_SEND_COOLDOWN_MS) return;
-    lastSentRef.current = now;
-    chat.sendGif({ url: gif.url, w: gif.w || undefined, h: gif.h || undefined });
+    // Le débit partagé (six d'affilée, puis un par seconde) : refusé ici, rien ne part.
+    if (!chat.sendGif({ url: gif.url, w: gif.w || undefined, h: gif.h || undefined })) return;
     // Flash bref sur la vignette : accusé visuel local (l'écho serveur suit).
     setSentId(gif.id);
     setTimeout(() => setSentId((cur) => (cur === gif.id ? null : cur)), 700);

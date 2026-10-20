@@ -45,7 +45,15 @@ const FloatingEmoji = memo(function FloatingEmoji({ reaction }: { reaction: WtFl
           style={reaction.gif.w && reaction.gif.h ? { aspectRatio: `${reaction.gif.w} / ${reaction.gif.h}` } : undefined}
         />
       ) : (
-        <span className="text-3xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">{reaction.emoji}</span>
+        <span className="relative text-3xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+          {reaction.emoji}
+          {/* Une rafale du même emoji : une seule bulle, comptée. */}
+          {reaction.count && reaction.count > 1 ? (
+            <span className="absolute -right-4 -top-1 rounded-full bg-black/60 px-1 text-[11px] font-bold tabular-nums text-white">
+              ×{reaction.count}
+            </span>
+          ) : null}
+        </span>
       )}
       <span className="mt-0.5 rounded-full bg-black/50 px-1.5 text-[10px] font-medium text-white/75">
         {reaction.username}

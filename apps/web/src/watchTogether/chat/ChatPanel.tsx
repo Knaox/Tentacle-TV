@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { WT_CHAT_MAX_LENGTH, WT_QUICK_REACTIONS, type WtChatMessageDto } from "@tentacle-tv/shared";
+import { WT_CHAT_MAX_LENGTH, WT_QUICK_REACTIONS, typingLabelKey, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
 import type { WtChatApi } from "@tentacle-tv/api-client";
@@ -56,6 +56,17 @@ const MessageRow = memo(function MessageRow({
   );
 });
 
+/** « X est en train d'écrire… » — les autres membres, jamais soi. */
+function TypingLine({ typing }: { typing: WtChatApi["state"]["typing"] }) {
+  const { t } = useTranslation("watchTogether");
+  const label = typingLabelKey(typing);
+  return (
+    <p aria-live="polite" className="h-4 shrink-0 truncate px-4 text-[11px] italic text-white/45">
+      {label ? t(label.key, label.params) : ""}
+    </p>
+  );
+}
+
 export function ChatPanel({ chat }: { chat: WtChatApi }) {
   const { t } = useTranslation("watchTogether");
   const { selfId } = useWatchTogether();
@@ -79,8 +90,8 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
 
   const submit = () => {
     const text = draft.trim();
-    if (!text) return;
-    chat.sendChat(text);
+    // Refusé (débit) : le brouillon reste, rien ne se perd en silence.
+    if (!text || !chat.sendChat(text)) return;
     setDraft("");
     stickToBottomRef.current = true;
   };
@@ -108,6 +119,8 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
           })
         )}
       </div>
+
+      <TypingLine typing={chat.state.typing} />
 
       <ReactionPicker
         tab={pickerTab}
@@ -159,7 +172,10 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
       <div className="flex shrink-0 items-center gap-2 border-t border-white/10 p-2">
         <input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (e.target.value.trim()) chat.notifyTyping();
+          }}
           onKeyDown={(e) => {
             // Ne surtout pas laisser remonter la frappe aux hotkeys du player
             // (Espace = pause, flèches = seek…).
