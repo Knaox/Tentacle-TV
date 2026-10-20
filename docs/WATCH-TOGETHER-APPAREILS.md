@@ -17,6 +17,16 @@ mobile). Le serveur le connaît déjà : aucun client n'a rien à annoncer, et u
 client d'avant profite du correctif comme les autres. Les onglets d'un même
 navigateur partagent le cookie : ils sont UN appareil, comme avant.
 
+**Le jeton qui fait foi** (20/10, `services/sessionTokenChoice.ts`) : le
+téléphone garde le cookie de sa CONNEXION (le compte, posé par
+`/api/auth/login`) et le renvoie avec chaque requête et chaque poignée de main
+WebSocket. Le Bearer et le message `auth` l'emportent sur ce cookie — sans
+quoi, en session de profil, l'hôte, le membre, la présence et l'appareil lié
+étaient ceux du compte (alpha mobile : « le propriétaire s'appelait Knaox »,
+invitation acceptée jamais vue). Un cookie posé par le serveur (profil du web,
+« voir en tant que ») l'emporte toujours. Preuves :
+`test/wtProfileSessionCookie.test.ts`, `bench:wt-profile-cookies`.
+
 Un membre (un compte) a 1..n appareils **liés** :
 
 - celui qui crée la salle (`POST /group`) ;

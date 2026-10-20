@@ -534,6 +534,14 @@ plateforme, la capacité et la garde du jeton du compte changent, en UN endroit 
   httpOnly), et le serveur lit le cookie AVANT tout Bearer. Le parcours du
   bureau (jeton du profil dans le stockage) aurait laissé le cookie du COMPTE
   agir pendant la session d'un enfant.
+- **Ce que « le cookie d'abord » veut dire** (20/10, `services/sessionTokenChoice.ts`) :
+  le cookie l'emporte quand il porte une session POSÉE PAR LE SERVEUR à la place
+  du compte (ce profil, « voir en tant que » : un JWT). Un cookie de CONNEXION
+  (un jeton Jellyfin) cède au jeton explicite — Bearer, message `auth` de la
+  socket : le téléphone garde dans son pot le cookie que `/api/auth/login` lui
+  a posé (le compte) et le renvoie partout, y compris pendant la session d'un
+  profil. Pour la page web, rien ne change : elle présente le même jeton des
+  deux façons.
 - **La réserve du serveur** (`routes/family/accountEscrow.ts`) : choisir le
   profil d'un autre (`platform: "web"`) réécrit les cookies — le profil devient
   `tentacle_token`, le jeton du compte part dans `tentacle_account_token`
