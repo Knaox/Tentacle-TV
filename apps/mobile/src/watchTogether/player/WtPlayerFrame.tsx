@@ -61,6 +61,7 @@ const st = StyleSheet.create({
   video: { flex: 1 },
   side: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: PLAYER.borderSubtle },
   below: { flex: 1, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: PLAYER.borderSubtle },
-  overlay: { position: "absolute", top: 0, right: 0, bottom: 0 },
+  // Par-dessus la vidéo : OPAQUE — à 90 %, les commandes du lecteur se lisaient au travers.
+  overlay: { position: "absolute", top: 0, right: 0, bottom: 0, backgroundColor: PLAYER.bg },
   sheet: { flex: 1, borderRadius: 16, overflow: "hidden" },
 });
