@@ -66,6 +66,7 @@ export function stopMetro(): void {
 /** Un appareil déjà installé : session reposée (même jeton neuf), app relancée, Hermes rebranché. */
 export async function relaunchIosMember(udid: string, account: BenchAccount, label: string, deviceName: string): Promise<IosClient> {
   const state = readState();
+  bootIfNeeded(udid);
   terminate(udid);
   const token = await injectSession(udid, state, account, deviceName, {
     tentacle_language: "fr",
