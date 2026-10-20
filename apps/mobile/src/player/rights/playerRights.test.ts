@@ -44,7 +44,7 @@ describe("droits de lecture du lecteur mobile", () => {
 
   it("une conversion refusée dans la proposition de Jellyfin : refusée", () => {
     const rights = playerRightsOf({ ...FULL_PLAYBACK_RIGHTS, videoTranscoding: false, audioTranscoding: false, remuxing: false }, source);
-    expect(rights.refusalOf({ ...source, TranscodingUrl: null } as MediaSource, false)).toBe("conversion_not_allowed");
+    expect(rights.refusalOf({ ...source, TranscodingUrl: undefined }, false)).toBe("conversion_not_allowed");
     expect(rights.refusalOf(source, true)).toBeNull();
   });
 });
