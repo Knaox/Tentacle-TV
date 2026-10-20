@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -62,6 +62,14 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   }), [navigate, pathname, show, t]);
 
   const value = useWatchTogetherSession(port);
+
+  // Plus rien à répondre (réponse donnée ici ou sur un autre appareil) : la
+  // boîte se referme — sinon elle restait « ouverte » et la prochaine
+  // invitation la faisait surgir par-dessus le lecteur.
+  const noInvites = value.invites.length === 0;
+  useEffect(() => {
+    if (noInvites) setInboxOpen(false);
+  }, [noInvites]);
 
   return (
     <WatchTogetherContext.Provider value={value}>

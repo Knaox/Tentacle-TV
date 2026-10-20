@@ -81,6 +81,10 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
         ? h.t("invitedByWithItem", { name: msg.invite.fromUsername, title: msg.invite.itemName })
         : h.t("invitedBy", { name: msg.invite.fromUsername }));
       break;
+    case "wt:inviteGone":
+      // Répondue ailleurs (autre appareil, autre onglet) : elle ne s'affiche plus.
+      h.dispatch({ type: "remove_invite", inviteId: msg.inviteId });
+      break;
     case "wt:inviteResult":
       h.onInviteResult?.(msg.toUserId, msg.accepted);
       h.toast(msg.accepted ? "success" : "info", h.t(
