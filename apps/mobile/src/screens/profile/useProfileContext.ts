@@ -8,6 +8,7 @@ import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useThemeMode } from "@/theme";
 import { engineOptionsFor } from "@/components/settings/controls/EngineOptionsRows";
 import { useCanSwitchProfileFlag, useIsProfileSession } from "./familyEntryHooks";
+import { useLiveTransfersSetting } from "./offlineEntryHooks";
 import { playerSettingsContext } from "./playerSettingsContext";
 import type { SettingsCatalogContext } from "@tentacle-tv/shared";
 
@@ -33,6 +34,7 @@ export function useProfileContext(): SettingsCatalogContext {
   const familyOn = isFamilyAvailable(config?.features.family, offline);
   const canSwitchProfile = useCanSwitchProfileFlag();
   const profileSession = useIsProfileSession();
+  const liveTransfers = useLiveTransfersSetting().available;
   const { capabilities } = useServerCapabilities();
   // La build et la plateforme ne changent pas pendant la vie de l'app.
   const player = useMemo(() => {
@@ -52,6 +54,7 @@ export function useProfileContext(): SettingsCatalogContext {
     liquidGlass: liquidGlass.supported,
     advancedEngine: player.advancedEngine,
     engineOptions: player.engineOptions,
+    liveTransfers,
     profileSession,
-  }), [offline, isAdmin, connectivity, offlineVisible, familyOn, canSwitchProfile, liquidGlass.supported, capabilities, player, profileSession]);
+  }), [offline, isAdmin, connectivity, offlineVisible, familyOn, canSwitchProfile, liquidGlass.supported, capabilities, player, liveTransfers, profileSession]);
 }

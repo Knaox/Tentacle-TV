@@ -21,7 +21,9 @@ import type {
  * - subtitleSize, subtitlePosition, engine, engineOptions → réglages du lecteur
  *   du mobile (`tentacle_sub_scale`, `tentacle_sub_pos`, `tentacle_video_engine`…) ;
  * - dataSaver → `tentacle_data_saver` (même clé sur le web) ;
- * - bloc offlineSettings → réglages hors ligne du mobile.
+ * - wifiOnly, backgroundTransfers → `offline/settings.ts` du mobile ;
+ *   notifyReady, liveTransfers → `offline/deviceSettings.ts` du mobile
+ *   (`tentacle_offline_live_activity` pour le suivi en direct).
  *
  * `null` : pas un réglage (une information, un geste, un renvoi).
  */
@@ -41,6 +43,10 @@ export const SETTINGS_CONTROLS: Readonly<Record<SettingsControlId, { scope: Sett
   dataSaver: { scope: "device", type: "segmented" },
   engine: { scope: "device", type: "segmented" },
   engineOptions: { scope: "device", type: "disclosure" },
+  wifiOnly: { scope: "device", type: "switch" },
+  backgroundTransfers: { scope: "device", type: "switch" },
+  notifyReady: { scope: "device", type: "switch" },
+  liveTransfers: { scope: "device", type: "switch" },
   advancedOnDesktop: { scope: null, type: "info" },
 };
 

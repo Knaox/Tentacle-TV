@@ -1,4 +1,4 @@
-import type { SettingsI18nRef, SettingsPlatform, SettingsCatalogSection } from "./settingsCatalogTypes";
+import type { SettingsI18nRef, SettingsPlatform, SettingsRequirement, SettingsCatalogSection } from "./settingsCatalogTypes";
 
 /**
  * Les rubriques des réglages, dans l'ordre de la liste — LA source de la
@@ -13,7 +13,8 @@ import type { SettingsI18nRef, SettingsPlatform, SettingsCatalogSection } from "
  *                          | SUR CET APPAREIL : thème, Liquid Glass, sous-titres, données, lecteur
  *                          | Réglages avancés : sur l'app bureau
  *   TV et appareils      — (le volet lui-même)
- *   Hors ligne           — Mes titres ▢ · Passer hors ligne | (espace, transferts, tout retirer)
+ *   Hors ligne           — Mes titres ▢ · Passer hors ligne | (espace) | TRANSFERTS : Wi-Fi seulement,
+ *                          arrière-plan, « prêt », suivi en direct | TITRES : tout retirer
  *   Notifications        — (le volet lui-même)
  *   Aide et à propos     — Support ▢ · À propos ▢ · Confidentialité ↗ · Réglages avancés
  * (▸ = volet ; ▢ = écran ; | = groupe suivant.)
@@ -28,6 +29,10 @@ const MOBILE: readonly SettingsPlatform[] = ["mobile"];
 
 const p = (key: string): SettingsI18nRef => ({ ns: "profile", key });
 const s = (key: string): SettingsI18nRef => ({ ns: "settingsMobile", key });
+const o = (key: string): SettingsI18nRef => ({ ns: "offline", key });
+
+/** Les réglages hors ligne : le droit de garder des titres, en session personnelle. */
+const OFFLINE: readonly SettingsRequirement[] = ["offlineVisible", "personal"];
 
 export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
   {
@@ -132,7 +137,23 @@ export const SETTINGS_SECTIONS: readonly SettingsCatalogSection[] = [
           { kind: "action", id: "goOffline", icon: "wifi-off", label: { ns: "nav", key: "goOffline" }, requires: ["canGoOffline", "personal"], platforms: MOBILE },
         ],
       },
-      { entries: [{ kind: "block", id: "offlineSettings", requires: ["offlineVisible", "personal"], platforms: MOBILE }] },
+      { entries: [{ kind: "block", id: "offlineSpace", requires: ["offlineVisible", "personal"], platforms: MOBILE }] },
+      {
+        title: o("sectionTransfers"),
+        scope: "device",
+        entries: [
+          { kind: "control", id: "wifiOnly", requires: OFFLINE, platforms: MOBILE },
+          { kind: "control", id: "backgroundTransfers", requires: OFFLINE, platforms: MOBILE },
+          { kind: "control", id: "notifyReady", requires: OFFLINE, platforms: MOBILE },
+          { kind: "control", id: "liveTransfers", requires: [...OFFLINE, "liveTransfers"], platforms: MOBILE },
+        ],
+      },
+      {
+        title: o("sectionTitles"),
+        entries: [
+          { kind: "action", id: "removeAllOffline", icon: "trash-2", label: o("removeAll"), destructive: true, requires: OFFLINE, platforms: MOBILE },
+        ],
+      },
     ],
   },
   {

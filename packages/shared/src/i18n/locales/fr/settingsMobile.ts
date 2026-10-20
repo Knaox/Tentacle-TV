@@ -74,6 +74,10 @@ export default {
     subtitleSizeHint: "Lecteur avancé ; 160 % par défaut",
     subtitlePositionHint: "100 % = tout en bas de l'image",
   },
+  offline: {
+    liveTransfers: "Suivi en direct",
+    liveTransfersHint: "Temps restant sur l'écran verrouillé pendant un transfert",
+  },
   advanced: {
     row: "Réglages avancés : sur l'app bureau",
     rowHint: "Délais, génériques, épisode suivant en détail…",
