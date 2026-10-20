@@ -11,6 +11,7 @@ import { wtMayJoin } from "./watchTogetherAccess";
 import { armDeviceGrace, cancelDeviceGrace } from "./memberDevices";
 import { notifyElsewhere, notifyElsewhereDevice } from "./elsewhere";
 import { wtSrvLog } from "./wtServerLog";
+import { onDeviceRevoked } from "../deviceRevokedEvents";
 
 /**
  * Watch Together — la présence : grâce de déconnexion (un F5 ne fait pas
@@ -56,6 +57,18 @@ export function onDeviceGraceExpired(userId: string, deviceKey: string): void {
   wtSrvLog(`appareil délié (grâce expirée) : ${userId}`, { devices: member.devices.size });
 }
 
+/** Un appareil RÉVOQUÉ (session de profil de la Famille terminée — profil
+ *  changé, quitté, retiré —, appareil déjumelé) quitte sa salle TOUT DE SUITE :
+ *  son jeton ne vaut plus rien, il ne reviendra pas. Sans cela, l'ancien
+ *  profil restait 120 s dans la séance, « hors ligne », hôte compris. */
+export function leaveRevokedDevice(userId: string, deviceKey: string): void {
+  const room = getRoomOf(userId);
+  const member = room?.members.get(userId);
+  if (!room || !member || !member.devices.has(deviceKey)) return;
+  wtSrvLog(`appareil révoqué : ${userId} le quitte de sa salle`);
+  if (!leaveFromDevice(room, member, deviceKey)) onGraceExpired(userId);
+}
+
 /** Départ annoncé (`wt:goodbye`) : grâce courte — sur l'appareil s'il est lié. */
 export function armGoodbye(userId: string, deviceKey: string | undefined): void {
   const member = getRoomOf(userId)?.members.get(userId);
@@ -89,6 +102,7 @@ export function releaseFromDeadRoom(userId: string): void {
 
 /** Branche la présence (appelé une fois, par le gateway). */
 export function registerPresence(): void {
+  onDeviceRevoked(leaveRevokedDevice);
   onPresenceChange((userId, online) => {
     if (online) {
       cancelGrace(userId);
