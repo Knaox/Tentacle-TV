@@ -8,7 +8,7 @@ import { stopOfflineRuntime } from "@/offline/engineRuntime";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import { accountAccessActions, isPlaybackRoute, type AccountAccessAction } from "./accountAccessModel";
 import { AccountAccessScreen } from "./AccountAccessScreen";
-import { endProfileSessionForAccess, useIsProfileSession } from "./profileSessionAdapter";
+import { useEndProfileSessionForAccess, useIsProfileSession } from "./profileSessionAdapter";
 
 /**
  * La porte de l'accès du compte sur le mobile (docs/DROITS-UTILISATEURS.md
@@ -25,6 +25,7 @@ export function AccountAccessHost() {
   const pathname = usePathname();
   const router = useRouter();
   const profileSession = useIsProfileSession();
+  const endProfileSession = useEndProfileSessionForAccess();
   const { logout, changeServer } = useAuth();
   const { storage } = useTentacleConfig();
   const { setServerUrl } = useServerUrl();
@@ -38,7 +39,7 @@ export function AccountAccessHost() {
     const leave = () => reportAccountAccess({ state: "allowed" });
     if (action === "switchProfile") {
       leave();
-      endProfileSessionForAccess();
+      endProfileSession();
       return;
     }
     if (action === "changeServer") {
@@ -57,7 +58,7 @@ export function AccountAccessHost() {
         toLogin();
       },
     });
-  }, [changeServer, logout, router, setServerUrl, storage]);
+  }, [changeServer, endProfileSession, logout, router, setServerUrl, storage]);
 
   if (!page) return null;
   return (
