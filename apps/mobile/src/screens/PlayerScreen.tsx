@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, StatusBar } from "react-native";
+import { View } from "react-native";
 import { PLAYER } from "@/theme";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useMediaItem, useUserId } from "@tentacle-tv/api-client";
@@ -29,6 +29,7 @@ import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlaybackProblemView } from "../components/problems/PlaybackProblemView";
 import type { PlaybackFailureReport } from "../player/problems/playbackFailure";
 import { usePlayerProblem } from "../player/problems/usePlayerProblem";
+import { PlayerStatusBar, useChromeVisibility } from "../player/chrome/PlayerStatusBar";
 
 interface Props { itemId: string; version?: string }
 
@@ -61,11 +62,9 @@ export function PlayerScreen({ itemId, version }: Props) {
   /** Un scrub est en cours — l'arbitre suspend décomptes et surcouches. */
   const [scrubbing, setScrubbing] = useState(false);
 
-  // Orientation : sur le Stack.Screen (`app/_layout.tsx`, "all"), plus sûr qu'un lockAsync.
-  useEffect(() => {
-    StatusBar.setHidden(true);
-    return () => { StatusBar.setHidden(false); };
-  }, []);
+  // Orientation : `app/_layout.tsx` ("all"). La barre d'état suit les commandes (`PlayerStatusBar`).
+  const chrome = useChromeVisibility(overlayVisible);
+  const [pipActive, setPipActive] = useState(false);
 
   // Fetch PlaybackInfo once the item metadata is ready
   useEffect(() => {
@@ -127,9 +126,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   });
 
   // Image dans l'image : l'habillage n'a rien à faire dans la petite fenêtre.
-  const onPipChange = useCallback((active: boolean) => {
-    if (active) setOverlayVisible(false);
-  }, []);
+  const onPipChange = useCallback((active: boolean) => { setPipActive(active); if (active) setOverlayVisible(false); }, []);
 
   const {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
@@ -203,10 +200,11 @@ export function PlayerScreen({ itemId, version }: Props) {
   // « Vous regardez encore ? » — tout toucher sur le lecteur est une présence.
   const stillWatching = useMobileStillWatching({ paused, buffering: isBuffering, started, setPaused });
 
+  const statusBar = <PlayerStatusBar controlsVisible={chrome.shown && started} pipActive={pipActive} />;
   // Le message — quoi, pourquoi, quoi faire —, une fois l'échec diagnostiqué.
   if (failure.problem) {
     return (
-      <PlaybackProblemView model={failure.problem} item={pb.item ?? routedItem} onAction={failure.onAction} onBack={leavePlayer} />
+      <>{statusBar}<PlaybackProblemView model={failure.problem} item={pb.item ?? routedItem} onAction={failure.onAction} onBack={leavePlayer} /></>
     );
   }
 
@@ -214,6 +212,7 @@ export function PlayerScreen({ itemId, version }: Props) {
   if (!pb.streamUrl || failure.diagnosing) {
     return (
       <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
+        {statusBar}
         <PlayerLoadingScreen item={pb.item ?? routedItem} onCancel={leavePlayer} />
       </View>
     );
@@ -256,6 +255,7 @@ export function PlayerScreen({ itemId, version }: Props) {
       onToggleOverlay={toggleOverlay} onActivity={stillWatching.reportActivity}
       onSwipeDown={leavePlayer}
     >
+      {statusBar}
       <MobilePlayerOverlay
         title={pb.item?.Name ?? ""}
         currentTime={seek.target ?? currentTime}
@@ -283,6 +283,7 @@ export function PlayerScreen({ itemId, version }: Props) {
         onScrubStateChange={setScrubbing}
         visible={overlayVisible}
         onToggle={toggleOverlay}
+        onFadeStart={chrome.onFadeStart}
       />
 
       <PlayerQualityNotice drop={qualityDrop} started={started} itemId={itemId} />

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
+import { useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from "react";
+import { View, Pressable, Animated, Platform, useWindowDimensions } from "react-native";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
-import { ArrowLeft, Captions, Settings, List } from "lucide-react-native";
+import { Captions, Settings, List } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MediaItem, QualityDrop } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
@@ -17,6 +17,7 @@ import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
 import type { LocalTrickplay } from "../hooks/offline/useLocalTrickplay";
 import type { NextEpisodeArtwork } from "../hooks/offline/useNextEpisodeArtwork";
 import { LocalPlayerEpisodePicker } from "./player/LocalPlayerEpisodePicker";
+import { PlayerTopBar } from "./player/PlayerTopBar";
 
 // AirPlay button — iOS only (native AVRoutePickerView)
 const AirPlaySection = Platform.OS === "ios"
@@ -74,6 +75,10 @@ interface Props {
   onScrubStateChange?: (active: boolean) => void;
   visible: boolean;
   onToggle: () => void;
+  /** L'effacement automatique COMMENCE : la barre d'état part avec les commandes. */
+  onFadeStart?: () => void;
+  /** Le haut droit de la barre du haut (image dans l'image, diffusion). */
+  topActions?: ReactNode;
 }
 
 export function MobilePlayerOverlay({
@@ -84,7 +89,7 @@ export function MobilePlayerOverlay({
   onPlayPause, onSeek, onSkip, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode, onScrubStateChange,
-  visible, onToggle,
+  visible, onToggle, onFadeStart, topActions,
 }: Props) {
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -116,10 +121,11 @@ export function MobilePlayerOverlay({
     if (hideTimer.current) clearTimeout(hideTimer.current);
     if (!paused) {
       hideTimer.current = setTimeout(() => {
+        onFadeStart?.();
         Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => onToggle());
       }, 4000);
     }
-  }, [paused, opacity, onToggle]);
+  }, [paused, opacity, onToggle, onFadeStart]);
 
   useEffect(() => {
     if (visible) {
@@ -149,13 +155,8 @@ export function MobilePlayerOverlay({
             onPress={onToggle}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           />
-          {/* Top bar — safe-area pour ne pas chevaucher la status bar (portrait). */}
-          <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "center", paddingTop: Math.max(12, insets.top), paddingLeft: Math.max(16, insets.left), paddingRight: Math.max(16, insets.right), gap: 12 }}>
-            <Pressable onPress={onBack} hitSlop={16} style={{ padding: 4 }}>
-              <ArrowLeft size={Math.round(26 * ui)} color={PLAYER.text} />
-            </Pressable>
-            <Text numberOfLines={1} style={{ color: PLAYER.text, fontSize: Math.round(16 * ui), fontWeight: "600", flex: 1 }}>{title}</Text>
-          </View>
+          {/* Barre du haut — marge stable, heure et batterie là où iOS masque les siennes. */}
+          <PlayerTopBar title={title} ui={ui} onBack={onBack} actions={topActions} />
 
           {/* Center controls — box-none : les zones vides laissent passer le tap
               vers le Pressable de fond (toggle overlay), seuls les boutons captent. */}

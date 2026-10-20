@@ -5,6 +5,7 @@
 // props déclaratives, sélection par ff-index, route AirPlay.
 import AVFoundation
 import CoreMedia
+import UIKit
 import ExpoModulesCore
 import VideoToolbox
 
@@ -55,6 +56,15 @@ public class MpvPlayerModule: Module {
       #else
       return false
       #endif
+    }
+
+    /// La batterie, pour l'heure et la batterie du lecteur quand iOS masque
+    /// sa barre d'état (iPhone en paysage). `level` de 0 à 1, -1 inconnu.
+    Function("batteryStatus") { () -> [String: Any] in
+      let device = UIDevice.current
+      if !device.isBatteryMonitoringEnabled { device.isBatteryMonitoringEnabled = true }
+      let state = device.batteryState
+      return ["level": Double(device.batteryLevel), "charging": state == .charging || state == .full]
     }
 
     View(MpvPlayerView.self) {
