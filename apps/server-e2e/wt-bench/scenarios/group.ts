@@ -12,7 +12,7 @@ const WT = "/api/watch-together";
 
 /**
  * Quitte tout groupe laissé par un passage précédent (état serveur en mémoire).
- * Avec l'adhésion par appareil (serveur 1.32.0), un nouveau contexte est un
+ * Avec l'adhésion par appareil (serveur 1.31.1), un nouveau contexte est un
  * AUTRE appareil : la salle du compte lui est « ailleurs » — il la rejoint ici
  * pour pouvoir la quitter, jusqu'à ce que le compte n'en ait plus.
  */
