@@ -13,6 +13,8 @@ import { activePluginsQueryOptions, toNotifPluginMeta } from "@/hooks/useActiveP
 import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { openFamilyNotification } from "@/family/familyPosterStore";
 import { libraryTitleLookup } from "@/services/notificationDestination";
+import { readActiveProfile } from "@/family/profiles/profileSessionCore";
+import { STILL_WATCHING_NOTICE_TYPE } from "@/player/stillWatching/backgroundNotice";
 import {
   configureNotificationHandler,
   registerForPushToken,
@@ -36,7 +38,9 @@ export function PushRegistrationSync({
   storage: StorageAdapter;
   serverUrl: string | null;
 }) {
-  const token = storage.getItem("tentacle_token");
+  // Une session de PROFIL (Famille) ne s'abonne pas : le serveur lui refuse
+  // `/api/push` ; l'abonnement du compte de l'appareil reste celui d'avant.
+  const token = readActiveProfile(storage) ? null : storage.getItem("tentacle_token");
   const register = useRegisterPushDevice();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -75,6 +79,8 @@ export function PushRegistrationSync({
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
       const type = data?.type ?? "";
+      // « Vous regardez encore ? » (notification locale du lecteur) : revenir à l'app suffit, le lecteur y est.
+      if (type === STILL_WATCHING_NOTICE_TYPE) return;
       // Notifications LOCALES du hors ligne : l'écran « Sur cet appareil ».
       if (type === "offline_ready" || type === "offline_disk_full") {
         router.push("/on-device" as never);

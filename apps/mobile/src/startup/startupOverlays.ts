@@ -11,9 +11,11 @@
  * Un hôte démonté se tait. Les MODALES, elles, se déclarent au portier
  * (`components/ui/modalGate`) : ce registre ne les double pas.
  *
- * Deux recouvrements passent APRÈS tous les autres, dans un ordre fixe
- * (`LATE_STARTUP_OVERLAYS`) : l'invitation aux avatars, puis « Action
- * recommandée : posez votre code PIN ». Chacun attend ceux d'avant
+ * Trois recouvrements passent APRÈS tous les autres, dans un ordre fixe
+ * (`LATE_STARTUP_OVERLAYS`) : le premier lancement d'un profil (code PIN,
+ * accueil, photo), l'invitation aux avatars, puis « Action recommandée :
+ * posez votre code PIN » — ces deux-là se taisent quand le premier lancement
+ * les a déjà couverts. Chacun attend ceux d'avant
  * (`startupOverlaysQuietBefore`), jamais ceux d'après — sinon ils
  * s'attendraient l'un l'autre.
  *
@@ -25,6 +27,8 @@ export type StartupOverlayKey =
   | "notices"
   /** L'affiche d'invitation de la Famille. */
   | "family"
+  /** « Qui regarde ? » à l'ouverture (session de profil, serveur 1.32.0). */
+  | "profiles"
   /** Les messages envoyés par l'administrateur à cet appareil. */
   | "messages"
   /** L'écran d'attente de la migration de la base du serveur. */
@@ -33,13 +37,15 @@ export type StartupOverlayKey =
   | "connectivity"
   /** Une demande de permission du système (notifications). */
   | "permission"
-  /** L'invitation unique aux avatars — tardive : après tous les ordinaires. */
+  /** Le premier lancement d'un profil sur cet appareil — tardif : le premier des tardifs. */
+  | "firstRun"
+  /** L'invitation unique aux avatars — tardive : après le premier lancement. */
   | "avatars"
   /** « Action recommandée : posez votre code PIN » — tardive : après l'invitation aux avatars. */
   | "familyPin";
 
 /** Les recouvrements tardifs, dans leur ordre de passage. */
-export const LATE_STARTUP_OVERLAYS: readonly StartupOverlayKey[] = ["avatars", "familyPin"];
+export const LATE_STARTUP_OVERLAYS: readonly StartupOverlayKey[] = ["firstRun", "avatars", "familyPin"];
 
 export type StartupOverlayState = "pending" | "active" | "quiet";
 

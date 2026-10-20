@@ -34,6 +34,8 @@ import {
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
   RECO_PAGE_KEY,
+  resyncPlaybackSettings,
+  resyncStillWatching,
 } from "@tentacle-tv/api-client";
 import { i18n } from "@tentacle-tv/shared";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -43,6 +45,7 @@ import { ThemeProvider } from "@/theme";
 import { PushRegistrationSync } from "@/hooks/usePushRegistration";
 import { TranscodeCleanupSync } from "@/providers/TranscodeCleanupSync";
 import { SessionChannelSync } from "@/session/SessionChannelSync";
+import { useSessionEpoch } from "@/family/profiles/sessionEpoch";
 import { StorageReadyContext } from "./StorageReadyContext";
 import { MOBILE_BITRATE_MEASURE } from "@/utils/bitrateMeasureOptions";
 
@@ -85,6 +88,9 @@ attachQueryPersister(queryClient, mobilePersistStorage, {
 });
 
 export function AppProviders({ storage, uuid, serverUrl, storageReady, children }: AppProvidersProps) {
+  // Une bascule de profil (Famille, `family/profiles/switchSession.ts`) fait avancer l'époque :
+  // le client renaît au nom du nouveau jeton, comme le rechargement de page du bureau.
+  const sessionEpoch = useSessionEpoch();
   const client = useMemo(() => {
     const jellyfinBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
     const MOBILE_VERSION: string = require("../../package.json").version ?? "1.0.0";
@@ -96,7 +102,7 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
     if (token) c.setAccessToken(token);
     return c;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverUrl]);
+  }, [serverUrl, sessionEpoch]);
 
   // L'hydratation du stockage finit APRÈS la construction du client (premier
   // rendu) : il relit ici la graine et l'identité adoptée persistées — sans
@@ -134,6 +140,14 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
       setShareLinkToken(token); setPairingToken(token); setPushToken(token);
     }
   }, [serverUrl, client, storage]);
+
+  // Après une bascule de profil : les réglages du COMPTE (lecture, « Vous regardez encore ? »)
+  // sont ceux du nouveau profil, relus aussitôt — jamais ceux du précédent gardés en cache.
+  useEffect(() => {
+    if (sessionEpoch === 0 || !storageReady) return;
+    resyncPlaybackSettings();
+    resyncStillWatching();
+  }, [sessionEpoch, storageReady]);
 
   const configValue = useMemo(
     () => ({ storage, uuid }),

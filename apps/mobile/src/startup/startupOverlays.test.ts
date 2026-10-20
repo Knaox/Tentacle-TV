@@ -70,4 +70,17 @@ describe("les recouvrements du démarrage", () => {
     reportStartupOverlay("avatars", "active");
     expect(startupOverlaysQuietBefore("notices")).toBe(true);
   });
+
+  it("le premier lancement passe en tête des tardifs, après « Qui regarde ? » et les ordinaires", () => {
+    reportStartupOverlay("profiles", "active");
+    reportStartupOverlay("firstRun", "pending");
+    expect(startupOverlaysQuietBefore("firstRun")).toBe(false);
+    reportStartupOverlay("profiles", "quiet");
+    expect(startupOverlaysQuietBefore("firstRun")).toBe(true);
+    // L'invitation aux avatars et le code PIN l'attendent.
+    expect(startupOverlaysQuietBefore("avatars")).toBe(false);
+    expect(startupOverlaysQuietBefore("familyPin")).toBe(false);
+    reportStartupOverlay("firstRun", "quiet");
+    expect(startupOverlaysQuietBefore("avatars")).toBe(true);
+  });
 });

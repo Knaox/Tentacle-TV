@@ -202,6 +202,11 @@ export const SERVER_CAPABILITIES = {
    *  par le serveur après 6 s sans nouvelle, jamais relayé à soi-même). Sans elle, rien n'est
    *  envoyé : un serveur d'avant répondrait `invalid` à chaque frappe. */
   "watchTogether.typing": "1.32.0",
+  /** « Qui regarde ? » sur le MOBILE (téléphone, tablette) : la plateforme `mobile` des routes
+   *  `/api/family/picker/*` (`FAMILY_PICKER_PLATFORMS`) — profils de la famille, session de
+   *  profil de l'appareil, PIN vérifié par le serveur, comme le bureau. Sans elle, le mobile
+   *  ne montre ni « Qui regarde ? » ni « Changer de profil ». */
+  "family.mobileProfiles": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

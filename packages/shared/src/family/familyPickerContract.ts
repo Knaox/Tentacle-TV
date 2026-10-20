@@ -34,14 +34,26 @@ import type { FamilyProfileColor, FamilyProfileKind, FamilyRights, FamilySwitche
  */
 
 /** Les plateformes où « Qui regarde ? » existe hors des TV — liste FERMÉE :
- *  le serveur refuse toute autre valeur (`family.invalid_input`). Le web et le
- *  mobile pourront suivre, chacun avec sa capacité. */
-export const FAMILY_PICKER_PLATFORMS = ["desktop"] as const;
+ *  le serveur refuse toute autre valeur (`family.invalid_input`). Le mobile
+ *  (téléphone, tablette) depuis le serveur 1.32.0, capacité
+ *  `family.mobileProfiles` : les MÊMES routes, les mêmes règles que le bureau
+ *  (son hôte, ses sessions de profil — le serveur les appelle `desktopProfile`,
+ *  nom interne de « session de profil hors TV »). Le mobile ne lit pas la
+ *  politique d'ouverture du bureau (`launchPolicy`) : il retient le profil
+ *  choisi sur l'appareil et ne redemande plus. Le web pourra suivre, avec sa
+ *  capacité. */
+export const FAMILY_PICKER_PLATFORMS = ["desktop", "mobile"] as const;
 export type FamilyPickerPlatform = (typeof FAMILY_PICKER_PLATFORMS)[number];
 
 export function isPickerPlatform(value: unknown): value is FamilyPickerPlatform {
   return typeof value === "string" && (FAMILY_PICKER_PLATFORMS as readonly string[]).includes(value);
 }
+
+/** Les plateformes de l'ANCIENNE préférence du compte (`PickerPreferenceDto`),
+ *  gardée pour les bureaux d'avant la 1.30.0 — le bureau seul : le mobile ne
+ *  l'a jamais lue ni écrite. Liste FERMÉE. */
+export const FAMILY_PICKER_PREFERENCE_PLATFORMS = ["desktop"] as const;
+export type FamilyPickerPreferencePlatform = (typeof FAMILY_PICKER_PREFERENCE_PLATFORMS)[number];
 
 /** Les plateformes que l'administration règle — liste FERMÉE : `desktop` (le
  *  bureau) et `tv` (Apple TV, Android TV). Les routes `/picker/*` restent
@@ -156,7 +168,8 @@ export interface PickProfileBody {
   /** Quatre chiffres, si le profil en a un — SON profil compris. */
   pin?: string;
   /** Le nom de cet appareil, montré par le tableau de bord de Jellyfin
-   *  (`FAMILY_PICKER_DEVICE_NAME_MAX` caractères au plus) ; absent : « Desktop ». */
+   *  (`FAMILY_PICKER_DEVICE_NAME_MAX` caractères au plus) ; absent : « Desktop »
+   *  (« Mobile » pour la plateforme `mobile`). */
   deviceName?: string;
 }
 
@@ -174,10 +187,10 @@ export type PickedProfileDto =
 export interface PickerPreferenceDto {
   /** Par plateforme : l'ancienne préférence du COMPTE — plus lue par un bureau
    *  à jour (il décide par appareil : voir l'en-tête). */
-  atLaunch: Record<FamilyPickerPlatform, boolean>;
+  atLaunch: Record<FamilyPickerPreferencePlatform, boolean>;
 }
 
 export interface SetPickerPreferenceBody {
-  platform: FamilyPickerPlatform;
+  platform: FamilyPickerPreferencePlatform;
   atLaunch: boolean;
 }

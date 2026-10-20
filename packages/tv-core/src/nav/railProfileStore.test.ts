@@ -216,3 +216,26 @@ describe("rail par profil — nombre de bibliothèques vu", () => {
     expect(store.readLibraryCount("alice")).toBeNull();
   });
 });
+
+describe("rail par profil — « Reproposer » du serveur", () => {
+  it("reopenSetup rend la préconfiguration à faire, la disposition gardée, et notifie", () => {
+    const storage = fakeStorage();
+    const store = createProfileRailStore(storage, identity("alice").read);
+    store.completeSetup("alice", { masquees: ["Library_b"], order: ["Library_a"] });
+    expect(store.readSnapshot().setupDone).toBe(true);
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.reopenSetup("alice");
+    expect(store.readSnapshot()).toMatchObject({ masquees: ["Library_b"], order: ["Library_a"], setupDone: false });
+    expect(profilesOf(storage)).toEqual({ alice: { masquees: ["Library_b"], order: ["Library_a"] } });
+    expect(listener).toHaveBeenCalled();
+  });
+
+  it("sans préconfiguration faite (ou sans entrée), rien n'est écrit", () => {
+    const storage = fakeStorage();
+    const store = createProfileRailStore(storage, identity("alice").read);
+    store.reopenSetup("alice");
+    store.reopenSetup("");
+    expect(storage.content.get(RAIL_PROFILES_STORAGE_KEY)).toBeUndefined();
+  });
+});

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { FIRST_RUN_STEP_IDS } from "@tentacle-tv/shared";
 import { STARTUP_WINDOWS, nextStartupWindow, startupRouteOf } from "./startupWindows";
 
 describe("les fenêtres du démarrage — un registre ordonné, une à la fois", () => {
@@ -38,5 +39,11 @@ describe("les fenêtres du démarrage — un registre ordonné, une à la fois",
   it("une fenêtre fermée ne revient pas : on cherche après elle", () => {
     expect(nextStartupWindow({ railSetup: true }, "railSetup")).toBeNull();
     expect(nextStartupWindow({ pinSetup: true }, "railSetup")).toBeNull();
+  });
+});
+
+describe("le même ordre hors TV", () => {
+  it("le premier lancement du mobile et du web étroit suit l'ordre de la TV (la barre y est l'accueil)", () => {
+    expect(STARTUP_WINDOWS.map((window) => (window === "railSetup" ? "homeRows" : window))).toEqual([...FIRST_RUN_STEP_IDS]);
   });
 });

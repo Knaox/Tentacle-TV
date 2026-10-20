@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { AppState } from "react-native";
 import type { QueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -12,6 +12,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { setSessionExpired } from "@/auth/sessionState";
 import { attemptReAuth, loginIdentity } from "@/auth/credentialManager";
+import { endMobileProfileSession } from "@/family/profiles/switchSession";
 
 /** Équivalent d'AbortSignal.timeout(), que React Native ne fournit pas */
 function timeoutSignal(ms: number): AbortSignal {
@@ -41,6 +42,18 @@ interface AuthRefreshOptions {
  */
 export function useAuthRefresh({ client, storage, serverUrl, queryClient }: AuthRefreshOptions) {
   const router = useRouter();
+
+  /** Un 401 pendant une session de PROFIL de la Famille : c'est elle qui a pris
+   *  fin (profil retiré, code changé…), pas le compte. Retour en coulisse à la
+   *  session personnelle, puis « Qui regarde ? » — jamais une reconnexion par
+   *  les identifiants, jamais le compte sans son code. */
+  const endedProfile = useCallback((): boolean => {
+    if (!serverUrl) return false;
+    if (!endMobileProfileSession({ storage, serverUrl, clearCache: () => queryClient.clear() }, "ended")) return false;
+    // L'accueil : la porte du lancement montre « Qui regarde ? » d'elle-même (demande posée par la fin).
+    router.replace("/(tabs)" as never);
+    return true;
+  }, [storage, serverUrl, queryClient, router]);
 
   // Jeton expiré, signalé par le client : tenter un rafraîchissement avant de déconnecter
   useEffect(() => {
@@ -78,6 +91,7 @@ export function useAuthRefresh({ client, storage, serverUrl, queryClient }: Auth
           }
 
           if (res.status === 401) {
+            if (endedProfile()) return;
             const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
             if (reAuth) {
               client.setAccessToken(reAuth.AccessToken);
@@ -109,7 +123,7 @@ export function useAuthRefresh({ client, storage, serverUrl, queryClient }: Auth
         isRefreshing = false;
       }
     });
-  }, [client, storage, router, serverUrl, queryClient]);
+  }, [client, storage, router, serverUrl, queryClient, endedProfile]);
 
   // Retour au premier plan : revalider le jeton
   useEffect(() => {
@@ -136,6 +150,7 @@ export function useAuthRefresh({ client, storage, serverUrl, queryClient }: Auth
           client.resetAuthState();
           queryClient.invalidateQueries();
         } else if (res.status === 401) {
+          if (endedProfile()) return;
           const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
           if (reAuth) {
             client.setAccessToken(reAuth.AccessToken);
@@ -165,5 +180,5 @@ export function useAuthRefresh({ client, storage, serverUrl, queryClient }: Auth
       }
     });
     return () => sub.remove();
-  }, [client, storage, router, serverUrl, queryClient]);
+  }, [client, storage, router, serverUrl, queryClient, endedProfile]);
 }

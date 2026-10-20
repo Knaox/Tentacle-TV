@@ -23,7 +23,7 @@ export {
 // partagés du compte, et LA coquille d'overlay des six surfaces.
 export { usePlaybackSegments } from "../hooks/usePlaybackSegments";
 export {
-  usePlaybackSettings, usePlaybackSettingsStore, setPlaybackSettings, rehydratePlaybackSettings, initPlaybackSettingsStore,
+  usePlaybackSettings, usePlaybackSettingsStore, setPlaybackSettings, rehydratePlaybackSettings, resyncPlaybackSettings, initPlaybackSettingsStore,
   setGroupPlaybackSettings, groupPlaybackSettings, useOwnPlaybackSettings,
 } from "../hooks/usePlaybackSettings";
 export {

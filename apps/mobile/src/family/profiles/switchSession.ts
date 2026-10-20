@@ -1,0 +1,129 @@
+import {
+  ACCOUNT_SESSION_KEY,
+  activeProfileOf,
+  enterProfile,
+  forgetProfileSession,
+  MOBILE_PROFILE_STAY_KEY,
+  pickerStayOf,
+  returnToAccount,
+  writeMobileStay,
+  type KeyValueStore,
+  type PickedProfileDto,
+} from "@tentacle-tv/shared";
+import { accountUserId, notifyProfileSessionChange, readActiveProfile } from "./profileSessionCore";
+import { bumpSessionEpoch, clearProfilePickerRequest, requestProfilePicker } from "./sessionEpoch";
+
+/**
+ * Les BASCULES de session du mobile — module sans React Native, testé sous
+ * vitest (`switchSession.test.ts`). Le stockage s'écrit par le module pur
+ * partagé (`profileSessionStore`) ; l'app « repart » ensuite au nom du
+ * nouveau profil : cache vidé, époque avancée (`AppProviders` reconstruit son
+ * client), puis l'appelant ramène à l'accueil.
+ */
+
+export interface SwitchDeps {
+  storage: KeyValueStore;
+  serverUrl: string;
+  /** Vide le cache des requêtes (`queryClient.clear`). */
+  clearCache: () => void;
+}
+
+export type SwitchResult = "stay" | "switched" | "failed";
+
+/**
+ * La réserve du compte va au TROUSSEAU (`RNStorageAdapter`), qui borne ses
+ * valeurs (~2 Ko côté expo-secure-store) : le `tentacle_user` mis de côté y
+ * perd `Configuration` (préférences d'affichage de Jellyfin, relues au retour
+ * par `refreshStoredUser`) et garde le reste, `Policy` comprise.
+ */
+export function compactingStore(storage: KeyValueStore): KeyValueStore {
+  return {
+    getItem: (key) => storage.getItem(key),
+    removeItem: (key) => storage.removeItem(key),
+    setItem: (key, value) => storage.setItem(key, key === ACCOUNT_SESSION_KEY ? compactStash(value) : value),
+  };
+}
+
+function compactStash(raw: string): string {
+  try {
+    const stash = JSON.parse(raw) as { user?: unknown };
+    if (typeof stash.user !== "string") return raw;
+    const { Configuration: _dropped, ...user } = JSON.parse(stash.user) as Record<string, unknown>;
+    return JSON.stringify({ ...stash, user: JSON.stringify(user) });
+  } catch {
+    return raw;
+  }
+}
+
+/** Le profil choisi est retenu sur l'appareil (jamais redemandé tant qu'il vaut). */
+function rememberChoice(deps: SwitchDeps, accountId: string | null, picked: PickedProfileDto): void {
+  if (!accountId) return;
+  deps.storage.setItem(
+    MOBILE_PROFILE_STAY_KEY,
+    writeMobileStay(deps.storage.getItem(MOBILE_PROFILE_STAY_KEY), deps.serverUrl, accountId, pickerStayOf(picked.profile)),
+  );
+}
+
+/**
+ * Ce qui suit la réponse du serveur : son propre profil depuis la session
+ * personnelle → rien ne bascule (`stay`) ; son profil depuis celle d'un
+ * autre → la session personnelle reprend ; un autre profil → son jeton
+ * devient celui de l'app.
+ */
+export function commitMobilePick(picked: PickedProfileDto, deps: SwitchDeps): SwitchResult {
+  const accountId = accountUserId(deps.storage);
+  const held = readActiveProfile(deps.storage);
+  clearProfilePickerRequest();
+  if (picked.personal && !held) {
+    rememberChoice(deps, accountId, picked);
+    return "stay";
+  }
+  let swapped: boolean;
+  try {
+    swapped = picked.personal
+      ? returnToAccount(deps.storage)
+      : enterProfile(compactingStore(deps.storage), { token: picked.token, user: picked.user, profile: activeProfileOf(picked.profile) });
+  } catch {
+    swapped = false;
+  }
+  if (!swapped) return "failed";
+  rememberChoice(deps, accountId, picked);
+  restart(deps);
+  return "switched";
+}
+
+/** Oublie le profil retenu (« Changer de profil » : le prochain choix le remplace). */
+export function forgetMobileStay(deps: Pick<SwitchDeps, "storage" | "serverUrl">): void {
+  const accountId = accountUserId(deps.storage);
+  if (!accountId) return;
+  deps.storage.setItem(MOBILE_PROFILE_STAY_KEY, writeMobileStay(deps.storage.getItem(MOBILE_PROFILE_STAY_KEY), deps.serverUrl, accountId, null));
+}
+
+/**
+ * La session de profil a pris fin (le serveur l'a coupée : 401 au
+ * rafraîchissement) : retour EN COULISSE à la session personnelle, puis
+ * « Qui regarde ? » exigé — jamais le compte sans son code, jamais une
+ * déconnexion. Faux hors d'une session de profil (l'appelant fait comme avant).
+ */
+export function endMobileProfileSession(deps: SwitchDeps, reason: string): boolean {
+  if (!readActiveProfile(deps.storage)) return false;
+  if (!returnToAccount(deps.storage)) {
+    forgetProfileSession(deps.storage);
+    return false;
+  }
+  requestProfilePicker(reason);
+  restart(deps);
+  return true;
+}
+
+/** La déconnexion du compte : la session de profil s'oublie avec lui. */
+export function forgetMobileProfileSession(storage: KeyValueStore): void {
+  forgetProfileSession(storage);
+  notifyProfileSessionChange();
+}
+
+function restart(deps: SwitchDeps): void {
+  deps.clearCache();
+  notifyProfileSessionChange();
+  bumpSessionEpoch();
+}

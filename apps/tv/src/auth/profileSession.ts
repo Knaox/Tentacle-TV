@@ -32,6 +32,7 @@ import { navigationRef } from "../navigation/navigationRef";
 import { scheduleRevocationDrain } from "./revocationQueue";
 import { notifySessionChanged } from "./sessionEvents";
 import type { UnpairContext } from "./unpair";
+import { railPinningStore } from "../components/nav/railPinning";
 
 /**
  * La SESSION DE PROFIL de l'Apple TV (Famille) — l'ouvrir, la quitter. Le
@@ -118,7 +119,8 @@ export function adoptProfileSession(
   storage.setItem("tentacle_user", JSON.stringify({ Id: session.user.id, Name: session.user.name }));
   // « Reproposer le code PIN et la photo » (serveur 1.30.0) : AVANT le profil retenu, que le registre
   // du démarrage lit aussitôt.
-  honorTvPromptsReset(storage, session.profile);
+  // La barre aussi (sa disposition gardée) : elle repasse entre le code et la photo.
+  if (honorTvPromptsReset(storage, session.profile)) railPinningStore.reopenSetup(session.profile.userId);
   writeProfileRecord(storage, profileRecordOf(session.profile, listing, session.remembered ? "sticky" : launch));
   notifySessionChanged();
   void followProfileLanguage(storage, session.token);
