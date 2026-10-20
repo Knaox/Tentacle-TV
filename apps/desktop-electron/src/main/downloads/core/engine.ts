@@ -22,6 +22,7 @@
 import type { EngineDeps } from "./engineDeps";
 import { applyEnd, mediaAwaitingFinalize, runFinalize } from "./engineEnd";
 import { cancelFile, pauseFile, resumeFile } from "./engineGestures";
+import { NetworkRetryLadder } from "./networkRetry";
 import { RETRY_DELAYS_MS, RetryScheduler } from "./retry";
 import {
   countQueued,
@@ -61,9 +62,12 @@ export class DownloadEngine {
   /** Entre `suspendForSystem` et `resumeSystemPauses` : les conditions manquent. */
   private systemSuspended = false;
   private readonly retries: RetryScheduler;
+  /** Coupures réseau d'affilée : la marche de leur relance (`networkRetry.ts`). */
+  private readonly networkRetries: NetworkRetryLadder;
 
   constructor(private readonly deps: EngineDeps) {
     this.retries = new RetryScheduler(deps.db, deps.now, () => this.sweepRetries());
+    this.networkRetries = new NetworkRetryLadder(deps.networkRetryDelaysMs);
   }
 
   isActive(fileId: number): boolean {
@@ -178,6 +182,9 @@ export class DownloadEngine {
   private async work(creds: Creds, fileId: number, flags: TransferFlags): Promise<void> {
     const file = getFile(this.deps.db, fileId);
     let end: TransferEnd;
+    // Des octets reçus pendant CET essai : la coupure qui suivra repartira de
+    // la première marche des relances.
+    let moved = false;
     const received =
       file === null || this.deps.finalizeMedia === undefined
         ? null
@@ -199,7 +206,10 @@ export class DownloadEngine {
             volume: this.deps.volume(),
             driver: this.deps.driver,
             fetchBytes: this.deps.makeFetcher(creds.token),
-            onProgress: (id, bytes) => this.progress(id, bytes, expected),
+            onProgress: (id, bytes) => {
+              moved = true;
+              this.progress(id, bytes, expected);
+            },
             onExpected: (id, totalBytes) => {
               expected = totalBytes;
               setExpectedSize(this.deps.db, id, totalBytes, this.deps.now());
@@ -233,7 +243,7 @@ export class DownloadEngine {
         end = await this.finalize(file, end.finalSize);
       }
     }
-    this.finish(fileId, end);
+    this.finish(fileId, end, moved);
   }
 
   private finalize(file: FileRow, finalSize: number): Promise<TransferEnd> {
@@ -253,13 +263,15 @@ export class DownloadEngine {
     this.deps.emit("downloads://progress", { fileId, bytesDone: bytes, expectedSize });
   }
 
-  private finish(fileId: number, end: TransferEnd): void {
+  private finish(fileId: number, end: TransferEnd, moved: boolean): void {
     this.active.delete(fileId);
+    const now = this.deps.now();
     applyEnd(this.deps.db, fileId, end, {
-      nowMs: this.deps.now(),
+      nowMs: now,
       systemSuspended: this.systemSuspended,
       canTransfer: this.deps.canTransfer,
       retryDelaysMs: this.deps.retryDelaysMs ?? RETRY_DELAYS_MS,
+      networkRetryAt: this.networkRetries.dueAt(fileId, end, { moved, systemSuspended: this.systemSuspended, nowMs: now }),
     });
     this.notifyChanged();
     this.pump();

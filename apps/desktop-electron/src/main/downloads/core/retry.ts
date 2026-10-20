@@ -20,6 +20,27 @@ import { integer, integerOrNull } from "./rows";
 /** Trois essais : la minute couvre une coupure passagère, au-delà c'est un vrai défaut. */
 export const RETRY_DELAYS_MS: readonly number[] = [5_000, 15_000, 60_000];
 
+/**
+ * Une COUPURE réseau (flux coupé, serveur muet, 5xx) n'est pas une erreur :
+ * c'est une pause système. Jusqu'ici, seul un évènement la relançait — retour
+ * au premier plan, changement de réseau, redémarrage. Application derrière ou
+ * écran verrouillé, rien de tout cela n'arrive : un transfert coupé une fois
+ * ne repartait JAMAIS en arrière-plan (alpha mobile, 21/10). Il se relance
+ * donc seul, sans limite de tentatives, à des intervalles qui s'allongent puis
+ * plafonnent à cinq minutes.
+ */
+export const NETWORK_RETRY_DELAYS_MS: readonly number[] = [5_000, 15_000, 30_000, 60_000, 120_000, 300_000];
+
+/**
+ * Le délai de la tentative `attempt` (0 = la première) : la dernière marche de
+ * l'échelle se répète. Échelle vide : aucune relance (`null`).
+ */
+export function networkRetryDelay(attempt: number, delays: readonly number[] = NETWORK_RETRY_DELAYS_MS): number | null {
+  if (delays.length === 0) return null;
+  const index = Math.min(Math.max(0, Math.trunc(attempt)), delays.length - 1);
+  return delays[index] ?? null;
+}
+
 /** Ce qui peut guérir tout seul. Voir l'en-tête pour ce qui en est exclu. */
 export const RETRYABLE_CODES: ReadonlySet<string> = new Set(["io", "finalize", "unexpected"]);
 
@@ -48,6 +69,20 @@ export function recordFailure(
   return delay !== undefined;
 }
 
+/**
+ * Date la relance d'une pause système née d'une coupure réseau. Ne consomme
+ * aucune des trois tentatives des vraies erreurs (`retry_count`) : une nuit de
+ * Wi-Fi capricieux ne doit pas épuiser les relances d'un disque occupé.
+ */
+export function scheduleNetworkRetry(db: DatabaseHandle, fileId: number, dueAt: number | null, nowMs: number): void {
+  db.prepare("UPDATE files SET next_retry_at = ?, last_error_at = ?, updated_at = ? WHERE id = ?").run(
+    dueAt,
+    nowMs,
+    nowMs,
+    fileId,
+  );
+}
+
 /** Un geste de l'utilisateur, ou une réussite : le compteur repart de zéro. */
 export function clearRetry(db: DatabaseHandle, fileId: number): void {
   db.prepare("UPDATE files SET retry_count = 0, next_retry_at = NULL WHERE id = ?").run(fileId);
@@ -62,11 +97,15 @@ export function clearRetry(db: DatabaseHandle, fileId: number): void {
  * d'un fichier qui n'attend plus que son remux.
  */
 export function requeueDueRetries(db: DatabaseHandle, nowMs: number): number {
+  // Les pauses SYSTÈME datées sont des coupures réseau en attente de leur
+  // relance (`scheduleNetworkRetry`) ; une pause de l'utilisateur n'a jamais
+  // d'échéance, et la condition l'exclut quand même.
   const result = db
     .prepare(
       `UPDATE files SET status = 'queued', error_code = NULL, next_retry_at = NULL,
               paused_by_user = 0, updated_at = ?
-       WHERE status = 'error' AND next_retry_at IS NOT NULL AND next_retry_at <= ?`,
+       WHERE (status = 'error' OR (status = 'paused' AND paused_by_user = 0))
+         AND next_retry_at IS NOT NULL AND next_retry_at <= ?`,
     )
     .run(nowMs, nowMs);
   return Number(result.changes);
@@ -77,7 +116,8 @@ export function nextRetryDueAt(db: DatabaseHandle): number | null {
   const row = db
     .prepare(
       `SELECT MIN(next_retry_at) AS due FROM files
-       WHERE status = 'error' AND next_retry_at IS NOT NULL`,
+       WHERE (status = 'error' OR (status = 'paused' AND paused_by_user = 0))
+         AND next_retry_at IS NOT NULL`,
     )
     .get();
   return row === undefined ? null : integerOrNull(row, "due");

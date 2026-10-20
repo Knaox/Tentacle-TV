@@ -146,6 +146,7 @@ export function makeEngine(
     // Aucune relance par défaut : un minuteur laissé armé ferait traîner la
     // suite. Les tests de relance passent leur propre échelle.
     retryDelaysMs: [],
+    networkRetryDelaysMs: [],
     emit: (event) => events.push(event),
     now: () => 1_000,
     onBusy: (busy) => toggles.push(busy),

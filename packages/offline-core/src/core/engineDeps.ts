@@ -28,6 +28,12 @@ export interface EngineDeps {
    */
   retryDelaysMs?: readonly number[];
   /**
+   * Échelle des relances d'une COUPURE réseau (pause système). Absente :
+   * `NETWORK_RETRY_DELAYS_MS`, dont la dernière marche se répète. Tableau vide :
+   * aucune relance seule, la pause attend un évènement (le banc d'essai).
+   */
+  networkRetryDelaysMs?: readonly number[];
+  /**
    * Défaillance INATTENDUE : une exception qu'aucun chemin prévu n'explique.
    * Le transfert est déjà retombé sur ses pieds quand ceci est appelé — c'est
    * une TRACE, pas une gestion d'erreur. Sans elle, le code `unexpected` reste
