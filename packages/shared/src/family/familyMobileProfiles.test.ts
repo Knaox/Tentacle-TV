@@ -3,7 +3,6 @@ import type { IncomingInvitationDto } from "./familyContract";
 import type { PickerProfileDto, PickerProfilesDto } from "./familyPickerContract";
 import {
   canSwitchMobileProfile,
-  mobileProfileLaunch,
   mobileProfilesEnabled,
   mobileStayIsStale,
   pendingInvitationCount,
@@ -47,32 +46,11 @@ describe("« Qui regarde ? » sur le mobile", () => {
     expect(canSwitchMobileProfile({ ...gate, capable: false }, listing())).toBe(false);
   });
 
-  it("premier lancement : « Qui regarde ? » ; seul : le compte, sans écran", () => {
-    expect(mobileProfileLaunch(listing(), null, null, NOW)).toBe("picker");
-    expect(mobileProfileLaunch(listing({ pickerRequired: false }), null, null, NOW)).toBe("personal");
-  });
-
-  it("le choix mémorisé n'est plus redemandé : son profil reprend", () => {
-    expect(mobileProfileLaunch(listing(), null, { profileId: "damien", hasPin: false }, NOW)).toBe("personal");
-    const inLea = listing({ currentProfileId: "lea" });
-    expect(mobileProfileLaunch(inLea, { profileId: "lea" }, { profileId: "lea", hasPin: false }, NOW)).toBe("resume");
-  });
-
-  it("jamais le compte ouvert parce que la session d'un profil a pris fin", () => {
-    // Zoé retenue, mais le serveur ne la dit plus en cours : « Qui regarde ? ».
-    expect(mobileProfileLaunch(listing(), null, { profileId: "zoe", hasPin: false }, NOW)).toBe("picker");
-    // L'app a perdu le jeton du profil en cours : jamais une session sans jeton.
-    expect(mobileProfileLaunch(listing({ currentProfileId: "lea" }), null, { profileId: "lea", hasPin: false }, NOW)).toBe("picker");
-  });
-
-  it("un choix qui ne vaut plus est redemandé : code posé depuis, profil disparu, profil bloqué", () => {
+  it("un choix qui ne vaut plus s'oublie : code posé depuis, profil disparu ; bloqué, il reste", () => {
     const withPin = listing({ profiles: [profile("damien", { kind: "owner", personal: true, hasPin: true }), profile("lea")] });
-    const old = { profileId: "damien", hasPin: false };
-    expect(mobileStayIsStale(withPin, old, NOW)).toBe(true);
-    expect(mobileProfileLaunch(withPin, null, old, NOW)).toBe("picker");
+    expect(mobileStayIsStale(withPin, { profileId: "damien", hasPin: false }, NOW)).toBe(true);
     expect(mobileStayIsStale(listing(), { profileId: "parti", hasPin: false }, NOW)).toBe(true);
     const locked = listing({ profiles: [profile("damien", { kind: "owner", personal: true, lockedUntil: "2026-10-20T04:00:00Z" }), profile("lea")] });
-    expect(mobileProfileLaunch(locked, null, { profileId: "damien", hasPin: false }, NOW)).toBe("picker");
     expect(mobileStayIsStale(locked, { profileId: "damien", hasPin: false }, NOW)).toBe(false);
   });
 

@@ -49,10 +49,12 @@ const STORAGE_KEYS = [
   "tentacle_avatar_invite_seen",
   // La session de PROFIL de la Famille (`@tentacle-tv/shared` › `profileSessionStore`) :
   // la marque du profil actif, la réserve de la session du compte (un SECRET :
-  // trousseau), le profil retenu par l'appareil (`MOBILE_PROFILE_STAY_KEY`) et
+  // trousseau), le dernier profil choisi (`MOBILE_PROFILE_STAY_KEY`), le choix
+  // « Qui regarde ? » au démarrage (`MOBILE_PROFILE_LAUNCH_KEY`) et
   // le premier lancement déjà vu par profil (`FIRST_RUN_SEEN_KEY`). Absentes d'ici,
   // l'app rouvrirait au nom du profil sans pouvoir revenir au compte.
   "tentacle_profile_session", "tentacle_account_session", "tentacle_mobile_profile_stay",
+  "tentacle_mobile_profile_launch",
   "tentacle_first_run_seen",
   // « Reproposer le code PIN et la photo » : la dernière demande du serveur honorée ici (`PROMPTS_RESET_SEEN_KEY`).
   "tentacle_prompts_reset_seen",
