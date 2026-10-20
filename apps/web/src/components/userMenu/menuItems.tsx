@@ -7,7 +7,9 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { profileColorStops, type FamilyProfileColor } from "@tentacle-tv/shared";
+import type { AccountAbilitiesState } from "@tentacle-tv/api-client";
 import { profileGradient } from "../../family/profileColors";
+import { abilityRefusals } from "./abilityRefusals";
 import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, OfflineIcon, OnDeviceIcon, PairIcon, SettingsIcon, StatsIcon } from "./icons";
 
 export interface UserInfo {
@@ -59,6 +61,8 @@ interface BuildItemsOptions {
    * INVITÉ n'a pas non plus l'Aide (ses tickets lui sont refusés).
    */
   profileSession?: { guest: boolean } | null;
+  /** Ce que le serveur dit des droits de la session (`abilityRefusals.ts`) ; absent : rien de plus. */
+  abilities?: AccountAbilitiesState;
 }
 
 export function getUserInfo(): UserInfo {
@@ -106,9 +110,10 @@ export const USER_MENU_GROUP_ORDER: readonly UserMenuGroupKey[] = ["account", "d
  */
 export function buildUserMenuGroups(opts: BuildItemsOptions): UserMenuGroup[] {
   const refused = opts.profileSession ? profileSessionRefusals(opts.profileSession) : null;
+  const denied = opts.abilities ? abilityRefusals(opts.abilities) : null;
   const all = buildAllGroups(opts);
   return USER_MENU_GROUP_ORDER
-    .map((key) => ({ key, items: all[key].filter((item) => !refused?.has(item.key)) }))
+    .map((key) => ({ key, items: all[key].filter((item) => !refused?.has(item.key) && !denied?.has(item.key)) }))
     .filter((group) => group.items.length > 0);
 }
 

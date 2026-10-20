@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { useVisiblePlugins } from "../rights/useVisiblePlugins";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { PlusMenu } from "./PlusMenu";
@@ -21,7 +21,7 @@ export function MobileTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("nav");
-  const activePluginsMeta = useActivePluginsMeta();
+  const activePluginsMeta = useVisiblePlugins();
   const pinned = usePinnedNav();
   const { data: libraries } = useLibraries();
   const [plusOpen, setPlusOpen] = useState(false);

@@ -7,7 +7,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { useUserId } from "@tentacle-tv/api-client";
+import { mayShow, useAccountAbilities, useUserId } from "@tentacle-tv/api-client";
 import { supportsDownloads } from "../desktop/bridge";
 import { getDiskFree, getDiskUsage, listDownloads, downloadStateForItem, type DownloadEntry } from "./api";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
@@ -97,13 +97,18 @@ export function useDownloadsVisibility(): DownloadsVisibility {
   // du compte, connecté ou non — le serveur refuse les téléchargements à un
   // profil, l'interface n'en montre aucune trace.
   const profileSession = useActiveProfile() !== null;
+  // Ce que le serveur dit de la SESSION (`account.abilities`, relu à
+  // `rights:changed`) : sans `keepOffline`, plus aucun bouton — le contenu
+  // déjà gardé reste lisible.
+  const mayKeep = mayShow(useAccountAbilities(), "keepOffline");
   if (!supportsDownloads() || profileSession) {
     return { visible: false, canDownload: false, canLight: false, hasContent: false };
   }
+  const canDownload = capabilities.downloads && mayKeep;
   return {
-    visible: capabilities.downloads || hasContent,
-    canDownload: capabilities.downloads,
-    canLight: capabilities.lightDownloads,
+    visible: canDownload || hasContent,
+    canDownload,
+    canLight: capabilities.lightDownloads && mayKeep,
     hasContent,
   };
 }

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { useAccountAbilities } from "@tentacle-tv/api-client";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Dropdown } from "./ui/Dropdown";
@@ -96,7 +97,9 @@ export function UserAvatarMenu() {
         }
       : undefined;
 
+  const abilities = useAccountAbilities();
   const groups = buildUserMenuGroups({
+    abilities,
     t,
     isAdmin,
     navigate: navigateTo,

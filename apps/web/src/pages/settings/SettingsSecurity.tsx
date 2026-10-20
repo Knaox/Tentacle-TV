@@ -4,6 +4,7 @@ import { ChangeServerSection } from "../../components/settings/ChangeServerSecti
 import { Navigate } from "react-router-dom";
 import { isDesktopApp } from "../../desktop/bridge";
 import { useActiveProfile } from "../../auth/profileSession";
+import { useSecurityAbilities } from "../../rights/useSecurityAbilities";
 
 /**
  * Sécurité — regroupe ce qui était dispersé sur quatre écrans.
@@ -19,12 +20,15 @@ import { useActiveProfile } from "../../auth/profileSession";
  * au backend. Les ajouter est un chantier serveur distinct.
  */
 export function SettingsSecurity() {
-  // Bureau, session d'un profil : rien de tout cela n'est à lui (le serveur le refuse).
-  if (useActiveProfile()) return <Navigate to="/settings/appearance" replace />;
+  // Session d'un profil : rien de tout cela n'est à lui (le serveur le refuse).
+  const profile = useActiveProfile();
+  // Ce que le serveur dit des droits de la session (`account.abilities`).
+  const { password, devices, any, pending } = useSecurityAbilities();
+  if (profile || (!any && !pending)) return <Navigate to="/settings/appearance" replace />;
   return (
     <div className="max-w-2xl">
-      <ChangePasswordSection />
-      <MyDevicesSection />
+      {password && <ChangePasswordSection />}
+      {devices && <MyDevicesSection />}
       {isDesktopApp() && <ChangeServerSection />}
     </div>
   );

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
-import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { useVisiblePlugins } from "../rights/useVisiblePlugins";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { placeFloating } from "./floating/floatingPlacement";
 import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
@@ -259,7 +259,7 @@ interface PluginPage {
 
 /** Pages de plugin épinglables — générique, aucun plugin nommé. */
 function usePluginPages(): PluginPage[] {
-  const activePluginsMeta = useActivePluginsMeta();
+  const activePluginsMeta = useVisiblePlugins();
   const { i18n } = useTranslation();
 
   return useMemo(() => {

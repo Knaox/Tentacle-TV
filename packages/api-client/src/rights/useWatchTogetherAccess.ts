@@ -3,6 +3,8 @@ import { wtMayCreate, wtMayJoin, type WtAccess, type WtAccessDto } from "@tentac
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { useServerCapabilities } from "../hooks/useServerCapabilities";
 import { useUserId } from "../hooks/useUserId";
+import { watchTogetherAbility } from "./accountAbilitiesGate";
+import { useAccountAbilities } from "./useAccountAbilities";
 
 /**
  * L'accès du compte à Watch Together (`SyncPlayAccess` de sa politique Jellyfin,
@@ -15,6 +17,10 @@ import { useUserId } from "../hooks/useUserId";
  *
  * Tant que l'accès n'est pas connu, rien ne s'ouvre : `access` vaut `null`, et
  * `mayCreate` / `mayJoin` restent faux (jamais montré puis retiré).
+ *
+ * Bornée en plus par ce que le serveur dit de la SESSION (`account.abilities` :
+ * un invité, une session de profil), relue à `rights:changed` — la règle de
+ * Damien, « ce que tu as le droit de faire se voit, le reste non ».
  */
 export const WT_ACCESS_KEY = "wt-access";
 
@@ -38,6 +44,16 @@ export function useWatchTogetherAccess(): WatchTogetherAccessState {
     enabled: capable && !!userId,
     staleTime: 30_000,
   });
-  if (!capable) return stateOf(settled ? "full" : null);
-  return stateOf(query.data ?? null);
+  const ability = watchTogetherAbility(useAccountAbilities());
+  if (!capable) return bounded(stateOf(settled ? "full" : null), ability);
+  return bounded(stateOf(query.data ?? null), ability);
+}
+
+/** L'accès du compte, borné par ce que la session peut (`watchTogetherAbility`). */
+export function bounded(state: WatchTogetherAccessState, ability: "full" | "joinOnly" | "none"): WatchTogetherAccessState {
+  return {
+    access: state.access,
+    mayCreate: state.mayCreate && ability === "full",
+    mayJoin: state.mayJoin && ability !== "none",
+  };
 }
