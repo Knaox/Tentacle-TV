@@ -29,6 +29,17 @@ export function launchAllowed(listing: Partial<Pick<PickerProfilesDto, "launchPo
   return desktopLaunchPolicy(listing).mode !== "off";
 }
 
+/**
+ * L'administration fait-elle proposer « Qui regarde ? » D'OFFICE à l'ouverture
+ * de cette plateforme (`PickerProfilesDto.launchAsk`, 1.31.1) ? Un serveur
+ * d'avant ne le dit pas : le comportement d'avant de la plateforme (`legacy`) —
+ * le mobile demandait, le bureau et le web suivent `launchPolicy`.
+ */
+export function launchAskedByServer(listing: Partial<Pick<PickerProfilesDto, "launchAsk" | "launchPolicy">>, legacy?: boolean): boolean {
+  if (typeof listing.launchAsk === "boolean") return listing.launchAsk;
+  return legacy ?? launchAllowed(listing);
+}
+
 /** Cet ordinateur PROPOSE-t-il « Qui regarde ? » à l'ouverture ? */
 export function deviceProposes(listing: Partial<Pick<PickerProfilesDto, "launchPolicy">>, choice: PickerDeviceChoice): boolean {
   if (!launchAllowed(listing) || choice === "stay") return false;

@@ -41,7 +41,7 @@ export function sender(app: FastifyInstance) {
 }
 
 /** « Qui regarde ? » du bureau, avec ce jeton (la session personnelle, en principe). */
-export function pickerProfiles(app: FastifyInstance, token: string, platform: "desktop" | "mobile" = "desktop") {
+export function pickerProfiles(app: FastifyInstance, token: string, platform: "desktop" | "mobile" | "web" = "desktop") {
   return sender(app)("GET", `/api/family/picker/profiles?platform=${platform}`, token);
 }
 

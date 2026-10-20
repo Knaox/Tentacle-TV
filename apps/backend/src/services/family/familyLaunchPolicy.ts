@@ -1,70 +1,127 @@
 import { getConfigValue, setConfigValue } from "../configStore";
 import {
-  DEFAULT_FAMILY_LAUNCH_POLICY,
-  type FamilyLaunchMode,
+  DEFAULT_FAMILY_LAUNCH_SETTINGS,
+  FAMILY_LAUNCH_ASK_PLATFORMS,
+  launchAskedOn,
+  type FamilyLaunchAskPlatform,
   type FamilyLaunchPolicy,
+  type FamilyLaunchSettings,
   type SetFamilyLaunchPolicyBody,
 } from "../../family/familyPickerContract";
 
 /**
- * « Qui regarde ? » à l'ouverture, réglé par l'ADMINISTRATION plateforme par
- * plateforme (docs/FAMILLE.md, « À l'ouverture ») : coupé pour tous (`off`),
- * ou au choix de chaque appareil (`choice`) — le bureau avec un défaut
- * (`defaultOn`) pour l'ordinateur qui n'a jamais choisi.
+ * « Qui regarde ? » à l'ouverture, réglé par l'ADMINISTRATION (docs/FAMILLE.md,
+ * « À l'ouverture »). Depuis la 1.31.1 (`family.launchPlatforms`), la forme
+ * SIMPLE fait foi : un interrupteur général et des plateformes cochées
+ * (`FamilyLaunchSettings`). La forme d'avant (`desktop` : permis / activé par
+ * défaut ; `tv` : permis) n'est plus que tirée d'elle, pour les bureaux et les
+ * TV d'avant.
  *
- * Rangé dans `server_config` sous `family_launch_policy` (JSON), comme les
- * interrupteurs de la Famille. Absent ou illisible : les défauts (permis
- * partout, bureau activé par défaut). Une valeur illisible prend SON défaut ;
- * une plateforme inconnue est ignorée.
+ * Rangé dans `server_config` sous `family_launch_policy` (JSON), les DEUX formes
+ * ensemble : un serveur ramené en arrière relit la sienne. Absent ou illisible :
+ * les défauts (tout coché). Une valeur d'avant la 1.31.1 est REPRISE telle
+ * quelle : le bureau coupé ou « pas activé par défaut » décoche Ordinateurs et
+ * Navigateur (le web suivait les ordinateurs) ; les TV coupées décochent TV ; le
+ * mobile, qui demandait toujours, reste coché.
  */
 
 export const FAMILY_LAUNCH_POLICY_KEY = "family_launch_policy";
 
 type Loose = Record<string, unknown>;
 
-function entryOf(source: Loose, platform: keyof FamilyLaunchPolicy): Loose {
-  const entry = Object.hasOwn(source, platform) ? source[platform] : undefined;
-  return entry && typeof entry === "object" && !Array.isArray(entry) ? (entry as Loose) : {};
+function looseOf(value: unknown): Loose {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Loose) : {};
 }
 
-function modeOf(value: unknown, fallback: FamilyLaunchMode): FamilyLaunchMode {
-  return value === "off" || value === "choice" ? value : fallback;
+function entryOf(source: Loose, key: string): Loose {
+  return looseOf(Object.hasOwn(source, key) ? source[key] : undefined);
 }
 
-/** Une politique entière, d'après n'importe quelle valeur (les défauts là où elle ne dit rien). */
-export function normalizeLaunchPolicy(raw: unknown): FamilyLaunchPolicy {
-  const source = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Loose) : {};
+function boolOr(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+/** La forme d'avant la 1.31.1 (`desktop`, `tv`), lue en forme simple. */
+function settingsFromLegacy(source: Loose): FamilyLaunchSettings {
   const desktop = entryOf(source, "desktop");
   const tv = entryOf(source, "tv");
-  const defaults = DEFAULT_FAMILY_LAUNCH_POLICY;
+  const computers = desktop.mode !== "off" && desktop.defaultOn !== false;
+  const defaults = DEFAULT_FAMILY_LAUNCH_SETTINGS.platforms;
   return {
-    desktop: {
-      mode: modeOf(desktop.mode, defaults.desktop.mode),
-      defaultOn: typeof desktop.defaultOn === "boolean" ? desktop.defaultOn : defaults.desktop.defaultOn,
-    },
-    tv: { mode: modeOf(tv.mode, defaults.tv.mode) },
+    enabled: true,
+    platforms: { ...defaults, desktop: computers, web: computers, tv: tv.mode !== "off" },
   };
 }
 
-export function getFamilyLaunchPolicy(): FamilyLaunchPolicy {
+/** La forme simple, d'après n'importe quelle valeur gardée (les défauts là où elle ne dit rien). */
+export function normalizeLaunchSettings(raw: unknown): FamilyLaunchSettings {
+  const source = looseOf(raw);
+  if (!Object.hasOwn(source, "platforms")) return settingsFromLegacy(source);
+  const platforms = entryOf(source, "platforms");
+  const defaults = DEFAULT_FAMILY_LAUNCH_SETTINGS;
+  return {
+    enabled: boolOr(source.enabled, defaults.enabled),
+    platforms: Object.fromEntries(
+      FAMILY_LAUNCH_ASK_PLATFORMS.map((platform) => [platform, boolOr(platforms[platform], defaults.platforms[platform])]),
+    ) as FamilyLaunchSettings["platforms"],
+  };
+}
+
+/** La politique entière telle que `GET /api/admin/family/picker` la rend : la forme
+ *  d'avant TIRÉE de la forme simple, puis la forme simple. */
+export function launchPolicyOf(settings: FamilyLaunchSettings): FamilyLaunchPolicy {
+  const mode = (platform: FamilyLaunchAskPlatform) => (launchAskedOn(settings, platform) ? "choice" : "off");
+  return {
+    desktop: { mode: mode("desktop"), defaultOn: true },
+    tv: { mode: mode("tv") },
+    enabled: settings.enabled,
+    platforms: { ...settings.platforms },
+  };
+}
+
+export function getFamilyLaunchSettings(): FamilyLaunchSettings {
   const raw = getConfigValue(FAMILY_LAUNCH_POLICY_KEY);
-  if (!raw) return normalizeLaunchPolicy(null);
+  if (!raw) return normalizeLaunchSettings(null);
   try {
-    return normalizeLaunchPolicy(JSON.parse(raw));
+    return normalizeLaunchSettings(JSON.parse(raw));
   } catch {
-    return normalizeLaunchPolicy(null);
+    return normalizeLaunchSettings(null);
   }
+}
+
+export function getFamilyLaunchPolicy(): FamilyLaunchPolicy {
+  return launchPolicyOf(getFamilyLaunchSettings());
+}
+
+/**
+ * Un corps de la forme d'avant (un bureau d'avant la 1.31.1), appliqué à la
+ * forme simple : « Permis » coupé décoche ; permis, ou « activé par défaut »,
+ * coche selon `defaultOn` — et rallume l'interrupteur général, sans quoi le
+ * geste ne se verrait pas. Les ordinateurs règlent aussi le navigateur.
+ */
+function applyLegacy(settings: FamilyLaunchSettings, patch: SetFamilyLaunchPolicyBody): FamilyLaunchSettings {
+  const next: FamilyLaunchSettings = { enabled: settings.enabled, platforms: { ...settings.platforms } };
+  const turn = (platforms: readonly FamilyLaunchAskPlatform[], on: boolean) => {
+    for (const platform of platforms) next.platforms[platform] = on;
+    if (on) next.enabled = true;
+  };
+  const desktop = patch.desktop;
+  if (desktop?.mode === "off") turn(["desktop", "web"], false);
+  else if (desktop?.mode === "choice" || desktop?.defaultOn !== undefined) turn(["desktop", "web"], desktop.defaultOn ?? true);
+  if (patch.tv?.mode) turn(["tv"], patch.tv.mode === "choice");
+  return next;
 }
 
 /** Pose ce qui change ; le reste garde sa valeur. Rend la politique entière, telle que gardée. */
 export async function setFamilyLaunchPolicy(patch: SetFamilyLaunchPolicyBody): Promise<FamilyLaunchPolicy> {
-  const current = getFamilyLaunchPolicy();
-  const next = normalizeLaunchPolicy({
-    desktop: { ...current.desktop, ...patch.desktop },
-    tv: { ...current.tv, ...patch.tv },
+  const legacy = applyLegacy(getFamilyLaunchSettings(), patch);
+  const next = normalizeLaunchSettings({
+    enabled: patch.enabled ?? legacy.enabled,
+    platforms: { ...legacy.platforms, ...patch.platforms },
   });
-  await setConfigValue(FAMILY_LAUNCH_POLICY_KEY, JSON.stringify(next));
-  return next;
+  const policy = launchPolicyOf(next);
+  await setConfigValue(FAMILY_LAUNCH_POLICY_KEY, JSON.stringify(policy));
+  return policy;
 }
 
 /** Ce que fait un ORDINATEUR qui n'a jamais choisi (`PickerProfilesDto.atLaunch`, lu par les bureaux d'avant). */

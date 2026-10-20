@@ -23,7 +23,7 @@ import { freshState } from "./familyMocks";
 import { fakeJellyfinUsersFetch } from "./fakeJellyfinUsers";
 import { IDS, enroll, openProfile, pairTv, resetCaches, seedUsers } from "./familyHarness";
 import { buildPickerApp, pick, pickerProfiles, seedFamily, sender } from "./familyPickerHarness";
-import { normalizeLaunchPolicy } from "../src/services/family/familyLaunchPolicy";
+import { launchPolicyOf, normalizeLaunchSettings } from "../src/services/family/familyLaunchPolicy";
 
 let app: FastifyInstance;
 let tokens: ReturnType<typeof seedUsers>;
@@ -45,7 +45,8 @@ beforeEach(() => {
   tokens = seedUsers(h.state);
 });
 
-const DEFAULTS = { desktop: { mode: "choice", defaultOn: true }, tv: { mode: "choice" } };
+const ALL = { desktop: true, web: true, mobile: true, tv: true };
+const DEFAULTS = { desktop: { mode: "choice", defaultOn: true }, tv: { mode: "choice" }, enabled: true, platforms: ALL };
 const setPolicy = (body: unknown, token = tokens.damien) => send("PUT", "/api/admin/family/picker", token, body);
 const tvListing = async (pairing: string) => (await sender(app)("GET", "/api/family/tv/profiles", pairing)).json();
 
@@ -54,40 +55,100 @@ describe("la politique de l'administration", () => {
     expect((await send("GET", "/api/admin/family/picker", tokens.damien)).json()).toEqual(DEFAULTS);
     h.state!.config.set("family_launch_policy", "{pas du json");
     expect((await send("GET", "/api/admin/family/picker", tokens.damien)).json()).toEqual(DEFAULTS);
-    expect(normalizeLaunchPolicy({ desktop: { mode: "parfois", defaultOn: "oui" }, tv: { defaultOn: false }, web: { mode: "off" } })).toEqual(DEFAULTS);
+    expect(launchPolicyOf(normalizeLaunchSettings({ desktop: { mode: "parfois", defaultOn: "oui" }, tv: { defaultOn: false }, web: { mode: "off" } })))
+      .toEqual(DEFAULTS);
+    expect(normalizeLaunchSettings({ enabled: "oui", platforms: { desktop: false, tv: 1, montre: false } }))
+      .toEqual({ enabled: true, platforms: { ...ALL, desktop: false } });
   });
 
-  it("ne change que ce qu'on lui envoie, et le garde", async () => {
-    const res = await setPolicy({ tv: { mode: "off" } });
+  it("forme simple : ne change que ce qu'on lui envoie, garde les DEUX formes (un serveur ramené en arrière relit la sienne)", async () => {
+    const res = await setPolicy({ platforms: { tv: false, mobile: false } });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ ...DEFAULTS, tv: { mode: "off" } });
-    await setPolicy({ desktop: { defaultOn: false } });
+    expect(res.json()).toEqual({ ...DEFAULTS, tv: { mode: "off" }, platforms: { ...ALL, tv: false, mobile: false } });
+    await setPolicy({ enabled: false });
     expect(JSON.parse(h.state!.config.get("family_launch_policy")!)).toEqual({
-      desktop: { mode: "choice", defaultOn: false },
+      desktop: { mode: "off", defaultOn: true },
       tv: { mode: "off" },
+      enabled: false,
+      platforms: { ...ALL, tv: false, mobile: false },
     });
+    // Rallumé : les cases reviennent telles qu'elles étaient.
+    expect((await setPolicy({ enabled: true })).json().platforms).toEqual({ ...ALL, tv: false, mobile: false });
+  });
+
+  it("forme d'avant (bureau d'avant la 1.31.1) : appliquée aux cases, les ordinateurs règlent aussi le navigateur", async () => {
+    expect((await setPolicy({ tv: { mode: "off" } })).json().platforms).toEqual({ ...ALL, tv: false });
+    expect((await setPolicy({ desktop: { defaultOn: false } })).json()).toMatchObject({
+      desktop: { mode: "off", defaultOn: true },
+      platforms: { desktop: false, web: false, mobile: true, tv: false },
+    });
+    await setPolicy({ enabled: false });
+    // Permettre de nouveau rallume l'interrupteur général : sans quoi le geste ne se verrait pas.
+    expect((await setPolicy({ desktop: { mode: "choice" } })).json()).toMatchObject({ enabled: true, platforms: { desktop: true, web: true } });
   });
 
   it("un administrateur en session personnelle seulement ; un corps mal formé : 400", async () => {
     expect((await send("GET", "/api/admin/family/picker", tokens.lea)).statusCode).toBe(403);
     expect((await setPolicy({ tv: { mode: "off" } }, tokens.lea)).statusCode).toBe(403);
+    expect((await setPolicy({ enabled: false }, tokens.lea)).statusCode).toBe(403);
     const tv = await enroll(app, await pairTv(h.state!, IDS.damien, "Damien"));
     expect((await send("GET", "/api/admin/family/picker", tv)).statusCode).toBeGreaterThanOrEqual(401);
-    const bad = await setPolicy({ tv: { mode: "parfois" } });
-    expect(bad.statusCode).toBe(400);
-    expect(bad.json().code).toBe("family.invalid_input");
+    for (const body of [{ tv: { mode: "parfois" } }, { platforms: { montre: true } }, { platforms: { web: "oui" } }, { enabled: 1 }]) {
+      const bad = await setPolicy(body);
+      expect(bad.statusCode).toBe(400);
+      expect(bad.json().code).toBe("family.invalid_input");
+    }
     expect(h.state!.config.has("family_launch_policy")).toBe(false);
   });
 });
 
-describe("le cadre du bureau", () => {
-  it("rendu à « Qui regarde ? » ; `atLaunch` (bureaux d'avant) = permis ET activé par défaut", async () => {
+describe("la reprise d'un réglage d'avant la 1.31.1", () => {
+  const legacy = (value: unknown) => h.state!.config.set("family_launch_policy", JSON.stringify(value));
+  const policy = async () => (await send("GET", "/api/admin/family/picker", tokens.damien)).json();
+
+  it("permis et activé par défaut : tout coché", async () => {
+    legacy({ desktop: { mode: "choice", defaultOn: true }, tv: { mode: "choice" } });
+    expect(await policy()).toEqual(DEFAULTS);
+  });
+
+  it("bureau « pas activé par défaut » ou coupé : Ordinateurs ET Navigateur décochés, le mobile coché", async () => {
+    legacy({ desktop: { mode: "choice", defaultOn: false }, tv: { mode: "choice" } });
+    expect((await policy()).platforms).toEqual({ ...ALL, desktop: false, web: false });
+    legacy({ desktop: { mode: "off", defaultOn: true }, tv: { mode: "off" } });
+    expect(await policy()).toMatchObject({ enabled: true, platforms: { desktop: false, web: false, mobile: true, tv: false } });
+  });
+
+  it("les TV d'une politique d'avant coupée restent coupées (elles ouvrent le profil de leur compte)", async () => {
+    legacy({ desktop: { mode: "choice", defaultOn: true }, tv: { mode: "off" } });
+    const salon = await enroll(app, await pairTv(h.state!, IDS.damien, "Damien"));
+    expect((await tvListing(salon)).askAtLaunch).toBe(false);
+  });
+});
+
+describe("« Qui regarde ? » de chaque plateforme", () => {
+  it("`launchAsk` suit SA case et l'interrupteur général ; `atLaunch` et `launchPolicy` (bureaux d'avant) en sont tirés", async () => {
     await seedFamily(app, tokens);
-    expect((await pickerProfiles(app, tokens.lea)).json()).toMatchObject({ atLaunch: true, launchPolicy: DEFAULTS.desktop });
-    await setPolicy({ desktop: { defaultOn: false } });
-    expect((await pickerProfiles(app, tokens.lea)).json()).toMatchObject({ atLaunch: false, launchPolicy: { mode: "choice", defaultOn: false } });
-    await setPolicy({ desktop: { mode: "off", defaultOn: true } });
-    expect((await pickerProfiles(app, tokens.lea)).json()).toMatchObject({ atLaunch: false, launchPolicy: { mode: "off", defaultOn: true } });
+    for (const platform of ["desktop", "web", "mobile"] as const) {
+      expect((await pickerProfiles(app, tokens.lea, platform)).json())
+        .toMatchObject({ launchAsk: true, atLaunch: true, launchPolicy: { mode: "choice", defaultOn: true } });
+    }
+    await setPolicy({ platforms: { web: false } });
+    expect((await pickerProfiles(app, tokens.lea, "web")).json())
+      .toMatchObject({ launchAsk: false, atLaunch: false, launchPolicy: { mode: "off", defaultOn: true } });
+    expect((await pickerProfiles(app, tokens.lea, "desktop")).json().launchAsk).toBe(true);
+    expect((await pickerProfiles(app, tokens.lea, "mobile")).json().launchAsk).toBe(true);
+    await setPolicy({ enabled: false });
+    for (const platform of ["desktop", "web", "mobile"] as const) {
+      expect((await pickerProfiles(app, tokens.lea, platform)).json().launchAsk).toBe(false);
+    }
+    const salon = await enroll(app, await pairTv(h.state!, IDS.damien, "Damien"));
+    expect((await tvListing(salon)).askAtLaunch).toBe(false);
+  });
+
+  it("décoché, « Changer de profil » reste : choisir un profil marche toujours", async () => {
+    await seedFamily(app, tokens);
+    await setPolicy({ platforms: { mobile: false } });
+    expect((await pick(app, tokens.damien, { profileId: IDS.lea, platform: "mobile" })).statusCode).toBe(200);
   });
 
   it("l'ancienne préférence du compte n'y change plus rien", async () => {
