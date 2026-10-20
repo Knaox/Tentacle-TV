@@ -7,7 +7,7 @@ import {
 } from "@tentacle-tv/api-client";
 import type { MediaItem, WtAffinityMatchDto, WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { IS_TABLET_DEVICE, useTheme } from "@/theme";
+import { CONTENT_MAX_WIDTH, useResponsive, useTheme } from "@/theme";
 import { useGatedModal } from "@/components/ui/useGatedModal";
 import { AffinityDeckScreen } from "./AffinityDeckScreen";
 import { AffinityKindsView } from "./AffinityKindsView";
@@ -15,11 +15,13 @@ import { AffinityMatchNative } from "./AffinityMatchNative";
 import { AffinityNoticeNative } from "./AffinityNoticeNative";
 
 /**
- * La modale de l'affinité sur le mobile — plein écran sur téléphone,
- * « page sheet » sur iPad. Ses vues : le choix du type, la pile, et le match,
+ * La modale de l'affinité sur le mobile — plein écran partout : sur iPad,
+ * une « page sheet » laissait l'accueil dépasser en haut et son glisser vers
+ * le bas concurrençait la pile. Le contenu y tient dans une colonne centrée
+ * de 640 pt (`CONTENT_MAX_WIDTH`) : en-tête, carte et boutons groupés. Ses vues : le choix du type, la pile, et le match,
  * qui ne se choisit pas (le premier en attente s'affiche chez tous à la fois).
  * Sous le match, la pile reste MONTÉE (cachée) : rien ne se recharge.
- * Fermer (Retour Android, glisser sur iPad), c'est QUITTER l'affinité.
+ * Fermer (Retour Android, « Quitter »), c'est QUITTER l'affinité.
  * Elle ne se présente qu'une fois la feuille du groupe retirée
  * (`useGatedModal`) : présentée pendant sa sortie, iOS la refusait et l'app
  * restait figée (« Trouver quoi regarder », alpha du 21/10).
@@ -37,6 +39,7 @@ export function AffinityModalNative({ onStale, onOpenTitle }: {
   const { t } = useTranslation("watchTogether");
   const theme = useTheme();
   const resolvePlayTarget = useResolvePlayTarget();
+  const { isTablet } = useResponsive();
 
   const quit = useCallback(() => {
     if (getAffinitySnapshot().state) void leaveAffinity().catch(() => undefined);
@@ -71,13 +74,14 @@ export function AffinityModalNative({ onStale, onOpenTitle }: {
     <Modal
       visible
       animationType="slide"
-      presentationStyle={IS_TABLET_DEVICE ? "pageSheet" : "fullScreen"}
+      presentationStyle="fullScreen"
       onRequestClose={view === "kinds" && state ? () => showAffinityView("deck") : quit}
       onShow={onShow}
       supportedOrientations={["portrait", "landscape"]}
     >
       <SafeAreaView style={[st.root, { backgroundColor: theme.colors.surface.s0 }]} edges={["top", "bottom", "left", "right"]}>
         <AffinityNoticeNative />
+        <View style={[st.fill, isTablet && st.column]}>
         {deckMounted && state && (
           <View style={view === "match" ? st.hidden : st.fill}>
             <AffinityDeckScreen
@@ -110,6 +114,7 @@ export function AffinityModalNative({ onStale, onOpenTitle }: {
             onKeepSwiping={() => onKeepSwiping(proposal).catch(failed)}
           />
         )}
+        </View>
       </SafeAreaView>
     </Modal>
   );
@@ -118,5 +123,6 @@ export function AffinityModalNative({ onStale, onOpenTitle }: {
 const st = StyleSheet.create({
   root: { flex: 1 },
   fill: { flex: 1 },
+  column: { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" },
   hidden: { display: "none" },
 });
