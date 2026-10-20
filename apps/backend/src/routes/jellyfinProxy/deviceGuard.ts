@@ -17,6 +17,11 @@ import { isOutOfScope, userIdFromPath, userIdFromQuery } from "./userScope";
  * Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni un
  * jeton d'usurpation, dont c'est justement la raison d'être.
  *
+ * Seule exception au périmètre : LIRE la photo d'un compte. Jellyfin la sert
+ * sans jeton (« Qui regarde ? » des TV la lit ainsi) ; une session de profil
+ * montre celle de chaque membre de sa séance de Watch Together — refusée, l'hôte
+ * paraissait en initiale (constat du 21/10). L'écrire reste borné à SON compte.
+ *
  * `null` : la requête passe ; sinon, la raison à journaliser (403).
  */
 export function deviceRefusal(
@@ -25,9 +30,16 @@ export function deviceRefusal(
   userId: string,
   query: Record<string, unknown> | undefined,
 ): string | null {
-  if ((userIdFromPath(path) !== null || userIdFromQuery(query) !== null) && isOutOfScope(path, userId, query)) {
+  const scoped = !readsAccountPhoto(method, path) && (userIdFromPath(path) !== null || userIdFromQuery(query) !== null);
+  if (scoped && isOutOfScope(path, userId, query)) {
     return "acces refuse : appareil hors de son perimetre utilisateur";
   }
   if (!isDeviceWriteAllowed(method, path)) return "ecriture refusee : hors de ce qu'un appareil ecrit";
   return null;
+}
+
+/** La lecture de la photo d'un compte (le seul chemin d'image de compte du proxy). */
+function readsAccountPhoto(method: string, path: string): boolean {
+  const verb = method.toUpperCase();
+  return (verb === "GET" || verb === "HEAD") && /^Users\/[^/]+\/Images\/Primary$/i.test(path);
 }
