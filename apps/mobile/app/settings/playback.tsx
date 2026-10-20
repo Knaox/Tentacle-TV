@@ -1,5 +1,6 @@
-import { PlaybackScreen } from "@/screens/settings/PlaybackScreen";
+import { Redirect } from "expo-router";
 
-export default function PlaybackRoute() {
-  return <PlaybackScreen />;
+/** Ancien volet, fondu dans « Lecture et apparence » : les liens d'avant y mènent. */
+export default function LegacySettingsRedirect() {
+  return <Redirect href="/profile/playback" />;
 }

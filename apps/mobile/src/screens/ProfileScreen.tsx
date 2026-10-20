@@ -11,7 +11,7 @@ import { ProfileDetailPane } from "./profile/ProfileDetailPane";
 import { ProfileFooter, ProfileStatsCard } from "./profile/ProfileFooter";
 import { ProfileHero } from "./profile/ProfileHero";
 import { ProfileSectionList } from "./profile/ProfileSectionList";
-import { findSection, resolveSection, type ProfileSectionId } from "./profile/profileStructure";
+import { findSettingsSection, resolveSettingsSection, type SettingsSectionId } from "@tentacle-tv/shared";
 import { useProfileContext } from "./profile/useProfileContext";
 
 /** Sous cette largeur utile, deux colonnes écraseraient le détail : une seule liste. */
@@ -19,9 +19,9 @@ const SPLIT_MIN_WIDTH = 720;
 const BOTTOM_CLEARANCE = 120;
 
 /**
- * Profil — l'identité en tête, « Mes statistiques », puis SEPT rubriques au
- * plus (Compte, Appareils et TV, Lecture, Apparence, Notifications, Serveur,
- * Aide), et « Se déconnecter » en dernier. La structure — ce que chaque rubrique contient,
+ * Profil et réglages — l'identité en tête, « Mes statistiques », puis six
+ * rubriques (Compte, Lecture et apparence, TV et appareils, Hors ligne,
+ * Notifications, Aide et à propos), et « Se déconnecter » en dernier. La structure — ce que chaque rubrique contient,
  * et quand — vit dans `profile/profileSections.ts` ; cet écran n'est qu'une
  * mise en page.
  *
@@ -45,14 +45,14 @@ export function ProfileScreen() {
   const { width, isTablet } = useResponsive();
   const railWidth = useRailWidth();
   const split = isTablet && width - railWidth >= SPLIT_MIN_WIDTH;
-  const [chosen, setChosen] = useState<ProfileSectionId | null>(null);
-  const sectionId = resolveSection(chosen, ctx);
-  const section = sectionId ? findSection(sectionId) : undefined;
+  const [chosen, setChosen] = useState<SettingsSectionId | null>(null);
+  const sectionId = resolveSettingsSection(chosen, ctx);
+  const section = sectionId ? findSettingsSection(sectionId) : undefined;
 
   const list = (
     <>
       <FadeIn delay={0}>
-        <ProfileHero user={user} userName={userName} initial={initial} isAdmin={isAdmin} serverUrl={serverUrl} />
+        <ProfileHero user={user} userName={userName} initial={initial} isAdmin={isAdmin} serverUrl={serverUrl} canSwitchProfile={ctx.canSwitchProfile && !ctx.offline && ctx.family} />
       </FadeIn>
       <FadeIn delay={40}>
         <ProfileStatsCard ctx={ctx} />

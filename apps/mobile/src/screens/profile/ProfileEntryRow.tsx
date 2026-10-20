@@ -2,53 +2,60 @@ import { Linking, StyleSheet } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { LanguageChoiceRow } from "@/components/profile/LanguageChoiceRow";
-import { LiquidGlassRow, SettingsRow, ThemeChoiceRow, type SettingsIcon } from "@/components/settings";
+import { SettingsRow, type SettingsIcon } from "@/components/settings";
+import { RemoveAllOfflineRow } from "@/components/settings/controls/OfflineRows";
 import { useOfflineActivity } from "@/hooks/offline/useOfflineList";
 import { setManualOffline } from "@/offline/connectivityStore";
-import { useDataSaverSetting } from "@/offline/useDataSaver";
-import { DATA_SAVER_LABEL_KEYS } from "@/screens/settings/DataSettingsScreen";
 import { spacing, useTheme } from "@/theme";
+import { usePendingFamilyInvitationCount } from "./familyEntryHooks";
+import { ProfileBlock } from "./ProfileBlock";
+import { ProfileControlRow } from "./ProfileControlRow";
 import { ProfilePaneRow } from "./ProfilePaneRow";
-import type { ActionEntry, ControlEntry, ProfileEntry, ScreenEntry } from "./profileStructure";
 import { useProfileEntryActions } from "./ProfileEntryActions";
+import { SETTINGS_PANE_SCOPES, type SettingsActionEntry, type SettingsCatalogEntry, type SettingsScreenEntry } from "@tentacle-tv/shared";
+import { SETTINGS_SCREEN_ROUTES } from "./profilePanes";
 
 const PRIVACY_POLICY_URL = "https://github.com/Knaox/Tentacle-TV/blob/main/PRIVACY.md";
 
 interface Props {
-  entry: ProfileEntry;
+  entry: SettingsCatalogEntry;
   last: boolean;
 }
 
 /**
  * Une entrée de la structure du profil, rendue selon son genre : un réglage
- * sur place, une page (volet ou écran), une action. Les rares entrées qui
- * montrent un état (« Auto », « 12 titres ») ont leur composant, pour que
- * leurs crochets ne tournent que là où elles paraissent.
+ * sur place (`ProfileControlRow`), une page (volet ou écran), une action, un
+ * bloc. Les rares entrées qui montrent un état (« 12 titres », « 2
+ * invitations ») ont leur composant, pour que leurs crochets ne tournent que
+ * là où elles paraissent.
  */
 export function ProfileEntryRow({ entry, last }: Props) {
   const { t } = useTranslation();
   switch (entry.kind) {
     case "control":
-      return <ControlRow id={entry.id} last={last} />;
+      return <ProfileControlRow id={entry.id} last={last} />;
     case "pane":
-      if (entry.id === "data") return <DataSaverRow icon={entry.icon as SettingsIcon} label={t(entry.label.key, { ns: entry.label.ns })} last={last} />;
-      return <ProfilePaneRow pane={entry.id} icon={entry.icon as SettingsIcon} label={t(entry.label.key, { ns: entry.label.ns })} last={last} />;
+      return (
+        <ProfilePaneRow
+          pane={entry.id}
+          icon={entry.icon as SettingsIcon}
+          label={t(entry.label.key, { ns: entry.label.ns })}
+          scope={SETTINGS_PANE_SCOPES[entry.id] ?? undefined}
+          last={last}
+        />
+      );
     case "screen":
       if (entry.id === "offlineTitles") return <OfflineTitlesRow entry={entry} last={last} />;
+      if (entry.id === "family") return <FamilyRow entry={entry} last={last} />;
       return <ScreenRow entry={entry} last={last} />;
     case "action":
       return <ActionRow entry={entry} last={last} />;
+    case "block":
+      return <ProfileBlock id={entry.id} />;
   }
 }
 
-function ControlRow({ id, last }: { id: ControlEntry["id"]; last: boolean }) {
-  if (id === "theme") return <ThemeChoiceRow last={last} />;
-  if (id === "language") return <LanguageChoiceRow last={last} />;
-  return <LiquidGlassRow last={last} />;
-}
-
-function ScreenRow({ entry, last, description }: { entry: ScreenEntry; last: boolean; description?: string }) {
+function ScreenRow({ entry, last, description, value }: { entry: SettingsScreenEntry; last: boolean; description?: string; value?: string }) {
   const { t } = useTranslation();
   const router = useRouter();
   return (
@@ -56,15 +63,16 @@ function ScreenRow({ entry, last, description }: { entry: ScreenEntry; last: boo
       icon={entry.icon as SettingsIcon}
       label={t(entry.label.key, { ns: entry.label.ns })}
       description={description}
+      value={value}
       chevron
       last={last}
-      onPress={() => router.push(entry.href as Href)}
+      onPress={() => router.push(SETTINGS_SCREEN_ROUTES[entry.id] as Href)}
     />
   );
 }
 
 /** « Mes titres hors ligne » : « 12 titres · 1 en cours ». */
-function OfflineTitlesRow({ entry, last }: { entry: ScreenEntry; last: boolean }) {
+function OfflineTitlesRow({ entry, last }: { entry: SettingsScreenEntry; last: boolean }) {
   const { t } = useTranslation("offline");
   const { active, total } = useOfflineActivity();
   const parts = [t("countTitles", { count: total })];
@@ -72,14 +80,14 @@ function OfflineTitlesRow({ entry, last }: { entry: ScreenEntry; last: boolean }
   return <ScreenRow entry={entry} last={last} description={parts.join(" · ")} />;
 }
 
-/** L'économie de données, avec son mode en valeur (« Auto »). */
-function DataSaverRow({ icon, label, last }: { icon: SettingsIcon; label: string; last: boolean }) {
-  const { t } = useTranslation("downloads");
-  const { setting } = useDataSaverSetting();
-  return <ProfilePaneRow pane="data" icon={icon} label={label} value={t(DATA_SAVER_LABEL_KEYS[setting])} last={last} />;
+/** « Famille » : le nombre d'invitations reçues qui attendent une réponse. */
+function FamilyRow({ entry, last }: { entry: SettingsScreenEntry; last: boolean }) {
+  const { t } = useTranslation("settingsMobile");
+  const count = usePendingFamilyInvitationCount();
+  return <ScreenRow entry={entry} last={last} value={count > 0 ? t("account.familyInvitesBadge", { count }) : undefined} />;
 }
 
-function ActionRow({ entry, last }: { entry: ActionEntry; last: boolean }) {
+function ActionRow({ entry, last }: { entry: SettingsActionEntry; last: boolean }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const actions = useProfileEntryActions();
@@ -90,6 +98,8 @@ function ActionRow({ entry, last }: { entry: ActionEntry; last: boolean }) {
       return <SettingsRow {...common} description={actions.serverUrl || undefined} chevron onPress={actions.handleChangeServer} />;
     case "goOffline":
       return <SettingsRow {...common} description={t("offline:goOfflineHint")} onPress={() => setManualOffline(true)} />;
+    case "removeAllOffline":
+      return <RemoveAllOfflineRow last={last} />;
     case "clearCache":
       return <SettingsRow {...common} onPress={actions.handleClearCache} />;
     case "deleteAccount":

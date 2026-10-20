@@ -4,41 +4,41 @@ import { SettingsRow, SettingsSection, THEME_MODE_LABEL_KEYS, type SettingsIcon 
 import { useThemeMode } from "@/theme";
 import { PROFILE_PANE_ROUTES } from "./profilePanes";
 import {
-  sectionSummary, sectionTarget, visibleSections,
-  type ProfileContext, type ProfileSection, type ProfileSectionId,
-} from "./profileStructure";
+  settingsSectionSummary, settingsSectionTarget, visibleSettingsSections,
+  type SettingsCatalogContext, type SettingsCatalogSection, type SettingsSectionId,
+} from "@tentacle-tv/shared";
 
 interface Props {
-  ctx: ProfileContext;
+  ctx: SettingsCatalogContext;
   /** Tablette : la rubrique affichée à droite, et le choix d'une autre. */
-  selected?: ProfileSectionId | null;
-  onSelect?: (id: ProfileSectionId) => void;
+  selected?: SettingsSectionId | null;
+  onSelect?: (id: SettingsSectionId) => void;
 }
 
 /**
  * Les rubriques du profil, une carte : pictogramme, nom et, dessous, ce
- * qu'on y trouve — ou, pour l'Apparence, ce qui est réglé (« Sombre ·
- * Français ») : on lit l'état sans ouvrir, comme les onglets des réglages de
+ * qu'on y trouve — ou, pour « Lecture et apparence », ce qui est réglé
+ * (« Sombre · Français ») : on lit l'état sans ouvrir, comme les onglets des réglages de
  * l'Apple TV. Téléphone : la ligne ouvre la page de la rubrique ; tablette :
  * elle la pose dans la colonne de droite.
  */
 export function ProfileSectionList({ ctx, selected, onSelect }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
-  const sections = visibleSections(ctx);
+  const sections = visibleSettingsSections(ctx);
   const appearance = useAppearanceCaption();
 
-  const open = (section: ProfileSection) => {
+  const open = (section: SettingsCatalogSection) => {
     if (onSelect) return onSelect(section.id);
-    const target = sectionTarget(section, ctx);
+    const target = settingsSectionTarget(section, ctx);
     router.push((target.kind === "pane" ? PROFILE_PANE_ROUTES[target.id] : `/profile/${section.id}`) as Href);
   };
 
   return (
     <SettingsSection>
       {sections.map((section, index) => {
-        const summary = sectionSummary(section, ctx);
-        const caption = section.id === "appearance" ? appearance : summary ? t(summary.key, { ns: summary.ns }) : undefined;
+        const summary = settingsSectionSummary(section, ctx);
+        const caption = section.id === "playback" ? appearance : summary ? t(summary.key, { ns: summary.ns }) : undefined;
         return (
           <SettingsRow
             key={section.id}

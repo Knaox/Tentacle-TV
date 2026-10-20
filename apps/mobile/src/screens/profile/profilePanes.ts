@@ -1,44 +1,44 @@
+import type { SettingsPaneId, SettingsScreenId } from "@tentacle-tv/shared";
+
 /**
- * Les VOLETS du profil : les pages de réglage du DEUXIÈME niveau, qu'un
- * téléphone ouvre en plein écran (`/settings/*`) et qu'une tablette pose dans
- * la colonne de détail, sous leur rubrique. Module pur — ni React ni expo.
+ * Les ROUTES du mobile pour le catalogue des réglages (`@tentacle-tv/shared`
+ * › settingsCatalog, rendu aussi par le web étroit) : le catalogue nomme des
+ * volets et des écrans, chaque client les fait correspondre à SES routes.
+ * Module pur — ni React ni expo.
  *
- * Où chacun se range (rubrique, groupe, condition d'affichage) : la structure
- * du profil, `profileStructure.ts`. Ici, seulement leur nom et leur route —
- * les routes restent celles d'avant la réorganisation : liens profonds,
- * notifications et écrans qui y renvoient (« Pour vous » → personnalisation)
- * arrivent toujours au même endroit.
+ * Les volets (deuxième niveau) : un écran plein sur téléphone (`/settings/*`),
+ * la colonne de détail sur tablette. Les routes restent celles d'avant : liens
+ * profonds, notifications et écrans qui y renvoient (« Pour vous » →
+ * personnalisation) arrivent toujours au même endroit. Celles des volets
+ * fondus dans une page (lecteur, économie de données, réglages hors ligne)
+ * redirigent vers elle : `LEGACY_PANE_REDIRECTS`.
  */
-
-export type ProfilePaneId =
-  | "personalization"
-  | "playback"
-  | "notifications"
-  | "data"
-  | "onDevice"
-  | "devices"
-  | "invites"
-  | "password";
-
-export const PROFILE_PANES: readonly ProfilePaneId[] = [
-  "password",
-  "devices",
-  "playback",
-  "data",
-  "onDevice",
-  "personalization",
-  "notifications",
-  "invites",
-];
 
 /** La route plein écran de chaque volet (téléphone, liens profonds). */
 export const PROFILE_PANE_ROUTES = {
-  personalization: "/settings/personalization",
-  playback: "/settings/playback",
-  notifications: "/settings/notifications",
-  data: "/settings/data",
-  onDevice: "/settings/on-device",
-  devices: "/settings/devices",
-  invites: "/settings/invites",
   password: "/settings/password",
-} as const satisfies Record<ProfilePaneId, string>;
+  mediaLanguages: "/settings/media-languages",
+  personalization: "/settings/personalization",
+  devices: "/settings/devices",
+  notifications: "/settings/notifications",
+  invites: "/settings/invites",
+} as const satisfies Record<SettingsPaneId, string>;
+
+/** L'écran de la Famille — `FAMILY_ROUTE` de l'api-client, le même chemin partout. */
+export const FAMILY_HREF = "/family";
+
+/** Les écrans à part entière vers lesquels renvoie le catalogue. */
+export const SETTINGS_SCREEN_ROUTES = {
+  family: FAMILY_HREF,
+  sessions: "/admin/sessions",
+  offlineTitles: "/on-device",
+  support: "/support",
+  about: "/about",
+} as const satisfies Record<SettingsScreenId, string>;
+
+/** Les anciens volets devenus une page de rubrique : leur route y mène. */
+export const LEGACY_PANE_REDIRECTS = {
+  "/settings/playback": "/profile/playback",
+  "/settings/data": "/profile/playback",
+  "/settings/on-device": "/profile/offline",
+} as const;

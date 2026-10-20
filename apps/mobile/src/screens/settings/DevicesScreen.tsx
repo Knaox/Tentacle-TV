@@ -5,15 +5,15 @@ import { PairedDevicesSection } from "@/components/profile";
 import { SettingsScaffold } from "./SettingsScaffold";
 
 /**
- * « Appareils et TV » : le jumelage d'une TV EN TÊTE — les cases du code
+ * « TV et appareils » : le jumelage d'une TV EN TÊTE — les cases du code
  * tout de suite, sans écran de plus —, puis la liste des appareils jumelés
  * et leur révocation. Plein écran sur téléphone, colonne de détail sur
  * tablette (`DevicesPane`).
  */
 export function DevicesScreen() {
-  const { t } = useTranslation("profile");
+  const { t } = useTranslation("settingsMobile");
   return (
-    <SettingsScaffold title={t("devicesAndTv")}>
+    <SettingsScaffold title={t("sections.tv")}>
       <DevicesPane />
     </SettingsScaffold>
   );

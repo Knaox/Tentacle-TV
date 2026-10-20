@@ -29,3 +29,17 @@ describe("réglage « Adapter la fréquence de l'écran »", () => {
     expect(storage.data.has("tentacle_match_frame_rate")).toBe(false);
   });
 });
+
+describe("sous-titres : défauts du téléphone", () => {
+  it("160 % et en bas pour qui n'a jamais réglé", () => {
+    configureEngineSettings(memoryStorage());
+    expect(getEngineSettings().subtitleScale).toBe(1.6);
+    expect(getEngineSettings().subtitlePosition).toBe(100);
+  });
+
+  it("garde la valeur de qui a déjà réglé, même 100 %", () => {
+    configureEngineSettings(memoryStorage({ tentacle_sub_scale: "1", tentacle_sub_pos: "80" }));
+    expect(getEngineSettings().subtitleScale).toBe(1);
+    expect(getEngineSettings().subtitlePosition).toBe(80);
+  });
+});

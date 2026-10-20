@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
+import { ScopeBadge, type SettingScope } from "./ScopeBadge";
 import {
   spacing,
   typography,
@@ -42,6 +43,8 @@ interface Props {
   disabled?: boolean;
   /** Libellé accessible, quand le label seul ne suffit pas. */
   accessibilityLabel?: string;
+  /** La portée du réglage : pastille « Compte » / « Cet appareil » sous le libellé. */
+  scope?: SettingScope;
 }
 
 /**
@@ -64,6 +67,7 @@ export function SettingsRow({
   last,
   disabled,
   accessibilityLabel,
+  scope,
 }: Props) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -81,6 +85,7 @@ export function SettingsRow({
       <View style={st.labelWrap}>
         <Text style={[st.label, { color: tint }]} numberOfLines={2}>{label}</Text>
         {description ? <Text style={st.description}>{description}</Text> : null}
+        {scope ? <View style={st.scope}><ScopeBadge scope={scope} /></View> : null}
       </View>
       {trailing ?? (
         <View style={st.trailing}>
@@ -139,6 +144,7 @@ const makeStyles = (t: AppTheme) =>
       marginTop: 2,
       lineHeight: 16,
     },
+    scope: { marginTop: spacing.xs },
     trailing: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
     checkSlot: { width: 18, height: 18 },
     value: {
