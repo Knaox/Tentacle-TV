@@ -9,7 +9,7 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { KeyboardAvoidingArea } from "@/components/ui/KeyboardAvoidingArea";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { inviteCandidates, toggleSelection, type InviteCandidate } from "../model/inviteModel";
+import { inviteCandidates, toggleSelection, type InviteCandidate } from "@tentacle-tv/shared";
 
 /**
  * Inviter une ou plusieurs personnes : recherche, liste cochable (en ligne

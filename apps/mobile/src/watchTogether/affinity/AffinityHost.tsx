@@ -5,7 +5,7 @@ import { memberName, useAffinitySession, useWatchTogether } from "@tentacle-tv/a
 import { showToast } from "@/notices/toastStore";
 import { closeWtSheet } from "../wtSheets";
 import { pushWtNotice } from "../notices/wtNotices";
-import { isPlayerPath } from "../session/inboxRule";
+import { isPlayerPath } from "@tentacle-tv/shared";
 import { AffinityModalNative } from "./AffinityModalNative";
 
 /**

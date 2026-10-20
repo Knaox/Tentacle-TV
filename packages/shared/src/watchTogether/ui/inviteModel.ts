@@ -1,4 +1,5 @@
-import { matchesSearch, type WtInvitableUserDto, type WtRoomStateDto } from "@tentacle-tv/shared";
+import { matchesSearch } from "../../utils/textSearch";
+import type { WtInvitableUserDto, WtRoomStateDto } from "../../types/watchTogether";
 
 /**
  * Watch Together — la liste « Inviter des membres », règles du web

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Hourglass, UserMinus } from "lucide-react-native";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { MEMBER_STATE_LABEL, type WtMemberRowModel, type WtMemberState } from "../model/roomModel";
+import { MEMBER_STATE_LABEL, type WtMemberRowModel, type WtMemberState } from "@tentacle-tv/shared";
 
 const AVATAR = 40;
 

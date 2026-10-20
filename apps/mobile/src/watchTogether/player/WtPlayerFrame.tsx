@@ -6,7 +6,7 @@ import type { WtPlayerChrome } from "./useWtPlayerChrome";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import {
   groupPanelLayout, OVERLAY_PANEL_WIDTH, SIDE_PANEL_WIDTH, videoHeightAbove,
-} from "./groupPanelLayout";
+} from "@tentacle-tv/shared";
 
 /**
  * Le cadre du lecteur en séance : la vidéo (`children`) et, ouvert, le
