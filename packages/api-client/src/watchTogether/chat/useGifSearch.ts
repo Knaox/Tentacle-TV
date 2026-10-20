@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { tentacleApiFetch } from "../../hooks/usePreferences";
+import { wtAuthInit, wtBackendRoot } from "../../hooks/useWatchTogetherApi";
 
 /**
- * Watch Together — recherche de GIFs par le relais du serveur `/api/gifs`
- * (la clé Klipy ne quitte jamais le serveur). Requête vide → tendances,
- * sinon recherche plein texte, après 350 ms sans frappe. Sans plateforme :
- * `tentacleApiFetch` porte le cookie (web) ou le jeton (bureau, mobile).
+ * Watch Together — recherche de GIFs via le proxy backend `/api/gifs`
+ * (clé Klipy côté serveur uniquement). Requête vide → tendances (featured),
+ * sinon recherche plein texte. Même serveur et même authentification que le
+ * reste de Watch Together (`setWatchTogetherBackendUrl`, jeton) : web, bureau
+ * et mobile.
  */
 
 export interface GifItem {
   id: string;
-  /** URL tinygif (~220 px) : aperçu de la grille ET contenu de `wt:gif`. */
+  /** URL tinygif (~220 px) : aperçu grille ET payload de wt:gif. */
   url: string;
   w: number;
   h: number;
@@ -20,15 +21,11 @@ export interface GifItem {
 export interface GifsPayload {
   configured: boolean;
   results: GifItem[];
-  /** Klipy en erreur ou injoignable (distinct d'une recherche sans résultat). */
+  /** Klipy en erreur/injoignable (distinct d'une recherche sans résultat). */
   error?: boolean;
 }
 
-/** La locale Klipy d'une langue d'interface. */
-export function gifLocaleOf(language: string | undefined): "fr_FR" | "en_US" {
-  return language?.toLowerCase().startsWith("fr") ? "fr_FR" : "en_US";
-}
-
+/** Valeur debouncée — évite une requête Klipy à chaque frappe. */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -38,20 +35,25 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
+/** `language` : la langue de l'interface (« fr », « en-US »…) — Klipy cherche dans la sienne. */
 export function useGifSearch(rawQuery: string, language: string | undefined) {
   const query = useDebouncedValue(rawQuery.trim(), 350);
-  const locale = gifLocaleOf(language);
+  const locale = language?.toLowerCase().startsWith("fr") ? "fr_FR" : "en_US";
+
   return useQuery({
     queryKey: ["wt-gifs", query, locale],
     queryFn: async (): Promise<GifsPayload> => {
-      const path = query
-        ? `/api/gifs/search?q=${encodeURIComponent(query)}&locale=${locale}`
-        : `/api/gifs/featured?locale=${locale}`;
-      // Un serveur d'avant sans la route, ou tout autre refus : comme « non configuré ».
-      return tentacleApiFetch<GifsPayload>(path).catch(() => ({ configured: false, results: [] }));
+      const base = `${wtBackendRoot()}/api/gifs`;
+      const url = query
+        ? `${base}/search?q=${encodeURIComponent(query)}&locale=${locale}`
+        : `${base}/featured?locale=${locale}`;
+      const res = await fetch(url, wtAuthInit());
+      // 404 (vieux serveur sans la route) ou autre échec → même UX que non configuré.
+      if (!res.ok) return { configured: false, results: [] };
+      return (await res.json()) as GifsPayload;
     },
     staleTime: 5 * 60 * 1000,
-    // La grille précédente reste affichée pendant la frappe (pas de flash).
+    // Garde la grille précédente affichée pendant la frappe (pas de flash).
     placeholderData: (prev) => prev,
   });
 }

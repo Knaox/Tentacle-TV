@@ -3,7 +3,7 @@ import {
   applyAffinityPush, armLaunchFollow, closeAffinity, getAffinitySnapshot, openAffinity, showAffinityNotice,
   showAffinityView,
 } from "./affinityStore";
-import { KIND_LABEL_KEY } from "./affinityText";
+import { KIND_LABEL_KEY } from "@tentacle-tv/shared";
 
 /**
  * Affinité — ce qu'un message `wt:affinity` change à l'écran, hors React (le

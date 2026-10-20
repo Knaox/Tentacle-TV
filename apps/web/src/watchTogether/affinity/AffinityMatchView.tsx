@@ -2,9 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { Heart, Play } from "lucide-react";
-import {
-  WtApiError, dismissAffinityMatch, applyAffinityPush, showAffinityNotice, formatNames, memberName,
-} from "@tentacle-tv/api-client";
+import { WtApiError, dismissAffinityMatch, applyAffinityPush, showAffinityNotice } from "@tentacle-tv/api-client";
+import { formatNames, memberName } from "@tentacle-tv/shared";
 import type { WtAffinityMatchDto, WtAffinityStateDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";

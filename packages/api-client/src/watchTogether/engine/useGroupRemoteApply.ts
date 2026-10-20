@@ -166,6 +166,16 @@ export function useGroupRemoteApply({
 
     if (!futureAnchor || skipApply) return;
 
+    // Un lecteur qui joue DÉJÀ (lecture automatique au chargement, reprise
+    // locale) partirait en avance de tout le délai de la reprise : il attend
+    // l'instant T en pause, comme les autres (défaut mesuré au banc le 20/10 :
+    // un membre qui arrivait partait 200 à 300 ms en avance).
+    if (!t.isPaused()) {
+      wtLog("engine", "apply: lecteur déjà en lecture avant la reprise planifiée → pause jusqu'à T");
+      armEcho(shared);
+      t.pause();
+    }
+
     // ── Reprise planifiée : pré-calage en pause, puis play() à l'instant T ──
     // Même tolérance que la barrière qui vient de poser ce lecteur : un seek de
     // plus juste avant T ferait manquer l'instant (sur un HLS, mpv recule le

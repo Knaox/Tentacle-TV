@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decideDrift, proportionalRate } from "./driftController";
+import { WT_DRIFT_ENGAGE_WEB_S, WT_DRIFT_SETTLE_WEB_S } from "../types/watchTogether";
 
 const band = { engageS: 0.04, settleS: 0.025 };
 
@@ -53,5 +54,20 @@ describe("decideDrift", () => {
       .toEqual({ rate: 1, seek: "none" });
     expect(decideDrift({ driftS: -0.2, paused: true, currentRate: 1, ...band, correctingForMs: null }))
       .toEqual({ rate: 1, seek: "paused" });
+  });
+});
+
+describe("decideDrift — la bande du web (currentTime lu en direct)", () => {
+  const web = { engageS: WT_DRIFT_ENGAGE_WEB_S, settleS: WT_DRIFT_SETTLE_WEB_S };
+
+  it("une fois engagée, la correction descend jusqu'à 8 ms — plus de biais de 50 ms entre deux lecteurs", () => {
+    // Avant : relâchée à 25 ms, A restait à −24 ms et B à +25 ms, sans jamais se recorriger.
+    expect(decideDrift({ ...web, driftS: 0.02, paused: false, currentRate: 0.99, correctingForMs: 1_000 }).rate).not.toBe(1);
+    expect(decideDrift({ ...web, driftS: -0.015, paused: false, currentRate: 1.01, correctingForMs: 1_000 }).rate).toBeGreaterThan(1);
+    expect(decideDrift({ ...web, driftS: 0.006, paused: false, currentRate: 0.995, correctingForMs: 1_000 })).toEqual({ rate: 1, seek: "none" });
+  });
+
+  it("au repos, rien ne s'engage sous 40 ms", () => {
+    expect(decideDrift({ ...web, driftS: 0.03, paused: false, currentRate: 1, correctingForMs: null })).toEqual({ rate: 1, seek: "none" });
   });
 });

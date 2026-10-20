@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { WT_CHAT_MAX_LENGTH, type WtChatMessageDto } from "@tentacle-tv/shared";
+import { WT_CHAT_MAX_LENGTH, WT_QUICK_REACTIONS, type WtChatMessageDto } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../WatchTogetherProvider";
 import { WtAvatar } from "../WatchTogetherRows";
 import type { WtChatApi } from "@tentacle-tv/api-client";
@@ -15,7 +15,6 @@ import { ReactionPicker, type PickerTab } from "./picker/ReactionPicker";
  * (ChatOverlay), qui garde son verre sombre quel que soit le thème.
  */
 
-const QUICK_EMOJIS = ["😂", "❤️", "🔥", "😮", "👍", "😭"] as const;
 
 function formatTime(at: number): string {
   return new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -118,7 +117,7 @@ export function ChatPanel({ chat }: { chat: WtChatApi }) {
       />
 
       <div className="flex shrink-0 items-center justify-center gap-1 border-t border-white/10 px-2 py-1.5">
-        {QUICK_EMOJIS.map((emoji) => (
+        {WT_QUICK_REACTIONS.map((emoji) => (
           <button
             key={emoji}
             onClick={() => chat.sendReaction(emoji)}

@@ -44,6 +44,19 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/** La racine du serveur Tentacle (vide sur le web : même origine) et
+ *  l'authentification de Watch Together — pour ses routes hors du préfixe
+ *  (`/api/gifs` du chat). */
+export function wtBackendRoot(): string {
+  return _backendBase.replace(/\/api\/watch-together$/, "");
+}
+
+/** L'authentification d'un appel : le jeton s'il y en a un (bureau, mobile),
+ *  sinon le cookie (web) — comme `wtFetch`. */
+export function wtAuthInit(): Pick<RequestInit, "headers" | "credentials"> {
+  return { headers: getAuthHeader(), credentials: currentToken() ? undefined : "include" };
+}
+
 /** Appel REST authentifié sous /api/watch-together (partagé avec l'affinité). */
 export async function wtFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {

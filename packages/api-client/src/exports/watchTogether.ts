@@ -28,10 +28,10 @@ export {
   chatReducer, initialChatState, WT_CHAT_TOAST_MAX, WT_FLOAT_MAX,
   type WtChatAction, type WtChatState, type WtFloatingReaction,
 } from "../watchTogether/chat/chatState";
-export { useGifSearch, gifLocaleOf, type GifItem, type GifsPayload } from "../watchTogether/chat/useGifSearch";
+export { useGifSearch, type GifItem, type GifsPayload } from "../watchTogether/chat/useGifSearch";
 
 // L'affinité (swipe de groupe) : magasin, effets des messages, mots.
 export * from "../watchTogether/affinity/affinityStore";
 export { handleAffinityMessage, reconcileAffinity, type AffinityEventContext } from "../watchTogether/affinity/affinityEvents";
 export { useAffinitySession } from "../watchTogether/affinity/useAffinitySession";
-export { AFFINITY_KINDS, KIND_LABEL_KEY, formatNames, memberName } from "../watchTogether/affinity/affinityText";
+export { launchAffinityMatchFor, type AffinityLaunchTarget } from "../watchTogether/affinity/launchAffinityMatchFor";

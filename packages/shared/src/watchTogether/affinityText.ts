@@ -1,4 +1,4 @@
-import type { WtAffinityKind, WtRoomStateDto } from "@tentacle-tv/shared";
+import type { WtAffinityKind, WtRoomStateDto } from "../types/watchTogether";
 
 /** Affinité — ce qui se dit pareil partout : le nom d'un type, une liste de noms. */
 
