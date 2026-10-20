@@ -38,10 +38,11 @@ function listing(extra: Partial<PickerProfilesDto> = {}): PickerProfilesDto {
 }
 
 describe("les plateformes de « Qui regarde ? »", () => {
-  it("forment une liste fermée : le bureau, rien d'autre aujourd'hui", () => {
-    expect(FAMILY_PICKER_PLATFORMS).toEqual(["desktop"]);
+  it("forment une liste fermée : le bureau et le mobile (1.32.0), rien d'autre aujourd'hui", () => {
+    expect(FAMILY_PICKER_PLATFORMS).toEqual(["desktop", "mobile"]);
     expect(isPickerPlatform("desktop")).toBe(true);
-    for (const other of ["web", "mobile", "tv", "", null, 1, "constructor"]) expect(isPickerPlatform(other)).toBe(false);
+    expect(isPickerPlatform("mobile")).toBe(true);
+    for (const other of ["web", "tv", "", null, 1, "constructor", "Mobile"]) expect(isPickerPlatform(other)).toBe(false);
   });
 });
 
