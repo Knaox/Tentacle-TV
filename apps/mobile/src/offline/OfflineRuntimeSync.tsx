@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
+import { offlineOwnerOf } from "@tentacle-tv/offline-core";
 import { refreshStoredUser } from "@/auth/storedUser";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import {
@@ -25,6 +26,7 @@ import { isBackgroundTransfers, useWifiOnly } from "./settings";
 import { wifiBlocked } from "./transferGate";
 import { useConnectivity } from "./useConnectivity";
 import { useStorageReady } from "@/providers/StorageReadyContext";
+import { useOfflineProfileSession } from "./rights/useOfflineOwner";
 
 /** Le jeton rafraîchi par AppProviders arrive un peu après le retour au premier plan. */
 const CREDS_RECHECK_MS = 3_000;
@@ -50,11 +52,20 @@ const PROFILE_FOREGROUND_MIN_INTERVAL_MS = 60_000;
  *   la photo suit son étiquette.
  * - « Wi-Fi seulement » : les données mobiles mettent tout en pause système
  *   (sauf « continuer en données mobiles »), le Wi-Fi relance.
+ *
+ * Le hors ligne appartient au COMPTE de l'appareil (`offline-core` ›
+ * `offlineOwnerOf`) : le moteur tourne toujours avec SON jeton, même pendant la
+ * session d'un profil (un lot lancé par le compte continue en coulisse). Ce qui
+ * photographie ou synchronise la session (photo, état de visionnage, caches de
+ * langues) attend la session du compte : un profil n'y écrit rien.
  */
 export function OfflineRuntimeSync() {
   const { serverUrl } = useServerUrl();
   const { storage } = useTentacleConfig();
-  const userId = useUserId();
+  const profileSession = useOfflineProfileSession();
+  // Relu à chaque rendu : la bascule d'un profil au compte (et retour) réécrit le stockage.
+  const owner = offlineOwnerOf(storage);
+  const userId = owner?.userId ?? null;
   const client = useJellyfinClient();
   // Développement : le hors ligne pilotable depuis l'inspecteur (voir le crochet).
   useOfflineDevHook(client, userId);
@@ -62,7 +73,7 @@ export function OfflineRuntimeSync() {
   const wifiOnly = useWifiOnly();
   const cellularAck = useCellularAck();
   const online = state === "online";
-  const token = storage.getItem("tentacle_token");
+  const token = owner?.token ?? null;
   const tokenRef = useRef(token);
   tokenRef.current = token;
   const queryClient = useQueryClient();
@@ -84,6 +95,7 @@ export function OfflineRuntimeSync() {
   useEffect(() => {
     if (!online || !serverUrl || !token || !userId) return;
     startOfflineRuntime({ serverUrl, token });
+    if (profileSession) return;
     photographSession(userId, storage, null);
     // Le profil se relit à chaque passage en ligne, ouverture comprise : une
     // photo changée, ajoutée ou retirée ailleurs n'attend plus la prochaine
@@ -100,7 +112,7 @@ export function OfflineRuntimeSync() {
     // Le jeton est suivi à part (voir ci-dessous) : un rafraîchissement ne
     // doit pas relancer une normalisation complète.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online, serverUrl, userId]);
+  }, [online, serverUrl, userId, profileSession]);
 
   // Démarrage hors ligne : le moteur se normalise quand même (transferts
   // interrompus et pauses système remis d'aplomb) et la purge tourne — la
@@ -117,7 +129,7 @@ export function OfflineRuntimeSync() {
   useEffect(() => {
     const syncCreds = (): void => {
       const current = offlineCreds();
-      const fresh = storage.getItem("tentacle_token");
+      const fresh = offlineOwnerOf(storage)?.token;
       if (current !== null && fresh && current.token !== fresh) {
         updateOfflineCreds({ serverUrl: current.serverUrl, token: fresh });
       }
@@ -149,7 +161,7 @@ export function OfflineRuntimeSync() {
       setTimeout(syncCreds, CREDS_RECHECK_MS);
       // Retour au premier plan en ligne : l'état de visionnage repart dans les
       // deux sens (au plus une fois par minute) — jamais pendant une lecture.
-      if (state === "online" && serverUrl && token && userId && !isLocalPlaybackActive()) {
+      if (state === "online" && serverUrl && token && userId && !profileSession && !isLocalPlaybackActive()) {
         void syncPlaybackState(serverUrl, token, userId, "all");
         void maybeRefreshOfflineCaches(serverUrl, token, userId, storage);
         // Une photo changée ailleurs pendant l'absence : l'app revenue au
@@ -161,7 +173,7 @@ export function OfflineRuntimeSync() {
       }
     });
     return () => subscription.remove();
-  }, [storage, state, token, serverUrl, userId, client]);
+  }, [storage, state, token, serverUrl, userId, client, profileSession]);
 
   // Wi-Fi seulement : pause système en données mobiles — sauf accusé
   // « continuer en données mobiles », qui tombe au retour du Wi-Fi —, reprise

@@ -131,6 +131,31 @@ export function endMobileProfileSession(deps: SwitchDeps, reason: string): boole
   return true;
 }
 
+/**
+ * Plus de connexion pendant une session de profil : l'appareil revient au
+ * compte qui s'y est connecté — le hors ligne est le sien, et aucun code PIN ne
+ * se vérifie sans serveur (`offline-core` › `offlineSessionFallback`). Sans
+ * « Qui regarde ? » exigé : au retour du réseau, rien ne se rouvre au nom d'un
+ * profil. Rend le nom du compte revenu (`""` s'il est illisible), ou null si
+ * rien n'a basculé (hors profil, réserve illisible : on ne touche à rien).
+ */
+export function returnToAccountOffline(deps: SwitchDeps): string | null {
+  if (!readActiveProfile(deps.storage)) return null;
+  if (!returnToAccount(deps.storage)) return null;
+  clearProfilePickerRequest();
+  restart(deps);
+  return storedUserName(deps.storage.getItem("tentacle_user"));
+}
+
+function storedUserName(raw: string | null): string {
+  try {
+    const name = raw ? (JSON.parse(raw) as { Name?: unknown }).Name : null;
+    return typeof name === "string" ? name : "";
+  } catch {
+    return "";
+  }
+}
+
 /** La déconnexion du compte : la session de profil s'oublie avec lui. */
 export function forgetMobileProfileSession(storage: KeyValueStore): void {
   forgetProfileSession(storage);

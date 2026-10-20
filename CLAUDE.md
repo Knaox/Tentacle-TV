@@ -957,6 +957,14 @@ pour octet dans `apps/backend/src/family/` (`familyMirror.test.ts`) ; carnet :
   par COOKIE, qui l'emporte sur tout Bearer : ouvrir un profil réécrit donc les cookies côté
   serveur, et le jeton du COMPTE part en réserve httpOnly (`tentacle_account_token`,
   `routes/family/accountEscrow.ts`), jamais dans la page ; il ne revient que derrière SON code.
+- **Le hors ligne appartient au COMPTE DE L'APPAREIL** (celui qui s'y est connecté, jamais le
+  propriétaire de la Famille ni le profil ouvert ; règle du 21/10, `offline-core` ›
+  `rights/offlineOwner.ts`, mobile ET bureau) : une session de profil n'en voit rien (ni bouton, ni
+  page, ni marqueur, ni réglage) ; le moteur tourne avec le jeton du compte (`offlineOwnerOf`) ; un
+  compte à qui le serveur refuse `keepOffline` ne voit rien (dernier mot retenu,
+  `tentacle_offline_keep_right`). Plus de connexion pendant un profil → retour d'office au compte
+  (`offlineSessionFallback` : mobile `OfflineAccountFallback`, bureau `offline/accountFallback.ts`),
+  dit dans le message de passage hors ligne ; au retour du réseau, rien ne se rouvre.
 - **Un invité n'apparaît dans AUCUNE liste** (Watch Together, candidats,
   utilisateurs, admin, classement, recommandations en fond) ; seulement dans
   les sessions en cours (`familyGuestOf`). Toute nouvelle liste de comptes

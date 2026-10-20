@@ -80,3 +80,5 @@ export * from "./core/reconcile";
 export * from "./variants/platformSupport";
 export * from "./variants/offlineVariants";
 export * from "./rights/offlineHidden";
+export * from "./rights/offlineOwner";
+export * from "./rights/keepRightMemory";

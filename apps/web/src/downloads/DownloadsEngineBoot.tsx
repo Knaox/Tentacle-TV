@@ -3,7 +3,9 @@
  * ligne : credentials (serveur + token) poussés en mémoire moteur, file
  * normalisée (transferts interrompus/pauses système → reprise auto).
  * Re-déclenché à chaque retour en ligne et à chaque changement de compte.
- * Ne rend rien.
+ * Le hors ligne appartient au COMPTE de l'appareil (`offlineOwner.ts`) : le
+ * moteur prend SON jeton, même pendant la session d'un profil — un lot lancé
+ * par le compte continue en coulisse. Ne rend rien.
  */
 
 import { useEffect } from "react";
@@ -11,6 +13,7 @@ import { useUserId } from "@tentacle-tv/api-client";
 import { backendUrl } from "../main";
 import { supportsDownloads } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
+import { readOfflineOwner } from "../offline/offlineOwner";
 import { engineStart } from "./api";
 import { primeDownloadsRoot } from "./localFiles";
 
@@ -26,12 +29,8 @@ export function DownloadsEngineBoot() {
 
   useEffect(() => {
     if (!supportsDownloads() || !userId || state !== "online") return;
-    try {
-      const token = localStorage.getItem("tentacle_token");
-      if (token) void engineStart(backendUrl, token);
-    } catch {
-      /* localStorage inaccessible : le moteur restera inactif. */
-    }
+    const token = readOfflineOwner()?.token;
+    if (token) void engineStart(backendUrl, token);
   }, [userId, state]);
 
   return null;

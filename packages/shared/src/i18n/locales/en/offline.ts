@@ -237,4 +237,7 @@ export default {
   detailEpisodes: "Episodes",
   detailSubtitlesKept: "Subtitles kept",
   detailSubtitlesKeptValue: "{{done}} of {{total}}",
+  // Plus de connexion pendant la session d'un profil : retour au compte de l'appareil.
+  accountFallback: "Back to this device's account, {{name}}.",
+  accountFallbackUnnamed: "Back to this device's account.",
 };
