@@ -17,7 +17,7 @@ import type { EngineSurfaceProps } from "./types";
  */
 export function NativeVideoSurface({
   engineRef, streamUrl, headers, startPositionMs, isDirectPlay, textTracks, title, artist,
-  paused, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
+  paused, rate, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
   overlayVisible, onLoad, onProgress, onEnd, onError, onBuffering, onExternalPlaybackChange,
   onSeek, onSkip, onToggleOverlay, onSwipeDown, onActivity, children,
 }: EngineSurfaceProps) {
@@ -61,6 +61,7 @@ export function NativeVideoSurface({
         style={{ flex: 1 }}
         resizeMode="contain"
         paused={paused}
+        rate={rate ?? 1}
         // Android ExoPlayer buffer config — larger buffer for smoother playback
         {...(Platform.OS === "android" ? {
           bufferConfig: {
