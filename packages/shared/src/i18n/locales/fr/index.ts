@@ -56,7 +56,6 @@ import metadataHint from "./metadataHint";
 import profilePicker from "./profilePicker";
 import familyRightsSummary from "./familyRightsSummary";
 import settingsMobile from "./settingsMobile";
-import familyRightsSummary from "./familyRightsSummary";
 import avatars from "./avatars";
 import userRights from "./userRights";
 import libraryDelete from "./libraryDelete";
@@ -93,7 +92,6 @@ export default {
   profilePicker,
   familyRightsSummary,
   settingsMobile,
-  familyRightsSummary,
   avatars,
   userRights,
   libraryDelete,
