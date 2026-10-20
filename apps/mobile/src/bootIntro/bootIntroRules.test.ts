@@ -5,6 +5,7 @@ import {
   mobileBootArrival,
   mobileBootPlan,
   overlayBootRoute,
+  overlayScreenState,
   type BootFirstScreenOverlay,
   type MobileArrivalInput,
 } from "./bootIntroRules";
@@ -115,8 +116,19 @@ describe("quand partir : le premier écran du mobile", () => {
     expect(watch(pending, "ready", BOOT_INTRO_MAX_HOLD_MS)).toBe("go");
   });
 
-  it("la connexion, le choix du serveur, une fiche, « Qui regarde ? » à l'écran : dès qu'ils sont montés", () => {
+  it("la connexion, le choix du serveur, une fiche : dès qu'ils sont montés", () => {
     for (const pathname of ["/login", "/server-setup", "/media/abc"]) expect(watch(mobileBootArrival({ ...base, pathname })), pathname).toBe("go");
-    expect(watch(mobileBootArrival({ ...base, overlays: { profiles: "active" }, shown: shown("profiles") }))).toBe("go");
+  });
+
+  it("« Qui regarde ? » à l'écran attend que l'accueil qu'il cache soit posé : son montage ne tombe jamais en pleine plongée", () => {
+    const picker = mobileBootArrival({ ...base, overlays: { profiles: "active" }, shown: shown("profiles") });
+    expect(overlayScreenState("/", {})).toBeNull();
+    expect(watch(picker, overlayScreenState("/", {}))).toBe("wait");
+    expect(watch(picker, overlayScreenState("/", { "/": "loading" }))).toBe("wait");
+    expect(watch(picker, overlayScreenState("/", { "/": "ready" }))).toBe("go");
+    expect(watch(picker, overlayScreenState("/", { "/": "failed" }))).toBe("go");
+    expect(watch(picker, overlayScreenState("/", { "/": "loading" }), BOOT_INTRO_MAX_HOLD_MS)).toBe("go");
+    // Sur un écran qui ne dit rien de lui-même : aussitôt.
+    expect(watch(picker, overlayScreenState("/media/abc", {}))).toBe("go");
   });
 });

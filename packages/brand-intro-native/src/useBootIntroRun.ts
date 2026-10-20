@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BOOT_INTRO_MAX_HOLD_MS, bootIntroOutcome, bootSoundLeads } from "@tentacle-tv/shared/brandIntro";
+import { BOOT_INTRO_MAX_HOLD_MS, bootIntroOutcome, bootSoundLeads, introFrameReport, type IntroFrameReport } from "@tentacle-tv/shared/brandIntro";
 import { bootIntroGate, useBootIntroReport } from "./bootIntroGate";
 import { bootSound } from "./bootSound";
 import { useIntroClock, type IntroClockControl } from "./useIntroClock";
@@ -12,6 +12,8 @@ export interface BootIntroRunOptions {
   soundWanted: Promise<boolean>;
   /** Les écrans qui disent eux-mêmes quand ils sont prêts (défaut : ceux de la TV). */
   selfReporting?: readonly string[];
+  /** À l'arrivée : le bilan des images de l'ouverture (shared `introFrameReport`). */
+  onFrameReport?: (report: IntroFrameReport) => void;
 }
 
 export interface BootIntroRun {
@@ -30,10 +32,13 @@ export interface BootIntroRun {
  * s'allume. Le son se décode pendant que le poulpe s'assemble, seulement s'il
  * est voulu ; la sortie mesurée (Android) dit quand le demander.
  */
-export function useBootIntroRun({ soundWanted, selfReporting }: BootIntroRunOptions): BootIntroRun {
+export function useBootIntroRun({ soundWanted, selfReporting, onFrameReport }: BootIntroRunOptions): BootIntroRun {
   const [landed, setLanded] = useState(false);
   const [heldSince, setHeldSince] = useState<number | null>(null);
   const [heldOut, setHeldOut] = useState(false);
+  // Lu à l'arrivée seulement : sa dernière valeur, sans rejouer l'effet.
+  const frameReportRef = useRef(onFrameReport);
+  frameReportRef.current = onFrameReport;
   const soundReady = useRef<Promise<{ ready: boolean; outputLeadMs: number | null }> | null>(null);
 
   if (soundReady.current === null) {
@@ -91,6 +96,8 @@ export function useBootIntroRun({ soundWanted, selfReporting }: BootIntroRunOpti
     if (!landed) return undefined;
     clock.landed.value = 1;
     clock.stop();
+    // Le bilan des images (images perdues, pire écart, par phase) : à qui le demande (le banc).
+    frameReportRef.current?.(introFrameReport(clock.frameLog.value));
     const timer = setTimeout(() => bootSound.dispose(), SOUND_TAIL_MS);
     return () => clearTimeout(timer);
   }, [landed, clock]);

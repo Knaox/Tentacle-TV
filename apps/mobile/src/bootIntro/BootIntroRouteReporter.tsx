@@ -1,14 +1,21 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useSegments } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { bootIntroGate } from "@tentacle-tv/brand-intro-native";
+import { bootIntroGate, useBootIntroReport } from "@tentacle-tv/brand-intro-native";
 import { resolveAuthRoute } from "@/auth/authRoute";
 import { isSessionExpired } from "@/auth/sessionState";
 import { STORED_USER_KEY } from "@/auth/storedUser";
 import { isServerOnlyRoute } from "@/offline/offlineRoutes";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { readStartupOverlay, subscribeStartupOverlays } from "@/startup/startupOverlays";
-import { BOOT_FIRST_SCREEN_OVERLAYS, mobileBootArrival, type BootFirstScreenOverlay, type BootOverlayStates } from "./bootIntroRules";
+import {
+  BOOT_FIRST_SCREEN_OVERLAYS,
+  mobileBootArrival,
+  overlayBootRoute,
+  overlayScreenState,
+  type BootFirstScreenOverlay,
+  type BootOverlayStates,
+} from "./bootIntroRules";
 import { useShownBootOverlays } from "./bootOverlays";
 
 /** L'état des recouvrements du premier écran, en une chaîne stable (le magasin rend une valeur par lecture). */
@@ -54,6 +61,13 @@ export function BootIntroRouteReporter({ appReady }: { appReady: boolean }) {
     shown,
   });
 
+  // « Qui regarde ? », le premier lancement : prêts quand l'écran qu'ils cachent est posé.
+  const { screens } = useBootIntroReport();
+  const covering = arrival.route === overlayBootRoute("profiles") || arrival.route === overlayBootRoute("firstRun");
+  const coveringState = covering ? overlayScreenState(pathname, screens) : null;
+  useEffect(() => {
+    if (arrival.route !== null && coveringState !== null) bootIntroGate.reportScreen(arrival.route, coveringState);
+  }, [arrival.route, coveringState]);
   useEffect(() => {
     if (arrival.route !== null) bootIntroGate.reportRoute(arrival.route);
   }, [arrival.route]);
