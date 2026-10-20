@@ -99,7 +99,10 @@ export const WT_BARRIER_PRESEEK_MPV_S = 0.1;
  *  nous aurait lâchés à 20 s de toute façon). */
 export const WT_BARRIER_CONFIRM_TIMEOUT_MS = 25_000;
 /** Seeks rapprochés (flèches martelées) : un seul wt:seek, le dernier (ms). */
-export const WT_SEEK_NOTIFY_DEBOUNCE_MS = 250;
+export const WT_SEEK_NOTIFY_DEBOUNCE_MS = 150;
+/** Un seek de CET appareil reste « en vol » ce délai au plus : au-delà, un écho
+ *  plus ancien n'est plus ignoré (le seek suivant s'est perdu, coupure). */
+export const WT_OWN_SEEK_ECHO_MS = 3_000;
 /** Lecture demandée au serveur sans réponse : on joue localement (ms). */
 export const WT_REQUEST_PLAY_WATCHDOG_MS = 2_000;
 /** Après un play() planifié, délai pour que le lecteur se déclare en lecture. */

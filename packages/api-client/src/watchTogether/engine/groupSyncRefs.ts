@@ -1,7 +1,7 @@
 import type { MutableRefObject } from "react";
 import {
-  TICKS_PER_SECOND, WT_SEEK_LOOKAHEAD_S, pendingIntentUntil,
-  type PendingIntent, type PendingIntentKind, type WsClientMessage, type WtRoomStateDto,
+  TICKS_PER_SECOND, WT_OWN_SEEK_ECHO_MS, WT_SEEK_LOOKAHEAD_S, pendingIntentUntil,
+  type PendingIntent, type PendingIntentKind, type WsClientMessage, type WtRoomStateDto, type WtSeekToken,
 } from "@tentacle-tv/shared";
 import type { PlayerTransport } from "../playerPort";
 import { getClockRttMs } from "../../socket/clockSync";
@@ -75,6 +75,18 @@ export interface GroupSyncSharedRefs {
   seekLatencySRef: MutableRefObject<number | null>;
   /** Seek dur en vol, pour mesurer sa latence à l'atterrissage. */
   pendingHardSeekRef: MutableRefObject<{ at: number; targetS: number } | null>;
+  /** Le dernier seek DEMANDÉ par cet appareil (numéro du jeton, instant). */
+  localSeekRef: MutableRefObject<{ seq: number; at: number } | null>;
+}
+
+/** L'appareil des jetons de seek : un tirage par chargement de l'app (un
+ *  onglet = un appareil), minuscules et chiffres (cf. `watchTogetherSeekToken.ts`). */
+export const WT_SEEK_DEVICE = Math.random().toString(36).slice(2, 10) || "wt";
+
+/** Mon dernier seek, tant qu'on peut l'attendre — null au-delà de WT_OWN_SEEK_ECHO_MS. */
+export function latestLocalSeek(shared: GroupSyncSharedRefs, now: number = Date.now()): WtSeekToken | null {
+  const local = shared.localSeekRef.current;
+  return local && now - local.at < WT_OWN_SEEK_ECHO_MS ? { device: WT_SEEK_DEVICE, seq: local.seq } : null;
 }
 
 /** Lookahead d'un seek dur en lecture : la latence mesurée, sinon le repli. */

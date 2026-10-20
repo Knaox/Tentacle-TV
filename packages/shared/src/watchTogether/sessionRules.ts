@@ -1,4 +1,4 @@
-import type { WtRoomStateDto } from "../types/watchTogether";
+import { parseWtSeekToken, type WtRoomStateDto, type WtSeekToken } from "../types/watchTogether";
 
 /**
  * Watch Together — ce qu'un lecteur conclut de l'état de la salle, sans
@@ -36,4 +36,16 @@ export function isGroupSessionActive(
   itemId: string | undefined,
 ): boolean {
   return isInGroup && !!room && !!itemId;
+}
+
+/**
+ * L'état de la salle est-il l'écho d'un de MES seeks plus anciens que le
+ * dernier que j'ai demandé ? Alors je ne m'y recale pas : mon seek suivant
+ * arrive, et c'est lui qui posera la salle (sauts rapides, B7 — sans cela,
+ * chaque écho me ramenait en arrière et l'appui suivant repartait de là).
+ * `latest` : mon dernier seek, null s'il est trop ancien pour qu'on l'attende.
+ */
+export function isOwnOlderSeekEcho(roomToken: string | undefined, latest: WtSeekToken | null): boolean {
+  const echoed = parseWtSeekToken(roomToken);
+  return !!echoed && !!latest && echoed.device === latest.device && echoed.seq < latest.seq;
 }
