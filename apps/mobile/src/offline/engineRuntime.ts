@@ -33,7 +33,8 @@ import {
 import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
 import { nowPlayingItemId } from "./nowPlaying";
-import { transferParallelLimit } from "./backgroundParallel";
+import { transferImmediateRetries, transferParallelLimit } from "./backgroundParallel";
+import { serverPrepareForEngine } from "./serverPrepare";
 import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
 import { runHevcRepair } from "./hevcRepair";
@@ -133,6 +134,12 @@ export function offlineEngine(): DownloadEngine {
     // Un seul transfert à la fois quand l'application est là ; plusieurs le
     // temps d'une suspension iOS, où rien de neuf ne peut plus partir.
     parallelLimit: transferParallelLimit,
+    // iPhone derrière : une coupure repart aussitôt, la session d'arrière-plan
+    // attend le réseau à notre place (aucun minuteur n'y sonnerait).
+    immediateNetworkRetries: transferImmediateRetries,
+    // L'Allégé préparé par le serveur, que l'application soit là ou non
+    // (`offline.serverPrepare`) ; sans la capacité, le transcodage en direct.
+    serverPrepare: serverPrepareForEngine,
     // Le fichier Allégé est un MP4 fragmenté : remux indexé par le module natif
     // avant « complete » ; sans module (ancien build), il reste tel quel.
     finalizeMedia: finalizeLightFile,

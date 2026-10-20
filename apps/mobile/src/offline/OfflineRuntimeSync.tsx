@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useServerCapability, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { refreshStoredUser } from "@/auth/storedUser";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import {
@@ -13,6 +13,8 @@ import {
 } from "./engineRuntime";
 import { syncAvatarCache } from "./avatarCache";
 import { setTransfersSuspended } from "./backgroundParallel";
+import { setServerPrepareEnabled } from "./serverPrepare";
+import { useOfflinePushWake } from "./offlinePushWake";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { configureEngineSettings } from "@/player/engine/engineSettings";
@@ -58,6 +60,11 @@ export function OfflineRuntimeSync() {
   const client = useJellyfinClient();
   // Développement : le hors ligne pilotable depuis l'inspecteur (voir le crochet).
   useOfflineDevHook(client, userId);
+  // La préparation tenue par le serveur : lue par le moteur à chaque transfert.
+  const serverPrepare = useServerCapability("offline.serverPrepare");
+  useEffect(() => setServerPrepareEnabled(serverPrepare), [serverPrepare]);
+  // L'iPhone réveillé par le serveur quand une préparation s'achève sans lui.
+  useOfflinePushWake();
   const { state, networkType, reachable } = useConnectivity();
   const wifiOnly = useWifiOnly();
   const cellularAck = useCellularAck();

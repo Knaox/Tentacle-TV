@@ -8,8 +8,32 @@ import Foundation
 /// système remettent l'attribut à zéro : l'application le repose à chaque
 /// fin de transfert.
 public class OfflineStorageModule: Module {
+  /// L'écoute des réveils « préparation prête » (`PushWake.swift`).
+  private var preparedObserver: NSObjectProtocol?
+
   public func definition() -> ModuleDefinition {
     Name("OfflineStorage")
+
+    // Le serveur a fini de préparer un titre pendant que l'application dormait.
+    Events("onOfflinePrepared")
+
+    OnStartObserving {
+      guard self.preparedObserver == nil else { return }
+      self.preparedObserver = NotificationCenter.default.addObserver(
+        forName: PushWake.notification, object: nil, queue: .main
+      ) { [weak self] note in
+        self?.sendEvent("onOfflinePrepared", ["itemId": note.userInfo?["itemId"] as? String ?? ""])
+      }
+      for itemId in PushWake.startListening() {
+        self.sendEvent("onOfflinePrepared", ["itemId": itemId])
+      }
+    }
+
+    OnStopObserving {
+      if let observer = self.preparedObserver { NotificationCenter.default.removeObserver(observer) }
+      self.preparedObserver = nil
+      PushWake.stopListening()
+    }
 
     Function("setExcludedFromBackup") { (uri: String, excluded: Bool) throws -> Bool in
       let candidate = uri.hasPrefix("file://") ? URL(string: uri) : URL(fileURLWithPath: uri)
@@ -103,7 +127,15 @@ public class OfflineStorageModule: Module {
         _ = Mp4Boxes.promoteHevcTag(at: source)
         promise.resolve("ok")
       case .fragmented:
-        remuxFragmented(source: source, promise: promise)
+        // Réveillée en arrière-plan (fin d'un transfert, push du serveur),
+        // l'application n'a que quelques secondes : l'export les dépasse
+        // souvent. Un délai à son nom, rendu à la fin dans tous les cas.
+        let hold = "tentacle-finalize-\(source.lastPathComponent)"
+        BackgroundTime.hold(hold)
+        remuxFragmented(source: source) { verdict in
+          promise.resolve(verdict)
+          BackgroundTime.release(hold)
+        }
       }
     }
 
@@ -124,13 +156,13 @@ public class OfflineStorageModule: Module {
 /// conteneur cible refuse : l'export réussit, et le titre n'a plus de son. On
 /// compte donc les pistes audio des deux côtés avant de remplacer quoi que ce
 /// soit. Une source qui n'en avait aucune n'a rien perdu.
-private func remuxFragmented(source: URL, promise: Promise) {
+private func remuxFragmented(source: URL, resolve: @escaping (String) -> Void) {
   let target = URL(fileURLWithPath: source.path + ".finalizing")
   try? FileManager.default.removeItem(at: target)
   let expectedAudio = Mp4Boxes.audioTrackCount(of: source)
   let asset = AVURLAsset(url: source)
   guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) else {
-    promise.resolve("failed")
+    resolve("failed")
     return
   }
   session.outputURL = target
@@ -139,21 +171,21 @@ private func remuxFragmented(source: URL, promise: Promise) {
   session.exportAsynchronously {
     guard session.status == .completed else {
       try? FileManager.default.removeItem(at: target)
-      promise.resolve("failed")
+      resolve("failed")
       return
     }
     if expectedAudio > 0, Mp4Boxes.audioTrackCount(of: target) == 0 {
       try? FileManager.default.removeItem(at: target)
-      promise.resolve("noaudio")
+      resolve("noaudio")
       return
     }
     _ = Mp4Boxes.promoteHevcTag(at: target)
     do {
       _ = try FileManager.default.replaceItemAt(source, withItemAt: target)
-      promise.resolve("ok")
+      resolve("ok")
     } catch {
       try? FileManager.default.removeItem(at: target)
-      promise.resolve("failed")
+      resolve("failed")
     }
   }
 }

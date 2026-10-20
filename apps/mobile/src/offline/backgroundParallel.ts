@@ -37,3 +37,16 @@ export function setTransfersSuspended(next: boolean): void {
 export function transferParallelLimit(): number {
   return suspended ? SUSPENDED_PARALLEL : MAX_PARALLEL;
 }
+
+/**
+ * Relances d'une coupure SANS délai, le temps de la suspension (iOS) : un
+ * minuteur n'y sonnerait jamais, et la tâche remise aussitôt à la session
+ * d'arrière-plan attend le réseau toute seule. Trois, pas plus : au-delà, la
+ * coupure tient, et c'est la push « prêt » du serveur ou le retour au premier
+ * plan qui la relèveront — sans user la batterie à réveiller l'application.
+ */
+const SUSPENDED_IMMEDIATE_RETRIES = 3;
+
+export function transferImmediateRetries(): number {
+  return suspended ? SUSPENDED_IMMEDIATE_RETRIES : 0;
+}
