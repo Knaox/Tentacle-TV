@@ -7,6 +7,7 @@
  * Étape d : iPhone (compte A) + web (compte B).
  */
 
+import { writeFileSync } from "node:fs";
 import type { WtInviteDto, WtRoomStateDto } from "../../../../packages/shared/src/types/watchTogether";
 import { IosClient } from "../clients/iosClient";
 import { WebClient, type PlayerSample } from "../clients/webClient";
@@ -144,6 +145,7 @@ export async function iosPairScenario(ctx: ScenarioContext): Promise<void> {
   } finally {
     await leave(a).catch(() => undefined);
     await leave(b).catch(() => undefined);
+    for (const c of [iph, ipd]) writeFileSync(`${ctx.outDir}/console-${c.label}.txt`, c.logs.join("\n"));
     iph.close();
     ipd.close();
   }
@@ -164,6 +166,7 @@ export async function iosWebScenario(ctx: ScenarioContext): Promise<void> {
     await runPair(ctx, a, b, episode);
   } finally {
     await leave(a).catch(() => undefined);
+    writeFileSync(`${ctx.outDir}/console-${iph.label}.txt`, iph.logs.join("\n"));
     iph.close();
   }
 }

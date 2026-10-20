@@ -29,15 +29,34 @@ export class IosClient {
   private constructor(
     readonly label: string,
     readonly account: BenchAccount,
-    private readonly hermes: HermesSession,
+    private hermes: HermesSession,
     private readonly state: BenchState,
     /** Le jeton de la session posée sur l'appareil : son identité d'appareil côté serveur. */
     private readonly token: string,
   ) {}
 
+  private metroPort = 0;
+  private deviceName = "";
+
   static async attach(state: BenchState, account: BenchAccount, label: string, metroPort: number, deviceName: string, token: string): Promise<IosClient> {
     const hermes = await HermesSession.connect(metroPort, deviceName);
-    return new IosClient(label, account, hermes, state, token);
+    const client = new IosClient(label, account, hermes, state, token);
+    client.metroPort = metroPort;
+    client.deviceName = deviceName;
+    return client;
+  }
+
+  /** La session Hermes, rouverte si l'app a été relancée ou Metro rechargé. */
+  private async session(): Promise<HermesSession> {
+    if (!this.hermes.closed) return this.hermes;
+    const logs = this.hermes.console;
+    this.hermes = await HermesSession.connect(this.metroPort, this.deviceName);
+    this.hermes.console.push(...logs, `${Date.now()} [banc] session Hermes rouverte`);
+    return this.hermes;
+  }
+
+  private async eval<T>(expression: string): Promise<T> {
+    return (await this.session()).eval<T>(expression);
   }
 
   /**
@@ -46,7 +65,7 @@ export class IosClient {
    * ce que croit le moteur de synchro, pour mesurer l'erreur de son estimation.
    */
   async sample(): Promise<PlayerSample & { portPos: number | null }> {
-    const s = await this.hermes.eval<(Probe & { wallMs: number }) | null>(
+    const s = await this.eval<(Probe & { wallMs: number }) | null>(
       "var b = globalThis.__wtBench; var p = b && b.sample ? b.sample() : null;"
       + " return p ? Object.assign({ wallMs: Date.now() }, p) : null;",
     ).catch(() => null);
@@ -78,7 +97,7 @@ export class IosClient {
 
   /** Navigation par le routeur d'expo-router (module trouvé par son nom) : aucun lien profond. */
   async navigate(path: string): Promise<void> {
-    await this.hermes.eval(
+    await this.eval(
       "var id = null; __r.getModules().forEach(function(v, k){ if (v && v.verboseName && /expo-router\\/build\\/imperative-api\\.js$/.test(v.verboseName)) id = k; });"
       + ` if (id === null) throw new Error("routeur introuvable"); __r(id).router.push(${JSON.stringify(path)}); return true;`,
     );
@@ -93,7 +112,7 @@ export class IosClient {
     const pred = what.testID
       ? `f.memoizedProps && f.memoizedProps.testID === ${JSON.stringify(what.testID)}`
       : `f.memoizedProps && typeof f.memoizedProps.children === "string" && f.memoizedProps.children.indexOf(${JSON.stringify(what.text ?? "")}) >= 0`;
-    return this.hermes.eval<boolean>(
+    return this.eval<boolean>(
       "var hook = globalThis.__REACT_DEVTOOLS_GLOBAL_HOOK__; var hit = null;"
       + " hook.renderers.forEach(function(_, rid){ hook.getFiberRoots(rid).forEach(function(root){"
       + "   var stack = [root.current]; while (stack.length && !hit) { var f = stack.pop();"
@@ -108,13 +127,18 @@ export class IosClient {
 
   /** Geste au lecteur par la sonde : les mêmes chemins que les boutons du lecteur mobile. */
   async action(kind: "play" | "pause" | "seekBy", value?: number): Promise<void> {
-    await this.hermes.eval(`globalThis.__wtBench.action(${JSON.stringify(kind)}, ${JSON.stringify(value ?? null)}); return true;`);
+    await this.eval(`globalThis.__wtBench.action(${JSON.stringify(kind)}, ${JSON.stringify(value ?? null)}); return true;`);
   }
 
   async setPlaying(playing: boolean): Promise<void> {
     const cur = await this.sample();
     if (cur.paused === !playing) return;
     await this.action(playing ? "play" : "pause");
+  }
+
+  /** Journaux `[WT …]` de l'app reçus par Hermes depuis la connexion. */
+  get logs(): string[] {
+    return this.hermes.console;
   }
 
   close(): void {

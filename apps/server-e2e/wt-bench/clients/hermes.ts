@@ -25,9 +25,20 @@ export class HermesSession {
   private nextId = 1;
   private readonly pending = new Map<number, (v: unknown) => void>();
 
+  /** Les journaux de la console de l'app (`[WT …]` et erreurs), horodatés à la réception. */
+  readonly console: string[] = [];
+
   private constructor(private readonly ws: WebSocket) {
     ws.addEventListener("message", (ev) => {
-      const msg = JSON.parse(String(ev.data)) as { id?: number; result?: unknown; error?: unknown };
+      const msg = JSON.parse(String(ev.data)) as {
+        id?: number; result?: unknown; error?: unknown; method?: string;
+        params?: { type?: string; args?: Array<{ value?: unknown; description?: string }> };
+      };
+      if (msg.method === "Runtime.consoleAPICalled") {
+        const text = (msg.params?.args ?? []).map((a) => (a.value !== undefined ? (typeof a.value === "string" ? a.value : JSON.stringify(a.value)) : a.description ?? "")).join(" ");
+        if (/\[WT|wt-|error/i.test(text)) this.console.push(`${Date.now()} ${msg.params?.type ?? "log"} ${text.slice(0, 400)}`);
+        return;
+      }
       if (msg.id !== undefined && this.pending.has(msg.id)) {
         this.pending.get(msg.id)!(msg.error ? { error: msg.error } : msg.result);
         this.pending.delete(msg.id);
@@ -53,10 +64,31 @@ export class HermesSession {
     return session;
   }
 
-  send(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+  /** Fermée (app relancée, Metro rechargé) : l'appelant se reconnecte. */
+  get closed(): boolean {
+    return this.ws.readyState !== WebSocket.OPEN;
+  }
+
+  /**
+   * Une commande CDP, avec un délai : une app rechargée ou un Mac saturé ne
+   * répond plus, et une promesse sans fin gelait tout le scénario (vu le 20/10,
+   * 30 min bloqué sur une lecture de position).
+   */
+  send(method: string, params: Record<string, unknown> = {}, timeoutMs = 8_000): Promise<unknown> {
     const id = this.nextId++;
-    return new Promise((ok) => {
-      this.pending.set(id, ok);
+    return new Promise((ok, ko) => {
+      if (this.closed) {
+        ko(new Error("socket CDP fermée"));
+        return;
+      }
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        ko(new Error(`CDP ${method} sans réponse en ${timeoutMs} ms`));
+      }, timeoutMs);
+      this.pending.set(id, (v) => {
+        clearTimeout(timer);
+        ok(v);
+      });
       this.ws.send(JSON.stringify({ id, method, params }));
     });
   }
