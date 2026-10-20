@@ -6,6 +6,7 @@
  *   node cdp.mjs <port> eval '<expression JS>'   # REPL : la dernière valeur, en JSON
  *   node cdp.mjs <port> shot <fichier.png>
  *   node cdp.mjs <port> key <touche>              # Escape, Space, ArrowRight…
+ *   node cdp.mjs <port> cookies                   # noms, httpOnly, expiration (jamais les valeurs)
  */
 
 const [port, command, arg] = process.argv.slice(2);
@@ -50,6 +51,9 @@ if (command === "eval") {
   const { writeFileSync } = await import("node:fs");
   writeFileSync(arg, Buffer.from(res.result.data, "base64"));
   console.log(arg);
+} else if (command === "cookies") {
+  const res = await send("Network.getAllCookies");
+  for (const c of res.result.cookies) console.log(`${c.domain} ${c.name} httpOnly=${c.httpOnly} expire=${c.expires > 0 ? new Date(c.expires * 1000).toISOString() : "session"}`);
 } else if (command === "key") {
   const k = KEYS[arg] ?? { key: arg };
   await send("Input.dispatchKeyEvent", { type: "keyDown", ...k });
