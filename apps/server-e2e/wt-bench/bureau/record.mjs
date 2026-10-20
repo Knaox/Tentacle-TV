@@ -63,16 +63,20 @@ const SAMPLE = `(async () => {
   } else if (v) { pos = v.currentTime; paused = v.paused; src = "video"; }
   const notes = [...document.querySelectorAll('[role=status],[role=alert],[data-sonner-toast],.toast,[class*="toast"]')]
     .map((n) => n.innerText.trim()).filter(Boolean).join(" ¦ ").slice(0, 400);
-  return { route: location.pathname + location.search, pos, paused, src, notes };
+  // Les messages de Watch Together, où qu'ils s'affichent (voile du lecteur, avis, bande de l'accueil).
+  const msgs = [...new Set((document.body.innerText.match(/[^\\n]*(rejoint la lecture|rejoint le groupe|n'a pas rejoint|a quitté la lecture|a quitté le groupe|En attente de|est maintenant l'hôte|ne peut pas lire)[^\\n]*/g) ?? []))].join(" ¦ ").slice(0, 400);
+  return { route: location.pathname + location.search, pos, paused, src, notes, msgs };
 })()`;
 
 let lastNotes = "";
 let lastRoute = "";
+let lastMsgs = "";
 setInterval(async () => {
   const res = await send("Runtime.evaluate", { expression: SAMPLE, awaitPromise: true, returnByValue: true });
   const s = res.result?.result?.value;
   if (!s) return;
   if (s.notes !== lastNotes) { lastNotes = s.notes; write({ kind: "notes", text: s.notes }); }
+  if (s.msgs !== lastMsgs) { lastMsgs = s.msgs; write({ kind: "msgs", text: s.msgs }); }
   if (s.route !== lastRoute) { lastRoute = s.route; write({ kind: "route", route: s.route }); }
   if (s.src !== "none") write({ kind: "sample", pos: s.pos, paused: s.paused, src: s.src });
 }, 200);
