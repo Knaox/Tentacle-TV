@@ -459,8 +459,9 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   tv-core `boot/` le réexporte) ; la synthèse Web Audio à part
   (`…/brandIntro/synth`). La VUE et le déroulé : `@tentacle-tv/brand-intro-native`,
   les mêmes pour la TV et le mobile (chaque app passe son dégradé et sa découpe).
-- **Mobile, iPad** (`apps/mobile/src/bootIntro/`) : l'écran du poulpe prend le
-  rapport de la fenêtre (`fitIntroArt`), le logo de départ se cadre dans la zone
+- **Mobile, iPad** (`apps/mobile/src/bootIntro/`) : le logo garde SES proportions
+  (jamais étiré) ; seule la fenêtre allumée dans sa vitre prend le rapport de la
+  fenêtre (`introLitWindow`), le logo de départ se cadre dans la zone
   sûre ; réglages d'appareil « Animation d'ouverture » et « Son au démarrage » ;
   les modales du lancement attendent `useBootIntroLanded()` ; le son natif est
   celui de la TV, compilé tel quel par le projet mobile.
@@ -468,7 +469,11 @@ sur une TV à profils). Carnet : `docs/OUVERTURE.md`.
   le 2026-10-19 ; sans lui, `BootView`). Jamais avec le mouvement réduit. Elle ne renonce
   jamais ; le premier écran pas prêt (il le dit à la porte,
   `useReportScreenToBootIntro` : accueil, « Qui regarde ? ») : le poulpe attend
-  sur son bouton lecture (8 s au plus).
+  sur son bouton lecture (8 s au plus). Mobile : route d'arrivée décidée avant
+  la plongée (`mobileBootArrival` : jamais une route qu'une garde remplace) ;
+  « Qui regarde ? », premier lancement, migration, accès suspendu nés pendant
+  l'ouverture se rendent DANS l'écran (`BootAwareModal`, `BootAwareOverlay`),
+  jamais en `Modal` par-dessus.
 - **L'app est montée DANS l'écran** (`IntroScreenPlane`) et n'en
   change jamais d'arbre : à l'arrivée, identité et découpe retirée. Rien que des
   transformations et des opacités, horloge Reanimated sur le fil d'interface,

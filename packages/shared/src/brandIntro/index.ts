@@ -10,7 +10,7 @@
 export * from "./easing";
 export * from "./introGeometry";
 export * from "./introCamera";
-export * from "./introFit";
+export * from "./introLit";
 export * from "./introPose";
 export * from "./introTimeline";
 export * from "./introHold";
@@ -19,3 +19,5 @@ export * from "./introSamples";
 export * from "./bootIntro";
 export * from "./bootIntroOnce";
 export * from "./bootSound";
+export * from "./introFrames";
+export * from "./introStart";

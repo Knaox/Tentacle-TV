@@ -1,11 +1,11 @@
-import { useCallback, useEffect, type ReactNode } from "react";
-import { Platform } from "react-native";
-import { FullWindowOverlay } from "react-native-screens";
+import { useCallback, useEffect } from "react";
 import { usePathname, useRouter } from "expo-router";
 import { reportAccountAccess, useAccountAccess, useAuth, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { clearCredentials } from "@/auth/credentialManager";
 import { stopOfflineRuntime } from "@/offline/engineRuntime";
 import { useServerUrl } from "@/providers/ServerUrlContext";
+import { BootAwareOverlay } from "@/bootIntro/BootAwareModal";
+import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 import { accountAccessActions, isPlaybackRoute, type AccountAccessAction } from "./accountAccessModel";
 import { AccountAccessScreen } from "./AccountAccessScreen";
 import { useEndProfileSessionForAccess, useIsProfileSession } from "./profileSessionAdapter";
@@ -29,6 +29,9 @@ export function AccountAccessHost() {
   const { logout, changeServer } = useAuth();
   const { storage } = useTentacleConfig();
   const { setServerUrl } = useServerUrl();
+
+  // La page remplace l'app : au démarrage, c'est elle le premier écran de l'ouverture.
+  useReportStartupOverlay("access", page ? "active" : "quiet");
 
   useEffect(() => {
     if (page && isPlaybackRoute(pathname)) router.replace("/(tabs)");
@@ -62,13 +65,10 @@ export function AccountAccessHost() {
 
   if (!page) return null;
   return (
-    <AboveEverything>
+    // Le lecteur est une modale NATIVE sur iOS : la page passe par une `FullWindowOverlay` — née pendant
+    // l'ouverture, dans l'écran du poulpe (`BootAwareOverlay`).
+    <BootAwareOverlay bootOverlay="access">
       <AccountAccessScreen page={page} actions={accountAccessActions(profileSession)} onAction={run} />
-    </AboveEverything>
+    </BootAwareOverlay>
   );
-}
-
-/** Le lecteur est une modale NATIVE sur iOS : la page passe par une `FullWindowOverlay` (patron de la migration). */
-function AboveEverything({ children }: { children: ReactNode }) {
-  return Platform.OS === "ios" ? <FullWindowOverlay>{children}</FullWindowOverlay> : <>{children}</>;
 }

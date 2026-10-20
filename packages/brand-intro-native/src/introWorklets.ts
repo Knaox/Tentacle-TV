@@ -77,3 +77,28 @@ export function loopStyleAt(loop: IntroLoopSamples, idle: number, weight: number
   const opacity = loopAt(loop, loop.opacity, idle, loop.baseOpacity);
   return { opacity: loop.baseOpacity + (opacity - loop.baseOpacity) * weight, transform };
 }
+
+export interface IntroStartWorkletState {
+  waitedMs: number;
+  calm: number;
+  periodMs: number;
+}
+
+/**
+ * Une image de plus sur l'encre avant le début (mobile) : le jumeau sur le fil
+ * d'interface de shared `introStartStep`, que ses tests tiennent — mêmes
+ * constantes (`INTRO_START`), même règle.
+ */
+export function introStartStepWorklet(
+  state: IntroStartWorkletState,
+  elapsedMs: number,
+  appReady: boolean,
+  rule: { calmFrames: number; maxWaitMs: number; calmRatio: number },
+): { state: IntroStartWorkletState; start: boolean } {
+  "worklet";
+  const periodMs = Math.min(state.periodMs, elapsedMs);
+  const calm = appReady && elapsedMs < periodMs * rule.calmRatio ? state.calm + 1 : 0;
+  const waitedMs = state.waitedMs + elapsedMs;
+  const start = (appReady && calm >= rule.calmFrames) || waitedMs >= rule.maxWaitMs;
+  return { state: { waitedMs, calm, periodMs }, start };
+}

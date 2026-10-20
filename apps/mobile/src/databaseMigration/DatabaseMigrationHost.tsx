@@ -1,10 +1,8 @@
-import type { ReactNode } from "react";
-import { Platform } from "react-native";
-import { FullWindowOverlay } from "react-native-screens";
 import { useDatabaseMigrationGate } from "@tentacle-tv/api-client";
 import { probeNow } from "@/offline/connectivityStore";
 import { DatabaseMigrationScreen } from "./DatabaseMigrationScreen";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
+import { BootAwareOverlay } from "@/bootIntro/BootAwareModal";
 
 /**
  * La SEULE porte de l'écran d'attente de la migration de la base sur le
@@ -14,17 +12,15 @@ import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
  *
  * Sur iOS, le lecteur est une modale NATIVE au-dessus de la racine : l'écran
  * passe par une `FullWindowOverlay`, posée seulement quand il est là (le patron
- * de `SessionMessageHost`). Sur Android, une vue après la pile suffit.
+ * de `SessionMessageHost`). Sur Android, une vue après la pile suffit. Née
+ * pendant l'ouverture du démarrage, elle vit dans l'écran du poulpe
+ * (`BootAwareOverlay`) : c'est elle le premier écran.
  */
 export function DatabaseMigrationHost({ serverUrl }: { serverUrl: string | null }) {
   const view = useDatabaseMigrationGate({ backendUrl: serverUrl, onResume: resume });
   useReportStartupOverlay("migration", view ? "active" : "quiet");
   if (!view) return null;
-  return <AboveEverything><DatabaseMigrationScreen view={view} /></AboveEverything>;
+  return <BootAwareOverlay bootOverlay="migration"><DatabaseMigrationScreen view={view} /></BootAwareOverlay>;
 }
 
 const resume = () => void probeNow(true);
-
-function AboveEverything({ children }: { children: ReactNode }) {
-  return Platform.OS === "ios" ? <FullWindowOverlay>{children}</FullWindowOverlay> : <>{children}</>;
-}

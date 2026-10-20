@@ -17,13 +17,24 @@ export interface BootIntroReport {
   /** Ce que disent d'eux-mêmes les écrans qui chargent (l'accueil, « Qui regarde ? »), par route. */
   screens: Readonly<Record<string, BootScreenState>>;
   blocked: boolean;
+  /** Un écran qui peut recouvrir le premier n'a pas encore tranché (mobile : « Qui regarde ? », premier lancement). */
+  pending: boolean;
+  /** L'app a fini de démarrer (mobile : stockage relu, polices chargées) : l'encre peut céder au poulpe. */
+  appReady: boolean;
 }
 
-let report: BootIntroReport = { playing: false, route: null, screens: {}, blocked: false };
+let report: BootIntroReport = { playing: false, route: null, screens: {}, blocked: false, pending: false, appReady: false };
 const listeners = new Set<() => void>();
 
 function update(next: BootIntroReport): void {
-  if (next.playing === report.playing && next.route === report.route && next.screens === report.screens && next.blocked === report.blocked) return;
+  if (
+    next.playing === report.playing &&
+    next.route === report.route &&
+    next.screens === report.screens &&
+    next.blocked === report.blocked &&
+    next.pending === report.pending &&
+    next.appReady === report.appReady
+  ) return;
   report = next;
   listeners.forEach((listener) => listener());
 }
@@ -48,11 +59,33 @@ export const bootIntroGate = {
   reportBlocked(blocked: boolean): void {
     update({ ...report, blocked });
   },
+  reportPending(pending: boolean): void {
+    update({ ...report, pending });
+  },
+  reportAppReady(appReady: boolean): void {
+    update({ ...report, appReady });
+  },
   /** L'écran affiché, à chaque changement de la navigation. */
   reportRoute(name: string | undefined): void {
     if (name !== undefined) update({ ...report, route: name });
   },
 };
+
+/**
+ * Résolue quand l'ouverture est arrivée (aussitôt si elle ne se joue pas) :
+ * pour ce qui ouvre une fenêtre du SYSTÈME (demande de permission), qui se
+ * poserait par-dessus le poulpe et rendrait l'app inactive en pleine ouverture.
+ */
+export function whenBootIntroLanded(): Promise<void> {
+  if (!report.playing) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = bootIntroGate.subscribe(() => {
+      if (report.playing) return;
+      unsubscribe();
+      resolve();
+    });
+  });
+}
 
 export function useBootIntroReport(): BootIntroReport {
   return useSyncExternalStore(bootIntroGate.subscribe, bootIntroGate.snapshot, bootIntroGate.snapshot);

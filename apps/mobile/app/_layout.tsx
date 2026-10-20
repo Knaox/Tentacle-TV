@@ -34,6 +34,7 @@ import { BootIntroShell } from "@/bootIntro/BootIntroShell";
 import { BootIntroRouteReporter } from "@/bootIntro/BootIntroRouteReporter";
 import { bootDecision } from "@/bootIntro/bootPlan";
 import { configureBootIntroSettings } from "@/bootIntro/bootIntroSettings";
+import { markBoot } from "@/bootIntro/bootTimeline";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -70,6 +71,7 @@ export default function RootLayout() {
       } catch (e) {
         console.warn("[RootLayout] Hydration failed:", e);
       }
+      markBoot("hydrated");
       // L'ouverture du démarrage est décidée (quelques millisecondes, partie au
       // chargement) : la navigation ne se monte jamais avant qu'on sache si
       // l'app vit dans l'écran du poulpe.
@@ -98,6 +100,7 @@ export default function RootLayout() {
 
       setServerUrl(url);
       setReady(true);
+      markBoot("ready");
     }
 
     init();
@@ -107,6 +110,7 @@ export default function RootLayout() {
   // Hide splash only when storage hydrated AND fonts loaded (or font error —
   // fallback system font is acceptable). Prevents flash of unstyled text.
   useEffect(() => {
+    if (fontsLoaded || fontError) markBoot("fonts");
     if (ready && (fontsLoaded || fontError)) {
       SplashScreen.hideAsync().catch(() => {});
     }
@@ -221,9 +225,10 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
             lecteur. Montée une fois le stockage relu ET le serveur connu : plus tôt, sa
             lecture de `/api/config` partait sans hôte et ne réessayait jamais. */}
         {serverUrl && !showLoading && introLanded ? <FamilyInvitationHost /> : null}
-        {/* « Qui regarde ? » (une feuille de cet hôte), puis le premier lancement du profil (code PIN,
-            accueil, photo) : après l'arrivée de l'ouverture, sur l'accueil (accord famille-mobile × ouverture-mobile). */}
-        {serverUrl && !showLoading && introLanded ? <FamilyLaunchHosts /> : null}
+        {/* « Qui regarde ? » et son code, puis le premier lancement du profil (code PIN, accueil, photo) :
+            montés PENDANT l'ouverture — nés pendant elle, ils se rendent dans l'écran du poulpe
+            (`BootAwareModal`), et c'est dans eux que la caméra plonge, jamais dans l'accueil qu'ils cachent. */}
+        {serverUrl && !showLoading ? <FamilyLaunchHosts /> : null}
         {/* Un droit changé au bureau s'applique ici sans redémarrage (`rights:changed`). */}
         {serverUrl && !showLoading ? <RightsLiveHost /> : null}
         {/* L'invitation unique aux avatars : après tous les recouvrements du démarrage
