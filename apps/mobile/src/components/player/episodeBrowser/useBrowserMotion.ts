@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Animated } from "react-native";
+import { Animated, BackHandler } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 
 /**
@@ -33,4 +33,12 @@ export function useSeasonSwap(seasonId: string | undefined, distance = 14): { op
     Animated.timing(value, { toValue: 1, duration: 200, useNativeDriver: true }).start();
   }, [seasonId, reduced, value]);
   return { opacity: value, translate: value.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) };
+}
+
+/** Android : Retour ferme la liste, pas le lecteur. */
+export function useBackCloses(onClose: () => void): void {
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => { onClose(); return true; });
+    return () => subscription.remove();
+  }, [onClose]);
 }

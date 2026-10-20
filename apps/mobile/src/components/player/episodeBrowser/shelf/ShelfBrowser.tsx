@@ -10,7 +10,7 @@ import { shelfGeometry } from "../../../../player/episodes/episodeBrowserLayout"
 import { BrowserCloseButton } from "../BrowserCloseButton";
 import { EB } from "../browserTokens";
 import type { EpisodeBrowserProps } from "../types";
-import { useEntrance, useSeasonSwap } from "../useBrowserMotion";
+import { useBackCloses, useEntrance, useSeasonSwap } from "../useBrowserMotion";
 import { useEpisodeWords } from "../useEpisodeWords";
 import { ShelfCard } from "./ShelfCard";
 import { ShelfSeasonTabs } from "./ShelfSeasonTabs";
@@ -35,6 +35,7 @@ export function ShelfBrowser(props: EpisodeBrowserProps) {
   const geo = shelfGeometry({ width, height, isTablet, edges, safe }, video);
   const words = useEpisodeWords();
   const enter = useEntrance();
+  useBackCloses(onClose);
   const swap = useSeasonSwap(activeSeasonId);
   const lift = enter.interpolate({ inputRange: [0, 1], outputRange: [36, 0] });
 

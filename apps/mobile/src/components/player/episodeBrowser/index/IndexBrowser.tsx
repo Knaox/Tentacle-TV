@@ -11,7 +11,7 @@ import { BrowserCloseButton } from "../BrowserCloseButton";
 import { EB, EB_TYPE } from "../browserTokens";
 import { SeasonChips } from "../panel/SeasonChips";
 import type { EpisodeBrowserProps } from "../types";
-import { useEntrance, useSeasonSwap } from "../useBrowserMotion";
+import { useBackCloses, useEntrance, useSeasonSwap } from "../useBrowserMotion";
 import { useEpisodeWords } from "../useEpisodeWords";
 import { IndexRow } from "./IndexRow";
 import { IndexSeasonList } from "./IndexSeasonList";
@@ -36,6 +36,7 @@ export function IndexBrowser(props: EpisodeBrowserProps) {
   const geo = indexGeometry({ width, height, isTablet, edges, safe });
   const words = useEpisodeWords();
   const enter = useEntrance();
+  useBackCloses(onClose);
   const swap = useSeasonSwap(activeSeasonId, 0);
   const rise = enter.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());

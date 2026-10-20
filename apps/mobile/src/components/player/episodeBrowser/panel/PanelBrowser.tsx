@@ -11,7 +11,7 @@ import { BrowserCloseButton } from "../BrowserCloseButton";
 import { BrowserGlass } from "../BrowserGlass";
 import { EB, EB_TYPE } from "../browserTokens";
 import type { EpisodeBrowserProps } from "../types";
-import { useEntrance, useSeasonSwap } from "../useBrowserMotion";
+import { useBackCloses, useEntrance, useSeasonSwap } from "../useBrowserMotion";
 import { useEpisodeWords } from "../useEpisodeWords";
 import { PANEL_ROW_HEIGHT, PanelRow } from "./PanelRow";
 import { SeasonChips } from "./SeasonChips";
@@ -36,6 +36,7 @@ export function PanelBrowser(props: EpisodeBrowserProps) {
   const side = geo.mode === "side";
   const words = useEpisodeWords();
   const enter = useEntrance();
+  useBackCloses(onClose);
   const swap = useSeasonSwap(activeSeasonId);
   const slide = enter.interpolate({ inputRange: [0, 1], outputRange: side ? [40, 0] : [height * 0.25, 0] });
 

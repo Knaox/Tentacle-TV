@@ -12,7 +12,7 @@ import { BrowserCloseButton } from "../BrowserCloseButton";
 import { EB } from "../browserTokens";
 import { ShelfSeasonTabs } from "../shelf/ShelfSeasonTabs";
 import type { EpisodeBrowserProps } from "../types";
-import { useEntrance, useSeasonSwap } from "../useBrowserMotion";
+import { useBackCloses, useEntrance, useSeasonSwap } from "../useBrowserMotion";
 import { useEpisodeWords } from "../useEpisodeWords";
 import { OpenCard } from "./OpenCard";
 import { OpenDetails } from "./OpenDetails";
@@ -38,6 +38,7 @@ export function OpenShelfBrowser(props: EpisodeBrowserProps) {
   const geo = openShelfGeometry({ width, height, isTablet, edges, safe }, video);
   const words = useEpisodeWords();
   const enter = useEntrance();
+  useBackCloses(onClose);
   const swap = useSeasonSwap(activeSeasonId);
   const lift = enter.interpolate({ inputRange: [0, 1], outputRange: [36, 0] });
 
