@@ -1,4 +1,5 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 import { useStillWatching, type StillWatchingController } from "@tentacle-tv/api-client";
 import { engineResumeIsPresence } from "./enginePresence";
 
@@ -10,6 +11,8 @@ interface Options {
   /** La lecture a vraiment démarré (image et position qui avance). */
   started: boolean;
   setPaused: (paused: boolean) => void;
+  /** Faux : la fonction se tait — une séance Watch Together, comme au bureau (`DesktopPlayer`). */
+  enabled?: boolean;
 }
 
 export interface MobileStillWatching extends StillWatchingController {
@@ -23,14 +26,17 @@ export interface MobileStillWatching extends StillWatchingController {
  * que d'où vient « ça tourne », comment mettre en pause et relancer, et
  * quelles reprises du moteur prouvent une présence (`enginePresence.ts`).
  *
- * Pas de Watch Together sur le mobile : la fonction n'a rien à y taire.
- * Les touchers (habillage, gestes, barre de lecture) passent par
+ * Comme au bureau, elle se tait quand la question ne serait pas VUE : app en
+ * arrière-plan (image dans l'image d'iOS, lecture en fond) — le bureau la tait
+ * dans son PiP —, et pendant une séance Watch Together (`enabled`, que le
+ * lecteur donne). Les touchers (habillage, gestes, barre de lecture) passent par
  * `onActivity` de la surface vidéo → `reportActivity`.
  */
-export function useMobileStillWatching({ paused, buffering, started, setPaused }: Options): MobileStillWatching {
+export function useMobileStillWatching({ paused, buffering, started, setPaused, enabled = true }: Options): MobileStillWatching {
   const pause = useCallback(() => setPaused(true), [setPaused]);
   const play = useCallback(() => setPaused(false), [setPaused]);
-  const controller = useStillWatching({ playing: started && !paused && !buffering, pause, play });
+  const visible = useAppVisible();
+  const controller = useStillWatching({ playing: started && !paused && !buffering, enabled: enabled && visible, pause, play });
 
   // L'état demandé, lu au moment où le moteur répond (l'écho suit le rendu).
   const requestedPaused = useRef(paused);
@@ -42,4 +48,14 @@ export function useMobileStillWatching({ paused, buffering, started, setPaused }
   }, [reportActivity, setPaused]);
 
   return { ...controller, onPausedChange };
+}
+
+/** L'app au premier plan : en arrière-plan (PiP d'iOS, lecture en fond), l'encart ne serait pas vu. */
+function useAppVisible(): boolean {
+  const [visible, setVisible] = useState(AppState.currentState !== "background");
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => setVisible(state !== "background"));
+    return () => subscription.remove();
+  }, []);
+  return visible;
 }

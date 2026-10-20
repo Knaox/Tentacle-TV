@@ -136,6 +136,13 @@ export function setPlaybackSettings(patch: PlaybackSettingsPatch): void {
   settingsStore?.set(patch);
 }
 
+/** Le compte de l'app a changé sans rechargement (une session de profil de la Famille s'ouvre ou
+ *  se ferme sur le mobile) : relire SES réglages tout de suite, sans attendre la borne. */
+export function resyncPlaybackSettings(): void {
+  lastResync = Date.now();
+  void settingsStore?.resync();
+}
+
 /** Android TV : à appeler après l'hydrate() du stockage natif. */
 export function rehydratePlaybackSettings(): void {
   settingsStore?.rehydrate();

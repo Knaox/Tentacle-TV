@@ -34,6 +34,8 @@ import {
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
   RECO_PAGE_KEY,
+  resyncPlaybackSettings,
+  resyncStillWatching,
 } from "@tentacle-tv/api-client";
 import { i18n } from "@tentacle-tv/shared";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -138,6 +140,14 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
       setShareLinkToken(token); setPairingToken(token); setPushToken(token);
     }
   }, [serverUrl, client, storage]);
+
+  // Après une bascule de profil : les réglages du COMPTE (lecture, « Vous regardez encore ? »)
+  // sont ceux du nouveau profil, relus aussitôt — jamais ceux du précédent gardés en cache.
+  useEffect(() => {
+    if (sessionEpoch === 0 || !storageReady) return;
+    resyncPlaybackSettings();
+    resyncStillWatching();
+  }, [sessionEpoch, storageReady]);
 
   const configValue = useMemo(
     () => ({ storage, uuid }),

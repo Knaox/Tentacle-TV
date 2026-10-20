@@ -50,6 +50,9 @@ export interface ProfileRailStore extends RailPinningStore {
   completeSetup: (userId: string, layout: RailLayout) => void;
   /** « Plus tard » / « Passer » : marque faite, garde la disposition héritée. */
   skipSetup: (userId: string) => void;
+  /** « Reproposer » du serveur (`promptsResetAt`) : la préconfiguration de ce profil redevient à faire,
+   *  sa disposition gardée — la barre repasse au démarrage, entre le code PIN et la photo. */
+  reopenSetup: (userId: string) => void;
   /** Copie la disposition de `fromUserId` chez chacun des autres, préconfiguration marquée faite. */
   applyLayoutTo: (fromUserId: string, toUserIds: readonly string[]) => void;
   /** Le dernier nombre de bibliothèques vu pour cette identité ; null : jamais vu. */
@@ -219,6 +222,10 @@ export function createProfileRailStore(
       if (entry.setupDone && rails[userId]) return;
       // L'héritée devient la sienne : figée telle qu'il l'a vue en passant.
       writeRails({ ...rails, [userId]: { ...copyOf(entry), setupDone: true } });
+    },
+    reopenSetup(userId) {
+      if (!userId || !rails[userId]?.setupDone) return;
+      writeRails({ ...rails, [userId]: { ...rails[userId], setupDone: false } });
     },
     applyLayoutTo(fromUserId, toUserIds) {
       if (!fromUserId) return;

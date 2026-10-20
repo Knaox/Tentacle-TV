@@ -54,6 +54,8 @@ const STORAGE_KEYS = [
   // l'app rouvrirait au nom du profil sans pouvoir revenir au compte.
   "tentacle_profile_session", "tentacle_account_session", "tentacle_mobile_profile_stay",
   "tentacle_first_run_seen",
+  // « Reproposer le code PIN et la photo » : la dernière demande du serveur honorée ici (`PROMPTS_RESET_SEEN_KEY`).
+  "tentacle_prompts_reset_seen",
 ];
 
 /** Délai avant le second essai de lecture du trousseau. */

@@ -7,6 +7,7 @@ import { whenNoModal } from "@/components/ui/modalGate";
 import { useReportStartupOverlay, useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { FamilyPinSuggest } from "./FamilyPinSuggest";
 import { useFamilyPinReminder } from "./useFamilyPinReminder";
+import { firstRunCoveredPin } from "../firstRun/firstRunCovered";
 
 /** Le calme exigé avant de paraître : un recouvrement qui se referme laisse la place. */
 const SETTLE_MS = 1500;
@@ -46,13 +47,15 @@ export function FamilyPinStartupHost() {
   useEffect(() => {
     if (eligible === null && reminder.settled) setEligible(reminder.startup);
   }, [eligible, reminder.settled, reminder.startup]);
+  // Le premier lancement vient de proposer le code (`family/firstRun`) : pas une seconde fois derrière.
+  const covered = firstRunCoveredPin();
 
   const busy = !overlaysQuiet
     || pathname.startsWith("/watch")
     || rootSegment === "watch"
     || rootSegment === "(auth)"
     || !appActive;
-  const due = phase === "waiting" && eligible === true && reminder.startup && !busy;
+  const due = phase === "waiting" && eligible === true && reminder.startup && !busy && !covered;
   useReportStartupOverlay("familyPin", phase === "open" || due ? "active" : "quiet");
 
   useEffect(() => {

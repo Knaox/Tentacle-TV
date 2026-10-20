@@ -10,6 +10,7 @@ import { useConnectivity } from "@/offline/useConnectivity";
 import { useReportStartupOverlay, useStartupOverlaysQuiet } from "@/startup/useStartupOverlay";
 import { AvatarGallerySheet } from "../gallery/AvatarGallerySheet";
 import { inviteBusy, markSubjectInvited, readInvitedSubjects } from "./inviteGate";
+import { firstRunCoveredPhoto } from "@/family/firstRun/firstRunCovered";
 
 /** Le calme exigé avant d'inviter : l'app s'installe, un recouvrement qui se referme laisse la place. */
 const SETTLE_MS = 1500;
@@ -51,10 +52,12 @@ export function AvatarInviteHost() {
   const [open, setOpen] = useState(false);
 
   const busy = inviteBusy({ overlaysQuiet, pathname, rootSegment, appActive, galleryOpen: open });
+  // Le premier lancement vient de proposer la photo : jamais deux fois de suite (`family/firstRun`).
+  const covered = firstRunCoveredPhoto();
   const due = shouldInviteToAvatars({
-    eligible: true,
+    eligible: !covered,
     subjectId: userId,
-    // Le mobile n'ouvre que des sessions personnelles : le jeton est celui du compte.
+    // Session personnelle, ou session de profil (1.32.0) : sa photo passe par le proxy (`ownPhoto`, `avatars.devicePhoto`).
     canChangePhoto: !!storage.getItem("tentacle_token"),
     online,
     hasPhoto,
@@ -66,10 +69,10 @@ export function AvatarInviteHost() {
   // si elle va paraître (dès que le reste se tait) ou est ouverte, « pas
   // tranché » tant que la photo du compte n'est pas connue.
   const awaited = shouldInviteToAvatars({
-    eligible: true, subjectId: userId, canChangePhoto: !!storage.getItem("tentacle_token"),
+    eligible: !covered, subjectId: userId, canChangePhoto: !!storage.getItem("tentacle_token"),
     online, hasPhoto, busy: false, invited,
   });
-  const undecided = online && !!userId && hasPhoto === undefined && !invited.includes(userId);
+  const undecided = !covered && online && !!userId && hasPhoto === undefined && !invited.includes(userId);
   useReportStartupOverlay("avatars", open || awaited ? "active" : undecided ? "pending" : "quiet");
 
   useEffect(() => {

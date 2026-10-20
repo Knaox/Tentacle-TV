@@ -1,3 +1,4 @@
+import { FirstRunHost } from "../firstRun/FirstRunHost";
 import { ProfileLaunchGate } from "./ProfileLaunchGate";
 
 /**
@@ -6,5 +7,10 @@ import { ProfileLaunchGate } from "./ProfileLaunchGate";
  * (`FirstRunHost`) — l'ordre de la TV : profil et PIN, puis l'accueil, puis la photo.
  */
 export function FamilyLaunchHosts() {
-  return <ProfileLaunchGate />;
+  return (
+    <>
+      <ProfileLaunchGate />
+      <FirstRunHost />
+    </>
+  );
 }
