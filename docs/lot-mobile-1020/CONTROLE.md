@@ -43,6 +43,7 @@ Branches suivies (une par worktree, `git worktree list`) :
 | A15 | Comptes de test Knaoxtest / Knaoxtest2 seulement | relecture des bancs, fixtures, captures | ☐ |
 | A16 | Pas de conflit entre sessions sur les mêmes fichiers | croisement des `git diff --name-only` des branches | ☐ |
 | A17 | Mac saturé : tout travail lourd (xcodebuild, gradle, expo prebuild/run, pod install, build complet) passe par `~/.tentacle-lot-mob/heavy.sh <session> <commande>`, un seul à la fois ; vitest `--maxWorkers=1` | `~/.tentacle-lot-mob/journal.log` : chaque build lourd y a son START/END ; aucun `xcodebuild`/`gradle` hors verrou (`ps` aux passes de revue) | ☐ |
+| A19 | Contrôles (tsc, vitest, eslint, pnpm typecheck/lint/test) par `~/.tentacle-lot-mob/check.sh`, deux au plus pour tout le lot, paquet touché seulement, vitest `--maxWorkers=1` ; gradle par heavy.sh puis `./gradlew --stop` (consigne 03:10) | à chaque passe : `ps` (aucun tsc/vitest/eslint hors d'un parent `check.sh`, jamais plus de deux), fichiers `~/.tentacle-lot-mob/check-*.lock` | ☐ |
 | A18 | Appareils : wt-banc mène la matrice (`~/.tentacle-lot-mob/devices.txt`), deux appareils au plus en tout, builds réutilisés (`builds.txt`), jamais le simulateur de base | `xcrun simctl list devices booted` aux passes de revue + `devices.txt` | ☐ |
 
 ## B. Watch Together — socle partagé et serveur (wt-socle)
