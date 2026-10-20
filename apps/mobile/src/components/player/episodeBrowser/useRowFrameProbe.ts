@@ -4,10 +4,15 @@ import { rowFrameReport } from "../../../player/episodes/rowFrames";
 
 /** Au-delà, un défilement est trop long pour un bilan lisible : on garde le début. */
 const MAX_GAPS = 900;
+/** Plus court qu'une image à 240 Hz : un second passage dans la même image. */
+const MIN_FRAME_MS = 4;
 
 function report(gaps: number[]): void {
-  const { hz, frames, dropped, worstMs } = rowFrameReport(gaps);
-  console.log(`[épisodes] défilement : ${frames} images à ${hz} Hz, ${dropped} perdue(s), pire écart ${worstMs} ms`);
+  const { hz, frames, dropped, worstMs, medianMs, p90Ms, over60 } = rowFrameReport(gaps);
+  console.log(
+    `[épisodes] défilement : ${frames} images à ${hz} Hz, ${dropped} perdue(s), pire écart ${worstMs} ms`
+      + ` (médiane ${medianMs} ms, 90e centile ${p90Ms} ms, ${over60} écart(s) > 25 ms)`,
+  );
 }
 
 /**
@@ -23,6 +28,9 @@ export function useRowFrameProbe(): { begin: () => void; end: () => void } {
   useFrameCallback((info) => {
     if (!active.value) return;
     const now = info.timestamp;
+    // La boucle passe parfois deux fois dans la même image (un évènement de
+    // défilement la relance) : un écart de moins de 4 ms n'est pas une image.
+    if (last.value > 0 && now - last.value < MIN_FRAME_MS) return;
     if (last.value > 0 && gaps.value.length < MAX_GAPS) {
       gaps.modify((list) => {
         "worklet";

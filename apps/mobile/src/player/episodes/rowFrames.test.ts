@@ -7,6 +7,10 @@ describe("rowFrames", () => {
     expect(framePeriod([8.3, 8.4, 8.3, 25])).toBeCloseTo(1000 / 120);
   });
 
+  it("la gigue d'une horloge à 120 Hz (7 puis 10 ms) ne passe pas pour 144 Hz", () => {
+    expect(framePeriod([7, 9.7, 8.3, 7.1, 9.6, 8.4, 8.3, 18])).toBeCloseTo(1000 / 120);
+  });
+
   it("une image perdue est un écart d'au moins une image et demie", () => {
     expect(droppedIn(16.7, 1000 / 60)).toBe(0);
     expect(droppedIn(24, 1000 / 60)).toBe(0);
@@ -15,7 +19,7 @@ describe("rowFrames", () => {
   });
 
   it("le bilan d'un défilement : fréquence, images, pertes, pire écart", () => {
-    expect(rowFrameReport([16.7, 16.6, 33.4, 16.7])).toEqual({ hz: 60, frames: 4, dropped: 1, worstMs: 33 });
-    expect(rowFrameReport([])).toEqual({ hz: 60, frames: 0, dropped: 0, worstMs: 0 });
+    expect(rowFrameReport([16.7, 16.6, 33.4, 16.7])).toEqual({ hz: 60, frames: 4, dropped: 1, worstMs: 33, medianMs: 16.7, p90Ms: 16.7, over60: 1 });
+    expect(rowFrameReport([])).toMatchObject({ hz: 60, frames: 0, dropped: 0, worstMs: 0, over60: 0 });
   });
 });
