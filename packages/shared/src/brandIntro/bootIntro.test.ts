@@ -87,6 +87,8 @@ describe("attendre, partir — jamais renoncer", () => {
   it("attend que l'app soit montée et que le premier écran soit prêt, ou le bout de l'attente", () => {
     expect(bootIntroOutcome({ ...watch, route: null })).toBe("wait");
     expect(bootIntroOutcome({ ...watch, route: null, blocked: true })).toBe("wait");
+    // Jamais sans fin : un premier écran resté inconnu au bout de l'attente, on plonge quand même.
+    expect(bootIntroOutcome({ ...watch, route: null, heldMs: BOOT_INTRO_MAX_HOLD_MS })).toBe("go");
     expect(bootIntroOutcome(watch)).toBe("wait");
     expect(bootIntroOutcome({ ...watch, screen: "loading" })).toBe("wait");
     expect(bootIntroOutcome({ ...watch, screen: "ready" })).toBe("go");
