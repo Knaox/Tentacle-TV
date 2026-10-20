@@ -19,18 +19,22 @@ import {
 import { openFamilyNotification } from "../../family/familyPosterStore";
 import { useNotificationPlugins } from "../../components/notifications/useNotificationPlugins";
 import { BottomSheet } from "../ui/BottomSheet";
+import { useFormFactor } from "../useFormFactor";
+import { NotifTabletPanel } from "./NotifTabletPanel";
 import { NotifSheetHeader } from "./NotifSheetHeader";
 import { MirrorNotifRow } from "./MirrorNotifRow";
 
 /**
  * La cloche de l'en-tête de l'app : une icône de 21 et sa pastille violette
- * (« 9+ » au-delà), qui ouvre la feuille des notifications (paliers 50 / 100 %).
+ * (« 9+ » au-delà), qui ouvre la feuille des notifications (paliers 50 / 100 %)
+ * sur téléphone, le panneau ancré sous la cloche sur tablette (comme le mobile).
  * Appui long sur une ligne : mode sélection, comme dans l'app.
  */
 export function MirrorNotificationBell() {
   const { t } = useTranslation("notifications");
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const Surface = useFormFactor() === "tablet" ? NotifTabletPanel : BottomSheet;
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -101,7 +105,7 @@ export function MirrorNotificationBell() {
         )}
       </button>
 
-      <BottomSheet open={open} onClose={close} label={t("title")}>
+      <Surface open={open} onClose={close} label={t("title")}>
         <NotifSheetHeader
           selectionMode={selectionMode}
           selectedCount={selected.size}
@@ -144,7 +148,7 @@ export function MirrorNotificationBell() {
             ))
           )}
         </div>
-      </BottomSheet>
+      </Surface>
     </>
   );
 }
