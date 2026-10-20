@@ -22,3 +22,26 @@ export function loadTargetSeconds(opts: {
   if (opts.startOverrideSeconds !== undefined) return opts.startOverrideSeconds;
   return (opts.resumeTicks ?? 0) / TICKS_PER_SECOND;
 }
+
+/** Un saut de départ en cours d'atterrissage : sa cible, et quand il est parti. */
+export interface StartLanding {
+  targetS: number;
+  sinceMs: number;
+}
+
+/** Atterri : la progression annoncée est à moins de ça de la cible. */
+export const LANDING_TOLERANCE_S = 5;
+/** Au-delà, la progression fait foi même loin de la cible (un saut qui n'atterrit pas). */
+export const LANDING_TIMEOUT_MS = 10_000;
+
+/**
+ * La progression annoncée peut-elle devenir la position du lecteur ? Pas tant
+ * que le saut de départ (`handleLoad`) n'a pas atterri : Android annonce encore
+ * 0 s, et une renégociation du flux à ce moment (préférence de piste)
+ * repartait de là — l'arrivant d'une séance Watch Together se disait prêt à
+ * 0 s (banc du 21/10).
+ */
+export function progressCountsAsPosition(landing: StartLanding | null, positionS: number, nowMs: number): boolean {
+  if (!landing) return true;
+  return Math.abs(positionS - landing.targetS) <= LANDING_TOLERANCE_S || nowMs - landing.sinceMs >= LANDING_TIMEOUT_MS;
+}

@@ -7,7 +7,7 @@ import type { EngineLoadData, EngineProgressData, PlayerEngineHandle } from "@/p
 import { registerOpenPlayer } from "@/player/openPlayer";
 import { backOrHome } from "@/utils/backOrHome";
 import type { PlayerSessionCore } from "./usePlayerPlayback";
-import { loadTargetSeconds } from "./loadTarget";
+import { loadTargetSeconds, progressCountsAsPosition, type StartLanding } from "./loadTarget";
 
 /**
  * Gestionnaires du lecteur mobile : chargement, progression, fin, erreur,
@@ -78,6 +78,8 @@ export function usePlayerHandlers({
   // Une notification tapée en pleine lecture quitte le lecteur par ici.
   useEffect(() => registerOpenPlayer(releaseEngine), [releaseEngine]);
 
+  // Le saut de départ en cours d'atterrissage (`progressCountsAsPosition`).
+  const landingRef = useRef<StartLanding | null>(null);
   const handleLoad = useCallback((_data: EngineLoadData) => {
     setIsBuffering(false);
     setVideoReady(true);
@@ -92,6 +94,7 @@ export function usePlayerHandlers({
       startOverrideSeconds,
     });
     resumeApplied.current = true;
+    landingRef.current = targetPosition > 0 ? { targetS: targetPosition, sinceMs: Date.now() } : null;
 
     if (targetPosition > 0) {
       if (pb.isDirectPlay) {
@@ -119,7 +122,10 @@ export function usePlayerHandlers({
     // Avant le premier chargement, la progression part de 0 sur certains moteurs (Android) :
     // elle ne remplace pas la position de départ voulue — une renégociation précoce
     // (préférence de piste) repartait sinon du début (banc Watch Together du 21/10).
-    if (resumeApplied.current) pb.positionRef.current = pos;
+    if (resumeApplied.current && progressCountsAsPosition(landingRef.current, pos, Date.now())) {
+      landingRef.current = null;
+      pb.positionRef.current = pos;
+    }
     pb.reporting.updatePosition(pos, paused);
   }, [paused, pb.reporting, pb.streamOffset, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
