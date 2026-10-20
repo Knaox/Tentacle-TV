@@ -7,10 +7,10 @@
  * sur le lecteur, elle, est celle de l'INTERFACE (le lancement suit la salle).
  */
 
-import type { WtAffinityStateDto } from "../../../../packages/shared/src/types/watchTogether";
+import type { WtAffinityStateDto, WtRoomStateDto } from "../../../../packages/shared/src/types/watchTogether";
 import { waitAligned, waitFor } from "../measure";
 import type { ScenarioContext } from "./context";
-import { createGroup, inviteAndAccept } from "./group";
+import { createGroup, inviteAndAccept, launch } from "./group";
 
 const AFF = "/api/watch-together/affinity";
 
@@ -21,8 +21,12 @@ export async function affinityScenario(ctx: ScenarioContext): Promise<void> {
   const b = await ctx.member(ctx.state.users.b, "B");
   await createGroup(a);
   await inviteAndAccept(ctx, a, b, false);
-  await a.goto("/");
-  await b.goto("/");
+  // La séance exige deux membres EN LIGNE (socket ouverte) : les pages sont déjà sur l'accueil.
+  const online = await waitFor(async () => {
+    const g = await a.api<WtRoomStateDto | null>("GET", "/api/watch-together/group");
+    return (g.json?.members ?? []).filter((m) => m.online).length >= 2;
+  }, 15_000);
+  ctx.check("les deux membres sont en ligne", online !== null, online === null ? undefined : `${online} ms`);
 
   const kinds = await a.api<Record<string, unknown>>("GET", `${AFF}/kinds`);
   ctx.log(`types : HTTP ${kinds.status} ${JSON.stringify(kinds.json).slice(0, 200)}`);
@@ -46,9 +50,15 @@ export async function affinityScenario(ctx: ScenarioContext): Promise<void> {
   const matchSeen = await waitFor(() => a.received("wt:affinity").some((f) => (f.raw.cause as string) === "match"), 5_000);
   ctx.check("A reçoit le match en direct (wt:affinity « match »)", matchSeen !== null);
 
+  // « Regarder ensemble » côté B, comme `useAffinityLaunch` : le serveur referme la
+  // séance chez tous, puis le client du LANCEUR ouvre le lecteur (épisode à lire de
+  // la série) — c'est ce lancement que la salle suit.
   const launchAt = Date.now();
   const launched = await b.api("POST", `${AFF}/launch`, { key: common.key });
   ctx.check("« Regarder ensemble » lance le titre pour le groupe", launched.status === 200, `HTTP ${launched.status}`);
+  const closed = await waitFor(() => a.received("wt:affinity").some((f) => f.raw.cause === "launch"), 5_000);
+  ctx.check("la séance se referme chez A (wt:affinity « launch »)", closed !== null);
+  await launch(b, ctx.state.episodeIds[0]);
   const onPlayer = await waitFor(async () => {
     const [sa, sb] = await Promise.all([a.sample(), b.sample()]);
     return sa.path.startsWith("/watch/") && sb.path === sa.path;

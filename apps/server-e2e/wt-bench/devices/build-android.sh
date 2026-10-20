@@ -7,6 +7,7 @@ REPO=${0:A:h}/../../../..
 OUT=$HOME/.tentacle-lot-mob/builds/android
 cd "$REPO/apps/mobile/android"
 ./gradlew --no-daemon -q assembleDebug
+./gradlew --stop >/dev/null 2>&1 || true
 mkdir -p "$OUT"
 cp app/build/outputs/apk/debug/*.apk "$OUT/"
 echo "$(date '+%Y-%m-%d %H:%M') $(git -C "$REPO" log -1 --format='%h %s')" > "$OUT/BUILT_FROM.txt"

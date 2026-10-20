@@ -10,7 +10,7 @@
  * banc ne touche pas).
  */
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -100,7 +100,7 @@ async function upJellyfin(): Promise<Omit<BenchState, "backendUrl" | "webUrl" | 
   const userC = await ensureUser(http, admin.token, USER3_NAME);
   const userD = await ensureUser(http, admin.token, USER4_NAME);
   const { seriesId, episodeIds } = await scanShow(http, admin.token, admin.id);
-  await ensureTmdbId(http, admin.token, admin.id, seriesId);
+  await ensureAffinityReady(http, admin.token, admin.id, seriesId);
   return {
     jellyfinUrl: url, apiKey, adminId: admin.id, seriesId, episodeIds,
     users: {
@@ -138,13 +138,28 @@ async function scanShow(http: JellyfinHttp, token: string, adminId: string): Pro
 
 /**
  * L'affinité (et la reco) ne retiennent que les titres qui ont un identifiant
- * TMDB. La série synthétique n'en a pas (fournisseurs coupés) : on lui en
- * pose un, fictif — le banc ne parle jamais à TMDB.
+ * TMDB et une affiche. La série synthétique n'a ni l'un (fournisseurs coupés)
+ * ni l'autre : on lui pose un identifiant fictif — le banc ne parle jamais à
+ * TMDB — et une affiche unie fabriquée par ImageMagick (envoyée en base64,
+ * la forme qu'attend Jellyfin).
  */
-async function ensureTmdbId(http: JellyfinHttp, token: string, adminId: string, itemId: string): Promise<void> {
-  const item = await http.get<Record<string, unknown> & { ProviderIds?: Record<string, string> }>(`/Items/${itemId}?userId=${adminId}`, token);
-  if (item.ProviderIds?.Tmdb) return;
-  await http.post(`/Items/${itemId}`, { ...item, ProviderIds: { ...(item.ProviderIds ?? {}), Tmdb: "990001" } }, token);
+async function ensureAffinityReady(http: JellyfinHttp, token: string, adminId: string, itemId: string): Promise<void> {
+  const item = await http.get<Record<string, unknown> & { ProviderIds?: Record<string, string>; ImageTags?: Record<string, string> }>(`/Items/${itemId}?userId=${adminId}`, token);
+  if (!item.ProviderIds?.Tmdb) {
+    await http.post(`/Items/${itemId}`, { ...item, ProviderIds: { ...(item.ProviderIds ?? {}), Tmdb: "990001" } }, token);
+  }
+  if (item.ImageTags?.Primary) return;
+  const png = spawnSync("magick", ["-size", "400x600", "gradient:#7c3aed-#ec4899", "png:-"], { maxBuffer: 16 * 1024 * 1024 });
+  if (png.status !== 0 || !png.stdout?.length) {
+    log("ImageMagick absent : la série n'aura pas d'affiche (l'affinité restera vide).");
+    return;
+  }
+  const res = await fetch(`${http.baseUrl}/Items/${itemId}/Images/Primary`, {
+    method: "POST",
+    headers: { "Content-Type": "image/png", Authorization: `MediaBrowser Client="wt-bench", Device="wt-bench", DeviceId="wt-bench-setup", Version="1.0.0", Token="${token}"` },
+    body: png.stdout.toString("base64"),
+  });
+  if (!res.ok) log(`affiche refusée par Jellyfin (${res.status})`);
 }
 
 /** Lance un processus détaché, journal dans un fichier ; rend son PID. */
