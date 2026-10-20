@@ -216,6 +216,7 @@ export * from "./family/familyClient";
 export * from "./family/familyRightsSummary";
 export * from "./family/familyParentalAge";
 export * from "./family/familyParentalLibraries";
+export * from "./family/familySimpleEditing";
 export * from "./library/libraryVisibilityContract";
 export * from "./accountAbilities/accountAbilitiesContract";
 export * from "./family/familyRolesClient";
