@@ -33,7 +33,7 @@ export function MyPinSection({ hasPin }: { hasPin: boolean }) {
             accessibilityLabel={`${action} — ${t("myPin.title")}`}
             style={({ pressed }) => [row.pill, pressed && row.dim]}
           >
-            <Text style={row.actionText}>{action}</Text>
+            <Text style={row.pillText}>{action}</Text>
           </Pressable>
         </View>
       </SettingsSection>
