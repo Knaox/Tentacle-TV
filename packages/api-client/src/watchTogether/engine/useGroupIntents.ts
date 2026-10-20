@@ -3,7 +3,8 @@ import { getClockOffsetMs, getClockRttMs } from "../../socket/clockSync";
 import { getSocketStatus, onSocketStatus } from "../../socket/tentacleSocket";
 import {
   TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
-  WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, needsStartCorrection, updatePlayLatency, wtPositionSecondsAt,
+  WT_SEEK_NOTIFY_DEBOUNCE_MS, formatWtSeekToken, isBarrierParticipant, needsStartCorrection, updatePlayLatency,
+  wtPositionSecondsAt,
   type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../playerPort";
@@ -154,8 +155,21 @@ export function useGroupIntents({
     const positionTicks = freezeAtSeconds !== undefined
       ? Math.max(0, Math.round(freezeAtSeconds * TICKS_PER_SECOND))
       : posTicks();
-    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: (positionTicks / TICKS_PER_SECOND).toFixed(1) });
-    shared.sendRef.current({ type: "wt:buffering", buffering, positionTicks, rttMs: rtt() });
+    // « Je cale » pendant une barrière : la salle m'attend de nouveau — ma
+    // confirmation d'avant ne vaut plus, je re-confirmerai (défaut M1 du banc :
+    // sans cela, la barrière restait gelée jusqu'à son délai).
+    if (buffering) shared.confirmedBarrierRef.current = null;
+    // Prêt ET déjà posé sur la cible d'une barrière qui m'attend : le « prêt »
+    // part avec son identifiant — sans lui, le serveur n'y lit qu'une fin de
+    // chargement (il me fera alors me caler, puis confirmer).
+    const t = transportRef.current;
+    const barrierId = !buffering && r.barrierId !== undefined && isBarrierParticipant(r, selfId) && t
+      && isSettledOn(t, r.positionTicks / TICKS_PER_SECOND) ? r.barrierId : undefined;
+    if (barrierId !== undefined) shared.confirmedBarrierRef.current = barrierId;
+    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: (positionTicks / TICKS_PER_SECOND).toFixed(1), barrierId });
+    shared.sendRef.current({
+      type: "wt:buffering", buffering, positionTicks, rttMs: rtt(), ...(barrierId !== undefined ? { barrierId } : {}),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks, sendPresence]);
 

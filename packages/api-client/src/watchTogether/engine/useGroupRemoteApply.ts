@@ -46,7 +46,6 @@ export function useGroupRemoteApply({
   const appliedSnapshotRef = useRef<{ positionTicks: number; stateAtServerTime: number; paused: boolean } | null>(null);
   /** Sondage de barrière en cours, et la dernière barrière confirmée. */
   const barrierPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const confirmedBarrierRef = useRef<number | null>(null);
   const stopBarrierPoll = () => {
     if (barrierPollRef.current) { clearInterval(barrierPollRef.current); barrierPollRef.current = null; }
   };
@@ -95,7 +94,7 @@ export function useGroupRemoteApply({
     // ── Barrière : la salle m'attend sur la cible ──
     if (barrierForMe && room.barrierId !== undefined) {
       const barrierId = room.barrierId;
-      if (confirmedBarrierRef.current !== barrierId && !barrierPollRef.current) {
+      if (shared.confirmedBarrierRef.current !== barrierId && !barrierPollRef.current) {
         const targetS = room.positionTicks / TICKS_PER_SECOND;
         if (!t.isPaused()) { armEcho(shared); t.pause(); }
         // Pré-calage exact, en pause. Sur mpv, un seek à moins de 300 ms de la
@@ -134,7 +133,7 @@ export function useGroupRemoteApply({
             return;
           }
           stopBarrierPoll();
-          confirmedBarrierRef.current = barrierId;
+          shared.confirmedBarrierRef.current = barrierId;
           wtLog("engine", settled ? "barrière : posé → prêt" : "barrière : pas posé à temps → prêt quand même", {
             barrierId, posS: player.getPositionSeconds().toFixed(2), afterMs: Date.now() - startedAt,
           });
@@ -222,7 +221,7 @@ export function useGroupRemoteApply({
       cancelScheduledPlay(shared);
       stopBarrierPoll();
       appliedSnapshotRef.current = null;
-      confirmedBarrierRef.current = null;
+      shared.confirmedBarrierRef.current = null;
     };
   }, [enabled, shared]);
 

@@ -77,6 +77,9 @@ export interface GroupSyncSharedRefs {
   pendingHardSeekRef: MutableRefObject<{ at: number; targetS: number } | null>;
   /** Le dernier seek DEMANDÉ par cet appareil (numéro du jeton, instant). */
   localSeekRef: MutableRefObject<{ seq: number; at: number } | null>;
+  /** La dernière barrière confirmée par ce lecteur — remise à zéro quand il
+   *  dit « je cale » : la salle l'attend de nouveau, il re-confirmera. */
+  confirmedBarrierRef: MutableRefObject<number | null>;
 }
 
 /** L'appareil des jetons de seek : un tirage par chargement de l'app (un
