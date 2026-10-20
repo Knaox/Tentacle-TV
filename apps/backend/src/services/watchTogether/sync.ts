@@ -11,7 +11,7 @@ import {
   requestResumeOnRelease,
 } from "./syncBarrier";
 import { loadedDuringSeekBarrier } from "./syncGuards";
-import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
+import { cancelPendingSkip, forgetSkipsFrom, holdPendingSkip, resetSkips } from "./syncSkip";
 import { armReadyGate, isStartingMember } from "./syncReadyGate";
 import { isStaleWtSeekToken } from "./watchTogetherSeekToken";
 import { arrivingFreezeTicks, finishArrival, holdArrivalLeave, noteArrivalOnPresence } from "./arrival";
@@ -177,6 +177,8 @@ export function applyCommand(
           touch(room, now);
           return { kind: "broadcast", cause: "presence" };
         }
+        // L'arrivant fait attendre la salle : un décompte de saut en cours repart en entier une fois tous prêts.
+        if (isArrivingDevice(room, member.userId, deviceKey)) holdPendingSkip(room);
         const frozen = arrivingFreezeTicks(room, member.userId, deviceKey, msg.positionTicks, now);
         return { kind: "broadcast", cause: waitForMember(room, member, now, clampTicks(frozen)) };
       }

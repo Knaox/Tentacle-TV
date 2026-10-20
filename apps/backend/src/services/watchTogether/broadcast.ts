@@ -1,11 +1,11 @@
 import { sendToUser } from "../wsManager";
-import type { Invite, Room, RoomMember } from "./roomTypes";
+import type { Invite, PendingSkip, Room, RoomMember } from "./roomTypes";
 import { isMemberOnline, sendToMember, sendToRoom } from "./memberDevices";
 import { wtAllReady } from "./syncReadyGate";
 import { visibleArrivals } from "./arrivalState";
 import { notifyElsewhereRoom } from "./elsewhere";
 import { getRoom } from "./roomRegistry";
-import type { WtDissolvedReason, WtInviteDto, WtRoomStateDto, WtStateCause } from "./protocol";
+import type { WtDissolvedReason, WtInviteDto, WtPendingSkipDto, WtRoomStateDto, WtStateCause } from "./protocol";
 
 /** Watch Together — projection Room→DTO et diffusion aux membres. */
 
@@ -46,13 +46,19 @@ export function roomToDto(room: Room): WtRoomStateDto {
     ...(room.hostSettings ? { hostPlaybackSettings: room.hostSettings } : {}),
     ...(room.barrier ? { barrierId: room.barrier.id } : {}),
     ...(room.waitCause ? { waitCause: room.waitCause } : {}),
-    ...(room.pendingSkip ? { pendingSkip: { ...room.pendingSkip } } : {}),
+    ...(room.pendingSkip ? { pendingSkip: pendingSkipDto(room.pendingSkip) } : {}),
     ...(room.seekToken ? { seekToken: room.seekToken } : {}),
     // « Tous prêts » : seulement quand un titre est lancé (sinon rien à sauter).
     ...(room.itemId ? { allReady: wtAllReady(room) } : {}),
     // Qui arrive (clic « Rejoindre », lecteur qui fait attendre la salle).
     ...(arriving.length > 0 ? { arrivingUserIds: arriving } : {}),
   };
+}
+
+/** Le décompte tel que le contrat le décrit (rien de ce que le serveur garde pour lui). */
+function pendingSkipDto(pending: PendingSkip): WtPendingSkipDto {
+  const { segmentType, segmentStartTicks, toTicks, skipAtPositionTicks, byUserId } = pending;
+  return { segmentType, segmentStartTicks, toTicks, skipAtPositionTicks, byUserId };
 }
 
 /** Diffuse l'état complet de la room à tous ses membres — à leurs appareils

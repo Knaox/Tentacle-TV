@@ -1,4 +1,5 @@
 import { WT_ARRIVAL_LEAVE_GRACE_MS, WT_ARRIVAL_TIMEOUT_MS, wtPositionTicksAt } from "./protocol";
+import { holdPendingSkip } from "./syncSkip";
 import type { Arrival, Room, RoomMember } from "./roomTypes";
 import { confirmReady, joinBarrier, openBarrier } from "./syncBarrier";
 import { touch } from "./syncSchedule";
@@ -58,6 +59,7 @@ function startArrival(room: Room, userId: string, deviceKey: string | null, now:
 export function beginArrival(room: Room, member: RoomMember, deviceKey: string | null, now: number): boolean {
   if (!room.itemId) return false;
   startArrival(room, member.userId, deviceKey, now, true);
+  holdPendingSkip(room);
   if (room.barrier) {
     joinBarrier(room, member.userId, now);
   } else {

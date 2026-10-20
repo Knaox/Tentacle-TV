@@ -4,6 +4,7 @@ import { TICKS_PER_MS, wtPositionTicksAt } from "./protocol";
 import type { Room, RoomMember } from "./roomTypes";
 import { barrierParticipants, openBarrier } from "./syncBarrier";
 import { touch } from "./syncSchedule";
+import { deferSkip } from "./syncReadyGate";
 
 /**
  * Watch Together — le saut de passage armé par le serveur.
@@ -94,6 +95,7 @@ export function proposeSkip(
     toTicks: msg.toTicks,
     skipAtPositionTicks: position + settings.autoDelayMs * TICKS_PER_MS,
     byUserId: member.userId,
+    isEpisode: msg.isEpisode,
   };
   touch(room, now);
   armSkipTimer(room);
@@ -122,6 +124,21 @@ export function cancelPendingSkip(room: Room, settled: boolean): boolean {
   }
   room.pendingSkip = null;
   return true;
+}
+
+/**
+ * Un membre ARRIVE pendant un décompte de saut (cas ajouté par Damien le 20/10 :
+ * l'intro sautée pendant le chargement de l'arrivant) : le décompte est mis de
+ * côté et rejoué EN ENTIER une fois tous prêts (`deferSkip` → la proposition
+ * repart au premier état « tous prêts ») — l'arrivant le voit et peut s'y
+ * opposer. Le passage n'est pas réglé. Rien sans décompte en cours.
+ */
+export function holdPendingSkip(room: Room): void {
+  const pending = room.pendingSkip;
+  if (!pending) return;
+  cancelPendingSkip(room, false);
+  const { segmentType, isEpisode, segmentStartTicks, toTicks } = pending;
+  deferSkip(room, { userId: pending.byUserId ?? room.hostUserId, proposal: { segmentType, isEpisode, segmentStartTicks, toTicks } });
 }
 
 /** Rembobiner avant le début d'un passage réglé le redemande. */

@@ -82,6 +82,9 @@ export interface PendingSkip {
   toTicks: number;
   skipAtPositionTicks: number;
   byUserId: string | null;
+  /** Épisode ou film (le réglage du générique en dépend) — gardé pour rejouer la
+   *  proposition à l'arrivée d'un membre (`holdPendingSkip`), jamais diffusé. */
+  isEpisode: boolean;
 }
 
 export interface Room {
