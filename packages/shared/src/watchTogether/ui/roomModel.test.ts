@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WtMemberDto, WtRoomStateDto } from "@tentacle-tv/shared";
+import type { WtMemberDto, WtRoomStateDto } from "../../types/watchTogether";
 import { memberState, roomMemberRows, waitingNotice } from "./roomModel";
 
 const member = (userId: string, over: Partial<WtMemberDto> = {}): WtMemberDto => ({

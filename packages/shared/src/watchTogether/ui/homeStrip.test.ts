@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { homeStripKind, type HomeStripInput } from "./homeStripModel";
+import { homeStripKind, type HomeStripInput } from "./homeStrip";
 
 const none: HomeStripInput = {
   inGroup: false, groupItemId: null, affinityInvite: false, inviteCount: 0, elsewhere: false, elsewhereDismissed: false,

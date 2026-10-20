@@ -1,4 +1,4 @@
-import type { WtMemberDto, WtRoomStateDto } from "@tentacle-tv/shared";
+import type { WtMemberDto, WtRoomStateDto } from "../../types/watchTogether";
 
 /**
  * Watch Together — ce que montre la feuille du groupe sur le mobile et

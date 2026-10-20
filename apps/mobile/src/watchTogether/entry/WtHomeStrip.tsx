@@ -10,7 +10,7 @@ import { FONT_FAMILY, RADIUS, spacing, useTheme, useThemedStyles, type AppTheme 
 import { KIND_LABEL_KEY, memberName } from "@tentacle-tv/api-client";
 import { WtElsewhereBanner } from "../room/WtElsewhereBanner";
 import { openWtSheet } from "../wtSheets";
-import { homeStripKind } from "./homeStripModel";
+import { homeStripKind } from "@tentacle-tv/shared";
 
 /**
  * La bande Watch Together de l'accueil — UNE ligne (`homeStripKind`) :

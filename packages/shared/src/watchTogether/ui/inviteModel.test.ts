@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WtInvitableUserDto, WtRoomStateDto } from "@tentacle-tv/shared";
+import type { WtInvitableUserDto, WtRoomStateDto } from "../../types/watchTogether";
 import { inviteCandidates, toggleSelection } from "./inviteModel";
 
 const user = (id: string, name: string, isOnline = false): WtInvitableUserDto => ({ id, name, hasAvatar: false, isOnline });

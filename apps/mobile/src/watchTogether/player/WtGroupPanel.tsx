@@ -6,7 +6,7 @@ import type { GifItem } from "@tentacle-tv/api-client";
 import type { WtChatMessageDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { UserAvatar } from "@/components/admin/sessions/UserAvatar";
 import { FONT_FAMILY, PLAYER, RADIUS } from "@/theme";
-import { MEMBER_STATE_LABEL, roomMemberRows, type WtMemberState } from "../model/roomModel";
+import { MEMBER_STATE_LABEL, roomMemberRows, type WtMemberState } from "@tentacle-tv/shared";
 import { WtChatPanel } from "../chat/WtChatPanel";
 
 export type WtGroupPanelTab = "group" | "chat";

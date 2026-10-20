@@ -7,7 +7,7 @@ import type { WtRoomStateDto } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { roomMemberRows } from "../model/roomModel";
+import { roomMemberRows } from "@tentacle-tv/shared";
 import { WtMemberRow, WtPendingInviteRow } from "./WtMemberRow";
 
 export interface WtPendingInviteView { userId: string; username: string; hasAvatar: boolean }
