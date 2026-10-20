@@ -5,6 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { NOTIFICATION_LIVE_KEYS, useRegisterPushDevice } from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 import { useOpenNotification } from "@/notifications/useOpenNotification";
+import { usePushSync } from "@/notifications/usePushSync";
+import { DISMISS_ACTION_IDENTIFIER } from "@/notifications/pushSyncRules";
+import { useMarkReadMobile } from "@/hooks/useNotificationsMobile";
 import {
   configureNotificationHandler,
   registerForPushToken,
@@ -56,15 +59,23 @@ export function PushRegistrationSync({
   // (`useOpenNotification`). La donnée fraîche est invalidée avant d'arriver :
   // la fiche et la cloche se rechargent.
   const open = useOpenNotification();
+  const markRead = useMarkReadMobile().mutate;
   const handleTap = useCallback(
     async (data: PushTapData) => {
+      // Touchée ou balayée : lue partout (capacité `notifications.pushSync`).
+      if (data?.notificationId) markRead(data.notificationId);
+      // Balayée (iOS) : rien à ouvrir.
+      if (data?.actionIdentifier === DISMISS_ACTION_IDENTIFIER) return;
       for (const queryKey of NOTIFICATION_LIVE_KEYS) {
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
       await open({ type: data?.type, refId: data?.refId ?? null, target: data?.target }, "push");
     },
-    [queryClient, open],
+    [queryClient, open, markRead],
   );
+
+  // Le centre du système et le serveur d'accord (balayée = lue, lue ailleurs = retirée, pastille).
+  usePushSync(!!serverUrl && !!token);
 
   useEffect(() => addNotificationListeners(handleTap), [handleTap]);
 

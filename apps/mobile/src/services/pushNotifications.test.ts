@@ -50,4 +50,15 @@ describe("getInitialNotificationTap — démarrage à froid", () => {
     native.getLastNotificationResponseAsync.mockResolvedValue({ notification: { request: { identifier: "n2", content: {} } } });
     expect(await getInitialNotificationTap()).toEqual({});
   });
+
+  it("app tuée, push BALAYÉE (iOS) : le geste remonte avec l'identifiant — lue, rien à ouvrir", async () => {
+    const { getInitialNotificationTap } = await import("./pushNotifications");
+    native.getLastNotificationResponseAsync.mockResolvedValue({
+      actionIdentifier: "com.apple.UNNotificationDismissActionIdentifier",
+      notification: { request: { identifier: "n3", content: { data: { type: "ticket_reply", notificationId: "srv1" } } } },
+    });
+    expect(await getInitialNotificationTap()).toEqual({
+      type: "ticket_reply", notificationId: "srv1", actionIdentifier: "com.apple.UNNotificationDismissActionIdentifier",
+    });
+  });
 });

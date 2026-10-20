@@ -68,6 +68,15 @@ export interface PushTapData {
   refId?: string;
   /** La cible posée par l'émetteur (contrat shared `notificationTarget`) — lue, jamais crue. */
   target?: unknown;
+  /** L'identifiant de la notification sur le serveur (capacité `notifications.pushSync`). */
+  notificationId?: string;
+  /** Le geste du système : toucher (défaut) ou balayage (iOS, catégorie à `customDismissAction`). */
+  actionIdentifier?: string;
+}
+
+function tapDataOf(response: Notifications.NotificationResponse): PushTapData {
+  const data = (response.notification.request.content.data ?? {}) as PushTapData;
+  return { ...data, actionIdentifier: response.actionIdentifier };
 }
 
 /**
@@ -104,11 +113,10 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   return next === "granted";
 }
 
-/** Écoute les taps sur notification ; appelle onTap avec les data. Renvoie un cleanup. */
+/** Écoute les réponses (toucher, balayage iOS) ; appelle onTap avec les data et le geste. Renvoie un cleanup. */
 export function addNotificationListeners(onTap: (data: PushTapData) => void): () => void {
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const data = (response.notification.request.content.data ?? {}) as PushTapData;
-    onTap(data);
+    onTap(tapDataOf(response));
   });
   return () => sub.remove();
 }
@@ -129,5 +137,5 @@ export async function getInitialNotificationTap(): Promise<PushTapData | null> {
   if (id && id === lastInitialResponseId) return null;
   lastInitialResponseId = id;
   await Notifications.clearLastNotificationResponseAsync().catch(() => {});
-  return (response.notification.request.content.data ?? {}) as PushTapData;
+  return tapDataOf(response);
 }
