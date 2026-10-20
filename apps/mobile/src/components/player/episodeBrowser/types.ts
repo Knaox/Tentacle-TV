@@ -3,7 +3,7 @@ import type { EpisodeEntry, SeasonEntry } from "../../../player/episodes/episode
 import type { Rect } from "../../../player/episodes/episodeBrowserLayout";
 
 /**
- * Ce que reçoit une mise en page de la liste des épisodes : des données déjà
+ * Ce que reçoit la liste des épisodes du lecteur : des données déjà
  * dans la forme de la liste (`episodeBrowserModel`), d'où qu'elles viennent —
  * le serveur, l'appareil, le banc d'UI. Les vignettes sont rendues par
  * l'hôte (image du serveur, fichier gardé, image du banc).
@@ -19,12 +19,10 @@ export interface EpisodeBrowserProps {
   /** Les épisodes de la saison ne sont pas encore là. */
   loading: boolean;
   renderArtwork: (entry: EpisodeEntry) => ReactNode;
+  /** La pastille d'états d'un épisode (le modèle des cartes) ; absente : « vu » seul. */
+  renderMarkers?: (entry: EpisodeEntry) => ReactNode;
   onPlay: (entry: EpisodeEntry) => void;
   onClose: () => void;
-  /** L'image de la vidéo à l'écran : la liste se pose autour. */
+  /** L'image de la vidéo à l'écran : debout, la liste se pose dessous. */
   video: Rect;
-  /** Le panneau debout remonte l'image en haut de l'écran : l'hôte la déplace d'autant. */
-  onVideoLift?: (lift: number) => void;
-  /** Une image fixe de la série (le sommaire la pose floutée sous la liste, une fois pour toutes). */
-  backdropUri?: string | null;
 }

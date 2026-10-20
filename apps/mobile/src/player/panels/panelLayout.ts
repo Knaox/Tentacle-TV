@@ -1,7 +1,7 @@
 import { CHROME_BOTTOM_ROW, CHROME_TOP_ROW, type SafeInsets } from "../chrome/chromeInsets";
 
 /**
- * Où se pose un panneau du lecteur (pistes, réglages, épisodes) — la règle
+ * Où se pose un menu du lecteur (pistes, réglages) — la règle
  * du lecteur d'Apple : l'image reste VISIBLE et lisible, jamais un voile noir
  * plein écran ni une feuille pleine largeur sur un téléphone couché.
  *
@@ -15,11 +15,11 @@ import { CHROME_BOTTOM_ROW, CHROME_TOP_ROW, type SafeInsets } from "../chrome/ch
  * l'îlot (banc du 21/10).
  * - `bottom` : une carte flottante en bas, décollée des bords (téléphone
  *   debout), plafonnée pour laisser voir le haut de l'image.
- * - `shelf` : une étagère en bas sur toute la largeur utile, qui défile de
- *   côté (épisodes en paysage et sur iPad, comme l'app TV d'Apple).
+ *
+ * La liste des épisodes a sa propre place (`player/episodes/episodeBrowserLayout`).
  */
-export type PanelKind = "menu" | "episodes";
-export type PanelMode = "side" | "bottom" | "shelf";
+export type PanelKind = "menu";
+export type PanelMode = "side" | "bottom";
 
 export interface PanelLayoutInput {
   kind: PanelKind;
@@ -48,26 +48,12 @@ export const SIDE_WIDTH = { phone: 340, tablet: 380 } as const;
 /** Air entre une carte du bas et les bords d'un téléphone debout. */
 export const BOTTOM_GAP = 8;
 /** Part de la hauteur qu'une carte du bas laisse au minimum à l'image. */
-const BOTTOM_IMAGE_SHARE = { menu: 0.38, episodes: 0.3 } as const;
+const BOTTOM_IMAGE_SHARE = { menu: 0.38 } as const;
 
 export function panelLayout(input: PanelLayoutInput): PanelFrame {
   const { kind, width, height, isTablet, edges, insets } = input;
   const landscape = width > height;
-  const usableHeight = Math.max(0, height - edges.top - edges.bottom);
-  const left = Math.max(edges.left, insets.left);
   const right = Math.max(edges.right, insets.right);
-
-  if (kind === "episodes" && (landscape || isTablet)) {
-    return {
-      mode: "shelf",
-      left,
-      right,
-      bottom: edges.bottom,
-      // L'étagère ne monte jamais au-delà des quatre cinquièmes : le haut de l'image reste.
-      maxHeight: Math.round(usableHeight * 0.8),
-      radius: isTablet ? 26 : 22,
-    };
-  }
 
   if (kind === "menu" && (landscape || isTablet)) {
     const target = isTablet ? SIDE_WIDTH.tablet : SIDE_WIDTH.phone;
@@ -94,8 +80,3 @@ export function panelLayout(input: PanelLayoutInput): PanelFrame {
     radius: 28,
   };
 }
-
-/** Largeur d'une carte d'épisode sur l'étagère (vignette 16:9 au-dessus du texte). */
-export const EPISODE_CARD_WIDTH = { phone: 188, tablet: 248 } as const;
-/** L'écart entre deux cartes de l'étagère. */
-export const EPISODE_CARD_GAP = 12;

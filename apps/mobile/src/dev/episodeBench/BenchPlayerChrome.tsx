@@ -9,12 +9,11 @@ import { PlayerTopBar } from "@/components/player/PlayerTopBar";
  * L'habillage du lecteur pour le banc, figé en pause : les VRAIES pièces de
  * `MobilePlayerOverlay` (barre du haut, commandes du centre, barre du bas),
  * dans le même ordre et aux mêmes tailles. Quand la liste des épisodes est
- * ouverte, il en reste ce que la mise en page garde :
+ * ouverte, il en reste ce que le lecteur garde (`MobilePlayerOverlay`) :
  * - `full` : tout (liste fermée) ;
- * - `top` : la barre du haut seule, sur un dégradé — l'image reste nue ;
- * - `none` : rien, la liste prend la main.
+ * - `top` : la barre du haut seule, sur un dégradé — l'image reste nue.
  */
-export type BenchChrome = "full" | "top" | "none";
+export type BenchChrome = "full" | "top";
 
 interface Props {
   mode: BenchChrome;
@@ -30,7 +29,6 @@ export function BenchPlayerChrome({ mode, title, currentTime, duration, onEpisod
   const { width, height } = useWindowDimensions();
   const isTablet = Math.min(width, height) >= TABLET_MIN_WIDTH;
   const ui = isTablet ? 1.4 : 1;
-  if (mode === "none") return null;
   if (mode === "top") {
     return (
       <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>

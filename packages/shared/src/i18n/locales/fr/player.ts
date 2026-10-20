@@ -270,14 +270,12 @@ export default {
     trackForced: "Forcé",
     trackExternal: "Externe",
   },
-  // La liste des épisodes du lecteur mobile (étagère, panneau, sommaire).
+  // La liste des épisodes du lecteur mobile : la carte qui s'ouvre.
   episodeBrowser: {
+    watched: "vu",
     remaining_one: "Reste {{count}} min",
     remaining_other: "Reste {{count}} min",
     seasonWatched: "Saison vue",
     seasonPlaying: "Saison en cours",
-    showOverview: "Afficher le résumé",
-    hideOverview: "Masquer le résumé",
-    seasons: "Saisons",
   },
 } as const;

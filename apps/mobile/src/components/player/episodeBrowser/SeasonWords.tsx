@@ -2,9 +2,9 @@ import { memo, useEffect, useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Check } from "lucide-react-native";
-import type { SeasonEntry } from "../../../../player/episodes/episodeBrowserModel";
-import { EB, EB_TYPE, brandGauge, brandInk } from "../browserTokens";
-import { useEpisodeWords } from "../useEpisodeWords";
+import type { SeasonEntry } from "../../../player/episodes/episodeBrowserModel";
+import { EB, EB_TYPE, brandGauge, brandInk } from "./browserTokens";
+import { useEpisodeWords } from "./useEpisodeWords";
 
 interface Props {
   seasons: readonly SeasonEntry[];
@@ -17,12 +17,12 @@ interface Props {
 }
 
 /**
- * Les saisons de l'étagère : des MOTS, pas des boutons — la saison montrée en
+ * Les saisons de la rangée : des MOTS, pas des boutons — la saison montrée en
  * blanc, soulignée d'un trait de la marque ; les autres en gris. Une coche dit
  * la saison vue ; un point rose, celle de l'épisode en cours quand on en
  * regarde une autre.
  */
-export const ShelfSeasonTabs = memo(function ShelfSeasonTabs({ seasons, activeId, onSelect, onIntent, fallbackTitle, large }: Props) {
+export const SeasonWords = memo(function SeasonWords({ seasons, activeId, onSelect, onIntent, fallbackTitle, large }: Props) {
   const words = useEpisodeWords();
   const scrollRef = useRef<ScrollView>(null);
   const offsets = useRef(new Map<string, number>());

@@ -1,9 +1,9 @@
 import { memo, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import type { EpisodeEntry } from "../../../../player/episodes/episodeBrowserModel";
-import { openCardPlace } from "../../../../player/episodes/episodeBrowserLayout";
-import { EpisodeArtwork } from "../EpisodeArtwork";
+import type { EpisodeEntry } from "../../../player/episodes/episodeBrowserModel";
+import { openCardPlace } from "../../../player/episodes/episodeBrowserLayout";
+import { EpisodeArtwork } from "./EpisodeArtwork";
 
 interface Props {
   entry: EpisodeEntry;
@@ -16,6 +16,8 @@ interface Props {
   openHeight: number;
   radius: number;
   artwork: ReactNode;
+  /** La pastille d'états de l'hôte (« vu », « sur cet appareil ») ; absente : « vu » seul. */
+  markers?: ReactNode;
   spoken: string;
   onAccessibilityTap: () => void;
 }
@@ -28,7 +30,7 @@ interface Props {
  * rangée (`openCardAt`) : la carte n'en reçoit aucun, elle reste lisible par
  * VoiceOver.
  */
-export const OpenCard = memo(function OpenCard({ entry, index, progress, step, restWidth, openWidth, openHeight, radius, artwork, spoken, onAccessibilityTap }: Props) {
+export const OpenCard = memo(function OpenCard({ entry, index, progress, step, restWidth, openWidth, openHeight, radius, artwork, markers, spoken, onAccessibilityTap }: Props) {
   const placed = useAnimatedStyle(() => {
     const place = openCardPlace(index, progress.value, step, restWidth, openWidth);
     const shrink = 1 - place.scale;
@@ -53,7 +55,7 @@ export const OpenCard = memo(function OpenCard({ entry, index, progress, step, r
       onAccessibilityTap={onAccessibilityTap}
     >
       <Animated.View pointerEvents="none" style={[st.card, { width: openWidth, height: openHeight }, placed]}>
-        <EpisodeArtwork entry={entry} width={openWidth} radius={radius} artwork={artwork} badge />
+        <EpisodeArtwork entry={entry} width={openWidth} radius={radius} artwork={artwork} markers={markers} badge />
       </Animated.View>
     </View>
   );

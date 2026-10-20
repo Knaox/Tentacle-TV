@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { openingEpisodeIndex, toEpisodeEntry, toSeasonEntry, type EpisodeEntry } from "./episodeBrowserModel";
+import { openingEpisodeIndex, toEpisodeEntry, toLocalEpisodeEntry, toSeasonEntry, type EpisodeEntry } from "./episodeBrowserModel";
 
 const MINUTE = 600_000_000;
 
@@ -67,5 +67,21 @@ describe("openingEpisodeIndex", () => {
 
   it("une saison toute vue s'ouvre au début, jamais au bout", () => {
     expect(openingEpisodeIndex(list({ watched: true }, { watched: true }))).toBe(0);
+  });
+});
+
+describe("toLocalEpisodeEntry", () => {
+  const source = { itemId: "e7", title: "Glass Half", indexNumber: 7, runtimeTicks: 30 * MINUTE, positionTicks: 10 * MINUTE };
+
+  it("reprend la règle du catalogue local : jauge et temps restant d'un épisode entamé", () => {
+    const entry = toLocalEpisodeEntry(source, { watched: false, percent: 33.3 }, "e7");
+    expect(entry).toMatchObject({ id: "e7", number: 7, minutes: 30, progress: 33.3, remainingMinutes: 20, watched: false, current: true });
+  });
+
+  it("vu : ni jauge ni temps restant ; sans titre ni numéro, rien d'inventé", () => {
+    const watched = toLocalEpisodeEntry(source, { watched: true, percent: null }, undefined);
+    expect(watched).toMatchObject({ progress: null, remainingMinutes: undefined, watched: true, current: false });
+    const bare = toLocalEpisodeEntry({ ...source, title: null, indexNumber: null, runtimeTicks: null }, { watched: false, percent: null }, undefined);
+    expect(bare).toMatchObject({ title: "", number: undefined, minutes: undefined });
   });
 });

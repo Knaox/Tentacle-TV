@@ -5,30 +5,32 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { TABLET_MIN_WIDTH } from "@/theme";
-import { useChromeInsets } from "../../../../player/chrome/useChromeInsets";
-import { openingEpisodeIndex, type EpisodeEntry } from "../../../../player/episodes/episodeBrowserModel";
-import { openCardAt, openShelfGeometry } from "../../../../player/episodes/episodeBrowserLayout";
-import { BrowserCloseButton } from "../BrowserCloseButton";
-import { EB, SHELF_SCRIM } from "../browserTokens";
-import { ShelfSeasonTabs } from "../shelf/ShelfSeasonTabs";
-import type { EpisodeBrowserProps } from "../types";
-import { useBackCloses, useEntrance, useSeasonSwap } from "../useBrowserMotion";
-import { useEpisodeWords } from "../useEpisodeWords";
+import { useChromeInsets } from "../../../player/chrome/useChromeInsets";
+import { openingEpisodeIndex, type EpisodeEntry } from "../../../player/episodes/episodeBrowserModel";
+import { openCardAt, openIndexAt, openShelfGeometry } from "../../../player/episodes/episodeBrowserLayout";
+import { BrowserCloseButton } from "./BrowserCloseButton";
+import { EB, ROW_SCRIM } from "./browserTokens";
+import { SeasonWords } from "./SeasonWords";
+import type { EpisodeBrowserProps } from "./types";
+import { useBackCloses, useEntrance, useSeasonSwap } from "./useBrowserMotion";
+import { useEpisodeWords } from "./useEpisodeWords";
 import { OpenCard } from "./OpenCard";
 import { OpenDetails } from "./OpenDetails";
+import { useRowFrameProbe } from "./useRowFrameProbe";
 
 const GAP = 12;
 const TAP_SLOP = 8;
 
 /**
- * Piste D — la carte qui s'ouvre, celle des rangées de la TV : au repos, des
+ * La liste des épisodes du lecteur — la carte qui s'ouvre, celle des rangées
+ * de la TV (choix de Damien, 21/10) : au repos, des
  * vignettes plus petites ; la carte posée au retrait de la rangée s'OUVRE —
  * plus grande, ses voisines poussées d'autant — et ses détails se lisent
  * dessous, avec « Lire ». Glisser fait s'ouvrir la suivante, en continu sous le
  * doigt ; toucher une carte l'ouvre, toucher la carte ouverte la lit.
  */
-export function OpenShelfBrowser(props: EpisodeBrowserProps) {
-  const { seriesTitle, seasons, activeSeasonId, onSelectSeason, onSeasonIntent, episodes, loading, renderArtwork, onPlay, onClose, video } = props;
+export function EpisodeBrowser(props: EpisodeBrowserProps) {
+  const { seriesTitle, seasons, activeSeasonId, onSelectSeason, onSeasonIntent, episodes, loading, renderArtwork, renderMarkers, onPlay, onClose, video } = props;
   const { t } = useTranslation("player");
   const { width, height } = useWindowDimensions();
   const edges = useChromeInsets();
@@ -53,14 +55,19 @@ export function OpenShelfBrowser(props: EpisodeBrowserProps) {
     announced.value = opening;
     setOpenIndex(opening);
   }, [activeSeasonId, opening, progress, announced]);
+  const count = episodes.length;
+  const probe = useRowFrameProbe();
   const onScroll = useAnimatedScrollHandler({
+    onBeginDrag: () => probe.begin(),
+    onEndDrag: (e) => { if (Math.abs(e.velocity?.x ?? 0) < 0.05) probe.end(); },
+    onMomentumEnd: () => probe.end(),
     onScroll: (e) => {
       progress.value = e.contentOffset.x / step;
       // Le fil JS n'apprend que le changement de carte ouverte, pas chaque image.
-      const rounded = Math.round(progress.value);
-      if (rounded !== announced.value) {
-        announced.value = rounded;
-        runOnJS(setOpenIndex)(rounded);
+      const open = openIndexAt(progress.value, count);
+      if (open !== announced.value) {
+        announced.value = open;
+        runOnJS(setOpenIndex)(open);
       }
     },
   });
@@ -78,7 +85,7 @@ export function OpenShelfBrowser(props: EpisodeBrowserProps) {
     if (Math.abs(e.nativeEvent.pageX - start.x) > TAP_SLOP || Math.abs(e.nativeEvent.pageY - start.y) > TAP_SLOP) return;
     const index = openCardAt(e.nativeEvent.pageX - geo.inset + progress.value * step, progress.value, step, geo.restWidth, geo.openWidth, episodes.length);
     if (index === null) return;
-    if (index === Math.round(progress.value)) onPlay(episodes[index]);
+    if (index === openIndexAt(progress.value, episodes.length)) onPlay(episodes[index]);
     else listRef.current?.scrollToOffset({ offset: index * step, animated: true });
   }, [progress, geo.inset, geo.restWidth, geo.openWidth, step, episodes, onPlay]);
 
@@ -94,23 +101,24 @@ export function OpenShelfBrowser(props: EpisodeBrowserProps) {
       openHeight={geo.openHeight}
       radius={isTablet ? 16 : 13}
       artwork={renderArtwork(item)}
+      markers={renderMarkers?.(item)}
       spoken={words.spoken(item)}
       onAccessibilityTap={() => onPlay(item)}
     />
-  ), [progress, step, geo.restWidth, geo.openWidth, geo.openHeight, isTablet, renderArtwork, words, onPlay]);
+  ), [progress, step, geo.restWidth, geo.openWidth, geo.openHeight, isTablet, renderArtwork, renderMarkers, words, onPlay]);
 
-  const shown = episodes[Math.min(Math.max(openIndex, 0), episodes.length - 1)];
+  const shown = episodes[openIndexAt(openIndex, episodes.length)];
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
       {!geo.belowVideo ? (
-        <RNAnimated.View pointerEvents="none" style={[st.scrim, { top: geo.top - SHELF_SCRIM.lead, opacity: enter }]}>
-          <LinearGradient colors={SHELF_SCRIM.colors} locations={SHELF_SCRIM.locations} style={StyleSheet.absoluteFill} />
+        <RNAnimated.View pointerEvents="none" style={[st.scrim, { top: geo.top - ROW_SCRIM.lead, opacity: enter }]}>
+          <LinearGradient colors={ROW_SCRIM.colors} locations={ROW_SCRIM.locations} style={StyleSheet.absoluteFill} />
         </RNAnimated.View>
       ) : null}
       <RNAnimated.View pointerEvents="box-none" style={[st.body, { top: geo.top, opacity: enter, transform: [{ translateY: lift }] }]}>
         <View style={[st.header, { paddingLeft: geo.inset, paddingRight: geo.inset - 4, height: isTablet ? 46 : 40 }]}>
-          <ShelfSeasonTabs seasons={seasons} activeId={activeSeasonId} onSelect={onSelectSeason} onIntent={onSeasonIntent} fallbackTitle={seriesTitle} large={isTablet} />
+          <SeasonWords seasons={seasons} activeId={activeSeasonId} onSelect={onSelectSeason} onIntent={onSeasonIntent} fallbackTitle={seriesTitle} large={isTablet} />
           <View style={st.spacer} />
           <BrowserCloseButton onPress={onClose} size={isTablet ? 34 : 30} />
         </View>

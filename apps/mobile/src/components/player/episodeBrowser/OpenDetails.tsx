@@ -2,10 +2,10 @@ import { memo, useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Play } from "lucide-react-native";
-import type { EpisodeEntry } from "../../../../player/episodes/episodeBrowserModel";
-import { EB, EB_HIT, EB_TYPE, brandInk } from "../browserTokens";
-import type { EpisodeWords } from "../useEpisodeWords";
-import { WholeText } from "../WholeText";
+import type { EpisodeEntry } from "../../../player/episodes/episodeBrowserModel";
+import { EB, EB_HIT, EB_TYPE, brandInk } from "./browserTokens";
+import type { EpisodeWords } from "./useEpisodeWords";
+import { WholeText } from "./WholeText";
 
 interface Props {
   entry: EpisodeEntry | undefined;

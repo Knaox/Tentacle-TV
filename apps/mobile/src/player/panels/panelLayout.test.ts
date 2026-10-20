@@ -48,20 +48,4 @@ describe("disposition des panneaux du lecteur", () => {
     expect(portrait.mode).toBe("side");
     expect(portrait.width).toBe(SIDE_WIDTH.tablet);
   });
-
-  it("épisodes, téléphone couché et iPad : étagère en bas, sur la largeur utile", () => {
-    const shelf = panelLayout({ kind: "episodes", ...phoneLandscape, edges: edgesLandscape, insets: insetsLandscape });
-    expect(shelf.mode).toBe("shelf");
-    // L'étagère monte au milieu de la hauteur : elle évite l'îlot, pas seulement les coins.
-    expect(shelf.left).toBe(59);
-    expect(shelf.maxHeight).toBeLessThan(phoneLandscape.height);
-    expect(panelLayout({ kind: "episodes", ...padPortrait, edges: edgesPad, insets: insetsPad }).mode).toBe("shelf");
-  });
-
-  it("épisodes, téléphone debout : carte du bas, plus haute qu'un menu", () => {
-    const episodes = panelLayout({ kind: "episodes", ...phonePortrait, edges: edgesPortrait, insets: insetsPortrait });
-    const menu = panelLayout({ kind: "menu", ...phonePortrait, edges: edgesPortrait, insets: insetsPortrait });
-    expect(episodes.mode).toBe("bottom");
-    expect(episodes.maxHeight).toBeGreaterThan(menu.maxHeight);
-  });
 });

@@ -62,6 +62,41 @@ export function toEpisodeEntry(item: MediaItem, currentId: string | undefined): 
   };
 }
 
+/** Un épisode gardé sur l'appareil (lecture locale), tel que le catalogue local le liste. */
+export interface LocalEpisodeSource {
+  itemId: string;
+  title: string | null;
+  indexNumber: number | null;
+  runtimeTicks: number | null;
+  positionTicks: number;
+}
+
+/**
+ * Un épisode de l'appareil dans la forme de la liste. Vu et avancement viennent
+ * de la règle du catalogue local (`watchStateOf`, offline-core), passée telle
+ * quelle : une seule règle pour la coche et la jauge.
+ */
+export function toLocalEpisodeEntry(
+  source: LocalEpisodeSource,
+  watch: { watched: boolean; percent: number | null },
+  currentId: string | undefined,
+): EpisodeEntry {
+  const runtime = source.runtimeTicks ?? 0;
+  const progress = !watch.watched && watch.percent !== null && watch.percent > 0 ? watch.percent : null;
+  return {
+    id: source.itemId,
+    number: source.indexNumber ?? undefined,
+    title: source.title ?? "",
+    minutes: runtime > 0 ? wholeMinutes(runtime) : undefined,
+    remainingMinutes: progress !== null && runtime > 0
+      ? Math.max(1, Math.ceil((runtime - source.positionTicks) / TICKS_PER_MINUTE))
+      : undefined,
+    progress,
+    watched: watch.watched,
+    current: source.itemId === currentId,
+  };
+}
+
 /** Une saison Jellyfin : vue seulement si elle compte des épisodes (une saison vide n'est pas « vue »). */
 export function toSeasonEntry(season: MediaItem, currentSeasonId: string | undefined): SeasonEntry {
   const count = season.RecursiveItemCount ?? season.ChildCount;

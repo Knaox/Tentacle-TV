@@ -263,14 +263,12 @@ export default {
     trackForced: "Forced",
     trackExternal: "External",
   },
-  // The mobile player's episode list (shelf, panel, index).
+  // The mobile player's episode list: the opening card.
   episodeBrowser: {
+    watched: "watched",
     remaining_one: "{{count}} min left",
     remaining_other: "{{count}} min left",
     seasonWatched: "Season watched",
     seasonPlaying: "Season playing",
-    showOverview: "Show summary",
-    hideOverview: "Hide summary",
-    seasons: "Seasons",
   },
 } as const;

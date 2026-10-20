@@ -21,6 +21,8 @@ interface Props {
   badge?: boolean;
   /** Le badge resserré d'une petite vignette (une ligne de liste). */
   compactBadge?: boolean;
+  /** La pastille d'états rendue par l'hôte (modèle des cartes, « sur cet appareil » compris). */
+  markers?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -29,7 +31,7 @@ interface Props {
  * la pastille « vu » en haut à droite, la jauge de la marque au pied d'un
  * épisode entamé. Sans image, son numéro, en grand, comme la TV.
  */
-export const EpisodeArtwork = memo(function EpisodeArtwork({ entry, width, radius, artwork, badge = false, compactBadge = false, style }: Props) {
+export const EpisodeArtwork = memo(function EpisodeArtwork({ entry, width, radius, artwork, badge = false, compactBadge = false, markers, style }: Props) {
   const height = Math.round((width * 9) / 16);
   const large = width >= 200;
   return (
@@ -38,7 +40,7 @@ export const EpisodeArtwork = memo(function EpisodeArtwork({ entry, width, radiu
       {entry.progress !== null && (
         <BrandGauge progress={entry.progress} style={[st.gauge, large && st.gaugeLarge]} height={large ? 4 : 3} />
       )}
-      <CardStatusMarkers statuses={entry.watched ? WATCHED : NONE} style={st.status} />
+      {markers ?? <CardStatusMarkers statuses={entry.watched ? WATCHED : NONE} style={st.status} />}
       {badge && entry.current && <NowPlayingBadge compact={compactBadge} />}
     </View>
   );

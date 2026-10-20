@@ -9,7 +9,7 @@ export interface EpisodeWords {
   time: (entry: EpisodeEntry) => string | undefined;
   /** Le surtitre : « Épisode 6 · Reste 7 min ». */
   kicker: (entry: EpisodeEntry) => string;
-  /** Ce qu'un lecteur d'écran dit d'une ligne. */
+  /** Ce qu'un lecteur d'écran dit d'une carte : « Épisode 3, Le titre, 42 min, vu ». */
   spoken: (entry: EpisodeEntry) => string;
   /** Ce qu'il dit d'une saison : « Saison 3, 12 épisodes, saison en cours ». */
   season: (season: SeasonEntry) => string;
@@ -33,7 +33,12 @@ export function useEpisodeWords(): EpisodeWords {
       time,
       kicker,
       nowPlaying,
-      spoken: (entry) => [entry.current ? nowPlaying : null, number(entry), entry.title, time(entry)].filter(Boolean).join(", "),
+      // Ce que VoiceOver lit : « Épisode 3, Le titre, 42 min, vu » — l'état en dernier.
+      spoken: (entry) => [
+        number(entry), entry.title, time(entry),
+        entry.watched ? t("player:episodeBrowser.watched") : null,
+        entry.current ? nowPlaying : null,
+      ].filter(Boolean).join(", "),
       season: (season) => [
         season.label,
         season.count ? t("common:seasonTabEpisodes", { count: season.count }) : null,
