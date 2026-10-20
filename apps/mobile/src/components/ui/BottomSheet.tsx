@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { GlassBackdrop } from "./GlassSurface";
-import { retainModal } from "./modalGate";
+import { holdPresentedModal, type PresentedModalHold } from "./modalGate";
 import { useSheetGestures } from "./sheet/useSheetGestures";
 import { SheetScrollContext } from "./sheet/sheetScroll";
 import type { SheetSnap } from "./sheet/sheetSnap";
@@ -144,10 +144,25 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
 
   // Déclarée au portier tant qu'elle est à l'écran : rien d'autre ne se
   // présentera par-dessus, et ce qui attend s'ouvrira à sa fermeture.
+  // Une modale que le natif n'a jamais présentée ne retient pas le portier
+  // au-delà d'un délai (`holdPresentedModal`) : `onShow` la confirme.
+  const holdRef = useRef<PresentedModalHold | null>(null);
+  const shownRef = useRef(false);
   useEffect(() => {
     if (!mounted) return;
-    return retainModal();
+    const hold = holdPresentedModal();
+    holdRef.current = hold;
+    if (shownRef.current) hold.shown();
+    return () => {
+      holdRef.current = null;
+      shownRef.current = false;
+      hold.release();
+    };
   }, [mounted]);
+  const onShow = useCallback(() => {
+    shownRef.current = true;
+    holdRef.current?.shown();
+  }, []);
 
   const setSnap = useCallback((snap: SheetSnap) => {
     ref.current.currentSnap = snap;
@@ -168,7 +183,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], header,
   if (!mounted) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
+    <Modal visible transparent animationType="none" onRequestClose={dismiss} onShow={onShow} statusBarTranslucent>
       <View style={{ flex: 1 }}>
         {/* Backdrop: blur + scrim (intensity 28 = valeur pixel-perfect historique) */}
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
