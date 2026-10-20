@@ -31,7 +31,6 @@ const NAMESPACES = [
   "familyMobile",
   "metadataHint",
   "profilePicker",
-  "settingsMobile",
   "avatars",
   "userRights",
   "libraryDelete",

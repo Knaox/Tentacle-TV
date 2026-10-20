@@ -11,4 +11,3 @@ export { VideoEngineSection } from "./VideoEngineSection";
 export { SegmentedChoice } from "./SegmentedChoice";
 export { SteppedSlider } from "./SteppedSlider";
 export { BrandSwitch } from "./BrandSwitch";
-export { ScopeBadge, type SettingScope } from "./ScopeBadge";
