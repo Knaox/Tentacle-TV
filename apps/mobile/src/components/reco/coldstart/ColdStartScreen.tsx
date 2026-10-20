@@ -34,6 +34,8 @@ interface Props {
   onDone: () => void;
   /** « Plus tard » : retour à l'accueil, la grille ne s'impose plus. */
   onLater: () => void;
+  /** La place d'une barre fixée sous l'en-tête (« Pour vous · Affiner »). */
+  topInset?: number;
 }
 
 /**
@@ -42,11 +44,11 @@ interface Props {
  * bibliothèque entière. La bascule vers les rangées est VOLONTAIRE : une
  * pilule collée au-dessus de la barre, jamais un écran qui se dérobe.
  */
-export function ColdStartScreen({ signalCount, onDone, onLater }: Props) {
+export function ColdStartScreen({ signalCount, onDone, onLater, topInset = 0 }: Props) {
   const { t } = useTranslation("reco");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const headerH = useHeaderHeight();
+  const headerH = useHeaderHeight() + topInset;
   const onScrollChrome = useScrollChromeHandler();
   const insets = useSafeAreaInsets();
   const tabBarH = useGlassTabBarHeight();

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RefreshControl, View, StyleSheet } from "react-native";
 import Animated, { useComposedEventHandler } from "react-native-reanimated";
 import { useRouter } from "expo-router";
@@ -24,12 +24,9 @@ import { useRecoPageModel } from "@/components/reco/page/useRecoPageModel";
 import { useRecoNavigation } from "@/hooks/useRecoNavigation";
 import { spacing, useTheme } from "@/theme";
 
-/** La hauteur, au plus, du segment « Pour vous · Affiner » au-dessus du héros. */
-const SECTION_SWITCH_ALLOWANCE = 72;
-
 interface Props {
-  /** Le segment « Pour vous · Affiner », en tête de page (il défile avec elle). */
-  sectionSwitch: ReactNode;
+  /** La place réservée sous l'en-tête à la barre « Pour vous · Affiner », fixée par-dessus. */
+  topInset: number;
   /** L'entrée vers « Affiner » glissée entre les rangées. */
   onOpenRefine: () => void;
 }
@@ -41,16 +38,17 @@ interface Props {
  * l'erreur avec « Réessayer » ; démarrage à froid : la grille ; vieux serveur
  * en mode désactivé : l'écran historique.
  */
-export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
+export function RecoFeedView({ topInset, onOpenRefine }: Props) {
   const theme = useTheme();
   const router = useRouter();
-  const headerH = useHeaderHeight();
+  // Le contenu commence sous l'en-tête ET sous la barre des sections.
+  const headerH = useHeaderHeight() + topInset;
   const tabBarH = useGlassTabBarHeight();
   const onScrollChrome = useScrollChromeHandler();
-  // Le héros défilé hors de la vue suspend sa rotation (le segment le
-  // précède : sa hauteur s'ajoute, à une marge près).
+  // Le héros défilé hors de la vue suspend sa rotation (il passe sous la
+  // barre des sections avant de passer sous l'en-tête).
   const { bannerH } = useHeroMetrics();
-  const hero = useHeroInView(bannerH + SECTION_SWITCH_ALLOWANCE);
+  const hero = useHeroInView(bannerH + topInset);
   const onScroll = useComposedEventHandler([onScrollChrome, hero.handler]);
   const model = useRecoPageModel();
   const recoNav = useRecoNavigation();
@@ -85,12 +83,10 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
       <SubtleBackground ambient>
         {model.isError ? (
           <View style={[styles.fill, { paddingTop: headerH }]}>
-            {sectionSwitch}
             <RecoErrorState onRetry={model.retry} />
           </View>
         ) : (
           <View style={{ paddingTop: headerH }}>
-            {sectionSwitch}
             <SkeletonHero />
             <View style={styles.skeletonRow}><SkeletonRow /></View>
             <View style={styles.skeletonRow}><SkeletonRow /></View>
@@ -104,7 +100,6 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
     return (
       <SubtleBackground ambient>
         <View style={[styles.fill, { paddingTop: headerH }]}>
-          {sectionSwitch}
           <RecoTmdbOffState />
         </View>
       </SubtleBackground>
@@ -115,7 +110,6 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
     return (
       <SubtleBackground ambient>
         <View style={[styles.fill, { paddingTop: headerH }]}>
-          {sectionSwitch}
           <RecoDisabledState onOpenSettings={openSettings} />
         </View>
       </SubtleBackground>
@@ -125,7 +119,7 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
   if (model.phase === "hold") {
     return (
       <SubtleBackground ambient>
-        <ColdStartScreen signalCount={page.signalCount} onDone={model.dismissColdStart} onLater={later} />
+        <ColdStartScreen signalCount={page.signalCount} onDone={model.dismissColdStart} onLater={later} topInset={topInset} />
       </SubtleBackground>
     );
   }
@@ -149,7 +143,6 @@ export function RecoFeedView({ sectionSwitch, onOpenRefine }: Props) {
             />
           }
         >
-          {sectionSwitch}
           {heroSlides.length > 0 && <HeroBanner slides={heroSlides} inView={hero.inView} />}
           <RecoPageHeader showTitle={heroSlides.length === 0} filterCount={activeCount} onOpenFilters={openFilters} />
           <RecoStatusBanner
