@@ -97,12 +97,21 @@ export function toLocalEpisodeEntry(
   };
 }
 
-/** Une saison Jellyfin : vue seulement si elle compte des épisodes (une saison vide n'est pas « vue »). */
-export function toSeasonEntry(season: MediaItem, currentSeasonId: string | undefined): SeasonEntry {
+/** Le nom d'une saison dans les mots de l'interface, d'après son numéro et son nom Jellyfin (tv-core `seasonTitle`). */
+export type SeasonTitle = (number: number, name: string | null | undefined) => string;
+
+/**
+ * Une saison Jellyfin : vue seulement si elle compte des épisodes (une saison
+ * vide n'est pas « vue »). Son libellé passe par `title` quand elle a un
+ * numéro : « Saison 1 » — jamais le « Season 1 » brut de Jellyfin —, et son
+ * vrai nom quand il dit plus.
+ */
+export function toSeasonEntry(season: MediaItem, currentSeasonId: string | undefined, title?: SeasonTitle): SeasonEntry {
   const count = season.RecursiveItemCount ?? season.ChildCount;
+  const number = season.IndexNumber;
   return {
     id: season.Id,
-    label: season.Name ?? "",
+    label: title && number != null ? title(number, season.Name) : season.Name ?? "",
     count: count ?? undefined,
     watched: season.UserData?.Played === true && count !== 0,
     current: season.Id === currentSeasonId,
