@@ -38,15 +38,17 @@ export function chooseSessionToken(cookie: string | undefined, explicit: string 
 /**
  * La socket : le cookie de la poignée de main l'authentifie-t-il AUSSITÔT ?
  * Oui pour une session posée par le serveur (rien ne la remplace), et pour un
- * navigateur — Fetch Metadata (`Sec-Fetch-Mode`) ou un User-Agent de
- * navigateur : la page web peut n'avoir que ce cookie. Non pour une
- * application native (React Native n'envoie ni l'un ni l'autre) : elle
- * s'annonce par le message `auth`, qui l'emporte ; le cookie de son pot n'est
- * qu'un repli, au bout de `WS_COOKIE_FALLBACK_MS`, pour un client muet.
+ * navigateur — tous s'annoncent « Mozilla/… », Electron et les TV web
+ * compris : la page web peut n'avoir que ce cookie. Non pour une application
+ * native : React Native n'envoie pas de User-Agent (iOS) ou celui d'OkHttp
+ * (Android) ; elle s'annonce par le message `auth`, qui l'emporte, et le
+ * cookie de son pot n'est qu'un repli, au bout de `WS_COOKIE_FALLBACK_MS`,
+ * pour un client muet. Jamais `Sec-Fetch-Mode` : la WebSocket de Node l'envoie
+ * aussi (mesuré). Une erreur d'aiguillage ne coûte qu'un délai, ou une liaison
+ * provisoire : le message `auth` l'emporte de toute façon.
  */
 export function cookieDecidesAtOnce(cookie: string, headers: IncomingHttpHeaders): boolean {
   if (isServerPlacedSession(cookie)) return true;
-  if (headers["sec-fetch-mode"] !== undefined) return true;
   const agent = headers["user-agent"];
   return typeof agent === "string" && agent.startsWith("Mozilla/");
 }

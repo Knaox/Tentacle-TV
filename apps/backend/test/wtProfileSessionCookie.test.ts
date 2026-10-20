@@ -78,6 +78,7 @@ interface Phone { account: string; profile: string; socket: WebSocket; inbox: Ms
 
 const A = { account: "jf-knaoxtest-a", profile: "jwt.knaoxtest2-sur-a.sig" };
 const B = { account: "jf-knaoxtest2-b", profile: "jwt.knaoxtest-sur-b.sig" };
+const BROWSER = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15";
 
 let app: FastifyInstance;
 let wsUrl = "";
@@ -228,10 +229,27 @@ describe("la règle, porte par porte", () => {
     expect(phone.map((u) => u.id)).toEqual(["u-knaoxtest"]);
   });
 
-  it("un navigateur (Fetch Metadata) est authentifié par son cookie, aussitôt, sans message", async () => {
-    const { inbox } = await openSocket(A.account, { "sec-fetch-mode": "websocket" });
+  it("un navigateur (« Mozilla/… ») est authentifié par son cookie, aussitôt, sans message", async () => {
+    const { inbox } = await openSocket(A.account, { "user-agent": BROWSER });
     await waitFor(() => inbox.find((m) => m.type === "auth_ok"), "auth_ok du navigateur");
     expect(isUserOnline("u-knaoxtest")).toBe(true);
+  });
+
+  it("filet : même pris pour un navigateur, le message `auth` d'un profil l'emporte sur le cookie de connexion", async () => {
+    const { socket, inbox } = await openSocket(A.account, { "user-agent": BROWSER });
+    socket.send(JSON.stringify({ type: "auth", token: A.profile }));
+    await waitFor(() => isUserOnline("u-knaoxtest2") || undefined, "la socket au profil");
+    await waitFor(() => !isUserOnline("u-knaoxtest") || undefined, "plus au compte");
+    expect(inbox.filter((m) => m.type === "auth_error")).toEqual([]);
+  });
+
+  it("la session de profil du web (cookie JWT posé par le serveur) : un message `auth` ne la remplace pas", async () => {
+    const { socket, inbox } = await openSocket(A.profile, { "user-agent": BROWSER });
+    await waitFor(() => inbox.find((m) => m.type === "auth_ok"), "auth_ok du profil");
+    socket.send(JSON.stringify({ type: "auth", token: A.account }));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(isUserOnline("u-knaoxtest2")).toBe(true);
+    expect(isUserOnline("u-knaoxtest")).toBe(false);
   });
 
   it("une app native muette retombe sur le cookie de son pot, au bout du délai", async () => {

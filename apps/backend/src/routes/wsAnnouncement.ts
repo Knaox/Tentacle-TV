@@ -3,15 +3,21 @@ import { chooseSessionToken, WS_COOKIE_FALLBACK_MS } from "../services/sessionTo
 import { bindSocketSession, checkSocketToken, type BoundSession } from "./wsSessionAuth";
 
 /**
- * Une socket qui s'annonce par le message `auth` (mobile, TV, bureau).
+ * Quelle session tient une socket : le cookie de la poignée de main, ou le
+ * message `auth` du client (mobile, TV, bureau ; la page web l'envoie aussi,
+ * avec le même jeton que son cookie).
  *
- * Le cookie de CONNEXION qu'une app native garde dans son pot (celui de
- * `/api/auth/login` : le compte de l'appareil) n'est qu'un REPLI, au bout de
- * `WS_COOKIE_FALLBACK_MS`, pour un client qui ne s'annoncerait pas. Le message
- * `auth` l'emporte toujours (cf. `sessionTokenChoice`) — même arrivé après ce
- * repli : la socket quitte alors la session du cookie pour celle du message.
- * Sans quoi la session de profil d'un téléphone parlait au nom de son compte
- * (alpha mobile, 20/10). Le premier message `auth` fait foi, comme avant.
+ * - Un navigateur, ou une session posée par le serveur dans le cookie : le
+ *   cookie authentifie AUSSITÔT (`cookieAtOnce`).
+ * - Une app native : le cookie de CONNEXION de son pot (celui de
+ *   `/api/auth/login` : le compte de l'appareil) n'est qu'un REPLI, au bout de
+ *   `WS_COOKIE_FALLBACK_MS`, pour un client qui ne s'annoncerait pas.
+ *
+ * Dans les deux cas, le message `auth` l'emporte sur un cookie de connexion
+ * (cf. `sessionTokenChoice`), même arrivé après coup : la socket quitte alors
+ * la session du cookie pour la sienne. Sans quoi la session de profil d'un
+ * téléphone parlait au nom de son compte (alpha mobile, 20/10). Le premier
+ * message `auth` fait foi, comme avant.
  */
 
 /** Une socket qui ne s'est toujours pas annoncée est fermée. */
@@ -26,8 +32,10 @@ export interface SocketAnnouncement {
 
 export function createSocketAnnouncement(deps: {
   socket: WebSocket;
-  /** Le cookie de connexion de la poignée de main, s'il y en a un. */
+  /** Le cookie de session de la poignée de main, s'il y en a un. */
   cookie: string | undefined;
+  /** Le cookie authentifie aussitôt (navigateur, session posée par le serveur). */
+  cookieAtOnce: boolean;
   /** La socket parle désormais au nom de cette session. */
   adopt: (session: BoundSession) => void;
   /** La session tenue jusqu'ici ne l'est plus (remplacée). */
@@ -47,7 +55,7 @@ export function createSocketAnnouncement(deps: {
     socket.send(JSON.stringify({ type: "auth_error", reason: "timeout" }));
     socket.close(4001, "Auth timeout");
   }, AUTH_TIMEOUT_MS);
-  const fallback = cookie
+  const fallback = cookie && !deps.cookieAtOnce
     ? setTimeout(() => {
         if (current === null && !disposed) attach(cookie, true);
       }, WS_COOKIE_FALLBACK_MS)
@@ -58,8 +66,8 @@ export function createSocketAnnouncement(deps: {
     if (fallback) clearTimeout(fallback);
   }
 
-  /** `quiet` : le repli sur le cookie — refusé, il ne ferme rien, la socket
-   *  attend toujours le message du client. */
+  /** `quiet` : le repli sur le cookie d'une app native — refusé, il ne ferme
+   *  rien, la socket attend toujours le message du client. */
   function attach(token: string, quiet: boolean): void {
     const mine = ++attempt;
     current = token;
@@ -85,6 +93,8 @@ export function createSocketAnnouncement(deps: {
     });
   }
 
+  if (cookie && deps.cookieAtOnce) attach(cookie, false);
+
   return {
     announce(token) {
       if (announced || disposed) return;
@@ -93,8 +103,8 @@ export function createSocketAnnouncement(deps: {
       clearTimeout(authTimeout);
       if (fallback) clearTimeout(fallback);
       const chosen = chooseSessionToken(cookie, token) ?? token;
-      // Déjà tenu (le repli sur le cookie portait ce même jeton) : rien à refaire.
-      // En cours de vérification par le repli : vérifié de nouveau, refus dit cette fois.
+      // Déjà tenu (le cookie portait ce même jeton) : rien à refaire. En cours de
+      // vérification : vérifié de nouveau — et un refus est dit, cette fois.
       if (!(adopted && chosen === current)) attach(chosen, false);
     },
     dispose() {

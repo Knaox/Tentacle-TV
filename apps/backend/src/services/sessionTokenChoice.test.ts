@@ -42,14 +42,18 @@ describe("isServerPlacedSession", () => {
 });
 
 describe("cookieDecidesAtOnce — la poignée de main de la socket", () => {
-  it("un navigateur : son cookie l'authentifie aussitôt (Fetch Metadata ou User-Agent)", () => {
-    expect(cookieDecidesAtOnce(ACCOUNT, { "sec-fetch-mode": "websocket" })).toBe(true);
+  it("un navigateur (« Mozilla/… », Electron compris) : son cookie l'authentifie aussitôt", () => {
     expect(cookieDecidesAtOnce(ACCOUNT, { "user-agent": "Mozilla/5.0 (Macintosh) Safari/605.1.15" })).toBe(true);
+    expect(cookieDecidesAtOnce(ACCOUNT, { "user-agent": "Mozilla/5.0 (X11; Linux) Electron/43.0.0" })).toBe(true);
   });
 
-  it("une app native (ni l'un ni l'autre) : le cookie de connexion attend son message `auth`", () => {
+  it("une app native (iOS sans User-Agent, OkHttp) : le cookie de connexion attend son message `auth`", () => {
     expect(cookieDecidesAtOnce(ACCOUNT, {})).toBe(false);
     expect(cookieDecidesAtOnce(ACCOUNT, { "user-agent": "okhttp/4.12.0" })).toBe(false);
+  });
+
+  it("`Sec-Fetch-Mode` ne fait pas un navigateur : la WebSocket de Node l'envoie aussi", () => {
+    expect(cookieDecidesAtOnce(ACCOUNT, { "sec-fetch-mode": "websocket", "user-agent": "node" })).toBe(false);
   });
 
   it("une session posée par le serveur dans le cookie décide toujours aussitôt", () => {

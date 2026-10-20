@@ -71,14 +71,3 @@ export function bindSocketSession(ws: WebSocket, session: BoundSession): void {
   ws.send(JSON.stringify({ type: "auth_ok" }));
   addConnection(session.user.userId, ws, session.tokenHash);
 }
-
-/** Verdict puis liaison, ou refus dit à la socket. */
-export async function authenticateAndBind(ws: WebSocket, token: string): Promise<BoundSession | null> {
-  const check = await checkSocketToken(token);
-  if (!check.ok) {
-    check.refuse(ws);
-    return null;
-  }
-  bindSocketSession(ws, check.session);
-  return check.session;
-}

@@ -11,7 +11,7 @@ import {
 import { isSessionMessageType } from "../services/deviceSessions/protocolParse";
 import { canUseWatchTogether } from "../services/family/profileSessionLimits";
 import { cookieDecidesAtOnce } from "../services/sessionTokenChoice";
-import { authenticateAndBind, type BoundSession } from "./wsSessionAuth";
+import type { BoundSession } from "./wsSessionAuth";
 import { createSocketAnnouncement } from "./wsAnnouncement";
 
 /** Ping protocolaire toutes les 10 s ; deux pongs manqués = socket mort,
@@ -141,25 +141,17 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
       }
     };
 
-    // 1. Le cookie d'un navigateur (la page web, cookie envoyé à la poignée
-    //    de main), ou une session que le serveur y a posée : il décide aussitôt.
+    // Le cookie de la poignée de main (la page web ; le pot d'une app native
+    // aussi) et le message `auth` du client : celui-ci l'emporte sur un cookie
+    // de connexion — cf. wsAnnouncement. Un navigateur garde son cookie aussitôt.
     const cookieToken = sessionCookieOf(request);
-    if (cookieToken && cookieDecidesAtOnce(cookieToken, request.headers)) {
-      const cleanup = () => { closed = true; release(); };
-      socket.on("close", cleanup);
-      socket.on("error", cleanup);
-      authenticateAndBind(socket, cookieToken).then((session) => { if (session) adopt(session); });
-      // Ping keepalive + messages métier des clients cookie-authentifiés
-      socket.on("message", (raw: Buffer) => {
-        const msg = tryParseMessage(String(raw));
-        if (msg) handleParsedMessage(socket, msg, () => user, () => bound);
-      });
-      return;
-    }
-
-    // 2. Le message `auth` (mobile, TV, bureau). Le cookie de connexion qu'une
-    //    app native garde dans son pot n'est qu'un repli : son message l'emporte.
-    const announcement = createSocketAnnouncement({ socket, cookie: cookieToken, adopt, release });
+    const announcement = createSocketAnnouncement({
+      socket,
+      cookie: cookieToken,
+      cookieAtOnce: cookieToken !== undefined && cookieDecidesAtOnce(cookieToken, request.headers),
+      adopt,
+      release,
+    });
     const cleanup = () => {
       closed = true;
       announcement.dispose();
