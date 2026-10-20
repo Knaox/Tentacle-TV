@@ -33,6 +33,8 @@ export interface IntroClockControl extends IntroClock {
   releaseDelay: SharedValue<number>;
   /** Arrivée ou renoncement : l'horloge ne compte plus aucune image. */
   stop: () => void;
+  /** Le plus long écart entre deux images une fois le son programmé (ms), et l'instant de la scène où il tombe. */
+  longestGap: SharedValue<{ ms: number; at: number }>;
 }
 
 /**
@@ -55,6 +57,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
   const soundAsked = useSharedValue(false);
   const defaults = bootSoundLeads(null);
   const requestAt = useSharedValue(defaults.requestAt);
+  const longestGap = useSharedValue({ ms: 0, at: 0 });
   const releaseDelay = useSharedValue(defaults.releaseDelayMs);
   const { onHold, onSound, onDone } = events;
 
@@ -83,6 +86,8 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
       scene.value = INTRO_HOLD_AT + (now - releaseAt.value);
       return;
     }
+    // Une image qui traîne APRÈS le son se voit : la plongée saute d'autant (mesure du banc).
+    if (soundAsked.value && elapsed > longestGap.value.ms) longestGap.value = { ms: elapsed, at: scene.value };
     const next = scene.value + (soundAsked.value ? elapsed : Math.min(elapsed, MAX_FRAME_MS));
     if (!soundAsked.value && !ready.value && next >= INTRO_HOLD_AT) {
       scene.value = INTRO_HOLD_AT;
@@ -111,7 +116,7 @@ export function useIntroClock(events: IntroClockEvents, frozenAt: number | null 
 
   // Un objet stable : les effets qui en dépendent ne se rejouent pas à chaque rendu.
   return useMemo(
-    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop }),
-    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop],
+    () => ({ scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, longestGap }),
+    [scene, idle, idleWeight, landed, ready, state, requestAt, releaseDelay, stop, longestGap],
   );
 }

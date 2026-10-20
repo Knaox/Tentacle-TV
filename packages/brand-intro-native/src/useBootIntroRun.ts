@@ -91,6 +91,11 @@ export function useBootIntroRun({ soundWanted, selfReporting }: BootIntroRunOpti
     if (!landed) return undefined;
     clock.landed.value = 1;
     clock.stop();
+    if (__DEV__) {
+      const gap = clock.longestGap.value;
+      // Le banc le lit dans le journal de Metro : un trou de plus de ~50 ms est une plongée qui saute.
+      console.log(`[ouverture] arrivée ; plus long écart entre deux images : ${Math.round(gap.ms)} ms à t=${Math.round(gap.at)} ms`);
+    }
     const timer = setTimeout(() => bootSound.dispose(), SOUND_TAIL_MS);
     return () => clearTimeout(timer);
   }, [landed, clock]);
