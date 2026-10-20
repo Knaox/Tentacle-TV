@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useWatchTogetherOrIdle, useWtChat } from "@tentacle-tv/api-client";
 import { TABLET_MIN_WIDTH } from "@/theme";
 import { WtReactionLayer } from "../chat/WtReactionLayer";
-import { waitingNotice } from "@tentacle-tv/shared";
+import { typingLabelKey, waitingNotice } from "@tentacle-tv/shared";
 import { WtNoticeLayer } from "../notices/WtNoticeLayer";
 import { openWtSheet } from "../wtSheets";
 import { WtGroupPanel, type WtGroupPanelTab } from "./WtGroupPanel";
@@ -55,6 +55,10 @@ export function useWtPlayerChrome(itemId: string): WtPlayerChrome {
   }
 
   const wait = waitingNotice(room, selfId);
+  // « X est en train d'écrire… » : dans le chat, et, chat replié, sur la vidéo.
+  const typing = typingLabelKey(chat.state.typing);
+  const typingText = typing ? t(typing.key, typing.params) : null;
+  const chatVisible = open && tab === "chat";
   return {
     active,
     open,
@@ -73,6 +77,8 @@ export function useWtPlayerChrome(itemId: string): WtPlayerChrome {
         onSend={chat.sendChat}
         onReact={chat.sendReaction}
         onSendGif={chat.sendGif}
+        typingText={typingText}
+        onTyping={chat.notifyTyping}
         onOpenRoom={() => openWtSheet("room")}
         onClose={close}
       />
@@ -81,7 +87,7 @@ export function useWtPlayerChrome(itemId: string): WtPlayerChrome {
       <>
         {wait && <WtWaitingChip text={t(wait.key, wait.params)} />}
         <WtReactionLayer reactions={chat.state.reactions} />
-        <WtNoticeLayer chatToasts={open && tab === "chat" ? [] : chat.state.toasts} />
+        <WtNoticeLayer chatToasts={chatVisible ? [] : chat.state.toasts} typingText={chatVisible ? null : typingText} />
       </>
     ),
   };

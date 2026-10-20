@@ -13,10 +13,14 @@ const DOT: Record<WtNoticeKind, string> = { success: PLAYER.accent, error: PLAYE
  * chat reçus panneau fermé. Lus par VoiceOver sans voler le focus ; aucun
  * toucher capté.
  */
-export const WtNoticeLayer = memo(function WtNoticeLayer({ chatToasts }: { chatToasts: readonly WtChatMessageDto[] }) {
+export const WtNoticeLayer = memo(function WtNoticeLayer({ chatToasts, typingText = null }: {
+  chatToasts: readonly WtChatMessageDto[];
+  /** « X est en train d'écrire… », chat replié (null : personne, ou chat ouvert). */
+  typingText?: string | null;
+}) {
   const notices = useWtNotices();
   const insets = useSafeAreaInsets();
-  if (notices.length === 0 && chatToasts.length === 0) return null;
+  if (notices.length === 0 && chatToasts.length === 0 && !typingText) return null;
   return (
     <View pointerEvents="none" style={[st.layer, { left: 16 + insets.left, bottom: 140 + insets.bottom }]}>
       {notices.map((n) => (
@@ -33,6 +37,9 @@ export const WtNoticeLayer = memo(function WtNoticeLayer({ chatToasts }: { chatT
           </Text>
         </View>
       ))}
+      {typingText ? (
+        <Text style={st.typing} numberOfLines={1} accessibilityLiveRegion="polite" testID="wt-typing-hint">{typingText}</Text>
+      ) : null}
     </View>
   );
 });
@@ -46,4 +53,8 @@ const st = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
   text: { flexShrink: 1, color: PLAYER.text, fontSize: 14, lineHeight: 19, fontFamily: FONT_FAMILY.regular },
   author: { fontFamily: FONT_FAMILY.semibold },
+  typing: {
+    alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.pill, overflow: "hidden",
+    backgroundColor: PLAYER.controlBg, color: PLAYER.textSecondary, fontSize: 12, fontStyle: "italic", fontFamily: FONT_FAMILY.regular,
+  },
 });
