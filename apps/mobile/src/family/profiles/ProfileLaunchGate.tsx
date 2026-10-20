@@ -7,8 +7,6 @@ import { useServerUrl } from "@/providers/ServerUrlContext";
 import { useReportStartupOverlay } from "@/startup/useStartupOverlay";
 import { MODAL_ORIENTATIONS } from "../modalOrientations";
 import { BootAwareModal } from "@/bootIntro/BootAwareModal";
-
-const noop = () => undefined;
 import { readLaunchChoice, subscribeLaunchChoice } from "./launchChoice";
 import { useMobileLaunchAsked } from "./useMobileLaunchAsked";
 import { launchGateState, launchStayToForget, nextLaunchDecision, type LaunchDecision } from "./launchGate";
@@ -18,6 +16,8 @@ import { forgetMobileStay } from "./switchSession";
 import { useCommitPick } from "./useCommitPick";
 import { usePickerListing } from "./usePickerListing";
 import { WhoIsWatchingView } from "./view/WhoIsWatchingView";
+
+const noop = () => undefined;
 
 /** Une modale plein écran tant qu'elle est montrée : les autres attendent (`modalGate`). */
 function Retained() {
