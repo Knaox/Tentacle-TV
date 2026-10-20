@@ -8,6 +8,7 @@ import { ticketPushText } from "./ticketPushText";
 import { loadPushLangs } from "./pushLang";
 import { departurePushBody, parseSeerDeparture } from "./seerDeparturePush";
 import { pushTapData } from "../notifications/notificationDto";
+import { departurePushAllowed } from "./seerDepartureRights";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -129,7 +130,9 @@ export async function deliverPendingNotifications(): Promise<void> {
         // Départ d'une demande (« est en route ») : poussé tel quel. Les
         // autres états (refusée, échec) restent dans la cloche.
         const departing = parseSeerDeparture(n);
-        if (departing) {
+        if (departing && !(await departurePushAllowed(n, userClaims))) {
+          console.log(`[NotifPush] départ caché par les droits[${n.jellyfinUserId.slice(0, 8)}] : cloche seule`);
+        } else if (departing) {
           const res = await sendToUser(n.jellyfinUserId, {
             title: n.title,
             body: departurePushBody(departing, langByUser.get(n.jellyfinUserId) ?? "fr"),
