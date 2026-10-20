@@ -1,154 +1,143 @@
 # Watch Together — le banc et ses mesures
 
 Rapport du banc `apps/server-e2e/wt-bench/` (mode d'emploi dans son README).
-Il consigne ce qui a été MESURÉ, scénario par scénario, avant et après les
-correctifs du lot du 20/10 (« mobile = bureau »). Le modèle de
-synchronisation lui-même est décrit dans `WATCH-TOGETHER-SYNC.md`.
+Il consigne ce qui a été MESURÉ dans la nuit du 20/10/2026 (lot « mobile =
+bureau »), avant et après les correctifs de wt-socle (serveur, partagé, web) et
+de wt-mobile. Le modèle de synchronisation est décrit dans
+`WATCH-TOGETHER-SYNC.md`.
 
 Cibles du lot : **< 100 ms en régime**, **retour < 1 s après un seek**.
 
 ## Méthode
 
 Tous les membres tournent sur le même Mac. La position de chaque lecteur est
-lue DANS l'app (web : `video.currentTime` ; iOS : la dernière annonce du
-moteur, par Hermes) avec l'heure murale commune, puis ramenée à un instant
-commun. La dérive est donc la vérité terrain, pas ce que les lecteurs croient
-d'eux-mêmes (`driftMs` de leurs balises). Le « biais » est la médiane SIGNÉE de
+lue DANS l'app (web : `video.currentTime` ; iOS : la dernière annonce du moteur,
+par Hermes) avec l'heure murale commune (`Date.now()`), puis ramenée à un
+instant commun. La dérive est la vérité terrain, pas ce que les lecteurs
+croient (`driftMs` de leurs balises). Le **biais** est la médiane SIGNÉE de
 l'écart d'un membre : un biais constant est un écart que la boucle de chaque
 lecteur croit corrigé.
 
 Médias : série synthétique de 3 × 5 min (720p, 6 Mb/s, chapitres « Intro »
-0–40 s et « Générique »), heure du film incrustée à la milliseconde.
-Transcodage : plafond de 1,5 Mb/s imposé à `PlaybackInfo` (le geste « qualité
-basse »), relevé dans les requêtes (HLS).
+0–40 s et « Générique », heure incrustée à la milliseconde). Transcodage :
+plafond de 1,5 Mb/s imposé à `PlaybackInfo` (le geste « qualité basse »),
+vérifié dans les requêtes (HLS). Comptes : ceux du Jellyfin JETABLE du banc
+(`compat-user`, `compat-user2`, `wtbench-user3/4`), jamais un compte réel.
 
-⚠️ **Charge du Mac.** La référence (02:45–03:00) a tourné à une charge de 6 à
-16 ; les rejeux de 03:05–03:20 entre 25 et 58 (huit sessions du lot en
-parallèle). Les DÉLAIS mesurés sous forte charge ne valent pas mesure ; les
-vérifications fonctionnelles, si.
+### Trois pièges d'environnement rencontrés (et neutralisés)
 
-## 1. Référence — code de `dev` (064890d94), web ↔ web, 2 Chrome
+1. **Veille profonde du Mac** (04:56–05:14) : tout gelé 18 min. Depuis, `run`
+   tient un `caffeinate -s`.
+2. **Capot fermé** (dès 03:40) : la seule sortie audio (haut-parleurs) ne
+   consomme plus. Dans Chrome, l'horloge média calait puis sautait par pas de
+   1,8 s (même un lecteur SEUL restait figé) — contourné par
+   `--disable-audio-output`. **Au simulateur iOS, pas de contournement** : mpv
+   abandonne au démarrage audio (`AURemoteIO::Start`, délai RPC) et AVPlayer
+   cale à la première seconde → mesures iOS à faire capot ouvert.
+3. **Charge du Mac** (jusqu'à 166 pendant les constructions Xcode/Gradle du
+   lot) : les délais mesurés sous forte charge ne valent pas mesure.
 
-### Synchronisation
+Les chiffres « au calme » ci-dessous sont ceux de 05:43–05:55 (charge 5–15,
+audio factice).
 
-| Mesure | Lecture directe | B en transcodage |
-|---|---|---|
-| Départ : écart au premier instant où les deux lisent | 106 ms | 175 ms |
-| Départ : du lancement à < 100 ms | 5,4 s | 7,5 s |
-| Régime (30 s), pire écart | 57 ms (biais constant) | 54 ms (biais constant) |
-| Pause (par l'un ou l'autre) → les deux en pause à < 50 ms | 117–119 ms | 124–147 ms |
-| Lecture → les deux repartis à < 100 ms | 421–432 ms | 435 ms |
-| Seek +30 s / −10 s → réalignés à < 100 ms | 734–767 ms | 752 ms |
-| Scrub (→ ← → en 600 ms) → réalignés | 1 450 ms | 652 ms |
-| Après une reprise / un seek (10 s) | 1–15 ms | 0–10 ms |
-| À trois membres, régime | 49 ms | — |
-| Membre lent (transcodage + 6 s de retard sur ses premières requêtes) | A n'avance pas sans lui (0,02 s) ; aligné 16,9 s après le lancement ; régime 0–6 ms ; seek 742 ms | |
-| Coupure réseau de B, 10 s puis 35 s | B reste membre, A n'est pas arrêté, réaligné 3 ms après le retour | |
+## 1. Web ↔ web — `dev` (référence) puis wt-socle
 
-Lecture : **cibles tenues en régime** (< 100 ms) et **après un seek** (< 1 s),
-sauf le scrub en lecture directe (1,45 s). Le **départ** dépasse la cible
-(106–304 ms d'écart, 5–10 s pour passer sous 100 ms).
+### Synchronisation (2 Chrome, membre B en lecture directe ou en transcodage)
+
+| Mesure | `dev` (02:45) | wt-socle, au calme — direct | wt-socle, au calme — B transcode |
+|---|---|---|---|
+| Départ : écart au premier instant où les deux lisent | 106–304 ms | 0 ms | 20 ms |
+| Départ : du lancement à < 100 ms (arrivée sur le lecteur comprise) | 5,4–9,7 s | 3,5 s | 2,6 s |
+| Régime 30 s, pire écart p50 / p95 / max | 57 / 57 / 59 ms (biais 57) | 1 / 4 / 8 ms (biais +1) | 0 / 5 / 9 ms (biais 0) |
+| Pause → les deux en pause à < 50 ms | 117–147 ms | 122–129 ms | 119 ms |
+| Lecture → les deux repartis à < 100 ms | 421–435 ms | 422–431 ms | 422–430 ms |
+| Seek +30 s / −10 s → réalignés à < 100 ms | 734–767 ms | 692–1 111 ms | 688–1 509 ms |
+| Scrub → ← → en 600 ms | 652–1 450 ms | ✘ (défaut B7-bis, corrigé depuis) | 1 941 ms |
+| Onglet caché 20 s / page gelée 10 s → réaligné | — | 0 ms / 8 ms | 0 ms / 3 ms |
+| Membre lent (transcode + 6 s de retard) : A n'avance pas sans lui | ✔ 0,02 s | ✔ 0,06 s | |
+| … puis régime, seek | 0–6 ms, 742 ms | 3–9 ms, 707 ms | |
+| À trois membres, régime | 49 ms | 1–2 ms | |
+| Coupure réseau de B, 10 s puis 35 s → réaligné au retour | 3 ms | 2 ms | |
+| Épisode suivant demandé par un membre → aligné | 7,1 s | 0,9 s | |
+| Fin naturelle → enchaînement automatique pour les deux | non mesuré (appuis perdus) | ✔ | |
+
+**Cibles tenues** : régime < 10 ms partout (cible 100), retour après un seek
+< 1 s en lecture directe ; en transcodage, un saut hors tampon attend les
+nouveaux segments de Jellyfin (0,7–1,5 s).
 
 ### Fonctions
 
-| Scénario | Résultat |
-|---|---|
-| Création, invitation, acceptation, lancement depuis la fiche — **par l'interface** | ✔ tout (invitation reçue en 52 ms, B suit le lancement en 1,8 s) |
-| Invitation arrivée pendant le chargement de l'accueil | ✔ 3/3 (deux ratés isolés ailleurs dans la nuit, non reproduits) |
-| Groupe à trois ; un AUTRE groupe en parallèle | ✔ aucune trame ni lancement chez l'autre groupe ; départ d'un membre sans casse |
-| Épisode suivant demandé par un membre | ✔ les deux passent à l'épisode 2 en 255 ms |
-| **3ᵉ appareil du même compte** | ✘ il suit le lancement, reçoit la salle, **sa pause arrête tout le monde, son départ éjecte le compte** |
-| **Intro au tout début**, hôte en « passer tout seul » | ✘ « Passer l'intro » visible avant que tous soient prêts (la salle, elle, attend) |
-| **Intro au tout début**, hôte en « proposer » | ✘ un clic avant que B soit prêt emmène la salle à 40 s, B encore à 0 |
-| Affinité | non jouable sur la médiathèque synthétique (corrigé dans le banc : identifiant TMDB et affiche posés) |
+| Scénario | `dev` | wt-socle |
+|---|---|---|
+| Création, invitation, acceptation, lancement depuis la fiche — par l'interface | ✔ | ✔ |
+| Invitation arrivée pendant le chargement de l'accueil | ✔ 3/3 | ✔ |
+| Groupe à trois ; un autre groupe en parallèle ; départ d'un membre | ✔ | ✔ |
+| **3ᵉ appareil du même compte** : ne suit pas le lancement, ne reçoit rien, sa pause n'agit pas, son départ n'éjecte personne | ✘ (tout) | ✔ (tout) |
+| … bandeau « Groupe en cours sur un autre appareil » + « Rejoindre ici » (ajout, pas transfert) | — | ✔ |
+| **Intro au tout début** [auto] : rien avant « tous prêts », saut commun ensuite | ✘ bouton visible | ✔ réaligné 519 ms |
+| **Intro** [proposer] : bouton absent tant que B charge, présent une fois tous prêts | ✘ (B laissé à 0 s) | ✔ |
+| **Intro** [proposer] : le clic emmène les deux | — | à confirmer (voir § 5) |
+| Appuis +30 s martelés (5 en 400 ms) | ✘ +30 s | ✔ +147 s seul et en séance, 0 ms d'écart |
+| Affinité : séance, match en direct, « Regarder ensemble » suivi | — | ✔ aligné en 2,1 s |
+| Chat en rafale : 25 réactions → 25 reçues, UNE bulle « ×N » | — | ✔ |
+| Chat : 12 messages → 10 envoyés (plafond client) / 10 reçus | — | ✔ |
+| « X est en train d'écrire… » : chez l'autre en ~40 ms, jamais chez soi, éteint à l'envoi et 4,1 s après la dernière frappe, rien au repos | — | ✔ |
 
 ## 2. Défauts trouvés et remontés
 
-| # | Défaut | Preuve | Session | État |
-|---|---|---|---|---|
-| 1 | Un membre qui ARRIVE démarre seul (autoplay du chargement) avant l'instant planifié : il finit 200–300 ms en avance, corrigé à −5 % en 6–10 s ; la règle « départ en retard > 250 ms → un seek » ne couvre que le retard | journal [WT] de B : `event play` à +10,9 s, `reprise planifiée : play()` à +11,3 s (pos 145,0 au lieu de 144,8), `driftS 0.282` | wt-socle | remonté |
-| 2 | Biais de régime 50–57 ms : chaque lecteur sort de correction dès |écart| < 25 ms et n'y revient qu'au-dessus de 40 ms ; A s'est posé à −24 ms, B à +25 ms | journaux `recalé — vitesse 1× {driftS: -0.024}` / `{driftS: 0.025}` | wt-socle | remonté (amélioration, sous la cible) |
-| 3 | 3ᵉ appareil (cf. tableau) | scénario `third-device` | wt-socle | **corrigé côté serveur** (voir § 3) |
-| 4 | « Passer l'intro » avant que tous soient prêts | scénario `intro-gate` | wt-socle | serveur : saut automatique gardé ✔ ; clic manuel encore accepté (un `wt:seek`) — attend le client web |
-| 5 | ~~Appuis → martelés perdus en séance~~ : PAS un défaut de Watch Together — le lecteur web SEUL fond aussi cinq appuis à 80 ms en un seul saut (+29,6 s) ; en séance, +28,6 s, les deux membres au même endroit | scénario `seek-hammer` | — | clos (comportement du lecteur, à juger par Damien) |
+| # | Défaut | Session | État |
+|---|---|---|---|
+| 1 | Un membre qui arrive démarre seul (autoplay) avant l'instant planifié : 200–300 ms en avance, 6–10 s pour se recaler | wt-socle | corrigé (45be910ad) — départ 0 ms mesuré |
+| 2 | Biais de régime 50–57 ms (sortie de correction à 25 ms de chaque côté) | wt-socle | corrigé (b4e8a1099, sortie à 8 ms) — biais ±1 ms mesuré |
+| 3 | 3ᵉ appareil : suit le lancement, sa pause arrête la salle, son départ éjecte le compte | wt-socle | corrigé (adhésion par appareil) |
+| 4 | « Passer l'intro » avant que tous soient prêts ; un clic précoce emmène la salle sans B | wt-socle | corrigé (allReady, garde du « prêt » sans barrierId) |
+| 5 | Appuis +30 s rapprochés perdus (seul comme en séance) | wt-socle (B7) | corrigé (25c768931) |
+| B7-bis | Après un saut DISTANT, le premier « +30 s » d'un membre partait de la cible de ce saut : appui perdu | wt-socle | corrigé (3c430087b), à reconfirmer (§ 5) |
+| 6 | Boîte « Invitations » restée ouverte par-dessus le lecteur après une acceptation faite ailleurs | wt-socle | corrigé (bbfb410eb, `wt:inviteGone`) |
+| M1 | Mobile : après le saut automatique de l'intro, aucun « prêt » → salle gelée 60 s puis membres déclarés « ne peut pas lire » ; « prêt » sans barrierId | wt-mobile + wt-socle | corrigé (a23e7a1e8, a45a727b4) |
+| M2 | Mobile : « Passer l'intro » affiché avant le chargement | wt-mobile | corrigé (b63c0ee3f) |
+| M3 | Mobile : « je cale » toutes les ~5 s, trois gels de 60 s | wt-mobile | corrigé (edc785ba4) ; en partie l'artefact audio du capot fermé |
+| M4 | Position aberrante 1 069 s → double « épisode suivant » | wt-socle | corrigé (c1863e347, l'anti-gel ne relance plus une salle gelée) |
+| M5 | Mobile : départ à la reprise Jellyfin personnelle (41,7 s) au lieu de la position de la salle → interblocage | wt-mobile | corrigé (867cd3698) — ✔ vérifié au simulateur (B part de 0 s) |
 
-## 3. Rejeu sur wt-socle (serveur puis client web)
+## 3. iPhone et iPad (simulateurs)
 
-Branche `claude/wt-socle-686749` fusionnée dans le banc : serveur seul
-(a6df368da), puis serveur + client web (c19df6592 → 5e23d1866).
+« WT banc iPhone (Claude) » (iPhone 17 Pro) et « WT banc iPad (Claude) » (iPad
+Pro 11 M5), iOS 26.3, app de dev partagée du lot, JS du Metro du banc
+(wt-mobile + sonde de dev `__wtBench`), serveur de wt-socle. Session posée
+sans geste, lecture par Hermes, navigation par le routeur d'expo-router.
 
-| Vérification | Référence (`dev`) | wt-socle |
+| Vérification | 1ᵉʳ passage (03:39) | 2ᵉ passage (05:27) |
 |---|---|---|
-| Le 3ᵉ appareil ne suit pas le lancement | ✘ | ✔ |
-| … ne reçoit aucun `wt:state` | ✘ 20 trames | ✔ 0 |
-| … `GET /group` → `null`, `GET /group/elsewhere` → la salle | ✘ | ✔ |
-| … affiche « Groupe en cours sur un autre appareil » et « Rejoindre ici » | — | ✔ (client web) |
-| … sa pause n'arrête pas la salle | ✘ | ✔ `wt:error not_in_group` |
-| … son « quitter » ne retire personne | ✘ | ✔ 404 |
-| … sa fermeture n'éjecte personne (15 s) | ✘ | ✔ |
-| « Rejoindre ici » ajoute l'appareil sans retirer le premier | — | ✔ |
-| Intro [auto] : pas de bouton avant « tous prêts », la salle ne saute pas sans B | ✘ / ✔ | ✔ / ✔ |
-| Intro [auto] : saut commun une fois tous prêts, réaligné | ✔ 418 ms | ✔ 107 ms |
-| Intro [proposer] : bouton absent tant que B charge, présent une fois tous prêts | ✘ | ✔ |
-| Intro [proposer] : un clic emmène les deux après l'intro | ✘ (B laissé à 0 s) | à rejouer au calme (voir ci-dessous) |
-| Appuis +30 s martelés (5 en 400 ms) : chacun compte | ✘ (+30 s) | ✔ +147 s seul, +147,7 s en séance, 0 ms d'écart |
-| Affinité : séance, match en direct, « Regarder ensemble » suivi, alignement | — | ✔ 2,1 s |
-| Départ commun : du lancement à < 100 ms | 5,4 s | 1,9 s |
+| Les deux apps parlent au backend avec leur session | ✔ | ✔ |
+| L'iPad reçoit l'invitation (« Accepter / Refuser / Plus tard ») | ✔ | ✔ |
+| L'iPad suit le lancement de l'iPhone jusqu'au lecteur | ✔ 556 ms | ✔ 1 087 ms |
+| L'iPad part de la position de la salle, pas de sa reprise (41,7 s) | — | ✔ 0,0 s |
+| Départ aligné à < 100 ms | 46,8 s (gels M1/M3) | 10,3 s (charge 166) |
+| Régime, gestes, arrière-plan | non mesurables | non mesurables |
 
-### Chat en rafale (wt-socle 7f894807a)
+**Non vérifié** : la synchro iOS au calme. Capot fermé, la lecture au
+simulateur est impossible (voir les pièges). À faire capot ouvert :
+`pnpm --filter @tentacle-tv/server-e2e bench:wt run ios-pair` (iPhone + iPad,
+~10 min) puis `ios-web` (iPhone + web).
 
-| Vérification | Résultat |
-|---|---|
-| 25 réactions identiques en ~1,2 s | ✔ 25 envoyées, 25 reçues, UNE bulle « ×N » chez l'autre |
-| 12 messages d'affilée | ✔ 10 envoyés (plafond du client, avant l'envoi), 10 reçus |
-| « X est en train d'écrire… » chez l'autre | ✔ ~40 ms après la 1ʳᵉ frappe ; jamais chez soi |
-| … s'éteint à l'envoi / après la dernière frappe | ✔ 3 ms / 4,1 s |
-| Au repos, rien sur le réseau | ✔ 0 `wt:typing` |
-| GIF | non joués (Klipy hors d'atteinte du banc) |
+## 4. Apps de test partagées du lot
 
-Défaut mineur (web, remonté) : une boîte « Invitations » reste ouverte
-par-dessus le lecteur quand l'invitation a été acceptée ailleurs ; l'invitation
-qu'elle montre est morte.
-
-Sous forte charge (construction Xcode en parallèle, Jellyfin dans colima
-transcodant sous le temps réel), le membre en transcodage est entré dans une
-boucle de « seek dur de recalage » toutes les 1,8 s : chaque saut se pose,
-puis la vidéo n'avance plus 1,6 s et la boucle re-saute. À rejouer sur Mac
-calme ; si elle persiste, la boucle devrait se taire (et déclarer « je cale »)
-tant qu'un saut posé n'a pas repris la lecture.
-
-## 4. iPhone et iPad (simulateurs) — premier passage
-
-Simulateurs « WT banc iPhone (Claude) » (iPhone 17 Pro) et « WT banc iPad
-(Claude) » (iPad Pro 11 M5), iOS 26.3, app de dev PARTAGÉE du lot, JS du Metro
-du banc (wt-mobile 0bf18ba25 + sonde), serveur de wt-socle. Session posée sans
-geste (manifeste AsyncStorage), lecture par Hermes, navigation par le routeur
-d'expo-router, gestes par l'arbre React.
-
-| Vérification | Résultat |
-|---|---|
-| Les deux apps parlent au backend avec leur session | ✔ |
-| L'iPad reçoit l'invitation (feuille « Invitations », « Accepter / Refuser / Plus tard ») | ✔ |
-| L'iPad suit le lancement de l'iPhone jusqu'au lecteur | ✔ 556 ms |
-| Départ aligné à < 100 ms | ✘ 46,8 s |
-| Régime, gestes | non mesurables (gels répétés, voir défauts M1–M5) |
-
-| # | Défaut mobile (remonté à wt-mobile avec le journal serveur) | État |
-|---|---|---|
-| M1 | Après le saut AUTOMATIQUE de l'intro (barrière à 40 s), aucun « prêt » des mobiles : salle gelée 60 s, puis le balayage anti-gel les marque tous deux « ne peut pas lire ». Leurs « prêt » n'ont jamais de `barrierId` | corrigé (a23e7a1e8), à rejouer |
-| M2 | « Passer l'intro » affiché à l'arrivée sur le lecteur, vidéo pas encore chargée | corrigé (b63c0ee3f + a23e7a1e8), à rejouer |
-| M3 | Toutes les ~5 s, « je cale » des deux mobiles sans retour « prêt » → trois gels de 60 s d'affilée | corrigé (edc785ba4), à rejouer |
-| M4 | Position aberrante 1 069,5 s sur un épisode de 300 s → « épisode suivant » envoyé par les deux | cause : gels + horloge de salle relancée par le balayage (signalé à wt-socle) |
-| M5 | Épisode 2 : les mobiles à 41,7 s (reprise Jellyfin personnelle) quand la salle est à 0 → interblocage, chacun affiche « l'autre met en mémoire tampon… » | corrigé (867cd3698) ; le banc garde exprès une reprise de 41,7 s chez le compte qui suit |
-
-## Incident de nuit : veille du Mac
-
-De 04:56 à 05:14 le Mac est passé en veille profonde (`pmset -g log` : « DarkWake
-from Deep Idle »). Tout le lot a été gelé ; le passage web de 04:55 est jeté
-(pics de 1,7 s, réalignements négatifs). Depuis, `run` tient un `caffeinate -s`,
-et les pages datent leurs mesures à `Date.now()` (l'horloge monotone d'une page
-s'arrête pendant la veille).
+Construites une fois par wt-banc depuis la branche d'essai
+`claude/wt-banc-essai-natif` (930159a58 = dev + lecteur-mobile 78b33afe8 +
+hors-ligne-live 0542d1691 + ouverture-mobile 90fbcdfda, fusion sans conflit) :
+app iOS simulateur arm64 (05:34) et APK debug (05:39). Chemins :
+`~/.tentacle-lot-mob/builds.txt`. Scripts : `apps/server-e2e/wt-bench/devices/`.
 
 ## 5. Ce qui reste
 
-_À compléter en fin de nuit._
+- **iOS au calme, capot ouvert** : `ios-pair` puis `ios-web` (étapes a et d).
+- **Android** (étapes b, c) : non joué — émulateur lent sous la charge, et même
+  piège audio probable capot fermé. APK partagé prêt.
+- **Intro [proposer] : le clic de B** sur « Passer l'intro » n'a déplacé
+  personne au passage de 05:52 ; le scénario consigne désormais si le bouton
+  était visible et si le clic est parti (à relire au prochain passage).
+- **B7-bis** (scrub après un saut distant) : corrigé par wt-socle, à
+  reconfirmer.
+- GIF du chat non joués (Klipy hors d'atteinte du banc) ; Electron (bureau)
+  non joué — le web en tient lieu.
