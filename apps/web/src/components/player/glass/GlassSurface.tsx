@@ -104,7 +104,12 @@ export function GlassSurface({
   });
 
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
-  const props = { ref: setRef, className: `lgp-surface${preview} ${className}`, "data-lgp-present": shown };
+  // En sortie (`AnimatePresence`), une surface qui rentre dans son bouton est encore « à l'écran »
+  // pour garder sa région — mais elle ne prend plus les clics (le bouton dessous les reçoit).
+  const props = {
+    ref: setRef, className: `lgp-surface${preview} ${className}`, "data-lgp-present": shown,
+    "data-lgp-exiting": isPresent ? undefined : true,
+  };
   if (morph) {
     return (
       <motion.div {...props} {...(rest as object)} layoutId={morph.layoutId} transition={morph.transition}>

@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { PLAYBACK_RATES, formatRate, isNormalRate } from "@tentacle-tv/shared";
@@ -36,6 +37,7 @@ import { GlassOption } from "../player/glass/GlassOption";
 import { GlassMorphSeed } from "../player/glass/GlassMorphSeed";
 import { GLASS_LENS_PROPS } from "../../theme/glass";
 import { PLAYER_MORPH } from "../player/glass/playerGlassFusion";
+import { useGlassDock } from "../player/glass/glassDock";
 
 interface PlaybackRateControlProps {
   /** Applique le taux au moteur (web : playbackRate ; desktop : mpv speed). */
@@ -65,9 +67,12 @@ export function PlaybackRateControl({
   const { rate, choose: chooseRate } = state ?? own;
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  // Verre : le conteneur n'est PAS positionné — le menu se cale alors sur la
-  // capsule (`.lgp-popover`), au-dessus d'elle, comme les deux autres panneaux.
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Verre : le menu est PORTÉ dans le dock, où se calent les deux autres
+  // panneaux (`.lgp-popover`) — rendu dans la capsule, la transformée de son
+  // apparition en ferait son bloc conteneur (`glassDock.ts`).
   const glass = isGlassLayout(usePlayerGlassMode());
+  const dock = useGlassDock();
 
   // Le menu se referme au changement de média et à l'entrée en groupe (le taux,
   // lui, s'y remet à 1× : `usePlaybackRate`).
@@ -85,7 +90,8 @@ export function PlaybackRateControl({
   useEffect(() => {
     if (!open) return;
     const auClic = (e: PointerEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (!containerRef.current?.contains(target) && !panelRef.current?.contains(target)) setOpen(false);
     };
     document.addEventListener("pointerdown", auClic, true);
     return () => document.removeEventListener("pointerdown", auClic, true);
@@ -106,6 +112,27 @@ export function PlaybackRateControl({
   }, []);
 
   if (isInGroup) return null;
+
+  // La présence vit DANS le portail : un portail n'est pas un élément pour
+  // `AnimatePresence`, qui l'ignorerait — et le panneau ne rentrerait plus dans
+  // son bouton à la fermeture.
+  const glassMenu = (
+    <AnimatePresence>
+      {open && (
+        <GlassPanel key="speed" morphId={PLAYER_MORPH.speed} surfaceRef={panelRef} className="w-52" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
+          <div className="mb-1 flex items-center justify-between gap-2 pl-2.5">
+            <span className="lgp-section-title lgp-section-title--inline">{t("player:speed")}</span>
+            <button type="button" onClick={() => setOpen(false)} aria-label={t("player:close")} title={t("player:close")} className="lgp-btn lgp-btn--small">
+              <CloseGlyph />
+            </button>
+          </div>
+          {PLAYBACK_RATES.map((value) => (
+            <GlassOption key={value} active={value === rate} onClick={() => choose(value)}>{formatRate(value)}</GlassOption>
+          ))}
+        </GlassPanel>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <div ref={containerRef} className={glass ? "" : "relative"}>
@@ -129,20 +156,8 @@ export function PlaybackRateControl({
         )}
       </button>
 
+      {glass && (dock ? createPortal(glassMenu, dock) : glassMenu)}
       <AnimatePresence>
-        {open && glass && (
-          <GlassPanel key="speed" morphId={PLAYER_MORPH.speed} className="w-52" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
-            <div className="mb-1 flex items-center justify-between gap-2 pl-2.5">
-              <span className="lgp-section-title lgp-section-title--inline">{t("player:speed")}</span>
-              <button type="button" onClick={() => setOpen(false)} aria-label={t("player:close")} title={t("player:close")} className="lgp-btn lgp-btn--small">
-                <CloseGlyph />
-              </button>
-            </div>
-            {PLAYBACK_RATES.map((value) => (
-              <GlassOption key={value} active={value === rate} onClick={() => choose(value)}>{formatRate(value)}</GlassOption>
-            ))}
-          </GlassPanel>
-        )}
         {open && !glass && (
           // Panneau DÉTACHÉ, fond quasi-opaque `surface-dropdown` comme
           // TrackSelector — donc pas de `backdrop-filter` : il ne resterait

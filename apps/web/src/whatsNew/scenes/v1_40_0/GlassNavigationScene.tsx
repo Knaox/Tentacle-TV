@@ -66,8 +66,8 @@ export function GlassNavigationScene({ active, reduced }: SceneProps) {
           style={{
             left: TABS_X,
             width: TAB_W,
-            background: "linear-gradient(135deg, rgba(var(--brand-rgb), 0.62), rgba(var(--brand-accent-rgb), 0.46))",
-            boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.45)",
+            background: "var(--lg-tinted-fill)",
+            boxShadow: "inset 1px 1px 0 var(--lg-specular-strong), inset 0 0 0 var(--lg-rim-width) var(--lg-rim)",
           }}
           initial={false}
           animate={{ x: tab * TAB_W, scaleX: step === 3 ? 1.12 : 1 }}

@@ -23,7 +23,6 @@
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-topbar {
-  pointer-events: auto;
   max-width: min(560px, 60%);
   border-radius: var(--lg-player-radius-capsule);
   transform-origin: top left;
@@ -65,12 +64,18 @@
   pointer-events: none;
 }
 
-/* Le remplissage est sur le CONTENU, pas sur la surface : les deux boîtes
-   coïncident, si bien qu'un panneau ancré « au-dessus » ne bouge pas quand le
-   contenu prend sa transformée de sortie (il devient alors leur bloc
-   conteneur). */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-bar {
+/* Le haut et le dock laissent passer les clics : leurs vides sont la vidéo.
+   Une surface À L'ÉCRAN les reprend — capsules, et panneaux rendus dans le
+   dock ; masquée, jamais. Mesuré avant cette règle : un panneau du dock n'en
+   recevait aucun (un clic sur une piste tombait sur la vidéo et mettait en
+   pause), et une capsule masquée gardait les siens (un clic sur l'image, là où
+   dormait la piste, faisait un saut). Un panneau qui rentre dans son bouton
+   (`data-lgp-exiting`) les laisse au bouton. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) :is(.lgp-topbar, .lgp-bar, .lgp-timecap, .lgp-group, .lgp-panel).lgp-surface:not([data-lgp-present="false"], [data-lgp-exiting]) {
   pointer-events: auto;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-bar {
   border-radius: var(--lg-player-radius-bar);
   transform-origin: bottom center;
 }
@@ -256,88 +261,4 @@
   :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range::-webkit-slider-thumb {
     transition: none;
   }
-}
-
-/* ── La vignette du survol, sertie dans une bulle de verre ───────────── */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay {
-  position: absolute;
-  z-index: 10;
-  pointer-events: none;
-  transform-origin: bottom center;
-  transition:
-    opacity var(--lg-duration-hover) var(--lg-player-ease-enter),
-    transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay[data-visible="false"] {
-  opacity: 0;
-  transform: translateY(3px) scale(0.96);
-  transition-duration: var(--lg-duration-press);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-trickplay__bubble {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  padding: var(--lg-player-trickplay-inset);
-  border-radius: var(--lg-player-radius-trickplay);
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay__frame {
-  border-radius: calc(var(--lg-player-radius-trickplay) - var(--lg-player-trickplay-inset));
-  background-color: var(--lg-player-placeholder);
-  background-repeat: no-repeat;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay__time {
-  color: var(--lg-player-fg);
-  text-shadow: var(--lg-media-label-shadow);
-  line-height: 20px;
-  text-align: center;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay {
-    transition-property: opacity;
-  }
-}
-
-/* ── Variante « fused » : la capsule du temps + trois capsules de boutons ── */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-timecap {
-  pointer-events: auto;
-  border-radius: var(--lg-player-radius-capsule);
-  transform-origin: bottom center;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timecap__inner {
-  padding: 6px 14px;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-groups {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: var(--lg-player-group-gap);
-}
-
-/* Non positionnée : le menu de vitesse se cale alors sur le DOCK, comme les
-   autres panneaux, et non sur sa capsule (il passerait sur celle du temps). */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-group {
-  position: static;
-  pointer-events: auto;
-  border-radius: var(--lg-player-radius-capsule);
-  transform-origin: bottom center;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-group__inner {
-  display: flex;
-  height: var(--lg-player-group-height);
-  align-items: center;
-  gap: 2px;
-  padding: 0 7px;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__center > .lgp-group__inner {
-  gap: 8px;
 }

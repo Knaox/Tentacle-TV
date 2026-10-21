@@ -14,7 +14,7 @@ const PANEL = { x: 382, y: 92, w: 188, h: 186 };
 /** Les pistes d'un film : des noms de langues, pas des mots de l'interface. */
 const AUDIO = ["Français · 5.1", "English · Atmos"] as const;
 
-/** Où se trouve le pointeur à chaque pas, et donc où tombe le reflet du verre. */
+/** Où se trouve le pointeur à chaque pas. Le verre du lecteur est NATIF : son reflet ne suit pas le pointeur. */
 const CURSOR = [
   { x: 320, y: 220 },
   { x: BAR.x + 120, y: BAR.y + 24 },
@@ -25,9 +25,10 @@ const CURSOR = [
 
 /**
  * Le lecteur en Liquid Glass : sur la vraie image du titre du bandeau, les
- * commandes flottent dans une capsule de verre — le film passe dessous et se
- * devine au travers —, le reflet suit le pointeur, et « Pistes » ouvre son
- * panneau en verre depuis le bouton, où une autre piste audio se choisit.
+ * commandes flottent dans des capsules de verre CLAIR, presque neutre — le film
+ * passe dessous et se devine au travers, comme dans le lecteur —, et « Pistes »
+ * ouvre son panneau de verre depuis le bouton, où une autre piste audio se
+ * choisit.
  */
 export function GlassPlayerScene({ active, reduced }: SceneProps) {
   const { t } = useTranslation(["player"]);
@@ -36,7 +37,6 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
   const open = step >= 3;
   const picked = step >= 4 ? 1 : 0;
   const cursor = CURSOR[step];
-  const sheenOf = (x: number, w: number) => Math.max(0, Math.min(1, (cursor.x - x) / w));
 
   return (
     <SceneStage cycle={cycle}>
@@ -53,13 +53,13 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
             : <div className="h-full w-full" style={{ background: CARD_TONES[1] }} />}
         </motion.div>
       </Place>
-      <FauxGlass x={18} y={16} w={34} h={34} reduced={reduced} sheen={sheenOf(18, 34)} className="flex items-center justify-center text-white">
+      <FauxGlass x={18} y={16} w={34} h={34} level="clear" reduced={reduced} className="flex items-center justify-center text-white">
         <ChevronLeft size={18} strokeWidth={2.2} aria-hidden />
       </FauxGlass>
-      <FauxGlass x={60} y={16} w={260} h={34} reduced={reduced} sheen={sheenOf(60, 260)} className="flex items-center px-4">
+      <FauxGlass x={60} y={16} w={260} h={34} level="clear" reduced={reduced} className="flex items-center px-4">
         <span className="truncate text-[12px] font-semibold text-white">{backdrop?.title ?? " "}</span>
       </FauxGlass>
-      <FauxGlass {...BAR} radius={22} reduced={reduced} sheen={sheenOf(BAR.x, BAR.w)} className="px-4 pt-2 text-white">
+      <FauxGlass {...BAR} level="clear" radius={22} reduced={reduced} className="px-4 pt-2 text-white">
         <div className="h-[4px] overflow-hidden rounded-full bg-white/25">
           <motion.div
             className="h-full w-full origin-left rounded-full"
@@ -89,14 +89,14 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
       {/* Le panneau naît du bouton : il grandit depuis son coin, en transform. */}
       <Place x={PANEL.x} y={PANEL.y} w={PANEL.w} h={PANEL.h} visible={open} scale={open ? 1 : 0.6}
         style={{ transformOrigin: "85% 100%" }} transition={reduced ? instant : undefined}>
-        <FauxGlass x={0} y={0} w={PANEL.w} h={PANEL.h} radius={20} reduced={reduced} sheen={sheenOf(PANEL.x, PANEL.w)} className="p-3 text-white">
+        <FauxGlass x={0} y={0} w={PANEL.w} h={PANEL.h} level="clear" radius={20} reduced={reduced} className="p-3 text-white">
           <p className="text-[9px] font-bold tracking-[0.16em] text-white/70">{t("player:audioLabel")}</p>
           {AUDIO.map((label, i) => (
             <div key={label} className="relative mt-1.5 flex h-[26px] items-center justify-between rounded-xl px-2.5 text-[11px] font-semibold">
               <motion.span
                 aria-hidden
                 className="absolute inset-0 rounded-xl"
-                style={{ background: "linear-gradient(135deg, rgba(var(--brand-rgb), 0.55), rgba(var(--brand-accent-rgb), 0.4))" }}
+                style={{ background: "var(--lg-tinted-fill)" }}
                 initial={false}
                 animate={{ opacity: picked === i ? 1 : 0 }}
                 transition={reduced ? instant : sceneTween}

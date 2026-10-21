@@ -22,7 +22,8 @@ vi.mock("./nativeGlassPort", () => ({
   },
 }));
 vi.mock("./windowResizing", () => ({ useWindowResizing: () => viewport.resizing }));
-vi.mock("framer-motion", () => ({ useIsPresent: () => true }));
+const presence = vi.hoisted(() => ({ present: true }));
+vi.mock("framer-motion", () => ({ useIsPresent: () => presence.present }));
 
 const { GlassSurface, GlassChromeVisibleContext, NATIVE_FADE_MS } = await import("./GlassSurface");
 const { PlayerGlassProvider } = await import("./PlayerGlassContext");
@@ -42,7 +43,7 @@ function render(node: ReactNode, { inPip = false } = {}) {
 }
 
 describe("les régions natives du lecteur", () => {
-  beforeEach(() => { native.available = true; viewport.resizing = false; });
+  beforeEach(() => { native.available = true; viewport.resizing = false; presence.present = true; });
 
   it("verre natif, surface à l'écran : une région active", () => {
     const { calls: asked } = render(<GlassSurface className="lgp-bar">x</GlassSurface>);
@@ -72,6 +73,12 @@ describe("les régions natives du lecteur", () => {
     viewport.resizing = true;
     render(<GlassSurface className="lgp-bar">x</GlassSurface>);
     expect(transitions).toEqual([0]);
+  });
+
+  it("à l'écran, aucune marque de sortie ; en sortie, la marque (les clics vont au bouton dessous)", () => {
+    expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).not.toContain("data-lgp-exiting");
+    presence.present = false;
+    expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).toContain('data-lgp-exiting="true"');
   });
 
   it("sans verre natif (macOS < 26, réglage coupé) : aucune région", () => {

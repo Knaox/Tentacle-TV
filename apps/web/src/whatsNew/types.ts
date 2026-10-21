@@ -6,9 +6,11 @@ export type WhatsNewKind = "new" | "improved" | "fixed";
 /**
  * Ce que CET appareil sait faire et dont une nouveauté dépend, hors serveur :
  * `liquidGlass` — le verre natif de macOS 26 (le système le permet, quel que
- * soit le réglage). Liste FERMÉE, lue par `clientTraits.ts`.
+ * soit le réglage) ; `liquidGlassPlayer` — ce verre voit aussi la VIDÉO, donc
+ * le lecteur en verre (Apple Silicon : pas sur Intel). Liste FERMÉE, lue par
+ * `clientTraits.ts`.
  */
-export type WhatsNewClientTrait = "liquidGlass";
+export type WhatsNewClientTrait = "liquidGlass" | "liquidGlassPlayer";
 
 /**
  * Ce que reçoit une scène. `active` : elle est sur scène ET visible (onglet au

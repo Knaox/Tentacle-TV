@@ -84,14 +84,19 @@ describe("registre de l'écran de nouveautés", () => {
     expect(partial.map((f) => f.id)).not.toContain("heroSource");
   });
 
-  it("1.40.0 : le Liquid Glass n'existe qu'avec le trait `liquidGlass` — ailleurs, la release est vide et rien ne s'ouvre", () => {
+  it("1.40.0 : le Liquid Glass n'existe qu'avec ses traits — ailleurs, la release est vide et rien ne s'ouvre", () => {
     const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.40.0");
-    const glass = release?.features.filter((f) => f.requires === "liquidGlass").map((f) => f.id);
-    expect(glass).toEqual(["glassNavigation", "glassPlayer"]);
+    expect(release?.features.map((f) => [f.id, f.requires])).toEqual([
+      ["glassNavigation", "liquidGlass"], ["glassPlayer", "liquidGlassPlayer"],
+    ]);
     const elsewhere = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set())).features;
     expect(elsewhere.map((f) => f.id)).not.toContain("glassNavigation");
     expect(elsewhere.map((f) => f.id)).not.toContain("glassPlayer");
-    const onTahoe = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set(["liquidGlass"] as const))).features;
-    expect(onTahoe.slice(0, 2).map((f) => f.id)).toEqual(["glassNavigation", "glassPlayer"]);
+    const intel = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set(["liquidGlass"] as const))).features;
+    expect(intel.map((f) => f.id)).toEqual(["glassNavigation"]);
+    const appleSilicon = selectWhatsNewFeatures(
+      "1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set(["liquidGlass", "liquidGlassPlayer"] as const)),
+    ).features;
+    expect(appleSilicon.map((f) => f.id)).toEqual(["glassNavigation", "glassPlayer"]);
   });
 });
