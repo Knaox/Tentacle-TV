@@ -21,13 +21,15 @@
  * Liquid Glass (macOS 26, `windowGlass.ts`) : la capsule passe au verre de
  * `windowGlassNav.css`, et son assise s'arrête à 0,3 — c'est l'effet de bord
  * de défilement, DERRIÈRE elle, qui garde la lisibilité. `data-lg-toolbar`
- * dit à cet effet de couvrir aussi la barre.
+ * dit à cet effet de couvrir aussi la barre. Le reflet suit le pointeur sur
+ * la capsule (`useSpecularHighlight`, rAF seulement pendant qu'il bouge).
  */
 
 import { useEffect } from "react";
 
 import { useScrollScrim } from "./useScrollScrim";
 import { useWindowGlass } from "../../desktop/windowGlass";
+import { GlassSpecular, useSpecularHighlight } from "../../theme/glass";
 import { NavBrand } from "./NavBrand";
 import { NavTabs } from "./NavTabs";
 import { SearchLauncher } from "../search/SearchLauncher";
@@ -53,6 +55,7 @@ export function TopNav() {
   // puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la couche de
   // verre, qui porte le flou, n'est jamais repeinte (theme/chrome.css).
   const glass = useWindowGlass();
+  const specular = useSpecularHighlight<HTMLDivElement>();
   const scrim = useScrollScrim<HTMLDivElement>({
     threshold: 140,
     opacityAt: (p) => Math.min(glass ? 0.3 : 0.78, p * 0.95),
@@ -79,11 +82,14 @@ export function TopNav() {
           l'en-tête : son `pointer-events: none` posé sur l'en-tête ne
           l'atteindrait pas, puisqu'elle rétablit les clics pour elle-même. */}
       <div
+        // Le reflet n'écoute le pointeur qu'en mode natif : ailleurs, aucun écouteur.
+        ref={glass ? specular : undefined}
         data-hote-voile="topbar"
         className="lgc-capsule pointer-events-auto relative mx-auto mt-2 flex h-[52px] max-w-[1840px] items-center gap-1 rounded-[18px] px-1.5"
       >
         <div aria-hidden className="nav-capsule-glass" />
         <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
+        {glass && <GlassSpecular />}
 
         <div className="relative flex min-w-0 flex-1 items-center gap-1">
           <NavBrand />
