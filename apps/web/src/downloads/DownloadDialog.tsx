@@ -13,6 +13,7 @@
  */
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { LIGHT_PRESETS, formatBytes } from "./presets";
@@ -56,7 +57,10 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
         ? t("downloads:dialogTitleSeason", { count: items.length })
         : t("downloads:dialogTitle"));
 
-  return (
+  // PORTAIL, toujours : ouvert depuis une capsule de verre, dont le
+  // `backdrop-filter` (comme un `transform`) borne les `position: fixed`, il
+  // tenait dans 240 × 54 px (garde : `components/ui/glass/modalPortal.test.ts`).
+  return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="lg-scrim absolute inset-0" style={{ background: "var(--glass-backdrop)" }} onClick={onClose} />
       <div
@@ -222,7 +226,8 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

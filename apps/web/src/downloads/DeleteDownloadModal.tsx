@@ -5,6 +5,7 @@
  */
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 interface DeleteDownloadModalProps {
@@ -33,7 +34,10 @@ export function DeleteDownloadModal({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  return (
+  // PORTAIL, toujours : ouvert depuis une capsule de verre, dont le
+  // `backdrop-filter` (comme un `transform`) borne les `position: fixed`, il
+  // tenait dans 240 × 54 px (garde : `components/ui/glass/modalPortal.test.ts`).
+  return createPortal(
     <div
       className="fixed inset-0 z-[210] flex items-center justify-center p-4"
       role="alertdialog"
@@ -77,6 +81,7 @@ export function DeleteDownloadModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
