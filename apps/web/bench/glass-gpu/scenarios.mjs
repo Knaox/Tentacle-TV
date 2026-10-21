@@ -74,6 +74,7 @@ export function scenarioDriver(scenario, send, evaluate) {
           await mouse("mouseMoved", target.x, target.y);
         },
         start: () =>
+          // Un appui puis un relâcher toutes les 400 ms (GPU_BUDGETS.pressPulse.periodMs).
           loop(200, (i) =>
             mouse(i % 2 === 0 ? "mousePressed" : "mouseReleased", target.x, target.y, { button: "left", clickCount: 1 }),
           ),
@@ -81,6 +82,7 @@ export function scenarioDriver(scenario, send, evaluate) {
     case "fusion":
       return {
         setup: (p) => prepare(p),
+        // Une fusion ou une séparation toutes les 700 ms (GPU_BUDGETS.fusion.periodMs).
         start: () => loop(700, (i) => evaluate(`window.__bench.set({ fused: ${i % 2 === 0} })`)),
       };
     default:

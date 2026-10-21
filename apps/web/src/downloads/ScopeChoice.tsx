@@ -43,7 +43,7 @@ export function ScopeChoice({ value, onChange, busy = false }: Props) {
               aria-checked={selected}
               disabled={busy && !selected}
               onClick={() => onChange(choice.value)}
-              className={`flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition-colors duration-150 disabled:opacity-50 ${
+              className={`lg-btn flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition-colors duration-150 disabled:opacity-50 ${
                 selected
                   ? "border-line-focus bg-fill-medium text-content-primary"
                   : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft"

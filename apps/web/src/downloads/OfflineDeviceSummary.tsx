@@ -40,7 +40,7 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
 
   return (
     <div className="row-gutter">
-      <div className="relative flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line-subtle bg-surface-1 p-4 md:px-5">
+      <div className="lg-panel relative flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line-subtle bg-surface-1 p-4 md:px-5">
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
           <div
             className="absolute -left-20 -top-24 h-56 w-56 rounded-full opacity-60"
@@ -81,14 +81,14 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
             <button
               type="button"
               onClick={() => setManualOffline(false)}
-              className="rounded-full bg-cta-primary-bg px-4 py-2 text-xs font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+              className="lg-btn-primary rounded-full bg-cta-primary-bg px-4 py-2 text-xs font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
             >
               {t("offlineGoOnline")}
             </button>
           )}
           <Link
             to="/downloads"
-            className="rounded-full bg-fill-subtle px-4 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+            className="lg-btn rounded-full bg-fill-subtle px-4 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
           >
             {t("offlineManage")}
           </Link>

@@ -71,11 +71,8 @@
   }
 }
 
-/* L'appui : le verre se voile, sans délai (le vocabulaire du socle :
- * `--lg-opacity-pressed`). Les disques gardent le ressort de `PressableScale`. */
-:root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media):active {
-  opacity: var(--lg-opacity-pressed);
-}
+/* L'appui : le verre GONFLE (décision du coordinateur) — c'est la lentille de
+ * lg-physique (`physics.css`) qui porte ces classes, pas cette feuille. */
 
 /* Le survol remplace le fond par le voile ci-dessus : un `hover:bg-*` resté
  * sur le composant repeindrait le fond à chaque passage. */
@@ -103,9 +100,6 @@
   box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
 }
 
-:root[data-liquid-glass="native"] :is(.hero-cta-primary, .lg-btn-primary):active {
-  opacity: var(--lg-opacity-pressed);
-}
 
 /* ══ 3. Le plateau du survol des cartes ═══════════════════════════════════
  *
@@ -257,4 +251,20 @@
 :root[data-liquid-glass="native"] :is(.lg-tray, .lg-capsule-media) [data-lg-lens] {
   --tw-scale-x: 1;
   --tw-scale-y: 1;
+}
+
+/* ══ 12. Panneaux de la page, choix retenu ════════════════════════════════
+ *
+ * Les cartes d'état de la page hors ligne (appareil, vue d'ensemble) : le
+ * verre épais SANS flou — elles reposent sur le fond de la page, il n'y a rien
+ * derrière à réfracter, et un flou par panneau se payerait à chaque défilement.
+ * Un `lg-btn` retenu (`aria-checked`) garde un liseré de marque. */
+:root[data-liquid-glass="native"] .lg-panel {
+  background: var(--lgc-fill-thick);
+  border-color: transparent;
+  box-shadow: var(--lgc-edge), var(--lg-shadow-float);
+}
+
+:root[data-liquid-glass="native"] .lg-btn[aria-checked="true"] {
+  box-shadow: var(--lgc-edge-strong), inset 0 0 0 var(--lg-thickness-regular) var(--lg-tint-brand), var(--lg-shadow-contact);
 }

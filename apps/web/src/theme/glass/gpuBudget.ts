@@ -110,37 +110,52 @@ export function summarize(values: number[]): GpuSummary {
 }
 
 /**
- * Scénarios du banc et ce que la physique a le droit d'y coûter, en POINTS
- * d'occupation au-dessus de la référence de la même passe (médiane) :
+ * Scénarios du banc et ce que la physique a le droit d'y coûter.
+ *
+ * États TENUS (rien ne s'arrête tant que le geste dure) : écart de médiane, en
+ * POINTS d'occupation du GPU d'Electron au-dessus de la référence de la passe :
  *  - au repos, pointeur posé : RIEN — aucune boucle ne tourne (0,5 de bruit) ;
- *  - reflet qui suit un pointeur en mouvement continu : une recomposition par
- *    image d'une petite couche, pas plus que ce que coûte déjà le flou — en
- *    couche déplacée (`GlassSpecular`) comme en reflet diffus repeint (`sheen`) ;
- *  - appuis répétés (lentille) et fusion : des transitions courtes ;
- *  - mouvement réduit : la physique se tait, retour au repos.
+ *  - reflet qui suit un pointeur en mouvement continu : une petite couche
+ *    déplacée par image, et le flou de la surface recalculé dessous ;
+ *  - mouvement réduit : la physique se tait.
+ *
+ * GESTES (appui, fusion) : le banc les répète sans relâche (`periodMs`) pour
+ * mesurer un régime stable, mais personne n'appuie cinq fois par seconde. Le
+ * verdict porte donc sur le temps GPU d'UN geste (écart × période) : 60 ms au
+ * plus — ~1 ms par image sur les ~50 images d'un ressort à 120 Hz, moins de
+ * 3 % en moyenne à un geste toutes les deux secondes.
  */
 export const GPU_BUDGETS = {
   idle: { maxDelta: 0.5 },
   hoverStill: { maxDelta: 0.5 },
   pointerSweep: { maxDelta: 6 },
   sheenSweep: { maxDelta: 6 },
-  pressPulse: { maxDelta: 6 },
-  fusion: { maxDelta: 6 },
+  pressPulse: { periodMs: 400, maxGestureMs: 60 },
+  fusion: { periodMs: 700, maxGestureMs: 60 },
   reducedSweep: { maxDelta: 1 },
-} as const satisfies Record<string, { maxDelta: number }>;
+} as const satisfies Record<string, { maxDelta: number } | { periodMs: number; maxGestureMs: number }>;
 
 export type GpuScenario = keyof typeof GPU_BUDGETS;
 
 export interface GpuVerdict {
   scenario: GpuScenario;
+  /** Écart de médiane, en points. */
   delta: number;
-  maxDelta: number;
+  /** Temps GPU d'un geste (ms), pour les scénarios de geste. */
+  gestureMs?: number;
+  /** Le seuil appliqué (points, ou ms par geste), et son unité. */
+  limit: number;
+  unit: "points" | "ms/geste";
   ok: boolean;
 }
 
-/** Écart de médiane entre la passe physique allumée et sa référence. */
+/** Verdict d'un scénario : passe physique allumée contre sa référence. */
 export function judgeScenario(scenario: GpuScenario, measured: GpuSummary, reference: GpuSummary): GpuVerdict {
   const delta = r1(measured.median - reference.median);
-  const { maxDelta } = GPU_BUDGETS[scenario];
-  return { scenario, delta, maxDelta, ok: delta <= maxDelta };
+  const budget: { maxDelta: number } | { periodMs: number; maxGestureMs: number } = GPU_BUDGETS[scenario];
+  if ("periodMs" in budget) {
+    const gestureMs = Math.round((Math.max(0, delta) / 100) * budget.periodMs);
+    return { scenario, delta, gestureMs, limit: budget.maxGestureMs, unit: "ms/geste", ok: gestureMs <= budget.maxGestureMs };
+  }
+  return { scenario, delta, limit: budget.maxDelta, unit: "points", ok: delta <= budget.maxDelta };
 }

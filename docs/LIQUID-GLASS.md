@@ -235,10 +235,99 @@ claire, sa valeur sombre, et qui le consomme.
 
 ## 6. Le « liquide » : mouvement, reflet, accessibilité
 
-> À écrire par **lg-physique** : morphing et fusion des verres, lentille au
-> survol et à l'appui, reflet qui suit le pointeur, ressorts ; « Réduire la
-> transparence », « Augmenter le contraste », mouvement réduit ; le budget GPU
-> mesuré.
+Tout vit dans `apps/web/src/theme/glass/` (règles pures testées, petites
+briques React) et la feuille `physics.css`, **portée par
+`html[data-liquid-glass="native"]`** : hors du mode natif, rien ne s'applique.
+
+| Comportement | Brique | Comment |
+|---|---|---|
+| Ressorts | `springs.ts` | paramétrage d'Apple (`response`, `dampingFraction`) ; `lens` (0,32 s · 0,55 : rebond franc), `morph` (0,42 · 0,84), `settle` (0,26 · 1). Sortie en `linear()` CSS (`--lg-spring-*-easing/duration`, GÉNÉRÉS, tenus par `physics.test.ts`) et en ressort framer (`GLASS_FRAMER`). |
+| Lentille au survol et à l'appui | `data-lg-lens` (`GLASS_LENS_PROPS`) | CSS pur : propriété `scale` (se compose avec un transform), `:hover` 1,04, `:active` 1,10, rebond au relâcher. Aucun écouteur. |
+| Reflet qui suit le pointeur | `useSpecularHighlight()` + `<GlassSpecular/>` | variables `--lg-spec-u/v` écrites hors React, boucle d'image seulement pendant le mouvement, 60 écritures/s au plus. La lumière est un dégradé FIXE qu'on DÉPLACE (`translate`) : halo sur la face, et la même lumière dans une bague masquée de 1 px pour le liseré. Option `{ sheen: true }` : fait suivre aussi `--lg-light-x/y` (le `--lgc-sheen` des recettes), un dégradé repeint. |
+| Fusion de verres voisins | `<GlassFusion spacing>` + `data-lg-fuse="id"` | `GlassEffectContainer` : sous `spacing` px, un seul verre pour le groupe ; chaque membre garde sa couche (clé stable), un seul porteur visible — deux verres superposés doubleraient la teinte. Animation `layout` de framer (transform) + opacité. |
+| Métamorphose (une barre qui naît d'un bouton) | `glassMorphProps(id, useReducedMotion())` | `layoutId` partagé, ressort `morph`, rayon corrigé par framer si `borderRadius` est en `style`. Mouvement réduit : fondu de 150 ms. |
+
+**Accessibilité du système.** `installGlassAccessibility()` (dans `main.tsx`,
+avant le premier rendu) lit les media queries — Chromium 150 d'Electron 43
+relaie les trois réglages de macOS, mesuré : aucun pont natif — et pose sur
+`<html>` `data-lg-transparency="reduce"`, `data-lg-contrast="more"`,
+`data-lg-motion="reduce"` et `data-lg-material` :
+
+- **Réduire la transparence** → `frosted` : verre plein (`--lg-a11y-solid`),
+  `--lgc-backdrop*: none` (plus de flou ni de réfraction, rien à recalculer),
+  reflet retiré ;
+- **Contraste accru** → `solid` : idem + liseré net (`--lg-contrast-border`),
+  aucun reflet décoratif ;
+- **Réduire les animations** → ni lentille, ni rebond, ni reflet qui suit ;
+  métamorphose en fondu.
+
+Côté natif, AppKit adapte ses matériaux à ces réglages ; pour
+NSGlassEffectView ce n'est PAS éprouvé ici. ⚠️ Rien n'a été vérifié en
+basculant les réglages du Mac (un agent ne touche pas aux réglages système) :
+les surcharges l'ont été par les attributs posés à la main dans Chromium. Le
+client LG charge la même feuille : `liquidGlassPass` (apps/tv-webos) en retire
+toutes les règles, seuls les jetons `:root` restent — vérifié contre
+`compatGuard`.
+
+**Contraste du texte (WCAG).** `contrast.ts` mesure le texte sur la teinte du
+verre au PIRE fond (blanc derrière un verre sombre, noir derrière un clair) ;
+`contrast.test.ts` le tient sur les jetons du thème : texte principal ≥ 4,5
+(sombre 4,79 · clair 9,85), secondaire ≥ 3 (3,63 · 5,57). Le remplissage
+`regular` du natif (`--lg-regular-fill`, 7 % de blanc) n'a PAS de contraste
+garanti à lui seul : il compte sur le matériau du système dessous — c'est la
+raison du mode `frosted`/`solid` pour qui en a besoin.
+
+### Le coût
+
+Banc rejouable SANS sudo : `node apps/web/bench/glass-gpu/run-bench.mjs
+[--seconds 8] [--lock-dir <créneaux Electron du lot>] [--out r.json]` — page du
+banc construite en production, ouverte dans l'Electron du dépôt, chaque
+scénario en deux passes (physique coupée, puis allumée), verdict en écart de
+médiane (`gpuBudget.ts`). Mesure : temps GPU cumulé PAR PROCESSUS (`ioreg`,
+clients AGX) — Electron et WindowServer à part — et le CPU d'Electron.
+`powermetrics` reste la référence de CLAUDE.md quand sudo est là ; « Device
+Utilization % » d'`ioreg` reste à 0 sur M4 / macOS 26. Une fenêtre que macOS
+ne compose pas (écran verrouillé) est REFUSÉE, au lieu d'un faux 0 %.
+
+Budgets (`GPU_BUDGETS`) : au repos et pointeur posé, 0,5 point — rien ne
+doit tourner ; reflet qui suit, 6 points PENDANT le mouvement ; mouvement
+réduit, 1 point. Un geste (appui, fusion) se juge à son temps GPU unitaire :
+60 ms au plus — ~1 ms par image d'un ressort à 120 Hz, moins de 3 % en
+moyenne à un geste toutes les deux secondes.
+
+Mesures du 21/10/2026 (MacBook Pro M4, macOS 26.6, écran 120 Hz ;
+`--seconds 6 --repeat 3`, charge du Mac 7 → 29 pendant la passe — d'autres
+sessions tournaient : à refaire machine au calme). GPU = occupation du GPU
+imputée à Electron, médiane.
+
+| Scénario | Réf. (physique coupée) | Physique | Écart | Budget | CPU Electron |
+|---|---|---|---|---|---|
+| Repos | 0 % | 0 % | 0 | 0,5 point | 0 → 0 % |
+| Pointeur posé sur un verre | 0 % | 0 % | 0 | 0,5 point | 0 → 0,1 % |
+| Reflet qui suit (`GlassSpecular`) | 0 % | 5,9 % | +5,9 | 6 points | 5,2 → 16,6 % |
+| Reflet diffus qui suit (`sheen`) | 0 % | 5,8 % | +5,8 | 6 points | 4,8 → 15,2 % |
+| Appuis répétés (lentille) | 0 % | 12,5 % | **50 ms par appui** | 60 ms | 0,7 → 20,6 % |
+| Fusion / séparation | 14,2 % | 22 % | **55 ms par fusion** | 60 ms | 20,2 → 30 % |
+| Balayage, mouvement réduit | 0 % | 0 % | 0 | 1 point | 5,6 → 6,3 % |
+
+Dispersion relevée sur quatre passes simples sous charge : reflet 4,3 → 9,6
+points, appui 32 → 56 ms, fusion 37 → 68 ms — d'où `--repeat`. Une passe
+sur trois environ est REFUSÉE par la calibration (le temps GPU va alors à
+`CoreServicesUIAgent`, pas à Electron : la fenêtre n'est pas composée) ;
+relancer suffit.
+
+Ce que le banc a appris :
+- un verre ne coûte RIEN tant que rien ne bouge dessus : aucune boucle au
+  repos ni pointeur immobile — c'est la règle de CLAUDE.md, tenue ;
+- toute image qui change SUR un verre en fait recalculer le flou : la traîne
+  d'un ressort sous le pixel coûtait autant que le geste — les transitions CSS
+  sont coupées à 1 % du trajet (lentille 643 → 439 ms) ;
+- sur ProMotion la boucle tourne à 120 Hz : le reflet n'écrit que 60 fois par
+  seconde ;
+- un dégradé conique dont l'angle suit le pointeur se repeint à chaque image :
+  le liseré est la même lumière DÉPLACÉE dans une bague masquée.
+- une couche effacée garde son flou à `opacity: 0` : celles de la fusion
+  passent en `visibility: hidden` à la fin du fondu.
 
 ## 7. Ce qui ne doit jamais casser
 

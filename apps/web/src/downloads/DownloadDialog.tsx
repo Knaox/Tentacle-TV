@@ -58,9 +58,9 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-0" style={{ background: "var(--glass-backdrop)" }} onClick={onClose} />
+      <div className="lg-scrim absolute inset-0" style={{ background: "var(--glass-backdrop)" }} onClick={onClose} />
       <div
-        className="relative w-full max-w-md origin-center animate-scale-in overflow-hidden rounded-2xl border border-line-subtle"
+        className="lg-sheet relative w-full max-w-md origin-center animate-scale-in overflow-hidden rounded-2xl border border-line-subtle"
         style={{
           background: "var(--surface-modal)",
           boxShadow: "var(--shadow-modal)",
@@ -208,7 +208,7 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md bg-cta-ghost-bg px-4 py-2 text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+            className="lg-btn lg-shape-capsule rounded-md bg-cta-ghost-bg px-4 py-2 text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
           >
             {t("common:cancel")}
           </button>
@@ -216,7 +216,7 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
             type="button"
             onClick={() => void state.start()}
             disabled={state.submitting || scope.loading || items.length === 0}
-            className="rounded-md bg-cta-primary-bg px-5 py-2 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover disabled:opacity-50"
+            className="lg-btn-primary lg-shape-capsule rounded-md bg-cta-primary-bg px-5 py-2 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover disabled:opacity-50"
           >
             {t("downloads:start")}
           </button>
