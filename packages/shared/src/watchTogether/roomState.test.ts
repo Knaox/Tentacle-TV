@@ -40,6 +40,28 @@ describe("wtStateEffects", () => {
     expect(wtStateEffects(room(), room({ epoch: 2 }), "seek", "a", "b").toasts[0].burstKey).toBe("seek:a");
   });
 
+  it("à mon entrée dans une salle, son premier état sert de référence : aucun avis de changement", () => {
+    // Passe croisée du 21/10 : le bureau (a) a été l'hôte de g, l'a quittée par une autre voie —
+    // sa séance garde cet état —, puis y revient par l'invitation de l'iPhone (b), hôte depuis.
+    const kept = room({ epoch: 47, members: [member("a", { isHost: true, inPlayback: false }), member("b")] });
+    const entry = room({
+      epoch: 68, hostUserId: "b", members: [member("b", { isHost: true }), member("a", { inPlayback: false })],
+      paused: true, pauseReason: "buffering", waitingForUserIds: ["a"], arrivingUserIds: ["a"],
+    });
+    expect(wtStateEffects(kept, entry, "join", "a", "a").toasts).toEqual([]);
+    // Ensuite, la séance continue : les changements se disent de nouveau.
+    const later = room({ ...entry, epoch: 69, members: [...entry.members, member("c")] });
+    expect(wtStateEffects(entry, later, "join", "c", "a").toasts.map((t) => t.key)).toEqual(["memberJoined"]);
+  });
+
+  it("jamais d'avis entre deux salles différentes, ni d'après une séance où je n'étais pas", () => {
+    const old = room({ groupId: "g", hostUserId: "a", members: [member("a"), member("c")] });
+    const other = room({ groupId: "h", hostUserId: "b", epoch: 1, members: [member("b"), member("a", { inPlayback: false })] });
+    for (const cause of ["join", "presence", "leave"] as const) expect(wtStateEffects(old, other, cause, "b", "a").toasts).toEqual([]);
+    const notMine = room({ members: [member("c"), member("d")] });
+    expect(wtStateEffects(notMine, room({ epoch: 2, hostUserId: "b" }), "presence", null, "a").toasts).toEqual([]);
+  });
+
   it("un titre lancé est à suivre ; le premier du groupe par tous", () => {
     expect(wtStateEffects(room({ itemId: null }), room({ epoch: 2 }), "setItem", "a", "b").follow).toEqual({ itemId: "film", firstLaunch: true });
     expect(wtStateEffects(room(), room({ itemId: "ep2", epoch: 2 }), "setItem", "a", "b").follow).toEqual({ itemId: "ep2", firstLaunch: false });
