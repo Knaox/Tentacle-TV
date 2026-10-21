@@ -5,8 +5,11 @@
 // native ; le HDR du lecteur jamais cassé. Chaque échec devient un défaut candidat.
 
 const find = (report, name) => report.steps.find((s) => s.name === name);
-const regionsOf = (stepEntry) => stepEntry?.native?.regions?.length ?? null;
+// `nativeViews` : les NSGlassEffectView réellement présentes, comptées dans AppKit
+// par le socle (lg-natif) — pas ce que le gestionnaire croit.
+const viewsOf = (stepEntry) => (stepEntry?.native?.exposed ? stepEntry.native.nativeViews ?? 0 : null);
 const visibleRegions = (stepEntry) => (stepEntry?.native?.regions ?? []).filter((r) => !r.hidden).length;
+const PLAYER_STEPS = ["lecteur-sdr", "lecteur-hdr", "lecteur-episodes"];
 
 /** La sortie de mpv est-elle en PQ ? (`video-target-params` arrive en JSON texte.) */
 function pq(params) {
@@ -35,15 +38,22 @@ export function checkCell(cell, report) {
     if (home?.dom && home.dom.htmlAttr !== "native") fail(`html[data-liquid-glass] = ${home.dom.htmlAttr} (attendu « native »)`, home?.capture);
     if (toggle && !toggle.found) fail("interrupteur Liquid Glass introuvable dans Réglages › Apparence", settings?.capture);
     if (toggle?.found && toggle.checked !== true) fail("interrupteur présent mais pas allumé par défaut", settings?.capture);
-    if (home?.native?.exposed && visibleRegions(home) === 0) fail("aucune région native visible sur l'accueil", home?.capture);
     if (home && !home.native?.exposed) fail("relevé natif non exposé (globalThis.__tentacleGlass.snapshot) — régions non vérifiables", null);
+    if (home?.native?.exposed && home.native.supported !== true) fail(`natif : supported faux (availability=${home.native.availability})`, home?.capture);
+    // Décision du lot : le natif ne voit jamais la page → natif = LECTEUR.
+    for (const name of PLAYER_STEPS) {
+      const s = find(report, name);
+      if (!s?.ok || !s.native?.exposed) continue;
+      if (s.native.refractsVideo && visibleRegions(s) === 0) fail(`lecteur sans verre natif visible à « ${name} » (${s.native.nativeViews} vue(s) AppKit)`, s.capture);
+    }
   }
   if (cell.expect === "off" || cell.expect === "unsupported") {
     for (const s of report.steps) {
-      const n = regionsOf(s);
-      if (n !== null && n > 0) fail(`${n} région(s) native(s) à l'étape « ${s.name} » alors que le verre est ${cell.expect === "off" ? "coupé" : "non supporté"}`, s.capture);
+      const n = viewsOf(s);
+      if (n !== null && n > 0) fail(`${n} NSGlassEffectView à l'étape « ${s.name} » alors que le verre est ${cell.expect === "off" ? "coupé" : "non supporté"}`, s.capture);
     }
-    if (home?.dom && home.dom.htmlAttr === "native") fail("html[data-liquid-glass]=native alors que le verre natif est inactif", home?.capture);
+    const want = cell.expect === "off" ? "off" : "refraction";
+    if (home?.dom && home.dom.htmlAttr !== want) fail(`html[data-liquid-glass]=${home.dom.htmlAttr} (attendu « ${want} »)`, home?.capture);
   }
   if (cell.expect === "off" && toggle && toggle.found && toggle.checked !== false) {
     fail("après coupure, l'interrupteur ne se relit pas « coupé »", settings?.capture);

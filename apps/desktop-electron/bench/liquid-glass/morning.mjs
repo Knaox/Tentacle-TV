@@ -4,7 +4,7 @@
 //   BANC_STATE=<état> node morning.mjs <dossier du clone> [--garder]
 // Le clone se fait depuis le dépôt local (branche `dev`, rien de poussé requis).
 import { execFileSync } from "node:child_process";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { connectAndLogin, dismissOverlays, glassDom, glassToggle, go, sleep } from "./lib/app.mjs";
 import { STATE, SERVER, account, outDir } from "./lib/config.mjs";
@@ -19,7 +19,10 @@ const log = (file) => path.join(out, file);
 const verdict = { clone, steps: [], issues: [] };
 const fail = (message) => verdict.issues.push(message);
 
-if (!existsSync(clone)) {
+// Un clone NEUF à chaque passe : rien d'une passe précédente (node_modules,
+// dist/) ne doit pouvoir masquer un oubli dans le dépôt.
+if (existsSync(clone)) rmSync(clone, { recursive: true, force: true });
+{
   execFileSync("git", ["clone", "--quiet", "--branch", "dev", "--single-branch", REPO, clone], { stdio: "inherit" });
 }
 verdict.commit = execFileSync("git", ["-C", clone, "rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
