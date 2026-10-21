@@ -54,13 +54,15 @@
   --lgc-fill: var(--lgc-sheen), var(--lg-regular-fill);
   --lgc-fill-media: var(--lgc-sheen), linear-gradient(var(--lgc-media-dim), var(--lgc-media-dim));
   /* Le verre sur affiche qui ne porte que des ICÔNES (capsule de la fiche) :
-   * 3:1 suffit, tenu par l'ombre de glyphe — le voile clair du socle. */
-  --lgc-fill-media-icons: var(--lgc-sheen), linear-gradient(var(--lgc-media-icons-dim), var(--lgc-media-icons-dim));
+   * un givre CLAIR, comme les boutons de Musique ou TV de macOS 26 sur un
+   * décor sombre — 3:1 suffit aux icônes, tenu par l'ombre de glyphe. */
+  --lgc-fill-media-icons: var(--lgc-sheen), var(--lg-regular-fill);
   /* Le verre épais du SOCLE seul (`--lg-thick-fill`) : plus de voile empilé
    * sur le voile régulier — le verre doit laisser voir ce qu'il couvre. */
   --lgc-fill-thick: var(--lgc-sheen), var(--lgc-thick-dim);
   --lgc-fill-prominent: var(--lgc-sheen), var(--lg-prominent-fill);
   --lgc-fill-veil: var(--lgc-sheen), var(--lgc-veil-fill);
+  --lgc-fill-badge: var(--lgc-sheen), linear-gradient(var(--lgc-badge-dim), var(--lgc-badge-dim));
 
   /* Les épaisseurs viennent du socle (`--lg-thick-fill`, `--lg-scrim`) ; les
    * alias `--lgc-*` restent, parce que lg-physique les remplace par un aplat
@@ -70,7 +72,10 @@
   /* Le verre POSÉ SUR UNE AFFICHE — noir dans les deux schémas, libellé blanc :
    * 0,55, le pire cas d'un décor blanc sous le verre tient 4,7:1. */
   --lgc-media-dim: var(--lg-media-dim);
-  --lgc-media-icons-dim: var(--lg-clear-dim);
+  /* La NOTE au repos des cartes : 11 px sur l'affiche, sans flou — l'ombre
+   * seule ne tient pas l'AA d'un libellé si petit sur un décor blanc. 0,55 :
+   * blanc plein y tient 4,7:1. Noir dans les deux schémas (posé sur média). */
+  --lgc-badge-dim: rgba(var(--scrim-media-rgb), 0.55);
   /* Recettes propres aux composants (accord de lg-tokens) : le verre sur un
    * voile DÉJÀ sombre (plateau des cartes, sans flou) et le pouce laiteux de
    * l'interrupteur. */

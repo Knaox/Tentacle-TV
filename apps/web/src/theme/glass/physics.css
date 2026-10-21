@@ -173,6 +173,11 @@ html[data-liquid-glass="native"][data-lg-material] {
    * surface claire du thème les effacerait. Surchargée en RECETTE, quelle que
    * soit la couche qu'elle lit. */
   --lgc-fill-media-icons: var(--lg-a11y-solid-media);
+  /* La note au repos des cartes (lg-composants, db1c95500). */
+  --lgc-badge-dim: var(--lg-a11y-solid-media);
+  /* Le reflet diffus du haut (`--lgc-sheen`) : sur un aplat, plus de reflet
+   * décoratif — comme la couche du reflet qui suit (`.lg-specular`). */
+  --lg-highlight: transparent;
   /* Sur un plein, les ombres de lisibilité et la vibrance n'ont plus rien à
    * tenir : le contraste est celui du libellé sur l'aplat. Elles partent
    * (`text-shadow` / `filter` : `none` est valide pour les deux). */
@@ -188,7 +193,6 @@ html[data-liquid-glass="native"][data-theme="light"][data-lg-material] {
 }
 html[data-liquid-glass="native"][data-lg-material="solid"] {
   --lg-rim: var(--lg-contrast-border);
-  --lg-highlight: transparent;
   --lg-specular-strong: var(--lg-contrast-border);
   --lg-specular-soft: transparent;
   --lg-inner-glow: transparent;

@@ -55,9 +55,27 @@ export interface NativeGlassRegion {
   readonly group?: string;
   /** En plus : distance (pt) en deçà de laquelle les verres du groupe fusionnent. */
   readonly spacing?: number;
-  /** En plus : apparition, déplacement et disparition animés CÔTÉ NATIF, en ms. */
+  /**
+   * En plus : apparition et disparition animées CÔTÉ NATIF, en ms ; non nul, il
+   * anime aussi les déplacements, au ressort `spring`.
+   */
   readonly transition?: number;
+  /** En plus : le ressort des déplacements (paramétrage d'Apple). Absent : `morph`, celui de la page. */
+  readonly spring?: GlassSpringSpec;
+  /** En plus : l'apparence du verre, quelle que soit celle de la fenêtre. Absent : héritée. */
+  readonly appearance?: GlassAppearance;
 }
+
+/** Un ressort au paramétrage d'Apple — celui de `theme/glass/springs.ts`. */
+export interface GlassSpringSpec {
+  /** Période non amortie, en secondes. */
+  readonly response: number;
+  /** 1 = critique, < 1 = rebond. */
+  readonly dampingFraction: number;
+}
+
+export const GLASS_APPEARANCES = ["dark", "light"] as const;
+export type GlassAppearance = (typeof GLASS_APPEARANCES)[number];
 
 /** Ce qui traverse le canal : les changements d'une tâche, déjà regroupés par le preload. */
 export interface LiquidGlassBatch {

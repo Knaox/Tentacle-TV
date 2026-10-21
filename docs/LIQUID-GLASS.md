@@ -51,16 +51,37 @@ le pont dans `apps/desktop-electron/src/preload/index.ts`.
   à recompiler à chaque version d'Electron ni à signer en plus — le paquet du Mac
   App Store embarque déjà koffi et ses deux binaires (`package-macos.mjs`,
   `NATIVE_MODULES`).
-- **`electron-liquid-glass`** (Meridius Labs, MIT, 1.1.1) a été lu et écarté :
-  une seule vue plein cadre par fenêtre (`addView`), sans rectangle, sans
-  retrait ni mise à jour de géométrie — on n'y pose ni une barre ni un bouton ;
-  ses variantes (`unstable_setVariant`, `scrim`, `subdued`) passent par des
-  sélecteurs PRIVÉS (`set_variant:`…), refusés au Mac App Store, seul canal
-  macOS ; node-gyp, prebuildify et un `.node` de plus. C'est **la même classe**
-  `NSGlassEffectView`, posée sans l'enveloppe — le vrai verre du système, pas
-  une imitation CSS.
+- **`electron-liquid-glass`** (Meridius Labs, MIT, 1.1.1, commit `a50d96f` du
+  30/09/2025) a été lu ligne à ligne et écarté. C'est **la même classe**
+  `NSGlassEffectView` — le vrai verre du système, pas une imitation CSS —, posée
+  sans l'enveloppe :
+
+  | Le module | Où (dépôt du module) | Chez nous |
+  |-----------|----------------------|-----------|
+  | La classe : `NSGlassEffectView`, par `NSClassFromString` | `src/glass_effect.mm:91` | la même (`nativeGlass.ts`) |
+  | UNE vue plein cadre (`container.bounds`, suit la fenêtre) | `:85`, `:96`, `:124` | une vue PAR région, au rectangle de la page |
+  | Une seule par fenêtre : `addView` retire la précédente | `:79-80`, `:134` | jusqu'à 64, en groupes qui fusionnent, ordonnées |
+  | Posée sous tout (`NSWindowBelow relativeTo:nil`) | `:130` | sous le compositeur de Chromium, AU-DESSUS d'une `NSOpenGLView` |
+  | Rayon par `layer.cornerRadius` + `masksToBounds` | `:160-161` | la propriété publique `cornerRadius` |
+  | Teinte : `setTintColor:` (publique) | `:175-176` | la même — reprise |
+  | Repli `NSVisualEffectView` avant macOS 26 | `:115` | aucun : le rendu d'avant, option invisible |
+  | Variantes, voile, atténuation : setters PRIVÉS (`set_` + clé) | `:191-199`, `src/liquidglass.cc:92,106,120` | aucune API privée (refus du Mac App Store) |
+  | Détection : `execSync("sw_vers")` | `js/index.ts:64` | version d'Electron + classe à l'exécution, sans processus |
+  | Un `.node` par architecture (node-gyp, prebuildify) | `package.json:42` | aucun : le pont koffi déjà livré et signé |
+
+  Repris du module : la classe, la teinte, la pose sous le contenu web, le suivi
+  de l'apparence. Laissé : ses variantes privées (dont `avplayer`,
+  `js/variants.ts:10`), le fond opaque `NSBox` (`opaque`), le repli
+  `NSVisualEffectView`. Ajouté : rectangles multiples, groupes qui fusionnent,
+  fondus et ressort natifs, apparence forcée par région.
 - Donc : aucune licence tierce de plus, **aucune API privée** nulle part — le
-  build MAS reçoit exactement ce code. Sélecteurs envoyés : `initWithFrame:`,
+  build MAS reçoit exactement ce code. Vérifié sur le paquet MAS lui-même
+  (`package-macos.mjs --arch arm64`, binaire Electron `mas`, web de
+  production) : pont présent, `supported`, mode `native`, verres posés et
+  retirés (relus dans AppKit), réfraction de la vidéo mpv ; aucun nom de
+  sélecteur privé dans l'archive ni dans le web embarqué — et
+  `privateApi.test.ts` refuse qu'un fichier livré en cite un, même en
+  commentaire (`tsc` recopie les commentaires dans l'archive). Sélecteurs envoyés : `initWithFrame:`,
   `setCornerRadius:`, `setStyle:`, `setTintColor:`, `setSpacing:`,
   `setContentView:`, `setAlphaValue:`, `setFrame:`, `animator`,
   `NSAnimationContext`, `addSubview:positioned:relativeTo:`,
@@ -88,16 +109,22 @@ qui cache l'option (`theme/liquidGlassMode.ts`). Le contrat est déclaré par la
 page (`apps/web/src/desktop/types.ts`) et reflété par `protocol.ts` ;
 `contractMirror.test.ts` casse si un champ de la page est inconnu de la coquille.
 
-- `supported`, `refractsVideo` (le verre voit la vidéo posée sous la page —
-  vrai sur les DEUX montages, mesuré), `setEnabled(bool)`, `upsert(regions[])`,
-  `remove(ids[])`.
+- `supported`, `refractsVideo` (le lecteur pose son verre sur la vidéo : vrai au
+  montage `fenetre`, Apple Silicon ; faux au montage `gl`, Intel — mesuré
+  possible, coupé par décision du lot : GPU intégrés qui chauffent déjà en
+  lecture, aucun HDR à y gagner ; une ligne de `detect.ts` pour l'ouvrir),
+  `setEnabled(bool)`, `upsert(regions[])`, `remove(ids[])`.
 - Région : `id`, `x`, `y`, `width`, `height` (px CSS du viewport), `radius`,
   `level` (`regular` | `clear` | `tinted` | `prominent`), `tint`
   (`#RRGGBB[AA]` ou `null`), `interactive`, `z` ; facultatifs : `group` (un
   `NSGlassEffectContainerView` par groupe : les verres voisins FUSIONNENT ; sans
-  groupe, une région est seule), `spacing` (distance de fusion du groupe, en
-  points), `transition` (ms : apparition, déplacement et disparition animés
-  côté natif, par `NSAnimationContext`).
+  groupe, une région a son conteneur à elle, et ne fusionne jamais), `spacing`
+  (distance de fusion du groupe, en points), `transition` (ms : apparition et
+  disparition natives ; non nul, il anime aussi les déplacements), `spring`
+  (`{ response, dampingFraction }`, le ressort des déplacements — `morph` de la
+  page par défaut), `appearance` (`"dark"` | `"light"` : la matière, quelle que
+  soit l'apparence de la fenêtre — mesuré, 98,34,91 en sombre contre
+  233,179,224 en clair sur le même fond).
 - AppKit n'a que deux styles : `clear` → `Clear`, les trois autres → `Regular` ;
   `tinted` et `prominent` se distinguent par leur teinte. `interactive` : aucune
   API publique, sans effet natif.
@@ -139,7 +166,35 @@ latérales). Une région native ne suit pas un défilement — sa position arriv
 par IPC, une image plus tard au mieux : rien de ce qui défile avec la page
 n'est natif.
 
-### 2.5 Cycle de vie
+### 2.5 Les mouvements natifs (mesurés)
+
+Trois faits de la maquette du 21/10, qui décident de tout :
+
+1. **Un verre ignore son propre alpha** — `alphaValue` par l'animateur,
+   opacité de sa couche, alpha d'une vue enveloppe : il reste à 100 %, même
+   l'alpha posé à 0. **Seul l'alpha de son `NSGlassEffectContainerView`
+   l'estompe** (49 %, 14 %, 2 %, 0 % aux quarts d'un fondu d'1,2 s).
+2. **Un verre ignore une animation Core Animation** posée sur sa couche
+   (`CASpringAnimation` sur position et taille : forme déjà à destination à
+   60 ms). Seul l'animateur d'AppKit (`NSAnimationContext`) fait suivre la
+   forme (17 %, 53 %, 82 % d'un trajet de 400 ms).
+3. **L'animateur rabote une courbe hors de [0, 1]** : pas de dépassement.
+
+D'où : une région seule entre et sort par le fondu de SON conteneur ; un
+groupe qui naît ou se vide, par le fondu du sien ; un membre qui rejoint un
+groupe visible naît de son centre, un membre qui le quitte fond vers son centre.
+Les déplacements suivent le ressort de la page (`springCurve.ts`, recopié de
+`theme/glass/springs.ts` et verrouillé par test) : coupe à 1 % du trajet comme
+les transitions CSS (`morph` : 291 ms), rejouée par l'animateur avec la Bézier
+la plus proche (écart < 1 % pour `morph` ; `lens` y perd son rebond, jamais sa
+durée). Pas les 584 ms de `NATIVE_GLASS_MORPH_MS` (repos à 0,1 %) : sur cette
+durée, la MEILLEURE Bézier possible s'écarte du ressort de 3,7 % en pleine course
+(recherche exhaustive) — 11 px sur 300 —, contre moins de 1 % sur 291 ms ; et
+la courbe ajustée finit exactement au but, sans le saut d'un ressort coupé. La
+`transition` que la page envoie (584) règle la durée des fondus. Mesuré dans l'app : fondu d'entrée à 62 % à 130 ms, de sortie à 24 % à
+160 ms puis 0 vue.
+
+### 2.6 Cycle de vie
 
 - Rien de posé sans région : ni racine, ni groupe — la fenêtre d'avant, vue
   pour vue.
@@ -153,7 +208,7 @@ n'est natif.
   quand elle change de taille — le repère de la page, qui renvoie ses
   rectangles quand sa mise en page change.
 
-### 2.6 Fenêtre, plein écran, HDR, PiP
+### 2.7 Fenêtre, plein écran, HDR, PiP
 
 - Rien ne change à la fabrication : `transparent: true`, `hasShadow: false`
   (CLAUDE.md, « Coût GPU » § 4), bandeau de 38 pt. Le verre de FENÊTRE d'AppKit
@@ -177,11 +232,14 @@ n'est natif.
   sur un fond immobile : 39 % contre 39 % sans verre — rien ne bouge derrière,
   rien n'est recomposé. Surface opaque : racine cachée, coût nul par
   construction. Les watts (`sudo powermetrics --samplers gpu_power`, build de
-  production) restent une passe manuelle : elle exige sudo.
+  production) restent une passe manuelle : elle exige sudo. Seconde passe après
+  les conteneurs par région (même banc, encore plus chargé) : moyennes 46 % sans
+  verre contre 60 % et 50 % avec, toujours 0 image perdue — le bruit des autres
+  sessions domine la mesure.
 - Un écran sans plage étendue (« potentiel 1 », un moniteur SDR) ne donne pas
   de HDR, verre ou pas : le relevé HDR ci-dessus vient de l'écran XDR intégré.
 
-### 2.7 Banc
+### 2.8 Banc
 
 `globalThis.__tentacleGlass.snapshot()` dans le principal, hors paquet :
 `{ supported, availability, refractsVideo, enabled, surfaceVisible, root,
@@ -247,10 +305,14 @@ animation de sa frame ; elle ne peut pas suivre une échelle image par image.
   portent) sur une surface à verre natif** : la lentille reste aux surfaces
   rendues par la page.
 - Une région qui se métamorphose ou fusionne envoie au pont
-  `transition: NATIVE_GLASS_MORPH_MS` (584 ms : repos à 0,1 % du trajet), et
-  le natif l'anime par `CASpringAnimation` avec `NATIVE_GLASS_SPRINGS.morph`
-  (raideur 223,8, amortissement 25,13, masse 1) — les constantes de framer,
-  donc la même courbe que la page (`springs.ts`).
+  `transition: NATIVE_GLASS_MORPH_MS` (584 ms, repos à 0,1 % du trajet : la
+  durée des fondus). Sa FRAME, le natif l'anime par la Bézier la plus proche
+  du ressort `morph` sur sa coupe à 1 % (291 ms) — sous 1 % d'écart de bout en
+  bout, là qu'aucune Bézier ne suit le ressort sur 584 ms (3,7 %, 11 px sur
+  300) : `apps/desktop-electron/src/main/liquidGlass/springCurve.ts`, tenu
+  contre `springs.ts` par son test miroir. `NATIVE_GLASS_SPRINGS` (les
+  constantes de framer) reste la référence si une animation à ressort native
+  remplace un jour la Bézier.
 
 **Accessibilité du système.** `installGlassAccessibility()` (dans `main.tsx`,
 avant le premier rendu) lit les media queries — Chromium 150 d'Electron 43

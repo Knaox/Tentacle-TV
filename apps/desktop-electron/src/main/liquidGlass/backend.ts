@@ -14,6 +14,8 @@
  */
 
 import type { AppKitRect, Rgba } from "./geometry";
+import type { GlassAppearance } from "./protocol";
+import type { NativeMotion } from "./springCurve";
 
 /** Une vue native, opaque pour le gestionnaire. */
 export interface ViewHandle {
@@ -26,14 +28,20 @@ export interface GroupHandle {
   readonly content: ViewHandle;
 }
 
-/** De quoi fabriquer un verre. */
+/**
+ * De quoi fabriquer un verre.
+ *
+ * ⚠️ Pas d'alpha : un `NSGlassEffectView` IGNORE le sien, l'opacité de sa couche
+ * et l'alpha d'une vue qui l'enveloppe (mesuré, maquette du 21/10). Seul
+ * l'alpha de son `NSGlassEffectContainerView` l'estompe — d'où les fondus par
+ * conteneur (`stage.ts`).
+ */
 export interface GlassProps {
   readonly frame: AppKitRect;
   readonly radius: number;
   readonly style: 0 | 1;
   readonly tint: Rgba | null;
-  /** 0 pour une apparition animée, 1 sinon. */
-  readonly alpha: number;
+  readonly appearance: GlassAppearance | null;
 }
 
 /** Ce qu'AppKit dit d'un verre posé — l'instantané du banc relit la VRAIE vue. */
@@ -52,15 +60,19 @@ export interface GlassBackend {
   contentHeight(): number;
   /** Une vue cachée n'est ni dessinée ni composée. */
   setHidden(view: ViewHandle, hidden: boolean): void;
-  createGroup(root: ViewHandle, spacing: number): GroupHandle;
+  /** Un conteneur, posé tout en haut de la racine, à l'alpha donné (0 pour un fondu d'entrée). */
+  createGroup(root: ViewHandle, spacing: number, alpha: number): GroupHandle;
   setSpacing(group: GroupHandle, spacing: number): void;
   /** Un verre DÉTACHÉ : `placeBelow` le pose dans son groupe. */
   createGlass(props: GlassProps): ViewHandle;
-  /** `durationMs` > 0 : le déplacement s'anime côté natif. */
-  setFrame(view: ViewHandle, frame: AppKitRect, durationMs: number): void;
+  /** Avec `motion`, le déplacement s'anime côté natif (animateur d'AppKit, Bézier du ressort). */
+  setFrame(view: ViewHandle, frame: AppKitRect, motion: NativeMotion | null): void;
   setRadius(view: ViewHandle, radius: number): void;
   setStyle(view: ViewHandle, style: 0 | 1): void;
   setTint(view: ViewHandle, tint: Rgba | null): void;
+  /** `null` : l'apparence de la fenêtre. */
+  setAppearance(view: ViewHandle, appearance: GlassAppearance | null): void;
+  /** L'alpha d'un CONTENEUR (sur un verre, sans effet) ; `durationMs` > 0 : en fondu. */
   setAlpha(view: ViewHandle, alpha: number, durationMs: number): void;
   /** Pose `view` dans `parent`, juste sous `anchor` — tout en haut si `anchor` est `null`. */
   placeBelow(parent: ViewHandle, view: ViewHandle, anchor: ViewHandle | null): void;

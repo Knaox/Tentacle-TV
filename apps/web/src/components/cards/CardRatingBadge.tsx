@@ -55,7 +55,7 @@ export function CardRatingBadge({
   return (
     <div
       role="img"
-      className={`absolute ${className ?? "bottom-2 left-2"} ${raised ? "z-30" : "z-10"} flex h-5 items-stretch overflow-hidden rounded-md border border-white/20 bg-black/70 text-[11px] font-semibold leading-none text-white transition-opacity duration-150 ${
+      className={`lg-badge absolute ${className ?? "bottom-2 left-2"} ${raised ? "z-30" : "z-10"} flex h-5 items-stretch overflow-hidden rounded-md border border-white/20 bg-black/70 text-[11px] font-semibold leading-none text-white transition-opacity duration-150 ${
         shown ? "opacity-100" : "opacity-0"
       }`}
       aria-label={label}

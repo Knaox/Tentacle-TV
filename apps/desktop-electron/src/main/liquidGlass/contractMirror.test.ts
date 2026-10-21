@@ -12,6 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { GLASS_LEVELS, type LiquidGlassBridge, type NativeGlassRegion } from "./protocol";
+import { GLASS_SPRINGS, SPRING_CUT } from "./springCurve";
 
 function repoRoot(): string {
   let folder = process.cwd();
@@ -29,6 +30,7 @@ type RequiredKeys<T> = { [K in keyof T]-?: object extends Pick<T, K> ? never : K
 const ALL_FIELDS: Record<keyof NativeGlassRegion, true> = {
   id: true, x: true, y: true, width: true, height: true, radius: true, level: true,
   tint: true, interactive: true, z: true, group: true, spacing: true, transition: true,
+  spring: true, appearance: true,
 };
 /** Les champs OBLIGATOIRES du protocole — idem. */
 const REQUIRED_FIELDS: Record<RequiredKeys<NativeGlassRegion>, true> = {
@@ -68,6 +70,17 @@ describe("contrat du verre — la page et la coquille parlent la même langue", 
     const union = /export type NativeGlassLevel = ([^;]+);/.exec(page)?.[1] ?? "";
     const levels = [...union.matchAll(/"(\w+)"/g)].map((m) => m[1]);
     expect(levels.sort()).toEqual([...GLASS_LEVELS].sort());
+  });
+
+  it("les ressorts du natif sont ceux de la page, à la même coupe (theme/glass/springs.ts)", () => {
+    const springs = readFileSync(join(repoRoot(), "apps/web/src/theme/glass/springs.ts"), "utf8");
+    for (const [name, spring] of Object.entries(GLASS_SPRINGS)) {
+      const line = new RegExp(`${name}: \\{ response: ([\\d.]+), dampingFraction: ([\\d.]+) \\}`).exec(springs);
+      expect(line, `ressort ${name} introuvable dans springs.ts`).not.toBeNull();
+      expect(Number(line?.[1])).toBe(spring.response);
+      expect(Number(line?.[2])).toBe(spring.dampingFraction);
+    }
+    expect(Number(/SPRING_CSS_EPSILON = ([\d.]+)/.exec(springs)?.[1])).toBe(SPRING_CUT);
   });
 
   it("chaque membre du pont que la page appelle existe dans le preload", () => {

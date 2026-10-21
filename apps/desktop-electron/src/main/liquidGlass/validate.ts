@@ -13,6 +13,7 @@
 
 import { z } from "zod";
 import {
+  GLASS_APPEARANCES,
   GLASS_LEVELS,
   MAX_ID_LENGTH,
   MAX_REGIONS,
@@ -46,6 +47,8 @@ const regionSchema = z.object({
   group: id.optional(),
   spacing: finite.min(0).max(1000).optional(),
   transition: finite.min(0).max(MAX_TRANSITION_MS).optional(),
+  spring: z.object({ response: finite.min(0.05).max(5), dampingFraction: finite.min(0.1).max(4) }).optional(),
+  appearance: z.enum(GLASS_APPEARANCES).optional(),
 });
 
 const batchSchema = z.object({
@@ -56,12 +59,14 @@ const batchSchema = z.object({
 
 /** Une région validée, aux seuls champs du protocole. */
 function toRegion(parsed: z.infer<typeof regionSchema>): NativeGlassRegion {
-  const { group, spacing, transition, ...base } = parsed;
+  const { group, spacing, transition, spring, appearance, ...base } = parsed;
   return {
     ...base,
     ...(group === undefined ? {} : { group }),
     ...(spacing === undefined ? {} : { spacing }),
     ...(transition === undefined ? {} : { transition }),
+    ...(spring === undefined ? {} : { spring }),
+    ...(appearance === undefined ? {} : { appearance }),
   };
 }
 
