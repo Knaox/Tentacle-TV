@@ -47,7 +47,7 @@
 /* L'arête et l'ombre occupent `box-shadow` : les anneaux `ring-*` de Tailwind,
  * qui y vivent aussi, sont recouverts. Le focus clavier passe donc par
  * `outline`, qui ne dépend de rien d'autre. */
-:root[data-lg="on"] :is(.lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .lg-segmented .ctl-segment):focus-visible {
+:root[data-lg="on"] :is(.lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .lg-chip, .lg-segmented .ctl-segment):focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
@@ -163,4 +163,42 @@
 :root[data-lg="on"] .ctl-segment::before {
   background: var(--lg-sheen), var(--lg-tint-brand);
   box-shadow: var(--lg-rim-strong), var(--ctl-glow-segment);
+}
+
+/* ══ 6. Formes ════════════════════════════════════════════════════════════
+ *
+ * Les boutons d'une feuille macOS 26 sont des capsules. Le libellé d'un
+ * primaire passe au blanc de marque : il quitte un fond blanc (`cta-primary`)
+ * pour le verre teinté. */
+:root[data-lg="on"] .lg-shape-capsule {
+  border-radius: var(--radius-pill);
+}
+
+:root[data-lg="on"] .lg-btn-primary {
+  color: var(--cta-brand-fg);
+}
+
+/* ══ 7. Pastilles de filtre ═══════════════════════════════════════════════
+ *
+ * Elles étaient passées à l'aplat OPAQUE : un voile translucide s'y perdait
+ * sur une affiche claire. Le verre garde donc un fond ÉPAIS (lisible sur
+ * n'importe quelle image) et un flou FIN — juste de quoi laisser deviner
+ * l'affiche. L'arête remplace l'anneau `ring-line-strong` ; une pastille
+ * active garde le sien, de marque (`--tw-ring-shadow`, posé par Tailwind),
+ * sous sa teinte, qu'on ne touche pas. */
+:root[data-lg="on"] .lg-chip {
+  -webkit-backdrop-filter: var(--lg-backdrop-thin);
+  backdrop-filter: var(--lg-backdrop-thin);
+  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+}
+
+:root[data-lg="on"] .lg-chip:not(.lg-chip-on) {
+  background: var(--lg-sheen), var(--lg-fill-thick);
+}
+
+:root[data-lg="on"] .lg-chip-on {
+  /* Seul le fond change : la teinte (violette ou rose) reste celle de la
+   * pastille, en `background-image`. */
+  background-color: var(--lg-fill-thick);
+  box-shadow: var(--lg-rim-strong), var(--tw-ring-shadow, 0 0 #0000);
 }
