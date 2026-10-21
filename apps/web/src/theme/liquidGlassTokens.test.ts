@@ -81,6 +81,11 @@ describe("les jetons du verre", () => {
       "--lg-scrim",
       "--lg-tint-gradient",
       "--lg-prominent-gradient",
+      "--lg-label-shadow",
+      "--lg-glyph-shadow",
+      "--lg-media-label-shadow",
+      "--lg-media-glyph-shadow",
+      "--lg-vibrancy-blend",
     ]) {
       expect(ROOT, name).toContain(name);
     }
@@ -99,6 +104,9 @@ describe("les jetons du verre", () => {
       "--lg-prominent-gradient",
       "--lg-thick-fill",
       "--lg-scrim",
+      "--lg-label-shadow",
+      "--lg-glyph-shadow",
+      "--lg-vibrancy-blend",
     ]) {
       expect(LIGHT, name).toContain(name);
     }
