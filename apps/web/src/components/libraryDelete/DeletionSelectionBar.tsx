@@ -33,7 +33,7 @@ export function DeletionSelectionBar({ selection, onDelete, failed, onRetry, not
       role="toolbar"
       data-deletion-bar
       aria-label={t("selectHint")}
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
+      className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
       style={{ animation: "deletionBarIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)" }}
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 md:px-8">

@@ -111,7 +111,7 @@ export function DetailHero({ backdropUrl, item, instant = false, onBack, backLab
           type="button"
           onClick={onBack ?? (() => navigate(-1))}
           aria-label={backLabel ?? t("common:back")}
-          className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-4 py-2 text-sm text-on-media-secondary backdrop-blur-md transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.65)] hover:text-on-media-primary md:left-8 md:top-8"
+          className="lg-btn-media absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-4 py-2 text-sm text-on-media-secondary backdrop-blur-md transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.65)] hover:text-on-media-primary md:left-8 md:top-8"
         >
           <ArrowLeftIcon />
           {backLabel ?? t("common:back")}

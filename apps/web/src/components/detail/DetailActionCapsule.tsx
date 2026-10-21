@@ -10,6 +10,8 @@ import {
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "../cards/cardGlyphs";
 import { DetailDownloadAction } from "../../downloads/DetailDownloadAction";
+import { GLASS_LENS_PROPS } from "../../theme/glass";
+import { useGlassControl } from "../ui/glass/useGlassControl";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { openRoomModal } from "../../watchTogether/roomModalStore";
 import { useToast } from "../../contexts/ToastContext";
@@ -111,12 +113,18 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
  * avec la fiche d'un titre gardé, qui y range ses propres bascules.
  */
 export function DetailCapsule({ children }: { children: ReactNode }) {
+  // En mode natif : la lentille exacte de la capsule, le reflet sous le pointeur.
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", shape: "capsule", specular: true });
+  // Le voile en CLASSE (et non plus en style en ligne) : la peau du verre
+  // (`.lg-capsule-media`) doit pouvoir le remplacer.
   return (
     <div
+      ref={glass.ref}
+      {...glass.props}
       role="group"
-      className="lg-capsule-media flex h-14 items-center gap-0.5 rounded-full border border-on-media-muted px-1.5"
-      style={{ background: "rgba(var(--scrim-media-rgb), 0.38)" }}
+      className="lg-capsule-media flex h-14 items-center gap-0.5 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] px-1.5"
     >
+      {glass.layers}
       {children}
     </div>
   );
@@ -137,6 +145,7 @@ export function CapsuleButton({ active, onClick, label, tone = "brand", children
       aria-label={label}
       title={label}
       aria-pressed={active}
+      {...GLASS_LENS_PROPS}
       className={`flex h-11 w-11 items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 hover:bg-white/10 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] ${
         active ? activeColor : "text-on-media-secondary hover:text-on-media-primary"
       }`}

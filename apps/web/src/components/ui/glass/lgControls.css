@@ -96,8 +96,8 @@
  * (son `::before`) reste tel quel — il approfondit le dégradé. */
 :root[data-liquid-glass="native"] :is(.hero-cta-primary, .lg-btn-primary) {
   background: var(--lgc-fill-prominent);
-  -webkit-backdrop-filter: var(--lgc-backdrop);
-  backdrop-filter: var(--lgc-backdrop);
+  -webkit-backdrop-filter: var(--lgc-backdrop-prominent);
+  backdrop-filter: var(--lgc-backdrop-prominent);
   border-color: transparent;
   /* `!important` : `HERO_PLAY_STYLE` pose son ombre EN LIGNE. */
   box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
@@ -112,6 +112,8 @@
  * Posé sur le voile du survol (0,9 en bas) : pas de flou. Le modèle
  * (`cardOverlay.ts`) ne change pas — seule la peau. */
 :root[data-liquid-glass="native"] .lg-tray {
+  /* Positionnée : le reflet (`GlassSpecular`) s'y pose en absolu. */
+  position: relative;
   background: var(--lgc-fill-veil);
   border-color: transparent;
   box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
@@ -201,4 +203,58 @@
    * pastille, en `background-image`. */
   background-color: var(--lgc-thick-dim);
   box-shadow: var(--lgc-edge-strong), var(--tw-ring-shadow, 0 0 #0000);
+}
+
+/* ══ 8. Champ de recherche ════════════════════════════════════════════════
+ *
+ * La capsule de recherche des barres d'outils (`ScopedSearchField`) : le
+ * verre épais (on y lit du texte saisi), l'arête ; au focus, l'anneau de
+ * marque revient par-dessus l'arête — `box-shadow` porte les deux. */
+:root[data-liquid-glass="native"] .lg-field {
+  background: var(--lgc-fill-thick);
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
+  border-color: transparent;
+  box-shadow: var(--lgc-edge), var(--lg-shadow-contact);
+}
+
+:root[data-liquid-glass="native"] .lg-field:focus-within {
+  box-shadow: var(--lgc-edge-strong), 0 0 0 3px var(--lg-tint-brand);
+}
+
+/* ══ 9. Pastilles de qualité et de langue ═════════════════════════════════
+ *
+ * Elles sont déjà du verre sombre, réglé au contraste près (10 px sur une
+ * affiche) : on n'y touche pas. Seule l'arête du matériau s'ajoute — la 4K
+ * garde son liseré et sa lueur de marque. `!important` : style en ligne. */
+:root[data-liquid-glass="native"] .lg-meta:not([data-tone="accent"]) {
+  box-shadow: var(--lgc-edge) !important;
+}
+
+/* Une bascule de verre allumée (Ma liste, favori, vu de la bannière) garde un
+ * liseré à sa couleur — blanc, ou le rose du favori — par-dessus l'arête. */
+:root[data-liquid-glass="native"] .lg-btn-media[aria-pressed="true"] {
+  box-shadow: var(--lgc-edge-strong), inset 0 0 0 var(--lg-thickness-regular) currentColor, var(--lg-shadow-contact);
+}
+
+/* ══ 10. Pastille de lien sans flou ═══════════════════════════════════════
+ *
+ * « Tout voir » des en-têtes de rangée : elle reste dans le DOM à opacité
+ * nulle (son fondu suit le survol de la rangée), une par rangée. Un
+ * `backdrop-filter` s'y recalculerait pour rien — elle n'a donc que le voile,
+ * l'arête et le reflet. */
+:root[data-liquid-glass="native"] .lg-pill {
+  background: var(--lgc-fill);
+  box-shadow: var(--lgc-edge);
+}
+
+/* ══ 11. La lentille des boutons du plateau et de la capsule ══════════════
+ *
+ * Ils portent `data-lg-lens` (lg-physique : bulle au survol, à l'appui, en
+ * ressort, par la propriété `scale`). Leur grossissement Tailwind
+ * (`hover:scale-110`, `active:scale-95`) s'y ajouterait : il est neutralisé
+ * en mode natif, la lentille le remplace. */
+:root[data-liquid-glass="native"] :is(.lg-tray, .lg-capsule-media) [data-lg-lens] {
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
 }

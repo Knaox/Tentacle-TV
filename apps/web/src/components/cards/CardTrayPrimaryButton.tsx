@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { stopCardClick } from "./cardEvents";
+import { GLASS_LENS_PROPS } from "../../theme/glass";
 
 /**
  * Le ton de l'action primaire d'un plateau :
@@ -58,6 +59,7 @@ export function CardTrayPrimaryButton({ box, icon, tone, label, onPress, busy = 
       title={label}
       // La mini-carte d'aperçu la peint pleine, au dégradé de son ton (`preview/previewActions.css`).
       data-tray-primary={tone}
+      {...GLASS_LENS_PROPS}
       onClick={(e) => {
         stopCardClick(e);
         if (!busy) onPress();

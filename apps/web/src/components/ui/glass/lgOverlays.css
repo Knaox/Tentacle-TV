@@ -71,16 +71,21 @@
 /* ══ 3. Toasts ════════════════════════════════════════════════════════════
  *
  * Un galet de verre ; le TON (succès, erreur, info) reste lisible par une
- * teinte légère sous le reflet, la barre qui se vide et le rôle annoncé. */
+ * teinte légère sous le reflet, la barre qui se vide et le rôle annoncé.
+ * Sans ton (le toast d'annulation de Ma liste) : le verre seul. */
 :root[data-liquid-glass="native"] .lg-toast {
   corner-shape: var(--lg-corner-shape);
-  --lgc-toast-tint: var(--brand-soft);
+  --lgc-toast-tint: transparent;
   background: linear-gradient(var(--lgc-toast-tint), var(--lgc-toast-tint)), var(--lgc-fill-thick) !important;
   -webkit-backdrop-filter: var(--lgc-backdrop) !important;
   backdrop-filter: var(--lgc-backdrop) !important;
   border-color: transparent !important;
-  border-radius: var(--lg-radius-sm) !important;
+  border-radius: var(--lg-radius-md) !important;
   box-shadow: var(--lgc-edge), var(--lg-shadow-float) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-toast[data-tone="info"] {
+  --lgc-toast-tint: var(--brand-soft);
 }
 
 :root[data-liquid-glass="native"] .lg-toast[data-tone="success"] {
@@ -89,4 +94,18 @@
 
 :root[data-liquid-glass="native"] .lg-toast[data-tone="error"] {
   --lgc-toast-tint: var(--status-error-bg);
+}
+
+/* ══ 4. Barres d'outils flottantes du bas ═════════════════════════════════
+ *
+ * Sélection multiple, marquage « vu », suppression : la barre garde sa
+ * géométrie (pleine largeur, collée au bas) et prend le verre épais — la page
+ * défile dessous, c'est là que le flou se voit. L'arête claire passe en haut,
+ * le seul bord libre. */
+:root[data-liquid-glass="native"] .lg-bar {
+  background: var(--lgc-fill-thick);
+  -webkit-backdrop-filter: var(--lgc-backdrop-thick);
+  backdrop-filter: var(--lgc-backdrop-thick);
+  border-color: transparent;
+  box-shadow: inset 0 var(--lg-rim-width) 0 var(--lg-specular-soft), var(--lg-shadow-float);
 }

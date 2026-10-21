@@ -1,5 +1,8 @@
 import type { CSSProperties } from "react";
-import { PressableScale } from "../ui/PressableScale";
+import { GlassPressable } from "../ui/glass/GlassPressable";
+
+/** En mode natif : la lentille exacte du disque (monté au survol seulement). */
+const DISC_GLASS = { lens: "regular", shape: "circle" } as const;
 
 interface EdgeArrowsProps {
   canLeft: boolean;
@@ -46,7 +49,8 @@ function Arrow({ side, shown, size, onClick }: { side: "left" | "right"; shown: 
       data-shown={shown}
       style={{ "--reveal-ms": "150ms" } as CSSProperties}
     >
-      <PressableScale
+      <GlassPressable
+        glass={DISC_GLASS}
         hoverScale={1.08}
         tapScale={0.92}
         onClick={onClick}
@@ -57,7 +61,7 @@ function Arrow({ side, shown, size, onClick }: { side: "left" | "right"; shown: 
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d={side === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
         </svg>
-      </PressableScale>
+      </GlassPressable>
     </div>
   );
 }

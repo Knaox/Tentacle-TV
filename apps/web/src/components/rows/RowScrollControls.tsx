@@ -1,4 +1,7 @@
-import { PressableScale } from "../ui/PressableScale";
+import { GlassPressable } from "../ui/glass/GlassPressable";
+
+/** En mode natif : la lentille exacte du disque (monté au survol seulement). */
+const DISC_GLASS = { lens: "regular", shape: "circle" } as const;
 
 interface RowScrollControlsProps {
   canLeft: boolean;
@@ -52,7 +55,8 @@ export function RowScrollControls({ canLeft, canRight, mounted, shown, onScroll 
           data-shown={shown}
           style={{ ...zoneStyle, background: "var(--row-fade-left)" }}
         >
-          <PressableScale
+          <GlassPressable
+            glass={DISC_GLASS}
             hoverScale={1.08}
             tapScale={0.92}
             onClick={() => onScroll("left")}
@@ -62,7 +66,7 @@ export function RowScrollControls({ canLeft, canRight, mounted, shown, onScroll 
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-          </PressableScale>
+          </GlassPressable>
         </div>
       )}
 
@@ -72,7 +76,8 @@ export function RowScrollControls({ canLeft, canRight, mounted, shown, onScroll 
           data-shown={shown}
           style={{ ...zoneStyle, background: "var(--row-fade-right)" }}
         >
-          <PressableScale
+          <GlassPressable
+            glass={DISC_GLASS}
             hoverScale={1.08}
             tapScale={0.92}
             onClick={() => onScroll("right")}
@@ -82,7 +87,7 @@ export function RowScrollControls({ canLeft, canRight, mounted, shown, onScroll 
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
-          </PressableScale>
+          </GlassPressable>
         </div>
       )}
     </>
