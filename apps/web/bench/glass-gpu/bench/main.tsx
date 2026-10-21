@@ -8,6 +8,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "../../../src/theme/tokens.css";
+import "../../../src/theme/liquidGlassTokens.css";
 import "../../../src/theme/glass/physics.css";
 import "../../../src/theme/motion-reduce.css";
 import "./bench.css";

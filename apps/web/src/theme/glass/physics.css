@@ -31,39 +31,56 @@
   /* Reflet : halo sur la face, liseré allumé du côté du pointeur. */
   /* Rayon du halo : une LONGUEUR (`circle` refuse un pourcentage). */
   --lg-specular-size: 72px;
-  --lg-specular-halo: rgba(255, 255, 255, 0.16);
-  --lg-specular-rim: rgba(255, 255, 255, 0.6);
   --lg-specular-rim-size: 96px;
   --lg-specular-opacity-hover: 1;
   --lg-specular-opacity-press: 1;
   --lg-specular-boost-press: 1.6;
-
-  /* Contraste accru : liseré net. */
-  --lg-contrast-border: rgba(255, 255, 255, 0.6);
 }
 
-:root[data-theme="light"] {
-  --lg-specular-halo: rgba(255, 255, 255, 0.55);
-  --lg-specular-rim: rgba(255, 255, 255, 0.9);
-  --lg-contrast-border: rgba(0, 0, 0, 0.55);
+:root[data-liquid-glass="native"] {
+  /* Couleurs du reflet et du liseré contrasté : tirées de la lumière et de
+   * l'ombre du socle (`--lg-light-rgb`, `--lg-shade-rgb`), donc portées par
+   * le mode natif comme toute lecture du verre. */
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.16);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.6);
+  --lg-contrast-border: rgba(var(--lg-light-rgb), 0.6);
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.55);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.9);
+  --lg-contrast-border: rgba(var(--lg-shade-rgb), 0.55);
 }
 
 /* ── Lentille ───────────────────────────────────────────────────────────────
  * La propriété `scale` (et non `transform`) : elle se compose avec le
- * transform d'un parent ou de framer-motion au lieu de l'écraser. */
-html[data-liquid-glass="native"] [data-lg-lens] {
+ * transform d'un parent ou de framer-motion au lieu de l'écraser. Portée par
+ * `data-lg-lens` ET par les boutons en verre de lg-composants (accord du
+ * coordinateur : l'appui GONFLE le verre, il ne le ternit pas). Le
+ * grossissement Tailwind (`hover:scale-*`, `active:scale-*`) s'y ajouterait :
+ * la lentille le remplace. */
+html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary) {
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
   scale: 1;
-  transition: scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing);
+  /* Cette déclaration REMPLACE la transition du bouton (une classe Tailwind
+   * `transition-colors` y perdrait ses fondus) : ses fondus de couleur et
+   * d'opacité sont repris ici, aux durées du socle. */
+  transition:
+    scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing),
+    opacity var(--lg-duration-hover) var(--lg-ease-out),
+    color var(--lg-duration-hover) var(--lg-ease-out),
+    background-color var(--lg-duration-hover) var(--lg-ease-out);
 }
 @media (hover: hover) {
-  html[data-liquid-glass="native"] [data-lg-lens]:hover {
+  html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):hover {
     scale: var(--lg-lens-scale-hover);
   }
 }
-html[data-liquid-glass="native"] [data-lg-lens]:active {
+html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):active {
   scale: var(--lg-lens-scale-press);
 }
-html[data-liquid-glass="native"] [data-lg-lens]:is(:disabled, [aria-disabled="true"]) {
+html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):is(:disabled, [aria-disabled="true"]) {
   scale: 1;
 }
 
@@ -130,7 +147,8 @@ html[data-liquid-glass="native"] .lg-fusion-shape {
  * sélecteurs passent devant les leurs par la spécificité (html + attributs),
  * thème clair compris. */
 html[data-liquid-glass="native"][data-lg-material] {
-  --lg-a11y-solid: rgb(30, 30, 36);
+  /* Le verre plein prend la surface élevée de la page : il ne jure pas avec elle. */
+  --lg-a11y-solid: var(--surface-3);
   --lgc-backdrop: none;
   --lgc-backdrop-clear: none;
   --lgc-backdrop-thick: none;
@@ -139,12 +157,33 @@ html[data-liquid-glass="native"][data-lg-material] {
   --lg-clear-fill: var(--lg-a11y-solid);
   --lg-tinted-fill: var(--lg-tint-gradient), linear-gradient(var(--lg-a11y-solid), var(--lg-a11y-solid));
   --lg-prominent-fill: var(--lg-prominent-gradient), linear-gradient(var(--lg-a11y-solid), var(--lg-a11y-solid));
-  --lgc-media-dim: var(--lg-a11y-solid);
+  --lg-tinted-accent-fill: linear-gradient(var(--lg-tint-accent), var(--lg-tint-accent)), var(--lg-a11y-solid);
+  --lg-prominent-accent-fill: var(--lg-prominent-gradient), linear-gradient(var(--lg-a11y-solid), var(--lg-a11y-solid));
   --lgc-thick-dim: var(--lg-a11y-solid);
   --lgc-veil-fill: var(--lg-a11y-solid);
+  /* Le verre posé sur une AFFICHE ou un média vif garde son libellé BLANC
+   * dans les deux thèmes : son plein est le noir des médias, jamais la
+   * surface claire du thème (illisible en clair). */
+  --lg-a11y-solid-media: rgb(var(--scrim-media-rgb));
+  --lg-media-dim: var(--lg-a11y-solid-media);
+  --lg-clear-dim: var(--lg-a11y-solid-media);
+  --lgc-media-dim: var(--lg-a11y-solid-media);
+  /* La capsule d'icônes de la fiche : un givre CLAIR sous des icônes blanches
+   * (lg-composants, f57bece49). Au plein, c'est le noir des médias — la
+   * surface claire du thème les effacerait. Surchargée en RECETTE, quelle que
+   * soit la couche qu'elle lit. */
+  --lgc-fill-media-icons: var(--lg-a11y-solid-media);
+  /* Sur un plein, les ombres de lisibilité et la vibrance n'ont plus rien à
+   * tenir : le contraste est celui du libellé sur l'aplat. Elles partent
+   * (`text-shadow` / `filter` : `none` est valide pour les deux). */
+  --lg-label-shadow: none;
+  --lg-glyph-shadow: none;
+  --lg-media-label-shadow: none;
+  --lg-media-glyph-shadow: none;
+  --lg-vibrancy-blend: normal;
 }
 html[data-liquid-glass="native"][data-theme="light"][data-lg-material] {
-  --lg-a11y-solid: rgb(242, 242, 247);
+  --lg-a11y-solid: var(--surface-2);
   --lgc-thick-dim: var(--lg-a11y-solid);
 }
 html[data-liquid-glass="native"][data-lg-material="solid"] {
@@ -157,6 +196,13 @@ html[data-liquid-glass="native"][data-lg-material="solid"] {
 html[data-liquid-glass="native"][data-theme="light"][data-lg-material="solid"] {
   --lg-rim: var(--lg-contrast-border);
 }
+/* La surface du socle (`liquidGlassSurface.css`) compose son flou de jetons
+ * locaux (`--lg-blur`…) : on le coupe sur la surface elle-même. Spécificité
+ * (0,4,1), devant ses règles de niveau (0,4,0). */
+html[data-liquid-glass="native"][data-lg-material] .lg-surface[data-lg-render="lens"] {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 html[data-liquid-glass="native"][data-lg-material] .lg-specular {
   display: none;
 }
@@ -164,6 +210,6 @@ html[data-liquid-glass="native"][data-lg-motion="reduce"] {
   --lg-lens-scale-hover: 1;
   --lg-lens-scale-press: 1;
 }
-html[data-liquid-glass="native"][data-lg-motion="reduce"] :is([data-lg-lens], .lg-fusion-shape) {
+html[data-liquid-glass="native"][data-lg-motion="reduce"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary, .lg-fusion-shape) {
   transition: none;
 }

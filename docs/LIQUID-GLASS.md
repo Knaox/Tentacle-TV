@@ -295,6 +295,17 @@ briques React) et la feuille `physics.css`, **portée par
 | Fusion de verres voisins | `<GlassFusion spacing>` + `data-lg-fuse="id"` | `GlassEffectContainer` : sous `spacing` px, un seul verre pour le groupe ; chaque membre garde sa couche (clé stable), un seul porteur visible — deux verres superposés doubleraient la teinte. Animation `layout` de framer (transform) + opacité. |
 | Métamorphose (une barre qui naît d'un bouton) | `glassMorphProps(id, useReducedMotion())` | `layoutId` partagé, ressort `morph`, rayon corrigé par framer si `borderRadius` est en `style`. Mouvement réduit : fondu de 150 ms. |
 
+**Verre natif et mouvement.** Une région de verre NATIF suit la page par une
+animation de sa frame ; elle ne peut pas suivre une échelle image par image.
+- **Jamais de lentille (`data-lg-lens`, ni les boutons en verre qui la
+  portent) sur une surface à verre natif** : la lentille reste aux surfaces
+  rendues par la page.
+- Une région qui se métamorphose ou fusionne envoie au pont
+  `transition: NATIVE_GLASS_MORPH_MS` (584 ms : repos à 0,1 % du trajet), et
+  le natif l'anime par `CASpringAnimation` avec `NATIVE_GLASS_SPRINGS.morph`
+  (raideur 223,8, amortissement 25,13, masse 1) — les constantes de framer,
+  donc la même courbe que la page (`springs.ts`).
+
 **Accessibilité du système.** `installGlassAccessibility()` (dans `main.tsx`,
 avant le premier rendu) lit les media queries — Chromium 150 d'Electron 43
 relaie les trois réglages de macOS, mesuré : aucun pont natif — et pose sur
@@ -353,10 +364,14 @@ imputée à Electron, médiane.
 | Repos | 0 % | 0 % | 0 | 0,5 point | 0 → 0 % |
 | Pointeur posé sur un verre | 0 % | 0 % | 0 | 0,5 point | 0 → 0,1 % |
 | Reflet qui suit (`GlassSpecular`) | 0 % | 5,9 % | +5,9 | 6 points | 5,2 → 16,6 % |
-| Reflet diffus qui suit (`sheen`) | 0 % | 5,8 % | +5,8 | 6 points | 4,8 → 15,2 % |
+| Reflet diffus qui suit (`sheen`) | 0 % | 5,8 % | +5,8 (6,1 à la contre-mesure) | 6 points | 4,8 → 15,2 % |
 | Appuis répétés (lentille) | 0 % | 12,5 % | **50 ms par appui** | 60 ms | 0,7 → 20,6 % |
 | Fusion / séparation | 14,2 % | 22 % | **55 ms par fusion** | 60 ms | 20,2 → 30 % |
 | Balayage, mouvement réduit | 0 % | 0 % | 0 | 1 point | 5,6 → 6,3 % |
+
+Le reflet diffus (`{ sheen: true }`) est AU RAS de son budget — il repeint
+un dégradé à chaque écriture : préférer `<GlassSpecular/>`, qui ne repeint
+rien, et ne garder `sheen` que pour une surface sans couche de reflet.
 
 Dispersion relevée sur quatre passes simples sous charge : reflet 4,3 → 9,6
 points, appui 32 → 56 ms, fusion 37 → 68 ms — d'où `--repeat`. Une passe
