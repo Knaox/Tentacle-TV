@@ -94,7 +94,9 @@ export async function glassDom(page) {
       trappedModals: [...document.querySelectorAll('[role="dialog"], [role="alertdialog"], .lg-sheet')].flatMap((m) => {
         for (let n = m.parentElement; n && n !== document.body; n = n.parentElement) {
           const c = getComputedStyle(n);
-          if (c.transform !== "none" || c.filter !== "none" || c.backdropFilter !== "none") {
+          const r = n.getBoundingClientRect();
+          const fullViewport = r.left <= 0 && r.top <= 0 && r.right >= innerWidth && r.bottom >= innerHeight;
+          if (!fullViewport && (c.transform !== "none" || c.filter !== "none" || c.backdropFilter !== "none")) {
             return [{ modal: (m.getAttribute("aria-label") ?? m.className).slice(0, 60), ancestor: String(n.className).slice(0, 60), backdrop: c.backdropFilter.slice(0, 40), transform: c.transform.slice(0, 30) }];
           }
         }

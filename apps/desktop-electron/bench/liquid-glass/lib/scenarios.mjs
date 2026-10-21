@@ -133,6 +133,8 @@ export async function player(ctx) {
 
 export async function admin(ctx) {
   const { page } = ctx.app;
+  await go(page, "/", 2500);
+  await dismissOverlays(page);
   for (const route of ["/admin", "/admin/users", "/settings/appearance"]) {
     await step(ctx, `admin${route.replaceAll("/", "-")}`, async () => {
       await go(page, route, 2500);

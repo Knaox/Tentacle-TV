@@ -49,6 +49,10 @@ export async function playerPanels(ctx, label) {
     // qui prouve le retrait natif mais ne prévient pas la page.
     const via = await page.evaluate(`return window.__tentaclePlayerGlass?.setLiquidGlass ? "page" : window.tentacle?.liquidGlass ? "pont" : null;`);
     if (!via) return { absent: true };
+    // Seulement verre ALLUMÉ : couper puis rallumer dans une cellule coupée
+    // allumerait le réglage pour toute la suite (artefact du 21/10).
+    const mode = await page.evaluate(`return document.documentElement.getAttribute("data-liquid-glass");`);
+    if (mode !== "native") return { absent: true, mode };
     const set = (on) => via === "page"
       ? `window.__tentaclePlayerGlass.setLiquidGlass(${on}); return true;`
       : `window.tentacle.liquidGlass.setEnabled(${on}); return true;`;
