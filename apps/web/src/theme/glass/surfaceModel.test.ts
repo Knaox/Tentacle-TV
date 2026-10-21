@@ -72,6 +72,14 @@ describe("regionSpecOf", () => {
       tint: "brand",
       interactive: false,
       z: 0,
+      group: null,
+      spacing: null,
+      transition: null,
+    });
+    expect(regionSpecOf({ group: "barre", spacing: 8, transition: 200 })).toMatchObject({
+      group: "barre",
+      spacing: 8,
+      transition: 200,
     });
   });
 });

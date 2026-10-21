@@ -81,6 +81,9 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
     tint: options.tint,
     interactive: options.interactive,
     z: options.z,
+    group: options.group,
+    spacing: options.spacing,
+    transition: options.transition,
   };
   const render = resolveSurfaceRender(useLiquidGlassMode(), backdrop);
 
