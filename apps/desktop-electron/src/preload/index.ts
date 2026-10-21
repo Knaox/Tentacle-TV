@@ -25,6 +25,13 @@ import {
   isAllowedCommand,
   isAllowedEvent,
 } from "../main/channels";
+import { createGlassBatcher } from "../main/liquidGlass/batcher";
+import {
+  AVAILABILITY_ARG,
+  LIQUID_GLASS_CHANNEL,
+  REFRACTS_VIDEO_ARG,
+  type LiquidGlassBridge,
+} from "../main/liquidGlass/protocol";
 
 /** Injectés à la fabrication par le processus principal via `additionalArguments`. */
 function argValue(prefix: string): string {
@@ -93,6 +100,34 @@ const windowing = ((): "libre" | "plein-ecran" | undefined => {
 })();
 
 /**
+ * Le verre natif de macOS 26 (`window.tentacle.liquidGlass`), ABSENT partout
+ * où il n'existe pas : c'est son absence qui cache l'option de Réglages ›
+ * Apparence (`theme/liquidGlassMode.ts`). Le verdict vient du processus
+ * principal, à la fabrication (`main/liquidGlass/detect.ts`).
+ *
+ * Les changements d'une même tâche partent en UN message (`batcher.ts`) ; rien
+ * ne revient, et le principal revalide tout.
+ */
+const liquidGlass = ((): LiquidGlassBridge | undefined => {
+  if (argValue(AVAILABILITY_ARG) !== "native") return undefined;
+  const batcher = createGlassBatcher(
+    (batch) => ipcRenderer.send(LIQUID_GLASS_CHANNEL, batch),
+    (flush) => queueMicrotask(flush),
+  );
+  return {
+    supported: true,
+    refractsVideo: argValue(REFRACTS_VIDEO_ARG) === "1",
+    setEnabled: (enabled) => batcher.setEnabled(enabled === true),
+    upsert: (regions) => {
+      if (Array.isArray(regions)) batcher.upsert(regions);
+    },
+    remove: (ids) => {
+      if (Array.isArray(ids)) batcher.remove(ids);
+    },
+  };
+})();
+
+/**
  * Rejoue le stockage local sauvé par l'app Tauri, une fois pour toutes.
  *
  * C'est ICI et nulle part ailleurs : le preload s'exécute avant le premier
@@ -156,6 +191,7 @@ contextBridge.exposeInMainWorld("tentacle", {
   ...(montage === undefined ? {} : { montage }),
   ...(windowing === undefined ? {} : { fenetrage: windowing }),
   titleBarHeight,
+  ...(liquidGlass === undefined ? {} : { liquidGlass }),
 
   openExternal(url: string): Promise<void> {
     // Le filtrage des schémas est fait côté principal, jamais ici : une liste

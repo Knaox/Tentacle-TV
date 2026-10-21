@@ -19,6 +19,8 @@ import { toggle as toggleWindowFullscreen, isFullscreen } from "./fullscreen";
 import { closePlayerSession, openPlayerSession } from "./playerFullscreenSession";
 import { pipSupported } from "./ipc/pip";
 import { closePip, installPipWindow, pipWindowOpen } from "./pip/pipWindow";
+import { liquidGlassArguments } from "./liquidGlass/detect";
+import { glassSurfaceChanged, installLiquidGlass } from "./liquidGlass/install";
 
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 800;
@@ -43,6 +45,9 @@ export function setPlayerSurfaceTransparent(on: boolean): void {
   const win = mainWindow;
   if (!win) return;
   win.setBackgroundColor(on ? "#00000000" : "#000000");
+  // Le verre natif ne se voit qu'à travers une surface transparente : opaque,
+  // il est caché, et ne coûte plus rien (`liquidGlass/stage.ts`).
+  glassSurfaceChanged(win, on);
 
   // ⚠️ L'OMBRE DE LA FENÊTRE NE REVIENT PLUS — elle est coupée à la fabrication
   // (`macosTitleBar.ts`) et ne se rallume à aucun moment. Deux raisons, chacune
@@ -174,6 +179,10 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
         // La page en a besoin pour SE TAIRE : l'avis pédagogique du plein
         // écran n'a de sens que là où il est réellement imposé.
         `--tentacle-fenetrage=${linuxWindowing() ?? ""}`,
+        // Le verre natif de macOS 26 — son verdict, et s'il voit la vidéo. Par
+        // argument comme le reste : l'option de Réglages › Apparence ne doit
+        // jamais apparaître puis disparaître (`liquidGlass/detect.ts`).
+        ...liquidGlassArguments(),
       ],
     },
   });
@@ -185,6 +194,9 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
   } else {
     lockNavigation(win.webContents);
   }
+
+  // Le verre natif : son canal, et ce qui le démonte avec la page ou la fenêtre.
+  installLiquidGlass(win);
 
   // En DÉVELOPPEMENT seulement, on relaie la console du rendu et les échecs de
   // chargement dans le terminal. Sans ça, une violation de CSP ou un module
