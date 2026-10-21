@@ -168,7 +168,11 @@ html[data-liquid-glass="native"][data-lg-material] {
   --lg-media-dim: var(--lg-a11y-solid-media);
   --lg-clear-dim: var(--lg-a11y-solid-media);
   --lgc-media-dim: var(--lg-a11y-solid-media);
-  --lgc-media-icons-dim: var(--lg-a11y-solid-media);
+  /* La capsule d'icônes de la fiche : un givre CLAIR sous des icônes blanches
+   * (lg-composants, f57bece49). Au plein, c'est le noir des médias — la
+   * surface claire du thème les effacerait. Surchargée en RECETTE, quelle que
+   * soit la couche qu'elle lit. */
+  --lgc-fill-media-icons: var(--lg-a11y-solid-media);
   /* Sur un plein, les ombres de lisibilité et la vibrance n'ont plus rien à
    * tenir : le contraste est celui du libellé sur l'aplat. Elles partent
    * (`text-shadow` / `filter` : `none` est valide pour les deux). */
