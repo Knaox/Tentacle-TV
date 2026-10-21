@@ -30,10 +30,9 @@ import type { StorageAdapter } from "../storage";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { useServerCapabilities } from "../hooks/useServerCapabilities";
 import { tickWithStillWatchingTrial } from "./stillWatchingTrialStore";
+import { shouldResyncStillWatching } from "./stillWatchingResync";
 
 const ROUTE = "/api/preferences/still-watching";
-/** Une relecture par demi-minute suffit — chaque montage n'en refait pas une. */
-const RESYNC_MIN_INTERVAL_MS = 30_000;
 /** Hors du lecteur plus longtemps que ceci : ce n'est plus un enchaînement, le compteur repart. */
 const REENTRY_RESET_MS = 60_000;
 const TICK_MS = 1_000;
@@ -58,8 +57,11 @@ export function initStillWatchingStore(storage: StorageAdapter): StillWatchingSt
 
 /** Un autre appareil du compte a changé le réglage (`preferences:update`, portée `still-watching`). */
 export function resyncStillWatching(): void {
+  // Pas encore de magasin : le premier crochet qui le crée relira le compte. Dater ici
+  // une relecture qui n'a pas eu lieu la lui ferait sauter (`stillWatchingResync.ts`).
+  if (!store) return;
   lastResync = Date.now();
-  void store?.resync();
+  void store.resync();
 }
 
 /** Android TV : à appeler après l'hydrate() du stockage natif. */
@@ -91,7 +93,7 @@ export function useStillWatchingSettings(): StillWatchingSettingsState {
       return;
     }
     const now = Date.now();
-    if (now - lastResync < RESYNC_MIN_INTERVAL_MS) return;
+    if (!shouldResyncStillWatching({ supported: current.readSnapshot().supported, lastResyncAt: lastResync, now })) return;
     lastResync = now;
     void current.resync();
   }, [current, known, available]);

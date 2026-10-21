@@ -36,6 +36,7 @@ import {
   RECO_PAGE_KEY,
   resyncPlaybackSettings,
   resyncStillWatching,
+  rehydrateStillWatching,
   notifyUserChange,
 } from "@tentacle-tv/api-client";
 import { i18n } from "@tentacle-tv/shared";
@@ -107,9 +108,13 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
 
   // L'hydratation du stockage finit APRÈS la construction du client (premier
   // rendu) : il relit ici la graine et l'identité adoptée persistées — sans
-  // quoi l'appareil changerait d'identité Jellyfin à chaque lancement.
+  // quoi l'appareil changerait d'identité Jellyfin à chaque lancement. De même
+  // « Vous regardez encore ? », si son magasin est né avant : sa copie locale
+  // (le réglage, la preuve que le serveur le connaît) vaut pour le hors ligne.
   useEffect(() => {
-    if (storageReady) client.rehydrateIdentity();
+    if (!storageReady) return;
+    client.rehydrateIdentity();
+    rehydrateStillWatching();
   }, [storageReady, client]);
 
   // Rafraîchissement du jeton : à l'expiration signalée par le client et au
