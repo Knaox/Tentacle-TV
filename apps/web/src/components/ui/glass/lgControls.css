@@ -1,11 +1,11 @@
 /* ── Liquid Glass : les CONTRÔLES de la page ──────────────────────────────
  *
  * Boutons, disques des rangées, capsules, plateau du survol des cartes,
- * interrupteur, choix segmenté. Chaque règle vit sous `:root[data-lg="on"]` :
+ * interrupteur, choix segmenté. Chaque règle vit sous `:root[data-liquid-glass="native"]` :
  * sans le drapeau, la classe-marqueur posée sur le composant (`lg-btn`,
  * `lg-disc`…) n'a AUCUN style — le rendu d'avant, au pixel près.
  *
- * Le verre de la page, c'est la réfraction de Chromium (`--lg-backdrop*`),
+ * Le verre de la page, c'est la réfraction de Chromium (`--lgc-backdrop*`),
  * jamais une région native : une région NSGlassEffect par bouton coûterait une
  * vue native par contrôle, resynchronisée à chaque défilement.
  *
@@ -17,74 +17,74 @@
  *  • un verre posé sur un voile opaque (plateau des cartes, ≥ 0,9) n'a pas de
  *    flou : il n'y aurait rien à réfracter. Arête et reflet suffisent.
  *
- * Spécificité : `:root[data-lg] .x` vaut (0,3,0) et l'emporte sur les
+ * Spécificité : `:root[data-liquid-glass] .x` vaut (0,3,0) et l'emporte sur les
  * utilitaires Tailwind et leurs variantes `hover:` (0,2,0) sans `!important`. */
 
 /* ══ 1. Le verre commun ═══════════════════════════════════════════════════ */
 
-:root[data-lg="on"] :is(.lg-btn, .lg-disc) {
+:root[data-liquid-glass="native"] :is(.lg-btn, .lg-disc) {
   position: relative;
   isolation: isolate;
-  background: var(--lg-sheen), var(--lg-fill);
-  -webkit-backdrop-filter: var(--lg-backdrop);
-  backdrop-filter: var(--lg-backdrop);
+  background: var(--lgc-fill);
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
   border-color: transparent;
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+  box-shadow: var(--lgc-edge), var(--lg-shadow-contact);
 }
 
 /* Posé sur une AFFICHE (héros, fiche) : verre sombre et neutre, libellé blanc
  * dans les deux schémas — la règle « posé sur média » des surfaces. */
-:root[data-lg="on"] :is(.lg-btn-media, .lg-capsule-media) {
+:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media) {
   position: relative;
   isolation: isolate;
-  background: var(--lg-sheen), var(--lg-fill-media);
-  -webkit-backdrop-filter: var(--lg-backdrop);
-  backdrop-filter: var(--lg-backdrop);
+  background: var(--lgc-fill-media);
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
   border-color: transparent;
-  box-shadow: var(--lg-rim-strong), var(--lg-shadow-sm);
+  box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
 }
 
 /* L'arête et l'ombre occupent `box-shadow` : les anneaux `ring-*` de Tailwind,
  * qui y vivent aussi, sont recouverts. Le focus clavier passe donc par
  * `outline`, qui ne dépend de rien d'autre. */
-:root[data-lg="on"] :is(.lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .lg-chip, .lg-segmented .ctl-segment):focus-visible {
+:root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .lg-chip, .lg-segmented .ctl-segment):focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
 /* Le survol : un voile clair, sur son calque, dont seule l'opacité change. */
-:root[data-lg="on"] :is(.lg-btn, .lg-btn-media, .lg-disc)::after {
+:root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media, .lg-disc)::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: var(--lg-hover-fill);
+  background: var(--lg-highlight);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 @media (hover: hover) {
-  :root[data-lg="on"] :is(.lg-btn, .lg-btn-media, .lg-disc):hover::after {
+  :root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media, .lg-disc):hover::after {
     opacity: 1;
   }
 }
 
-/* L'appui : le verre s'enfonce. `PressableScale` (disques) a son propre
- * ressort, ce `transform` ne le concerne pas — il porte un style en ligne. */
-:root[data-lg="on"] :is(.lg-btn, .lg-btn-media):active {
-  transform: scale(var(--lg-press-scale));
+/* L'appui : le verre se voile, sans délai (le vocabulaire du socle :
+ * `--lg-opacity-pressed`). Les disques gardent le ressort de `PressableScale`. */
+:root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media):active {
+  opacity: var(--lg-opacity-pressed);
 }
 
 /* Le survol remplace le fond par le voile ci-dessus : un `hover:bg-*` resté
  * sur le composant repeindrait le fond à chaque passage. */
 @media (hover: hover) {
-  :root[data-lg="on"] .lg-btn-media:hover {
-    background: var(--lg-sheen), var(--lg-fill-media);
+  :root[data-liquid-glass="native"] .lg-btn-media:hover {
+    background: var(--lgc-fill-media);
   }
-  :root[data-lg="on"] .lg-btn:hover {
-    background: var(--lg-sheen), var(--lg-fill);
+  :root[data-liquid-glass="native"] .lg-btn:hover {
+    background: var(--lgc-fill);
   }
 }
 
@@ -94,75 +94,75 @@
  * bouton primaire générique. Le dégradé profond rendu translucide : l'affiche
  * passe dessous et se teinte. Le voile noir du survol de `.hero-cta-primary`
  * (son `::before`) reste tel quel — il approfondit le dégradé. */
-:root[data-lg="on"] :is(.hero-cta-primary, .lg-btn-primary) {
-  background: var(--lg-sheen), var(--lg-tint-brand);
-  -webkit-backdrop-filter: var(--lg-backdrop);
-  backdrop-filter: var(--lg-backdrop);
+:root[data-liquid-glass="native"] :is(.hero-cta-primary, .lg-btn-primary) {
+  background: var(--lgc-fill-prominent);
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
   border-color: transparent;
   /* `!important` : `HERO_PLAY_STYLE` pose son ombre EN LIGNE. */
-  box-shadow: var(--lg-rim-strong), var(--lg-tint-brand-glow) !important;
+  box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
 }
 
-:root[data-lg="on"] :is(.hero-cta-primary, .lg-btn-primary):active {
-  transform: scale(var(--lg-press-scale));
+:root[data-liquid-glass="native"] :is(.hero-cta-primary, .lg-btn-primary):active {
+  opacity: var(--lg-opacity-pressed);
 }
 
 /* ══ 3. Le plateau du survol des cartes ═══════════════════════════════════
  *
  * Posé sur le voile du survol (0,9 en bas) : pas de flou. Le modèle
  * (`cardOverlay.ts`) ne change pas — seule la peau. */
-:root[data-lg="on"] .lg-tray {
-  background: var(--lg-sheen), var(--lg-fill-veil);
+:root[data-liquid-glass="native"] .lg-tray {
+  background: var(--lgc-fill-veil);
   border-color: transparent;
-  box-shadow: var(--lg-rim-strong), var(--lg-shadow-sm);
+  box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
 }
 
 /* L'action primaire du plateau, au ton de marque : le même verre teinté que
  * « Lecture », sans flou (même raison). */
-:root[data-lg="on"] .lg-tray [data-tray-primary="brand"] {
-  background: var(--lg-sheen), var(--lg-tint-brand);
-  box-shadow: var(--lg-rim-strong), var(--lg-tint-brand-glow);
+:root[data-liquid-glass="native"] .lg-tray [data-tray-primary="brand"] {
+  background: var(--lgc-fill-prominent);
+  box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand);
 }
 
 /* ══ 4. L'interrupteur ════════════════════════════════════════════════════
  *
  * Le pouce devient une lentille de verre (macOS 26) : blanc laiteux, arête,
  * reflet. La piste allumée garde le dégradé de marque — c'est l'ÉTAT. */
-:root[data-lg="on"] .ctl-switch {
-  background: var(--lg-sheen), var(--lg-fill-thin);
+:root[data-liquid-glass="native"] .ctl-switch {
+  background: var(--lgc-fill);
   border-color: transparent;
-  box-shadow: var(--lg-rim);
+  box-shadow: var(--lgc-edge);
 }
 
-:root[data-lg="on"] .ctl-switch::before {
-  background: var(--lg-sheen), var(--ctl-gradient);
+:root[data-liquid-glass="native"] .ctl-switch::before {
+  background: var(--lgc-sheen), var(--ctl-gradient);
 }
 
-:root[data-lg="on"] .ctl-switch-thumb {
-  background: var(--lg-knob);
-  box-shadow: var(--lg-rim-strong), var(--lg-knob-shadow);
+:root[data-liquid-glass="native"] .ctl-switch-thumb {
+  background: var(--lgc-knob);
+  box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
 }
 
 /* ══ 5. Le choix segmenté ═════════════════════════════════════════════════
  *
  * Le groupe devient une piste de verre en capsule ; l'option retenue, un
  * galet de verre teinté posé dedans. */
-:root[data-lg="on"] .lg-segmented {
-  border-radius: var(--radius-pill);
-  background: var(--lg-sheen), var(--lg-fill-thin);
-  -webkit-backdrop-filter: var(--lg-backdrop-thin);
-  backdrop-filter: var(--lg-backdrop-thin);
+:root[data-liquid-glass="native"] .lg-segmented {
+  border-radius: var(--lg-radius-capsule);
+  background: var(--lgc-fill);
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
   border-color: transparent;
-  box-shadow: var(--lg-rim);
+  box-shadow: var(--lgc-edge);
 }
 
-:root[data-lg="on"] .lg-segmented .ctl-segment {
-  border-radius: var(--radius-pill);
+:root[data-liquid-glass="native"] .lg-segmented .ctl-segment {
+  border-radius: var(--lg-radius-capsule);
 }
 
-:root[data-lg="on"] .ctl-segment::before {
-  background: var(--lg-sheen), var(--lg-tint-brand);
-  box-shadow: var(--lg-rim-strong), var(--ctl-glow-segment);
+:root[data-liquid-glass="native"] .ctl-segment::before {
+  background: var(--lgc-fill-prominent);
+  box-shadow: var(--lgc-edge-strong), var(--ctl-glow-segment);
 }
 
 /* ══ 6. Formes ════════════════════════════════════════════════════════════
@@ -170,11 +170,11 @@
  * Les boutons d'une feuille macOS 26 sont des capsules. Le libellé d'un
  * primaire passe au blanc de marque : il quitte un fond blanc (`cta-primary`)
  * pour le verre teinté. */
-:root[data-lg="on"] .lg-shape-capsule {
-  border-radius: var(--radius-pill);
+:root[data-liquid-glass="native"] .lg-shape-capsule {
+  border-radius: var(--lg-radius-capsule);
 }
 
-:root[data-lg="on"] .lg-btn-primary {
+:root[data-liquid-glass="native"] .lg-btn-primary {
   color: var(--cta-brand-fg);
 }
 
@@ -186,19 +186,19 @@
  * l'affiche. L'arête remplace l'anneau `ring-line-strong` ; une pastille
  * active garde le sien, de marque (`--tw-ring-shadow`, posé par Tailwind),
  * sous sa teinte, qu'on ne touche pas. */
-:root[data-lg="on"] .lg-chip {
-  -webkit-backdrop-filter: var(--lg-backdrop-thin);
-  backdrop-filter: var(--lg-backdrop-thin);
-  box-shadow: var(--lg-rim), var(--lg-shadow-sm);
+:root[data-liquid-glass="native"] .lg-chip {
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
+  box-shadow: var(--lgc-edge), var(--lg-shadow-contact);
 }
 
-:root[data-lg="on"] .lg-chip:not(.lg-chip-on) {
-  background: var(--lg-sheen), var(--lg-fill-thick);
+:root[data-liquid-glass="native"] .lg-chip:not(.lg-chip-on) {
+  background: var(--lgc-fill-thick);
 }
 
-:root[data-lg="on"] .lg-chip-on {
+:root[data-liquid-glass="native"] .lg-chip-on {
   /* Seul le fond change : la teinte (violette ou rose) reste celle de la
    * pastille, en `background-image`. */
-  background-color: var(--lg-fill-thick);
-  box-shadow: var(--lg-rim-strong), var(--tw-ring-shadow, 0 0 #0000);
+  background-color: var(--lgc-thick-dim);
+  box-shadow: var(--lgc-edge-strong), var(--tw-ring-shadow, 0 0 #0000);
 }
