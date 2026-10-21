@@ -40,11 +40,12 @@ describe("physics.css", () => {
 
   it("sous Réduire la transparence / Contraste accru, le verre sur média reste sombre", () => {
     const block = /html\[data-liquid-glass="native"\]\[data-lg-material\] \{([^}]*)\}/.exec(css)?.[1] ?? "";
-    for (const token of ["--lgc-media-dim", "--lgc-fill-media-icons", "--lg-media-dim", "--lg-clear-dim"]) {
+    for (const token of ["--lgc-media-dim", "--lgc-fill-media-icons", "--lgc-badge-dim", "--lg-media-dim", "--lg-clear-dim"]) {
       expect(block).toContain(`${token}: var(--lg-a11y-solid-media)`);
     }
     for (const token of ["--lg-label-shadow", "--lg-glyph-shadow", "--lg-media-label-shadow", "--lg-media-glyph-shadow"]) {
       expect(block).toContain(`${token}: none`);
     }
+    expect(block).toContain("--lg-highlight: transparent");
   });
 });

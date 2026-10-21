@@ -3,6 +3,9 @@ import type { TrickplayInfo } from "@tentacle-tv/shared";
 import { formatDuration } from "./playerControls/utils";
 import { videoShadow } from "../lib/videoShadow";
 import type { TrickplayFrame } from "../hooks/useTrickplay";
+import { usePlayerGlassMode } from "./player/glass/PlayerGlassContext";
+import { isGlassLayout } from "./player/glass/playerGlassMode";
+import { GlassTrickplayBubble } from "./player/glass/GlassTrickplayBubble";
 
 interface TrickplayPreviewProps {
   visible: boolean;
@@ -47,7 +50,13 @@ const ENTER_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
  * ne voit jamais l'image du film et ne peut donc pas la flouter : le flou ne
  * floutait rien et coûtait quand même une couche composée. Ne pas le remettre.
  */
-function TrickplayPreviewImpl({
+function TrickplayPreviewImpl(props: TrickplayPreviewProps) {
+  // Lecteur de bureau en verre : la vignette sertie dans une bulle de verre.
+  const glass = isGlassLayout(usePlayerGlassMode());
+  return glass ? <GlassTrickplayBubble {...props} /> : <LegacyTrickplayPreview {...props} />;
+}
+
+function LegacyTrickplayPreview({
   visible,
   positionSeconds,
   frame,

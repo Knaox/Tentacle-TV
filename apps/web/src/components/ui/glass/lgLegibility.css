@@ -31,3 +31,25 @@
 :root[data-liquid-glass="native"] :is(.lg-btn, .lg-chip, .lg-pill, .lg-field) svg {
   filter: var(--lg-glyph-shadow);
 }
+
+/* ── Libellés secondaires des menus ──
+ * Gris sur un menu clair et coloré par ce qu'il couvre, ils tombaient sous
+ * l'AA. Dans un menu de verre, les teintes tertiaire et quaternaire prennent
+ * la secondaire, et tout libellé porte l'ombre du socle. Surcharge LOCALE des
+ * jetons de texte : rien ne change hors des menus. */
+:root[data-liquid-glass="native"] .lg-menu {
+  --text-tertiary: var(--lg-label-secondary);
+  --text-quaternary: var(--lg-label-secondary);
+  text-shadow: var(--lg-label-shadow);
+}
+
+/* ── La note au repos des cartes ──
+ * Un petit verre SANS flou : elle est montée sur CHAQUE carte de la page, un
+ * `backdrop-filter` par carte se recalculerait à chaque défilement. Voile de
+ * la note (`--lgc-badge-dim`, l'AA d'un libellé de 11 px), arête, ombre. */
+:root[data-liquid-glass="native"] .lg-badge {
+  background: var(--lgc-fill-badge);
+  border-color: transparent;
+  box-shadow: var(--lgc-edge);
+  text-shadow: var(--lg-media-label-shadow);
+}

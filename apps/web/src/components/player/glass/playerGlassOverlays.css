@@ -54,7 +54,7 @@
   width: 1px;
   flex-shrink: 0;
   margin: 12px 0;
-  background: rgb(0 0 0 / 0.3);
+  background: var(--lg-player-separator);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__close {
@@ -124,4 +124,79 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge--round {
   width: 92px;
   height: 92px;
+}
+
+/* ── Watch Together dans le lecteur ──────────────────────────────────── */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-wt-members {
+  position: absolute;
+  top: calc(var(--lg-player-edge) + 3px);
+  right: var(--lg-player-edge);
+  z-index: 20;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-wt-capsule {
+  border-radius: var(--lg-player-radius-capsule);
+}
+
+/* La couleur d'ATTENTE du web (ambre), en pleins : un ambre translucide grise sur le verre. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-wt-spinner {
+  border-color: var(--lg-player-wait-track);
+  border-top-color: var(--lg-player-wait);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-wt-text {
+  color: var(--lg-player-fg);
+}
+
+/* ── Les avis posés sur la vidéo (`NoticeCard surface="player"`) ──────── */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-notice {
+  overflow: hidden;
+  border-radius: var(--lg-player-radius-row);
+  color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__meta {
+  color: var(--lg-player-fg-3);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__line {
+  color: var(--lg-player-fg-2);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__chip {
+  background: var(--lg-player-icon-well);
+  color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__secondary {
+  border-color: var(--lg-player-chip-line);
+  color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__secondary:hover,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__close:hover {
+  background: var(--lg-player-icon-well);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__close {
+  color: var(--lg-player-fg-2);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-notice__track {
+  background: var(--lg-player-track);
+}
+
+/* ── L'attente en lecture (`PlaybackSpinner`) ────────────────────────── */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge--spinner {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--lg-player-track);
+  border-top-color: var(--lg-player-fg);
 }

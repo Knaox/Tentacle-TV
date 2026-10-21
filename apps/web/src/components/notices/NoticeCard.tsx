@@ -4,6 +4,9 @@ import { useTranslation } from "react-i18next";
 import type { NoticeSeverity } from "@tentacle-tv/shared";
 import type { MessageCountdown } from "../session/useMessageCountdown";
 import { useGlassControl } from "../ui/glass/useGlassControl";
+import { usePlayerGlassMode } from "../player/glass/PlayerGlassContext";
+import { isGlassLayout } from "../player/glass/playerGlassMode";
+import { GlassSurface } from "../player/glass/GlassSurface";
 
 export type NoticeIcon = "server" | "key" | "check" | "alert" | "gauge" | "wifiOff";
 
@@ -47,6 +50,22 @@ const SURFACES = {
   },
 } as const;
 
+/**
+ * `player` dans le lecteur de bureau en VERRE : la matière est native, la page
+ * ne peint que du plein ou du noir à alpha (cf. `player/glass/playerGlass.css`)
+ * — ni liseré translucide, ni ombre (floue, elle sortirait en aplat noir sur
+ * la surface à alpha).
+ */
+const GLASS_LOOK = {
+  root: "lgp-notice",
+  meta: "lgp-notice__meta",
+  line: "lgp-notice__line",
+  secondary: "lgp-notice__secondary",
+  close: "lgp-notice__close",
+  track: "lgp-notice__track",
+  infoChip: "lgp-notice__chip",
+} as const;
+
 interface Props {
   severity: NoticeSeverity;
   icon: NoticeIcon;
@@ -76,19 +95,15 @@ export const NoticeCard = memo(function NoticeCard({
 }: Props) {
   const { t } = useTranslation(["notices", "sessions"]);
   const tone = TONES[severity];
-  const look = SURFACES[surface];
+  // Le lecteur de bureau en verre (`player`) : une surface NATIVE (`GlassRoot`).
+  const playerGlass = isGlassLayout(usePlayerGlassMode()) && surface === "player";
+  const look = playerGlass ? GLASS_LOOK : SURFACES[surface];
   const chip = severity === "info" ? look.infoChip : tone.chip;
   const Icon = ICONS[icon];
   // En mode natif, la carte de l'app (pas celle du lecteur) : la lentille exacte.
   const glass = useGlassControl<HTMLDivElement>({ lens: surface === "app" ? "regular" : false });
-  return (
-    <div
-      ref={glass.ref}
-      {...glass.props}
-      role={severity === "blocking" ? "alert" : "status"}
-      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
-    >
-      {glass.layers}
+  const content = (
+    <>
       <span aria-hidden className={`w-1 shrink-0 rounded-full ${tone.accent}`} />
       <div className="min-w-0 flex-1 py-0.5">
         <div className="flex items-start gap-2.5">
@@ -148,6 +163,29 @@ export const NoticeCard = memo(function NoticeCard({
           />
         </span>
       )}
+    </>
+  );
+  if (playerGlass) {
+    return (
+      <GlassRoot role={severity === "blocking" ? "alert" : "status"} className={`relative flex items-stretch gap-3 py-3 pl-3 pr-1 ${look.root}`}>
+        {content}
+      </GlassRoot>
+    );
+  }
+  return (
+    <div
+      ref={glass.ref}
+      {...glass.props}
+      role={severity === "blocking" ? "alert" : "status"}
+      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
+    >
+      {glass.layers}
+      {content}
     </div>
   );
 });
+
+/** La carte en verre : une surface native du lecteur. */
+function GlassRoot({ className, role, children }: { className: string; role: string; children: React.ReactNode }) {
+  return <GlassSurface className={className} role={role} group="player-notice">{children}</GlassSurface>;
+}

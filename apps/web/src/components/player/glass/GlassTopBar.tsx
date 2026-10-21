@@ -21,7 +21,7 @@ export function GlassTopBar({ visible, title, subtitle, isDirectPlay, goBack }: 
   const { t } = useTranslation("player");
   return (
     <div className="lgp-top" onClick={(e) => e.stopPropagation()}>
-      <GlassSurface className="lgp-topbar" present={visible}>
+      <GlassSurface className="lgp-topbar lgp-morph lgp-morph--top" present={visible}>
         <div className="lgp-content lgp-topbar__inner">
           <button type="button" onClick={() => goBack()} className="lgp-btn" aria-label={t("player:back")} title={t("player:back")}>
             <BackIcon />

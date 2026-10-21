@@ -25,13 +25,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { PLAYBACK_RATES, NORMAL_RATE, formatRate, isNormalRate } from "@tentacle-tv/shared";
+import { PLAYBACK_RATES, formatRate, isNormalRate } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { SpeedIcon } from "../PlayerIcons";
+import { usePlaybackRate, type PlaybackRateState } from "./usePlaybackRate";
 import { usePlayerGlassMode } from "../player/glass/PlayerGlassContext";
 import { isGlassLayout } from "../player/glass/playerGlassMode";
 import { GlassPanel } from "../player/glass/GlassPanel";
 import { GlassOption } from "../player/glass/GlassOption";
+import { GlassMorphSeed } from "../player/glass/GlassMorphSeed";
+import { PLAYER_MORPH } from "../player/glass/playerGlassFusion";
 
 interface PlaybackRateControlProps {
   /** Applique le taux au moteur (web : playbackRate ; desktop : mpv speed). */
@@ -44,31 +47,30 @@ interface PlaybackRateControlProps {
   otherPanelOpen?: boolean;
   /** Ce menu vient de s'ouvrir — à la barre de fermer les siens. */
   onOpen?: () => void;
+  /**
+   * Le taux, tenu PLUS HAUT (`usePlaybackRate`) quand ce bouton peut se
+   * remonter en pleine lecture (le lecteur de bureau qui change d'habillage) ;
+   * absent, le bouton tient le sien.
+   */
+  state?: PlaybackRateState;
 }
 
 export function PlaybackRateControl({
-  apply, resetKey, buttonClass = "", otherPanelOpen = false, onOpen,
+  apply, resetKey, buttonClass = "", otherPanelOpen = false, onOpen, state,
 }: PlaybackRateControlProps) {
   const { t } = useTranslation("player");
   const { isInGroup } = useWatchTogether();
-  const [rate, setRate] = useState<number>(NORMAL_RATE);
+  const own = usePlaybackRate(apply, resetKey, state === undefined);
+  const { rate, choose: chooseRate } = state ?? own;
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   // Verre : le conteneur n'est PAS positionné — le menu se cale alors sur la
   // capsule (`.lgp-popover`), au-dessus d'elle, comme les deux autres panneaux.
   const glass = isGlassLayout(usePlayerGlassMode());
 
-  // `apply` est recréée à chaque rendu du parent : la garder en ref évite
-  // de relancer la remise à 1× à chaque tour.
-  const applyRef = useRef(apply);
-  applyRef.current = apply;
-
-  // Remise à la vitesse normale au changement de média et à l'entrée en groupe.
-  // Indispensable côté mpv : sa propriété `speed` SURVIT au loadfile, donc un
-  // épisode lancé à 2× repartirait à 2× sans que rien ne l'affiche.
+  // Le menu se referme au changement de média et à l'entrée en groupe (le taux,
+  // lui, s'y remet à 1× : `usePlaybackRate`).
   useEffect(() => {
-    setRate(NORMAL_RATE);
-    applyRef.current(NORMAL_RATE);
     setOpen(false);
   }, [resetKey, isInGroup]);
 
@@ -89,10 +91,9 @@ export function PlaybackRateControl({
   }, [open]);
 
   const choose = useCallback((value: number) => {
-    setRate(value);
-    applyRef.current(value);
+    chooseRate(value);
     setOpen(false);
-  }, []);
+  }, [chooseRate]);
 
   const openRef = useRef(onOpen);
   openRef.current = onOpen;
@@ -115,6 +116,7 @@ export function PlaybackRateControl({
         aria-haspopup="menu"
         aria-expanded={open}
       >
+        {glass && <GlassMorphSeed id={PLAYER_MORPH.speed} />}
         <SpeedIcon />
         {/* Pastille du taux courant : seulement hors vitesse normale, sinon
             elle serait un « 1x » permanent qui n'apprend rien. */}
@@ -127,7 +129,7 @@ export function PlaybackRateControl({
 
       <AnimatePresence>
         {open && glass && (
-          <GlassPanel key="speed" className="w-44" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
+          <GlassPanel key="speed" morphId={PLAYER_MORPH.speed} className="w-52" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
             <div className="mb-1 flex items-center justify-between gap-2 pl-2.5">
               <span className="lgp-section-title lgp-section-title--inline">{t("player:speed")}</span>
               <button type="button" onClick={() => setOpen(false)} aria-label={t("player:close")} title={t("player:close")} className="lgp-btn lgp-btn--small">

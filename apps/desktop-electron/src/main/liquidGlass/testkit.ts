@@ -8,6 +8,8 @@
 
 import type { GlassBackend, GlassInspection, GlassProps, GroupHandle, ViewHandle } from "./backend";
 import type { AppKitRect, Rgba } from "./geometry";
+import type { GlassAppearance } from "./protocol";
+import type { NativeMotion } from "./springCurve";
 
 export interface FakeView {
   readonly kind: "content" | "root" | "container" | "groupContent" | "glass";
@@ -21,6 +23,7 @@ export interface FakeView {
   alpha: number;
   hidden: boolean;
   spacing: number;
+  appearance: GlassAppearance | null;
   released: boolean;
 }
 
@@ -31,7 +34,7 @@ export class FakeBackend implements GlassBackend {
   private counter = 0;
 
   private make(kind: FakeView["kind"], name: string): FakeView {
-    return { kind, name, parent: null, children: [], frame: { x: 0, y: 0, width: 0, height: 0 }, radius: 0, style: 0, tint: null, alpha: 1, hidden: false, spacing: 0, released: false };
+    return { kind, name, parent: null, children: [], frame: { x: 0, y: 0, width: 0, height: 0 }, radius: 0, style: 0, tint: null, alpha: 1, hidden: false, spacing: 0, appearance: null, released: false };
   }
 
   private view(handle: ViewHandle): FakeView {
@@ -63,12 +66,13 @@ export class FakeBackend implements GlassBackend {
     this.view(handle).hidden = hidden;
   }
 
-  createGroup(root: ViewHandle, spacing: number): GroupHandle {
+  createGroup(root: ViewHandle, spacing: number, alpha: number): GroupHandle {
     this.counter += 1;
-    this.ops.push(`createGroup ${String(spacing)}`);
+    this.ops.push(`createGroup ${String(spacing)} alpha ${String(alpha)}`);
     const container = this.make("container", `container${String(this.counter)}`);
     const content = this.make("groupContent", `groupContent${String(this.counter)}`);
     container.spacing = spacing;
+    container.alpha = alpha;
     container.children.push(content);
     content.parent = container;
     const parent = this.view(root);
@@ -86,13 +90,18 @@ export class FakeBackend implements GlassBackend {
     this.counter += 1;
     this.ops.push("createGlass");
     const glass = this.make("glass", `glass${String(this.counter)}`);
-    Object.assign(glass, { frame: props.frame, radius: props.radius, style: props.style, tint: props.tint, alpha: props.alpha });
+    Object.assign(glass, { frame: props.frame, radius: props.radius, style: props.style, tint: props.tint, appearance: props.appearance });
     return { native: glass };
   }
 
-  setFrame(handle: ViewHandle, frame: AppKitRect, durationMs: number): void {
-    this.ops.push(`setFrame ${String(durationMs)}`);
+  setFrame(handle: ViewHandle, frame: AppKitRect, motion: NativeMotion | null): void {
+    this.ops.push(`setFrame ${motion === null ? "direct" : `ressort ${String(motion.durationMs)}`}`);
     this.view(handle).frame = frame;
+  }
+
+  setAppearance(handle: ViewHandle, appearance: GlassAppearance | null): void {
+    this.ops.push(`setAppearance ${String(appearance)}`);
+    this.view(handle).appearance = appearance;
   }
 
   setRadius(handle: ViewHandle, radius: number): void {
@@ -111,8 +120,11 @@ export class FakeBackend implements GlassBackend {
   }
 
   setAlpha(handle: ViewHandle, alpha: number, durationMs: number): void {
-    this.ops.push(`setAlpha ${String(alpha)} ${String(durationMs)}`);
-    this.view(handle).alpha = alpha;
+    const view = this.view(handle);
+    // Comme AppKit : sur un verre, l'alpha ne fait rien (mesuré) — le test le saurait.
+    if (view.kind === "glass") throw new Error("alpha pose sur un verre : sans effet dans AppKit");
+    this.ops.push(`setAlpha ${view.kind} ${String(alpha)} ${String(durationMs)}`);
+    view.alpha = alpha;
   }
 
   placeBelow(parentHandle: ViewHandle, handle: ViewHandle, anchor: ViewHandle | null): void {

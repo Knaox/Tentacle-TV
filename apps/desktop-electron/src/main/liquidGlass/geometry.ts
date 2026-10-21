@@ -92,7 +92,7 @@ export function parseTint(hex: string | null): Rgba | null {
  *
  * AppKit n'en a que deux : `Regular` (0) et `Clear` (1). `tinted` et
  * `prominent` sont le verre ordinaire AVEC sa teinte — c'est la teinte qui les
- * distingue, et elle arrive par `tint`. Jamais une variante privée (`_variant`) :
+ * distingue, et elle arrive par `tint`. Jamais une variante non publique :
  * le build du Mac App Store reçoit exactement ce code.
  */
 export function nativeStyle(level: NativeGlassLevel): 0 | 1 {
