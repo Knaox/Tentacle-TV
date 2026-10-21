@@ -45,10 +45,10 @@
 
 /* ── La note au repos des cartes ──
  * Un petit verre SANS flou : elle est montée sur CHAQUE carte de la page, un
- * `backdrop-filter` par carte se recalculerait à chaque défilement. Voile
- * léger, arête, et l'ombre du libellé pour la lisibilité sur l'affiche. */
+ * `backdrop-filter` par carte se recalculerait à chaque défilement. Voile de
+ * la note (`--lgc-badge-dim`, l'AA d'un libellé de 11 px), arête, ombre. */
 :root[data-liquid-glass="native"] .lg-badge {
-  background: var(--lgc-fill-media);
+  background: var(--lgc-fill-badge);
   border-color: transparent;
   box-shadow: var(--lgc-edge);
   text-shadow: var(--lg-media-label-shadow);
