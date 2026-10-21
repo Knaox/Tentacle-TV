@@ -24,6 +24,11 @@
  *   zéro, la primitive (lg-tokens) relit le rectangle — transformations
  *   comprises — à chaque image et le verre le suit exactement.
  *
+ * Une surface fixe BOUGE aussi quand la fenêtre change de taille (la barre du
+ * bas suit le bord) : le temps du redimensionnement, sa transition tombe à
+ * zéro (`windowResizing.ts`) — mesuré sans cela : le verre du bas sortait de
+ * la fenêtre puis remontait au ressort, jusqu'à 160 pt de sa capsule, 300 ms.
+ *
  * # Présence
  *
  * `present` faux (contrôles masqués) ou sortie en cours (`AnimatePresence` :
@@ -37,6 +42,7 @@ import type { GlassMorphProps } from "../../../theme/glass";
 import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
 import { useNativeGlassRegion, type GlassRegionOptions } from "./nativeGlassPort";
 import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
+import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
 
 /**
@@ -79,6 +85,7 @@ export function GlassSurface({
   const isPresent = useIsPresent();
   const chromeVisible = useContext(GlassChromeVisibleContext);
   const regionsAllowed = usePlayerGlassRegionsAllowed();
+  const resizing = useWindowResizing();
   // Une surface qui se métamorphose garde sa région pendant sa sortie : elle rentre dans son bouton.
   const shown = present && (isPresent || morph !== undefined) && chromeVisible;
   const ref = useRef<HTMLDivElement | null>(null);
@@ -92,7 +99,7 @@ export function GlassSurface({
     active: mode === "native" && shown && regionsAllowed,
     group,
     variant,
-    transition,
+    transition: resizing ? 0 : transition,
     spacing: spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
   });
 
