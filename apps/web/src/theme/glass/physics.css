@@ -25,7 +25,8 @@
   --lg-lens-scale-press: 1.1;
 
   /* Reflet : halo sur la face, liseré allumé du côté du pointeur. */
-  --lg-specular-size: 70%;
+  /* Rayon du halo : une LONGUEUR (`circle` refuse un pourcentage). */
+  --lg-specular-size: 72px;
   --lg-specular-halo: rgba(255, 255, 255, 0.16);
   --lg-specular-rim: rgba(255, 255, 255, 0.5);
   --lg-specular-opacity-hover: 1;
