@@ -9,12 +9,13 @@ import {
 import { Skeleton } from "@/components/ui";
 import { PersonalizationHomeSection } from "@/components/settings/personalization/PersonalizationHomeSection";
 import { PersonalizationRecoSection } from "@/components/settings/personalization/PersonalizationRecoSection";
+import { LinkedAccountsSection } from "@/components/settings/personalization/LinkedAccountsSection";
 import { spacing } from "@/theme";
 import { SettingsScaffold } from "./SettingsScaffold";
 
 /**
- * Personnalisation — l'accueil (bandeau, densité, rangées) et les réglages
- * de recommandation, comme sur le web. Relus à chaque focus : ce qu'un autre
+ * Personnalisation — l'accueil (bandeau, densité, rangées), les réglages
+ * de recommandation et les comptes liés (TMDB), comme sur le web. Relus à chaque focus : ce qu'un autre
  * appareil a changé est là à l'ouverture.
  *
  * Le VOLET est le contenu seul : l'écran l'habille de son en-tête sur
@@ -56,6 +57,7 @@ export function PersonalizationPane() {
       ) : (
         <Skeleton width="100%" height={240} radius={16} />
       )}
+      <LinkedAccountsSection />
     </>
   );
 }
