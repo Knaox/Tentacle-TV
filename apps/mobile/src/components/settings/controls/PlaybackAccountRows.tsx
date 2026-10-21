@@ -8,6 +8,7 @@ import { SettingsChoiceRow } from "../SettingsChoiceRow";
 import type { SettingScope } from "../ScopeBadge";
 import { stillWatchingChoices } from "../stillWatchingChoices";
 import { SegmentedSettingRow, SwitchSettingRow } from "./SettingRowKit";
+import { StillWatchingTrialRow } from "./StillWatchingTrialRow";
 
 interface RowProps {
   scope: SettingScope | null;
@@ -69,7 +70,8 @@ export function NextAutoPlayRow({ scope, last }: RowProps) {
  * « Êtes-vous encore là ? » — la MÊME portée que le bureau : le réglage du
  * compte (`/api/preferences/still-watching`), rendu seulement face à un
  * serveur qui déclare `playback.stillWatching` (la structure le garde). Un
- * interrupteur, puis, allumé, quand demander et combien de temps laisser.
+ * interrupteur, puis, allumé, quand demander, combien de temps laisser, et
+ * « Essayer » pour voir la question sans attendre (`StillWatchingTrialRow`).
  */
 export function StillWatchingRows({ scope, last }: RowProps) {
   const { t } = useTranslation("preferences");
@@ -102,8 +104,8 @@ export function StillWatchingRows({ scope, last }: RowProps) {
             options={choices.countdown}
             value={String(settings.countdownMs)}
             onChange={(value) => set({ countdownMs: Number(value) })}
-            last={last}
           />
+          <StillWatchingTrialRow last={last} />
         </>
       )}
     </>
