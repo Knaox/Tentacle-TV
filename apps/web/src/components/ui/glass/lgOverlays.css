@@ -1,0 +1,92 @@
+/* ── Liquid Glass : ce qui FLOTTE sur la page ─────────────────────────────
+ *
+ * Menus et déroulants, feuilles et modales, toasts. Même contrat que
+ * `lgControls.css` : tout sous `:root[data-liquid-glass="native"]`, aucun style sans lui.
+ *
+ * ⚠️ `!important`, et seulement ici : `Modal`, `Sheet`, `Dropdown` et `Toast`
+ * peignent leur surface en STYLE EN LIGNE, qu'aucun sélecteur ne bat. Le
+ * retirer du JSX aurait changé l'ordre de priorité face aux `className` des
+ * appelants — donc le rendu hors verre. Seules les propriétés de peau en
+ * portent un ; `opacity` et `transform` (framer-motion) jamais. */
+
+/* ══ 1. Menus, déroulants, menus contextuels ══════════════════════════════
+ *
+ * Le verre le plus « vrai » de la page : un menu est ouvert peu de temps,
+ * son contenu ne bouge pas — le flou épais et la réfraction s'y paient une
+ * fois. Avant, un fond à 0,95 rendait son flou invisible. */
+:root[data-liquid-glass="native"] .lg-menu {
+  corner-shape: var(--lg-corner-shape);
+  background: var(--lgc-fill-thick) !important;
+  -webkit-backdrop-filter: var(--lgc-backdrop-thick) !important;
+  backdrop-filter: var(--lgc-backdrop-thick) !important;
+  border-color: transparent !important;
+  border-radius: var(--lg-radius-md) !important;
+  box-shadow: var(--lgc-edge), var(--lg-shadow-float) !important;
+}
+
+/* ══ 2. Modales : la feuille de macOS 26 ══════════════════════════════════
+ *
+ * Verre ÉPAIS, grand rayon, arête franche. Le panneau n'a PAS de
+ * `backdrop-filter`, et c'est voulu : le voile de la modale floute déjà
+ * toute la page dessous (`--blur-modal`). Un verre translucide posé sur un
+ * fond déjà flouté se lit exactement comme un verre dépoli — pour rien.
+ * Un flou de plus sur le panneau se recalculait à chaque image dès que son
+ * contenu bougeait (98 i/s contre 219, mesuré : cf. `Modal.tsx`). */
+:root[data-liquid-glass="native"] .lg-sheet {
+  corner-shape: var(--lg-corner-shape);
+  background: var(--lgc-fill-thick) !important;
+  border-color: transparent !important;
+  border-radius: var(--lg-radius-xl) !important;
+  box-shadow: var(--lgc-edge-strong), var(--lg-shadow-raised) !important;
+}
+
+/* La feuille LATÉRALE (`Sheet`, côté droit ou bas) garde ses coins collés au
+ * bord : seuls ses coins libres prennent le grand rayon — le composant pose
+ * les quatre en ligne, ce bloc ne touche que la peau. */
+:root[data-liquid-glass="native"] .lg-sheet[data-side] {
+  border-radius: 0 !important;
+  /* Son voile ne floute pas, lui : le flou est donc sur la feuille. Il ne se
+   * recalcule que pendant le glissement d'entrée, puis la page dessous est
+   * immobile. */
+  -webkit-backdrop-filter: var(--lgc-backdrop-thick) !important;
+  backdrop-filter: var(--lgc-backdrop-thick) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-sheet[data-side="right"] {
+  border-top-left-radius: var(--lg-radius-xl) !important;
+  border-bottom-left-radius: var(--lg-radius-xl) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-sheet[data-side="bottom"] {
+  border-top-left-radius: var(--lg-radius-xl) !important;
+  border-top-right-radius: var(--lg-radius-xl) !important;
+}
+
+/* Le voile sous la feuille : plus léger, le verre épais porte désormais la
+ * séparation. Le flou du voile, lui, reste — c'est lui qui fait le dépoli. */
+:root[data-liquid-glass="native"] .lg-scrim {
+  background: var(--lgc-scrim) !important;
+}
+
+/* ══ 3. Toasts ════════════════════════════════════════════════════════════
+ *
+ * Un galet de verre ; le TON (succès, erreur, info) reste lisible par une
+ * teinte légère sous le reflet, la barre qui se vide et le rôle annoncé. */
+:root[data-liquid-glass="native"] .lg-toast {
+  corner-shape: var(--lg-corner-shape);
+  --lgc-toast-tint: var(--brand-soft);
+  background: linear-gradient(var(--lgc-toast-tint), var(--lgc-toast-tint)), var(--lgc-fill-thick) !important;
+  -webkit-backdrop-filter: var(--lgc-backdrop) !important;
+  backdrop-filter: var(--lgc-backdrop) !important;
+  border-color: transparent !important;
+  border-radius: var(--lg-radius-sm) !important;
+  box-shadow: var(--lgc-edge), var(--lg-shadow-float) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-toast[data-tone="success"] {
+  --lgc-toast-tint: var(--status-success-bg);
+}
+
+:root[data-liquid-glass="native"] .lg-toast[data-tone="error"] {
+  --lgc-toast-tint: var(--status-error-bg);
+}

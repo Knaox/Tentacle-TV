@@ -52,11 +52,12 @@ export const Toast = memo(function Toast({ id, type, title, message, onDismiss }
       exit={{ opacity: 0, x: reduced ? 0 : 50, transition: { duration: exitDuration(duration.base) } }}
       transition={{ duration: duration.base }}
       role={type === "error" ? "alert" : "status"}
+      data-tone={type}
       /* `backdrop-blur-md` en classe et non en style en ligne : un attribut
          `style` échappe à la passe de verre du portage téléviseur, où un flou
          d'arrière-plan coûte une recopie et un recalcul par image sans rien
          apporter. La classe rend le même flou sur le web. */
-      className="relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg backdrop-blur-md"
+      className="lg-toast relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg backdrop-blur-md"
       style={{ background: c.bg, border: `1px solid ${c.border}` }}
       onClick={() => onDismiss(id)}
       onPointerEnter={() => setHeld(true)}

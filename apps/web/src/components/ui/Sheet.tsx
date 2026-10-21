@@ -142,7 +142,8 @@ export function Sheet({
             aria-modal="true"
             aria-labelledby={labelledBy}
             tabIndex={-1}
-            className={`absolute outline-none ${className ?? ""}`}
+            className={`lg-sheet absolute outline-none ${className ?? ""}`}
+            data-side={isRight ? "right" : "bottom"}
             style={{
               ...panelStyle,
               background: "var(--surface-sheet)",

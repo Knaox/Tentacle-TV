@@ -1,0 +1,71 @@
+/* ── Liquid Glass : les RECETTES des composants (`--lgc-*`) ────────────────
+ *
+ * Le matériau appartient à lg-tokens (`theme/liquidGlassTokens.css`, jetons
+ * `--lg-*`). Ici, rien que des COMPOSITIONS de ces jetons — une arête faite de
+ * trois traits, un `backdrop-filter` complet, un reflet — pour que les feuilles
+ * des composants n'en recopient aucune. Préfixe à part (`--lgc-`) : aucun nom
+ * du socle n'est redéfini.
+ *
+ * Les seules VALEURS du fichier sont au bas de chaque bloc, marquées « à
+ * reprendre » : des épaisseurs dont le socle n'a pas (encore) d'équivalent.
+ *
+ * Tout vit sous `:root[data-liquid-glass="native"]` : hors du mode natif
+ * (réglage coupé, web, Windows, Linux, macOS < 26), aucun de ces noms
+ * n'existe, et aucune règle des feuilles `lg*.css` ne s'applique. */
+
+:root[data-liquid-glass="native"] {
+  /* Le filtre de réfraction monté une fois par `GlassFilters` : la carte
+   * générique, faute de connaître la géométrie de chaque bouton (les surfaces
+   * de la primitive `LiquidGlass` ont la leur). */
+  --lgc-refract: url(#tentacle-glass-refract);
+
+  /* ── Le fond vu à travers, par épaisseur ── */
+  --lgc-backdrop-clear: blur(var(--lg-clear-blur)) saturate(var(--lg-clear-saturate)) brightness(var(--lg-clear-brightness)) var(--lgc-refract);
+  --lgc-backdrop: blur(var(--lg-regular-blur)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness)) var(--lgc-refract);
+  --lgc-backdrop-thick: blur(calc(var(--lg-regular-blur) * 2)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness)) var(--lgc-refract);
+  --lgc-backdrop-prominent: blur(var(--lg-prominent-blur)) saturate(var(--lg-prominent-saturate)) brightness(var(--lg-prominent-brightness)) var(--lgc-refract);
+
+  /* ── L'arête : trois traits INTÉRIEURS, fixes ──
+   * Le liseré tout autour, l'arête claire en haut, la contre-arête en bas.
+   * C'est elle, plus que le flou, qui fait lire un matériau. */
+  --lgc-edge:
+    inset 0 0 0 var(--lg-rim-width) var(--lg-rim),
+    inset 0 var(--lg-rim-width) 0 var(--lg-specular-soft),
+    inset 0 calc(-1 * var(--lg-rim-width)) 0 var(--lg-inner-glow);
+  --lgc-edge-strong:
+    inset 0 0 0 var(--lg-rim-width) var(--lg-rim),
+    inset 0 var(--lg-rim-width) 0 var(--lg-specular-strong),
+    inset 0 calc(-1 * var(--lg-rim-width)) 0 var(--lg-specular-soft);
+
+  /* ── Le reflet diffus, à la source de lumière ──
+   * `--lg-light-x/y` : lg-physique les fait suivre le pointeur. */
+  --lgc-sheen: radial-gradient(130% 90% at var(--lg-light-x) var(--lg-light-y), var(--lg-highlight) 0%, transparent 70%);
+
+  /* La lueur de marque sous un verre proéminent (« Lecture »). */
+  --lgc-glow-brand: 0 4px 18px var(--lg-tint-brand);
+
+  /* ── Les voiles, par usage ── */
+  --lgc-fill: var(--lgc-sheen), var(--lg-regular-fill);
+  --lgc-fill-media: var(--lgc-sheen), linear-gradient(var(--lgc-media-dim), var(--lgc-media-dim));
+  --lgc-fill-thick: var(--lgc-sheen), linear-gradient(var(--lgc-thick-dim), var(--lgc-thick-dim)), var(--lg-regular-fill);
+  --lgc-fill-prominent: var(--lgc-sheen), var(--lg-prominent-fill);
+  --lgc-fill-veil: var(--lgc-sheen), var(--lgc-veil-fill);
+
+  /* À reprendre par lg-tokens — épaisseurs sans équivalent dans le socle :
+   *  • le verre POSÉ SUR UNE AFFICHE : noir dans les deux schémas, comme tout
+ *    ce qui est « posé sur média » — son libellé est blanc partout ;
+   *  • le verre ÉPAIS des menus et des feuilles (lisible sur toute page) ;
+   *  • le verre sur un voile DÉJÀ sombre (plateau des cartes, sans flou) ;
+   *  • le pouce laiteux de l'interrupteur ;
+   *  • le voile sous une feuille, plus léger : le verre épais sépare. */
+  --lgc-media-dim: rgba(var(--scrim-media-rgb), 0.34);
+  --lgc-thick-dim: rgba(18, 18, 26, 0.6);
+  --lgc-veil-fill: rgba(255, 255, 255, 0.1);
+  --lgc-knob: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 244, 248, 0.92));
+  --lgc-scrim: rgba(0, 0, 0, 0.42);
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lgc-thick-dim: rgba(250, 250, 252, 0.62);
+  --lgc-scrim: rgba(0, 0, 0, 0.22);
+}

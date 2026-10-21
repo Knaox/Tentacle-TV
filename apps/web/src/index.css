@@ -24,6 +24,10 @@
 @import "./theme/chrome.css";
 @import "./theme/search.css";
 @import "./theme/motion-reduce.css";
+/* Liquid Glass des composants : rien ne s'y applique hors de `:root[data-liquid-glass="native"]`. */
+@import "./components/ui/glass/lgRecipes.css";
+@import "./components/ui/glass/lgControls.css";
+@import "./components/ui/glass/lgOverlays.css";
 
 @tailwind base;
 @tailwind components;
