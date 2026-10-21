@@ -17,9 +17,17 @@
  * Zone de 68 px, comme avant : les pages gardent leur marge haute, et celles
  * qui remontent leur bannière dessous (`-mt-[68px]`) continuent de le faire.
  * Le bandeau d'hôte de macOS (feux tricolores) reste au-dessus.
+ *
+ * Liquid Glass (macOS 26, `windowGlass.ts`) : la capsule passe au verre de
+ * `windowGlassNav.css`, et son assise s'arrête à 0,3 — c'est l'effet de bord
+ * de défilement, DERRIÈRE elle, qui garde la lisibilité. `data-lg-toolbar`
+ * dit à cet effet de couvrir aussi la barre.
  */
 
+import { useEffect } from "react";
+
 import { useScrollScrim } from "./useScrollScrim";
+import { useWindowGlass } from "../../desktop/windowGlass";
 import { NavBrand } from "./NavBrand";
 import { NavTabs } from "./NavTabs";
 import { SearchLauncher } from "../search/SearchLauncher";
@@ -44,10 +52,20 @@ export function TopNav() {
   // L'assise : nulle en haut de page (le verre seul, par-dessus la bannière),
   // puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la couche de
   // verre, qui porte le flou, n'est jamais repeinte (theme/chrome.css).
+  const glass = useWindowGlass();
   const scrim = useScrollScrim<HTMLDivElement>({
     threshold: 140,
-    opacityAt: (p) => Math.min(0.78, p * 0.95),
+    opacityAt: (p) => Math.min(glass ? 0.3 : 0.78, p * 0.95),
   });
+
+  useEffect(() => {
+    if (!glass) return;
+    const root = document.documentElement;
+    root.dataset["lgToolbar"] = "nav";
+    return () => {
+      delete root.dataset["lgToolbar"];
+    };
+  }, [glass]);
 
   return (
     <header
@@ -62,7 +80,7 @@ export function TopNav() {
           l'atteindrait pas, puisqu'elle rétablit les clics pour elle-même. */}
       <div
         data-hote-voile="topbar"
-        className="pointer-events-auto relative mx-auto mt-2 flex h-[52px] max-w-[1840px] items-center gap-1 rounded-[18px] px-1.5"
+        className="lgc-capsule pointer-events-auto relative mx-auto mt-2 flex h-[52px] max-w-[1840px] items-center gap-1 rounded-[18px] px-1.5"
       >
         <div aria-hidden className="nav-capsule-glass" />
         <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
@@ -77,7 +95,7 @@ export function TopNav() {
           )}
         </div>
 
-        <div className="relative flex shrink-0 items-center gap-1.5 pl-2">
+        <div className="lgc-actions relative flex shrink-0 items-center gap-1.5 pl-2">
           <ConnectivityChip />
           <DataSaverChip />
           {!offline && (

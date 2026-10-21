@@ -42,7 +42,7 @@ export const SearchLauncher = memo(function SearchLauncher({ variant, className 
       type="button"
       onClick={() => openOmnibox()}
       aria-label={t("open")}
-      className={`group flex h-10 items-center gap-2.5 rounded-xl border border-line-subtle bg-fill-subtle px-3.5 text-left text-sm text-content-tertiary transition-colors duration-150 hover:border-line-strong hover:bg-fill-soft hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}
+      className={`lgc-field group flex h-10 items-center gap-2.5 rounded-xl border border-line-subtle bg-fill-subtle px-3.5 text-left text-sm text-content-tertiary transition-colors duration-150 hover:border-line-strong hover:bg-fill-soft hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}
     >
       <SearchIcon className="h-4 w-4 shrink-0 transition-colors group-hover:text-[var(--brand-light)]" />
       <span className="min-w-0 flex-1 truncate">{t("launcher")}</span>

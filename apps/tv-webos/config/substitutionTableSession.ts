@@ -29,4 +29,9 @@ export const SESSION_FILES: Record<string, string> = {
   // démarrage (`StartupOverlays`) : la LG ne change pas la photo du compte. Sa
   // galerie vit dans `profiles/`, que la feuille ne balaie pas.
   [resolve(WEB, "profiles/avatarGallery/AvatarInvite.tsx")]: resolve(CLIENT, "shims/noAvatarInvite.ts"),
+
+  // Le retour au compte de l'appareil quand la connexion tombe pendant un
+  // profil (bureau) : la LG n'a ni hors ligne ni profils, et le vrai module
+  // ferait entrer `profiles/launch/` dans le graphe.
+  [resolve(WEB, "offline/accountFallback.ts")]: resolve(CLIENT, "shims/noAccountFallback.ts"),
 };

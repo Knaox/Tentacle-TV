@@ -1,0 +1,157 @@
+/* ── Liquid Glass : la barre de navigation et les barres latérales ────────
+ *
+ * Jetons dans `windowGlass.css`. Même garde : `:root[data-liquid-glass="native"]`,
+ * sinon rien. Voir l'en-tête de ce fichier-là. */
+
+/* ── La capsule (`TopNav`) ─────────────────────────────────────────────── */
+
+:root[data-liquid-glass="native"] .lgc-capsule {
+  border-radius: var(--lg-chrome-capsule-radius);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass {
+  background: var(--lg-chrome-capsule-bg);
+  border-color: var(--lg-chrome-capsule-rim);
+  box-shadow: var(--lg-chrome-capsule-specular), var(--lg-chrome-capsule-shadow);
+  backdrop-filter: var(--lg-chrome-capsule-filter);
+  -webkit-backdrop-filter: var(--lg-chrome-capsule-filter);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-scrim {
+  background: var(--lg-chrome-capsule-scrim);
+}
+
+/* Les onglets : des capsules dans la capsule ; l'actif, une lentille
+ * (`ActiveIndicator` lit `--lg-chrome-lens-*` en ligne). */
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab,
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-lens {
+  border-radius: var(--lg-chrome-item-radius);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:hover:not([aria-current]) {
+  background: var(--lg-chrome-item-hover);
+}
+
+/* Les boutons d'icônes (recherche, transferts, Watch Together, cloche) :
+ * des capsules aussi. Leurs panneaux sont des portails, hors d'atteinte. */
+:root[data-liquid-glass="native"] .lgc-actions button.rounded-xl:not(.lgc-field) {
+  border-radius: var(--lg-chrome-item-radius);
+}
+
+:root[data-liquid-glass="native"] .lgc-actions button.rounded-xl:not(.lgc-field):hover {
+  background: var(--lg-chrome-item-hover);
+}
+
+/* L'avatar : une bille de verre — liseré et arête spéculaire PAR-DESSUS la
+ * photo (le halo de couleur du profil, en ligne, reste dessous). */
+:root[data-liquid-glass="native"] .lgc-avatar {
+  position: relative;
+}
+
+:root[data-liquid-glass="native"] .lgc-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--lg-chrome-avatar-rim);
+  pointer-events: none;
+}
+
+/* Fenêtre inactive : l'icône de l'onglet courant perd la marque. */
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule .lgc-tab[aria-current] svg {
+  color: var(--lg-chrome-inactive-icon);
+}
+
+/* La recherche : un champ de verre enfoncé, en capsule. */
+:root[data-liquid-glass="native"] .lgc-field {
+  border-radius: var(--lg-chrome-item-radius);
+  border-color: var(--lg-chrome-field-rim);
+  background: var(--lg-chrome-field-bg);
+  box-shadow: var(--lg-chrome-field-shadow);
+}
+
+:root[data-liquid-glass="native"] .lgc-field:hover {
+  background: var(--lg-chrome-field-bg-hover);
+}
+
+/* ── Les panneaux de la barre (« Plus », menu d'un onglet, personnaliser) ─
+ *
+ * Montés à l'ouverture seulement (`FloatingLayer`, portail) : leur flou ne
+ * coûte rien barre refermée. */
+
+:root[data-liquid-glass="native"] .lgc-panel {
+  border-radius: var(--lg-chrome-panel-radius);
+  border-color: var(--lg-chrome-panel-rim);
+  background: var(--lg-chrome-panel-bg);
+  box-shadow: var(--lg-chrome-panel-shadow);
+  backdrop-filter: var(--lg-chrome-panel-filter);
+  -webkit-backdrop-filter: var(--lg-chrome-panel-filter);
+}
+
+/* ── La barre latérale (`SettingsShell` : Réglages, Administration) ───────
+ *
+ * Un panneau FLOTTANT, en retrait des bords, comme la barre latérale des
+ * Réglages Système de macOS 26. Sans `backdrop-filter` : derrière elle, rien
+ * que le fond de la page, qui ne bouge pas — un flou n'y flouterait rien
+ * (corollaire de la règle 1 de « Coût GPU »). Teinte, liseré et spéculaire
+ * suffisent à la lire comme du verre. */
+
+@media (min-width: 768px) {
+  :root[data-liquid-glass="native"] .lgc-sidebar {
+    padding: var(--lg-chrome-sidebar-pad);
+    border-radius: var(--lg-chrome-sidebar-radius);
+    border: 1px solid var(--lg-chrome-sidebar-rim);
+    background: var(--lg-chrome-sidebar-bg);
+    box-shadow: var(--lg-chrome-sidebar-shadow);
+    /* Collée SOUS la barre et sa frange de bord, jamais dessous. */
+    top: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade) + 4px);
+  }
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item {
+  border-radius: var(--lg-chrome-sidebar-item-radius);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item:hover:not([aria-current]) {
+  background: var(--lg-chrome-item-hover);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] {
+  background: var(--lg-chrome-sidebar-selection-bg);
+  box-shadow: var(--lg-chrome-sidebar-selection-shadow);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
+  color: var(--lg-chrome-sidebar-selection-icon);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-label {
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 12px;
+}
+
+/* ── Accessibilité de macOS ────────────────────────────────────────────── */
+
+/* Réduire la transparence : les verres de la barre redeviennent des aplats. */
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass,
+  :root[data-liquid-glass="native"] .lgc-panel {
+    background: var(--surface-1);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  :root[data-liquid-glass="native"] .lgc-sidebar {
+    background: var(--surface-1);
+  }
+}
+
+/* Contraste accru : des liserés qui se voient. */
+@media (prefers-contrast: more) {
+  :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass,
+  :root[data-liquid-glass="native"] .lgc-panel,
+  :root[data-liquid-glass="native"] .lgc-sidebar,
+  :root[data-liquid-glass="native"] .lgc-field {
+    border-color: var(--border-strong, currentColor);
+  }
+}

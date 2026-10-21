@@ -135,7 +135,7 @@ export function UserAvatarMenu() {
         aria-label={t("preferences")}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-cta-brand-fg transition-transform duration-200 hover:-translate-y-0.5"
+        className="lgc-avatar flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-cta-brand-fg transition-transform duration-200 hover:-translate-y-0.5"
         style={ringStyle}
       >
         {avatarContent}

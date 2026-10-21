@@ -1,6 +1,6 @@
 import type { ServerCapability } from "@tentacle-tv/shared";
 import { isNewerVersion } from "../lib/updateCheckers";
-import type { WhatsNewRelease, WhatsNewSelectedFeature } from "./types";
+import type { WhatsNewClientTrait, WhatsNewRelease, WhatsNewSelectedFeature } from "./types";
 
 export const WHATS_NEW_MAX_FEATURES = 12;
 
@@ -77,5 +77,21 @@ export function forServer(
   return releases.map((release) => ({
     ...release,
     features: release.features.filter((feature) => feature.capability === undefined || capabilities.has(feature.capability)),
+  }));
+}
+
+/**
+ * Le registre tel que CET appareil permet de le voir : une nouveauté qui exige
+ * un trait (`requires`) que l'appareil n'a pas disparaît — le Liquid Glass hors
+ * macOS 26, par exemple. Une release ainsi vidée reste dans la liste, vide :
+ * la sélection la saute, et la porte n'ouvre pas un écran sans rien dedans.
+ */
+export function forClient(
+  releases: readonly WhatsNewRelease[],
+  traits: ReadonlySet<WhatsNewClientTrait>,
+): WhatsNewRelease[] {
+  return releases.map((release) => ({
+    ...release,
+    features: release.features.filter((feature) => feature.requires === undefined || traits.has(feature.requires)),
   }));
 }

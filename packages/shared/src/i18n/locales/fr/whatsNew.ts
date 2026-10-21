@@ -48,6 +48,12 @@ export default {
   sceneFamilyMember: "Ana",
   sceneFamilyGuest: "Léa",
 
+  // 1.40.0 — les autres nouveautés de la version suivent le verre.
+  v1_40_0_glassNavigation_title: "Tentacle en Liquid Glass",
+  v1_40_0_glassNavigation_body: "Sur macOS Tahoe, l'application adopte le verre d'Apple : la barre de navigation, les boutons et les menus flottent au-dessus de la page, qui défile dessous et se devine au travers, aux couleurs de Tentacle. Activé d'office ; Réglages › Apparence le coupe.",
+  v1_40_0_glassPlayer_title: "Le lecteur, tout en verre",
+  v1_40_0_glassPlayer_body: "Les commandes flottent sur le film sans le cacher, le reflet suit votre pointeur, et les pistes audio, les sous-titres et les épisodes s'ouvrent dans des panneaux de verre.",
+
   // 1.29.0
   v1_29_0_trailerPreview_title: "La bande-annonce, au survol",
   v1_29_0_trailerPreview_body: "Laissez le pointeur sur une affiche : sa bande-annonce démarre dans une mini-carte, avec le son, et les cartes voisines s'écartent. Dessous, Lire, Ma liste, favori, vu et « Plus d'infos », la note et l'essentiel du titre ; un clic coupe le son, et Réglages › Apparence › « Aperçus au survol » les éteint.",
