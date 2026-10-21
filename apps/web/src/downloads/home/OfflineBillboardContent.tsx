@@ -6,10 +6,10 @@ import { extractMediaQuality, formatDuration, formatEpisodeCode, type MediaItem 
 import { localMediaItem, localVersionOf, watchStateOf, type DownloadListEntry } from "@tentacle-tv/offline-core";
 import { HeroEyebrow } from "../../components/hero/HeroEyebrow";
 import { HeroMetaLine } from "../../components/hero/HeroMetaLine";
-import { HERO_INFO_CLASS, HERO_PLAY_CLASS, HERO_PLAY_STYLE } from "../../components/hero/HeroActions";
+import { HERO_INFO_CLASS, HERO_INFO_GLASS, HERO_PLAY_CLASS, HERO_PLAY_GLASS, HERO_PLAY_STYLE } from "../../components/hero/HeroActions";
 import { InfoIcon, PlayIcon } from "../../components/icons/HeroIcons";
 import { soberMetaText } from "../../components/media/MetaChips";
-import { PressableScale } from "../../components/ui/PressableScale";
+import { GlassPressable } from "../../components/ui/glass/GlassPressable";
 import { RichOverview } from "../../lib/overviewHtml";
 import { fadeUp, textCascade } from "../../theme/motion";
 import { useDownloadsRootReady } from "../localFiles";
@@ -107,15 +107,15 @@ export function OfflineBillboardContent({ entry, animationKey }: { entry: Downlo
         )}
 
         <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2.5">
-          <PressableScale onClick={() => navigate(`/watch/${entry.itemId}`)} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
+          <GlassPressable glass={HERO_PLAY_GLASS} onClick={() => navigate(`/watch/${entry.itemId}`)} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
             <PlayIcon />
             {hasProgress ? t("common:resume") : t("common:play")}
             {code && <span className="font-semibold opacity-60">{code}</span>}
-          </PressableScale>
-          <PressableScale onClick={() => navigate(`/offline/item/${entry.itemId}`)} className={HERO_INFO_CLASS}>
+          </GlassPressable>
+          <GlassPressable glass={HERO_INFO_GLASS} onClick={() => navigate(`/offline/item/${entry.itemId}`)} className={HERO_INFO_CLASS}>
             <InfoIcon />
             {t("common:moreInfo")}
-          </PressableScale>
+          </GlassPressable>
         </motion.div>
       </motion.div>
     </div>
