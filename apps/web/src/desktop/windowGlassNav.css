@@ -106,9 +106,16 @@
   background: var(--lg-chrome-item-hover);
 }
 
+/* La sélection est la lentille qui glisse (`useGlassSidebarSelection`) :
+ * l'entrée elle-même ne peint plus rien. */
 :root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] {
+  background: transparent;
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-selection {
   background: var(--lg-chrome-sidebar-selection-bg);
   box-shadow: var(--lg-chrome-sidebar-selection-shadow);
+  pointer-events: none;
 }
 
 :root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
