@@ -9,7 +9,7 @@
 // Verrou du lot (LOT.md) : deux Electron au plus sur la machine, `mkdir` d'un
 // dossier `electron-slot-N`, `rmdir` à la fin. Arrêt par NOTRE pid seulement.
 import { spawn } from "node:child_process";
-import { mkdirSync, openSync, rmSync, rmdirSync } from "node:fs";
+import { mkdirSync, openSync, rmSync, rmdirSync, writeSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Cdp, waitForTarget } from "./cdp.mjs";
@@ -55,6 +55,7 @@ export async function launchApp({ home, fresh = false, env = {}, log, slotTimeou
   if (fresh) rmSync(home, { recursive: true, force: true });
   mkdirSync(path.join(home, "Library/Application Support"), { recursive: true });
   const out = openSync(log, "a");
+  writeSync(out, `[banc] slot ${path.basename(slot)} pris à ${new Date().toISOString()}\n`);
   const flags = [`--remote-debugging-port=${PORTS.page}`, `--inspect=${PORTS.main}`];
   // `command` : lancer AUTRE chose que le binaire (ex. `pnpm dev:electron` d'un
   // clone propre) — les drapeaux sont ajoutés en fin de commande.

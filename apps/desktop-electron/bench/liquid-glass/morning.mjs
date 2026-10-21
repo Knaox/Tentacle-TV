@@ -31,8 +31,10 @@ const app = await launchApp({
   home: path.join(STATE, "home-matin"),
   fresh: true,
   log: log("dev-electron.log"),
-  // `pnpm dev:electron -- <drapeaux>` : pnpm les passe à `electron .`.
-  command: { bin: "pnpm", args: ["dev:electron", "--"], cwd: clone },
+  // `pnpm dev:electron <drapeaux>` : pnpm les colle au bout du script, donc
+  // derrière `electron .`. ⚠️ JAMAIS `--` : Electron le recevrait tel quel, et
+  // Chromium ignore tout drapeau placé après (CDP muet, mesuré le 21/10).
+  command: { bin: "pnpm", args: ["dev:electron"], cwd: clone },
   startTimeoutMs: 20 * 60_000,
 });
 try {
