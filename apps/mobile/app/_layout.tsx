@@ -1,4 +1,6 @@
 import "react-native-reanimated";
+// Avant toute requête : la page reco se demande avec sa tête des tendances.
+import "@/reco/recoTrendingHead";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { Stack, SplashScreen } from "expo-router";
