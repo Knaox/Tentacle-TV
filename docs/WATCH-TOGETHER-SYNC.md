@@ -160,7 +160,12 @@ messages ne parlait que d'un membre qui quitte le GROUPE.
   (lecteur fermé, appli tuée — dès la fermeture du socket, sans attendre la
   grâce), puis « X a quitté le groupe ». L'état dit les arrivants
   (`arrivingUserIds`, facultatif) ; le départ se lit aussi face à un serveur
-  d'avant.
+  d'avant. Jamais d'avis de changement (hôte, membres, lecture) entre deux
+  salles, ni à SON entrée dans une salle : le premier état sert de référence
+  (`wtContinuesSession`, 21/10 — le bureau, ancien hôte revenu dans la même
+  salle, lisait « X est maintenant l'hôte »). L'avis « ailleurs » ne va qu'aux
+  appareils non liés : reçu par une séance qui se croit dans une salle, il lui
+  fait redemander l'état (purge sur `not_in_group`).
 - Un membre attendu qui quitte le groupe libère la salle (le retrait l'ôtait
   de l'attente sans la lever : salle gelée). Un lecteur qui affiche un échec
   (web, bureau, mobile) le dit au groupe tout de suite (`notifyFatalError`).
