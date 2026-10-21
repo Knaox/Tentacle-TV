@@ -66,6 +66,9 @@ import { useTranslation } from "react-i18next";
 import type { SkipLabelKey } from "@tentacle-tv/shared";
 import { videoShadow } from "../../lib/videoShadow";
 import { Sweep, Veil } from "./overlayPill";
+import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
+import { isGlassLayout } from "./glass/playerGlassMode";
+import { GlassSkipPill } from "./glass/GlassSkipPill";
 
 interface SkipSegmentButtonProps {
   /** Clé i18n du libellé (`player:<clé>` et sa forme décomptée `<clé>In`). */
@@ -99,6 +102,16 @@ export function SkipSegmentButton({
 }: SkipSegmentButtonProps) {
   const { t } = useTranslation("player");
   const armed = countdownSeconds !== null;
+  // Lecteur en verre : même pilule, matière de verre (`glass/GlassSkipPill.tsx`).
+  const glass = isGlassLayout(usePlayerGlassMode());
+  if (glass) {
+    return (
+      <GlassSkipPill
+        labelKey={labelKey} countdownSeconds={countdownSeconds} countdownTotalMs={countdownTotalMs}
+        onSkip={onSkip} onDismiss={onDismiss} layer={layer} controlsVisible={controlsVisible}
+      />
+    );
+  }
 
   return (
     <div

@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
+import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
+import { isGlassLayout } from "./glass/playerGlassMode";
+import { GlassPanel } from "./glass/GlassPanel";
 import {
   useSeasonBrowser,
   useJellyfinClient,
@@ -74,22 +77,9 @@ export function EpisodeSelectorPanel({
     onClose();
   };
 
-  return (
-    // Panneau DÉTACHÉ (même traitement que TrackSelector) : fond quasi-opaque
-    // `surface-dropdown`, suit le thème clair/sombre — pas posé sur la vidéo.
-    //
-    // Et donc PAS de `backdrop-filter` : à 0,95 d'alpha il ne reste rien à
-    // flouter, alors que le panneau flotte au-dessus d'une vidéo en lecture —
-    // son arrière-plan change vingt-quatre à soixante fois par seconde, et
-    // chaque changement forçait une recopie de la région et une passe de flou
-    // de 24 px sur 26 rem par 65 vh.
-    <motion.div data-panneau-detache
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)]"
-      onClick={(e) => e.stopPropagation()}
-    >
+  const glass = isGlassLayout(usePlayerGlassMode());
+  const body = (
+    <>
       <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
         <span className="text-sm font-semibold text-content-primary">{t("player:episodes")}</span>
         <button onClick={onClose} aria-label={t("player:close")} className="text-lg leading-none text-content-quaternary transition-colors hover:text-content-primary">
@@ -126,6 +116,33 @@ export function EpisodeSelectorPanel({
           <p className="px-3 py-8 text-center text-sm text-content-quaternary">{t("player:noEpisodes")}</p>
         )}
       </div>
+    </>
+  );
+  // Verre : le popover au-dessus de la capsule (`GlassPanel`), mêmes lignes.
+  if (glass) {
+    return (
+      <GlassPanel className="flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden" bodyClassName="flex min-h-0 flex-1 flex-col">
+        {body}
+      </GlassPanel>
+    );
+  }
+  return (
+    // Panneau DÉTACHÉ (même traitement que TrackSelector) : fond quasi-opaque
+    // `surface-dropdown`, suit le thème clair/sombre — pas posé sur la vidéo.
+    //
+    // Et donc PAS de `backdrop-filter` : à 0,95 d'alpha il ne reste rien à
+    // flouter, alors que le panneau flotte au-dessus d'une vidéo en lecture —
+    // son arrière-plan change vingt-quatre à soixante fois par seconde, et
+    // chaque changement forçait une recopie de la région et une passe de flou
+    // de 24 px sur 26 rem par 65 vh.
+    <motion.div data-panneau-detache
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {body}
     </motion.div>
   );
 }
