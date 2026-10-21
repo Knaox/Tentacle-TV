@@ -27,6 +27,12 @@ import {
 } from "../main/channels";
 import { createGlassBatcher } from "../main/liquidGlass/batcher";
 import {
+  WINDOW_FOCUS_CHANNEL,
+  WINDOW_FOCUS_GET_CHANNEL,
+  createWindowFocusBridge,
+  type WindowFocusBridge,
+} from "../main/windowFocusBridge";
+import {
   AVAILABILITY_ARG,
   LIQUID_GLASS_CHANNEL,
   REFRACTS_VIDEO_ARG,
@@ -128,6 +134,25 @@ const liquidGlass = ((): LiquidGlassBridge | undefined => {
 })();
 
 /**
+ * Le focus de la fenêtre vu par le principal (`window.tentacle.windowFocus`),
+ * macOS seulement — la page ternit la fenêtre inactive comme le système, et
+ * `document.hasFocus()` ment (`main/windowFocusBridge.ts`). Lu une fois en
+ * synchrone au chargement, puis suivi par les `focus` / `blur` de la fenêtre.
+ */
+const windowFocus = ((): WindowFocusBridge | undefined => {
+  if (platform !== "darwin") return undefined;
+  let initial = false;
+  try {
+    initial = ipcRenderer.sendSync(WINDOW_FOCUS_GET_CHANNEL) === true;
+  } catch {
+    // Principal muet : la fenêtre passe pour inactive jusqu'au premier `focus`.
+  }
+  return createWindowFocusBridge(initial, (onChange) => {
+    ipcRenderer.on(WINDOW_FOCUS_CHANNEL, (_event, value: unknown) => onChange(value));
+  });
+})();
+
+/**
  * Rejoue le stockage local sauvé par l'app Tauri, une fois pour toutes.
  *
  * C'est ICI et nulle part ailleurs : le preload s'exécute avant le premier
@@ -192,6 +217,7 @@ contextBridge.exposeInMainWorld("tentacle", {
   ...(windowing === undefined ? {} : { fenetrage: windowing }),
   titleBarHeight,
   ...(liquidGlass === undefined ? {} : { liquidGlass }),
+  ...(windowFocus === undefined ? {} : { windowFocus }),
 
   openExternal(url: string): Promise<void> {
     // Le filtrage des schémas est fait côté principal, jamais ici : une liste

@@ -11,22 +11,23 @@
  * le noir et l'opaque, eux, se composent juste. Les jetons du lecteur
  * (`playerGlass.css`) n'emploient donc que ces deux familles.
  *
- * # La surface peut bouger : le verre la suit
+ * # Deux façons d'apparaître
  *
- * La primitive (lg-tokens) relit le rectangle de l'élément — transformations
- * comprises — à chaque image tant que quelque chose bouge. Une capsule qui se
- * pose sur son ressort (`.lgp-morph`) emmène donc le verre natif avec elle : il
- * grandit, il ne se contente pas d'apparaître. Le contenu, lui, n'apparaît
- * qu'en opacité (`.lgp-content`).
+ * - Une surface FIXE (capsules, badges, attente) : la vue native entre et sort
+ *   en FONDU, par son conteneur (`transition` > 0, lg-natif — l'alpha d'une
+ *   NSGlassEffectView seule ne se voit pas, celui de son conteneur, si) ; son
+ *   contenu se pose sur le ressort `morph` dans le même temps.
+ * - Une surface qui BOUGE image par image (panneau qui naît de son bouton, coin
+ *   bas-droit qui monte avec la capsule, bulle de la vignette, avis qui
+ *   glissent) : `transition={0}`. Avec une transition, chaque déplacement serait
+ *   rejoué au ressort côté natif et le verre courrait derrière la surface ; à
+ *   zéro, la primitive (lg-tokens) relit le rectangle — transformations
+ *   comprises — à chaque image et le verre le suit exactement.
  *
- * # Le fondu natif : nul, pour l'instant
- *
- * `transition` > 0 demande à la vue native un fondu d'apparition et de retrait
- * — mesuré au banc le 21/10 : il ne se VOIT pas (le verre reste plein puis
- * saute à la fin du minuteur), et chaque déplacement s'anime d'autant (le verre
- * court derrière la surface). D'où `NATIVE_FADE_MS = 0` : le verre suit
- * exactement et part sans traîner. À remonter quand le socle aura un fondu
- * visible.
+ * Une surface fixe BOUGE aussi quand la fenêtre change de taille (la barre du
+ * bas suit le bord) : le temps du redimensionnement, sa transition tombe à
+ * zéro (`windowResizing.ts`) — mesuré sans cela : le verre du bas sortait de
+ * la fenêtre puis remontait au ressort, jusqu'à 160 pt de sa capsule, 300 ms.
  *
  * # Présence
  *
@@ -41,6 +42,7 @@ import type { GlassMorphProps } from "../../../theme/glass";
 import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
 import { useNativeGlassRegion, type GlassRegionOptions } from "./nativeGlassPort";
 import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
+import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
 
 /**
@@ -49,8 +51,11 @@ import "./playerGlass.css";
  */
 export const GlassChromeVisibleContext = createContext(true);
 
-/** Le fondu natif (ms) — voir l'en-tête : nul tant qu'il ne se voit pas. */
-export const NATIVE_FADE_MS = 0;
+/**
+ * Le fondu natif d'une surface FIXE, en ms — celui du socle pour une
+ * disparition (`--lg-duration-disappear`, 180 ms), à l'identique.
+ */
+export const NATIVE_FADE_MS = 180;
 
 interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
   /** La surface est à l'écran (contrôles affichés, panneau ouvert). */
@@ -80,6 +85,7 @@ export function GlassSurface({
   const isPresent = useIsPresent();
   const chromeVisible = useContext(GlassChromeVisibleContext);
   const regionsAllowed = usePlayerGlassRegionsAllowed();
+  const resizing = useWindowResizing();
   // Une surface qui se métamorphose garde sa région pendant sa sortie : elle rentre dans son bouton.
   const shown = present && (isPresent || morph !== undefined) && chromeVisible;
   const ref = useRef<HTMLDivElement | null>(null);
@@ -93,7 +99,7 @@ export function GlassSurface({
     active: mode === "native" && shown && regionsAllowed,
     group,
     variant,
-    transition,
+    transition: resizing ? 0 : transition,
     spacing: spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
   });
 

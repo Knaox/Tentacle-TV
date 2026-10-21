@@ -13,6 +13,34 @@
  * jetons) : on n'y glisse que le voile de lisibilité SOUS le remplissage. */
 :root[data-liquid-glass="native"] .lgc-capsule > .lg-surface {
   --lg-fill: linear-gradient(var(--lg-regular-fill), var(--lg-regular-fill)), var(--lg-chrome-capsule-veil);
+  --lg-highlight: var(--lg-chrome-capsule-highlight);
+}
+
+/* Les libellés et icônes de la capsule : lus par leur ombre (la couche de
+ * verre est leur SŒUR, son `text-shadow` ne leur parvient pas). Peint une
+ * fois avec le texte, rien d'animé. */
+:root[data-liquid-glass="native"] .lgc-capsule {
+  text-shadow: var(--lg-chrome-label-shadow);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule svg {
+  filter: var(--lg-chrome-glyph-shadow);
+}
+
+/* Les onglets inactifs et la recherche : un ton plus franc que sur fond
+ * plein (le verre laisse passer l'image). Le survol garde le ton primaire. */
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]),
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-field {
+  color: var(--lg-chrome-label);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]) svg {
+  color: var(--lg-chrome-glyph);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]):hover,
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]):hover svg {
+  color: var(--text-primary);
 }
 
 /* Fenêtre inactive : le verre de la capsule perd sa saturation. */
