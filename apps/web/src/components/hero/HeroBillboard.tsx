@@ -5,10 +5,11 @@ import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
 import { useBillboardRotation } from "./useBillboardRotation";
+import { billboardActivity } from "./billboardActivity";
 import { useHeroImageFailures } from "./useHeroImageFailures";
 import { useHeroImage } from "./useHeroImage";
 import { useDataSaverActive } from "../../offline/useDataSaver";
-import { useInViewport } from "../../hooks/useInViewport";
+import { useBillboardViewport } from "./useBillboardViewport";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useIdle } from "../../hooks/useIdle";
 
@@ -64,11 +65,10 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
     return shown.length > 0 ? shown : chosen;
   }, [chosen, exhausted]);
   const dataSaver = useDataSaverActive();
-  // Bannière réellement à l'écran ET fenêtre au premier plan. Tout ce qui suit
-  // — rotation, zoom du fond, halo flouté — ne tourne QUE dans ce cas.
-  // Marge de 200 px : le halo est remonté AVANT d'entrer réellement dans le
-  // champ, pour qu'on ne surprenne jamais son fondu d'apparition en remontant.
-  const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
+  // Deux seuils sur le même cadre (fenêtre au premier plan dans les deux cas,
+  // cf. `billboardActivity`) : à 200 px, le halo est remonté AVANT d'entrer
+  // dans le champ ; strictement à l'écran, la rotation tourne.
+  const { ref: frameRef, near, onScreen } = useBillboardViewport<HTMLDivElement>();
   // Personne devant l'écran depuis vingt secondes : on cesse de relancer.
   const idle = useIdle(IDLE_MS);
   // Survol de la carte — il ne sert QU'À monter les flèches, jamais à
@@ -86,9 +86,10 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
   //   préchargement (~250-400 Ko), rien n'est mis en cache — 5 min sur
   //   l'accueil coûtaient jusqu'à ~10 Mo en pure perte. La navigation manuelle
   //   (flèches, indicateurs) reste disponible.
-  // — Hors écran ou fenêtre en arrière-plan : chaque rotation recrée un fond
-  //   1920 px ET un halo flouté plein cadre, les deux coexistant pendant le
-  //   fondu — pour une bannière que personne ne regarde.
+  // — Hors écran (STRICTEMENT : la marge de 200 px ne vaut que pour le halo)
+  //   ou fenêtre en arrière-plan : chaque rotation recrée un fond 1920 px ET
+  //   un halo flouté plein cadre, les deux coexistant pendant le fondu — pour
+  //   une bannière que personne ne regarde.
   // — Inactivité : le seul geste qui fasse vraiment redescendre le GPU ici.
   //   Brider la cadence d'une animation n'endort pas le compositeur : tant
   //   qu'une animation est en cours, le navigateur produit une image à chaque
@@ -99,11 +100,12 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
   //   en marche SUR-LE-CHAMP : la diapositive suivante arrive avec son fondu,
   //   son zoom, son halo et son indicateur — pas une image figée pendant
   //   encore un cycle (cf. useBillboardRotation).
+  const activity = billboardActivity({ near, onScreen, idle, dataSaver });
   const { index, animKey, selectWithGrace, prevWithGrace, nextWithGrace } =
     useBillboardRotation({
       count: items.length,
       rotateMs,
-      active: !dataSaver && visible && !idle,
+      active: activity.rotating,
     });
 
   const active: MediaItem | undefined = items[Math.min(index, items.length - 1)];
@@ -139,7 +141,7 @@ export function HeroBillboard({ items: chosen, rotateMs = DEFAULT_ROTATE_MS }: H
             Démonté hors écran : c'est une image floutée à 48 px sur toute la
             largeur, animée en boucle infinie. Suspendre la rotation ne suffit
             pas, le zoom continuerait de la faire re-rastériser. */}
-        {visible && <AmbilightLayer url={image.haloUrl} layerKey={active.Id} />}
+        {activity.haloMounted && <AmbilightLayer url={image.haloUrl} layerKey={active.Id} />}
 
         {/* La carte. Repère de la transition d'ouverture : c'est ce cadre que
             « Plus d'infos » fait s'ouvrir jusqu'au plein écran de la fiche. */}

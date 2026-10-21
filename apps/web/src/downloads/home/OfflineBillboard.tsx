@@ -21,7 +21,8 @@ import { HeroIndicators } from "../../components/hero/HeroIndicators";
 import { useBillboardRotation } from "../../components/hero/useBillboardRotation";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useIdle } from "../../hooks/useIdle";
-import { useInViewport } from "../../hooks/useInViewport";
+import { useBillboardViewport } from "../../components/hero/useBillboardViewport";
+import { billboardActivity } from "../../components/hero/billboardActivity";
 import { localResourceUrl } from "../localFiles";
 import { OfflineBillboardContent } from "./OfflineBillboardContent";
 
@@ -31,13 +32,15 @@ const ROTATE_MS = HERO_ZOOM_DURATION_S * 1000;
 
 export function OfflineBillboard({ entries }: { entries: readonly DownloadListEntry[] }) {
   const { t } = useTranslation("downloads");
-  const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
+  // Halo monté à 200 px, rotation strictement à l'écran (`billboardActivity`).
+  const { ref: frameRef, near, onScreen } = useBillboardViewport<HTMLDivElement>();
   const idle = useIdle(IDLE_MS);
+  const activity = billboardActivity({ near, onScreen, idle, dataSaver: false });
   const arrows = useHoverMount(300);
   const { index, animKey, selectWithGrace, prevWithGrace, nextWithGrace } = useBillboardRotation({
     count: entries.length,
     rotateMs: ROTATE_MS,
-    active: visible && !idle,
+    active: activity.rotating,
   });
 
   const entry = entries[index] ?? entries[0];
@@ -47,7 +50,7 @@ export function OfflineBillboard({ entries }: { entries: readonly DownloadListEn
   return (
     <section className={`relative w-full bg-surface-0 pb-6 md:pb-10 ${FRAME_GUTTER}`} aria-label={t("heroLabel")}>
       <div ref={frameRef} className="relative">
-        {visible && <AmbilightLayer url={backdrop} layerKey={entry.itemId} />}
+        {activity.haloMounted && <AmbilightLayer url={backdrop} layerKey={entry.itemId} />}
         <div
           className={`group/billboard relative w-full overflow-hidden ${CARD_HEIGHT}`}
           style={{ borderRadius: "var(--hero-frame-radius)", boxShadow: "var(--hero-frame-ring)" }}
