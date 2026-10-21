@@ -1,0 +1,142 @@
+/* Le « liquide » du Liquid Glass — ressorts, lentille, reflet, accessibilité.
+ *
+ * Tout est OPT-IN : rien ici ne s'applique à un élément qui ne le demande pas
+ * (`data-lg-lens`, `data-lg-specular` + `.lg-specular`, `.lg-fusion-shape`).
+ * Hors Liquid Glass, le rendu d'avant est donc intact au pixel près.
+ *
+ * Coût (cf. CLAUDE.md, « Coût GPU ») : la lentille n'anime que `scale`, le
+ * reflet que `translate` et `opacity` — composités, aucune peinture par image.
+ * Mais toute image qui change SUR un verre en fait recalculer le flou : les
+ * ressorts sont coupés dès que le reste du trajet passe sous le pixel, le
+ * reflet n'écrit pas plus de 60 fois par seconde. Mesures : banc
+ * `apps/web/bench/glass-gpu/`. */
+
+:root {
+  /* Ressorts — GÉNÉRÉS depuis `springs.ts` (GLASS_SPRINGS), tenus identiques
+   * par `physics.test.ts`. Ne pas retoucher à la main : changer le ressort,
+   * puis recopier la sortie de `springToCssLinear`. */
+  --lg-spring-lens-duration: 439ms;
+  --lg-spring-lens-easing: linear(0, 0.0214, 0.0786, 0.1617, 0.2617, 0.3711, 0.4833, 0.593, 0.6964, 0.7905, 0.8733, 0.9439, 1.0019, 1.0476, 1.0816, 1.1052, 1.1194, 1.1257, 1.1255, 1.1202, 1.111, 1.0992, 1.0858, 1.0717, 1.0577, 1.0442, 1.0317, 1.0206, 1.011, 1.0029, 0.9964, 0.9915, 0.9879, 0.9856, 0.9844, 0.984, 0.9844, 0.9854, 0.9868, 0.9884, 1);
+  --lg-spring-morph-duration: 291ms;
+  --lg-spring-morph-easing: linear(0, 0.0056, 0.021, 0.0444, 0.0742, 0.1091, 0.1477, 0.1892, 0.2324, 0.2768, 0.3215, 0.3661, 0.4102, 0.4532, 0.4949, 0.5352, 0.5737, 0.6104, 0.6452, 0.6781, 0.7089, 0.7377, 0.7645, 0.7894, 0.8124, 0.8336, 0.8531, 0.8709, 0.8871, 0.9018, 0.9151, 0.9272, 0.938, 0.9476, 0.9562, 0.9639, 0.9707, 0.9766, 0.9818, 0.9863, 1);
+  --lg-spring-settle-duration: 275ms;
+  --lg-spring-settle-easing: linear(0, 0.0124, 0.0444, 0.0897, 0.1436, 0.2023, 0.2631, 0.324, 0.3835, 0.4406, 0.4947, 0.5453, 0.5923, 0.6355, 0.6751, 0.7111, 0.7437, 0.773, 0.7994, 0.8231, 0.8442, 0.8629, 0.8796, 0.8944, 0.9075, 0.919, 0.9292, 0.9382, 0.9461, 0.953, 0.959, 0.9643, 0.969, 0.973, 0.9766, 0.9797, 0.9824, 0.9847, 0.9867, 0.9885, 1);
+
+  /* Lentille : grossissement au survol, bulle à l'appui, rebond au relâcher. */
+  --lg-lens-scale-hover: 1.04;
+  --lg-lens-scale-press: 1.1;
+
+  /* Reflet : halo sur la face, liseré allumé du côté du pointeur. */
+  /* Rayon du halo : une LONGUEUR (`circle` refuse un pourcentage). */
+  --lg-specular-size: 72px;
+  --lg-specular-halo: rgba(255, 255, 255, 0.16);
+  --lg-specular-rim: rgba(255, 255, 255, 0.6);
+  --lg-specular-rim-size: 96px;
+  --lg-specular-opacity-hover: 1;
+  --lg-specular-opacity-press: 1;
+  --lg-specular-boost-press: 1.6;
+
+  /* Contraste accru : liseré net. */
+  --lg-contrast-border: rgba(255, 255, 255, 0.6);
+}
+
+:root[data-theme="light"] {
+  --lg-specular-halo: rgba(255, 255, 255, 0.55);
+  --lg-specular-rim: rgba(255, 255, 255, 0.9);
+  --lg-contrast-border: rgba(0, 0, 0, 0.55);
+}
+
+/* ── Lentille ───────────────────────────────────────────────────────────────
+ * La propriété `scale` (et non `transform`) : elle se compose avec le
+ * transform d'un parent ou de framer-motion au lieu de l'écraser. */
+[data-lg-lens] {
+  scale: 1;
+  transition: scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing);
+}
+@media (hover: hover) {
+  [data-lg-lens]:hover {
+    scale: var(--lg-lens-scale-hover);
+  }
+}
+[data-lg-lens]:active {
+  scale: var(--lg-lens-scale-press);
+}
+[data-lg-lens]:is(:disabled, [aria-disabled="true"]) {
+  scale: 1;
+}
+
+/* ── Reflet ─────────────────────────────────────────────────────────────────
+ * `.lg-specular` est un enfant de la surface (`GlassSpecular`). La lumière est
+ * un dégradé FIXE, de la taille de la surface, qui se DÉPLACE (translate) de
+ * l'écart entre le pointeur et le centre : sur la face (halo), et dans la
+ * bague de 1 px du liseré (`.lg-specular-rim`, masquée) — le bord s'allume au
+ * plus près du pointeur. Aucune peinture par image ; la couche n'est promue
+ * (`will-change`) que sous le pointeur. */
+.lg-specular,
+.lg-specular-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.lg-specular-rim {
+  padding: 1px;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.lg-specular::before,
+.lg-specular-rim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  translate: calc((var(--lg-spec-u, 0.3) - 0.5) * 100%) calc((var(--lg-spec-v, 0.12) - 0.5) * 100%);
+  transition: opacity var(--lg-spring-settle-duration) var(--lg-spring-settle-easing);
+}
+.lg-specular::before {
+  background: radial-gradient(circle var(--lg-specular-size) at 50% 50%, var(--lg-specular-halo), transparent);
+}
+.lg-specular-rim::before {
+  background: radial-gradient(circle var(--lg-specular-rim-size) at 50% 50%, var(--lg-specular-rim), transparent);
+}
+[data-lg-specular-active] > .lg-specular::before,
+[data-lg-specular-active] > .lg-specular > .lg-specular-rim::before {
+  opacity: var(--lg-specular-opacity-hover);
+  will-change: translate;
+}
+[data-lg-specular]:active > .lg-specular::before {
+  opacity: var(--lg-specular-opacity-press);
+  filter: brightness(var(--lg-specular-boost-press));
+}
+
+/* ── Fusion ─────────────────────────────────────────────────────────────────
+ * Une couche par membre (`GlassFusion`) ; framer anime l'écart de mise en
+ * page en transform. La surface est celle de lg-tokens (`shapeClassName`). */
+.lg-fusion-shape {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* ── Accessibilité du système (cf. `accessibility.ts`) ──────────────────────
+ * Ne touche QUE les jetons du Liquid Glass (`--lg-surface-*`, contrat avec
+ * lg-tokens) : les jetons hérités (`--glass-tint`, `--blur-*`) restent ceux
+ * d'avant. */
+html[data-lg-transparency="reduce"] {
+  --lg-surface-backdrop: none;
+  --lg-surface-tint: var(--lg-surface-tint-opaque, var(--glass-panel));
+}
+html[data-lg-contrast="more"] {
+  --lg-surface-backdrop: none;
+  --lg-surface-tint: var(--lg-surface-tint-opaque, var(--glass-panel));
+  --lg-surface-border: var(--lg-contrast-border);
+}
+html:is([data-lg-transparency="reduce"], [data-lg-contrast="more"]) .lg-specular {
+  display: none;
+}
+html[data-lg-motion="reduce"] {
+  --lg-lens-scale-hover: 1;
+  --lg-lens-scale-press: 1;
+}
+html[data-lg-motion="reduce"] :is([data-lg-lens], .lg-fusion-shape) {
+  transition: none;
+}

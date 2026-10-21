@@ -23,6 +23,7 @@
 @import "./theme/rowEntrance.css";
 @import "./theme/chrome.css";
 @import "./theme/search.css";
+@import "./theme/glass/physics.css";
 @import "./theme/motion-reduce.css";
 /* Liquid Glass des composants : rien ne s'y applique hors de `:root[data-liquid-glass="native"]`. */
 @import "./components/ui/glass/lgRecipes.css";
