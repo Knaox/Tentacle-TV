@@ -23,19 +23,35 @@ import { memo, type MouseEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { springSoft } from "../../theme/motion";
+import { GLASS_LENS_PROPS, glassMorphProps } from "../../theme/glass";
+import { useWindowGlass } from "../../desktop/windowGlass";
 import type { NavIcon } from "./useNavDestinations";
 
 export const TAB_CLASS =
-  "group relative flex h-9 shrink-0 items-center gap-2 rounded-[11px] px-3 text-[13.5px] outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
+  "lgc-tab group relative flex h-9 shrink-0 items-center gap-2 rounded-[11px] px-3 text-[13.5px] outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
+
+/** Rayon de la lentille en verre : la moitié de `h-9`, une capsule. */
+const LENS_RADIUS = 18;
 
 export function ActiveIndicator({ reduced }: { reduced: boolean }) {
+  // Liquid Glass (mode natif) : la lentille GLISSE d'un onglet à l'autre sur
+  // le ressort de métamorphose du verre, rayon corrigé pendant l'étirement
+  // (framer ne le corrige que passé en `style`). Ailleurs, le dessin d'avant.
+  const glass = useWindowGlass();
+  const morph = glass ? glassMorphProps("nav-active", reduced) : null;
   return (
     <motion.span
-      layoutId="nav-active"
+      layoutId={morph?.layoutId ?? "nav-active"}
       aria-hidden
-      className="absolute inset-0 rounded-[11px]"
-      style={{ background: "var(--nav-active-bg)", boxShadow: "inset 0 0 0 1px var(--nav-active-ring)" }}
-      transition={reduced ? { duration: 0 } : springSoft}
+      className="lgc-lens absolute inset-0 rounded-[11px]"
+      // Les jetons de la lentille (`windowGlass.css`) n'existent qu'en mode
+      // natif — ailleurs, le repli est le dessin d'avant.
+      style={{
+        background: "var(--lg-chrome-lens-bg, var(--nav-active-bg))",
+        boxShadow: "var(--lg-chrome-lens-shadow, inset 0 0 0 1px var(--nav-active-ring))",
+        ...(glass ? { borderRadius: LENS_RADIUS } : null),
+      }}
+      transition={morph?.transition ?? (reduced ? { duration: 0 } : springSoft)}
     />
   );
 }
@@ -73,6 +89,8 @@ export const NavTab = memo(function NavTab({ id, label, path, icon, active, redu
   return (
     <Link
       to={path}
+      // La lentille du verre au survol et à l'appui (CSS seul, mode natif).
+      {...GLASS_LENS_PROPS}
       aria-current={active ? "page" : undefined}
       onMouseEnter={onIntent}
       onFocus={onIntent}

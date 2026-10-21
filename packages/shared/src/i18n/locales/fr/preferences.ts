@@ -30,6 +30,9 @@ export default {
   // desktop, où cette même clé est affichée.
   liquidGlassDescription: "Ajoute une réfraction aux surfaces translucides. Désactivé, l'application revient à l'effet verre classique.",
   liquidGlassUnavailable: "Non disponible sur ce moteur de rendu — l'effet verre classique est utilisé.",
+  // Bureau macOS 26 : le verre NATIF du système (NSGlassEffectView). L'interrupteur
+  // n'apparaît que là ; sur un macOS d'avant, la section se tait.
+  liquidGlassNativeDescription: "Le verre de macOS : les barres, les menus et le lecteur prennent le matériau du système. Désactivé, l'application retrouve son apparence d'avant.",
   // L'ouverture du démarrage (Apple TV) : un réglage d'APPAREIL.
   opening: "Ouverture",
   bootSoundTitle: "Son au démarrage",

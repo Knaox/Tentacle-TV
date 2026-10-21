@@ -34,7 +34,9 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
   const { t } = useTranslation("cards");
   const toggles = useCardToggles(item);
   const { box, icon, dir } = VARIANT_STYLE[variant];
-  const base = `${box} flex items-center justify-center rounded-full border bg-black/55 transition-transform duration-150 hover:scale-105`;
+  // `lg-btn-media` : le verre sur affiche, sur la bannière seulement (une instance).
+  const glass = variant === "inline" ? "lg-btn-media " : "";
+  const base = `${glass}${box} flex items-center justify-center rounded-full border bg-black/55 transition-transform duration-150 hover:scale-105`;
 
   const listLabel = toggles.watchlist ? t("removeFromWatchlist") : t("addToWatchlist");
   const favLabel = toggles.favorite ? t("removeFromFavorites") : t("addToFavorites");

@@ -64,7 +64,7 @@ export const ScopedSearchField = forwardRef<HTMLInputElement, ScopedSearchFieldP
   return (
     <div
       role="search"
-      className={`group relative flex h-11 w-full items-center gap-2 rounded-full border border-line-strong bg-[color:var(--surface-2)] pl-4 pr-1.5 transition-colors duration-150 focus-within:border-[color:rgba(var(--brand-rgb),0.75)] focus-within:shadow-[0_0_0_3px_rgba(var(--brand-rgb),0.2)] ${className}`}
+      className={`lg-field group relative flex h-11 w-full items-center gap-2 rounded-full border border-line-strong bg-[color:var(--surface-2)] pl-4 pr-1.5 transition-colors duration-150 focus-within:border-[color:rgba(var(--brand-rgb),0.75)] focus-within:shadow-[0_0_0_3px_rgba(var(--brand-rgb),0.2)] ${className}`}
     >
       <Search
         aria-hidden

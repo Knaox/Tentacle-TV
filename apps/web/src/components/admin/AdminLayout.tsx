@@ -5,6 +5,7 @@ import { SettingsShell } from "@tentacle-tv/ui";
 
 import { getUserInfo } from "../userMenu/menuItems";
 import { OVERVIEW_ID, activeAdminSection, adminSectionPath, useAdminSections } from "./adminSections";
+import { useGlassSidebarSelection } from "../nav/useGlassSidebarSelection";
 
 /**
  * Coquille maître-détail de l'administration.
@@ -38,6 +39,7 @@ export function AdminLayout() {
   const { isAdmin } = getUserInfo();
   const sections = useAdminSections();
   const activeId = useMemo(() => activeAdminSection(pathname), [pathname]);
+  const selection = useGlassSidebarSelection("admin");
 
   if (!isAdmin) return <Navigate to="/" replace />;
 
@@ -50,6 +52,7 @@ export function AdminLayout() {
         navLabel={t("title")}
         onBack={activeId === OVERVIEW_ID ? undefined : () => navigate("/admin")}
         backLabel={t("navOverview")}
+        selectionIndicator={selection}
         fluid
       >
         <Outlet />

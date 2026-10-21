@@ -1,6 +1,7 @@
 import type { Plugin } from "postcss";
 import { createContext } from "./context";
 import { remoteImportsPass } from "./remoteImportsPass";
+import { liquidGlassPass } from "./liquidGlassPass";
 import { modernPseudoPass } from "./modernPseudoPass";
 import { fixedUnitsPass } from "./fixedUnitsPass";
 import { gridPass } from "./gridPass";
@@ -25,7 +26,9 @@ import { compatGuard, formatSurvivals } from "./compatGuard";
  * L'ordre des passes n'est pas arbitraire :
  *
  *   1. `remoteImportsPass` d'abord — un `@import` doit rester en tête de
- *      feuille, aucune autre passe ne doit avoir à le contourner.
+ *      feuille, aucune autre passe ne doit avoir à le contourner. Puis
+ *      `liquidGlassPass`, qui retire le verre du bureau macOS (règles sous
+ *      `[data-lg]`) : les passes suivantes n'ont pas à réécrire ce qui part.
  *   2. `fixedUnitsPass` avant TOUTE transformation géométrique : les passes
  *      suivantes voient alors des pixels partout, y compris dans les
  *      demi-écarts qu'elles écrivent en `calc(… / 2)`.
@@ -61,6 +64,7 @@ export function chrome53Compat(): Plugin {
       const context = createContext();
 
       remoteImportsPass(root, context);
+      liquidGlassPass(root, context);
       fixedUnitsPass(root, context);
       modernPseudoPass(root, context);
       gridPass(root, context);

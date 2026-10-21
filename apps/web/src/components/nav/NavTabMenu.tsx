@@ -85,7 +85,7 @@ export function NavTabMenu({ target, onUnpin, onCustomize, onClose }: {
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
       style={position}
-      className="fixed z-[60] min-w-56 animate-scale-in rounded-xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-1 shadow-[var(--shadow-dropdown)]"
+      className="lg-menu fixed z-[60] min-w-56 animate-scale-in rounded-xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-1 shadow-[var(--shadow-dropdown)]"
     >
       {target.key !== null && (
         <button

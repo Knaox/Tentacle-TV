@@ -151,7 +151,7 @@ function StageButton({ onClick, label, icon, showLabel = false }: {
       title={label}
       // Blanc plein sur un verre à 0,55 : sur un décor clair, le blanc à 80 %
       // sur 0,42 tombait à 4,1:1 (mesuré au banc, thème clair).
-      className={`flex h-11 items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.55)] text-sm font-medium text-on-media-primary backdrop-blur-md transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.7)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] ${
+      className={`lg-btn-media flex h-11 items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.55)] text-sm font-medium text-on-media-primary backdrop-blur-md transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.7)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] ${
         showLabel ? "px-4" : "w-11 justify-center"
       }`}
     >

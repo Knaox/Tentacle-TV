@@ -1,0 +1,127 @@
+/* Liquid Glass — la surface `.lg-surface`, en mode NATIF seulement.
+ *
+ * La classe et ses attributs ne sont posés que par la primitive
+ * (`theme/glass/`), et seulement sous `<html data-liquid-glass="native">` ;
+ * chaque règle le redit quand même dans son sélecteur : le rendu d'avant ne
+ * peut pas être atteint par accident (test `liquidGlassTokens.test.ts`).
+ *
+ * Deux rendus :
+ *  - `lens`   : la lentille de Chromium. Le fond de la page se lit à travers
+ *               le filtre propre à la surface (`--lg-lens`, posé en ligne :
+ *               réfraction au biseau), puis flou, saturation, luminosité. Le
+ *               matériau se dessine en couches : un reflet diffus calé sur la
+ *               source de lumière, le voile du niveau, un liseré, deux arêtes
+ *               spéculaires (haut-gauche vive, bas-droite douce), une lueur
+ *               intérieure, une ombre de contact et une ombre portée.
+ *  - `native` : le verre de macOS est SOUS la page ; la surface ne dessine
+ *               plus rien, son contenu seul reste.
+ *
+ * Tout vient des jetons (`liquidGlassTokens.css`). Les variables locales
+ * (`--lg-fill`, `--lg-blur`…) ne font que choisir le jeu du niveau.
+ *
+ * Le mouvement (suivi du pointeur, appui, ressorts) et l'accessibilité
+ * (Réduire la transparence, Contraste accru) sont posés par lg-physique, sur
+ * les mêmes attributs. */
+
+:root[data-liquid-glass="native"] .lg-surface {
+  --lg-fill: var(--lg-regular-fill);
+  --lg-blur: var(--lg-regular-blur);
+  --lg-saturate: var(--lg-regular-saturate);
+  --lg-brightness: var(--lg-regular-brightness);
+  --lg-shadow: var(--lg-shadow-contact), var(--lg-shadow-float);
+  color: var(--lg-label);
+  border-radius: var(--lg-radius-md);
+  corner-shape: var(--lg-corner-shape);
+  background:
+    radial-gradient(
+      140% 100% at var(--lg-light-x) var(--lg-light-y),
+      var(--lg-highlight),
+      transparent 60%
+    ),
+    var(--lg-fill);
+  box-shadow:
+    inset 0 0 0 var(--lg-rim-width) var(--lg-rim),
+    inset 1.5px 1.5px 1px -1px var(--lg-specular-strong),
+    inset -1px -1px 1px -0.5px var(--lg-specular-soft),
+    inset 0 0 16px var(--lg-inner-glow),
+    var(--lg-shadow);
+}
+
+/* La lentille : la réfraction d'abord, sur l'image nette, puis le dépoli.
+ * `--lg-lens` absent (taille pas encore mesurée) : le flou seul. */
+:root[data-liquid-glass="native"] .lg-surface[data-lg-render="lens"] {
+  backdrop-filter: var(--lg-lens,) blur(var(--lg-blur)) saturate(var(--lg-saturate))
+    brightness(var(--lg-brightness));
+}
+
+/* Le verre natif est dessous : la page s'efface à cet endroit. */
+:root[data-liquid-glass="native"] .lg-surface[data-lg-render="native"] {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── Niveaux ─────────────────────────────────────────────────────────── */
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-level="clear"] {
+  --lg-fill: var(--lg-clear-fill);
+  --lg-blur: var(--lg-clear-blur);
+  --lg-saturate: var(--lg-clear-saturate);
+  --lg-brightness: var(--lg-clear-brightness);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-level="tinted"] {
+  --lg-fill: var(--lg-tinted-fill);
+  --lg-blur: var(--lg-tinted-blur);
+  --lg-saturate: var(--lg-tinted-saturate);
+  --lg-brightness: var(--lg-tinted-brightness);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-level="tinted"][data-lg-tint="accent"] {
+  --lg-fill: var(--lg-tinted-accent-fill);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-level="prominent"] {
+  --lg-fill: var(--lg-prominent-fill);
+  --lg-blur: var(--lg-prominent-blur);
+  --lg-saturate: var(--lg-prominent-saturate);
+  --lg-brightness: var(--lg-prominent-brightness);
+  --lg-shadow: var(--lg-shadow-contact), var(--lg-shadow-raised);
+  color: var(--lg-label-on-prominent);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-level="prominent"][data-lg-tint="accent"] {
+  --lg-fill: var(--lg-prominent-accent-fill);
+}
+
+/* ── Formes ──────────────────────────────────────────────────────────── */
+
+/* Capsule et cercle : de vrais demi-cercles, comme les boutons de macOS 26. */
+:root[data-liquid-glass="native"] .lg-surface[data-lg-shape="capsule"] {
+  border-radius: var(--lg-radius-capsule);
+  corner-shape: round;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-shape="circle"] {
+  border-radius: var(--lg-radius-capsule);
+  corner-shape: round;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-shape="rect"] {
+  border-radius: 0;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-radius="xs"] {
+  border-radius: var(--lg-radius-xs);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-radius="sm"] {
+  border-radius: var(--lg-radius-sm);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-radius="lg"] {
+  border-radius: var(--lg-radius-lg);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[data-lg-radius="xl"] {
+  border-radius: var(--lg-radius-xl);
+}

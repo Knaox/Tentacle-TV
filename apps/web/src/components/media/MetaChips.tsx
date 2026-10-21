@@ -51,7 +51,8 @@ export function MetaChip({ children, tone = "glass", title, ariaLabel }: MetaChi
     <span
       title={title}
       aria-label={ariaLabel ?? title}
-      className="inline-flex items-center whitespace-nowrap rounded-[5px] px-1.5 py-[2px] text-[10px] font-semibold uppercase leading-none tracking-[0.1em] backdrop-blur-md"
+      data-tone={tone}
+      className="lg-meta inline-flex items-center whitespace-nowrap rounded-[5px] px-1.5 py-[2px] text-[10px] font-semibold uppercase leading-none tracking-[0.1em] backdrop-blur-md"
       style={{ ...TONE_STYLE[tone], textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
     >
       {children}

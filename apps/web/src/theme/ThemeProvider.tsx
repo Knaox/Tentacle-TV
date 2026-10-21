@@ -1,5 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { releaseBootBackground, syncFromDocument } from "./colorScheme";
+// Effet de bord voulu : le mode Liquid Glass se pose sur <html> au CHARGEMENT
+// du module, donc avant le premier rendu (voir liquidGlassMode.ts).
+import "./liquidGlassMode";
 
 /**
  * Amorçage du thème au montage. Deux gestes, et rien d'autre : resynchroniser

@@ -14,13 +14,23 @@ import { useEffect } from "react";
  * jamais de fenêtre de temps où les deux sont transparents.
  *
  * Extrait de `DesktopPlayer` (limite de 300 lignes par fichier).
+ *
+ * `data-native-playback` dit l'état au reste de la page : le bandeau des feux,
+ * transparent sous Liquid Glass, y redevient OPAQUE — la fenêtre de mpv passe
+ * sous lui et y cache ses coins arrondis (`macosTitleBar.ts`, `OVERLAP`).
  */
 export function useTransparentPageDuringPlayback(ready: boolean): void {
   useEffect(() => {
     if (!ready) return;
     const prev = document.body.style.background;
     document.body.style.background = "transparent";
-    document.documentElement.style.background = "transparent";
-    return () => { document.body.style.background = prev; document.documentElement.style.background = ""; };
+    const root = document.documentElement;
+    root.style.background = "transparent";
+    root.dataset["nativePlayback"] = "on";
+    return () => {
+      document.body.style.background = prev;
+      root.style.background = "";
+      delete root.dataset["nativePlayback"];
+    };
   }, [ready]);
 }

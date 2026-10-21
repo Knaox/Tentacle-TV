@@ -36,7 +36,7 @@ export function ConfirmDialog({
           <button
             onClick={onCancel}
             disabled={pending}
-            className="inline-flex h-11 items-center justify-center rounded-lg border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition hover:bg-fill-medium disabled:opacity-50"
+            className="lg-btn lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition hover:bg-fill-medium disabled:opacity-50"
           >
             {cancelLabel}
           </button>
@@ -45,8 +45,8 @@ export function ConfirmDialog({
             disabled={pending}
             className={
               danger
-                ? "inline-flex h-11 items-center justify-center rounded-lg bg-[var(--status-error-bg)] border border-danger-border px-5 text-sm font-semibold text-[var(--status-error-fg)] transition hover:bg-danger-surface-hover disabled:opacity-50"
-                : "inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover disabled:opacity-50"
+                ? "lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg bg-[var(--status-error-bg)] border border-danger-border px-5 text-sm font-semibold text-[var(--status-error-fg)] transition hover:bg-danger-surface-hover disabled:opacity-50"
+                : "lg-btn-primary lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover disabled:opacity-50"
             }
            
           >

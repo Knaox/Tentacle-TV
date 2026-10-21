@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { i18n, initI18n, isServerCapability, resolveServerCapabilities } from "@tentacle-tv/shared";
 import { isNewerVersion } from "../../lib/updateCheckers";
-import { forAudience, forServer, selectWhatsNewFeatures } from "../selectFeatures";
+import { forAudience, forClient, forServer, selectWhatsNewFeatures } from "../selectFeatures";
 import { WHATS_NEW_RELEASES } from "./index";
 
 // La source unique des versions, lue telle quelle : le garde-fou porte sur le
@@ -82,5 +82,16 @@ describe("registre de l'écran de nouveautés", () => {
     expect(partial.map((f) => f.id)).toEqual(["trailerPreview", "stillWatching", "avatars"]);
     // Sans les sources par genre, la fiche du bandeau se tait : Personnalisation ne les propose pas.
     expect(partial.map((f) => f.id)).not.toContain("heroSource");
+  });
+
+  it("1.40.0 : le Liquid Glass n'existe qu'avec le trait `liquidGlass` — ailleurs, la release est vide et rien ne s'ouvre", () => {
+    const release = WHATS_NEW_RELEASES.find((r) => r.version === "1.40.0");
+    const glass = release?.features.filter((f) => f.requires === "liquidGlass").map((f) => f.id);
+    expect(glass).toEqual(["glassNavigation", "glassPlayer"]);
+    const elsewhere = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set())).features;
+    expect(elsewhere.map((f) => f.id)).not.toContain("glassNavigation");
+    expect(elsewhere.map((f) => f.id)).not.toContain("glassPlayer");
+    const onTahoe = selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(WHATS_NEW_RELEASES, new Set(["liquidGlass"] as const))).features;
+    expect(onTahoe.slice(0, 2).map((f) => f.id)).toEqual(["glassNavigation", "glassPlayer"]);
   });
 });

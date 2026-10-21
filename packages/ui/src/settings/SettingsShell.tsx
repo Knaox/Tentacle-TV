@@ -17,6 +17,10 @@ import { useId, type ReactNode } from "react";
  * Responsive — sous `md`, on bascule en navigation par poussée : le rail seul
  * quand aucune section n'est active, le détail seul sinon. C'est le
  * comportement attendu sur web mobile, où deux colonnes ne tiennent pas.
+ *
+ * Les classes `lgc-sidebar*` n'ont aucun style ici : c'est la barre latérale
+ * Liquid Glass du bureau macOS 26 (`apps/web/src/desktop/windowGlassNav.css`),
+ * portée par `<html data-liquid-glass="native">`. Ailleurs, rendu inchangé.
  */
 
 export interface SettingsShellSection {
@@ -57,6 +61,12 @@ export interface SettingsShellProps {
    * un formulaire se lit mieux étroit.
    */
   fluid?: boolean;
+  /**
+   * Posé DANS l'entrée active, sous son icône et son libellé : la sélection
+   * en verre qui glisse d'une entrée à l'autre (bureau macOS 26, `layoutId`
+   * fourni par le client). Absent, la sélection d'avant.
+   */
+  selectionIndicator?: ReactNode;
   children: ReactNode;
 }
 
@@ -70,6 +80,7 @@ export function SettingsShell({
   onBack,
   backLabel,
   fluid = false,
+  selectionIndicator,
   children,
 }: SettingsShellProps) {
   const groupDomId = useId();
@@ -91,7 +102,7 @@ export function SettingsShell({
            formulaire de services), le rail reste à portée au lieu de défiler
            hors de l'écran. `self-start` : dans une rangée flex, un élément
            étiré sur toute la hauteur ne colle jamais. */
-        className={`${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--topnav-height)+1.5rem)] md:w-60 md:self-start`}
+        className={`lgc-sidebar ${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--topnav-height)+1.5rem)] md:w-60 md:self-start`}
       >
         {groups.map((group, gi) => (
           <div key={group.name ?? gi} className={gi > 0 ? "mt-6" : ""}>
@@ -100,7 +111,7 @@ export function SettingsShell({
             {group.name ? (
               <p
                 id={`${groupDomId}-${gi}`}
-                className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary"
+                className="lgc-sidebar-label mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary"
               >
                 {group.name}
               </p>
@@ -116,23 +127,24 @@ export function SettingsShell({
                       aria-current={active ? "page" : undefined}
                       /* État actif : pilule pleine et discrète. Pas de glow —
                          c'était la signature la plus datée de l'ancien écran. */
-                      className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 ${
+                      className={`lgc-sidebar-item relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 ${
                         active
                           ? "bg-fill-soft font-medium text-content-primary"
                           : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
                       }`}
                     >
+                      {active ? selectionIndicator : null}
                       {section.icon ? (
                         <span
                           aria-hidden="true"
-                          className={`flex w-[18px] shrink-0 justify-center ${
+                          className={`lgc-sidebar-icon relative flex w-[18px] shrink-0 justify-center ${
                             active ? "text-content-primary" : "text-content-tertiary"
                           }`}
                         >
                           {section.icon}
                         </span>
                       ) : null}
-                      <span className="truncate">{section.label}</span>
+                      <span className="relative truncate">{section.label}</span>
                     </button>
                   </li>
                 );

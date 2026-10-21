@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useMessageCountdown } from "./session/useMessageCountdown";
 import { duration, exitDuration } from "../theme/motion";
+import { useGlassControl } from "./ui/glass/useGlassControl";
 
 interface ToastProps {
   id: number;
@@ -44,24 +45,30 @@ export const Toast = memo(function Toast({ id, type, title, message, onDismiss }
   const durationMs = DURATION_MS[type];
   const countdown = useMessageCountdown(durationMs, held, () => onDismiss(id));
   const c = COLORS[type];
+  // En mode natif : la lentille exacte du galet.
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
 
   return (
     <motion.div
+      ref={glass.ref}
+      data-lgc-lens={glass.props["data-lgc-lens"]}
       initial={{ opacity: 0, x: reduced ? 0 : 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: reduced ? 0 : 50, transition: { duration: exitDuration(duration.base) } }}
       transition={{ duration: duration.base }}
       role={type === "error" ? "alert" : "status"}
+      data-tone={type}
       /* `backdrop-blur-md` en classe et non en style en ligne : un attribut
          `style` échappe à la passe de verre du portage téléviseur, où un flou
          d'arrière-plan coûte une recopie et un recalcul par image sans rien
          apporter. La classe rend le même flou sur le web. */
-      className="relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg backdrop-blur-md"
-      style={{ background: c.bg, border: `1px solid ${c.border}` }}
+      className="lg-toast relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg backdrop-blur-md"
+      style={{ background: c.bg, border: `1px solid ${c.border}`, ...glass.props.style }}
       onClick={() => onDismiss(id)}
       onPointerEnter={() => setHeld(true)}
       onPointerLeave={() => setHeld(false)}
     >
+      {glass.layers}
       {title && <p className="font-semibold">{title}</p>}
       <p className={title ? "mt-0.5 text-content-secondary" : undefined}>{message}</p>
       <span aria-hidden className="absolute bottom-0 left-0 block h-0.5 w-full motion-reduce:hidden">

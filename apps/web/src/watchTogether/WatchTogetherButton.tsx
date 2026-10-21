@@ -63,7 +63,7 @@ function WatchTogetherControl({ dropdownPosition = "below" }: WatchTogetherButto
         onDismiss={() => setOpen(false)}
         side={dropdownPosition === "right" ? "right" : "bottom"}
         align="end"
-        className="w-96 overflow-y-auto overscroll-contain rounded-xl"
+        className="lg-menu w-96 overflow-y-auto overscroll-contain rounded-xl"
         style={{
           // Panneau flottant sur le fond de page : suit le schema. Le
           // rgba(15,15,25) fige restait sombre en theme clair.

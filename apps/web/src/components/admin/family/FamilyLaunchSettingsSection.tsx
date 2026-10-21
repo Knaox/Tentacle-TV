@@ -75,6 +75,7 @@ function LaunchSettingsForm({ saved }: { saved: FamilyLaunchSettings }) {
               key={platform}
               platform={platform}
               checked={draft.platforms[platform]}
+              disabled={!draft.enabled}
               onChange={(on) => change(togglePlatform(draft, platform, on))}
             />
           ))}
@@ -102,18 +103,21 @@ function LaunchSettingsForm({ saved }: { saved: FamilyLaunchSettings }) {
 interface PlatformTileProps {
   platform: FamilyLaunchAskPlatform;
   checked: boolean;
+  /** Le fieldset est désactivé : dit au curseur, sans `:has()` (refusé par la garde Chrome 53 du client LG). */
+  disabled: boolean;
   onChange: (checked: boolean) => void;
 }
 
 /** Une plateforme : la case, son pictogramme, son nom, ce que « décochée » y fait. */
-function PlatformTile({ platform, checked, onChange }: PlatformTileProps) {
+function PlatformTile({ platform, checked, disabled, onChange }: PlatformTileProps) {
   const { t } = useTranslation("profilePicker");
   const Icon = ICONS[platform];
   const frame = checked
     ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)]"
     : "border-line-subtle bg-fill-faint hover:border-line-strong";
+  const cursor = disabled ? "cursor-not-allowed" : "cursor-pointer";
   return (
-    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors duration-150 has-[:disabled]:cursor-not-allowed ${frame}`}>
+    <label className={`flex ${cursor} items-start gap-3 rounded-xl border p-4 transition-colors duration-150 ${frame}`}>
       <input type="checkbox" className={`${CHECKBOX} mt-0.5`} checked={checked} onChange={(event) => onChange(event.target.checked)} />
       <Icon size={18} aria-hidden="true" className="mt-px shrink-0 text-content-secondary" />
       <span className="min-w-0">
