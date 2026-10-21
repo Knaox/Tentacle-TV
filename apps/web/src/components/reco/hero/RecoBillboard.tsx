@@ -8,7 +8,8 @@ import { HeroIndicators } from "../../hero/HeroIndicators";
 import { useBillboardRotation } from "../../hero/useBillboardRotation";
 import { useHoverMount } from "../../../hooks/useHoverMount";
 import { useIdle } from "../../../hooks/useIdle";
-import { useInViewport } from "../../../hooks/useInViewport";
+import { useBillboardViewport } from "../../hero/useBillboardViewport";
+import { billboardActivity } from "../../hero/billboardActivity";
 import { useDataSaverActive } from "../../../offline/useDataSaver";
 import { recoAmbilightSourceUrl } from "@tentacle-tv/api-client";
 import { RecoHeroBackdrop } from "./RecoHeroBackdrop";
@@ -36,15 +37,17 @@ export function RecoBillboard({ slides: servedSlides }: { slides: RecoRowItem[] 
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
   const dataSaver = useDataSaverActive();
-  const { ref: frameRef, visible } = useInViewport<HTMLDivElement>("200px");
+  // Halo monté à 200 px, rotation strictement à l'écran (`billboardActivity`).
+  const { ref: frameRef, near, onScreen } = useBillboardViewport<HTMLDivElement>();
   const idle = useIdle(IDLE_MS);
   const arrows = useHoverMount(300);
   const slides = useHeldRecoItems(servedSlides, arrows.hovered);
 
+  const activity = billboardActivity({ near, onScreen, idle, dataSaver });
   const { index, animKey, selectWithGrace, prevWithGrace, nextWithGrace } = useBillboardRotation({
     count: slides.length,
     rotateMs: ROTATE_MS,
-    active: !dataSaver && visible && !idle,
+    active: activity.rotating,
   });
 
   // Le clamp du hook passe par un effet : entre un retrait optimiste (« Ne
@@ -65,7 +68,7 @@ export function RecoBillboard({ slides: servedSlides }: { slides: RecoRowItem[] 
     >
       <div ref={frameRef} className="relative">
         {/* Halo démonté hors écran — une image floutée animée en boucle. */}
-        {visible && <AmbilightLayer url={haloUrl} layerKey={item.key} />}
+        {activity.haloMounted && <AmbilightLayer url={haloUrl} layerKey={item.key} />}
 
         {/* Repère de la transition d'ouverture : c'est ce cadre que « Voir la
             fiche » fait voler jusqu'à la fiche (cf. HeroBillboard). */}
