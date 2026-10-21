@@ -1,6 +1,7 @@
 // Le lecteur en verre, geste par geste (lecture en cours) : contrôles masqués,
 // chaque panneau ouvert par son bouton, coupure du verre en pleine lecture.
 import { mpvProperty, sleep } from "./app.mjs";
+import { evalMain } from "./electron.mjs";
 import { centerOf, clickAt, mouseTo, nativeSnapshot, shot, showControls, step } from "./steps.mjs";
 
 // Libellés FR des boutons (i18n `player`) : un bouton absent n'est pas une
@@ -43,6 +44,20 @@ export async function playerPanels(ctx, label) {
       return { capture, visibleRegions: visibleNative(native) };
     });
   }
+  await step(ctx, `lecteur-${label}-redimension`, async () => {
+    // Le verre suit-il la fenêtre (lg-lecteur 882689c18) ? On réduit la fenêtre
+    // par le principal, puis on compare chaque vue AppKit à sa région demandée.
+    await evalMain(ctx.app, `require("electron").BrowserWindow.getAllWindows().find((w) => w.isVisible() && w.getSize()[0] > 600)?.setSize(1080, 700); return true;`);
+    await showControls(page);
+    await sleep(1500);
+    const snap = await nativeSnapshot(ctx.app);
+    const capture = await shot(ctx, `lecteur-${label}-redimension`);
+    const drift = (snap?.regions ?? []).filter((r) => !r.hidden && r.frame)
+      .map((r) => Math.max(Math.abs(r.frame.width - r.css.width), Math.abs(r.frame.height - r.css.height)));
+    await evalMain(ctx.app, `require("electron").BrowserWindow.getAllWindows().find((w) => w.isVisible() && w.getSize()[0] > 600)?.setSize(1280, 800); return true;`);
+    await sleep(1000);
+    return { capture, visibleRegions: visibleNative(snap), maxDrift: drift.length ? Math.max(...drift) : null };
+  });
   await step(ctx, `lecteur-${label}-coupure`, async () => {
     // Coupure du RÉGLAGE en pleine lecture : par le crochet de banc de
     // lg-lecteur (le vrai chemin de la page) s'il existe, sinon par le pont —

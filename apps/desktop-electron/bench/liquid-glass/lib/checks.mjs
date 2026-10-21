@@ -118,6 +118,12 @@ function chromeOn(report, fail) {
   for (const s of report.steps.filter((x) => x.ok && /^lecteur-.*-masque$/.test(x.name))) {
     if (s.visibleRegions > 0) fail(`« ${s.name} » : ${s.visibleRegions} région(s) native(s) visibles contrôles masqués`, s.capture);
   }
+  for (const s of report.steps.filter((x) => x.ok && /^lecteur-.*-redimension$/.test(x.name))) {
+    if (!s.visibleRegions) fail(`« ${s.name} » : aucune région native visible après redimensionnement`, s.capture);
+    else if (s.maxDrift > 2) fail(`« ${s.name} » : vue AppKit décalée de ${s.maxDrift} pt de sa région après redimensionnement`, s.capture);
+  }
+  const homeAttrs = find(report, "accueil")?.dom?.attrs;
+  if (homeAttrs && homeAttrs["data-window-inactive"] === null) fail("fenêtre ouverte inactive (banc) : html[data-window-inactive] absent", find(report, "accueil")?.capture);
   for (const s of report.steps.filter((x) => x.ok && /^lecteur-.*-coupure$/.test(x.name) && !x.absent)) {
     if (s.offViews > 0) fail(`« ${s.name} » : ${s.offViews} vue(s) AppKit après coupure en pleine lecture`, s.capture);
     // Le rallumage par le PONT ne prévient pas la page : elle ne renvoie pas ses
