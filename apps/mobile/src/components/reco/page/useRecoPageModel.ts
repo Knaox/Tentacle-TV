@@ -2,14 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect } from "expo-router";
 import {
-  heroSelectionFromRows, invalidateRecoQueries, useRecoPageVisit, useRecoSettings, useRequestedTitles, useTentacleConfig, useUserId,
+  RECO_GLOBAL_ROW_KEYS, forYouPageRows, heroSelectionFromRows, invalidateRecoQueries, useRecoPageVisit, useRecoSettings, useRequestedTitles, useTentacleConfig, useUserId,
 } from "@tentacle-tv/api-client";
 import { hasColdStartAck, markColdStartAck } from "@/reco/coldStartAck";
 
 const EMPTY: number[] = [];
-
-/** Les rangées servies dans TOUS les états du moteur (contrat backend). */
-export const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
 
 export type ColdStartPhase = "auto" | "hold" | "dismissed";
 
@@ -34,7 +31,9 @@ export function useRecoPageModel() {
   const settingsReady = settings.isSuccess || settings.isError;
   const providerFilter = settings.data?.providerFilter ?? EMPTY;
   const query = useRecoPageVisit(providerFilter, { enabled: settingsReady });
-  const page = query.data;
+  // « Tendances actuelles » en tête : la rangée goûtée des tendances n'y est pas répétée.
+  const served = query.data;
+  const page = useMemo(() => (served ? { ...served, rows: forYouPageRows(served.rows) } : served), [served]);
 
   // Un titre demandé dans la page de l'extension (empilée par-dessus) sort
   // des rangées quand l'écran reprend le focus.
@@ -79,7 +78,7 @@ export function useRecoPageModel() {
   const openColdStart = useCallback(() => setPhase("hold"), []);
   const dismissColdStart = useCallback(() => setPhase("dismissed"), []);
 
-  const hasPersonalizedRows = !!page?.rows.some((r) => !GLOBAL_ROW_KEYS.has(r.key));
+  const hasPersonalizedRows = !!page?.rows.some((r) => !RECO_GLOBAL_ROW_KEYS.has(r.key));
   const canPersonalize = page?.personalized !== false && page?.tmdbConfigured !== false;
 
   return {
