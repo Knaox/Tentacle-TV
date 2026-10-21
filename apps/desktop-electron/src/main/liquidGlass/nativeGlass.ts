@@ -5,7 +5,7 @@
  *
  * Ce module (MIT, Meridius Labs) a été lu, pas adopté : une seule vue de verre
  * par fenêtre, plein cadre, sans rectangle, sans retrait ni mise à jour de
- * géométrie, et ses variantes passent par des API PRIVÉES (`set_variant:`…) —
+ * géométrie, et ses variantes passent par des API PRIVÉES —
  * interdites au Mac App Store. Ce qu'il fait d'utile tient en trois messages à
  * des classes PUBLIQUES d'AppKit, que le pont de `video/objc.ts` sait déjà
  * envoyer : pas de `.node` de plus à compiler, à signer ni à recompiler à chaque

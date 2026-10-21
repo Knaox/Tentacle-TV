@@ -60,7 +60,13 @@ le pont dans `apps/desktop-electron/src/preload/index.ts`.
   `NSGlassEffectView`, posée sans l'enveloppe — le vrai verre du système, pas
   une imitation CSS.
 - Donc : aucune licence tierce de plus, **aucune API privée** nulle part — le
-  build MAS reçoit exactement ce code. Sélecteurs envoyés : `initWithFrame:`,
+  build MAS reçoit exactement ce code. Vérifié sur le paquet MAS lui-même
+  (`package-macos.mjs --arch arm64`, binaire Electron `mas`, web de
+  production) : pont présent, `supported`, mode `native`, verres posés et
+  retirés (relus dans AppKit), réfraction de la vidéo mpv ; aucun nom de
+  sélecteur privé dans l'archive ni dans le web embarqué — et
+  `privateApi.test.ts` refuse qu'un fichier livré en cite un, même en
+  commentaire (`tsc` recopie les commentaires dans l'archive). Sélecteurs envoyés : `initWithFrame:`,
   `setCornerRadius:`, `setStyle:`, `setTintColor:`, `setSpacing:`,
   `setContentView:`, `setAlphaValue:`, `setFrame:`, `animator`,
   `NSAnimationContext`, `addSubview:positioned:relativeTo:`,
