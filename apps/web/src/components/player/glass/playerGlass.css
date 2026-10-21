@@ -44,12 +44,18 @@
   --lg-player-track-buffer: #85838e;
   --lg-player-track-fill: var(--progress-fill);
   --lg-player-thumb: #ffffff;
+  /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste sur la surface à alpha. */
+  --lg-player-thumb-edge: 0 0 0 0.5px rgb(0 0 0 / 0.35);
   --lg-player-track-hover-scale: 1.6;
 
   /* Lignes des panneaux : la surbrillance façon menu macOS, à la couleur de marque */
   --lg-player-row-hover: var(--ctl-gradient);
   --lg-player-row-hover-fg: #ffffff;
   --lg-player-chip-line: #6f6d78;
+  /* Séparateur dans une capsule (pilule de saut) : noir à alpha. */
+  --lg-player-separator: rgb(0 0 0 / 0.3);
+  /* Témoin de développement (`mpv (transcode)`), opaque. */
+  --lg-player-devbadge: #2a1d45;
   /* L'attente (Watch Together) : l'ambre du web, en pleins. */
   --lg-player-wait: #fbbf24;
   --lg-player-wait-track: #6b5320;

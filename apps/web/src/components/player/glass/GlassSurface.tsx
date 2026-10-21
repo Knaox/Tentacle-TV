@@ -37,7 +37,7 @@
 
 import { createContext, useCallback, useContext, useRef, type HTMLAttributes, type Ref } from "react";
 import { useIsPresent } from "framer-motion";
-import { usePlayerGlassMode } from "./PlayerGlassContext";
+import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
 import { useNativeGlassRegion, type GlassRegionOptions } from "./nativeGlassPort";
 import "./playerGlass.css";
 
@@ -67,6 +67,7 @@ export function GlassSurface({
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();
   const chromeVisible = useContext(GlassChromeVisibleContext);
+  const regionsAllowed = usePlayerGlassRegionsAllowed();
   const shown = present && isPresent && chromeVisible;
   const ref = useRef<HTMLDivElement | null>(null);
   const setRef = useCallback((node: HTMLDivElement | null) => {
@@ -75,7 +76,7 @@ export function GlassSurface({
     else if (surfaceRef) (surfaceRef as { current: HTMLDivElement | null }).current = node;
   }, [surfaceRef]);
 
-  useNativeGlassRegion(ref, { active: mode === "native" && shown, group, variant, transition });
+  useNativeGlassRegion(ref, { active: mode === "native" && shown && regionsAllowed, group, variant, transition });
 
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
   return (

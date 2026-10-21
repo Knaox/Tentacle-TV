@@ -49,15 +49,16 @@ export function PlayerGlassProvider({ children }: { children: ReactNode }) {
   // l'habillage d'avant (et retire les régions natives).
   const { enabled } = useLiquidGlass();
   const nativeAvailable = useNativeGlassAvailable();
+  const mode = useMemo(
+    () => decidePlayerGlassMode({ enabled, nativeAvailable, videoUnderWindow: videoUnderWindow(), devPreview: DEV_PREVIEW }),
+    [enabled, nativeAvailable],
+  );
   // Le PiP : le lecteur est caché dans la fenêtre principale et ses contrôles
   // vivent dans la fenêtre du PiP, que les régions de la page ne savent pas
-  // viser (elles se poseraient dans la fenêtre PRINCIPALE). D'ici là, rien de
-  // natif pendant le PiP : l'habillage d'avant, démonté de toute région.
+  // viser (elles se poseraient dans la fenêtre PRINCIPALE). Rien de natif
+  // pendant le PiP — mais le MODE ne change pas : changer d'habillage
+  // remonterait le menu de vitesse, qui se remet à 1× à son montage.
   const { active: inPip } = usePictureInPicture();
-  const mode = useMemo(
-    () => inPip ? "legacy" : decidePlayerGlassMode({ enabled, nativeAvailable, videoUnderWindow: videoUnderWindow(), devPreview: DEV_PREVIEW }),
-    [enabled, nativeAvailable, inPip],
-  );
   // Les feuilles du lecteur ne s'allument que sous `data-liquid-glass="native"` (règle du lot,
   // `liquidGlassTokens.test.ts`) ; l'aperçu de développement pose son propre drapeau.
   useEffect(() => {
@@ -66,9 +67,20 @@ export function PlayerGlassProvider({ children }: { children: ReactNode }) {
     root.setAttribute("data-lgp-preview", "on");
     return () => root.removeAttribute("data-lgp-preview");
   }, [mode]);
-  return <PlayerGlassModeContext.Provider value={mode}>{children}</PlayerGlassModeContext.Provider>;
+  return (
+    <PlayerGlassModeContext.Provider value={mode}>
+      <PlayerGlassRegionsContext.Provider value={!inPip}>{children}</PlayerGlassRegionsContext.Provider>
+    </PlayerGlassModeContext.Provider>
+  );
 }
 
 export function usePlayerGlassMode(): PlayerGlassMode {
   return useContext(PlayerGlassModeContext);
+}
+
+/** Les régions natives du lecteur peuvent-elles se poser (faux pendant le PiP) ? */
+const PlayerGlassRegionsContext = createContext(true);
+
+export function usePlayerGlassRegionsAllowed(): boolean {
+  return useContext(PlayerGlassRegionsContext);
 }

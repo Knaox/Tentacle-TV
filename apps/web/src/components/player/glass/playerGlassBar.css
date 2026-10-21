@@ -46,7 +46,7 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-devbadge {
   pointer-events: none;
   border-radius: var(--lg-player-radius-capsule);
-  background: #2a1d45;
+  background: var(--lg-player-devbadge);
   padding: 4px 10px;
   color: var(--brand-light);
   font-size: 11px;
@@ -166,7 +166,7 @@
   border-radius: 50%;
   background: var(--lg-player-thumb);
   /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste. */
-  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.35);
+  box-shadow: var(--lg-player-thumb-edge);
   transform: scale(0);
   transition: transform 200ms var(--lg-player-ease-spring);
 }
@@ -235,7 +235,7 @@
   border: none;
   border-radius: 50%;
   background: var(--lg-player-thumb);
-  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.35);
+  box-shadow: var(--lg-player-thumb-edge);
   transition: transform 200ms var(--lg-player-ease-spring);
 }
 

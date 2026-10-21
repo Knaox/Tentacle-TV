@@ -54,7 +54,7 @@
   width: 1px;
   flex-shrink: 0;
   margin: 12px 0;
-  background: rgb(0 0 0 / 0.3);
+  background: var(--lg-player-separator);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__close {
