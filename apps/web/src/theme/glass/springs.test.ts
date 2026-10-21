@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   GLASS_SPRINGS,
+  NATIVE_GLASS_MORPH_MS,
+  NATIVE_GLASS_SPRINGS,
   springOvershoot,
   springPosition,
   springSettleSeconds,
@@ -61,5 +63,15 @@ describe("ressorts du verre", () => {
   it("donne l'équivalent framer (k = ω0², c = 2ζω0)", () => {
     const f = springToFramer({ response: 2 * Math.PI, dampingFraction: 0.5 });
     expect(f).toEqual({ type: "spring", stiffness: 1, damping: 1, mass: 1 });
+  });
+
+  it("donne au verre natif les constantes de framer et une durée de repos fine", () => {
+    // Valeurs relayées à lg-natif pour CASpringAnimation : ne pas les changer
+    // sans le prévenir.
+    expect(NATIVE_GLASS_SPRINGS.morph).toMatchObject({ stiffness: 223.8, damping: 25.13, mass: 1 });
+    expect(NATIVE_GLASS_SPRINGS.lens).toMatchObject({ stiffness: 385.5, damping: 21.6, mass: 1 });
+    expect(NATIVE_GLASS_MORPH_MS).toBe(584);
+    // Plafond du pont (MAX_TRANSITION_MS) : 1 000 ms.
+    expect(NATIVE_GLASS_MORPH_MS).toBeLessThanOrEqual(1000);
   });
 });

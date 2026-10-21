@@ -126,3 +126,22 @@ export function springToFramer(spring: GlassSpring): { type: "spring"; stiffness
     mass: 1,
   };
 }
+
+/**
+ * Le verre NATIF (NSGlassEffectView, pont de lg-natif) suit les métamorphoses
+ * de la page par une animation de sa frame : `CASpringAnimation` (API
+ * publique, sûre pour le Mac App Store) avec les MÊMES constantes que framer
+ * — même équation, donc la même courbe image par image.
+ *
+ * Durée : le repos à 0,1 % du trajet (`SPRING_REST_EPSILON`), pas la coupe à
+ * 1 % des transitions CSS — une frame native coupée à 1 % d'une métamorphose
+ * de 300 px finirait par un saut de 3 px. C'est la `transition` que la page
+ * envoie au pont pour une région qui se métamorphose ou fusionne (plafond du
+ * pont : 1 000 ms).
+ */
+export const NATIVE_GLASS_SPRINGS = {
+  morph: springToFramer(GLASS_SPRINGS.morph),
+  lens: springToFramer(GLASS_SPRINGS.lens),
+} as const;
+
+export const NATIVE_GLASS_MORPH_MS = Math.round(springSettleSeconds(GLASS_SPRINGS.morph) * 1000);

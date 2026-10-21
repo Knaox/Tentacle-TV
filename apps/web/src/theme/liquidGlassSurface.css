@@ -30,6 +30,8 @@
   --lg-brightness: var(--lg-regular-brightness);
   --lg-shadow: var(--lg-shadow-contact), var(--lg-shadow-float);
   color: var(--lg-label);
+  /* La lisibilité tient à l'ombre du libellé, pas à un voile sombre. */
+  text-shadow: var(--lg-label-shadow);
   border-radius: var(--lg-radius-md);
   corner-shape: var(--lg-corner-shape);
   background:

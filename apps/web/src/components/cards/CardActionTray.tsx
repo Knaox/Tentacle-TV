@@ -203,9 +203,8 @@ export function CardTrayCapsule({ label, stretch = false, bare = false, children
   bare?: boolean;
   children: ReactNode;
 }) {
-  // Le reflet sous le pointeur (mode natif) ; pas de lentille : le voile du
-  // survol dessous est opaque, il n'y aurait rien à réfracter.
-  const glass = useGlassControl<HTMLDivElement>({ specular: !bare });
+  // En mode natif : la lentille exacte du verre clair et le reflet sous le pointeur.
+  const glass = useGlassControl<HTMLDivElement>({ lens: bare ? false : "clear", shape: "capsule", specular: !bare });
   // `max-w-full min-w-0` : la capsule ne dépasse jamais la carte, ce sont ses
   // boutons qui se resserrent (`TRAY_SIZE`).
   const capsule = `lg-tray flex min-w-0 max-w-full items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
@@ -214,6 +213,7 @@ export function CardTrayCapsule({ label, stretch = false, bare = false, children
   return (
     <div
       ref={glass.ref}
+      {...glass.props}
       role="toolbar"
       aria-label={label}
       onClick={(e) => {

@@ -1,0 +1,33 @@
+/* ── Liquid Glass : la LISIBILITÉ sur un verre clair ──────────────────────
+ *
+ * Le verre du lot est clair et lumineux : ce n'est plus un fond noir qui tient
+ * le contraste d'un libellé, c'est son OMBRE — un halo autour du texte et des
+ * icônes, comme la vibrance de macOS. Les valeurs sont des jetons du socle
+ * (lg-tokens) : `--lg-label-shadow`, `--lg-media-label-shadow`,
+ * `--lg-glyph-shadow`, `--lg-media-glyph-shadow`.
+ *
+ * Coût : une ombre de texte ou un `drop-shadow` d'icône se peignent avec
+ * l'élément, une fois ; rien ne s'anime ici.
+ *
+ * Sous `:root[data-liquid-glass="native"]` seulement : le rendu d'avant n'a
+ * pas d'ombre de plus. */
+
+/* Posé sur une AFFICHE (héros, fiche, plateau des cartes) : libellé blanc dans
+ * les deux schémas, halo sombre — c'est lui qui tient l'AA sur un décor blanc. */
+:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media, .lg-tray) {
+  text-shadow: var(--lg-media-label-shadow);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media, .lg-tray) svg {
+  filter: var(--lg-media-glyph-shadow);
+}
+
+/* Posé sur la PAGE : l'ombre suit le schéma (halo sombre en sombre, liseré
+ * clair en clair). */
+:root[data-liquid-glass="native"] :is(.lg-btn, .lg-chip, .lg-pill, .lg-field) {
+  text-shadow: var(--lg-label-shadow);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-btn, .lg-chip, .lg-pill, .lg-field) svg {
+  filter: var(--lg-glyph-shadow);
+}

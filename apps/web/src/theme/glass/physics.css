@@ -159,9 +159,24 @@ html[data-liquid-glass="native"][data-lg-material] {
   --lg-prominent-fill: var(--lg-prominent-gradient), linear-gradient(var(--lg-a11y-solid), var(--lg-a11y-solid));
   --lg-tinted-accent-fill: linear-gradient(var(--lg-tint-accent), var(--lg-tint-accent)), var(--lg-a11y-solid);
   --lg-prominent-accent-fill: var(--lg-prominent-gradient), linear-gradient(var(--lg-a11y-solid), var(--lg-a11y-solid));
-  --lgc-media-dim: var(--lg-a11y-solid);
   --lgc-thick-dim: var(--lg-a11y-solid);
   --lgc-veil-fill: var(--lg-a11y-solid);
+  /* Le verre posé sur une AFFICHE ou un média vif garde son libellé BLANC
+   * dans les deux thèmes : son plein est le noir des médias, jamais la
+   * surface claire du thème (illisible en clair). */
+  --lg-a11y-solid-media: rgb(var(--scrim-media-rgb));
+  --lg-media-dim: var(--lg-a11y-solid-media);
+  --lg-clear-dim: var(--lg-a11y-solid-media);
+  --lgc-media-dim: var(--lg-a11y-solid-media);
+  --lgc-media-icons-dim: var(--lg-a11y-solid-media);
+  /* Sur un plein, les ombres de lisibilité et la vibrance n'ont plus rien à
+   * tenir : le contraste est celui du libellé sur l'aplat. Elles partent
+   * (`text-shadow` / `filter` : `none` est valide pour les deux). */
+  --lg-label-shadow: none;
+  --lg-glyph-shadow: none;
+  --lg-media-label-shadow: none;
+  --lg-media-glyph-shadow: none;
+  --lg-vibrancy-blend: normal;
 }
 html[data-liquid-glass="native"][data-theme="light"][data-lg-material] {
   --lg-a11y-solid: var(--surface-2);
