@@ -1,33 +1,32 @@
 # Liquid Glass — le verre de macOS 26 dans le bureau (1.40.0)
 
-Carnet commun du lot « Liquid Glass macOS » (nuit du 21 au 22/10/2026). Chaque
-section dit qui la tient ; une section « à écrire » attend la fusion de son
-morceau dans `dev`, et se rédige d'après ce qui a été FUSIONNÉ, jamais d'après
-un plan.
+Carnet du lot « Liquid Glass macOS » (nuit du 21 au 22/10/2026), écrit d'après
+ce qui a été FUSIONNÉ dans `dev`. Chaque section a été rédigée par la session
+qui a fait le morceau ; il se tient désormais comme le reste du dépôt.
 
-| Section | Tenue par |
-|---------|-----------|
-| 1. La règle | lg-livraison |
-| 2. Le socle natif | lg-natif |
-| 3. Les jetons `--lg-*` | lg-livraison, d'après lg-tokens |
-| 4. La primitive | lg-livraison, d'après lg-tokens |
-| 5. Mode d'emploi : une nouvelle surface en verre | lg-livraison |
-| 6. Le « liquide » : mouvement, reflet, accessibilité | lg-physique |
-| 7. Ce qui ne doit jamais casser | tous |
-| 8. Livraison : nouveautés, notes, licences | lg-livraison |
-| 9. Bancs et mesures | lg-banc |
+1. La règle — 2. Le socle natif — 3. Les jetons `--lg-*` — 4. La primitive —
+5. Mode d'emploi : une nouvelle surface en verre — 6. Le « liquide » :
+mouvement, reflet, accessibilité — 7. Le lecteur — 8. La fenêtre, la
+navigation, les composants, le hors ligne — 9. Ce qui ne doit jamais casser —
+10. Livraison : nouveautés, notes, licences — 11. Bancs et mesures.
 
 ## 1. La règle
 
-- **Le verre NATIF, ou le rendu d'avant.** Sur macOS 26 (Tahoe) et au-delà, dans
-  l'app de bureau, la fenêtre reçoit le vrai verre du système
-  (`NSGlassEffectView`, classe PUBLIQUE d'AppKit, pilotée par le pont koffi déjà
-  dans le dépôt — aucun module natif de plus) et la page dessine
-  ses surfaces pour s'y accorder. Partout ailleurs — web, Windows, Linux, macOS
-  d'avant 26, réglage coupé —, **le rendu d'avant, au pixel près** : aucune
-  classe, aucun jeton, aucun calque de plus.
-- **Activé d'office, coupé dans Réglages › Apparence.** L'option n'existe QUE là
-  où le système sait faire : elle est invisible ailleurs, jamais grisée.
+- **Une seule porte : `<html data-liquid-glass="native">`** (`theme/liquidGlassMode.ts`),
+  posée avant le premier rendu : macOS 26 (le pont de la coquille le dit) ET
+  réglage allumé. Partout ailleurs — web, Windows, Linux, macOS d'avant 26,
+  réglage coupé, `TENTACLE_LIQUID_GLASS=off` — l'attribut vaut `refraction` ou
+  `off`, aucune règle du verre ne s'applique : **le rendu d'avant, au pixel près**.
+- **Deux verres, selon ce qu'il y a derrière.** Sur la VIDÉO (le lecteur, Apple
+  Silicon seulement) : le vrai verre du système, `NSGlassEffectView`, classe
+  PUBLIQUE d'AppKit pilotée par le pont koffi déjà dans le dépôt (§ 2, § 7). Sur
+  la PAGE (navigation, menus, cartes, fenêtres) : la lentille de Chromium,
+  réfraction calculée pour la forme exacte de chaque surface (§ 4) — le verre
+  natif vit SOUS la vue web et ne voit pas la page.
+- **Activé d'office, coupé dans Réglages › Apparence** (préférence d'appareil
+  `tentacle_liquid_glass`, la clé du mobile). Sur le bureau macOS, l'option
+  n'existe QUE là où le système sait faire : invisible sur un macOS d'avant 26,
+  jamais grisée.
 - **Fonction purement client.** Aucune capacité serveur : le serveur ne sait
   rien du verre, et un serveur ancien n'y change rien.
 - **Les couleurs de marque restent.** Le verre est neutre ; le violet → rose
@@ -252,20 +251,73 @@ celui qui tape ailleurs.
 
 ## 3. Les jetons `--lg-*`
 
-> À écrire d'après la fusion de **lg-tokens** : la table des jetons
-> (`apps/web/src/theme/tokens.css`), leur valeur en clair et en sombre, et le
-> sélecteur qui les allume (la racine ne les porte QUE quand le verre est actif).
+Le MATÉRIAU commun vit dans `apps/web/src/theme/liquidGlassTokens.css`, en
+sombre (`:root`) puis en clair (`:root[data-theme="light"]`) — son en-tête
+tient le catalogue, c'est lui qui fait foi. Pas dans `tokens.css` : le test de
+parité de l'admin (`packages/theme/src/css/cssVars.test.ts`) exige que toute
+variable de `tokens.css` soit surchargeable, et le verre est un matériau du
+SYSTÈME ; seules ses touches de couleur suivent la marque (`--brand-rgb`,
+`--brand-accent-rgb`).
 
-Ce que la table doit dire, pour chaque jeton : son rôle (flou, saturation,
-teinte neutre, teinte de marque, liseré, reflet, ombre, rayon), sa valeur
-claire, sa valeur sombre, et qui le consomme.
+| Famille | Jetons |
+|---------|--------|
+| Teintes | `--lg-light-rgb`, `--lg-shade-rgb`, `--lg-tint-brand` · `-accent` · `-gradient`, `--lg-prominent-gradient`, `--lg-label*` |
+| Niveaux | `--lg-{regular,clear,tinted,prominent}-{fill,blur,saturate,brightness}` — le vocabulaire d'Apple (`regular`, `clear`, `tint`, `prominent`) |
+| Épaisseurs | `--lg-thick-fill` (menus, feuilles), `--lg-clear-dim`, `--lg-media-dim` (verre sur une affiche), `--lg-scrim` |
+| Lisibilité | `--lg-label-shadow`, `--lg-glyph-shadow`, `--lg-media-label-shadow`, `--lg-media-glyph-shadow`, `--lg-vibrancy-blend` — la lisibilité vient de l'OMBRE du libellé, pas d'un voile qui assombrit le verre |
+| États | `--lg-hover-brightness`, `--lg-opacity-pressed` · `-disabled` |
+| Réfraction | `--lg-refraction-{niveau}` (px), `--lg-bezel-{sm,md,lg}`, `--lg-dispersion` |
+| Spéculaire | `--lg-rim(-width)`, `--lg-specular-strong` · `-soft`, `--lg-highlight`, `--lg-inner-glow`, `--lg-light-x` · `-y` |
+| Ombres, formes | `--lg-shadow-{contact,float,raised}`, `--lg-corner-shape`, `--lg-radius-*`, `--lg-thickness-*` |
+| Fondus | `--lg-duration-{press,hover,appear,disappear}`, `--lg-ease-out` |
+| Natif | `--lg-native-tint-{niveau}(-accent)` : la teinte `#RRGGBBAA` envoyée au pont |
+
+Chaque famille COMPOSE ce matériau chez elle, sans redéfinir un nom commun :
+mouvement `--lg-spring-*` et accessibilité (`theme/glass/physics.css`, § 6),
+fenêtre `--lg-chrome-*` (`desktop/windowGlass.css`, § 8), contrôles `--lgc-*`
+(`components/ui/glass/lgRecipes.css`, § 8), lecteur `--lg-player-*`
+(`components/player/glass/`, § 7).
+
+**La portée est tenue par test** : toute règle de `apps/web/src` qui lit
+`var(--lg-…)` ou une classe `.lg-…` doit être portée par
+`:root[data-liquid-glass="native"]` (`theme/liquidGlassTokens.test.ts`). Les
+jetons sont DÉCLARÉS partout (`:root`), mais LUS seulement sous la porte.
 
 ## 4. La primitive
 
-> À écrire d'après la fusion de **lg-tokens** : le composant `LiquidGlass` et
-> son crochet (`packages/ui/src/glass/`), leurs props, ce qu'ils rendent quand
-> le verre est coupé (le rendu d'avant, sans enveloppe superflue), et le crochet
-> qui dit « verre actif » / « verre supporté ».
+`apps/web/src/theme/glass/` — l'API est documentée en tête de `index.ts`,
+qui fait foi. La carte de réfraction est dans `packages/ui/src/glass/`.
+
+```ts
+import { LiquidGlass, useLiquidGlassSurface, useLiquidGlassRegion, useLiquidGlassMode } from "../theme/glass";
+```
+
+- **Hors `native`, rien d'autre que le rendu d'avant** : une surface rend
+  `className` + `fallbackClassName` (+ `fallbackStyle`, `style`), DOM identique
+  à avant (test de rendu statique). Migrer une surface = déplacer son habillage
+  d'avant dans `fallbackClassName`, garder la MISE EN PAGE dans `className`.
+- **En `native`, selon `backdrop`** :
+  - `page` (défaut) — derrière, de la PAGE : la **lentille de Chromium**,
+    réfraction au biseau calculée pour la forme exacte (`refractionMap.ts`,
+    filtre SVG en sRGB, cache de 32 cartes), puis flou, saturation, luminosité,
+    liseré, reflets, tout en jetons ;
+  - `window` — derrière, la fenêtre (le lecteur sur la vidéo) : **région
+    native** inscrite auprès du pont (`useLiquidGlassRegion`), la surface se
+    rend transparente ; l'appelant garantit que ses ancêtres le sont aussi.
+    Un `upsert` + un `remove` par image au plus, sommeil après six images
+    sans changement, région retirée dès qu'elle est cachée, hors écran ou
+    démontée.
+- **Options** : `level` (`regular` · `clear` · `tinted` · `prominent`),
+  `shape` (`rounded` · `capsule` · `circle` · `rect`), `radius` (`xs` → `xl`),
+  `tint` (`brand` · `accent`), `interactive`, `z` ; verre natif seulement :
+  `group`, `spacing`, `transition` (§ 2.3).
+- `useLiquidGlassSurface({ … })` pour un `motion.div` : `{ props, layers }`,
+  `layers` (le filtre de la lentille) se rend DANS l'élément.
+- **Les portes** : `useLiquidGlassMode() === "native"` (OS + réglage) ;
+  `useLiquidGlass().nativeSupported` / `readNativeGlassBridge() !== null`
+  (l'OS seul, réglage mis à part — l'écran des nouveautés) ;
+  `useLiquidGlass().refractsVideo` / `nativeGlassRefractsVideo()` (le verre
+  natif voit la vidéo : montage `fenetre`, Apple Silicon).
 
 ## 5. Mode d'emploi : une nouvelle surface en verre
 
@@ -280,10 +332,24 @@ claire, sa valeur sombre, et qui le consomme.
 4. **L'accessibilité du système est respectée** (§ 6) : « Réduire la
    transparence » rend une surface opaque, « Augmenter le contraste » durcit
    le liseré, le mouvement réduit fige le liquide.
-5. **Le lecteur ne perd jamais son HDR** (§ 7) : une surface posée sur la vidéo
+5. **Le lecteur ne perd jamais son HDR** (§ 9) : une surface posée sur la vidéo
    se vérifie par `video-target-params`, avant et après.
 6. **Hors macOS 26, rien** : un test le dit — la surface rend exactement le
-   balisage d'avant quand le verre est inactif.
+   balisage d'avant quand le verre est inactif. Sa feuille est portée par
+   `:root[data-liquid-glass="native"]` (test de portée, § 3).
+7. **Une modale ou un menu en `position: fixed` passe par un PORTAIL**
+   (`createPortal(document.body)`, ou `Modal`, `Sheet`, `FloatingLayer`) : un
+   `backdrop-filter`, un `transform` ou la propriété `scale` de la lentille
+   font de leur élément le BLOC CONTENEUR de ses descendants fixes. Vécu : le
+   dialogue « garder hors ligne », ouvert depuis la capsule de la fiche, tenait
+   dans 240 × 54 px. Garde : `components/ui/glass/modalPortal.test.ts`. Le
+   lecteur porte de même ses popovers dans son dock (§ 7).
+8. **Jamais de lentille (`data-lg-lens`) sur une surface à verre natif** :
+   une région native ne suit pas une échelle image par image (§ 6).
+9. **Le client LG compile la même feuille** : `liquidGlassPass`
+   (`apps/tv-webos/config/postcss/`) retire toute règle sous
+   `[data-liquid-glass…]` / `[data-lg…]` ; rien d'autre à faire, sauf une
+   syntaxe que la garde Chrome 53 refuserait HORS de cette portée.
 
 ## 6. Le « liquide » : mouvement, reflet, accessibilité
 
@@ -400,37 +466,210 @@ Ce que le banc a appris :
 - une couche effacée garde son flou à `opacity: 0` : celles de la fusion
   passent en `visibility: hidden` à la fin du fondu.
 
-## 7. Ce qui ne doit jamais casser
+## 7. Le lecteur
+
+Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
+
+- **Une porte** : `playerGlassMode.ts`. Le lecteur ne prend le verre que si le
+  mode est `native` ET que le socle dit `refractsVideo` (le verre voit la vidéo :
+  montage `fenetre`, Apple Silicon). Sinon — web, Windows, Linux, macOS < 26,
+  **Intel** (montage `gl` : décision du lot, GPU intégrés qui chauffent déjà en
+  lecture, aucun HDR à y gagner), réglage coupé — l'habillage d'avant, au
+  balisage près. Couper le réglage EN PLEINE LECTURE rend aussitôt l'habillage
+  d'avant et retire les régions (la vitesse vit dans l'aiguillage,
+  `usePlaybackRate`). Le repli vers le lecteur web (mpv en échec) est hors de la
+  porte.
+- **Pas de repli « verre de la page » sur la vidéo** : Chromium ne voit pas
+  l'image de mpv, un flou CSS n'y floute rien. Le verre natif, ou rien.
+- **Une couture** vers les socles : `nativeGlassPort.ts` (mode, `refractsVideo`,
+  `useLiquidGlassRegion` avec `group`, `spacing`, `transition`).
+- **Le décor** : capsule du haut (retour + titre) ; en bas, la capsule du temps
+  et trois capsules de boutons à 4 px — sous la distance de fusion du groupe
+  natif `player` (`spacing` 8) : AppKit les fond en UNE forme liquide.
+  Popovers (pistes, vitesse, épisodes) qui NAISSENT de leur bouton
+  (`glassMorphProps`, la région suit la surface qui grandit). Pilule de saut,
+  « Vous regardez encore ? », fiche « à suivre », badges, attente, avis, Watch
+  Together, bulle de la vignette du survol.
+- **Deux familles de couleurs seulement : l'opaque et le noir à alpha.** Un
+  blanc translucide rend gris sur la surface à alpha de la fenêtre. Teinte
+  native presque neutre, comme QuickTime : `--lg-player-native-tint` 10 % de
+  noir sur les capsules (18 % en clair), `--lg-player-panel-tint` 20 % sur les
+  panneaux (32 % en clair) ; lisibilité par les ombres du socle.
+- **Mouvement** : surfaces FIXES (capsules, badges) — fondu natif par
+  conteneur (180 ms), et transition nulle PENDANT un redimensionnement
+  (`windowResizing.ts` ; sans elle, le verre traînait jusqu'à 160 pt) ;
+  surfaces qui BOUGENT (panneaux, avis, bulle) — `transition: 0`, le verre suit
+  image par image. Un test vérifie que toute variable `--lg-*` lue par le
+  lecteur existe (vécu : `--lg-ease-spring`, retiré du socle, figeait en
+  silence toutes les transitions).
+- **Popovers dans le DOCK** (`glassDock.ts`, `createPortal`) : rendu dans sa
+  capsule, le menu de vitesse était retenu par la transformée de `.lgp-content`.
+- **Clics** : une surface À L'ÉCRAN reprend les clics ; masquée, jamais ; en
+  sortie, elle les laisse au bouton dessous (vécu : une piste choisie mettait
+  en pause).
+  ⚠️ Ces deux points viennent des derniers commits de lg-lecteur
+  (`f0d5eeed6`, `b9cf047ee`, tête `09429366d`), annoncés prêts à fusionner au
+  moment de cette rédaction : à retirer de ce carnet s'ils n'entrent pas.
+- **Masqué, rien ne consomme** : régions retirées en moins de 100 ms,
+  `nativeViews: 0`.
+- **PiP** : contrôles d'avant (le document du PiP n'a pas de pont) ; le lecteur
+  principal retire ses régions pendant le PiP (5 → 0 → 5, mesuré).
+- **GPU** (`ioreg`, relatif) : contrôles affichés ≈ +8 points avec le verre ;
+  masqués, aucun coût.
+
+## 8. La fenêtre, la navigation, les composants, le hors ligne
+
+Tout en LENTILLE de Chromium (§ 4) — aucune région native par contrôle.
+
+- **Fenêtre et navigation** (lg-chrome, `apps/web/src/desktop/windowGlass.css`,
+  `windowGlassNav.css`, jetons `--lg-chrome-*`) : bandeau des feux transparent,
+  le contenu défile dessous ; **effet de bord de défilement**
+  (`ScrollEdgeEffect.tsx` : flou masqué en dégradé, monté seulement page
+  défilée, opacité sur les 48 premiers px) ; capsule de la `TopNav` en surface
+  de la primitive, onglet actif en lentille teintée qui GLISSE (ressort
+  `morph`), reflet qui suit le pointeur ; barres latérales de Réglages et
+  d'Admin en panneau flottant, sélection en lentille qui glisse, sans
+  `backdrop-filter` (rien ne bouge derrière) ; **fenêtre inactive**
+  (`windowFocus.ts`, `data-window-inactive`) au gris, sans animation. Pendant la
+  lecture native, le bandeau redevient OPAQUE (`data-native-playback`).
+- **Composants** (lg-composants, `components/ui/glass/` : `lgRecipes.css`,
+  `lgControls.css`, `lgOverlays.css`, `lgLegibility.css`, `useGlassControl`,
+  `GlassPressable`) : des CLASSES-MARQUEURS sans aucun style hors de la porte —
+  `.hero-cta-primary` / `.lg-btn-primary` (action principale, verre proéminent
+  de marque), `.lg-btn-media`, `.lg-capsule-media`, `.lg-btn`, `.lg-disc`
+  (flèches des rangées, montées au survol), `.lg-tray` (plateau du survol des
+  cartes), `.lg-pill`, `.lg-chip`, `.lg-meta`, `.lg-field`, `.lg-segmented`,
+  `.lg-menu`, `.lg-sheet` / `.lg-scrim`, `.lg-toast`, `.lg-bar`, `.lg-notice`,
+  `.lg-panel`, `.lg-badge`. Le modèle des cartes (`cardOverlay.ts`) est intact :
+  seule la peau change.
+- **Hors ligne** : message de passage hors ligne et avis en `.lg-notice`,
+  panneaux de la page hors ligne en `.lg-panel` (sans flou), bannière en
+  lentille ; dialogues « garder hors ligne » et de suppression en portail (§ 5).
+- **Bannières** : la rotation ne tourne que STRICTEMENT à l'écran
+  (`useBillboardViewport`, `billboardActivity`) — sous un verre, toute image qui
+  change fait recalculer le flou (51 → 0 DrawFrame/s hors écran).
+
+## 9. Ce qui ne doit jamais casser
 
 - **Le HDR / EDR du lecteur** : Apple Silicon, fenêtre Metal de mpv SOUS la
   nôtre ; Intel, `NSOpenGLView` dans la nôtre (CLAUDE.md, « macOS — deux
   montages vidéo »). Le verre ne s'interpose jamais entre la vidéo et l'écran
   d'une façon qui ferait passer la sortie en SDR.
-- **Le Mac App Store** : aucune API privée dans le build MAS.
+- **Le Mac App Store** : aucune API privée dans le build MAS —
+  `privateApi.test.ts` refuse qu'un fichier livré en cite une, même en
+  commentaire.
 - **L'ombre de la fenêtre transparente** : jamais rallumée (CLAUDE.md,
   « Coût GPU » § 4).
-- **Le rendu d'avant** hors macOS 26 et réglage coupé.
+- **Le rendu d'avant** hors macOS 26 et réglage coupé (tests de portée et de
+  rendu statique, § 3, § 4).
+- **Rien de monté ni de flouté qui n'est pas affiché** (CLAUDE.md, « Coût
+  GPU ») : un verre ne coûte rien tant que rien ne bouge dessus (§ 6, « Le
+  coût »).
+- **Les clics et le clavier de l'utilisateur** : un banc s'ouvre en
+  `TENTACLE_BENCH_INACTIVE=1`, après 120 s d'inactivité (§ 11).
 
-## 8. Livraison : nouveautés, notes, licences
+## 10. Livraison : nouveautés, notes, licences
 
 - **Notes de version** (`changelogs/desktop.md`) : le verre n'existe que sur
   macOS 26, il ne paraît donc QUE dans le bloc `## [mac-1.40.0]` (App Store
-  Connect). Le bloc nu `## [1.40.0]` (Microsoft Store, Linux) porte les autres
+  Connect) — le lecteur dit « sur un Mac à puce Apple ». Le bloc nu `## [1.40.0]` (Microsoft Store, Linux) porte les autres
   nouveautés de la version ; chacune se recopie aussi dans le bloc Mac, sous le
   verre. Jamais un commentaire DANS `### FR` / `### EN` : il partirait chez le
   store.
 - **Écran des nouveautés** (`apps/web/src/whatsNew/`) : release `1.40.0`
   (`releases/v1_40_0.tsx`), scènes `scenes/v1_40_0/` — la navigation et le
   lecteur, le verre PEINT par `FauxGlass` (une scène ne peut pas emprunter le
-  verre natif). Elles portent `requires: "liquidGlass"` : le filtre `forClient`
-  les retire là où l'appareil n'a pas le verre (`clientTraits.ts`), et une
-  release ainsi vidée n'ouvre pas d'écran.
+  verre natif), avec les jetons du matériau. La navigation exige le trait
+  `liquidGlass` (le pont annonce le verre), le lecteur `liquidGlassPlayer` (le
+  verre voit la vidéo) : le filtre `forClient` les retire là où l'appareil ne
+  les a pas (`clientTraits.ts`) — un Mac Intel en macOS 26 voit la navigation
+  seule —, et une release ainsi vidée n'ouvre pas d'écran.
 - **Licences** : rien à ajouter à `apps/desktop-electron/THIRD-PARTY-LICENSES.md`
   — le verre passe par AppKit et koffi, déjà présents ; le module
   `electron-liquid-glass` n'a pas été retenu (§ 2).
 
-## 9. Bancs et mesures
+## 11. Bancs et mesures
 
-> À écrire par **lg-banc** : comment lancer le banc Electron du verre (CDP,
-> captures de fenêtre), les mesures `powermetrics` de référence (au repos, en
-> lecture, verre allumé et coupé), et la recette d'une fusion.
+Le banc de recette vit dans `apps/desktop-electron/bench/liquid-glass/` (son
+`README.md` fait foi pour les commandes). Jamais lancé par `pnpm test`.
+
+**Ce qu'il fait tourner** — tout est JETABLE : un Jellyfin 10.11 dans Docker
+(`lg-banc-jf`, `127.0.0.1:18307`, `jellyfin.sh`), le backend du worktree sur une
+base SQLite neuve (`:3107`, `backend.sh`), et la VRAIE app de dev : processus
+principal, preload, CSP. Comptes `admin` et `Knaoxtest` du Jellyfin jetable,
+mots de passe générés (`<état>/jf/`, 0600, jamais imprimés) : aucun compte réel,
+jamais le Jellyfin partagé par dev et prod. Médias : douze films dont six aux
+affiches DÉTAILLÉES (Mandelbrot, jeu de la vie, mire de zones, Sierpinski, mire
+SMPTE quadrillée, chiffres) pour juger la réfraction au biseau, « Banc HDR10 »
+(HEVC Main10, PQ, BT.2020, 4K), « Banc SDR », la série « Écume ».
+
+**Comment il observe**
+
+- Profil : `CFFIXED_USER_HOME=<état>/home-<cellule>` — `--user-data-dir` est
+  ignoré (`index.ts` force `userData`) ; le verrou d'instance unique suit ce HOME.
+- Page en CDP (`9307`) : `html[data-liquid-glass]`, le pont, l'interrupteur
+  (cherché par son texte), `.lgc-edge`, `.lg-surface`, `data-lg-material`,
+  `data-native-playback`, `prefers-*` émulés. Principal par l'inspecteur Node
+  (`9407`) : `globalThis.__tentacleGlass.snapshot()` (hors paquet) compte les
+  `NSGlassEffectView` RÉELLEMENT présentes dans AppKit (`nativeViews`).
+- Captures : `screencapture -l <notre fenêtre>` uniquement — elle compose les
+  fenêtres filles (mpv compris) et ne montre rien d'une autre application.
+  Jamais `-R` : à travers une fenêtre transparente, une capture d'écran a saisi
+  d'autres applications (21/10).
+- **Le clavier de Damien** : aucune fenêtre ne s'ouvre, aucun plein écran ni PiP
+  ne se joue tant que clavier et souris n'ont pas été inactifs 120 s
+  (`HIDIdleTime`), et l'app s'ouvre en `TENTACLE_BENCH_INACTIVE=1`.
+- Deux Electron au plus sur la machine : `mkdir`/`rmdir` de
+  `.claude/locks/lg/electron-slot-1|2`, arrêt par notre pid seulement.
+
+**La matrice** (`matrix.mjs`) — six écrans (accueil en haut, défilé de 300 et
+900 px, survol d'une carte, fiche, Réglages › Apparence et › Lecture), le
+lecteur (SDR, HDR, contrôles masqués, chaque panneau, coupure du verre en pleine
+lecture, plein écran, PiP et retour par « Revenir au lecteur », épisodes), et
+l'administration :
+
+| Cellule | Attendu |
+|---------|---------|
+| `allume` | html `native`, pont `supported`, interrupteur allumé, verre natif au lecteur, rien de natif contrôles masqués |
+| `coupe` | html `off`, `nativeViews` = 0 partout, aucune `.lg-surface`, fiche identique au rendu d'avant |
+| `env-off` | `TENTACLE_LIQUID_GLASS=off` : interrupteur ABSENT, html `refraction`, 0 vue |
+| `clair` | `tentacle_theme_mode=light` + `nativeTheme.themeSource="light"` |
+| `transparence`, `contraste` | `prefers-reduced-transparency` / `prefers-contrast` émulés côté page → `data-lg-material` |
+| `admin` | barres latérales, compte admin du Jellyfin jetable |
+
+Le HDR s'y juge sur le COUPLE `video-params` / `video-target-params` et sur la
+marge EDR de l'écran (`video_surface_probe` → `edr.potential`) : sur un écran
+sans HDR (capot fermé sur un moniteur SDR), une sortie SDR est juste et le HDR
+est dit « non vérifiable », pas en défaut. Référence mesurée sur l'écran interne
+(base d'avant le lot) : `gamma=pq`, `primaries=bt.2020`, `max-luma` 1000, EDR 9,4.
+
+**Réduire la transparence côté natif** : `NSGlassEffectView` suit seul le
+réglage du SYSTÈME. Le banc ne le bascule pas (réglage d'accessibilité de
+Damien, global à la machine) : à vérifier à la main.
+
+**Mesures GPU** — le banc relève « Device Utilization % » d'`IOAccelerator`
+(`ioreg`, sans sudo) à 1 Hz : charge de la machine ENTIÈRE, comparable d'une
+cellule à l'autre dans une même passe, jamais dans l'absolu, et sans valeur
+au-delà d'une charge système de ~20. La mesure de référence en watts reste
+manuelle, sur un build de PRODUCTION (`build:web`, jamais `dev` et son compteur
+d'images) :
+
+```bash
+sudo powermetrics --samplers gpu_power -i 1000 -n 10
+```
+
+au repos sur l'accueil, puis en lecture, verre allumé puis coupé. lg-physique
+tient en plus un banc GPU de page sans sudo : `node apps/web/bench/glass-gpu/run-bench.mjs`.
+
+**Recette d'une fusion** — `recette.sh` fusionne `dev` dans la branche du banc,
+réinstalle si le lockfile bouge, reconstruit le bureau, relance le backend s'il
+a changé, rejoue la matrice et compare au rendu d'avant (`compare.mjs`,
+`compare -metric AE -fuzz 2%` : fiche ≤ 0,03 % = bruit ; l'accueil fait tourner
+son héros, il ne se juge pas au pixel). Les preuves vont dans
+`~/Pictures/tentacle-banc-liquid-glass/<date>-recette-<commit>/` (`resume.md`,
+`rapport.json`, captures).
+
+**Recette du matin** — `morning.mjs` : clone NEUF de `dev`, `pnpm install`,
+`pnpm dev:electron` (drapeaux CDP passés SANS `--` : Chromium ignore tout ce qui
+suit un `--`), connexion, puis exige le pont `supported`, le natif `enabled`,
+html `native` et l'interrupteur allumé.

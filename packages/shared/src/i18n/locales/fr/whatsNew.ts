@@ -50,9 +50,9 @@ export default {
 
   // 1.40.0 — les autres nouveautés de la version suivent le verre.
   v1_40_0_glassNavigation_title: "Tentacle en Liquid Glass",
-  v1_40_0_glassNavigation_body: "Sur macOS Tahoe, l'application adopte le verre d'Apple : la barre de navigation, les boutons et les menus flottent au-dessus de la page, qui défile dessous et se devine au travers, aux couleurs de Tentacle. Activé d'office ; Réglages › Apparence le coupe.",
+  v1_40_0_glassNavigation_body: "Sur macOS Tahoe, l'application adopte le verre d'Apple : la barre de navigation, les boutons, les menus et les fenêtres flottent au-dessus de la page, qui défile dessous et se devine au travers, aux couleurs de Tentacle — jusque dans les pages hors ligne. Activé d'office ; Réglages › Apparence le coupe.",
   v1_40_0_glassPlayer_title: "Le lecteur, tout en verre",
-  v1_40_0_glassPlayer_body: "Les commandes flottent sur le film sans le cacher, le reflet suit votre pointeur, et les pistes audio, les sous-titres et les épisodes s'ouvrent dans des panneaux de verre.",
+  v1_40_0_glassPlayer_body: "Les commandes flottent sur le film dans un verre presque transparent qui ne le cache pas, et se fondent les unes dans les autres ; les pistes audio, les sous-titres, la vitesse et les épisodes s'ouvrent depuis leur bouton dans des panneaux de verre. Sur un Mac à puce Apple.",
 
   // 1.29.0
   v1_29_0_trailerPreview_title: "La bande-annonce, au survol",

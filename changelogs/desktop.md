@@ -18,10 +18,12 @@ et Linux reçoivent l'ensemble.
      Les autres nouveautés de la 1.40.0 s'ajoutent ICI aussi, SOUS la puce du verre (même texte que le bloc nu). Jamais un commentaire DANS « ### FR » / « ### EN » : il partirait chez le store.
      Fonction purement client : aucune version de serveur exigée. -->
 ### FR
-- **Tentacle en Liquid Glass sur macOS Tahoe** : sur un Mac à jour avec macOS 26, l'application adopte le verre d'Apple. La barre de navigation, les boutons, les menus, les fenêtres et tout le lecteur deviennent translucides et laissent deviner ce qui passe dessous, aux couleurs de Tentacle. Activé d'office, à couper dans Réglages › Apparence ; « Réduire la transparence » et « Augmenter le contraste » de macOS sont respectés
+- **Tentacle en Liquid Glass sur macOS Tahoe** : sur un Mac à jour avec macOS 26, l'application adopte le verre d'Apple. La barre de navigation, les boutons, les menus, les fenêtres et les pages hors ligne deviennent un verre clair qui laisse deviner ce qui défile dessous, aux couleurs de Tentacle. Activé d'office, à couper dans Réglages › Apparence ; « Réduire la transparence », « Augmenter le contraste » et « Réduire les animations » de macOS sont pris en compte
+- **Le lecteur, tout en verre** : sur un Mac à puce Apple, les commandes flottent sur le film dans un verre presque transparent et se fondent les unes dans les autres ; les pistes, les sous-titres, la vitesse et les épisodes s'ouvrent depuis leur bouton dans des panneaux de verre. La vidéo garde son HDR
 
 ### EN
-- **Tentacle in Liquid Glass on macOS Tahoe**: on a Mac running macOS 26, the app takes on Apple's glass. The navigation bar, buttons, menus, windows and the whole player become translucent and let what lies beneath show through, in Tentacle's colors. On by default, can be turned off in Settings › Appearance; macOS "Reduce transparency" and "Increase contrast" are respected
+- **Tentacle in Liquid Glass on macOS Tahoe**: on a Mac running macOS 26, the app takes on Apple's glass. The navigation bar, buttons, menus, windows and offline pages turn into clear glass that lets what scrolls beneath show through, in Tentacle's colors. On by default, can be turned off in Settings › Appearance; macOS "Reduce transparency", "Increase contrast" and "Reduce motion" are taken into account
+- **The player, all glass**: on Macs with Apple silicon, the controls float over the movie in nearly clear glass and melt into one another; tracks, subtitles, speed and episodes open from their button in glass panels. The video keeps its HDR
 
 ## [1.40.0]
 <!-- Bloc nu : Microsoft Store et Release GitHub Linux. VOLONTAIREMENT VIDE tant que les autres nouveautés de la 1.40.0 ne sont pas écrites :
