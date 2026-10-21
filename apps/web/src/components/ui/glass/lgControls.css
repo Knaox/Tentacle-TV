@@ -100,15 +100,18 @@
   box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
 }
 
-
 /* ══ 3. Le plateau du survol des cartes ═══════════════════════════════════
  *
- * Posé sur le voile du survol (0,9 en bas) : pas de flou. Le modèle
- * (`cardOverlay.ts`) ne change pas — seule la peau. */
+ * Un vrai verre CLAIR (lentille exacte, flou léger) : sans lui, un blanc
+ * translucide sur le voile du survol se lisait comme un gris. Monté au survol,
+ * une instance à la fois. Le modèle (`cardOverlay.ts`) ne change pas — seule
+ * la peau. */
 :root[data-liquid-glass="native"] .lg-tray {
   /* Positionnée : le reflet (`GlassSpecular`) s'y pose en absolu. */
   position: relative;
   background: var(--lgc-fill-veil);
+  -webkit-backdrop-filter: var(--lgc-backdrop-clear);
+  backdrop-filter: var(--lgc-backdrop-clear);
   border-color: transparent;
   box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
 }
