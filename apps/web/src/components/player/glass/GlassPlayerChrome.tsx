@@ -6,6 +6,7 @@ import { GlassChromeVisibleContext, GlassSurface } from "./GlassSurface";
 import { GlassTopBar } from "./GlassTopBar";
 import { GlassSeekbar } from "./GlassSeekbar";
 import { GlassControlsRow } from "./GlassControlsRow";
+import { PLAYER_BAR_LAYOUT } from "./playerGlassFusion";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 import "./playerGlassBar.css";
 
@@ -37,7 +38,7 @@ export function GlassPlayerChrome({
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
   goBack, onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
   handleAudioChange, handleSubtitleChange, onQualityChange, applyToSeries,
-  onNextEpisode, onPreviousEpisode,
+  onNextEpisode, onPreviousEpisode, speed,
 }: DesktopPlayerControlsProps) {
   return (
     <GlassChromeVisibleContext.Provider value={visible}>
@@ -45,9 +46,15 @@ export function GlassPlayerChrome({
         <GlassTopBar visible={visible} title={title} subtitle={subtitle} isDirectPlay={isDirectPlay} goBack={goBack} />
 
         <div className="lgp-dock" onClick={(e) => e.stopPropagation()}>
-          <GlassSurface className="lgp-bar" present={visible}>
-            <div className="lgp-content lgp-bar__inner">
-              <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
+          {PLAYER_BAR_LAYOUT === "fused" ? (
+            <>
+              {/* La capsule du temps, puis les trois capsules de boutons : même groupe
+                  natif, 4 px d'écart — AppKit les fond en UNE forme liquide. */}
+              <GlassSurface className="lgp-timecap lgp-morph" present={visible}>
+                <div className="lgp-content lgp-timecap__inner">
+                  <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
+                </div>
+              </GlassSurface>
               <GlassControlsRow
                 state={state} itemId={itemId} isEpisode={isEpisode} hasSettings={hasSettings}
                 hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
@@ -55,39 +62,57 @@ export function GlassPlayerChrome({
                 setShowSettings={setShowSettings} setShowEpisodes={setShowEpisodes}
                 onReduce={onReduce} togglePause={togglePause} skipBy={skipBy} toggleMute={toggleMute}
                 setVolume={setVolume} setSpeed={setSpeed} toggleFullscreen={toggleFullscreen}
-                onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
+                onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode} speed={speed}
+                visible={visible} grouped
               />
-            </div>
-
-            <AnimatePresence>
-              {showSettings && hasSettings && (
-                <TrackSelector
-                  key="tracks"
-                  audioTracks={displayAudio} subtitleTracks={displaySubs}
-                  currentAudio={curAudio} currentSubtitle={curSub}
-                  currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
-                  autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
-                  onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
-                  onQualityChange={onQualityChange}
-                  applyToSeries={applyToSeries}
-                  onClose={closePanels.settings}
+            </>
+          ) : (
+            <GlassSurface className="lgp-bar lgp-morph" present={visible}>
+              <div className="lgp-content lgp-bar__inner">
+                <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
+                <GlassControlsRow
+                  state={state} itemId={itemId} isEpisode={isEpisode} hasSettings={hasSettings}
+                  hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
+                  showSettings={showSettings} showEpisodes={showEpisodes}
+                  setShowSettings={setShowSettings} setShowEpisodes={setShowEpisodes}
+                  onReduce={onReduce} togglePause={togglePause} skipBy={skipBy} toggleMute={toggleMute}
+                  setVolume={setVolume} setSpeed={setSpeed} toggleFullscreen={toggleFullscreen}
+                  onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode} speed={speed}
+                  visible={visible} grouped={false}
                 />
-              )}
-              {showEpisodes && isEpisode && item?.SeriesId && (
-                useLocalEpisodes ? (
-                  <LocalEpisodeSelectorPanel key="episodes" currentEpisodeId={item.Id} onClose={closePanels.episodes} />
-                ) : (
-                  <EpisodeSelectorPanel
-                    key="episodes"
-                    seriesId={item.SeriesId}
-                    currentEpisodeId={item.Id}
-                    currentSeasonId={item.SeasonId}
-                    onClose={closePanels.episodes}
-                  />
-                )
-              )}
-            </AnimatePresence>
-          </GlassSurface>
+              </div>
+            </GlassSurface>
+          )}
+
+          {/* Les panneaux se calent sur le DOCK (bord droit, au-dessus des capsules). */}
+          <AnimatePresence>
+            {showSettings && hasSettings && (
+              <TrackSelector
+                key="tracks"
+                audioTracks={displayAudio} subtitleTracks={displaySubs}
+                currentAudio={curAudio} currentSubtitle={curSub}
+                currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
+                autoQualityActive={autoQualityActive} qualityDrop={qualityDrop}
+                onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
+                onQualityChange={onQualityChange}
+                applyToSeries={applyToSeries}
+                onClose={closePanels.settings}
+              />
+            )}
+            {showEpisodes && isEpisode && item?.SeriesId && (
+              useLocalEpisodes ? (
+                <LocalEpisodeSelectorPanel key="episodes" currentEpisodeId={item.Id} onClose={closePanels.episodes} />
+              ) : (
+                <EpisodeSelectorPanel
+                  key="episodes"
+                  seriesId={item.SeriesId}
+                  currentEpisodeId={item.Id}
+                  currentSeasonId={item.SeasonId}
+                  onClose={closePanels.episodes}
+                />
+              )
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </GlassChromeVisibleContext.Provider>

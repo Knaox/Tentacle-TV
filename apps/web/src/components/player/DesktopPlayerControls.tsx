@@ -16,6 +16,7 @@ import { ReduceIcon } from "../../pictureInPicture/pipIcons";
 import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
 import { isGlassLayout } from "./glass/playerGlassMode";
 import { GlassPlayerChrome } from "./glass/GlassPlayerChrome";
+import { usePlaybackRate } from "../playerControls/usePlaybackRate";
 import type { DesktopPlayerControlsProps } from "./desktopPlayerControls.types";
 
 /**
@@ -44,7 +45,12 @@ const WITHOUT_ALPHA = !surfaceHasAlpha();
  */
 export function DesktopPlayerControls(props: DesktopPlayerControlsProps) {
   const mode = usePlayerGlassMode();
-  return isGlassLayout(mode) ? <GlassPlayerChrome {...props} /> : <LegacyDesktopPlayerControls {...props} />;
+  // Le taux de lecture vit ICI : couper le réglage en pleine lecture change
+  // d'habillage, et un taux tenu par le bouton remettait mpv à 1×.
+  const speed = usePlaybackRate(props.setSpeed, props.itemId);
+  return isGlassLayout(mode)
+    ? <GlassPlayerChrome {...props} speed={speed} />
+    : <LegacyDesktopPlayerControls {...props} speed={speed} />;
 }
 
 function LegacyDesktopPlayerControls({
@@ -55,7 +61,7 @@ function LegacyDesktopPlayerControls({
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
   goBack, onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
   handleAudioChange, handleSubtitleChange, onQualityChange, applyToSeries,
-  onNextEpisode, onPreviousEpisode,
+  onNextEpisode, onPreviousEpisode, speed,
 }: DesktopPlayerControlsProps) {
   const { t } = useTranslation("player");
   const { dragProgress } = seekbar;
@@ -187,7 +193,7 @@ function LegacyDesktopPlayerControls({
             </div>
             <div className="flex items-center gap-2">
               <PlaybackRateControl
-                apply={setSpeed} resetKey={itemId} buttonClass="p-2"
+                apply={setSpeed} resetKey={itemId} buttonClass="p-2" state={speed}
                 // Un seul panneau à la fois : pistes et épisodes se fermaient
                 // déjà l'un l'autre, la vitesse s'ouvrait par-dessus les deux.
                 otherPanelOpen={showSettings || showEpisodes}

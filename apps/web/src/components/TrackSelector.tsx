@@ -10,6 +10,7 @@ import { usePlayerGlassMode } from "./player/glass/PlayerGlassContext";
 import { isGlassLayout } from "./player/glass/playerGlassMode";
 import { GlassPanel } from "./player/glass/GlassPanel";
 import { GlassChip, GlassOption } from "./player/glass/GlassOption";
+import { PLAYER_MORPH } from "./player/glass/playerGlassFusion";
 
 interface Track {
   index: number;
@@ -151,7 +152,7 @@ export function TrackSelector({
   );
   // Verre : le popover au-dessus de la capsule (`GlassPanel`), mêmes lignes.
   if (glass) {
-    return <GlassPanel className="w-80 max-w-[calc(100vw-3rem)]" bodyClassName="p-3" role="dialog" aria-label={t("player:settings")}>{body}</GlassPanel>;
+    return <GlassPanel morphId={PLAYER_MORPH.tracks} className="w-80 max-w-[calc(100vw-3rem)]" bodyClassName="p-3" role="dialog" aria-label={t("player:settings")}>{body}</GlassPanel>;
   }
   return (
     <motion.div data-panneau-detache

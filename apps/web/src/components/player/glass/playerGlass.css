@@ -28,10 +28,17 @@
   --lg-player-bar-max: 980px;
   /* Hauteur FIXE de la capsule de lecture : le coin bas-droit monte d'autant (`.lgp-corner`). */
   --lg-player-bar-height: 90px;
+  /* Variante « fused » : écart entre la capsule du temps et celles des boutons (sous la
+     distance de fusion, 8), et hauteur des capsules de boutons. 36 + 4 + 50 = 90. */
+  --lg-player-group-gap: 4px;
+  --lg-player-group-height: 50px;
   --lg-player-radius-bar: var(--lg-radius-xl);
   --lg-player-radius-capsule: 9999px;
   --lg-player-radius-panel: var(--lg-radius-lg);
   --lg-player-radius-row: 12px;
+  --lg-player-radius-trickplay: 16px;
+  /* Le liseré de verre autour de la vignette (`GlassTrickplayBubble` : INSET, à l'identique). */
+  --lg-player-trickplay-inset: 5px;
   --lg-player-button: 36px;
   --lg-player-button-primary: 46px;
   --lg-player-button-small: 28px;
@@ -41,12 +48,21 @@
   --lg-player-track-buffer: #85838e;
   --lg-player-track-fill: var(--progress-fill);
   --lg-player-thumb: #ffffff;
+  /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste sur la surface à alpha. */
+  --lg-player-thumb-edge: 0 0 0 0.5px rgb(0 0 0 / 0.35);
   --lg-player-track-hover-scale: 1.6;
 
   /* Lignes des panneaux : la surbrillance façon menu macOS, à la couleur de marque */
   --lg-player-row-hover: var(--ctl-gradient);
   --lg-player-row-hover-fg: #ffffff;
   --lg-player-chip-line: #6f6d78;
+  /* Séparateur dans une capsule (pilule de saut) : noir à alpha. */
+  --lg-player-separator: rgb(0 0 0 / 0.3);
+  /* Témoin de développement (`mpv (transcode)`), opaque. */
+  --lg-player-devbadge: #2a1d45;
+  /* L'attente (Watch Together) : l'ambre du web, en pleins. */
+  --lg-player-wait: #fbbf24;
+  --lg-player-wait-track: #6b5320;
   /* Le puits d'une icône de carte : noir à alpha, il assombrit le verre sans le griser. */
   --lg-player-icon-well: rgb(0 0 0 / 0.28);
 
@@ -56,7 +72,9 @@
 
   /* Mouvement : entrée sur ressort, sortie plus courte (≈ 60 %) */
   --lg-player-enter-ms: 340ms;
-  --lg-player-exit-ms: 190ms;
+  /* Sortie COURTE : le verre natif part dès le masquage (fondu natif nul,
+     `NATIVE_FADE_MS`) — le contenu ne doit pas traîner sur l'image nue. */
+  --lg-player-exit-ms: 150ms;
   --lg-player-ease-spring: var(--lg-ease-spring);
   --lg-player-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --lg-player-ease-exit: cubic-bezier(0.4, 0, 1, 1);
@@ -68,9 +86,19 @@
      léger, pour que le blanc des symboles tienne sur une image claire. */
   --lg-player-native-tint: rgb(0 0 0 / 0.22);
 
+  /* Une vignette absente (fiche « à suivre ») : un aplat plein, sombre. */
+  --lg-player-placeholder: #25222e;
+
   /* Aperçu de développement seulement (mode `preview`) */
   --lg-player-preview-surface: #25222e;
   --lg-player-preview-edge: #3d3948;
+}
+
+/* Thème clair : la vue native y prend l'apparence CLAIRE (verre laiteux), sous
+   des symboles qui restent blancs (le lecteur est sombre dans les deux thèmes).
+   Teinte plus dense, en attendant une apparence sombre forcée par région. */
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lg-player-native-tint: rgb(0 0 0 / 0.42);
 }
 
 /* ── Surface ─────────────────────────────────────────────────────────── */
@@ -96,16 +124,30 @@
   opacity: 0;
 }
 
-/* Le contenu se « matérialise » : il monte et se pose, sur un ressort. */
+/* Les capsules se « matérialisent » : la SURFACE monte et se pose sur un
+   ressort, et la primitive suit son rectangle image par image — le verre natif
+   grandit avec elle (un vrai morphing, pas un fondu plat). Le contenu, lui,
+   n'apparaît qu'en opacité. Sortie vers le bord le plus proche, plus courte. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-morph {
+  transition: transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-morph[data-lgp-present="false"] {
+  transform: translateY(var(--lg-player-hide-shift)) scale(var(--lg-player-hide-scale));
+  transition-duration: var(--lg-player-exit-ms);
+  transition-timing-function: var(--lg-player-ease-exit);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-morph--top[data-lgp-present="false"] {
+  transform: translateY(calc(-1 * var(--lg-player-hide-shift))) scale(var(--lg-player-hide-scale));
+}
+
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-content {
-  transition:
-    opacity var(--lg-player-enter-ms) var(--lg-player-ease-enter),
-    transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
+  transition: opacity var(--lg-player-enter-ms) var(--lg-player-ease-enter);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) [data-lgp-present="false"] > .lgp-content {
   opacity: 0;
-  transform: translateY(var(--lg-player-hide-shift)) scale(var(--lg-player-hide-scale));
   transition-duration: var(--lg-player-exit-ms);
   transition-timing-function: var(--lg-player-ease-exit);
 }
@@ -113,6 +155,7 @@
 /* ── Boutons ─────────────────────────────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn {
+  position: relative;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -184,10 +227,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-content,
-  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) [data-lgp-present="false"] > .lgp-content {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-morph,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-morph[data-lgp-present="false"] {
     transform: none;
-    transition-property: opacity;
+    transition: none;
   }
   :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn > svg {
     transition: none;

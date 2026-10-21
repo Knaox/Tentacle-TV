@@ -37,11 +37,11 @@ export function PlaybackBadge({ flash }: { flash: PlaybackFlash | null }) {
   if (!flash) return null;
 
   // Lecteur en verre : une bulle de verre FIXE (sa région native ne bouge pas,
-  // elle paraît et part en fondu natif), le symbole seul fait son battement.
+  // elle paraît et part avec le badge), le symbole seul fait son battement.
   if (glass) {
     return (
       <div key={flash.id} className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center" aria-hidden="true">
-        <GlassSurface className="lgp-badge lgp-badge--round" group="player-flash" transition={150}>
+        <GlassSurface className="lgp-badge lgp-badge--round" group="player-flash">
           <div className="flex h-full w-full animate-[playbackFlash_0.7s_ease-out_forwards] items-center justify-center">
             <Trace kind={flash.kind} />
           </div>
