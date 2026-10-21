@@ -44,6 +44,11 @@
   box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
 }
 
+/* La capsule de la fiche ne porte que des icônes : le voile clair. */
+:root[data-liquid-glass="native"] .lg-capsule-media {
+  background: var(--lgc-fill-media-icons);
+}
+
 /* L'arête et l'ombre occupent `box-shadow` : les anneaux `ring-*` de Tailwind,
  * qui y vivent aussi, sont recouverts. Le focus clavier passe donc par
  * `outline`, qui ne dépend de rien d'autre. */
