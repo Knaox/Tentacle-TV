@@ -81,7 +81,7 @@ export async function screens(ctx) {
     return { capture: await shot(ctx, "accueil-defile") };
   });
   await step(ctx, "carte-survol", async () => {
-    const at = await centerOf(page, 'a[href*="/media/"] img');
+    const at = await centerOf(page, 'img[src*="/Images/Primary"]');
     if (!at) throw new Error("aucune carte visible");
     await mouseTo(page, at.x, at.y);
     await sleep(1200);
@@ -161,7 +161,7 @@ export async function player(ctx) {
       });
       await step(ctx, "lecteur-hdr-pip", async () => {
         await showControls(page);
-        const at = await centerOf(page, "button[aria-label]", "image dans l|picture|pip|réduire");
+        const at = await centerOf(page, "button[aria-label]", "incrustation|image dans l|picture");
         if (!at) throw new Error("bouton PiP introuvable");
         await clickAt(page, at.x, at.y);
         await sleep(2500);

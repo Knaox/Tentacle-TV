@@ -5,7 +5,7 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { clickGlassToggle, connectAndLogin, emulateMedia, glassToggle, go, sleep } from "./lib/app.mjs";
 import { checkCell } from "./lib/checks.mjs";
-import { STATE, SERVER, account, outDir } from "./lib/config.mjs";
+import { STATE, SERVER, account, outDir, resetPlayback } from "./lib/config.mjs";
 import { evalMain, launchApp, stopApp } from "./lib/electron.mjs";
 import { admin, player, screens } from "./lib/scenarios.mjs";
 
@@ -73,6 +73,7 @@ for (const name of names) {
   if (!cell) throw new Error(`cellule inconnue : ${name}`);
   const report = { cell: name, expect: cell.expect, steps: [], startedAt: new Date().toISOString() };
   console.log(`[banc] cellule ${name}…`);
+  report.reset = await resetPlayback();
   const app = await launchApp({
     home: path.join(STATE, `home-${name}`),
     fresh: true,

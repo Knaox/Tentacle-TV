@@ -34,3 +34,30 @@ export async function itemId(name, type = "Movie,Series,Episode") {
   if (!hit) throw new Error(`titre introuvable : ${name}`);
   return hit.Id;
 }
+
+/**
+ * Remet à zéro l'état de lecture du compte de test (positions, « vu ») : sans
+ * cela, les lectures d'une cellule ajoutent « Reprendre » à l'accueil de la
+ * suivante, et la comparaison au pixel ne vaut plus rien.
+ */
+export async function resetPlayback(name = "Knaoxtest") {
+  const key = readFileSync(path.join(STATE, "jf/api-key"), "utf8").trim();
+  const users = await (await fetch(`${JELLYFIN}/Users?api_key=${key}`)).json();
+  const user = users.find((u) => u.Name === name);
+  if (!user) return 0;
+  const touched = await (await fetch(
+    `${JELLYFIN}/Items?Recursive=true&userId=${user.Id}&Filters=IsResumable&IncludeItemTypes=Movie,Episode&api_key=${key}`,
+  )).json();
+  const played = await (await fetch(
+    `${JELLYFIN}/Items?Recursive=true&userId=${user.Id}&Filters=IsPlayed&IncludeItemTypes=Movie,Episode&api_key=${key}`,
+  )).json();
+  const ids = new Set([...touched.Items, ...played.Items].map((i) => i.Id));
+  for (const id of ids) {
+    await fetch(`${JELLYFIN}/UserItems/${id}/UserData?userId=${user.Id}&api_key=${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ PlaybackPositionTicks: 0, Played: false, PlayCount: 0, LastPlayedDate: null }),
+    });
+  }
+  return ids.size;
+}

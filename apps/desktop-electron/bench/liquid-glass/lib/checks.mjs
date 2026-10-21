@@ -8,9 +8,14 @@ const find = (report, name) => report.steps.find((s) => s.name === name);
 const regionsOf = (stepEntry) => stepEntry?.native?.regions?.length ?? null;
 const visibleRegions = (stepEntry) => (stepEntry?.native?.regions ?? []).filter((r) => !r.hidden).length;
 
+/** La sortie de mpv est-elle en PQ ? (`video-target-params` arrive en JSON texte.) */
 function pq(params) {
-  const text = typeof params === "string" ? params : JSON.stringify(params ?? "");
-  return /"gamma":"pq"|pq/.test(text);
+  try {
+    const value = typeof params === "string" ? JSON.parse(params) : params;
+    return value?.gamma === "pq";
+  } catch {
+    return false;
+  }
 }
 
 export function checkCell(cell, report) {
