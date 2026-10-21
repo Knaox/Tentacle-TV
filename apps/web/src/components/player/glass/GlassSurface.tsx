@@ -50,7 +50,7 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function GlassSurface({
-  present = true, group = "player", variant = "regular", transition = 200, surfaceRef, className = "", children, ...rest
+  present = true, group = "player", variant = "regular", transition = 120, surfaceRef, className = "", children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();

@@ -59,7 +59,9 @@
 
   /* Mouvement : entrée sur ressort, sortie plus courte (≈ 60 %) */
   --lg-player-enter-ms: 340ms;
-  --lg-player-exit-ms: 190ms;
+  /* Sortie COURTE : le verre natif part ~120 ms après le masquage (fondu natif
+     non visible à ce jour, cf. rapport lg-lecteur) — le contenu ne doit pas lui survivre. */
+  --lg-player-exit-ms: 150ms;
   --lg-player-ease-spring: var(--lg-ease-spring);
   --lg-player-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --lg-player-ease-exit: cubic-bezier(0.4, 0, 1, 1);
@@ -70,6 +72,9 @@
      dans `--lg-native-tint-*`, redéfinis sur chaque surface) : un voile sombre
      léger, pour que le blanc des symboles tienne sur une image claire. */
   --lg-player-native-tint: rgb(0 0 0 / 0.22);
+
+  /* Une vignette absente (fiche « à suivre ») : un aplat plein, sombre. */
+  --lg-player-placeholder: #25222e;
 
   /* Aperçu de développement seulement (mode `preview`) */
   --lg-player-preview-surface: #25222e;

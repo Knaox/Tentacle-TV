@@ -9,6 +9,7 @@
 
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { useLiquidGlass } from "../../../theme/useLiquidGlass";
+import { setLiquidGlass } from "../../../theme/liquidGlass";
 import { decidePlayerGlassMode, type PlayerGlassMode } from "./playerGlassMode";
 import { useNativeGlassAvailable, videoUnderWindow } from "./nativeGlassPort";
 import { usePictureInPicture } from "../../../pictureInPicture/pictureInPictureContext";
@@ -22,10 +23,20 @@ export const PlayerGlassModeContext = createContext<PlayerGlassMode>("legacy");
  */
 export const PLAYER_GLASS_PREVIEW_KEY = "tentacle_dev_player_glass";
 
+const INSTRUMENTED = import.meta.env.DEV || (typeof __PLAYER_DEBUG__ !== "undefined" && __PLAYER_DEBUG__);
+
+/**
+ * Paquets instrumentés seulement : le banc coupe et rallume le réglage EN PLEINE
+ * LECTURE (le lecteur couvre la fenêtre, Réglages n'y est pas atteignable).
+ * Le geste est celui de l'interrupteur de Réglages › Apparence, rien de plus.
+ */
+if (INSTRUMENTED && typeof window !== "undefined") {
+  (window as unknown as Record<string, unknown>).__tentaclePlayerGlass = { setLiquidGlass };
+}
+
 /** Figé au chargement : un rechargement suffit pour basculer l'aperçu. */
 const DEV_PREVIEW = ((): boolean => {
-  const instrumented = import.meta.env.DEV || (typeof __PLAYER_DEBUG__ !== "undefined" && __PLAYER_DEBUG__);
-  if (!instrumented) return false;
+  if (!INSTRUMENTED) return false;
   try {
     return localStorage.getItem(PLAYER_GLASS_PREVIEW_KEY) === "preview";
   } catch {

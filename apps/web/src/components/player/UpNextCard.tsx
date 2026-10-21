@@ -45,6 +45,11 @@ import { motion } from "framer-motion";
 import { videoShadow } from "../../lib/videoShadow";
 import { Sweep, Veil } from "./overlayPill";
 import { duration, exitDuration } from "../../theme/motion";
+import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
+import { isGlassLayout } from "./glass/playerGlassMode";
+import { GlassSurface } from "./glass/GlassSurface";
+import "./glass/playerGlassPanels.css";
+import "./glass/playerGlassOverlays.css";
 
 interface UpNextCardProps {
   /**
@@ -108,28 +113,12 @@ export function UpNextCard({
 }: UpNextCardProps) {
   const { t } = useTranslation("player");
   const counting = countdown !== null;
+  // Lecteur de bureau en verre : la même carte, en verre, au coin partagé avec
+  // la pilule (`.lgp-corner` : il monte au-dessus de la capsule de lecture).
+  const glass = isGlassLayout(usePlayerGlassMode());
 
-  return (
-    <motion.div
-      // Le même mouvement que la pilule — une montée de huit pixels et un
-      // fondu, sur 200 ms. C'était un ressort avec changement d'échelle : deux
-      // surfaces voisines qui entrent avec des physiques différentes se lisent
-      // comme deux applications. La montée passe par `y` de framer et non par
-      // une classe : les deux écriraient la même transformée, et la dernière
-      // posée gagnerait.
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: controlsVisible ? -80 : 0 }}
-      exit={{ opacity: 0, y: 8, transition: { duration: exitDuration(duration.base), ease: EASE_OUT } }}
-      transition={{ duration: duration.base, ease: EASE_OUT }}
-      className="absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] overflow-hidden sm:bottom-6 sm:right-6"
-      onClick={(e) => { e.stopPropagation(); }}
-      style={{
-        background: "var(--surface-modal)",
-        border: "1px solid var(--border-subtle)",
-        borderRadius: "var(--radius-xl)",
-        boxShadow: CARD_SHADOW,
-      }}
-    >
+  const body = (
+    <>
       {/* La vignette de l'épisode, fondue dans la surface pour que le texte
           reste lisible. Badge et croix sont posés SUR l'image : ils restent en
           dur (blanc, noirs translucides) quel que soit le thème. */}
@@ -138,19 +127,21 @@ export function UpNextCard({
           <img
             src={episodeImageUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className={glass ? "absolute inset-0 h-full w-full object-cover lgp-upnext__image" : "absolute inset-0 h-full w-full object-cover"}
             draggable={false}
           />
         ) : (
           <div className="absolute inset-0" style={{ background: "var(--surface-1)" }} />
         )}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15,15,21,0.55) 55%, var(--surface-modal) 100%)",
-          }}
-        />
+        {!glass && (
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15,15,21,0.55) 55%, var(--surface-modal) 100%)",
+            }}
+          />
+        )}
 
         {/* Le badge dit CE QUE C'EST, et rien d'autre : le temps a rejoint le
             bouton. Sa pastille était en `--brand-light` avec une lueur de huit
@@ -241,6 +232,49 @@ export function UpNextCard({
           </span>
         </button>
       </div>
+    </>
+  );
+
+  if (glass) {
+    return (
+      <div className="lgp-corner z-30" data-lifted={controlsVisible}>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8, transition: { duration: exitDuration(duration.base), ease: EASE_OUT } }}
+          transition={{ duration: duration.base, ease: EASE_OUT }}
+          onClick={(e) => { e.stopPropagation(); }}
+        >
+          <GlassSurface className="lgp-panel lgp-upnext w-[min(420px,calc(100vw-2rem))]" group="player-corner" transition={120}>
+            {body}
+          </GlassSurface>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      // Le même mouvement que la pilule — une montée de huit pixels et un
+      // fondu, sur 200 ms. C'était un ressort avec changement d'échelle : deux
+      // surfaces voisines qui entrent avec des physiques différentes se lisent
+      // comme deux applications. La montée passe par `y` de framer et non par
+      // une classe : les deux écriraient la même transformée, et la dernière
+      // posée gagnerait.
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: controlsVisible ? -80 : 0 }}
+      exit={{ opacity: 0, y: 8, transition: { duration: exitDuration(duration.base), ease: EASE_OUT } }}
+      transition={{ duration: duration.base, ease: EASE_OUT }}
+      className="absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] overflow-hidden sm:bottom-6 sm:right-6"
+      onClick={(e) => { e.stopPropagation(); }}
+      style={{
+        background: "var(--surface-modal)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: "var(--radius-xl)",
+        boxShadow: CARD_SHADOW,
+      }}
+    >
+      {body}
     </motion.div>
   );
 }

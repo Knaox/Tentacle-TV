@@ -104,3 +104,17 @@
   margin: 0;
   padding: 0;
 }
+
+/* ── La fiche « à suivre » en verre : l'île sombre des panneaux, et sa
+   vignette qui se fond ELLE-MÊME dans la matière (masque), là où l'habillage
+   d'avant la recouvrait d'un dégradé vers une surface opaque. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-upnext {
+  --surface-modal: transparent;
+  --surface-1: var(--lg-player-placeholder);
+  overflow: hidden;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-upnext__image {
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
+}
