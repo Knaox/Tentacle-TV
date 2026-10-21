@@ -1,7 +1,7 @@
 // Les gestes et relevés communs des scénarios : capture de NOTRE fenêtre,
 // souris par CDP (jamais le vrai pointeur), étapes consignées, lecteur.
 import path from "node:path";
-import { glassDom, go, mpvProperty, sleep } from "./app.mjs";
+import { go, mpvProperty, sleep } from "./app.mjs";
 import { Cdp, listTargets } from "./cdp.mjs";
 import { STATE } from "./config.mjs";
 import { evalMain, PORTS } from "./electron.mjs";
