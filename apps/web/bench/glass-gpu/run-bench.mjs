@@ -2,7 +2,7 @@
 /**
  * Banc GPU du « liquide » du verre — rejouable, sans sudo.
  *
- *   node apps/web/bench/glass-gpu/run-bench.mjs [--seconds 8] [--out fichier.json]
+ *   node apps/web/bench/glass-gpu/run-bench.mjs [--seconds 8] [--repeat 1] [--out fichier.json]
  *        [--cdp 9306] [--lock-dir <dossier des créneaux Electron du lot>]
  *
  * 1. Construit la page du banc EN PRODUCTION (vite build, dossier temporaire).
@@ -31,6 +31,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const webRoot = resolve(here, "../..");
 const args = new Map(process.argv.slice(2).map((a, i, all) => [a, all[i + 1]]).filter(([a]) => a.startsWith("--")));
 const seconds = Number(args.get("--seconds") ?? 8);
+const repeat = Number(args.get("--repeat") ?? 1);
 const cdpPort = Number(args.get("--cdp") ?? 9306);
 // Dossier des verrous du lot (créneaux Electron) : `--lock-dir` ou LG_LOCK_DIR ;
 // sans lui, aucun verrou (banc lancé seul).
@@ -134,8 +135,10 @@ async function sample(durationMs, rootPid) {
     before = after;
     t0 = t1;
   }
-  return { gpu: summarize(app), windowServer: summarize(server), cpu: summarize(cpu) };
+  return { app, server, cpu };
 }
+
+const summarizePass = (raw) => ({ gpu: summarize(raw.app), windowServer: summarize(raw.server), cpu: summarize(raw.cpu) });
 
 async function main() {
   const outDir = mkdtempSync(join(tmpdir(), "lg-gpu-bench-"));
@@ -176,22 +179,40 @@ async function main() {
     const calibration = scenarioDriver("fusion", page.send, evaluate);
     await calibration.setup(false);
     const stopCalibration = calibration.start();
-    const calibrated = await sample(3000, child.pid);
+    const agxBefore = agx();
+    const calibrated = summarizePass(await sample(3000, child.pid));
+    const agxAfter = agx();
     await stopCalibration();
     if (!(calibrated.gpu.median > 1)) {
+      // À qui macOS a-t-il imputé le temps GPU ? Les cinq processus qui ont le plus bougé.
+      const names = execFileSync("ps", ["-A", "-o", "pid=,comm="], { encoding: "utf8" }).split("\n");
+      const movers = [...agxAfter]
+        .map(([pid, ns]) => [pid, ns - (agxBefore.get(pid) ?? 0)])
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+      for (const [pid, ns] of movers) {
+        const name = names.find((l) => l.trim().startsWith(`${pid} `))?.trim().slice(0, 140) ?? pid;
+        console.error(`  ${Math.round(ns / 1e6)} ms GPU — ${name}${processTree(child.pid).pids.has(pid) ? " (Electron du banc)" : ""}`);
+      }
       throw new Error(`calibration : ${calibrated.gpu.median} % de GPU pour une animation connue — temps GPU d'Electron non compté, mesure impossible`);
     }
     console.log(`calibration : animation connue à ${calibrated.gpu.median} % du GPU d'Electron`);
     for (const scenario of Object.keys(GPU_BUDGETS)) {
-      const passes = {};
-      for (const physics of [false, true]) {
-        const drive = scenarioDriver(scenario, page.send, evaluate);
-        await drive.setup(physics);
-        await sleep(1500);
-        const stop = drive.start();
-        passes[physics ? "on" : "off"] = await sample(seconds * 1000, child.pid);
-        await stop();
+      // Passes coupée / allumée ALTERNÉES `repeat` fois : une dérive de la
+      // charge du Mac pèse autant sur l'une que sur l'autre.
+      const raw = { off: { app: [], server: [], cpu: [] }, on: { app: [], server: [], cpu: [] } };
+      for (let r = 0; r < repeat; r += 1) {
+        for (const physics of [false, true]) {
+          const drive = scenarioDriver(scenario, page.send, evaluate);
+          await drive.setup(physics);
+          await sleep(1500);
+          const stop = drive.start();
+          const pass = await sample(seconds * 1000, child.pid);
+          await stop();
+          for (const k of ["app", "server", "cpu"]) raw[physics ? "on" : "off"][k].push(...pass[k]);
+        }
       }
+      const passes = { off: summarizePass(raw.off), on: summarizePass(raw.on) };
       const verdict = judgeScenario(scenario, passes.on.gpu, passes.off.gpu);
       results.push({ ...verdict, reference: passes.off, measured: passes.on });
       console.log(
@@ -205,7 +226,7 @@ async function main() {
     child.kill();
     if (slot) rmdirSync(slot);
   }
-  const report = { date: new Date().toISOString(), seconds, source: "ioreg AGXDeviceUserClient accumulatedGPUTime (Electron, WindowServer) ; CPU = ps", results };
+  const report = { date: new Date().toISOString(), seconds, repeat, load: execFileSync("uptime", { encoding: "utf8" }).trim(), source: "ioreg AGXDeviceUserClient accumulatedGPUTime (Electron, WindowServer) ; CPU = ps", results };
   if (args.get("--out")) writeFileSync(args.get("--out"), `${JSON.stringify(report, null, 2)}\n`);
   process.exitCode = results.every((r) => r.ok) ? 0 : 1;
 }
