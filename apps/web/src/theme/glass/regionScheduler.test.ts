@@ -11,7 +11,16 @@ import { bindRegion } from "./useLiquidGlassRegion";
  * région existe, pas plus.
  */
 
-const spec: RegionSpec = { level: "regular", shape: "capsule", tint: "brand", interactive: true, z: 0 };
+const spec: RegionSpec = {
+  level: "regular",
+  shape: "capsule",
+  tint: "brand",
+  interactive: true,
+  z: 0,
+  group: null,
+  spacing: null,
+  transition: null,
+};
 
 function harness() {
   const frames: Array<() => void> = [];

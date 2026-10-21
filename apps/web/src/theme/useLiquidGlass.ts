@@ -16,6 +16,7 @@ import {
   getLiquidGlassMode,
   liquidGlassToggleVisible,
   nativeGlassBridge,
+  nativeGlassRefractsVideo,
   subscribeLiquidGlassMode,
   type LiquidGlassMode,
 } from "./liquidGlassMode";
@@ -35,6 +36,8 @@ export interface LiquidGlassValue {
   mode: LiquidGlassMode;
   /** La coquille offre le verre natif de macOS 26. */
   nativeSupported: boolean;
+  /** Le verre natif voit la vidéo (montage `fenetre`) : le lecteur peut s'en vêtir. */
+  refractsVideo: boolean;
   /** L'interrupteur de Réglages › Apparence se montre-t-il ? */
   toggleVisible: boolean;
   setEnabled: (next: boolean) => void;
@@ -69,6 +72,7 @@ export function useLiquidGlass(): LiquidGlassValue {
     level: resolveGlassLevel(enabled),
     mode,
     nativeSupported,
+    refractsVideo: nativeGlassRefractsVideo(),
     toggleVisible: liquidGlassToggleVisible({
       platform: desktopPlatform(),
       nativeSupported,

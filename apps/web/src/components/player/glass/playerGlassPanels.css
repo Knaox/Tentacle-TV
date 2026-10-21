@@ -1,0 +1,106 @@
+/* Les panneaux du lecteur en verre (pistes, vitesse, épisodes).
+ *
+ * Une ÎLE SOMBRE : les jetons du thème sont redéfinis sur le panneau lui-même,
+ * si bien que son contenu — écrit pour le thème, `text-content-*`,
+ * `bg-fill-*`, `border-line-*` — s'y peint sans une ligne de plus. Deux
+ * familles seulement (cf. `playerGlass.css`) :
+ *  - le texte et les traits en gris PLEINS (un blanc translucide rendrait gris
+ *    sale sur la surface à alpha) ;
+ *  - les remplissages en NOIR à alpha (invariant par prémultiplication).
+ * Le fond `surface-dropdown` devient transparent : la matière est native. */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel {
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e6;
+  --text-tertiary: #b9b9c2;
+  --text-quaternary: #91919b;
+  --text-disabled: #6e6e78;
+  --border-subtle: rgb(0 0 0 / 0.26);
+  --border-strong: #8d8b97;
+  --fill-faint: rgb(0 0 0 / 0.1);
+  --fill-subtle: rgb(0 0 0 / 0.16);
+  --fill-soft: rgb(0 0 0 / 0.22);
+  --fill-medium: rgb(0 0 0 / 0.3);
+  --fill-strong: rgb(0 0 0 / 0.42);
+  --surface-dropdown: transparent;
+  --surface-2: #1d1c24;
+
+  border-color: transparent;
+  border-radius: var(--lg-player-radius-panel);
+  transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
+}
+
+/* Les contrôles s'effacent, panneau ouvert compris (comme l'habillage d'avant).
+   Sur la SURFACE : le corps porte l'opacité en ligne de son animation. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel[data-lgp-present="false"] {
+  opacity: 0;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-panel__body {
+  transform-origin: bottom right;
+  border-radius: inherit;
+}
+
+/* ── Lignes façon menu macOS : coche pour l'actif, surbrillance de marque au survol ── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--lg-player-radius-row);
+  padding: 7px 10px;
+  text-align: left;
+  color: var(--lg-player-fg);
+  font-size: 14px;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option:hover,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option:focus-visible {
+  background: var(--lg-player-row-hover);
+  color: var(--lg-player-row-hover-fg);
+  outline: none;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option[aria-checked="true"] {
+  font-weight: 600;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option__check {
+  display: inline-flex;
+  width: 14px;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+/* Les étiquettes (langue, codec, HDR…) : un trait plein, jamais un aplat translucide. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-chip {
+  flex-shrink: 0;
+  border: 1px solid var(--lg-player-chip-line);
+  border-radius: 6px;
+  padding: 0 5px;
+  color: var(--lg-player-fg-2);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option:hover .lgp-chip {
+  border-color: currentColor;
+  color: inherit;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-section-title {
+  margin: 0 0 4px;
+  padding: 0 10px;
+  color: var(--lg-player-fg-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-section-title--inline {
+  margin: 0;
+  padding: 0;
+}

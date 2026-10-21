@@ -74,9 +74,11 @@ describe("les jetons du verre", () => {
       "--lg-dispersion",
       "--lg-thickness-regular",
       "--lg-duration-press",
-      "--lg-duration-morph",
-      "--lg-ease-spring",
-      "--lg-ease-smooth",
+      "--lg-duration-appear",
+      "--lg-ease-out",
+      "--lg-thick-fill",
+      "--lg-media-dim",
+      "--lg-scrim",
       "--lg-tint-gradient",
       "--lg-prominent-gradient",
     ]) {
@@ -95,6 +97,8 @@ describe("les jetons du verre", () => {
       "--lg-shadow-float",
       "--lg-tint-gradient",
       "--lg-prominent-gradient",
+      "--lg-thick-fill",
+      "--lg-scrim",
     ]) {
       expect(LIGHT, name).toContain(name);
     }

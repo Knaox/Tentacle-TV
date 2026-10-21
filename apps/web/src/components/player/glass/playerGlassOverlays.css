@@ -1,0 +1,127 @@
+/* Les encarts du lecteur en verre : pilule de saut, « Vous regardez encore ? »,
+ * badges du centre et des côtés. Jetons : `playerGlass.css` ; mêmes familles
+ * de couleurs (opaque, ou noir à alpha). */
+
+/* ── Le coin bas-droit, partagé ───────────────────────────────────────
+   Quand la capsule de lecture paraît, le coin monte AU-DESSUS d'elle : sa
+   hauteur, plus l'écart — d'une transformée, jamais d'un `bottom` animé. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner {
+  position: absolute;
+  right: var(--lg-player-edge);
+  bottom: var(--lg-player-edge);
+  transition: transform 320ms var(--lg-player-ease-enter);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner[data-lifted="true"] {
+  transform: translateY(calc(-1 * (var(--lg-player-bar-height) + var(--lg-player-gap))));
+}
+
+/* L'arrivée : le contenu se pose sur un ressort (la matière est native). */
+@keyframes lgp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-rise {
+  animation: lgp-rise var(--lg-player-enter-ms) var(--lg-player-ease-spring) both;
+  transform-origin: bottom right;
+}
+
+/* ── La pilule de saut ─────────────────────────────────────────────── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-pill {
+  overflow: hidden;
+  border-radius: var(--lg-player-radius-capsule);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__inner {
+  display: flex;
+  align-items: stretch;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__action {
+  position: relative;
+  min-height: 44px;
+  padding: 0 24px;
+  color: var(--lg-player-fg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__separator {
+  width: 1px;
+  flex-shrink: 0;
+  margin: 12px 0;
+  background: rgb(0 0 0 / 0.3);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__close {
+  position: relative;
+  display: flex;
+  width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--lg-player-fg-2);
+  transition: color 150ms ease-out;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__close:hover {
+  color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__action:focus-visible,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__close:focus-visible {
+  outline: 2px solid var(--lg-player-focus);
+  outline-offset: -3px;
+  border-radius: var(--lg-player-radius-capsule);
+}
+
+/* ── Les cartes (« Vous regardez encore ? ») ─────────────────────────── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-card {
+  overflow: hidden;
+  border-radius: var(--lg-player-radius-panel);
+  color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__icon {
+  background: var(--lg-player-icon-well);
+  color: var(--brand-light);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__body {
+  color: var(--lg-player-fg-2);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__track {
+  background: var(--lg-player-track);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__secondary {
+  border: 1px solid var(--lg-player-chip-line);
+  color: var(--lg-player-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner {
+    transition: none;
+  }
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-rise {
+    animation: none;
+  }
+}
+
+/* ── Les badges éphémères (lecture/pause au centre, ±10/30 s sur les côtés) ── */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge {
+  border-radius: var(--lg-player-radius-capsule);
+  color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge--round {
+  width: 92px;
+  height: 92px;
+}
