@@ -41,9 +41,8 @@ import { useHostFullscreen } from "../hooks/useHostFullscreen";
  *
  * # Liquid Glass (macOS 26)
  *
- * Porte ouverte (`windowGlass.ts`), il pose aussi `data-lg-chrome` sur la
- * racine — l'attribut qui garde TOUTES les règles de `windowGlass.css` — et
- * monte l'effet de bord de défilement. La bande devient alors transparente :
+ * En mode natif (`windowGlass.ts`, `<html data-liquid-glass="native">`), il
+ * monte aussi l'effet de bord de défilement. La bande devient alors transparente :
  * le contenu défile dessous, fondu et flouté, comme sous la barre d'outils
  * d'une app de macOS 26. Sa hauteur, sa prise et les feux ne changent pas.
  * L'effet survit au plein écran : la barre de navigation, elle, y reste.
@@ -52,15 +51,6 @@ export function HostTitleBar() {
   const fullscreen = useHostFullscreen();
   const glass = useWindowGlass();
   const active = hostTitleBar() && !fullscreen;
-
-  useEffect(() => {
-    if (!glass) return;
-    const root = document.documentElement;
-    root.dataset["lgChrome"] = "on";
-    return () => {
-      delete root.dataset["lgChrome"];
-    };
-  }, [glass]);
 
   useEffect(() => {
     const root = document.documentElement;

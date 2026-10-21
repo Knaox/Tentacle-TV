@@ -20,7 +20,7 @@ import { useId, type ReactNode } from "react";
  *
  * Les classes `lgc-sidebar*` n'ont aucun style ici : c'est la barre latérale
  * Liquid Glass du bureau macOS 26 (`apps/web/src/desktop/windowGlassNav.css`),
- * gardée par l'attribut racine `data-lg-chrome`. Ailleurs, rendu inchangé.
+ * portée par `<html data-liquid-glass="native">`. Ailleurs, rendu inchangé.
  */
 
 export interface SettingsShellSection {

@@ -35,7 +35,7 @@ export function ActiveIndicator({ reduced }: { reduced: boolean }) {
       aria-hidden
       className="lgc-lens absolute inset-0 rounded-[11px]"
       // Liquid Glass : la lentille de `windowGlassNav.css`. Ses jetons
-      // n'existent que sous `data-lg-chrome` — ailleurs, le repli est le dessin d'avant.
+      // n'existent qu'en mode natif (`data-liquid-glass="native"`) — ailleurs, le repli est le dessin d'avant.
       style={{
         background: "var(--lg-chrome-lens-bg, var(--nav-active-bg))",
         boxShadow: "var(--lg-chrome-lens-shadow, inset 0 0 0 1px var(--nav-active-ring))",
