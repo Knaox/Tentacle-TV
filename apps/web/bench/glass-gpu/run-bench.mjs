@@ -160,6 +160,28 @@ async function main() {
     const fps = (await evaluate(FRAME_RATE_PROBE)).result?.result?.value ?? 0;
     if (fps < 30) throw new Error(`fenêtre non rendue (${fps} images/s) : écran verrouillé, éteint ou fenêtre masquée — mesure impossible`);
     console.log(`fenêtre rendue à ${fps} images/s`);
+    if (args.has("--debug")) {
+      // Diagnostic : quels processus d'Electron ont un client GPU, et combien.
+      const map = agx();
+      const names = execFileSync("ps", ["-A", "-o", "pid=,comm="], { encoding: "utf8" });
+      for (const pid of processTree(child.pid).pids) {
+        const name = names.split("\n").find((l) => l.trim().startsWith(`${pid} `))?.trim() ?? pid;
+        console.log(`  ${name} — GPU cumulé ${map.get(pid) ?? "aucun client AGX"}`);
+      }
+    }
+    // Calibration : une animation connue (fusion, physique coupée) DOIT se voir
+    // au GPU d'Electron. Relevé du 21/10 : une passe entière à 0 % partout,
+    // fenêtre pourtant rendue — le temps GPU n'était plus compté à Electron.
+    // Sans cette garde, ce zéro passait pour un verdict « ✓ ».
+    const calibration = scenarioDriver("fusion", page.send, evaluate);
+    await calibration.setup(false);
+    const stopCalibration = calibration.start();
+    const calibrated = await sample(3000, child.pid);
+    await stopCalibration();
+    if (!(calibrated.gpu.median > 1)) {
+      throw new Error(`calibration : ${calibrated.gpu.median} % de GPU pour une animation connue — temps GPU d'Electron non compté, mesure impossible`);
+    }
+    console.log(`calibration : animation connue à ${calibrated.gpu.median} % du GPU d'Electron`);
     for (const scenario of Object.keys(GPU_BUDGETS)) {
       const passes = {};
       for (const physics of [false, true]) {
