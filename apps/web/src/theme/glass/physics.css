@@ -5,20 +5,22 @@
  * Hors Liquid Glass, le rendu d'avant est donc intact au pixel près.
  *
  * Coût (cf. CLAUDE.md, « Coût GPU ») : la lentille n'anime que `scale`, le
- * reflet que `translate` et `opacity` — composités, aucune peinture par image ;
- * seul le liseré lumineux (dégradé conique) repeint sa bague de 1 px quand le
- * pointeur bouge, et seulement à ce moment-là. */
+ * reflet que `translate` et `opacity` — composités, aucune peinture par image.
+ * Mais toute image qui change SUR un verre en fait recalculer le flou : les
+ * ressorts sont coupés dès que le reste du trajet passe sous le pixel, le
+ * reflet n'écrit pas plus de 60 fois par seconde. Mesures : banc
+ * `scripts/glass-gpu/`. */
 
 :root {
   /* Ressorts — GÉNÉRÉS depuis `springs.ts` (GLASS_SPRINGS), tenus identiques
    * par `physics.test.ts`. Ne pas retoucher à la main : changer le ressort,
    * puis recopier la sortie de `springToCssLinear`. */
-  --lg-spring-lens-duration: 643ms;
-  --lg-spring-lens-easing: linear(0, 0.0442, 0.1551, 0.3041, 0.4675, 0.6273, 0.7714, 0.8923, 0.9868, 1.0546, 1.098, 1.1205, 1.1263, 1.1199, 1.1053, 1.0862, 1.0656, 1.0455, 1.0275, 1.0125, 1.0008, 0.9925, 0.9873, 0.9847, 0.9841, 0.985, 0.9869, 0.9893, 0.9919, 0.9945, 0.9967, 0.9986, 1, 1.001, 1.0016, 1.002, 1.002, 1.0019, 1.0016, 1.0013, 1);
-  --lg-spring-morph-duration: 584ms;
-  --lg-spring-morph-easing: linear(0, 0.0211, 0.0747, 0.1486, 0.2336, 0.3231, 0.4119, 0.4969, 0.5758, 0.6473, 0.7109, 0.7665, 0.8142, 0.8547, 0.8886, 0.9164, 0.9391, 0.9572, 0.9714, 0.9824, 0.9908, 0.9969, 1.0013, 1.0043, 1.0061, 1.0072, 1.0077, 1.0077, 1.0074, 1.0069, 1.0063, 1.0056, 1.0049, 1.0042, 1.0036, 1.003, 1.0025, 1.002, 1.0016, 1.0013, 1);
-  --lg-spring-settle-duration: 383ms;
-  --lg-spring-settle-easing: linear(0, 0.023, 0.0791, 0.1538, 0.2369, 0.3218, 0.4041, 0.4814, 0.5522, 0.6159, 0.6723, 0.7219, 0.7649, 0.8021, 0.8339, 0.861, 0.884, 0.9034, 0.9198, 0.9335, 0.945, 0.9546, 0.9625, 0.9691, 0.9746, 0.9791, 0.9829, 0.986, 0.9885, 0.9906, 0.9923, 0.9937, 0.9949, 0.9958, 0.9966, 0.9972, 0.9977, 0.9982, 0.9985, 0.9988, 1);
+  --lg-spring-lens-duration: 439ms;
+  --lg-spring-lens-easing: linear(0, 0.0214, 0.0786, 0.1617, 0.2617, 0.3711, 0.4833, 0.593, 0.6964, 0.7905, 0.8733, 0.9439, 1.0019, 1.0476, 1.0816, 1.1052, 1.1194, 1.1257, 1.1255, 1.1202, 1.111, 1.0992, 1.0858, 1.0717, 1.0577, 1.0442, 1.0317, 1.0206, 1.011, 1.0029, 0.9964, 0.9915, 0.9879, 0.9856, 0.9844, 0.984, 0.9844, 0.9854, 0.9868, 0.9884, 1);
+  --lg-spring-morph-duration: 291ms;
+  --lg-spring-morph-easing: linear(0, 0.0056, 0.021, 0.0444, 0.0742, 0.1091, 0.1477, 0.1892, 0.2324, 0.2768, 0.3215, 0.3661, 0.4102, 0.4532, 0.4949, 0.5352, 0.5737, 0.6104, 0.6452, 0.6781, 0.7089, 0.7377, 0.7645, 0.7894, 0.8124, 0.8336, 0.8531, 0.8709, 0.8871, 0.9018, 0.9151, 0.9272, 0.938, 0.9476, 0.9562, 0.9639, 0.9707, 0.9766, 0.9818, 0.9863, 1);
+  --lg-spring-settle-duration: 275ms;
+  --lg-spring-settle-easing: linear(0, 0.0124, 0.0444, 0.0897, 0.1436, 0.2023, 0.2631, 0.324, 0.3835, 0.4406, 0.4947, 0.5453, 0.5923, 0.6355, 0.6751, 0.7111, 0.7437, 0.773, 0.7994, 0.8231, 0.8442, 0.8629, 0.8796, 0.8944, 0.9075, 0.919, 0.9292, 0.9382, 0.9461, 0.953, 0.959, 0.9643, 0.969, 0.973, 0.9766, 0.9797, 0.9824, 0.9847, 0.9867, 0.9885, 1);
 
   /* Lentille : grossissement au survol, bulle à l'appui, rebond au relâcher. */
   --lg-lens-scale-hover: 1.04;
@@ -28,7 +30,8 @@
   /* Rayon du halo : une LONGUEUR (`circle` refuse un pourcentage). */
   --lg-specular-size: 72px;
   --lg-specular-halo: rgba(255, 255, 255, 0.16);
-  --lg-specular-rim: rgba(255, 255, 255, 0.5);
+  --lg-specular-rim: rgba(255, 255, 255, 0.6);
+  --lg-specular-rim-size: 96px;
   --lg-specular-opacity-hover: 1;
   --lg-specular-opacity-press: 1;
   --lg-specular-boost-press: 1.6;
@@ -63,44 +66,43 @@
 }
 
 /* ── Reflet ─────────────────────────────────────────────────────────────────
- * `.lg-specular` est un enfant de la surface (`GlassSpecular`) : la couche du
- * halo a la taille de la surface et se DÉPLACE (translate) de l'écart entre le
- * pointeur et le centre — le dégradé, lui, ne change jamais. */
-.lg-specular {
+ * `.lg-specular` est un enfant de la surface (`GlassSpecular`). La lumière est
+ * un dégradé FIXE, de la taille de la surface, qui se DÉPLACE (translate) de
+ * l'écart entre le pointeur et le centre : sur la face (halo), et dans la
+ * bague de 1 px du liseré (`.lg-specular-rim`, masquée) — le bord s'allume au
+ * plus près du pointeur. Aucune peinture par image ; la couche n'est promue
+ * (`will-change`) que sous le pointeur. */
+.lg-specular,
+.lg-specular-rim {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   overflow: hidden;
   pointer-events: none;
 }
+.lg-specular-rim {
+  padding: 1px;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
 .lg-specular::before,
-.lg-specular::after {
+.lg-specular-rim::before {
   content: "";
   position: absolute;
-  border-radius: inherit;
+  inset: 0;
   opacity: 0;
+  translate: calc((var(--lg-spec-u, 0.3) - 0.5) * 100%) calc((var(--lg-spec-v, 0.12) - 0.5) * 100%);
   transition: opacity var(--lg-spring-settle-duration) var(--lg-spring-settle-easing);
 }
 .lg-specular::before {
-  inset: 0;
   background: radial-gradient(circle var(--lg-specular-size) at 50% 50%, var(--lg-specular-halo), transparent);
-  translate: calc((var(--lg-spec-u, 0.3) - 0.5) * 100%) calc((var(--lg-spec-v, 0.12) - 0.5) * 100%);
 }
-.lg-specular::after {
-  inset: 0;
-  padding: 1px;
-  background: conic-gradient(
-    from calc(var(--lg-spec-angle, 315deg) - 60deg),
-    var(--lg-specular-rim),
-    transparent 120deg,
-    transparent 240deg,
-    var(--lg-specular-rim)
-  );
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+.lg-specular-rim::before {
+  background: radial-gradient(circle var(--lg-specular-rim-size) at 50% 50%, var(--lg-specular-rim), transparent);
 }
 [data-lg-specular-active] > .lg-specular::before,
-[data-lg-specular-active] > .lg-specular::after {
+[data-lg-specular-active] > .lg-specular > .lg-specular-rim::before {
   opacity: var(--lg-specular-opacity-hover);
+  will-change: translate;
 }
 [data-lg-specular]:active > .lg-specular::before {
   opacity: var(--lg-specular-opacity-press);

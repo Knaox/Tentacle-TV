@@ -44,9 +44,18 @@ describe("ressorts du verre", () => {
         const f = k / 400;
         const i = Math.min(n - 1, Math.floor(f * n));
         const lerp = pts[i] + (pts[i + 1] - pts[i]) * (f * n - i);
-        expect(Math.abs(lerp - springPosition(s, (f * durationMs) / 1000))).toBeLessThan(0.012);
+        // Échantillonnage + coupe à 1 % du trajet : sous 1,5 % partout.
+        expect(Math.abs(lerp - springPosition(s, (f * durationMs) / 1000))).toBeLessThan(0.015);
       }
     }
+  });
+
+  it("coupe la traîne sous le pixel : 300 ms au plus, 450 pour la lentille qui rebondit", () => {
+    expect(springToCssLinear(GLASS_SPRINGS.morph).durationMs).toBeLessThanOrEqual(300);
+    expect(springToCssLinear(GLASS_SPRINGS.settle).durationMs).toBeLessThanOrEqual(300);
+    expect(springToCssLinear(GLASS_SPRINGS.lens).durationMs).toBeLessThanOrEqual(450);
+    const lens = springToCssLinear(GLASS_SPRINGS.lens).easing.slice("linear(".length, -1).split(", ").map(Number);
+    expect(Math.max(...lens)).toBeGreaterThan(1.1);
   });
 
   it("donne l'équivalent framer (k = ω0², c = 2ζω0)", () => {

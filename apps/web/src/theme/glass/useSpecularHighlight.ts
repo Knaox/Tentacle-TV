@@ -1,10 +1,11 @@
 /**
  * Le reflet qui suit le pointeur, posé sur une surface de verre.
  *
- * Aucun rendu React : le crochet écrit trois variables CSS sur l'élément
- * (`--lg-spec-u`, `--lg-spec-v`, `--lg-spec-angle`) depuis une boucle
- * `requestAnimationFrame` qui ne tourne QUE pendant que le halo bouge — entrée,
- * mouvement, retour au repos après la sortie. Au repos, rien ne s'exécute.
+ * Aucun rendu React : le crochet écrit deux variables CSS sur l'élément
+ * (`--lg-spec-u`, `--lg-spec-v`) depuis une boucle `requestAnimationFrame`
+ * qui ne tourne QUE pendant que la lumière bouge — entrée, mouvement, retour au
+ * repos après la sortie — et n'écrit pas plus de 60 fois par seconde. Au
+ * repos, rien ne s'exécute.
  *
  * L'élément porte `data-lg-specular` ; la feuille `physics.css` dessine le halo
  * dans un enfant `.lg-specular` (voir `GlassSpecular`) qui ne se déplace que
@@ -17,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  SPECULAR_MIN_FRAME_MS,
   SPECULAR_REST_POINT,
   specularCssVars,
   specularSettled,
@@ -44,12 +46,15 @@ export function useSpecularHighlight<T extends HTMLElement>(): (el: T | null) =>
     let rect = element.getBoundingClientRect();
 
     const write = () => {
-      const vars = specularCssVars(state.current.current, rect.width, rect.height);
-      for (const [k, v] of Object.entries(vars)) element.style.setProperty(k, v);
+      for (const [k, v] of Object.entries(specularCssVars(state.current.current))) element.style.setProperty(k, v);
     };
 
     const tick = (now: number) => {
       const s = state.current;
+      if (last !== 0 && now - last < SPECULAR_MIN_FRAME_MS) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
       s.current = specularStep(s.current, s.target, last === 0 ? 16 : now - last);
       last = now;
       write();

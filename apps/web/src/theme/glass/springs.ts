@@ -25,6 +25,14 @@ export interface GlassSpring {
 export const SPRING_REST_EPSILON = 0.001;
 
 /**
+ * Seuil de coupe des transitions CSS : 1 % du trajet. Une lentille de 6 % sur
+ * une capsule de 240 px parcourt ~14 px — le reste, 0,14 px, ne se voit pas,
+ * mais chaque image de traîne recalcule le flou de la surface (mesuré au banc :
+ * la traîne sous le pixel coûtait autant que le geste lui-même).
+ */
+export const SPRING_CSS_EPSILON = 0.01;
+
+/**
  * Les ressorts de référence. Les valeurs suivent l'échelle de `motion.ts`
  * (150–400 ms perçus) : `lens` répond au doigt et rebondit franchement,
  * `morph` porte une forme qui change de taille et ne doit presque pas rebondir,
@@ -66,10 +74,10 @@ export function springPosition(spring: GlassSpring, t: number): number {
  * 1 ms depuis la fin : le dernier instant hors tolérance fait foi, un rebond
  * tardif n'est donc jamais coupé.
  */
-export function springSettleSeconds(spring: GlassSpring): number {
+export function springSettleSeconds(spring: GlassSpring, epsilon = SPRING_REST_EPSILON): number {
   const horizon = spring.response * 6;
   for (let ms = Math.ceil(horizon * 1000); ms >= 0; ms -= 1) {
-    if (Math.abs(1 - springPosition(spring, ms / 1000)) > SPRING_REST_EPSILON) {
+    if (Math.abs(1 - springPosition(spring, ms / 1000)) > epsilon) {
       return (ms + 1) / 1000;
     }
   }
@@ -89,13 +97,17 @@ const round4 = (n: number): string => {
 };
 
 /**
- * La courbe en `linear()` CSS, échantillonnée régulièrement sur la durée de
- * repos. 40 points suffisent : entre deux points, l'écart à la vraie courbe
+ * La courbe en `linear()` CSS, échantillonnée régulièrement jusqu'à ce que le
+ * reste du trajet passe sous `SPRING_CSS_EPSILON`. 40 points suffisent : entre deux points, l'écart à la vraie courbe
  * reste sous le centième (vérifié par le test) — sous le pixel pour un
  * grossissement de quelques pour cent.
  */
-export function springToCssLinear(spring: GlassSpring, samples = 40): { easing: string; durationMs: number } {
-  const settle = springSettleSeconds(spring);
+export function springToCssLinear(
+  spring: GlassSpring,
+  samples = 40,
+  epsilon = SPRING_CSS_EPSILON,
+): { easing: string; durationMs: number } {
+  const settle = springSettleSeconds(spring, epsilon);
   const points: string[] = [];
   for (let i = 0; i <= samples; i += 1) {
     const t = (i / samples) * settle;

@@ -2,10 +2,10 @@
  * Reflet spéculaire qui suit le pointeur — la règle, pure.
  *
  * Sur le verre d'Apple, la lumière glisse avec le doigt : un halo sur la face,
- * et le liseré qui s'allume du côté de la source. Ici : la position du halo en
- * fractions de la surface (u, v), l'angle de la source vu du centre (pour le
- * liseré en dégradé conique), et un lissage exponentiel indépendant de la
- * cadence de l'écran — à 60 comme à 120 Hz, le halo traîne autant.
+ * et le liseré qui s'allume au plus près de la source. Ici : la position de la
+ * lumière en fractions de la surface (u, v) — la même pour le halo et pour le
+ * liseré, qui n'en montre que la bague —, et un lissage exponentiel
+ * indépendant de la cadence de l'écran : à 60 comme à 120 Hz, il traîne autant.
  */
 
 export interface SpecularPoint {
@@ -75,29 +75,21 @@ export function specularSettled(current: SpecularPoint, target: SpecularPoint): 
 }
 
 /**
- * Angle de la source vu du centre de la surface, en degrés, convention de
- * `conic-gradient` (0° en haut, sens horaire) : le liseré s'allume du côté du
- * pointeur. Mesuré sur la surface réelle (pas en fractions) : sur une capsule
- * large, un pointeur au bout s'éclaire bien sur le côté, pas en diagonale.
- */
-export function specularAngle(p: SpecularPoint, width: number, height: number): number {
-  const dx = (p.u - 0.5) * width;
-  const dy = (p.v - 0.5) * height;
-  if (dx === 0 && dy === 0) return 0;
-  const deg = (Math.atan2(dx, -dy) * 180) / Math.PI;
-  return Math.round(((deg + 360) % 360) * 10) / 10;
-}
-
-/**
  * Les variables CSS écrites sur la surface. Fractions SANS unité : la feuille
  * en tire un `translate` en pourcentage de la couche du halo (de la taille de
  * la surface), donc un déplacement composité — jamais une position de
  * dégradé, qui repeindrait la couche à chaque image.
  */
-export function specularCssVars(p: SpecularPoint, width: number, height: number): Record<string, string> {
+export function specularCssVars(p: SpecularPoint): Record<string, string> {
   return {
     "--lg-spec-u": String(Math.round(p.u * 1000) / 1000),
     "--lg-spec-v": String(Math.round(p.v * 1000) / 1000),
-    "--lg-spec-angle": `${specularAngle(p, width, height)}deg`,
   };
 }
+
+/**
+ * Intervalle minimal entre deux écritures : 60 Hz. Sur un écran ProMotion la
+ * boucle tourne à 120 Hz ; un halo lissé n'y gagne rien de visible, et chaque
+ * écriture fait recalculer le flou de la surface (mesuré au banc).
+ */
+export const SPECULAR_MIN_FRAME_MS = 15;

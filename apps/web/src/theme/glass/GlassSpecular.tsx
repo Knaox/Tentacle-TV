@@ -2,15 +2,20 @@
  * La couche du reflet, à poser DANS une surface de verre qui porte
  * `useSpecularHighlight` (la surface doit être positionnée : `relative`).
  *
- * Un `span` vide, décoratif : le halo et le liseré sont ses pseudo-éléments
- * (`physics.css`). Invisible au repos — il ne s'allume que sous le pointeur,
+ * Deux `span` décoratifs : le halo (pseudo-élément de `.lg-specular`) et le
+ * liseré (`.lg-specular-rim`, masqué en bague de 1 px), éclairés par la même
+ * lumière qui se DÉPLACE — `physics.css`. Invisible au repos — il ne s'allume que sous le pointeur,
  * pour ne jamais doubler le reflet fixe que la surface dessine déjà.
  */
 
 import { memo } from "react";
 
 export const GlassSpecular = memo(function GlassSpecular() {
-  return <span className="lg-specular" aria-hidden="true" />;
+  return (
+    <span className="lg-specular" aria-hidden="true">
+      <span className="lg-specular-rim" />
+    </span>
+  );
 });
 
 /**

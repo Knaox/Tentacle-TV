@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   SPECULAR_OVERSCAN,
   SPECULAR_REST_POINT,
-  specularAngle,
   specularCssVars,
   specularSettled,
   specularStep,
@@ -40,20 +39,7 @@ describe("reflet spéculaire", () => {
     expect(frames).toBeLessThan(40);
   });
 
-  it("allume le liseré du côté du pointeur (0° en haut, sens horaire)", () => {
-    expect(specularAngle({ u: 0.5, v: 0 }, 200, 40)).toBe(0);
-    expect(specularAngle({ u: 1, v: 0.5 }, 200, 40)).toBe(90);
-    expect(specularAngle({ u: 0.5, v: 1 }, 200, 40)).toBe(180);
-    expect(specularAngle({ u: 0, v: 0.5 }, 200, 40)).toBe(270);
-    // Capsule large : un pointeur au bout en haut éclaire le côté, pas la diagonale.
-    expect(specularAngle({ u: 1, v: 0 }, 200, 40)).toBeGreaterThan(75);
-  });
-
   it("écrit des fractions sans unité (translate composité)", () => {
-    expect(specularCssVars({ u: 0.25, v: 0.5 }, 200, 40)).toEqual({
-      "--lg-spec-u": "0.25",
-      "--lg-spec-v": "0.5",
-      "--lg-spec-angle": "270deg",
-    });
+    expect(specularCssVars({ u: 0.25, v: 0.5 })).toEqual({ "--lg-spec-u": "0.25", "--lg-spec-v": "0.5" });
   });
 });
