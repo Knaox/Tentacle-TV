@@ -30,6 +30,8 @@ export default {
   // where this same key is displayed.
   liquidGlassDescription: "Adds refraction to translucent surfaces. When off, the app falls back to the classic glass effect.",
   liquidGlassUnavailable: "Not available on this rendering engine — the classic glass effect is used.",
+  // macOS 26 desktop: the system's NATIVE glass. The toggle only shows there.
+  liquidGlassNativeDescription: "The macOS glass: bars, menus and the player take on the system material. When off, the app returns to its previous look.",
   // The startup opening (Apple TV): a DEVICE setting.
   opening: "Opening",
   bootSoundTitle: "Startup sound",

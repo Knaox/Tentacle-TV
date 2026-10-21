@@ -73,12 +73,64 @@ export interface ElectronBridge {
    * déplacer la fenêtre. Voir `hostChrome.ts`.
    */
   readonly titleBarHeight?: number;
+  /**
+   * macOS seulement : le verre NATIF (NSGlassEffectView, macOS 26). Absent
+   * ailleurs, et absent si le module natif n'a pas pu se charger. Ne pas le
+   * lire directement : passer par `theme/liquidGlassMode.ts`.
+   */
+  readonly liquidGlass?: LiquidGlassBridge;
   /** Ouvre une URL dans le navigateur du système. */
   openExternal(url: string): Promise<void>;
   /** Sélecteur de dossier natif. `null` si l'utilisateur annule. */
   pickFolder(): Promise<string | null>;
   /** Redémarre l'application. */
   relaunch(): Promise<void>;
+}
+
+/** Variante du matériau natif — les quatre niveaux des jetons `--lg-*`. */
+export type NativeGlassLevel = "regular" | "clear" | "tinted" | "prominent";
+
+/**
+ * Une région de verre natif, décrite par la page.
+ *
+ * Coordonnées en px CSS, relatives au VIEWPORT de la page
+ * (`getBoundingClientRect`) : la coquille y ajoute l'origine de la vue web et
+ * le facteur de zoom. La page n'envoie que des régions VISIBLES ; une région
+ * cachée, sortie de l'écran ou démontée est retirée par `remove`.
+ */
+export interface NativeGlassRegion {
+  /** Identifiant stable choisi par la page, unique dans la fenêtre. */
+  readonly id: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  /** Rayon des coins, en px CSS (capsule : la moitié de la hauteur). */
+  readonly radius: number;
+  readonly level: NativeGlassLevel;
+  /** Teinte `#RRGGBBAA`, ou `null` : le matériau du système, sans teinte. */
+  readonly tint: string | null;
+  /** Réagit au pointeur (survol, appui). */
+  readonly interactive: boolean;
+  /** Ordre d'empilement entre régions : la plus grande valeur au-dessus. */
+  readonly z: number;
+}
+
+/**
+ * Pont du verre natif (`window.tentacle.liquidGlass`), fourni par la coquille.
+ *
+ * La page regroupe ses changements par image : au plus un `upsert` et un
+ * `remove` par image, jamais un appel par élément ni par évènement.
+ */
+export interface LiquidGlassBridge {
+  /** macOS 26 ou plus ET module natif chargé. Figé au démarrage. */
+  readonly supported: boolean;
+  /** Le réglage de l'utilisateur. `false` retire TOUT verre natif. */
+  setEnabled(enabled: boolean): void;
+  /** Crée ou met à jour des régions. */
+  upsert(regions: readonly NativeGlassRegion[]): void;
+  /** Retire des régions par identifiant. */
+  remove(ids: readonly string[]): void;
 }
 
 declare global {
