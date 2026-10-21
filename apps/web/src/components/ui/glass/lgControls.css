@@ -71,11 +71,8 @@
   }
 }
 
-/* L'appui : le verre se voile, sans délai (le vocabulaire du socle :
- * `--lg-opacity-pressed`). Les disques gardent le ressort de `PressableScale`. */
-:root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media):active {
-  opacity: var(--lg-opacity-pressed);
-}
+/* L'appui : le verre GONFLE (décision du coordinateur) — c'est la lentille de
+ * lg-physique (`physics.css`) qui porte ces classes, pas cette feuille. */
 
 /* Le survol remplace le fond par le voile ci-dessus : un `hover:bg-*` resté
  * sur le composant repeindrait le fond à chaque passage. */
@@ -103,9 +100,6 @@
   box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
 }
 
-:root[data-liquid-glass="native"] :is(.hero-cta-primary, .lg-btn-primary):active {
-  opacity: var(--lg-opacity-pressed);
-}
 
 /* ══ 3. Le plateau du survol des cartes ═══════════════════════════════════
  *
