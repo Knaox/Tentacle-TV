@@ -85,6 +85,18 @@ export async function glassDom(page) {
       lenses: document.querySelectorAll('[data-lg-render="lens"]').length,
       bandeau: (() => { const b = document.querySelector(".bandeau-hote"); return b ? getComputedStyle(b).backgroundColor : null; })(),
       capsuleFirst: (() => { const c = document.querySelector(".lgc-capsule")?.firstElementChild; return c ? { cls: c.className, render: c.getAttribute("data-lg-render") } : null; })(),
+      // Une modale « position: fixed » sous un ancêtre à transform / filter /
+      // backdrop-filter n'a plus le viewport pour référence : elle est
+      // confinée à cet ancêtre (défaut du 21/10 : dialogue dans la capsule).
+      trappedModals: [...document.querySelectorAll('[role="dialog"], [role="alertdialog"], .lg-sheet')].flatMap((m) => {
+        for (let n = m.parentElement; n && n !== document.body; n = n.parentElement) {
+          const c = getComputedStyle(n);
+          if (c.transform !== "none" || c.filter !== "none" || c.backdropFilter !== "none") {
+            return [{ modal: (m.getAttribute("aria-label") ?? m.className).slice(0, 60), ancestor: String(n.className).slice(0, 60), backdrop: c.backdropFilter.slice(0, 40), transform: c.transform.slice(0, 30) }];
+          }
+        }
+        return [];
+      }),
       sidebar: (() => { const n = document.querySelector("nav.lgc-sidebar"); return n ? { selection: !!n.querySelector("span.lgc-sidebar-selection") } : null; })(),
       dark: matchMedia("(prefers-color-scheme: dark)").matches,
     };

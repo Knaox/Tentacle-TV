@@ -26,6 +26,9 @@ export function checkCell(cell, report) {
   const fail = (message, proof) => issues.push({ message, proof });
   for (const s of report.steps) {
     if (!s.ok) fail(`étape « ${s.name} » en échec : ${s.error}`, s.capture ?? null);
+    for (const t of s.dom?.trappedModals ?? []) {
+      fail(`« ${s.name} » : modale « ${t.modal} » confinée sous « ${t.ancestor} » (backdrop ${t.backdrop}, transform ${t.transform})`, s.capture ?? null);
+    }
   }
   const home = find(report, "accueil") ?? report.steps.find((s) => s.dom);
   const settings = find(report, "reglages-apparence");

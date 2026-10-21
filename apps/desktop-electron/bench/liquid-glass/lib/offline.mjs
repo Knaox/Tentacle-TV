@@ -2,7 +2,7 @@
 // le vrai dialogue, la progression, la bascule (message temporaire), le
 // catalogue, la fiche hors ligne, le dialogue de suppression, la lecture locale.
 // Libellés FR : `downloads.ts`, `errors.ts` (relevé du 21/10).
-import { glassDom, go, mpvProperty, sleep } from "./app.mjs";
+import { dismissOverlays, glassDom, go, mpvProperty, sleep } from "./app.mjs";
 import { itemId } from "./config.mjs";
 import { centerOf, clickAt, leavePlayer, nativeSnapshot, playing, shot, showControls, step } from "./steps.mjs";
 
@@ -27,6 +27,9 @@ async function setNetwork(page, offline) {
 export async function offline(ctx) {
   const { page } = ctx.app;
   const id = await itemId(TITLE, "Movie");
+  // Les fenêtres du démarrage (nouveautés, photo) recouvrent tout : les fermer.
+  await go(page, "/", 2500);
+  await dismissOverlays(page);
   await step(ctx, "hl-dialogue-garder", async () => {
     await go(page, `/media/${id}`, 3000);
     await clickSelector(page, ".lg-capsule-media button[aria-label]", "^Télécharger$");
@@ -63,11 +66,12 @@ export async function offline(ctx) {
     await clickSelector(page, 'button[aria-label="Supprimer de cette machine"]');
     await page.waitFor(`document.querySelector('[role="alertdialog"]')`, 10_000, "dialogue de suppression");
     await sleep(800);
+    const dom = await glassDom(page);
     const capture = await shot(ctx, "hl-dialogue-suppression");
     // On GARDE le titre : la lecture locale suit.
     await clickSelector(page, '[role="alertdialog"] button.lg-btn', "Annuler");
     await sleep(600);
-    return { capture };
+    return { capture, dom };
   });
   await step(ctx, "hl-lecture-locale", async () => {
     await go(page, `/watch/${id}`, 2500);
