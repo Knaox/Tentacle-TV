@@ -53,7 +53,9 @@
   /* ── Les voiles, par usage ── */
   --lgc-fill: var(--lgc-sheen), var(--lg-regular-fill);
   --lgc-fill-media: var(--lgc-sheen), linear-gradient(var(--lgc-media-dim), var(--lgc-media-dim));
-  --lgc-fill-thick: var(--lgc-sheen), linear-gradient(var(--lgc-thick-dim), var(--lgc-thick-dim)), var(--lg-regular-fill);
+  /* Le verre épais du SOCLE seul (`--lg-thick-fill`) : plus de voile empilé
+   * sur le voile régulier — le verre doit laisser voir ce qu'il couvre. */
+  --lgc-fill-thick: var(--lgc-sheen), var(--lgc-thick-dim);
   --lgc-fill-prominent: var(--lgc-sheen), var(--lg-prominent-fill);
   --lgc-fill-veil: var(--lgc-sheen), var(--lgc-veil-fill);
 
