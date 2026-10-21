@@ -13,7 +13,16 @@ import {
  * rien pour une région qui ne se voit pas.
  */
 
-const spec: RegionSpec = { level: "regular", shape: "rounded", tint: "brand", interactive: false, z: 0 };
+const spec: RegionSpec = {
+  level: "regular",
+  shape: "rounded",
+  tint: "brand",
+  interactive: false,
+  z: 0,
+  group: null,
+  spacing: null,
+  transition: null,
+};
 const viewport = { width: 1280, height: 800 };
 const style = { radius: 16, tint: null };
 
@@ -80,6 +89,21 @@ describe("regionFromBox", () => {
     expect(regionFromBox("a", scaled, spec, style, viewport)?.radius).toBeCloseTo(17.6, 2);
   });
 
+  it("groupe, distance de fusion, animation native : présents seulement s'ils sont demandés", () => {
+    const grouped = regionFromBox(
+      "a",
+      box,
+      { ...spec, group: "lecteur-barre", spacing: 12, transition: 240 },
+      style,
+      viewport,
+    );
+    expect(grouped).toMatchObject({ group: "lecteur-barre", spacing: 12, transition: 240 });
+    const alone = regionFromBox("a", box, spec, style, viewport);
+    expect(alone).not.toHaveProperty("group");
+    expect(alone).not.toHaveProperty("spacing");
+    expect(alone).not.toHaveProperty("transition");
+  });
+
   it("vide ou hors de l'écran : rien à envoyer", () => {
     expect(regionFromBox("a", { ...box, width: 0 }, spec, style, viewport)).toBeNull();
     expect(regionFromBox("a", { ...box, y: -44 }, spec, style, viewport)).toBeNull();
@@ -98,5 +122,6 @@ describe("sameRegion", () => {
     expect(sameRegion(a, b)).toBe(true);
     expect(sameRegion(a, c)).toBe(false);
     expect(sameRegion(a, { ...a, tint: "#FFFFFFFF" })).toBe(false);
+    expect(sameRegion(a, { ...a, group: "barre" })).toBe(false);
   });
 });

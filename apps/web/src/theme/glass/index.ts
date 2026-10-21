@@ -29,7 +29,22 @@
  *  - `tint`   des niveaux teintés : `brand` (défaut, violet → rose) · `accent` (rose) ;
  *  - `interactive` réagit au pointeur (le natif l'anime ; la lentille expose
  *             `data-lg-interactive` pour les règles de lg-physique) ;
- *  - `z`      ordre des verres natifs entre eux.
+ *  - `z`      ordre des verres natifs entre eux ;
+ *  - `group`, `spacing`, `transition` (verre NATIF seulement) : groupe de
+ *             fusion (NSGlassEffectContainerView : voisines, les régions
+ *             fusionnent et se métamorphosent), sa distance de fusion en pt,
+ *             les animations natives d'apparition, de déplacement et de retrait
+ *             en ms — la page ne pousse pas un rectangle par image pour animer.
+ *
+ * ── Les portes
+ *  - `useLiquidGlassMode() === "native"` : le verre est là (OS + réglage) ;
+ *  - `useLiquidGlass().nativeSupported` / `nativeGlassBridge() !== null` :
+ *    l'OS l'offre, réglage mis à part (écran des nouveautés) ;
+ *  - `useLiquidGlass().refractsVideo` / `nativeGlassRefractsVideo()` : le verre
+ *    natif voit la VIDÉO (montage `fenetre`, Apple Silicon) — sans lui, le
+ *    lecteur garde son rendu d'avant sur l'image ;
+ *  - `useLiquidGlassRegion(…)` rend `true` quand la région est NATIVE : ne
+ *    rien peindre de plus dessous (la teinte vient du verre natif).
  *
  * ── Les règles à tenir
  *  - `className` = MISE EN PAGE seulement (position, taille, marges, flex).
@@ -64,7 +79,12 @@ export {
   type SurfaceRender,
 } from "./surfaceModel";
 export { useLiquidGlassMode } from "../useLiquidGlass";
-export { getLiquidGlassMode, type LiquidGlassMode } from "../liquidGlassMode";
+export {
+  getLiquidGlassMode,
+  nativeGlassBridge,
+  nativeGlassRefractsVideo,
+  type LiquidGlassMode,
+} from "../liquidGlassMode";
 
 // ── Le « liquide » (lg-physique) : ressorts, lentille, reflet qui suit le
 // pointeur, fusion et métamorphose des formes, accessibilité du système,

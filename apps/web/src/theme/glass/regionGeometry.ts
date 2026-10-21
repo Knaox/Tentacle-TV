@@ -22,6 +22,12 @@ export interface RegionSpec {
   tint: LiquidGlassTint;
   interactive: boolean;
   z: number;
+  /** Groupe de fusion natif (NSGlassEffectContainerView), ou `null`. */
+  group: string | null;
+  /** Distance de fusion du groupe en pt, ou `null` (celle d'AppKit). */
+  spacing: number | null;
+  /** Animation native d'apparition, de déplacement et de retrait en ms, ou `null`. */
+  transition: number | null;
 }
 
 /** Ce que les feuilles disent de l'élément. */
@@ -135,6 +141,10 @@ export function regionFromBox(
     tint: style.tint,
     interactive: spec.interactive,
     z: spec.z,
+    // Champs facultatifs du pont : absents plutôt que `null`.
+    ...(spec.group !== null ? { group: spec.group } : {}),
+    ...(spec.spacing !== null ? { spacing: spec.spacing } : {}),
+    ...(spec.transition !== null ? { transition: spec.transition } : {}),
   };
 }
 
@@ -149,7 +159,10 @@ export function sameRegion(a: NativeGlassRegion, b: NativeGlassRegion): boolean 
     a.level === b.level &&
     a.tint === b.tint &&
     a.interactive === b.interactive &&
-    a.z === b.z
+    a.z === b.z &&
+    a.group === b.group &&
+    a.spacing === b.spacing &&
+    a.transition === b.transition
   );
 }
 

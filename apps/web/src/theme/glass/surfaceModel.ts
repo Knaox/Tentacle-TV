@@ -44,6 +44,14 @@ export interface LiquidGlassAppearance {
   interactive?: boolean;
   /** Ordre d'empilement des verres natifs entre eux. Défaut 0. */
   z?: number;
+  /**
+   * Verre NATIF seulement : groupe de fusion (les régions d'un même groupe
+   * fusionnent et se métamorphosent, NSGlassEffectContainerView), sa distance
+   * de fusion en pt, et la durée des animations natives en ms.
+   */
+  group?: string;
+  spacing?: number;
+  transition?: number;
 }
 
 /** Hors du mode natif : toujours le rendu d'avant (CLAUDE.md, lot Liquid Glass). */
@@ -63,6 +71,9 @@ export function regionSpecOf(appearance: LiquidGlassAppearance): RegionSpec {
     tint: appearance.tint ?? "brand",
     interactive: appearance.interactive === true,
     z: appearance.z ?? 0,
+    group: appearance.group ?? null,
+    spacing: appearance.spacing ?? null,
+    transition: appearance.transition ?? null,
   };
 }
 

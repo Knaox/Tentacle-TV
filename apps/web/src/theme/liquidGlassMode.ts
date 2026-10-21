@@ -103,6 +103,12 @@ export const getLiquidGlassMode = (): LiquidGlassMode => mode;
 /** Le pont, s'il sert : `null` hors macOS 26. */
 export const nativeGlassBridge = (): LiquidGlassBridge | null => bridge;
 
+/**
+ * Le verre natif peut-il se poser sur la VIDÉO (montage `fenetre` d'Apple
+ * Silicon) ? Indépendant du réglage, comme `nativeGlassBridge`.
+ */
+export const nativeGlassRefractsVideo = (): boolean => bridge?.refractsVideo === true;
+
 export function subscribeLiquidGlassMode(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
