@@ -109,3 +109,18 @@
   border-color: transparent;
   box-shadow: inset 0 var(--lg-rim-width) 0 var(--lg-specular-soft), var(--lg-shadow-float);
 }
+
+/* ══ 5. Avis de l'app ═════════════════════════════════════════════════════
+ *
+ * `NoticeCard` sur la PAGE (surface `app`) : le message temporaire de passage
+ * hors ligne, les avis de `NoticeHost`. Le galet des toasts. La carte posée
+ * sur la vidéo (surface `player`) n'est pas concernée : elle est au lecteur. */
+:root[data-liquid-glass="native"] .lg-notice {
+  background: var(--lgc-fill-thick);
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
+  border-color: transparent;
+  border-radius: var(--lg-radius-md);
+  corner-shape: var(--lg-corner-shape);
+  box-shadow: var(--lgc-edge), var(--lg-shadow-float);
+}
