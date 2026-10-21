@@ -147,7 +147,8 @@ const st = StyleSheet.create({
   },
   title: { color: PLAYER.text, fontSize: 16, fontWeight: "700" },
   titleTablet: { fontSize: 19 },
-  body: { color: PLAYER.textSecondary, fontSize: 13, lineHeight: 18 },
+  // Chiffres tabulaires : la phrase du décompte ne bouge pas d'une seconde à l'autre.
+  body: { color: PLAYER.textSecondary, fontSize: 14, lineHeight: 20, fontVariant: ["tabular-nums"] },
   track: { height: 3, borderRadius: 2, overflow: "hidden", backgroundColor: PLAYER.fillSoft, marginTop: 2 },
   fill: { ...StyleSheet.absoluteFillObject, transformOrigin: "left" },
   actions: { flexDirection: "row", gap: 8, marginTop: 6 },
