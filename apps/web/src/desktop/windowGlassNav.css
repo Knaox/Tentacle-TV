@@ -32,6 +32,16 @@
   background: var(--lg-chrome-item-hover);
 }
 
+/* Les boutons d'icônes (recherche, transferts, Watch Together, cloche) :
+ * des capsules aussi. Leurs panneaux sont des portails, hors d'atteinte. */
+:root[data-lg-chrome="on"] .lgc-actions button.rounded-xl:not(.lgc-field) {
+  border-radius: var(--lg-chrome-item-radius);
+}
+
+:root[data-lg-chrome="on"] .lgc-actions button.rounded-xl:not(.lgc-field):hover {
+  background: var(--lg-chrome-item-hover);
+}
+
 /* La recherche : un champ de verre enfoncé, en capsule. */
 :root[data-lg-chrome="on"] .lgc-field {
   border-radius: var(--lg-chrome-item-radius);

@@ -95,7 +95,7 @@ export function TopNav() {
           )}
         </div>
 
-        <div className="relative flex shrink-0 items-center gap-1.5 pl-2">
+        <div className="lgc-actions relative flex shrink-0 items-center gap-1.5 pl-2">
           <ConnectivityChip />
           <DataSaverChip />
           {!offline && (
