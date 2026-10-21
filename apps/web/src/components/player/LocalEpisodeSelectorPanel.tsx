@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
+import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
+import { isGlassLayout } from "./glass/playerGlassMode";
+import { GlassPanel } from "./glass/GlassPanel";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import { SeasonTabs, type SeasonTabItem } from "../episodes/SeasonTabs";
 import { useDownloadsList } from "../../downloads/useDownloadState";
@@ -76,18 +79,9 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
     onClose();
   };
 
-  return (
-    // PAS de `backdrop-filter` : `surface-dropdown` est à 0,95 d'alpha, il ne
-    // reste rien à flouter, alors que le panneau flotte au-dessus d'une vidéo
-    // en lecture dont l'arrière-plan change à chaque image décodée. Même
-    // arbitrage que son jumeau en ligne (`EpisodeSelectorPanel`).
-    <motion.div data-panneau-detache
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)]"
-      onClick={(e) => e.stopPropagation()}
-    >
+  const glass = isGlassLayout(usePlayerGlassMode());
+  const body = (
+    <>
       <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
         <span className="flex items-center gap-2 text-sm font-semibold text-content-primary">
           {t("player:episodes")}
@@ -120,6 +114,29 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
           <p className="px-3 py-8 text-center text-sm text-content-quaternary">{t("player:noEpisodes")}</p>
         )}
       </div>
+    </>
+  );
+  // Verre : le popover au-dessus de la capsule (`GlassPanel`), mêmes lignes.
+  if (glass) {
+    return (
+      <GlassPanel className="flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden" bodyClassName="flex min-h-0 flex-1 flex-col">
+        {body}
+      </GlassPanel>
+    );
+  }
+  return (
+    // PAS de `backdrop-filter` : `surface-dropdown` est à 0,95 d'alpha, il ne
+    // reste rien à flouter, alors que le panneau flotte au-dessus d'une vidéo
+    // en lecture dont l'arrière-plan change à chaque image décodée. Même
+    // arbitrage que son jumeau en ligne (`EpisodeSelectorPanel`).
+    <motion.div data-panneau-detache
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      className="absolute bottom-20 right-6 z-50 flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-xl border border-line-subtle bg-[var(--surface-dropdown)]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {body}
     </motion.div>
   );
 }
