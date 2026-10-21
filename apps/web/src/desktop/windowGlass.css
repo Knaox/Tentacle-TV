@@ -28,16 +28,12 @@
   --lg-chrome-edge-tint-top: rgba(10, 9, 15, 0.72);
   --lg-chrome-edge-tint-mid: rgba(10, 9, 15, 0.38);
 
-  /* La capsule de navigation : le verre `regular`. */
+  /* La capsule de navigation : une surface `regular` de la primitive
+   * (`useLiquidGlassSurface`, lentille de page). Ne s'y ajoute qu'un voile
+   * sous le remplissage, pour la lisibilité du libellé sur une bannière claire
+   * au repos (la capsule est AU-DESSUS de l'image). */
   --lg-chrome-capsule-radius: var(--lg-radius-capsule);
-  /* Le voile `regular` sur un fond qui assure la lisibilité du libellé sur
-   * une bannière claire au repos (la capsule est AU-DESSUS de l'image). */
   --lg-chrome-capsule-veil: rgba(var(--lg-shade-rgb), 0.34);
-  --lg-chrome-capsule-bg: linear-gradient(var(--lg-regular-fill), var(--lg-regular-fill)), var(--lg-chrome-capsule-veil);
-  --lg-chrome-capsule-rim: var(--lg-rim);
-  --lg-chrome-capsule-specular: inset 0 1px 0 var(--lg-specular-soft), inset 0 -1px 0 var(--lg-inner-glow);
-  --lg-chrome-capsule-shadow: var(--lg-shadow-float), var(--lg-shadow-contact);
-  --lg-chrome-capsule-filter: blur(22px) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
   --lg-chrome-capsule-scrim: var(--surface-1);
 
   /* Les éléments dans la capsule : des capsules. */
@@ -96,7 +92,6 @@
 /* La fenêtre a perdu le focus : la barre se ternit, comme une app de macOS.
  * Après le bloc clair : même spécificité, l'ordre décide. */
 :root[data-liquid-glass="native"][data-window-inactive] {
-  --lg-chrome-capsule-filter: blur(22px) saturate(1) brightness(var(--lg-regular-brightness));
   --lg-chrome-lens-bg: var(--lg-chrome-inactive-fill);
   --lg-chrome-lens-shadow: inset 0 0 0 var(--lg-rim-width) var(--lg-rim);
   --lg-chrome-sidebar-selection-bg: var(--lg-chrome-inactive-fill);
@@ -159,14 +154,14 @@
   );
 }
 
-/* Réduire la transparence (Accessibilité de macOS) : ni flou, la teinte
- * devient l'aplat de la surface — l'équivalent du bandeau d'avant. */
-@media (prefers-reduced-transparency: reduce) {
-  :root[data-liquid-glass="native"] .lgc-edge::before {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  :root[data-liquid-glass="native"] .lgc-edge::after {
-    background: linear-gradient(to bottom, var(--surface-0) 0%, var(--surface-0) calc(100% - var(--lg-chrome-edge-fade)), transparent 100%);
-  }
+/* Réduire la transparence ou Contraste accru (macOS ; `data-lg-material`,
+ * posé par theme/glass/accessibility.ts) : ni flou, la teinte devient
+ * l'aplat de la surface — l'équivalent du bandeau d'avant. */
+:root[data-liquid-glass="native"][data-lg-material] .lgc-edge::before {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"][data-lg-material] .lgc-edge::after {
+  background: linear-gradient(to bottom, var(--surface-0) 0%, var(--surface-0) calc(100% - var(--lg-chrome-edge-fade)), transparent 100%);
 }
