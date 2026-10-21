@@ -34,6 +34,7 @@ import { isGlassLayout } from "../player/glass/playerGlassMode";
 import { GlassPanel } from "../player/glass/GlassPanel";
 import { GlassOption } from "../player/glass/GlassOption";
 import { GlassMorphSeed } from "../player/glass/GlassMorphSeed";
+import { GLASS_LENS_PROPS } from "../../theme/glass";
 import { PLAYER_MORPH } from "../player/glass/playerGlassFusion";
 
 interface PlaybackRateControlProps {
@@ -109,6 +110,7 @@ export function PlaybackRateControl({
   return (
     <div ref={containerRef} className={glass ? "" : "relative"}>
       <button
+        {...(glass ? GLASS_LENS_PROPS : {})}
         onClick={toggle}
         className={glass ? "lgp-btn relative" : `relative rounded-full hover:bg-white/10 ${open ? "bg-white/10" : ""} ${buttonClass}`}
         title={t("player:speed")}

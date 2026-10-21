@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { BackIcon } from "../../PlayerIcons";
 import { GlassSurface } from "./GlassSurface";
+import { GLASS_LENS_PROPS } from "../../../theme/glass";
 
 interface GlassTopBarProps {
   visible: boolean;
@@ -21,9 +22,9 @@ export function GlassTopBar({ visible, title, subtitle, isDirectPlay, goBack }: 
   const { t } = useTranslation("player");
   return (
     <div className="lgp-top" onClick={(e) => e.stopPropagation()}>
-      <GlassSurface className="lgp-topbar lgp-morph lgp-morph--top" present={visible}>
+      <GlassSurface className="lgp-topbar lgp-from-top" present={visible}>
         <div className="lgp-content lgp-topbar__inner">
-          <button type="button" onClick={() => goBack()} className="lgp-btn" aria-label={t("player:back")} title={t("player:back")}>
+          <button type="button" onClick={() => goBack()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:back")} title={t("player:back")}>
             <BackIcon />
           </button>
           <div className="lgp-topbar__titles">

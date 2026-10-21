@@ -97,7 +97,7 @@ const LOOK = {
     track: "lgp-card__track",
     secondary: "lgp-card__secondary font-medium",
     ring: "focus-visible:ring-[var(--lg-player-focus)]",
-    secondaryVeil: "bg-black/15",
+    secondaryVeil: "lgp-card__veil",
   },
 } as const;
 type Look = (typeof LOOK)[keyof typeof LOOK];
@@ -188,7 +188,7 @@ export function StillWatchingPrompt({ controller, controlsVisible, surface = "we
 /** La carte : un verre dans le lecteur en verre, la carte d'avant ailleurs — mêmes attributs. */
 function Card({ glass, children, ...props }: HTMLAttributes<HTMLDivElement> & { glass: boolean; "data-still-watching": string }) {
   return glass
-    ? <GlassSurface {...props} group="player-corner">{children}</GlassSurface>
+    ? <GlassSurface {...props} group="player-corner" transition={0}>{children}</GlassSurface>
     : <div {...props}>{children}</div>;
 }
 

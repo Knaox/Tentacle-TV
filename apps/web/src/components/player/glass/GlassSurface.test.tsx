@@ -10,17 +10,21 @@ import type { ReactNode } from "react";
  */
 
 const calls = vi.hoisted(() => [] as Array<{ active: boolean; group: string }>);
+const transitions = vi.hoisted(() => [] as number[]);
 const native = vi.hoisted(() => ({ available: true }));
+const viewport = vi.hoisted(() => ({ resizing: false }));
 vi.mock("./nativeGlassPort", () => ({
   useNativeGlassAvailable: () => native.available,
   videoUnderWindow: () => true,
-  useNativeGlassRegion: (_ref: unknown, options: { active: boolean; group: string }) => {
+  useNativeGlassRegion: (_ref: unknown, options: { active: boolean; group: string; transition: number }) => {
     calls.push({ active: options.active, group: options.group });
+    transitions.push(options.transition);
   },
 }));
+vi.mock("./windowResizing", () => ({ useWindowResizing: () => viewport.resizing }));
 vi.mock("framer-motion", () => ({ useIsPresent: () => true }));
 
-const { GlassSurface, GlassChromeVisibleContext } = await import("./GlassSurface");
+const { GlassSurface, GlassChromeVisibleContext, NATIVE_FADE_MS } = await import("./GlassSurface");
 const { PlayerGlassProvider } = await import("./PlayerGlassContext");
 const { PictureInPictureContext } = await import("../../../pictureInPicture/pictureInPictureContext");
 
@@ -28,6 +32,7 @@ const pip = (active: boolean) => ({ supported: true, active }) as never;
 
 function render(node: ReactNode, { inPip = false } = {}) {
   calls.length = 0;
+  transitions.length = 0;
   const html = renderToStaticMarkup(
     <PictureInPictureContext.Provider value={pip(inPip)}>
       <PlayerGlassProvider>{node}</PlayerGlassProvider>
@@ -37,7 +42,7 @@ function render(node: ReactNode, { inPip = false } = {}) {
 }
 
 describe("les régions natives du lecteur", () => {
-  beforeEach(() => { native.available = true; });
+  beforeEach(() => { native.available = true; viewport.resizing = false; });
 
   it("verre natif, surface à l'écran : une région active", () => {
     const { calls: asked } = render(<GlassSurface className="lgp-bar">x</GlassSurface>);
@@ -59,6 +64,14 @@ describe("les régions natives du lecteur", () => {
     const inside = render(<GlassSurface className="lgp-bar">x</GlassSurface>, { inPip: true });
     expect(inside.html).toBe(outside.html);
     expect(inside.calls).toEqual([{ active: false, group: "player" }]);
+  });
+
+  it("surface fixe : fondu natif ; fenêtre en redimensionnement : aucune transition, le verre suit la barre", () => {
+    expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).calls).toHaveLength(1);
+    expect(transitions).toEqual([NATIVE_FADE_MS]);
+    viewport.resizing = true;
+    render(<GlassSurface className="lgp-bar">x</GlassSurface>);
+    expect(transitions).toEqual([0]);
   });
 
   it("sans verre natif (macOS < 26, réglage coupé) : aucune région", () => {

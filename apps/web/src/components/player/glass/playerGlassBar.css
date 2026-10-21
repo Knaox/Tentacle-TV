@@ -124,7 +124,7 @@
   overflow: hidden;
   border-radius: var(--lg-player-radius-capsule);
   background: var(--lg-player-track);
-  transition: transform 220ms var(--lg-player-ease-spring);
+  transition: transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__zone:hover .lgp-scrub__rail,
@@ -163,12 +163,12 @@
   left: -7px;
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: var(--lg-player-radius-capsule);
   background: var(--lg-player-thumb);
   /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste. */
   box-shadow: var(--lg-player-thumb-edge);
   transform: scale(0);
-  transition: transform 200ms var(--lg-player-ease-spring);
+  transition: transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-scrub__zone:hover .lgp-scrub__thumb,
@@ -233,10 +233,10 @@
   appearance: none;
   -webkit-appearance: none;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--lg-player-radius-capsule);
   background: var(--lg-player-thumb);
   box-shadow: var(--lg-player-thumb-edge);
-  transition: transform 200ms var(--lg-player-ease-spring);
+  transition: transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-range:hover::-webkit-slider-thumb {
@@ -265,14 +265,14 @@
   pointer-events: none;
   transform-origin: bottom center;
   transition:
-    opacity 160ms var(--lg-player-ease-enter),
-    transform 200ms var(--lg-player-ease-spring);
+    opacity var(--lg-duration-hover) var(--lg-player-ease-enter),
+    transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay[data-visible="false"] {
   opacity: 0;
   transform: translateY(3px) scale(0.96);
-  transition-duration: 110ms;
+  transition-duration: var(--lg-duration-press);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-trickplay__bubble {
@@ -292,6 +292,7 @@
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay__time {
   color: var(--lg-player-fg);
+  text-shadow: var(--lg-media-label-shadow);
   line-height: 20px;
   text-align: center;
 }

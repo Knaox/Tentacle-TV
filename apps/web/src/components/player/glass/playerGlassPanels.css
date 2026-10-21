@@ -28,6 +28,9 @@
   --season-tab-border: var(--lg-player-chip-line);
   --brand-accent-soft: rgb(0 0 0 / 0.28);
 
+  /* Chargé de texte : teinte native plus dense que celle des capsules. */
+  --lg-native-tint-regular: var(--lg-player-panel-tint);
+  --lg-native-tint-clear: var(--lg-player-panel-tint);
   border-color: transparent;
   border-radius: var(--lg-player-radius-panel);
 }
@@ -89,7 +92,7 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-chip {
   flex-shrink: 0;
   border: 1px solid var(--lg-player-chip-line);
-  border-radius: 6px;
+  border-radius: var(--lg-player-radius-chip);
   padding: 0 5px;
   color: var(--lg-player-fg-2);
   font-size: 10px;
