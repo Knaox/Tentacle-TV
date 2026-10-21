@@ -51,7 +51,9 @@ try {
   verdict.home = { dom, native, capture: win ? captureWindow(win.id, log("accueil.png")) : null };
   if (!dom.bridge.present || dom.bridge.supported !== true) fail("pont du verre absent ou non supporté");
   if (dom.htmlAttr !== "native") fail(`html[data-liquid-glass]=${dom.htmlAttr} (attendu native)`);
-  if (native.exposed && (native.regions ?? []).filter((r) => !r.hidden).length === 0) fail("aucune région native à l'accueil");
+  // Natif = lecteur (décision du lot) : à l'accueil, on exige le verre DISPONIBLE et allumé.
+  if (!native.exposed) fail("relevé natif non exposé (__tentacleGlass)");
+  else if (native.supported !== true || native.enabled !== true) fail(`verre natif : supported=${native.supported} enabled=${native.enabled}`);
   await go(app.page, "/settings/appearance", 2000);
   const toggle = await glassToggle(app.page);
   verdict.settings = { toggle, capture: win ? captureWindow(win.id, log("reglages.png")) : null };
