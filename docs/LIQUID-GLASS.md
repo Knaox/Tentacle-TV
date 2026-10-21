@@ -241,6 +241,17 @@ briques React) et la feuille `physics.css`, **portée par
 | Fusion de verres voisins | `<GlassFusion spacing>` + `data-lg-fuse="id"` | `GlassEffectContainer` : sous `spacing` px, un seul verre pour le groupe ; chaque membre garde sa couche (clé stable), un seul porteur visible — deux verres superposés doubleraient la teinte. Animation `layout` de framer (transform) + opacité. |
 | Métamorphose (une barre qui naît d'un bouton) | `glassMorphProps(id, useReducedMotion())` | `layoutId` partagé, ressort `morph`, rayon corrigé par framer si `borderRadius` est en `style`. Mouvement réduit : fondu de 150 ms. |
 
+**Verre natif et mouvement.** Une région de verre NATIF suit la page par une
+animation de sa frame ; elle ne peut pas suivre une échelle image par image.
+- **Jamais de lentille (`data-lg-lens`, ni les boutons en verre qui la
+  portent) sur une surface à verre natif** : la lentille reste aux surfaces
+  rendues par la page.
+- Une région qui se métamorphose ou fusionne envoie au pont
+  `transition: NATIVE_GLASS_MORPH_MS` (584 ms : repos à 0,1 % du trajet), et
+  le natif l'anime par `CASpringAnimation` avec `NATIVE_GLASS_SPRINGS.morph`
+  (raideur 223,8, amortissement 25,13, masse 1) — les constantes de framer,
+  donc la même courbe que la page (`springs.ts`).
+
 **Accessibilité du système.** `installGlassAccessibility()` (dans `main.tsx`,
 avant le premier rendu) lit les media queries — Chromium 150 d'Electron 43
 relaie les trois réglages de macOS, mesuré : aucun pont natif — et pose sur
