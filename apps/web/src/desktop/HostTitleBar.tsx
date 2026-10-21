@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { hostTitleBar, hostTitleBarHeight } from "./hostChrome";
+import { ScrollEdgeEffect } from "./ScrollEdgeEffect";
+import { useWindowGlass } from "./windowGlass";
 import { useHostFullscreen } from "../hooks/useHostFullscreen";
 
 /**
@@ -36,9 +38,18 @@ import { useHostFullscreen } from "../hooks/useHostFullscreen";
  * principal cesse de retrancher la bande à la fenêtre de mpv
  * (`macosTitleBar.retraitBandeau`). La garder laisserait une bande opaque en
  * haut d'un film.
+ *
+ * # Liquid Glass (macOS 26)
+ *
+ * En mode natif (`windowGlass.ts`, `<html data-liquid-glass="native">`), il
+ * monte aussi l'effet de bord de défilement. La bande devient alors transparente :
+ * le contenu défile dessous, fondu et flouté, comme sous la barre d'outils
+ * d'une app de macOS 26. Sa hauteur, sa prise et les feux ne changent pas.
+ * L'effet survit au plein écran : la barre de navigation, elle, y reste.
  */
 export function HostTitleBar() {
   const fullscreen = useHostFullscreen();
+  const glass = useWindowGlass();
   const active = hostTitleBar() && !fullscreen;
 
   useEffect(() => {
@@ -52,8 +63,15 @@ export function HostTitleBar() {
     };
   }, [active]);
 
-  if (!active) return null;
+  return (
+    <>
+      {glass && <ScrollEdgeEffect />}
+      {active && <Band />}
+    </>
+  );
+}
 
+function Band() {
   return (
     <div
       aria-hidden
