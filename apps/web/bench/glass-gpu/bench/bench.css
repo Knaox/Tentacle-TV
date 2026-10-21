@@ -1,0 +1,56 @@
+/* Banc GPU : un décor qui ne bouge pas, des verres floutés comme ceux de
+ * l'application (même flou, même saturation), et rien d'autre. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font: 15px/1.4 system-ui, sans-serif;
+}
+.bench-backdrop {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, #7c3aed 0, transparent 35%),
+    radial-gradient(circle at 75% 60%, #ec4899 0, transparent 40%),
+    repeating-linear-gradient(45deg, #ffffff22 0 14px, transparent 14px 40px),
+    #0b0b10;
+}
+.bench-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 240px);
+  gap: 32px;
+  padding: 80px;
+}
+.bench-glass {
+  position: relative;
+  height: 64px;
+  border-radius: 32px;
+  border: 1px solid var(--border-strong);
+  background: var(--glass-tint);
+  backdrop-filter: blur(var(--blur-modal)) saturate(180%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bench-fusion {
+  position: relative;
+  margin: 0 80px;
+  display: flex;
+  height: 56px;
+}
+.bench-fusion > [data-lg-fuse] {
+  width: 120px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: margin-left 0ms;
+}
+.bench-fuse-shape {
+  border: 1px solid var(--border-strong);
+  background: var(--glass-tint);
+  backdrop-filter: blur(var(--blur-modal)) saturate(180%);
+}

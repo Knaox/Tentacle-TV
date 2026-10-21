@@ -9,7 +9,7 @@
  * Mais toute image qui change SUR un verre en fait recalculer le flou : les
  * ressorts sont coupés dès que le reste du trajet passe sous le pixel, le
  * reflet n'écrit pas plus de 60 fois par seconde. Mesures : banc
- * `scripts/glass-gpu/`. */
+ * `apps/web/bench/glass-gpu/`. */
 
 :root {
   /* Ressorts — GÉNÉRÉS depuis `springs.ts` (GLASS_SPRINGS), tenus identiques
