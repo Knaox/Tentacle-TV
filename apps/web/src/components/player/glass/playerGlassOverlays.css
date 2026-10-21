@@ -9,7 +9,7 @@
   position: absolute;
   right: var(--lg-player-edge);
   bottom: var(--lg-player-edge);
-  transition: transform 320ms var(--lg-player-ease-enter);
+  transition: transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner[data-lifted="true"] {
@@ -43,6 +43,7 @@
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__action {
   position: relative;
+  text-shadow: var(--lg-media-label-shadow);
   min-height: 44px;
   padding: 0 24px;
   color: var(--lg-player-fg);
@@ -66,7 +67,7 @@
   align-items: center;
   justify-content: center;
   color: var(--lg-player-fg-2);
-  transition: color 150ms ease-out;
+  transition: color var(--lg-duration-hover) var(--lg-ease-out);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pill__close:hover {
@@ -83,6 +84,8 @@
 /* ── Les cartes (« Vous regardez encore ? ») ─────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-card {
+  --lg-native-tint-regular: var(--lg-player-panel-tint);
+  --lg-native-tint-clear: var(--lg-player-panel-tint);
   overflow: hidden;
   border-radius: var(--lg-player-radius-panel);
   color: var(--lg-player-fg);
@@ -146,10 +149,13 @@
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-wt-text {
   color: var(--lg-player-fg);
+  text-shadow: var(--lg-media-label-shadow);
 }
 
 /* ── Les avis posés sur la vidéo (`NoticeCard surface="player"`) ──────── */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-notice {
+  --lg-native-tint-regular: var(--lg-player-panel-tint);
+  --lg-native-tint-clear: var(--lg-player-panel-tint);
   overflow: hidden;
   border-radius: var(--lg-player-radius-row);
   color: var(--lg-player-fg);
@@ -199,4 +205,8 @@
   height: 40px;
   border: 4px solid var(--lg-player-track);
   border-top-color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__veil {
+  background: var(--lg-player-veil);
 }

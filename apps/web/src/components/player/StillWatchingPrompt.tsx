@@ -97,7 +97,7 @@ const LOOK = {
     track: "lgp-card__track",
     secondary: "lgp-card__secondary font-medium",
     ring: "focus-visible:ring-[var(--lg-player-focus)]",
-    secondaryVeil: "bg-black/15",
+    secondaryVeil: "lgp-card__veil",
   },
 } as const;
 type Look = (typeof LOOK)[keyof typeof LOOK];
