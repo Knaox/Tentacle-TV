@@ -70,13 +70,14 @@
   /* Mouvement : les RESSORTS du socle (lg-physique, `physics.css`) — `morph`
      pour une forme qui se pose, `settle` pour un trait qui s'épaissit. Une
      courbe `linear()` de ressort ne va qu'avec SA durée : on les lit par paire.
-     Sortie COURTE : le verre natif part dès le masquage (fondu natif nul,
-     `NATIVE_FADE_MS`) — le contenu ne doit pas traîner sur l'image nue. */
+     Sortie : la durée de disparition du socle, celle du fondu natif du verre
+     (`NATIVE_FADE_MS`) — contenu et verre partent ensemble. Elle ACCÉLÈRE : le
+     socle n'a pas de courbe d'entrée lente, la nôtre reste locale. */
   --lg-player-enter-ms: var(--lg-spring-morph-duration);
   --lg-player-ease-spring: var(--lg-spring-morph-easing);
   --lg-player-settle-ms: var(--lg-spring-settle-duration);
   --lg-player-ease-settle: var(--lg-spring-settle-easing);
-  --lg-player-exit-ms: 150ms;
+  --lg-player-exit-ms: var(--lg-duration-disappear);
   --lg-player-ease-enter: var(--lg-ease-out);
   --lg-player-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --lg-player-hide-shift: 10px;
