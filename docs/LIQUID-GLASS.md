@@ -305,10 +305,14 @@ animation de sa frame ; elle ne peut pas suivre une échelle image par image.
   portent) sur une surface à verre natif** : la lentille reste aux surfaces
   rendues par la page.
 - Une région qui se métamorphose ou fusionne envoie au pont
-  `transition: NATIVE_GLASS_MORPH_MS` (584 ms : repos à 0,1 % du trajet), et
-  le natif l'anime par `CASpringAnimation` avec `NATIVE_GLASS_SPRINGS.morph`
-  (raideur 223,8, amortissement 25,13, masse 1) — les constantes de framer,
-  donc la même courbe que la page (`springs.ts`).
+  `transition: NATIVE_GLASS_MORPH_MS` (584 ms, repos à 0,1 % du trajet : la
+  durée des fondus). Sa FRAME, le natif l'anime par la Bézier la plus proche
+  du ressort `morph` sur sa coupe à 1 % (291 ms) — sous 1 % d'écart de bout en
+  bout, là qu'aucune Bézier ne suit le ressort sur 584 ms (3,7 %, 11 px sur
+  300) : `apps/desktop-electron/src/main/liquidGlass/springCurve.ts`, tenu
+  contre `springs.ts` par son test miroir. `NATIVE_GLASS_SPRINGS` (les
+  constantes de framer) reste la référence si une animation à ressort native
+  remplace un jour la Bézier.
 
 **Accessibilité du système.** `installGlassAccessibility()` (dans `main.tsx`,
 avant le premier rendu) lit les media queries — Chromium 150 d'Electron 43
