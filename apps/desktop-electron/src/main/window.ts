@@ -21,6 +21,7 @@ import { pipSupported } from "./ipc/pip";
 import { closePip, installPipWindow, pipWindowOpen } from "./pip/pipWindow";
 import { liquidGlassArguments } from "./liquidGlass/detect";
 import { glassSurfaceChanged, installLiquidGlass } from "./liquidGlass/install";
+import { installWindowFocus } from "./windowFocus";
 
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 800;
@@ -197,6 +198,8 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 
   // Le verre natif : son canal, et ce qui le démonte avec la page ou la fenêtre.
   installLiquidGlass(win);
+  // Le focus de la fenêtre pour la page (macOS) : `document.hasFocus()` ment.
+  installWindowFocus(win);
 
   // En DÉVELOPPEMENT seulement, on relaie la console du rendu et les échecs de
   // chargement dans le terminal. Sans ça, une violation de CSP ou un module
