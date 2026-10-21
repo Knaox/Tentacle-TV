@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { usePlayerGlassMode } from "./glass/PlayerGlassContext";
 import { isGlassLayout } from "./glass/playerGlassMode";
 import { GlassPanel } from "./glass/GlassPanel";
+import { PLAYER_MORPH } from "./glass/playerGlassFusion";
 import {
   useSeasonBrowser,
   useJellyfinClient,
@@ -121,7 +122,7 @@ export function EpisodeSelectorPanel({
   // Verre : le popover au-dessus de la capsule (`GlassPanel`), mêmes lignes.
   if (glass) {
     return (
-      <GlassPanel className="flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden" bodyClassName="flex min-h-0 flex-1 flex-col">
+      <GlassPanel morphId={PLAYER_MORPH.episodes} className="flex max-h-[65vh] w-[26rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden" bodyClassName="flex min-h-0 flex-1 flex-col">
         {body}
       </GlassPanel>
     );

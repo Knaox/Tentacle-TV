@@ -16,12 +16,18 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: "fr" } }),
 }));
 // framer-motion embarque sa propre copie de React sous Node : remplacé, comme ailleurs.
-vi.mock("framer-motion", () => ({
-  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
-  useIsPresent: () => true,
-  useReducedMotion: () => false,
-  motion: { div: ({ children }: { children?: ReactNode }) => <div>{children}</div> },
-}));
+vi.mock("framer-motion", async () => {
+  const { createElement } = await import("react");
+  return {
+    AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+    useIsPresent: () => true,
+    useReducedMotion: () => false,
+    // Toute balise : `motion.div` des panneaux, `motion.span` des graines de métamorphose.
+    motion: new Proxy({}, {
+      get: (_, tag: string) => ({ children }: { children?: ReactNode }) => createElement(tag, null, children),
+    }),
+  };
+});
 vi.mock("@tentacle-tv/api-client", () => ({ useEndCardRating: () => null }));
 // Les panneaux d'épisodes tirent le moteur hors ligne (et `main.tsx`) : fermés ici, remplacés.
 vi.mock("../EpisodeSelectorPanel", () => ({ EpisodeSelectorPanel: () => null }));

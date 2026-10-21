@@ -24,6 +24,8 @@ export interface GlassRegionOptions {
   active: boolean;
   /** Groupe de fusion : même conteneur natif, AppKit fond les verres qui se touchent. */
   group: string;
+  /** Distance (px CSS) sous laquelle les verres du groupe fusionnent ; absente : celle d'AppKit. */
+  spacing?: number;
   /**
    * Apparition et disparition en FONDU NATIF, en ms (et déplacement animé
    * d'autant). Le contenu, lui, se pose sur son ressort CSS dans le même temps.
@@ -67,6 +69,7 @@ export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options
     level: options.variant,
     shape: "rounded",
     group: options.group,
+    spacing: options.spacing,
     transition: options.transition,
   });
 }

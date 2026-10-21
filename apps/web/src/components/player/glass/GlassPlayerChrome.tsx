@@ -37,7 +37,7 @@ export function GlassPlayerChrome({
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
   goBack, onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
   handleAudioChange, handleSubtitleChange, onQualityChange, applyToSeries,
-  onNextEpisode, onPreviousEpisode,
+  onNextEpisode, onPreviousEpisode, speed,
 }: DesktopPlayerControlsProps) {
   return (
     <GlassChromeVisibleContext.Provider value={visible}>
@@ -55,7 +55,7 @@ export function GlassPlayerChrome({
                 setShowSettings={setShowSettings} setShowEpisodes={setShowEpisodes}
                 onReduce={onReduce} togglePause={togglePause} skipBy={skipBy} toggleMute={toggleMute}
                 setVolume={setVolume} setSpeed={setSpeed} toggleFullscreen={toggleFullscreen}
-                onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
+                onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode} speed={speed}
               />
             </div>
 

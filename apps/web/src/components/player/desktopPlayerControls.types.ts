@@ -3,6 +3,7 @@ import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 import type { MediaItem, QualityDrop, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { MpvState } from "../../hooks/useDesktopPlayer";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
+import type { PlaybackRateState } from "../playerControls/usePlaybackRate";
 
 /** L'habillage du lecteur de bureau — le même contrat pour l'habillage d'avant et pour le verre. */
 export interface DesktopPlayerControlsProps {
@@ -60,4 +61,6 @@ export interface DesktopPlayerControlsProps {
   applyToSeries?: ApplyToSeriesControl;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
+  /** Le taux de lecture, tenu par l'aiguillage (`DesktopPlayerControls`) : il survit au changement d'habillage. */
+  speed?: PlaybackRateState;
 }

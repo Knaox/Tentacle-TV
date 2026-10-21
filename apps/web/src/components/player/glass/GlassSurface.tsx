@@ -36,9 +36,11 @@
  */
 
 import { createContext, useCallback, useContext, useRef, type HTMLAttributes, type Ref } from "react";
-import { useIsPresent } from "framer-motion";
+import { motion, useIsPresent } from "framer-motion";
+import type { GlassMorphProps } from "../../../theme/glass";
 import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
 import { useNativeGlassRegion, type GlassRegionOptions } from "./nativeGlassPort";
+import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
 import "./playerGlass.css";
 
 /**
@@ -57,18 +59,29 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
   variant?: GlassRegionOptions["variant"];
   /** Fondu natif à l'apparition et au retrait (ms) ; `NATIVE_FADE_MS` par défaut. */
   transition?: number;
+  /** Distance de fusion du groupe (`playerGlassFusion.ts`) ; par défaut celle du groupe `player`. */
+  spacing?: number;
+  /**
+   * Métamorphose (`glassMorphProps`, lg-physique) : la surface NAÎT du
+   * rectangle de sa graine (`GlassMorphSeed`, dans le bouton) et y rentre à la
+   * sortie — la région reste alors posée pendant la sortie, pour que le verre
+   * natif suive la surface jusque dans le bouton.
+   */
+  morph?: GlassMorphProps;
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
   surfaceRef?: Ref<HTMLDivElement>;
 }
 
 export function GlassSurface({
-  present = true, group = "player", variant = "regular", transition = NATIVE_FADE_MS, surfaceRef, className = "", children, ...rest
+  present = true, group = PLAYER_GLASS_GROUP, variant = "regular", transition = NATIVE_FADE_MS, spacing, morph,
+  surfaceRef, className = "", children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();
   const chromeVisible = useContext(GlassChromeVisibleContext);
   const regionsAllowed = usePlayerGlassRegionsAllowed();
-  const shown = present && isPresent && chromeVisible;
+  // Une surface qui se métamorphose garde sa région pendant sa sortie : elle rentre dans son bouton.
+  const shown = present && (isPresent || morph !== undefined) && chromeVisible;
   const ref = useRef<HTMLDivElement | null>(null);
   const setRef = useCallback((node: HTMLDivElement | null) => {
     ref.current = node;
@@ -76,12 +89,22 @@ export function GlassSurface({
     else if (surfaceRef) (surfaceRef as { current: HTMLDivElement | null }).current = node;
   }, [surfaceRef]);
 
-  useNativeGlassRegion(ref, { active: mode === "native" && shown && regionsAllowed, group, variant, transition });
+  useNativeGlassRegion(ref, {
+    active: mode === "native" && shown && regionsAllowed,
+    group,
+    variant,
+    transition,
+    spacing: spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
+  });
 
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
-  return (
-    <div ref={setRef} className={`lgp-surface${preview} ${className}`} data-lgp-present={shown} {...rest}>
-      {children}
-    </div>
-  );
+  const props = { ref: setRef, className: `lgp-surface${preview} ${className}`, "data-lgp-present": shown };
+  if (morph) {
+    return (
+      <motion.div {...props} {...(rest as object)} layoutId={morph.layoutId} transition={morph.transition}>
+        {children}
+      </motion.div>
+    );
+  }
+  return <div {...props} {...rest}>{children}</div>;
 }

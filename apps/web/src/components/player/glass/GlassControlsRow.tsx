@@ -7,13 +7,15 @@ import {
 import { ReduceIcon } from "../../../pictureInPicture/pipIcons";
 import { rangeFill } from "../../../lib/rangeFill";
 import { SkipBackGlyph, SkipForwardGlyph } from "./glassIcons";
+import { GlassMorphSeed } from "./GlassMorphSeed";
+import { PLAYER_MORPH } from "./playerGlassFusion";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 
 type GlassControlsRowProps = Pick<DesktopPlayerControlsProps,
   "state" | "itemId" | "isEpisode" | "hasSettings" | "hasNextEpisode" | "hasPreviousEpisode"
   | "showSettings" | "showEpisodes" | "setShowSettings" | "setShowEpisodes"
   | "onReduce" | "togglePause" | "skipBy" | "toggleMute" | "setVolume" | "setSpeed" | "toggleFullscreen"
-  | "onNextEpisode" | "onPreviousEpisode">;
+  | "onNextEpisode" | "onPreviousEpisode" | "speed">;
 
 /**
  * La rangée de boutons de la capsule : le son à gauche, le transport au CENTRE
@@ -28,7 +30,7 @@ export function GlassControlsRow({
   state, itemId, isEpisode, hasSettings, hasNextEpisode, hasPreviousEpisode,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes,
   onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
-  onNextEpisode, onPreviousEpisode,
+  onNextEpisode, onPreviousEpisode, speed,
 }: GlassControlsRowProps) {
   const { t } = useTranslation("player");
   const muted = state.muted || state.volume === 0;
@@ -67,19 +69,21 @@ export function GlassControlsRow({
 
       <div className="lgp-row__side lgp-row__side--end">
         <PlaybackRateControl
-          apply={setSpeed} resetKey={itemId}
+          apply={setSpeed} resetKey={itemId} state={speed}
           otherPanelOpen={showSettings || showEpisodes}
           onOpen={() => { setShowSettings(() => false); setShowEpisodes(() => false); }}
         />
         {isEpisode && (
           <button type="button" onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
             className="lgp-btn" aria-expanded={showEpisodes} aria-label={t("player:episodes")} title={t("player:episodes")}>
+            <GlassMorphSeed id={PLAYER_MORPH.episodes} />
             <EpisodesIcon />
           </button>
         )}
         {hasSettings && (
           <button type="button" onClick={() => { setShowSettings((p) => !p); setShowEpisodes(() => false); }}
             className="lgp-btn" aria-expanded={showSettings} aria-label={t("player:settings")} title={t("player:settings")}>
+            <GlassMorphSeed id={PLAYER_MORPH.tracks} />
             <GearIcon />
           </button>
         )}
