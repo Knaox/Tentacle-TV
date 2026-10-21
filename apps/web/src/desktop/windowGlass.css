@@ -26,16 +26,26 @@
    * theme/scrims.css) : la frange se fond dans `--surface-0`, sans écart. */
   --lg-chrome-edge-blur: var(--lg-regular-blur);
   --lg-chrome-edge-fade: 20px;
-  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.72);
-  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.38);
+  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
+  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.28);
 
   /* La capsule de navigation : une surface `regular` de la primitive
    * (`useLiquidGlassSurface`, lentille de page). Ne s'y ajoute qu'un voile
    * sous le remplissage, pour la lisibilité du libellé sur une bannière claire
    * au repos (la capsule est AU-DESSUS de l'image). */
   --lg-chrome-capsule-radius: var(--lg-radius-capsule);
-  --lg-chrome-capsule-veil: rgba(var(--lg-shade-rgb), 0.34);
+  --lg-chrome-capsule-veil: rgba(var(--lg-shade-rgb), 0.24);
   --lg-chrome-capsule-scrim: var(--surface-1);
+  /* Le reflet diffus de la capsule : celui du matériau. */
+  --lg-chrome-capsule-highlight: var(--lg-highlight);
+  /* La lisibilité des libellés : l'ombre du matériau (vibrance), pas un voile. */
+  --lg-chrome-label-shadow: var(--lg-label-shadow);
+  --lg-chrome-glyph-shadow: var(--lg-glyph-shadow);
+  /* Sur du verre, l'image passe dessous : un libellé tertiaire (4,2:1 déjà
+   * sur fond plein, mesuré) n'y tient pas l'AA — le secondaire, si (≥ 6:1
+   * mesuré au banc, clair défilé compris). Icônes : ≥ 3:1. */
+  --lg-chrome-label: var(--text-secondary);
+  --lg-chrome-glyph: var(--text-tertiary);
 
   /* Les éléments dans la capsule : des capsules. */
   --lg-chrome-item-radius: var(--lg-radius-capsule);
@@ -80,9 +90,20 @@
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.78);
-  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.42);
-  --lg-chrome-capsule-veil: rgba(var(--lg-light-rgb), 0.2);
+  /* La capsule est à hauteur du MILIEU du fondu : c'est lui qui tient l'AA de
+   * ses libellés sombres quand une affiche passe dessous (mesuré au banc :
+   * 0,22 → 3,9:1, sous le seuil). */
+  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
+  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.4);
+  /* Clair : le verre SEUL — ni voile, ni assise blanche, un reflet diffus
+   * retenu (sur 1 800 px de large, celui du matériau blanchissait toute la
+   * capsule). L'affiche passe à travers ; un halo clair tient le libellé
+   * sombre lisible même sur une bannière sombre. */
+  --lg-chrome-capsule-veil: transparent;
+  --lg-chrome-capsule-scrim: transparent;
+  --lg-chrome-capsule-highlight: rgba(var(--lg-light-rgb), 0.18);
+  --lg-chrome-label-shadow: 0 0 6px rgba(var(--lg-light-rgb), 0.85), 0 1px 0 rgba(var(--lg-light-rgb), 0.6);
+  --lg-chrome-glyph-shadow: drop-shadow(0 0 3px rgba(var(--lg-light-rgb), 0.85));
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
   --lg-chrome-field-bg: rgba(var(--lg-shade-rgb), 0.05);
   --lg-chrome-field-bg-hover: rgba(var(--lg-shade-rgb), 0.08);
