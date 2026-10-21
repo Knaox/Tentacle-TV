@@ -122,7 +122,8 @@ if [ ! -s "$STATE/jf/api-key" ]; then
 fi
 KEY=$(cat "$STATE/jf/api-key")
 lib() { # nom type chemin
-  curl -fsS "$JF/Library/VirtualFolders?api_key=$KEY" | grep -q "\"Name\":\"$1\"" && return 0
+  # Comparaison sur le JSON DÉCODÉ : un nom accentué peut arriver échappé.
+  curl -fsS "$JF/Library/VirtualFolders?api_key=$KEY" | python3 -c "import sys,json;sys.exit(0 if sys.argv[1] in [v['Name'] for v in json.load(sys.stdin)] else 1)" "$1" && return 0
   post "/Library/VirtualFolders?name=$(python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))" "$1")&collectionType=$2&refreshLibrary=true&api_key=$KEY" \
     -d "{\"LibraryOptions\":{\"PathInfos\":[{\"Path\":\"$3\"}],\"EnableInternetProviders\":false,\"MetadataSavers\":[],\"EnableTrickplayImageExtraction\":false}}"
 }
