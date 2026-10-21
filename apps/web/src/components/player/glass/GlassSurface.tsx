@@ -43,12 +43,14 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
   present?: boolean;
   group?: GlassRegionOptions["group"];
   variant?: GlassRegionOptions["variant"];
+  /** Fondu natif à l'apparition et au retrait (ms) ; `0` pour une surface qui se déplace. */
+  transition?: number;
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
   surfaceRef?: Ref<HTMLDivElement>;
 }
 
 export function GlassSurface({
-  present = true, group = "player", variant = "regular", surfaceRef, className = "", children, ...rest
+  present = true, group = "player", variant = "regular", transition = 200, surfaceRef, className = "", children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();
@@ -61,7 +63,7 @@ export function GlassSurface({
     else if (surfaceRef) (surfaceRef as { current: HTMLDivElement | null }).current = node;
   }, [surfaceRef]);
 
-  useNativeGlassRegion(ref, { active: mode === "native" && shown, group, variant });
+  useNativeGlassRegion(ref, { active: mode === "native" && shown, group, variant, transition });
 
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
   return (

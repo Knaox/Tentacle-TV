@@ -37,7 +37,7 @@ export function GlassSkipPill({
 
   return (
     <div className={`lgp-corner ${layer}`} data-lifted={controlsVisible}>
-      <GlassSurface className="lgp-pill">
+      <GlassSurface className="lgp-pill" group="player-corner" transition={120}>
         <div className="lgp-content lgp-rise lgp-pill__inner">
           <button type="button" onClick={(e) => { e.stopPropagation(); onSkip(); }} className="group/skip lgp-pill__action">
             <Veil className="rounded-l-full group-hover/skip:opacity-100" />

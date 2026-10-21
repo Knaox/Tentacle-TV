@@ -13,7 +13,7 @@
 
 import type { RefObject } from "react";
 import { useLiquidGlassMode, useLiquidGlassRegion } from "../../../theme/glass";
-import { nativeGlassBridge } from "../../../theme/liquidGlassMode";
+import { nativeGlassRefractsVideo } from "../../../theme/liquidGlassMode";
 
 export interface GlassRegionOptions {
   /**
@@ -22,12 +22,13 @@ export interface GlassRegionOptions {
    * contrôles masqués).
    */
   active: boolean;
-  /**
-   * Groupe de fusion (même conteneur natif → AppKit fond les verres qui se
-   * touchent). Déclaré par le socle natif, pas encore transmis par la
-   * primitive : sans effet tant qu'elle ne le porte pas.
-   */
+  /** Groupe de fusion : même conteneur natif, AppKit fond les verres qui se touchent. */
   group: string;
+  /**
+   * Apparition et disparition en FONDU NATIF, en ms (et déplacement animé
+   * d'autant). Le contenu, lui, se pose sur son ressort CSS dans le même temps.
+   */
+  transition: number;
   /** `regular` : la matière par défaut ; `clear` : plus transparente. */
   variant: "regular" | "clear";
 }
@@ -46,12 +47,11 @@ export function useNativeGlassAvailable(): boolean {
  * (`refractsVideo`). Faux sur Intel (mpv dessine par OpenGL DANS notre
  * fenêtre) et partout où le pont ne le dit pas : l'habillage d'avant.
  *
- * ⚠️ `refractsVideo` traverse le pont par CHAÎNE : le renommer côté preload
- * rend, en silence, l'habillage d'avant.
+ * ⚠️ `refractsVideo` traverse le pont par CHAÎNE (`desktop/types.ts`) : le
+ * renommer côté preload rend, en silence, l'habillage d'avant.
  */
 export function videoUnderWindow(): boolean {
-  const bridge = nativeGlassBridge() as { refractsVideo?: unknown } | null;
-  return bridge?.refractsVideo === true;
+  return nativeGlassRefractsVideo();
 }
 
 /**
@@ -62,5 +62,11 @@ export function videoUnderWindow(): boolean {
  * du lecteur redéfinissent sur leurs surfaces (`playerGlass.css`).
  */
 export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options: GlassRegionOptions): void {
-  useLiquidGlassRegion(ref, { enabled: options.active, level: options.variant, shape: "rounded" });
+  useLiquidGlassRegion(ref, {
+    enabled: options.active,
+    level: options.variant,
+    shape: "rounded",
+    group: options.group,
+    transition: options.transition,
+  });
 }

@@ -187,7 +187,9 @@ export function StillWatchingPrompt({ controller, controlsVisible, surface = "we
 
 /** La carte : un verre dans le lecteur en verre, la carte d'avant ailleurs — mêmes attributs. */
 function Card({ glass, children, ...props }: HTMLAttributes<HTMLDivElement> & { glass: boolean; "data-still-watching": string }) {
-  return glass ? <GlassSurface {...props}>{children}</GlassSurface> : <div {...props}>{children}</div>;
+  return glass
+    ? <GlassSurface {...props} group="player-corner" transition={120}>{children}</GlassSurface>
+    : <div {...props}>{children}</div>;
 }
 
 function PromptButton({ primary, onPress, look, children }: { primary: boolean; onPress: () => void; look: Look; children: ReactNode }) {
