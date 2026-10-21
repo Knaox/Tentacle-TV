@@ -4,7 +4,8 @@ import { isDesktopApp } from "../desktop/detect";
 import { resolveDesktopVersion } from "../hooks/useDesktopVersion";
 import { isNewerVersion } from "../lib/updateCheckers";
 import { WHATS_NEW_RELEASES } from "./releases";
-import { forAudience, forServer, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { forAudience, forClient, forServer, selectWhatsNewFeatures, type WhatsNewSelection } from "./selectFeatures";
+import { readClientTraits } from "./clientTraits";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { readSeenVersion, writeSeenVersion } from "./whatsNewStorage";
 
@@ -43,7 +44,8 @@ export interface WhatsNewGate {
  *
  * La décision attend que le serveur ait RÉPONDU (`known`) : une nouveauté qui
  * exige une capacité (`capability`) n'est montrée que s'il la déclare
- * (`forServer`). Jamais décidé sur une configuration absente (hors ligne) :
+ * (`forServer`) ; une nouveauté qui exige un trait de l'appareil (`requires`,
+ * le Liquid Glass) ne l'est que s'il l'a (`forClient`). Jamais décidé sur une configuration absente (hors ligne) :
  * elle tairait ces nouveautés pour de bon, la version étant ensuite notée vue.
  */
 export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): WhatsNewGate {
@@ -74,7 +76,7 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
     // Égale ou rétrogradée : rien à montrer, et rien à écrire. Absente : tout
     // le registre jusqu'à la version courante (mise à jour depuis avant l'écran).
     if (seen !== null && !isNewerVersion(version, seen)) return;
-    const visible = forServer(forAudience(WHATS_NEW_RELEASES, getUserInfo().isAdmin), capabilities);
+    const visible = forClient(forServer(forAudience(WHATS_NEW_RELEASES, getUserInfo().isAdmin), capabilities), readClientTraits());
     const next = selectWhatsNewFeatures(version, seen, visible);
     if (next.features.length === 0) {
       writeSeenVersion(version);

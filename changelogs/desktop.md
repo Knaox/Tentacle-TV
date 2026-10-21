@@ -13,6 +13,24 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [mac-1.40.0]
+<!-- Bloc Mac : App Store Connect seulement (CHANNEL=mac). Le Liquid Glass n'existe que sur macOS 26 : il ne paraît QUE dans ce bloc.
+     Les autres nouveautés de la 1.40.0 s'ajoutent ICI aussi, SOUS la puce du verre (même texte que le bloc nu). Jamais un commentaire DANS « ### FR » / « ### EN » : il partirait chez le store.
+     Fonction purement client : aucune version de serveur exigée. -->
+### FR
+- **Tentacle en Liquid Glass sur macOS Tahoe** : sur un Mac à jour avec macOS 26, l'application adopte le verre d'Apple. La barre de navigation, les boutons, les menus, les fenêtres et tout le lecteur deviennent translucides et laissent deviner ce qui passe dessous, aux couleurs de Tentacle. Activé d'office, à couper dans Réglages › Apparence ; « Réduire la transparence » et « Augmenter le contraste » de macOS sont respectés
+
+### EN
+- **Tentacle in Liquid Glass on macOS Tahoe**: on a Mac running macOS 26, the app takes on Apple's glass. The navigation bar, buttons, menus, windows and the whole player become translucent and let what lies beneath show through, in Tentacle's colors. On by default, can be turned off in Settings › Appearance; macOS "Reduce transparency" and "Increase contrast" are respected
+
+## [1.40.0]
+<!-- Bloc nu : Microsoft Store et Release GitHub Linux. VOLONTAIREMENT VIDE tant que les autres nouveautés de la 1.40.0 ne sont pas écrites :
+     le pré-vol (check-changelog.mjs) refuse alors la livraison Windows / Linux — jamais des notes vides en silence. Le Liquid Glass n'y figure pas (macOS 26 seulement, bloc [mac-1.40.0]).
+     Chaque puce ajoutée sous « ### FR » / « ### EN » se recopie aussi dans [mac-1.40.0]. -->
+### FR
+
+### EN
+
 ## [1.31.1]
 <!-- Bloc nu : les trois canaux partent de la 1.31.0. Tout le Watch Together nouveau exige le serveur 1.31.1 (capacités watchTogether.*) : face à un serveur plus ancien, comportement d'avant. -->
 ### FR

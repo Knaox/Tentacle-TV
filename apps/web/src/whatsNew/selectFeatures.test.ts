@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveServerCapabilities } from "@tentacle-tv/shared";
-import { forAudience, forServer, selectWhatsNewFeatures } from "./selectFeatures";
+import { forAudience, forClient, forServer, selectWhatsNewFeatures } from "./selectFeatures";
 import type { WhatsNewFeature, WhatsNewRelease } from "./types";
 
 const Scene = () => null;
@@ -86,5 +86,22 @@ describe("nouveautés qui exigent une capacité du serveur", () => {
     expect(forServer(registry, some)[0]?.features.map((f) => f.id)).toEqual(["preview", "plain"]);
     const all = resolveServerCapabilities({ version: "1.29.0", capabilities: ["trailers.preview", "family.desktopProfiles"] });
     expect(forServer(registry, all)[0]?.features.map((f) => f.id)).toEqual(["preview", "profiles", "plain"]);
+  });
+});
+
+describe("nouveautés qui exigent un trait de l'appareil", () => {
+  const glass: WhatsNewFeature = { ...feature("glass"), requires: "liquidGlass" };
+  const plain = feature("plain");
+
+  it("sans le trait (Windows, Linux, macOS d'avant 26, web) : absente, et une release vidée n'ouvre rien", () => {
+    const onlyGlass: WhatsNewRelease[] = [{ version: "1.40.0", features: [glass] }];
+    expect(selectWhatsNewFeatures("1.40.0", "1.31.1", forClient(onlyGlass, new Set())).features).toEqual([]);
+    const mixed: WhatsNewRelease[] = [{ version: "1.40.0", features: [glass, plain] }];
+    expect(forClient(mixed, new Set())[0]?.features.map((f) => f.id)).toEqual(["plain"]);
+  });
+
+  it("avec le trait : montrée, à sa place", () => {
+    const mixed: WhatsNewRelease[] = [{ version: "1.40.0", features: [glass, plain] }];
+    expect(forClient(mixed, new Set(["liquidGlass"] as const))[0]?.features.map((f) => f.id)).toEqual(["glass", "plain"]);
   });
 });

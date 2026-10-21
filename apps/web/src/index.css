@@ -13,6 +13,7 @@
 @import "./theme/tokens.css";
 @import "./theme/scrims.css";
 @import "./theme/surfaces.css";
+@import "./theme/liquidGlassTokens.css";
 @import "./theme/cards.css";
 @import "./theme/controls.css";
 @import "./theme/heroCta.css";
