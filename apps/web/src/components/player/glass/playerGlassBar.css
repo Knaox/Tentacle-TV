@@ -75,10 +75,6 @@
   pointer-events: auto;
 }
 
-/* Le remplissage est sur le CONTENU, pas sur la surface : les deux boîtes
-   coïncident, si bien qu'un panneau ancré « au-dessus » ne bouge pas quand le
-   contenu prend sa transformée de sortie (il devient alors leur bloc
-   conteneur). */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-bar {
   border-radius: var(--lg-player-radius-bar);
   transform-origin: bottom center;

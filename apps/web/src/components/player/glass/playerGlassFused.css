@@ -19,10 +19,7 @@
   margin-top: var(--lg-player-group-gap);
 }
 
-/* Non positionnée : le menu de vitesse se cale alors sur le DOCK, comme les
-   autres panneaux, et non sur sa capsule (il passerait sur celle du temps). */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-group {
-  position: static;
   border-radius: var(--lg-player-radius-capsule);
   transform-origin: bottom center;
 }
