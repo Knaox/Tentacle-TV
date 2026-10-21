@@ -202,3 +202,29 @@
   background-color: var(--lgc-thick-dim);
   box-shadow: var(--lgc-edge-strong), var(--tw-ring-shadow, 0 0 #0000);
 }
+
+/* ══ 8. Champ de recherche ════════════════════════════════════════════════
+ *
+ * La capsule de recherche des barres d'outils (`ScopedSearchField`) : le
+ * verre épais (on y lit du texte saisi), l'arête ; au focus, l'anneau de
+ * marque revient par-dessus l'arête — `box-shadow` porte les deux. */
+:root[data-liquid-glass="native"] .lg-field {
+  background: var(--lgc-fill-thick);
+  -webkit-backdrop-filter: var(--lgc-backdrop);
+  backdrop-filter: var(--lgc-backdrop);
+  border-color: transparent;
+  box-shadow: var(--lgc-edge), var(--lg-shadow-contact);
+}
+
+:root[data-liquid-glass="native"] .lg-field:focus-within {
+  box-shadow: var(--lgc-edge-strong), 0 0 0 3px var(--lg-tint-brand);
+}
+
+/* ══ 9. Pastilles de qualité et de langue ═════════════════════════════════
+ *
+ * Elles sont déjà du verre sombre, réglé au contraste près (10 px sur une
+ * affiche) : on n'y touche pas. Seule l'arête du matériau s'ajoute — la 4K
+ * garde son liseré et sa lueur de marque. `!important` : style en ligne. */
+:root[data-liquid-glass="native"] .lg-meta:not([data-tone="accent"]) {
+  box-shadow: var(--lgc-edge) !important;
+}
