@@ -58,7 +58,10 @@
    *  • le verre sur un voile DÉJÀ sombre (plateau des cartes, sans flou) ;
    *  • le pouce laiteux de l'interrupteur ;
    *  • le voile sous une feuille, plus léger : le verre épais sépare. */
-  --lgc-media-dim: rgba(var(--scrim-media-rgb), 0.34);
+  /* 0,55 : le pire cas est un décor BLANC sous le verre — blanc plein sur
+   * 0,55 de noir y tient 4,7:1 (au banc, 0,42 tombait à 4,1:1 ; cf.
+   * `DetailStage.tsx`). Plus clair, le verre perdrait son libellé. */
+  --lgc-media-dim: rgba(var(--scrim-media-rgb), 0.55);
   --lgc-thick-dim: rgba(18, 18, 26, 0.6);
   --lgc-veil-fill: rgba(255, 255, 255, 0.1);
   --lgc-knob: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 244, 248, 0.92));
