@@ -18,10 +18,10 @@ describe("physics.css", () => {
     }
   });
 
-  it("n'anime que des propriétés composées (scale, translate, opacity)", () => {
-    const animated = [...css.matchAll(/transition:\s*([a-z-]+)\s/g)].map((m) => m[1]);
-    expect(animated.length).toBeGreaterThan(0);
-    for (const p of animated) expect(["scale", "translate", "opacity", "transform", "none"]).toContain(p);
+  it("n'anime au ressort que des propriétés composées ; aucune animation infinie", () => {
+    const sprung = [...css.matchAll(/([a-z-]+)\s+var\(--lg-spring-[a-z]+-duration\)/g)].map((m) => m[1]);
+    expect(sprung.length).toBeGreaterThan(0);
+    for (const p of sprung) expect(["scale", "translate", "opacity", "transform"]).toContain(p);
     expect(css).not.toMatch(/@keyframes|animation:/);
   });
 
