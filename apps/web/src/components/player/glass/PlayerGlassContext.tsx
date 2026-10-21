@@ -11,6 +11,7 @@ import { createContext, useContext, useEffect, useMemo, type ReactNode } from "r
 import { useLiquidGlass } from "../../../theme/useLiquidGlass";
 import { decidePlayerGlassMode, type PlayerGlassMode } from "./playerGlassMode";
 import { useNativeGlassAvailable, videoUnderWindow } from "./nativeGlassPort";
+import { usePictureInPicture } from "../../../pictureInPicture/pictureInPictureContext";
 
 /** Exporté pour les bancs de composants ; le lecteur passe par `PlayerGlassProvider`. */
 export const PlayerGlassModeContext = createContext<PlayerGlassMode>("legacy");
@@ -37,9 +38,14 @@ export function PlayerGlassProvider({ children }: { children: ReactNode }) {
   // l'habillage d'avant (et retire les régions natives).
   const { enabled } = useLiquidGlass();
   const nativeAvailable = useNativeGlassAvailable();
+  // Le PiP : le lecteur est caché dans la fenêtre principale et ses contrôles
+  // vivent dans la fenêtre du PiP, que les régions de la page ne savent pas
+  // viser (elles se poseraient dans la fenêtre PRINCIPALE). D'ici là, rien de
+  // natif pendant le PiP : l'habillage d'avant, démonté de toute région.
+  const { active: inPip } = usePictureInPicture();
   const mode = useMemo(
-    () => decidePlayerGlassMode({ enabled, nativeAvailable, videoUnderWindow: videoUnderWindow(), devPreview: DEV_PREVIEW }),
-    [enabled, nativeAvailable],
+    () => inPip ? "legacy" : decidePlayerGlassMode({ enabled, nativeAvailable, videoUnderWindow: videoUnderWindow(), devPreview: DEV_PREVIEW }),
+    [enabled, nativeAvailable, inPip],
   );
   // Les feuilles du lecteur ne s'allument que sous `data-liquid-glass="native"` (règle du lot,
   // `liquidGlassTokens.test.ts`) ; l'aperçu de développement pose son propre drapeau.

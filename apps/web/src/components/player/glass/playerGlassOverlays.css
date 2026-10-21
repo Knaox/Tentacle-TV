@@ -114,3 +114,14 @@
     animation: none;
   }
 }
+
+/* ── Les badges éphémères (lecture/pause au centre, ±10/30 s sur les côtés) ── */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge {
+  border-radius: var(--lg-player-radius-capsule);
+  color: var(--lg-player-fg);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-badge--round {
+  width: 92px;
+  height: 92px;
+}
