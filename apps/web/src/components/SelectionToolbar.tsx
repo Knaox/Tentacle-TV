@@ -14,7 +14,7 @@ interface SelectionToolbarProps {
 export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDeleting, removal = false }: SelectionToolbarProps) {
   return createPortal(
     <div
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
+      className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
       style={{ animation: "slideUp 0.25s ease" }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-12">

@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Gauge, KeyRound, Pause, Server, WifiOff, X, type 
 import { useTranslation } from "react-i18next";
 import type { NoticeSeverity } from "@tentacle-tv/shared";
 import type { MessageCountdown } from "../session/useMessageCountdown";
+import { useGlassControl } from "../ui/glass/useGlassControl";
 import { usePlayerGlassMode } from "../player/glass/PlayerGlassContext";
 import { isGlassLayout } from "../player/glass/playerGlassMode";
 import { GlassSurface } from "../player/glass/GlassSurface";
@@ -94,16 +95,15 @@ export const NoticeCard = memo(function NoticeCard({
 }: Props) {
   const { t } = useTranslation(["notices", "sessions"]);
   const tone = TONES[severity];
-  const glass = isGlassLayout(usePlayerGlassMode()) && surface === "player";
-  const look = glass ? GLASS_LOOK : SURFACES[surface];
+  // Le lecteur de bureau en verre (`player`) : une surface NATIVE (`GlassRoot`).
+  const playerGlass = isGlassLayout(usePlayerGlassMode()) && surface === "player";
+  const look = playerGlass ? GLASS_LOOK : SURFACES[surface];
   const chip = severity === "info" ? look.infoChip : tone.chip;
   const Icon = ICONS[icon];
-  const Root = glass ? GlassRoot : "div";
-  return (
-    <Root
-      role={severity === "blocking" ? "alert" : "status"}
-      className={glass ? `relative flex items-stretch gap-3 py-3 pl-3 pr-1 ${look.root}` : `relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
-    >
+  // En mode natif, la carte de l'app (pas celle du lecteur) : la lentille exacte.
+  const glass = useGlassControl<HTMLDivElement>({ lens: surface === "app" ? "regular" : false });
+  const content = (
+    <>
       <span aria-hidden className={`w-1 shrink-0 rounded-full ${tone.accent}`} />
       <div className="min-w-0 flex-1 py-0.5">
         <div className="flex items-start gap-2.5">
@@ -163,7 +163,25 @@ export const NoticeCard = memo(function NoticeCard({
           />
         </span>
       )}
-    </Root>
+    </>
+  );
+  if (playerGlass) {
+    return (
+      <GlassRoot role={severity === "blocking" ? "alert" : "status"} className={`relative flex items-stretch gap-3 py-3 pl-3 pr-1 ${look.root}`}>
+        {content}
+      </GlassRoot>
+    );
+  }
+  return (
+    <div
+      ref={glass.ref}
+      {...glass.props}
+      role={severity === "blocking" ? "alert" : "status"}
+      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
+    >
+      {glass.layers}
+      {content}
+    </div>
   );
 });
 

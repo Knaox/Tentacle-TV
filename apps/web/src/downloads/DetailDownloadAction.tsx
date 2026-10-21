@@ -22,6 +22,7 @@ import { supportsDownloads } from "../desktop/bridge";
 import { DownloadDialog } from "./DownloadDialog";
 import { DownloadGlyph } from "./DownloadGlyph";
 import { useDownloadsList, useDownloadsVisibility, useItemDownloadState } from "./useDownloadState";
+import { GLASS_LENS_PROPS } from "../theme/glass";
 
 const ACTIVE_STATUSES = new Set(["queued", "downloading", "paused", "error"]);
 
@@ -91,6 +92,7 @@ export function DetailDownloadAction({ item, variant = "circle" }: { item: Media
         disabled={wanted}
         aria-label={label}
         title={label}
+        {...(variant === "capsule" ? GLASS_LENS_PROPS : {})}
         className={variant === "capsule"
           ? `relative flex h-11 w-11 items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 hover:bg-white/10 active:scale-95 ${
             // « Sur cette machine » : le vert constant de la pastille des cartes (posé sur média).

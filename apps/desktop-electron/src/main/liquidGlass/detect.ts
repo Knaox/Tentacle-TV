@@ -42,14 +42,18 @@ export function liquidGlassAvailability(): LiquidGlassAvailability {
 /**
  * Le verre voit-il la vidéo posée sous la page ?
  *
- * Mesuré sur le montage `fenetre` (Apple Silicon : la fenêtre Metal de mpv est
- * SOUS la nôtre, et le verre réfracte ce qui est sous la fenêtre). Le montage
- * `gl` (Intel) dessine DANS la fenêtre, sous la racine du verre : à confirmer
- * sur une vraie lecture avant de l'annoncer — d'ici là, la page garde le rendu
- * d'avant sur la vidéo.
+ * Oui, sur les DEUX montages — mesuré le 21/10 sur une vraie lecture mpv HDR10
+ * (macOS 26.6, M4) : en `fenetre` (Apple Silicon), le verre réfracte la fenêtre
+ * Metal de mpv posée SOUS la nôtre ; en `gl` (Intel, forcé par
+ * `TENTACLE_VIDEO_MONTAGE=gl`), il réfracte la `NSOpenGLView` de NOTRE fenêtre,
+ * parce que la racine du verre se pose juste au-dessus d'elle
+ * (`AppKitGlassBackend.anchor`). Le montage reste lu ici : un montage à venir
+ * qui ne serait ni l'un ni l'autre ne serait pas annoncé par défaut.
  */
 export function glassRefractsVideo(): boolean {
-  return liquidGlassAvailability() === "native" && decideMacosMontage(process.arch, process.env) === "fenetre";
+  if (liquidGlassAvailability() !== "native") return false;
+  const montage = decideMacosMontage(process.arch, process.env);
+  return montage === "fenetre" || montage === "gl";
 }
 
 /** Les arguments de fabrication que le preload relit (`protocol.ts`). */

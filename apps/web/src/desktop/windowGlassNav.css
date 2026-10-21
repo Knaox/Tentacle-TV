@@ -9,12 +9,15 @@
   border-radius: var(--lg-chrome-capsule-radius);
 }
 
-:root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass {
-  background: var(--lg-chrome-capsule-bg);
-  border-color: var(--lg-chrome-capsule-rim);
-  box-shadow: var(--lg-chrome-capsule-specular), var(--lg-chrome-capsule-shadow);
-  backdrop-filter: var(--lg-chrome-capsule-filter);
-  -webkit-backdrop-filter: var(--lg-chrome-capsule-filter);
+/* La couche de verre est une surface de la primitive (`.lg-surface`, ses
+ * jetons) : on n'y glisse que le voile de lisibilité SOUS le remplissage. */
+:root[data-liquid-glass="native"] .lgc-capsule > .lg-surface {
+  --lg-fill: linear-gradient(var(--lg-regular-fill), var(--lg-regular-fill)), var(--lg-chrome-capsule-veil);
+}
+
+/* Fenêtre inactive : le verre de la capsule perd sa saturation. */
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule > .lg-surface {
+  --lg-saturate: 1;
 }
 
 :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-scrim {
@@ -128,25 +131,17 @@
   font-size: 12px;
 }
 
-/* ── Accessibilité de macOS ────────────────────────────────────────────── */
+/* ── Accessibilité de macOS (`data-lg-material`, theme/glass/accessibility.ts) ─
+ * La capsule, surface de la primitive, suit les règles de lg-physique. */
 
-/* Réduire la transparence : les verres de la barre redeviennent des aplats. */
-@media (prefers-reduced-transparency: reduce) {
-  :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass {
-    background: var(--surface-1);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  :root[data-liquid-glass="native"] .lgc-sidebar {
-    background: var(--surface-1);
-  }
+/* Réduire la transparence (« frosted ») ou Contraste accru (« solid ») : la
+ * barre latérale redevient un aplat. */
+:root[data-liquid-glass="native"][data-lg-material] .lgc-sidebar {
+  background: var(--surface-1);
 }
 
 /* Contraste accru : des liserés qui se voient. */
-@media (prefers-contrast: more) {
-  :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass,
-  :root[data-liquid-glass="native"] .lgc-sidebar,
-  :root[data-liquid-glass="native"] .lgc-field {
-    border-color: var(--border-strong, currentColor);
-  }
+:root[data-liquid-glass="native"][data-lg-material="solid"] .lgc-sidebar,
+:root[data-liquid-glass="native"][data-lg-material="solid"] .lgc-field {
+  border-color: var(--lg-contrast-border);
 }

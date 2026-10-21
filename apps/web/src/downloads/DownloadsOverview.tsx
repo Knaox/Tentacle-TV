@@ -35,7 +35,7 @@ export function DownloadsOverview({ entries }: { entries: readonly DownloadEntry
   const ratio = overview.transferRatio;
 
   return (
-    <section className="relative rounded-2xl border border-line-subtle bg-surface-1 p-4 sm:p-5">
+    <section className="lg-panel relative rounded-2xl border border-line-subtle bg-surface-1 p-4 sm:p-5">
       {/*
         Les halos débordent de la carte : ils vivent dans un calque rogné. Posés
         directement dans la section, leur débord à droite l'agrandissait, et le

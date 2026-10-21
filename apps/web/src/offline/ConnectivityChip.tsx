@@ -54,7 +54,7 @@ export function ConnectivityChip() {
         onDismiss={() => setOpen(false)}
         role="dialog"
         ariaLabel={t("offlinePopoverTitle")}
-        className="w-72 overflow-y-auto overscroll-contain"
+        className="lg-menu w-72 overflow-y-auto overscroll-contain"
         style={{
           background: "var(--surface-dropdown)",
           border: "1px solid var(--border-subtle)",

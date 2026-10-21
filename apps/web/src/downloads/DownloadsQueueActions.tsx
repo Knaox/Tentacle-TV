@@ -64,7 +64,7 @@ function QueueButton({ label, icon, disabled, onClick }: { label: string; icon: 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-subtle px-3 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:opacity-50"
+      className="lg-btn inline-flex h-8 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-subtle px-3 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:opacity-50"
     >
       {icon}
       {label}
