@@ -24,7 +24,14 @@ export async function shot(ctx, name) {
   const win = mainWindow(STATE, ctx.app.pid);
   if (!win) throw new Error("fenêtre principale introuvable");
   const file = path.join(ctx.out, `${ctx.cell}-${name}.png`);
-  captureWindow(win.id, file);
+  try {
+    captureWindow(win.id, file);
+  } catch (error) {
+    // Écran verrouillé ou éteint : aucune capture possible, mais les relevés
+    // DOM et AppKit restent valables — on consigne, on continue.
+    ctx.report.captureErrors = [...(ctx.report.captureErrors ?? []), `${name} : ${String(error.message ?? error).slice(0, 80)}`];
+    return null;
+  }
   return path.basename(file);
 }
 

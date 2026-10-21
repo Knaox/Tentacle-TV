@@ -122,6 +122,7 @@ for (const r of all) {
   lines.push(`## ${r.cell} (attendu : ${r.expect})`, "");
   for (const s of r.steps) lines.push(`- ${s.ok ? "✓" : "✗"} ${s.name}${s.capture ? ` — ${s.capture}` : ""}${s.error ? ` — ${s.error}` : ""}`);
   for (const note of r.notes ?? []) lines.push(`- ⚠️ ${note}`);
+  if (r.captureErrors?.length) lines.push(`- ⚠️ ${r.captureErrors.length} capture(s) impossible(s) (écran verrouillé ?) : ${r.captureErrors[0]}`);
   lines.push("", r.issues.length === 0 ? "**Aucun défaut.**" : "**Défauts candidats :**");
   r.issues.forEach((i, n) => lines.push(`${n + 1}. ${i.message}${i.proof ? ` (preuve : ${i.proof})` : ""}`));
   lines.push("");
