@@ -114,6 +114,16 @@ export interface NativeGlassRegion {
   readonly interactive: boolean;
   /** Ordre d'empilement entre régions : la plus grande valeur au-dessus. */
   readonly z: number;
+  /**
+   * Groupe de fusion : les régions d'un même groupe partagent un
+   * NSGlassEffectContainerView — voisines, elles fusionnent et se métamorphosent.
+   * Absent : la région est seule.
+   */
+  readonly group?: string;
+  /** Distance de fusion du groupe, en pt. Absent : celle d'AppKit. */
+  readonly spacing?: number;
+  /** Apparition, déplacement et disparition animés CÔTÉ NATIF, en ms. Absent : aucun. */
+  readonly transition?: number;
 }
 
 /**
@@ -125,6 +135,12 @@ export interface NativeGlassRegion {
 export interface LiquidGlassBridge {
   /** macOS 26 ou plus ET module natif chargé. Figé au démarrage. */
   readonly supported: boolean;
+  /**
+   * Le verre voit-il la vidéo ? Vrai au montage `fenetre` (Apple Silicon : mpv
+   * dans sa fenêtre Metal, SOUS la nôtre). Absent ou faux : le lecteur garde
+   * son rendu d'avant sur la vidéo.
+   */
+  readonly refractsVideo?: boolean;
   /** Le réglage de l'utilisateur. `false` retire TOUT verre natif. */
   setEnabled(enabled: boolean): void;
   /** Crée ou met à jour des régions. */

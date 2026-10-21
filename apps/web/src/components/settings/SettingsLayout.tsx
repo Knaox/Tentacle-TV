@@ -10,6 +10,7 @@ import { useOfflineMode } from "../../offline/useOfflineMode";
 import { useFamilyEntryShown } from "../../family/useFamilyEntryShown";
 import { useActiveProfile } from "../../auth/profileSession";
 import { useSecurityAbilities } from "../../rights/useSecurityAbilities";
+import { useGlassSidebarSelection } from "../nav/useGlassSidebarSelection";
 
 /**
  * Coquille des réglages utilisateur.
@@ -91,6 +92,7 @@ export function SettingsLayout() {
   }, [pathname]);
 
   const active = sections.find((s) => s.id === activeId);
+  const selection = useGlassSidebarSelection("settings");
 
   return (
     <div className="pt-6">
@@ -105,6 +107,7 @@ export function SettingsLayout() {
         description={undefined}
         onBack={() => navigate("/settings")}
         backLabel={t("back")}
+        selectionIndicator={selection}
       >
         <Outlet />
       </SettingsShell>

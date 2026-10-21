@@ -139,7 +139,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: duration.fast, ease: easeOut }}
           // Fond à 95 % d'opacité : un flou d'arrière-plan n'y verrait rien.
-          className="absolute inset-x-0 top-full z-50 mt-2 origin-top overflow-hidden rounded-xl border border-line-subtle bg-surface-dropdown"
+          className="lg-menu absolute inset-x-0 top-full z-50 mt-2 origin-top overflow-hidden rounded-xl border border-line-subtle bg-surface-dropdown"
           style={{ boxShadow: "var(--shadow-dropdown)" }}
         >
           <div className="relative border-b border-line-subtle p-2">

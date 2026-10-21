@@ -21,7 +21,8 @@ un plan.
 
 - **Le verre NATIF, ou le rendu d'avant.** Sur macOS 26 (Tahoe) et au-delà, dans
   l'app de bureau, la fenêtre reçoit le vrai verre du système
-  (`NSGlassEffectView`, par le module `electron-liquid-glass`) et la page dessine
+  (`NSGlassEffectView`, classe PUBLIQUE d'AppKit, pilotée par le pont koffi déjà
+  dans le dépôt — aucun module natif de plus) et la page dessine
   ses surfaces pour s'y accorder. Partout ailleurs — web, Windows, Linux, macOS
   d'avant 26, réglage coupé —, **le rendu d'avant, au pixel près** : aucune
   classe, aucun jeton, aucun calque de plus.
@@ -37,12 +38,12 @@ un plan.
 
 ## 2. Le socle natif
 
-> À écrire par **lg-natif** : le module (`electron-liquid-glass`, version,
-> chargement), la détection de l'OS (comment « supporté » se décide, et ce qui
+> À écrire par **lg-natif** : `NSGlassEffectView` / `NSGlassEffectContainerView`
+> par le pont koffi (`video/objc.ts`) — pourquoi pas `electron-liquid-glass`
+> (mesures), la détection de l'OS (comment « supporté » se décide, et ce qui
 > le rend faux), le pont du preload (nom, forme, canaux), les régions
 > synchronisées au DOM, la fenêtre (transparence, ombre — cf. CLAUDE.md « Coût
-> GPU » § 4), l'empaquetage et la signature du `.node` (`package-macos.mjs`), le
-> build Mac App Store (API publiques seulement).
+> GPU » § 4), le build Mac App Store (API publiques seulement).
 
 ## 3. Les jetons `--lg-*`
 
@@ -111,8 +112,9 @@ claire, sa valeur sombre, et qui le consomme.
   verre natif). Elles portent `requires: "liquidGlass"` : le filtre `forClient`
   les retire là où l'appareil n'a pas le verre (`clientTraits.ts`), et une
   release ainsi vidée n'ouvre pas d'écran.
-- **Licences** : `apps/desktop-electron/THIRD-PARTY-LICENSES.md`, entrée
-  `electron-liquid-glass`.
+- **Licences** : rien à ajouter à `apps/desktop-electron/THIRD-PARTY-LICENSES.md`
+  — le verre passe par AppKit et koffi, déjà présents ; le module
+  `electron-liquid-glass` n'a pas été retenu (§ 2).
 
 ## 9. Bancs et mesures
 

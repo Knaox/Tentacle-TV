@@ -87,7 +87,7 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
       role="dialog"
       labelledBy={titleId}
       tabIndex={-1}
-      className="lgc-panel flex w-[460px] flex-col overflow-hidden rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] shadow-[var(--shadow-dropdown)] outline-none"
+      className="lg-menu flex w-[460px] flex-col overflow-hidden rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] shadow-[var(--shadow-dropdown)] outline-none"
     >
       <header className="border-b border-line-subtle px-5 pb-3 pt-4">
         <h2 id={titleId} className="text-base font-semibold text-content-primary">{t("customizeBar")}</h2>

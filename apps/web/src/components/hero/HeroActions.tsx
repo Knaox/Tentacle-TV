@@ -5,7 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { PlayIcon, InfoIcon } from "../icons/HeroIcons";
-import { PressableScale } from "../ui/PressableScale";
+import { GlassPressable } from "../ui/glass/GlassPressable";
 import { CardQuickActions } from "../cards/CardQuickActions";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 
@@ -20,7 +20,11 @@ export const HERO_PLAY_CLASS =
 export const HERO_PLAY_STYLE = { boxShadow: "var(--elev-2)" };
 /** Posé sur l'affiche : verre sombre + texte blanc constants, jamais les tokens `--cta-ghost-*` du fond de PAGE. */
 export const HERO_INFO_CLASS =
-  "flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-6 py-3 text-base font-semibold text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
+  "lg-btn-media flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-6 py-3 text-base font-semibold text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
+
+/** En mode natif : la lentille exacte de la capsule et le reflet sous le pointeur. */
+const PLAY_GLASS = { lens: "prominent", shape: "capsule", specular: true } as const;
+const INFO_GLASS = { lens: "regular", shape: "capsule", specular: true } as const;
 
 interface HeroActionsProps {
   item: MediaItem;
@@ -77,17 +81,17 @@ export function HeroActions({ item, onPlay, resuming, episodeCode, imageUrl }: H
 
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      <PressableScale onClick={onPlay} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
+      <GlassPressable glass={PLAY_GLASS} onClick={onPlay} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
         <PlayIcon />
         {resuming ? t("common:resume") : t("common:play")}
         {/* Blanc plein, graisse moindre : une opacité réduite passait sous 3:1 sur le dégradé. */}
         {episodeCode && <span className="font-medium">{episodeCode}</span>}
-      </PressableScale>
+      </GlassPressable>
 
-      <PressableScale onClick={openDetail} className={HERO_INFO_CLASS}>
+      <GlassPressable glass={INFO_GLASS} onClick={openDetail} className={HERO_INFO_CLASS}>
         <InfoIcon />
         {t("common:moreInfo")}
-      </PressableScale>
+      </GlassPressable>
 
       <div className="ml-1 hidden items-center gap-1.5 sm:flex">
         <CardQuickActions item={item} variant="inline" />

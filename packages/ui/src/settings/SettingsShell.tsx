@@ -20,7 +20,7 @@ import { useId, type ReactNode } from "react";
  *
  * Les classes `lgc-sidebar*` n'ont aucun style ici : c'est la barre latérale
  * Liquid Glass du bureau macOS 26 (`apps/web/src/desktop/windowGlassNav.css`),
- * gardée par l'attribut racine `data-lg-chrome`. Ailleurs, rendu inchangé.
+ * portée par `<html data-liquid-glass="native">`. Ailleurs, rendu inchangé.
  */
 
 export interface SettingsShellSection {
@@ -61,6 +61,12 @@ export interface SettingsShellProps {
    * un formulaire se lit mieux étroit.
    */
   fluid?: boolean;
+  /**
+   * Posé DANS l'entrée active, sous son icône et son libellé : la sélection
+   * en verre qui glisse d'une entrée à l'autre (bureau macOS 26, `layoutId`
+   * fourni par le client). Absent, la sélection d'avant.
+   */
+  selectionIndicator?: ReactNode;
   children: ReactNode;
 }
 
@@ -74,6 +80,7 @@ export function SettingsShell({
   onBack,
   backLabel,
   fluid = false,
+  selectionIndicator,
   children,
 }: SettingsShellProps) {
   const groupDomId = useId();
@@ -120,23 +127,24 @@ export function SettingsShell({
                       aria-current={active ? "page" : undefined}
                       /* État actif : pilule pleine et discrète. Pas de glow —
                          c'était la signature la plus datée de l'ancien écran. */
-                      className={`lgc-sidebar-item flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 ${
+                      className={`lgc-sidebar-item relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 ${
                         active
                           ? "bg-fill-soft font-medium text-content-primary"
                           : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
                       }`}
                     >
+                      {active ? selectionIndicator : null}
                       {section.icon ? (
                         <span
                           aria-hidden="true"
-                          className={`lgc-sidebar-icon flex w-[18px] shrink-0 justify-center ${
+                          className={`lgc-sidebar-icon relative flex w-[18px] shrink-0 justify-center ${
                             active ? "text-content-primary" : "text-content-tertiary"
                           }`}
                         >
                           {section.icon}
                         </span>
                       ) : null}
-                      <span className="truncate">{section.label}</span>
+                      <span className="relative truncate">{section.label}</span>
                     </button>
                   </li>
                 );

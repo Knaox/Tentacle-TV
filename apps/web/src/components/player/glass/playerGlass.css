@@ -1,0 +1,195 @@
+/* Le lecteur en verre — jetons et classes (`lgp-` : Liquid Glass, Player).
+ *
+ * ⚠️ Deux familles de couleurs SEULEMENT : l'OPAQUE et le NOIR à alpha. Sur la
+ * surface à canal alpha de macOS (la fenêtre transparente posée sur celle de
+ * mpv), un blanc semi-transparent se lit comme prémultiplié et rend GRIS ;
+ * le noir est invariant (noir × alpha reste noir). Mesuré le 30.08 — voir
+ * `lib/videoShadow.ts`. Les « secondaires » sont donc des gris PLEINS, jamais
+ * `white/60`.
+ *
+ * Mêmes valeurs en clair et en sombre, VOLONTAIREMENT : tout ceci se pose sur
+ * la vidéo, jamais sur une surface du thème (règle des barres du lecteur).
+ *
+ * La matière du verre n'est PAS ici : c'est la vue native derrière la page.
+ * La page ne dessine que le contenu. Le seul fond peint est celui de l'aperçu
+ * de développement (`--preview`), opaque, pour juger la mise en page. */
+
+:root[data-liquid-glass="native"],
+:root[data-lgp-preview="on"] {
+  /* Texte et symboles */
+  --lg-player-fg: #ffffff;
+  --lg-player-fg-2: #c9c9d1;
+  --lg-player-fg-3: #8f8f99;
+  --lg-player-focus: var(--brand-light);
+
+  /* Géométrie */
+  --lg-player-edge: 20px;
+  --lg-player-gap: 10px;
+  --lg-player-bar-max: 980px;
+  /* Hauteur FIXE de la capsule de lecture : le coin bas-droit monte d'autant (`.lgp-corner`). */
+  --lg-player-bar-height: 90px;
+  --lg-player-radius-bar: var(--lg-radius-xl);
+  --lg-player-radius-capsule: 9999px;
+  --lg-player-radius-panel: var(--lg-radius-lg);
+  --lg-player-radius-row: 12px;
+  --lg-player-button: 36px;
+  --lg-player-button-primary: 46px;
+  --lg-player-button-small: 28px;
+
+  /* Barre de progression : pleine, jamais translucide */
+  --lg-player-track: #5d5b66;
+  --lg-player-track-buffer: #85838e;
+  --lg-player-track-fill: var(--progress-fill);
+  --lg-player-thumb: #ffffff;
+  --lg-player-track-hover-scale: 1.6;
+
+  /* Lignes des panneaux : la surbrillance façon menu macOS, à la couleur de marque */
+  --lg-player-row-hover: var(--ctl-gradient);
+  --lg-player-row-hover-fg: #ffffff;
+  --lg-player-chip-line: #6f6d78;
+  /* Le puits d'une icône de carte : noir à alpha, il assombrit le verre sans le griser. */
+  --lg-player-icon-well: rgb(0 0 0 / 0.28);
+
+  /* Gestes : le symbole répond, la matière reste (transform seulement) */
+  --lg-player-hover-scale: 1.1;
+  --lg-player-press-scale: 0.9;
+
+  /* Mouvement : entrée sur ressort, sortie plus courte (≈ 60 %) */
+  --lg-player-enter-ms: 340ms;
+  --lg-player-exit-ms: 190ms;
+  --lg-player-ease-spring: var(--lg-ease-spring);
+  --lg-player-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --lg-player-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --lg-player-hide-shift: 10px;
+  --lg-player-hide-scale: 0.965;
+
+  /* La teinte que la vue NATIVE pose sur le verre du lecteur (lue par la primitive
+     dans `--lg-native-tint-*`, redéfinis sur chaque surface) : un voile sombre
+     léger, pour que le blanc des symboles tienne sur une image claire. */
+  --lg-player-native-tint: rgb(0 0 0 / 0.22);
+
+  /* Aperçu de développement seulement (mode `preview`) */
+  --lg-player-preview-surface: #25222e;
+  --lg-player-preview-edge: #3d3948;
+}
+
+/* ── Surface ─────────────────────────────────────────────────────────── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface {
+  --lg-native-tint-regular: var(--lg-player-native-tint);
+  --lg-native-tint-clear: var(--lg-player-native-tint);
+  position: relative;
+  background: transparent;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-present="false"] {
+  pointer-events: none;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface--preview {
+  background: var(--lg-player-preview-surface);
+  box-shadow: inset 0 0 0 1px var(--lg-player-preview-edge);
+  transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface--preview[data-lgp-present="false"] {
+  opacity: 0;
+}
+
+/* Le contenu se « matérialise » : il monte et se pose, sur un ressort. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-content {
+  transition:
+    opacity var(--lg-player-enter-ms) var(--lg-player-ease-enter),
+    transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) [data-lgp-present="false"] > .lgp-content {
+  opacity: 0;
+  transform: translateY(var(--lg-player-hide-shift)) scale(var(--lg-player-hide-scale));
+  transition-duration: var(--lg-player-exit-ms);
+  transition-timing-function: var(--lg-player-ease-exit);
+}
+
+/* ── Boutons ─────────────────────────────────────────────────────────── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--lg-player-button);
+  height: var(--lg-player-button);
+  border-radius: var(--lg-player-radius-capsule);
+  color: var(--lg-player-fg);
+  cursor: pointer;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--primary {
+  width: var(--lg-player-button-primary);
+  height: var(--lg-player-button-primary);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn--small {
+  width: var(--lg-player-button-small);
+  height: var(--lg-player-button-small);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn > svg {
+  transition: transform 260ms var(--lg-player-ease-spring);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn:hover > svg {
+  transform: scale(var(--lg-player-hover-scale));
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn:active > svg {
+  transform: scale(var(--lg-player-press-scale));
+  transition-duration: 90ms;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn:focus-visible {
+  outline: 2px solid var(--lg-player-focus);
+  outline-offset: 1px;
+}
+
+/* Panneau ouvert : le symbole passe à la marque. Sur le SVG lui-même — les
+   icônes du lecteur portent `text-white` en propre (`PlayerIcons.tsx`). */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-pressed="true"] > svg,
+/* Panneau ouvert : le symbole passe à la marque. Sur le SVG lui-même — les
+   icônes du lecteur portent `text-white` en propre (`PlayerIcons.tsx`). */:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-expanded="true"] > svg {
+  color: var(--lg-player-focus);
+}
+
+/* ── Texte ───────────────────────────────────────────────────────────── */
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-title {
+  color: var(--lg-player-fg);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-subtitle {
+  color: var(--lg-player-fg-2);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-time {
+  color: var(--lg-player-fg-2);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-content,
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) [data-lgp-present="false"] > .lgp-content {
+    transform: none;
+    transition-property: opacity;
+  }
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn > svg {
+    transition: none;
+  }
+}

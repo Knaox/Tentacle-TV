@@ -1,72 +1,85 @@
 /* ── Liquid Glass : la barre de navigation et les barres latérales ────────
  *
- * Jetons dans `windowGlass.css`. Même garde : `:root[data-lg-chrome="on"]`,
+ * Jetons dans `windowGlass.css`. Même garde : `:root[data-liquid-glass="native"]`,
  * sinon rien. Voir l'en-tête de ce fichier-là. */
 
 /* ── La capsule (`TopNav`) ─────────────────────────────────────────────── */
 
-:root[data-lg-chrome="on"] .lgc-capsule {
+:root[data-liquid-glass="native"] .lgc-capsule {
   border-radius: var(--lg-chrome-capsule-radius);
 }
 
-:root[data-lg-chrome="on"] .lgc-capsule .nav-capsule-glass {
-  background: var(--lg-chrome-capsule-bg);
-  border-color: var(--lg-chrome-capsule-rim);
-  box-shadow: var(--lg-chrome-capsule-specular), var(--lg-chrome-capsule-shadow);
-  backdrop-filter: var(--lg-chrome-capsule-filter);
-  -webkit-backdrop-filter: var(--lg-chrome-capsule-filter);
+/* La couche de verre est une surface de la primitive (`.lg-surface`, ses
+ * jetons) : on n'y glisse que le voile de lisibilité SOUS le remplissage. */
+:root[data-liquid-glass="native"] .lgc-capsule > .lg-surface {
+  --lg-fill: linear-gradient(var(--lg-regular-fill), var(--lg-regular-fill)), var(--lg-chrome-capsule-veil);
 }
 
-:root[data-lg-chrome="on"] .lgc-capsule .nav-capsule-scrim {
+/* Fenêtre inactive : le verre de la capsule perd sa saturation. */
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule > .lg-surface {
+  --lg-saturate: 1;
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-scrim {
   background: var(--lg-chrome-capsule-scrim);
 }
 
 /* Les onglets : des capsules dans la capsule ; l'actif, une lentille
  * (`ActiveIndicator` lit `--lg-chrome-lens-*` en ligne). */
-:root[data-lg-chrome="on"] .lgc-capsule .lgc-tab,
-:root[data-lg-chrome="on"] .lgc-capsule .lgc-lens {
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab,
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-lens {
   border-radius: var(--lg-chrome-item-radius);
 }
 
-:root[data-lg-chrome="on"] .lgc-capsule .lgc-tab:hover:not([aria-current]) {
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:hover:not([aria-current]) {
   background: var(--lg-chrome-item-hover);
 }
 
 /* Les boutons d'icônes (recherche, transferts, Watch Together, cloche) :
  * des capsules aussi. Leurs panneaux sont des portails, hors d'atteinte. */
-:root[data-lg-chrome="on"] .lgc-actions button.rounded-xl:not(.lgc-field) {
+:root[data-liquid-glass="native"] .lgc-actions button.rounded-xl:not(.lgc-field) {
   border-radius: var(--lg-chrome-item-radius);
 }
 
-:root[data-lg-chrome="on"] .lgc-actions button.rounded-xl:not(.lgc-field):hover {
+:root[data-liquid-glass="native"] .lgc-actions button.rounded-xl:not(.lgc-field):hover {
   background: var(--lg-chrome-item-hover);
 }
 
+/* L'avatar : une bille de verre — liseré et arête spéculaire PAR-DESSUS la
+ * photo (le halo de couleur du profil, en ligne, reste dessous). */
+:root[data-liquid-glass="native"] .lgc-avatar {
+  position: relative;
+}
+
+:root[data-liquid-glass="native"] .lgc-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--lg-chrome-avatar-rim);
+  pointer-events: none;
+}
+
+/* Fenêtre inactive : l'icône de l'onglet courant perd la marque. */
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule .lgc-tab[aria-current] svg {
+  color: var(--lg-chrome-inactive-icon);
+}
+
 /* La recherche : un champ de verre enfoncé, en capsule. */
-:root[data-lg-chrome="on"] .lgc-field {
+:root[data-liquid-glass="native"] .lgc-field {
   border-radius: var(--lg-chrome-item-radius);
   border-color: var(--lg-chrome-field-rim);
   background: var(--lg-chrome-field-bg);
   box-shadow: var(--lg-chrome-field-shadow);
 }
 
-:root[data-lg-chrome="on"] .lgc-field:hover {
+:root[data-liquid-glass="native"] .lgc-field:hover {
   background: var(--lg-chrome-field-bg-hover);
 }
 
-/* ── Les panneaux de la barre (« Plus », menu d'un onglet, personnaliser) ─
- *
- * Montés à l'ouverture seulement (`FloatingLayer`, portail) : leur flou ne
- * coûte rien barre refermée. */
-
-:root[data-lg-chrome="on"] .lgc-panel {
-  border-radius: var(--lg-chrome-panel-radius);
-  border-color: var(--lg-chrome-panel-rim);
-  background: var(--lg-chrome-panel-bg);
-  box-shadow: var(--lg-chrome-panel-shadow);
-  backdrop-filter: var(--lg-chrome-panel-filter);
-  -webkit-backdrop-filter: var(--lg-chrome-panel-filter);
-}
+/* Les panneaux de la barre (« Plus », menu d'un onglet, personnaliser) : le
+ * verre des menus de l'app, `.lg-menu` (components/ui/glass/lgOverlays.css) —
+ * un seul verre pour tout ce qui s'ouvre depuis la barre. */
 
 /* ── La barre latérale (`SettingsShell` : Réglages, Administration) ───────
  *
@@ -77,7 +90,7 @@
  * suffisent à la lire comme du verre. */
 
 @media (min-width: 768px) {
-  :root[data-lg-chrome="on"] .lgc-sidebar {
+  :root[data-liquid-glass="native"] .lgc-sidebar {
     padding: var(--lg-chrome-sidebar-pad);
     border-radius: var(--lg-chrome-sidebar-radius);
     border: 1px solid var(--lg-chrome-sidebar-rim);
@@ -88,50 +101,47 @@
   }
 }
 
-:root[data-lg-chrome="on"] .lgc-sidebar-item {
+:root[data-liquid-glass="native"] .lgc-sidebar-item {
   border-radius: var(--lg-chrome-sidebar-item-radius);
 }
 
-:root[data-lg-chrome="on"] .lgc-sidebar-item:hover:not([aria-current]) {
+:root[data-liquid-glass="native"] .lgc-sidebar-item:hover:not([aria-current]) {
   background: var(--lg-chrome-item-hover);
 }
 
-:root[data-lg-chrome="on"] .lgc-sidebar-item[aria-current] {
-  background: var(--lg-chrome-sidebar-selection-bg);
-  box-shadow: var(--lg-chrome-sidebar-selection-shadow);
+/* La sélection est la lentille qui glisse (`useGlassSidebarSelection`) :
+ * l'entrée elle-même ne peint plus rien. */
+:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] {
+  background: transparent;
 }
 
-:root[data-lg-chrome="on"] .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
+:root[data-liquid-glass="native"] .lgc-sidebar-selection {
+  background: var(--lg-chrome-sidebar-selection-bg);
+  box-shadow: var(--lg-chrome-sidebar-selection-shadow);
+  pointer-events: none;
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
   color: var(--lg-chrome-sidebar-selection-icon);
 }
 
-:root[data-lg-chrome="on"] .lgc-sidebar-label {
+:root[data-liquid-glass="native"] .lgc-sidebar-label {
   letter-spacing: 0.02em;
   text-transform: none;
   font-size: 12px;
 }
 
-/* ── Accessibilité de macOS ────────────────────────────────────────────── */
+/* ── Accessibilité de macOS (`data-lg-material`, theme/glass/accessibility.ts) ─
+ * La capsule, surface de la primitive, suit les règles de lg-physique. */
 
-/* Réduire la transparence : les verres de la barre redeviennent des aplats. */
-@media (prefers-reduced-transparency: reduce) {
-  :root[data-lg-chrome="on"] .lgc-capsule .nav-capsule-glass,
-  :root[data-lg-chrome="on"] .lgc-panel {
-    background: var(--surface-1);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  :root[data-lg-chrome="on"] .lgc-sidebar {
-    background: var(--surface-1);
-  }
+/* Réduire la transparence (« frosted ») ou Contraste accru (« solid ») : la
+ * barre latérale redevient un aplat. */
+:root[data-liquid-glass="native"][data-lg-material] .lgc-sidebar {
+  background: var(--surface-1);
 }
 
 /* Contraste accru : des liserés qui se voient. */
-@media (prefers-contrast: more) {
-  :root[data-lg-chrome="on"] .lgc-capsule .nav-capsule-glass,
-  :root[data-lg-chrome="on"] .lgc-panel,
-  :root[data-lg-chrome="on"] .lgc-sidebar,
-  :root[data-lg-chrome="on"] .lgc-field {
-    border-color: var(--border-strong, currentColor);
-  }
+:root[data-liquid-glass="native"][data-lg-material="solid"] .lgc-sidebar,
+:root[data-liquid-glass="native"][data-lg-material="solid"] .lgc-field {
+  border-color: var(--lg-contrast-border);
 }

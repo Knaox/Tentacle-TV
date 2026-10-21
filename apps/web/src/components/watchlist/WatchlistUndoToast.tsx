@@ -35,7 +35,7 @@ export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose
       <div
         role="status"
         aria-live="polite"
-        className="watchlist-toast pointer-events-auto flex max-w-lg items-center gap-3 rounded-2xl border border-line-subtle bg-surface-toolbar py-2 pl-4 pr-2 shadow-2xl backdrop-blur-xl"
+        className="lg-toast watchlist-toast pointer-events-auto flex max-w-lg items-center gap-3 rounded-2xl border border-line-subtle bg-surface-toolbar py-2 pl-4 pr-2 shadow-2xl backdrop-blur-xl"
       >
         <span className="min-w-0 flex-1 truncate text-sm text-content-primary">{t("removed", { title: item.Name })}</span>
         <button

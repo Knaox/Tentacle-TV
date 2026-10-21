@@ -65,7 +65,7 @@ export function SegmentedChoice<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={`inline-grid w-fit max-w-full ${columns} gap-0.5 overflow-hidden rounded-[10px] border border-line-subtle bg-tentacle-surface p-0.5 ${className}`}
+      className={`lg-segmented inline-grid w-fit max-w-full ${columns} gap-0.5 overflow-hidden rounded-[10px] border border-line-subtle bg-tentacle-surface p-0.5 ${className}`}
     >
       {options.map((option) => {
         return (

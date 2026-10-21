@@ -134,7 +134,7 @@ export function NotificationBell() {
         align="end"
         role="dialog"
         ariaLabel={t("notifications:title")}
-        className="flex w-[24rem] flex-col overflow-hidden rounded-2xl"
+        className="lg-menu flex w-[24rem] flex-col overflow-hidden rounded-2xl"
         style={{
           background: "var(--surface-dropdown)",
           backdropFilter: "blur(var(--blur-dropdown))",
