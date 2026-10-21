@@ -74,19 +74,9 @@
   background: var(--lg-chrome-field-bg-hover);
 }
 
-/* ── Les panneaux de la barre (« Plus », menu d'un onglet, personnaliser) ─
- *
- * Montés à l'ouverture seulement (`FloatingLayer`, portail) : leur flou ne
- * coûte rien barre refermée. */
-
-:root[data-liquid-glass="native"] .lgc-panel {
-  border-radius: var(--lg-chrome-panel-radius);
-  border-color: var(--lg-chrome-panel-rim);
-  background: var(--lg-chrome-panel-bg);
-  box-shadow: var(--lg-chrome-panel-shadow);
-  backdrop-filter: var(--lg-chrome-panel-filter);
-  -webkit-backdrop-filter: var(--lg-chrome-panel-filter);
-}
+/* Les panneaux de la barre (« Plus », menu d'un onglet, personnaliser) : le
+ * verre des menus de l'app, `.lg-menu` (components/ui/glass/lgOverlays.css) —
+ * un seul verre pour tout ce qui s'ouvre depuis la barre. */
 
 /* ── La barre latérale (`SettingsShell` : Réglages, Administration) ───────
  *
@@ -135,8 +125,7 @@
 
 /* Réduire la transparence : les verres de la barre redeviennent des aplats. */
 @media (prefers-reduced-transparency: reduce) {
-  :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass,
-  :root[data-liquid-glass="native"] .lgc-panel {
+  :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass {
     background: var(--surface-1);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -149,7 +138,6 @@
 /* Contraste accru : des liserés qui se voient. */
 @media (prefers-contrast: more) {
   :root[data-liquid-glass="native"] .lgc-capsule .nav-capsule-glass,
-  :root[data-liquid-glass="native"] .lgc-panel,
   :root[data-liquid-glass="native"] .lgc-sidebar,
   :root[data-liquid-glass="native"] .lgc-field {
     border-color: var(--border-strong, currentColor);
