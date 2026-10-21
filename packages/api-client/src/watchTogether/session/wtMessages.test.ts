@@ -45,6 +45,17 @@ describe("handleWtServerMessage", () => {
     expect(inside.h.onElsewhere).not.toHaveBeenCalled();
   });
 
+  it("l'avis « ailleurs » reçu dans une salle : quittée par une autre voie — l'état se redemande", () => {
+    // Seuls les appareils NON liés le reçoivent : la séance garde l'état d'une salle quittée.
+    const kept = helpers(room(), { resync: vi.fn() });
+    handleWtServerMessage({ type: "wt:elsewhere", elsewhere: null }, kept.h);
+    expect(kept.h.resync).toHaveBeenCalledTimes(1);
+    expect(kept.actions).toEqual([]);
+    const outside = helpers(null, { resync: vi.fn() });
+    handleWtServerMessage({ type: "wt:elsewhere", elsewhere: null }, outside.h);
+    expect(outside.h.resync).not.toHaveBeenCalled();
+  });
+
   it("un état de la salle éteint l'avis et applique l'état", () => {
     const { h, actions } = helpers(null);
     handleWtServerMessage({ type: "wt:state", state: room({ epoch: 3 }), originUserId: null, cause: "join" }, h);
