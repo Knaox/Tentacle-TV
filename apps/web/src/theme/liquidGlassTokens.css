@@ -1,0 +1,193 @@
+/* Liquid Glass — les jetons du matériau (`--lg-*`), sombre puis clair.
+ *
+ * TOUTE surface en verre ne lit QUE ces jetons : teinte, flou, saturation,
+ * réfraction, spéculaire, ombres, rayons, durées. Aucune valeur en dur dans
+ * une classe, aucune recopie dans un composant — un réglage du matériau se
+ * fait ici, et toutes les surfaces le reçoivent.
+ *
+ * Quatre NIVEAUX, le vocabulaire d'Apple (`Glass.regular`, `.clear`,
+ * `.tint(…)`, `glassProminent`) :
+ *  - `regular`   : le verre par défaut — barres, menus, panneaux, pastilles ;
+ *  - `clear`     : presque rien, sur un média vif (le lecteur) — il demande un
+ *                  voile de lisibilité (`--lg-clear-dim`) sous le texte ;
+ *  - `tinted`    : le verre teinté par la marque, en touche (violet → rose) ;
+ *  - `prominent` : l'action principale — la marque presque pleine.
+ *
+ * Ils ne servent QUE sous `html[data-liquid-glass="native"]` (macOS 26, réglage
+ * allumé ; voir `liquidGlassMode.ts`). Partout ailleurs aucune règle ne les lit,
+ * et le rendu d'avant reste intact au pixel près.
+ *
+ * Déclarés ICI et non dans tokens.css, pour la même raison que surfaces.css :
+ * le test de parité (packages/theme/src/css/cssVars.test.ts) exige que toute
+ * variable de tokens.css soit surchargeable par l'admin. Le verre est un
+ * matériau du SYSTÈME, pas un réglage de marque : seules ses touches de
+ * couleur suivent la marque, par `--brand-rgb` et `--brand-accent-rgb`.
+ *
+ * Valeurs de départ, à affiner au banc contre le verre natif de macOS 26. */
+:root {
+  /* ── Teintes ─────────────────────────────────────────────────────────── */
+  /* La lumière que le verre renvoie (liseré, reflets) et l'ombre qu'il pose. */
+  --lg-light-rgb: 255, 255, 255;
+  --lg-shade-rgb: 0, 0, 0;
+  /* La marque, en TOUCHES : jamais un aplat violet sur une grande surface. */
+  --lg-tint-brand: rgba(var(--brand-rgb), 0.32);
+  --lg-tint-accent: rgba(var(--brand-accent-rgb), 0.26);
+  --lg-tint-gradient: linear-gradient(
+    135deg,
+    rgba(var(--brand-rgb), 0.34) 0%,
+    rgba(var(--brand-accent-rgb), 0.26) 100%
+  );
+  --lg-prominent-gradient: linear-gradient(
+    135deg,
+    rgba(var(--brand-rgb), 0.8) 0%,
+    rgba(var(--brand-accent-rgb), 0.72) 100%
+  );
+  /* Texte posé sur le verre. Le proéminent garde du blanc dans les deux
+   * thèmes : c'est la marque qui commande, comme `--cta-brand-fg`. */
+  --lg-label: var(--text-primary);
+  --lg-label-secondary: var(--text-secondary);
+  --lg-label-on-prominent: #FFFFFF;
+
+  /* ── Remplissage par niveau (le voile, au-dessus du fond flouté) ────── */
+  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.07);
+  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.015);
+  --lg-tinted-fill: var(--lg-tint-gradient);
+  --lg-prominent-fill: var(--lg-prominent-gradient);
+  /* Voile de lisibilité d'un verre `clear` sur un média vif. */
+  --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.24);
+
+  /* ── Opacités (états) ────────────────────────────────────────────────── */
+  --lg-hover-brightness: 1.12;   /* le verre s'éclaire au survol */
+  --lg-opacity-pressed: 0.86;
+  --lg-opacity-disabled: 0.45;
+
+  /* ── Flou ────────────────────────────────────────────────────────────── */
+  --lg-regular-blur: 14px;
+  --lg-clear-blur: 3px;
+  --lg-tinted-blur: 16px;
+  --lg-prominent-blur: 12px;
+
+  /* ── Saturation et luminosité du fond vu à travers ───────────────────── */
+  --lg-regular-saturate: 1.7;
+  --lg-clear-saturate: 1.35;
+  --lg-tinted-saturate: 1.6;
+  --lg-prominent-saturate: 1.5;
+  --lg-regular-brightness: 0.94;
+  --lg-clear-brightness: 1;
+  --lg-tinted-brightness: 0.96;
+  --lg-prominent-brightness: 1;
+
+  /* ── Réfraction (rendu Chromium) ─────────────────────────────────────── */
+  /* Amplitude de `feDisplacementMap`, en px : le décalage maximal, atteint au
+   * ras du bord. Zéro au centre — seul le biseau courbe l'image. */
+  --lg-refraction-regular: 24;
+  --lg-refraction-clear: 36;
+  --lg-refraction-tinted: 20;
+  --lg-refraction-prominent: 16;
+  /* Largeur du biseau qui réfracte, par taille de surface. */
+  --lg-bezel-sm: 8px;
+  --lg-bezel-md: 14px;
+  --lg-bezel-lg: 22px;
+  /* Écart relatif des trois canaux au ras du bord (frange chromatique). */
+  --lg-dispersion: 0.06;
+
+  /* ── Spéculaire ──────────────────────────────────────────────────────── */
+  --lg-rim-width: 1px;
+  --lg-rim: rgba(var(--lg-light-rgb), 0.13);            /* liseré tout autour */
+  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.5); /* arête haut-gauche */
+  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.18);  /* contre-arête bas-droite */
+  --lg-highlight: rgba(var(--lg-light-rgb), 0.1);       /* reflet diffus du haut */
+  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.04);
+  /* Position du reflet : la source de lumière, en haut à gauche. Le suivi du
+   * pointeur (lg-physique) réécrit ces deux-là, rien d'autre. */
+  --lg-light-x: 30%;
+  --lg-light-y: 0%;
+
+  /* ── Ombres de contact ───────────────────────────────────────────────── */
+  --lg-shadow-contact: 0 1px 2px rgba(var(--lg-shade-rgb), 0.3);
+  --lg-shadow-float: 0 10px 30px -10px rgba(var(--lg-shade-rgb), 0.55);
+  --lg-shadow-raised: 0 22px 56px -16px rgba(var(--lg-shade-rgb), 0.7);
+
+  /* ── Rayons : coins CONTINUS façon macOS (`corner-shape: squircle`) ──── */
+  /* Un coin continu paraît plus petit qu'un arc de même rayon : l'échelle est
+   * plus large que `--radius-*`, comme celle des contrôles de macOS 26. */
+  --lg-corner-shape: squircle;
+  --lg-radius-xs: 8px;
+  --lg-radius-sm: 12px;
+  --lg-radius-md: 16px;
+  --lg-radius-lg: 22px;
+  --lg-radius-xl: 28px;
+  --lg-radius-capsule: 9999px;
+
+  /* ── Épaisseurs ──────────────────────────────────────────────────────── */
+  --lg-thickness-thin: 1px;
+  --lg-thickness-regular: 2px;
+  --lg-thickness-thick: 3px;
+
+  /* ── Durées et ressorts ──────────────────────────────────────────────── */
+  --lg-duration-press: 110ms;
+  --lg-duration-hover: 180ms;
+  --lg-duration-appear: 280ms;
+  --lg-duration-disappear: 180ms;
+  --lg-duration-morph: 420ms;
+  --lg-ease-out: cubic-bezier(0.2, 0.9, 0.3, 1);
+  /* Ressorts échantillonnés (amortissement 0,72 : un léger rebond ; 1 :
+   * critique, sans rebond). La courbe de Bézier d'abord : un moteur sans
+   * `linear()` retombe sur elle. */
+  --lg-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --lg-ease-spring: linear(0, 0.042, 0.143, 0.274, 0.415, 0.55, 0.671, 0.774, 0.857, 0.921, 0.968, 1.001, 1.022, 1.033, 1.038, 1.038, 1.035, 1.031, 1.025, 1.02, 1.015, 1.011, 1.007, 1.004, 1);
+  --lg-ease-smooth: cubic-bezier(0.25, 0.9, 0.3, 1);
+  --lg-ease-smooth: linear(0, 0.099, 0.285, 0.471, 0.624, 0.741, 0.825, 0.884, 0.924, 0.951, 0.968, 0.98, 0.987, 0.992, 0.995, 0.997, 1);
+
+  /* ── Verre NATIF (NSGlassEffectView) ─────────────────────────────────── */
+  /* La teinte que le pont transmet à macOS, lue sur l'élément au moment de
+   * l'inscription. `transparent` = aucune teinte : le matériau du système. */
+  --lg-native-tint-regular: transparent;
+  --lg-native-tint-clear: transparent;
+  --lg-native-tint-tinted: rgba(var(--brand-rgb), 0.38);
+  --lg-native-tint-prominent: rgba(var(--brand-rgb), 0.86);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SCHÉMA CLAIR — seuls les jetons qui changent. Le verre clair de macOS est
+ * plus OPAQUE et plus lumineux ; son liseré devient un fil sombre, ses reflets
+ * restent blancs, ses ombres raccourcissent (des ombres noires à 0,5 salissent
+ * un fond clair, cf. `--elev-*`).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+:root[data-theme="light"] {
+  --lg-shade-rgb: 11, 11, 16;
+  --lg-tint-brand: rgba(var(--brand-rgb), 0.22);
+  --lg-tint-accent: rgba(var(--brand-accent-rgb), 0.18);
+  --lg-tint-gradient: linear-gradient(
+    135deg,
+    rgba(var(--brand-rgb), 0.24) 0%,
+    rgba(var(--brand-accent-rgb), 0.18) 100%
+  );
+  --lg-prominent-gradient: linear-gradient(
+    135deg,
+    rgba(var(--brand-rgb), 0.86) 0%,
+    rgba(var(--brand-accent-rgb), 0.8) 100%
+  );
+
+  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.46);
+  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.12);
+  --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.12);
+
+  --lg-regular-saturate: 1.8;
+  --lg-tinted-saturate: 1.7;
+  --lg-regular-brightness: 1.05;
+  --lg-tinted-brightness: 1.03;
+
+  --lg-rim: rgba(var(--lg-shade-rgb), 0.09);
+  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.9);
+  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.5);
+  --lg-highlight: rgba(var(--lg-light-rgb), 0.35);
+  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.18);
+
+  --lg-shadow-contact: 0 1px 2px rgba(var(--lg-shade-rgb), 0.1);
+  --lg-shadow-float: 0 10px 30px -12px rgba(var(--lg-shade-rgb), 0.22);
+  --lg-shadow-raised: 0 20px 48px -16px rgba(var(--lg-shade-rgb), 0.3);
+
+  --lg-native-tint-tinted: rgba(var(--brand-rgb), 0.26);
+  --lg-native-tint-prominent: rgba(var(--brand-rgb), 0.86);
+}

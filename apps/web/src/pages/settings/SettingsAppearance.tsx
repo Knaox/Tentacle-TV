@@ -24,6 +24,11 @@ export function SettingsAppearance() {
   const { t } = useTranslation("preferences");
   const { mode, setMode } = useThemeMode();
   const glass = useLiquidGlass();
+  const glassCaption = glass.nativeSupported
+    ? t("liquidGlassNativeDescription")
+    : glass.supported
+      ? t("liquidGlassDescription")
+      : t("liquidGlassUnavailable");
 
   const modes: Array<{ id: ThemeMode; label: string; icon: ReactNode; hint?: string }> = [
     { id: "light", label: t("themeLight"), icon: <Sun size={ICON} /> },
@@ -53,25 +58,25 @@ export function SettingsAppearance() {
         ))}
       </SettingsSection>
 
-      <SettingsSection
-        title={t("effects")}
-        caption={
-          glass.supported ? t("liquidGlassDescription") : t("liquidGlassUnavailable")
-        }
-      >
-        <SettingsRow
-          icon={<Sparkles size={ICON} />}
-          label={t("liquidGlassTitle")}
-          last
-          trailing={
-            <ToggleSwitch
-              checked={glass.enabled}
-              onChange={glass.setEnabled}
-              label={t("liquidGlassTitle")}
-            />
-          }
-        />
-      </SettingsSection>
+      {/* Sur le bureau macOS, l'interrupteur n'existe que là où le verre
+          natif existe (macOS 26) : sur un système d'avant, rien à régler, et
+          la section entière se tait. Ailleurs, le comportement d'avant. */}
+      {glass.toggleVisible ? (
+        <SettingsSection title={t("effects")} caption={glassCaption}>
+          <SettingsRow
+            icon={<Sparkles size={ICON} />}
+            label={t("liquidGlassTitle")}
+            last
+            trailing={
+              <ToggleSwitch
+                checked={glass.enabled}
+                onChange={glass.setEnabled}
+                label={t("liquidGlassTitle")}
+              />
+            }
+          />
+        </SettingsSection>
+      ) : null}
 
       {/* Les aperçus de bande-annonce au survol des cartes : un comportement de
           l'interface, réglé par appareil comme le thème et le verre. */}
