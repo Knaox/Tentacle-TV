@@ -299,10 +299,14 @@ imputée à Electron, médiane.
 | Repos | 0 % | 0 % | 0 | 0,5 point | 0 → 0 % |
 | Pointeur posé sur un verre | 0 % | 0 % | 0 | 0,5 point | 0 → 0,1 % |
 | Reflet qui suit (`GlassSpecular`) | 0 % | 5,9 % | +5,9 | 6 points | 5,2 → 16,6 % |
-| Reflet diffus qui suit (`sheen`) | 0 % | 5,8 % | +5,8 | 6 points | 4,8 → 15,2 % |
+| Reflet diffus qui suit (`sheen`) | 0 % | 5,8 % | +5,8 (6,1 à la contre-mesure) | 6 points | 4,8 → 15,2 % |
 | Appuis répétés (lentille) | 0 % | 12,5 % | **50 ms par appui** | 60 ms | 0,7 → 20,6 % |
 | Fusion / séparation | 14,2 % | 22 % | **55 ms par fusion** | 60 ms | 20,2 → 30 % |
 | Balayage, mouvement réduit | 0 % | 0 % | 0 | 1 point | 5,6 → 6,3 % |
+
+Le reflet diffus (`{ sheen: true }`) est AU RAS de son budget — il repeint
+un dégradé à chaque écriture : préférer `<GlassSpecular/>`, qui ne repeint
+rien, et ne garder `sheen` que pour une surface sans couche de reflet.
 
 Dispersion relevée sur quatre passes simples sous charge : reflet 4,3 → 9,6
 points, appui 32 → 56 ms, fusion 37 → 68 ms — d'où `--repeat`. Une passe
