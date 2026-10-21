@@ -52,3 +52,10 @@ visible ; `BANC_OUT` pour un autre). Jamais la Corbeille.
 
 Arrêt : arrêter le backend par son PID (`<état>/backend.pid`), puis
 `docker rm -f lg-banc-jf && docker volume rm lg-banc-jf-config lg-banc-jf-cache lg-banc-jf-media`.
+
+## ⚠️ Captures composites et vie privée
+
+`screencapture -R` saisit TOUT ce qui est à l'écran dans le rectangle : si la fenêtre
+devient transparente (un PiP resté ouvert, un défaut de surface), les fenêtres des AUTRES
+applications y paraissent. Le banc ferme le PiP par son vrai bouton avant la suite ; une
+capture qui en montrerait se floute (`magick f.png -blur 0x18 f.png`) avant d'être montrée.

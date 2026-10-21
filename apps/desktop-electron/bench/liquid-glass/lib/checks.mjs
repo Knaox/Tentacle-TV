@@ -27,7 +27,7 @@ export function checkCell(cell, report) {
   for (const s of report.steps) {
     if (!s.ok) fail(`étape « ${s.name} » en échec : ${s.error}`, s.capture ?? null);
   }
-  const home = find(report, "accueil");
+  const home = find(report, "accueil") ?? report.steps.find((s) => s.dom);
   const settings = find(report, "reglages-apparence");
   const bridge = home?.dom?.bridge;
   const toggle = settings?.toggle;
@@ -62,12 +62,21 @@ export function checkCell(cell, report) {
     if (bridge?.present && bridge.supported === true) fail("`supported` vrai malgré TENTACLE_LIQUID_GLASS=off", home?.capture);
     if (toggle?.found) fail("option Liquid Glass VISIBLE alors que le verre natif n'est pas supporté", settings?.capture);
   }
-  for (const name of ["lecteur-hdr", "lecteur-hdr-plein-ecran", "lecteur-hdr-pip"]) {
+  const hdrStep = find(report, "lecteur-hdr");
+  const edr = hdrStep?.edr ?? find(report, "lecteur-hdr-plein-ecran")?.probe?.edr ?? null;
+  const hdrScreen = !edr || edr.potential > 1;
+  if (hdrStep?.ok && !hdrScreen) report.notes = [...(report.notes ?? []), "HDR non vérifiable : l'écran n'offre aucune marge EDR (potential = 1)"];
+  for (const name of hdrScreen ? ["lecteur-hdr", "lecteur-hdr-plein-ecran", "lecteur-hdr-pip"] : []) {
     const s = find(report, name);
     if (!s?.ok) continue;
     const target = s.mpv?.["video-target-params"] ?? s["video-target-params"];
     if (!pq(target)) fail(`HDR perdu à l'étape « ${name} » : video-target-params sans PQ`, s.capture ?? null);
   }
+  const pipStep = find(report, "lecteur-hdr-pip");
+  if (hdrScreen && pipStep?.ok && pipStep.afterBack && !pq(pipStep.afterBack["video-target-params"])) {
+    fail("HDR perdu après le retour du PiP au lecteur", pipStep.capture);
+  }
+  if (pipStep?.ok && pipStep.back && !pipStep.back.clicked) fail("bouton « Revenir au lecteur » du PiP introuvable", pipStep.capture);
   const sdr = find(report, "lecteur-sdr");
   if (sdr?.ok && pq(sdr.mpv?.["video-target-params"])) fail("SDR sorti en PQ (à vérifier : écran laissé en HDR ?)", sdr.capture);
   return issues;
