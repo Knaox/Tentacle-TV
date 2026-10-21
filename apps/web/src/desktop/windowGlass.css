@@ -1,0 +1,163 @@
+/* ── Le verre de la fenêtre (macOS 26) ─────────────────────────────────────
+ *
+ * Bandeau des feux, effet de bord de défilement, capsule de navigation,
+ * barres latérales des réglages et de l'administration, menus de la barre.
+ *
+ * ⚠️ TOUT est porté par `:root[data-liquid-glass="native"]`, le mode posé par
+ * `theme/liquidGlassMode.ts` (macOS 26, pont natif, réglage allumé). Ailleurs
+ * — web, Windows, Linux, macOS < 26, réglage coupé — aucune règle ne
+ * s'applique : le rendu d'avant est tenu par construction. Les classes `lgc-*` posées dans les
+ * composants n'ont AUCUN style hors de ce fichier.
+ *
+ * Spécificité : `:root[attr] .x` (0,3,0) l'emporte sur un utilitaire Tailwind,
+ * survol compris (0,2,0) — sans `!important`.
+ *
+ * Coût GPU (CLAUDE.md) : un seul `backdrop-filter` permanent de plus, celui de
+ * l'effet de bord, et seulement page défilée ; la barre latérale n'en porte pas
+ * (rien ne bouge derrière elle : un flou n'y flouterait rien) ; les panneaux de
+ * la barre ne sont montés qu'ouverts. On n'anime que l'opacité. */
+
+/* Les jetons de la fenêtre, COMPOSÉS du matériau (`theme/liquidGlassTokens.css`) :
+ * un réglage du verre là-bas se reporte ici. Seul ce qui n'existe pas dans le
+ * matériau — la frange de l'effet de bord, le champ enfoncé, le voile des
+ * panneaux posés sur des affiches — a sa valeur propre. */
+:root[data-liquid-glass="native"] {
+  /* Effet de bord de défilement */
+  --lg-chrome-edge-blur: var(--lg-regular-blur);
+  --lg-chrome-edge-fade: 20px;
+  --lg-chrome-edge-tint-top: rgba(10, 9, 15, 0.72);
+  --lg-chrome-edge-tint-mid: rgba(10, 9, 15, 0.38);
+
+  /* La capsule de navigation : le verre `regular`. */
+  --lg-chrome-capsule-radius: var(--lg-radius-capsule);
+  /* Le voile `regular` sur un fond qui assure la lisibilité du libellé sur
+   * une bannière claire au repos (la capsule est AU-DESSUS de l'image). */
+  --lg-chrome-capsule-veil: rgba(var(--lg-shade-rgb), 0.34);
+  --lg-chrome-capsule-bg: linear-gradient(var(--lg-regular-fill), var(--lg-regular-fill)), var(--lg-chrome-capsule-veil);
+  --lg-chrome-capsule-rim: var(--lg-rim);
+  --lg-chrome-capsule-specular: inset 0 1px 0 var(--lg-specular-soft), inset 0 -1px 0 var(--lg-inner-glow);
+  --lg-chrome-capsule-shadow: var(--lg-shadow-float), var(--lg-shadow-contact);
+  --lg-chrome-capsule-filter: blur(22px) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
+  --lg-chrome-capsule-scrim: var(--surface-1);
+
+  /* Les éléments dans la capsule : des capsules. */
+  --lg-chrome-item-radius: var(--lg-radius-capsule);
+  --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.07);
+
+  /* L'onglet actif : une lentille teintée de la marque (`tinted`). */
+  --lg-chrome-lens-bg:
+    radial-gradient(120% 140% at var(--lg-light-x) var(--lg-light-y), var(--lg-highlight) 0%, transparent 55%),
+    var(--lg-tint-gradient);
+  --lg-chrome-lens-shadow:
+    inset 0 1px 0 var(--lg-specular-soft),
+    inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand),
+    0 4px 14px -6px var(--lg-tint-brand);
+
+  /* Le champ de recherche : du verre ENFONCÉ. */
+  --lg-chrome-field-bg: rgba(var(--lg-light-rgb), 0.06);
+  --lg-chrome-field-bg-hover: rgba(var(--lg-light-rgb), 0.1);
+  --lg-chrome-field-rim: var(--lg-rim);
+  --lg-chrome-field-shadow: inset 0 1px 2px rgba(var(--lg-shade-rgb), 0.32), inset 0 -1px 0 var(--lg-inner-glow);
+
+  /* Les panneaux de la barre (« Plus », menu d'un onglet) : posés sur des
+   * affiches, ils gardent un voile dense — à 0,95 elles transparaissaient
+   * nettes, d'où le flou. */
+  --lg-chrome-panel-radius: var(--lg-radius-lg);
+  --lg-chrome-panel-bg: rgba(26, 24, 36, 0.74);
+  --lg-chrome-panel-rim: var(--lg-rim);
+  --lg-chrome-panel-filter: blur(32px) saturate(var(--lg-regular-saturate));
+  --lg-chrome-panel-shadow: inset 0 1px 0 var(--lg-highlight), var(--lg-shadow-raised);
+
+  /* La barre latérale : un panneau flottant, en retrait des bords. */
+  --lg-chrome-sidebar-radius: var(--lg-radius-lg);
+  --lg-chrome-sidebar-pad: 8px;
+  --lg-chrome-sidebar-bg: rgba(var(--lg-light-rgb), 0.045);
+  --lg-chrome-sidebar-rim: var(--lg-rim);
+  --lg-chrome-sidebar-shadow: inset 0 1px 0 var(--lg-highlight), var(--lg-shadow-float);
+  --lg-chrome-sidebar-item-radius: var(--lg-radius-sm);
+  --lg-chrome-sidebar-selection-bg:
+    radial-gradient(120% 160% at 20% 0%, var(--lg-highlight) 0%, transparent 60%),
+    var(--lg-tint-gradient);
+  --lg-chrome-sidebar-selection-shadow: inset 0 1px 0 var(--lg-specular-soft), inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand);
+  --lg-chrome-sidebar-selection-icon: var(--brand-light);
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lg-chrome-edge-tint-top: rgba(250, 249, 253, 0.78);
+  --lg-chrome-edge-tint-mid: rgba(250, 249, 253, 0.42);
+  --lg-chrome-capsule-veil: rgba(var(--lg-light-rgb), 0.2);
+  --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
+  --lg-chrome-field-bg: rgba(var(--lg-shade-rgb), 0.05);
+  --lg-chrome-field-bg-hover: rgba(var(--lg-shade-rgb), 0.08);
+  --lg-chrome-field-shadow: inset 0 1px 2px rgba(var(--lg-shade-rgb), 0.1), inset 0 -1px 0 var(--lg-specular-soft);
+  --lg-chrome-panel-bg: rgba(255, 255, 255, 0.78);
+  --lg-chrome-sidebar-bg: rgba(var(--lg-light-rgb), 0.55);
+  --lg-chrome-sidebar-selection-icon: var(--brand);
+}
+
+/* ── Le bandeau des feux : transparent, le contenu défile dessous ──────── */
+
+:root[data-liquid-glass="native"] .bandeau-hote {
+  background: transparent;
+}
+
+/* Pendant une lecture native, la fenêtre de mpv passe SOUS le bandeau et y
+ * cache ses coins arrondis (`macosTitleBar.ts`, `OVERLAP`) : il redevient
+ * l'aplat d'avant. */
+:root[data-liquid-glass="native"][data-native-playback] .bandeau-hote {
+  background: var(--surface-0);
+}
+
+/* ── L'effet de bord de défilement (`ScrollEdgeEffect`) ────────────────── */
+
+:root[data-liquid-glass="native"] .lgc-edge {
+  position: fixed;
+  inset: 0 0 auto 0;
+  /* Sans barre de navigation (fiche, lecteur) : la bande seule. */
+  height: calc(var(--hote-bandeau) + var(--lg-chrome-edge-fade));
+  /* Sous la capsule (z-40) et le bandeau, au-dessus de la page. */
+  z-index: 39;
+  pointer-events: none;
+  opacity: 0;
+}
+
+:root[data-liquid-glass="native"][data-lg-toolbar="nav"] .lgc-edge {
+  height: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade));
+}
+
+/* Le flou progressif : plein sous la barre, éteint dans la frange. */
+:root[data-liquid-glass="native"] .lgc-edge::before,
+:root[data-liquid-glass="native"] .lgc-edge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+:root[data-liquid-glass="native"] .lgc-edge::before {
+  backdrop-filter: blur(var(--lg-chrome-edge-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--lg-chrome-edge-blur)) saturate(1.4);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2 * var(--lg-chrome-edge-fade)), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2 * var(--lg-chrome-edge-fade)), transparent 100%);
+}
+
+/* La teinte : garde les feux, la capsule et le titre lisibles. */
+:root[data-liquid-glass="native"] .lgc-edge::after {
+  background: linear-gradient(
+    to bottom,
+    var(--lg-chrome-edge-tint-top) 0%,
+    var(--lg-chrome-edge-tint-mid) 62%,
+    transparent 100%
+  );
+}
+
+/* Réduire la transparence (Accessibilité de macOS) : ni flou, la teinte
+ * devient l'aplat de la surface — l'équivalent du bandeau d'avant. */
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-liquid-glass="native"] .lgc-edge::before {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  :root[data-liquid-glass="native"] .lgc-edge::after {
+    background: linear-gradient(to bottom, var(--surface-0) 0%, var(--surface-0) calc(100% - var(--lg-chrome-edge-fade)), transparent 100%);
+  }
+}
