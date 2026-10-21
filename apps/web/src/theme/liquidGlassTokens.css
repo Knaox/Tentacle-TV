@@ -82,24 +82,40 @@
   --lg-label-secondary: var(--text-secondary);
   --lg-label-on-prominent: #FFFFFF;
 
+  /* ── Lisibilité : l'OMBRE du libellé, pas un fond noir ───────────────── */
+  /* Le verre d'Apple reste clair ; ce qui tient le texte, c'est un halo
+   * sombre serré sous le libellé, et une légère vibrance. Le halo compte pour
+   * le contraste (WCAG, « Understanding 1.4.3 » : texte cerné d'un halo).
+   * Les deux ombres superposées couvrent ~0,65 au bord du glyphe : blanc
+   * dessus ≈ 7:1 même sur un décor blanc (sur affiche, ~0,76 : ≈ 10:1). */
+  --lg-label-shadow: 0 1px 2px rgba(var(--lg-shade-rgb), 0.5), 0 0 6px rgba(var(--lg-shade-rgb), 0.3);
+  --lg-glyph-shadow: drop-shadow(0 1px 1.5px rgba(var(--lg-shade-rgb), 0.55));
+  /* Sur une AFFICHE : sombre dans les deux thèmes, le libellé y est blanc. */
+  --lg-media-label-shadow: 0 1px 2px rgba(var(--scrim-media-rgb), 0.6), 0 0 8px rgba(var(--scrim-media-rgb), 0.4);
+  --lg-media-glyph-shadow: drop-shadow(0 1px 2px rgba(var(--scrim-media-rgb), 0.6));
+  /* Libellés SECONDAIRES : ils s'additionnent au fond (la vibrance d'AppKit). */
+  --lg-vibrancy-blend: plus-lighter;
+
   /* ── Remplissage par niveau (le voile, au-dessus du fond flouté) ────── */
-  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.07);
-  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.015);
+  /* Une teinte TRÈS légère : c'est le fond, éclairci et saturé, qui fait
+   * le verre — jamais un voile sombre. */
+  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.12);
+  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.05);
   --lg-tinted-fill: var(--lg-tint-gradient);
   --lg-prominent-fill: var(--lg-prominent-gradient);
   /* Variante ROSE (`tint="accent"`) des deux niveaux teintés. */
   --lg-tinted-accent-fill: var(--lg-tint-accent);
   --lg-prominent-accent-fill: rgba(var(--brand-accent-rgb), 0.86);
   /* Verre ÉPAIS : menus, feuilles, panneaux qui portent beaucoup de texte. */
-  --lg-thick-fill: rgba(18, 18, 26, 0.6);
+  --lg-thick-fill: rgba(28, 26, 38, 0.5);
   /* Voile de lisibilité d'un verre `clear` sur un média vif. */
-  --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.24);
+  --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.16);
   /* Verre posé sur une AFFICHE : noir dans les deux thèmes, comme le texte
    * sur média (`--on-media-*`) — la luminosité d'une image ne suit pas le thème.
-   * 0,55 : pire cas, un décor BLANC sous le verre et un libellé blanc — gris
-   * 255 × 0,45 ≈ 4,7:1 (AA). À 0,34 il tombait à ~2,4:1 (banc de lg-composants,
-   * DetailStage). */
-  --lg-media-dim: rgba(var(--scrim-media-rgb), 0.55);
+   * 0,24 : un voile, pas un aplat (à 0,55 la capsule de la fiche était presque
+   * noire, banc du 21/10). Le pire cas — décor blanc, libellé blanc — est
+   * tenu par `--lg-media-label-shadow`, plus par le voile. */
+  --lg-media-dim: rgba(var(--scrim-media-rgb), 0.24);
   /* Le voile sous une feuille ou une modale de verre. */
   --lg-scrim: rgba(var(--lg-shade-rgb), 0.42);
 
@@ -109,51 +125,56 @@
   --lg-opacity-disabled: 0.45;
 
   /* ── Flou ────────────────────────────────────────────────────────────── */
-  --lg-regular-blur: 14px;
-  --lg-clear-blur: 3px;
-  --lg-tinted-blur: 16px;
-  --lg-prominent-blur: 12px;
+  /* Modéré : un verre trop dépoli cache sa réfraction. */
+  --lg-regular-blur: 12px;
+  --lg-clear-blur: 2px;
+  --lg-tinted-blur: 14px;
+  --lg-prominent-blur: 10px;
 
   /* ── Saturation et luminosité du fond vu à travers ───────────────────── */
-  --lg-regular-saturate: 1.7;
-  --lg-clear-saturate: 1.35;
-  --lg-tinted-saturate: 1.6;
-  --lg-prominent-saturate: 1.5;
-  --lg-regular-brightness: 0.94;
-  --lg-clear-brightness: 1;
-  --lg-tinted-brightness: 0.96;
-  --lg-prominent-brightness: 1;
+  /* Le verre ÉCLAIRE ce qu'il montre (≥ 1) : un verre qui assombrit lit
+   * comme un voile. */
+  --lg-regular-saturate: 1.9;
+  --lg-clear-saturate: 1.6;
+  --lg-tinted-saturate: 1.8;
+  --lg-prominent-saturate: 1.6;
+  --lg-regular-brightness: 1.06;
+  --lg-clear-brightness: 1.1;
+  --lg-tinted-brightness: 1.04;
+  --lg-prominent-brightness: 1.04;
 
   /* ── Réfraction (rendu Chromium) ─────────────────────────────────────── */
   /* Décalage maximal de l'image, en px (nombre nu : lu par le filtre SVG),
    * atteint au ras du bord. Zéro au centre — seul le biseau courbe l'image. */
-  --lg-refraction-regular: 12;
-  --lg-refraction-clear: 18;
-  --lg-refraction-tinted: 10;
-  --lg-refraction-prominent: 8;
+  --lg-refraction-regular: 18;
+  --lg-refraction-clear: 26;
+  --lg-refraction-tinted: 14;
+  --lg-refraction-prominent: 12;
   /* Largeur du biseau qui réfracte, par taille de surface. */
-  --lg-bezel-sm: 8px;
-  --lg-bezel-md: 14px;
-  --lg-bezel-lg: 22px;
+  --lg-bezel-sm: 10px;
+  --lg-bezel-md: 18px;
+  --lg-bezel-lg: 26px;
   /* Écart relatif des trois canaux au ras du bord (frange chromatique). */
-  --lg-dispersion: 0.06;
+  --lg-dispersion: 0.08;
 
   /* ── Spéculaire ──────────────────────────────────────────────────────── */
   --lg-rim-width: 1px;
-  --lg-rim: rgba(var(--lg-light-rgb), 0.13);            /* liseré tout autour */
-  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.5); /* arête haut-gauche */
-  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.18);  /* contre-arête bas-droite */
-  --lg-highlight: rgba(var(--lg-light-rgb), 0.1);       /* reflet diffus du haut */
-  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.04);
+  /* FRANC : l'arête qui attrape la lumière fait lire le matériau. */
+  --lg-rim: rgba(var(--lg-light-rgb), 0.22);             /* liseré tout autour */
+  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.85); /* arête haut-gauche */
+  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.38);   /* contre-arête bas-droite */
+  --lg-highlight: rgba(var(--lg-light-rgb), 0.22);       /* reflet diffus du haut */
+  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.1);
   /* Position du reflet : la source de lumière, en haut à gauche. Le suivi du
    * pointeur (lg-physique) réécrit ces deux-là, rien d'autre. */
   --lg-light-x: 30%;
   --lg-light-y: 0%;
 
   /* ── Ombres de contact ───────────────────────────────────────────────── */
-  --lg-shadow-contact: 0 1px 2px rgba(var(--lg-shade-rgb), 0.3);
-  --lg-shadow-float: 0 10px 30px -10px rgba(var(--lg-shade-rgb), 0.55);
-  --lg-shadow-raised: 0 22px 56px -16px rgba(var(--lg-shade-rgb), 0.7);
+  /* Plus douces : le verre flotte, il ne pèse pas. */
+  --lg-shadow-contact: 0 1px 2px rgba(var(--lg-shade-rgb), 0.22);
+  --lg-shadow-float: 0 8px 28px -10px rgba(var(--lg-shade-rgb), 0.38);
+  --lg-shadow-raised: 0 20px 50px -16px rgba(var(--lg-shade-rgb), 0.5);
 
   /* ── Rayons : coins CONTINUS façon macOS (`corner-shape: squircle`) ──── */
   /* Un coin continu paraît plus petit qu'un arc de même rayon : l'échelle est
@@ -213,22 +234,28 @@
     rgba(var(--brand-accent-rgb), 0.8) 100%
   );
 
-  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.46);
-  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.12);
-  --lg-thick-fill: rgba(250, 250, 252, 0.62);
+  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.3);
+  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.08);
+  --lg-thick-fill: rgba(250, 250, 252, 0.54);
   --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.12);
   --lg-scrim: rgba(var(--lg-shade-rgb), 0.22);
 
-  --lg-regular-saturate: 1.8;
-  --lg-tinted-saturate: 1.7;
-  --lg-regular-brightness: 1.05;
-  --lg-tinted-brightness: 1.03;
+  --lg-regular-saturate: 2;
+  --lg-tinted-saturate: 1.9;
+  --lg-regular-brightness: 1.1;
+  --lg-tinted-brightness: 1.06;
 
-  --lg-rim: rgba(var(--lg-shade-rgb), 0.09);
-  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.9);
-  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.5);
-  --lg-highlight: rgba(var(--lg-light-rgb), 0.35);
-  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.18);
+  --lg-rim: rgba(var(--lg-shade-rgb), 0.1);
+  --lg-specular-strong: rgba(var(--lg-light-rgb), 1);
+  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.65);
+  --lg-highlight: rgba(var(--lg-light-rgb), 0.5);
+  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.3);
+
+  /* Un libellé SOMBRE sur verre clair : un liseré clair dessous suffit, et
+   * la vibrance s'inverse (le libellé assombrit le fond). */
+  --lg-label-shadow: 0 1px 0 rgba(var(--lg-light-rgb), 0.55);
+  --lg-glyph-shadow: drop-shadow(0 1px 0 rgba(var(--lg-light-rgb), 0.55));
+  --lg-vibrancy-blend: multiply;
 
   --lg-shadow-contact: 0 1px 2px rgba(var(--lg-shade-rgb), 0.1);
   --lg-shadow-float: 0 10px 30px -12px rgba(var(--lg-shade-rgb), 0.22);

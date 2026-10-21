@@ -30,6 +30,7 @@
 @import "./components/ui/glass/lgRecipes.css";
 @import "./components/ui/glass/lgControls.css";
 @import "./components/ui/glass/lgOverlays.css";
+@import "./components/ui/glass/lgLegibility.css";
 
 @tailwind base;
 @tailwind components;

@@ -249,6 +249,21 @@
   --media-badge-warning-fg: #fbbf24;
 }
 
+/* Liquid Glass (macOS 26, mode natif seulement) : le bas du voile de survol
+ * s'allège, 0,9 → 0,5. Le plateau y est un VRAI verre (lentille claire de
+ * lg-composants) : sous un voile à 0,9, il ne voyait que du noir et lisait
+ * comme un aplat gris. Ses icônes et la note tiennent par leur ombre
+ * (`--lg-media-glyph-shadow`, `--lg-media-label-shadow`). Ailleurs, le voile
+ * d'avant, inchangé. */
+:root[data-liquid-glass="native"] {
+  --card-hover-veil: linear-gradient(
+    180deg,
+    rgba(var(--scrim-media-rgb), 0.08) 0%,
+    rgba(var(--scrim-media-rgb), 0.22) 38%,
+    rgba(var(--scrim-media-rgb), 0.5) 100%
+  );
+}
+
 /* ── Lueur de raccord des bannières à fond perdu ────────────────────────
  * `screen` : la lumière ne peut qu'ÉCLAIRCIR le raccord, donc aucune bande
  * sombre. Le masque vertical s'éteint aux DEUX bouts — nul en haut (l'image

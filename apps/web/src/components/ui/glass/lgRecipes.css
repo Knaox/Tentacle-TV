@@ -53,7 +53,12 @@
   /* ── Les voiles, par usage ── */
   --lgc-fill: var(--lgc-sheen), var(--lg-regular-fill);
   --lgc-fill-media: var(--lgc-sheen), linear-gradient(var(--lgc-media-dim), var(--lgc-media-dim));
-  --lgc-fill-thick: var(--lgc-sheen), linear-gradient(var(--lgc-thick-dim), var(--lgc-thick-dim)), var(--lg-regular-fill);
+  /* Le verre sur affiche qui ne porte que des ICÔNES (capsule de la fiche) :
+   * 3:1 suffit, tenu par l'ombre de glyphe — le voile clair du socle. */
+  --lgc-fill-media-icons: var(--lgc-sheen), linear-gradient(var(--lgc-media-icons-dim), var(--lgc-media-icons-dim));
+  /* Le verre épais du SOCLE seul (`--lg-thick-fill`) : plus de voile empilé
+   * sur le voile régulier — le verre doit laisser voir ce qu'il couvre. */
+  --lgc-fill-thick: var(--lgc-sheen), var(--lgc-thick-dim);
   --lgc-fill-prominent: var(--lgc-sheen), var(--lg-prominent-fill);
   --lgc-fill-veil: var(--lgc-sheen), var(--lgc-veil-fill);
 
@@ -65,6 +70,7 @@
   /* Le verre POSÉ SUR UNE AFFICHE — noir dans les deux schémas, libellé blanc :
    * 0,55, le pire cas d'un décor blanc sous le verre tient 4,7:1. */
   --lgc-media-dim: var(--lg-media-dim);
+  --lgc-media-icons-dim: var(--lg-clear-dim);
   /* Recettes propres aux composants (accord de lg-tokens) : le verre sur un
    * voile DÉJÀ sombre (plateau des cartes, sans flou) et le pouce laiteux de
    * l'interrupteur. */

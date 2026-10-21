@@ -18,10 +18,10 @@ describe("physics.css", () => {
     }
   });
 
-  it("n'anime que des propriétés composées (scale, translate, opacity)", () => {
-    const animated = [...css.matchAll(/transition:\s*([a-z-]+)\s/g)].map((m) => m[1]);
-    expect(animated.length).toBeGreaterThan(0);
-    for (const p of animated) expect(["scale", "translate", "opacity", "transform", "none"]).toContain(p);
+  it("n'anime au ressort que des propriétés composées ; aucune animation infinie", () => {
+    const sprung = [...css.matchAll(/([a-z-]+)\s+var\(--lg-spring-[a-z]+-duration\)/g)].map((m) => m[1]);
+    expect(sprung.length).toBeGreaterThan(0);
+    for (const p of sprung) expect(["scale", "translate", "opacity", "transform"]).toContain(p);
     expect(css).not.toMatch(/@keyframes|animation:/);
   });
 
@@ -35,6 +35,16 @@ describe("physics.css", () => {
       if (/--lgc?-(regular|clear|tinted|prominent)-fill|--lgc-backdrop|--lg-rim\s*:/.test(body)) {
         expect(selector).toContain('[data-liquid-glass="native"]');
       }
+    }
+  });
+
+  it("sous Réduire la transparence / Contraste accru, le verre sur média reste sombre", () => {
+    const block = /html\[data-liquid-glass="native"\]\[data-lg-material\] \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    for (const token of ["--lgc-media-dim", "--lgc-media-icons-dim", "--lg-media-dim", "--lg-clear-dim"]) {
+      expect(block).toContain(`${token}: var(--lg-a11y-solid-media)`);
+    }
+    for (const token of ["--lg-label-shadow", "--lg-glyph-shadow", "--lg-media-label-shadow", "--lg-media-glyph-shadow"]) {
+      expect(block).toContain(`${token}: none`);
     }
   });
 });
