@@ -227,8 +227,13 @@ export class GlassRegions {
     return top;
   }
 
-  /** La distance de fusion d'un groupe : la plus grande que ses régions demandent. */
+  /**
+   * La distance de fusion d'un groupe : la plus grande que ses régions
+   * demandent. Le groupe par défaut ne fusionne JAMAIS : une région sans groupe
+   * est seule (contrat de la page), même si elle porte un `spacing`.
+   */
   private spacingOf(key: string): number {
+    if (key === DEFAULT_GROUP) return 0;
     let spacing = 0;
     for (const entry of this.regions.values()) {
       if (entry.groupKey === key) spacing = Math.max(spacing, entry.region.spacing ?? 0);

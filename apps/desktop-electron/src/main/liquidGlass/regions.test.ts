@@ -94,6 +94,12 @@ describe("GlassRegions — profondeur et groupes", () => {
     expect(snapshot.regions.find((r) => r.id === "a")?.group).toBe("lecteur");
   });
 
+  it("une région sans groupe est seule : son spacing ne fait rien fusionner", () => {
+    const t = setup();
+    t.upsert(region("a", { spacing: 30 }), region("b"));
+    expect(t.root()?.children[0]?.spacing).toBe(0);
+  });
+
   it("changer de groupe repose la vue, et l'ancien groupe vide part", () => {
     const t = setup();
     t.upsert(region("a", { group: "un" }));
