@@ -40,9 +40,9 @@ export function DeleteDownloadModal({
       aria-modal="true"
       aria-label={header}
     >
-      <div className="absolute inset-0" style={{ background: "var(--glass-backdrop)" }} onClick={onClose} />
+      <div className="lg-scrim absolute inset-0" style={{ background: "var(--glass-backdrop)" }} onClick={onClose} />
       <div
-        className="relative w-full max-w-sm origin-center animate-scale-in overflow-hidden rounded-2xl border border-line-subtle"
+        className="lg-sheet relative w-full max-w-sm origin-center animate-scale-in overflow-hidden rounded-2xl border border-line-subtle"
         style={{
           background: "var(--surface-modal)",
           boxShadow: "var(--shadow-modal)",
@@ -63,7 +63,7 @@ export function DeleteDownloadModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md bg-cta-ghost-bg px-4 py-2 text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+            className="lg-btn lg-shape-capsule rounded-md bg-cta-ghost-bg px-4 py-2 text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
           >
             {t("common:cancel")}
           </button>
@@ -71,7 +71,7 @@ export function DeleteDownloadModal({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="rounded-md border border-danger-border bg-danger-surface px-4 py-2 text-sm font-bold text-status-error-fg transition-colors duration-150 hover:bg-danger-surface-hover disabled:opacity-50"
+            className="lg-shape-capsule rounded-md border border-danger-border bg-danger-surface px-4 py-2 text-sm font-bold text-status-error-fg transition-colors duration-150 hover:bg-danger-surface-hover disabled:opacity-50"
           >
             {t("downloads:deleteConfirm")}
           </button>
