@@ -84,6 +84,13 @@
   --lg-player-preview-edge: #3d3948;
 }
 
+/* Thème clair : la vue native y prend l'apparence CLAIRE (verre laiteux), sous
+   des symboles qui restent blancs (le lecteur est sombre dans les deux thèmes).
+   Teinte plus dense, en attendant une apparence sombre forcée par région. */
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lg-player-native-tint: rgb(0 0 0 / 0.42);
+}
+
 /* ── Surface ─────────────────────────────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface {
