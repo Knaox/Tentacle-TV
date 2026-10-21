@@ -369,6 +369,86 @@ Ce que le banc a appris :
 
 ## 9. Bancs et mesures
 
-> À écrire par **lg-banc** : comment lancer le banc Electron du verre (CDP,
-> captures de fenêtre), les mesures `powermetrics` de référence (au repos, en
-> lecture, verre allumé et coupé), et la recette d'une fusion.
+Le banc de recette vit dans `apps/desktop-electron/bench/liquid-glass/` (son
+`README.md` fait foi pour les commandes). Jamais lancé par `pnpm test`.
+
+**Ce qu'il fait tourner** — tout est JETABLE : un Jellyfin 10.11 dans Docker
+(`lg-banc-jf`, `127.0.0.1:18307`, `jellyfin.sh`), le backend du worktree sur une
+base SQLite neuve (`:3107`, `backend.sh`), et la VRAIE app de dev : processus
+principal, preload, CSP. Comptes `admin` et `Knaoxtest` du Jellyfin jetable,
+mots de passe générés (`<état>/jf/`, 0600, jamais imprimés) : aucun compte réel,
+jamais le Jellyfin partagé par dev et prod. Médias : douze films dont six aux
+affiches DÉTAILLÉES (Mandelbrot, jeu de la vie, mire de zones, Sierpinski, mire
+SMPTE quadrillée, chiffres) pour juger la réfraction au biseau, « Banc HDR10 »
+(HEVC Main10, PQ, BT.2020, 4K), « Banc SDR », la série « Écume ».
+
+**Comment il observe**
+
+- Profil : `CFFIXED_USER_HOME=<état>/home-<cellule>` — `--user-data-dir` est
+  ignoré (`index.ts` force `userData`) ; le verrou d'instance unique suit ce HOME.
+- Page en CDP (`9307`) : `html[data-liquid-glass]`, le pont, l'interrupteur
+  (cherché par son texte), `.lgc-edge`, `.lg-surface`, `data-lg-material`,
+  `data-native-playback`, `prefers-*` émulés. Principal par l'inspecteur Node
+  (`9407`) : `globalThis.__tentacleGlass.snapshot()` (hors paquet) compte les
+  `NSGlassEffectView` RÉELLEMENT présentes dans AppKit (`nativeViews`).
+- Captures : `screencapture -l <notre fenêtre>` uniquement — elle compose les
+  fenêtres filles (mpv compris) et ne montre rien d'une autre application.
+  Jamais `-R` : à travers une fenêtre transparente, une capture d'écran a saisi
+  d'autres applications (21/10).
+- **Le clavier de Damien** : aucune fenêtre ne s'ouvre, aucun plein écran ni PiP
+  ne se joue tant que clavier et souris n'ont pas été inactifs 120 s
+  (`HIDIdleTime`), et l'app s'ouvre en `TENTACLE_BENCH_INACTIVE=1`.
+- Deux Electron au plus sur la machine : `mkdir`/`rmdir` de
+  `.claude/locks/lg/electron-slot-1|2`, arrêt par notre pid seulement.
+
+**La matrice** (`matrix.mjs`) — six écrans (accueil en haut, défilé de 300 et
+900 px, survol d'une carte, fiche, Réglages › Apparence et › Lecture), le
+lecteur (SDR, HDR, contrôles masqués, chaque panneau, coupure du verre en pleine
+lecture, plein écran, PiP et retour par « Revenir au lecteur », épisodes), et
+l'administration :
+
+| Cellule | Attendu |
+|---------|---------|
+| `allume` | html `native`, pont `supported`, interrupteur allumé, verre natif au lecteur, rien de natif contrôles masqués |
+| `coupe` | html `off`, `nativeViews` = 0 partout, aucune `.lg-surface`, fiche identique au rendu d'avant |
+| `env-off` | `TENTACLE_LIQUID_GLASS=off` : interrupteur ABSENT, html `refraction`, 0 vue |
+| `clair` | `tentacle_theme_mode=light` + `nativeTheme.themeSource="light"` |
+| `transparence`, `contraste` | `prefers-reduced-transparency` / `prefers-contrast` émulés côté page → `data-lg-material` |
+| `admin` | barres latérales, compte admin du Jellyfin jetable |
+
+Le HDR s'y juge sur le COUPLE `video-params` / `video-target-params` et sur la
+marge EDR de l'écran (`video_surface_probe` → `edr.potential`) : sur un écran
+sans HDR (capot fermé sur un moniteur SDR), une sortie SDR est juste et le HDR
+est dit « non vérifiable », pas en défaut. Référence mesurée sur l'écran interne
+(base d'avant le lot) : `gamma=pq`, `primaries=bt.2020`, `max-luma` 1000, EDR 9,4.
+
+**Réduire la transparence côté natif** : `NSGlassEffectView` suit seul le
+réglage du SYSTÈME. Le banc ne le bascule pas (réglage d'accessibilité de
+Damien, global à la machine) : à vérifier à la main.
+
+**Mesures GPU** — le banc relève « Device Utilization % » d'`IOAccelerator`
+(`ioreg`, sans sudo) à 1 Hz : charge de la machine ENTIÈRE, comparable d'une
+cellule à l'autre dans une même passe, jamais dans l'absolu, et sans valeur
+au-delà d'une charge système de ~20. La mesure de référence en watts reste
+manuelle, sur un build de PRODUCTION (`build:web`, jamais `dev` et son compteur
+d'images) :
+
+```bash
+sudo powermetrics --samplers gpu_power -i 1000 -n 10
+```
+
+au repos sur l'accueil, puis en lecture, verre allumé puis coupé. lg-physique
+tient en plus un banc GPU de page sans sudo : `node apps/web/bench/glass-gpu/run-bench.mjs`.
+
+**Recette d'une fusion** — `recette.sh` fusionne `dev` dans la branche du banc,
+réinstalle si le lockfile bouge, reconstruit le bureau, relance le backend s'il
+a changé, rejoue la matrice et compare au rendu d'avant (`compare.mjs`,
+`compare -metric AE -fuzz 2%` : fiche ≤ 0,03 % = bruit ; l'accueil fait tourner
+son héros, il ne se juge pas au pixel). Les preuves vont dans
+`~/Pictures/tentacle-banc-liquid-glass/<date>-recette-<commit>/` (`resume.md`,
+`rapport.json`, captures).
+
+**Recette du matin** — `morning.mjs` : clone NEUF de `dev`, `pnpm install`,
+`pnpm dev:electron` (drapeaux CDP passés SANS `--` : Chromium ignore tout ce qui
+suit un `--`), connexion, puis exige le pont `supported`, le natif `enabled`,
+html `native` et l'interrupteur allumé.
