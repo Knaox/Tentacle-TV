@@ -1,21 +1,19 @@
 /**
  * LA couture entre le lecteur et les socles du verre — la seule.
  *
- * Deux sessions du lot posent ce que le lecteur consomme :
+ *  - lg-tokens : le mode rendu (`data-liquid-glass`, `useLiquidGlassMode`) et
+ *    la primitive des régions natives (`useLiquidGlassRegion`), qui suit le
+ *    rectangle d'un élément image par image et regroupe les envois ;
  *  - lg-natif : les vues NSGlassEffectView derrière la page, et le pont
- *    preload qui dit si la coquille sait en poser ;
- *  - lg-tokens : la primitive React (`useLiquidGlassRegion` / `<LiquidGlass>`)
- *    qui synchronise une région native avec un élément du DOM.
+ *    (`window.tentacle.liquidGlass`) qui dit si le verre VOIT la vidéo.
  *
- * Le lecteur ne les appelle QUE d'ici. Tant qu'ils ne sont pas branchés, le
- * verre natif est « indisponible » : la porte (`playerGlassMode.ts`) rend alors
- * l'habillage d'avant, au pixel près — aucune régression possible en chemin.
- *
- * ⚠️ Les noms lus sur `window.tentacle` traversent le pont par CHAÎNE : les
- * renommer côté preload casse ce module en silence (il répond « indisponible »).
+ * Le lecteur ne les appelle QUE d'ici : un changement de leur contrat se
+ * répare en un seul endroit.
  */
 
 import type { RefObject } from "react";
+import { useLiquidGlassMode, useLiquidGlassRegion } from "../../../theme/glass";
+import { nativeGlassBridge } from "../../../theme/liquidGlassMode";
 
 export interface GlassRegionOptions {
   /**
@@ -25,42 +23,44 @@ export interface GlassRegionOptions {
    */
   active: boolean;
   /**
-   * Groupe de fusion : les régions d'un même groupe partagent un conteneur
-   * natif, et AppKit fond celles qui se touchent.
+   * Groupe de fusion (même conteneur natif → AppKit fond les verres qui se
+   * touchent). Déclaré par le socle natif, pas encore transmis par la
+   * primitive : sans effet tant qu'elle ne le porte pas.
    */
   group: string;
   /** `regular` : la matière par défaut ; `clear` : plus transparente. */
   variant: "regular" | "clear";
 }
 
-/** La coquille sait-elle poser du verre natif ici (macOS 26, module chargé) ? */
+/**
+ * Le verre natif est-il rendu ici (macOS 26, réglage allumé) ? Suit le réglage
+ * EN DIRECT : le couper pendant la lecture rend aussitôt l'habillage d'avant.
+ */
 export function useNativeGlassAvailable(): boolean {
-  // Branché à la fusion de lg-natif / lg-tokens.
-  return false;
+  return useLiquidGlassMode() === "native";
 }
 
 /**
- * La vidéo est-elle dans une fenêtre SOUS la nôtre ?
+ * Le verre voit-il la vidéo ? Vrai pour le montage macOS `fenetre` (Apple
+ * Silicon : la fenêtre Metal de mpv, SOUS la nôtre) — le socle le dit
+ * (`refractsVideo`). Faux sur Intel (mpv dessine par OpenGL DANS notre
+ * fenêtre) et partout où le pont ne le dit pas : l'habillage d'avant.
  *
- * Vrai pour le montage macOS `fenetre` (Apple Silicon : la fenêtre Metal de
- * mpv). Faux pour le montage `gl` (Intel : la vidéo est dessinée DANS notre
- * fenêtre), et partout où le pont ne le dit pas.
+ * ⚠️ `refractsVideo` traverse le pont par CHAÎNE : le renommer côté preload
+ * rend, en silence, l'habillage d'avant.
  */
 export function videoUnderWindow(): boolean {
-  if (typeof window === "undefined") return false;
-  const bridge = window.tentacle as { videoMontage?: unknown } | undefined;
-  return bridge?.videoMontage === "fenetre";
+  const bridge = nativeGlassBridge() as { refractsVideo?: unknown } | null;
+  return bridge?.refractsVideo === true;
 }
 
 /**
  * Synchronise une région de verre natif avec l'élément `ref`.
  *
  * Le rayon vient du CSS de l'élément (`border-radius`, un jeton
- * `--lg-player-radius-*`) : une seule source, lue par la primitive.
+ * `--lg-player-radius-*`), la teinte de `--lg-native-tint-*` que les feuilles
+ * du lecteur redéfinissent sur leurs surfaces (`playerGlass.css`).
  */
-export function useNativeGlassRegion(
-  _ref: RefObject<HTMLElement | null>,
-  _options: GlassRegionOptions,
-): void {
-  // Branché à la fusion de lg-natif / lg-tokens.
+export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options: GlassRegionOptions): void {
+  useLiquidGlassRegion(ref, { enabled: options.active, level: options.variant, shape: "rounded" });
 }

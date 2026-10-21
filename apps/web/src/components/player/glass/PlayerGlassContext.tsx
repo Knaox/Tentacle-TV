@@ -7,7 +7,7 @@
  * traverse les portails React, donc la fenêtre du PiP reçoit le même mode.
  */
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { useLiquidGlass } from "../../../theme/useLiquidGlass";
 import { decidePlayerGlassMode, type PlayerGlassMode } from "./playerGlassMode";
 import { useNativeGlassAvailable, videoUnderWindow } from "./nativeGlassPort";
@@ -41,6 +41,14 @@ export function PlayerGlassProvider({ children }: { children: ReactNode }) {
     () => decidePlayerGlassMode({ enabled, nativeAvailable, videoUnderWindow: videoUnderWindow(), devPreview: DEV_PREVIEW }),
     [enabled, nativeAvailable],
   );
+  // Les feuilles du lecteur ne s'allument que sous `data-liquid-glass="native"` (règle du lot,
+  // `liquidGlassTokens.test.ts`) ; l'aperçu de développement pose son propre drapeau.
+  useEffect(() => {
+    if (mode !== "preview") return undefined;
+    const root = document.documentElement;
+    root.setAttribute("data-lgp-preview", "on");
+    return () => root.removeAttribute("data-lgp-preview");
+  }, [mode]);
   return <PlayerGlassModeContext.Provider value={mode}>{children}</PlayerGlassModeContext.Provider>;
 }
 

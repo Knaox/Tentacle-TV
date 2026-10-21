@@ -9,7 +9,7 @@
  *  - les remplissages en NOIR à alpha (invariant par prémultiplication).
  * Le fond `surface-dropdown` devient transparent : la matière est native. */
 
-.lgp-surface.lgp-panel {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel {
   --text-primary: #ffffff;
   --text-secondary: #e0e0e6;
   --text-tertiary: #b9b9c2;
@@ -32,18 +32,18 @@
 
 /* Les contrôles s'effacent, panneau ouvert compris (comme l'habillage d'avant).
    Sur la SURFACE : le corps porte l'opacité en ligne de son animation. */
-.lgp-surface.lgp-panel[data-lgp-present="false"] {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel[data-lgp-present="false"] {
   opacity: 0;
 }
 
-.lgp-panel__body {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-panel__body {
   transform-origin: bottom right;
   border-radius: inherit;
 }
 
 /* ── Lignes façon menu macOS : coche pour l'actif, surbrillance de marque au survol ── */
 
-.lgp-option {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option {
   display: flex;
   width: 100%;
   align-items: center;
@@ -55,18 +55,18 @@
   font-size: 14px;
 }
 
-.lgp-option:hover,
-.lgp-option:focus-visible {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option:hover,
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option:focus-visible {
   background: var(--lg-player-row-hover);
   color: var(--lg-player-row-hover-fg);
   outline: none;
 }
 
-.lgp-option[aria-checked="true"] {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option[aria-checked="true"] {
   font-weight: 600;
 }
 
-.lgp-option__check {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option__check {
   display: inline-flex;
   width: 14px;
   flex-shrink: 0;
@@ -74,7 +74,7 @@
 }
 
 /* Les étiquettes (langue, codec, HDR…) : un trait plein, jamais un aplat translucide. */
-.lgp-chip {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-chip {
   flex-shrink: 0;
   border: 1px solid var(--lg-player-chip-line);
   border-radius: 6px;
@@ -85,12 +85,12 @@
   line-height: 15px;
 }
 
-.lgp-option:hover .lgp-chip {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option:hover .lgp-chip {
   border-color: currentColor;
   color: inherit;
 }
 
-.lgp-section-title {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-section-title {
   margin: 0 0 4px;
   padding: 0 10px;
   color: var(--lg-player-fg-3);
@@ -100,7 +100,7 @@
   text-transform: uppercase;
 }
 
-.lgp-section-title--inline {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-section-title--inline {
   margin: 0;
   padding: 0;
 }
