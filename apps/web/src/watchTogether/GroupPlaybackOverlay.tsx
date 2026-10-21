@@ -77,7 +77,7 @@ export function GroupPlaybackOverlay({
             className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2"
           >
             {glass ? (
-              <GlassSurface className="lgp-wt-capsule" group="player-wt">
+              <GlassSurface className="lgp-wt-capsule" group="player-wt" transition={0}>
                 <div className="flex items-center gap-2.5 px-4 py-2">
                   <div className="lgp-wt-spinner h-3.5 w-3.5 animate-spin rounded-full border-2" />
                   <span className="lgp-wt-text text-sm">{t(notice.key, notice.params)}</span>

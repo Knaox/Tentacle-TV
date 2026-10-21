@@ -116,7 +116,7 @@ export function GlassControlsRow({
 function Part({ grouped, visible, className, children }: { grouped: boolean; visible: boolean; className: string; children: ReactNode }) {
   if (!grouped) return <div className={className}>{children}</div>;
   return (
-    <GlassSurface className={`lgp-group lgp-morph ${className}`} present={visible}>
+    <GlassSurface className={`lgp-group ${className}`} present={visible}>
       <div className="lgp-content lgp-group__inner">{children}</div>
     </GlassSurface>
   );

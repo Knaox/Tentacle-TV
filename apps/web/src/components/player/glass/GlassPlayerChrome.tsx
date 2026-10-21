@@ -50,7 +50,7 @@ export function GlassPlayerChrome({
             <>
               {/* La capsule du temps, puis les trois capsules de boutons : même groupe
                   natif, 4 px d'écart — AppKit les fond en UNE forme liquide. */}
-              <GlassSurface className="lgp-timecap lgp-morph" present={visible}>
+              <GlassSurface className="lgp-timecap" present={visible}>
                 <div className="lgp-content lgp-timecap__inner">
                   <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
                 </div>
@@ -67,7 +67,7 @@ export function GlassPlayerChrome({
               />
             </>
           ) : (
-            <GlassSurface className="lgp-bar lgp-morph" present={visible}>
+            <GlassSurface className="lgp-bar" present={visible}>
               <div className="lgp-content lgp-bar__inner">
                 <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
                 <GlassControlsRow

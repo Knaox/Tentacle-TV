@@ -42,7 +42,7 @@ export function GlassTrickplayBubble({ visible, positionSeconds, frame, info, an
 
   return (
     <div aria-hidden="true" className="lgp-trickplay" data-visible={visible} style={{ left, bottom: GAP_TO_SEEKBAR, width }}>
-      <GlassSurface className="lgp-trickplay__bubble" present={visible} group="player-trickplay">
+      <GlassSurface className="lgp-trickplay__bubble" present={visible} group="player-trickplay" transition={0}>
         {hasFrame && (
           <div
             className="lgp-trickplay__frame"
