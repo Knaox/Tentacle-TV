@@ -41,6 +41,11 @@
   /* La lisibilité des libellés : l'ombre du matériau (vibrance), pas un voile. */
   --lg-chrome-label-shadow: var(--lg-label-shadow);
   --lg-chrome-glyph-shadow: var(--lg-glyph-shadow);
+  /* Sur du verre, l'image passe dessous : un libellé tertiaire (4,2:1 déjà
+   * sur fond plein, mesuré) n'y tient pas l'AA — le secondaire, si (≥ 6:1
+   * mesuré au banc, clair défilé compris). Icônes : ≥ 3:1. */
+  --lg-chrome-label: var(--text-secondary);
+  --lg-chrome-glyph: var(--text-tertiary);
 
   /* Les éléments dans la capsule : des capsules. */
   --lg-chrome-item-radius: var(--lg-radius-capsule);

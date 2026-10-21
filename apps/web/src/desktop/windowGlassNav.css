@@ -27,6 +27,22 @@
   filter: var(--lg-chrome-glyph-shadow);
 }
 
+/* Les onglets inactifs et la recherche : un ton plus franc que sur fond
+ * plein (le verre laisse passer l'image). Le survol garde le ton primaire. */
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]),
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-field {
+  color: var(--lg-chrome-label);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]) svg {
+  color: var(--lg-chrome-glyph);
+}
+
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]):hover,
+:root[data-liquid-glass="native"] .lgc-capsule .lgc-tab:not([aria-current]):hover svg {
+  color: var(--text-primary);
+}
+
 /* Fenêtre inactive : le verre de la capsule perd sa saturation. */
 :root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule > .lg-surface {
   --lg-saturate: 1;
