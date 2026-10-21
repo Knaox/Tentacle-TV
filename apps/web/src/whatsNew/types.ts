@@ -4,6 +4,13 @@ import type { ServerCapability } from "@tentacle-tv/shared";
 export type WhatsNewKind = "new" | "improved" | "fixed";
 
 /**
+ * Ce que CET appareil sait faire et dont une nouveauté dépend, hors serveur :
+ * `liquidGlass` — le verre natif de macOS 26 (le système le permet, quel que
+ * soit le réglage). Liste FERMÉE, lue par `clientTraits.ts`.
+ */
+export type WhatsNewClientTrait = "liquidGlass";
+
+/**
  * Ce que reçoit une scène. `active` : elle est sur scène ET visible (onglet au
  * premier plan, cadre à l'écran) — à faux elle se met en pause, elle ne se
  * démonte pas : c'est l'écran qui ne monte que la scène courante. `reduced` :
@@ -33,6 +40,12 @@ export interface WhatsNewFeature {
    * d'une fonction que l'app cache.
    */
   capability?: ServerCapability;
+  /**
+   * Le trait de l'appareil sans lequel la fonction n'existe pas ici (cf.
+   * `forClient`) : ailleurs, la nouveauté n'est pas montrée — jamais une
+   * scène d'une fonction que cet appareil ne peut pas avoir.
+   */
+  requires?: WhatsNewClientTrait;
 }
 
 export interface WhatsNewRelease {
