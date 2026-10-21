@@ -122,7 +122,8 @@ function chromeOn(report, fail) {
     if (s.offViews > 0) fail(`« ${s.name} » : ${s.offViews} vue(s) AppKit après coupure en pleine lecture`, s.capture);
     // Le rallumage par le PONT ne prévient pas la page : elle ne renvoie pas ses
     // régions. Une note, pas un défaut (le vrai interrupteur est éprouvé par « coupe »).
-    if (!s.onViews) report.notes = [...(report.notes ?? []), `« ${s.name} » : rallumage par le pont sans régions (attendu : la page n'est pas prévenue)`];
+    if (!s.onViews && s.via === "page") fail(`« ${s.name} » : le verre ne revient pas au rallumage du réglage (${s.onViews} vue)`, s.onCapture);
+    else if (!s.onViews) report.notes = [...(report.notes ?? []), `« ${s.name} » : rallumage par le pont sans régions (la page n'est pas prévenue)`];
   }
   const fs = find(report, "lecteur-hdr-plein-ecran");
   if (fs?.ok && !fs.skipped && fs.duringVisible === 0) fail("plein écran : aucune région native visible contrôles affichés", null);

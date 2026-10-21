@@ -44,19 +44,25 @@ export async function playerPanels(ctx, label) {
     });
   }
   await step(ctx, `lecteur-${label}-coupure`, async () => {
-    // La coupure passe ici par le PONT (le réglage de la page n'a pas de porte
-    // de banc) : elle prouve le retrait natif et le HDR, pas le rendu de la page.
-    const has = await page.evaluate(`return !!window.tentacle?.liquidGlass;`);
-    if (!has) return { absent: true };
+    // Coupure du RÉGLAGE en pleine lecture : par le crochet de banc de
+    // lg-lecteur (le vrai chemin de la page) s'il existe, sinon par le pont —
+    // qui prouve le retrait natif mais ne prévient pas la page.
+    const via = await page.evaluate(`return window.__tentaclePlayerGlass?.setLiquidGlass ? "page" : window.tentacle?.liquidGlass ? "pont" : null;`);
+    if (!via) return { absent: true };
+    const set = (on) => via === "page"
+      ? `window.__tentaclePlayerGlass.setLiquidGlass(${on}); return true;`
+      : `window.tentacle.liquidGlass.setEnabled(${on}); return true;`;
     await showControls(page);
-    await page.evaluate(`window.tentacle.liquidGlass.setEnabled(false); return true;`);
+    await page.evaluate(set(false));
     await sleep(1500);
     const off = await nativeSnapshot(ctx.app);
     const offTarget = await mpvProperty(page, "video-target-params");
     const capture = await shot(ctx, `lecteur-${label}-coupure`);
-    await page.evaluate(`window.tentacle.liquidGlass.setEnabled(true); return true;`);
+    await page.evaluate(set(true));
+    await showControls(page);
     await sleep(1500);
     const on = await nativeSnapshot(ctx.app);
-    return { capture, offViews: off?.nativeViews, onViews: on?.nativeViews, "video-target-params": offTarget };
+    const onCapture = await shot(ctx, `lecteur-${label}-rallumage`);
+    return { via, capture, onCapture, offViews: off?.nativeViews, onViews: on?.nativeViews, "video-target-params": offTarget };
   });
 }

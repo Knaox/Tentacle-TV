@@ -53,13 +53,15 @@ export async function screens(ctx) {
     await go(page, "/", 2500);
     await mouseTo(page, 5, 5);
     await page.evaluate(`(document.scrollingElement ?? document.body).scrollTo(0, 900); return true;`);
-    await sleep(3000);
+    // Repos VRAI : la bannière d'accueil tourne encore 20 s hors écran (useIdle).
+    await sleep(25_000);
     return { load: loadAverage(), gpu: await gpuWindow(30) };
   });
   await step(ctx, "gpu-repos-accueil", async () => {
     await go(page, "/", 2500);
     await mouseTo(page, 5, 5);
-    await sleep(3000);
+    // Repos VRAI : la bannière d'accueil tourne encore 20 s hors écran (useIdle).
+    await sleep(25_000);
     return { load: loadAverage(), gpu: await gpuWindow(30) };
   });
 }
