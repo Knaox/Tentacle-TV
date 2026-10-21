@@ -32,6 +32,9 @@ export interface GlassFusionProps {
   shapeClassName?: string;
 }
 
+const SHOWN = { opacity: 1, visibility: "visible" as const };
+const HIDDEN = { opacity: 0, transitionEnd: { visibility: "hidden" as const } };
+
 const sameShapes = (a: FusionShape[], b: FusionShape[]): boolean =>
   a.length === b.length &&
   a.every((s, i) => {
@@ -105,7 +108,10 @@ export const GlassFusion = memo(function GlassFusion({
           className={shapeClassName ? `lg-fusion-shape ${shapeClassName}` : "lg-fusion-shape"}
           layout={!reduced}
           initial={false}
-          animate={{ opacity: s.visible ? 1 : 0 }}
+          // Une couche effacée sort du rendu (`visibility: hidden`) dès la fin
+          // du fondu : à `opacity: 0` seule, son flou serait encore recalculé
+          // (CLAUDE.md, « Coût GPU » § 1).
+          animate={s.visible ? SHOWN : HIDDEN}
           transition={transition}
           style={{
             // Position par left/top, pas par transform : l'animation `layout`
