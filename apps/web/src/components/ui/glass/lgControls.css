@@ -228,3 +228,20 @@
 :root[data-liquid-glass="native"] .lg-meta:not([data-tone="accent"]) {
   box-shadow: var(--lgc-edge) !important;
 }
+
+/* Une bascule de verre allumée (Ma liste, favori, vu de la bannière) garde un
+ * liseré à sa couleur — blanc, ou le rose du favori — par-dessus l'arête. */
+:root[data-liquid-glass="native"] .lg-btn-media[aria-pressed="true"] {
+  box-shadow: var(--lgc-edge-strong), inset 0 0 0 var(--lg-thickness-regular) currentColor, var(--lg-shadow-contact);
+}
+
+/* ══ 10. Pastille de lien sans flou ═══════════════════════════════════════
+ *
+ * « Tout voir » des en-têtes de rangée : elle reste dans le DOM à opacité
+ * nulle (son fondu suit le survol de la rangée), une par rangée. Un
+ * `backdrop-filter` s'y recalculerait pour rien — elle n'a donc que le voile,
+ * l'arête et le reflet. */
+:root[data-liquid-glass="native"] .lg-pill {
+  background: var(--lgc-fill);
+  box-shadow: var(--lgc-edge);
+}

@@ -42,7 +42,7 @@ export function RowHeader({ title, href, trailing }: RowHeaderProps) {
       {href && (
         <Link
           to={href}
-          className="-translate-x-2 flex items-center gap-1 rounded-full bg-cta-ghost-bg px-2.5 py-1 text-xs font-medium text-content-tertiary opacity-0 transition-all duration-300 hover:bg-cta-ghost-bg-hover hover:text-content-primary group-hover/row:translate-x-0 group-hover/row:opacity-100 motion-reduce:transition-none"
+          className="lg-pill -translate-x-2 flex items-center gap-1 rounded-full bg-cta-ghost-bg px-2.5 py-1 text-xs font-medium text-content-tertiary opacity-0 transition-all duration-300 hover:bg-cta-ghost-bg-hover hover:text-content-primary group-hover/row:translate-x-0 group-hover/row:opacity-100 motion-reduce:transition-none"
         >
           {t("common:seeAll")}
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4}>
