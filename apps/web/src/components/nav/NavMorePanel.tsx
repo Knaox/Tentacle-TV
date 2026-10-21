@@ -167,7 +167,7 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
       panelRef={panelRef}
       role="dialog"
       ariaLabel={t("more")}
-      className="lgc-panel w-[620px] overflow-y-auto overscroll-contain rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
+      className="lg-menu w-[620px] overflow-y-auto overscroll-contain rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
     >
       {libraries.length > 0 && (
         <section>

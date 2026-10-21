@@ -18,6 +18,17 @@ export {
   supportsBackdropSvgFilter,
   type GlassLevel,
 } from "./glass/engine";
+export {
+  RefractionFilter,
+  refractionMapUrl,
+  type RefractionFilterProps,
+} from "./glass/RefractionFilter";
+export {
+  buildRefractionMap,
+  refractionProfile,
+  type RefractionGeometry,
+  type RefractionMap,
+} from "./glass/refractionMap";
 
 export { SettingsRow, type SettingsRowProps } from "./settings/SettingsRow";
 export {

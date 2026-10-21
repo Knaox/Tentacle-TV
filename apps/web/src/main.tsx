@@ -34,6 +34,7 @@ import * as PluginsAPI from "@tentacle-tv/plugins-api";
 import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/plugins-api";
 import { App } from "./App";
 import { ThemeProvider } from "./theme";
+import { installGlassAccessibility } from "./theme/glass/accessibility";
 import { isDesktopApp } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { nativeKillEncodings, nativePlaybackInfo, supportsNativePlayerRelay } from "./desktop/playerRelay";
@@ -83,6 +84,9 @@ initI18n({ lng: savedLang });
 // Les clés des réglages disparus partent AVANT tout rendu : un utilisateur qui
 // avait choisi un mode retiré revient au défaut sans rien faire.
 cleanupObsoleteStorage(localStorage);
+// Réduire la transparence, Contraste accru, Réduire les animations : posés sur
+// <html> AVANT le premier rendu — pas d'éclair de verre transparent.
+installGlassAccessibility();
 // Une page d'avant la mise à jour du client recharge au lieu de rester noire.
 installStaleBuildReload();
 

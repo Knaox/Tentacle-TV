@@ -53,6 +53,9 @@
   --lg-clear-fill: rgba(var(--lg-light-rgb), 0.015);
   --lg-tinted-fill: var(--lg-tint-gradient);
   --lg-prominent-fill: var(--lg-prominent-gradient);
+  /* Variante ROSE (`tint="accent"`) des deux niveaux teintés. */
+  --lg-tinted-accent-fill: var(--lg-tint-accent);
+  --lg-prominent-accent-fill: rgba(var(--brand-accent-rgb), 0.8);
   /* Voile de lisibilité d'un verre `clear` sur un média vif. */
   --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.24);
 
@@ -78,12 +81,12 @@
   --lg-prominent-brightness: 1;
 
   /* ── Réfraction (rendu Chromium) ─────────────────────────────────────── */
-  /* Amplitude de `feDisplacementMap`, en px : le décalage maximal, atteint au
-   * ras du bord. Zéro au centre — seul le biseau courbe l'image. */
-  --lg-refraction-regular: 24;
-  --lg-refraction-clear: 36;
-  --lg-refraction-tinted: 20;
-  --lg-refraction-prominent: 16;
+  /* Décalage maximal de l'image, en px (nombre nu : lu par le filtre SVG),
+   * atteint au ras du bord. Zéro au centre — seul le biseau courbe l'image. */
+  --lg-refraction-regular: 12;
+  --lg-refraction-clear: 18;
+  --lg-refraction-tinted: 10;
+  --lg-refraction-prominent: 8;
   /* Largeur du biseau qui réfracte, par taille de surface. */
   --lg-bezel-sm: 8px;
   --lg-bezel-md: 14px;
@@ -146,6 +149,8 @@
   --lg-native-tint-clear: transparent;
   --lg-native-tint-tinted: rgba(var(--brand-rgb), 0.38);
   --lg-native-tint-prominent: rgba(var(--brand-rgb), 0.86);
+  --lg-native-tint-tinted-accent: rgba(var(--brand-accent-rgb), 0.34);
+  --lg-native-tint-prominent-accent: rgba(var(--brand-accent-rgb), 0.84);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -188,6 +193,10 @@
   --lg-shadow-float: 0 10px 30px -12px rgba(var(--lg-shade-rgb), 0.22);
   --lg-shadow-raised: 0 20px 48px -16px rgba(var(--lg-shade-rgb), 0.3);
 
+  --lg-prominent-accent-fill: rgba(var(--brand-accent-rgb), 0.86);
+
   --lg-native-tint-tinted: rgba(var(--brand-rgb), 0.26);
   --lg-native-tint-prominent: rgba(var(--brand-rgb), 0.86);
+  --lg-native-tint-tinted-accent: rgba(var(--brand-accent-rgb), 0.24);
+  --lg-native-tint-prominent-accent: rgba(var(--brand-accent-rgb), 0.86);
 }

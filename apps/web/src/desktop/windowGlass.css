@@ -15,7 +15,7 @@
  * Coût GPU (CLAUDE.md) : un seul `backdrop-filter` permanent de plus, celui de
  * l'effet de bord, et seulement page défilée ; la barre latérale n'en porte pas
  * (rien ne bouge derrière elle : un flou n'y flouterait rien) ; les panneaux de
- * la barre ne sont montés qu'ouverts. On n'anime que l'opacité. */
+ * la barre (`.lg-menu`, lg-composants) ne sont montés qu'ouverts. On n'anime que l'opacité. */
 
 /* Les jetons de la fenêtre, COMPOSÉS du matériau (`theme/liquidGlassTokens.css`) :
  * un réglage du verre là-bas se reporte ici. Seul ce qui n'existe pas dans le
@@ -62,15 +62,6 @@
   /* L'avatar : liseré de verre et arête spéculaire, par-dessus la photo. */
   --lg-chrome-avatar-rim: inset 0 0 0 var(--lg-rim-width) var(--lg-rim), inset 0 1px 0 var(--lg-specular-soft);
 
-  /* Les panneaux de la barre (« Plus », menu d'un onglet) : posés sur des
-   * affiches, ils gardent un voile dense — à 0,95 elles transparaissaient
-   * nettes, d'où le flou. */
-  --lg-chrome-panel-radius: var(--lg-radius-lg);
-  --lg-chrome-panel-bg: rgba(26, 24, 36, 0.74);
-  --lg-chrome-panel-rim: var(--lg-rim);
-  --lg-chrome-panel-filter: blur(32px) saturate(var(--lg-regular-saturate));
-  --lg-chrome-panel-shadow: inset 0 1px 0 var(--lg-highlight), var(--lg-shadow-raised);
-
   /* La barre latérale : un panneau flottant, en retrait des bords. */
   --lg-chrome-sidebar-radius: var(--lg-radius-lg);
   --lg-chrome-sidebar-pad: 8px;
@@ -97,7 +88,6 @@
   --lg-chrome-field-bg: rgba(var(--lg-shade-rgb), 0.05);
   --lg-chrome-field-bg-hover: rgba(var(--lg-shade-rgb), 0.08);
   --lg-chrome-field-shadow: inset 0 1px 2px rgba(var(--lg-shade-rgb), 0.1), inset 0 -1px 0 var(--lg-specular-soft);
-  --lg-chrome-panel-bg: rgba(255, 255, 255, 0.78);
   --lg-chrome-sidebar-bg: rgba(var(--lg-light-rgb), 0.55);
   --lg-chrome-sidebar-selection-icon: var(--brand);
   --lg-chrome-inactive-fill: rgba(var(--lg-shade-rgb), 0.07);
