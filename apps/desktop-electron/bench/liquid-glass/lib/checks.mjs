@@ -82,6 +82,9 @@ export function checkCell(cell, report) {
     const target = s.mpv?.["video-target-params"] ?? s["video-target-params"];
     if (!pq(target)) fail(`HDR perdu à l'étape « ${name} » : video-target-params sans PQ`, s.capture ?? null);
   }
+  const wn = find(report, "nouveautes-1-40-0");
+  if (wn?.ok && cell.expect === "on" && (!wn.traits?.liquidGlass || wn.shown === false)) fail(`nouveautés 1.40.0 : traits ${JSON.stringify(wn.traits)}, scène « Liquid Glass » ${wn.shown ? "vue" : "absente"}`, wn.capture);
+  if (wn?.ok && cell.expect === "unsupported" && (wn.traits?.liquidGlass || wn.traits?.liquidGlassPlayer)) fail(`nouveautés 1.40.0 : trait du verre présent sans verre natif (${JSON.stringify(wn.traits)})`, null);
   const pipStep = find(report, "lecteur-hdr-pip");
   if (hdrScreen && pipStep?.ok && pipStep.afterBack && !pq(pipStep.afterBack["video-target-params"])) {
     fail("HDR perdu après le retour du PiP au lecteur", pipStep.capture);

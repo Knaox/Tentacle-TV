@@ -8,6 +8,7 @@ import { checkCell } from "./lib/checks.mjs";
 import { STATE, SERVER, account, outDir, resetPlayback } from "./lib/config.mjs";
 import { evalMain, launchApp, stopApp } from "./lib/electron.mjs";
 import { offline } from "./lib/offline.mjs";
+import { whatsNew } from "./lib/whatsNew.mjs";
 import { admin, player, screens } from "./lib/scenarios.mjs";
 
 async function reload(page) {
@@ -17,7 +18,7 @@ async function reload(page) {
 
 const CELLS = {
   // macOS 26, réglage par défaut : le verre natif doit être là.
-  allume: { expect: "on", run: [screens, player] },
+  allume: { expect: "on", run: [whatsNew, screens, player] },
   // L'utilisateur coupe dans Réglages › Apparence : rendu d'avant, aucune région.
   coupe: {
     expect: "off",
@@ -31,7 +32,7 @@ const CELLS = {
     },
   },
   // OS « non supporté » simulé : option invisible, aucun verre natif.
-  "env-off": { expect: "unsupported", env: { TENTACLE_LIQUID_GLASS: "off" }, run: [screens] },
+  "env-off": { expect: "unsupported", env: { TENTACLE_LIQUID_GLASS: "off" }, run: [whatsNew, screens] },
   // Thème clair de l'app ET apparence claire de la fenêtre native.
   clair: {
     expect: "on",
