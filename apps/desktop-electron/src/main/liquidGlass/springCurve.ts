@@ -4,9 +4,19 @@
  * La page anime ses verres au RESSORT (`apps/web/src/theme/glass/springs.ts`,
  * lg-physique) ; une région native qui la suivait sur une courbe fixe divergeait
  * d'elle pendant une métamorphose. Le natif reprend donc la MÊME physique :
- * paramétrage d'Apple (`response`, `dampingFraction`), mêmes ressorts, même
- * coupe à 1 % du trajet (`SPRING_CSS_EPSILON`) — `contractMirror.test.ts`
- * relit `springs.ts` et refuse que les valeurs divergent.
+ * paramétrage d'Apple (`response`, `dampingFraction`), mêmes ressorts —
+ * `contractMirror.test.ts` relit `springs.ts` et refuse que les valeurs divergent.
+ *
+ * # Pourquoi 291 ms et pas les 584 ms de `NATIVE_GLASS_MORPH_MS`
+ *
+ * La page arrête le ressort à son repos à 0,1 % (584 ms pour `morph`). Une seule
+ * Bézier ne sait pas suivre une montée rapide PUIS cette longue traîne : la
+ * meilleure possible sur 584 ms s'écarte du ressort de 3,7 % en pleine course
+ * (recherche exhaustive, 21/10) — 11 px sur une métamorphose de 300 px. Sur la
+ * coupe à 1 % (`SPRING_CSS_EPSILON`, 291 ms), elle reste sous 1 % de bout en
+ * bout, et elle FINIT exactement au but : ajustée, pas tronquée, elle n'a pas le
+ * saut final d'un ressort coupé. Ensuite, la page ne s'éloigne plus du but que
+ * de 0,76 % au plus (le dépassement de `morph`), soit 2 px sur 300.
  *
  * # Pourquoi une courbe de Bézier, et pas `CASpringAnimation`
  *
@@ -15,7 +25,7 @@
  * la forme est déjà à destination à 60 ms. Seul l'animateur d'AppKit
  * (`NSAnimationContext`) fait suivre la forme du verre, et il ne prend qu'une
  * courbe de Bézier (`CAMediaTimingFunction`), rabotée à [0, 1]. On ajuste donc
- * la Bézier la plus proche de la réponse du ressort, sur sa durée de coupe :
+ * la Bézier la plus proche de la réponse du ressort, sur sa coupe à 1 % :
  * `morph` (dépassement < 1 %) y est rendu fidèlement ; un ressort qui rebondit
  * franchement (`lens`, 12 %) y perd son rebond, jamais sa durée.
  */
@@ -35,7 +45,7 @@ export const GLASS_SPRINGS = {
   settle: { response: 0.26, dampingFraction: 1 },
 } as const satisfies Record<string, GlassSpring>;
 
-/** Coupe : 1 % du trajet, celle des transitions CSS de la page. */
+/** Coupe : 1 % du trajet, celle des transitions CSS de la page (`SPRING_CSS_EPSILON`). */
 export const SPRING_CUT = 0.01;
 
 /** Une animation que l'animateur d'AppKit sait jouer : durée et Bézier. */
@@ -63,7 +73,7 @@ export function springPosition(spring: GlassSpring, t: number): number {
   return 1 - ((1 - c2) * Math.exp(r1 * t) + c2 * Math.exp(r2 * t));
 }
 
-/** Dernier instant hors de la coupe, au millième près — la recherche de la page. */
+/** Dernier instant hors de la coupe, au millième près — la recherche de la page (`springSettleSeconds`). */
 export function springCutSeconds(spring: GlassSpring, epsilon = SPRING_CUT): number {
   for (let ms = Math.ceil(spring.response * 6 * 1000); ms >= 0; ms -= 1) {
     if (Math.abs(1 - springPosition(spring, ms / 1000)) > epsilon) return (ms + 1) / 1000;

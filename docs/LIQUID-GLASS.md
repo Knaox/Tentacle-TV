@@ -187,7 +187,11 @@ Les déplacements suivent le ressort de la page (`springCurve.ts`, recopié de
 `theme/glass/springs.ts` et verrouillé par test) : coupe à 1 % du trajet comme
 les transitions CSS (`morph` : 291 ms), rejouée par l'animateur avec la Bézier
 la plus proche (écart < 1 % pour `morph` ; `lens` y perd son rebond, jamais sa
-durée). Mesuré dans l'app : fondu d'entrée à 62 % à 130 ms, de sortie à 24 % à
+durée). Pas les 584 ms de `NATIVE_GLASS_MORPH_MS` (repos à 0,1 %) : sur cette
+durée, la MEILLEURE Bézier possible s'écarte du ressort de 3,7 % en pleine course
+(recherche exhaustive) — 11 px sur 300 —, contre moins de 1 % sur 291 ms ; et
+la courbe ajustée finit exactement au but, sans le saut d'un ressort coupé. La
+`transition` que la page envoie (584) règle la durée des fondus. Mesuré dans l'app : fondu d'entrée à 62 % à 130 ms, de sortie à 24 % à
 160 ms puis 0 vue.
 
 ### 2.6 Cycle de vie
