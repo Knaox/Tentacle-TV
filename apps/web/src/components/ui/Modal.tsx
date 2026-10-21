@@ -165,7 +165,7 @@ export function Modal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+          className="lg-scrim fixed inset-0 z-[100] flex items-center justify-center px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: { duration: reduced ? 0.12 : 0.18 } }}
           exit={{ opacity: 0, transition: { duration: reduced ? 0.08 : 0.12 } }}
@@ -188,7 +188,7 @@ export function Modal({
             aria-labelledby={labelledBy}
             aria-describedby={describedBy}
             tabIndex={-1}
-            className={`relative w-full overflow-hidden outline-none ${className ?? ""}`}
+            className={`lg-sheet relative w-full overflow-hidden outline-none ${className ?? ""}`}
             style={{
               maxWidth: typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth,
               background: "var(--surface-modal)",

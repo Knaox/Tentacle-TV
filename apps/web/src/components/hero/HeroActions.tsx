@@ -20,7 +20,7 @@ export const HERO_PLAY_CLASS =
 export const HERO_PLAY_STYLE = { boxShadow: "var(--elev-2)" };
 /** Posé sur l'affiche : verre sombre + texte blanc constants, jamais les tokens `--cta-ghost-*` du fond de PAGE. */
 export const HERO_INFO_CLASS =
-  "flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-6 py-3 text-base font-semibold text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
+  "lg-btn-media flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-6 py-3 text-base font-semibold text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
 
 interface HeroActionsProps {
   item: MediaItem;

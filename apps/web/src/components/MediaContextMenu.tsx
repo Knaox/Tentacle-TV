@@ -42,7 +42,7 @@ export function MediaContextMenu({ item, x, y, onClose }: Props) {
       gap={2}
       role="menu"
       ariaLabel={t("common:moreInfo")}
-      className="min-w-[240px] overflow-y-auto overscroll-contain rounded-xl border border-line-subtle bg-surface-dropdown py-1 shadow-2xl backdrop-blur-lg"
+      className="lg-menu min-w-[240px] overflow-y-auto overscroll-contain rounded-xl border border-line-subtle bg-surface-dropdown py-1 shadow-2xl backdrop-blur-lg"
     >
       <MenuToggles item={item} onDone={onClose} />
     </FloatingLayer>

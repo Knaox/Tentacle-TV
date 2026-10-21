@@ -203,7 +203,7 @@ export function CardTrayCapsule({ label, stretch = false, bare = false, children
 }) {
   // `max-w-full min-w-0` : la capsule ne dépasse jamais la carte, ce sont ses
   // boutons qui se resserrent (`TRAY_SIZE`).
-  const capsule = `flex min-w-0 max-w-full items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
+  const capsule = `lg-tray flex min-w-0 max-w-full items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
     stretch ? "w-full justify-between" : ""
   }`;
   return (

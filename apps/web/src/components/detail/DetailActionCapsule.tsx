@@ -114,7 +114,7 @@ export function DetailCapsule({ children }: { children: ReactNode }) {
   return (
     <div
       role="group"
-      className="flex h-14 items-center gap-0.5 rounded-full border border-on-media-muted px-1.5"
+      className="lg-capsule-media flex h-14 items-center gap-0.5 rounded-full border border-on-media-muted px-1.5"
       style={{ background: "rgba(var(--scrim-media-rgb), 0.38)" }}
     >
       {children}

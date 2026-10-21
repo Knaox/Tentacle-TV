@@ -114,7 +114,7 @@ export function FilterMenu({
         onDismiss={() => setOpen(false)}
         side="bottom"
         align={align === "right" ? "end" : "start"}
-        className="overflow-y-auto overscroll-contain rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]"
+        className="lg-menu overflow-y-auto overscroll-contain rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]"
         style={{ width, boxShadow: "var(--shadow-dropdown)" }}
       >
         {closeButton && (

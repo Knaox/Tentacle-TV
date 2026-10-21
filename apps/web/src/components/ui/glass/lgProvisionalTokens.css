@@ -1,0 +1,99 @@
+/* ── Jetons Liquid Glass PROVISOIRES des composants ──────────────────────
+ *
+ * ⚠️ Fichier de passage. Les jetons `--lg-*` appartiennent à lg-tokens
+ * (theme/tokens.css) ; ceux-ci ne sont là que pour que les composants se
+ * dessinent avant sa fusion. À sa fusion : ce fichier disparaît, les noms
+ * qu'il a gardés passent chez lui, les autres sont renommés par `sed`.
+ *
+ * Tout vit sous `:root[data-lg="on"]` : hors verre (réglage coupé, web,
+ * Windows, Linux, macOS < 26), aucun de ces noms n'existe — et aucune règle
+ * des feuilles `lg*.css` ne s'applique. Le rendu d'avant, au pixel près. */
+
+:root[data-lg="on"] {
+  /* Le filtre de réfraction monté une fois par `GlassFilters`. Chromium
+   * l'exécute ; c'est le seul moteur du bureau. */
+  --lg-refract: url(#tentacle-glass-refract);
+
+  /* Trois épaisseurs, comme le matériau d'Apple : fin (pastilles, flèches),
+   * régulier (boutons, menus), épais (feuilles, modales). */
+  --lg-fill-thin: rgba(30, 30, 38, 0.34);
+  --lg-fill: rgba(26, 26, 34, 0.56);
+  --lg-fill-thick: rgba(20, 20, 28, 0.68);
+  /* Le verre POSÉ SUR UNE AFFICHE : plus neutre, plus sombre — le libellé y
+   * est blanc dans les deux schémas. */
+  --lg-fill-media: rgba(0, 0, 0, 0.34);
+  /* Le verre posé sur un voile déjà sombre (plateau des cartes) : sans flou,
+   * un blanc léger suffit — mêmes valeurs dans les deux schémas. */
+  --lg-fill-veil: rgba(255, 255, 255, 0.1);
+  /* Le pouce de l'interrupteur, lentille laiteuse. */
+  --lg-knob: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 244, 248, 0.92));
+  --lg-knob-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+
+  --lg-backdrop-thin: blur(10px) saturate(1.35) var(--lg-refract);
+  --lg-backdrop: blur(18px) saturate(1.45) var(--lg-refract);
+  --lg-backdrop-thick: blur(32px) saturate(1.5) var(--lg-refract);
+
+  /* L'ARÊTE : ce qui fait lire un matériau et non un voile. Trois traits
+   * intérieurs — lumière en haut, contour d'un pixel, reflet bas plus faible.
+   * Ombres INSET, fixes : rien ne s'anime jamais ici. */
+  --lg-rim:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  --lg-rim-strong:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  /* Le reflet spéculaire : une nappe claire qui tombe du haut du verre. */
+  --lg-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 45%, rgba(255, 255, 255, 0) 70%);
+
+  --lg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.2);
+  --lg-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.22), 0 12px 32px rgba(0, 0, 0, 0.32);
+  --lg-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.24), 0 28px 72px rgba(0, 0, 0, 0.48);
+
+  /* Teinte de marque du bouton primaire : le dégradé PROFOND (libellé blanc
+   * ≥ 4,5:1, cf. `--cta-brand-gradient`), rendu translucide — l'affiche passe
+   * dessous et se teinte de violet → rose. */
+  --lg-tint-brand: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand-dark) 90%, transparent) 0%,
+    color-mix(in srgb, var(--brand-accent-dark) 88%, transparent) 100%
+  );
+  --lg-tint-brand-glow: 0 4px 18px rgba(var(--brand-rgb), 0.38);
+
+  /* Survol : un voile clair dont seule l'opacité change. Appui : l'échelle. */
+  --lg-hover-fill: rgba(255, 255, 255, 0.1);
+  --lg-press-scale: 0.97;
+
+  --lg-radius-control: 12px;
+  --lg-radius-menu: 14px;
+  --lg-radius-sheet: 26px;
+
+  /* Voile de modale : un cran plus léger qu'avant — le verre épais de la
+   * feuille porte désormais la séparation. */
+  --lg-scrim: rgba(0, 0, 0, 0.42);
+}
+
+:root[data-lg="on"][data-theme="light"] {
+  --lg-fill-thin: rgba(255, 255, 255, 0.42);
+  --lg-fill: rgba(255, 255, 255, 0.56);
+  --lg-fill-thick: rgba(250, 250, 252, 0.72);
+  --lg-fill-media: rgba(0, 0, 0, 0.24);
+
+  --lg-rim:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  --lg-rim-strong:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  --lg-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.12) 45%, rgba(255, 255, 255, 0) 70%);
+
+  --lg-shadow-sm: 0 1px 2px rgba(11, 11, 16, 0.08), 0 4px 12px rgba(11, 11, 16, 0.08);
+  --lg-shadow-md: 0 2px 6px rgba(11, 11, 16, 0.08), 0 12px 32px rgba(11, 11, 16, 0.14);
+  --lg-shadow-lg: 0 4px 12px rgba(11, 11, 16, 0.1), 0 28px 72px rgba(11, 11, 16, 0.2);
+
+  --lg-hover-fill: rgba(0, 0, 0, 0.05);
+  --lg-scrim: rgba(0, 0, 0, 0.22);
+}
