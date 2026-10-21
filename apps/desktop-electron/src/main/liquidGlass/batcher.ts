@@ -46,6 +46,10 @@ function pick(region: NativeGlassRegion): NativeGlassRegion {
     ...(region.group === undefined ? {} : { group: region.group }),
     ...(region.spacing === undefined ? {} : { spacing: region.spacing }),
     ...(region.transition === undefined ? {} : { transition: region.transition }),
+    ...(region.spring === undefined
+      ? {}
+      : { spring: { response: region.spring.response, dampingFraction: region.spring.dampingFraction } }),
+    ...(region.appearance === undefined ? {} : { appearance: region.appearance }),
   };
 }
 

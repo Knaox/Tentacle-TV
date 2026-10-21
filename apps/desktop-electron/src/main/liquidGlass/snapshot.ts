@@ -8,6 +8,8 @@
  */
 
 import type { LiquidGlassAvailability } from "./availability";
+import type { GlassInspection } from "./backend";
+import type { NativeGlassRegion } from "./protocol";
 
 /** Une région : ce que la page a demandé, et ce qu'AppKit porte. */
 export interface RegionSnapshot {
@@ -44,4 +46,19 @@ export interface GlassSnapshot extends RegionsSnapshot {
   supported: boolean;
   availability: LiquidGlassAvailability;
   refractsVideo: boolean;
+}
+
+/** Une région décrite : ce que la page a demandé, et ce qu'AppKit porte (`null` sans vue). */
+export function describeRegion(region: NativeGlassRegion, native: GlassInspection | null): RegionSnapshot {
+  return {
+    id: region.id,
+    level: region.level,
+    group: region.group ?? null,
+    z: region.z,
+    css: { x: region.x, y: region.y, width: region.width, height: region.height, radius: region.radius },
+    frame: native?.frame ?? null,
+    radius: native?.radius ?? null,
+    style: native?.style ?? null,
+    hidden: native === null || native.hidden,
+  };
 }

@@ -29,6 +29,8 @@ import type { BrowserWindow } from "electron";
 import { NSWindowBelow, cls, fromHandle, msg, sel, signature } from "../video/objc";
 import type { GlassBackend, GlassInspection, GlassProps, GroupHandle, ViewHandle } from "./backend";
 import type { AppKitRect, Rgba } from "./geometry";
+import type { GlassAppearance } from "./protocol";
+import type { NativeMotion } from "./springCurve";
 
 /** `[[Classe alloc] initWithFrame: cadre]`. */
 const initWithFrame = signature("void*", ["void*", "void*", "NSRect"]);
@@ -40,6 +42,10 @@ const srgb = signature("void*", ["void*", "void*", "double", "double", "double",
 const setNullable = signature("void", ["void*", "void*", "void*"]);
 /** `[CAMediaTimingFunction functionWithControlPoints::::]` — des `float`, pas des CGFloat. */
 const controlPoints = signature("void*", ["void*", "void*", "float", "float", "float", "float"]);
+/** `[NSString stringWithUTF8String:]`. */
+const utf8 = signature("void*", ["void*", "void*", "const char*"]);
+/** `[cible sélecteur: objet]` — retour objet (`appearanceNamed:`). */
+const withObject = signature("void*", ["void*", "void*", "void*"]);
 
 /** `NSViewWidthSizable | NSViewHeightSizable` : la vue suit son parent. */
 const FILL = 2 | 16;
@@ -60,33 +66,52 @@ function create(className: string, frame: AppKitRect): unknown {
   return raw === null ? null : initWithFrame(raw, sel("initWithFrame:"), frame);
 }
 
+type Points = readonly [number, number, number, number];
+
+/** La courbe des fondus : l'accélération-décélération d'AppKit. */
+const FADE: Points = [0.42, 0, 0.58, 1];
+
 /**
- * La courbe des transitions natives : une décélération franche, sans rebond —
- * celle des feuilles d'AppKit. Retenue UNE fois : l'objet rendu est
- * autoreleased, et le garder d'une image à l'autre sans `retain` le laisserait
- * pendre après la vidange du pool.
+ * Les courbes, retenues UNE fois chacune : l'objet rendu est autoreleased, et le
+ * garder d'une image à l'autre sans `retain` le laisserait pendre après la
+ * vidange du pool. Il n'en existe qu'une poignée (une par ressort, et le fondu).
  */
-let easing: unknown = null;
-function easingCurve(): unknown {
-  if (easing !== null) return easing;
-  const curve = controlPoints(cls("CAMediaTimingFunction"), sel("functionWithControlPoints::::"), 0.2, 0.9, 0.25, 1);
-  if (curve) easing = msg.get(curve, "retain");
-  return easing;
+const curves = new Map<string, unknown>();
+function curve(points: Points): unknown {
+  const key = points.join(",");
+  const known = curves.get(key);
+  if (known !== undefined) return known;
+  const made = controlPoints(cls("CAMediaTimingFunction"), sel("functionWithControlPoints::::"), ...points);
+  const kept = made ? msg.get(made, "retain") : null;
+  curves.set(key, kept);
+  return kept;
 }
 
-/** Joue `gesture` sur le mandataire `animator` de la vue, en `durationMs`. */
-function animate(view: unknown, durationMs: number, gesture: (animator: unknown) => void): void {
+/** Joue `gesture` sur le mandataire `animator` de la vue : `durationMs`, courbe `points`. */
+function animate(view: unknown, durationMs: number, points: Points, gesture: (animator: unknown) => void): void {
   const context = cls("NSAnimationContext");
   msg.get(context, "beginGrouping");
   try {
     const current = msg.get(context, "currentContext");
     msg.setDouble(current, "setDuration:", durationMs / 1000);
-    const curve = easingCurve();
-    if (curve) msg.setObject(current, "setTimingFunction:", curve);
+    const timing = curve(points);
+    if (timing) msg.setObject(current, "setTimingFunction:", timing);
     gesture(msg.get(view, "animator"));
   } finally {
     msg.get(context, "endGrouping");
   }
+}
+
+/** Les deux apparences d'AppKit, retenues une fois. Les noms sont ceux des constantes publiques. */
+const appearances = new Map<GlassAppearance, unknown>();
+function appearanceObject(appearance: GlassAppearance): unknown {
+  const known = appearances.get(appearance);
+  if (known !== undefined) return known;
+  const name = utf8(cls("NSString"), sel("stringWithUTF8String:"), appearance === "dark" ? "NSAppearanceNameDarkAqua" : "NSAppearanceNameAqua");
+  const found = withObject(cls("NSAppearance"), sel("appearanceNamed:"), name);
+  const kept = found ? msg.get(found, "retain") : null;
+  appearances.set(appearance, kept);
+  return kept;
 }
 
 export class AppKitGlassBackend implements GlassBackend {
@@ -138,13 +163,14 @@ export class AppKitGlassBackend implements GlassBackend {
     msg.setFlag(view.native, "setHidden:", hidden);
   }
 
-  createGroup(root: ViewHandle, spacing: number): GroupHandle {
+  createGroup(root: ViewHandle, spacing: number, alpha: number): GroupHandle {
     const bounds = msg.rect(root.native, "bounds");
     const container = create("NSGlassEffectContainerView", bounds);
     const content = create("NSView", bounds);
     msg.setAutoresizingMask(container, FILL);
     msg.setAutoresizingMask(content, FILL);
     msg.setDouble(container, "setSpacing:", spacing);
+    if (alpha !== 1) msg.setDouble(container, "setAlphaValue:", alpha);
     msg.setObject(container, "setContentView:", content);
     // Le conteneur retient sa vue de contenu : notre +1 lui revient, et elle
     // part avec lui. On ne la touche plus qu'à travers lui.
@@ -163,13 +189,17 @@ export class AppKitGlassBackend implements GlassBackend {
     msg.setDouble(view, "setCornerRadius:", props.radius);
     msg.setInt(view, "setStyle:", props.style);
     if (props.tint !== null) this.setTint(wrap(view), props.tint);
-    if (props.alpha !== 1) msg.setDouble(view, "setAlphaValue:", props.alpha);
+    if (props.appearance !== null) this.setAppearance(wrap(view), props.appearance);
     return wrap(view);
   }
 
-  setFrame(view: ViewHandle, frame: AppKitRect, durationMs: number): void {
-    if (durationMs <= 0) return msg.setViewFrame(view.native, frame);
-    animate(view.native, durationMs, (animator) => msg.setViewFrame(animator, frame));
+  /**
+   * Par l'animateur d'AppKit, et par lui seulement : la forme d'un verre IGNORE
+   * une animation Core Animation posée sur sa couche (`springCurve.ts`).
+   */
+  setFrame(view: ViewHandle, frame: AppKitRect, motion: NativeMotion | null): void {
+    if (motion === null || motion.durationMs <= 0) return msg.setViewFrame(view.native, frame);
+    animate(view.native, motion.durationMs, motion.points, (animator) => msg.setViewFrame(animator, frame));
   }
 
   setRadius(view: ViewHandle, radius: number): void {
@@ -189,9 +219,13 @@ export class AppKitGlassBackend implements GlassBackend {
     setNullable(view.native, sel("setTintColor:"), color);
   }
 
+  setAppearance(view: ViewHandle, appearance: GlassAppearance | null): void {
+    setNullable(view.native, sel("setAppearance:"), appearance === null ? null : appearanceObject(appearance));
+  }
+
   setAlpha(view: ViewHandle, alpha: number, durationMs: number): void {
     if (durationMs <= 0) return msg.setDouble(view.native, "setAlphaValue:", alpha);
-    animate(view.native, durationMs, (animator) => msg.setDouble(animator, "setAlphaValue:", alpha));
+    animate(view.native, durationMs, FADE, (animator) => msg.setDouble(animator, "setAlphaValue:", alpha));
   }
 
   placeBelow(parent: ViewHandle, view: ViewHandle, anchor: ViewHandle | null): void {
