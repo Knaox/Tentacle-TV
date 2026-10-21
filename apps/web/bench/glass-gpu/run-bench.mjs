@@ -173,7 +173,8 @@ async function main() {
       const verdict = judgeScenario(scenario, passes.on.gpu, passes.off.gpu);
       results.push({ ...verdict, reference: passes.off, measured: passes.on });
       console.log(
-        `${verdict.ok ? "✓" : "✗"} ${scenario.padEnd(13)} GPU Electron ${passes.off.gpu.median} → ${passes.on.gpu.median} % (écart ${verdict.delta}, budget ${verdict.maxDelta})` +
+        `${verdict.ok ? "✓" : "✗"} ${scenario.padEnd(13)} GPU Electron ${passes.off.gpu.median} → ${passes.on.gpu.median} % (écart ${verdict.delta}` +
+          `${verdict.gestureMs === undefined ? "" : ` = ${verdict.gestureMs} ms/geste`}, budget ${verdict.limit} ${verdict.unit})` +
           ` · WindowServer ${passes.off.windowServer.median} → ${passes.on.windowServer.median} % · CPU ${passes.off.cpu.median} → ${passes.on.cpu.median} %`,
       );
     }

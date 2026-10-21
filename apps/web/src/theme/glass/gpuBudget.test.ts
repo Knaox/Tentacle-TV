@@ -56,6 +56,17 @@ describe("budget GPU — lecture des mesures", () => {
     expect(judgeScenario("pointerSweep", summarize([20, 21, 22]), ref)).toMatchObject({ delta: 11, ok: false });
   });
 
+  it("juge un geste répété par son temps GPU unitaire", () => {
+    const ref = summarize([0, 0, 0]);
+    // 10 points pendant une période de 400 ms : 40 ms de GPU par appui.
+    expect(judgeScenario("pressPulse", summarize([10, 10, 10]), ref)).toMatchObject({
+      gestureMs: 40,
+      unit: "ms/geste",
+      ok: true,
+    });
+    expect(judgeScenario("fusion", summarize([10, 10, 10]), ref)).toMatchObject({ gestureMs: 70, ok: false });
+  });
+
   it("lit le temps GPU cumulé de chaque processus (clients AGX)", () => {
     const text = `      "IOUserClientCreator" = "pid 395, WindowServer"
       "AppUsage" = ({"API"="Metal","lastSubmittedTime"=1,"accumulatedGPUTime"=1000},{"API"="Metal","accumulatedGPUTime"=500})
