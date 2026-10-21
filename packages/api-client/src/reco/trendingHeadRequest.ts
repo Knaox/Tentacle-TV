@@ -7,7 +7,7 @@ import { appConfigQuery, useAppConfig } from "../hooks/useConfig";
  * La page reco demande-t-elle « Tendances actuelles » en tête (`?trendingNow=1`) ?
  * Seulement si TROIS choses sont vraies (garde-fous du lot 1017) :
  *   1. l'application sait la rendre (`acceptRecoTrendingHead`, posé au
- *      démarrage : web, bureau, Apple TV, Android TV — pas le mobile ni webOS) ;
+ *      démarrage : web, bureau, Apple TV, Android TV, mobile — pas webOS) ;
  *   2. le serveur déclare `reco.trending` ;
  *   3. la préférence du compte n'est pas coupée (`trendingNow`).
  * Sinon la requête — et sa clé de cache, mémoire et disque — est EXACTEMENT
