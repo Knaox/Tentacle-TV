@@ -26,7 +26,8 @@ interface FloatingLayerProps extends FloatingOptions {
   /** -1 : le panneau reçoit le focus à l'ouverture (dialogue). */
   tabIndex?: number;
   /** Autres attributs du panneau (id, aria-describedby…). */
-  attrs?: Pick<HTMLAttributes<HTMLDivElement>, "id" | "aria-describedby" | "aria-modal">;
+  /** `data-lgc-lens` : la lentille propre du panneau (`useGlassControl`, mode natif). */
+  attrs?: Pick<HTMLAttributes<HTMLDivElement>, "id" | "aria-describedby" | "aria-modal"> & { "data-lgc-lens"?: "" };
   /** Largeur maximale voulue par l'appelant ; la fenêtre peut borner plus bas. */
   maxWidth?: number;
   /** Le panneau lui-même, pour qui doit y lire (focus, défilement). */

@@ -28,6 +28,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PLAYBACK_RATES, NORMAL_RATE, formatRate, isNormalRate } from "@tentacle-tv/shared";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { SpeedIcon } from "../PlayerIcons";
+import { usePlayerGlassMode } from "../player/glass/PlayerGlassContext";
+import { isGlassLayout } from "../player/glass/playerGlassMode";
+import { GlassPanel } from "../player/glass/GlassPanel";
+import { GlassOption } from "../player/glass/GlassOption";
 
 interface PlaybackRateControlProps {
   /** Applique le taux au moteur (web : playbackRate ; desktop : mpv speed). */
@@ -50,6 +54,9 @@ export function PlaybackRateControl({
   const [rate, setRate] = useState<number>(NORMAL_RATE);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Verre : le conteneur n'est PAS positionné — le menu se cale alors sur la
+  // capsule (`.lgp-popover`), au-dessus d'elle, comme les deux autres panneaux.
+  const glass = isGlassLayout(usePlayerGlassMode());
 
   // `apply` est recréée à chaque rendu du parent : la garder en ref évite
   // de relancer la remise à 1× à chaque tour.
@@ -99,10 +106,10 @@ export function PlaybackRateControl({
   if (isInGroup) return null;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={glass ? "" : "relative"}>
       <button
         onClick={toggle}
-        className={`relative rounded-full hover:bg-white/10 ${open ? "bg-white/10" : ""} ${buttonClass}`}
+        className={glass ? "lgp-btn relative" : `relative rounded-full hover:bg-white/10 ${open ? "bg-white/10" : ""} ${buttonClass}`}
         title={t("player:speed")}
         aria-label={t("player:speed")}
         aria-haspopup="menu"
@@ -119,7 +126,20 @@ export function PlaybackRateControl({
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && glass && (
+          <GlassPanel key="speed" className="w-44" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
+            <div className="mb-1 flex items-center justify-between gap-2 pl-2.5">
+              <span className="lgp-section-title lgp-section-title--inline">{t("player:speed")}</span>
+              <button type="button" onClick={() => setOpen(false)} aria-label={t("player:close")} title={t("player:close")} className="lgp-btn lgp-btn--small">
+                <CloseGlyph />
+              </button>
+            </div>
+            {PLAYBACK_RATES.map((value) => (
+              <GlassOption key={value} active={value === rate} onClick={() => choose(value)}>{formatRate(value)}</GlassOption>
+            ))}
+          </GlassPanel>
+        )}
+        {open && !glass && (
           // Panneau DÉTACHÉ, fond quasi-opaque `surface-dropdown` comme
           // TrackSelector — donc pas de `backdrop-filter` : il ne resterait
           // rien à flouter, et sur macOS/Linux toute couche à alpha composée
@@ -147,9 +167,7 @@ export function PlaybackRateControl({
                 title={t("player:close")}
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
               >
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseGlyph />
               </button>
             </div>
             {PLAYBACK_RATES.map((value) => {
@@ -174,5 +192,13 @@ export function PlaybackRateControl({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function CloseGlyph() {
+  return (
+    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
   );
 }

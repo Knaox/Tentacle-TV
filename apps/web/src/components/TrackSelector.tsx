@@ -5,6 +5,11 @@ import {
   type QualityDrop, type QualityKey, type QualityPreset, type SourceQuality,
 } from "@tentacle-tv/shared";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
+import { parseTrackLabel } from "./trackLabel";
+import { usePlayerGlassMode } from "./player/glass/PlayerGlassContext";
+import { isGlassLayout } from "./player/glass/playerGlassMode";
+import { GlassPanel } from "./player/glass/GlassPanel";
+import { GlassChip, GlassOption } from "./player/glass/GlassOption";
 
 interface Track {
   index: number;
@@ -50,14 +55,9 @@ export function TrackSelector({
   // Et donc PAS de `backdrop-filter` : à 0,95 d'alpha il ne reste rien à
   // flouter, alors que le panneau flotte au-dessus d'une vidéo en lecture dont
   // l'arrière-plan change à chaque image décodée.
-  return (
-    <motion.div data-panneau-detache
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      className="absolute bottom-20 right-6 z-50 w-80 max-w-[calc(100vw-3rem)] rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-4"
-      onClick={(e) => e.stopPropagation()}
-    >
+  const glass = isGlassLayout(usePlayerGlassMode());
+  const body = (
+    <>
       <div className="mb-3 flex items-center justify-between">
         <span className="text-sm font-semibold text-content-primary">{t("player:settings")}</span>
         <button onClick={onClose} className="text-content-quaternary hover:text-content-primary">&times;</button>
@@ -147,14 +147,30 @@ export function TrackSelector({
           {t("player:applyToSeries")}
         </label>
       )}
+    </>
+  );
+  // Verre : le popover au-dessus de la capsule (`GlassPanel`), mêmes lignes.
+  if (glass) {
+    return <GlassPanel className="w-80 max-w-[calc(100vw-3rem)]" bodyClassName="p-3" role="dialog" aria-label={t("player:settings")}>{body}</GlassPanel>;
+  }
+  return (
+    <motion.div data-panneau-detache
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      className="absolute bottom-20 right-6 z-50 w-80 max-w-[calc(100vw-3rem)] rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-4"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {body}
     </motion.div>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const glass = isGlassLayout(usePlayerGlassMode());
   return (
     <div className="mb-3 last:mb-0">
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-content-quaternary">{title}</p>
+      <p className={glass ? "lgp-section-title" : "mb-1.5 text-xs font-medium uppercase tracking-wider text-content-quaternary"}>{title}</p>
       <div className="space-y-0.5">{children}</div>
     </div>
   );
@@ -176,6 +192,19 @@ function QualityOption({
   const label = isOriginal ? t("player:original") : t(`player:${presetKey}`);
   const resSuffix = isOriginal && sourceQuality?.resolution ? sourceQuality.resolution : null;
   const mbpsChip = !isOriginal && bitrate ? formatBitrateMbps(bitrate) : null;
+  const glass = isGlassLayout(usePlayerGlassMode());
+  const inner = (
+    <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
+      <span className="truncate">{label}</span>
+      {autoBadge && <Badge color="purple">{t("player:qualityAutoBadge")}</Badge>}
+      {resSuffix && <span className="text-content-quaternary">— {resSuffix}</span>}
+      {isOriginal && sourceQuality?.isDolbyVision && <Badge color="purple">DV</Badge>}
+      {isOriginal && sourceQuality?.isHDR && <Badge color="amber">HDR</Badge>}
+      {isOriginal && sourceQuality?.isDolbyAtmos && <Badge color="amber">Atmos</Badge>}
+      {mbpsChip && <span className="ml-auto"><Badge color="zinc">{mbpsChip}</Badge></span>}
+    </span>
+  );
+  if (glass) return <GlassOption active={active} onClick={onClick}>{inner}</GlassOption>;
 
   return (
     <button
@@ -185,21 +214,22 @@ function QualityOption({
       }`}
     >
       <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-fill-medium"}`} />
-      <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
-        <span className="truncate">{label}</span>
-        {autoBadge && <Badge color="purple">{t("player:qualityAutoBadge")}</Badge>}
-        {resSuffix && <span className="text-content-quaternary">— {resSuffix}</span>}
-        {isOriginal && sourceQuality?.isDolbyVision && <Badge color="purple">DV</Badge>}
-        {isOriginal && sourceQuality?.isHDR && <Badge color="amber">HDR</Badge>}
-        {isOriginal && sourceQuality?.isDolbyAtmos && <Badge color="amber">Atmos</Badge>}
-        {mbpsChip && <span className="ml-auto"><Badge color="zinc">{mbpsChip}</Badge></span>}
-      </span>
+      {inner}
     </button>
   );
 }
 
 function TrackOption({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   const { lang, codec, title } = parseTrackLabel(label);
+  const glass = isGlassLayout(usePlayerGlassMode());
+  const inner = (
+    <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
+      <span className="truncate">{title}</span>
+      {lang && <Badge color="purple">{lang}</Badge>}
+      {codec && <Badge color="zinc">{codec}</Badge>}
+    </span>
+  );
+  if (glass) return <GlassOption active={active} onClick={onClick}>{inner}</GlassOption>;
 
   return (
     <button
@@ -209,52 +239,19 @@ function TrackOption({ label, active, onClick }: { label: string; active: boolea
       }`}
     >
       <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-fill-medium"}`} />
-      <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
-        <span className="truncate">{title}</span>
-        {lang && <Badge color="purple">{lang}</Badge>}
-        {codec && <Badge color="zinc">{codec}</Badge>}
-      </span>
+      {inner}
     </button>
   );
 }
 
 function Badge({ color, children }: { color: "purple" | "zinc" | "amber"; children: React.ReactNode }) {
+  // Verre : un trait plein — l'aplat translucide d'avant rendrait gris sur la surface à alpha.
+  const glass = isGlassLayout(usePlayerGlassMode());
+  if (glass) return <GlassChip>{children}</GlassChip>;
   const cls = color === "purple"
     ? "bg-[rgba(var(--brand-rgb),0.2)] text-[var(--brand-light)]"
     : color === "amber"
       ? "bg-amber-500/20 text-amber-300"
       : "bg-fill-soft text-content-tertiary";
   return <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>{children}</span>;
-}
-
-/** Extract language, codec, and title from track label like "French - AAC" */
-function parseTrackLabel(raw: string) {
-  const parts = raw.split(" - ");
-  if (parts.length >= 2) {
-    const last = parts[parts.length - 1].trim();
-    const isCodec = /^[A-Z0-9]{2,8}$/i.test(last);
-    return {
-      title: parts.slice(0, isCodec ? -1 : undefined).join(" - "),
-      codec: isCodec ? last : null,
-      lang: extractLang(parts[0]),
-    };
-  }
-  return { title: raw, codec: null, lang: extractLang(raw) };
-}
-
-const LANG_MAP: Record<string, string> = {
-  french: "FR", français: "FR", francais: "FR", fre: "FR", fra: "FR",
-  english: "EN", anglais: "EN", eng: "EN",
-  japanese: "JP", japonais: "JP", jpn: "JP",
-  german: "DE", allemand: "DE", ger: "DE", deu: "DE",
-  spanish: "ES", espagnol: "ES", spa: "ES",
-  undetermined: "", und: "",
-};
-
-function extractLang(text: string): string | null {
-  const lower = text.toLowerCase().trim();
-  for (const [key, code] of Object.entries(LANG_MAP)) {
-    if (lower.includes(key)) return code || null;
-  }
-  return null;
 }

@@ -121,7 +121,7 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
       onClick={handleClick}
       aria-label={label}
       title={label}
-      className={`${box} relative flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
+      className={`${variant === "inline" && tone === "chip" ? "lg-btn-media " : ""}${box} relative flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
         tone === "tray"
           ? `transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${kept ? "text-emerald-400" : "text-white/80 hover:text-white"}`
           : `border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${

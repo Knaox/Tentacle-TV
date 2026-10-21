@@ -8,6 +8,7 @@ import {
 import { formatEpisodeCode, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
+import { PlayerGlassProvider } from "../components/player/glass/PlayerGlassContext";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { PipLoadingPortal, pipTitle } from "../pictureInPicture/PlayerPipPortal";
@@ -228,47 +229,51 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     ? `${formatEpisodeCode(nextEpisode.ParentIndexNumber, nextEpisode.IndexNumber, { style: "padded" })} — ${nextEpisode.Name}` : undefined;
 
   return (
-    <div className="relative h-screen w-screen">
-      <DesktopPlayer
-        key={`${itemId}:${attempt}`} src={streamUrl} title={title} subtitle={epSubtitle}
-        startPositionSeconds={group.groupStartPositionSeconds ?? playback.resumeAt ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
-        audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-        currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality} autoQualityActive={autoModeArmed} qualityDrop={qualityDrop}
-        qualityPresets={qualityPresets}
-        onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
-        /* Lecture locale : le fichier EST la source — changer la « qualité »
-           n'a aucun sens, le sélecteur est retiré (TrackSelector le masque
-           quand onQualityChange est absent). */
-        onQualityChange={isLocalPlayback ? undefined : handleQualityChange}
-        isLocalPlayback={isLocalPlayback} offline={!online}
-        localLibraryId={localSource?.libraryId ?? null}
-        localSubtitleFiles={localSource?.subtitleFiles}
-        onProgress={handleProgress} onStarted={() => { playback.markStarted(); if (online && !isLocalPlayback) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
-        hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
-        nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextArtwork.imageUrl}
-        nextSeriesBackdropUrl={nextArtwork.seriesBackdropUrl} nextEpisodeThumbUrl={nextArtwork.thumbUrl}
-        nextEpisodeDescription={nextArtwork.description}
-        onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
-        isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
-        segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
-        itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
-        onFallbackToWeb={handlePlayerFailure} onMediaMissing={handleMediaMissing}
-        transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
-        onBufferingChange={playback.onBuffering}
-        onSeekComplete={(seconds, _paused, explicit) => groupSync.notifySeek(seconds, { explicit })}
-        onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
-        inGroupSession={group.groupActive}
-        onControlsVisibilityChange={setControlsVisible}
-        applyToSeries={applyToSeries}
-      />
-      <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
-      <JellyfinOutageNotice onRetry={playback.reopen} />
-      {/* Indicateur discret « Lecture locale » — suit le fondu des contrôles. */}
-      {isLocalPlayback && controlsVisible && (
-        <div className="pointer-events-none absolute right-4 top-4 z-40 rounded-full bg-status-success-bg px-3 py-1 text-xs font-semibold text-status-success-fg">
-          {tDownloads("localPlayback")}
-        </div>
-      )}
-    </div>
+    // L'habillage (verre natif ou celui d'avant) se décide ICI, une fois, pour
+    // tout ce qui se pose sur la vidéo — Watch Together et avis compris.
+    <PlayerGlassProvider>
+      <div className="relative h-screen w-screen">
+        <DesktopPlayer
+          key={`${itemId}:${attempt}`} src={streamUrl} title={title} subtitle={epSubtitle}
+          startPositionSeconds={group.groupStartPositionSeconds ?? playback.resumeAt ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
+          audioTracks={audioTracks} subtitleTracks={subtitleTracks}
+          currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality} autoQualityActive={autoModeArmed} qualityDrop={qualityDrop}
+          qualityPresets={qualityPresets}
+          onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
+          /* Lecture locale : le fichier EST la source — changer la « qualité »
+             n'a aucun sens, le sélecteur est retiré (TrackSelector le masque
+             quand onQualityChange est absent). */
+          onQualityChange={isLocalPlayback ? undefined : handleQualityChange}
+          isLocalPlayback={isLocalPlayback} offline={!online}
+          localLibraryId={localSource?.libraryId ?? null}
+          localSubtitleFiles={localSource?.subtitleFiles}
+          onProgress={handleProgress} onStarted={() => { playback.markStarted(); if (online && !isLocalPlayback) reportStart(group.groupStartPositionSeconds ?? startPositionSeconds); }}
+          hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
+          nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextArtwork.imageUrl}
+          nextSeriesBackdropUrl={nextArtwork.seriesBackdropUrl} nextEpisodeThumbUrl={nextArtwork.thumbUrl}
+          nextEpisodeDescription={nextArtwork.description}
+          onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
+          isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
+          segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
+          itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
+          onFallbackToWeb={handlePlayerFailure} onMediaMissing={handleMediaMissing}
+          transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
+          onBufferingChange={playback.onBuffering}
+          onSeekComplete={(seconds, _paused, explicit) => groupSync.notifySeek(seconds, { explicit })}
+          onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
+          inGroupSession={group.groupActive}
+          onControlsVisibilityChange={setControlsVisible}
+          applyToSeries={applyToSeries}
+        />
+        <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
+        <JellyfinOutageNotice onRetry={playback.reopen} />
+        {/* Indicateur discret « Lecture locale » — suit le fondu des contrôles. */}
+        {isLocalPlayback && controlsVisible && (
+          <div className="pointer-events-none absolute right-4 top-4 z-40 rounded-full bg-status-success-bg px-3 py-1 text-xs font-semibold text-status-success-fg">
+            {tDownloads("localPlayback")}
+          </div>
+        )}
+      </div>
+    </PlayerGlassProvider>
   );
 }

@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Gauge, KeyRound, Pause, Server, WifiOff, X, type 
 import { useTranslation } from "react-i18next";
 import type { NoticeSeverity } from "@tentacle-tv/shared";
 import type { MessageCountdown } from "../session/useMessageCountdown";
+import { useGlassControl } from "../ui/glass/useGlassControl";
 
 export type NoticeIcon = "server" | "key" | "check" | "alert" | "gauge" | "wifiOff";
 
@@ -78,11 +79,16 @@ export const NoticeCard = memo(function NoticeCard({
   const look = SURFACES[surface];
   const chip = severity === "info" ? look.infoChip : tone.chip;
   const Icon = ICONS[icon];
+  // En mode natif, la carte de l'app (pas celle du lecteur) : la lentille exacte.
+  const glass = useGlassControl<HTMLDivElement>({ lens: surface === "app" ? "regular" : false });
   return (
     <div
+      ref={glass.ref}
+      {...glass.props}
       role={severity === "blocking" ? "alert" : "status"}
-      className={`relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
+      className={`${surface === "app" ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-xl border py-3 pl-3 pr-1 shadow-xl ${look.root}`}
     >
+      {glass.layers}
       <span aria-hidden className={`w-1 shrink-0 rounded-full ${tone.accent}`} />
       <div className="min-w-0 flex-1 py-0.5">
         <div className="flex items-start gap-2.5">

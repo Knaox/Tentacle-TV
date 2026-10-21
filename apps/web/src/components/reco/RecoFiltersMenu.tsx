@@ -77,7 +77,7 @@ export function RecoFiltersMenu() {
         <div
           role="group"
           aria-label={t("providersFilterAria")}
-          className="absolute right-[var(--row-gutter-mobile)] top-[calc(100%+8px)] w-[min(92vw,430px)] rounded-2xl border border-line-subtle bg-surface-modal p-4 shadow-2xl md:right-[var(--row-gutter-desktop)]"
+          className="lg-menu absolute right-[var(--row-gutter-mobile)] top-[calc(100%+8px)] w-[min(92vw,430px)] rounded-2xl border border-line-subtle bg-surface-modal p-4 shadow-2xl md:right-[var(--row-gutter-desktop)]"
         >
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
             {t("filtersPlatformsLabel")}

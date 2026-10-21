@@ -35,6 +35,7 @@ describe("liquidGlassToggleVisible", () => {
 
 interface FakeBridge {
   supported: boolean;
+  refractsVideo?: boolean;
   setEnabled: ReturnType<typeof vi.fn>;
   upsert: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
@@ -104,6 +105,16 @@ describe("le mode posé au chargement", () => {
     const { attribute } = await boot({ platform: "darwin", bridge, stored: "false" });
     expect(attribute()).toBe("off");
     expect(bridge.setEnabled).toHaveBeenCalledWith(false);
+  });
+
+  it("le verre voit la vidéo seulement si le pont le dit (montage fenetre)", async () => {
+    const seeing = { ...fakeBridge(true), refractsVideo: true };
+    const { mode } = await boot({ platform: "darwin", bridge: seeing });
+    expect(mode.nativeGlassRefractsVideo()).toBe(true);
+    const blind = await boot({ platform: "darwin", bridge: fakeBridge(true) });
+    expect(blind.mode.nativeGlassRefractsVideo()).toBe(false);
+    const old = await boot({ platform: "darwin", bridge: { ...fakeBridge(false), refractsVideo: true } });
+    expect(old.mode.nativeGlassRefractsVideo()).toBe(false);
   });
 
   it("macOS d'avant 26 (pont non supporté) : refraction, aucun appel natif", async () => {
