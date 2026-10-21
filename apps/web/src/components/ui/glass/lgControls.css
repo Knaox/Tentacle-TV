@@ -96,8 +96,8 @@
  * (son `::before`) reste tel quel — il approfondit le dégradé. */
 :root[data-liquid-glass="native"] :is(.hero-cta-primary, .lg-btn-primary) {
   background: var(--lgc-fill-prominent);
-  -webkit-backdrop-filter: var(--lgc-backdrop);
-  backdrop-filter: var(--lgc-backdrop);
+  -webkit-backdrop-filter: var(--lgc-backdrop-prominent);
+  backdrop-filter: var(--lgc-backdrop-prominent);
   border-color: transparent;
   /* `!important` : `HERO_PLAY_STYLE` pose son ombre EN LIGNE. */
   box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
@@ -112,6 +112,8 @@
  * Posé sur le voile du survol (0,9 en bas) : pas de flou. Le modèle
  * (`cardOverlay.ts`) ne change pas — seule la peau. */
 :root[data-liquid-glass="native"] .lg-tray {
+  /* Positionnée : le reflet (`GlassSpecular`) s'y pose en absolu. */
+  position: relative;
   background: var(--lgc-fill-veil);
   border-color: transparent;
   box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
@@ -244,4 +246,15 @@
 :root[data-liquid-glass="native"] .lg-pill {
   background: var(--lgc-fill);
   box-shadow: var(--lgc-edge);
+}
+
+/* ══ 11. La lentille des boutons du plateau et de la capsule ══════════════
+ *
+ * Ils portent `data-lg-lens` (lg-physique : bulle au survol, à l'appui, en
+ * ressort, par la propriété `scale`). Leur grossissement Tailwind
+ * (`hover:scale-110`, `active:scale-95`) s'y ajouterait : il est neutralisé
+ * en mode natif, la lentille le remplace. */
+:root[data-liquid-glass="native"] :is(.lg-tray, .lg-capsule-media) [data-lg-lens] {
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
 }
