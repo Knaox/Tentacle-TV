@@ -90,8 +90,11 @@
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.55);
-  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.22);
+  /* La capsule est à hauteur du MILIEU du fondu : c'est lui qui tient l'AA de
+   * ses libellés sombres quand une affiche passe dessous (mesuré au banc :
+   * 0,22 → 3,9:1, sous le seuil). */
+  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
+  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.4);
   /* Clair : le verre SEUL — ni voile, ni assise blanche, un reflet diffus
    * retenu (sur 1 800 px de large, celui du matériau blanchissait toute la
    * capsule). L'affiche passe à travers ; un halo clair tient le libellé
