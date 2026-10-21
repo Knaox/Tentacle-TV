@@ -1,8 +1,10 @@
 /* Le « liquide » du Liquid Glass — ressorts, lentille, reflet, accessibilité.
  *
- * Tout est OPT-IN : rien ici ne s'applique à un élément qui ne le demande pas
- * (`data-lg-lens`, `data-lg-specular` + `.lg-specular`, `.lg-fusion-shape`).
- * Hors Liquid Glass, le rendu d'avant est donc intact au pixel près.
+ * Tout est OPT-IN (`data-lg-lens`, `data-lg-specular` + `.lg-specular`,
+ * `.lg-fusion-shape`) ET porté par le mode natif
+ * (`html[data-liquid-glass="native"]`, macOS 26, réglage allumé) : hors de
+ * lui, aucune règle ne s'applique — le rendu d'avant est intact au pixel près
+ * (tenu par `liquidGlassTokens.test.ts`).
  *
  * Coût (cf. CLAUDE.md, « Coût GPU ») : la lentille n'anime que `scale`, le
  * reflet que `translate` et `opacity` — composités, aucune peinture par image.
@@ -49,19 +51,19 @@
 /* ── Lentille ───────────────────────────────────────────────────────────────
  * La propriété `scale` (et non `transform`) : elle se compose avec le
  * transform d'un parent ou de framer-motion au lieu de l'écraser. */
-[data-lg-lens] {
+html[data-liquid-glass="native"] [data-lg-lens] {
   scale: 1;
   transition: scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing);
 }
 @media (hover: hover) {
-  [data-lg-lens]:hover {
+  html[data-liquid-glass="native"] [data-lg-lens]:hover {
     scale: var(--lg-lens-scale-hover);
   }
 }
-[data-lg-lens]:active {
+html[data-liquid-glass="native"] [data-lg-lens]:active {
   scale: var(--lg-lens-scale-press);
 }
-[data-lg-lens]:is(:disabled, [aria-disabled="true"]) {
+html[data-liquid-glass="native"] [data-lg-lens]:is(:disabled, [aria-disabled="true"]) {
   scale: 1;
 }
 
@@ -72,20 +74,18 @@
  * bague de 1 px du liseré (`.lg-specular-rim`, masquée) — le bord s'allume au
  * plus près du pointeur. Aucune peinture par image ; la couche n'est promue
  * (`will-change`) que sous le pointeur. */
-.lg-specular,
-.lg-specular-rim {
+html[data-liquid-glass="native"] :is(.lg-specular, .lg-specular-rim) {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   overflow: hidden;
   pointer-events: none;
 }
-.lg-specular-rim {
+html[data-liquid-glass="native"] .lg-specular-rim {
   padding: 1px;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
-.lg-specular::before,
-.lg-specular-rim::before {
+html[data-liquid-glass="native"] :is(.lg-specular, .lg-specular-rim)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -93,18 +93,18 @@
   translate: calc((var(--lg-spec-u, 0.3) - 0.5) * 100%) calc((var(--lg-spec-v, 0.12) - 0.5) * 100%);
   transition: opacity var(--lg-spring-settle-duration) var(--lg-spring-settle-easing);
 }
-.lg-specular::before {
+html[data-liquid-glass="native"] .lg-specular::before {
   background: radial-gradient(circle var(--lg-specular-size) at 50% 50%, var(--lg-specular-halo), transparent);
 }
-.lg-specular-rim::before {
+html[data-liquid-glass="native"] .lg-specular-rim::before {
   background: radial-gradient(circle var(--lg-specular-rim-size) at 50% 50%, var(--lg-specular-rim), transparent);
 }
-[data-lg-specular-active] > .lg-specular::before,
-[data-lg-specular-active] > .lg-specular > .lg-specular-rim::before {
+html[data-liquid-glass="native"] [data-lg-specular-active] > .lg-specular::before,
+html[data-liquid-glass="native"] [data-lg-specular-active] > .lg-specular > .lg-specular-rim::before {
   opacity: var(--lg-specular-opacity-hover);
   will-change: translate;
 }
-[data-lg-specular]:active > .lg-specular::before {
+html[data-liquid-glass="native"] [data-lg-specular]:active > .lg-specular::before {
   opacity: var(--lg-specular-opacity-press);
   filter: brightness(var(--lg-specular-boost-press));
 }
@@ -112,31 +112,58 @@
 /* ── Fusion ─────────────────────────────────────────────────────────────────
  * Une couche par membre (`GlassFusion`) ; framer anime l'écart de mise en
  * page en transform. La surface est celle de lg-tokens (`shapeClassName`). */
-.lg-fusion-shape {
+html[data-liquid-glass="native"] .lg-fusion-shape {
   position: absolute;
   pointer-events: none;
 }
 
 /* ── Accessibilité du système (cf. `accessibility.ts`) ──────────────────────
- * Ne touche QUE les jetons du Liquid Glass (`--lg-surface-*`, contrat avec
- * lg-tokens) : les jetons hérités (`--glass-tint`, `--blur-*`) restent ceux
- * d'avant. */
-html[data-lg-transparency="reduce"] {
-  --lg-surface-backdrop: none;
-  --lg-surface-tint: var(--lg-surface-tint-opaque, var(--glass-panel));
+ * Comme macOS : « Réduire la transparence » rend le verre GIVRÉ (plein, sans
+ * flou ni réfraction — rien ne transparaît, et rien à recalculer) ;
+ * « Contraste accru » le rend PLEIN avec un liseré net et sans reflet. Le
+ * verre natif (NSGlassEffectView) suit ces réglages de lui-même : on aligne la
+ * page dessus.
+ *
+ * Seulement en mode natif (`data-liquid-glass="native"`) : ailleurs, ni ces
+ * jetons ni le rendu d'avant ne bougent. Les jetons visés sont ceux du socle
+ * (`liquidGlassTokens.css`) et des recettes (`lgRecipes.css`) ; les
+ * sélecteurs passent devant les leurs par la spécificité (html + attributs),
+ * thème clair compris. */
+html[data-liquid-glass="native"][data-lg-material] {
+  --lg-a11y-solid: rgb(30, 30, 36);
+  --lgc-backdrop: none;
+  --lgc-backdrop-clear: none;
+  --lgc-backdrop-thick: none;
+  --lgc-backdrop-prominent: none;
+  --lg-regular-fill: var(--lg-a11y-solid);
+  --lg-clear-fill: var(--lg-a11y-solid);
+  --lg-tinted-fill: var(--lg-tint-gradient), linear-gradient(var(--lg-a11y-solid), var(--lg-a11y-solid));
+  --lg-prominent-fill: var(--lg-prominent-gradient), linear-gradient(var(--lg-a11y-solid), var(--lg-a11y-solid));
+  --lgc-media-dim: var(--lg-a11y-solid);
+  --lgc-thick-dim: var(--lg-a11y-solid);
+  --lgc-veil-fill: var(--lg-a11y-solid);
 }
-html[data-lg-contrast="more"] {
-  --lg-surface-backdrop: none;
-  --lg-surface-tint: var(--lg-surface-tint-opaque, var(--glass-panel));
-  --lg-surface-border: var(--lg-contrast-border);
+html[data-liquid-glass="native"][data-theme="light"][data-lg-material] {
+  --lg-a11y-solid: rgb(242, 242, 247);
+  --lgc-thick-dim: var(--lg-a11y-solid);
 }
-html:is([data-lg-transparency="reduce"], [data-lg-contrast="more"]) .lg-specular {
+html[data-liquid-glass="native"][data-lg-material="solid"] {
+  --lg-rim: var(--lg-contrast-border);
+  --lg-highlight: transparent;
+  --lg-specular-strong: var(--lg-contrast-border);
+  --lg-specular-soft: transparent;
+  --lg-inner-glow: transparent;
+}
+html[data-liquid-glass="native"][data-theme="light"][data-lg-material="solid"] {
+  --lg-rim: var(--lg-contrast-border);
+}
+html[data-liquid-glass="native"][data-lg-material] .lg-specular {
   display: none;
 }
-html[data-lg-motion="reduce"] {
+html[data-liquid-glass="native"][data-lg-motion="reduce"] {
   --lg-lens-scale-hover: 1;
   --lg-lens-scale-press: 1;
 }
-html[data-lg-motion="reduce"] :is([data-lg-lens], .lg-fusion-shape) {
+html[data-liquid-glass="native"][data-lg-motion="reduce"] :is([data-lg-lens], .lg-fusion-shape) {
   transition: none;
 }

@@ -41,5 +41,6 @@ describe("reflet spéculaire", () => {
 
   it("écrit des fractions sans unité (translate composité)", () => {
     expect(specularCssVars({ u: 0.25, v: 0.5 })).toEqual({ "--lg-spec-u": "0.25", "--lg-spec-v": "0.5" });
+    expect(specularCssVars({ u: 0.25, v: 0.5 }, { sheen: true })).toMatchObject({ "--lg-light-x": "25%", "--lg-light-y": "50%" });
   });
 });

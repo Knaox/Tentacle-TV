@@ -114,7 +114,8 @@ export function summarize(values: number[]): GpuSummary {
  * d'occupation au-dessus de la référence de la même passe (médiane) :
  *  - au repos, pointeur posé : RIEN — aucune boucle ne tourne (0,5 de bruit) ;
  *  - reflet qui suit un pointeur en mouvement continu : une recomposition par
- *    image d'une petite couche, pas plus que ce que coûte déjà le flou ;
+ *    image d'une petite couche, pas plus que ce que coûte déjà le flou — en
+ *    couche déplacée (`GlassSpecular`) comme en reflet diffus repeint (`sheen`) ;
  *  - appuis répétés (lentille) et fusion : des transitions courtes ;
  *  - mouvement réduit : la physique se tait, retour au repos.
  */
@@ -122,6 +123,7 @@ export const GPU_BUDGETS = {
   idle: { maxDelta: 0.5 },
   hoverStill: { maxDelta: 0.5 },
   pointerSweep: { maxDelta: 6 },
+  sheenSweep: { maxDelta: 6 },
   pressPulse: { maxDelta: 6 },
   fusion: { maxDelta: 6 },
   reducedSweep: { maxDelta: 1 },

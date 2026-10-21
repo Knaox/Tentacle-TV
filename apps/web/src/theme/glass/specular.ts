@@ -80,11 +80,19 @@ export function specularSettled(current: SpecularPoint, target: SpecularPoint): 
  * la surface), donc un déplacement composité — jamais une position de
  * dégradé, qui repeindrait la couche à chaque image.
  */
-export function specularCssVars(p: SpecularPoint): Record<string, string> {
-  return {
+export function specularCssVars(p: SpecularPoint, options: { sheen?: boolean } = {}): Record<string, string> {
+  const vars: Record<string, string> = {
     "--lg-spec-u": String(Math.round(p.u * 1000) / 1000),
     "--lg-spec-v": String(Math.round(p.v * 1000) / 1000),
   };
+  if (options.sheen) {
+    // Le reflet diffus du socle (`--lgc-sheen`) : un dégradé PLACÉ à cette
+    // position, donc repeint à chaque écriture — à réserver aux surfaces qui
+    // n'ont pas de `GlassSpecular` (mesure : banc, scénario `sheenSweep`).
+    vars["--lg-light-x"] = `${Math.round(p.u * 1000) / 10}%`;
+    vars["--lg-light-y"] = `${Math.round(p.v * 1000) / 10}%`;
+  }
+  return vars;
 }
 
 /**

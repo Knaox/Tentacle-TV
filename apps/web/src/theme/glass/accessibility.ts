@@ -37,7 +37,10 @@ export interface GlassAccessibilityPlan {
   /** Fusion et métamorphose des formes ; sinon fondu enchaîné. */
   morph: boolean;
   /** Attributs à poser sur `<html>` (absents = valeur par défaut). */
-  attributes: Record<"data-lg-transparency" | "data-lg-contrast" | "data-lg-motion", string | null>;
+  attributes: Record<
+    "data-lg-transparency" | "data-lg-contrast" | "data-lg-motion" | "data-lg-material",
+    string | null
+  >;
 }
 
 /**
@@ -57,6 +60,8 @@ export function planGlassAccessibility(a: SystemAccessibility): GlassAccessibili
       "data-lg-transparency": a.reduceTransparency ? "reduce" : null,
       "data-lg-contrast": a.increaseContrast ? "more" : null,
       "data-lg-motion": still ? "reduce" : null,
+      // Le matériau à rendre, quand ce n'est plus le verre : `physics.css` le lit.
+      "data-lg-material": material === "liquid" ? null : material,
     },
   };
 }

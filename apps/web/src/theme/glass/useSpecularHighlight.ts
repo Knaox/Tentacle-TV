@@ -33,7 +33,19 @@ const followAllowed = (): boolean => {
   return ds.lgMotion !== "reduce" && ds.lgContrast !== "more" && ds.lgTransparency !== "reduce";
 };
 
-export function useSpecularHighlight<T extends HTMLElement>(): (el: T | null) => void {
+export interface SpecularHighlightOptions {
+  /**
+   * Faire suivre AUSSI le reflet diffus du socle (`--lg-light-x/y`, lu par
+   * `--lgc-sheen`). Repeint la surface à chaque écriture : pour une surface
+   * sans `GlassSpecular` seulement.
+   */
+  sheen?: boolean;
+}
+
+export function useSpecularHighlight<T extends HTMLElement>(
+  options: SpecularHighlightOptions = {},
+): (el: T | null) => void {
+  const sheen = options.sheen === true;
   const [element, setElement] = useState<T | null>(null);
   const ref = useCallback((el: T | null) => setElement(el), []);
   const state = useRef({ current: SPECULAR_REST_POINT as SpecularPoint, target: SPECULAR_REST_POINT as SpecularPoint });
@@ -46,7 +58,7 @@ export function useSpecularHighlight<T extends HTMLElement>(): (el: T | null) =>
     let rect = element.getBoundingClientRect();
 
     const write = () => {
-      for (const [k, v] of Object.entries(specularCssVars(state.current.current))) element.style.setProperty(k, v);
+      for (const [k, v] of Object.entries(specularCssVars(state.current.current, { sheen }))) element.style.setProperty(k, v);
     };
 
     const tick = (now: number) => {
@@ -98,8 +110,9 @@ export function useSpecularHighlight<T extends HTMLElement>(): (el: T | null) =>
       element.removeEventListener("pointerleave", onLeave);
       delete element.dataset.lgSpecular;
       delete element.dataset.lgSpecularActive;
+      for (const k of ["--lg-spec-u", "--lg-spec-v", "--lg-light-x", "--lg-light-y"]) element.style.removeProperty(k);
     };
-  }, [element]);
+  }, [element, sheen]);
 
   return ref;
 }

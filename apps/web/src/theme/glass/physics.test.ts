@@ -28,4 +28,13 @@ describe("physics.css", () => {
   it("ne touche jamais les jetons hérités du verre", () => {
     expect(css).not.toMatch(/--glass-tint\s*:|--blur-[a-z]+\s*:/);
   });
+
+  it("n'agit sur le matériau qu'en mode natif", () => {
+    const blocks = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)];
+    for (const [, selector, body] of blocks) {
+      if (/--lgc?-(regular|clear|tinted|prominent)-fill|--lgc-backdrop|--lg-rim\s*:/.test(body)) {
+        expect(selector).toContain('[data-liquid-glass="native"]');
+      }
+    }
+  });
 });

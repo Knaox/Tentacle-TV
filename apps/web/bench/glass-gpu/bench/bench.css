@@ -54,3 +54,8 @@ body {
   background: var(--glass-tint);
   backdrop-filter: blur(var(--blur-modal)) saturate(180%);
 }
+.bench-sheen {
+  background:
+    radial-gradient(130% 90% at var(--lg-light-x, 30%) var(--lg-light-y, 0%), rgba(255, 255, 255, 0.14), transparent 70%),
+    var(--glass-tint);
+}

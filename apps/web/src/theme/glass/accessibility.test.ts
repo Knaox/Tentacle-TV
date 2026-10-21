@@ -26,6 +26,7 @@ describe("accessibilité du verre", () => {
       "data-lg-transparency": "reduce",
       "data-lg-contrast": "more",
       "data-lg-motion": null,
+      "data-lg-material": "solid",
     });
   });
 
@@ -58,6 +59,7 @@ describe("accessibilité du verre", () => {
     state["(prefers-reduced-transparency: reduce)"] = true;
     listeners.forEach((l) => l());
     expect(attrs.get("data-lg-transparency")).toBe("reduce");
+    expect(attrs.get("data-lg-material")).toBe("frosted");
     state["(prefers-reduced-transparency: reduce)"] = false;
     listeners.forEach((l) => l());
     expect(attrs.has("data-lg-transparency")).toBe(false);

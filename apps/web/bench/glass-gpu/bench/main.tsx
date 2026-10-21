@@ -39,6 +39,16 @@ function Capsule({ physics, label }: { physics: boolean; label: string }) {
   );
 }
 
+/** Surface au reflet diffus du socle (`--lgc-sheen`) : la lumière PLACÉE dans le dégradé. */
+function SheenCapsule({ physics }: { physics: boolean }) {
+  const specRef = useSpecularHighlight<HTMLButtonElement>({ sheen: true });
+  return (
+    <button ref={physics ? specRef : undefined} className="bench-glass bench-sheen">
+      Reflet diffus
+    </button>
+  );
+}
+
 function Bench() {
   const [state, setState] = useState<BenchState>({ physics: true, fused: false });
   useEffect(() => {
@@ -52,6 +62,7 @@ function Bench() {
         {["Lecture", "Pistes", "Épisodes", "Sous-titres", "Qualité", "Plein écran"].map((l) => (
           <Capsule key={`${l}-${state.physics}`} physics={state.physics} label={l} />
         ))}
+        <SheenCapsule key={`sheen-${state.physics}`} physics={state.physics} />
       </div>
       <GlassFusion className="bench-fusion" spacing={state.physics ? 12 : 0} shapeClassName="bench-fuse-shape">
         {["a", "b", "c"].map((id, i) => (

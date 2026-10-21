@@ -12,12 +12,12 @@ export function scenarioDriver(scenario, send, evaluate) {
   const mouse = (type, x, y, extra = {}) => send("Input.dispatchMouseEvent", { type, x, y, button: "none", ...extra });
   let target = { x: 0, y: 0, w: 0, h: 0 };
 
-  const prepare = async (physics, { reduce = false } = {}) => {
+  const prepare = async (physics, { reduce = false, selector = ".bench-glass" } = {}) => {
     const html = "document.documentElement";
     await evaluate(reduce ? `${html}.setAttribute("data-lg-motion", "reduce")` : `${html}.removeAttribute("data-lg-motion")`);
     await evaluate(`window.__bench.set({ physics: ${physics}, fused: false })`);
     await sleep(300);
-    const r = (await evaluate(`JSON.stringify(document.querySelector(".bench-glass").getBoundingClientRect())`)).result.result.value;
+    const r = (await evaluate(`JSON.stringify(document.querySelector("${selector}").getBoundingClientRect())`)).result.result.value;
     const rect = JSON.parse(r);
     target = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, w: rect.width, h: rect.height };
     await mouse("mouseMoved", 4, 4);
@@ -54,8 +54,13 @@ export function scenarioDriver(scenario, send, evaluate) {
       };
     case "pointerSweep":
     case "reducedSweep":
+    case "sheenSweep":
       return {
-        setup: (p) => prepare(p, { reduce: scenario === "reducedSweep" }),
+        setup: (p) =>
+          prepare(p, {
+            reduce: scenario === "reducedSweep",
+            selector: scenario === "sheenSweep" ? ".bench-sheen" : ".bench-glass",
+          }),
         start: () =>
           loop(FRAME_MS, (i) => {
             const t = (i * FRAME_MS) / 1000;
