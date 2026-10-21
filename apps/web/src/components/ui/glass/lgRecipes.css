@@ -62,14 +62,12 @@
    * sous « Réduire la transparence » (`physics.css`). */
   --lgc-thick-dim: var(--lg-thick-fill);
   --lgc-scrim: var(--lg-scrim);
-  /* Le verre POSÉ SUR UNE AFFICHE — noir dans les deux schémas, libellé blanc.
-   * 0,55 et non les 0,34 de `--lg-media-dim` : le pire cas est un décor BLANC
-   * sous le verre — blanc plein sur 0,55 de noir y tient 4,7:1 (au banc, 0,42
-   * tombait à 4,1:1 ; cf. `DetailStage.tsx`). Demandé au socle ; d'ici là, la
-   * valeur reste ici. */
-  --lgc-media-dim: rgba(var(--scrim-media-rgb), 0.55);
-  /* À reprendre par le socle : le verre sur un voile DÉJÀ sombre (plateau des
-   * cartes, sans flou) et le pouce laiteux de l'interrupteur. */
+  /* Le verre POSÉ SUR UNE AFFICHE — noir dans les deux schémas, libellé blanc :
+   * 0,55, le pire cas d'un décor blanc sous le verre tient 4,7:1. */
+  --lgc-media-dim: var(--lg-media-dim);
+  /* Recettes propres aux composants (accord de lg-tokens) : le verre sur un
+   * voile DÉJÀ sombre (plateau des cartes, sans flou) et le pouce laiteux de
+   * l'interrupteur. */
   --lgc-veil-fill: rgba(255, 255, 255, 0.1);
   --lgc-knob: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 244, 248, 0.92));
 }
