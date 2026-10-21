@@ -7,6 +7,7 @@ import { clickGlassToggle, connectAndLogin, emulateMedia, glassToggle, go, sleep
 import { checkCell } from "./lib/checks.mjs";
 import { STATE, SERVER, account, outDir, resetPlayback } from "./lib/config.mjs";
 import { evalMain, launchApp, stopApp } from "./lib/electron.mjs";
+import { offline } from "./lib/offline.mjs";
 import { admin, player, screens } from "./lib/scenarios.mjs";
 
 async function reload(page) {
@@ -68,6 +69,9 @@ const CELLS = {
       return { emulated: true };
     },
   },
+  // Le hors ligne en verre (lg-composants), puis le même réglage coupé.
+  "hors-ligne": { expect: "on", run: [offline] },
+  "hors-ligne-coupe": { expect: "off", run: [offline], prepare: (app) => CELLS.coupe.prepare(app) },
   // L'administration (compte admin du Jellyfin jetable).
   admin: { expect: "on", account: "admin", run: [admin] },
 };

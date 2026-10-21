@@ -117,8 +117,12 @@ function chromeOn(report, fail) {
   }
   for (const s of report.steps.filter((x) => x.ok && /^lecteur-.*-coupure$/.test(x.name) && !x.absent)) {
     if (s.offViews > 0) fail(`« ${s.name} » : ${s.offViews} vue(s) AppKit après coupure en pleine lecture`, s.capture);
-    if (!s.onViews) fail(`« ${s.name} » : le verre ne revient pas au rallumage (${s.onViews} vue)`, s.capture);
+    // Le rallumage par le PONT ne prévient pas la page : elle ne renvoie pas ses
+    // régions. Une note, pas un défaut (le vrai interrupteur est éprouvé par « coupe »).
+    if (!s.onViews) report.notes = [...(report.notes ?? []), `« ${s.name} » : rallumage par le pont sans régions (attendu : la page n'est pas prévenue)`];
   }
+  const fs = find(report, "lecteur-hdr-plein-ecran");
+  if (fs?.ok && !fs.skipped && fs.duringVisible === 0) fail("plein écran : aucune région native visible contrôles affichés", null);
   const gTop = find(report, "gpu-repos-accueil")?.gpu?.mean;
   const gScroll = find(report, "gpu-repos-defile")?.gpu?.mean;
   if (Number.isFinite(gTop) && Number.isFinite(gScroll)) {

@@ -50,7 +50,8 @@ export async function centerOf(page, selector, pattern = null) {
     const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find((n) => {
       const r = n.getBoundingClientRect();
       if (r.width === 0 || r.height === 0 || r.bottom < 0 || r.top > innerHeight) return false;
-      return !re || re.test((n.getAttribute("aria-label") ?? "") + " " + (n.textContent ?? ""));
+      // L'aria-label seul d'abord (motifs ancrés « ^…$ »), sinon avec le texte.
+      return !re || re.test(n.getAttribute("aria-label") ?? "") || re.test((n.getAttribute("aria-label") ?? "") + " " + (n.textContent ?? ""));
     });
     if (!el) return null;
     const r = el.getBoundingClientRect();

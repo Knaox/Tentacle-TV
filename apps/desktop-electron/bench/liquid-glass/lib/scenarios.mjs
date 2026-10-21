@@ -87,9 +87,11 @@ export async function player(ctx) {
         await sleep(2500);
         const probe = await page.evaluate(`try { return await window.tentacle.invoke("video_surface_probe"); } catch (e) { return String(e); }`);
         const target = await mpvProperty(page, "video-target-params");
+        await showControls(page);
+        const during = await nativeSnapshot(ctx.app);
         await page.evaluate(`await window.tentacle.invoke("toggle_fullscreen"); return true;`);
         await sleep(2500);
-        return { probe, "video-target-params": target };
+        return { probe, "video-target-params": target, duringViews: during?.nativeViews, duringVisible: (during?.regions ?? []).filter((r) => !r.hidden).length };
       });
       await step(ctx, "lecteur-hdr-pip", async () => {
         if (!damienAway()) return { skipped: "Damien actif : pas de fenêtre PiP" };
