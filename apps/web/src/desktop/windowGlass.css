@@ -22,11 +22,12 @@
  * matériau — la frange de l'effet de bord, le champ enfoncé, le voile des
  * panneaux posés sur des affiches — a sa valeur propre. */
 :root[data-liquid-glass="native"] {
-  /* Effet de bord de défilement */
+  /* Effet de bord de défilement — teinté du fond de page (`--scrim-page-rgb`,
+   * theme/scrims.css) : la frange se fond dans `--surface-0`, sans écart. */
   --lg-chrome-edge-blur: var(--lg-regular-blur);
   --lg-chrome-edge-fade: 20px;
-  --lg-chrome-edge-tint-top: rgba(10, 9, 15, 0.72);
-  --lg-chrome-edge-tint-mid: rgba(10, 9, 15, 0.38);
+  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.72);
+  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.38);
 
   /* La capsule de navigation : une surface `regular` de la primitive
    * (`useLiquidGlassSurface`, lentille de page). Ne s'y ajoute qu'un voile
@@ -79,8 +80,8 @@
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lg-chrome-edge-tint-top: rgba(250, 249, 253, 0.78);
-  --lg-chrome-edge-tint-mid: rgba(250, 249, 253, 0.42);
+  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.78);
+  --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.42);
   --lg-chrome-capsule-veil: rgba(var(--lg-light-rgb), 0.2);
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
   --lg-chrome-field-bg: rgba(var(--lg-shade-rgb), 0.05);
