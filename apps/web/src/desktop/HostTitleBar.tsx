@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { hostTitleBar, hostTitleBarHeight } from "./hostChrome";
 import { ScrollEdgeEffect } from "./ScrollEdgeEffect";
+import { useWindowInactiveAttribute } from "./windowFocus";
 import { useWindowGlass } from "./windowGlass";
 import { useHostFullscreen } from "../hooks/useHostFullscreen";
 
@@ -42,7 +43,8 @@ import { useHostFullscreen } from "../hooks/useHostFullscreen";
  * # Liquid Glass (macOS 26)
  *
  * En mode natif (`windowGlass.ts`, `<html data-liquid-glass="native">`), il
- * monte aussi l'effet de bord de défilement. La bande devient alors transparente :
+ * monte aussi l'effet de bord de défilement, et dit quand la fenêtre est
+ * inactive (`windowFocus.ts`). La bande devient alors transparente :
  * le contenu défile dessous, fondu et flouté, comme sous la barre d'outils
  * d'une app de macOS 26. Sa hauteur, sa prise et les feux ne changent pas.
  * L'effet survit au plein écran : la barre de navigation, elle, y reste.
@@ -51,6 +53,7 @@ export function HostTitleBar() {
   const fullscreen = useHostFullscreen();
   const glass = useWindowGlass();
   const active = hostTitleBar() && !fullscreen;
+  useWindowInactiveAttribute(glass);
 
   useEffect(() => {
     const root = document.documentElement;

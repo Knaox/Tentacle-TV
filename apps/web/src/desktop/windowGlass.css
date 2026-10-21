@@ -59,6 +59,9 @@
   --lg-chrome-field-rim: var(--lg-rim);
   --lg-chrome-field-shadow: inset 0 1px 2px rgba(var(--lg-shade-rgb), 0.32), inset 0 -1px 0 var(--lg-inner-glow);
 
+  /* L'avatar : liseré de verre et arête spéculaire, par-dessus la photo. */
+  --lg-chrome-avatar-rim: inset 0 0 0 var(--lg-rim-width) var(--lg-rim), inset 0 1px 0 var(--lg-specular-soft);
+
   /* Les panneaux de la barre (« Plus », menu d'un onglet) : posés sur des
    * affiches, ils gardent un voile dense — à 0,95 elles transparaissaient
    * nettes, d'où le flou. */
@@ -80,6 +83,10 @@
     var(--lg-tint-gradient);
   --lg-chrome-sidebar-selection-shadow: inset 0 1px 0 var(--lg-specular-soft), inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand);
   --lg-chrome-sidebar-selection-icon: var(--brand-light);
+
+  /* Fenêtre inactive (`windowFocus.ts`) : la marque cède au gris. */
+  --lg-chrome-inactive-fill: rgba(var(--lg-light-rgb), 0.1);
+  --lg-chrome-inactive-icon: var(--text-secondary);
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
@@ -93,6 +100,18 @@
   --lg-chrome-panel-bg: rgba(255, 255, 255, 0.78);
   --lg-chrome-sidebar-bg: rgba(var(--lg-light-rgb), 0.55);
   --lg-chrome-sidebar-selection-icon: var(--brand);
+  --lg-chrome-inactive-fill: rgba(var(--lg-shade-rgb), 0.07);
+}
+
+/* La fenêtre a perdu le focus : la barre se ternit, comme une app de macOS.
+ * Après le bloc clair : même spécificité, l'ordre décide. */
+:root[data-liquid-glass="native"][data-window-inactive] {
+  --lg-chrome-capsule-filter: blur(22px) saturate(1) brightness(var(--lg-regular-brightness));
+  --lg-chrome-lens-bg: var(--lg-chrome-inactive-fill);
+  --lg-chrome-lens-shadow: inset 0 0 0 var(--lg-rim-width) var(--lg-rim);
+  --lg-chrome-sidebar-selection-bg: var(--lg-chrome-inactive-fill);
+  --lg-chrome-sidebar-selection-shadow: none;
+  --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
 }
 
 /* ── Le bandeau des feux : transparent, le contenu défile dessous ──────── */

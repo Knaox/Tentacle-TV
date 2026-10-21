@@ -42,6 +42,26 @@
   background: var(--lg-chrome-item-hover);
 }
 
+/* L'avatar : une bille de verre — liseré et arête spéculaire PAR-DESSUS la
+ * photo (le halo de couleur du profil, en ligne, reste dessous). */
+:root[data-liquid-glass="native"] .lgc-avatar {
+  position: relative;
+}
+
+:root[data-liquid-glass="native"] .lgc-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--lg-chrome-avatar-rim);
+  pointer-events: none;
+}
+
+/* Fenêtre inactive : l'icône de l'onglet courant perd la marque. */
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule .lgc-tab[aria-current] svg {
+  color: var(--lg-chrome-inactive-icon);
+}
+
 /* La recherche : un champ de verre enfoncé, en capsule. */
 :root[data-liquid-glass="native"] .lgc-field {
   border-radius: var(--lg-chrome-item-radius);
