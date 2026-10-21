@@ -26,15 +26,20 @@ import { springSoft } from "../../theme/motion";
 import type { NavIcon } from "./useNavDestinations";
 
 export const TAB_CLASS =
-  "group relative flex h-9 shrink-0 items-center gap-2 rounded-[11px] px-3 text-[13.5px] outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
+  "lgc-tab group relative flex h-9 shrink-0 items-center gap-2 rounded-[11px] px-3 text-[13.5px] outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
 
 export function ActiveIndicator({ reduced }: { reduced: boolean }) {
   return (
     <motion.span
       layoutId="nav-active"
       aria-hidden
-      className="absolute inset-0 rounded-[11px]"
-      style={{ background: "var(--nav-active-bg)", boxShadow: "inset 0 0 0 1px var(--nav-active-ring)" }}
+      className="lgc-lens absolute inset-0 rounded-[11px]"
+      // Liquid Glass : la lentille de `windowGlassNav.css`. Ses jetons
+      // n'existent que sous `data-lg-chrome` — ailleurs, le repli est le dessin d'avant.
+      style={{
+        background: "var(--lg-chrome-lens-bg, var(--nav-active-bg))",
+        boxShadow: "var(--lg-chrome-lens-shadow, inset 0 0 0 1px var(--nav-active-ring))",
+      }}
       transition={reduced ? { duration: 0 } : springSoft}
     />
   );

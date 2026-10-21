@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { hostTitleBar, hostTitleBarHeight } from "./hostChrome";
+import { ScrollEdgeEffect } from "./ScrollEdgeEffect";
+import { useWindowGlass } from "./windowGlass";
 import { useHostFullscreen } from "../hooks/useHostFullscreen";
 
 /**
@@ -36,10 +38,29 @@ import { useHostFullscreen } from "../hooks/useHostFullscreen";
  * principal cesse de retrancher la bande à la fenêtre de mpv
  * (`macosTitleBar.retraitBandeau`). La garder laisserait une bande opaque en
  * haut d'un film.
+ *
+ * # Liquid Glass (macOS 26)
+ *
+ * Porte ouverte (`windowGlass.ts`), il pose aussi `data-lg-chrome` sur la
+ * racine — l'attribut qui garde TOUTES les règles de `windowGlass.css` — et
+ * monte l'effet de bord de défilement. La bande devient alors transparente :
+ * le contenu défile dessous, fondu et flouté, comme sous la barre d'outils
+ * d'une app de macOS 26. Sa hauteur, sa prise et les feux ne changent pas.
+ * L'effet survit au plein écran : la barre de navigation, elle, y reste.
  */
 export function HostTitleBar() {
   const fullscreen = useHostFullscreen();
+  const glass = useWindowGlass();
   const active = hostTitleBar() && !fullscreen;
+
+  useEffect(() => {
+    if (!glass) return;
+    const root = document.documentElement;
+    root.dataset["lgChrome"] = "on";
+    return () => {
+      delete root.dataset["lgChrome"];
+    };
+  }, [glass]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -52,8 +73,15 @@ export function HostTitleBar() {
     };
   }, [active]);
 
-  if (!active) return null;
+  return (
+    <>
+      {glass && <ScrollEdgeEffect />}
+      {active && <Band />}
+    </>
+  );
+}
 
+function Band() {
   return (
     <div
       aria-hidden
