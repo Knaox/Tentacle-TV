@@ -50,6 +50,11 @@ export async function centerOf(page, selector, pattern = null) {
     const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find((n) => {
       const r = n.getBoundingClientRect();
       if (r.width === 0 || r.height === 0 || r.bottom < 0 || r.top > innerHeight) return false;
+      // Le centre doit être VISIBLE et atteignable : ni sous la barre du haut, ni hors fenêtre.
+      const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+      if (cy < 0 || cy > innerHeight || cx < 0 || cx > innerWidth) return false;
+      const top = document.elementFromPoint(cx, cy);
+      if (top && top !== n && !n.contains(top) && !top.contains(n) && !n.closest("a, button, [role]")?.contains(top)) return false;
       // L'aria-label seul d'abord (motifs ancrés « ^…$ »), sinon avec le texte.
       return !re || re.test(n.getAttribute("aria-label") ?? "") || re.test((n.getAttribute("aria-label") ?? "") + " " + (n.textContent ?? ""));
     });
