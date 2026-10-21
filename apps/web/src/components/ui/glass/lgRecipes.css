@@ -54,8 +54,9 @@
   --lgc-fill: var(--lgc-sheen), var(--lg-regular-fill);
   --lgc-fill-media: var(--lgc-sheen), linear-gradient(var(--lgc-media-dim), var(--lgc-media-dim));
   /* Le verre sur affiche qui ne porte que des ICÔNES (capsule de la fiche) :
-   * 3:1 suffit, tenu par l'ombre de glyphe — le voile clair du socle. */
-  --lgc-fill-media-icons: var(--lgc-sheen), linear-gradient(var(--lgc-media-icons-dim), var(--lgc-media-icons-dim));
+   * un givre CLAIR, comme les boutons de Musique ou TV de macOS 26 sur un
+   * décor sombre — 3:1 suffit aux icônes, tenu par l'ombre de glyphe. */
+  --lgc-fill-media-icons: var(--lgc-sheen), var(--lg-regular-fill);
   /* Le verre épais du SOCLE seul (`--lg-thick-fill`) : plus de voile empilé
    * sur le voile régulier — le verre doit laisser voir ce qu'il couvre. */
   --lgc-fill-thick: var(--lgc-sheen), var(--lgc-thick-dim);
@@ -70,7 +71,6 @@
   /* Le verre POSÉ SUR UNE AFFICHE — noir dans les deux schémas, libellé blanc :
    * 0,55, le pire cas d'un décor blanc sous le verre tient 4,7:1. */
   --lgc-media-dim: var(--lg-media-dim);
-  --lgc-media-icons-dim: var(--lg-clear-dim);
   /* Recettes propres aux composants (accord de lg-tokens) : le verre sur un
    * voile DÉJÀ sombre (plateau des cartes, sans flou) et le pouce laiteux de
    * l'interrupteur. */
