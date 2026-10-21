@@ -1549,6 +1549,39 @@ mpv suit seul son nouveau parent (crochet sur le thread de sa fenêtre parente) 
 cadre dessiné (`pipFrame.ts` : fenêtre rendue transparente à l'exécution, jamais fabriquée
 `transparent`), ancré = fenêtre POSSÉDÉE (`setParentWindow`).
 
+### Liquid Glass (bureau macOS 26) — une porte, deux verres
+
+Le bureau 1.40.0 prend le verre de macOS 26 ; carnet complet : `docs/LIQUID-GLASS.md`.
+
+- **Une seule porte : `<html data-liquid-glass="native">`** (`theme/liquidGlassMode.ts`, posée
+  avant le premier rendu) — le pont de la coquille dit le système capable
+  (`window.tentacle.liquidGlass.supported`) ET le réglage est allumé (Réglages › Apparence, allumé
+  d'office, `tentacle_liquid_glass`). Toute règle qui lit `var(--lg-…)` ou `.lg-…` est portée par
+  `:root[data-liquid-glass="native"]` (`liquidGlassTokens.test.ts`) : web, Windows, Linux, macOS < 26,
+  réglage coupé gardent le RENDU D'AVANT au pixel près. L'option n'existe pas sur un macOS < 26.
+  Fonction purement client : aucune capacité serveur.
+- **Deux verres.** Sur la VIDÉO, le vrai `NSGlassEffectView` (classe PUBLIQUE d'AppKit) par le pont
+  koffi du lecteur (`apps/desktop-electron/src/main/liquidGlass/`) — jamais `electron-liquid-glass`,
+  jamais une API privée (refus du Mac App Store ; `privateApi.test.ts`). Lecteur seulement, et sur
+  Apple Silicon seulement (`refractsVideo`, montage `fenetre` ; Intel garde l'habillage d'avant). Sur
+  la PAGE, la lentille de Chromium (réfraction calculée pour la forme exacte) : le verre natif vit
+  SOUS la vue web et ne voit pas la page — jamais une région native qui défile avec elle.
+- **Jetons `--lg-*`** dans `theme/liquidGlassTokens.css` (clair ET sombre ; pas `tokens.css`, que
+  l'admin surcharge) ; les familles composent sans redéfinir (`--lg-chrome-*`, `--lgc-*`,
+  `--lg-player-*`, `--lg-spring-*`). **Primitive** `theme/glass/` (`LiquidGlass`,
+  `useLiquidGlassSurface`, `useLiquidGlassRegion`) : hors `native`, `className` +
+  `fallbackClassName` et rien d'autre.
+- **Une modale ou un menu `fixed` passe par un PORTAIL** : un `backdrop-filter`, un `transform` ou
+  le `scale` de la lentille en font le bloc conteneur (vécu : « garder hors ligne » coincé dans
+  240 × 54 px ; `modalPortal.test.ts`). Jamais de lentille (`data-lg-lens`) sur un verre natif.
+- **GPU** : les règles ci-dessous valent double — un verre ne coûte rien tant que rien ne bouge
+  dessus ; rien de monté ni de flouté qui n'est pas affiché ; contrôles du lecteur masqués =
+  0 région native.
+- **Bancs** : `TENTACLE_LIQUID_GLASS=off` simule un Mac sans verre (pont absent, option
+  invisible) ; `TENTACLE_BENCH_INACTIVE=1` ouvre la fenêtre sans voler le focus (jamais un banc
+  sous les doigts de l'utilisateur) ; recette `apps/desktop-electron/bench/liquid-glass/` (README) ;
+  coût de la physique `apps/web/bench/glass-gpu/`.
+
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 
 Trois règles, chacune payée par une régression mesurée à `powermetrics`. Elles
