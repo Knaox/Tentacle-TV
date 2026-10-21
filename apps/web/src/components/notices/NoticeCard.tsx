@@ -185,7 +185,7 @@ export const NoticeCard = memo(function NoticeCard({
   );
 });
 
-/** La carte en verre : une surface native du lecteur (fondu natif court : elle descend en entrant). */
+/** La carte en verre : une surface native du lecteur. */
 function GlassRoot({ className, role, children }: { className: string; role: string; children: React.ReactNode }) {
-  return <GlassSurface className={className} role={role} group="player-notice" transition={100}>{children}</GlassSurface>;
+  return <GlassSurface className={className} role={role} group="player-notice">{children}</GlassSurface>;
 }

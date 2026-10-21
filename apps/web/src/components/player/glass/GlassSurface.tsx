@@ -11,13 +11,22 @@
  * le noir et l'opaque, eux, se composent juste. Les jetons du lecteur
  * (`playerGlass.css`) n'emploient donc que ces deux familles.
  *
- * # Le cadre ne bouge pas, le contenu oui
+ * # La surface peut bouger : le verre la suit
  *
- * La région suit le RECTANGLE de cet élément. Une transformée animée dessus la
- * décalerait de la vue native le temps de l'animation (et une mesure prise au
- * montage garderait le décalage). Les apparitions animent donc l'enfant
- * (`.lgp-content`), jamais la surface ; l'apparition de la matière est celle
- * de la vue native.
+ * La primitive (lg-tokens) relit le rectangle de l'élément — transformations
+ * comprises — à chaque image tant que quelque chose bouge. Une capsule qui se
+ * pose sur son ressort (`.lgp-morph`) emmène donc le verre natif avec elle : il
+ * grandit, il ne se contente pas d'apparaître. Le contenu, lui, n'apparaît
+ * qu'en opacité (`.lgp-content`).
+ *
+ * # Le fondu natif : nul, pour l'instant
+ *
+ * `transition` > 0 demande à la vue native un fondu d'apparition et de retrait
+ * — mesuré au banc le 21/10 : il ne se VOIT pas (le verre reste plein puis
+ * saute à la fin du minuteur), et chaque déplacement s'anime d'autant (le verre
+ * court derrière la surface). D'où `NATIVE_FADE_MS = 0` : le verre suit
+ * exactement et part sans traîner. À remonter quand le socle aura un fondu
+ * visible.
  *
  * # Présence
  *
@@ -38,19 +47,22 @@ import "./playerGlass.css";
  */
 export const GlassChromeVisibleContext = createContext(true);
 
+/** Le fondu natif (ms) — voir l'en-tête : nul tant qu'il ne se voit pas. */
+export const NATIVE_FADE_MS = 0;
+
 interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
   /** La surface est à l'écran (contrôles affichés, panneau ouvert). */
   present?: boolean;
   group?: GlassRegionOptions["group"];
   variant?: GlassRegionOptions["variant"];
-  /** Fondu natif à l'apparition et au retrait (ms) ; `0` pour une surface qui se déplace. */
+  /** Fondu natif à l'apparition et au retrait (ms) ; `NATIVE_FADE_MS` par défaut. */
   transition?: number;
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
   surfaceRef?: Ref<HTMLDivElement>;
 }
 
 export function GlassSurface({
-  present = true, group = "player", variant = "regular", transition = 120, surfaceRef, className = "", children, ...rest
+  present = true, group = "player", variant = "regular", transition = NATIVE_FADE_MS, surfaceRef, className = "", children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();

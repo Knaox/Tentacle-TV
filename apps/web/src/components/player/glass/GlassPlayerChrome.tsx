@@ -45,7 +45,7 @@ export function GlassPlayerChrome({
         <GlassTopBar visible={visible} title={title} subtitle={subtitle} isDirectPlay={isDirectPlay} goBack={goBack} />
 
         <div className="lgp-dock" onClick={(e) => e.stopPropagation()}>
-          <GlassSurface className="lgp-bar" present={visible}>
+          <GlassSurface className="lgp-bar lgp-morph" present={visible}>
             <div className="lgp-content lgp-bar__inner">
               <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
               <GlassControlsRow

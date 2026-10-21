@@ -26,6 +26,7 @@
   pointer-events: auto;
   max-width: min(560px, 60%);
   border-radius: var(--lg-player-radius-capsule);
+  transform-origin: top left;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-topbar__inner {
@@ -71,6 +72,7 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-bar {
   pointer-events: auto;
   border-radius: var(--lg-player-radius-bar);
+  transform-origin: bottom center;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-bar__inner {
