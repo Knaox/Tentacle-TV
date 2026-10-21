@@ -239,7 +239,11 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un
   // rectangle vide le temps du premier rendu.
   win.once("ready-to-show", () => {
-    win.show();
+    // `TENTACLE_BENCH_INACTIVE=1` (développement seulement) : un banc qui se
+    // lance pendant que quelqu'un tape ailleurs ne lui vole ni le focus ni ses
+    // frappes — constaté. La fenêtre s'affiche devant, sans devenir active.
+    if (!app.isPackaged && process.env["TENTACLE_BENCH_INACTIVE"] === "1") win.showInactive();
+    else win.show();
     // La fenêtre a prouvé qu'elle s'affiche : l'essai d'un choix de session
     // explicite est concluant (sans effet sinon — voir `linux/sessionRescue.ts`).
     sessionShown();
