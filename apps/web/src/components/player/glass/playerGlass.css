@@ -47,6 +47,9 @@
   --lg-player-row-hover: var(--ctl-gradient);
   --lg-player-row-hover-fg: #ffffff;
   --lg-player-chip-line: #6f6d78;
+  /* L'attente (Watch Together) : l'ambre du web, en pleins. */
+  --lg-player-wait: #fbbf24;
+  --lg-player-wait-track: #6b5320;
   /* Le puits d'une icône de carte : noir à alpha, il assombrit le verre sans le griser. */
   --lg-player-icon-well: rgb(0 0 0 / 0.28);
 

@@ -127,7 +127,7 @@ export function PlaybackRateControl({
 
       <AnimatePresence>
         {open && glass && (
-          <GlassPanel key="speed" className="w-44" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
+          <GlassPanel key="speed" className="w-52" bodyClassName="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin" role="menu" aria-label={t("player:speed")}>
             <div className="mb-1 flex items-center justify-between gap-2 pl-2.5">
               <span className="lgp-section-title lgp-section-title--inline">{t("player:speed")}</span>
               <button type="button" onClick={() => setOpen(false)} aria-label={t("player:close")} title={t("player:close")} className="lgp-btn lgp-btn--small">
