@@ -76,6 +76,7 @@ export function useWatchTogetherSession(port: WtPlatformPort): WatchTogetherCont
     selfId: selfId ?? "",
     getRoom: () => roomRef.current,
     dispatch,
+    resync: () => sendSocketMessage({ type: "wt:syncRequest" }),
     toast: (kind, message) => portRef.current.toast(kind, message),
     t: (key, opts) => portRef.current.t(key, opts),
     navigateToWatch: (itemId) => portRef.current.navigateToWatch(itemId),

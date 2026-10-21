@@ -33,6 +33,8 @@ export interface WtEventHelpers {
   onAccessRevoked?: () => void;
   /** Adhésion par appareil : l'avis « groupe en cours sur un autre appareil ». */
   onElsewhere?: (elsewhere: WtElsewhereDto | null) => void;
+  /** Redemander l'état de la salle (`wt:syncRequest`) : le serveur le redit, ou purge (`not_in_group`). */
+  resync?: () => void;
 }
 
 /** Anti-rafale des messages (un seek coalescé = un état par remplacement). */
@@ -106,8 +108,12 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
       break;
     }
     case "wt:elsewhere":
-      // Un appareil lié n'a pas d'avis : il EST dans la salle.
+      // Un appareil lié n'a pas d'avis : il EST dans la salle. Le serveur ne l'envoie
+      // qu'aux appareils NON liés : une séance qui se croit dans une salle l'a quittée
+      // par une autre voie (autre onglet du même navigateur, appel direct) et en garde
+      // l'état — elle le redemande, le serveur tranche (21/10).
       if (!h.getRoom()) h.onElsewhere?.(msg.elsewhere);
+      else h.resync?.();
       break;
     case "wt:error":
       // Room disparue pendant une coupure (ou cet appareil n'y est plus lié) :

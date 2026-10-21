@@ -68,6 +68,27 @@ function nameOf(state: WtRoomStateDto | null, userId: string | null): string {
   return state.members.find((m) => m.userId === userId)?.username ?? "";
 }
 
+/**
+ * Le nouvel état CONTINUE-t-il la séance que l'appareil voyait ? Sinon, il sert
+ * de référence, sans aucun avis de changement (hôte, membres, lecture) :
+ * jamais entre deux salles différentes, jamais à MON entrée dans une salle
+ * (invitation acceptée, « Rejoindre ici » : un `join` dont je suis l'origine),
+ * jamais d'après une séance où je n'étais pas. L'état gardé d'avant peut être
+ * celui de CETTE salle, quittée par une autre voie : le bureau, ancien hôte,
+ * y revenait avec « X est maintenant l'hôte », X l'étant déjà (21/10).
+ */
+export function wtContinuesSession(
+  prev: WtRoomStateDto | null,
+  next: WtRoomStateDto,
+  cause: WtStateCause,
+  originUserId: string | null,
+  selfId: string,
+): prev is WtRoomStateDto {
+  if (!prev || prev.groupId !== next.groupId) return false;
+  if (cause === "join" && originUserId === selfId) return false;
+  return prev.members.some((m) => m.userId === selfId);
+}
+
 /** Ce qu'un nouvel état (déjà jugé frais) change à l'écran de `selfId`. */
 export function wtStateEffects(
   prev: WtRoomStateDto | null,
@@ -79,7 +100,7 @@ export function wtStateEffects(
   const toasts: WtToastEffect[] = [];
   const originName = nameOf(next, originUserId) || nameOf(prev, originUserId);
 
-  if (prev && prev.groupId === next.groupId) {
+  if (wtContinuesSession(prev, next, cause, originUserId, selfId)) {
     const prevIds = new Set(prev.members.map((m) => m.userId));
     const nextIds = new Set(next.members.map((m) => m.userId));
     for (const m of next.members) {
