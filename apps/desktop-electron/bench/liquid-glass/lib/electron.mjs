@@ -50,23 +50,30 @@ async function waitSlot(timeoutMs) {
  * Lance l'app. `env` s'ajoute à l'environnement (ex. `TENTACLE_LIQUID_GLASS:
  * "off"`). `home` : dossier du profil ; `fresh` l'efface d'abord.
  */
-export async function launchApp({ home, fresh = false, env = {}, log, slotTimeoutMs = 30 * 60_000 }) {
+export async function launchApp({ home, fresh = false, env = {}, log, slotTimeoutMs = 30 * 60_000, command = null, startTimeoutMs = 60_000 }) {
   const slot = await waitSlot(slotTimeoutMs);
   if (fresh) rmSync(home, { recursive: true, force: true });
   mkdirSync(path.join(home, "Library/Application Support"), { recursive: true });
   const out = openSync(log, "a");
+  const flags = [`--remote-debugging-port=${PORTS.page}`, `--inspect=${PORTS.main}`];
+  // `command` : lancer AUTRE chose que le binaire (ex. `pnpm dev:electron` d'un
+  // clone propre) — les drapeaux sont ajoutés en fin de commande.
+  const [bin, binArgs, cwd] = command
+    ? [command.bin, [...command.args, ...flags], command.cwd]
+    : [ELECTRON, [".", ...flags], DESKTOP_DIR];
   const child = spawn(
-    ELECTRON,
-    [".", `--remote-debugging-port=${PORTS.page}`, `--inspect=${PORTS.main}`],
+    bin,
+    binArgs,
     {
-      cwd: DESKTOP_DIR,
+      cwd,
+      detached: command !== null,
       env: { ...process.env, CFFIXED_USER_HOME: home, TENTACLE_SANS_DEVTOOLS: "1", ...env },
       stdio: ["ignore", out, out],
     },
   );
   const app = { child, pid: child.pid, slot, page: null, main: null };
   try {
-    const target = await waitForTarget(PORTS.page, (url) => url.startsWith("tentacle://"));
+    const target = await waitForTarget(PORTS.page, (url) => url.startsWith("tentacle://"), startTimeoutMs);
     app.page = await Cdp.connect(target.webSocketDebuggerUrl);
     await app.page.send("Runtime.enable");
     app.main = await connectMain();
@@ -118,6 +125,11 @@ export async function stopApp(app) {
   app.page?.close();
   app.main?.close();
   if (app.child.exitCode === null) {
+    // Commande détachée (pnpm → electron) : on tue SON groupe de processus,
+    // et lui seul (pid négatif) — jamais un pkill -f.
+    if (app.child.spawnargs[0] !== ELECTRON) {
+      try { process.kill(-app.child.pid, "SIGTERM"); } catch { /* déjà parti */ }
+    }
     app.child.kill("SIGTERM");
     const gone = await Promise.race([
       new Promise((r) => app.child.once("exit", () => r(true))),
