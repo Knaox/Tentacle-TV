@@ -94,9 +94,11 @@ qui cache l'option (`theme/liquidGlassMode.ts`). Le contrat est déclaré par la
 page (`apps/web/src/desktop/types.ts`) et reflété par `protocol.ts` ;
 `contractMirror.test.ts` casse si un champ de la page est inconnu de la coquille.
 
-- `supported`, `refractsVideo` (le verre voit la vidéo posée sous la page —
-  vrai sur les DEUX montages, mesuré), `setEnabled(bool)`, `upsert(regions[])`,
-  `remove(ids[])`.
+- `supported`, `refractsVideo` (le lecteur pose son verre sur la vidéo : vrai au
+  montage `fenetre`, Apple Silicon ; faux au montage `gl`, Intel — mesuré
+  possible, coupé par décision du lot : GPU intégrés qui chauffent déjà en
+  lecture, aucun HDR à y gagner ; une ligne de `detect.ts` pour l'ouvrir),
+  `setEnabled(bool)`, `upsert(regions[])`, `remove(ids[])`.
 - Région : `id`, `x`, `y`, `width`, `height` (px CSS du viewport), `radius`,
   `level` (`regular` | `clear` | `tinted` | `prominent`), `tint`
   (`#RRGGBB[AA]` ou `null`), `interactive`, `z` ; facultatifs : `group` (un

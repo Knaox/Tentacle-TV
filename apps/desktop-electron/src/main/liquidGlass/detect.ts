@@ -40,20 +40,21 @@ export function liquidGlassAvailability(): LiquidGlassAvailability {
 }
 
 /**
- * Le verre voit-il la vidéo posée sous la page ?
+ * Le lecteur pose-t-il son verre sur la vidéo ? Seulement au montage `fenetre`
+ * (Apple Silicon : la fenêtre Metal de mpv, SOUS la nôtre).
  *
- * Oui, sur les DEUX montages — mesuré le 21/10 sur une vraie lecture mpv HDR10
- * (macOS 26.6, M4) : en `fenetre` (Apple Silicon), le verre réfracte la fenêtre
- * Metal de mpv posée SOUS la nôtre ; en `gl` (Intel, forcé par
- * `TENTACLE_VIDEO_MONTAGE=gl`), il réfracte la `NSOpenGLView` de NOTRE fenêtre,
- * parce que la racine du verre se pose juste au-dessus d'elle
- * (`AppKitGlassBackend.anchor`). Le montage reste lu ici : un montage à venir
- * qui ne serait ni l'un ni l'autre ne serait pas annoncé par défaut.
+ * ⚠️ Le montage `gl` (Intel) le POURRAIT : mesuré le 21/10 sur une vraie lecture
+ * mpv HDR10, le verre y réfracte la `NSOpenGLView` de notre fenêtre (la racine
+ * se pose juste au-dessus, `AppKitGlassBackend.anchor`). Décision du lot : pas
+ * de verre du lecteur sur Intel pour l'instant — ses GPU intégrés chauffent déjà
+ * en lecture (`macosMontage.ts`, mpv#12675), un flou composé à chaque image
+ * n'y arrangerait rien, et il n'y a aucun HDR à y gagner. Pour l'ouvrir, une
+ * seule ligne : `|| montage === "gl"` ci-dessous.
  */
 export function glassRefractsVideo(): boolean {
   if (liquidGlassAvailability() !== "native") return false;
   const montage = decideMacosMontage(process.arch, process.env);
-  return montage === "fenetre" || montage === "gl";
+  return montage === "fenetre";
 }
 
 /** Les arguments de fabrication que le preload relit (`protocol.ts`). */
