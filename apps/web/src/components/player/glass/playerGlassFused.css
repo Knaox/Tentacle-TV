@@ -1,0 +1,42 @@
+/* Le lecteur en verre — la variante « fused » de la barre (`PLAYER_BAR_LAYOUT`).
+   Importée par `GlassPlayerChrome` après `playerGlassBar.css` et la bulle : la
+   cascade garde l'ordre d'avant le découpage. */
+
+/* ── Variante « fused » : la capsule du temps + trois capsules de boutons ── */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-timecap {
+  pointer-events: auto;
+  border-radius: var(--lg-player-radius-capsule);
+  transform-origin: bottom center;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timecap__inner {
+  padding: 6px 14px;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-groups {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--lg-player-group-gap);
+}
+
+/* Non positionnée : le menu de vitesse se cale alors sur le DOCK, comme les
+   autres panneaux, et non sur sa capsule (il passerait sur celle du temps). */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-group {
+  position: static;
+  pointer-events: auto;
+  border-radius: var(--lg-player-radius-capsule);
+  transform-origin: bottom center;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-group__inner {
+  display: flex;
+  height: var(--lg-player-group-height);
+  align-items: center;
+  gap: 2px;
+  padding: 0 7px;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__center > .lgp-group__inner {
+  gap: 8px;
+}

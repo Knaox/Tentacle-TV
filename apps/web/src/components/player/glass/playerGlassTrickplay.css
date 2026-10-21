@@ -1,0 +1,48 @@
+/* Le lecteur en verre — la bulle de la vignette du survol (`GlassTrickplayBubble`).
+   Importée par `GlassPlayerChrome` juste après `playerGlassBar.css` : la cascade
+   garde l'ordre d'avant le découpage. */
+
+/* ── La vignette du survol, sertie dans une bulle de verre ───────────── */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  transform-origin: bottom center;
+  transition:
+    opacity var(--lg-duration-hover) var(--lg-player-ease-enter),
+    transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay[data-visible="false"] {
+  opacity: 0;
+  transform: translateY(3px) scale(0.96);
+  transition-duration: var(--lg-duration-press);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-trickplay__bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: var(--lg-player-trickplay-inset);
+  border-radius: var(--lg-player-radius-trickplay);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay__frame {
+  border-radius: calc(var(--lg-player-radius-trickplay) - var(--lg-player-trickplay-inset));
+  background-color: var(--lg-player-placeholder);
+  background-repeat: no-repeat;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay__time {
+  color: var(--lg-player-fg);
+  text-shadow: var(--lg-media-label-shadow);
+  line-height: 20px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay {
+    transition-property: opacity;
+  }
+}

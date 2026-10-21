@@ -9,6 +9,8 @@ import { GlassControlsRow } from "./GlassControlsRow";
 import { PLAYER_BAR_LAYOUT } from "./playerGlassFusion";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 import "./playerGlassBar.css";
+import "./playerGlassTrickplay.css";
+import "./playerGlassFused.css";
 
 /**
  * L'habillage du lecteur en VERRE — même contrat que l'habillage d'avant
