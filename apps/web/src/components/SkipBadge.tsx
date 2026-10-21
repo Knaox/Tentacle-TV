@@ -22,7 +22,7 @@ export interface SkipFlash {
  * image. Ne pas le remettre.
  */
 export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
-  // Lecteur en verre : la même pilule, en verre (fondu natif, symbole et nombre blancs).
+  // Lecteur en verre : la même pilule, en verre (symbole et nombre blancs).
   const glass = isGlassLayout(usePlayerGlassMode());
   if (!flash) return null;
   const forward = flash.delta > 0;
@@ -53,7 +53,7 @@ export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
 function Pill({ glass, children }: { glass: boolean; children: React.ReactNode }) {
   if (glass) {
     return (
-      <GlassSurface className="lgp-badge" group="player-flash" transition={120}>
+      <GlassSurface className="lgp-badge" group="player-flash">
         <div className="flex animate-[fadeIn_0.12s_ease] items-center gap-2 px-5 py-2.5">{children}</div>
       </GlassSurface>
     );

@@ -24,15 +24,27 @@
   --fill-strong: rgb(0 0 0 / 0.42);
   --surface-dropdown: transparent;
   --surface-2: #1d1c24;
+  /* Le panneau des épisodes : onglets de saisons et épisode en cours. */
+  --season-tab-border: var(--lg-player-chip-line);
+  --brand-accent-soft: rgb(0 0 0 / 0.28);
 
   border-color: transparent;
   border-radius: var(--lg-player-radius-panel);
-  transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
 }
 
 /* Les contrôles s'effacent, panneau ouvert compris (comme l'habillage d'avant).
-   Sur la SURFACE : le corps porte l'opacité en ligne de son animation. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel[data-lgp-present="false"] {
+   Sur une ENVELOPPE ordinaire : framer pose l'opacité en ligne sur la surface
+   (métamorphose) et sur le corps (apparition), une règle posée sur eux perdrait.
+   Colonne souple : le panneau des épisodes y garde sa liste défilante. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-panel__fade {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel[data-lgp-present="false"] > .lgp-panel__fade {
   opacity: 0;
 }
 
@@ -103,4 +115,26 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-section-title--inline {
   margin: 0;
   padding: 0;
+}
+
+/* ── La fiche « à suivre » en verre : l'île sombre des panneaux, et sa
+   vignette qui se fond ELLE-MÊME dans la matière (masque), là où l'habillage
+   d'avant la recouvrait d'un dégradé vers une surface opaque. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-upnext {
+  --surface-modal: transparent;
+  --surface-1: var(--lg-player-placeholder);
+  overflow: hidden;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-upnext__image {
+  -webkit-mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 40%, transparent 100%);
+}
+
+/* La graine d'une métamorphose : le rectangle du bouton, rien de visible. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-morph-seed {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
 }
