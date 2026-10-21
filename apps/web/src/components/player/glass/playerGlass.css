@@ -32,6 +32,9 @@
   --lg-player-radius-capsule: 9999px;
   --lg-player-radius-panel: var(--lg-radius-lg);
   --lg-player-radius-row: 12px;
+  --lg-player-radius-trickplay: 16px;
+  /* Le liseré de verre autour de la vignette (`GlassTrickplayBubble` : INSET, à l'identique). */
+  --lg-player-trickplay-inset: 5px;
   --lg-player-button: 36px;
   --lg-player-button-primary: 46px;
   --lg-player-button-small: 28px;

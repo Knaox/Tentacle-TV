@@ -24,6 +24,9 @@
   --fill-strong: rgb(0 0 0 / 0.42);
   --surface-dropdown: transparent;
   --surface-2: #1d1c24;
+  /* Le panneau des épisodes : onglets de saisons et épisode en cours. */
+  --season-tab-border: var(--lg-player-chip-line);
+  --brand-accent-soft: rgb(0 0 0 / 0.28);
 
   border-color: transparent;
   border-radius: var(--lg-player-radius-panel);
