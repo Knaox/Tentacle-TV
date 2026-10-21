@@ -47,11 +47,24 @@ const CELLS = {
   // suit le réglage du SYSTÈME, que le banc ne bascule pas (global à la machine).
   transparence: {
     expect: "on",
+    a11y: "Réduire la transparence",
     run: [screens],
     async prepare(app) {
       await emulateMedia(app.page, { reducedTransparency: true });
       await reload(app.page);
       await emulateMedia(app.page, { reducedTransparency: true });
+      return { emulated: true };
+    },
+  },
+  // Contraste accru (émulé côté page) : verre givré/opaque (lg-physique).
+  contraste: {
+    expect: "on",
+    a11y: "Contraste accru",
+    run: [screens],
+    async prepare(app) {
+      await emulateMedia(app.page, { moreContrast: true });
+      await reload(app.page);
+      await emulateMedia(app.page, { moreContrast: true });
       return { emulated: true };
     },
   },

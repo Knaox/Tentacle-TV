@@ -47,7 +47,14 @@ export function checkCell(cell, report) {
       if (s.native.refractsVideo && visibleRegions(s) === 0) fail(`lecteur sans verre natif visible à « ${name} » (${s.native.nativeViews} vue(s) AppKit)`, s.capture);
     }
   }
+  if (cell.expect === "on") chromeOn(report, fail);
+  if (cell.a11y && home?.dom && !home.dom.attrs?.["data-lg-material"]) {
+    fail(`${cell.a11y} émulé : html[data-lg-material] absent (verre givré/opaque attendu)`, home.capture);
+  }
   if (cell.expect === "off" || cell.expect === "unsupported") {
+    for (const s of report.steps.filter((x) => x.dom)) {
+      if (s.dom.edge > 0 || s.dom.surfaces > 0) fail(`« ${s.name} » : ${s.dom.edge} .lgc-edge / ${s.dom.surfaces} .lg-surface alors que le verre est inactif`, s.capture);
+    }
     for (const s of report.steps) {
       const n = viewsOf(s);
       if (n !== null && n > 0) fail(`${n} NSGlassEffectView à l'étape « ${s.name} » alors que le verre est ${cell.expect === "off" ? "coupé" : "non supporté"}`, s.capture);
@@ -80,4 +87,41 @@ export function checkCell(cell, report) {
   const sdr = find(report, "lecteur-sdr");
   if (sdr?.ok && pq(sdr.mpv?.["video-target-params"])) fail("SDR sorti en PQ (à vérifier : écran laissé en HDR ?)", sdr.capture);
   return issues;
+}
+
+const transparent = (color) => color === "transparent" || /rgba\([^)]*,\s*0\)$/.test(color ?? "");
+
+/** Le chrome de fenêtre (lg-chrome, vérifications a–e de sa demande). */
+function chromeOn(report, fail) {
+  const top = find(report, "accueil");
+  const scrolled = find(report, "accueil-defile-300");
+  if (top?.dom && top.dom.edge > 0) fail("haut de page : .lgc-edge présent (attendu absent)", top.capture);
+  if (scrolled?.dom) {
+    if (scrolled.dom.edge === 0) fail("accueil défilé de 300 px : aucun .lgc-edge", scrolled.capture);
+    if (scrolled.dom.bandeau !== null && !transparent(scrolled.dom.bandeau)) fail(`accueil défilé : bandeau des feux non transparent (${scrolled.dom.bandeau})`, scrolled.capture);
+  }
+  const cap = top?.dom?.capsuleFirst;
+  if (top?.dom && (!cap || !/lg-surface/.test(cap.cls) || cap.render !== "lens")) fail(`capsule de nav : premier enfant ${JSON.stringify(cap)} (attendu .lg-surface + data-lg-render="lens")`, top?.capture);
+  for (const name of ["reglages-apparence", "admin-admin"]) {
+    const s = find(report, name);
+    if (s?.dom && !s.dom.sidebar?.selection) fail(`« ${name} » : nav.lgc-sidebar ou sa sélection absente (${JSON.stringify(s.dom.sidebar)})`, s.capture);
+  }
+  for (const name of ["lecteur-sdr", "lecteur-hdr"]) {
+    const s = find(report, name);
+    if (!s?.ok || !s.dom) continue;
+    if (s.dom.attrs?.["data-native-playback"] === null) fail(`« ${name} » : html[data-native-playback] absent pendant la lecture`, s.capture);
+    if (s.dom.bandeau !== null && transparent(s.dom.bandeau)) fail(`« ${name} » : bandeau des feux transparent pendant la lecture (coins de mpv visibles)`, s.capture);
+  }
+  for (const s of report.steps.filter((x) => x.ok && /^lecteur-.*-masque$/.test(x.name))) {
+    if (s.visibleRegions > 0) fail(`« ${s.name} » : ${s.visibleRegions} région(s) native(s) visibles contrôles masqués`, s.capture);
+  }
+  for (const s of report.steps.filter((x) => x.ok && /^lecteur-.*-coupure$/.test(x.name) && !x.absent)) {
+    if (s.offViews > 0) fail(`« ${s.name} » : ${s.offViews} vue(s) AppKit après coupure en pleine lecture`, s.capture);
+    if (!s.onViews) fail(`« ${s.name} » : le verre ne revient pas au rallumage (${s.onViews} vue)`, s.capture);
+  }
+  const gTop = find(report, "gpu-repos-accueil")?.gpu?.mean;
+  const gScroll = find(report, "gpu-repos-defile")?.gpu?.mean;
+  if (Number.isFinite(gTop) && Number.isFinite(gScroll)) {
+    report.notes = [...(report.notes ?? []), `GPU au repos (ioreg, machine entière) : haut ${gTop} %, défilée ${gScroll} %`];
+  }
 }

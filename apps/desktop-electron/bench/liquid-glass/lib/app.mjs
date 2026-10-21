@@ -76,6 +76,16 @@ export async function glassDom(page) {
       bodyBg: getComputedStyle(document.body).backgroundColor,
       htmlBg: css.backgroundColor,
       reducedTransparency: matchMedia("(prefers-reduced-transparency: reduce)").matches,
+      moreContrast: matchMedia("(prefers-contrast: more)").matches,
+      // Chrome de fenêtre (lg-chrome) et matériau (lg-physique).
+      attrs: Object.fromEntries(["data-lg-chrome", "data-lg-material", "data-window-inactive", "data-native-playback"]
+        .map((a) => [a, document.documentElement.getAttribute(a)])),
+      edge: document.querySelectorAll(".lgc-edge").length,
+      surfaces: document.querySelectorAll(".lg-surface").length,
+      lenses: document.querySelectorAll('[data-lg-render="lens"]').length,
+      bandeau: (() => { const b = document.querySelector(".bandeau-hote"); return b ? getComputedStyle(b).backgroundColor : null; })(),
+      capsuleFirst: (() => { const c = document.querySelector(".lgc-capsule")?.firstElementChild; return c ? { cls: c.className, render: c.getAttribute("data-lg-render") } : null; })(),
+      sidebar: (() => { const n = document.querySelector("nav.lgc-sidebar"); return n ? { selection: !!n.querySelector("span.lgc-sidebar-selection") } : null; })(),
       dark: matchMedia("(prefers-color-scheme: dark)").matches,
     };
   `);
@@ -110,12 +120,13 @@ export async function clickGlassToggle(page) {
 }
 
 /** Émule « Réduire la transparence » et le thème, côté PAGE seulement. */
-export async function emulateMedia(page, { dark, reducedTransparency, reducedMotion } = {}) {
+export async function emulateMedia(page, { dark, reducedTransparency, reducedMotion, moreContrast } = {}) {
   const features = [];
   if (dark !== undefined) features.push({ name: "prefers-color-scheme", value: dark ? "dark" : "light" });
   if (reducedTransparency !== undefined) {
     features.push({ name: "prefers-reduced-transparency", value: reducedTransparency ? "reduce" : "no-preference" });
   }
+  if (moreContrast !== undefined) features.push({ name: "prefers-contrast", value: moreContrast ? "more" : "no-preference" });
   if (reducedMotion !== undefined) features.push({ name: "prefers-reduced-motion", value: reducedMotion ? "reduce" : "no-preference" });
   await page.send("Emulation.setEmulatedMedia", { features });
 }

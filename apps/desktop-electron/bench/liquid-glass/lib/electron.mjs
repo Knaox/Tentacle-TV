@@ -13,6 +13,7 @@ import { mkdirSync, openSync, rmSync, rmdirSync, writeSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Cdp, waitForTarget } from "./cdp.mjs";
+import { waitHidIdle } from "./macos.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DESKTOP_DIR = path.resolve(HERE, "../../..");
@@ -51,6 +52,8 @@ async function waitSlot(timeoutMs) {
  * "off"`). `home` : dossier du profil ; `fresh` l'efface d'abord.
  */
 export async function launchApp({ home, fresh = false, env = {}, log, slotTimeoutMs = 30 * 60_000, command = null, startTimeoutMs = 60_000 }) {
+  // LOT.md : jamais une fenêtre qui s'ouvre pendant que Damien tape.
+  if (!(await waitHidIdle(120))) throw new Error("Damien actif depuis plus d'une heure : lancement reporté");
   const slot = await waitSlot(slotTimeoutMs);
   if (fresh) rmSync(home, { recursive: true, force: true });
   mkdirSync(path.join(home, "Library/Application Support"), { recursive: true });
@@ -68,7 +71,7 @@ export async function launchApp({ home, fresh = false, env = {}, log, slotTimeou
     {
       cwd,
       detached: command !== null,
-      env: { ...process.env, CFFIXED_USER_HOME: home, TENTACLE_SANS_DEVTOOLS: "1", ...env },
+      env: { ...process.env, CFFIXED_USER_HOME: home, TENTACLE_SANS_DEVTOOLS: "1", TENTACLE_BENCH_INACTIVE: "1", ...env },
       stdio: ["ignore", out, out],
     },
   );

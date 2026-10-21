@@ -10,7 +10,7 @@ import { connectAndLogin, dismissOverlays, glassDom, glassToggle, go, sleep } fr
 import { STATE, SERVER, account, outDir } from "./lib/config.mjs";
 import { launchApp, stopApp } from "./lib/electron.mjs";
 import { captureWindow, mainWindow } from "./lib/macos.mjs";
-import { nativeSnapshot } from "./lib/scenarios.mjs";
+import { nativeSnapshot } from "./lib/steps.mjs";
 
 const REPO = "/Users/damienrouge/Desktop/Projet - local/Tentacle-TV";
 const clone = path.resolve(process.argv[2] ?? path.join(STATE, "clone-matin"));
