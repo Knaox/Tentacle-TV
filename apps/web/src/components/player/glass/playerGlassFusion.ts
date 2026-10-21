@@ -25,3 +25,10 @@ export const PLAYER_MORPH = {
 } as const;
 
 export type PlayerMorphId = (typeof PLAYER_MORPH)[keyof typeof PLAYER_MORPH];
+
+/**
+ * La capsule de lecture : `single` (UNE capsule, deux rangées) ou `fused` (la
+ * capsule du temps et trois capsules de boutons — son, transport, réglages —
+ * que leur écart de 4 px, sous la distance de fusion, fond en une forme).
+ */
+export const PLAYER_BAR_LAYOUT: "single" | "fused" = "fused";

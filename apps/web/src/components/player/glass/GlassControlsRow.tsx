@@ -9,13 +9,18 @@ import { rangeFill } from "../../../lib/rangeFill";
 import { SkipBackGlyph, SkipForwardGlyph } from "./glassIcons";
 import { GlassMorphSeed } from "./GlassMorphSeed";
 import { PLAYER_MORPH } from "./playerGlassFusion";
+import { GlassSurface } from "./GlassSurface";
+import type { ReactNode } from "react";
 import type { DesktopPlayerControlsProps } from "../desktopPlayerControls.types";
 
 type GlassControlsRowProps = Pick<DesktopPlayerControlsProps,
   "state" | "itemId" | "isEpisode" | "hasSettings" | "hasNextEpisode" | "hasPreviousEpisode"
   | "showSettings" | "showEpisodes" | "setShowSettings" | "setShowEpisodes"
   | "onReduce" | "togglePause" | "skipBy" | "toggleMute" | "setVolume" | "setSpeed" | "toggleFullscreen"
-  | "onNextEpisode" | "onPreviousEpisode" | "speed">;
+  | "onNextEpisode" | "onPreviousEpisode" | "speed" | "visible"> & {
+  /** Trois capsules fusionnées (son, transport, réglages) au lieu d'une rangée dans la capsule. */
+  grouped: boolean;
+};
 
 /**
  * La rangée de boutons de la capsule : le son à gauche, le transport au CENTRE
@@ -30,14 +35,14 @@ export function GlassControlsRow({
   state, itemId, isEpisode, hasSettings, hasNextEpisode, hasPreviousEpisode,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes,
   onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
-  onNextEpisode, onPreviousEpisode, speed,
+  onNextEpisode, onPreviousEpisode, speed, visible, grouped,
 }: GlassControlsRowProps) {
   const { t } = useTranslation("player");
   const muted = state.muted || state.volume === 0;
 
   return (
-    <div className="lgp-row">
-      <div className="lgp-row__side">
+    <div className={grouped ? "lgp-groups" : "lgp-row"}>
+      <Part grouped={grouped} visible={visible} className="lgp-row__side">
         <button type="button" onClick={() => toggleMute()} className="lgp-btn" aria-label={muted ? t("player:unmute") : t("player:mute")} title={muted ? t("player:unmute") : t("player:mute")}>
           {/* Quatre états, comme l'habillage d'avant : coupé, bas, moyen, fort. */}
           {muted ? <MuteIcon /> : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
@@ -47,9 +52,9 @@ export function GlassControlsRow({
           onChange={(e) => setVolume(Number(e.target.value))}
           style={rangeFill(state.volume, 0, 100)}
           className="lgp-range" />
-      </div>
+      </Part>
 
-      <div className="lgp-row__center">
+      <Part grouped={grouped} visible={visible} className="lgp-row__center">
         {hasPreviousEpisode && (
           <button type="button" onClick={onPreviousEpisode} className="lgp-btn" aria-label={t("player:previousEpisodeLabel")} title={t("player:previousEpisode")}><PrevEpIcon /></button>
         )}
@@ -65,9 +70,9 @@ export function GlassControlsRow({
         {hasNextEpisode && (
           <button type="button" onClick={onNextEpisode} className="lgp-btn" aria-label={t("player:nextEpisodeLabel")} title={t("player:nextEpisode")}><NextEpIcon /></button>
         )}
-      </div>
+      </Part>
 
-      <div className="lgp-row__side lgp-row__side--end">
+      <Part grouped={grouped} visible={visible} className="lgp-row__side lgp-row__side--end">
         <PlaybackRateControl
           apply={setSpeed} resetKey={itemId} state={speed}
           otherPanelOpen={showSettings || showEpisodes}
@@ -96,7 +101,22 @@ export function GlassControlsRow({
           aria-label={state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} title={`${state.fullscreen ? t("player:exitFullscreen") : t("player:fullscreen")} (F)`}>
           {state.fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
         </button>
-      </div>
+      </Part>
     </div>
+  );
+}
+
+/**
+ * Une partie de la rangée. Groupée, c'est sa PROPRE capsule de verre, du même
+ * groupe natif que la capsule du temps : AppKit les fond en une seule forme.
+ * Au niveau du module : défini dans le rendu, il changerait d'identité à chaque
+ * battement de position et remonterait toute la rangée.
+ */
+function Part({ grouped, visible, className, children }: { grouped: boolean; visible: boolean; className: string; children: ReactNode }) {
+  if (!grouped) return <div className={className}>{children}</div>;
+  return (
+    <GlassSurface className={`lgp-group lgp-morph ${className}`} present={visible}>
+      <div className="lgp-content lgp-group__inner">{children}</div>
+    </GlassSurface>
   );
 }

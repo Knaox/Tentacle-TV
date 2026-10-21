@@ -30,12 +30,21 @@
 
   border-color: transparent;
   border-radius: var(--lg-player-radius-panel);
-  transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
 }
 
 /* Les contrôles s'effacent, panneau ouvert compris (comme l'habillage d'avant).
-   Sur la SURFACE : le corps porte l'opacité en ligne de son animation. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel[data-lgp-present="false"] {
+   Sur une ENVELOPPE ordinaire : framer pose l'opacité en ligne sur la surface
+   (métamorphose) et sur le corps (apparition), une règle posée sur eux perdrait.
+   Colonne souple : le panneau des épisodes y garde sa liste défilante. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-panel__fade {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  transition: opacity var(--lg-player-exit-ms) var(--lg-player-ease-exit);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel[data-lgp-present="false"] > .lgp-panel__fade {
   opacity: 0;
 }
 

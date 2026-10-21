@@ -66,12 +66,14 @@ describe("l'habillage du lecteur de bureau", () => {
     expect(LEGACY).not.toContain("lgp-");
   });
 
-  it("verre natif disponible : les deux capsules, plus aucun dégradé d'assombrissement", () => {
+  it("verre natif disponible : les capsules, plus aucun dégradé d'assombrissement", () => {
     const html = renderToStaticMarkup(
       <PlayerGlassModeContext.Provider value="native">{controls()}</PlayerGlassModeContext.Provider>,
     );
     expect(html).toContain("lgp-topbar");
-    expect(html).toContain("lgp-bar");
+    // La capsule de lecture : UNE capsule, ou celle du temps et trois capsules de boutons fusionnées.
+    expect(html).toMatch(/lgp-bar|lgp-timecap/);
+    if (html.includes("lgp-timecap")) expect(html.match(/lgp-group /g)?.length).toBe(3);
     expect(html).not.toContain("bg-gradient-to-t");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.
     expect(html).not.toContain("lgp-surface--preview");

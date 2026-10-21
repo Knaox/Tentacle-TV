@@ -28,6 +28,10 @@
   --lg-player-bar-max: 980px;
   /* Hauteur FIXE de la capsule de lecture : le coin bas-droit monte d'autant (`.lgp-corner`). */
   --lg-player-bar-height: 90px;
+  /* Variante « fused » : écart entre la capsule du temps et celles des boutons (sous la
+     distance de fusion, 8), et hauteur des capsules de boutons. 36 + 4 + 50 = 90. */
+  --lg-player-group-gap: 4px;
+  --lg-player-group-height: 50px;
   --lg-player-radius-bar: var(--lg-radius-xl);
   --lg-player-radius-capsule: 9999px;
   --lg-player-radius-panel: var(--lg-radius-lg);

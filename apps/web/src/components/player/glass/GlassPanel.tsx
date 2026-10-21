@@ -50,14 +50,19 @@ export function GlassPanel({ className = "", bodyClassName = "", morphId, surfac
       aria-label={aria["aria-label"]}
       onClick={(e) => e.stopPropagation()}
     >
-      <motion.div
-        className={`lgp-panel__body ${bodyClassName}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1, transition: reduced ? { duration: 0.15 } : { duration: 0.16, delay: 0.12, ease: "easeOut" } }}
-        exit={{ opacity: 0, transition: { duration: 0.08, ease: "easeIn" } }}
-      >
-        {children}
-      </motion.div>
+      {/* L'enveloppe qui s'efface avec les contrôles : framer pose l'opacité EN
+          LIGNE sur la surface (métamorphose) et sur le corps (apparition) — une
+          règle CSS posée sur eux ne gagnerait jamais. */}
+      <div className="lgp-panel__fade">
+        <motion.div
+          className={`lgp-panel__body ${bodyClassName}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: reduced ? { duration: 0.15 } : { duration: 0.16, delay: 0.12, ease: "easeOut" } }}
+          exit={{ opacity: 0, transition: { duration: 0.08, ease: "easeIn" } }}
+        >
+          {children}
+        </motion.div>
+      </div>
     </GlassSurface>
   );
 }
