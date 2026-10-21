@@ -95,8 +95,11 @@
   /* Voile de lisibilité d'un verre `clear` sur un média vif. */
   --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.24);
   /* Verre posé sur une AFFICHE : noir dans les deux thèmes, comme le texte
-   * sur média (`--on-media-*`) — la luminosité d'une image ne suit pas le thème. */
-  --lg-media-dim: rgba(var(--scrim-media-rgb), 0.34);
+   * sur média (`--on-media-*`) — la luminosité d'une image ne suit pas le thème.
+   * 0,55 : pire cas, un décor BLANC sous le verre et un libellé blanc — gris
+   * 255 × 0,45 ≈ 4,7:1 (AA). À 0,34 il tombait à ~2,4:1 (banc de lg-composants,
+   * DetailStage). */
+  --lg-media-dim: rgba(var(--scrim-media-rgb), 0.55);
   /* Le voile sous une feuille ou une modale de verre. */
   --lg-scrim: rgba(var(--lg-shade-rgb), 0.42);
 

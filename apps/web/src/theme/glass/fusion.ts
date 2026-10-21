@@ -30,7 +30,10 @@ export interface FusionMember {
 export interface FusionShape {
   id: string;
   rect: GlassRect;
-  /** Faux : couche gardée montée (pour l'animation), mais transparente. */
+  /**
+   * Faux : couche gardée montée (pour l'animation), effacée puis retirée du
+   * rendu (`visibility: hidden`) — jamais un flou à opacité nulle.
+   */
   visible: boolean;
   /** Identifiant du groupe (celui de son premier membre). */
   group: string;
