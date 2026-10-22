@@ -33,6 +33,8 @@
 
 import { screen, type BrowserWindow, type Rectangle } from "electron";
 import { nativeHandle } from "./video/native";
+import { effectiveFullscreen, settleIntent, type FullscreenIntent } from "./linux/fullscreenIntent";
+import { fullscreenPinned } from "./linux/fullscreenPin";
 
 /**
  * Tout ce qui précède décrit un contournement STRICTEMENT Windows.
@@ -81,6 +83,25 @@ export const WINDOWS_WORKAROUND = process.platform === "win32";
  */
 const NATIVE_FULLSCREEN = process.platform === "darwin" || process.platform === "linux";
 
+/**
+ * Linux : la cible demandée, tant que le compositeur n'a pas répondu — voir
+ * `linux/fullscreenIntent.ts`. Toujours `null` ailleurs.
+ */
+let intent: FullscreenIntent | null = null;
+
+function noteIntent(target: boolean): void {
+  if (process.platform === "linux") intent = { target, at: Date.now() };
+}
+
+/**
+ * Le compositeur a répondu (`enter-full-screen` / `leave-full-screen`). Appelé
+ * par `fullscreenSync.ts`, AVANT la diffusion à la page : l'état diffusé est
+ * alors celui de la fenêtre, plus une promesse.
+ */
+export function noteFullscreenReached(reached: boolean): void {
+  intent = settleIntent(intent, reached);
+}
+
 /** Les appels Win32 de la parade, réclamés seulement là où ils existent. */
 function win32(): typeof import("./video/win32") {
   return require("./video/win32") as typeof import("./video/win32");
@@ -128,6 +149,9 @@ export function noteWindow(win: BrowserWindow): void {
 export function isFullscreen(): boolean {
   if (WINDOWS_WORKAROUND) return before !== null;
   if (host === null || host.isDestroyed()) return false;
+  if (process.platform === "linux") {
+    return effectiveFullscreen(intent, host.isFullScreen(), Date.now());
+  }
   // Le SIMPLE est encore interrogé : il n'est plus posé par nous, mais une
   // session ouverte avant une mise à jour peut encore s'y trouver, et une
   // fenêtre dont on ne sait pas qu'elle est en plein écran est une souricière.
@@ -165,6 +189,7 @@ function enter(win: BrowserWindow): void {
   // porte l'état, et `isFullscreen` le lui demande.
   if (!WINDOWS_WORKAROUND) {
     host = win;
+    noteIntent(true);
     if (NATIVE_FULLSCREEN) win.setFullScreen(true);
     // ⚠️ NON VÉRIFIÉ, et assumé comme tel. Une fenêtre qui vient de changer
     // d'espace peut ne plus être la fenêtre CLÉ, et AppKit ne livre pas
@@ -215,6 +240,22 @@ function exit(win: BrowserWindow): void {
     // Les deux, dans cet ordre : une session ouverte avant la bascule vers le
     // natif peut encore être en plein écran simple, et la touche Échap doit
     // rendre la main dans les deux cas.
+    if (process.platform === "linux") {
+      // Montage Wayland forcé, vidéo attachée : `SurfaceWayland` réaffirmerait
+      // aussitôt le plein écran — un éclair, rien d'autre. On ne le tente pas
+      // (la page propose X11 à la place, `useForcedFullscreen`).
+      if (fullscreenPinned()) {
+        console.info("[fenetre] sortie du plein écran refusée : la vidéo y est épinglée (Wayland sans colle)");
+        return;
+      }
+      // Sous Linux, `isFullScreen()` peut encore dire « non » juste après une
+      // entrée demandée : on sort si l'état CRU ou l'état demandé le veut.
+      // `isSimpleFullScreen` n'y existe pas (macOS seul).
+      const wanted = isFullscreen() || win.isFullScreen();
+      noteIntent(false);
+      if (wanted) win.setFullScreen(false);
+      return;
+    }
     if (win.isSimpleFullScreen()) win.setSimpleFullScreen(false);
     if (win.isFullScreen()) win.setFullScreen(false);
     return;
@@ -241,7 +282,8 @@ export function toggle(win: BrowserWindow): boolean {
     host = win;
     if (isFullscreen()) {
       exit(win);
-      return false;
+      // Linux : l'épingle peut avoir refusé la sortie — l'état demandé le dit.
+      return process.platform === "linux" ? isFullscreen() : false;
     }
     enter(win);
     return true;

@@ -4,6 +4,8 @@
  * chaque client refaisait à sa façon — le statut d'une invitation et son lien.
  */
 
+import { trimTrailingSlashes } from "../utils/trailingSlashes";
+
 /**
  * Bornes de `POST /api/invites`, appliquées par le serveur. Le formulaire les
  * reprend pour refuser une saisie AVANT l'envoi : hors bornes, le serveur
@@ -73,5 +75,5 @@ export function inviteStatus(
  * l'application — sous Electron, cette dernière vaut `tentacle://app`.
  */
 export function buildInviteUrl(base: string, key: string): string {
-  return `${base.replace(/\/+$/, "")}/register?invite=${encodeURIComponent(key)}`;
+  return `${trimTrailingSlashes(base)}/register?invite=${encodeURIComponent(key)}`;
 }

@@ -172,7 +172,9 @@ export async function tmdbRoutes(app: FastifyInstance) {
       remoteTrailers: (match.RemoteTrailers ?? []).filter((t) => t.Url),
     });
 
-    const itemTypes = mediaType === "movie" ? "Movie" : "Series";
+    // Le type relu, jamais la chaîne du client : elle ne va pas telle quelle au journal.
+    const kind = mediaType === "movie" ? "movie" : "tv";
+    const itemTypes = kind === "movie" ? "Movie" : "Series";
     try {
       const fields = "ProviderIds,ImageTags,BackdropImageTags,RemoteTrailers";
       // Au nom du COMPTE : Jellyfin applique alors ses droits (note maximale,
@@ -192,7 +194,7 @@ export async function tmdbRoutes(app: FastifyInstance) {
         const data = (await res.json()) as { Items?: ResolvedItem[] };
         const match = data.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
         if (match) {
-          console.log(`[TMDB] Resolved ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
+          console.log(`[TMDB] Resolved ${kind} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
           return toResult(match);
         }
       }
@@ -206,7 +208,7 @@ export async function tmdbRoutes(app: FastifyInstance) {
         const allData = (await allRes.json()) as { Items?: ResolvedItem[] };
         const match = allData.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
         if (match) {
-          console.log(`[TMDB] Resolved (fallback) ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
+          console.log(`[TMDB] Resolved (fallback) ${kind} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
           return toResult(match);
         }
       }

@@ -44,3 +44,16 @@ regexes = [
   '''APPLE_API_ISSUER=''',
   '''Store ID\s*:''',
 ]
+
+# Dépendances des paquets Linux : des NOMS de paquets Debian / Arch
+# (« libsecret-1-0 »), que la règle générique prend pour une clé à cause du
+# mot « secret ». Bornée au fichier qui les déclare.
+[[allowlists]]
+description = "Noms de paquets système des paquets Linux"
+targetRules = ["generic-api-key"]
+# ET : il faut le fichier ET le motif — un vrai secret collé ailleurs dans ce
+# fichier reste détecté.
+condition = "AND"
+paths = ['''^apps/desktop-electron/scripts/linux/packageDependencies\.mjs$''']
+regexTarget = "line"
+regexes = ['''"lib[a-z0-9.+-]*secret[a-z0-9.+-]*"''']

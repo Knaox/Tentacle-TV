@@ -39,6 +39,12 @@ updates:
     ignore:
       # Paquets du workspace : jamais servis par le registre.
       - dependency-name: "@tentacle-tv/*"
+      # Aucune MAJEURE proposée d'office (décision du 2026-10-22) : vite 8,
+      # Prisma 7, framer-motion 13… sont des migrations, pas des mises à jour.
+      # Elles se mènent en chantier, à la main. Les mises à jour de SÉCURITÉ
+      # (alertes Dependabot) arrivent toujours.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
       # Mobile et TV : Expo et React Native ne montent QUE par une mise à niveau
       # du SDK (`npx expo install --fix`, `react-native-tvos`), jamais paquet par
       # paquet — Dependabot proposait expo-splash-screen 31 → 58 (un autre SDK)

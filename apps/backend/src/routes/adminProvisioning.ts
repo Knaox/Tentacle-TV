@@ -13,10 +13,9 @@ const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 12; // code long : résiste au brute-force (permanent + réutilisable)
 
 function generateLongCode(): string {
-  const bytes = crypto.randomBytes(CODE_LENGTH);
-  return Array.from(bytes)
-    .map((b) => PAIR_CHARS[b % PAIR_CHARS.length])
-    .join("");
+  // randomInt : tirage uniforme sur l'alphabet (le modulo d'un octet favorisait
+  // les premières lettres, 256 n'étant pas un multiple de 31).
+  return Array.from({ length: CODE_LENGTH }, () => PAIR_CHARS[crypto.randomInt(PAIR_CHARS.length)]).join("");
 }
 
 /** Récupère (ou crée) la ligne singleton du code de provisionnement. */

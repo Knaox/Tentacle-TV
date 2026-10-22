@@ -107,5 +107,12 @@ export function linuxBase(
     // Un plein écran posé par mpv lui ferait couvrir l'écran entier et masquer
     // l'interface, que la page soit fenêtrée ou non.
     fullscreen: "no",
+    // ⚠️ NON, comme pour la colle : avec `keepaspect-window`, mpv pose sur sa
+    // fenêtre un indice d'ASPECT (`WM_NORMAL_HINTS`) que le gestionnaire
+    // applique à NOTRE calage. Mesuré le 22.10.2026 (Xwayland rootful, openbox +
+    // picom, options exactes de la page) : zone client 900x600, fenêtre mpv
+    // posée en 900x506 — la vidéo collée en haut au lieu d'être centrée, et
+    // 94 px sous elle couverts par rien. Le letterbox vit DANS le rectangle calé.
+    "keepaspect-window": "no",
   };
 }

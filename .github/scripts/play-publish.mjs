@@ -106,7 +106,9 @@ async function publish(play) {
   const base = `/applications/${pkg}`;
   const edit = await play.call(`${base}/edits`, { method: 'POST', body: {} });
   const editId = edit.id;
-  console.log(`[play] édition ${editId} ouverte (${play.email}).`);
+  // Jamais l'adresse du compte de service : elle sort du secret, et les journaux
+  // d'un dépôt public sont publics (CodeQL `js/clear-text-logging`).
+  console.log(`[play] édition ${editId} ouverte.`);
 
   try {
     let versionCodes;

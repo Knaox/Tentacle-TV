@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import path from "node:path";
-import { detectFormat, nameFrom, owns, type OwnershipProbe } from "./update";
+import { detectFormat, immutableRoot, installCommand, nameFrom, owns, type OwnershipProbe } from "./update";
 
 beforeEach(() => { delete process.env["APPIMAGE"]; });
 afterEach(() => { delete process.env["APPIMAGE"]; });
@@ -39,6 +39,9 @@ describe("detecterFormat", () => {
     asked.push(command);
     return command === owner;
   };
+  // Le poste de test peut être lui-même immuable (Bazzite) : la racine est
+  // injectée, jamais lue sur la machine.
+  const notImmutable = () => false;
   beforeEach(() => { asked.length = 0; });
 
   it("reconnaît une AppImage AVANT tout gestionnaire de paquets", async () => {
@@ -46,20 +49,69 @@ describe("detecterFormat", () => {
     // aussi installé se ferait sinon prendre pour lui, et la mise à jour
     // remplacerait le mauvais fichier.
     process.env["APPIMAGE"] = "/home/k/Applications/TentacleTV.AppImage";
-    expect(await detectFormat(ownedBy("dpkg"))).toBe("appimage");
+    expect(await detectFormat(ownedBy("dpkg"), notImmutable)).toBe("appimage");
     expect(asked).toEqual([]);
   });
 
   it("ignore un $APPIMAGE vide", async () => {
     process.env["APPIMAGE"] = "";
-    expect(await detectFormat(ownedBy(null))).toBe("unknown");
+    expect(await detectFormat(ownedBy(null), notImmutable)).toBe("unknown");
     expect(asked).toEqual(["pacman", "dpkg", "rpm"]);
   });
 
   it("rend le gestionnaire qui possède le binaire, dans l'ordre pacman, dpkg, rpm", async () => {
-    expect(await detectFormat(ownedBy("pacman"))).toBe("pacman");
-    expect(await detectFormat(ownedBy("dpkg"))).toBe("deb");
-    expect(await detectFormat(ownedBy("rpm"))).toBe("rpm");
+    expect(await detectFormat(ownedBy("pacman"), notImmutable)).toBe("pacman");
+    expect(await detectFormat(ownedBy("dpkg"), notImmutable)).toBe("deb");
+    expect(await detectFormat(ownedBy("rpm"), notImmutable)).toBe("rpm");
+  });
+});
+
+describe("racine immuable", () => {
+  it("ne propose rien pour un paquet superposé sur Fedora Atomic", async () => {
+    // Bazzite : rpm possède bien le binaire, mais `dnf` refuse d'installer.
+    const rpmOwns: OwnershipProbe = async (command) => command === "rpm";
+    expect(await detectFormat(rpmOwns, () => true)).toBe("unknown");
+  });
+
+  it("garde l'AppImage, qui se remplace sans toucher au système", async () => {
+    process.env["APPIMAGE"] = "/home/k/Applications/TentacleTV.AppImage";
+    expect(await detectFormat(async () => true, () => true)).toBe("appimage");
+  });
+
+  it("reconnaît les témoins de install-linux.sh", () => {
+    const none = () => false;
+    expect(immutableRoot((p) => p === "/run/ostree-booted", none)).toBe(true);
+    for (const binary of ["rpm-ostree", "transactional-update", "steamos-readonly"]) {
+      expect(immutableRoot(none, (b) => b === binary)).toBe(true);
+    }
+    expect(immutableRoot(none, none)).toBe(false);
+  });
+});
+
+describe("commande d'installation", () => {
+  const only = (...binaries: string[]) => (b: string) => binaries.includes(b);
+
+  it("installe un rpm par zypper sur openSUSE, qui n'a pas de dnf", () => {
+    expect(installCommand("/tmp/t.rpm", "rpm", only("zypper", "rpm"))).toEqual(
+      ["zypper", ["--non-interactive", "install", "--allow-unsigned-rpm", "/tmp/t.rpm"]],
+    );
+  });
+
+  it("préfère dnf quand il est là (Fedora)", () => {
+    expect(installCommand("/tmp/t.rpm", "rpm", only("dnf", "zypper"))).toEqual(
+      ["dnf", ["install", "-y", "/tmp/t.rpm"]],
+    );
+  });
+
+  it("refuse clairement sans gestionnaire rpm connu", () => {
+    expect(() => installCommand("/tmp/t.rpm", "rpm", only())).toThrow(/ni dnf ni zypper/);
+  });
+
+  it("garde apt-get et pacman pour leurs formats", () => {
+    expect(installCommand("/tmp/t.deb", "deb", only())[0]).toBe("apt-get");
+    expect(installCommand("/tmp/t.pkg.tar.zst", "pacman", only())).toEqual(
+      ["pacman", ["-U", "--noconfirm", "/tmp/t.pkg.tar.zst"]],
+    );
   });
 });
 

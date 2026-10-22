@@ -16,6 +16,7 @@ function entry(given: Partial<PlayerExitInput>): PlayerExitInput {
     windowing: "libre",
     alreadyFullscreen: false,
     fullscreen: true,
+    pinned: false,
     ...given,
   };
 }
@@ -30,8 +31,13 @@ describe("decidePlayerExitAction", () => {
       .toBe("exitFullscreenThenMaximize");
   });
 
-  it("montage imposé (GNOME/wlroots) : la surface possède la restauration", () => {
-    expect(decidePlayerExitAction(entry({ windowing: "plein-ecran" }))).toBe("none");
+  it("montage imposé (GNOME/wlroots), vidéo attachée : la surface possède la restauration", () => {
+    expect(decidePlayerExitAction(entry({ windowing: "plein-ecran", pinned: true }))).toBe("none");
+  });
+
+  it("montage imposé SANS vidéo attachée (bande-annonce) : le plein écran du film se rend", () => {
+    expect(decidePlayerExitAction(entry({ windowing: "plein-ecran", pinned: false })))
+      .toBe("exitFullscreenThenMaximize");
   });
 
   it("montage inconnu : ne rien toucher", () => {

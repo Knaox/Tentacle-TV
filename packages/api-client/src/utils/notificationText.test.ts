@@ -60,3 +60,29 @@ describe("notifBodyText", () => {
     expect(notifBodyText({ type: "ticket_reply", body: null })).toBeNull();
   });
 });
+
+describe("formatNotifTitle — ancienne phrase de statut, lecture linéaire", () => {
+  const LEGACY_STATUS = /^Ticket\s+"(.+?)"\s+—\s+(.+)$/;
+  const STATUSES: Record<string, string> = { Ouvert: "open", "En cours": "in_progress", Résolu: "resolved", Fermé: "closed" };
+
+  it("rend ce que rendait l'ancienne regex", () => {
+    const alphabet = ["Ticket", " ", "  ", "\n", '"', "—", "Résolu", "En cours", "a", "x"];
+    let seed = 3;
+    const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    for (let i = 0; i < 5000; i++) {
+      const parts = Array.from({ length: Math.floor(next() * 10) }, () => alphabet[Math.floor(next() * alphabet.length)]);
+      const title = `Ticket${next() < 0.2 ? "\n" : " "}"${parts.join("")}`;
+      const legacy = LEGACY_STATUS.exec(title);
+      const key = legacy ? STATUSES[legacy[2]] : undefined;
+      const expected = legacy && key ? formatNotifTitle({ type: "ticket_status", title: "S", body: key }, t).replace('"S"', JSON.stringify(legacy[1])) : title;
+      expect(formatNotifTitle({ type: "ticket_status", title, body: null }, t)).toBe(expected);
+    }
+  });
+
+  it("lit un sujet hostile en un instant (CodeQL polynomial-redos)", () => {
+    const started = performance.now();
+    formatNotifTitle({ type: "ticket_status", title: `Ticket "a" — ${" ".repeat(60_000)}\n`, body: null }, t);
+    formatNotifTitle({ type: "ticket_status", title: `Ticket "a${'"  —  '.repeat(10_000)}\n`, body: null }, t);
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+});

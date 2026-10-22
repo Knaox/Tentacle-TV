@@ -159,3 +159,22 @@ describe("vider", () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("un identifiant qui nomme une propriété d'objet (CodeQL remote-property-injection)", () => {
+  it("« __proto__ » est une entrée comme une autre, sans toucher au prototype", () => {
+    notePlaybackStop(state("__proto__", 30));
+    notePlaybackStop(state("a", 10));
+    const entries = readPlaybackOutbox();
+    expect(Object.keys(entries).sort()).toEqual(["__proto__", "a"]);
+    expect(Object.getPrototypeOf(entries)).toBeNull();
+    const stored: unknown = JSON.parse(content.get(OUTBOX_KEY) ?? "{}");
+    expect(Object.prototype.hasOwnProperty.call(stored, "__proto__")).toBe(true);
+  });
+
+  it("« toString » n'est pas une entrée tant qu'elle n'est pas notée", () => {
+    notePlaybackStop(state("a", 10));
+    expect(readPlaybackOutbox().toString).toBeUndefined();
+    settlePlayback("toString", now);
+    expect(Object.keys(readPlaybackOutbox())).toEqual(["a"]);
+  });
+});

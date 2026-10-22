@@ -120,7 +120,7 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
 
     let upstream: Response;
     try {
-      upstream = await fetch(`${jellyfinUrl}/Items/${itemId}/Download`, { headers });
+      upstream = await fetch(`${jellyfinUrl}/Items/${encodeURIComponent(itemId)}/Download`, { headers });
     } catch {
       return notFound(reply);
     }
@@ -179,7 +179,7 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
 
     let upstream: Response;
     try {
-      upstream = await fetch(`${jellyfinUrl}/Videos/${itemId}/stream.mp4?${params.toString()}`, {
+      upstream = await fetch(`${jellyfinUrl}/Videos/${encodeURIComponent(light.itemId)}/stream.mp4?${params.toString()}`, {
         headers: { Authorization: mediaBrowserAuthHeader(token) },
       });
     } catch {

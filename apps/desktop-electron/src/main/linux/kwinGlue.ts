@@ -84,7 +84,8 @@
  * l'application, et au lancement suivant pour les pids qui ne répondent plus.
  *
  * Chaque pose écrit donc son QML dans un dossier qui n'a JAMAIS servi —
- * `tentacle-colle-<pid>-<n>/glue.qml` (banc : deux dossiers neufs d'affilée,
+ * `tentacle-colle-<pid>-<n>-<aléa>/glue.qml`, créé par `mkdtemp` en 0700 (jamais
+ * un nom prévisible dans un /tmp partagé : `createGlueFolder`) (banc : deux dossiers neufs d'affilée,
  * deux chargements réussis). Ce dossier ne contient qu'un fichier, en
  * minuscules : jamais candidat à un nom de type QML — l'autre piège du 28.08,
  * un fichier parasite de /tmp qui prenait la place de `Timer`.
@@ -97,9 +98,9 @@
  * sinon « Non-existent attached object » et tue le composant entier.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { glueFolder, removeFolder, pluginName } from "./glueCleanup";
+import { createGlueFolder, removeFolder, pluginName } from "./glueCleanup";
 import { glueTemplate } from "./kwinGlueTemplate";
 import { loadDeclarativeScript, unloadScript, runScript } from "./kwinScripting";
 import { videoWindowAppId } from "./videoWindowIdentity";
@@ -127,10 +128,11 @@ export class KwinGlue {
 
   async apply(): Promise<boolean> {
     applied += 1;
-    const folder = glueFolder(process.pid, applied);
-    const filePath = path.join(folder, "glue.qml");
+    let folder: string;
+    let filePath: string;
     try {
-      mkdirSync(folder, { recursive: true });
+      folder = createGlueFolder(process.pid, applied);
+      filePath = path.join(folder, "glue.qml");
       writeFileSync(filePath, glueTemplate(process.pid, videoWindowAppId()), "utf8");
     } catch {
       return false;

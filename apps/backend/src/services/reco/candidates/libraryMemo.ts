@@ -40,7 +40,7 @@ async function refreshNow(userId: string): Promise<LibraryIndex> {
     .catch((err: unknown) => {
       const hit = memo.get(userId);
       if (!hit) throw err;
-      console.error(`[Reco] Index bibliothèque ${userId.slice(0, 8)}… : l'ancien reste servi —`, err);
+      console.error("[Reco] Index bibliothèque %s… : l'ancien reste servi —", userId.slice(0, 8), err);
       return hit.index;
     })
     .finally(() => refreshing.delete(userId));

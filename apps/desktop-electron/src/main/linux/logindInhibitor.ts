@@ -21,11 +21,20 @@
  * # Pourquoi `systemd-inhibit` et pas D-Bus
  *
  * L'inhibiteur de logind est un DESCRIPTEUR DE FICHIER : il vit tant qu'on le
- * tient ouvert, et se libère à sa fermeture — y compris si l'application meurt
- * brutalement, ce qui est exactement la propriété qu'on veut. `systemd-inhibit`
- * est l'outil que systemd fournit pour cela, il est présent partout où logind
- * l'est, et il évite une bibliothèque D-Bus entière pour un seul appel. Un
- * processus fils, tué à la libération : le noyau referme le descripteur.
+ * tient ouvert, et se libère à sa fermeture. `systemd-inhibit` est l'outil
+ * que systemd fournit pour cela, il est présent partout où logind l'est, et il
+ * évite une bibliothèque D-Bus entière pour un seul appel. Un processus fils,
+ * tué à la libération : le noyau referme le descripteur.
+ *
+ * # Le fils meurt avec l'application, pas seulement à la libération
+ *
+ * C'est le FILS qui tient le descripteur. Avec `sleep infinity`, une
+ * application tuée (SIGTERM, plantage) laissait `systemd-inhibit` orphelin, et
+ * le verrou « idle:sleep » sur le logind du système jusqu'au redémarrage —
+ * plus de mise en veille du tout (constaté au banc KDE le 22.10.2026, le fils
+ * tenait même le port de débogage de l'application morte). Le fils attend donc
+ * la mort de l'application (`tail --pid`, GNU coreutils, relevé chaque
+ * seconde) : quelle qu'en soit la cause, le verrou tombe avec elle.
  *
  * Sur une distribution sans systemd — Artix, Void, Alpine — la commande n'existe
  * pas et le renfort s'efface sans bruit. Il n'y a alors rien à inhiber.
@@ -53,7 +62,7 @@ const WHY = "Lecture vidéo en cours";
  * `idle:sleep` couvre les deux chemins par lesquels la machine s'endort : le
  * délai d'inactivité, et une demande de veille explicite.
  */
-export function createLogindBackup(launch: Launcher): WakeLock {
+export function createLogindBackup(launch: Launcher, ownerPid: number = process.pid): WakeLock {
   let child: ChildProcess | null = null;
   return {
     prevent(): void {
@@ -64,9 +73,12 @@ export function createLogindBackup(launch: Launcher): WakeLock {
         `--why=${WHY}`,
         "--mode=block",
         // Un processus qui ne fait rien et qu'on tue : c'est le descripteur
-        // qu'il tient ouvert qui compte, pas ce qu'il exécute.
-        "sleep",
-        "infinity",
+        // qu'il tient ouvert qui compte. Il s'arrête de lui-même quand
+        // l'application meurt — jamais un verrou orphelin.
+        "tail",
+        `--pid=${String(ownerPid)}`,
+        "-f",
+        "/dev/null",
       ]);
     },
     release(): void {
