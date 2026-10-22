@@ -17,6 +17,8 @@ const LIFETIME_MS = 6000;
  * par l'opacité coûterait sa passe de composition à chaque image (CLAUDE.md,
  * coût GPU, règle 1). `aria-live` sans voler le focus. Verre natif : une
  * SURFACE d'un seul ton (`useGlassControl`, lot lg2), comme les autres avis.
+ * « Annuler » prend `--brand` en Clair : `--brand-light` n'y tenait que
+ * 4,0:1 sur le toast (audit lg2, n° 28), `--brand` y tient ≈ 5,4:1.
  */
 export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose: () => void }) {
   const { t } = useTranslation("watchlist");
@@ -47,7 +49,7 @@ export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose
         <button
           type="button"
           onClick={undo}
-          className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-bold text-brand-light transition-colors duration-150 hover:bg-fill-soft"
+          className="watchlist-toast-undo flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-sm font-bold text-brand-light transition-colors duration-150 hover:bg-fill-soft"
         >
           <Undo2 size={15} aria-hidden /> {t("undo")}
         </button>
@@ -62,6 +64,7 @@ export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose
       </div>
       <style>{`@keyframes watchlistToastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 .watchlist-toast { animation: watchlistToastIn 0.22s cubic-bezier(0.22,1,0.36,1); }
+:root[data-theme="light"] .watchlist-toast-undo { color: var(--brand); }
 @media (prefers-reduced-motion: reduce) { .watchlist-toast { animation: none; } }`}</style>
     </div>,
     document.body,
