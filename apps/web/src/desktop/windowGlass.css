@@ -27,9 +27,10 @@
    * theme/scrims.css) : la frange se fond dans `--surface-0`, sans écart. */
   --lg-chrome-edge-blur: var(--lg-regular-blur);
   --lg-chrome-edge-fade: 24px;
-  /* Le haut de la teinte : le jeton du socle (`--lg-scroll-edge`), sinon la
-   * valeur d'avant. */
-  --lg-chrome-edge-tint-top: var(--lg-scroll-edge, rgba(var(--scrim-page-rgb), 0.6));
+  /* Pas `--lg-scroll-edge` du socle ici : c'est un DÉGRADÉ à deux arrêts (sa
+   * rampe linéaire laisse un pli), pas une couleur — la courbe sans pli de
+   * `.lgc-edge::after` a besoin de couleurs aux deux bouts. */
+  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
   /* Le milieu du fondu est à hauteur des groupes de la barre, presque
    * transparents : c'est lui qui tient l'AA de leurs libellés page défilée
    * (mesuré : 0,28 → 3,2:1). */

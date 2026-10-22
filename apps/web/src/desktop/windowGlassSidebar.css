@@ -28,7 +28,9 @@
 :root[data-liquid-glass="native"] .lgc-sidebar.lg-surface[data-lg-tone="light"] {
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.05);
   --lg-chrome-sidebar-selection-bg: var(--lg-sidebar-selection, rgba(var(--lg-shade-rgb), 0.08));
-  --lg-chrome-sidebar-selection-icon: var(--lg-sidebar-selection-glyph, var(--brand));
+  /* Pas `--lg-sidebar-selection-glyph` ici : le socle le règle par THÈME, et
+   * un rail de ton clair dans le thème sombre y prendrait l'accent clair. */
+  --lg-chrome-sidebar-selection-icon: var(--brand);
 }
 
 /* Fenêtre inactive (`windowFocus.ts`) : la sélection reste, l'accent cède au gris. */

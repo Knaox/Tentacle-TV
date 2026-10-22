@@ -34,7 +34,9 @@ export interface GlassSidebar {
 export function useGlassSidebar(id: string): GlassSidebar {
   const glass = useWindowGlass();
   const reduced = useReducedMotion() ?? false;
-  const material = useLiquidGlassSurface({ radius: "lg" });
+  // Un GRAND verre : régime `surface` (ton mesuré à l'ouverture puis tenu,
+  // matériau épais, jamais de bandes).
+  const material = useLiquidGlassSurface({ radius: "lg", scale: "surface" });
 
   const selection = useMemo(() => {
     if (!glass) return undefined;
