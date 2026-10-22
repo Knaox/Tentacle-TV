@@ -1,44 +1,22 @@
 /**
- * La géométrie de la lentille Chromium d'une surface : taille, rayon, biseau,
- * force, dispersion — de quoi calculer SA carte de réfraction
- * (`RefractionFilter`, @tentacle-tv/ui).
+ * La géométrie de la lentille Chromium d'une surface, tenue à jour : de quoi
+ * calculer SES cartes (`RefractionFilter`, @tentacle-tv/ui).
  *
- * Taille par `ResizeObserver` ; force, biseau et dispersion lus dans les
- * jetons `--lg-*` (jamais une valeur en dur ici). Une taille qui bouge encore
- * (fenêtre qu'on redimensionne, panneau qui s'ouvre) garde l'ancienne carte,
- * étirée, jusqu'à ce qu'elle se pose : la recalculer à chaque image coûterait
- * plus que l'écart ne se voit.
+ * Taille par `ResizeObserver` ; biseau, force, dispersion et lumière du bord
+ * lus dans les jetons `--lg-*` (`lensTokens.ts`, jamais une valeur en dur
+ * ici), relus quand le thème bascule (la lumière du bord en dépend). Une
+ * taille qui bouge encore (fenêtre qu'on redimensionne, panneau qui s'ouvre)
+ * garde l'ancienne carte, étirée, jusqu'à ce qu'elle se pose : la recalculer à
+ * chaque image coûterait plus que l'écart ne se voit.
  */
 
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 
-import {
-  LENS_RESIZE_SETTLE_MS,
-  lensBezelToken,
-  type LiquidGlassLevel,
-  type LiquidGlassShape,
-} from "./surfaceModel";
+import { getScheme, subscribe as subscribeScheme } from "../colorScheme";
+import { lensGeometryFrom, sameLens, type LensGeometry } from "./lensTokens";
+import { LENS_RESIZE_SETTLE_MS, type LiquidGlassLevel, type LiquidGlassShape } from "./surfaceModel";
 
-export interface LensGeometry {
-  width: number;
-  height: number;
-  radius: number;
-  bezel: number;
-  strength: number;
-  dispersion: number;
-}
-
-const sameLens = (a: LensGeometry | null, b: LensGeometry): boolean =>
-  a !== null &&
-  a.width === b.width &&
-  a.height === b.height &&
-  a.radius === b.radius &&
-  a.bezel === b.bezel &&
-  a.strength === b.strength &&
-  a.dispersion === b.dispersion;
-
-const numberToken = (computed: CSSStyleDeclaration, name: string): number =>
-  Number.parseFloat(computed.getPropertyValue(name)) || 0;
+export type { LensGeometry } from "./lensTokens";
 
 /** Lit la géométrie sur l'élément ; `null` s'il n'a pas de taille. */
 export function readLensGeometry(
@@ -46,24 +24,17 @@ export function readLensGeometry(
   level: LiquidGlassLevel,
   shape: LiquidGlassShape,
 ): LensGeometry | null {
-  const width = Math.round(element.offsetWidth);
-  const height = Math.round(element.offsetHeight);
-  if (width < 1 || height < 1) return null;
   const computed = getComputedStyle(element);
-  const half = Math.min(width, height) / 2;
-  const radius =
-    shape === "capsule" || shape === "circle"
-      ? half
-      : Math.min(Number.parseFloat(computed.borderTopLeftRadius) || 0, half);
-  return {
-    width,
-    height,
-    radius: Math.round(radius),
-    bezel: numberToken(computed, lensBezelToken(width, height)),
-    strength: numberToken(computed, `--lg-refraction-${level}`),
-    // La frange chromatique coûte deux passes : réservée au verre clair.
-    dispersion: level === "clear" ? numberToken(computed, "--lg-dispersion") : 0,
-  };
+  return lensGeometryFrom(
+    {
+      width: element.offsetWidth,
+      height: element.offsetHeight,
+      cssRadius: Number.parseFloat(computed.borderTopLeftRadius) || 0,
+      shape,
+      level,
+    },
+    (name) => computed.getPropertyValue(name),
+  );
 }
 
 export function useLensGeometry(
@@ -74,6 +45,7 @@ export function useLensGeometry(
   radiusKey: string,
 ): LensGeometry | null {
   const [geometry, setGeometry] = useState<LensGeometry | null>(null);
+  const scheme = useSyncExternalStore(subscribeScheme, getScheme, getScheme);
 
   useLayoutEffect(() => {
     if (!enabled || element === null) {
@@ -96,8 +68,9 @@ export function useLensGeometry(
       observer.disconnect();
       clearTimeout(timer);
     };
-    // `radiusKey` : un autre rayon demandé change la carte sans changer la taille.
-  }, [element, enabled, level, shape, radiusKey]);
+    // `radiusKey` : un autre rayon demandé change la carte sans changer la
+    // taille ; `scheme` : la lumière du bord suit le thème.
+  }, [element, enabled, level, shape, radiusKey, scheme]);
 
   return geometry;
 }

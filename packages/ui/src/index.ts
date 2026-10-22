@@ -20,15 +20,19 @@ export {
 } from "./glass/engine";
 export {
   RefractionFilter,
+  lensMapUrls,
   refractionMapUrl,
   type RefractionFilterProps,
 } from "./glass/RefractionFilter";
 export {
+  buildLensMaps,
   buildRefractionMap,
-  refractionProfile,
+  type LensMaps,
   type RefractionGeometry,
   type RefractionMap,
+  type SpecularLight,
 } from "./glass/refractionMap";
+export { GLASS_INDEX, bezelHeight, lensProfile } from "./glass/lensProfile";
 
 export { SettingsRow, type SettingsRowProps } from "./settings/SettingsRow";
 export {

@@ -1,184 +1,159 @@
 /* Liquid Glass — les jetons du matériau (`--lg-*`), sombre puis clair.
  *
- * TOUTE surface en verre ne lit QUE ces jetons : teinte, flou, saturation,
- * réfraction, spéculaire, ombres, rayons, durées. Aucune valeur en dur dans
- * une classe, aucune recopie dans un composant — un réglage du matériau se
- * fait ici, et toutes les surfaces le reçoivent.
+ * LA CIBLE, celle d'Apple (macOS / iOS 26, HIG « Materials ») — refonte du
+ * 22/10 après le verdict « on dirait pas du Liquid Glass » :
+ *  1. PRESQUE TRANSPARENT : le contenu dessous reste lisible et net au centre ;
+ *     givre faible ; JAMAIS un fond sombre. La lisibilité vient d'une ombre
+ *     douce DANS le verre et de glyphes ADAPTÉS à ce qu'il y a dessous
+ *     (`data-lg-tone` : clair dessous → glyphes sombres, et inversement).
+ *  2. LA LENTILLE AU BORD : toute la réfraction dans le biseau (carte de la
+ *     forme exacte, profil de Snell : `@tentacle-tv/ui` glass/lensProfile).
+ *  3. LA LUMIÈRE DU BORD : un liseré fin, vif là où le bord fait face à la
+ *     lumière, plus doux en vis-à-vis — jamais un « border » gris.
+ *  4. Une ombre portée très douce, qui soulève.
+ *  5. La teinte = le sens : seule l'action principale est teintée.
  *
- * Quatre NIVEAUX, le vocabulaire d'Apple (`Glass.regular`, `.clear`,
- * `.tint(…)`, `glassProminent`) :
- *  - `regular`   : le verre par défaut — barres, menus, panneaux, pastilles ;
- *  - `clear`     : presque rien, sur un média vif (le lecteur) — il demande un
- *                  voile de lisibilité (`--lg-clear-dim`) sous le texte ;
- *  - `tinted`    : le verre teinté par la marque, en touche (violet → rose) ;
- *  - `prominent` : l'action principale — la marque presque pleine.
+ * Quatre NIVEAUX (`Glass.regular`, `.clear`, `.tint(…)`, `glassProminent`) :
+ * `regular` (barres, boutons, menus), `clear` (sur un média vif : rien que la
+ * lentille), `tinted` (la marque en touche), `prominent` (l'action principale).
  *
  * Ils ne servent QUE sous `html[data-liquid-glass="native"]` (macOS 26, réglage
- * allumé ; voir `liquidGlassMode.ts`). Partout ailleurs aucune règle ne les lit,
- * et le rendu d'avant reste intact au pixel près.
+ * allumé). Partout ailleurs aucune règle ne les lit : rendu d'avant au pixel
+ * près. Déclarés ICI et non dans tokens.css : le test de parité de l'admin
+ * (packages/theme/src/css/cssVars.test.ts) refuse une variable non
+ * surchargeable. Seules les touches de couleur suivent la marque.
  *
- * Déclarés ICI et non dans tokens.css, pour la même raison que surfaces.css :
- * le test de parité (packages/theme/src/css/cssVars.test.ts) exige que toute
- * variable de tokens.css soit surchargeable par l'admin. Le verre est un
- * matériau du SYSTÈME, pas un réglage de marque : seules ses touches de
- * couleur suivent la marque, par `--brand-rgb` et `--brand-accent-rgb`.
- *
- * Valeurs de départ, à affiner au banc contre le verre natif de macOS 26.
- *
- * ── CATALOGUE, par famille ────────────────────────────────────────────────
- * Ici, le MATÉRIAU commun (lu par tous) :
+ * ── CATALOGUE ─────────────────────────────────────────────────────────────
  *  - teintes      --lg-light-rgb, --lg-shade-rgb, --lg-tint-brand|accent|gradient,
- *                 --lg-prominent-gradient, --lg-label(-secondary|-on-prominent) ;
+ *                 --lg-prominent-gradient, --lg-label(-secondary|-on-prominent)
+ *  - glyphes      --lg-glyph-on-{dark|light}(-secondary), --lg-glyph-shadow-on-*,
+ *                 --lg-glyph-filter-on-* (ton adaptatif) ; alias d'avant :
+ *                 --lg-label-shadow, --lg-glyph-shadow, --lg-media-*-shadow,
+ *                 --lg-vibrancy-blend
  *  - niveaux      --lg-{regular|clear|tinted|prominent}-{fill|blur|saturate|brightness},
- *                 --lg-{tinted|prominent}-accent-fill ;
- *  - épaisseurs   --lg-thick-fill (menus, feuilles), --lg-clear-dim (verre clair
- *                 sur média vif), --lg-media-dim (verre posé sur une affiche),
- *                 --lg-scrim (voile sous une feuille ou une modale) ;
- *  - états        --lg-hover-brightness, --lg-opacity-pressed|disabled ;
- *  - réfraction   --lg-refraction-{niveau} (px), --lg-bezel-{sm|md|lg}, --lg-dispersion ;
- *  - spéculaire   --lg-rim(-width), --lg-specular-strong|soft, --lg-highlight,
- *                 --lg-inner-glow, --lg-light-x|y (la source de lumière) ;
- *  - ombres       --lg-shadow-contact|float|raised ;
- *  - formes       --lg-corner-shape, --lg-radius-{xs|sm|md|lg|xl|capsule},
- *                 --lg-thickness-{thin|regular|thick} ;
- *  - fondus       --lg-duration-{press|hover|appear|disappear}, --lg-ease-out ;
- *  - natif        --lg-native-tint-{niveau}(-accent) (#RRGGBBAA envoyé au pont).
- * Les familles COMPOSENT ce matériau dans leur propre fichier, sans redéfinir
- * un nom d'ici :
- *  - mouvement    theme/glass/physics.css (lg-physique) : --lg-spring-{lens|morph|
- *                 settle}-{duration|easing} (vrais ressorts : SOURCE UNIQUE du
- *                 mouvement), reflet au pointeur, accessibilité (--lg-a11y-solid,
- *                 --lg-contrast-border) ;
- *  - chrome       desktop/windowGlass.css (lg-chrome) : --lg-chrome-* (bandeau,
- *                 capsule, barres latérales, bord de défilement) ;
- *  - contrôles    components/ui/glass/lgRecipes.css (lg-composants) : --lgc-* ;
- *  - lecteur      components/player/glass/ (lg-lecteur) : --lg-player-* ;
- *  - hors ligne et autres écrans : le matériau commun, rien de propre.
- * Un jeton qui manque à une famille : le demander ici s'il est du MATÉRIAU
- * (partagé), le composer chez soi s'il est une recette. */
+ *                 --lg-{tinted|prominent}-accent-fill ; épais : --lg-thick-{fill|blur}
+ *  - voiles       --lg-clear-dim, --lg-media-dim (transparents : plus de fond
+ *                 sombre), --lg-scrim (sous une feuille)
+ *  - états        --lg-hover-brightness, --lg-opacity-pressed|disabled
+ *  - lentille     --lg-refraction-{niveau} (× biseau), --lg-bezel-{ratio|min|max},
+ *                 --lg-dispersion
+ *  - lumière      --lg-light-angle, --lg-specular-{facing|opposite|base|rim|glow}
+ *                 (carte du bord) ; d'avant : --lg-rim(-width), --lg-specular-strong|
+ *                 soft, --lg-highlight, --lg-inner-glow, --lg-light-x|y
+ *  - ombres       --lg-edge, --lg-shadow-contact|float|raised
+ *  - formes       --lg-corner-shape, --lg-radius-*, --lg-thickness-*
+ *  - fondus       --lg-duration-*, --lg-ease-out ; natif : --lg-native-tint-*
+ * Familles (composent ce matériau chez elles) : mouvement physics.css
+ * (--lg-spring-*), chrome windowGlass.css (--lg-chrome-*), contrôles
+ * lgRecipes.css (--lgc-*), lecteur player/glass (--lg-player-*). */
 :root {
   /* ── Teintes ─────────────────────────────────────────────────────────── */
-  /* La lumière que le verre renvoie (liseré, reflets) et l'ombre qu'il pose. */
   --lg-light-rgb: 255, 255, 255;
   --lg-shade-rgb: 0, 0, 0;
-  /* La marque, en TOUCHES : jamais un aplat violet sur une grande surface. */
   --lg-tint-brand: rgba(var(--brand-rgb), 0.32);
   --lg-tint-accent: rgba(var(--brand-accent-rgb), 0.26);
-  --lg-tint-gradient: linear-gradient(
-    135deg,
-    rgba(var(--brand-rgb), 0.34) 0%,
-    rgba(var(--brand-accent-rgb), 0.26) 100%
-  );
-  /* 0,86 / 0,8 : un libellé blanc de 14 px gras y tient l'AA (0,8 / 0,72
-   * tombait à ~4,2:1 sur un fond moyen — lg-composants, « Confirmer »). */
-  --lg-prominent-gradient: linear-gradient(
-    135deg,
-    rgba(var(--brand-rgb), 0.86) 0%,
-    rgba(var(--brand-accent-rgb), 0.8) 100%
-  );
-  /* Texte posé sur le verre. Le proéminent garde du blanc dans les deux
-   * thèmes : c'est la marque qui commande, comme `--cta-brand-fg`. */
+  --lg-tint-gradient: linear-gradient(135deg, rgba(var(--brand-rgb), 0.26) 0%, rgba(var(--brand-accent-rgb), 0.2) 100%);
+  /* La marque DANS le verre : translucide, le contenu passe dessous. Le
+   * libellé blanc tient par son ombre (≈ 7:1 au bord du glyphe). */
+  --lg-prominent-gradient: linear-gradient(135deg, rgba(var(--brand-rgb), 0.72) 0%, rgba(var(--brand-accent-rgb), 0.64) 100%);
   --lg-label: var(--text-primary);
   --lg-label-secondary: var(--text-secondary);
   --lg-label-on-prominent: #FFFFFF;
 
-  /* ── Lisibilité : l'OMBRE du libellé, pas un fond noir ───────────────── */
-  /* Le verre d'Apple reste clair ; ce qui tient le texte, c'est un halo
-   * sombre serré sous le libellé, et une légère vibrance. Le halo compte pour
-   * le contraste (WCAG, « Understanding 1.4.3 » : texte cerné d'un halo).
-   * Les deux ombres superposées couvrent ~0,65 au bord du glyphe : blanc
-   * dessus ≈ 7:1 même sur un décor blanc (sur affiche, ~0,76 : ≈ 10:1). */
-  --lg-label-shadow: 0 1px 2px rgba(var(--lg-shade-rgb), 0.5), 0 0 6px rgba(var(--lg-shade-rgb), 0.3);
-  --lg-glyph-shadow: drop-shadow(0 1px 1.5px rgba(var(--lg-shade-rgb), 0.55));
-  /* Sur une AFFICHE : sombre dans les deux thèmes, le libellé y est blanc. */
-  --lg-media-label-shadow: 0 1px 2px rgba(var(--scrim-media-rgb), 0.6), 0 0 8px rgba(var(--scrim-media-rgb), 0.4);
-  --lg-media-glyph-shadow: drop-shadow(0 1px 2px rgba(var(--scrim-media-rgb), 0.6));
-  /* Libellés SECONDAIRES : ils s'additionnent au fond (la vibrance d'AppKit). */
+  /* ── Glyphes ADAPTATIFS (`data-lg-tone`, posé d'après ce qui est dessous) ── */
+  /* Les deux polarités existent dans les deux thèmes : c'est le contenu sous
+   * le verre qui choisit, pas le thème. L'ombre est DANS le verre, serrée. */
+  --lg-glyph-on-dark: rgba(255, 255, 255, 0.96);
+  --lg-glyph-on-dark-secondary: rgba(255, 255, 255, 0.74);
+  --lg-glyph-on-light: rgba(12, 12, 18, 0.88);
+  --lg-glyph-on-light-secondary: rgba(12, 12, 18, 0.62);
+  --lg-glyph-shadow-on-dark: 0 0 1px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.42), 0 0 12px rgba(0, 0, 0, 0.26);
+  --lg-glyph-shadow-on-light: 0 0 1px rgba(255, 255, 255, 0.45), 0 0 12px rgba(255, 255, 255, 0.55);
+  --lg-glyph-filter-on-dark: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  --lg-glyph-filter-on-light: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
+  /* Alias d'avant (recettes de lg-composants) : la polarité sombre. */
+  --lg-label-shadow: var(--lg-glyph-shadow-on-dark);
+  --lg-glyph-shadow: var(--lg-glyph-filter-on-dark);
+  --lg-media-label-shadow: var(--lg-glyph-shadow-on-dark);
+  --lg-media-glyph-shadow: var(--lg-glyph-filter-on-dark);
   --lg-vibrancy-blend: plus-lighter;
 
-  /* ── Remplissage par niveau (le voile, au-dessus du fond flouté) ────── */
-  /* Une teinte TRÈS légère : c'est le fond, éclairci et saturé, qui fait
-   * le verre — jamais un voile sombre. */
-  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.12);
-  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.05);
+  /* ── Remplissage : presque rien — c'est le fond, éclairci, qui fait le verre ── */
+  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.04);
+  --lg-clear-fill: rgba(var(--lg-light-rgb), 0);
   --lg-tinted-fill: var(--lg-tint-gradient);
   --lg-prominent-fill: var(--lg-prominent-gradient);
-  /* Variante ROSE (`tint="accent"`) des deux niveaux teintés. */
   --lg-tinted-accent-fill: var(--lg-tint-accent);
-  --lg-prominent-accent-fill: rgba(var(--brand-accent-rgb), 0.86);
-  /* Verre ÉPAIS : menus, feuilles, panneaux qui portent beaucoup de texte. */
-  --lg-thick-fill: rgba(28, 26, 38, 0.5);
-  /* Voile de lisibilité d'un verre `clear` sur un média vif. */
-  --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.16);
-  /* Verre posé sur une AFFICHE : noir dans les deux thèmes, comme le texte
-   * sur média (`--on-media-*`) — la luminosité d'une image ne suit pas le thème.
-   * 0,24 : un voile, pas un aplat (à 0,55 la capsule de la fiche était presque
-   * noire, banc du 21/10). Le pire cas — décor blanc, libellé blanc — est
-   * tenu par `--lg-media-label-shadow`, plus par le voile. */
-  --lg-media-dim: rgba(var(--scrim-media-rgb), 0.24);
-  /* Le voile sous une feuille ou une modale de verre. */
-  --lg-scrim: rgba(var(--lg-shade-rgb), 0.42);
+  --lg-prominent-accent-fill: rgba(var(--brand-accent-rgb), 0.7);
+  /* ÉPAIS (menus, feuilles) : un givre plus fort, toujours sans fond sombre. */
+  --lg-thick-fill: rgba(var(--lg-light-rgb), 0.07);
+  --lg-thick-blur: 14px;
+  /* Plus de voile sombre sous le verre (le ton des glyphes s'en charge). */
+  --lg-clear-dim: rgba(var(--lg-shade-rgb), 0);
+  --lg-media-dim: rgba(var(--scrim-media-rgb), 0);
+  /* Le voile sous une feuille (pas un fond de verre : l'atténuation d'Apple). */
+  --lg-scrim: rgba(var(--lg-shade-rgb), 0.32);
 
-  /* ── Opacités (états) ────────────────────────────────────────────────── */
-  --lg-hover-brightness: 1.12;   /* le verre s'éclaire au survol */
+  /* ── États ───────────────────────────────────────────────────────────── */
+  --lg-hover-brightness: 1.08;
   --lg-opacity-pressed: 0.86;
   --lg-opacity-disabled: 0.45;
 
-  /* ── Flou ────────────────────────────────────────────────────────────── */
-  /* Modéré : un verre trop dépoli cache sa réfraction. */
-  --lg-regular-blur: 12px;
-  --lg-clear-blur: 2px;
-  --lg-tinted-blur: 14px;
-  --lg-prominent-blur: 10px;
+  /* ── Givre FAIBLE : le centre reste net ──────────────────────────────── */
+  --lg-regular-blur: 3px;
+  --lg-clear-blur: 0px;
+  --lg-tinted-blur: 3px;
+  --lg-prominent-blur: 3px;
 
   /* ── Saturation et luminosité du fond vu à travers ───────────────────── */
-  /* Le verre ÉCLAIRE ce qu'il montre (≥ 1) : un verre qui assombrit lit
-   * comme un voile. */
-  --lg-regular-saturate: 1.9;
-  --lg-clear-saturate: 1.6;
-  --lg-tinted-saturate: 1.8;
-  --lg-prominent-saturate: 1.6;
-  --lg-regular-brightness: 1.06;
-  --lg-clear-brightness: 1.1;
-  --lg-tinted-brightness: 1.04;
-  --lg-prominent-brightness: 1.04;
+  --lg-regular-saturate: 1.5;
+  --lg-clear-saturate: 1.25;
+  --lg-tinted-saturate: 1.4;
+  --lg-prominent-saturate: 1.3;
+  --lg-regular-brightness: 1.04;
+  --lg-clear-brightness: 1.02;
+  --lg-tinted-brightness: 1.02;
+  --lg-prominent-brightness: 1;
 
-  /* ── Réfraction (rendu Chromium) ─────────────────────────────────────── */
-  /* Décalage maximal de l'image, en px (nombre nu : lu par le filtre SVG),
-   * atteint au ras du bord. Zéro au centre — seul le biseau courbe l'image. */
-  --lg-refraction-regular: 18;
-  --lg-refraction-clear: 26;
-  --lg-refraction-tinted: 14;
-  --lg-refraction-prominent: 12;
-  /* Largeur du biseau qui réfracte, par taille de surface. */
-  --lg-bezel-sm: 10px;
-  --lg-bezel-md: 18px;
-  --lg-bezel-lg: 26px;
-  /* Écart relatif des trois canaux au ras du bord (frange chromatique). */
-  --lg-dispersion: 0.08;
+  /* ── La lentille (rendu Chromium) ────────────────────────────────────── */
+  /* Décalage maximal de l'image, en fraction de la largeur du biseau (nombre
+   * nu, lu par la carte). Le biseau suit le rayon : ratio × rayon, borné. */
+  --lg-refraction-regular: 0.6;
+  --lg-refraction-clear: 0.8;
+  --lg-refraction-tinted: 0.6;
+  --lg-refraction-prominent: 0.5;
+  --lg-bezel-ratio: 0.6;
+  --lg-bezel-min: 8px;
+  --lg-bezel-max: 22px;
+  /* Écart relatif des trois canaux au ras du bord (frange du verre `clear`). */
+  --lg-dispersion: 0.1;
 
-  /* ── Spéculaire ──────────────────────────────────────────────────────── */
+  /* ── La lumière du bord (carte spéculaire de la lentille) ────────────── */
+  /* D'où vient la lumière, en degrés (0 = du haut ; négatif = de la gauche). */
+  --lg-light-angle: -18;
+  --lg-specular-facing: 0.85;   /* le bord qui fait face à la lumière */
+  --lg-specular-opposite: 0.42; /* le reflet en vis-à-vis */
+  --lg-specular-base: 0.1;      /* le liseré, tout autour */
+  --lg-specular-rim: 1.5;       /* épaisseur du liseré, en px (nombre nu) */
+  --lg-specular-glow: 0.16;     /* lueur douce sous l'arête éclairée */
+  /* D'avant (recettes en couches `inset`) : un liseré à peine, une arête vive. */
   --lg-rim-width: 1px;
-  /* FRANC : l'arête qui attrape la lumière fait lire le matériau. */
-  --lg-rim: rgba(var(--lg-light-rgb), 0.22);             /* liseré tout autour */
-  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.85); /* arête haut-gauche */
-  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.38);   /* contre-arête bas-droite */
-  --lg-highlight: rgba(var(--lg-light-rgb), 0.22);       /* reflet diffus du haut */
-  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.1);
-  /* Position du reflet : la source de lumière, en haut à gauche. Le suivi du
-   * pointeur (lg-physique) réécrit ces deux-là, rien d'autre. */
+  --lg-rim: rgba(var(--lg-light-rgb), 0.08);
+  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.8);
+  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.3);
+  --lg-highlight: rgba(var(--lg-light-rgb), 0.12);
+  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.06);
+  /* Position du reflet au pointeur (réécrite par lg-physique). */
   --lg-light-x: 30%;
   --lg-light-y: 0%;
 
-  /* ── Ombres de contact ───────────────────────────────────────────────── */
-  /* Plus douces : le verre flotte, il ne pèse pas. */
-  --lg-shadow-contact: 0 1px 2px rgba(var(--lg-shade-rgb), 0.22);
-  --lg-shadow-float: 0 8px 28px -10px rgba(var(--lg-shade-rgb), 0.38);
-  --lg-shadow-raised: 0 20px 50px -16px rgba(var(--lg-shade-rgb), 0.5);
+  /* ── Ombres : très douces, elles SOULÈVENT ───────────────────────────── */
+  --lg-edge: rgba(var(--lg-shade-rgb), 0.12);
+  --lg-shadow-contact: 0 0.5px 1px rgba(var(--lg-shade-rgb), 0.14);
+  --lg-shadow-float: 0 6px 22px -8px rgba(var(--lg-shade-rgb), 0.3);
+  --lg-shadow-raised: 0 16px 44px -14px rgba(var(--lg-shade-rgb), 0.4);
 
-  /* ── Rayons : coins CONTINUS façon macOS (`corner-shape: squircle`) ──── */
-  /* Un coin continu paraît plus petit qu'un arc de même rayon : l'échelle est
-   * plus large que `--radius-*`, comme celle des contrôles de macOS 26. */
+  /* ── Formes : coins continus façon macOS ─────────────────────────────── */
   --lg-corner-shape: squircle;
   --lg-radius-xs: 8px;
   --lg-radius-sm: 12px;
@@ -186,25 +161,18 @@
   --lg-radius-lg: 22px;
   --lg-radius-xl: 28px;
   --lg-radius-capsule: 9999px;
-
-  /* ── Épaisseurs ──────────────────────────────────────────────────────── */
   --lg-thickness-thin: 1px;
   --lg-thickness-regular: 2px;
   --lg-thickness-thick: 3px;
 
-  /* ── Fondus ──────────────────────────────────────────────────────────── */
-  /* Les fondus simples seulement. Les RESSORTS (lentille, métamorphose,
-   * retour au repos) sont ceux de lg-physique, `--lg-spring-*` dans
-   * theme/glass/physics.css : une seule source du mouvement. */
+  /* ── Fondus (les RESSORTS sont ceux de lg-physique, --lg-spring-*) ───── */
   --lg-duration-press: 110ms;
   --lg-duration-hover: 180ms;
   --lg-duration-appear: 280ms;
   --lg-duration-disappear: 180ms;
   --lg-ease-out: cubic-bezier(0.2, 0.9, 0.3, 1);
 
-  /* ── Verre NATIF (NSGlassEffectView) ─────────────────────────────────── */
-  /* La teinte que le pont transmet à macOS, lue sur l'élément au moment de
-   * l'inscription. `transparent` = aucune teinte : le matériau du système. */
+  /* ── Verre NATIF (NSGlassEffectView) : teinte envoyée au pont ───────── */
   --lg-native-tint-regular: transparent;
   --lg-native-tint-clear: transparent;
   --lg-native-tint-tinted: rgba(var(--brand-rgb), 0.38);
@@ -213,58 +181,45 @@
   --lg-native-tint-prominent-accent: rgba(var(--brand-accent-rgb), 0.84);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
- * SCHÉMA CLAIR — seuls les jetons qui changent. Le verre clair de macOS est
- * plus OPAQUE et plus lumineux ; son liseré devient un fil sombre, ses reflets
- * restent blancs, ses ombres raccourcissent (des ombres noires à 0,5 salissent
- * un fond clair, cf. `--elev-*`).
- * ═══════════════════════════════════════════════════════════════════════════ */
+/* ═══ SCHÉMA CLAIR — seuls les jetons qui changent. Le verre d'Apple est le
+ * même matériau ; en clair, son voile est un peu plus laiteux, sa lumière plus
+ * présente, et un fil sombre très léger le détache d'un fond blanc. ═══ */
 :root[data-theme="light"] {
   --lg-shade-rgb: 11, 11, 16;
-  --lg-tint-brand: rgba(var(--brand-rgb), 0.22);
-  --lg-tint-accent: rgba(var(--brand-accent-rgb), 0.18);
-  --lg-tint-gradient: linear-gradient(
-    135deg,
-    rgba(var(--brand-rgb), 0.24) 0%,
-    rgba(var(--brand-accent-rgb), 0.18) 100%
-  );
-  --lg-prominent-gradient: linear-gradient(
-    135deg,
-    rgba(var(--brand-rgb), 0.86) 0%,
-    rgba(var(--brand-accent-rgb), 0.8) 100%
-  );
+  --lg-tint-gradient: linear-gradient(135deg, rgba(var(--brand-rgb), 0.2) 0%, rgba(var(--brand-accent-rgb), 0.16) 100%);
+  --lg-prominent-gradient: linear-gradient(135deg, rgba(var(--brand-rgb), 0.78) 0%, rgba(var(--brand-accent-rgb), 0.72) 100%);
 
-  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.3);
-  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.08);
-  --lg-thick-fill: rgba(250, 250, 252, 0.54);
-  --lg-clear-dim: rgba(var(--lg-shade-rgb), 0.12);
-  --lg-scrim: rgba(var(--lg-shade-rgb), 0.22);
+  --lg-regular-fill: rgba(var(--lg-light-rgb), 0.16);
+  --lg-clear-fill: rgba(var(--lg-light-rgb), 0.04);
+  --lg-thick-fill: rgba(var(--lg-light-rgb), 0.32);
+  --lg-scrim: rgba(var(--lg-shade-rgb), 0.18);
 
-  --lg-regular-saturate: 2;
-  --lg-tinted-saturate: 1.9;
-  --lg-regular-brightness: 1.1;
-  --lg-tinted-brightness: 1.06;
+  --lg-regular-saturate: 1.7;
+  --lg-tinted-saturate: 1.6;
+  --lg-regular-brightness: 1.08;
+  --lg-tinted-brightness: 1.05;
 
-  --lg-rim: rgba(var(--lg-shade-rgb), 0.1);
+  --lg-specular-facing: 0.95;
+  --lg-specular-opposite: 0.6;
+  --lg-specular-base: 0.22;
+  --lg-specular-glow: 0.28;
+  --lg-rim: rgba(var(--lg-shade-rgb), 0.06);
   --lg-specular-strong: rgba(var(--lg-light-rgb), 1);
-  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.65);
-  --lg-highlight: rgba(var(--lg-light-rgb), 0.5);
-  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.3);
+  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.6);
+  --lg-highlight: rgba(var(--lg-light-rgb), 0.35);
+  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.2);
 
-  /* Un libellé SOMBRE sur verre clair : un liseré clair dessous suffit, et
-   * la vibrance s'inverse (le libellé assombrit le fond). */
-  --lg-label-shadow: 0 1px 0 rgba(var(--lg-light-rgb), 0.55);
-  --lg-glyph-shadow: drop-shadow(0 1px 0 rgba(var(--lg-light-rgb), 0.55));
+  --lg-edge: rgba(var(--lg-shade-rgb), 0.08);
+  --lg-shadow-contact: 0 0.5px 1px rgba(var(--lg-shade-rgb), 0.08);
+  --lg-shadow-float: 0 6px 20px -8px rgba(var(--lg-shade-rgb), 0.16);
+  --lg-shadow-raised: 0 16px 40px -14px rgba(var(--lg-shade-rgb), 0.22);
+
+  /* Alias d'avant : sur un thème clair, la polarité claire. */
+  --lg-label-shadow: var(--lg-glyph-shadow-on-light);
+  --lg-glyph-shadow: var(--lg-glyph-filter-on-light);
   --lg-vibrancy-blend: multiply;
 
-  --lg-shadow-contact: 0 1px 2px rgba(var(--lg-shade-rgb), 0.1);
-  --lg-shadow-float: 0 10px 30px -12px rgba(var(--lg-shade-rgb), 0.22);
-  --lg-shadow-raised: 0 20px 48px -16px rgba(var(--lg-shade-rgb), 0.3);
-
-  --lg-prominent-accent-fill: rgba(var(--brand-accent-rgb), 0.86);
-
   --lg-native-tint-tinted: rgba(var(--brand-rgb), 0.26);
-  --lg-native-tint-prominent: rgba(var(--brand-rgb), 0.86);
   --lg-native-tint-tinted-accent: rgba(var(--brand-accent-rgb), 0.24);
   --lg-native-tint-prominent-accent: rgba(var(--brand-accent-rgb), 0.86);
 }
