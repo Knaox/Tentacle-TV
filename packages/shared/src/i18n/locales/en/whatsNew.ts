@@ -46,9 +46,9 @@ export default {
 
   // 1.40.0
   v1_40_0_glassNavigation_title: "Tentacle in Liquid Glass",
-  v1_40_0_glassNavigation_body: "On macOS Tahoe, the app takes on Apple's glass: the navigation bar, buttons, menus and windows float above the page, which scrolls underneath and shows through, in Tentacle's colors — offline pages included. On by default; Settings › Appearance turns it off.",
+  v1_40_0_glassNavigation_body: "On macOS Tahoe, the app takes on Apple's glass: the navigation bar floats in small groups of nearly clear glass, the page scrolls underneath and bends at their edge, and labels switch between light and dark to match what passes beneath. Buttons, menus and windows follow, offline pages included. On by default; Settings › Appearance turns it off.",
   v1_40_0_glassPlayer_title: "The player, all glass",
-  v1_40_0_glassPlayer_body: "The controls float over the movie in nearly clear glass that never hides it, and melt into one another; audio tracks, subtitles, speed and episodes open from their button in glass panels. On Macs with Apple silicon.",
+  v1_40_0_glassPlayer_body: "The controls float over the movie as small shapes of clear glass that are born from a single drop and pull apart; audio tracks, subtitles, speed and episodes open from their button in glass panels. On Macs with Apple silicon.",
 
   // 1.29.0
   v1_29_0_trailerPreview_title: "Trailers on hover",
