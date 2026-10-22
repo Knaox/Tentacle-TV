@@ -99,8 +99,11 @@ export interface LiquidGlassBridge {
   remove(ids: readonly string[]): void;
   /**
    * En plus : la luminance relative médiane (0..1, sRGB linéarisé) sous chaque
-   * rectangle (px CSS du viewport) ; `null` là où la page est transparente (la
-   * vidéo) ou si la capture échoue. Au plus toutes les 250 ms, au repos.
+   * rectangle (px CSS du viewport) — la page, et là où elle est transparente la
+   * VIDÉO de mpv dessous (macOS, montage `fenetre`), composée comme à l'écran,
+   * au verre natif près. `null` si rien n'est mesurable (page transparente sans
+   * vidéo dessous, capture en échec). Au plus toutes les 250 ms, au repos ; sur
+   * la vidéo, une image par seconde au plus (`videoSample.ts`).
    */
   sample(rects: readonly GlassSampleRect[]): Promise<(number | null)[]>;
 }

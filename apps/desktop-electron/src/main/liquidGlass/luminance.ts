@@ -2,10 +2,12 @@
  * La luminance de ce qui est SOUS une surface de verre — pour que ses glyphes
  * s'adaptent au contenu (sombres sur un dessous clair, et inversement), comme
  * le Liquid Glass d'Apple. La page ne peut pas lire ses propres pixels ; le
- * principal le peut (`sampler.ts`, `webContents.capturePage`).
+ * principal le peut (`sampler.ts` : `webContents.capturePage`, et la vidéo de
+ * mpv par `videoSample.ts` là où la page est transparente).
  *
- * Pur, sans Electron : la capture arrive ici en BGRA (le format de `toBitmap()`
- * sur macOS) et ne repart qu'en NOMBRES — jamais un pixel ne traverse le pont.
+ * Pur, sans Electron : les captures arrivent ici en BGRA prémultiplié (le format
+ * de `toBitmap()` sur macOS ; la grille de la vidéo, opaque, de `videoSample.ts`)
+ * et ne repartent qu'en NOMBRES — jamais un pixel ne traverse le pont.
  */
 
 /** Un rectangle, en pixels de l'image ou en points selon l'appelant. */
@@ -41,27 +43,76 @@ export function median(values: readonly number[]): number | null {
 }
 
 /**
- * Médiane de la luminance sur une grille `grid` × `grid` dans `box` (pixels de
- * l'image), en ignorant les pixels transparents. `null` si rien d'opaque :
- * au-dessus de la vidéo, la page est transparente et la capture ne voit pas mpv.
+ * Les échantillons d'une grille `grid` × `grid` sur `box` (pixels de l'image) :
+ * `grid² × 4` octets BGRA, un point au CENTRE de chaque case, ligne par ligne
+ * depuis le haut. Un point hors de l'image est transparent (0, 0, 0, 0) : la
+ * grille garde sa place sur la boîte ENTIÈRE, si bien que la page et la vidéo
+ * (`videoSample.ts`), capturées chacune dans son repère, se composent case à
+ * case. `null` si la boîte est vide.
  */
-export function medianLuminance(bgra: Uint8Array, imageWidth: number, imageHeight: number, box: Box, grid = SAMPLE_GRID): number | null {
-  const x0 = Math.max(0, Math.floor(box.x));
-  const y0 = Math.max(0, Math.floor(box.y));
-  const x1 = Math.min(imageWidth, Math.ceil(box.x + box.width));
-  const y1 = Math.min(imageHeight, Math.ceil(box.y + box.height));
-  if (x1 <= x0 || y1 <= y0) return null;
-  const values: number[] = [];
+export function gridSamples(bgra: Uint8Array, imageWidth: number, imageHeight: number, box: Box, grid = SAMPLE_GRID): Uint8Array | null {
+  if (!(box.width > 0 && box.height > 0)) return null;
+  const samples = new Uint8Array(grid * grid * 4);
   for (let j = 0; j < grid; j += 1) {
-    const y = Math.min(y1 - 1, Math.floor(y0 + ((j + 0.5) * (y1 - y0)) / grid));
+    const y = Math.floor(box.y + ((j + 0.5) * box.height) / grid);
+    if (y < 0 || y >= imageHeight) continue;
     for (let i = 0; i < grid; i += 1) {
-      const x = Math.min(x1 - 1, Math.floor(x0 + ((i + 0.5) * (x1 - x0)) / grid));
+      const x = Math.floor(box.x + ((i + 0.5) * box.width) / grid);
+      if (x < 0 || x >= imageWidth) continue;
       const p = (y * imageWidth + x) * 4;
-      if ((bgra[p + 3] ?? 0) < OPAQUE_ALPHA) continue;
-      values.push(relativeLuminance(bgra[p + 2] ?? 0, bgra[p + 1] ?? 0, bgra[p] ?? 0));
+      samples.set(bgra.subarray(p, p + 4), (j * grid + i) * 4);
     }
   }
+  return samples;
+}
+
+/** Médiane de la luminance des échantillons, les transparents ignorés ; `null` sans rien d'opaque. */
+export function medianOfSamples(samples: Uint8Array): number | null {
+  const values: number[] = [];
+  for (let p = 0; p + 3 < samples.length; p += 4) {
+    if ((samples[p + 3] ?? 0) < OPAQUE_ALPHA) continue;
+    values.push(relativeLuminance(samples[p + 2] ?? 0, samples[p + 1] ?? 0, samples[p] ?? 0));
+  }
   return median(values);
+}
+
+/**
+ * Médiane de la luminance sur une grille `grid` × `grid` dans `box` (pixels de
+ * l'image), en ignorant les pixels transparents. `null` si rien d'opaque.
+ */
+export function medianLuminance(bgra: Uint8Array, imageWidth: number, imageHeight: number, box: Box, grid = SAMPLE_GRID): number | null {
+  const samples = gridSamples(bgra, imageWidth, imageHeight, box, grid);
+  return samples === null ? null : medianOfSamples(samples);
+}
+
+/** La page laisse-t-elle voir le dessous quelque part (un échantillon pas pleinement opaque) ? */
+export function seesThrough(samples: Uint8Array): boolean {
+  for (let p = 3; p < samples.length; p += 4) if ((samples[p] ?? 0) < 255) return true;
+  return false;
+}
+
+/**
+ * La page posée sur la vidéo, échantillon par échantillon : ce que l'œil voit
+ * sous les glyphes, au verre natif près (`clear` : −15 % de luminance mesurés).
+ *
+ * Les deux grilles sont PRÉMULTIPLIÉES : « source sur destination » s'écrit
+ * page + vidéo × (1 − alpha de la page), dans l'espace sRGB encodé où Chromium
+ * compose lui-même. Un échantillon de vidéo transparent (hors de la fenêtre de
+ * mpv : le bandeau, une marge) ne compose rien — la page y reste telle quelle.
+ */
+export function compositeOver(page: Uint8Array, video: Uint8Array): Uint8Array {
+  const out = new Uint8Array(page.length);
+  for (let p = 0; p + 3 < page.length; p += 4) {
+    const alpha = page[p + 3] ?? 0;
+    if ((video[p + 3] ?? 0) < OPAQUE_ALPHA) {
+      out.set(page.subarray(p, p + 4), p);
+      continue;
+    }
+    const rest = 1 - alpha / 255;
+    for (let c = 0; c < 3; c += 1) out[p + c] = Math.min(255, Math.round((page[p + c] ?? 0) + (video[p + c] ?? 0) * rest));
+    out[p + 3] = 255;
+  }
+  return out;
 }
 
 /** Le plus petit rectangle qui contient tous les autres. */
