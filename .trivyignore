@@ -1,0 +1,71 @@
+# Vulnérabilités que la garde Trivy de l'image (server-image.yml) TOLÈRE.
+#
+# La garde échoue sur toute vulnérabilité CRITICAL ou HIGH CORRIGEABLE de
+# l'image, avant qu'aucune étiquette ne soit posée. Une ligne ici l'en
+# dispense : elle se justifie, et elle EXPIRE (« exp:AAAA-MM-JJ ») — passé la
+# date, Trivy la refuse de nouveau et la livraison s'arrête. Jamais une ligne
+# sans date.
+#
+# Format : un identifiant par ligne (CVE-…, GHSA-…), puis « exp:… ».
+#   CVE-2026-00000 exp:2026-12-31
+#
+# ── DETTE RELEVÉE LE 2026-10-22 (Trivy 0.70.0, image de 7640fcf9d) ─────────
+# Toutes dans les dépendances npm de PRODUCTION du serveur (verrou pnpm), aucune
+# dans le système (Alpine 3.24 : 0). Elles existaient avant la garde : les
+# tolérer deux semaines évite qu'elle arrête la prochaine livraison serveur ou
+# webOS sans prévenir. À corriger par la montée de ces dépendances (fastify
+# ≥ 5.12.2, @fastify/static ≥ 10.1.1 — majeure —, undici, fast-uri, ws,
+# find-my-way, brace-expansion), puis À RETIRER d'ici. Rejouer :
+#   trivy image --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed <image>
+# @fastify/static 8.3.0 → 10.1.1
+CVE-2026-15074 exp:2026-11-05
+# brace-expansion 5.0.8 → 5.0.10, 3.0.7, 2.1.5, 1.1.19
+CVE-2026-102276 exp:2026-11-05
+# brace-expansion 5.0.8 → 5.0.11, 3.0.8, 2.1.6, 1.1.20
+CVE-2026-102278 exp:2026-11-05
+# brace-expansion 5.0.8 → 1.1.18, 2.1.4, 3.0.6, 5.0.9
+CVE-2026-69152 exp:2026-11-05
+# fast-uri 3.1.0 → 4.0.1, 3.1.3, 2.4.2
+CVE-2026-13676 exp:2026-11-05
+# fast-uri 3.1.0 → 2.4.3, 3.1.4, 4.1.1
+CVE-2026-16221 exp:2026-11-05
+# fast-uri 3.1.0 → 2.4.4, 3.1.5, 4.1.2
+CVE-2026-18446 exp:2026-11-05
+# fast-uri 3.1.0 → 3.1.1, 2.4.1
+CVE-2026-6321 exp:2026-11-05
+# fast-uri 3.1.0 → 3.1.2, 2.4.1
+CVE-2026-6322 exp:2026-11-05
+# fast-uri 3.1.0 → 2.4.5, 3.1.6, 4.1.3
+CVE-2026-75975 exp:2026-11-05
+# fast-uri 3.1.0 → 2.4.5, 3.1.6, 4.1.3
+CVE-2026-76172 exp:2026-11-05
+# fast-uri 3.1.0 → 2.4.6, 3.1.7, 4.1.4
+CVE-2026-84292 exp:2026-11-05
+# fastify 5.7.4 → 5.8.5
+CVE-2026-33806 exp:2026-11-05
+# fastify 5.7.4 → 5.12.2
+CVE-2026-76169 exp:2026-11-05
+# fastify 5.7.4 → 5.12.2
+CVE-2026-84428 exp:2026-11-05
+# fastify 5.7.4 → 5.12.2
+CVE-2026-84469 exp:2026-11-05
+# fastify 5.7.4 → 5.12.2
+CVE-2026-84504 exp:2026-11-05
+# find-my-way 9.5.0 → 9.7.0
+CVE-2026-47219 exp:2026-11-05
+# undici 6.23.0 → 6.27.0, 7.28.0, 8.5.0
+CVE-2026-12151 exp:2026-11-05
+# undici 7.28.0 → 7.29.0, 8.9.0
+CVE-2026-13697 exp:2026-11-05
+# undici 6.23.0 → 6.24.0, 7.24.0
+CVE-2026-1526 exp:2026-11-05
+# undici 6.23.0 → 6.24.0, 7.24.0
+CVE-2026-1528 exp:2026-11-05
+# undici 6.23.0 → 6.28.1, 7.29.1, 8.10.2
+CVE-2026-19534 exp:2026-11-05
+# undici 6.23.0 → 6.24.0, 7.24.0
+CVE-2026-2229 exp:2026-11-05
+# undici 7.28.0 → 7.29.1, 8.10.2
+CVE-2026-84961 exp:2026-11-05
+# ws 8.19.0 → 5.2.5, 6.2.4, 7.5.11, 8.21.0
+CVE-2026-48779 exp:2026-11-05

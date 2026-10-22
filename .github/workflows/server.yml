@@ -223,6 +223,9 @@ jobs:
     permissions:
       contents: write
       packages: write
+      # Signature keyless (cosign) de l'image par server-image.yml : un
+      # workflow appelé ne reçoit jamais plus que ce que son appelant lui donne.
+      id-token: write
     with:
       mode: server
       channel: ${{ needs.prepare.outputs.channel }}

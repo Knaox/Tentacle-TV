@@ -8,7 +8,10 @@
 # Contexte : la racine du dépôt, filtrée par Dockerfile.dockerignore (liste
 # blanche). L'image finale ne garde qu'un fichier : le service empaqueté par
 # esbuild (Fastify et Zod compris), sur Node distroless, sans shell ni root.
-ARG NODE_IMAGE=node:24-alpine
+# Images de base ÉPINGLÉES par empreinte (index multi-arch), tag en commentaire —
+# voir le Dockerfile racine pour la marche à suivre.
+# node:24.22.1-alpine3.24 (relevé le 2026-10-22)
+ARG NODE_IMAGE=node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
 
 FROM ${NODE_IMAGE} AS build
 WORKDIR /repo
@@ -25,7 +28,8 @@ WORKDIR /deploy
 RUN node node_modules/esbuild/bin/esbuild src/index.ts --bundle --platform=node --target=node24 \
       --format=cjs --outfile=dist/server.cjs --legal-comments=none
 
-FROM gcr.io/distroless/nodejs24-debian12:nonroot
+# gcr.io/distroless/nodejs24-debian12:nonroot (relevé le 2026-10-22)
+FROM gcr.io/distroless/nodejs24-debian12:nonroot@sha256:14d42e2511532589a7c7e01a753667a74fcc96266e137e8125006b87b0c32d0a
 WORKDIR /app
 COPY --from=build /deploy/dist/server.cjs /app/server.cjs
 ENV NODE_ENV=production PORT=8080
