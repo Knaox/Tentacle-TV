@@ -6,7 +6,7 @@ import path from "node:path";
 import { clickGlassToggle, connectAndLogin, emulateMedia, glassToggle, go, sleep } from "./lib/app.mjs";
 import { checkCell } from "./lib/checks.mjs";
 import { STATE, SERVER, account, outDir, resetPlayback } from "./lib/config.mjs";
-import { evalMain, launchApp, stopApp } from "./lib/electron.mjs";
+import { evalMain, focusEvents, launchApp, stopApp } from "./lib/electron.mjs";
 import { offline } from "./lib/offline.mjs";
 import { whatsNew } from "./lib/whatsNew.mjs";
 import { menus } from "./lib/menus.mjs";
@@ -113,9 +113,11 @@ for (const name of names) {
   } catch (error) {
     report.fatal = String(error?.message ?? error);
   } finally {
+    report.focusEvents = await focusEvents(app);
     await stopApp(app);
   }
   report.issues = checkCell(cell, report);
+  if (report.focusEvents.length > 0) report.notes = [...(report.notes ?? []), `${report.focusEvents.length} prise(s) de focus — 1re à ${report.focusEvents[0].at} : ${report.focusEvents[0].stack.slice(0, 160)}`];
   if (report.fatal) report.issues.unshift({ message: `cellule interrompue : ${report.fatal}`, proof: null });
   all.push(report);
   writeFileSync(path.join(out, "rapport.json"), JSON.stringify(all, null, 1));
