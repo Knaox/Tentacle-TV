@@ -77,10 +77,22 @@ export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options
 
 /**
  * Le TON de ce qui est sous une forme du lecteur (`dark` | `light`), mesuré par
- * la coquille (`sample`) tant que `active` — relu au ralenti pendant la lecture,
- * rien quand les contrôles sont masqués. Sur la vidéo, le thème ne dit rien du
- * dessous : sans mesure, le ton reste `dark` (des glyphes clairs, comme avant).
+ * la coquille tant que `active` — relu au ralenti pendant la lecture, rien quand
+ * les contrôles sont masqués. Sur la vidéo, le thème ne dit rien du dessous :
+ * sans mesure, le ton reste `dark` (des glyphes clairs, comme avant).
+ *
+ * ⚠️ `liquidGlass.sample` capture la PAGE et ignore ses pixels transparents :
+ * au-dessus de la vidéo, il mesure NOS glyphes et leurs halos, jamais l'image
+ * (mesuré sur « Banc Neige », vidéo ~0,9 : 0,11 à 0,63 selon la forme). Le
+ * brancher ferait osciller le ton (des glyphes blancs « clairs » → sombres →
+ * « sombres » → clairs). Tant que la coquille ne mesure pas ce qui est SOUS la
+ * fenêtre (`videoToneMeasurable`), rien n'est mesuré.
  */
 export function useVideoBackdropTone(element: HTMLElement | null, active: boolean): BackdropTone {
-  return useBackdropTone(element, active, { fallback: "dark" });
+  return useBackdropTone(element, active && videoToneMeasurable(), { fallback: "dark" });
+}
+
+/** La coquille sait-elle mesurer ce qui est SOUS la fenêtre (la vidéo de mpv) ? Pas encore. */
+export function videoToneMeasurable(): boolean {
+  return false;
 }
