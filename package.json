@@ -57,8 +57,19 @@
       "koffi",
       "ssh2"
     ],
+    "//overrides": "Au-delà de @types/react : planchers de SÉCURITÉ des dépendances transitives relevées par Trivy le 2026-10-22 (garde de server-image.yml). Chaque sélecteur ne relève que sa propre majeure ; à retirer quand les parents les tirent d'eux-mêmes.",
     "overrides": {
-      "@types/react": "^19.0.0"
+      "@types/react": "^19.0.0",
+      "brace-expansion@^1": "^1.1.20",
+      "brace-expansion@^2": "^2.1.6",
+      "brace-expansion@^5": "^5.0.11",
+      "fast-uri@^3": "^3.1.7",
+      "find-my-way@^9": "^9.7.0",
+      "undici@^6": "^6.28.1",
+      "undici@^7": "^7.29.1",
+      "ws@^6": "^6.2.4",
+      "ws@^7": "^7.5.11",
+      "ws@^8": "^8.21.0"
     },
     "patchedDependencies": {
       "react-native-video@6.19.0": "patches/react-native-video@6.19.0.patch",
