@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * `graphicsSession.test.ts`.
  */
 
-const { state } = vi.hoisted(() => ({ state: { userData: "" } }));
+const { state, relaunches } = vi.hoisted(() => ({ state: { userData: "" }, relaunches: [] as unknown[] }));
 
 vi.mock("electron", () => ({
   app: {
@@ -20,6 +20,8 @@ vi.mock("electron", () => ({
       return state.userData;
     },
     commandLine: { appendSwitch: () => undefined },
+    relaunch: (options: unknown) => { relaunches.push(options); },
+    exit: () => undefined,
   },
 }));
 
@@ -40,6 +42,7 @@ const { cleanup } = vi.hoisted(() => ({ cleanup: { sweeps: 0 } }));
 
 import {
   applyGraphicsSession,
+  relaunchingForSession,
   detectWindowing,
   saveSessionChoice,
   linuxWindowing,
@@ -86,6 +89,7 @@ const restoreEnv = (name: string, value: string | undefined): void => {
 
 beforeEach(() => {
   cleanup.sweeps = 0;
+  relaunches.length = 0;
   folder = mkdtempSync(path.join(tmpdir(), "tentacle-session-"));
   state.userData = folder;
   delete process.env["TENTACLE_LINUX_SESSION"];
@@ -147,5 +151,17 @@ describe("detecterFenetrage", () => {
     applyGraphicsSession();
     await detectWindowing();
     expect(linuxWindowing()).toBeNull();
+  });
+});
+
+describe("la plateforme d'affichage ne se pose qu'en relançant", () => {
+  beforeEach(asWaylandLinux);
+
+  it("X11 choisi sous Wayland : relance avec --ozone-platform=x11 et s'arrête là", () => {
+    process.env["TENTACLE_LINUX_SESSION"] = "x11";
+    applyGraphicsSession();
+    expect(relaunchingForSession()).toBe(true);
+    expect(relaunches).toHaveLength(1);
+    expect((relaunches[0] as { args: string[] }).args.at(-1)).toBe("--ozone-platform=x11");
   });
 });

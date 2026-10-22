@@ -11,6 +11,7 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import {
   decideSession,
+  ozoneRelaunchArgs,
   SESSION_FILE,
   readSessionChoice,
   type SessionChoice,
@@ -31,6 +32,12 @@ import { kwinScriptApiAvailable } from "./kwinScripting";
 import { sweepOrphanGlue } from "./glueCleanup";
 
 let decided: DecidedSession | null = null;
+let relaunching = false;
+
+/** Ce processus se relance sur une autre plateforme : le démarrage s'arrête là. */
+export function relaunchingForSession(): boolean {
+  return relaunching;
+}
 
 /**
  * Décide de la plateforme d'affichage et la pose. À appeler AVANT `whenReady` :
@@ -55,6 +62,18 @@ export function applyGraphicsSession(): DecidedSession | null {
     hdrDisplay: hdrDisplayConnected(),
     xwaylandAutoBlocked: xwaylandAutoBlocked(folder),
   });
+  // La plateforme ne se change qu'en relançant — voir `ozoneRelaunchArgs`. AVANT
+  // tout témoin : le second processus décide à nouveau et pose les siens.
+  const relaunchArgs = ozoneRelaunchArgs(decided, process.argv);
+  if (relaunchArgs !== null) {
+    console.info(`[session] relance sur --ozone-platform=${decided.ozone ?? ""} (choix=${decided.choice})`);
+    // Une AppImage se relance par son fichier : le montage de `execPath` part avec ce processus.
+    const appImage = process.env["APPIMAGE"];
+    app.relaunch({ args: relaunchArgs, ...(appImage ? { execPath: appImage } : {}) });
+    app.exit(0);
+    relaunching = true;
+    return decided;
+  }
   if (decided.ozone !== null) app.commandLine.appendSwitch("ozone-platform", decided.ozone);
   // Budget de tuiles du compositeur Chromium. Le défaut (quelques centaines de
   // Mo) ne tient pas les transitions de pages sur un bureau 4K à échelle ×2 :

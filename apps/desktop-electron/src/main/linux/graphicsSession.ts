@@ -142,6 +142,34 @@ export function decideSession(
   return { choice, session, ozone: null, montage: "wayland", xwaylandAuto: false };
 }
 
+const OZONE_SWITCH = "--ozone-platform=";
+
+/**
+ * Les arguments d'une relance qui porte la plateforme décidée, ou `null` si
+ * Electron tourne déjà dessus.
+ *
+ * ⚠️ `app.commandLine.appendSwitch("ozone-platform", …)` arrive TROP TARD sur
+ * Electron 43 : le processus principal a déjà choisi son Ozone d'après la ligne
+ * de commande (`auto` : Wayland dès que `WAYLAND_DISPLAY` est posé) avant
+ * d'exécuter notre code. Seuls les ENFANTS reçoivent le drapeau : un navigateur
+ * Wayland et un processus GPU X11 (« XGetWindowAttributes failed for window
+ * 1 »). La fenêtre n'existe alors ni dans XWayland ni chez le compositeur — et
+ * `ready-to-show` part quand même, si bien que `sessionRescue.ts` croit
+ * l'essai réussi. Mesuré le 22.10 sous sway et GNOME headless, Electron
+ * minimal compris : le même drapeau posé sur la ligne de commande affiche.
+ *
+ * D'où la relance, une fois : le second processus trouve le drapeau dans
+ * `argv` et rend `null`, il ne peut pas boucler.
+ */
+export function ozoneRelaunchArgs(decided: DecidedSession, argv: readonly string[]): string[] | null {
+  if (decided.ozone === null) return null;
+  const given = argv.slice(1).find((arg) => arg.startsWith(OZONE_SWITCH))?.slice(OZONE_SWITCH.length);
+  // `auto` (défaut d'Electron) prend Wayland dès que la session en est une.
+  const running = given ?? (decided.session === "wayland" ? "wayland" : "x11");
+  if (running === decided.ozone) return null;
+  return [...argv.slice(1).filter((arg) => !arg.startsWith(OZONE_SWITCH)), `${OZONE_SWITCH}${decided.ozone}`];
+}
+
 /**
  * Le choix enregistré. `TENTACLE_LINUX_SESSION` le court-circuite — c'est ce qui
  * permet d'éprouver les deux montages sans toucher au réglage de l'utilisateur.
