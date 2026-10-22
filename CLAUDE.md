@@ -1571,7 +1571,11 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   jamais une API privée (refus du Mac App Store ; `privateApi.test.ts`). Lecteur seulement, et sur
   Apple Silicon seulement (`refractsVideo`, montage `fenetre` ; Intel garde l'habillage d'avant) :
   de PETITES capsules `clear` séparées (10 px, au-delà de la fusion), nées d'une goutte
-  (`useCollapsePivots`), sans voile noir — la lisibilité par le halo des glyphes. Sur la PAGE, la
+  (`useCollapsePivots`), ATTÉNUÉES comme chez QuickTime — un noir à alpha de la page DANS
+  la forme, dosé par le ton mesuré (`playerGlassDim.css` : 0,65 clair, 0,5 sombre), glyphes
+  toujours blancs ; le verre normal (panneaux) s'adapte seul. ⚠️ Fenêtre ACTIVE, le verre
+  natif est bien plus clair qu'inactive (87 contre 33 sur du noir) : un banc sans focus ne
+  juge que l'inactif (`bench/liquid-glass/lg3/`). Sur la PAGE, la
   LENTILLE de Chromium : le verre natif vit SOUS la vue web et ne voit pas la page — jamais une
   région native qui défile avec elle.
 - **La lentille** (`@tentacle-tv/ui` glass/`lensProfile`, `refractionMap`) : presque transparente,
@@ -1585,7 +1589,7 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   glyphes (`--lg-glyph*`), lumière du bord, reflet et DANGER (`--lg-danger-on-*`) en suivent ;
   hystérésis, un appel par 250 ms au plus. Menus et feuilles : un ton PAR BANDE (`bands`,
   `data-lg-band`) et, sur un dessous moyen seulement, un voile minimal calculé. Jamais un fond
-  sombre pour lire : `--lg-clear-dim` et `--lg-media-dim` sont transparents.
+  sombre pour lire : `--lg-clear-dim` et `--lg-media-dim` sont transparents (la page ; sur la vidéo, l'atténuation du lecteur ci-dessus).
 - **Jetons `--lg-*`** dans `theme/liquidGlassTokens.css` (clair ET sombre ; pas `tokens.css`, que
   l'admin surcharge) ; les familles composent sans redéfinir (`--lg-chrome-*`, `--lgc-*`,
   `--lg-player-*`, `--lg-spring-*`). **Primitive** `theme/glass/` (`LiquidGlass`,

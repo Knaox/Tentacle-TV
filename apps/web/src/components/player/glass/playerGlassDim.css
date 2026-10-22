@@ -1,0 +1,74 @@
+/* Le lecteur en verre — l'ATTÉNUATION sous les glyphes (lot lg3, 22/10).
+ *
+ * HIG « Materials » : le verre CLAIR n'est lisible que sur un contenu riche, et
+ * il exige une couche d'atténuation (dimming) quand le dessous est clair. Mesuré
+ * le 22/10 (M4, macOS 26, captures de la fenêtre) :
+ *  - sans elle, le verre de la vidéo vire au gris LAITEUX dans une fenêtre
+ *    ACTIVE — 87/255 sur du noir pur, 246 sur de la neige (33 et 235 fenêtre
+ *    inactive : le banc, toujours inactif, ne le voyait pas) ; d'où des glyphes
+ *    sombres sur une plaque grise, ou blancs sur un gris sale ;
+ *  - QuickTime Player sur les mêmes clips : 88 sur la neige, 26 sur le noir, et
+ *    des glyphes BLANCS dans les deux cas — un verre atténué ;
+ *  - teinte native (`tintColor`) : sans effet utile sur le verre clair (242 →
+ *    231 même à 85 % de noir). L'atténuation vient donc de la PAGE : un noir à
+ *    alpha (le seul qui se compose juste sur la surface à alpha, cf.
+ *    `playerGlass.css`) DANS la forme, sous les glyphes, sur la vue native.
+ *
+ * Dosage, d'après le TON mesuré sous la forme (`data-lg-tone`, la vidéo seule) :
+ * 0,65 sur un dessous clair (neige → 87, celui de QuickTime), 0,5 sur un dessous
+ * sombre (noir → 43 : la forme reste visible, liseré et reflet du verre
+ * compris). Fenêtre inactive, le verre est déjà sombre : 0,2 sur un dessous
+ * sombre (→ 26). Les glyphes restent BLANCS partout (≥ 4,5:1, mesuré).
+ *
+ * Le verre NORMAL (panneaux, fiches, avis) n'en prend AUCUNE : il s'adapte seul
+ * — 91 sur la neige, 22 sur le noir fenêtre active, 96 et 36 inactive, déjà le
+ * réglage de QuickTime ; atténué, il devenait une dalle noire (32).
+ *
+ * Rien ne peint en continu : un aplat immobile, dont seule l'OPACITÉ suit un
+ * changement de ton (rare : hystérésis de `backdropTone.ts`). */
+
+:root[data-liquid-glass="native"] {
+  --lg-player-dim-dark: 0.5;
+  --lg-player-dim-light: 0.65;
+  --lg-player-dim-ms: var(--lg-duration-hover);
+}
+
+:root[data-liquid-glass="native"][data-window-inactive="on"] {
+  --lg-player-dim-dark: 0.2;
+}
+
+:root[data-liquid-glass="native"] .lgp-surface {
+  --lgp-dim: var(--lg-player-dim-dark);
+  /* L'aplat passe SOUS le contenu, sans qu'un enfant positionné ait à le savoir. */
+  isolation: isolate;
+}
+
+:root[data-liquid-glass="native"] .lgp-surface[data-lg-tone="light"] {
+  --lgp-dim: var(--lg-player-dim-light);
+}
+
+/* Après la règle du ton : même spécificité, le verre normal l'emporte. */
+:root[data-liquid-glass="native"] .lgp-surface[data-lgp-variant="regular"] {
+  --lgp-dim: 0;
+}
+
+/* Thème clair : le verre normal y prend l'apparence claire — 176 sur la neige,
+   130 sur le noir, sous des textes blancs (~2:1, mesuré lg3). À 0,5 : 88 et 65,
+   le réglage du thème sombre (texte blanc 7:1, tertiaire 5:1). */
+:root[data-liquid-glass="native"][data-theme="light"] .lgp-surface[data-lgp-variant="regular"] {
+  --lgp-dim: 0.5;
+}
+
+/* Noir pur, opacité variable : la couleur ne change jamais, seule l'opacité suit
+   le ton (compositeur, aucune peinture par image). */
+:root[data-liquid-glass="native"] .lgp-surface::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: rgb(0 0 0);
+  opacity: var(--lgp-dim);
+  pointer-events: none;
+  transition: opacity var(--lg-player-dim-ms) var(--lg-ease-out);
+}

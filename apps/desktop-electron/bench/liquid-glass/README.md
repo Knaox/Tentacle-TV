@@ -59,3 +59,24 @@ Arrêt : arrêter le backend par son PID (`<état>/backend.pid`), puis
 devient transparente (un PiP resté ouvert, un défaut de surface), les fenêtres des AUTRES
 applications y paraissent. Le banc ferme le PiP par son vrai bouton avant la suite ; une
 capture qui en montrerait se floute (`magick f.png -blur 0x18 f.png`) avant d'être montrée.
+
+## Le lecteur, fenêtre ACTIVE (lg3)
+
+⚠️ Le verre natif n'a pas le même rendu fenêtre active et inactive : sur du noir pur, 87/255
+active contre 33 inactive (mesuré le 22/10). Le banc ouvre ses fenêtres SANS focus : il juge le
+cas inactif, pas celui que voit l'utilisateur. `lg3/` pilote l'app tenue par `lg2/hold.mjs` :
+
+```bash
+node lg3/probe.mjs Knaoxtest play Banc Neige   # lit le clip, puis REND le premier plan (mpv active l'app)
+node lg3/probe.mjs Knaoxtest pause             # en pause, les contrôles restent affichés
+node lg3/probe.mjs Knaoxtest show              # fenêtre à l'écran sans l'activer (grand écran ; 120 s d'inactivité)
+node lg3/probe.mjs Knaoxtest activate          # fenêtre ACTIVE (120 s d'inactivité), puis `unfront <pid>`
+node lg3/probe.mjs Knaoxtest fsseq ctl|hidden  # aller-retour plein écran relevé à +150…2600 ms, sortie garantie
+node lg3/tint.mjs Knaoxtest neige clear,none,-,0.5   # essai : niveau, teinte native, apparence, voile de page
+```
+
+- Lancer, quitter le lecteur (Échap) ou recharger la page ACTIVE l'app : rendre aussitôt le
+  premier plan (`unfront <pid de l'app d'avant>`), jamais laisser le banc sous le clavier.
+- `show` vise le plus grand écran : l'autre peut montrer un espace plein écran de Damien, où la
+  fenêtre ne serait pas à l'écran (`onscreen: false`, capture impossible).
+- Mesurer les gris en sRGB (`%[fx:mean.g]`), jamais après `-colorspace Gray` : linéaire en IM7.

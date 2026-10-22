@@ -107,8 +107,13 @@ describe("les régions natives du lecteur", () => {
     expect(transitions).toEqual([NATIVE_FADE_MS]);
   });
 
-  it("ton du dessous : seule une forme ADAPTATIVE le porte, et le mesure tant qu'elle est à l'écran", () => {
-    expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).not.toContain("data-lg-tone");
+  it("ton du dessous : le verre clair le porte par défaut (son atténuation le suit), et le mesure tant qu'il est à l'écran", () => {
+    expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).toContain('data-lg-tone="dark"');
+    // Le verre normal s'adapte seul : ni mesure, ni atténuation.
+    const regular = render(<GlassSurface className="lgp-panel" variant="regular">x</GlassSurface>).html;
+    expect(regular).not.toContain("data-lg-tone");
+    expect(regular).toContain('data-lgp-variant="regular"');
+    expect(render(<GlassSurface className="lgp-bar" adaptiveTone={false}>x</GlassSurface>).html).not.toContain("data-lg-tone");
     backdrop.tone = "light";
     const shown = render(<GlassSurface className="lgp-group" adaptiveTone>x</GlassSurface>);
     expect(shown.html).toContain('data-lg-tone="light"');
