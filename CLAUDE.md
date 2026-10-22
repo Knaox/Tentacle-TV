@@ -1555,7 +1555,9 @@ cadre dessiné (`pipFrame.ts` : fenêtre rendue transparente à l'exécution, ja
 
 ### Liquid Glass (bureau macOS 26) — une porte, deux verres
 
-Le bureau 1.40.0 prend le verre de macOS 26 ; carnet complet : `docs/LIQUID-GLASS.md`.
+Le bureau 1.40.0 prend le verre de macOS 26 ; carnet complet : `docs/LIQUID-GLASS.md`. **La cible est
+Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/10 après le verdict
+« ignoble » sur un premier verre sombre, très flou, à liseré gris, et un lecteur en dalle.
 
 - **Une seule porte : `<html data-liquid-glass="native">`** (`theme/liquidGlassMode.ts`, posée
   avant le premier rendu) — le pont de la coquille dit le système capable
@@ -1567,24 +1569,42 @@ Le bureau 1.40.0 prend le verre de macOS 26 ; carnet complet : `docs/LIQUID-GLAS
 - **Deux verres.** Sur la VIDÉO, le vrai `NSGlassEffectView` (classe PUBLIQUE d'AppKit) par le pont
   koffi du lecteur (`apps/desktop-electron/src/main/liquidGlass/`) — jamais `electron-liquid-glass`,
   jamais une API privée (refus du Mac App Store ; `privateApi.test.ts`). Lecteur seulement, et sur
-  Apple Silicon seulement (`refractsVideo`, montage `fenetre` ; Intel garde l'habillage d'avant). Sur
-  la PAGE, la lentille de Chromium (réfraction calculée pour la forme exacte) : le verre natif vit
-  SOUS la vue web et ne voit pas la page — jamais une région native qui défile avec elle.
+  Apple Silicon seulement (`refractsVideo`, montage `fenetre` ; Intel garde l'habillage d'avant) :
+  de PETITES capsules `clear` séparées (10 px, au-delà de la fusion), nées d'une goutte
+  (`useCollapsePivots`), sans voile noir — la lisibilité par le halo des glyphes. Sur la PAGE, la
+  LENTILLE de Chromium : le verre natif vit SOUS la vue web et ne voit pas la page — jamais une
+  région native qui défile avec elle.
+- **La lentille** (`@tentacle-tv/ui` glass/`lensProfile`, `refractionMap`) : presque transparente,
+  givre faible, réfraction PHYSIQUE au biseau (Snell, rien au centre) calculée pour la forme exacte ;
+  le bord ÉCLAIRCIT le fond réfracté (`fond × (1 + gain)`) — jamais un trait ni un contour blanc.
+  `backdrop-filter: <givre…> url(#lentille)`, les fonctions AVANT `url()`.
+- **Ton du dessous, mesuré** : `liquidGlass.sample(rects)` (luminance médiane sous chaque rectangle,
+  capture de la page ; `null` sur la vidéo) → `useBackdropTone` → `data-lg-tone="dark|light"` :
+  glyphes (`--lg-glyph*`), lumière du bord, reflet et DANGER (`--lg-danger-on-*`) en suivent ;
+  hystérésis, un appel par 250 ms au plus. Menus et feuilles : un ton PAR BANDE (`bands`,
+  `data-lg-band`) et, sur un dessous moyen seulement, un voile minimal calculé. Jamais un fond
+  sombre pour lire : `--lg-clear-dim` et `--lg-media-dim` sont transparents.
 - **Jetons `--lg-*`** dans `theme/liquidGlassTokens.css` (clair ET sombre ; pas `tokens.css`, que
   l'admin surcharge) ; les familles composent sans redéfinir (`--lg-chrome-*`, `--lgc-*`,
   `--lg-player-*`, `--lg-spring-*`). **Primitive** `theme/glass/` (`LiquidGlass`,
-  `useLiquidGlassSurface`, `useLiquidGlassRegion`) : hors `native`, `className` +
-  `fallbackClassName` et rien d'autre.
+  `useLiquidGlassSurface`, `useLiquidGlassRegion` ; bouton : `components/ui/glass/PressableGlass`) :
+  hors `native`, `className` +
+  `fallbackClassName` et rien d'autre. Petites formes qui flottent (la barre en GROUPES), teinte de
+  marque DANS le verre pour l'action principale seule (`prominent`).
+- **Le labo `/dev/verre`** (`dev/glassLab/`, paquets de développement seulement, absent des paquets
+  livrés et du client LG) : chaque surface sur de vrais dessous — on y juge un verre AVANT de le
+  propager.
 - **Une modale ou un menu `fixed` passe par un PORTAIL** : un `backdrop-filter`, un `transform` ou
   le `scale` de la lentille en font le bloc conteneur (vécu : « garder hors ligne » coincé dans
   240 × 54 px ; `modalPortal.test.ts`). Jamais de lentille (`data-lg-lens`) sur un verre natif.
-- **GPU** : les règles ci-dessous valent double — un verre ne coûte rien tant que rien ne bouge
-  dessus ; rien de monté ni de flouté qui n'est pas affiché ; contrôles du lecteur masqués =
-  0 région native.
+- **GPU** : les règles ci-dessous valent double — toute image qui change SOUS un verre en refait le
+  flou et la réfraction. Le travelling du héros est joué par le COMPOSITEUR (`@keyframes` de
+  `transform` en `steps()`, `theme/heroMotion.css` : 60 % → 20 % du GPU d'Electron), la rotation des
+  bannières seulement à l'écran ; contrôles du lecteur masqués = 0 région native.
 - **Bancs** : `TENTACLE_LIQUID_GLASS=off` simule un Mac sans verre (pont absent, option
   invisible) ; `TENTACLE_BENCH_INACTIVE=1` ouvre la fenêtre sans voler le focus (jamais un banc
   sous les doigts de l'utilisateur) ; recette `apps/desktop-electron/bench/liquid-glass/` (README) ;
-  coût de la physique `apps/web/bench/glass-gpu/`.
+  coût de la lentille `apps/web/bench/glass-gpu/` (page et application réelle, `app-lens.mjs`).
 
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 

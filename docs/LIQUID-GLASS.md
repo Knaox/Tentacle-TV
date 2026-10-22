@@ -29,9 +29,17 @@ navigation, les composants, le hors ligne — 9. Ce qui ne doit jamais casser �
   jamais grisée.
 - **Fonction purement client.** Aucune capacité serveur : le serveur ne sait
   rien du verre, et un serveur ancien n'y change rien.
+- **La cible est celle d'Apple, pas du « glassmorphisme »** (refonte du 22/10,
+  après le verdict « ignoble, on dirait pas du Liquid Glass » ; références :
+  HIG « Materials », WWDC25 « Meet Liquid Glass ») : un verre PRESQUE
+  TRANSPARENT, net au centre, givre faible, jamais un fond sombre ; toute la
+  réfraction dans le BISEAU (le contenu s'y courbe, comme sous une goutte) ; un
+  bord qui ÉCLAIRCIT ce qu'il y a dessous, jamais un trait blanc ; des glyphes
+  au TON du dessous (clair dessous → sombres, et inversement) ; de petites
+  formes qui flottent séparées, jamais une dalle.
 - **Les couleurs de marque restent.** Le verre est neutre ; le violet → rose
-  vient en TEINTE (bouton principal, onglet actif, progression), jamais en
-  aplat derrière le verre.
+  vient en TEINTE DANS le verre (l'action principale, l'onglet actif, une
+  bascule allumée, la progression), jamais en aplat derrière.
 - **Tout passe par les jetons `--lg-*`** (clair ET sombre) et la primitive ; jamais
   une valeur de flou, de teinte ou de liseré en dur dans une classe.
 
@@ -276,16 +284,16 @@ SYSTÈME ; seules ses touches de couleur suivent la marque (`--brand-rgb`,
 
 | Famille | Jetons |
 |---------|--------|
-| Teintes | `--lg-light-rgb`, `--lg-shade-rgb`, `--lg-tint-brand` · `-accent` · `-gradient`, `--lg-prominent-gradient`, `--lg-label*` |
-| Niveaux | `--lg-{regular,clear,tinted,prominent}-{fill,blur,saturate,brightness}` — le vocabulaire d'Apple (`regular`, `clear`, `tint`, `prominent`) |
-| Épaisseurs | `--lg-thick-fill` (menus, feuilles), `--lg-clear-dim`, `--lg-media-dim` (verre sur une affiche), `--lg-scrim` |
-| Lisibilité | `--lg-label-shadow`, `--lg-glyph-shadow`, `--lg-media-label-shadow`, `--lg-media-glyph-shadow`, `--lg-vibrancy-blend` — la lisibilité vient de l'OMBRE du libellé, pas d'un voile qui assombrit le verre |
-| États | `--lg-hover-brightness`, `--lg-opacity-pressed` · `-disabled` |
-| Réfraction | `--lg-refraction-{niveau}` (px), `--lg-bezel-{sm,md,lg}`, `--lg-dispersion` |
-| Spéculaire | `--lg-rim(-width)`, `--lg-specular-strong` · `-soft`, `--lg-highlight`, `--lg-inner-glow`, `--lg-light-x` · `-y` |
-| Ombres, formes | `--lg-shadow-{contact,float,raised}`, `--lg-corner-shape`, `--lg-radius-*`, `--lg-thickness-*` |
-| Fondus | `--lg-duration-{press,hover,appear,disappear}`, `--lg-ease-out` |
-| Natif | `--lg-native-tint-{niveau}(-accent)` : la teinte `#RRGGBBAA` envoyée au pont |
+| Teintes | `--lg-light-rgb`, `--lg-shade-rgb`, `--lg-tint-brand` · `-accent` · `-gradient`, `--lg-prominent-gradient` (la marque DANS le verre, translucide), `--lg-label*` |
+| Glyphes au ton du dessous | `--lg-glyph-on-{dark,light}(-secondary)`, `--lg-glyph-shadow-on-*`, `--lg-glyph-filter-on-*`, `--lg-danger-on-{dark,light}` (corail / bordeaux : le rouge de danger suit le dessous) ; épais, par bande : `--lg-glyph-on-*-secondary-thick` |
+| Niveaux | `--lg-{regular,clear,tinted,prominent}-{fill,blur,saturate,brightness}` (presque transparents, givre faible), `--lg-thick-{fill,blur}` (menus, feuilles) |
+| Voiles | `--lg-clear-dim`, `--lg-media-dim` — TRANSPARENTS depuis la refonte (plus de fond sombre) ; `--lg-scrim` sous une feuille ; le voile minimal d'une bande (`--lg-band-veil`) est CALCULÉ, jamais un jeton |
+| Lentille | `--lg-refraction-{niveau}` (fraction du biseau), `--lg-bezel-{ratio,min,max}` (biseau proportionnel au rayon), `--lg-dispersion` |
+| Lumière du bord | `--lg-light-angle`, `--lg-specular-{facing,opposite,base,glow}`, `--lg-edge-{width,gain,white}` — gain et éclat par TON ; `--lg-edge` (fil et ombres) |
+| États | `--lg-hover-brightness` (le verre s'éclaire au survol), `--lg-opacity-pressed` · `-disabled` |
+| Ombres, formes | `--lg-shadow-{contact,float,raised}` (qui soulèvent), `--lg-corner-shape`, `--lg-radius-*`, `--lg-thickness-*` |
+| Fondus, natif | `--lg-duration-*`, `--lg-ease-out` ; `--lg-native-tint-{niveau}(-accent)` : la teinte `#RRGGBBAA` envoyée au pont |
+| Noms d'avant | `--lg-rim(-width)`, `--lg-specular-strong` · `-soft`, `--lg-highlight`, `--lg-inner-glow`, `--lg-label-shadow`, `--lg-media-*-shadow`… gardés en alias pour les recettes sans lentille |
 
 Chaque famille COMPOSE ce matériau chez elle, sans redéfinir un nom commun :
 mouvement `--lg-spring-*` et accessibilité (`theme/glass/physics.css`, § 6),
@@ -312,20 +320,43 @@ import { LiquidGlass, useLiquidGlassSurface, useLiquidGlassRegion, useLiquidGlas
   à avant (test de rendu statique). Migrer une surface = déplacer son habillage
   d'avant dans `fallbackClassName`, garder la MISE EN PAGE dans `className`.
 - **En `native`, selon `backdrop`** :
-  - `page` (défaut) — derrière, de la PAGE : la **lentille de Chromium**,
-    réfraction au biseau calculée pour la forme exacte (`refractionMap.ts`,
-    filtre SVG en sRGB, cache de 32 cartes), puis flou, saturation, luminosité,
-    liseré, reflets, tout en jetons ;
+  - `page` (défaut) — derrière, de la PAGE : la **lentille de Chromium**.
+    Profil PHYSIQUE (`@tentacle-tv/ui` glass/`lensProfile` : loi de Snell,
+    n = 1,5, biseau convexe squircle) — rien au centre, presque rien au ras du
+    bord, un anneau de forte déviation juste à l'intérieur, où le contenu est
+    grossi et courbé. `refractionMap.ts` calcule en un passage la carte de
+    déplacement de la forme exacte ET la carte de LUMIÈRE du bord ;
+    `RefractionFilter` réfracte puis ÉCLAIRCIT le fond réfracté
+    (`fond × (1 + gain × intensité)`, un soupçon de blanc) : le bord prend la
+    couleur du dessous, un arc face à la lumière, un reflet faible en vis-à-vis,
+    rien sur les flancs. `backdrop-filter: <givre, saturation, luminosité>
+    url(#lentille)` — les fonctions AVANT `url()`, sinon le liseré est flouté ;
   - `window` — derrière, la fenêtre (le lecteur sur la vidéo) : **région
     native** inscrite auprès du pont (`useLiquidGlassRegion`), la surface se
     rend transparente ; l'appelant garantit que ses ancêtres le sont aussi.
     Un `upsert` + un `remove` par image au plus, sommeil après six images
     sans changement, région retirée dès qu'elle est cachée, hors écran ou
     démontée.
+- **Le TON du dessous** (`useBackdropTone`) : la coquille mesure la
+  luminance sous chaque surface (`liquidGlass.sample`, § 2.3) et la surface
+  porte `data-lg-tone="dark|light"` — glyphes, danger, lumière du bord et
+  reflet en suivent ; hystérésis, un appel regroupé par 250 ms, jamais à
+  chaque image ; sans échantillonneur, le ton du thème. Matériau ÉPAIS (menu,
+  feuille : option `bands`, `useBandTones`) : un ton PAR RANGÉE
+  (`data-lg-band`), et sur un dessous de luminance moyenne — où aucune polarité
+  ne tient 4,5:1 — un voile MINIMAL dans le sens du ton (`bandLook`).
 - **Options** : `level` (`regular` · `clear` · `tinted` · `prominent`),
   `shape` (`rounded` · `capsule` · `circle` · `rect`), `radius` (`xs` → `xl`),
-  `tint` (`brand` · `accent`), `interactive`, `z` ; verre natif seulement :
-  `group`, `spacing`, `transition` (§ 2.3).
+  `tint` (`brand` · `accent`), `interactive`, `z`, `bands` ; verre natif
+  seulement : `group`, `spacing`, `transition` (§ 2.3).
+- **Le LABO `/dev/verre`** (`apps/web/src/dev/glassLab/`, paquets de
+  développement seulement : la route disparaît des paquets livrés et du client
+  LG) : un exemple de chaque surface — groupes de navigation, action principale
+  et secondaire, ronds, plateau de survol, menu, lecteur en petits groupes,
+  les vrais composants — sur de vrais dessous (affiches de la bibliothèque,
+  troupe riso, typographie dense, mire, blanc, noir, « mixte » ;
+  `?fond=` pour un banc reproductible). **On juge le verre là, AVANT de le
+  propager.**
 - `useLiquidGlassSurface({ … })` pour un `motion.div` : `{ props, layers }`,
   `layers` (le filtre de la lentille) se rend DANS l'élément.
 - **Les portes** : `useLiquidGlassMode() === "native"` (OS + réglage) ;
@@ -514,19 +545,35 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   l'image de mpv, un flou CSS n'y floute rien. Le verre natif, ou rien.
 - **Une couture** vers les socles : `nativeGlassPort.ts` (mode, `refractsVideo`,
   `useLiquidGlassRegion` avec `group`, `spacing`, `transition`).
-- **Le décor** : capsule du haut (retour + titre) ; en bas, la capsule du temps
-  et trois capsules de boutons à 4 px — sous la distance de fusion du groupe
-  natif `player` (`spacing` 8) : AppKit les fond en UNE forme liquide.
-  Popovers (pistes, vitesse, épisodes) qui NAISSENT de leur bouton
+- **Le décor : de PETITES formes qui flottent, séparées** (refonte du 22/10 ;
+  la première version, UNE dalle givrée teintée de noir, était « ignoble ») —
+  la pastille de la sortie et la capsule du titre en haut ; en bas la capsule
+  du temps, puis le son, le transport, les réglages, à 10 px (`--lg-player-gap`),
+  AU-DELÀ de la distance de fusion du groupe natif `player` (8) : AppKit les
+  garde distinctes au repos. Verre **CLAIR** pour les contrôles (ce qui flotte
+  sur la vidéo), verre normal pour les surfaces de texte (panneaux, fiches,
+  avis). Popovers (pistes, vitesse, épisodes) qui NAISSENT de leur bouton
   (`glassMorphProps`, la région suit la surface qui grandit). Pilule de saut,
   « Vous regardez encore ? », fiche « à suivre », badges, attente, avis, Watch
-  Together, bulle de la vignette du survol.
-- **Deux familles de couleurs seulement : l'opaque et le noir à alpha.** Un
-  blanc translucide rend gris sur la surface à alpha de la fenêtre. Teinte
-  native presque neutre, comme QuickTime : `--lg-player-native-tint` 10 % de
-  noir sur les capsules (18 % en clair), `--lg-player-panel-tint` 20 % sur les
-  panneaux (32 % en clair) ; lisibilité par les ombres du socle.
-- **Mouvement** : surfaces FIXES (capsules, badges) — fondu natif par
+  Together, bulle de la vignette du survol. Relevé : 6 vues claires contrôles
+  affichés, 7 avec un panneau, 0 masqués.
+- **Aucun voile noir sous le verre clair** (`--lg-player-clear-dim:
+  transparent`) : mesuré, le flou du verre clair ne vient ni du voile ni du
+  conteneur commun, le voile ne réglait que le ton. La lisibilité vient d'un
+  HALO local qui épouse glyphes et libellés (`--lg-player-glyph-shadow`,
+  `--lg-player-label-shadow` : contour d'un point, ombre portée, halo de 8 à
+  12 px), coupé en matière pleine. Panneaux : aucune teinte en sombre, 32 %
+  de noir en thème clair (`--lg-player-panel-tint`). Couleurs de la page : l'OPAQUE
+  ou le noir à alpha seulement — un blanc translucide rend gris sur la
+  surface à alpha de la fenêtre.
+- **Une MÉTAMORPHOSE au lieu d'un fondu** : chaque forme se replie vers le
+  pivot de son ensemble (le transport, la sortie — `useCollapsePivots`), s'y
+  fond avec les autres en une goutte, et s'en sépare au retour ; la région suit
+  la surface image par image, c'est la fin du repli (`visibility`) qui la
+  retire. Mesuré : formes nées du pivot (4 × 4 pt à 55 ms), séparées à leur
+  place en ~320 ms ; repli en ~200 ms puis 0 vue. Mouvement réduit : fondu
+  natif, sans repli.
+- **Mouvement** : surfaces FIXES (badges, attente) — fondu natif par
   conteneur (180 ms), et transition nulle PENDANT un redimensionnement
   (`windowResizing.ts` ; sans elle, le verre traînait jusqu'à 160 pt) ;
   surfaces qui BOUGENT (panneaux, avis, bulle) — `transition: 0`, le verre suit
@@ -538,9 +585,6 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
 - **Clics** : une surface À L'ÉCRAN reprend les clics ; masquée, jamais ; en
   sortie, elle les laisse au bouton dessous (vécu : une piste choisie mettait
   en pause).
-  ⚠️ Ces deux points viennent des derniers commits de lg-lecteur
-  (`f0d5eeed6`, `b9cf047ee`, tête `09429366d`), annoncés prêts à fusionner au
-  moment de cette rédaction : à retirer de ce carnet s'ils n'entrent pas.
 - **Masqué, rien ne consomme** : régions retirées en moins de 100 ms,
   `nativeViews: 0`.
 - **PiP** : contrôles d'avant (le document du PiP n'a pas de pont) ; le lecteur
@@ -550,16 +594,23 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
 
 ## 8. La fenêtre, la navigation, les composants, le hors ligne
 
-Tout en LENTILLE de Chromium (§ 4) — aucune région native par contrôle.
+Tout en LENTILLE de Chromium (§ 4) — aucune région native par contrôle. Les
+glyphes de chaque surface suivent son ton (`data-lg-tone`) : les couleurs de
+texte du thème deviennent `--lg-glyph*` sous la porte.
 
 - **Fenêtre et navigation** (lg-chrome, `apps/web/src/desktop/windowGlass.css`,
   `windowGlassNav.css`, jetons `--lg-chrome-*`) : bandeau des feux transparent,
   le contenu défile dessous ; **effet de bord de défilement**
   (`ScrollEdgeEffect.tsx` : flou masqué en dégradé, monté seulement page
-  défilée, opacité sur les 48 premiers px) ; capsule de la `TopNav` en surface
-  de la primitive, onglet actif en lentille teintée qui GLISSE (ressort
-  `morph`), reflet qui suit le pointeur ; barres latérales de Réglages et
-  d'Admin en panneau flottant, sélection en lentille qui glisse, sans
+  défilée, opacité sur les 48 premiers px) ; la `TopNav` en **GROUPES qui
+  flottent** à 10 px (`--lg-chrome-group-gap`) — marque + onglets, recherche,
+  boutons + profil, trois surfaces de la primitive ; dans un groupe, de simples
+  glyphes (pas de verre dans le verre), boutons sans fond au repos ; « Plus »
+  calculé sur la place libre de sa case ; onglet courant en lentille teintée qui
+  GLISSE (ressort `morph`), reflet discret qui suit le pointeur ; barres
+  latérales de Réglages et d'Admin en panneau flottant (remplissage du
+  matériau, reflet du haut, ombre qui soulève, aucune bordure grise ;
+  `windowGlassSidebar.css`), sélection en lentille qui glisse, sans
   `backdrop-filter` (rien ne bouge derrière) ; **fenêtre inactive**
   (`windowFocus.ts`, `data-window-inactive`) au gris, sans animation. Pendant la
   lecture native, le bandeau redevient OPAQUE (`data-native-playback`).
@@ -572,13 +623,28 @@ Tout en LENTILLE de Chromium (§ 4) — aucune région native par contrôle.
   cartes), `.lg-pill`, `.lg-chip`, `.lg-meta`, `.lg-field`, `.lg-segmented`,
   `.lg-menu`, `.lg-sheet` / `.lg-scrim`, `.lg-toast`, `.lg-bar`, `.lg-notice`,
   `.lg-panel`, `.lg-badge`. Le modèle des cartes (`cardOverlay.ts`) est intact :
-  seule la peau change.
+  seule la peau change. Depuis la refonte : l'action principale (« Lecture »,
+  « Reprendre », « Demander », confirmation) est une capsule `prominent` — la
+  marque DANS le verre, l'affiche se voit au travers (`PressableGlass`,
+  `HERO_PLAY_PROPS`) ; « Plus d'infos », bande-annonce, « Annuler » en verre
+  clair ou régulier ; les RONDS (flèches des rangées, Ma liste · favori · vu de
+  la bannière, angles de la fiche) et le plateau du survol des cartes en
+  pastilles de verre clair séparées — une bascule allumée passe en verre
+  teinté (rose pour le favori) ; menus, feuilles et modales en verre clair
+  épais, ton et voile PAR BANDE (`useGlassControl({ bands: true })`), le rouge
+  de danger (« Déconnexion ») au ton du dessous.
 - **Hors ligne** : message de passage hors ligne et avis en `.lg-notice`,
   panneaux de la page hors ligne en `.lg-panel` (sans flou), bannière en
   lentille ; dialogues « garder hors ligne » et de suppression en portail (§ 5).
 - **Bannières** : la rotation ne tourne que STRICTEMENT à l'écran
   (`useBillboardViewport`, `billboardActivity`) — sous un verre, toute image qui
-  change fait recalculer le flou (51 → 0 DrawFrame/s hors écran).
+  change fait recalculer le flou (51 → 0 DrawFrame/s hors écran). Le travelling
+  du héros (zoom du fond et du halo, remplissage de la pastille active) est
+  joué par le COMPOSITEUR : `@keyframes` de `transform` bridées par `steps()`
+  aux trente paliers par seconde (`theme/heroMotion.css`), plus des animations
+  de framer qui passaient chaque palier par un rendu — mesuré, 60 % du GPU
+  d'Electron en `linear` contre 20 en `steps()`. Mouvement réduit : aucun
+  travelling.
 
 ## 9. Ce qui ne doit jamais casser
 
@@ -609,8 +675,11 @@ Tout en LENTILLE de Chromium (§ 4) — aucune région native par contrôle.
   store.
 - **Écran des nouveautés** (`apps/web/src/whatsNew/`) : release `1.40.0`
   (`releases/v1_40_0.tsx`), scènes `scenes/v1_40_0/` — la navigation et le
-  lecteur, le verre PEINT par `FauxGlass` (une scène ne peut pas emprunter le
-  verre natif), avec les jetons du matériau. La navigation exige le trait
+  lecteur, rendues par la VRAIE primitive (`FauxGlass` n'est qu'un placement :
+  lentille, lumière du bord, ton du dessous) ; sur la vidéo, la lentille
+  `clear` de la page tient lieu du verre natif, qu'une scène ne peut pas
+  emprunter. La barre en groupes, le lecteur en petites formes nées d'une
+  goutte. La navigation exige le trait
   `liquidGlass` (le pont annonce le verre), le lecteur `liquidGlassPlayer` (le
   verre voit la vidéo) : le filtre `forClient` les retire là où l'appareil ne
   les a pas (`clientTraits.ts`) — un Mac Intel en macOS 26 voit la navigation
