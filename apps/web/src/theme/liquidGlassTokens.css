@@ -101,7 +101,8 @@
 
   /* ── Givre FAIBLE : le centre reste net ──────────────────────────────── */
   --lg-regular-blur: 3px;
-  --lg-clear-blur: 0px;
+  /* Un souffle : sans lui, un motif très fin (rayures, texte serré) mange les glyphes. */
+  --lg-clear-blur: 1.5px;
   --lg-tinted-blur: 3px;
   --lg-prominent-blur: 3px;
 
@@ -194,8 +195,8 @@
   --lg-thick-fill: rgba(var(--lg-light-rgb), 0.32);
   --lg-scrim: rgba(var(--lg-shade-rgb), 0.18);
 
-  --lg-regular-saturate: 1.7;
-  --lg-tinted-saturate: 1.6;
+  --lg-regular-saturate: 1.55;
+  --lg-tinted-saturate: 1.5;
   --lg-regular-brightness: 1.08;
   --lg-tinted-brightness: 1.05;
 

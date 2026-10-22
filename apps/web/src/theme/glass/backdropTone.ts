@@ -26,10 +26,16 @@ export interface ToneRect {
 /** Échantillonneur de la coquille : une luminance (0..1) ou `null` par rectangle. */
 export type ToneSampler = (rects: readonly ToneRect[]) => Promise<ReadonlyArray<number | null>>;
 
+/**
+ * Seuils en LUMINANCE RELATIVE (linéaire, celle du contraste WCAG). Un glyphe
+ * noir contraste mieux qu'un blanc dès que le dessous dépasse ~0,18 (gris
+ * moyen : les deux tiennent ~4,5:1) — d'où une bascule tôt, comme chez Apple,
+ * et une bande d'hystérésis autour pour ne pas clignoter.
+ */
 /** Au-dessus : clair dessous (glyphes sombres). */
-export const TONE_LIGHT_ABOVE = 0.56;
+export const TONE_LIGHT_ABOVE = 0.28;
 /** En dessous : sombre dessous (glyphes clairs). Entre les deux : on garde. */
-export const TONE_DARK_BELOW = 0.4;
+export const TONE_DARK_BELOW = 0.18;
 
 /** Le ton suivant, d'après une luminance mesurée (hystérésis). */
 export function nextTone(previous: BackdropTone, luminance: number | null): BackdropTone {
