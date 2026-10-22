@@ -81,8 +81,7 @@ export function watchLocation(path: string, state: unknown = null): Location {
     hash: url.hash,
     state,
     key: Math.random().toString(36).slice(2, 10),
-    // Le masque d'URL de React Router (7.13) : aucun ici.
-    unstable_mask: undefined,
+    // Aucun masque d'URL (`mask`, facultatif depuis React Router 7.18).
   };
 }
 
