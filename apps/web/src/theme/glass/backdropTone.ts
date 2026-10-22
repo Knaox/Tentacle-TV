@@ -52,7 +52,7 @@ interface Watched {
   tone: BackdropTone;
   /** Une surface : son ton, rendu quand il change. */
   onTone?: (tone: BackdropTone) => void;
-  /** Une bande (`useBandTones`) : la luminance brute, à chaque mesure. */
+  /** Une bande de couronne (`surfaceToneProbe`) : la luminance brute, à chaque mesure. */
   onLuminance?: (luminance: number) => void;
 }
 

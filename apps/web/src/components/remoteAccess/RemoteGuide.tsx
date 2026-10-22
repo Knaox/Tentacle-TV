@@ -53,7 +53,7 @@ export function RemoteGuide({ state, publicIp, save, variant, onOpenChange }: Re
         aria-expanded={open}
         aria-controls={id}
         onClick={toggle}
-        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-line-subtle bg-fill-faint px-5 py-3 text-left text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="lg-content lg-content-tile flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-line-subtle bg-fill-faint px-5 py-3 text-left text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         {t("moreLabel")}
         <ChevronDown size={18} aria-hidden="true" className={`shrink-0 text-content-tertiary transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`} />

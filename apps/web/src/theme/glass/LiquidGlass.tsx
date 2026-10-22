@@ -42,8 +42,6 @@ function LiquidGlassImpl(
     spacing,
     transition,
     backdrop,
-    // Sans effet (lot lg2) : retiré ici pour ne pas finir dans le DOM.
-    bands: _bands,
     className,
     style,
     fallbackClassName,

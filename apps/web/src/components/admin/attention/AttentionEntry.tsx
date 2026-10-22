@@ -43,8 +43,10 @@ const TILE = {
   hidden: "bg-fill-soft text-content-tertiary",
 };
 
+// Sous le verre de macOS 26, un geste du contenu : le remplissage, sans
+// teinte de marque (`lg-content-control`, lot lg2).
 const PILL =
-  "inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.16)] px-3.5 text-[13px] font-medium text-content-primary transition hover:bg-[rgba(var(--brand-rgb),0.26)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "lg-content-control inline-flex h-9 items-center gap-1.5 rounded-full border border-[color:rgba(var(--brand-rgb),0.4)] bg-[rgba(var(--brand-rgb),0.16)] px-3.5 text-[13px] font-medium text-content-primary transition hover:bg-[rgba(var(--brand-rgb),0.26)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 const QUIET =
   "inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-content-secondary transition hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 

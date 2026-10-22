@@ -17,7 +17,7 @@ export function HelpGuides() {
       </h2>
       <Link
         to={TRAILER_GUIDE_PATH}
-        className="group mt-3 flex max-w-xl items-center gap-4 rounded-2xl border border-line-subtle bg-fill-faint p-4 transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="lg-content lg-content-tile group mt-3 flex max-w-xl items-center gap-4 rounded-2xl border border-line-subtle bg-fill-faint p-4 transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
       >
         <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fill-soft text-content-secondary">
           <Film size={20} />

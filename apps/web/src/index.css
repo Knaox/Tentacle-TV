@@ -16,6 +16,7 @@
 @import "./theme/liquidGlassTokens.css";
 @import "./theme/glass/surfaceTokens.css";
 @import "./theme/liquidGlassSurface.css";
+@import "./theme/liquidGlassContent.css";
 @import "./theme/cards.css";
 @import "./theme/controls.css";
 @import "./theme/heroCta.css";

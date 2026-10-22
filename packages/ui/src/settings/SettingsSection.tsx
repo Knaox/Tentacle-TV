@@ -34,7 +34,7 @@ export function SettingsSection({
         </h2>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-line-subtle bg-surface-1">
+      <div className="lg-content overflow-hidden rounded-xl border border-line-subtle bg-surface-1">
         {children}
       </div>
 

@@ -61,7 +61,7 @@ export function ChangePasswordSection() {
   };
 
   return (
-    <div className="mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
+    <div className="lg-content mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
       <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("preferences:changePasswordTitle")}</h3>
       <p className="mb-4 text-xs text-content-tertiary">{t("preferences:changePasswordDescription")}</p>
 

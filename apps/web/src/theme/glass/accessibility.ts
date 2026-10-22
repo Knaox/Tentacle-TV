@@ -93,6 +93,18 @@ let current: GlassAccessibilityPlan = planGlassAccessibility({
 /** Le plan en vigueur (dernier appliqué par `installGlassAccessibility`). */
 export const getGlassAccessibility = (): GlassAccessibilityPlan => current;
 
+const listeners = new Set<() => void>();
+
+/**
+ * Prévient quand un réglage du système change, application ouverte (une
+ * surface au ton tenu se remesure : `useSurfaceTone`). Rend de quoi se
+ * désabonner — la forme de `useSyncExternalStore`.
+ */
+export function subscribeGlassAccessibility(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 /**
  * Pose les attributs sur `root` et les tient à jour quand l'utilisateur change
  * un réglage du système, application ouverte. Retourne de quoi se désabonner.
@@ -104,11 +116,15 @@ export function installGlassAccessibility(
   matchMedia: MatchMedia | undefined = typeof window !== "undefined" ? window.matchMedia?.bind(window) : undefined,
 ): () => void {
   const apply = () => {
+    const previous = JSON.stringify(current.attributes);
     current = planGlassAccessibility(readSystemAccessibility(matchMedia));
     for (const [name, value] of Object.entries(current.attributes)) {
       if (value === null) root.removeAttribute(name);
       else root.setAttribute(name, value);
     }
+    // Une requête par réglage écoute : trois signaux pour un seul changement.
+    // On ne prévient qu'une fois, et seulement si le plan a changé.
+    if (JSON.stringify(current.attributes) !== previous) for (const listener of listeners) listener();
   };
   apply();
   if (!matchMedia) return () => undefined;

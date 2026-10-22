@@ -38,7 +38,7 @@ export function CheckRow({ label, checked, onClick }: { label: string; checked: 
       }`}
     >
       <span
-        className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[4px] border ${
+        className={`lg-check flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-[4px] border ${
           checked ? "border-transparent bg-[var(--brand)]" : "border-line-strong"
         }`}
       >

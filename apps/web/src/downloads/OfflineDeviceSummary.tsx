@@ -19,7 +19,6 @@ import { useConnectivity } from "../offline/useConnectivity";
 import { formatBytes } from "./presets";
 import { useDiskInfo } from "./useDownloadState";
 import { GlassButton } from "../components/ui/glass/GlassButton";
-import { useLiquidGlassSurface } from "../theme/glass";
 
 export function OfflineDeviceSummary({ complete }: { complete: readonly DownloadListEntry[] }) {
   const { t } = useTranslation("downloads");
@@ -39,21 +38,13 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
   ].filter((part): part is string => part !== null && part !== "");
   const total = (usedBytes ?? 0) + (freeBytes ?? 0);
   const ratio = usedBytes !== null && total > 0 ? Math.min(1, usedBytes / total) : null;
-  // « Gérer » est un lien : la surface de verre s'y étale directement.
-  const manage = useLiquidGlassSurface({
-    level: "regular",
-    shape: "capsule",
-    interactive: true,
-    className: "px-4 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]",
-    fallbackClassName: "rounded-full bg-fill-subtle text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary",
-  });
 
   return (
     <div className="row-gutter">
       <div className="lg-panel relative flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line-subtle bg-surface-1 p-4 md:px-5">
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
           <div
-            className="absolute -left-20 -top-24 h-56 w-56 rounded-full opacity-60"
+            className="lg-content-ornament absolute -left-20 -top-24 h-56 w-56 rounded-full opacity-60"
             style={{ background: "radial-gradient(closest-side, rgba(var(--brand-rgb), 0.18), transparent)" }}
           />
         </div>
@@ -97,8 +88,12 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
               {t("offlineGoOnline")}
             </GlassButton>
           )}
-          <Link to="/downloads" {...manage.props}>
-            {manage.layers}
+          {/* « Gérer » est un geste du CONTENU : un remplissage, pas un verre
+              posé sur le panneau (`lg-content-control`, lot lg2). */}
+          <Link
+            to="/downloads"
+            className="lg-content-control rounded-full bg-fill-subtle px-4 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+          >
             {t("offlineManage")}
           </Link>
         </div>

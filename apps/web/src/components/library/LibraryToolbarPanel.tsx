@@ -33,7 +33,7 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
     <>
       <section
         aria-label={t("library:toolbar")}
-        className="relative rounded-[var(--radius-xl)] p-2.5 shadow-[var(--elev-2)] ring-1 ring-line-subtle md:p-3"
+        className="lg-content relative rounded-[var(--radius-xl)] p-2.5 shadow-[var(--elev-2)] ring-1 ring-line-subtle md:p-3"
         style={{
           background:
             "linear-gradient(180deg, rgba(var(--brand-rgb),0.07), rgba(var(--brand-rgb),0) 60%), var(--surface-1)",
@@ -41,7 +41,7 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
       >
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-x-8 top-0 h-px"
+          className="lg-content-ornament pointer-events-none absolute inset-x-8 top-0 h-px"
           style={{
             background:
               "linear-gradient(90deg, transparent, rgba(var(--brand-rgb),0.7), rgba(var(--brand-accent-rgb),0.7), transparent)",
@@ -74,7 +74,7 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
               onClick={() => props.onSortOrderChange(desc ? "Ascending" : "Descending")}
               aria-label={desc ? t("library:orderDescending") : t("library:orderAscending")}
               title={t("library:reverseOrder")}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--surface-2)] text-content-secondary shadow-[var(--elev-1)] ring-1 ring-line-strong transition-colors hover:bg-fill-medium hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
+              className="lg-content-control flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--surface-2)] text-content-secondary shadow-[var(--elev-1)] ring-1 ring-line-strong transition-colors hover:bg-fill-medium hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
             >
               {desc
                 ? <ArrowDownWideNarrow aria-hidden className="h-4 w-4" strokeWidth={2.1} />

@@ -14,7 +14,8 @@
  * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
  * surfaces de la primitive ; `?vue=barres` la VRAIE barre du haut et une
  * vraie barre latérale (`labChrome.tsx`, axe des barres) ; `?vue=menus` les
- * VRAIS menus et popovers (`labMenus.tsx`, axe des menus). Hors du mode natif, le labo montre le
+ * VRAIS menus et popovers (`labMenus.tsx`, axe des menus) ; `?vue=contenu` la
+ * couche de contenu (`labContent.tsx`, axe D du lot lg2). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -27,6 +28,7 @@ import { backdropToneMeasured } from "../../theme/glass/useBackdropTone";
 import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop";
 import { LabChrome } from "./labChrome";
 import { LabComponents } from "./labComponents";
+import { LabContent } from "./labContent";
 import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
 import { LabMenus } from "./labMenus";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
@@ -38,9 +40,9 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus";
+type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus" | "contenu";
 
-const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus"];
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus", "contenu"];
 
 const initialView = (): LabView => {
   const asked = new URLSearchParams(window.location.search).get("vue");
@@ -126,6 +128,8 @@ export function GlassLab() {
         <LabChrome top={top} />
       ) : view === "composants" ? (
         <LabComponents top={top} />
+      ) : view === "contenu" ? (
+        <LabContent top={top} />
       ) : view === "grandes" ? (
         <>
           <LabSurfaceSidebar top={top + 40} left={24} />
