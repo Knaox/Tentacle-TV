@@ -183,7 +183,7 @@ function replaceAppImage(next: string): void {
     chmodSync(target, 0o755);
   } catch (e) {
     renameSync(backup, target);
-    throw new Error(`remplacement AppImage échoué : ${String(e)}`);
+    throw new Error(`remplacement AppImage échoué : ${String(e)}`, { cause: e });
   }
   rmSync(backup, { force: true });
 }
