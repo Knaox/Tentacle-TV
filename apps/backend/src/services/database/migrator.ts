@@ -88,6 +88,15 @@ function applyOne(db: DatabaseSync, migration: CoreMigration): void {
   }
 }
 
+/** Crée la base vide en 0600, d'un seul geste (`wx` : jamais un fichier ni un lien posé entre-temps). */
+function createIfMissing(path: string): void {
+  try {
+    closeSync(openSync(path, "wx", 0o600));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+  }
+}
+
 /**
  * La base porte les secrets du serveur (jwt_secret, clés Jellyfin et TMDB) :
  * lisible du seul compte du serveur. Le fichier naît en 0600 AVANT que SQLite
@@ -111,7 +120,7 @@ export function restrictDatabaseFiles(path: string): void {
     })();
     if (link) throw new Error(`[db] ${file} est un lien symbolique : refusé (la base doit être un fichier du dossier de données)`);
   }
-  if (!existsSync(path)) closeSync(openSync(path, "a", 0o600));
+  createIfMissing(path);
   for (const file of files) {
     if (!existsSync(file)) continue;
     try {

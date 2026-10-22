@@ -23,8 +23,12 @@ export function isSetupClosed(lockFile = SETUP_LOCK_FILE): boolean {
 /** Pose le fichier — à la fin de l'assistant, et pour une installation d'avant (base déjà complète). */
 export function sealSetup(lockFile = SETUP_LOCK_FILE, now = new Date()): void {
   forgetClaimant();
-  if (existsSync(lockFile)) return;
-  writeFileSync(lockFile, `${now.toISOString()}\n`, { mode: 0o600 });
+  // `wx` : déjà posé, il reste tel quel — sans fenêtre entre le constat et l'écriture.
+  try {
+    writeFileSync(lockFile, `${now.toISOString()}\n`, { mode: 0o600, flag: "wx" });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+  }
 }
 
 /** `tentacle setup reset` seulement. */

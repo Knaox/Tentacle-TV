@@ -1,6 +1,7 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { buildAuthHeader, deviceIdFor } from "./jellyfinIdentity";
 import { jellyfinAuthHeaders } from "./jellyfinAuth";
+import { jellyfinItemSegment } from "../utils/jellyfinItemId";
 
 interface JellyfinUserResponse {
   Id: string;
@@ -203,9 +204,12 @@ export async function getItemDetail(userId: string, itemId: string): Promise<Rec
   if (!jellyfinUrl || !apiKey) {
     throw new Error("Jellyfin n'est pas configuré");
   }
+  // Clé d'administration : l'identifiant ne doit jamais devenir un chemin.
+  const segment = jellyfinItemSegment(itemId);
+  if (!segment) throw new Error("Identifiant de titre invalide");
 
   const res = await fetch(
-    `${jellyfinUrl}/Items/${itemId}?userId=${userId}` +
+    `${jellyfinUrl}/Items/${segment}?userId=${encodeURIComponent(userId)}` +
       `&Fields=Overview,Genres,Taglines,People,Studios,ProviderIds,RemoteTrailers,RunTimeTicks,ParentBackdropImageTags,ParentBackdropItemId`,
     { headers: jellyfinAuthHeaders(apiKey) }
   );
