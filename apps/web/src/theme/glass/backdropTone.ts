@@ -48,7 +48,10 @@ export function nextTone(previous: BackdropTone, luminance: number | null): Back
 interface Watched {
   rect: () => ToneRect | null;
   tone: BackdropTone;
-  onTone: (tone: BackdropTone) => void;
+  /** Une surface : son ton, rendu quand il change. */
+  onTone?: (tone: BackdropTone) => void;
+  /** Une bande (`useBandTones`) : la luminance brute, à chaque mesure. */
+  onLuminance?: (luminance: number) => void;
 }
 
 export interface ToneSchedulerDeps {
@@ -61,7 +64,10 @@ export interface ToneSchedulerDeps {
 }
 
 export interface ToneScheduler {
+  /** Une surface : `initial` est le ton supposé avant la mesure (rendu seulement s'il change). */
   watch(id: string, rect: () => ToneRect | null, initial: BackdropTone, onTone: (tone: BackdropTone) => void): void;
+  /** Une bande : la luminance mesurée, telle quelle, à chaque appel (même lot, même intervalle). */
+  observe(id: string, rect: () => ToneRect | null, onLuminance: (luminance: number) => void): void;
   unwatch(id: string): void;
   /** Demande une mesure (regroupée, au plus une par intervalle). */
   request(): void;
@@ -79,6 +85,9 @@ export function createToneScheduler(deps: ToneSchedulerDeps): ToneScheduler {
   let timer: unknown = null;
   let inFlight = false;
   let again = false;
+  /** Au-delà de `TONE_MAX_RECTS` surfaces : où reprendre, et ce qu'il reste de la tournée. */
+  let cursor = 0;
+  let roundLeft = 0;
 
   async function run(): Promise<void> {
     timer = null;
@@ -87,12 +96,28 @@ export function createToneScheduler(deps: ToneSchedulerDeps): ToneScheduler {
       return;
     }
     const batch: Array<[string, ToneRect]> = [];
-    for (const [id, entry] of watched) {
+    const entries = [...watched];
+    if (roundLeft <= 0) roundLeft = entries.length;
+    const quota = Math.min(entries.length, roundLeft);
+    let considered = 0;
+    while (considered < quota && batch.length < TONE_MAX_RECTS) {
+      const [id, entry] = entries[(cursor + considered) % entries.length]!;
+      considered += 1;
       const rect = entry.rect();
       if (rect !== null && rect.width >= 1 && rect.height >= 1) batch.push([id, rect]);
-      if (batch.length === TONE_MAX_RECTS) break;
     }
-    if (batch.length === 0) return;
+    cursor = (cursor + considered) % Math.max(1, entries.length);
+    // Plus de surfaces que la coquille n'en mesure par appel : la tournée
+    // continue au lot suivant (à l'intervalle), puis s'arrête.
+    roundLeft -= considered;
+    if (roundLeft > 0) again = true;
+    if (batch.length === 0) {
+      if (again) {
+        again = false;
+        request();
+      }
+      return;
+    }
     inFlight = true;
     lastRun = deps.now();
     try {
@@ -100,10 +125,15 @@ export function createToneScheduler(deps: ToneSchedulerDeps): ToneScheduler {
       batch.forEach(([id], index) => {
         const entry = watched.get(id);
         if (entry === undefined) return;
-        const tone = nextTone(entry.tone, values[index] ?? null);
+        const value = values[index] ?? null;
+        if (entry.onLuminance !== undefined) {
+          if (value !== null && Number.isFinite(value)) entry.onLuminance(value);
+          return;
+        }
+        const tone = nextTone(entry.tone, value);
         if (tone === entry.tone) return;
         entry.tone = tone;
-        entry.onTone(tone);
+        entry.onTone?.(tone);
       });
     } catch {
       /* La coquille n'a pas su capturer : les tons restent ce qu'ils étaient. */
@@ -125,6 +155,10 @@ export function createToneScheduler(deps: ToneSchedulerDeps): ToneScheduler {
   return {
     watch(id, rect, initial, onTone) {
       watched.set(id, { rect, tone: initial, onTone });
+      request();
+    },
+    observe(id, rect, onLuminance) {
+      watched.set(id, { rect, tone: "dark", onLuminance });
       request();
     },
     unwatch(id) {

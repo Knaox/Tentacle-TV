@@ -7,8 +7,9 @@
  * détaillés (`labBackdrop.tsx`), un exemple de chaque surface par la primitive
  * (`labSurfaces.tsx`), les deux thèmes, et ce que la page sait du ton dessous.
  *
- * `?fond=affiches|illustrations|texte|mire|blanc|noir` choisit le dessous à
- * l'ouverture (bancs reproductibles) ; `?vue=composants` montre les VRAIS
+ * `?fond=affiches|illustrations|texte|mire|brun|blanc|noir|mixte` choisit le
+ * dessous à l'ouverture (bancs reproductibles) ; `?bandes=0` rend le menu
+ * d'un seul ton (comparaison avec le ton par bande) ; `?vue=composants` montre les VRAIS
  * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
  * surfaces de la primitive. Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
@@ -103,6 +104,7 @@ export function GlassLab() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
   const top = hostTitleBarHeight() + 14;
+  const [bands] = useState(() => new URLSearchParams(window.location.search).get("bandes") !== "0");
   const poster = avatarImageUrl(AVATAR_CHARACTERS[3]?.id ?? "bip");
 
   return (
@@ -114,7 +116,7 @@ export function GlassLab() {
         <>
           <LabCardTray poster={poster} top={top + 300} left={Math.max(24, width - 360)} />
           <LabNav top={top} />
-          <LabMenu top={top + 66} />
+          <LabMenu top={top + 66} bands={bands} />
           <LabRowEdge top={top + 200} />
           <LabHeroActions top={top + 470} />
           <LabPlayer bottom={24} />

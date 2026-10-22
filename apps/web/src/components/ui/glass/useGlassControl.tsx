@@ -22,6 +22,7 @@ import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNo
 import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { GlassSpecular, useBackdropTone, useLiquidGlassMode, useSpecularHighlight, type BackdropTone } from "../../../theme/glass";
+import { useBandTones } from "../../../theme/glass/useBandTones";
 import { useLensGeometry } from "../../../theme/glass/useLensGeometry";
 import { lensFilterId, type LiquidGlassLevel, type LiquidGlassShape } from "../../../theme/glass/surfaceModel";
 
@@ -37,6 +38,12 @@ export interface GlassControlOptions {
    * la surface s'y adaptent (`lgLegibility.css`). Vrai par défaut.
    */
   tone?: boolean;
+  /**
+   * Matériau ÉPAIS (menu, feuille) : un ton par RANGÉE en plus du ton de la
+   * surface (`useBandTones`, lg-tokens) — un dessous mixte (bande claire de la
+   * page, héros sombre) ne laisse aucune rangée sans contraste. Défaut non.
+   */
+  bands?: boolean;
 }
 
 export interface GlassControl<T extends HTMLElement> {
@@ -51,7 +58,7 @@ export interface GlassControl<T extends HTMLElement> {
 }
 
 export function useGlassControl<T extends HTMLElement>(options: GlassControlOptions): GlassControl<T> {
-  const { lens = false, shape = "rounded", specular = false, tone: toneEnabled = true } = options;
+  const { lens = false, shape = "rounded", specular = false, tone: toneEnabled = true, bands = false } = options;
   const native = useLiquidGlassMode() === "native";
   const [element, setElement] = useState<T | null>(null);
   const specularRef = useSpecularHighlight<T>();
@@ -73,6 +80,7 @@ export function useGlassControl<T extends HTMLElement>(options: GlassControlOpti
 
   const geometry = useLensGeometry(element, native && lens !== false, lens || "regular", shape, shape);
   const tone = useBackdropTone(element, native && toneEnabled);
+  useBandTones(element, native && toneEnabled && bands);
   const filterId = lensFilterId(useId());
 
   if (!native) return { ref, refObject, props: {}, layers: null };

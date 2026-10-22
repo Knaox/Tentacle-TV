@@ -27,7 +27,9 @@
  *  - teintes      --lg-light-rgb, --lg-shade-rgb, --lg-tint-brand|accent|gradient,
  *                 --lg-prominent-gradient, --lg-label(-secondary|-on-prominent)
  *  - glyphes      --lg-glyph-on-{dark|light}(-secondary), --lg-glyph-shadow-on-*,
- *                 --lg-glyph-filter-on-*, --lg-danger-on-* (ton adaptatif) ; alias d'avant :
+ *                 --lg-glyph-filter-on-*, --lg-danger-on-* (ton adaptatif) ;
+ *                 épais, par bande : --lg-glyph-on-{dark|light}-secondary-thick
+ *                 (le voile `--lg-band-veil` est calculé, `bandTones.ts`) ; alias d'avant :
  *                 --lg-label-shadow, --lg-glyph-shadow, --lg-media-*-shadow,
  *                 --lg-vibrancy-blend
  *  - niveaux      --lg-{regular|clear|tinted|prominent}-{fill|blur|saturate|brightness},
@@ -67,6 +69,11 @@
   --lg-glyph-on-dark-secondary: rgba(255, 255, 255, 0.74);
   --lg-glyph-on-light: rgba(12, 12, 18, 0.88);
   --lg-glyph-on-light-secondary: rgba(12, 12, 18, 0.62);
+  /* Matériau épais, ton PAR BANDE (menus, feuilles : `useBandTones`) : un
+   * secondaire plus franc, qui tient 4,5:1 sur le fond que vise le voile
+   * minimal d'une bande (`bandTones.ts`, cibles testées). */
+  --lg-glyph-on-dark-secondary-thick: rgba(255, 255, 255, 0.8);
+  --lg-glyph-on-light-secondary-thick: rgba(12, 12, 18, 0.74);
   --lg-glyph-shadow-on-dark: 0 0 1px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.42), 0 0 12px rgba(0, 0, 0, 0.26);
   --lg-glyph-shadow-on-light: 0 0 1px rgba(255, 255, 255, 0.45), 0 0 12px rgba(255, 255, 255, 0.55);
   --lg-glyph-filter-on-dark: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
