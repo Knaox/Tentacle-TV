@@ -63,7 +63,7 @@ export async function centerOf(page, selector, pattern = null) {
       const top = document.elementFromPoint(cx, cy);
       if (top && top !== n && !n.contains(top) && !top.contains(n) && !n.closest("a, button, [role]")?.contains(top)) return false;
       // L'aria-label seul d'abord (motifs ancrés « ^…$ »), sinon avec le texte.
-      return !re || re.test(n.getAttribute("aria-label") ?? "") || re.test((n.getAttribute("aria-label") ?? "") + " " + (n.textContent ?? ""));
+      return !re || re.test(n.getAttribute("aria-label") ?? "") || re.test((n.textContent ?? "").trim()) || re.test((n.getAttribute("aria-label") ?? "") + " " + (n.textContent ?? ""));
     });
     if (!el) return null;
     const r = el.getBoundingClientRect();

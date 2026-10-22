@@ -38,7 +38,7 @@ export async function offline(ctx) {
     return { dom: await glassDom(page), capture: await shot(ctx, "hl-dialogue-garder") };
   });
   await step(ctx, "hl-progression", async () => {
-    await clickSelector(page, '[role="dialog"] button.lg-btn-primary');
+    await clickSelector(page, '[role="dialog"] button', "^Lancer le téléchargement$");
     await sleep(1500);
     await go(page, "/downloads", 2000);
     const capture = await shot(ctx, "hl-progression");
@@ -63,13 +63,13 @@ export async function offline(ctx) {
     return { dom: await glassDom(page), capture: await shot(ctx, "hl-fiche") };
   });
   await step(ctx, "hl-dialogue-suppression", async () => {
-    await clickSelector(page, 'button[aria-label="Supprimer de cette machine"]');
+    await clickSelector(page, "button[aria-label]", "^Supprimer (de cette machine|ce téléchargement)$");
     await page.waitFor(`document.querySelector('[role="alertdialog"]')`, 10_000, "dialogue de suppression");
     await sleep(800);
     const dom = await glassDom(page);
     const capture = await shot(ctx, "hl-dialogue-suppression");
     // On GARDE le titre : la lecture locale suit.
-    await clickSelector(page, '[role="alertdialog"] button.lg-btn', "Annuler");
+    await clickSelector(page, '[role="alertdialog"] button', "^Annuler$");
     await sleep(600);
     return { capture, dom };
   });
