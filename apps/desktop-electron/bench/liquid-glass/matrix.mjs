@@ -9,6 +9,7 @@ import { STATE, SERVER, account, outDir, resetPlayback } from "./lib/config.mjs"
 import { evalMain, launchApp, stopApp } from "./lib/electron.mjs";
 import { offline } from "./lib/offline.mjs";
 import { whatsNew } from "./lib/whatsNew.mjs";
+import { menus } from "./lib/menus.mjs";
 import { admin, player, screens } from "./lib/scenarios.mjs";
 
 async function reload(page) {
@@ -18,7 +19,7 @@ async function reload(page) {
 
 const CELLS = {
   // macOS 26, réglage par défaut : le verre natif doit être là.
-  allume: { expect: "on", run: [whatsNew, screens, player] },
+  allume: { expect: "on", run: [whatsNew, screens, menus, player] },
   // L'utilisateur coupe dans Réglages › Apparence : rendu d'avant, aucune région.
   coupe: {
     expect: "off",
@@ -36,7 +37,7 @@ const CELLS = {
   // Thème clair de l'app ET apparence claire de la fenêtre native.
   clair: {
     expect: "on",
-    run: [screens],
+    run: [screens, menus],
     async prepare(app) {
       await app.page.evaluate(`localStorage.setItem("tentacle_theme_mode", "light"); return true;`);
       const native = await evalMain(app, `require("electron").nativeTheme.themeSource = "light"; return "light";`).catch(String);
@@ -73,6 +74,9 @@ const CELLS = {
   // Le hors ligne en verre (lg-composants), puis le même réglage coupé.
   "hors-ligne": { expect: "on", run: [offline] },
   "hors-ligne-coupe": { expect: "off", run: [offline], prepare: (app) => CELLS.coupe.prepare(app) },
+  // Menus et feuilles seuls (sombre / clair), pour rejouer vite une passe de lg-tokens.
+  menus: { expect: "on", run: [menus] },
+  "menus-clair": { expect: "on", run: [menus], prepare: (app) => CELLS.clair.prepare(app) },
   // L'administration (compte admin du Jellyfin jetable).
   admin: { expect: "on", account: "admin", run: [admin] },
 };

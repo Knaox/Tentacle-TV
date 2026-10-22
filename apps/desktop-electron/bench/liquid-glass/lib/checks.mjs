@@ -82,6 +82,9 @@ export function checkCell(cell, report) {
     const target = s.mpv?.["video-target-params"] ?? s["video-target-params"];
     if (!pq(target)) fail(`HDR perdu à l'étape « ${name} » : video-target-params sans PQ`, s.capture ?? null);
   }
+  for (const m of report.steps.filter((x) => x.ok && x.name.startsWith("menu-"))) {
+    for (const o of m.open ?? []) if (!o.inside) fail(`« ${m.name} » : menu qui déborde de la fenêtre (${o.w}×${o.h}, ${o.cls})`, m.capture);
+  }
   const wn = find(report, "nouveautes-1-40-0");
   if (wn?.ok && cell.expect === "on" && (!wn.traits?.liquidGlass || wn.shown === false)) fail(`nouveautés 1.40.0 : traits ${JSON.stringify(wn.traits)}, scène « Liquid Glass » ${wn.shown ? "vue" : "absente"}`, wn.capture);
   if (wn?.ok && cell.expect === "unsupported" && (wn.traits?.liquidGlass || wn.traits?.liquidGlassPlayer)) fail(`nouveautés 1.40.0 : trait du verre présent sans verre natif (${JSON.stringify(wn.traits)})`, null);
