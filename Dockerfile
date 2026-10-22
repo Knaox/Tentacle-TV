@@ -191,6 +191,13 @@ ENV NODE_ENV=production \
 # les signaux et récolte les processus orphelins. Plus de ffmpeg ni de fpcalc :
 # ils ne servaient qu'à l'analyse audio, retirée.
 RUN apk add --no-cache python3 su-exec tini
+# Ni npm, ni npx, ni corepack, ni yarn à l'exécution : le serveur n'en lance
+# aucun (Prisma est généré au build, les extensions s'ouvrent par tar). Ils ne
+# feraient qu'offrir un installeur de paquets à qui prendrait la main dans le
+# conteneur — et leurs dépendances embarquées font l'essentiel des alertes
+# des scanners de vulnérabilités.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-v* \
+  && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 # yt-dlp : résolution des bandes-annonces YouTube → flux HLS jouable (Apple TV
 # n'a pas de WebView). Le zipapp OFFICIEL, épinglé et vérifié : le paquet
