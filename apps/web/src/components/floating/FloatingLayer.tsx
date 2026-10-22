@@ -49,7 +49,7 @@ export function FloatingLayer({
   const menuGlass = className?.split(/\s+/).includes("lg-menu") ?? false;
   // UNE plaque : un seul ton pour tout le menu, jamais de bandes (règle de la
   // SURFACE — `lgMenu.css`). Le ton se lit sous le panneau entier.
-  const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass });
+  const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass, scale: menuGlass ? "surface" : "control" });
   const variants = floatingVariants(useLiquidGlassMode() === "native", glassMotionReduced());
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {

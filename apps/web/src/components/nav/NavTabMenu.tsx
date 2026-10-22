@@ -37,7 +37,7 @@ export function NavTabMenu({ target, onUnpin, onCustomize, onClose }: {
   const { t } = useTranslation("nav");
   const ref = useRef<HTMLDivElement>(null);
   // Verre natif : la lentille et le ton du dessous, comme les menus du calque commun.
-  const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {
     ref.current = node;

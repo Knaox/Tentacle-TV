@@ -25,7 +25,7 @@ export function RecoFiltersMenu() {
   const { t } = useTranslation("reco");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
   const { selected, setSelected, clear } = useRecoFilter();
   const qc = useQueryClient();
   const warm = useCallback(

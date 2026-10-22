@@ -37,7 +37,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
   const flags = useCountryFlags();
   const reduce = useReducedMotion();
   // Verre natif : une plaque d'un seul ton, comme tout menu (lentille, ton du dessous).
-  const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

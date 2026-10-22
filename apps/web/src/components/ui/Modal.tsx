@@ -90,7 +90,7 @@ export function Modal({
   // Verre natif : le ton du dessous (`data-lg-tone`), auquel les textes de la
   // feuille s'adaptent — UN ton pour toute la feuille, jamais de bandes ; pas
   // de lentille (le voile floute déjà, cf. plus bas).
-  const glass = useGlassControl<HTMLDivElement>({ lens: false });
+  const glass = useGlassControl<HTMLDivElement>({ lens: false, scale: "surface" });
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {
     panelRef.current = node;

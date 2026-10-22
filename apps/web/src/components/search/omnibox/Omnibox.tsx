@@ -41,7 +41,7 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
   const navigate = useNavigate();
   const compact = useIsMobile();
   // Verre natif (panneau flottant) : le ton du dessous, auquel ses textes s'adaptent.
-  const glass = useGlassControl<HTMLDivElement>({ lens: false });
+  const glass = useGlassControl<HTMLDivElement>({ lens: false, scale: "surface" });
   const reduced = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState(seed);
