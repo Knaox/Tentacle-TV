@@ -151,7 +151,10 @@ export function tokenizeCueText(raw: string): TokenizedCueText {
     }
   };
 
-  const tokenRe = /\{[^}]*\}|<[^>]*>/g;
+  // `[^{}]` / `[^<>]` et non `[^}]` / `[^>]` : une suite d'ouvrants sans fermant
+  // (« <<<<… », « {{{{… ») rendait le balayage quadratique (CodeQL
+  // `js/polynomial-redos`) ; chaque échec s'arrête désormais à l'ouvrant suivant.
+  const tokenRe = /\{[^{}]*\}|<[^<>]*>/g;
   let lastIndex = 0;
   for (let m = tokenRe.exec(raw); m !== null; m = tokenRe.exec(raw)) {
     emitText(raw.slice(lastIndex, m.index));
