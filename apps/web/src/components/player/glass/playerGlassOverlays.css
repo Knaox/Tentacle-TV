@@ -7,7 +7,7 @@
    hauteur, plus l'écart — d'une transformée, jamais d'un `bottom` animé. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-corner {
   position: absolute;
-  right: var(--lg-player-edge);
+  right: var(--lg-player-inline);
   bottom: var(--lg-player-edge);
   transition: transform var(--lg-player-enter-ms) var(--lg-player-ease-spring);
 }
@@ -133,7 +133,7 @@
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-wt-members {
   position: absolute;
   top: calc(var(--lg-player-edge) + 3px);
-  right: var(--lg-player-edge);
+  right: var(--lg-player-inline);
   z-index: 20;
 }
 

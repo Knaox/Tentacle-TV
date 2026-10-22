@@ -73,10 +73,14 @@ node lg3/probe.mjs Knaoxtest show              # fenêtre à l'écran sans l'act
 node lg3/probe.mjs Knaoxtest activate          # fenêtre ACTIVE (120 s d'inactivité), puis `unfront <pid>`
 node lg3/probe.mjs Knaoxtest fsseq ctl|hidden  # aller-retour plein écran relevé à +150…2600 ms, sortie garantie
 node lg3/tint.mjs Knaoxtest neige clear,none,-,0.5   # essai : niveau, teinte native, apparence, voile de page
+node lg3/geometry.mjs Knaoxtest 900x560 1900x1040    # géométrie de l'overlay, verre allumé contre coupé (référence)
+node lg3/geometry.mjs Knaoxtest resize               # redimensionnement en direct : fenêtre − 48, page, vue native
+node lg3/geometry.mjs Knaoxtest fs                   # la même en plein écran (écran déverrouillé, sortie garantie)
 ```
 
 - Lancer, quitter le lecteur (Échap) ou recharger la page ACTIVE l'app : rendre aussitôt le
   premier plan (`unfront <pid de l'app d'avant>`), jamais laisser le banc sous le clavier.
 - `show` vise le plus grand écran : l'autre peut montrer un espace plein écran de Damien, où la
   fenêtre ne serait pas à l'écran (`onscreen: false`, capture impossible).
+- Écran verrouillé (premier plan : `loginwindow`) : aucune transition plein écran ne se joue.
 - Mesurer les gris en sRGB (`%[fx:mean.g]`), jamais après `-colorspace Gray` : linéaire en IM7.
