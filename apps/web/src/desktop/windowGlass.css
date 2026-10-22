@@ -26,8 +26,10 @@
   /* Effet de bord de défilement — teinté du fond de page (`--scrim-page-rgb`,
    * theme/scrims.css) : la frange se fond dans `--surface-0`, sans écart. */
   --lg-chrome-edge-blur: var(--lg-regular-blur);
-  --lg-chrome-edge-fade: 20px;
-  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
+  --lg-chrome-edge-fade: 24px;
+  /* Le haut de la teinte : le jeton du socle (`--lg-scroll-edge`), sinon la
+   * valeur d'avant. */
+  --lg-chrome-edge-tint-top: var(--lg-scroll-edge, rgba(var(--scrim-page-rgb), 0.6));
   /* Le milieu du fondu est à hauteur des groupes de la barre, presque
    * transparents : c'est lui qui tient l'AA de leurs libellés page défilée
    * (mesuré : 0,28 → 3,2:1). */
@@ -71,7 +73,6 @@
   /* La capsule est à hauteur du MILIEU du fondu : c'est lui qui tient l'AA de
    * ses libellés sombres quand une affiche passe dessous (mesuré au banc :
    * 0,22 → 3,9:1, sous le seuil). */
-  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
   --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.5);
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
 }
@@ -106,7 +107,10 @@
   height: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade));
 }
 
-/* Le flou progressif : plein sous la barre, éteint dans la frange. */
+/* Le flou ADOUCI (règle 7 d'Apple, style « soft ») : plein sous la barre,
+ * puis il s'éteint sur une courbe en douceur — une rampe linéaire laisse lire
+ * sa limite (un pli de luminosité là où elle s'arrête). Même courbe pour la
+ * teinte : aucun bord ne se lit, ni du flou ni du voile. */
 :root[data-liquid-glass="native"] .lgc-edge::before,
 :root[data-liquid-glass="native"] .lgc-edge::after {
   content: "";
@@ -115,18 +119,37 @@
 }
 
 :root[data-liquid-glass="native"] .lgc-edge::before {
+  --lgc-edge-mask: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - 2 * var(--lg-chrome-edge-fade)),
+    rgba(0, 0, 0, 0.72) calc(100% - 1.4 * var(--lg-chrome-edge-fade)),
+    rgba(0, 0, 0, 0.38) calc(100% - 0.8 * var(--lg-chrome-edge-fade)),
+    rgba(0, 0, 0, 0.12) calc(100% - 0.35 * var(--lg-chrome-edge-fade)),
+    transparent 100%
+  );
   backdrop-filter: blur(var(--lg-chrome-edge-blur)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--lg-chrome-edge-blur)) saturate(1.4);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2 * var(--lg-chrome-edge-fade)), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2 * var(--lg-chrome-edge-fade)), transparent 100%);
+  mask-image: var(--lgc-edge-mask);
+  -webkit-mask-image: var(--lgc-edge-mask);
 }
 
-/* La teinte : garde les feux, la capsule et le titre lisibles. */
+/* La teinte : garde les feux, la barre et le titre lisibles. Une courbe SANS
+ * pli : jusqu'au milieu (62 %, la hauteur des libellés de la barre, dont elle
+ * tient l'AA) elle s'accélère doucement, puis une Hermite raccordée à la même
+ * pente s'éteint à pente nulle — mesuré au labo, plus de cassure de pente. */
 :root[data-liquid-glass="native"] .lgc-edge::after {
   background: linear-gradient(
     to bottom,
     var(--lg-chrome-edge-tint-top) 0%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-top) 89%, var(--lg-chrome-edge-tint-mid)) 20%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-top) 58%, var(--lg-chrome-edge-tint-mid)) 40%,
     var(--lg-chrome-edge-tint-mid) 62%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 77%, transparent) 71.5%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 43%, transparent) 81%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 13%, transparent) 90.5%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 4%, transparent) 95%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 1%, transparent) 97.5%,
     transparent 100%
   );
 }
