@@ -192,3 +192,73 @@
 :root[data-liquid-glass="native"] .lg-surface[data-lg-radius="xl"] {
   border-radius: var(--lg-radius-xl);
 }
+
+/* ══ Le régime SURFACE (lot lg2, règle 3) ══════════════════════════════════
+ * Un grand verre (`data-lg-scale="surface"` : menu, popover, feuille, barre
+ * latérale, palette) : UN ton tenu (`useSurfaceTone`), jamais de bandes, un
+ * matériau ÉPAIS (`surfaceTokens.css`, contraste prouvé par
+ * `surfaceMaterial.ts`). Composé ICI, sur l'élément, en quatre jetons que
+ * toute peau peut lire :
+ *   --lg-surface-fill      le fond (reflet discret + remplissage du ton) ;
+ *   --lg-surface-backdrop  le givre (`backdrop-filter`, lentille à ajouter) ;
+ *   --lg-surface-glyph(-secondary), --lg-surface-danger  les textes.
+ * Jamais sous « Réduire la transparence » ni « Contraste accru »
+ * (`data-lg-material`) : l'aplat de `physics.css` prend la main, et le ton
+ * est alors celui du thème. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-dark) 0%, transparent 70%),
+    linear-gradient(var(--lg-surface-fill-on-dark), var(--lg-surface-fill-on-dark));
+  --lg-surface-backdrop: blur(var(--lg-surface-blur)) saturate(var(--lg-surface-saturate))
+    brightness(var(--lg-surface-brightness));
+  --lg-surface-glyph: var(--lg-surface-glyph-on-dark);
+  --lg-surface-glyph-secondary: var(--lg-surface-glyph-on-dark-secondary);
+  --lg-surface-danger: var(--lg-surface-danger-on-dark);
+  /* La lentille lit ces jetons SUR l'élément (`lensTokens.ts`) : réfraction
+   * douce, et lumière du bord en sourdine (plus fort que la règle du ton). */
+  --lg-refraction-regular: var(--lg-refraction-surface);
+  --lg-edge-gain: var(--lg-surface-edge-gain-on-dark);
+  --lg-edge-white: var(--lg-surface-edge-white-on-dark);
+  /* L'ombre profonde et douce, pour les peaux qui lisent celles du socle. */
+  --lg-shadow-float: var(--lg-surface-shadow);
+  --lg-shadow-raised: var(--lg-surface-shadow);
+}
+
+:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"][data-lg-tone="light"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-light) 0%, transparent 70%),
+    linear-gradient(var(--lg-surface-fill-on-light), var(--lg-surface-fill-on-light));
+  --lg-surface-glyph: var(--lg-surface-glyph-on-light);
+  --lg-surface-glyph-secondary: var(--lg-surface-glyph-on-light-secondary);
+  --lg-surface-danger: var(--lg-surface-danger-on-light);
+  --lg-edge-gain: var(--lg-surface-edge-gain-on-light);
+  --lg-edge-white: var(--lg-surface-edge-white-on-light);
+}
+
+/* La surface de la primitive (`.lg-surface`) prend le matériau. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) .lg-surface[data-lg-scale="surface"] {
+  --lg-fill: var(--lg-surface-fill);
+  --lg-blur: var(--lg-surface-blur);
+  --lg-saturate: var(--lg-surface-saturate);
+  --lg-brightness-rest: var(--lg-surface-brightness);
+  --lg-shadow: var(--lg-surface-shadow);
+  --lg-glyph: var(--lg-surface-glyph);
+  --lg-glyph-secondary: var(--lg-surface-glyph-secondary);
+  --lg-danger: var(--lg-surface-danger);
+}
+
+/* Les PEAUX CSS (`useGlassControl` : `.lg-menu`, `.lg-sheet`…, lgOverlays.css)
+ * lisent les recettes `--lgc-*` et les textes du thème : on les remappe sur le
+ * matériau. `!important` sur ces seules PROPRIÉTÉS PERSONNALISÉES : les
+ * recettes par ton de `lgLegibility.css` viennent après dans la cascade, au
+ * même poids — le régime `surface` doit l'emporter, sans quoi un voile de 0,07
+ * et une saturation de 1,5 reviennent (les « taches » du 22/10). */
+:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"]:not(.lg-surface) {
+  --lgc-fill: var(--lg-surface-fill) !important;
+  --lgc-fill-thick: var(--lg-surface-fill) !important;
+  --lgc-backdrop: var(--lg-surface-backdrop) var(--lgc-lens, var(--lgc-refract)) !important;
+  --lgc-backdrop-thick: var(--lg-surface-backdrop) var(--lgc-lens, var(--lgc-refract)) !important;
+  --text-primary: var(--lg-surface-glyph) !important;
+  --text-secondary: var(--lg-surface-glyph-secondary) !important;
+  --text-tertiary: var(--lg-surface-glyph-secondary) !important;
+  --text-quaternary: var(--lg-surface-glyph-secondary) !important;
+  --status-error-fg: var(--lg-surface-danger) !important;
+}

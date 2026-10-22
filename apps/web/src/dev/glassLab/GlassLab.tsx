@@ -8,10 +8,12 @@
  * (`labSurfaces.tsx`), les deux thèmes, et ce que la page sait du ton dessous.
  *
  * `?fond=affiches|illustrations|texte|mire|brun|blanc|noir|mixte` choisit le
- * dessous à l'ouverture (bancs reproductibles) ; `?bandes=0` rend le menu
- * d'un seul ton (comparaison avec le ton par bande) ; `?vue=composants` montre les VRAIS
+ * dessous à l'ouverture (bancs reproductibles) ; `?vue=grandes` montre les
+ * GRANDES surfaces du régime `surface` (lot lg2 : menu, popover, barre
+ * latérale — `labLargeSurfaces.tsx`) ; `?vue=composants` montre les VRAIS
  * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
- * surfaces de la primitive. Hors du mode natif, le labo montre le
+ * surfaces de la primitive ; `?vue=barres` la VRAIE barre du haut et une
+ * vraie barre latérale (`labChrome.tsx`, axe des barres). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -22,7 +24,9 @@ import { getScheme, setMode, subscribe as subscribeScheme } from "../../theme/co
 import { useLiquidGlassMode } from "../../theme/glass";
 import { backdropToneMeasured } from "../../theme/glass/useBackdropTone";
 import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop";
+import { LabChrome } from "./labChrome";
 import { LabComponents } from "./labComponents";
+import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
@@ -32,10 +36,14 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants";
+type LabView = "surfaces" | "composants" | "grandes" | "barres";
 
-const initialView = (): LabView =>
-  new URLSearchParams(window.location.search).get("vue") === "composants" ? "composants" : "surfaces";
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres"];
+
+const initialView = (): LabView => {
+  const asked = new URLSearchParams(window.location.search).get("vue");
+  return LAB_VIEWS.find((v) => v === asked) ?? "surfaces";
+};
 
 const chip = (active: boolean) => ({
   padding: "4px 9px",
@@ -81,8 +89,9 @@ function LabPanel({ backdrop, onBackdrop, view, onView }: LabPanelProps) {
         ))}
       </div>
       <div style={{ display: "flex", marginBottom: 6 }}>
-        <button type="button" onClick={() => onView("surfaces")} style={{ ...chip(view === "surfaces"), margin: 2 }}>surfaces</button>
-        <button type="button" onClick={() => onView("composants")} style={{ ...chip(view === "composants"), margin: 2 }}>composants</button>
+        {LAB_VIEWS.map((v) => (
+          <button key={v} type="button" onClick={() => onView(v)} style={{ ...chip(view === v), margin: 2 }}>{v}</button>
+        ))}
       </div>
       <div style={{ display: "flex", marginBottom: 6 }}>
         <button type="button" onClick={() => setMode("dark")} style={{ ...chip(scheme === "dark"), margin: 2 }}>sombre</button>
@@ -104,19 +113,26 @@ export function GlassLab() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
   const top = hostTitleBarHeight() + 14;
-  const [bands] = useState(() => new URLSearchParams(window.location.search).get("bandes") !== "0");
   const poster = avatarImageUrl(AVATAR_CHARACTERS[3]?.id ?? "bip");
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <LabBackdropView kind={backdrop} />
-      {view === "composants" ? (
+      {view === "barres" ? (
+        <LabChrome top={top} />
+      ) : view === "composants" ? (
         <LabComponents top={top} />
+      ) : view === "grandes" ? (
+        <>
+          <LabSurfaceSidebar top={top + 40} left={24} />
+          <LabSurfacePopover top={top + 120} left={Math.max(280, width / 2 - 240)} />
+          <LabSurfaceMenu top={top + 10} right={24} />
+        </>
       ) : (
         <>
           <LabCardTray poster={poster} top={top + 300} left={Math.max(24, width - 360)} />
           <LabNav top={top} />
-          <LabMenu top={top + 66} bands={bands} />
+          <LabMenu top={top + 66} />
           <LabRowEdge top={top + 200} />
           <LabHeroActions top={top + 470} />
           <LabPlayer bottom={24} />
