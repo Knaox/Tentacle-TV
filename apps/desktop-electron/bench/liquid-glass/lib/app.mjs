@@ -1,5 +1,7 @@
 // Parcours dans la page de l'app (par CDP) : premier lancement, connexion,
 // navigation, et les sondes du verre côté DOM.
+import { waitHidIdle } from "./macos.mjs";
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Tape dans le champ `selector` (focus + insertText : React voit un vrai `input`). */
@@ -38,6 +40,9 @@ export async function connectAndLogin(page, { server, username, password }) {
 
 /** Navigue sans clic : React Router suit `popstate`. */
 export async function go(page, route, settleMs = 1500) {
+  // Une lecture peut rendre l'app ACTIVE (mpv, 22/10 : la 2e lecture d'une
+  // instance a pris le focus) : jamais sous les doigts de Damien.
+  if (route.startsWith("/watch/")) await waitHidIdle(120);
   await page.evaluate(`history.pushState({}, "", ${JSON.stringify(route)}); window.dispatchEvent(new PopStateEvent("popstate")); return true;`);
   await sleep(settleMs);
 }
