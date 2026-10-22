@@ -28,6 +28,18 @@ export interface LocalTrackInput {
 
 const FORCED_RE = /\bforc(ed|é|ee|ée)s?(?![a-z0-9_à-öø-ÿ])/i;
 const SDH_RE = /\b(sdh|cc|hearing[- ]impaired|malentendants?)\b/i;
+const SEPARATOR = /[\s,;/·—-]/;
+
+/**
+ * Retire les séparateurs de fin, à rebours : `[\s,;/·—-]+$` était quadratique
+ * sur une longue suite d'espaces suivie d'autre chose (CodeQL
+ * `js/polynomial-redos`) — le titre vient du fichier.
+ */
+function trimSeparatorsEnd(value: string): string {
+  let end = value.length;
+  while (end > 0 && SEPARATOR.test(value.charAt(end - 1))) end--;
+  return value.slice(0, end);
+}
 
 /** Codecs aux noms d'affichage établis ; sinon la valeur brute si elle a l'air d'un sigle. */
 const CODEC_LABELS: Record<string, string> = {
@@ -98,13 +110,13 @@ export function formatLocalTrackLabel(
 
   // Un titre qui ne fait que répéter un drapeau (« Forced », « SDH ») n'apporte
   // rien : la mention est déjà rendue à part.
-  const meaningfulTitle = title
+  const withoutFlags = title
     .replace(FORCED_RE, "")
     .replace(SDH_RE, "")
     .replace(/[[\]()]/g, "")
     .replace(/\s{2,}/g, " ")
-    .replace(/^[\s,;/·—-]+|[\s,;/·—-]+$/g, "")
-    .trim();
+    .replace(/^[\s,;/·—-]+/, "");
+  const meaningfulTitle = trimSeparatorsEnd(withoutFlags).trim();
 
   const language = languageLabel(track.lang, locale);
   // Le titre l'emporte quand il est informatif (« Commentaire du réalisateur »)
