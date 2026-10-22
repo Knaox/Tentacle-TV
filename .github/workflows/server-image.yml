@@ -231,8 +231,14 @@ jobs:
             echo "ref=${REGISTRY}/${IMAGE_NAME}:scan-${ARCH}" >> "$GITHUB_OUTPUT"
           fi
 
+      # Une image poussée par empreinte est un INDEX (image + attestations) :
+      # sans plateforme explicite, Trivy et syft y cherchent celle de leur
+      # binaire et échouent (« no child with platform linux/amd64 », vécu à la
+      # livraison 1.31.2 sur arm64).
       - name: Trivy — vulnérabilités CRITICAL / HIGH corrigeables (bloquant)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_PLATFORM: ${{ matrix.platform }}
         with:
           image-ref: ${{ steps.scanref.outputs.ref }}
           scanners: vuln
@@ -248,6 +254,8 @@ jobs:
       # Dockerfile), et un faux positif ne doit pas retenir une livraison.
       - name: Trivy — secrets dans les couches (signalés)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_PLATFORM: ${{ matrix.platform }}
         with:
           image-ref: ${{ steps.scanref.outputs.ref }}
           scanners: secret
@@ -259,6 +267,8 @@ jobs:
       # store ou dev, le job sign l'attache à l'image comme attestation signée.
       - name: SBOM (syft)
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        env:
+          SYFT_PLATFORM: ${{ matrix.platform }}
         with:
           image: ${{ steps.scanref.outputs.ref }}
           registry-username: ${{ github.actor }}
