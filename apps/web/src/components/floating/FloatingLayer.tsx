@@ -1,8 +1,9 @@
-import { useEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
 import { useFloatingPlacement, type FloatingAnchor, type FloatingOptions } from "./useFloatingPlacement";
+import { useGlassControl } from "../ui/glass/useGlassControl";
 
 const VARIANTS = {
   hidden: { opacity: 0, scale: 0.96 },
@@ -47,6 +48,16 @@ export function FloatingLayer({
   const ownRef = useRef<HTMLDivElement | null>(null);
   const ref = panelRef ?? ownRef;
   const placement = useFloatingPlacement(open, anchor, ref, options);
+  // Le verre des MENUS (`.lg-menu`, la classe convenue avec lg-chrome), en mode
+  // natif : la lentille exacte du panneau et le ton du dessous, auquel ses
+  // textes s'adaptent. Hors natif, `useGlassControl` ne fait rien.
+  const menuGlass = className?.split(/\s+/).includes("lg-menu") ?? false;
+  const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass });
+  const { ref: glassRef } = glass;
+  const setPanel = useCallback((node: HTMLDivElement | null) => {
+    (ref as { current: HTMLDivElement | null }).current = node;
+    glassRef(node);
+  }, [ref, glassRef]);
   const dismissRef = useRef(onDismiss);
   dismissRef.current = onDismiss;
 
@@ -79,7 +90,8 @@ export function FloatingLayer({
       {open && (
         <motion.div
           {...attrs}
-          ref={ref}
+          {...glass.props}
+          ref={setPanel}
           role={role}
           aria-label={ariaLabel}
           aria-labelledby={labelledBy}
@@ -87,6 +99,7 @@ export function FloatingLayer({
           className={`fixed z-[60] ${className ?? ""}`}
           style={{
             ...style,
+            ...glass.props.style,
             // Avant la première mesure : hors champ plutôt que caché — un panneau
             // caché refuserait le focus qu'on lui donne au montage.
             top: placement?.top ?? 0,
@@ -100,6 +113,7 @@ export function FloatingLayer({
           animate="show"
           exit="exit"
         >
+          {glass.layers}
           {children}
         </motion.div>
       )}

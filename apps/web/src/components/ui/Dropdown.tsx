@@ -2,7 +2,6 @@ import { useMemo, useRef } from "react";
 import type { ReactNode, RefObject } from "react";
 import { FloatingLayer } from "../floating/FloatingLayer";
 import type { FloatingAlign, FloatingSide } from "../floating/floatingPlacement";
-import { useGlassControl } from "./glass/useGlassControl";
 
 export type DropdownPlacement = "bottom-end" | "bottom-start" | "top-end" | "top-start";
 
@@ -53,8 +52,6 @@ export function Dropdown({
     [],
   );
   const [side, align] = SIDES[placement];
-  // En mode natif : la lentille exacte du panneau (sa carte de réfraction).
-  const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
 
   return (
     <>
@@ -67,8 +64,7 @@ export function Dropdown({
         align={align}
         role="menu"
         maxWidth={maxWidth}
-        panelRef={glass.refObject}
-        attrs={glass.props["data-lgc-lens"] === undefined ? undefined : { "data-lgc-lens": "" }}
+
         className={`lg-menu overflow-y-auto overscroll-contain ${className ?? ""}`}
         style={{
           minWidth,
@@ -79,10 +75,8 @@ export function Dropdown({
           boxShadow: "var(--shadow-dropdown)",
           backdropFilter: "blur(var(--blur-dropdown))",
           WebkitBackdropFilter: "blur(var(--blur-dropdown))",
-          ...glass.props.style,
         }}
       >
-        {glass.layers}
         {children}
       </FloatingLayer>
     </>

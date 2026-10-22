@@ -18,7 +18,7 @@
 import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { RefractionFilter } from "@tentacle-tv/ui";
 
-import { GlassSpecular, useLiquidGlassMode, useSpecularHighlight } from "../../../theme/glass";
+import { GlassSpecular, useBackdropTone, useLiquidGlassMode, useSpecularHighlight, type BackdropTone } from "../../../theme/glass";
 import { useLensGeometry } from "../../../theme/glass/useLensGeometry";
 import { lensFilterId, type LiquidGlassLevel, type LiquidGlassShape } from "../../../theme/glass/surfaceModel";
 
@@ -29,6 +29,11 @@ export interface GlassControlOptions {
   shape?: LiquidGlassShape;
   /** Le reflet qui suit le pointeur. */
   specular?: boolean;
+  /**
+   * Le ton du dessous (`data-lg-tone`, mesuré par la coquille) : les textes de
+   * la surface s'y adaptent (`lgLegibility.css`). Vrai par défaut.
+   */
+  tone?: boolean;
 }
 
 export interface GlassControl<T extends HTMLElement> {
@@ -37,13 +42,13 @@ export interface GlassControl<T extends HTMLElement> {
   /** La même, pour une API qui attend un objet (`FloatingLayer.panelRef`). */
   refObject: RefObject<T | null>;
   /** À étaler sur la surface ; `style` se fusionne avec celui de l'appelant. */
-  props: { style?: CSSProperties; "data-lgc-lens"?: "" };
+  props: { style?: CSSProperties; "data-lgc-lens"?: ""; "data-lg-tone"?: BackdropTone };
   /** À rendre DANS la surface (filtre et reflet sont hors du flux). */
   layers: ReactNode;
 }
 
 export function useGlassControl<T extends HTMLElement>(options: GlassControlOptions): GlassControl<T> {
-  const { lens = false, shape = "rounded", specular = false } = options;
+  const { lens = false, shape = "rounded", specular = false, tone: toneEnabled = true } = options;
   const native = useLiquidGlassMode() === "native";
   const [element, setElement] = useState<T | null>(null);
   const specularRef = useSpecularHighlight<T>();
@@ -64,15 +69,17 @@ export function useGlassControl<T extends HTMLElement>(options: GlassControlOpti
   }, [ref]);
 
   const geometry = useLensGeometry(element, native && lens !== false, lens || "regular", shape, shape);
+  const tone = useBackdropTone(element, native && toneEnabled);
   const filterId = lensFilterId(useId());
 
   if (!native) return { ref, refObject, props: {}, layers: null };
   return {
     ref,
     refObject,
-    props: geometry
-      ? { "data-lgc-lens": "", style: { "--lgc-lens": `url(#${filterId})` } as CSSProperties }
-      : {},
+    props: {
+      ...(geometry ? { "data-lgc-lens": "" as const, style: { "--lgc-lens": `url(#${filterId})` } as CSSProperties } : {}),
+      ...(toneEnabled ? { "data-lg-tone": tone } : {}),
+    },
     layers: (
       <>
         {geometry && <RefractionFilter id={filterId} {...geometry} />}
