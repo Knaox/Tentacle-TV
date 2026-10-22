@@ -32,7 +32,7 @@ export async function offline(ctx) {
   await dismissOverlays(page);
   await step(ctx, "hl-dialogue-garder", async () => {
     await go(page, `/media/${id}`, 3000);
-    await clickSelector(page, ".lg-capsule-media button[aria-label]", "^Télécharger$");
+    await clickSelector(page, "button[aria-label]", "^Télécharger$");
     await page.waitFor(`document.querySelector('[role="dialog"][aria-modal="true"]')`, 10_000, "dialogue de téléchargement");
     await sleep(800);
     return { dom: await glassDom(page), capture: await shot(ctx, "hl-dialogue-garder") };

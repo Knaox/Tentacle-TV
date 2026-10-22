@@ -84,7 +84,8 @@ export async function glassDom(page) {
       surfaces: document.querySelectorAll(".lg-surface").length,
       lenses: document.querySelectorAll('[data-lg-render="lens"]').length,
       bandeau: (() => { const b = document.querySelector(".bandeau-hote"); return b ? getComputedStyle(b).backgroundColor : null; })(),
-      capsuleFirst: (() => { const c = document.querySelector(".lgc-capsule")?.firstElementChild; return c ? { cls: c.className, render: c.getAttribute("data-lg-render") } : null; })(),
+      // Barre du haut : depuis la refonte (22/10), des GROUPES en lentille dans la capsule.
+      capsuleLenses: document.querySelector(".lgc-capsule") ? document.querySelectorAll('.lgc-capsule .lg-surface[data-lg-render="lens"]').length : null,
       // Une modale « position: fixed » sous un ancêtre à transform / filter /
       // backdrop-filter n'a plus le viewport pour référence : elle est
       // confinée à cet ancêtre (défaut du 21/10 : dialogue dans la capsule).

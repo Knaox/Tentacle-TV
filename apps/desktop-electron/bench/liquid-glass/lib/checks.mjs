@@ -106,8 +106,7 @@ function chromeOn(report, fail) {
     if (scrolled.dom.edge === 0) fail("accueil défilé de 300 px : aucun .lgc-edge", scrolled.capture);
     if (scrolled.dom.bandeau !== null && !transparent(scrolled.dom.bandeau)) fail(`accueil défilé : bandeau des feux non transparent (${scrolled.dom.bandeau})`, scrolled.capture);
   }
-  const cap = top?.dom?.capsuleFirst;
-  if (top?.dom && (!cap || !/lg-surface/.test(cap.cls) || cap.render !== "lens")) fail(`capsule de nav : premier enfant ${JSON.stringify(cap)} (attendu .lg-surface + data-lg-render="lens")`, top?.capture);
+  if (top?.dom && !(top.dom.capsuleLenses > 0)) fail(`barre du haut : aucune .lg-surface en lentille dans .lgc-capsule (${top.dom.capsuleLenses})`, top?.capture);
   for (const name of ["reglages-apparence", "admin-admin"]) {
     const s = find(report, name);
     if (s?.dom && !s.dom.sidebar?.selection) fail(`« ${name} » : nav.lgc-sidebar ou sa sélection absente (${JSON.stringify(s.dom.sidebar)})`, s.capture);
