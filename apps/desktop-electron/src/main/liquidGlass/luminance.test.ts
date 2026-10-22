@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linearize, median, medianLuminance, reductionFor, relativeLuminance, unionBox } from "./luminance";
+import { compositeOver, gridSamples, linearize, median, medianLuminance, medianOfSamples, reductionFor, relativeLuminance, seesThrough, unionBox } from "./luminance";
 
 /** Une image BGRA unie de `w` × `h`, avec quelques pixels « glyphes » posés par `paint`. */
 function image(w: number, h: number, bgra: [number, number, number, number], paint?: (x: number, y: number) => [number, number, number, number] | null) {
@@ -48,6 +48,70 @@ describe("medianLuminance", () => {
   it("un rectangle hors de l'image ne dit rien", () => {
     const data = image(10, 10, [0, 0, 0, 255]);
     expect(medianLuminance(data, 10, 10, { x: 20, y: 20, width: 5, height: 5 })).toBeNull();
+  });
+});
+
+/** Une grille de `n` échantillons, tous de la même couleur BGRA. */
+function samples(n: number, bgra: [number, number, number, number]): Uint8Array {
+  const data = new Uint8Array(n * 4);
+  for (let p = 0; p < data.length; p += 4) data.set(bgra, p);
+  return data;
+}
+
+describe("gridSamples / medianOfSamples", () => {
+  it("un point au centre de chaque case, ligne par ligne depuis le haut", () => {
+    // Moitié haute blanche, moitié basse noire : la première ligne de la grille est blanche.
+    const data = image(32, 32, [0, 0, 0, 255], (_x, y) => (y < 16 ? [255, 255, 255, 255] : null));
+    const grid = gridSamples(data, 32, 32, { x: 0, y: 0, width: 32, height: 32 }, 4);
+    expect(grid).not.toBeNull();
+    expect(Array.from(grid?.subarray(0, 4) ?? [])).toEqual([255, 255, 255, 255]);
+    expect(Array.from(grid?.subarray(12 * 4, 12 * 4 + 4) ?? [])).toEqual([0, 0, 0, 255]);
+  });
+
+  it("medianLuminance est la médiane des échantillons de la grille", () => {
+    const data = image(64, 32, [255, 255, 255, 255], (x) => (x % 3 === 0 ? [0, 0, 0, 255] : null));
+    const box = { x: 0, y: 0, width: 64, height: 32 };
+    const grid = gridSamples(data, 64, 32, box);
+    expect(grid === null ? null : medianOfSamples(grid)).toBe(medianLuminance(data, 64, 32, box));
+  });
+});
+
+describe("seesThrough / compositeOver — la page posée sur la vidéo", () => {
+  it("une page pleinement opaque ne laisse rien voir ; un seul point transparent suffit", () => {
+    const opaque = samples(256, [10, 20, 30, 255]);
+    expect(seesThrough(opaque)).toBe(false);
+    opaque[3] = 254;
+    expect(seesThrough(opaque)).toBe(true);
+  });
+
+  it("page transparente sur une vidéo claire : la luminance de la vidéo (le cas « neige »)", () => {
+    const snow = samples(256, [242, 242, 242, 255]);
+    const result = medianOfSamples(compositeOver(samples(256, [0, 0, 0, 0]), snow));
+    expect(result).toBeCloseTo(relativeLuminance(242, 242, 242), 6);
+    expect(result).toBeGreaterThan(0.85);
+  });
+
+  it("des glyphes opaques minoritaires ne tirent pas la médiane : c'est le dessous qui compte", () => {
+    // 20 % de glyphes blancs opaques sur une vidéo sombre.
+    const page = samples(256, [0, 0, 0, 0]);
+    for (let k = 0; k < 51; k += 1) page.set([255, 255, 255, 255], k * 4);
+    const dark = samples(256, [20, 20, 20, 255]);
+    expect(medianOfSamples(compositeOver(page, dark))).toBeCloseTo(relativeLuminance(20, 20, 20), 6);
+  });
+
+  it("compose en prémultiplié : page + vidéo × (1 − alpha)", () => {
+    // Un voile noir à 50 % (prémultiplié : 0,0,0,128) sur du blanc donne ~127.
+    const out = compositeOver(samples(1, [0, 0, 0, 128]), samples(1, [255, 255, 255, 255]));
+    expect(Array.from(out)).toEqual([127, 127, 127, 255]);
+    // Un blanc à 50 % prémultiplié (128,128,128,128) sur du noir reste 128.
+    expect(Array.from(compositeOver(samples(1, [128, 128, 128, 128]), samples(1, [0, 0, 0, 255])))).toEqual([128, 128, 128, 255]);
+  });
+
+  it("hors de la fenêtre de mpv (vidéo transparente), la page reste telle quelle", () => {
+    const page = samples(4, [0, 0, 0, 0]);
+    expect(medianOfSamples(compositeOver(page, samples(4, [0, 0, 0, 0])))).toBeNull();
+    const banner = samples(4, [5, 5, 5, 255]);
+    expect(Array.from(compositeOver(banner, samples(4, [0, 0, 0, 0])))).toEqual(Array.from(banner));
   });
 });
 

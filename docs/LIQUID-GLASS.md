@@ -141,11 +141,28 @@ page (`apps/web/src/desktop/types.ts`) et reflété par `protocol.ts` ;
   `tinted` et `prominent` se distinguent par leur teinte. `interactive` : aucune
   API publique, sans effet natif.
 - `sample(rects)` (avec réponse) : la luminance relative médiane (0..1, sRGB
-  linéarisé) sous chaque rectangle, pour que les glyphes s'adaptent au contenu
-  — une capture de la PAGE (`capturePage` sur l'union), 16 × 16 points par
-  rectangle, pixels transparents ignorés : `null` au-dessus de la vidéo, que la
-  capture ne voit pas. Vérifié dans l'app : blanc 1, noir 0, gris 50 % 0,216,
-  blanc sous du texte noir 0,85 ; 10 ms par appel.
+  linéarisé) sous chaque rectangle, pour que les glyphes s'adaptent au contenu.
+  La PAGE d'abord : `capturePage` sur l'union, 16 × 16 points par rectangle
+  (vérifié dans l'app : blanc 1, noir 0, gris 50 % 0,216, blanc sous du texte
+  noir 0,85 ; 10 ms ; la capture est prémultipliée). Là où la page laisse voir
+  le dessous, la VIDÉO (`videoSample.ts`, macOS, montage `fenetre`) : l'image
+  que mpv a décodée (`screenshot-raw video bgra`, commande ASYNCHRONE lue
+  pendant sa réponse, `commandForResult`), lue aux mêmes points et composée
+  SOUS la page (prémultiplié, comme Chromium) — ce que l'œil voit, au verre
+  natif près. Cadrage : l'image ajustée au centre de la fenêtre de mpv, à
+  l'aspect affiché de `video-params` (`osd-dimensions` reste à 0 × 0, OSD
+  coupé). Mesuré le 22/10 sur une vraie lecture : bandes 0x4D / 0xF2 (« neige »)
+  / 0x80 / 0x1A → 0,073 / 0,882 / 0,211 / 0,010, bande noire 0, glyphes opaques
+  sur 14 % du rectangle sans effet sur la médiane, voile blanc à 50 % → 0,265 ;
+  mire HDR10 4K (PQ / BT.2020) : rouge 0,213, bleu 0,072, cyan 0,787. La capture
+  GPU de `gpu-next` échoue sur MoltenVK, mpv se replie seul sur sa capture
+  LOGICIELLE : 25–82 ms sur le cœur de mpv (1080p à 4K HDR), hors du fil
+  principal ; aucune image perdue, même toutes les 250 ms ; une capture par
+  seconde au plus ; rien au repos. Écartés au banc : `CGWindowListCreateImage`
+  (retirée du SDK 15 : images vides avec le SDK 26.4 d'Electron) et
+  ScreenCaptureKit (`-3811` sur toutes nos fenêtres, même par le contenu « du
+  processus courant », et la demande « Enregistrement de l'écran » s'est très
+  probablement affichée).
 - Un message d'IPC par tâche JavaScript (`batcher.ts`, vidé en microtâche) ;
   le principal revalide tout (`validate.ts`, zod, région par région : une
   région folle est écartée sans perdre les retraits du même lot), applique le

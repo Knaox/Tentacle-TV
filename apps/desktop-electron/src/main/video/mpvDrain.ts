@@ -27,8 +27,8 @@ import type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
 /** Ce que la vidange doit pouvoir faire remonter à `mpv.ts`. */
 export interface Hooks {
-  /** Règle une commande asynchrone qui vient d'aboutir. */
-  settle: (id: number, code: number) => void;
+  /** Règle une commande asynchrone qui vient d'aboutir ; `data` : son résultat, valide le temps de l'appel. */
+  settle: (id: number, code: number, data: unknown) => void;
   /** mpv annonce son arrêt — le seul instant où libérer ne bloque pas. */
   onShutdown: () => void;
   /**
@@ -181,7 +181,7 @@ export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
     // Une commande asynchrone vient d'aboutir : on règle sa promesse et on
     // n'en dit rien à la page — c'est l'appelant qui saura quoi en faire.
     if (id === EVENT.COMMAND_REPLY) {
-      hooks.settle(Number(ev.reply_userdata), ev.error);
+      hooks.settle(Number(ev.reply_userdata), ev.error, ev.data);
       continue;
     }
 

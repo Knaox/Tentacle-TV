@@ -1578,8 +1578,9 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   givre faible, réfraction PHYSIQUE au biseau (Snell, rien au centre) calculée pour la forme exacte ;
   le bord ÉCLAIRCIT le fond réfracté (`fond × (1 + gain)`) — jamais un trait ni un contour blanc.
   `backdrop-filter: <givre…> url(#lentille)`, les fonctions AVANT `url()`.
-- **Ton du dessous, mesuré** : `liquidGlass.sample(rects)` (luminance médiane sous chaque rectangle,
-  capture de la page ; `null` sur la vidéo) → `useBackdropTone` → `data-lg-tone="dark|light"` :
+- **Ton du dessous, mesuré** : `liquidGlass.sample(rects)` (luminance médiane sous chaque rectangle :
+  la page, et là où elle est transparente l'image décodée de mpv dessous — macOS, montage `fenetre`,
+  une capture par seconde au plus, hors du fil principal) → `useBackdropTone` → `data-lg-tone="dark|light"` :
   glyphes (`--lg-glyph*`), lumière du bord, reflet et DANGER (`--lg-danger-on-*`) en suivent ;
   hystérésis, un appel par 250 ms au plus. Menus et feuilles : un ton PAR BANDE (`bands`,
   `data-lg-band`) et, sur un dessous moyen seulement, un voile minimal calculé. Jamais un fond
