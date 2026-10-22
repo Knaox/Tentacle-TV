@@ -78,12 +78,18 @@
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
 }
 
-/* La barre ne SAUTE pas d'une page à l'autre : avec une barre de défilement
- * classique (souris branchée, « Toujours » dans Réglages Système), la page
- * qui défile la gagnait et celle qui ne défile pas la perdait — les groupes
- * de droite bougeaient de ~10 px (audit lg2, n° 15). La gouttière est tenue. */
-:root[data-liquid-glass="native"] {
-  scrollbar-gutter: stable;
+/* La barre ne SAUTE pas d'une page à l'autre (audit lg2, n° 15). La barre
+ * de défilement est stylée (`index.css`, 8 px), donc toujours classique : une
+ * page longue l'a, une page courte non, et la barre fixe (`inset-x-0`) suivait
+ * la largeur utile — 8 px de décalage. Ni `scrollbar-gutter` (Chromium ne
+ * l'honore pas avec ce style : mesuré, 1440 contre 1432), ni `overflow-y:
+ * scroll` sur la racine (le verrou de défilement des modales, `overflow:
+ * hidden` sur `body`, ne passerait plus à la fenêtre). La barre prend donc la
+ * largeur de la FENÊTRE, barre de défilement comprise : elle ne bouge plus ;
+ * sa marge droite (24 px) garde ses groupes hors de la piste. */
+:root[data-liquid-glass="native"] [data-top-nav] {
+  right: auto;
+  width: 100vw;
 }
 
 /* ── Le bandeau des feux : transparent, le contenu défile dessous ──────── */
