@@ -52,7 +52,8 @@ export function FloatingLayer({
   // natif : la lentille exacte du panneau et le ton du dessous, auquel ses
   // textes s'adaptent. Hors natif, `useGlassControl` ne fait rien.
   const menuGlass = className?.split(/\s+/).includes("lg-menu") ?? false;
-  const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass });
+  // Un ton par rangée : un menu chevauche souvent la page claire ET le héros.
+  const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass, bands: menuGlass });
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {
     (ref as { current: HTMLDivElement | null }).current = node;

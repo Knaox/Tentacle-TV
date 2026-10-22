@@ -51,6 +51,15 @@
   text-shadow: var(--lg-glyph-shadow-on-light);
 }
 
+/* Matériau épais sur un dessous MIXTE : chaque rangée prend le ton de SON
+ * dessous (`data-lg-band`, règles dans `theme/liquidGlassSurface.css`) et,
+ * là où un dessous moyen l'exige, un voile minimal calculé par bande
+ * (`--lg-band-veil`, `useBandTones` de lg-tokens) passe SOUS les textes,
+ * par-dessus le remplissage — le reflet (`--lgc-sheen`) gardé. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-sheet)[data-lg-veil] {
+  background-image: var(--lg-band-veil), var(--lgc-sheen) !important;
+}
+
 /* ── La note au repos des cartes ──
  * Un petit verre SANS flou : elle est montée sur CHAQUE carte de la page, un
  * `backdrop-filter` par carte se recalculerait à chaque défilement. Voile de

@@ -37,6 +37,8 @@
  *  - `interactive` réagit au pointeur (le natif l'anime ; la lentille expose
  *             `data-lg-interactive` pour les règles de lg-physique) ;
  *  - `z`      ordre des verres natifs entre eux ;
+ *  - `bands`  matériau ÉPAIS (menu, feuille) : un ton par RANGÉE
+ *             (`data-lg-band`, `useBandTones`), pour un dessous mixte ;
  *  - `group`, `spacing`, `transition` (verre NATIF seulement) : groupe de
  *             fusion (NSGlassEffectContainerView : voisines, les régions
  *             fusionnent et se métamorphosent), sa distance de fusion en pt,
@@ -80,6 +82,7 @@ export {
 } from "./useLiquidGlassSurface";
 export { useLiquidGlassRegion, type LiquidGlassRegionOptions } from "./useLiquidGlassRegion";
 export { useBackdropTone } from "./useBackdropTone";
+export { useBandTones } from "./useBandTones";
 export type { BackdropTone } from "./backdropTone";
 export { useLensGeometry, type LensGeometry } from "./useLensGeometry";
 export {

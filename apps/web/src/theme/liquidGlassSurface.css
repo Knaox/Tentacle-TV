@@ -58,6 +58,57 @@
   --lg-danger: var(--lg-danger-on-light);
 }
 
+/* ── Bandes : un dessous MIXTE sous un matériau épais ──────────────────
+ * Un menu ou une feuille couvre souvent deux mondes (la bande claire de la
+ * page, le héros sombre) : un seul ton laisse une partie illisible. Chaque
+ * rangée (`data-lg-band`, posé par `useBandTones`) prend le ton de SON
+ * dessous. Les jetons du verre (`--lg-glyph…`, la primitive) ET ceux du
+ * thème (`--text-*`, les menus de lg-composants) ; le secondaire en version
+ * ÉPAISSE (plus franc, l'AA sur la cible du voile). */
+:root[data-liquid-glass="native"] [data-lg-band="dark"] {
+  --lg-glyph: var(--lg-glyph-on-dark);
+  --lg-glyph-secondary: var(--lg-glyph-on-dark-secondary-thick);
+  --lg-glyph-text-shadow: var(--lg-glyph-shadow-on-dark);
+  --lg-glyph-filter: var(--lg-glyph-filter-on-dark);
+  --lg-danger: var(--lg-danger-on-dark);
+  --status-error-fg: var(--lg-danger-on-dark);
+  --text-primary: var(--lg-glyph-on-dark);
+  --text-secondary: var(--lg-glyph-on-dark-secondary-thick);
+  --text-tertiary: var(--lg-glyph-on-dark-secondary-thick);
+  --text-quaternary: var(--lg-glyph-on-dark-secondary-thick);
+}
+
+:root[data-liquid-glass="native"] [data-lg-band="light"] {
+  --lg-glyph: var(--lg-glyph-on-light);
+  --lg-glyph-secondary: var(--lg-glyph-on-light-secondary-thick);
+  --lg-glyph-text-shadow: var(--lg-glyph-shadow-on-light);
+  --lg-glyph-filter: var(--lg-glyph-filter-on-light);
+  --lg-danger: var(--lg-danger-on-light);
+  --status-error-fg: var(--lg-danger-on-light);
+  --text-primary: var(--lg-glyph-on-light);
+  --text-secondary: var(--lg-glyph-on-light-secondary-thick);
+  --text-tertiary: var(--lg-glyph-on-light-secondary-thick);
+  --text-quaternary: var(--lg-glyph-on-light-secondary-thick);
+}
+
+/* La couleur HÉRITÉE de la surface a été résolue chez elle : la bande la
+ * reprend. Au poids d'UNE classe : plus fort que `button { color: inherit }`,
+ * plus faible que la classe de couleur d'une rangée (`text-content-*`, le
+ * danger), qui vient après et lit déjà les jetons de la bande. */
+:where(:root[data-liquid-glass="native"]) [data-lg-band] {
+  color: var(--lg-glyph);
+  text-shadow: var(--lg-glyph-text-shadow);
+}
+
+/* Le VOILE MINIMAL des bandes (`--lg-band-veil`, un dégradé vertical calculé
+ * par `useBandTones`) : seulement là où un dessous moyen l'exige, blanc sous
+ * un texte sombre, noir sous un texte clair — au plus ~0,3. Par-dessus le
+ * remplissage du verre. Les menus et feuilles de lg-composants : même voile,
+ * dans `lgLegibility.css` (leur fond porte aussi un reflet). */
+:root[data-liquid-glass="native"] .lg-surface[data-lg-veil] {
+  background-image: var(--lg-band-veil);
+}
+
 /* La lentille. Sans carte encore (taille pas mesurée) : le givre seul. */
 :root[data-liquid-glass="native"] .lg-surface[data-lg-render="lens"] {
   backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness))

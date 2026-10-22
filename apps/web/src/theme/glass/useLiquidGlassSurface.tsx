@@ -28,6 +28,7 @@ import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { useLiquidGlassMode } from "../useLiquidGlass";
 import { useBackdropTone } from "./useBackdropTone";
+import { useBandTones } from "./useBandTones";
 import { useLensGeometry } from "./useLensGeometry";
 import { useLiquidGlassRegion } from "./useLiquidGlassRegion";
 import {
@@ -51,6 +52,12 @@ export interface LiquidGlassSurfaceOptions extends LiquidGlassAppearance {
   fallbackStyle?: CSSProperties;
   /** Ref de l'appelant, réunie à celle de la surface. */
   ref?: Ref<HTMLElement>;
+  /**
+   * Matériau ÉPAIS (menu, feuille) : un ton par RANGÉE (`useBandTones`), pour
+   * qu'un dessous mixte ne laisse aucune rangée sans contraste. Défaut non :
+   * un petit verre bascule d'un bloc.
+   */
+  bands?: boolean;
 }
 
 export interface LiquidGlassSurfaceProps {
@@ -73,7 +80,7 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null): void {
 }
 
 export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): LiquidGlassSurface {
-  const { backdrop = "page", className, style, fallbackClassName, fallbackStyle, ref: outerRef } =
+  const { backdrop = "page", className, style, fallbackClassName, fallbackStyle, ref: outerRef, bands = false } =
     options;
   const appearance: LiquidGlassAppearance = {
     level: options.level,
@@ -115,6 +122,7 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
   // Le ton de ce qui est dessous : la polarité des glyphes (lentille de page ;
   // le verre natif s'adapte seul).
   const tone = useBackdropTone(element, render === "lens");
+  useBandTones(element, render === "lens" && bands);
 
   if (render === "fallback") {
     const merged = fallbackStyle || style ? { ...fallbackStyle, ...style } : undefined;

@@ -35,7 +35,8 @@ function readSampler(): ToneSampler | null {
 
 let shared: ToneScheduler | null | undefined;
 
-function sharedScheduler(): ToneScheduler | null {
+/** L'ordonnanceur de la page (surfaces ET bandes), ou `null` sans échantillonneur. */
+export function sharedScheduler(): ToneScheduler | null {
   if (shared !== undefined) return shared;
   const sampler = typeof window === "undefined" ? null : readSampler();
   if (sampler === null) {
