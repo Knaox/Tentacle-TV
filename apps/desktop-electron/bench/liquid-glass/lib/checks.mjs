@@ -88,6 +88,9 @@ export function checkCell(cell, report) {
   const wn = find(report, "nouveautes-1-40-0");
   if (wn?.ok && cell.expect === "on" && (!wn.traits?.liquidGlass || wn.shown === false)) fail(`nouveautés 1.40.0 : traits ${JSON.stringify(wn.traits)}, scène « Liquid Glass » ${wn.shown ? "vue" : "absente"}`, wn.capture);
   if (wn?.ok && cell.expect === "unsupported" && (wn.traits?.liquidGlass || wn.traits?.liquidGlassPlayer)) fail(`nouveautés 1.40.0 : trait du verre présent sans verre natif (${JSON.stringify(wn.traits)})`, null);
+  for (const sc of [wn?.scene1, wn?.scene2]) {
+    if (sc?.overflow?.length) fail(`nouveautés 1.40.0 : ${sc.overflow.length} surface(s) de verre débordent de la scène (${sc.overflow[0]})`, wn.capture);
+  }
   const pipStep = find(report, "lecteur-hdr-pip");
   if (hdrScreen && pipStep?.ok && pipStep.afterBack && !pq(pipStep.afterBack["video-target-params"])) {
     fail("HDR perdu après le retour du PiP au lecteur", pipStep.capture);

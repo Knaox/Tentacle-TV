@@ -37,7 +37,7 @@ const CELLS = {
   // Thème clair de l'app ET apparence claire de la fenêtre native.
   clair: {
     expect: "on",
-    run: [screens, menus],
+    run: [whatsNew, screens, menus],
     async prepare(app) {
       await app.page.evaluate(`localStorage.setItem("tentacle_theme_mode", "light"); return true;`);
       const native = await evalMain(app, `require("electron").nativeTheme.themeSource = "light"; return "light";`).catch(String);
@@ -76,6 +76,9 @@ const CELLS = {
   "hors-ligne-coupe": { expect: "off", run: [offline], prepare: (app) => CELLS.coupe.prepare(app) },
   // Menus et feuilles seuls (sombre / clair), pour rejouer vite une passe de lg-tokens.
   menus: { expect: "on", run: [menus] },
+  // Les scènes des nouveautés seules, sombre et clair.
+  nouveautes: { expect: "on", run: [whatsNew] },
+  "nouveautes-clair": { expect: "on", run: [whatsNew], prepare: (app) => CELLS.clair.prepare(app) },
   "menus-clair": { expect: "on", run: [menus], prepare: (app) => CELLS.clair.prepare(app) },
   // L'administration (compte admin du Jellyfin jetable).
   admin: { expect: "on", account: "admin", run: [admin] },
