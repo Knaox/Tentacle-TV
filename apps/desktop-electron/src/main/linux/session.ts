@@ -12,6 +12,7 @@ import path from "node:path";
 import {
   decideSession,
   ozoneRelaunchArgs,
+  SESSION_RELAUNCH_FLAG,
   SESSION_FILE,
   readSessionChoice,
   type SessionChoice,
@@ -50,7 +51,11 @@ export function applyGraphicsSession(): DecidedSession | null {
   // `TENTACLE_LINUX_SESSION` est l'outil d'essai des développeurs : il ne
   // touche pas au réglage, le garde-fou ne doit ni le juger ni le corriger.
   const devTry = process.env["TENTACLE_LINUX_SESSION"] !== undefined;
-  if (!devTry) {
+  // Relancé par le lancement d'avant pour changer de plateforme : le témoin
+  // et l'essai trouvés en place sont ceux qu'il a posés POUR ce processus, pas
+  // la trace d'un échec.
+  const relaunched = process.argv.includes(SESSION_RELAUNCH_FLAG);
+  if (!devTry && !relaunched) {
     const doomed = recoverDoomedChoice(folder, readSessionChoice(folder));
     if (doomed !== null) {
       console.error(
@@ -60,13 +65,17 @@ export function applyGraphicsSession(): DecidedSession | null {
   }
   decided = decideSession(process.env, readSessionChoice(folder), {
     hdrDisplay: hdrDisplayConnected(),
-    xwaylandAutoBlocked: xwaylandAutoBlocked(folder),
+    xwaylandAutoBlocked: xwaylandAutoBlocked(folder, relaunched),
   });
-  // La plateforme ne se change qu'en relançant — voir `ozoneRelaunchArgs`. AVANT
-  // tout témoin : le second processus décide à nouveau et pose les siens.
+  // La plateforme ne se change qu'en relançant — voir `ozoneRelaunchArgs`.
   const relaunchArgs = ozoneRelaunchArgs(decided, process.argv);
   if (relaunchArgs !== null) {
-    console.info(`[session] relance sur --ozone-platform=${decided.ozone ?? ""} (choix=${decided.choice})`);
+    // Les témoins AVANT la relance : un second processus qui meurt avant notre
+    // code (XWayland injoignable — « Missing X server », mesuré sous GNOME) n'en
+    // poserait aucun, et chaque lancement recommencerait sans fenêtre.
+    if (!devTry && decided.choice !== "auto") writeWitness(folder, decided.choice);
+    if (!devTry && decided.xwaylandAuto) writeXwaylandAutoTrial(folder);
+    console.info(`[session] relance sur --ozone-platform=${decided.ozone ?? "auto"} (choix=${decided.choice})`);
     // Une AppImage se relance par son fichier : le montage de `execPath` part avec ce processus.
     const appImage = process.env["APPIMAGE"];
     app.relaunch({ args: relaunchArgs, ...(appImage ? { execPath: appImage } : {}) });

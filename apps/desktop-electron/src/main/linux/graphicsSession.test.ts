@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { decideSession, readSessionChoice, desktopSession, ozoneRelaunchArgs } from "./graphicsSession";
+import { decideSession, readSessionChoice, desktopSession, ozoneRelaunchArgs, SESSION_RELAUNCH_FLAG } from "./graphicsSession";
 
 const WAYLAND = { XDG_SESSION_TYPE: "wayland", WAYLAND_DISPLAY: "wayland-0", DISPLAY: ":0" };
 const X11 = { XDG_SESSION_TYPE: "x11", DISPLAY: ":0" };
@@ -106,11 +106,12 @@ describe("ozoneRelaunchArgs", () => {
 
   it("XWayland sous une session Wayland : relance, le drapeau sur la ligne de commande", () => {
     expect(ozoneRelaunchArgs(decideSession(WAYLAND, "x11"), ARGV))
-      .toEqual(["--remote-debugging-port=9334", "--ozone-platform=x11"]);
+      .toEqual(["--remote-debugging-port=9334", "--ozone-platform=x11", SESSION_RELAUNCH_FLAG]);
   });
 
   it("le second processus trouve le drapeau : pas de boucle", () => {
-    expect(ozoneRelaunchArgs(decideSession(WAYLAND, "x11"), [...ARGV, "--ozone-platform=x11"])).toBeNull();
+    const relaunched = ["/opt/tentacle/tentacle-tv", ...ozoneRelaunchArgs(decideSession(WAYLAND, "x11"), ARGV)!];
+    expect(ozoneRelaunchArgs(decideSession(WAYLAND, "x11"), relaunched)).toBeNull();
   });
 
   it("auto n'impose rien, et Wayland imposé sous Wayland est déjà ce qu'Electron a pris", () => {
@@ -124,6 +125,12 @@ describe("ozoneRelaunchArgs", () => {
 
   it("remplace un drapeau contraire au lieu d'en ajouter un second", () => {
     expect(ozoneRelaunchArgs(decideSession(WAYLAND, "x11"), [...ARGV, "--ozone-platform=wayland"]))
-      .toEqual(["--remote-debugging-port=9334", "--ozone-platform=x11"]);
+      .toEqual(["--remote-debugging-port=9334", "--ozone-platform=x11", SESSION_RELAUNCH_FLAG]);
+  });
+
+  it("un drapeau X11 hérité d'une relance, puis retour à auto : relance SANS drapeau", () => {
+    const inherited = [...ARGV, "--ozone-platform=x11", SESSION_RELAUNCH_FLAG];
+    expect(ozoneRelaunchArgs(decideSession(WAYLAND, "auto"), inherited))
+      .toEqual(["--remote-debugging-port=9334", SESSION_RELAUNCH_FLAG]);
   });
 });

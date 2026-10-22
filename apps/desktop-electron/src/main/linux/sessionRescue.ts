@@ -46,10 +46,14 @@ export const WITNESS_FILE = "session-essai.json";
 export const XWAYLAND_AUTO_TRIAL = "xwayland-auto-essai.json";
 export const XWAYLAND_AUTO_OFF = "xwayland-auto-bloque.json";
 
-/** XWayland-auto a-t-il déjà échoué sur ce poste ? Solde aussi un essai resté en plan. */
-export function xwaylandAutoBlocked(folder: string): boolean {
+/**
+ * XWayland-auto a-t-il déjà échoué sur ce poste ? Solde aussi un essai resté en
+ * plan — sauf `inheritedTrial` : le processus est la relance qui l'a posé
+ * pour lui (`session.ts`), l'essai commence à peine.
+ */
+export function xwaylandAutoBlocked(folder: string, inheritedTrial = false): boolean {
   const trial = path.join(folder, XWAYLAND_AUTO_TRIAL);
-  if (existsSync(trial)) {
+  if (!inheritedTrial && existsSync(trial)) {
     blockXwaylandAuto(folder, "le lancement précédent n'a jamais affiché de fenêtre");
     rmSync(trial, { force: true });
   }

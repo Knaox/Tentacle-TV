@@ -145,6 +145,13 @@ export function decideSession(
 const OZONE_SWITCH = "--ozone-platform=";
 
 /**
+ * Posé sur la ligne de commande d'une relance de `ozoneRelaunchArgs` : le
+ * processus relancé sait que le témoin trouvé en place est le sien
+ * (`session.ts`). Traverse `argv` : ne se renomme pas.
+ */
+export const SESSION_RELAUNCH_FLAG = "--tentacle-session-relaunch";
+
+/**
  * Les arguments d'une relance qui porte la plateforme décidée, ou `null` si
  * Electron tourne déjà dessus.
  *
@@ -158,16 +165,19 @@ const OZONE_SWITCH = "--ozone-platform=";
  * l'essai réussi. Mesuré le 22.10 sous sway et GNOME headless, Electron
  * minimal compris : le même drapeau posé sur la ligne de commande affiche.
  *
- * D'où la relance, une fois : le second processus trouve le drapeau dans
- * `argv` et rend `null`, il ne peut pas boucler.
+ * D'où la relance, une fois : le second processus trouve la bonne plateforme
+ * dans `argv` et rend `null`, il ne peut pas boucler. Un drapeau hérité d'une
+ * relance précédente (`relaunch()` des Préférences reprend `argv`) et qui ne
+ * correspond plus au choix est retiré : `auto` se relance alors SANS drapeau,
+ * pour garder le repli d'Electron.
  */
 export function ozoneRelaunchArgs(decided: DecidedSession, argv: readonly string[]): string[] | null {
-  if (decided.ozone === null) return null;
   const given = argv.slice(1).find((arg) => arg.startsWith(OZONE_SWITCH))?.slice(OZONE_SWITCH.length);
   // `auto` (défaut d'Electron) prend Wayland dès que la session en est une.
-  const running = given ?? (decided.session === "wayland" ? "wayland" : "x11");
-  if (running === decided.ozone) return null;
-  return [...argv.slice(1).filter((arg) => !arg.startsWith(OZONE_SWITCH)), `${OZONE_SWITCH}${decided.ozone}`];
+  const byDefault = decided.session === "wayland" ? "wayland" : "x11";
+  if ((given ?? byDefault) === (decided.ozone ?? byDefault)) return null;
+  const kept = argv.slice(1).filter((arg) => !arg.startsWith(OZONE_SWITCH) && arg !== SESSION_RELAUNCH_FLAG);
+  return [...kept, ...(decided.ozone === null ? [] : [`${OZONE_SWITCH}${decided.ozone}`]), SESSION_RELAUNCH_FLAG];
 }
 
 /**

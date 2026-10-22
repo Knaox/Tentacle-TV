@@ -162,6 +162,6 @@ describe("la plateforme d'affichage ne se pose qu'en relançant", () => {
     applyGraphicsSession();
     expect(relaunchingForSession()).toBe(true);
     expect(relaunches).toHaveLength(1);
-    expect((relaunches[0] as { args: string[] }).args.at(-1)).toBe("--ozone-platform=x11");
+    expect((relaunches[0] as { args: string[] }).args).toContain("--ozone-platform=x11");
   });
 });
