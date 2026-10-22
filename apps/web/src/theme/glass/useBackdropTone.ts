@@ -26,11 +26,11 @@ const SCROLL_SETTLE_MS = 160;
 /** Relecture lente, tant qu'une surface adaptative est à l'écran. */
 const SLOW_REFRESH_MS = 2000;
 
-/** L'échantillonneur de la coquille. Type LOCAL : le pont ne le déclare pas encore. */
+/** L'échantillonneur de la coquille (`liquidGlass.sample`), s'il l'offre. */
 function readSampler(): ToneSampler | null {
-  const bridge = nativeGlassBridge() as { sample?: ToneSampler } | null;
-  const sample = bridge?.sample;
-  return typeof sample === "function" ? (rects) => sample.call(bridge, rects) : null;
+  const bridge = nativeGlassBridge();
+  if (bridge === null || typeof bridge.sample !== "function") return null;
+  return (rects) => bridge.sample?.(rects) ?? Promise.resolve([]);
 }
 
 let shared: ToneScheduler | null | undefined;
