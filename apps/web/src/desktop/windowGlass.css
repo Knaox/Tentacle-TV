@@ -29,25 +29,14 @@
   --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
   --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.28);
 
-  /* La capsule de navigation : une surface `regular` de la primitive
-   * (`useLiquidGlassSurface`, lentille de page). Ne s'y ajoute qu'un voile
-   * sous le remplissage, pour la lisibilité du libellé sur une bannière claire
-   * au repos (la capsule est AU-DESSUS de l'image). */
-  --lg-chrome-capsule-radius: var(--lg-radius-capsule);
-  --lg-chrome-capsule-veil: rgba(var(--lg-shade-rgb), 0.24);
-  --lg-chrome-capsule-scrim: var(--surface-1);
-  /* Le reflet diffus de la capsule : celui du matériau. */
-  --lg-chrome-capsule-highlight: var(--lg-highlight);
-  /* La lisibilité des libellés : l'ombre du matériau (vibrance), pas un voile. */
-  --lg-chrome-label-shadow: var(--lg-label-shadow);
-  --lg-chrome-glyph-shadow: var(--lg-glyph-shadow);
-  /* Sur du verre, l'image passe dessous : un libellé tertiaire (4,2:1 déjà
-   * sur fond plein, mesuré) n'y tient pas l'AA — le secondaire, si (≥ 6:1
-   * mesuré au banc, clair défilé compris). Icônes : ≥ 3:1. */
-  --lg-chrome-label: var(--text-secondary);
-  --lg-chrome-glyph: var(--text-tertiary);
+  /* La barre de navigation : des GROUPES de verre qui flottent (TopNav).
+   * Chacun est une surface de la primitive — remplissage, lentille, lumière
+   * du bord, ton des glyphes : les siens. Ici, leur gabarit seulement. */
+  --lg-chrome-group-height: 48px;
+  --lg-chrome-group-pad: 6px;
+  --lg-chrome-group-gap: 10px;
 
-  /* Les éléments dans la capsule : des capsules. */
+  /* Les éléments dans les groupes : des capsules. */
   --lg-chrome-item-radius: var(--lg-radius-capsule);
   --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.07);
 
@@ -60,23 +49,17 @@
     inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand),
     0 4px 14px -6px var(--lg-tint-brand);
 
-  /* Le champ de recherche : du verre ENFONCÉ. */
-  --lg-chrome-field-bg: rgba(var(--lg-light-rgb), 0.06);
-  --lg-chrome-field-bg-hover: rgba(var(--lg-light-rgb), 0.1);
-  --lg-chrome-field-rim: var(--lg-rim);
-  --lg-chrome-field-shadow: inset 0 1px 2px rgba(var(--lg-shade-rgb), 0.32), inset 0 -1px 0 var(--lg-inner-glow);
-
   /* L'avatar : liseré de verre et arête spéculaire, par-dessus la photo. */
-  --lg-chrome-avatar-rim: inset 0 0 0 var(--lg-rim-width) var(--lg-rim), inset 0 1px 0 var(--lg-specular-soft);
+  --lg-chrome-avatar-rim: inset 0 1px 0 var(--lg-specular-soft), 0 0 0 0.5px var(--lg-edge);
 
   /* La barre latérale : un panneau flottant, en retrait des bords. */
   --lg-chrome-sidebar-radius: var(--lg-radius-lg);
   --lg-chrome-sidebar-pad: 8px;
-  /* L'épaisseur des menus et feuilles du matériau ; sans flou (voir
-   * windowGlassNav.css : rien ne bouge derrière). */
-  --lg-chrome-sidebar-bg: var(--lg-thick-fill);
-  --lg-chrome-sidebar-rim: var(--lg-rim);
-  --lg-chrome-sidebar-shadow: inset 0 1px 0 var(--lg-highlight), var(--lg-shadow-float);
+  /* L'épaisseur des menus et feuilles du matériau, le reflet du haut ; sans
+   * flou (windowGlassSidebar.css : rien ne bouge derrière). Fil du bord DEHORS
+   * et ombre qui soulève : aucun liseré gris. */
+  --lg-chrome-sidebar-bg: linear-gradient(180deg, var(--lg-highlight), transparent 32%), var(--lg-thick-fill);
+  --lg-chrome-sidebar-shadow: 0 0 0 0.5px var(--lg-edge), var(--lg-shadow-contact), var(--lg-shadow-float);
   --lg-chrome-sidebar-item-radius: var(--lg-radius-sm);
   --lg-chrome-sidebar-selection-bg:
     radial-gradient(120% 160% at 20% 0%, var(--lg-highlight) 0%, transparent 60%),
@@ -95,19 +78,7 @@
    * 0,22 → 3,9:1, sous le seuil). */
   --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
   --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.4);
-  /* Clair : le verre SEUL — ni voile, ni assise blanche, un reflet diffus
-   * retenu (sur 1 800 px de large, celui du matériau blanchissait toute la
-   * capsule). L'affiche passe à travers ; un halo clair tient le libellé
-   * sombre lisible même sur une bannière sombre. */
-  --lg-chrome-capsule-veil: transparent;
-  --lg-chrome-capsule-scrim: transparent;
-  --lg-chrome-capsule-highlight: rgba(var(--lg-light-rgb), 0.18);
-  --lg-chrome-label-shadow: 0 0 6px rgba(var(--lg-light-rgb), 0.85), 0 1px 0 rgba(var(--lg-light-rgb), 0.6);
-  --lg-chrome-glyph-shadow: drop-shadow(0 0 3px rgba(var(--lg-light-rgb), 0.85));
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
-  --lg-chrome-field-bg: rgba(var(--lg-shade-rgb), 0.05);
-  --lg-chrome-field-bg-hover: rgba(var(--lg-shade-rgb), 0.08);
-  --lg-chrome-field-shadow: inset 0 1px 2px rgba(var(--lg-shade-rgb), 0.1), inset 0 -1px 0 var(--lg-specular-soft);
   --lg-chrome-sidebar-selection-icon: var(--brand);
   --lg-chrome-inactive-fill: rgba(var(--lg-shade-rgb), 0.07);
 }
@@ -116,7 +87,7 @@
  * Après le bloc clair : même spécificité, l'ordre décide. */
 :root[data-liquid-glass="native"][data-window-inactive] {
   --lg-chrome-lens-bg: var(--lg-chrome-inactive-fill);
-  --lg-chrome-lens-shadow: inset 0 0 0 var(--lg-rim-width) var(--lg-rim);
+  --lg-chrome-lens-shadow: 0 0 0 0.5px var(--lg-edge);
   --lg-chrome-sidebar-selection-bg: var(--lg-chrome-inactive-fill);
   --lg-chrome-sidebar-selection-shadow: none;
   --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
