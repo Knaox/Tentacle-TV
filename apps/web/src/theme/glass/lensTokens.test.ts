@@ -16,12 +16,12 @@ const TOKENS: Record<string, string> = {
   "--lg-dispersion": "0.1",
   "--lg-light-angle": "-18",
   "--lg-specular-facing": "0.9",
-  "--lg-specular-opposite": "0.3",
+  "--lg-specular-opposite": "0.25",
   "--lg-specular-base": "0",
   "--lg-edge-width": "1.2",
   "--lg-specular-glow": "0.22",
   "--lg-edge-gain": "1.4",
-  "--lg-edge-white": "0.12",
+  "--lg-edge-white": "0.2",
 };
 const read = (name: string) => TOKENS[name] ?? "";
 
@@ -68,7 +68,7 @@ describe("lensGeometryFrom", () => {
 describe("readSpecularLight et sameLens", () => {
   it("la lumière vient des jetons ; des défauts sûrs s'ils manquent", () => {
     expect(readSpecularLight(read)).toEqual({
-      angle: -18, facing: 0.9, opposite: 0.3, base: 0, rim: 1.2, glow: 0.22, gain: 1.4, white: 0.12,
+      angle: -18, facing: 0.9, opposite: 0.25, base: 0, rim: 1.2, glow: 0.22, gain: 1.4, white: 0.2,
     });
     expect(readSpecularLight(() => "").facing).toBeGreaterThan(0);
     // Aucun contour uniforme par défaut : la base est nulle.

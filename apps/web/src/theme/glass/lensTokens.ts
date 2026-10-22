@@ -46,12 +46,12 @@ export function readSpecularLight(read: TokenReader): SpecularLight {
   return {
     angle: number(read, "--lg-light-angle", -18),
     facing: number(read, "--lg-specular-facing", 0.9),
-    opposite: number(read, "--lg-specular-opposite", 0.3),
+    opposite: number(read, "--lg-specular-opposite", 0.25),
     base: number(read, "--lg-specular-base", 0),
     rim: number(read, "--lg-edge-width", 1.2),
     glow: number(read, "--lg-specular-glow", 0.22),
     gain: number(read, "--lg-edge-gain", 1.4),
-    white: number(read, "--lg-edge-white", 0.12),
+    white: number(read, "--lg-edge-white", 0.2),
   };
 }
 

@@ -156,12 +156,12 @@
   /* D'où vient la lumière, en degrés (0 = du haut ; négatif = de la gauche). */
   --lg-light-angle: -18;
   --lg-specular-facing: 0.9;    /* intensité sur l'arc face à la lumière */
-  --lg-specular-opposite: 0.3;  /* le reflet en vis-à-vis */
+  --lg-specular-opposite: 0.25; /* le reflet en vis-à-vis */
   --lg-specular-base: 0;        /* tout autour : rien, aucun contour */
   --lg-specular-glow: 0.22;     /* lueur dans le biseau, sous l'arc */
   --lg-edge-width: 1.2;         /* épaisseur de l'arête, en px (nombre nu) */
   --lg-edge-gain: 1.4;          /* éclaircissement du fond à intensité 1 */
-  --lg-edge-white: 0.12;        /* blanc ajouté à intensité 1 */
+  --lg-edge-white: 0.2;         /* blanc ajouté à intensité 1 (l'éclat de l'arc) */
   /* D'avant : les recettes CSS en couches `inset`, sans lentille propre. Elles
    * ne savent pas colorer un bord par le dessous : plus de contour CLAIR — un
    * fil sombre tout autour, un reflet du haut à peine, rien en bas. */
@@ -262,7 +262,7 @@
  * sur `:root` (`--lgc-edge`…) résolvent leurs jetons à la racine. */
 :root[data-liquid-glass="native"] [data-lg-tone="dark"] {
   --lg-edge-gain: 1.4;
-  --lg-edge-white: 0.12;
+  --lg-edge-white: 0.2;
 }
 
 :root[data-liquid-glass="native"] [data-lg-tone="light"] {
