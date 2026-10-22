@@ -2,12 +2,14 @@
 // des capsules doivent passer en SOMBRE (ton adaptatif, liquidGlass.sample).
 // On lit la couleur calculée des textes et des icônes visibles du lecteur, et
 // sa luminance relative (0 = noir, 1 = blanc).
-import { go, sleep } from "./app.mjs";
+import { dismissOverlays, go, sleep } from "./app.mjs";
 import { itemId } from "./config.mjs";
 import { leavePlayer, playing, shot, showControls, step } from "./steps.mjs";
 
 export async function snow(ctx) {
   const { page } = ctx.app;
+  await go(page, "/", 2500);
+  await dismissOverlays(page);
   await step(ctx, "lecteur-neige", async () => {
     await go(page, `/watch/${await itemId("Banc Neige", "Movie")}`, 2000);
     const mpv = await playing(page);
