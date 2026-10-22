@@ -44,6 +44,9 @@
  *
  * Verre CLAIR par défaut (HIG « Materials » : ce qui flotte sur la vidéo) ;
  * `variant="regular"` pour les surfaces de texte — panneaux, fiches, avis.
+ * Le verre clair porte, SOUS son contenu, l'atténuation que la HIG exige de lui
+ * (`playerGlassDim.css`), dosée par le ton mesuré dessous ; le verre normal
+ * s'adapte seul (mesuré : 91 sur la neige, 22 sur le noir, comme QuickTime).
  */
 
 import { createContext, useCallback, useContext, useRef, useState, type HTMLAttributes, type Ref } from "react";
@@ -55,6 +58,7 @@ import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
 import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
 import "./playerGlassCollapse.css";
+import "./playerGlassDim.css";
 
 /**
  * Les contrôles du lecteur sont-ils à l'écran ? Fourni par l'habillage : un
@@ -90,8 +94,10 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
    */
   collapse?: boolean;
   /**
-   * Ses glyphes suivent le TON du dessous, mesuré sous la forme (`data-lg-tone`) :
-   * sombres sur un dessous clair (la neige, un ciel blanc), clairs sinon.
+   * Mesure le TON du dessous sous la forme (`data-lg-tone`, la vidéo seule) : son
+   * ATTÉNUATION le suit (`playerGlassDim.css`), plus forte sur un dessous clair.
+   * Par défaut pour le verre CLAIR, qui en a besoin ; le verre normal s'adapte
+   * seul et ne prend aucune atténuation (mesuré, lg3).
    */
   adaptiveTone?: boolean;
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
@@ -100,7 +106,7 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
 
 export function GlassSurface({
   present = true, group = PLAYER_GLASS_GROUP, variant = "clear", transition = NATIVE_FADE_MS, spacing, morph,
-  collapse = false, adaptiveTone = false, surfaceRef, className = "", children, ...rest
+  collapse = false, adaptiveTone, surfaceRef, className = "", children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();
@@ -133,7 +139,8 @@ export function GlassSurface({
     spacing: spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
   });
 
-  const tone = useVideoBackdropTone(element, adaptiveTone && mode === "native" && shown && regionsAllowed);
+  const measured = adaptiveTone ?? variant === "clear";
+  const tone = useVideoBackdropTone(element, measured && mode === "native" && shown && regionsAllowed);
 
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
   // En sortie (`AnimatePresence`), une surface qui rentre dans son bouton est encore « à l'écran »
@@ -142,7 +149,8 @@ export function GlassSurface({
     ref: setRef, className: `lgp-surface${preview} ${className}`, "data-lgp-present": shown,
     "data-lgp-exiting": isPresent ? undefined : true,
     "data-lgp-collapse": collapse ? "" : undefined,
-    "data-lg-tone": adaptiveTone ? tone : undefined,
+    "data-lg-tone": measured ? tone : undefined,
+    "data-lgp-variant": variant,
   };
   if (morph) {
     return (
