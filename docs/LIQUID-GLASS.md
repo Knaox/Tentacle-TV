@@ -651,6 +651,16 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   Panneaux : 32 % de noir en thème clair (`--lg-player-panel-tint`, natif). Couleurs de
   la page : l'OPAQUE ou le noir à alpha seulement — un blanc translucide rend gris sur la
   surface à alpha de la fenêtre.
+- **La géométrie de l'habillage d'avant** (lot lg3, retour de Damien : « l'overlay doit
+  s'adapter à la taille de l'écran, même comportement que sans liquid glass ») : marges
+  de 20 px en haut et en bas, 24 px sur les côtés (`--lg-player-inline`, le `px-6` /
+  `right-6` d'avant), capsule du temps et rangée du bas d'une marge à l'autre, transport
+  au centre de la fenêtre (grille `1fr auto 1fr`) — plus de bas plafonné à 760 px centrés.
+  Relevé, verre allumé contre coupé : de 900 × 600 à 1900 × 1040, bouton retour au pixel
+  près, bords du bas identiques ; pendant un redimensionnement, page et vue native égales à
+  chaque pas de 16 ms (`bench/liquid-glass/lg3/geometry.mjs`). Seul écart voulu : le bloc
+  du bas monte de 32 px de plus (le temps a sa capsule, les boutons des cibles de 48 px).
+  `playerGlassGeometry.test.ts` lie les jetons aux classes d'avant.
 - **Une MÉTAMORPHOSE au lieu d'un fondu** : chaque forme se replie vers le
   pivot de son ensemble (le transport, la sortie — `useCollapsePivots`), s'y
   fond avec les autres en une goutte, et s'en sépare au retour ; la région suit
