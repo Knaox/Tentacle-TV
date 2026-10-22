@@ -95,6 +95,28 @@ describe("createToneScheduler", () => {
     for (let i = 0; i < 40; i++) h.scheduler.watch(`s${i}`, () => rect(i), "dark", vi.fn());
     await h.flush();
     expect(h.sampler.mock.calls[0][0]).toHaveLength(32);
+    // Le reste au lot suivant, puis la tournée s'arrête (aucune boucle).
+    expect(h.sampler.mock.calls[1][0]).toHaveLength(8);
+    expect(h.sampler.mock.calls[1][0][0]).toEqual(rect(32));
+    expect(h.sampler).toHaveBeenCalledTimes(2);
+  });
+
+  it("une bande reçoit la luminance brute de CHAQUE mesure, dans le même lot", async () => {
+    const h = harness([0.9, 0.23, null]);
+    const surface = vi.fn();
+    const band = vi.fn();
+    const missing = vi.fn();
+    h.scheduler.watch("surface", () => rect(0), "light", surface);
+    h.scheduler.observe("bande", () => rect(200), band);
+    h.scheduler.observe("manquante", () => rect(400), missing);
+    await h.flush();
+    expect(h.sampler).toHaveBeenCalledTimes(1);
+    expect(surface).not.toHaveBeenCalled();
+    expect(band).toHaveBeenCalledWith(0.23);
+    expect(missing).not.toHaveBeenCalled();
+    h.scheduler.request();
+    await h.flush();
+    expect(band).toHaveBeenCalledTimes(2);
   });
 
   it("le même ton ne rappelle pas la surface", async () => {
