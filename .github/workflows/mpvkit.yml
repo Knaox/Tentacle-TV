@@ -30,6 +30,11 @@ concurrency:
   group: mpvkit-lgpl
   cancel-in-progress: false
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build LGPL xcframework

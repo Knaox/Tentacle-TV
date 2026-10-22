@@ -77,6 +77,11 @@ env:
   # du plan le désigne par ce chemin.
   CLIENT_DIR: tv-client-dist
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   plan:
     name: Plan de l'image

@@ -50,6 +50,11 @@ concurrency:
   group: quality-${{ github.ref }}
   cancel-in-progress: true
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   controles:
     name: Typecheck et tests

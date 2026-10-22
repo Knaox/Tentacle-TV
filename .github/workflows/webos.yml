@@ -75,8 +75,10 @@ concurrency:
   group: release-webos
   cancel-in-progress: false
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
 permissions:
-  contents: write
+  contents: read
 
 env:
   APP_ID: com.tentacletv.webos

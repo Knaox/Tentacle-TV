@@ -27,6 +27,11 @@ on:
         description: "Commit livré"
         required: true
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   sources:
     name: Sources ${{ inputs.tag }}

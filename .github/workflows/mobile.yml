@@ -96,6 +96,11 @@ env:
   PLAY_MOBILE_TRACK: "internal"
   PLAY_PACKAGE: "com.tentacletv.mobile"
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   # ── Ce qui rend tout le reste reproductible ────────────────────────────────
   # Sort un `sha` que TOUS les jobs suivants checkout. Refuse de partir si la

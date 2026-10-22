@@ -8,6 +8,11 @@ name: Play — lister les pistes
 on:
   workflow_dispatch:
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   tracks:
     runs-on: ubuntu-latest

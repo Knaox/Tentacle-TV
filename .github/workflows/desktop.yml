@@ -72,6 +72,11 @@ env:
   SIGN_PKG: "3rd Party Mac Developer Installer: Damien ROUGE (96K3M57W49)"
   STORE_ID: "9NKHL0T84245"
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
   prepare:

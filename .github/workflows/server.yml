@@ -94,6 +94,11 @@ concurrency:
   group: ${{ github.event_name == 'push' && 'server-dev' || 'release-server' }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
   prepare:

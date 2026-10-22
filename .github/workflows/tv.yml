@@ -99,6 +99,11 @@ env:
   PLAY_TV_PRODUCTION: "tv:production"
   PLAY_PACKAGE: "com.tentacletv.mobile"
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
   prepare:
