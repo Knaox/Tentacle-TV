@@ -12,7 +12,8 @@
  * GRANDES surfaces du régime `surface` (lot lg2 : menu, popover, barre
  * latérale — `labLargeSurfaces.tsx`) ; `?vue=composants` montre les VRAIS
  * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
- * surfaces de la primitive. Hors du mode natif, le labo montre le
+ * surfaces de la primitive ; `?vue=barres` la VRAIE barre du haut et une
+ * vraie barre latérale (`labChrome.tsx`, axe des barres). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -23,6 +24,7 @@ import { getScheme, setMode, subscribe as subscribeScheme } from "../../theme/co
 import { useLiquidGlassMode } from "../../theme/glass";
 import { backdropToneMeasured } from "../../theme/glass/useBackdropTone";
 import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop";
+import { LabChrome } from "./labChrome";
 import { LabComponents } from "./labComponents";
 import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
@@ -34,9 +36,9 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants" | "grandes";
+type LabView = "surfaces" | "composants" | "grandes" | "barres";
 
-const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants"];
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres"];
 
 const initialView = (): LabView => {
   const asked = new URLSearchParams(window.location.search).get("vue");
@@ -116,7 +118,9 @@ export function GlassLab() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <LabBackdropView kind={backdrop} />
-      {view === "composants" ? (
+      {view === "barres" ? (
+        <LabChrome top={top} />
+      ) : view === "composants" ? (
         <LabComponents top={top} />
       ) : view === "grandes" ? (
         <>

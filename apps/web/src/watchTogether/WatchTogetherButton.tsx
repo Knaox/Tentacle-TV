@@ -44,7 +44,7 @@ function WatchTogetherControl({ dropdownPosition = "below" }: WatchTogetherButto
             // Au-delà de neuf, le compte exact n'apprend plus rien et la
             // pastille déborderait du bouton.
             className="animate-pulse-glow absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none tabular-nums text-cta-brand-fg"
-            style={{ background: "var(--brand)", boxShadow: "0 0 6px rgba(var(--brand-rgb), 0.6)" }}
+            style={{ background: "var(--brand)", boxShadow: "var(--lg-chrome-badge-shadow, 0 0 6px rgba(var(--brand-rgb), 0.6))" }}
           >
             +{Math.min(invites.length, 9)}
           </span>

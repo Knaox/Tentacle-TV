@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
 
 /**
  * Coquille maître-détail des écrans de réglages et d'administration.
@@ -19,9 +19,24 @@ import { useId, type ReactNode } from "react";
  * comportement attendu sur web mobile, où deux colonnes ne tiennent pas.
  *
  * Les classes `lgc-sidebar*` n'ont aucun style ici : c'est la barre latérale
- * Liquid Glass du bureau macOS 26 (`apps/web/src/desktop/windowGlassNav.css`),
+ * Liquid Glass du bureau macOS 26 (`apps/web/src/desktop/windowGlassSidebar.css`),
  * portée par `<html data-liquid-glass="native">`. Ailleurs, rendu inchangé.
  */
+
+/**
+ * La surface de verre du rail (bureau macOS 26), fournie par le client : la
+ * primitive du verre vit dans l'app web, pas ici. Absente, le rail d'avant.
+ */
+export interface SettingsShellSurface {
+  ref?: (element: HTMLElement | null) => void;
+  /** Les classes du verre, ajoutées à celles du rail. */
+  className?: string;
+  style?: CSSProperties;
+  /** Les attributs `data-lg-*` de la surface. */
+  attributes?: Readonly<Record<string, string>>;
+  /** Rendu en premier enfant du rail (le filtre de la lentille). */
+  layers?: ReactNode;
+}
 
 export interface SettingsShellSection {
   id: string;
@@ -67,6 +82,8 @@ export interface SettingsShellProps {
    * fourni par le client). Absent, la sélection d'avant.
    */
   selectionIndicator?: ReactNode;
+  /** Le rail en surface de verre (voir `SettingsShellSurface`). */
+  sidebarSurface?: SettingsShellSurface;
   children: ReactNode;
 }
 
@@ -81,6 +98,7 @@ export function SettingsShell({
   backLabel,
   fluid = false,
   selectionIndicator,
+  sidebarSurface,
   children,
 }: SettingsShellProps) {
   const groupDomId = useId();
@@ -97,13 +115,17 @@ export function SettingsShell({
   return (
     <div className={`mx-auto flex w-full gap-6 px-4 md:px-8 ${fluid ? "" : "max-w-6xl"}`}>
       <nav
+        ref={sidebarSurface?.ref}
+        style={sidebarSurface?.style}
+        {...sidebarSurface?.attributes}
         aria-label={navLabel ?? title}
         /* Collant sur desktop : sur une longue page (la liste des comptes, un
            formulaire de services), le rail reste à portée au lieu de défiler
            hors de l'écran. `self-start` : dans une rangée flex, un élément
            étiré sur toute la hauteur ne colle jamais. */
-        className={`lgc-sidebar ${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--topnav-height)+1.5rem)] md:w-60 md:self-start`}
+        className={`lgc-sidebar ${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--topnav-height)+1.5rem)] md:w-60 md:self-start${sidebarSurface?.className ? ` ${sidebarSurface.className}` : ""}`}
       >
+        {sidebarSurface?.layers}
         {groups.map((group, gi) => (
           <div key={group.name ?? gi} className={gi > 0 ? "mt-6" : ""}>
             {/* L'intertitre NOMME sa liste (« Comptes, liste, 3 éléments »)
