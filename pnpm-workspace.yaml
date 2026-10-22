@@ -1,3 +1,14 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# ⚠️ Défense contre les paquets piégés (vers ChainDrop, Shai-Hulud…) : une
+# version publiée depuis moins de 7 jours (10 080 minutes) n'est JAMAIS
+# résolue — le temps que le registre repère et retire une version malveillante.
+# Ne joue qu'à la RÉSOLUTION (ajout, mise à jour) : `pnpm install
+# --frozen-lockfile` relit le lockfile tel quel. Un correctif de sécurité
+# urgent passe par une exception nommée ici, le temps de sa quarantaine.
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  # Paquets du workspace : jamais servis par le registre.
+  - "@tentacle-tv/*"
