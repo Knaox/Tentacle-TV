@@ -78,8 +78,9 @@ export function useGlassControl<T extends HTMLElement>(options: GlassControlOpti
     };
   }, [ref]);
 
-  const geometry = useLensGeometry(element, native && lens !== false, lens || "regular", shape, shape);
   const tone = useBackdropTone(element, native && toneEnabled);
+  // Le ton relit la lentille : la lumière du bord en dépend (gain, éclat).
+  const geometry = useLensGeometry(element, native && lens !== false, lens || "regular", shape, shape, tone);
   useBandTones(element, native && toneEnabled && bands);
   const filterId = lensFilterId(useId());
 
