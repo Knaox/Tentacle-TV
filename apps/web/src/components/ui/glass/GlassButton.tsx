@@ -14,6 +14,8 @@ interface GlassButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>,
   className?: string;
   /** La peau d'avant (fond, bord, ombre, survol) — seulement hors du mode natif. */
   fallbackClassName?: string;
+  /** Style de la peau d'avant (une ombre en ligne…) — seulement hors du mode natif. */
+  fallbackStyle?: React.CSSProperties;
 }
 
 /**
@@ -24,9 +26,9 @@ interface GlassButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>,
  * exactement le bouton d'avant. `PressableGlass` en est la version à ressort.
  */
 export const GlassButton = forwardRef<HTMLButtonElement, GlassButtonProps>(
-  function GlassButton({ appearance, className, fallbackClassName, style, children, type = "button", ...props }, ref) {
+  function GlassButton({ appearance, className, fallbackClassName, fallbackStyle, style, children, type = "button", ...props }, ref) {
     const native = useLiquidGlassMode() === "native";
-    const glass = useLiquidGlassSurface({ ...appearance, interactive: true, className, fallbackClassName, style, ref });
+    const glass = useLiquidGlassSurface({ ...appearance, interactive: true, className, fallbackClassName, fallbackStyle, style, ref });
     return (
       <button type={type} {...props} {...(native ? GLASS_LENS_PROPS : {})} {...glass.props}>
         {glass.layers}
