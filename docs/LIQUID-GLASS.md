@@ -124,6 +124,11 @@ page (`apps/web/src/desktop/types.ts`) et reflété par `protocol.ts` ;
   page par défaut), `appearance` (`"dark"` | `"light"` : la matière, quelle que
   soit l'apparence de la fenêtre — mesuré, 98,34,91 en sombre contre
   233,179,224 en clair sur le même fond).
+- Sur la vidéo, `clear` : mesuré sur une vraie image en lecture (photo détaillée,
+  grille fine), `clear` garde la photo et la grille NETTES à travers le verre
+  (luminance −15 %), quand `regular` en apparence sombre givre et assombrit
+  (−43 %) — la « dalle » de la première version. Une teinte noire légère (10 %)
+  n'y change presque rien : le noir venait du style.
 - AppKit n'a que deux styles : `clear` → `Clear`, les trois autres → `Regular` ;
   `tinted` et `prominent` se distinguent par leur teinte. `interactive` : aucune
   API publique, sans effet natif.
