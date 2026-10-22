@@ -113,12 +113,12 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
   const Icon = entry.icon;
   const label = entry.pinned ? t("unpinFromBar") : t("pinToBar");
   return (
-    <div className="flex items-center gap-1">
+    <div className="lg-row flex items-center gap-1">
       <Link
         to={entry.path}
         onClick={onClose}
         aria-current={active ? "page" : undefined}
-        className={`lg-row flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-line-focus ${
+        className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-line-focus ${
           active ? "bg-fill-soft font-semibold text-content-primary" : "text-content-secondary hover:bg-fill-subtle hover:text-content-primary"
         }`}
       >

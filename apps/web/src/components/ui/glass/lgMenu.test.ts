@@ -20,6 +20,22 @@ function fallbackOf(name: string): string {
   return match[1];
 }
 
+/** Les sélecteurs d'une liste, coupés aux virgules de premier niveau (hors parenthèses). */
+function splitTopLevel(list: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < list.length; i++) {
+    if (list[i] === "(") depth++;
+    else if (list[i] === ")") depth--;
+    else if (list[i] === "," && depth === 0) {
+      parts.push(list.slice(start, i));
+      start = i + 1;
+    }
+  }
+  return [...parts, list.slice(start)];
+}
+
 /** Les surfaces de menu du périmètre : chacune passe par le calque commun ou par `useGlassControl`. */
 const MENU_FILES = [
   "components/floating/FloatingLayer.tsx",
@@ -36,7 +52,7 @@ describe("les menus en verre", () => {
     const selectors = MENU.replace(/\/\*[\s\S]*?\*\//g, "").match(/^[^{}@]+(?=\{)/gm) ?? [];
     expect(selectors.length).toBeGreaterThan(10);
     for (const group of selectors) {
-      for (const selector of group.split(/,(?![^(]*\))/)) {
+      for (const selector of splitTopLevel(group)) {
         expect(selector.trim(), selector).toMatch(/^:root\[data-liquid-glass="native"\]/);
       }
     }
@@ -52,7 +68,7 @@ describe("les menus en verre", () => {
   });
 
   it("des rayons concentriques : la rangée vaut le menu moins sa marge", () => {
-    expect(MENU).toMatch(/--lgm-radius:\s*var\(--lg-row-radius,\s*calc\(var\(--lgm-panel-radius\) - var\(--lgm-inset\)\)\)/);
+    expect(MENU).toMatch(/--lgm-radius:\s*calc\(var\(--lgm-panel-radius\) - var\(--lgm-inset\)\);/);
     expect(MENU).toMatch(/--lgm-inset:\s*var\(--lg-row-inset,\s*[56]px\)/);
   });
 

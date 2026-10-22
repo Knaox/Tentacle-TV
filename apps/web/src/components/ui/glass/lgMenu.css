@@ -30,9 +30,11 @@
  * Tailwind sans `!important`, sauf face aux styles en ligne. */
 
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) {
-  --lgm-inset: var(--lg-row-inset, 6px);
-  --lgm-panel-radius: var(--lg-radius-md);
-  --lgm-radius: var(--lg-row-radius, calc(var(--lgm-panel-radius) - var(--lgm-inset)));
+  --lgm-inset: var(--lg-row-inset, 5px);
+  --lgm-panel-radius: var(--lg-surface-radius, var(--lg-radius-md));
+  /* Concentrique au panneau QUI la porte (un popover large a un rayon plus
+   * grand que le `--lg-row-radius` du socle, calculé sur le menu type). */
+  --lgm-radius: calc(var(--lgm-panel-radius) - var(--lgm-inset));
   /* L'accent UNI, sombre assez pour un blanc à 4,5:1 : #7C3AED (5,7:1). Le
    * violet du thème sombre (#8B5CF6) n'y tient que 4,2:1. */
   --lgm-highlight: var(--lg-row-highlight, rgb(124, 58, 237));
@@ -85,19 +87,37 @@
   padding-inline: 10px;
 }
 
+/* La destruction garde son rouge, réglé par le ton du verre (`lgLegibility.css` :
+ * corail sur un dessous sombre, bordeaux sur un clair). */
+:root[data-liquid-glass="native"] .lg-menu .lg-row-danger {
+  color: var(--status-error-fg);
+}
+
 /* Cochée : la coche suffit, comme un menu du Mac — pas de fond teinté. */
 :root[data-liquid-glass="native"] .lg-menu :is([role="menuitemcheckbox"], [role="menuitemradio"])[aria-checked="true"] {
   background: transparent;
   color: var(--text-primary);
 }
 
+/* Une rangée qui porte un accessoire (lien + épingle du menu « Plus ») : la
+ * pastille couvre la rangée entière, ses enfants ne peignent plus rien. */
+:root[data-liquid-glass="native"] .lg-menu .lg-row > :is(a, button) {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-liquid-glass="native"] .lg-menu .lg-row > a {
+  color: inherit;
+}
+
 /* La page où l'on est (menu « Plus ») : remplissage neutre, jamais l'accent. */
-:root[data-liquid-glass="native"] .lg-menu .lg-row[aria-current="page"] {
+:root[data-liquid-glass="native"] .lg-menu .lg-row:is([aria-current="page"], :has(> [aria-current="page"])) {
   background: var(--lgm-current);
 }
 
 /* ── La pastille : survol, focus clavier, option active de la palette ── */
 :root[data-liquid-glass="native"] .lg-menu :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row):is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]),
+:root[data-liquid-glass="native"] .lg-menu .lg-row:has(:focus-visible),
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) [role="option"]:is([data-lg-active="true"], :focus-visible) {
   --text-primary: var(--lgm-glyph);
   --text-secondary: var(--lgm-glyph);
