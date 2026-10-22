@@ -41,7 +41,7 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
   const navigate = useNavigate();
   const compact = useIsMobile();
   // Verre natif (panneau flottant) : le ton du dessous, auquel ses textes s'adaptent.
-  const glass = useGlassControl<HTMLDivElement>({ lens: false });
+  const glass = useGlassControl<HTMLDivElement>({ lens: false, scale: "surface" });
   const reduced = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState(seed);
@@ -179,7 +179,7 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
           aria-label={t("dialog")}
           className={compact
             ? "flex h-[100dvh] w-full flex-col bg-surface-modal"
-            : "lg-sheet pointer-events-auto flex max-h-[min(78vh,720px)] w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border border-line-subtle bg-surface-modal shadow-[var(--shadow-modal)]"}
+            : "lg-sheet lg-palette pointer-events-auto flex max-h-[min(78vh,720px)] w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border border-line-subtle bg-surface-modal shadow-[var(--shadow-modal)]"}
           initial={reduced ? false : { opacity: 0, y: -10, scale: 0.985 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: duration.base, ease: easeOut }}

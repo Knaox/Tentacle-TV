@@ -17,7 +17,7 @@ interface AccountHeaderProps {
  */
 export function AccountHeader({ avatar, ringStyle, name, caption, uploading, onChangePhoto }: AccountHeaderProps) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    <div className="lg-menu-header flex items-center gap-3 px-4 py-3">
       <button
         type="button"
         onClick={onChangePhoto}

@@ -33,7 +33,7 @@ interface NavBarEditorPanelProps {
 }
 
 function SectionTitle({ children }: { children: string }) {
-  return <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{children}</p>;
+  return <p className="lg-menu-label mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{children}</p>;
 }
 
 export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarEditorPanelProps) {
@@ -87,9 +87,9 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
       role="dialog"
       labelledBy={titleId}
       tabIndex={-1}
-      className="lg-menu flex w-[460px] flex-col overflow-hidden rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] shadow-[var(--shadow-dropdown)] outline-none"
+      className="lg-menu lg-menu-wide flex w-[460px] flex-col overflow-hidden rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] shadow-[var(--shadow-dropdown)] outline-none"
     >
-      <header className="border-b border-line-subtle px-5 pb-3 pt-4">
+      <header className="lg-sep border-b border-line-subtle px-5 pb-3 pt-4">
         <h2 id={titleId} className="text-base font-semibold text-content-primary">{t("customizeBar")}</h2>
         <p className="mt-0.5 text-[13px] leading-relaxed text-content-tertiary">{t("customizeBarHint")}</p>
       </header>
@@ -130,7 +130,7 @@ export function NavBarEditorPanel({ entries, editor, trigger, onClose }: NavBarE
         )}
       </motion.div>
 
-      <footer className="flex items-center justify-between gap-2 border-t border-line-subtle px-4 py-3">
+      <footer className="lg-sep flex items-center justify-between gap-2 border-t border-line-subtle px-4 py-3">
         <button
           type="button"
           onClick={editor.reset}

@@ -7,6 +7,7 @@ import { CountryFlag } from "./CountryFlag";
 import { useCountryFlags } from "./countryFlags";
 import { filterCountryOptions, type CountryOption } from "./countryOptions";
 import { duration, easeOut } from "../../../theme/motion";
+import { useGlassControl } from "../../ui/glass/useGlassControl";
 
 interface CountryPickerProps {
   value: string;
@@ -35,6 +36,8 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
   const { t } = useTranslation("adminMetadata");
   const flags = useCountryFlags();
   const reduce = useReducedMotion();
+  // Verre natif : une plaque d'un seul ton, comme tout menu (lentille, ton du dessous).
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -135,14 +138,17 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
 
       {open && (
         <motion.div
+          ref={glass.ref}
+          {...glass.props}
           initial={reduce ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: duration.fast, ease: easeOut }}
           // Fond à 95 % d'opacité : un flou d'arrière-plan n'y verrait rien.
-          className="lg-menu absolute inset-x-0 top-full z-50 mt-2 origin-top overflow-hidden rounded-xl border border-line-subtle bg-surface-dropdown"
-          style={{ boxShadow: "var(--shadow-dropdown)" }}
+          className="lg-menu lg-menu-list absolute inset-x-0 top-full z-50 mt-2 origin-top overflow-hidden rounded-xl border border-line-subtle bg-surface-dropdown"
+          style={{ boxShadow: "var(--shadow-dropdown)", ...glass.props.style }}
         >
-          <div className="relative border-b border-line-subtle p-2">
+          {glass.layers}
+          <div className="lg-sep relative border-b border-line-subtle p-2">
             <Search aria-hidden size={16} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-content-tertiary" />
             <input
               ref={inputRef}
@@ -173,6 +179,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
                   id={`${listId}-${option.code}`}
                   role="option"
                   aria-selected={isSelected}
+                  data-lg-active={index === active}
                   aria-label={
                     option.providers === null
                       ? option.name
@@ -182,7 +189,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choose(option.code)}
                   onMouseMove={() => index !== active && setActive(index)}
-                  className={`flex cursor-pointer items-center gap-3 px-3 py-2 text-sm ${index === active ? "bg-fill-soft" : ""} ${
+                  className={`lg-row flex cursor-pointer items-center gap-3 px-3 py-2 text-sm ${index === active ? "bg-fill-soft" : ""} ${
                     isSelected ? "font-medium text-content-primary" : "text-content-secondary"
                   }`}
                 >
@@ -203,7 +210,7 @@ export function CountryPicker({ value, options, onChange, labelId, footnote, dis
               {t("regionNoMatch")}
             </p>
           )}
-          {footnote && <p className="border-t border-line-subtle px-3 py-2 text-xs text-content-tertiary">{footnote}</p>}
+          {footnote && <p className="lg-sep border-t border-line-subtle px-3 py-2 text-xs text-content-tertiary">{footnote}</p>}
         </motion.div>
       )}
     </div>

@@ -45,7 +45,7 @@ function libraryColumns(count: number): string {
 }
 
 function SectionTitle({ children }: { children: string }) {
-  return <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{children}</p>;
+  return <p className="lg-menu-label mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-content-quaternary">{children}</p>;
 }
 
 const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogglePin }: {
@@ -67,7 +67,7 @@ const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogg
         to={library.path}
         onClick={onClose}
         aria-current={active ? "page" : undefined}
-        className={`group relative flex h-[76px] items-end gap-2 overflow-hidden rounded-xl border p-3 outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+        className={`lg-tile group relative flex h-[76px] items-end gap-2 overflow-hidden rounded-xl border p-3 outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
           active ? "border-[var(--nav-active-ring)]" : "border-line-subtle"
         }`}
         style={art === null ? { background: "linear-gradient(135deg, rgba(var(--brand-rgb), 0.35), var(--fill-soft))" } : undefined}
@@ -113,7 +113,7 @@ const PinnableRow = memo(function PinnableRow({ entry, active, onClose, onToggle
   const Icon = entry.icon;
   const label = entry.pinned ? t("unpinFromBar") : t("pinToBar");
   return (
-    <div className="flex items-center gap-1">
+    <div className="lg-row flex items-center gap-1">
       <Link
         to={entry.path}
         onClick={onClose}
@@ -167,7 +167,7 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
       panelRef={panelRef}
       role="dialog"
       ariaLabel={t("more")}
-      className="lg-menu w-[620px] overflow-y-auto overscroll-contain rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
+      className="lg-menu lg-menu-wide lg-more w-[620px] overflow-y-auto overscroll-contain rounded-2xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-4 shadow-[var(--shadow-dropdown)]"
     >
       {libraries.length > 0 && (
         <section>
@@ -179,7 +179,7 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
           </div>
         </section>
       )}
-      <div className={`grid gap-4 ${extensions.length > 0 ? "grid-cols-2" : "grid-cols-1"} ${libraries.length > 0 ? "mt-4 border-t border-line-subtle pt-4" : ""}`}>
+      <div className={`grid gap-4 ${extensions.length > 0 ? "grid-cols-2" : "grid-cols-1"} ${libraries.length > 0 ? "lg-sep mt-4 border-t border-line-subtle pt-4" : ""}`}>
         <section>
           <SectionTitle>{t("lists")}</SectionTitle>
           {lists.map((entry) => <PinnableRow key={entry.key} entry={entry} active={isActivePath(entry.path, pathname)} onClose={onClose} onTogglePin={togglePin} />)}
@@ -191,11 +191,11 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
           </section>
         )}
       </div>
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-line-subtle pt-3">
+      <div className="lg-sep mt-3 flex items-center justify-between gap-2 border-t border-line-subtle pt-3">
         <Link
           to="/pair-device"
           onClick={onClose}
-          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-content-secondary outline-none transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="lg-row flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-content-secondary outline-none transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           <MonitorSmartphone aria-hidden className="h-4 w-4 text-content-tertiary" strokeWidth={1.9} />
           {t("pairDevice")}

@@ -13,7 +13,8 @@
  * latérale — `labLargeSurfaces.tsx`) ; `?vue=composants` montre les VRAIS
  * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
  * surfaces de la primitive ; `?vue=barres` la VRAIE barre du haut et une
- * vraie barre latérale (`labChrome.tsx`, axe des barres). Hors du mode natif, le labo montre le
+ * vraie barre latérale (`labChrome.tsx`, axe des barres) ; `?vue=menus` les
+ * VRAIS menus et popovers (`labMenus.tsx`, axe des menus). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -27,6 +28,7 @@ import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop"
 import { LabChrome } from "./labChrome";
 import { LabComponents } from "./labComponents";
 import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
+import { LabMenus } from "./labMenus";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
@@ -36,9 +38,9 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants" | "grandes" | "barres";
+type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus";
 
-const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres"];
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus"];
 
 const initialView = (): LabView => {
   const asked = new URLSearchParams(window.location.search).get("vue");
@@ -88,7 +90,7 @@ function LabPanel({ backdrop, onBackdrop, view, onView }: LabPanelProps) {
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", marginBottom: 6 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", marginBottom: 6 }}>
         {LAB_VIEWS.map((v) => (
           <button key={v} type="button" onClick={() => onView(v)} style={{ ...chip(view === v), margin: 2 }}>{v}</button>
         ))}
@@ -118,7 +120,9 @@ export function GlassLab() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <LabBackdropView kind={backdrop} />
-      {view === "barres" ? (
+      {view === "menus" ? (
+        <LabMenus top={top} />
+      ) : view === "barres" ? (
         <LabChrome top={top} />
       ) : view === "composants" ? (
         <LabComponents top={top} />

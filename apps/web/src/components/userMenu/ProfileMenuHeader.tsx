@@ -22,7 +22,7 @@ export const ProfileMenuHeader = memo(function ProfileMenuHeader({ profile, onCh
   const { t } = useTranslation(["profilePicker", "profile"]);
   const avatar = <FamilyAvatar userId={profile.id} name={profile.name} color={profile.color} imageTag={profile.imageTag} size={44} />;
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    <div className="lg-menu-header flex items-center gap-3 px-4 py-3">
       {onChangePhoto ? (
         <button
           type="button"

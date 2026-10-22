@@ -11,10 +11,11 @@
  * le bloc conteneur de la barre.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { PinOff, Settings2 } from "lucide-react";
+import { useGlassControl } from "../ui/glass/useGlassControl";
 
 const ITEM =
   "flex h-10 w-full items-center gap-2.5 rounded-lg px-3 text-left text-[13.5px] text-content-secondary outline-none transition-colors hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-soft focus-visible:text-content-primary";
@@ -35,6 +36,13 @@ export function NavTabMenu({ target, onUnpin, onCustomize, onClose }: {
 }) {
   const { t } = useTranslation("nav");
   const ref = useRef<HTMLDivElement>(null);
+  // Verre natif : la lentille et le ton du dessous, comme les menus du calque commun.
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
+  const { ref: glassRef } = glass;
+  const setPanel = useCallback((node: HTMLDivElement | null) => {
+    ref.current = node;
+    glassRef(node);
+  }, [glassRef]);
   const [position, setPosition] = useState({ left: target.x, top: target.y });
 
   // Le menu reste dans la fenêtre, même ouvert au bord droit.
@@ -79,14 +87,16 @@ export function NavTabMenu({ target, onUnpin, onCustomize, onClose }: {
 
   return createPortal(
     <div
-      ref={ref}
+      ref={setPanel}
+      {...glass.props}
       role="menu"
       aria-label={t("customizeBar")}
       onKeyDown={onKeyDown}
       onContextMenu={(e) => e.preventDefault()}
-      style={position}
-      className="lg-menu fixed z-[60] min-w-56 animate-scale-in rounded-xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-1 shadow-[var(--shadow-dropdown)]"
+      style={{ ...position, ...glass.props.style }}
+      className="lg-menu lg-menu-list fixed z-[60] min-w-56 animate-scale-in rounded-xl border border-line-subtle bg-[color:var(--nav-panel-bg)] p-1 shadow-[var(--shadow-dropdown)]"
     >
+      {glass.layers}
       {target.key !== null && (
         <button
           type="button"

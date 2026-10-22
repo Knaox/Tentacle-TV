@@ -45,7 +45,7 @@ export function NotificationPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex flex-shrink-0 items-center gap-2 border-b border-line-subtle px-4 py-3">
+      <header className="lg-sep flex flex-shrink-0 items-center gap-2 border-b border-line-subtle px-4 py-3">
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-content-primary">
             {sel.isSelecting ? t("notifications:selected", { count: sel.count }) : t("notifications:title")}
@@ -94,7 +94,7 @@ export function NotificationPanel({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2">
           {groups.map(({ group, items }) => (
             <section key={group} aria-label={t(group === "today" ? "notifications:groupToday" : "notifications:groupEarlier")}>
-              <h3 className="sticky top-0 z-[1] bg-[var(--surface-dropdown)] px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-content-quaternary">
+              <h3 className="lg-menu-sticky lg-menu-label sticky top-0 z-[1] bg-[var(--surface-dropdown)] px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-content-quaternary">
                 {t(group === "today" ? "notifications:groupToday" : "notifications:groupEarlier")}
               </h3>
               <div className="space-y-0.5">

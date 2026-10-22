@@ -54,7 +54,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3">
+      <div className="lg-sep flex items-center justify-between border-b border-line-subtle px-4 py-3">
         <span className="text-sm font-semibold text-content-primary">{t("title")}</span>
         {room && (
           <span className="text-xs text-content-quaternary">
@@ -64,8 +64,8 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
       </div>
 
       {invites.length > 0 && (
-        <div className="border-b border-line-subtle">
-          <p className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
+        <div className="lg-sep border-b border-line-subtle">
+          <p className="lg-menu-label px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
             {t("invitations")}
           </p>
           {invites.map((invite) => (
@@ -98,7 +98,7 @@ export function WatchTogetherPanel({ onClose }: WatchTogetherPanelProps) {
               </p>
             )}
           </div>
-          <div className="space-y-2 border-t border-line-subtle p-3">
+          <div className="lg-sep space-y-2 border-t border-line-subtle p-3">
             <AffinityEntry variant="panel" onOpen={onClose} />
             <div className="flex gap-2">
               {isHost && mayCreate && (

@@ -13,15 +13,17 @@
  *
  * Le verre le plus « vrai » de la page : un menu est ouvert peu de temps,
  * son contenu ne bouge pas — le flou épais et la réfraction s'y paient une
- * fois. Avant, un fond à 0,95 rendait son flou invisible. */
+ * fois. Avant, un fond à 0,95 rendait son flou invisible. Une SURFACE (lot
+ * lg2) : une plaque d'un seul ton, l'ombre profonde des surfaces ; rayon du
+ * panneau et anatomie des rangées dans `lgMenu.css`. */
 :root[data-liquid-glass="native"] .lg-menu {
   corner-shape: var(--lg-corner-shape);
   background: var(--lgc-fill-thick) !important;
   -webkit-backdrop-filter: var(--lgc-backdrop-thick) !important;
   backdrop-filter: var(--lgc-backdrop-thick) !important;
   border-color: transparent !important;
-  border-radius: var(--lg-radius-md) !important;
-  box-shadow: var(--lgc-edge), var(--lg-shadow-float) !important;
+  border-radius: var(--lgm-panel-radius) !important;
+  box-shadow: var(--lgc-edge), var(--lg-surface-shadow, var(--lg-shadow-float)) !important;
 }
 
 /* ══ 2. Modales : la feuille de macOS 26 ══════════════════════════════════

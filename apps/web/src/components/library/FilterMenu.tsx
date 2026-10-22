@@ -65,7 +65,7 @@ export function FilterMenu({
         // deux composants, une seule pastille au style différent se voit
         // immédiatement. Fond opaque pour la même raison — ces contrôles
         // reposent sur la bannière et se perdaient sur une affiche claire.
-        className={`inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
+        className={`lg-chip ${active ? "lg-chip-on " : ""}inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)] ${
           active
             ? "bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.24),rgba(var(--brand-rgb),0.24))] text-[var(--brand-light)] ring-1 ring-[rgba(var(--brand-rgb),0.6)]"
             : "bg-[color:var(--surface-2)] text-content-secondary ring-1 ring-line-strong shadow-[var(--elev-1)] hover:bg-fill-medium hover:text-content-primary"

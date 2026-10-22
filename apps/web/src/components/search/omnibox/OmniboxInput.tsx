@@ -36,7 +36,7 @@ export const OmniboxInput = forwardRef<HTMLInputElement, OmniboxInputProps>(func
 ) {
   const { t } = useTranslation("search");
   return (
-    <div className="relative flex h-16 shrink-0 items-center gap-3 border-b border-line-subtle px-4 sm:px-5">
+    <div className="lg-sep relative flex h-16 shrink-0 items-center gap-3 border-b border-line-subtle px-4 sm:px-5">
       <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-[var(--brand-light)]" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
         <circle cx="11" cy="11" r="6.5" />
         <path d="M20 20l-4.2-4.2" strokeLinecap="round" />
