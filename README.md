@@ -5,7 +5,7 @@
 <h1 align="center">Tentacle TV</h1>
 
 <p align="center">
-  <strong>A premium, modern media client for Jellyfin</strong>
+  <strong>A premium, modern media client for Jellyfin, on every screen you own</strong>
 </p>
 
 <p align="center">
@@ -15,12 +15,13 @@
   <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FKnaox%2FTentacle-TV%2Fmain%2Fversions.json&query=%24.desktop&label=desktop&color=8b5cf6" alt="Desktop version" /></a>
   <a href="#quick-start-docker"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FKnaox%2FTentacle-TV%2Fmain%2Fversions.json&query=%24.server&label=server&color=d946ef" alt="Server version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-blue" alt="License" /></a>
-  <img src="https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white" alt="Node" />
+  <img src="https://img.shields.io/badge/node-%3E%3D22.13-339933?logo=node.js&logoColor=white" alt="Node" />
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
 </p>
 
 <p align="center">
-  Browse and stream your Jellyfin library through a sleek, dark-themed interface with glassmorphism design, smooth animations, and powerful features — all self-hosted.
+  Browse and stream your Jellyfin library through a dark, glassy interface — on the web, the desktop, your phone
+  and your TV. Self-hosted, free, no ads, no tracking.
 </p>
 
 > [!IMPORTANT]
@@ -37,6 +38,22 @@
   <br />
   <sub>Screenshots: open movies by the Blender Foundation, CC BY — <a href="docs/screenshots/CREDITS.md">credits</a> · Captures : films libres de la Blender Foundation, CC BY — <a href="docs/screenshots/CREDITS.md">crédits</a></sub>
 </p>
+
+---
+
+## Why Tentacle TV
+
+Jellyfin is a great server. Tentacle TV is a **different family of clients** for it, plus a small companion
+server that adds what a household actually asks for:
+
+- **One design on every screen.** Web, Windows, macOS, Linux, iPhone, iPad, Android, Apple TV, Android TV and LG
+  webOS share the same card model, the same actions and the same TV navigation rules.
+- **Playback that respects the source.** Direct play first; a native mpv player on desktop (Dolby Vision, HDR10,
+  Atmos passthrough), ExoPlayer on Android TV, AVPlayer on Apple TV. Each player *declares* what its engine
+  decodes and the server decides what has to be transcoded — no hard-coded "H.264 + AAC" fallback.
+- **What Jellyfin clients usually don't do.** Family profiles with PINs, Watch Together, offline copies on phone
+  and desktop, personal recommendations, trailer previews, a guided setup and a tested remote access.
+- **Yours.** Self-hosted, free and open source (AGPL), no account on our side, nothing behind a paywall.
 
 ---
 
@@ -61,17 +78,22 @@ docker compose logs tentacle     # the one-time setup code and the link (Portain
 ```
 
 Portainer, a NAS, another service name? The code is in **the Tentacle container's log**, wherever you read
-it; the wizard's code screen shows this container's ID and the commands for each case.
+it; the wizard's code screen shows this container's ID and the commands for each case. From the same local
+network, the first browser to open the wizard doesn't even need the code.
 
-Open `http://<your-server>:3000`, enter the setup code, and answer the wizard's questions one at a time:
-Jellyfin is configured for you, your libraries are created, remote access is guided and tested from the
-outside. No stack ships a reverse proxy: for HTTPS from the Internet, Tentacle goes behind **yours** (Nginx
-Proxy Manager, Caddy, Traefik…), and the admin page writes what to put in it.
+Open `http://<your-server>:3000` and answer the wizard's questions one at a time: Jellyfin is configured for
+you, your libraries are created, remote access is guided and tested from the outside. No stack ships a reverse
+proxy: for HTTPS from the Internet, Tentacle goes behind **yours** (Nginx Proxy Manager, Caddy, Traefik…), and
+the admin page writes what to put in it.
 
 **Step-by-step guide, with screenshots, in English and French: <https://tentacletv.app/docs/server/>** —
 every screen of the wizard, adding content, remote access (port forwarding, your reverse proxy, CGNAT),
 troubleshooting and FAQ. Reference pages for maintainers: [docs/server](docs/server/README.md)
 ([français](docs/server/fr/README.md)).
+
+> **No Docker, on Windows?** **Tentacle Server** is the same server packaged as a Microsoft Store app: it lives
+> in the notification area, starts with your session and updates through the Store —
+> [docs/server/windows.md](docs/server/windows.md).
 
 > **Updating from before 1.25** (a stack or a `docker-compose.yml` with a MariaDB or MySQL)? Keep your file as it
 > is and update the image: Tentacle migrates its database to SQLite by itself, then the dashboard says how to
@@ -79,42 +101,49 @@ troubleshooting and FAQ. Reference pages for maintainers: [docs/server](docs/ser
 
 ### Update
 
-The admin overview (`/admin`) shows the running version, the latest published release and, when a newer one is out, the command to copy. With Docker Compose, run it in the folder of your `compose.yaml`:
+The admin overview (`/admin`) shows the running version, the latest published release and, when a newer one is
+out, the command to copy. With Docker Compose, run it in the folder of your `compose.yaml`:
 
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:v1.23.0`), change it to the new one first — `pull` would fetch nothing new otherwise. Tentacle never talks to Docker itself; the overview notices the restarted server on its own.
+If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:v1.23.0`), change it to the new
+one first — `pull` would fetch nothing new otherwise. Tentacle never talks to Docker itself (no socket mounted);
+the overview notices the restarted server on its own.
 
 ---
 
 ## Platforms
 
-| Platform | Status | Download | Technology |
-|----------|--------|----------|------------|
-| **Web** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Self-hosted | React 19 + Vite 6 + Tailwind CSS |
+| Platform | Status | Get it | Technology |
+|----------|--------|--------|------------|
+| **Web** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Served by your Tentacle server | React 19 + Vite 6 + Tailwind CSS |
 | **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + native mpv player |
 | **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + native mpv player |
 | **Linux** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Electron + native mpv player (HDR on Wayland) |
-| **iOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
+| **iOS / iPadOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
 | **Android** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
+| **Apple TV** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) + AVPlayer |
 | **Android TV** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + ExoPlayer/Media3 |
-| **Apple TV** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) |
+| **LG webOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/IPK-A50034?style=flat-square&logo=lg&logoColor=white" alt="IPK" /></a> | Web client served by your server under `/tv` |
+| **Tentacle Server (Windows)** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Microsoft Store — [guide](docs/server/windows.md) | The Docker image's server, without Docker |
 
 <details>
 <summary>🇫🇷 Plateformes (français)</summary>
 
-| Plateforme | Statut | Téléchargement | Technologie |
-|------------|--------|----------------|-------------|
-| **Web** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Auto-hébergé | React 19 + Vite 6 + Tailwind CSS |
+| Plateforme | Statut | Où la trouver | Technologie |
+|------------|--------|---------------|-------------|
+| **Web** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Servie par votre serveur Tentacle | React 19 + Vite 6 + Tailwind CSS |
 | **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + lecteur mpv natif |
 | **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + lecteur mpv natif |
 | **Linux** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Electron + lecteur mpv natif (HDR sous Wayland) |
-| **iOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
+| **iOS / iPadOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
 | **Android** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
+| **Apple TV** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) + AVPlayer |
 | **Android TV** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + ExoPlayer/Media3 |
-| **Apple TV** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native (tvOS) |
+| **LG webOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/IPK-A50034?style=flat-square&logo=lg&logoColor=white" alt="IPK" /></a> | Client web servi par votre serveur sous `/tv` |
+| **Tentacle Server (Windows)** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Microsoft Store — [guide](docs/server/fr/windows.md) | Le serveur de l'image Docker, sans Docker |
 
 </details>
 
@@ -122,245 +151,66 @@ If you pin a version (`TENTACLE_VERSION=v1.23.0`, or `ghcr.io/knaox/tentacle-tv:
 
 ## Features
 
-### Video Playback
-- HTML5 player (web) with HLS streaming via hls.js
-- Native mpv player (desktop) with Direct Play, Dolby Vision, and Atmos support
-- Android TV: ExoPlayer/Media3 with hardware decoding, HDR/DV passthrough, and surround audio bitstream
-- On-the-fly audio track and subtitle switching
-- Resume watching — pick up right where you left off
-- Per-library preferences (default audio language, subtitles)
+### Playback
+- **Direct play first**, with automatic transcoding only for what the device's engine cannot decode
+- Desktop: native **mpv** (Dolby Vision, HDR10, Atmos/TrueHD passthrough), **real HDR on Linux Wayland**, picture-in-picture
+- Apple TV: AVPlayer; Android TV: ExoPlayer/Media3 with HDR/DV and surround bitstream
+- Skip intros, recaps and credits — Tentacle installs and configures the segment plugins in Jellyfin for you
+- Resume anywhere, per-library audio and subtitle preferences, trickplay thumbnails
+
+### Watching together and as a family
+- **Watch Together**: synchronised playback across devices, chat, "everyone ready" before a skip
+- **Family**: one owner, members and guest profiles, each with an optional PIN checked by the server; a
+  "Who's watching?" screen on TV, desktop and web
+- **Offline**: keep titles on your phone or computer, including a lighter version prepared by the server, and
+  finish the transfer with the app closed
+
+### Discovery
+- **"For you"**: personal recommendations built from what you watch, like and rate (needs a free TMDB key)
+- Trailer previews on focus or hover, on desktop, web, Apple TV and Android TV
+- Ratings, favourites, My list and "watched" — the same card and the same actions on every platform
+- New titles appear live on the home screen, without refreshing
+- Requests for missing movies and seasons through the optional **Vigie** plugin (Jellyseerr / Overseerr)
 
 ### Interface
-- Premium dark theme with purple/pink glassmorphism accents
-- Dynamic hero banner with auto-rotation
-- Expandable sidebar with library hover previews
-- Animated media cards with smooth CSS transitions
-- Global search with keyboard shortcut (`Ctrl+K`)
-- Fully responsive — works on any screen size
-- Multi-language (English & French)
-
-### Plugin System
-- Extensible architecture with a built-in admin marketplace
-- Multiple registry sources (custom GitHub-hosted registries)
-- One-click install, update, and uninstall
-- Plugins auto-integrate into navigation and routing
-- SHA256 verification and version compatibility checks
+- Dark glassmorphism theme with purple → pink accents, and **Liquid Glass** on macOS 26
+- TV navigation designed for the remote: Siri Remote, Android TV remotes, LG Magic Remote
+- 36 hand-drawn avatar characters (no AI-generated images)
+- English and French throughout
 
 ### Administration
-- Guided setup wizard (Jellyfin connection, admin account, libraries) — no database to set up
-- Invite system to control user access
-- Built-in support tickets
-- TV pairing via 4-digit code
-- Real-time notifications
+- A guided setup wizard (no database to set up) and a dashboard that says what is broken, then what to improve
+- Remote access: the admin writes your reverse-proxy config and tests the ports **from the outside**
+- Invitations, support tickets, TV pairing by code, real-time notifications
+- A plugin system with a marketplace and SHA-256 verification
 
 ---
 
-## Reverse Proxy (Nginx Proxy Manager)
+## Remote Access and Reverse Proxy
 
-> The stacks ship no reverse proxy: Tentacle goes behind yours. **Administration › Remote access** writes what
-> to put in it — a Caddyfile block, an Nginx / Nginx Proxy Manager block or a Traefik routes file — then guides
-> the router ports and tests from the outside; see [docs/server/remote-access.md](docs/server/remote-access.md).
-> This section details Nginx Proxy Manager, including same-domain direct streaming.
+The stacks ship no reverse proxy: Tentacle goes behind yours. **Administration › Remote access** writes what to
+put in it — a Caddyfile block, an Nginx / Nginx Proxy Manager block or a Traefik routes file — then guides the
+router ports and tests them from the outside.
 
-If you expose Tentacle TV through **Nginx Proxy Manager**, follow these steps to enable real-time features (WebSocket).
-
-### 1. Create a Proxy Host
-
-| Field | Value |
-|-------|-------|
-| **Domain Names** | `tentacle.example.com` |
-| **Scheme** | `http` |
-| **Forward Hostname / IP** | Your server IP (e.g. `192.168.1.100`) |
-| **Forward Port** | `3000` (or your configured `PORT`) |
-| **Websockets Support** | **Enable** (toggle ON) |
-
-> The **Websockets Support** toggle is required for the real-time home page updates and notification sync. Without it, WebSocket connections to `/api/ws` will fail and the app will fall back to 60-second polling.
-
-### 2. SSL (recommended)
-
-Go to the **SSL** tab and either:
-- Select **Request a new SSL Certificate** with Let's Encrypt
-- Or upload your own certificate
-
-Enable **Force SSL** and **HTTP/2 Support**.
-
-### 3. Advanced (strongly recommended)
-
-Click the **gear icon** on the proxy host to open the Advanced tab and paste:
-
-```nginx
-proxy_hide_header Content-Security-Policy;
-proxy_read_timeout 86400s;
-proxy_send_timeout 86400s;
-```
-
-- `proxy_hide_header Content-Security-Policy` removes any upstream CSP header that can block the app's WebSocket (`wss://`). The application ships its own CSP policy.
-- `proxy_read_timeout 86400s` and `proxy_send_timeout 86400s` keep long-lived WebSocket connections (real-time home updates, notifications) alive for up to 24 h instead of being dropped by NPM's default 60 s idle timeout. Without these, the WS reconnects every minute and the home feed flickers.
-
-### 4. Direct Streaming via same-domain Jellyfin (recommended)
-
-If you enable **Direct Streaming** in the admin panel, the browser will issue XHR requests directly to your Jellyfin server. The **cleanest, CORS-free way** to expose Jellyfin to the browser is to serve it under a **sub-path of the same domain as Tentacle TV** (e.g. `tentacle.example.com/jellyfin`). Same origin → no preflight, no `Access-Control-Allow-Origin` headers to maintain, no Cloudflare worker.
-
-#### Step 1 — Tell Jellyfin to live under `/jellyfin`
-
-In **Jellyfin → Dashboard → Networking → Base URL**, set:
-
-```
-/jellyfin
-```
-
-Save and **restart Jellyfin** (`docker restart jellyfin` or the equivalent). Without a restart Jellyfin keeps using the old base URL.
-
-#### Step 2 — Trust the reverse proxy
-
-In **Jellyfin → Dashboard → Networking → Known Proxies**, add the IP of your NPM container (e.g. `172.16.1.30`). Otherwise Jellyfin discards `X-Forwarded-For` / `X-Forwarded-Proto` and may reject HLS requests with `401`.
-
-In **Jellyfin → Dashboard → Networking → Published Server URIs**, add:
-
-```
-all=https://tentacle.example.com
-```
-
-This is the URL Jellyfin advertises to clients (including Tentacle TV mobile/desktop) — it must match what the browser sees.
-
-#### Step 3 — Add a Custom Location in NPM
-
-On the existing **Tentacle proxy host** (`tentacle.example.com`), open the **Custom locations** tab and **Add location**:
-
-| Field | Value |
-|-------|-------|
-| **Location** | `/jellyfin` |
-| **Scheme** | `http` |
-| **Forward Hostname / IP** | your Jellyfin container IP (e.g. `172.16.1.30`) |
-| **Forward Port** | `8096` |
-
-Click the **gear icon next to the location** (not the one at the top of the modal) → toggle **Enable Websockets Support** ON. Jellyfin's SyncPlay and live updates need it.
-
-#### Step 4 — Cloudflare DNS only (if you use Cloudflare)
-
-In your Cloudflare DNS panel, set the record for `tentacle.example.com` to **DNS only** (grey cloud, not orange). Cloudflare's proxy combined with Jellyfin sub-paths consistently breaks HTTP/2 and WebSocket upgrades. Keep it grey for streaming.
-
-#### Step 5 — Configure Tentacle's Direct Streaming admin
-
-In **Tentacle admin → Direct Streaming**, set both URLs to the new same-domain URL:
-
-```
-Public URL  : https://tentacle.example.com/jellyfin
-Private URL : https://tentacle.example.com/jellyfin
-```
-
-(Or your LAN URL on the private side if your LAN clients should hit Jellyfin directly.)
-
-#### Verify
-
-```bash
-curl -sI "https://tentacle.example.com/jellyfin/web/main.jellyfin.bundle.js" \
-  | grep -iE "content-type|server"
-```
-
-You must see `content-type: application/javascript`. If you see `text/html`, the Custom Location didn't take effect (the request is hitting Tentacle's SPA shell) — double-check the location path and reload NPM.
-
-#### Recovery if you mistyped Jellyfin's BaseURL
-
-If you set the wrong BaseURL in Jellyfin and locked yourself out of the dashboard, edit `network.xml` in place:
-
-```bash
-# Reset BaseURL to empty (root)
-docker exec jellyfin sed -i 's|<BaseUrl>.*</BaseUrl>|<BaseUrl />|' /config/network.xml
-docker restart jellyfin
-
-# Or set it explicitly to /jellyfin
-docker exec jellyfin sed -i 's|<BaseUrl>.*</BaseUrl>|<BaseUrl>/jellyfin</BaseUrl>|' /config/network.xml
-docker restart jellyfin
-```
-
-> **Note for users with other Jellyfin clients** (official mobile app, Findroid, Streamyfin, Sonarr/Radarr integrations): they'll need their server URL updated to include the new `/jellyfin` sub-path. If that's not acceptable, keep your existing `jellyfin.example.com` subdomain as a mirror proxy host in NPM and follow section 5 below to handle CORS instead.
-
-### 5. Direct Streaming with a separate Jellyfin subdomain (CORS) — alternative
-
-If you must keep Jellyfin on its own subdomain (e.g. `jellyfin.example.com`) for legacy clients, the browser will issue cross-origin requests for `PlaybackInfo` and the HLS `master.m3u8`. You will see errors like:
-
-```
-Origin https://tentacle.example.com is not allowed by Access-Control-Allow-Origin.
-```
-
-Jellyfin does not let you configure CORS in its UI, so the headers must be added by the reverse proxy in front of Jellyfin. In NPM, open the **Jellyfin** proxy host → gear icon → **Advanced** tab and paste:
-
-```nginx
-proxy_hide_header Content-Security-Policy;
-proxy_read_timeout 86400s;
-proxy_send_timeout 86400s;
-
-# Strip any CORS headers Jellyfin sets itself, to avoid duplicates
-proxy_hide_header Access-Control-Allow-Origin;
-proxy_hide_header Access-Control-Allow-Credentials;
-proxy_hide_header Access-Control-Allow-Methods;
-proxy_hide_header Access-Control-Allow-Headers;
-proxy_hide_header Access-Control-Expose-Headers;
-
-# Add CORS headers for the Tentacle TV web client (replace with your origin)
-add_header Access-Control-Allow-Origin      "https://tentacle.example.com" always;
-add_header Access-Control-Allow-Credentials "true" always;
-add_header Access-Control-Allow-Methods     "GET, POST, OPTIONS, DELETE, PUT, PATCH" always;
-add_header Access-Control-Allow-Headers     "Authorization, X-Emby-Token, X-Emby-Authorization, X-Requested-With, Content-Type, Range, If-Modified-Since, Cache-Control" always;
-add_header Access-Control-Expose-Headers    "Content-Length, Content-Range, Date, Server" always;
-add_header Access-Control-Max-Age           "1728000" always;
-```
-
-**Important rules**
-
-- Replace `https://tentacle.example.com` with the **exact** origin of your Tentacle TV client (scheme + host, no trailing slash).
-- Every `add_header` value **must stay on a single line** inside its quotes — nginx does not allow line breaks in quoted strings. A broken value will fail `nginx -t` and NPM will refuse to reload, taking **all** your hosts offline (and Cloudflare will show error **525 SSL handshake failed**).
-- Do not use a `map` directive in this tab. `map` only works at the `http {}` level, but NPM injects this block inside `server {}` and nginx will reject the config.
-- Do not wrap the preflight in `if ($request_method = OPTIONS)`. Jellyfin already responds `204` to the preflight; the `always` flag on `add_header` is enough to attach the CORS headers to that 204.
-- Specifying `Access-Control-Allow-Origin: *` is **not enough** here because Tentacle TV sends an `Authorization` header — the browser requires an explicit origin in that case.
-
-**Verify**
-
-From any machine, just after saving:
-
-```bash
-curl -sI https://jellyfin.example.com/System/Info/Public \
-  -H "Origin: https://tentacle.example.com"
-```
-
-You should see **exactly one** `access-control-allow-origin: https://tentacle.example.com` line. If you also see a `*`, your `proxy_hide_header` did not take effect — check the host order and reload NPM (`docker restart nginx-proxy-manager`).
-
-**Don't forget Jellyfin's Known Proxies**
-
-In **Jellyfin → Dashboard → Networking → Known Proxies**, add the IP (or subnet) of your NPM container. Without this, Jellyfin discards `X-Forwarded-*` headers and may reject HLS requests with `401`, which masquerades as a CORS error in the browser.
-
-**Automatic fallback (always on)**
-
-If your CORS config is broken or partially missing, the web client detects the failure (CORS-blocked `PlaybackInfo` or HLS `manifestLoadError`) and **transparently falls back** to the same-origin backend proxy `/api/jellyfin/*` for that browser session. Playback still works. You'll see in DevTools console:
-
-```
-[Tentacle:PlaybackInfo] direct call failed, falling back to proxy: TypeError: Load failed
-[Tentacle:Playback] { mode: "Transcode", transport: "proxy", directStreamingConfigured: true, … }
-```
-
-The `directStreamingConfigured: true` confirms the admin toggle stays ON; `transport: "proxy"` confirms the per-session fallback engaged. Native apps (desktop, mobile, TV) are unaffected — they have no CORS and continue full-direct.
+- General guide: [docs/server/remote-access.md](docs/server/remote-access.md)
+- Nginx Proxy Manager in detail (WebSockets, same-domain Jellyfin for direct streaming, CORS):
+  [docs/server/reverse-proxy-npm.md](docs/server/reverse-proxy-npm.md)
 
 ---
 
 ## Desktop App
 
-The desktop app wraps the web client with [Electron](https://www.electronjs.org/) on all three systems, and adds a native **mpv** video player for superior playback (Direct Play, Dolby Vision, Atmos).
-
-### Installation
-
-| OS | Format | Source |
-|----|--------|--------|
-| Windows | MSIX | [Microsoft Store](https://apps.microsoft.com/detail/9NKHL0T84245) |
-| macOS | App Store | [App Store](https://apps.apple.com/app/id6760205634) |
-| Linux | `.deb` · `.rpm` · `.AppImage` · `.pkg.tar.zst` | [GitHub Releases](https://github.com/Knaox/Tentacle-TV/releases) (tag `desktop-v*`) |
+The desktop app wraps the web client with [Electron](https://www.electronjs.org/) on all three systems, and
+drives a native **mpv** through [koffi](https://koffi.dev/) for the video (Direct Play, Dolby Vision, HDR,
+Atmos). Windows and macOS update through their stores; **Linux has a built-in updater** that detects how the
+app was installed, verifies the SHA-256 and installs through polkit (or swaps the AppImage in place).
 
 ### Linux
 
 Four packages, and **mpv is bundled in every one of them** — nothing else to install.
 
-**One command, any distribution** — detects the format, installs the right package
-and adds the menu entry (`--uninstall` removes both):
+**One command, any distribution** — detects the format, installs the right package and adds the menu entry
+(`--uninstall` removes both):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/scripts/install-linux.sh | sh
@@ -375,37 +225,26 @@ sudo pacman -U ./tentacle-tv_*.pkg.tar.zst        # Arch / Manjaro / EndeavourOS
 chmod +x tentacle-tv_*.AppImage && ./tentacle-tv_*.AppImage   # any distribution
 ```
 
-The AppImage needs FUSE (`fuse2` on Arch, `libfuse2t64` on Ubuntu); the install
-script above says so if it is missing.
+The AppImage needs FUSE (`fuse2` on Arch, `libfuse2t64` on Ubuntu); the install script says so if it is missing.
 
 #### HDR, Wayland and X11
 
-Linux forces a trade-off no other system does, and the app adapts to your session:
+Linux forces a trade-off no other system does: **X.Org will never support HDR** (HDR on Linux goes through the
+Wayland `wp-color-management-v1` protocol), and **Wayland does not let an application position its own
+windows**. The app picks the best setup for your session at start-up:
 
 | Session | Video window | HDR |
 |---------|--------------|-----|
-| **Wayland** | fullscreen while playing | **yes**, real PQ / BT.2020 passthrough |
-| **X11** | windowed, like Windows and macOS | no — tone-mapped to SDR |
+| **Wayland + KDE Plasma** | follows the window, windowed or fullscreen (KWin script) | **yes**, even windowed |
+| **Wayland, other compositors** (GNOME, wlroots) | windowed through XWayland; fullscreen when an HDR screen is plugged in | **yes** when an HDR screen is plugged in |
+| **X11** | windowed | no — tone-mapped to SDR |
 
-Two facts are behind it. **X.Org will never support HDR** — it has been stated
-officially, there is no protocol and there will not be one; HDR on Linux goes
-through the Wayland `wp-color-management-v1` protocol. And **Wayland does not let
-an application position its own windows**, so the video window can only be pinned
-to the interface in fullscreen, where there is only one possible position.
-
-HDR needs a Wayland session with a colour-managed compositor (KDE Plasma 6.2+,
-GNOME 48+, Hyprland), plus Mesa 25.1+ or NVIDIA 595+. X11 sessions need a
-compositing window manager — every modern desktop has one — otherwise the
-controls paint black over the video.
-
-> Windows and macOS update through their stores. **Linux has a built-in
-> updater**: it detects how the app was installed (`.deb`, `.rpm`, pacman or
-> AppImage), verifies the SHA-256 and installs through polkit — or swaps the
-> AppImage file in place.
+HDR needs a colour-managed compositor (KDE Plasma 6.2+, GNOME 48+, Hyprland), plus Mesa 25.1+ or NVIDIA 595+.
+X11 sessions need a compositing window manager — every modern desktop has one. A setting forces Wayland or X11.
 
 ### First Launch
 
-1. Enter the URL of your Tentacle TV server (e.g. `http://192.168.1.100` or `https://tentacle.example.com`)
+1. Enter the URL of your Tentacle server (e.g. `http://192.168.1.100:3000` or `https://tentacle.example.com`)
 2. Sign in with your Jellyfin credentials
 3. Start watching
 
@@ -413,39 +252,30 @@ controls paint black over the video.
 
 ## Android TV App
 
-The Android TV app uses **ExoPlayer (Media3)** for all video playback — direct play with hardware decoding for all common codecs. Player architecture inspired by [VoidTV for Jellyfin](https://github.com/hritwikjohri/VoidTV-for-jellyfin).
+The Android TV app uses **ExoPlayer (Media3)** for all video playback, with hardware decoding. Player
+architecture inspired by [VoidTV for Jellyfin](https://github.com/hritwikjohri/VoidTV-for-jellyfin).
 
-### Codec Support (Direct Play)
+The app reads what **this device** can decode and declares it to the server: what the device can play is played
+directly, the rest is converted by the server — and the player says so.
 
-| Codec | Decoding | Notes |
-|-------|----------|-------|
+| Codec | Direct play | Notes |
+|-------|-------------|-------|
 | **H.264 / AVC** | Hardware (MediaCodec) | All Android TV devices |
 | **HEVC / H.265** | Hardware (MediaCodec) | Shield, Chromecast, Fire TV, etc. |
 | **VP9** | Hardware (MediaCodec) | Wide device support |
-| **AV1** | FFmpeg (dav1d) | Software decode via Jellyfin FFmpeg decoder |
+| **AV1** | Hardware, where the device has a decoder | Otherwise converted by the server |
 | **Dolby Vision P8** | Hardware (MediaCodec) | Native DV decoder on supported devices |
-| **Dolby Vision P7** | DvCompatRenderer | P7→P8.1 rewrite for device compatibility |
+| **Dolby Vision P7** | `DvCompatRenderer` | P7 → P8.1 rewrite for device compatibility |
 
-Codec errors trigger an automatic fallback to server-side transcoding (H.264 + AAC).
-
-### Audio Passthrough
-
-`DefaultAudioSink` with real device `AudioCapabilities` for bitstream passthrough over HDMI:
+Audio passthrough over HDMI uses the device's real `AudioCapabilities`:
 
 | Format | Passthrough | Notes |
 |--------|-------------|-------|
 | AC3 / EAC3 | Yes | Wide device support |
-| EAC3 JOC (Dolby Atmos) | Yes | If device/AVR reports `ENCODING_E_AC3_JOC` |
-| TrueHD (Dolby Atmos) | Yes | Nvidia Shield only |
+| EAC3 JOC (Dolby Atmos) | Yes | If the device/AVR reports `ENCODING_E_AC3_JOC` |
+| TrueHD (Dolby Atmos) | Yes | NVIDIA Shield only |
 | DTS / DTS-HD MA | Yes | Shield and select devices |
-| Fallback | PCM decode | Automatic when passthrough unavailable |
-
-### Installation
-
-```bash
-cd apps/tv/android && ./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
+| Fallback | PCM decode | Automatic when passthrough is unavailable |
 
 ---
 
@@ -464,12 +294,14 @@ from the wizard. Full list in [docs/server/install.md](docs/server/install.md#se
 | `TRUSTED_PROXIES` | Extra proxies (IPs/CIDRs) whose `X-Forwarded-For` is trusted — neighbours (local and Docker networks) always are | — |
 | `REMOTE_CHECK_URL` | Remote access test service; `off` disables the test | `https://check.tentacletv.app` |
 | `TENTACLE_PUBLIC_URL` | Fallback public link (the one set in the administration wins) | — |
+| `TENTACLE_WEB_UI` | `off` turns the web interface off (apps, TV client and invitation links keep working) | on |
 | `CORS_ORIGIN` | Allowed CORS origin (dev only) | — |
 | `TENTACLE_IMAGE` | The image you deploy (e.g. `ghcr.io/knaox/tentacle-tv:v1.23.0`): the admin overview then gives the exact update command for a pinned tag | — |
 | `TENTACLE_INSTALL_RUNTIME` | `docker`, `podman` or `none`: forces container detection where its marker file is missing (Kubernetes, LXC…) | auto |
 | `TENTACLE_SERVER_UPDATE_REPO` | `off` turns off the update check (GitHub, at most every six hours) | Knaox/Tentacle-TV |
 
-> Jellyfin URL and API key are configured through the web setup wizard and stored in the database — not in environment variables.
+> The Jellyfin URL and API key are configured through the setup wizard and stored in the database — never in
+> environment variables, and never sent to a client.
 
 ---
 
@@ -477,83 +309,52 @@ from the wizard. Full list in [docs/server/install.md](docs/server/install.md#se
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) >= 22.13 (`node:sqlite`, used by the backend, without a flag)
+- [Node.js](https://nodejs.org/) >= 22.13 (the backend uses `node:sqlite` without a flag)
 - [pnpm](https://pnpm.io/) >= 9
 
-No database server: the backend keeps its data in `apps/backend/data/tentacle.db` (SQLite), created and kept
-up to date by the server itself on start.
+No database server: the backend keeps its data in `apps/backend/data/tentacle.db` (SQLite), created and kept up
+to date by the server itself on start.
 
-### 1. Clone and Install
+### Get running
 
 ```bash
 git clone https://github.com/Knaox/Tentacle-TV.git
 cd Tentacle-TV
-pnpm install
-```
+pnpm install                                   # also enables the pre-push hook
 
-### 2. Configure the Backend
+cp apps/backend/.env.example apps/backend/.env # nothing is required for a local run
+pnpm --filter @tentacle-tv/backend db:generate      # Prisma client (never `prisma db push`)
+pnpm --filter @tentacle-tv/backend build:shared-deps # needed by plugin pages
 
-```bash
-cp apps/backend/.env.example apps/backend/.env
-```
-
-Edit `apps/backend/.env` if needed — nothing is required for a local run:
-
-```env
-PORT=3001
-CORS_ORIGIN=http://localhost:5173
-```
-
-### 3. Generate the Prisma Client
-
-```bash
-cd apps/backend
-pnpm db:generate   # Generate the Prisma client (never `prisma db push`)
-cd ../..
-```
-
-### 4. Build Plugin Dependencies
-
-```bash
-cd apps/backend
-pnpm build:shared-deps   # Downloads tailwind.js + bundles shared-deps.js
-cd ../..
-```
-
-> This step is required for the plugin system to work. Without it, plugin pages will fail to load with a 404 on `tailwind.js`.
-
-### 5. Start Development Servers
-
-Run both in separate terminals:
-
-```bash
 pnpm dev:backend    # API server → http://localhost:3001
-pnpm dev:web        # Web client → http://localhost:5173
+pnpm dev:web        # Web client → http://localhost:5173 (proxies /api to :3001)
 ```
 
-The web dev server automatically proxies `/api/*` requests to the backend on port 3001.
-
-### Other Dev Commands
+### Other commands
 
 ```bash
-# Desktop (requires Rust toolchain)
-pnpm dev:desktop
+pnpm dev:electron   # Desktop app (Windows, macOS, Linux)
+pnpm dev:mobile     # Expo app (iOS, Android)
+pnpm dev:tv         # Apple TV / Android TV app
+pnpm dev:webos      # LG webOS client
 
-# Code quality
 pnpm lint           # ESLint across all packages
 pnpm typecheck      # TypeScript --noEmit across all packages
+pnpm test           # Unit tests (Vitest)
 
-# Database (run from apps/backend/) — SQLite, data/tentacle.db
-pnpm db:generate    # Regenerate the Prisma client after a schema change
-pnpm db:studio      # Open Prisma Studio GUI
-
-# Docker shortcuts
-pnpm docker:up      # Start stacks/tentacle-full (project tentacle-dev, published image)
-pnpm docker:down    # Stop it
-pnpm docker:logs    # Tail its logs
 pnpm docker:rebuild # Build the image from this repository (:local) and start the stack on it
-pnpm docker:reset   # Full teardown + rebuild (deletes data!)
+pnpm docker:logs    # Tail its logs
 ```
+
+Database changes are versioned SQL migrations: after editing `prisma/schema.prisma`, run
+`pnpm db:migration <name>` from `apps/backend/`.
+
+### Quality gates
+
+A `pre-push` hook runs typecheck and tests on the packages a push touches (and those that depend on them). The
+same check runs on GitHub (`quality.yml`), and **no release workflow builds a commit that hasn't passed it**.
+Releases are never triggered by a push: each platform has its own workflow, run on demand, with three levels
+— build only, test tracks (TestFlight, Play internal, pre-release), and store.
 
 ---
 
@@ -561,65 +362,75 @@ pnpm docker:reset   # Full teardown + rebuild (deletes data!)
 
 ```
 apps/
-  web/             React 19 + Vite 6 + Tailwind CSS (main web client)
-  backend/         Fastify 5 + Prisma 6 + SQLite (API server)
-  desktop-electron/ Electron (same web build for Windows, macOS and Linux)
-  mobile/          Expo 52 + React Native (iOS + Android)
-  tv/              React Native for Android TV (ExoPlayer/Media3)
+  web/               React 19 + Vite 6 + Tailwind (web client, also the desktop UI)
+  desktop-electron/  Electron shell + native mpv (Windows, macOS, Linux)
+  mobile/            Expo 52 + React Native (iPhone, iPad, Android)
+  tv/                React Native for Apple TV (tvOS) and Android TV
+  tv-webos/          LG webOS shell (IPK); the client itself is a build variant of apps/web
+  backend/           Fastify 5 + Prisma 6 + SQLite (the Tentacle server)
+  server-windows/    Tentacle Server packaged for the Microsoft Store
+  port-check/        External service that tests remote access from the Internet
+  server-e2e/        End-to-end benches against real stacks (never run by `pnpm test`)
 
 packages/
-  api-client/      Jellyfin API client + TanStack Query hooks
-  shared/          Types, i18n translations, constants
-  ui/              Shared React components (GlassCard, MediaCard, Shimmer)
-  plugins-api/     Plugin system interfaces and registry
+  shared/            Types, i18n, contracts and pure rules shared by every client
+  api-client/        Jellyfin + Tentacle API client, TanStack Query hooks
+  tv-core/           TV navigation: remote intents, focus and player behaviours (pure, platform-agnostic)
+  ui/, theme/        Shared React components and design tokens
+  offline-core/      Offline engine shared by mobile and desktop
+  plugins-api/       Plugin system interfaces
+  brand-intro-native/ The start-up animation on TV and mobile
 
-relay/             Cloudflare Worker for remote TV pairing
-
-docs/              Plugin registry documentation
+stacks/              The two Docker Compose stacks
+brand/               The logo and every icon, generated from one source
+relay/               Cloudflare Worker for TV pairing
+docs/                Design notes, measurements and the server guide
 ```
 
 ### Architecture Overview
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────────┐
-│   Web App   │────▶│   Backend   │────▶│     SQLite      │
-│  (React 19) │     │ (Fastify 5) │     │  (Prisma ORM)   │
-└─────────────┘     └──────┬──────┘     └─────────────────┘
-                           │
-┌─────────────┐            │            ┌─────────────────┐
-│ Desktop App │────────────┘       ┌───▶│ Jellyfin Server │
-│ (mpv native)│                    │    └─────────────────┘
-└─────────────┘            ▲───────┘
-                           │
-                     /api/jellyfin/*
-                      (proxy route)
+┌──────────────────────────┐        ┌──────────────────┐        ┌───────────┐
+│ Clients                  │  /api  │ Tentacle server  │        │  SQLite   │
+│ web · desktop · mobile   │───────▶│ (Fastify 5)      │───────▶│ (Prisma)  │
+│ Apple TV · Android TV    │        │ auth, family,    │        └───────────┘
+│ LG webOS                 │        │ reco, plugins,   │
+└────────────┬─────────────┘        │ Jellyfin proxy   │        ┌───────────┐
+             │                      └────────┬─────────┘        │           │
+             │   direct streaming (optional) │  admin API key   │ Jellyfin  │
+             └───────────────────────────────┴─────────────────▶│           │
+                                                                └───────────┘
 ```
 
-**Two API targets from the frontend:**
+- **Tentacle server** (`/api/*`): authentication, family and profiles, invitations, recommendations, Watch
+  Together, pairing, plugins — and a proxy to Jellyfin, so the admin API key never leaves the server.
+- **Jellyfin**: browsing and streaming go through that proxy, or straight to Jellyfin when direct streaming is
+  configured. Native apps fall back to the proxy on their own; the web client does too when CORS is not set up.
+- **Server capabilities**: the server declares what it can do (`GET /api/config` → `capabilities`), and every
+  client hides what its server doesn't support — an up-to-date app works with an older server, without errors.
 
-1. **Tentacle Backend** (`/api/*`) — Authentication, invites, tickets, config, pairing, plugins
-2. **Jellyfin** (`/api/jellyfin/*`) — Proxied through the backend — streaming, media browsing, user data
+---
+
+## A Note on the Codebase
+
+Tentacle TV is written by a French developer, and **the code comments, design notes in `docs/` and commit
+messages are in French.** Everything else is in English: file names, identifiers, types, APIs, the user
+interface strings for English users, and this README.
+
+This is a deliberate choice rather than an oversight — the notes record *why* things are done the way they are
+(often with measurements), and writing them in my own language keeps them precise. If you want to read a
+part of the code, a translation tool handles the comments well; and **issues and pull requests are welcome in
+English or French**.
 
 ---
 
 ## Plugin Development
 
-Tentacle TV supports a plugin system that lets you extend the client with custom pages and backend routes.
+Tentacle TV supports plugins that add pages to the clients and routes to the server.
 
-### Installing Plugins
-
-1. Go to **Admin > Plugins > Marketplace**
-2. Click **Install** on any available plugin
-3. Configure the plugin in its settings tab
-4. The plugin auto-appears in the navigation
-
-### Adding Custom Registries
-
-1. Go to **Admin > Plugins > Sources**
-2. Click **Add source** with the URL to a `registry.json`
-3. Plugins from the new source appear in the Marketplace
-
-### Building a Plugin
+- **Install**: Admin › Plugins › Marketplace › **Install**, then configure it in its settings tab — it appears in
+  the navigation.
+- **Add a source**: Admin › Plugins › Sources › **Add source**, with the URL of a `registry.json`.
 
 A plugin implements the `TentaclePlugin` interface from `@tentacle-tv/plugins-api`:
 
@@ -639,7 +450,8 @@ interface TentaclePlugin {
 }
 ```
 
-See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full registry format and archive structure.
+See the [plugin registry documentation](docs/plugin-registry-README.md) for the registry format and archive
+structure.
 
 ---
 
@@ -647,15 +459,15 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 
 | Layer | Technology |
 |-------|------------|
-| Web Frontend | React 19, Vite 6, Tailwind CSS 3, Framer Motion 11 |
-| Desktop | Electron (Windows, macOS, Linux), native mpv player via koffi |
+| Web | React 19, Vite 6, Tailwind CSS 3, Framer Motion 11 |
+| Desktop | Electron 43 (Windows, macOS, Linux), libmpv via koffi |
+| Mobile | React Native 0.76, Expo 52, NativeWind 4 |
+| TV | React Native (react-native-tvos), AVPlayer (tvOS), ExoPlayer/Media3 (Android TV) |
 | Backend | Fastify 5, Prisma 6, SQLite |
-| API Client | TanStack Query v5 |
-| Language | TypeScript 5.7 (strict mode) |
-| Video | hls.js 1.6 + HTML5 `<video>` (web), mpv (desktop), ExoPlayer/Media3 1.8 (TV) |
+| Data | TanStack Query v5, Zod |
+| Language | TypeScript 5.7, strict mode |
 | i18n | i18next + react-i18next (English & French) |
-| Validation | Zod 3.24 |
-| CI/CD | GitHub Actions (Docker build on push to main) |
+| CI/CD | GitHub Actions: quality gate on every push, releases run on demand per platform |
 
 ---
 
@@ -675,11 +487,13 @@ Join the **[Tentacle TV Discord](https://discord.gg/FRse3yMhnc)** to get help, s
 
 Rejoignez le **[Discord de Tentacle TV](https://discord.gg/FRse3yMhnc)** pour obtenir de l'aide, proposer des idées et suivre les nouveautés — annonces et salon de discussion en français.
 
-Bugs and feature requests still go to [GitHub issues](https://github.com/Knaox/Tentacle-TV/issues).
+Bugs and feature requests go to [GitHub issues](https://github.com/Knaox/Tentacle-TV/issues).
 
 ## Contributing
 
-Contributions are welcome! Please open an [issue](https://github.com/Knaox/Tentacle-TV/issues) or submit a pull request.
+Contributions are welcome! Open an [issue](https://github.com/Knaox/Tentacle-TV/issues) or a pull request — in
+English or French. Before a pull request, `pnpm lint`, `pnpm typecheck` and `pnpm test` should pass (the
+pre-push hook checks the last two for you).
 
 By submitting a contribution, you agree that it is licensed under the same terms as Tentacle TV: the GNU AGPL v3.0 or later, together with the additional permission and terms of [`LICENSE-EXCEPTIONS`](LICENSE-EXCEPTIONS).
 
