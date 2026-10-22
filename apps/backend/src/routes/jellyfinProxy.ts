@@ -294,7 +294,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // déjà fermée.
       if (cause === "annule") return reply;
       if (cause === "delai-absolu") return reply.status(504).send({ message: "Jellyfin timeout" });
-      return reply.status(502).send({ message: err instanceof Error ? err.message : "Proxy error" });
+      // La cause va au journal (`traceFailure`) ; le client n'en reçoit que le fait.
+      return reply.status(502).send({ message: "Proxy error" });
     }
   });
 };
