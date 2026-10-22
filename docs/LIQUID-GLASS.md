@@ -149,7 +149,11 @@ page (`apps/web/src/desktop/types.ts`) et reflété par `protocol.ts` ;
   que mpv a décodée (`screenshot-raw video bgra`, commande ASYNCHRONE lue
   pendant sa réponse, `commandForResult`), lue aux mêmes points et composée
   SOUS la page (prémultiplié, comme Chromium) — ce que l'œil voit, au verre
-  natif près. Cadrage : l'image ajustée au centre de la fenêtre de mpv, à
+  natif près. Avec `under: "window"` sur un rectangle, la vidéo SEULE, page
+  exclue (non capturée) : c'est le mode des formes posées sur la vidéo — une
+  capsule du lecteur ne doit mesurer ni ses glyphes ni ses halos (15 à 35 % de
+  sa surface), dont le ton dépend justement de la mesure ; `null` hors de la
+  vidéo. Cadrage : l'image ajustée au centre de la fenêtre de mpv, à
   l'aspect affiché de `video-params` (`osd-dimensions` reste à 0 × 0, OSD
   coupé). Mesuré le 22/10 sur une vraie lecture : bandes 0x4D / 0xF2 (« neige »)
   / 0x80 / 0x1A → 0,073 / 0,882 / 0,211 / 0,010, bande noire 0, glyphes opaques

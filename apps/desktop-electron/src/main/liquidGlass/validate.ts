@@ -19,6 +19,7 @@ import {
   MAX_REGIONS,
   MAX_SAMPLE_RECTS,
   MAX_TRANSITION_MS,
+  SAMPLE_UNDER,
   type GlassSampleRect,
   type LiquidGlassBatch,
   type NativeGlassRegion,
@@ -102,10 +103,13 @@ export function parseBatch(raw: unknown): ParsedBatch | null {
   };
 }
 
-const sampleRectsSchema = z.array(z.object({ x: coord, y: coord, width: size, height: size })).max(MAX_SAMPLE_RECTS);
+const sampleRectsSchema = z
+  .array(z.object({ x: coord, y: coord, width: size, height: size, under: z.enum(SAMPLE_UNDER).optional() }))
+  .max(MAX_SAMPLE_RECTS);
 
-/** Les rectangles de `sample`, ou `null` si leur forme est fausse. */
+/** Les rectangles de `sample`, aux seuls champs du protocole, ou `null` si leur forme est fausse. */
 export function parseSampleRects(raw: unknown): GlassSampleRect[] | null {
   const parsed = sampleRectsSchema.safeParse(raw);
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return null;
+  return parsed.data.map(({ under, ...rect }) => (under === undefined ? rect : { ...rect, under }));
 }

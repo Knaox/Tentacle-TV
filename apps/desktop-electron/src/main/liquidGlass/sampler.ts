@@ -8,8 +8,10 @@
  * rectangles), réduite pour que le plus petit garde sa grille de 16 × 16.
  * Là où elle laisse voir le dessous, la VIDÉO : l'image décodée de mpv
  * (`videoSample.ts`, macOS, montage `fenetre`), composée SOUS la page point par
- * point (`compositeOver`) — ce que l'œil voit, au verre natif près. Rien que
- * des nombres repartent : jamais un pixel.
+ * point (`compositeOver`) — ce que l'œil voit, au verre natif près. Avec
+ * `under: "window"`, la vidéo SEULE : une capsule du lecteur ne mesure ni ses
+ * glyphes ni ses halos, dont le ton dépend de la mesure (sinon, elle se
+ * mesurerait elle-même). Rien que des nombres repartent : jamais un pixel.
  *
  * Une capture à la fois par page ; sur la vidéo, une par seconde au plus. Rien
  * au repos : tout part d'un appel de la page.
@@ -43,25 +45,19 @@ function videoUnder(window: BrowserWindow, boxes: readonly (Box | null)[]): Prom
   }
 }
 
-async function measure(contents: WebContents, rects: readonly GlassSampleRect[]): Promise<(number | null)[]> {
-  const nothing = rects.map(() => null);
-  const window = BrowserWindow.fromWebContents(contents);
-  if (window === null || window.isDestroyed() || contents.isDestroyed()) return nothing;
-  const { width: viewWidth, height: viewHeight } = window.getContentBounds();
-  const view = { x: 0, y: 0, width: viewWidth, height: viewHeight };
-  const zoom = contents.getZoomFactor();
-  // En points de la vue, rognés à ce qu'elle montre : la page et la vidéo y lisent la MÊME grille.
-  const boxes = rects.map((r) => clamp({ x: r.x * zoom, y: r.y * zoom, width: r.width * zoom, height: r.height * zoom }, view));
+/** La grille de la page sous chaque boîte (points de la vue) ; `null` : pas demandée, ou capture en échec. */
+async function pageGrids(contents: WebContents, boxes: readonly (Box | null)[]): Promise<(Uint8Array | null)[]> {
+  const none = boxes.map(() => null);
   const present = boxes.filter((box): box is Box => box !== null);
-  if (present.length === 0) return nothing;
+  if (present.length === 0) return none;
   const area = unionBox(present);
   let image: Electron.NativeImage;
   try {
     image = await contents.capturePage(area);
   } catch {
-    return nothing;
+    return none;
   }
-  if (image.isEmpty()) return nothing;
+  if (image.isEmpty()) return none;
   const factor = reductionFor(present);
   const reduced = factor < 1 ? image.resize({ width: Math.max(1, Math.round(area.width * factor)), quality: "good" }) : image;
   const bitmap = reduced.toBitmap();
@@ -71,16 +67,31 @@ async function measure(contents: WebContents, rects: readonly GlassSampleRect[])
   const scale = Math.sqrt(bitmap.length / 4 / Math.max(1, size.width * size.height));
   const width = Math.round(size.width * scale);
   const height = Math.round(size.height * scale);
-  if (width * height * 4 > bitmap.length) return nothing;
+  if (width * height * 4 > bitmap.length) return none;
   const sx = width / area.width;
   const sy = height / area.height;
-  const pages = boxes.map((b) =>
+  return boxes.map((b) =>
     b === null ? null : gridSamples(bitmap, width, height, { x: (b.x - area.x) * sx, y: (b.y - area.y) * sy, width: b.width * sx, height: b.height * sy }),
   );
-  const videos = pages.some((page) => page !== null && seesThrough(page)) ? await videoUnder(window, boxes) : null;
-  return pages.map((page, k) => {
-    if (page === null) return null;
+}
+
+async function measure(contents: WebContents, rects: readonly GlassSampleRect[]): Promise<(number | null)[]> {
+  const window = BrowserWindow.fromWebContents(contents);
+  if (window === null || window.isDestroyed() || contents.isDestroyed()) return rects.map(() => null);
+  const { width: viewWidth, height: viewHeight } = window.getContentBounds();
+  const view = { x: 0, y: 0, width: viewWidth, height: viewHeight };
+  const zoom = contents.getZoomFactor();
+  // En points de la vue, rognés à ce qu'elle montre : la page et la vidéo y lisent la MÊME grille.
+  const boxes = rects.map((r) => clamp({ x: r.x * zoom, y: r.y * zoom, width: r.width * zoom, height: r.height * zoom }, view));
+  const behind = rects.map((r) => r.under === "window");
+  const pages = await pageGrids(contents, boxes.map((box, k) => (behind[k] ? null : box)));
+  const wantsVideo = boxes.some((box, k) => box !== null && behind[k]) || pages.some((page) => page !== null && seesThrough(page));
+  const videos = wantsVideo ? await videoUnder(window, boxes) : null;
+  return rects.map((_rect, k) => {
     const video = videos?.[k] ?? null;
+    if (behind[k]) return video === null ? null : medianOfSamples(video);
+    const page = pages[k] ?? null;
+    if (page === null) return null;
     return medianOfSamples(video === null ? page : compositeOver(page, video));
   });
 }

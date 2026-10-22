@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { GLASS_LEVELS, type LiquidGlassBridge, type NativeGlassRegion } from "./protocol";
+import { GLASS_LEVELS, type GlassSampleRect, type LiquidGlassBridge, type NativeGlassRegion } from "./protocol";
 import { GLASS_SPRINGS, SPRING_CUT } from "./springCurve";
 
 function repoRoot(): string {
@@ -40,6 +40,8 @@ const REQUIRED_FIELDS: Record<RequiredKeys<NativeGlassRegion>, true> = {
 const BRIDGE_MEMBERS: Record<keyof LiquidGlassBridge, true> = {
   supported: true, refractsVideo: true, setEnabled: true, upsert: true, remove: true, sample: true,
 };
+/** Les champs d'un rectangle de `sample` — idem. */
+const SAMPLE_RECT_FIELDS: Record<keyof GlassSampleRect, true> = { x: true, y: true, width: true, height: true, under: true };
 
 const page = readFileSync(join(repoRoot(), "apps/web/src/desktop/types.ts"), "utf8");
 
@@ -87,5 +89,11 @@ describe("contrat du verre — la page et la coquille parlent la même langue", 
     for (const member of members("LiquidGlassBridge")) {
       expect(Object.keys(BRIDGE_MEMBERS)).toContain(member.name);
     }
+  });
+
+  it("chaque champ d'un rectangle de `sample` que la page envoie est connu ici (`under` compris)", () => {
+    const fields = members("NativeGlassSampleRect");
+    expect(fields.length).toBeGreaterThan(0);
+    for (const field of fields) expect(Object.keys(SAMPLE_RECT_FIELDS)).toContain(field.name);
   });
 });
