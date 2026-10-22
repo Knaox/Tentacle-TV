@@ -19,6 +19,9 @@
 /** Canal unique, sens page → principal, sans réponse : un lot par tâche JavaScript. */
 export const LIQUID_GLASS_CHANNEL = "tentacle:liquid-glass";
 
+/** Canal page → principal, AVEC réponse : la luminance sous des rectangles (`sampler.ts`). */
+export const LIQUID_GLASS_SAMPLE_CHANNEL = "tentacle:liquid-glass-sample";
+
 /** Argument de fabrication : le verdict de `availability.ts`. */
 export const AVAILABILITY_ARG = "--tentacle-liquid-glass=";
 
@@ -94,7 +97,24 @@ export interface LiquidGlassBridge {
   setEnabled(enabled: boolean): void;
   upsert(regions: readonly NativeGlassRegion[]): void;
   remove(ids: readonly string[]): void;
+  /**
+   * En plus : la luminance relative médiane (0..1, sRGB linéarisé) sous chaque
+   * rectangle (px CSS du viewport) ; `null` là où la page est transparente (la
+   * vidéo) ou si la capture échoue. Au plus toutes les 250 ms, au repos.
+   */
+  sample(rects: readonly GlassSampleRect[]): Promise<(number | null)[]>;
 }
+
+/** Un rectangle à échantillonner, en px CSS relatifs au viewport — comme une région. */
+export interface GlassSampleRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Au plus, par appel de `sample`. */
+export const MAX_SAMPLE_RECTS = 32;
 
 /** Au-delà, une région de plus est ignorée : la page a une fuite, pas un besoin. */
 export const MAX_REGIONS = 64;

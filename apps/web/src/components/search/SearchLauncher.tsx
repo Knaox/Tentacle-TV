@@ -8,6 +8,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { searchShortcutLabel } from "../../lib/shortcutLabel";
+import { useLiquidGlassSurface } from "../../theme/glass";
 import { openOmnibox } from "./omniboxStore";
 
 function SearchIcon({ className }: { className: string }) {
@@ -24,6 +25,16 @@ export const SearchLauncher = memo(function SearchLauncher({ variant, className 
   className?: string;
 }) {
   const { t } = useTranslation("search");
+  // Le champ est une capsule de verre à lui seul (Liquid Glass, mode natif) :
+  // les barres de macOS 26 sont des groupes séparés. Hors mode natif, la
+  // peau d'avant (`fallbackClassName`), classe pour classe.
+  const field = useLiquidGlassSurface({
+    shape: "capsule",
+    interactive: true,
+    className: `lgc-field group flex h-10 items-center gap-2.5 px-3.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`,
+    fallbackClassName:
+      "rounded-xl border border-line-subtle bg-fill-subtle text-content-tertiary transition-colors duration-150 hover:border-line-strong hover:bg-fill-soft hover:text-content-secondary",
+  });
   if (variant === "icon") {
     return (
       <button
@@ -42,8 +53,9 @@ export const SearchLauncher = memo(function SearchLauncher({ variant, className 
       type="button"
       onClick={() => openOmnibox()}
       aria-label={t("open")}
-      className={`lgc-field group flex h-10 items-center gap-2.5 rounded-xl border border-line-subtle bg-fill-subtle px-3.5 text-left text-sm text-content-tertiary transition-colors duration-150 hover:border-line-strong hover:bg-fill-soft hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}
+      {...field.props}
     >
+      {field.layers}
       <SearchIcon className="h-4 w-4 shrink-0 transition-colors group-hover:text-[var(--brand-light)]" />
       <span className="min-w-0 flex-1 truncate">{t("launcher")}</span>
       <kbd className="hidden shrink-0 rounded-md border border-line-subtle bg-fill-soft px-1.5 py-0.5 font-sans text-[11px] font-medium text-content-quaternary xl:inline">

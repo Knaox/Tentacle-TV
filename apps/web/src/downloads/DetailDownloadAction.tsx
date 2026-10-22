@@ -22,7 +22,7 @@ import { supportsDownloads } from "../desktop/bridge";
 import { DownloadDialog } from "./DownloadDialog";
 import { DownloadGlyph } from "./DownloadGlyph";
 import { useDownloadsList, useDownloadsVisibility, useItemDownloadState } from "./useDownloadState";
-import { GLASS_LENS_PROPS } from "../theme/glass";
+import { GLASS_LENS_PROPS, useLiquidGlassMode, useLiquidGlassSurface } from "../theme/glass";
 
 const ACTIVE_STATUSES = new Set(["queued", "downloading", "paused", "error"]);
 
@@ -53,6 +53,22 @@ export function DetailDownloadAction({ item, variant = "circle" }: { item: Media
     setWanted(false);
     setSeriesItems(episodes);
   }, [wanted, episodes, isError]);
+
+  // Dans la capsule de la fiche (verre natif) : une pastille ronde de verre
+  // clair comme ses voisines (`CapsuleButton`) ; le vert de « gardé » reste.
+  const native = useLiquidGlassMode() === "native";
+  const complete = !isSeries && state?.status === "complete";
+  const capsuleGlass = useLiquidGlassSurface({
+    level: "clear",
+    shape: "circle",
+    interactive: true,
+    className: "relative flex h-11 w-11 items-center justify-center",
+    fallbackClassName: `rounded-full transition-[color,background-color,transform] duration-150 hover:bg-white/10 active:scale-95 ${
+      // « Sur cette machine » : le vert constant de la pastille des cartes (posé sur média).
+      complete ? "text-emerald-400" : "text-on-media-secondary hover:text-on-media-primary"
+    }`,
+    style: native && complete ? { color: "var(--media-badge-success-fg)" } : undefined,
+  });
 
   if (!supportsDownloads()) return null;
   if (item.Type !== "Movie" && item.Type !== "Episode" && !isSeries) return null;
@@ -92,18 +108,16 @@ export function DetailDownloadAction({ item, variant = "circle" }: { item: Media
         disabled={wanted}
         aria-label={label}
         title={label}
-        {...(variant === "capsule" ? GLASS_LENS_PROPS : {})}
+        {...(variant === "capsule" ? { ...GLASS_LENS_PROPS, ...capsuleGlass.props } : {})}
         className={variant === "capsule"
-          ? `relative flex h-11 w-11 items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 hover:bg-white/10 active:scale-95 ${
-            // « Sur cette machine » : le vert constant de la pastille des cartes (posé sur média).
-            isComplete ? "text-emerald-400" : "text-on-media-secondary hover:text-on-media-primary"
-          }`
+          ? capsuleGlass.props.className
           : `relative flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-150 hover:scale-105 hover:bg-fill-medium active:scale-95 ${
             isComplete
               ? "border-status-success-fg bg-fill-medium text-status-success-fg"
               : "border-line-strong text-content-secondary"
           }`}
       >
+        {variant === "capsule" && capsuleGlass.layers}
         <DownloadGlyph done={isComplete} />
         {isActive && (
           <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-brand animate-pulse-glow" />

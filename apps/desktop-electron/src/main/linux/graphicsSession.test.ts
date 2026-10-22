@@ -49,6 +49,42 @@ describe("deciderSession", () => {
   });
 });
 
+describe("auto sous GNOME et wlroots : XWayland, sauf écran HDR", () => {
+  const GNOME = { ...WAYLAND, XDG_CURRENT_DESKTOP: "GNOME" };
+  const KDE = { ...WAYLAND, XDG_CURRENT_DESKTOP: "KDE" };
+  const SDR = { hdrDisplay: false, xwaylandAutoBlocked: false };
+
+  it("GNOME sans écran HDR prend XWayland : lecture fenêtrée", () => {
+    expect(decideSession(GNOME, "auto", SDR)).toMatchObject({ ozone: "x11", montage: "x11", xwaylandAuto: true });
+  });
+
+  it("sway (aucun XDG_CURRENT_DESKTOP KDE) aussi", () => {
+    expect(decideSession({ ...WAYLAND, XDG_CURRENT_DESKTOP: "sway" }, "auto", SDR).montage).toBe("x11");
+  });
+
+  it("un écran HDR branché garde Wayland, et le HDR", () => {
+    expect(decideSession(GNOME, "auto", { ...SDR, hdrDisplay: true }))
+      .toMatchObject({ ozone: null, montage: "wayland", xwaylandAuto: false });
+  });
+
+  it("KDE garde Wayland : la colle KWin y tient la lecture fenêtrée", () => {
+    expect(decideSession(KDE, "auto", SDR).montage).toBe("wayland");
+    expect(decideSession({ ...WAYLAND, XDG_CURRENT_DESKTOP: "kde:plasma" }, "auto", SDR).montage).toBe("wayland");
+  });
+
+  it("sans XWayland (DISPLAY vide), Wayland reste le seul possible", () => {
+    expect(decideSession({ ...GNOME, DISPLAY: "" }, "auto", SDR).montage).toBe("wayland");
+  });
+
+  it("un XWayland qui n'a jamais affiché n'est plus retenté", () => {
+    expect(decideSession(GNOME, "auto", { ...SDR, xwaylandAutoBlocked: true }).montage).toBe("wayland");
+  });
+
+  it("un choix explicite l'emporte sur la règle", () => {
+    expect(decideSession(GNOME, "wayland", SDR)).toMatchObject({ montage: "wayland", xwaylandAuto: false });
+  });
+});
+
 describe("lireChoixSession", () => {
   it("vaut « auto » quand le fichier n'existe pas — le premier lancement", () => {
     expect(readSessionChoice("/inexistant/xyz")).toBe("auto");

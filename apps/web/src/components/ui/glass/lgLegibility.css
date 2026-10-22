@@ -3,8 +3,8 @@
  * Le verre du lot est clair et lumineux : ce n'est plus un fond noir qui tient
  * le contraste d'un libellé, c'est son OMBRE — un halo autour du texte et des
  * icônes, comme la vibrance de macOS. Les valeurs sont des jetons du socle
- * (lg-tokens) : `--lg-label-shadow`, `--lg-media-label-shadow`,
- * `--lg-glyph-shadow`, `--lg-media-glyph-shadow`.
+ * (lg-tokens) : `--lg-label-shadow`, `--lg-glyph-shadow`, `--lg-glyph-*-on-*`,
+ * `--lg-media-label-shadow`.
  *
  * Coût : une ombre de texte ou un `drop-shadow` d'icône se peignent avec
  * l'élément, une fois ; rien ne s'anime ici.
@@ -12,35 +12,43 @@
  * Sous `:root[data-liquid-glass="native"]` seulement : le rendu d'avant n'a
  * pas d'ombre de plus. */
 
-/* Posé sur une AFFICHE (héros, fiche, plateau des cartes) : libellé blanc dans
- * les deux schémas, halo sombre — c'est lui qui tient l'AA sur un décor blanc. */
-:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media, .lg-tray) {
-  text-shadow: var(--lg-media-label-shadow);
-}
-
-:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media, .lg-tray) svg {
-  filter: var(--lg-media-glyph-shadow);
-}
-
-/* Posé sur la PAGE : l'ombre suit le schéma (halo sombre en sombre, liseré
- * clair en clair). */
-:root[data-liquid-glass="native"] :is(.lg-btn, .lg-chip, .lg-pill, .lg-field) {
+/* Les contrôles habillés en CSS posés sur la PAGE (pastilles, « Tout voir »,
+ * champ) : l'ombre suit le schéma (halo sombre en sombre, liseré clair en
+ * clair). Les surfaces de la primitive ont la leur, selon leur ton. */
+:root[data-liquid-glass="native"] :is(.lg-chip, .lg-pill, .lg-field) {
   text-shadow: var(--lg-label-shadow);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-btn, .lg-chip, .lg-pill, .lg-field) svg {
+:root[data-liquid-glass="native"] :is(.lg-chip, .lg-pill, .lg-field) svg {
   filter: var(--lg-glyph-shadow);
 }
 
-/* ── Libellés secondaires des menus ──
- * Gris sur un menu clair et coloré par ce qu'il couvre, ils tombaient sous
- * l'AA. Dans un menu de verre, les teintes tertiaire et quaternaire prennent
- * la secondaire, et tout libellé porte l'ombre du socle. Surcharge LOCALE des
- * jetons de texte : rien ne change hors des menus. */
-:root[data-liquid-glass="native"] .lg-menu {
-  --text-tertiary: var(--lg-label-secondary);
-  --text-quaternary: var(--lg-label-secondary);
-  text-shadow: var(--lg-label-shadow);
+/* ── Les textes des menus, feuilles, toasts et avis suivent le DESSOUS ──
+ * Le verre est presque transparent : ce n'est plus le thème qui dit si un
+ * libellé est clair ou sombre, c'est ce que le verre couvre (`data-lg-tone`,
+ * mesuré par la coquille — `useGlassControl`). Surcharge LOCALE des jetons de
+ * texte du thème : tout ce que la surface contient (titres, libellés, icônes
+ * en `currentColor`, champs) s'y adapte, rien ne change au dehors. Les
+ * teintes tertiaire et quaternaire prennent la secondaire : grises sur un
+ * verre clair et coloré, elles tombaient sous l'AA. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-sheet, .lg-toast, .lg-notice)[data-lg-tone="dark"] {
+  --text-primary: var(--lg-glyph-on-dark);
+  --text-secondary: var(--lg-glyph-on-dark-secondary);
+  --text-tertiary: var(--lg-glyph-on-dark-secondary);
+  --text-quaternary: var(--lg-glyph-on-dark-secondary);
+  /* Le danger aussi (« Déconnexion ») : corail sur un dessous sombre. */
+  --status-error-fg: var(--lg-danger-on-dark);
+  text-shadow: var(--lg-glyph-shadow-on-dark);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-sheet, .lg-toast, .lg-notice)[data-lg-tone="light"] {
+  --text-primary: var(--lg-glyph-on-light);
+  --text-secondary: var(--lg-glyph-on-light-secondary);
+  --text-tertiary: var(--lg-glyph-on-light-secondary);
+  --text-quaternary: var(--lg-glyph-on-light-secondary);
+  /* Bordeaux sur un dessous clair. */
+  --status-error-fg: var(--lg-danger-on-light);
+  text-shadow: var(--lg-glyph-shadow-on-light);
 }
 
 /* ── La note au repos des cartes ──

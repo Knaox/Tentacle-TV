@@ -124,9 +124,20 @@ page (`apps/web/src/desktop/types.ts`) et reflété par `protocol.ts` ;
   page par défaut), `appearance` (`"dark"` | `"light"` : la matière, quelle que
   soit l'apparence de la fenêtre — mesuré, 98,34,91 en sombre contre
   233,179,224 en clair sur le même fond).
+- Sur la vidéo, `clear` : mesuré sur une vraie image en lecture (photo détaillée,
+  grille fine), `clear` garde la photo et la grille NETTES à travers le verre
+  (luminance −15 %), quand `regular` en apparence sombre givre et assombrit
+  (−43 %) — la « dalle » de la première version. Une teinte noire légère (10 %)
+  n'y change presque rien : le noir venait du style.
 - AppKit n'a que deux styles : `clear` → `Clear`, les trois autres → `Regular` ;
   `tinted` et `prominent` se distinguent par leur teinte. `interactive` : aucune
   API publique, sans effet natif.
+- `sample(rects)` (avec réponse) : la luminance relative médiane (0..1, sRGB
+  linéarisé) sous chaque rectangle, pour que les glyphes s'adaptent au contenu
+  — une capture de la PAGE (`capturePage` sur l'union), 16 × 16 points par
+  rectangle, pixels transparents ignorés : `null` au-dessus de la vidéo, que la
+  capture ne voit pas. Vérifié dans l'app : blanc 1, noir 0, gris 50 % 0,216,
+  blanc sous du texte noir 0,85 ; 10 ms par appel.
 - Un message d'IPC par tâche JavaScript (`batcher.ts`, vidé en microtâche) ;
   le principal revalide tout (`validate.ts`, zod, région par région : une
   région folle est écartée sans perdre les retraits du même lot), applique le
@@ -178,6 +189,10 @@ Trois faits de la maquette du 21/10, qui décident de tout :
    60 ms). Seul l'animateur d'AppKit (`NSAnimationContext`) fait suivre la
    forme (17 %, 53 %, 82 % d'un trajet de 400 ms).
 3. **L'animateur rabote une courbe hors de [0, 1]** : pas de dépassement.
+
+Vérifié dans l'app : trois boutons ronds d'un même groupe (`spacing` 16) posés à
+8 points l'un de l'autre FUSIONNENT en une seule goutte, ponts de matière
+compris ; sans `spacing`, trois verres séparés.
 
 D'où : une région seule entre et sort par le fondu de SON conteneur ; un
 groupe qui naît ou se vide, par le fondu du sien ; un membre qui rejoint un
@@ -453,7 +468,23 @@ sur trois environ est REFUSÉE par la calibration (le temps GPU va alors à
 `CoreServicesUIAgent`, pas à Electron : la fenêtre n'est pas composée) ;
 relancer suffit.
 
-Ce que le banc a appris :
+**Dans l'application réelle** (22/10 : bureau de production, mode natif,
+Jellyfin jetable du banc — `BANC_STATE=<état de lg-banc> node
+apps/web/bench/glass-gpu/app-lens.mjs --home <profil jetable>`) :
+- la lentille se comporte comme au banc sur « Plus d'infos » du héros :
+  repos 1 · survol 1,04 · appui 1,099 · relâché 1,04 ; dix porteurs de
+  `data-lg-lens` sur l'accueil, AUCUN sur un verre natif ;
+- son coût propre se perd dans le bruit de la page : l'accueil AU REPOS coûte
+  déjà 26 à 35 % du GPU d'Electron (sept relevés). Cause relevée : le
+  travelling des deux images du héros et sa barre de progression sont
+  réécrits ~31 fois par seconde (cadence d'ambiance), SOUS neuf verres
+  floutés (barre de la fenêtre, boutons du héros) qui refont leur flou et leur
+  réfraction à chaque pas. Travelling masqué : ~0 % (une passe). La part du
+  verre seule n'a pas pu être isolée proprement : la mesure par processus
+  décroche par moments en cours de passe (les passes du banc de page ont, elles,
+  leur calibration).
+
+
 - un verre ne coûte RIEN tant que rien ne bouge dessus : aucune boucle au
   repos ni pointeur immobile — c'est la règle de CLAUDE.md, tenue ;
 - toute image qui change SUR un verre en fait recalculer le flou : la traîne

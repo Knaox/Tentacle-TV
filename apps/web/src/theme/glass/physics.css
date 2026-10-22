@@ -55,11 +55,13 @@
 /* ── Lentille ───────────────────────────────────────────────────────────────
  * La propriété `scale` (et non `transform`) : elle se compose avec le
  * transform d'un parent ou de framer-motion au lieu de l'écraser. Portée par
- * `data-lg-lens` ET par les boutons en verre de lg-composants (accord du
- * coordinateur : l'appui GONFLE le verre, il ne le ternit pas). Le
- * grossissement Tailwind (`hover:scale-*`, `active:scale-*`) s'y ajouterait :
- * la lentille le remplace. */
-html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary) {
+ * `data-lg-lens` seul : les boutons en verre le posent en mode natif
+ * (`PressableGlass`, `GlassButton`, cartes, capsule de la fiche) — l'appui
+ * GONFLE le verre, il ne le ternit pas. Le grossissement Tailwind
+ * (`hover:scale-*`, `active:scale-*`) s'y ajouterait : la lentille le
+ * remplace. Elle ne touche pas la réfraction de la surface : celle-ci se
+ * mesure en `offsetWidth`, qui ignore `scale` (aucune carte recalculée). */
+html[data-liquid-glass="native"] [data-lg-lens] {
   --tw-scale-x: 1;
   --tw-scale-y: 1;
   scale: 1;
@@ -73,14 +75,14 @@ html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg
     background-color var(--lg-duration-hover) var(--lg-ease-out);
 }
 @media (hover: hover) {
-  html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):hover {
+  html[data-liquid-glass="native"] [data-lg-lens]:hover {
     scale: var(--lg-lens-scale-hover);
   }
 }
-html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):active {
+html[data-liquid-glass="native"] [data-lg-lens]:active {
   scale: var(--lg-lens-scale-press);
 }
-html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):is(:disabled, [aria-disabled="true"]) {
+html[data-liquid-glass="native"] [data-lg-lens]:is(:disabled, [aria-disabled="true"]) {
   scale: 1;
 }
 
@@ -214,6 +216,6 @@ html[data-liquid-glass="native"][data-lg-motion="reduce"] {
   --lg-lens-scale-hover: 1;
   --lg-lens-scale-press: 1;
 }
-html[data-liquid-glass="native"][data-lg-motion="reduce"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary, .lg-fusion-shape) {
+html[data-liquid-glass="native"][data-lg-motion="reduce"] :is([data-lg-lens], .lg-fusion-shape) {
   transition: none;
 }

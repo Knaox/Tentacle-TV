@@ -4,15 +4,18 @@ import { useSeriesWatchState } from "@tentacle-tv/api-client";
 import { useMediaWarmup } from "../../hooks/useMediaWarmup";
 import { formatEpisodeCode, resumeState, splitMinutes, VERSION_QUERY_PARAM, type MediaItem } from "@tentacle-tv/shared";
 import { PlayIcon } from "../media/MediaDetailIcons";
-import { GlassPressable } from "../ui/glass/GlassPressable";
+import { PressableGlass } from "../ui/glass/PressableGlass";
 import { DETAIL_COLLECTION_ANCHOR } from "./detailStageGeometry";
 
 // `hero-cta-primary` : le dégradé de marque profond (libellé blanc ≥ 4,6:1),
-// ses voiles d'appui et son anneau de focus — le même que les bannières.
-const PRIMARY_CLASS = "hero-cta-primary flex h-14 items-center gap-3 overflow-hidden rounded-full pr-7 text-left";
-const PRIMARY_STYLE = { boxShadow: "0 12px 34px rgba(var(--brand-rgb), 0.42)" };
-/** En mode natif : la lentille exacte de la capsule et le reflet sous le pointeur. */
-const PRIMARY_GLASS = { lens: "prominent", shape: "capsule", specular: true } as const;
+// ses voiles d'appui et son anneau de focus — le même que les bannières. La
+// peau d'AVANT (hors verre natif) ; en natif, la marque DANS le verre.
+const PRIMARY_LAYOUT = "flex h-14 items-center gap-3 overflow-hidden pr-7 text-left";
+const PRIMARY_GLASS = {
+  appearance: { level: "prominent", tint: "brand", shape: "capsule" },
+  fallbackClassName: "hero-cta-primary rounded-full",
+  fallbackStyle: { boxShadow: "0 12px 34px rgba(var(--brand-rgb), 0.42)" },
+} as const;
 
 /**
  * L'action principale de la fiche — la seule en couleur, au dégradé de marque
@@ -46,17 +49,16 @@ export function DetailPlayButton({ item, collectionCount = 0, version = null }: 
   if (item.Type === "BoxSet") {
     if (collectionCount === 0) return null;
     return (
-      <GlassPressable
-        glass={PRIMARY_GLASS}
+      <PressableGlass
+        {...PRIMARY_GLASS}
         hoverScale={1.03}
         tapScale={0.97}
         onClick={() => document.getElementById(DETAIL_COLLECTION_ANCHOR)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-        className={`${PRIMARY_CLASS} pl-6`}
-        style={PRIMARY_STYLE}
+        className={`${PRIMARY_LAYOUT} pl-6`}
       >
         <svg className="relative h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 6h16M4 12h16M4 18h10" /></svg>
         <span className="relative whitespace-nowrap text-base font-bold">{t("media:detailBrowseCollection", { count: collectionCount })}</span>
-      </GlassPressable>
+      </PressableGlass>
     );
   }
   if (isSeries && !episode) return null;
@@ -95,21 +97,20 @@ export function DetailPlayPill({ label, remaining, progress, ariaLabel, onClick 
   onClick: () => void;
 }) {
   return (
-    <GlassPressable
-      glass={PRIMARY_GLASS}
+    <PressableGlass
+      {...PRIMARY_GLASS}
       hoverScale={1.03}
       tapScale={0.97}
       onClick={onClick}
       aria-label={ariaLabel}
-      className={`${PRIMARY_CLASS} pl-4`}
-      style={PRIMARY_STYLE}
+      className={`${PRIMARY_LAYOUT} pl-4`}
     >
       <ProgressRing progress={progress} />
       <span className="relative flex flex-col leading-tight">
         <span className="whitespace-nowrap text-base font-bold">{label}</span>
         {remaining && <span className="whitespace-nowrap text-xs font-medium">{remaining}</span>}
       </span>
-    </GlassPressable>
+    </PressableGlass>
   );
 }
 

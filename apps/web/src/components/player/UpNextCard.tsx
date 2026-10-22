@@ -245,7 +245,7 @@ export function UpNextCard({
           transition={{ duration: duration.base, ease: EASE_OUT }}
           onClick={(e) => { e.stopPropagation(); }}
         >
-          <GlassSurface className="lgp-panel lgp-upnext w-[min(420px,calc(100vw-2rem))]" group="player-corner" transition={0}>
+          <GlassSurface className="lgp-panel lgp-upnext w-[min(420px,calc(100vw-2rem))]" group="player-corner" variant="regular" transition={0}>
             {body}
           </GlassSurface>
         </motion.div>

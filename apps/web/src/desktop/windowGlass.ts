@@ -21,6 +21,7 @@ import { getLiquidGlassMode, subscribeLiquidGlassMode } from "../theme/liquidGla
 import { hostTitleBar } from "./hostChrome";
 import "./windowGlass.css";
 import "./windowGlassNav.css";
+import "./windowGlassSidebar.css";
 
 /** Le verre de fenêtre est-il rendu maintenant ? */
 export function windowGlassActive(): boolean {

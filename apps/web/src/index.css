@@ -22,6 +22,7 @@
 @import "./theme/rendering.css";
 @import "./theme/reveal.css";
 @import "./theme/rowEntrance.css";
+@import "./theme/heroMotion.css";
 @import "./theme/chrome.css";
 @import "./theme/search.css";
 @import "./theme/glass/physics.css";

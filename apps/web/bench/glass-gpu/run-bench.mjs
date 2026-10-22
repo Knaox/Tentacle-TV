@@ -24,7 +24,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { GPU_BUDGETS, gpuBusyPercent, judgeScenario, parseAgxGpuTime, summarize } from "../../src/theme/glass/gpuBudget.ts";
+import { GPU_BUDGETS, judgeScenario } from "../../src/theme/glass/gpuBudget.ts";
+import { agx, processTree, sample, summarizePass } from "./sampling.mjs";
 import { scenarioDriver } from "./scenarios.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -87,58 +88,6 @@ const FRAME_RATE_PROBE = `new Promise((res) => { let n = 0; const t0 = performan
   const f = () => { n += 1; if (performance.now() - t0 < 1000) requestAnimationFrame(f); else res(n); };
   requestAnimationFrame(f); })`;
 
-/** L'arbre de processus d'Electron (principal, rendu, GPU) et son %CPU cumulé. */
-function processTree(rootPid) {
-  const rows = execFileSync("ps", ["-A", "-o", "pid=,ppid=,%cpu="], { encoding: "utf8" })
-    .trim()
-    .split("\n")
-    .map((l) => l.trim().split(/\s+/).map(Number));
-  const pids = new Set([rootPid]);
-  for (let grew = true; grew; ) {
-    grew = false;
-    for (const [pid, ppid] of rows) {
-      if (pids.has(ppid) && !pids.has(pid)) {
-        pids.add(pid);
-        grew = true;
-      }
-    }
-  }
-  const cpu = rows.filter(([pid]) => pids.has(pid)).reduce((s, [, , c]) => s + c, 0);
-  return { pids, cpu };
-}
-
-const windowServerPid = () => Number(execFileSync("pgrep", ["-x", "WindowServer"], { encoding: "utf8" }).trim().split("\n")[0]);
-
-const agx = () =>
-  parseAgxGpuTime(execFileSync("ioreg", ["-l", "-w0", "-r", "-c", "AGXDeviceUserClient"], { encoding: "utf8", maxBuffer: 64 << 20 }));
-
-/**
- * Relevés toutes les 500 ms : occupation GPU d'Electron (sa page) et de
- * WindowServer (composition, flou natif), %CPU d'Electron.
- */
-async function sample(durationMs, rootPid) {
-  const app = [];
-  const server = [];
-  const cpu = [];
-  const ws = windowServerPid();
-  let before = agx();
-  let t0 = performance.now();
-  const end = Date.now() + durationMs;
-  while (Date.now() < end) {
-    await sleep(500);
-    const after = agx();
-    const t1 = performance.now();
-    const tree = processTree(rootPid);
-    app.push(gpuBusyPercent(before, after, tree.pids, t1 - t0));
-    server.push(gpuBusyPercent(before, after, [ws], t1 - t0));
-    cpu.push(tree.cpu);
-    before = after;
-    t0 = t1;
-  }
-  return { app, server, cpu };
-}
-
-const summarizePass = (raw) => ({ gpu: summarize(raw.app), windowServer: summarize(raw.server), cpu: summarize(raw.cpu) });
 
 async function main() {
   const outDir = mkdtempSync(join(tmpdir(), "lg-gpu-bench-"));

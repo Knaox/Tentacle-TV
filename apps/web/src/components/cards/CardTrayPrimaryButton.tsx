@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { stopCardClick } from "./cardEvents";
-import { GLASS_LENS_PROPS } from "../../theme/glass";
+import { GLASS_LENS_PROPS, useLiquidGlassSurface } from "../../theme/glass";
+import { useTrayGlassAllowed } from "./CardTrayParts";
 
 /**
  * Le ton de l'action primaire d'un plateau :
@@ -50,6 +51,19 @@ const TONES: Record<CardTrayPrimaryTone, string> = {
  * la coque du survol les arrête.
  */
 export function CardTrayPrimaryButton({ box, icon, tone, label, onPress, busy = false, children }: CardTrayPrimaryButtonProps) {
+  // Verre natif : une pastille ronde comme ses voisines — « Lire » en verre
+  // clair, « Demander » avec la marque DANS le verre (`prominent`).
+  const layout = `${box} flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${busy ? "cursor-wait" : ""}`;
+  const skin = `rounded-full transition-transform duration-150 ${busy ? "" : "hover:scale-110 active:scale-95"} ${TONES[tone]}`;
+  const glassAllowed = useTrayGlassAllowed();
+  const glass = useLiquidGlassSurface({
+    level: tone === "brand" ? "prominent" : "clear",
+    shape: "circle",
+    interactive: !busy,
+    className: layout,
+    fallbackClassName: skin,
+  });
+  const surface = glassAllowed ? glass.props : { className: `${layout} ${skin}` };
   return (
     <button
       type="button"
@@ -60,14 +74,13 @@ export function CardTrayPrimaryButton({ box, icon, tone, label, onPress, busy = 
       // La mini-carte d'aperçu la peint pleine, au dégradé de son ton (`preview/previewActions.css`).
       data-tray-primary={tone}
       {...GLASS_LENS_PROPS}
+      {...surface}
       onClick={(e) => {
         stopCardClick(e);
         if (!busy) onPress();
       }}
-      className={`${box} flex items-center justify-center rounded-full transition-transform duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
-        busy ? "cursor-wait" : "hover:scale-110 active:scale-95"
-      } ${TONES[tone]}`}
     >
+      {glassAllowed && glass.layers}
       {busy ? <Loader2 className={`${icon} animate-spin`} aria-hidden /> : children}
     </button>
   );

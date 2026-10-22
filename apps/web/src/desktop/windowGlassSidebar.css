@@ -1,0 +1,62 @@
+/* ── Liquid Glass : la barre latérale (`SettingsShell` : Réglages, Administration)
+ *
+ * Jetons dans `windowGlass.css`. Même garde : `:root[data-liquid-glass="native"]`.
+ *
+ * Un panneau FLOTTANT, en retrait des bords, comme la barre latérale des
+ * Réglages Système de macOS 26. Sans `backdrop-filter` : derrière elle, rien
+ * que le fond de la page, qui ne bouge pas — une lentille n'y courberait rien
+ * (corollaire de la règle 1 de « Coût GPU »). Le matériau du lot (refonte du
+ * 22/10) : remplissage presque transparent, reflet du haut, fil du bord à
+ * 0,5 px DEHORS et ombre qui soulève — aucun liseré gris. */
+
+@media (min-width: 768px) {
+  :root[data-liquid-glass="native"] .lgc-sidebar {
+    padding: var(--lg-chrome-sidebar-pad);
+    border-radius: var(--lg-chrome-sidebar-radius);
+    background: var(--lg-chrome-sidebar-bg);
+    box-shadow: var(--lg-chrome-sidebar-shadow);
+    /* Collée SOUS la barre et sa frange de bord, jamais dessous. */
+    top: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade) + 4px);
+  }
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item {
+  border-radius: var(--lg-chrome-sidebar-item-radius);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item:hover:not([aria-current]) {
+  background: var(--lg-chrome-item-hover);
+}
+
+/* La sélection est la lentille qui glisse (`useGlassSidebarSelection`) :
+ * l'entrée elle-même ne peint plus rien. */
+:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] {
+  background: transparent;
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-selection {
+  background: var(--lg-chrome-sidebar-selection-bg);
+  box-shadow: var(--lg-chrome-sidebar-selection-shadow);
+  pointer-events: none;
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
+  color: var(--lg-chrome-sidebar-selection-icon);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar-label {
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 12px;
+}
+
+/* ── Accessibilité de macOS (`data-lg-material`, theme/glass/accessibility.ts)
+ * Réduire la transparence (« frosted ») ou Contraste accru (« solid ») : un
+ * aplat ; en contraste accru, un bord qui se voit. */
+:root[data-liquid-glass="native"][data-lg-material] .lgc-sidebar {
+  background: var(--surface-1);
+}
+
+:root[data-liquid-glass="native"][data-lg-material="solid"] .lgc-sidebar {
+  box-shadow: 0 0 0 1px var(--lg-contrast-border);
+}

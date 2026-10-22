@@ -22,8 +22,8 @@ vi.mock("./nativeGlassPort", () => ({
   },
 }));
 vi.mock("./windowResizing", () => ({ useWindowResizing: () => viewport.resizing }));
-const presence = vi.hoisted(() => ({ present: true }));
-vi.mock("framer-motion", () => ({ useIsPresent: () => presence.present }));
+const presence = vi.hoisted(() => ({ present: true, reduced: false }));
+vi.mock("framer-motion", () => ({ useIsPresent: () => presence.present, useReducedMotion: () => presence.reduced }));
 
 const { GlassSurface, GlassChromeVisibleContext, NATIVE_FADE_MS } = await import("./GlassSurface");
 const { PlayerGlassProvider } = await import("./PlayerGlassContext");
@@ -43,7 +43,7 @@ function render(node: ReactNode, { inPip = false } = {}) {
 }
 
 describe("les régions natives du lecteur", () => {
-  beforeEach(() => { native.available = true; viewport.resizing = false; presence.present = true; });
+  beforeEach(() => { native.available = true; viewport.resizing = false; presence.present = true; presence.reduced = false; });
 
   it("verre natif, surface à l'écran : une région active", () => {
     const { calls: asked } = render(<GlassSurface className="lgp-bar">x</GlassSurface>);
@@ -79,6 +79,24 @@ describe("les régions natives du lecteur", () => {
     expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).not.toContain("data-lgp-exiting");
     presence.present = false;
     expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).toContain('data-lgp-exiting="true"');
+  });
+
+  it("contrôle qui se REPLIE : masqué, sa région reste demandée (la fin du repli, `visibility`, la retire), suivie image par image", () => {
+    const { html, calls: asked } = render(
+      <GlassChromeVisibleContext.Provider value={false}>
+        <GlassSurface className="lgp-group" collapse>x</GlassSurface>
+      </GlassChromeVisibleContext.Provider>,
+    );
+    expect(html).toContain('data-lgp-present="false"');
+    expect(html).toContain('data-lgp-collapse=""');
+    expect(asked).toEqual([{ active: true, group: "player" }]);
+    expect(transitions).toEqual([0]);
+  });
+
+  it("mouvement réduit : pas de repli suivi — la région part et revient en fondu natif", () => {
+    presence.reduced = true;
+    render(<GlassSurface className="lgp-group" collapse>x</GlassSurface>);
+    expect(transitions).toEqual([NATIVE_FADE_MS]);
   });
 
   it("sans verre natif (macOS < 26, réglage coupé) : aucune région", () => {

@@ -1,7 +1,6 @@
 import { AnimatePresence, cubicBezier, motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { JellyfinClient, RecoRowItem } from "@tentacle-tv/api-client";
-import { HERO_ZOOM_DURATION_S } from "../../hero/HeroBackdrop";
 import { HeroScrims } from "../../hero/HeroScrims";
 import { HERO_BACKDROP_WIDTH } from "../../hero/resolveBackdrop";
 import { AMBIENT_HZ, cadence } from "../../../theme/motion";
@@ -10,10 +9,9 @@ import { recoBackdropUrl } from "@tentacle-tv/api-client";
 
 // Miroir de HeroBackdrop pour un RecoRowItem (qui n'est pas un MediaItem) :
 // mêmes durées, mêmes bridages de cadence — les commentaires de mesure vivent
-// là-bas, ne pas faire dériver ces valeurs.
+// là-bas, ne pas faire dériver ces valeurs. Le zoom est la même classe
+// (`hero-zoom`, theme/heroMotion.css), jouée par le compositeur.
 const FADE_DURATION_S = 1.2;
-const TARGET_SCALE = 1.06;
-const ZOOM_EASE = cadence(AMBIENT_HZ, HERO_ZOOM_DURATION_S);
 const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1));
 
 /**
@@ -46,14 +44,11 @@ export function RecoHeroBackdrop({ item }: { item: RecoRowItem }) {
             src={url}
             alt=""
             draggable={false}
-            initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: 1, scale: TARGET_SCALE }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{
-              opacity: { duration: FADE_DURATION_S, ease: FADE_EASE },
-              scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
-            }}
-            className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
+            transition={{ opacity: { duration: FADE_DURATION_S, ease: FADE_EASE } }}
+            className="hero-zoom absolute inset-0 h-full w-full object-cover will-change-transform"
             style={{ display: broken ? "none" : undefined }}
             onError={reportFailure}
           />

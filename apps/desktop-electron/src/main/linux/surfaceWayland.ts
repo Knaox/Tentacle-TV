@@ -68,6 +68,7 @@ import { connectorForLabel, connectedDisplays } from "./displays";
 import { labelOnceMapped } from "./displayTarget";
 import { setProperty } from "../video/mpv";
 import type { VideoSurface } from "../video/surface";
+import { setFullscreenPinned } from "./fullscreenPin";
 
 /**
  * Le délai entre `file-loaded` et la reprise d'activation, MESURÉ au banc — le
@@ -107,6 +108,7 @@ export class SurfaceWayland implements VideoSurface {
     // servie, celle de mpv ne le demande jamais (`focus-on=never`).
     this.host.focus();
     this.host.on("leave-full-screen", this.resumeFullscreen);
+    setFullscreenPinned(true);
     // La visée AVANT de rendre la main — voir l'en-tête. Le compositeur met
     // ~200 ms à mapper le plein écran ; l'attente vit dans `displayTarget.ts`.
     await this.aimAtMeasure();
@@ -190,6 +192,7 @@ export class SurfaceWayland implements VideoSurface {
       clearTimeout(this.activationTimer);
       this.activationTimer = null;
     }
+    setFullscreenPinned(false);
     if (this.host.isDestroyed()) return;
     this.host.removeListener("leave-full-screen", this.resumeFullscreen);
     const before = this.before;

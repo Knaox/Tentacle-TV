@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemTrailer, type RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { HERO_INFO_CLASS, HERO_PLAY_CLASS, HERO_PLAY_STYLE } from "../../hero/HeroActions";
+import { HERO_INFO_PROPS, HERO_PLAY_PROPS } from "../../hero/HeroActions";
+import { PressableGlass } from "../../ui/glass/PressableGlass";
 import { InfoIcon, PlayIcon } from "../../icons/HeroIcons";
 import { FilmIcon } from "../../media/MediaDetailIcons";
 import { CardQuickActions } from "../../cards/CardQuickActions";
@@ -12,7 +13,6 @@ import { TrailerViewer } from "../../detail/TrailerViewer";
 import { useWebTrailerPlatform } from "../../detail/trailerPlatform";
 import { CatalogTrailerPlayer } from "../../detail/CatalogTrailerPlayer";
 import { shouldOpenYouTubeExternally } from "../../detail/youtube";
-import { PressableScale } from "../../ui/PressableScale";
 import { openExternal } from "../../../lib/openExternal";
 import { useRecoNavigation } from "../../../lib/recoNavigation";
 import { useRecoPlayTarget } from "../useRecoPlayTarget";
@@ -47,23 +47,23 @@ export function SpotlightActions({ item, media, onOpenDetail, onDismiss }: Spotl
   return (
     <div className="flex flex-wrap items-center gap-2.5">
       {target ? (
-        <PressableScale onClick={play} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
+        <PressableGlass {...HERO_PLAY_PROPS} onClick={play}>
           <PlayIcon />
           {target.label}
-        </PressableScale>
+        </PressableGlass>
       ) : (
         canOpen(item) && (
-          <PressableScale onClick={onOpenDetail} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
+          <PressableGlass {...HERO_PLAY_PROPS} onClick={onOpenDetail}>
             {t("heroOpenVigie")}
-          </PressableScale>
+          </PressableGlass>
         )
       )}
       {media && <SpotlightTrailer media={media} />}
       {target && (
-        <PressableScale onClick={onOpenDetail} className={HERO_INFO_CLASS}>
+        <PressableGlass {...HERO_INFO_PROPS} onClick={onOpenDetail}>
           <InfoIcon />
           {t("heroOpenDetail")}
-        </PressableScale>
+        </PressableGlass>
       )}
       {media && (
         <div className="hidden items-center gap-1.5 sm:flex">
@@ -100,10 +100,10 @@ function SpotlightTrailer({ media }: { media: MediaItem }) {
 
   return (
     <>
-      <PressableScale onClick={play} className={HERO_INFO_CLASS}>
+      <PressableGlass {...HERO_INFO_PROPS} onClick={play}>
         <FilmIcon />
         {t("trailer")}
-      </PressableScale>
+      </PressableGlass>
       {remote.length > 0 && <TrailerViewer open={open} onClose={() => setOpen(false)} trailers={remote} />}
       {playerOpen && target?.kind === "relay" && (
         <CatalogTrailerPlayer entries={entries} start={target.entry} language={language} onClose={() => setPlayerOpen(false)} />
