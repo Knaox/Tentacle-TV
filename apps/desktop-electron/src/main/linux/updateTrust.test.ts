@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { download, install, type OwnershipProbe } from "./update";
@@ -60,6 +60,18 @@ describe("download — URL et empreinte venues de la page", () => {
     const local = await download({ url: RELEASE, sha256: BODY_SHA.toUpperCase(), fileName: "ok.deb", onProgress: noProgress });
     expect(existsSync(local)).toBe(true);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("download — dossier de dépôt", () => {
+  it("dépose dans un dossier PRIVÉ et propre à chaque téléchargement", async () => {
+    // `/tmp` est partagé : un dossier au nom fixe pouvait être créé d'avance
+    // par un autre compte, qui aurait alors échangé le paquet entre la
+    // vérification et l'invite pkexec.
+    const a = await download({ url: RELEASE, sha256: BODY_SHA, fileName: "a.deb", onProgress: noProgress });
+    const b = await download({ url: RELEASE, sha256: BODY_SHA, fileName: "a.deb", onProgress: noProgress });
+    expect(path.dirname(a)).not.toBe(path.dirname(b));
+    expect(statSync(path.dirname(a)).mode & 0o077).toBe(0);
   });
 });
 
