@@ -25,17 +25,48 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     groups:
-      # Un seul PR pour tout le menu fretin, un par écosystème lourd.
-      expo-react-native:
-        patterns: ["expo", "expo-*", "@expo/*", "react-native", "react-native-*", "@react-native/*", "@react-native-community/*"]
+      # Un PR par famille, chacune prouvée par SES tests : le serveur par ceux
+      # du backend, l'outillage par lint et typecheck, le reste ensemble.
+      server:
+        patterns: ["fastify", "@fastify/*", "prisma", "@prisma/*", "undici", "ws", "@types/ws", "zod", "pino*"]
+        update-types: ["minor", "patch"]
+      tooling:
+        patterns: ["eslint", "eslint-*", "@eslint/*", "typescript-eslint", "globals", "typescript", "vitest", "@vitest/*", "tsx", "@types/*"]
         update-types: ["minor", "patch"]
       minor-and-patch:
         patterns: ["*"]
-        exclude-patterns: ["@tentacle-tv/*"]
         update-types: ["minor", "patch"]
     ignore:
       # Paquets du workspace : jamais servis par le registre.
       - dependency-name: "@tentacle-tv/*"
+      # Mobile et TV : Expo et React Native ne montent QUE par une mise à niveau
+      # du SDK (`npx expo install --fix`, `react-native-tvos`), jamais paquet par
+      # paquet — Dependabot proposait expo-splash-screen 31 → 58 (un autre SDK)
+      # et @react-native/* 0.80 → 0.88 (désaligné de react-native-tvos 0.80).
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "@expo/*"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "@react-native/*"
+      - dependency-name: "@react-native-community/*"
+      - dependency-name: "@react-navigation/*"
+      - dependency-name: "nativewind"
+      # React suit le moteur de rendu de React Native (19.1.0 exactement pour
+      # la TV) : il monte avec le SDK, pas seul.
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "@types/react"
+      - dependency-name: "@types/react-dom"
+      # koffi pilote mpv dans le bureau et Tentacle Server pour Windows : une
+      # montée se valide sur les trois OS, à la main.
+      - dependency-name: "koffi"
+      # esbuild est en 0.x : une « mineure » y est une rupture.
+      - dependency-name: "esbuild"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # Electron : une majeure se prépare (fuses, signature, MAS, MSIX).
+      - dependency-name: "electron"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directories: ["/", "/.github/actions/*"]
@@ -50,8 +81,11 @@ updates:
     commit-message:
       prefix: "chore(ci)"
     groups:
+      # Les mineures et correctifs ensemble ; une MAJEURE a son propre PR, à
+      # éprouver par un cran build de chaque livraison avant de la fusionner.
       actions:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # Images de base épinglées par empreinte (Dockerfile racine, port-check) :
   # sans ces mises à jour, la base vieillit et la garde Trivy finit par bloquer.
