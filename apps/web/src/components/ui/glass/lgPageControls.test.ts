@@ -166,6 +166,15 @@ describe("les contrôles des pages en verre", () => {
     }
   });
 
+  it("le danger se lit sur le verre, aux deux tons", () => {
+    const darkBg = stackAll(token(ROOT, "--lgp-fill-hover-on-dark"), DARK_PANEL);
+    const lightBg = stackAll(token(ROOT, "--lgp-fill-on-light"), LIGHT_PANEL);
+    // Les valeurs de repli sont celles du socle (`--lg-danger-on-*`).
+    const fallback = (name: string) => /,\s*(#[0-9a-f]{6})\)/i.exec(token(ROOT, name))![1];
+    expect(contrast(parse(fallback("--lgp-danger-on-dark")), darkBg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(parse(fallback("--lgp-danger-on-light")), lightBg)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("« Partager » : la marque du libellé reste lisible sur le verre", () => {
     const content = rules(CONTENT);
     const dark = content.find(([s]) => s === ':root[data-liquid-glass="native"]')![1];

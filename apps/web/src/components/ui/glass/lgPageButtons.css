@@ -36,10 +36,11 @@
   color: var(--lgp-glyph);
 }
 
-/* Le danger garde son rouge (le thème le tient lisible sur un fond de page). */
-:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface:not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
-:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface:not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
-  color: var(--status-error-fg, var(--status-error));
+/* Le danger garde son rouge, au TON du verre (corail sur sombre, bordeaux sur clair). */
+/* (Spécificité doublée sur la classe : la règle générale en a une de plus.) */
+:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface.bg-danger-surface:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
+:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface.bg-danger-surface:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+  color: var(--lgp-danger);
 }
 
 /* ══ L'action principale : `glassProminent` ════════════════════════════════ */

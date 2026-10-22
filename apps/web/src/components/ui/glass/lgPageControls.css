@@ -40,6 +40,8 @@
   --lgp-depth-on-dark: 0 0.5px 1px rgba(0, 0, 0, 0.55), 0 4px 12px -4px rgba(0, 0, 0, 0.55);
   --lgp-glyph-on-dark: rgba(255, 255, 255, 0.94);
   --lgp-glyph-secondary-on-dark: rgba(255, 255, 255, 0.76);
+  /* Le danger au ton du verre (corail) : le rouge du thème y tombait à 3,9:1. */
+  --lgp-danger-on-dark: var(--lg-surface-danger-on-dark, #ffc4bc);
   /* La LENTILLE d'un segmenté (le segment choisi), un cran plus présente. */
   --lgp-lens-fill-on-dark: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 62%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.11) 100%);
@@ -60,6 +62,7 @@
   --lgp-depth-on-light: 0 0.5px 1px rgba(0, 0, 0, 0.12), 0 3px 10px -3px rgba(0, 0, 0, 0.16);
   --lgp-glyph-on-light: rgba(12, 12, 18, 0.88);
   --lgp-glyph-secondary-on-light: rgba(12, 12, 18, 0.7);
+  --lgp-danger-on-light: var(--lg-danger-on-light, #6e0b10);
   --lgp-lens-fill-on-light: var(--lgp-sheen-on-light), linear-gradient(180deg, #ffffff 0%, rgba(252, 252, 254, 0.92) 100%);
   --lgp-lens-edge-on-light: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 1px 0 #ffffff;
   --lgp-lens-depth-on-light: 0 1px 2px rgba(0, 0, 0, 0.14), 0 3px 9px -2px rgba(0, 0, 0, 0.16);
@@ -91,6 +94,7 @@
   --lgp-depth: var(--lgp-depth-on-dark);
   --lgp-glyph: var(--lgp-glyph-on-dark);
   --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-dark);
+  --lgp-danger: var(--lgp-danger-on-dark);
   --lgp-lens-fill: var(--lgp-lens-fill-on-dark);
   --lgp-lens-edge: var(--lgp-lens-edge-on-dark);
   --lgp-lens-depth: var(--lgp-lens-depth-on-dark);
@@ -107,6 +111,7 @@
   --lgp-depth: var(--lgp-depth-on-light);
   --lgp-glyph: var(--lgp-glyph-on-light);
   --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-light);
+  --lgp-danger: var(--lgp-danger-on-light);
   --lgp-lens-fill: var(--lgp-lens-fill-on-light);
   --lgp-lens-edge: var(--lgp-lens-edge-on-light);
   --lgp-lens-depth: var(--lgp-lens-depth-on-light);
@@ -121,6 +126,7 @@
   --lgp-depth: var(--lgp-depth-on-dark);
   --lgp-glyph: var(--lgp-glyph-on-dark);
   --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-dark);
+  --lgp-danger: var(--lgp-danger-on-dark);
   --lgp-lens-fill: var(--lgp-lens-fill-on-dark);
   --lgp-lens-edge: var(--lgp-lens-edge-on-dark);
   --lgp-lens-depth: var(--lgp-lens-depth-on-dark);
