@@ -1,10 +1,11 @@
 {
+  "//types": "Les globaux de Node (URL, navigator, Response…) que shared emploie, sans le DOM. Vitest 3 les apportait en douce par ses propres types ; vitest 4 ne le fait plus.",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
     "jsx": "react-jsx",
     "lib": ["ES2022"],
-    "types": []
+    "types": ["node"]
   },
   "include": ["src/**/*"]
 }
