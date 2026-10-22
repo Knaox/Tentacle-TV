@@ -11,7 +11,8 @@
  * dessous à l'ouverture (bancs reproductibles) ; `?bandes=0` rend le menu
  * d'un seul ton (comparaison avec le ton par bande) ; `?vue=composants` montre les VRAIS
  * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
- * surfaces de la primitive. Hors du mode natif, le labo montre le
+ * surfaces de la primitive ; `?vue=contenu` la couche de contenu (`labContent.tsx`,
+ * axe D du lot lg2). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -23,6 +24,7 @@ import { useLiquidGlassMode } from "../../theme/glass";
 import { backdropToneMeasured } from "../../theme/glass/useBackdropTone";
 import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop";
 import { LabComponents } from "./labComponents";
+import { LabContent } from "./labContent";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
@@ -32,10 +34,12 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants";
+type LabView = "surfaces" | "composants" | "contenu";
 
-const initialView = (): LabView =>
-  new URLSearchParams(window.location.search).get("vue") === "composants" ? "composants" : "surfaces";
+const initialView = (): LabView => {
+  const asked = new URLSearchParams(window.location.search).get("vue");
+  return asked === "composants" || asked === "contenu" ? asked : "surfaces";
+};
 
 const chip = (active: boolean) => ({
   padding: "4px 9px",
@@ -83,6 +87,7 @@ function LabPanel({ backdrop, onBackdrop, view, onView }: LabPanelProps) {
       <div style={{ display: "flex", marginBottom: 6 }}>
         <button type="button" onClick={() => onView("surfaces")} style={{ ...chip(view === "surfaces"), margin: 2 }}>surfaces</button>
         <button type="button" onClick={() => onView("composants")} style={{ ...chip(view === "composants"), margin: 2 }}>composants</button>
+        <button type="button" onClick={() => onView("contenu")} style={{ ...chip(view === "contenu"), margin: 2 }}>contenu</button>
       </div>
       <div style={{ display: "flex", marginBottom: 6 }}>
         <button type="button" onClick={() => setMode("dark")} style={{ ...chip(scheme === "dark"), margin: 2 }}>sombre</button>
@@ -112,6 +117,8 @@ export function GlassLab() {
       <LabBackdropView kind={backdrop} />
       {view === "composants" ? (
         <LabComponents top={top} />
+      ) : view === "contenu" ? (
+        <LabContent top={top} />
       ) : (
         <>
           <LabCardTray poster={poster} top={top + 300} left={Math.max(24, width - 360)} />

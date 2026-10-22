@@ -49,9 +49,10 @@
   --lgd-tab-selected: #3a3a3f;
   /* Une bascule ALLUMÉE : la couleur d'accent, unie (pas le dégradé). */
   --lgd-accent: rgb(var(--brand-rgb));
-  /* Le libellé d'un filtre actif : la marque « en touche », lisible — 4,8:1
-   * sur le bouton choisi, 7:1 sur un groupe (`--brand-light` : 3,3:1). */
-  --lgd-accent-fg: #c4b5fd;
+  /* Le libellé d'un filtre actif : la marque « en touche », lisible — 4,7:1
+   * sur le bouton choisi (#5D5D5E sur un groupe #18181B ; `--brand-light` :
+   * 2,6:1, #C4B5FD : 3,6:1). */
+  --lgd-accent-fg: #ddd6fe;
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
@@ -164,9 +165,9 @@
 
 /* ══ 5. Le texte tertiaire en clair ═══════════════════════════════════════
  *
- * `rgba(11, 11, 16, 0.55)` donne 4,2:1 sur le remplissage d'un groupe et sur
- * le fond de la page (#F4F4F7) — sous l'AA des légendes de réglages. 0,64 :
- * 5,6:1 sur le groupe, 5,8:1 sur la page. En sombre, 6,2:1 : inchangé. */
+ * `rgba(11, 11, 16, 0.55)` donne 4,4:1 sur un groupe blanc et 4,2:1 sur le
+ * fond de la page (#F4F4F7) — sous l'AA des légendes de réglages. 0,64 :
+ * 6:1 sur le groupe, 5,5:1 sur la page. En sombre, ≥ 6:1 : inchangé. */
 :root[data-liquid-glass="native"][data-theme="light"] {
   --text-tertiary: rgba(11, 11, 16, 0.64);
 }
