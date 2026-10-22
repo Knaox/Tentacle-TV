@@ -197,6 +197,10 @@
 
   --lg-regular-saturate: 1.55;
   --lg-tinted-saturate: 1.5;
+  /* Le verre CLAIR garde la couleur de son dessous (un brun reste brun) : sur
+   * un thème clair, sans ce coup de saturation, il virait au gris. */
+  --lg-clear-saturate: 1.5;
+  --lg-clear-brightness: 1.04;
   --lg-regular-brightness: 1.08;
   --lg-tinted-brightness: 1.05;
 

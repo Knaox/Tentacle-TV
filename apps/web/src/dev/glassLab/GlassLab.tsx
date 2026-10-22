@@ -22,7 +22,7 @@ import { useLiquidGlassMode } from "../../theme/glass";
 import { backdropToneMeasured } from "../../theme/glass/useBackdropTone";
 import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop";
 import { LabComponents } from "./labComponents";
-import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer } from "./labSurfaces";
+import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
 
@@ -115,6 +115,7 @@ export function GlassLab() {
           <LabCardTray poster={poster} top={top + 300} left={Math.max(24, width - 360)} />
           <LabNav top={top} />
           <LabMenu top={top + 66} />
+          <LabRowEdge top={top + 200} />
           <LabHeroActions top={top + 470} />
           <LabPlayer bottom={24} />
         </>

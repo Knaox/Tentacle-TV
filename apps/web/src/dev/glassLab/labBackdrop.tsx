@@ -8,6 +8,8 @@
  *  - `illustrations` : la troupe riso embarquée (`public/avatars/`, détaillée) ;
  *  - `texte` : une typographie dense, noir sur blanc et blanc sur noir ;
  *  - `mire` : barres de couleur, lignes fines, damier ;
+ *  - `brun` : un brun-rouge MOYEN et détaillé (trame, typographie) — le cas
+ *    où un verre clair vire au gris ;
  *  - `blanc`, `noir` : les extrêmes, avec une trame fine.
  *
  * Styles en ligne seulement : le labo n'existe que dans les paquets de
@@ -22,9 +24,9 @@ import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
 
-export type LabBackdrop = "affiches" | "illustrations" | "texte" | "mire" | "blanc" | "noir";
+export type LabBackdrop = "affiches" | "illustrations" | "texte" | "mire" | "brun" | "blanc" | "noir";
 
-export const LAB_BACKDROPS: readonly LabBackdrop[] = ["affiches", "illustrations", "texte", "mire", "blanc", "noir"];
+export const LAB_BACKDROPS: readonly LabBackdrop[] = ["affiches", "illustrations", "texte", "mire", "brun", "blanc", "noir"];
 
 interface LabItem {
   Id: string;
@@ -127,6 +129,36 @@ function TestCard() {
   );
 }
 
+/** Des affiches brun-rouge de luminance MOYENNE, trame et texte compris. */
+function BrownBackdrop() {
+  const tones = ["#8a3b2a", "#7a2f24", "#9b4a32", "#6e2a22", "#a0522d", "#843a2c"];
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", background: "#3a1712" }}>
+      {Array.from({ length: 40 }, (_, i) => (
+        <div
+          key={i}
+          style={{
+            width: 213,
+            height: 320,
+            background: tones[i % tones.length],
+            backgroundImage:
+              "radial-gradient(rgba(255,214,170,0.35) 1.2px, transparent 1.6px), linear-gradient(160deg, rgba(255,190,140,0.25), rgba(0,0,0,0.35))",
+            backgroundSize: "7px 7px, 100% 100%",
+            color: "rgba(255,226,200,0.9)",
+            padding: 18,
+            fontWeight: 800,
+            fontSize: 26,
+            lineHeight: 1.05,
+            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.25)",
+          }}
+        >
+          {["ROUILLE", "TERRE BRÛLÉE", "LE DÉSERT", "BRIQUE", "CUIVRE"][i % 5]}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SolidBackdrop({ dark }: { dark: boolean }) {
   const line = dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.12)";
   return (
@@ -151,6 +183,7 @@ export const LabBackdropView = memo(function LabBackdropView({ kind }: { kind: L
   const library = useLibraryImages();
   if (kind === "texte") return <TextBackdrop />;
   if (kind === "mire") return <TestCard />;
+  if (kind === "brun") return <BrownBackdrop />;
   if (kind === "blanc" || kind === "noir") return <SolidBackdrop dark={kind === "noir"} />;
 
   const posters = kind === "affiches" && library.posters.length > 0 ? library.posters : ILLUSTRATIONS;

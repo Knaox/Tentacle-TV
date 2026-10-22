@@ -147,6 +147,21 @@ export interface LiquidGlassBridge {
   upsert(regions: readonly NativeGlassRegion[]): void;
   /** Retire des régions par identifiant. */
   remove(ids: readonly string[]): void;
+  /**
+   * La luminance relative (médiane, 0..1) sous chaque rectangle — en px CSS
+   * relatifs au viewport, 32 au plus par appel —, ou `null` si la capture
+   * échoue : la lisibilité ADAPTATIVE du verre (`theme/glass/useBackdropTone`).
+   * Absent : le ton du thème.
+   */
+  sample?(rects: readonly NativeGlassSampleRect[]): Promise<(number | null)[]>;
+}
+
+/** Un rectangle à mesurer, comme une région : px CSS, relatif au viewport. */
+export interface NativeGlassSampleRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
 }
 
 declare global {
