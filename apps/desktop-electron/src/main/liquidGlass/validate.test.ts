@@ -65,4 +65,11 @@ describe("parseSampleRects", () => {
     expect(parseSampleRects("tout")).toBeNull();
     expect(parseSampleRects(new Array(33).fill({ x: 0, y: 0, width: 1, height: 1 }))).toBeNull();
   });
+
+  it("garde `under: \"window\"` (la vidéo seule), refuse toute autre valeur, et rien d'inconnu ne passe", () => {
+    expect(parseSampleRects([{ x: 0, y: 0, width: 120, height: 40, under: "window" }])).toEqual([{ x: 0, y: 0, width: 120, height: 40, under: "window" }]);
+    expect(parseSampleRects([{ x: 0, y: 0, width: 120, height: 40, under: "page" }])).toBeNull();
+    expect(parseSampleRects([{ x: 0, y: 0, width: 120, height: 40, under: "window", selector: "x" }])?.[0]).not.toHaveProperty("selector");
+    expect(parseSampleRects([{ x: 0, y: 0, width: 120, height: 40 }])?.[0]).not.toHaveProperty("under");
+  });
 });
