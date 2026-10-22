@@ -15,6 +15,7 @@ import {
   Check,
   Heart,
   Info,
+  LogOut,
   Maximize,
   Pause,
   PictureInPicture2,
@@ -45,6 +46,7 @@ interface GlassProps {
   style?: CSSProperties;
   label?: string;
   interactive?: boolean;
+  bands?: boolean;
   children?: ReactNode;
 }
 
@@ -151,15 +153,16 @@ export function LabCardTray({ poster, top, left }: { poster?: string; top: numbe
   );
 }
 
-export function LabMenu({ top }: { top: number }) {
+export function LabMenu({ top, bands }: { top: number; bands: boolean }) {
+  // Pas de `color` en ligne : une rangée prend la couleur de SA bande.
   const item = (icon: ReactNode, text: string) => (
-    <button type="button" style={{ ...row, gap: 12, width: "100%", height: 40, padding: "0 14px", background: "none", border: 0, color: "inherit", fontSize: 15, borderRadius: 10 }}>
+    <button type="button" style={{ ...row, gap: 12, width: "100%", height: 40, padding: "0 14px", background: "none", border: 0, fontSize: 15, borderRadius: 10 }}>
       {icon}
       {text}
     </button>
   );
   return (
-    <Glass radius="lg" style={{ position: "fixed", top, right: 24, width: 280, padding: 8, zIndex: 30 }}>
+    <Glass radius="lg" bands={bands} style={{ position: "fixed", top, right: 24, width: 280, padding: 8, zIndex: 30 }}>
       <div style={{ ...row, gap: 12, padding: "8px 10px 12px" }}>
         <span style={{ ...row, justifyContent: "center", width: 40, height: 40, borderRadius: 20, fontWeight: 700, color: "#fff", background: "var(--cta-brand-gradient)" }}>K</span>
         <div>
@@ -170,6 +173,10 @@ export function LabMenu({ top }: { top: number }) {
       {item(<Settings size={ICON} />, "Paramètres du compte")}
       {item(<Bell size={ICON} />, "Notifications")}
       {item(<Users size={ICON} />, "Famille")}
+      <button type="button" style={{ ...row, gap: 12, width: "100%", height: 40, padding: "0 14px", background: "none", border: 0, fontSize: 15, borderRadius: 10, color: "var(--lg-danger)" }}>
+        <LogOut size={ICON} />
+        Déconnexion
+      </button>
     </Glass>
   );
 }
