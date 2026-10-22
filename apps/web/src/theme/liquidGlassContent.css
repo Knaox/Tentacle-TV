@@ -1,0 +1,172 @@
+/* ── Liquid Glass : la COUCHE DE CONTENU (lot lg2, 22/10) ─────────────────
+ *
+ * Règle d'Apple (HIG « Materials ») : le verre est la couche FONCTIONNELLE —
+ * barres, menus, feuilles, contrôles qui flottent. Le CONTENU (groupes de
+ * réglages, tuiles, panneaux d'outils posés dans la page, sections) prend des
+ * REMPLISSAGES sobres et opaques, comme Réglages Système de macOS 26 : un
+ * gris à peine plus clair que la fenêtre en sombre, à peine plus foncé en
+ * clair, un liseré discret, aucune ombre, aucun flou, aucune teinte de marque.
+ * Opaques : le remplissage se compose sur le fond de la page (`--lgd-base`).
+ *
+ * Les classes-marqueurs n'ont AUCUN style hors de la porte : le rendu d'avant,
+ * au pixel près (tenu par `liquidGlassTokens.test.ts`).
+ *
+ *  • `.lg-content`         un conteneur de contenu (groupe, panneau, tuile) ;
+ *  • `.lg-content-tile`    … qui réagit au survol (tuile qui filtre) ;
+ *  • `.lg-content-control` un petit contrôle DANS le contenu (pastille de
+ *                          filtre, bouton rond, champ) : remplissage, jamais
+ *                          un verre de plus ;
+ *  • `.lg-seg` / `.lg-seg-marker` le contrôle segmenté des barres d'outils :
+ *                          piste en remplissage, segment choisi en bouton
+ *                          NEUTRE plus clair, jamais un aplat violet.
+ *
+ * Jetons : ceux du socle (`--lg-content-*`, `--lg-separator`) quand ils
+ * existent, sinon un repli à la valeur visée. Les jetons LOCAUX `--lgd-*`
+ * (D = contenu) les composent ; ils ne servent qu'ici et dans les contrôles
+ * de contenu de `components/ui/glass/lgControls.css`.
+ *
+ * `!important` seulement contre un style EN LIGNE (le panneau d'outils de la
+ * bibliothèque, le repère du contrôle segmenté) ; ailleurs, la spécificité de
+ * la porte (0,3,0) l'emporte sur les utilitaires Tailwind (0,1,0 et 0,2,0). */
+
+:root[data-liquid-glass="native"] {
+  /* Le fond sur lequel un remplissage se compose : celui de la page. */
+  --lgd-base: var(--surface-0);
+  --lgd-fill: var(--lg-content-fill, rgba(255, 255, 255, 0.065));
+  --lgd-fill-hover: var(--lg-content-fill-hover, rgba(255, 255, 255, 0.1));
+  --lgd-stroke: var(--lg-content-stroke, rgba(255, 255, 255, 0.07));
+  /* Un contrôle posé dans un groupe : un cran au-dessus du groupe. */
+  --lgd-control: rgba(255, 255, 255, 0.08);
+  --lgd-control-hover: rgba(255, 255, 255, 0.13);
+  /* Le segment choisi : un bouton neutre, plus clair que sa piste. */
+  --lgd-selected: rgba(255, 255, 255, 0.24);
+  --lgd-selected-fg: #ffffff;
+  --lgd-selected-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  /* Une bascule ALLUMÉE : la couleur d'accent, unie (pas le dégradé). */
+  --lgd-accent: rgb(var(--brand-rgb));
+  /* Le libellé d'un filtre actif : la marque « en touche », lisible — 4,8:1
+   * sur le bouton choisi, 7:1 sur un groupe (`--brand-light` : 3,3:1). */
+  --lgd-accent-fg: #c4b5fd;
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lgd-fill: var(--lg-content-fill, rgba(0, 0, 0, 0.04));
+  --lgd-fill-hover: var(--lg-content-fill-hover, rgba(0, 0, 0, 0.065));
+  --lgd-stroke: var(--lg-content-stroke, rgba(0, 0, 0, 0.06));
+  --lgd-control: rgba(0, 0, 0, 0.055);
+  --lgd-control-hover: rgba(0, 0, 0, 0.085);
+  --lgd-selected: #ffffff;
+  --lgd-selected-fg: #0b0b10;
+  --lgd-selected-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  --lgd-accent-fg: #6d28d9; /* 7,1:1 sur le bouton choisi, 5,9:1 sur un groupe */
+}
+
+/* ══ 1. Les conteneurs ════════════════════════════════════════════════════ */
+:root[data-liquid-glass="native"] .lg-content {
+  /* OPAQUE : le remplissage est composé sur le fond de la page. Un panneau
+   * qui chevauche le bas d'une bannière (Bibliothèque, Ma liste, Mes favoris)
+   * laissait voir l'affiche au travers — illisible en clair (banc du 22/10). */
+  background: linear-gradient(var(--lgd-fill), var(--lgd-fill)), var(--lgd-base) !important;
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--lgd-stroke);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"] .lg-content-tile:hover {
+  background: linear-gradient(var(--lgd-fill-hover), var(--lgd-fill-hover)), var(--lgd-base) !important;
+}
+
+/* ══ 2. Les petits contrôles du contenu ═══════════════════════════════════ */
+:root[data-liquid-glass="native"] .lg-content-control {
+  background: var(--lgd-control);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"] .lg-content-control:hover {
+  background: var(--lgd-control-hover);
+}
+
+/* ══ 3. Le contrôle segmenté des barres d'outils ══════════════════════════ */
+:root[data-liquid-glass="native"] .lg-seg {
+  background: var(--lgd-control);
+  box-shadow: none;
+}
+
+:root[data-liquid-glass="native"] .lg-seg-marker {
+  background: var(--lgd-selected) !important;
+  box-shadow: var(--lgd-selected-shadow) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"]) {
+  color: var(--lgd-selected-fg);
+}
+
+/* Le compte d'un segment choisi (Ma liste) : neutre, comme son segment. */
+:root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"]) .lg-seg-count {
+  background: var(--lgd-control);
+  color: var(--lgd-selected-fg);
+}
+
+/* Sur un remplissage opaque, le halo de lisibilité des verres clairs
+ * (`lgLegibility.css`) n'a plus rien à tenir : il épaississait les libellés.
+ * `:not(.lg-surface)` pour l'emporter sur sa règle, chargée après. */
+:root[data-liquid-glass="native"] :is(.lg-chip, .lg-pill, .lg-field, .lg-content):not(.lg-surface) {
+  text-shadow: none;
+}
+
+:root[data-liquid-glass="native"] :is(.lg-chip, .lg-pill, .lg-field):not(.lg-surface) svg {
+  filter: none;
+}
+
+/* Les ornements de marque d'un conteneur (filet violet → rose, lavis) : le
+ * contenu n'a pas de teinte de marque sous le verre de macOS. */
+:root[data-liquid-glass="native"] .lg-content-ornament {
+  display: none;
+}
+
+/* ══ 4. Un conteneur qui est AUSSI un filtre (tuiles du bilan) ═════════════
+ *
+ * Choisi : un cran plus clair, liseré d'accent, et la pastille d'icône en
+ * accent UNI — jamais le dégradé ni un fond violet sur toute la tuile. */
+:root[data-liquid-glass="native"] .lg-content[aria-pressed="true"] {
+  background: linear-gradient(var(--lgd-fill-hover), var(--lgd-fill-hover)), var(--lgd-base) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(var(--brand-rgb), 0.7);
+}
+
+:root[data-liquid-glass="native"] .lg-content[aria-pressed="true"] .lg-content-badge {
+  background: var(--lgd-accent) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-content[aria-pressed="true"] .text-\[var\(--brand-light\)\] {
+  color: var(--lgd-accent-fg);
+}
+
+/* ══ 5. Le texte tertiaire en clair ═══════════════════════════════════════
+ *
+ * `rgba(11, 11, 16, 0.55)` donne 4,2:1 sur le remplissage d'un groupe et sur
+ * le fond de la page (#F4F4F7) — sous l'AA des légendes de réglages. 0,64 :
+ * 5,6:1 sur le groupe, 5,8:1 sur la page. En sombre, 6,2:1 : inchangé. */
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --text-tertiary: rgba(11, 11, 16, 0.64);
+}
+
+/* Un geste repérable sans être l'action principale (« Partager ») : le
+ * remplissage des contrôles, la marque sur le seul libellé. */
+:root[data-liquid-glass="native"] .lg-content-accent {
+  color: var(--lgd-accent-fg);
+}
+
+/* Désactivé, un conteneur garde son fond OPAQUE : c'est son contenu qui
+ * s'efface. Une `opacity` sur toute la tuile laissait voir la bannière
+ * au travers (tuiles « 0 Séries » de Mes favoris). */
+:root[data-liquid-glass="native"] .lg-content:disabled {
+  opacity: 1;
+}
+
+:root[data-liquid-glass="native"] .lg-content:disabled > :not(.pointer-events-none) {
+  /* Le calque de survol (`pointer-events-none`) garde son opacité nulle. */
+  opacity: 0.45;
+}

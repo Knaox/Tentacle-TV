@@ -34,7 +34,8 @@ interface SegmentedControlProps<T extends string> {
  * Le contrôle segmenté des barres d'outils — Bibliothèque, Ma liste, Mes
  * favoris : une pilule opaque (`--surface-2`, liseré fort, comme les
  * pastilles de filtre), un repère au dégradé de marque qui glisse d'un
- * segment à l'autre.
+ * segment à l'autre. Sous le verre de macOS 26, celui de macOS : piste en
+ * remplissage, repère en bouton neutre (`lg-seg`, `theme/liquidGlassContent.css`).
  *
  * Le repère se déplace par `layoutId`, donc en `transform` ; immédiat quand
  * l'utilisateur réduit les animations. Aucune couleur de fond animée : le
@@ -69,7 +70,7 @@ export function SegmentedControl<T extends string>({
       role={radio ? "radiogroup" : "group"}
       aria-label={label}
       onKeyDown={onKeyDown}
-      className="inline-flex shrink-0 items-center rounded-full bg-[color:var(--surface-2)] p-[3px] ring-1 ring-line-strong"
+      className="lg-seg inline-flex shrink-0 items-center rounded-full bg-[color:var(--surface-2)] p-[3px] ring-1 ring-line-strong"
     >
       {options.map((opt, i) => {
         const selected = opt.value === value;
@@ -94,7 +95,7 @@ export function SegmentedControl<T extends string>({
                 aria-hidden
                 layoutId={markerId}
                 transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
-                className="absolute inset-0 -z-10 rounded-full"
+                className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
                 style={{
                   background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.95), rgba(var(--brand-accent-rgb),0.9))",
                   boxShadow: "0 2px 10px rgba(var(--brand-rgb),0.35)",
@@ -104,7 +105,7 @@ export function SegmentedControl<T extends string>({
             {opt.icon ?? opt.label}
             {opt.count !== undefined && (
               <span
-                className={`ml-1.5 rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
+                className={`lg-seg-count ml-1.5 rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
                   selected ? "bg-black/20 text-cta-brand-fg" : "bg-fill-soft text-content-tertiary"
                 }`}
               >
