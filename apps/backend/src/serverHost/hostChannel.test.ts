@@ -5,7 +5,7 @@
  */
 
 import { EventEmitter } from "events";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 import { createHostChannel, HostRequestError, type HostChannelHandlers, type HostPort } from "./hostChannel";
 
 class FakePort extends EventEmitter implements HostPort {
@@ -20,8 +20,8 @@ class FakePort extends EventEmitter implements HostPort {
 
 const STATUS = { bootId: "boot", appState: "running", playbackActive: false, restartPending: false };
 
-function handlers(): HostChannelHandlers & { shutdown: ReturnType<typeof vi.fn> } {
-  return { shutdown: vi.fn(), status: vi.fn(async () => STATUS) };
+function handlers(): HostChannelHandlers & { shutdown: Mock<HostChannelHandlers["shutdown"]> } {
+  return { shutdown: vi.fn<HostChannelHandlers["shutdown"]>(), status: vi.fn(async () => STATUS) };
 }
 
 afterEach(() => {

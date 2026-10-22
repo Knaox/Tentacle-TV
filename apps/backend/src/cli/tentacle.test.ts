@@ -38,6 +38,8 @@ const configKeys = (): string[] => {
 afterAll(() => rmSync(DATA_ROOT, { recursive: true, force: true }));
 beforeEach(() => {
   for (const file of [lock, token, database, `${database}-wal`, `${database}-shm`]) rmSync(file, { force: true });
+  // vitest 4 réutilise un espion déjà posé sans effacer ses appels : on repart de zéro.
+  vi.restoreAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => undefined);
   vi.spyOn(console, "error").mockImplementation(() => undefined);
 });
