@@ -70,7 +70,16 @@ COPY packages/tv-core/package.json packages/tv-core/package.json
 # imports une fois les sources arrivées par le COPY global.
 COPY packages/offline-core/package.json packages/offline-core/package.json
 COPY patches/ patches/
-RUN pnpm install --frozen-lockfile
+# AUCUN script d'installation, puis les seuls qui servent, nommés : le moteur
+# de Prisma (téléchargé par @prisma/engines, exigé par `prisma generate`).
+# esbuild n'en a pas besoin : son binaire arrive par son paquet de plateforme
+# (@esbuild/linux-*), et son `pnpm rebuild` échoue sur le lien d'un paquet
+# absent du contexte (apps/desktop-electron). pnpm 10 n'exécute déjà que ceux de
+# `onlyBuiltDependencies`, mais cette liste vit dans package.json : l'image ne
+# doit pas suivre en silence un ajout fait pour le mobile ou le bureau. Un ver
+# npm (famille Shai-Hulud) s'exécute à l'installation — jamais ici.
+RUN pnpm install --frozen-lockfile --ignore-scripts \
+  && pnpm rebuild @prisma/engines prisma
 
 COPY packages/ packages/
 COPY apps/web/ apps/web/
