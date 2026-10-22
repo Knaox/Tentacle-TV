@@ -67,9 +67,14 @@ updates:
       # koffi pilote mpv dans le bureau et Tentacle Server pour Windows : une
       # montée se valide sur les trois OS, à la main.
       - dependency-name: "koffi"
-      # esbuild est en 0.x : une « mineure » y est une rupture.
+      # En 0.x, une « mineure » est une rupture : esbuild (bundler), libpgs (rendu
+      # des sous-titres PGS du lecteur web, aucune note de version publiée).
       - dependency-name: "esbuild"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "libpgs"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # Polices d'Expo : de la famille du SDK, elles montent avec lui.
+      - dependency-name: "@expo-google-fonts/*"
       # Electron : une majeure se prépare (fuses, signature, MAS, MSIX).
       - dependency-name: "electron"
         update-types: ["version-update:semver-major"]
