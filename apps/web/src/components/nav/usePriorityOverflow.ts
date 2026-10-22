@@ -16,15 +16,22 @@
  * (`slot`) autour du groupe (`hug`). Sans `slack`, le calcul d'avant.
  */
 
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 const ALWAYS_SHOWN = 2;
 
+/**
+ * Des ÉLÉMENTS, pas des refs : ceux d'un parent sont attachés APRÈS les effets
+ * de ses enfants — lus ici au premier calcul, ils valaient `null`, la place
+ * libre comptait 0, et chaque passe retirait un onglet (mesuré : deux onglets
+ * et « Plus » sur les Réglages). L'appelant les tient en état ; leur arrivée
+ * relance la mesure.
+ */
 export interface OverflowSlack {
   /** La case qui s'étire sur toute la place de la rangée. */
-  slot: RefObject<HTMLElement | null>;
+  slot: HTMLElement;
   /** Le groupe qui épouse son contenu, dans `slot`. */
-  hug: RefObject<HTMLElement | null>;
+  hug: HTMLElement;
 }
 
 export function usePriorityOverflow(count: number, signature: string, slack?: OverflowSlack) {
@@ -36,8 +43,8 @@ export function usePriorityOverflow(count: number, signature: string, slack?: Ov
     const container = containerRef.current;
     const measure = measureRef.current;
     if (container === null || measure === null) return;
-    const slot = slack?.slot.current ?? null;
-    const hug = slack?.hug.current ?? null;
+    const slot = slack?.slot ?? null;
+    const hug = slack?.hug ?? null;
     const compute = () => {
       const free = slot && hug ? Math.max(0, slot.clientWidth - hug.offsetWidth) : 0;
       const available = container.clientWidth + free;

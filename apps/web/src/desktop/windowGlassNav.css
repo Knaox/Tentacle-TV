@@ -69,12 +69,14 @@
   color: var(--lg-glyph-secondary);
 }
 
-:root[data-liquid-glass="native"] .lgc-group .lgc-tab:not([aria-current]),
 :root[data-liquid-glass="native"] .lgc-field > span {
-  color: var(--lg-glyph-secondary);
+  color: var(--lg-glyph);
 }
 
-:root[data-liquid-glass="native"] .lgc-group .lgc-tab[aria-current],
+/* Les libellés des onglets — inactifs compris — prennent le ton PRIMAIRE du
+ * verre : au secondaire, page défilée, ils tombaient à 3,2–3,9:1 (mesuré au
+ * banc) ; l'onglet courant se distingue par sa lentille et sa graisse. */
+:root[data-liquid-glass="native"] .lgc-group .lgc-tab,
 :root[data-liquid-glass="native"] :is(.lgc-group, .lgc-actions-group) :is(a, button):hover,
 :root[data-liquid-glass="native"] :is(.lgc-group, .lgc-actions-group) :is(a, button):hover svg {
   color: var(--lg-glyph);
@@ -97,6 +99,9 @@
 
 :root[data-liquid-glass="native"] .lg-surface:is(.lgc-group, .lgc-actions-group) {
   --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.12);
+  /* Les boutons qui peignent leur fond en ligne (la cloche) lisent ces deux-là. */
+  --lg-chrome-button-rest: transparent;
+  --lg-chrome-button-open: var(--lg-chrome-item-hover);
 }
 
 :root[data-liquid-glass="native"] .lg-surface:is(.lgc-group, .lgc-actions-group)[data-lg-tone="light"] {

@@ -30,7 +30,7 @@
  * de bord de défilement de couvrir aussi la barre.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useScrollScrim } from "./useScrollScrim";
 import { useWindowGlass } from "../../desktop/windowGlass";
@@ -51,10 +51,14 @@ import { useActiveProfile } from "../../auth/profileSession";
 export function TopNav() {
   const offline = useOfflineMode();
   const glass = useWindowGlass();
-  // La case qui s'étire, et le groupe de verre qui épouse les onglets.
-  const slotRef = useRef<HTMLDivElement>(null);
-  const hugRef = useRef<HTMLElement>(null);
-  const slack = useMemo(() => (glass ? { slot: slotRef, hug: hugRef } : undefined), [glass]);
+  // La case qui s'étire, et le groupe de verre qui épouse les onglets — en
+  // ÉTAT : leur arrivée relance la mesure des onglets (`usePriorityOverflow`).
+  const [slotEl, setSlotEl] = useState<HTMLDivElement | null>(null);
+  const [hugEl, setHugEl] = useState<HTMLElement | null>(null);
+  const slack = useMemo(
+    () => (glass && slotEl && hugEl ? { slot: slotEl, hug: hugEl } : undefined),
+    [glass, slotEl, hugEl],
+  );
   // Hors ligne, la session d'un PROFIL n'a ni catalogue local ni transferts
   // (rien n'est gardé pour lui) : aucun onglet, et pas de séparateur qui ne
   // sépare rien.
@@ -63,7 +67,7 @@ export function TopNav() {
 
   // Les groupes (mode natif). Ailleurs : `contents`, ils n'existent pas pour
   // la mise en page.
-  const tabsGroup = useLiquidGlassSurface({ shape: "capsule", className: "lgc-group", fallbackClassName: "contents", ref: hugRef });
+  const tabsGroup = useLiquidGlassSurface({ shape: "capsule", className: "lgc-group", fallbackClassName: "contents", ref: setHugEl });
   const actionsGroup = useLiquidGlassSurface({ shape: "capsule", className: "lgc-actions-group", fallbackClassName: "contents" });
 
   // L'assise d'avant : nulle en haut de page (le verre seul, par-dessus la
@@ -105,7 +109,7 @@ export function TopNav() {
           </>
         )}
 
-        <div ref={slotRef} className="relative flex min-w-0 flex-1 items-center gap-1">
+        <div ref={setSlotEl} className="relative flex min-w-0 flex-1 items-center gap-1">
           <div {...tabsGroup.props}>
             {tabsGroup.layers}
             <NavBrand />
