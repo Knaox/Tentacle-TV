@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,7 +26,7 @@ vi.mock("./kwinScripting", () => ({
 
 import {
   sweepOrphanGlue,
-  glueFolder,
+  createGlueFolder,
   pluginName,
   removeGlueAtStartup,
 } from "./glueCleanup";
@@ -54,8 +54,19 @@ function writeFakeGlue(pid: number, number: number): string {
 
 describe("la disposition des chemins", () => {
   it("un dossier par pose, sous le pid — c'est lui que le balayage relit", () => {
-    expect(path.basename(glueFolder(42, 3))).toBe("tentacle-colle-42-3");
+    expect(path.basename(createGlueFolder(42, 3, root))).toMatch(/^tentacle-colle-42-3-[A-Za-z0-9]{6}$/);
     expect(pluginName(42)).toBe("tentacle-colle-42");
+  });
+
+  it("un dossier NEUF, à nous seuls : jamais celui qu'un autre compte a préparé d'avance (CodeQL insecure-temporary-file)", () => {
+    // Le répertoire temporaire est partagé : un autre compte peut y créer, avant
+    // nous, le dossier au nom prévisible et y échanger le QML avant que KWin le lise.
+    const planted = path.join(root, "tentacle-colle-42-3");
+    mkdirSync(planted, { recursive: true });
+    const folder = createGlueFolder(42, 3, root);
+    expect(folder).not.toBe(planted);
+    expect(path.dirname(folder)).toBe(root);
+    expect(statSync(folder).mode & 0o777).toBe(0o700);
   });
 });
 
@@ -85,6 +96,12 @@ describe("balayerCollesOrphelines", () => {
     expect(existsSync(previous)).toBe(false);
     // Ses greffons étaient anonymes : rien à décrocher, ils partiront avec KWin.
     expect(bridge.detached).toEqual([]);
+  });
+
+  it("reconnaît aussi les dossiers à suffixe aléatoire", async () => {
+    const dead = createGlueFolder(DEAD_PID, 1, root);
+    expect(await sweepOrphanGlue(root)).toBe(1);
+    expect(existsSync(dead)).toBe(false);
   });
 
   it("racine illisible : zéro, sans jeter", async () => {
