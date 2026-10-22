@@ -12,10 +12,11 @@
  * Spécificité : `:root[attr] .x` (0,3,0) l'emporte sur un utilitaire Tailwind,
  * survol compris (0,2,0) — sans `!important`.
  *
- * Coût GPU (CLAUDE.md) : un seul `backdrop-filter` permanent de plus, celui de
- * l'effet de bord, et seulement page défilée ; la barre latérale n'en porte pas
- * (rien ne bouge derrière elle : un flou n'y flouterait rien) ; les panneaux de
- * la barre (`.lg-menu`, lg-composants) ne sont montés qu'ouverts. On n'anime que l'opacité. */
+ * Coût GPU (CLAUDE.md) : l'effet de bord n'existe que page défilée ; la barre
+ * latérale est une surface de la primitive, mais rien ne bouge derrière elle au
+ * repos (le fond de page) : son flou n'est recalculé qu'au défilement ; les
+ * panneaux de la barre (`.lg-menu`, lg-composants) ne sont montés qu'ouverts.
+ * On n'anime que l'opacité. */
 
 /* Les jetons de la fenêtre, COMPOSÉS du matériau (`theme/liquidGlassTokens.css`) :
  * un réglage du verre là-bas se reporte ici. Seul ce qui n'existe pas dans le
@@ -56,23 +57,13 @@
   /* L'avatar : liseré de verre et arête spéculaire, par-dessus la photo. */
   --lg-chrome-avatar-rim: inset 0 1px 0 var(--lg-specular-soft), 0 0 0 0.5px var(--lg-edge);
 
-  /* La barre latérale : un panneau flottant, en retrait des bords. */
+  /* La barre latérale : une surface flottante, en retrait des bords. Son
+   * matériau est celui de la primitive ; sa sélection, ses glyphes :
+   * `windowGlassSidebar.css`, au ton du rail. */
   --lg-chrome-sidebar-radius: var(--lg-radius-lg);
   --lg-chrome-sidebar-pad: 8px;
-  /* L'épaisseur des menus et feuilles du matériau, le reflet du haut ; sans
-   * flou (windowGlassSidebar.css : rien ne bouge derrière). Fil du bord DEHORS
-   * et ombre qui soulève : aucun liseré gris. */
-  --lg-chrome-sidebar-bg: linear-gradient(180deg, var(--lg-highlight), transparent 32%), var(--lg-thick-fill);
-  --lg-chrome-sidebar-shadow: 0 0 0 0.5px var(--lg-edge), var(--lg-shadow-contact), var(--lg-shadow-float);
-  --lg-chrome-sidebar-item-radius: var(--lg-radius-sm);
-  --lg-chrome-sidebar-selection-bg:
-    radial-gradient(120% 160% at 20% 0%, var(--lg-highlight) 0%, transparent 60%),
-    var(--lg-tint-gradient);
-  --lg-chrome-sidebar-selection-shadow: inset 0 1px 0 var(--lg-specular-soft), inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand);
-  --lg-chrome-sidebar-selection-icon: var(--brand-light);
 
-  /* Fenêtre inactive (`windowFocus.ts`) : la marque cède au gris. */
-  --lg-chrome-inactive-fill: rgba(var(--lg-light-rgb), 0.1);
+  /* Fenêtre inactive (`windowFocus.ts`) : l'accent cède au gris. */
   --lg-chrome-inactive-icon: var(--text-secondary);
 }
 
@@ -83,16 +74,6 @@
   --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
   --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.5);
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
-  --lg-chrome-sidebar-selection-icon: var(--brand);
-  --lg-chrome-inactive-fill: rgba(var(--lg-shade-rgb), 0.07);
-}
-
-/* La fenêtre a perdu le focus : la barre se ternit, comme une app de macOS.
- * Après le bloc clair : même spécificité, l'ordre décide. */
-:root[data-liquid-glass="native"][data-window-inactive] {
-  --lg-chrome-sidebar-selection-bg: var(--lg-chrome-inactive-fill);
-  --lg-chrome-sidebar-selection-shadow: none;
-  --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
 }
 
 /* ── Le bandeau des feux : transparent, le contenu défile dessous ──────── */

@@ -2,52 +2,83 @@
  *
  * Jetons dans `windowGlass.css`. Même garde : `:root[data-liquid-glass="native"]`.
  *
- * Un panneau FLOTTANT, en retrait des bords, comme la barre latérale des
- * Réglages Système de macOS 26. Sans `backdrop-filter` : derrière elle, rien
- * que le fond de la page, qui ne bouge pas — une lentille n'y courberait rien
- * (corollaire de la règle 1 de « Coût GPU »). Le matériau du lot (refonte du
- * 22/10) : remplissage presque transparent, reflet du haut, fil du bord à
- * 0,5 px DEHORS et ombre qui soulève — aucun liseré gris. */
+ * La barre FLOTTANTE de macOS 26 (Réglages Système, Finder) : une surface de
+ * la primitive (`useGlassSidebar` → `.lg-surface`), en retrait des bords, d'UN
+ * seul ton pour tout le rail — plus de reflet en dégradé vertical, plus de
+ * marque. Le matériau (remplissage, lentille, ombre, glyphes au ton) est
+ * celui de la primitive ; ici, le gabarit, la sélection et les glyphes. */
 
 @media (min-width: 768px) {
   :root[data-liquid-glass="native"] .lgc-sidebar {
     padding: var(--lg-chrome-sidebar-pad);
     border-radius: var(--lg-chrome-sidebar-radius);
-    background: var(--lg-chrome-sidebar-bg);
-    box-shadow: var(--lg-chrome-sidebar-shadow);
     /* Collée SOUS la barre et sa frange de bord, jamais dessous. */
     top: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade) + 4px);
   }
 }
 
+/* Les remplissages des entrées, NEUTRES et au ton du rail : survol < sélection.
+ * La sélection lit le jeton du socle (`--lg-sidebar-selection*`), avec un repli. */
+:root[data-liquid-glass="native"] .lgc-sidebar.lg-surface {
+  --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.07);
+  --lg-chrome-sidebar-selection-bg: var(--lg-sidebar-selection, rgba(var(--lg-light-rgb), 0.14));
+  --lg-chrome-sidebar-selection-icon: var(--lg-sidebar-selection-glyph, var(--brand-light));
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar.lg-surface[data-lg-tone="light"] {
+  --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.05);
+  --lg-chrome-sidebar-selection-bg: var(--lg-sidebar-selection, rgba(var(--lg-shade-rgb), 0.08));
+  --lg-chrome-sidebar-selection-icon: var(--lg-sidebar-selection-glyph, var(--brand));
+}
+
+/* Fenêtre inactive (`windowFocus.ts`) : la sélection reste, l'accent cède au gris. */
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-sidebar.lg-surface {
+  --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
+}
+
+/* Rayon CONCENTRIQUE au rail : le sien moins sa marge. */
 :root[data-liquid-glass="native"] .lgc-sidebar-item {
-  border-radius: var(--lg-chrome-sidebar-item-radius);
+  border-radius: calc(var(--lg-chrome-sidebar-radius) - var(--lg-chrome-sidebar-pad));
 }
 
 :root[data-liquid-glass="native"] .lgc-sidebar-item:hover:not([aria-current]) {
   background: var(--lg-chrome-item-hover);
 }
 
-/* La sélection est la lentille qui glisse (`useGlassSidebarSelection`) :
- * l'entrée elle-même ne peint plus rien. */
+/* La sélection glisse (`useGlassSidebar`) : l'entrée elle-même ne peint rien. */
 :root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] {
   background: transparent;
 }
 
 :root[data-liquid-glass="native"] .lgc-sidebar-selection {
   background: var(--lg-chrome-sidebar-selection-bg);
-  box-shadow: var(--lg-chrome-sidebar-selection-shadow);
   pointer-events: none;
 }
 
-:root[data-liquid-glass="native"] .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
+/* ── Les glyphes au ton du rail (`data-lg-tone`, figé pour une surface) ──── */
+
+:root[data-liquid-glass="native"] .lgc-sidebar.lg-surface .text-content-primary,
+:root[data-liquid-glass="native"] .lgc-sidebar.lg-surface .lgc-sidebar-item:hover {
+  color: var(--lg-glyph);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar.lg-surface :is(.text-content-secondary, .text-content-tertiary) {
+  color: var(--lg-glyph-secondary);
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar.lg-surface .lgc-sidebar-item[aria-current] .lgc-sidebar-icon {
   color: var(--lg-chrome-sidebar-selection-icon);
 }
 
+/* Les intertitres : la casse de macOS, au jeton du socle. */
 :root[data-liquid-glass="native"] .lgc-sidebar-label {
   letter-spacing: 0.02em;
   text-transform: none;
   font-size: 12px;
+}
+
+:root[data-liquid-glass="native"] .lgc-sidebar.lg-surface .lgc-sidebar-label {
+  color: var(--lg-section-label, var(--lg-glyph-secondary));
 }
 
 /* ── Accessibilité de macOS (`data-lg-material`, theme/glass/accessibility.ts)
