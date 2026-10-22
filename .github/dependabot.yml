@@ -87,11 +87,16 @@ updates:
     commit-message:
       prefix: "chore(ci)"
     groups:
-      # Les mineures et correctifs ensemble ; une MAJEURE a son propre PR, à
-      # éprouver par un cran build de chaque livraison avant de la fusionner.
       actions:
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # Aucune MAJEURE d'action proposée d'office (décision du 2026-10-22) :
+      # checkout 7, upload/download-artifact 7-8, build-push 7, action-gh-release
+      # 3… touchent tous les workflows de LIVRAISON et ne s'éprouvent que par un
+      # cran build de chacun. Elles se mènent en chantier, à la main.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # Images de base épinglées par empreinte (Dockerfile racine, port-check) :
   # sans ces mises à jour, la base vieillit et la garde Trivy finit par bloquer.
