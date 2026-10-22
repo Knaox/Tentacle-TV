@@ -66,6 +66,40 @@ const ALLOWED_PROXY_PATTERNS_CI = ALLOWED_PROXY_PATTERNS.map(
   (p) => new RegExp(p.source, "i"),
 );
 
+/** Décodages successifs au plus : au-delà, le chemin est tenu pour piégé. */
+const MAX_DECODE_ROUNDS = 4;
+
+/**
+ * Le chemin remonte-t-il (ou se déguise-t-il) ? Plusieurs motifs de la liste
+ * ne valent que par leur PRÉFIXE (`Items/{id}/Images/…`) : sans ce contrôle,
+ * `Items/x/Images/../../../System/Configuration` passait la liste, et l'URL
+ * relayée, résolue par undici, atteignait `/System/Configuration` — avec la
+ * clé d'administration prêtée à un appareil jumelé. Décodé jusqu'au point fixe
+ * (`%2e%2e`, `%252e%252e`, `%2f`), puis refusé dès qu'un segment vaut `.` ou
+ * `..`, ou qu'une barre oblique inverse paraît (l'URL la lit comme `/`).
+ * Aucune route de Jellyfin n'a de tels segments.
+ */
+export function hasUnsafePathSegment(path: string): boolean {
+  let decoded = path;
+  for (let round = 0; ; round += 1) {
+    if (decoded.includes("\\")) return true;
+    if (decoded.split("/").some((segment) => segment === "." || segment === "..")) return true;
+    if (!decoded.includes("%")) return false;
+    if (round >= MAX_DECODE_ROUNDS) return true;
+    let next: string;
+    try {
+      next = decodeURIComponent(decoded);
+    } catch {
+      // Un « % » orphelin : l'URL relayée le garde tel quel, sans point à résoudre —
+      // mais un `%2e` voisin compterait encore. On le refuse plutôt que d'en juger.
+      return /%2e/i.test(decoded);
+    }
+    if (next === decoded) return false;
+    decoded = next;
+  }
+}
+
 export function isAllowedProxyPath(path: string): boolean {
+  if (hasUnsafePathSegment(path)) return false;
   return ALLOWED_PROXY_PATTERNS_CI.some((pattern) => pattern.test(path));
 }
