@@ -259,7 +259,14 @@ la courbe ajustée finit exactement au but, sans le saut d'un ressort coupé. La
   opaque il ne montrerait rien, et derrière une page trouée il montrerait le
   bureau. lg-chrome fait ce verre en CSS, sur le contenu.
 - Plein écran : aller-retour vérifié verre posé — position tenue, sortie de mpv
-  inchangée.
+  inchangée. ⚠️ AppKit pose le drapeau plein écran du `styleMask` et la vue web prend sa
+  taille au DÉBUT de la transition ; `enter-full-screen` / `leave-full-screen` n'arrivent
+  qu'à la FIN de l'animation, ~1 s plus tard (mesuré, lot lg3). La page l'apprend donc au
+  premier `resize` où `isFullScreen()` change (`fullscreenSync.ts`, `fullscreenOnResize`) :
+  avant, bandeau des feux peint sur le film et capsules du haut 38 pt trop bas à l'entrée,
+  capsules du haut SOUS les feux revenus à la sortie — le verre natif avec elles. Relevé
+  après : à +150 ms, entrée comme sortie, tout est à sa place (contrôles affichés ou
+  masqués ; masqués, 0 vue pendant la bascule).
 - HDR, vraie lecture HDR10 (HEVC Main10, PQ, BT.2020) au montage `fenetre` :
   `video-params` ET `video-target-params` restent `pq/bt.2020` avec le verre ;
   headroom EDR 9,45 / 16 maintenu verre posé, en plein écran comme au retour en
@@ -618,14 +625,31 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   « Vous regardez encore ? », fiche « à suivre », badges, attente, avis, Watch
   Together, bulle de la vignette du survol. Relevé : 6 vues claires contrôles
   affichés, 7 avec un panneau, 0 masqués.
-- **Aucun voile noir sous le verre clair** (`--lg-player-clear-dim:
-  transparent`) : mesuré, le flou du verre clair ne vient ni du voile ni du
-  conteneur commun, le voile ne réglait que le ton. La lisibilité vient d'un
-  HALO local qui épouse glyphes et libellés (`--lg-player-glyph-shadow`,
-  `--lg-player-label-shadow` : contour d'un point, ombre portée, halo de 8 à
-  12 px), coupé en matière pleine. Panneaux : aucune teinte en sombre, 32 %
-  de noir en thème clair (`--lg-player-panel-tint`). Couleurs de la page : l'OPAQUE
-  ou le noir à alpha seulement — un blanc translucide rend gris sur la
+- **Une ATTÉNUATION sous le verre clair, comme QuickTime** (lot lg3, 23/10 ; avant :
+  aucun voile, la lisibilité par le halo — « sur du blanc ou du noir, ça rend vraiment
+  mal »). Mesuré sur les captures de la fenêtre (M4, macOS 26) : fenêtre ACTIVE, le verre
+  clair seul vire au gris LAITEUX — 87/255 sur du noir pur, 246 sur la neige (33 et 235
+  fenêtre inactive : le banc, toujours sans focus, ne voyait que ce cas-là) ; QuickTime
+  Player sur les mêmes clips : 88 et 26, glyphes BLANCS. La teinte native (`tintColor`)
+  n'y peut rien (242 → 231 même à 85 % de noir) : l'atténuation est un noir à alpha posé
+  par la PAGE dans chaque forme, sous le contenu (`playerGlassDim.css`, `::before`,
+  `isolation: isolate`), dosé par le TON mesuré dessous (`data-lg-tone`, la vidéo seule) :
+  **0,65** dessous clair (neige → 88), **0,5** dessous sombre (noir → 44, liseré et
+  reflet du verre visibles), **0,2** dessous sombre fenêtre inactive (→ 26). Seule son
+  opacité suit le ton (compositeur). **Glyphes blancs partout** — plus de glyphes sombres
+  sur un dessous clair ; secondaire `#d4d4da`. Contrastes mesurés : 7,1:1 (neige) à
+  17:1 (noir), icônes 7,5:1 à 14:1.
+- **Le verre NORMAL s'adapte seul** (panneaux, fiche « à suivre », « Vous regardez
+  encore ? », avis) : 91 sur la neige, 22 sur le noir fenêtre active (96 / 36 inactive),
+  déjà le réglage de QuickTime — aucune atténuation, aucune mesure de ton
+  (`adaptiveTone` par défaut pour le seul verre clair ; `data-lgp-variant`). Atténué, il
+  devenait une dalle noire (32). Exception, le **thème clair** : le verre normal y prend
+  l'apparence claire (176 / 130 sous des textes blancs, ~2:1) → 0,5 (88 / 65). Gris des
+  panneaux relevés à 4,5:1 sur le plus clair (96) : secondaire `#ececf0`, tertiaire et
+  quaternaire `#dcdce2` (titres de section, « aucun épisode » étaient à 3,2 et 2:1).
+  Le halo des glyphes reste (contour d'un point, ombre portée), coupé en matière pleine.
+  Panneaux : 32 % de noir en thème clair (`--lg-player-panel-tint`, natif). Couleurs de
+  la page : l'OPAQUE ou le noir à alpha seulement — un blanc translucide rend gris sur la
   surface à alpha de la fenêtre.
 - **Une MÉTAMORPHOSE au lieu d'un fondu** : chaque forme se replie vers le
   pivot de son ensemble (le transport, la sortie — `useCollapsePivots`), s'y
