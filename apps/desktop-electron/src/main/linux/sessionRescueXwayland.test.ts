@@ -28,6 +28,15 @@ describe("XWayland-auto", () => {
     expect(xwaylandAutoBlocked(dir)).toBe(false);
   });
 
+  it("premier lancement, dossier de données pas encore créé : l'essai s'écrit quand même", () => {
+    const dir = path.join(folder(), "com.tentacle.media");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    writeXwaylandAutoTrial(dir);
+    expect(existsSync(path.join(dir, XWAYLAND_AUTO_TRIAL))).toBe(true);
+    // …XWayland injoignable : le processus meurt avant Chromium, le lancement suivant le sait.
+    expect(xwaylandAutoBlocked(dir)).toBe(true);
+  });
+
   it("un essai jamais soldé bloque XWayland-auto au lancement suivant", () => {
     const dir = folder();
     vi.spyOn(console, "error").mockImplementation(() => {});

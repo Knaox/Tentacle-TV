@@ -29,7 +29,7 @@
  * développeurs, il ne touche pas au réglage et ne doit pas être « secouru ».
  */
 
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { SESSION_FILE, type SessionChoice } from "./graphicsSession";
 
@@ -60,13 +60,26 @@ export function xwaylandAutoBlocked(folder: string, inheritedTrial = false): boo
   return existsSync(path.join(folder, XWAYLAND_AUTO_OFF));
 }
 
+/**
+ * Écrit un fichier du secours, en créant le dossier de données au besoin.
+ *
+ * ⚠️ Au PREMIER lancement, ce dossier n'existe pas encore : c'est Chromium qui
+ * le crée, une fois sa plateforme initialisée. Un XWayland injoignable tue le
+ * processus avant — mesuré sous GNOME headless : l'essai ne s'écrivait jamais,
+ * aucun lancement n'allait plus loin, et l'application ne s'ouvrait plus.
+ */
+function writeRescueFile(folder: string, name: string, content: string): void {
+  mkdirSync(folder, { recursive: true });
+  writeFileSync(path.join(folder, name), content, "utf8");
+}
+
 function blockXwaylandAuto(folder: string, reason: string): void {
   console.error(`[session] ⚠️ XWayland en auto : ${reason} — retour à Wayland`);
   try {
-    writeFileSync(
-      path.join(folder, XWAYLAND_AUTO_OFF),
+    writeRescueFile(
+      folder,
+      XWAYLAND_AUTO_OFF,
       `${JSON.stringify({ raison: reason, depuis: new Date().toISOString() }, null, 2)}\n`,
-      "utf8",
     );
   } catch {
     // Sans marqueur, l'essai se rejouera : un clignotement de plus, pas un écran noir.
@@ -77,7 +90,7 @@ function blockXwaylandAuto(folder: string, reason: string): void {
 export function writeXwaylandAutoTrial(folder: string): void {
   trialFolder = folder;
   try {
-    writeFileSync(path.join(folder, XWAYLAND_AUTO_TRIAL), "{}\n", "utf8");
+    writeRescueFile(folder, XWAYLAND_AUTO_TRIAL, "{}\n");
   } catch {
     // Le filet n° 2 manque, la surveillance du GPU reste.
   }
@@ -105,10 +118,10 @@ export function readWitness(folder: string): SessionChoice | null {
 export function writeWitness(folder: string, choice: SessionChoice): void {
   witnessFolder = folder;
   try {
-    writeFileSync(
-      path.join(folder, WITNESS_FILE),
+    writeRescueFile(
+      folder,
+      WITNESS_FILE,
       `${JSON.stringify({ choix: choice, depuis: new Date().toISOString() }, null, 2)}\n`,
-      "utf8",
     );
   } catch {
     // Un témoin qui ne s'écrit pas prive du filet n° 2, pas du lancement.
