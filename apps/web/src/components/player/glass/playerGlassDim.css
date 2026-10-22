@@ -52,6 +52,13 @@
   --lgp-dim: 0;
 }
 
+/* Thème clair : le verre normal y prend l'apparence claire — 176 sur la neige,
+   130 sur le noir, sous des textes blancs (~2:1, mesuré lg3). À 0,5 : 88 et 65,
+   le réglage du thème sombre (texte blanc 7:1, tertiaire 5:1). */
+:root[data-liquid-glass="native"][data-theme="light"] .lgp-surface[data-lgp-variant="regular"] {
+  --lgp-dim: 0.5;
+}
+
 /* Noir pur, opacité variable : la couleur ne change jamais, seule l'opacité suit
    le ton (compositeur, aucune peinture par image). */
 :root[data-liquid-glass="native"] .lgp-surface::before {
