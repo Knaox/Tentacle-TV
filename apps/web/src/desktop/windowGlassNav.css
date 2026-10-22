@@ -82,30 +82,41 @@
   color: var(--lg-glyph);
 }
 
-:root[data-liquid-glass="native"] .lgc-group .lgc-tab:not([aria-current]) svg {
+:root[data-liquid-glass="native"] .lgc-group .lgc-tab:not(:has(> .lgc-lens)) svg {
   color: var(--lg-glyph-secondary);
 }
 
-/* L'icône de l'onglet courant garde la marque — plus profonde sur un dessous clair. */
-:root[data-liquid-glass="native"] .lgc-group .lgc-tab[aria-current] svg {
-  color: var(--brand-light);
+/* L'onglet courant (ou « Plus » quand il porte la page courante : la pastille
+ * `.lgc-lens` est là) : son glyphe à l'ACCENT, le libellé au glyphe du verre
+ * (en gras) — l'accent plus profond sur un dessous clair. */
+:root[data-liquid-glass="native"] .lgc-group .lgc-tab:has(> .lgc-lens) > svg:first-of-type {
+  color: var(--lg-chrome-accent);
 }
 
-:root[data-liquid-glass="native"] .lgc-group[data-lg-tone="light"] .lgc-tab[aria-current] svg {
-  color: var(--brand);
-}
-
-/* ── Dans un groupe : de simples glyphes (pas de verre dans le verre) ────── */
+/* ── Dans un groupe : de simples glyphes (pas de verre dans le verre) ──────
+ * Des remplissages NEUTRES au ton du dessous, du plus léger au plus marqué :
+ * survol < appui (« Plus » ouvert) < sélection. La sélection est la pastille
+ * de la barre d'onglets d'iOS 26 (`ActiveIndicator` lit `--lg-chrome-lens-*`),
+ * concentrique au groupe — jamais un aplat de marque bordé. Déclarées sur le
+ * GROUPE : c'est lui qui porte `data-lg-tone`. */
 
 :root[data-liquid-glass="native"] .lg-surface:is(.lgc-group, .lgc-actions-group) {
-  --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.12);
+  --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.08);
+  --lg-chrome-item-pressed: rgba(var(--lg-light-rgb), 0.12);
+  --lg-chrome-selection: rgba(var(--lg-light-rgb), 0.16);
+  --lg-chrome-accent: var(--brand-light);
+  --lg-chrome-lens-bg: var(--lg-chrome-selection);
+  --lg-chrome-lens-shadow: none;
   /* Les boutons qui peignent leur fond en ligne (la cloche) lisent ces deux-là. */
   --lg-chrome-button-rest: transparent;
-  --lg-chrome-button-open: var(--lg-chrome-item-hover);
+  --lg-chrome-button-open: var(--lg-chrome-item-pressed);
 }
 
 :root[data-liquid-glass="native"] .lg-surface:is(.lgc-group, .lgc-actions-group)[data-lg-tone="light"] {
-  --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.07);
+  --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.05);
+  --lg-chrome-item-pressed: rgba(var(--lg-shade-rgb), 0.08);
+  --lg-chrome-selection: rgba(var(--lg-shade-rgb), 0.1);
+  --lg-chrome-accent: var(--brand);
 }
 
 :root[data-liquid-glass="native"] .lgc-group :is(.lgc-tab, .lgc-lens) {
@@ -114,6 +125,12 @@
 
 :root[data-liquid-glass="native"] .lgc-group .lgc-tab:hover:not([aria-current]) {
   background: var(--lg-chrome-item-hover);
+}
+
+/* « Plus » ouvert : l'appui tenu (le panneau est à lui), jamais la sélection
+ * — sauf s'il porte lui-même la page courante (sa pastille, alors). */
+:root[data-liquid-glass="native"] .lgc-group .lgc-tab[aria-expanded="true"]:not([aria-current]) {
+  background: var(--lg-chrome-item-pressed);
 }
 
 /* Les boutons d'icônes (recherche, transferts, Watch Together, cloche) : ronds,
@@ -154,12 +171,12 @@
 }
 
 /* ── Fenêtre inactive : les verres de la barre perdent leur saturation, et
- * l'onglet courant sa marque. */
+ * l'onglet courant son accent (sa pastille neutre reste). */
 :root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule .lg-surface {
   --lg-saturate: 1;
 }
 
-:root[data-liquid-glass="native"][data-window-inactive] .lgc-group .lgc-tab[aria-current] svg {
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-group .lgc-tab:has(> .lgc-lens) > svg:first-of-type {
   color: var(--lg-chrome-inactive-icon);
 }
 

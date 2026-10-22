@@ -101,6 +101,17 @@ describe("mode natif", () => {
     expect(brand).not.toContain("data-lg-tint");
   });
 
+  it("le régime `surface` se marque ; `control` (défaut) ne marque rien ; `bands` n'a plus d'effet", () => {
+    const surface = render("native", <LiquidGlass scale="surface" bands />);
+    expect(surface).toContain('data-lg-scale="surface"');
+    expect(surface).not.toContain("bands");
+    expect(surface).not.toContain("data-lg-band");
+    expect(render("native", <LiquidGlass scale="control" />)).not.toContain("data-lg-scale");
+    expect(render("native", <LiquidGlass />)).not.toContain("data-lg-scale");
+    // Hors du mode natif : rien, comme pour tout le reste.
+    expect(render("off", <LiquidGlass scale="surface" bands>x</LiquidGlass>)).toBe("<div>x</div>");
+  });
+
   it("les props de l'élément passent, le type de l'élément suit `as`", () => {
     const html = render(
       "native",

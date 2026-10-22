@@ -43,4 +43,5 @@ export {
   SettingsShell,
   type SettingsShellProps,
   type SettingsShellSection,
+  type SettingsShellSurface,
 } from "./settings/SettingsShell";

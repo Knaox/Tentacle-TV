@@ -3,6 +3,7 @@ import {
   lensFilterId,
   regionSpecOf,
   resolveSurfaceRender,
+  scaleAttributes,
   surfaceAttributes,
   surfaceClassName,
 } from "./surfaceModel";
@@ -60,6 +61,25 @@ describe("surfaceAttributes", () => {
       "data-lg-tint": "accent",
       "data-lg-interactive": "",
     });
+  });
+});
+
+describe("le régime (`scale`, lot lg2)", () => {
+  it("seule une surface se marque, sur la lentille comme sur le verre natif", () => {
+    expect(surfaceAttributes({ scale: "surface" }, "lens")).toMatchObject({ "data-lg-scale": "surface" });
+    expect(surfaceAttributes({ scale: "surface" }, "native")).toMatchObject({ "data-lg-scale": "surface" });
+    expect(surfaceAttributes({ scale: "control" }, "lens")).not.toHaveProperty("data-lg-scale");
+    expect(surfaceAttributes({ scale: "surface" }, "fallback")).toEqual({});
+  });
+
+  it("la même marque pour une peau CSS (`useGlassControl`)", () => {
+    expect(scaleAttributes("surface")).toEqual({ "data-lg-scale": "surface" });
+    expect(scaleAttributes("control")).toEqual({});
+    expect(scaleAttributes(undefined)).toEqual({});
+  });
+
+  it("le régime ne change pas la région native", () => {
+    expect(regionSpecOf({ scale: "surface" })).toEqual(regionSpecOf({}));
   });
 });
 

@@ -13,6 +13,16 @@ export type LiquidGlassLevel = NativeGlassLevel;
 export type LiquidGlassRadius = "xs" | "sm" | "md" | "lg" | "xl";
 
 /**
+ * Le RÉGIME du verre, selon sa taille (règle 3 du lot lg2, HIG « Materials ») :
+ *  - `control` : un petit verre (bouton, capsule, groupe de barre) ; son ton
+ *                suit le dessous et bascule (hystérésis) ;
+ *  - `surface` : un grand verre (menu, popover, feuille, barre latérale,
+ *                palette) ; UN ton pour toute la surface, mesuré à l'ouverture
+ *                puis TENU, matériau épais (`data-lg-scale="surface"`).
+ */
+export type LiquidGlassScale = "control" | "surface";
+
+/**
  * Ce qu'il y a DERRIÈRE la surface, dans la fenêtre :
  *  - `page`   : du contenu de la page (affiches, texte) — le cas courant ;
  *  - `window` : rien de la page — la page est transparente jusqu'à la
@@ -42,6 +52,8 @@ export interface LiquidGlassAppearance {
   tint?: LiquidGlassTint;
   /** Réagit au pointeur. */
   interactive?: boolean;
+  /** Le régime (voir `LiquidGlassScale`). Défaut `control`. */
+  scale?: LiquidGlassScale;
   /** Ordre d'empilement des verres natifs entre eux. Défaut 0. */
   z?: number;
   /**
@@ -92,7 +104,15 @@ export function surfaceAttributes(
   if (shape === "rounded") attributes["data-lg-radius"] = appearance.radius ?? "md";
   if (appearance.tint === "accent") attributes["data-lg-tint"] = "accent";
   if (appearance.interactive === true) attributes["data-lg-interactive"] = "";
-  return attributes;
+  return { ...attributes, ...scaleAttributes(appearance.scale) };
+}
+
+/**
+ * L'attribut du régime, pour une surface comme pour une peau CSS
+ * (`useGlassControl`) : seul `surface` se marque, `control` est le défaut.
+ */
+export function scaleAttributes(scale: LiquidGlassScale | undefined): { "data-lg-scale"?: "surface" } {
+  return scale === "surface" ? { "data-lg-scale": "surface" } : {};
 }
 
 const join = (...parts: Array<string | undefined>): string =>

@@ -30,13 +30,15 @@ import type { NavIcon } from "./useNavDestinations";
 export const TAB_CLASS =
   "lgc-tab group relative flex h-9 shrink-0 items-center gap-2 rounded-[11px] px-3 text-[13.5px] outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-line-focus";
 
-/** Rayon de la lentille en verre : la moitié de `h-9`, une capsule. */
+/** Rayon de la pastille en verre : la moitié de `h-9`, une capsule concentrique au groupe. */
 const LENS_RADIUS = 18;
 
 export function ActiveIndicator({ reduced }: { reduced: boolean }) {
-  // Liquid Glass (mode natif) : la lentille GLISSE d'un onglet à l'autre sur
-  // le ressort de métamorphose du verre, rayon corrigé pendant l'étirement
-  // (framer ne le corrige que passé en `style`). Ailleurs, le dessin d'avant.
+  // Liquid Glass (mode natif) : la pastille NEUTRE de la barre d'onglets
+  // d'iOS 26 (jetons du groupe, `windowGlassNav.css`) GLISSE d'un onglet à
+  // l'autre sur le ressort de métamorphose du verre, rayon corrigé pendant
+  // l'étirement (framer ne le corrige que passé en `style`). Ailleurs, le
+  // dessin d'avant.
   const glass = useWindowGlass();
   const morph = glass ? glassMorphProps("nav-active", reduced) : null;
   return (

@@ -12,10 +12,11 @@
  * Spécificité : `:root[attr] .x` (0,3,0) l'emporte sur un utilitaire Tailwind,
  * survol compris (0,2,0) — sans `!important`.
  *
- * Coût GPU (CLAUDE.md) : un seul `backdrop-filter` permanent de plus, celui de
- * l'effet de bord, et seulement page défilée ; la barre latérale n'en porte pas
- * (rien ne bouge derrière elle : un flou n'y flouterait rien) ; les panneaux de
- * la barre (`.lg-menu`, lg-composants) ne sont montés qu'ouverts. On n'anime que l'opacité. */
+ * Coût GPU (CLAUDE.md) : l'effet de bord n'existe que page défilée ; la barre
+ * latérale est une surface de la primitive, mais rien ne bouge derrière elle au
+ * repos (le fond de page) : son flou n'est recalculé qu'au défilement ; les
+ * panneaux de la barre (`.lg-menu`, lg-composants) ne sont montés qu'ouverts.
+ * On n'anime que l'opacité. */
 
 /* Les jetons de la fenêtre, COMPOSÉS du matériau (`theme/liquidGlassTokens.css`) :
  * un réglage du verre là-bas se reporte ici. Seul ce qui n'existe pas dans le
@@ -25,7 +26,10 @@
   /* Effet de bord de défilement — teinté du fond de page (`--scrim-page-rgb`,
    * theme/scrims.css) : la frange se fond dans `--surface-0`, sans écart. */
   --lg-chrome-edge-blur: var(--lg-regular-blur);
-  --lg-chrome-edge-fade: 20px;
+  --lg-chrome-edge-fade: 24px;
+  /* Pas `--lg-scroll-edge` du socle ici : c'est un DÉGRADÉ à deux arrêts (sa
+   * rampe linéaire laisse un pli), pas une couleur — la courbe sans pli de
+   * `.lgc-edge::after` a besoin de couleurs aux deux bouts. */
   --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
   /* Le milieu du fondu est à hauteur des groupes de la barre, presque
    * transparents : c'est lui qui tient l'AA de leurs libellés page défilée
@@ -39,39 +43,30 @@
   --lg-chrome-group-pad: 6px;
   --lg-chrome-group-gap: 10px;
 
-  /* Les éléments dans les groupes : des capsules. */
+  /* Les éléments dans les groupes : des capsules CONCENTRIQUES au groupe
+   * (rayon intérieur = rayon du groupe − sa marge : deux capsules). */
   --lg-chrome-item-radius: var(--lg-radius-capsule);
   --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.07);
 
-  /* L'onglet actif : une lentille teintée de la marque (`tinted`). */
-  --lg-chrome-lens-bg:
-    radial-gradient(120% 140% at var(--lg-light-x) var(--lg-light-y), var(--lg-highlight) 0%, transparent 55%),
-    var(--lg-tint-gradient);
-  --lg-chrome-lens-shadow:
-    inset 0 1px 0 var(--lg-specular-soft),
-    inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand),
-    0 4px 14px -6px var(--lg-tint-brand);
+  /* L'onglet courant : la pastille de la barre d'onglets d'iOS 26 — un
+   * remplissage NEUTRE, jamais la marque ; seul son glyphe prend l'accent.
+   * Valeurs par ton du dessous : `windowGlassNav.css`, sur le groupe. */
+
+  /* Les pastilles de compte (cloche, Watch Together) : l'accent UNI, sans
+   * halo — la marque en touche, jamais un dégradé. */
+  --lg-chrome-badge-bg: var(--brand);
+  --lg-chrome-badge-shadow: none;
 
   /* L'avatar : liseré de verre et arête spéculaire, par-dessus la photo. */
   --lg-chrome-avatar-rim: inset 0 1px 0 var(--lg-specular-soft), 0 0 0 0.5px var(--lg-edge);
 
-  /* La barre latérale : un panneau flottant, en retrait des bords. */
+  /* La barre latérale : une surface flottante, en retrait des bords. Son
+   * matériau est celui de la primitive ; sa sélection, ses glyphes :
+   * `windowGlassSidebar.css`, au ton du rail. */
   --lg-chrome-sidebar-radius: var(--lg-radius-lg);
   --lg-chrome-sidebar-pad: 8px;
-  /* L'épaisseur des menus et feuilles du matériau, le reflet du haut ; sans
-   * flou (windowGlassSidebar.css : rien ne bouge derrière). Fil du bord DEHORS
-   * et ombre qui soulève : aucun liseré gris. */
-  --lg-chrome-sidebar-bg: linear-gradient(180deg, var(--lg-highlight), transparent 32%), var(--lg-thick-fill);
-  --lg-chrome-sidebar-shadow: 0 0 0 0.5px var(--lg-edge), var(--lg-shadow-contact), var(--lg-shadow-float);
-  --lg-chrome-sidebar-item-radius: var(--lg-radius-sm);
-  --lg-chrome-sidebar-selection-bg:
-    radial-gradient(120% 160% at 20% 0%, var(--lg-highlight) 0%, transparent 60%),
-    var(--lg-tint-gradient);
-  --lg-chrome-sidebar-selection-shadow: inset 0 1px 0 var(--lg-specular-soft), inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand);
-  --lg-chrome-sidebar-selection-icon: var(--brand-light);
 
-  /* Fenêtre inactive (`windowFocus.ts`) : la marque cède au gris. */
-  --lg-chrome-inactive-fill: rgba(var(--lg-light-rgb), 0.1);
+  /* Fenêtre inactive (`windowFocus.ts`) : l'accent cède au gris. */
   --lg-chrome-inactive-icon: var(--text-secondary);
 }
 
@@ -79,21 +74,16 @@
   /* La capsule est à hauteur du MILIEU du fondu : c'est lui qui tient l'AA de
    * ses libellés sombres quand une affiche passe dessous (mesuré au banc :
    * 0,22 → 3,9:1, sous le seuil). */
-  --lg-chrome-edge-tint-top: rgba(var(--scrim-page-rgb), 0.6);
   --lg-chrome-edge-tint-mid: rgba(var(--scrim-page-rgb), 0.5);
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
-  --lg-chrome-sidebar-selection-icon: var(--brand);
-  --lg-chrome-inactive-fill: rgba(var(--lg-shade-rgb), 0.07);
 }
 
-/* La fenêtre a perdu le focus : la barre se ternit, comme une app de macOS.
- * Après le bloc clair : même spécificité, l'ordre décide. */
-:root[data-liquid-glass="native"][data-window-inactive] {
-  --lg-chrome-lens-bg: var(--lg-chrome-inactive-fill);
-  --lg-chrome-lens-shadow: 0 0 0 0.5px var(--lg-edge);
-  --lg-chrome-sidebar-selection-bg: var(--lg-chrome-inactive-fill);
-  --lg-chrome-sidebar-selection-shadow: none;
-  --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
+/* La barre ne SAUTE pas d'une page à l'autre : avec une barre de défilement
+ * classique (souris branchée, « Toujours » dans Réglages Système), la page
+ * qui défile la gagnait et celle qui ne défile pas la perdait — les groupes
+ * de droite bougeaient de ~10 px (audit lg2, n° 15). La gouttière est tenue. */
+:root[data-liquid-glass="native"] {
+  scrollbar-gutter: stable;
 }
 
 /* ── Le bandeau des feux : transparent, le contenu défile dessous ──────── */
@@ -126,7 +116,10 @@
   height: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade));
 }
 
-/* Le flou progressif : plein sous la barre, éteint dans la frange. */
+/* Le flou ADOUCI (règle 7 d'Apple, style « soft ») : plein sous la barre,
+ * puis il s'éteint sur une courbe en douceur — une rampe linéaire laisse lire
+ * sa limite (un pli de luminosité là où elle s'arrête). Même courbe pour la
+ * teinte : aucun bord ne se lit, ni du flou ni du voile. */
 :root[data-liquid-glass="native"] .lgc-edge::before,
 :root[data-liquid-glass="native"] .lgc-edge::after {
   content: "";
@@ -135,18 +128,37 @@
 }
 
 :root[data-liquid-glass="native"] .lgc-edge::before {
+  --lgc-edge-mask: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - 2 * var(--lg-chrome-edge-fade)),
+    rgba(0, 0, 0, 0.72) calc(100% - 1.4 * var(--lg-chrome-edge-fade)),
+    rgba(0, 0, 0, 0.38) calc(100% - 0.8 * var(--lg-chrome-edge-fade)),
+    rgba(0, 0, 0, 0.12) calc(100% - 0.35 * var(--lg-chrome-edge-fade)),
+    transparent 100%
+  );
   backdrop-filter: blur(var(--lg-chrome-edge-blur)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--lg-chrome-edge-blur)) saturate(1.4);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2 * var(--lg-chrome-edge-fade)), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 2 * var(--lg-chrome-edge-fade)), transparent 100%);
+  mask-image: var(--lgc-edge-mask);
+  -webkit-mask-image: var(--lgc-edge-mask);
 }
 
-/* La teinte : garde les feux, la capsule et le titre lisibles. */
+/* La teinte : garde les feux, la barre et le titre lisibles. Une courbe SANS
+ * pli : jusqu'au milieu (62 %, la hauteur des libellés de la barre, dont elle
+ * tient l'AA) elle s'accélère doucement, puis une Hermite raccordée à la même
+ * pente s'éteint à pente nulle — mesuré au labo, plus de cassure de pente. */
 :root[data-liquid-glass="native"] .lgc-edge::after {
   background: linear-gradient(
     to bottom,
     var(--lg-chrome-edge-tint-top) 0%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-top) 89%, var(--lg-chrome-edge-tint-mid)) 20%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-top) 58%, var(--lg-chrome-edge-tint-mid)) 40%,
     var(--lg-chrome-edge-tint-mid) 62%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 77%, transparent) 71.5%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 43%, transparent) 81%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 13%, transparent) 90.5%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 4%, transparent) 95%,
+    color-mix(in srgb, var(--lg-chrome-edge-tint-mid) 1%, transparent) 97.5%,
     transparent 100%
   );
 }
