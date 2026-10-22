@@ -36,6 +36,8 @@
   --text-secondary: var(--lg-glyph-on-dark-secondary);
   --text-tertiary: var(--lg-glyph-on-dark-secondary);
   --text-quaternary: var(--lg-glyph-on-dark-secondary);
+  /* Le danger aussi (« Déconnexion ») : corail sur un dessous sombre. */
+  --status-error-fg: var(--lg-danger-on-dark);
   text-shadow: var(--lg-glyph-shadow-on-dark);
 }
 
@@ -44,6 +46,8 @@
   --text-secondary: var(--lg-glyph-on-light-secondary);
   --text-tertiary: var(--lg-glyph-on-light-secondary);
   --text-quaternary: var(--lg-glyph-on-light-secondary);
+  /* Bordeaux sur un dessous clair. */
+  --status-error-fg: var(--lg-danger-on-light);
   text-shadow: var(--lg-glyph-shadow-on-light);
 }
 
