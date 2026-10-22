@@ -198,13 +198,87 @@ jobs:
           cache-from: ${{ inputs.mode == 'server' && format('type=gha,scope={0}', matrix.arch) || '' }}
           cache-to: ${{ inputs.mode == 'server' && format('type=gha,mode=max,scope={0}', matrix.arch) || '' }}
           # Au cran « build » l'image reste sur le runner : rien n'est poussé
-          # dans le registre, on vérifie seulement que ça compile.
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ needs.plan.outputs.push }}
+          # dans le registre. Elle est chargée dans le démon Docker local
+          # (étiquette `:scan-<arch>`, jamais poussée) pour que le contrôle de
+          # sécurité ci-dessous la lise ; poussée, elle l'est par empreinte
+          # seule, SANS étiquette : rien n'est visible avant le job merge.
+          outputs: ${{ needs.plan.outputs.push == 'true' && format('type=image,name={0}/{1},push-by-digest=true,name-canonical=true,push=true', env.REGISTRY, env.IMAGE_NAME) || format('type=docker,name={0}/{1}:scan-{2}', env.REGISTRY, env.IMAGE_NAME, matrix.arch) }}
+
+      # ── Contrôle de sécurité, AVANT toute étiquette ─────────────────────────
+      # L'image d'une architecture n'existe encore que par son empreinte : si
+      # elle porte une vulnérabilité CRITICAL ou HIGH CORRIGEABLE, ce job
+      # échoue, son empreinte n'est pas transmise, et merge (qui pose les
+      # étiquettes et bascule `:latest`) ne tourne pas. Une vulnérabilité
+      # acceptée en connaissance de cause va dans .trivyignore, justifiée et
+      # datée (voir l'en-tête du fichier).
+      - name: Référence de l'image à contrôler
+        id: scanref
+        env:
+          PUSH: ${{ needs.plan.outputs.push }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/sbom
+          if [ "$PUSH" = "true" ]; then
+            echo "ref=${REGISTRY}/${IMAGE_NAME}@${DIGEST}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${REGISTRY}/${IMAGE_NAME}:scan-${ARCH}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trivy — vulnérabilités CRITICAL / HIGH corrigeables (bloquant)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.scanref.outputs.ref }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+          format: table
+          exit-code: "1"
+
+      # Un secret gravé dans une couche (clé, jeton, .env oublié) : signalé,
+      # pas bloquant — la clé Klipy y est gravée VOLONTAIREMENT (voir le
+      # Dockerfile), et un faux positif ne doit pas retenir une livraison.
+      - name: Trivy — secrets dans les couches (signalés)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.scanref.outputs.ref }}
+          scanners: secret
+          format: table
+          exit-code: "0"
+          skip-setup-trivy: true
+
+      # L'inventaire des composants (SPDX), gardé en artefact.
+      - name: SBOM (syft)
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ${{ steps.scanref.outputs.ref }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: spdx-json
+          output-file: /tmp/sbom/sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom-${{ matrix.arch }}
+          path: /tmp/sbom/sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: true
 
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
           digest="${{ steps.build.outputs.digest }}"
+          # Au cran build (sortie docker), l'empreinte n'est qu'indicative :
+          # merge ne tourne pas. Jamais un artefact vide pour autant.
+          digest="${digest:-sha256:local-${{ matrix.arch }}}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
