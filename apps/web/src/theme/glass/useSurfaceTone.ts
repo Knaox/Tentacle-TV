@@ -1,71 +1,58 @@
 /**
  * `useSurfaceTone(element, enabled)` — le ton TENU d'une grande surface
- * (régime `surface`, lot lg2) : mesuré une fois à l'ouverture sur la couronne
- * autour d'elle (`surfaceTone.ts`), puis plus jamais relu — ni au défilement,
- * ni au survol, ni par la minuterie lente. Une nouvelle ouverture (nouvel
- * élément) mesure de nouveau.
+ * (régime `surface`, lot lg2) : mesuré à l'ouverture sur la couronne autour
+ * d'elle (`surfaceTone.ts`, `surfaceToneProbe.ts`), puis TENU — ni au
+ * défilement, ni au survol, ni par la minuterie lente. Remesuré seulement si
+ * le thème ou le matériau du système change sous la surface ouverte
+ * (`surfaceToneEpoch`) ; une nouvelle ouverture (nouvel élément) mesure de
+ * nouveau.
  *
  * Avant la mesure, et sans échantillonneur : le ton du thème. Sous « Réduire
  * la transparence » ou « Contraste accru », le verre devient un aplat du
  * thème (`physics.css`) : le ton est celui du thème, sans mesure.
  */
 
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
 import { getScheme, subscribe as subscribeScheme } from "../colorScheme";
-import { getGlassAccessibility } from "./accessibility";
+import { getGlassAccessibility, subscribeGlassAccessibility, type GlassMaterial } from "./accessibility";
 import type { BackdropTone } from "./backdropTone";
-import { heldSurfaceTone, PROBE_SIDES, surfaceProbeRect, surfaceToneMeasured } from "./surfaceTone";
+import { surfaceProbeRect, surfaceToneMeasured } from "./surfaceTone";
+import { SURFACE_TONE_REMEASURE_DELAY_MS, startSurfaceToneProbe, surfaceToneEpoch } from "./surfaceToneProbe";
 import { sharedScheduler } from "./useBackdropTone";
 
-/** Sans réponse de la coquille passé ce délai : le ton du thème reste. */
-const GIVE_UP_MS = 1500;
+const getMaterial = (): GlassMaterial => getGlassAccessibility().material;
 
 export function useSurfaceTone(element: HTMLElement | null, enabled: boolean): BackdropTone {
   const scheme = useSyncExternalStore(subscribeScheme, getScheme, getScheme);
+  const material = useSyncExternalStore(subscribeGlassAccessibility, getMaterial, getMaterial);
   const themeTone: BackdropTone = scheme === "light" ? "light" : "dark";
   const [held, setHeld] = useState<BackdropTone | null>(null);
   const id = useId();
+  /** L'élément déjà mesuré : la même surface, remesurée, attend que la page se repeigne. */
+  const measured = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    // Le ton d'avant n'a plus cours : celui du thème, jusqu'à la mesure.
     setHeld(null);
-    if (!enabled || element === null || !surfaceToneMeasured(getGlassAccessibility().material)) return undefined;
+    if (!enabled || element === null || !surfaceToneMeasured(material)) return undefined;
     const scheduler = sharedScheduler();
     if (scheduler === null) return undefined;
-
-    const assumed: BackdropTone = getScheme() === "light" ? "light" : "dark";
-    const ids = PROBE_SIDES.map((side) => `${id}:${side}`);
-    const luminances: number[] = [];
-    let settle: number | undefined;
-    let done = false;
-    const finish = (): void => {
-      if (done) return;
-      done = true;
-      for (const probe of ids) scheduler.unwatch(probe);
-      window.clearTimeout(giveUp);
-      if (luminances.length > 0) setHeld(heldSurfaceTone(assumed, luminances));
-    };
-    // Tout le lot de la couronne revient d'un coup : on conclut juste après.
-    const collect = (value: number): void => {
-      luminances.push(value);
-      window.clearTimeout(settle);
-      settle = window.setTimeout(finish, 0);
-    };
-    PROBE_SIDES.forEach((side, index) => {
-      scheduler.observe(
-        ids[index]!,
-        () => surfaceProbeRect(element.getBoundingClientRect(), side, { width: innerWidth, height: innerHeight }),
-        collect,
-      );
-    });
-    const giveUp = window.setTimeout(finish, GIVE_UP_MS);
-    return () => {
-      done = true;
-      window.clearTimeout(settle);
-      window.clearTimeout(giveUp);
-      for (const probe of ids) scheduler.unwatch(probe);
-    };
-  }, [element, enabled, id]);
+    const delay = measured.current === element ? SURFACE_TONE_REMEASURE_DELAY_MS : 0;
+    measured.current = element;
+    return startSurfaceToneProbe(
+      `${id}:${surfaceToneEpoch(scheme, material)}`,
+      scheme === "light" ? "light" : "dark",
+      {
+        scheduler,
+        rectOf: (side) => surfaceProbeRect(element.getBoundingClientRect(), side, { width: innerWidth, height: innerHeight }),
+        setTimer: (callback, ms) => window.setTimeout(callback, ms),
+        clearTimer: (handle) => window.clearTimeout(handle as number),
+      },
+      setHeld,
+      delay,
+    );
+  }, [element, enabled, id, scheme, material]);
 
   return held ?? themeTone;
 }
