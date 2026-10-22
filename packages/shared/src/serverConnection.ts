@@ -1,5 +1,6 @@
 import { classifyProblem, type RawProblem } from "./problems/classifyProblem";
 import type { ProblemCause } from "./problems/problemTypes";
+import { trimTrailingSlashes } from "./utils/trailingSlashes";
 
 /**
  * Shared server connection utilities.
@@ -61,7 +62,7 @@ function stripDefaultPorts(url: string): string {
  * Does NOT add a protocol — that is handled by `verifyServer`.
  */
 export function normalizeServerUrl(raw: string): string {
-  const trimmed = raw.trim().replace(/\/+$/, "");
+  const trimmed = trimTrailingSlashes(raw.trim());
   return stripDefaultPorts(trimmed);
 }
 
@@ -129,7 +130,7 @@ function classifyError(
  * - Returns the working URL with the correct protocol on success.
  */
 export async function verifyServer(rawUrl: string): Promise<ServerCheckResult> {
-  const trimmed = rawUrl.trim().replace(/\/+$/, "");
+  const trimmed = trimTrailingSlashes(rawUrl.trim());
   if (!trimmed) {
     return { success: false, url: "", errorKey: "invalidUrl" };
   }

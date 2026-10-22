@@ -14,6 +14,8 @@
  * autres, ce seraient des portes fermées.
  */
 
+import { trimTrailingSlashes } from "../utils/trailingSlashes";
+
 /** L'adresse du guide dans les clients — la même sur le web, le bureau et le miroir. */
 export const TRAILER_GUIDE_PATH = "/help/trailers";
 
@@ -188,13 +190,13 @@ export function resolveGuideLink(link: TrailerGuideLink, ctx: TrailerGuideLinkCo
       return { href: link.url, external: true };
     case "jellyfin": {
       if (!ctx.isAdmin || !ctx.jellyfinUrl) return null;
-      return { href: `${ctx.jellyfinUrl.replace(/\/+$/, "")}${JELLYFIN_DASHBOARD_PAGES[link.page]}`, external: true };
+      return { href: `${trimTrailingSlashes(ctx.jellyfinUrl)}${JELLYFIN_DASHBOARD_PAGES[link.page]}`, external: true };
     }
     case "admin": {
       if (!ctx.isAdmin || !ctx.adminOrigin) return null;
       const route = TENTACLE_ADMIN_PAGES[link.page];
       if (ctx.adminOrigin === "app") return { href: route, external: false };
-      return { href: `${ctx.adminOrigin.replace(/\/+$/, "")}${route}`, external: true };
+      return { href: `${trimTrailingSlashes(ctx.adminOrigin)}${route}`, external: true };
     }
   }
 }
