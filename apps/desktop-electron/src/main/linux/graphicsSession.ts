@@ -13,8 +13,12 @@
  *
  * Aucun des deux ne gagne : l'utilisateur arbitre.
  *
- *   auto (défaut) — la session du bureau décide. Wayland → HDR, lecture plein
- *                   écran. X11 → lecture fenêtrée, pas de HDR.
+ *   auto (défaut) — la session du bureau décide. KDE Wayland → HDR, et la
+ *                   colle KWin garde la lecture fenêtrée. Autre bureau Wayland
+ *                   (GNOME, wlroots) → XWayland quand aucun écran HDR n'est
+ *                   branché (lecture fenêtrée, bouton plein écran qui marche),
+ *                   Wayland sinon (HDR, lecture plein écran forcée). X11 →
+ *                   lecture fenêtrée, pas de HDR.
  *   wayland       — Wayland natif imposé, quand la session s'y prête.
  *   x11           — X11 imposé (XWayland sous une session Wayland) : on retrouve
  *                   la lecture fenêtrée, on perd le HDR.
@@ -46,6 +50,32 @@ export interface DecidedSession {
   ozone: Montage | null;
   /** Le montage vidéo qui en découle — c'est lui qui décide de tout le reste. */
   montage: Montage;
+  /**
+   * `auto` a choisi XWayland sous une session Wayland sans colle ni écran HDR
+   * (voir `decideSession`). C'est un choix NON explicite qui peut tout de même
+   * ne rien afficher : `session.ts` le surveille comme un choix explicite.
+   */
+  xwaylandAuto: boolean;
+}
+
+/** Ce que `decideSession` doit savoir du poste, au-delà de l'environnement. */
+export interface SessionFacts {
+  /** Un écran branché annonce PQ ou HLG (`edidHdr.ts`). */
+  hdrDisplay: boolean;
+  /** XWayland a déjà échoué à afficher en `auto` sur ce poste : ne plus le tenter. */
+  xwaylandAutoBlocked: boolean;
+}
+
+/**
+ * Le bureau offre-t-il la colle KWin ? Lu dans `XDG_CURRENT_DESKTOP` (`KDE`),
+ * faute de mieux : il faut répondre avant `whenReady`, quand le ping D-Bus de
+ * `kwinScripting.ts` n'est pas encore possible. Un KDE muet retombe sur le
+ * montage forcé, qui marche ; jamais l'inverse.
+ */
+export function kdeDesktop(env: Record<string, string | undefined>): boolean {
+  return (env["XDG_CURRENT_DESKTOP"] ?? "")
+    .split(":")
+    .some((name) => name.trim().toUpperCase() === "KDE");
 }
 
 function isChoice(v: unknown): v is SessionChoice {
@@ -79,18 +109,75 @@ export function desktopSession(env: Record<string, string | undefined>): Montage
  * ⚠️ Demander `wayland` depuis une session X11 n'a pas de sens : il n'y a pas de
  * compositeur à qui parler. La demande est ramenée à X11 plutôt que refusée,
  * pour qu'un réglage transporté d'une machine à l'autre ne bloque personne.
+ *
+ * # `auto` sous GNOME et wlroots : XWayland, sauf écran HDR
+ *
+ * Sans colle KWin, Wayland impose la lecture plein écran (`surfaceWayland.ts`) :
+ * le bouton « sortir du plein écran » y était annulé aussitôt, et l'utilisateur
+ * de Fedora Workstation le croyait cassé (22.10). Ce prix n'achète que le HDR ;
+ * sans écran HDR, il n'achète rien. `auto` y prend donc XWayland — lecture
+ * fenêtrée, bouton qui marche — et garde Wayland dès qu'un écran HDR est
+ * branché (décision de Damien, 22.10). Il faut aussi un XWayland (`DISPLAY`) ;
+ * sans `facts`, la règle d'avant (Wayland) tient.
  */
 export function decideSession(
   env: Record<string, string | undefined>,
   choice: SessionChoice,
+  facts?: SessionFacts,
 ): DecidedSession {
   const session = desktopSession(env);
-  if (choice === "x11") return { choice, session, ozone: "x11", montage: "x11" };
+  if (choice === "x11") return { choice, session, ozone: "x11", montage: "x11", xwaylandAuto: false };
   if (choice === "wayland") {
-    if (session !== "wayland") return { choice, session, ozone: "x11", montage: "x11" };
-    return { choice, session, ozone: "wayland", montage: "wayland" };
+    if (session !== "wayland") return { choice, session, ozone: "x11", montage: "x11", xwaylandAuto: false };
+    return { choice, session, ozone: "wayland", montage: "wayland", xwaylandAuto: false };
   }
-  return { choice, session, ozone: null, montage: session === "wayland" ? "wayland" : "x11" };
+  if (session !== "wayland") return { choice, session, ozone: null, montage: "x11", xwaylandAuto: false };
+  const xwayland =
+    facts !== undefined &&
+    !facts.hdrDisplay &&
+    !facts.xwaylandAutoBlocked &&
+    !kdeDesktop(env) &&
+    (env["DISPLAY"] ?? "") !== "";
+  if (xwayland) return { choice, session, ozone: "x11", montage: "x11", xwaylandAuto: true };
+  return { choice, session, ozone: null, montage: "wayland", xwaylandAuto: false };
+}
+
+const OZONE_SWITCH = "--ozone-platform=";
+
+/**
+ * Posé sur la ligne de commande d'une relance de `ozoneRelaunchArgs` : le
+ * processus relancé sait que le témoin trouvé en place est le sien
+ * (`session.ts`). Traverse `argv` : ne se renomme pas.
+ */
+export const SESSION_RELAUNCH_FLAG = "--tentacle-session-relaunch";
+
+/**
+ * Les arguments d'une relance qui porte la plateforme décidée, ou `null` si
+ * Electron tourne déjà dessus.
+ *
+ * ⚠️ `app.commandLine.appendSwitch("ozone-platform", …)` arrive TROP TARD sur
+ * Electron 43 : le processus principal a déjà choisi son Ozone d'après la ligne
+ * de commande (`auto` : Wayland dès que `WAYLAND_DISPLAY` est posé) avant
+ * d'exécuter notre code. Seuls les ENFANTS reçoivent le drapeau : un navigateur
+ * Wayland et un processus GPU X11 (« XGetWindowAttributes failed for window
+ * 1 »). La fenêtre n'existe alors ni dans XWayland ni chez le compositeur — et
+ * `ready-to-show` part quand même, si bien que `sessionRescue.ts` croit
+ * l'essai réussi. Mesuré le 22.10 sous sway et GNOME headless, Electron
+ * minimal compris : le même drapeau posé sur la ligne de commande affiche.
+ *
+ * D'où la relance, une fois : le second processus trouve la bonne plateforme
+ * dans `argv` et rend `null`, il ne peut pas boucler. Un drapeau hérité d'une
+ * relance précédente (`relaunch()` des Préférences reprend `argv`) et qui ne
+ * correspond plus au choix est retiré : `auto` se relance alors SANS drapeau,
+ * pour garder le repli d'Electron.
+ */
+export function ozoneRelaunchArgs(decided: DecidedSession, argv: readonly string[]): string[] | null {
+  const given = argv.slice(1).find((arg) => arg.startsWith(OZONE_SWITCH))?.slice(OZONE_SWITCH.length);
+  // `auto` (défaut d'Electron) prend Wayland dès que la session en est une.
+  const byDefault = decided.session === "wayland" ? "wayland" : "x11";
+  if ((given ?? byDefault) === (decided.ozone ?? byDefault)) return null;
+  const kept = argv.slice(1).filter((arg) => !arg.startsWith(OZONE_SWITCH) && arg !== SESSION_RELAUNCH_FLAG);
+  return [...kept, ...(decided.ozone === null ? [] : [`${OZONE_SWITCH}${decided.ozone}`]), SESSION_RELAUNCH_FLAG];
 }
 
 /**

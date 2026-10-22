@@ -124,6 +124,12 @@ export default {
   volume: "Volume",
   fullscreen: "Plein écran",
   exitFullscreen: "Quitter le plein écran",
+  // Bureau Linux, Wayland sans colle KWin avec un écran HDR : le plein écran est imposé.
+  forcedFullscreenTitle: "Lecture en plein écran uniquement",
+  forcedFullscreenBody:
+    "Sur ce bureau Wayland, la lecture reste en plein écran : c'est ce qui garde le HDR. Pour regarder en fenêtre, passez en mode X11 (sans HDR) ; l'application va se relancer.",
+  forcedFullscreenSwitch: "Passer en X11 et relancer",
+  forcedFullscreenStay: "Rester en plein écran",
   seekbar: "Position de lecture",
   // L'image dans l'image du NAVIGATEUR — `pip`, plus bas, est celle du bureau.
   pictureInPicture: "Image dans l'image",

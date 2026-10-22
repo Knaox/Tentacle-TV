@@ -164,12 +164,20 @@ export function mpvApi(): MpvApi {
   return cache;
 }
 
-/** La bibliothèque est-elle chargeable ? Ne lève jamais. */
+/**
+ * La bibliothèque est-elle chargeable ? Ne lève jamais — mais DIT pourquoi.
+ *
+ * ⚠️ L'échec était avalé : le journal ne gardait que « aucune libmpv
+ * chargeable », sans la cause par candidate que `loadFirstAvailable` a pourtant
+ * rédigée (`libXpresent.so.1: cannot open shared object file`…). C'est la seule
+ * trace d'un paquet installé sans une dépendance (recette Linux du 2026-10-22).
+ */
 export function libmpvAvailable(): boolean {
   try {
     mpvApi();
     return true;
-  } catch {
+  } catch (e) {
+    console.warn(`[mpv] ${e instanceof Error ? e.message : String(e)}`);
     return false;
   }
 }

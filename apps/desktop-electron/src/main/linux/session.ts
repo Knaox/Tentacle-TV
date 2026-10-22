@@ -11,19 +11,34 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import {
   decideSession,
+  ozoneRelaunchArgs,
+  SESSION_RELAUNCH_FLAG,
   SESSION_FILE,
   readSessionChoice,
   type SessionChoice,
   type Montage,
   type DecidedSession,
 } from "./graphicsSession";
-import { writeWitness, recoverDoomedChoice, watchGpu } from "./sessionRescue";
+import {
+  writeWitness,
+  recoverDoomedChoice,
+  watchGpu,
+  writeXwaylandAutoTrial,
+  xwaylandAutoBlocked,
+} from "./sessionRescue";
+import { hdrDisplayConnected } from "./edidHdr";
 // Sans risque à l'import (aucune bibliothèque native) — contrairement aux
 // surfaces, pas besoin de `require` paresseux.
 import { kwinScriptApiAvailable } from "./kwinScripting";
 import { sweepOrphanGlue } from "./glueCleanup";
 
 let decided: DecidedSession | null = null;
+let relaunching = false;
+
+/** Ce processus se relance sur une autre plateforme : le démarrage s'arrête là. */
+export function relaunchingForSession(): boolean {
+  return relaunching;
+}
 
 /**
  * Décide de la plateforme d'affichage et la pose. À appeler AVANT `whenReady` :
@@ -36,7 +51,11 @@ export function applyGraphicsSession(): DecidedSession | null {
   // `TENTACLE_LINUX_SESSION` est l'outil d'essai des développeurs : il ne
   // touche pas au réglage, le garde-fou ne doit ni le juger ni le corriger.
   const devTry = process.env["TENTACLE_LINUX_SESSION"] !== undefined;
-  if (!devTry) {
+  // Relancé par le lancement d'avant pour changer de plateforme : le témoin
+  // et l'essai trouvés en place sont ceux qu'il a posés POUR ce processus, pas
+  // la trace d'un échec.
+  const relaunched = process.argv.includes(SESSION_RELAUNCH_FLAG);
+  if (!devTry && !relaunched) {
     const doomed = recoverDoomedChoice(folder, readSessionChoice(folder));
     if (doomed !== null) {
       console.error(
@@ -44,7 +63,28 @@ export function applyGraphicsSession(): DecidedSession | null {
       );
     }
   }
-  decided = decideSession(process.env, readSessionChoice(folder));
+  decided = decideSession(process.env, readSessionChoice(folder), {
+    hdrDisplay: hdrDisplayConnected(),
+    xwaylandAutoBlocked: xwaylandAutoBlocked(folder, relaunched),
+  });
+  // La plateforme ne se change qu'en relançant — voir `ozoneRelaunchArgs`.
+  const relaunchArgs = ozoneRelaunchArgs(decided, process.argv);
+  if (relaunchArgs !== null) {
+    // Les témoins AVANT la relance : un second processus qui meurt avant notre
+    // code (XWayland injoignable — « Missing X server », mesuré sous GNOME) n'en
+    // poserait aucun, et chaque lancement recommencerait sans fenêtre.
+    if (!devTry && decided.choice !== "auto") writeWitness(folder, decided.choice);
+    if (!devTry && decided.xwaylandAuto) writeXwaylandAutoTrial(folder);
+    console.info(`[session] relance sur --ozone-platform=${decided.ozone ?? "auto"} (choix=${decided.choice})`);
+    // Une AppImage se relance par son fichier : le montage de `execPath` part avec ce processus.
+    // Chemin absolu seulement : on ne relance pas un exécutable résolu depuis le dossier courant.
+    const appImage = process.env["APPIMAGE"] ?? "";
+    const relaunchFrom = path.isAbsolute(appImage) ? { execPath: appImage } : {};
+    app.relaunch({ args: relaunchArgs, ...relaunchFrom });
+    app.exit(0);
+    relaunching = true;
+    return decided;
+  }
   if (decided.ozone !== null) app.commandLine.appendSwitch("ozone-platform", decided.ozone);
   // Budget de tuiles du compositeur Chromium. Le défaut (quelques centaines de
   // Mo) ne tient pas les transitions de pages sur un bureau 4K à échelle ×2 :
@@ -57,13 +97,19 @@ export function applyGraphicsSession(): DecidedSession | null {
     `[session] bureau=${decided.session} choix=${decided.choice} ` +
       `ozone=${decided.ozone ?? "auto"} montage=${decided.montage}` +
       // Le fenêtré n'est pas encore connu ici — `detecterFenetrage` le dira.
-      (decided.montage === "wayland" ? " (HDR possible)" : " (pas de HDR)"),
+      (decided.montage === "wayland" ? " (HDR possible)" : " (pas de HDR)") +
+      (decided.xwaylandAuto ? " — XWayland : aucun écran HDR, bureau sans colle" : ""),
   );
   // Un choix explicite peut ne JAMAIS afficher — réglage persistant, fenêtre
   // introuvable, application briquée (vécu avec x11 sur XWayland cassé). Le
   // témoin et la surveillance GPU sont les deux filets ; voir `sessionRescue.ts`.
   if (!devTry && decided.choice !== "auto") {
     writeWitness(folder, decided.choice);
+    watchGpu(folder, app);
+  }
+  // XWayland-auto peut échouer comme `x11` : mêmes filets, propres à lui.
+  if (!devTry && decided.xwaylandAuto) {
+    writeXwaylandAutoTrial(folder);
     watchGpu(folder, app);
   }
   return decided;

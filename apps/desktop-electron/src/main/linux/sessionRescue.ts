@@ -29,12 +29,74 @@
  * développeurs, il ne touche pas au réglage et ne doit pas être « secouru ».
  */
 
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { SESSION_FILE, type SessionChoice } from "./graphicsSession";
 
 /** Le témoin : « un choix explicite est à l'essai, l'affichage n'a pas encore eu lieu ». */
 export const WITNESS_FILE = "session-essai.json";
+
+/**
+ * Les deux fichiers du filet de XWayland-auto (`graphicsSession.ts` →
+ * `xwaylandAuto`) : un choix NON explicite, mais qui peut ne rien afficher
+ * comme `x11` (le XWayland refusé par SELinux du 27.08). Le témoin d'essai
+ * vit le temps d'un lancement ; s'il survit, ou si le GPU meurt trois fois,
+ * le marqueur de blocage le remplace et `auto` retombe sur Wayland pour de bon.
+ */
+export const XWAYLAND_AUTO_TRIAL = "xwayland-auto-essai.json";
+export const XWAYLAND_AUTO_OFF = "xwayland-auto-bloque.json";
+
+/**
+ * XWayland-auto a-t-il déjà échoué sur ce poste ? Solde aussi un essai resté en
+ * plan — sauf `inheritedTrial` : le processus est la relance qui l'a posé
+ * pour lui (`session.ts`), l'essai commence à peine.
+ */
+export function xwaylandAutoBlocked(folder: string, inheritedTrial = false): boolean {
+  const trial = path.join(folder, XWAYLAND_AUTO_TRIAL);
+  if (!inheritedTrial && existsSync(trial)) {
+    blockXwaylandAuto(folder, "le lancement précédent n'a jamais affiché de fenêtre");
+    rmSync(trial, { force: true });
+  }
+  return existsSync(path.join(folder, XWAYLAND_AUTO_OFF));
+}
+
+/**
+ * Écrit un fichier du secours, en créant le dossier de données au besoin.
+ *
+ * ⚠️ Au PREMIER lancement, ce dossier n'existe pas encore : c'est Chromium qui
+ * le crée, une fois sa plateforme initialisée. Un XWayland injoignable tue le
+ * processus avant — mesuré sous GNOME headless : l'essai ne s'écrivait jamais,
+ * aucun lancement n'allait plus loin, et l'application ne s'ouvrait plus.
+ */
+function writeRescueFile(folder: string, name: string, content: string): void {
+  mkdirSync(folder, { recursive: true });
+  writeFileSync(path.join(folder, name), content, "utf8");
+}
+
+function blockXwaylandAuto(folder: string, reason: string): void {
+  console.error(`[session] ⚠️ XWayland en auto : ${reason} — retour à Wayland`);
+  try {
+    writeRescueFile(
+      folder,
+      XWAYLAND_AUTO_OFF,
+      `${JSON.stringify({ raison: reason, depuis: new Date().toISOString() }, null, 2)}\n`,
+    );
+  } catch {
+    // Sans marqueur, l'essai se rejouera : un clignotement de plus, pas un écran noir.
+  }
+}
+
+/** Pose le témoin d'essai de XWayland-auto — effacé par `sessionShown()`. */
+export function writeXwaylandAutoTrial(folder: string): void {
+  trialFolder = folder;
+  try {
+    writeRescueFile(folder, XWAYLAND_AUTO_TRIAL, "{}\n");
+  } catch {
+    // Le filet n° 2 manque, la surveillance du GPU reste.
+  }
+}
+
+let trialFolder: string | null = null;
 
 /** Nombre de morts du processus GPU avant de conclure que ce montage n'affichera pas. */
 const FATAL_GPU_DEATHS = 3;
@@ -56,10 +118,10 @@ export function readWitness(folder: string): SessionChoice | null {
 export function writeWitness(folder: string, choice: SessionChoice): void {
   witnessFolder = folder;
   try {
-    writeFileSync(
-      path.join(folder, WITNESS_FILE),
+    writeRescueFile(
+      folder,
+      WITNESS_FILE,
       `${JSON.stringify({ choix: choice, depuis: new Date().toISOString() }, null, 2)}\n`,
-      "utf8",
     );
   } catch {
     // Un témoin qui ne s'écrit pas prive du filet n° 2, pas du lancement.
@@ -81,6 +143,7 @@ export function clearWitness(folder: string): void {
  */
 export function sessionShown(): void {
   if (witnessFolder !== null) clearWitness(witnessFolder);
+  if (trialFolder !== null) rmSync(path.join(trialFolder, XWAYLAND_AUTO_TRIAL), { force: true });
 }
 
 /**
@@ -133,6 +196,10 @@ export function watchGpu(folder: string, application: WatchableApp): void {
       "utf8",
     );
     clearWitness(folder);
+    if (trialFolder === folder) {
+      blockXwaylandAuto(folder, `${dead} morts du processus GPU`);
+      rmSync(path.join(folder, XWAYLAND_AUTO_TRIAL), { force: true });
+    }
     application.relaunch();
     application.exit(0);
   });

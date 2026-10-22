@@ -44,6 +44,12 @@ describe("socleLinux", () => {
     expect(glue["gpu-context"]).toBe("waylandvk");
   });
 
+  it("X11 : le rectangle calé n'est jamais rogné au ratio du média", () => {
+    // Sinon le gestionnaire applique l'indice d'aspect de mpv à notre calage :
+    // 900x600 demandés, 900x506 obtenus, la vidéo collée en haut.
+    expect(linuxBase("x11")["keepaspect-window"]).toBe("no");
+  });
+
   it("la colle ne change rien à X11 — le calage y est déjà à nous", () => {
     expect(linuxBase("x11", true)).toEqual(linuxBase("x11"));
   });

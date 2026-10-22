@@ -92,7 +92,7 @@ SORTIE="$(mkdir -p "$SORTIE" && cd "$SORTIE" && pwd)"
 # bas — fontconfig lit la configuration de l'hôte, elle ne peut donc pas
 # voyager. Les deux SONAME sont universels : toute machine capable de lancer
 # Electron a déjà une fontconfig, puisque Chromium en dépend.
-UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libglib-2.0.so.0 libgnutls.so.30 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 libfontconfig.so.1 libexpat.so.1 "
+UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libglib-2.0.so.0 libgnutls.so.30 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 libfontconfig.so.1 libexpat.so.1 "
 
 auditer() {
   echo "==> Audit des NEEDED de $SORTIE (readelf)"
@@ -373,6 +373,16 @@ fi
 #
 # `libexpat` la suit : elle n'entrait dans la chaîne que comme dépendance de
 # fontconfig.
+#
+# ⚠️ Deux extensions X11 font exception et VOYAGENT : `libXpresent` et `libXss`.
+# Ce ne sont que des bibliothèques CLIENT (sérialisation d'une extension du
+# protocole, ABI figée depuis des années, rien que libX11 / libXext derrière),
+# mais AUCUN bureau ne les garantit : sur Fedora 44, seuls mpv, xfwm4, marco et
+# metacity tirent `libXpresent` — un Fedora GNOME ou KDE de série ne l'a pas.
+# Recette du 2026-10-22, conteneurs Ubuntu, Debian, Fedora, Arch : les deux
+# manquaient partout, `dlopen` refusait la chaîne, et l'AppImage (qui ne peut
+# rien déclarer) perdait le lecteur natif sans un mot.
+EMBARQUEES='^(libXpresent|libXss)\.so'
 echo "==> Collecte vers $SORTIE"
 rm -rf "$SORTIE"; mkdir -p "$SORTIE"
 SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libglib-2\.0|libgnutls|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma|libfontconfig|libexpat)\.so'
@@ -392,7 +402,9 @@ copier_recursif() {
   besoins="$(readelf -d "$fichier" 2>/dev/null | sed -n 's/.*(NEEDED).*\[\(.*\)\].*/\1/p')"
   table="$(ldd "$fichier" 2>/dev/null || true)"
   for nom in $besoins; do
-    echo "$nom" | grep -Eq "$SYSTEME" && continue
+    if ! echo "$nom" | grep -Eq "$EMBARQUEES"; then
+      echo "$nom" | grep -Eq "$SYSTEME" && continue
+    fi
     dep="$(printf '%s\n' "$table" | awk -v n="$nom" '$1 == n && $2 == "=>" { print $3; exit }')"
     [ -n "$dep" ] && [ -e "$dep" ] && copier_recursif "$dep"
   done
