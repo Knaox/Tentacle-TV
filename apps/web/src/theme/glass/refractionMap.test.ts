@@ -88,8 +88,15 @@ describe("buildLensMaps", () => {
     expect(buildLensMaps(geometry).specular).toBeNull();
   });
 
+  it("une petite surface se calcule à la densité de l'écran (liseré net sur Retina)", () => {
+    const dot = buildRefractionMap({ width: 30, height: 30, radius: 15, bezel: 9, pixelRatio: 2 });
+    expect(dot.width).toBe(60);
+    expect(at(dot, 30, 30)).toMatchObject({ r: 128, g: 128 });
+    expect(at(dot, 30, 2).g).toBeGreaterThan(150);
+  });
+
   it("une grande surface se calcule à résolution réduite", () => {
-    const big = buildRefractionMap({ width: 1600, height: 900, radius: 28, bezel: 22 });
+    const big = buildRefractionMap({ width: 1600, height: 900, radius: 28, bezel: 22, pixelRatio: 2 });
     expect(big.width * big.height).toBeLessThanOrEqual(160_000 + 2_000);
     expect(big.width / big.height).toBeCloseTo(1600 / 900, 1);
   });

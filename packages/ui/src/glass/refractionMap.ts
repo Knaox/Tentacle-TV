@@ -29,6 +29,12 @@ export interface RefractionGeometry {
   radius: number;
   /** Largeur du biseau qui réfracte, en px CSS. */
   bezel: number;
+  /**
+   * Densité de l'écran (`devicePixelRatio`, 1 par défaut). Les cartes se
+   * calculent à cette densité tant que la surface est petite : sans elle, le
+   * liseré d'une pastille de 30 px s'empâte sur un écran Retina.
+   */
+  pixelRatio?: number;
 }
 
 /** La lumière du bord. Alphas de 0 à 1. */
@@ -66,11 +72,16 @@ export const REFRACTION_MAP_MAX_PIXELS = 160_000;
 
 const NEUTRAL = 128;
 
-/** Résolution des cartes : 1 pixel de carte par px CSS, sauf grande surface. */
-export function refractionMapScale(width: number, height: number): number {
-  const pixels = width * height;
-  if (pixels <= REFRACTION_MAP_MAX_PIXELS) return 1;
-  return Math.sqrt(REFRACTION_MAP_MAX_PIXELS / pixels);
+/**
+ * Résolution des cartes, en pixels de carte par px CSS : la densité de
+ * l'écran (2 au plus), réduite pour qu'une grande surface ne dépasse pas
+ * `REFRACTION_MAP_MAX_PIXELS`.
+ */
+export function refractionMapScale(width: number, height: number, pixelRatio = 1): number {
+  const density = Math.min(2, Math.max(1, pixelRatio));
+  const pixels = width * height * density * density;
+  if (pixels <= REFRACTION_MAP_MAX_PIXELS) return density;
+  return density * Math.sqrt(REFRACTION_MAP_MAX_PIXELS / pixels);
 }
 
 const smooth = (edge0: number, edge1: number, x: number): number => {
@@ -82,7 +93,7 @@ const smooth = (edge0: number, edge1: number, x: number): number => {
 export function buildLensMaps(geometry: RefractionGeometry, light?: SpecularLight): LensMaps {
   const width = Math.max(1, geometry.width);
   const height = Math.max(1, geometry.height);
-  const scale = refractionMapScale(width, height);
+  const scale = refractionMapScale(width, height, geometry.pixelRatio);
   const mapWidth = Math.max(1, Math.round(width * scale));
   const mapHeight = Math.max(1, Math.round(height * scale));
   const displacement = new Uint8ClampedArray(mapWidth * mapHeight * 4);
@@ -175,7 +186,7 @@ export function buildRefractionMap(geometry: RefractionGeometry): RefractionMap 
 /** Clé de cache d'une géométrie (au px près : la carte est lisse). */
 export function refractionMapKey(geometry: RefractionGeometry, light?: SpecularLight): string {
   const r = (value: number) => Math.round(value);
-  const base = `${r(geometry.width)}x${r(geometry.height)}-r${r(geometry.radius)}-b${r(geometry.bezel)}`;
+  const base = `${r(geometry.width)}x${r(geometry.height)}-r${r(geometry.radius)}-b${r(geometry.bezel)}-d${geometry.pixelRatio ?? 1}`;
   if (light === undefined) return base;
   const l = (value: number) => Math.round(value * 100);
   return `${base}-a${r(light.angle)}-f${l(light.facing)}-o${l(light.opposite)}-s${l(light.base)}-w${l(light.rim)}-g${l(light.glow)}`;

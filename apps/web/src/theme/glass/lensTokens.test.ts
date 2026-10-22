@@ -52,6 +52,12 @@ describe("lensGeometryFrom", () => {
     expect(lens).toMatchObject({ bezel: 22, strength: 17.6, dispersion: 0.1 });
   });
 
+  it("une pastille de 30 px garde un biseau visible ; la densité de l'écran est bornée à 2", () => {
+    const dot = lensGeometryFrom({ width: 30, height: 30, cssRadius: 15, shape: "circle", level: "clear", pixelRatio: 3 }, read);
+    expect(dot).toMatchObject({ radius: 15, bezel: 9, pixelRatio: 2 });
+    expect(dot?.strength).toBeGreaterThan(6);
+  });
+
   it("sans taille : rien", () => {
     expect(lensGeometryFrom({ width: 0, height: 40, cssRadius: 0, shape: "rect", level: "regular" }, read)).toBeNull();
   });

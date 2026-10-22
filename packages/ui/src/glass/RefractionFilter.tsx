@@ -101,13 +101,14 @@ function RefractionFilterImpl({
   height,
   radius,
   bezel,
+  pixelRatio,
   strength,
   dispersion = 0,
   light,
 }: RefractionFilterProps) {
   // Le cache de `lensMapUrls` tient lieu de mémo : une géométrie déjà vue ne
   // coûte qu'une recherche de clé.
-  const urls = lensMapUrls({ width, height, radius, bezel }, light);
+  const urls = lensMapUrls({ width, height, radius, bezel, pixelRatio }, light);
   if (urls === null || width < 1 || height < 1) return null;
 
   // La carte encode ±1 sur ±127,5 : l'échelle vaut deux fois le décalage voulu.
