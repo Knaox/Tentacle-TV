@@ -83,30 +83,38 @@ export function AmbilightLayer({
         }}
       >
         <AnimatePresence>
-          <motion.img
+          {/* La COUCHE de la diapositive : elle porte le zoom (compositeur) et
+              le fondu enchaîné, et rien d'autre. Le flou est sur l'image
+              DEDANS, qui n'a pas de couche à elle : il est rastérisé une fois
+              dans la texture de cette couche, que le zoom ne fait qu'agrandir.
+              Posé sur la couche animée elle-même, il devenait un filtre de
+              compositeur, réappliqué à CHAQUE palier du zoom, à l'échelle de
+              l'écran — la sous-échelle n'y changeait rien (mesuré sur la TV LG,
+              dont le halo n'a pas de couche pour la même raison). */}
+          <motion.div
             key={layerKey}
-            src={url}
-            alt=""
-            draggable={false}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ opacity: { duration: FADE_DURATION_S, ease: "easeOut" } }}
-            // `will-change: transform` : le flou est alors rastérisé UNE fois dans
-            // sa propre couche, et le zoom devient une simple transformation de
-            // compositeur. Sans lui, un flou de cette taille serait recalculé à
-            // chaque image de l'animation.
-            className={`absolute inset-0 h-full w-full object-cover will-change-transform ${ZOOM_CLASS}`}
-            style={{
-              // Rayon divisé par la sous-échelle : agrandi d'autant ensuite, il
-              // redonne exactement le flou d'origine.
-              // `brightness` : 1 par défaut ; la lueur de la fiche le baisse
-              // (`.hero-glow`), où des textes se posent sur elle.
-              filter:
-                `blur(calc(var(--hero-ambilight-blur) / ${RENDER_DOWNSCALE}))` +
-                " saturate(var(--hero-ambilight-sat)) brightness(var(--hero-ambilight-brightness, 1))",
-            }}
-          />
+            className={`absolute inset-0 will-change-transform ${ZOOM_CLASS}`}
+          >
+            <img
+              src={url}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{
+                // Rayon divisé par la sous-échelle : agrandi d'autant ensuite, il
+                // redonne exactement le flou d'origine.
+                // `brightness` : 1 par défaut ; la lueur de la fiche le baisse
+                // (`.hero-glow`), où des textes se posent sur elle.
+                filter:
+                  `blur(calc(var(--hero-ambilight-blur) / ${RENDER_DOWNSCALE}))` +
+                  " saturate(var(--hero-ambilight-sat)) brightness(var(--hero-ambilight-brightness, 1))",
+              }}
+            />
+          </motion.div>
         </AnimatePresence>
       </div>
     </div>
