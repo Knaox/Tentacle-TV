@@ -14,7 +14,7 @@
 
 import type { RefObject } from "react";
 import { useBackdropTone, useLiquidGlassMode, useLiquidGlassRegion, type BackdropTone } from "../../../theme/glass";
-import { nativeGlassRefractsVideo } from "../../../theme/liquidGlassMode";
+import { nativeGlassBridge, nativeGlassRefractsVideo } from "../../../theme/liquidGlassMode";
 
 export interface GlassRegionOptions {
   /**
@@ -81,18 +81,24 @@ export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options
  * les contrôles sont masqués. Sur la vidéo, le thème ne dit rien du dessous :
  * sans mesure, le ton reste `dark` (des glyphes clairs, comme avant).
  *
- * ⚠️ `liquidGlass.sample` capture la PAGE et ignore ses pixels transparents :
- * au-dessus de la vidéo, il mesure NOS glyphes et leurs halos, jamais l'image
- * (mesuré sur « Banc Neige », vidéo ~0,9 : 0,11 à 0,63 selon la forme). Le
- * brancher ferait osciller le ton (des glyphes blancs « clairs » → sombres →
- * « sombres » → clairs). Tant que la coquille ne mesure pas ce qui est SOUS la
- * fenêtre (`videoToneMeasurable`), rien n'est mesuré.
+ * `liquidGlass.sample` compose la page SUR la vidéo de mpv (lg-natif,
+ * `videoSample.ts` : l'image décodée, une par seconde au plus, hors du fil
+ * principal) — ce que l'œil voit, au verre près. Nos glyphes n'y pèsent pas
+ * (mesuré par lg-natif : 14 % de la forme → 0,877 sur une neige à 0,882).
+ * Avant cela, la coquille ne lisait que la PAGE : au-dessus de la vidéo, nos
+ * glyphes et leurs halos, et le ton aurait oscillé.
  */
 export function useVideoBackdropTone(element: HTMLElement | null, active: boolean): BackdropTone {
   return useBackdropTone(element, active && videoToneMeasurable(), { fallback: "dark" });
 }
 
-/** La coquille sait-elle mesurer ce qui est SOUS la fenêtre (la vidéo de mpv) ? Pas encore. */
+/**
+ * La coquille sait-elle mesurer la VIDÉO sous la page ? Au montage `fenetre`
+ * (Apple Silicon : mpv dans sa fenêtre Metal, sous la nôtre), là où le lecteur
+ * pose son verre. La branche de lg-natif qui l'apprend à `sample` (`6d86ce1ed`)
+ * fait partie de celle-ci : la mesure n'existe pas sans elle.
+ */
 export function videoToneMeasurable(): boolean {
-  return false;
+  const bridge = nativeGlassBridge() as { sample?: unknown } | null;
+  return typeof bridge?.sample === "function" && nativeGlassRefractsVideo();
 }
