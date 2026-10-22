@@ -138,6 +138,17 @@
   --lg-player-label-shadow: none;
 }
 
+/* Le TON du dessous (`data-lg-tone`, mesuré sous chaque forme par la coquille) :
+   sur un dessous CLAIR — la neige, un ciel blanc —, glyphes et chiffres passent
+   au SOMBRE du socle (un quasi-noir à alpha, qui se compose juste), SANS halo :
+   un blanc à alpha rendrait gris sur la fenêtre transparente. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lg-tone="light"] {
+  --lg-player-fg: var(--lg-glyph-on-light);
+  --lg-player-fg-2: var(--lg-glyph-on-light-secondary);
+  --lg-player-glyph-shadow: none;
+  --lg-player-label-shadow: none;
+}
+
 /* ── Surface ─────────────────────────────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface {
@@ -209,6 +220,7 @@
    appui gonflent le bouton) ; ici, la lisibilité du symbole sur un verre
    presque neutre. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn > svg {
+  color: var(--lg-player-fg);
   filter: var(--lg-player-glyph-shadow);
 }
 

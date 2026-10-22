@@ -5,14 +5,15 @@
  *    la primitive des régions natives (`useLiquidGlassRegion`), qui suit le
  *    rectangle d'un élément image par image et regroupe les envois ;
  *  - lg-natif : les vues NSGlassEffectView derrière la page, et le pont
- *    (`window.tentacle.liquidGlass`) qui dit si le verre VOIT la vidéo.
+ *    (`window.tentacle.liquidGlass`) qui dit si le verre VOIT la vidéo, et
+ *    mesure ce qu'il y a dessous (`sample`, lu par `useBackdropTone`).
  *
  * Le lecteur ne les appelle QUE d'ici : un changement de leur contrat se
  * répare en un seul endroit.
  */
 
 import type { RefObject } from "react";
-import { useLiquidGlassMode, useLiquidGlassRegion } from "../../../theme/glass";
+import { useBackdropTone, useLiquidGlassMode, useLiquidGlassRegion, type BackdropTone } from "../../../theme/glass";
 import { nativeGlassRefractsVideo } from "../../../theme/liquidGlassMode";
 
 export interface GlassRegionOptions {
@@ -72,4 +73,14 @@ export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options
     spacing: options.spacing,
     transition: options.transition,
   });
+}
+
+/**
+ * Le TON de ce qui est sous une forme du lecteur (`dark` | `light`), mesuré par
+ * la coquille (`sample`) tant que `active` — relu au ralenti pendant la lecture,
+ * rien quand les contrôles sont masqués. Sur la vidéo, le thème ne dit rien du
+ * dessous : sans mesure, le ton reste `dark` (des glyphes clairs, comme avant).
+ */
+export function useVideoBackdropTone(element: HTMLElement | null, active: boolean): BackdropTone {
+  return useBackdropTone(element, active, { fallback: "dark" });
 }

@@ -67,9 +67,19 @@ export function sharedScheduler(): ToneScheduler | null {
 /** Le ton par défaut : celui du thème (une page sombre a un dessous sombre). */
 const themeTone = (): BackdropTone => (getScheme() === "light" ? "light" : "dark");
 
-export function useBackdropTone(element: HTMLElement | null, enabled: boolean): BackdropTone {
+/**
+ * `fallback` : le ton tant qu'aucune mesure n'est revenue — celui du thème par
+ * défaut. Un verre posé sur la VIDÉO (le lecteur) n'a pas le thème dessous : il
+ * part de `dark`.
+ */
+export function useBackdropTone(
+  element: HTMLElement | null,
+  enabled: boolean,
+  options: { fallback?: BackdropTone } = {},
+): BackdropTone {
   const scheme = useSyncExternalStore(subscribeScheme, getScheme, getScheme);
-  const fallback: BackdropTone = scheme === "light" ? "light" : "dark";
+  const fallback: BackdropTone = options.fallback ?? (scheme === "light" ? "light" : "dark");
+  const initial = options.fallback;
   const [measured, setMeasured] = useState<BackdropTone | null>(null);
   const id = useId();
 
@@ -86,7 +96,7 @@ export function useBackdropTone(element: HTMLElement | null, enabled: boolean): 
         const visible = r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
         return visible ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
       },
-      themeTone(),
+      initial ?? themeTone(),
       setMeasured,
     );
     const resize = new ResizeObserver(() => scheduler.request());
@@ -98,7 +108,7 @@ export function useBackdropTone(element: HTMLElement | null, enabled: boolean): 
       resize.disconnect();
       element.removeEventListener("pointerenter", hover);
     };
-  }, [element, enabled, id]);
+  }, [element, enabled, id, initial]);
 
   return measured ?? fallback;
 }

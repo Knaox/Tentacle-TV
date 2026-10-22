@@ -63,7 +63,7 @@ export function GlassPlayerChrome({
             {/* La capsule du temps, puis les trois capsules de boutons : même groupe
                 natif, SÉPARÉES au repos (10 px, au-delà de la fusion), fondues en
                 se repliant vers le transport. */}
-            <GlassSurface className="lgp-timecap" present={visible} collapse>
+            <GlassSurface className="lgp-timecap" present={visible} collapse adaptiveTone>
               <div className="lgp-content lgp-timecap__inner">
                 <GlassSeekbar seekbar={seekbar} displayProgress={displayProgress} bufProg={bufProg} position={actualPos} duration={dur} />
               </div>
