@@ -27,6 +27,7 @@ export const FacetChip = memo(function FacetChip({
       id={optionId(index)}
       role="option"
       aria-selected={active}
+      data-lg-active={active}
       onMouseMove={() => { if (!active) onHover(index); }}
       onClick={() => onActivate(index)}
       className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] transition-colors duration-100 ${

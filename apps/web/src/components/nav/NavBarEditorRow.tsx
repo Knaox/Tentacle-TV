@@ -43,7 +43,7 @@ export const PinnedRow = memo(function PinnedRow({ entry, first, last, onNudge, 
       dragControls={controls}
       onDragEnd={onDragEnd}
       whileDrag={{ scale: 1.02 }}
-      className="relative flex h-11 items-center gap-2 rounded-xl border border-line-subtle bg-[color:var(--nav-panel-bg)] pl-1 pr-1.5"
+      className="lg-fill relative flex h-11 items-center gap-2 rounded-xl border border-line-subtle bg-[color:var(--nav-panel-bg)] pl-1 pr-1.5"
     >
       <button
         type="button"

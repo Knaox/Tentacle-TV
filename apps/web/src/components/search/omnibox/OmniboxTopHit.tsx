@@ -27,6 +27,7 @@ function Shell({ index, active, onHover, onActivate, children }: RowProps & { ch
       id={optionId(index)}
       role="option"
       aria-selected={active}
+      data-lg-active={active}
       onMouseMove={() => { if (!active) onHover(index); }}
       onClick={() => onActivate(index)}
       className={`relative flex cursor-pointer items-center gap-4 overflow-hidden rounded-2xl border p-3 transition-colors duration-100 ${

@@ -43,7 +43,7 @@ export const NotifRow = memo(function NotifRow({
       aria-pressed={selectionMode ? isSelected : undefined}
       onClick={activate}
       onKeyDown={onKeyDown}
-      className={`group relative flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 outline-none transition-colors duration-150 hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.5)] ${
+      className={`lg-row-soft group relative flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 outline-none transition-colors duration-150 hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.5)] ${
         !notif.read ? "bg-[rgba(var(--brand-rgb),0.06)]" : ""
       } ${isDeleting ? "pointer-events-none animate-fade-out" : ""}`}
     >

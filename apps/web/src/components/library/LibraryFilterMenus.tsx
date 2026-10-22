@@ -83,7 +83,7 @@ export function SortMenu({
             onClick={() => { onSortByChange(opt.value); onSortOrderChange(opt.order); }}
           />
         ))}
-        <div className="my-1 border-t border-line-subtle" />
+        <div className="lg-sep my-1 border-t border-line-subtle" />
         <button
           type="button"
           onClick={() => onSortOrderChange(desc ? "Ascending" : "Descending")}

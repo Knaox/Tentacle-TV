@@ -6,6 +6,7 @@ import { prefetchRecoPage, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import { useRecoFilter } from "../../hooks/useRecoFilter";
 import { PlatformLogo } from "./PlatformLogo";
+import { useGlassControl } from "../ui/glass/useGlassControl";
 import { activeFamilyCount, buildPlatformCatalog, isFamilyActive, toggleFamily } from "@tentacle-tv/api-client";
 
 /**
@@ -17,11 +18,14 @@ import { activeFamilyCount, buildPlatformCatalog, isFamilyActive, toggleFamily }
  * Survoler une plateforme précharge la page qu'un clic donnerait (le serveur
  * la tient prête en snapshot) : le clic n'attend rien.
  * Panneau MONTÉ à l'ouverture seulement, fond opaque — aucun backdrop-filter.
+ * Verre natif : une plaque d'un seul ton (lentille et ton du dessous,
+ * `useGlassControl`), comme tout menu.
  */
 export function RecoFiltersMenu() {
   const { t } = useTranslation("reco");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
   const { selected, setSelected, clear } = useRecoFilter();
   const qc = useQueryClient();
   const warm = useCallback(
@@ -75,11 +79,14 @@ export function RecoFiltersMenu() {
 
       {open && (
         <div
+          ref={glass.ref}
+          {...glass.props}
           role="group"
           aria-label={t("providersFilterAria")}
           className="lg-menu absolute right-[var(--row-gutter-mobile)] top-[calc(100%+8px)] w-[min(92vw,430px)] rounded-2xl border border-line-subtle bg-surface-modal p-4 shadow-2xl md:right-[var(--row-gutter-desktop)]"
         >
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
+          {glass.layers}
+          <p className="lg-menu-label mb-3 text-xs font-semibold uppercase tracking-wide text-content-quaternary">
             {t("filtersPlatformsLabel")}
           </p>
           <div className="grid grid-cols-2 gap-1.5">

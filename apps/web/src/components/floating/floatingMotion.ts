@@ -48,3 +48,13 @@ export function floatingVariants(nativeGlass: boolean, reducedMotion: boolean): 
   if (!nativeGlass) return LEGACY;
   return reducedMotion ? GLASS_REDUCED : GLASS;
 }
+
+/**
+ * Le mouvement réduit du système, tel que l'accessibilité du verre le pose sur
+ * `<html>` (`data-lg-motion`, `installGlassAccessibility`, suivi en direct) —
+ * lu au rendu, sans crochet : celui de framer-motion porte sa propre copie de
+ * React, que le rendu statique des tests ne connaît pas.
+ */
+export function glassMotionReduced(root: { dataset?: DOMStringMap } | undefined = globalThis.document?.documentElement): boolean {
+  return root?.dataset?.lgMotion === "reduce";
+}

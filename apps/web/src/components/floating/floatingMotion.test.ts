@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { springOvershoot, springSettleSeconds, SPRING_CSS_EPSILON } from "../../theme/glass/springs";
-import { floatingVariants, MENU_FROM_SCALE, MENU_OPEN_SPRING } from "./floatingMotion";
+import { floatingVariants, glassMotionReduced, MENU_FROM_SCALE, MENU_OPEN_SPRING } from "./floatingMotion";
 
 type Step = { opacity?: number; scale?: number; transition?: { duration?: number; scale?: unknown } };
 const step = (variants: ReturnType<typeof floatingVariants>, name: string) => variants[name] as Step;
@@ -30,5 +30,11 @@ describe("le mouvement des menus", () => {
   it("mouvement réduit : un fondu seul, aucune échelle", () => {
     const reduced = floatingVariants(true, true);
     for (const name of ["hidden", "show", "exit"]) expect(step(reduced, name).scale).toBeUndefined();
+  });
+
+  it("le mouvement réduit se lit sur l'attribut posé par l'accessibilité du verre", () => {
+    expect(glassMotionReduced({ dataset: { lgMotion: "reduce" } })).toBe(true);
+    expect(glassMotionReduced({ dataset: {} })).toBe(false);
+    expect(glassMotionReduced(undefined)).toBe(false);
   });
 });

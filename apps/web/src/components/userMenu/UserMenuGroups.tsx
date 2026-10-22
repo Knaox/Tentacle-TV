@@ -35,7 +35,7 @@ export const UserMenuGroups = memo(function UserMenuGroups({ groups }: UserMenuG
           key={group.key}
           role="group"
           aria-label={labelOf(group.key, t)}
-          className="border-b border-line-subtle py-1.5"
+          className="lg-sep border-b border-line-subtle py-1.5"
         >
           {group.items.map((item) => <MenuRow key={item.key} item={item} />)}
         </div>
@@ -95,7 +95,7 @@ function FooterDanger({ item }: { item: UserMenuItem }) {
       type="button"
       role="menuitem"
       onClick={item.action}
-      className="ml-auto flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] font-medium text-[color:var(--status-error-fg)] transition-colors duration-150 hover:bg-[color:var(--status-error-bg)] focus-visible:bg-[color:var(--status-error-bg)] focus-visible:outline-none"
+      className="lg-row-danger ml-auto flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] font-medium text-[color:var(--status-error-fg)] transition-colors duration-150 hover:bg-[color:var(--status-error-bg)] focus-visible:bg-[color:var(--status-error-bg)] focus-visible:outline-none"
     >
       <span className="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-4">{item.icon}</span>
       {item.label}

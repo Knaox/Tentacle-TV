@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useLiquidGlassMode } from "../../theme/glass";
 import { useFloatingPlacement, type FloatingAnchor, type FloatingOptions } from "./useFloatingPlacement";
-import { floatingVariants } from "./floatingMotion";
+import { floatingVariants, glassMotionReduced } from "./floatingMotion";
 import { useGlassControl } from "../ui/glass/useGlassControl";
 
 interface FloatingLayerProps extends FloatingOptions {
@@ -50,7 +50,7 @@ export function FloatingLayer({
   // UNE plaque : un seul ton pour tout le menu, jamais de bandes (règle de la
   // SURFACE — `lgMenu.css`). Le ton se lit sous le panneau entier.
   const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass });
-  const variants = floatingVariants(useLiquidGlassMode() === "native", useReducedMotion() ?? false);
+  const variants = floatingVariants(useLiquidGlassMode() === "native", glassMotionReduced());
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {
     (ref as { current: HTMLDivElement | null }).current = node;
