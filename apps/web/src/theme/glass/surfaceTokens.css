@@ -25,7 +25,13 @@
  *  - barre lat.   --lg-sidebar-selection, --lg-sidebar-selection-glyph
  *  - ombre        --lg-surface-shadow (une surface qui flotte : profonde, douce)
  *  - contenu      --lg-content-fill, --lg-content-fill-hover, --lg-content-stroke
- *  - bord         --lg-scroll-edge (le fondu du contenu sous la barre du haut) */
+ *  - bord         --lg-scroll-edge (le fondu du contenu sous la barre du haut)
+ *  - matériau     --lg-surface-{blur|saturate|brightness}, --lg-refraction-surface,
+ *    `surface`    --lg-surface-{fill|sheen|glyph|glyph-secondary|danger}-on-{dark|light},
+ *                 --lg-surface-edge-{gain|white}-on-{dark|light} — recopiés de
+ *                 `surfaceMaterial.ts`, qui PROUVE le contraste (≥ 4,5:1 sur
+ *                 tout dessous) ; composés sur l'élément par `liquidGlassSurface.css`
+ *                 en --lg-surface-fill, --lg-surface-backdrop, --lg-surface-glyph(-secondary) */
 
 :root[data-liquid-glass="native"] {
   /* ── Rangées d'une surface : la pastille insérée des menus macOS ───── */
@@ -36,9 +42,34 @@
   --lg-row-highlight: var(--brand-dark);
   --lg-row-highlight-glyph: #FFFFFF;
 
+  /* ── Le matériau ÉPAIS d'une surface (règle 3) ──────────────────────
+   * Givre et diffusion forts, dessous jamais avivé (saturation ≤ 1 : plus de
+   * taches de couleur), réfraction douce au biseau, et UN remplissage par TON
+   * assez dense pour tenir l'AA sur un blanc comme sur un noir pur. Ne
+   * dépend pas du thème : c'est le ton tenu de la surface qui choisit. */
+  --lg-surface-blur: 30px;
+  --lg-surface-saturate: 0.75;
+  --lg-surface-brightness: 1;
+  --lg-refraction-surface: 0.3;
+  --lg-surface-fill-on-dark: rgba(28, 28, 32, 0.78);
+  --lg-surface-sheen-on-dark: rgba(255, 255, 255, 0.05);
+  --lg-surface-glyph-on-dark: rgba(255, 255, 255, 0.96);
+  --lg-surface-glyph-on-dark-secondary: rgba(255, 255, 255, 0.8);
+  --lg-surface-danger-on-dark: #FFC4BC;
+  --lg-surface-fill-on-light: rgba(246, 246, 248, 0.76);
+  --lg-surface-sheen-on-light: rgba(255, 255, 255, 0.3);
+  --lg-surface-glyph-on-light: rgba(12, 12, 18, 0.88);
+  --lg-surface-glyph-on-light-secondary: rgba(12, 12, 18, 0.72);
+  --lg-surface-danger-on-light: #6E0B10;
+  /* Le reflet de BORD discret : la lumière du bord de la lentille, en sourdine. */
+  --lg-surface-edge-gain-on-dark: 0.5;
+  --lg-surface-edge-white-on-dark: 0.06;
+  --lg-surface-edge-gain-on-light: 0.2;
+  --lg-surface-edge-white-on-light: 0;
+
   /* ── Structure, dans un verre de ton sombre (réécrits par ton, plus bas) ── */
   --lg-separator: rgba(255, 255, 255, 0.12);
-  --lg-section-label: rgba(255, 255, 255, 0.62);
+  --lg-section-label: var(--lg-surface-glyph-on-dark-secondary);
 
   /* ── Barre latérale : sélection NEUTRE, l'icône à l'accent ──────────── */
   --lg-sidebar-selection: rgba(255, 255, 255, 0.1);
@@ -61,7 +92,7 @@
 :root[data-liquid-glass="native"][data-theme="light"] {
   --lg-row-highlight: var(--brand);
   --lg-separator: rgba(0, 0, 0, 0.1);
-  --lg-section-label: rgba(12, 12, 18, 0.6);
+  --lg-section-label: var(--lg-surface-glyph-on-light-secondary);
   --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
   --lg-sidebar-selection-glyph: var(--brand);
   --lg-surface-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 10px 24px -10px rgba(0, 0, 0, 0.16),
@@ -75,12 +106,12 @@
 /* ── Les jetons qui vivent DANS un verre suivent SON ton, pas le thème ──── */
 :root[data-liquid-glass="native"] [data-lg-tone="dark"] {
   --lg-separator: rgba(255, 255, 255, 0.12);
-  --lg-section-label: rgba(255, 255, 255, 0.62);
+  --lg-section-label: var(--lg-surface-glyph-on-dark-secondary);
   --lg-sidebar-selection: rgba(255, 255, 255, 0.1);
 }
 
 :root[data-liquid-glass="native"] [data-lg-tone="light"] {
   --lg-separator: rgba(0, 0, 0, 0.1);
-  --lg-section-label: rgba(12, 12, 18, 0.6);
+  --lg-section-label: var(--lg-surface-glyph-on-light-secondary);
   --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
 }
