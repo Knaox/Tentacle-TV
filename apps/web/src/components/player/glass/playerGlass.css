@@ -100,18 +100,17 @@
      du verre normal, qui règle lui-même sa luminosité ; elles ne prennent un
      voile qu'en thème clair (`--lg-player-panel-tint`). */
   --lg-player-panel-tint: transparent;
-  /* Le voile du verre CLAIR : la « couche d'assombrissement » qu'Apple exige derrière
-     le verre clair dès que le contenu est lumineux (HIG « Materials » : 35 % sur un
-     contenu clair ; les contrôles d'AVKit portent le leur). Posé par la vue native,
-     DANS la forme — un voile local, jamais une dalle. 20 % : comparé à l'image sur un
-     paysage surexposé (0 / 20 / 32 %), le seuil où chiffres et symboles se lisent
-     sans que le verre vire au fumé. */
-  --lg-player-clear-dim: rgb(0 0 0 / 0.2);
+  /* Le voile du verre CLAIR, posé par la vue native DANS la forme : AUCUN (décision du
+     lot : pas de teinte noire sur le verre). La HIG en prévoit un sous le verre clair
+     sur un contenu lumineux ; ici c'est le halo des glyphes qui tient la lisibilité —
+     mesuré, le voile ne change rien au flou du verre (avec ou sans, le détail fin
+     de l'image tombe de 94 %), seulement à son ton. */
+  --lg-player-clear-dim: transparent;
   /* L'ombre portée qui SOULÈVE chaque forme : très douce, hors de la forme — du noir à
      alpha, qui se compose juste sur la fenêtre transparente. */
   --lg-player-lift-shadow: 0 6px 18px rgba(var(--scrim-media-rgb), 0.2), 0 1px 3px rgba(var(--scrim-media-rgb), 0.16);
-  --lg-player-glyph-shadow: drop-shadow(0 1px 1.5px rgba(var(--scrim-media-rgb), 0.55)) drop-shadow(0 0 5px rgba(var(--scrim-media-rgb), 0.32));
-  --lg-player-label-shadow: 0 1px 2px rgba(var(--scrim-media-rgb), 0.6), 0 0 10px rgba(var(--scrim-media-rgb), 0.38);
+  --lg-player-glyph-shadow: drop-shadow(0 0 1px rgba(var(--scrim-media-rgb), 0.55)) drop-shadow(0 1px 2px rgba(var(--scrim-media-rgb), 0.5)) drop-shadow(0 0 8px rgba(var(--scrim-media-rgb), 0.38));
+  --lg-player-label-shadow: 0 0 1px rgba(var(--scrim-media-rgb), 0.6), 0 1px 2px rgba(var(--scrim-media-rgb), 0.55), 0 0 12px rgba(var(--scrim-media-rgb), 0.42);
   /* Voile de survol d'un bouton secondaire de carte : noir à alpha. */
   --lg-player-veil: rgb(0 0 0 / 0.15);
 
