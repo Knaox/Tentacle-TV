@@ -18,6 +18,10 @@ const SETTINGS = { x: 456, w: 144 };
 /** Le pivot du repli : le centre du transport, d'où naissent les formes (`useCollapsePivots` dans le lecteur). */
 const PIVOT_X = TRANSPORT.x + TRANSPORT.w / 2;
 const PANEL = { x: 416, y: 112, w: 184, h: 176 };
+/** Voile média des bandes de contrôle (0,7 au bord : ≥ 6:1 pour un glyphe blanc, même sur une image blanche). */
+const SCRIM_TOP = "linear-gradient(to bottom, rgba(var(--scrim-media-rgb), 0.7), rgba(var(--scrim-media-rgb), 0.55) 60%, transparent)";
+const SCRIM_BOTTOM = "linear-gradient(to top, rgba(var(--scrim-media-rgb), 0.7), rgba(var(--scrim-media-rgb), 0.6) 55%, transparent)";
+const PANEL_TINT = "rgba(var(--scrim-media-rgb), 0.62)";
 /** Les pistes d'un film : des noms de langues, pas des mots de l'interface. */
 const AUDIO = ["Français · 5.1", "English · Atmos"] as const;
 
@@ -67,6 +71,11 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
             ? <img src={backdrop.url} alt="" draggable={false} className="h-full w-full object-cover" />
             : <div className="h-full w-full" style={{ background: CARD_TONES[1] }} />}
         </motion.div>
+        {/* Les bandes du haut et du bas assombries, comme l'image d'un lecteur sous ses contrôles : les
+            glyphes BLANCS du lecteur (halo compris) y tiennent l'AA sur n'importe quel film, même blanc
+            — un décor de scène n'a ni mesure ni garantie de ton. Jamais DANS le verre. */}
+        <div className="absolute inset-x-0 top-0 h-[84px]" style={{ background: SCRIM_TOP }} />
+        <div className="absolute inset-x-0 bottom-0 h-[110px]" style={{ background: SCRIM_BOTTOM }} />
       </Place>
       <FauxGlass x={18} y={16} w={34} h={34} shape="circle" level="clear" onMedia visible={shown} className="flex items-center justify-center">
         <ChevronLeft size={18} strokeWidth={2.2} aria-hidden />
@@ -108,8 +117,10 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
           apparition seulement — un verre masqué par l'opacité coûterait encore (« Coût GPU »). */}
       {step >= 3 && <Place x={PANEL.x} y={PANEL.y} w={PANEL.w} h={PANEL.h} visible={open} scale={open ? 1 : 0.4}
         style={{ transformOrigin: "30% 100%" }} transition={reduced ? instant : undefined}>
-        <FauxGlass x={0} y={0} w={PANEL.w} h={PANEL.h} shape="rounded" className="p-3">
-          <p className="text-[9px] font-bold tracking-[0.16em]" style={{ color: "var(--lg-glyph-secondary, var(--on-media-secondary))" }}>
+        {/* Les panneaux du lecteur sont une « île sombre » (teinte native, `--lg-player-panel-tint`) aux
+            libellés blancs : ici la même île, assez dense pour l'AA sur un film blanc. */}
+        <FauxGlass x={0} y={0} w={PANEL.w} h={PANEL.h} shape="rounded" onMedia className="p-3" style={{ background: PANEL_TINT }}>
+          <p className="text-[9px] font-bold tracking-[0.16em]" style={{ color: "var(--on-media-secondary)" }}>
             {t("player:audioLabel")}
           </p>
           {AUDIO.map((label, i) => (
@@ -126,7 +137,7 @@ export function GlassPlayerScene({ active, reduced }: SceneProps) {
               {picked === i && <Check size={12} className="relative" aria-hidden />}
             </div>
           ))}
-          <p className="mt-3 text-[9px] font-bold tracking-[0.16em]" style={{ color: "var(--lg-glyph-secondary, var(--on-media-secondary))" }}>
+          <p className="mt-3 text-[9px] font-bold tracking-[0.16em]" style={{ color: "var(--on-media-secondary)" }}>
             {t("player:subtitlesLabel")}
           </p>
           <div className="mt-1.5 flex h-[26px] items-center px-2.5 text-[11px] font-semibold">{t("player:subtitlesDisabled")}</div>
