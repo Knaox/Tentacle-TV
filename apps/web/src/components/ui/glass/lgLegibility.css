@@ -51,6 +51,21 @@
   text-shadow: var(--lg-glyph-shadow-on-light);
 }
 
+/* Le REFLET suit le dessous lui aussi. `--lgc-sheen` est composé à la racine,
+ * donc par thème : en thème clair il pose 0,35 de blanc en haut de la surface
+ * — sur un héros sombre, il blanchissait le haut d'un menu dont les libellés
+ * sont blancs. Sur un dessous sombre, la surface reprend le reflet du thème
+ * sombre (`--lg-highlight` à 0,12 : `lgSheenTone.test.ts` tient l'égalité),
+ * recomposé ici pour qu'il se résolve sur ELLE ; le voile des bandes de
+ * lg-tokens (`--lgc-sheen`) le reprend tel quel. Jamais sous « Réduire la
+ * transparence » : lg-physique y éteint le reflet (`--lg-highlight:
+ * transparent`), et le redéclarer le rallumerait. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) :is(.lg-menu, .lg-sheet, .lg-toast, .lg-notice)[data-lg-tone="dark"] {
+  --lg-highlight: rgba(var(--lg-light-rgb), 0.12);
+  --lgc-sheen: radial-gradient(130% 90% at var(--lg-light-x) var(--lg-light-y), var(--lg-highlight) 0%, transparent 70%);
+  --lgc-fill-thick: var(--lgc-sheen), var(--lgc-thick-dim);
+}
+
 /* ── La note au repos des cartes ──
  * Un petit verre SANS flou : elle est montée sur CHAQUE carte de la page, un
  * `backdrop-filter` par carte se recalculerait à chaque défilement. Voile de
