@@ -78,6 +78,14 @@
   --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.06);
 }
 
+/* La barre ne SAUTE pas d'une page à l'autre : avec une barre de défilement
+ * classique (souris branchée, « Toujours » dans Réglages Système), la page
+ * qui défile la gagnait et celle qui ne défile pas la perdait — les groupes
+ * de droite bougeaient de ~10 px (audit lg2, n° 15). La gouttière est tenue. */
+:root[data-liquid-glass="native"] {
+  scrollbar-gutter: stable;
+}
+
 /* ── Le bandeau des feux : transparent, le contenu défile dessous ──────── */
 
 :root[data-liquid-glass="native"] .bandeau-hote {
