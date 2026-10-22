@@ -10,6 +10,7 @@ import { evalMain, focusEvents, launchApp, stopApp } from "./lib/electron.mjs";
 import { offline } from "./lib/offline.mjs";
 import { whatsNew } from "./lib/whatsNew.mjs";
 import { menus } from "./lib/menus.mjs";
+import { snow } from "./lib/snow.mjs";
 import { admin, player, screens } from "./lib/scenarios.mjs";
 
 async function reload(page) {
@@ -76,6 +77,9 @@ const CELLS = {
   "hors-ligne-coupe": { expect: "off", run: [offline], prepare: (app) => CELLS.coupe.prepare(app) },
   // Menus et feuilles seuls (sombre / clair), pour rejouer vite une passe de lg-tokens.
   menus: { expect: "on", run: [menus] },
+  // Le vrai lecteur sur une vidéo presque blanche, sombre et clair.
+  neige: { expect: "on", run: [snow] },
+  "neige-clair": { expect: "on", run: [snow], prepare: (app) => CELLS.clair.prepare(app) },
   // Les scènes des nouveautés seules, sombre et clair.
   nouveautes: { expect: "on", run: [whatsNew] },
   "nouveautes-clair": { expect: "on", run: [whatsNew], prepare: (app) => CELLS.clair.prepare(app) },

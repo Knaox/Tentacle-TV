@@ -91,6 +91,8 @@ export function checkCell(cell, report) {
   for (const sc of [wn?.scene1, wn?.scene2]) {
     if (sc?.overflow?.length) fail(`nouveautés 1.40.0 : ${sc.overflow.length} surface(s) de verre débordent de la scène (${sc.overflow[0]})`, wn.capture);
   }
+  const neige = find(report, "lecteur-neige");
+  if (neige?.ok && neige.medianLum !== null && neige.medianLum > 0.5) fail(`lecteur sur vidéo presque blanche : glyphes CLAIRS (luminance médiane ${neige.medianLum}) — le ton ne bascule pas en sombre`, neige.capture);
   const pipStep = find(report, "lecteur-hdr-pip");
   if (hdrScreen && pipStep?.ok && pipStep.afterBack && !pq(pipStep.afterBack["video-target-params"])) {
     fail("HDR perdu après le retour du PiP au lecteur", pipStep.capture);
