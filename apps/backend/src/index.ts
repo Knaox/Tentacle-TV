@@ -44,6 +44,7 @@ import { registerAccountAccessWatch } from "./services/accountAccess/accessWatch
 import { watchRightsLive } from "./services/rightsLive/rightsLive";
 import { registerBodyParsers } from "./services/bodyParsers";
 import { registerErrorHandler } from "./services/errorHandler";
+import { routedPath } from "./utils/routedPath";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -143,7 +144,8 @@ async function main() {
   // ── Setup guard: block most API routes until setup is complete ──
   let lastStateCheck = 0;
   app.addHook("onRequest", async (request, reply) => {
-    const url = request.url;
+    // Le chemin décodé, celui que le routeur suit : `/%61pi/…` ne saute pas la garde.
+    const url = routedPath(request.url);
     // Always allow: setup, health, theme (read-only public), websocket, static files
     if (url.startsWith("/api/setup") || url.startsWith("/api/health") || url.startsWith("/api/ws") || url.startsWith("/api/theme") || !url.startsWith("/api/")) {
       return;
