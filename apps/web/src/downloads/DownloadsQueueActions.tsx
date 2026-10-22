@@ -12,7 +12,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pause, Play, RotateCw } from "lucide-react";
 import { pauseDownload, resumeDownload, type DownloadEntry } from "./api";
-import { GlassButton } from "../components/ui/glass/GlassButton";
 
 const RUNNING = new Set(["queued", "downloading"]);
 
@@ -61,15 +60,15 @@ export function DownloadsQueueActions({ entries }: { entries: readonly DownloadE
 
 function QueueButton({ label, icon, disabled, onClick }: { label: string; icon: React.ReactNode; disabled: boolean; onClick: () => void }) {
   return (
-    <GlassButton
+    // Un geste du CONTENU : un remplissage, pas un verre sur la page (lot lg2).
+    <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
-      appearance={{ level: "regular", shape: "capsule" }}
-      className="inline-flex h-8 items-center gap-1.5 px-3 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:opacity-50"
-      fallbackClassName="rounded-full border border-line-subtle bg-fill-subtle text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary"
+      className="lg-content-control inline-flex h-8 items-center gap-1.5 rounded-full border border-line-subtle bg-fill-subtle px-3 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] disabled:opacity-50"
     >
       {icon}
       {label}
-    </GlassButton>
+    </button>
   );
 }

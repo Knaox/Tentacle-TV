@@ -139,7 +139,7 @@ export function RecommendedPluginCard({ rec }: { rec: RecommendedPlugin }) {
 
   const compact = status.kind === "ready";
   return (
-    <article aria-labelledby={`rec-${rec.pluginId}`} className="rounded-xl border border-line-subtle bg-fill-subtle p-4">
+    <article aria-labelledby={`rec-${rec.pluginId}`} className="lg-content rounded-xl border border-line-subtle bg-fill-subtle p-4">
       <div className="flex items-start gap-3">
         <span aria-hidden="true" className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand-light)]">
           <Icon size={22} />

@@ -35,7 +35,7 @@ export const RecoSectionSwitch = memo(function RecoSectionSwitch({ section }: Re
   return (
     <nav
       aria-label={t("sectionsLabel")}
-      className="inline-flex items-center rounded-full bg-[color:var(--surface-2)] p-[3px] ring-1 ring-line-strong"
+      className="lg-seg inline-flex items-center rounded-full bg-[color:var(--surface-2)] p-[3px] ring-1 ring-line-strong"
     >
       {SECTIONS.map(({ key, path, labelKey, Icon }) => {
         const selected = key === section;
@@ -54,7 +54,7 @@ export const RecoSectionSwitch = memo(function RecoSectionSwitch({ section }: Re
                 aria-hidden
                 layoutId="reco-section-marker"
                 transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }}
-                className="absolute inset-0 -z-10 rounded-full"
+                className="lg-seg-marker absolute inset-0 -z-10 rounded-full"
                 style={{
                   background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.95), rgba(var(--brand-accent-rgb),0.9))",
                   boxShadow: "0 2px 10px rgba(var(--brand-rgb),0.35)",

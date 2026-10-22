@@ -27,7 +27,7 @@ function ShareStatsButtonView({ period }: { period: ViewingStatsPeriod }) {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label={t("title")}
-        className="relative inline-flex min-h-9 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.16),rgba(var(--brand-rgb),0.16))] px-4 text-sm font-semibold text-[var(--brand-light)] shadow-[var(--elev-1)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] transition-colors before:absolute before:-inset-1 before:content-[''] hover:text-content-primary hover:ring-[rgba(var(--brand-rgb),0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
+        className="lg-content-control lg-content-accent relative inline-flex min-h-9 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.16),rgba(var(--brand-rgb),0.16))] px-4 text-sm font-semibold text-[var(--brand-light)] shadow-[var(--elev-1)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] transition-colors before:absolute before:-inset-1 before:content-[''] hover:text-content-primary hover:ring-[rgba(var(--brand-rgb),0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
       >
         <Share2 aria-hidden className="h-4 w-4" />
         {t("button")}

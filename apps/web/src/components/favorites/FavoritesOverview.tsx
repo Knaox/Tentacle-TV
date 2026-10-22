@@ -24,6 +24,8 @@ interface TileProps {
  * Une tuile : un compte ET un filtre, posée dans le dock de verre de la page
  * (qui porte le voile de lecture). Le survol passe par un calque en fondu
  * d'opacité, jamais par un `background-color` animé (règle GPU de CLAUDE.md).
+ * Sous le verre de macOS 26, du contenu : le remplissage des groupes
+ * (`lg-content`), la marque seulement en touche (`theme/liquidGlassContent.css`).
  */
 const Tile = memo(function Tile({ icon, label, count, active, onToggle }: TileProps) {
   return (
@@ -32,7 +34,7 @@ const Tile = memo(function Tile({ icon, label, count, active, onToggle }: TilePr
       aria-pressed={active}
       onClick={onToggle}
       disabled={count === 0 && !active}
-      className={`group relative flex min-h-[64px] cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-light)] disabled:cursor-default disabled:opacity-45 ${
+      className={`lg-content group relative flex min-h-[64px] cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-light)] disabled:cursor-default disabled:opacity-45 ${
         active
           ? "border-[rgba(var(--brand-rgb),0.45)] bg-[rgba(var(--brand-rgb),0.16)]"
           : "border-line-subtle bg-[color:var(--surface-1)]"
@@ -44,7 +46,7 @@ const Tile = memo(function Tile({ icon, label, count, active, onToggle }: TilePr
       />
       <span
         aria-hidden
-        className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+        className={`lg-content-badge relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
           active ? "text-white" : "text-[var(--brand-light)]"
         }`}
         style={{

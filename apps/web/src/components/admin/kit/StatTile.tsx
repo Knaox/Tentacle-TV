@@ -87,14 +87,14 @@ export function StatTile({ label, value, hint, icon, tone = "default", loading =
     </>
   );
 
-  const base = `group flex min-h-[128px] flex-col rounded-2xl border border-line-subtle bg-fill-faint p-4 ${className ?? ""}`;
+  const base = `lg-content group flex min-h-[128px] flex-col rounded-2xl border border-line-subtle bg-fill-faint p-4 ${className ?? ""}`;
 
   if (to) {
     return (
       <Link
         to={to}
         aria-busy={loading || undefined}
-        className={`${base} transition-colors duration-150 hover:border-line-strong hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus`}
+        className={`${base} lg-content-tile transition-colors duration-150 hover:border-line-strong hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus`}
       >
         {body}
       </Link>

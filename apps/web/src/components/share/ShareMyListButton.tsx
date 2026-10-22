@@ -34,7 +34,7 @@ function ShareMyListButtonView({ kind = "watchlist" }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="inline-flex min-h-[32px] cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.16),rgba(var(--brand-rgb),0.16))] px-3.5 text-xs font-semibold text-[var(--brand-light)] shadow-[var(--elev-1)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] transition-colors hover:text-content-primary hover:ring-[rgba(var(--brand-rgb),0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
+        className="lg-content-control lg-content-accent inline-flex min-h-[32px] cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full bg-[color:var(--surface-2)] bg-[linear-gradient(rgba(var(--brand-rgb),0.16),rgba(var(--brand-rgb),0.16))] px-3.5 text-xs font-semibold text-[var(--brand-light)] shadow-[var(--elev-1)] ring-1 ring-[rgba(var(--brand-rgb),0.5)] transition-colors hover:text-content-primary hover:ring-[rgba(var(--brand-rgb),0.8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--brand-rgb),0.8)]"
       >
         <ShareIcon className="h-4 w-4" />
         {t(kind === "likes" ? "common:shareMyFavorites" : "common:shareMyList")}

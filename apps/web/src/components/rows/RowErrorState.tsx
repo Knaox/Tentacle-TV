@@ -52,7 +52,7 @@ export function RowErrorState({ title, retrying, onRetry }: RowErrorStateProps) 
     <section className="group/row mb-10" role="status">
       <RowHeader title={title} />
       <div className="row-gutter mt-3">
-        <div className="flex max-w-xl flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line-subtle bg-fill-subtle px-4 py-3">
+        <div className="lg-content flex max-w-xl flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-line-subtle bg-fill-subtle px-4 py-3">
           <p className="text-sm text-content-tertiary">{t("common:rowErrorMessage")}</p>
           <button
             type="button"

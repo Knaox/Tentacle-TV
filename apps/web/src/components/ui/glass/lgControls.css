@@ -32,7 +32,8 @@
 /* ══ 1. L'interrupteur ════════════════════════════════════════════════════
  *
  * Le pouce devient une lentille de verre (macOS 26) : blanc laiteux, arête,
- * reflet. La piste allumée garde le dégradé de marque — c'est l'ÉTAT. */
+ * reflet. La piste allumée prend la couleur d'accent UNIE (lot lg2 : le
+ * dégradé de marque est réservé à l'action principale d'un écran). */
 :root[data-liquid-glass="native"] .ctl-switch {
   background: var(--lgc-fill);
   border-color: transparent;
@@ -40,7 +41,8 @@
 }
 
 :root[data-liquid-glass="native"] .ctl-switch::before {
-  background: var(--lgc-sheen), var(--ctl-gradient);
+  background: var(--lgd-accent);
+  box-shadow: none;
 }
 
 :root[data-liquid-glass="native"] .ctl-switch-thumb {
@@ -50,15 +52,14 @@
 
 /* ══ 2. Le choix segmenté ═════════════════════════════════════════════════
  *
- * Le groupe devient une piste de verre en capsule ; l'option retenue, un
- * galet de verre teinté posé dedans. */
+ * Un contrôle du CONTENU (lot lg2) : la piste en remplissage, l'option
+ * retenue en bouton neutre plus clair — le contrôle segmenté de macOS, jamais
+ * un verre dans un groupe, jamais un aplat de marque. */
 :root[data-liquid-glass="native"] .lg-segmented {
   border-radius: var(--lg-radius-capsule);
-  background: var(--lgc-fill);
-  -webkit-backdrop-filter: var(--lgc-backdrop);
-  backdrop-filter: var(--lgc-backdrop);
+  background: var(--lgd-control);
   border-color: transparent;
-  box-shadow: var(--lgc-edge);
+  box-shadow: none;
 }
 
 :root[data-liquid-glass="native"] .lg-segmented .ctl-segment {
@@ -66,8 +67,12 @@
 }
 
 :root[data-liquid-glass="native"] .ctl-segment::before {
-  background: var(--lgc-fill-prominent);
-  box-shadow: var(--lgc-edge-strong), var(--ctl-glow-segment);
+  background: var(--lgd-selected);
+  box-shadow: var(--lgd-selected-shadow);
+}
+
+:root[data-liquid-glass="native"] .ctl-segment[aria-checked="true"] {
+  color: var(--lgd-selected-fg);
 }
 
 /* ══ 3. Capsule ═══════════════════════════════════════════════════════════
@@ -80,63 +85,70 @@
 
 /* ══ 4. Pastilles de filtre ═══════════════════════════════════════════════
  *
- * Verre épais (lisible sur n'importe quelle image) et flou fin. L'arête
- * remplace l'anneau `ring-line-strong` ; une pastille active garde le sien, de
- * marque (`--tw-ring-shadow`, posé par Tailwind), sous sa teinte. */
+ * Elles vivent dans le panneau d'outils, qui est du CONTENU (il défile avec
+ * la page) : un remplissage, pas un verre dans le panneau (lot lg2). Active,
+ * la pastille devient le bouton neutre plus clair du segment choisi, et seul
+ * son libellé porte la marque — « en touche », jamais un aplat. */
 :root[data-liquid-glass="native"] .lg-chip {
-  -webkit-backdrop-filter: var(--lgc-backdrop);
-  backdrop-filter: var(--lgc-backdrop);
-  box-shadow: var(--lgc-edge), var(--lg-shadow-contact);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 :root[data-liquid-glass="native"] .lg-chip:not(.lg-chip-on) {
-  background: var(--lgc-fill-thick);
+  background: var(--lgd-control);
+}
+
+:root[data-liquid-glass="native"] .lg-chip:not(.lg-chip-on):hover {
+  background: var(--lgd-control-hover);
 }
 
 :root[data-liquid-glass="native"] .lg-chip-on {
-  /* Seul le fond change : la teinte (violette ou rose) reste celle de la
-   * pastille, en `background-image`. */
-  background-color: var(--lgc-thick-dim);
-  box-shadow: var(--lgc-edge-strong), var(--tw-ring-shadow, 0 0 #0000);
+  background: var(--lgd-selected);
+  box-shadow: var(--lgd-selected-shadow);
+  color: var(--lgd-accent-fg);
 }
 
 /* ══ 5. Champ de recherche ════════════════════════════════════════════════
  *
- * La capsule de recherche des barres d'outils (`ScopedSearchField`) : le
- * verre épais, l'arête ; au focus, l'anneau de marque par-dessus. */
+ * La capsule de recherche des panneaux d'outils (`ScopedSearchField`) : un
+ * champ de CONTENU, en remplissage (lot lg2) ; au focus, l'anneau d'accent. */
 :root[data-liquid-glass="native"] .lg-field {
-  background: var(--lgc-fill-thick);
-  -webkit-backdrop-filter: var(--lgc-backdrop);
-  backdrop-filter: var(--lgc-backdrop);
+  background: var(--lgd-control);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-color: transparent;
-  box-shadow: var(--lgc-edge), var(--lg-shadow-contact);
+  box-shadow: none;
 }
 
 :root[data-liquid-glass="native"] .lg-field:focus-within {
-  box-shadow: var(--lgc-edge-strong), 0 0 0 3px var(--lg-tint-brand);
+  box-shadow: 0 0 0 3px var(--lg-tint-brand);
 }
 
 /* ══ 6. Pastilles de qualité et de langue ═════════════════════════════════
  *
- * Déjà du verre sombre, réglé au contraste près (10 px sur une affiche) :
- * seule l'arête du matériau s'ajoute — la 4K garde son liseré et sa lueur de
- * marque. `!important` : style en ligne. */
-:root[data-liquid-glass="native"] .lg-meta:not([data-tone="accent"]) {
-  box-shadow: var(--lgc-edge) !important;
+ * Des ÉTIQUETTES du contenu, pas des contrôles (lot lg2) : plus de flou
+ * (`backdrop-blur-md` du rendu d'avant) ni d'arête de verre. Leur fond sombre
+ * à 72 % tient seul le contraste sur une affiche ; la 4K garde son liseré et
+ * sa lueur de marque, en ligne. */
+:root[data-liquid-glass="native"] .lg-meta {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* ══ 7. Sans flou : « Tout voir » et les panneaux de la page ═══════════════
  *
- * « Tout voir » reste dans le DOM à opacité nulle (une par rangée) ; les
- * panneaux du hors ligne reposent sur le fond de la page. Un
- * `backdrop-filter` s'y recalculerait pour rien. */
+ * Du contenu (lot lg2) : le remplissage de `theme/liquidGlassContent.css`,
+ * aucun verre — « Tout voir » reste en plus dans le DOM à opacité nulle (une
+ * par rangée), un `backdrop-filter` s'y recalculerait pour rien. */
 :root[data-liquid-glass="native"] .lg-pill {
-  background: var(--lgc-fill);
-  box-shadow: var(--lgc-edge);
+  background: var(--lgd-control);
+  box-shadow: none;
 }
 
+/* Un panneau de la page est du contenu (lot lg2) : le remplissage des groupes. */
 :root[data-liquid-glass="native"] .lg-panel {
-  background: var(--lgc-fill-thick);
+  background: var(--lgd-fill);
   border-color: transparent;
-  box-shadow: var(--lgc-edge), var(--lg-shadow-float);
+  box-shadow: inset 0 0 0 1px var(--lgd-stroke);
 }

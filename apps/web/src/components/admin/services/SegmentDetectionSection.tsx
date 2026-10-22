@@ -64,7 +64,7 @@ export function SegmentDetectionSection() {
                   href={plugin.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="group flex h-full items-start gap-3 rounded-xl border border-line-subtle bg-fill-subtle px-3 py-2.5 transition-colors hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                  className="lg-content lg-content-tile group flex h-full items-start gap-3 rounded-xl border border-line-subtle bg-fill-subtle px-3 py-2.5 transition-colors hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-content-primary">
