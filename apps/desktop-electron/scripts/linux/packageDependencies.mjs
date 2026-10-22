@@ -25,9 +25,17 @@ export const LIBMPV_SYSTEM_SONAMES = [
   "libvulkan.so.1", "libgbm.so.1", "libEGL.so.1", "libgomp.so.1", "libpulse.so.0",
 ];
 
+/**
+ * ⚠️ Le nom `t64` d'abord : apt essaie les alternatives DANS L'ORDRE. Sur
+ * Ubuntu 24.04, `libasound2` n'est plus qu'un paquet virtuel, que fournit aussi
+ * `liboss4-salsa-asound2` — une émulation OSS sans `snd_device_name_get_hint`.
+ * apt la choisissait sur un système qui n'avait pas encore d'ALSA, et Electron
+ * mourait au lancement (« undefined symbol: snd_device_name_get_hint »).
+ * Là où `t64` n'existe pas (Debian 12, Ubuntu 22.04), l'ancien nom prend le relais.
+ */
 export const DEB_DEPENDS = [
-  "libgtk-3-0 | libgtk-3-0t64", "libnotify4", "libnss3", "libxtst6", "xdg-utils",
-  "libatspi2.0-0 | libatspi2.0-0t64", "libsecret-1-0", "libasound2 | libasound2t64",
+  "libgtk-3-0t64 | libgtk-3-0", "libnotify4", "libnss3", "libxtst6", "xdg-utils",
+  "libatspi2.0-0t64 | libatspi2.0-0", "libsecret-1-0", "libasound2t64 | libasound2",
   // Un paquet par SONAME de `LIBMPV_SYSTEM_SONAMES`, dans le même ordre.
   "libvulkan1", "libgbm1", "libegl1", "libgomp1", "libpulse0",
 ];

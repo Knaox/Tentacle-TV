@@ -12,6 +12,13 @@ describe("dépendances déclarées des paquets Linux", () => {
     expect(RPM_DEPENDS).toContain("libvulkan.so.1()(64bit)");
   });
 
+  it("le .deb nomme d'abord libasound2t64 : apt prenait l'émulation OSS sur Ubuntu 24.04", () => {
+    expect(DEB_DEPENDS).toContain("libasound2t64 | libasound2");
+    for (const alternative of DEB_DEPENDS.filter((d) => d.includes("t64"))) {
+      expect(alternative.split(" | ")[0]).toMatch(/t64$/);
+    }
+  });
+
   it("le rpm déclare chaque SONAME système de la libmpv", () => {
     for (const soname of LIBMPV_SYSTEM_SONAMES) expect(RPM_DEPENDS).toContain(`${soname}()(64bit)`);
   });
