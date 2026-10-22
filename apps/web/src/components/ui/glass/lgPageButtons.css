@@ -1,0 +1,68 @@
+/* ── Liquid Glass : les BOUTONS ad hoc des pages, reconnus à leur forme (lg4) ──
+ *
+ * Des dizaines de boutons des pages (« Chercher un titre », « Modifier »,
+ * « Essayer », « Resynchroniser », « Enregistrer »…) n'ont pas de marqueur :
+ * ils se reconnaissent à leur FORME, comme les cartes ad hoc du contenu
+ * (`liquidGlassContent.css`) — un `button` / `a` / `select` arrondi (capsule,
+ * `rounded-lg`, `rounded-md`), rempli ou bordé, sans marqueur `lg-` ni `ctl-`.
+ * Une TUILE (rembourrage `p-*`, texte aligné à gauche, `rounded-xl` et plus)
+ * reste du contenu : elle n'est jamais visée.
+ *
+ *  • secondaire (rempli ou bordé)  → verre `glass` ;
+ *  • danger (`bg-danger-surface`)  → verre `glass`, libellé au rouge du thème ;
+ *  • principal (`bg-cta-primary-bg`) → verre `glassProminent` : la marque DANS
+ *    le verre, l'action principale de l'écran.
+ * Même peau que les marqueurs (`lgPageGlass.css`), mêmes jetons
+ * (`lgPageControls.css`) ; jamais dans un verre (menu, feuille, barre latérale,
+ * surface de la primitive). Hors de la porte : aucune règle. */
+
+:root[data-liquid-glass="native"] .lg-page :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
+  background: var(--lgp-fill);
+  border-color: transparent;
+  box-shadow: var(--lgp-edge), var(--lgp-depth);
+  color: var(--lgp-glyph);
+  text-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  scale: 1;
+  transition:
+    scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing),
+    opacity var(--duration-base, 200ms) var(--ease-out, ease-out),
+    color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+:root[data-liquid-glass="native"] .lg-page :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):hover {
+  background: var(--lgp-fill-hover);
+  color: var(--lgp-glyph);
+}
+
+/* Le danger garde son rouge (le thème le tient lisible sur un fond de page). */
+:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface:not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
+:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface:not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+  color: var(--status-error-fg, var(--status-error));
+}
+
+/* ══ L'action principale : `glassProminent` ════════════════════════════════ */
+:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
+  background: var(--lgp-prominent-fill);
+  border-color: transparent;
+  box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
+  color: var(--lgp-tint-glyph);
+  text-shadow: none;
+  scale: 1;
+  transition:
+    scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing),
+    opacity var(--duration-base, 200ms) var(--ease-out, ease-out);
+}
+
+:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):hover {
+  /* Le verre s'éclaire au survol, comme les surfaces de la primitive. */
+  background: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%), var(--lgp-prominent-fill);
+  color: var(--lgp-tint-glyph);
+}
+
+/* L'appui, pour les trois : le verre gonfle (jamais un `<select>`, qui ouvre
+ * sa liste du système). */
+:root[data-liquid-glass="native"] .lg-page :is(button, a):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .bg-cta-primary-bg):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):active:not(:disabled) {
+  scale: var(--lgp-press-scale);
+}

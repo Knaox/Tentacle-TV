@@ -73,9 +73,12 @@
       color-mix(in srgb, var(--brand-dark) 88%, black) 100%);
   --lgp-tint-edge: inset 0 0.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
   --lgp-tint-glyph: #ffffff;
-  /* L'action PRINCIPALE d'un écran (`glassProminent`) : la marque dans le verre. */
-  --lgp-prominent-fill: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.14) 0%, transparent 62%),
-    var(--cta-brand-gradient);
+  /* L'action PRINCIPALE d'un écran (`glassProminent`) : la marque dans le verre.
+   * Le rose du bout assombri (82 %) : blanc ≥ 4,5:1 partout (le rose pur : 4,4). */
+  --lgp-prominent-gradient: linear-gradient(120deg, var(--brand-dark) 0%,
+    color-mix(in srgb, var(--brand-accent-dark) 82%, black) 100%);
+  --lgp-prominent-fill: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%),
+    var(--lgp-prominent-gradient);
 
   /* L'appui fait GONFLER le verre (petit : une pastille côtoie ses voisines). */
   --lgp-press-scale: 1.04;
@@ -136,7 +139,7 @@
   --lgp-fill-hover-on-light: linear-gradient(#f0f0f4, #f0f0f4);
   --lgp-lens-fill-on-light: linear-gradient(#ffffff, #ffffff);
   --lgp-tint-fill: linear-gradient(var(--brand-dark), var(--brand-dark));
-  --lgp-prominent-fill: var(--cta-brand-gradient);
+  --lgp-prominent-fill: var(--lgp-prominent-gradient);
 }
 
 :root[data-liquid-glass="native"][data-lg-material="solid"] {

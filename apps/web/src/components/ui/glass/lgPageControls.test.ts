@@ -10,7 +10,8 @@ import { describe, expect, it } from "vitest";
 
 const strip = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 const TOKENS = strip(readFileSync(join(__dirname, "lgPageControls.css"), "utf8"));
-const SKIN = strip(readFileSync(join(__dirname, "lgPageGlass.css"), "utf8"));
+const SKIN = strip(readFileSync(join(__dirname, "lgPageGlass.css"), "utf8"))
+  + strip(readFileSync(join(__dirname, "lgPageButtons.css"), "utf8"));
 const CONTENT = strip(readFileSync(join(__dirname, "../../../theme/liquidGlassContent.css"), "utf8"));
 
 const rules = (source: string): Array<[string, string]> =>
@@ -21,6 +22,28 @@ const token = (block: string, name: string): string => {
   if (!match) throw new Error(`${name} absent`);
   return match[1];
 };
+
+/** Les sélecteurs d'une liste (virgules hors parenthèses ; `\(` échappé ne compte pas). */
+function splitTop(list: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (let i = 0; i < list.length; i += 1) {
+    const ch = list[i];
+    if (ch === "\\") {
+      current += ch + list[i + 1];
+      i += 1;
+      continue;
+    }
+    if (ch === "(") depth += 1;
+    if (ch === ")") depth -= 1;
+    if (ch === "," && depth === 0) {
+      out.push(current.trim());
+      current = "";
+    } else current += ch;
+  }
+  return [...out, current.trim()];
+}
 
 type Rgba = [number, number, number, number];
 
@@ -91,8 +114,8 @@ describe("les contrôles des pages en verre", () => {
   it("la peau ne touche JAMAIS un verre (menu, feuille, barre latérale, surface)", () => {
     for (const [selector, body] of rules(SKIN)) {
       if (!/background|box-shadow/.test(body) || !/\.lg-page/.test(selector)) continue;
-      for (const part of selector.split(/,(?![^(]*\))/)) {
-        expect(part, part).toMatch(/:not\(:where\(\[data-lg-scale="surface"\], \.lg-surface, \.lg-menu, \.lg-sheet, \[role="dialog"\]\) \*\)|:active|\.lg-page \.ctl-switch \.ctl-switch-thumb/);
+      for (const part of splitTop(selector)) {
+        expect(part, part).toMatch(/:not\(:where\(\[data-lg-scale="surface"\], \.lg-surface, \.lg-menu, \.lg-sheet, \[role="dialog"\](, \.lg-tray)?\) \*\)|:active|\.lg-page \.ctl-switch \.ctl-switch-thumb/);
       }
     }
   });
@@ -160,6 +183,26 @@ describe("les contrôles des pages en verre", () => {
     // Blanc sur l'accent le plus clair des deux thèmes (#7C3AED, sombre), reflet compris.
     const top = over(parse("rgba(255,255,255,0.08)"), over([0x7c, 0x3a, 0xed, 0.94], DARK_PANEL));
     expect(contrast(parse("#ffffff"), top)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("l'action principale (`glassProminent`) : blanc ≥ 4,5:1 aux deux bouts du dégradé", () => {
+    expect(token(ROOT, "--lgp-prominent-gradient")).toMatch(/var\(--brand-dark\)[\s\S]*82%, black/);
+    const sheen = parse("rgba(255,255,255,0.1)");
+    // Les bouts les plus clairs des deux thèmes : #7C3AED, et #DB2777 assombri à 82 %.
+    const pink: Rgba = [0xdb * 0.82, 0x27 * 0.82, 0x77 * 0.82, 1];
+    for (const end of [parse("#7c3aed"), pink]) {
+      expect(contrast(parse("#ffffff"), over(sheen, end))).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("une tuile (rembourrée, alignée à gauche) n'est jamais prise pour un bouton", () => {
+    for (const [selector] of rules(SKIN)) {
+      if (!selector.includes(":is(button, a")) continue;
+      for (const part of splitTop(selector)) {
+        if (/bg-danger-surface|bg-cta-primary-bg\b/.test(part) && !part.includes(".p-3")) continue;
+        expect(part, part).toMatch(/\.p-3, \.p-4, \.p-5, \.p-6, \.text-left/);
+      }
+    }
   });
 
   it("« Réduire la transparence » rend le verre plein, mouvement réduit le fige", () => {

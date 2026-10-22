@@ -38,6 +38,7 @@
 /* Les contrôles des pages en verre (lot lg4) : après les remplissages du contenu. */
 @import "./components/ui/glass/lgPageControls.css";
 @import "./components/ui/glass/lgPageGlass.css";
+@import "./components/ui/glass/lgPageButtons.css";
 
 @tailwind base;
 @tailwind components;
