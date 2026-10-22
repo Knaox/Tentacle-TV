@@ -78,8 +78,8 @@ const CELLS = {
   // Menus et feuilles seuls (sombre / clair), pour rejouer vite une passe de lg-tokens.
   menus: { expect: "on", run: [menus] },
   // Le vrai lecteur sur une vidéo presque blanche, sombre et clair.
-  neige: { expect: "on", run: [snow, night] },
-  "neige-clair": { expect: "on", run: [snow, night], prepare: (app) => CELLS.clair.prepare(app) },
+  neige: { expect: "on", fullWindow: true, run: [snow, night] },
+  "neige-clair": { expect: "on", fullWindow: true, run: [snow, night], prepare: (app) => CELLS.clair.prepare(app) },
   // Les scènes des nouveautés seules, sombre et clair.
   nouveautes: { expect: "on", run: [whatsNew] },
   "nouveautes-clair": { expect: "on", run: [whatsNew], prepare: (app) => CELLS.clair.prepare(app) },
@@ -107,6 +107,7 @@ for (const name of names) {
     home: path.join(STATE, `home-${name}`),
     fresh: true,
     env: cell.env ?? {},
+    fullWindow: cell.fullWindow === true,
     log: path.join(out, `${name}-electron.log`),
   });
   try {

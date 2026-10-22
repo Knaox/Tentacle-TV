@@ -51,13 +51,15 @@ async function waitSlot(timeoutMs) {
  * Lance l'app. `env` s'ajoute à l'environnement (ex. `TENTACLE_LIQUID_GLASS:
  * "off"`). `home` : dossier du profil ; `fresh` l'efface d'abord.
  */
-export async function launchApp({ home, fresh = false, env = {}, log, slotTimeoutMs = 30 * 60_000, command = null, startTimeoutMs = 60_000 }) {
+export async function launchApp({ home, fresh = false, env = {}, log, slotTimeoutMs = 30 * 60_000, command = null, startTimeoutMs = 60_000, fullWindow = false }) {
   // LOT.md : jamais une fenêtre sous les doigts de Damien. Mode « coin »
   // (BANC_COIN=1, défaut) : chaque fenêtre naît dans le coin bas-droit, 60 px
   // visibles seulement, sans focus — jamais occultée (Chromium et mpv
   // cessent de peindre une fenêtre cachée), jamais devant lui. Sinon : attendre
   // 120 s d'inactivité.
-  const corner = process.env.BANC_COIN !== "0";
+  // `fullWindow` : la cellule mesure ce que l'écran MONTRE (ton échantillonné
+  // sous la vidéo) — au coin, la vidéo hors écran n'est pas peinte.
+  const corner = process.env.BANC_COIN !== "0" && !fullWindow;
   if (!corner && !(await waitHidIdle(120))) throw new Error("Damien actif depuis plus d'une heure : lancement reporté");
   const slot = await waitSlot(slotTimeoutMs);
   if (fresh) rmSync(home, { recursive: true, force: true });
