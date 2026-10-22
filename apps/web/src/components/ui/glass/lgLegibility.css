@@ -32,15 +32,28 @@
   filter: var(--lg-glyph-shadow);
 }
 
-/* ── Libellés secondaires des menus ──
- * Gris sur un menu clair et coloré par ce qu'il couvre, ils tombaient sous
- * l'AA. Dans un menu de verre, les teintes tertiaire et quaternaire prennent
- * la secondaire, et tout libellé porte l'ombre du socle. Surcharge LOCALE des
- * jetons de texte : rien ne change hors des menus. */
-:root[data-liquid-glass="native"] .lg-menu {
-  --text-tertiary: var(--lg-label-secondary);
-  --text-quaternary: var(--lg-label-secondary);
-  text-shadow: var(--lg-label-shadow);
+/* ── Les textes des menus, feuilles, toasts et avis suivent le DESSOUS ──
+ * Le verre est presque transparent : ce n'est plus le thème qui dit si un
+ * libellé est clair ou sombre, c'est ce que le verre couvre (`data-lg-tone`,
+ * mesuré par la coquille — `useGlassControl`). Surcharge LOCALE des jetons de
+ * texte du thème : tout ce que la surface contient (titres, libellés, icônes
+ * en `currentColor`, champs) s'y adapte, rien ne change au dehors. Les
+ * teintes tertiaire et quaternaire prennent la secondaire : grises sur un
+ * verre clair et coloré, elles tombaient sous l'AA. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-sheet, .lg-toast, .lg-notice)[data-lg-tone="dark"] {
+  --text-primary: var(--lg-glyph-on-dark);
+  --text-secondary: var(--lg-glyph-on-dark-secondary);
+  --text-tertiary: var(--lg-glyph-on-dark-secondary);
+  --text-quaternary: var(--lg-glyph-on-dark-secondary);
+  text-shadow: var(--lg-glyph-shadow-on-dark);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-sheet, .lg-toast, .lg-notice)[data-lg-tone="light"] {
+  --text-primary: var(--lg-glyph-on-light);
+  --text-secondary: var(--lg-glyph-on-light-secondary);
+  --text-tertiary: var(--lg-glyph-on-light-secondary);
+  --text-quaternary: var(--lg-glyph-on-light-secondary);
+  text-shadow: var(--lg-glyph-shadow-on-light);
 }
 
 /* ── La note au repos des cartes ──

@@ -20,16 +20,17 @@
   --lgc-refract: url(#tentacle-glass-refract);
 
   /* ── Le fond vu à travers, par épaisseur ──
-   * La réfraction d'ABORD, sur l'image nette, puis le dépoli — l'ordre de la
-   * lentille de la primitive (`liquidGlassSurface.css`). */
+   * Le givre D'ABORD, puis la lentille — l'ordre de la primitive refaite
+   * (`liquidGlassSurface.css`) : la lumière du bord est dans le filtre de la
+   * lentille, un flou posé après la noierait. */
   --lgc-frost-clear: blur(var(--lg-clear-blur)) saturate(var(--lg-clear-saturate)) brightness(var(--lg-clear-brightness));
   --lgc-frost: blur(var(--lg-regular-blur)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
-  --lgc-frost-thick: blur(calc(var(--lg-regular-blur) * 2)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
+  --lgc-frost-thick: blur(var(--lg-thick-blur)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
   --lgc-frost-prominent: blur(var(--lg-prominent-blur)) saturate(var(--lg-prominent-saturate)) brightness(var(--lg-prominent-brightness));
-  --lgc-backdrop-clear: var(--lgc-refract) var(--lgc-frost-clear);
-  --lgc-backdrop: var(--lgc-refract) var(--lgc-frost);
-  --lgc-backdrop-thick: var(--lgc-refract) var(--lgc-frost-thick);
-  --lgc-backdrop-prominent: var(--lgc-refract) var(--lgc-frost-prominent);
+  --lgc-backdrop-clear: var(--lgc-frost-clear) var(--lgc-refract);
+  --lgc-backdrop: var(--lgc-frost) var(--lgc-refract);
+  --lgc-backdrop-thick: var(--lgc-frost-thick) var(--lgc-refract);
+  --lgc-backdrop-prominent: var(--lgc-frost-prominent) var(--lgc-refract);
 
   /* ── L'arête : trois traits INTÉRIEURS, fixes ──
    * Le liseré tout autour, l'arête claire en haut, la contre-arête en bas.
@@ -90,8 +91,12 @@
  * ou « Contraste accru » (`data-lg-material`, lg-physique), la règle tombe et
  * le `none` de la racine passe. */
 :root[data-liquid-glass="native"]:not([data-lg-material]) [data-lgc-lens] {
-  --lgc-backdrop-clear: var(--lgc-lens) var(--lgc-frost-clear);
-  --lgc-backdrop: var(--lgc-lens) var(--lgc-frost);
-  --lgc-backdrop-thick: var(--lgc-lens) var(--lgc-frost-thick);
-  --lgc-backdrop-prominent: var(--lgc-lens) var(--lgc-frost-prominent);
+  --lgc-backdrop-clear: var(--lgc-frost-clear) var(--lgc-lens);
+  --lgc-backdrop: var(--lgc-frost) var(--lgc-lens);
+  --lgc-backdrop-thick: var(--lgc-frost-thick) var(--lgc-lens);
+  --lgc-backdrop-prominent: var(--lgc-frost-prominent) var(--lgc-lens);
+  /* La lumière du bord est DANS le filtre de la lentille : plus de liseré en
+   * couches, le seul fil d'un demi-pixel du socle. */
+  --lgc-edge: 0 0 0 0.5px var(--lg-edge);
+  --lgc-edge-strong: 0 0 0 0.5px var(--lg-edge);
 }

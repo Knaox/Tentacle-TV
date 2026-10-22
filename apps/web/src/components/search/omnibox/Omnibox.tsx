@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import { inlineCompletion } from "@tentacle-tv/shared";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { easeOut, duration } from "../../../theme/motion";
+import { useGlassControl } from "../../ui/glass/useGlassControl";
 import { optionPath, stepIndex } from "../omniboxModel";
 import { pushRecentSearch } from "../recentSearches";
 import { useSeasonRequest } from "../../seasons/SeasonRequestProvider";
@@ -39,6 +40,8 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
   const { t } = useTranslation("search");
   const navigate = useNavigate();
   const compact = useIsMobile();
+  // Verre natif (panneau flottant) : le ton du dessous, auquel ses textes s'adaptent.
+  const glass = useGlassControl<HTMLDivElement>({ lens: false });
   const reduced = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState(seed);
@@ -169,6 +172,8 @@ export function Omnibox({ seed, onClose }: { seed: string; onClose: () => void }
         style={compact ? undefined : { top: "calc(var(--hote-bandeau) + 10px)" }}
       >
         <motion.div
+          ref={compact ? undefined : glass.ref}
+          {...(compact ? {} : glass.props)}
           role="dialog"
           aria-modal="true"
           aria-label={t("dialog")}
