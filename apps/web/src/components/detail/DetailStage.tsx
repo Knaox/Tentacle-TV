@@ -9,6 +9,7 @@ import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { DetailStageFallback } from "./DetailArtworkFallback";
+import { GlassButton } from "../ui/glass/GlassButton";
 import { useLateReveal } from "./detailArrival";
 import {
   DETAIL_STAGE_BOX,
@@ -143,21 +144,23 @@ function StageButton({ onClick, label, icon, showLabel = false }: {
   icon: ReactNode;
   showLabel?: boolean;
 }) {
+  // Verre natif : un rond (ou une capsule avec libellé) de verre clair, glyphes
+  // adaptés au décor. Ailleurs : blanc plein sur un verre à 0,55 — sur un
+  // décor clair, le blanc à 80 % sur 0,42 tombait à 4,1:1 (mesuré au banc).
   return (
-    <button
-      type="button"
+    <GlassButton
       onClick={onClick}
       aria-label={label}
       title={label}
-      // Blanc plein sur un verre à 0,55 : sur un décor clair, le blanc à 80 %
-      // sur 0,42 tombait à 4,1:1 (mesuré au banc, thème clair).
-      className={`lg-btn-media flex h-11 items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.55)] text-sm font-medium text-on-media-primary backdrop-blur-md transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.7)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] ${
+      appearance={{ level: "clear", shape: showLabel ? "capsule" : "circle" }}
+      className={`flex h-11 items-center gap-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)] ${
         showLabel ? "px-4" : "w-11 justify-center"
       }`}
+      fallbackClassName="rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.55)] text-on-media-primary backdrop-blur-md transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.7)]"
     >
       {icon}
       {showLabel && <span>{label}</span>}
-    </button>
+    </GlassButton>
   );
 }
 
