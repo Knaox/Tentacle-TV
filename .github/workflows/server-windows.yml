@@ -277,7 +277,7 @@ jobs:
           fi
           du -sh tv-client
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.TV_CLIENT_ARTIFACT }}
           path: tv-client
@@ -367,7 +367,7 @@ jobs:
           "MSIX_PATH=$out" >> $env:GITHUB_ENV
 
       - name: Upload MSIX (secours / installation à la main)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tentacle-server-windows-msix
           path: ${{ env.MSIX_PATH }}
@@ -400,7 +400,7 @@ jobs:
 
       - name: Upload du rapport de certification
         if: always() && env.WACK_REPORT != ''
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: tentacle-server-windows-certification
           path: ${{ env.WACK_REPORT }}
