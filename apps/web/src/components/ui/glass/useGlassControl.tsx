@@ -1,18 +1,21 @@
 /**
- * Ce que la primitive de lg-tokens apporte à une surface, branché sur un
- * composant qui garde SA peau (`lg-btn`, `lg-menu`… — `lgControls.css`,
- * `lgOverlays.css`) :
- *  - la LENTILLE exacte : une carte de réfraction calculée pour la forme et
- *    la taille de l'élément (`useLensGeometry` + `RefractionFilter`), au lieu
- *    de la carte générique étirée de `GlassFilters` ;
+ * Ce que la primitive de lg-tokens apporte à une surface qui garde SA peau CSS
+ * (`lg-menu`, `lg-sheet`, `lg-toast`, `lg-notice` — `lgOverlays.css`), quand
+ * elle ne peut pas devenir elle-même une surface de la primitive (panneau de
+ * `FloatingLayer`, feuille de `Modal` en `motion.div` animé…) :
+ *  - la LENTILLE exacte : une carte de réfraction calculée pour la forme et la
+ *    taille de l'élément, lumière du bord comprise (`useLensGeometry` +
+ *    `RefractionFilter`), au lieu de la carte générique de `GlassFilters` ;
+ *  - le TON du dessous (`data-lg-tone`, `useBackdropTone`), auquel les textes
+ *    de la surface s'adaptent (`lgLegibility.css`) ;
  *  - le REFLET qui suit le pointeur (lg-physique : `useSpecularHighlight` et
  *    sa couche `GlassSpecular`, déplacée par `translate` — aucune peinture).
  *
  * Hors du mode natif : aucun écouteur, aucune mesure, aucun nœud en plus —
  * `props` est vide, `layers` est nul. Le rendu d'avant, au pixel près.
  *
- *     const glass = useGlassControl<HTMLButtonElement>({ lens: "prominent", shape: "capsule", specular: true });
- *     <button ref={glass.ref} {...glass.props} className="lg-btn-primary …">{glass.layers}…</button>
+ *     const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
+ *     <div ref={glass.ref} {...glass.props} className="lg-menu …">{glass.layers}…</div>
  */
 
 import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
