@@ -77,8 +77,10 @@ export function applyGraphicsSession(): DecidedSession | null {
     if (!devTry && decided.xwaylandAuto) writeXwaylandAutoTrial(folder);
     console.info(`[session] relance sur --ozone-platform=${decided.ozone ?? "auto"} (choix=${decided.choice})`);
     // Une AppImage se relance par son fichier : le montage de `execPath` part avec ce processus.
-    const appImage = process.env["APPIMAGE"];
-    app.relaunch({ args: relaunchArgs, ...(appImage ? { execPath: appImage } : {}) });
+    // Chemin absolu seulement : on ne relance pas un exécutable résolu depuis le dossier courant.
+    const appImage = process.env["APPIMAGE"] ?? "";
+    const relaunchFrom = path.isAbsolute(appImage) ? { execPath: appImage } : {};
+    app.relaunch({ args: relaunchArgs, ...relaunchFrom });
     app.exit(0);
     relaunching = true;
     return decided;
