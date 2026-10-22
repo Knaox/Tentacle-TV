@@ -16,7 +16,7 @@
  * (`lgPageControls.css`) ; jamais dans un verre (menu, feuille, barre latérale,
  * surface de la primitive). Hors de la porte : aucune règle. */
 
-:root[data-liquid-glass="native"] .lg-page :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
+:root[data-liquid-glass="native"] .lg-page :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
   background: var(--lgp-fill);
   border-color: transparent;
   box-shadow: var(--lgp-edge), var(--lgp-depth);
@@ -31,15 +31,15 @@
     color var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
-:root[data-liquid-glass="native"] .lg-page :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):hover {
+:root[data-liquid-glass="native"] .lg-page :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):hover {
   background: var(--lgp-fill-hover);
   color: var(--lgp-glyph);
 }
 
 /* Le danger garde son rouge, au TON du verre (corail sur sombre, bordeaux sur clair). */
 /* (Spécificité doublée sur la classe : la règle générale en a une de plus.) */
-:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface.bg-danger-surface:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
-:root[data-liquid-glass="native"] .lg-page :is(button, a).bg-danger-surface.bg-danger-surface:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+:root[data-liquid-glass="native"] .lg-page :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
+:root[data-liquid-glass="native"] .lg-page :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
   color: var(--lgp-danger);
 }
 

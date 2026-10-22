@@ -41,6 +41,16 @@ const TONE: Record<PillTone, { box: string; icon: string }> = {
   },
 };
 
+// Sous le verre de macOS 26 (lot lg4), le bouton au repos est un verre ; « fait »
+// et « erreur » gardent leur aplat (l'état se voit). Marqueurs sans style hors
+// de la porte (`lgPageGlass.css`).
+const GLASS: Record<PillTone, string> = {
+  neutral: "lg-glass-btn",
+  brand: "lg-glass-btn lg-glass-accent",
+  danger: "lg-glass-btn lg-glass-danger",
+  dangerSolid: "lg-glass-btn lg-glass-danger",
+};
+
 const STATUS_BOX: Partial<Record<PillStatus, string>> = {
   done: "border-transparent bg-status-success-bg text-status-success-fg",
   error: "animate-shake border-transparent bg-status-error-bg text-status-error-fg",
@@ -76,7 +86,7 @@ export const ActionPill = forwardRef<HTMLButtonElement, ActionPillProps>(functio
   const busy = status === "busy";
   const Icon = busy ? LoaderCircle : status === "done" ? Check : status === "error" ? CircleAlert : icon;
   const text = busy ? busyLabel ?? label : status === "done" ? doneLabel ?? label : status === "error" ? errorLabel ?? label : label;
-  const toneBox = STATUS_BOX[status] ?? palette.box;
+  const toneBox = STATUS_BOX[status] ?? `${palette.box} ${GLASS[tone]}`;
   const iconTone = status === "idle" || busy ? palette.icon : "";
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {

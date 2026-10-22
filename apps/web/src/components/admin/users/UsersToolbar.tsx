@@ -120,7 +120,7 @@ function SortSelect({ value, onChange }: { value: UserSort; onChange: (sort: Use
         <select
           value={value}
           onChange={(event) => onChange(event.target.value as UserSort)}
-          className="h-10 cursor-pointer appearance-none rounded-[10px] border border-line-subtle bg-tentacle-surface pl-3 pr-9 text-[13px] font-medium text-content-primary outline-none transition-colors duration-150 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="lg-glass-btn h-10 cursor-pointer appearance-none rounded-[10px] border border-line-subtle bg-tentacle-surface pl-3 pr-9 text-[13px] font-medium text-content-primary outline-none transition-colors duration-150 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           {USER_SORTS.map((option) => (
             <option key={option} value={option}>{labels[option]}</option>

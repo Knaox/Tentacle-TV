@@ -22,7 +22,7 @@ interface ChoiceChipsProps<T extends string | number> {
 // jusqu'au rendu suivant. Opacités en `rgba(var(--brand-rgb), …)` : Tailwind 3
 // ne sait pas en poser une sur `[var(--brand)]/NN`, il supprime la déclaration.
 const CHIP =
-  "inline-flex h-9 min-w-[2.75rem] select-none items-center justify-center rounded-full border px-3.5 text-xs font-semibold tabular-nums transition-colors " +
+  "lg-glass-btn inline-flex h-9 min-w-[2.75rem] select-none items-center justify-center rounded-full border px-3.5 text-xs font-semibold tabular-nums transition-colors " +
   "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary " +
   "peer-checked:border-[rgba(var(--brand-rgb),0.45)] peer-checked:bg-[var(--brand-soft)] peer-checked:text-content-primary " +
   "peer-focus-visible:ring-2 peer-focus-visible:ring-[rgba(var(--brand-rgb),0.4)]";

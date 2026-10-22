@@ -72,8 +72,8 @@ export function Tabs<T extends string>({ idPrefix, label, items, active, onChang
             onKeyDown={(event) => onKeyDown(event, index)}
             className={`inline-flex h-9 flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected
-                ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]"
-                : "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
+                ? "lg-glass-btn lg-glass-selected border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-[var(--brand-light)]"
+                : "lg-glass-btn border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
             }`}
           >
             {item.icon ? (

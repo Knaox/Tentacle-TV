@@ -39,7 +39,7 @@
   color: var(--lgp-glyph);
 }
 
-:root[data-liquid-glass="native"] .lg-page :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):active:not(:disabled) {
+:root[data-liquid-glass="native"] .lg-page :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):active:not(:disabled, select) {
   scale: var(--lgp-press-scale);
 }
 
@@ -56,6 +56,24 @@
  * neutre, la marque sur le seul libellé — 4,5:1 au moins sur le verre. */
 :root[data-liquid-glass="native"] .lg-page .lg-content-control.lg-content-accent:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
   color: var(--lgd-accent-fg);
+}
+
+/* Un bouton marqué à la main (`.lg-glass-btn`) : son libellé de danger ou de
+ * marque, au ton du verre ; CHOISI (onglet, pastille cochée), la lentille
+ * neutre des segmentés — jamais l'aplat de marque. */
+:root[data-liquid-glass="native"] .lg-page .lg-glass-btn.lg-glass-danger:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+  color: var(--lgp-danger);
+}
+
+:root[data-liquid-glass="native"] .lg-page .lg-glass-btn.lg-glass-accent:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+  color: var(--lgd-accent-fg);
+}
+
+:root[data-liquid-glass="native"] .lg-page :is(.lg-glass-btn.lg-glass-selected, :checked + .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
+:root[data-liquid-glass="native"] .lg-page :is(.lg-glass-btn.lg-glass-selected, :checked + .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+  background: var(--lgp-lens-fill);
+  box-shadow: var(--lgp-lens-edge), var(--lgp-lens-depth);
+  color: var(--lgp-glyph);
 }
 
 /* ══ Un filtre POSÉ : l'accent uni DANS le verre (`glassProminent`) ══════ */
