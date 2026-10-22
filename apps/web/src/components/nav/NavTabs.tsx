@@ -24,14 +24,14 @@ import { ActiveIndicator, NavTab, NavTabBody, TAB_CLASS, TabIcon, menuAnchor, ta
 import { NavMorePanel } from "./NavMorePanel";
 import { NavBarEditorPanel } from "./NavBarEditorPanel";
 import { NavTabMenu, type NavTabMenuTarget } from "./NavTabMenu";
-import { usePriorityOverflow } from "./usePriorityOverflow";
+import { usePriorityOverflow, type OverflowSlack } from "./usePriorityOverflow";
 import { isActivePath, useNavDestinations } from "./useNavDestinations";
 
 const CHEVRON = <ChevronDown aria-hidden className="h-3.5 w-3.5 shrink-0" />;
 
 type Panel = "more" | "edit" | null;
 
-export function NavTabs() {
+export function NavTabs({ slack }: { slack?: OverflowSlack } = {}) {
   const { t } = useTranslation("nav");
   const { pathname } = useLocation();
   const reduced = useReducedMotion() ?? false;
@@ -45,7 +45,7 @@ export function NavTabs() {
   const recoIntent = useCallback(() => onRecoNavIntent(qc, readRecoFilterMirror(userId)), [qc, userId]);
 
   const signature = primary.map((d) => `${d.key}:${d.label}`).join("|");
-  const { containerRef, measureRef, visible } = usePriorityOverflow(primary.length, signature);
+  const { containerRef, measureRef, visible } = usePriorityOverflow(primary.length, signature, slack);
   const shown = primary.slice(0, visible);
   const overflowActive = primary.slice(visible).find((d) => isActivePath(d.path, pathname)) ?? null;
   const moreLabel = overflowActive?.label ?? t("more");
@@ -62,8 +62,8 @@ export function NavTabs() {
   }, []);
 
   return (
-    <div className="relative flex min-w-0 flex-1 items-center">
-      <nav ref={containerRef} aria-label={t("railLabel")} className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+    <div className="lgc-tabs relative flex min-w-0 flex-1 items-center">
+      <nav ref={containerRef} aria-label={t("railLabel")} className="lgc-tabs-nav flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
         {shown.map((d) => (
           <NavTab
             key={d.key}

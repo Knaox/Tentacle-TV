@@ -18,19 +18,23 @@
  * qui remontent leur bannière dessous (`-mt-[68px]`) continuent de le faire.
  * Le bandeau d'hôte de macOS (feux tricolores) reste au-dessus.
  *
- * Liquid Glass (macOS 26, `windowGlass.ts`) : la couche de verre de la capsule
- * est une surface de la primitive (`useLiquidGlassSurface`, lentille de page :
- * réfraction calculée pour la capsule exacte), et son assise s'arrête à 0,3 — c'est l'effet de bord
- * de défilement, DERRIÈRE elle, qui garde la lisibilité. `data-lg-toolbar`
- * dit à cet effet de couvrir aussi la barre. Le reflet suit le pointeur sur
- * la capsule (`useSpecularHighlight`, rAF seulement pendant qu'il bouge).
+ * Liquid Glass (macOS 26, mode natif, `windowGlass.ts`) : plus de capsule
+ * unique — les barres de macOS 26 sont des GROUPES séparés qui flottent. Trois
+ * surfaces de la primitive (`useLiquidGlassSurface`, lentille de page : la
+ * bannière se courbe au biseau, lumière du bord, glyphes au ton du dessous) :
+ * la marque et les onglets ; la recherche (`SearchLauncher`) ; les boutons et
+ * le profil. Le groupe des onglets ÉPOUSE son contenu : « Plus » se calcule
+ * alors sur la place libre de sa case (`usePriorityOverflow`, `slack`).
+ * Hors mode natif, les enveloppes de groupe sont en `display: contents` et
+ * la capsule d'avant est rendue telle quelle. `data-lg-toolbar` dit à l'effet
+ * de bord de défilement de couvrir aussi la barre.
  */
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useScrollScrim } from "./useScrollScrim";
 import { useWindowGlass } from "../../desktop/windowGlass";
-import { GlassSpecular, useLiquidGlassSurface, useSpecularHighlight } from "../../theme/glass";
+import { useLiquidGlassSurface } from "../../theme/glass";
 import { NavBrand } from "./NavBrand";
 import { NavTabs } from "./NavTabs";
 import { SearchLauncher } from "../search/SearchLauncher";
@@ -46,29 +50,32 @@ import { useActiveProfile } from "../../auth/profileSession";
 
 export function TopNav() {
   const offline = useOfflineMode();
+  const glass = useWindowGlass();
+  // La case qui s'étire, et le groupe de verre qui épouse les onglets — en
+  // ÉTAT : leur arrivée relance la mesure des onglets (`usePriorityOverflow`).
+  const [slotEl, setSlotEl] = useState<HTMLDivElement | null>(null);
+  const [hugEl, setHugEl] = useState<HTMLElement | null>(null);
+  const slack = useMemo(
+    () => (glass && slotEl && hugEl ? { slot: slotEl, hug: hugEl } : undefined),
+    [glass, slotEl, hugEl],
+  );
   // Hors ligne, la session d'un PROFIL n'a ni catalogue local ni transferts
   // (rien n'est gardé pour lui) : aucun onglet, et pas de séparateur qui ne
   // sépare rien.
   const profileSession = useActiveProfile() !== null;
-  const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs />;
+  const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs slack={slack} />;
 
-  // L'assise : nulle en haut de page (le verre seul, par-dessus la bannière),
-  // puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la couche de
-  // verre, qui porte le flou, n'est jamais repeinte (theme/chrome.css).
-  const glass = useWindowGlass();
-  const specular = useSpecularHighlight<HTMLDivElement>();
-  // La couche qui porte le verre. Hors mode natif : `nav-capsule-glass`, le
-  // dessin d'avant (theme/chrome.css), et rien d'autre.
-  const capsuleGlass = useLiquidGlassSurface({
-    level: "regular",
-    shape: "capsule",
-    backdrop: "page",
-    className: "pointer-events-none absolute inset-0",
-    fallbackClassName: "nav-capsule-glass",
-  });
+  // Les groupes (mode natif). Ailleurs : `contents`, ils n'existent pas pour
+  // la mise en page.
+  const tabsGroup = useLiquidGlassSurface({ shape: "capsule", className: "lgc-group", fallbackClassName: "contents", ref: setHugEl });
+  const actionsGroup = useLiquidGlassSurface({ shape: "capsule", className: "lgc-actions-group", fallbackClassName: "contents" });
+
+  // L'assise d'avant : nulle en haut de page (le verre seul, par-dessus la
+  // bannière), puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la
+  // couche de verre, qui porte le flou, n'est jamais repeinte (theme/chrome.css).
   const scrim = useScrollScrim<HTMLDivElement>({
     threshold: 140,
-    opacityAt: (p) => Math.min(glass ? 0.3 : 0.78, p * 0.95),
+    opacityAt: (p) => Math.min(0.78, p * 0.95),
   });
 
   useEffect(() => {
@@ -92,38 +99,41 @@ export function TopNav() {
           l'en-tête : son `pointer-events: none` posé sur l'en-tête ne
           l'atteindrait pas, puisqu'elle rétablit les clics pour elle-même. */}
       <div
-        // Le reflet n'écoute le pointeur qu'en mode natif : ailleurs, aucun écouteur.
-        ref={glass ? specular : undefined}
         data-hote-voile="topbar"
         className="lgc-capsule pointer-events-auto relative mx-auto mt-2 flex h-[52px] max-w-[1840px] items-center gap-1 rounded-[18px] px-1.5"
       >
-        <div aria-hidden {...capsuleGlass.props}>{capsuleGlass.layers}</div>
-        <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
-        {glass && <GlassSpecular />}
+        {!glass && (
+          <>
+            <div aria-hidden className="nav-capsule-glass" />
+            <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
+          </>
+        )}
 
-        <div className="relative flex min-w-0 flex-1 items-center gap-1">
-          <NavBrand />
-          {tabs && (
-            <>
-              <span aria-hidden className="mx-1 h-6 w-px shrink-0 bg-line-subtle" />
-              {tabs}
-            </>
-          )}
+        <div ref={setSlotEl} className="relative flex min-w-0 flex-1 items-center gap-1">
+          <div {...tabsGroup.props}>
+            {tabsGroup.layers}
+            <NavBrand />
+            {tabs && (
+              <>
+                <span aria-hidden className="lgc-separator mx-1 h-6 w-px shrink-0 bg-line-subtle" />
+                {tabs}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="lgc-actions relative flex shrink-0 items-center gap-1.5 pl-2">
           <ConnectivityChip />
           <DataSaverChip />
-          {!offline && (
-            <>
-              <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />
-              <SearchLauncher variant="icon" className="lg:hidden" />
-            </>
-          )}
-          <DownloadsNavButton />
-          {!offline && <WatchTogetherButton />}
-          {!offline && <NotificationBell />}
-          <UserAvatarMenu />
+          {!offline && <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />}
+          <div {...actionsGroup.props}>
+            {actionsGroup.layers}
+            {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
+            <DownloadsNavButton />
+            {!offline && <WatchTogetherButton />}
+            {!offline && <NotificationBell />}
+            <UserAvatarMenu />
+          </div>
         </div>
       </div>
     </header>
