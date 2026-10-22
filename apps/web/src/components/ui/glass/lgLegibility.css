@@ -12,13 +12,13 @@
  * Sous `:root[data-liquid-glass="native"]` seulement : le rendu d'avant n'a
  * pas d'ombre de plus. */
 
-/* Posé sur une AFFICHE (héros, fiche, plateau des cartes) : libellé blanc dans
+/* Posé sur une AFFICHE (héros, fiche) : libellé blanc dans
  * les deux schémas, halo sombre — c'est lui qui tient l'AA sur un décor blanc. */
-:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media, .lg-tray) {
+:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media) {
   text-shadow: var(--lg-media-label-shadow);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media, .lg-tray) svg {
+:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media) svg {
   filter: var(--lg-media-glyph-shadow);
 }
 
