@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { duration, easeIn, easeOut, exitDuration } from "../../theme/motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useLiquidGlassMode } from "../../theme/glass";
 import { useFloatingPlacement, type FloatingAnchor, type FloatingOptions } from "./useFloatingPlacement";
+import { floatingVariants } from "./floatingMotion";
 import { useGlassControl } from "../ui/glass/useGlassControl";
-
-const VARIANTS = {
-  hidden: { opacity: 0, scale: 0.96 },
-  show: { opacity: 1, scale: 1, transition: { duration: duration.fast, ease: easeOut } },
-  exit: { opacity: 0, scale: 0.97, transition: { duration: exitDuration(duration.fast), ease: easeIn } },
-};
 
 interface FloatingLayerProps extends FloatingOptions {
   open: boolean;
@@ -52,8 +47,10 @@ export function FloatingLayer({
   // natif : la lentille exacte du panneau et le ton du dessous, auquel ses
   // textes s'adaptent. Hors natif, `useGlassControl` ne fait rien.
   const menuGlass = className?.split(/\s+/).includes("lg-menu") ?? false;
-  // Un ton par rangée : un menu chevauche souvent la page claire ET le héros.
-  const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass, bands: menuGlass });
+  // UNE plaque : un seul ton pour tout le menu, jamais de bandes (règle de la
+  // SURFACE — `lgMenu.css`). Le ton se lit sous le panneau entier.
+  const glass = useGlassControl<HTMLDivElement>({ lens: menuGlass ? "regular" : false, tone: menuGlass });
+  const variants = floatingVariants(useLiquidGlassMode() === "native", useReducedMotion() ?? false);
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {
     (ref as { current: HTMLDivElement | null }).current = node;
@@ -109,7 +106,7 @@ export function FloatingLayer({
             maxWidth: placement ? Math.min(placement.maxWidth, maxWidth ?? Infinity) : maxWidth,
             transformOrigin: placement?.transformOrigin,
           }}
-          variants={VARIANTS}
+          variants={variants}
           initial="hidden"
           animate="show"
           exit="exit"
