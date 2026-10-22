@@ -10,7 +10,9 @@
  *  - `mire` : barres de couleur, lignes fines, damier ;
  *  - `brun` : un brun-rouge MOYEN et détaillé (trame, typographie) — le cas
  *    où un verre clair vire au gris ;
- *  - `blanc`, `noir` : les extrêmes, avec une trame fine.
+ *  - `blanc`, `noir` : les extrêmes, avec une trame fine ;
+ *  - `mixte` : la bande CLAIRE d'une page en thème clair, puis un héros
+ *    sombre — le dessous qu'un menu ou une feuille chevauche (ton par bande).
  *
  * Styles en ligne seulement : le labo n'existe que dans les paquets de
  * développement, et aucune de ses classes ne doit entrer dans la feuille du
@@ -24,9 +26,12 @@ import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
 
-export type LabBackdrop = "affiches" | "illustrations" | "texte" | "mire" | "brun" | "blanc" | "noir";
+export type LabBackdrop = "affiches" | "illustrations" | "texte" | "mire" | "brun" | "blanc" | "noir" | "mixte";
 
-export const LAB_BACKDROPS: readonly LabBackdrop[] = ["affiches", "illustrations", "texte", "mire", "brun", "blanc", "noir"];
+export const LAB_BACKDROPS: readonly LabBackdrop[] = ["affiches", "illustrations", "texte", "mire", "brun", "blanc", "noir", "mixte"];
+
+/** `mixte` : hauteur de la bande claire — elle coupe le menu du labo en deux. */
+export const MIXED_LIGHT_BAND = 200;
 
 interface LabItem {
   Id: string;
@@ -178,6 +183,22 @@ function SolidBackdrop({ dark }: { dark: boolean }) {
   );
 }
 
+/** Une page claire (titre, texte dense) au-dessus d'un héros sombre. */
+function MixedBackdrop({ hero, posters }: { hero: string | undefined; posters: string[] }) {
+  return (
+    <div style={{ background: "#000" }}>
+      <div style={{ height: MIXED_LIGHT_BAND, overflow: "hidden", background: "#f2f2f5", color: "#1c1c1e", padding: "56px 40px 0" }}>
+        <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: "-0.02em" }}>Pour vous</div>
+        <div style={{ fontSize: 14, lineHeight: 1.35, color: "#3a3a3c" }}>{PROSE.repeat(4)}</div>
+      </div>
+      <div style={{ height: 640, overflow: "hidden", filter: "brightness(0.55)" }}>
+        {hero ? <img src={hero} alt="" style={cover} draggable={false} /> : <Mosaic images={posters.slice(0, 7)} height={640} />}
+      </div>
+      <Mosaic images={[...posters, ...posters]} height={300} />
+    </div>
+  );
+}
+
 /** Le dessous choisi, sur toute la hauteur défilable du labo. */
 export const LabBackdropView = memo(function LabBackdropView({ kind }: { kind: LabBackdrop }) {
   const library = useLibraryImages();
@@ -186,8 +207,9 @@ export const LabBackdropView = memo(function LabBackdropView({ kind }: { kind: L
   if (kind === "brun") return <BrownBackdrop />;
   if (kind === "blanc" || kind === "noir") return <SolidBackdrop dark={kind === "noir"} />;
 
-  const posters = kind === "affiches" && library.posters.length > 0 ? library.posters : ILLUSTRATIONS;
-  const hero = kind === "affiches" ? library.backdrops[0] : undefined;
+  const posters = (kind === "affiches" || kind === "mixte") && library.posters.length > 0 ? library.posters : ILLUSTRATIONS;
+  const hero = kind === "affiches" || kind === "mixte" ? library.backdrops[0] : undefined;
+  if (kind === "mixte") return <MixedBackdrop hero={hero} posters={posters} />;
   return (
     <div style={{ background: "#000" }}>
       <div style={{ height: 640, overflow: "hidden" }}>

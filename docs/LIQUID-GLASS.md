@@ -468,7 +468,23 @@ sur trois environ est REFUSÉE par la calibration (le temps GPU va alors à
 `CoreServicesUIAgent`, pas à Electron : la fenêtre n'est pas composée) ;
 relancer suffit.
 
-Ce que le banc a appris :
+**Dans l'application réelle** (22/10 : bureau de production, mode natif,
+Jellyfin jetable du banc — `BANC_STATE=<état de lg-banc> node
+apps/web/bench/glass-gpu/app-lens.mjs --home <profil jetable>`) :
+- la lentille se comporte comme au banc sur « Plus d'infos » du héros :
+  repos 1 · survol 1,04 · appui 1,099 · relâché 1,04 ; dix porteurs de
+  `data-lg-lens` sur l'accueil, AUCUN sur un verre natif ;
+- son coût propre se perd dans le bruit de la page : l'accueil AU REPOS coûte
+  déjà 26 à 35 % du GPU d'Electron (sept relevés). Cause relevée : le
+  travelling des deux images du héros et sa barre de progression sont
+  réécrits ~31 fois par seconde (cadence d'ambiance), SOUS neuf verres
+  floutés (barre de la fenêtre, boutons du héros) qui refont leur flou et leur
+  réfraction à chaque pas. Travelling masqué : ~0 % (une passe). La part du
+  verre seule n'a pas pu être isolée proprement : la mesure par processus
+  décroche par moments en cours de passe (les passes du banc de page ont, elles,
+  leur calibration).
+
+
 - un verre ne coûte RIEN tant que rien ne bouge dessus : aucune boucle au
   repos ni pointeur immobile — c'est la règle de CLAUDE.md, tenue ;
 - toute image qui change SUR un verre en fait recalculer le flou : la traîne

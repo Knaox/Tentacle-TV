@@ -1,8 +1,7 @@
-import { useMemo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { ChevronLeftIcon, ChevronRightIcon } from "../icons/HeroIcons";
 import { PressableScale } from "../ui/PressableScale";
-import { AMBIENT_HZ, cadence } from "../../theme/motion";
+import { AMBIENT_HZ } from "../../theme/motion";
 
 interface HeroIndicatorsProps {
   count: number;
@@ -41,17 +40,17 @@ export function HeroIndicators({
   onNext,
 }: HeroIndicatorsProps) {
   const reduced = useReducedMotion();
-  // Remplissage bridé comme les autres mouvements d'ambiance : quarante-quatre
-  // pixels parcourus en huit secondes, soit moins de deux dixièmes de pixel par
-  // pas à trente images par seconde. Mémoïsé parce qu'une nouvelle identité de
-  // fonction d'easing relancerait l'animation à chaque rendu du composant.
-  const fillEase = useMemo(
-    () => cadence(AMBIENT_HZ, durationMs / 1000),
-    [durationMs],
-  );
   if (count <= 1) return null;
 
+  // Remplissage bridé comme les autres mouvements d'ambiance (`hero-fill`,
+  // theme/heroMotion.css) : quarante-quatre pixels parcourus en huit secondes,
+  // soit moins de deux dixièmes de pixel par pas à trente paliers par seconde.
+  // Joué par le compositeur, au rythme du zoom de la diapositive : même
+  // départ, même durée, mêmes paliers — leurs pas tombent ensemble.
   const animateFill = durationMs > 0 && !reduced;
+  const fillAnimation = animateFill
+    ? `hero-fill ${durationMs}ms steps(${Math.max(1, Math.round((AMBIENT_HZ * durationMs) / 1000))}, end) both`
+    : undefined;
 
   // Le CENTRAGE vertical vit sur un conteneur, jamais sur le bouton lui-même.
   // `PressableScale` est un `motion.button` : au survol, Framer écrit un
@@ -118,13 +117,10 @@ export function HeroIndicators({
               }}
             >
               {active && (
-                <motion.span
+                <span
                   key={activeIndex}
-                  initial={animateFill ? { scaleX: 0 } : false}
-                  animate={{ scaleX: 1 }}
-                  transition={animateFill ? { duration: durationMs / 1000, ease: fillEase } : { duration: 0 }}
                   className="absolute inset-0 origin-left rounded-full"
-                  style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))" }}
+                  style={{ background: "linear-gradient(90deg, var(--brand), var(--brand-accent))", animation: fillAnimation }}
                   aria-hidden
                 />
               )}
