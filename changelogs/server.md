@@ -10,6 +10,24 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.31.2]
+<!-- Version de sécurité, aucune capacité nouvelle. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
+### FR
+- **Mise à jour de sécurité, recommandée pour tous les serveurs**
+- **Appareils jumelés** : une TV ou un profil ne pouvait pas seulement regarder — certaines adresses lui ouvraient des réglages de Jellyfin réservés à l'administration. C'est fermé. Si votre serveur est joignable depuis Internet, renouvelez par précaution la clé d'API de Jellyfin utilisée par Tentacle (Jellyfin › Tableau de bord › Clés d'API, puis Administration › Services)
+- **Profils de la Famille** : les limites d'un profil (enfant, invité) s'appliquent quelle que soit la façon d'écrire une adresse
+- **Connexion et jumelage** : les plafonds d'essais valent aussi en IPv6 et pour l'attente d'un code de jumelage
+- **Dépendances à jour** : Fastify, Prisma et les modules du serveur montent aux versions corrigées ; l'image ne contient plus aucune vulnérabilité connue corrigeable
+- **Image Docker plus sûre** : bases épinglées, aucun script d'installation exécuté, image signée (cosign) avec sa liste de composants (SBOM)
+
+### EN
+- **Security update, recommended for every server**
+- **Paired devices**: a TV or a profile could do more than watch — some addresses gave it access to Jellyfin settings reserved for administrators. This is closed. If your server is reachable from the Internet, renew the Jellyfin API key used by Tentacle as a precaution (Jellyfin › Dashboard › API Keys, then Administration › Services)
+- **Family profiles**: a profile's limits (child, guest) now apply however an address is written
+- **Sign-in and pairing**: attempt caps now also hold over IPv6 and while waiting for a pairing code
+- **Up-to-date dependencies**: Fastify, Prisma and the server modules move to their fixed versions; the image no longer contains any known fixable vulnerability
+- **Safer Docker image**: pinned base images, no install scripts run, image signed (cosign) with its component list (SBOM)
+
 ## [1.31.1]
 <!-- Capacités 1.31.1 : watchTogether.deviceMembership, readyGate, typing ; family.mobileProfiles, family.webProfiles ; rights.live, offline.verdicts, account.abilities ; notifications.pushSync ; offline.serverPrepare. Un client d'avant n'en voit rien. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
