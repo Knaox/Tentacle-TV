@@ -17,22 +17,22 @@
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT servie par la piste de PRODUCTION de la fiche Play. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (.github/scripts/store-live.mjs : API de rapports Play en lecture seule, recoupée avec la fiche publique ; puis patch-store-manifest.mjs --only=play-mobile --track=production), comme le bloc macAppStore — jamais à l’envoi : mobile.yml le patchait dès la publication, cran test compris, et le site annonçait une version de piste fermée. Ne PAS le déduire de versions.json → mobile, qui porte l’intention et non la publication.",
-    "version": "1.11.0",
+    "version": "1.20.0",
     "packageName": "com.tentacletv.mobile",
     "track": "production",
     "notes": {
-      "fr": "• Appareils et TV dans le Profil : jumelage dès le dernier caractère\n• Lecture fluide : 120 Hz pour un film à 24 i/s\n• Jellyfin redémarre ? La lecture continue (serveur 1.24.0)\n• Qualité réduite plus fine (HEVC), son d'origine gardé\n• Famille en vert, TV déjumelée retirée aussitôt\n• Hors ligne direct, sans fenêtre : un message dit la cause\n• Serveur ancien : rien ne casse, les nouveautés attendent\n• « Là où vous en étiez » pour les titres entamés\n• Le clavier ne recouvre plus les champs",
-      "en": "• Devices and TVs in Profile: pairing on the code's last character\n• Smooth playback: 120 Hz for 24 fps films\n• Jellyfin restarting? Playback continues (server 1.24.0)\n• Sharper reduced quality (HEVC), original audio kept\n• Family in green, unpaired TV removed at once\n• Offline right away, no blocking screen: a message says why\n• Older server: nothing breaks, new features wait\n• \"Where you left off\" for in-progress titles\n• The keyboard no longer covers text fields"
+      "fr": "• Watch Together sur téléphone et tablette : groupes, affinité, chat\n• « Qui regarde ? », code PIN, accueil et photo au 1er lancement\n• Réglages réorganisés : Compte ou Cet appareil\n• Notifications en plein écran, lues partout\n• Image dans l'image et diffusion vers la TV\n• Hors ligne qui continue app fermée\n• Lecteur repensé, heure et batterie\n• Ouverture animée, erreurs claires",
+      "en": "• Watch Together on phone and tablet: groups, affinity, chat\n• \"Who's watching?\", PIN, home and photo at first launch\n• Settings reorganized: Account or This device\n• Notifications full screen, read everywhere\n• Picture-in-picture and casting to a TV\n• Offline that carries on with the app closed\n• Redesigned player, time and battery\n• Animated opening, clear error messages"
     }
   },
   "playTv": {
     "$comment": "Version Android TV RÉELLEMENT servie en production. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. MAINTENU AUTOMATIQUEMENT par le veilleur store-watch.yml (--only=play-tv --track=tv:production), comme playMobile ; tv.yml ne le patche plus.",
-    "version": "1.10.1",
+    "version": "1.20.0",
     "packageName": "com.tentacletv.mobile",
     "track": "tv:production",
     "notes": {
-      "fr": "• Android TV redessinée, comme l'Apple TV : verre, grand bandeau, grand panneau sur OK maintenu\n• Profils de la famille avec code PIN\n• La lecture démarre d'un seul tenant, image et son ensemble\n• Rangées sans sursaut, accueil d'un seul fondu\n• Le bandeau suit votre réglage, comme sur mobile\n• Jellyfin redémarre ? La lecture continue (serveur 1.24.0)\n• Qualité réduite plus fine (HEVC)\n• Retour ferme d'abord la fenêtre du lecteur\n• Recherche et filtres sans à-coup\n• Plus de plantage au jumelage",
-      "en": "• Android TV redesigned, like Apple TV: glass, large banner, large panel on held OK\n• Family profiles with PIN\n• Playback starts in one go, picture and sound together\n• Rows without jumps, Home in a single fade\n• The banner follows your setting, as on mobile\n• Jellyfin restarting? Playback continues (server 1.24.0)\n• Sharper reduced quality (HEVC)\n• Back closes the player's open panel first\n• Search and filters respond instantly\n• No more crash when pairing"
+      "fr": "• Nouvel accueil : un grand héros qui défile à la télécommande, l'aperçu de la bande-annonce par-dessus\n• Bibliothèques et Ma liste : les lignes ne bougent plus, seul le focus se déplace\n• Fiche : tous les extras reviennent, épisodes compris\n• Navigation plus rapide et plus fluide\n• Choisissez vos bibliothèques dans la barre, profil par profil\n• Réglages › Accueil : choisissez le bandeau principal, dont vos meilleures recommandations (serveur 1.30.0)",
+      "en": "• New home: a large hero you browse with the remote, the trailer preview on top\n• Libraries and My List: rows stay still, only the focus moves\n• Title page: all extras are back, episodes included\n• Faster, smoother navigation\n• Pick your libraries for the side bar, profile by profile\n• Settings › Home: choose the main banner, including your best recommendations (server 1.30.0)\n• My List and Favorites can be sorted and filtered by type\n• “Still watching?”, then pause (server 1.30.0)"
     }
   },
   "linux": {
