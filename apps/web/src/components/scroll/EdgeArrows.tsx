@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
-import { GlassPressable } from "../ui/glass/GlassPressable";
+import { PressableGlass } from "../ui/glass/PressableGlass";
 
 /** En mode natif : la lentille exacte du disque (monté au survol seulement). */
-const DISC_GLASS = { lens: "regular", shape: "circle" } as const;
+const DISC_GLASS = { level: "clear", shape: "circle" } as const;
 
 interface EdgeArrowsProps {
   canLeft: boolean;
@@ -49,19 +49,20 @@ function Arrow({ side, shown, size, onClick }: { side: "left" | "right"; shown: 
       data-shown={shown}
       style={{ "--reveal-ms": "150ms" } as CSSProperties}
     >
-      <GlassPressable
-        glass={DISC_GLASS}
+      <PressableGlass
+        appearance={DISC_GLASS}
+        fallbackClassName="rounded-full bg-glass-tint text-content-primary shadow-[var(--elev-2)] ring-1 ring-line-subtle backdrop-blur-md transition-colors hover:ring-[rgba(var(--brand-rgb),0.55)]"
         hoverScale={1.08}
         tapScale={0.92}
         onClick={onClick}
         tabIndex={-1}
         aria-hidden="true"
-        className={`lg-disc pointer-events-auto flex ${DISC_SIZE[size]} items-center justify-center rounded-full bg-glass-tint text-content-primary shadow-[var(--elev-2)] ring-1 ring-line-subtle backdrop-blur-md transition-colors hover:ring-[rgba(var(--brand-rgb),0.55)]`}
+        className={`pointer-events-auto flex ${DISC_SIZE[size]} items-center justify-center`}
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d={side === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
         </svg>
-      </GlassPressable>
+      </PressableGlass>
     </div>
   );
 }
