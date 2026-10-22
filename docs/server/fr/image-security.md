@@ -16,7 +16,7 @@ Les images publiées avant cette version ne sont pas signées.
 
 ## Vérifier qu'une image est authentique
 
-Installer [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) (v2.4 ou plus), puis :
+Installer [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) (**v3 ou plus** : les images sont signées au format « bundle » de Sigstore, que cosign 2 ne lit pas — il répond « no signatures found »), puis :
 
 ```bash
 cosign verify ghcr.io/knaox/tentacle-tv:latest \

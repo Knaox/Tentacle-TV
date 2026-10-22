@@ -16,7 +16,7 @@ Images published before that release are not signed.
 
 ## Check that an image is genuine
 
-Install [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) (v2.4 or later), then:
+Install [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) (**v3 or later**: the images are signed in the Sigstore bundle format, which cosign 2 does not read — it answers "no signatures found"), then:
 
 ```bash
 cosign verify ghcr.io/knaox/tentacle-tv:latest \
