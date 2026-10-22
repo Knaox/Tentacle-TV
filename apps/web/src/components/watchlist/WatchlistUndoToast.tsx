@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Undo2, X } from "lucide-react";
 import { useRestoreWatchlistItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { useGlassControl } from "../ui/glass/useGlassControl";
 
 const LIFETIME_MS = 6000;
 
@@ -14,11 +15,13 @@ const LIFETIME_MS = 6000;
  *
  * MONTÉ seulement quand il a quelque chose à dire : un verre flouté masqué
  * par l'opacité coûterait sa passe de composition à chaque image (CLAUDE.md,
- * coût GPU, règle 1). `aria-live` sans voler le focus.
+ * coût GPU, règle 1). `aria-live` sans voler le focus. Verre natif : une
+ * SURFACE d'un seul ton (`useGlassControl`, lot lg2), comme les autres avis.
  */
 export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose: () => void }) {
   const { t } = useTranslation("watchlist");
   const restore = useRestoreWatchlistItem(item);
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
 
   useEffect(() => {
     const timer = window.setTimeout(onClose, LIFETIME_MS);
@@ -33,10 +36,13 @@ export function WatchlistUndoToast({ item, onClose }: { item: MediaItem; onClose
   return createPortal(
     <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4 md:bottom-8">
       <div
+        ref={glass.ref}
+        {...glass.props}
         role="status"
         aria-live="polite"
         className="lg-toast watchlist-toast pointer-events-auto flex max-w-lg items-center gap-3 rounded-2xl border border-line-subtle bg-surface-toolbar py-2 pl-4 pr-2 shadow-2xl backdrop-blur-xl"
       >
+        {glass.layers}
         <span className="min-w-0 flex-1 truncate text-sm text-content-primary">{t("removed", { title: item.Name })}</span>
         <button
           type="button"

@@ -82,6 +82,11 @@ describe("les menus en verre", () => {
     for (const file of MENU_FILES) expect(read(file), file).toMatch(/useGlassControl/);
   });
 
+  it("menus, feuilles, palette et avis flottants sont des SURFACES (un ton tenu, matériau épais)", () => {
+    const floating = ["components/Toast.tsx", "components/notices/NoticeCard.tsx", "components/watchlist/WatchlistUndoToast.tsx"];
+    for (const file of [...MENU_FILES, ...floating]) expect(read(file), file).toMatch(/scale: [^,}]*"surface"/);
+  });
+
   it("un menu en `fixed` est rendu dans un portail", () => {
     for (const file of ["components/floating/FloatingLayer.tsx", "components/nav/NavTabMenu.tsx", "components/search/omnibox/Omnibox.tsx"]) {
       expect(read(file), file).toMatch(/createPortal\(/);
