@@ -80,3 +80,19 @@ describe("Linux — la bascule ne se fie pas à une fenêtre pas encore acquitt�
     expect(() => fs.leave(win as never)).not.toThrow();
   });
 });
+
+describe("Linux — montage Wayland forcé, vidéo attachée", () => {
+  it("la sortie n'est pas tentée : plus d'éclair, l'état reste « plein écran »", async () => {
+    const fs = await loadLinux();
+    const { setFullscreenPinned } = await import("./linux/fullscreenPin");
+    const win = lateWindow();
+    fs.toggle(win as never);
+    fs.noteFullscreenReached(win.settle() ?? false);
+    win.setFullScreen.mockClear();
+
+    setFullscreenPinned(true);
+    expect(fs.toggle(win as never)).toBe(true);
+    expect(win.setFullScreen).not.toHaveBeenCalled();
+    setFullscreenPinned(false);
+  });
+});
