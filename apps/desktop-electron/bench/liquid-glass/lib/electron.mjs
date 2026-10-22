@@ -21,7 +21,12 @@ const ROOT = path.resolve(DESKTOP_DIR, "../..");
 const ELECTRON = path.join(ROOT, "node_modules/electron/dist/Electron.app/Contents/MacOS/Electron");
 const LOCKS = "/Users/damienrouge/Desktop/Projet - local/.claude/locks/lg";
 
-export const PORTS = { backend: 3107, page: 9307, main: 9407 };
+// Ports surchargeables : deux bancs du même lot tournent côte à côte (lg2 : 3115 / 9335 / 9435).
+export const PORTS = {
+  backend: Number(process.env.BANC_PORT_BACKEND ?? 3107),
+  page: Number(process.env.BANC_PORT_CDP ?? 9307),
+  main: Number(process.env.BANC_PORT_MAIN ?? 9407),
+};
 
 function takeSlot() {
   for (const n of [1, 2]) {

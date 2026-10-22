@@ -12,5 +12,5 @@ cd "$BACKEND"
 TSX="$(node -p 'require.resolve("tsx/cli")')"
 node "$TSX" "$HERE/seed.cts" "$BACKEND" "$STATE/data" "$STATE/jf"
 echo $$ > "$STATE/backend.pid"
-exec env PORT=3107 TENTACLE_DATA_DIR="$STATE/data" DATABASE_URL= REMOTE_CHECK_URL=off \
+exec env PORT="${BANC_PORT_BACKEND:-3107}" TENTACLE_DATA_DIR="$STATE/data" DATABASE_URL= REMOTE_CHECK_URL=off \
   CORS_ORIGINS="tentacle://app" node "$TSX" src/index.ts

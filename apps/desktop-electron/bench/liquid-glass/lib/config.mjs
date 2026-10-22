@@ -16,7 +16,7 @@ export function outDir(label) {
   return dir;
 }
 
-export const SERVER = "http://127.0.0.1:3107";
+export const SERVER = `http://127.0.0.1:${process.env.BANC_PORT_BACKEND ?? 3107}`;
 export const JELLYFIN = "http://127.0.0.1:18307";
 
 /** Comptes du Jellyfin jetable (mots de passe générés par jellyfin.sh, jamais imprimés). */
