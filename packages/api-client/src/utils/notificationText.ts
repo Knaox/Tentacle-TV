@@ -29,7 +29,36 @@ export function parseTicketNotifBody(body: string | null | undefined): {
 // on la relit pour la retraduire, plutôt que d'afficher du français à un
 // compte en anglais.
 const LEGACY_REPLY = /^Réponse sur\s+"(.+)"$/;
-const LEGACY_STATUS = /^Ticket\s+"(.+?)"\s+—\s+(.+)$/;
+const LEGACY_STATUS_HEAD = /^Ticket\s+"/;
+const LEGACY_STATUS_SEPARATOR = /"\s+—\s+/y;
+const LINE_BREAKS = /[\n\r\u2028\u2029]/g;
+
+/**
+ * « Ticket "<sujet>" — <statut> », lu comme le faisait
+ * `/^Ticket\s+"(.+?)"\s+—\s+(.+)$/` (le PREMIER guillemet suivi du tiret), mais
+ * en temps linéaire : la regex était quadratique sur un sujet hostile (CodeQL
+ * `js/polynomial-redos`) — le sujet est tapé par un utilisateur.
+ */
+function parseLegacyStatus(title: string): { subject: string; status: string } | null {
+  const head = LEGACY_STATUS_HEAD.exec(title);
+  if (!head) return null;
+  const start = head[0].length;
+  // Ni le sujet ni le statut ne passent une fin de ligne : leurs bornes, relevées une fois.
+  const breaks = [...title.matchAll(LINE_BREAKS)].map((match) => match.index);
+  const firstBreak = breaks.find((at) => at >= start) ?? title.length;
+  const lastBreak = breaks.length > 0 ? breaks[breaks.length - 1] : -1;
+  for (let quote = title.indexOf('"', start + 1); quote >= 0 && quote <= firstBreak; quote = title.indexOf('"', quote + 1)) {
+    LEGACY_STATUS_SEPARATOR.lastIndex = quote;
+    const separator = LEGACY_STATUS_SEPARATOR.exec(title);
+    if (!separator) continue;
+    const statusStart = quote + separator[0].length;
+    if (statusStart < title.length && lastBreak < statusStart) {
+      return { subject: title.slice(start, quote), status: title.slice(statusStart) };
+    }
+  }
+  return null;
+}
+
 const FR_STATUS_TO_KEY: Record<string, string> = {
   Ouvert: "open",
   "En cours": "in_progress",
@@ -55,10 +84,10 @@ export function formatNotifTitle(
       if (n.body && n.body in TICKET_STATUS_LABEL_KEYS) {
         return t("notifications:ticketStatusTitle", { subject: n.title, status: statusLabel(n.body, t) });
       }
-      const legacy = n.title.match(LEGACY_STATUS);
-      const key = legacy ? FR_STATUS_TO_KEY[legacy[2]] : undefined;
+      const legacy = parseLegacyStatus(n.title);
+      const key = legacy ? FR_STATUS_TO_KEY[legacy.status] : undefined;
       if (legacy && key) {
-        return t("notifications:ticketStatusTitle", { subject: legacy[1], status: statusLabel(key, t) });
+        return t("notifications:ticketStatusTitle", { subject: legacy.subject, status: statusLabel(key, t) });
       }
       return n.title;
     }
