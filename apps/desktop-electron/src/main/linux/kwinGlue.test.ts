@@ -361,7 +361,7 @@ describe("ColleKwin", () => {
     // mesuré le 28.08 — la colle mourait dès le 2e lancement).
     expect(path.basename(filePath)).toBe("glue.qml");
     expect(path.basename(path.dirname(filePath))).toMatch(
-      new RegExp(`^tentacle-colle-${String(process.pid)}-\\d+$`),
+      new RegExp(`^tentacle-colle-${String(process.pid)}-\\d+-[A-Za-z0-9]{6}$`),
     );
     expect(existsSync(filePath)).toBe(true);
     expect(readFileSync(filePath, "utf8")).toBe(glueTemplate(process.pid));
