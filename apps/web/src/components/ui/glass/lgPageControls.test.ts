@@ -115,7 +115,7 @@ describe("les contrôles des pages en verre", () => {
     for (const [selector, body] of rules(SKIN)) {
       if (!/background|box-shadow/.test(body) || !/\.lg-page/.test(selector)) continue;
       for (const part of splitTop(selector)) {
-        expect(part, part).toMatch(/:not\(:where\(\[data-lg-scale="surface"\], \.lg-surface, \.lg-menu, \.lg-sheet, \[role="dialog"\](, \.lg-tray)?\) \*\)|:active|\.lg-page \.ctl-switch \.ctl-switch-thumb/);
+        expect(part, part).toMatch(/:not\(:where\(\[data-lg-scale="surface"\], \.lg-surface, \.lg-menu, \.lg-sheet, \[role="dialog"\](, \.lg-tray)?\) \*\)|:active|\.ctl-switch \.ctl-switch-thumb|\.lg-detail \.season-tab/);
       }
     }
   });

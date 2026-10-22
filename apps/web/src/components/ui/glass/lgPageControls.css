@@ -18,7 +18,8 @@
  * Tout est FIXE (peint une fois) ; à l'appui, le verre gonfle par `scale` —
  * composité, sur le ressort de la lentille.
  *
- * Portée : `.lg-page` (la zone des pages d'`AppLayout`), JAMAIS dans un verre —
+ * Portée : `.lg-page` (la zone des pages d'`AppLayout`) et `.lg-detail` (la fiche,
+ * servie hors d'`AppLayout`), JAMAIS dans un verre —
  * un menu, une feuille, une barre latérale ou une surface de la primitive
  * gardent leurs remplissages (pas de verre sur du verre). Hors de la porte,
  * aucune règle : le rendu d'avant, au pixel près (`liquidGlassTokens.test.ts`).
@@ -104,7 +105,7 @@
 
 /* Le ton du THÈME clair, ou le ton MESURÉ d'un contrôle (`data-lg-tone`). */
 :root[data-liquid-glass="native"][data-theme="light"],
-:root[data-liquid-glass="native"] .lg-page [data-lg-tone="light"] {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) [data-lg-tone="light"] {
   --lgp-fill: var(--lgp-fill-on-light);
   --lgp-fill-hover: var(--lgp-fill-hover-on-light);
   --lgp-edge: var(--lgp-edge-on-light);
@@ -119,7 +120,7 @@
   --lgp-track-edge: var(--lgp-track-edge-on-light);
 }
 
-:root[data-liquid-glass="native"] .lg-page [data-lg-tone="dark"] {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) [data-lg-tone="dark"] {
   --lgp-fill: var(--lgp-fill-on-dark);
   --lgp-fill-hover: var(--lgp-fill-hover-on-dark);
   --lgp-edge: var(--lgp-edge-on-dark);
