@@ -90,6 +90,13 @@ describe("createToneScheduler", () => {
     expect(h.scheduler.size).toBe(0);
   });
 
+  it("jamais plus de rectangles par appel que la coquille n'en accepte", async () => {
+    const h = harness([]);
+    for (let i = 0; i < 40; i++) h.scheduler.watch(`s${i}`, () => rect(i), "dark", vi.fn());
+    await h.flush();
+    expect(h.sampler.mock.calls[0][0]).toHaveLength(32);
+  });
+
   it("le même ton ne rappelle pas la surface", async () => {
     const h = harness([0.1]);
     const onTone = vi.fn();

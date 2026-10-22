@@ -63,6 +63,8 @@ export interface ToneScheduler {
 }
 
 export const TONE_MIN_INTERVAL_MS = 250;
+/** Au plus, par appel : la limite de la coquille (`MAX_SAMPLE_RECTS`). */
+export const TONE_MAX_RECTS = 32;
 
 export function createToneScheduler(deps: ToneSchedulerDeps): ToneScheduler {
   const watched = new Map<string, Watched>();
@@ -82,6 +84,7 @@ export function createToneScheduler(deps: ToneSchedulerDeps): ToneScheduler {
     for (const [id, entry] of watched) {
       const rect = entry.rect();
       if (rect !== null && rect.width >= 1 && rect.height >= 1) batch.push([id, rect]);
+      if (batch.length === TONE_MAX_RECTS) break;
     }
     if (batch.length === 0) return;
     inFlight = true;
