@@ -250,7 +250,8 @@ jobs:
           exit-code: "0"
           skip-setup-trivy: true
 
-      # L'inventaire des composants (SPDX), gardé en artefact.
+      # L'inventaire des composants (SPDX), gardé en artefact ; au cran test,
+      # store ou dev, le job sign l'attache à l'image comme attestation signée.
       - name: SBOM (syft)
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
@@ -290,10 +291,61 @@ jobs:
           retention-days: 1
           overwrite: true
 
+  # ── Signature et attestation, par EMPREINTE, avant toute étiquette ────────
+  # Cosign « keyless » : aucune clé à garder, le certificat éphémère de
+  # Sigstore atteste que l'image vient de CE workflow de CE dépôt (jeton OIDC
+  # de GitHub), et la signature est inscrite au journal public Rekor. Chaque
+  # image d'architecture est signée et reçoit son SBOM en attestation ; merge
+  # signe ensuite l'index multi-arch. Seul ce job (et merge) reçoit id-token.
+  # Vérifier : docs/server/image-security.md.
+  sign:
+    name: Signer (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    needs: [plan, build]
+    if: needs.plan.outputs.push == 'true'
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [amd64, arm64]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Download digest
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests
+
+      - name: Download SBOM
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: sbom-${{ matrix.arch }}
+          path: /tmp/sbom
+
+      - name: Installer cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Signer l'image et attester son SBOM
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "$REGISTRY_TOKEN" | cosign login "$REGISTRY" -u "$REGISTRY_USER" --password-stdin
+          DIGEST="sha256:$(ls /tmp/digests)"
+          REF="${IMAGE}@${DIGEST}"
+          echo "Signature de ${REF}"
+          cosign sign --yes "$REF"
+          cosign attest --yes --type spdxjson --predicate /tmp/sbom/sbom.spdx.json "$REF"
+
   merge:
     name: Publier les étiquettes
     runs-on: ubuntu-latest
-    needs: [plan, build]
+    needs: [plan, build, sign]
     if: needs.plan.outputs.push == 'true'
     timeout-minutes: 15
     # COMMUN à server.yml et webos.yml (même workflow appelé) : deux bascules
@@ -304,6 +356,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # La signature de l'index multi-arch (dernière étape).
+      id-token: write
     steps:
       - name: Checkout repository (le script de relecture)
         uses: actions/checkout@v4
@@ -376,6 +430,25 @@ jobs:
           IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           TAGS: ${{ needs.plan.outputs.tags }}
         run: docker buildx imagetools inspect "${IMAGE}:${TAGS%%,*}"
+
+      - name: Installer cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      # L'index multi-arch, par son EMPREINTE (jamais par une étiquette, qui
+      # peut bouger) : c'est lui que `docker pull …:latest` résout. Les images
+      # d'architecture qu'il désigne sont déjà signées (job sign).
+      - name: Signer l'index multi-arch
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          TAGS: ${{ needs.plan.outputs.tags }}
+        run: |
+          set -euo pipefail
+          DIGEST=$(docker buildx imagetools inspect "${IMAGE}:${TAGS%%,*}" --format '{{json .Manifest}}' | jq -r .digest)
+          case "$DIGEST" in sha256:*) ;; *) echo "::error::empreinte de l'index illisible"; exit 1 ;; esac
+          echo "Signature de ${IMAGE}@${DIGEST}"
+          cosign sign --yes "${IMAGE}@${DIGEST}"
+          echo "### Image signée" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${IMAGE}@${DIGEST}\`" >> "$GITHUB_STEP_SUMMARY"
 
   # ── Release GitHub — au cran STORE seulement ────────────────────────────────
   # server-vS pour le serveur (notes : changelogs/server.md [S]) ;
