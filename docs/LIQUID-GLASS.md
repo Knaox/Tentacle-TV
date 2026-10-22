@@ -37,6 +37,16 @@ navigation, les composants, le hors ligne — 9. Ce qui ne doit jamais casser �
   bord qui ÉCLAIRCIT ce qu'il y a dessous, jamais un trait blanc ; des glyphes
   au TON du dessous (clair dessous → sombres, et inversement) ; de petites
   formes qui flottent séparées, jamais une dalle.
+- **Le verre est la couche FONCTIONNELLE ; le contenu prend des remplissages**
+  (lot lg2) : groupes de réglages, cartes, tuiles, panneaux d'outils posés dans
+  la page sont des remplissages sobres et OPAQUES (`theme/liquidGlassContent.css`),
+  comme Réglages Système. **Mais un CONTRÔLE est du verre, même dans une page**
+  (lot lg4, décision de Damien du 22/10, « certains boutons sont pas liquid
+  glass ») : bouton, pastille de filtre, déclencheur de menu, tri, champ de
+  recherche, segmenté, interrupteur prennent le style `glass` de macOS 26
+  (`glassProminent` pour l'action principale) — § 8, « Contrôles des pages ».
+  Jamais de verre sur du verre : dans un menu, une feuille ou une barre
+  latérale, ils gardent leurs remplissages.
 - **Les couleurs de marque restent.** Le verre est neutre ; le violet → rose
   vient en TEINTE DANS le verre (l'action principale, l'onglet actif, une
   bascule allumée, la progression), jamais en aplat derrière.
@@ -339,7 +349,8 @@ déclarés SOUS la porte, sombre et clair — son en-tête tient le catalogue :
 Chaque famille COMPOSE ce matériau chez elle, sans redéfinir un nom commun :
 mouvement `--lg-spring-*` et accessibilité (`theme/glass/physics.css`, § 6),
 fenêtre `--lg-chrome-*` (`desktop/windowGlass.css`, § 8), contrôles `--lgc-*`
-(`components/ui/glass/lgRecipes.css`, § 8), lecteur `--lg-player-*`
+(`components/ui/glass/lgRecipes.css`, § 8), contrôles des pages `--lgp-*`
+(`components/ui/glass/lgPageControls.css`, § 8), lecteur `--lg-player-*`
 (`components/player/glass/`, § 7).
 
 **La portée est tenue par test** : toute règle de `apps/web/src` qui lit
@@ -760,6 +771,47 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   `/dev/verre?vue=menus`. Preuve du rendu d'avant : styles calculés de quatre
   menus ouverts (survol compris), base contre branche, porte éteinte — 4 512
   propriétés, 0 écart.
+- **Contrôles des pages : du verre, même dans une page** (lot lg4,
+  `components/ui/glass/lgPageControls.css` pour les jetons `--lgp-*`,
+  `lgPageGlass.css` pour la peau des marqueurs, `lgPageButtons.css` pour les
+  boutons ad hoc). Portée : `.lg-page` (la zone d'`AppLayout`) et `.lg-detail`
+  (la fiche, servie hors d'`AppLayout`), jamais sous un verre
+  (`[data-lg-scale="surface"]`, `.lg-surface`, `.lg-menu`, `.lg-sheet`, dialogue).
+  - **Le verre sur un fond opaque se lit encore comme du verre** : légère
+    translucidité (voile blanc dégressif), reflet diffus en haut à gauche,
+    liseré de LUMIÈRE (arc éclairé du côté de la lumière, contre-reflet en
+    vis-à-vis), profondeur (ombre de contact + ombre portée douce). **Aucun
+    `backdrop-filter`** : sur un remplissage opaque il ne flouterait qu'un aplat,
+    pour une passe de composition par contrôle — tout est peint une fois, rien ne
+    se recalcule au défilement. Jamais un simple aplat plus clair.
+  - **Par ton** : jetons `-on-dark` / `-on-light`, choisis par le thème ou par le
+    ton mesuré d'un contrôle (`data-lg-tone`). Libellés ≥ 4,5:1 au PIRE point du
+    reflet (`lgPageControls.test.ts`, qui calcule la composition couche par
+    couche — il a trouvé une lentille sombre à 4:1 et un rouge de danger à 3,9:1,
+    corrigés).
+  - **Qui reçoit quoi** : `.lg-chip` (pastilles, déclencheurs de `FilterMenu`),
+    `.lg-content-control` (sens du tri, « Partager »), `.lg-pill` (« Tout voir »),
+    `.lg-field` (champ de recherche), `.lg-glass-btn` (marqueur à la main :
+    `ActionPill`, `Tabs`, `ChoiceChips`, tri des utilisateurs) → `glass` ; un
+    filtre POSÉ (`.lg-chip-on`) → l'accent UNI dans le verre ; un onglet ou une
+    pastille CHOISIS (`.lg-glass-selected`, `:checked + .lg-glass-btn`) → la
+    lentille neutre ; les boutons ad hoc se reconnaissent à leur FORME (`button` /
+    `a` / `select` arrondi, rempli ou bordé, jamais une tuile rembourrée ou
+    alignée à gauche) : secondaire et danger → `glass`, `bg-cta-primary-bg` →
+    `glassProminent` (la marque dans le verre, rose assombri à 82 % : blanc
+    ≥ 4,5:1). Les champs de SAISIE d'un formulaire et les tuiles de choix
+    restent des remplissages (Réglages Système).
+  - **Segmentés** : piste EN CREUX, segment choisi en LENTILLE qui GLISSE —
+    `.lg-seg-marker` (repère de framer, `layoutId`) ou `SegmentLens` (segmentés
+    de réglages `.ctl-segment`, montée en natif seulement, ressort `morph`,
+    fondu en mouvement réduit) ; à l'appui sur la piste, la lentille gonfle
+    (`scale`). **Interrupteur** : piste en creux, le pouce s'étire en lentille à
+    l'appui. Seuls `scale`, `transform`, `opacity` et la couleur du libellé sont
+    en transition ; l'appui gonfle le verre (`--lgp-press-scale`, 1,04), 1 en
+    mouvement réduit. « Réduire la transparence » : verre plein ; « Contraste
+    accru » : plein + liseré net.
+  - Labo : `/dev/verre?vue=controles` (les vrais contrôles sur le panneau d'outils
+    opaque et sur le fond nu de la page).
 - **Hors ligne** : message de passage hors ligne et avis en `.lg-notice`,
   panneaux de la page hors ligne en `.lg-panel` (sans flou), bannière en
   lentille ; dialogues « garder hors ligne » et de suppression en portail (§ 5).

@@ -1,7 +1,8 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useId, useRef, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 import { ScopedSearchField } from "../../search/ScopedSearchField";
+import { SegmentLens } from "../../ui/glass/SegmentLens";
 import { USER_FILTERS, USER_SORTS, type UserFilter, type UserSort } from "./userListModel";
 
 interface UsersToolbarProps {
@@ -50,6 +51,8 @@ function FilterGroup({ value, counts, onChange }: {
 }) {
   const { t } = useTranslation("admin");
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
+  // La lentille de verre qui glisse d'un filtre à l'autre (natif seulement).
+  const lensGroup = useId();
   const labels: Record<UserFilter, string> = {
     all: t("filterAll"),
     admins: t("usersFilterAdmins"),
@@ -93,6 +96,7 @@ function FilterGroup({ value, counts, onChange }: {
           onClick={() => onChange(option)}
           className="ctl-segment flex items-center gap-1.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
         >
+          {option === value && <SegmentLens group={lensGroup} />}
           {labels[option]}
           {counts && <span className="tabular-nums opacity-70">{counts[option]}</span>}
         </button>
@@ -116,7 +120,7 @@ function SortSelect({ value, onChange }: { value: UserSort; onChange: (sort: Use
         <select
           value={value}
           onChange={(event) => onChange(event.target.value as UserSort)}
-          className="h-10 cursor-pointer appearance-none rounded-[10px] border border-line-subtle bg-tentacle-surface pl-3 pr-9 text-[13px] font-medium text-content-primary outline-none transition-colors duration-150 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="lg-glass-btn h-10 cursor-pointer appearance-none rounded-[10px] border border-line-subtle bg-tentacle-surface pl-3 pr-9 text-[13px] font-medium text-content-primary outline-none transition-colors duration-150 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           {USER_SORTS.map((option) => (
             <option key={option} value={option}>{labels[option]}</option>

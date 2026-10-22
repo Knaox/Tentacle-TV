@@ -85,8 +85,9 @@
 
 /* ══ 4. Pastilles de filtre ═══════════════════════════════════════════════
  *
- * Elles vivent dans le panneau d'outils, qui est du CONTENU (il défile avec
- * la page) : un remplissage, pas un verre dans le panneau (lot lg2). Active,
+ * Hors d'une page (menu, feuille) : un remplissage, pas un verre dans le
+ * verre (lot lg2). DANS une page, le verre de `lgPageGlass.css` les reprend
+ * (lot lg4 : un contrôle est du verre, même dans une page). Active,
  * la pastille devient le bouton neutre plus clair du segment choisi, et seul
  * son libellé porte la marque — « en touche », jamais un aplat. */
 :root[data-liquid-glass="native"] .lg-chip {

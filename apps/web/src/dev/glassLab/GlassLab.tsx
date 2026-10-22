@@ -15,7 +15,8 @@
  * surfaces de la primitive ; `?vue=barres` la VRAIE barre du haut et une
  * vraie barre latérale (`labChrome.tsx`, axe des barres) ; `?vue=menus` les
  * VRAIS menus et popovers (`labMenus.tsx`, axe des menus) ; `?vue=contenu` la
- * couche de contenu (`labContent.tsx`, axe D du lot lg2). Hors du mode natif, le labo montre le
+ * couche de contenu (`labContent.tsx`, axe D du lot lg2) ; `?vue=controles` les CONTRÔLES des
+ * pages en verre (`labControls.tsx`, lot lg4). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -29,6 +30,7 @@ import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop"
 import { LabChrome } from "./labChrome";
 import { LabComponents } from "./labComponents";
 import { LabContent } from "./labContent";
+import { LabControls } from "./labControls";
 import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
 import { LabMenus } from "./labMenus";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
@@ -40,9 +42,9 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus" | "contenu";
+type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus" | "contenu" | "controles";
 
-const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus", "contenu"];
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus", "contenu", "controles"];
 
 const initialView = (): LabView => {
   const asked = new URLSearchParams(window.location.search).get("vue");
@@ -130,6 +132,8 @@ export function GlassLab() {
         <LabComponents top={top} />
       ) : view === "contenu" ? (
         <LabContent top={top} />
+      ) : view === "controles" ? (
+        <LabControls top={top} />
       ) : view === "grandes" ? (
         <>
           <LabSurfaceSidebar top={top + 40} left={24} />

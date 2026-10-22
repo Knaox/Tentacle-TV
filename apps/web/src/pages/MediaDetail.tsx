@@ -221,7 +221,9 @@ export function MediaDetail() {
         page de 12 px et l'échelonne à 99,5 % SOUS le calque, mouvement que
         personne ne voit et qui n'a plus qu'à finir au mauvais moment. */}
     <PageTransition skip={skipEntrance.current}>
-      <div className="min-h-screen bg-surface-0" style={pageStyle}>
+      {/* `lg-detail` : sous le verre de macOS 26, les contrôles de la fiche sont en
+          verre comme ceux des pages (`lgPageGlass.css`) — marqueur sans style. */}
+      <div className="lg-detail min-h-screen bg-surface-0" style={pageStyle}>
         <DetailStage backdropUrl={backdropUrl} item={item} instant={skipEntrance.current} onOpenImages={openImages}>
           <motion.div
             className="flex items-end gap-8 px-5 pb-10 pt-28 md:px-12 md:pb-14 xl:gap-12 xl:px-16"
