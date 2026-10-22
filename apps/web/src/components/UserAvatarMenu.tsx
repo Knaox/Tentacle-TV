@@ -146,7 +146,7 @@ export function UserAvatarMenu() {
       <Dropdown open={open} onClose={close} placement="bottom-end" minWidth={260}>
         <div ref={menuKeys.panelRef} onKeyDown={menuKeys.onKeyDown}>
           {/* Le bloc d'identité : qui l'on est, et « Changer de profil » juste dessous. */}
-          <div className={`border-b border-line-subtle ${profileItems.length > 0 ? "pb-1.5" : ""}`}>
+          <div className={`lg-sep border-b border-line-subtle ${profileItems.length > 0 ? "pb-1.5" : ""}`}>
             {activeProfile ? (
               <ProfileMenuHeader profile={activeProfile} onChangePhoto={guestTarget ? changeGuestPhoto : undefined} />
             ) : (

@@ -58,8 +58,8 @@ export function Sheet({
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   // Verre natif : le ton du dessous (`data-lg-tone`), auquel les textes de la
-  // feuille s'adaptent — rangée par rangée sur un dessous mixte (`bands`).
-  const glass = useGlassControl<HTMLDivElement>({ lens: false, bands: true });
+  // feuille s'adaptent — UN ton pour toute la feuille, jamais de bandes.
+  const glass = useGlassControl<HTMLDivElement>({ lens: false, scale: "surface" });
   const { ref: glassRef } = glass;
   const setPanel = useCallback((node: HTMLDivElement | null) => {
     panelRef.current = node;

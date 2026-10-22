@@ -43,6 +43,7 @@ function RowShell({ index, active, onHover, onActivate, children }: RowProps & {
       id={optionId(index)}
       role="option"
       aria-selected={active}
+      data-lg-active={active}
       onMouseMove={() => { if (!active) onHover(index); }}
       onClick={() => onActivate(index)}
       className={`relative flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl px-3 py-1.5 transition-colors duration-100 ${
@@ -50,7 +51,7 @@ function RowShell({ index, active, onHover, onActivate, children }: RowProps & {
       }`}
     >
       {active && (
-        <span aria-hidden className="absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-gradient-to-b from-[var(--brand)] to-[var(--brand-accent)]" />
+        <span aria-hidden className="lg-row-mark absolute bottom-2 left-0 top-2 w-[3px] rounded-full bg-gradient-to-b from-[var(--brand)] to-[var(--brand-accent)]" />
       )}
       {children}
       {active && (

@@ -50,7 +50,7 @@ export function ItemMoreMenu({ item }: { item: MediaItem }) {
                   setOpen(false);
                   deletion.open();
                 }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-[var(--status-error-fg)] transition-colors duration-150 hover:bg-danger-surface focus-visible:bg-danger-surface focus-visible:outline-none"
+                className="lg-row-danger flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-[var(--status-error-fg)] transition-colors duration-150 hover:bg-danger-surface focus-visible:bg-danger-surface focus-visible:outline-none"
               >
                 <Trash2 className="h-4 w-4 shrink-0" strokeWidth={2.2} aria-hidden />
                 {t("deleteFromLibrary")}

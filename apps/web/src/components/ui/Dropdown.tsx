@@ -65,7 +65,7 @@ export function Dropdown({
         role="menu"
         maxWidth={maxWidth}
 
-        className={`lg-menu overflow-y-auto overscroll-contain ${className ?? ""}`}
+        className={`lg-menu lg-menu-list overflow-y-auto overscroll-contain ${className ?? ""}`}
         style={{
           minWidth,
           width: "max-content",

@@ -701,6 +701,27 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   (`useGlassControl({ scale: "surface" })`, § 4 : un ton tenu, matériau épais —
   le ton et le voile par bande d'avant sont retirés par le lot lg2), le rouge
   de danger (« Déconnexion ») au ton de la surface.
+- **Menus et popovers : l'anatomie d'un menu de macOS 26** (lot lg2,
+  `components/ui/glass/lgMenu.css`) — compte, « Plus », menu d'un onglet,
+  éditeur de la barre, filtres et tri, menus contextuels, notifications, Watch
+  Together, hors ligne, palette ⌘K, sélecteur de pays. UNE plaque par menu ;
+  dedans, jamais un verre de plus : marge de 5 px (`--lg-row-inset`), survol
+  et focus clavier en PASTILLE insérée à l'accent UNI (`--lg-row-highlight`,
+  blanc ≥ 5,7:1 — jamais une barre bord à bord ni le dégradé de marque), rayon
+  de la rangée = rayon du panneau − marge (calculé sur le panneau qui la porte :
+  un popover large a `--lg-radius-lg`), en-têtes discrets
+  (`--lg-section-label`, sans capitales), filets fins (`--lg-separator`),
+  coche sans fond teinté, page courante en remplissage neutre, destruction en
+  pastille rouge (#DC2626, blanc 4,8:1). Des MARQUEURS sans style hors de la
+  porte (`.lg-menu-list`, `.lg-row`, `.lg-sep`, `.lg-menu-label`…, liste en
+  tête du fichier) ; les rangées à rôle ARIA (`menuitem*`, `option`) sont
+  reconnues seules, l'option active d'une liste par `data-lg-active`
+  (`aria-selected` dit tantôt l'active, tantôt la valeur choisie). Le menu
+  NAÎT de son déclencheur (`floatingMotion.ts` : échelle 0,9 → 1 sur un ressort
+  court, sortie à 65 %, fondu seul en mouvement réduit). Labo :
+  `/dev/verre?vue=menus`. Preuve du rendu d'avant : styles calculés de quatre
+  menus ouverts (survol compris), base contre branche, porte éteinte — 4 512
+  propriétés, 0 écart.
 - **Hors ligne** : message de passage hors ligne et avis en `.lg-notice`,
   panneaux de la page hors ligne en `.lg-panel` (sans flou), bannière en
   lentille ; dialogues « garder hors ligne » et de suppression en portail (§ 5).

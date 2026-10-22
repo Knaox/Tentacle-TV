@@ -63,7 +63,7 @@ export function DataSaverChip() {
           WebkitBackdropFilter: "blur(var(--blur-dropdown))",
         }}
       >
-        <div className="border-b border-line-subtle px-4 py-3">
+        <div className="lg-sep border-b border-line-subtle px-4 py-3">
           <p className="text-sm font-semibold text-content-primary">{t("saverPopoverTitle")}</p>
           <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
             {setting === "on" ? t("saverForcedReason") : t("saverAutoReason")}

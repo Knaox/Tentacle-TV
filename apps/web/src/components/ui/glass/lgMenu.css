@@ -1,0 +1,191 @@
+/* ── Liquid Glass : l'ANATOMIE d'un menu de macOS 26 ─────────────────────
+ *
+ * Un menu, un popover, la palette ⌘K sont UNE plaque de verre (régime
+ * « surface » du lot lg2) : un seul ton, aucune bande, aucune couture. Ce qui
+ * vit DEDANS n'est jamais un verre de plus — des remplissages, et l'idiome des
+ * menus du Mac :
+ *  - une marge intérieure de 5 à 6 px (`--lg-row-inset`) ;
+ *  - le survol et la sélection au clavier en PASTILLE arrondie INSÉRÉE, à la
+ *    couleur d'accent UNIE, glyphes blancs (`--lg-row-highlight*`) — jamais
+ *    une barre bord à bord, jamais le dégradé de marque ;
+ *  - des rayons CONCENTRIQUES : rangée = menu − marge ;
+ *  - des en-têtes de section discrets (`--lg-section-label`) ;
+ *  - des séparateurs fins (`--lg-separator`) ;
+ *  - le rouge de danger lisible sur le verre (le ton le règle :
+ *    `lgLegibility.css`) et sa pastille rouge au survol.
+ *
+ * Marqueurs (aucun style hors de la porte) : `.lg-menu-list` (panneau-liste à
+ * marge), `.lg-palette` (la palette ⌘K), `.lg-row` (une rangée sans rôle ARIA,
+ * un lien), `.lg-row-danger`, `.lg-row-soft` (rangée riche : survol neutre),
+ * `.lg-menu-header`, `.lg-menu-label`,
+ * `.lg-sep` (filet), `.lg-fill` (bloc rempli dans le verre), `.lg-menu-sticky` (en-tête collant d'une liste),
+ * `.lg-row-mark` (la barre d'activité d'avant, remplacée par la pastille).
+ * Les rangées à rôle (`menuitem*`, `option`) sont reconnues seules ; l'option
+ * ACTIVE (survol, flèches) se dit par `data-lg-active` — `aria-selected` dit,
+ * selon la liste, l'option active (palette) ou la valeur choisie (sélecteur).
+ *
+ * Jetons du socle (lot lg2, axe A) lus avec un REPLI : la feuille vaut avant
+ * comme après leur fusion. Tout vit sous `:root[data-liquid-glass="native"]` ;
+ * spécificité (0,3,1) et plus : elle l'emporte sur les utilitaires de
+ * Tailwind sans `!important`, sauf face aux styles en ligne. */
+
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) {
+  --lgm-inset: var(--lg-row-inset, 5px);
+  --lgm-panel-radius: var(--lg-surface-radius, var(--lg-radius-md));
+  /* Concentrique au panneau QUI la porte (un popover large a un rayon plus
+   * grand que le `--lg-row-radius` du socle, calculé sur le menu type). */
+  --lgm-radius: calc(var(--lgm-panel-radius) - var(--lgm-inset));
+  /* L'accent UNI, sombre assez pour un blanc à 4,5:1 : #7C3AED (5,7:1). Le
+   * violet du thème sombre (#8B5CF6) n'y tient que 4,2:1. */
+  --lgm-highlight: var(--lg-row-highlight, rgb(124, 58, 237));
+  --lgm-glyph: var(--lg-row-highlight-glyph, #fff);
+  /* La destruction : rouge plein, blanc à 4,8:1 (#DC2626). */
+  --lgm-danger-highlight: rgb(220, 38, 38);
+  --lgm-separator: var(--lg-separator, rgba(var(--lg-light-rgb), 0.14));
+  --lgm-label: var(--lg-section-label, var(--text-secondary));
+  /* La page COURANTE dans un menu de navigation : un remplissage neutre. */
+  --lgm-current: rgba(var(--lg-light-rgb), 0.1);
+}
+
+/* Un menu clair sur un dessous clair : filets et page courante au gris. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette)[data-lg-tone="light"] {
+  --lgm-separator: var(--lg-separator, rgba(var(--lg-shade-rgb), 0.12));
+  --lgm-current: rgba(var(--lg-shade-rgb), 0.07);
+}
+
+:root[data-liquid-glass="native"] .lg-menu.lg-menu-wide {
+  --lgm-panel-radius: var(--lg-radius-lg);
+}
+
+/* Le menu « Plus » : un POPOVER à sections (tuiles, listes, pied) — une
+ * marge de popover (12 px), et des tuiles concentriques au panneau. Les
+ * tuiles restent des IMAGES : aucun verre dedans. */
+:root[data-liquid-glass="native"] .lg-menu.lg-more {
+  padding: 12px !important;
+}
+
+:root[data-liquid-glass="native"] .lg-menu.lg-more .lg-tile {
+  border-radius: calc(var(--lgm-panel-radius) - 12px);
+}
+
+/* ── La marge intérieure : les rangées ne touchent jamais le bord ── */
+:root[data-liquid-glass="native"] .lg-menu.lg-menu-list {
+  padding: var(--lgm-inset) !important;
+}
+
+/* ── Les rangées ── */
+:root[data-liquid-glass="native"] .lg-menu :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row) {
+  border-radius: var(--lgm-radius);
+  color: var(--text-primary);
+  outline: none;
+  box-shadow: none;
+}
+
+/* Le texte part à 10 px du bord de la pastille, comme l'icône d'un menu du Mac. */
+:root[data-liquid-glass="native"] .lg-menu.lg-menu-list :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row),
+:root[data-liquid-glass="native"] .lg-menu.lg-menu-list .lg-menu-header {
+  padding-inline: 10px;
+}
+
+/* La destruction garde son rouge, réglé par le ton du verre (`lgLegibility.css` :
+ * corail sur un dessous sombre, bordeaux sur un clair). */
+:root[data-liquid-glass="native"] .lg-menu .lg-row-danger {
+  color: var(--status-error-fg);
+}
+
+/* Cochée : la coche suffit, comme un menu du Mac — pas de fond teinté. */
+:root[data-liquid-glass="native"] .lg-menu :is([role="menuitemcheckbox"], [role="menuitemradio"])[aria-checked="true"] {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* Une rangée qui porte un accessoire (lien + épingle du menu « Plus ») : la
+ * pastille couvre la rangée entière, ses enfants ne peignent plus rien. */
+:root[data-liquid-glass="native"] .lg-menu .lg-row > :is(a, button) {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-liquid-glass="native"] .lg-menu .lg-row > a {
+  color: inherit;
+}
+
+/* La page où l'on est (menu « Plus ») : remplissage neutre, jamais l'accent. */
+:root[data-liquid-glass="native"] .lg-menu .lg-row:is([aria-current="page"], :has(> [aria-current="page"])) {
+  background: var(--lgm-current);
+}
+
+/* ── La pastille : survol, focus clavier, option active de la palette ── */
+:root[data-liquid-glass="native"] .lg-menu :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row):is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]),
+:root[data-liquid-glass="native"] .lg-menu .lg-row:has(:focus-visible),
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) [role="option"]:is([data-lg-active="true"], :focus-visible) {
+  --text-primary: var(--lgm-glyph);
+  --text-secondary: var(--lgm-glyph);
+  --text-tertiary: var(--lgm-glyph);
+  --text-quaternary: var(--lgm-glyph);
+  --brand-light: var(--lgm-glyph);
+  --brand-accent: var(--lgm-glyph);
+  --status-error-fg: var(--lgm-glyph);
+  background: var(--lgm-highlight);
+  border-color: transparent;
+  color: var(--lgm-glyph);
+  text-shadow: none;
+}
+
+:root[data-liquid-glass="native"] .lg-menu .lg-row-danger:is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"]) {
+  background: var(--lgm-danger-highlight);
+}
+
+/* Les icônes du ton du dessous : sur la pastille, plus d'ombre portée. */
+:root[data-liquid-glass="native"] .lg-menu :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], .lg-row):is(:hover, :focus-visible) svg,
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) [role="option"][data-lg-active="true"] svg {
+  filter: none;
+}
+
+/* Une rangée RICHE d'un popover (notification : icône teintée, badges) : au
+ * survol, le remplissage neutre — l'accent plein y effacerait ses couleurs,
+ * qui portent du sens (état, type). */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-row-soft:is(:hover, :focus-visible) {
+  background: var(--lgm-current);
+}
+
+/* La barre d'activité d'avant (palette) : la pastille la remplace. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-row-mark {
+  display: none;
+}
+
+/* Un bloc DANS le verre (rangée de l'éditeur de la barre) : un remplissage
+ * léger, jamais le fond opaque d'un panneau — c'était une dalle. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-fill {
+  background: rgba(var(--lg-light-rgb), 0.08);
+  border-color: transparent;
+}
+
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette)[data-lg-tone="light"] .lg-fill {
+  background: rgba(var(--lg-shade-rgb), 0.05);
+}
+
+/* ── En-têtes de section : discrets, sans capitales criardes ── */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-menu-label {
+  color: var(--lgm-label);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Séparateurs : un filet fin, inséré par la marge du panneau ── */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-sep {
+  border-color: var(--lgm-separator);
+}
+
+/* Un filet seul (élément vide) : rentré comme les rangées. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-sep:empty {
+  margin-inline: 10px;
+}
+
+/* Un en-tête collant ne porte plus de fond opaque : c'était une bande. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-menu-sticky {
+  position: static;
+  background: transparent;
+}

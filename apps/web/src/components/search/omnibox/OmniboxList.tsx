@@ -103,7 +103,7 @@ export const OmniboxList = memo(function OmniboxList({
           <div key={key} role="group" aria-label={title} className={section === "all" ? "mt-1" : "mt-1.5 first:mt-0"}>
             {title && (
               <div className="flex items-center justify-between px-3 pb-1.5 pt-2.5">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-content-quaternary">
+                <span className="lg-menu-label text-[11px] font-semibold uppercase tracking-[0.08em] text-content-quaternary">
                   {title}
                   {external !== null && (
                     <span className="ml-1.5 font-medium normal-case tracking-normal">{t("externalBy", { name: external.source })}</span>
