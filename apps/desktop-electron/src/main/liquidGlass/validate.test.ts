@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MAX_REGIONS } from "./protocol";
-import { parseBatch } from "./validate";
+import { parseBatch, parseSampleRects } from "./validate";
 
 const good = { id: "barre", x: 24, y: 700, width: 600, height: 56, radius: 28, level: "regular", tint: null, interactive: false, z: 1 };
 
@@ -54,5 +54,15 @@ describe("parseBatch", () => {
     expect(parseBatch({ upserts: "a" })).toBeNull();
     expect(parseBatch({ upserts: [], removes: [], enabled: "oui" })).toBeNull();
     expect(parseBatch({ upserts: new Array(MAX_REGIONS * 4 + 1).fill(good), removes: [] })).toBeNull();
+  });
+});
+
+describe("parseSampleRects", () => {
+  it("garde des rectangles propres, refuse une forme fausse ou démesurée", () => {
+    expect(parseSampleRects([{ x: 0, y: 0, width: 120, height: 40 }])).toEqual([{ x: 0, y: 0, width: 120, height: 40 }]);
+    expect(parseSampleRects([{ x: 0, y: 0, width: -1, height: 40 }])).toBeNull();
+    expect(parseSampleRects([{ x: Number.NaN, y: 0, width: 1, height: 1 }])).toBeNull();
+    expect(parseSampleRects("tout")).toBeNull();
+    expect(parseSampleRects(new Array(33).fill({ x: 0, y: 0, width: 1, height: 1 }))).toBeNull();
   });
 });

@@ -35,6 +35,7 @@ import {
 import {
   AVAILABILITY_ARG,
   LIQUID_GLASS_CHANNEL,
+  LIQUID_GLASS_SAMPLE_CHANNEL,
   REFRACTS_VIDEO_ARG,
   type LiquidGlassBridge,
 } from "../main/liquidGlass/protocol";
@@ -130,6 +131,11 @@ const liquidGlass = ((): LiquidGlassBridge | undefined => {
     remove: (ids) => {
       if (Array.isArray(ids)) batcher.remove(ids);
     },
+    // Avec réponse : des nombres seulement, le principal revalide les rectangles.
+    sample: (rects) =>
+      Array.isArray(rects)
+        ? (ipcRenderer.invoke(LIQUID_GLASS_SAMPLE_CHANNEL, rects) as Promise<(number | null)[]>)
+        : Promise.resolve([]),
   };
 })();
 

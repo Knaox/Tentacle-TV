@@ -27,6 +27,7 @@ import {
 import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { useLiquidGlassMode } from "../useLiquidGlass";
+import { useBackdropTone } from "./useBackdropTone";
 import { useLensGeometry } from "./useLensGeometry";
 import { useLiquidGlassRegion } from "./useLiquidGlassRegion";
 import {
@@ -111,6 +112,9 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
   const shape = appearance.shape ?? "rounded";
   const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md");
   const filterId = lensFilterId(useId());
+  // Le ton de ce qui est dessous : la polarité des glyphes (lentille de page ;
+  // le verre natif s'adapte seul).
+  const tone = useBackdropTone(element, render === "lens");
 
   if (render === "fallback") {
     const merged = fallbackStyle || style ? { ...fallbackStyle, ...style } : undefined;
@@ -132,6 +136,7 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
       className: surfaceClassName(render, className, undefined),
       style: lensStyle || style ? { ...style, ...lensStyle } : undefined,
       ...surfaceAttributes(appearance, render),
+      ...(render === "lens" ? { "data-lg-tone": tone } : {}),
     },
     layers:
       render === "lens" && lens !== null ? <RefractionFilter id={filterId} {...lens} /> : null,

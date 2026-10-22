@@ -38,7 +38,7 @@ const REQUIRED_FIELDS: Record<RequiredKeys<NativeGlassRegion>, true> = {
   tint: true, interactive: true, z: true,
 };
 const BRIDGE_MEMBERS: Record<keyof LiquidGlassBridge, true> = {
-  supported: true, refractsVideo: true, setEnabled: true, upsert: true, remove: true,
+  supported: true, refractsVideo: true, setEnabled: true, upsert: true, remove: true, sample: true,
 };
 
 const page = readFileSync(join(repoRoot(), "apps/web/src/desktop/types.ts"), "utf8");

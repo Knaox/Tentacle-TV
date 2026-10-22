@@ -1,7 +1,7 @@
 /* ── Liquid Glass : les CONTRÔLES de la page ──────────────────────────────
  *
- * Boutons, disques des rangées, capsules, plateau du survol des cartes,
- * interrupteur, choix segmenté. Chaque règle vit sous `:root[data-liquid-glass="native"]` :
+ * Boutons, disques des rangées, capsules, interrupteur, choix segmenté (le
+ * plateau du survol des cartes est passé sur la primitive : `CardTrayParts`). Chaque règle vit sous `:root[data-liquid-glass="native"]` :
  * sans le drapeau, la classe-marqueur posée sur le composant (`lg-btn`,
  * `lg-disc`…) n'a AUCUN style — le rendu d'avant, au pixel près.
  *
@@ -11,10 +11,10 @@
  *
  * Règles de coût (CLAUDE.md, « Coût GPU ») :
  *  • un `backdrop-filter` n'est posé que sur ce qui est AFFICHÉ — les disques
- *    et le plateau sont montés au survol (`useHoverMount`), jamais masqués ;
+ *    sont montés au survol (`useHoverMount`), jamais masqués ;
  *  • rien ne s'anime que `transform` et `opacity` : l'arête et l'ombre sont
  *    des `box-shadow` FIXES, le survol est un calque (`::after`) en fondu ;
- *  • un verre posé sur un voile opaque (plateau des cartes, ≥ 0,9) n'a pas de
+ *  • un verre posé sur la page immobile (« Tout voir », panneaux) n'a pas de
  *    flou : il n'y aurait rien à réfracter. Arête et reflet suffisent.
  *
  * Spécificité : `:root[data-liquid-glass] .x` vaut (0,3,0) et l'emporte sur les
@@ -103,29 +103,6 @@
   border-color: transparent;
   /* `!important` : `HERO_PLAY_STYLE` pose son ombre EN LIGNE. */
   box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
-}
-
-/* ══ 3. Le plateau du survol des cartes ═══════════════════════════════════
- *
- * Un vrai verre CLAIR (lentille exacte, flou léger) : sans lui, un blanc
- * translucide sur le voile du survol se lisait comme un gris. Monté au survol,
- * une instance à la fois. Le modèle (`cardOverlay.ts`) ne change pas — seule
- * la peau. */
-:root[data-liquid-glass="native"] .lg-tray {
-  /* Positionnée : le reflet (`GlassSpecular`) s'y pose en absolu. */
-  position: relative;
-  background: var(--lgc-fill-veil);
-  -webkit-backdrop-filter: var(--lgc-backdrop-clear);
-  backdrop-filter: var(--lgc-backdrop-clear);
-  border-color: transparent;
-  box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
-}
-
-/* L'action primaire du plateau, au ton de marque : le même verre teinté que
- * « Lecture », sans flou (même raison). */
-:root[data-liquid-glass="native"] .lg-tray [data-tray-primary="brand"] {
-  background: var(--lgc-fill-prominent);
-  box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand);
 }
 
 /* ══ 4. L'interrupteur ════════════════════════════════════════════════════
@@ -250,13 +227,13 @@
   box-shadow: var(--lgc-edge);
 }
 
-/* ══ 11. La lentille des boutons du plateau et de la capsule ══════════════
+/* ══ 11. La lentille des boutons de la capsule ════════════════════════════
  *
  * Ils portent `data-lg-lens` (lg-physique : bulle au survol, à l'appui, en
  * ressort, par la propriété `scale`). Leur grossissement Tailwind
  * (`hover:scale-110`, `active:scale-95`) s'y ajouterait : il est neutralisé
  * en mode natif, la lentille le remplace. */
-:root[data-liquid-glass="native"] :is(.lg-tray, .lg-capsule-media) [data-lg-lens] {
+:root[data-liquid-glass="native"] .lg-capsule-media [data-lg-lens] {
   --tw-scale-x: 1;
   --tw-scale-y: 1;
 }

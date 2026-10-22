@@ -11,6 +11,7 @@ import { isAppOrigin } from "../appProtocol";
 import { glassRefractsVideo, liquidGlassAvailability } from "./detect";
 import { LIQUID_GLASS_CHANNEL } from "./protocol";
 import { GlassRegions } from "./regions";
+import { installGlassSampler } from "./sampler";
 import type { GlassSnapshot } from "./snapshot";
 import { parseBatch } from "./validate";
 
@@ -80,6 +81,7 @@ export function installLiquidGlass(win: BrowserWindow): void {
   if (!listening) {
     listening = true;
     ipcMain.on(LIQUID_GLASS_CHANNEL, onBatch);
+    installGlassSampler();
   }
   // Une page rechargée ne doit pas hériter du verre de la précédente : elle ne
   // saurait même pas qu'il est là. `did-navigate` ne vaut que pour une vraie

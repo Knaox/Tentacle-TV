@@ -31,6 +31,8 @@ import { DownloadGlyph } from "./DownloadGlyph";
 import { requestDownload } from "./downloadRequest";
 import { useDownloadsVisibility } from "./useDownloadState";
 import { useDeviceGroupState, useDeviceItemState } from "./useDeviceState";
+import { useLiquidGlassSurface } from "../theme/glass";
+import { useTrayGlassAllowed } from "../components/cards/CardTrayParts";
 
 /** Mêmes boîtes que `CardQuickActions` : les pastilles s'alignent au pixel. */
 const VARIANT_STYLE = {
@@ -68,9 +70,6 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
   const itemState = useDeviceItemState(isSeries ? "" : item.Id);
   const group = useDeviceGroupState(isSeries ? item.Id : "");
 
-  if (!supportsDownloads()) return null;
-  if (item.Type !== "Movie" && item.Type !== "Episode" && !isSeries) return null;
-
   // L'échec compte comme « en route » : son écran le relance, la carte non.
   const isActive = isSeries ? group.active > 0 : itemState === "active" || itemState === "error";
   // Une série n'est JAMAIS « complète » : elle reste ouverte aux épisodes à
@@ -78,6 +77,24 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
   // dit, par son glyphe, que des épisodes sont déjà là.
   const isComplete = !isSeries && itemState === "complete";
   const seriesKept = isSeries && group.kept > 0;
+  // « Sur cette machine » se lit comme au repos : le glyphe et le vert CONSTANT
+  // de la pastille (posé sur média, dans les deux thèmes).
+  const kept = isComplete || (seriesKept && !isActive);
+  const { box } = tray ?? VARIANT_STYLE[variant];
+  // Dans le plateau d'une carte (verre natif) : une pastille de verre clair
+  // comme ses voisines (`CardTrayButton`) ; le vert de « gardé » reste.
+  const trayGlass = useTrayGlassAllowed() && tone === "tray";
+  const glass = useLiquidGlassSurface({
+    level: "clear",
+    shape: "circle",
+    interactive: true,
+    className: `${box} relative flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-white`,
+    fallbackClassName: `rounded-full transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${kept ? "text-emerald-400" : "text-white/80 hover:text-white"}`,
+    style: kept ? { color: "var(--media-badge-success-fg)" } : undefined,
+  });
+
+  if (!supportsDownloads()) return null;
+  if (item.Type !== "Movie" && item.Type !== "Episode" && !isSeries) return null;
   // Sans droit ET sans téléchargement existant : AUCUN rendu. Ni grisé, ni
   // cadenas — c'est la règle de toute la feature.
   if (!canDownload && !isActive && !isComplete && !seriesKept) return null;
@@ -93,10 +110,6 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
           : item.Type === "Episode"
             ? t("episodeDownload")
             : t("download");
-  // « Sur cette machine » se lit comme au repos : le glyphe et le vert CONSTANT
-  // de la pastille (posé sur média, dans les deux thèmes).
-  const kept = isComplete || (seriesKept && !isActive);
-
   const handleClick = (event: React.MouseEvent) => {
     // Sans les deux, la carte navigue sous le bouton.
     event.stopPropagation();
@@ -109,7 +122,7 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
   };
 
   const { dot } = VARIANT_STYLE[variant];
-  const { box, icon } = tray ?? VARIANT_STYLE[variant];
+  const { icon } = tray ?? VARIANT_STYLE[variant];
 
   // Posé sur l'affiche : verre sombre et blancs CONSTANTS dans les deux thèmes,
   // comme le reste du cluster. Pas de `backdrop-filter` — ce serait une passe de
@@ -121,7 +134,8 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
       onClick={handleClick}
       aria-label={label}
       title={label}
-      className={`${variant === "inline" && tone === "chip" ? "lg-btn-media " : ""}${box} relative flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
+      {...(trayGlass ? glass.props : {})}
+      className={trayGlass ? glass.props.className : `${variant === "inline" && tone === "chip" ? "lg-btn-media " : ""}${box} relative flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
         tone === "tray"
           ? `transition-transform duration-150 hover:scale-110 hover:bg-white/10 ${kept ? "text-emerald-400" : "text-white/80 hover:text-white"}`
           : `border bg-black/55 transition hover:scale-105 hover:bg-black/70 ${
@@ -129,6 +143,7 @@ export function CardDownloadAction({ item, variant = "compact", tone = "chip", t
             }`
       }`}
     >
+      {trayGlass && glass.layers}
       <DownloadGlyph done={kept} className={icon} strokeWidth={1.8} />
       {isActive && (
         <span className={`${dot} absolute -right-0.5 -top-0.5 rounded-full bg-brand animate-pulse-glow`} />

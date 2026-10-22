@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EyeOff, Info, Plus } from "lucide-react";
 import { useCardToggles } from "@tentacle-tv/api-client";
@@ -8,15 +7,16 @@ import {
   type CardOverlay,
   type CardToggleHandlers,
   type CardToggleKind,
-  type CardTrayExtra,
   type MediaItem,
 } from "@tentacle-tv/shared";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 import { BookmarkGlyph, HeartGlyph, PlayGlyph, WatchedGlyph } from "./cardGlyphs";
 import { CardTrayPrimaryButton } from "./CardTrayPrimaryButton";
-import { stopCardClick } from "./cardEvents";
-import { GLASS_LENS_PROPS } from "../../theme/glass";
-import { useGlassControl } from "../ui/glass/useGlassControl";
+import { CardTrayButton, CardTrayCapsule } from "./CardTrayParts";
+
+// La capsule et ses boutons vivent dans `CardTrayParts` ; ré-exportés ici,
+// où leurs appelants les ont toujours pris.
+export { CardTrayButton, CardTrayCapsule };
 
 interface CardActionTrayProps {
   /** Le visage Jellyfin des bascules et du hors ligne — `null` hors bibliothèque. */
@@ -186,87 +186,4 @@ export function ToggleGlyph({ kind, className, filled }: { kind: CardToggleKind;
   if (kind === "watchlist") return <BookmarkGlyph className={className} filled={filled} />;
   if (kind === "favorite") return <HeartGlyph className={className} filled={filled} />;
   return <WatchedGlyph className={className} filled={filled} />;
-}
-
-/**
- * La capsule elle-même. Réutilisable par une carte qui n'a pas d'item à
- * basculer mais garde le même plateau — une carte Vigie, par exemple.
- *
- * `bare` : sans capsule (la mini-carte d'aperçu, où chaque bouton est un rond
- * cerclé) — la barre d'outils reste, son nom et son arrêt des clics aussi.
- * Seul un bouton qui rend son clic à la carte (`data-tray-pass`) le laisse
- * passer.
- */
-export function CardTrayCapsule({ label, stretch = false, bare = false, children }: {
-  label: string;
-  stretch?: boolean;
-  bare?: boolean;
-  children: ReactNode;
-}) {
-  // En mode natif : la lentille exacte du verre clair et le reflet sous le pointeur.
-  const glass = useGlassControl<HTMLDivElement>({ lens: bare ? false : "clear", shape: "capsule", specular: !bare });
-  // `max-w-full min-w-0` : la capsule ne dépasse jamais la carte, ce sont ses
-  // boutons qui se resserrent (`TRAY_SIZE`).
-  const capsule = `lg-tray flex min-w-0 max-w-full items-center gap-0.5 rounded-full border border-white/15 bg-white/[0.12] p-0.5 shadow-[0_4px_14px_rgba(0,0,0,0.35)] ${
-    stretch ? "w-full justify-between" : ""
-  }`;
-  return (
-    <div
-      ref={glass.ref}
-      {...glass.props}
-      role="toolbar"
-      aria-label={label}
-      onClick={(e) => {
-        if (!(e.target instanceof Element && e.target.closest("[data-tray-pass]"))) stopCardClick(e);
-      }}
-      className={bare ? "card-preview-tray" : capsule}
-    >
-      {glass.layers}
-      {children}
-    </div>
-  );
-}
-
-interface TrayButtonProps {
-  box: string;
-  /** État d'une bascule — absent pour une action simple (fiche, refus). */
-  active?: boolean;
-  /** L'état actif prend l'accent de marque (le cœur) plutôt que le blanc. */
-  accent?: boolean;
-  /** Faux : une action, pas une bascule — pas d'`aria-pressed`. */
-  pressable?: boolean;
-  /** L'extra que ce bouton porte (`data-tray-extra`) : la feuille de la mini-carte range « Plus d'infos » au bout. */
-  extra?: CardTrayExtra;
-  label: string;
-  /** Absent : le clic REMONTE à la carte, qui fait son geste (« Plus d'infos » d'une affiche). */
-  onPress?: () => void;
-  children: ReactNode;
-}
-
-export function CardTrayButton({ box, active = false, accent = false, pressable, extra, label, onPress, children }: TrayButtonProps) {
-  const isToggle = pressable !== false;
-  const tone = active
-    ? accent
-      ? "bg-white/15 text-[var(--brand-accent)]"
-      : "bg-white/15 text-white"
-    : "text-white/80 hover:bg-white/10 hover:text-white";
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={isToggle ? active : undefined}
-      title={label}
-      {...GLASS_LENS_PROPS}
-      data-tray-extra={extra}
-      data-tray-pass={onPress ? undefined : true}
-      onClick={(e) => {
-        if (!onPress) return;
-        stopCardClick(e);
-        onPress();
-      }}
-      className={`${box} flex items-center justify-center rounded-full transition-transform duration-150 hover:scale-110 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${tone}`}
-    >
-      {children}
-    </button>
-  );
 }
