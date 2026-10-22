@@ -1,3 +1,4 @@
+import { isIPv4, isIPv6 } from "net";
 import type { FastifyRequest } from "fastify";
 import { getRealClientIp } from "./networkUtils";
 
@@ -60,8 +61,36 @@ export const RATE_LIMIT_IMAGES = Number(process.env.RATE_LIMIT_IMAGES) || 6000;
  * le relais de Cloudflare, partagé par des milliers de visiteurs.
  */
 export function rateLimitKey(request: FastifyRequest): string {
-  const client = getRealClientIp(request);
+  const client = clientBucket(getRealClientIp(request));
   return isImage(request.url) ? `img:${client}` : client;
+}
+
+/**
+ * Le client d'un compteur. En IPv6, un abonné reçoit un /64 entier — des
+ * milliards d'adresses : compter par adresse, c'était lui laisser changer
+ * d'adresse à chaque essai et passer sous tous les plafonds (connexion,
+ * jumelage). Le compteur est donc celui du /64. Une IPv4 écrite en IPv6
+ * (`::ffff:a.b.c.d`) reste l'IPv4 qu'elle est.
+ */
+export function clientBucket(ip: string): string {
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+  if (mapped && isIPv4(mapped[1])) return mapped[1];
+  if (!isIPv6(ip)) return ip;
+  const hextets = expandIPv6(ip.split("%")[0] ?? ip);
+  return hextets ? `${hextets.slice(0, 4).join(":")}::/64` : ip;
+}
+
+/** Les huit groupes d'une IPv6, `::` déplié ; null si l'écriture surprend. */
+function expandIPv6(ip: string): string[] | null {
+  const [head, tail] = ip.split("::");
+  const left = head ? head.split(":") : [];
+  const right = tail ? tail.split(":") : [];
+  // Une IPv4 en queue (`::1.2.3.4`) compte pour deux groupes : seul le /64 nous importe.
+  const width = (parts: string[]) => parts.reduce((n, part) => n + (part.includes(".") ? 2 : 1), 0);
+  const missing = 8 - width(left) - width(right);
+  if (tail === undefined && missing !== 0) return null;
+  const groups = [...left, ...Array<string>(Math.max(missing, 0)).fill("0"), ...right];
+  return groups.map((group) => (group.includes(".") ? group : group.toLowerCase().replace(/^0+(?=.)/, "")));
 }
 
 export function rateLimitMax(request: FastifyRequest): number {
