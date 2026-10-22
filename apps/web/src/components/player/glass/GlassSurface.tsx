@@ -46,11 +46,11 @@
  * `variant="regular"` pour les surfaces de texte — panneaux, fiches, avis.
  */
 
-import { createContext, useCallback, useContext, useRef, type HTMLAttributes, type Ref } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type HTMLAttributes, type Ref } from "react";
 import { motion, useIsPresent, useReducedMotion } from "framer-motion";
 import type { GlassMorphProps } from "../../../theme/glass";
 import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
-import { useNativeGlassRegion, type GlassRegionOptions } from "./nativeGlassPort";
+import { useNativeGlassRegion, useVideoBackdropTone, type GlassRegionOptions } from "./nativeGlassPort";
 import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
 import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
@@ -89,13 +89,18 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
    * et au retrait, au lieu d'un fondu : la métamorphose des contrôles.
    */
   collapse?: boolean;
+  /**
+   * Ses glyphes suivent le TON du dessous, mesuré sous la forme (`data-lg-tone`) :
+   * sombres sur un dessous clair (la neige, un ciel blanc), clairs sinon.
+   */
+  adaptiveTone?: boolean;
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
   surfaceRef?: Ref<HTMLDivElement>;
 }
 
 export function GlassSurface({
   present = true, group = PLAYER_GLASS_GROUP, variant = "clear", transition = NATIVE_FADE_MS, spacing, morph,
-  collapse = false, surfaceRef, className = "", children, ...rest
+  collapse = false, adaptiveTone = false, surfaceRef, className = "", children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();
@@ -109,8 +114,11 @@ export function GlassSurface({
   // Une surface qui se métamorphose garde sa région pendant sa sortie : elle rentre dans son bouton.
   const shown = present && (isPresent || morph !== undefined) && chromeVisible;
   const ref = useRef<HTMLDivElement | null>(null);
+  // L'élément lui-même (pas une ref) : `useBackdropTone` se réabonne quand il change.
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
   const setRef = useCallback((node: HTMLDivElement | null) => {
     ref.current = node;
+    setElement(node);
     if (typeof surfaceRef === "function") surfaceRef(node);
     else if (surfaceRef) (surfaceRef as { current: HTMLDivElement | null }).current = node;
   }, [surfaceRef]);
@@ -125,6 +133,8 @@ export function GlassSurface({
     spacing: spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
   });
 
+  const tone = useVideoBackdropTone(element, adaptiveTone && mode === "native" && shown && regionsAllowed);
+
   const preview = mode === "preview" ? " lgp-surface--preview" : "";
   // En sortie (`AnimatePresence`), une surface qui rentre dans son bouton est encore « à l'écran »
   // pour garder sa région — mais elle ne prend plus les clics (le bouton dessous les reçoit).
@@ -132,6 +142,7 @@ export function GlassSurface({
     ref: setRef, className: `lgp-surface${preview} ${className}`, "data-lgp-present": shown,
     "data-lgp-exiting": isPresent ? undefined : true,
     "data-lgp-collapse": collapse ? "" : undefined,
+    "data-lg-tone": adaptiveTone ? tone : undefined,
   };
   if (morph) {
     return (

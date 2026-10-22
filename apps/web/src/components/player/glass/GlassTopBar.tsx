@@ -29,14 +29,14 @@ export function GlassTopBar({ visible, title, subtitle, isDirectPlay, goBack }: 
   return (
     <div className="lgp-top" onClick={(e) => e.stopPropagation()}>
       <div ref={setLead} className="lgp-top__lead">
-        <GlassSurface className="lgp-pastille" present={visible} collapse data-lgp-pivot="">
+        <GlassSurface className="lgp-pastille" present={visible} collapse adaptiveTone data-lgp-pivot="">
           <div className="lgp-content">
             <button type="button" onClick={() => goBack()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:back")} title={t("player:back")}>
               <BackIcon />
             </button>
           </div>
         </GlassSurface>
-        <GlassSurface className="lgp-titlecap" present={visible} collapse>
+        <GlassSurface className="lgp-titlecap" present={visible} collapse adaptiveTone>
           <div className="lgp-content lgp-titlecap__inner">
             <h2 className="lgp-title truncate">{title}</h2>
             {subtitle && <p className="lgp-subtitle truncate">{subtitle}</p>}

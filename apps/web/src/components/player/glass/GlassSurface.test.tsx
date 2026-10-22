@@ -13,12 +13,17 @@ const calls = vi.hoisted(() => [] as Array<{ active: boolean; group: string }>);
 const transitions = vi.hoisted(() => [] as number[]);
 const native = vi.hoisted(() => ({ available: true }));
 const viewport = vi.hoisted(() => ({ resizing: false }));
+const backdrop = vi.hoisted(() => ({ tone: "dark" as "dark" | "light", asked: [] as boolean[] }));
 vi.mock("./nativeGlassPort", () => ({
   useNativeGlassAvailable: () => native.available,
   videoUnderWindow: () => true,
   useNativeGlassRegion: (_ref: unknown, options: { active: boolean; group: string; transition: number }) => {
     calls.push({ active: options.active, group: options.group });
     transitions.push(options.transition);
+  },
+  useVideoBackdropTone: (_element: unknown, active: boolean) => {
+    backdrop.asked.push(active);
+    return backdrop.tone;
   },
 }));
 vi.mock("./windowResizing", () => ({ useWindowResizing: () => viewport.resizing }));
@@ -43,7 +48,10 @@ function render(node: ReactNode, { inPip = false } = {}) {
 }
 
 describe("les régions natives du lecteur", () => {
-  beforeEach(() => { native.available = true; viewport.resizing = false; presence.present = true; presence.reduced = false; });
+  beforeEach(() => {
+    native.available = true; viewport.resizing = false; presence.present = true; presence.reduced = false;
+    backdrop.tone = "dark"; backdrop.asked.length = 0;
+  });
 
   it("verre natif, surface à l'écran : une région active", () => {
     const { calls: asked } = render(<GlassSurface className="lgp-bar">x</GlassSurface>);
@@ -97,6 +105,21 @@ describe("les régions natives du lecteur", () => {
     presence.reduced = true;
     render(<GlassSurface className="lgp-group" collapse>x</GlassSurface>);
     expect(transitions).toEqual([NATIVE_FADE_MS]);
+  });
+
+  it("ton du dessous : seule une forme ADAPTATIVE le porte, et le mesure tant qu'elle est à l'écran", () => {
+    expect(render(<GlassSurface className="lgp-bar">x</GlassSurface>).html).not.toContain("data-lg-tone");
+    backdrop.tone = "light";
+    const shown = render(<GlassSurface className="lgp-group" adaptiveTone>x</GlassSurface>);
+    expect(shown.html).toContain('data-lg-tone="light"');
+    expect(backdrop.asked.at(-1)).toBe(true);
+    render(
+      <GlassChromeVisibleContext.Provider value={false}>
+        <GlassSurface className="lgp-group" adaptiveTone>x</GlassSurface>
+      </GlassChromeVisibleContext.Provider>,
+    );
+    // Masquée : plus de mesure (rien ne consomme), le ton retenu reste posé.
+    expect(backdrop.asked.at(-1)).toBe(false);
   });
 
   it("sans verre natif (macOS < 26, réglage coupé) : aucune région", () => {

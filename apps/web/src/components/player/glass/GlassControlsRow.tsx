@@ -112,7 +112,7 @@ export function GlassControlsRow({
  */
 function Part({ visible, className, pivot = false, children }: { visible: boolean; className: string; pivot?: boolean; children: ReactNode }) {
   return (
-    <GlassSurface className={`lgp-group ${className}`} present={visible} collapse data-lgp-pivot={pivot ? "" : undefined}>
+    <GlassSurface className={`lgp-group ${className}`} present={visible} collapse adaptiveTone data-lgp-pivot={pivot ? "" : undefined}>
       <div className="lgp-content lgp-group__inner">{children}</div>
     </GlassSurface>
   );

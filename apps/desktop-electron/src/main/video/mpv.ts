@@ -14,7 +14,7 @@ import { forgetLayer } from "./metalLayer";
 import { forgetOutput } from "../linux/hdr";
 import { forgetReads } from "./mpvRead";
 import { readProperty, writeProperty } from "./mpvProperties";
-import { sendCommand, settleAllCommands, settleCommand } from "./mpvCommand";
+import { sendCommand, sendCommandForResult, settleAllCommands, settleCommand, type CommandResult } from "./mpvCommand";
 import { drain, forgetCadence, type Sink } from "./mpvDrain";
 import { applyOptions } from "./mpvOptions";
 export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
@@ -116,6 +116,11 @@ export function setProperty(name: string, value: string): Promise<string | null>
 /** Exécute une commande SANS bloquer le processus principal — `mpvCommand.ts`. */
 export function command(args: readonly string[]): Promise<string | null> {
   return sendCommand(ctx, args);
+}
+
+/** Une commande dont on lit le résultat pendant la réponse — `sendCommandForResult`. */
+export function commandForResult<T>(args: readonly string[], read: (result: unknown) => T): Promise<CommandResult<T>> {
+  return sendCommandForResult(ctx, args, read);
 }
 
 

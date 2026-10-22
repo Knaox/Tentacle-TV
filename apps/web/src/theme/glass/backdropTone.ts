@@ -21,6 +21,8 @@ export interface ToneRect {
   y: number;
   width: number;
   height: number;
+  /** `window` : la vidéo seule sous le rectangle, la page exclue (`NativeGlassSampleRect`). */
+  under?: "window";
 }
 
 /** Échantillonneur de la coquille : une luminance (0..1) ou `null` par rectangle. */
