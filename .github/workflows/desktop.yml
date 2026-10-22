@@ -749,7 +749,7 @@ jobs:
       # manifeste n'est pas patché — l'auto-updater ne propose rien.
       - name: Créer la Release GitHub
         if: needs.prepare.outputs.channel != 'build'
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           target_commitish: ${{ needs.prepare.outputs.sha }}
@@ -832,7 +832,7 @@ jobs:
 
       - name: Ajouter SHA256SUMS à la Release
         if: needs.prepare.outputs.linux == 'build'
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           files: SHA256SUMS
