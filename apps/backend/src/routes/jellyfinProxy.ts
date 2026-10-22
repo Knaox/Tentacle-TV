@@ -44,7 +44,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const wildcardPath = (request.params as Record<string, string>)["*"] || "";
 
     if (!isAllowedProxyPath(wildcardPath)) {
-      console.log("[PROXY BLOCKED]", wildcardPath);
+      console.log("[PROXY BLOCKED]", JSON.stringify(wildcardPath)); // échappé : jamais une ligne de journal forgée
       return reply.status(403).send({ error: "Forbidden proxy path" });
     }
 
