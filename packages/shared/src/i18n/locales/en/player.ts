@@ -120,6 +120,12 @@ export default {
   volume: "Volume",
   fullscreen: "Full screen",
   exitFullscreen: "Exit full screen",
+  // Linux desktop, Wayland without the KWin glue and with an HDR display: fullscreen is imposed.
+  forcedFullscreenTitle: "Fullscreen playback only",
+  forcedFullscreenBody:
+    "On this Wayland desktop, playback stays fullscreen: that is what keeps HDR. To watch in a window, switch to X11 mode (no HDR); the app will restart.",
+  forcedFullscreenSwitch: "Switch to X11 and restart",
+  forcedFullscreenStay: "Stay in fullscreen",
   seekbar: "Playback position",
   // L'image dans l'image du NAVIGATEUR — `pip`, plus bas, est celle du bureau.
   pictureInPicture: "Picture in picture",

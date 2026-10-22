@@ -1,0 +1,49 @@
+/* Le lecteur en verre — la MÉTAMORPHOSE des contrôles (`collapse` de
+   `GlassSurface`). Importée par `GlassSurface` juste après `playerGlass.css`. */
+
+/* ── La métamorphose (`collapse` de `GlassSurface`) ──────────────────────
+   La SURFACE elle-même se replie vers le pivot de son ensemble
+   (`--lgp-collapse-x/y`, posés par `useCollapsePivots`) et s'y résorbe ; sa
+   région native la suit image par image (transition native nulle). Repliées,
+   les capsules d'un même groupe se touchent : AppKit les FOND en une goutte,
+   qui se sépare en capsules quand elles reprennent leur place — la
+   métamorphose de macOS 26, au lieu d'un fondu. `visibility` bascule à la fin
+   du repli : l'élément ne se voit plus, la primitive retire la région — rien
+   de natif ne reste derrière des contrôles masqués. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-collapse] {
+  visibility: visible;
+  transform: none;
+  transform-origin: center;
+  box-shadow: var(--lg-player-lift-shadow);
+  transition:
+    transform var(--lg-player-enter-ms) var(--lg-player-ease-spring),
+    visibility 0s;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-collapse][data-lgp-present="false"] {
+  visibility: hidden;
+  transform: translate(var(--lgp-collapse-x, 0px), var(--lgp-collapse-y, 0px)) scale(0);
+  transition:
+    transform var(--lg-player-collapse-ms) var(--lg-player-ease-exit),
+    visibility 0s linear var(--lg-player-collapse-ms);
+}
+
+/* Le contenu ne s'étire pas avec la forme : il paraît une fois la forme presque
+   posée, et part avant elle. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-collapse] > .lgp-content {
+  transform: none;
+  transition: opacity var(--lg-player-content-in-ms) var(--lg-player-ease-enter) var(--lg-player-content-in-delay);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lgp-collapse][data-lgp-present="false"] > .lgp-content {
+  opacity: 0;
+  transform: none;
+  transition: opacity var(--lg-player-content-out-ms) var(--lg-player-ease-exit);
+}
+
+/* Mouvement réduit : ni repli ni goutte — la région part et revient en FONDU
+   natif (`GlassSurface` lui rend sa transition). */
+:root[data-liquid-glass="native"][data-lg-motion="reduce"] .lgp-surface[data-lgp-collapse][data-lgp-present="false"] {
+  transform: none;
+  transition: visibility 0s;
+}

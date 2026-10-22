@@ -20,16 +20,17 @@
   --lgc-refract: url(#tentacle-glass-refract);
 
   /* ── Le fond vu à travers, par épaisseur ──
-   * La réfraction d'ABORD, sur l'image nette, puis le dépoli — l'ordre de la
-   * lentille de la primitive (`liquidGlassSurface.css`). */
+   * Le givre D'ABORD, puis la lentille — l'ordre de la primitive refaite
+   * (`liquidGlassSurface.css`) : la lumière du bord est dans le filtre de la
+   * lentille, un flou posé après la noierait. */
   --lgc-frost-clear: blur(var(--lg-clear-blur)) saturate(var(--lg-clear-saturate)) brightness(var(--lg-clear-brightness));
   --lgc-frost: blur(var(--lg-regular-blur)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
-  --lgc-frost-thick: blur(calc(var(--lg-regular-blur) * 2)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
+  --lgc-frost-thick: blur(var(--lg-thick-blur)) saturate(var(--lg-regular-saturate)) brightness(var(--lg-regular-brightness));
   --lgc-frost-prominent: blur(var(--lg-prominent-blur)) saturate(var(--lg-prominent-saturate)) brightness(var(--lg-prominent-brightness));
-  --lgc-backdrop-clear: var(--lgc-refract) var(--lgc-frost-clear);
-  --lgc-backdrop: var(--lgc-refract) var(--lgc-frost);
-  --lgc-backdrop-thick: var(--lgc-refract) var(--lgc-frost-thick);
-  --lgc-backdrop-prominent: var(--lgc-refract) var(--lgc-frost-prominent);
+  --lgc-backdrop-clear: var(--lgc-frost-clear) var(--lgc-refract);
+  --lgc-backdrop: var(--lgc-frost) var(--lgc-refract);
+  --lgc-backdrop-thick: var(--lgc-frost-thick) var(--lgc-refract);
+  --lgc-backdrop-prominent: var(--lgc-frost-prominent) var(--lgc-refract);
 
   /* ── L'arête : trois traits INTÉRIEURS, fixes ──
    * Le liseré tout autour, l'arête claire en haut, la contre-arête en bas.
@@ -47,21 +48,12 @@
    * `--lg-light-x/y` : lg-physique les fait suivre le pointeur. */
   --lgc-sheen: radial-gradient(130% 90% at var(--lg-light-x) var(--lg-light-y), var(--lg-highlight) 0%, transparent 70%);
 
-  /* La lueur de marque sous un verre proéminent (« Lecture »). */
-  --lgc-glow-brand: 0 4px 18px var(--lg-tint-brand);
-
   /* ── Les voiles, par usage ── */
   --lgc-fill: var(--lgc-sheen), var(--lg-regular-fill);
-  --lgc-fill-media: var(--lgc-sheen), linear-gradient(var(--lgc-media-dim), var(--lgc-media-dim));
-  /* Le verre sur affiche qui ne porte que des ICÔNES (capsule de la fiche) :
-   * un givre CLAIR, comme les boutons de Musique ou TV de macOS 26 sur un
-   * décor sombre — 3:1 suffit aux icônes, tenu par l'ombre de glyphe. */
-  --lgc-fill-media-icons: var(--lgc-sheen), var(--lg-regular-fill);
   /* Le verre épais du SOCLE seul (`--lg-thick-fill`) : plus de voile empilé
    * sur le voile régulier — le verre doit laisser voir ce qu'il couvre. */
   --lgc-fill-thick: var(--lgc-sheen), var(--lgc-thick-dim);
   --lgc-fill-prominent: var(--lgc-sheen), var(--lg-prominent-fill);
-  --lgc-fill-veil: var(--lgc-sheen), var(--lgc-veil-fill);
   --lgc-fill-badge: var(--lgc-sheen), linear-gradient(var(--lgc-badge-dim), var(--lgc-badge-dim));
 
   /* Les épaisseurs viennent du socle (`--lg-thick-fill`, `--lg-scrim`) ; les
@@ -69,17 +61,12 @@
    * sous « Réduire la transparence » (`physics.css`). */
   --lgc-thick-dim: var(--lg-thick-fill);
   --lgc-scrim: var(--lg-scrim);
-  /* Le verre POSÉ SUR UNE AFFICHE — noir dans les deux schémas, libellé blanc :
-   * 0,55, le pire cas d'un décor blanc sous le verre tient 4,7:1. */
-  --lgc-media-dim: var(--lg-media-dim);
   /* La NOTE au repos des cartes : 11 px sur l'affiche, sans flou — l'ombre
    * seule ne tient pas l'AA d'un libellé si petit sur un décor blanc. 0,55 :
    * blanc plein y tient 4,7:1. Noir dans les deux schémas (posé sur média). */
   --lgc-badge-dim: rgba(var(--scrim-media-rgb), 0.55);
-  /* Recettes propres aux composants (accord de lg-tokens) : le verre sur un
-   * voile DÉJÀ sombre (plateau des cartes, sans flou) et le pouce laiteux de
-   * l'interrupteur. */
-  --lgc-veil-fill: rgba(var(--lg-light-rgb), 0.1);
+  /* Recette propre aux composants (accord de lg-tokens) : le pouce laiteux
+   * de l'interrupteur. */
   --lgc-knob: linear-gradient(180deg, rgba(var(--lg-light-rgb), 0.98), rgba(244, 244, 248, 0.92));
 }
 
@@ -90,8 +77,12 @@
  * ou « Contraste accru » (`data-lg-material`, lg-physique), la règle tombe et
  * le `none` de la racine passe. */
 :root[data-liquid-glass="native"]:not([data-lg-material]) [data-lgc-lens] {
-  --lgc-backdrop-clear: var(--lgc-lens) var(--lgc-frost-clear);
-  --lgc-backdrop: var(--lgc-lens) var(--lgc-frost);
-  --lgc-backdrop-thick: var(--lgc-lens) var(--lgc-frost-thick);
-  --lgc-backdrop-prominent: var(--lgc-lens) var(--lgc-frost-prominent);
+  --lgc-backdrop-clear: var(--lgc-frost-clear) var(--lgc-lens);
+  --lgc-backdrop: var(--lgc-frost) var(--lgc-lens);
+  --lgc-backdrop-thick: var(--lgc-frost-thick) var(--lgc-lens);
+  --lgc-backdrop-prominent: var(--lgc-frost-prominent) var(--lgc-lens);
+  /* La lumière du bord est DANS le filtre de la lentille : plus de liseré en
+   * couches, le seul fil d'un demi-pixel du socle. */
+  --lgc-edge: 0 0 0 0.5px var(--lg-edge);
+  --lgc-edge-strong: 0 0 0 0.5px var(--lg-edge);
 }

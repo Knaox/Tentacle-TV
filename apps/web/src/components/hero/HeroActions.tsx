@@ -5,7 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { PlayIcon, InfoIcon } from "../icons/HeroIcons";
-import { GlassPressable } from "../ui/glass/GlassPressable";
+import { PressableGlass } from "../ui/glass/PressableGlass";
 import { CardQuickActions } from "../cards/CardQuickActions";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 
@@ -14,17 +14,31 @@ import { CardDownloadAction } from "../../downloads/CardDownloadAction";
  * ligne : même poids, même verre, à la classe près.
  */
 // `hero-cta-primary` : le dégradé de marque de l'Apple TV, ses voiles d'appui
-// et son anneau de focus (theme/heroCta.css).
-export const HERO_PLAY_CLASS =
-  "hero-cta-primary flex items-center gap-2.5 rounded-full px-7 py-3 text-base font-bold";
+// et son anneau de focus (theme/heroCta.css) — la peau d'AVANT (hors verre
+// natif), qui garde aussi le focus d'entrée des TV LG (`[class*="cta-primary"]`).
+export const HERO_PLAY_CLASS = "hero-cta-primary rounded-full";
 export const HERO_PLAY_STYLE = { boxShadow: "var(--elev-2)" };
 /** Posé sur l'affiche : verre sombre + texte blanc constants, jamais les tokens `--cta-ghost-*` du fond de PAGE. */
 export const HERO_INFO_CLASS =
-  "lg-btn-media flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-6 py-3 text-base font-semibold text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
+  "rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] text-on-media-primary backdrop-blur-md transition-colors duration-200 hover:bg-[rgba(var(--scrim-media-rgb),0.65)]";
 
-/** En mode natif : la lentille exacte de la capsule et le reflet sous le pointeur. */
-export const HERO_PLAY_GLASS = { lens: "prominent", shape: "capsule", specular: true } as const;
-export const HERO_INFO_GLASS = { lens: "regular", shape: "capsule", specular: true } as const;
+/**
+ * Les deux boutons du héros, prêts à étaler sur `PressableGlass` : la mise en
+ * page (tous les modes), la peau d'avant (hors verre natif) et le verre natif
+ * — « Lecture » porte la marque DANS le verre (`prominent`), « Plus d'infos »
+ * est un verre clair aux glyphes adaptés au décor.
+ */
+export const HERO_PLAY_PROPS = {
+  appearance: { level: "prominent", tint: "brand", shape: "capsule" },
+  className: "flex items-center gap-2.5 px-7 py-3 text-base font-bold",
+  fallbackClassName: HERO_PLAY_CLASS,
+  fallbackStyle: HERO_PLAY_STYLE,
+} as const;
+export const HERO_INFO_PROPS = {
+  appearance: { level: "clear", shape: "capsule" },
+  className: "flex items-center gap-2 px-6 py-3 text-base font-semibold",
+  fallbackClassName: HERO_INFO_CLASS,
+} as const;
 
 interface HeroActionsProps {
   item: MediaItem;
@@ -81,17 +95,17 @@ export function HeroActions({ item, onPlay, resuming, episodeCode, imageUrl }: H
 
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      <GlassPressable glass={HERO_PLAY_GLASS} onClick={onPlay} className={HERO_PLAY_CLASS} style={HERO_PLAY_STYLE}>
+      <PressableGlass {...HERO_PLAY_PROPS} onClick={onPlay}>
         <PlayIcon />
         {resuming ? t("common:resume") : t("common:play")}
         {/* Blanc plein, graisse moindre : une opacité réduite passait sous 3:1 sur le dégradé. */}
         {episodeCode && <span className="font-medium">{episodeCode}</span>}
-      </GlassPressable>
+      </PressableGlass>
 
-      <GlassPressable glass={HERO_INFO_GLASS} onClick={openDetail} className={HERO_INFO_CLASS}>
+      <PressableGlass {...HERO_INFO_PROPS} onClick={openDetail}>
         <InfoIcon />
         {t("common:moreInfo")}
-      </GlassPressable>
+      </PressableGlass>
 
       <div className="ml-1 hidden items-center gap-1.5 sm:flex">
         <CardQuickActions item={item} variant="inline" />

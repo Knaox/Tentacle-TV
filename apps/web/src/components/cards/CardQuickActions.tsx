@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BookmarkGlyph, HeartGlyph, WatchedGlyph } from "./cardGlyphs";
 import { useCardToggles } from "@tentacle-tv/api-client";
 import { stopCardClick } from "./cardEvents";
+import { GLASS_LENS_PROPS, useLiquidGlassSurface } from "../../theme/glass";
 
 /**
  * • `compact` — colonne d'angle (la plus discrète).
@@ -34,9 +36,9 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
   const { t } = useTranslation("cards");
   const toggles = useCardToggles(item);
   const { box, icon, dir } = VARIANT_STYLE[variant];
-  // `lg-btn-media` : le verre sur affiche, sur la bannière seulement (une instance).
-  const glass = variant === "inline" ? "lg-btn-media " : "";
-  const base = `${glass}${box} flex items-center justify-center rounded-full border bg-black/55 transition-transform duration-150 hover:scale-105`;
+  // Le verre (mode natif) sur la bannière seulement : une instance à l'écran.
+  const glass = variant === "inline";
+  const off = "border-white/40 text-white hover:border-white";
 
   const listLabel = toggles.watchlist ? t("removeFromWatchlist") : t("addToWatchlist");
   const favLabel = toggles.favorite ? t("removeFromFavorites") : t("addToFavorites");
@@ -44,40 +46,63 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
 
   return (
     <div className={`flex ${dir} gap-1.5`}>
-      <button
-        type="button"
-        onClick={(e) => { stopCardClick(e); toggles.toggleList(); }}
-        aria-label={listLabel}
-        aria-pressed={toggles.watchlist}
-        title={listLabel}
-        className={`${base} ${toggles.watchlist ? "border-white text-white" : "border-white/40 text-white hover:border-white"}`}
-      >
+      <QuickButton glass={glass} box={box} active={toggles.watchlist} label={listLabel}
+        state={toggles.watchlist ? "border-white text-white" : off}
+        onClick={() => toggles.toggleList()}>
         <BookmarkGlyph className={icon} filled={toggles.watchlist} />
-      </button>
-      <button
-        type="button"
-        onClick={(e) => { stopCardClick(e); toggles.toggleFavorite(); }}
-        aria-label={favLabel}
-        aria-pressed={toggles.favorite}
-        title={favLabel}
-        className={`${base} ${
-          toggles.favorite
-            ? "border-[var(--brand-accent)] text-[var(--brand-accent)]"
-            : "border-white/40 text-white hover:border-white"
-        }`}
-      >
+      </QuickButton>
+      <QuickButton glass={glass} box={box} active={toggles.favorite} accent label={favLabel}
+        state={toggles.favorite ? "border-[var(--brand-accent)] text-[var(--brand-accent)]" : off}
+        onClick={() => toggles.toggleFavorite()}>
         <HeartGlyph className={icon} filled={toggles.favorite} />
-      </button>
-      <button
-        type="button"
-        onClick={(e) => { stopCardClick(e); toggles.toggleWatched(); }}
-        aria-label={watchedLabel}
-        aria-pressed={toggles.watched}
-        title={watchedLabel}
-        className={`${base} ${toggles.watched ? "border-white text-white" : "border-white/40 text-white hover:border-white"}`}
-      >
+      </QuickButton>
+      <QuickButton glass={glass} box={box} active={toggles.watched} label={watchedLabel}
+        state={toggles.watched ? "border-white text-white" : off}
+        onClick={() => toggles.toggleWatched()}>
         <WatchedGlyph className={icon} filled={toggles.watched} />
-      </button>
+      </QuickButton>
     </div>
+  );
+}
+
+/**
+ * Un rond d'action. Verre natif (bannière) : une pastille ronde de verre
+ * clair, lentille au biseau, glyphes adaptés au décor ; allumée, la teinte
+ * passe DANS le verre (rose pour le favori) — jamais un anneau. Ailleurs :
+ * le rond cerclé d'avant.
+ */
+function QuickButton({ glass, box, active, accent = false, label, state, onClick, children }: {
+  glass: boolean;
+  box: string;
+  active: boolean;
+  accent?: boolean;
+  label: string;
+  /** Bord et couleur du rendu d'avant, selon l'état. */
+  state: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const layout = `${box} flex items-center justify-center`;
+  const skin = `rounded-full border bg-black/55 transition-transform duration-150 hover:scale-105 ${state}`;
+  const surface = useLiquidGlassSurface({
+    level: active ? "tinted" : "clear",
+    tint: accent ? "accent" : "brand",
+    shape: "circle",
+    interactive: true,
+    className: layout,
+    fallbackClassName: skin,
+  });
+  return (
+    <button
+      type="button"
+      onClick={(e) => { stopCardClick(e); onClick(); }}
+      aria-label={label}
+      aria-pressed={active}
+      title={label}
+      {...(glass ? { ...GLASS_LENS_PROPS, ...surface.props } : { className: `${layout} ${skin}` })}
+    >
+      {glass && surface.layers}
+      {children}
+    </button>
   );
 }

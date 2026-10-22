@@ -9,6 +9,7 @@
  */
 
 import { useTranslation } from "react-i18next";
+import { GlassButton } from "../components/ui/glass/GlassButton";
 
 export type DownloadScope = "episode" | "season" | "series";
 
@@ -36,21 +37,23 @@ export function ScopeChoice({ value, onChange, busy = false }: Props) {
         {CHOICES.map((choice) => {
           const selected = choice.value === value;
           return (
-            <button
+            // Verre natif : une capsule de verre, la retenue teintée de marque.
+            <GlassButton
               key={choice.value}
-              type="button"
               role="radio"
               aria-checked={selected}
               disabled={busy && !selected}
               onClick={() => onChange(choice.value)}
-              className={`lg-btn flex-1 rounded-full border px-3 py-2 text-xs font-semibold transition-colors duration-150 disabled:opacity-50 ${
+              appearance={{ level: selected ? "tinted" : "regular", shape: "capsule" }}
+              className="flex-1 px-3 py-2 text-xs font-semibold disabled:opacity-50"
+              fallbackClassName={`rounded-full border transition-colors duration-150 ${
                 selected
                   ? "border-line-focus bg-fill-medium text-content-primary"
                   : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft"
               }`}
             >
               {t(choice.key)}
-            </button>
+            </GlassButton>
           );
         })}
       </div>

@@ -14,6 +14,7 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { GlassButton } from "../components/ui/glass/GlassButton";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { LIGHT_PRESETS, formatBytes } from "./presets";
@@ -209,21 +210,23 @@ export function DownloadDialog({ items: requested, mode: requestedMode = "single
         </div>
 
         <div className="flex justify-end gap-2 border-t border-line-subtle px-5 py-3.5">
-          <button
-            type="button"
+          <GlassButton
             onClick={onClose}
-            className="lg-btn lg-shape-capsule rounded-md bg-cta-ghost-bg px-4 py-2 text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+            appearance={{ level: "regular", shape: "capsule" }}
+            className="px-4 py-2 text-sm font-semibold"
+            fallbackClassName="rounded-md bg-cta-ghost-bg text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
           >
             {t("common:cancel")}
-          </button>
-          <button
-            type="button"
+          </GlassButton>
+          <GlassButton
             onClick={() => void state.start()}
             disabled={state.submitting || scope.loading || items.length === 0}
-            className="lg-btn-primary lg-shape-capsule rounded-md bg-cta-primary-bg px-5 py-2 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover disabled:opacity-50"
+            appearance={{ level: "prominent", tint: "brand", shape: "capsule" }}
+            className="px-5 py-2 text-sm font-bold disabled:opacity-50"
+            fallbackClassName="rounded-md bg-cta-primary-bg text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
           >
             {t("downloads:start")}
-          </button>
+          </GlassButton>
         </div>
       </div>
     </div>,

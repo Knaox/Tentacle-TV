@@ -9,13 +9,32 @@
  * à la place réellement disponible, à chaque changement de l'une ou de
  * l'autre (ResizeObserver). Les deux premiers onglets (Accueil, Pour vous)
  * restent quoi qu'il arrive.
+ *
+ * `slack` : quand la rangée d'onglets ÉPOUSE son contenu (le groupe de verre
+ * de macOS 26, `TopNav`), sa largeur ne dit plus la place disponible — elle
+ * dit la place prise. S'y ajoute alors la marge libre de la case qui s'étire
+ * (`slot`) autour du groupe (`hug`). Sans `slack`, le calcul d'avant.
  */
 
 import { useLayoutEffect, useRef, useState } from "react";
 
 const ALWAYS_SHOWN = 2;
 
-export function usePriorityOverflow(count: number, signature: string) {
+/**
+ * Des ÉLÉMENTS, pas des refs : ceux d'un parent sont attachés APRÈS les effets
+ * de ses enfants — lus ici au premier calcul, ils valaient `null`, la place
+ * libre comptait 0, et chaque passe retirait un onglet (mesuré : deux onglets
+ * et « Plus » sur les Réglages). L'appelant les tient en état ; leur arrivée
+ * relance la mesure.
+ */
+export interface OverflowSlack {
+  /** La case qui s'étire sur toute la place de la rangée. */
+  slot: HTMLElement;
+  /** Le groupe qui épouse son contenu, dans `slot`. */
+  hug: HTMLElement;
+}
+
+export function usePriorityOverflow(count: number, signature: string, slack?: OverflowSlack) {
   const containerRef = useRef<HTMLElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(count);
@@ -24,8 +43,11 @@ export function usePriorityOverflow(count: number, signature: string) {
     const container = containerRef.current;
     const measure = measureRef.current;
     if (container === null || measure === null) return;
+    const slot = slack?.slot ?? null;
+    const hug = slack?.hug ?? null;
     const compute = () => {
-      const available = container.clientWidth;
+      const free = slot && hug ? Math.max(0, slot.clientWidth - hug.offsetWidth) : 0;
+      const available = container.clientWidth + free;
       const children = Array.from(measure.children) as HTMLElement[];
       const more = children[count];
       const gap = Number.parseFloat(getComputedStyle(measure).columnGap) || 0;
@@ -45,9 +67,10 @@ export function usePriorityOverflow(count: number, signature: string) {
     const observer = new ResizeObserver(compute);
     observer.observe(container);
     observer.observe(measure);
+    if (slot) observer.observe(slot);
     return () => observer.disconnect();
     // `signature` : les libellés ont changé (langue, bibliothèques) — on remesure.
-  }, [count, signature]);
+  }, [count, signature, slack]);
 
   return { containerRef, measureRef, visible };
 }

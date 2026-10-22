@@ -32,6 +32,7 @@ import { Stats, TrailerGuide } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 import { ByFormFactor } from "./mirror/ByFormFactor";
 import { RECO_REFINE_PATH } from "./lib/recoSections";
+import { DevGlassLab } from "./dev/glassLab/devRoute";
 import {
   MirrorAbout,
   MirrorCredits,
@@ -138,6 +139,7 @@ export function App() {
 
           {/* Protected — immersive. Avec le PiP, `PlayerStage` rend le lecteur hors des routes. */}
           <Route path="/watch/:itemId" element={guard(playerOnStage ? <></> : <Watch />)} />
+          {DevGlassLab ? <Route path="/dev/verre" element={guard(<DevGlassLab />)} /> : null}
           <Route path="/media/:itemId" element={guard(onlineOnly(<ByFormFactor desktop={<MediaDetail />} mirror={<MirrorMediaDetail />} />))} />
           {/* La page d'une personne : un clic sur le casting ou l'équipe d'une fiche. Immersive, comme la fiche. */}
           <Route path="/person/:personId" element={guard(onlineOnly(<ByFormFactor desktop={<Person />} mirror={<MirrorPerson />} />))} />

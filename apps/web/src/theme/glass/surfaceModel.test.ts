@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  lensBezelToken,
   lensFilterId,
   regionSpecOf,
   resolveSurfaceRender,
@@ -85,12 +84,6 @@ describe("regionSpecOf", () => {
 });
 
 describe("lens", () => {
-  it("le biseau grandit avec la plus petite dimension", () => {
-    expect(lensBezelToken(300, 28)).toBe("--lg-bezel-sm");
-    expect(lensBezelToken(300, 44)).toBe("--lg-bezel-md");
-    expect(lensBezelToken(600, 400)).toBe("--lg-bezel-lg");
-  });
-
   it("un identifiant de filtre utilisable dans url(#…)", () => {
     expect(lensFilterId("«r1»")).toBe("lg-lens-r1");
     expect(lensFilterId(":r2a:")).toBe("lg-lens-r2a");

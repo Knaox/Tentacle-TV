@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { useGlassControl } from "./glass/useGlassControl";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -86,6 +87,15 @@ export function Modal({
   initialFocus,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // Verre natif : le ton du dessous (`data-lg-tone`), auquel les textes de la
+  // feuille s'adaptent — rangée par rangée sur un dessous mixte (`bands`) ;
+  // pas de lentille (le voile floute déjà, cf. plus bas).
+  const glass = useGlassControl<HTMLDivElement>({ lens: false, bands: true });
+  const { ref: glassRef } = glass;
+  const setPanel = useCallback((node: HTMLDivElement | null) => {
+    panelRef.current = node;
+    glassRef(node);
+  }, [glassRef]);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const reduced = useReducedMotion();
 
@@ -182,7 +192,8 @@ export function Modal({
           }}
         >
           <motion.div
-            ref={panelRef}
+            ref={setPanel}
+            {...glass.props}
             role="dialog"
             aria-modal="true"
             aria-labelledby={labelledBy}

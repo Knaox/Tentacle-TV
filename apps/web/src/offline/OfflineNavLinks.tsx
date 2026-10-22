@@ -29,7 +29,7 @@ export function OfflineNavLinks() {
   const { pathname } = useLocation();
   const reduced = useReducedMotion() ?? false;
   return (
-    <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden" aria-label={t("nav:railLabel")}>
+    <nav className="lgc-tabs-nav flex min-w-0 flex-1 items-center gap-1 overflow-hidden" aria-label={t("nav:railLabel")}>
       {/* `/` en égalité stricte : en préfixe il capterait tout. */}
       <NavTab label={t("nav:downloads")} path="/" icon={HardDrive} active={pathname === "/"} reduced={reduced} />
       <NavTab label={t("downloads:offlineManage")} path="/downloads" icon={Download} active={pathname.startsWith("/downloads")} reduced={reduced} />

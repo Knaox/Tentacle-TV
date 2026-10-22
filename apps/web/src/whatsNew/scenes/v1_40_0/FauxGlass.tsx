@@ -1,67 +1,52 @@
-import { motion } from "framer-motion";
 import type { CSSProperties, ReactNode } from "react";
+import { LiquidGlass, type LiquidGlassLevel, type LiquidGlassShape } from "../../../theme/glass";
 import { Place, type Animated, type Placed } from "../Place";
-import { instant, sceneSpring } from "../sceneMotion";
-
-/**
- * Le niveau du matériau, comme dans l'app : `regular` (barres, menus),
- * `clear` (sur la vidéo : presque rien, un voile neutre de lisibilité, comme le
- * lecteur), `tinted` (la marque en touche : onglet actif, piste choisie).
- */
-export type FauxGlassLevel = "regular" | "clear" | "tinted";
 
 interface FauxGlassProps extends Placed, Animated {
-  level?: FauxGlassLevel;
-  /** Rayon des coins, en px logiques ; une capsule par défaut. */
-  radius?: number;
-  /** 0..1 : où tombe le reflet, de gauche à droite — il suit le pointeur de la scène. */
-  sheen?: number;
-  reduced: boolean;
+  /** Le niveau du matériau, comme dans l'app : `clear` sur la vidéo, `regular` pour un panneau de texte. */
+  level?: LiquidGlassLevel;
+  shape?: LiquidGlassShape;
+  /** Glyphes posés sur un MÉDIA (le lecteur) : blancs et leur halo, comme le lecteur ; sinon le ton du dessous. */
+  onMedia?: boolean;
   className?: string;
+  style?: CSSProperties;
   children?: ReactNode;
 }
 
-/** Le matériau de l'app, lu dans ses jetons (`theme/liquidGlassTokens.css`), clair ET sombre. */
-function materialOf(level: FauxGlassLevel): CSSProperties {
-  const filter = `blur(var(--lg-${level}-blur)) saturate(var(--lg-${level}-saturate)) brightness(var(--lg-${level}-brightness))`;
-  return {
-    backdropFilter: filter,
-    WebkitBackdropFilter: filter,
-    // Sur la vidéo, le lecteur ajoute un voile NEUTRE presque nul (QuickTime, TV) : `--lg-clear-dim`.
-    background: level === "clear" ? "linear-gradient(var(--lg-clear-dim), var(--lg-clear-dim)), var(--lg-clear-fill)" : `var(--lg-${level}-fill)`,
-    boxShadow:
-      "inset 1px 1px 0 var(--lg-specular-strong), inset -1px -1px 0 var(--lg-specular-soft), inset 0 0 0 var(--lg-rim-width) var(--lg-rim), var(--lg-shadow-float)",
-  };
-}
+/** Hors du mode natif (crochet de développement, banc) : un verre d'avant, discret — la scène ne s'y montre pas sinon. */
+const FALLBACK: CSSProperties = {
+  background: "rgba(var(--scrim-media-rgb), 0.28)",
+  backdropFilter: "blur(10px) saturate(1.6)",
+  WebkitBackdropFilter: "blur(10px) saturate(1.6)",
+};
 
-const SHEEN = "linear-gradient(105deg, transparent 25%, var(--lg-highlight) 50%, transparent 75%)";
+/** Les glyphes d'une surface : au ton mesuré du dessous (`data-lg-tone`), ou blancs à halo sur la vidéo. */
+const GLYPHS: CSSProperties = { color: "var(--lg-glyph, var(--on-media-primary))", textShadow: "var(--lg-glyph-text-shadow, none)" };
+const MEDIA_GLYPHS: CSSProperties = { color: "var(--on-media-primary)", textShadow: "var(--lg-media-label-shadow)" };
 
 /**
- * Une surface en Liquid Glass, en PEINTURE : la scène ne peut pas poser le
- * verre natif de macOS (une vue du système, sous la page), elle le dessine
- * avec le MATÉRIAU de l'app — ses jetons `--lg-*`, `backdrop-filter` sur
- * l'image de la scène, arêtes, liseré, reflet qui suit le pointeur. Seul le
- * reflet bouge, en `transform` ; la scène n'est montée que lorsqu'elle est sur
- * scène (règles « Coût GPU »).
+ * Une surface de la scène : la VRAIE primitive du verre (`LiquidGlass`,
+ * lentille de la page) — réfraction au biseau calculée pour sa forme, lumière
+ * du bord qui éclaircit le dessous, glyphes au ton du dessous ; rien de
+ * repeint ici. Sur la vidéo, l'app pose le verre NATIF (`clear`) que la scène
+ * ne peut pas emprunter : la lentille `clear` de la page en est l'image la
+ * plus proche. Seul le placement passe par `Place` (transform, opacité).
  */
 export function FauxGlass({
-  level = "regular", radius = 999, sheen = 0.3, reduced, className, children, ...place
+  level = "regular", shape = "capsule", onMedia = false, className, style, children, ...place
 }: FauxGlassProps) {
   return (
     <Place {...place}>
-      <div className="relative h-full w-full overflow-hidden" style={{ borderRadius: radius, ...materialOf(level) }}>
-        <motion.span
-          aria-hidden
-          className="absolute inset-y-0 left-0 w-full"
-          style={{ background: SHEEN }}
-          initial={false}
-          animate={{ x: `${Math.round((sheen - 0.5) * 100)}%` }}
-          transition={reduced ? instant : sceneSpring}
-        />
-        <div className={`relative h-full w-full ${className ?? ""}`} style={{ textShadow: "var(--lg-media-label-shadow)" }}>
-          {children}
-        </div>
-      </div>
+      <LiquidGlass
+        level={level}
+        shape={shape}
+        className={`relative h-full w-full ${className ?? ""}`}
+        style={{ ...(onMedia ? MEDIA_GLYPHS : GLYPHS), ...style }}
+        fallbackClassName={shape === "rounded" ? "rounded-2xl" : "rounded-full"}
+        fallbackStyle={FALLBACK}
+      >
+        {children}
+      </LiquidGlass>
     </Place>
   );
 }

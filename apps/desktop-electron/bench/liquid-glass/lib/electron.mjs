@@ -13,6 +13,7 @@ import { mkdirSync, openSync, rmSync, rmdirSync, writeSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Cdp, waitForTarget } from "./cdp.mjs";
+import { waitHidIdle } from "./macos.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DESKTOP_DIR = path.resolve(HERE, "../../..");
@@ -51,6 +52,13 @@ async function waitSlot(timeoutMs) {
  * "off"`). `home` : dossier du profil ; `fresh` l'efface d'abord.
  */
 export async function launchApp({ home, fresh = false, env = {}, log, slotTimeoutMs = 30 * 60_000, command = null, startTimeoutMs = 60_000 }) {
+  // LOT.md : jamais une fenêtre sous les doigts de Damien. Mode « coin »
+  // (BANC_COIN=1, défaut) : chaque fenêtre naît dans le coin bas-droit, 60 px
+  // visibles seulement, sans focus — jamais occultée (Chromium et mpv
+  // cessent de peindre une fenêtre cachée), jamais devant lui. Sinon : attendre
+  // 120 s d'inactivité.
+  const corner = process.env.BANC_COIN !== "0";
+  if (!corner && !(await waitHidIdle(120))) throw new Error("Damien actif depuis plus d'une heure : lancement reporté");
   const slot = await waitSlot(slotTimeoutMs);
   if (fresh) rmSync(home, { recursive: true, force: true });
   mkdirSync(path.join(home, "Library/Application Support"), { recursive: true });
@@ -68,21 +76,70 @@ export async function launchApp({ home, fresh = false, env = {}, log, slotTimeou
     {
       cwd,
       detached: command !== null,
-      env: { ...process.env, CFFIXED_USER_HOME: home, TENTACLE_SANS_DEVTOOLS: "1", ...env },
+      env: { ...process.env, CFFIXED_USER_HOME: home, TENTACLE_SANS_DEVTOOLS: "1", TENTACLE_BENCH_INACTIVE: "1", ...env },
       stdio: ["ignore", out, out],
     },
   );
   const app = { child, pid: child.pid, slot, page: null, main: null };
   try {
+    if (corner) await placeInCorner(startTimeoutMs);
     const target = await waitForTarget(PORTS.page, (url) => url.startsWith("tentacle://"), startTimeoutMs);
     app.page = await Cdp.connect(target.webSocketDebuggerUrl);
     await app.page.send("Runtime.enable");
     app.main = await connectMain();
+    await watchFocus(app);
   } catch (error) {
     await stopApp(app);
     throw error;
   }
   return app;
+}
+
+/**
+ * Mode « coin » : l'inspecteur du principal répond dès le démarrage, bien avant
+ * la fenêtre. On y pose, par `process.mainModule.require`, l'écouteur qui place
+ * chaque fenêtre au coin bas-droit (60 px visibles) dès sa création — rien
+ * n'est injecté dans l'app (un préchargement `--require` cassait son
+ * `require("electron")`, 22/10).
+ */
+async function placeInCorner(timeoutMs) {
+  const end = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      const list = await (await fetch(`http://127.0.0.1:${PORTS.main}/json/list`)).json();
+      if (list[0]) {
+        const main = await Cdp.connect(list[0].webSocketDebuggerUrl);
+        try {
+          const r = await main.send("Runtime.evaluate", {
+            returnByValue: true,
+            expression: `(() => {
+              const req = process.mainModule?.require;
+              if (!req) return "pas-encore";
+              const { app, screen } = req("electron");
+              const corner = (w) => {
+                if (w.isDestroyed() || w.isFullScreen()) return;
+                const a = screen.getPrimaryDisplay().workArea;
+                w.setPosition(a.x + a.width - 60, a.y + a.height - 60);
+              };
+              app.on("browser-window-created", (_e, w) => {
+                corner(w);
+                w.once("ready-to-show", () => corner(w));
+                w.on("show", () => corner(w));
+              });
+              return "pose";
+            })()`,
+          });
+          if (r.result?.value === "pose") return;
+        } finally {
+          main.close();
+        }
+      }
+    } catch {
+      // Pas encore prêt.
+    }
+    if (Date.now() > end) throw new Error("placement au coin impossible (inspecteur du principal)");
+    await new Promise((r) => setTimeout(r, 50));
+  }
 }
 
 /** L'inspecteur Node du processus principal (`--inspect`). */
@@ -120,6 +177,26 @@ export async function evalMain(app, body) {
     throw new Error(result.exceptionDetails.exception?.description ?? result.exceptionDetails.text);
   }
   return result.result.value;
+}
+
+/**
+ * Mouchard du focus (22/10) : qui donne le focus à une fenêtre du banc ? Chaque
+ * `browser-window-focus` est noté avec son heure et la pile JS du moment — un
+ * `win.focus()` de l'app y paraît ; un clic ou une activation de macOS, non.
+ */
+async function watchFocus(app) {
+  await evalMain(app, `
+    globalThis.__bancFocus = [];
+    require("electron").app.on("browser-window-focus", (_e, w) => {
+      globalThis.__bancFocus.push({ at: new Date().toISOString(), title: w.getTitle(), stack: new Error().stack.split("\n").slice(2, 9).join(" | ") });
+    });
+    return true;
+  `).catch(() => {});
+}
+
+/** Les prises de focus notées depuis le lancement. */
+export async function focusEvents(app) {
+  return evalMain(app, "return globalThis.__bancFocus ?? [];").catch(() => []);
 }
 
 export async function stopApp(app) {

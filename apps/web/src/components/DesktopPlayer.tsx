@@ -30,6 +30,7 @@ import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayer
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import { useSeekWaitFeedback } from "../hooks/useSeekWaitFeedback";
 import { QualityDropNotice } from "./player/QualityDropNotice";
+import { ForcedFullscreenPrompt } from "./player/ForcedFullscreenPrompt";
 import { EMPTY_SUBTITLE_FILES, type DesktopPlayerProps } from "./player/desktopPlayer.types";
 
 export function DesktopPlayer({
@@ -54,7 +55,7 @@ export function DesktopPlayer({
   const probeLocalMedia = useLocalMediaProbe({ isLocalPlayback, itemId });
   const { state, ready, fileLoaded, mediaReady, failure, play, togglePause: rawTogglePause, setPause, seek: rawSeek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen,
-    clock } = useDesktopPlayer({ probeLocalMedia });
+    clock, forcedFullscreen } = useDesktopPlayer({ probeLocalMedia });
   // Chaque seek absolu du lecteur passe par ici : sur un HLS Jellyfin, mpv
   // atterrit sinon une image clé trop loin (cf. `mpvSeekLanding.ts`).
   const isHls = !isDirectPlay && src.includes(".m3u8");
@@ -181,7 +182,7 @@ export function DesktopPlayer({
 
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
   const { skipFlash, skipBy } = useDesktopPlayerShortcuts({
-    seekRelative: skipRelativeOrEnd, togglePause, goBack, toggleFullscreen, fullscreenRef, enabled: !pip.active, onReduce: reduce,
+    seekRelative: skipRelativeOrEnd, togglePause, goBack, toggleFullscreen, fullscreenRef, enabled: !pip.active, onReduce: reduce, escapeLeaves: forcedFullscreen.forced,
     hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode,
   });
 
@@ -263,7 +264,7 @@ export function DesktopPlayer({
         onRatingEngage={playback.cancelNextCountdown} stillWatching={stillWatching}
       />
 
-      <SkipBadge flash={skipFlash} />
+      <SkipBadge flash={skipFlash} /><ForcedFullscreenPrompt forced={forcedFullscreen} />
       <PlayerPipPortal paused={state.paused} position={actualPos} duration={dur} title={fullTitle ?? ""} onTogglePause={togglePause} onSkip={skipBy} loading={pipLoading} />
       <QualityDropNotice drop={qualityDrop ?? null} started={hasStarted} itemId={itemId} />
 

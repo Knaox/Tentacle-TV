@@ -66,14 +66,18 @@ describe("l'habillage du lecteur de bureau", () => {
     expect(LEGACY).not.toContain("lgp-");
   });
 
-  it("verre natif disponible : les capsules, plus aucun dégradé d'assombrissement", () => {
+  it("verre natif disponible : de petites formes séparées, plus aucun dégradé d'assombrissement", () => {
     const html = renderToStaticMarkup(
       <PlayerGlassModeContext.Provider value="native">{controls()}</PlayerGlassModeContext.Provider>,
     );
-    expect(html).toContain("lgp-topbar");
-    // La capsule de lecture : UNE capsule, ou celle du temps et trois capsules de boutons fusionnées.
-    expect(html).toMatch(/lgp-bar|lgp-timecap/);
-    if (html.includes("lgp-timecap")) expect(html.match(/lgp-group /g)?.length).toBe(3);
+    // En haut : la pastille de la sortie et la capsule du titre ; en bas : le temps, puis trois capsules.
+    expect(html).toContain("lgp-pastille");
+    expect(html).toContain("lgp-titlecap");
+    expect(html).toContain("lgp-timecap");
+    expect(html.match(/lgp-group /g)?.length).toBe(3);
+    // Elles se métamorphosent (repli vers un pivot) : six formes repliables, un pivot en haut, un en bas.
+    expect(html.match(/data-lgp-collapse=""/g)?.length).toBe(6);
+    expect(html.match(/data-lgp-pivot=""/g)?.length).toBe(2);
     expect(html).not.toContain("bg-gradient-to-t");
     // La matière est native : en mode natif, la page ne peint aucun fond d'aperçu.
     expect(html).not.toContain("lgp-surface--preview");

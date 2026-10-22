@@ -27,6 +27,8 @@ import {
 import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { useLiquidGlassMode } from "../useLiquidGlass";
+import { useBackdropTone } from "./useBackdropTone";
+import { useBandTones } from "./useBandTones";
 import { useLensGeometry } from "./useLensGeometry";
 import { useLiquidGlassRegion } from "./useLiquidGlassRegion";
 import {
@@ -50,6 +52,12 @@ export interface LiquidGlassSurfaceOptions extends LiquidGlassAppearance {
   fallbackStyle?: CSSProperties;
   /** Ref de l'appelant, réunie à celle de la surface. */
   ref?: Ref<HTMLElement>;
+  /**
+   * Matériau ÉPAIS (menu, feuille) : un ton par RANGÉE (`useBandTones`), pour
+   * qu'un dessous mixte ne laisse aucune rangée sans contraste. Défaut non :
+   * un petit verre bascule d'un bloc.
+   */
+  bands?: boolean;
 }
 
 export interface LiquidGlassSurfaceProps {
@@ -72,7 +80,7 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null): void {
 }
 
 export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): LiquidGlassSurface {
-  const { backdrop = "page", className, style, fallbackClassName, fallbackStyle, ref: outerRef } =
+  const { backdrop = "page", className, style, fallbackClassName, fallbackStyle, ref: outerRef, bands = false } =
     options;
   const appearance: LiquidGlassAppearance = {
     level: options.level,
@@ -109,8 +117,12 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
 
   const level = appearance.level ?? "regular";
   const shape = appearance.shape ?? "rounded";
-  const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md");
+  // Le ton de ce qui est dessous : la polarité des glyphes et la lumière du
+  // bord (lentille de page ; le verre natif s'adapte seul).
+  const tone = useBackdropTone(element, render === "lens");
+  const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md", tone);
   const filterId = lensFilterId(useId());
+  useBandTones(element, render === "lens" && bands);
 
   if (render === "fallback") {
     const merged = fallbackStyle || style ? { ...fallbackStyle, ...style } : undefined;
@@ -132,6 +144,7 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
       className: surfaceClassName(render, className, undefined),
       style: lensStyle || style ? { ...style, ...lensStyle } : undefined,
       ...surfaceAttributes(appearance, render),
+      ...(render === "lens" ? { "data-lg-tone": tone } : {}),
     },
     layers:
       render === "lens" && lens !== null ? <RefractionFilter id={filterId} {...lens} /> : null,

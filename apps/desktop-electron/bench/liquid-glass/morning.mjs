@@ -10,7 +10,7 @@ import { connectAndLogin, dismissOverlays, glassDom, glassToggle, go, sleep } fr
 import { STATE, SERVER, account, outDir } from "./lib/config.mjs";
 import { launchApp, stopApp } from "./lib/electron.mjs";
 import { captureWindow, mainWindow } from "./lib/macos.mjs";
-import { nativeSnapshot } from "./lib/scenarios.mjs";
+import { nativeSnapshot } from "./lib/steps.mjs";
 
 const REPO = "/Users/damienrouge/Desktop/Projet - local/Tentacle-TV";
 const clone = path.resolve(process.argv[2] ?? path.join(STATE, "clone-matin"));
@@ -48,13 +48,16 @@ try {
   const dom = await glassDom(app.page);
   const native = await nativeSnapshot(app);
   const win = mainWindow(STATE, app.pid) ?? null;
-  verdict.home = { dom, native, capture: win ? captureWindow(win.id, log("accueil.png")) : null };
+  const tryCapture = (file) => { try { return win ? captureWindow(win.id, log(file)) : null; } catch { return "capture impossible (écran verrouillé ?)"; } };
+  verdict.home = { dom, native, capture: tryCapture("accueil.png") };
   if (!dom.bridge.present || dom.bridge.supported !== true) fail("pont du verre absent ou non supporté");
   if (dom.htmlAttr !== "native") fail(`html[data-liquid-glass]=${dom.htmlAttr} (attendu native)`);
-  if (native.exposed && (native.regions ?? []).filter((r) => !r.hidden).length === 0) fail("aucune région native à l'accueil");
+  // Natif = lecteur (décision du lot) : à l'accueil, on exige le verre DISPONIBLE et allumé.
+  if (!native.exposed) fail("relevé natif non exposé (__tentacleGlass)");
+  else if (native.supported !== true || native.enabled !== true) fail(`verre natif : supported=${native.supported} enabled=${native.enabled}`);
   await go(app.page, "/settings/appearance", 2000);
   const toggle = await glassToggle(app.page);
-  verdict.settings = { toggle, capture: win ? captureWindow(win.id, log("reglages.png")) : null };
+  verdict.settings = { toggle, capture: tryCapture("reglages.png") };
   if (!toggle.found || toggle.checked !== true) fail("interrupteur Liquid Glass absent ou pas allumé par défaut");
 } catch (error) {
   fail(`démarrage ou parcours interrompu : ${String(error?.message ?? error)}`);

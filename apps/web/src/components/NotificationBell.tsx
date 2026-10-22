@@ -112,7 +112,9 @@ export function NotificationBell() {
         aria-haspopup="dialog"
         aria-expanded={open}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl text-content-quaternary transition-colors duration-200 hover:bg-fill-soft hover:text-content-secondary"
-        style={{ background: open ? "var(--fill-soft)" : "var(--fill-subtle)" }}
+        // Dans le groupe de verre de la barre (macOS 26), un simple glyphe : ses
+        // jetons n'existent que là (`windowGlassNav.css`) — ailleurs, le disque d'avant.
+        style={{ background: open ? "var(--lg-chrome-button-open, var(--fill-soft))" : "var(--lg-chrome-button-rest, var(--fill-subtle))" }}
       >
         <Bell className="h-5 w-5" strokeWidth={2} />
         {count > 0 && (

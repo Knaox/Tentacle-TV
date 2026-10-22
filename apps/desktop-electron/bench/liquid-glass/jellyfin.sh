@@ -39,25 +39,44 @@ image() { # fichier largeur hauteur graine couleurs…
   local cs="" i=0; for c in "$@"; do cs="$cs:c$i=$c"; i=$((i+1)); done
   ff -f lavfi -i "gradients=s=${w}x${h}:n=$#${cs}:seed=${seed}:type=radial" -frames:v 1 -q:v 3 "$f"
 }
-film() { # dossier titre année clip graine c0 c1 c2 genre
+# Affiches DÉTAILLÉES (arêtes nettes, motifs fins, chiffres) : sans elles on ne
+# juge pas la réfraction au biseau du verre. Générées ici, donc sans droits.
+detail() { # fichier largeur hauteur motif
+  local f=$1 w=$2 h=$3 src
+  case $4 in
+    mandel) src="mandelbrot=s=${w}x${h}:maxiter=300:start_x=-0.743643887:start_y=0.131825904:start_scale=0.02" ;;
+    life)   src="life=s=$((w/6))x$((h/6)):mold=10:r=1:ratio=0.3:death_color=#1e1b4b:life_color=#f472b6,scale=${w}x${h}:flags=neighbor" ;;
+    zone)   src="zoneplate=s=${w}x${h}:kx2=200:ky2=200:k0=0" ;;
+    sierp)  src="sierpinski=s=${w}x${h}:type=carpet,format=rgb24,colorchannelmixer=rr=0.9:gg=0.4:bb=1" ;;
+    bars)   src="smptehdbars=s=${w}x${h},drawgrid=w=40:h=40:t=2:c=white@0.9" ;;
+    digits) src="testsrc2=s=${w}x${h}" ;;
+  esac
+  ff -f lavfi -i "$src" -frames:v 1 -q:v 2 "$f"
+}
+film() { # dossier titre année clip graine c0 c1 c2 genre [motif]
   local d="$STATE/media/films/$1"; mkdir -p "$d"
   ln -f "$CLIPS/$4.mkv" "$d/$1.mkv"
-  image "$d/poster.jpg" 600 900 "$5" "$6" "$7" "$8"
-  image "$d/backdrop.jpg" 1920 1080 "$(( $5 + 7 ))" "$8" "$6" "$7"
+  if [ -n "${10:-}" ]; then
+    detail "$d/poster.jpg" 600 900 "${10}"
+    detail "$d/backdrop.jpg" 1920 1080 "${10}"
+  else
+    image "$d/poster.jpg" 600 900 "$5" "$6" "$7" "$8"
+    image "$d/backdrop.jpg" 1920 1080 "$(( $5 + 7 ))" "$8" "$6" "$7"
+  fi
   printf '<movie><title>%s</title><year>%s</year><plot>Titre factice du banc Liquid Glass : un fond coloré pour juger la réfraction du verre, la lisibilité des textes et le contraste des contrôles.</plot><genre>%s</genre><rating>7.4</rating><runtime>1</runtime><lockdata>true</lockdata></movie>\n' \
     "$2" "$3" "$9" > "$d/movie.nfo"
 }
 film "Banc HDR10 (2024)"     "Banc HDR10"     2024 hdr10 11 0x6d28d9 0xdb2777 0x0ea5e9 "Science-fiction"
 film "Banc SDR (2023)"       "Banc SDR"       2023 sdr   12 0xf59e0b 0xef4444 0x7c3aed "Aventure"
-film "Rivage Violet (2021)"  "Rivage Violet"  2021 sdr   13 0x8b5cf6 0x1e1b4b 0xf472b6 "Drame"
-film "Nuit Corail (2020)"    "Nuit Corail"    2020 sdr   14 0xfb7185 0x0f172a 0xfde68a "Thriller"
-film "Givre (2019)"          "Givre"          2019 sdr   15 0xe0f2fe 0x38bdf8 0x1e3a8a "Drame"
+film "Rivage Violet (2021)"  "Rivage Violet"  2021 sdr   13 0x8b5cf6 0x1e1b4b 0xf472b6 "Drame" mandel
+film "Nuit Corail (2020)"    "Nuit Corail"    2020 sdr   14 0xfb7185 0x0f172a 0xfde68a "Thriller" life
+film "Givre (2019)"          "Givre"          2019 sdr   15 0xe0f2fe 0x38bdf8 0x1e3a8a "Drame" zone
 film "Soleil Bas (2018)"     "Soleil Bas"     2018 sdr   16 0xfacc15 0xea580c 0x7f1d1d "Western"
-film "Prairie (2017)"        "Prairie"        2017 sdr   17 0x22c55e 0xa3e635 0x14532d "Famille"
+film "Prairie (2017)"        "Prairie"        2017 sdr   17 0x22c55e 0xa3e635 0x14532d "Famille" sierp
 film "Abysse (2016)"         "Abysse"         2016 sdr   18 0x0f766e 0x020617 0x2dd4bf "Science-fiction"
 film "Papier Blanc (2015)"   "Papier Blanc"   2015 sdr   19 0xffffff 0xf5f5f4 0xd6d3d1 "Comédie"
-film "Encre (2014)"          "Encre"          2014 sdr   20 0x000000 0x18181b 0x3f3f46 "Policier"
-film "Néon (2013)"           "Néon"           2013 sdr   21 0xd946ef 0x06b6d4 0x111827 "Action"
+film "Encre (2014)"          "Encre"          2014 sdr   20 0x000000 0x18181b 0x3f3f46 "Policier" digits
+film "Néon (2013)"           "Néon"           2013 sdr   21 0xd946ef 0x06b6d4 0x111827 "Action" bars
 film "Ambre (2012)"          "Ambre"          2012 sdr   22 0xb45309 0xfbbf24 0x451a03 "Historique"
 
 S="$STATE/media/series/Écume (2022)"; mkdir -p "$S"
@@ -103,7 +122,8 @@ if [ ! -s "$STATE/jf/api-key" ]; then
 fi
 KEY=$(cat "$STATE/jf/api-key")
 lib() { # nom type chemin
-  curl -fsS "$JF/Library/VirtualFolders?api_key=$KEY" | grep -q "\"Name\":\"$1\"" && return 0
+  # Comparaison sur le JSON DÉCODÉ : un nom accentué peut arriver échappé.
+  curl -fsS "$JF/Library/VirtualFolders?api_key=$KEY" | python3 -c "import sys,json;sys.exit(0 if sys.argv[1] in [v['Name'] for v in json.load(sys.stdin)] else 1)" "$1" && return 0
   post "/Library/VirtualFolders?name=$(python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))" "$1")&collectionType=$2&refreshLibrary=true&api_key=$KEY" \
     -d "{\"LibraryOptions\":{\"PathInfos\":[{\"Path\":\"$3\"}],\"EnableInternetProviders\":false,\"MetadataSavers\":[],\"EnableTrickplayImageExtraction\":false}}"
 }
@@ -113,6 +133,11 @@ if ! curl -fsS "$JF/Users?api_key=$KEY" | grep -q '"Name":"Knaoxtest"'; then
   curl -fsS -o /dev/null -X POST "$JF/Users/New?api_key=$KEY" -H 'Content-Type: application/json' -d "{\"Name\":\"Knaoxtest\",\"Password\":\"$TEST_PW\"}"
 fi
 post "/Library/Refresh?api_key=$KEY"
+# Les images posées APRÈS un premier passage : Jellyfin garde sa copie tant
+# qu'on ne lui demande pas de les remplacer.
+for id in $(curl -fsS "$JF/Items?Recursive=true&IncludeItemTypes=Movie,Series&api_key=$KEY" | python3 -c "import sys,json;print(' '.join(i['Id'] for i in json.load(sys.stdin)['Items']))"); do
+  post "/Items/$id/Refresh?metadataRefreshMode=Default&imageRefreshMode=FullRefresh&replaceAllImages=true&api_key=$KEY"
+done
 for _ in $(seq 1 60); do
   n=$(curl -fsS "$JF/Items?Recursive=true&IncludeItemTypes=Movie,Episode&api_key=$KEY" | json '["TotalRecordCount"]')
   [ "$n" -ge 18 ] && break; sleep 2

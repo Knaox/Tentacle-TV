@@ -41,25 +41,42 @@
   /* Couleurs du reflet et du liseré contrasté : tirées de la lumière et de
    * l'ombre du socle (`--lg-light-rgb`, `--lg-shade-rgb`), donc portées par
    * le mode natif comme toute lecture du verre. */
+  /* Le liseré qui s'allume près du pointeur : un ÉCLAT de l'arête, jamais un
+   * trait blanc (retour du 22/10 : « le contour est blanc dégueu ») — le bord
+   * de la lentille, coloré par le dessous, porte la lumière fixe. */
   --lg-specular-halo: rgba(var(--lg-light-rgb), 0.16);
-  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.6);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.35);
   --lg-contrast-border: rgba(var(--lg-light-rgb), 0.6);
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.55);
-  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.9);
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.22);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.3);
   --lg-contrast-border: rgba(var(--lg-shade-rgb), 0.55);
+}
+
+/* Le TON du dessous (`data-lg-tone`, mesuré) l'emporte sur le thème : sur un
+ * dessous clair, un halo blanc ne se voit pas, il blanchit — presque rien. */
+:root[data-liquid-glass="native"] [data-lg-tone="dark"] {
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.16);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.35);
+}
+
+:root[data-liquid-glass="native"] [data-lg-tone="light"] {
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.14);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.2);
 }
 
 /* ── Lentille ───────────────────────────────────────────────────────────────
  * La propriété `scale` (et non `transform`) : elle se compose avec le
  * transform d'un parent ou de framer-motion au lieu de l'écraser. Portée par
- * `data-lg-lens` ET par les boutons en verre de lg-composants (accord du
- * coordinateur : l'appui GONFLE le verre, il ne le ternit pas). Le
- * grossissement Tailwind (`hover:scale-*`, `active:scale-*`) s'y ajouterait :
- * la lentille le remplace. */
-html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary) {
+ * `data-lg-lens` seul : les boutons en verre le posent en mode natif
+ * (`PressableGlass`, `GlassButton`, cartes, capsule de la fiche) — l'appui
+ * GONFLE le verre, il ne le ternit pas. Le grossissement Tailwind
+ * (`hover:scale-*`, `active:scale-*`) s'y ajouterait : la lentille le
+ * remplace. Elle ne touche pas la réfraction de la surface : celle-ci se
+ * mesure en `offsetWidth`, qui ignore `scale` (aucune carte recalculée). */
+html[data-liquid-glass="native"] [data-lg-lens] {
   --tw-scale-x: 1;
   --tw-scale-y: 1;
   scale: 1;
@@ -73,14 +90,14 @@ html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg
     background-color var(--lg-duration-hover) var(--lg-ease-out);
 }
 @media (hover: hover) {
-  html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):hover {
+  html[data-liquid-glass="native"] [data-lg-lens]:hover {
     scale: var(--lg-lens-scale-hover);
   }
 }
-html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):active {
+html[data-liquid-glass="native"] [data-lg-lens]:active {
   scale: var(--lg-lens-scale-press);
 }
-html[data-liquid-glass="native"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary):is(:disabled, [aria-disabled="true"]) {
+html[data-liquid-glass="native"] [data-lg-lens]:is(:disabled, [aria-disabled="true"]) {
   scale: 1;
 }
 
@@ -214,6 +231,6 @@ html[data-liquid-glass="native"][data-lg-motion="reduce"] {
   --lg-lens-scale-hover: 1;
   --lg-lens-scale-press: 1;
 }
-html[data-liquid-glass="native"][data-lg-motion="reduce"] :is([data-lg-lens], .lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .hero-cta-primary, .lg-fusion-shape) {
+html[data-liquid-glass="native"][data-lg-motion="reduce"] :is([data-lg-lens], .lg-fusion-shape) {
   transition: none;
 }

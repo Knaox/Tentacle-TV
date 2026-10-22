@@ -13,8 +13,15 @@
  * ── Le rendu d'une surface en mode `native`, selon `backdrop`
  *  - `backdrop="page"` (défaut) : ce qui est derrière est de la PAGE (affiches,
  *    texte). Le verre natif ne peut pas le voir — il vit SOUS la vue web. La
- *    surface rend la LENTILLE de Chromium : réfraction au biseau calculée pour
- *    sa forme exacte, flou, saturation, liseré et reflets, tout en jetons.
+ *    surface rend la LENTILLE de Chromium (refonte du 22/10, cible Apple) :
+ *    presque transparente, givre faible, réfraction physique AU BISEAU calculée
+ *    pour sa forme exacte (Snell, `@tentacle-tv/ui` lensProfile), lumière du
+ *    bord (liseré face à la lumière) dans le même filtre, ombre qui soulève, et
+ *    glyphes au TON du dessous (`data-lg-tone`, mesuré par la coquille).
+ *    Une recette qui monte `RefractionFilter` elle-même (`useLensGeometry`) :
+ *    `backdrop-filter: <givre, saturation, luminosité> url(#lentille)` — les
+ *    fonctions AVANT `url()`, sinon le liseré est flouté ; et `useBackdropTone`
+ *    pour la polarité de ses glyphes.
  *  - `backdrop="window"` : la page est transparente jusqu'à la fenêtre (le
  *    lecteur sur la vidéo de mpv, une barre latérale sur le fond). La surface
  *    s'inscrit auprès de la coquille (NSGlassEffectView au même rectangle,
@@ -30,11 +37,17 @@
  *  - `interactive` réagit au pointeur (le natif l'anime ; la lentille expose
  *             `data-lg-interactive` pour les règles de lg-physique) ;
  *  - `z`      ordre des verres natifs entre eux ;
+ *  - `bands`  matériau ÉPAIS (menu, feuille) : un ton par RANGÉE
+ *             (`data-lg-band`, `useBandTones`), pour un dessous mixte ;
  *  - `group`, `spacing`, `transition` (verre NATIF seulement) : groupe de
  *             fusion (NSGlassEffectContainerView : voisines, les régions
  *             fusionnent et se métamorphosent), sa distance de fusion en pt,
  *             les animations natives d'apparition, de déplacement et de retrait
  *             en ms — la page ne pousse pas un rectangle par image pour animer.
+ *
+ * ── Le LABO : `/dev/verre` (paquets de développement seulement) — un
+ *    exemple de chaque surface sur de vrais dessous ; on y juge avant de
+ *    propager (`dev/glassLab/`).
  *
  * ── Les portes
  *  - `useLiquidGlassMode() === "native"` : le verre est là (OS + réglage) ;
@@ -68,6 +81,10 @@ export {
   type LiquidGlassSurfaceProps,
 } from "./useLiquidGlassSurface";
 export { useLiquidGlassRegion, type LiquidGlassRegionOptions } from "./useLiquidGlassRegion";
+export { useBackdropTone } from "./useBackdropTone";
+export { useBandTones } from "./useBandTones";
+export type { BackdropTone } from "./backdropTone";
+export { useLensGeometry, type LensGeometry } from "./useLensGeometry";
 export {
   resolveSurfaceRender,
   type LiquidGlassAppearance,

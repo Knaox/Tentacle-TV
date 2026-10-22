@@ -5,6 +5,7 @@ import {
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
+import { useForcedFullscreen } from "./useForcedFullscreen";
 import type { PlaybackFailure } from "./playbackFailure";
 import { useEndFileFailure } from "./useEndFileFailure";
 import type { LocalMediaProbe } from "./useLocalMediaProbe";
@@ -277,5 +278,7 @@ export function useDesktopPlayer(opts?: {
 
   const commands = useMpvCommands({ state, setState, mutedRef });
 
-  return { state, ready, fileLoaded, mediaReady, failure, play, clock, ...commands };
+  // Plein écran imposé (Linux, Wayland sans colle) : la bascule y propose X11 au lieu d'échouer.
+  const forcedFullscreen = useForcedFullscreen(commands.toggleFullscreen);
+  return { state, ready, fileLoaded, mediaReady, failure, play, clock, ...commands, toggleFullscreen: forcedFullscreen.toggle, forcedFullscreen };
 }

@@ -35,7 +35,7 @@ export function mainWindow(stateDir, pid) {
 /**
  * Capture d'UNE fenêtre (`-l`, sans ombre `-o`) : ce que la page et le verre
  * natif de cette fenêtre composent. La fenêtre Metal de mpv (Apple Silicon) est
- * une AUTRE fenêtre, dessous : pour le lecteur, `captureRect`.
+ * une fenêtre FILLE de la nôtre : `-l` la compose avec la page.
  */
 export function captureWindow(windowId, file) {
   const r = spawnSync("screencapture", ["-x", "-o", "-l", String(windowId), file]);
@@ -43,12 +43,9 @@ export function captureWindow(windowId, file) {
   return file;
 }
 
-/** Capture d'un rectangle de l'écran (points) : la composition réelle, vidéo comprise. */
-export function captureRect({ x, y, width, height }, file) {
-  const r = spawnSync("screencapture", ["-x", "-R", `${x},${y},${width},${height}`, file]);
-  if (r.status !== 0) throw new Error(`screencapture -R : ${String(r.stderr)}`);
-  return file;
-}
+// Jamais `screencapture -R` : une capture de l'ÉCRAN montre les autres
+// applications à travers une fenêtre transparente (incident du 21/10). `-l`
+// sur NOTRE fenêtre prend ses fenêtres filles — mpv compris — et rien d'autre.
 
 /** Un relevé de charge du GPU (Apple Silicon : IOAccelerator, sans sudo). */
 export function gpuSample() {
@@ -72,6 +69,27 @@ export async function gpuWindow(seconds) {
   const valid = samples.filter(Number.isFinite);
   const mean = valid.reduce((a, b) => a + b, 0) / Math.max(1, valid.length);
   return { mean: Math.round(mean * 10) / 10, max: Math.max(...valid), samples };
+}
+
+/** Secondes depuis le dernier geste clavier/souris de Damien (IOHIDSystem). */
+export function hidIdleSeconds() {
+  const text = execFileSync("ioreg", ["-c", "IOHIDSystem"], { encoding: "utf8" });
+  const raw = /"HIDIdleTime" = (\d+)/.exec(text)?.[1];
+  return raw ? Number(raw) / 1e9 : 0;
+}
+
+/**
+ * LOT.md : « ne jamais voler le clavier de Damien » — rien qui ouvre une
+ * fenêtre ou change d'espace tant qu'il a touché clavier ou souris depuis
+ * moins de `seconds`. Attend, au plus `timeoutMs` ; rend false si toujours actif.
+ */
+export async function waitHidIdle(seconds = 120, timeoutMs = 60 * 60_000) {
+  const end = Date.now() + timeoutMs;
+  for (;;) {
+    if (hidIdleSeconds() >= seconds) return true;
+    if (Date.now() > end) return false;
+    await new Promise((r) => setTimeout(r, 5000));
+  }
 }
 
 /** Charge de la machine (les mesures ne valent rien au-delà de ~20). */

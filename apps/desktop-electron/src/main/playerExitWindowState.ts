@@ -15,10 +15,13 @@
  *
  * # Ce que la décision refuse, et pourquoi
  *
- * - Le montage Wayland IMPOSÉ (GNOME/wlroots, `windowing !== "libre"`) :
- *   `SurfaceWayland` y possède sa propre restauration (mémoire `before`) et
- *   ÉPINGLE le plein écran tant que la vidéo est attachée (`leave-full-screen`
- *   → réaffirmation). Décider ici entrerait en guerre avec l'épingle.
+ * - Le montage Wayland IMPOSÉ (GNOME/wlroots, `windowing !== "libre"`) TANT
+ *   QUE l'épingle est posée : `SurfaceWayland` y possède sa propre
+ *   restauration (mémoire `before`) et ÉPINGLE le plein écran tant que la
+ *   vidéo est attachée (`leave-full-screen` → réaffirmation). Décider ici
+ *   entrerait en guerre avec l'épingle. Sans épingle — une bande-annonce, lue
+ *   en HTML —, personne ne restaurait : on parcourait ensuite le catalogue en
+ *   plein écran. La règle commune s'applique alors.
  * - macOS et Windows : leurs chemins actuels, éprouvés, restent intacts.
  */
 
@@ -32,13 +35,15 @@ export interface PlayerExitInput {
   alreadyFullscreen: boolean | null;
   /** État courant de la fenêtre au moment de la sortie. */
   fullscreen: boolean;
+  /** `SurfaceWayland` tient-elle le plein écran (vidéo mpv attachée) ? */
+  pinned: boolean;
 }
 
 export function decidePlayerExitAction(input: PlayerExitInput): PlayerExitAction {
   if (input.platform !== "linux") return "none";
   // Sans montage décidé, on ne sait rien du terrain : ne rien toucher.
   if (input.montage === null) return "none";
-  if (input.montage === "wayland" && input.windowing !== "libre") return "none";
+  if (input.montage === "wayland" && input.windowing !== "libre" && input.pinned) return "none";
   // Pas de session lecteur : rien n'a été ouvert, rien à défaire.
   if (input.alreadyFullscreen === null) return "none";
   // Le plein écran précédait le film : il est à l'utilisateur.

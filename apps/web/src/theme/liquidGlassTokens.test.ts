@@ -68,9 +68,29 @@ describe("les jetons du verre", () => {
       "--lg-radius-md",
       "--lg-radius-lg",
       "--lg-radius-capsule",
-      "--lg-bezel-sm",
-      "--lg-bezel-md",
-      "--lg-bezel-lg",
+      "--lg-bezel-ratio",
+      "--lg-bezel-min",
+      "--lg-bezel-max",
+      "--lg-light-angle",
+      "--lg-specular-facing",
+      "--lg-specular-opposite",
+      "--lg-specular-base",
+      "--lg-specular-glow",
+      "--lg-edge-width",
+      "--lg-edge-gain",
+      "--lg-edge-white",
+      "--lg-edge",
+      "--lg-thick-blur",
+      "--lg-glyph-on-dark",
+      "--lg-glyph-on-light",
+      "--lg-glyph-shadow-on-dark",
+      "--lg-glyph-shadow-on-light",
+      "--lg-glyph-filter-on-dark",
+      "--lg-glyph-filter-on-light",
+      "--lg-danger-on-dark",
+      "--lg-danger-on-light",
+      "--lg-glyph-on-dark-secondary-thick",
+      "--lg-glyph-on-light-secondary-thick",
       "--lg-dispersion",
       "--lg-thickness-regular",
       "--lg-duration-press",
@@ -107,6 +127,8 @@ describe("les jetons du verre", () => {
       "--lg-label-shadow",
       "--lg-glyph-shadow",
       "--lg-vibrancy-blend",
+      "--lg-edge-gain",
+      "--lg-edge",
     ]) {
       expect(LIGHT, name).toContain(name);
     }
@@ -132,6 +154,35 @@ describe("les jetons du verre", () => {
     const at = (file: string) => index.indexOf(`@import "./theme/${file}"`);
     expect(at("liquidGlassTokens.css")).toBeGreaterThan(at("tokens.css"));
     expect(at("liquidGlassTokens.css")).toBeGreaterThan(at("surfaces.css"));
+  });
+
+  it("plus AUCUN fond sombre : les voiles du verre sont transparents (cible Apple)", () => {
+    const block = (sel: string) => blockFor(CSS, sel);
+    for (const name of ["--lg-clear-dim", "--lg-media-dim"]) {
+      expect(block(":root")).toMatch(new RegExp(`${name}:\\s*rgba\\(var\\([^)]*\\),\\s*0\\)`));
+    }
+    // Les remplissages neutres sont des BLANCS légers, jamais une teinte sombre.
+    for (const name of ["--lg-regular-fill", "--lg-clear-fill", "--lg-thick-fill"]) {
+      expect(block(":root")).toMatch(new RegExp(`${name}:\\s*rgba\\(var\\(--lg-light-rgb\\)`));
+    }
+  });
+
+  it("aucun CONTOUR blanc : un bord orienté, coloré par le dessous, éteint sur un dessous clair", () => {
+    const root = blockFor(CSS, ":root");
+    const light = blockFor(CSS, ':root[data-theme="light"]');
+    // Rien tout autour : la lumière n'est que sur l'arc face à elle.
+    expect(root).toMatch(/--lg-specular-base:\s*0;/);
+    // Les anciens liserés `inset` : un fil SOMBRE, jamais clair, dans les deux thèmes.
+    expect(root).toMatch(/--lg-rim:\s*rgba\(var\(--lg-shade-rgb\)/);
+    expect(light).toMatch(/--lg-rim:\s*rgba\(var\(--lg-shade-rgb\)/);
+    // En clair : aucun trait blanc, et le bord de la lentille sans éclat.
+    for (const name of ["--lg-specular-strong", "--lg-specular-soft", "--lg-inner-glow"]) {
+      expect(light).toMatch(new RegExp(`${name}:\\s*transparent;`));
+    }
+    expect(light).toMatch(/--lg-edge-white:\s*0;/);
+    // Le ton du dessous l'emporte sur le thème pour le gain et l'éclat.
+    expect(blockFor(CSS, ':root[data-liquid-glass="native"] [data-lg-tone="light"]')).toMatch(/--lg-edge-white:\s*0;/);
+    expect(blockFor(CSS, ':root[data-liquid-glass="native"] [data-lg-tone="dark"]')).toMatch(/--lg-edge-gain:/);
   });
 
   it("aucune primitive que la feuille du téléviseur LG refuserait", () => {
