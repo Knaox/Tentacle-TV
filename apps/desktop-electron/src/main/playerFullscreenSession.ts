@@ -12,6 +12,7 @@ import type { BrowserWindow } from "electron";
 import { isFullscreen, noteWindow, WINDOWS_WORKAROUND, leave } from "./fullscreen";
 import { linuxWindowing, linuxMontage } from "./linux/session";
 import { decidePlayerExitAction } from "./playerExitWindowState";
+import { fullscreenPinned } from "./linux/fullscreenPin";
 
 /**
  * Session plein écran du lecteur : la fenêtre était-elle DÉJÀ en plein écran quand
@@ -71,7 +72,8 @@ export function openPlayerSession(win: BrowserWindow): boolean {
  * sortie. Règle choisie par l'utilisateur (28.08) : plein écran posé PENDANT
  * la lecture → fenêtre maximisée à la sortie ; plein écran antérieur (F11 à
  * lui) → on le laisse. La décision est pure (`playerExitWindowState.ts`) et
- * refuse le montage Wayland imposé, qui garde sa propre restauration.
+ * refuse le montage Wayland imposé tant que sa vidéo est attachée : il garde
+ * alors sa propre restauration.
  *
  * # macOS ne défait RIEN, et c'est la règle
  *
@@ -119,6 +121,7 @@ function applyLinuxExit(
     windowing: linuxWindowing(),
     alreadyFullscreen: session === null ? null : session.alreadyFullscreen,
     fullscreen: isFullscreen(),
+    pinned: fullscreenPinned(),
   });
   if (action !== "exitFullscreenThenMaximize") return;
   // `setFullScreen(false)` est ASYNCHRONE sur Wayland : un `maximize()` dans

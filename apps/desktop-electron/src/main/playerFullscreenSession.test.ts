@@ -29,6 +29,7 @@ vi.mock("./linux/session", () => ({
 }));
 
 import { closePlayerSession, openPlayerSession } from "./playerFullscreenSession";
+import { setFullscreenPinned } from "./linux/fullscreenPin";
 
 /** Fenêtre jouée : capture le `once("leave-full-screen")` pour le déclencher. */
 function window() {
@@ -86,13 +87,24 @@ describe("fermerSessionLecteur — Linux, colle KDE", () => {
     expect(h.leave).not.toHaveBeenCalled();
   });
 
-  it("montage imposé : la surface possède la restauration, pas nous", () => {
+  it("montage imposé, vidéo attachée : la surface possède la restauration, pas nous", () => {
+    const win = window();
+    h.windowing = "plein-ecran";
+    setFullscreenPinned(true);
+    openPlayerSession(win as unknown as BrowserWindow);
+    h.fullscreen = true;
+    closePlayerSession(win as unknown as BrowserWindow);
+    setFullscreenPinned(false);
+    expect(h.leave).not.toHaveBeenCalled();
+  });
+
+  it("montage imposé, bande-annonce (rien d'attaché) : le plein écran se rend", () => {
     const win = window();
     h.windowing = "plein-ecran";
     openPlayerSession(win as unknown as BrowserWindow);
     h.fullscreen = true;
     closePlayerSession(win as unknown as BrowserWindow);
-    expect(h.leave).not.toHaveBeenCalled();
+    expect(h.leave).toHaveBeenCalledTimes(1);
   });
 
   it("fenêtre détruite entre-temps : le maximize ne part pas", () => {
