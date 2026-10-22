@@ -41,6 +41,7 @@
 import { net } from "electron";
 import { z } from "zod";
 import { playbackFarewell, type FarewellStop } from "../playbackFarewell";
+import { HTTP_URL } from "./httpUrl";
 import { CommandRegistry } from "./registry";
 
 /**
@@ -60,7 +61,7 @@ const TIMEOUT_MS = 20_000;
 
 const POST = z.object({
   /** Base du serveur Jellyfin, telle que la page l'a résolue. */
-  baseUrl: z.string().url(),
+  baseUrl: HTTP_URL,
   path: z.string(),
   token: z.string().min(1),
   authHeader: z.string().min(1),
@@ -69,7 +70,7 @@ const POST = z.object({
 });
 
 const PLAYBACK_INFO = z.object({
-  baseUrl: z.string().url(),
+  baseUrl: HTTP_URL,
   /** Un identifiant Jellyfin, jamais un chemin : l'alphabet le garantit. */
   itemId: z.string().regex(/^[A-Za-z0-9-]+$/),
   /**
@@ -84,7 +85,7 @@ const PLAYBACK_INFO = z.object({
 });
 
 const KILL_ENCODINGS = z.object({
-  baseUrl: z.string().url(),
+  baseUrl: HTTP_URL,
   deviceId: z.string().min(1),
   playSessionId: z.string().min(1),
   token: z.string().min(1),

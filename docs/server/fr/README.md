@@ -18,6 +18,7 @@ couvrent tous les cas ; un assistant guidé fait le reste dans le navigateur.
 | le transcodage matériel (Intel, AMD, NVIDIA) | [gpu.md](gpu.md) |
 | mettre à jour, sauvegarder, rouvrir l'assistant, migrer depuis l'ancien compose | [operations.md](operations.md) |
 | ce que devient ma base MariaDB en 1.25, et comment la retirer ensuite | [sqlite-migration.md](sqlite-migration.md) |
+| vérifier que l'image est authentique (signature, SBOM), durcir le conteneur | [image-security.md](image-security.md) |
 | réparer ce qui ne marche pas | [troubleshooting.md](troubleshooting.md) |
 | faire tourner le service de test d'ouverture (mainteneurs) | [port-check.md](port-check.md) |
 

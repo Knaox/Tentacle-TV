@@ -1,0 +1,44 @@
+#!/bin/sh
+# Garde contre les secrets AVANT que le commit existe : gitleaks relit ce qui
+# est INDEXÉ (pas l'arbre de travail), avec la config du dépôt (.gitleaks.toml).
+#
+# Même forme que `pre-push` : sh pur, joué tel quel par Git pour Windows, macOS
+# et Linux. Pas de Node ici : gitleaks est un binaire, rien à orchestrer.
+#
+# gitleaks absent → le commit est REFUSÉ, avec la marche à suivre. Un crochet
+# qui laisse passer en silence quand son outil manque ne garde rien.
+#
+# Échappatoire, en connaissance de cause : TENTACLE_SKIP_GITLEAKS=1 git commit …
+# (ou --no-verify). Le job « Secrets » de la CI relit les mêmes commits.
+
+[ "${TENTACLE_SKIP_GITLEAKS:-}" = "1" ] && exit 0
+
+ROOT=$(git rev-parse --show-toplevel) || exit 1
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  printf '\033[31m✗ commit refusé — gitleaks n'"'"'est pas installé.\033[0m\n' >&2
+  cat >&2 <<'EOF'
+  Il relit les fichiers indexés à la recherche de secrets (clés, jetons, .env).
+  Installation (binaire officiel, jamais par npm) :
+    macOS / Linux (Homebrew) : brew install gitleaks
+    Windows                  : winget install gitleaks.gitleaks   (ou scoop install gitleaks)
+    Ailleurs                 : https://github.com/gitleaks/gitleaks/releases
+                               (vérifier la somme dans gitleaks_<version>_checksums.txt)
+  Puis relancer le commit. Pour passer outre cette fois seulement :
+    TENTACLE_SKIP_GITLEAKS=1 git commit …
+EOF
+  exit 1
+fi
+
+if ! gitleaks git --pre-commit --staged --redact --verbose --no-banner \
+     --config "$ROOT/.gitleaks.toml" "$ROOT"; then
+  printf '\n\033[31m✗ commit refusé — gitleaks a trouvé un secret dans les fichiers indexés.\033[0m\n' >&2
+  cat >&2 <<'EOF'
+  - Un VRAI secret : le retirer de l'index (git restore --staged <fichier>),
+    le mettre dans un .env ignoré ou un secret de la CI, et le RÉVOQUER s'il a
+    déjà quitté la machine.
+  - Un faux positif évident (fixture de test, identifiant public) : l'ajouter
+    aux exceptions de .gitleaks.toml, jamais un vrai secret.
+EOF
+  exit 1
+fi

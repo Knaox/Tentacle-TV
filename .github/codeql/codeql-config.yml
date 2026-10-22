@@ -1,0 +1,21 @@
+# Configuration de CodeQL (.github/workflows/codeql.yml).
+#
+# security-extended : les requêtes de sécurité par défaut PLUS celles de
+# précision moindre — injections SQL et de commandes, XSS, SSRF, traversée de
+# chemins, désérialisation, expressions régulières coûteuses, etc.
+name: "Tentacle TV"
+
+queries:
+  - uses: security-extended
+
+# Rien que du code tiers ou dérivé : le relire noierait les vraies alertes.
+paths-ignore:
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/*.min.js"
+  - "**/*.generated.ts"
+  - "apps/web/public/**"
+  - "apps/*/android/**"
+  - "apps/*/ios/**"
+  - "docs/**"

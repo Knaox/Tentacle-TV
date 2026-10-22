@@ -58,6 +58,7 @@ describe("pipWindowOpen", () => {
       frame: false,
       skipTaskbar: true,
       show: false,
+      webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true },
     });
     // L'annonce est consommée : une seconde ouverture est refusée.
     expect(pipWindowOpen(asked(PIP_FRAME_NAME))).toEqual({ action: "deny" });

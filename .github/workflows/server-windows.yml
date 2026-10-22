@@ -106,6 +106,11 @@ env:
   MSIX_NAME: TentacleServer.msix
   TV_CLIENT_ARTIFACT: server-windows-tv-client
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   # ── Ce qui rend tout le reste reproductible (voir desktop.yml, même forme) ──
   prepare:
@@ -128,7 +133,7 @@ jobs:
       store-id: ${{ steps.store.outputs.store-id }}
       flight-id: ${{ steps.store.outputs.flight-id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
@@ -177,7 +182,7 @@ jobs:
           sha: ${{ steps.sha.outputs.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
@@ -251,7 +256,7 @@ jobs:
       # commit. Il est le même pour toutes les architectures (HTML et JS) : la
       # variante amd64 suffit.
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -272,7 +277,7 @@ jobs:
           fi
           du -sh tv-client
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ env.TV_CLIENT_ARTIFACT }}
           path: tv-client
@@ -292,22 +297,22 @@ jobs:
       group: release-server-windows
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ needs.prepare.outputs.sha }}
 
       # 24 : le serveur exige `node:sqlite`, et l'assemblage tourne sous ce
       # Node-là (celui qu'il embarque est épinglé par le script lui-même).
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{ env.TV_CLIENT_ARTIFACT }}
           path: ${{ runner.temp }}/tv-client
@@ -362,7 +367,7 @@ jobs:
           "MSIX_PATH=$out" >> $env:GITHUB_ENV
 
       - name: Upload MSIX (secours / installation à la main)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: tentacle-server-windows-msix
           path: ${{ env.MSIX_PATH }}
@@ -395,7 +400,7 @@ jobs:
 
       - name: Upload du rapport de certification
         if: always() && env.WACK_REPORT != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: tentacle-server-windows-certification
           path: ${{ env.WACK_REPORT }}
@@ -441,7 +446,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ needs.prepare.outputs.sha }}
 

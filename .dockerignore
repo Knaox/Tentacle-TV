@@ -36,3 +36,25 @@ apps/backend/test
 # recopié pour être aussitôt écrasé par le build de l'image.
 apps/tv-webos/dist-ipk
 apps/tv-webos/client/dist
+
+# Jamais de secret ni de donnée locale dans le contexte, même sous un dossier
+# gardé : bases SQLite, clés et certificats, réglages d'outils et d'agents,
+# dépôt git. (Pas de motif « **/data » : packages/shared/src/data est du code.)
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore
+**/*.mobileprovision
+**/token.txt
+**/setup-token.txt
+**/.npmrc.local
+**/.git
+**/.claude
+**/.vscode
+**/.idea

@@ -103,6 +103,15 @@ export function lockNavigation(
     }
   });
 
+  // `will-navigate` ne voit pas les redirections du serveur : un 30x vers
+  // l'extérieur ferait sinon sortir le cadre principal de l'application. Les
+  // cadres (relais de bande-annonce, greffons) gardent les leurs. Une
+  // redirection n'est jamais ouverte dans le navigateur : personne ne l'a
+  // demandée.
+  contents.on("will-redirect", (details) => {
+    if (details.isMainFrame && !isAppOrigin(details.url)) details.preventDefault();
+  });
+
   contents.setWindowOpenHandler((details) => {
     // La seule fenêtre que la page ouvre elle-même : le PiP, armé et nommé
     // (`pip/pipWindow.ts`). Tout le reste part à l'extérieur, ou nulle part.

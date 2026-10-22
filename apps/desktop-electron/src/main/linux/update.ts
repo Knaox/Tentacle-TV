@@ -22,18 +22,24 @@
 
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdtempSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
+import { isSha256Hex, isTrustedReleaseUrl, isVerified, rememberVerified } from "./updateTrust";
 
 export type LinuxFormat = "appimage" | "deb" | "rpm" | "pacman" | "unknown";
 
-/** Le dossier des paquets téléchargés — jamais celui de l'utilisateur. */
+/**
+ * Le dossier d'UN téléchargement — jamais celui de l'utilisateur.
+ *
+ * ⚠️ Neuf et privé à chaque fois (`mkdtemp` : nom aléatoire, mode 0700). Le
+ * temporaire est partagé entre les comptes : un dossier au nom fixe pouvait
+ * être créé d'avance par un autre, qui aurait échangé le paquet entre la
+ * vérification d'empreinte et l'invite pkexec.
+ */
 function tempFolder(): string {
-  const d = path.join(tmpdir(), "tentacle-update");
-  mkdirSync(d, { recursive: true });
-  return d;
+  return mkdtempSync(path.join(tmpdir(), "tentacle-update-"));
 }
 
 /** Demande à un gestionnaire de paquets s'il possède le binaire courant. */
@@ -97,6 +103,9 @@ export function nameFrom(fileName: string): string {
 
 /** Télécharge le paquet, vérifie son empreinte, rend son chemin local. */
 export async function download(t: Download): Promise<string> {
+  // Contrôlés AVANT le moindre octet : voir `updateTrust.ts`.
+  if (!isTrustedReleaseUrl(t.url)) throw new Error("URL de mise à jour refusée (hors des Releases du dépôt)");
+  if (!isSha256Hex(t.sha256)) throw new Error("empreinte SHA256 absente ou mal formée");
   const destination = path.join(tempFolder(), nameFrom(t.fileName));
   const response = await fetch(t.url, { redirect: "follow" });
   if (!response.ok || response.body === null) {
@@ -118,13 +127,12 @@ export async function download(t: Download): Promise<string> {
 
   await pipeline(count(), createWriteStream(destination));
 
-  if (t.sha256 !== "") {
-    const granted = digest.digest("hex");
-    if (granted.toLowerCase() !== t.sha256.toLowerCase()) {
-      rmSync(destination, { force: true });
-      throw new Error(`SHA256 invalide (attendu ${t.sha256}, obtenu ${granted})`);
-    }
+  const granted = digest.digest("hex");
+  if (granted.toLowerCase() !== t.sha256.toLowerCase()) {
+    rmSync(destination, { force: true });
+    throw new Error(`SHA256 invalide (attendu ${t.sha256}, obtenu ${granted})`);
   }
+  rememberVerified(destination);
   return destination;
 }
 
@@ -175,13 +183,23 @@ function replaceAppImage(next: string): void {
     chmodSync(target, 0o755);
   } catch (e) {
     renameSync(backup, target);
-    throw new Error(`remplacement AppImage échoué : ${String(e)}`);
+    throw new Error(`remplacement AppImage échoué : ${String(e)}`, { cause: e });
   }
   rmSync(backup, { force: true });
 }
 
-/** Installe le paquet téléchargé, selon le format d'origine. */
-export async function install(path: string, format: LinuxFormat): Promise<void> {
+/**
+ * Installe le paquet téléchargé, selon le format d'origine.
+ *
+ * Chemin et format viennent de la page : seul un fichier que `download` a
+ * vérifié s'installe, et seulement par le format que l'installation a
+ * réellement (`detectFormat`) — jamais une AppImage remplacée sur la parole de
+ * la page. `probe` n'est remplacée que par les tests.
+ */
+export async function install(path: string, format: LinuxFormat, probe: OwnershipProbe = owns): Promise<void> {
+  if (!isVerified(path)) throw new Error("paquet non vérifié par ce processus : installation refusée");
+  const actual = await detectFormat(probe);
+  if (actual !== format) throw new Error(`format ${format} refusé : l'installation est ${actual}`);
   switch (format) {
     case "pacman": return escalate("pacman", ["-U", "--noconfirm", path]);
     case "deb": return escalate("apt-get", ["install", "-y", path]);
