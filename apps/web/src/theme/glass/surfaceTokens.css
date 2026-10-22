@@ -1,0 +1,86 @@
+/* Liquid Glass — les jetons du lot lg2 : le CONTRAT des surfaces (menus,
+ * barres latérales, contenu) et le matériau du régime `surface`.
+ *
+ * Suite de `liquidGlassTokens.css` (300 lignes au plus par fichier). Tout est
+ * déclaré SOUS la porte `:root[data-liquid-glass="native"]` : hors du mode
+ * natif, aucun de ces noms n'existe — rendu d'avant au pixel près.
+ *
+ * Les règles d'Apple qu'ils servent (brief du lot, HIG « Materials ») :
+ *  - le verre est la couche FONCTIONNELLE ; le contenu prend des remplissages
+ *    sobres (`--lg-content-*`), jamais du verre ;
+ *  - jamais de verre sur du verre : une rangée de menu est une pastille
+ *    INSÉRÉE (`--lg-row-*`), concentrique à sa surface ;
+ *  - la teinte est une emphase : la sélection d'un menu est l'accent UNI de la
+ *    marque (glyphes blancs), celle d'une barre latérale un remplissage NEUTRE
+ *    (l'icône à l'accent) ;
+ *  - un grand verre a UN ton, tenu (`data-lg-tone` + `data-lg-scale="surface"`) :
+ *    les jetons qui vivent DANS un verre (rangées, séparateurs, intitulés)
+ *    suivent son ton, en bas du fichier.
+ *
+ * ── CATALOGUE ─────────────────────────────────────────────────────────────
+ *  - rangées      --lg-surface-radius, --lg-row-inset, --lg-row-radius
+ *                 (= rayon de la surface − marge), --lg-row-highlight,
+ *                 --lg-row-highlight-glyph
+ *  - structure    --lg-separator, --lg-section-label
+ *  - barre lat.   --lg-sidebar-selection, --lg-sidebar-selection-glyph
+ *  - ombre        --lg-surface-shadow (une surface qui flotte : profonde, douce)
+ *  - contenu      --lg-content-fill, --lg-content-fill-hover, --lg-content-stroke
+ *  - bord         --lg-scroll-edge (le fondu du contenu sous la barre du haut) */
+
+:root[data-liquid-glass="native"] {
+  /* ── Rangées d'une surface : la pastille insérée des menus macOS ───── */
+  --lg-surface-radius: var(--lg-radius-md);
+  --lg-row-inset: 5px;
+  --lg-row-radius: calc(var(--lg-surface-radius) - var(--lg-row-inset));
+  /* L'accent UNI de la marque, un cran profond : blanc dessus ≥ 5,7:1. */
+  --lg-row-highlight: var(--brand-dark);
+  --lg-row-highlight-glyph: #FFFFFF;
+
+  /* ── Structure, dans un verre de ton sombre (réécrits par ton, plus bas) ── */
+  --lg-separator: rgba(255, 255, 255, 0.12);
+  --lg-section-label: rgba(255, 255, 255, 0.62);
+
+  /* ── Barre latérale : sélection NEUTRE, l'icône à l'accent ──────────── */
+  --lg-sidebar-selection: rgba(255, 255, 255, 0.1);
+  --lg-sidebar-selection-glyph: var(--brand-light);
+
+  /* ── L'ombre d'une surface qui flotte : profonde et douce ──────────── */
+  --lg-surface-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.5), 0 10px 24px -10px rgba(0, 0, 0, 0.45),
+    0 28px 64px -16px rgba(0, 0, 0, 0.55);
+
+  /* ── Le CONTENU : remplissages sobres et opaques (Réglages Système) ── */
+  --lg-content-fill: #18181B;
+  --lg-content-fill-hover: #202024;
+  --lg-content-stroke: rgba(255, 255, 255, 0.07);
+
+  /* ── Le bord de défilement sous la barre du haut : un fondu, jamais une
+   * bande dure — à poser en masque ou en fond, flou à part (axe C). ──── */
+  --lg-scroll-edge: linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] {
+  --lg-row-highlight: var(--brand);
+  --lg-separator: rgba(0, 0, 0, 0.1);
+  --lg-section-label: rgba(12, 12, 18, 0.6);
+  --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
+  --lg-sidebar-selection-glyph: var(--brand);
+  --lg-surface-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 10px 24px -10px rgba(0, 0, 0, 0.16),
+    0 28px 64px -16px rgba(0, 0, 0, 0.22);
+  --lg-content-fill: #FFFFFF;
+  --lg-content-fill-hover: #F4F4F7;
+  --lg-content-stroke: rgba(0, 0, 0, 0.07);
+  --lg-scroll-edge: linear-gradient(180deg, rgba(244, 244, 247, 0.7) 0%, rgba(244, 244, 247, 0) 100%);
+}
+
+/* ── Les jetons qui vivent DANS un verre suivent SON ton, pas le thème ──── */
+:root[data-liquid-glass="native"] [data-lg-tone="dark"] {
+  --lg-separator: rgba(255, 255, 255, 0.12);
+  --lg-section-label: rgba(255, 255, 255, 0.62);
+  --lg-sidebar-selection: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-liquid-glass="native"] [data-lg-tone="light"] {
+  --lg-separator: rgba(0, 0, 0, 0.1);
+  --lg-section-label: rgba(12, 12, 18, 0.6);
+  --lg-sidebar-selection: rgba(0, 0, 0, 0.07);
+}

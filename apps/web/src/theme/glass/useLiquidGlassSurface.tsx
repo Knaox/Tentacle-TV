@@ -28,7 +28,6 @@ import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { useLiquidGlassMode } from "../useLiquidGlass";
 import { useBackdropTone } from "./useBackdropTone";
-import { useBandTones } from "./useBandTones";
 import { useLensGeometry } from "./useLensGeometry";
 import { useLiquidGlassRegion } from "./useLiquidGlassRegion";
 import {
@@ -53,9 +52,9 @@ export interface LiquidGlassSurfaceOptions extends LiquidGlassAppearance {
   /** Ref de l'appelant, réunie à celle de la surface. */
   ref?: Ref<HTMLElement>;
   /**
-   * Matériau ÉPAIS (menu, feuille) : un ton par RANGÉE (`useBandTones`), pour
-   * qu'un dessous mixte ne laisse aucune rangée sans contraste. Défaut non :
-   * un petit verre bascule d'un bloc.
+   * @deprecated SANS EFFET depuis le lot lg2 : une surface garde UN ton
+   * (Apple ne pose jamais de bandes). Un grand verre prend `scale: "surface"`.
+   * Retiré en fin de lot.
    */
   bands?: boolean;
 }
@@ -80,14 +79,14 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null): void {
 }
 
 export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): LiquidGlassSurface {
-  const { backdrop = "page", className, style, fallbackClassName, fallbackStyle, ref: outerRef, bands = false } =
-    options;
+  const { backdrop = "page", className, style, fallbackClassName, fallbackStyle, ref: outerRef } = options;
   const appearance: LiquidGlassAppearance = {
     level: options.level,
     shape: options.shape,
     radius: options.radius,
     tint: options.tint,
     interactive: options.interactive,
+    scale: options.scale,
     z: options.z,
     group: options.group,
     spacing: options.spacing,
@@ -122,7 +121,6 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
   const tone = useBackdropTone(element, render === "lens");
   const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md", tone);
   const filterId = lensFilterId(useId());
-  useBandTones(element, render === "lens" && bands);
 
   if (render === "fallback") {
     const merged = fallbackStyle || style ? { ...fallbackStyle, ...style } : undefined;
