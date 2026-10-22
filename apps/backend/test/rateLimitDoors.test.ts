@@ -9,7 +9,7 @@
 
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type InjectOptions } from "fastify";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/services/configStore", async (original) => ({
@@ -68,7 +68,7 @@ afterAll(async () => {
   vi.unstubAllGlobals();
 });
 
-async function hammer(count: number, request: Parameters<FastifyInstance["inject"]>[0] & object): Promise<number[]> {
+async function hammer(count: number, request: InjectOptions): Promise<number[]> {
   const statuses: number[] = [];
   for (let i = 0; i < count; i += 1) statuses.push((await app.inject(request)).statusCode);
   return statuses;
