@@ -31,6 +31,11 @@
   --lg-glyph-secondary: var(--lg-glyph-on-dark-secondary);
   --lg-glyph-text-shadow: var(--lg-glyph-shadow-on-dark);
   --lg-glyph-filter: var(--lg-glyph-filter-on-dark);
+  --lg-danger: var(--lg-danger-on-dark);
+  /* Le texte de danger d'un descendant (`text-status-error-fg`) suit le ton du
+   * dessous, pas le thème : le rouge clair du thème sombre ne se lit pas sur
+   * un dessous clair. */
+  --status-error-fg: var(--lg-danger);
   color: var(--lg-glyph);
   text-shadow: var(--lg-glyph-text-shadow);
   border-radius: var(--lg-radius-md);
@@ -50,6 +55,7 @@
   --lg-glyph-secondary: var(--lg-glyph-on-light-secondary);
   --lg-glyph-text-shadow: var(--lg-glyph-shadow-on-light);
   --lg-glyph-filter: var(--lg-glyph-filter-on-light);
+  --lg-danger: var(--lg-danger-on-light);
 }
 
 /* La lentille. Sans carte encore (taille pas mesurée) : le givre seul. */
