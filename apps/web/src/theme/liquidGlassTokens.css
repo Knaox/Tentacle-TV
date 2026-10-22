@@ -164,7 +164,10 @@
   --lg-edge-white: 0.2;         /* blanc ajouté à intensité 1 (l'éclat de l'arc) */
   /* D'avant : les recettes CSS en couches `inset`, sans lentille propre. Elles
    * ne savent pas colorer un bord par le dessous : plus de contour CLAIR — un
-   * fil sombre tout autour, un reflet du haut à peine, rien en bas. */
+   * fil sombre tout autour, un reflet du haut à peine, rien en bas.
+   * ⚠️ lg-physique les SURCHARGE exprès sous `html[data-lg-material]`
+   * (Réduire la transparence, Contraste accru : `physics.css`) — ne pas les
+   * renommer sans le prévenir. */
   --lg-rim-width: 1px;
   --lg-rim: rgba(var(--lg-shade-rgb), 0.1);
   --lg-specular-strong: rgba(var(--lg-light-rgb), 0.22);
