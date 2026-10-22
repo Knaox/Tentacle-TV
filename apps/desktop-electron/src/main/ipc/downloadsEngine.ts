@@ -18,12 +18,13 @@ import { listForUser, setAutoDelete, stateForItem } from "../downloads/core/list
 import { freeSpace } from "../downloads/core/paths";
 import { deleteClaim } from "../downloads/core/store";
 import { localDb } from "../localDb";
+import { HTTP_URL } from "./httpUrl";
 import { CommandRegistry } from "./registry";
 
 const USER_ID = z.string().min(1).max(128);
 const FILE_ID = z.number().int().nonnegative();
 
-const CREDS = z.object({ serverUrl: z.string().min(1), token: z.string().min(1) });
+const CREDS = z.object({ serverUrl: HTTP_URL, token: z.string().min(1) });
 const FILE = z.object({ fileId: FILE_ID });
 const USER = z.object({ userId: USER_ID });
 const USER_FILE = z.object({ userId: USER_ID, fileId: FILE_ID });
@@ -72,7 +73,7 @@ const ITEM = z.object({
 
 const ENQUEUE = z.object({
   userId: USER_ID,
-  serverUrl: z.string().min(1),
+  serverUrl: HTTP_URL,
   token: z.string().min(1),
   items: z.array(ITEM),
 });
