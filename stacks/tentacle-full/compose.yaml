@@ -113,6 +113,19 @@ services:
       - "${TENTACLE_PORT:-3000}:3000"
     volumes:
       - tentacle-data:/app/apps/backend/data
+    # ── Hardening (optional) ─────────────────────────────────────────────────
+    # Tentacle only writes to its data volume and /tmp. Uncomment to run it on
+    # a read-only file system, without privilege escalation and with only the
+    # capabilities its start-up needs (hand the data folder to PUID:PGID, then
+    # drop root). The tentacle-data volume above is then MANDATORY.
+    # https://github.com/Knaox/Tentacle-TV/blob/main/docs/server/image-security.md
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+    # security_opt:
+    #   - no-new-privileges:true
+    # cap_drop: [ALL]
+    # cap_add: [CHOWN, DAC_OVERRIDE, SETUID, SETGID]
 
   # Public access over HTTPS: put YOUR reverse proxy (Caddy, Nginx Proxy
   # Manager, Traefik…) in front of ports 3000 and 8096. What to put in it:
