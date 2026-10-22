@@ -53,11 +53,23 @@ try {
     case "scroll": await page.evaluate(`(document.querySelector("main")?.scrollHeight > innerHeight ? document.querySelector("main") : document.scrollingElement).scrollTo(0, ${Number(args[0])}); return 1;`); await sleep(900); break;
     case "theme": {
       const mode = args[0];
-      await page.evaluate(`localStorage.setItem("tentacle_theme_mode", ${JSON.stringify(mode === "auto" ? "system" : mode)}); location.reload(); return 1;`).catch(() => {});
+      await page.evaluate(`localStorage.setItem("tentacle_theme_mode", ${JSON.stringify(mode)}); location.reload(); return 1;`).catch(() => {});
       console.log(await evalMain(`require("electron").nativeTheme.themeSource = ${JSON.stringify(mode === "auto" ? "system" : mode)}; return "ok";`));
       await sleep(5000);
       break;
     }
+    case "emul": {
+      const f = [];
+      if (args[0]) f.push({ name: "prefers-reduced-transparency", value: args[0] === "1" ? "reduce" : "no-preference" });
+      if (args[1]) f.push({ name: "prefers-contrast", value: args[1] === "1" ? "more" : "no-preference" });
+      // L'émulation ne vit que le temps de la connexion CDP : on la pose, on mesure, on capture DANS la même commande.
+      await page.send("Emulation.setEmulatedMedia", { features: f });
+      await sleep(1500);
+      console.log(JSON.stringify(await page.evaluate(args[3] ?? "return 0")));
+      if (args[2]) { const win = mainWindow(STATE, electronPid); console.log(captureWindow(win.id, path.join(OUT, `${args[2]}.png`))); }
+      break;
+    }
+    case "native": console.log(await evalMain(`require("electron").nativeTheme.themeSource = ${JSON.stringify(args[0])}; return require("electron").nativeTheme.shouldUseDarkColors;`)); await sleep(2500); break;
     default: console.log("commande inconnue");
   }
 } finally {
