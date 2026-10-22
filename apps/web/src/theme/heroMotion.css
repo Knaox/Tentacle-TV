@@ -1,0 +1,63 @@
+/* Les mouvements d'AMBIANCE des bannières (accueil, « Pour vous », accueil
+ * hors ligne) : le travelling du fond, celui du halo, le remplissage de la
+ * pastille active.
+ *
+ * Des animations CSS de `transform`, jouées par le COMPOSITEUR : aucun style
+ * n'est réécrit par JavaScript. Framer les jouait sur le fil principal, trente
+ * fois par seconde, sans fin ; c'était la même trajectoire, mais chaque pas
+ * passait par un rendu de la page.
+ *
+ * Le bridage est celui de `cadence` (theme/motion.ts) : trente paliers par
+ * seconde, par `steps()`. Le compositeur ne recompose l'image qu'au palier
+ * suivant, pas à chaque rafraîchissement de l'écran — et c'est ce nombre
+ * d'images qui coûte : chacune recompose la bannière, son halo flouté et
+ * chaque verre posé dessus (barre de fenêtre, boutons), dont le flou et la
+ * réfraction sont refaits. Mesuré dans l'application (mode natif) : le même
+ * zoom en `linear` coûte 60 % du GPU d'Electron, contre 20 en `steps()`.
+ *
+ * Les trois partent dans le même rendu (changement de diapositive), avec la
+ * même durée et le même nombre de paliers : leurs pas tombent ensemble, une
+ * seule image par palier. Durées et paliers suivent `HERO_ZOOM_DURATION_S` et
+ * `AMBIENT_HZ` : `heroMotion.test.ts` le tient.
+ *
+ * Le client LG n'a pas ce travelling : sa feuille pose `[data-hero-frame] img`
+ * (un fondu, `banner-tv.css`), plus spécifique que ces classes, et il a son
+ * propre halo et sa propre jauge. */
+
+@keyframes hero-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
+}
+
+/* Un cran plus ample que le fond : le halo respire un peu plus que l'image. */
+@keyframes hero-halo-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
+
+/* La durée et les paliers du remplissage sont posés en ligne : ils suivent la
+ * durée d'une diapositive (`HeroIndicators`). */
+@keyframes hero-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* `both` : l'échelle d'arrivée reste acquise une fois le zoom fini (la
+ * rotation suspendue laisse l'image où elle est, comme avant). */
+.hero-zoom {
+  animation: hero-zoom 8s steps(240, end) both;
+}
+
+.hero-halo-zoom {
+  animation: hero-halo-zoom 8s steps(240, end) both;
+}
+
+/* Mouvement réduit : pas de travelling du tout. La règle globale
+ * (`motion-reduce.css`) ne fait que raccourcir les animations : sans celle-ci,
+ * l'image sauterait d'un coup à son échelle d'arrivée. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-zoom,
+  .hero-halo-zoom {
+    animation: none;
+  }
+}

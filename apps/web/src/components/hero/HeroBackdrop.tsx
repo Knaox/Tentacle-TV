@@ -27,25 +27,17 @@ interface HeroBackdropProps {
  */
 export const HERO_ZOOM_DURATION_S = 8;
 const FADE_DURATION_S = 1.2;
-// Scale 1 → 1.06 perçu comme un travelling lent et CONSTANT sur 9.5s. On
-// utilise `linear` exprès : un ease-out tassait 80% du mouvement sur les 3
-// premières secondes, donnant l'illusion d'un zoom court — le reste de la
-// durée l'image paraissait figée. Linear étale uniformément la motion.
-const TARGET_SCALE = 1.06;
 /**
- * Le zoom ne met son échelle à jour que trente fois par seconde, au lieu d'une
- * fois par image d'affichage.
+ * Le zoom — 1 → 1,06, linéaire, en huit secondes, bridé à trente paliers par
+ * seconde — est la classe `hero-zoom` (`theme/heroMotion.css`), jouée par le
+ * compositeur. Framer ne garde que le fondu enchaîné, qui a besoin
+ * d'`AnimatePresence` pour faire sortir l'image précédente.
  *
- * Six pour cent étalés sur huit secondes, c'est un dixième de pixel de
- * progression entre deux images à 120 Hz — et une recomposition d'image plein
- * écran à chaque fois. À trente, la progression passe à quatre dixièmes de
- * pixel : toujours sous le pixel, donc toujours lisse, pour deux à huit fois
- * moins de recompositions selon la fréquence de l'écran (cf. `cadence`).
- *
- * `linear` reste `linear` : la quantification porte sur le TEMPS, la trajectoire
- * et la durée sont inchangées.
+ * `linear` exprès : un ease-out tassait 80 % du mouvement sur les trois
+ * premières secondes, donnant l'illusion d'un zoom court — le reste de la durée
+ * l'image paraissait figée.
  */
-const ZOOM_EASE = cadence(AMBIENT_HZ, HERO_ZOOM_DURATION_S);
+const ZOOM_CLASS = "hero-zoom";
 /**
  * Le fondu enchaîné d'une diapositive à l'autre est bridé lui aussi.
  *
@@ -138,17 +130,16 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
             src={url}
             alt=""
             draggable={false}
-            initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: 1, scale: TARGET_SCALE }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{
               // `easeOut` est PRÉSERVÉE : `cadence` quantifie le temps avant
               // d'appliquer la courbe, jamais la valeur après. Le fondu garde
               // donc exactement sa trajectoire et sa durée.
               opacity: { duration: FADE_DURATION_S, ease: FADE_EASE },
-              scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
             }}
-            className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
+            className={`absolute inset-0 h-full w-full object-cover will-change-transform ${ZOOM_CLASS}`}
             style={{ display: broken ? "none" : undefined }}
             onError={() => {
               reportFailure();

@@ -1,22 +1,15 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
-import { AMBIENT_HZ, cadence } from "../../theme/motion";
 
 /** Le halo suit la rotation de la bannière — mêmes durées, donc mêmes gestes. */
 const FADE_DURATION_S = 1.4;
 /**
- * Zoom un cran plus ample que celui du backdrop (1.06) : le halo respire un peu
- * plus que l'image, ce qui rend le débordement vivant plutôt que figé. Les
- * couleurs qui atteignent le bord du cadre changent donc au fil du zoom.
+ * Le zoom du halo — 1 → 1,12, un cran plus ample que celui du fond (1,06) — est
+ * la classe `hero-halo-zoom` (`theme/heroMotion.css`), jouée par le compositeur
+ * au même rythme que le fond : leurs paliers tombent ensemble. Le halo respire
+ * un peu plus que l'image, ce qui rend le débordement vivant plutôt que figé ;
+ * aucun palier ne peut s'y voir, le flou les efface par construction.
  */
-const TARGET_SCALE = 1.12;
-/**
- * Même bridage que le backdrop, et le halo s'y prête encore mieux : ce qu'il
- * affiche est une tache de couleurs floutée à quarante-huit pixels. Aucun pas de
- * quantification ne peut s'y voir — le flou les efface par construction, bien
- * avant que l'œil n'ait à trancher.
- */
-const ZOOM_EASE = cadence(AMBIENT_HZ, HERO_ZOOM_DURATION_S);
+const ZOOM_CLASS = "hero-halo-zoom";
 /**
  * Facteur de sous-échelle du rendu — le vrai levier de coût de ce composant.
  *
@@ -78,7 +71,7 @@ export function AmbilightLayer({
           Le flou est calculé sur une fraction de la surface, puis la texture
           floutée est agrandie — cf. RENDER_DOWNSCALE. `top/left: 0` + origine
           au coin supérieur gauche : une boîte de 1/n agrandie n fois recouvre
-          exactement la boîte d'origine. Le zoom de Framer se compose avec
+          exactement la boîte d'origine. Le zoom de l'image se compose avec
           cette échelle au lieu de la remplacer. */}
       <div
         className="absolute left-0 top-0"
@@ -95,18 +88,15 @@ export function AmbilightLayer({
             src={url}
             alt=""
             draggable={false}
-            initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: 1, scale: TARGET_SCALE }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{
-              opacity: { duration: FADE_DURATION_S, ease: "easeOut" },
-              scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
-            }}
+            transition={{ opacity: { duration: FADE_DURATION_S, ease: "easeOut" } }}
             // `will-change: transform` : le flou est alors rastérisé UNE fois dans
             // sa propre couche, et le zoom devient une simple transformation de
             // compositeur. Sans lui, un flou de cette taille serait recalculé à
             // chaque image de l'animation.
-            className="absolute inset-0 h-full w-full object-cover will-change-transform"
+            className={`absolute inset-0 h-full w-full object-cover will-change-transform ${ZOOM_CLASS}`}
             style={{
               // Rayon divisé par la sous-échelle : agrandi d'autant ensuite, il
               // redonne exactement le flou d'origine.
