@@ -101,7 +101,7 @@ export const NoticeCard = memo(function NoticeCard({
   const chip = severity === "info" ? look.infoChip : tone.chip;
   const Icon = ICONS[icon];
   // En mode natif, la carte de l'app (pas celle du lecteur) : la lentille exacte.
-  const glass = useGlassControl<HTMLDivElement>({ lens: surface === "app" ? "regular" : false });
+  const glass = useGlassControl<HTMLDivElement>({ lens: surface === "app" ? "regular" : false, scale: surface === "app" ? "surface" : "control" });
   const content = (
     <>
       <span aria-hidden className={`w-1 shrink-0 rounded-full ${tone.accent}`} />

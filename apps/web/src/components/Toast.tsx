@@ -45,13 +45,16 @@ export const Toast = memo(function Toast({ id, type, title, message, onDismiss }
   const durationMs = DURATION_MS[type];
   const countdown = useMessageCountdown(durationMs, held, () => onDismiss(id));
   const c = COLORS[type];
-  // En mode natif : la lentille exacte du galet.
-  const glass = useGlassControl<HTMLDivElement>({ lens: "regular" });
+  // En mode natif : la lentille exacte du galet, et le matériau d'une SURFACE
+  // (lot lg2) — un avis qui flotte est un grand verre d'un seul ton, tenu.
+  const glass = useGlassControl<HTMLDivElement>({ lens: "regular", scale: "surface" });
 
   return (
     <motion.div
       ref={glass.ref}
       data-lgc-lens={glass.props["data-lgc-lens"]}
+      data-lg-scale={glass.props["data-lg-scale"]}
+      data-lg-tone={glass.props["data-lg-tone"]}
       initial={{ opacity: 0, x: reduced ? 0 : 50 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: reduced ? 0 : 50, transition: { duration: exitDuration(duration.base) } }}
