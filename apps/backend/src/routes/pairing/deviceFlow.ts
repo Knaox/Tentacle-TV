@@ -44,7 +44,11 @@ export const devicePairingRoutes: FastifyPluginAsync = async (app) => {
 
   // ── GET /device/status/:code — TV poll : confirmé ? (sans auth) ──
   // Le token n'est délivré qu'une fois (l'enregistrement est supprimé après).
-  app.get("/device/status/:code", async (request) => {
+  // Public et porteur d'un jeton d'appareil : plafonné à part. Une TV relève
+  // toutes les 3 s (20/min, `useDevicePairStatus`) ; 120/min laisse six TV
+  // derrière la même box, et ôte au balayage des 923 521 codes le plafond
+  // global (1000/min).
+  app.get("/device/status/:code", { config: { rateLimit: { max: 120, timeWindow: 60_000 } } }, async (request) => {
     const { code } = request.params as { code: string };
     const prisma = getPrisma();
 

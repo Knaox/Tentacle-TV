@@ -129,7 +129,16 @@ export function pipWindowOpen(details: Electron.HandlerDetails): Electron.Window
       alwaysOnTop: wanted.mode === "floating",
       skipTaskbar: true,
       show: false,
-      webPreferences: { backgroundThrottling: false },
+      // Les réglages de sécurité sont ceux de la fenêtre principale, que
+      // Chromium ferait de toute façon hériter : écrits ici pour qu'aucun
+      // changement d'Electron ni d'ici ne les relâche en silence.
+      webPreferences: {
+        backgroundThrottling: false,
+        sandbox: true,
+        contextIsolation: true,
+        nodeIntegration: false,
+        webSecurity: true,
+      },
     },
   };
 }

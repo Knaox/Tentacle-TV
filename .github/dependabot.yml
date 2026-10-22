@@ -1,0 +1,119 @@
+# Dependabot — mises à jour des dépendances npm (workspace pnpm entier, lu
+# depuis le pnpm-lock.yaml de la racine), des actions GitHub et des images
+# de base Docker.
+#
+# ⚠️ cooldown : une version n'est proposée qu'après quelques jours de
+# publication — le temps qu'un paquet piégé (ver ChainDrop, Shai-Hulud…) soit
+# repéré et retiré du registre. Même logique que `minimumReleaseAge` de pnpm.
+# Les mises à jour de SÉCURITÉ ne l'attendent pas.
+#
+# Les actions restent épinglées par SHA : Dependabot met à jour le SHA ET le
+# commentaire de version.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Un PR par famille, chacune prouvée par SES tests : le serveur par ceux
+      # du backend, l'outillage par lint et typecheck, le reste ensemble.
+      server:
+        patterns: ["fastify", "@fastify/*", "prisma", "@prisma/*", "undici", "ws", "@types/ws", "zod", "pino*"]
+        update-types: ["minor", "patch"]
+      tooling:
+        patterns: ["eslint", "eslint-*", "@eslint/*", "typescript-eslint", "globals", "typescript", "vitest", "@vitest/*", "tsx", "@types/*"]
+        update-types: ["minor", "patch"]
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Paquets du workspace : jamais servis par le registre.
+      - dependency-name: "@tentacle-tv/*"
+      # Aucune MAJEURE proposée d'office (décision du 2026-10-22) : vite 8,
+      # Prisma 7, framer-motion 13… sont des migrations, pas des mises à jour.
+      # Elles se mènent en chantier, à la main. Les mises à jour de SÉCURITÉ
+      # (alertes Dependabot) arrivent toujours.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Mobile et TV : Expo et React Native ne montent QUE par une mise à niveau
+      # du SDK (`npx expo install --fix`, `react-native-tvos`), jamais paquet par
+      # paquet — Dependabot proposait expo-splash-screen 31 → 58 (un autre SDK)
+      # et @react-native/* 0.80 → 0.88 (désaligné de react-native-tvos 0.80).
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "@expo/*"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "@react-native/*"
+      - dependency-name: "@react-native-community/*"
+      - dependency-name: "@react-navigation/*"
+      - dependency-name: "nativewind"
+      # React suit le moteur de rendu de React Native (19.1.0 exactement pour
+      # la TV) : il monte avec le SDK, pas seul.
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "@types/react"
+      - dependency-name: "@types/react-dom"
+      # koffi pilote mpv dans le bureau et Tentacle Server pour Windows : une
+      # montée se valide sur les trois OS, à la main.
+      - dependency-name: "koffi"
+      # En 0.x, une « mineure » est une rupture : esbuild (bundler), libpgs (rendu
+      # des sous-titres PGS du lecteur web, aucune note de version publiée).
+      - dependency-name: "esbuild"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "libpgs"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # Polices d'Expo : de la famille du SDK, elles montent avec lui.
+      - dependency-name: "@expo-google-fonts/*"
+      # Electron : une majeure se prépare (fuses, signature, MAS, MSIX).
+      - dependency-name: "electron"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directories: ["/", "/.github/actions/*"]
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Aucune MAJEURE d'action proposée d'office (décision du 2026-10-22) :
+      # checkout 7, upload/download-artifact 7-8, build-push 7, action-gh-release
+      # 3… touchent tous les workflows de LIVRAISON et ne s'éprouvent que par un
+      # cran build de chacun. Elles se mènent en chantier, à la main.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Images de base épinglées par empreinte (Dockerfile racine, port-check) :
+  # sans ces mises à jour, la base vieillit et la garde Trivy finit par bloquer.
+  - package-ecosystem: "docker"
+    directories: ["/", "/apps/port-check"]
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(docker)"

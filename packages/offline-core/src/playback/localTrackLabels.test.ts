@@ -56,3 +56,15 @@ describe("formatLocalTrackLabel", () => {
     expect(formatLocalTrackLabel({}, fr)).toBe("Piste 3");
   });
 });
+
+describe("formatLocalTrackLabel — titre hostile", () => {
+  it("garde le titre utile entre ses séparateurs", () => {
+    expect(formatLocalTrackLabel({ title: " , Commentaire —  ; " }, fr)).toBe("Commentaire");
+  });
+
+  it("lit un titre fait de séparateurs sans fin en un instant (CodeQL polynomial-redos)", () => {
+    const started = performance.now();
+    formatLocalTrackLabel({ title: `a${"\t,".repeat(40_000)}b` }, fr);
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+});

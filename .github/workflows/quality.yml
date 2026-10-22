@@ -46,9 +46,18 @@ on:
 
 # Une poussée de plus sur la même référence rend le run précédent sans objet :
 # on l'annule. Contrairement aux workflows de livraison, rien n'est perdu.
+#
+# Le dispatch (relancé par l'auto-fusion de Dependabot après une fusion) a sa
+# PROPRE file : il n'annule jamais le run d'un push sur main qu'une livraison
+# attend, et deux dispatchs de suite ne contrôlent que la tête la plus récente.
 concurrency:
-  group: quality-${{ github.ref }}
+  group: quality-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && 'dispatch' || 'push' }}
   cancel-in-progress: true
+
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
 
 jobs:
   controles:
@@ -57,12 +66,12 @@ jobs:
     steps:
       # `fetch-depth: 0` : la base de comparaison est un commit du passé
       # (github.event.before), il doit exister dans le clone.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm

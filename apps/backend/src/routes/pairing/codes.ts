@@ -9,11 +9,10 @@ const PAIR_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 4;
 export const CODE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-function generateCode(): string {
-  const bytes = crypto.randomBytes(CODE_LENGTH);
-  return Array.from(bytes)
-    .map((b) => PAIR_CHARS[b % PAIR_CHARS.length])
-    .join("");
+export function generateCode(): string {
+  // randomInt : tirage uniforme sur l'alphabet (le modulo d'un octet favorisait
+  // les premières lettres, 256 n'étant pas un multiple de 31).
+  return Array.from({ length: CODE_LENGTH }, () => PAIR_CHARS[crypto.randomInt(PAIR_CHARS.length)]).join("");
 }
 
 export const generateSchema = z.object({

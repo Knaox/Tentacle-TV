@@ -101,6 +101,7 @@ const USERS: Record<string, { Id: string; Name: string; Policy: { IsAdministrato
   "jeton-alice": { Id: "u-alice", Name: "alice", Policy: { IsAdministrator: false } },
   "jeton-root": { Id: "a-root", Name: "root", Policy: { IsAdministrator: true } },
   "jeton-bob": { Id: "a-bob", Name: "bob", Policy: { IsAdministrator: true } },
+  "jeton-carol": { Id: "u-carol", Name: "carol", Policy: { IsAdministrator: false } },
 };
 const ADMINS = [
   { id: "a-root", name: "root", isAdministrator: true },
@@ -277,6 +278,22 @@ describe("fermeture par l'auteur et suppression", () => {
     expect(notifications.filter((n) => n.refId === a || n.refId === b)).toHaveLength(0);
     const missing = await app.inject({ method: "DELETE", url: `/api/tickets/${a}`, headers: as("jeton-root") });
     expect(missing.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+describe("le ticket d'un autre compte (IDOR)", () => {
+  it("ni lu, ni répondu, ni fermé par un autre simple compte ; jamais sans jeton", async () => {
+    const app = await makeApp();
+    const { id } = await createTicket(app, "jeton-alice");
+    const carol = { headers: as("jeton-carol") };
+    expect((await app.inject({ url: `/api/tickets/${id}`, ...carol })).statusCode).toBe(403);
+    expect((await app.inject({ method: "POST", url: `/api/tickets/${id}/reply`, ...carol, payload: { body: "intrusion" } })).statusCode).toBe(403);
+    expect((await app.inject({ method: "POST", url: `/api/tickets/${id}/close`, ...carol, payload: { reason: "intrusion" } })).statusCode).toBe(403);
+    expect((await app.inject({ url: `/api/tickets/${id}` })).statusCode).toBe(401);
+    expect((await app.inject({ url: `/api/tickets/${id}`, headers: as("jeton-forge") })).statusCode).toBe(401);
+    expect(messages.some((m) => m.body === "intrusion")).toBe(false);
+    expect((await app.inject({ url: `/api/tickets/${id}`, headers: as("jeton-alice") })).statusCode).toBe(200);
     await app.close();
   });
 });

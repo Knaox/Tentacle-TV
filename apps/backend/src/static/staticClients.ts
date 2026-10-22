@@ -115,15 +115,16 @@ export async function registerStaticClients(
       // écrase ce que `setHeaders` a écrit : tout le bundle serait
       // retéléchargé à chaque lancement de l'application.
       cacheControl: false,
-      setHeaders(response, path) {
+      // Depuis @fastify/static 10, `setHeaders` reçoit la réponse de Fastify.
+      setHeaders(reply, path) {
         // Vite nomme les ressources par empreinte : elles sont immuables et
         // peuvent être gardées indéfiniment. `index.html`, lui, désigne ces
         // noms — le garder en cache figerait le téléviseur sur une version
         // ancienne et annulerait tout l'intérêt de servir le client.
         if (path.includes(`${sep}assets${sep}`)) {
-          response.setHeader("cache-control", "public, max-age=31536000, immutable");
+          reply.header("cache-control", "public, max-age=31536000, immutable");
         } else {
-          response.setHeader("cache-control", "no-cache");
+          reply.header("cache-control", "no-cache");
         }
       },
     });

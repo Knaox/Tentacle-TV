@@ -22,18 +22,24 @@
 
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdtempSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
+import { isSha256Hex, isTrustedReleaseUrl, isVerified, rememberVerified } from "./updateTrust";
 
 export type LinuxFormat = "appimage" | "deb" | "rpm" | "pacman" | "unknown";
 
-/** Le dossier des paquets téléchargés — jamais celui de l'utilisateur. */
+/**
+ * Le dossier d'UN téléchargement — jamais celui de l'utilisateur.
+ *
+ * ⚠️ Neuf et privé à chaque fois (`mkdtemp` : nom aléatoire, mode 0700). Le
+ * temporaire est partagé entre les comptes : un dossier au nom fixe pouvait
+ * être créé d'avance par un autre, qui aurait échangé le paquet entre la
+ * vérification d'empreinte et l'invite pkexec.
+ */
 function tempFolder(): string {
-  const d = path.join(tmpdir(), "tentacle-update");
-  mkdirSync(d, { recursive: true });
-  return d;
+  return mkdtempSync(path.join(tmpdir(), "tentacle-update-"));
 }
 
 /** Demande à un gestionnaire de paquets s'il possède le binaire courant. */
@@ -61,17 +67,40 @@ export function owns(command: string, args: readonly string[]): Promise<boolean>
  * binaire courant. Sinon `unknown` — et la page ne propose alors rien plutôt que
  * de toucher à une installation qu'on ne comprend pas.
  *
+ * Sur une racine IMMUABLE, un paquet superposé (`rpm-ostree install`) est bien
+ * possédé par rpm, mais `dnf` y refuse d'installer quoi que ce soit — Bazzite
+ * répond « Fedora Atomic images utilize rpm-ostree instead ». La page
+ * proposait donc une mise à jour vouée à l'échec après le téléchargement :
+ * `unknown`, comme `scripts/install-linux.sh` qui y prend l'AppImage.
+ *
  * `probe` n'est remplacée que par les tests : interroger les vrais
  * gestionnaires y dépend de la machine (`dpkg -S` parcourt toute la base des
  * paquets d'un runner Ubuntu, au-delà des 5 s d'un test).
  */
-export async function detectFormat(probe: OwnershipProbe = owns): Promise<LinuxFormat> {
+export async function detectFormat(
+  probe: OwnershipProbe = owns,
+  immutable: () => boolean = immutableRoot,
+): Promise<LinuxFormat> {
   if ((process.env["APPIMAGE"] ?? "") !== "") return "appimage";
+  if (immutable()) return "unknown";
   const exe = process.execPath;
   if (await probe("pacman", ["-Qo", exe])) return "pacman";
   if (await probe("dpkg", ["-S", exe])) return "deb";
   if (await probe("rpm", ["-qf", exe])) return "rpm";
   return "unknown";
+}
+
+/**
+ * Racine en lecture seule : Fedora Atomic (Silverblue, Kinoite, Bazzite),
+ * openSUSE MicroOS / Aeon, SteamOS. Les mêmes témoins que
+ * `scripts/install-linux.sh` → `immutable_root`.
+ */
+export function immutableRoot(
+  exists: (p: string) => boolean = existsSync,
+  has: (binary: string) => boolean = onPath,
+): boolean {
+  return exists("/run/ostree-booted") || has("rpm-ostree") || has("transactional-update")
+    || has("steamos-readonly");
 }
 
 export interface Download {
@@ -97,6 +126,9 @@ export function nameFrom(fileName: string): string {
 
 /** Télécharge le paquet, vérifie son empreinte, rend son chemin local. */
 export async function download(t: Download): Promise<string> {
+  // Contrôlés AVANT le moindre octet : voir `updateTrust.ts`.
+  if (!isTrustedReleaseUrl(t.url)) throw new Error("URL de mise à jour refusée (hors des Releases du dépôt)");
+  if (!isSha256Hex(t.sha256)) throw new Error("empreinte SHA256 absente ou mal formée");
   const destination = path.join(tempFolder(), nameFrom(t.fileName));
   const response = await fetch(t.url, { redirect: "follow" });
   if (!response.ok || response.body === null) {
@@ -118,18 +150,17 @@ export async function download(t: Download): Promise<string> {
 
   await pipeline(count(), createWriteStream(destination));
 
-  if (t.sha256 !== "") {
-    const granted = digest.digest("hex");
-    if (granted.toLowerCase() !== t.sha256.toLowerCase()) {
-      rmSync(destination, { force: true });
-      throw new Error(`SHA256 invalide (attendu ${t.sha256}, obtenu ${granted})`);
-    }
+  const granted = digest.digest("hex");
+  if (granted.toLowerCase() !== t.sha256.toLowerCase()) {
+    rmSync(destination, { force: true });
+    throw new Error(`SHA256 invalide (attendu ${t.sha256}, obtenu ${granted})`);
   }
+  rememberVerified(destination);
   return destination;
 }
 
 /** Un exécutable est-il dans le `PATH` ? */
-function onPath(binary: string): boolean {
+export function onPath(binary: string): boolean {
   const paths = (process.env["PATH"] ?? "").split(path.delimiter).filter((p) => p !== "");
   return paths.some((d) => existsSync(path.join(d, binary)));
 }
@@ -175,17 +206,56 @@ function replaceAppImage(next: string): void {
     chmodSync(target, 0o755);
   } catch (e) {
     renameSync(backup, target);
-    throw new Error(`remplacement AppImage échoué : ${String(e)}`);
+    throw new Error(`remplacement AppImage échoué : ${String(e)}`, { cause: e });
   }
   rmSync(backup, { force: true });
 }
 
-/** Installe le paquet téléchargé, selon le format d'origine. */
-export async function install(path: string, format: LinuxFormat): Promise<void> {
+/**
+ * La commande qui installe le paquet, selon son format et les outils du poste.
+ *
+ * ⚠️ « rpm » ne veut pas dire `dnf` : openSUSE installe ses rpm par `zypper`
+ * et n'a pas de `dnf`. `pkexec dnf` y sortait en 127, que l'on traduisait en
+ * « installation annulée » — la mise à jour échouait à chaque fois, après le
+ * téléchargement. `--allow-unsigned-rpm` : nos paquets ne sont pas signés,
+ * l'intégrité tient au SHA-256, OBLIGATOIRE et vérifié par le processus
+ * principal (`updateTrustRules.ts`), et `install` refuse tout paquet qu'il
+ * n'a pas vérifié lui-même (`isVerified`).
+ */
+export function installCommand(
+  path: string,
+  format: "deb" | "rpm" | "pacman",
+  has: (binary: string) => boolean = onPath,
+): [string, string[]] {
   switch (format) {
-    case "pacman": return escalate("pacman", ["-U", "--noconfirm", path]);
-    case "deb": return escalate("apt-get", ["install", "-y", path]);
-    case "rpm": return escalate("dnf", ["install", "-y", path]);
+    case "pacman": return ["pacman", ["-U", "--noconfirm", path]];
+    case "deb": return ["apt-get", ["install", "-y", path]];
+    case "rpm":
+      if (has("dnf")) return ["dnf", ["install", "-y", path]];
+      if (has("zypper")) return ["zypper", ["--non-interactive", "install", "--allow-unsigned-rpm", path]];
+      throw new Error(`ni dnf ni zypper : installer le paquet à la main (${path})`);
+  }
+}
+
+/**
+ * Installe le paquet téléchargé, selon le format d'origine.
+ *
+ * Chemin et format viennent de la page : seul un fichier que `download` a
+ * vérifié s'installe, et seulement par le format que l'installation a
+ * réellement (`detectFormat`) — jamais une AppImage remplacée sur la parole de
+ * la page. `probe` n'est remplacée que par les tests.
+ */
+export async function install(path: string, format: LinuxFormat, probe: OwnershipProbe = owns): Promise<void> {
+  if (!isVerified(path)) throw new Error("paquet non vérifié par ce processus : installation refusée");
+  const actual = await detectFormat(probe);
+  if (actual !== format) throw new Error(`format ${format} refusé : l'installation est ${actual}`);
+  switch (format) {
+    case "pacman":
+    case "deb":
+    case "rpm": {
+      const [manager, args] = installCommand(path, format);
+      return escalate(manager, args);
+    }
     case "appimage": return Promise.resolve(replaceAppImage(path));
     default: throw new Error(`format non géré : ${format}`);
   }

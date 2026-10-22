@@ -45,12 +45,12 @@
   },
   "devDependencies": {
     "@electron/packager": "^20.0.4",
-    "@types/node": "^22.10.0",
+    "@types/node": "^22.20.5",
     "cross-env": "^10.1.0",
-    "electron": "^43.2.0",
+    "electron": "^43.7.0",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.25.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.2.0"
+    "vitest": "^4.1.12"
   }
 }

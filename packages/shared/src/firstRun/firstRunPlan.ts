@@ -1,4 +1,5 @@
 import { FIRST_RUN_STEP_IDS, type FirstRunStep } from "./firstRunCatalog";
+import { trimTrailingSlashes } from "../utils/trailingSlashes";
 
 /**
  * Le PREMIER LANCEMENT d'un profil hors TV (mobile, iPad, web étroit) — ce
@@ -33,7 +34,7 @@ export type FirstRunPlan =
   | { kind: "show"; steps: FirstRunStep[] };
 
 export function firstRunKey(serverUrl: string, subjectId: string): string {
-  return `${serverUrl.replace(/\/+$/, "").toLowerCase()}|${subjectId.replace(/-/g, "").toLowerCase()}`;
+  return `${trimTrailingSlashes(serverUrl).toLowerCase()}|${subjectId.replace(/-/g, "").toLowerCase()}`;
 }
 
 export function parseFirstRunSeen(raw: string | null): string[] {

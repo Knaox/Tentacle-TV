@@ -26,6 +26,8 @@ beforeAll(() => {
 });
 afterAll(() => rmSync(DATA_ROOT, { recursive: true, force: true }));
 beforeEach(() => {
+  // vitest 4 réutilise un espion déjà posé sans effacer ses appels : on repart de zéro.
+  vi.restoreAllMocks();
   vi.spyOn(console, "log").mockImplementation(() => undefined);
   vi.spyOn(console, "error").mockImplementation(() => undefined);
 });

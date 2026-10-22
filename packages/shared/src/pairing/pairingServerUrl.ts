@@ -19,6 +19,8 @@
  * `hostname` sur toutes les versions livrées.
  */
 
+import { trimTrailingSlashes } from "../utils/trailingSlashes";
+
 const HTTP_URL = /^(https?):\/\/(\[[0-9a-f:.]+\]|[^\s/?#:@[\]]+)(?::(\d{1,5}))?(?:[/?#][^\s]*)?$/i;
 
 function isLoopbackHost(host: string): boolean {
@@ -30,7 +32,7 @@ function isLoopbackHost(host: string): boolean {
 
 /** L'adresse, débarrassée de ses `/` finaux, si une TV peut la joindre ; sinon `null`. */
 export function reachableServerUrl(raw: string | null | undefined): string | null {
-  const url = raw?.trim().replace(/\/+$/, "");
+  const url = raw == null ? undefined : trimTrailingSlashes(raw.trim());
   if (!url) return null;
   const match = HTTP_URL.exec(url);
   if (!match) return null;

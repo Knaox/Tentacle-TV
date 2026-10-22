@@ -18,14 +18,23 @@
  * une instance installée peuvent tourner côte à côte.
  */
 
-import { readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { unloadScript, unloadScriptSync } from "./kwinScripting";
 
-/** Le dossier de la n-ième pose de ce processus. Exporté pour les tests. */
-export function glueFolder(pid: number, number: number): string {
-  return path.join(tmpdir(), `tentacle-colle-${String(pid)}-${String(number)}`);
+/**
+ * Crée le dossier de la n-ième pose de ce processus, et le rend.
+ *
+ * `mkdtemp` et jamais un nom fixe : le répertoire temporaire est PARTAGÉ, et un
+ * autre compte pouvait y créer d'avance `tentacle-colle-<pid>-<n>` — repris tel
+ * quel, il lui laissait échanger le QML avant que KWin le charge dans NOTRE
+ * session (CodeQL `js/insecure-temporary-file`). Le suffixe aléatoire rend le
+ * nom imprévisible, la création échoue plutôt que de reprendre un dossier
+ * existant, et il naît en 0700 : personne d'autre n'y entre.
+ */
+export function createGlueFolder(pid: number, number: number, root: string = tmpdir()): string {
+  return mkdtempSync(path.join(root, `tentacle-colle-${String(pid)}-${String(number)}-`));
 }
 
 export function removeFolder(folder: string): void {
@@ -46,7 +55,8 @@ export function pluginName(pid: number): string {
   return `tentacle-colle-${String(pid)}`;
 }
 
-const FOLDER_PATTERN = /^tentacle-colle-(\d+)-\d+$/;
+// Le suffixe de `mkdtemp` ; sans lui, un dossier d'une version d'avant.
+const FOLDER_PATTERN = /^tentacle-colle-(\d+)-\d+(?:-[A-Za-z0-9]{6})?$/;
 
 /**
  * Les dossiers de pose d'une racine, avec leur pid.

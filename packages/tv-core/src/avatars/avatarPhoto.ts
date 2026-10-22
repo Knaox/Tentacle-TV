@@ -12,12 +12,14 @@
  * Module pur : l'adresse se calcule, la donnée lue arrive en argument.
  */
 
+import { trimTrailingSlashes } from "@tentacle-tv/shared";
+
 export type AvatarImageSize = "thumb" | "full";
 
 /** L'adresse d'une image de la troupe ; null sans serveur ou pour un identifiant douteux. */
 export function avatarImageUrl(serverUrl: string | null | undefined, id: string, size: AvatarImageSize): string | null {
   if (!serverUrl || !/^[a-z0-9]+$/.test(id)) return null;
-  const base = serverUrl.replace(/\/+$/, "");
+  const base = trimTrailingSlashes(serverUrl);
   return size === "thumb" ? `${base}/avatars/thumbs/${id}.webp` : `${base}/avatars/${id}.webp`;
 }
 
@@ -55,5 +57,5 @@ function mediaType(value: string | null | undefined): string | null {
 
 /** L'adresse, par le proxy du serveur, où la photo du compte se pose (`POST`) ou se lit. */
 export function accountPhotoPath(jellyfinBase: string, userId: string): string {
-  return `${jellyfinBase.replace(/\/+$/, "")}/Users/${encodeURIComponent(userId)}/Images/Primary`;
+  return `${trimTrailingSlashes(jellyfinBase)}/Users/${encodeURIComponent(userId)}/Images/Primary`;
 }

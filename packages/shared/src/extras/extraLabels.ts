@@ -95,8 +95,21 @@ export function extraKindLabel(t: TFunction, kind: ExtraKind): string {
   return t(LABEL_KEYS[kind]);
 }
 
-/** « Trailer 2 », « Behind The Scenes » : un genre, numéroté quand il se répète. */
-const GENERIC_NAME = /^(.+?)(?:\s+(\d+))?$/;
+/**
+ * « Trailer 2 », « Behind The Scenes » : un genre, numéroté quand il se répète.
+ * Lu à la main : `/^(.+?)(?:\s+(\d+))?$/` était quadratique sur un nom fait de
+ * longues suites d'espaces (CodeQL `js/polynomial-redos`) — le nom vient du serveur.
+ */
+function splitGenericName(name: string): { kind: string; number?: string } {
+  let digits = name.length;
+  while (digits > 0 && name.charCodeAt(digits - 1) >= 48 && name.charCodeAt(digits - 1) <= 57) digits--;
+  let spaces = digits;
+  while (spaces > 0 && /\s/.test(name.charAt(spaces - 1))) spaces--;
+  if (digits < name.length && spaces < digits && spaces > 0) {
+    return { kind: name.slice(0, spaces), number: name.slice(digits) };
+  }
+  return { kind: name };
+}
 
 /**
  * Le suffixe de fichier d'un extra, tel que Jellyfin 10.x le laissait dans son
@@ -124,11 +137,11 @@ export function localExtraTitle(t: TFunction, extra: { Name?: string; ExtraType?
   const name = (extra.Name ?? "").trim();
   if (name === "") return own;
 
-  const generic = GENERIC_NAME.exec(name);
-  const genericKind = generic ? knownKind(generic[1]) : null;
-  if (generic && genericKind) {
+  const generic = splitGenericName(name);
+  const genericKind = knownKind(generic.kind);
+  if (genericKind) {
     const label = extraKindLabel(t, genericKind);
-    return generic[2] ? t("common:extraNumbered", { kind: label, number: generic[2] }) : label;
+    return generic.number ? t("common:extraNumbered", { kind: label, number: generic.number }) : label;
   }
 
   const suffixed = FILE_SUFFIX.exec(name);

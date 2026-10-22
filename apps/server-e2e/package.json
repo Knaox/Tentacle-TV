@@ -13,9 +13,9 @@
     "bench:wt-profile-cookies": "tsx wt-bench/profile/cookieJarBench.ts"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
+    "@types/node": "^22.20.5",
     "playwright-core": "^1.63.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.2.0"
+    "vitest": "^4.1.12"
   }
 }

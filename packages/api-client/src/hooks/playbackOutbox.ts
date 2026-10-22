@@ -95,14 +95,20 @@ export function isPlaybackOutboxActive(): boolean {
 }
 
 /** Les entrées en attente, par titre. */
+/**
+ * La file, en objet SANS prototype : ses clés sont des identifiants de titre
+ * venus du serveur, et un « __proto__ » ou un « toString » doit y rester une
+ * entrée comme une autre (CodeQL `js/remote-property-injection`).
+ */
 export function readPlaybackOutbox(): Record<string, OutboxEntry> {
-  if (!store) return {};
+  const entries: Record<string, OutboxEntry> = Object.create(null);
+  if (!store) return entries;
   try {
     const raw = store.getItem(OUTBOX_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? (parsed as Record<string, OutboxEntry>) : {};
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? Object.assign(entries, parsed as Record<string, OutboxEntry>) : entries;
   } catch {
-    return {};
+    return entries;
   }
 }
 
