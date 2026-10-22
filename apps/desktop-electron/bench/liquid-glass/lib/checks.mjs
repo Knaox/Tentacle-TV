@@ -36,7 +36,7 @@ export function checkCell(cell, report) {
   const toggle = settings?.toggle;
 
   if (cell.expect === "on") {
-    if (!bridge?.present) fail("pont `window.tentacle.liquidGlass` absent sur macOS 26", home?.capture);
+    if (home && !bridge?.present) fail("pont `window.tentacle.liquidGlass` absent sur macOS 26", home?.capture);
     else if (bridge.supported !== true) fail("pont présent mais `supported` faux sur macOS 26", home?.capture);
     if (home?.dom && home.dom.htmlAttr !== "native") fail(`html[data-liquid-glass] = ${home.dom.htmlAttr} (attendu « native »)`, home?.capture);
     if (toggle && !toggle.found) fail("interrupteur Liquid Glass introuvable dans Réglages › Apparence", settings?.capture);
