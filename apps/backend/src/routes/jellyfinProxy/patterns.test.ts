@@ -34,3 +34,27 @@ describe("isAllowedProxyPath — nouveautés de Jellyfin 12", () => {
     expect(isAllowedProxyPath("Collections/abc/Items")).toBe(false);
   });
 });
+
+describe("isAllowedProxyPath — aucune remontée hors de la liste", () => {
+  it("refuse un préfixe permis suivi de « .. », sous toutes ses formes", () => {
+    for (const path of [
+      "Items/x/Images/../../../System/Configuration",
+      "Items/x/Images/%2e%2e/%2E%2E/System/Configuration",
+      "Items/x/Images/%252e%252e/%252e%252e/Users",
+      "Items/x/Images/..%2f..%2fAuth/Keys",
+      "Items/x/Images/..\\..\\System/Configuration",
+      "Genres/../Users",
+      "Items/x/Images/./Primary",
+    ]) expect(isAllowedProxyPath(path)).toBe(false);
+  });
+
+  it("garde les chemins légitimes, points et pourcentages compris", () => {
+    for (const path of [
+      "Items/abc/Images/Primary",
+      "Videos/abc/def/Subtitles/0/Stream.vtt",
+      "Persons/John%20Doe",
+      "Genres/Science-Fiction %26 Fantastique",
+      "Studios/100%",
+    ]) expect(isAllowedProxyPath(path)).toBe(true);
+  });
+});
