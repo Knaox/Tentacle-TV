@@ -52,12 +52,6 @@ export interface LiquidGlassSurfaceOptions extends LiquidGlassAppearance {
   fallbackStyle?: CSSProperties;
   /** Ref de l'appelant, réunie à celle de la surface. */
   ref?: Ref<HTMLElement>;
-  /**
-   * @deprecated SANS EFFET depuis le lot lg2 : une surface garde UN ton
-   * (Apple ne pose jamais de bandes). Un grand verre prend `scale: "surface"`.
-   * Retiré en fin de lot.
-   */
-  bands?: boolean;
 }
 
 export interface LiquidGlassSurfaceProps {

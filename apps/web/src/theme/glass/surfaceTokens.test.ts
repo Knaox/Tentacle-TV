@@ -8,6 +8,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { WCAG_AA_TEXT, compositeOver, contrastRatio, parseColor, relativeLuminance } from "./contrast";
+
 const CSS = readFileSync(join(__dirname, "surfaceTokens.css"), "utf8");
 const GATE = ':root[data-liquid-glass="native"]';
 
@@ -86,5 +88,29 @@ describe("le contrat du lot lg2", () => {
     const at = (file: string) => index.indexOf(`@import "./theme/${file}"`);
     expect(at("glass/surfaceTokens.css")).toBeGreaterThan(at("liquidGlassTokens.css"));
     expect(at("glass/surfaceTokens.css")).toBeLessThan(at("liquidGlassSurface.css"));
+  });
+});
+
+describe("le contenu en clair (valeurs relevées par D)", () => {
+  const LIGHT = blockFor(`${GATE}[data-theme="light"]`);
+  const value = (name: string) => new RegExp(`${name}:\\s*([^;]+);`).exec(LIGHT)?.[1]?.trim();
+  const THEME = readFileSync(join(__dirname, "..", "tokens.css"), "utf8");
+  const page = /:root\[data-theme="light"\][^{]*\{[^}]*--surface-0:\s*(#[0-9A-Fa-f]{6})/.exec(THEME)?.[1];
+
+  it("le survol d'une carte se distingue du groupe ET de la page", () => {
+    expect(page).toBeDefined();
+    const hover = parseColor(value("--lg-content-fill-hover") ?? "")!;
+    for (const other of [value("--lg-content-fill")!, page!]) {
+      const o = parseColor(other)!;
+      expect(Math.abs(relativeLuminance(hover) - relativeLuminance(o)), other).toBeGreaterThan(0.02);
+    }
+  });
+
+  it("le texte tertiaire tient l'AA sur le groupe blanc et sur la page", () => {
+    const tertiary = parseColor(value("--text-tertiary") ?? "")!;
+    for (const under of [value("--lg-content-fill")!, page!]) {
+      const bg = parseColor(under)!;
+      expect(contrastRatio(compositeOver(tertiary, bg), bg), under).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+    }
   });
 });
