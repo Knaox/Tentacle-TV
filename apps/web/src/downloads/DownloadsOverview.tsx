@@ -41,7 +41,7 @@ export function DownloadsOverview({ entries }: { entries: readonly DownloadEntry
         directement dans la section, leur débord à droite l'agrandissait, et le
         focus d'un bouton la faisait défiler de côté en fenêtre étroite.
       */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+      <div aria-hidden className="lg-content-ornament pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
         <div
           className="absolute -right-24 -top-24 h-64 w-64 rounded-full opacity-60"
           style={{ background: "radial-gradient(closest-side, rgba(var(--brand-accent-rgb), 0.18), transparent)" }}

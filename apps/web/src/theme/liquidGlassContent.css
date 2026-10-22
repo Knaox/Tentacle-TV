@@ -45,6 +45,8 @@
   --lgd-selected: rgba(255, 255, 255, 0.24);
   --lgd-selected-fg: #ffffff;
   --lgd-selected-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  /* Le même, OPAQUE, pour un choix posé sur une image (onglets de saison). */
+  --lgd-tab-selected: #3a3a3f;
   /* Une bascule ALLUMÉE : la couleur d'accent, unie (pas le dégradé). */
   --lgd-accent: rgb(var(--brand-rgb));
   /* Le libellé d'un filtre actif : la marque « en touche », lisible — 4,8:1
@@ -62,6 +64,7 @@
   --lgd-selected: #ffffff;
   --lgd-selected-fg: #0b0b10;
   --lgd-selected-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  --lgd-tab-selected: #ffffff;
   --lgd-accent-fg: #6d28d9; /* 7,1:1 sur le bouton choisi, 5,9:1 sur un groupe */
 }
 
@@ -190,4 +193,30 @@
  * focus : le liseré du contenu l'avait recouvert. */
 :root[data-liquid-glass="native"] .lg-content:has(input):focus-within {
   box-shadow: inset 0 0 0 1px var(--lgd-stroke), 0 0 0 3px var(--lg-tint-brand);
+}
+
+/* ══ 6. Les onglets de saison de la fiche ═════════════════════════════════
+ *
+ * Un choix du contenu : la saison retenue devient le bouton neutre plus clair
+ * du segment choisi (opaque : les onglets passent sur le fond de la fiche),
+ * jamais l'aplat au dégradé de marque. Le point « en cours » garde la marque. */
+:root[data-liquid-glass="native"] .season-tab[aria-selected="true"] {
+  color: var(--lgd-selected-fg);
+}
+
+:root[data-liquid-glass="native"] .season-tab[aria-selected="true"]::before {
+  background: var(--lgd-tab-selected);
+  box-shadow: var(--lgd-selected-shadow);
+}
+
+:root[data-liquid-glass="native"] .season-tab[aria-selected="true"] :is(.season-tab-count, .season-tab-watched) {
+  color: var(--lgd-selected-fg);
+}
+
+:root[data-liquid-glass="native"] .season-tab[aria-selected="true"] .season-tab-count {
+  background: var(--lgd-control);
+}
+
+:root[data-liquid-glass="native"] .season-tab[aria-selected="true"] .season-tab-dot {
+  background: rgb(var(--brand-rgb));
 }
