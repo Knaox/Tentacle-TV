@@ -162,6 +162,12 @@ export interface NativeGlassSampleRect {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  /**
+   * `window` : la vidéo de mpv SEULE sous ce rectangle, la page exclue — pour
+   * une forme posée sur la vidéo, dont les glyphes ne doivent pas peser.
+   * Absent : la page, composée sur la vidéo là où elle est transparente.
+   */
+  readonly under?: "window";
 }
 
 declare global {

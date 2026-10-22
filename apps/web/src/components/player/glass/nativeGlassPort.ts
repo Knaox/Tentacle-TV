@@ -81,22 +81,22 @@ export function useNativeGlassRegion(ref: RefObject<HTMLElement | null>, options
  * les contrôles sont masqués. Sur la vidéo, le thème ne dit rien du dessous :
  * sans mesure, le ton reste `dark` (des glyphes clairs, comme avant).
  *
- * `liquidGlass.sample` compose la page SUR la vidéo de mpv (lg-natif,
- * `videoSample.ts` : l'image décodée, une par seconde au plus, hors du fil
- * principal) — ce que l'œil voit, au verre près. Nos glyphes n'y pèsent pas
- * (mesuré par lg-natif : 14 % de la forme → 0,877 sur une neige à 0,882).
- * Avant cela, la coquille ne lisait que la PAGE : au-dessus de la vidéo, nos
- * glyphes et leurs halos, et le ton aurait oscillé.
+ * La mesure porte sur la VIDÉO SEULE sous la forme (`under: "window"`, lg-natif
+ * `videoSample.ts` : l'image décodée de mpv, une par seconde au plus, hors du
+ * fil principal), la page exclue : nos glyphes, chiffres et halos ne pèsent
+ * rien — un ton qui se lirait sur eux oscillerait (des glyphes blancs lus
+ * « clairs » passent au sombre, relus « sombres » repassent au clair).
  */
 export function useVideoBackdropTone(element: HTMLElement | null, active: boolean): BackdropTone {
-  return useBackdropTone(element, active && videoToneMeasurable(), { fallback: "dark" });
+  return useBackdropTone(element, active && videoToneMeasurable(), { fallback: "dark", under: "window" });
 }
 
 /**
  * La coquille sait-elle mesurer la VIDÉO sous la page ? Au montage `fenetre`
  * (Apple Silicon : mpv dans sa fenêtre Metal, sous la nôtre), là où le lecteur
- * pose son verre. La branche de lg-natif qui l'apprend à `sample` (`6d86ce1ed`)
- * fait partie de celle-ci : la mesure n'existe pas sans elle.
+ * pose son verre. La branche de lg-natif qui l'apprend à `sample` (`6d86ce1ed`,
+ * puis `under: "window"` en `aece229d4`) fait partie de celle-ci : la mesure
+ * n'existe pas sans elle.
  */
 export function videoToneMeasurable(): boolean {
   const bridge = nativeGlassBridge() as { sample?: unknown } | null;

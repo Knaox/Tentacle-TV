@@ -71,15 +71,18 @@ const themeTone = (): BackdropTone => (getScheme() === "light" ? "light" : "dark
  * `fallback` : le ton tant qu'aucune mesure n'est revenue — celui du thème par
  * défaut. Un verre posé sur la VIDÉO (le lecteur) n'a pas le thème dessous : il
  * part de `dark`.
+ * `under: "window"` : mesurer la vidéo SEULE sous l'élément, la page exclue —
+ * ses propres glyphes ne pèsent alors rien (`NativeGlassSampleRect`).
  */
 export function useBackdropTone(
   element: HTMLElement | null,
   enabled: boolean,
-  options: { fallback?: BackdropTone } = {},
+  options: { fallback?: BackdropTone; under?: "window" } = {},
 ): BackdropTone {
   const scheme = useSyncExternalStore(subscribeScheme, getScheme, getScheme);
   const fallback: BackdropTone = options.fallback ?? (scheme === "light" ? "light" : "dark");
   const initial = options.fallback;
+  const under = options.under;
   const [measured, setMeasured] = useState<BackdropTone | null>(null);
   const id = useId();
 
@@ -94,7 +97,10 @@ export function useBackdropTone(
       () => {
         const r = element.getBoundingClientRect();
         const visible = r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
-        return visible ? { x: r.x, y: r.y, width: r.width, height: r.height } : null;
+        if (!visible) return null;
+        return under === undefined
+          ? { x: r.x, y: r.y, width: r.width, height: r.height }
+          : { x: r.x, y: r.y, width: r.width, height: r.height, under };
       },
       initial ?? themeTone(),
       setMeasured,
@@ -108,7 +114,7 @@ export function useBackdropTone(
       resize.disconnect();
       element.removeEventListener("pointerenter", hover);
     };
-  }, [element, enabled, id, initial]);
+  }, [element, enabled, id, initial, under]);
 
   return measured ?? fallback;
 }
