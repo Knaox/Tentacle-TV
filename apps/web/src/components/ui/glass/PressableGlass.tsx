@@ -18,6 +18,8 @@ interface PressableGlassProps extends Omit<PressableScaleProps, "children" | "cl
   className?: string;
   /** La peau d'avant (fond, bord, ombre, survol) — seulement hors du mode natif. */
   fallbackClassName?: string;
+  /** Style de la peau d'avant (une ombre en ligne…) — seulement hors du mode natif. */
+  fallbackStyle?: React.CSSProperties;
 }
 
 /**
@@ -32,7 +34,7 @@ interface PressableGlassProps extends Omit<PressableScaleProps, "children" | "cl
  */
 export const PressableGlass = forwardRef<HTMLButtonElement, PressableGlassProps>(
   function PressableGlass(
-    { appearance, className, fallbackClassName, style, children, hoverScale, tapScale, ...props },
+    { appearance, className, fallbackClassName, fallbackStyle, style, children, hoverScale, tapScale, ...props },
     ref,
   ) {
     const native = useLiquidGlassMode() === "native";
@@ -41,6 +43,7 @@ export const PressableGlass = forwardRef<HTMLButtonElement, PressableGlassProps>
       interactive: true,
       className,
       fallbackClassName,
+      fallbackStyle,
       style: style as React.CSSProperties | undefined,
       ref,
     });
