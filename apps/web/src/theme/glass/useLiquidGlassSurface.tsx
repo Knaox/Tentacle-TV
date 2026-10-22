@@ -117,11 +117,11 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
 
   const level = appearance.level ?? "regular";
   const shape = appearance.shape ?? "rounded";
-  const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md");
-  const filterId = lensFilterId(useId());
-  // Le ton de ce qui est dessous : la polarité des glyphes (lentille de page ;
-  // le verre natif s'adapte seul).
+  // Le ton de ce qui est dessous : la polarité des glyphes et la lumière du
+  // bord (lentille de page ; le verre natif s'adapte seul).
   const tone = useBackdropTone(element, render === "lens");
+  const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md", tone);
+  const filterId = lensFilterId(useId());
   useBandTones(element, render === "lens" && bands);
 
   if (render === "fallback") {

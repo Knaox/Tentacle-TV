@@ -14,8 +14,11 @@ import {
  * `backdrop-filter`, voir `engine.ts`).
  *
  * Il fait deux choses, dans cet ordre : RÉFRACTER le fond au biseau (carte de
- * déplacement calculée pour la forme exacte, `refractionMap.ts`), puis poser
- * la LUMIÈRE du bord (carte spéculaire) par-dessus. Le léger givre, la
+ * déplacement calculée pour la forme exacte, `refractionMap.ts`), puis
+ * ÉCLAIRER le bord : la carte spéculaire ne porte qu'une intensité, et le fond
+ * réfracté y est éclairci de `gain` × l'intensité (plus un soupçon de blanc,
+ * `white`) — une lumière de la COULEUR du dessous, jamais un trait blanc posé
+ * dessus ; sur un dessous clair elle plafonne et s'éteint. Le léger givre, la
  * saturation et la luminosité se règlent AVANT, en fonctions CSS du même
  * `backdrop-filter` (`blur() saturate() brightness() url(#…)`) : placés après,
  * ils flouteraient le liseré.
@@ -181,10 +184,12 @@ function RefractionFilterImpl({
               <feComposite in="c01" in2="c2" operator="arithmetic" k2="1" k3="1" result="lens" />
             </>
           )}
-          {urls.specular !== null ? (
+          {urls.specular !== null && light !== undefined && (light.gain > 0 || light.white > 0) ? (
             <>
               {image(urls.specular, "light")}
-              <feComposite in="light" in2="lens" operator="over" />
+              {/* Prémultiplié : la carte vaut (I, I, I, I). Résultat :
+                  fond × (1 + gain × I) + white × I ; l'alpha plafonne à 1. */}
+              <feComposite in="lens" in2="light" operator="arithmetic" k1={light.gain} k2={1} k3={light.white} k4={0} />
             </>
           ) : null}
         </filter>

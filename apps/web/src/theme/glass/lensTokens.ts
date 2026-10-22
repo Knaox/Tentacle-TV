@@ -38,15 +38,20 @@ export function lensBezel(radius: number, ratio: number, min: number, max: numbe
   return Math.round(Math.min(max, Math.max(min, radius * ratio)));
 }
 
-/** La lumière du bord, d'après les jetons du thème courant. */
+/**
+ * La lumière du bord, d'après les jetons lus SUR la surface : le gain et
+ * l'éclat suivent son ton (`data-lg-tone`, `liquidGlassTokens.css`).
+ */
 export function readSpecularLight(read: TokenReader): SpecularLight {
   return {
     angle: number(read, "--lg-light-angle", -18),
-    facing: number(read, "--lg-specular-facing", 0.85),
-    opposite: number(read, "--lg-specular-opposite", 0.42),
-    base: number(read, "--lg-specular-base", 0.1),
-    rim: number(read, "--lg-specular-rim", 1.5),
-    glow: number(read, "--lg-specular-glow", 0.16),
+    facing: number(read, "--lg-specular-facing", 0.9),
+    opposite: number(read, "--lg-specular-opposite", 0.25),
+    base: number(read, "--lg-specular-base", 0),
+    rim: number(read, "--lg-edge-width", 1.2),
+    glow: number(read, "--lg-specular-glow", 0.22),
+    gain: number(read, "--lg-edge-gain", 1.4),
+    white: number(read, "--lg-edge-white", 0.2),
   };
 }
 
@@ -112,6 +117,8 @@ export function sameLens(a: LensGeometry | null, b: LensGeometry): boolean {
     la.opposite === lb.opposite &&
     la.base === lb.base &&
     la.rim === lb.rim &&
-    la.glow === lb.glow
+    la.glow === lb.glow &&
+    la.gain === lb.gain &&
+    la.white === lb.white
   );
 }

@@ -75,8 +75,10 @@ describe("les jetons du verre", () => {
       "--lg-specular-facing",
       "--lg-specular-opposite",
       "--lg-specular-base",
-      "--lg-specular-rim",
       "--lg-specular-glow",
+      "--lg-edge-width",
+      "--lg-edge-gain",
+      "--lg-edge-white",
       "--lg-edge",
       "--lg-thick-blur",
       "--lg-glyph-on-dark",
@@ -125,7 +127,7 @@ describe("les jetons du verre", () => {
       "--lg-label-shadow",
       "--lg-glyph-shadow",
       "--lg-vibrancy-blend",
-      "--lg-specular-facing",
+      "--lg-edge-gain",
       "--lg-edge",
     ]) {
       expect(LIGHT, name).toContain(name);
@@ -163,6 +165,24 @@ describe("les jetons du verre", () => {
     for (const name of ["--lg-regular-fill", "--lg-clear-fill", "--lg-thick-fill"]) {
       expect(block(":root")).toMatch(new RegExp(`${name}:\\s*rgba\\(var\\(--lg-light-rgb\\)`));
     }
+  });
+
+  it("aucun CONTOUR blanc : un bord orienté, coloré par le dessous, éteint sur un dessous clair", () => {
+    const root = blockFor(CSS, ":root");
+    const light = blockFor(CSS, ':root[data-theme="light"]');
+    // Rien tout autour : la lumière n'est que sur l'arc face à elle.
+    expect(root).toMatch(/--lg-specular-base:\s*0;/);
+    // Les anciens liserés `inset` : un fil SOMBRE, jamais clair, dans les deux thèmes.
+    expect(root).toMatch(/--lg-rim:\s*rgba\(var\(--lg-shade-rgb\)/);
+    expect(light).toMatch(/--lg-rim:\s*rgba\(var\(--lg-shade-rgb\)/);
+    // En clair : aucun trait blanc, et le bord de la lentille sans éclat.
+    for (const name of ["--lg-specular-strong", "--lg-specular-soft", "--lg-inner-glow"]) {
+      expect(light).toMatch(new RegExp(`${name}:\\s*transparent;`));
+    }
+    expect(light).toMatch(/--lg-edge-white:\s*0;/);
+    // Le ton du dessous l'emporte sur le thème pour le gain et l'éclat.
+    expect(blockFor(CSS, ':root[data-liquid-glass="native"] [data-lg-tone="light"]')).toMatch(/--lg-edge-white:\s*0;/);
+    expect(blockFor(CSS, ':root[data-liquid-glass="native"] [data-lg-tone="dark"]')).toMatch(/--lg-edge-gain:/);
   });
 
   it("aucune primitive que la feuille du téléviseur LG refuserait", () => {
