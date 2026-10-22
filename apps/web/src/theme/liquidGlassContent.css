@@ -4,9 +4,10 @@
  * barres, menus, feuilles, contrôles qui flottent. Le CONTENU (groupes de
  * réglages, tuiles, panneaux d'outils posés dans la page, sections) prend des
  * REMPLISSAGES sobres et opaques, comme Réglages Système de macOS 26 : un
- * gris à peine plus clair que la fenêtre en sombre, à peine plus foncé en
+ * gris un cran plus clair que la fenêtre en sombre, le blanc des groupes en
  * clair, un liseré discret, aucune ombre, aucun flou, aucune teinte de marque.
- * Opaques : le remplissage se compose sur le fond de la page (`--lgd-base`).
+ * Opaques : le remplissage se compose sur le fond de la page (`--lgd-base`),
+ * même si un jeton du socle devenait translucide.
  *
  * Les classes-marqueurs n'ont AUCUN style hors de la porte : le rendu d'avant,
  * au pixel près (tenu par `liquidGlassTokens.test.ts`).
@@ -32,9 +33,11 @@
 :root[data-liquid-glass="native"] {
   /* Le fond sur lequel un remplissage se compose : celui de la page. */
   --lgd-base: var(--surface-0);
-  --lgd-fill: var(--lg-content-fill, rgba(255, 255, 255, 0.065));
-  --lgd-fill-hover: var(--lg-content-fill-hover, rgba(255, 255, 255, 0.1));
+  --lgd-fill: var(--lg-content-fill, #18181b);
+  --lgd-fill-hover: var(--lg-content-fill-hover, #202024);
   --lgd-stroke: var(--lg-content-stroke, rgba(255, 255, 255, 0.07));
+  /* Un élément posé DANS un groupe (carte de choix, encadré) : un cran plus clair. */
+  --lgd-raised: #232327;
   /* Un contrôle posé dans un groupe : un cran au-dessus du groupe. */
   --lgd-control: rgba(255, 255, 255, 0.08);
   --lgd-control-hover: rgba(255, 255, 255, 0.13);
@@ -50,9 +53,10 @@
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lgd-fill: var(--lg-content-fill, rgba(0, 0, 0, 0.04));
-  --lgd-fill-hover: var(--lg-content-fill-hover, rgba(0, 0, 0, 0.065));
-  --lgd-stroke: var(--lg-content-stroke, rgba(0, 0, 0, 0.06));
+  --lgd-fill: var(--lg-content-fill, #ffffff);
+  --lgd-fill-hover: var(--lg-content-fill-hover, #f4f4f7);
+  --lgd-stroke: var(--lg-content-stroke, rgba(0, 0, 0, 0.07));
+  --lgd-raised: #f0f0f4;
   --lgd-control: rgba(0, 0, 0, 0.055);
   --lgd-control-hover: rgba(0, 0, 0, 0.085);
   --lgd-selected: #ffffff;
@@ -61,7 +65,18 @@
   --lgd-accent-fg: #6d28d9; /* 7,1:1 sur le bouton choisi, 5,9:1 sur un groupe */
 }
 
-/* ══ 1. Les conteneurs ════════════════════════════════════════════════════ */
+/* ══ 1. Les conteneurs ════════════════════════════════════════════════════
+ *
+ * `.lg-page` (la zone des pages, `AppLayout`) : les cartes des pages qui
+ * peignent `--surface-1` (« cartes par défaut ») et `--surface-2` (un élément
+ * dans une carte) prennent les remplissages du contenu — une seule grammaire
+ * pour les dizaines de cartes ad hoc des pages, sans marqueur sur chacune. Les
+ * menus et feuilles, portés hors de cette zone, n'en voient rien. */
+:root[data-liquid-glass="native"] .lg-page {
+  --surface-1: var(--lgd-fill);
+  --surface-2: var(--lgd-raised);
+}
+
 :root[data-liquid-glass="native"] .lg-content {
   /* OPAQUE : le remplissage est composé sur le fond de la page. Un panneau
    * qui chevauche le bas d'une bannière (Bibliothèque, Ma liste, Mes favoris)
@@ -100,12 +115,12 @@
   box-shadow: var(--lgd-selected-shadow) !important;
 }
 
-:root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"]) {
+:root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"], [aria-current="page"]) {
   color: var(--lgd-selected-fg);
 }
 
 /* Le compte d'un segment choisi (Ma liste) : neutre, comme son segment. */
-:root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"]) .lg-seg-count {
+:root[data-liquid-glass="native"] .lg-seg > :is([aria-checked="true"], [aria-selected="true"], [aria-current="page"]) .lg-seg-count {
   background: var(--lgd-control);
   color: var(--lgd-selected-fg);
 }
@@ -169,4 +184,10 @@
 :root[data-liquid-glass="native"] .lg-content:disabled > :not(.pointer-events-none) {
   /* Le calque de survol (`pointer-events-none`) garde son opacité nulle. */
   opacity: 0.45;
+}
+
+/* Un champ posé en conteneur (en-tête de la recherche) garde son anneau de
+ * focus : le liseré du contenu l'avait recouvert. */
+:root[data-liquid-glass="native"] .lg-content:has(input):focus-within {
+  box-shadow: inset 0 0 0 1px var(--lgd-stroke), 0 0 0 3px var(--lg-tint-brand);
 }

@@ -23,11 +23,11 @@ export function FamilyPinCard() {
       {card && (
         <section
           aria-labelledby={titleId}
-          className="relative mb-6 overflow-hidden rounded-2xl border border-[rgba(var(--brand-rgb),0.35)] bg-surface-1 p-5"
+          className="lg-content relative mb-6 overflow-hidden rounded-2xl border border-[rgba(var(--brand-rgb),0.35)] bg-surface-1 p-5"
         >
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
+            className="lg-content-ornament pointer-events-none absolute inset-0"
             style={{ background: "linear-gradient(135deg, rgba(var(--brand-rgb), 0.18), rgba(var(--brand-accent-rgb), 0.10) 60%, transparent)" }}
           />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">

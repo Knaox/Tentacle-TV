@@ -18,7 +18,7 @@ export function SwipeSkeleton() {
 export function SwipeLibraryOnlyNotice() {
   const { t } = useTranslation("swipe");
   return (
-    <div className="flex w-full max-w-xl items-start gap-3 rounded-2xl border border-line-subtle bg-fill-subtle px-4 py-2.5 text-sm sm:py-3" role="status">
+    <div className="lg-content flex w-full max-w-xl items-start gap-3 rounded-2xl border border-line-subtle bg-fill-subtle px-4 py-2.5 text-sm sm:py-3" role="status">
       <Library size={18} className="mt-0.5 shrink-0 text-brand-light" aria-hidden />
       <div>
         <p className="hidden font-semibold text-content-primary sm:block">{t("libraryOnlyTitle")}</p>

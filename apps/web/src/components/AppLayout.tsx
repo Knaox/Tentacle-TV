@@ -75,8 +75,10 @@ function DesktopLayout() {
         <TopNav />
       )}
 
+      {/* `lg-page` : sous le verre de macOS 26, les cartes des pages prennent
+          les remplissages du contenu (`theme/liquidGlassContent.css`). */}
       <div
-        className={isMobile ? "pt-[56px] pb-20" : "pt-[68px]"}
+        className={isMobile ? "lg-page pt-[56px] pb-20" : "lg-page pt-[68px]"}
         style={isMobile ? {
           paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
           paddingLeft: "env(safe-area-inset-left, 0px)",

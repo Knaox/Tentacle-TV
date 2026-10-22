@@ -70,7 +70,7 @@ function Schedules({ lines, t, lang }: { lines: ScheduleLine[]; t: T; lang: stri
   return (
     <section
       aria-labelledby="account-access-hours"
-      className="mt-8 w-full rounded-2xl border border-line-subtle bg-fill-subtle p-5 text-left backdrop-blur-md"
+      className="lg-content mt-8 w-full rounded-2xl border border-line-subtle bg-fill-subtle p-5 text-left backdrop-blur-md"
     >
       <h2 id="account-access-hours" className="text-xs font-semibold uppercase tracking-wider text-content-tertiary">
         {t("schedulesTitle")}

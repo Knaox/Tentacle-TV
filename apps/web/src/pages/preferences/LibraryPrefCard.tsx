@@ -51,7 +51,7 @@ export function LibraryPrefCard({ libraryId, libraryName, pref, languages, subti
   };
 
   return (
-    <div className="rounded-xl border border-line-subtle bg-fill-subtle p-5">
+    <div className="lg-content rounded-xl border border-line-subtle bg-fill-subtle p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-content-primary">{libraryName}</h3>
         <div className="flex items-center gap-2">
