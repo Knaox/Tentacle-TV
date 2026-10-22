@@ -127,11 +127,13 @@
 
 /* ══ 6. Pastilles de qualité et de langue ═════════════════════════════════
  *
- * Déjà du verre sombre, réglé au contraste près (10 px sur une affiche) :
- * seule l'arête du matériau s'ajoute — la 4K garde son liseré et sa lueur de
- * marque. `!important` : style en ligne. */
-:root[data-liquid-glass="native"] .lg-meta:not([data-tone="accent"]) {
-  box-shadow: var(--lgc-edge) !important;
+ * Des ÉTIQUETTES du contenu, pas des contrôles (lot lg2) : plus de flou
+ * (`backdrop-blur-md` du rendu d'avant) ni d'arête de verre. Leur fond sombre
+ * à 72 % tient seul le contraste sur une affiche ; la 4K garde son liseré et
+ * sa lueur de marque, en ligne. */
+:root[data-liquid-glass="native"] .lg-meta {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* ══ 7. Sans flou : « Tout voir » et les panneaux de la page ═══════════════
