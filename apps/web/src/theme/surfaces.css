@@ -255,6 +255,24 @@
  * s'adaptent à ce qui est dessous (`data-lg-tone`), la lisibilité ne vient
  * plus d'un voile. Ailleurs, le voile d'avant, inchangé. */
 :root[data-liquid-glass="native"] {
+  /* Le fondu des bords de rangée s'allège aussi : la flèche y est une pastille
+   * de verre CLAIR, qui montre fidèlement ce qu'elle a dessous. Sous le voile
+   * d'avant (couleur de la page à 0,92), elle ne voyait qu'un aplat — un disque
+   * GRIS en thème clair sur une affiche brun-rouge (labo, 22/10). Un bord doux,
+   * comme l'effet de bord de défilement de macOS 26 ; la flèche se lit par ses
+   * glyphes adaptés (`data-lg-tone`). */
+  --row-fade-left: linear-gradient(
+    90deg,
+    rgba(var(--scrim-page-rgb), 0.38) 0%,
+    rgba(var(--scrim-page-rgb), 0.14) 45%,
+    rgba(var(--scrim-page-rgb), 0) 100%
+  );
+  --row-fade-right: linear-gradient(
+    270deg,
+    rgba(var(--scrim-page-rgb), 0.38) 0%,
+    rgba(var(--scrim-page-rgb), 0.14) 45%,
+    rgba(var(--scrim-page-rgb), 0) 100%
+  );
   --card-hover-veil: linear-gradient(
     180deg,
     rgba(var(--scrim-media-rgb), 0) 0%,
