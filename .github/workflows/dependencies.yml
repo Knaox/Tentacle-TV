@@ -75,3 +75,9 @@ jobs:
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
+          # Avis tolérés, un par un, justifiés et sans correctif publié :
+          # - GHSA-86w9-cpqp-85rv (node-forge, vérification de signature RSA) :
+          #   node-forge 1.4.0 est la dernière version ; seuls @expo/cli (serveur
+          #   de dev) et @expo/code-signing-certificates (outil de build) le tirent,
+          #   jamais embarqué dans une application livrée. À retirer dès un correctif.
+          allow-ghsas: GHSA-86w9-cpqp-85rv
