@@ -50,5 +50,16 @@ describe("verre de fenêtre", () => {
       const loose = list.filter((s) => !s.startsWith(GATE));
       expect(loose).toEqual([]);
     });
+
+    // La marque est une emphase (action principale d'un écran), jamais une
+    // sélection de barre ni de barre latérale (lot lg2, règle 5 d'Apple).
+    it(`${name} : aucun dégradé de marque`, () => {
+      const bare = sheet(name).replace(/\/\*[\s\S]*?\*\//g, "");
+      expect(bare).not.toMatch(/--lg-tint-gradient|--lg-tint-brand|--brand-accent/);
+    });
   }
+
+  it("la sélection de la barre latérale lit le remplissage neutre du socle", () => {
+    expect(sheet("./windowGlassSidebar.css")).toMatch(/var\(--lg-sidebar-selection,/);
+  });
 });
