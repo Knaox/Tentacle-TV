@@ -306,9 +306,9 @@ SYSTÈME ; seules ses touches de couleur suivent la marque (`--brand-rgb`,
 | Famille | Jetons |
 |---------|--------|
 | Teintes | `--lg-light-rgb`, `--lg-shade-rgb`, `--lg-tint-brand` · `-accent` · `-gradient`, `--lg-prominent-gradient` (la marque DANS le verre, translucide), `--lg-label*` |
-| Glyphes au ton du dessous | `--lg-glyph-on-{dark,light}(-secondary)`, `--lg-glyph-shadow-on-*`, `--lg-glyph-filter-on-*`, `--lg-danger-on-{dark,light}` (corail / bordeaux : le rouge de danger suit le dessous) ; d'avant, par bande (à retirer) : `--lg-glyph-on-*-secondary-thick` |
+| Glyphes au ton du dessous | `--lg-glyph-on-{dark,light}(-secondary)`, `--lg-glyph-shadow-on-*`, `--lg-glyph-filter-on-*`, `--lg-danger-on-{dark,light}` (corail / bordeaux : le rouge de danger suit le dessous) ; les GRANDES surfaces ont leurs glyphes prouvés (`--lg-surface-glyph-*`, plus bas) |
 | Niveaux | `--lg-{regular,clear,tinted,prominent}-{fill,blur,saturate,brightness}` (presque transparents, givre faible ; saturation ≤ 1,3 depuis lg2 — à 1,5 une affiche laissait des taches vives), `--lg-thick-{fill,blur}` (d'avant ; un grand verre prend le régime `surface`) |
-| Voiles | `--lg-clear-dim`, `--lg-media-dim` — TRANSPARENTS depuis la refonte (plus de fond sombre) ; `--lg-scrim` sous une feuille ; le voile minimal d'une bande (`--lg-band-veil`) est CALCULÉ, jamais un jeton |
+| Voiles | `--lg-clear-dim`, `--lg-media-dim` — TRANSPARENTS depuis la refonte (plus de fond sombre) ; `--lg-scrim` sous une feuille ; jamais un voile par rangée (le ton et le voile par bande d'avant sont RETIRÉS, lot lg2) |
 | Lentille | `--lg-refraction-{niveau}` (fraction du biseau), `--lg-bezel-{ratio,min,max}` (biseau proportionnel au rayon), `--lg-dispersion` |
 | Lumière du bord | `--lg-light-angle`, `--lg-specular-{facing,opposite,base,glow}`, `--lg-edge-{width,gain,white}` — gain et éclat par TON ; `--lg-edge` (fil et ombres) |
 | États | `--lg-hover-brightness` (le verre s'éclaire au survol), `--lg-opacity-pressed` · `-disabled` |
@@ -400,8 +400,9 @@ import { LiquidGlass, useLiquidGlassSurface, useLiquidGlassRegion, useLiquidGlas
     `--lgc-*` et les textes du thème pour les peaux CSS. Sous « Réduire la
     transparence » / « Contraste accru » : l'aplat de `physics.css`, le ton du
     thème, aucune mesure.
-  - `bands` : SANS EFFET depuis lg2 (le ton par rangée, `useBandTones`, est
-    l'inverse d'Apple), retiré en fin de lot.
+  - Le ton et le voile PAR BANDE d'avant (`bands`, `useBandTones`,
+    `--lg-band-veil`) sont RETIRÉS (lot lg2) : l'inverse d'Apple, et la
+    couture visible des captures de Damien. Un grand verre a UN ton.
 - **Options** : `level` (`regular` · `clear` · `tinted` · `prominent`),
   `shape` (`rounded` · `capsule` · `circle` · `rect`), `radius` (`xs` → `xl`),
   `tint` (`brand` · `accent`), `interactive`, `scale` (`control` ·

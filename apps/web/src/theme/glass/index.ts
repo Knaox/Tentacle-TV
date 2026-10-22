@@ -42,7 +42,6 @@
  *             `surface` (menu, popover, feuille, barre latérale, palette —
  *             `data-lg-scale="surface"` : UN ton tenu, matériau épais, jamais
  *             de bandes ; jetons du contrat dans `surfaceTokens.css`) ;
- *  - `bands`  SANS EFFET (lot lg2), retiré en fin de lot ;
  *  - `group`, `spacing`, `transition` (verre NATIF seulement) : groupe de
  *             fusion (NSGlassEffectContainerView : voisines, les régions
  *             fusionnent et se métamorphosent), sa distance de fusion en pt,
@@ -86,7 +85,6 @@ export {
 } from "./useLiquidGlassSurface";
 export { useLiquidGlassRegion, type LiquidGlassRegionOptions } from "./useLiquidGlassRegion";
 export { useBackdropTone } from "./useBackdropTone";
-export { useBandTones } from "./useBandTones";
 export type { BackdropTone } from "./backdropTone";
 export { useLensGeometry, type LensGeometry } from "./useLensGeometry";
 export {

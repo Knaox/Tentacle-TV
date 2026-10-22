@@ -50,11 +50,6 @@ export interface GlassControlOptions {
    * Défaut `control`.
    */
   scale?: LiquidGlassScale;
-  /**
-   * @deprecated SANS EFFET depuis le lot lg2 : une surface garde UN ton.
-   * Prendre `scale: "surface"`. Retiré en fin de lot.
-   */
-  bands?: boolean;
 }
 
 export interface GlassControl<T extends HTMLElement> {
