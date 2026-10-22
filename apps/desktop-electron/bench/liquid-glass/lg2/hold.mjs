@@ -31,5 +31,6 @@ try {
 } catch (error) {
   console.error(String(error));
 }
-app.child.once("exit", () => { rmSync(pidFile, { force: true }); process.exit(0); });
+// Sortie de l'app sans SIGTERM : on rend le slot (sinon le verrou du lot reste pris).
+app.child.once("exit", () => { if (!stopping) stop(); });
 setInterval(() => {}, 1 << 30);
