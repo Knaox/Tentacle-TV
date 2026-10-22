@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "fs";
-import { resolve } from "path";
+import { resolve, sep } from "path";
 import { DATA_DIR, isValidPluginId } from "./pluginManager";
 
 /**
@@ -21,11 +21,18 @@ export function readPluginManifest(pluginId: string): Record<string, unknown> | 
   }
 }
 
-/** Les emplacements qu'essaie le chargeur, dans l'ordre : le déclaré d'abord. */
+/**
+ * Les emplacements qu'essaie le chargeur, dans l'ordre : le déclaré d'abord.
+ * Tous DANS le dossier de l'extension : le module est importé avec tous les
+ * droits du serveur, un `"server": "../…"` (ou absolu) du manifeste, ou un
+ * identifiant d'`installed.json` qui remonte, n'importe rien d'ailleurs.
+ */
 export function serverModuleCandidates(pluginId: string, declared?: unknown): string[] {
+  if (!isValidPluginId(pluginId)) return [];
   const pluginDir = resolve(DATA_DIR, pluginId);
+  const declaredPath = typeof declared === "string" && declared ? resolve(pluginDir, declared) : null;
   return [
-    ...(typeof declared === "string" && declared ? [resolve(pluginDir, declared)] : []),
+    ...(declaredPath && declaredPath.startsWith(pluginDir + sep) ? [declaredPath] : []),
     resolve(pluginDir, "server", "index.js"),
     resolve(pluginDir, "server", "index.mjs"),
     resolve(pluginDir, "server.js"),
