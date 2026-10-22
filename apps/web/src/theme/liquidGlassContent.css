@@ -183,14 +183,8 @@
   color: var(--lgd-accent-fg);
 }
 
-/* ══ 5. Le texte tertiaire en clair ═══════════════════════════════════════
- *
- * `rgba(11, 11, 16, 0.55)` donne 4,4:1 sur un groupe blanc et 4,2:1 sur le
- * fond de la page (#F4F4F7) — sous l'AA des légendes de réglages. 0,64 :
- * 6:1 sur le groupe, 5,5:1 sur la page. En sombre, ≥ 6:1 : inchangé. */
-:root[data-liquid-glass="native"][data-theme="light"] {
-  --text-tertiary: rgba(11, 11, 16, 0.64);
-}
+/* ══ 5. Le texte tertiaire en clair : monté dans le socle
+ * (`theme/glass/surfaceTokens.css`, sous la porte). */
 
 /* Un geste repérable sans être l'action principale (« Partager ») : le
  * remplissage des contrôles, la marque sur le seul libellé. */

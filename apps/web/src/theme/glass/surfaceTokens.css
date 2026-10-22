@@ -98,9 +98,15 @@
   --lg-surface-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 10px 24px -10px rgba(0, 0, 0, 0.16),
     0 28px 64px -16px rgba(0, 0, 0, 0.22);
   --lg-content-fill: #FFFFFF;
-  --lg-content-fill-hover: #F4F4F7;
+  /* Distinct du blanc du groupe ET du fond de la page (#F4F4F7, `--surface-0`) :
+   * à #F4F4F7, une carte disparaissait au survol (D, lot lg2). */
+  --lg-content-fill-hover: #EEEEF2;
   --lg-content-stroke: rgba(0, 0, 0, 0.07);
   --lg-scroll-edge: linear-gradient(180deg, rgba(244, 244, 247, 0.7) 0%, rgba(244, 244, 247, 0) 100%);
+  /* Le texte TERTIAIRE du thème clair (`tokens.css` : 0,55) tombait sous l'AA
+   * (4,4:1 sur un groupe blanc, 4,2:1 sur la page) : 0,64 → 6:1 et 5,5:1.
+   * Sous la porte : hors du verre, le rendu d'avant. En sombre, ≥ 6:1. */
+  --text-tertiary: rgba(11, 11, 16, 0.64);
 }
 
 /* ── Les jetons qui vivent DANS un verre suivent SON ton, pas le thème ──── */
