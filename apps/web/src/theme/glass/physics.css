@@ -41,15 +41,30 @@
   /* Couleurs du reflet et du liseré contrasté : tirées de la lumière et de
    * l'ombre du socle (`--lg-light-rgb`, `--lg-shade-rgb`), donc portées par
    * le mode natif comme toute lecture du verre. */
+  /* Le liseré qui s'allume près du pointeur : un ÉCLAT de l'arête, jamais un
+   * trait blanc (retour du 22/10 : « le contour est blanc dégueu ») — le bord
+   * de la lentille, coloré par le dessous, porte la lumière fixe. */
   --lg-specular-halo: rgba(var(--lg-light-rgb), 0.16);
-  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.6);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.35);
   --lg-contrast-border: rgba(var(--lg-light-rgb), 0.6);
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.55);
-  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.9);
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.22);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.3);
   --lg-contrast-border: rgba(var(--lg-shade-rgb), 0.55);
+}
+
+/* Le TON du dessous (`data-lg-tone`, mesuré) l'emporte sur le thème : sur un
+ * dessous clair, un halo blanc ne se voit pas, il blanchit — presque rien. */
+:root[data-liquid-glass="native"] [data-lg-tone="dark"] {
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.16);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.35);
+}
+
+:root[data-liquid-glass="native"] [data-lg-tone="light"] {
+  --lg-specular-halo: rgba(var(--lg-light-rgb), 0.14);
+  --lg-specular-rim: rgba(var(--lg-light-rgb), 0.2);
 }
 
 /* ── Lentille ───────────────────────────────────────────────────────────────
