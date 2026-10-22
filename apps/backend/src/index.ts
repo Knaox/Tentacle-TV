@@ -5,7 +5,6 @@ import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import compress from "@fastify/compress";
 import rateLimit from "@fastify/rate-limit";
-import { ZodError } from "zod";
 import websocket from "@fastify/websocket";
 
 import { registerStaticClients } from "./static/staticClients";
@@ -44,6 +43,7 @@ import { watchPlaybackPolicyWrites } from "./services/playbackRights";
 import { registerAccountAccessWatch } from "./services/accountAccess/accessWatch";
 import { watchRightsLive } from "./services/rightsLive/rightsLive";
 import { registerBodyParsers } from "./services/bodyParsers";
+import { registerErrorHandler } from "./services/errorHandler";
 import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -125,25 +125,8 @@ async function main() {
   });
   await app.register(websocket);
 
-  // Global error handler: hide internals on 5xx, pass 4xx, format ZodErrors
-  app.setErrorHandler((error, _request, reply) => {
-    if (error instanceof ZodError) {
-      return reply.status(400).send({
-        message: "Validation error",
-        errors: error.errors,
-      });
-    }
-
-    const statusCode = (error as any).statusCode ?? 500;
-    if (statusCode >= 500) {
-      app.log.error(error);
-      return reply.status(statusCode).send({ message: "Internal server error" });
-    }
-
-    return reply.status(statusCode).send({
-      message: (error as Error).message || "Error",
-    });
-  });
+  // Gestionnaire d'erreurs global : rien de l'intérieur sur une 5xx (services/errorHandler.ts).
+  registerErrorHandler(app);
 
   // Parsers de corps custom (JSON tolérant, binaire brut, image/*) — voir services/bodyParsers.ts
   registerBodyParsers(app);
