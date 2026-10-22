@@ -1,28 +1,25 @@
 /**
- * Carte de déplacement d'une lentille de verre — le cœur de la réfraction
- * Chromium, calculée pour UNE surface (sa taille, son rayon, son biseau).
+ * Les CARTES d'une lentille de verre, calculées pour UNE surface (sa taille,
+ * son rayon, son biseau) : la carte de déplacement (la réfraction) et la carte
+ * spéculaire (la lumière que le bord attrape).
  *
- * POURQUOI PAR SURFACE. L'ancien filtre (`GlassFilters.tsx`) étirait une carte
- * fixe de 100 × 100 sur la boîte : la bande qui réfractait valait 18 % de la
- * dimension — 216 px sur une barre de 1 200 px, 12 px sur sa hauteur —, et
- * les coins arrondis n'y étaient pas. Le verre d'Apple ne courbe l'image que
- * dans un BISEAU de largeur constante qui suit le contour, coins compris ; le
- * centre reste net. D'où une carte par géométrie, mise en cache.
+ * POURQUOI PAR SURFACE. Le verre d'Apple ne courbe l'image que dans un BISEAU
+ * qui suit le contour, coins compris ; le centre reste net. Une carte générique
+ * étirée sur la boîte (l'ancien `GlassFilters`) réfractait 18 % de chaque
+ * dimension et ignorait les coins. D'où une carte par géométrie, mise en cache.
  *
- * Le modèle : une lentille plan-convexe posée sur la page. Son profil est une
- * « squircle » (h = (1 − (1 − t)⁴)^¼, t de 0 au bord à 1 en fin de biseau) :
- * raide au ras du bord, plate ensuite. Un rayon qui traverse une surface
- * inclinée se plie vers l'INTÉRIEUR : on voit, près du bord, ce qui est un
- * peu plus vers le centre — le grossissement caractéristique. Le décalage
- * suit la pente (saturée : s / (1 + s)), maximal au bord, nul au centre.
+ * Déplacement (`feDisplacementMap`) : rouge = X, vert = Y, 128 = immobile ;
+ * le profil vient de `lensProfile` (Snell, biseau squircle), vers l'intérieur.
  *
- * Encodage, celui de `feDisplacementMap` : rouge = axe X, vert = axe Y,
- * 128 = aucun déplacement. Avec `scale = 2 × décalage max`, un octet de 255
- * déplace de +décalage max, un octet de 0 de −décalage max.
+ * Spéculaire : blanc, l'alpha porte la lumière. Un liseré fin au ras du bord,
+ * d'autant plus vif que le bord FAIT FACE à la lumière (en haut, et plus
+ * doucement en vis-à-vis, en bas) — jamais un « border » gris uniforme — et
+ * une lueur douce qui descend sous l'arête éclairée, dans le biseau.
  *
- * Pur (aucun DOM) : testé hors navigateur. La mise en image est à côté
- * (`refractionMapUrl`).
+ * Pur (aucun DOM) : testé hors navigateur. La mise en image est à côté.
  */
+
+import { lensProfile } from "./lensProfile";
 
 export interface RefractionGeometry {
   /** Taille de la surface, en px CSS. */
@@ -34,55 +31,73 @@ export interface RefractionGeometry {
   bezel: number;
 }
 
+/** La lumière du bord. Alphas de 0 à 1. */
+export interface SpecularLight {
+  /** Direction d'où vient la lumière, en degrés : 0 = du haut, positif = vers la droite. */
+  angle: number;
+  /** Liseré du bord qui fait face à la lumière. */
+  facing: number;
+  /** Liseré du bord opposé (le reflet en vis-à-vis). */
+  opposite: number;
+  /** Liseré minimal, tout autour. */
+  base: number;
+  /** Épaisseur du liseré, en px CSS. */
+  rim: number;
+  /** Lueur douce sous l'arête éclairée, dans le biseau. */
+  glow: number;
+}
+
 export interface RefractionMap {
-  /** Taille de la carte, en pixels (≤ la surface : voir `resolution`). */
+  /** Taille de la carte, en pixels (≤ la surface : voir `refractionMapScale`). */
   width: number;
   height: number;
   /** RGBA, ligne par ligne (tampon ordinaire : `ImageData` refuse un partagé). */
   data: Uint8ClampedArray<ArrayBuffer>;
 }
 
-/** Au-delà de ce nombre de pixels, la carte se calcule à résolution réduite. */
+export interface LensMaps {
+  displacement: RefractionMap;
+  /** `null` sans lumière demandée. */
+  specular: RefractionMap | null;
+}
+
+/** Au-delà de ce nombre de pixels, les cartes se calculent à résolution réduite. */
 export const REFRACTION_MAP_MAX_PIXELS = 160_000;
 
 const NEUTRAL = 128;
 
-/**
- * Intensité du déplacement à une profondeur `t` du biseau (0 au bord, 1 au
- * bout) : 1 au ras du bord, 0 au-delà du biseau, décroissante entre les deux.
- */
-export function refractionProfile(t: number): number {
-  if (t <= 0) return 1;
-  if (t >= 1) return 0;
-  const u = 1 - t;
-  // Pente de la squircle h(t) = (1 − u⁴)^¼ : h'(t) = u³ / (1 − u⁴)^¾.
-  const slope = (u * u * u) / Math.pow(1 - u * u * u * u, 0.75);
-  return slope / (1 + slope);
-}
-
-/** Résolution de la carte : 1 pixel de carte par px CSS, sauf grande surface. */
+/** Résolution des cartes : 1 pixel de carte par px CSS, sauf grande surface. */
 export function refractionMapScale(width: number, height: number): number {
   const pixels = width * height;
   if (pixels <= REFRACTION_MAP_MAX_PIXELS) return 1;
   return Math.sqrt(REFRACTION_MAP_MAX_PIXELS / pixels);
 }
 
-/** Calcule la carte de déplacement d'une surface. */
-export function buildRefractionMap(geometry: RefractionGeometry): RefractionMap {
+const smooth = (edge0: number, edge1: number, x: number): number => {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+};
+
+/** Calcule les cartes d'une surface (la spéculaire seulement si `light`). */
+export function buildLensMaps(geometry: RefractionGeometry, light?: SpecularLight): LensMaps {
   const width = Math.max(1, geometry.width);
   const height = Math.max(1, geometry.height);
   const scale = refractionMapScale(width, height);
   const mapWidth = Math.max(1, Math.round(width * scale));
   const mapHeight = Math.max(1, Math.round(height * scale));
-  const data = new Uint8ClampedArray(mapWidth * mapHeight * 4);
+  const displacement = new Uint8ClampedArray(mapWidth * mapHeight * 4);
+  const specular = light ? new Uint8ClampedArray(mapWidth * mapHeight * 4) : null;
 
   const halfW = width / 2;
   const halfH = height / 2;
   const radius = Math.max(0, Math.min(geometry.radius, halfW, halfH));
   const bezel = Math.max(0.5, geometry.bezel);
-  // Le centre de la boîte « droite » : au-delà, on est dans un coin.
   const innerW = halfW - radius;
   const innerH = halfH - radius;
+  // Vers la lumière (repère écran : y vers le bas).
+  const angle = ((light?.angle ?? 0) * Math.PI) / 180;
+  const lightX = Math.sin(angle);
+  const lightY = -Math.cos(angle);
 
   for (let py = 0; py < mapHeight; py++) {
     const y = ((py + 0.5) / mapHeight) * height;
@@ -93,18 +108,15 @@ export function buildRefractionMap(geometry: RefractionGeometry): RefractionMap 
       const dx = x - halfW;
       const qx = Math.abs(dx) - innerW;
       const offset = (py * mapWidth + px) * 4;
-      data[offset + 2] = NEUTRAL;
-      data[offset + 3] = 255;
+      displacement[offset] = NEUTRAL;
+      displacement[offset + 1] = NEUTRAL;
+      displacement[offset + 2] = NEUTRAL;
+      displacement[offset + 3] = 255;
 
       // Distance signée au contour arrondi (négative dedans).
       const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0));
-      const sdf = outside + Math.min(Math.max(qx, qy), 0) - radius;
-      const depth = -sdf;
-      if (depth <= 0 || depth >= bezel) {
-        data[offset] = NEUTRAL;
-        data[offset + 1] = NEUTRAL;
-        continue;
-      }
+      const depth = -(outside + Math.min(Math.max(qx, qy), 0) - radius);
+      if (depth <= 0) continue;
 
       // Normale sortante : vers le centre du coin dans un coin, l'axe dominant ailleurs.
       let nx: number;
@@ -123,18 +135,48 @@ export function buildRefractionMap(geometry: RefractionGeometry): RefractionMap 
       if (dx < 0) nx = -nx;
       if (dy < 0) ny = -ny;
 
-      // Le rayon se plie vers l'intérieur : on échantillonne CONTRE la normale.
-      const magnitude = refractionProfile(depth / bezel);
-      data[offset] = Math.round(127.5 - 127.5 * nx * magnitude);
-      data[offset + 1] = Math.round(127.5 - 127.5 * ny * magnitude);
+      if (depth < bezel) {
+        // Le rayon se plie vers l'intérieur : on échantillonne CONTRE la normale.
+        const magnitude = lensProfile(depth / bezel);
+        displacement[offset] = Math.round(127.5 - 127.5 * nx * magnitude);
+        displacement[offset + 1] = Math.round(127.5 - 127.5 * ny * magnitude);
+      }
+
+      if (specular !== null && light !== undefined) {
+        const facing = nx * lightX + ny * lightY;
+        const strength =
+          facing >= 0
+            ? light.base + (light.facing - light.base) * Math.pow(facing, 1.6)
+            : light.base + (light.opposite - light.base) * Math.pow(-facing, 1.6);
+        // Liseré net au ras du bord, adouci sur un demi-pixel vers l'intérieur.
+        const rim = strength * (1 - smooth(light.rim * 0.5, light.rim + 0.5, depth));
+        const glow =
+          facing > 0 ? light.glow * Math.pow(facing, 2) * Math.pow(Math.max(0, 1 - depth / bezel), 2) : 0;
+        const alpha = 1 - (1 - rim) * (1 - glow);
+        specular[offset] = 255;
+        specular[offset + 1] = 255;
+        specular[offset + 2] = 255;
+        specular[offset + 3] = Math.round(alpha * 255);
+      }
     }
   }
 
-  return { width: mapWidth, height: mapHeight, data };
+  return {
+    displacement: { width: mapWidth, height: mapHeight, data: displacement },
+    specular: specular === null ? null : { width: mapWidth, height: mapHeight, data: specular },
+  };
+}
+
+/** La seule carte de déplacement (compatibilité). */
+export function buildRefractionMap(geometry: RefractionGeometry): RefractionMap {
+  return buildLensMaps(geometry).displacement;
 }
 
 /** Clé de cache d'une géométrie (au px près : la carte est lisse). */
-export function refractionMapKey(geometry: RefractionGeometry): string {
+export function refractionMapKey(geometry: RefractionGeometry, light?: SpecularLight): string {
   const r = (value: number) => Math.round(value);
-  return `${r(geometry.width)}x${r(geometry.height)}-r${r(geometry.radius)}-b${r(geometry.bezel)}`;
+  const base = `${r(geometry.width)}x${r(geometry.height)}-r${r(geometry.radius)}-b${r(geometry.bezel)}`;
+  if (light === undefined) return base;
+  const l = (value: number) => Math.round(value * 100);
+  return `${base}-a${r(light.angle)}-f${l(light.facing)}-o${l(light.opposite)}-s${l(light.base)}-w${l(light.rim)}-g${l(light.glow)}`;
 }

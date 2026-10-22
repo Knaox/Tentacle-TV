@@ -112,14 +112,6 @@ export function surfaceClassName(
     : join("lg-surface", className);
 }
 
-/** Le biseau selon la taille : une pastille n'a pas le biseau d'un panneau. */
-export function lensBezelToken(width: number, height: number): string {
-  const side = Math.min(width, height);
-  if (side < 36) return "--lg-bezel-sm";
-  if (side < 120) return "--lg-bezel-md";
-  return "--lg-bezel-lg";
-}
-
 /** Un identifiant de filtre valide dans `url(#…)`, tiré de `useId`. */
 export function lensFilterId(reactId: string): string {
   return `lg-lens-${reactId.replace(/[^a-zA-Z0-9_-]/g, "")}`;

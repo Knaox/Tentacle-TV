@@ -68,9 +68,23 @@ describe("les jetons du verre", () => {
       "--lg-radius-md",
       "--lg-radius-lg",
       "--lg-radius-capsule",
-      "--lg-bezel-sm",
-      "--lg-bezel-md",
-      "--lg-bezel-lg",
+      "--lg-bezel-ratio",
+      "--lg-bezel-min",
+      "--lg-bezel-max",
+      "--lg-light-angle",
+      "--lg-specular-facing",
+      "--lg-specular-opposite",
+      "--lg-specular-base",
+      "--lg-specular-rim",
+      "--lg-specular-glow",
+      "--lg-edge",
+      "--lg-thick-blur",
+      "--lg-glyph-on-dark",
+      "--lg-glyph-on-light",
+      "--lg-glyph-shadow-on-dark",
+      "--lg-glyph-shadow-on-light",
+      "--lg-glyph-filter-on-dark",
+      "--lg-glyph-filter-on-light",
       "--lg-dispersion",
       "--lg-thickness-regular",
       "--lg-duration-press",
@@ -107,6 +121,8 @@ describe("les jetons du verre", () => {
       "--lg-label-shadow",
       "--lg-glyph-shadow",
       "--lg-vibrancy-blend",
+      "--lg-specular-facing",
+      "--lg-edge",
     ]) {
       expect(LIGHT, name).toContain(name);
     }
@@ -132,6 +148,17 @@ describe("les jetons du verre", () => {
     const at = (file: string) => index.indexOf(`@import "./theme/${file}"`);
     expect(at("liquidGlassTokens.css")).toBeGreaterThan(at("tokens.css"));
     expect(at("liquidGlassTokens.css")).toBeGreaterThan(at("surfaces.css"));
+  });
+
+  it("plus AUCUN fond sombre : les voiles du verre sont transparents (cible Apple)", () => {
+    const block = (sel: string) => blockFor(CSS, sel);
+    for (const name of ["--lg-clear-dim", "--lg-media-dim"]) {
+      expect(block(":root")).toMatch(new RegExp(`${name}:\\s*rgba\\(var\\([^)]*\\),\\s*0\\)`));
+    }
+    // Les remplissages neutres sont des BLANCS légers, jamais une teinte sombre.
+    for (const name of ["--lg-regular-fill", "--lg-clear-fill", "--lg-thick-fill"]) {
+      expect(block(":root")).toMatch(new RegExp(`${name}:\\s*rgba\\(var\\(--lg-light-rgb\\)`));
+    }
   });
 
   it("aucune primitive que la feuille du téléviseur LG refuserait", () => {
