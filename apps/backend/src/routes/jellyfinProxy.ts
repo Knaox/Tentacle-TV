@@ -6,7 +6,7 @@ import { pairedDeviceStatus, revokedReplyFor } from "../services/pairedDeviceSta
 import { cacheGeneration, getCached, getCacheTtl } from "../services/jellyfinCache";
 import { getJellyfinDispatcher } from "../services/jellyfinHttpAgent";
 import { clearDeviceTokenIfInvalid } from "../services/deviceTokenHealth";
-import { isAllowedProxyPath } from "./jellyfinProxy/patterns";
+import { isAllowedProxyPath, isProgressiveStreamPath } from "./jellyfinProxy/patterns";
 import {
   buildForwardHeaders,
   apiCacheControl,
@@ -132,7 +132,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     if (latest && (await serveLatestAdditions(request, reply, latest, latestCtx))) return reply;
 
     // Progressive streams (remux) can last hours; HLS segments and API calls stay short.
-    const isProgressiveStream = /Videos\/.*\/stream/.test(wildcardPath);
+    const isProgressiveStream = isProgressiveStreamPath(wildcardPath);
     const timeout = isProgressiveStream ? 4 * 60 * 60 * 1000 : 120_000;
 
     const fetchInit: UndiciRequestInit = {

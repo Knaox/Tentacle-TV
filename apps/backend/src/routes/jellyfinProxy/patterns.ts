@@ -103,3 +103,12 @@ export function isAllowedProxyPath(path: string): boolean {
   if (hasUnsafePathSegment(path)) return false;
   return ALLOWED_PROXY_PATTERNS_CI.some((pattern) => pattern.test(path));
 }
+
+/**
+ * Un flux progressif (`Videos/{id}/stream`, `stream.mp4`…), qui peut durer des
+ * heures. Un segment sans barre au lieu de `.*` : le chemin vient du client,
+ * l'expression reste linéaire quelle que soit sa longueur.
+ */
+export function isProgressiveStreamPath(path: string): boolean {
+  return /Videos\/[^/]+\/stream/.test(path);
+}

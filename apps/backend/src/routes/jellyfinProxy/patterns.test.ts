@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isAllowedProxyPath } from "./patterns";
+import { isAllowedProxyPath, isProgressiveStreamPath } from "./patterns";
 
 describe("isAllowedProxyPath — routes de session", () => {
   it("laisse passer le playstate", () => {
@@ -56,5 +56,21 @@ describe("isAllowedProxyPath — aucune remontée hors de la liste", () => {
       "Genres/Science-Fiction %26 Fantastique",
       "Studios/100%",
     ]) expect(isAllowedProxyPath(path)).toBe(true);
+  });
+});
+
+describe("isProgressiveStreamPath", () => {
+  it("reconnaît les flux progressifs, pas le HLS", () => {
+    expect(isProgressiveStreamPath("Videos/abc/stream")).toBe(true);
+    expect(isProgressiveStreamPath("Videos/abc/stream.mp4")).toBe(true);
+    expect(isProgressiveStreamPath("Videos/abc/master.m3u8")).toBe(false);
+    expect(isProgressiveStreamPath("Videos/abc/hls1/main/0.ts")).toBe(false);
+  });
+
+  it("reste linéaire sur un chemin hostile (alerte CodeQL js/polynomial-redos 9)", () => {
+    const hostile = "Videos/".repeat(50_000);
+    const start = performance.now();
+    expect(isProgressiveStreamPath(hostile)).toBe(false);
+    expect(performance.now() - start).toBeLessThan(200);
   });
 });
