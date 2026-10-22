@@ -30,6 +30,7 @@ import { useLiquidGlassMode } from "../useLiquidGlass";
 import { useBackdropTone } from "./useBackdropTone";
 import { useLensGeometry } from "./useLensGeometry";
 import { useLiquidGlassRegion } from "./useLiquidGlassRegion";
+import { useSurfaceTone } from "./useSurfaceTone";
 import {
   lensFilterId,
   resolveSurfaceRender,
@@ -117,8 +118,12 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
   const level = appearance.level ?? "regular";
   const shape = appearance.shape ?? "rounded";
   // Le ton de ce qui est dessous : la polarité des glyphes et la lumière du
-  // bord (lentille de page ; le verre natif s'adapte seul).
-  const tone = useBackdropTone(element, render === "lens");
+  // bord (lentille de page ; le verre natif s'adapte seul). Un CONTRÔLE suit
+  // le dessous et bascule ; une SURFACE mesure à l'ouverture puis tient.
+  const surface = appearance.scale === "surface";
+  const controlTone = useBackdropTone(element, render === "lens" && !surface);
+  const surfaceTone = useSurfaceTone(element, render === "lens" && surface);
+  const tone = surface ? surfaceTone : controlTone;
   const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md", tone);
   const filterId = lensFilterId(useId());
 

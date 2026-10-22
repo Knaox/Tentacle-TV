@@ -306,8 +306,8 @@ SYSTÈME ; seules ses touches de couleur suivent la marque (`--brand-rgb`,
 | Famille | Jetons |
 |---------|--------|
 | Teintes | `--lg-light-rgb`, `--lg-shade-rgb`, `--lg-tint-brand` · `-accent` · `-gradient`, `--lg-prominent-gradient` (la marque DANS le verre, translucide), `--lg-label*` |
-| Glyphes au ton du dessous | `--lg-glyph-on-{dark,light}(-secondary)`, `--lg-glyph-shadow-on-*`, `--lg-glyph-filter-on-*`, `--lg-danger-on-{dark,light}` (corail / bordeaux : le rouge de danger suit le dessous) ; épais, par bande : `--lg-glyph-on-*-secondary-thick` |
-| Niveaux | `--lg-{regular,clear,tinted,prominent}-{fill,blur,saturate,brightness}` (presque transparents, givre faible), `--lg-thick-{fill,blur}` (menus, feuilles) |
+| Glyphes au ton du dessous | `--lg-glyph-on-{dark,light}(-secondary)`, `--lg-glyph-shadow-on-*`, `--lg-glyph-filter-on-*`, `--lg-danger-on-{dark,light}` (corail / bordeaux : le rouge de danger suit le dessous) ; d'avant, par bande (à retirer) : `--lg-glyph-on-*-secondary-thick` |
+| Niveaux | `--lg-{regular,clear,tinted,prominent}-{fill,blur,saturate,brightness}` (presque transparents, givre faible ; saturation ≤ 1,3 depuis lg2 — à 1,5 une affiche laissait des taches vives), `--lg-thick-{fill,blur}` (d'avant ; un grand verre prend le régime `surface`) |
 | Voiles | `--lg-clear-dim`, `--lg-media-dim` — TRANSPARENTS depuis la refonte (plus de fond sombre) ; `--lg-scrim` sous une feuille ; le voile minimal d'une bande (`--lg-band-veil`) est CALCULÉ, jamais un jeton |
 | Lentille | `--lg-refraction-{niveau}` (fraction du biseau), `--lg-bezel-{ratio,min,max}` (biseau proportionnel au rayon), `--lg-dispersion` |
 | Lumière du bord | `--lg-light-angle`, `--lg-specular-{facing,opposite,base,glow}`, `--lg-edge-{width,gain,white}` — gain et éclat par TON ; `--lg-edge` (fil et ombres) |
@@ -315,6 +315,19 @@ SYSTÈME ; seules ses touches de couleur suivent la marque (`--brand-rgb`,
 | Ombres, formes | `--lg-shadow-{contact,float,raised}` (qui soulèvent), `--lg-corner-shape`, `--lg-radius-*`, `--lg-thickness-*` |
 | Fondus, natif | `--lg-duration-*`, `--lg-ease-out` ; `--lg-native-tint-{niveau}(-accent)` : la teinte `#RRGGBBAA` envoyée au pont |
 | Noms d'avant | `--lg-rim(-width)`, `--lg-specular-strong` · `-soft`, `--lg-highlight`, `--lg-inner-glow`, `--lg-label-shadow`, `--lg-media-*-shadow`… gardés en alias pour les recettes sans lentille |
+
+**Le contrat du lot lg2 et le matériau `surface`** vivent à côté, dans
+`apps/web/src/theme/glass/surfaceTokens.css` (300 lignes au plus par fichier),
+déclarés SOUS la porte, sombre et clair — son en-tête tient le catalogue :
+
+| Famille | Jetons |
+|---------|--------|
+| Rangées (menus) | `--lg-surface-radius`, `--lg-row-inset`, `--lg-row-radius` (= rayon de la surface − marge : concentrique), `--lg-row-highlight` (l'accent UNI, jamais le dégradé), `--lg-row-highlight-glyph` |
+| Structure | `--lg-separator`, `--lg-section-label` — suivent le TON du verre qui les porte |
+| Barre latérale | `--lg-sidebar-selection` (neutre translucide), `--lg-sidebar-selection-glyph` (l'icône à l'accent) |
+| Contenu (jamais du verre) | `--lg-content-fill` · `-hover`, `--lg-content-stroke` : remplissages sobres et opaques |
+| Bord, ombre | `--lg-scroll-edge` (une image : le fondu sous la barre du haut), `--lg-surface-shadow` (profonde, douce) |
+| Matériau `surface` | `--lg-surface-{blur,saturate,brightness}`, `--lg-refraction-surface`, `--lg-surface-{fill,sheen,glyph,glyph-secondary,danger}-on-{dark,light}`, `--lg-surface-edge-{gain,white}-on-*` — recopiés de `surfaceMaterial.ts` (test de parité) |
 
 Chaque famille COMPOSE ce matériau chez elle, sans redéfinir un nom commun :
 mouvement `--lg-spring-*` et accessibilité (`theme/glass/physics.css`, § 6),
@@ -358,25 +371,48 @@ import { LiquidGlass, useLiquidGlassSurface, useLiquidGlassRegion, useLiquidGlas
     Un `upsert` + un `remove` par image au plus, sommeil après six images
     sans changement, région retirée dès qu'elle est cachée, hors écran ou
     démontée.
-- **Le TON du dessous** (`useBackdropTone`) : la coquille mesure la
-  luminance sous chaque surface (`liquidGlass.sample`, § 2.3) et la surface
-  porte `data-lg-tone="dark|light"` — glyphes, danger, lumière du bord et
-  reflet en suivent ; hystérésis, un appel regroupé par 250 ms, jamais à
-  chaque image ; sans échantillonneur, le ton du thème. Matériau ÉPAIS (menu,
-  feuille : option `bands`, `useBandTones`) : un ton PAR RANGÉE
-  (`data-lg-band`), et sur un dessous de luminance moyenne — où aucune polarité
-  ne tient 4,5:1 — un voile MINIMAL dans le sens du ton (`bandLook`).
+- **Deux RÉGIMES, selon la taille** (option `scale`, lot lg2 — règle d'Apple :
+  un grand verre n'a jamais de bandes) :
+  - `control` (défaut : bouton, capsule, groupe de barre) — **le ton du
+    dessous** (`useBackdropTone`) : la coquille mesure la luminance sous la
+    surface (`liquidGlass.sample`, § 2.3), la surface porte
+    `data-lg-tone="dark|light"` — glyphes, danger, lumière du bord et reflet en
+    suivent ; hystérésis, un appel regroupé par 250 ms, jamais à chaque image ;
+    sans échantillonneur, le ton du thème ;
+  - `surface` (menu, popover, feuille, barre latérale, palette ⌘K) —
+    `data-lg-scale="surface"`, aussi sur une peau CSS (`useGlassControl({ scale })`).
+    **UN ton, TENU** (`useSurfaceTone`) : mesuré une fois à l'ouverture, puis
+    plus jamais relu. Mesuré AUTOUR de la surface (`surfaceTone.ts` : une
+    couronne à gauche, à droite, au-dessus et sous l'ombre, médiane) — la
+    capture de la coquille voit la page PEINTE, et un verre épais mesuré sur
+    son propre rectangle se mesurerait lui-même. **Matériau épais** : givre
+    30 px, saturation 0,75 (le dessous n'est jamais avivé : au plus 20 % de sa
+    couleur traverse — plus de taches), réfraction 0,3 du biseau, lumière du
+    bord en sourdine, ombre profonde, et un remplissage par ton (0,78 sombre,
+    0,76 clair) qui tient **≥ 4,5:1 pour TOUT texte sur TOUT dessous** —
+    prouvé par `surfaceMaterial.ts` sur 216 dessous, blanc et noir purs
+    compris, reflet au plus fort. Composé sur l'élément en `--lg-surface-fill`,
+    `--lg-surface-backdrop`, `--lg-surface-glyph(-secondary)`,
+    `--lg-surface-danger` (`liquidGlassSurface.css`), remappés sur les recettes
+    `--lgc-*` et les textes du thème pour les peaux CSS. Sous « Réduire la
+    transparence » / « Contraste accru » : l'aplat de `physics.css`, le ton du
+    thème, aucune mesure.
+  - `bands` : SANS EFFET depuis lg2 (le ton par rangée, `useBandTones`, est
+    l'inverse d'Apple), retiré en fin de lot.
 - **Options** : `level` (`regular` · `clear` · `tinted` · `prominent`),
   `shape` (`rounded` · `capsule` · `circle` · `rect`), `radius` (`xs` → `xl`),
-  `tint` (`brand` · `accent`), `interactive`, `z`, `bands` ; verre natif
-  seulement : `group`, `spacing`, `transition` (§ 2.3).
+  `tint` (`brand` · `accent`), `interactive`, `scale` (`control` ·
+  `surface`), `z` ; verre natif seulement : `group`, `spacing`, `transition`
+  (§ 2.3).
 - **Le LABO `/dev/verre`** (`apps/web/src/dev/glassLab/`, paquets de
   développement seulement : la route disparaît des paquets livrés et du client
   LG) : un exemple de chaque surface — groupes de navigation, action principale
   et secondaire, ronds, plateau de survol, menu, lecteur en petits groupes,
   les vrais composants — sur de vrais dessous (affiches de la bibliothèque,
-  troupe riso, typographie dense, mire, blanc, noir, « mixte » ;
-  `?fond=` pour un banc reproductible). **On juge le verre là, AVANT de le
+  troupe riso, typographie dense, mire, blanc, noir, « mixte », « couleurs »
+  aux taches vives ; `?fond=` pour un banc reproductible). `?vue=grandes` :
+  les grandes surfaces du régime `surface` (menu du compte, popover en
+  sections, barre latérale de Réglages), rien que les jetons du contrat. **On juge le verre là, AVANT de le
   propager.**
 - `useLiquidGlassSurface({ … })` pour un `motion.div` : `{ props, layers }`,
   `layers` (le filtre de la lentille) se rend DANS l'élément.
@@ -661,9 +697,10 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   clair ou régulier ; les RONDS (flèches des rangées, Ma liste · favori · vu de
   la bannière, angles de la fiche) et le plateau du survol des cartes en
   pastilles de verre clair séparées — une bascule allumée passe en verre
-  teinté (rose pour le favori) ; menus, feuilles et modales en verre clair
-  épais, ton et voile PAR BANDE (`useGlassControl({ bands: true })`), le rouge
-  de danger (« Déconnexion ») au ton du dessous.
+  teinté (rose pour le favori) ; menus, feuilles et modales en GRAND verre
+  (`useGlassControl({ scale: "surface" })`, § 4 : un ton tenu, matériau épais —
+  le ton et le voile par bande d'avant sont retirés par le lot lg2), le rouge
+  de danger (« Déconnexion ») au ton de la surface.
 - **Hors ligne** : message de passage hors ligne et avis en `.lg-notice`,
   panneaux de la page hors ligne en `.lg-panel` (sans flou), bannière en
   lentille ; dialogues « garder hors ligne » et de suppression en portail (§ 5).

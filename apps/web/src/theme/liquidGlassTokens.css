@@ -122,9 +122,12 @@
   --lg-prominent-blur: 3px;
 
   /* ── Saturation et luminosité du fond vu à travers ───────────────────── */
-  --lg-regular-saturate: 1.5;
+  /* Un CONTRÔLE ravive à peine son dessous (lot lg2) : à 1,5, une affiche
+   * colorée laissait des taches vives dans le verre. Le grand verre (régime
+   * `surface`) ne ravive rien : `--lg-surface-saturate`. */
+  --lg-regular-saturate: 1.25;
   --lg-clear-saturate: 1.25;
-  --lg-tinted-saturate: 1.4;
+  --lg-tinted-saturate: 1.25;
   --lg-prominent-saturate: 1.3;
   --lg-regular-brightness: 1.04;
   --lg-clear-brightness: 1.02;
@@ -225,8 +228,8 @@
   --lg-thick-fill: rgba(var(--lg-light-rgb), 0.32);
   --lg-scrim: rgba(var(--lg-shade-rgb), 0.18);
 
-  --lg-regular-saturate: 1.55;
-  --lg-tinted-saturate: 1.5;
+  --lg-regular-saturate: 1.3;
+  --lg-tinted-saturate: 1.3;
   /* Le verre CLAIR garde la couleur de son dessous (un brun reste brun) : sur
    * un thème clair, sans ce coup de saturation, il virait au gris. */
   --lg-clear-saturate: 1.5;

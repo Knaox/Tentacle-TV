@@ -8,8 +8,9 @@
  * (`labSurfaces.tsx`), les deux thèmes, et ce que la page sait du ton dessous.
  *
  * `?fond=affiches|illustrations|texte|mire|brun|blanc|noir|mixte` choisit le
- * dessous à l'ouverture (bancs reproductibles) ; `?bandes=0` rend le menu
- * d'un seul ton (comparaison avec le ton par bande) ; `?vue=composants` montre les VRAIS
+ * dessous à l'ouverture (bancs reproductibles) ; `?vue=grandes` montre les
+ * GRANDES surfaces du régime `surface` (lot lg2 : menu, popover, barre
+ * latérale — `labLargeSurfaces.tsx`) ; `?vue=composants` montre les VRAIS
  * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
  * surfaces de la primitive ; `?vue=barres` la VRAIE barre du haut et une
  * vraie barre latérale (`labChrome.tsx`, axe des barres). Hors du mode natif, le labo montre le
@@ -25,6 +26,7 @@ import { backdropToneMeasured } from "../../theme/glass/useBackdropTone";
 import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop";
 import { LabChrome } from "./labChrome";
 import { LabComponents } from "./labComponents";
+import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
@@ -34,9 +36,9 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants" | "barres";
+type LabView = "surfaces" | "composants" | "grandes" | "barres";
 
-const LAB_VIEWS: readonly LabView[] = ["surfaces", "composants", "barres"];
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres"];
 
 const initialView = (): LabView => {
   const asked = new URLSearchParams(window.location.search).get("vue");
@@ -111,7 +113,6 @@ export function GlassLab() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
   const top = hostTitleBarHeight() + 14;
-  const [bands] = useState(() => new URLSearchParams(window.location.search).get("bandes") !== "0");
   const poster = avatarImageUrl(AVATAR_CHARACTERS[3]?.id ?? "bip");
 
   return (
@@ -121,11 +122,17 @@ export function GlassLab() {
         <LabChrome top={top} />
       ) : view === "composants" ? (
         <LabComponents top={top} />
+      ) : view === "grandes" ? (
+        <>
+          <LabSurfaceSidebar top={top + 40} left={24} />
+          <LabSurfacePopover top={top + 120} left={Math.max(280, width / 2 - 240)} />
+          <LabSurfaceMenu top={top + 10} right={24} />
+        </>
       ) : (
         <>
           <LabCardTray poster={poster} top={top + 300} left={Math.max(24, width - 360)} />
           <LabNav top={top} />
-          <LabMenu top={top + 66} bands={bands} />
+          <LabMenu top={top + 66} />
           <LabRowEdge top={top + 200} />
           <LabHeroActions top={top + 470} />
           <LabPlayer bottom={24} />

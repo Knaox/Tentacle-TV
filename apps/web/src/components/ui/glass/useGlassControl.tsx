@@ -23,6 +23,7 @@ import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { GlassSpecular, useBackdropTone, useLiquidGlassMode, useSpecularHighlight, type BackdropTone } from "../../../theme/glass";
 import { useLensGeometry } from "../../../theme/glass/useLensGeometry";
+import { useSurfaceTone } from "../../../theme/glass/useSurfaceTone";
 import {
   lensFilterId,
   scaleAttributes,
@@ -88,7 +89,11 @@ export function useGlassControl<T extends HTMLElement>(options: GlassControlOpti
     };
   }, [ref]);
 
-  const tone = useBackdropTone(element, native && toneEnabled);
+  // Un contrôle suit le dessous ; une surface mesure à l'ouverture puis tient (lot lg2).
+  const surface = scale === "surface";
+  const controlTone = useBackdropTone(element, native && toneEnabled && !surface);
+  const surfaceTone = useSurfaceTone(element, native && toneEnabled && surface);
+  const tone = surface ? surfaceTone : controlTone;
   // Le ton relit la lentille : la lumière du bord en dépend (gain, éclat).
   const geometry = useLensGeometry(element, native && lens !== false, lens || "regular", shape, shape, tone);
   const filterId = lensFilterId(useId());
