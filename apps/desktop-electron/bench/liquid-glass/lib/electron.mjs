@@ -87,6 +87,7 @@ export async function launchApp({ home, fresh = false, env = {}, log, slotTimeou
     app.page = await Cdp.connect(target.webSocketDebuggerUrl);
     await app.page.send("Runtime.enable");
     app.main = await connectMain();
+    await watchFocus(app);
   } catch (error) {
     await stopApp(app);
     throw error;
@@ -176,6 +177,26 @@ export async function evalMain(app, body) {
     throw new Error(result.exceptionDetails.exception?.description ?? result.exceptionDetails.text);
   }
   return result.result.value;
+}
+
+/**
+ * Mouchard du focus (22/10) : qui donne le focus à une fenêtre du banc ? Chaque
+ * `browser-window-focus` est noté avec son heure et la pile JS du moment — un
+ * `win.focus()` de l'app y paraît ; un clic ou une activation de macOS, non.
+ */
+async function watchFocus(app) {
+  await evalMain(app, `
+    globalThis.__bancFocus = [];
+    require("electron").app.on("browser-window-focus", (_e, w) => {
+      globalThis.__bancFocus.push({ at: new Date().toISOString(), title: w.getTitle(), stack: new Error().stack.split("\n").slice(2, 9).join(" | ") });
+    });
+    return true;
+  `).catch(() => {});
+}
+
+/** Les prises de focus notées depuis le lancement. */
+export async function focusEvents(app) {
+  return evalMain(app, "return globalThis.__bancFocus ?? [];").catch(() => []);
 }
 
 export async function stopApp(app) {

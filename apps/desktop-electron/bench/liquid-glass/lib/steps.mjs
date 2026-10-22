@@ -101,6 +101,8 @@ export async function step(ctx, name, body) {
     entry.error = String(error?.message ?? error);
   }
   entry.native = await nativeSnapshot(ctx.app);
+  // La VÉRITÉ du focus (lg-chrome) : ce que dit le principal, pas la page.
+  entry.focused = await evalMain(ctx.app, `return require("electron").BrowserWindow.getAllWindows().some((w) => w.isFocused());`).catch(() => null);
   return entry;
 }
 

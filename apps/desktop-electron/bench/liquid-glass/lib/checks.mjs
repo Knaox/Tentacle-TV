@@ -82,6 +82,9 @@ export function checkCell(cell, report) {
     const target = s.mpv?.["video-target-params"] ?? s["video-target-params"];
     if (!pq(target)) fail(`HDR perdu à l'étape « ${name} » : video-target-params sans PQ`, s.capture ?? null);
   }
+  for (const m of report.steps.filter((x) => x.ok && x.name.startsWith("menu-"))) {
+    for (const o of m.open ?? []) if (!o.inside) fail(`« ${m.name} » : menu qui déborde de la fenêtre (${o.w}×${o.h}, ${o.cls})`, m.capture);
+  }
   const wn = find(report, "nouveautes-1-40-0");
   if (wn?.ok && cell.expect === "on" && (!wn.traits?.liquidGlass || wn.shown === false)) fail(`nouveautés 1.40.0 : traits ${JSON.stringify(wn.traits)}, scène « Liquid Glass » ${wn.shown ? "vue" : "absente"}`, wn.capture);
   if (wn?.ok && cell.expect === "unsupported" && (wn.traits?.liquidGlass || wn.traits?.liquidGlassPlayer)) fail(`nouveautés 1.40.0 : trait du verre présent sans verre natif (${JSON.stringify(wn.traits)})`, null);
@@ -124,8 +127,11 @@ function chromeOn(report, fail) {
     if (!s.visibleRegions) fail(`« ${s.name} » : aucune région native visible après redimensionnement`, s.capture);
     else if (s.maxDrift > 2) fail(`« ${s.name} » : vue AppKit décalée de ${s.maxDrift} pt de sa région après redimensionnement`, s.capture);
   }
-  const homeAttrs = find(report, "accueil")?.dom?.attrs;
-  if (homeAttrs && homeAttrs["data-window-inactive"] === null) fail("fenêtre ouverte inactive (banc) : html[data-window-inactive] absent", find(report, "accueil")?.capture);
+  // data-window-inactive jugé contre le principal (isFocused) : défaut seulement s'ils divergent.
+  for (const st of report.steps.filter((x) => x.dom?.attrs && typeof x.focused === "boolean")) {
+    const inactive = st.dom.attrs["data-window-inactive"] !== null;
+    if (inactive === st.focused) fail(`« ${st.name} » : data-window-inactive=${st.dom.attrs["data-window-inactive"]} alors que le principal dit focused=${st.focused}`, st.capture);
+  }
   for (const s of report.steps.filter((x) => x.ok && /^lecteur-.*-coupure$/.test(x.name) && !x.absent)) {
     if (s.offViews > 0) fail(`« ${s.name} » : ${s.offViews} vue(s) AppKit après coupure en pleine lecture`, s.capture);
     // Le rallumage par le PONT ne prévient pas la page : elle ne renvoie pas ses
