@@ -1,0 +1,161 @@
+/* ── Liquid Glass : les CONTRÔLES des pages sont du VERRE (lot lg4, 22/10) ──
+ *
+ * Décision de Damien (« certains boutons sont pas liquid glass ») : un
+ * CONTRÔLE n'est pas du contenu. Les dalles restent des remplissages opaques
+ * (`theme/liquidGlassContent.css`) ; tout ce qui est interactif DANS une page
+ * — boutons, pastilles de filtre, déclencheurs de menus, tri, champs de
+ * recherche, segmentés, interrupteurs — prend le style `glass` de macOS 26
+ * (`glassProminent` : l'action principale, ailleurs).
+ *
+ * Le verre posé sur un remplissage OPAQUE n'a rien à réfracter : aucun
+ * `backdrop-filter` (il ne flouterait qu'un aplat, pour une passe de
+ * composition de plus par contrôle — CLAUDE.md, « Coût GPU »). Ce qui le fait
+ * lire comme du verre, et pas comme un aplat plus clair :
+ *  • une LÉGÈRE translucidité — un voile blanc dégressif, le dessous passe ;
+ *  • un REFLET diffus en haut à gauche (la lumière du socle) ;
+ *  • un LISERÉ DE LUMIÈRE : l'arête haute éclairée, une contre-arête en bas ;
+ *  • la PROFONDEUR : une ombre de contact et une ombre portée douce.
+ * Tout est FIXE (peint une fois) ; à l'appui, le verre gonfle par `scale` —
+ * composité, sur le ressort de la lentille.
+ *
+ * Portée : `.lg-page` (la zone des pages d'`AppLayout`), JAMAIS dans un verre —
+ * un menu, une feuille, une barre latérale ou une surface de la primitive
+ * gardent leurs remplissages (pas de verre sur du verre). Hors de la porte,
+ * aucune règle : le rendu d'avant, au pixel près (`liquidGlassTokens.test.ts`).
+ *
+ * Jetons `--lgp-*` (p = page), par TON : `-on-dark` / `-on-light`, choisis par
+ * le thème, ou par le ton mesuré d'un contrôle (`data-lg-tone`) ; prouvés par
+ * `lgPageControls.test.ts` (contraste des libellés, AA). */
+
+:root[data-liquid-glass="native"] {
+  --lgp-sheen-on-dark: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 62%);
+  --lgp-fill-on-dark: var(--lgp-sheen-on-dark),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.055) 100%);
+  --lgp-fill-hover-on-dark: var(--lgp-sheen-on-dark),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.085) 100%);
+  /* Le liseré de LUMIÈRE : la lumière vient d'en haut à gauche (`--lg-light-angle`),
+   * l'arc éclairé de ce côté, le contre-reflet plus faible en vis-à-vis. */
+  --lgp-edge-on-dark: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 1px 1px 0 -0.5px rgba(255, 255, 255, 0.4),
+    inset -1px -1px 0 -0.5px rgba(255, 255, 255, 0.16);
+  --lgp-depth-on-dark: 0 0.5px 1px rgba(0, 0, 0, 0.55), 0 4px 12px -4px rgba(0, 0, 0, 0.55);
+  --lgp-glyph-on-dark: rgba(255, 255, 255, 0.94);
+  --lgp-glyph-secondary-on-dark: rgba(255, 255, 255, 0.76);
+  /* La LENTILLE d'un segmenté (le segment choisi), un cran plus présente. */
+  --lgp-lens-fill-on-dark: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.11) 100%);
+  --lgp-lens-edge-on-dark: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), inset 1px 1px 0 -0.5px rgba(255, 255, 255, 0.62),
+    inset -1px -1px 0 -0.5px rgba(255, 255, 255, 0.24);
+  --lgp-lens-depth-on-dark: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 9px -2px rgba(0, 0, 0, 0.45);
+  /* La piste d'un segmenté, d'un interrupteur : un remplissage EN CREUX. */
+  --lgp-track-on-dark: rgba(255, 255, 255, 0.07);
+  --lgp-track-edge-on-dark: inset 0 0.5px 1.5px rgba(0, 0, 0, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+
+  --lgp-sheen-on-light: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.9) 0%, transparent 62%);
+  --lgp-fill-on-light: var(--lgp-sheen-on-light),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(234, 234, 240, 0.66) 100%);
+  --lgp-fill-hover-on-light: var(--lgp-sheen-on-light),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 248, 251, 0.8) 100%);
+  --lgp-edge-on-light: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.05);
+  --lgp-depth-on-light: 0 0.5px 1px rgba(0, 0, 0, 0.12), 0 3px 10px -3px rgba(0, 0, 0, 0.16);
+  --lgp-glyph-on-light: rgba(12, 12, 18, 0.88);
+  --lgp-glyph-secondary-on-light: rgba(12, 12, 18, 0.7);
+  --lgp-lens-fill-on-light: var(--lgp-sheen-on-light), linear-gradient(180deg, #ffffff 0%, rgba(252, 252, 254, 0.92) 100%);
+  --lgp-lens-edge-on-light: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 1px 0 #ffffff;
+  --lgp-lens-depth-on-light: 0 1px 2px rgba(0, 0, 0, 0.14), 0 3px 9px -2px rgba(0, 0, 0, 0.16);
+  --lgp-track-on-light: rgba(0, 0, 0, 0.055);
+  --lgp-track-edge-on-light: inset 0 0.5px 1.5px rgba(0, 0, 0, 0.12), inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+
+  /* `glassProminent` d'un état ACTIF (filtre posé) : l'accent UNI dans le
+   * verre, jamais le dégradé de marque — blanc dessus ≥ 4,5:1 (test). */
+  --lgp-tint-fill: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--brand-dark) 94%, transparent) 0%,
+      color-mix(in srgb, var(--brand-dark) 88%, black) 100%);
+  --lgp-tint-edge: inset 0 0.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+  --lgp-tint-glyph: #ffffff;
+  /* L'action PRINCIPALE d'un écran (`glassProminent`) : la marque dans le verre. */
+  --lgp-prominent-fill: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.14) 0%, transparent 62%),
+    var(--cta-brand-gradient);
+
+  /* L'appui fait GONFLER le verre (petit : une pastille côtoie ses voisines). */
+  --lgp-press-scale: 1.04;
+  --lgp-lens-press-scale: 1.06;
+
+  /* Le ton du THÈME sombre (défaut). */
+  --lgp-fill: var(--lgp-fill-on-dark);
+  --lgp-fill-hover: var(--lgp-fill-hover-on-dark);
+  --lgp-edge: var(--lgp-edge-on-dark);
+  --lgp-depth: var(--lgp-depth-on-dark);
+  --lgp-glyph: var(--lgp-glyph-on-dark);
+  --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-dark);
+  --lgp-lens-fill: var(--lgp-lens-fill-on-dark);
+  --lgp-lens-edge: var(--lgp-lens-edge-on-dark);
+  --lgp-lens-depth: var(--lgp-lens-depth-on-dark);
+  --lgp-track: var(--lgp-track-on-dark);
+  --lgp-track-edge: var(--lgp-track-edge-on-dark);
+}
+
+/* Le ton du THÈME clair, ou le ton MESURÉ d'un contrôle (`data-lg-tone`). */
+:root[data-liquid-glass="native"][data-theme="light"],
+:root[data-liquid-glass="native"] .lg-page [data-lg-tone="light"] {
+  --lgp-fill: var(--lgp-fill-on-light);
+  --lgp-fill-hover: var(--lgp-fill-hover-on-light);
+  --lgp-edge: var(--lgp-edge-on-light);
+  --lgp-depth: var(--lgp-depth-on-light);
+  --lgp-glyph: var(--lgp-glyph-on-light);
+  --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-light);
+  --lgp-lens-fill: var(--lgp-lens-fill-on-light);
+  --lgp-lens-edge: var(--lgp-lens-edge-on-light);
+  --lgp-lens-depth: var(--lgp-lens-depth-on-light);
+  --lgp-track: var(--lgp-track-on-light);
+  --lgp-track-edge: var(--lgp-track-edge-on-light);
+}
+
+:root[data-liquid-glass="native"] .lg-page [data-lg-tone="dark"] {
+  --lgp-fill: var(--lgp-fill-on-dark);
+  --lgp-fill-hover: var(--lgp-fill-hover-on-dark);
+  --lgp-edge: var(--lgp-edge-on-dark);
+  --lgp-depth: var(--lgp-depth-on-dark);
+  --lgp-glyph: var(--lgp-glyph-on-dark);
+  --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-dark);
+  --lgp-lens-fill: var(--lgp-lens-fill-on-dark);
+  --lgp-lens-edge: var(--lgp-lens-edge-on-dark);
+  --lgp-lens-depth: var(--lgp-lens-depth-on-dark);
+  --lgp-track: var(--lgp-track-on-dark);
+  --lgp-track-edge: var(--lgp-track-edge-on-dark);
+}
+
+/* « Réduire la transparence » / « Contraste accru » (`data-lg-material`) : le
+ * verre devient PLEIN — aucun voile, aucun reflet ; « Contraste accru » y
+ * ajoute un liseré net (`--lg-contrast-border`, `physics.css`). */
+:root[data-liquid-glass="native"][data-lg-material] {
+  --lgp-fill-on-dark: linear-gradient(#2c2c31, #2c2c31);
+  --lgp-fill-hover-on-dark: linear-gradient(#36363c, #36363c);
+  --lgp-lens-fill-on-dark: linear-gradient(#4a4a50, #4a4a50);
+  --lgp-fill-on-light: linear-gradient(#ffffff, #ffffff);
+  --lgp-fill-hover-on-light: linear-gradient(#f0f0f4, #f0f0f4);
+  --lgp-lens-fill-on-light: linear-gradient(#ffffff, #ffffff);
+  --lgp-tint-fill: linear-gradient(var(--brand-dark), var(--brand-dark));
+  --lgp-prominent-fill: var(--cta-brand-gradient);
+}
+
+:root[data-liquid-glass="native"][data-lg-material="solid"] {
+  --lgp-edge-on-dark: inset 0 0 0 1px var(--lg-contrast-border);
+  --lgp-edge-on-light: inset 0 0 0 1px var(--lg-contrast-border);
+  --lgp-lens-edge-on-dark: inset 0 0 0 1px var(--lg-contrast-border);
+  --lgp-lens-edge-on-light: inset 0 0 0 1px var(--lg-contrast-border);
+  --lgp-tint-edge: inset 0 0 0 1px var(--lg-contrast-border);
+}
+
+/* Mouvement réduit : le verre ne gonfle plus (le système le demande). */
+:root[data-liquid-glass="native"][data-lg-motion="reduce"] {
+  --lgp-press-scale: 1;
+  --lgp-lens-press-scale: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-liquid-glass="native"] {
+    --lgp-press-scale: 1;
+    --lgp-lens-press-scale: 1;
+  }
+}
