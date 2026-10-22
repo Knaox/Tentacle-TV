@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { installGlassAccessibility, planGlassAccessibility, readSystemAccessibility } from "./accessibility";
+import {
+  getGlassAccessibility,
+  installGlassAccessibility,
+  planGlassAccessibility,
+  readSystemAccessibility,
+  subscribeGlassAccessibility,
+} from "./accessibility";
 
 const none = { reduceTransparency: false, increaseContrast: false, reduceMotion: false };
 
@@ -54,6 +60,8 @@ describe("accessibilité du verre", () => {
       setAttribute: (k: string, v: string) => attrs.set(k, v),
       removeAttribute: (k: string) => attrs.delete(k),
     } as unknown as HTMLElement;
+    const seen: string[] = [];
+    const unsubscribe = subscribeGlassAccessibility(() => seen.push(getGlassAccessibility().material));
     installGlassAccessibility(root, matchMedia as never);
     expect(attrs.size).toBe(0);
     state["(prefers-reduced-transparency: reduce)"] = true;
@@ -63,6 +71,13 @@ describe("accessibilité du verre", () => {
     state["(prefers-reduced-transparency: reduce)"] = false;
     listeners.forEach((l) => l());
     expect(attrs.has("data-lg-transparency")).toBe(false);
+    // Les abonnés (le ton tenu d'une surface) apprennent chaque changement.
+    // Une fois par changement réel (trois requêtes écoutent, un seul avis).
+    expect(seen).toEqual(["frosted", "liquid"]);
+    unsubscribe();
+    state["(prefers-contrast: more)"] = true;
+    listeners.forEach((l) => l());
+    expect(seen).toHaveLength(2);
     expect(readSystemAccessibility(undefined)).toEqual(none);
   });
 });

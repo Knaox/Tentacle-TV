@@ -382,7 +382,10 @@ import { LiquidGlass, useLiquidGlassSurface, useLiquidGlassRegion, useLiquidGlas
   - `surface` (menu, popover, feuille, barre latérale, palette ⌘K) —
     `data-lg-scale="surface"`, aussi sur une peau CSS (`useGlassControl({ scale })`).
     **UN ton, TENU** (`useSurfaceTone`) : mesuré une fois à l'ouverture, puis
-    plus jamais relu. Mesuré AUTOUR de la surface (`surfaceTone.ts` : une
+    plus jamais relu — sauf si le THÈME (Clair, Sombre, Auto, apparence du
+    système) ou « Réduire la transparence » / « Contraste accru » change sous
+    la surface ouverte : ton du thème aussitôt, puis nouvelle mesure après le
+    repeint (`surfaceToneProbe.ts`, défaut 25 de l'audit lg2). Mesuré AUTOUR de la surface (`surfaceTone.ts` : une
     couronne à gauche, à droite, au-dessus et sous l'ombre, médiane) — la
     capture de la coquille voit la page PEINTE, et un verre épais mesuré sur
     son propre rectangle se mesurerait lui-même. **Matériau épais** : givre
