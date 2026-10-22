@@ -18,6 +18,7 @@ import {
   toggle as toggleWindowFullscreen,
   isFullscreen,
   leave as leaveWindowFullscreen,
+  noteFullscreenReached,
 } from "./fullscreen";
 
 /** Envoie l'état à la page. Sans effet sur une fenêtre détruite. */
@@ -42,8 +43,12 @@ export function broadcastFullscreen(win: BrowserWindow, value: boolean): void {
 export function installFullscreenSync(win: BrowserWindow): void {
   const broadcast = (value: boolean): void => broadcastFullscreen(win, value);
 
-  win.on("enter-full-screen", () => broadcast(true));
+  win.on("enter-full-screen", () => {
+    noteFullscreenReached(true);
+    broadcast(true);
+  });
   win.on("leave-full-screen", () => {
+    noteFullscreenReached(false);
     broadcast(false);
     traceWindows();
   });
