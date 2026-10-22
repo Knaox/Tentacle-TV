@@ -117,4 +117,11 @@ describe("plafonds des portes à essais répétés", () => {
     expect(statuses.slice(0, 10)).toEqual(Array(10).fill(400));
     expect(statuses[10]).toBe(429);
   });
+
+  it("relevé public d'un code affiché par une TV : 120 par minute (balayage des codes)", async () => {
+    const remoteAddress = freshClient();
+    const statuses = await hammer(121, { method: "GET", url: "/api/pair/device/status/ABCD", remoteAddress });
+    expect(statuses.slice(0, 120).every((status) => status === 200)).toBe(true);
+    expect(statuses[120]).toBe(429);
+  });
 });
