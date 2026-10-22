@@ -13,6 +13,40 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.31.2]
+<!-- Livrée sur LINUX seulement (le 2026-10-22). Les blocs mac-1.31.2 et win-1.31.2 ne gardent que ce qui touche ces deux systèmes : leurs notes cumulées de la version suivante les reprendront, sans les correctifs Linux. -->
+### FR
+- **Linux : la lecture fonctionne sur toutes les sessions** : sous GNOME et wlroots sans écran HDR, l'application passe d'elle-même par XWayland, où le plein écran fonctionne, et la fenêtre réapparaît après ce changement ; si le plein écran est imposé, le bouton propose X11 au lieu d'échouer
+- **Linux, X11** : la vidéo n'est plus rognée au format du film, et le clavier reste à l'interface au démarrage d'une lecture
+- **Linux, GNOME** : quitter une bande-annonce rend la fenêtre
+- **Linux, KDE** : la mise en veille n'est plus bloquée une fois l'application fermée
+- **Paquets .deb, .rpm et Arch** : ils déclarent ce dont la lecture a besoin (plus de lecteur muet au premier lancement), apt ne choisit plus l'émulation OSS d'ALSA, et le dossier d'installation est lisible par tous
+- **Mises à jour sur openSUSE** (par zypper) **et sur les systèmes à racine immuable** (Bazzite, Silverblue…), qui proposent l'AppImage
+- **Sécurité** : une mise à jour ne s'installe qu'après vérification de son empreinte par l'application elle-même, dans un dossier privé ; la navigation et les liens externes sont mieux bornés ; Electron 43.7
+
+### EN
+- **Linux: playback works on every session**: on GNOME and wlroots without an HDR display, the app goes through XWayland on its own, where full screen works, and the window comes back after that switch; when full screen is forced, the button offers X11 instead of failing
+- **Linux, X11**: the video is no longer cropped to the movie's shape, and the keyboard stays with the interface when playback starts
+- **Linux, GNOME**: leaving a trailer gives the window back
+- **Linux, KDE**: sleep is no longer blocked once the app is closed
+- **.deb, .rpm and Arch packages**: they declare what playback needs (no more silent player on first launch), apt no longer picks ALSA's OSS emulation, and the install folder is readable by everyone
+- **Updates on openSUSE** (through zypper) **and on immutable systems** (Bazzite, Silverblue…), which offer the AppImage
+- **Security**: an update is only installed after the app itself checks its fingerprint, in a private folder; navigation and external links are more tightly bounded; Electron 43.7
+
+## [mac-1.31.2]
+### FR
+- **Sécurité** : la navigation et les liens externes sont mieux bornés, une adresse de serveur n'est acceptée qu'en http(s) ; Electron 43.7
+
+### EN
+- **Security**: navigation and external links are more tightly bounded, a server address is only accepted as http(s); Electron 43.7
+
+## [win-1.31.2]
+### FR
+- **Sécurité** : la navigation et les liens externes sont mieux bornés, une adresse de serveur n'est acceptée qu'en http(s) ; Electron 43.7
+
+### EN
+- **Security**: navigation and external links are more tightly bounded, a server address is only accepted as http(s); Electron 43.7
+
 ## [1.31.1]
 <!-- Bloc nu : les trois canaux partent de la 1.31.0. Tout le Watch Together nouveau exige le serveur 1.31.1 (capacités watchTogether.*) : face à un serveur plus ancien, comportement d'avant. -->
 ### FR
