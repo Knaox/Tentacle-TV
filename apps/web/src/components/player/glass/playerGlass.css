@@ -22,17 +22,18 @@
   --lg-player-fg-3: #8f8f99;
   --lg-player-focus: var(--brand-light);
 
-  /* Géométrie */
+  /* Géométrie : de PETITES capsules qui flottent, séparées — jamais une dalle. Tous
+     les écarts (10) dépassent la distance de fusion du groupe natif (8) : au repos,
+     AppKit les garde distinctes ; elles ne se fondent que pendant leur
+     métamorphose (`[data-lgp-collapse]`), quand elles se resserrent. */
   --lg-player-edge: 20px;
   --lg-player-gap: 10px;
-  --lg-player-bar-max: 980px;
-  /* Hauteur FIXE de la capsule de lecture : le coin bas-droit monte d'autant (`.lgp-corner`). */
-  --lg-player-bar-height: 90px;
-  /* Variante « fused » : écart entre la capsule du temps et celles des boutons (sous la
-     distance de fusion, 8), et hauteur des capsules de boutons. 36 + 4 + 50 = 90. */
-  --lg-player-group-gap: 4px;
-  --lg-player-group-height: 50px;
-  --lg-player-radius-bar: var(--lg-radius-xl);
+  --lg-player-bar-max: 760px;
+  --lg-player-timecap-height: 36px;
+  --lg-player-group-height: 48px;
+  /* Hauteur FIXE du bas (temps + écart + boutons) : le coin bas-droit monte d'autant (`.lgp-corner`). */
+  --lg-player-bar-height: calc(var(--lg-player-timecap-height) + var(--lg-player-gap) + var(--lg-player-group-height));
+  --lg-player-pastille: 40px;
   --lg-player-radius-capsule: var(--lg-radius-capsule);
   --lg-player-radius-panel: var(--lg-radius-lg);
   --lg-player-radius-row: var(--lg-radius-sm);
@@ -40,7 +41,7 @@
   --lg-player-radius-trickplay: var(--lg-radius-md);
   /* Le liseré de verre autour de la vignette (`GlassTrickplayBubble` : INSET, à l'identique). */
   --lg-player-trickplay-inset: 5px;
-  --lg-player-button: 36px;
+  --lg-player-button: 34px;
   --lg-player-button-primary: 46px;
   --lg-player-button-small: 28px;
 
@@ -82,15 +83,35 @@
   --lg-player-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --lg-player-hide-shift: 10px;
   --lg-player-hide-scale: 0.965;
+  /* La métamorphose : les capsules se REPLIENT vers le pivot de leur ensemble (le
+     transport en bas, le retour en haut), s'y fondent et s'y résorbent ; elles en
+     naissent au retour, sur le ressort `morph`. Le contenu part avant la forme et
+     revient après elle. */
+  --lg-player-collapse-ms: 220ms;
+  --lg-player-content-in-ms: var(--lg-duration-hover);
+  --lg-player-content-in-delay: 90ms;
+  --lg-player-content-out-ms: var(--lg-duration-press);
 
-  /* La teinte que la vue NATIVE pose sur le verre du lecteur (lue par la
-     primitive dans `--lg-native-tint-*`, redéfinis sur chaque surface). Sur la
-     vidéo, le verre reste presque NEUTRE, comme chez Apple (QuickTime, TV) : la
-     lisibilité des capsules vient de l'ombre des glyphes du socle
-     (`--lg-media-glyph-shadow`, `--lg-media-label-shadow`). Panneaux et cartes,
-     chargés de texte, gardent une teinte plus dense. */
-  --lg-player-native-tint: rgb(0 0 0 / 0.1);
-  --lg-player-panel-tint: rgb(0 0 0 / 0.2);
+  /* AUCUNE teinte sur le verre des contrôles : la variante CLAIRE d'Apple, sur la
+     vidéo (HIG « Materials » : le verre clair pour ce qui flotte sur des photos et
+     des vidéos, sous des glyphes francs et clairs). La lisibilité vient d'un
+     voile LOCAL — l'ombre douce qui épouse chaque glyphe et chaque libellé —,
+     jamais d'un fond noir. Les surfaces de TEXTE (panneaux, fiches, avis) sont
+     du verre normal, qui règle lui-même sa luminosité ; elles ne prennent un
+     voile qu'en thème clair (`--lg-player-panel-tint`). */
+  --lg-player-panel-tint: transparent;
+  /* Le voile du verre CLAIR : la « couche d'assombrissement » qu'Apple exige derrière
+     le verre clair dès que le contenu est lumineux (HIG « Materials » : 35 % sur un
+     contenu clair ; les contrôles d'AVKit portent le leur). Posé par la vue native,
+     DANS la forme — un voile local, jamais une dalle. 20 % : comparé à l'image sur un
+     paysage surexposé (0 / 20 / 32 %), le seuil où chiffres et symboles se lisent
+     sans que le verre vire au fumé. */
+  --lg-player-clear-dim: rgb(0 0 0 / 0.2);
+  /* L'ombre portée qui SOULÈVE chaque forme : très douce, hors de la forme — du noir à
+     alpha, qui se compose juste sur la fenêtre transparente. */
+  --lg-player-lift-shadow: 0 6px 18px rgba(var(--scrim-media-rgb), 0.2), 0 1px 3px rgba(var(--scrim-media-rgb), 0.16);
+  --lg-player-glyph-shadow: drop-shadow(0 1px 1.5px rgba(var(--scrim-media-rgb), 0.55)) drop-shadow(0 0 5px rgba(var(--scrim-media-rgb), 0.32));
+  --lg-player-label-shadow: 0 1px 2px rgba(var(--scrim-media-rgb), 0.6), 0 0 10px rgba(var(--scrim-media-rgb), 0.38);
   /* Voile de survol d'un bouton secondaire de carte : noir à alpha. */
   --lg-player-veil: rgb(0 0 0 / 0.15);
 
@@ -102,19 +123,27 @@
   --lg-player-preview-edge: #3d3948;
 }
 
-/* Thème clair : la vue native y prend l'apparence CLAIRE (verre laiteux), sous
-   des symboles qui restent blancs (le lecteur est sombre dans les deux thèmes).
-   Teintes plus denses, en attendant une apparence sombre forcée par région. */
+/* Thème clair : le verre NORMAL y prend l'apparence claire (laiteuse), sous des
+   textes qui restent blancs (le lecteur est sombre dans les deux thèmes) — un
+   voile sur les seules surfaces de texte, en attendant une apparence sombre
+   forcée par région. Le verre clair des contrôles n'en prend aucun. */
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lg-player-native-tint: rgb(0 0 0 / 0.18);
   --lg-player-panel-tint: rgb(0 0 0 / 0.32);
+}
+
+/* Matière pleine (contraste accru, transparence réduite) : comme le socle, les
+   ombres de lisibilité partent — le contraste est celui du glyphe sur l'aplat. */
+:root[data-liquid-glass="native"][data-lg-material] {
+  --lg-player-lift-shadow: none;
+  --lg-player-glyph-shadow: none;
+  --lg-player-label-shadow: none;
 }
 
 /* ── Surface ─────────────────────────────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface {
-  --lg-native-tint-regular: var(--lg-player-native-tint);
-  --lg-native-tint-clear: var(--lg-player-native-tint);
+  --lg-native-tint-regular: var(--lg-player-panel-tint);
+  --lg-native-tint-clear: var(--lg-player-clear-dim);
   position: relative;
   background: transparent;
 }
@@ -152,10 +181,6 @@
   transition-timing-function: var(--lg-player-ease-exit);
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-from-top[data-lgp-present="false"] > .lgp-content {
-  transform: translateY(calc(-1 * var(--lg-player-hide-shift))) scale(var(--lg-player-hide-scale));
-}
-
 /* ── Boutons ─────────────────────────────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn {
@@ -185,7 +210,7 @@
    appui gonflent le bouton) ; ici, la lisibilité du symbole sur un verre
    presque neutre. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn > svg {
-  filter: var(--lg-media-glyph-shadow);
+  filter: var(--lg-player-glyph-shadow);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn:focus-visible {
@@ -196,15 +221,14 @@
 /* Panneau ouvert : le symbole passe à la marque. Sur le SVG lui-même — les
    icônes du lecteur portent `text-white` en propre (`PlayerIcons.tsx`). */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-pressed="true"] > svg,
-/* Panneau ouvert : le symbole passe à la marque. Sur le SVG lui-même — les
-   icônes du lecteur portent `text-white` en propre (`PlayerIcons.tsx`). */:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-expanded="true"] > svg {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-btn[aria-expanded="true"] > svg {
   color: var(--lg-player-focus);
 }
 
 /* ── Texte ───────────────────────────────────────────────────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-title {
-  text-shadow: var(--lg-media-label-shadow);
+  text-shadow: var(--lg-player-label-shadow);
   color: var(--lg-player-fg);
   font-size: 15px;
   font-weight: 600;
@@ -212,17 +236,17 @@
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-subtitle {
-  text-shadow: var(--lg-media-label-shadow);
+  text-shadow: var(--lg-player-label-shadow);
   color: var(--lg-player-fg-2);
   font-size: 12px;
   line-height: 1.3;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-time {
-  text-shadow: var(--lg-media-label-shadow);
-  color: var(--lg-player-fg-2);
+  text-shadow: var(--lg-player-label-shadow);
+  color: var(--lg-player-fg);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
 }

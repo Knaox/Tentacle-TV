@@ -1,4 +1,4 @@
-/* Les deux capsules du lecteur en verre et leur contenu.
+/* Le haut et le bas du lecteur en verre : de petites capsules qui flottent.
  * Jetons : `playerGlass.css`. Rien d'autre que `transform` et `opacity` ne
  * s'anime ici : ces capsules flottent sur une vidéo EN LECTURE. */
 
@@ -9,7 +9,7 @@
   pointer-events: none;
 }
 
-/* ── En haut : sortie + titre ────────────────────────────────────────── */
+/* ── En haut : le rond de la sortie, la capsule du titre ──────────────── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-top {
   position: absolute;
@@ -22,24 +22,41 @@
   pointer-events: none;
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-topbar {
-  max-width: min(560px, 60%);
-  border-radius: var(--lg-player-radius-capsule);
-  transform-origin: top left;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-topbar__inner {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 46px;
-  padding: 5px 20px 5px 5px;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-topbar__titles {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-top__lead {
   display: flex;
   min-width: 0;
+  align-items: center;
+  gap: var(--lg-player-gap);
+}
+
+/* Une pastille : le verre d'un seul bouton, un cercle. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-pastille {
+  flex-shrink: 0;
+  border-radius: var(--lg-player-radius-capsule);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-pastille > .lgp-content {
+  display: flex;
+  width: var(--lg-player-pastille);
+  height: var(--lg-player-pastille);
+  align-items: center;
+  justify-content: center;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-titlecap {
+  min-width: 0;
+  max-width: min(520px, 56vw);
+  border-radius: var(--lg-player-radius-capsule);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-titlecap__inner {
+  display: flex;
+  min-height: var(--lg-player-pastille);
+  box-sizing: border-box;
+  min-width: 0;
   flex-direction: column;
+  justify-content: center;
+  padding: 3px 18px;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-devbadge {
@@ -71,22 +88,8 @@
    pause), et une capsule masquée gardait les siens (un clic sur l'image, là où
    dormait la piste, faisait un saut). Un panneau qui rentre dans son bouton
    (`data-lgp-exiting`) les laisse au bouton. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) :is(.lgp-topbar, .lgp-bar, .lgp-timecap, .lgp-group, .lgp-panel).lgp-surface:not([data-lgp-present="false"], [data-lgp-exiting]) {
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) :is(.lgp-pastille, .lgp-titlecap, .lgp-timecap, .lgp-group, .lgp-panel).lgp-surface:not([data-lgp-present="false"], [data-lgp-exiting]) {
   pointer-events: auto;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-bar {
-  border-radius: var(--lg-player-radius-bar);
-  transform-origin: bottom center;
-}
-
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-bar__inner {
-  display: flex;
-  box-sizing: border-box;
-  height: var(--lg-player-bar-height);
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 14px 6px;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-popover {
@@ -182,13 +185,6 @@
 }
 
 /* Boutons : le son à gauche, le transport au centre, les réglages à droite */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  height: 48px;
-}
-
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__side {
   display: flex;
   min-width: 0;

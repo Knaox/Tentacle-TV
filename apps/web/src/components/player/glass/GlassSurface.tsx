@@ -11,9 +11,13 @@
  * le noir et l'opaque, eux, se composent juste. Les jetons du lecteur
  * (`playerGlass.css`) n'emploient donc que ces deux familles.
  *
- * # Deux façons d'apparaître
+ * # Trois façons d'apparaître
  *
- * - Une surface FIXE (capsules, badges, attente) : la vue native entre et sort
+ * - Les CONTRÔLES (capsules du haut et du bas) se MÉTAMORPHOSENT (`collapse`) :
+ *   repliés vers le pivot de leur ensemble, ils s'y fondent en une goutte qui se
+ *   sépare en capsules ; la région suit la surface image par image et part
+ *   quand la surface, repliée, ne se voit plus (`playerGlass.css`).
+ * - Une surface FIXE (badges, attente) : la vue native entre et sort
  *   en FONDU, par son conteneur (`transition` > 0, lg-natif — l'alpha d'une
  *   NSGlassEffectView seule ne se voit pas, celui de son conteneur, si) ; son
  *   contenu se pose sur le ressort `morph` dans le même temps.
@@ -32,18 +36,25 @@
  * # Présence
  *
  * `present` faux (contrôles masqués) ou sortie en cours (`AnimatePresence` :
- * `useIsPresent`) → la région est RETIRÉE dès le début de la sortie. Rien de
- * natif ne reste derrière un contrôle qui n'est plus à l'écran.
+ * `useIsPresent`) → la région est RETIRÉE dès le début de la sortie — à la fin
+ * du repli pour une surface qui se replie. Rien de natif ne reste derrière un
+ * contrôle qui n'est plus à l'écran.
+ *
+ * # Matière
+ *
+ * Verre CLAIR par défaut (HIG « Materials » : ce qui flotte sur la vidéo) ;
+ * `variant="regular"` pour les surfaces de texte — panneaux, fiches, avis.
  */
 
 import { createContext, useCallback, useContext, useRef, type HTMLAttributes, type Ref } from "react";
-import { motion, useIsPresent } from "framer-motion";
+import { motion, useIsPresent, useReducedMotion } from "framer-motion";
 import type { GlassMorphProps } from "../../../theme/glass";
 import { usePlayerGlassMode, usePlayerGlassRegionsAllowed } from "./PlayerGlassContext";
 import { useNativeGlassRegion, type GlassRegionOptions } from "./nativeGlassPort";
 import { PLAYER_FUSION_SPACING, PLAYER_GLASS_GROUP } from "./playerGlassFusion";
 import { useWindowResizing } from "./windowResizing";
 import "./playerGlass.css";
+import "./playerGlassCollapse.css";
 
 /**
  * Les contrôles du lecteur sont-ils à l'écran ? Fourni par l'habillage : un
@@ -73,19 +84,28 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
    * natif suive la surface jusque dans le bouton.
    */
   morph?: GlassMorphProps;
+  /**
+   * Se REPLIE vers le pivot de son ensemble (`useCollapsePivots`) à l'apparition
+   * et au retrait, au lieu d'un fondu : la métamorphose des contrôles.
+   */
+  collapse?: boolean;
   /** Pour qui doit aussi tenir l'élément (clic à l'extérieur d'un menu…). */
   surfaceRef?: Ref<HTMLDivElement>;
 }
 
 export function GlassSurface({
-  present = true, group = PLAYER_GLASS_GROUP, variant = "regular", transition = NATIVE_FADE_MS, spacing, morph,
-  surfaceRef, className = "", children, ...rest
+  present = true, group = PLAYER_GLASS_GROUP, variant = "clear", transition = NATIVE_FADE_MS, spacing, morph,
+  collapse = false, surfaceRef, className = "", children, ...rest
 }: GlassSurfaceProps) {
   const mode = usePlayerGlassMode();
   const isPresent = useIsPresent();
   const chromeVisible = useContext(GlassChromeVisibleContext);
   const regionsAllowed = usePlayerGlassRegionsAllowed();
   const resizing = useWindowResizing();
+  const reducedMotion = useReducedMotion();
+  // Repliée, la surface est suivie image par image ; en mouvement réduit, elle
+  // part et revient en fondu natif, sans repli (`playerGlass.css`).
+  const folding = collapse && reducedMotion !== true;
   // Une surface qui se métamorphose garde sa région pendant sa sortie : elle rentre dans son bouton.
   const shown = present && (isPresent || morph !== undefined) && chromeVisible;
   const ref = useRef<HTMLDivElement | null>(null);
@@ -96,10 +116,12 @@ export function GlassSurface({
   }, [surfaceRef]);
 
   useNativeGlassRegion(ref, {
-    active: mode === "native" && shown && regionsAllowed,
+    // Qui se replie garde sa région tant qu'elle se voit : c'est la fin du repli
+    // (`visibility`) qui la retire, pas le premier instant du masquage.
+    active: mode === "native" && (shown || collapse) && regionsAllowed,
     group,
     variant,
-    transition: resizing ? 0 : transition,
+    transition: folding || resizing ? 0 : transition,
     spacing: spacing ?? (group === PLAYER_GLASS_GROUP ? PLAYER_FUSION_SPACING : undefined),
   });
 
@@ -109,6 +131,7 @@ export function GlassSurface({
   const props = {
     ref: setRef, className: `lgp-surface${preview} ${className}`, "data-lgp-present": shown,
     "data-lgp-exiting": isPresent ? undefined : true,
+    "data-lgp-collapse": collapse ? "" : undefined,
   };
   if (morph) {
     return (

@@ -18,16 +18,13 @@ type GlassControlsRowProps = Pick<DesktopPlayerControlsProps,
   "state" | "itemId" | "isEpisode" | "hasSettings" | "hasNextEpisode" | "hasPreviousEpisode"
   | "showSettings" | "showEpisodes" | "setShowSettings" | "setShowEpisodes"
   | "onReduce" | "togglePause" | "skipBy" | "toggleMute" | "setVolume" | "setSpeed" | "toggleFullscreen"
-  | "onNextEpisode" | "onPreviousEpisode" | "speed" | "visible"> & {
-  /** Trois capsules fusionnées (son, transport, réglages) au lieu d'une rangée dans la capsule. */
-  grouped: boolean;
-};
+  | "onNextEpisode" | "onPreviousEpisode" | "speed" | "visible">;
 
 /**
- * La rangée de boutons de la capsule : le son à gauche, le transport au CENTRE
- * (toujours au centre, quels que soient les boutons des côtés — grille à trois
- * colonnes), les réglages à droite. L'ordre de droite est celui de l'habillage
- * d'avant : vitesse, épisodes, pistes, PiP, plein écran.
+ * La rangée de boutons : TROIS capsules séparées — le son à gauche, le
+ * transport au centre (le pivot du bas : les autres capsules s'y replient), les
+ * réglages à droite. L'ordre de droite est celui de l'habillage d'avant :
+ * vitesse, épisodes, pistes, PiP, plein écran.
  *
  * Aucun fond au survol : sur le verre, c'est le symbole qui répond (ressort,
  * `playerGlass.css`) — un voile blanc translucide y rendrait gris.
@@ -36,14 +33,14 @@ export function GlassControlsRow({
   state, itemId, isEpisode, hasSettings, hasNextEpisode, hasPreviousEpisode,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes,
   onReduce, togglePause, skipBy, toggleMute, setVolume, setSpeed, toggleFullscreen,
-  onNextEpisode, onPreviousEpisode, speed, visible, grouped,
+  onNextEpisode, onPreviousEpisode, speed, visible,
 }: GlassControlsRowProps) {
   const { t } = useTranslation("player");
   const muted = state.muted || state.volume === 0;
 
   return (
-    <div className={grouped ? "lgp-groups" : "lgp-row"}>
-      <Part grouped={grouped} visible={visible} className="lgp-row__side">
+    <div className="lgp-groups">
+      <Part visible={visible} className="lgp-row__side">
         <button type="button" onClick={() => toggleMute()} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={muted ? t("player:unmute") : t("player:mute")} title={muted ? t("player:unmute") : t("player:mute")}>
           {/* Quatre états, comme l'habillage d'avant : coupé, bas, moyen, fort. */}
           {muted ? <MuteIcon /> : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
@@ -55,7 +52,7 @@ export function GlassControlsRow({
           className="lgp-range" />
       </Part>
 
-      <Part grouped={grouped} visible={visible} className="lgp-row__center">
+      <Part visible={visible} className="lgp-row__center" pivot>
         {hasPreviousEpisode && (
           <button type="button" onClick={onPreviousEpisode} {...GLASS_LENS_PROPS} className="lgp-btn" aria-label={t("player:previousEpisodeLabel")} title={t("player:previousEpisode")}><PrevEpIcon /></button>
         )}
@@ -73,7 +70,7 @@ export function GlassControlsRow({
         )}
       </Part>
 
-      <Part grouped={grouped} visible={visible} className="lgp-row__side lgp-row__side--end">
+      <Part visible={visible} className="lgp-row__side lgp-row__side--end">
         <PlaybackRateControl
           apply={setSpeed} resetKey={itemId} state={speed}
           otherPanelOpen={showSettings || showEpisodes}
@@ -108,15 +105,14 @@ export function GlassControlsRow({
 }
 
 /**
- * Une partie de la rangée. Groupée, c'est sa PROPRE capsule de verre, du même
- * groupe natif que la capsule du temps : AppKit les fond en une seule forme.
- * Au niveau du module : défini dans le rendu, il changerait d'identité à chaque
- * battement de position et remonterait toute la rangée.
+ * Une partie de la rangée : sa PROPRE capsule de verre, du même groupe natif que
+ * la capsule du temps — séparée au repos, fondue avec elles quand elles se
+ * replient. Au niveau du module : défini dans le rendu, il changerait d'identité
+ * à chaque battement de position et remonterait toute la rangée.
  */
-function Part({ grouped, visible, className, children }: { grouped: boolean; visible: boolean; className: string; children: ReactNode }) {
-  if (!grouped) return <div className={className}>{children}</div>;
+function Part({ visible, className, pivot = false, children }: { visible: boolean; className: string; pivot?: boolean; children: ReactNode }) {
   return (
-    <GlassSurface className={`lgp-group ${className}`} present={visible}>
+    <GlassSurface className={`lgp-group ${className}`} present={visible} collapse data-lgp-pivot={pivot ? "" : undefined}>
       <div className="lgp-content lgp-group__inner">{children}</div>
     </GlassSurface>
   );

@@ -5,10 +5,11 @@
  * partagent un NSGlassEffectContainerView, et AppKit les fond à moins de
  * `spacing` points.
  *
- * Capsule de lecture et panneaux sont du même groupe : un panneau qui NAÎT de
- * son bouton (`glassMorphProps`, lg-physique) traverse la capsule en s'y fondant,
- * puis s'en détache — au repos, l'écart (10 px, `--lg-player-gap`) dépasse la
- * distance de fusion.
+ * Au repos, les capsules du lecteur sont SÉPARÉES (écarts de 10 px, au-delà de
+ * la distance de fusion) : de petites formes qui flottent, jamais une dalle. Elles
+ * ne se fondent qu'en mouvement — repliées vers leur pivot quand les contrôles
+ * paraissent ou s'effacent (`collapse`), ou quand un panneau NAÎT de son bouton
+ * (`glassMorphProps`, lg-physique) et traverse sa capsule avant de s'en détacher.
  */
 
 /** Le groupe des capsules et de leurs panneaux. */
@@ -25,10 +26,3 @@ export const PLAYER_MORPH = {
 } as const;
 
 export type PlayerMorphId = (typeof PLAYER_MORPH)[keyof typeof PLAYER_MORPH];
-
-/**
- * La capsule de lecture : `single` (UNE capsule, deux rangées) ou `fused` (la
- * capsule du temps et trois capsules de boutons — son, transport, réglages —
- * que leur écart de 4 px, sous la distance de fusion, fond en une forme).
- */
-export const PLAYER_BAR_LAYOUT: "single" | "fused" = "fused";

@@ -187,5 +187,5 @@ export const NoticeCard = memo(function NoticeCard({
 
 /** La carte en verre : une surface native du lecteur. */
 function GlassRoot({ className, role, children }: { className: string; role: string; children: React.ReactNode }) {
-  return <GlassSurface className={className} role={role} group="player-notice" transition={0}>{children}</GlassSurface>;
+  return <GlassSurface className={className} role={role} group="player-notice" variant="regular" transition={0}>{children}</GlassSurface>;
 }
