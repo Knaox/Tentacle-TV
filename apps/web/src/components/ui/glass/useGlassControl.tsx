@@ -22,9 +22,14 @@ import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNo
 import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { GlassSpecular, useBackdropTone, useLiquidGlassMode, useSpecularHighlight, type BackdropTone } from "../../../theme/glass";
-import { useBandTones } from "../../../theme/glass/useBandTones";
 import { useLensGeometry } from "../../../theme/glass/useLensGeometry";
-import { lensFilterId, type LiquidGlassLevel, type LiquidGlassShape } from "../../../theme/glass/surfaceModel";
+import {
+  lensFilterId,
+  scaleAttributes,
+  type LiquidGlassLevel,
+  type LiquidGlassScale,
+  type LiquidGlassShape,
+} from "../../../theme/glass/surfaceModel";
 
 export interface GlassControlOptions {
   /** Le niveau dont la lentille lit sa force (`--lg-refraction-*`) ; `false` : pas de lentille. */
@@ -39,9 +44,14 @@ export interface GlassControlOptions {
    */
   tone?: boolean;
   /**
-   * Matériau ÉPAIS (menu, feuille) : un ton par RANGÉE en plus du ton de la
-   * surface (`useBandTones`, lg-tokens) — un dessous mixte (bande claire de la
-   * page, héros sombre) ne laisse aucune rangée sans contraste. Défaut non.
+   * Le régime (`LiquidGlassScale`) : `surface` pour un grand verre (menu,
+   * feuille, palette) — UN ton tenu, matériau épais (`data-lg-scale`).
+   * Défaut `control`.
+   */
+  scale?: LiquidGlassScale;
+  /**
+   * @deprecated SANS EFFET depuis le lot lg2 : une surface garde UN ton.
+   * Prendre `scale: "surface"`. Retiré en fin de lot.
    */
   bands?: boolean;
 }
@@ -52,13 +62,13 @@ export interface GlassControl<T extends HTMLElement> {
   /** La même, pour une API qui attend un objet (`FloatingLayer.panelRef`). */
   refObject: RefObject<T | null>;
   /** À étaler sur la surface ; `style` se fusionne avec celui de l'appelant. */
-  props: { style?: CSSProperties; "data-lgc-lens"?: ""; "data-lg-tone"?: BackdropTone };
+  props: { style?: CSSProperties; "data-lgc-lens"?: ""; "data-lg-tone"?: BackdropTone; "data-lg-scale"?: "surface" };
   /** À rendre DANS la surface (filtre et reflet sont hors du flux). */
   layers: ReactNode;
 }
 
 export function useGlassControl<T extends HTMLElement>(options: GlassControlOptions): GlassControl<T> {
-  const { lens = false, shape = "rounded", specular = false, tone: toneEnabled = true, bands = false } = options;
+  const { lens = false, shape = "rounded", specular = false, tone: toneEnabled = true, scale } = options;
   const native = useLiquidGlassMode() === "native";
   const [element, setElement] = useState<T | null>(null);
   const specularRef = useSpecularHighlight<T>();
@@ -81,7 +91,6 @@ export function useGlassControl<T extends HTMLElement>(options: GlassControlOpti
   const tone = useBackdropTone(element, native && toneEnabled);
   // Le ton relit la lentille : la lumière du bord en dépend (gain, éclat).
   const geometry = useLensGeometry(element, native && lens !== false, lens || "regular", shape, shape, tone);
-  useBandTones(element, native && toneEnabled && bands);
   const filterId = lensFilterId(useId());
 
   if (!native) return { ref, refObject, props: {}, layers: null };
@@ -91,6 +100,7 @@ export function useGlassControl<T extends HTMLElement>(options: GlassControlOpti
     props: {
       ...(geometry ? { "data-lgc-lens": "" as const, style: { "--lgc-lens": `url(#${filterId})` } as CSSProperties } : {}),
       ...(toneEnabled ? { "data-lg-tone": tone } : {}),
+      ...scaleAttributes(scale),
     },
     layers: (
       <>
