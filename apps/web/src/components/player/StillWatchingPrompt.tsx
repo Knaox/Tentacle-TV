@@ -188,7 +188,7 @@ export function StillWatchingPrompt({ controller, controlsVisible, surface = "we
 /** La carte : un verre dans le lecteur en verre, la carte d'avant ailleurs — mêmes attributs. */
 function Card({ glass, children, ...props }: HTMLAttributes<HTMLDivElement> & { glass: boolean; "data-still-watching": string }) {
   return glass
-    ? <GlassSurface {...props} group="player-corner" transition={0}>{children}</GlassSurface>
+    ? <GlassSurface {...props} group="player-corner" variant="regular" transition={0}>{children}</GlassSurface>
     : <div {...props}>{children}</div>;
 }
 

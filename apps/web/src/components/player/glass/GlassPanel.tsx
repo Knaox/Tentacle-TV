@@ -45,6 +45,7 @@ export function GlassPanel({ className = "", bodyClassName = "", morphId, surfac
     <GlassSurface
       className={`lgp-panel lgp-popover ${className}`}
       morph={glassMorphProps(morphId, reduced)}
+      variant="regular"
       transition={0}
       surfaceRef={surfaceRef}
       role={role}

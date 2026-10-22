@@ -1,37 +1,43 @@
-/* Le lecteur en verre — la variante « fused » de la barre (`PLAYER_BAR_LAYOUT`).
-   Importée par `GlassPlayerChrome` après `playerGlassBar.css` et la bulle : la
-   cascade garde l'ordre d'avant le découpage. */
+/* Le lecteur en verre — le bas : la capsule du temps, puis trois capsules de
+   boutons (son, transport, réglages), SÉPARÉES. Importée par `GlassPlayerChrome`
+   après `playerGlassBar.css` et la bulle de la vignette. */
 
-/* ── Variante « fused » : la capsule du temps + trois capsules de boutons ── */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-timecap {
   border-radius: var(--lg-player-radius-capsule);
-  transform-origin: bottom center;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timecap__inner {
-  padding: 6px 14px;
+  display: flex;
+  height: var(--lg-player-timecap-height);
+  box-sizing: border-box;
+  align-items: center;
+  padding: 0 12px;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-timecap__inner > .lgp-scrub {
+  flex: 1 1 auto;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-groups {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--lg-player-group-gap);
+  margin-top: var(--lg-player-gap);
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-group {
   border-radius: var(--lg-player-radius-capsule);
-  transform-origin: bottom center;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-group__inner {
   display: flex;
   height: var(--lg-player-group-height);
+  box-sizing: border-box;
   align-items: center;
   gap: 2px;
   padding: 0 7px;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-row__center > .lgp-group__inner {
-  gap: 8px;
+  gap: 6px;
 }
