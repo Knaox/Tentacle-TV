@@ -1,0 +1,53 @@
+# Dependabot — mises à jour des dépendances npm (workspace pnpm entier, lu
+# depuis le pnpm-lock.yaml de la racine) et des actions GitHub.
+#
+# ⚠️ cooldown : une version n'est proposée qu'après quelques jours de
+# publication — le temps qu'un paquet piégé (ver ChainDrop, Shai-Hulud…) soit
+# repéré et retiré du registre. Même logique que `minimumReleaseAge` de pnpm.
+# Les mises à jour de SÉCURITÉ ne l'attendent pas.
+#
+# Les actions restent épinglées par SHA : Dependabot met à jour le SHA ET le
+# commentaire de version.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Un seul PR pour tout le menu fretin, un par écosystème lourd.
+      expo-react-native:
+        patterns: ["expo", "expo-*", "@expo/*", "react-native", "react-native-*", "@react-native/*", "@react-native-community/*"]
+        update-types: ["minor", "patch"]
+      minor-and-patch:
+        patterns: ["*"]
+        exclude-patterns: ["@tentacle-tv/*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Paquets du workspace : jamais servis par le registre.
+      - dependency-name: "@tentacle-tv/*"
+
+  - package-ecosystem: "github-actions"
+    directories: ["/", "/.github/actions/*"]
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]
