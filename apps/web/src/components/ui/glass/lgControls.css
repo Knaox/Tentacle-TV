@@ -1,111 +1,35 @@
-/* ── Liquid Glass : les CONTRÔLES de la page ──────────────────────────────
+/* ── Liquid Glass : les CONTRÔLES de la page qui gardent leur peau CSS ─────
  *
- * Boutons, disques des rangées, capsules, interrupteur, choix segmenté (le
- * plateau du survol des cartes est passé sur la primitive : `CardTrayParts`). Chaque règle vit sous `:root[data-liquid-glass="native"]` :
- * sans le drapeau, la classe-marqueur posée sur le composant (`lg-btn`,
- * `lg-disc`…) n'a AUCUN style — le rendu d'avant, au pixel près.
+ * Les boutons (principal, ronds, flèches, plateau des cartes, capsule de la
+ * fiche, boutons des dialogues) sont des surfaces de la PRIMITIVE de lg-tokens
+ * (`PressableGlass`, `GlassButton`, `CardTrayParts`, `useLiquidGlassSurface`) :
+ * lentille pour leur forme, lumière du bord, ton du dessous. Restent ici les
+ * contrôles qu'une classe habille : interrupteur, choix segmenté, pastilles de
+ * filtre, champ de recherche, pastilles de qualité, « Tout voir », panneaux.
  *
- * Le verre de la page, c'est la réfraction de Chromium (`--lgc-backdrop*`),
- * jamais une région native : une région NSGlassEffect par bouton coûterait une
- * vue native par contrôle, resynchronisée à chaque défilement.
+ * Chaque règle vit sous `:root[data-liquid-glass="native"]` : sans le
+ * drapeau, la classe-marqueur n'a AUCUN style — le rendu d'avant, au pixel
+ * près (tenu par `liquidGlassTokens.test.ts`).
  *
  * Règles de coût (CLAUDE.md, « Coût GPU ») :
- *  • un `backdrop-filter` n'est posé que sur ce qui est AFFICHÉ — les disques
- *    sont montés au survol (`useHoverMount`), jamais masqués ;
+ *  • un `backdrop-filter` n'est posé que sur ce qui est AFFICHÉ ;
  *  • rien ne s'anime que `transform` et `opacity` : l'arête et l'ombre sont
- *    des `box-shadow` FIXES, le survol est un calque (`::after`) en fondu ;
+ *    des `box-shadow` FIXES ;
  *  • un verre posé sur la page immobile (« Tout voir », panneaux) n'a pas de
- *    flou : il n'y aurait rien à réfracter. Arête et reflet suffisent.
+ *    flou : il n'y aurait rien à réfracter.
  *
  * Spécificité : `:root[data-liquid-glass] .x` vaut (0,3,0) et l'emporte sur les
  * utilitaires Tailwind et leurs variantes `hover:` (0,2,0) sans `!important`. */
 
-/* ══ 1. Le verre commun ═══════════════════════════════════════════════════ */
-
-:root[data-liquid-glass="native"] :is(.lg-btn, .lg-disc) {
-  position: relative;
-  isolation: isolate;
-  background: var(--lgc-fill);
-  -webkit-backdrop-filter: var(--lgc-backdrop);
-  backdrop-filter: var(--lgc-backdrop);
-  border-color: transparent;
-  box-shadow: var(--lgc-edge), var(--lg-shadow-contact);
-}
-
-/* Posé sur une AFFICHE (héros, fiche) : verre sombre et neutre, libellé blanc
- * dans les deux schémas — la règle « posé sur média » des surfaces. */
-:root[data-liquid-glass="native"] :is(.lg-btn-media, .lg-capsule-media) {
-  position: relative;
-  isolation: isolate;
-  background: var(--lgc-fill-media);
-  -webkit-backdrop-filter: var(--lgc-backdrop);
-  backdrop-filter: var(--lgc-backdrop);
-  border-color: transparent;
-  box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
-}
-
-/* La capsule de la fiche ne porte que des icônes : le voile clair. */
-:root[data-liquid-glass="native"] .lg-capsule-media {
-  background: var(--lgc-fill-media-icons);
-}
-
 /* L'arête et l'ombre occupent `box-shadow` : les anneaux `ring-*` de Tailwind,
  * qui y vivent aussi, sont recouverts. Le focus clavier passe donc par
  * `outline`, qui ne dépend de rien d'autre. */
-:root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media, .lg-disc, .lg-btn-primary, .lg-chip, .lg-segmented .ctl-segment):focus-visible {
+:root[data-liquid-glass="native"] :is(.lg-chip, .lg-segmented .ctl-segment):focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
-/* Le survol : un voile clair, sur son calque, dont seule l'opacité change. */
-:root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media, .lg-disc)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--lg-highlight);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
-@media (hover: hover) {
-  :root[data-liquid-glass="native"] :is(.lg-btn, .lg-btn-media, .lg-disc):hover::after {
-    opacity: 1;
-  }
-}
-
-/* L'appui : le verre GONFLE (décision du coordinateur) — c'est la lentille de
- * lg-physique (`physics.css`) qui porte ces classes, pas cette feuille. */
-
-/* Le survol remplace le fond par le voile ci-dessus : un `hover:bg-*` resté
- * sur le composant repeindrait le fond à chaque passage. */
-@media (hover: hover) {
-  :root[data-liquid-glass="native"] .lg-btn-media:hover {
-    background: var(--lgc-fill-media);
-  }
-  :root[data-liquid-glass="native"] .lg-btn:hover {
-    background: var(--lgc-fill);
-  }
-}
-
-/* ══ 2. Le bouton PRIMAIRE : verre teinté de marque ═══════════════════════
- *
- * « Lecture » du héros et de la fiche, l'action primaire d'une carte, le
- * bouton primaire générique. Le dégradé profond rendu translucide : l'affiche
- * passe dessous et se teinte. Le voile noir du survol de `.hero-cta-primary`
- * (son `::before`) reste tel quel — il approfondit le dégradé. */
-:root[data-liquid-glass="native"] :is(.hero-cta-primary, .lg-btn-primary) {
-  background: var(--lgc-fill-prominent);
-  -webkit-backdrop-filter: var(--lgc-backdrop-prominent);
-  backdrop-filter: var(--lgc-backdrop-prominent);
-  border-color: transparent;
-  /* `!important` : `HERO_PLAY_STYLE` pose son ombre EN LIGNE. */
-  box-shadow: var(--lgc-edge-strong), var(--lgc-glow-brand) !important;
-}
-
-/* ══ 4. L'interrupteur ════════════════════════════════════════════════════
+/* ══ 1. L'interrupteur ════════════════════════════════════════════════════
  *
  * Le pouce devient une lentille de verre (macOS 26) : blanc laiteux, arête,
  * reflet. La piste allumée garde le dégradé de marque — c'est l'ÉTAT. */
@@ -124,7 +48,7 @@
   box-shadow: var(--lgc-edge-strong), var(--lg-shadow-contact);
 }
 
-/* ══ 5. Le choix segmenté ═════════════════════════════════════════════════
+/* ══ 2. Le choix segmenté ═════════════════════════════════════════════════
  *
  * Le groupe devient une piste de verre en capsule ; l'option retenue, un
  * galet de verre teinté posé dedans. */
@@ -146,27 +70,19 @@
   box-shadow: var(--lgc-edge-strong), var(--ctl-glow-segment);
 }
 
-/* ══ 6. Formes ════════════════════════════════════════════════════════════
+/* ══ 3. Capsule ═══════════════════════════════════════════════════════════
  *
- * Les boutons d'une feuille macOS 26 sont des capsules. Le libellé d'un
- * primaire passe au blanc de marque : il quitte un fond blanc (`cta-primary`)
- * pour le verre teinté. */
+ * Les boutons d'une feuille macOS 26 sont des capsules — celui de danger d'une
+ * confirmation aussi, qui garde sa peau. */
 :root[data-liquid-glass="native"] .lg-shape-capsule {
   border-radius: var(--lg-radius-capsule);
 }
 
-:root[data-liquid-glass="native"] .lg-btn-primary {
-  color: var(--cta-brand-fg);
-}
-
-/* ══ 7. Pastilles de filtre ═══════════════════════════════════════════════
+/* ══ 4. Pastilles de filtre ═══════════════════════════════════════════════
  *
- * Elles étaient passées à l'aplat OPAQUE : un voile translucide s'y perdait
- * sur une affiche claire. Le verre garde donc un fond ÉPAIS (lisible sur
- * n'importe quelle image) et un flou FIN — juste de quoi laisser deviner
- * l'affiche. L'arête remplace l'anneau `ring-line-strong` ; une pastille
- * active garde le sien, de marque (`--tw-ring-shadow`, posé par Tailwind),
- * sous sa teinte, qu'on ne touche pas. */
+ * Verre épais (lisible sur n'importe quelle image) et flou fin. L'arête
+ * remplace l'anneau `ring-line-strong` ; une pastille active garde le sien, de
+ * marque (`--tw-ring-shadow`, posé par Tailwind), sous sa teinte. */
 :root[data-liquid-glass="native"] .lg-chip {
   -webkit-backdrop-filter: var(--lgc-backdrop);
   backdrop-filter: var(--lgc-backdrop);
@@ -184,11 +100,10 @@
   box-shadow: var(--lgc-edge-strong), var(--tw-ring-shadow, 0 0 #0000);
 }
 
-/* ══ 8. Champ de recherche ════════════════════════════════════════════════
+/* ══ 5. Champ de recherche ════════════════════════════════════════════════
  *
  * La capsule de recherche des barres d'outils (`ScopedSearchField`) : le
- * verre épais (on y lit du texte saisi), l'arête ; au focus, l'anneau de
- * marque revient par-dessus l'arête — `box-shadow` porte les deux. */
+ * verre épais, l'arête ; au focus, l'anneau de marque par-dessus. */
 :root[data-liquid-glass="native"] .lg-field {
   background: var(--lgc-fill-thick);
   -webkit-backdrop-filter: var(--lgc-backdrop);
@@ -201,55 +116,27 @@
   box-shadow: var(--lgc-edge-strong), 0 0 0 3px var(--lg-tint-brand);
 }
 
-/* ══ 9. Pastilles de qualité et de langue ═════════════════════════════════
+/* ══ 6. Pastilles de qualité et de langue ═════════════════════════════════
  *
- * Elles sont déjà du verre sombre, réglé au contraste près (10 px sur une
- * affiche) : on n'y touche pas. Seule l'arête du matériau s'ajoute — la 4K
- * garde son liseré et sa lueur de marque. `!important` : style en ligne. */
+ * Déjà du verre sombre, réglé au contraste près (10 px sur une affiche) :
+ * seule l'arête du matériau s'ajoute — la 4K garde son liseré et sa lueur de
+ * marque. `!important` : style en ligne. */
 :root[data-liquid-glass="native"] .lg-meta:not([data-tone="accent"]) {
   box-shadow: var(--lgc-edge) !important;
 }
 
-/* Une bascule de verre allumée (Ma liste, favori, vu de la bannière) garde un
- * liseré à sa couleur — blanc, ou le rose du favori — par-dessus l'arête. */
-:root[data-liquid-glass="native"] .lg-btn-media[aria-pressed="true"] {
-  box-shadow: var(--lgc-edge-strong), inset 0 0 0 var(--lg-thickness-regular) currentColor, var(--lg-shadow-contact);
-}
-
-/* ══ 10. Pastille de lien sans flou ═══════════════════════════════════════
+/* ══ 7. Sans flou : « Tout voir » et les panneaux de la page ═══════════════
  *
- * « Tout voir » des en-têtes de rangée : elle reste dans le DOM à opacité
- * nulle (son fondu suit le survol de la rangée), une par rangée. Un
- * `backdrop-filter` s'y recalculerait pour rien — elle n'a donc que le voile,
- * l'arête et le reflet. */
+ * « Tout voir » reste dans le DOM à opacité nulle (une par rangée) ; les
+ * panneaux du hors ligne reposent sur le fond de la page. Un
+ * `backdrop-filter` s'y recalculerait pour rien. */
 :root[data-liquid-glass="native"] .lg-pill {
   background: var(--lgc-fill);
   box-shadow: var(--lgc-edge);
 }
 
-/* ══ 11. La lentille des boutons de la capsule ════════════════════════════
- *
- * Ils portent `data-lg-lens` (lg-physique : bulle au survol, à l'appui, en
- * ressort, par la propriété `scale`). Leur grossissement Tailwind
- * (`hover:scale-110`, `active:scale-95`) s'y ajouterait : il est neutralisé
- * en mode natif, la lentille le remplace. */
-:root[data-liquid-glass="native"] .lg-capsule-media [data-lg-lens] {
-  --tw-scale-x: 1;
-  --tw-scale-y: 1;
-}
-
-/* ══ 12. Panneaux de la page, choix retenu ════════════════════════════════
- *
- * Les cartes d'état de la page hors ligne (appareil, vue d'ensemble) : le
- * verre épais SANS flou — elles reposent sur le fond de la page, il n'y a rien
- * derrière à réfracter, et un flou par panneau se payerait à chaque défilement.
- * Un `lg-btn` retenu (`aria-checked`) garde un liseré de marque. */
 :root[data-liquid-glass="native"] .lg-panel {
   background: var(--lgc-fill-thick);
   border-color: transparent;
   box-shadow: var(--lgc-edge), var(--lg-shadow-float);
-}
-
-:root[data-liquid-glass="native"] .lg-btn[aria-checked="true"] {
-  box-shadow: var(--lgc-edge-strong), inset 0 0 0 var(--lg-thickness-regular) var(--lg-tint-brand), var(--lg-shadow-contact);
 }
