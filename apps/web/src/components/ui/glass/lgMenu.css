@@ -19,7 +19,9 @@
  * un lien), `.lg-row-danger`, `.lg-row-soft` (rangée riche : survol neutre),
  * `.lg-menu-header`, `.lg-menu-label`,
  * `.lg-sep` (filet), `.lg-fill` (bloc rempli dans le verre), `.lg-menu-sticky` (en-tête collant d'une liste),
- * `.lg-row-mark` (la barre d'activité d'avant, remplacée par la pastille).
+ * `.lg-row-mark` (la barre d'activité d'avant, remplacée par la pastille),
+ * `.lg-check` (case → coche seule), `.lg-menu-button` (bouton rempli, sans
+ * liseré), `.lg-tile-pin` (épingle sur l'image d'une tuile), `.lg-palette-foot`.
  * Les rangées à rôle (`menuitem*`, `option`) sont reconnues seules ; l'option
  * ACTIVE (survol, flèches) se dit par `data-lg-active` — `aria-selected` dit,
  * selon la liste, l'option active (palette) ou la valeur choisie (sélecteur).
@@ -110,6 +112,18 @@
   color: inherit;
 }
 
+/* La coche des menus du Mac : rien devant une option non choisie, la coche
+ * seule devant la choisie (la case d'avant disparaît, sa colonne reste). */
+:root[data-liquid-glass="native"] .lg-menu .lg-check {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-primary);
+}
+
+:root[data-liquid-glass="native"] .lg-menu .lg-check svg {
+  color: var(--text-primary);
+}
+
 /* La page où l'on est (menu « Plus ») : remplissage neutre, jamais l'accent. */
 :root[data-liquid-glass="native"] .lg-menu .lg-row:is([aria-current="page"], :has(> [aria-current="page"])) {
   background: var(--lgm-current);
@@ -165,6 +179,22 @@
   background: rgba(var(--lg-shade-rgb), 0.05);
 }
 
+/* Un bouton DANS la plaque (« Personnaliser la barre ») : un remplissage, sans
+ * liseré — un liseré ferait une capsule de verre de plus. */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-menu-button {
+  border-color: transparent;
+}
+
+/* L'épingle d'une tuile du menu « Plus » est posée sur l'IMAGE de la tuile :
+ * un voile de média léger, jamais une pastille noire dans le verre. */
+:root[data-liquid-glass="native"] .lg-menu .lg-tile-pin {
+  background: rgba(var(--scrim-media-rgb), 0.32);
+}
+
+:root[data-liquid-glass="native"] .lg-menu .lg-tile-pin:hover {
+  background: rgba(var(--scrim-media-rgb), 0.5);
+}
+
 /* ── En-têtes de section : discrets, sans capitales criardes ── */
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-menu-label {
   color: var(--lgm-label);
@@ -182,6 +212,18 @@
 /* Un filet seul (élément vide) : rentré comme les rangées. */
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-sep:empty {
   margin-inline: 10px;
+}
+
+/* La palette ⌘K : son PROPRE givre (le voile de la page floute peu : la
+ * plaque s'y confondait), et un pied d'aide sans filet — pas de bande en bas,
+ * comme Spotlight. Le dessous est le voile, immobile : rien à recalculer. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) .lg-palette {
+  -webkit-backdrop-filter: var(--lg-surface-backdrop, blur(30px)) !important;
+  backdrop-filter: var(--lg-surface-backdrop, blur(30px)) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-palette .lg-palette-foot {
+  border-top-color: transparent;
 }
 
 /* Un en-tête collant ne porte plus de fond opaque : c'était une bande. */

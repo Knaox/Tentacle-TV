@@ -92,7 +92,7 @@ const LibraryTile = memo(function LibraryTile({ library, active, onClose, onTogg
           aria-label={`${pinLabel} — ${library.label}`}
           title={pinLabel}
           // Épinglée : l'épingle se voit toujours. Sinon, au survol ou au focus.
-          className={`absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-black/55 text-[var(--on-media-primary)] outline-none transition-opacity hover:bg-black/75 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-line-focus ${
+          className={`lg-tile-pin absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-lg bg-black/55 text-[var(--on-media-primary)] outline-none transition-opacity hover:bg-black/75 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-line-focus ${
             library.pinned ? "opacity-100" : "opacity-0 group-hover/tile:opacity-100"
           }`}
         >
@@ -203,7 +203,7 @@ export function NavMorePanel({ libraries, lists, extensions, editor, trigger, on
         <button
           type="button"
           onClick={onCustomize}
-          className="inline-flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
+          className="lg-menu-button inline-flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-fill-soft px-3.5 text-[13px] font-semibold text-content-primary outline-none transition-colors hover:bg-fill-medium focus-visible:ring-2 focus-visible:ring-line-focus"
         >
           <Settings2 aria-hidden className="h-4 w-4 text-[var(--brand-light)]" strokeWidth={2} />
           {t("customizeBar")}

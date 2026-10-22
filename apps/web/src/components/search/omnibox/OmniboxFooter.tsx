@@ -33,7 +33,7 @@ export const OmniboxFooter = memo(function OmniboxFooter({ tookMs, hasQuery, can
   // ⌘ sur Mac, Ctrl ailleurs — même règle que le rappel de la barre.
   const mod = isAppleKeyboard() ? "⌘" : "Ctrl";
   return (
-    <div className="lg-sep flex h-10 shrink-0 items-center gap-4 border-t border-line-subtle px-4 text-[11px] text-content-quaternary">
+    <div className="lg-palette-foot flex h-10 shrink-0 items-center gap-4 border-t border-line-subtle px-4 text-[11px] text-content-quaternary">
       <Hint keys={["↑", "↓"]} label={t("hintNavigate")} />
       <Hint keys={["↵"]} label={t("hintOpen")} />
       {canComplete && <Hint keys={["⇥"]} label={t("hintComplete")} />}
