@@ -22,7 +22,14 @@
 # clients et les outils média. Elle recopiait le `node_modules` complet du
 # monorepo — dépendances de développement du web et du téléviseur comprises :
 # 307 Mo compressés sur 479 (relevé du registre, v1.23.0).
-ARG NODE_IMAGE=node:24-alpine
+# ÉPINGLÉE PAR EMPREINTE (index multi-arch) : un même commit construit toujours
+# sur la même base, et une image de base republiée sous le même tag — par
+# erreur ou par malveillance — n'entre pas en silence dans l'image livrée.
+# Monter de version : relever l'empreinte du tag voulu
+#   skopeo inspect --raw docker://docker.io/library/node:24-alpine | sha256sum
+# et mettre à jour le commentaire du tag ci-dessous.
+# node:24.22.1-alpine3.24 (relevé le 2026-10-22)
+ARG NODE_IMAGE=node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
 
 # ── Construction : l'espace de travail utile, dépendances de dev comprises ───
 FROM ${NODE_IMAGE} AS base
