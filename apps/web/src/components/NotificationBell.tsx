@@ -121,7 +121,12 @@ export function NotificationBell() {
           <span
             aria-hidden
             className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-cta-brand-fg"
-            style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))", boxShadow: "0 2px 6px rgba(var(--brand-rgb), 0.45)" }}
+            style={{
+              // Liquid Glass : l'accent uni, sans halo (jetons `--lg-chrome-badge-*`,
+              // posés en mode natif seulement) ; ailleurs, le dessin d'avant.
+              background: "var(--lg-chrome-badge-bg, linear-gradient(135deg, var(--brand), var(--brand-accent)))",
+              boxShadow: "var(--lg-chrome-badge-shadow, 0 2px 6px rgba(var(--brand-rgb), 0.45))",
+            }}
           >
             {badge}
           </span>

@@ -12,7 +12,9 @@
  *    où un verre clair vire au gris ;
  *  - `blanc`, `noir` : les extrêmes, avec une trame fine ;
  *  - `mixte` : la bande CLAIRE d'une page en thème clair, puis un héros
- *    sombre — le dessous qu'un menu ou une feuille chevauche (ton par bande).
+ *    sombre — le dessous qu'un menu ou une feuille chevauche ;
+ *  - `couleurs` : un héros aux taches VIVES (violet, orange, vert, magenta) —
+ *    ce qui faisait fuser des couleurs sous le menu « Plus » (capture 3).
  *
  * Styles en ligne seulement : le labo n'existe que dans les paquets de
  * développement, et aucune de ses classes ne doit entrer dans la feuille du
@@ -26,9 +28,9 @@ import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
 
-export type LabBackdrop = "affiches" | "illustrations" | "texte" | "mire" | "brun" | "blanc" | "noir" | "mixte";
+export type LabBackdrop = "affiches" | "illustrations" | "texte" | "mire" | "brun" | "blanc" | "noir" | "mixte" | "couleurs";
 
-export const LAB_BACKDROPS: readonly LabBackdrop[] = ["affiches", "illustrations", "texte", "mire", "brun", "blanc", "noir", "mixte"];
+export const LAB_BACKDROPS: readonly LabBackdrop[] = ["affiches", "illustrations", "texte", "mire", "brun", "blanc", "noir", "mixte", "couleurs"];
 
 /** `mixte` : hauteur de la bande claire — elle coupe le menu du labo en deux. */
 export const MIXED_LIGHT_BAND = 200;
@@ -199,12 +201,31 @@ function MixedBackdrop({ hero, posters }: { hero: string | undefined; posters: s
   );
 }
 
+/** Des taches vives et nettes, avec un texte fin dessus : le pire pour la couleur qui traverse. */
+function ColorBackdrop() {
+  const spots = ["#8B5CF6", "#F97316", "#22C55E", "#EC4899", "#0EA5E9", "#FACC15"];
+  return (
+    <div style={{ position: "relative", height: 1100, overflow: "hidden", background: "#120a1e" }}>
+      {spots.map((color, i) => (
+        <div
+          key={color}
+          style={{ position: "absolute", left: `${(i * 17) % 90}%`, top: (i % 3) * 300 + 40, width: 360, height: 300, borderRadius: 40, background: color }}
+        />
+      ))}
+      <div style={{ position: "absolute", inset: 0, padding: 40, color: "#fff", fontSize: 13, lineHeight: 1.4, mixBlendMode: "difference" }}>
+        {PROSE.repeat(16)}
+      </div>
+    </div>
+  );
+}
+
 /** Le dessous choisi, sur toute la hauteur défilable du labo. */
 export const LabBackdropView = memo(function LabBackdropView({ kind }: { kind: LabBackdrop }) {
   const library = useLibraryImages();
   if (kind === "texte") return <TextBackdrop />;
   if (kind === "mire") return <TestCard />;
   if (kind === "brun") return <BrownBackdrop />;
+  if (kind === "couleurs") return <ColorBackdrop />;
   if (kind === "blanc" || kind === "noir") return <SolidBackdrop dark={kind === "noir"} />;
 
   const posters = (kind === "affiches" || kind === "mixte") && library.posters.length > 0 ? library.posters : ILLUSTRATIONS;

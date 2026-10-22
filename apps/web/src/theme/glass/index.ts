@@ -37,8 +37,12 @@
  *  - `interactive` réagit au pointeur (le natif l'anime ; la lentille expose
  *             `data-lg-interactive` pour les règles de lg-physique) ;
  *  - `z`      ordre des verres natifs entre eux ;
- *  - `bands`  matériau ÉPAIS (menu, feuille) : un ton par RANGÉE
- *             (`data-lg-band`, `useBandTones`), pour un dessous mixte ;
+ *  - `scale`  le RÉGIME, selon la taille (lot lg2) : `control` (défaut :
+ *             bouton, capsule — le ton suit le dessous et bascule) ·
+ *             `surface` (menu, popover, feuille, barre latérale, palette —
+ *             `data-lg-scale="surface"` : UN ton tenu, matériau épais, jamais
+ *             de bandes ; jetons du contrat dans `surfaceTokens.css`) ;
+ *  - `bands`  SANS EFFET (lot lg2), retiré en fin de lot ;
  *  - `group`, `spacing`, `transition` (verre NATIF seulement) : groupe de
  *             fusion (NSGlassEffectContainerView : voisines, les régions
  *             fusionnent et se métamorphosent), sa distance de fusion en pt,
@@ -87,10 +91,12 @@ export type { BackdropTone } from "./backdropTone";
 export { useLensGeometry, type LensGeometry } from "./useLensGeometry";
 export {
   resolveSurfaceRender,
+  scaleAttributes,
   type LiquidGlassAppearance,
   type LiquidGlassBackdrop,
   type LiquidGlassLevel,
   type LiquidGlassRadius,
+  type LiquidGlassScale,
   type LiquidGlassShape,
   type LiquidGlassTint,
   type SurfaceRender,
