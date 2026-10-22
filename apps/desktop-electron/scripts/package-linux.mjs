@@ -35,6 +35,7 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
+import { openBundlePermissions } from "./linux/bundlePermissions.mjs";
 import { prepareLegacyCompat } from "./linux/legacyCompat.mjs";
 import { Arch, build, Platform } from "electron-builder";
 
@@ -237,6 +238,9 @@ const [bundleFolder] = await packager({
   appCopyright: "Damien ROUGE",
 });
 console.log(`Dossier assemblé : ${bundleFolder}`);
+// Le dossier sort de packager en 0700 : sans ceci, `/opt/tentacle-tv` n'est
+// ouvert qu'à root dans le .deb et le paquet Arch (voir `bundlePermissions.mjs`).
+for (const fixed of openBundlePermissions(bundleFolder)) console.log(`  droits ouverts : ${fixed}`);
 
 /**
  * La version d'Electron, lue dans le module INSTALLÉ.
