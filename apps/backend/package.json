@@ -44,13 +44,13 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/ws": "^8.5.0",
     "cross-env": "^10.1.0",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.1",
     "i18next": "^25.8.13",
     "prisma": "^6.19.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^16.5.4",
-    "tsx": "^4.19.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.0",
     "vitest": "^3.2.0"
   }
