@@ -19,10 +19,18 @@
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-groups {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   margin-top: var(--lg-player-gap);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-groups > :first-child {
+  justify-self: start;
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-groups > :last-child {
+  justify-self: end;
 }
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-group {
