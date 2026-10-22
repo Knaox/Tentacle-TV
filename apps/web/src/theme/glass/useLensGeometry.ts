@@ -4,7 +4,8 @@
  *
  * Taille par `ResizeObserver` ; biseau, force, dispersion et lumière du bord
  * lus dans les jetons `--lg-*` (`lensTokens.ts`, jamais une valeur en dur
- * ici), relus quand le thème bascule (la lumière du bord en dépend). Une
+ * ici), relus quand le thème ou le TON du dessous bascule (la lumière du bord
+ * en dépend : `tone`, celui que la surface porte en `data-lg-tone`). Une
  * taille qui bouge encore (fenêtre qu'on redimensionne, panneau qui s'ouvre)
  * garde l'ancienne carte, étirée, jusqu'à ce qu'elle se pose : la recalculer à
  * chaque image coûterait plus que l'écart ne se voit.
@@ -44,6 +45,7 @@ export function useLensGeometry(
   level: LiquidGlassLevel,
   shape: LiquidGlassShape,
   radiusKey: string,
+  tone?: string,
 ): LensGeometry | null {
   const [geometry, setGeometry] = useState<LensGeometry | null>(null);
   const scheme = useSyncExternalStore(subscribeScheme, getScheme, getScheme);
@@ -70,8 +72,9 @@ export function useLensGeometry(
       clearTimeout(timer);
     };
     // `radiusKey` : un autre rayon demandé change la carte sans changer la
-    // taille ; `scheme` : la lumière du bord suit le thème.
-  }, [element, enabled, level, shape, radiusKey, scheme]);
+    // taille ; `scheme`, `tone` : la lumière du bord suit le thème et le ton
+    // (l'attribut est posé dans le même rendu : la relecture le voit).
+  }, [element, enabled, level, shape, radiusKey, scheme, tone]);
 
   return geometry;
 }

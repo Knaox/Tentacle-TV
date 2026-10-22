@@ -39,9 +39,11 @@
  *  - états        --lg-hover-brightness, --lg-opacity-pressed|disabled
  *  - lentille     --lg-refraction-{niveau} (× biseau), --lg-bezel-{ratio|min|max},
  *                 --lg-dispersion
- *  - lumière      --lg-light-angle, --lg-specular-{facing|opposite|base|rim|glow}
- *                 (carte du bord) ; d'avant : --lg-rim(-width), --lg-specular-strong|
- *                 soft, --lg-highlight, --lg-inner-glow, --lg-light-x|y
+ *  - lumière      --lg-light-angle, --lg-specular-{facing|opposite|base|glow},
+ *                 --lg-edge-{width|gain|white} (bord de la lentille, coloré par le
+ *                 dessous, gain et éclat par TON) ; d'avant : --lg-rim(-width),
+ *                 --lg-specular-strong|soft, --lg-highlight, --lg-inner-glow,
+ *                 --lg-light-x|y
  *  - ombres       --lg-edge, --lg-shadow-contact|float|raised
  *  - formes       --lg-corner-shape, --lg-radius-*, --lg-thickness-*
  *  - fondus       --lg-duration-*, --lg-ease-out ; natif : --lg-native-tint-*
@@ -142,21 +144,33 @@
   /* Écart relatif des trois canaux au ras du bord (frange du verre `clear`). */
   --lg-dispersion: 0.1;
 
-  /* ── La lumière du bord (carte spéculaire de la lentille) ────────────── */
+  /* ── La lumière du bord (dans le filtre de la lentille) ─────────────── */
+  /* Jamais un trait blanc uniforme (retour du 22/10 : « le contour est blanc
+   * dégueu ») : un reflet ORIENTÉ — fort sur l'arc qui fait face à la lumière,
+   * faible en vis-à-vis, rien sur les flancs ni tout autour —, fin, et COLORÉ
+   * par le dessous : le filtre ÉCLAIRCIT le fond réfracté
+   * (`fond × (1 + gain × intensité)`) au lieu d'y poser du blanc, plus un
+   * soupçon de blanc sur l'arc (`white`). Sur un dessous clair,
+   * l'éclaircissement plafonne : le bord s'éteint de lui-même. Gain et éclat
+   * suivent le TON du dessous (`[data-lg-tone]`, en bas du fichier). */
   /* D'où vient la lumière, en degrés (0 = du haut ; négatif = de la gauche). */
   --lg-light-angle: -18;
-  --lg-specular-facing: 0.85;   /* le bord qui fait face à la lumière */
-  --lg-specular-opposite: 0.42; /* le reflet en vis-à-vis */
-  --lg-specular-base: 0.1;      /* le liseré, tout autour */
-  --lg-specular-rim: 1.5;       /* épaisseur du liseré, en px (nombre nu) */
-  --lg-specular-glow: 0.16;     /* lueur douce sous l'arête éclairée */
-  /* D'avant (recettes en couches `inset`) : un liseré à peine, une arête vive. */
+  --lg-specular-facing: 0.9;    /* intensité sur l'arc face à la lumière */
+  --lg-specular-opposite: 0.3;  /* le reflet en vis-à-vis */
+  --lg-specular-base: 0;        /* tout autour : rien, aucun contour */
+  --lg-specular-glow: 0.22;     /* lueur dans le biseau, sous l'arc */
+  --lg-edge-width: 1.2;         /* épaisseur de l'arête, en px (nombre nu) */
+  --lg-edge-gain: 1.4;          /* éclaircissement du fond à intensité 1 */
+  --lg-edge-white: 0.12;        /* blanc ajouté à intensité 1 */
+  /* D'avant : les recettes CSS en couches `inset`, sans lentille propre. Elles
+   * ne savent pas colorer un bord par le dessous : plus de contour CLAIR — un
+   * fil sombre tout autour, un reflet du haut à peine, rien en bas. */
   --lg-rim-width: 1px;
-  --lg-rim: rgba(var(--lg-light-rgb), 0.08);
-  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.8);
-  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.3);
+  --lg-rim: rgba(var(--lg-shade-rgb), 0.1);
+  --lg-specular-strong: rgba(var(--lg-light-rgb), 0.22);
+  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.1);
   --lg-highlight: rgba(var(--lg-light-rgb), 0.12);
-  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.06);
+  --lg-inner-glow: transparent;
   /* Position du reflet au pointeur (réécrite par lg-physique). */
   --lg-light-x: 30%;
   --lg-light-y: 0%;
@@ -217,15 +231,14 @@
   --lg-regular-brightness: 1.08;
   --lg-tinted-brightness: 1.05;
 
-  --lg-specular-facing: 0.95;
-  --lg-specular-opposite: 0.6;
-  --lg-specular-base: 0.22;
-  --lg-specular-glow: 0.28;
+  /* Un dessous clair : la lumière du bord s'éteint, aucun trait blanc. */
+  --lg-edge-gain: 0.5;
+  --lg-edge-white: 0;
   --lg-rim: rgba(var(--lg-shade-rgb), 0.06);
-  --lg-specular-strong: rgba(var(--lg-light-rgb), 1);
-  --lg-specular-soft: rgba(var(--lg-light-rgb), 0.6);
+  --lg-specular-strong: transparent;
+  --lg-specular-soft: transparent;
   --lg-highlight: rgba(var(--lg-light-rgb), 0.35);
-  --lg-inner-glow: rgba(var(--lg-light-rgb), 0.2);
+  --lg-inner-glow: transparent;
 
   --lg-edge: rgba(var(--lg-shade-rgb), 0.08);
   --lg-shadow-contact: 0 0.5px 1px rgba(var(--lg-shade-rgb), 0.08);
@@ -240,4 +253,19 @@
   --lg-native-tint-tinted: rgba(var(--brand-rgb), 0.26);
   --lg-native-tint-tinted-accent: rgba(var(--brand-accent-rgb), 0.24);
   --lg-native-tint-prominent-accent: rgba(var(--brand-accent-rgb), 0.86);
+}
+
+/* ── La lumière du bord suit le TON du dessous ──────────────────────────────
+ * Lue SUR la surface (`readSpecularLight`, relue quand son ton change) : un
+ * verre du thème clair posé sur un héros sombre s'éclaire comme un verre
+ * sombre, et inversement. Seuls le gain et l'éclat : les recettes composées
+ * sur `:root` (`--lgc-edge`…) résolvent leurs jetons à la racine. */
+:root[data-liquid-glass="native"] [data-lg-tone="dark"] {
+  --lg-edge-gain: 1.4;
+  --lg-edge-white: 0.12;
+}
+
+:root[data-liquid-glass="native"] [data-lg-tone="light"] {
+  --lg-edge-gain: 0.5;
+  --lg-edge-white: 0;
 }

@@ -15,11 +15,13 @@ const TOKENS: Record<string, string> = {
   "--lg-refraction-clear": "0.8",
   "--lg-dispersion": "0.1",
   "--lg-light-angle": "-18",
-  "--lg-specular-facing": "0.85",
-  "--lg-specular-opposite": "0.42",
-  "--lg-specular-base": "0.1",
-  "--lg-specular-rim": "1.5",
-  "--lg-specular-glow": "0.16",
+  "--lg-specular-facing": "0.9",
+  "--lg-specular-opposite": "0.3",
+  "--lg-specular-base": "0",
+  "--lg-edge-width": "1.2",
+  "--lg-specular-glow": "0.22",
+  "--lg-edge-gain": "1.4",
+  "--lg-edge-white": "0.12",
 };
 const read = (name: string) => TOKENS[name] ?? "";
 
@@ -65,8 +67,12 @@ describe("lensGeometryFrom", () => {
 
 describe("readSpecularLight et sameLens", () => {
   it("la lumière vient des jetons ; des défauts sûrs s'ils manquent", () => {
-    expect(readSpecularLight(read)).toEqual({ angle: -18, facing: 0.85, opposite: 0.42, base: 0.1, rim: 1.5, glow: 0.16 });
+    expect(readSpecularLight(read)).toEqual({
+      angle: -18, facing: 0.9, opposite: 0.3, base: 0, rim: 1.2, glow: 0.22, gain: 1.4, white: 0.12,
+    });
     expect(readSpecularLight(() => "").facing).toBeGreaterThan(0);
+    // Aucun contour uniforme par défaut : la base est nulle.
+    expect(readSpecularLight(() => "").base).toBe(0);
   });
 
   it("une autre lumière (thème) refait la carte", () => {
@@ -74,6 +80,8 @@ describe("readSpecularLight et sameLens", () => {
     if (a === null) throw new Error("géométrie attendue");
     expect(sameLens(a, { ...a })).toBe(true);
     expect(sameLens(a, { ...a, light: { ...a.light, facing: 0.95 } })).toBe(false);
+    // Le ton change le gain du bord : le filtre se refait.
+    expect(sameLens(a, { ...a, light: { ...a.light, gain: 0.5 } })).toBe(false);
     expect(sameLens(null, a)).toBe(false);
   });
 });

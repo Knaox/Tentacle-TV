@@ -46,7 +46,7 @@ describe("lensProfile (Snell, biseau squircle)", () => {
 
 describe("buildLensMaps", () => {
   const geometry = { width: 200, height: 60, radius: 30, bezel: 14 };
-  const light = { angle: 0, facing: 0.9, opposite: 0.4, base: 0.1, rim: 1.5, glow: 0.2 };
+  const light = { angle: 0, facing: 0.9, opposite: 0.3, base: 0, rim: 1.2, glow: 0.2, gain: 1.4, white: 0.12 };
   const { displacement, specular } = buildLensMaps(geometry, light);
 
   it("une carte à la taille de la surface, opaque, neutre au centre", () => {
@@ -72,14 +72,15 @@ describe("buildLensMaps", () => {
     expect(at(wide, 2, 34).r).toBeGreaterThan(140);
   });
 
-  it("la lumière : vive sur le bord qui lui fait face, plus douce en vis-à-vis, faible sur les flancs", () => {
+  it("la lumière : un ARC face à elle, un reflet faible en vis-à-vis, RIEN sur les flancs ni au centre", () => {
     if (specular === null) throw new Error("carte de lumière attendue");
     const top = at(specular, 100, 0).a;
     const bottom = at(specular, 100, 59).a;
-    expect(at(specular, 100, 0)).toMatchObject({ r: 255, g: 255, b: 255 });
     expect(top).toBeGreaterThan(200);
-    expect(bottom).toBeGreaterThan(70);
-    expect(bottom).toBeLessThan(top);
+    expect(bottom).toBeGreaterThan(40);
+    expect(bottom).toBeLessThan(top / 2);
+    // Flanc d'une capsule horizontale (la lumière vient du haut) : aucun contour.
+    expect(at(specular, 0, 30).a).toBeLessThan(10);
     // Au centre : aucune lumière.
     expect(at(specular, 100, 30).a).toBe(0);
   });

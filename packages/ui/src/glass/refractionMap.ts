@@ -37,20 +37,31 @@ export interface RefractionGeometry {
   pixelRatio?: number;
 }
 
-/** La lumière du bord. Alphas de 0 à 1. */
+/**
+ * La lumière du bord, à la Apple : jamais un trait blanc uniforme, un reflet
+ * ORIENTÉ — fort sur l'arc qui fait face à la lumière, faible en vis-à-vis,
+ * rien sur les côtés — et COLORÉ par le dessous : la carte ne porte qu'une
+ * INTENSITÉ (0..1) ; le filtre éclaircit le fond réfracté de `gain` × cette
+ * intensité, et n'ajoute qu'un soupçon de blanc (`white`). Sur un dessous
+ * clair, l'éclaircissement plafonne : le bord s'éteint de lui-même.
+ */
 export interface SpecularLight {
   /** Direction d'où vient la lumière, en degrés : 0 = du haut, positif = vers la droite. */
   angle: number;
-  /** Liseré du bord qui fait face à la lumière. */
+  /** Intensité sur l'arc qui fait face à la lumière. */
   facing: number;
-  /** Liseré du bord opposé (le reflet en vis-à-vis). */
+  /** Intensité du reflet en vis-à-vis (la lumière ressortie par le bord opposé). */
   opposite: number;
-  /** Liseré minimal, tout autour. */
+  /** Intensité minimale, tout autour (0 : aucun contour uniforme). */
   base: number;
-  /** Épaisseur du liseré, en px CSS. */
+  /** Épaisseur de l'arête éclairée, en px CSS. */
   rim: number;
   /** Lueur douce sous l'arête éclairée, dans le biseau. */
   glow: number;
+  /** Éclaircissement du fond réfracté à intensité 1 : `fond × (1 + gain)`. */
+  gain: number;
+  /** Blanc ajouté à intensité 1 (l'éclat de l'arc), de 0 à 1. */
+  white: number;
 }
 
 export interface RefractionMap {
@@ -155,10 +166,11 @@ export function buildLensMaps(geometry: RefractionGeometry, light?: SpecularLigh
 
       if (specular !== null && light !== undefined) {
         const facing = nx * lightX + ny * lightY;
+        // Un ARC : l'intensité retombe vite en s'écartant de l'axe de la lumière.
         const strength =
           facing >= 0
-            ? light.base + (light.facing - light.base) * Math.pow(facing, 1.6)
-            : light.base + (light.opposite - light.base) * Math.pow(-facing, 1.6);
+            ? light.base + (light.facing - light.base) * Math.pow(facing, 2.2)
+            : light.base + (light.opposite - light.base) * Math.pow(-facing, 2.2);
         // Liseré net au ras du bord, adouci sur un demi-pixel vers l'intérieur.
         const rim = strength * (1 - smooth(light.rim * 0.5, light.rim + 0.5, depth));
         const glow =
