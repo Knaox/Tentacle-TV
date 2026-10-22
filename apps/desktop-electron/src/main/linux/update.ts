@@ -22,7 +22,7 @@
 
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdtempSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -30,11 +30,16 @@ import { isSha256Hex, isTrustedReleaseUrl, isVerified, rememberVerified } from "
 
 export type LinuxFormat = "appimage" | "deb" | "rpm" | "pacman" | "unknown";
 
-/** Le dossier des paquets téléchargés — jamais celui de l'utilisateur. */
+/**
+ * Le dossier d'UN téléchargement — jamais celui de l'utilisateur.
+ *
+ * ⚠️ Neuf et privé à chaque fois (`mkdtemp` : nom aléatoire, mode 0700). Le
+ * temporaire est partagé entre les comptes : un dossier au nom fixe pouvait
+ * être créé d'avance par un autre, qui aurait échangé le paquet entre la
+ * vérification d'empreinte et l'invite pkexec.
+ */
 function tempFolder(): string {
-  const d = path.join(tmpdir(), "tentacle-update");
-  mkdirSync(d, { recursive: true });
-  return d;
+  return mkdtempSync(path.join(tmpdir(), "tentacle-update-"));
 }
 
 /** Demande à un gestionnaire de paquets s'il possède le binaire courant. */
