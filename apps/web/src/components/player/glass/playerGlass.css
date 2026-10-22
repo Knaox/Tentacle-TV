@@ -100,11 +100,16 @@
      du verre normal, qui règle lui-même sa luminosité ; elles ne prennent un
      voile qu'en thème clair (`--lg-player-panel-tint`). */
   --lg-player-panel-tint: transparent;
-  /* Le voile du verre CLAIR : la « couche d'assombrissement » qu'Apple pose derrière
-     le verre clair sur un contenu lumineux (HIG : 35 % sur un contenu clair). Posé
-     par la vue native, DANS la forme : la goutte reste claire et nette, l'image
-     derrière les glyphes descend d'un ton. */
-  --lg-player-clear-dim: transparent;
+  /* Le voile du verre CLAIR : la « couche d'assombrissement » qu'Apple exige derrière
+     le verre clair dès que le contenu est lumineux (HIG « Materials » : 35 % sur un
+     contenu clair ; les contrôles d'AVKit portent le leur). Posé par la vue native,
+     DANS la forme — un voile local, jamais une dalle. 20 % : comparé à l'image sur un
+     paysage surexposé (0 / 20 / 32 %), le seuil où chiffres et symboles se lisent
+     sans que le verre vire au fumé. */
+  --lg-player-clear-dim: rgb(0 0 0 / 0.2);
+  /* L'ombre portée qui SOULÈVE chaque forme : très douce, hors de la forme — du noir à
+     alpha, qui se compose juste sur la fenêtre transparente. */
+  --lg-player-lift-shadow: 0 6px 18px rgba(var(--scrim-media-rgb), 0.2), 0 1px 3px rgba(var(--scrim-media-rgb), 0.16);
   --lg-player-glyph-shadow: drop-shadow(0 1px 1.5px rgba(var(--scrim-media-rgb), 0.55)) drop-shadow(0 0 5px rgba(var(--scrim-media-rgb), 0.32));
   --lg-player-label-shadow: 0 1px 2px rgba(var(--scrim-media-rgb), 0.6), 0 0 10px rgba(var(--scrim-media-rgb), 0.38);
   /* Voile de survol d'un bouton secondaire de carte : noir à alpha. */
@@ -129,6 +134,7 @@
 /* Matière pleine (contraste accru, transparence réduite) : comme le socle, les
    ombres de lisibilité partent — le contraste est celui du glyphe sur l'aplat. */
 :root[data-liquid-glass="native"][data-lg-material] {
+  --lg-player-lift-shadow: none;
   --lg-player-glyph-shadow: none;
   --lg-player-label-shadow: none;
 }
