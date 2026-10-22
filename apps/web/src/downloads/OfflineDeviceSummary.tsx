@@ -18,6 +18,8 @@ import { setManualOffline } from "../offline/connectivityStore";
 import { useConnectivity } from "../offline/useConnectivity";
 import { formatBytes } from "./presets";
 import { useDiskInfo } from "./useDownloadState";
+import { GlassButton } from "../components/ui/glass/GlassButton";
+import { useLiquidGlassSurface } from "../theme/glass";
 
 export function OfflineDeviceSummary({ complete }: { complete: readonly DownloadListEntry[] }) {
   const { t } = useTranslation("downloads");
@@ -37,6 +39,14 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
   ].filter((part): part is string => part !== null && part !== "");
   const total = (usedBytes ?? 0) + (freeBytes ?? 0);
   const ratio = usedBytes !== null && total > 0 ? Math.min(1, usedBytes / total) : null;
+  // « Gérer » est un lien : la surface de verre s'y étale directement.
+  const manage = useLiquidGlassSurface({
+    level: "regular",
+    shape: "capsule",
+    interactive: true,
+    className: "px-4 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]",
+    fallbackClassName: "rounded-full bg-fill-subtle text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary",
+  });
 
   return (
     <div className="row-gutter">
@@ -78,18 +88,17 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
 
         <div className="relative flex flex-wrap items-center gap-2">
           {backOnline && (
-            <button
-              type="button"
+            <GlassButton
               onClick={() => setManualOffline(false)}
-              className="lg-btn-primary rounded-full bg-cta-primary-bg px-4 py-2 text-xs font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+              appearance={{ level: "prominent", tint: "brand", shape: "capsule" }}
+              className="px-4 py-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
+              fallbackClassName="rounded-full bg-cta-primary-bg text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
             >
               {t("offlineGoOnline")}
-            </button>
+            </GlassButton>
           )}
-          <Link
-            to="/downloads"
-            className="lg-btn rounded-full bg-fill-subtle px-4 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"
-          >
+          <Link to="/downloads" {...manage.props}>
+            {manage.layers}
             {t("offlineManage")}
           </Link>
         </div>

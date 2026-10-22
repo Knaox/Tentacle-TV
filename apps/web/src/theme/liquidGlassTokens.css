@@ -27,7 +27,7 @@
  *  - teintes      --lg-light-rgb, --lg-shade-rgb, --lg-tint-brand|accent|gradient,
  *                 --lg-prominent-gradient, --lg-label(-secondary|-on-prominent)
  *  - glyphes      --lg-glyph-on-{dark|light}(-secondary), --lg-glyph-shadow-on-*,
- *                 --lg-glyph-filter-on-* (ton adaptatif) ; alias d'avant :
+ *                 --lg-glyph-filter-on-*, --lg-danger-on-* (ton adaptatif) ; alias d'avant :
  *                 --lg-label-shadow, --lg-glyph-shadow, --lg-media-*-shadow,
  *                 --lg-vibrancy-blend
  *  - niveaux      --lg-{regular|clear|tinted|prominent}-{fill|blur|saturate|brightness},
@@ -71,6 +71,12 @@
   --lg-glyph-shadow-on-light: 0 0 1px rgba(255, 255, 255, 0.45), 0 0 12px rgba(255, 255, 255, 0.55);
   --lg-glyph-filter-on-dark: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
   --lg-glyph-filter-on-light: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
+  /* Le DANGER (« Déconnexion »…) suit le ton lui aussi — le rouge du thème
+   * est illisible sur l'autre polarité. Mesuré : corail ≥ 4,8:1 sur un dessous
+   * de luminance ≤ 0,08 ; bordeaux ≥ 5:1 dès 0,4. Dans la bande d'hystérésis,
+   * le halo du glyphe porte, comme pour le blanc et le noir. */
+  --lg-danger-on-dark: #FFB4AB;
+  --lg-danger-on-light: #6E0B10;
   /* Alias d'avant (recettes de lg-composants) : la polarité sombre. */
   --lg-label-shadow: var(--lg-glyph-shadow-on-dark);
   --lg-glyph-shadow: var(--lg-glyph-filter-on-dark);
@@ -197,6 +203,10 @@
 
   --lg-regular-saturate: 1.55;
   --lg-tinted-saturate: 1.5;
+  /* Le verre CLAIR garde la couleur de son dessous (un brun reste brun) : sur
+   * un thème clair, sans ce coup de saturation, il virait au gris. */
+  --lg-clear-saturate: 1.5;
+  --lg-clear-brightness: 1.04;
   --lg-regular-brightness: 1.08;
   --lg-tinted-brightness: 1.05;
 

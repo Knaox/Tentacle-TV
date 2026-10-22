@@ -85,6 +85,8 @@ describe("les jetons du verre", () => {
       "--lg-glyph-shadow-on-light",
       "--lg-glyph-filter-on-dark",
       "--lg-glyph-filter-on-light",
+      "--lg-danger-on-dark",
+      "--lg-danger-on-light",
       "--lg-dispersion",
       "--lg-thickness-regular",
       "--lg-duration-press",

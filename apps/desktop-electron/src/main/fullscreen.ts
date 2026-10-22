@@ -34,6 +34,7 @@
 import { screen, type BrowserWindow, type Rectangle } from "electron";
 import { nativeHandle } from "./video/native";
 import { effectiveFullscreen, settleIntent, type FullscreenIntent } from "./linux/fullscreenIntent";
+import { fullscreenPinned } from "./linux/fullscreenPin";
 
 /**
  * Tout ce qui précède décrit un contournement STRICTEMENT Windows.
@@ -240,6 +241,13 @@ function exit(win: BrowserWindow): void {
     // natif peut encore être en plein écran simple, et la touche Échap doit
     // rendre la main dans les deux cas.
     if (process.platform === "linux") {
+      // Montage Wayland forcé, vidéo attachée : `SurfaceWayland` réaffirmerait
+      // aussitôt le plein écran — un éclair, rien d'autre. On ne le tente pas
+      // (la page propose X11 à la place, `useForcedFullscreen`).
+      if (fullscreenPinned()) {
+        console.info("[fenetre] sortie du plein écran refusée : la vidéo y est épinglée (Wayland sans colle)");
+        return;
+      }
       // Sous Linux, `isFullScreen()` peut encore dire « non » juste après une
       // entrée demandée : on sort si l'état CRU ou l'état demandé le veut.
       // `isSimpleFullScreen` n'y existe pas (macOS seul).
@@ -274,7 +282,8 @@ export function toggle(win: BrowserWindow): boolean {
     host = win;
     if (isFullscreen()) {
       exit(win);
-      return false;
+      // Linux : l'épingle peut avoir refusé la sortie — l'état demandé le dit.
+      return process.platform === "linux" ? isFullscreen() : false;
     }
     enter(win);
     return true;

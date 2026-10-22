@@ -198,3 +198,20 @@ export function LabPlayer({ bottom }: { bottom: number }) {
     </div>
   );
 }
+
+/**
+ * Le BORD D'UNE RANGÉE : le fondu de défilement (`--row-fade-left`, celui de
+ * `RowScrollControls`) et sa flèche, une pastille de verre CLAIR — la même que
+ * celle des rangées (`EdgeArrows`, lg-composants).
+ */
+export function LabRowEdge({ top }: { top: number }) {
+  return (
+    <div style={{ ...row, position: "fixed", top, left: 0, width: 140, height: 220, padding: "0 6px", background: "var(--row-fade-left)", zIndex: 15 }}>
+      <Glass as="button" level="clear" shape="circle" interactive label="Défiler à gauche" style={{ ...row, justifyContent: "center", width: 44, height: 44, position: "relative" }}>
+        <svg width={16} height={16} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </Glass>
+    </div>
+  );
+}

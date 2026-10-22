@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { Modal } from "./Modal";
+import { GlassButton } from "./glass/GlassButton";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -33,25 +34,36 @@ export function ConfirmDialog({
         <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{title}</h2>
         <p id={descId} className="mt-2 text-sm leading-relaxed text-content-tertiary">{message}</p>
         <div className="mt-6 flex justify-end gap-2">
-          <button
+          {/* Verre natif : des capsules de verre, la confirmation porte la marque
+              DANS le verre ; ailleurs, les boutons d'avant. */}
+          <GlassButton
             onClick={onCancel}
             disabled={pending}
-            className="lg-btn lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg border border-line-subtle bg-fill-soft px-5 text-sm font-semibold text-content-primary transition hover:bg-fill-medium disabled:opacity-50"
+            appearance={{ level: "regular", shape: "capsule" }}
+            className="inline-flex h-11 items-center justify-center px-5 text-sm font-semibold disabled:opacity-50"
+            fallbackClassName="rounded-lg border border-line-subtle bg-fill-soft text-content-primary transition hover:bg-fill-medium"
           >
             {cancelLabel}
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={pending}
-            className={
-              danger
-                ? "lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg bg-[var(--status-error-bg)] border border-danger-border px-5 text-sm font-semibold text-[var(--status-error-fg)] transition hover:bg-danger-surface-hover disabled:opacity-50"
-                : "lg-btn-primary lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg bg-cta-primary-bg px-5 text-sm font-bold text-cta-primary-fg transition hover:bg-cta-primary-bg-hover disabled:opacity-50"
-            }
-           
-          >
-            {confirmLabel}
-          </button>
+          </GlassButton>
+          {danger ? (
+            <button
+              onClick={onConfirm}
+              disabled={pending}
+              className="lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg bg-[var(--status-error-bg)] border border-danger-border px-5 text-sm font-semibold text-[var(--status-error-fg)] transition hover:bg-danger-surface-hover disabled:opacity-50"
+            >
+              {confirmLabel}
+            </button>
+          ) : (
+            <GlassButton
+              onClick={onConfirm}
+              disabled={pending}
+              appearance={{ level: "prominent", tint: "brand", shape: "capsule" }}
+              className="inline-flex h-11 items-center justify-center px-5 text-sm font-bold disabled:opacity-50"
+              fallbackClassName="rounded-lg bg-cta-primary-bg text-cta-primary-fg transition hover:bg-cta-primary-bg-hover"
+            >
+              {confirmLabel}
+            </GlassButton>
+          )}
         </div>
       </div>
     </Modal>

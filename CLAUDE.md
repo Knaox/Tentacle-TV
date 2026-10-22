@@ -1476,8 +1476,12 @@ D'où les montages, choisis au démarrage (`linux/sessionGraphique.ts`, puis
 `detecterFenetrage`) : Wayland + compositeur scriptable (KDE) → **lecture qui
 suit la fenêtre** — fenêtrée ou plein écran, comme Windows — et HDR réel, même
 fenêtré (mesuré : KWin sert le PQ aux surfaces fenêtrées) ; Wayland sans API de
-placement (GNOME, wlroots) → HDR réel, lecture plein écran forcée ; X11 →
-lecture fenêtrée à la main, pas de HDR. Un réglage force Wayland/X11 (relance).
+placement (GNOME, wlroots) → en `auto`, **XWayland tant qu'aucun écran HDR n'est
+branché** (EDID, `linux/edidHdr.ts` ; décision du 2026-10-22 : le bouton plein
+écran y était annulé par l'épingle, « cassé » sur Fedora 44), sinon HDR réel et
+lecture plein écran forcée ; X11 → lecture fenêtrée à la main, pas de HDR. Un
+XWayland-auto qui n'affiche pas se bloque seul (`sessionRescue.ts`). Un réglage
+force Wayland/X11 (relance).
 
 Cinq conséquences à ne pas défaire :
 - **`transparent: true` à la CONSTRUCTION** de la fenêtre (comme macOS, PAS comme

@@ -22,11 +22,13 @@ interface Options {
   enabled?: boolean;
   /** Réduire la lecture dans le PiP — là où il existe (touche I, comme le mini-lecteur de YouTube). */
   onReduce?: () => void;
+  /** Plein écran imposé (Linux, `useForcedFullscreen`) : Échap quitte le lecteur, il n'y a rien d'autre à quitter. */
+  escapeLeaves?: boolean;
 }
 
 export function useDesktopPlayerShortcuts({
   seekRelative, togglePause, goBack, toggleFullscreen, fullscreenRef,
-  hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, enabled = true, onReduce,
+  hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, enabled = true, onReduce, escapeLeaves = false,
 }: Options): { skipFlash: SkipFlash | null; skipBy: (delta: number) => void } {
   const { skipFlash, skipBy } = useSkipFlash(seekRelative);
 
@@ -35,7 +37,7 @@ export function useDesktopPlayerShortcuts({
     const onKey = (e: KeyboardEvent) => {
       if (e.code === "Space") { e.preventDefault(); togglePause(); }
       if (e.code === "Escape") {
-        if (fullscreenRef.current) toggleFullscreen();
+        if (fullscreenRef.current && !escapeLeaves) toggleFullscreen();
         else goBack();
       }
       if (e.code === "ArrowRight") skipBy(30);
@@ -47,7 +49,7 @@ export function useDesktopPlayerShortcuts({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [enabled, togglePause, goBack, skipBy, toggleFullscreen, fullscreenRef, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, onReduce]);
+  }, [enabled, togglePause, goBack, skipBy, toggleFullscreen, fullscreenRef, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, onReduce, escapeLeaves]);
 
   return { skipFlash, skipBy };
 }

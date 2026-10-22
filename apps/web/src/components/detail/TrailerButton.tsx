@@ -11,7 +11,7 @@ import { shouldOpenYouTubeExternally } from "./youtube";
 import { openExternal } from "../../lib/openExternal";
 import { useWebTrailerPlatform } from "./trailerPlatform";
 import { CatalogTrailerPlayer } from "./CatalogTrailerPlayer";
-import { useGlassControl } from "../ui/glass/useGlassControl";
+import { GlassButton } from "../ui/glass/GlassButton";
 
 /**
  * Bouton « Bande-annonce » sur la page détail (film ET série).
@@ -38,8 +38,6 @@ export function TrailerButton({ item }: { item: MediaItem }) {
   /** Un clic arrivé avant la vidéo : il part dès qu'elle est connue. */
   const [wanted, setWanted] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
-  // En mode natif : la lentille exacte de la capsule, le reflet sous le pointeur.
-  const glass = useGlassControl<HTMLButtonElement>({ lens: "regular", shape: "capsule", specular: true });
   const full = useFullTrailerPlayer();
   const remoteId = full && target?.kind === "remote" ? parseYouTubeId(target.trailer.Url) : null;
   const intentPlayback = useMemo<RelayedTrailerPlayback | null>(
@@ -87,21 +85,20 @@ export function TrailerButton({ item }: { item: MediaItem }) {
 
   return (
     <>
-      <button
-        ref={glass.ref}
-        {...glass.props}
-        type="button"
+      <GlassButton
         onClick={handleClick}
         aria-busy={!target || undefined}
         {...intent}
         aria-label={t("common:watchTrailer")}
-        // Posé sur la scène : `on-media`, sans flou (le voile dessous est déjà
-        // sombre, un `backdrop-filter` n'y changerait rien de visible).
-        className="lg-btn-media flex h-14 items-center gap-2.5 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] px-6 text-base font-semibold text-on-media-primary transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.6)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]"
+        // Verre natif : une capsule de verre clair, glyphes adaptés au décor.
+        // Ailleurs, posé sur la scène : `on-media`, sans flou (le voile dessous
+        // est déjà sombre, un `backdrop-filter` n'y changerait rien de visible).
+        appearance={{ level: "clear", shape: "capsule" }}
+        className="flex h-14 items-center gap-2.5 px-6 text-base font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--border-focus)]"
+        fallbackClassName="rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] text-on-media-primary transition-colors duration-150 hover:bg-[rgba(var(--scrim-media-rgb),0.6)]"
       >
-        {glass.layers}
         <FilmIcon /> {t("common:trailer")}
-      </button>
+      </GlassButton>
       {remote.length > 0 && (
         <TrailerViewer open={modalOpen} onClose={() => setModalOpen(false)} trailers={remote} />
       )}

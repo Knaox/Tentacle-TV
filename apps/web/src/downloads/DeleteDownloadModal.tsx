@@ -6,6 +6,7 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { GlassButton } from "../components/ui/glass/GlassButton";
 import { useTranslation } from "react-i18next";
 
 interface DeleteDownloadModalProps {
@@ -64,13 +65,14 @@ export function DeleteDownloadModal({
           </p>
         </div>
         <div className="flex justify-end gap-2 border-t border-line-subtle px-5 py-3.5">
-          <button
-            type="button"
+          <GlassButton
             onClick={onClose}
-            className="lg-btn lg-shape-capsule rounded-md bg-cta-ghost-bg px-4 py-2 text-sm font-semibold text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
+            appearance={{ level: "regular", shape: "capsule" }}
+            className="px-4 py-2 text-sm font-semibold"
+            fallbackClassName="rounded-md bg-cta-ghost-bg text-content-secondary transition-colors duration-150 hover:bg-cta-ghost-bg-hover"
           >
             {t("common:cancel")}
-          </button>
+          </GlassButton>
           <button
             type="button"
             onClick={onConfirm}

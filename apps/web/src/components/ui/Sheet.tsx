@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { useGlassControl } from "./glass/useGlassControl";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,6 +57,14 @@ export function Sheet({
   trapFocus = false,
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // Verre natif : le ton du dessous (`data-lg-tone`), auquel les textes de la
+  // feuille s'adaptent.
+  const glass = useGlassControl<HTMLDivElement>({ lens: false });
+  const { ref: glassRef } = glass;
+  const setPanel = useCallback((node: HTMLDivElement | null) => {
+    panelRef.current = node;
+    glassRef(node);
+  }, [glassRef]);
 
   // Esc to close ; Tab boucle dans le panneau quand `trapFocus` est demandé.
   useEffect(() => {
@@ -137,7 +146,8 @@ export function Sheet({
           style={{ background: "rgba(0,0,0,0.55)" }}
         >
           <motion.div
-            ref={panelRef}
+            ref={setPanel}
+            {...glass.props}
             role="dialog"
             aria-modal="true"
             aria-labelledby={labelledBy}

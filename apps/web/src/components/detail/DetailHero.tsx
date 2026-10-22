@@ -5,6 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { HeroScrims } from "../hero/HeroScrims";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
+import { GlassButton } from "../ui/glass/GlassButton";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
 
@@ -107,15 +108,16 @@ export function DetailHero({ backdropUrl, item, instant = false, onBack, backLab
     // boîte image en dépendent.
     <div className="relative w-full">
       <div ref={boxRef} className={`absolute inset-x-0 top-0 overflow-hidden ${DETAIL_HERO_BOX}`}>
-        <button
-          type="button"
+        <GlassButton
           onClick={onBack ?? (() => navigate(-1))}
           aria-label={backLabel ?? t("common:back")}
-          className="lg-btn-media absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] px-4 py-2 text-sm text-on-media-secondary backdrop-blur-md transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.65)] hover:text-on-media-primary md:left-8 md:top-8"
+          appearance={{ level: "clear", shape: "capsule" }}
+          className="absolute left-4 top-4 z-20 flex items-center gap-2 px-4 py-2 text-sm md:left-8 md:top-8"
+          fallbackClassName="rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] text-on-media-secondary backdrop-blur-md transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.65)] hover:text-on-media-primary"
         >
           <ArrowLeftIcon />
           {backLabel ?? t("common:back")}
-        </button>
+        </GlassButton>
 
         {backdropUrl && (
           <motion.img

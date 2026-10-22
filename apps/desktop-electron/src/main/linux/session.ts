@@ -17,7 +17,14 @@ import {
   type Montage,
   type DecidedSession,
 } from "./graphicsSession";
-import { writeWitness, recoverDoomedChoice, watchGpu } from "./sessionRescue";
+import {
+  writeWitness,
+  recoverDoomedChoice,
+  watchGpu,
+  writeXwaylandAutoTrial,
+  xwaylandAutoBlocked,
+} from "./sessionRescue";
+import { hdrDisplayConnected } from "./edidHdr";
 // Sans risque à l'import (aucune bibliothèque native) — contrairement aux
 // surfaces, pas besoin de `require` paresseux.
 import { kwinScriptApiAvailable } from "./kwinScripting";
@@ -44,7 +51,10 @@ export function applyGraphicsSession(): DecidedSession | null {
       );
     }
   }
-  decided = decideSession(process.env, readSessionChoice(folder));
+  decided = decideSession(process.env, readSessionChoice(folder), {
+    hdrDisplay: hdrDisplayConnected(),
+    xwaylandAutoBlocked: xwaylandAutoBlocked(folder),
+  });
   if (decided.ozone !== null) app.commandLine.appendSwitch("ozone-platform", decided.ozone);
   // Budget de tuiles du compositeur Chromium. Le défaut (quelques centaines de
   // Mo) ne tient pas les transitions de pages sur un bureau 4K à échelle ×2 :
@@ -57,13 +67,19 @@ export function applyGraphicsSession(): DecidedSession | null {
     `[session] bureau=${decided.session} choix=${decided.choice} ` +
       `ozone=${decided.ozone ?? "auto"} montage=${decided.montage}` +
       // Le fenêtré n'est pas encore connu ici — `detecterFenetrage` le dira.
-      (decided.montage === "wayland" ? " (HDR possible)" : " (pas de HDR)"),
+      (decided.montage === "wayland" ? " (HDR possible)" : " (pas de HDR)") +
+      (decided.xwaylandAuto ? " — XWayland : aucun écran HDR, bureau sans colle" : ""),
   );
   // Un choix explicite peut ne JAMAIS afficher — réglage persistant, fenêtre
   // introuvable, application briquée (vécu avec x11 sur XWayland cassé). Le
   // témoin et la surveillance GPU sont les deux filets ; voir `sessionRescue.ts`.
   if (!devTry && decided.choice !== "auto") {
     writeWitness(folder, decided.choice);
+    watchGpu(folder, app);
+  }
+  // XWayland-auto peut échouer comme `x11` : mêmes filets, propres à lui.
+  if (!devTry && decided.xwaylandAuto) {
+    writeXwaylandAutoTrial(folder);
     watchGpu(folder, app);
   }
   return decided;
