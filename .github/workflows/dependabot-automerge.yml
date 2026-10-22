@@ -1,0 +1,65 @@
+# Auto-fusion des PR de Dependabot peu risquées (décision du 2026-10-22).
+#
+# QUOI : un correctif de n'importe quelle dépendance, une mineure d'outillage
+# (devDependencies) ou d'action ; jamais une majeure, jamais electron, koffi,
+# react, react-dom, react-native. Règle : .github/scripts/lib/dependabot-policy.mjs,
+# testée hors ligne. Tout le reste attend un humain, sans erreur.
+#
+# QUAND : seulement si TOUS les checks de la tête de la PR sont finis et verts
+# (qualité, gitleaks, audit, dependency review, CodeQL…). Le job attend lui-même :
+# l'auto-merge de GitHub fusionnerait aussitôt faute de checks requis sur main.
+#
+# SÛRETÉ :
+# - la règle et le script sont lus sur `main` par l'API, jamais dans la PR jugée ;
+# - aucune action tierce : ce job écrit, et une action que Dependabot vient de
+#   monter n'y tourne pas avec un jeton en écriture ;
+# - PR de Dependabot, sur ce dépôt, d'un seul commit de Dependabot.
+# Après la fusion, quality.yml est relancé sur main (une fusion par GITHUB_TOKEN
+# ne déclenche aucun workflow, et les livraisons exigent son verdict).
+name: Auto-fusion Dependabot
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependabot-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  automerge:
+    name: Auto-fusion
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      checks: read
+    steps:
+      - name: Règle lue sur main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/policy/lib"
+          for f in lib/dependabot-policy.mjs dependabot-automerge.mjs; do
+            gh api -H "Accept: application/vnd.github.raw" \
+              "repos/$REPO/contents/.github/scripts/$f?ref=main" > "$RUNNER_TEMP/policy/$f"
+          done
+
+      - name: Juger, attendre les checks, fusionner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SELF_NAME: Auto-fusion
+        run: node "$RUNNER_TEMP/policy/dependabot-automerge.mjs"
