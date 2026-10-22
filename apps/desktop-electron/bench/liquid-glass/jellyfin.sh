@@ -40,6 +40,11 @@ fi
   -f lavfi -i "sine=frequency=330:sample_rate=48000" -t 40 \
   -c:v libx264 -preset veryfast -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 -c:a aac -b:a 128k "$CLIPS/snow.mkv"
 
+# Et sa contre-épreuve PRESQUE NOIRE : les glyphes doivent y rester clairs.
+[ -f "$CLIPS/night.mkv" ] || ff -f lavfi -i "color=c=0x0B0C10:s=1920x1080:r=24,noise=alls=8:allf=t+u,gblur=sigma=1.2" \
+  -f lavfi -i "sine=frequency=220:sample_rate=48000" -t 40 \
+  -c:v libx264 -preset veryfast -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 -c:a aac -b:a 128k "$CLIPS/night.mkv"
+
 image() { # fichier largeur hauteur graine couleurs…
   local f=$1 w=$2 h=$3 seed=$4; shift 4
   local cs="" i=0; for c in "$@"; do cs="$cs:c$i=$c"; i=$((i+1)); done
@@ -85,6 +90,7 @@ film "Encre (2014)"          "Encre"          2014 sdr   20 0x000000 0x18181b 0x
 film "Néon (2013)"           "Néon"           2013 sdr   21 0xd946ef 0x06b6d4 0x111827 "Action" bars
 film "Ambre (2012)"          "Ambre"          2012 sdr   22 0xb45309 0xfbbf24 0x451a03 "Historique"
 film "Banc Neige (2025)"    "Banc Neige"     2025 snow  23 0xffffff 0xf8fafc 0xe2e8f0 "Documentaire"
+film "Banc Nuit (2025)"     "Banc Nuit"      2025 night 24 0x000000 0x0b0c10 0x1f2937 "Documentaire"
 
 S="$STATE/media/series/Écume (2022)"; mkdir -p "$S"
 image "$S/poster.jpg" 600 900 30 0x0284c7 0x7dd3fc 0x0c4a6e
@@ -147,6 +153,6 @@ for id in $(curl -fsS "$JF/Items?Recursive=true&IncludeItemTypes=Movie,Series&ap
 done
 for _ in $(seq 1 60); do
   n=$(curl -fsS "$JF/Items?Recursive=true&IncludeItemTypes=Movie,Episode&api_key=$KEY" | json '["TotalRecordCount"]')
-  [ "$n" -ge 19 ] && break; sleep 2
+  [ "$n" -ge 20 ] && break; sleep 2
 done
 echo "[banc] Jellyfin jetable prêt : $JF — $n titres (état : $STATE/jf)"

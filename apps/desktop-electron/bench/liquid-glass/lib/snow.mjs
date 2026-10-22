@@ -6,12 +6,15 @@ import { dismissOverlays, go, sleep } from "./app.mjs";
 import { itemId } from "./config.mjs";
 import { leavePlayer, playing, shot, showControls, step } from "./steps.mjs";
 
-export async function snow(ctx) {
+export const snow = (ctx) => playerTone(ctx, "Banc Neige", "lecteur-neige");
+export const night = (ctx) => playerTone(ctx, "Banc Nuit", "lecteur-nuit");
+
+async function playerTone(ctx, title, name) {
   const { page } = ctx.app;
   await go(page, "/", 2500);
   await dismissOverlays(page);
-  await step(ctx, "lecteur-neige", async () => {
-    await go(page, `/watch/${await itemId("Banc Neige", "Movie")}`, 2000);
+  await step(ctx, name, async () => {
+    await go(page, `/watch/${await itemId(title, "Movie")}`, 2000);
     const mpv = await playing(page);
     await showControls(page);
     await sleep(800);
@@ -34,7 +37,7 @@ export async function snow(ctx) {
       }
       return out.slice(0, 30);
     `);
-    const capture = await shot(ctx, "lecteur-neige");
+    const capture = await shot(ctx, name);
     const lums = glyphs.map((g) => g.lum).filter((v) => v !== null).sort((a, b) => a - b);
     return { mpv, glyphs, capture, medianLum: lums.length ? lums[Math.floor(lums.length / 2)] : null };
   });
