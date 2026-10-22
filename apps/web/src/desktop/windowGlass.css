@@ -39,18 +39,19 @@
   --lg-chrome-group-pad: 6px;
   --lg-chrome-group-gap: 10px;
 
-  /* Les éléments dans les groupes : des capsules. */
+  /* Les éléments dans les groupes : des capsules CONCENTRIQUES au groupe
+   * (rayon intérieur = rayon du groupe − sa marge : deux capsules). */
   --lg-chrome-item-radius: var(--lg-radius-capsule);
   --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.07);
 
-  /* L'onglet actif : une lentille teintée de la marque (`tinted`). */
-  --lg-chrome-lens-bg:
-    radial-gradient(120% 140% at var(--lg-light-x) var(--lg-light-y), var(--lg-highlight) 0%, transparent 55%),
-    var(--lg-tint-gradient);
-  --lg-chrome-lens-shadow:
-    inset 0 1px 0 var(--lg-specular-soft),
-    inset 0 0 0 var(--lg-rim-width) var(--lg-tint-brand),
-    0 4px 14px -6px var(--lg-tint-brand);
+  /* L'onglet courant : la pastille de la barre d'onglets d'iOS 26 — un
+   * remplissage NEUTRE, jamais la marque ; seul son glyphe prend l'accent.
+   * Valeurs par ton du dessous : `windowGlassNav.css`, sur le groupe. */
+
+  /* Les pastilles de compte (cloche, Watch Together) : l'accent UNI, sans
+   * halo — la marque en touche, jamais un dégradé. */
+  --lg-chrome-badge-bg: var(--brand);
+  --lg-chrome-badge-shadow: none;
 
   /* L'avatar : liseré de verre et arête spéculaire, par-dessus la photo. */
   --lg-chrome-avatar-rim: inset 0 1px 0 var(--lg-specular-soft), 0 0 0 0.5px var(--lg-edge);
@@ -89,8 +90,6 @@
 /* La fenêtre a perdu le focus : la barre se ternit, comme une app de macOS.
  * Après le bloc clair : même spécificité, l'ordre décide. */
 :root[data-liquid-glass="native"][data-window-inactive] {
-  --lg-chrome-lens-bg: var(--lg-chrome-inactive-fill);
-  --lg-chrome-lens-shadow: 0 0 0 0.5px var(--lg-edge);
   --lg-chrome-sidebar-selection-bg: var(--lg-chrome-inactive-fill);
   --lg-chrome-sidebar-selection-shadow: none;
   --lg-chrome-sidebar-selection-icon: var(--lg-chrome-inactive-icon);
