@@ -2,6 +2,7 @@ import type { IncomingInvitationDto, FamilyCapability } from "./familyContract";
 import type { PickerProfilesDto } from "./familyPickerContract";
 import { pickerStayState, type PickerStay } from "./familyPickerStay";
 import { isFamilyAvailable } from "./familyClient";
+import { trimTrailingSlashes } from "../utils/trailingSlashes";
 
 /**
  * « Qui regarde ? » sur le MOBILE (téléphone, tablette ; serveur 1.31.1,
@@ -44,7 +45,7 @@ export function canSwitchMobileProfile(gate: MobileProfilesGate, listing: Pick<P
 
 /** La clé d'une mémoire du mobile par serveur et par compte (casse et tirets normalisés). */
 export function mobileMemoryKey(serverUrl: string, accountId: string): string {
-  return `${serverUrl.replace(/\/+$/, "").toLowerCase()}|${accountId.replace(/-/g, "").toLowerCase()}`;
+  return `${trimTrailingSlashes(serverUrl).toLowerCase()}|${accountId.replace(/-/g, "").toLowerCase()}`;
 }
 
 function isStay(value: unknown): value is PickerStay {

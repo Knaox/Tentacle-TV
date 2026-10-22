@@ -20,6 +20,7 @@ import { startHeartbeat } from "./heartbeat";
 import { dataFolder } from "./dataPaths";
 import {
   applyGraphicsSession,
+  relaunchingForSession,
   detectWindowing,
   linuxWindowing,
   linuxMontage,
@@ -158,6 +159,8 @@ function main(): void {
   // ensuite n'a plus d'effet. C'est ce choix qui décide du HDR et du montage
   // de la fenêtre vidéo ; voir `linux/graphicsSession.ts`.
   applyGraphicsSession();
+  // Relance sur une autre plateforme d'affichage : ce processus ne fait plus rien.
+  if (relaunchingForSession()) return;
   registerAppScheme();
 
   // ⚠️ Le `.catch` n'est pas une précaution de style.

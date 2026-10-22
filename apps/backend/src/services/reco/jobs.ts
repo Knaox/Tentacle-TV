@@ -213,7 +213,7 @@ export function pokeProfile(userId: string | undefined | null, opts: { poolMinAg
       rebuildProfile(userId)
         .then(() => regeneratePoolIfAged(userId, minAge))
         .catch((err) =>
-          console.error(`[Reco] Rebuild du profil ${userId.slice(0, 8)}… en échec :`, err)
+          console.error("[Reco] Rebuild du profil %s… en échec :", userId.slice(0, 8).replace(/[\r\n]/g, ""), err)
         );
     }, POKE_DEBOUNCE_MS)
   );

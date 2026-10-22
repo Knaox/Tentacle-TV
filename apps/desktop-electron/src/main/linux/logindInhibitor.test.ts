@@ -20,6 +20,14 @@ describe("creerRenfortLogind", () => {
     expect(launched[0]?.args).toContain("--mode=block");
   });
 
+  it("le fils s'arrête avec l'application : jamais un verrou orphelin", () => {
+    const { launch, launched } = fake();
+    createLogindBackup(launch, 4242).prevent();
+    const args = launched[0]?.args ?? [];
+    expect(args.slice(-4)).toEqual(["tail", "--pid=4242", "-f", "/dev/null"]);
+    expect(args).not.toContain("infinity");
+  });
+
   it("est idempotent — le lecteur est remonté à chaque épisode", () => {
     const { launch, launched } = fake();
     const v = createLogindBackup(launch);

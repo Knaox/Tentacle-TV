@@ -22,3 +22,22 @@ describe("politique de débit", () => {
     }
   });
 });
+
+describe("politique de débit — IPv6", () => {
+  const from = (ip: string) => ({ url: "/api/auth/login", ip, headers: {} }) as unknown as FastifyRequest;
+
+  it("un même /64 (un abonné, des milliards d'adresses) partage UN compteur", () => {
+    const a = rateLimitKey(from("2001:db8:1234:5678::1"));
+    const b = rateLimitKey(from("2001:0db8:1234:5678:abcd:ef01:2345:6789"));
+    expect(a).toBe(b);
+  });
+
+  it("deux /64 différents restent deux clients", () => {
+    expect(rateLimitKey(from("2001:db8:1234:5678::1"))).not.toBe(rateLimitKey(from("2001:db8:1234:5679::1")));
+  });
+
+  it("une adresse IPv4, même écrite en IPv6, garde son compteur à elle", () => {
+    expect(rateLimitKey(from("::ffff:192.0.2.10"))).toBe("192.0.2.10");
+    expect(rateLimitKey(from("192.0.2.10"))).toBe("192.0.2.10");
+  });
+});

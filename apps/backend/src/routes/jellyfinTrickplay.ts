@@ -107,7 +107,8 @@ export const jellyfinTrickplayRoutes: FastifyPluginAsync = async (app) => {
       }
       const msg = err instanceof Error ? err.message : "Proxy error";
       request.log.error({ url: url.pathname, error: msg }, "Trickplay proxy error");
-      return reply.status(502).send({ message: msg });
+      // La cause au journal ; au client, le seul fait (ni hôte, ni port de Jellyfin).
+      return reply.status(502).send({ message: "Proxy error" });
     }
   });
 };

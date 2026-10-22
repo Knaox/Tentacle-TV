@@ -4,17 +4,17 @@
  * reprise vident le parking sans faire tirer l'expiration.
  */
 
-import { describe, expect, it, vi } from "vitest";
-import { Park, optionsSignature } from "./mpvPark";
+import { describe, expect, it, vi, type Mock } from "vitest";
+import { Park, optionsSignature, type ParkTimers } from "./mpvPark";
 
-function fakeTimers(): { timers: { set: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn> }; fire: () => void } {
+function fakeTimers(): { timers: { set: Mock<ParkTimers["set"]>; clear: Mock<ParkTimers["clear"]> }; fire: () => void } {
   let pending: (() => void) | null = null;
   const timers = {
-    set: vi.fn((callback: () => void) => {
+    set: vi.fn<ParkTimers["set"]>((callback) => {
       pending = callback;
       return 1;
     }),
-    clear: vi.fn(() => {
+    clear: vi.fn<ParkTimers["clear"]>(() => {
       pending = null;
     }),
   };

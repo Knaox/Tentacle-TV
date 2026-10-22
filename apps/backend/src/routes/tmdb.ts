@@ -6,6 +6,7 @@
 /* ------------------------------------------------------------------ */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { getSeerrConfig } from "../services/seerConfig";
@@ -80,19 +81,23 @@ function isPlatformCached(platformId: number): boolean {
   return discoverCache.has(`movies-${platformId}`) && discoverCache.has(`tv-${platformId}`);
 }
 
-interface CheckPlatformBody {
-  tmdbIds: Array<{ tmdbId: number; mediaType: "movie" | "tv" }>;
-  platformId: number;
-}
+/** Le corps de `/check-platform` : des nombres, rien d'autre — `platformId`
+ *  part dans l'URL de Seerr, sous sa clé. Mal formé : la réponse vide d'avant. */
+const checkPlatformSchema = z.object({
+  tmdbIds: z.array(z.object({ tmdbId: z.number().int(), mediaType: z.enum(["movie", "tv"]) })),
+  platformId: z.number().int().positive(),
+});
+
+/** Un identifiant TMDB : des chiffres seuls (il part dans une URL sous la clé d'administration). */
+const TMDB_ID = /^\d{1,10}$/;
 
 export async function tmdbRoutes(app: FastifyInstance) {
   app.addHook("preHandler", requireAuth);
 
   app.post("/check-platform", async (request: FastifyRequest, _reply: FastifyReply) => {
-    const body = request.body as CheckPlatformBody;
-    if (!body.tmdbIds || !body.platformId) {
-      return { matchingIds: [], cacheReady: false };
-    }
+    const parsed = checkPlatformSchema.safeParse(request.body);
+    if (!parsed.success) return { matchingIds: [], cacheReady: false };
+    const body = parsed.data;
 
     const seerr = getSeerrConfig();
     const cached = isPlatformCached(body.platformId);
@@ -151,7 +156,7 @@ export async function tmdbRoutes(app: FastifyInstance) {
    */
   app.get("/resolve", async (request: FastifyRequest, _reply: FastifyReply) => {
     const { tmdbId, mediaType } = request.query as { tmdbId?: string; mediaType?: string };
-    if (!tmdbId || !mediaType) return { jellyfinId: null, remoteTrailers: [] };
+    if (!tmdbId || !mediaType || !TMDB_ID.test(tmdbId)) return { jellyfinId: null, remoteTrailers: [] };
 
     const jellyfinUrl = getJellyfinUrl();
     const apiKey = getJellyfinApiKey();
@@ -167,7 +172,9 @@ export async function tmdbRoutes(app: FastifyInstance) {
       remoteTrailers: (match.RemoteTrailers ?? []).filter((t) => t.Url),
     });
 
-    const itemTypes = mediaType === "movie" ? "Movie" : "Series";
+    // Le type relu, jamais la chaîne du client : elle ne va pas telle quelle au journal.
+    const kind = mediaType === "movie" ? "movie" : "tv";
+    const itemTypes = kind === "movie" ? "Movie" : "Series";
     try {
       const fields = "ProviderIds,ImageTags,BackdropImageTags,RemoteTrailers";
       // Au nom du COMPTE : Jellyfin applique alors ses droits (note maximale,
@@ -187,7 +194,7 @@ export async function tmdbRoutes(app: FastifyInstance) {
         const data = (await res.json()) as { Items?: ResolvedItem[] };
         const match = data.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
         if (match) {
-          console.log(`[TMDB] Resolved ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
+          console.log(`[TMDB] Resolved ${kind} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
           return toResult(match);
         }
       }
@@ -201,7 +208,7 @@ export async function tmdbRoutes(app: FastifyInstance) {
         const allData = (await allRes.json()) as { Items?: ResolvedItem[] };
         const match = allData.Items?.find((item) => item.ProviderIds?.Tmdb === String(tmdbId));
         if (match) {
-          console.log(`[TMDB] Resolved (fallback) ${mediaType} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
+          console.log(`[TMDB] Resolved (fallback) ${kind} tmdb:${tmdbId} → ${match.Id} "${match.Name}" (Type=${match.Type}, hasImages=${!!match.ImageTags?.Primary})`);
           return toResult(match);
         }
       }

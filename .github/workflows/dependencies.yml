@@ -1,0 +1,83 @@
+# Tentacle TV — vulnérabilités des dépendances
+#
+# Deux regards, aucun `pnpm install` (donc aucun script de paquet exécuté) :
+#
+# - « pnpm audit » lit le lockfile et interroge la base d'avis du registre npm.
+#   Sur une pull request, il ne refuse que les avis de niveau high ou plus que
+#   la branche AJOUTE par rapport à sa base : l'arbre en porte déjà des dizaines
+#   (outillage de build surtout, relevé du 2026-10-22), et un job rouge à chaque
+#   PR serait vite ignoré. Chaque semaine, il dit l'état RÉEL, seuil absolu.
+#   Règle : .github/scripts/lib/audit-diff.mjs, testée hors ligne.
+# - « dependency-review » (PR seulement) relit le diff du graphe de dépendances
+#   contre la base d'avis de GitHub : nouvelle dépendance vulnérable (high ou
+#   plus) → refus.
+
+name: Dépendances
+
+on:
+  pull_request:
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependencies-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: pnpm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      # pnpm audit sort en erreur dès qu'il trouve un avis : le verdict est
+      # rendu par audit-diff.mjs, qui refuse aussi un rapport illisible.
+      - name: Auditer la branche
+        run: pnpm audit --json > "$RUNNER_TEMP/audit-head.json" || true
+
+      - name: Auditer la base
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -eu
+          git worktree add --detach "$RUNNER_TEMP/base" "$PR_BASE"
+          (cd "$RUNNER_TEMP/base" && pnpm audit --json > "$RUNNER_TEMP/audit-base.json") || true
+
+      - name: Verdict (high et plus)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            node .github/scripts/audit-diff.mjs --level high \
+              --head "$RUNNER_TEMP/audit-head.json" --base "$RUNNER_TEMP/audit-base.json"
+          else
+            node .github/scripts/audit-diff.mjs --level high --head "$RUNNER_TEMP/audit-head.json"
+          fi
+
+  review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          # Avis tolérés, un par un, justifiés et sans correctif publié :
+          # - GHSA-86w9-cpqp-85rv (node-forge, vérification de signature RSA) :
+          #   node-forge 1.4.0 est la dernière version ; seuls @expo/cli (serveur
+          #   de dev) et @expo/code-signing-certificates (outil de build) le tirent,
+          #   jamais embarqué dans une application livrée. À retirer dès un correctif.
+          allow-ghsas: GHSA-86w9-cpqp-85rv

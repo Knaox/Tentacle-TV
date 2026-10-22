@@ -1,0 +1,59 @@
+# Configuration de gitleaks — crochet pre-commit (.githooks/pre-commit) et
+# job « Secrets » de la CI (.github/workflows/secrets.yml).
+#
+# On ÉTEND les règles par défaut (useDefault) : aucune n'est retirée. Les
+# exceptions ci-dessous ne couvrent QUE des faux positifs évidents relevés par
+# un balayage de tout l'historique (gitleaks 8.30.1, 2026-10-22). Jamais un
+# vrai secret ici : un secret réel se RÉVOQUE, il ne s'excuse pas.
+
+title = "Tentacle TV"
+
+[extend]
+useDefault = true
+
+# Fixtures des tests et des bancs : clés « 0123456789abcdef… », mots de passe
+# de bancs jetables, JWT factice (« signature » en base64). Bornées aux deux
+# règles génériques : une vraie clé AWS, GitHub, Stripe ou une clé privée
+# collée dans un test reste détectée.
+[[allowlists]]
+description = "Fixtures de tests et de bancs"
+targetRules = ["generic-api-key", "jwt"]
+paths = [
+  '''\.test\.(ts|tsx|mjs|js)$''',
+  '''^apps/backend/test/''',
+  '''^apps/server-e2e/''',
+]
+
+# Les écrans de nouveautés nomment des CLÉS i18n (« bodyKey: "v1_29_0_…" »),
+# que la règle générique prend pour des clés d'API.
+[[allowlists]]
+description = "Clés i18n des écrans de nouveautés"
+targetRules = ["generic-api-key"]
+regexTarget = "line"
+regexes = ['''\b(title|body)Key:\s*"v\d+_\d+_\d+_[A-Za-z0-9_]+"''']
+
+# Identifiants PUBLICS, pas des secrets : l'« Issuer ID » d'App Store Connect
+# (il n'ouvre rien sans la clé .p8, qui vit dans les secrets de la CI) et
+# l'identifiant de fiche du Microsoft Store (visible dans l'URL publique).
+[[allowlists]]
+description = "Identifiants publics des boutiques"
+targetRules = ["generic-api-key"]
+regexTarget = "line"
+regexes = [
+  '''ascApiKeyIssuerId"\s*:''',
+  '''APPLE_API_ISSUER=''',
+  '''Store ID\s*:''',
+]
+
+# Dépendances des paquets Linux : des NOMS de paquets Debian / Arch
+# (« libsecret-1-0 »), que la règle générique prend pour une clé à cause du
+# mot « secret ». Bornée au fichier qui les déclare.
+[[allowlists]]
+description = "Noms de paquets système des paquets Linux"
+targetRules = ["generic-api-key"]
+# ET : il faut le fichier ET le motif — un vrai secret collé ailleurs dans ce
+# fichier reste détecté.
+condition = "AND"
+paths = ['''^apps/desktop-electron/scripts/linux/packageDependencies\.mjs$''']
+regexTarget = "line"
+regexes = ['''"lib[a-z0-9.+-]*secret[a-z0-9.+-]*"''']

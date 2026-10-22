@@ -1,4 +1,5 @@
 import type { LinkProbe, ServerLinksReport } from "./serverLinksContract";
+import { trimTrailingSlashes } from "../utils/trailingSlashes";
 
 /**
  * Le verdict des liens du serveur — une seule règle, lue par la vue
@@ -98,7 +99,7 @@ export function linkHostKind(url: string): LinkHostKind {
 
 /** Une adresse absolue en http(s), sans barre finale ; la chaîne vide reste vide. */
 export function normalizeLinkUrl(value: string): string {
-  return value.trim().replace(/\/+$/, "");
+  return trimTrailingSlashes(value.trim());
 }
 
 export function isLinkUrl(value: string): boolean {

@@ -9,3 +9,11 @@
 apps/port-check/node_modules
 apps/port-check/dist
 **/.DS_Store
+# Jamais de secret ni de donnée locale dans le contexte.
+**/.env
+**/.env.*
+**/*.db
+**/*.pem
+**/*.key
+**/.git
+**/.claude

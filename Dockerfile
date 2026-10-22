@@ -22,7 +22,14 @@
 # clients et les outils média. Elle recopiait le `node_modules` complet du
 # monorepo — dépendances de développement du web et du téléviseur comprises :
 # 307 Mo compressés sur 479 (relevé du registre, v1.23.0).
-ARG NODE_IMAGE=node:24-alpine
+# ÉPINGLÉE PAR EMPREINTE (index multi-arch) : un même commit construit toujours
+# sur la même base, et une image de base republiée sous le même tag — par
+# erreur ou par malveillance — n'entre pas en silence dans l'image livrée.
+# Monter de version : relever l'empreinte du tag voulu
+#   skopeo inspect --raw docker://docker.io/library/node:24-alpine | sha256sum
+# et mettre à jour le commentaire du tag ci-dessous.
+# node:24.22.1-alpine3.24 (relevé le 2026-10-22)
+ARG NODE_IMAGE=node:24-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53
 
 # ── Construction : l'espace de travail utile, dépendances de dev comprises ───
 FROM ${NODE_IMAGE} AS base
@@ -63,7 +70,16 @@ COPY packages/tv-core/package.json packages/tv-core/package.json
 # imports une fois les sources arrivées par le COPY global.
 COPY packages/offline-core/package.json packages/offline-core/package.json
 COPY patches/ patches/
-RUN pnpm install --frozen-lockfile
+# AUCUN script d'installation, puis les seuls qui servent, nommés : le moteur
+# de Prisma (téléchargé par @prisma/engines, exigé par `prisma generate`).
+# esbuild n'en a pas besoin : son binaire arrive par son paquet de plateforme
+# (@esbuild/linux-*), et son `pnpm rebuild` échoue sur le lien d'un paquet
+# absent du contexte (apps/desktop-electron). pnpm 10 n'exécute déjà que ceux de
+# `onlyBuiltDependencies`, mais cette liste vit dans package.json : l'image ne
+# doit pas suivre en silence un ajout fait pour le mobile ou le bureau. Un ver
+# npm (famille Shai-Hulud) s'exécute à l'installation — jamais ici.
+RUN pnpm install --frozen-lockfile --ignore-scripts \
+  && pnpm rebuild @prisma/engines prisma
 
 COPY packages/ packages/
 COPY apps/web/ apps/web/
@@ -175,6 +191,13 @@ ENV NODE_ENV=production \
 # les signaux et récolte les processus orphelins. Plus de ffmpeg ni de fpcalc :
 # ils ne servaient qu'à l'analyse audio, retirée.
 RUN apk add --no-cache python3 su-exec tini
+# Ni npm, ni npx, ni corepack, ni yarn à l'exécution : le serveur n'en lance
+# aucun (Prisma est généré au build, les extensions s'ouvrent par tar). Ils ne
+# feraient qu'offrir un installeur de paquets à qui prendrait la main dans le
+# conteneur — et leurs dépendances embarquées font l'essentiel des alertes
+# des scanners de vulnérabilités.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-v* \
+  && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 # yt-dlp : résolution des bandes-annonces YouTube → flux HLS jouable (Apple TV
 # n'a pas de WebView). Le zipapp OFFICIEL, épinglé et vérifié : le paquet

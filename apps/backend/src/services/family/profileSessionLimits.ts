@@ -1,6 +1,7 @@
 import type { FamilyErrorBody } from "../../family/familyProtocol";
 import { EXTENSIONS_PREFIX, guestExtensionAccess } from "./familyGuestExtensions";
 import { isFamilyGuest } from "./familyGuestMarkers";
+import { routedPath } from "../../utils/routedPath";
 
 /**
  * Ce qu'une SESSION DE PROFIL de TV atteint (docs/FAMILLE.md) — appliqué par
@@ -55,7 +56,7 @@ function guestRefusal(): ProfileScope {
 
 export async function profileSessionScope(url: string, user: ScopedUser): Promise<ProfileScope> {
   if (user.session !== "tvProfile") return PASS;
-  const path = url.split("?")[0] ?? "";
+  const path = routedPath(url);
   if (within(path, PROFILE_DENIED)) {
     return { kind: "refuse", body: { code: "family.personal_session_required", message: "Geste impossible depuis un profil de TV" } };
   }

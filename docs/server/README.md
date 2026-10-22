@@ -18,6 +18,7 @@ cover every case; a guided setup wizard does the rest in the browser.
 | hardware transcoding (Intel, AMD, NVIDIA) | [gpu.md](gpu.md) |
 | to update, back up, reopen the wizard, or migrate from the old compose file | [operations.md](operations.md) |
 | what happens to my MariaDB database in 1.25, and how to remove it afterwards | [sqlite-migration.md](sqlite-migration.md) |
+| to check that the image is genuine (signature, SBOM) or harden the container | [image-security.md](image-security.md) |
 | to fix something that doesn't work | [troubleshooting.md](troubleshooting.md) |
 | to run the remote access test service (maintainers) | [port-check.md](port-check.md) |
 

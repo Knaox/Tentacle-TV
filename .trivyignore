@@ -1,0 +1,17 @@
+# Vulnérabilités que la garde Trivy de l'image (server-image.yml) TOLÈRE.
+#
+# La garde échoue sur toute vulnérabilité CRITICAL ou HIGH CORRIGEABLE de
+# l'image, avant qu'aucune étiquette ne soit posée. Une ligne ici l'en
+# dispense : elle se justifie, et elle EXPIRE (« exp:AAAA-MM-JJ ») — passé la
+# date, Trivy la refuse de nouveau et la livraison s'arrête. Jamais une ligne
+# sans date.
+#
+# Format : un identifiant par ligne (CVE-…, GHSA-…), puis « exp:… ».
+#   CVE-2026-00000 exp:2026-12-31
+#
+
+# ── 2026-10-22 : dette soldée ───────────────────────────────────────────────
+# Les 26 HIGH relevées sur l'image de 7640fcf9d (fastify, @fastify/static,
+# undici, fast-uri, ws, find-my-way, brace-expansion) sont corrigées par la
+# montée des dépendances (planchers dans package.json › pnpm.overrides) :
+# plus aucune exception.

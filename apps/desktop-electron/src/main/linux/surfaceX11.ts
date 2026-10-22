@@ -96,6 +96,14 @@ export class SurfaceX11 implements VideoSurface {
         // Réduite pendant le chargement : la vidéo naît réduite avec elle.
         if (this.host.isMinimized()) this.minimizeVideo();
         else this.align();
+        // ⚠️ Le `blur` de NOTRE fenêtre est déjà passé : le gestionnaire active
+        // la fenêtre mpv dès qu'il la mappe, avant que ce sondage ne la trouve —
+        // le contrôle d'activation s'arrêtait alors sur `video === null`.
+        // Mesuré le 22.10.2026 sous openbox : mpv restait active, la page sans
+        // focus, aucun raccourci du lecteur jusqu'à un clic. On contrôle donc
+        // une fois de plus, maintenant qu'on la connaît (rien n'est pris à une
+        // autre application : seulement si c'est mpv qui est active).
+        this.scheduleActivationCheck();
       } else if (++tries > POLL_MAX) {
         this.stopSearch();
         // Tracé même en cas d'échec : « rien ne s'est passé » est le symptôme le

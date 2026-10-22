@@ -39,6 +39,40 @@ export interface TmdbVideo {
   url: string;
 }
 
+const WATCH_MARKER = "youtube.com/watch?";
+const VIDEO_PARAM = /v=([\w-]{11})/y;
+
+/** `v=ID` à cette position exacte de la ligne. */
+function videoParamAt(line: string, at: number): string | null {
+  VIDEO_PARAM.lastIndex = at;
+  return VIDEO_PARAM.exec(line)?.[1] ?? null;
+}
+
+/**
+ * L'identifiant d'un lien `youtube.com/watch?…v=ID`, lu comme le faisait
+ * `/youtube\.com\/watch\?(?:.*&)?v=([\w-]{11})/` — sur la première ligne qui
+ * réussit : le DERNIER `&v=` valide après le premier repère, sinon un `v=` juste
+ * après un repère —, mais en temps linéaire : la regex était quadratique sur un
+ * lien hostile (CodeQL `js/polynomial-redos`). Les `&v=` d'un repère suivant de
+ * la même ligne sont déjà ceux du premier : seul son `?v=` reste à essayer.
+ */
+function watchVideoId(url: string): string | null {
+  for (const line of url.split(/[\n\r\u2028\u2029]/)) {
+    const first = line.indexOf(WATCH_MARKER);
+    if (first < 0) continue;
+    const queryStart = first + WATCH_MARKER.length;
+    for (let amp = line.lastIndexOf("&v="); amp >= queryStart; amp = line.lastIndexOf("&v=", amp - 1)) {
+      const id = videoParamAt(line, amp + 1);
+      if (id) return id;
+    }
+    for (let at = first; at >= 0; at = line.indexOf(WATCH_MARKER, at + 1)) {
+      const id = videoParamAt(line, at + WATCH_MARKER.length);
+      if (id) return id;
+    }
+  }
+  return null;
+}
+
 /**
  * Extrait l'identifiant vidéo YouTube d'une URL de trailer distant.
  * Gère : `watch?v=`, `youtu.be/`, `embed/`, `v/`, `shorts/`, et le format
@@ -51,8 +85,10 @@ export function parseYouTubeId(url: string | undefined): string | null {
   const pluginMatch = url.match(/[?&]video_id=([\w-]{11})/);
   if (pluginMatch) return pluginMatch[1];
 
+  const watched = watchVideoId(url);
+  if (watched) return watched;
+
   const patterns = [
-    /youtube\.com\/watch\?(?:.*&)?v=([\w-]{11})/,
     /youtu\.be\/([\w-]{11})/,
     /youtube\.com\/embed\/([\w-]{11})/,
     /youtube\.com\/v\/([\w-]{11})/,

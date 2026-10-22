@@ -22,6 +22,7 @@
 
 import { getJellyfinUrl } from "./configStore";
 import { buildAuthHeader, deviceIdForSync } from "./jellyfinIdentity";
+import { jellyfinItemSegment } from "../utils/jellyfinItemId";
 
 export interface DownloadPolicySnapshot {
   enableContentDownloading: boolean;
@@ -158,9 +159,10 @@ export async function getDownloadCapabilities(token: string): Promise<DownloadCa
  */
 export async function getItemLibraryId(token: string, itemId: string): Promise<string | null> {
   const jellyfinUrl = getJellyfinUrl();
-  if (!jellyfinUrl) return null;
+  const segment = jellyfinItemSegment(itemId);
+  if (!jellyfinUrl || !segment) return null;
   try {
-    const res = await fetch(`${jellyfinUrl}/Items/${itemId}/Ancestors`, {
+    const res = await fetch(`${jellyfinUrl}/Items/${segment}/Ancestors`, {
       headers: { Authorization: mediaBrowserAuthHeader(token) },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });

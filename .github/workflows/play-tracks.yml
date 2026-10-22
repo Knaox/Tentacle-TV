@@ -8,38 +8,28 @@ name: Play — lister les pistes
 on:
   workflow_dispatch:
 
+# Jeton en LECTURE par défaut : chaque job qui écrit (tag, Release, push,
+# image) le déclare lui-même, au plus juste.
+permissions:
+  contents: read
+
 jobs:
   tracks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/setup-node@v4
+      # Aucun `npm install` : le client Play maison (lib/play-api.mjs), zéro
+      # dépendance — l'ancien `npm install googleapis` tournait sans lockfile
+      # et AVEC les scripts d'installation.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
 
       - name: Lister les pistes (androidpublisher v3)
         env:
-          SA_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-        run: |
-          npm install googleapis@140 --no-save --silent
-          node - <<'EOF'
-          const { google } = require('googleapis');
-          (async () => {
-            const auth = new google.auth.GoogleAuth({
-              credentials: JSON.parse(process.env.SA_JSON),
-              scopes: ['https://www.googleapis.com/auth/androidpublisher'],
-            });
-            const ap = google.androidpublisher({ version: 'v3', auth });
-            const packageName = 'com.tentacletv.mobile';
-            const edit = await ap.edits.insert({ packageName });
-            const { data } = await ap.edits.tracks.list({ packageName, editId: edit.data.id });
-            console.log(`Pistes de ${packageName} :`);
-            for (const t of data.tracks ?? []) {
-              const rel = (t.releases ?? [])
-                .map((r) => `${r.status}${r.name ? ` « ${r.name} »` : ''} [vc ${(r.versionCodes ?? []).join(', ') || '—'}]`)
-                .join(' ; ') || '(aucune release)';
-              console.log(`  • track API = "${t.track}" → ${rel}`);
-            }
-            await ap.edits.delete({ packageName, editId: edit.data.id }).catch(() => {});
-          })().catch((e) => { console.error(e.message); process.exit(1); });
-          EOF
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: node .github/scripts/play-list-tracks.mjs com.tentacletv.mobile

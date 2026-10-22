@@ -80,7 +80,9 @@ function isSafePath(value: unknown): value is string {
 
 /** « Vigie — Jellyseerr (unofficial) » se présente comme « Vigie ». */
 export function shortPluginName(name: string): string {
-  return name.split(/\s+[—–-]\s+/)[0]?.trim() || name;
+  // Séparateur de longueur FIXE : `\s+[—–-]\s+` était quadratique sur de longues
+  // suites d'espaces ; le trim retire celles qui précèdent le tiret.
+  return name.split(/\s[—–-]\s/)[0]?.trim() || name;
 }
 
 /** Les plugins actifs, configurés, qui savent chercher. */
