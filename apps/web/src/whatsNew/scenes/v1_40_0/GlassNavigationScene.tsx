@@ -50,7 +50,10 @@ export function GlassNavigationScene({ active, reduced }: SceneProps) {
           {media.backdrop
             ? <img src={media.backdrop.url} alt="" draggable={false} className="h-full w-full object-cover" />
             : <div className="h-full w-full" style={{ background: CARD_TONES[0] }} />}
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--surface-0)] via-transparent to-transparent" />
+          {/* Le voile du héros de l'accueil (`--scrim-media-rgb`, texte en `on-media-*`) : le titre blanc
+              tient sur n'importe quel décor, dans les deux thèmes — plus un fondu vers le fond de page. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(var(--scrim-media-rgb),0.8)] via-[rgba(var(--scrim-media-rgb),0.25)] to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[rgba(var(--scrim-media-rgb),0.6)] to-transparent" />
           <p className="absolute bottom-6 left-6 max-w-[360px] truncate text-[22px] font-bold text-on-media-primary">{media.backdrop?.title ?? " "}</p>
         </Place>
         {Array.from({ length: 7 }, (_, i) => (
