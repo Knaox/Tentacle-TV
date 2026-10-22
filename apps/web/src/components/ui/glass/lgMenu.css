@@ -195,6 +195,23 @@
   background: rgba(var(--scrim-media-rgb), 0.5);
 }
 
+/* Un segmenté du contenu (`.lg-seg`, D) posé DANS une plaque — feuille de
+ * partage, « garder hors ligne » : ses remplissages suivent le TON de la
+ * plaque, pas le thème (une feuille sombre dans le thème clair existe). */
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-sheet, .lg-palette)[data-lg-tone="dark"] .lg-seg {
+  --lgd-control: rgba(255, 255, 255, 0.08);
+  --lgd-selected: rgba(255, 255, 255, 0.24);
+  --lgd-selected-fg: #ffffff;
+  --lgd-selected-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-menu, .lg-sheet, .lg-palette)[data-lg-tone="light"] .lg-seg {
+  --lgd-control: rgba(0, 0, 0, 0.055);
+  --lgd-selected: #ffffff;
+  --lgd-selected-fg: #0b0b10;
+  --lgd-selected-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
 /* ── En-têtes de section : discrets, sans capitales criardes ── */
 :root[data-liquid-glass="native"] :is(.lg-menu, .lg-palette) .lg-menu-label {
   color: var(--lgm-label);

@@ -14,7 +14,9 @@ interface Props {
  * se touchent au doigt (44 px). Un vrai groupe radio : tabulation sur le seul
  * choix actif, flèches pour changer — comme le contrôle segmenté des barres
  * d'outils. Le choix actif prend le dégradé de marque en fondu d'opacité,
- * sans couleur animée.
+ * sans couleur animée — en verre natif (macOS 26), le segment NEUTRE du
+ * contenu (`.lg-seg`, `liquidGlassContent.css`) : la marque est réservée à
+ * l'action principale de la feuille.
  */
 export function SharePeriodPicker({ value, onChange, label, labelOf }: Props) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -34,7 +36,7 @@ export function SharePeriodPicker({ value, onChange, label, labelOf }: Props) {
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className="grid grid-cols-3 gap-1 rounded-xl bg-[color:var(--surface-2)] p-1 ring-1 ring-line-strong"
+      className="lg-seg grid grid-cols-3 gap-1 rounded-xl bg-[color:var(--surface-2)] p-1 ring-1 ring-line-strong"
     >
       {VIEWING_STATS_PERIODS.map((period, i) => {
         const selected = period === value;
@@ -53,7 +55,7 @@ export function SharePeriodPicker({ value, onChange, label, labelOf }: Props) {
           >
             <span
               aria-hidden
-              className={`absolute inset-0 -z-10 rounded-lg transition-opacity duration-150 ${selected ? "opacity-100" : "opacity-0"}`}
+              className={`lg-seg-marker absolute inset-0 -z-10 rounded-lg transition-opacity duration-150 ${selected ? "opacity-100" : "opacity-0"}`}
               style={{
                 background: "linear-gradient(135deg, rgba(var(--brand-rgb),0.95), rgba(var(--brand-accent-rgb),0.9))",
                 boxShadow: "0 2px 10px rgba(var(--brand-rgb),0.35)",
