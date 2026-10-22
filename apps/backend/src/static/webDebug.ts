@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from "fs";
+import { closeSync, fstatSync, openSync, readFileSync } from "fs";
 import { resolve } from "path";
 import type { FastifyReply } from "fastify";
 import { parseWebUiSwitch } from "./webUi";
@@ -57,11 +57,18 @@ export function createWebIndexSender(webPath: string): (reply: FastifyReply) => 
   const file = resolve(webPath, "index.html");
   let cached: { mtimeMs: number; size: number; html: string } | null = null;
   const read = (): string => {
-    const stat = statSync(file);
-    if (!cached || cached.mtimeMs !== stat.mtimeMs || cached.size !== stat.size) {
-      cached = { mtimeMs: stat.mtimeMs, size: stat.size, html: injectWebDebugFlag(readFileSync(file, "utf8")) };
+    // Le constat et la lecture portent sur le MÊME fichier ouvert : un rebuild
+    // entre les deux ne mêle plus l'ancienne date au nouveau contenu.
+    const fd = openSync(file, "r");
+    try {
+      const stat = fstatSync(fd);
+      if (!cached || cached.mtimeMs !== stat.mtimeMs || cached.size !== stat.size) {
+        cached = { mtimeMs: stat.mtimeMs, size: stat.size, html: injectWebDebugFlag(readFileSync(fd, "utf8")) };
+      }
+      return cached.html;
+    } finally {
+      closeSync(fd);
     }
-    return cached.html;
   };
   return (reply) =>
     reply
