@@ -620,21 +620,31 @@ glyphes de chaque surface suivent son ton (`data-lg-tone`) : les couleurs de
 texte du thème deviennent `--lg-glyph*` sous la porte.
 
 - **Fenêtre et navigation** (lg-chrome, `apps/web/src/desktop/windowGlass.css`,
-  `windowGlassNav.css`, jetons `--lg-chrome-*`) : bandeau des feux transparent,
-  le contenu défile dessous ; **effet de bord de défilement**
-  (`ScrollEdgeEffect.tsx` : flou masqué en dégradé, monté seulement page
-  défilée, opacité sur les 48 premiers px) ; la `TopNav` en **GROUPES qui
-  flottent** à 10 px (`--lg-chrome-group-gap`) — marque + onglets, recherche,
-  boutons + profil, trois surfaces de la primitive ; dans un groupe, de simples
-  glyphes (pas de verre dans le verre), boutons sans fond au repos ; « Plus »
-  calculé sur la place libre de sa case ; onglet courant en lentille teintée qui
-  GLISSE (ressort `morph`), reflet discret qui suit le pointeur ; barres
-  latérales de Réglages et d'Admin en panneau flottant (remplissage du
-  matériau, reflet du haut, ombre qui soulève, aucune bordure grise ;
-  `windowGlassSidebar.css`), sélection en lentille qui glisse, sans
-  `backdrop-filter` (rien ne bouge derrière) ; **fenêtre inactive**
-  (`windowFocus.ts`, `data-window-inactive`) au gris, sans animation. Pendant la
-  lecture native, le bandeau redevient OPAQUE (`data-native-playback`).
+  `windowGlassNav.css`, `windowGlassSidebar.css`, jetons `--lg-chrome-*`) :
+  bandeau des feux transparent, le contenu défile dessous ; **effet de bord de
+  défilement** (`ScrollEdgeEffect.tsx` : monté seulement page défilée, opacité
+  sur les 48 premiers px) — flou masqué en paliers et teinte sur une courbe
+  SANS pli (accélérée jusqu'à la hauteur des libellés, dont elle tient l'AA,
+  puis une Hermite raccordée qui s'éteint à pente nulle ; mesuré au labo, lot
+  lg2). La `TopNav` en **GROUPES qui flottent** à 10 px
+  (`--lg-chrome-group-gap`) — marque + onglets, recherche, boutons + profil,
+  trois surfaces de la primitive au régime `control` (petits : ils basculent
+  avec le ton du dessous) ; dans un groupe, de simples glyphes (pas de verre
+  dans le verre), des remplissages NEUTRES au ton du groupe : survol < appui
+  (« Plus » ouvert) < sélection. **L'onglet courant** est la pastille de la
+  barre d'onglets d'iOS 26 : remplissage neutre concentrique au groupe, qui
+  GLISSE (ressort `morph`), le glyphe seul à l'accent — jamais la marque en
+  aplat ; pastilles de la cloche et de Watch Together à l'accent uni, sans
+  halo. « Plus » calculé sur la place libre de sa case. **Barres latérales**
+  de Réglages et d'Admin (`useGlassSidebar` → prop `sidebarSurface` de
+  `SettingsShell`) : une surface de la primitive au régime `surface` (un ton
+  tenu, matériau épais), en retrait des bords, sans dégradé ; sélection en
+  remplissage neutre translucide (`--lg-sidebar-selection`) concentrique au
+  rail, l'icône à l'accent. **Fenêtre inactive** (`windowFocus.ts`,
+  `data-window-inactive`) : les pastilles restent, l'accent cède au gris.
+  Pendant la lecture native, le bandeau redevient OPAQUE
+  (`data-native-playback`). Labo : `/dev/verre?vue=barres` (la vraie barre et
+  une vraie barre latérale sur les dessous du labo, page défilable).
 - **Composants** (lg-composants, `components/ui/glass/` : `lgRecipes.css`,
   `lgControls.css`, `lgOverlays.css`, `lgLegibility.css`, `useGlassControl`,
   `GlassPressable`) : des CLASSES-MARQUEURS sans aucun style hors de la porte —
