@@ -1,5 +1,6 @@
 # Dependabot — mises à jour des dépendances npm (workspace pnpm entier, lu
-# depuis le pnpm-lock.yaml de la racine) et des actions GitHub.
+# depuis le pnpm-lock.yaml de la racine), des actions GitHub et des images
+# de base Docker.
 #
 # ⚠️ cooldown : une version n'est proposée qu'après quelques jours de
 # publication — le temps qu'un paquet piégé (ver ChainDrop, Shai-Hulud…) soit
@@ -51,3 +52,18 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  # Images de base épinglées par empreinte (Dockerfile racine, port-check) :
+  # sans ces mises à jour, la base vieillit et la garde Trivy finit par bloquer.
+  - package-ecosystem: "docker"
+    directories: ["/", "/apps/port-check"]
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(docker)"
