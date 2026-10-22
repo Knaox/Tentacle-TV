@@ -41,12 +41,21 @@
   },
   "packageManager": "pnpm@10.30.2",
   "pnpm": {
+    "//onlyBuiltDependencies": "LISTE BLANCHE : seuls ces paquets exécutent leur script d'installation (pnpm 10 bloque tous les autres). Relevé du 2026-10-22 sur le lockfile entier : Prisma (moteurs, client) et esbuild (vérification de son binaire). Tout autre paquet à script est ignoré, nommément, dans ignoredBuiltDependencies — un nouveau venu se voit donc dans l'avertissement de pnpm, jamais exécuté en silence.",
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
-      "bcrypt",
       "esbuild",
       "prisma"
+    ],
+    "//ignoredBuiltDependencies": "Scripts relus le 2026-10-22, et DÉJÀ jamais exécutés (pnpm 10 bloque ce qui n'est pas en liste blanche) sans que la livraison en souffre : koffi (binaires précompilés @koromix/koffi-*), ssh2 et cpu-features (liaison native facultative, repli JS), core-js (message publicitaire), electron-winstaller (copie d'un 7z.exe Squirrel), @webos-tools/cli (chmod de ses fichiers de conf). Les nommer fait taire l'avertissement et rend visible tout NOUVEAU paquet à script.",
+    "ignoredBuiltDependencies": [
+      "@webos-tools/cli",
+      "core-js",
+      "cpu-features",
+      "electron-winstaller",
+      "koffi",
+      "ssh2"
     ],
     "overrides": {
       "@types/react": "^19.0.0"
