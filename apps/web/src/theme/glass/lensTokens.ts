@@ -17,6 +17,8 @@ export interface LensGeometry {
   height: number;
   radius: number;
   bezel: number;
+  /** Densité des cartes (celle de l'écran, 2 au plus). */
+  pixelRatio: number;
   /** Décalage maximal, en px. */
   strength: number;
   dispersion: number;
@@ -55,6 +57,8 @@ export interface MeasuredSurface {
   cssRadius: number;
   shape: LiquidGlassShape;
   level: LiquidGlassLevel;
+  /** `devicePixelRatio` de l'écran (1 par défaut). */
+  pixelRatio?: number;
 }
 
 /** La géométrie de la lentille ; `null` sans taille. */
@@ -82,6 +86,7 @@ export function lensGeometryFrom(surface: MeasuredSurface, read: TokenReader): L
     height,
     radius: Math.round(radius),
     bezel,
+    pixelRatio: Math.min(2, Math.max(1, Math.round(surface.pixelRatio ?? 1))),
     strength: Math.round(strength * 10) / 10,
     // La frange chromatique coûte deux passes : réservée au verre clair.
     dispersion: surface.level === "clear" ? number(read, "--lg-dispersion", 0) : 0,
@@ -99,6 +104,7 @@ export function sameLens(a: LensGeometry | null, b: LensGeometry): boolean {
     a.height === b.height &&
     a.radius === b.radius &&
     a.bezel === b.bezel &&
+    a.pixelRatio === b.pixelRatio &&
     a.strength === b.strength &&
     a.dispersion === b.dispersion &&
     la.angle === lb.angle &&

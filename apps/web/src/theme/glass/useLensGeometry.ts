@@ -32,6 +32,7 @@ export function readLensGeometry(
       cssRadius: Number.parseFloat(computed.borderTopLeftRadius) || 0,
       shape,
       level,
+      pixelRatio: typeof window === "undefined" ? 1 : window.devicePixelRatio,
     },
     (name) => computed.getPropertyValue(name),
   );

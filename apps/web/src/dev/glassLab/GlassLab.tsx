@@ -8,7 +8,9 @@
  * (`labSurfaces.tsx`), les deux thèmes, et ce que la page sait du ton dessous.
  *
  * `?fond=affiches|illustrations|texte|mire|blanc|noir` choisit le dessous à
- * l'ouverture (bancs reproductibles). Hors du mode natif, le labo montre le
+ * l'ouverture (bancs reproductibles) ; `?vue=composants` montre les VRAIS
+ * composants de lg-composants (`labComponents.tsx`, à eux) au lieu des
+ * surfaces de la primitive. Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -19,6 +21,7 @@ import { getScheme, setMode, subscribe as subscribeScheme } from "../../theme/co
 import { useLiquidGlassMode } from "../../theme/glass";
 import { backdropToneMeasured } from "../../theme/glass/useBackdropTone";
 import { LAB_BACKDROPS, LabBackdropView, type LabBackdrop } from "./labBackdrop";
+import { LabComponents } from "./labComponents";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
@@ -27,6 +30,11 @@ function initialBackdrop(): LabBackdrop {
   const asked = new URLSearchParams(window.location.search).get("fond");
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
+
+type LabView = "surfaces" | "composants";
+
+const initialView = (): LabView =>
+  new URLSearchParams(window.location.search).get("vue") === "composants" ? "composants" : "surfaces";
 
 const chip = (active: boolean) => ({
   padding: "4px 9px",
@@ -37,7 +45,14 @@ const chip = (active: boolean) => ({
   fontSize: 12,
 });
 
-function LabPanel({ backdrop, onBackdrop }: { backdrop: LabBackdrop; onBackdrop: (b: LabBackdrop) => void }) {
+interface LabPanelProps {
+  backdrop: LabBackdrop;
+  onBackdrop: (b: LabBackdrop) => void;
+  view: LabView;
+  onView: (v: LabView) => void;
+}
+
+function LabPanel({ backdrop, onBackdrop, view, onView }: LabPanelProps) {
   const mode = useLiquidGlassMode();
   const scheme = useSyncExternalStore(subscribeScheme, getScheme, getScheme);
   return (
@@ -65,6 +80,10 @@ function LabPanel({ backdrop, onBackdrop }: { backdrop: LabBackdrop; onBackdrop:
         ))}
       </div>
       <div style={{ display: "flex", marginBottom: 6 }}>
+        <button type="button" onClick={() => onView("surfaces")} style={{ ...chip(view === "surfaces"), margin: 2 }}>surfaces</button>
+        <button type="button" onClick={() => onView("composants")} style={{ ...chip(view === "composants"), margin: 2 }}>composants</button>
+      </div>
+      <div style={{ display: "flex", marginBottom: 6 }}>
         <button type="button" onClick={() => setMode("dark")} style={{ ...chip(scheme === "dark"), margin: 2 }}>sombre</button>
         <button type="button" onClick={() => setMode("light")} style={{ ...chip(scheme === "light"), margin: 2 }}>clair</button>
       </div>
@@ -76,6 +95,7 @@ function LabPanel({ backdrop, onBackdrop }: { backdrop: LabBackdrop; onBackdrop:
 
 export function GlassLab() {
   const [backdrop, setBackdrop] = useState<LabBackdrop>(initialBackdrop);
+  const [view, setView] = useState<LabView>(initialView);
   const [width, setWidth] = useState(() => window.innerWidth);
   useEffect(() => {
     const onResize = (): void => setWidth(window.innerWidth);
@@ -88,12 +108,18 @@ export function GlassLab() {
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
       <LabBackdropView kind={backdrop} />
-      <LabCardTray poster={poster} top={top + 300} left={Math.max(24, width - 360)} />
-      <LabNav top={top} />
-      <LabMenu top={top + 66} />
-      <LabHeroActions top={top + 470} />
-      <LabPlayer bottom={24} />
-      <LabPanel backdrop={backdrop} onBackdrop={setBackdrop} />
+      {view === "composants" ? (
+        <LabComponents top={top} />
+      ) : (
+        <>
+          <LabCardTray poster={poster} top={top + 300} left={Math.max(24, width - 360)} />
+          <LabNav top={top} />
+          <LabMenu top={top + 66} />
+          <LabHeroActions top={top + 470} />
+          <LabPlayer bottom={24} />
+        </>
+      )}
+      <LabPanel backdrop={backdrop} onBackdrop={setBackdrop} view={view} onView={setView} />
     </div>
   );
 }
