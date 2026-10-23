@@ -1,6 +1,7 @@
 import { useReducedMotion } from "framer-motion";
 import { ChevronLeftIcon, ChevronRightIcon } from "../icons/HeroIcons";
-import { PressableScale } from "../ui/PressableScale";
+import { PressableGlass } from "../ui/glass/PressableGlass";
+import { GlassLensScope } from "../../theme/glass";
 import { AMBIENT_HZ } from "../../theme/motion";
 
 interface HeroIndicatorsProps {
@@ -29,6 +30,9 @@ interface HeroIndicatorsProps {
  * blanches sont donc CONSTANTS dans les deux thèmes (règle « posé sur média »),
  * mais le liseré et le halo suivent la marque.
  */
+/** Les flèches en Liquid Glass : le rond de verre clair des voisins de la bannière. */
+const ARROW_GLASS = { level: "clear", shape: "circle" } as const;
+
 export function HeroIndicators({
   count,
   activeIndex,
@@ -53,7 +57,7 @@ export function HeroIndicators({
     : undefined;
 
   // Le CENTRAGE vertical vit sur un conteneur, jamais sur le bouton lui-même.
-  // `PressableScale` est un `motion.button` : au survol, Framer écrit un
+  // `PressableGlass` est un `motion.button` : au survol, Framer écrit un
   // `transform` inline qui ÉCRASE le `-translate-y-1/2` de Tailwind — la flèche
   // retombait alors d'une demi-hauteur, de façon intermittente (seulement une
   // fois le transform posé). Deux calques, deux responsabilités : le conteneur
@@ -64,39 +68,49 @@ export function HeroIndicators({
   // en perdrait une. Les flèches ne sont montées que pendant le survol : elles
   // portent un `backdrop-filter` et flottent sur une image qui zoome sans fin,
   // donc à `opacity: 0` leur flou était malgré tout refait à chaque image.
-  const arrowClass =
-    "hover-reveal flex h-12 w-12 items-center justify-center rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.42)] text-on-media-primary backdrop-blur-md hover:border-[rgba(var(--brand-rgb),0.75)] hover:bg-[rgba(var(--scrim-media-rgb),0.62)]";
+  //
+  // Liquid Glass (mode natif) : le MÊME rond que ses voisins de la bannière
+  // (lot lg7, R9) — verre clair de la primitive, sans bordure, en givre SANS
+  // lentille comme eux (`GlassLensScope`, lot lg5 « A′ »). Ailleurs : la peau
+  // d'avant (`arrowSkin`), classe pour classe.
+  const arrowClass = "hover-reveal flex h-12 w-12 items-center justify-center";
+  const arrowSkin =
+    "rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.42)] text-on-media-primary backdrop-blur-md hover:border-[rgba(var(--brand-rgb),0.75)] hover:bg-[rgba(var(--scrim-media-rgb),0.62)]";
 
   return (
     <>
       {arrowsMounted && (
-        <>
+        <GlassLensScope lens={false}>
           <div className={`${zoneClass} left-3 md:left-6`}>
-            <PressableScale
+            <PressableGlass
+              appearance={ARROW_GLASS}
               hoverScale={1.06}
               tapScale={0.92}
               onClick={onPrev}
               aria-label="Précédent"
               className={arrowClass}
+              fallbackClassName={arrowSkin}
               data-shown={arrowsShown}
             >
               <ChevronLeftIcon />
-            </PressableScale>
+            </PressableGlass>
           </div>
 
           <div className={`${zoneClass} right-3 md:right-6`}>
-            <PressableScale
+            <PressableGlass
+              appearance={ARROW_GLASS}
               hoverScale={1.06}
               tapScale={0.92}
               onClick={onNext}
               aria-label="Suivant"
               className={arrowClass}
+              fallbackClassName={arrowSkin}
               data-shown={arrowsShown}
             >
               <ChevronRightIcon />
-            </PressableScale>
+            </PressableGlass>
           </div>
-        </>
+        </GlassLensScope>
       )}
 
       <div className="absolute bottom-6 right-6 z-10 flex items-center gap-2 md:bottom-10 md:right-10">

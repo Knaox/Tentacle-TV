@@ -40,9 +40,9 @@ export function DataSaverChip() {
         onClick={() => setOpen((p) => !p)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-fill-subtle px-3 text-xs font-semibold text-content-secondary transition-opacity duration-150 hover:opacity-80"
+        className="lgc-status flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-fill-subtle px-3 text-xs font-semibold text-content-secondary transition-opacity duration-150 hover:opacity-80"
       >
-        <span className="h-2 w-2 rounded-full bg-content-tertiary" />
+        <span className="lgc-status-dot h-2 w-2 rounded-full bg-content-tertiary" />
         <span className="hidden sm:inline">{t("saverChip")}</span>
       </button>
 

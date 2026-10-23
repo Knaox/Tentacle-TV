@@ -67,9 +67,9 @@ export function CardQuickActions({ item, variant = "compact" }: CardQuickActions
 
 /**
  * Un rond d'action. Verre natif (bannière) : une pastille ronde de verre
- * clair, lentille au biseau, glyphes adaptés au décor ; allumée, le verre
- * reste clair et c'est le GLYPHE qui le dit — plein, le cœur à l'accent rose
- * (lot lg2 : à côté de « Lecture », une seule emphase de marque). Ailleurs :
+ * clair, glyphes adaptés au décor ; allumée, le verre reste clair et c'est le
+ * GLYPHE qui le dit — plein, à l'accent (`data-lg-toggle` : signet et coche
+ * violets, cœur rose ; lot lg7, R5). Le seul fond coloré reste « Lecture ». Ailleurs :
  * le rond cerclé d'avant.
  */
 function QuickButton({ glass, box, active, accent = false, label, state, onClick, children }: {
@@ -98,7 +98,7 @@ function QuickButton({ glass, box, active, accent = false, label, state, onClick
       onClick={(e) => { stopCardClick(e); onClick(); }}
       aria-label={label}
       aria-pressed={active}
-      data-lg-quick-accent={accent ? "" : undefined}
+      data-lg-toggle={accent ? "accent" : "brand"}
       title={label}
       {...(glass ? { ...GLASS_LENS_PROPS, ...surface.props } : { className: `${layout} ${skin}` })}
     >

@@ -3,6 +3,10 @@
  * suivent la frappe, comme la page de Google), et les onglets par type avec
  * leur compte. La saisie écrit l'adresse en `replace` : Retour ramène à la
  * page d'avant la recherche, pas à chaque lettre tapée.
+ *
+ * Liquid Glass (mode natif) : c'est LE champ de recherche de l'écran — la
+ * capsule de verre des contrôles de page (`.lg-field`), et la barre du haut
+ * retire alors le sien (`TopNav`) : jamais deux recherches à l'écran.
  */
 
 import { memo, useEffect, useRef, useState } from "react";
@@ -47,7 +51,7 @@ export const SearchPageHeader = memo(function SearchPageHeader({ query, tab, cou
 
   return (
     <div className="px-4 pt-6 md:px-12">
-      <label className="lg-content group relative flex h-14 items-center gap-3 rounded-2xl border border-line-subtle bg-fill-subtle px-5 transition-colors focus-within:border-[rgba(var(--brand-rgb),0.55)] focus-within:bg-fill-soft">
+      <label className="lg-field group relative flex h-14 items-center gap-3 rounded-2xl border border-line-subtle bg-fill-subtle px-5 transition-colors focus-within:border-[rgba(var(--brand-rgb),0.55)] focus-within:bg-fill-soft">
         <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-content-tertiary transition-colors group-focus-within:text-[var(--brand-light)]" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
           <circle cx="11" cy="11" r="6.5" />
           <path d="M20 20l-4.2-4.2" strokeLinecap="round" />

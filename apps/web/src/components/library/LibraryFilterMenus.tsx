@@ -87,7 +87,7 @@ export function SortMenu({
         <button
           type="button"
           onClick={() => onSortOrderChange(desc ? "Ascending" : "Descending")}
-          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-content-secondary transition-colors hover:bg-fill-soft"
+          className="lg-row flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-content-secondary transition-colors hover:bg-fill-soft"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d={desc ? "M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" : "M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"} />

@@ -137,11 +137,11 @@ export function CapsuleButton({ active, onClick, label, tone = "brand", children
   children: ReactNode;
 }) {
   const activeColor = tone === "accent" ? "text-[var(--brand-accent)]" : "text-[var(--brand-light)]";
-  // Verre natif : une pastille ronde de verre clair ; allumée, la teinte passe
-  // DANS le verre (rose pour le favori) — jamais un anneau.
+  // Verre natif : une pastille ronde de verre clair ; allumée, le verre reste
+  // clair et le GLYPHE prend l'accent (`data-lg-toggle`, lot lg7, R5 : Apple
+  // colore le symbole d'une bascule, pas son verre) — jamais un anneau.
   const glass = useLiquidGlassSurface({
-    level: active ? "tinted" : "clear",
-    tint: tone,
+    level: "clear",
     shape: "circle",
     interactive: true,
     className: "flex h-11 w-11 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]",
@@ -156,6 +156,7 @@ export function CapsuleButton({ active, onClick, label, tone = "brand", children
       aria-label={label}
       title={label}
       aria-pressed={active}
+      data-lg-toggle={tone}
       {...GLASS_LENS_PROPS}
       {...glass.props}
     >

@@ -97,14 +97,15 @@
  * extensions, accès à distance, recherche…) se reconnaissent à leur forme :
  * arrondi, liseré `line-subtle`, remplissage translucide. Le même remplissage
  * que `.lg-content`, sans marqueur sur chacune ; une carte DANS une carte
- * prend le cran plus clair. */
-:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle) {
+ * prend le cran plus clair. Un champ de page (`.lg-field`) n'en est pas une :
+ * c'est un CONTRÔLE, en verre (`lgPageGlass.css`). */
+:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field) {
   background: var(--lgd-fill);
   border-color: transparent;
   box-shadow: inset 0 0 0 1px var(--lgd-stroke);
 }
 
-:root[data-liquid-glass="native"] .lg-page :is(a, button):is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):hover {
+:root[data-liquid-glass="native"] .lg-page :is(a, button):is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field):hover {
   background: var(--lgd-fill-hover);
 }
 
@@ -205,10 +206,31 @@
   opacity: 0.45;
 }
 
-/* Un champ posé en conteneur (en-tête de la recherche) garde son anneau de
- * focus : le liseré du contenu l'avait recouvert. */
-:root[data-liquid-glass="native"] .lg-content:has(input):focus-within {
-  box-shadow: inset 0 0 0 1px var(--lgd-stroke), 0 0 0 3px var(--lg-tint-brand);
+/* Aucun anneau sur une DALLE dont un champ a le focus (lot lg7, R6) : l'anneau
+ * entoure le contrôle focalisé — le champ, qui garde le sien
+ * (`lgPageGlass.css`) —, jamais son conteneur. Ouvrir « Genres » cerclait
+ * toute la dalle d'outils. */
+
+/* Les tuiles de genre de la recherche (lot lg7, R14) : le remplissage neutre de
+ * `.lg-content`, la marque en TOUCHE — un filet d'accent au-dessus du nom,
+ * violet et rose en alternance. Décoratif : le nom porte le sens. */
+:root[data-liquid-glass="native"] .lg-genre-tile::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 20px;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--brand-light);
+}
+
+:root[data-liquid-glass="native"] .lg-genre-tile[data-lg-accent="accent"]::before {
+  background: rgb(var(--brand-accent-rgb));
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] .lg-genre-tile:not([data-lg-accent="accent"])::before {
+  background: rgb(var(--brand-rgb));
 }
 
 /* ══ 6. Les onglets de saison de la fiche ═════════════════════════════════
@@ -237,10 +259,32 @@
   background: rgb(var(--brand-rgb));
 }
 
-/* ══ 7. Les ronds de la bannière, allumés ═════════════════════════════════
+/* ══ 7. Les bascules allumées : le SYMBOLE, pas le verre ════════════════════
  *
- * Ma liste · favori · vu : le verre reste clair, l'état est dit par le glyphe
- * plein ; le favori le dit à l'accent (rose), comme un cœur d'Apple. */
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-quick-accent] {
-  color: var(--brand-accent);
+ * Ma liste · favori · vu, sur la bannière, la fiche et le plateau des cartes
+ * (lot lg7, R5 ; HIG Color : « refrain from adding color to the background of
+ * multiple controls ») : le verre reste clair, le glyphe plein prend l'accent
+ * — signet et coche violets, cœur rose —, réglé sur le TON du verre pour
+ * tenir 3:1 (sombre : #A78BFA 5,4:1, #EC4899 4,2:1 ; clair : #6D28D9,
+ * #BE185D). Le seul fond coloré de l'écran reste « Lecture ». */
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle] {
+  --lg-toggle-on: #a78bfa;
+  color: var(--lg-toggle-on);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle="accent"] {
+  --lg-toggle-on: #ec4899;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle][data-lg-tone="light"] {
+  --lg-toggle-on: #6d28d9;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle="accent"][data-lg-tone="light"] {
+  --lg-toggle-on: #be185d;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle]:hover,
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle] svg {
+  color: var(--lg-toggle-on);
 }

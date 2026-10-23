@@ -72,7 +72,8 @@ interface TrayButtonProps {
  * Un bouton du plateau. Verre natif : une pastille RONDE de verre clair, sa
  * lentille calculée pour le cercle, ses glyphes adaptés à l'affiche dessous
  * (`data-lg-tone`), éclairée au survol, gonflée à l'appui (lentille de
- * lg-physique) ; allumée (Ma liste, vu, favori), la teinte passe DANS le verre.
+ * lg-physique) ; allumée (Ma liste, vu, favori), le verre reste clair et le
+ * GLYPHE prend l'accent (`data-lg-toggle`, lot lg7, R5) — jamais un fond coloré.
  * Ailleurs : le rendu d'avant (`fallbackClassName`).
  */
 export function CardTrayButton({ box, active = false, accent = false, pressable, extra, label, onPress, children }: TrayButtonProps) {
@@ -86,8 +87,7 @@ export function CardTrayButton({ box, active = false, accent = false, pressable,
   const skin = `rounded-full transition-transform duration-150 hover:scale-110 active:scale-95 ${tone}`;
   const glassAllowed = useContext(TrayGlass);
   const glass = useLiquidGlassSurface({
-    level: active ? "tinted" : "clear",
-    tint: accent ? "accent" : "brand",
+    level: "clear",
     shape: "circle",
     interactive: true,
     className: layout,
@@ -100,6 +100,7 @@ export function CardTrayButton({ box, active = false, accent = false, pressable,
       type="button"
       aria-label={label}
       aria-pressed={isToggle ? active : undefined}
+      data-lg-toggle={isToggle ? (accent ? "accent" : "brand") : undefined}
       title={label}
       {...GLASS_LENS_PROPS}
       {...surface}

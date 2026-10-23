@@ -144,6 +144,38 @@
   background: var(--lg-chrome-item-hover);
 }
 
+/* Les puces d'état (« Hors ligne », « Économiseur ») rangées DANS le groupe
+ * d'actions (lot lg7, R16) : un simple élément du groupe, sans bord ni aplat ;
+ * l'état se dit par le POINT, à la couleur d'état réglée sur le ton du verre
+ * (ambre clair sur sombre, ambre foncé sur clair : ≥ 3:1). */
+:root[data-liquid-glass="native"] .lgc-actions-group .lgc-status {
+  border-color: transparent;
+  border-radius: var(--lg-chrome-item-radius);
+  background: transparent;
+  color: var(--lg-glyph);
+}
+
+:root[data-liquid-glass="native"] .lgc-actions-group .lgc-status:hover {
+  opacity: 1;
+  background: var(--lg-chrome-item-hover);
+}
+
+:root[data-liquid-glass="native"] .lgc-actions-group .lgc-status[aria-expanded="true"] {
+  background: var(--lg-chrome-item-pressed);
+}
+
+:root[data-liquid-glass="native"] .lgc-actions-group .lgc-status .lgc-status-dot.bg-status-warning {
+  background: #fbbf24;
+}
+
+:root[data-liquid-glass="native"] .lgc-actions-group[data-lg-tone="light"] .lgc-status .lgc-status-dot.bg-status-warning {
+  background: #b45309;
+}
+
+:root[data-liquid-glass="native"] .lgc-actions-group .lgc-status .lgc-status-dot:not(.bg-status-warning) {
+  background: var(--lg-glyph-secondary);
+}
+
 /* Le rappel du raccourci : une pastille SANS bord. */
 :root[data-liquid-glass="native"] .lgc-field kbd {
   border-color: transparent;

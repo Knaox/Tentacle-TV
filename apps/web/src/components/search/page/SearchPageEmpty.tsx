@@ -47,7 +47,8 @@ export const SearchPageEmpty = memo(function SearchPageEmpty({ onQuery, onGenre 
                 key={genre.name}
                 type="button"
                 onClick={() => onGenre(genre.name)}
-                className="relative flex h-20 items-end overflow-hidden rounded-2xl border border-line-subtle p-4 text-left transition-transform duration-200 hover:-translate-y-0.5"
+                data-lg-accent={i % 2 === 0 ? "brand" : "accent"}
+                className="lg-content lg-content-tile lg-genre-tile relative flex h-20 items-end overflow-hidden rounded-2xl border border-line-subtle p-4 text-left transition-transform duration-200 hover:-translate-y-0.5"
                 style={{ background: GENRE_TONES[i % GENRE_TONES.length] }}
               >
                 <span className="relative">
@@ -63,7 +64,10 @@ export const SearchPageEmpty = memo(function SearchPageEmpty({ onQuery, onGenre 
   );
 });
 
-/** Des dégradés tirés des jetons de marque — jamais une couleur en dur. */
+/** Des dégradés tirés des jetons de marque — jamais une couleur en dur. En
+ * Liquid Glass (mode natif), la tuile prend le remplissage neutre du contenu
+ * (`.lg-content`, qui l'emporte sur ce fond en ligne) et la marque ne reste
+ * qu'en TOUCHE : un filet d'accent (`.lg-genre-tile`, `data-lg-accent`). */
 const GENRE_TONES = [
   "linear-gradient(135deg, rgba(var(--brand-rgb), 0.55), rgba(var(--brand-rgb), 0.18))",
   "linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.5), rgba(var(--brand-accent-rgb), 0.15))",

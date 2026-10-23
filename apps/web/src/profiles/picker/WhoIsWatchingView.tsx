@@ -47,7 +47,7 @@ export const WhoIsWatchingView = memo(function WhoIsWatchingView(props: WhoIsWat
   const { model } = props;
   const { t } = useTranslation("profilePicker");
   return (
-    <div className="relative isolate flex min-h-screen flex-col overflow-x-clip bg-surface-0">
+    <div className="lg-screen relative isolate flex min-h-screen flex-col overflow-x-clip bg-surface-0">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
