@@ -20,7 +20,10 @@
   --lg-player-fg: #ffffff;
   /* ≥ 4,5:1 sur la forme atténuée la plus claire (87/255, neige) : mesuré lg3. */
   --lg-player-fg-2: #d4d4da;
-  --lg-player-fg-3: #8f8f99;
+  /* Titres de section des panneaux (« AUDIO », « QUALITÉ »), méta des avis : ≥ 4,5:1 sur
+     le verre normal le plus clair (96, neige) ET sur une mire saturée (violet 114,27,147),
+     mesuré lg7 (R19) — à #8f8f99, 2,9:1. La hiérarchie passe par la taille et la graisse. */
+  --lg-player-fg-3: #ececf0;
   --lg-player-focus: var(--brand-light);
 
   /* Géométrie : de PETITES capsules qui flottent, séparées — jamais une dalle. Tous
@@ -52,19 +55,28 @@
   --lg-player-button-primary: 46px;
   --lg-player-button-small: 28px;
 
-  /* Barre de progression : pleine, jamais translucide */
-  --lg-player-track: #5d5b66;
-  --lg-player-track-buffer: #85838e;
-  --lg-player-track-fill: var(--progress-fill);
+  /* Barre de progression et volume : BLANCS, comme QuickTime et l'app TV (HIG « Color » :
+     la couleur, avec parcimonie, sur le verre) — remplissage à 90 %, piste à 30 %, la part
+     chargée entre les deux. Plus de dégradé de marque dans la couche fonctionnelle (lg7, R20).
+     Le blanc à alpha se compose ici DANS la page, sur l'atténuation noire de la capsule
+     (`playerGlassDim.css`) : ce n'est pas le blanc translucide posé seul sur la vidéo qui
+     rendait gris (cf. plus haut). */
+  --lg-player-track: rgb(255 255 255 / 0.3);
+  --lg-player-track-buffer: rgb(255 255 255 / 0.45);
+  --lg-player-track-fill: rgb(255 255 255 / 0.9);
   --lg-player-thumb: #ffffff;
   /* Liseré NOIR d'un demi-point : le seul détachement qui se compose juste sur la surface à alpha. */
   --lg-player-thumb-edge: 0 0 0 0.5px rgb(0 0 0 / 0.35);
   --lg-player-track-hover-scale: 1.6;
 
-  /* Lignes des panneaux : la surbrillance façon menu macOS, à la couleur de marque */
-  --lg-player-row-hover: var(--ctl-gradient);
+  /* Lignes des panneaux : la surbrillance façon menu macOS — l'ACCENT uni, jamais le dégradé
+     (lg7) ; blanc dessus 5,7:1. Même accent pour la saison affichée du panneau des épisodes. */
+  --lg-player-accent: var(--brand-dark);
+  --lg-player-row-hover: var(--lg-player-accent);
   --lg-player-row-hover-fg: #ffffff;
   --lg-player-chip-line: #6f6d78;
+  /* Une étiquette (débit, codec) : un remplissage noir à alpha, sans trait (lg7, R11). */
+  --lg-player-chip-fill: rgb(0 0 0 / 0.24);
   /* Séparateur dans une capsule (pilule de saut) : noir à alpha. */
   --lg-player-separator: rgb(0 0 0 / 0.3);
   /* Témoin de développement (`mpv (transcode)`), opaque. */

@@ -30,6 +30,8 @@ export interface SeasonTabsProps {
   className?: string;
   /** Marges intérieures de la bande (le miroir la fait courir d'un bord à l'autre). */
   stripClassName?: string;
+  /** Les flèches de bord : `glyph` dans un panneau du lecteur en verre (cf. `EdgeArrows`). */
+  arrows?: "disc" | "glyph";
 }
 
 /** Identifiant DOM d'un onglet — le panneau d'épisodes s'y rattache (`aria-labelledby`). */
@@ -48,10 +50,10 @@ export const seasonTabId = (seasonId: string) => `season-tab-${seasonId}`;
  *   bande ne charge pas chaque saison traversée, il la précharge).
  * - Bords : fondu par masque ; flèches au survol, du côté qui déborde.
  */
-export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, size = "md", tone, className = "", stripClassName = "" }: SeasonTabsProps) {
+export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, size = "md", tone, className = "", stripClassName = "", arrows = "disc" }: SeasonTabsProps) {
   const { t } = useTranslation("common");
   const { ref, canLeft, canRight, scrollBy } = useHorizontalScroll();
-  const arrows = useHoverMount(150);
+  const arrowsReveal = useHoverMount(150);
   useKeepInView(ref, selectedId);
   const intent = useIntent(onIntent);
 
@@ -71,7 +73,7 @@ export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, 
 
   const focusableId = selectedId ?? seasons[0]?.Id;
   return (
-    <div className={`relative ${className}`} onMouseEnter={arrows.onMouseEnter} onMouseLeave={arrows.onMouseLeave}>
+    <div className={`relative ${className}`} onMouseEnter={arrowsReveal.onMouseEnter} onMouseLeave={arrowsReveal.onMouseLeave}>
       <div
         ref={ref}
         role="tablist"
@@ -97,7 +99,7 @@ export function SeasonTabs({ seasons, selectedId, markedId, onSelect, onIntent, 
           />
         ))}
       </div>
-      <EdgeArrows canLeft={canLeft} canRight={canRight} mounted={arrows.mounted} shown={arrows.hovered} onScroll={scrollBy} />
+      <EdgeArrows canLeft={canLeft} canRight={canRight} mounted={arrowsReveal.mounted} shown={arrowsReveal.hovered} onScroll={scrollBy} look={arrows} />
     </div>
   );
 }

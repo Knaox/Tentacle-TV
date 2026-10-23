@@ -14,6 +14,11 @@ interface EdgeArrowsProps {
   onScroll: (direction: "left" | "right") => void;
   /** `sm` pour une bande de pastilles, `md` pour une rangée de cartes. */
   size?: "sm" | "md";
+  /**
+   * `glyph` : le chevron seul, sans disque — dans un panneau du lecteur en verre, posé
+   * sur le verre NATIF, la lentille de la page n'a rien à réfracter (un disque vide).
+   */
+  look?: "disc" | "glyph";
 }
 
 const DISC_SIZE = { sm: "h-9 w-9", md: "h-10 w-10" } as const;
@@ -32,37 +37,49 @@ const DISC_SIZE = { sm: "h-9 w-9", md: "h-10 w-10" } as const;
  * `aria-hidden` et hors tabulation : au clavier, la bande défile par ses
  * propres touches fléchées.
  */
-export function EdgeArrows({ canLeft, canRight, mounted, shown, onScroll, size = "sm" }: EdgeArrowsProps) {
+export function EdgeArrows({ canLeft, canRight, mounted, shown, onScroll, size = "sm", look = "disc" }: EdgeArrowsProps) {
   if (!mounted) return null;
   return (
     <>
-      {canLeft && <Arrow side="left" shown={shown} size={size} onClick={() => onScroll("left")} />}
-      {canRight && <Arrow side="right" shown={shown} size={size} onClick={() => onScroll("right")} />}
+      {canLeft && <Arrow side="left" shown={shown} size={size} look={look} onClick={() => onScroll("left")} />}
+      {canRight && <Arrow side="right" shown={shown} size={size} look={look} onClick={() => onScroll("right")} />}
     </>
   );
 }
 
-function Arrow({ side, shown, size, onClick }: { side: "left" | "right"; shown: boolean; size: "sm" | "md"; onClick: () => void }) {
+interface ArrowProps { side: "left" | "right"; shown: boolean; size: "sm" | "md"; look: "disc" | "glyph"; onClick: () => void }
+
+function Arrow({ side, shown, size, look, onClick }: ArrowProps) {
+  const glyph = (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d={side === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
+    </svg>
+  );
   return (
     <div
       className={`hover-reveal pointer-events-none absolute inset-y-0 z-20 flex items-center ${side === "left" ? "left-1" : "right-1"}`}
       data-shown={shown}
       style={{ "--reveal-ms": "150ms" } as CSSProperties}
     >
-      <PressableGlass
-        appearance={DISC_GLASS}
-        fallbackClassName="rounded-full bg-glass-tint text-content-primary shadow-[var(--elev-2)] ring-1 ring-line-subtle backdrop-blur-md transition-colors hover:ring-[rgba(var(--brand-rgb),0.55)]"
-        hoverScale={1.08}
-        tapScale={0.92}
-        onClick={onClick}
-        tabIndex={-1}
-        aria-hidden="true"
-        className={`pointer-events-auto flex ${DISC_SIZE[size]} items-center justify-center`}
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" d={side === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
-        </svg>
-      </PressableGlass>
+      {look === "glyph" ? (
+        // Le symbole du lecteur (`.lgp-btn`) : blanc, son halo, aucune surface.
+        <button type="button" onClick={onClick} tabIndex={-1} aria-hidden="true" className="lgp-btn lgp-btn--small lgp-edge-arrow pointer-events-auto">
+          {glyph}
+        </button>
+      ) : (
+        <PressableGlass
+          appearance={DISC_GLASS}
+          fallbackClassName="rounded-full bg-glass-tint text-content-primary shadow-[var(--elev-2)] ring-1 ring-line-subtle backdrop-blur-md transition-colors hover:ring-[rgba(var(--brand-rgb),0.55)]"
+          hoverScale={1.08}
+          tapScale={0.92}
+          onClick={onClick}
+          tabIndex={-1}
+          aria-hidden="true"
+          className={`pointer-events-auto flex ${DISC_SIZE[size]} items-center justify-center`}
+        >
+          {glyph}
+        </PressableGlass>
+      )}
     </div>
   );
 }

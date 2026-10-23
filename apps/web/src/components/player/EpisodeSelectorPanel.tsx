@@ -97,6 +97,7 @@ export function EpisodeSelectorPanel({
             onSelect={browser.select}
             onIntent={browser.prefetch}
             size="sm"
+            arrows={glass ? "glyph" : "disc"}
           />
         </div>
       )}
