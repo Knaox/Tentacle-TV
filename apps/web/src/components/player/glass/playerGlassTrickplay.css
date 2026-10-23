@@ -1,11 +1,16 @@
-/* Le lecteur en verre — la bulle de la vignette du survol (`GlassTrickplayBubble`).
+/* Le lecteur en verre — la vignette du survol (`GlassTrickplayBubble`).
    Importée par `GlassPlayerChrome` juste après `playerGlassBar.css` : la cascade
    garde l'ordre d'avant le découpage. */
 
-/* ── La vignette du survol, sertie dans une bulle de verre ───────────── */
+/* ── La vignette du survol : l'image seule, le temps dessous ─────────── */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay {
   position: absolute;
+  left: 0;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   pointer-events: none;
   transform-origin: bottom center;
   transition:
@@ -19,24 +24,24 @@
   transition-duration: var(--lg-duration-press);
 }
 
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-trickplay__bubble {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
-  padding: var(--lg-player-trickplay-inset);
-  border-radius: var(--lg-player-radius-trickplay);
-}
-
+/* Liseré NOIR d'un demi-point et ombre de soulèvement des capsules : les deux
+   seules couleurs qui se composent juste sur la surface à alpha de la fenêtre. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay__frame {
-  border-radius: calc(var(--lg-player-radius-trickplay) - var(--lg-player-trickplay-inset));
+  align-self: stretch;
+  border-radius: var(--lg-player-radius-trickplay);
   background-color: var(--lg-player-placeholder);
   background-repeat: no-repeat;
+  box-shadow: 0 0 0 0.5px var(--lg-player-trickplay-edge), var(--lg-player-lift-shadow);
 }
 
+/* Le temps : glyphes blancs sur une pastille d'atténuation (noir à alpha), comme
+   les capsules — lisible sur la neige (≥ 6:1) sans bande de verre. */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay__time {
+  border-radius: var(--lg-player-radius-capsule);
+  background: var(--lg-player-trickplay-time-dim);
+  padding: 0 8px;
   color: var(--lg-player-fg);
-  text-shadow: var(--lg-media-label-shadow);
+  text-shadow: var(--lg-player-label-shadow);
   line-height: 20px;
   text-align: center;
 }
