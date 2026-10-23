@@ -43,9 +43,11 @@
   --lg-player-radius-panel: var(--lg-radius-lg);
   --lg-player-radius-row: var(--lg-radius-sm);
   --lg-player-radius-chip: var(--lg-radius-xs);
-  --lg-player-radius-trickplay: var(--lg-radius-md);
-  /* Le liseré de verre autour de la vignette (`GlassTrickplayBubble` : INSET, à l'identique). */
-  --lg-player-trickplay-inset: 5px;
+  --lg-player-radius-trickplay: var(--lg-radius-sm);
+  /* La vignette du survol : un liseré noir fin, et le temps sur une pastille
+     d'atténuation (lot lg3 : plus de cadre de verre autour de l'image). */
+  --lg-player-trickplay-edge: rgb(0 0 0 / 0.4);
+  --lg-player-trickplay-time-dim: rgb(0 0 0 / 0.6);
   --lg-player-button: 34px;
   --lg-player-button-primary: 46px;
   --lg-player-button-small: 28px;
