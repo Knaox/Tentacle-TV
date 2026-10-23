@@ -20,7 +20,10 @@
   --lg-player-fg: #ffffff;
   /* ≥ 4,5:1 sur la forme atténuée la plus claire (87/255, neige) : mesuré lg3. */
   --lg-player-fg-2: #d4d4da;
-  --lg-player-fg-3: #8f8f99;
+  /* Titres de section des panneaux (« AUDIO », « QUALITÉ »), méta des avis : ≥ 4,5:1 sur
+     le verre normal le plus clair (96, neige) ET sur une mire saturée (violet 114,27,147),
+     mesuré lg7 (R19) — à #8f8f99, 2,9:1. La hiérarchie passe par la taille et la graisse. */
+  --lg-player-fg-3: #ececf0;
   --lg-player-focus: var(--brand-light);
 
   /* Géométrie : de PETITES capsules qui flottent, séparées — jamais une dalle. Tous
