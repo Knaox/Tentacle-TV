@@ -52,8 +52,12 @@ describe("modales et surfaces de verre", () => {
   });
 
   it("les dialogues du hors ligne, ouverts depuis une capsule de verre, sont en portail", () => {
+    // Leur cadre commun : `Modal` en verre natif (lot lg7), le portail d'avant ailleurs.
     for (const file of ["downloads/DownloadDialog.tsx", "downloads/DeleteDownloadModal.tsx"]) {
-      expect(readFileSync(join(SRC, file), "utf8")).toMatch(/createPortal\([\s\S]*document\.body/);
+      expect(readFileSync(join(SRC, file), "utf8")).toMatch(/<OfflineSheetFrame\b/);
     }
+    const frame = readFileSync(join(SRC, "downloads/OfflineSheetFrame.tsx"), "utf8");
+    expect(frame).toMatch(/createPortal\([\s\S]*document\.body/);
+    expect(frame).toMatch(/<Modal\b/);
   });
 });

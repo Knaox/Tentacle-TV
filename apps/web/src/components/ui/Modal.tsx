@@ -18,6 +18,10 @@ interface ModalProps {
   /** ARIA label/description IDs. */
   labelledBy?: string;
   describedBy?: string;
+  /** Un nom accessible sans titre visible à désigner (`aria-label`). */
+  label?: string;
+  /** `alertdialog` pour une confirmation destructive. Défaut `dialog`. */
+  role?: "dialog" | "alertdialog";
   /** Forward className to the inner panel. */
   className?: string;
   /**
@@ -83,6 +87,8 @@ export function Modal({
   lockScroll = true,
   labelledBy,
   describedBy,
+  label,
+  role = "dialog",
   className,
   initialFocus,
 }: ModalProps) {
@@ -194,8 +200,9 @@ export function Modal({
           <motion.div
             ref={setPanel}
             {...glass.props}
-            role="dialog"
+            role={role}
             aria-modal="true"
+            aria-label={label}
             aria-labelledby={labelledBy}
             aria-describedby={describedBy}
             tabIndex={-1}
