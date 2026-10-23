@@ -5,6 +5,7 @@
 /* ── La vignette du survol : l'image seule, le temps dessous ─────────── */
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-trickplay {
   position: absolute;
+  left: 0;
   z-index: 10;
   display: flex;
   flex-direction: column;

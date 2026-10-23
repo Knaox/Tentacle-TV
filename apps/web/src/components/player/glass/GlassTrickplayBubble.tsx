@@ -25,7 +25,9 @@ const GAP_TO_SEEKBAR = 18;
  * Plus de bulle de verre autour (lot lg3, « le rendu trickplay est ignoble ») :
  * fenêtre active, le verre clair y faisait un épais cadre gris laiteux, avec le
  * temps dans une bande du même verre. Aucune région native donc : rien à
- * recaler à chaque image, rien à composer derrière.
+ * recaler à chaque image, rien à composer derrière — c'était aussi la traînée
+ * floue du survol (« flou de mouvement moche ») : la vue native, replacée par IPC
+ * une image après la page, glissait derrière la vignette.
  */
 export function GlassTrickplayBubble({ visible, positionSeconds, frame, info, anchorX, parentWidth }: GlassTrickplayBubbleProps) {
   const hasFrame = frame !== null && info !== null;
@@ -39,7 +41,10 @@ export function GlassTrickplayBubble({ visible, positionSeconds, frame, info, an
   );
 
   return (
-    <div aria-hidden="true" className="lgp-trickplay" data-visible={visible} style={{ left, bottom: GAP_TO_SEEKBAR, width }}>
+    // `translate`, pas `left` : suivre le pointeur ne remet rien en page et reste au
+    // compositeur, dans l'image même du déplacement — aucune transition ne porte
+    // sur cette propriété (la feuille n'anime que `opacity` et `transform`).
+    <div aria-hidden="true" className="lgp-trickplay" data-visible={visible} style={{ translate: `${left}px 0`, bottom: GAP_TO_SEEKBAR, width }}>
       {hasFrame && (
         <div
           className="lgp-trickplay__frame"
