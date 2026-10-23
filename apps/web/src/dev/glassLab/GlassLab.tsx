@@ -16,7 +16,8 @@
  * vraie barre latérale (`labChrome.tsx`, axe des barres) ; `?vue=menus` les
  * VRAIS menus et popovers (`labMenus.tsx`, axe des menus) ; `?vue=contenu` la
  * couche de contenu (`labContent.tsx`, axe D du lot lg2) ; `?vue=controles` les CONTRÔLES des
- * pages en verre (`labControls.tsx`, lot lg4). Hors du mode natif, le labo montre le
+ * pages en verre (`labControls.tsx`, lot lg4) ; `?vue=feuilles` les VRAIES feuilles et barres
+ * flottantes (`labSheets.tsx`, lot lg7). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -33,6 +34,7 @@ import { LabContent } from "./labContent";
 import { LabControls } from "./labControls";
 import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
 import { LabMenus } from "./labMenus";
+import { LabSheets } from "./labSheets";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
 import { avatarImageUrl } from "../../profiles/avatarGallery/avatarImages";
@@ -42,9 +44,9 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus" | "contenu" | "controles";
+type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus" | "contenu" | "controles" | "feuilles";
 
-const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus", "contenu", "controles"];
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus", "contenu", "controles", "feuilles"];
 
 const initialView = (): LabView => {
   const asked = new URLSearchParams(window.location.search).get("vue");
@@ -134,6 +136,8 @@ export function GlassLab() {
         <LabContent top={top} />
       ) : view === "controles" ? (
         <LabControls top={top} />
+      ) : view === "feuilles" ? (
+        <LabSheets top={top} />
       ) : view === "grandes" ? (
         <>
           <LabSurfaceSidebar top={top + 40} left={24} />
