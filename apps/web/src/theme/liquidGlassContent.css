@@ -211,6 +211,28 @@
  * (`lgPageGlass.css`) —, jamais son conteneur. Ouvrir « Genres » cerclait
  * toute la dalle d'outils. */
 
+/* Les tuiles de genre de la recherche (lot lg7, R14) : le remplissage neutre de
+ * `.lg-content`, la marque en TOUCHE — un filet d'accent au-dessus du nom,
+ * violet et rose en alternance. Décoratif : le nom porte le sens. */
+:root[data-liquid-glass="native"] .lg-genre-tile::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 20px;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--brand-light);
+}
+
+:root[data-liquid-glass="native"] .lg-genre-tile[data-lg-accent="accent"]::before {
+  background: rgb(var(--brand-accent-rgb));
+}
+
+:root[data-liquid-glass="native"][data-theme="light"] .lg-genre-tile:not([data-lg-accent="accent"])::before {
+  background: rgb(var(--brand-rgb));
+}
+
 /* ══ 6. Les onglets de saison de la fiche ═════════════════════════════════
  *
  * Un choix du contenu : la saison retenue devient le bouton neutre plus clair
