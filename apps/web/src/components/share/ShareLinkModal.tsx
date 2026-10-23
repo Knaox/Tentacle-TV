@@ -65,11 +65,13 @@ export function ShareLinkModal({ onClose, kind = "watchlist" }: Props) {
               >
                 {t("revokeLink")}
               </button>
+              {/* Verre natif : l'action principale de la feuille en `glassProminent`
+                  peint, comme toute feuille (lot lg7, R8) — marqueurs sans style ailleurs. */}
               {canShareNatively() && (
                 <button
                   type="button"
                   onClick={share}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-md bg-[rgba(var(--brand-rgb),0.22)] px-4 text-sm font-semibold text-cta-brand-fg ring-1 ring-[rgba(var(--brand-rgb),0.4)] transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                  className="lg-surface-btn lg-surface-btn-prominent inline-flex min-h-9 items-center gap-2 rounded-md bg-[rgba(var(--brand-rgb),0.22)] px-4 text-sm font-semibold text-cta-brand-fg ring-1 ring-[rgba(var(--brand-rgb),0.4)] transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
                 >
                   <Share2 aria-hidden className="h-4 w-4" />
                   {t("shareAction")}
@@ -83,7 +85,7 @@ export function ShareLinkModal({ onClose, kind = "watchlist" }: Props) {
               type="button"
               onClick={() => createLink.mutate()}
               disabled={createLink.isPending}
-              className="w-full rounded-lg bg-[rgba(var(--brand-rgb),0.22)] px-4 py-2.5 text-sm font-semibold text-cta-brand-fg ring-1 ring-[rgba(var(--brand-rgb),0.4)] transition-transform hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50"
+              className="lg-surface-btn lg-surface-btn-prominent w-full rounded-lg bg-[rgba(var(--brand-rgb),0.22)] px-4 py-2.5 text-sm font-semibold text-cta-brand-fg ring-1 ring-[rgba(var(--brand-rgb),0.4)] transition-transform hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-50"
             >
               {createLink.isPending ? t("loading") : t("generateLink")}
             </button>

@@ -1,0 +1,63 @@
+/* ── Liquid Glass : les boutons AD HOC des feuilles et popovers (lot lg7, R8) ──
+ *
+ * Quatre idiomes se côtoyaient pour l'action principale d'une feuille ou d'un
+ * popover (dégradé, violet sourd, blanc plein, gris) : un seul désormais, la
+ * peau peinte de `lgSurfaceButtons.css`, sans marqueur à poser — reconnue à la
+ * FORME, comme les boutons des pages de lg4 (`lgPageButtons.css`) :
+ *  • principal (`bg-cta-primary-bg`)                → `glassProminent` peint ;
+ *  • secondaire (rempli ou bordé, arrondi)          → `glass` peint, en capsule,
+ *    SANS liseré (R11 : « Épingler » de l'éditeur de la barre) ;
+ *  • danger (`bg-danger-surface`, `border-danger-*`) → `glass`, libellé rouge.
+ * Portée : `.lg-sheet` (Modal, Sheet), `.lg-menu` (popovers de FloatingLayer),
+ * `.lg-toast` — jamais une barre latérale, jamais une rangée de menu (rôles
+ * `menuitem*`, `option`), une tuile (`p-*`, `text-left`, `rounded-xl`), un
+ * choix (`radio`, `tab`, `aria-pressed`) ni un élément déjà marqué (`lg-*`). */
+
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-cta-primary-bg, .bg-fill-soft, .bg-fill-subtle, .bg-cta-ghost-bg, .border-line-subtle, .border-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left, [role^="menuitem"], [role="option"], [role="tab"], [role="radio"], [aria-pressed]) {
+  background: var(--lgp-fill);
+  border-color: transparent;
+  border-radius: var(--lg-radius-capsule);
+  box-shadow: var(--lgp-edge), var(--lgp-depth);
+  color: var(--lgp-glyph);
+  text-shadow: none;
+  scale: 1;
+  transition:
+    scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing),
+    opacity var(--duration-base, 200ms) var(--ease-out, ease-out),
+    color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-cta-ghost-bg, .border-line-subtle, .border-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left, [role^="menuitem"], [role="option"], [role="tab"], [role="radio"], [aria-pressed], .bg-cta-primary-bg):hover:not(:disabled) {
+  background: var(--lgp-fill-hover);
+  color: var(--lgp-glyph);
+}
+
+/* Le danger : le rouge au ton de la plaque (spécificité doublée sur la classe). */
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(.bg-cta-primary-bg),
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(.bg-cta-primary-bg):hover {
+  color: var(--lgp-danger);
+}
+
+/* L'action PRINCIPALE : `glassProminent` peint. */
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"], [role^="menuitem"], [role="option"]) {
+  background: var(--lgp-prominent-fill);
+  box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
+  color: var(--lgp-tint-glyph);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"], [role^="menuitem"], [role="option"]):hover:not(:disabled) {
+  background: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%), var(--lgp-prominent-fill);
+  color: var(--lgp-tint-glyph);
+}
+
+/* L'appui gonfle le verre ; le focus clavier garde son anneau (l'ombre des
+ * utilitaires `ring-*` est recouverte par celle du verre). */
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-cta-primary-bg, .bg-fill-soft, .bg-fill-subtle, .bg-cta-ghost-bg, .border-line-subtle, .border-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left, [role^="menuitem"], [role="option"], [role="tab"], [role="radio"], [aria-pressed]):active:not(:disabled) {
+  scale: var(--lgp-press-scale);
+  transform: none;
+}
+
+:root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-cta-primary-bg, .bg-fill-soft, .bg-fill-subtle, .bg-cta-ghost-bg, .border-line-subtle, .border-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left, [role^="menuitem"], [role="option"], [role="tab"], [role="radio"], [aria-pressed]):focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
