@@ -22,6 +22,7 @@ import { useCallback, useId, useMemo, useState, type CSSProperties, type ReactNo
 import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { GlassSpecular, useBackdropTone, useLiquidGlassMode, useSpecularHighlight, type BackdropTone } from "../../../theme/glass";
+import { useLensBudget } from "../../../theme/glass/useLensBudget";
 import { useLensGeometry } from "../../../theme/glass/useLensGeometry";
 import { useSurfaceTone } from "../../../theme/glass/useSurfaceTone";
 import {
@@ -90,7 +91,9 @@ export function useGlassControl<T extends HTMLElement>(options: GlassControlOpti
   const surfaceTone = useSurfaceTone(element, native && toneEnabled && surface);
   const tone = surface ? surfaceTone : controlTone;
   // Le ton relit la lentille : la lumière du bord en dépend (gain, éclat).
-  const geometry = useLensGeometry(element, native && lens !== false, lens || "regular", shape, shape, tone);
+  // Accordée par la portée et le budget de lentilles de la page (lot lg5).
+  const lensOn = useLensBudget(element, native && lens !== false, surface);
+  const geometry = useLensGeometry(element, lensOn, lens || "regular", shape, shape, tone);
   const filterId = lensFilterId(useId());
 
   if (!native) return { ref, refObject, props: {}, layers: null };

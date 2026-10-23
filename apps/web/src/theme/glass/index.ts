@@ -87,6 +87,7 @@ export { useLiquidGlassRegion, type LiquidGlassRegionOptions } from "./useLiquid
 export { useBackdropTone } from "./useBackdropTone";
 export type { BackdropTone } from "./backdropTone";
 export { useLensGeometry, type LensGeometry } from "./useLensGeometry";
+export { GlassLensScope, useLensBudget } from "./useLensBudget";
 export {
   resolveSurfaceRender,
   scaleAttributes,
