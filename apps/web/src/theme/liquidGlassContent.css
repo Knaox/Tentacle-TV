@@ -97,14 +97,15 @@
  * extensions, accès à distance, recherche…) se reconnaissent à leur forme :
  * arrondi, liseré `line-subtle`, remplissage translucide. Le même remplissage
  * que `.lg-content`, sans marqueur sur chacune ; une carte DANS une carte
- * prend le cran plus clair. */
-:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle) {
+ * prend le cran plus clair. Un champ de page (`.lg-field`) n'en est pas une :
+ * c'est un CONTRÔLE, en verre (`lgPageGlass.css`). */
+:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field) {
   background: var(--lgd-fill);
   border-color: transparent;
   box-shadow: inset 0 0 0 1px var(--lgd-stroke);
 }
 
-:root[data-liquid-glass="native"] .lg-page :is(a, button):is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):hover {
+:root[data-liquid-glass="native"] .lg-page :is(a, button):is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field):hover {
   background: var(--lgd-fill-hover);
 }
 
@@ -205,11 +206,10 @@
   opacity: 0.45;
 }
 
-/* Un champ posé en conteneur (en-tête de la recherche) garde son anneau de
- * focus : le liseré du contenu l'avait recouvert. */
-:root[data-liquid-glass="native"] .lg-content:has(input):focus-within {
-  box-shadow: inset 0 0 0 1px var(--lgd-stroke), 0 0 0 3px var(--lg-tint-brand);
-}
+/* Aucun anneau sur une DALLE dont un champ a le focus (lot lg7, R6) : l'anneau
+ * entoure le contrôle focalisé — le champ, qui garde le sien
+ * (`lgPageGlass.css`) —, jamais son conteneur. Ouvrir « Genres » cerclait
+ * toute la dalle d'outils. */
 
 /* ══ 6. Les onglets de saison de la fiche ═════════════════════════════════
  *

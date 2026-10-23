@@ -86,6 +86,9 @@
 
 /* ══ Le champ de recherche d'une page ════════════════════════════════════ */
 :root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-field:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+  /* Une CAPSULE, comme le champ de la barre (lot lg7, R13) : un champ de page
+   * posé en `rounded-2xl` (en-tête de la recherche) la prend aussi. */
+  border-radius: 9999px;
   background: var(--lgp-fill);
   border-color: transparent;
   box-shadow: var(--lgp-edge), var(--lgp-depth);

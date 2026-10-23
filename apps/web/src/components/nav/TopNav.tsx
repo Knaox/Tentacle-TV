@@ -31,6 +31,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import { useScrollScrim } from "./useScrollScrim";
 import { useWindowGlass } from "../../desktop/windowGlass";
@@ -63,6 +64,10 @@ export function TopNav() {
   // (rien n'est gardé pour lui) : aucun onglet, et pas de séparateur qui ne
   // sépare rien.
   const profileSession = useActiveProfile() !== null;
+  // Sur la page de recherche, son champ EST la recherche (lot lg7, R13) : en
+  // mode natif, la barre retire le sien — jamais deux champs à l'écran.
+  const onSearchPage = useLocation().pathname === "/search";
+  const showFieldLauncher = !offline && !(glass && onSearchPage);
   const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs slack={slack} />;
 
   // Les groupes (mode natif). Ailleurs : `contents`, ils n'existent pas pour
@@ -126,7 +131,7 @@ export function TopNav() {
         <div className="lgc-actions relative flex shrink-0 items-center gap-1.5 pl-2">
           <ConnectivityChip />
           <DataSaverChip />
-          {!offline && <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />}
+          {showFieldLauncher && <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />}
           <div {...actionsGroup.props}>
             {actionsGroup.layers}
             {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
