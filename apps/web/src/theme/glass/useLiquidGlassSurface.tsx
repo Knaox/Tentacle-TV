@@ -28,6 +28,7 @@ import { RefractionFilter } from "@tentacle-tv/ui";
 
 import { useLiquidGlassMode } from "../useLiquidGlass";
 import { useBackdropTone } from "./useBackdropTone";
+import { useLensBudget } from "./useLensBudget";
 import { useLensGeometry } from "./useLensGeometry";
 import { useLiquidGlassRegion } from "./useLiquidGlassRegion";
 import { useSurfaceTone } from "./useSurfaceTone";
@@ -118,7 +119,10 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
   const controlTone = useBackdropTone(element, render === "lens" && !surface);
   const surfaceTone = useSurfaceTone(element, render === "lens" && surface);
   const tone = surface ? surfaceTone : controlTone;
-  const lens = useLensGeometry(element, render === "lens", level, shape, appearance.radius ?? "md", tone);
+  // La lentille seulement si la portée la permet et que le budget de la page
+  // l'accorde (lot lg5) ; sinon, le givre seul — la carte n'est même pas calculée.
+  const lensOn = useLensBudget(element, render === "lens", surface);
+  const lens = useLensGeometry(element, lensOn, level, shape, appearance.radius ?? "md", tone);
   const filterId = lensFilterId(useId());
 
   if (render === "fallback") {

@@ -1607,6 +1607,14 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   flou et la réfraction. Le travelling du héros est joué par le COMPOSITEUR (`@keyframes` de
   `transform` en `steps()`, `theme/heroMotion.css` : 60 % → 20 % du GPU d'Electron), la rotation des
   bannières seulement à l'écran ; contrôles du lecteur masqués = 0 région native.
+- **Budget de LENTILLES** (lot lg5, décision de Damien du 23/10) : une lentille coûte ~0,3-0,45 ms de
+  dessin GPU par image redessinée QUELLE QUE SOIT sa taille (le coût suit la fenêtre) ; à 20 sur un
+  dessous qui bouge, une image sur deux est perdue. Au plus 8 visibles (`LENS_BUDGET`, `gpuBudget.ts`,
+  `useLensBudget` dans la primitive et `useGlassControl`) : au-delà, les moins prioritaires (surface >
+  barre > contrôle, puis taille) restent du givre. Un groupe posé sur un dessous animé renonce à la
+  sienne (`GlassLensScope lens={false}` : les 4 petits ronds de la bannière de l'accueil ; « Lecture »
+  et « Plus d'infos » gardent la leur). Un nouveau verre
+  à lentille se compte : `node perf/census.mjs /route` (banc de fluidité, `bench/liquid-glass/perf/`).
 - **Bancs** : `TENTACLE_LIQUID_GLASS=off` simule un Mac sans verre (pont absent, option
   invisible) ; `TENTACLE_BENCH_INACTIVE=1` ouvre la fenêtre sans voler le focus (jamais un banc
   sous les doigts de l'utilisateur) ; recette `apps/desktop-electron/bench/liquid-glass/` (README) ;

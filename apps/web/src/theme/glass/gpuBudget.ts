@@ -159,3 +159,52 @@ export function judgeScenario(scenario: GpuScenario, measured: GpuSummary, refer
   }
   return { scenario, delta, limit: budget.maxDelta, unit: "points", ok: delta <= budget.maxDelta };
 }
+
+/* ── Le budget de LENTILLES (lot lg5, décision de Damien du 23/10) ────────────
+ *
+ * Mesuré au banc de fluidité (`apps/desktop-electron/bench/liquid-glass/perf/`) :
+ * une lentille (filtre SVG d'un `backdrop-filter`) coûte ~0,3 à 0,45 ms de
+ * dessin GPU par image redessinée, QUELLE QUE SOIT sa taille et sa place — le
+ * coût suit la fenêtre, pas le verre. Sur un dessous qui bouge (le héros
+ * redessine toute la fenêtre trente fois par seconde), chaque lentille visible
+ * se recalcule à chaque image : à 20 lentilles, une image sur deux est perdue.
+ * Au-delà du budget, les verres les moins prioritaires restent du GIVRE (flou,
+ * teinte, ombre) sans lentille ; sous le budget, rien ne change.
+ */
+
+/** Lentilles visibles en même temps, au plus (« 6 à 8 », décision du 23/10). */
+export const LENS_BUDGET = 8;
+
+/**
+ * La priorité d'un verre pour sa lentille : une SURFACE (menu, popover,
+ * feuille, barre latérale) d'abord, puis le CHROME de la fenêtre (la barre du
+ * haut), puis les contrôles des pages.
+ */
+export type LensRank = "surface" | "chrome" | "control";
+
+const RANK_WEIGHT: Record<LensRank, number> = { surface: 3, chrome: 2, control: 1 };
+
+export interface LensCandidate {
+  id: string;
+  rank: LensRank;
+  /** À l'écran : seuls les verres visibles comptent (hors champ, ils ne coûtent rien). */
+  visible: boolean;
+  /** Surface à l'écran, en points² : à rang égal, le plus grand verre garde sa lentille. */
+  area: number;
+  /** Ordre d'arrivée : à égalité, le premier venu garde la sienne (pas de bascule). */
+  order: number;
+}
+
+/**
+ * Les verres qui GARDENT leur lentille. Hors champ : gardée (rien n'est
+ * dessiné, et un verre qui revient ne bascule pas tant que le budget tient).
+ * À l'écran : les `budget` premiers par rang, puis surface, puis ancienneté.
+ */
+export function allocateLenses(candidates: readonly LensCandidate[], budget: number = LENS_BUDGET): Set<string> {
+  const granted = new Set(candidates.filter((c) => !c.visible).map((c) => c.id));
+  const visible = candidates
+    .filter((c) => c.visible)
+    .sort((a, b) => RANK_WEIGHT[b.rank] - RANK_WEIGHT[a.rank] || b.area - a.area || a.order - b.order);
+  for (const c of visible.slice(0, Math.max(0, budget))) granted.add(c.id);
+  return granted;
+}
