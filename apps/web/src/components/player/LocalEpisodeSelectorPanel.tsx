@@ -103,6 +103,7 @@ export function LocalEpisodeSelectorPanel({ currentEpisodeId, onClose }: LocalEp
             markedId={seasonKey(currentSeason)}
             onSelect={(id) => setSelected(seasonNumbers.find((num) => seasonKey(num) === id) ?? null)}
             size="sm"
+            arrows={glass ? "glyph" : "disc"}
           />
         </div>
       )}

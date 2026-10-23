@@ -151,3 +151,19 @@
   pointer-events: none;
   border-radius: inherit;
 }
+
+/* Les flèches de bord de la bande des saisons : le chevron seul (R18) — sur le verre natif,
+   un disque de lentille ne réfracterait rien. Le survol fait répondre le symbole. */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-edge-arrow > svg {
+  transition: transform var(--lg-player-settle-ms) var(--lg-player-ease-settle);
+}
+
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-edge-arrow:hover > svg {
+  transform: scale(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-edge-arrow > svg {
+    transition: none;
+  }
+}
