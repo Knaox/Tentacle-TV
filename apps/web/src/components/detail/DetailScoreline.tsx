@@ -75,7 +75,7 @@ export const DetailScoreline = memo(function DetailScoreline({ item, communityRa
             return (
               <li
                 key={kind}
-                className="flex items-center gap-1.5 rounded-full border border-on-media-muted px-3 py-1 text-xs font-medium text-on-media-secondary"
+                className="lg-status-pill flex items-center gap-1.5 rounded-full border border-on-media-muted px-3 py-1 text-xs font-medium text-on-media-secondary"
                 style={{ background: "rgba(var(--scrim-media-rgb), 0.35)" }}
               >
                 <Glyph filled className={`h-3.5 w-3.5 ${kind === "favorite" ? "text-[var(--brand-accent)]" : "text-[var(--brand-light)]"}`} />

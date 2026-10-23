@@ -187,3 +187,11 @@
   background: var(--lgp-lens-fill), var(--lgd-tab-selected);
   box-shadow: var(--lgp-lens-edge), var(--lgp-lens-depth);
 }
+
+/* ══ Les pastilles d'état de la fiche (« Déjà vu », « Dans les favoris ») ══
+ *
+ * Lot lg7, R11 : aucun liseré sur une pastille — le voile de média en ligne
+ * suffit à la poser sur l'image ; le glyphe à l'accent dit l'état. */
+:root[data-liquid-glass="native"] .lg-detail .lg-status-pill {
+  border-color: transparent;
+}
