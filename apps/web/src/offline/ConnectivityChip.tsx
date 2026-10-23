@@ -41,9 +41,9 @@ export function ConnectivityChip() {
         onClick={() => setOpen((p) => !p)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-status-warning-bg px-3 text-xs font-semibold text-status-warning-fg transition-opacity duration-150 hover:opacity-80"
+        className="lgc-status flex h-9 items-center gap-2 rounded-full border border-line-subtle bg-status-warning-bg px-3 text-xs font-semibold text-status-warning-fg transition-opacity duration-150 hover:opacity-80"
       >
-        <span className="h-2 w-2 rounded-full bg-status-warning animate-pulse-glow" />
+        <span className="lgc-status-dot h-2 w-2 rounded-full bg-status-warning animate-pulse-glow" />
         <span className="hidden sm:inline">{t(manual ? "offlineChipManual" : "offlineChip")}</span>
       </button>
 

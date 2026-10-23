@@ -68,6 +68,14 @@ export function TopNav() {
   // mode natif, la barre retire le sien — jamais deux champs à l'écran.
   const onSearchPage = useLocation().pathname === "/search";
   const showFieldLauncher = !offline && !(glass && onSearchPage);
+  // Les puces d'état (hors ligne, économiseur) : en mode natif, DANS le groupe
+  // d'actions (lot lg7, R16) — jamais un aplat qui flotte hors des groupes.
+  const statusChips = (
+    <>
+      <ConnectivityChip />
+      <DataSaverChip />
+    </>
+  );
   const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs slack={slack} />;
 
   // Les groupes (mode natif). Ailleurs : `contents`, ils n'existent pas pour
@@ -129,11 +137,11 @@ export function TopNav() {
         </div>
 
         <div className="lgc-actions relative flex shrink-0 items-center gap-1.5 pl-2">
-          <ConnectivityChip />
-          <DataSaverChip />
+          {!glass && statusChips}
           {showFieldLauncher && <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />}
           <div {...actionsGroup.props}>
             {actionsGroup.layers}
+            {glass && statusChips}
             {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
             <DownloadsNavButton />
             {!offline && <WatchTogetherButton />}
