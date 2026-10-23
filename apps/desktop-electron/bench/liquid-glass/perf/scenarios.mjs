@@ -132,6 +132,40 @@ export const SCENARIOS = [
     },
   },
   {
+    name: "repos-fiche",
+    prep: async (page) => {
+      await go(page, `/media/${await itemId("Banc SDR")}`, 3000);
+      await mouseTo(page, 5, 5);
+      await sleep(1500);
+    },
+    run: () => sleep(6000),
+  },
+  {
+    // La même fiche, une fois son travelling (8 s) fini : plus rien ne doit bouger.
+    name: "repos-fiche-tard",
+    prep: async (page) => {
+      await go(page, `/media/${await itemId("Banc SDR")}`, 3000);
+      await mouseTo(page, 5, 5);
+      await sleep(9000);
+    },
+    run: () => sleep(5000),
+  },
+  {
+    name: "defilement-fiche",
+    prep: async (page) => {
+      await go(page, `/media/${await itemId("Écume", "Series")}`, 3000);
+      await mouseTo(page, 5, 5);
+      await sleep(1500);
+    },
+    run: async (page) => {
+      const { w, h } = await viewport(page);
+      await wheel(page, w / 2, h * 0.6, 1200);
+      await sleep(300);
+      await wheel(page, w / 2, h * 0.6, -1200);
+      await sleep(300);
+    },
+  },
+  {
     name: "navigation",
     prep: (page) => home(page),
     run: async (page) => {
