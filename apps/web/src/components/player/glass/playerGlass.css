@@ -72,6 +72,8 @@
   --lg-player-row-hover: var(--lg-player-accent);
   --lg-player-row-hover-fg: #ffffff;
   --lg-player-chip-line: #6f6d78;
+  /* Une étiquette (débit, codec) : un remplissage noir à alpha, sans trait (lg7, R11). */
+  --lg-player-chip-fill: rgb(0 0 0 / 0.24);
   /* Séparateur dans une capsule (pilule de saut) : noir à alpha. */
   --lg-player-separator: rgb(0 0 0 / 0.3);
   /* Témoin de développement (`mpv (transcode)`), opaque. */
