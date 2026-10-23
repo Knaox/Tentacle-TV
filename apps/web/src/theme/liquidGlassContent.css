@@ -259,10 +259,32 @@
   background: rgb(var(--brand-rgb));
 }
 
-/* ══ 7. Les ronds de la bannière, allumés ═════════════════════════════════
+/* ══ 7. Les bascules allumées : le SYMBOLE, pas le verre ════════════════════
  *
- * Ma liste · favori · vu : le verre reste clair, l'état est dit par le glyphe
- * plein ; le favori le dit à l'accent (rose), comme un cœur d'Apple. */
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-quick-accent] {
-  color: var(--brand-accent);
+ * Ma liste · favori · vu, sur la bannière, la fiche et le plateau des cartes
+ * (lot lg7, R5 ; HIG Color : « refrain from adding color to the background of
+ * multiple controls ») : le verre reste clair, le glyphe plein prend l'accent
+ * — signet et coche violets, cœur rose —, réglé sur le TON du verre pour
+ * tenir 3:1 (sombre : #A78BFA 5,4:1, #EC4899 4,2:1 ; clair : #6D28D9,
+ * #BE185D). Le seul fond coloré de l'écran reste « Lecture ». */
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle] {
+  --lg-toggle-on: #a78bfa;
+  color: var(--lg-toggle-on);
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle="accent"] {
+  --lg-toggle-on: #ec4899;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle][data-lg-tone="light"] {
+  --lg-toggle-on: #6d28d9;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle="accent"][data-lg-tone="light"] {
+  --lg-toggle-on: #be185d;
+}
+
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle]:hover,
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle] svg {
+  color: var(--lg-toggle-on);
 }
