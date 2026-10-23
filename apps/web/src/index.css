@@ -42,6 +42,7 @@
 @import "./components/ui/glass/lgSurfaceButtons.css";
 @import "./components/ui/glass/lgSurfaceAdhoc.css";
 @import "./components/ui/glass/lgFloatingBar.css";
+@import "./components/detail/lgDetailStage.css";
 
 @tailwind base;
 @tailwind components;

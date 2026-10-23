@@ -1,0 +1,61 @@
+/* ── Liquid Glass : la scène de la fiche (lot lg7, R4) ────────────────────
+ *
+ * HIG Materials, « Scroll edge effects » : au repos, le contenu monte jusqu'au
+ * bord de la fenêtre — l'app TV de macOS 26 passe l'image de la fiche sous les
+ * feux. Ici, la bande des feux est déjà transparente en verre natif
+ * (`windowGlass.css`) ; mais l'image commençait SOUS elle (le `body` garde son
+ * retrait de 38 pt), qui restait l'aplat de la page : un bord dur au-dessus du
+ * décor (audit lg6, d-12, l-12). Une fois défilée, l'effet de bord
+ * (`ScrollEdgeEffect`, monté par `HostTitleBar`) prend le relais.
+ *
+ * Tout sous la porte : hors macOS 26, la scène d'avant. */
+
+/* La boîte IMAGE monte de la hauteur de la bande : elle part du haut de la
+ * fenêtre — la MÊME boîte que celle du calque d'ouverture (`DetailOpenOverlay`,
+ * fixe, en haut de la fenêtre), qui s'efface donc sans ressaut. */
+:root[data-liquid-glass="native"] .lg-detail .detail-stage-box {
+  top: calc(-1 * var(--hote-bandeau));
+}
+
+/* Le libellé de la bande (« Tentacle TV ») ne se pose pas sur l'image : comme
+ * dans l'app TV, la fenêtre n'a que ses feux au-dessus du décor. */
+:root[data-liquid-glass="native"]:has(.lg-detail .detail-stage-box) .bandeau-hote > span {
+  visibility: hidden;
+}
+
+/* ── L'assise du texte : un dégradé PLEINE LARGEUR, jamais un rectangle ──
+ *
+ * L'assise d'avant (`.detail-text-scrim`, theme/scrims.css) suivait la colonne :
+ * un rectangle gris aux bords flous, une dalle fantôme sur l'image, très
+ * visible en clair. En verre natif, elle court sur toute la largeur de la
+ * scène, du bas de la fenêtre jusqu'au-dessus du texte — comme le héros de
+ * l'accueil —, à la même densité (`--detail-text-scrim-alpha`, qui tient le
+ * texte de la colonne à 4,5:1 sur un blanc pur) : plus aucun bord vertical,
+ * une montée en smoothstep au-dessus du surtitre, une extinction dans la
+ * marge sous les actions. La colonne cède son positionnement : l'assise se mesure sur le bloc
+ * de la scène (`relative z-10`), qui court d'un bord à l'autre. */
+:root[data-liquid-glass="native"] .lg-detail .detail-text-column {
+  position: static;
+}
+
+:root[data-liquid-glass="native"] .lg-detail .detail-text-scrim {
+  --lgd-scrim-a: var(--detail-text-scrim-alpha);
+  /* Jusqu'au bas de la scène, pas au-delà : en clair, la page qui suit
+   * (« Informations ») se posait sinon sur une bande grise. */
+  inset: -120px 0 0 0;
+  width: auto;
+  max-width: none;
+  background: linear-gradient(
+    180deg,
+    rgba(var(--scrim-media-rgb), 0) 0,
+    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.16)) 55px,
+    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.5)) 110px,
+    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.84)) 165px,
+    rgba(var(--scrim-media-rgb), var(--lgd-scrim-a)) 220px,
+    rgba(var(--scrim-media-rgb), var(--lgd-scrim-a)) calc(100% - 56px),
+    rgba(var(--scrim-media-rgb), calc(var(--lgd-scrim-a) * 0.5)) calc(100% - 28px),
+    rgba(var(--scrim-media-rgb), 0) 100%
+  );
+  -webkit-mask-image: none;
+  mask-image: none;
+}
