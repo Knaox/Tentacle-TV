@@ -4,16 +4,22 @@
  * choisit une au chargement (bancs reproductibles) :
  *  - `telecharger` : « garder hors ligne » (`DownloadDialog`, un épisode) ;
  *  - `supprimer`   : `DeleteDownloadModal` ;
- *  - `confirmer`, `danger` : `ConfirmDialog`, action principale puis destructive.
+ *  - `confirmer`, `danger` : `ConfirmDialog`, action principale puis destructive ;
+ *  - `barre-favoris`, `barre-vus`, `barre-suppression` : les barres de sélection
+ *    qui flottent (`FloatingBar`), au bas des dessous du labo.
  */
 
 import { useState } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { SelectionToolbar } from "../../components/SelectionToolbar";
+import { WatchedSelectionToolbar } from "../../components/WatchedSelectionToolbar";
+import { DeletionSelectionBar } from "../../components/libraryDelete/DeletionSelectionBar";
+import type { DeletionSelection } from "../../components/libraryDelete/useDeletionSelection";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { DeleteDownloadModal } from "../../downloads/DeleteDownloadModal";
 import { DownloadDialog } from "../../downloads/DownloadDialog";
 
-const SHEETS = ["telecharger", "supprimer", "confirmer", "danger"] as const;
+const SHEETS = ["telecharger", "supprimer", "confirmer", "danger", "barre-favoris", "barre-vus", "barre-suppression"] as const;
 type LabSheet = (typeof SHEETS)[number] | null;
 
 const EPISODE = {
@@ -26,6 +32,13 @@ const EPISODE = {
   IndexNumber: 3,
   ParentIndexNumber: 1,
 } as unknown as MediaItem;
+
+const noop = () => {};
+
+const DELETION = {
+  active: true, enter: noop, exit: noop, markOf: () => "off", toggle: noop, selectAll: noop, clear: noop,
+  selected: [{}, {}, {}], selectableCount: 42, universeCount: 58, ready: true,
+} as unknown as DeletionSelection;
 
 const initialSheet = (): LabSheet => {
   const asked = new URLSearchParams(window.location.search).get("feuille");
@@ -46,6 +59,11 @@ export function LabSheets({ top }: { top: number }) {
       </div>
       {sheet === "telecharger" && <DownloadDialog items={[EPISODE]} onClose={close} />}
       {sheet === "supprimer" && <DeleteDownloadModal title="Banc Nuit — Le phare" busy={false} onConfirm={close} onClose={close} />}
+      {sheet === "barre-favoris" && <SelectionToolbar count={3} onSelectAll={noop} onCancel={close} onDelete={noop} isDeleting={false} removal />}
+      {sheet === "barre-vus" && (
+        <WatchedSelectionToolbar count={4} onSelectAll={noop} onCancel={close} onMarkWatched={noop} onMarkUnwatched={noop} isBusy={false} onDownload={noop} downloadLabel="Télécharger (4)" />
+      )}
+      {sheet === "barre-suppression" && <DeletionSelectionBar selection={DELETION} onDelete={noop} />}
       <ConfirmDialog
         open={sheet === "confirmer" || sheet === "danger"}
         title={sheet === "danger" ? "Supprimer ce profil ?" : "Partager vos titres likés ?"}
