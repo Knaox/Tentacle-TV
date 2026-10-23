@@ -1,0 +1,132 @@
+/* ── Liquid Glass : les boutons DANS une surface (lot lg7, R3 et R8) ───────
+ *
+ * Une feuille, un dialogue, un popover, une barre flottante sont déjà UNE
+ * plaque de verre : ce qui vit dedans n'en est jamais une de plus (WWDC25
+ * « Meet Liquid Glass » : pas de verre empilé ; HIG Buttons : un bouton d'une
+ * feuille s'appuie sur la forme et le matériau du composant qui le porte).
+ * Plus de lentille dedans : la PEAU PEINTE des contrôles de lg4 — aucun
+ * `backdrop-filter`, rien qui se recalcule, mêmes jetons `--lgp-*`.
+ *
+ * Marqueurs (aucun style hors de la porte), posés par `GlassButton inSurface`
+ * ou à la main :
+ *  • `.lg-surface-btn`            → `glass` neutre (« Annuler », « Tout sélectionner ») ;
+ *  • `.lg-surface-btn-prominent`  → `glassProminent` : L'action principale de
+ *    la feuille ou du popover, une seule (« Lancer », « Créer un groupe »,
+ *    « Terminé », « Générer le lien ») — R8, un seul idiome ;
+ *  • `.lg-surface-btn-danger`     → `glass`, libellé rouge au ton de la plaque.
+ *
+ * Le TON : celui, TENU, de la plaque qui les porte (`data-lg-tone` d'une
+ * surface, lot lg2) — une feuille sombre dans le thème clair existe ; sinon
+ * le thème. Spécificité (0,3,0) et plus : l'emporte sur les utilitaires de
+ * Tailwind (fond, anneau `ring-*`) sans `!important`. */
+
+:root[data-liquid-glass="native"] :is([data-lg-scale="surface"], .lg-sheet, .lg-floating-bar)[data-lg-tone="light"] {
+  --lgp-fill: var(--lgp-fill-on-light);
+  --lgp-fill-hover: var(--lgp-fill-hover-on-light);
+  --lgp-edge: var(--lgp-edge-on-light);
+  --lgp-depth: var(--lgp-depth-on-light);
+  --lgp-glyph: var(--lgp-glyph-on-light);
+  --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-light);
+  --lgp-danger: var(--lgp-danger-on-light);
+  --lgp-lens-fill: var(--lgp-lens-fill-on-light);
+  --lgp-lens-edge: var(--lgp-lens-edge-on-light);
+  --lgp-lens-depth: var(--lgp-lens-depth-on-light);
+}
+
+:root[data-liquid-glass="native"] :is([data-lg-scale="surface"], .lg-sheet, .lg-floating-bar)[data-lg-tone="dark"] {
+  --lgp-fill: var(--lgp-fill-on-dark);
+  --lgp-fill-hover: var(--lgp-fill-hover-on-dark);
+  --lgp-edge: var(--lgp-edge-on-dark);
+  --lgp-depth: var(--lgp-depth-on-dark);
+  --lgp-glyph: var(--lgp-glyph-on-dark);
+  --lgp-glyph-secondary: var(--lgp-glyph-secondary-on-dark);
+  --lgp-danger: var(--lgp-danger-on-dark);
+  --lgp-lens-fill: var(--lgp-lens-fill-on-dark);
+  --lgp-lens-edge: var(--lgp-lens-edge-on-dark);
+  --lgp-lens-depth: var(--lgp-lens-depth-on-dark);
+}
+
+:root[data-liquid-glass="native"] .lg-surface-btn {
+  background: var(--lgp-fill);
+  border-color: transparent;
+  border-radius: var(--lg-radius-capsule);
+  box-shadow: var(--lgp-edge), var(--lgp-depth);
+  color: var(--lgp-glyph);
+  text-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  scale: 1;
+  transition:
+    scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing),
+    opacity var(--duration-base, 200ms) var(--ease-out, ease-out),
+    color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+:root[data-liquid-glass="native"] .lg-surface-btn:hover:not(:disabled) {
+  background: var(--lgp-fill-hover);
+  color: var(--lgp-glyph);
+}
+
+:root[data-liquid-glass="native"] .lg-surface-btn.lg-surface-btn-danger,
+:root[data-liquid-glass="native"] .lg-surface-btn.lg-surface-btn-danger:hover:not(:disabled) {
+  color: var(--lgp-danger);
+}
+
+/* `glassProminent` : la marque DANS le verre, blanc ≥ 4,5:1 aux deux bouts
+ * du dégradé (`lgPageControls.test.ts`). */
+:root[data-liquid-glass="native"] .lg-surface-btn.lg-surface-btn-prominent {
+  background: var(--lgp-prominent-fill);
+  box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
+  color: var(--lgp-tint-glyph);
+}
+
+:root[data-liquid-glass="native"] .lg-surface-btn.lg-surface-btn-prominent:hover:not(:disabled) {
+  /* Le verre s'éclaire au survol, comme les surfaces de la primitive. */
+  background: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%), var(--lgp-prominent-fill);
+  color: var(--lgp-tint-glyph);
+}
+
+/* L'appui : le verre gonfle (le transform des utilitaires d'avant se tait). */
+:root[data-liquid-glass="native"] .lg-surface-btn:active:not(:disabled) {
+  scale: var(--lgp-press-scale);
+  transform: none;
+}
+
+:root[data-liquid-glass="native"] .lg-surface-btn:hover {
+  transform: none;
+}
+
+:root[data-liquid-glass="native"] .lg-surface-btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+:root[data-liquid-glass="native"] .lg-surface-btn svg {
+  filter: none;
+}
+
+/* ══ Les tuiles de choix d'une feuille (« Original / Allégé », paliers) ════
+ *
+ * Du contenu de la feuille, pas un contrôle de verre : un remplissage, SANS
+ * liseré (R11) ; la choisie à l'accent UNI (`--lg-row-highlight`, blanc
+ * ≥ 4,5:1), jamais un contour violet ni le dégradé de marque. Marqueur
+ * `.lg-choice-tile`, l'état par `aria-pressed`. */
+:root[data-liquid-glass="native"] :is(.lg-sheet, [data-lg-scale="surface"]) .lg-choice-tile {
+  background: var(--lgp-track);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root[data-liquid-glass="native"] :is(.lg-sheet, [data-lg-scale="surface"]) .lg-choice-tile:hover:not([aria-pressed="true"]) {
+  background: var(--lgp-fill-hover);
+}
+
+:root[data-liquid-glass="native"] :is(.lg-sheet, [data-lg-scale="surface"]) .lg-choice-tile[aria-pressed="true"] {
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-tertiary: rgba(255, 255, 255, 0.9);
+  --text-quaternary: rgba(255, 255, 255, 0.9);
+  background: var(--lg-row-highlight);
+  color: #ffffff;
+  text-shadow: none;
+}

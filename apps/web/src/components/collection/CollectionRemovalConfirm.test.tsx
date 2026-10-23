@@ -20,6 +20,10 @@ vi.mock("../ui/ConfirmDialog", () => ({
     return null;
   },
 }));
+// La barre flottante (lot lg7) : hors verre, son balisage d'avant — rendu tel quel.
+vi.mock("../ui/glass/FloatingBar", () => ({
+  FloatingBar: ({ legacy }: { legacy: unknown }) => legacy,
+}));
 vi.mock("react-dom", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-dom")>()),
   createPortal: (node: unknown) => node,

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { ShareListKind } from "@tentacle-tv/api-client";
+import { FloatingBar } from "../ui/glass/FloatingBar";
 
 interface Props {
   kind: ShareListKind;
@@ -15,35 +16,51 @@ interface Props {
  * enfin où partent les titres (il annonçait « ma liste » dans les deux cas).
  *
  * Montée seulement quand elle sert : son verre ne coûte rien le reste du temps.
+ * Verre natif : UNE capsule qui flotte (lot lg7, R16, `FloatingBar`), le
+ * compte et l'ajout en `glassProminent` peint ; ailleurs, la pilule d'avant.
  */
 export function SharedListAddBar({ kind, count, isAdding, added, onAdd }: Props) {
   const { t } = useTranslation("share");
   if (count === 0 && !added) return null;
   const likes = kind === "likes";
 
+  const status = (
+    <span className="lg-fb-status text-sm font-medium tabular-nums text-content-secondary">
+      {added && count === 0
+        ? t(likes ? "addedFavorites" : "addedWatchlist")
+        : t("selectedCount", { count })}
+    </span>
+  );
+  const add = (
+    <button
+      type="button"
+      onClick={onAdd}
+      disabled={isAdding || count === 0}
+      aria-busy={isAdding || undefined}
+      className="lg-fb-btn lg-fb-primary h-10 cursor-pointer rounded-full px-5 text-sm font-bold text-cta-brand-fg transition-transform duration-150 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100 motion-reduce:hover:scale-100"
+      style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
+    >
+      {isAdding ? t("adding") : t(likes ? "addToFavorites" : "addToWatchlist")}
+    </button>
+  );
+
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
-      <div
-        role="status"
-        aria-live="polite"
-        className="flex items-center gap-4 rounded-full border border-line-strong bg-surface-toolbar py-2 pl-5 pr-2 shadow-2xl backdrop-blur-lg animate-fade-slide-up"
-      >
-        <span className="text-sm font-medium tabular-nums text-content-secondary">
-          {added && count === 0
-            ? t(likes ? "addedFavorites" : "addedWatchlist")
-            : t("selectedCount", { count })}
-        </span>
-        <button
-          type="button"
-          onClick={onAdd}
-          disabled={isAdding || count === 0}
-          aria-busy={isAdding || undefined}
-          className="h-10 cursor-pointer rounded-full px-5 text-sm font-bold text-cta-brand-fg transition-transform duration-150 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100 motion-reduce:hover:scale-100"
-          style={{ background: "linear-gradient(135deg, var(--brand), var(--brand-accent))" }}
-        >
-          {isAdding ? t("adding") : t(likes ? "addToFavorites" : "addToWatchlist")}
-        </button>
-      </div>
-    </div>
+    <FloatingBar
+      role="status"
+      live="polite"
+      groups={[<>{status}{add}</>]}
+      legacy={
+        <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-4 rounded-full border border-line-strong bg-surface-toolbar py-2 pl-5 pr-2 shadow-2xl backdrop-blur-lg animate-fade-slide-up"
+          >
+            {status}
+            {add}
+          </div>
+        </div>
+      }
+    />
   );
 }

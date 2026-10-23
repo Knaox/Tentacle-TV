@@ -79,7 +79,9 @@ export function OfflineDeviceSummary({ complete }: { complete: readonly Download
 
         <div className="relative flex flex-wrap items-center gap-2">
           {backOnline && (
+            // Posé sur un panneau opaque : la peau peinte, jamais une lentille (lot lg7).
             <GlassButton
+              inSurface
               onClick={() => setManualOffline(false)}
               appearance={{ level: "prominent", tint: "brand", shape: "capsule" }}
               className="px-4 py-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]"

@@ -7,6 +7,8 @@ import { onSessionMessage, type SessionMessage } from "@tentacle-tv/api-client";
 import { useMessageCountdown, type MessageCountdown } from "./useMessageCountdown";
 import { useFullscreenPortalTarget } from "../../hooks/useFullscreenPortalTarget";
 import { duration, exitDuration } from "../../theme/motion";
+import { useGlassControl, type GlassControl } from "../ui/glass/useGlassControl";
+import { useNativePlaybackActive } from "./useNativePlaybackActive";
 
 /**
  * Les messages que l'administrateur envoie à cette session — depuis le tableau
@@ -24,6 +26,11 @@ import { duration, exitDuration } from "../../theme/motion";
  * Sans délai, il reste jusqu'à ce qu'on le ferme — comme l'alerte de Jellyfin :
  * un message d'administrateur qui disparaîtrait avant d'être lu ne servirait
  * à rien.
+ *
+ * Verre natif (macOS 26, lot lg7, R16) : HORS lecture native, le message est un
+ * avis de verre (`lg-notice`, régime `surface` : un ton tenu, ses textes s'y
+ * adaptent). Pendant une lecture native, la plaque pleine d'avant — pour la
+ * raison dite plus haut.
  */
 
 const MIN_TIMEOUT_MS = 3_000;
@@ -85,6 +92,9 @@ const MessageBanner = memo(function MessageBanner({
   const [focused, setFocused] = useState(false);
   const { id } = message;
   const countdown = useMessageCountdown(message.durationMs, hovered || focused, () => onDismiss(id));
+  // Hors du verre natif, la primitive ne rend rien (`props` vide).
+  const glass = useGlassControl<HTMLDivElement>({ scale: "surface" });
+  const overVideo = useNativePlaybackActive();
   return (
     <motion.div
       layout={!reduced}
@@ -104,6 +114,7 @@ const MessageBanner = memo(function MessageBanner({
         durationMs={message.durationMs}
         countdown={countdown}
         onDismiss={() => onDismiss(id)}
+        glass={overVideo ? undefined : glass}
       />
     </motion.div>
   );
@@ -118,7 +129,7 @@ const MessageBanner = memo(function MessageBanner({
  * pied qui se vide. Couleurs PLEINES pour la barre et son rail (`surface-2`,
  * `brand`) : aucune couche à alpha au-dessus de la vidéo macOS.
  */
-export function MessageBannerCard({ header, text, onDismiss, durationMs = null, countdown = null, still = false }: {
+export function MessageBannerCard({ header, text, onDismiss, durationMs = null, countdown = null, still = false, glass }: {
   header: string;
   text: string;
   onDismiss?: () => void;
@@ -126,10 +137,18 @@ export function MessageBannerCard({ header, text, onDismiss, durationMs = null, 
   countdown?: MessageCountdown | null;
   /** Aperçu : le compte à rebours s'affiche à son départ, sans s'écouler. */
   still?: boolean;
+  /** Le bandeau EN SERVICE, en verre natif : un avis de verre (`lg-notice`). */
+  glass?: GlassControl<HTMLDivElement>;
 }) {
   const { t } = useTranslation("sessions");
+  const native = glass !== undefined && glass.props["data-lg-scale"] === "surface";
   return (
-    <div className="relative flex items-stretch gap-3 overflow-hidden rounded-xl border border-line-strong bg-surface-3 py-3 pl-3 pr-1 text-content-primary">
+    <div
+      ref={native ? glass.ref : undefined}
+      {...(native ? glass.props : {})}
+      className={`${native ? "lg-notice " : ""}relative flex items-stretch gap-3 overflow-hidden rounded-xl border border-line-strong bg-surface-3 py-3 pl-3 pr-1 text-content-primary`}
+    >
+      {native && glass.layers}
       <span aria-hidden className="w-1 shrink-0 rounded-full bg-brand" />
       <div className="min-w-0 flex-1 py-0.5">
         <p className="flex h-4 items-center justify-between gap-3 text-xs font-medium leading-4 text-content-tertiary">

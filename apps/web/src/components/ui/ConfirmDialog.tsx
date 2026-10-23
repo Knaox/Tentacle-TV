@@ -34,9 +34,11 @@ export function ConfirmDialog({
         <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">{title}</h2>
         <p id={descId} className="mt-2 text-sm leading-relaxed text-content-tertiary">{message}</p>
         <div className="mt-6 flex justify-end gap-2">
-          {/* Verre natif : des capsules de verre, la confirmation porte la marque
-              DANS le verre ; ailleurs, les boutons d'avant. */}
+          {/* Verre natif : la peau peinte des boutons d'une feuille, jamais une
+              lentille dans la plaque (lot lg7) ; la confirmation porte la marque
+              DANS le verre. Ailleurs, les boutons d'avant. */}
           <GlassButton
+            inSurface
             onClick={onCancel}
             disabled={pending}
             appearance={{ level: "regular", shape: "capsule" }}
@@ -46,15 +48,20 @@ export function ConfirmDialog({
             {cancelLabel}
           </GlassButton>
           {danger ? (
-            <button
+            <GlassButton
+              inSurface
+              danger
               onClick={onConfirm}
               disabled={pending}
-              className="lg-shape-capsule inline-flex h-11 items-center justify-center rounded-lg bg-[var(--status-error-bg)] border border-danger-border px-5 text-sm font-semibold text-[var(--status-error-fg)] transition hover:bg-danger-surface-hover disabled:opacity-50"
+              appearance={{ level: "regular", shape: "capsule" }}
+              className="inline-flex h-11 items-center justify-center px-5 text-sm font-semibold disabled:opacity-50"
+              fallbackClassName="lg-shape-capsule rounded-lg bg-[var(--status-error-bg)] border border-danger-border text-[var(--status-error-fg)] transition hover:bg-danger-surface-hover"
             >
               {confirmLabel}
-            </button>
+            </GlassButton>
           ) : (
             <GlassButton
+              inSurface
               onClick={onConfirm}
               disabled={pending}
               appearance={{ level: "prominent", tint: "brand", shape: "capsule" }}
