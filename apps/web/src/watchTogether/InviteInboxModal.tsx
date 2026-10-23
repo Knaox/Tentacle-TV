@@ -15,7 +15,9 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { Modal } from "../components/ui/Modal";
 import { useToast } from "../contexts/ToastContext";
+import { useLiquidGlassMode } from "../theme/glass";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { InviteRow } from "./WatchTogetherRows";
 
@@ -28,6 +30,7 @@ export function InviteInboxModal({ onClose }: InviteInboxModalProps) {
   const { show } = useToast();
   const { invites, actions } = useWatchTogether();
   const [busy, setBusy] = useState(false);
+  const native = useLiquidGlassMode() === "native";
 
   // La dernière invitation honorée referme la modale : il n'y a plus rien à y
   // répondre, et une carte vide au milieu de l'écran ne dit rien.
@@ -43,6 +46,55 @@ export function InviteInboxModal({ onClose }: InviteInboxModalProps) {
       setBusy(false);
     }
   };
+
+  const content = (
+    <>
+      <div className="flex items-center justify-between border-b border-line-subtle px-6 py-4">
+        <h2 className="text-lg font-bold text-content-primary">{t("invitations")}</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("later")}
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="divide-y divide-line-subtle overflow-y-auto py-1">
+        {invites.map((invite) => (
+          <InviteRow
+            key={invite.inviteId}
+            invite={invite}
+            busy={busy}
+            onRespond={(accept) => void respond(invite.inviteId, accept)}
+          />
+        ))}
+      </div>
+
+      <div className="border-t border-line-subtle px-6 py-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs font-medium text-content-tertiary transition-colors hover:text-content-primary"
+        >
+          {t("later")}
+        </button>
+      </div>
+    </>
+  );
+
+  // Verre natif : la feuille de `Modal` — une plaque d'un seul ton, focus
+  // piégé, Échap (lot lg7, R16) ; ses boutons prennent la peau des feuilles.
+  if (native) {
+    return (
+      <Modal open onClose={onClose} maxWidth={448} label={t("invitations")} className="flex max-h-[80vh] flex-col">
+        {content}
+      </Modal>
+    );
+  }
 
   // Portal vers <body>, même motif que les autres modales : rendue depuis le
   // fournisseur, la modale serait sinon piégée par le containing block d'un
@@ -60,40 +112,7 @@ export function InviteInboxModal({ onClose }: InviteInboxModalProps) {
         aria-modal="true"
         aria-label={t("invitations")}
       >
-        <div className="flex items-center justify-between border-b border-line-subtle px-6 py-4">
-          <h2 className="text-lg font-bold text-content-primary">{t("invitations")}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("later")}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="divide-y divide-line-subtle overflow-y-auto py-1">
-          {invites.map((invite) => (
-            <InviteRow
-              key={invite.inviteId}
-              invite={invite}
-              busy={busy}
-              onRespond={(accept) => void respond(invite.inviteId, accept)}
-            />
-          ))}
-        </div>
-
-        <div className="border-t border-line-subtle px-6 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs font-medium text-content-tertiary transition-colors hover:text-content-primary"
-          >
-            {t("later")}
-          </button>
-        </div>
+        {content}
       </div>
     </div>,
     document.body,

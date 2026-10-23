@@ -8,7 +8,8 @@
  *  - `barre-favoris`, `barre-vus`, `barre-suppression` : les barres de sélection
  *    qui flottent (`FloatingBar`), au bas des dessous du labo ;
  *  - `barre-liste`, `pastille-reco` : l'ajout d'une liste partagée, et
- *    « Nouveautés disponibles » sous la barre du haut.
+ *    « Nouveautés disponibles » sous la barre du haut ;
+ *  - `message-admin` : un message de l'administrateur, câblé comme son hôte.
  */
 
 import { useState } from "react";
@@ -20,10 +21,12 @@ import type { DeletionSelection } from "../../components/libraryDelete/useDeleti
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { RecoNewerPill } from "../../components/reco/RecoNewerPill";
 import { SharedListAddBar } from "../../components/share/SharedListAddBar";
+import { MessageBannerCard } from "../../components/session/SessionMessageHost";
+import { useGlassControl } from "../../components/ui/glass/useGlassControl";
 import { DeleteDownloadModal } from "../../downloads/DeleteDownloadModal";
 import { DownloadDialog } from "../../downloads/DownloadDialog";
 
-const SHEETS = ["telecharger", "supprimer", "confirmer", "danger", "barre-favoris", "barre-vus", "barre-suppression", "barre-liste", "pastille-reco"] as const;
+const SHEETS = ["telecharger", "supprimer", "confirmer", "danger", "barre-favoris", "barre-vus", "barre-suppression", "barre-liste", "pastille-reco", "message-admin"] as const;
 type LabSheet = (typeof SHEETS)[number] | null;
 
 const EPISODE = {
@@ -70,6 +73,7 @@ export function LabSheets({ top }: { top: number }) {
       {sheet === "barre-suppression" && <DeletionSelectionBar selection={DELETION} onDelete={noop} />}
       {sheet === "barre-liste" && <SharedListAddBar kind="watchlist" count={5} isAdding={false} added={false} onAdd={noop} />}
       <RecoNewerPill visible={sheet === "pastille-reco"} onShow={close} />
+      {sheet === "message-admin" && <LabAdminMessage onClose={close} />}
       <ConfirmDialog
         open={sheet === "confirmer" || sheet === "danger"}
         title={sheet === "danger" ? "Supprimer ce profil ?" : "Partager vos titres likés ?"}
@@ -81,5 +85,21 @@ export function LabSheets({ top }: { top: number }) {
         onCancel={close}
       />
     </>
+  );
+}
+
+function LabAdminMessage({ onClose }: { onClose: () => void }) {
+  const glass = useGlassControl<HTMLDivElement>({ scale: "surface" });
+  return (
+    <div className="fixed inset-x-0 top-4 z-[100] flex justify-center px-4">
+      <div className="w-[min(28rem,100%)]">
+        <MessageBannerCard
+          header="Maintenance ce soir"
+          text={"Le serveur redémarre à 23 h pour une mise à jour.\nLa lecture reprendra d'elle-même."}
+          onDismiss={onClose}
+          glass={glass}
+        />
+      </div>
+    </div>
   );
 }
