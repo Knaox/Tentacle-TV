@@ -10,10 +10,20 @@
 
 @media (min-width: 768px) {
   :root[data-liquid-glass="native"] .lgc-sidebar {
+    --lgc-sidebar-top: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade) + 4px);
     padding: var(--lg-chrome-sidebar-pad);
     border-radius: var(--lg-chrome-sidebar-radius);
     /* Collée SOUS la barre et sa frange de bord, jamais dessous. */
-    top: calc(var(--hote-bandeau) + var(--topnav-height) + var(--lg-chrome-edge-fade) + 4px);
+    top: var(--lgc-sidebar-top);
+    /* La COLONNE flottante de Réglages Système (lot lg7, R10) : du dessous de
+     * la barre au bas de la fenêtre, en retrait de 8, ses entrées en haut —
+     * plus une carte courte posée dans la page. Une longue liste
+     * (Administration) défile dans le rail ; une lentille coûte pareil
+     * quelle que soit sa taille. */
+    height: calc(100dvh - var(--lgc-sidebar-top) - var(--lg-chrome-sidebar-pad));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
   }
 }
 
