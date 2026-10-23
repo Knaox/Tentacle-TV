@@ -39,6 +39,7 @@
 @import "./components/ui/glass/lgPageControls.css";
 @import "./components/ui/glass/lgPageGlass.css";
 @import "./components/ui/glass/lgPageButtons.css";
+@import "./components/ui/glass/lgSurfaceButtons.css";
 
 @tailwind base;
 @tailwind components;
