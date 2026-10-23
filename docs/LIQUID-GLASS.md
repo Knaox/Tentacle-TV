@@ -818,7 +818,37 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
     opaque et sur le fond nu de la page).
 - **Hors ligne** : message de passage hors ligne et avis en `.lg-notice`,
   panneaux de la page hors ligne en `.lg-panel` (sans flou), bannière en
-  lentille ; dialogues « garder hors ligne » et de suppression en portail (§ 5).
+  lentille ; dialogues « garder hors ligne » et de suppression dans la feuille
+  de `Modal` (`OfflineSheetFrame`, lot lg7), toujours en portail (§ 5).
+- **Feuilles, barres flottantes, fiche** (lot lg7, axe Surfaces, d'après
+  l'audit lg6) :
+  - **Rien de verre DANS une surface.** `GlassButton inSurface` rend la peau
+    peinte de lg4 (`lgSurfaceButtons.css` : `.lg-surface-btn`, `-prominent`,
+    `-danger`), au ton TENU de la plaque ; les boutons ad hoc des feuilles,
+    popovers et toasts sont reconnus à leur forme (`lgSurfaceAdhoc.css`) :
+    UN idiome d'action principale, `glassProminent` peint (« Créer un
+    groupe », « Terminé », « Choisir »…), secondaires en `glass` peint, sans
+    liseré. Tuiles de choix (`.lg-choice-tile`, `aria-pressed`) : remplissage,
+    la choisie à l'accent uni (blanc 5,7:1).
+  - **`FloatingBar`** (`components/ui/glass/`, `lgFloatingBar.css`) : la barre
+    d'actions qui flotte — sélection (trois barres), liste partagée, « Pour
+    vous » prêt, « Nouveautés disponibles », « voir en tant que ». Une capsule
+    de la primitive par groupe (régime `control`, ton mesuré) à 16 px du bord,
+    de simples glyphes dedans (`.lg-fb-btn`, `-primary`, `-danger`), et l'effet
+    de bord du BAS (recette de `.lgc-edge`, retournée). Hors porte, le balisage
+    d'avant que l'appelant lui donne, tel quel ; le rendu natif est toujours
+    porté dans `document.body`.
+  - **Fiche** (`lgDetailStage.css`) : la boîte image monte sous la bande des
+    feux (même boîte que le calque d'ouverture), le libellé de la bande ne se
+    pose pas sur l'image ; l'assise du texte est un dégradé pleine largeur à la
+    densité d'avant, plus le rectangle aux bords flous (blanc à 90 % ≥ 5,25:1
+    mesuré sur un décor blanc).
+  - **Barre latérale** de Réglages et d'Admin : du dessous de la barre du haut
+    au bas de la fenêtre, collante (`windowGlassSidebar.css`).
+  - **Avis** : message de l'administrateur en `.lg-notice` (plaque pleine
+    d'avant pendant une lecture native : `useNativePlaybackActive`),
+    invitations Watch Together dans `Modal`.
+  - Labo : `/dev/verre?vue=feuilles&feuille=…` (les vraies feuilles et barres).
 - **Bannières** : la rotation ne tourne que STRICTEMENT à l'écran
   (`useBillboardViewport`, `billboardActivity`) — sous un verre, toute image qui
   change fait recalculer le flou (51 → 0 DrawFrame/s hors écran). Le travelling
