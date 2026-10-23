@@ -86,6 +86,22 @@ export const SCENARIOS = [
     },
   },
   {
+    // Le menu « Plus » seul, quatre fois.
+    name: "menu-plus",
+    prep: (page) => home(page),
+    run: async (page) => {
+      for (let i = 0; i < 4; i += 1) {
+        const at = await centerOf(page, '.lgc-capsule button[aria-haspopup="dialog"]', "Plus");
+        if (!at) throw new Error("déclencheur « Plus » introuvable");
+        await page.evaluate(`performance.mark("lg5:open"); return 1;`);
+        await clickAt(page, at.x, at.y);
+        await sleep(800);
+        await escape(page);
+        await sleep(700);
+      }
+    },
+  },
+  {
     // Les mêmes menus sur une page SANS héros (aucun dessous qui bouge).
     name: "menus-statique",
     prep: async (page) => {

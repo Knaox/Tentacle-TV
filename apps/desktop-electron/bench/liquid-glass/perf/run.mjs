@@ -53,7 +53,7 @@ const slots = () => readdirSync(LOCKS).filter((n) => n.startsWith("electron-slot
 async function launchAlone(home) {
   for (;;) {
     while (slots().length > 0) await sleep(10_000);
-    const app = await launchApp({ home, fresh: true, log: path.join(out, `${path.basename(home)}.log`) });
+    const app = await launchApp({ home, fresh: !flag("--keep-profile"), log: path.join(out, `${path.basename(home)}.log`) });
     if (slots().length === 1) return app;
     // Une autre session a pris l'autre slot au même instant : on lui laisse le banc.
     await stopApp(app);
@@ -127,7 +127,7 @@ function line(r) {
 async function phase(who, scenarios, results) {
   if (scenarios.length === 0) return;
   await waitUnlocked();
-  const app = await launchAlone(path.join(STATE, `home-lg5-${who}`));
+  const app = await launchAlone(path.join(STATE, `home-lg5-${opt("--profile", who)}`));
   try {
     await connectAndLogin(app.page, { server: SERVER, ...account(who) });
     await sleep(4000);

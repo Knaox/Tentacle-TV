@@ -12,7 +12,7 @@ import { connectAndLogin, dismissOverlays, sleep } from "../lib/app.mjs";
 import { SERVER, STATE, account, outDir } from "../lib/config.mjs";
 import { evalMain, launchApp, stopApp } from "../lib/electron.mjs";
 import { frameStats, framesOf, markWindow, startTrace, stopTrace } from "./frames.mjs";
-import { stageStats } from "./stages.mjs";
+import { openWindows, stageStats } from "./stages.mjs";
 import { SCENARIOS } from "./scenarios.mjs";
 import { ABLATIONS } from "./ablations.mjs";
 
@@ -33,6 +33,13 @@ try {
   await dismissOverlays(app.page);
   // Écran verrouillé, fenêtre couverte : la page reste « visible » et peint (banc seulement).
   await evalMain(app, `require("electron").BrowserWindow.getAllWindows().forEach((w) => w.webContents.setBackgroundThrottling(false)); return 1;`);
+  // `--size 800x500` : la fenêtre redimensionnée (le coût d'une lentille suit-il la FENÊTRE ?).
+  const size = opt("--size", null);
+  if (size) {
+    const [w, h] = size.split("x").map(Number);
+    await evalMain(app, `require("electron").BrowserWindow.getAllWindows().forEach((w) => w.setContentSize(${w}, ${h})); return 1;`);
+    await sleep(1500);
+  }
   const ablations = ABLATIONS.filter((a) => which === null || which.includes(a.name));
   // Inventaire des lentilles de l'accueil : combien, et quelle surface.
   console.log(JSON.stringify(await app.page.evaluate(`return [...document.querySelectorAll("[style*='--lg-lens'], [style*='--lgc-lens']")].map((n) => { const r = n.getBoundingClientRect(); return (n.getAttribute("aria-label") || String(n.className).slice(0, 30)) + " " + Math.round(r.width) + "x" + Math.round(r.height); });`)));
@@ -59,6 +66,7 @@ try {
           await app.page.evaluate(`${ablation.js} return 1;`);
           dirty = true;
         }
+        if (ablation.main) await evalMain(app, `${ablation.main} return 1;`);
         await scenario.prep(app.page);
         await sleep(600);
         await startTrace(app.page);
@@ -66,14 +74,18 @@ try {
         await scenario.run(app.page).catch(() => {});
         await app.page.evaluate(`performance.mark("lg5:end"); return 1;`);
         const events = await stopTrace(app.page);
+        if (ablation.mainUndo) await evalMain(app, `${ablation.mainUndo} return 1;`);
+        if (ablation.report) console.log(JSON.stringify(await evalMain(app, ablation.report)));
         if (argv.includes("--dump")) writeFileSync(path.join(out, `${name}-${ablation.name}-${round}.trace.json`), JSON.stringify(events));
         const window = markWindow(events);
         const f = frameStats(framesOf(events), window, scenario.cadenceMs ?? null);
         const st = stageStats(events, window);
-        const r = { round, scenario: name, ablation: ablation.name, frames: f.frames, dropped: f.dropped, expected: f.expected, longest: f.longestDropRun, ...st };
+        const opens = openWindows(events);
+        const atOpen = opens.length > 0 ? stageStats(events, opens).StartDrawToSwapStart : null;
+        const r = { round, scenario: name, ablation: ablation.name, frames: f.frames, dropped: f.dropped, expected: f.expected, longest: f.longestDropRun, atOpen, ...st };
         results.push(r);
         const fmt = (k) => `${st[k]?.p50 ?? "-"}/${st[k]?.p95 ?? "-"}`;
-        console.log(`${name.padEnd(14)} ${ablation.name.padEnd(18)} images ${String(f.frames).padStart(4)} · abandonnées ${f.dropped}/${f.expected} pire ${f.longestDropRun} · dessin GPU ${fmt("StartDrawToSwapStart")} · fil principal ${fmt("SendBeginMainFrameToCommit")} · raster ${fmt("EndCommitToActivation")} ms (p50/p95)`);
+        console.log(`${name.padEnd(14)} ${ablation.name.padEnd(18)} images ${String(f.frames).padStart(4)} · abandonnées ${f.dropped}/${f.expected} pire ${f.longestDropRun} · dessin GPU ${fmt("StartDrawToSwapStart")} · fil principal ${fmt("SendBeginMainFrameToCommit")} · raster ${fmt("EndCommitToActivation")} ms (p50/p95)${atOpen ? ` · à l'ouverture ${atOpen.p50}/${atOpen.p95}` : ""}`);
         writeFileSync(path.join(out, "ablation.json"), `${JSON.stringify(results, null, 2)}\n`);
       }
     }

@@ -15,6 +15,18 @@ const filterPatch = (mutate) => `
   window.__lg5Mo = new MutationObserver(() => document.querySelectorAll("filter:not([data-lg5])").forEach(patch));
   window.__lg5Mo.observe(document.body, { childList: true, subtree: true });`;
 
+/** `count` lentilles de test, posées sur le héros, avec le filtre de la première lentille de la page. */
+function injectLenses(count, width, height) {
+  return `const src = document.querySelector("[style*='--lg-lens']");
+    const lens = src?.style.getPropertyValue("--lg-lens");
+    for (let i = 0; i < ${count}; i += 1) {
+      const d = document.createElement("div");
+      d.className = "lg5-test-lens";
+      d.style.cssText = "position:fixed;z-index:5;pointer-events:none;border-radius:18px;left:" + (40 + (i % 3) * 700) + "px;top:" + (160 + Math.floor(i / 3) * ${height + 12}) + "px;width:${width}px;height:${height}px;backdrop-filter:blur(4px) saturate(1.2) " + lens;
+      document.body.append(d);
+    }`;
+}
+
 export const ABLATIONS = [
   { name: "reference", css: "" },
   {
@@ -61,6 +73,83 @@ export const ABLATIONS = [
     css: `${N} [data-lg-scale="surface"], ${N} [data-lg-scale="surface"] * { --lg-lens: saturate(1) !important; --lgc-lens: saturate(1) !important; }`,
   },
   {
+    // Le halo « ambilight » du héros masqué (un filtre CSS flou sur une grande image).
+    name: "sans-halo",
+    css: ".hero-halo-zoom { display: none !important; }",
+  },
+  {
+    // Les grands verres sans AUCUN backdrop-filter (ni givre ni lentille).
+    name: "menu-sans-givre",
+    css: `${N} [data-lg-scale="surface"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }`,
+  },
+  {
+    // Les groupes de la barre sans AUCUN backdrop-filter.
+    name: "barre-sans-givre",
+    css: `${N} .lgc-capsule, ${N} .lgc-capsule * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }`,
+  },
+  {
+    // Les petites lentilles (≤ 60 px : boutons ronds du héros) seules retirées.
+    name: "petites-sans-lentille",
+    css: "",
+    js: `for (const n of document.querySelectorAll("[style*='--lg-lens'], [style*='--lgc-lens']")) {
+      const r = n.getBoundingClientRect();
+      if (r.width <= 60 && r.height <= 60) { n.style.setProperty("--lg-lens", "saturate(1)", "important"); n.style.setProperty("--lgc-lens", "saturate(1)", "important"); }
+    }`,
+  },
+  {
+    // Loi d'échelle : 10 lentilles de 36 px de PLUS sur le héros (même filtre qu'une vraie).
+    name: "plus-10-petites",
+    css: "",
+    js: injectLenses(10, 36, 36),
+  },
+  {
+    // … ou UNE lentille de plus, de la taille d'un groupe de la barre.
+    name: "plus-1-grande",
+    css: "",
+    js: injectLenses(1, 655, 48),
+  },
+  {
+    // … ou 10 GRANDES (le coût suit-il la surface ?).
+    name: "plus-10-grandes",
+    css: "",
+    js: injectLenses(10, 655, 48),
+  },
+  {
+    // Le menu « Plus » sans ses images (tuiles des bibliothèques).
+    name: "plus-sans-images",
+    css: ".lg-more img { visibility: hidden !important; }",
+  },
+  {
+    // Le menu « Plus » sans défilement propre (plus de calque de défilement).
+    name: "plus-sans-defilement",
+    css: ".lg-more { overflow: visible !important; }",
+  },
+  {
+    // MÊME rendu : chaque primitive reçoit sa sous-région explicite (celle du filtre).
+    name: "sous-regions",
+    css: "",
+    js: filterPatch(`const w = f.getAttribute("width"), h = f.getAttribute("height");
+      f.querySelectorAll("feDisplacementMap, feComposite, feColorMatrix").forEach((p) => { p.setAttribute("x", "0"); p.setAttribute("y", "0"); p.setAttribute("width", w); p.setAttribute("height", h); });`),
+  },
+  {
+    // Aucune mesure du ton (la coquille répond tout de suite, sans capture) — `main` : côté principal.
+    name: "sans-mesure-ton",
+    css: "",
+    main: `const { ipcMain } = require("electron"); const ch = "tentacle:liquid-glass-sample";
+      globalThis.__lg5SampleOrig ??= ipcMain._invokeHandlers.get(ch);
+      ipcMain._invokeHandlers.set(ch, async () => []);`,
+    mainUndo: `const { ipcMain } = require("electron"); if (globalThis.__lg5SampleOrig) ipcMain._invokeHandlers.set("tentacle:liquid-glass-sample", globalThis.__lg5SampleOrig);`,
+  },
+  {
+    // Instrument : la taille de chaque capture du ton (`capturePage`), rendue par `report`.
+    name: "compte-captures",
+    css: "",
+    main: `const { BrowserWindow } = require("electron"); globalThis.__lg5Caps = [];
+      for (const w of BrowserWindow.getAllWindows()) { const wc = w.webContents; if (wc.__lg5) continue; wc.__lg5 = true; const orig = wc.capturePage.bind(wc);
+        wc.capturePage = async (rect, ...rest) => { const t = performance.now(); const img = await orig(rect, ...rest); globalThis.__lg5Caps.push({ w: rect?.width, h: rect?.height, ms: Math.round(performance.now() - t) }); return img; }; }`,
+    report: `return globalThis.__lg5Caps;`,
+  },
+  {
     // La couche floutée sous la barre (bord de défilement adouci).
     name: "sans-bord",
     css: `${N} .lgc-edge::before { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }`,
@@ -69,6 +158,11 @@ export const ABLATIONS = [
     // Les ombres des glyphes (texte et icônes) dans le verre.
     name: "sans-ombres",
     css: `${N} * { text-shadow: none !important; } ${N} svg { filter: none !important; }`,
+  },
+  {
+    // TOUTES les animations CSS figées (travelling, halo, jauge du héros) ; les menus (framer) bougent encore.
+    name: "css-fige",
+    css: "*, *::before, *::after { animation-play-state: paused !important; }",
   },
   {
     // Le travelling du héros arrêté : ce que coûte un dessous qui bouge.

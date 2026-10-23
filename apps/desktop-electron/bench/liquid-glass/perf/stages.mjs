@@ -13,8 +13,12 @@ export const STAGES = [
 
 const q = (sorted, p) => (sorted.length === 0 ? null : Math.round(sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] * 10) / 10);
 
-/** `window` : [début, fin] en ms de la trace (`markWindow`), ou toute la trace. */
+/**
+ * `window` : [début, fin] en ms de la trace (`markWindow`), ou toute la trace ;
+ * ou une LISTE de fenêtres (les ouvertures de menus : `openWindows`).
+ */
 export function stageStats(events, window = null) {
+  const windows = window === null ? null : Array.isArray(window[0]) ? window : [window];
   const open = new Map();
   const spans = Object.fromEntries(STAGES.map((s) => [s, []]));
   for (const e of events.filter((x) => STAGES.includes(x.name)).sort((a, b) => a.ts - b.ts)) {
@@ -23,7 +27,7 @@ export function stageStats(events, window = null) {
     else if (e.ph === "e") {
       const begin = open.get(key)?.pop();
       if (begin === undefined) continue;
-      if (window !== null && (begin / 1000 < window[0] || begin / 1000 > window[1])) continue;
+      if (windows !== null && !windows.some(([a, b]) => begin / 1000 >= a && begin / 1000 <= b)) continue;
       spans[e.name].push((e.ts - begin) / 1000);
     }
   }
@@ -33,4 +37,11 @@ export function stageStats(events, window = null) {
       return [name, { n: sorted.length, p50: q(sorted, 0.5), p95: q(sorted, 0.95), max: q(sorted, 1) }];
     }),
   );
+}
+
+/** Les 350 ms qui suivent chaque `performance.mark("lg5:open")` : l'animation d'ouverture. */
+export function openWindows(events, ms = 350) {
+  return events
+    .filter((e) => e.name === "lg5:open" && e.cat?.includes("blink.user_timing"))
+    .map((e) => [e.ts / 1000, e.ts / 1000 + ms]);
 }
