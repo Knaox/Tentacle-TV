@@ -1,3 +1,7 @@
+import { useId } from "react";
+
+import { SegmentLens } from "../ui/glass/SegmentLens";
+
 /**
  * Un choix parmi deux ou trois, posé à plat.
  *
@@ -60,6 +64,8 @@ export function SegmentedChoice<T extends string>({
   label, value, options, onChange, className = "",
 }: SegmentedChoiceProps<T>) {
   const columns = COLUMNS[options.length] ?? COLUMNS[3];
+  // La lentille de verre qui glisse d'un segment à l'autre (natif seulement).
+  const lensGroup = useId();
 
   return (
     <div
@@ -81,6 +87,7 @@ export function SegmentedChoice<T extends string>({
                pour les lecteurs d'écran. */
             className="ctl-segment flex min-w-0 items-center justify-center text-center leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
+            {option.value === value && <SegmentLens group={lensGroup} />}
             {option.label}
           </button>
         );

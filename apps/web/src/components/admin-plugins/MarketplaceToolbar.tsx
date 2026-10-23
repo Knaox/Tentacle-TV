@@ -57,8 +57,8 @@ export function MarketplaceToolbar({ filter, onFilter, categories, total, shown 
                 onClick={() => onFilter({ ...filter, category: active && chip.id ? null : chip.id })}
                 className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-line-focus ${
                   active
-                    ? "border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-content-primary"
-                    : "border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
+                    ? "lg-chip lg-chip-on border-[rgba(var(--brand-rgb),0.45)] bg-[var(--brand-soft)] text-content-primary"
+                    : "lg-chip border-line-subtle bg-fill-subtle text-content-secondary hover:bg-fill-soft hover:text-content-primary"
                 }`}
               >
                 {chip.label}

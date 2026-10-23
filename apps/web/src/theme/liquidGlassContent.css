@@ -15,8 +15,9 @@
  *  • `.lg-content`         un conteneur de contenu (groupe, panneau, tuile) ;
  *  • `.lg-content-tile`    … qui réagit au survol (tuile qui filtre) ;
  *  • `.lg-content-control` un petit contrôle DANS le contenu (pastille de
- *                          filtre, bouton rond, champ) : remplissage, jamais
- *                          un verre de plus ;
+ *                          filtre, bouton rond, champ) : remplissage ici —
+ *                          dans une page, le VERRE de `lgPageGlass.css` le
+ *                          reprend (lot lg4 : un contrôle est du verre) ;
  *  • `.lg-seg` / `.lg-seg-marker` le contrôle segmenté des barres d'outils :
  *                          piste en remplissage, segment choisi en bouton
  *                          NEUTRE plus clair, jamais un aplat violet.

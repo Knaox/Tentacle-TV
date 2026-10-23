@@ -18,7 +18,8 @@
 :root[data-lgp-preview="on"] {
   /* Texte et symboles */
   --lg-player-fg: #ffffff;
-  --lg-player-fg-2: #c9c9d1;
+  /* ≥ 4,5:1 sur la forme atténuée la plus claire (87/255, neige) : mesuré lg3. */
+  --lg-player-fg-2: #d4d4da;
   --lg-player-fg-3: #8f8f99;
   --lg-player-focus: var(--brand-light);
 
@@ -26,9 +27,13 @@
      les écarts (10) dépassent la distance de fusion du groupe natif (8) : au repos,
      AppKit les garde distinctes ; elles ne se fondent que pendant leur
      métamorphose (`[data-lgp-collapse]`), quand elles se resserrent. */
+  /* Les marges de l'habillage d'avant, à l'identique : 20 px en haut et en bas
+     (`pt-5` / `pb-5`), 24 px sur les côtés (`px-6`, le `right-6` des encarts).
+     L'overlay suit la fenêtre et l'écran comme lui (retour de Damien, lg3) :
+     aucune largeur plafonnée — la capsule du temps court d'une marge à l'autre. */
   --lg-player-edge: 20px;
+  --lg-player-inline: 24px;
   --lg-player-gap: 10px;
-  --lg-player-bar-max: 760px;
   --lg-player-timecap-height: 36px;
   --lg-player-group-height: 48px;
   /* Hauteur FIXE du bas (temps + écart + boutons) : le coin bas-droit monte d'autant (`.lgp-corner`). */
@@ -138,16 +143,11 @@
   --lg-player-label-shadow: none;
 }
 
-/* Le TON du dessous (`data-lg-tone`, mesuré sous chaque forme par la coquille) :
-   sur un dessous CLAIR — la neige, un ciel blanc —, glyphes et chiffres passent
-   au SOMBRE du socle (un quasi-noir à alpha, qui se compose juste), SANS halo :
-   un blanc à alpha rendrait gris sur la fenêtre transparente. */
-:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface[data-lg-tone="light"] {
-  --lg-player-fg: var(--lg-glyph-on-light);
-  --lg-player-fg-2: var(--lg-glyph-on-light-secondary);
-  --lg-player-glyph-shadow: none;
-  --lg-player-label-shadow: none;
-}
+/* Le TON du dessous (`data-lg-tone`, mesuré sous chaque forme par la coquille)
+   ne change PAS la couleur des glyphes : ils restent blancs, comme chez Apple
+   (QuickTime, l'app TV). C'est l'ATTÉNUATION de la forme qui suit le ton
+   (`playerGlassDim.css`) — avant le lot lg3, des glyphes sombres posés sur un
+   verre devenu laiteux rendaient une plaque grise sale sur la neige. */
 
 /* ── Surface ─────────────────────────────────────────────────────────── */
 

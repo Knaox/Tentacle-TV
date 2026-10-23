@@ -21,9 +21,32 @@ import {
   noteFullscreenReached,
 } from "./fullscreen";
 
+/** Le dernier état diffusé, par fenêtre : un `resize` ne rediffuse que ce qui a changé. */
+const lastBroadcast = new WeakMap<BrowserWindow, boolean>();
+
 /** Envoie l'état à la page. Sans effet sur une fenêtre détruite. */
 export function broadcastFullscreen(win: BrowserWindow, value: boolean): void {
-  if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", value);
+  if (win.isDestroyed()) return;
+  lastBroadcast.set(win, value);
+  win.webContents.send("tentacle:window://fullscreen", value);
+}
+
+/**
+ * macOS : ce qu'un `resize` doit diffuser — l'état de la fenêtre s'il a changé
+ * depuis la dernière diffusion, sinon rien (`null`).
+ *
+ * AppKit pose (et retire) le drapeau plein écran du `styleMask` au DÉBUT de la
+ * transition, et la vue web prend sa nouvelle taille dans la foulée ; mais
+ * `enter-full-screen` / `leave-full-screen` n'arrivent qu'à la FIN de
+ * l'animation, ~1 s plus tard (mesuré le 22/10, lot lg3). Entre les deux, la
+ * page se mettait en page pour la NOUVELLE taille avec l'ANCIEN état : bandeau
+ * des feux encore peint sur le film, capsules du haut 38 pt trop bas à
+ * l'entrée ; à la sortie, capsules du haut sous les feux revenus — et le verre
+ * natif, qui suit la page, avec elles. Le côté natif (retrait de mpv sous le
+ * bandeau, `macosTitleBar.ts`) lit déjà `isFullScreen()` à chaque `resize`.
+ */
+export function fullscreenOnResize(last: boolean | undefined, now: boolean): boolean | null {
+  return last === now ? null : now;
 }
 
 /**
@@ -52,6 +75,14 @@ export function installFullscreenSync(win: BrowserWindow): void {
     broadcast(false);
     traceWindows();
   });
+
+  if (process.platform === "darwin") {
+    win.on("resize", () => {
+      if (win.isDestroyed()) return;
+      const value = fullscreenOnResize(lastBroadcast.get(win), win.isFullScreen());
+      if (value !== null) broadcast(value);
+    });
+  }
 
   installF11(win, broadcast);
 }

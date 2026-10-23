@@ -10,10 +10,13 @@
  * Le fond `surface-dropdown` devient transparent : la matière est native. */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-surface.lgp-panel {
+  /* ≥ 4,5:1 sur le verre normal le plus clair (96/255 : la neige, fenêtre inactive,
+     mesuré lg3) — avant, tertiaire 3,2:1 et quaternaire 2:1 (titres de section,
+     « aucun épisode »). La hiérarchie passe par la taille et la graisse. */
   --text-primary: #ffffff;
-  --text-secondary: #e0e0e6;
-  --text-tertiary: #b9b9c2;
-  --text-quaternary: #91919b;
+  --text-secondary: #ececf0;
+  --text-tertiary: #dcdce2;
+  --text-quaternary: #dcdce2;
   --text-disabled: #6e6e78;
   --border-subtle: rgb(0 0 0 / 0.26);
   --border-strong: #8d8b97;

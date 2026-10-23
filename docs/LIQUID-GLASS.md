@@ -37,6 +37,16 @@ navigation, les composants, le hors ligne — 9. Ce qui ne doit jamais casser �
   bord qui ÉCLAIRCIT ce qu'il y a dessous, jamais un trait blanc ; des glyphes
   au TON du dessous (clair dessous → sombres, et inversement) ; de petites
   formes qui flottent séparées, jamais une dalle.
+- **Le verre est la couche FONCTIONNELLE ; le contenu prend des remplissages**
+  (lot lg2) : groupes de réglages, cartes, tuiles, panneaux d'outils posés dans
+  la page sont des remplissages sobres et OPAQUES (`theme/liquidGlassContent.css`),
+  comme Réglages Système. **Mais un CONTRÔLE est du verre, même dans une page**
+  (lot lg4, décision de Damien du 22/10, « certains boutons sont pas liquid
+  glass ») : bouton, pastille de filtre, déclencheur de menu, tri, champ de
+  recherche, segmenté, interrupteur prennent le style `glass` de macOS 26
+  (`glassProminent` pour l'action principale) — § 8, « Contrôles des pages ».
+  Jamais de verre sur du verre : dans un menu, une feuille ou une barre
+  latérale, ils gardent leurs remplissages.
 - **Les couleurs de marque restent.** Le verre est neutre ; le violet → rose
   vient en TEINTE DANS le verre (l'action principale, l'onglet actif, une
   bascule allumée, la progression), jamais en aplat derrière.
@@ -259,7 +269,14 @@ la courbe ajustée finit exactement au but, sans le saut d'un ressort coupé. La
   opaque il ne montrerait rien, et derrière une page trouée il montrerait le
   bureau. lg-chrome fait ce verre en CSS, sur le contenu.
 - Plein écran : aller-retour vérifié verre posé — position tenue, sortie de mpv
-  inchangée.
+  inchangée. ⚠️ AppKit pose le drapeau plein écran du `styleMask` et la vue web prend sa
+  taille au DÉBUT de la transition ; `enter-full-screen` / `leave-full-screen` n'arrivent
+  qu'à la FIN de l'animation, ~1 s plus tard (mesuré, lot lg3). La page l'apprend donc au
+  premier `resize` où `isFullScreen()` change (`fullscreenSync.ts`, `fullscreenOnResize`) :
+  avant, bandeau des feux peint sur le film et capsules du haut 38 pt trop bas à l'entrée,
+  capsules du haut SOUS les feux revenus à la sortie — le verre natif avec elles. Relevé
+  après : à +150 ms, entrée comme sortie, tout est à sa place (contrôles affichés ou
+  masqués ; masqués, 0 vue pendant la bascule).
 - HDR, vraie lecture HDR10 (HEVC Main10, PQ, BT.2020) au montage `fenetre` :
   `video-params` ET `video-target-params` restent `pq/bt.2020` avec le verre ;
   headroom EDR 9,45 / 16 maintenu verre posé, en plein écran comme au retour en
@@ -332,7 +349,8 @@ déclarés SOUS la porte, sombre et clair — son en-tête tient le catalogue :
 Chaque famille COMPOSE ce matériau chez elle, sans redéfinir un nom commun :
 mouvement `--lg-spring-*` et accessibilité (`theme/glass/physics.css`, § 6),
 fenêtre `--lg-chrome-*` (`desktop/windowGlass.css`, § 8), contrôles `--lgc-*`
-(`components/ui/glass/lgRecipes.css`, § 8), lecteur `--lg-player-*`
+(`components/ui/glass/lgRecipes.css`, § 8), contrôles des pages `--lgp-*`
+(`components/ui/glass/lgPageControls.css`, § 8), lecteur `--lg-player-*`
 (`components/player/glass/`, § 7).
 
 **La portée est tenue par test** : toute règle de `apps/web/src` qui lit
@@ -618,15 +636,42 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
   « Vous regardez encore ? », fiche « à suivre », badges, attente, avis, Watch
   Together, bulle de la vignette du survol. Relevé : 6 vues claires contrôles
   affichés, 7 avec un panneau, 0 masqués.
-- **Aucun voile noir sous le verre clair** (`--lg-player-clear-dim:
-  transparent`) : mesuré, le flou du verre clair ne vient ni du voile ni du
-  conteneur commun, le voile ne réglait que le ton. La lisibilité vient d'un
-  HALO local qui épouse glyphes et libellés (`--lg-player-glyph-shadow`,
-  `--lg-player-label-shadow` : contour d'un point, ombre portée, halo de 8 à
-  12 px), coupé en matière pleine. Panneaux : aucune teinte en sombre, 32 %
-  de noir en thème clair (`--lg-player-panel-tint`). Couleurs de la page : l'OPAQUE
-  ou le noir à alpha seulement — un blanc translucide rend gris sur la
+- **Une ATTÉNUATION sous le verre clair, comme QuickTime** (lot lg3, 23/10 ; avant :
+  aucun voile, la lisibilité par le halo — « sur du blanc ou du noir, ça rend vraiment
+  mal »). Mesuré sur les captures de la fenêtre (M4, macOS 26) : fenêtre ACTIVE, le verre
+  clair seul vire au gris LAITEUX — 87/255 sur du noir pur, 246 sur la neige (33 et 235
+  fenêtre inactive : le banc, toujours sans focus, ne voyait que ce cas-là) ; QuickTime
+  Player sur les mêmes clips : 88 et 26, glyphes BLANCS. La teinte native (`tintColor`)
+  n'y peut rien (242 → 231 même à 85 % de noir) : l'atténuation est un noir à alpha posé
+  par la PAGE dans chaque forme, sous le contenu (`playerGlassDim.css`, `::before`,
+  `isolation: isolate`), dosé par le TON mesuré dessous (`data-lg-tone`, la vidéo seule) :
+  **0,65** dessous clair (neige → 88), **0,5** dessous sombre (noir → 44, liseré et
+  reflet du verre visibles), **0,2** dessous sombre fenêtre inactive (→ 26). Seule son
+  opacité suit le ton (compositeur). **Glyphes blancs partout** — plus de glyphes sombres
+  sur un dessous clair ; secondaire `#d4d4da`. Contrastes mesurés : 7,1:1 (neige) à
+  17:1 (noir), icônes 7,5:1 à 14:1.
+- **Le verre NORMAL s'adapte seul** (panneaux, fiche « à suivre », « Vous regardez
+  encore ? », avis) : 91 sur la neige, 22 sur le noir fenêtre active (96 / 36 inactive),
+  déjà le réglage de QuickTime — aucune atténuation, aucune mesure de ton
+  (`adaptiveTone` par défaut pour le seul verre clair ; `data-lgp-variant`). Atténué, il
+  devenait une dalle noire (32). Exception, le **thème clair** : le verre normal y prend
+  l'apparence claire (176 / 130 sous des textes blancs, ~2:1) → 0,5 (88 / 65). Gris des
+  panneaux relevés à 4,5:1 sur le plus clair (96) : secondaire `#ececf0`, tertiaire et
+  quaternaire `#dcdce2` (titres de section, « aucun épisode » étaient à 3,2 et 2:1).
+  Le halo des glyphes reste (contour d'un point, ombre portée), coupé en matière pleine.
+  Panneaux : 32 % de noir en thème clair (`--lg-player-panel-tint`, natif). Couleurs de
+  la page : l'OPAQUE ou le noir à alpha seulement — un blanc translucide rend gris sur la
   surface à alpha de la fenêtre.
+- **La géométrie de l'habillage d'avant** (lot lg3, retour de Damien : « l'overlay doit
+  s'adapter à la taille de l'écran, même comportement que sans liquid glass ») : marges
+  de 20 px en haut et en bas, 24 px sur les côtés (`--lg-player-inline`, le `px-6` /
+  `right-6` d'avant), capsule du temps et rangée du bas d'une marge à l'autre, transport
+  au centre de la fenêtre (grille `1fr auto 1fr`) — plus de bas plafonné à 760 px centrés.
+  Relevé, verre allumé contre coupé : de 900 × 600 à 1900 × 1040, bouton retour au pixel
+  près, bords du bas identiques ; pendant un redimensionnement, page et vue native égales à
+  chaque pas de 16 ms (`bench/liquid-glass/lg3/geometry.mjs`). Seul écart voulu : le bloc
+  du bas monte de 32 px de plus (le temps a sa capsule, les boutons des cibles de 48 px).
+  `playerGlassGeometry.test.ts` lie les jetons aux classes d'avant.
 - **Une MÉTAMORPHOSE au lieu d'un fondu** : chaque forme se replie vers le
   pivot de son ensemble (le transport, la sortie — `useCollapsePivots`), s'y
   fond avec les autres en une goutte, et s'en sépare au retour ; la région suit
@@ -726,6 +771,47 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   `/dev/verre?vue=menus`. Preuve du rendu d'avant : styles calculés de quatre
   menus ouverts (survol compris), base contre branche, porte éteinte — 4 512
   propriétés, 0 écart.
+- **Contrôles des pages : du verre, même dans une page** (lot lg4,
+  `components/ui/glass/lgPageControls.css` pour les jetons `--lgp-*`,
+  `lgPageGlass.css` pour la peau des marqueurs, `lgPageButtons.css` pour les
+  boutons ad hoc). Portée : `.lg-page` (la zone d'`AppLayout`) et `.lg-detail`
+  (la fiche, servie hors d'`AppLayout`), jamais sous un verre
+  (`[data-lg-scale="surface"]`, `.lg-surface`, `.lg-menu`, `.lg-sheet`, dialogue).
+  - **Le verre sur un fond opaque se lit encore comme du verre** : légère
+    translucidité (voile blanc dégressif), reflet diffus en haut à gauche,
+    liseré de LUMIÈRE (arc éclairé du côté de la lumière, contre-reflet en
+    vis-à-vis), profondeur (ombre de contact + ombre portée douce). **Aucun
+    `backdrop-filter`** : sur un remplissage opaque il ne flouterait qu'un aplat,
+    pour une passe de composition par contrôle — tout est peint une fois, rien ne
+    se recalcule au défilement. Jamais un simple aplat plus clair.
+  - **Par ton** : jetons `-on-dark` / `-on-light`, choisis par le thème ou par le
+    ton mesuré d'un contrôle (`data-lg-tone`). Libellés ≥ 4,5:1 au PIRE point du
+    reflet (`lgPageControls.test.ts`, qui calcule la composition couche par
+    couche — il a trouvé une lentille sombre à 4:1 et un rouge de danger à 3,9:1,
+    corrigés).
+  - **Qui reçoit quoi** : `.lg-chip` (pastilles, déclencheurs de `FilterMenu`),
+    `.lg-content-control` (sens du tri, « Partager »), `.lg-pill` (« Tout voir »),
+    `.lg-field` (champ de recherche), `.lg-glass-btn` (marqueur à la main :
+    `ActionPill`, `Tabs`, `ChoiceChips`, tri des utilisateurs) → `glass` ; un
+    filtre POSÉ (`.lg-chip-on`) → l'accent UNI dans le verre ; un onglet ou une
+    pastille CHOISIS (`.lg-glass-selected`, `:checked + .lg-glass-btn`) → la
+    lentille neutre ; les boutons ad hoc se reconnaissent à leur FORME (`button` /
+    `a` / `select` arrondi, rempli ou bordé, jamais une tuile rembourrée ou
+    alignée à gauche) : secondaire et danger → `glass`, `bg-cta-primary-bg` →
+    `glassProminent` (la marque dans le verre, rose assombri à 82 % : blanc
+    ≥ 4,5:1). Les champs de SAISIE d'un formulaire et les tuiles de choix
+    restent des remplissages (Réglages Système).
+  - **Segmentés** : piste EN CREUX, segment choisi en LENTILLE qui GLISSE —
+    `.lg-seg-marker` (repère de framer, `layoutId`) ou `SegmentLens` (segmentés
+    de réglages `.ctl-segment`, montée en natif seulement, ressort `morph`,
+    fondu en mouvement réduit) ; à l'appui sur la piste, la lentille gonfle
+    (`scale`). **Interrupteur** : piste en creux, le pouce s'étire en lentille à
+    l'appui. Seuls `scale`, `transform`, `opacity` et la couleur du libellé sont
+    en transition ; l'appui gonfle le verre (`--lgp-press-scale`, 1,04), 1 en
+    mouvement réduit. « Réduire la transparence » : verre plein ; « Contraste
+    accru » : plein + liseré net.
+  - Labo : `/dev/verre?vue=controles` (les vrais contrôles sur le panneau d'outils
+    opaque et sur le fond nu de la page).
 - **Hors ligne** : message de passage hors ligne et avis en `.lg-notice`,
   panneaux de la page hors ligne en `.lg-panel` (sans flou), bannière en
   lentille ; dialogues « garder hors ligne » et de suppression en portail (§ 5).
