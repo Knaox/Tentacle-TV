@@ -12,8 +12,9 @@
  * (marqueurs `.lg-fb-btn`, `lgFloatingBar.css`) : jamais de verre dans le verre.
  *
  * Ailleurs : `legacy`, le balisage d'avant, rendu tel quel — le rendu d'avant
- * au pixel près. `portal` monte l'un comme l'autre dans `document.body` (une
- * barre `fixed` sous un verre serait bornée par lui : `modalPortal.test.ts`).
+ * au pixel près ; `portal` le monte dans `document.body` comme avant. Le rendu
+ * natif, `fixed`, y est TOUJOURS monté (sous un verre ou un `transform`, il
+ * serait borné par lui : `modalPortal.test.ts`).
  *
  *     <FloatingBar portal legacy={<OldBar />} label="…" groups={[status, actions]} />
  */
@@ -29,7 +30,7 @@ interface FloatingBarProps {
   groups: ReadonlyArray<ReactNode>;
   /** Le bord où la barre flotte : en bas (défaut), ou sous la barre du haut. */
   edge?: "bottom" | "top";
-  /** Monte la barre (les deux rendus) dans `document.body`. */
+  /** Monte AUSSI le rendu d'avant dans `document.body` (le natif y est toujours). */
   portal?: boolean;
   /** Rôle et nom accessibles de la barre (verre natif). */
   role?: "toolbar" | "status";
@@ -47,7 +48,8 @@ const EDGE: Record<"bottom" | "top", CSSProperties> = {
 
 export function FloatingBar({ legacy, groups, edge = "bottom", portal = false, role, label, live, data }: FloatingBarProps) {
   const native = useLiquidGlassMode() === "native";
-  const node = native ? (
+  if (!native) return portal ? createPortal(legacy, document.body) : <>{legacy}</>;
+  return createPortal(
     <>
       {/* L'effet de bord du bas : le contenu se fond sous la barre (lgFloatingBar.css). */}
       {edge === "bottom" && <div aria-hidden className="lg-floating-bar-edge" />}
@@ -64,11 +66,9 @@ export function FloatingBar({ legacy, groups, edge = "bottom", portal = false, r
           <FloatingBarGroup key={index}>{group}</FloatingBarGroup>
         ))}
       </div>
-    </>
-  ) : (
-    legacy
+    </>,
+    document.body,
   );
-  return portal ? createPortal(node, document.body) : <>{node}</>;
 }
 
 function FloatingBarGroup({ children }: { children: ReactNode }) {

@@ -28,6 +28,13 @@
 :root[data-liquid-glass="native"] .lg-surface.lg-floating-bar-group[data-lg-tone="light"] {
   --lgfb-hover: rgba(var(--lg-shade-rgb), 0.06);
   --lgfb-pressed: rgba(var(--lg-shade-rgb), 0.1);
+  --lgfb-accent: var(--brand);
+}
+
+/* Un glyphe à l'ACCENT (« Nouveautés disponibles ») : plus clair sur un
+ * dessous sombre, plus profond sur un dessous clair — comme l'onglet courant. */
+:root[data-liquid-glass="native"] .lg-floating-bar-group .lg-fb-accent {
+  color: var(--lgfb-accent, var(--brand-light));
 }
 
 :root[data-liquid-glass="native"] .lg-floating-bar-group .lg-fb-status {
@@ -85,7 +92,8 @@
 
 :root[data-liquid-glass="native"] .lg-floating-bar-group .lg-fb-btn.lg-fb-primary {
   padding-inline: 18px;
-  background: var(--lgp-prominent-fill);
+  /* `!important` contre le dégradé d'avant posé EN LIGNE (« Ajouter à ma liste »). */
+  background: var(--lgp-prominent-fill) !important;
   box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
   color: var(--lgp-tint-glyph);
   font-weight: 700;
@@ -93,7 +101,7 @@
 }
 
 :root[data-liquid-glass="native"] .lg-floating-bar-group .lg-fb-btn.lg-fb-primary:hover:not(:disabled) {
-  background: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%), var(--lgp-prominent-fill);
+  background: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%), var(--lgp-prominent-fill) !important;
   color: var(--lgp-tint-glyph);
 }
 

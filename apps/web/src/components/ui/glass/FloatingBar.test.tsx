@@ -10,6 +10,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 const state = vi.hoisted(() => ({ mode: "off" as "native" | "refraction" | "off" }));
 vi.mock("../../../theme/useLiquidGlass", () => ({ useLiquidGlassMode: () => state.mode }));
+// Le portail rendu sur place (le rendu serveur n'en connaît pas).
+vi.mock("react-dom", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-dom")>()),
+  createPortal: (node: unknown) => node,
+}));
+
+// Le rendu natif vise `document.body` : un corps factice suffit, le portail rend sur place.
+vi.stubGlobal("document", { body: {}, documentElement: { setAttribute() {}, removeAttribute() {}, getAttribute: () => null, dataset: {}, style: {} } });
 
 const { FloatingBar } = await import("./FloatingBar");
 

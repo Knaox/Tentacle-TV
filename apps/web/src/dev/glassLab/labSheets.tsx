@@ -6,7 +6,9 @@
  *  - `supprimer`   : `DeleteDownloadModal` ;
  *  - `confirmer`, `danger` : `ConfirmDialog`, action principale puis destructive ;
  *  - `barre-favoris`, `barre-vus`, `barre-suppression` : les barres de sélection
- *    qui flottent (`FloatingBar`), au bas des dessous du labo.
+ *    qui flottent (`FloatingBar`), au bas des dessous du labo ;
+ *  - `barre-liste`, `pastille-reco` : l'ajout d'une liste partagée, et
+ *    « Nouveautés disponibles » sous la barre du haut.
  */
 
 import { useState } from "react";
@@ -16,10 +18,12 @@ import { WatchedSelectionToolbar } from "../../components/WatchedSelectionToolba
 import { DeletionSelectionBar } from "../../components/libraryDelete/DeletionSelectionBar";
 import type { DeletionSelection } from "../../components/libraryDelete/useDeletionSelection";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { RecoNewerPill } from "../../components/reco/RecoNewerPill";
+import { SharedListAddBar } from "../../components/share/SharedListAddBar";
 import { DeleteDownloadModal } from "../../downloads/DeleteDownloadModal";
 import { DownloadDialog } from "../../downloads/DownloadDialog";
 
-const SHEETS = ["telecharger", "supprimer", "confirmer", "danger", "barre-favoris", "barre-vus", "barre-suppression"] as const;
+const SHEETS = ["telecharger", "supprimer", "confirmer", "danger", "barre-favoris", "barre-vus", "barre-suppression", "barre-liste", "pastille-reco"] as const;
 type LabSheet = (typeof SHEETS)[number] | null;
 
 const EPISODE = {
@@ -64,6 +68,8 @@ export function LabSheets({ top }: { top: number }) {
         <WatchedSelectionToolbar count={4} onSelectAll={noop} onCancel={close} onMarkWatched={noop} onMarkUnwatched={noop} isBusy={false} onDownload={noop} downloadLabel="Télécharger (4)" />
       )}
       {sheet === "barre-suppression" && <DeletionSelectionBar selection={DELETION} onDelete={noop} />}
+      {sheet === "barre-liste" && <SharedListAddBar kind="watchlist" count={5} isAdding={false} added={false} onAdd={noop} />}
+      <RecoNewerPill visible={sheet === "pastille-reco"} onShow={close} />
       <ConfirmDialog
         open={sheet === "confirmer" || sheet === "danger"}
         title={sheet === "danger" ? "Supprimer ce profil ?" : "Partager vos titres likés ?"}
