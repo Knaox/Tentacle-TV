@@ -1,6 +1,9 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { allocateLenses, LENS_BUDGET, type LensCandidate } from "./gpuBudget";
+import { GlassLensScope, useLensAllowed } from "./useLensBudget";
 import { lensBudgetSnapshot, lensGranted, lensRankOf, registerLens, subscribeLensBudget } from "./lensBudgetStore";
 
 /**
@@ -96,5 +99,20 @@ describe("le magasin de la page", () => {
     cleanups.push(registerLens("loin", fakeElement({ x: 0, y: 99_999, width: 100, height: 40 }), "control"));
     expect(lensGranted("loin")).toBe(true);
     expect(notified - after).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("la portée (GlassLensScope)", () => {
+  const Probe = () => createElement("i", null, String(useLensAllowed()));
+  const scope = (lens: boolean, child: ReturnType<typeof createElement>) => createElement(GlassLensScope, { lens, children: child });
+
+  it("permise par défaut, retirée par la portée, rendue par une portée imbriquée", () => {
+    expect(renderToStaticMarkup(createElement(Probe))).toBe("<i>true</i>");
+    expect(renderToStaticMarkup(scope(false, createElement(Probe)))).toBe("<i>false</i>");
+    expect(renderToStaticMarkup(scope(false, scope(true, createElement(Probe))))).toBe("<i>true</i>");
+  });
+
+  it("ne dessine rien : hors du mode natif, le DOM d'avant", () => {
+    expect(renderToStaticMarkup(scope(false, createElement("b", null, "x")))).toBe("<b>x</b>");
   });
 });

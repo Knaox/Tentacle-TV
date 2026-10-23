@@ -94,31 +94,32 @@ export function HeroActions({ item, onPlay, resuming, episodeCode, imageUrl }: H
     navigate(`/media/${item.Id}`);
   };
 
-  // Posés sur une image qui bouge sans cesse (travelling, fondus) : du givre
-  // SANS lentille — chacune se recalculait à chaque pas du héros (lot lg5 :
-  // dessin au repos 4,4 → 2 ms, ouverture d'un menu 16,5 → 5-9 ms).
   return (
-    <GlassLensScope lens={false}>
-      <div className="flex flex-wrap items-center gap-2.5">
-        <PressableGlass {...HERO_PLAY_PROPS} onClick={onPlay}>
-          <PlayIcon />
-          {resuming ? t("common:resume") : t("common:play")}
-          {/* Blanc plein, graisse moindre : une opacité réduite passait sous 3:1 sur le dégradé. */}
-          {episodeCode && <span className="font-medium">{episodeCode}</span>}
-        </PressableGlass>
+    <div className="flex flex-wrap items-center gap-2.5">
+      <PressableGlass {...HERO_PLAY_PROPS} onClick={onPlay}>
+        <PlayIcon />
+        {resuming ? t("common:resume") : t("common:play")}
+        {/* Blanc plein, graisse moindre : une opacité réduite passait sous 3:1 sur le dégradé. */}
+        {episodeCode && <span className="font-medium">{episodeCode}</span>}
+      </PressableGlass>
 
-        <PressableGlass {...HERO_INFO_PROPS} onClick={openDetail}>
-          <InfoIcon />
-          {t("common:moreInfo")}
-        </PressableGlass>
+      <PressableGlass {...HERO_INFO_PROPS} onClick={openDetail}>
+        <InfoIcon />
+        {t("common:moreInfo")}
+      </PressableGlass>
 
+      {/* Les petits ronds, posés sur une image qui bouge sans cesse : du givre SANS
+          lentille (lot lg5, décision de Damien du 23/10) — chacune se recalculait
+          à chaque pas du héros, pour une réfraction invisible à 36 px. « Lecture »
+          et « Plus d'infos » gardent la leur. */}
+      <GlassLensScope lens={false}>
         <div className="ml-1 hidden items-center gap-1.5 sm:flex">
           <CardQuickActions item={item} variant="inline" />
           {/* La bannière n'est pas montée au survol : une seule instance, et un
               seul abonnement à la file des téléchargements pour tout l'écran. */}
           <CardDownloadAction item={item} variant="inline" />
         </div>
-      </div>
-    </GlassLensScope>
+      </GlassLensScope>
+    </div>
   );
 }

@@ -546,8 +546,8 @@ FENÊTRE. Le héros redessine toute la fenêtre à chaque pas du travelling (30 
 posée dessus ou dans la barre se recalcule autant de fois. À 20 lentilles, une image sur deux est
 perdue ; l'ouverture d'un menu sur l'accueil (120 i/s) saturait le GPU avec 11 lentilles (« Plus » :
 16,5 ms par image pour 8,3). D'où, décision de Damien : au plus `LENS_BUDGET` = 8 lentilles visibles
-(`allocateLenses`, `lensBudgetStore.ts`, `useLensBudget`), et les boutons de la bannière en givre sans
-lentille (`GlassLensScope`). Écartés après mesure : loger la lumière du bord dans le bleu de la carte
+(`allocateLenses`, `lensBudgetStore.ts`, `useLensBudget`), et les 4 petits ronds de la bannière en
+givre sans lentille (`GlassLensScope`) — « Lecture » et « Plus d'infos » gardent la leur. Écartés après mesure : loger la lumière du bord dans le bleu de la carte
 de déplacement (Chromium gère la couleur des `feImage` et mélange les canaux : tout le dessous
 glisse), découper les captures du ton (plus nombreuses, chacune force un redessin complet).
 

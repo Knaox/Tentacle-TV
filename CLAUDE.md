@@ -1612,7 +1612,8 @@ Apple (HIG « Materials »), jamais le « glassmorphisme »** — refonte du 22/
   dessous qui bouge, une image sur deux est perdue. Au plus 8 visibles (`LENS_BUDGET`, `gpuBudget.ts`,
   `useLensBudget` dans la primitive et `useGlassControl`) : au-delà, les moins prioritaires (surface >
   barre > contrôle, puis taille) restent du givre. Un groupe posé sur un dessous animé renonce à la
-  sienne (`GlassLensScope lens={false}` : les boutons de la bannière de l'accueil). Un nouveau verre
+  sienne (`GlassLensScope lens={false}` : les 4 petits ronds de la bannière de l'accueil ; « Lecture »
+  et « Plus d'infos » gardent la leur). Un nouveau verre
   à lentille se compte : `node perf/census.mjs /route` (banc de fluidité, `bench/liquid-glass/perf/`).
 - **Bancs** : `TENTACLE_LIQUID_GLASS=off` simule un Mac sans verre (pont absent, option
   invisible) ; `TENTACLE_BENCH_INACTIVE=1` ouvre la fenêtre sans voler le focus (jamais un banc

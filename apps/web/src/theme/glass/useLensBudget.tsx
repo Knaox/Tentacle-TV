@@ -1,8 +1,8 @@
 /**
  * La lentille d'un verre est-elle ACCORDÉE ? Deux conditions (lot lg5) :
  *  - la PORTÉE (`GlassLensScope`) : un groupe de verres posé sur un dessous qui
- *    bouge sans cesse peut renoncer à la lentille — les boutons de la bannière
- *    de l'accueil (décision de Damien du 23/10, « A ») ;
+ *    bouge sans cesse peut renoncer à la lentille — les petits ronds de la
+ *    bannière de l'accueil (décision de Damien du 23/10) ;
  *  - le BUDGET de la page (`LENS_BUDGET`, `lensBudgetStore.ts`) : au-delà de
  *    huit lentilles visibles, les moins prioritaires restent du givre (« C »).
  * Refusée, la surface garde son givre, sa teinte et son ombre : seule la
@@ -25,9 +25,14 @@ export function GlassLensScope({ lens, children }: { lens: boolean; children: Re
   return <LensAllowed.Provider value={lens}>{children}</LensAllowed.Provider>;
 }
 
+/** La portée permet-elle la lentille ? (`GlassLensScope` le plus proche ; permise par défaut.) */
+export function useLensAllowed(): boolean {
+  return useContext(LensAllowed);
+}
+
 /** La lentille de ce verre : voulue, permise par la portée, et dans le budget de la page. */
 export function useLensBudget(element: HTMLElement | null, wanted: boolean, surface: boolean): boolean {
-  const allowed = useContext(LensAllowed);
+  const allowed = useLensAllowed();
   const id = useId();
   const enrolled = wanted && allowed && element !== null;
   useLayoutEffect(() => {
