@@ -12,6 +12,8 @@ import { PersonHero } from "../components/person/PersonHero";
 import { PersonBiography } from "../components/person/PersonBiography";
 import { FilmographyFilters } from "../components/person/FilmographyFilters";
 import { usePersonPage } from "../components/person/usePersonPage";
+import { GlassButton } from "../components/ui/glass/GlassButton";
+import { useLiquidGlassMode } from "../theme/glass";
 
 /**
  * La page d'une personne (`/person/:personId`) — ouverte d'un clic sur un
@@ -33,6 +35,7 @@ export function Person() {
 function PersonView({ personId }: { personId: string }) {
   const { t } = useTranslation(["media", "common"]);
   const navigate = useNavigate();
+  const native = useLiquidGlassMode() === "native";
   const [params] = useSearchParams();
   const page = usePersonPage(personId, params.get("role"));
   const openItem = useCallback((item: SearchMediaItem) => navigate(`/media/${item.Id}`), [navigate]);
@@ -49,15 +52,18 @@ function PersonView({ personId }: { personId: string }) {
 
   return (
     <div className="relative min-h-screen bg-surface-0 pb-20">
-      <button
-        type="button"
+      {/* Liquid Glass (mode natif) : le même Retour que la fiche — une capsule
+          de verre CLAIR sur l'image (lot lg7, R16). Ailleurs, la peau d'avant. */}
+      <GlassButton
         onClick={() => navigate(-1)}
         aria-label={t("common:back")}
-        className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-line-subtle bg-[var(--glass-tint)] px-4 py-2 text-sm text-content-secondary backdrop-blur-md transition-colors hover:text-content-primary md:left-12 md:top-6"
+        appearance={{ level: "clear", shape: "capsule" }}
+        className={`absolute left-4 top-4 z-20 flex items-center gap-2 px-4 text-sm md:left-12 md:top-6 ${native ? "h-11 font-medium" : "py-2"}`}
+        fallbackClassName="rounded-full border border-line-subtle bg-[var(--glass-tint)] text-content-secondary backdrop-blur-md transition-colors hover:text-content-primary"
       >
         <ArrowLeftIcon />
         {t("common:back")}
-      </button>
+      </GlassButton>
 
       {page.details.data ? (
         <PersonHero

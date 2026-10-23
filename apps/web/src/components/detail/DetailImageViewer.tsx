@@ -6,6 +6,7 @@ import { useJellyfinClient, type JellyfinClient } from "@tentacle-tv/api-client"
 import type { DetailImageRef } from "@tentacle-tv/shared";
 import { easeOut, duration, exitDuration } from "../../theme/motion";
 import { swipeDelta, useImageViewerControls } from "./useImageViewerControls";
+import { GlassButton } from "../ui/glass/GlassButton";
 
 interface DetailImageViewerProps {
   title: string;
@@ -91,16 +92,17 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
                 {count > 1 && <> · {t("imageViewerCounter", { index: (index ?? 0) + 1, count })}</>}
               </p>
             </div>
-            <button
+            <GlassButton
               ref={closeRef}
-              type="button"
               onClick={onClose}
               aria-label={t("imageViewerClose")}
               title={t("imageViewerClose")}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]"
+              appearance={VIEWER_ROUND}
+              className="flex h-11 w-11 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)]"
+              fallbackClassName={VIEWER_ROUND_SKIN}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
-            </button>
+            </GlassButton>
           </header>
 
           {/* Clic dans le vide = fermer ; clic sur l'image = rien. */}
@@ -158,20 +160,26 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
   );
 }
 
+/** Les ronds de la visionneuse : en Liquid Glass (mode natif), le rond de verre
+ * CLAIR de la fiche (lot lg7, R16) ; ailleurs, la peau d'avant. */
+const VIEWER_ROUND = { level: "clear", shape: "circle" } as const;
+const VIEWER_ROUND_SKIN = "rounded-full bg-white/10 transition-colors hover:bg-white/20";
+
 function StepButton({ side, label, onClick }: { side: "left" | "right"; label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
+    <GlassButton
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       aria-label={label}
       title={label}
-      className={`absolute top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] md:flex ${
+      appearance={VIEWER_ROUND}
+      className={`absolute top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--border-focus)] md:flex ${
         side === "left" ? "left-5" : "right-5"
       }`}
+      fallbackClassName={VIEWER_ROUND_SKIN}
     >
       <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d={side === "left" ? "M15 18l-6-6 6-6" : "M9 6l6 6-6 6"} />
       </svg>
-    </button>
+    </GlassButton>
   );
 }
