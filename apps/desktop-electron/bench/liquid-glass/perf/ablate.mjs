@@ -40,7 +40,14 @@ try {
     await evalMain(app, `require("electron").BrowserWindow.getAllWindows().forEach((w) => w.setContentSize(${w}, ${h})); return 1;`);
     await sleep(1500);
   }
-  const ablations = ABLATIONS.filter((a) => which === null || which.includes(a.name));
+  // « a+b » : plusieurs ablations ensemble.
+  const combine = (name) => {
+    const parts = name.split("+").map((n) => ABLATIONS.find((a) => a.name === n));
+    if (parts.some((p) => !p)) return null;
+    const join = (key) => parts.map((p) => p[key] ?? "").join("\n").trim() || undefined;
+    return { name, css: join("css") ?? "", js: join("js"), main: join("main"), mainUndo: join("mainUndo"), report: parts.find((p) => p.report)?.report };
+  };
+  const ablations = which === null ? ABLATIONS : which.map(combine).filter(Boolean);
   // Inventaire des lentilles de l'accueil : combien, et quelle surface.
   console.log(JSON.stringify(await app.page.evaluate(`return [...document.querySelectorAll("[style*='--lg-lens'], [style*='--lgc-lens']")].map((n) => { const r = n.getBoundingClientRect(); return (n.getAttribute("aria-label") || String(n.className).slice(0, 30)) + " " + Math.round(r.width) + "x" + Math.round(r.height); });`)));
   let dirty = false;

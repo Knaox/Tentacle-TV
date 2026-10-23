@@ -16,13 +16,13 @@ const filterPatch = (mutate) => `
   window.__lg5Mo.observe(document.body, { childList: true, subtree: true });`;
 
 /** `count` lentilles de test, posées sur le héros, avec le filtre de la première lentille de la page. */
-function injectLenses(count, width, height) {
+function injectLenses(count, width, height, origin = null) {
   return `const src = document.querySelector("[style*='--lg-lens']");
     const lens = src?.style.getPropertyValue("--lg-lens");
     for (let i = 0; i < ${count}; i += 1) {
       const d = document.createElement("div");
       d.className = "lg5-test-lens";
-      d.style.cssText = "position:fixed;z-index:5;pointer-events:none;border-radius:18px;left:" + (40 + (i % 3) * 700) + "px;top:" + (160 + Math.floor(i / 3) * ${height + 12}) + "px;width:${width}px;height:${height}px;backdrop-filter:blur(4px) saturate(1.2) " + lens;
+      d.style.cssText = "position:fixed;z-index:5;pointer-events:none;border-radius:18px;left:" + ${origin ? `(${origin[0]} + (i % 5) * ${width + 6})` : "(40 + (i % 3) * 700)"} + "px;top:" + ${origin ? `(${origin[1]} + Math.floor(i / 5) * ${height + 6})` : `(160 + Math.floor(i / 3) * ${height + 12})`} + "px;width:${width}px;height:${height}px;backdrop-filter:blur(4px) saturate(1.2) " + lens;
       document.body.append(d);
     }`;
 }
@@ -68,6 +68,17 @@ export const ABLATIONS = [
     css: `${N} .lgc-capsule, ${N} .lgc-capsule * { --lg-lens: saturate(1) !important; --lgc-lens: saturate(1) !important; }`,
   },
   {
+    // La lentille réservée à la barre et aux grands verres : les boutons posés sur le héros en givre seul.
+    name: "heros-sans-lentille",
+    // En CSS : les boutons du héros sont RECRÉÉS à chaque diapositive (un patch en JS ne tient pas).
+    css: `${N} .lg-surface:not(.lgc-capsule *):not([data-lg-scale="surface"]) { --lg-lens: saturate(1) !important; }`,
+  },
+  {
+    // Le cadre du héros sans son découpage arrondi (instrument : le dessin déborde des coins).
+    name: "heros-sans-decoupe",
+    css: '[class*="group/billboard"] { overflow: visible !important; }',
+  },
+  {
     // Les grands verres (menus, popovers : régime `surface`) sans lentille ; la barre garde la sienne.
     name: "menu-sans-lentille",
     css: `${N} [data-lg-scale="surface"], ${N} [data-lg-scale="surface"] * { --lg-lens: saturate(1) !important; --lgc-lens: saturate(1) !important; }`,
@@ -90,17 +101,25 @@ export const ABLATIONS = [
   {
     // Les petites lentilles (≤ 60 px : boutons ronds du héros) seules retirées.
     name: "petites-sans-lentille",
-    css: "",
-    js: `for (const n of document.querySelectorAll("[style*='--lg-lens'], [style*='--lgc-lens']")) {
-      const r = n.getBoundingClientRect();
-      if (r.width <= 60 && r.height <= 60) { n.style.setProperty("--lg-lens", "saturate(1)", "important"); n.style.setProperty("--lgc-lens", "saturate(1)", "important"); }
-    }`,
+    css: `${N} .lg-surface.h-9.w-9 { --lg-lens: saturate(1) !important; }`,
   },
   {
     // Loi d'échelle : 10 lentilles de 36 px de PLUS sur le héros (même filtre qu'une vraie).
     name: "plus-10-petites",
     css: "",
     js: injectLenses(10, 36, 36),
+  },
+  {
+    // Loi de POSITION : les mêmes 10 petites, groupées en haut à gauche…
+    name: "plus-10-haut-gauche",
+    css: "",
+    js: injectLenses(10, 36, 36, [90, 90]),
+  },
+  {
+    // … ou en bas à droite.
+    name: "plus-10-bas-droite",
+    css: "",
+    js: injectLenses(10, 36, 36, [1020, 650]),
   },
   {
     // … ou UNE lentille de plus, de la taille d'un groupe de la barre.
