@@ -777,10 +777,14 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
   boutons ad hoc). Portée : `.lg-page` (la zone d'`AppLayout`) et `.lg-detail`
   (la fiche, servie hors d'`AppLayout`), jamais sous un verre
   (`[data-lg-scale="surface"]`, `.lg-surface`, `.lg-menu`, `.lg-sheet`, dialogue).
-  - **Le verre sur un fond opaque se lit encore comme du verre** : légère
-    translucidité (voile blanc dégressif), reflet diffus en haut à gauche,
-    liseré de LUMIÈRE (arc éclairé du côté de la lumière, contre-reflet en
-    vis-à-vis), profondeur (ombre de contact + ombre portée douce). **Aucun
+  - **Le verre sur un fond opaque se lit encore comme du verre**, sans aucun
+    TRAIT (retour de Damien sur la première version : des pilules cerclées
+    d'un liseré net, « ça ressemble pas à Apple » — tenu par test) : un
+    remplissage translucide un cran plus clair que le dessous (en clair, un
+    voile gris très léger), une LUMIÈRE DE BORD floue, forte en haut et nulle
+    sur les côtés (ombre intérieure décalée vers le bas, floue, rétractée), un
+    reflet doux, une ombre portée très légère ; le segment choisi est une
+    lentille plus claire, sans contour. **Aucun
     `backdrop-filter`** : sur un remplissage opaque il ne flouterait qu'un aplat,
     pour une passe de composition par contrôle — tout est peint une fois, rien ne
     se recalcule au défilement. Jamais un simple aplat plus clair.

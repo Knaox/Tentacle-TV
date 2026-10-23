@@ -143,6 +143,20 @@ describe("les contrôles des pages en verre", () => {
     }
   });
 
+  it("aucun TRAIT : la lumière de bord est floue, jamais un anneau ni un filet net", () => {
+    // Retour de Damien sur la première version : des pilules cerclées, « ça ressemble pas à Apple ».
+    for (const tone of ["dark", "light"]) {
+      for (const name of ["edge", "lens-edge", "track-edge"]) {
+        const value = token(ROOT, `--lgp-${name}-on-${tone}`);
+        for (const shadow of layersOf(value)) {
+          const [, , blur] = shadow.replace(/rgba?\([^)]*\)|#[0-9a-f]+/gi, "").replace("inset", "").trim().split(/\s+/);
+          expect(parseFloat(blur), `${name}-on-${tone} : ${shadow}`).toBeGreaterThan(0);
+        }
+      }
+    }
+    expect(layersOf(token(ROOT, "--lgp-tint-edge")).every((shadow) => !/inset 0 0 0/.test(shadow))).toBe(true);
+  });
+
   it("les libellés tiennent l'AA sur le verre, au plus clair du reflet (sombre)", () => {
     const glyph = parse(token(ROOT, "--lgp-glyph-on-dark"));
     const secondary = parse(token(ROOT, "--lgp-glyph-secondary-on-dark"));

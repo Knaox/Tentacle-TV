@@ -29,53 +29,57 @@
  * `lgPageControls.test.ts` (contraste des libellés, AA). */
 
 :root[data-liquid-glass="native"] {
-  --lgp-sheen-on-dark: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 62%);
+  /* Le verre `glass` de macOS 26 (retour de Damien sur la première version,
+   * « moche, ça ressemble pas à Apple » : des pilules cerclées d'un trait net).
+   * AUCUN trait : la forme se lit par un remplissage translucide un cran plus
+   * clair que le dessous, une LUMIÈRE DE BORD floue — forte en haut, nulle sur
+   * les côtés (ombre intérieure décalée vers le bas, floue, rétractée), un
+   * contre-reflet à peine visible en bas —, un reflet doux et une ombre portée
+   * très légère. */
+  --lgp-sheen-on-dark: radial-gradient(120% 100% at 30% 0%, rgba(255, 255, 255, 0.07) 0%, transparent 60%);
   --lgp-fill-on-dark: var(--lgp-sheen-on-dark),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.055) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.07) 100%);
   --lgp-fill-hover-on-dark: var(--lgp-sheen-on-dark),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.085) 100%);
-  /* Le liseré de LUMIÈRE : la lumière vient d'en haut à gauche (`--lg-light-angle`),
-   * l'arc éclairé de ce côté, le contre-reflet plus faible en vis-à-vis. */
-  --lgp-edge-on-dark: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 1px 1px 0 -0.5px rgba(255, 255, 255, 0.4),
-    inset -1px -1px 0 -0.5px rgba(255, 255, 255, 0.16);
-  --lgp-depth-on-dark: 0 0.5px 1px rgba(0, 0, 0, 0.55), 0 4px 12px -4px rgba(0, 0, 0, 0.55);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
+  --lgp-edge-on-dark: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.3), inset 0 -1px 1px -0.5px rgba(255, 255, 255, 0.05);
+  --lgp-depth-on-dark: 0 1px 2px rgba(0, 0, 0, 0.22), 0 2px 8px -4px rgba(0, 0, 0, 0.3);
   --lgp-glyph-on-dark: rgba(255, 255, 255, 0.94);
   --lgp-glyph-secondary-on-dark: rgba(255, 255, 255, 0.76);
   /* Le danger au ton du verre (corail) : le rouge du thème y tombait à 3,9:1. */
   --lgp-danger-on-dark: var(--lg-surface-danger-on-dark, #ffc4bc);
-  /* La LENTILLE d'un segmenté (le segment choisi), un cran plus présente. */
-  --lgp-lens-fill-on-dark: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 62%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.11) 100%);
-  --lgp-lens-edge-on-dark: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), inset 1px 1px 0 -0.5px rgba(255, 255, 255, 0.62),
-    inset -1px -1px 0 -0.5px rgba(255, 255, 255, 0.24);
-  --lgp-lens-depth-on-dark: 0 1px 2px rgba(0, 0, 0, 0.5), 0 3px 9px -2px rgba(0, 0, 0, 0.45);
-  /* La piste d'un segmenté, d'un interrupteur : un remplissage EN CREUX. */
-  --lgp-track-on-dark: rgba(255, 255, 255, 0.07);
-  --lgp-track-edge-on-dark: inset 0 0.5px 1.5px rgba(0, 0, 0, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+  /* La LENTILLE d'un segmenté (le segment choisi) : plus claire, sans contour. */
+  --lgp-lens-fill-on-dark: radial-gradient(120% 100% at 30% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.15) 100%);
+  --lgp-lens-edge-on-dark: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.42), inset 0 -1px 1px -0.5px rgba(255, 255, 255, 0.07);
+  --lgp-lens-depth-on-dark: 0 1px 3px rgba(0, 0, 0, 0.3), 0 3px 10px -5px rgba(0, 0, 0, 0.35);
+  /* La piste d'un segmenté, d'un interrupteur : un remplissage, à peine en creux. */
+  --lgp-track-on-dark: rgba(255, 255, 255, 0.06);
+  --lgp-track-edge-on-dark: inset 0 1px 1.5px -0.5px rgba(0, 0, 0, 0.3);
 
-  --lgp-sheen-on-light: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.9) 0%, transparent 62%);
+  /* En clair, rien n'est plus clair qu'un groupe blanc : le verre y est un
+   * voile gris très léger que la lumière du haut éclaire, posé par une ombre douce. */
+  --lgp-sheen-on-light: radial-gradient(120% 100% at 30% 0%, rgba(255, 255, 255, 0.7) 0%, transparent 60%);
   --lgp-fill-on-light: var(--lgp-sheen-on-light),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(234, 234, 240, 0.66) 100%);
+    linear-gradient(180deg, rgba(246, 246, 249, 0.75) 0%, rgba(229, 229, 235, 0.72) 100%);
   --lgp-fill-hover-on-light: var(--lgp-sheen-on-light),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 248, 251, 0.8) 100%);
-  --lgp-edge-on-light: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -0.5px 0 rgba(0, 0, 0, 0.05);
-  --lgp-depth-on-light: 0 0.5px 1px rgba(0, 0, 0, 0.12), 0 3px 10px -3px rgba(0, 0, 0, 0.16);
+    linear-gradient(180deg, rgba(250, 250, 252, 0.85) 0%, rgba(236, 236, 241, 0.82) 100%);
+  --lgp-edge-on-light: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.95), inset 0 -1px 1px -0.5px rgba(0, 0, 0, 0.05);
+  --lgp-depth-on-light: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 7px -3px rgba(0, 0, 0, 0.12);
   --lgp-glyph-on-light: rgba(12, 12, 18, 0.88);
   --lgp-glyph-secondary-on-light: rgba(12, 12, 18, 0.7);
   --lgp-danger-on-light: var(--lg-danger-on-light, #6e0b10);
-  --lgp-lens-fill-on-light: var(--lgp-sheen-on-light), linear-gradient(180deg, #ffffff 0%, rgba(252, 252, 254, 0.92) 100%);
-  --lgp-lens-edge-on-light: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 1px 0 #ffffff;
-  --lgp-lens-depth-on-light: 0 1px 2px rgba(0, 0, 0, 0.14), 0 3px 9px -2px rgba(0, 0, 0, 0.16);
-  --lgp-track-on-light: rgba(0, 0, 0, 0.055);
-  --lgp-track-edge-on-light: inset 0 0.5px 1.5px rgba(0, 0, 0, 0.12), inset 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  --lgp-lens-fill-on-light: linear-gradient(180deg, #ffffff 0%, rgba(253, 253, 254, 0.96) 100%);
+  --lgp-lens-edge-on-light: inset 0 1px 1px -0.5px #ffffff;
+  --lgp-lens-depth-on-light: 0 1px 3px rgba(0, 0, 0, 0.13), 0 0 1px rgba(0, 0, 0, 0.06);
+  --lgp-track-on-light: rgba(0, 0, 0, 0.05);
+  --lgp-track-edge-on-light: inset 0 1px 1.5px -0.5px rgba(0, 0, 0, 0.08);
 
   /* `glassProminent` d'un état ACTIF (filtre posé) : l'accent UNI dans le
    * verre, jamais le dégradé de marque — blanc dessus ≥ 4,5:1 (test). */
   --lgp-tint-fill: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 62%),
     linear-gradient(180deg, color-mix(in srgb, var(--brand-dark) 94%, transparent) 0%,
       color-mix(in srgb, var(--brand-dark) 88%, black) 100%);
-  --lgp-tint-edge: inset 0 0.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+  --lgp-tint-edge: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.38);
   --lgp-tint-glyph: #ffffff;
   /* L'action PRINCIPALE d'un écran (`glassProminent`) : la marque dans le verre.
    * Le rose du bout assombri (82 %) : blanc ≥ 4,5:1 partout (le rose pur : 4,4). */
