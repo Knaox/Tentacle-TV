@@ -104,6 +104,16 @@
   background: var(--lg-player-track);
 }
 
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__fill {
+  background: var(--lg-player-track-fill);
+}
+
+/* L'action principale : l'accent UNI (opaque : le voile blanc du survol s'y compose juste). */
+:is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__primary {
+  background: var(--lg-player-accent);
+  color: var(--lg-player-row-hover-fg);
+}
+
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-card__secondary {
   border: 1px solid var(--lg-player-chip-line);
   color: var(--lg-player-fg);

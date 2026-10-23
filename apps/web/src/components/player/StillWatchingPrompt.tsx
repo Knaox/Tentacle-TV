@@ -86,6 +86,8 @@ const LOOK = {
     icon: "bg-[rgba(var(--brand-rgb),0.18)] text-[var(--brand-light)]",
     body: "text-white/70",
     track: "bg-white/10",
+    fill: "bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)]",
+    primary: "bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] font-semibold text-white",
     secondary: "border border-white/15 font-medium text-white/85",
     ring: "focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#100e18]",
     secondaryVeil: "bg-white/[0.12]",
@@ -95,6 +97,9 @@ const LOOK = {
     icon: "lgp-card__icon",
     body: "lgp-card__body",
     track: "lgp-card__track",
+    // Le blanc du décompte et l'accent uni du bouton : plus de dégradé de marque dans le lecteur (lg7).
+    fill: "lgp-card__fill",
+    primary: "lgp-card__primary font-semibold",
     secondary: "lgp-card__secondary font-medium",
     ring: "focus-visible:ring-[var(--lg-player-focus)]",
     secondaryVeil: "lgp-card__veil",
@@ -170,7 +175,7 @@ export function StillWatchingPrompt({ controller, controlsVisible, surface = "we
             </div>
           </div>
 
-          {asking && <CountdownBar remainingMs={controller.remainingMs} totalMs={controller.countdownMs} trackClass={look.track} />}
+          {asking && <CountdownBar remainingMs={controller.remainingMs} totalMs={controller.countdownMs} trackClass={look.track} fillClass={look.fill} />}
 
           <div className={`flex gap-2 ${asking ? "mt-4" : "mt-5"}`}>
             {actions.map((action) => (
@@ -198,9 +203,7 @@ function PromptButton({ primary, onPress, look, children }: { primary: boolean; 
       type="button"
       onClick={(event) => { event.stopPropagation(); onPress(); }}
       className={`group/sw relative flex min-h-11 flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-full px-4 text-sm outline-none focus-visible:ring-2 ${look.ring} ${
-        primary
-          ? "bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] font-semibold text-white"
-          : look.secondary
+        primary ? look.primary : look.secondary
       }`}
     >
       {/* Le survol en OPACITÉ d'un voile, jamais une couleur de fond animée (repeinte à chaque image).
@@ -220,7 +223,7 @@ function PromptButton({ primary, onPress, look, children }: { primary: boolean; 
  * (cf. l'avertissement de `Sweep`, `overlayPill.tsx`). Sous « animations
  * réduites », elle s'efface : la phrase décompte en toutes lettres.
  */
-function CountdownBar({ remainingMs, totalMs, trackClass }: { remainingMs: number; totalMs: number; trackClass: string }) {
+function CountdownBar({ remainingMs, totalMs, trackClass, fillClass }: { remainingMs: number; totalMs: number; trackClass: string; fillClass: string }) {
   const [armed] = useState(() => ({
     fraction: totalMs > 0 ? Math.min(1, Math.max(0, remainingMs / totalMs)) : 0,
     durationMs: Math.max(0, remainingMs),
@@ -234,7 +237,7 @@ function CountdownBar({ remainingMs, totalMs, trackClass }: { remainingMs: numbe
   return (
     <div aria-hidden="true" className={`mt-4 h-1 overflow-hidden rounded-full ${trackClass} motion-reduce:hidden`}>
       <div
-        className="h-full origin-left rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] transition-transform ease-linear"
+        className={`h-full origin-left rounded-full ${fillClass} transition-transform ease-linear`}
         style={{ transitionDuration: `${String(armed.durationMs)}ms`, transform: `scaleX(${running ? 0 : armed.fraction})` }}
       />
     </div>

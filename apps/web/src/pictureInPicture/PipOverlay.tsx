@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PauseIcon, PlayIcon } from "../components/PlayerIcons";
 import { formatDuration } from "../components/playerControls/utils";
+import { useLiquidGlassMode } from "../theme/useLiquidGlass";
 import { usePictureInPicture } from "./pictureInPictureContext";
 import { CloseIcon, DockIcon, ExpandIcon, UndockIcon } from "./pipIcons";
 
@@ -15,6 +16,11 @@ import { CloseIcon, DockIcon, ExpandIcon, UndockIcon } from "./pipIcons";
  * des fonds de boutons noirs et des dégradés noirs. Aucun `backdrop-filter` :
  * il recalculerait son flou à chaque image de la vidéo. Seule l'opacité
  * s'anime.
+ *
+ * Verre natif (macOS 26) : pas de verre ici — la fenêtre PiP n'a pas de pont
+ * natif —, mais la grammaire du lecteur : progression BLANCHE et bouton de
+ * lecture noir comme les autres, plus de dégradé de marque (lot lg7, R17/R20).
+ * Le document du PiP ne porte pas `data-liquid-glass` : le mode se lit ici.
  */
 
 interface PipOverlayProps {
@@ -30,31 +36,37 @@ interface PipOverlayProps {
   loading?: boolean;
 }
 
-function PipButton({ label, onClick, children, variant = "chrome" }: {
+function PipButton({ label, onClick, children, variant = "chrome", plain = false }: {
   label: string; onClick: () => void; children: ReactNode; variant?: "chrome" | "skip" | "play";
+  /** Verre natif : le bouton de lecture sans le dégradé de marque. */
+  plain?: boolean;
 }) {
   const look = {
     chrome: "h-8 w-8 bg-black/45 hover:bg-black/70 active:bg-black/85",
     skip: "h-9 min-w-9 px-2 text-xs font-bold tabular-nums text-white/90 bg-black/45 hover:bg-black/70 active:bg-black/85",
     // Le seul bouton qui grandit au survol — et rien ne bouge sous mouvement réduit.
     play: "h-12 w-12 shadow-[0_2px_10px_rgba(0,0,0,0.45)] transition-transform hover:scale-105 active:scale-95 motion-reduce:transform-none",
-  }[variant];
+  }[variant] + (variant === "play" && plain ? " bg-black/45 hover:bg-black/70 active:bg-black/85" : "");
   return (
     <button
       type="button" title={label} aria-label={label}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`flex cursor-pointer items-center justify-center rounded-full text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white/80 ${look}`}
-      style={variant === "play" ? { background: "var(--progress-fill)" } : undefined}
+      style={variant === "play" && !plain ? { background: "var(--progress-fill)" } : undefined}
     >
       {children}
     </button>
   );
 }
 
+/** Le remplissage blanc à 90 % du lecteur en verre (`--lg-player-track-fill`). */
+const PLAIN_FILL = "rgb(255 255 255 / 0.9)";
+
 export function PipOverlay({ visible, paused, position, duration, title, onTogglePause, onSkip, loading = false }: PipOverlayProps) {
   const { t } = useTranslation("player");
   const pip = usePictureInPicture();
   const docked = pip.mode === "docked";
+  const plain = useLiquidGlassMode() === "native";
   const progress = duration > 0 ? Math.min(Math.max(position / duration, 0), 1) : 0;
   const fade = `transition-opacity duration-200 ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`;
 
@@ -80,7 +92,7 @@ export function PipOverlay({ visible, paused, position, duration, title, onToggl
         </div>
         {!loading && <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 items-center justify-center gap-4">
           <PipButton variant="skip" label={t("pip.back10")} onClick={() => onSkip(-10)}>-10</PipButton>
-          <PipButton variant="play" label={paused ? t("pip.play") : t("pip.pause")} onClick={onTogglePause}>
+          <PipButton variant="play" plain={plain} label={paused ? t("pip.play") : t("pip.pause")} onClick={onTogglePause}>
             {paused ? <PlayIcon /> : <PauseIcon />}
           </PipButton>
           <PipButton variant="skip" label={t("pip.forward30")} onClick={() => onSkip(30)}>+30</PipButton>
@@ -96,10 +108,10 @@ export function PipOverlay({ visible, paused, position, duration, title, onToggl
       </div>
       {/* La progression, au bas de l'image, arrondie par les coins de la vidéo. */}
       {!loading && <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px]">
-        <div className={`absolute inset-0 bg-black/50 ${fade}`} />
+        <div className={`absolute inset-0 ${plain ? "bg-white/30" : "bg-black/50"} ${fade}`} />
         <div
           className="absolute inset-0 origin-left"
-          style={{ transform: `scaleX(${String(progress)})`, background: "var(--progress-fill)" }}
+          style={{ transform: `scaleX(${String(progress)})`, background: plain ? PLAIN_FILL : "var(--progress-fill)" }}
         />
       </div>}
     </>

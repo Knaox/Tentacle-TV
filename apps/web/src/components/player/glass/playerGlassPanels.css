@@ -29,6 +29,10 @@
   --surface-2: #1d1c24;
   /* Le panneau des épisodes : onglets de saisons et épisode en cours. */
   --season-tab-border: var(--lg-player-chip-line);
+  /* La saison affichée à l'accent uni, pas au dégradé (lg7). */
+  --season-tab-gradient: var(--lg-player-accent);
+  /* La lueur violette d'une pastille choisie : une ombre colorée sur la surface à alpha. */
+  --ctl-glow-segment: none;
   --brand-accent-soft: rgb(0 0 0 / 0.28);
 
   /* Chargé de texte : teinte native plus dense que celle des capsules. */
@@ -59,7 +63,7 @@
   border-radius: inherit;
 }
 
-/* ── Lignes façon menu macOS : coche pour l'actif, surbrillance de marque au survol ── */
+/* ── Lignes façon menu macOS : coche pour l'actif, surbrillance à l'accent au survol ── */
 
 :is(:root[data-liquid-glass="native"], :root[data-lgp-preview="on"]) .lgp-option {
   display: flex;
