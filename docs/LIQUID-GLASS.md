@@ -537,6 +537,20 @@ raison du mode `frosted`/`solid` pour qui en a besoin.
 
 ### Le coût
 
+**Le budget de lentilles (lot lg5, 23/10).** Banc de fluidité :
+`apps/desktop-electron/bench/liquid-glass/perf/` (README) — images par trace Chromium, images
+abandonnées selon Chromium, dessin GPU par image, ablations. Mesuré sur un build de production,
+2560×1600 px à 120 Hz : une lentille (filtre SVG d'un `backdrop-filter`) coûte ~0,3-0,45 ms de dessin
+GPU par image redessinée, que le verre fasse 36 px ou 655×48, où qu'il soit — le coût suit la
+FENÊTRE. Le héros redessine toute la fenêtre à chaque pas du travelling (30 i/s) : chaque lentille
+posée dessus ou dans la barre se recalcule autant de fois. À 20 lentilles, une image sur deux est
+perdue ; l'ouverture d'un menu sur l'accueil (120 i/s) saturait le GPU avec 11 lentilles (« Plus » :
+16,5 ms par image pour 8,3). D'où, décision de Damien : au plus `LENS_BUDGET` = 8 lentilles visibles
+(`allocateLenses`, `lensBudgetStore.ts`, `useLensBudget`), et les 4 petits ronds de la bannière en
+givre sans lentille (`GlassLensScope`) — « Lecture » et « Plus d'infos » gardent la leur. Écartés après mesure : loger la lumière du bord dans le bleu de la carte
+de déplacement (Chromium gère la couleur des `feImage` et mélange les canaux : tout le dessous
+glisse), découper les captures du ton (plus nombreuses, chacune force un redessin complet).
+
 Banc rejouable SANS sudo : `node apps/web/bench/glass-gpu/run-bench.mjs
 [--seconds 8] [--lock-dir <créneaux Electron du lot>] [--out r.json]` — page du
 banc construite en production, ouverte dans l'Electron du dépôt, chaque

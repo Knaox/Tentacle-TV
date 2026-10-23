@@ -6,6 +6,7 @@ import { heroBackdropUrl } from "./resolveBackdrop";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { PlayIcon, InfoIcon } from "../icons/HeroIcons";
 import { PressableGlass } from "../ui/glass/PressableGlass";
+import { GlassLensScope } from "../../theme/glass";
 import { CardQuickActions } from "../cards/CardQuickActions";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 
@@ -107,12 +108,18 @@ export function HeroActions({ item, onPlay, resuming, episodeCode, imageUrl }: H
         {t("common:moreInfo")}
       </PressableGlass>
 
-      <div className="ml-1 hidden items-center gap-1.5 sm:flex">
-        <CardQuickActions item={item} variant="inline" />
-        {/* La bannière n'est pas montée au survol : une seule instance, et un
-            seul abonnement à la file des téléchargements pour tout l'écran. */}
-        <CardDownloadAction item={item} variant="inline" />
-      </div>
+      {/* Les petits ronds, posés sur une image qui bouge sans cesse : du givre SANS
+          lentille (lot lg5, décision de Damien du 23/10) — chacune se recalculait
+          à chaque pas du héros, pour une réfraction invisible à 36 px. « Lecture »
+          et « Plus d'infos » gardent la leur. */}
+      <GlassLensScope lens={false}>
+        <div className="ml-1 hidden items-center gap-1.5 sm:flex">
+          <CardQuickActions item={item} variant="inline" />
+          {/* La bannière n'est pas montée au survol : une seule instance, et un
+              seul abonnement à la file des téléchargements pour tout l'écran. */}
+          <CardDownloadAction item={item} variant="inline" />
+        </div>
+      </GlassLensScope>
     </div>
   );
 }
