@@ -12,11 +12,15 @@
  *  • danger (`bg-danger-surface`)  → verre `glass`, libellé au rouge du thème ;
  *  • principal (`bg-cta-primary-bg`) → verre `glassProminent` : la marque DANS
  *    le verre, l'action principale de l'écran.
- * Même peau que les marqueurs (`lgPageGlass.css`), mêmes jetons
+ * Tous en CAPSULE (lot lg7). Même peau que les marqueurs (`lgPageGlass.css`), mêmes jetons
  * (`lgPageControls.css`) ; jamais dans un verre (menu, feuille, barre latérale,
  * surface de la primitive). Hors de la porte : aucune règle. */
 
 :root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
+  /* Une CAPSULE, comme les contrôles de macOS 26 (lot lg7, R12) : les
+   * `rounded-lg` / `rounded-md` d'avant faisaient des rectangles à côté des
+   * capsules. */
+  border-radius: 9999px;
   background: var(--lgp-fill);
   border-color: transparent;
   box-shadow: var(--lgp-edge), var(--lgp-depth);
@@ -45,6 +49,7 @@
 
 /* ══ L'action principale : `glassProminent` ════════════════════════════════ */
 :root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
+  border-radius: 9999px;
   background: var(--lgp-prominent-fill);
   border-color: transparent;
   box-shadow: var(--lgp-tint-edge), var(--lgp-depth);

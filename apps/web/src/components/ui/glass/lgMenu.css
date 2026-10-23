@@ -70,6 +70,24 @@
   border-radius: calc(var(--lgm-panel-radius) - 12px);
 }
 
+/* Concentriques, toujours (lot lg7, R12) : rayon d'une rangée = rayon du
+ * panneau − sa marge. « Plus » et les filtres de la bibliothèque (`FilterMenu`,
+ * `p-3`) ont une marge de 12 px, pas les 5 d'un menu en liste — leurs rangées
+ * gardaient 17 px (« Plus ») ou 6 (`rounded-md`, filtres). */
+:root[data-liquid-glass="native"] .lg-menu.lg-filter {
+  /* Le rayon d'un popover, comme « Plus » : au rayon d'un menu (16), la
+   * marge de 12 laissait des rangées à 4 px, presque carrées. */
+  --lgm-panel-radius: var(--lg-radius-lg);
+}
+
+:root[data-liquid-glass="native"] .lg-menu:is(.lg-more, .lg-filter) {
+  --lgm-radius: calc(var(--lgm-panel-radius) - 12px);
+}
+
+:root[data-liquid-glass="native"] .lg-menu.lg-filter input {
+  border-radius: var(--lgm-radius);
+}
+
 /* ── La marge intérieure : les rangées ne touchent jamais le bord ── */
 :root[data-liquid-glass="native"] .lg-menu.lg-menu-list {
   padding: var(--lgm-inset) !important;
