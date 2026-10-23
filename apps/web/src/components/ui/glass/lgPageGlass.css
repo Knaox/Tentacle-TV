@@ -15,10 +15,15 @@
  * pas de verre sur du verre — les remplissages de `liquidGlassContent.css`
  * et `lgControls.css` y restent.
  *
+ * Portées : `.lg-page` (AppLayout), `.lg-detail` (la fiche) et `.lg-screen`
+ * (lot lg7) — un écran PLEIN et opaque servi hors d'AppLayout (« Qui
+ * regarde ? »), même porté par un `role="dialog"` : ce dialogue-là n'est pas
+ * un verre, il est exempté de l'exclusion (`[role="dialog"]:not(.lg-screen)`).
+ *
  * Spécificité : (0,4,0) au moins, devant les règles du contenu (0,3,0) ; les
  * `!important` ne visent que des styles EN LIGNE (repère de framer). */
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   background: var(--lgp-fill);
   border-color: transparent;
   box-shadow: var(--lgp-edge), var(--lgp-depth);
@@ -34,58 +39,58 @@
     color var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *):hover {
   background: var(--lgp-fill-hover);
   color: var(--lgp-glyph);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):active:not(:disabled, select) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *):active:not(:disabled, select) {
   scale: var(--lgp-press-scale);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn, .lg-field):focus-visible {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn, .lg-field):focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn) svg {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-chip, .lg-content-control, .lg-pill, .lg-glass-btn) svg {
   filter: none;
 }
 
 /* Un geste repérable sans être l'action principale (« Partager ») : le verre
  * neutre, la marque sur le seul libellé — 4,5:1 au moins sur le verre. */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-content-control.lg-content-accent:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-content-control.lg-content-accent:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   color: var(--lgd-accent-fg);
 }
 
 /* Un bouton marqué à la main (`.lg-glass-btn`) : son libellé de danger ou de
  * marque, au ton du verre ; CHOISI (onglet, pastille cochée), la lentille
  * neutre des segmentés — jamais l'aplat de marque. */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-glass-btn.lg-glass-danger:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-glass-btn.lg-glass-danger:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   color: var(--lgp-danger);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-glass-btn.lg-glass-accent:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-glass-btn.lg-glass-accent:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   color: var(--lgd-accent-fg);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-glass-btn.lg-glass-selected, :checked + .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-glass-btn.lg-glass-selected, :checked + .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-glass-btn.lg-glass-selected, :checked + .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *),
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-glass-btn.lg-glass-selected, :checked + .lg-glass-btn):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *):hover {
   background: var(--lgp-lens-fill);
   box-shadow: var(--lgp-lens-edge), var(--lgp-lens-depth);
   color: var(--lgp-glyph);
 }
 
 /* ══ Un filtre POSÉ : l'accent uni DANS le verre (`glassProminent`) ══════ */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-chip.lg-chip-on:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-chip.lg-chip-on:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-chip.lg-chip-on:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *),
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-chip.lg-chip-on:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *):hover {
   background: var(--lgp-tint-fill);
   box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
   color: var(--lgp-tint-glyph);
 }
 
 /* ══ Le champ de recherche d'une page ════════════════════════════════════ */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-field:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-field:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   /* Une CAPSULE, comme le champ de la barre (lot lg7, R13) : un champ de page
    * posé en `rounded-2xl` (en-tête de la recherche) la prend aussi. */
   border-radius: 9999px;
@@ -97,7 +102,7 @@
   text-shadow: none;
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-field:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):focus-within {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-field:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *):focus-within {
   background: var(--lgp-fill-hover);
   box-shadow: var(--lgp-edge), var(--lgp-depth), 0 0 0 3px var(--lg-tint-brand);
 }
@@ -110,24 +115,24 @@
  * de réglages (`.ctl-segment`), dont le calque choisi `::before` s'efface
  * alors. À l'appui sur la piste, la lentille GONFLE (`scale`, ressort de la
  * lentille), puis glisse jusqu'au segment visé. */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-seg, .lg-segmented):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-seg, .lg-segmented):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   background: var(--lgp-track);
   border-color: transparent;
   box-shadow: var(--lgp-track-edge);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-seg-marker, .lg-seg-lens):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-seg-marker, .lg-seg-lens):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   background: var(--lgp-lens-fill) !important;
   box-shadow: var(--lgp-lens-edge), var(--lgp-lens-depth) !important;
   scale: 1;
   transition: scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-seg, .lg-segmented):active :is(.lg-seg-marker, .lg-seg-lens) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-seg, .lg-segmented):active :is(.lg-seg-marker, .lg-seg-lens) {
   scale: var(--lgp-lens-press-scale);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-seg-lens {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-seg-lens {
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -135,30 +140,30 @@
   pointer-events: none;
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .ctl-segment:has(> .lg-seg-lens)::before {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .ctl-segment:has(> .lg-seg-lens)::before {
   opacity: 0;
 }
 
 /* Le segment choisi ne rétrécit plus à l'appui : c'est la lentille qui vit. */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .lg-segmented .ctl-segment:active {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .lg-segmented .ctl-segment:active {
   transform: none;
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(.lg-seg, .lg-segmented) > :is([aria-checked="true"], [aria-selected="true"]) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(.lg-seg, .lg-segmented) > :is([aria-checked="true"], [aria-selected="true"]) {
   color: var(--lgp-glyph);
 }
 
 /* ══ L'interrupteur : piste en creux, le pouce devient lentille à l'appui ══ */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .ctl-switch:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .ctl-switch:not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *) {
   background: var(--lgp-track);
   box-shadow: var(--lgp-track-edge);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .ctl-switch:active {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .ctl-switch:active {
   transform: none;
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .ctl-switch .ctl-switch-thumb {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .ctl-switch .ctl-switch-thumb {
   box-shadow: var(--lgp-lens-edge-on-light), var(--lgp-lens-depth-on-dark);
   scale: 1;
   transition:
@@ -166,7 +171,7 @@
     scale var(--lg-spring-lens-duration) var(--lg-spring-lens-easing);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) .ctl-switch:active:not(:disabled) .ctl-switch-thumb {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) .ctl-switch:active:not(:disabled) .ctl-switch-thumb {
   /* Étiré comme le pouce de macOS 26 qu'on presse, sans repeindre. */
   scale: calc(1 + 2.5 * (var(--lgp-lens-press-scale) - 1)) var(--lgp-lens-press-scale);
 }

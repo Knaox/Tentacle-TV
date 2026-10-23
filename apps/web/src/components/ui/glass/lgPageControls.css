@@ -109,7 +109,7 @@
 
 /* Le ton du THÈME clair, ou le ton MESURÉ d'un contrôle (`data-lg-tone`). */
 :root[data-liquid-glass="native"][data-theme="light"],
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) [data-lg-tone="light"] {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) [data-lg-tone="light"] {
   --lgp-fill: var(--lgp-fill-on-light);
   --lgp-fill-hover: var(--lgp-fill-hover-on-light);
   --lgp-edge: var(--lgp-edge-on-light);
@@ -124,7 +124,7 @@
   --lgp-track-edge: var(--lgp-track-edge-on-light);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) [data-lg-tone="dark"] {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) [data-lg-tone="dark"] {
   --lgp-fill: var(--lgp-fill-on-dark);
   --lgp-fill-hover: var(--lgp-fill-hover-on-dark);
   --lgp-edge: var(--lgp-edge-on-dark);

@@ -16,7 +16,7 @@
  * (`lgPageControls.css`) ; jamais dans un verre (menu, feuille, barre latérale,
  * surface de la primitive). Hors de la porte : aucune règle. */
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen), .lg-tray) *) {
   /* Une CAPSULE, comme les contrôles de macOS 26 (lot lg7, R12) : les
    * `rounded-lg` / `rounded-md` d'avant faisaient des rectangles à côté des
    * capsules. */
@@ -35,20 +35,20 @@
     color var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):hover {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(button, a, select):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .border-danger-border):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen), .lg-tray) *):hover {
   background: var(--lgp-fill-hover);
   color: var(--lgp-glyph);
 }
 
 /* Le danger garde son rouge, au TON du verre (corail sur sombre, bordeaux sur clair). */
 /* (Spécificité doublée sur la classe : la règle générale en a une de plus.) */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *),
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]) *):hover {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *),
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(button, a):is(.bg-danger-surface, .border-danger-border):is(.bg-danger-surface, .border-danger-border):is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen)) *):hover {
   color: var(--lgp-danger);
 }
 
 /* ══ L'action principale : `glassProminent` ════════════════════════════════ */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen), .lg-tray) *) {
   border-radius: 9999px;
   background: var(--lgp-prominent-fill);
   border-color: transparent;
@@ -61,7 +61,7 @@
     opacity var(--duration-base, 200ms) var(--ease-out, ease-out);
 }
 
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):hover {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"]):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen), .lg-tray) *):hover {
   /* Le verre s'éclaire au survol, comme les surfaces de la primitive. */
   background: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%), var(--lgp-prominent-fill);
   color: var(--lgp-tint-glyph);
@@ -69,6 +69,6 @@
 
 /* L'appui, pour les trois : le verre gonfle (jamais un `<select>`, qui ouvre
  * sa liste du système). */
-:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail) :is(button, a):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .bg-cta-primary-bg):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"], .lg-tray) *):active:not(:disabled) {
+:root[data-liquid-glass="native"] :is(.lg-page, .lg-detail, .lg-screen) :is(button, a):is(.rounded-full, .rounded-lg, .rounded-md):is(.bg-fill-soft, .bg-fill-subtle, .bg-fill-faint, .bg-cta-ghost-bg, .bg-tentacle-surface, .bg-\[color\:var\(--surface-2\)\], .border-line-subtle, .border-line-strong, .ring-line-strong, .bg-danger-surface, .bg-cta-primary-bg):not([class*="lg-"], [class*="ctl-"], .p-2, .p-3, .p-4, .p-5, .p-6, .text-left):not(:where([data-lg-scale="surface"], .lg-surface, .lg-menu, .lg-sheet, [role="dialog"]:not(.lg-screen), .lg-tray) *):active:not(:disabled) {
   scale: var(--lgp-press-scale);
 }

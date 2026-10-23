@@ -109,7 +109,7 @@ function SwitchScreen({ phase }: { phase: Exclude<SwitchScreenPhase, "closed"> }
       role="dialog"
       aria-modal="true"
       aria-label={t("whoIsWatching")}
-      className="fixed inset-x-0 bottom-0 z-[8000] overflow-y-auto overscroll-contain bg-surface-0"
+      className="lg-screen fixed inset-x-0 bottom-0 z-[8000] overflow-y-auto overscroll-contain bg-surface-0"
       style={{
         top: "var(--hote-bandeau, 0px)",
         opacity: phase === "closing" ? 0 : 1,
