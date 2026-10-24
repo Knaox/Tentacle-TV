@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { reportAccountAccessBody } from "../accountAccess/accountAccessSignal";
+import { clientFetchAnnounceHeaders } from "../pluginMusic/clientFetchAnnounce";
 
 let _backendRoot = "";
 let _tokenOverride: string | null = null;
@@ -17,6 +18,17 @@ function getAuthHeader(): Record<string, string> {
   const token = _tokenOverride
     ?? (typeof localStorage !== "undefined" ? localStorage.getItem("tentacle_token") : null);
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/** Le serveur et l'authentification des appels backend : ce qu'un pont natif rejoue pour parler au même serveur. */
+export interface TentacleApiSession {
+  serverOrigin: string;
+  headers: Record<string, string>;
+}
+
+export function tentacleApiSession(): TentacleApiSession {
+  const root = _backendRoot || (typeof location !== "undefined" ? location.origin : "");
+  return { serverOrigin: root ? new URL(root, typeof location !== "undefined" ? location.href : undefined).origin : "", headers: getAuthHeader() };
 }
 
 /**
@@ -46,6 +58,7 @@ export class TentacleApiError extends Error {
 export async function tentacleApiFetch<T>(apiPath: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...getAuthHeader(),
+    ...clientFetchAnnounceHeaders(apiPath),
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";

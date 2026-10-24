@@ -62,6 +62,11 @@ export interface AudioBridgeSource {
   durationMs: number | null;
   replayGain: AudioBridgeReplayGain | null;
   expiresAt: number | null;
+  /**
+   * Un flux que CET appareil lit en direct (requêtes déléguées) : la coquille le lit par son relais
+   * local si son hôte est déclaré par l'extension, `url` (le serveur) restant le repli.
+   */
+  direct?: { url: string; expiresAt: number | null };
 }
 
 export type AudioBridgeReplayGainMode = "off" | "track" | "album" | "auto";

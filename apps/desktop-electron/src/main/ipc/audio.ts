@@ -15,6 +15,7 @@ import { app } from "electron";
 import { z } from "zod";
 import { NativeAudioEngine } from "../audio/audioEngine";
 import { refuseSource } from "../audio/audioSources";
+import { adoptDirect } from "../clientFetch/directSources";
 import type { Platform } from "../audio/audioOptions";
 import { libmpvAvailable } from "../video/mpvFfi";
 import { sendToPage } from "../pageEvents";
@@ -41,6 +42,7 @@ const SOURCE = z.object({
   durationMs: MS.nullable(),
   replayGain: z.object({ trackGainDb: GAIN, trackPeak: GAIN, albumGainDb: GAIN, albumPeak: GAIN }).nullable(),
   expiresAt: z.number().finite().nullable(),
+  direct: z.object({ url: z.string().min(1).max(8192), expiresAt: z.number().finite().nullable() }).optional(),
 });
 const RG_MODE = z.enum(["off", "track", "album", "auto"]);
 const START = z.object({
@@ -65,6 +67,8 @@ const NO_ARGS = z.object({}).passthrough();
 
 let engine: NativeAudioEngine | null = null;
 let serverOrigin: string | null = null;
+/** Les en-têtes d'authentification du démarrage : le repli d'un flux direct (serveur) les reprend. */
+let serverHeaders: Record<string, string> = {};
 
 function platform(): Platform {
   return process.platform === "win32" || process.platform === "linux" ? process.platform : "darwin";
@@ -84,11 +88,16 @@ function running(): NativeAudioEngine {
   return engine;
 }
 
-/** La source n'est confiée à mpv que si elle vient du serveur réglé. */
-function checked(source: z.infer<typeof SOURCE>): z.infer<typeof SOURCE> {
+/**
+ * La source n'est confiée à mpv que si elle vient du serveur réglé ; un flux
+ * direct déclaré par l'extension passe par le relais local (`directSources.ts`),
+ * avec ce serveur pour repli.
+ */
+async function checked(source: z.infer<typeof SOURCE>, trackKey: string): Promise<Omit<z.infer<typeof SOURCE>, "direct">> {
   const refusal = refuseSource(source.url, serverOrigin);
   if (refusal !== null) throw new Error(refusal);
-  return source;
+  const session = serverOrigin === null ? null : { serverOrigin, headers: serverHeaders };
+  return (await adoptDirect(source, trackKey, session)).source;
 }
 
 export function registerAudioCommands(registry: CommandRegistry): void {
@@ -102,6 +111,7 @@ export function registerAudioCommands(registry: CommandRegistry): void {
       run: async (args) => {
         engine ??= new NativeAudioEngine({ platform: platform(), extraOptions: devLogOptions() }, (event) => sendToPage("audio://event", event));
         serverOrigin = args.serverOrigin;
+        serverHeaders = args.headers;
         return engine.start(args);
       },
     })
@@ -116,15 +126,15 @@ export function registerAudioCommands(registry: CommandRegistry): void {
     })
     .add("audio_play", {
       schema: z.object({ track: TRACK, source: SOURCE, startMs: MS }),
-      run: ({ track, source, startMs }) => running().play(track, checked(source), startMs),
+      run: async ({ track, source, startMs }) => running().play(track, await checked(source, track.trackKey), startMs),
     })
     .add("audio_set_next", {
       schema: z.object({ track: TRACK.nullable(), source: SOURCE.nullable() }),
-      run: ({ track, source }) => running().setNext(track, source === null ? null : checked(source)),
+      run: async ({ track, source }) => running().setNext(track, source === null || track === null ? null : await checked(source, track.trackKey)),
     })
     .add("audio_swap_source", {
       schema: z.object({ trackKey: KEY, source: SOURCE }),
-      run: ({ trackKey, source }) => running().swap(trackKey, checked(source)),
+      run: async ({ trackKey, source }) => running().swap(trackKey, await checked(source, trackKey)),
     })
     .add("audio_control", { schema: CONTROL, run: (c) => running().control(c) })
     .add("audio_list_outputs", { schema: NO_ARGS, run: () => running().listOutputs() })

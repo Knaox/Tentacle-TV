@@ -106,7 +106,7 @@ export function isDeclarableHost(host: string): boolean {
   if (host.length > 253 || host !== host.toLowerCase()) return false;
   const labels = host.split(".");
   if (labels.length < 2 || !labels.every((l) => LABEL.test(l))) return false;
-  if (/^\d+$/.test(labels[labels.length - 1])) return false;
+  if (/^\d+$/.test(labels.at(-1) ?? "")) return false;
   return !/(^|\.)(localhost|local|internal|lan|home|arpa|test|invalid)$/.test(host);
 }
 

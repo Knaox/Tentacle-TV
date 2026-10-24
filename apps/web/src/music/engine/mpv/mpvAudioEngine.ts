@@ -59,6 +59,8 @@ export function bridgeSource(source: PlaybackSource, baseUrl: string): AudioBrid
     durationMs: source.durationMs,
     replayGain: source.replayGain,
     expiresAt: source.expiresAt,
+    // Un flux que CET appareil lit en direct (requêtes déléguées) : la coquille le juge et garde `url` en repli.
+    ...(source.direct ? { direct: source.direct } : {}),
   };
 }
 

@@ -9,7 +9,7 @@ import type { ClientFetchBroker } from "./clientFetchBroker";
  * `POST /api/client-fetch/:id` — la réponse d'un appareil à une requête
  * déléguée. Après `requireAuth` ; l'appareil est le hash du jeton de la requête,
  * qui doit être CELUI à qui la requête a été confiée (le courtier le vérifie).
- * 204 : rendue à l'extension ; 404 : inconnue, expirée ou d'un autre appareil.
+ * 200 : rendue à l'extension ; 404 : inconnue, expirée ou d'un autre appareil.
  */
 
 const REPLY = z.union([
@@ -38,7 +38,7 @@ export async function registerClientFetchRoute(app: FastifyInstance, broker: () 
       const current = broker();
       if (!parsed.success || !token || !current || !/^[0-9a-f-]{36}$/.test(request.params.id)) return reply.status(400).send({ error: "invalid" });
       const accepted = current.accept(request.params.id, hashToken(token), parsed.data as ClientFetchOutcome);
-      return accepted ? reply.status(204).send() : reply.status(404).send({ error: "notFound" });
+      return accepted ? reply.send({ ok: true }) : reply.status(404).send({ error: "notFound" });
     },
   );
 }
