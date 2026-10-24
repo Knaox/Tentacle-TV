@@ -16,9 +16,27 @@ const youtubeUrl = /^https:\/\/((www|music|m)\.)?youtube\.com\/[^\s\0]{1,1500}$|
 const search = /^ytsearch\d{1,2}:[^\n\r\0]{1,200}$/;
 const key = z.string().regex(/^[a-z0-9_]{1,30}$/);
 
+const plainValue = z.string().max(100).regex(/^[^\n\r\0]*$/);
+// Le visitorData d'InnerTube (~450 caractères) : la SEULE valeur longue, alphabet borné.
+const VISITOR_DATA = /^[A-Za-z0-9_%=-]{20,1024}$/;
+
+/** Chaque valeur d'`extractorArgs` : 100 caractères au plus, sauf `youtube.visitor_data` (une seule, bornée). */
+function extractorArgsValid(args: Record<string, Record<string, string[]>>): boolean {
+  return Object.entries(args).every(([ie, byKey]) =>
+    Object.entries(byKey).every(([name, values]) =>
+      ie === "youtube" && name === "visitor_data"
+        ? values.length === 1 && VISITOR_DATA.test(values[0])
+        : values.every((v) => plainValue.safeParse(v).success),
+    ),
+  );
+}
+
 const options = z
   .object({
-    extractorArgs: z.record(key, z.record(key, z.array(z.string().max(100).regex(/^[^\n\r\0]*$/)).max(10))).optional(),
+    extractorArgs: z
+      .record(key, z.record(key, z.array(z.string().max(1024)).max(10)))
+      .refine(extractorArgsValid, "valeur refusée")
+      .optional(),
     format: z.string().max(200).regex(/^[A-Za-z0-9_\-+/[\]=<>!*.,:^$?~ ]+$/).optional(),
     socketTimeoutS: z.number().int().min(1).max(120).optional(),
     retries: z.number().int().min(0).max(20).optional(),

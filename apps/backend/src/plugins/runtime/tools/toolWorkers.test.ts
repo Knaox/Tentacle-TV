@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { connect, type Socket } from "net";
 import { join } from "path";
 import { tmpdir } from "os";
-import { spawnWorker, stopAllWorkers } from "./toolWorkers";
+import { followActiveZipapp, spawnWorker, stopAllWorkers, stopWorker } from "./toolWorkers";
 
 /**
  * L'ouvrier persistant d'une extension (`tools.spawnWorker`) : un VRAI Python,
@@ -42,12 +42,31 @@ vi.hoisted(() => {
     wr(j(src, "yt_dlp", "utils.py"), "class DownloadCancelled(Exception):\n    pass\n");
     wr(j(src, "yt_dlp", "__init__.py"), [
       "from . import version, utils",
+      "CREATED = [0]",
       "class YoutubeDL:",
-      "    def __init__(self, opts): self.opts = opts",
+      "    def __init__(self, opts):",
+      "        self.opts = self.params = opts",
+      "        CREATED[0] += 1",
+      "        self.serial = CREATED[0]",
       "    def __enter__(self): return self",
       "    def __exit__(self, *a): return False",
+      "    def close(self): pass",
+      "    def urlopen(self, req):",
+      "        import io",
+      "        class Resp:",
+      "            url = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false'",
+      "            def __init__(self): self.fp = io.BytesIO(b'{\\\"videoDetails\\\": {\\\"videoId\\\": \\\"au1\\\", \\\"author\\\": \\\"Queen - Topic\\\"}}')",
+      "            def read(self, amt=None): return self.fp.read()",
+      "        return Resp()",
       "    def extract_info(self, target, download=False):",
       `        if 'evil' in target: open(${secret}).read()`,
+      "        if 'boom' in target: raise RuntimeError('panne')",
+      "        if 'leak' in target: raise RuntimeError('args ' + repr(self.params.get('extractor_args')))",
+      "        if 'author' in target:",
+      "            import json",
+      "            again = json.loads(self.urlopen('x').read())['videoDetails']['author']",
+      "            return {'id': 'au1', 'title': again, 'channel': None, 'formats': []}",
+      "        if 'serial' in target: return {'id': str(self.serial), 'formats': []}",
       "        return {'id': 'v1', 'title': 'T', 'artists': ['A'], 'duration': 61.5, 'formats': [{'format_id': '251', 'ext': 'webm', 'acodec': 'opus', 'abr': 130.5, 'url': 'https://x/' + 'a' * 1100, 'http_headers': {'User-Agent': 'UA'}}], 'raw_secret_field': 'jamais'}",
       "    def download(self, urls):",
       "        out = self.opts['outtmpl']['default']",
@@ -142,6 +161,40 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     s.close();
   });
 
+  it("youtube.visitor_data : une valeur bornée passe, jamais recopiée dans un message ; le reste garde 100 caractères", async () => {
+    const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
+    const s = session(socketPath);
+    const visitor = `Cgt${"x".repeat(440)}%3D%3D`;
+    const args = (youtube: Record<string, string[]>) => ({ op: "extract", target: "https://www.youtube.com/watch?v=leak", options: { extractorArgs: { youtube } } });
+    const refused: [number, Msg][] = [
+      [50, args({ visitor_data: [visitor, visitor] })],
+      [51, args({ visitor_data: ["A".repeat(1025)] })],
+      [52, args({ visitor_data: ["Cgt abc def ghi jkl mno"] })],
+      [53, args({ visitor_data: ["Cgt\nabcdefghijklmnopqrstu"] })],
+      [54, args({ player_client: ["v".repeat(101)] })],
+      [55, { op: "extract", target: "https://www.youtube.com/watch?v=leak", options: { extractorArgs: { other: { visitor_data: [visitor] } } } }],
+    ];
+    for (const [id, req] of refused) {
+      const [reply] = await s.ask({ id, ...req });
+      expect(reply, String(id)).toEqual({ id, ok: false, error: { code: "invalid", message: "requête refusée par l'hôte" } });
+    }
+    const [passed] = await s.ask({ id: 56, ...args({ visitor_data: [visitor], player_skip: ["webpage", "configs"] }) });
+    // Arrivée jusqu'à yt-dlp (le faux la recopie dans son erreur) : la réponse ne la porte plus.
+    expect(passed).toMatchObject({ id: 56, ok: false, error: { code: "failed" } });
+    const message = String((passed.error as { message: string }).message);
+    expect(message).toContain("[visitor_data]");
+    expect(message).not.toContain(visitor);
+    s.close();
+  });
+
+  it("sans chaîne chez yt-dlp, channel/uploader viennent de videoDetails.author ; la réponse reste lisible", async () => {
+    const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
+    const s = session(socketPath);
+    const [reply] = await s.ask({ id: 70, op: "extract", target: "https://www.youtube.com/watch?v=author" });
+    expect(reply).toMatchObject({ id: 70, ok: true, result: { id: "au1", title: "Queen - Topic", channel: "Queen - Topic", uploader: "Queen - Topic" } });
+    s.close();
+  });
+
   it("le programme de l'hôte reste sous la garde de l'amorçage (tentacle.db illisible)", async () => {
     const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
     const s = session(socketPath);
@@ -149,6 +202,28 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     expect(reply).toMatchObject({ id: 20, ok: false, error: { code: "failed" } });
     expect(String((reply.error as { message: string }).message)).toContain("lecture refusée");
     s.close();
+  });
+
+  it("extract reprend l'instance gardée pour les mêmes options, jamais celle d'un échec", async () => {
+    const { socketPath, workerId } = await spawnWorker(ctx, "yt-dlp", "keep");
+    const s = session(socketPath);
+    const serial = async (id: number, options?: Msg, target = "https://www.youtube.com/watch?v=serial") =>
+      ((await s.ask({ id, op: "extract", target, ...(options ? { options } : {}) }))[0].result as { id: string } | undefined)?.id;
+    const music = { extractorArgs: { youtube: { player_client: ["visionos"] } } };
+    const first = await serial(40, music);
+    expect(await serial(41, music)).toBe(first);
+    const other = await serial(42, { flat: true });
+    expect(other).not.toBe(first);
+    expect(await serial(43, music)).toBe(first);
+    const [failed] = await s.ask({ id: 44, op: "extract", target: "https://www.youtube.com/watch?v=boom", options: music });
+    expect(failed).toMatchObject({ ok: false, error: { code: "failed" } });
+    // L'instance de l'échec est jetée : la suivante est neuve.
+    const after = await serial(45, music);
+    expect(after).not.toBe(first);
+    expect(after).not.toBe(other);
+    s.close();
+    // Arrêté : le test de relance ci-dessous ne doit trouver que l'ouvrier « probe ».
+    stopWorker("w-test", workerId);
   });
 
   it("un ouvrier mort est relancé, la socket reste la même", async () => {
@@ -161,5 +236,28 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     const s = session(socketPath);
     expect(await s.ask({ id: 30, op: "version" })).toEqual([{ id: 30, ok: true, result: { version: "2099.01.01" } }]);
     s.close();
+  }, 15_000);
+  it("un nouveau yt-dlp en service : l'ouvrier AU REPOS repart dessus, sans couper la connexion de l'extension", async () => {
+    const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
+    const s = session(socketPath);
+    expect(await s.ask({ id: 60, op: "version" })).toEqual([{ id: 60, ok: true, result: { version: "2099.01.01" } }]);
+    const rebuild = (version: string) => {
+      writeFileSync(join(root, "zipsrc", "yt_dlp", "version.py"), `__version__ = '${version}'\n`);
+      execFileSync("python3", ["-m", "zipapp", join(root, "zipsrc"), "-o", join(root, "yt-dlp"), "-p", "/usr/bin/env python3"]);
+    };
+    // La date du fichier compte : on attend qu'elle change vraiment.
+    await new Promise((r) => setTimeout(r, 20));
+    rebuild("2099.02.02");
+    try {
+      followActiveZipapp();
+      // Une requête PENDANT la relance attend le nouveau processus : elle n'est pas perdue.
+      expect(await s.ask({ id: 61, op: "version" })).toEqual([{ id: 61, ok: true, result: { version: "2099.02.02" } }]);
+      // Rien de changé depuis : l'ouvrier n'est plus relancé.
+      followActiveZipapp();
+      expect(await s.ask({ id: 62, op: "version" })).toEqual([{ id: 62, ok: true, result: { version: "2099.02.02" } }]);
+    } finally {
+      rebuild("2099.01.01");
+      s.close();
+    }
   }, 15_000);
 });

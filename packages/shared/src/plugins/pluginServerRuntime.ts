@@ -183,7 +183,12 @@ export function hostMethodFamily(method: HostMethod): HostApiFamily {
  * chemin de sortie hors du dossier de données.
  */
 export interface WorkerOptions {
-  /** `extractor_args` de yt-dlp, par extracteur (ex. `{ youtube: { player_client: ["web_music"] } }`). */
+  /**
+   * `extractor_args` de yt-dlp, par extracteur (ex. `{ youtube: { player_client: ["web_music"] } }`).
+   * Chaque valeur : 100 caractères au plus, sauf `youtube.visitor_data` — UNE valeur, le visitorData
+   * d'InnerTube (base64url, `%`, `=` ; 20 à 1 024 caractères), à passer avec `player_skip` `webpage` et
+   * `configs` (plus de page watch). Secret de session : jamais journalisé, ni par l'hôte ni par l'ouvrier.
+   */
   extractorArgs?: Record<string, Record<string, string[]>>;
   /** Sélecteur de format (« bestaudio[acodec=opus]/bestaudio »). */
   format?: string;
