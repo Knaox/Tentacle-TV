@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { connect, type Socket } from "net";
 import { join } from "path";
 import { tmpdir } from "os";
-import { spawnWorker, stopAllWorkers, stopWorker } from "./toolWorkers";
+import { followActiveZipapp, spawnWorker, stopAllWorkers, stopWorker } from "./toolWorkers";
 
 /**
  * L'ouvrier persistant d'une extension (`tools.spawnWorker`) : un VRAI Python,
@@ -217,5 +217,28 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     const s = session(socketPath);
     expect(await s.ask({ id: 30, op: "version" })).toEqual([{ id: 30, ok: true, result: { version: "2099.01.01" } }]);
     s.close();
+  }, 15_000);
+  it("un nouveau yt-dlp en service : l'ouvrier AU REPOS repart dessus, sans couper la connexion de l'extension", async () => {
+    const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
+    const s = session(socketPath);
+    expect(await s.ask({ id: 60, op: "version" })).toEqual([{ id: 60, ok: true, result: { version: "2099.01.01" } }]);
+    const rebuild = (version: string) => {
+      writeFileSync(join(root, "zipsrc", "yt_dlp", "version.py"), `__version__ = '${version}'\n`);
+      execFileSync("python3", ["-m", "zipapp", join(root, "zipsrc"), "-o", join(root, "yt-dlp"), "-p", "/usr/bin/env python3"]);
+    };
+    // La date du fichier compte : on attend qu'elle change vraiment.
+    await new Promise((r) => setTimeout(r, 20));
+    rebuild("2099.02.02");
+    try {
+      followActiveZipapp();
+      // Une requête PENDANT la relance attend le nouveau processus : elle n'est pas perdue.
+      expect(await s.ask({ id: 61, op: "version" })).toEqual([{ id: 61, ok: true, result: { version: "2099.02.02" } }]);
+      // Rien de changé depuis : l'ouvrier n'est plus relancé.
+      followActiveZipapp();
+      expect(await s.ask({ id: 62, op: "version" })).toEqual([{ id: 62, ok: true, result: { version: "2099.02.02" } }]);
+    } finally {
+      rebuild("2099.01.01");
+      s.close();
+    }
   }, 15_000);
 });
