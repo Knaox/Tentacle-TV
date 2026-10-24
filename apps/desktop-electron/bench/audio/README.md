@@ -43,6 +43,12 @@ décodage ffmpeg de ses fichiers), `jfGaplessRealtime`, `jfLatency`, `jfFormats`
 - `apps/web/bench/audio-engine/` : le moteur `<audio>` dans Chrome sans tête (CDP
   9232), ce que SORTENT les éléments enregistré par un AudioWorklet.
 
+- `firstSound.mts` (lot Sillon vitesse, S5) : clic sur un titre HORS bibliothèque jamais joué →
+  premier son, une fois l'URL connue. Le vrai moteur devant un relais `/api/plugins/sillon/*` et le
+  banc de Sillon (`bench/playback/firstSoundHost.ts` du dépôt Sillon : vraies routes de lecture, faux
+  googlevideo mesuré ou vraies URL). Port 3305 ; `FS_MPV` pour éprouver des options. Pendant web :
+  `apps/web/bench/audio-engine/firstSound.mjs` (Chrome sans tête, CDP 9335).
+
 ## Ce que le banc a appris (à ne pas redécouvrir)
 
 - Bascule à chaud : jamais `start=T` sur l'entrée suivante — c'est un SAUT, qui
@@ -65,5 +71,9 @@ décodage ffmpeg de ses fichiers), `jfGaplessRealtime`, `jfLatency`, `jfFormats`
   dans le même processus). Remède : `outputWarmup.ts` (50 ms de silence numérique
   à la naissance de l'instance). Mesure : `jfFirstClick` (un processus par
   mesure, `CLICK_WARM=0` pour l'avant), `jfClicks` (20 clics enchaînés).
+- Titre hors bibliothèque (webm Opus 251 de YouTube, Cues en tête) : mpv ne lit que ~8–15 ko avant le
+  premier son, ~7 ms après le premier octet ; le m4a AAC 140 ~10–15 ko et ~30 ms de plus (et parfois un
+  saut). `demuxer-lavf-probesize` / `analyzeduration` n'y changent rien ; `audio-buffer=0.1` RETARDE le
+  premier son (p50 71 → 101 ms). Chrome (`<audio>`) attend ~32 ko et sort ~45 ms après mpv.
 - `mpv_terminate_destroy` a tenu une fois le fil principal 1,5 s ; `quit` puis
   `mpv_destroy` à l'arrêt : ~60 ms. L'appel « async » de koffi : SIGSEGV.
