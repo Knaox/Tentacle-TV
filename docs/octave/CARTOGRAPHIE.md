@@ -320,7 +320,7 @@ sequenceDiagram
     S-->>Relay: suggestions (index locaux, vus du compte)
     Relay-->>Sug: MusicSuggestResponse
   end
-  Sug->>Box: liste unique (récentes, artistes, titres, albums ; 8 au plus)
+  Sug->>Box: liste unique (récentes, artistes, titres, albums, 8 au plus)
   Note over Box: complétion grise après le curseur (⇥ ou →)
 ```
 
@@ -357,7 +357,7 @@ sequenceDiagram
     P->>S: GET music/search?q=…&revise=1
     Note over S: cache 24 h ? → page entière aussitôt
     S->>MB: index ListenBrainz, phares, artistes MusicBrainz (1 req/s)
-    S-->>P: page 1 (≤ 350 ms ; provisional tant que pas sûre)
+    S-->>P: page 1 (≤ 350 ms, provisional tant que pas sûre)
     S-->>Art: préchauffe les pochettes de la page calculée
     loop curseur (long-poll ≤ 8 s)
       P->>S: GET …&cursor=…
@@ -365,7 +365,7 @@ sequenceDiagram
     end
   end
   P->>Art: précharge et DÉCODE les pochettes des premières rangées (budget 250 ms)
-  Note over P: révélation d'un BLOC : bibliothèque + page SÛRE + pochettes ;<br/>extension en retard > 1,5 s : la bibliothèque part seule, rangées fantômes
+  Note over P: révélation d'un BLOC : bibliothèque + page SÛRE + pochettes,<br/>extension en retard > 1,5 s : la bibliothèque part seule, rangées fantômes
   P->>S: POST music/prefetch {ids: 3 premiers, intent: "results"} (une fois)
 ```
 
@@ -395,7 +395,7 @@ sequenceDiagram
   participant SC as SourceCache
   participant S as Sillon (relayé)
   participant YT as YouTube (InnerTube / googlevideo)
-  participant E as Moteur <audio>
+  participant E as Moteur audio HTML
   U->>UI: survol tenu 120 ms
   UI->>S: prefetch(hover)
   U->>UI: appui (pointerdown)
@@ -415,7 +415,7 @@ sequenceDiagram
     Note over S: la tête du flux (256 Ko) se charge pendant que la réponse part
     PL->>E: play(titre, source)
   end
-  E->>S: GET music/stream/… (?api_key= car <audio> sans en-tête)
+  E->>S: GET music/stream/… (?api_key= car l'élément audio est sans en-tête)
   S->>YT: Range vers googlevideo (le relais rejoint la tête en cours)
   S-->>E: octets audio (Opus WebM ou AAC m4a, sans remux)
   E-->>PL: état « playing » → la progression démarre AVEC le son
@@ -444,7 +444,7 @@ sequenceDiagram
   participant YT as YouTube / googlevideo
   participant Mpv as mpv (audio seul)
   Page->>Relay: POST music/resolve + x-tentacle-client-fetch: 1
-  Relay->>S: + x-tentacle-client: <poignée>
+  Relay->>S: + x-tentacle-client: ‹poignée›
   S->>Host: client.fetch {client, request: recherche « Titres »}
   Host->>Page: socket : plugin:clientFetch (CET appareil)
   Page->>Main: client_fetch_run
@@ -459,7 +459,7 @@ sequenceDiagram
   S-->>Page: PlaybackSource { url: chemin serveur, direct: { url googlevideo } }
   Page->>Main: audio_play (source)
   Main->>Main: adoptDirect : hôte dans mediaHosts ? pas près d'expirer ?
-  Main->>Mpv: http://127.0.0.1:<port>/d/<jeton aléatoire>
+  Main->>Mpv: http://127.0.0.1:‹port›/d/‹jeton aléatoire›
   Mpv->>Main: GET (avec le jeton Tentacle en en-tête de l'instance)
   Main->>YT: GET googlevideo SANS aucun identifiant
   alt échec avant le premier octet
@@ -499,13 +499,13 @@ sequenceDiagram
   V->>S: GET music/album/rel:… (ou rg:…)
   S->>MB: parution et ses pistes (cache 7 j / base)
   S-->>V: MusicAlbum + tracks (ids rec:…~rel:…)
-  Note over S: vue album : anticipation de la 1re piste ; pochettes préchauffées
+  Note over S: vue album : anticipation de la 1re piste, pochettes préchauffées
   Note over S,AP: vue TENUE 1 s (une autre vue ou recherche du compte l'annule)
   AP->>AP: fiches de toutes les pistes semées depuis la vue (plus aucune requête catalogue au clic)
   AP->>YT: recherche « Albums » (1 requête) puis browse de l'album (1 requête)
   AP->>AP: appariement (titre + durée ±7 s, ou rang + durée ±3 s) — pistes AUDIO (ATV) seulement
   U->>V: clic sur une piste
-  Note over S: clic : attend la préparation en cours ≤ 2 s ;<br/>puis seulement le player (1 requête) — un clip (OMV) passe par la recherche « Titres »
+  Note over S: clic : attend la préparation en cours ≤ 2 s,<br/>puis seulement le player (1 requête) — un clip (OMV) passe par la recherche « Titres »
 ```
 
 - Fichiers : [`AlbumView.tsx`](../../apps/web/src/music/octave/views/AlbumView.tsx),
