@@ -23,7 +23,6 @@ vi.mock("react-router-dom", () => ({
   Link: ({ to, children, className }: { to: string; children?: React.ReactNode; className?: string }) => <a href={to} className={className}>{children}</a>,
   useNavigate: () => () => undefined,
 }));
-vi.mock("../data/libraryQueries", () => ({ useMusicPlaylists: () => ({ data: [] }) }));
 
 const { OctaveEntryButton } = await import("../mode/OctaveEntry");
 const { AvailabilityMark } = await import("./AvailabilityMark");

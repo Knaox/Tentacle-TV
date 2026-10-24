@@ -12,7 +12,7 @@ import { LogOut } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../../hooks/useIsMobile";
-import { useMusicEvents } from "../events/useMusicEvents";
+import { useOctaveEvents } from "../events/useOctaveEvents";
 import { NowPlayingSheet } from "./NowPlayingSheet";
 import { OctaveSidebar, OctaveTabBar, OctaveWordmark } from "./OctaveSidebar";
 import { MiniPlayer, PlayerBar } from "./PlayerBar";
@@ -40,7 +40,7 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
   const toggleQueue = useCallback(() => setQueueOpen((v) => !v), []);
   const closeQueue = useCallback(() => setQueueOpen(false), []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
-  useMusicEvents();
+  useOctaveEvents();
   useResetScroll(main);
 
   if (mobile) {

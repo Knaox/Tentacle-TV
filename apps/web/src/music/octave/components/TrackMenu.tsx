@@ -8,9 +8,9 @@ import { ChevronLeft, ChevronRight, Disc3, ListEnd, ListPlus, ListStart, MoreHor
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
+import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import type { TrackActions } from "../actions/useTrackActions";
-import { useMusicPlaylists } from "../data/libraryQueries";
 import { octavePaths } from "../octavePaths";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
@@ -97,9 +97,21 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenu
               <div className="my-1 h-px bg-line-subtle" />
               {editable.length === 0 && <p className="px-3 py-2 text-sm text-content-tertiary">{t("playlist.none")}</p>}
               {editable.map((p) => (
-                <button key={p.jellyfinId} type="button" role="menuitem" className={itemClass} onClick={run(() => void actions.addToPlaylist(track, p))}>
-                  <span className="truncate">{p.name}</span>
-                </button>
+                <div key={p.jellyfinId} className="flex items-center gap-1">
+                  {/* Le nom ajoute à la fin ; « En tête » à la position 0 (A3 insère à une position). */}
+                  <button type="button" role="menuitem" className={`${itemClass} min-w-0 flex-1`} onClick={run(() => void actions.addToPlaylist(track, p))}>
+                    <span className="truncate">{p.name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    title={t("playlist.addFirst")}
+                    onClick={run(() => void actions.addToPlaylist(track, p, 0))}
+                    className="shrink-0 cursor-pointer rounded-md px-2 py-2 text-xs font-semibold text-content-tertiary hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-subtle focus-visible:outline-none"
+                  >
+                    {t("playlist.first")}
+                  </button>
+                </div>
               ))}
             </>
           ) : (

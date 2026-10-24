@@ -8,6 +8,8 @@
 
 import type {
   ExternalActionOutcome,
+  MusicAlbum,
+  MusicArtist,
   ExternalSourcesResponse,
   PendingMusicResponse,
   PlaybackSource,
@@ -90,6 +92,24 @@ export async function fetchPendingMusic(provider: MusicProvider, signal?: AbortS
   if (!provider.music.pending) return { items: [] };
   const raw = await tentacleApiFetch<PendingMusicResponse>(musicRouteUrl(provider, provider.music.pending), { signal });
   return { items: Array.isArray(raw?.items) ? raw.items.filter((i) => !!i && typeof i.operationId === "string") : [] };
+}
+
+/** L'écoute menée au bout d'un titre hors bibliothèque (`music.played`) : silencieuse, jamais bloquante. */
+export function reportExternalPlayed(provider: MusicProvider, externalId: string, completed: boolean): void {
+  if (!provider.music.played) return;
+  void tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.played), post({ externalId, completed })).catch(() => undefined);
+}
+
+/** La vue d'un album hors bibliothèque (`music.album`), `null` si l'extension n'en sert pas. */
+export function fetchExternalAlbum(provider: MusicProvider, albumId: string, signal?: AbortSignal): Promise<MusicAlbum | null> {
+  if (!provider.music.album) return Promise.resolve(null);
+  return tentacleApiFetch<MusicAlbum>(`${musicRouteUrl(provider, provider.music.album)}/${encodeURIComponent(albumId)}`, { signal });
+}
+
+/** La vue d'un artiste hors bibliothèque (`music.artist`), `null` si l'extension n'en sert pas. */
+export function fetchExternalArtist(provider: MusicProvider, artistId: string, signal?: AbortSignal): Promise<MusicArtist | null> {
+  if (!provider.music.artist) return Promise.resolve(null);
+  return tentacleApiFetch<MusicArtist>(`${musicRouteUrl(provider, provider.music.artist)}/${encodeURIComponent(artistId)}`, { signal });
 }
 
 /** Pour les tests. */

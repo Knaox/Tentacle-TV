@@ -8,7 +8,7 @@ import type { EngineEvent, EngineState, MusicTrack, PlaybackSource } from "@tent
 
 /** De quoi joindre le serveur Tentacle, tel que le client Jellyfin de la page le sait. */
 export interface MusicEngineAuth {
-  /** L'adresse du serveur Tentacle (`client.getBaseUrl()`), vide si même origine. */
+  /** L'adresse du serveur Tentacle (`getBackendBase()`), vide si même origine. */
   baseUrl: string;
   token: string | null;
   /** Session par cookie (le web) : le navigateur authentifie seul. */

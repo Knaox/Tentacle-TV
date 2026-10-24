@@ -5,6 +5,7 @@ export { findMusicProvider, musicRouteUrl, musicSectionLabel, type MusicProvider
 export { mergeExternalMusicPages, readMusicSearchPage, type MergedMusicResults } from "../pluginMusic/musicSearchMerge";
 export {
   resolveMusicSources, isSourceFresh, prefetchMusic, likeExternalTrack, addExternalTrackToPlaylist, fetchPendingMusic,
+  reportExternalPlayed, fetchExternalAlbum, fetchExternalArtist,
 } from "../pluginMusic/musicRequests";
 export { useMusicProvider } from "../pluginMusic/useMusicProvider";
 // Renommés à l'export : la recherche de la BIBLIOTHÈQUE (exports/music) garde les noms courts.

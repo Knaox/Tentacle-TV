@@ -1,8 +1,8 @@
 /**
  * Octave — un moteur FACTICE conforme à `AudioEnginePort` : il note chaque
  * appel et laisse le test (ou une scène de banc) dire ce que le son fait.
- * Jamais livré comme moteur : le vrai est celui de l'agent 2
- * (`apps/web/src/music/engine/`), branché par `engine/octaveEngine.ts`.
+ * Jamais livré comme moteur : le vrai est celui d'A2 (`apps/web/src/music/engine/`,
+ * `AudioEngineProvider`). Tests et bancs seulement.
  */
 
 import type {

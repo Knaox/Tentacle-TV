@@ -15,6 +15,10 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: "fr", resolvedLanguage: "fr" } }),
 }));
 
+// Les outils accordés (runtime isolé) appellent l'API d'administration, qui tire `main.tsx` (et `window`) :
+// hors sujet pour la carte, qui n'en rend que l'emplacement.
+vi.mock("./PluginToolGrants", () => ({ PluginToolGrants: () => null }));
+
 function plugin(overrides: Partial<InstalledPlugin> = {}): InstalledPlugin {
   return {
     id: "11111111-1111-4111-8111-111111111111", pluginId: "seer", sourceId: "official", name: "Vigie",

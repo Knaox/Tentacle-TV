@@ -7,8 +7,8 @@
  *   const engine = useAudioEngine();        // null tant qu'il démarre
  *   const state = useAudioEngineState();    // suit l'état (null sans moteur)
  *
- * L'authentification vient du client Jellyfin de la page (le serveur Tentacle,
- * son jeton, cookie ou non) ; un changement de compte, de jeton ou de serveur
+ * L'authentification vient de la page : la racine du serveur Tentacle
+ * (`getBackendBase`), le jeton et le mode cookie du client Jellyfin ; un changement de compte, de jeton ou de serveur
  * redémarre le moteur avec la nouvelle.
  *
  * `useAudioEngineState` suit les ÉVÈNEMENTS (quatre par seconde en lecture) ;
@@ -19,6 +19,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { AudioEnginePort, EngineState } from "@tentacle-tv/shared/music";
+import { getBackendBase } from "../../lib/backendBase";
 import { createAudioEngine } from "./createAudioEngine";
 import type { MusicEngineAuth } from "./engineShared";
 import type { EnginePrefs } from "./mpv/mpvAudioEngine";
@@ -29,7 +30,9 @@ const DEFAULT_PREFS: EnginePrefs = { volume: 1, muted: false, replayGain: "auto"
 
 export function AudioEngineProvider({ children, prefs = DEFAULT_PREFS }: { children: ReactNode; prefs?: EnginePrefs }) {
   const client = useJellyfinClient();
-  const baseUrl = client.getBaseUrl();
+  // La racine du serveur TENTACLE (`/api/music/...` y vit), pas celle du proxy Jellyfin
+  // (`client.getBaseUrl()` = `…/api/jellyfin` : le flux y devenait `/api/jellyfin/api/music/stream`).
+  const baseUrl = getBackendBase();
   const token = client.getToken();
   const useCredentials = client.useCredentials;
   const auth = useMemo<MusicEngineAuth>(() => ({ baseUrl, token, useCredentials }), [baseUrl, token, useCredentials]);

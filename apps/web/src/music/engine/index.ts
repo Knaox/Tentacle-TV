@@ -5,5 +5,5 @@
 
 export { AudioEngineProvider, useAudioEngine, useAudioEngineState } from "./AudioEngineProvider";
 export { createAudioEngine, preferredEngine, type EngineKind } from "./createAudioEngine";
-export type { MusicEngineAuth } from "./engineShared";
+export { elementSourceUrl, type MusicEngineAuth } from "./engineShared";
 export type { EnginePrefs } from "./mpv/mpvAudioEngine";

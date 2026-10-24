@@ -1,15 +1,11 @@
 /**
  * Octave — le mode ne s'offre QUE si le serveur déclare `music.library` ET que
- * `/api/music/status` dit une bibliothèque musique visible par ce compte.
- * Serveur d'avant, compte sans musique, hors ligne : aucune entrée, aucune
- * requête de plus (la configuration est déjà en cache).
+ * `/api/music/status` dit une bibliothèque musique visible par ce compte
+ * (`useMusicStatus`, A3). Serveur d'avant, compte sans musique, hors ligne :
+ * aucune entrée, aucune requête de plus.
  */
 
-import { useQuery } from "@tanstack/react-query";
-import { useServerCapabilities, useUserId } from "@tentacle-tv/api-client";
-import { libraryApi } from "../data/libraryApi";
-
-export const MUSIC_STATUS_KEY = "octave-status";
+import { useMusicStatus, useServerCapabilities, useUserId } from "@tentacle-tv/api-client";
 
 export interface OctaveAvailability {
   available: boolean;
@@ -20,15 +16,8 @@ export interface OctaveAvailability {
 export function useOctaveAvailability(enabled = true): OctaveAvailability {
   const { capabilities, settled: capsSettled } = useServerCapabilities();
   const userId = useUserId();
-  const declared = capabilities.has("music.library");
-  const status = useQuery({
-    queryKey: [MUSIC_STATUS_KEY, userId],
-    queryFn: libraryApi.status,
-    enabled: enabled && declared && !!userId,
-    staleTime: 60_000,
-    retry: 1,
-  });
+  const status = useMusicStatus();
   if (!enabled || !userId) return { available: false, settled: true };
-  if (!declared) return { available: false, settled: capsSettled };
-  return { available: status.data?.available === true, settled: !status.isPending };
+  if (!capabilities.has("music.library")) return { available: false, settled: capsSettled };
+  return { available: status.data?.available === true, settled: !status.isPending || status.isError };
 }

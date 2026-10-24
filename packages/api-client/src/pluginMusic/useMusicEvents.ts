@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { MUSIC_EVENT_TYPES, type MusicEvent } from "@tentacle-tv/shared/music";
-import { acquireSocket, subscribeSocket } from "../socket/tentacleSocket";
+import { acquireSocket, onSocketStatus, subscribeSocket, type SocketStatus } from "../socket/tentacleSocket";
 import { musicPendingKey } from "./useMusicActions";
 
 /**
@@ -52,8 +52,17 @@ export function useMusicEvents({ enabled, token, onEvent }: UseMusicEventsOption
       applyMusicEvent(qc, typed);
       handler.current?.(typed);
     });
+    // Une coupure a pu faire manquer des événements : au retour du socket, toute la musique se relit (une fois).
+    let hadOpen = false;
+    let previous: SocketStatus | null = null;
+    const offStatus = onSocketStatus((status) => {
+      if (status === "open" && hadOpen && previous !== "open") void qc.invalidateQueries({ queryKey: ["music"] });
+      if (status === "open") hadOpen = true;
+      previous = status;
+    });
     return () => {
       off();
+      offStatus();
       release();
     };
   }, [enabled, token, qc]);

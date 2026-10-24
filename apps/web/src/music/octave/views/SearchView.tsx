@@ -1,28 +1,27 @@
 /**
- * Octave — la recherche. La BIBLIOTHÈQUE d'abord (index local, au fil de la
- * frappe), puis la section de chaque extension musique, remplie page après
- * page — elle n'existe pas sans extension. La requête vit dans l'adresse
- * (`?q=`) : retour arrière et lien profond la retrouvent.
+ * Octave — la recherche. La BIBLIOTHÈQUE d'abord (au fil de la frappe), puis
+ * la section de l'extension musique, remplie page après page — elle n'existe
+ * pas sans extension. La requête vit dans l'adresse (`?q=`) : retour arrière
+ * et lien profond la retrouvent.
  */
 
 import { useMemo } from "react";
 import { Search, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { PluginMusicSearchState } from "@tentacle-tv/api-client";
 import { AlbumCard, ArtistCard, CardGrid, PlaylistCard, Shelf } from "../components/Cards";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { EmptyState, RowsSkeleton } from "../components/ViewStates";
-import { useMusicSearch } from "../data/libraryQueries";
-import { isSectionEmpty, visibleSection, type ExternalSection } from "@tentacle-tv/shared/octave";
-import { useExternalSearch } from "../search/useExternalSearch";
-import { useLibraryKnowledge } from "../search/useLibraryKnowledge";
+import { useOctaveSearch } from "../search/useOctaveSearch";
 
-function ExternalResults({ section, query }: { section: ExternalSection; query: string }) {
+function ExternalResults({ section, label, query }: { section: PluginMusicSearchState; label: string; query: string }) {
   const { t } = useTranslation("music");
   const rows = useMemo(() => rowsOf(section.tracks.slice(0, 10)), [section.tracks]);
-  if (isSectionEmpty(section) && section.complete) return null;
+  const empty = section.tracks.length === 0 && section.albums.length === 0 && section.artists.length === 0;
+  if (empty && section.complete && !section.pending) return null;
   return (
-    <Shelf title={section.label} action={!section.complete ? <span className="text-xs text-content-tertiary" role="status">{t("search.externalLoading")}</span> : undefined}>
+    <Shelf title={label} action={!section.complete ? <span className="text-xs text-content-tertiary" role="status">{t("search.externalLoading")}</span> : undefined}>
       {/* Une barre fine pendant que des pages arrivent : jamais un spinner qui bloque. */}
       {!section.complete && (
         <div aria-hidden className="mx-2 h-0.5 overflow-hidden rounded-full bg-fill-subtle">
@@ -31,7 +30,7 @@ function ExternalResults({ section, query }: { section: ExternalSection; query: 
       )}
       {rows.length > 0 && (
         <div className="octave-enter">
-          <TrackList rows={rows} contextId={`search:${section.pluginId}:${query}`} showArtwork showAlbum label={section.label} />
+          <TrackList rows={rows} contextId={`search:external:${query}`} showArtwork showAlbum label={label} />
         </div>
       )}
       {section.albums.length > 0 && (
@@ -60,11 +59,8 @@ export function SearchView() {
   const { t } = useTranslation("music");
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
-  const library = useMusicSearch(query);
-  const sections = useExternalSearch(query);
-  const known = useLibraryKnowledge(library.data, sections);
-  const visible = useMemo(() => sections.map((s) => visibleSection(s, known)), [known, sections]);
-  const data = query.trim() ? library.data : undefined;
+  const { library, external, externalLabel } = useOctaveSearch(query);
+  const data = library.data;
   const trackRows = useMemo(() => rowsOf((data?.tracks ?? []).slice(0, 8)), [data]);
   const libraryEmpty = !!data && !data.tracks.length && !data.albums.length && !data.artists.length && !data.playlists.length;
 
@@ -108,12 +104,12 @@ export function SearchView() {
         </div>
       )}
 
-      {query.trim() && library.isPending && <RowsSkeleton rows={5} />}
+      {query.trim() && !data && library.pending && <RowsSkeleton rows={5} />}
       {libraryEmpty && <EmptyState>{t("search.noResults", { query: query.trim() })}</EmptyState>}
 
       {trackRows.length > 0 && (
         <Shelf title={t("search.tracks")}>
-          <TrackList rows={trackRows} contextId={`search:${query}`} showArtwork showAlbum label={t("search.tracks")} />
+          <TrackList rows={trackRows} contextId={`search:${library.settledQuery}`} showArtwork showAlbum label={t("search.tracks")} />
         </Shelf>
       )}
       {(data?.artists.length ?? 0) > 0 && (
@@ -132,9 +128,7 @@ export function SearchView() {
         </Shelf>
       )}
 
-      {visible.map((section) => (
-        <ExternalResults key={section.pluginId} section={section} query={query} />
-      ))}
+      {external.available && externalLabel && <ExternalResults section={external} label={externalLabel} query={query} />}
     </div>
   );
 }

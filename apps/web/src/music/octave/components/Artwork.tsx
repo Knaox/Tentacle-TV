@@ -1,11 +1,18 @@
 /**
  * Octave — une pochette (ou la photo d'un artiste) : place réservée (aucun
  * saut de mise en page), chargement paresseux, repli dessiné sans image.
+ *
+ * L'adresse suit la règle du moteur (`elementSourceUrl`, A2) : telle quelle
+ * avec une session par cookie (le web), le jeton en `api_key` sinon (le
+ * bureau) — une `<img>` ne pose pas d'en-tête, et le cœur l'accepte sur
+ * `/api/music/artwork` (A3). Une URL https d'extension reste telle quelle.
  */
 
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Music, User } from "lucide-react";
-import { serverUrl } from "../data/libraryApi";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { getBackendBase } from "../../../lib/backendBase";
+import { elementSourceUrl } from "../../engine";
 
 interface ArtworkProps {
   url: string | null;
@@ -18,9 +25,19 @@ interface ArtworkProps {
   eager?: boolean;
 }
 
+/** L'adresse affichable d'une image du cœur. */
+export function useArtworkSrc(url: string | null): string | null {
+  const client = useJellyfinClient();
+  const baseUrl = getBackendBase();
+  const token = client.getToken();
+  const useCredentials = client.useCredentials;
+  return useMemo(() => (url ? elementSourceUrl(url, { baseUrl, token, useCredentials }) : null), [url, baseUrl, token, useCredentials]);
+}
+
 export const Artwork = memo(function Artwork({ url, alt = "", className = "", round = false, kind = "album", eager = false }: ArtworkProps) {
   const [failed, setFailed] = useState(false);
-  const src = failed ? null : serverUrl(url);
+  const resolved = useArtworkSrc(url);
+  const src = failed ? null : resolved;
   const Icon = kind === "artist" ? User : Music;
   return (
     <div

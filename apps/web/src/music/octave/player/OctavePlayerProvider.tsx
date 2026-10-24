@@ -1,57 +1,62 @@
 /**
- * Octave — le lecteur de la session musique : UN moteur, UNE file, montés
- * avec le mode et démontés en le quittant (la musique s'arrête en sortant
- * d'Octave : la vidéo reprend sa place).
+ * Octave — le lecteur de la session musique : le MOTEUR d'A2
+ * (`AudioEngineProvider` : mpv en audio seul sur le bureau, Web Audio sur le
+ * web) et la FILE (`OctavePlayer`, shared/octave), montés avec le mode et
+ * démontés en le quittant (la musique s'arrête en sortant d'Octave).
+ *
+ * Les sources : la bibliothèque par le cache d'A3 (`fetchMusicSource`, une
+ * requête par titre), l'extension par A5 (`resolveMusicSources`) ; la couche
+ * `SourceCache` (shared) ne fait que les rendre disponibles SYNCHRONEMENT
+ * (`peek`), pour lancer le son dans le tour même du clic.
  *
  * Lecture par sélecteurs (`useSyncExternalStore`) : la barre de progression
  * seule suit la position ; une liste ne se redessine qu'au changement de titre.
  */
 
-import { createContext, useContext, useLayoutEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import type { AudioEnginePort, MusicTrack } from "@tentacle-tv/shared/music";
-import { libraryApi } from "../data/libraryApi";
-import { externalApi } from "../extension/externalApi";
-import { useMusicProviders, type MusicProvider } from "../extension/musicProviders";
-import { createOctaveEngine } from "../engine/octaveEngine";
-import { OctavePlayer, PlaybackReporter, type PlayerSnapshot, type PositionState, SourceCache } from "@tentacle-tv/shared/octave";
+import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import {
+  fetchMusicSource,
+  prefetchMusic,
+  reportExternalPlayed,
+  reportMusicPlayback,
+  resolveMusicSources,
+  type MusicProvider,
+} from "@tentacle-tv/api-client";
+import type { AudioEnginePort } from "@tentacle-tv/shared/music";
+import { OctavePlayer, PlaybackReporter, SourceCache, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
+import { AudioEngineProvider, useAudioEngine, type EnginePrefs } from "../../engine";
+import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
 
 const VOLUME_KEY = "tentacle_octave_volume";
 
-function readVolume(): number | null {
+function readVolume(): number {
   try {
-    const v = Number(localStorage.getItem(VOLUME_KEY));
-    return Number.isFinite(v) && v >= 0 && v <= 1 && localStorage.getItem(VOLUME_KEY) !== null ? v : null;
+    const raw = localStorage.getItem(VOLUME_KEY);
+    const v = raw === null ? Number.NaN : Number(raw);
+    return Number.isFinite(v) && v >= 0 && v <= 1 ? v : 1;
   } catch {
-    return null;
+    return 1;
   }
 }
 
-/** Les extensions du moment, lues sans recréer le lecteur à chaque rendu. */
-const providersRef: { current: readonly MusicProvider[] } = { current: [] };
-
-function providerOf(track: MusicTrack): MusicProvider | null {
-  const pluginId = track.external?.pluginId;
-  return pluginId ? (providersRef.current.find((p) => p.pluginId === pluginId) ?? null) : null;
-}
-
-export function buildOctavePlayer(engine: AudioEnginePort): OctavePlayer {
+export function buildOctavePlayer(engine: AudioEnginePort, qc: QueryClient, provider: () => MusicProvider | null): OctavePlayer {
   const sources = new SourceCache({
-    library: (id) => libraryApi.source(id),
+    library: (id) => fetchMusicSource(qc, id),
     external: async (track) => {
-      const provider = providerOf(track);
-      if (!provider || !track.external) return null;
-      const res = await externalApi.resolve(provider, [track.external.id]);
-      return res.sources.find((s) => s.externalId === track.external?.id)?.source ?? null;
+      const p = provider();
+      if (!track.external || !isFromProvider(p, track.external.pluginId)) return null;
+      return (await resolveMusicSources(p, [track.external.id])).get(track.external.id) ?? null;
     },
     now: () => Date.now(),
   });
   const reporter = new PlaybackReporter({
-    library: (report) => void libraryApi.report(report).catch(() => undefined),
+    library: (report) => void reportMusicPlayback(report),
     externalPlayed: (track, completed) => {
-      const provider = providerOf(track);
-      if (provider && track.external) externalApi.played(provider, track.external.id, completed);
+      const p = provider();
+      if (track.external && isFromProvider(p, track.external.pluginId)) reportExternalPlayed(p, track.external.id, completed);
     },
     now: () => Date.now(),
   });
@@ -60,26 +65,26 @@ export function buildOctavePlayer(engine: AudioEnginePort): OctavePlayer {
     sources,
     reporter,
     prefetchExternal: (tracks, intent) => {
-      const byProvider = new Map<MusicProvider, string[]>();
-      for (const t of tracks) {
-        const p = providerOf(t);
-        if (p && t.external && t.availability !== "library") byProvider.set(p, [...(byProvider.get(p) ?? []), t.external.id]);
-      }
-      for (const [p, ids] of byProvider) externalApi.prefetch(p, ids, intent);
+      const p = provider();
+      if (!p) return;
+      const ids = tracks.filter((t) => t.availability !== "library" && t.external && isFromProvider(p, t.external.pluginId)).map((t) => t.external!.id);
+      prefetchMusic(p, ids, intent);
     },
   });
 }
 
-export function OctavePlayerProvider({ children, engineFactory = createOctaveEngine }: { children: ReactNode; engineFactory?: () => AudioEnginePort }) {
-  const providers = useMusicProviders();
-  providersRef.current = providers;
+/** La file, sur le moteur démarré par A2 (un moteur neuf → une file neuve). */
+function PlayerOnEngine({ children }: { children: ReactNode }) {
+  const engine = useAudioEngine();
+  const qc = useQueryClient();
+  const provider = useOctaveProvider();
+  const providerRef = useRef(provider);
+  providerRef.current = provider;
   const [player, setPlayer] = useState<OctavePlayer | null>(null);
-  // Créé dans un effet de mise en page (StrictMode monte deux fois : chaque
-  // montage a SON moteur, rendu avant la première image — aucun écran vide).
+
   useLayoutEffect(() => {
-    const p = buildOctavePlayer(engineFactory());
-    const volume = readVolume();
-    if (volume !== null) p.setVolume(volume);
+    if (!engine) return;
+    const p = buildOctavePlayer(engine, qc, () => providerRef.current);
     // Le volume survit d'une session à l'autre (préférence d'appareil).
     let lastVolume = p.snapshot.get().volume;
     const off = p.snapshot.subscribe(() => {
@@ -96,11 +101,21 @@ export function OctavePlayerProvider({ children, engineFactory = createOctaveEng
     return () => {
       off();
       p.dispose();
-      p.deps.engine.dispose();
+      setPlayer(null);
     };
-  }, [engineFactory]);
+  }, [engine, qc]);
+
   if (!player) return null;
   return <PlayerContext.Provider value={player}>{children}</PlayerContext.Provider>;
+}
+
+export function OctavePlayerProvider({ children }: { children: ReactNode }) {
+  const [prefs] = useState<EnginePrefs>(() => ({ volume: readVolume(), muted: false, replayGain: "auto", deviceId: null, exclusive: false }));
+  return (
+    <AudioEngineProvider prefs={prefs}>
+      <PlayerOnEngine>{children}</PlayerOnEngine>
+    </AudioEngineProvider>
+  );
 }
 
 export function useOctavePlayer(): OctavePlayer {

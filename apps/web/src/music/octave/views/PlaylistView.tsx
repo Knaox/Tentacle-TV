@@ -6,14 +6,11 @@
 
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useUserId } from "@tentacle-tv/api-client";
+import { useMusicPlaylist, useRemoveMusicPlaylistEntry } from "@tentacle-tv/api-client";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
 import { TrackList } from "../components/TrackList";
 import { EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
-import { libraryApi } from "../data/libraryApi";
-import { octaveKeys, useMusicPlaylist } from "../data/libraryQueries";
 import { mergePlaylist, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
@@ -21,8 +18,7 @@ import { useOctavePlayer } from "../player/OctavePlayerProvider";
 export function PlaylistView() {
   const { t } = useTranslation("music");
   const { id = "" } = useParams();
-  const user = useUserId();
-  const queryClient = useQueryClient();
+  const { mutate: removeEntry } = useRemoveMusicPlaylistEntry();
   const player = useOctavePlayer();
   const playlist = useMusicPlaylist(id);
   const pending = usePendingMusic();
@@ -44,10 +40,7 @@ export function PlaylistView() {
   const data = playlist.data;
   const remove = data.editable
     ? (entryId: string) => {
-        void libraryApi.removeEntry(id, entryId).finally(() => {
-          void queryClient.invalidateQueries({ queryKey: octaveKeys.playlist(user, id) });
-          void queryClient.invalidateQueries({ queryKey: octaveKeys.playlists(user) });
-        });
+        removeEntry({ playlistId: id, entryId });
       }
     : undefined;
 

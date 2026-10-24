@@ -68,8 +68,11 @@ describe("le moteur ne reçoit que courant + suivant", () => {
     const { player, engine, reports } = setup();
     player.playList(tracks, 0);
     await flush();
-    expect(engine.calls).toContainEqual({ method: "setNext", key: "jf:b" });
+    // Le suivant attend le son du courant (jamais deux ouvertures à la fois).
+    expect(engine.calls.some((c) => c.method === "setNext")).toBe(false);
     engine.sound(0);
+    await flush();
+    expect(engine.calls).toContainEqual({ method: "setNext", key: "jf:b" });
     engine.emit({ type: "advanced", fromKey: "jf:a", toKey: "jf:b" });
     expect(player.snapshot.get().current?.key).toBe("jf:b");
     await flush();
@@ -82,6 +85,8 @@ describe("le moteur ne reçoit que courant + suivant", () => {
   it("l'aléatoire redit le suivant au moteur", async () => {
     const { player, engine } = setup();
     player.playList(["a", "b", "c", "d", "e"].map((id) => libraryTrack(id)), 0);
+    await flush();
+    engine.sound(0);
     await flush();
     const before = engine.calls.length;
     queueActions.toggleShuffle(player);

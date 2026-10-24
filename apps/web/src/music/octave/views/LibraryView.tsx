@@ -7,33 +7,32 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlbumCard, ArtistCard, CardGrid, PlaylistCard } from "../components/Cards";
 import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates";
-import { flattenPages, useMusicAlbums, useMusicArtists, useMusicPlaylists } from "../data/libraryQueries";
-import { LoadMore } from "./LoadMore";
+import { useMusicAlbums, useMusicArtists, useMusicPlaylists, type MusicAlbumSort } from "@tentacle-tv/api-client";
+import { LoadMore, flattenPages } from "./LoadMore";
 
 type Tab = "albums" | "artists" | "playlists";
 /** Les tris demandés au serveur (`/api/music/albums?sort=`). */
-const SORTS = [
-  { value: "added", key: "library.sortAdded" },
+const SORTS: readonly { value: MusicAlbumSort; key: string }[] = [
+  { value: "recent", key: "library.sortAdded" },
   { value: "name", key: "library.sortName" },
-  { value: "artist", key: "library.sortArtist" },
   { value: "year", key: "library.sortYear" },
-] as const;
+];
 
 const SORT_KEY = "tentacle_octave_album_sort";
 
-function readSort(): string {
+function readSort(): MusicAlbumSort {
   try {
     const v = localStorage.getItem(SORT_KEY);
-    return SORTS.some((s) => s.value === v) ? (v as string) : "added";
+    return SORTS.find((s) => s.value === v)?.value ?? "recent";
   } catch {
-    return "added";
+    return "recent";
   }
 }
 
 function Albums() {
   const { t } = useTranslation("music");
   const [sort, setSort] = useState(readSort);
-  const albums = useMusicAlbums(sort);
+  const albums = useMusicAlbums({ sort });
   const list = flattenPages(albums.data?.pages);
   return (
     <div className="flex flex-col gap-4">
@@ -45,7 +44,7 @@ function Albums() {
           id="octave-album-sort"
           value={sort}
           onChange={(e) => {
-            setSort(e.target.value);
+            setSort(e.target.value as MusicAlbumSort);
             try {
               localStorage.setItem(SORT_KEY, e.target.value);
             } catch {

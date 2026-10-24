@@ -6,14 +6,11 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useUserId } from "@tentacle-tv/api-client";
+import { useCreateMusicPlaylist, useMusicPlaylists } from "@tentacle-tv/api-client";
 import { useToast } from "../../../contexts/ToastContext";
 import { CardGrid, PlaylistCard } from "../components/Cards";
 import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates";
-import { libraryApi } from "../data/libraryApi";
-import { octaveKeys, useMusicPlaylists } from "../data/libraryQueries";
 import { octavePaths } from "../octavePaths";
 
 function NewPlaylist() {
@@ -21,8 +18,7 @@ function NewPlaylist() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const user = useUserId();
-  const queryClient = useQueryClient();
+  const { mutateAsync: createPlaylist } = useCreateMusicPlaylist();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -43,8 +39,7 @@ function NewPlaylist() {
     if (!clean || busy) return;
     setBusy(true);
     try {
-      const created = await libraryApi.createPlaylist(clean);
-      await queryClient.invalidateQueries({ queryKey: octaveKeys.playlists(user) });
+      const created = await createPlaylist({ name: clean });
       navigate(octavePaths.playlist(created.jellyfinId));
     } catch {
       toast.show("error", t("refusal.failed"), { title: t("refusal.title") });

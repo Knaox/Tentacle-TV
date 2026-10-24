@@ -10,7 +10,7 @@ import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Artwork } from "../components/Artwork";
 import { OctaveLogo } from "../components/OctaveLogo";
-import { useMusicPlaylists } from "../data/libraryQueries";
+import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
 
 export const OCTAVE_DESTINATIONS = [

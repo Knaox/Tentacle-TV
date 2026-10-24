@@ -36,6 +36,8 @@ export class OctavePlayer {
   readonly engineKeys = new Map<string, string>();
   /** L'entrée préchargée comme « suivante » dans le moteur. */
   nextUid: string | null = null;
+  /** Le suivant attend que le courant SONNE : préchargé plus tôt, il disputait au courant l'ouverture (mpv, mesuré). */
+  private nextAfterStart = false;
   private playToken = 0;
   private readonly unsubscribe: () => void;
 
@@ -104,7 +106,7 @@ export class OctavePlayer {
     this.snapshot.update({ origin: source.origin, format: source.format ?? item.track.format, durationMs: source.durationMs ?? item.track.durationMs });
     this.deps.engine.play(item.track, source, startMs);
     if (!this.snapshot.get().wantsPlay) this.deps.engine.pause();
-    this.scheduleNext();
+    this.nextAfterStart = true;
   }
 
   /** Aucune source : on le dit, puis on passe au suivant (jamais une file bloquée). */
@@ -244,6 +246,10 @@ export class OctavePlayer {
       format: state.format ?? snap.format,
       durationMs: state.durationMs ?? snap.durationMs,
     });
+    if (playing && this.nextAfterStart) {
+      this.nextAfterStart = false;
+      this.scheduleNext();
+    }
     if (playing) {
       this.deps.reporter.started(snap.current, state.positionMs);
       this.deps.reporter.progress(state.positionMs);

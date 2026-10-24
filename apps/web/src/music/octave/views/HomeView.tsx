@@ -10,7 +10,7 @@ import { AlbumCard, CardGrid, PlaylistCard, Shelf } from "../components/Cards";
 import { Artwork } from "../components/Artwork";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { CardsSkeleton, EmptyState, ErrorState, RowsSkeleton } from "../components/ViewStates";
-import { useMusicHome } from "../data/libraryQueries";
+import { useMusicHome } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { usePrefetchHandlers } from "../player/usePrefetchHandlers";

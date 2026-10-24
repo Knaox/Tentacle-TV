@@ -5,6 +5,12 @@
 
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import type { MusicPage } from "@tentacle-tv/shared/music";
+
+/** Les pages d'une liste mises bout à bout. */
+export function flattenPages<T>(pages: readonly MusicPage<T>[] | undefined): T[] {
+  return pages ? pages.flatMap((p) => p.items) : [];
+}
 
 interface PagedQuery {
   hasNextPage: boolean;
