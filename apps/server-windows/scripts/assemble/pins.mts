@@ -26,7 +26,7 @@ export interface PinnedFile {
   fileName: string;
 }
 
-const NODE_VERSION = "24.21.0";
+const NODE_VERSION = "24.22.1";
 const NODE_ARCHIVE = `node-v${NODE_VERSION}-win-x64.zip`;
 
 export const NODE: PinnedFile & { shasumsUrl: string; folder: string } = {
@@ -34,7 +34,7 @@ export const NODE: PinnedFile & { shasumsUrl: string; folder: string } = {
   version: NODE_VERSION,
   url: `https://nodejs.org/dist/v${NODE_VERSION}/${NODE_ARCHIVE}`,
   shasumsUrl: `https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt`,
-  sha256: "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
+  sha256: "d2046d28c2c3dcd211ac5145c0bf30e2047ef9dfb306693c8c6e2eccd8b95fa5",
   fileName: NODE_ARCHIVE,
   /** Le dossier racine de l'archive. */
   folder: `node-v${NODE_VERSION}-win-x64`,
