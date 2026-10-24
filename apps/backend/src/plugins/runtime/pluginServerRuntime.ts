@@ -146,6 +146,29 @@ export interface HostApi {
    */
   "tools.spawnWorker": { params: { tool: ToolName; name: string }; result: { workerId: string; socketPath: string } };
   "tools.stopWorker": { params: { workerId: string }; result: { ok: true } };
+  /**
+   * Le BUDGET YOUTUBE de l'hôte : une place pour `cost` requêtes (1 à 4) vers
+   * youtube.com, music.youtube.com ou InnerTube — par l'ouvrier comme en HTTP
+   * direct —, comptées dès l'accord. L'hôte tient UN registre pour lui et ses
+   * extensions (les bandes-annonces sortent par la même adresse) : 150 par
+   * heure et 20 par minute en tout ; une extension en `play` tant que l'heure
+   * est sous 140, en `prefetch` sous 110, 100 par heure au plus ; cadence de
+   * 250 ms (`waitMs` : attendre avant de lancer). Disjoncteur COMMUN ouvert :
+   * `blocked`, sauf une lecture-sonde toutes les 5 min. Exige la famille
+   * `tools` ET un outil demandé au manifeste. Hôte d'avant : `forbidden`
+   * (méthode inconnue) — l'extension garde alors sa propre garde.
+   */
+  "tools.youtubeAdmit": {
+    params: { kind: "play" | "prefetch"; cost: number };
+    result: { granted: true; waitMs: number } | { granted: false; reason: "blocked" | "budget"; retryAfterMs: number };
+  };
+  /**
+   * Le verdict d'une requête accordée : `antiBot` (vérification anti-robot,
+   * limite de débit) ouvre le disjoncteur commun ; `ok`, partie (`startedAt`,
+   * millisecondes de l'horloge de l'hôte comme de l'invité : `Date.now()`)
+   * APRÈS sa dernière ouverture, le referme.
+   */
+  "tools.youtubeReport": { params: { outcome: "ok" | "antiBot"; startedAt: number }; result: { ok: true } };
 }
 
 export type HostMethod = keyof HostApi;
@@ -165,6 +188,8 @@ export const HOST_METHODS: readonly HostMethod[] = [
   "tools.exec",
   "tools.spawnWorker",
   "tools.stopWorker",
+  "tools.youtubeAdmit",
+  "tools.youtubeReport",
 ];
 
 /** La famille d'une méthode : appeler hors des familles déclarées → `forbidden`. */
