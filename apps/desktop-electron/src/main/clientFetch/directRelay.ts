@@ -27,7 +27,19 @@ interface Entry {
   /** Un octet du direct a été servi : plus de repli possible (les deux flux peuvent différer). */
   delivered: boolean;
   mode: "direct" | "server";
+  /** L'échec du direct a été signalé au serveur (`direct=failed` sur la première requête de repli). */
+  reported: boolean;
   usedAt: number;
+}
+
+/**
+ * Le signal d'échec du flux direct (contrat `PlaybackSource.direct`) : la première requête de repli vers `url`
+ * porte `direct=failed`, l'extension y oublie la source de l'appareil (et la correspondance qu'il a fournie).
+ */
+export function withDirectFailed(url: string): string {
+  const u = new URL(url);
+  u.searchParams.set("direct", "failed");
+  return u.href;
 }
 
 const IDLE_MS = 3_600_000;
@@ -58,7 +70,7 @@ export class DirectRelay {
     const port = await this.listen();
     this.sweep();
     const id = randomBytes(32).toString("base64url");
-    this.entries.set(id, { directUrl, fallbackUrl, fallbackHeaders, delivered: false, mode: "direct", usedAt: Date.now() });
+    this.entries.set(id, { directUrl, fallbackUrl, fallbackHeaders, delivered: false, mode: "direct", reported: false, usedAt: Date.now() });
     return `http://127.0.0.1:${port}/d/${id}`;
   }
 
@@ -137,7 +149,8 @@ export class DirectRelay {
   }
 
   private pipeFrom(entry: Entry, _from: "server", method: string | undefined, range: string | undefined, res: ServerResponse): void {
-    const target = new URL(entry.fallbackUrl);
+    const target = new URL(entry.reported ? entry.fallbackUrl : withDirectFailed(entry.fallbackUrl));
+    entry.reported = true;
     const send = target.protocol === "https:" ? httpsRequest : httpRequest;
     const upstream = send(target, { method, headers: { ...entry.fallbackHeaders, ...(range ? { range } : {}) }, timeout: CONNECT_TIMEOUT_MS }, (up) => this.answer(up, res));
     upstream.once("timeout", () => upstream.destroy(new Error("délai")));

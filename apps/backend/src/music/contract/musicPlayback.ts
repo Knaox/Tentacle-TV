@@ -37,8 +37,9 @@ export interface PlaybackSource {
   /**
    * Un flux que CET appareil lit EN DIRECT (capacité `plugins.clientFetch`) : obtenu par une
    * requête déléguée, il n'est valable que depuis la connexion de l'appareil. https, hôte dans
-   * les `mediaHosts` de l'extension, AUCUN en-tête d'authentification ; à la première erreur, le
-   * moteur reprend `url` (le serveur). Un moteur qui ne le connaît pas l'ignore.
+   * les `mediaHosts` de l'extension, AUCUN identifiant (ni jeton, ni en-tête, ni cookie) ; à la
+   * première erreur, le moteur reprend `url` (le serveur) en y ajoutant `direct=failed` une fois,
+   * pour que l'extension oublie cette source. Un moteur qui ne le connaît pas l'ignore.
    */
   direct?: { url: string; expiresAt: number | null };
 }

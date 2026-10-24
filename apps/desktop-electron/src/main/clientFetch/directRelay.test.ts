@@ -51,7 +51,9 @@ describe("relais local des flux directs", () => {
     expect(res).toMatchObject({ status: 206, body: "OCTETS-DIRECTS" });
     expect(res.headers["set-cookie"]).toBeUndefined();
     expect(direct.seen[0]?.headers.range).toBe("bytes=0-");
-    expect(direct.seen[0]?.headers["x-emby-token"]).toBeUndefined();
+    // Jamais un identifiant du compte vers l'hôte du flux : ni jeton, ni authentification, ni cookie, ni api_key.
+    for (const name of ["x-emby-token", "authorization", "cookie", "x-emby-authorization", "x-mediabrowser-token"]) expect(direct.seen[0]?.headers[name], name).toBeUndefined();
+    expect(direct.seen[0]?.url).toBe("/videoplayback?x=1");
     expect(server.seen).toHaveLength(0);
     expect(relay.stats).toEqual({ direct: 1, fallbacks: 0 });
   });
@@ -64,9 +66,11 @@ describe("relais local des flux directs", () => {
     const local = await relay.adopt(`${direct.url}/v`, `${server.url}/stream`, { "X-Emby-Token": "secret" });
     expect(await get(local)).toMatchObject({ status: 200, body: "SERVEUR" });
     expect(server.seen[0]?.headers["x-emby-token"]).toBe("secret");
+    expect(server.seen[0]?.url, "l'échec du direct est signalé au serveur, une fois").toBe("/stream?direct=failed");
     await get(local, "bytes=10-");
     expect(direct.seen).toHaveLength(1);
     expect(server.seen[1]?.headers.range).toBe("bytes=10-");
+    expect(server.seen[1]?.url).toBe("/stream");
     expect(relay.stats.fallbacks).toBe(1);
   });
 

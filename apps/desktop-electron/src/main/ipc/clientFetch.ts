@@ -9,7 +9,7 @@
 
 import { z } from "zod";
 import { ClientFetchQuota } from "../clientFetch/clientFetchQuota";
-import { runClientFetch } from "../clientFetch/clientFetchRunner";
+import { runDelegated } from "../clientFetch/delegatedRun";
 import { pluginManifests } from "../clientFetch/directSources";
 import type { ClientFetchOutcome, ClientFetchRequest } from "../clientFetch/pluginClientFetch";
 import { isValidPluginId } from "../pluginDocuments";
@@ -58,17 +58,9 @@ export function registerClientFetchCommands(registry: CommandRegistry): void {
           remember({ t: started, pluginId, host: target?.hostname ?? "?", path: target?.pathname ?? "?", outcome: outcome.ok ? outcome.response.status : outcome.reason, ms: Date.now() - started });
           return outcome;
         };
-        const manifest = await pluginManifests.of({ serverOrigin, headers }, pluginId);
-        if (!manifest) return note({ ok: false, reason: "refused" });
-        const release = quota.take(pluginId);
-        if (!release) return note({ ok: false, reason: "budget" });
-        try {
-          // Les champs absents restent absents (le contrat n'admet pas `undefined`).
-          const clean: ClientFetchRequest = Object.fromEntries(Object.entries(request).filter(([, v]) => v !== undefined)) as unknown as ClientFetchRequest;
-          return note(await runClientFetch(clean, manifest));
-        } finally {
-          release();
-        }
+        // Les champs absents restent absents (le contrat n'admet pas `undefined`).
+        const clean: ClientFetchRequest = Object.fromEntries(Object.entries(request).filter(([, v]) => v !== undefined)) as unknown as ClientFetchRequest;
+        return note(await runDelegated({ serverOrigin, headers, pluginId, request: clean }, { manifests: pluginManifests, quota }));
       },
     })
     .add("client_fetch_log", { schema: z.object({}).passthrough(), run: () => log.slice() });
