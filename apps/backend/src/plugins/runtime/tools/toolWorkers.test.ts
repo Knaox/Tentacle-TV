@@ -51,10 +51,21 @@ vi.hoisted(() => {
       "    def __enter__(self): return self",
       "    def __exit__(self, *a): return False",
       "    def close(self): pass",
+      "    def urlopen(self, req):",
+      "        import io",
+      "        class Resp:",
+      "            url = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false'",
+      "            def __init__(self): self.fp = io.BytesIO(b'{\\\"videoDetails\\\": {\\\"videoId\\\": \\\"au1\\\", \\\"author\\\": \\\"Queen - Topic\\\"}}')",
+      "            def read(self, amt=None): return self.fp.read()",
+      "        return Resp()",
       "    def extract_info(self, target, download=False):",
       `        if 'evil' in target: open(${secret}).read()`,
       "        if 'boom' in target: raise RuntimeError('panne')",
       "        if 'leak' in target: raise RuntimeError('args ' + repr(self.params.get('extractor_args')))",
+      "        if 'author' in target:",
+      "            import json",
+      "            again = json.loads(self.urlopen('x').read())['videoDetails']['author']",
+      "            return {'id': 'au1', 'title': again, 'channel': None, 'formats': []}",
       "        if 'serial' in target: return {'id': str(self.serial), 'formats': []}",
       "        return {'id': 'v1', 'title': 'T', 'artists': ['A'], 'duration': 61.5, 'formats': [{'format_id': '251', 'ext': 'webm', 'acodec': 'opus', 'abr': 130.5, 'url': 'https://x/' + 'a' * 1100, 'http_headers': {'User-Agent': 'UA'}}], 'raw_secret_field': 'jamais'}",
       "    def download(self, urls):",
@@ -173,6 +184,14 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     const message = String((passed.error as { message: string }).message);
     expect(message).toContain("[visitor_data]");
     expect(message).not.toContain(visitor);
+    s.close();
+  });
+
+  it("sans chaîne chez yt-dlp, channel/uploader viennent de videoDetails.author ; la réponse reste lisible", async () => {
+    const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
+    const s = session(socketPath);
+    const [reply] = await s.ask({ id: 70, op: "extract", target: "https://www.youtube.com/watch?v=author" });
+    expect(reply).toMatchObject({ id: 70, ok: true, result: { id: "au1", title: "Queen - Topic", channel: "Queen - Topic", uploader: "Queen - Topic" } });
     s.close();
   });
 

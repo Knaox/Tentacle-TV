@@ -24,7 +24,7 @@
 /* ------------------------------------------------------------------ */
 
 export const WORKER_SCRIPT = String.raw`
-import json, threading, os, time
+import io, json, threading, os, time
 import yt_dlp
 from yt_dlp.utils import DownloadCancelled
 
@@ -38,6 +38,25 @@ ANTI_BOT = ("confirm you" + "’re not a bot", "confirm you're not a bot", "sign
 KEEP_S, KEEP_USES, KEEP_PER_KEY, KEEP_KEYS = 1800, 200, 4, 8
 kept = {}
 kept_lock = threading.Lock()
+authors = {}
+
+class HostYoutubeDL(yt_dlp.YoutubeDL):
+    # Sans page watch ni initial_data, yt-dlp perd le nom de la chaîne ; la réponse player le porte
+    # (videoDetails.author) : lu au passage, rendu dans channel/uploader quand yt-dlp n'en a pas.
+    def urlopen(self, req):
+        resp = super().urlopen(req)
+        if "/youtubei/v1/player" in str(getattr(resp, "url", "")):
+            body = resp.read()
+            resp.fp = io.BytesIO(body)
+            try:
+                details = json.loads(body).get("videoDetails") or {}
+                if details.get("videoId") and details.get("author"):
+                    if len(authors) > 500:
+                        authors.clear()
+                    authors[str(details["videoId"])] = str(details["author"])[:200]
+            except (ValueError, AttributeError):
+                pass
+        return resp
 
 def send(obj):
     line = json.dumps(obj, separators=(",", ":"))
@@ -94,7 +113,7 @@ def take(o, logger):
                 return key, ydl, born, uses
             close_quietly(ydl)
     prune_players()
-    return key, yt_dlp.YoutubeDL(options(o, logger)), time.monotonic(), 0
+    return key, HostYoutubeDL(options(o, logger)), time.monotonic(), 0
 
 def give_back(key, ydl, born, uses):
     if not isinstance(getattr(ydl, "params", None), dict):
@@ -154,11 +173,12 @@ def fmt(f):
 
 def info(d, depth=0):
     d = d or {}
+    author = authors.pop(str(d.get("id") or ""), None) if depth == 0 else None
     artists = d.get("artists") or ([d["artist"]] if d.get("artist") else [])
     entries = [info(e, depth + 1) for e in (d.get("entries") or []) if e] if depth == 0 else []
     return {"id": str(d.get("id") or ""), "title": text(d.get("title")), "track": text(d.get("track")),
-            "artists": [str(a)[:200] for a in artists][:20], "album": text(d.get("album")), "channel": text(d.get("channel")),
-            "channelId": text(d.get("channel_id")), "uploader": text(d.get("uploader")), "durationS": num(d.get("duration")),
+            "artists": [str(a)[:200] for a in artists][:20], "album": text(d.get("album")), "channel": text(d.get("channel") or author),
+            "channelId": text(d.get("channel_id")), "uploader": text(d.get("uploader") or author), "durationS": num(d.get("duration")),
             "isLive": bool(d.get("is_live")), "webpageUrl": text(d.get("webpage_url") or d.get("url")),
             "categories": [str(c)[:100] for c in (d.get("categories") or [])][:20],
             "formats": [fmt(f) for f in (d.get("formats") or [])][:80], "entries": entries[:100]}
