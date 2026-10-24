@@ -59,5 +59,11 @@ décodage ffmpeg de ses fichiers), `jfGaplessRealtime`, `jfLatency`, `jfFormats`
   ffmpeg boucle alors sur la vraie fin (reprise à 33 s au lieu de 9).
 - ffmpeg lit ~124 ko d'un FLAC avant de l'ouvrir : la latence d'un fichier en
   écriture suit la vitesse d'écriture.
+- Le palier de ~2 s du premier clic : le PREMIER `AudioUnitInitialize` d'un
+  processus fait recenser à macOS les composants audio (1,5 à 1,9 s mesurés à
+  froid, 17 ms cache chaud ; une fois par processus — 3 ms après 60 s de silence
+  dans le même processus). Remède : `outputWarmup.ts` (50 ms de silence numérique
+  à la naissance de l'instance). Mesure : `jfFirstClick` (un processus par
+  mesure, `CLICK_WARM=0` pour l'avant), `jfClicks` (20 clics enchaînés).
 - `mpv_terminate_destroy` a tenu une fois le fil principal 1,5 s ; `quit` puis
   `mpv_destroy` à l'arrêt : ~60 ms. L'appel « async » de koffi : SIGSEGV.

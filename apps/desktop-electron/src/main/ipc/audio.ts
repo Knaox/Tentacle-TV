@@ -11,6 +11,7 @@
  * devient faux, et la musique prend le moteur `<audio>` du web.
  */
 
+import { app } from "electron";
 import { z } from "zod";
 import { NativeAudioEngine } from "../audio/audioEngine";
 import { refuseSource } from "../audio/audioSources";
@@ -69,6 +70,15 @@ function platform(): Platform {
   return process.platform === "win32" || process.platform === "linux" ? process.platform : "darwin";
 }
 
+/**
+ * Développement seulement : `TENTACLE_AUDIO_MPV_LOG=<fichier>` écrit le journal
+ * verbeux de l'instance audio (diagnostic d'un clic lent). Jamais dans un paquet.
+ */
+function devLogOptions(): Record<string, string> {
+  const file = process.env["TENTACLE_AUDIO_MPV_LOG"];
+  return !app.isPackaged && file ? { "log-file": file, "msg-level": "all=v" } : {};
+}
+
 function running(): NativeAudioEngine {
   if (engine === null) throw new Error("moteur audio non démarré");
   return engine;
@@ -90,7 +100,7 @@ export function registerAudioCommands(registry: CommandRegistry): void {
     .add("audio_engine_start", {
       schema: START,
       run: async (args) => {
-        engine ??= new NativeAudioEngine({ platform: platform() }, (event) => sendToPage("audio://event", event));
+        engine ??= new NativeAudioEngine({ platform: platform(), extraOptions: devLogOptions() }, (event) => sendToPage("audio://event", event));
         serverOrigin = args.serverOrigin;
         return engine.start(args);
       },

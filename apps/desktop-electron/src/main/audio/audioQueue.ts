@@ -99,10 +99,7 @@ export class AudioQueue {
   isStarted = (): boolean => this.started;
 
   /** La source de bascule insérée, en attente de son instant T. */
-  pendingSwap(): QueueEntry | null {
-    const second = this.entries[1];
-    return second !== undefined && second.kind === "swap" ? second : null;
-  }
+  pendingSwap = (): QueueEntry | null => (this.entries[1]?.kind === "swap" ? this.entries[1] : null);
 
   /** Le titre suivant : dans mpv, ou retenu. */
   nextTrack(): Pending | null {
@@ -288,6 +285,9 @@ export class AudioQueue {
     this.flushHeld(result);
     return result;
   }
+
+  /** Un identifiant pris par une entrée du MOTEUR, hors de la liste (le préchauffage). */
+  reserveId = (): number => ++this.idAlloc;
 
   /** mpv a refusé l'ajout `mpvId` : il n'a rien numéroté, la suite se recale. */
   loadFailed(mpvId: number): void {

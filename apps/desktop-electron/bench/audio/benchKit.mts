@@ -35,7 +35,9 @@ export async function benchEngine(config: Partial<EngineConfig> = {}, volume = 1
   // `BENCH_MPVLOG=<fichier>` : le journal verbeux de mpv, pour comprendre un scénario.
   const log = process.env["BENCH_MPVLOG"];
   const extraOptions = { ...config.extraOptions, ...(log ? { "log-file": log, "msg-level": "all=v" } : {}) };
-  const engine = new NativeAudioEngine({ platform: "darwin", ...config, extraOptions }, (event) => {
+  // Sortie PCM : pas de préchauffage (son silence ouvrirait le fichier comparé).
+  const warmOutput = config.warmOutput ?? config.extraOptions?.["ao"] !== "pcm";
+  const engine = new NativeAudioEngine({ platform: "darwin", ...config, extraOptions, warmOutput }, (event) => {
     const rec = { at: performance.now(), event };
     events.push(rec);
     if (process.env["BENCH_DEBUG"]) console.log(Math.round(rec.at), JSON.stringify(event).slice(0, 220));

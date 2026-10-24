@@ -24,11 +24,13 @@ import { formats, gapless, growingHold, provisionalEnd, swapCurrent, swapNext, w
 import { exclusive, latency, outputs, ram } from "./deviceScenarios.mts";
 import { gaplessRealtime, heldRealtime, swapRealtime } from "./realtimeScenarios.mts";
 import { jfFormats, jfGaplessPcm, jfGaplessRealtime, jfLatency, jfReplayGain } from "./jellyfinScenarios.mts";
+import { firstClick, jfClicks } from "./clickScenarios.mts";
 
 const dir = process.env["BENCH_DIR"] ?? path.join(tmpdir(), "tentacle-audio-bench");
 mkdirSync(dir, { recursive: true });
 const fx = generate(dir);
-const server = await startBenchServer(fx, PORT);
+// `BENCH_NO_SERVER=1` : le port est pris par un vrai backend (scénarios du Jellyfin seulement).
+const server = process.env["BENCH_NO_SERVER"] === "1" ? { requests: [], close: () => undefined } : await startBenchServer(fx, PORT);
 const out = (name: string): string => path.join(fx, `out-${name}.raw`);
 
 const all: Record<string, () => Promise<unknown>> = {
@@ -53,6 +55,8 @@ const all: Record<string, () => Promise<unknown>> = {
   jfLatency: () => jfLatency(),
   jfFormats: () => jfFormats(fx),
   jfReplayGain: () => jfReplayGain(fx),
+  jfClicks: () => jfClicks(Number(process.env["CLICKS"] ?? 20)),
+  jfFirstClick: () => firstClick(),
 };
 const DEFAULT = Object.keys(all).filter((k) => !k.startsWith("jf"));
 

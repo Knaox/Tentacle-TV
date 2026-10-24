@@ -24,6 +24,7 @@ import { AudioQueue, offsetOf, type QueueResult } from "./audioQueue";
 import { ProvisionalEnd, StateThrottle } from "./audioEngineTimers";
 import { expiresSoon, servedSource } from "./audioSources";
 import { cachedToEnd, isRealEnd } from "./partialSource";
+import { warmOutput } from "./outputWarmup";
 
 export interface EngineConfig {
   platform: Platform;
@@ -33,8 +34,9 @@ export interface EngineConfig {
   extraOptions?: Readonly<Record<string, string>>;
   /** Cadence de la pompe en lecture (ms) — le banc la resserre. */
   activePumpMs?: number;
+  /** Préchauffer la sortie à la naissance (`outputWarmup.ts`) ; le banc PCM le coupe. */
+  warmOutput?: boolean;
 }
-
 
 /** L'état part au plus quatre fois par seconde pour la position, tout de suite sinon. */
 const STATE_INTERVAL_MS = 250;
@@ -57,7 +59,8 @@ export class NativeAudioEngine {
   /** L'instant T de la bascule en attente, pour dire une bascule manquée. */
   private swapAtS: number | null = null;
   private readonly leadS: number;
-
+  /** L'entrée mpv du préchauffage : son départ n'est pas un titre. */
+  private warmId = -1;
   constructor(private readonly config: EngineConfig, private readonly emit: (event: AudioBridgeEvent) => void) {
     this.leadS = config.leadS ?? DEFAULT_LEAD_S;
     this.throttle = new StateThrottle(STATE_INTERVAL_MS, (at) =>
@@ -86,6 +89,7 @@ export class NativeAudioEngine {
       const options = startOptions(this.config.platform, start, headers, this.config.extraOptions ?? {});
       const failed = this.mpv.start(options, OBSERVED_PROPERTIES);
       if (failed !== null) throw new Error(failed);
+      if (this.config.warmOutput !== false) this.warmId = warmOutput(this.mpv, this.queue);
     }
     return mpvCapabilities(codecsFromDecoderList(await this.mpv.get("decoder-list")));
   }
@@ -154,14 +158,11 @@ export class NativeAudioEngine {
     this.emitState();
   }
 
-  async listOutputs(): Promise<AudioBridgeOutput[]> {
-    return parseOutputs(this.config.platform, await this.mpv.get("audio-device-list"));
-  }
+  listOutputs = async (): Promise<AudioBridgeOutput[]> => parseOutputs(this.config.platform, await this.mpv.get("audio-device-list"));
 
   async setOutput(deviceId: string | null, exclusive: boolean): Promise<void> {
     Object.assign(this.settings, { deviceId, exclusive });
-    const sets = Object.entries(outputOptions(this.config.platform, deviceId, exclusive)).map(([k, v]) => this.mpv.set(k, v));
-    const errors = (await Promise.all(sets)).filter((e) => e !== null);
+    const errors = (await Promise.all(Object.entries(outputOptions(this.config.platform, deviceId, exclusive)).map(([k, v]) => this.mpv.set(k, v)))).filter((e) => e !== null);
     this.emitState();
     if (errors.length > 0) throw new Error(errors.join(" ; "));
   }
@@ -189,8 +190,7 @@ export class NativeAudioEngine {
     for (const op of result.ops) {
       const args = opArgs(op, this.settings.replayGain);
       if (op.op === "load" && op.mode === "replace") {
-        // `keep-open` met mpv en pause sur la fin d'un fichier ; un chargement
-        // en hérite (titre retenu, relecture) — sauf pause VOULUE.
+        // La pause de `keep-open` (fin du fichier d'avant) ne passe pas au suivant — sauf VOULUE.
         if (!this.flags.wantPaused) void this.mpv.set("pause", "no");
         this.flags.awaitingRestart = true;
         this.props = { ...this.props, timePos: null, eofReached: false };
@@ -233,7 +233,7 @@ export class NativeAudioEngine {
     const before = this.props.timePos === null ? null : this.positionS();
     const result = this.queue.startFile(mpvId);
     if (result === null) {
-      console.warn(`[audio] entrée mpv inconnue : ${mpvId}`);
+      if (mpvId !== this.warmId) console.warn(`[audio] entrée mpv inconnue : ${mpvId}`);
       return;
     }
     const swapped = result.notices.some((n) => n.type === "swapped");
