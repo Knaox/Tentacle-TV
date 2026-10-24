@@ -17,6 +17,7 @@ import { recordingOf, rowFromItem } from "../jellyfin/itemMapping";
 import { INDEX_FIELDS, jfAdmin, normalizeId, q, type JfItem, type JfItemsPage } from "../jellyfin/musicJellyfin";
 import { getMusicLibrary, type MusicLibrary } from "../jellyfin/musicLibrary";
 import { fillArtistMbids } from "./artistMbids";
+import { markAnnounced, wasAnnounced } from "./recentArrivals";
 import { albumTracks, orderedIds, rowsByIds } from "./indexQueries";
 import { currentGeneration, dropOlderThan, removeRows, upsertRows } from "./indexStore";
 import type { IndexRow } from "./indexTypes";
@@ -185,17 +186,20 @@ export async function applyLibraryChange(addedIds: string[], updatedIds: string[
   await upsertRows(rows, await currentGeneration());
   if (newArtists.length > 0) await fillArtistMbids();
   const isNew = (row: IndexRow) => !knownBefore.has(row.id);
+  // Déjà annoncé (indexé à l'avance après un `refreshPath`) : l'index se met à jour en silence.
+  const told = (id: string) => knownBefore.has(id) && wasAnnounced(id);
   const tracks = inLibrary.filter((i) => i.Type === "Audio");
   const result: IncrementalResult = {
     added: rows.filter(isNew),
-    updated: rows.filter((r) => !isNew(r)),
+    updated: rows.filter((r) => !isNew(r) && !told(r.id)),
     removed,
     addedRefs: tracks.filter((i) => !knownBefore.has(normalizeId(i.Id))).map(audioRef),
-    updatedRefs: tracks.filter((i) => knownBefore.has(normalizeId(i.Id))).map(audioRef),
+    updatedRefs: tracks.filter((i) => knownBefore.has(normalizeId(i.Id)) && !told(normalizeId(i.Id))).map(audioRef),
     playlists,
     unresolved: touched.filter((id) => !items.some((i) => normalizeId(i.Id) === id) && !knownBefore.has(id)),
   };
   if (result.added.length > 0 || result.removed.length > 0) invalidateMusicVisibility();
+  markAnnounced(result.added.map((r) => r.id));
   publishAudioItems({ added: result.addedRefs, updated: result.updatedRefs, removed: removedTracks });
   return result;
 }

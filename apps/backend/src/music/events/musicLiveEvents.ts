@@ -38,6 +38,11 @@ function ids(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string" && v.length > 0) : [];
 }
 
+/** Un passage sur l'index, à la suite des évènements (jamais deux à la fois : l'ordre et l'anti-doublon en dépendent). */
+export function runSerialized(task: () => Promise<void>): Promise<void> {
+  return enqueue(task);
+}
+
 function enqueue(task: () => Promise<void>): Promise<void> {
   const next = queue.then(task).catch((error: unknown) => {
     console.warn(`[music] évènement Jellyfin non appliqué : ${error instanceof Error ? error.message : String(error)}`);

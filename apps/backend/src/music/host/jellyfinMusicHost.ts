@@ -21,6 +21,7 @@ import { insertIntoPlaylist } from "../playlists/playlistService";
 import type { AudioItemRef } from "../events/audioItemsFeed";
 import { isAdminUser, listUserIds } from "./hostUsers";
 import { isLibraryPath, refreshContaining } from "./folderRefresh";
+import { indexArrivalsUnder, lookupRecentArrivals } from "../events/folderArrivals";
 
 export class HostMusicFailure extends Error {
   constructor(
@@ -50,7 +51,13 @@ export async function musicLibrary(): Promise<{ libraryId: string; name: string;
 export async function findByMbid(params: { recordings: string[] }): Promise<AudioItemRef[]> {
   if (!Array.isArray(params.recordings) || params.recordings.length > 500) throw new HostMusicFailure("invalid", "recordings");
   const mbids = [...new Set(params.recordings.map(normalizeMbid).filter((m): m is string => m !== null))];
-  const rows = await tracksByRecording(mbids);
+  let rows = await tracksByRecording(mbids);
+  // Le filet : un MBID que l'index ignore encore (Jellyfin le voit, `LibraryChanged` n'est pas arrivé) —
+  // relecture BORNÉE des dossiers rafraîchis et des derniers ajouts, puis l'index une seconde fois.
+  if (new Set(rows.map((r) => r.recordingMbid)).size < mbids.length) {
+    await lookupRecentArrivals();
+    rows = await tracksByRecording(mbids);
+  }
   if (rows.length === 0) return [];
   // Le chemin n'est pas dans l'index : Jellyfin le dit (une requête, champs minimaux).
   const listed = await jfAdmin<JfItemsPage>(`/Items?Ids=${rows.map((r) => q(r.id)).join(",")}&Fields=ProviderIds,Path&EnableImages=false&EnableUserData=false`);
@@ -146,5 +153,7 @@ export async function refreshPath(params: { path: string }): Promise<{ ok: true;
   if (!isLibraryPath(library, path)) throw new HostMusicFailure("invalid", "chemin hors de la bibliothèque musique");
   const result = await refreshContaining(library, path);
   if (!result.ok) throw new HostMusicFailure("unavailable", "Jellyfin muet");
+  // L'index n'attend pas `LibraryChanged` (30 s par défaut) : le dossier rafraîchi s'indexe dès qu'il a ses éléments.
+  if (result.itemId !== library.libraryId) void indexArrivalsUnder(result.itemId).catch(() => undefined);
   return { ok: true, scope: result.scope, itemId: result.itemId };
 }
