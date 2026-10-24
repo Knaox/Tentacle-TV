@@ -43,6 +43,15 @@ vi.hoisted(() => {
     wr(j(src, "yt_dlp", "__init__.py"), [
       "from . import version, utils",
       "CREATED = [0]",
+      // Les messages RÉELS de yt-dlp 2026.10.21 (banc S8 du 24/10, banc S3) : le classement en dépend.
+      "ERRORS = {",
+      "  'noformat': 'ERROR: [youtube] g0uUqiDxAa4: Requested format is not available. Use --list-formats for a list of available formats [youtube] g0uUqiDxAa4: Failed to parse JSON (caused by JSONDecodeError(\"Expecting value in \\'\\': line 1 column 1 (char 0)\"))',",
+      "  'sme': 'ERROR: [youtube] A22oy8dFjqc: It was blocked due to the claimed content by SME.',",
+      "  'age': 'ERROR: [youtube] abc: Sign in to confirm your age. This video may be inappropriate for some users.',",
+      "  'bot': 'ERROR: [youtube] J7p4bzqLvCw: Sign in to confirm you’re not a bot. Use --cookies-from-browser',",
+      "  'gone': 'ERROR: [youtube] abc: Video unavailable. This video has been removed by the uploader',",
+      "  'private': 'ERROR: [youtube] abc: Private video. Sign in if you have been granted access',",
+      "}",
       "class YoutubeDL:",
       "    def __init__(self, opts):",
       "        self.opts = self.params = opts",
@@ -61,6 +70,7 @@ vi.hoisted(() => {
       "    def extract_info(self, target, download=False):",
       `        if 'evil' in target: open(${secret}).read()`,
       "        if 'boom' in target: raise RuntimeError('panne')",
+      "        if 'err=' in target: raise RuntimeError(ERRORS[target.split('err=')[1]])",
       "        if 'leak' in target: raise RuntimeError('args ' + repr(self.params.get('extractor_args')))",
       "        if 'author' in target:",
       "            import json",
@@ -192,6 +202,18 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     const s = session(socketPath);
     const [reply] = await s.ask({ id: 70, op: "extract", target: "https://www.youtube.com/watch?v=author" });
     expect(reply).toMatchObject({ id: 70, ok: true, result: { id: "au1", title: "Queen - Topic", channel: "Queen - Topic", uploader: "Queen - Topic" } });
+    s.close();
+  });
+
+  it("classement des échecs réels : aucun format ou réponse vide → failed ; bloquée, retirée, privée, âge → unavailable ; anti-robot seul → antiBot", async () => {
+    const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
+    const s = session(socketPath);
+    const cases: [string, string][] = [["noformat", "failed"], ["sme", "unavailable"], ["age", "unavailable"], ["bot", "antiBot"], ["gone", "unavailable"], ["private", "unavailable"]];
+    let id = 80;
+    for (const [key, code] of cases) {
+      const [reply] = await s.ask({ id: id++, op: "extract", target: `https://www.youtube.com/watch?v=x&err=${key}` });
+      expect(reply, key).toMatchObject({ ok: false, error: { code } });
+    }
     s.close();
   });
 
