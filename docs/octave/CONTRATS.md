@@ -72,6 +72,21 @@ code chargé, aucune trace dans l'interface.
   qui charge un script du dossier de l'extension (yt-dlp en bibliothèque Python,
   importée depuis le zipapp en service). Le chemin et la mise à jour de yt-dlp
   restent ceux du cœur (`services/ytDlp.ts`), inchangés pour les bandes-annonces.
+- **Budget YouTube UNIQUE de l'hôte** (lot « Sillon vitesse », S6) : une seule
+  adresse IP sert les bandes-annonces ET les extensions. `tools.youtubeAdmit
+  { kind: "play" | "prefetch", cost: 1..4 }` → `{ granted: true, waitMs }` ou
+  `{ granted: false, reason: "blocked" | "budget", retryAfterMs }` ;
+  `tools.youtubeReport { outcome: "ok" | "antiBot", startedAt }`. Registre de
+  l'hôte (`services/youtubeBudget/`) : 150/h et 20/min toutes sources ; une
+  extension en `play` sous 140, en `prefetch` sous 110 (≥ 40/h restent toujours
+  aux bandes-annonces et aux clics), 100/h chacune, cadence 250 ms. Disjoncteur
+  COMMUN (celui des bandes-annonces) : `antiBot` l'ouvre, une lecture-sonde
+  d'extension toutes les 5 min, un `ok` parti après l'ouverture le referme. Les
+  bandes-annonces ne sont refusées qu'à l'heure pleine (150) : en deçà, leur
+  comportement est inchangé. Réservé à la famille `tools` avec un outil demandé
+  au manifeste. Toute requête vers youtube.com / music.youtube.com / InnerTube
+  d'une extension passe par lui — par l'ouvrier comme en HTTP direct. Hôte
+  d'avant : `forbidden` (méthode inconnue) → l'extension garde sa garde locale.
 - Extension désactivée → `shutdown`, plus aucun relais, `music:provider` émis.
 - Repli si le runtime se révèle trop risqué : conteneur séparé, MÊME contrat HTTP.
 
