@@ -28,6 +28,11 @@ export interface HtmlEngineDeps extends SwapTimers {
   listOutputs?: () => Promise<AudioOutputDevice[]>;
 }
 
+/** Une position plus proche que cela de la dernière publiée ne se republie pas. */
+const POSITION_STEP_MS = 100;
+
+const positionOf = (slot: Slot): number => Math.round(slot.el.currentTime * 1000);
+
 /** À moins de cela de la fin, le départ du suivant est programmé. */
 const ARM_BEFORE_END_S = 1.5;
 
@@ -80,16 +85,27 @@ export class HtmlAudioEngine implements AudioEnginePort {
   /** Le courant : ses évènements pilotent l'état. */
   private adopt(slot: Slot): void {
     this.current = slot;
-    slot.on("playing", () => this.current === slot && this.patch({ status: "playing", error: null }));
+    slot.on("playing", () => this.current === slot && this.patch({ status: "playing", error: null, positionMs: positionOf(slot) }));
     slot.on("waiting", () => this.current === slot && this.patch({ status: "buffering" }));
     // Une pause qui ne vient pas de nous (le système, un casque débranché).
     slot.on("pause", () => this.current === slot && this.state.status === "playing" && this.patch({ status: "paused" }));
     slot.on("error", () => this.current === slot && this.fail(slot));
     slot.on("ended", () => this.current === slot && this.onEnded());
     slot.on("loadedmetadata", () => this.current === slot && Number.isFinite(slot.el.duration) && this.patch({ durationMs: Math.round(slot.el.duration * 1000) }));
-    slot.on("timeupdate", () => this.current === slot && this.onTime(slot));
+    // La POSITION se publie au rythme de l'élément (~4 fois par seconde, comme le moteur du bureau) : sans elle,
+    // le lecteur restait à « 0:00 » pendant que le son jouait (défaut R2-01 du 25/10).
+    slot.on("timeupdate", () => {
+      if (this.current !== slot) return;
+      this.onTime(slot);
+      this.publishPosition(slot);
+    });
     slot.el.volume = this.volumeFor(slot);
     slot.el.muted = this.state.muted;
+  }
+
+  private publishPosition(slot: Slot): void {
+    const positionMs = positionOf(slot);
+    if (Math.abs(positionMs - this.state.positionMs) >= POSITION_STEP_MS) this.patch({ positionMs });
   }
 
   private fail(slot: Slot): void {

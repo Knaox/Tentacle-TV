@@ -54,6 +54,20 @@ describe("moteur <audio>", () => {
     expect(a.src).toBe("");
   });
 
+  it("publie la position pendant la lecture : la barre suit le son dès la première seconde", () => {
+    const { engine, elements, events } = rig();
+    engine.play(testTrack("t1"), testSource("/a", "plugin", false), 0);
+    const a = elements[0] as FakeElement;
+    a.fire("playing");
+    for (const t of [0.25, 0.5, 1.02]) {
+      a.currentTime = t;
+      a.fire("timeupdate");
+    }
+    const states = events.flatMap((e) => (e.type === "state" ? [e.state] : []));
+    expect(states.at(-1)).toMatchObject({ status: "playing", trackKey: "t1", positionMs: 1020 });
+    expect(states.map((s) => s.positionMs)).toEqual(expect.arrayContaining([250, 500, 1020]));
+  });
+
   it("sans suivant, la fin est « ended »", () => {
     const { engine, elements } = rig();
     engine.play(testTrack("t1"), testSource("/a"), 0);
