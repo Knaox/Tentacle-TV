@@ -52,7 +52,11 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    une page non provisoire ; l'interface gèle l'ordre sous le pointeur ou le
    focus et glisse vers le nouvel ordre au relâchement. Une extension d'avant
    ignore `revise` (ajout seul) ; sans `revise`, une extension v2 sert l'ancien
-   protocole à l'identique.
+   protocole à l'identique. Un curseur v2 tient au plus 8 s, puis rend la page
+   COURANTE avec un nouveau curseur (jamais près des 120 s du relais) ; une
+   recherche dont aucun curseur n'est redemandé pendant 10 s est abandonnée.
+   Le client n'envoie `prefetch("results")` que pour une page non provisoire,
+   une requête stable depuis 700 ms, une fois par requête.
 2. **Source de lecture** — `music.resolve` (POST `{ ids }` → `PlaybackSource`,
    jouable pendant l'écriture : `complete: false`) ; `music.prefetch` reçoit
    l'anticipation (`results`, `hover`, `press` au mousedown/touchstart, `next`).

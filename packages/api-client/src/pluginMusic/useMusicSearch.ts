@@ -19,7 +19,11 @@ import { mergeExternalMusicPages, readMusicSearchPage, type MergedMusicResults }
  */
 
 const MIN_QUERY = 2;
-const MAX_PAGES = 8;
+/**
+ * v2 : un curseur rend la page courante toutes les 8 s tant que l'extension travaille (45 s au plus),
+ * plus ses révisions — 16 pages couvrent une recherche entière.
+ */
+const MAX_PAGES = 16;
 
 export interface MusicSearchOptions {
   limit?: number;
