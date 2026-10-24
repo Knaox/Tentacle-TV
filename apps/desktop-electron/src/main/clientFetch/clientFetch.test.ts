@@ -102,6 +102,18 @@ describe("requêtes déléguées (bureau) — le manifeste lu par le principal",
     expect(calls).toHaveLength(2);
   });
 
+  it("la page et le moteur audio (deux jeux d'en-têtes) gardent chacun leur lecture : pas de va-et-vient", async () => {
+    let calls = 0;
+    const manifests = new PluginManifests(async () => (calls++, new Response(JSON.stringify([{ pluginId: "sillon", clientFetch: manifest }]))));
+    const page = { serverOrigin: "https://t.example", headers: { Authorization: "Bearer t" } };
+    const audio = { serverOrigin: "https://t.example", headers: { "X-Emby-Token": "t" } };
+    for (let i = 0; i < 3; i++) {
+      await manifests.of(page, "sillon");
+      await manifests.mediaHosts(audio, "sillon");
+    }
+    expect(calls).toBe(2);
+  });
+
   it("une lecture ratée ne déclare rien", async () => {
     const manifests = new PluginManifests(async () => new Response("non", { status: 500 }));
     expect(await manifests.of({ serverOrigin: "https://t.example", headers: {} }, "sillon")).toBeNull();

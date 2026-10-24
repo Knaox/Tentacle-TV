@@ -20,26 +20,34 @@ export interface ServerSession {
 
 type Fetcher = (url: string, init: RequestInit) => Promise<Response>;
 
+/** Sessions gardées à la fois : la page (`Authorization`) et le moteur audio (`X-Emby-Token`) n'envoient pas les mêmes en-têtes. */
+const MAX_SESSIONS = 4;
+
 export class PluginManifests {
-  private cache: { key: string; at: number; manifests: Map<string, ClientFetchManifest> } | null = null;
-  private loading: Promise<Map<string, ClientFetchManifest>> | null = null;
+  private readonly cache = new Map<string, { at: number; manifests: Map<string, ClientFetchManifest> }>();
+  private readonly loading = new Map<string, Promise<Map<string, ClientFetchManifest>>>();
 
   constructor(private readonly fetcher: Fetcher = (url, init) => fetch(url, init), private readonly now: () => number = Date.now) {}
 
   /** Le manifeste de `pluginId` sur ce serveur, `null` s'il n'en déclare pas (ou lecture impossible). */
   async of(session: ServerSession, pluginId: string): Promise<ClientFetchManifest | null> {
     const key = `${session.serverOrigin}\n${JSON.stringify(session.headers)}`;
-    if (this.cache && this.cache.key === key && this.now() - this.cache.at < TTL_MS) return this.cache.manifests.get(pluginId) ?? null;
-    this.loading ??= this.load(session)
-      .then((manifests) => {
-        this.cache = { key, at: this.now(), manifests };
-        return manifests;
-      })
-      .catch(() => new Map<string, ClientFetchManifest>())
-      .finally(() => {
-        this.loading = null;
-      });
-    return (await this.loading).get(pluginId) ?? null;
+    const hit = this.cache.get(key);
+    if (hit && this.now() - hit.at < TTL_MS) return hit.manifests.get(pluginId) ?? null;
+    let pending = this.loading.get(key);
+    if (!pending) {
+      pending = this.load(session)
+        .then((manifests) => {
+          this.cache.delete(key);
+          this.cache.set(key, { at: this.now(), manifests });
+          while (this.cache.size > MAX_SESSIONS) this.cache.delete(this.cache.keys().next().value as string);
+          return manifests;
+        })
+        .catch(() => new Map<string, ClientFetchManifest>())
+        .finally(() => this.loading.delete(key));
+      this.loading.set(key, pending);
+    }
+    return (await pending).get(pluginId) ?? null;
   }
 
   /** Un flux direct : l'hôte est-il dans les `mediaHosts` de cette extension ? (cache seulement, jamais d'attente réseau longue) */
