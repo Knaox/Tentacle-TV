@@ -127,9 +127,13 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
   let qc: QueryClient;
   let seen: { provider: MusicProvider | null; search: MusicSearchState } | null = null;
 
+  let observers = 1;
   function Rig() {
     const provider = useMusicProvider([SILLON]);
-    seen = { provider, search: useMusicSearch(provider, "daft punk") };
+    // Octave observe la même recherche deux fois (avant et après le tri de la bibliothèque).
+    const first = useMusicSearch(provider, "daft punk");
+    const second = useMusicSearch(provider, observers > 1 ? "daft punk" : "");
+    seen = { provider, search: observers > 1 ? second : first };
     return null;
   }
 
@@ -147,6 +151,7 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
   afterEach(async () => {
     for (const root of roots) await act(async () => root.unmount());
     roots = [];
+    observers = 1;
     vi.unstubAllGlobals();
   });
 
@@ -169,5 +174,22 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
     expect(seen?.search.tracks.map((t) => t.key)).toEqual(["a", "b"]);
     expect(seen?.search.complete).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("deux observateurs de la même recherche : le curseur en attente (long-poll) n'est jamais annulé ni doublé", async () => {
+    observers = 2;
+    const signals: AbortSignal[] = [];
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (!url.includes("cursor=c1")) return new Response(JSON.stringify(page([track("a", R1)], false, "c1")));
+      if (init?.signal) signals.push(init.signal);
+      await new Promise((r) => setTimeout(r, 60));
+      return new Response(JSON.stringify(page([track("b", null)], true, null)));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime"] });
+    await act(async () => { await new Promise((r) => setTimeout(r, 120)); });
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes("cursor=c1"))).toHaveLength(1);
+    expect(signals.some((sig) => sig.aborted)).toBe(false);
+    expect(seen?.search.tracks.map((t) => t.key)).toEqual(["a", "b"]);
   });
 });
