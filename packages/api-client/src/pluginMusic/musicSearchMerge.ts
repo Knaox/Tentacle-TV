@@ -3,7 +3,8 @@
  * d'une extension (`ExternalMusicSearchPage`, `complete` / `cursor`) mises bout
  * à bout, chaque élément une fois (par sa clé), et la BIBLIOTHÈQUE GAGNE — un
  * titre externe dont le MBID d'enregistrement est déjà dans la bibliothèque est
- * retiré (contrat, point 1). Règle pure.
+ * retiré (contrat, point 1). Contrat v2 : une page `replace` porte la liste
+ * ENTIÈRE et remplace tout ce qui précède. Règle pure.
  */
 
 import { normalizeMbid, type ExternalMusicSearchPage, type MusicAlbum, type MusicArtist, type MusicTrack } from "@tentacle-tv/shared/music";
@@ -14,6 +15,8 @@ export interface MergedMusicResults {
   artists: MusicArtist[];
   /** La dernière page dit `complete` : plus rien ne viendra. */
   complete: boolean;
+  /** v2 : le classement peut encore changer (l'anticipation l'attend). */
+  provisional: boolean;
 }
 
 function uniqueByKey<T extends { key: string }>(items: T[]): T[] {
@@ -35,11 +38,17 @@ export function mergeExternalMusicPages(
     const normalized = normalizeMbid(mbid);
     return normalized !== null && set.has(normalized);
   };
-  const tracks = uniqueByKey(pages.flatMap((p) => p.tracks)).filter((t) => !inLibrary(t.mbids.recording, libraryRecordings));
-  const albums = uniqueByKey(pages.flatMap((p) => p.albums)).filter((a) => !inLibrary(a.mbids.release, libraryReleases));
-  const artists = uniqueByKey(pages.flatMap((p) => p.artists));
+  // La dernière page qui REMPLACE sert de base ; celles d'après (ajout seul) s'y ajoutent.
+  let base = 0;
+  pages.forEach((p, i) => {
+    if (p.replace === true) base = i;
+  });
+  const kept = pages.slice(base);
+  const tracks = uniqueByKey(kept.flatMap((p) => p.tracks)).filter((t) => !inLibrary(t.mbids.recording, libraryRecordings));
+  const albums = uniqueByKey(kept.flatMap((p) => p.albums)).filter((a) => !inLibrary(a.mbids.release, libraryReleases));
+  const artists = uniqueByKey(kept.flatMap((p) => p.artists));
   const last = pages[pages.length - 1];
-  return { tracks, albums, artists, complete: last ? last.complete || last.cursor === null : false };
+  return { tracks, albums, artists, complete: last ? last.complete || last.cursor === null : false, provisional: last?.provisional === true };
 }
 
 /** Une réponse d'extension n'est crue que si elle a la forme d'une page. */
@@ -51,6 +60,8 @@ export function readMusicSearchPage(raw: unknown, query: string): ExternalMusicS
     query,
     complete: page.complete === true,
     cursor: typeof page.cursor === "string" && page.cursor !== "" ? page.cursor : null,
+    ...(page.replace === true ? { replace: true } : {}),
+    ...(page.provisional === true ? { provisional: true } : {}),
     tracks: page.tracks.filter((t): t is MusicTrack => !!t && typeof t.key === "string"),
     albums: page.albums.filter((a): a is MusicAlbum => !!a && typeof a.key === "string"),
     artists: page.artists.filter((a): a is MusicArtist => !!a && typeof a.key === "string"),

@@ -12,10 +12,18 @@ import { mergeExternalMusicPages, readMusicSearchPage, type MergedMusicResults }
  * au plus `MAX_PAGES`. Lancée à côté de la recherche de la bibliothèque, jamais
  * devant ; un résultat que la bibliothèque a déjà (même MBID d'enregistrement)
  * est retiré. Sans fournisseur, rien : ni requête, ni section.
+ *
+ * Contrat v2 (`revise=1`) : l'extension peut rendre d'abord un classement
+ * PROVISOIRE (sources rapides), puis la liste entière révisée à chaque page
+ * (`replace`). Une extension d'avant ignore le paramètre : ajout seul.
  */
 
 const MIN_QUERY = 2;
-const MAX_PAGES = 8;
+/**
+ * v2 : un curseur rend la page courante toutes les 8 s tant que l'extension travaille (45 s au plus),
+ * plus ses révisions — 16 pages couvrent une recherche entière.
+ */
+const MAX_PAGES = 16;
 
 export interface MusicSearchOptions {
   limit?: number;
@@ -43,7 +51,7 @@ export function useMusicSearch(provider: MusicProvider | null, query: string, op
     queryKey: ["music", "external-search", provider?.pluginId ?? null, provider?.music.search ?? null, q, limit],
     queryFn: async ({ pageParam, signal }: { pageParam: string | null; signal: AbortSignal }): Promise<ExternalMusicSearchPage> => {
       if (!provider) throw new Error("no music provider");
-      const raw = await tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.search, { q, limit, cursor: pageParam }), { signal });
+      const raw = await tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.search, { q, limit, cursor: pageParam, revise: 1 }), { signal });
       return readMusicSearchPage(raw, q) ?? { query: q, complete: true, cursor: null, tracks: [], albums: [], artists: [] };
     },
     initialPageParam: null as string | null,
@@ -64,7 +72,7 @@ export function useMusicSearch(provider: MusicProvider | null, query: string, op
   const releases = options.libraryReleases ?? EMPTY_SET;
   const pages = result.data?.pages;
   return useMemo(() => {
-    const merged = enabled && pages ? mergeExternalMusicPages(pages, recordings, releases) : { tracks: [], albums: [], artists: [], complete: !enabled };
+    const merged = enabled && pages ? mergeExternalMusicPages(pages, recordings, releases) : { tracks: [], albums: [], artists: [], complete: !enabled, provisional: false };
     return { ...merged, pending: enabled && result.isPending, available: !!provider };
   }, [enabled, pages, recordings, releases, result.isPending, provider]);
 }
