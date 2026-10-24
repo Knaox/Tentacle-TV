@@ -188,4 +188,8 @@ export default {
   errorSession: "votre session a expiré, reconnectez-vous.",
   errorForbidden: "action réservée aux administrateurs.",
   errorGeneric: "le serveur a renvoyé une erreur.",
+  toolGrantTitle: "Outils du serveur",
+  toolGrantLabel: "Autoriser {{tool}}",
+  toolGrantHint: "Cette extension demande à lancer {{tool}} sur le serveur, dans son seul dossier de données. Rien ne lui est permis tant que vous ne l'avez pas autorisé.",
+  toolGrantError: "L'autorisation n'a pas été enregistrée : réessayez.",
 } as const;

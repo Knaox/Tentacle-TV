@@ -43,6 +43,24 @@ export interface ActivePluginMeta {
     state: string;
     request?: string;
   };
+  /**
+   * Les points d'extension de la musique (champ `music` du manifeste) :
+   * recherche, source de lecture, gestes, en attente — routes du serveur de
+   * l'extension. Absent si l'intégration est éteinte. Contrat complet :
+   * `packages/shared/src/music/pluginMusicContract.ts` (`PluginMusicManifest`).
+   */
+  music?: {
+    search: string;
+    resolve: string;
+    prefetch?: string;
+    like?: string;
+    playlistAdd?: string;
+    pending?: string;
+    played?: string;
+    album?: string;
+    artist?: string;
+    labels?: Record<string, string>;
+  };
 }
 
 export interface PluginContextValue {

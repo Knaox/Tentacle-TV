@@ -1,0 +1,150 @@
+/**
+ * Les points d'extension musique côté clients : règles pures (fournisseur,
+ * fusion où la bibliothèque gagne, anticipation dédoublonnée, refus rendus dans
+ * la liste fermée) et crochets montés pour de vrai face à un serveur qui ne
+ * déclare RIEN — aucune requête, aucune section, aucune erreur.
+ */
+import { act, createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExternalMusicSearchPage, MusicTrack } from "@tentacle-tv/shared/music";
+import { findMusicProvider, musicRouteUrl, type MusicProvider } from "./musicProvider";
+import { mergeExternalMusicPages, readMusicSearchPage } from "./musicSearchMerge";
+import { likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests } from "./musicRequests";
+import { useMusicProvider } from "./useMusicProvider";
+import { useMusicSearch, type MusicSearchState } from "./useMusicSearch";
+import { isMusicEvent } from "./useMusicEvents";
+
+const g = globalThis as Record<string, unknown>;
+g.IS_REACT_ACT_ENVIRONMENT = true;
+g.window ??= globalThis;
+const doc: Record<string, unknown> = { nodeType: 9, activeElement: null, addEventListener() {}, removeEventListener() {} };
+doc.defaultView = { document: doc, HTMLIFrameElement: class {} };
+const container = { nodeType: 1, tagName: "DIV", nodeName: "DIV", namespaceURI: "http://www.w3.org/1999/xhtml", ownerDocument: doc, addEventListener() {}, removeEventListener() {} };
+
+const MUSIC = { search: "/music/search", resolve: "/music/resolve", prefetch: "/music/prefetch", like: "/music/like", labels: { fr: "Ailleurs" } };
+const SILLON = { pluginId: "sillon", name: "Sillon", configEnabled: true, music: MUSIC };
+
+const track = (key: string, recording: string | null): MusicTrack => ({
+  key, jellyfinId: null, external: { pluginId: "sillon", id: key }, title: key, artists: [], album: null, durationMs: null,
+  trackNumber: null, discNumber: null, year: null, artworkUrl: null,
+  mbids: { recording, release: null, releaseGroup: null, artists: [] }, availability: "remote", format: null, favorite: false,
+});
+const page = (tracks: MusicTrack[], complete: boolean, cursor: string | null): ExternalMusicSearchPage => ({ query: "q", complete, cursor, tracks, albums: [], artists: [] });
+const R1 = "11111111-1111-4111-8111-111111111111";
+const R2 = "22222222-2222-4222-8222-222222222222";
+
+describe("fournisseur de musique", () => {
+  it("prend une extension active, configurée, au contrat `music` valide", () => {
+    expect(findMusicProvider([SILLON])).toEqual({ pluginId: "sillon", name: "Sillon", music: MUSIC });
+  });
+
+  it("ignore une extension éteinte, sans contrat ou au contrat mal formé", () => {
+    expect(findMusicProvider([{ ...SILLON, configEnabled: false }])).toBeNull();
+    expect(findMusicProvider([{ pluginId: "seer", name: "Vigie", configEnabled: true }])).toBeNull();
+    expect(findMusicProvider([{ ...SILLON, music: { search: "https://evil.example/x", resolve: "/r" } }])).toBeNull();
+    expect(findMusicProvider(null)).toBeNull();
+  });
+
+  it("construit les routes sous /api/plugins/<id>", () => {
+    const provider = findMusicProvider([SILLON]) as MusicProvider;
+    expect(musicRouteUrl(provider, "/music/search", { q: "daft punk", limit: 20, cursor: null })).toBe("/api/plugins/sillon/music/search?q=daft+punk&limit=20");
+  });
+});
+
+describe("fusion des pages progressives", () => {
+  it("met les pages bout à bout, chaque titre une fois, et la bibliothèque gagne", () => {
+    const merged = mergeExternalMusicPages(
+      [page([track("a", R1), track("b", null)], false, "c1"), page([track("b", null), track("c", R2.toUpperCase())], true, null)],
+      new Set([R2]),
+    );
+    expect(merged.tracks.map((t) => t.key)).toEqual(["a", "b"]);
+    expect(merged.complete).toBe(true);
+  });
+
+  it("ne croit qu'une réponse qui a la forme d'une page", () => {
+    expect(readMusicSearchPage({ tracks: "x" }, "q")).toBeNull();
+    expect(readMusicSearchPage({ tracks: [], albums: [], artists: [], complete: false, cursor: "" }, "q")).toEqual(page([], false, null));
+  });
+});
+
+describe("appels à l'extension", () => {
+  const provider = findMusicProvider([SILLON]) as MusicProvider;
+  beforeEach(() => resetMusicPrefetchForTests());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("l'anticipation part une fois par titre et par intention, `press` toujours, et ne remonte jamais d'erreur", async () => {
+    const fetchMock = vi.fn(async () => { throw new Error("réseau coupé"); });
+    vi.stubGlobal("fetch", fetchMock);
+    prefetchMusic(provider, ["a", "b"], "hover", 1_000);
+    prefetchMusic(provider, ["a"], "hover", 2_000);
+    prefetchMusic(provider, ["a"], "press", 2_000);
+    prefetchMusic(provider, ["a"], "press", 2_001);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("un refus HTTP devient une raison de la liste fermée", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("non", { status: 403 })));
+    expect(await likeExternalTrack(provider, "a", true)).toEqual({ ok: false, reason: "forbidden", message: null });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, state: "pending", operationId: "op1", jellyfinId: null }))));
+    expect(await likeExternalTrack(provider, "a", true)).toEqual({ ok: true, state: "pending", operationId: "op1", jellyfinId: null });
+  });
+
+  it("reconnaît les événements music:* et eux seuls", () => {
+    expect(isMusicEvent({ type: "music:resolved" })).toBe(true);
+    expect(isMusicEvent({ type: "music:whatever" })).toBe(false);
+    expect(isMusicEvent({ type: "home:update" })).toBe(false);
+  });
+});
+
+describe("crochets montés, selon ce que le serveur déclare", () => {
+  let roots: Root[] = [];
+  let qc: QueryClient;
+  let seen: { provider: MusicProvider | null; search: MusicSearchState } | null = null;
+
+  function Rig() {
+    const provider = useMusicProvider([SILLON]);
+    seen = { provider, search: useMusicSearch(provider, "daft punk") };
+    return null;
+  }
+
+  async function mount(config: Record<string, unknown>) {
+    qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(["app-config", ""], config);
+    const root = createRoot(container as never);
+    roots.push(root);
+    await act(async () => {
+      root.render(createElement(QueryClientProvider, { client: qc }, createElement(Rig)));
+      await new Promise((r) => setTimeout(r, 20));
+    });
+  }
+
+  afterEach(async () => {
+    for (const root of roots) await act(async () => root.unmount());
+    roots = [];
+    vi.unstubAllGlobals();
+  });
+
+  it("serveur qui ne déclare rien (1.31) : aucun fournisseur, aucune requête, aucune section, sans erreur", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await mount({ version: "1.31.1" });
+    expect(seen?.provider).toBeNull();
+    expect(seen?.search).toEqual({ tracks: [], albums: [], artists: [], complete: true, pending: false, available: false });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("capacité déclarée : la recherche part et suit les pages jusqu'à `complete`", async () => {
+    const pages = [page([track("a", R1)], false, "c1"), page([track("b", null)], true, null)];
+    const fetchMock = vi.fn(async (url: string) => new Response(JSON.stringify(url.includes("cursor=c1") ? pages[1] : pages[0])));
+    vi.stubGlobal("fetch", fetchMock);
+    await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime"] });
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(seen?.provider?.pluginId).toBe("sillon");
+    expect(seen?.search.tracks.map((t) => t.key)).toEqual(["a", "b"]);
+    expect(seen?.search.complete).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});

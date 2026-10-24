@@ -11,11 +11,13 @@
  */
 
 import { createHash } from "crypto";
-import { existsSync, mkdirSync, rmSync, createWriteStream } from "fs";
+import { existsSync, mkdirSync, renameSync, rmSync, createWriteStream } from "fs";
 import { dirname, join, relative, resolve, sep } from "path";
 import { pipeline } from "stream/promises";
 import { assertPathUnderDataDir, DATA_DIR, isValidPluginId } from "./pluginManager";
 import { tarCommand } from "./tools/toolPaths";
+import { readPluginManifest } from "./pluginServerModule";
+import { readRuntimeManifest } from "../plugins/runtime/runtimeManifest";
 import {
   unsafeMember,
   membersFromListing,
@@ -88,8 +90,34 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
   if (!isValidPluginId(pluginId)) throw new Error("Invalid plugin ID");
   const destDir = resolve(DATA_DIR, pluginId);
   assertPathUnderDataDir(destDir);
-  if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true });
+  // Le dossier de données d'une extension ISOLÉE (`data/` : sa base, son cache) survit à la mise à jour.
+  const keptData = keepIsolatedData(pluginId, destDir);
+  try {
+    if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true });
+    mkdirSync(destDir, { recursive: true });
+    return await unpack(archivePath, destDir);
+  } finally {
+    // Une archive n'apporte jamais de `data/` à une extension isolée (ni fichier, ni lien) : celui d'avant fait foi.
+    if (readRuntimeManifest(readPluginManifest(pluginId))) rmSync(resolve(destDir, "data"), { recursive: true, force: true });
+    if (keptData) restoreIsolatedData(keptData, destDir);
+  }
+}
+
+function keepIsolatedData(pluginId: string, destDir: string): string | null {
+  const data = resolve(destDir, "data");
+  if (!existsSync(data) || !readRuntimeManifest(readPluginManifest(pluginId))) return null;
+  const kept = resolve(DATA_DIR, `.${pluginId}.data-keep`);
+  rmSync(kept, { recursive: true, force: true });
+  renameSync(data, kept);
+  return kept;
+}
+
+function restoreIsolatedData(kept: string, destDir: string): void {
   mkdirSync(destDir, { recursive: true });
+  renameSync(kept, resolve(destDir, "data"));
+}
+
+async function unpack(archivePath: string, destDir: string): Promise<string> {
 
   const { execFileSync } = await import("child_process");
   // Sans shell (`execFileSync`) : ni `cmd.exe` ni guillemets à échapper, et le

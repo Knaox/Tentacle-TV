@@ -188,4 +188,8 @@ export default {
   errorSession: "your session has expired, sign in again.",
   errorForbidden: "administrators only.",
   errorGeneric: "the server returned an error.",
+  toolGrantTitle: "Server tools",
+  toolGrantLabel: "Allow {{tool}}",
+  toolGrantHint: "This extension asks to run {{tool}} on the server, in its own data folder only. Nothing is allowed until you say so.",
+  toolGrantError: "The permission was not saved: try again.",
 } as const;

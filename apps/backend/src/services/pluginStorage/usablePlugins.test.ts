@@ -19,6 +19,7 @@ vi.mock("../dataDir", async () => {
 vi.mock("../../middleware/auth", () => ({
   requireAuth: async () => {},
   requireAdmin: async () => {},
+  requirePersonalAdmin: async () => {},
 }));
 
 import { DATA_DIR, saveInstalled } from "../pluginManager";

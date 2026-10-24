@@ -8,6 +8,7 @@ import { ActionError } from "./ActionError";
 import { PluginIcon } from "./PluginIcon";
 import { UninstallButton, UpdateButton } from "./PluginActionButtons";
 import { ServerModulePill } from "./ServerModulePill";
+import { PluginToolGrants } from "./PluginToolGrants";
 import { navIconName } from "./pluginCatalog";
 import { statePill } from "./cardState";
 import type { PluginActionState } from "./usePluginActions";
@@ -119,6 +120,8 @@ export const InstalledPluginCard = memo(function InstalledPluginCard({
           )}
         </div>
       )}
+
+      <PluginToolGrants plugin={plugin} />
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line-subtle pt-4">
         {configureTo && (

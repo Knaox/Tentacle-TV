@@ -1,0 +1,88 @@
+/**
+ * Une extension ISOLÉE et le droit du compte (`users.rights` → `canUse`) : un
+ * compte sans droit ne reçoit RIEN d'elle dans `/api/plugins/active` — ni
+ * l'entrée, ni sa navigation (« /music/requests »), ni son contrat `music` — et
+ * son bundle lui répond comme à une extension absente. Un compte permis la voit
+ * entière ; un administrateur en session personnelle la voit toujours (il la règle).
+ */
+
+import Fastify from "fastify";
+import { mkdirSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { FastifyRequest } from "fastify";
+
+vi.mock("../services/dataDir", async () => {
+  const { tmpdir } = await import("os");
+  const path = await import("path");
+  return { DATA_ROOT: path.join(tmpdir(), `tentacle-active-rights-${process.pid}`) };
+});
+const USERS: Record<string, { userId: string; username: string; isAdmin: boolean; session: string }> = {
+  permis: { userId: "u-ok", username: "octave1", isAdmin: false, session: "personal" },
+  "sans-droit": { userId: "u-no", username: "octave-sans", isAdmin: false, session: "personal" },
+  admin: { userId: "u-admin", username: "admin", isAdmin: true, session: "personal" },
+};
+vi.mock("../middleware/auth", () => ({
+  requireAuth: async (request: FastifyRequest) => {
+    (request as FastifyRequest & { user?: unknown }).user = USERS[String(request.headers["x-test-user"])];
+  },
+  requireAdmin: async () => {},
+  requirePersonalAdmin: async () => {},
+}));
+vi.mock("../plugins/runtime/host/userRights", () => ({
+  userRights: vi.fn(async (_pluginId: string, userId: string) => ({ exists: true, isAdmin: false, canUse: userId === "u-ok", canRequest: userId === "u-ok" })),
+}));
+
+import { DATA_DIR, saveInstalled } from "../services/pluginManager";
+import { forgetIsolatedRights } from "../plugins/runtime/accountRights";
+import { pluginRoutes } from "./plugins";
+
+const SILLON = {
+  id: "sillon", entry: "dist/plugin-sillon.iife.js", storage: { sqlite: true },
+  runtime: { kind: "isolated", entry: "server/index.mjs", hostApi: ["users"] },
+  music: { search: "/music/search", resolve: "/music/resolve" },
+  navItems: [
+    { path: "/music/requests", icon: "music", platforms: ["web"], labels: { fr: "Demandes" } },
+    { path: "/admin/plugins/sillon", icon: "settings", admin: true, platforms: ["web"] },
+  ],
+};
+
+async function call(url: string, user: string) {
+  const app = Fastify();
+  await app.register(pluginRoutes, { prefix: "/api/plugins" });
+  const response = await app.inject({ method: "GET", url, headers: { "x-test-user": user } });
+  await app.close();
+  return response;
+}
+
+beforeEach(() => {
+  rmSync(DATA_DIR, { recursive: true, force: true });
+  const dir = join(DATA_DIR, "sillon");
+  mkdirSync(join(dir, "dist"), { recursive: true });
+  writeFileSync(join(dir, "plugin.json"), JSON.stringify(SILLON));
+  writeFileSync(join(dir, "dist", "plugin-sillon.iife.js"), "/* bundle */");
+  saveInstalled([{
+    id: "22222222-2222-4222-8222-222222222222", pluginId: "sillon", sourceId: "local", name: "Sillon",
+    version: "0.1.0", enabled: true, config: { enabled: true }, installedAt: "2026-10-24T00:00:00.000Z",
+  }]);
+  forgetIsolatedRights();
+});
+afterEach(() => rmSync(DATA_DIR, { recursive: true, force: true }));
+
+describe("extension isolée et droit du compte", () => {
+  it("un compte sans droit : /active sans Sillon, et son bundle n'existe pas", async () => {
+    expect((await call("/api/plugins/active", "sans-droit")).json()).toEqual([]);
+    expect((await call("/api/plugins/sillon/bundle", "sans-droit")).statusCode).toBe(404);
+  });
+
+  it("un compte permis : l'entrée entière, navigation et contrat music compris", async () => {
+    const [entry] = (await call("/api/plugins/active", "permis")).json() as Array<Record<string, unknown>>;
+    expect(entry).toMatchObject({ pluginId: "sillon", music: { search: "/music/search" } });
+    expect((entry.navItems as Array<{ path: string }>).map((n) => n.path)).toEqual(["/music/requests", "/admin/plugins/sillon"]);
+    expect((await call("/api/plugins/sillon/bundle", "permis")).statusCode).toBe(200);
+  });
+
+  it("un administrateur en session personnelle la voit toujours (il la règle)", async () => {
+    expect(((await call("/api/plugins/active", "admin")).json() as unknown[]).length).toBe(1);
+  });
+});

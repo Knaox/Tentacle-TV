@@ -1,7 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
-import { requireAdmin, requireAuth } from "../middleware/auth";
+import { requireAdmin, requireAuth, type JellyfinUser } from "../middleware/auth";
+import type { InstalledPlugin } from "../services/pluginManager";
+import { isIsolatedPlugin } from "../plugins/runtime/runtimeRegistry";
+import { mayUseIsolatedPlugin } from "../plugins/runtime/accountRights";
 import {
   getInstalled,
   isValidPluginId,
@@ -12,12 +15,22 @@ import { isPluginUsable, usablePlugins } from "../services/pluginStorage/gate";
 import { readTabMeta, type PluginTabMeta } from "./pluginTabMeta";
 import { readSearchMeta, type PluginSearchMeta } from "./pluginSearchMeta";
 import { readTitlesMeta, type PluginTitlesMeta } from "./pluginTitlesMeta";
+import { readPluginMusicManifest, type PluginMusicManifest } from "./pluginMusicMeta";
+import { registerPluginRuntimeAdminRoutes } from "./pluginRuntimeAdmin";
 // L'administration, découpée par sujet — ce fichier ne garde que ce que
 // chaque client lit (dépendances partagées, plugins actifs, bundles).
 import { registerPluginSourceRoutes } from "./pluginSources";
 import { registerPluginInstalledRoutes } from "./pluginInstalled";
 import { registerPluginConfigRoutes } from "./pluginConfig";
 import { registerPluginSetupRoutes } from "./pluginSetup/pluginSetupRoutes";
+
+/** Les extensions, moins les ISOLÉES que ce compte n'a pas le droit d'employer (plugins/runtime/accountRights.ts). */
+async function withoutForbiddenIsolated(plugins: InstalledPlugin[], user: JellyfinUser | undefined): Promise<InstalledPlugin[]> {
+  const kept = await Promise.all(
+    plugins.map(async (p) => (!isIsolatedPlugin(p.pluginId) || (user && (await mayUseIsolatedPlugin(p.pluginId, user))) ? p : null)),
+  );
+  return kept.filter((p): p is InstalledPlugin => p !== null);
+}
 
 // ── Route registration ──
 export const pluginRoutes: FastifyPluginAsync = async (app) => {
@@ -57,9 +70,10 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       .send(tailwindCache);
   });
 
-  app.get("/active", { preHandler: requireAuth }, async () => {
+  app.get("/active", { preHandler: requireAuth }, async (request) => {
     // Une extension que ce serveur refuse (pluginStorage/gate.ts) n'existe pas pour les clients : jamais à moitié.
-    const active = usablePlugins();
+    // Une extension ISOLÉE que ce compte n'a pas le droit d'employer non plus : rien d'elle, navigation comprise.
+    const active = await withoutForbiddenIsolated(usablePlugins(), (request as { user?: JellyfinUser }).user);
     return active.map((p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
       let navItems: unknown[] = [];
@@ -69,6 +83,8 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       let search: PluginSearchMeta | undefined;
       // Ce que le plugin sait dire et faire d'un titre hors bibliothèque — cf. pluginTitlesMeta.
       let titles: PluginTitlesMeta | undefined;
+      // Les points d'extension de la musique (Octave) — cf. pluginMusicMeta.
+      let music: PluginMusicManifest | null = null;
       const manifestPath = resolve(pluginDir, "plugin.json");
       if (existsSync(manifestPath)) {
         try {
@@ -77,6 +93,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
           tab = readTabMeta(manifest);
           search = readSearchMeta(manifest);
           titles = readTitlesMeta(manifest);
+          music = readPluginMusicManifest(manifest.music);
         } catch { /* ignore malformed manifest */ }
       }
       const configEnabled = (p.config as Record<string, unknown>)?.enabled === true;
@@ -92,6 +109,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
         // Comme les pages : une intégration éteinte ne cherche rien.
         ...(configEnabled && search ? { search } : {}),
         ...(configEnabled && titles ? { titles } : {}),
+        ...(configEnabled && music ? { music } : {}),
       };
     });
   });
@@ -108,6 +126,10 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     if (!installed || !isPluginUsable(installed)) {
       return reply.status(404).send({ message: "Bundle not found" });
     }
+    // Comme dans /active : une extension isolée n'existe pas pour un compte sans droit.
+    if ((await withoutForbiddenIsolated([installed], (request as { user?: JellyfinUser }).user)).length === 0) {
+      return reply.status(404).send({ message: "Bundle not found" });
+    }
     const bundlePath = resolve(DATA_DIR, pluginId, "dist", `plugin-${pluginId}.iife.js`);
     assertPathUnderDataDir(bundlePath);
     if (!existsSync(bundlePath)) {
@@ -121,6 +143,8 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     registerPluginSourceRoutes(admin);
     registerPluginInstalledRoutes(admin);
     registerPluginConfigRoutes(admin);
+    // Le runtime isolé : état du processus, outils permis par l'administrateur.
+    registerPluginRuntimeAdminRoutes(admin);
     // Le formulaire générique que déclare un plugin (`setup` de son manifeste).
     registerPluginSetupRoutes(admin);
   });

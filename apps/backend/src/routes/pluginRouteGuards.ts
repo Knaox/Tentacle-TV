@@ -2,6 +2,7 @@ import { isValidPluginId, type InstalledPlugin } from "../services/pluginManager
 import { pluginHasServerModule } from "../services/pluginServerModule";
 import { pluginBackendDiag } from "../services/pluginBackendLoader";
 import { storageRefusal, type StorageRefusalReason } from "../services/pluginStorage/gate";
+import { isIsolatedPlugin, isolatedState } from "../plugins/runtime/runtimeRegistry";
 
 /**
  * Gardes communes aux routes d'administration des plugins (`plugins.ts` et
@@ -34,6 +35,13 @@ export type ServerModuleState = "none" | "running" | "failed" | "idle";
 export function serverModuleState(
   pluginId: string,
 ): { state: ServerModuleState; detail?: string; refusal?: StorageRefusalReason } {
+  // Un module ISOLÉ : son état est celui de son processus (démarré, relancé, arrêté à chaud).
+  if (isIsolatedPlugin(pluginId)) {
+    const guest = isolatedState(pluginId);
+    if (!guest || guest.state === "stopped") return { state: "idle" };
+    if (guest.state === "backoff") return { state: "failed", detail: guest.lastError ?? undefined };
+    return { state: "running" };
+  }
   const boot = pluginBackendDiag.loadResults.find((r) => r.pluginId === pluginId);
   if (boot?.status === "loaded") return { state: "running" };
   // Refusée par ce serveur : « en échec » pour les interfaces d'avant, `refusal` dit pourquoi aux nouvelles.
@@ -53,6 +61,10 @@ export function serverModuleState(
  */
 export function restartPolicy(plugin: InstalledPlugin) {
   const serverModule = serverModuleState(plugin.pluginId);
+  // Un module isolé s'active, se coupe et se met à jour sans redémarrer le serveur.
+  if (isIsolatedPlugin(plugin.pluginId)) {
+    return { serverModule, restartRequired: false, restartsOn: { update: false, uninstall: false } };
+  }
   const { state } = serverModule;
   return {
     serverModule,

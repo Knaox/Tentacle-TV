@@ -1,4 +1,5 @@
 import { broadcastAll, broadcastToUser } from "./wsManager";
+import { notifyLibraryListeners } from "./jellyfinLibraryListeners";
 import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 import { pokeProfile } from "./reco/jobs";
 import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
@@ -42,6 +43,8 @@ function addedCount(data: unknown): number {
 }
 
 export function relayLibraryChanged(data: unknown, now = Date.now()): void {
+  // Ce qui a changé, à qui veut le savoir — avant la fenêtre des rangées (cf. jellyfinLibraryListeners.ts).
+  notifyLibraryListeners(data, now);
   if (now - lastLibraryAt < DUPLICATE_MS) return;
   lastLibraryAt = now;
   console.log(`[JellyfinEvents] bibliothèque changée (+${addedCount(data)}) → rangées « Derniers ajouts »`);

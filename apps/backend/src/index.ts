@@ -36,6 +36,7 @@ import { stopWatchTime } from "./services/watchTime/collector";
 import { savePendingPreviewMemory } from "./services/trailers/preview/previewMemoryStore";
 import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
+import { registerIsolatedRuntime, stopIsolatedRuntime } from "./plugins/runtime";
 import { serverShutdown } from "./services/lifecycle/serverShutdown";
 import { announceProgress, announceReady, beginServerLifecycle, failStartup, startupFailureOf } from "./serverHost/serverLifecycle";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
@@ -249,6 +250,8 @@ async function main() {
     announceProgress("extensions");
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
+    // Les extensions ISOLÉES : leur processus, et le relais de leurs routes (plugins/runtime/).
+    await registerIsolatedRuntime(app);
   }
 
   // L'arrêt propre, borné étape par étape (`lifecycle/serverShutdown.ts`) : les
@@ -262,6 +265,8 @@ async function main() {
       // Les décisions d'aperçu des dernières secondes : écrites avant de partir.
       savePendingPreviewMemory();
       await stopWatchTime();
+      // Chaque invité isolé reçoit `shutdown` ; ses ouvriers partent avec lui.
+      await stopIsolatedRuntime();
     },
     closeHttp: () => app.close(),
   });
