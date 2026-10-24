@@ -35,6 +35,17 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
   "jellyfin.notifyPath": z
     .object({ path: z.string().min(1).max(1024), change: z.enum(["created", "modified", "deleted"]) })
     .strict(),
+  // Absolu (POSIX ou lecteur Windows), borné, sans « .. » ni octet nul ; la bibliothèque est vérifiée par l'hôte.
+  "jellyfin.refreshPath": z
+    .object({
+      path: z
+        .string()
+        .min(2)
+        .max(1024)
+        .regex(/^(\/|[A-Za-z]:[\\/])/, "chemin absolu attendu")
+        .refine((p) => !/(^|[\\/])\.\.([\\/]|$)/.test(p) && !p.includes("\0"), "chemin invalide"),
+    })
+    .strict(),
   "users.rights": z.object({ userId: jellyfinId }).strict(),
   "events.emit": z.object({ userIds: z.array(jellyfinId).min(1).max(200), event: eventPayload }).strict(),
   "tools.info": z.object({ tool }).strict(),

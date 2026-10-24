@@ -60,6 +60,7 @@ export interface JfItem {
   NormalizationGain?: number;
   Studios?: JfNamedRef[];
   Path?: string;
+  IsFolder?: boolean;
   CanDelete?: boolean;
   MediaType?: string;
   PlaylistItemId?: string;

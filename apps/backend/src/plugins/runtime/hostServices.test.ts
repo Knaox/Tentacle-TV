@@ -32,6 +32,7 @@ const fakeJellyfin = (over: Partial<JellyfinMusicHost> = {}): JellyfinMusicHost 
   playlistEntries: async () => [],
   usageOf: async () => [],
   notifyPath: async () => ({ ok: true }),
+  refreshPath: async () => ({ ok: true, scope: "folder", itemId: "album" }),
   ...over,
 });
 

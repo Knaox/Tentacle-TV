@@ -77,4 +77,5 @@ jetons encore valides (les agents ne sont pas déconnectés).
 ```bash
 node bench/octave/search-latency.mjs http://127.0.0.1:3103 "<jeton Tentacle>"     # 20 frappes, p50 / p95
 node bench/octave/music-events.mjs ws://127.0.0.1:3103/api/ws "<jeton Tentacle>" 60  # music:* reçus, horodatés
+node "$(node -p 'require.resolve("tsx/cli")')" ../../bench/octave/measure-refresh.cts           # (depuis apps/backend) notifyPath vs refreshPath
 ```

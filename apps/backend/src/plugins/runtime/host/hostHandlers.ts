@@ -34,6 +34,7 @@ export const HOST_HANDLERS: HostHandlers = {
   "jellyfin.playlistEntries": (_ctx, params) => jellyfin().playlistEntries(params),
   "jellyfin.usageOf": (_ctx, params) => jellyfin().usageOf(params),
   "jellyfin.notifyPath": (_ctx, params) => jellyfin().notifyPath(params),
+  "jellyfin.refreshPath": (_ctx, params) => jellyfin().refreshPath(params),
   "users.rights": (ctx, { userId }) => userRights(ctx.pluginId, userId),
   "events.emit": async (ctx, { userIds, event }) => emitPluginMusicEvent(ctx.pluginId, userIds, event),
   "tools.info": async (ctx, { tool }) => {

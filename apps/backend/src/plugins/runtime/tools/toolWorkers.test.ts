@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { connect, type Socket } from "net";
 import { join } from "path";
 import { tmpdir } from "os";
+import { spawnWorker, stopAllWorkers } from "./toolWorkers";
 
 /**
  * L'ouvrier persistant d'une extension (`tools.spawnWorker`) : un VRAI Python,
@@ -24,11 +25,13 @@ const hasPython = (() => {
 })();
 
 // Le faux zipapp existe AVANT le chargement de services/ytDlp.ts, qui choisit alors celui-ci (l'« épinglé »).
-await vi.hoisted(async () => {
-  const { join: j } = await import("path");
-  const { tmpdir: t } = await import("os");
-  const { mkdirSync: mk, writeFileSync: wr } = await import("fs");
-  const { execFileSync: run } = await import("child_process");
+// `vi.hoisted` passe avant les imports, mais SYNCHRONE (le backend est CommonJS : pas d'`await` de premier
+// niveau) : les modules de Node viennent donc de `process.getBuiltinModule`, sans `import`.
+vi.hoisted(() => {
+  const { join: j } = process.getBuiltinModule("path");
+  const { tmpdir: t } = process.getBuiltinModule("os");
+  const { mkdirSync: mk, writeFileSync: wr } = process.getBuiltinModule("fs");
+  const { execFileSync: run } = process.getBuiltinModule("child_process");
   const dir = j(t(), `tentacle-worker-test-${process.pid}`);
   const src = j(dir, "zipsrc");
   process.env.TENTACLE_YTDLP_PINNED = j(dir, "yt-dlp");
@@ -59,8 +62,6 @@ await vi.hoisted(async () => {
     // Sans python3 : les tests sont sautés.
   }
 });
-
-const { spawnWorker, stopAllWorkers } = await import("./toolWorkers");
 
 const dataDir = join(root, "plugins", "w-test", "data");
 const ctx = {

@@ -119,6 +119,15 @@ export interface HostApi {
   "jellyfin.usageOf": { params: { itemIds: string[] }; result: { itemId: string; favoriteUserIds: string[]; playlists: PlaylistUsage[] }[] };
   /** Prévient Jellyfin qu'un chemin de SA bibliothèque musique a changé (scan ciblé). */
   "jellyfin.notifyPath": { params: { path: string; change: "created" | "modified" | "deleted" }; result: { ok: true } };
+  /**
+   * Rafraîchit TOUT DE SUITE (sans attendre `LibraryMonitorDelay`, 60 s par défaut)
+   * le dossier connu de Jellyfin le plus proche qui contient `path` — album, sinon
+   * artiste —, récursivement. Aucun dossier connu (artiste neuf) : la bibliothèque
+   * musique non récursivement, puis le dossier apparu. Hors de la bibliothèque
+   * musique : `invalid`. Venu après : une extension le teste (`forbidden`/`invalid`
+   * d'un hôte d'avant) et garde `notifyPath` en repli.
+   */
+  "jellyfin.refreshPath": { params: { path: string }; result: { ok: true; scope: "folder" | "library"; itemId: string } };
   /** Les droits du compte face à CETTE extension (Jellyfin + réglages du cœur). */
   "users.rights": { params: { userId: string }; result: { exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean } };
   /** Émet un événement musique (types : PLUGIN_EMITTABLE_MUSIC_EVENTS) aux comptes nommés. */
@@ -149,6 +158,7 @@ export const HOST_METHODS: readonly HostMethod[] = [
   "jellyfin.playlistEntries",
   "jellyfin.usageOf",
   "jellyfin.notifyPath",
+  "jellyfin.refreshPath",
   "users.rights",
   "events.emit",
   "tools.info",

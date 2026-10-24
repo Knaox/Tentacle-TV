@@ -20,6 +20,7 @@ import { listUserPlaylists, playlistEntries as entriesOf } from "../playlists/pl
 import { insertIntoPlaylist } from "../playlists/playlistService";
 import type { AudioItemRef } from "../events/audioItemsFeed";
 import { isAdminUser, listUserIds } from "./hostUsers";
+import { isLibraryPath, refreshContaining } from "./folderRefresh";
 
 export class HostMusicFailure extends Error {
   constructor(
@@ -130,4 +131,20 @@ export async function notifyPath(params: { path: string; change: "created" | "mo
   const sent = await jfWrite("/Library/Media/Updated", "POST", { Updates: [{ Path: path, UpdateType: type }] });
   if (!sent.ok) throw new HostMusicFailure("unavailable", "Jellyfin muet");
   return { ok: true };
+}
+
+/**
+ * Fait voir TOUT DE SUITE à Jellyfin un dossier de SA bibliothèque musique
+ * (`folderRefresh.ts`) : le dossier connu le plus proche, récursivement. Un
+ * chemin hors de la bibliothèque musique est `invalid` ; une extension garde
+ * `notifyPath` en repli face à un hôte d'avant.
+ */
+export async function refreshPath(params: { path: string }): Promise<{ ok: true; scope: "folder" | "library"; itemId: string }> {
+  const library = await getMusicLibrary();
+  if (!library) throw new HostMusicFailure("notFound", "aucune bibliothèque musique");
+  const path = typeof params.path === "string" ? params.path : "";
+  if (!isLibraryPath(library, path)) throw new HostMusicFailure("invalid", "chemin hors de la bibliothèque musique");
+  const result = await refreshContaining(library, path);
+  if (!result.ok) throw new HostMusicFailure("unavailable", "Jellyfin muet");
+  return { ok: true, scope: result.scope, itemId: result.itemId };
 }
