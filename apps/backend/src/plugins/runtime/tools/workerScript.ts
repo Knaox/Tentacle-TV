@@ -34,7 +34,13 @@ CACHE = os.path.join(DATA, ".yt-dlp-cache")
 lock = threading.Lock()
 slots = threading.BoundedSemaphore(4)
 cancels = {}
-ANTI_BOT = ("confirm you" + "’re not a bot", "confirm you're not a bot", "sign in to confirm", "http error 429")
+# « Sign in to confirm your AGE » n'est pas un anti-robot : seul « …you're not a bot » (et 429) en est un.
+ANTI_BOT = ("’re not a bot", "'re not a bot", "http error 429")
+# Échecs passagers ou propres au client interrogé (aucun format, réponse vide) : jamais « indisponible ».
+TRANSIENT = ("requested format is not available", "failed to parse json")
+UNAVAILABLE = ("video unavailable", "this video is unavailable", "private video", "has been removed", "is not available",
+               "in your country", "blocked due to", "claimed content", "copyright", "confirm your age",
+               "inappropriate for some users", "account associated with this video has been terminated")
 KEEP_S, KEEP_USES, KEEP_PER_KEY, KEEP_KEYS = 1800, 200, 4, 8
 kept = {}
 kept_lock = threading.Lock()
@@ -194,7 +200,7 @@ def failure(req_id, exc, logger, secrets=()):
         message = message.replace(secret, "[visitor_data]")
     low = message.lower()
     code = "cancelled" if isinstance(exc, DownloadCancelled) else "antiBot" if any(k in low for k in ANTI_BOT) else \
-        "unavailable" if ("unavailable" in low or "private video" in low or "not available" in low) else "failed"
+        "failed" if any(k in low for k in TRANSIENT) else "unavailable" if any(k in low for k in UNAVAILABLE) else "failed"
     send({"id": req_id, "ok": False, "error": {"code": code, "message": message[:500]}})
 
 def run(req):
