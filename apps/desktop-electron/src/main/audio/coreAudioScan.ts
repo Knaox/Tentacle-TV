@@ -16,8 +16,11 @@
  *
  * # Sans effet visible
  *
- * Seul `AudioComponentFindNext` est appelé : aucune unité créée, aucun
- * périphérique ouvert, aucun son — un casque Bluetooth ne se réveille pas.
+ * `AudioComponentFindNext`, puis l'unité de sortie CRÉÉE et aussitôt détruite
+ * (`AudioComponentInstanceNew` / `Dispose`, ~50 ms : le greffon de sortie est
+ * chargé) — jamais `AudioUnitInitialize` ni `AudioOutputUnitStart` : aucun
+ * flux ouvert, aucun son, un casque Bluetooth ne se réveille pas. Le
+ * recensement seul laissait encore ~0,55 s à froid dans l'ouverture de mpv.
  * L'appel passe par le pool de libuv (`koffi` asynchrone) : le fil principal
  * n'attend jamais, même 2 s. Une panne ne fait rien : mpv recensera lui-même,
  * comme avant.
@@ -49,7 +52,7 @@ export const DEFAULT_OUTPUT: ScanDescription = {
   componentFlagsMask: 0,
 };
 
-/** La recherche native, ASYNCHRONE ; `done` reçoit la durée (ms) ou l'erreur. */
+/** Le recensement natif, ASYNCHRONE ; `done` reçoit l'erreur (`null` : fait). */
 export type FindNextAsync = (description: ScanDescription, done: (error: unknown) => void) => void;
 
 function nativeFindNext(): FindNextAsync {
@@ -62,7 +65,17 @@ function nativeFindNext(): FindNextAsync {
     componentFlagsMask: "uint32",
   });
   const findNext = lib.func("void* AudioComponentFindNext(void*, AudioComponentDescription*)");
-  return (description, done) => findNext.async(null, description, (error: unknown) => done(error));
+  const instanceNew = lib.func("int32 AudioComponentInstanceNew(void*, _Out_ void**)");
+  const dispose = lib.func("int32 AudioComponentInstanceDispose(void*)");
+  return (description, done) =>
+    findNext.async(null, description, (error: unknown, component: unknown) => {
+      if (error || component === null) return done(error ?? new Error("aucune sortie"));
+      const unit: [unknown] = [null];
+      instanceNew.async(component, unit, (failed: unknown, status: number) => {
+        if (failed || status !== 0 || unit[0] === null) return done(failed ?? new Error(`AudioComponentInstanceNew : ${status}`));
+        dispose.async(unit[0], () => done(null));
+      });
+    });
 }
 
 let started = false;
