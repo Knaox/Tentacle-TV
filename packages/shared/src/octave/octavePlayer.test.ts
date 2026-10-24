@@ -106,6 +106,41 @@ describe("le moteur ne reçoit que courant + suivant", () => {
   });
 });
 
+describe("titres sans source d'affilée (défaut R2-04)", () => {
+  it("une file de titres injouables ne défile pas toute seule : au 3e d'affilée, le lecteur s'arrête, message affiché", async () => {
+    const { player, external } = setup({ externalSource: false });
+    const queue = Array.from({ length: 8 }, (_, i) => externalTrack("sillon", `r${i}`));
+    player.playList(queue, 0);
+    for (let i = 0; i < 20; i++) await flush();
+    expect(external).toHaveBeenCalledTimes(3);
+    expect(player.snapshot.get().current?.key).toBe(queue[2]!.key);
+    expect(player.snapshot.get()).toMatchObject({ phase: "error", error: "noSource" });
+    // « Suivant » est un choix de l'utilisateur : la série repart, au plus trois titres de plus.
+    player.next();
+    for (let i = 0; i < 20; i++) await flush();
+    expect(external).toHaveBeenCalledTimes(6);
+    expect(player.snapshot.get().current?.key).toBe(queue[5]!.key);
+  });
+
+  it("un titre qui SONNE remet la série à zéro", async () => {
+    const engine = createFakeEngine();
+    let calls = 0;
+    const sources = new SourceCache({ library: async (id) => sourceOf(`jf:${id}`), external: async (t) => (calls++ === 2 ? sourceOf(t.key, "plugin") : null), now: () => 0 });
+    const reporter = new PlaybackReporter({ library: () => {}, externalPlayed: () => {}, now: () => 0 });
+    const player = new OctavePlayer({ engine, sources, reporter, prefetchExternal: () => {}, skipDelayMs: 0 });
+    const queue = Array.from({ length: 6 }, (_, i) => externalTrack("sillon", `s${i}`));
+    player.playList(queue, 0);
+    for (let i = 0; i < 20; i++) await flush();
+    expect(player.snapshot.get().current?.key).toBe(queue[2]!.key);
+    engine.sound(500);
+    expect(player.snapshot.get().phase).toBe("playing");
+    player.next();
+    for (let i = 0; i < 20; i++) await flush();
+    // Après le son, trois nouveaux échecs permis (s3, s4, s5).
+    expect(player.snapshot.get().current?.key).toBe(queue[5]!.key);
+  });
+});
+
 describe("bascule à la résolution (music:resolved)", () => {
   it("le courant hors bibliothèque devient le titre de la bibliothèque, source basculée à chaud", async () => {
     const { player, engine } = setup();

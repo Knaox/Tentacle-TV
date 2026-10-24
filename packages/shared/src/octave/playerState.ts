@@ -4,7 +4,7 @@
  * seconde et ne doit faire redessiner que la barre de progression.
  */
 
-import type { MusicAudioFormat, MusicTrack, PlaybackSource } from "../music";
+import type { EngineState, MusicAudioFormat, MusicTrack, PlaybackSource } from "../music";
 import { EMPTY_QUEUE, type QueueState } from "./queueModel";
 
 /**
@@ -44,6 +44,13 @@ export const INITIAL_SNAPSHOT: PlayerSnapshot = {
   origin: null,
   error: null,
 };
+
+/** La phase affichée d'après l'état du moteur (une attente au démarrage reste « starting »). */
+export function enginePhase(status: EngineState["status"], current: PlayerPhase): PlayerPhase {
+  if (status === "playing" || status === "paused" || status === "error" || status === "ended") return status;
+  if (status === "buffering") return current === "starting" ? "starting" : "stalled";
+  return current;
+}
 
 export interface PositionState {
   positionMs: number;
