@@ -5,7 +5,7 @@
  * démontés en le quittant (la musique s'arrête en sortant d'Octave).
  *
  * Les sources : la bibliothèque par le cache d'A3 (`fetchMusicSource`, une
- * requête par titre), l'extension par A5 (`resolveMusicSources`) ; la couche
+ * requête par titre), l'extension par A5 (`resolveMusicSource`) ; la couche
  * `SourceCache` (shared) ne fait que les rendre disponibles SYNCHRONEMENT
  * (`peek`), pour lancer le son dans le tour même du clic.
  *
@@ -20,7 +20,7 @@ import {
   prefetchMusic,
   reportExternalPlayed,
   reportMusicPlayback,
-  resolveMusicSources,
+  resolveMusicSource,
   type MusicProvider,
 } from "@tentacle-tv/api-client";
 import type { AudioEnginePort } from "@tentacle-tv/shared/music";
@@ -48,7 +48,9 @@ export function buildOctavePlayer(engine: AudioEnginePort, qc: QueryClient, prov
     external: async (track) => {
       const p = provider();
       if (!track.external || !isFromProvider(p, track.external.pluginId)) return null;
-      return (await resolveMusicSources(p, [track.external.id])).get(track.external.id) ?? null;
+      // Sans source parce que le budget de l'extension est atteint : le lecteur réessaiera (contrat `retry`).
+      const outcome = await resolveMusicSource(p, track.external.id);
+      return outcome === null ? null : "source" in outcome ? outcome.source : outcome;
     },
     now: () => Date.now(),
   });

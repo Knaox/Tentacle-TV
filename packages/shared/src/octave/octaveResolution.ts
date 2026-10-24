@@ -26,6 +26,16 @@ export function resolvedTrackOf(old: MusicTrack, event: MusicResolvedEvent): Mus
   };
 }
 
+/** Le moteur redemande une source (URL expirée, refusée) : le cache l'oublie, la nouvelle bascule à chaud. */
+export function refreshEngineSource(player: OctavePlayer, engineKey: string): void {
+  const item = player.snapshot.get().queue.items.find((i) => player.engineKeys.get(i.uid) === engineKey);
+  if (!item) return;
+  player.deps.sources.invalidate(item.track.key);
+  void player.deps.sources.get(item.track).then((source) => {
+    if (source) player.deps.engine.swapSource(engineKey, { ...source, trackKey: engineKey });
+  });
+}
+
 export function applyResolution(player: OctavePlayer, event: MusicResolvedEvent): void {
   const snap = player.snapshot.get();
   const affected = snap.queue.items.filter((item) => matchesExternal(item.track, event.pluginId, event.externalId));

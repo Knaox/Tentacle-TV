@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExternalMusicSearchPage, MusicTrack } from "@tentacle-tv/shared/music";
 import { findMusicProvider, musicRouteUrl, type MusicProvider } from "./musicProvider";
 import { mergeExternalMusicPages, readMusicSearchPage } from "./musicSearchMerge";
-import { likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests } from "./musicRequests";
+import { likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests, resolveMusicSource, resolveMusicSources } from "./musicRequests";
 import { useMusicProvider } from "./useMusicProvider";
 import { useMusicSearch, type MusicSearchState } from "./useMusicSearch";
 import { isMusicEvent } from "./useMusicEvents";
@@ -113,6 +113,19 @@ describe("appels à l'extension", () => {
     expect(await likeExternalTrack(provider, "a", true)).toEqual({ ok: false, reason: "forbidden", message: null });
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, state: "pending", operationId: "op1", jellyfinId: null }))));
     expect(await likeExternalTrack(provider, "a", true)).toEqual({ ok: true, state: "pending", operationId: "op1", jellyfinId: null });
+  });
+
+  it("« réessaie plus tard » (contrat `retry`) : lu par le lecteur d'aujourd'hui, une simple absence de source pour un client d'avant", async () => {
+    const busy = { sources: [], retry: { reason: "budget", afterMs: 4_000 } };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(busy))));
+    expect(await resolveMusicSource(provider, "a")).toEqual({ retryAfterMs: 4_000 });
+    expect((await resolveMusicSources(provider, ["a"])).size).toBe(0);
+    const source = { trackKey: "k", url: "/s", origin: "plugin", complete: true, sizeBytes: null, durationMs: null, format: null, replayGain: null, expiresAt: null };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ sources: [{ externalId: "a", source }] }))));
+    expect(await resolveMusicSource(provider, "a")).toEqual({ source });
+    // Sans source et sans « réessaie », ou une raison inconnue : une absence de source, comme avant.
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ sources: [], retry: { reason: "autre", afterMs: 10 } }))));
+    expect(await resolveMusicSource(provider, "a")).toBeNull();
   });
 
   it("reconnaît les événements music:* et eux seuls", () => {

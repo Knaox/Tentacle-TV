@@ -18,6 +18,8 @@ import { enginePhase, INITIAL_POSITION, INITIAL_SNAPSHOT, ValueStore, type Playe
 import type { PlaybackReporter } from "./playbackReports";
 import type { SourceCache } from "./sourceCache";
 import { FailureStreak } from "./failureStreak";
+import { refreshEngineSource } from "./octaveResolution";
+import { scheduleSourceRetry } from "./sourceRetry";
 
 export interface OctavePlayerDeps {
   engine: AudioEnginePort;
@@ -89,6 +91,7 @@ export class OctavePlayer {
       format: item.track.format,
       origin: null,
       error: null,
+      notice: null,
     });
     this.position.set({ positionMs: startMs, durationMs: item.track.durationMs, running: false });
     this.nextUid = null;
@@ -101,7 +104,16 @@ export class OctavePlayer {
     void this.deps.sources.get(item.track).then((source) => {
       if (token !== this.playToken) return;
       if (source) this.launch(item, source, startMs);
-      else this.failCurrent(token);
+      else if (!this.retrySoon(item, token, startMs)) this.failCurrent(token);
+    });
+  }
+
+  /** Le budget de l'extension est atteint : « Lecture dans un instant… », UN nouvel essai, borné (`sourceRetry.ts`). */
+  private retrySoon(item: QueueItem, token: number, startMs: number): boolean {
+    return scheduleSourceRetry(this.deps.sources, item.track, {
+      current: () => token === this.playToken,
+      notice: (notice) => this.snapshot.update({ notice }),
+      done: (source) => (source ? this.launch(item, source, startMs) : this.failCurrent(token)),
     });
   }
 
@@ -208,7 +220,7 @@ export class OctavePlayer {
     this.deps.reporter.stopped(this.position.get().positionMs, this.position.get().durationMs);
     this.deps.engine.stop();
     this.nextUid = null;
-    this.snapshot.update({ current: null, wantsPlay: false, phase: "idle", origin: null, error: null });
+    this.snapshot.update({ current: null, wantsPlay: false, phase: "idle", origin: null, error: null, notice: null });
     this.position.set(INITIAL_POSITION);
   }
 
@@ -224,7 +236,7 @@ export class OctavePlayer {
   private onEngine(event: EngineEvent): void {
     if (event.type === "state") this.onEngineState(event.state);
     else if (event.type === "advanced") this.onAdvanced(event.toKey);
-    else if (event.type === "needSource") this.onNeedSource(event.trackKey);
+    else if (event.type === "needSource") refreshEngineSource(this, event.trackKey);
     else this.snapshot.update({ origin: event.origin });
   }
 
@@ -283,15 +295,5 @@ export class OctavePlayer {
     this.position.set({ positionMs: 0, durationMs: item.track.durationMs, running: true });
     this.nextUid = null;
     this.scheduleNext();
-  }
-
-  private onNeedSource(engineKey: string): void {
-    const queue = this.snapshot.get().queue;
-    const item = queue.items.find((i) => this.engineKeys.get(i.uid) === engineKey);
-    if (!item) return;
-    this.deps.sources.invalidate(item.track.key);
-    void this.deps.sources.get(item.track).then((source) => {
-      if (source) this.deps.engine.swapSource(engineKey, { ...source, trackKey: engineKey });
-    });
   }
 }

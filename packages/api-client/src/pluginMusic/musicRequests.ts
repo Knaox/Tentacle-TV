@@ -20,15 +20,29 @@ import { musicRouteUrl, type MusicProvider } from "./musicProvider";
 
 const post = (body: unknown, signal?: AbortSignal): RequestInit => ({ method: "POST", body: JSON.stringify(body), signal });
 
-/** Les sources des identifiants demandés ; un identifiant sans source n'a pas d'entrée (le client passe au suivant). */
-export async function resolveMusicSources(provider: MusicProvider, ids: readonly string[], signal?: AbortSignal): Promise<Map<string, PlaybackSource>> {
+function readSources(raw: ExternalSourcesResponse | null | undefined): Map<string, PlaybackSource> {
   const out = new Map<string, PlaybackSource>();
-  if (ids.length === 0) return out;
-  const raw = await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post({ ids }, signal));
   for (const entry of Array.isArray(raw?.sources) ? raw.sources : []) {
     if (entry && typeof entry.externalId === "string" && entry.source && typeof entry.source.url === "string") out.set(entry.externalId, entry.source);
   }
   return out;
+}
+
+/** Les sources des identifiants demandés ; un identifiant sans source n'a pas d'entrée (le client passe au suivant). */
+export async function resolveMusicSources(provider: MusicProvider, ids: readonly string[], signal?: AbortSignal): Promise<Map<string, PlaybackSource>> {
+  if (ids.length === 0) return new Map();
+  return readSources(await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post({ ids }, signal)));
+}
+
+/** La source d'UN titre ; sans source parce que le budget de l'extension est atteint, le délai à attendre (`retry`). */
+export type MusicSourceOutcome = { source: PlaybackSource } | { retryAfterMs: number } | null;
+
+export async function resolveMusicSource(provider: MusicProvider, id: string, signal?: AbortSignal): Promise<MusicSourceOutcome> {
+  const raw = await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post({ ids: [id] }, signal));
+  const source = readSources(raw).get(id);
+  if (source) return { source };
+  const retry = raw?.retry;
+  return retry && retry.reason === "budget" && Number.isFinite(retry.afterMs) && retry.afterMs >= 0 ? { retryAfterMs: retry.afterMs } : null;
 }
 
 /** Une source qui a expiré (`expiresAt` passé) se redemande. */

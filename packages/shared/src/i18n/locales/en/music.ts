@@ -154,6 +154,7 @@ export default {
     queue: "Queue",
     nothing: "Nothing playing",
     noSource: "This song can't be played right now",
+    retrySoon: "Playing in a moment…",
     engineError: "Playback stopped",
     lossless: "Lossless",
     hiRes: "Hi-Res",
