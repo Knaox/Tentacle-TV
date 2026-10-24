@@ -27,9 +27,13 @@ import { ALIAS_MAP, isForcedTrack, langMatches, parseVariant, variantMatchesTitl
 /** Préférence « VO » — même valeur que `ORIGINAL_AUDIO_LANG` de @tentacle-tv/shared (le backend n'en dépend pas). */
 const ORIGINAL_AUDIO_LANG = "original";
 
+/** Listes BORNÉES (GHSA-mrhx-c7xc-m3w5 : zod 3 accumule une erreur par
+ *  élément refusé) — bien au-delà de ce qu'un fichier réel porte. */
+const MAX_LIST = 1000;
+
 const resolveSchema = z.object({
   libraryId: z.string().min(1),
-  libraryIds: z.array(z.string()).optional(),
+  libraryIds: z.array(z.string()).max(MAX_LIST).optional(),
   /** Contenu en cours — sa préférence propre bat toutes les autres. */
   itemId: z.string().max(255).optional(),
   audioTracks: z.array(z.object({
@@ -39,7 +43,7 @@ const resolveSchema = z.object({
     title: z.string().optional(),
     /** Piste de la version originale (`IsOriginal`, Jellyfin 12+). */
     isOriginal: z.boolean().optional(),
-  })).default([]),
+  })).max(MAX_LIST).default([]),
   /** Langue originale du titre (`OriginalLanguage`, Jellyfin 12+) — pour la préférence « VO ». */
   originalLanguage: z.string().max(16).nullable().optional(),
   subtitleTracks: z.array(z.object({
@@ -47,7 +51,7 @@ const resolveSchema = z.object({
     language: z.string().optional(),
     isForced: z.boolean().optional(),
     title: z.string().optional(),
-  })).default([]),
+  })).max(MAX_LIST).default([]),
 });
 
 type ResolveBody = z.infer<typeof resolveSchema>;

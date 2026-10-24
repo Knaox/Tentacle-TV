@@ -13,11 +13,15 @@ notes vont dans `changelogs/server-webos.md`, pas ici.
 ## [1.31.3]
 <!-- Version de sécurité, aucune capacité nouvelle. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
-- **Mise à jour de sécurité de Node.js** : Tentacle Server pour Windows passe à Node.js 24.22.1, qui corrige les failles publiées le 21 octobre 2026 (décompression Brotli, vérification des certificats TLS, résolution DNS). L'image Docker en bénéficiait déjà depuis la 1.31.2
+- **Mise à jour de sécurité, recommandée pour tous les serveurs**
+- **Node.js 24.22.1** pour Tentacle Server pour Windows : corrige les failles publiées le 21 octobre 2026 (décompression Brotli, vérification des certificats TLS, résolution DNS). L'image Docker l'avait déjà depuis la 1.31.2
+- **Requêtes surdimensionnées** : le serveur refuse les listes démesurées au lieu de saturer sa mémoire, et le module réseau undici passe à sa version corrigée
 - Aucun autre changement : réglages, comptes et bibliothèques restent tels quels
 
 ### EN
-- **Node.js security update**: Tentacle Server for Windows moves to Node.js 24.22.1, which fixes the vulnerabilities published on October 21, 2026 (Brotli decompression, TLS certificate checks, DNS resolution). The Docker image already had it since 1.31.2
+- **Security update, recommended for every server**
+- **Node.js 24.22.1** for Tentacle Server for Windows: fixes the vulnerabilities published on October 21, 2026 (Brotli decompression, TLS certificate checks, DNS resolution). The Docker image already had it since 1.31.2
+- **Oversized requests**: the server rejects oversized lists instead of exhausting its memory, and the undici network module moves to its fixed version
 - No other change: settings, accounts and libraries stay as they are
 
 ## [1.31.2]
