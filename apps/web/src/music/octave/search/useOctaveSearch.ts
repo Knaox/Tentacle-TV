@@ -4,16 +4,16 @@
  * l'extension, progressive (`usePluginMusicSearch`, A5 : pages par curseur,
  * fusion par clé). La bibliothèque gagne : un enregistrement qu'elle a — dans
  * ses résultats, ou ailleurs (`useMusicByMbid`, A3) — est retiré de la section.
- * Les premiers titres externes sont annoncés à l'extension (`prefetch("results")`).
+ * Les premiers titres externes sont annoncés à l'extension (`prefetch("results")`),
+ * une fois la page sûre et la requête stable (`resultsPrefetch.ts`).
  */
 
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { musicSectionLabel, useMusicByMbid, useMusicPrefetch, useMusicSearch, usePluginMusicSearch } from "@tentacle-tv/api-client";
+import { musicSectionLabel, useDebouncedText, useMusicByMbid, useMusicPrefetch, useMusicSearch, usePluginMusicSearch } from "@tentacle-tv/api-client";
 import { normalizeMbid } from "@tentacle-tv/shared/music";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
-
-const RESULTS_PREFETCHED = 3;
+import { RESULTS_STABLE_MS, resultsToAnnounce } from "./resultsPrefetch";
 
 function recordingsOf(tracks: readonly { mbids: { recording: string | null } }[] | undefined): Set<string> {
   const out = new Set<string>();
@@ -53,16 +53,16 @@ export function useOctaveSearch(query: string) {
   }, [byMbid.data, fromResults]);
   const external = usePluginMusicSearch(provider, query, { libraryRecordings: known, libraryReleases: releases });
 
-  const announced = useRef<string>("");
+  // La recherche est immédiate ; l'ANTICIPATION attend une page sûre d'une requête stable (resultsPrefetch.ts).
+  const stableQuery = useDebouncedText(query, RESULTS_STABLE_MS);
+  const announced = useRef<string | null>(null);
   useEffect(() => {
-    // Un classement provisoire (contrat v2) va changer : l'anticipation attend le classement sûr.
-    if (external.provisional) return;
-    const ids = external.tracks.slice(0, RESULTS_PREFETCHED).map((track) => track.external?.id).filter((id): id is string => !!id);
-    const signature = `${query}|${ids.join(",")}`;
-    if (ids.length === 0 || announced.current === signature) return;
-    announced.current = signature;
-    prefetch(ids, "results");
-  }, [external.tracks, external.provisional, prefetch, query]);
+    const ids = external.tracks.map((track) => track.external?.id).filter((id): id is string => !!id);
+    const toAnnounce = resultsToAnnounce({ query, stableQuery, provisional: external.provisional, ids, announced: announced.current });
+    if (!toAnnounce) return;
+    announced.current = query.trim();
+    prefetch(toAnnounce, "results");
+  }, [external.tracks, external.provisional, prefetch, query, stableQuery]);
 
   return {
     library,
