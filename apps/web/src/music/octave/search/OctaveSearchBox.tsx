@@ -4,12 +4,15 @@
  * suggestion choisie lancent la recherche. Combobox ARIA comme l'omnibox de
  * Tentacle : le champ garde le focus, les flèches parcourent la liste
  * (`aria-activedescendant`), Échap la ferme. La liste n'existe que montrée
- * (son flou d'arrière-plan ne coûte rien quand elle est fermée).
+ * (son flou d'arrière-plan ne coûte rien quand elle est fermée). Et comme
+ * l'omnibox, la barre COMPLÈTE : la suite de la première suggestion qui
+ * commence par la frappe s'inscrit en gris après le curseur (⇥ ou → l'accepte).
  */
 
 import { memo, useCallback, useState, type KeyboardEvent } from "react";
 import { Clock, Disc3, Music, Search, User, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { inlineCompletion } from "@tentacle-tv/shared";
 import { moveActive, type OctaveSuggestion } from "./suggestionModel";
 
 const LIST_ID = "octave-search-suggestions";
@@ -30,6 +33,8 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
   const [active, setActive] = useState(-1);
   const shown = open && suggestions.length > 0;
   const activeId = shown && active >= 0 && active < suggestions.length ? `${LIST_ID}-${active}` : undefined;
+  // La suite proposée : jamais une réécriture de ce qui est tapé, seulement ce qui le prolonge.
+  const completion = shown && active < 0 ? (suggestions.map((s) => inlineCompletion(value, s.text)).find((c) => c !== null) ?? null) : null;
 
   const submit = useCallback(
     (text: string) => {
@@ -41,6 +46,11 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
   );
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Tab" || e.key === "ArrowRight") && completion !== null && !e.shiftKey && e.currentTarget.selectionStart === value.length) {
+      e.preventDefault();
+      onChange(value + completion);
+      return;
+    }
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       setOpen(true);
@@ -59,6 +69,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
     <div className="relative flex max-w-2xl items-center gap-2">
       <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-content-tertiary" aria-hidden />
+
         <input
           id="octave-search"
           type="search"
@@ -85,6 +96,13 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
           aria-autocomplete="list"
           className="h-12 w-full rounded-full border border-line-subtle bg-fill-subtle pl-12 pr-12 text-base text-content-primary placeholder:text-content-quaternary focus:border-line-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
+        {completion !== null && (
+          // Calque PAR-DESSUS le champ (sans pointeur), même boîte : le texte tapé y est invisible, la suite visible après le curseur.
+          <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre rounded-full border border-transparent pl-12 pr-12 text-base">
+            <span className="invisible">{value}</span>
+            <span className="text-content-quaternary">{completion}</span>
+          </div>
+        )}
         {value && (
           <button
             type="button"
