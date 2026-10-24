@@ -49,7 +49,7 @@ const OBSERVED = z.array(z.tuple([z.string(), z.string()]).rest(z.unknown()));
 const INIT = z.object({
   options: z
     .object({
-      initialOptions: z.record(SCALAR).optional(),
+      initialOptions: z.record(z.string(), SCALAR).optional(),
       observedProperties: OBSERVED.optional(),
     })
     .optional(),

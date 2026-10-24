@@ -5,12 +5,12 @@ import { getInstalled, saveInstalled, type InstalledPlugin } from "../services/p
 import { isPrivateIp } from "../services/networkUtils";
 import { isValidRouteId } from "./pluginRouteGuards";
 
-const configSchema = z.record(z.unknown());
+const configSchema = z.record(z.string(), z.unknown());
 
 const proxySchema = z.object({
   url: z.string().url(),
   method: z.enum(["GET", "POST", "PUT", "DELETE"]).default("GET"),
-  headers: z.record(z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
   body: z.unknown().optional(),
 });
 
