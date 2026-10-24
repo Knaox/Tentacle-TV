@@ -5,7 +5,7 @@
  * et lien profond la retrouvent.
  */
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -14,10 +14,17 @@ import { AlbumCard, ArtistCard, CardGrid, PlaylistCard, Shelf } from "../compone
 import { TrackList, rowsOf } from "../components/TrackList";
 import { EmptyState, RowsSkeleton } from "../components/ViewStates";
 import { useOctaveSearch } from "../search/useOctaveSearch";
+import { useRevisedRows, useRowSlide } from "../search/useRevisedRows";
 
 function ExternalResults({ section, label, query }: { section: PluginMusicSearchState; label: string; query: string }) {
   const { t } = useTranslation("music");
-  const rows = useMemo(() => rowsOf(section.tracks.slice(0, 10)), [section.tracks]);
+  const top = useMemo(() => section.tracks.slice(0, 10), [section.tracks]);
+  // La liste se révise (classement provisoire, puis définitif) : rien ne bouge sous la main, puis glissement.
+  const { items, holdProps } = useRevisedRows(top);
+  const rows = useMemo(() => rowsOf(items), [items]);
+  const keys = useMemo(() => rows.map((r) => r.rowKey), [rows]);
+  const list = useRef<HTMLDivElement>(null);
+  useRowSlide(list, keys);
   const empty = section.tracks.length === 0 && section.albums.length === 0 && section.artists.length === 0;
   if (empty && section.complete && !section.pending) return null;
   return (
@@ -29,7 +36,7 @@ function ExternalResults({ section, label, query }: { section: PluginMusicSearch
         </div>
       )}
       {rows.length > 0 && (
-        <div className="octave-enter">
+        <div ref={list} className="octave-enter" aria-busy={!section.complete} {...holdProps}>
           <TrackList rows={rows} contextId={`search:external:${query}`} showArtwork showAlbum label={label} />
         </div>
       )}

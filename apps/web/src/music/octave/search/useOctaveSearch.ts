@@ -55,12 +55,14 @@ export function useOctaveSearch(query: string) {
 
   const announced = useRef<string>("");
   useEffect(() => {
+    // Un classement provisoire (contrat v2) va changer : l'anticipation attend le classement sûr.
+    if (external.provisional) return;
     const ids = external.tracks.slice(0, RESULTS_PREFETCHED).map((track) => track.external?.id).filter((id): id is string => !!id);
     const signature = `${query}|${ids.join(",")}`;
     if (ids.length === 0 || announced.current === signature) return;
     announced.current = signature;
     prefetch(ids, "results");
-  }, [external.tracks, prefetch, query]);
+  }, [external.tracks, external.provisional, prefetch, query]);
 
   return {
     library,
