@@ -1,0 +1,18 @@
+/**
+ * Octave — la logique PURE du mode musique, partagée par le web et le bureau :
+ * la file (ordre, aléatoire, répétition), le contrôleur de lecture sur
+ * le port `AudioEnginePort`, le cache des sources, le rapport d'écoute, les
+ * fusions « en attente » et de recherche, la qualité affichée. Ni React, ni
+ * DOM, ni React Native : chaque client branche sa vue et son moteur.
+ * Importé par `@tentacle-tv/shared/octave`. Les contrats sont dans `../music`.
+ */
+export * from "./queueModel";
+export * from "./audioFormat";
+export * from "./pendingMerge";
+export * from "./searchMerge";
+export * from "./playerState";
+export * from "./sourceCache";
+export * from "./playbackReports";
+export * from "./octavePlayer";
+export * from "./octaveQueueActions";
+export * from "./octaveResolution";

@@ -60,6 +60,7 @@ import avatars from "./avatars";
 import userRights from "./userRights";
 import libraryDelete from "./libraryDelete";
 import accountAccess from "./accountAccess";
+import music from "./music";
 
 export default {
   common, auth, player, admin,
@@ -96,4 +97,5 @@ export default {
   userRights,
   libraryDelete,
   accountAccess,
+  music,
 };

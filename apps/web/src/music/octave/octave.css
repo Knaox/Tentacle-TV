@@ -1,0 +1,88 @@
+/*
+ * Octave — ce que Tailwind ne dit pas. Thème existant (clair ET sombre, jetons
+ * de tokens.css) ; animations en transform/opacity seulement ; rien qui bat
+ * en boucle (règles « Coût GPU » de CLAUDE.md).
+ */
+
+.octave-brand-fill {
+  background-image: var(--cta-brand-gradient);
+  color: var(--cta-brand-fg, #fff);
+}
+
+.octave-brand-text {
+  background-image: var(--cta-brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* La tête d'une vue (album, playlist, likés) : un voile de marque qui fond vers la page. */
+.octave-hero {
+  position: relative;
+  isolation: isolate;
+}
+.octave-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--cta-brand-gradient);
+  opacity: 0.22;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Une rangée de titre : le bouton lecture remplace le numéro au survol et au focus. */
+.octave-row .octave-row-play { opacity: 0; }
+.octave-row:hover .octave-row-play,
+.octave-row:focus-within .octave-row-play { opacity: 1; }
+.octave-row:hover .octave-row-number,
+.octave-row:focus-within .octave-row-number { opacity: 0; }
+
+/* Une carte : le bouton lecture monte au survol (transform + opacité seulement). */
+.octave-card .octave-card-play {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 160ms ease-out, transform 160ms ease-out;
+}
+.octave-card:hover .octave-card-play,
+.octave-card:focus-within .octave-card-play {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* La file d'attente et le lecteur plein écran : montés à l'ouverture, ils entrent
+   en glissant (une animation d'ENTRÉE, finie — rien ne tourne une fois posé). */
+@keyframes octaveSlideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes octaveSheetIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.octave-drawer { animation: octaveSlideIn 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.octave-sheet { animation: octaveSheetIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Le remplissage de la barre de progression : une échelle, jamais une largeur. */
+.octave-progress-fill {
+  transform-origin: left center;
+  will-change: transform;
+}
+.octave-progress-fill[data-running="true"] { transition: transform 250ms linear; }
+
+/* Les nouveaux résultats d'une page externe entrent en fondu. */
+@keyframes octaveFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.octave-enter { animation: octaveFadeIn 200ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .octave-card .octave-card-play,
+  .octave-progress-fill[data-running="true"] { transition: none; }
+  .octave-enter,
+  .octave-drawer,
+  .octave-sheet { animation: none; }
+}
