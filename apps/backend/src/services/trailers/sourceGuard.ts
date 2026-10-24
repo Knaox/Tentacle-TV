@@ -115,6 +115,7 @@ export class SourceBreaker {
   private openUntil = 0;
   private nextOpenMs: number;
   private reason: GuardReason | null = null;
+  private trippedAt: number | null = null;
   private listener: (() => void) | null = null;
   private readonly baseMs: number;
   private readonly maxMs: number;
@@ -128,6 +129,7 @@ export class SourceBreaker {
   /** La source refuse : pause de la durée en cours, la suivante doublée. Sans effet si déjà ouvert. */
   trip(reason: GuardReason, now = Date.now()): void {
     if (this.openUntil > now) return;
+    this.trippedAt = now;
     this.openUntil = now + this.nextOpenMs;
     this.reason = reason;
     console.warn(this.options.tripLine(reason, minutes(this.nextOpenMs)));
@@ -143,6 +145,11 @@ export class SourceBreaker {
     this.nextOpenMs = this.baseMs;
     this.reason = null;
     if (changed) this.listener?.();
+  }
+
+  /** L'instant de la dernière ouverture (`null` : jamais depuis le démarrage) : une réponse partie avant ne la referme pas. */
+  lastTripAt(): number | null {
+    return this.trippedAt;
   }
 
   /** Combien de ms de pause restent ; 0 : fermé. */
@@ -175,5 +182,6 @@ export class SourceBreaker {
     this.openUntil = 0;
     this.nextOpenMs = this.baseMs;
     this.reason = null;
+    this.trippedAt = null;
   }
 }

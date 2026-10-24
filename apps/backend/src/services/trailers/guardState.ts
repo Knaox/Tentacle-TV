@@ -15,7 +15,8 @@
 import { getConfigValue, setConfigValue } from "../configStore";
 import { dailymotionApiBudget, dailymotionBreaker } from "./dailymotionGuard";
 import type { BreakerSnapshot } from "./sourceGuard";
-import { playbackBudget, previewBudget, youtubeBreaker } from "./youtubeGuard";
+import type { LedgerEntry } from "../youtubeBudget/hostYouTubeLedger";
+import { hostYouTubeBudget, playbackBudget, previewBudget, youtubeBreaker } from "./youtubeGuard";
 
 export const GUARD_STATE_KEY = "trailers_guard_state";
 const VERSION = 1;
@@ -24,7 +25,8 @@ const BUDGET_SAVE_EVERY_MS = 60_000;
 
 interface GuardSnapshot {
   version: number;
-  youtube: { breaker: BreakerSnapshot; preview: number[]; playback: number[] };
+  /** `host` : le budget de l'hôte (bandes-annonces + extensions) — absent d'un état d'avant, sans conséquence. */
+  youtube: { breaker: BreakerSnapshot; preview: number[]; playback: number[]; host?: LedgerEntry[] };
   dailymotion: { breaker: BreakerSnapshot; api: number[] };
 }
 
@@ -35,11 +37,20 @@ let lastSaved = "";
 function snapshot(now = Date.now()): GuardSnapshot {
   return {
     version: VERSION,
-    youtube: { breaker: youtubeBreaker.snapshot(), preview: previewBudget.snapshot(now), playback: playbackBudget.snapshot(now) },
+    youtube: {
+      breaker: youtubeBreaker.snapshot(),
+      preview: previewBudget.snapshot(now),
+      playback: playbackBudget.snapshot(now),
+      host: hostYouTubeBudget.snapshot(now),
+    },
     dailymotion: { breaker: dailymotionBreaker.snapshot(), api: dailymotionApiBudget.snapshot(now) },
   };
 }
 
+const entries = (value: unknown): LedgerEntry[] =>
+  Array.isArray(value)
+    ? value.filter((e): e is LedgerEntry => !!e && typeof e === "object" && typeof (e as LedgerEntry).at === "number" && typeof (e as LedgerEntry).source === "string")
+    : [];
 const times = (value: unknown): number[] => (Array.isArray(value) ? value.filter((t): t is number => typeof t === "number") : []);
 
 /** Reprend un état écrit ; illisible, d'une autre version : on repart de rien, sans erreur. */
@@ -52,6 +63,7 @@ export function restoreGuardState(raw: string | undefined, now = Date.now()): vo
       youtubeBreaker.restore(saved.youtube.breaker ?? {});
       previewBudget.restore(times(saved.youtube.preview), now);
       playbackBudget.restore(times(saved.youtube.playback), now);
+      hostYouTubeBudget.restore(entries(saved.youtube.host), now);
     }
     if (saved.dailymotion) {
       dailymotionBreaker.restore(saved.dailymotion.breaker ?? {});
