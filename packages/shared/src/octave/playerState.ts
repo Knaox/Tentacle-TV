@@ -30,6 +30,8 @@ export interface PlayerSnapshot {
   format: MusicAudioFormat | null;
   origin: PlaybackSource["origin"] | null;
   error: PlayerErrorKind | null;
+  /** « Lecture dans un instant… » : l'extension a dit « réessaie plus tard » (`sourceRetry.ts`). */
+  notice: "retrySoon" | null;
 }
 
 export const INITIAL_SNAPSHOT: PlayerSnapshot = {
@@ -43,6 +45,7 @@ export const INITIAL_SNAPSHOT: PlayerSnapshot = {
   format: null,
   origin: null,
   error: null,
+  notice: null,
 };
 
 /** La phase affichée d'après l'état du moteur (une attente au démarrage reste « starting »). */

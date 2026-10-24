@@ -88,6 +88,19 @@ export interface ExternalMusicSearchPage {
 /** 2 · Une source par identifiant demandé ; absent = pas de source (le client passe au suivant). */
 export interface ExternalSourcesResponse {
   sources: { externalId: string; source: PlaybackSource }[];
+  /**
+   * Des titres demandés n'ont pas de source PARCE QUE le budget de requêtes de
+   * l'extension est atteint (pas faute de source) : réessayer dans `afterMs`.
+   * Vaut pour les identifiants absents de `sources`. Additif : un client qui
+   * l'ignore n'y voit qu'une absence de source, comme avant.
+   */
+  retry?: SourceRetryHint;
+}
+
+export interface SourceRetryHint {
+  /** Liste fermée : le client a ses mots pour chacune. */
+  reason: "budget";
+  afterMs: number;
 }
 
 export type PrefetchIntent =

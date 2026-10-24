@@ -17,6 +17,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
   const { t } = useTranslation("music");
   const track = usePlayerSelector((s) => s.current);
   const error = usePlayerSelector((s) => s.error);
+  const notice = usePlayerSelector((s) => s.notice);
   const actions = useTrackActions();
   if (!track) {
     return <p className="truncate px-2 text-sm text-content-tertiary">{t("player.nothing")}</p>;
@@ -40,6 +41,8 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
             <span className="text-status-error-fg" role="status">
               {t(error === "noSource" ? "player.noSource" : "player.engineError")}
             </span>
+          ) : notice === "retrySoon" ? (
+            <span role="status">{t("player.retrySoon")}</span>
           ) : (
             track.artists.map((a) => a.name).join(", ")
           )}

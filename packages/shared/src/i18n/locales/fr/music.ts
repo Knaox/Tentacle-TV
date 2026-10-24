@@ -154,6 +154,7 @@ export default {
     queue: "File d'attente",
     nothing: "Rien en cours de lecture",
     noSource: "Ce titre ne peut pas être lu pour l'instant",
+    retrySoon: "Lecture dans un instant…",
     engineError: "La lecture s'est interrompue",
     lossless: "Sans perte",
     hiRes: "Hi-Res",
