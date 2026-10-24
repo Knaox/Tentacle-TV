@@ -40,7 +40,7 @@ Chaque ligne dit ce qui est attendu. Noter ce qui diffère, avec le journal
 
 | # | Geste | Attendu |
 |---|---|---|
-| 1 | Lancer « Tentacle Server » depuis le menu Démarrer | Aucune fenêtre noire. Icône dans la zone de notification. L'assistant s'ouvre UNE fois dans le navigateur, sur l'adresse locale du PC (pas `localhost`). Journal : `hôte 1.0.0 — Node v24.21.0`. |
+| 1 | Lancer « Tentacle Server » depuis le menu Démarrer | Aucune fenêtre noire. Icône dans la zone de notification. L'assistant s'ouvre UNE fois dans le navigateur, sur l'adresse locale du PC (pas `localhost`). Journal : `hôte 1.0.0 — Node v24.22.1`. |
 | 2 | `%ProgramData%\Tentacle Server` | Créé, écrit (pas de virtualisation sous `AppData\Local\Packages\…\VFS`). `tentacle.db` présent. |
 | 3 | Depuis un téléphone du même réseau (profil réseau « Privé ») | `http://<ip-du-pc>:3000` répond, SANS invite du pare-feu. Avec un compte Windows STANDARD aussi (règle posée sans élévation). En profil « Public » : injoignable, et l'icône le signale. |
 | 4 | Changer de port (menu de l'icône) | Le nouveau port est joignable sans invite du pare-feu (la règle n'a pas de port). |
