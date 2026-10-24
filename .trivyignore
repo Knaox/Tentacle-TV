@@ -15,3 +15,11 @@
 # undici, fast-uri, ws, find-my-way, brace-expansion) sont corrigées par la
 # montée des dépendances (planchers dans package.json › pnpm.overrides) :
 # plus aucune exception.
+
+# ── 2026-10-24 : zod 3 (GHSA-mrhx-c7xc-m3w5) ───────────────────────────────
+# Un z.array() SANS borne accumule une erreur par élément refusé : un corps
+# énorme épuise la mémoire. Seul correctif : zod 4.6.6, une majeure (chantier
+# à part). En attendant, tout z.array() du backend porte un .max() (tmdb,
+# préférences de pistes : le seul chemin d'attaque est fermé). Échéance courte :
+# la migration vers zod 4 doit être faite avant.
+CVE-2023-54404 exp:2026-12-15
