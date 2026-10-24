@@ -33,6 +33,11 @@ async function withoutForbiddenIsolated(plugins: InstalledPlugin[], user: Jellyf
   return kept.filter((p): p is InstalledPlugin => p !== null);
 }
 
+/** Une entrée `admin: true` du manifeste : une page d'administration de l'extension. */
+function isAdminNavItem(item: unknown): boolean {
+  return typeof item === "object" && item !== null && Boolean((item as { admin?: unknown }).admin);
+}
+
 // ── Route registration ──
 export const pluginRoutes: FastifyPluginAsync = async (app) => {
   // Les dépendances partagées (React, ReactDOM, TQ, i18next) et Tailwind (inliné dans les
@@ -63,7 +68,8 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
   app.get("/active", { preHandler: requireAuth }, async (request) => {
     // Une extension que ce serveur refuse (pluginStorage/gate.ts) n'existe pas pour les clients : jamais à moitié.
     // Une extension ISOLÉE que ce compte n'a pas le droit d'employer non plus : rien d'elle, navigation comprise.
-    const active = await withoutForbiddenIsolated(usablePlugins(), (request as { user?: JellyfinUser }).user);
+    const user = (request as { user?: JellyfinUser }).user;
+    const active = await withoutForbiddenIsolated(usablePlugins(), user);
     return active.map((p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
       let navItems: unknown[] = [];
@@ -90,10 +96,9 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       return {
         id: p.id, pluginId: p.pluginId, name: p.name, version: p.version,
         hasBundle: existsSync(resolve(pluginDir, "dist")),
-        // Only expose regular navItems when plugin is configured; admin navItems always visible
-        navItems: configEnabled
-          ? navItems
-          : navItems.filter((n: any) => n.admin),
+        // Une entrée d'ADMINISTRATION ne part qu'à un administrateur, configurée ou non (c'est elle
+        // qui la règle) ; les autres, seulement une fois l'extension configurée.
+        navItems: navItems.filter((n) => (isAdminNavItem(n) ? user?.isAdmin === true : configEnabled)),
         configEnabled,
         tab,
         // Comme les pages : une intégration éteinte ne cherche rien.
