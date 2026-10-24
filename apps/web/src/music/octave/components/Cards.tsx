@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { useCollectionPlayback, type CollectionRef } from "../actions/useCollectionPlayback";
+import { rememberAlbumPreview } from "../data/albumPreview";
 import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
 
@@ -56,7 +57,8 @@ export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum 
     </>
   );
   return target ? (
-    <Link to={octavePaths.album(target)} className={cardClass}>
+    // Un album hors bibliothèque : sa vue s'ouvre sur ce que la carte montre déjà (`albumPreview.ts`).
+    <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)}>
       {content}
     </Link>
   ) : (
