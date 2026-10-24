@@ -7,6 +7,7 @@ import type { PluginHostEnv } from "./pluginHostEnv";
 export type { PluginHostEnv } from "./pluginHostEnv";
 import { buildTrailerCatalogBridgeMethod } from "./pluginTrailerCatalog";
 import { buildMediaBridgeListener, buildMediaBridgeMethod, buildMediaBridgeState } from "./pluginMediaBridge";
+import { buildFormSubmitGuardScript } from "./formSubmitGuard";
 
 /**
  * Script (sans balises) : shim localStorage, error handler, bridge postMessage
@@ -37,6 +38,7 @@ export function buildPluginBridgeScript(params: { backendUrl: string; hostEnv: P
       }, "*");
     };
 
+${buildFormSubmitGuardScript()}
     // ── Host environment (plateforme, base backend) ──
     window.__tentacle_env = ${JSON.stringify(hostEnv)};
 
