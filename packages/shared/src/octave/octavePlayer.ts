@@ -14,9 +14,10 @@
 
 import type { AudioEnginePort, EngineEvent, EngineState, MusicTrack, PrefetchIntent } from "../music";
 import { advance, createQueue, currentItem, peekNext, previous, type QueueItem, type QueueState, type Random } from "./queueModel";
-import { INITIAL_POSITION, INITIAL_SNAPSHOT, ValueStore, type PlayerSnapshot, type PositionState } from "./playerState";
+import { enginePhase, INITIAL_POSITION, INITIAL_SNAPSHOT, ValueStore, type PlayerSnapshot, type PositionState } from "./playerState";
 import type { PlaybackReporter } from "./playbackReports";
 import type { SourceCache } from "./sourceCache";
+import { FailureStreak } from "./failureStreak";
 
 export interface OctavePlayerDeps {
   engine: AudioEnginePort;
@@ -39,6 +40,8 @@ export class OctavePlayer {
   /** Le suivant attend que le courant SONNE : préchargé plus tôt, il disputait au courant l'ouverture (mpv, mesuré). */
   private nextAfterStart = false;
   private playToken = 0;
+  /** Les titres sans source d'affilée : au 3e, plus de passage automatique (`failureStreak.ts`). */
+  private readonly failures = new FailureStreak();
   private readonly unsubscribe: () => void;
 
   constructor(readonly deps: OctavePlayerDeps) {
@@ -60,6 +63,7 @@ export class OctavePlayer {
 
   /** Lit `tracks` à partir de `index` — la barre est à jour AVANT le retour de cette fonction. */
   playList(tracks: readonly MusicTrack[], index: number, contextId: string | null = null): void {
+    this.failures.reset();
     const { shuffle, repeat } = this.snapshot.get().queue;
     const queue = createQueue(tracks, index, { shuffle, repeat, contextId, random: this.random });
     this.startItem(queue, 0);
@@ -109,9 +113,10 @@ export class OctavePlayer {
     this.nextAfterStart = true;
   }
 
-  /** Aucune source : on le dit, puis on passe au suivant (jamais une file bloquée). */
+  /** Aucune source : on le dit, puis on passe au suivant — au plus deux fois d'affilée (`failureStreak.ts`). */
   private failCurrent(token: number): void {
     this.snapshot.update({ phase: "error", error: "noSource" });
+    if (!this.failures.failed()) return;
     const delay = this.deps.skipDelayMs ?? 1_500;
     setTimeout(() => {
       if (token !== this.playToken) return;
@@ -168,6 +173,7 @@ export class OctavePlayer {
   }
 
   next(): void {
+    this.failures.reset();
     const moved = advance(this.snapshot.get().queue, false);
     if (moved) this.startItem(moved, 0);
   }
@@ -233,19 +239,13 @@ export class OctavePlayer {
     const playing = state.status === "playing";
     // La progression démarre AVEC le son : rien n'avance tant que le moteur n'a pas dit « playing ».
     this.position.set({ positionMs: state.positionMs, durationMs: state.durationMs ?? snap.durationMs, running: playing });
-    const phase =
-      state.status === "playing" ? "playing"
-      : state.status === "paused" ? "paused"
-      : state.status === "buffering" ? (snap.phase === "starting" ? "starting" : "stalled")
-      : state.status === "error" ? "error"
-      : state.status === "ended" ? "ended"
-      : snap.phase;
     this.snapshot.update({
-      phase,
+      phase: enginePhase(state.status, snap.phase),
       error: state.status === "error" ? "engine" : snap.error,
       format: state.format ?? snap.format,
       durationMs: state.durationMs ?? snap.durationMs,
     });
+    if (playing) this.failures.reset();
     if (playing && this.nextAfterStart) {
       this.nextAfterStart = false;
       this.scheduleNext();
