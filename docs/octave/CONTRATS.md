@@ -44,6 +44,15 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
 1. **Recherche** — `music.search` : pages PROGRESSIVES (`complete`, `cursor`). Le
    client fusionne : un résultat externe dont le MBID d'enregistrement est déjà
    dans la bibliothèque est retiré (la bibliothèque gagne).
+   **v2 (24/10, additif)** : le client envoie `revise=1` ; une extension v2 peut
+   alors rendre d'abord un classement PROVISOIRE (sources rapides,
+   `provisional: true`), puis, à chaque curseur (long-poll), la liste ENTIÈRE
+   révisée (`replace: true`) — la dernière page `replace` sert de base, les pages
+   d'ajout d'après s'y ajoutent. L'anticipation (`prefetch("results")`) attend
+   une page non provisoire ; l'interface gèle l'ordre sous le pointeur ou le
+   focus et glisse vers le nouvel ordre au relâchement. Une extension d'avant
+   ignore `revise` (ajout seul) ; sans `revise`, une extension v2 sert l'ancien
+   protocole à l'identique.
 2. **Source de lecture** — `music.resolve` (POST `{ ids }` → `PlaybackSource`,
    jouable pendant l'écriture : `complete: false`) ; `music.prefetch` reçoit
    l'anticipation (`results`, `hover`, `press` au mousedown/touchstart, `next`).

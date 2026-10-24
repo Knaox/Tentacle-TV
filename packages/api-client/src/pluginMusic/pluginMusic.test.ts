@@ -63,6 +63,17 @@ describe("fusion des pages progressives", () => {
     expect(merged.complete).toBe(true);
   });
 
+  it("v2 : une page `replace` remplace tout ce qui précède, une page d'ajout d'après s'y ajoute", () => {
+    const provisional = { ...page([track("a", null), track("b", null)], false, "c1"), replace: true, provisional: true };
+    const revised = { ...page([track("b", null), track("c", null)], false, "c2"), replace: true };
+    const appended = page([track("d", null)], true, null);
+    const merged = mergeExternalMusicPages([provisional, revised, appended], new Set());
+    expect(merged.tracks.map((t) => t.key)).toEqual(["b", "c", "d"]);
+    expect(merged.provisional).toBe(false);
+    expect(mergeExternalMusicPages([provisional], new Set()).provisional).toBe(true);
+    expect(readMusicSearchPage({ ...provisional, replace: true, provisional: true }, "q")).toMatchObject({ replace: true, provisional: true });
+  });
+
   it("ne croit qu'une réponse qui a la forme d'une page", () => {
     expect(readMusicSearchPage({ tracks: "x" }, "q")).toBeNull();
     expect(readMusicSearchPage({ tracks: [], albums: [], artists: [], complete: false, cursor: "" }, "q")).toEqual(page([], false, null));
@@ -132,7 +143,7 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
     vi.stubGlobal("fetch", fetchMock);
     await mount({ version: "1.31.1" });
     expect(seen?.provider).toBeNull();
-    expect(seen?.search).toEqual({ tracks: [], albums: [], artists: [], complete: true, pending: false, available: false });
+    expect(seen?.search).toEqual({ tracks: [], albums: [], artists: [], complete: true, provisional: false, pending: false, available: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

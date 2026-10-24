@@ -55,6 +55,13 @@ export interface ExternalMusicSearchPage {
   tracks: MusicTrack[];
   albums: MusicAlbum[];
   artists: MusicArtist[];
+  /**
+   * v2 (requête `revise=1`) : la page porte la liste ENTIÈRE, classée, et REMPLACE tout ce qui
+   * précède ; absent : elle s'ajoute (première occurrence d'une clé gardée).
+   */
+  replace?: boolean;
+  /** v2 : ce classement peut encore changer — une page suivante le révisera. */
+  provisional?: boolean;
 }
 
 /** 2 · Une source par identifiant demandé ; absent = pas de source (le client passe au suivant). */
