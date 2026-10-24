@@ -45,7 +45,7 @@ const DUMP = z.object({
   version: z.literal(1),
   savedAt: z.number().optional(),
   origin: z.string().optional(),
-  entries: z.record(z.string()),
+  entries: z.record(z.string(), z.string()),
 });
 
 /** Ce qu'on a trouvé. Chaque cas mérite sa trace, y compris les échecs. */

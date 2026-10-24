@@ -41,7 +41,7 @@
   "dependencies": {
     "@tentacle-tv/web": "workspace:*",
     "koffi": "^3.1.2",
-    "zod": "^3.24.0"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@electron/packager": "^20.0.4",
