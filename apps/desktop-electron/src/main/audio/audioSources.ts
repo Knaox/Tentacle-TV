@@ -10,6 +10,10 @@
  * d'authentification n'a pas à connaître. Le contrat le dit
  * (`PlaybackSource.url` est TOUJOURS un chemin du serveur Tentacle) ; le
  * principal le TIENT, puisque c'est lui qui pose le jeton sur chaque requête.
+ *
+ * ⚠️ Le jeton est un en-tête de l'INSTANCE (`http-header-fields`) : admettre
+ * une autre origine ici (un flux googlevideo lu en direct) l'enverrait à cet
+ * hôte. D'abord limiter le jeton aux requêtes du serveur (test « garde-fou »).
  */
 
 import type { AudioBridgeSource } from "./audioBridgeContract";
