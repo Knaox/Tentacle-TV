@@ -35,6 +35,12 @@ export interface PluginMusicManifest {
   album?: string;
   /** Vue artiste hors bibliothèque — GET <artist>/<artistId> → `MusicArtist` avec `topTracks`, `albums`. */
   artist?: string;
+  /**
+   * Suggestions pendant la frappe — GET ?q=&limit= → `MusicSuggestResponse`. LOCALES : l'extension
+   * n'y lit que ses index et ses caches, jamais le réseau ; la recherche complète (`search`) ne part
+   * qu'à la validation. Capacité serveur `music.suggest`.
+   */
+  suggest?: string;
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
 }
@@ -45,6 +51,21 @@ export interface MusicCapablePlugin {
   name: string;
   configEnabled?: boolean;
   music?: PluginMusicManifest;
+}
+
+/** Une suggestion de la barre : un TEXTE à chercher (la choisir lance `search`, jamais une lecture). */
+export interface MusicSuggestion {
+  kind: "track" | "artist" | "album";
+  title: string;
+  /** L'artiste d'un titre ou d'un album ; `null` pour un artiste. */
+  subtitle: string | null;
+  /** Ce qui part dans la recherche (par défaut : titre et artiste). */
+  text: string;
+}
+
+export interface MusicSuggestResponse {
+  query: string;
+  suggestions: MusicSuggestion[];
 }
 
 /** 1 · Une page de résultats PROGRESSIVE : `complete` faux → redemander avec `cursor`. */
@@ -134,7 +155,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }

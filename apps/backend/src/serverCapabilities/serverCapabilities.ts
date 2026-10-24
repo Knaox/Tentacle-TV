@@ -266,6 +266,11 @@ export const SERVER_CAPABILITIES = {
    *  contrat `music` du manifeste relayé par `/api/plugins/active`. Sans elle : aucun résultat,
    *  aucune lecture ni geste hors bibliothèque. */
   "plugins.isolatedRuntime": "1.32.0",
+  /** Le point d'extension `music.suggest` relayé par `/api/plugins/active` : pendant la frappe, la
+   *  barre d'Octave demande des SUGGESTIONS LOCALES à l'extension (ses index, aucune requête
+   *  réseau de sa part), la recherche complète ne part qu'à la validation. Sans elle : suggestions
+   *  de la bibliothèque et recherches récentes seulement. */
+  "music.suggest": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

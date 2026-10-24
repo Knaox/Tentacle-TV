@@ -63,9 +63,10 @@ export function useMusicSearch(provider: MusicProvider | null, query: string, op
   });
 
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = result;
-  // La suite vient d'elle-même : l'écran n'a rien à demander.
+  // La suite vient d'elle-même : l'écran n'a rien à demander. Plusieurs observateurs de la même recherche
+  // la demandent ensemble : `cancelRefetch: false`, sinon chacun ANNULE le curseur en attente de l'autre.
   useEffect(() => {
-    if (enabled && hasNextPage && !isFetchingNextPage) void fetchNextPage();
+    if (enabled && hasNextPage && !isFetchingNextPage) void fetchNextPage({ cancelRefetch: false });
   }, [enabled, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const recordings = options.libraryRecordings ?? EMPTY_SET;

@@ -56,7 +56,18 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    COURANTE avec un nouveau curseur (jamais près des 120 s du relais) ; une
    recherche dont aucun curseur n'est redemandé pendant 10 s est abandonnée.
    Le client n'envoie `prefetch("results")` que pour une page non provisoire,
-   une requête stable depuis 700 ms, une fois par requête.
+   une fois par requête.
+   **Barre d'Octave (25/10)** : la recherche complète ne part qu'à la VALIDATION
+   (Entrée, « Rechercher », une suggestion choisie) ; pendant la frappe, des
+   suggestions seulement. Le client ne montre jamais une page `provisional` et
+   ne réordonne plus une rangée montrée (la suite s'ajoute dessous).
+   **`music.suggest` (optionnel, capacité serveur `music.suggest`)** : GET
+   `?q=&limit=` → `MusicSuggestResponse` ; l'extension n'y lit que ses index et
+   ses caches, JAMAIS le réseau. Sans capacité ou sans route : suggestions de la
+   bibliothèque et recherches récentes seules.
+   **Pochettes** : `artworkUrl` peut être une route de l'extension relayée par le
+   cœur (`/api/plugins/<id>/…`, servie de son cache) ; le jeton n'accompagne
+   jamais une URL d'un autre hôte.
 2. **Source de lecture** — `music.resolve` (POST `{ ids }` → `PlaybackSource`,
    jouable pendant l'écriture : `complete: false`) ; `music.prefetch` reçoit
    l'anticipation (`results`, `hover`, `press` au mousedown/touchstart, `next`).

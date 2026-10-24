@@ -8,6 +8,7 @@ export {
   reportExternalPlayed, fetchExternalAlbum, fetchExternalArtist,
 } from "../pluginMusic/musicRequests";
 export { useMusicProvider } from "../pluginMusic/useMusicProvider";
+export { useMusicSuggest, readMusicSuggestions } from "../pluginMusic/useMusicSuggest";
 // Renommés à l'export : la recherche de la BIBLIOTHÈQUE (exports/music) garde les noms courts.
 export {
   useMusicSearch as usePluginMusicSearch, type MusicSearchOptions as PluginMusicSearchOptions, type MusicSearchState as PluginMusicSearchState,
