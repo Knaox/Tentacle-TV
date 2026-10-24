@@ -12,7 +12,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (error instanceof ZodError) {
       return reply.status(400).send({
         message: "Validation error",
-        errors: error.errors,
+        errors: error.issues,
       });
     }
 

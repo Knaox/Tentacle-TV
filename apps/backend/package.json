@@ -37,7 +37,7 @@
     "minisearch": "^7.2.0",
     "undici": "^6.29.1",
     "ws": "^8.21.0",
-    "zod": "^3.24.0"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.90.21",
