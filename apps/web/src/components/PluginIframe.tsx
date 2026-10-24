@@ -9,6 +9,7 @@ import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
 import { useServerCapabilities } from "@tentacle-tv/api-client";
+import { PLUGIN_IFRAME_SANDBOX } from "@tentacle-tv/plugins-api";
 import { TRAILER_PLAYER_AVAILABLE, TrailerPlayer } from "./trailerPlayer";
 import {
   OPEN_TRAILER_CATALOG_MESSAGE, loadPluginTrailerQueue, parsePluginTrailerCatalogQuery, type PluginTrailerQueue,
@@ -30,7 +31,7 @@ interface PluginIframeProps {
 }
 
 /**
- * Renders a plugin inside a sandboxed iframe (allow-scripts only).
+ * Renders a plugin inside a sandboxed iframe (allow-scripts only — aucun formulaire natif : `PLUGIN_IFRAME_SANDBOX`).
  * The plugin has NO access to the parent's DOM, localStorage, or cookies.
  * API requests are proxied through postMessage → host fetch with credentials.
  */
@@ -238,7 +239,7 @@ export function PluginIframe({
       <iframe
         ref={iframeRef}
         {...mount}
-        sandbox="allow-scripts"
+        sandbox={PLUGIN_IFRAME_SANDBOX}
         title={`plugin-${pluginId}`}
         className="h-full w-full border-0"
         style={{ minHeight: "calc(100vh - 64px)" }}

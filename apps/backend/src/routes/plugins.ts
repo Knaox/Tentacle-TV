@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 import { requireAdmin, requireAuth, type JellyfinUser } from "../middleware/auth";
@@ -12,6 +12,7 @@ import {
   DATA_DIR,
 } from "../services/pluginManager";
 import { isPluginUsable, usablePlugins } from "../services/pluginStorage/gate";
+import { locateSharedDep, type SharedDepName } from "../services/pluginSharedDeps/sharedDepsLocator";
 import { readTabMeta, type PluginTabMeta } from "./pluginTabMeta";
 import { readSearchMeta, type PluginSearchMeta } from "./pluginSearchMeta";
 import { readTitlesMeta, type PluginTitlesMeta } from "./pluginTitlesMeta";
@@ -32,48 +33,43 @@ async function withoutForbiddenIsolated(plugins: InstalledPlugin[], user: Jellyf
   return kept.filter((p): p is InstalledPlugin => p !== null);
 }
 
+/** Une entrée `admin: true` du manifeste : une page d'administration de l'extension. */
+function isAdminNavItem(item: unknown): boolean {
+  return typeof item === "object" && item !== null && Boolean((item as { admin?: unknown }).admin);
+}
+
 // ── Route registration ──
 export const pluginRoutes: FastifyPluginAsync = async (app) => {
-  // Shared dependencies bundle (React, ReactDOM, TQ, i18next) — no auth needed
-  // DATA_DIR = data/plugins/, shared-deps is at data/shared-deps/
-  const sharedDepsPath = resolve(DATA_DIR, "..", "shared-deps", "shared-deps.js");
-  let sharedDepsCache: string | null = null;
+  // Les dépendances partagées (React, ReactDOM, TQ, i18next) et Tailwind (inliné dans les
+  // iframes : ni CORS ni CSP à négocier sur les coquilles) — sans authentification. Où les
+  // trouver : services/pluginSharedDeps. Introuvables, c'est une panne du SERVEUR (500) :
+  // un 404 se lisait « serveur trop ancien » sur la page de l'extension.
+  const sharedDepsCache = new Map<SharedDepName, string>();
+  const serveSharedDep = (name: SharedDepName, cacheControl: string) =>
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      let code = sharedDepsCache.get(name);
+      if (code === undefined) {
+        const path = await locateSharedDep(name);
+        if (!path) {
+          return reply.status(500).send({ message: `${name} introuvable sur ce serveur. Run: pnpm build:shared-deps` });
+        }
+        code = readFileSync(path, "utf-8");
+        sharedDepsCache.set(name, code);
+      }
+      return reply.header("Cache-Control", cacheControl).type("application/javascript").send(code);
+    };
 
-  app.get("/shared-deps.js", { config: { compress: false } }, async (_request, reply) => {
-    if (!existsSync(sharedDepsPath)) {
-      return reply.status(404).send({ message: "Shared deps not built. Run: pnpm build:shared-deps" });
-    }
-    if (!sharedDepsCache) {
-      sharedDepsCache = readFileSync(sharedDepsPath, "utf-8");
-    }
-    const isDev = process.env.NODE_ENV !== "production";
-    reply
-      .header("Cache-Control", isDev ? "no-cache" : "public, max-age=86400, immutable")
-      .type("application/javascript")
-      .send(sharedDepsCache);
-  });
-
-  // Tailwind CSS runtime (inlined in plugin iframes to avoid CORS/CSP issues in Tauri)
-  const tailwindPath = resolve(DATA_DIR, "..", "shared-deps", "tailwind.js");
-  let tailwindCache: string | null = null;
-
-  app.get("/tailwind.js", { config: { compress: false } }, async (_request, reply) => {
-    if (!existsSync(tailwindPath)) {
-      return reply.status(404).send({ message: "tailwind.js not found in data/shared-deps/" });
-    }
-    if (!tailwindCache) {
-      tailwindCache = readFileSync(tailwindPath, "utf-8");
-    }
-    reply
-      .header("Cache-Control", "public, max-age=604800, immutable")
-      .type("application/javascript")
-      .send(tailwindCache);
-  });
+  const isDev = process.env.NODE_ENV !== "production";
+  app.get("/shared-deps.js", { config: { compress: false } },
+    serveSharedDep("shared-deps.js", isDev ? "no-cache" : "public, max-age=86400, immutable"));
+  app.get("/tailwind.js", { config: { compress: false } },
+    serveSharedDep("tailwind.js", "public, max-age=604800, immutable"));
 
   app.get("/active", { preHandler: requireAuth }, async (request) => {
     // Une extension que ce serveur refuse (pluginStorage/gate.ts) n'existe pas pour les clients : jamais à moitié.
     // Une extension ISOLÉE que ce compte n'a pas le droit d'employer non plus : rien d'elle, navigation comprise.
-    const active = await withoutForbiddenIsolated(usablePlugins(), (request as { user?: JellyfinUser }).user);
+    const user = (request as { user?: JellyfinUser }).user;
+    const active = await withoutForbiddenIsolated(usablePlugins(), user);
     return active.map((p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
       let navItems: unknown[] = [];
@@ -100,10 +96,9 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       return {
         id: p.id, pluginId: p.pluginId, name: p.name, version: p.version,
         hasBundle: existsSync(resolve(pluginDir, "dist")),
-        // Only expose regular navItems when plugin is configured; admin navItems always visible
-        navItems: configEnabled
-          ? navItems
-          : navItems.filter((n: any) => n.admin),
+        // Une entrée d'ADMINISTRATION ne part qu'à un administrateur, configurée ou non (c'est elle
+        // qui la règle) ; les autres, seulement une fois l'extension configurée.
+        navItems: navItems.filter((n) => (isAdminNavItem(n) ? user?.isAdmin === true : configEnabled)),
         configEnabled,
         tab,
         // Comme les pages : une intégration éteinte ne cherche rien.

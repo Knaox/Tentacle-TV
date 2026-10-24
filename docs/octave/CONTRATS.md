@@ -52,7 +52,10 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
 4. **En attente** — `music.pending` : les entrées du compte dans « Titres likés »
    et les playlists, résolues par `music:resolved` (et la synchro Jellyfin).
 5. **Navigation et réglages** — `navItems`/`routes` du bundle front ; masqués sans
-   extension active, configurée et permise au compte.
+   extension active, configurée et permise au compte. Les pages vivent dans une
+   iframe `sandbox="allow-scripts"` SANS `allow-forms` (`PLUGIN_IFRAME_SANDBOX`,
+   `packages/plugins-api/src/iframeSandbox.ts`) : aucun `<form>` dans une extension,
+   `submit` n'y part jamais — envoyer au clic et à Entrée (`ActionForm` de Sillon).
 
 Garde partout : capacité serveur `plugins.isolatedRuntime` ET extension active
 déclarant `music` ET droit du compte (`users.rights` → `canUse`). Sinon : aucun

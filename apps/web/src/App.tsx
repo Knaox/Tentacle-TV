@@ -22,6 +22,7 @@ import { isDesktopApp } from "./desktop/bridge";
 import { supportsPictureInPicture } from "./desktop/capabilities";
 import { PlayerStage } from "./pictureInPicture/PlayerStage";
 import { PageSpinner } from "./components/PageSpinner";
+import { UnknownRoute } from "./components/pluginIframe/UnknownRoute";
 import { useProfileLaunchGate } from "./profiles/launch/useProfileLaunchGate";
 import { LazyOctaveApp, OctaveHomeSwitch } from "./music/octave/mode/OctaveEntry";
 import { OCTAVE_BASE_PATH } from "./music/octave/mode/octaveMode";
@@ -292,7 +293,7 @@ export function App() {
           </Route>
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<UnknownRoute authed={authed} notFound={<NotFound />} />} />
         </AnimatedRoutes>
       </Suspense>
       {authed && playerOnStage && <PlayerStage />}

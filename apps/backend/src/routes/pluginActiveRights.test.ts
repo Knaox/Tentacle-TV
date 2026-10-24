@@ -78,11 +78,25 @@ describe("extension isolée et droit du compte", () => {
   it("un compte permis : l'entrée entière, navigation et contrat music compris", async () => {
     const [entry] = (await call("/api/plugins/active", "permis")).json() as Array<Record<string, unknown>>;
     expect(entry).toMatchObject({ pluginId: "sillon", music: { search: "/music/search" } });
-    expect((entry.navItems as Array<{ path: string }>).map((n) => n.path)).toEqual(["/music/requests", "/admin/plugins/sillon"]);
+    // Sa page d'administration n'est pas pour lui : son entrée ne lui est même pas envoyée.
+    expect((entry.navItems as Array<{ path: string }>).map((n) => n.path)).toEqual(["/music/requests"]);
     expect((await call("/api/plugins/sillon/bundle", "permis")).statusCode).toBe(200);
   });
 
-  it("un administrateur en session personnelle la voit toujours (il la règle)", async () => {
-    expect(((await call("/api/plugins/active", "admin")).json() as unknown[]).length).toBe(1);
+  it("un administrateur en session personnelle la voit toujours (il la règle), entrée d'administration comprise", async () => {
+    const entries = (await call("/api/plugins/active", "admin")).json() as Array<{ navItems: Array<{ path: string }> }>;
+    expect(entries.length).toBe(1);
+    expect(entries[0].navItems.map((n) => n.path)).toEqual(["/music/requests", "/admin/plugins/sillon"]);
+  });
+
+  it("extension pas encore configurée : l'administrateur garde son entrée d'administration, un compte permis n'a rien", async () => {
+    saveInstalled([{
+      id: "22222222-2222-4222-8222-222222222222", pluginId: "sillon", sourceId: "local", name: "Sillon",
+      version: "0.1.0", enabled: true, config: {}, installedAt: "2026-10-24T00:00:00.000Z",
+    }]);
+    const [admin] = (await call("/api/plugins/active", "admin")).json() as Array<{ navItems: Array<{ path: string }> }>;
+    expect(admin.navItems.map((n) => n.path)).toEqual(["/admin/plugins/sillon"]);
+    const [permis] = (await call("/api/plugins/active", "permis")).json() as Array<{ navItems: unknown[] }>;
+    expect(permis.navItems).toEqual([]);
   });
 });
