@@ -11,19 +11,33 @@
 /*  aucune fusion, aucun fichier `.part` (le fichier se lit pendant    */
 /*  qu'il s'écrit, `progress` le dit). Chaque requête dans son fil,   */
 /*  quatre à la fois ; `cancel` arrête un `download` en cours.         */
+/*                                                                     */
+/*  Un `extract` reprend une instance YoutubeDL GARDÉE pour le même    */
+/*  jeu d'options (une par fil, au plus 4) : l'extracteur reste        */
+/*  chargé et le lecteur JS de YouTube reste en mémoire — plus de      */
+/*  base.js re-téléchargé à chaque vidéo. Une instance sert 30 min ou */
+/*  200 extractions au plus, jamais après un échec. L'ouvrier se      */
+/*  préchauffe au démarrage (extracteur YouTube importé) et garde le  */
+/*  lecteur PRÉTRAITÉ par le solveur JS sur disque (les 2 derniers) : */
+/*  node ne réanalyse plus 2,5 Mo de JavaScript à chaque défi.         */
+/*  Mesures : docs/octave/EXTRACTION.md.                               */
 /* ------------------------------------------------------------------ */
 
 export const WORKER_SCRIPT = String.raw`
-import json, threading, os
+import json, threading, os, time
 import yt_dlp
 from yt_dlp.utils import DownloadCancelled
 
 DATA = _tentacle_paths["data"]
 NODE = _tentacle_paths["node"]
+CACHE = os.path.join(DATA, ".yt-dlp-cache")
 lock = threading.Lock()
 slots = threading.BoundedSemaphore(4)
 cancels = {}
 ANTI_BOT = ("confirm you" + "’re not a bot", "confirm you're not a bot", "sign in to confirm", "http error 429")
+KEEP_S, KEEP_USES, KEEP_PER_KEY, KEEP_KEYS = 1800, 200, 4, 8
+kept = {}
+kept_lock = threading.Lock()
 
 def send(obj):
     line = json.dumps(obj, separators=(",", ":"))
@@ -46,7 +60,7 @@ class Quiet:
 def options(o, logger):
     o = o or {}
     opts = {"quiet": True, "no_warnings": True, "noplaylist": True, "logger": logger, "noprogress": True,
-            "postprocessors": [], "cachedir": os.path.join(DATA, ".yt-dlp-cache"), "nopart": True,
+            "postprocessors": [], "cachedir": CACHE, "nopart": True,
             "js_runtimes": {"node": {"path": NODE}}, "socket_timeout": o.get("socketTimeoutS", 15)}
     if "extractorArgs" in o:
         opts["extractor_args"] = o["extractorArgs"]
@@ -61,6 +75,67 @@ def options(o, logger):
     if "limit" in o:
         opts["playlistend"] = o["limit"]
     return opts
+
+def close_quietly(ydl):
+    try:
+        ydl.close()
+    except BaseException:
+        pass
+
+def take(o, logger):
+    # Une instance gardée pour ces options, sinon une neuve ; le journal est celui de CETTE requête.
+    key = json.dumps(o or {}, sort_keys=True)
+    with kept_lock:
+        bucket = kept.get(key) or []
+        while bucket:
+            ydl, born, uses = bucket.pop()
+            if time.monotonic() - born < KEEP_S and uses < KEEP_USES:
+                ydl.params["logger"] = logger
+                return key, ydl, born, uses
+            close_quietly(ydl)
+    prune_players()
+    return key, yt_dlp.YoutubeDL(options(o, logger)), time.monotonic(), 0
+
+def give_back(key, ydl, born, uses):
+    if not isinstance(getattr(ydl, "params", None), dict):
+        return close_quietly(ydl)
+    ydl.params["logger"] = SILENT
+    with kept_lock:
+        if key not in kept and len(kept) >= KEEP_KEYS:
+            for old in kept.pop(next(iter(kept))):
+                close_quietly(old[0])
+        bucket = kept.setdefault(key, [])
+        if len(bucket) < KEEP_PER_KEY:
+            bucket.append((ydl, born, uses + 1))
+            return
+    close_quietly(ydl)
+
+def prune_players(keep=2):
+    # Le lecteur prétraité pèse ~4 Mo par version de lecteur : seuls les plus récents restent.
+    folder = os.path.join(CACHE, "challenge-solver")
+    try:
+        files = sorted((os.path.join(folder, n) for n in os.listdir(folder) if n.startswith("player")), key=os.path.getmtime)
+        for path in files[:-keep]:
+            os.remove(path)
+    except OSError:
+        pass
+
+def warm():
+    # Au démarrage : l'extracteur YouTube importé et le cache du lecteur prétraité ouvert. Rien de bloquant :
+    # un yt-dlp qui n'a pas ces modules (version, banc de test) garde le comportement d'origine.
+    try:
+        from yt_dlp.extractor.youtube.jsc._builtin.ejs import EJSBaseJCP
+        EJSBaseJCP._ENABLE_PREPROCESSED_PLAYER_CACHE = True
+    except BaseException:
+        pass
+    prune_players()
+    try:
+        with slots:
+            key, ydl, born, uses = take(None, Quiet())
+            ydl.get_info_extractor("Youtube")
+            give_back(key, ydl, born, uses - 1)
+    except BaseException:
+        pass
 
 def num(v):
     return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
@@ -103,8 +178,14 @@ def run(req):
             if op == "version":
                 send({"id": req["id"], "ok": True, "result": {"version": yt_dlp.version.__version__}})
             elif op == "extract":
-                with yt_dlp.YoutubeDL(options(req.get("options"), logger)) as ydl:
-                    send({"id": req["id"], "ok": True, "result": info(ydl.extract_info(req["target"], download=False))})
+                key, ydl, born, uses = take(req.get("options"), logger)
+                try:
+                    result = info(ydl.extract_info(req["target"], download=False))
+                except BaseException:
+                    close_quietly(ydl)
+                    raise
+                give_back(key, ydl, born, uses)
+                send({"id": req["id"], "ok": True, "result": result})
             elif op == "download":
                 stop = cancels.setdefault(req["id"], threading.Event())
                 last = [0]
@@ -126,6 +207,9 @@ def run(req):
             failure(req["id"], exc, logger)
         finally:
             cancels.pop(req["id"], None)
+
+SILENT = Quiet()
+threading.Thread(target=warm, daemon=True).start()
 
 for raw in sys.stdin:
     try:

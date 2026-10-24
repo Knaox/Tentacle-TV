@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { connect, type Socket } from "net";
 import { join } from "path";
 import { tmpdir } from "os";
-import { spawnWorker, stopAllWorkers } from "./toolWorkers";
+import { spawnWorker, stopAllWorkers, stopWorker } from "./toolWorkers";
 
 /**
  * L'ouvrier persistant d'une extension (`tools.spawnWorker`) : un VRAI Python,
@@ -42,12 +42,19 @@ vi.hoisted(() => {
     wr(j(src, "yt_dlp", "utils.py"), "class DownloadCancelled(Exception):\n    pass\n");
     wr(j(src, "yt_dlp", "__init__.py"), [
       "from . import version, utils",
+      "CREATED = [0]",
       "class YoutubeDL:",
-      "    def __init__(self, opts): self.opts = opts",
+      "    def __init__(self, opts):",
+      "        self.opts = self.params = opts",
+      "        CREATED[0] += 1",
+      "        self.serial = CREATED[0]",
       "    def __enter__(self): return self",
       "    def __exit__(self, *a): return False",
+      "    def close(self): pass",
       "    def extract_info(self, target, download=False):",
       `        if 'evil' in target: open(${secret}).read()`,
+      "        if 'boom' in target: raise RuntimeError('panne')",
+      "        if 'serial' in target: return {'id': str(self.serial), 'formats': []}",
       "        return {'id': 'v1', 'title': 'T', 'artists': ['A'], 'duration': 61.5, 'formats': [{'format_id': '251', 'ext': 'webm', 'acodec': 'opus', 'abr': 130.5, 'url': 'https://x/' + 'a' * 1100, 'http_headers': {'User-Agent': 'UA'}}], 'raw_secret_field': 'jamais'}",
       "    def download(self, urls):",
       "        out = self.opts['outtmpl']['default']",
@@ -149,6 +156,28 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     expect(reply).toMatchObject({ id: 20, ok: false, error: { code: "failed" } });
     expect(String((reply.error as { message: string }).message)).toContain("lecture refusée");
     s.close();
+  });
+
+  it("extract reprend l'instance gardée pour les mêmes options, jamais celle d'un échec", async () => {
+    const { socketPath, workerId } = await spawnWorker(ctx, "yt-dlp", "keep");
+    const s = session(socketPath);
+    const serial = async (id: number, options?: Msg, target = "https://www.youtube.com/watch?v=serial") =>
+      ((await s.ask({ id, op: "extract", target, ...(options ? { options } : {}) }))[0].result as { id: string } | undefined)?.id;
+    const music = { extractorArgs: { youtube: { player_client: ["visionos"] } } };
+    const first = await serial(40, music);
+    expect(await serial(41, music)).toBe(first);
+    const other = await serial(42, { flat: true });
+    expect(other).not.toBe(first);
+    expect(await serial(43, music)).toBe(first);
+    const [failed] = await s.ask({ id: 44, op: "extract", target: "https://www.youtube.com/watch?v=boom", options: music });
+    expect(failed).toMatchObject({ ok: false, error: { code: "failed" } });
+    // L'instance de l'échec est jetée : la suivante est neuve.
+    const after = await serial(45, music);
+    expect(after).not.toBe(first);
+    expect(after).not.toBe(other);
+    s.close();
+    // Arrêté : le test de relance ci-dessous ne doit trouver que l'ouvrier « probe ».
+    stopWorker("w-test", workerId);
   });
 
   it("un ouvrier mort est relancé, la socket reste la même", async () => {
