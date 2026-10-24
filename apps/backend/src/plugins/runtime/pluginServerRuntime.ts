@@ -11,9 +11,12 @@
  * extensions qui ne déclarent pas `runtime.kind = "isolated"`.
  *
  * MIROIR : recopié octet pour octet dans `apps/backend/src/plugins/runtime/`
- * (test miroir), comme `serverCapabilities.ts`. Aucun import : il compile seul.
+ * (test miroir), comme `serverCapabilities.ts`. Un seul import, de TYPES, de son
+ * voisin `pluginClientFetch.ts`, recopié avec lui : les deux compilent seuls.
  * Les noms traversent la frontière d'un processus : ils ne se renomment jamais.
  */
+
+import type { ClientFetchManifest, ClientFetchOutcome, ClientFetchRequest } from "./pluginClientFetch";
 
 /** `plugin.json` → `runtime`. */
 export interface PluginRuntimeManifest {
@@ -28,12 +31,16 @@ export interface PluginRuntimeManifest {
   publicRoutes?: string[];
   /** Les familles de l'API d'hôte qu'il emploie (`HostApiFamily`). */
   hostApi?: HostApiFamily[];
+  /** Hôtes que l'APPAREIL appelant joint pour elle, et lit en direct (`pluginClientFetch.ts`). */
+  clientFetch?: ClientFetchManifest;
 }
+
+
 
 /** Liste FERMÉE des outils qu'un hôte sait fournir. */
 export type ToolName = "yt-dlp";
 
-export type HostApiFamily = "jellyfin.music" | "users" | "events" | "tools";
+export type HostApiFamily = "jellyfin.music" | "users" | "events" | "tools" | "client";
 
 /* ── Démarrage de l'invité ───────────────────────────────────────────── */
 
@@ -63,6 +70,8 @@ export const RELAY_HEADERS = {
   session: "x-tentacle-session",
   locale: "x-tentacle-locale",
   requestId: "x-tentacle-request-id",
+  /** Poignée OPAQUE de l'appareil appelant pour `client.fetch` (stable par appareil et extension), s'il s'est annoncé. */
+  client: "x-tentacle-client",
 } as const;
 
 /* ── Messages IPC (process.send) ─────────────────────────────────────── */
@@ -169,6 +178,11 @@ export interface HostApi {
    * APRÈS sa dernière ouverture, le referme.
    */
   "tools.youtubeReport": { params: { outcome: "ok" | "antiBot"; startedAt: number }; result: { ok: true } };
+  /**
+   * Fait EXÉCUTER `request` par l'appareil de la poignée `client`, et seulement lui : sa réponse, ou
+   * le motif d'un échec. Exige la famille `client` et `runtime.clientFetch`. Hôte d'avant : `forbidden`.
+   */
+  "client.fetch": { params: { client: string; request: ClientFetchRequest }; result: ClientFetchOutcome };
 }
 
 export type HostMethod = keyof HostApi;
@@ -190,6 +204,7 @@ export const HOST_METHODS: readonly HostMethod[] = [
   "tools.stopWorker",
   "tools.youtubeAdmit",
   "tools.youtubeReport",
+  "client.fetch",
 ];
 
 /** La famille d'une méthode : appeler hors des familles déclarées → `forbidden`. */
@@ -197,6 +212,7 @@ export function hostMethodFamily(method: HostMethod): HostApiFamily {
   if (method.startsWith("jellyfin.")) return "jellyfin.music";
   if (method.startsWith("users.")) return "users";
   if (method.startsWith("events.")) return "events";
+  if (method.startsWith("client.")) return "client";
   return "tools";
 }
 

@@ -49,6 +49,7 @@ import { registerPipCommands } from "./ipc/pip";
 import { registerVideoCommands, restoreDisplay, stopPlayer } from "./ipc/video";
 import { registerMediaWarmCommands } from "./ipc/mediaWarm";
 import { registerAudioCommands, stopAudio } from "./ipc/audio";
+import { registerClientFetchCommands } from "./ipc/clientFetch";
 import { scanAudioComponents } from "./audio/coreAudioScan";
 import { isRunning } from "./video/mpv";
 import { installCloseSequence } from "./closeSequence";
@@ -228,6 +229,7 @@ function main(): void {
       registerUpdateCommands(registry);
       registerVideoCommands(registry);
       registerAudioCommands(registry);
+      registerClientFetchCommands(registry);
       registerMediaWarmCommands(registry);
       registerLinuxSessionCommands(registry);
       registerPipCommands(registry);

@@ -66,4 +66,20 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
   // Un coût hors 1..4 est refusé : une extension ne réserve pas l'heure d'un coup.
   "tools.youtubeAdmit": z.object({ kind: z.enum(["play", "prefetch"]), cost: z.number().int().min(1).max(4) }).strict(),
   "tools.youtubeReport": z.object({ outcome: z.enum(["ok", "antiBot"]), startedAt: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER) }).strict(),
+  // La forme seulement : hôtes, en-têtes et tailles sont jugés contre le manifeste par le courtier.
+  "client.fetch": z
+    .object({
+      client: z.string().regex(/^[A-Za-z0-9_-]{32}$/),
+      request: z
+        .object({
+          method: z.enum(["GET", "POST"]),
+          url: z.string().min(8).max(4096),
+          headers: z.record(z.string().max(8192)).optional(),
+          body: z.string().max(256 * 1024).optional(),
+          timeoutMs: z.number().int().min(1).max(8_000).optional(),
+          maxBytes: z.number().int().min(1).max(2 * 1024 * 1024).optional(),
+        })
+        .strict(),
+    })
+    .strict(),
 };

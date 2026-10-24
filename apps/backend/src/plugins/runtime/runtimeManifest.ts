@@ -1,5 +1,6 @@
 import { resolve, sep } from "path";
 import type { HostApiFamily, PluginRuntimeManifest, ToolName } from "./pluginServerRuntime";
+import { readClientFetchManifest } from "./pluginClientFetch";
 
 /**
  * `plugin.json` → `runtime`, VALIDÉ : la seule forme que l'hôte croit. Un champ
@@ -10,7 +11,7 @@ import type { HostApiFamily, PluginRuntimeManifest, ToolName } from "./pluginSer
  */
 
 export const KNOWN_TOOLS: readonly ToolName[] = ["yt-dlp"];
-export const KNOWN_FAMILIES: readonly HostApiFamily[] = ["jellyfin.music", "users", "events", "tools"];
+export const KNOWN_FAMILIES: readonly HostApiFamily[] = ["jellyfin.music", "users", "events", "tools", "client"];
 
 const SAFE_ROUTE = /^\/[A-Za-z0-9_\-/]{1,100}$/;
 const ENV_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
@@ -54,7 +55,11 @@ export function readRuntimeManifest(manifest: unknown): PluginRuntimeManifest | 
   if (!env.every((name) => ENV_NAME.test(name) && !RESERVED_ENV.test(name))) return null;
   if (!publicRoutes.every((route) => SAFE_ROUTE.test(route) && !route.includes("//"))) return null;
 
-  return { kind: "isolated", entry: r.entry, tools, env: [...new Set(env)], publicRoutes, hostApi };
+  // Les requêtes déléguées : déclarées, elles doivent être valides (sinon rien ne se lance).
+  const clientFetch = r.clientFetch === undefined ? undefined : readClientFetchManifest(r.clientFetch);
+  if (clientFetch === null) return null;
+
+  return { kind: "isolated", entry: r.entry, tools, env: [...new Set(env)], publicRoutes, hostApi, ...(clientFetch ? { clientFetch } : {}) };
 }
 
 /** La route relayée (`/webhooks/lidarr`) est-elle publique pour ce manifeste ? Égalité stricte, jamais un préfixe. */

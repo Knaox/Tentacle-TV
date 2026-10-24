@@ -5,6 +5,7 @@ import { isToolGranted } from "../tools/toolGrants";
 import { execTool, ytDlpVersion } from "../tools/toolExec";
 import { spawnWorker, stopWorker } from "../tools/toolWorkers";
 import { hostYouTubeBudget } from "../../../services/trailers/youtubeGuard";
+import { clientFetchBroker } from "../clientFetch/clientFetchRuntime";
 import { emitPluginMusicEvent } from "./musicEvents";
 import { userRights } from "./userRights";
 
@@ -68,4 +69,7 @@ export const HOST_HANDLERS: HostHandlers = {
     hostYouTubeBudget.report(outcome, startedAt, Date.now());
     return { ok: true };
   },
+  // La famille `client` est vérifiée ; le courtier juge la requête contre `runtime.clientFetch` et vise l'appareil de la poignée.
+  "client.fetch": async (ctx, { client, request }) =>
+    clientFetchBroker()?.run(ctx.pluginId, ctx.manifest.clientFetch, client, request) ?? { ok: false, reason: "offline" },
 };

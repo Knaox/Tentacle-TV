@@ -15,6 +15,7 @@ import { libraryTrackKey, type MusicEvent } from "@tentacle-tv/shared/music";
 import { applyResolution, queueActions } from "@tentacle-tv/shared/octave";
 import { clearLikeOverride } from "../actions/likeOverrides";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
+import { useDesktopClientFetch } from "../clientFetch/useDesktopClientFetch";
 
 export function useOctaveEvents(): void {
   const queryClient = useQueryClient();
@@ -41,4 +42,6 @@ export function useOctaveEvents(): void {
   );
 
   useMusicEvents({ enabled: capable, token, onEvent });
+  // Bureau : les requêtes de l'extension partent de CET appareil (requêtes déléguées).
+  useDesktopClientFetch(capable, token);
 }

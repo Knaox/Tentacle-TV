@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import type { Readable } from "stream";
 import { requireAuth, type JellyfinUser } from "../../../middleware/auth";
 import { isValidPluginId } from "../../../services/pluginManager";
-import type { PluginRuntimeManifest } from "../pluginServerRuntime";
+import { RELAY_HEADERS, type PluginRuntimeManifest } from "../pluginServerRuntime";
 import { isPublicRoute } from "../runtimeManifest";
 import { splitQueryAuth } from "./relayQueryAuth";
 import { clientResponseHeaders, guestRequestHeaders, relayLocale, relaySessionOf } from "./relayHeaders";
@@ -38,6 +38,8 @@ export interface RelayDeps {
   mayUse: (pluginId: string, user: JellyfinUser) => Promise<boolean>;
   /** La porte des routes non publiques ; `requireAuth` du cœur (remplacée dans les tests seulement). */
   authenticate?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
+  /** La poignée de l'appareil appelant pour les requêtes déléguées (`clientFetchRuntime.ts`), ou `null`. */
+  clientHandle?: (pluginId: string, manifest: PluginRuntimeManifest, request: FastifyRequest) => string | null;
 }
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
@@ -77,6 +79,8 @@ async function relay(deps: RelayDeps, request: FastifyRequest, reply: FastifyRep
     relayLocale(request.headers["accept-language"], deps.serverLocale()),
     randomUUID(),
   );
+  const handle = user ? (deps.clientHandle?.(pluginId, found.manifest, request) ?? null) : null;
+  if (handle) headers[RELAY_HEADERS.client] = handle;
 
   return new Promise<unknown>((done) => {
     const upstream = httpRequest({ socketPath: socket, method: request.method, path: target, headers });

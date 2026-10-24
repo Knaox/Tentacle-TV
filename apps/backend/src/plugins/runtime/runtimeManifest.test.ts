@@ -35,6 +35,14 @@ describe("manifeste `runtime`", () => {
     expect(readRuntimeManifest({})).toBeNull();
   });
 
+  it("lit les requêtes déléguées déclarées, refuse le manifeste si elles sont mal formées", () => {
+    const withClient = { runtime: { ...SILLON.runtime, hostApi: [...SILLON.runtime.hostApi, "client"], clientFetch: { hosts: ["music.example.com"], mediaHosts: ["*.media.example.net"] } } };
+    expect(readRuntimeManifest(withClient)?.clientFetch).toEqual({ hosts: ["music.example.com"], mediaHosts: ["*.media.example.net"] });
+    expect(readRuntimeManifest({ runtime: { ...withClient.runtime, clientFetch: { hosts: ["localhost"] } } })).toBeNull();
+    expect(readRuntimeManifest({ runtime: { ...withClient.runtime, clientFetch: { hosts: [] } } })).toBeNull();
+    expect(readRuntimeManifest(SILLON)?.clientFetch).toBeUndefined();
+  });
+
   it("garde le module dans le dossier de l'extension", () => {
     expect(runtimeEntryPath("/data/plugins/sillon", "server/index.mjs")).toBe("/data/plugins/sillon/server/index.mjs");
     expect(runtimeEntryPath("/data/plugins/sillon", "../vigie/server/index.mjs")).toBeNull();

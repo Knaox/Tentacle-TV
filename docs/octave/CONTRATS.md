@@ -121,6 +121,33 @@ code chargé, aucune trace dans l'interface.
 - Extension désactivée → `shutdown`, plus aucun relais, `music:provider` émis.
 - Repli si le runtime se révèle trop risqué : conteneur séparé, MÊME contrat HTTP.
 
+## Requêtes déléguées à l'appareil (lot « Sillon recherche », R3 — capacité `plugins.clientFetch`)
+
+Une extension DÉCRIT une requête HTTP, l'appareil qui l'a sollicitée (le bureau) l'exécute depuis
+SA connexion, l'extension analyse la réponse : cent comptes qui cherchent de la musique ne font plus
+bloquer l'adresse du serveur. Contrat : `packages/shared/src/plugins/pluginClientFetch.ts`, recopié
+dans le backend, le bureau et Sillon (`types/tentacle/`), tests miroirs.
+
+- **Manifeste** : `runtime.clientFetch = { hosts, mediaHosts }` + famille d'API d'hôte `client`.
+  Noms PUBLICS exacts (ni IP, ni `localhost`, ni domaine local), https ; `mediaHosts` admet `*.d`.
+  Mal formé : le manifeste entier est refusé. Exposé aux clients par `/api/plugins/active`.
+- **Chemin** : le bureau s'annonce (`x-tentacle-client-fetch: 1` sur `/api/plugins/*`, tant que
+  l'agent tourne) ; le relais pose `RELAY_HEADERS.client` = poignée HMAC (extension, appareil) si
+  l'appareil a une socket ouverte ; `client.fetch { client, request }` → l'hôte valide, pousse
+  `plugin:clientFetch` sur la socket de CET appareil seulement → le principal Electron revalide
+  contre le manifeste qu'il lit LUI-MÊME, plafonne (4 en parallèle, 30/min, 300/h par extension),
+  exécute sans cookie (redirections revalidées, adresses privées refusées dans la résolution) →
+  `POST /api/client-fetch/:id` (accepté du seul appareil visé ; taille et hôte final revérifiés).
+  Jamais une exception pour l'extension : `offline` · `refused` · `timeout` · `budget` · `network` · `tooLarge`.
+- **Flux direct** : `PlaybackSource.direct = { url, expiresAt }` (URL liée à l'IP de l'appareil) ;
+  `url` reste le chemin du serveur. Le bureau ne donne JAMAIS l'adresse directe à mpv (il poserait
+  `X-Emby-Token` dessus) : relais LOCAL 127.0.0.1, repli sur `url` si le direct échoue avant le
+  premier octet, 502 ensuite (le moteur redemande la source).
+- **Sillon** : la garde YouTube de l'appareil (jamais `tools.youtubeAdmit`, qui compte l'adresse du
+  serveur), son visiteur anonyme, le cache des recherches commun ; repli sur le serveur AU CLIC
+  seulement, jamais pour une anticipation ; correspondances partagées avec leur provenance (jamais
+  par-dessus un jugement du serveur). Le web ne s'annonce pas : chemin serveur inchangé.
+
 ## Synchro temps réel
 
 Le cœur écoute les sockets Jellyfin des comptes (`jellyfinUserEvents.ts`) et émet

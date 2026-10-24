@@ -17,3 +17,6 @@ export {
   useMusicResolver, useMusicPrefetch, useMusicGestures, useMusicPending, musicPendingKey, type MusicGestures,
 } from "../pluginMusic/useMusicActions";
 export { useMusicEvents, applyMusicEvent as applyPluginMusicEvent, isMusicEvent, type UseMusicEventsOptions } from "../pluginMusic/useMusicEvents";
+export { startClientFetchAgent, isClientFetchJob, type ClientFetchExecutor } from "../pluginMusic/clientFetchAgent";
+export { useClientFetchAgent } from "../pluginMusic/useClientFetchAgent";
+export { tentacleApiSession, type TentacleApiSession } from "../hooks/usePreferences";

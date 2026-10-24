@@ -16,7 +16,8 @@
     "./music": "./src/music/index.ts",
     "./octave": "./src/octave/index.ts",
     "./octave/testing": "./src/octave/testing.ts",
-    "./pluginServerRuntime": "./src/plugins/pluginServerRuntime.ts"
+    "./pluginServerRuntime": "./src/plugins/pluginServerRuntime.ts",
+    "./pluginClientFetch": "./src/plugins/pluginClientFetch.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
