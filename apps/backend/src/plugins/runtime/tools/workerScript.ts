@@ -24,7 +24,7 @@
 /* ------------------------------------------------------------------ */
 
 export const WORKER_SCRIPT = String.raw`
-import io, json, threading, os, time
+import hashlib, io, json, threading, os, time
 import yt_dlp
 from yt_dlp.utils import DownloadCancelled
 
@@ -103,7 +103,8 @@ def close_quietly(ydl):
 
 def take(o, logger):
     # Une instance gardée pour ces options, sinon une neuve ; le journal est celui de CETTE requête.
-    key = json.dumps(o or {}, sort_keys=True)
+    # La clé est une EMPREINTE des options : le visitorData n'y figure jamais en clair.
+    key = hashlib.sha256(json.dumps(o or {}, sort_keys=True).encode()).hexdigest()[:32]
     with kept_lock:
         bucket = kept.get(key) or []
         while bucket:
