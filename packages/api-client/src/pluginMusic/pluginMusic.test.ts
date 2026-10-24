@@ -160,7 +160,7 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
     vi.stubGlobal("fetch", fetchMock);
     await mount({ version: "1.31.1" });
     expect(seen?.provider).toBeNull();
-    expect(seen?.search).toEqual({ tracks: [], albums: [], artists: [], complete: true, provisional: false, pending: false, available: false });
+    expect(seen?.search).toEqual({ tracks: [], albums: [], artists: [], complete: true, provisional: false, pending: false, failed: false, available: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -191,5 +191,15 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes("cursor=c1"))).toHaveLength(1);
     expect(signals.some((sig) => sig.aborted)).toBe(false);
     expect(seen?.search.tracks.map((t) => t.key)).toEqual(["a", "b"]);
+  });
+
+  it("une page suivante en échec : la recherche dit `failed` (plus rien ne viendra), sans erreur levée", async () => {
+    const fetchMock = vi.fn(async (url: string) => (url.includes("cursor=c1") ? new Response("panne", { status: 502 }) : new Response(JSON.stringify({ ...page([track("a", R1)], false, "c1"), provisional: true, replace: true }))));
+    vi.stubGlobal("fetch", fetchMock);
+    await mount({ version: "1.32.0", capabilities: ["plugins.isolatedRuntime"] });
+    await act(async () => { await new Promise((r) => setTimeout(r, 60)); });
+    expect(seen?.search.failed).toBe(true);
+    expect(seen?.search.pending).toBe(false);
+    expect(seen?.search.provisional).toBe(true);
   });
 });

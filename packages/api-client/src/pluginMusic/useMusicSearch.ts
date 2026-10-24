@@ -36,6 +36,8 @@ export interface MusicSearchOptions {
 export interface MusicSearchState extends MergedMusicResults {
   /** La première page n'est pas encore là. */
   pending: boolean;
+  /** Une page a échoué (réseau, extension) : plus rien ne viendra de cette recherche. */
+  failed: boolean;
   /** Un fournisseur existe : sinon, aucune section à prévoir. */
   available: boolean;
 }
@@ -74,6 +76,6 @@ export function useMusicSearch(provider: MusicProvider | null, query: string, op
   const pages = result.data?.pages;
   return useMemo(() => {
     const merged = enabled && pages ? mergeExternalMusicPages(pages, recordings, releases) : { tracks: [], albums: [], artists: [], complete: !enabled, provisional: false };
-    return { ...merged, pending: enabled && result.isPending, available: !!provider };
-  }, [enabled, pages, recordings, releases, result.isPending, provider]);
+    return { ...merged, pending: enabled && result.isPending && !result.isError, failed: enabled && result.isError, available: !!provider };
+  }, [enabled, pages, recordings, releases, result.isPending, result.isError, provider]);
 }
