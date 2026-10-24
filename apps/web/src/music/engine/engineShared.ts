@@ -30,14 +30,41 @@ export function engineHeaders(auth: MusicEngineAuth): Record<string, string> {
   return auth.token !== null && auth.token !== "" ? { "X-Emby-Token": auth.token } : {};
 }
 
+/** L'origine `scheme://hôte[:port]` d'une adresse http(s) complète, ou `null`. */
+function httpOrigin(address: string): string | null {
+  try {
+    const url = new URL(address);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+const pageOrigin = (): string | null => (typeof location !== "undefined" ? httpOrigin(location.href) : null);
+
 /**
- * L'adresse que lit un `<audio>`, qui ne sait pas poser d'en-tête : avec une
- * session par cookie, l'adresse telle quelle ; sinon le jeton en `api_key`,
- * la convention des balises sans en-têtes (`beaconUrl`, api-client).
+ * L'adresse est-elle celle du serveur Tentacle ? Un chemin (« /api/… »), ou une
+ * adresse complète de SON origine (base de l'API, sinon celle de la page).
+ * Une adresse sans schéma (« //hôte/… ») vise un autre hôte : jamais.
+ */
+export function isServerAddress(address: string, baseUrl: string): boolean {
+  if (address.startsWith("/") && !address.startsWith("//")) return true;
+  const server = baseUrl !== "" ? httpOrigin(baseUrl) : pageOrigin();
+  return server !== null && httpOrigin(address) === server;
+}
+
+/**
+ * L'adresse que lit un `<audio>` ou une `<img>`, qui ne savent pas poser
+ * d'en-tête : avec une session par cookie, l'adresse telle quelle ; sinon le
+ * jeton en `api_key`, la convention des balises sans en-têtes (`beaconUrl`,
+ * api-client) — et SEULEMENT vers le serveur Tentacle : une pochette d'un
+ * autre hôte (Cover Art Archive, archive.org) ou un flux googlevideo ne le
+ * reçoivent jamais (fuite relevée par R1 le 25/10 : le jeton du compte
+ * partait chez coverartarchive.org).
  */
 export function elementSourceUrl(url: string, auth: MusicEngineAuth): string {
   const absolute = absoluteSourceUrl(url, auth.baseUrl);
-  if (auth.useCredentials || auth.token === null || auth.token === "") return absolute;
+  if (auth.useCredentials || auth.token === null || auth.token === "" || !isServerAddress(absolute, auth.baseUrl)) return absolute;
   return `${absolute}${absolute.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(auth.token)}`;
 }
 

@@ -23,6 +23,24 @@ describe("adresses et authentification", () => {
     expect(elementSourceUrl("/a?b=1", auth)).toBe("http://srv:3001/a?b=1&api_key=tok");
     expect(elementSourceUrl("/api/music/stream/1", { ...auth, useCredentials: true })).toBe("http://srv:3001/api/music/stream/1");
   });
+  it("le jeton ne part QUE vers le serveur Tentacle : jamais une pochette tierce, jamais googlevideo", () => {
+    const leaks = (u: string) => u.includes("api_key");
+    // Une adresse d'un autre hôte reste telle quelle, SANS le jeton.
+    expect(elementSourceUrl("https://coverartarchive.org/release/x/front-250", auth)).toBe("https://coverartarchive.org/release/x/front-250");
+    expect(leaks(elementSourceUrl("https://ia800.us.archive.org/x.jpg", auth))).toBe(false);
+    expect(leaks(elementSourceUrl("https://rr3---sn-nfpnnjvh-1gir.googlevideo.com/videoplayback?expire=1&itag=251", auth))).toBe(false);
+    // Même hôte, autre port ou autre schéma : une autre origine.
+    expect(leaks(elementSourceUrl("http://srv:8096/Items/1/Images/Primary", auth))).toBe(false);
+    expect(leaks(elementSourceUrl("https://srv:3001/api/music/stream/1", auth))).toBe(false);
+    // Le serveur : son chemin, ou son adresse complète.
+    expect(elementSourceUrl("/api/music/artwork/1", auth)).toBe("http://srv:3001/api/music/artwork/1?api_key=tok");
+    expect(elementSourceUrl("http://srv:3001/api/plugins/sillon/music/stream/x", auth)).toBe("http://srv:3001/api/plugins/sillon/music/stream/x?api_key=tok");
+    // Serveur de même origine que la page (base vide) : un chemin oui, une adresse sans schéma (« //hôte/… ») jamais.
+    const same = { ...auth, baseUrl: "" };
+    expect(elementSourceUrl("/api/music/stream/1", same)).toBe("/api/music/stream/1?api_key=tok");
+    expect(leaks(elementSourceUrl("//evil.example/x.jpg", same))).toBe(false);
+    expect(leaks(elementSourceUrl("https://coverartarchive.org/x", same))).toBe(false);
+  });
   it("la clé d'album : Jellyfin, sinon MBID, sinon titre et artiste", () => {
     const t = testTrack("t1", "alb");
     expect(albumKeyOf(t)).toBe("alb");
