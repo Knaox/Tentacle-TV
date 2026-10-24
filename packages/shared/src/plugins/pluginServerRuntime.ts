@@ -128,11 +128,14 @@ export interface HostApi {
   /** Lancement ponctuel, arguments validés par la politique de l'outil (Zod, côté hôte). */
   "tools.exec": { params: { tool: ToolName; args: string[]; timeoutMs: number }; result: { code: number; stdout: string; stderr: string } };
   /**
-   * Ouvrier PERSISTANT : l'interpréteur de l'outil charge `script` (relatif au
-   * dossier de l'extension, jamais ailleurs) ; stdin/stdout reliés à une socket
-   * que l'invité ouvre (`socketPath`), lignes JSON. L'hôte le relance s'il meurt.
+   * Ouvrier PERSISTANT fourni par l'HÔTE (jamais un script de l'extension :
+   * il tournerait hors du bac à sable) : l'interpréteur de l'outil charge la
+   * bibliothèque depuis l'outil en service et parle le protocole FERMÉ
+   * `WorkerRequest` / `WorkerMessage` en lignes JSON sur `socketPath`, que
+   * l'invité ouvre. L'hôte le relance s'il meurt ; sorties sous le dossier de
+   * données de l'extension seulement.
    */
-  "tools.spawnWorker": { params: { tool: ToolName; script: string; name: string }; result: { workerId: string; socketPath: string } };
+  "tools.spawnWorker": { params: { tool: ToolName; name: string }; result: { workerId: string; socketPath: string } };
   "tools.stopWorker": { params: { workerId: string }; result: { ok: true } };
 }
 
@@ -161,3 +164,75 @@ export function hostMethodFamily(method: HostMethod): HostApiFamily {
   if (method.startsWith("events.")) return "events";
   return "tools";
 }
+
+/* ── Protocole de l'ouvrier persistant (lignes JSON, une requête par ligne) ── */
+
+/**
+ * Options PERMISES, liste FERMÉE validée par Zod côté hôte (une option de plus
+ * se demande au coordinateur). Jamais `exec`, `config`, `plugin_dirs`, ni un
+ * chemin de sortie hors du dossier de données.
+ */
+export interface WorkerOptions {
+  /** `extractor_args` de yt-dlp, par extracteur (ex. `{ youtube: { player_client: ["web_music"] } }`). */
+  extractorArgs?: Record<string, Record<string, string[]>>;
+  /** Sélecteur de format (« bestaudio[acodec=opus]/bestaudio »). */
+  format?: string;
+  socketTimeoutS?: number;
+  retries?: number;
+  /** Fragments téléchargés en parallèle (`concurrent_fragment_downloads`). */
+  concurrentFragments?: number;
+  /** Ne pas résoudre chaque entrée d'une recherche (`extract_flat`). */
+  flat?: boolean;
+  /** Nombre d'entrées d'une recherche ou d'une playlist. */
+  limit?: number;
+}
+
+export type WorkerRequest =
+  | { id: number; op: "version" }
+  /** `target` : une URL https de YouTube / YouTube Music, ou une recherche `ytsearchN:<texte>`. */
+  | { id: number; op: "extract"; target: string; options?: WorkerOptions }
+  /** Écrit le format choisi, TEL QUEL (aucun post-traitement), sous `output`, relatif au dossier de données. */
+  | { id: number; op: "download"; url: string; formatId: string; output: string; options?: WorkerOptions }
+  | { id: number; op: "cancel"; target: number };
+
+export interface WorkerFormat {
+  formatId: string;
+  ext: string;
+  acodec: string | null;
+  vcodec: string | null;
+  /** kbit/s */
+  abr: number | null;
+  asr: number | null;
+  filesize: number | null;
+  protocol: string | null;
+  /** URL directe du flux (expire) et en-têtes à rejouer pour la lire. */
+  url: string | null;
+  httpHeaders: Record<string, string>;
+}
+
+/** Ce que l'ouvrier rend d'une vidéo ou d'une entrée de recherche — champs choisis, jamais l'objet brut. */
+export interface WorkerInfo {
+  id: string;
+  title: string | null;
+  /** Titre de piste et artistes quand la source les donne (YouTube Music). */
+  track: string | null;
+  artists: string[];
+  album: string | null;
+  channel: string | null;
+  channelId: string | null;
+  uploader: string | null;
+  durationS: number | null;
+  isLive: boolean;
+  webpageUrl: string | null;
+  categories: string[];
+  formats: WorkerFormat[];
+  entries: WorkerInfo[];
+}
+
+export type WorkerErrorCode = "antiBot" | "unavailable" | "invalid" | "failed" | "timeout" | "cancelled";
+
+export type WorkerMessage =
+  | { id: number; ok: true; result: { version: string } | WorkerInfo | { path: string; bytes: number } }
+  | { id: number; ok: false; error: { code: WorkerErrorCode; message: string } }
+  /** Avancement d'un `download` : le fichier se lit pendant qu'il s'écrit. */
+  | { id: number; event: "progress"; bytes: number; total: number | null };
