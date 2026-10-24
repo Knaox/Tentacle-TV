@@ -20,18 +20,31 @@ et Linux reçoivent l'ensemble.
 ### FR
 - **Tentacle en Liquid Glass sur macOS Tahoe** : sur un Mac à jour avec macOS 26, l'application adopte le verre d'Apple. La barre de navigation flotte en petits groupes de verre presque transparent : la page défile dessous et se courbe à leur bord, et les textes passent du clair au sombre selon ce qui passe dessous. Boutons, menus, fenêtres et pages hors ligne suivent, l'action principale teintée aux couleurs de Tentacle. Activé d'office, à couper dans Réglages › Apparence ; « Réduire la transparence », « Augmenter le contraste » et « Réduire les animations » de macOS sont pris en compte
 - **Le lecteur, tout en verre** : sur un Mac à puce Apple, les commandes flottent sur le film en petites formes de verre clair qui naissent d'une seule goutte et s'en séparent ; les pistes, les sous-titres, la vitesse et les épisodes s'ouvrent depuis leur bouton dans des panneaux de verre. La vidéo garde son HDR
+- **Plus léger pour la carte graphique** : les bannières de l'accueil et de « Pour vous » ne tournent plus quand elles sont sorties de l'écran, et leur mouvement coûte bien moins
 
 ### EN
 - **Tentacle in Liquid Glass on macOS Tahoe**: on a Mac running macOS 26, the app takes on Apple's glass. The navigation bar floats in small groups of nearly clear glass: the page scrolls underneath and bends at their edge, and labels switch between light and dark to match what passes beneath. Buttons, menus, windows and offline pages follow, with the main action tinted in Tentacle's colors. On by default, can be turned off in Settings › Appearance; macOS "Reduce transparency", "Increase contrast" and "Reduce motion" are taken into account
 - **The player, all glass**: on Macs with Apple silicon, the controls float over the movie as small shapes of clear glass that are born from a single drop and pull apart; tracks, subtitles, speed and episodes open from their button in glass panels. The video keeps its HDR
+- **Lighter on the graphics card**: the Home and "For you" banners no longer rotate once scrolled off screen, and their motion costs far less
 
-## [1.40.0]
-<!-- Bloc nu : Microsoft Store et Release GitHub Linux. VOLONTAIREMENT VIDE tant que les autres nouveautés de la 1.40.0 ne sont pas écrites :
-     le pré-vol (check-changelog.mjs) refuse alors la livraison Windows / Linux — jamais des notes vides en silence. Le Liquid Glass n'y figure pas (macOS 26 seulement, bloc [mac-1.40.0]).
-     Chaque puce ajoutée sous « ### FR » / « ### EN » se recopie aussi dans [mac-1.40.0]. -->
+## [win-1.40.0]
+<!-- Bloc Windows : Microsoft Store seulement (CHANNEL=win). Ni le verre (macOS 26), ni les correctifs Linux. -->
 ### FR
+- **Plus léger pour la carte graphique** : les bannières de l'accueil et de « Pour vous » ne tournent plus quand elles sont sorties de l'écran, et leur mouvement coûte bien moins
 
 ### EN
+- **Lighter on the graphics card**: the Home and "For you" banners no longer rotate once scrolled off screen, and their motion costs far less
+
+## [1.40.0]
+<!-- Bloc nu : Release GitHub Linux (Windows a son bloc [win-1.40.0], macOS [mac-1.40.0]). Le Liquid Glass n'y figure pas (macOS 26 seulement).
+     Une nouveauté commune aux trois OS s'ajoute aussi dans [mac-1.40.0] et [win-1.40.0]. -->
+### FR
+- **Plein écran sous Linux (GNOME, Fedora…)** : sans écran HDR branché, le lecteur s'ouvre en fenêtre et le bouton plein écran fonctionne de nouveau ; avec un écran HDR, il propose de passer en X11 au lieu d'échouer. Quitter une bande-annonce rend aussi la fenêtre
+- **Plus léger pour la carte graphique** : les bannières de l'accueil et de « Pour vous » ne tournent plus quand elles sont sorties de l'écran, et leur mouvement coûte bien moins
+
+### EN
+- **Full screen on Linux (GNOME, Fedora…)**: without an HDR display plugged in, the player opens in a window and the full-screen button works again; with an HDR display, it offers to switch to X11 instead of failing. Leaving a trailer also gives the window back
+- **Lighter on the graphics card**: the Home and "For you" banners no longer rotate once scrolled off screen, and their motion costs far less
 
 ## [1.31.1]
 <!-- Bloc nu : les trois canaux partent de la 1.31.0. Tout le Watch Together nouveau exige le serveur 1.31.1 (capacités watchTogether.*) : face à un serveur plus ancien, comportement d'avant. -->
