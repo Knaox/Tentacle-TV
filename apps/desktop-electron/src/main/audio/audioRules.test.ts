@@ -159,6 +159,13 @@ describe("sources", () => {
     expect(refuseSource("http://u:p@srv:3001/x", "http://srv:3001")).not.toBeNull();
     expect(refuseSource("http://srv:3001/x", null)).not.toBeNull();
   });
+  it("un flux googlevideo ou une pochette tierce est REFUSÉ : le jeton (http-header-fields) vaut pour TOUTES les requêtes de mpv", () => {
+    // Garde-fou (25/10) : l'en-tête X-Emby-Token est posé sur l'instance entière. Admettre une autre origine ici
+    // (lecture directe de googlevideo par le bureau, R3) exige d'abord que le jeton ne vise plus que le serveur.
+    expect(refuseSource("https://rr3---sn-nfpnnjvh-1gir.googlevideo.com/videoplayback?expire=1&itag=251", "http://srv:3001")).not.toBeNull();
+    expect(refuseSource("https://coverartarchive.org/release/x/front", "http://srv:3001")).not.toBeNull();
+    expect(refuseSource("https://srv:3001/api/music/stream/1", "http://srv:3001")).not.toBeNull();
+  });
   it("une bascule reçue d'avance sert, jamais à reculer vers l'extension", () => {
     const overrides = new Map([["k", s("http://srv/lib")]]);
     expect(servedSource(overrides, "k", s("http://srv/ext", "plugin")).url).toBe("http://srv/lib");
