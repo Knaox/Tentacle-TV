@@ -13,7 +13,7 @@
  * sur sa place réservée — jamais un « pop » sous les yeux.
  */
 
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { isArtworkDecoded, markArtworkDecoded } from "./artworkPreload";
 import { Music, User } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
@@ -31,18 +31,27 @@ interface ArtworkProps {
   eager?: boolean;
 }
 
-/** L'adresse affichable d'une image du cœur. */
-export function useArtworkSrc(url: string | null): string | null {
+/** La règle d'adresse d'une image : jamais de jeton hors du serveur Tentacle. */
+function artworkSrcOf(url: string | null, auth: { baseUrl: string; token: string | null; useCredentials: boolean }): string | null {
+  if (!url) return null;
+  // Une adresse d'un autre hôte : jamais de jeton dans sa requête.
+  if (/^https?:\/\//i.test(url)) return url;
+  return elementSourceUrl(url, auth);
+}
+
+/** De quoi calculer l'adresse affichable de n'importe quelle image (préchargement des résultats). */
+export function useArtworkResolver(): (url: string | null) => string | null {
   const client = useJellyfinClient();
   const baseUrl = getBackendBase();
   const token = client.getToken();
   const useCredentials = client.useCredentials;
-  return useMemo(() => {
-    if (!url) return null;
-    // Une adresse d'un autre hôte : jamais de jeton dans sa requête.
-    if (/^https?:\/\//i.test(url)) return url;
-    return elementSourceUrl(url, { baseUrl, token, useCredentials });
-  }, [url, baseUrl, token, useCredentials]);
+  return useCallback((url: string | null) => artworkSrcOf(url, { baseUrl, token, useCredentials }), [baseUrl, token, useCredentials]);
+}
+
+/** L'adresse affichable d'une image du cœur. */
+export function useArtworkSrc(url: string | null): string | null {
+  const resolve = useArtworkResolver();
+  return useMemo(() => resolve(url), [resolve, url]);
 }
 
 export const Artwork = memo(function Artwork({ url, alt = "", className = "", round = false, kind = "album", eager = false }: ArtworkProps) {

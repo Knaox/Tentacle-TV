@@ -1,11 +1,11 @@
 /**
  * Octave — QUAND annoncer les premiers résultats d'une extension pour qu'elle
  * les prépare (`prefetch("results")`, une préparation coûte des requêtes
- * YouTube côté extension). La recherche, elle, reste immédiate ; seule
- * l'anticipation attend :
+ * YouTube côté extension). L'anticipation attend :
  * - une page NON provisoire (contrat v2 : un classement provisoire va changer) ;
- * - une requête STABLE depuis 700 ms (la stabilisation de l'extension) : une
- *   pause dans la frappe ne prépare pas les résultats d'un mot inachevé ;
+ * - une requête STABLE (`stableQuery`) : la page Recherche ne cherche plus qu'une
+ *   requête VALIDÉE, elle passe la requête elle-même ; un autre appelant qui
+ *   chercherait au fil de la frappe garderait `RESULTS_STABLE_MS` ;
  * - une seule fois par requête.
  */
 
