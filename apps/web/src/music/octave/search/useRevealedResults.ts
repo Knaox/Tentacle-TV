@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MusicAlbum, MusicArtist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
 import { preloadArtwork } from "../components/artworkPreload";
 import { useArtworkResolver } from "../components/Artwork";
-import { ART_BUDGET_MS, ART_FIRST_CARDS, ART_FIRST_TRACKS, REVEAL_CAP_MS, revealDecision } from "./revealModel";
+import { ART_BUDGET_MS, ART_FIRST_CARDS, EXTERNAL_TRACKS_SHOWN, LIBRARY_TRACKS_SHOWN, REVEAL_CAP_MS, revealDecision } from "./revealModel";
 import { settleOrder } from "./stableOrder";
 import { useOctaveSearch } from "./useOctaveSearch";
 
@@ -27,8 +27,8 @@ export interface ShownExternal {
 
 const sameList = <T,>(a: readonly T[], b: readonly T[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 
-function artOf(tracks: readonly MusicTrack[], cards: readonly { artworkUrl?: string | null; imageUrl?: string | null }[]): (string | null)[] {
-  return [...tracks.slice(0, ART_FIRST_TRACKS).map((t) => t.artworkUrl), ...cards.slice(0, ART_FIRST_CARDS).map((c) => c.artworkUrl ?? c.imageUrl ?? null)];
+function artOf(tracks: readonly MusicTrack[], shown: number, cards: readonly { artworkUrl?: string | null; imageUrl?: string | null }[]): (string | null)[] {
+  return [...tracks.slice(0, shown).map((t) => t.artworkUrl), ...cards.slice(0, ART_FIRST_CARDS).map((c) => c.artworkUrl ?? c.imageUrl ?? null)];
 }
 
 /**
@@ -58,8 +58,8 @@ export function useRevealedResults(query: string) {
   }, [query]);
 
   const libraryData = library.data;
-  const libraryArt = useMemo(() => artOf(libraryData?.tracks ?? [], [...(libraryData?.albums ?? []), ...(libraryData?.artists ?? [])]), [libraryData]);
-  const externalArt = useMemo(() => artOf(external.tracks, [...external.albums, ...external.artists]), [external.tracks, external.albums, external.artists]);
+  const libraryArt = useMemo(() => artOf(libraryData?.tracks ?? [], LIBRARY_TRACKS_SHOWN, [...(libraryData?.albums ?? []), ...(libraryData?.artists ?? [])]), [libraryData]);
+  const externalArt = useMemo(() => artOf(external.tracks, EXTERNAL_TRACKS_SHOWN, [...external.albums, ...external.artists]), [external.tracks, external.albums, external.artists]);
   const libraryArtReady = useArtReady(`${query}|library`, libraryReady, libraryArt);
   const externalArtReady = useArtReady(`${query}|external`, externalReady, externalArt);
   const decision = revealDecision({ elapsedMs: lateFor === query ? REVEAL_CAP_MS : 0, libraryReady, externalReady, libraryArtReady, externalArtReady });

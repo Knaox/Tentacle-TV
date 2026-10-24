@@ -14,7 +14,7 @@
  */
 
 import { memo, useCallback, useMemo, useState } from "react";
-import { isArtworkDecoded, markArtworkDecoded } from "./artworkPreload";
+import { isArtworkDecoded, isArtworkFailed, markArtworkDecoded } from "./artworkPreload";
 import { Music, User } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";
@@ -58,7 +58,8 @@ export const Artwork = memo(function Artwork({ url, alt = "", className = "", ro
   const [failed, setFailed] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<string | null>(null);
   const resolved = useArtworkSrc(url);
-  const src = resolved !== null && failed !== resolved ? resolved : null;
+  // Une image dont le préchargement a déjà échoué : le repli d'emblée, jamais une case vide un instant.
+  const src = resolved !== null && failed !== resolved && !isArtworkFailed(resolved) ? resolved : null;
   const ready = src !== null && (loaded === src || isArtworkDecoded(src));
   const Icon = kind === "artist" ? User : Music;
   return (

@@ -16,8 +16,14 @@
 
 export const REVEAL_CAP_MS = 1_500;
 export const ART_BUDGET_MS = 250;
-/** Les rangées dont la pochette est attendue avant la révélation (ce que l'œil voit d'abord). */
-export const ART_FIRST_TRACKS = 8;
+/**
+ * Les titres que chaque section MONTRE (`SearchResults`) : leurs pochettes sont toutes attendues avant la
+ * révélation — une rangée visible dont l'image arriverait après se verrait (banc R1 : la 9e et la 10e rangée de
+ * l'extension, jamais préchargées, arrivaient en fondu même à la 2e recherche).
+ */
+export const LIBRARY_TRACKS_SHOWN = 8;
+export const EXTERNAL_TRACKS_SHOWN = 10;
+/** Les cartes (albums, artistes) dont la pochette est attendue : les premières, sous les titres. */
 export const ART_FIRST_CARDS = 6;
 
 export interface RevealInput {

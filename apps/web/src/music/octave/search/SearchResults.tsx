@@ -11,20 +11,19 @@ import { useTranslation } from "react-i18next";
 import { AlbumCard, ArtistCard, CardGrid, PlaylistCard, Shelf } from "../components/Cards";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { EmptyState, RowsSkeleton } from "../components/ViewStates";
+import { EXTERNAL_TRACKS_SHOWN, LIBRARY_TRACKS_SHOWN } from "./revealModel";
 import type { useRevealedResults } from "./useRevealedResults";
 
 type Revealed = ReturnType<typeof useRevealedResults>;
 
-const EXTERNAL_TRACKS = 10;
-const LIBRARY_TRACKS = 8;
 
 export const SearchResults = memo(function SearchResults({ results }: { results: Revealed }) {
   const { t } = useTranslation("music");
   const { library, external, externalLabel, externalPending } = results;
   const data = library?.data ?? null;
   const query = library?.query ?? "";
-  const libraryRows = useMemo(() => rowsOf((data?.tracks ?? []).slice(0, LIBRARY_TRACKS)), [data]);
-  const externalRows = useMemo(() => rowsOf((external?.tracks ?? []).slice(0, EXTERNAL_TRACKS)), [external]);
+  const libraryRows = useMemo(() => rowsOf((data?.tracks ?? []).slice(0, LIBRARY_TRACKS_SHOWN)), [data]);
+  const externalRows = useMemo(() => rowsOf((external?.tracks ?? []).slice(0, EXTERNAL_TRACKS_SHOWN)), [external]);
   if (!library) return null;
 
   const libraryEmpty = !data || (!data.tracks.length && !data.albums.length && !data.artists.length && !data.playlists.length);
