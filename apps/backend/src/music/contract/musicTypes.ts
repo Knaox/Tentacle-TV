@@ -80,8 +80,9 @@ export interface MusicTrack {
   discNumber: number | null;
   year: number | null;
   /**
-   * L'image (pochette) : une URL du cœur (`/api/music/...`) ou une URL https
-   * publique donnée par l'extension (Cover Art Archive) — jamais Jellyfin en direct.
+   * L'image (pochette) : une URL du cœur (`/api/music/...`), une route de l'extension relayée par
+   * le cœur (`/api/plugins/<id>/…`, servie de son cache), ou une URL https publique — jamais
+   * Jellyfin en direct. Le jeton n'accompagne jamais une URL d'un autre hôte.
    */
   artworkUrl: string | null;
   mbids: MusicMbids;
