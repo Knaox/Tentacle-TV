@@ -82,9 +82,11 @@ function isPlatformCached(platformId: number): boolean {
 }
 
 /** Le corps de `/check-platform` : des nombres, rien d'autre — `platformId`
- *  part dans l'URL de Seerr, sous sa clé. Mal formé : la réponse vide d'avant. */
+ *  part dans l'URL de Seerr, sous sa clé. Mal formé : la réponse vide d'avant.
+ *  Liste BORNÉE (GHSA-mrhx-c7xc-m3w5 : zod 3 accumule une erreur par élément
+ *  refusé) ; large, car le client envoie toute la bibliothèque chargée. */
 const checkPlatformSchema = z.object({
-  tmdbIds: z.array(z.object({ tmdbId: z.number().int(), mediaType: z.enum(["movie", "tv"]) })),
+  tmdbIds: z.array(z.object({ tmdbId: z.number().int(), mediaType: z.enum(["movie", "tv"]) })).max(50_000),
   platformId: z.number().int().positive(),
 });
 
