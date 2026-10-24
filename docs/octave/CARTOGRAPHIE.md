@@ -12,10 +12,10 @@ Documents voisins :
 - [`EXTRACTION.md`](EXTRACTION.md) — où partent les millisecondes d'une extraction yt-dlp ;
 - Sillon `docs/ARCHITECTURE.md` — l'intérieur de l'extension (modules, base, caches, sources externes).
 
-État décrit : intégration du 25/10 (Tentacle `53ff77a2c`, Sillon `1920dd7`, branches `feat/music-mode`).
+État décrit : intégration du 25/10, 02:35 (Tentacle `886182f61`, Sillon `b725288`, branches `feat/music-mode`).
 Chaque affirmation a été relue dans le code à ces commits ; ce qui ne l'a pas été est marqué
-**« non vérifié »**. Deux parties sont **en cours de refonte** au moment d'écrire (lot « Sillon
-recherche ») et le disent en tête de section.
+**« non vérifié »**. La recherche est **en cours de refonte** au moment d'écrire (lot « Sillon recherche », R5 ; préchauffage et
+pages gardées sur l'appareil, R7) et le dit en tête de section.
 
 ## Sommaire
 
@@ -364,13 +364,16 @@ sequenceDiagram
       S-->>P: liste entière révisée (replace) — la finale : complete
     end
   end
-  P->>Art: précharge et DÉCODE les pochettes des premières rangées (budget 250 ms)
+  P->>Art: précharge et DÉCODE les pochettes de TOUTES les rangées montrées (budget 250 ms)
   Note over P: révélation d'un BLOC : bibliothèque + page SÛRE + pochettes,<br/>extension en retard > 1,5 s : la bibliothèque part seule, rangées fantômes
   P->>S: POST music/prefetch {ids: 3 premiers, intent: "results"} (une fois)
 ```
 
 - Règles de révélation : [`revealModel.ts`](../../apps/web/src/music/octave/search/revealModel.ts)
-  (`REVEAL_CAP_MS` 1 500, `ART_BUDGET_MS` 250, 8 premiers titres et 6 premières cartes),
+  (`REVEAL_CAP_MS` 1 500, `ART_BUDGET_MS` 250 ; les pochettes de TOUS les titres montrés — 8 de la
+  bibliothèque, 10 de l'extension — et des 6 premières cartes) ; une pochette absente ou illisible est
+  retenue une minute et sa rangée naît avec son repli dessiné, sans case vide
+  ([`artworkPreload.ts`](../../apps/web/src/music/octave/components/artworkPreload.ts)) ;
   [`useRevealedResults.ts`](../../apps/web/src/music/octave/search/useRevealedResults.ts) (une section montrée
   ne se réordonne plus, la suite s'ajoute dessous — `stableOrder.ts`), [`SearchResults.tsx`](../../apps/web/src/music/octave/search/SearchResults.tsx)
   (titres d'abord : 8 de la bibliothèque, 10 de l'extension ; puis artistes, albums, playlists).
@@ -476,14 +479,19 @@ sequenceDiagram
 - Chez Sillon : `server/playback/delegation/*` (transport par appareil, repli au CLIC seulement) et
   `server/youtube/clientPort.ts`. La correspondance titre → vidéo trouvée par un appareil est PARTAGÉE avec sa
   provenance ; l'URL, jamais (elle est liée à l'IP de l'appareil).
-- Ce qui part encore du serveur à l'intégration du 25/10 : MusicBrainz / ListenBrainz (phase 2 en pause),
-  l'album YouTube Music (voir 6.5), yt-dlp (il ne peut pas tourner sur le bureau), le `visitor_id` d'amorce du
-  serveur (une fois par 12 h, pour le web).
+- **Le contexte d'appareil** (Sillon `server/runtime/deviceContext.ts`) : chaque requête relayée qui porte une
+  poignée est exécutée dans un contexte asynchrone (`AsyncLocalStorage`) qui dit l'appareil — son port HTTP et sa
+  garde YouTube. Tout ce qu'elle déclenche, travail de fond d'une recherche compris, interroge YouTube depuis
+  cet appareil.
+- Ce qui part encore du serveur à l'intégration du 25/10 : MusicBrainz / ListenBrainz (phase 2 en pause,
+  non intégrée), yt-dlp (il ne peut pas tourner sur le bureau), le `visitor_id` d'amorce du serveur (une fois
+  par 12 h, pour le web).
 
 ### 6.5 Ouvrir un album hors bibliothèque
 
-> **En cours de refonte** (R3 : l'album YouTube Music préparé depuis le bureau — le `YtmAlbumFinder` par
-> appareil existe, `clientTransport.ts`, mais `AlbumPreparer` n'emploie encore que celui du serveur).
+> Sur le **bureau**, « Albums » et `browse` partent de l'appareil délégué du compte (R3, `4d407cc`) : pour une
+> VUE, jamais de repli sur le serveur ; un appareil indisponible n'est pas un verdict (la vue suivante
+> réessaiera). Sur le web, ils partent du serveur.
 
 ```mermaid
 sequenceDiagram
@@ -502,7 +510,7 @@ sequenceDiagram
   Note over S: vue album : anticipation de la 1re piste, pochettes préchauffées
   Note over S,AP: vue TENUE 1 s (une autre vue ou recherche du compte l'annule)
   AP->>AP: fiches de toutes les pistes semées depuis la vue (plus aucune requête catalogue au clic)
-  AP->>YT: recherche « Albums » (1 requête) puis browse de l'album (1 requête)
+  AP->>YT: recherche « Albums » (1 requête) puis browse de l'album (1 requête) — depuis l'appareil au bureau
   AP->>AP: appariement (titre + durée ±7 s, ou rang + durée ±3 s) — pistes AUDIO (ATV) seulement
   U->>V: clic sur une piste
   Note over S: clic : attend la préparation en cours ≤ 2 s,<br/>puis seulement le player (1 requête) — un clip (OMV) passe par la recherche « Titres »
@@ -570,6 +578,8 @@ sequenceDiagram
   H-->>UI: music:resolved → la file et le moteur basculent (swapSource), sans geste
 ```
 
+- Aimer un titre (comme l'écouter jusqu'au bout) le met en tête de la recherche de CE compte — l'historique
+  d'écoute par compte de Sillon (`catalog/personal.ts`), jamais partagé.
 - Upgrade Lidarr (webhook `POST /api/plugins/sillon/webhooks/lidarr`, en-tête `X-Sillon-Secret`) :
   instantané d'usage AVANT (`jellyfin.usageOf`), nouvel élément attendu, favoris et positions reposés pour
   TOUS les comptes, sans doublon (Sillon `server/library/relink.ts`).
@@ -592,6 +602,7 @@ sequenceDiagram
 | **Aucune source officielle** | « Rien d'acceptable » retenu 1 h ; toutes les vidéos refusées par yt-dlp : 10 min. Le lecteur affiche l'échec et passe au suivant au bout de 1,5 s — au 3e titre sans source d'affilée, il s'arrête. | Sillon `preparedStore.ts` ; cœur [`failureStreak.ts`](../../packages/shared/src/octave/failureStreak.ts) |
 | **Source trop lente** | Passé 10 s, le clic rend « pas de source » ; la résolution continue derrière pour le clic suivant. | Sillon `playbackService.ts` (`CLICK_DEADLINE_MS`) |
 | **URL googlevideo refusée** (expirée, 403) | Le relais ré-extrait la même vidéo une fois, puis passe au candidat suivant pour cette lecture. Bureau : repli sur le serveur avant le premier octet (`direct=failed`), 502 après (le moteur redemande). | Sillon `streamRelay.ts` ; bureau `directRelay.ts` |
+| **ListenBrainz refuse sans jeton** (401 sur les classements par artiste, depuis le 24/10) | Après 3 refus de suite, le point d'API est laissé de côté une heure (puis une sonde) : les replis MusicBrainz partent aussitôt. Un lot de plus de 100 identifiants est découpé (au-delà, ListenBrainz répond 502). | Sillon `catalog/lbRefusals.ts`, `lbBatch.ts` |
 | **MusicBrainz en panne ou saturé** (503) | La recherche rend ce qu'elle a (index locaux, ListenBrainz) ; une recherche touchée par une panne n'est ni gardée ni apprise ; plafond de 45 s puis résultat définitif. Vue album/artiste : 502 « unavailable », l'interface garde son état. | Sillon `catalog/search.ts`, `catalog/routes.ts` |
 | **ListenBrainz sans jeton** | Les « titres phares » d'un artiste non précalculé répondent 401 : repli sur les pistes de ses albums les plus écoutés et sur MusicBrainz. | Sillon `catalog/fallbacks.ts`, README |
 | **Bureau coupé, socket fermée, plafond de l'appareil** | `client.fetch` rend `offline` / `budget` / `timeout` ; Sillon reprend sur le serveur **au clic seulement** ; une anticipation n'a pas lieu. | Sillon `delegation/delegating.ts` |
@@ -676,5 +687,5 @@ sequenceDiagram
 - Les mesures citées (latences, nombres de requêtes) viennent des rapports des lots (`OCTAVE-RAPPORT.md`,
   `SILLON-VITESSE-RAPPORT.md`, rapports R1 à R4 du lot « Sillon recherche ») : elles n'ont pas été refaites
   pour ce document.
-- La refonte de la recherche (R5) et l'album depuis le bureau (R3) : décrits « en cours », à mettre à jour sur
-  l'intégration finale.
+- La refonte de la recherche (R5 : catalogue YouTube Music) et le préchauffage (R7 : pages gardées sur
+  l'appareil, index chaud) : non intégrés au moment d'écrire, à décrire sur l'intégration finale.

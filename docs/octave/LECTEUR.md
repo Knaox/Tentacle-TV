@@ -5,7 +5,7 @@ et sur le bureau : la file, le contrôleur, les deux moteurs audio, la position 
 préchargement et la sécurité du jeton. La carte d'ensemble (recherche, extension, budgets) est dans
 [`CARTOGRAPHIE.md`](CARTOGRAPHIE.md) ; les contrats dans [`CONTRATS.md`](CONTRATS.md).
 
-État décrit : intégration du 25/10 (Tentacle `53ff77a2c`). Chaque affirmation a été relue dans le code ; ce
+État décrit : intégration du 25/10, 02:35 (Tentacle `886182f61` ; le lecteur n'a pas changé depuis `53ff77a2c`). Chaque affirmation a été relue dans le code ; ce
 qui ne l'a pas été est marqué **« non vérifié »**.
 
 ## Sommaire
