@@ -17,6 +17,7 @@ import { startWatchTime } from "./watchTime/collector";
 import { startSegmentPluginsWatch } from "./segmentPlugins/segmentPluginsWatch";
 import { startJellyfinCorsSync } from "./jellyfinCorsSync";
 import { whenCachesReady } from "../dbMigration/cache/cacheCopyGate";
+import { startMusicIndex } from "../music/musicService";
 
 /**
  * Les tâches de fond d'un serveur INSTALLÉ, lancées une seule fois par
@@ -58,6 +59,8 @@ export function startBackgroundServices(): void {
   void whenCachesReady().then(() => startRecoJobs());
   // Le moteur de recherche : son index se construit peu après le démarrage.
   startSearchJobs();
+  // Octave : l'index local de la musique (passage complet, puis évènements des comptes).
+  startMusicIndex();
 }
 
 export function backgroundServicesStarted(): boolean {

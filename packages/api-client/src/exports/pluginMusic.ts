@@ -7,8 +7,11 @@ export {
   resolveMusicSources, isSourceFresh, prefetchMusic, likeExternalTrack, addExternalTrackToPlaylist, fetchPendingMusic,
 } from "../pluginMusic/musicRequests";
 export { useMusicProvider } from "../pluginMusic/useMusicProvider";
-export { useMusicSearch, type MusicSearchOptions, type MusicSearchState } from "../pluginMusic/useMusicSearch";
+// Renommés à l'export : la recherche de la BIBLIOTHÈQUE (exports/music) garde les noms courts.
+export {
+  useMusicSearch as usePluginMusicSearch, type MusicSearchOptions as PluginMusicSearchOptions, type MusicSearchState as PluginMusicSearchState,
+} from "../pluginMusic/useMusicSearch";
 export {
   useMusicResolver, useMusicPrefetch, useMusicGestures, useMusicPending, musicPendingKey, type MusicGestures,
 } from "../pluginMusic/useMusicActions";
-export { useMusicEvents, applyMusicEvent, isMusicEvent, type UseMusicEventsOptions } from "../pluginMusic/useMusicEvents";
+export { useMusicEvents, applyMusicEvent as applyPluginMusicEvent, isMusicEvent, type UseMusicEventsOptions } from "../pluginMusic/useMusicEvents";

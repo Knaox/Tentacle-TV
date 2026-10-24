@@ -75,6 +75,7 @@ import { sagaRoutes } from "./sagas";
 import { recoPageRoutes } from "./recoPage";
 import { recoRowRoutes } from "./recoRows";
 import { externalAccountRoutes } from "./externalAccounts";
+import { musicRoutes } from "../music/routes/musicRoutes";
 
 /** Enregistre, dans l'ordre, toutes les routes de l'application, puis le proxy de Jellyfin. */
 export async function registerApplicationRoutes(app: FastifyInstance): Promise<void> {
@@ -143,6 +144,8 @@ export async function registerApplicationRoutes(app: FastifyInstance): Promise<v
   await app.register(libraryVisibilityRoutes, { prefix: "/api/library" });
   await app.register(sagaRoutes, { prefix: "/api/sagas" });
   await app.register(externalAccountRoutes, { prefix: "/api/external" });
+  // Octave : la musique de la bibliothèque Jellyfin (capacité `music.library`).
+  await app.register(musicRoutes, { prefix: "/api/music" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
   // Segments de lecture : le résolveur unique (préfixe hors /api/jellyfin —

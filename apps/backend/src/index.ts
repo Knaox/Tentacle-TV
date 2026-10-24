@@ -37,6 +37,11 @@ import { savePendingPreviewMemory } from "./services/trailers/preview/previewMem
 import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { registerIsolatedRuntime, stopIsolatedRuntime } from "./plugins/runtime";
+import { configureIsolatedRuntime } from "./plugins/runtime/hostServices";
+import { musicLibrary, findByMbid, setFavorite, playlistInsert, playlistEntries, usageOf, notifyPath } from "./music/host/jellyfinMusicHost";
+import { sendMusicEvent, broadcastMusicEvent } from "./music/events/musicSend";
+import { onAudioItems } from "./music/events/audioItemsFeed";
+import type { MusicEvent } from "./music/contract/musicEvents";
 import { serverShutdown } from "./services/lifecycle/serverShutdown";
 import { announceProgress, announceReady, beginServerLifecycle, failStartup, startupFailureOf } from "./serverHost/serverLifecycle";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
@@ -251,6 +256,13 @@ async function main() {
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
     // Les extensions ISOLÉES : leur processus, et le relais de leurs routes (plugins/runtime/).
+    // Ce que le runtime emprunte à la musique du cœur (lot A3) : Jellyfin, événements, éléments audio vus.
+    configureIsolatedRuntime({
+      jellyfin: { musicLibrary, findByMbid, setFavorite, playlistInsert, playlistEntries, usageOf, notifyPath },
+      sendMusicEvent: (ids, event) => sendMusicEvent(ids, event as MusicEvent),
+      broadcastMusicEvent: (event) => broadcastMusicEvent(event as MusicEvent),
+      onAudioItems,
+    });
     await registerIsolatedRuntime(app);
   }
 

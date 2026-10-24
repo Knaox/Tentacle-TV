@@ -15,6 +15,7 @@ export type CarouselId =
 import type { WtClientMessage, WtServerMessage } from "./watchTogether";
 import type { SessionClientMessage, SessionServerMessage } from "./sessionChannelMessages";
 import type { FamilyWsMessage } from "../family/familyProtocol";
+import type { MusicEvent } from "../music/musicEvents";
 
 /** Messages sent from the server to clients.
  *  `pong` porte optionnellement `t` (echo du ping client) et `serverTime`
@@ -44,6 +45,9 @@ export type WsServerMessage =
   /** Les droits du compte (ou du profil de cette session) viennent de changer — au bureau, sur
    *  le web, dans Jellyfin : relire ce qu'on montre (capacité `rights.live`, `useRightsLive`). */
   | { type: "rights:changed" }
+  /** Octave : la musique de la bibliothèque (`music:library`, `music:userdata`, `music:playlist`)
+   *  et ce que relaient les extensions — capacité `music.library` (contrat `music/musicEvents.ts`). */
+  | MusicEvent
   | SessionServerMessage
   | WtServerMessage;
 

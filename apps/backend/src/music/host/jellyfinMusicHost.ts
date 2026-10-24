@@ -1,0 +1,133 @@
+/**
+ * Octave — l'API d'hôte `jellyfin.*` des extensions musique (contrat
+ * `HostApi` de packages/shared/src/plugins/pluginServerRuntime.ts), mêmes
+ * paramètres, mêmes résultats. Le runtime isolé (agent 5) n'a qu'à les
+ * appeler : la musique de la bibliothèque ne se fait qu'ICI, une fois.
+ *
+ * Un refus lève une `HostMusicFailure` portant le code de `HostCallError`
+ * (`invalid`, `notFound`, `forbidden`, `unavailable`).
+ */
+
+import { writeFavorite } from "../access/userFavorites";
+import { sendToUser } from "../../services/wsManager";
+import { musicMessage } from "../events/musicSend";
+import { tracksByRecording } from "../index/indexQueries";
+import { normalizeMbid } from "../contract/musicKeys";
+import { audioRef } from "../index/indexSync";
+import { isJellyfinId, jfAdmin, jfWrite, normalizeId, q, type JfItemsPage } from "../jellyfin/musicJellyfin";
+import { getMusicLibrary } from "../jellyfin/musicLibrary";
+import { listUserPlaylists, playlistEntries as entriesOf } from "../playlists/playlistJellyfin";
+import { insertIntoPlaylist } from "../playlists/playlistService";
+import type { AudioItemRef } from "../events/audioItemsFeed";
+import { isAdminUser, listUserIds } from "./hostUsers";
+
+export class HostMusicFailure extends Error {
+  constructor(
+    readonly code: "invalid" | "notFound" | "forbidden" | "unavailable",
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+export interface PlaylistUsage {
+  playlistId: string;
+  ownerUserId: string;
+  entryId: string;
+  position: number;
+}
+
+function ids(values: unknown, max = 500): string[] {
+  if (!Array.isArray(values) || values.length > max || !values.every(isJellyfinId)) throw new HostMusicFailure("invalid", "identifiants Jellyfin attendus");
+  return (values as string[]).map(normalizeId);
+}
+
+export async function musicLibrary(): Promise<{ libraryId: string; name: string; paths: string[] } | null> {
+  return getMusicLibrary();
+}
+
+export async function findByMbid(params: { recordings: string[] }): Promise<AudioItemRef[]> {
+  if (!Array.isArray(params.recordings) || params.recordings.length > 500) throw new HostMusicFailure("invalid", "recordings");
+  const mbids = [...new Set(params.recordings.map(normalizeMbid).filter((m): m is string => m !== null))];
+  const rows = await tracksByRecording(mbids);
+  if (rows.length === 0) return [];
+  // Le chemin n'est pas dans l'index : Jellyfin le dit (une requête, champs minimaux).
+  const listed = await jfAdmin<JfItemsPage>(`/Items?Ids=${rows.map((r) => q(r.id)).join(",")}&Fields=ProviderIds,Path&EnableImages=false&EnableUserData=false`);
+  if (!listed.ok) throw new HostMusicFailure("unavailable", "Jellyfin muet");
+  return (listed.data.Items ?? []).map(audioRef);
+}
+
+export async function setFavorite(params: { userId: string; itemId: string; favorite: boolean }): Promise<{ ok: true }> {
+  const [userId, itemId] = ids([params.userId, params.itemId]);
+  if (typeof params.favorite !== "boolean") throw new HostMusicFailure("invalid", "favorite");
+  if (!(await writeFavorite(userId!, itemId!, params.favorite))) throw new HostMusicFailure("unavailable", "favori refusé par Jellyfin");
+  sendToUser(userId!, musicMessage({ type: "music:userdata", changes: [{ jellyfinId: itemId!, favorite: params.favorite }] }));
+  return { ok: true };
+}
+
+export async function playlistInsert(params: { userId: string; playlistId: string; itemIds: string[]; position: number }): Promise<{ ok: true }> {
+  const [userId, playlistId] = ids([params.userId, params.playlistId]);
+  const itemIds = ids(params.itemIds);
+  if (itemIds.length === 0 || !Number.isInteger(params.position) || params.position < 0) throw new HostMusicFailure("invalid", "itemIds / position");
+  const result = await insertIntoPlaylist(userId!, playlistId!, itemIds, params.position);
+  if (result.ok) return { ok: true };
+  throw new HostMusicFailure(result.failure === "not_found" ? "notFound" : result.failure === "invalid" ? "invalid" : result.failure, "playlist");
+}
+
+export async function playlistEntries(params: { userId: string; playlistId: string }): Promise<{ entryId: string; itemId: string; position: number }[]> {
+  const [userId, playlistId] = ids([params.userId, params.playlistId]);
+  const entries = await entriesOf(userId!, playlistId!);
+  if (!entries) throw new HostMusicFailure("unavailable", "Jellyfin muet");
+  return entries.map((e, position) => ({ ...e, position }));
+}
+
+/**
+ * Qui a ces éléments en favori, et où ils sont dans quelles playlists (de leur
+ * PROPRIÉTAIRE : `CanDelete`) — pour reposer les deux sur l'élément qui les
+ * remplace. Une requête par compte et par playlist possédée : un geste rare
+ * (mise à niveau d'un fichier), jamais sur le chemin d'une lecture.
+ */
+export async function usageOf(params: { itemIds: string[] }): Promise<{ itemId: string; favoriteUserIds: string[]; playlists: PlaylistUsage[] }[]> {
+  const wanted = ids(params.itemIds, 200);
+  const out = new Map(wanted.map((id) => [id, { itemId: id, favoriteUserIds: [] as string[], playlists: [] as PlaylistUsage[] }]));
+  const users = await listUserIds();
+  const seenPlaylists = new Set<string>();
+  for (const userId of users) {
+    const favs = await jfAdmin<JfItemsPage>(`/Items?userId=${q(userId)}&Ids=${wanted.map(q).join(",")}&IsFavorite=true&Fields=&EnableImages=false`);
+    if (!favs.ok) throw new HostMusicFailure("unavailable", "Jellyfin muet");
+    for (const item of favs.data.Items ?? []) out.get(normalizeId(item.Id))?.favoriteUserIds.push(userId);
+    // Un administrateur peut supprimer la playlist publique d'un autre : son propriétaire passe d'abord.
+    if (await isAdminUser(userId)) continue;
+    await collectPlaylists(userId, out, seenPlaylists);
+  }
+  for (const userId of users) if (await isAdminUser(userId)) await collectPlaylists(userId, out, seenPlaylists);
+  return [...out.values()];
+}
+
+async function collectPlaylists(userId: string, out: Map<string, { playlists: PlaylistUsage[] }>, seen: Set<string>): Promise<void> {
+  for (const playlist of await listUserPlaylists(userId)) {
+    const id = normalizeId(playlist.Id);
+    if (playlist.CanDelete !== true || seen.has(id)) continue;
+    seen.add(id);
+    const entries = (await entriesOf(userId, id)) ?? [];
+    entries.forEach((entry, position) => {
+      out.get(entry.itemId)?.playlists.push({ playlistId: id, ownerUserId: userId, entryId: entry.entryId, position });
+    });
+  }
+}
+
+const UPDATE_TYPES = { created: "Created", modified: "Modified", deleted: "Deleted" } as const;
+
+/** Prévient Jellyfin qu'un chemin de SA bibliothèque musique a changé — jamais un chemin d'ailleurs. */
+export async function notifyPath(params: { path: string; change: "created" | "modified" | "deleted" }): Promise<{ ok: true }> {
+  const library = await getMusicLibrary();
+  if (!library) throw new HostMusicFailure("notFound", "aucune bibliothèque musique");
+  const path = typeof params.path === "string" ? params.path : "";
+  const type = UPDATE_TYPES[params.change];
+  if (!type || path.includes("..") || !library.paths.some((root) => path === root || path.startsWith(`${root.replace(/[\\/]+$/, "")}/`))) {
+    throw new HostMusicFailure("forbidden", "chemin hors de la bibliothèque musique");
+  }
+  const sent = await jfWrite("/Library/Media/Updated", "POST", { Updates: [{ Path: path, UpdateType: type }] });
+  if (!sent.ok) throw new HostMusicFailure("unavailable", "Jellyfin muet");
+  return { ok: true };
+}

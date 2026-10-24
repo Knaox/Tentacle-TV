@@ -39,6 +39,8 @@ export type WsServerMessage =
   /** Les droits du compte viennent de changer (politique Jellyfin écrite par Tentacle ou
    *  constatée changée) : relire ce qu'on montre — capacité `rights.live`. */
   | { type: "rights:changed" }
+  /** Octave : les évènements `music:*` (contrat `MusicEvent`, packages/shared/src/music/musicEvents.ts). */
+  | ({ type: `music:${string}` } & Record<string, unknown>)
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */

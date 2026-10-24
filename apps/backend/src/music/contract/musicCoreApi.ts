@@ -1,0 +1,108 @@
+/**
+ * Octave — les routes MUSIQUE du cœur (`/api/music/*`), servies par le backend
+ * Tentacle sous la capacité `music.library` (contrat, docs/octave/CONTRATS.md).
+ *
+ * Le cœur ne sert QUE la bibliothèque Jellyfin : aucune source extérieure,
+ * aucun nom d'extension. Toutes les routes exigent la session (requireAuth) et
+ * respectent les droits Jellyfin du compte (bibliothèques visibles, contrôle
+ * parental) ; un compte qui ne voit pas la bibliothèque musique reçoit des
+ * listes vides — jamais une erreur qui trahit son existence.
+ */
+
+import type { Mbid, MusicAlbum, MusicArtist, MusicPage, MusicPlaylist, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
+import type { PlaybackSource } from "./musicPlayback";
+
+export const MUSIC_ROUTES = {
+  /** GET — l'état : y a-t-il une bibliothèque musique visible pour ce compte ? */
+  status: "/api/music/status",
+  /** GET ?q=&limit= — index local (SQLite FTS5) : première réponse < 100 ms. */
+  search: "/api/music/search",
+  /** GET ?cursor=&limit=&sort= — albums de la bibliothèque. */
+  albums: "/api/music/albums",
+  /** GET /:id — un album et ses titres. */
+  album: "/api/music/albums/:id",
+  /** GET ?cursor=&limit= */
+  artists: "/api/music/artists",
+  /** GET /:id — un artiste, ses titres phares, ses albums. */
+  artist: "/api/music/artists/:id",
+  /** GET — l'accueil (récents, ajouts, souvent écoutés). */
+  home: "/api/music/home",
+  /** GET ?cursor= — « Titres likés » = les titres audio favoris Jellyfin du compte. */
+  liked: "/api/music/liked",
+  /** PUT /:id { favorite } — pose ou retire le favori Jellyfin (= le cœur). */
+  favorite: "/api/music/favorite/:id",
+  /** GET — les playlists Jellyfin du compte ; POST { name, itemIds? } — en crée une. */
+  playlists: "/api/music/playlists",
+  /** GET /:id ; PATCH /:id { name } ; DELETE /:id */
+  playlist: "/api/music/playlists/:id",
+  /** POST /:id/entries { itemIds, position? } — insère à une position (fin si absente). */
+  playlistEntries: "/api/music/playlists/:id/entries",
+  /** PATCH /:id/entries/:entryId { position } — déplace ; DELETE — retire. */
+  playlistEntry: "/api/music/playlists/:id/entries/:entryId",
+  /** POST { recordings: Mbid[] } — retrouve des éléments audio par MBID d'enregistrement. */
+  byMbid: "/api/music/by-mbid",
+  /** GET /:id — la source de lecture d'un titre de la bibliothèque. */
+  source: "/api/music/source/:id",
+  /** GET /:id — le flux DIRECT du fichier (Range), jamais transcodé. */
+  stream: "/api/music/stream/:id",
+  /** GET /:id?size= — pochette (relayée, mise en cache). */
+  artwork: "/api/music/artwork/:id",
+  /** POST { itemId, positionMs, event } — rapport d'écoute à Jellyfin (start, progress, stop). */
+  playback: "/api/music/playback",
+} as const;
+
+export interface MusicStatus {
+  /** Faux : aucune bibliothèque musique visible — le mode Octave ne s'offre pas. */
+  available: boolean;
+  /** La bibliothèque musique dédiée (Jellyfin `CollectionType = music`), si le compte la voit. */
+  libraryId: string | null;
+  /** L'index local est-il prêt (premier passage fini) ? */
+  indexReady: boolean;
+  trackCount: number;
+}
+
+export interface MusicSearchResponse {
+  query: string;
+  tracks: MusicTrack[];
+  albums: MusicAlbum[];
+  artists: MusicArtist[];
+  playlists: MusicPlaylist[];
+  /** Durée côté serveur, pour les bancs (ms). */
+  tookMs: number;
+}
+
+export interface MusicHomeResponse {
+  recentlyPlayed: MusicTrack[];
+  recentlyAdded: MusicAlbum[];
+  mostPlayed: MusicTrack[];
+  playlists: MusicPlaylist[];
+}
+
+export interface MusicArtistResponse extends MusicArtist {
+  topTracks: MusicTrack[];
+  albums: MusicAlbum[];
+}
+
+export type MusicLikedPage = MusicPage<MusicTrack>;
+export type MusicAlbumPage = MusicPage<MusicAlbum>;
+export type MusicArtistPage = MusicPage<MusicArtist>;
+
+export interface MusicPlaylistDetail extends MusicPlaylist {
+  entries: MusicPlaylistEntry[];
+}
+
+export interface MusicByMbidResponse {
+  matches: { recording: Mbid; jellyfinId: string; track: MusicTrack }[];
+}
+
+export type MusicSourceResponse = PlaybackSource;
+
+export type MusicPlaybackEvent = "start" | "progress" | "pause" | "stop";
+
+export interface MusicPlaybackReport {
+  itemId: string;
+  positionMs: number;
+  event: MusicPlaybackEvent;
+  /** Écoute menée au bout (stop à plus de 90 % de la durée). */
+  completed?: boolean;
+}

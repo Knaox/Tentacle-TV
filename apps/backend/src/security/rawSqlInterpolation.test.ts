@@ -51,6 +51,15 @@ const REVIEWED: Record<string, Record<string, string>> = {
     "plan.verb": "type fermé : \"INSERT\" | \"INSERT OR IGNORE\"",
     'names.join(", ")': "colonnes cibles passées par quoteIdent juste au-dessus",
   },
+  // L'index local de la musique (Octave) : des lots écrits d'un coup, en SQL
+  // brut pour FTS5. Les valeurs passent toutes en paramètres liés.
+  "music/index/indexStore.ts": {
+    "placeholders(batch.length, COLUMNS.length)": "« (?, …), (?, …) » : des marques, aucune valeur",
+    "placeholders(batch.length, 6)": "« (?, …), (?, …) » : des marques, aucune valeur",
+  },
+  "music/index/indexQueries.ts": {
+    "ORDER_SQL[order]": "tri tiré d'une table fermée de constantes ; `order` est un type fermé validé par la route",
+  },
   "dbMigration/legacySource/mariadbReader.ts": {
     select: "colonnes passées par quoteId ; le fuseau de CONVERT_TZ en paramètre lié",
     order: "colonnes de clé passées par quoteId",

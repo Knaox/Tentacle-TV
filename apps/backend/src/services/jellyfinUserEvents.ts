@@ -5,6 +5,7 @@ import { pokeProfile } from "./reco/jobs";
 import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
 import { markCatalogChanged } from "./search/catalog";
 import { markAllUserAccessStale, refreshUserAccess } from "./search/userAccess";
+import { onJellyfinUserDataChanged } from "../music/events/musicLiveEvents";
 
 /**
  * Ce que Jellyfin pousse aux sessions d'UTILISATEUR, relayé aux applications.
@@ -58,6 +59,7 @@ export function relayLibraryChanged(data: unknown, now = Date.now()): void {
 }
 
 export function relayUserDataChanged(data: unknown, now = Date.now()): void {
+  void onJellyfinUserDataChanged(data, now);
   const userId = (data as { UserId?: unknown } | null)?.UserId;
   if (typeof userId !== "string" || userId === "") return;
   if (now - (lastUserDataAt.get(userId) ?? 0) < DUPLICATE_MS) return;

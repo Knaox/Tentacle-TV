@@ -26,3 +26,4 @@ export * from "./exports/family"; // La Famille : appels, Apple TV, crochets, te
 export * from "./exports/userRights"; // Droits des comptes et contrôle parental des invités
 export * from "./exports/libraryDelete"; // Supprimer des titres de la bibliothèque (web, bureau)
 export * from "./exports/pluginMusic"; // Octave : points d'extension musique (fournisseur, recherche, source, gestes, en attente)
+export * from "./exports/music"; // Octave : la musique de la bibliothèque Jellyfin
