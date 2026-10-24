@@ -9,7 +9,7 @@
  * Pendant qu'une NOUVELLE recherche se prépare, la précédente reste affichée.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MusicAlbum, MusicArtist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
 import { preloadArtwork } from "../components/artworkPreload";
 import { useArtworkResolver } from "../components/Artwork";
@@ -31,21 +31,20 @@ function artOf(tracks: readonly MusicTrack[], cards: readonly { artworkUrl?: str
   return [...tracks.slice(0, ART_FIRST_TRACKS).map((t) => t.artworkUrl), ...cards.slice(0, ART_FIRST_CARDS).map((c) => c.artworkUrl ?? c.imageUrl ?? null)];
 }
 
-/** Les pochettes de tête d'une section, décodées dans leur budget, dès que `ready`. */
+/**
+ * Les pochettes de tête d'une section, décodées dans leur budget, dès que `ready`. L'attente part UNE fois par
+ * recherche (`key`) : une révision arrivée pendant le budget ne la relance pas (la révélation n'attend jamais plus).
+ */
 function useArtReady(key: string, ready: boolean, urls: readonly (string | null)[]): boolean {
   const resolve = useArtworkResolver();
   const [done, setDone] = useState<string | null>(null);
+  const started = useRef<string | null>(null);
   const srcs = useMemo(() => urls.map(resolve).filter((s): s is string => !!s), [urls, resolve]);
   useEffect(() => {
-    if (!ready || done === key) return;
-    let live = true;
-    void preloadArtwork(srcs, ART_BUDGET_MS).then(() => {
-      if (live) setDone(key);
-    });
-    return () => {
-      live = false;
-    };
-  }, [ready, key, srcs, done]);
+    if (!ready || started.current === key) return;
+    started.current = key;
+    void preloadArtwork(srcs, ART_BUDGET_MS).then(() => setDone((d) => (started.current === key ? key : d)));
+  }, [ready, key, srcs]);
   return ready && done === key;
 }
 
