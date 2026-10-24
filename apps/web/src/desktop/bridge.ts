@@ -30,6 +30,7 @@ export {
   supportsDownloads,
   supportsMediaWarm,
   supportsMpv,
+  supportsNativeAudio,
   supportsOfflineSession,
   supportsSmtc,
 } from "./capabilities";

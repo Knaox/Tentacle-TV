@@ -36,6 +36,7 @@
     "//dev:mpv-homebrew": "Le dev sur la mpv 0.41 de Homebrew (GPL) et le MoltenVK du systeme — pour comparer, ou tant que la chaine livree n est pas construite (apps/desktop/scripts/build-mpv-lgpl-macos.sh).",
     "dev:mpv-homebrew": "cross-env TENTACLE_MPV_LIB=homebrew pnpm dev",
     "test": "vitest run",
+    "bench:audio": "tsx bench/audio/run.mts",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {

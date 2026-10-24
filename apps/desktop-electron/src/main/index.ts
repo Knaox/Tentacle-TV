@@ -48,6 +48,7 @@ import { registerLinuxSessionCommands } from "./ipc/linuxSession";
 import { registerPipCommands } from "./ipc/pip";
 import { registerVideoCommands, restoreDisplay, stopPlayer } from "./ipc/video";
 import { registerMediaWarmCommands } from "./ipc/mediaWarm";
+import { registerAudioCommands, stopAudio } from "./ipc/audio";
 import { isRunning } from "./video/mpv";
 import { installCloseSequence } from "./closeSequence";
 import { closePipBeforeHost } from "./pip/pipQuit";
@@ -220,6 +221,7 @@ function main(): void {
       registerSessionCommands(registry);
       registerUpdateCommands(registry);
       registerVideoCommands(registry);
+      registerAudioCommands(registry);
       registerMediaWarmCommands(registry);
       registerLinuxSessionCommands(registry);
       registerPipCommands(registry);
@@ -296,6 +298,8 @@ function main(): void {
     // devoir, pas un nettoyage. Une fermeture qui court-circuite `smtc_clear`
     // les laisserait prises jusqu'au redémarrage de la session.
     releaseMediaKeys();
+    // La musique : la sortie (exclusive comprise) est rendue sans attendre.
+    stopAudio();
     // Même devoir pour l'anti-veille : un blocage laissé actif empêcherait
     // l'écran de s'éteindre longtemps après la fermeture de l'application.
     releaseDisplayWakeLock();

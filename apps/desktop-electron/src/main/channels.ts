@@ -125,6 +125,17 @@ export const COMMANDS = [
   "pip_restore",
   "pip_close",
 
+  // Octave — le moteur audio natif (mpv en audio seul) de la musique : voir
+  // `audio/audioBridgeContract.ts` (miroir dans la page) et `ipc/audio.ts`.
+  "audio_engine_start",
+  "audio_engine_stop",
+  "audio_play",
+  "audio_set_next",
+  "audio_swap_source",
+  "audio_control",
+  "audio_list_outputs",
+  "audio_set_output",
+
   // Greffons — dépôt du document à servir sous son origine dédiée.
   // Propre à Electron : Tauri monte les greffons en `srcdoc`, la question de
   // l'origine ne s'y pose pas de la même façon.
@@ -141,6 +152,7 @@ export const EVENTS = [
   "smtc-button",
   "msix-update-progress",
   "linux-update-progress",
+  "audio://event",
 ] as const;
 
 /**
