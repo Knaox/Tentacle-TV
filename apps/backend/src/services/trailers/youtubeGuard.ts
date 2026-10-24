@@ -23,8 +23,13 @@
 /*    ouvert, le client ouvre le lecteur officiel ; disjoncteur ouvert,*/
 /*    une lecture-SONDE passe toutes les 5 minutes — réussie, elle le  */
 /*    referme.                                                         */
+/*  Par-dessus, le BUDGET DE L'HÔTE (`services/youtubeBudget/`) : la    */
+/*  même adresse sert les extensions (Sillon). Chaque extraction s'y    */
+/*  inscrit ; il ne refuse les bandes-annonces qu'une fois l'heure     */
+/*  pleine (150, toutes sources) — en deçà, rien ne change ici.        */
 /* ------------------------------------------------------------------ */
 
+import { HostYouTubeLedger } from "../youtubeBudget/hostYouTubeLedger";
 import { SlidingBudget, SourceBreaker, TokenBuckets, type GuardReason, type GuardStatus } from "./sourceGuard";
 
 export type BlockKind = Extract<GuardReason, "bot" | "limit">;
@@ -52,6 +57,13 @@ export const youtubeBreaker = new SourceBreaker({
 export const previewBudget = new SlidingBudget(PREVIEW_EXTRACTIONS_PER_HOUR, HOUR_MS);
 export const playbackBudget = new SlidingBudget(PLAYBACK_EXTRACTIONS_PER_HOUR, HOUR_MS);
 const playbackAccounts = new TokenBuckets(PLAYBACK_ACCOUNT_BURST, PLAYBACK_ACCOUNT_REFILL_MS);
+/** Le budget YouTube de l'hôte (bandes-annonces + extensions), sur le disjoncteur des bandes-annonces. */
+export const hostYouTubeBudget = new HostYouTubeLedger({
+  remainingMs: (now) => youtubeBreaker.remainingMs(now),
+  trip: (reason, now) => youtubeBreaker.trip(reason, now),
+  recordSuccess: (now) => youtubeBreaker.recordSuccess(now),
+  lastTripAt: () => youtubeBreaker.lastTripAt(),
+});
 let lastProbeAt = -Infinity;
 let budgetReported = false;
 
@@ -84,7 +96,7 @@ export function youtubeBreakerOpen(now = Date.now()): boolean {
 export function previewRefusal(now = Date.now()): PreviewRefusal | null {
   const remainingMs = youtubeBreaker.remainingMs(now);
   if (remainingMs > 0) return { kind: "blocked", remainingMs };
-  const retryAfterMs = previewBudget.refusal(now);
+  const retryAfterMs = previewBudget.refusal(now) ?? hostYouTubeBudget.trailerRefusal(now);
   if (retryAfterMs === null) {
     budgetReported = false;
     return null;
@@ -99,6 +111,7 @@ export function previewRefusal(now = Date.now()): PreviewRefusal | null {
 /** Une extraction d'aperçu commence : elle compte dans le budget de l'heure. */
 export function countPreviewExtraction(now = Date.now()): void {
   previewBudget.count(now);
+  hostYouTubeBudget.countTrailer(now);
 }
 
 /**
@@ -115,13 +128,15 @@ export function takeYouTubePlayback(account: string, now = Date.now()): Playback
     lastProbeAt = now;
     console.log("[trailers] YouTube en pause — une lecture-sonde essaie");
     playbackBudget.count(now);
+    hostYouTubeBudget.countTrailer(now);
     return null;
   }
-  const serverWait = playbackBudget.refusal(now);
+  const serverWait = playbackBudget.refusal(now) ?? hostYouTubeBudget.trailerRefusal(now);
   if (serverWait !== null) return { kind: "budget", retryAfterMs: serverWait };
   const accountWait = playbackAccounts.take(account, now);
   if (accountWait > 0) return { kind: "account", retryAfterMs: accountWait };
   playbackBudget.count(now);
+  hostYouTubeBudget.countTrailer(now);
   return null;
 }
 
@@ -136,6 +151,7 @@ export function resetYouTubeGuard(): void {
   previewBudget.reset();
   playbackBudget.reset();
   playbackAccounts.reset();
+  hostYouTubeBudget.reset();
   lastProbeAt = -Infinity;
   budgetReported = false;
 }

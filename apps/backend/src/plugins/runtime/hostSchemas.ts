@@ -63,4 +63,7 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
     })
     .strict(),
   "tools.stopWorker": z.object({ workerId: z.string().regex(/^[a-z0-9-]{1,80}$/) }).strict(),
+  // Un coût hors 1..4 est refusé : une extension ne réserve pas l'heure d'un coup.
+  "tools.youtubeAdmit": z.object({ kind: z.enum(["play", "prefetch"]), cost: z.number().int().min(1).max(4) }).strict(),
+  "tools.youtubeReport": z.object({ outcome: z.enum(["ok", "antiBot"]), startedAt: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER) }).strict(),
 };

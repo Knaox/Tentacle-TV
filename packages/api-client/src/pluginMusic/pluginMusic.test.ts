@@ -96,6 +96,18 @@ describe("appels à l'extension", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("un survol se redit au bout de 5 s (l'extension l'oublie après 8 s), un résultat pas avant 30 s", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    prefetchMusic(provider, ["a"], "hover", 0);
+    prefetchMusic(provider, ["a"], "hover", 4_999);
+    prefetchMusic(provider, ["a"], "hover", 5_000);
+    prefetchMusic(provider, ["a"], "results", 0);
+    prefetchMusic(provider, ["a"], "results", 29_999);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it("un refus HTTP devient une raison de la liste fermée", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("non", { status: 403 })));
     expect(await likeExternalTrack(provider, "a", true)).toEqual({ ok: false, reason: "forbidden", message: null });

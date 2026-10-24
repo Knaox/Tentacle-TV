@@ -4,6 +4,7 @@ import type { ToolName } from "../pluginServerRuntime";
 import { isToolGranted } from "../tools/toolGrants";
 import { execTool, ytDlpVersion } from "../tools/toolExec";
 import { spawnWorker, stopWorker } from "../tools/toolWorkers";
+import { hostYouTubeBudget } from "../../../services/trailers/youtubeGuard";
 import { emitPluginMusicEvent } from "./musicEvents";
 import { userRights } from "./userRights";
 
@@ -19,6 +20,11 @@ function jellyfin(): JellyfinMusicHost {
   const host = runtimeServices().jellyfin;
   if (!host) throw new HostCallFailure("unavailable", "musique Jellyfin indisponible sur ce serveur");
   return host;
+}
+
+/** Le budget YouTube : réservé à une extension qui demande un outil (la famille `tools` est déjà vérifiée). */
+function requireAnyTool(ctx: HostCallContext): void {
+  if ((ctx.manifest.tools ?? []).length === 0) throw new HostCallFailure("forbidden", "aucun outil demandé par le manifeste");
 }
 
 function requireTool(ctx: HostCallContext, tool: ToolName): void {
@@ -51,6 +57,15 @@ export const HOST_HANDLERS: HostHandlers = {
   },
   "tools.stopWorker": async (ctx, { workerId }) => {
     stopWorker(ctx.pluginId, workerId);
+    return { ok: true };
+  },
+  "tools.youtubeAdmit": async (ctx, { kind, cost }) => {
+    requireAnyTool(ctx);
+    return hostYouTubeBudget.admitExtension(ctx.pluginId, kind, cost, Date.now());
+  },
+  "tools.youtubeReport": async (ctx, { outcome, startedAt }) => {
+    requireAnyTool(ctx);
+    hostYouTubeBudget.report(outcome, startedAt, Date.now());
     return { ok: true };
   },
 };
