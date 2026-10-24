@@ -36,19 +36,25 @@ export function isSourceFresh(source: PlaybackSource, now = Date.now()): boolean
   return source.expiresAt === null || source.expiresAt > now + 5_000;
 }
 
-const PREFETCH_DEDUP_MS = 30_000;
+/**
+ * Le silence après un signal, par intention. Un survol se redit au bout de
+ * 5 s : l'extension l'oublie après 8 s (sa politique d'anticipation), un
+ * second survol plus tard doit donc arriver. `press` passe toujours.
+ */
+const PREFETCH_DEDUP_MS: Record<PrefetchIntent, number> = { results: 30_000, hover: 5_000, press: 0, next: 30_000 };
 const recentPrefetch = new Map<string, number>();
 
 /**
- * L'anticipation : au plus une fois par (titre, intention) toutes les 30 s ;
- * `press` passe toujours (le clic arrive). Silencieuse : un échec ne remonte jamais.
+ * L'anticipation : au plus une fois par (titre, intention) dans le silence de
+ * son intention ; `press` passe toujours (le clic arrive). Silencieuse : un
+ * échec ne remonte jamais.
  */
 export function prefetchMusic(provider: MusicProvider, ids: readonly string[], intent: PrefetchIntent, now = Date.now()): void {
   if (!provider.music.prefetch || ids.length === 0) return;
   const fresh = ids.filter((id) => {
     const key = `${provider.pluginId}:${intent}:${id}`;
     const last = recentPrefetch.get(key);
-    if (intent !== "press" && last !== undefined && now - last < PREFETCH_DEDUP_MS) return false;
+    if (last !== undefined && now - last < PREFETCH_DEDUP_MS[intent]) return false;
     recentPrefetch.set(key, now);
     return true;
   });
