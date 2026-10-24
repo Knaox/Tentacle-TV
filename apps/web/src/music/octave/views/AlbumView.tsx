@@ -52,6 +52,8 @@ export function AlbumView() {
   }
   if (album.isError || !album.data) return <ErrorState onRetry={() => void album.refetch()} message={t("album.notFound")} />;
   const data = album.data;
+  // L'aperçu de la carte : l'en-tête tout de suite, à sa place définitive ; les titres (et leur compte) à la réponse.
+  const preview = album.isPlaceholder;
 
   return (
     <div className="pb-10">
@@ -82,8 +84,12 @@ export function AlbumView() {
                 <span>{data.year ?? data.releaseDate?.slice(0, 4)}</span>
               </>
             )}
-            <Dot />
-            <span>{meta}</span>
+            {!preview && (
+              <>
+                <Dot />
+                <span>{meta}</span>
+              </>
+            )}
             {data.label && (
               <>
                 <Dot />
@@ -99,14 +105,14 @@ export function AlbumView() {
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
       />
       <div className="px-2 md:px-6">
-        <TrackList
+        {preview ? <RowsSkeleton rows={Math.min(12, data.trackCount ?? 8)} /> : <TrackList
           rows={rows}
           contextId={contextId}
           useTrackNumbers
           showHeader
           label={data.title}
           sectionBefore={discs.length > 1 ? (row, index) => (index === 0 || rows[index - 1]?.track.discNumber !== row.track.discNumber ? t("album.disc", { number: row.track.discNumber ?? 1 }) : null) : undefined}
-        />
+        />}
       </div>
     </div>
   );
