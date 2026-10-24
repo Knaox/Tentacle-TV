@@ -73,7 +73,8 @@ def fmt(f):
     return {"formatId": str(f.get("format_id") or ""), "ext": str(f.get("ext") or ""), "acodec": text(f.get("acodec")),
             "vcodec": text(f.get("vcodec")), "abr": num(f.get("abr")), "asr": num(f.get("asr")),
             "filesize": num(f.get("filesize") or f.get("filesize_approx")), "protocol": text(f.get("protocol")),
-            "url": text(f.get("url")) if f.get("url") and len(str(f.get("url"))) < 8000 else None,
+            # Jamais text() (500 caractères) : une URL googlevideo en fait ~1 100, tronquée elle répond 403.
+            "url": str(f.get("url")) if f.get("url") and len(str(f.get("url"))) < 8000 else None,
             "httpHeaders": {str(k)[:100]: str(v)[:1000] for k, v in list(headers.items())[:20]}}
 
 def info(d, depth=0):

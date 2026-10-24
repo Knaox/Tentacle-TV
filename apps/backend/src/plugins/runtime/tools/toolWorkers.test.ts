@@ -48,7 +48,7 @@ vi.hoisted(() => {
       "    def __exit__(self, *a): return False",
       "    def extract_info(self, target, download=False):",
       `        if 'evil' in target: open(${secret}).read()`,
-      "        return {'id': 'v1', 'title': 'T', 'artists': ['A'], 'duration': 61.5, 'formats': [{'format_id': '251', 'ext': 'webm', 'acodec': 'opus', 'abr': 130.5, 'url': 'https://x/y', 'http_headers': {'User-Agent': 'UA'}}], 'raw_secret_field': 'jamais'}",
+      "        return {'id': 'v1', 'title': 'T', 'artists': ['A'], 'duration': 61.5, 'formats': [{'format_id': '251', 'ext': 'webm', 'acodec': 'opus', 'abr': 130.5, 'url': 'https://x/' + 'a' * 1100, 'http_headers': {'User-Agent': 'UA'}}], 'raw_secret_field': 'jamais'}",
       "    def download(self, urls):",
       "        out = self.opts['outtmpl']['default']",
       "        with open(out, 'wb') as f:",
@@ -115,6 +115,8 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
     const [extract] = await s.ask({ id: 2, op: "extract", target: "https://music.youtube.com/watch?v=abc", options: { flat: true, limit: 5 } });
     const info = (extract.result ?? {}) as Msg;
     expect(info).toMatchObject({ id: "v1", title: "T", artists: ["A"], durationS: 61.5, formats: [{ formatId: "251", acodec: "opus", abr: 130.5, httpHeaders: { "User-Agent": "UA" } }] });
+    // Une URL directe réelle dépasse 1 000 caractères : rendue ENTIÈRE, jamais tronquée.
+    expect((info as { formats: { url: string }[] }).formats[0].url).toBe(`https://x/${"a".repeat(1100)}`);
     expect(info.raw_secret_field).toBeUndefined();
     const download = await s.ask({ id: 3, op: "download", url: "https://www.youtube.com/watch?v=abc", formatId: "251", output: "cache/v1.webm" });
     expect(download.filter((m) => m.event === "progress").length, JSON.stringify(download)).toBeGreaterThanOrEqual(3);
