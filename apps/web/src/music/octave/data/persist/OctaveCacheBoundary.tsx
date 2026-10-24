@@ -52,6 +52,18 @@ function hydrationOf(qc: OctaveQueryClientLike, owner: string): Promise<Hydratio
   return job;
 }
 
+/**
+ * La lecture du disque part AU PLUS TÔT (montage d'Octave, pendant que sa disponibilité se vérifie) :
+ * la porte, montée ensuite, la trouve souvent déjà finie.
+ */
+export function useOctaveCacheWarmStart(): void {
+  const qc = useQueryClient() as unknown as OctaveQueryClientLike;
+  const owner = useMemo(octaveCacheOwner, []);
+  useEffect(() => {
+    if (owner !== null) void hydrationOf(qc, owner);
+  }, [qc, owner]);
+}
+
 export function OctaveCacheBoundary({ children }: { children: ReactNode }) {
   const qc = useQueryClient() as unknown as OctaveQueryClientLike;
   const owner = useMemo(octaveCacheOwner, []);
