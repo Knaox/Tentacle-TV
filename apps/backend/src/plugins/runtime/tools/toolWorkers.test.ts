@@ -54,6 +54,7 @@ vi.hoisted(() => {
       "    def extract_info(self, target, download=False):",
       `        if 'evil' in target: open(${secret}).read()`,
       "        if 'boom' in target: raise RuntimeError('panne')",
+      "        if 'leak' in target: raise RuntimeError('args ' + repr(self.params.get('extractor_args')))",
       "        if 'serial' in target: return {'id': str(self.serial), 'formats': []}",
       "        return {'id': 'v1', 'title': 'T', 'artists': ['A'], 'duration': 61.5, 'formats': [{'format_id': '251', 'ext': 'webm', 'acodec': 'opus', 'abr': 130.5, 'url': 'https://x/' + 'a' * 1100, 'http_headers': {'User-Agent': 'UA'}}], 'raw_secret_field': 'jamais'}",
       "    def download(self, urls):",
@@ -146,6 +147,32 @@ describe.skipIf(!hasPython)("ouvrier persistant fourni par l'hôte", () => {
       expect(await s.ask({ id, ...req }), String(id)).toEqual([{ id, ok: false, error: { code: "invalid", message: expect.any(String) } }]);
     }
     expect(existsSync(join(dataDir, "evil.so"))).toBe(false);
+    s.close();
+  });
+
+  it("youtube.visitor_data : une valeur bornée passe, jamais recopiée dans un message ; le reste garde 100 caractères", async () => {
+    const { socketPath } = await spawnWorker(ctx, "yt-dlp", "probe");
+    const s = session(socketPath);
+    const visitor = `Cgt${"x".repeat(440)}%3D%3D`;
+    const args = (youtube: Record<string, string[]>) => ({ op: "extract", target: "https://www.youtube.com/watch?v=leak", options: { extractorArgs: { youtube } } });
+    const refused: [number, Msg][] = [
+      [50, args({ visitor_data: [visitor, visitor] })],
+      [51, args({ visitor_data: ["A".repeat(1025)] })],
+      [52, args({ visitor_data: ["Cgt abc def ghi jkl mno"] })],
+      [53, args({ visitor_data: ["Cgt\nabcdefghijklmnopqrstu"] })],
+      [54, args({ player_client: ["v".repeat(101)] })],
+      [55, { op: "extract", target: "https://www.youtube.com/watch?v=leak", options: { extractorArgs: { other: { visitor_data: [visitor] } } } }],
+    ];
+    for (const [id, req] of refused) {
+      const [reply] = await s.ask({ id, ...req });
+      expect(reply, String(id)).toEqual({ id, ok: false, error: { code: "invalid", message: "requête refusée par l'hôte" } });
+    }
+    const [passed] = await s.ask({ id: 56, ...args({ visitor_data: [visitor], player_skip: ["webpage", "configs"] }) });
+    // Arrivée jusqu'à yt-dlp (le faux la recopie dans son erreur) : la réponse ne la porte plus.
+    expect(passed).toMatchObject({ id: 56, ok: false, error: { code: "failed" } });
+    const message = String((passed.error as { message: string }).message);
+    expect(message).toContain("[visitor_data]");
+    expect(message).not.toContain(visitor);
     s.close();
   });
 

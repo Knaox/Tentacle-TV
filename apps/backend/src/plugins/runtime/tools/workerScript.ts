@@ -163,8 +163,14 @@ def info(d, depth=0):
             "categories": [str(c)[:100] for c in (d.get("categories") or [])][:20],
             "formats": [fmt(f) for f in (d.get("formats") or [])][:80], "entries": entries[:100]}
 
-def failure(req_id, exc, logger):
+def secrets_of(o):
+    # Le visitorData passé par l'extension : une session, jamais recopiée dans un message.
+    return [v for v in (((o or {}).get("extractorArgs") or {}).get("youtube") or {}).get("visitor_data") or [] if v]
+
+def failure(req_id, exc, logger, secrets=()):
     message = (str(exc) + " " + " ".join(logger.lines)).strip()
+    for secret in secrets:
+        message = message.replace(secret, "[visitor_data]")
     low = message.lower()
     code = "cancelled" if isinstance(exc, DownloadCancelled) else "antiBot" if any(k in low for k in ANTI_BOT) else \
         "unavailable" if ("unavailable" in low or "private video" in low or "not available" in low) else "failed"
@@ -204,7 +210,7 @@ def run(req):
                 size = os.path.getsize(req["output"])
                 send({"id": req["id"], "ok": True, "result": {"path": os.path.relpath(os.path.realpath(req["output"]), DATA), "bytes": size}})
         except BaseException as exc:
-            failure(req["id"], exc, logger)
+            failure(req["id"], exc, logger, secrets_of(req.get("options")))
         finally:
             cancels.pop(req["id"], None)
 

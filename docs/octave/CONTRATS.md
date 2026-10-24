@@ -72,6 +72,10 @@ code chargé, aucune trace dans l'interface.
   qui charge un script du dossier de l'extension (yt-dlp en bibliothèque Python,
   importée depuis le zipapp en service). Le chemin et la mise à jour de yt-dlp
   restent ceux du cœur (`services/ytDlp.ts`), inchangés pour les bandes-annonces.
+- Ouvrier yt-dlp : chaque valeur d'`extractorArgs` fait 100 caractères au plus, SAUF
+  `youtube.visitor_data` (une seule valeur, base64url `%` `=`, 20–1 024 caractères : le
+  visitorData du `visitorStore` de Sillon, avec `player_skip` `webpage`,`configs`). Jamais
+  journalisée : refus de l'hôte à message fixe, valeur effacée des messages d'échec de l'ouvrier.
 - Extension désactivée → `shutdown`, plus aucun relais, `music:provider` émis.
 - Repli si le runtime se révèle trop risqué : conteneur séparé, MÊME contrat HTTP.
 
