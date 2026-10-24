@@ -104,6 +104,7 @@ def main():
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--options", default=None)
     ap.add_argument("--label", default="")
+    ap.add_argument("--dump-info", action="store_true", help="rend aussi l'info (sans les formats)")
     ap.add_argument("--settle", type=float, default=0, help="attente (s) après `version` d'un processus neuf")
     ap.add_argument("--dump-format", default=None, help="rend aussi ce format en entier (URL comprise)")
     ap.add_argument("--prelude", action="append", help="code Python posé avant le programme (variante mesurée)")
@@ -132,6 +133,8 @@ def main():
                    "meta": {k: (msg.get("result") or {}).get(k) for k in ("track", "artists", "album", "channel", "channelId", "uploader", "title", "durationS", "isLive")},
                    "http": [(t["key"][:90], t["ms"]) for t in http], "httpMs": sum(t["ms"] for t in http),
                    "nodeMs": sum(t["ms"] for t in node), "versionMs": version_ms if args.cold else None}
+            if args.dump_info and msg.get("ok"):
+                row["info"] = {k: v for k, v in msg["result"].items() if k not in ("formats", "entries")}
             if args.dump_format and msg.get("ok"):
                 row["dump"] = [f for f in msg["result"]["formats"] if f["formatId"] == args.dump_format]
             print(json.dumps(row, ensure_ascii=False), flush=True)
