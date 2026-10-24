@@ -34,6 +34,13 @@ export interface PlaybackSource {
   replayGain: ReplayGainInfo | null;
   /** Au-delà (ms epoch), redemander la source ; `null` : sans expiration. */
   expiresAt: number | null;
+  /**
+   * Un flux que CET appareil lit EN DIRECT (capacité `plugins.clientFetch`) : obtenu par une
+   * requête déléguée, il n'est valable que depuis la connexion de l'appareil. https, hôte dans
+   * les `mediaHosts` de l'extension, AUCUN en-tête d'authentification ; à la première erreur, le
+   * moteur reprend `url` (le serveur). Un moteur qui ne le connaît pas l'ignore.
+   */
+  direct?: { url: string; expiresAt: number | null };
 }
 
 export type ReplayGainMode = "off" | "track" | "album" | "auto";

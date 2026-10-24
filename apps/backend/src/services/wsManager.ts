@@ -7,6 +7,7 @@ import {
   type FamilyWsMessage,
 } from "../family/familyProtocol";
 import type { AccountAccessWsMessage } from "../accountAccess/accountAccessContract";
+import type { ClientFetchJob } from "../plugins/runtime/pluginClientFetch";
 import { bindDeviceSocket, deviceKeyOfSocket, deviceSocketsOf, unbindDeviceSocket } from "./wsDeviceSockets";
 
 export { deviceKeyOfSocket, isDeviceOnline, onDevicePresenceChange } from "./wsDeviceSockets";
@@ -41,6 +42,8 @@ export type WsServerMessage =
   | { type: "rights:changed" }
   /** Octave : les évènements `music:*` (contrat `MusicEvent`, packages/shared/src/music/musicEvents.ts). */
   | ({ type: `music:${string}` } & Record<string, unknown>)
+  /** Une requête qu'une extension confie à CET appareil (`client.fetch`, pluginClientFetch.ts). */
+  | ClientFetchJob
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */

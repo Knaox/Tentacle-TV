@@ -36,7 +36,8 @@ import { stopWatchTime } from "./services/watchTime/collector";
 import { savePendingPreviewMemory } from "./services/trailers/preview/previewMemoryStore";
 import { startBackgroundServices } from "./services/backgroundServices";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
-import { registerIsolatedRuntime, stopIsolatedRuntime } from "./plugins/runtime";
+import { clientFetchBroker, configureClientFetch, registerIsolatedRuntime, stopIsolatedRuntime } from "./plugins/runtime";
+import { isDeviceOnline, onDevicePresenceChange, sendToDevices } from "./services/wsManager";
 import { configureIsolatedRuntime } from "./plugins/runtime/hostServices";
 import { musicLibrary, findByMbid, setFavorite, playlistInsert, playlistEntries, usageOf, notifyPath, refreshPath } from "./music/host/jellyfinMusicHost";
 import { sendMusicEvent, broadcastMusicEvent } from "./music/events/musicSend";
@@ -262,6 +263,11 @@ async function main() {
       sendMusicEvent: (ids, event) => sendMusicEvent(ids, event as MusicEvent),
       broadcastMusicEvent: (event) => broadcastMusicEvent(event as MusicEvent),
       onAudioItems,
+    });
+    // Les requêtes déléguées : poussées sur la socket de l'appareil visé ; ses poignées tombent avec lui.
+    configureClientFetch({ send: (key, job) => (isDeviceOnline(key) ? (sendToDevices([key], job), true) : false), online: isDeviceOnline });
+    onDevicePresenceChange((_userId, key, online) => {
+      if (!online) clientFetchBroker()?.forgetDevice(key);
     });
     await registerIsolatedRuntime(app);
   }

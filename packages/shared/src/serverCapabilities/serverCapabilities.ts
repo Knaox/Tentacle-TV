@@ -271,6 +271,10 @@ export const SERVER_CAPABILITIES = {
    *  réseau de sa part), la recherche complète ne part qu'à la validation. Sans elle : suggestions
    *  de la bibliothèque et recherches récentes seulement. */
   "music.suggest": "1.32.0",
+  /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
+   *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
+   *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */
+  "plugins.clientFetch": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

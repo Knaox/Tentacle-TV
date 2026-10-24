@@ -3,6 +3,8 @@ import { onJellyfinHealth } from "../../services/jellyfinHealth";
 import { registerPluginRelay } from "./relay/relayRoute";
 import { mayUseIsolatedPlugin } from "./accountRights";
 import { configureIsolatedRuntime, type IsolatedRuntimeServices } from "./hostServices";
+import { registerClientFetchRoute } from "./clientFetch/clientFetchRoute";
+import { clientFetchBroker, relayClientHandle } from "./clientFetch/clientFetchRuntime";
 import { pushJellyfinState, relayLookup, serverLocale, startIsolatedRuntime, stopIsolatedRuntime } from "./runtimeRegistry";
 
 /**
@@ -19,7 +21,8 @@ import { pushJellyfinState, relayLookup, serverLocale, startIsolatedRuntime, sto
  */
 export async function registerIsolatedRuntime(app: FastifyInstance, services: Partial<IsolatedRuntimeServices> = {}): Promise<void> {
   configureIsolatedRuntime(services);
-  await registerPluginRelay(app, { lookup: relayLookup, serverLocale, mayUse: mayUseIsolatedPlugin });
+  await registerPluginRelay(app, { lookup: relayLookup, serverLocale, mayUse: mayUseIsolatedPlugin, clientHandle: relayClientHandle });
+  await registerClientFetchRoute(app, clientFetchBroker);
   const started = await startIsolatedRuntime();
   if (started.length > 0) console.log(`[runtime] invités isolés : ${started.join(", ")}`);
   onJellyfinHealth((next) => {
@@ -28,4 +31,5 @@ export async function registerIsolatedRuntime(app: FastifyInstance, services: Pa
 }
 
 export { stopIsolatedRuntime };
+export { configureClientFetch, clientFetchBroker } from "./clientFetch/clientFetchRuntime";
 export { isolatedPluginChanged, stopIsolatedPlugin, syncIsolatedPlugins, isIsolatedPlugin, isolatedState } from "./runtimeRegistry";

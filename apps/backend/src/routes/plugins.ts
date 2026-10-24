@@ -17,6 +17,8 @@ import { readTabMeta, type PluginTabMeta } from "./pluginTabMeta";
 import { readSearchMeta, type PluginSearchMeta } from "./pluginSearchMeta";
 import { readTitlesMeta, type PluginTitlesMeta } from "./pluginTitlesMeta";
 import { readPluginMusicManifest, type PluginMusicManifest } from "./pluginMusicMeta";
+import { readRuntimeManifest } from "../plugins/runtime/runtimeManifest";
+import type { ClientFetchManifest } from "../plugins/runtime/pluginClientFetch";
 import { registerPluginRuntimeAdminRoutes } from "./pluginRuntimeAdmin";
 // L'administration, découpée par sujet — ce fichier ne garde que ce que
 // chaque client lit (dépendances partagées, plugins actifs, bundles).
@@ -81,6 +83,9 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
       let titles: PluginTitlesMeta | undefined;
       // Les points d'extension de la musique (Octave) — cf. pluginMusicMeta.
       let music: PluginMusicManifest | null = null;
+      // Les hôtes que le BUREAU joint et lit en direct pour elle (requêtes déléguées) — le principal Electron
+      // les lit ICI lui-même, jamais par la page.
+      let clientFetch: ClientFetchManifest | null = null;
       const manifestPath = resolve(pluginDir, "plugin.json");
       if (existsSync(manifestPath)) {
         try {
@@ -90,6 +95,8 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
           search = readSearchMeta(manifest);
           titles = readTitlesMeta(manifest);
           music = readPluginMusicManifest(manifest.music);
+          const runtime = readRuntimeManifest(manifest);
+          clientFetch = runtime?.clientFetch && runtime.hostApi?.includes("client") ? runtime.clientFetch : null;
         } catch { /* ignore malformed manifest */ }
       }
       const configEnabled = (p.config as Record<string, unknown>)?.enabled === true;
@@ -105,6 +112,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
         ...(configEnabled && search ? { search } : {}),
         ...(configEnabled && titles ? { titles } : {}),
         ...(configEnabled && music ? { music } : {}),
+        ...(configEnabled && clientFetch ? { clientFetch } : {}),
       };
     });
   });
