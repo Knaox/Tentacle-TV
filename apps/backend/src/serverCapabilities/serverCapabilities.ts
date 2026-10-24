@@ -257,6 +257,15 @@ export const SERVER_CAPABILITIES = {
    *  réveille l'iPhone quand elle s'achève sans lui. Sans elle, le téléphone tire le transcodage
    *  en direct (`/light`), comme avant. */
   "offline.serverPrepare": "1.31.1",
+  // ── Octave : la musique de la bibliothèque, et les extensions isolées (docs/octave/CONTRATS.md) ──
+  /** La musique de la bibliothèque Jellyfin servie par le cœur (`/api/music/*` : index et
+   *  recherche, favoris, playlists, flux direct, événements `music:*`). Sans elle : aucun mode
+   *  Octave, aucune entrée musique. */
+  "music.library": "1.32.0",
+  /** Le runtime ISOLÉ des modules serveur d'extension (processus à part, API d'hôte fermée) et le
+   *  contrat `music` du manifeste relayé par `/api/plugins/active`. Sans elle : aucun résultat,
+   *  aucune lecture ni geste hors bibliothèque. */
+  "plugins.isolatedRuntime": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

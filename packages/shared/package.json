@@ -12,7 +12,9 @@
     "./licenses": "./src/licenses/index.ts",
     "./licenses/texts": "./src/licenses/texts.ts",
     "./brandIntro": "./src/brandIntro/index.ts",
-    "./brandIntro/synth": "./src/brandIntro/introSynth.ts"
+    "./brandIntro/synth": "./src/brandIntro/introSynth.ts",
+    "./music": "./src/music/index.ts",
+    "./pluginServerRuntime": "./src/plugins/pluginServerRuntime.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
