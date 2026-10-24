@@ -29,5 +29,7 @@ describe("révélation des résultats (Octave)", () => {
     expect(externalReadiness({ ...base, provisional: false, settled: false })).toBe(false);
     expect(externalReadiness({ ...base, provisional: true, complete: true })).toBe(true);
     expect(externalReadiness({ available: false, complete: false, provisional: false, pending: true, settled: false })).toBe(true);
+    // Une page suivante en échec : plus rien ne viendra, la section ne reste pas en rangées fantômes.
+    expect(externalReadiness({ ...base, provisional: true, failed: true })).toBe(true);
   });
 });

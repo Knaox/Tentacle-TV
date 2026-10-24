@@ -72,14 +72,17 @@ export function useRevealedResults(query: string) {
   const active = query.trim() !== "";
   if (active && decision.library && lib?.query !== query) setLib({ query, data: libraryData ?? null });
   if (active && decision.external) {
+    // Une recherche en échec après une page provisoire : rien de provisoire n'est jamais montré.
+    const usable = external.provisional ? { tracks: [], albums: [], artists: [] } : external;
+    const complete = external.complete || external.failed;
     if (ext?.query !== query) {
-      setExt({ query, tracks: external.tracks, albums: external.albums, artists: external.artists, complete: external.complete });
+      setExt({ query, tracks: usable.tracks, albums: usable.albums, artists: usable.artists, complete });
     } else {
-      const tracks = settleOrder(ext.tracks, external.tracks, true);
-      const albums = settleOrder(ext.albums, external.albums, true);
-      const artists = settleOrder(ext.artists, external.artists, true);
-      if (!sameList(tracks, ext.tracks) || !sameList(albums, ext.albums) || !sameList(artists, ext.artists) || ext.complete !== external.complete) {
-        setExt({ query, tracks, albums, artists, complete: external.complete });
+      const tracks = settleOrder(ext.tracks, usable.tracks, true);
+      const albums = settleOrder(ext.albums, usable.albums, true);
+      const artists = settleOrder(ext.artists, usable.artists, true);
+      if (!sameList(tracks, ext.tracks) || !sameList(albums, ext.albums) || !sameList(artists, ext.artists) || ext.complete !== complete) {
+        setExt({ query, tracks, albums, artists, complete });
       }
     }
   }

@@ -45,9 +45,9 @@ export function revealDecision(input: RevealInput): RevealDecision {
   return { library, external: library && externalShowable };
 }
 
-/** L'extension a une page montrable : sa recherche finie, ou une page non provisoire. */
-export function externalReadiness(state: { available: boolean; complete: boolean; provisional: boolean; pending: boolean; settled: boolean }): boolean {
-  if (!state.available) return true;
+/** L'extension a une page montrable : sa recherche finie, ou une page non provisoire — ou rien ne viendra plus (échec). */
+export function externalReadiness(state: { available: boolean; complete: boolean; provisional: boolean; pending: boolean; settled: boolean; failed?: boolean }): boolean {
+  if (!state.available || state.failed) return true;
   if (state.pending) return false;
   // `settled` : ce que la bibliothèque possède déjà est connu (sinon un titre disparaîtrait de la section après coup).
   return state.settled && (state.complete || !state.provisional);

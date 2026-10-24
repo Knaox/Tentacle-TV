@@ -78,7 +78,7 @@ export function useOctaveSearch(query: string) {
   const libraryReady = library.settledQuery === musicSearchText(query) && settledQuery(library);
   // Ce que la bibliothèque possède parmi les titres externes est connu : sinon un titre quitterait la section après coup.
   const ownedKnown = toCheck.length === 0 || settledQuery(byMbid);
-  const externalReady = externalReadiness({ available: external.available, complete: external.complete, provisional: external.provisional, pending: external.pending, settled: ownedKnown });
+  const externalReady = externalReadiness({ available: external.available, complete: external.complete, provisional: external.provisional, pending: external.pending, settled: ownedKnown, failed: external.failed });
 
   return {
     library,
