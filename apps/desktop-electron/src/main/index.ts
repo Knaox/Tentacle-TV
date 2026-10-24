@@ -49,6 +49,7 @@ import { registerPipCommands } from "./ipc/pip";
 import { registerVideoCommands, restoreDisplay, stopPlayer } from "./ipc/video";
 import { registerMediaWarmCommands } from "./ipc/mediaWarm";
 import { registerAudioCommands, stopAudio } from "./ipc/audio";
+import { scanAudioComponents } from "./audio/coreAudioScan";
 import { isRunning } from "./video/mpv";
 import { installCloseSequence } from "./closeSequence";
 import { closePipBeforeHost } from "./pip/pipQuit";
@@ -163,6 +164,11 @@ function main(): void {
   // Relance sur une autre plateforme d'affichage : ce processus ne fait plus rien.
   if (relaunchingForSession()) return;
   registerAppScheme();
+  // Le recensement CoreAudio (jusqu'à ~2 s à froid) part dès le lancement, hors du fil principal :
+  // il ne tombe plus sur le premier clic d'Octave (`audio/coreAudioScan.ts`).
+  scanAudioComponents(process.platform as "darwin" | "win32" | "linux", (ms) => {
+    if (ms !== null && ms > 250) console.log(`[audio] recensement CoreAudio au lancement : ${Math.round(ms)} ms`);
+  });
 
   // ⚠️ Le `.catch` n'est pas une précaution de style.
   //
