@@ -11,6 +11,7 @@ import { useCallback, useEffect } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "./octave.css";
 import { resetLikeOverrides } from "./actions/likeOverrides";
+import { OctaveCacheBoundary, useOctaveCacheWarmStart } from "./data/persist/OctaveCacheBoundary";
 import { setOctaveMode } from "./mode/octaveMode";
 import { useOctaveAvailability } from "./mode/useOctaveAvailability";
 import { OctavePlayerProvider } from "./player/OctavePlayerProvider";
@@ -26,6 +27,7 @@ import { SearchView } from "./views/SearchView";
 
 export function OctaveApp() {
   const { available, settled } = useOctaveAvailability();
+  useOctaveCacheWarmStart();
   const navigate = useNavigate();
 
   // Entrer par une adresse `/octave/...`, c'est allumer le mode ; sans musique, il s'éteint.
@@ -43,21 +45,23 @@ export function OctaveApp() {
   if (!available) return <Navigate to="/" replace />;
 
   return (
-    <OctavePlayerProvider>
-      <OctaveShell onExit={exit}>
-        <Routes>
-          <Route index element={<HomeView />} />
-          <Route path="search" element={<SearchView />} />
-          <Route path="library" element={<LibraryView />} />
-          <Route path="liked" element={<LikedView />} />
-          <Route path="playlists" element={<PlaylistsView />} />
-          <Route path="playlist/:id" element={<PlaylistView />} />
-          <Route path="album/:id" element={<AlbumView />} />
-          <Route path="artist/:id" element={<ArtistView />} />
-          <Route path="*" element={<Navigate to="." replace />} />
-        </Routes>
-      </OctaveShell>
-    </OctavePlayerProvider>
+    <OctaveCacheBoundary>
+      <OctavePlayerProvider>
+        <OctaveShell onExit={exit}>
+          <Routes>
+            <Route index element={<HomeView />} />
+            <Route path="search" element={<SearchView />} />
+            <Route path="library" element={<LibraryView />} />
+            <Route path="liked" element={<LikedView />} />
+            <Route path="playlists" element={<PlaylistsView />} />
+            <Route path="playlist/:id" element={<PlaylistView />} />
+            <Route path="album/:id" element={<AlbumView />} />
+            <Route path="artist/:id" element={<ArtistView />} />
+            <Route path="*" element={<Navigate to="." replace />} />
+          </Routes>
+        </OctaveShell>
+      </OctavePlayerProvider>
+    </OctaveCacheBoundary>
   );
 }
 
