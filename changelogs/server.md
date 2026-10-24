@@ -10,6 +10,18 @@ livré par ce workflow : une livraison serveur reprend celui de l'image en
 service. Il ne change que par `webos.yml`, qui reconstruit alors l'image — ses
 notes vont dans `changelogs/server-webos.md`, pas ici.
 
+## [1.31.4]
+<!-- Version de sécurité, aucune capacité nouvelle. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
+### FR
+- **Mise à jour de sécurité, recommandée pour tous les serveurs**
+- **Validation des requêtes** : la bibliothèque qui vérifie chaque requête reçue par le serveur passe à sa version corrigée ; une requête démesurée ne peut plus saturer sa mémoire
+- Aucun autre changement : réglages, comptes et bibliothèques restent tels quels
+
+### EN
+- **Security update, recommended for every server**
+- **Request validation**: the library that checks every request the server receives moves to its fixed version; an oversized request can no longer exhaust its memory
+- No other change: settings, accounts and libraries stay as they are
+
 ## [1.31.3]
 <!-- Version de sécurité, aucune capacité nouvelle. Ce bloc est aussi le texte de Tentacle Server pour Windows (Microsoft Store, 1 500 caractères par langue). -->
 ### FR
