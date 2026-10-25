@@ -96,3 +96,6 @@ export function useTypingPauseAnnouncer(): TypingPause {
   useEffect(() => () => pause.dispose(), [pause]);
   return pause;
 }
+
+/** Le nom sous lequel la barre de R5 l'appelle (`SearchView`) : la version complète, pause comprise. */
+export const useTypingPause = useTypingPauseAnnouncer;
