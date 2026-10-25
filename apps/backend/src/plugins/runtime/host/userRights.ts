@@ -1,5 +1,7 @@
 import { jellyfinAdminFetch } from "../../../services/jellyfinAdminFetch";
 import { guestExtensionAccess } from "../../../services/family/familyGuestExtensions";
+import { isFamilyGuest } from "../../../services/family/familyGuestMarkers";
+import type { HostApi } from "../pluginServerRuntime";
 import { getInstalled } from "../../../services/pluginManager";
 import { isPluginUsable } from "../../../services/pluginStorage/gate";
 import { HostCallFailure } from "../hostDispatcher";
@@ -15,8 +17,10 @@ import { runtimeServices } from "../hostServices";
  * - le cœur : l'extension sert (installée, activée, pas refusée) et son
  *   intégration est allumée par l'administrateur (`configEnabled`).
  * `canRequest` (garder hors bibliothèque, demander) suit `canUse` — un invité
- * qui l'a reçu agit à SON nom. `keepOffline` (garder hors ligne sur l'appareil)
- * suit en plus `EnableContentDownloading`, et n'est jamais celui d'un invité.
+ * qui l'a reçu agit à SON nom. `familyGuest` le dit à l'extension, qui peut
+ * en faire moins (une extension de musique n'y fait jamais rien entrer).
+ * `keepOffline` (garder hors ligne sur l'appareil) suit en plus
+ * `EnableContentDownloading`, et n'est jamais celui d'un invité.
  */
 
 interface RawUser {
@@ -24,12 +28,10 @@ interface RawUser {
   Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; EnableAllFolders?: boolean; EnabledFolders?: string[]; EnableContentDownloading?: boolean };
 }
 
-type UserRights = { exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean; keepOffline: boolean };
-
-export async function userRights(pluginId: string, userId: string): Promise<UserRights> {
+export async function userRights(pluginId: string, userId: string): Promise<Required<HostApi["users.rights"]["result"]>> {
   const res = await jellyfinAdminFetch<RawUser>(`/Users/${encodeURIComponent(userId)}`);
   if (!res.ok) {
-    if (res.status === 404 || res.status === 400) return { exists: false, isAdmin: false, canUse: false, canRequest: false, keepOffline: false };
+    if (res.status === 404 || res.status === 400) return { exists: false, isAdmin: false, canUse: false, canRequest: false, familyGuest: false, keepOffline: false };
     throw new HostCallFailure("unavailable", "Jellyfin ne répond pas");
   }
   const policy = res.data.Policy ?? {};
@@ -40,18 +42,17 @@ export async function userRights(pluginId: string, userId: string): Promise<User
   const lib = await runtimeServices().jellyfin?.musicLibrary({}).catch(() => null) ?? null;
   const seesMusic = !!lib && (policy.EnableAllFolders === true || (policy.EnabledFolders ?? []).includes(lib.libraryId));
   let familyOk: boolean;
-  let guest: boolean;
+  let familyGuest: boolean;
   try {
-    const access = await guestExtensionAccess(userId);
-    familyOk = access !== "denied";
-    guest = access !== null;
+    familyOk = (await guestExtensionAccess(userId)) !== "denied";
+    familyGuest = await isFamilyGuest(userId);
   } catch {
-    // Base muette : fermé à l'échec, comme `requireAuth`.
+    // Base muette : fermé à l'échec, comme `requireAuth` — et tenu pour un invité.
     familyOk = false;
-    guest = true;
+    familyGuest = true;
   }
   const canUse = pluginOn && policy.IsDisabled !== true && seesMusic && familyOk;
   // Garder hors ligne (`offline.music`) : le droit Jellyfin du compte ; un invité de la Famille, jamais.
-  const keepOffline = canUse && !guest && policy.EnableContentDownloading === true;
-  return { exists: true, isAdmin, canUse, canRequest: canUse, keepOffline };
+  const keepOffline = canUse && !familyGuest && policy.EnableContentDownloading === true;
+  return { exists: true, isAdmin, canUse, canRequest: canUse, familyGuest, keepOffline };
 }

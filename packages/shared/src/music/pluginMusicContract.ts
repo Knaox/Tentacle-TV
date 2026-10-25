@@ -65,6 +65,11 @@ export interface PluginMusicManifest {
    */
   searchKinds?: MusicSearchKind[];
   /**
+   * Droits du COMPTE — GET → `MusicRights` (musicRights.ts) : ajouter à la bibliothèque, limite par jour, garder
+   * hors ligne hors bibliothèque. Absent (extension d'avant) : comportement d'avant (`MUSIC_RIGHTS_BEFORE`).
+   */
+  rights?: string;
+  /**
    * Garder hors ligne un titre hors bibliothèque (capacité `offline.music`, BUREAU) — GET <offline>/<externalId> → le
    * fichier audio COMPLET (`Content-Length`, `Range` → 206), que l'appareil garde tel quel. Tant qu'il se prépare :
    * 503 (`Retry-After`), le moteur hors ligne réessaie seul ; un titre introuvable ou un droit refusé : 404. Droits
@@ -261,7 +266,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "offline"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }

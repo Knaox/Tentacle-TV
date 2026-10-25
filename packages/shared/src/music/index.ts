@@ -6,3 +6,4 @@ export * from "./musicCoreApi";
 export * from "./musicEvents";
 export * from "./pluginMusicContract";
 export * from "./musicLibraryMatch";
+export * from "./musicRights";

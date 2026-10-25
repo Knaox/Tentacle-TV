@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { externalTrackKey, libraryTrackKey, normalizeMbid, parseTrackKey } from "./musicKeys";
 import { readPluginMusicManifest } from "./pluginMusicContract";
+import { MUSIC_RIGHTS_BEFORE, readMusicRights } from "./musicRights";
 
 describe("clés de titre", () => {
   it("aller-retour bibliothèque et extension", () => {
@@ -35,5 +36,22 @@ describe("manifeste music", () => {
     // Rien de connu : pas de filtres servis (l'interface filtre la page « Tout »).
     expect(readPluginMusicManifest({ search: "/music/search", resolve: "/music/resolve", searchKinds: ["videos"] })?.searchKinds).toBeUndefined();
     expect(readPluginMusicManifest({ search: "/music/search", resolve: "/music/resolve", playlist: "../x", searchKinds: "tracks" })).toEqual({ search: "/music/search", resolve: "/music/resolve" });
+  });
+});
+
+describe("droits du compte (route `rights`)", () => {
+  it("le manifeste garde `rights` ; une extension d'avant n'en a pas", () => {
+    expect(readPluginMusicManifest({ search: "/s", resolve: "/r", rights: "/music/me/rights" })?.rights).toBe("/music/me/rights");
+    expect(readPluginMusicManifest({ search: "/s", resolve: "/r" })?.rights).toBeUndefined();
+  });
+
+  it("readMusicRights valide la forme, sinon rien (le client garde le comportement d'avant)", () => {
+    const ok = { acquire: true, dailyLimit: 10, remainingToday: 3, keepOffline: false, resetsAt: 1_800_000_000_000 };
+    expect(readMusicRights(ok)).toEqual(ok);
+    expect(readMusicRights({ ...ok, dailyLimit: 0, remainingToday: null, resetsAt: null })?.remainingToday).toBeNull();
+    expect(readMusicRights({ ...ok, acquire: "oui" })).toBeNull();
+    expect(readMusicRights({ ...ok, remainingToday: -1 })).toBeNull();
+    expect(readMusicRights(null)).toBeNull();
+    expect(MUSIC_RIGHTS_BEFORE.acquire).toBe(true);
   });
 });

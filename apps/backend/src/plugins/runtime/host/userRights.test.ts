@@ -15,6 +15,7 @@ vi.mock("../../../services/jellyfinAdminFetch", () => ({
   jellyfinAdminFetch: async () => ({ ok: true, status: 200, data: { Id: "u1", Policy: state.policy } }),
 }));
 vi.mock("../../../services/family/familyGuestExtensions", () => ({ guestExtensionAccess: async () => state.guest }));
+vi.mock("../../../services/family/familyGuestMarkers", () => ({ isFamilyGuest: async () => state.guest !== null }));
 vi.mock("../../../services/pluginManager", () => ({ getInstalled: () => [{ pluginId: "musique", config: { enabled: true } }] }));
 vi.mock("../../../services/pluginStorage/gate", () => ({ isPluginUsable: () => true }));
 vi.mock("../hostServices", () => ({ runtimeServices: () => ({ jellyfin: { musicLibrary: async () => ({ libraryId: "lib" }) } }) }));
