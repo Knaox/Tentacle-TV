@@ -116,8 +116,13 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
   return <PlayerContext.Provider value={player}>{children}</PlayerContext.Provider>;
 }
 
+/** Les réglages de départ du moteur d'Octave (le volume survit d'une session à l'autre). */
+export function octaveEnginePrefs(): EnginePrefs {
+  return { volume: readVolume(), muted: false, replayGain: "auto", deviceId: null, exclusive: false };
+}
+
 export function OctavePlayerProvider({ children }: { children: ReactNode }) {
-  const [prefs] = useState<EnginePrefs>(() => ({ volume: readVolume(), muted: false, replayGain: "auto", deviceId: null, exclusive: false }));
+  const [prefs] = useState<EnginePrefs>(octaveEnginePrefs);
   return (
     <AudioEngineProvider prefs={prefs}>
       <PlayerOnEngine>{children}</PlayerOnEngine>

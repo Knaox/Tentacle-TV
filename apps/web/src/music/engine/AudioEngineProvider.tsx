@@ -4,7 +4,7 @@
  * port qu'il expose — jamais à mpv ni à un `<audio>`.
  *
  *   <AudioEngineProvider>…</AudioEngineProvider>
- *   const engine = useAudioEngine();        // null tant qu'il démarre
+ *   const engine = useAudioEngine();        // le port, dès le premier rendu (différé tant que le moteur démarre)
  *   const state = useAudioEngineState();    // suit l'état (null sans moteur)
  *
  * L'authentification vient de la page : la racine du serveur Tentacle
@@ -16,12 +16,12 @@
  * (`requestAnimationFrame`) : la position y est extrapolée.
  */
 
-import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { createContext, useContext, useLayoutEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { AudioEnginePort, EngineState } from "@tentacle-tv/shared/music";
-import { getBackendBase } from "../../lib/backendBase";
 import { createAudioEngine } from "./createAudioEngine";
-import type { MusicEngineAuth } from "./engineShared";
+import { createDeferredEngine } from "./deferredEngine";
+import { useMusicEngineAuth } from "./engineAuth";
+import { adoptPrestartedEngine } from "./enginePrestart";
 import type { EnginePrefs } from "./mpv/mpvAudioEngine";
 
 const EngineContext = createContext<AudioEnginePort | null>(null);
@@ -29,27 +29,17 @@ const EngineContext = createContext<AudioEnginePort | null>(null);
 const DEFAULT_PREFS: EnginePrefs = { volume: 1, muted: false, replayGain: "auto", deviceId: null, exclusive: false };
 
 export function AudioEngineProvider({ children, prefs = DEFAULT_PREFS }: { children: ReactNode; prefs?: EnginePrefs }) {
-  const client = useJellyfinClient();
-  // La racine du serveur TENTACLE (`/api/music/...` y vit), pas celle du proxy Jellyfin
-  // (`client.getBaseUrl()` = `…/api/jellyfin` : le flux y devenait `/api/jellyfin/api/music/stream`).
-  const baseUrl = getBackendBase();
-  const token = client.getToken();
-  const useCredentials = client.useCredentials;
-  const auth = useMemo<MusicEngineAuth>(() => ({ baseUrl, token, useCredentials }), [baseUrl, token, useCredentials]);
+  const auth = useMusicEngineAuth();
   const [engine, setEngine] = useState<AudioEnginePort | null>(null);
 
-  useEffect(() => {
-    let alive = true;
-    let started: AudioEnginePort | null = null;
+  // Effet de MISE EN PAGE : le port différé est posé avant la première peinture, la coquille
+  // se dessine aussitôt ; le vrai moteur (démarré au geste s'il l'a été) le rejoint ensuite.
+  useLayoutEffect(() => {
     // Les réglages du moment, pas une dépendance : l'interface les change par le port.
-    void createAudioEngine(auth, prefs).then((e) => {
-      if (!alive) return e.dispose();
-      started = e;
-      setEngine(e);
-    });
+    const port = createDeferredEngine(adoptPrestartedEngine(auth) ?? createAudioEngine(auth, prefs), prefs);
+    setEngine(port);
     return () => {
-      alive = false;
-      started?.dispose();
+      port.dispose();
       setEngine(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- les préférences ne redémarrent pas le moteur

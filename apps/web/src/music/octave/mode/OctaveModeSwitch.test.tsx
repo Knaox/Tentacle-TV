@@ -11,6 +11,7 @@ const h = vi.hoisted(() => ({ available: true, mode: false }));
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({}) }));
+vi.mock("../../engine/engineAuth", () => ({ useMusicEngineAuth: () => ({ baseUrl: "", token: null, useCredentials: true }) }));
 vi.mock("./useOctaveAvailability", () => ({
   useOctaveAvailability: (enabled = true) => ({ available: enabled && h.available, settled: true }),
 }));
