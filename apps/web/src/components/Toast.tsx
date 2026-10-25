@@ -9,6 +9,8 @@ interface ToastProps {
   type: "success" | "error" | "info";
   title?: string;
   message: string;
+  /** Un geste à côté du message ; il ferme l'avis. */
+  action?: { label: string; onPress: () => void };
   onDismiss: (id: number) => void;
 }
 
@@ -39,7 +41,7 @@ const DURATION_MS = { success: 4000, info: 4000, error: 6000 } as const;
  * ferme. La barre qui se vide est une animation CSS de `transform`, suspendue
  * en même temps : plus de rendu React vingt fois par seconde pour la tenir.
  */
-export const Toast = memo(function Toast({ id, type, title, message, onDismiss }: ToastProps) {
+export const Toast = memo(function Toast({ id, type, title, message, action, onDismiss }: ToastProps) {
   const reduced = useReducedMotion() ?? false;
   const [held, setHeld] = useState(false);
   const durationMs = DURATION_MS[type];
@@ -73,7 +75,22 @@ export const Toast = memo(function Toast({ id, type, title, message, onDismiss }
     >
       {glass.layers}
       {title && <p className="font-semibold">{title}</p>}
-      <p className={title ? "mt-0.5 text-content-secondary" : undefined}>{message}</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className={title ? "mt-0.5 text-content-secondary" : undefined}>{message}</p>
+        {action && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              action.onPress();
+              onDismiss(id);
+            }}
+            className="relative shrink-0 cursor-pointer rounded-md px-2 py-1 font-semibold text-[var(--brand)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus before:absolute before:-inset-2 before:content-['']"
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
       <span aria-hidden className="absolute bottom-0 left-0 block h-0.5 w-full motion-reduce:hidden">
         <span
           className="block h-full origin-left animate-countdown"
