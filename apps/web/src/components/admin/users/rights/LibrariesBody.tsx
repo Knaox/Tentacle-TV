@@ -27,7 +27,9 @@ export function LibrariesBody({ rights, options, writer }: GroupProps) {
     () => withMissing(
       (options?.libraries ?? []).map((library) => {
         const type = (library.collectionType ?? "").toLowerCase();
-        return { id: library.id, name: library.name, detail: NAMED_TYPES.has(type) ? t(`libraries.types.${type}`) : undefined };
+        const detail = NAMED_TYPES.has(type) ? t(`libraries.types.${type}`) : undefined;
+        // « Musique · Musique » ne dit rien de plus : le type ne se répète pas quand il EST le nom.
+        return { id: library.id, name: library.name, detail: detail?.toLowerCase() === library.name.trim().toLowerCase() ? undefined : detail };
       }),
       rights.enabledFolders,
       missing,
