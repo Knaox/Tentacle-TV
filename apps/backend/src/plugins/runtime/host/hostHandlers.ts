@@ -8,6 +8,7 @@ import { hostYouTubeBudget } from "../../../services/trailers/youtubeGuard";
 import { clientFetchBroker } from "../clientFetch/clientFetchRuntime";
 import { emitPluginMusicEvent } from "./musicEvents";
 import { userRights } from "./userRights";
+import { userList } from "./userList";
 
 /**
  * Les gestionnaires de l'API d'hôte : chaque méthode de `HOST_METHODS`, déjà
@@ -43,6 +44,7 @@ export const HOST_HANDLERS: HostHandlers = {
   "jellyfin.notifyPath": (_ctx, params) => jellyfin().notifyPath(params),
   "jellyfin.refreshPath": (_ctx, params) => jellyfin().refreshPath(params),
   "users.rights": (ctx, { userId }) => userRights(ctx.pluginId, userId),
+  "users.list": () => userList(),
   "events.emit": async (ctx, { userIds, event }) => emitPluginMusicEvent(ctx.pluginId, userIds, event),
   "tools.info": async (ctx, { tool }) => {
     const allowed = (ctx.manifest.tools ?? []).includes(tool) && isToolGranted(ctx.pluginId, tool);

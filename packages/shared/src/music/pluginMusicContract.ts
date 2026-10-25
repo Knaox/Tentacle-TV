@@ -64,6 +64,11 @@ export interface PluginMusicManifest {
    * remplie) : les puces de filtre en font UNE requête au clic. Absent : l'interface filtre la page « Tout ».
    */
   searchKinds?: MusicSearchKind[];
+  /**
+   * Droits du COMPTE — GET → `MusicRights` (musicRights.ts) : ajouter à la bibliothèque, limite par jour, garder
+   * hors ligne hors bibliothèque. Absent (extension d'avant) : comportement d'avant (`MUSIC_RIGHTS_BEFORE`).
+   */
+  rights?: string;
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
 }
@@ -254,7 +259,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }

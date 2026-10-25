@@ -1,5 +1,7 @@
 import { jellyfinAdminFetch } from "../../../services/jellyfinAdminFetch";
 import { guestExtensionAccess } from "../../../services/family/familyGuestExtensions";
+import { isFamilyGuest } from "../../../services/family/familyGuestMarkers";
+import type { HostApi } from "../pluginServerRuntime";
 import { getInstalled } from "../../../services/pluginManager";
 import { isPluginUsable } from "../../../services/pluginStorage/gate";
 import { HostCallFailure } from "../hostDispatcher";
@@ -15,7 +17,8 @@ import { runtimeServices } from "../hostServices";
  * - le cœur : l'extension sert (installée, activée, pas refusée) et son
  *   intégration est allumée par l'administrateur (`configEnabled`).
  * `canRequest` (garder hors bibliothèque, demander) suit `canUse` — un invité
- * qui l'a reçu agit à SON nom.
+ * qui l'a reçu agit à SON nom. `familyGuest` le dit à l'extension, qui peut
+ * en faire moins (une extension de musique n'y fait jamais rien entrer).
  */
 
 interface RawUser {
@@ -23,7 +26,7 @@ interface RawUser {
   Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; EnableAllFolders?: boolean; EnabledFolders?: string[] };
 }
 
-export async function userRights(pluginId: string, userId: string): Promise<{ exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean }> {
+export async function userRights(pluginId: string, userId: string): Promise<HostApi["users.rights"]["result"]> {
   const res = await jellyfinAdminFetch<RawUser>(`/Users/${encodeURIComponent(userId)}`);
   if (!res.ok) {
     if (res.status === 404 || res.status === 400) return { exists: false, isAdmin: false, canUse: false, canRequest: false };
@@ -37,12 +40,15 @@ export async function userRights(pluginId: string, userId: string): Promise<{ ex
   const lib = await runtimeServices().jellyfin?.musicLibrary({}).catch(() => null) ?? null;
   const seesMusic = !!lib && (policy.EnableAllFolders === true || (policy.EnabledFolders ?? []).includes(lib.libraryId));
   let familyOk: boolean;
+  let familyGuest: boolean;
   try {
     familyOk = (await guestExtensionAccess(userId)) !== "denied";
+    familyGuest = await isFamilyGuest(userId);
   } catch {
-    // Base muette : fermé à l'échec, comme `requireAuth`.
+    // Base muette : fermé à l'échec, comme `requireAuth` — et tenu pour un invité.
     familyOk = false;
+    familyGuest = true;
   }
   const canUse = pluginOn && policy.IsDisabled !== true && seesMusic && familyOk;
-  return { exists: true, isAdmin, canUse, canRequest: canUse };
+  return { exists: true, isAdmin, canUse, canRequest: canUse, familyGuest };
 }

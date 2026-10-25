@@ -47,6 +47,7 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
     })
     .strict(),
   "users.rights": z.object({ userId: jellyfinId }).strict(),
+  "users.list": empty as unknown as z.ZodType<Record<string, never>>,
   "events.emit": z.object({ userIds: z.array(jellyfinId).min(1).max(200), event: eventPayload }).strict(),
   "tools.info": z.object({ tool }).strict(),
   "tools.exec": z
