@@ -117,7 +117,8 @@ export const TrackRow = memo(function TrackRow({ track, number, current, failed 
       )}
       <div role="gridcell" className="flex items-center gap-1">
         <HeartButton track={track} actions={actions} quiet />
-        <span className="w-12 text-right text-[13px] tabular-nums text-content-tertiary">{durationLabel(track.durationMs)}</span>
+        {/* Une durée inconnue (titre d'une recherche hors bibliothèque) : la place, pas de « –:–– ». */}
+        <span className="w-12 text-right text-[13px] tabular-nums text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>
         <TrackMenu track={track} actions={actions} onRemove={onRemove} />
       </div>
     </div>

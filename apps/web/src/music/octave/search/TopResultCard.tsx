@@ -58,13 +58,13 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
   const albumTarget = top.kind === "album" && !top.album.jellyfinId ? entityTarget(top.album) : null;
   // Le nom : un lien vers sa vue, dont la zone couvre toute la carte (le bouton Lecture reste au-dessus).
   const nameClass =
-    "block truncate text-[28px] font-bold leading-tight tracking-tight text-content-primary focus-visible:outline-none after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-line-focus";
+    "line-clamp-2 break-words text-2xl font-bold leading-tight tracking-tight text-content-primary md:text-[28px] focus-visible:outline-none after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-line-focus";
   return (
     <section aria-labelledby={headingId} className="flex min-w-0 flex-col gap-3">
       <h2 id={headingId} className="px-2 text-xl font-bold tracking-tight text-content-primary">
         {t("search.topResult")}
       </h2>
-      <div className="octave-card group relative flex min-h-[15rem] flex-1 flex-col justify-end gap-4 rounded-xl bg-fill-subtle p-5 transition-colors duration-150 hover:bg-fill-medium focus-within:bg-fill-medium">
+      <div className="octave-card group relative flex min-h-[15rem] flex-1 flex-col justify-between gap-4 rounded-xl bg-fill-subtle p-5 transition-colors duration-150 hover:bg-fill-medium focus-within:bg-fill-medium">
         <Artwork url={face.art} kind={face.round ? "artist" : "album"} round={face.round} eager className="h-28 w-28 shadow-lg" />
         <div className="min-w-0 pr-16">
           {face.to ? (
