@@ -26,7 +26,8 @@ function blockFor(source: string, selector: string): string {
 const declared = (block: string): Set<string> =>
   new Set(Array.from(block.matchAll(/^\s*(--oc-[a-z0-9-]+)\s*:/gim), (m) => m[1] as string));
 
-const DARK = declared(blockFor(TOKENS, ":root"));
+// Le thème sombre vaut aussi pour la nuit (`:root, .octave-night`).
+const DARK = declared(blockFor(TOKENS, ".octave-night"));
 const LIGHT = declared(blockFor(TOKENS, ':root[data-theme="light"]'));
 
 /** Les feuilles d'Octave (la coquille, les vues, la recherche…). */
@@ -73,7 +74,7 @@ describe("les jetons d'Octave", () => {
   });
 
   it("l'accent est le ROSE de la marque, jamais une valeur en dur", () => {
-    const dark = blockFor(TOKENS, ":root");
+    const dark = blockFor(TOKENS, ".octave-night");
     expect(dark).toMatch(/--oc-accent:\s*var\(--brand-accent\);/);
     expect(dark).toMatch(/--oc-accent-rgb:\s*var\(--brand-accent-rgb\);/);
     expect(dark).toMatch(/--oc-volume-fill:\s*var\(--oc-accent\);/);

@@ -19,6 +19,34 @@
   backdrop-filter: blur(var(--oc-dock-blur)) saturate(1.4);
 }
 
+/* La colonne de droite du dock se règle sur SA place (requête de conteneur :
+ * elle se resserre quand la file s'ouvre ou la fenêtre rétrécit). La qualité
+ * et l'état ne paraissent que s'ils tiennent EN ENTIER — jamais coupés au
+ * milieu d'un mot ; la glissière du volume cède d'abord de la largeur.
+ * Mesuré (Inter, « Sans perte », le plus long) : état + pastille 97, file 36,
+ * bouton du volume 40, écarts 6. D'où l'échelle (glissière / qualité) :
+ *   < 160 : pas de glissière (le bouton muet reste) ;
+ *   160 → 64 px ;  200 → 96 px ;
+ *   280 → qualité + 72 px (263 utiles) ;  310 → qualité + 96 px (287 utiles).
+ * `.octave-range.octave-dock-volume` : la règle de `.octave-range`, plus bas
+ * dans la feuille, reprendrait sinon le `display`. */
+.octave-dock-aside { container-type: inline-size; }
+.octave-dock-meta { display: none; }
+.octave-range.octave-dock-volume { display: none; width: 64px; }
+@container (min-width: 160px) {
+  .octave-range.octave-dock-volume { display: flex; }
+}
+@container (min-width: 200px) {
+  .octave-range.octave-dock-volume { width: 96px; }
+}
+@container (min-width: 280px) {
+  .octave-dock-meta { display: inline-flex; }
+  .octave-range.octave-dock-volume { width: 72px; }
+}
+@container (min-width: 310px) {
+  .octave-range.octave-dock-volume { width: 96px; }
+}
+
 /* Le bord du bas : la page se fond dans l'encre sous le dock — un dégradé
  * posé, sans flou (le contenu reste lisible jusqu'au dock, puis s'efface).
  * En verre natif, à moitié : le verre doit encore voir ce qui passe dessous. */
