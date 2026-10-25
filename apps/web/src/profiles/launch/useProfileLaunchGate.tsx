@@ -46,6 +46,8 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   const [initial] = useState(() => octaveInitial(initialState(authed), initialListing));
   const [gate, setGate] = useState<GateState>(initial.gate);
   const [octavePin, setOctavePin] = useState<PickerProfileDto | null>(initial.pin);
+  // Le miroir ouvrait l'identité sans code : on attend la réponse fraîche (un code posé ailleurs depuis), bornée.
+  const [octaveAwaiting, setOctaveAwaiting] = useState(initial.awaiting);
   const gateRef = useRef(gate);
   gateRef.current = gate;
   const eligible = useRef(authed);
@@ -90,6 +92,7 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
     const step = afterFresh(gateRef.current, answer, late);
     if (step.logout) logout();
     if (step.endProfile && endProfileSession("ended")) return;
+    setOctaveAwaiting(false);
     const { heldProfileId, stay } = gateRef.current;
     const octave = octaveGateStep(step.phase, answer.kind === "listing" ? answer.listing : null, heldProfileId, stay, Date.now(), isTentacleHeld());
     setOctavePin(octave.pinProfile);
@@ -104,6 +107,16 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   useEffect(() => {
     if (eligible.current) check();
   }, [check]);
+
+  // Pas de réponse dans l'attente bornée (serveur lent, hors ligne) : l'identité gardée s'ouvre, comme hors d'Octave.
+  useEffect(() => {
+    if (!octaveAwaiting) return;
+    const timer = setTimeout(() => {
+      setOctaveAwaiting(false);
+      setGate((current) => (current.phase === "check" ? { ...current, phase: "app", mode: "late" } : current));
+    }, Math.max(0, LAUNCH_CHECK_BUDGET_MS - (Date.now() - startedAt.current)));
+    return () => clearTimeout(timer);
+  }, [octaveAwaiting]);
 
   // La feuille du code (lancement en Octave) : son propre profil s'ouvre sans rechargement ; sinon la page repart.
   const onOctaveOpened = useCallback((result: "stay" | "reload") => {
@@ -134,14 +147,14 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
 }
 
 /**
- * Le lancement en Octave, d'après le miroir : le sélecteur devient l'identité
- * gardée, ou la feuille de son code. Ouverte sur la foi du miroir, la porte
- * reste « late » : la réponse fraîche, dans l'attente bornée, peut encore
- * demander le code (posé ailleurs depuis), comme hors d'Octave.
+ * Le lancement en Octave, d'après le miroir : le sélecteur devient la feuille
+ * du code de l'identité gardée — ou, si le miroir la dit sans code, l'ATTENTE
+ * de la réponse fraîche (`check`, fond d'Octave, bornée) : un code posé
+ * ailleurs depuis est alors demandé avant que rien de l'identité ne paraisse.
  */
-function octaveInitial(gate: GateState, listing: PickerProfilesDto | null): { gate: GateState; pin: PickerProfileDto | null } {
+function octaveInitial(gate: GateState, listing: PickerProfilesDto | null): { gate: GateState; pin: PickerProfileDto | null; awaiting: boolean } {
   const step = octaveGateStep(gate.phase, listing, gate.heldProfileId, gate.stay, Date.now(), isTentacleHeld());
-  return { gate: step.opened ? { ...gate, phase: "app", mode: "late" } : gate, pin: step.pinProfile };
+  return { gate: step.opened ? { ...gate, phase: "check" } : gate, pin: step.pinProfile, awaiting: step.opened };
 }
 
 /** La source de la première fenêtre du démarrage que tient cette porte. */
