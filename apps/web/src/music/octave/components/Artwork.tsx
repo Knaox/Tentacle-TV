@@ -11,10 +11,17 @@
  * Une image déjà décodée (`artworkPreload.ts` : préparée avant la révélation
  * des résultats) s'affiche d'emblée ; une autre arrive en fondu d'opacité,
  * sur sa place réservée — jamais un « pop » sous les yeux.
+ *
+ * Sans image (ou image illisible) : le repli teinté du titre (`artworkTone.ts`),
+ * l'initiale pour un artiste. Une vignette de liste (`thumb`) demande 128 px —
+ * sauf si l'image pleine taille est DÉJÀ décodée (préparée par la recherche) :
+ * elle sert alors telle quelle, sans attendre.
  */
 
 import { memo, useCallback, useMemo, useState } from "react";
 import { isArtworkDecoded, isArtworkFailed, markArtworkDecoded } from "./artworkPreload";
+import { THUMB_ARTWORK_SIZE, fallbackTone, initialOf, sizedArtworkUrl } from "./artworkTone";
+import "./octaveViews.css";
 import { Music, User } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";
@@ -29,6 +36,12 @@ interface ArtworkProps {
   kind?: "album" | "artist";
   /** Pochette au-dessus de la ligne de flottaison : pas de chargement paresseux. */
   eager?: boolean;
+  /** Le nom de ce que l'image montre : la teinte du repli, l'initiale d'un artiste. Par défaut `alt`. */
+  label?: string;
+  /** Vignette de liste (≤ 64 px) : 128 px demandés au cœur. */
+  thumb?: boolean;
+  /** Coins droits (une vignette collée au bord d'une tuile). */
+  square?: boolean;
 }
 
 /** La règle d'adresse d'une image : jamais de jeton hors du serveur Tentacle. */
@@ -48,23 +61,33 @@ export function useArtworkResolver(): (url: string | null) => string | null {
   return useCallback((url: string | null) => artworkSrcOf(url, { baseUrl, token, useCredentials }), [baseUrl, token, useCredentials]);
 }
 
-/** L'adresse affichable d'une image du cœur. */
-export function useArtworkSrc(url: string | null): string | null {
-  const resolve = useArtworkResolver();
-  return useMemo(() => resolve(url), [resolve, url]);
+/** Ce qu'affiche une case sans image : la teinte du titre, et l'initiale d'un artiste. */
+function ArtworkFallback({ kind, label }: { kind: "album" | "artist"; label: string }) {
+  const initial = kind === "artist" ? initialOf(label) : "";
+  const Icon = kind === "artist" ? User : Music;
+  return (
+    <div className="octave-art-fallback octave-art-box absolute inset-0 flex items-center justify-center" data-tone={fallbackTone(label)}>
+      {initial ? <span className="octave-art-initial select-none">{initial}</span> : <Icon className="h-[38%] w-[38%]" strokeWidth={1.5} />}
+    </div>
+  );
 }
 
-export const Artwork = memo(function Artwork({ url, alt = "", className = "", round = false, kind = "album", eager = false }: ArtworkProps) {
+export const Artwork = memo(function Artwork({ url, alt = "", className = "", round = false, kind = "album", eager = false, label, thumb = false, square = false }: ArtworkProps) {
   const [failed, setFailed] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<string | null>(null);
-  const resolved = useArtworkSrc(url);
+  const resolve = useArtworkResolver();
+  const resolved = useMemo(() => {
+    const full = resolve(url);
+    if (!thumb || url === null || full === null || isArtworkDecoded(full)) return full;
+    return resolve(sizedArtworkUrl(url, THUMB_ARTWORK_SIZE));
+  }, [resolve, thumb, url]);
   // Une image dont le préchargement a déjà échoué : le repli d'emblée, jamais une case vide un instant.
   const src = resolved !== null && failed !== resolved && !isArtworkFailed(resolved) ? resolved : null;
   const ready = src !== null && (loaded === src || isArtworkDecoded(src));
-  const Icon = kind === "artist" ? User : Music;
+  const shape = round ? "rounded-full" : square ? "" : "rounded-md";
   return (
     <div
-      className={`relative shrink-0 overflow-hidden bg-fill-soft ${round ? "rounded-full" : "rounded-md"} ${className}`}
+      className={`relative shrink-0 overflow-hidden bg-fill-soft ${shape} ${className}`}
       aria-hidden={alt === "" ? true : undefined}
     >
       {src ? (
@@ -82,9 +105,7 @@ export const Artwork = memo(function Artwork({ url, alt = "", className = "", ro
           className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-150 motion-reduce:transition-none ${ready ? "opacity-100" : "opacity-0"}`}
         />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-content-quaternary">
-          <Icon className="h-1/3 w-1/3" strokeWidth={1.5} />
-        </div>
+        <ArtworkFallback kind={kind} label={label ?? alt} />
       )}
     </div>
   );
