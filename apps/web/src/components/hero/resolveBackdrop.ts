@@ -44,6 +44,21 @@ export function firstBackdropItem(items: MediaItem[] | undefined): MediaItem | n
 }
 
 /**
+ * Le titre de la bannière d'une BIBLIOTHÈQUE : le tirage aléatoire, et le repli
+ * (« Derniers ajouts ») seulement une fois le tirage revenu sans rien. Tant
+ * qu'il est en route, rien : le repli, souvent déjà en cache, s'affichait
+ * d'abord, puis le tirage le REMPLAÇAIT une fraction de seconde plus tard — une
+ * image montrée puis changée sous les yeux à chaque première visite (25/10).
+ */
+export function libraryBannerItem(
+  random: { data: MediaItem | undefined; isLoading: boolean },
+  latest: MediaItem[] | undefined,
+): MediaItem | null {
+  if (random.isLoading) return null;
+  return random.data ?? firstBackdropItem(latest);
+}
+
+/**
  * L'adresse d'une image du plan de la bannière d'ACCUEIL (shared
  * `heroImagePlan`). Une image Jellyfin garde l'URL de `heroBackdropUrl` à
  * l'octet près pour un fond (même largeur, même qualité) : la fiche et la

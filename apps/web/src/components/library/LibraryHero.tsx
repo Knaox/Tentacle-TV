@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient, useLatestItems, useRandomLibraryBackdrop } from "@tentacle-tv/api-client";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
-import { firstBackdropItem, heroBackdropUrl, resolveBackdropId } from "../hero/resolveBackdrop";
+import { heroBackdropUrl, libraryBannerItem, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { isImageReady, markImageSeen } from "../../lib/seenImages";
 import { HeroScrims } from "../hero/HeroScrims";
 
 interface LibraryHeroProps {
@@ -29,13 +30,14 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const reduced = useReducedMotion();
-  const { data: randomItem } = useRandomLibraryBackdrop(libraryId);
+  const random = useRandomLibraryBackdrop(libraryId);
   const { data: latest } = useLatestItems(libraryId, { collectionType });
   // Bannière réellement à l'écran ET fenêtre au premier plan — sert à démonter
   // le halo flouté dès qu'on défile dans la grille (cf. plus bas).
   const { ref: boxRef, visible } = useInViewport<HTMLDivElement>("200px");
 
-  const featured = randomItem ?? firstBackdropItem(latest);
+  // Le repli n'attend pas à la place du tirage : il ne vient qu'après lui.
+  const featured = libraryBannerItem(random, latest);
   const backdropId = featured ? resolveBackdropId(featured) : null;
   const { broken, reportFailure } = useBrokenImage(backdropId ?? undefined);
   // La MÊME URL que l'accueil, à la lettre — `heroBackdropUrl` est la
@@ -66,7 +68,10 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
             src={url}
             alt=""
             draggable={false}
-            initial={{ opacity: 0, scale: 1.04 }}
+            // Déjà montrée (retour dans la bibliothèque) : posée d'emblée, sans
+            // repartir du noir (`lib/seenImages`). L'adresse est lue au MONTAGE
+            // de l'image (clé `backdropId`), un rendu suivant n'y change rien.
+            initial={isImageReady(url) ? false : { opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             /* `will-change-transform` comme sur l'accueil, et pour la même
@@ -76,6 +81,7 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
                moteurs de générations différentes n'y répondent pas pareil. */
             className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
             style={{ display: broken ? "none" : undefined }}
+            onLoad={() => markImageSeen(url)}
             onError={reportFailure}
           />
         )}

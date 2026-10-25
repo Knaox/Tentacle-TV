@@ -2,6 +2,8 @@ import { AnimatePresence, cubicBezier, motion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { AMBIENT_HZ, cadence } from "../../theme/motion";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { markImageSeen } from "../../lib/seenImages";
+import { ENTRY_FADE, useBillboardEntry } from "./useBillboardEntry";
 import { HeroScrims } from "./HeroScrims";
 
 interface HeroBackdropProps {
@@ -55,6 +57,7 @@ const ZOOM_CLASS = "hero-zoom";
  * `easeOut` qu'utilisait cette transition.
  */
 const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1));
+const CROSSFADE = { duration: FADE_DURATION_S, ease: FADE_EASE };
 
 /** Le décor d'une bannière sans image : deux lueurs de marque sur le fond de page. */
 const FALLBACK_BACKGROUND = {
@@ -87,6 +90,9 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
   // Calculée AVANT le retour anticipé : le suivi de l'échec est un hook, il ne
   // peut pas vivre après une sortie conditionnelle.
   const { broken, reportFailure } = useBrokenImage(url ?? undefined);
+  // L'arrivée sur la page ne repart jamais du noir (cf. `useBillboardEntry`) ;
+  // le fondu enchaîné d'une diapositive à l'autre reste tel quel.
+  const entry = useBillboardEntry(imageKey, url);
 
   // Solid base + gradients restent rendus en permanence (jamais animés).
   //
@@ -123,7 +129,7 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
           rien n'y est animé, il ne coûte qu'une peinture. */}
       <div className="absolute inset-0 bg-surface-0" style={FALLBACK_BACKGROUND} />
 
-      <AnimatePresence>
+      <AnimatePresence initial={entry.presenceInitial}>
         {url && (
           <motion.img
             key={imageKey}
@@ -132,15 +138,17 @@ export function HeroBackdropLayer({ imageKey, url, onFailure }: {
             draggable={false}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { opacity: CROSSFADE } }}
             transition={{
               // `easeOut` est PRÉSERVÉE : `cadence` quantifie le temps avant
               // d'appliquer la courbe, jamais la valeur après. Le fondu garde
-              // donc exactement sa trajectoire et sa durée.
-              opacity: { duration: FADE_DURATION_S, ease: FADE_EASE },
+              // donc exactement sa trajectoire et sa durée. La première image
+              // de la bannière, elle, paraît en un temps d'affiche.
+              opacity: entry.isEntry ? ENTRY_FADE : CROSSFADE,
             }}
             className={`absolute inset-0 h-full w-full object-cover will-change-transform ${ZOOM_CLASS}`}
             style={{ display: broken ? "none" : undefined }}
+            onLoad={() => markImageSeen(url)}
             onError={() => {
               reportFailure();
               onFailure?.();

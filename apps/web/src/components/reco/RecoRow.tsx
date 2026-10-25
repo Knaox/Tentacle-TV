@@ -10,6 +10,7 @@ import { useRowWindow } from "../rows/useRowWindow";
 import { rowIntrinsicHeight } from "../rows/rowTrackReserve";
 import { useRowTrackReserve } from "../rows/useRowTrackReserve";
 import { useRowEntrance } from "../rows/useRowEntrance";
+import { rowEntranceId } from "../rows/rowEntranceMemory";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
@@ -46,7 +47,9 @@ export function RecoRow({ title, items, headerTrailing, reasonRow }: RecoRowProp
   const cardWidth = useRowCardWidth(scrollRef, "poster");
   const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
   // L'entrée, une fois (cf. MediaRow, `rowEntrance`).
-  const holdEntrance = useRowEntrance(scrollRef, visible);
+  // La même rangée sur l'accueil et sur « Pour vous » : entrée une fois pour ce contenu.
+  const entranceId = useMemo(() => rowEntranceId(title, items.map((item) => item.key)), [title, items]);
+  const holdEntrance = useRowEntrance(scrollRef, visible, entranceId);
   const setRowRoot = useCallback((el: HTMLElement | null) => {
     rowRef.current = el;
     setRowEl(el);

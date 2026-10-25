@@ -1,4 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { markImageSeen } from "../../lib/seenImages";
+import { ENTRY_FADE, useBillboardEntry } from "./useBillboardEntry";
 
 /** Le halo suit la rotation de la bannière — mêmes durées, donc mêmes gestes. */
 const FADE_DURATION_S = 1.4;
@@ -57,6 +59,8 @@ export function AmbilightLayer({
   className = "absolute inset-0",
 }: AmbilightLayerProps) {
   const reduced = useReducedMotion();
+  // Le halo arrive avec sa bannière, jamais une seconde après elle (`useBillboardEntry`).
+  const entry = useBillboardEntry(url ? layerKey : null, url);
   if (reduced || !url) return null;
 
   return (
@@ -82,7 +86,7 @@ export function AmbilightLayer({
           transformOrigin: "top left",
         }}
       >
-        <AnimatePresence>
+        <AnimatePresence initial={entry.presenceInitial}>
           {/* La COUCHE de la diapositive : elle porte le zoom (compositeur) et
               le fondu enchaîné, et rien d'autre. Le flou est sur l'image
               DEDANS, qui n'a pas de couche à elle : il est rastérisé une fois
@@ -95,14 +99,15 @@ export function AmbilightLayer({
             key={layerKey}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ opacity: { duration: FADE_DURATION_S, ease: "easeOut" } }}
+            exit={{ opacity: 0, transition: { opacity: { duration: FADE_DURATION_S, ease: "easeOut" } } }}
+            transition={{ opacity: entry.isEntry ? ENTRY_FADE : { duration: FADE_DURATION_S, ease: "easeOut" } }}
             className={`absolute inset-0 will-change-transform ${ZOOM_CLASS}`}
           >
             <img
               src={url}
               alt=""
               draggable={false}
+              onLoad={() => markImageSeen(url)}
               className="absolute inset-0 h-full w-full object-cover"
               style={{
                 // Rayon divisé par la sous-échelle : agrandi d'autant ensuite, il
