@@ -2,8 +2,8 @@ import { Film, Music } from "lucide-react";
 import { isListening, type AdminNowPlayingDto } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";
-// Le module PUR des adresses du moteur — jamais l'index du moteur (mpv, lecteurs).
-import { elementSourceUrl } from "../../../music/engine/engineShared";
+// La règle d'adresse des pochettes d'Octave, la même ici (module pur, sans le moteur).
+import { artworkSrcOf } from "../../../music/octave/components/artworkSrc";
 import { Poster } from "./Poster";
 
 /**
@@ -12,18 +12,15 @@ import { Poster } from "./Poster";
  *
  * - Un élément de Jellyfin : son image, par le client Jellyfin (la pochette
  *   de l'album pour un titre qui n'en a pas, le serveur l'a déjà choisie).
- * - Une lecture d'extension : l'adresse déclarée par le lecteur — un chemin
- *   du serveur Tentacle reçoit l'authentification de la page (cookie, ou le
- *   jeton en `api_key` sur le bureau) ; une adresse https tierce reste telle
- *   quelle, sans jeton ni référent.
+ * - Une lecture d'extension : l'adresse déclarée par le lecteur, résolue par
+ *   LA règle d'Octave (`artworkSrc.ts`) : la carte charge la pochette comme
+ *   Octave la charge — une adresse https tierce telle quelle, sans jeton.
  */
 export function SessionArtwork({ item }: { item: AdminNowPlayingDto }) {
   const client = useJellyfinClient();
   const listening = isListening(item);
   const src = item.imageUrl
-    ? /^https:\/\//i.test(item.imageUrl)
-      ? item.imageUrl
-      : elementSourceUrl(item.imageUrl, { baseUrl: getBackendBase(), token: client.getToken(), useCredentials: client.useCredentials })
+    ? artworkSrcOf(item.imageUrl, { baseUrl: getBackendBase(), token: client.getToken(), useCredentials: client.useCredentials })
     : item.imageItemId
       ? client.getImageUrl(item.imageItemId, "Primary", { width: listening ? 240 : 160, quality: 80, tag: item.imageTag })
       : null;
