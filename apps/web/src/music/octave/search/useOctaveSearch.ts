@@ -7,6 +7,8 @@
  * résultats, ou ailleurs (`useMusicByMbid`) — est retiré de la section.
  * Les premiers titres externes sont annoncés à l'extension (`prefetch("results")`)
  * dès sa page sûre : la requête est validée, elle n'a plus à se stabiliser.
+ * Ce que la bibliothèque a SANS MBID (titre, artiste, durée : `POST /api/music/match`) est connu avant la
+ * révélation aussi (`useOwnedLists`, la même demande que l'affichage) : rien ne bascule sous les yeux.
  *
  * Ce crochet dit aussi ce qui est PRÊT (`libraryReady`, `externalReady`) :
  * `useRevealedResults` attend tout pour tout montrer d'un coup.
@@ -17,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { musicSearchText, musicSectionLabel, useMusicByMbid, useMusicPrefetch, useMusicSearch, usePluginMusicSearch } from "@tentacle-tv/api-client";
 import { normalizeMbid } from "@tentacle-tv/shared/music";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
+import { useOwnedLists } from "./ownedSearch";
 import { resultsToAnnounce } from "./resultsPrefetch";
 import { externalReadiness } from "./revealModel";
 
@@ -77,7 +80,8 @@ export function useOctaveSearch(query: string) {
 
   const libraryReady = library.settledQuery === musicSearchText(query) && settledQuery(library);
   // Ce que la bibliothèque possède parmi les titres externes est connu : sinon un titre quitterait la section après coup.
-  const ownedKnown = toCheck.length === 0 || settledQuery(byMbid);
+  const owned = useOwnedLists(external.provisional ? null : external);
+  const ownedKnown = (toCheck.length === 0 || settledQuery(byMbid)) && owned.settled;
   const externalReady = externalReadiness({ available: external.available, complete: external.complete, provisional: external.provisional, pending: external.pending, settled: ownedKnown, failed: external.failed });
 
   return {

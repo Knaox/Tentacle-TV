@@ -1,36 +1,38 @@
 /**
  * Octave — les JUMEAUX : un titre (ou un album, un artiste) de l'extension qui EST déjà dans la bibliothèque.
- * La bibliothèque gagne : il se lit tout de suite, sans rien demander. Avec des MBID des deux côtés, c'est
- * `useOctaveSearch` qui les retire ; ici, la règle GÉNÉRIQUE sans MBID (contrat, CONTRATS.md) : même titre
- * normalisé, même premier artiste, et — si les deux la connaissent — une durée à ± 3 s. Règle pure.
+ * La bibliothèque gagne : il se lit tout de suite, sans rien demander. Ici, contre les résultats de bibliothèque
+ * de la MÊME recherche (aucune requête) ; contre l'index entier, c'est `POST /api/music/match` (`ownedSearch.ts`).
+ * La règle est UNE, celle du contrat (`musicLibraryMatch.ts` : MBID, sinon titre de base + artiste commun +
+ * durée à ± 2 s).
  */
 
-import type { MusicAlbum, MusicArtist, MusicTrack } from "@tentacle-tv/shared/music";
-
-const DURATION_GAP_MS = 3_000;
+import { isSameAlbum, isSameTrack, matchText, type MatchableAlbum, type MatchableTrack, type MusicAlbum, type MusicArtist, type MusicTrack } from "@tentacle-tv/shared/music";
 
 /** Casse, accents, ponctuation et espaces mis de côté (« Feel Good Inc. » = « feel good inc »). */
-export function twinText(text: string): string {
-  return text
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/['’`]/g, "")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
-}
+export const twinText = matchText;
 
-const firstArtist = (artists: readonly { name: string }[]) => twinText(artists[0]?.name ?? "");
+const trackView = (t: MusicTrack): MatchableTrack => ({
+  title: t.title,
+  artists: t.artists,
+  albumTitle: t.album?.title ?? null,
+  durationMs: t.durationMs,
+  recording: t.mbids.recording,
+  discNumber: t.discNumber,
+  trackNumber: t.trackNumber,
+});
 
-export function sameTrack(a: MusicTrack, b: MusicTrack): boolean {
-  if (twinText(a.title) !== twinText(b.title) || firstArtist(a.artists) !== firstArtist(b.artists)) return false;
-  if (a.durationMs !== null && b.durationMs !== null && Math.abs(a.durationMs - b.durationMs) > DURATION_GAP_MS) return false;
-  return true;
-}
+const albumView = (a: MusicAlbum): MatchableAlbum => ({
+  title: a.title,
+  artists: a.artists,
+  release: a.mbids.release,
+  releaseGroup: a.mbids.releaseGroup,
+  compilation: a.kind === "compilation" || a.kind === "soundtrack",
+});
 
-export const sameAlbum = (a: MusicAlbum, b: MusicAlbum): boolean => twinText(a.title) === twinText(b.title) && firstArtist(a.artists) === firstArtist(b.artists);
-export const sameArtist = (a: MusicArtist, b: MusicArtist): boolean => twinText(a.name) === twinText(b.name);
+/** `a` : celui de la bibliothèque ; `b` : celui de l'extension. */
+export const sameTrack = (a: MusicTrack, b: MusicTrack): boolean => isSameTrack(trackView(a), trackView(b));
+export const sameAlbum = (a: MusicAlbum, b: MusicAlbum): boolean => isSameAlbum(albumView(a), albumView(b));
+export const sameArtist = (a: MusicArtist, b: MusicArtist): boolean => (a.mbid && b.mbid ? a.mbid === b.mbid : twinText(a.name) === twinText(b.name));
 
 /** Le jumeau de bibliothèque d'un élément de l'extension, s'il y en a un. */
 export function libraryTwin<T>(item: T, library: readonly T[], same: (a: T, b: T) => boolean): T | null {
