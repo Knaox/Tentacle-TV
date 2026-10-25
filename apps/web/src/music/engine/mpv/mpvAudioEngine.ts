@@ -80,6 +80,9 @@ class MpvAudioEngine implements AudioEnginePort {
     this.state = { ...idleState(prefs.volume, prefs.muted), output: { deviceId: prefs.deviceId, exclusive: prefs.exclusive } };
   }
 
+  /** Faux : un démarrage plus récent a été demandé — l'instance native est à lui, pas à ce port. */
+  ownsNative: () => boolean = () => true;
+
   attach(unlisten: () => void): void {
     this.unlisten = unlisten;
   }
@@ -186,12 +189,18 @@ class MpvAudioEngine implements AudioEnginePort {
     this.disposed = true;
     this.unlisten?.();
     this.emitter.clear();
-    void this.bridge.invoke("audio_engine_stop").catch(() => undefined);
+    // Le principal n'a qu'UN moteur : l'arrêt tardif d'un port quitté (son démarrage a fini après
+    // la sortie) couperait celui d'une entrée plus récente — seul le dernier démarré l'arrête.
+    if (this.ownsNative()) void this.bridge.invoke("audio_engine_stop").catch(() => undefined);
   }
 }
 
+/** Les démarrages demandés, dans l'ordre : le dernier possède l'instance native du principal. */
+let startGeneration = 0;
+
 /** Démarre le moteur natif (instance mpv gardée chaude) et rend le port. */
 export async function createMpvAudioEngine(bridge: NativeBridge, auth: MusicEngineAuth, prefs: EnginePrefs): Promise<AudioEnginePort> {
+  const generation = ++startGeneration;
   let engine: MpvAudioEngine | null = null;
   const early: AudioBridgeEvent[] = [];
   const unlisten = await bridge.listen<AudioBridgeEvent>(AUDIO_BRIDGE_EVENT, ({ payload }) => {
@@ -205,6 +214,7 @@ export async function createMpvAudioEngine(bridge: NativeBridge, auth: MusicEngi
       ...prefs,
     });
     engine = new MpvAudioEngine(capabilities, bridge, auth, prefs);
+    engine.ownsNative = () => generation === startGeneration;
     engine.attach(unlisten);
     for (const e of early) engine.handle(e);
     return engine;

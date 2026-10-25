@@ -157,4 +157,14 @@ describe("adaptateur du moteur natif", () => {
     expect(f.unlistened()).toBe(true);
     expect(f.calls.at(-1)?.[0]).toBe("audio_engine_stop");
   });
+
+  it("allers-retours rapides : l'arrêt tardif d'un port quitté ne coupe pas le moteur d'une entrée plus récente", async () => {
+    const f = fakeBridge();
+    const stale = await createMpvAudioEngine(f.bridge, auth, prefs);
+    const current = await createMpvAudioEngine(f.bridge, auth, prefs);
+    stale.dispose();
+    expect(f.calls.filter(([c]) => c === "audio_engine_stop")).toHaveLength(0);
+    current.dispose();
+    expect(f.calls.filter(([c]) => c === "audio_engine_stop")).toHaveLength(1);
+  });
 });
