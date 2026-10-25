@@ -61,7 +61,7 @@ export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget
       {cards.length > 0 && (
         <section aria-labelledby="octave-search-listened" className="flex flex-col gap-3">
           <div className="px-2">
-            <h2 id="octave-search-listened" className="text-xl font-bold text-content-primary">
+            <h2 id="octave-search-listened" className="oc-heading text-xl text-content-primary">
               {t("search.listenedTitle")}
             </h2>
             <p className="mt-1 text-sm text-content-tertiary">{t("search.listenedHint")}</p>
@@ -75,12 +75,12 @@ export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget
       )}
       {recents.length > 0 && (
         <section aria-labelledby="octave-search-recent" className="flex max-w-2xl flex-col gap-2">
-          <h2 id="octave-search-recent" className="px-2 text-xl font-bold text-content-primary">
+          <h2 id="octave-search-recent" className="oc-heading px-2 text-xl text-content-primary">
             {t("search.recentTitle")}
           </h2>
           <ul className="flex flex-col">
             {recents.map((query) => (
-              <li key={query} className="group flex items-center gap-1 rounded-md transition-colors duration-150 hover:bg-fill-subtle">
+              <li key={query} className="group flex items-center gap-1 rounded-md transition-colors duration-150 hover:bg-octave-hover">
                 <button
                   type="button"
                   onClick={() => onSearch(query)}

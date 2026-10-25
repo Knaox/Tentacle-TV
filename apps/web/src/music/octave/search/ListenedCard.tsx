@@ -30,7 +30,7 @@ function TrackButton({ tracks, index, contextId }: { tracks: readonly MusicTrack
       onClick={() => player.playList(tracks, index, contextId)}
       {...prefetch}
       aria-label={t("track.play", { title: track.title })}
-      className="group/track flex h-8 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-1.5 text-left text-[13px] text-content-secondary transition-colors duration-150 hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="group/track flex h-8 w-full min-w-0 cursor-pointer items-center gap-2 rounded-md px-1.5 text-left text-[13px] text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
       <Play className="h-3 w-3 shrink-0 text-content-tertiary group-hover/track:text-content-primary" fill="currentColor" aria-hidden />
       <span className="min-w-0 flex-1 truncate">{track.title}</span>
@@ -61,9 +61,9 @@ export const ListenedCard = memo(function ListenedCard({ card }: { card: Listene
     );
 
   return (
-    <article className="octave-card flex min-w-0 flex-col gap-2 rounded-lg p-2 transition-colors duration-150 hover:bg-fill-subtle">
+    <article className="octave-card flex min-w-0 flex-col gap-2 rounded-xl p-2 transition-colors duration-150 hover:bg-octave-hover">
       <div className="relative aspect-square w-full">
-        {albumLink(<Artwork url={card.artworkUrl} alt="" className="h-full w-full shadow-md" />, t("search.openAlbum", { title }))}
+        {albumLink(<Artwork url={card.artworkUrl} alt="" className="h-full w-full rounded-[var(--oc-radius-art)] [box-shadow:var(--oc-shadow-art)]" />, t("search.openAlbum", { title }))}
         <button
           type="button"
           onClick={() => player.playList(card.tracks, 0, contextId)}
