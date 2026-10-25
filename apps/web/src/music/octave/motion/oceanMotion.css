@@ -27,6 +27,9 @@
   overflow: hidden;
   contain: layout paint;
   vertical-align: middle;
+  /* Les vagues naissent et meurent dans l'écume : aucun bout coupé net aux bords de la boîte. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
 }
 
 .oc-swell-sea,
@@ -100,10 +103,10 @@
 .oc-ocean {
   --ocean-tint-rgb: var(--oc-accent-rgb);
   --ocean-glow-alpha: 0.2;
-  --ocean-band-top: 0.15;
-  --ocean-band-bottom: 0.02;
-  --ocean-crest: rgba(255, 255, 255, 0.16);
-  --ocean-light: rgba(255, 255, 255, 0.055);
+  --ocean-band-top: 0.1;
+  --ocean-band-bottom: 0;
+  --ocean-crest: rgba(255, 255, 255, 0.14);
+  --ocean-light: rgba(255, 255, 255, 0.07);
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -113,8 +116,8 @@
 
 :root[data-theme="light"] .oc-ocean {
   --ocean-glow-alpha: 0.16;
-  --ocean-band-top: 0.13;
-  --ocean-crest: rgba(255, 255, 255, 0.75);
+  --ocean-band-top: 0.09;
+  --ocean-crest: rgba(255, 255, 255, 0.7);
   --ocean-light: rgba(255, 255, 255, 0.45);
 }
 
@@ -151,14 +154,14 @@
   left: 0;
   right: 0;
   bottom: -1.5rem;
-  height: 30%;
+  height: 20%;
   will-change: transform;
   animation: ocOceanBob 11s steps(165) infinite alternate;
 }
 
-.oc-ocean-band-back { height: 34%; animation-duration: 13s; animation-timing-function: steps(195); animation-delay: -4s; }
-.oc-ocean-band-mid { height: 27%; animation-duration: 9s; animation-timing-function: steps(135); animation-delay: -7s; }
-.oc-ocean-band-front { height: 21%; }
+.oc-ocean-band-back { height: 24%; animation-duration: 13s; animation-timing-function: steps(195); animation-delay: -4s; }
+.oc-ocean-band-mid { height: 19%; animation-duration: 9s; animation-timing-function: steps(135); animation-delay: -7s; }
+.oc-ocean-band-front { height: 15%; }
 
 .oc-ocean-drift {
   position: absolute;

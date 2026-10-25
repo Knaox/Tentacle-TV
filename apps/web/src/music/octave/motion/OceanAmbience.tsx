@@ -24,11 +24,11 @@ import { useArtworkTint } from "./useArtworkTint";
 import { waveBodyPath, wavePath, type WaveSpec } from "./wavePath";
 import "./oceanMotion.css";
 
-// Bandes de 1 800 unités sur 150 % de la scène : chaque tracé se répète tous les 600 (un tiers), la dérive boucle.
+// Bandes de 1 800 unités sur 150 % de la scène : la période de chaque tracé divise 600 (un tiers) : la dérive boucle.
 const SPAN = { from: -100, to: 1900 };
-const BACK: WaveSpec = { period: 600, amplitude: 22, baseline: 60, phase: 0, ...SPAN };
-const MID: WaveSpec = { period: 300, amplitude: 12, baseline: 50, phase: 75, ...SPAN };
-const FRONT: WaveSpec = { period: 600, amplitude: 16, baseline: 44, phase: 150, ...SPAN };
+const BACK: WaveSpec = { period: 300, amplitude: 16, baseline: 40, phase: 0, ...SPAN };
+const MID: WaveSpec = { period: 200, amplitude: 10, baseline: 34, phase: 50, ...SPAN };
+const FRONT: WaveSpec = { period: 300, amplitude: 12, baseline: 30, phase: 110, ...SPAN };
 const BOTTOM = 200;
 
 const BANDS = [

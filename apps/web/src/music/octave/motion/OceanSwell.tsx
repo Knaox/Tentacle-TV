@@ -18,12 +18,13 @@ import { swellState } from "./swellState";
 import { wavePath } from "./wavePath";
 import "./oceanMotion.css";
 
-// Deux périodes de 16 unités dans un calque deux fois plus large que la boîte : glisser de 50 % boucle.
-const FRONT = wavePath({ period: 16, amplitude: 2.3, baseline: 10, from: -4, to: 36 });
-const BACK = wavePath({ period: 16, amplitude: 1.7, baseline: 5.6, from: -4, to: 36, phase: 5 });
+// Deux crêtes par boîte de 16 (période 8), dans un calque deux fois plus large : glisser de 50 % (deux
+// périodes) boucle. Les deux vagues ne se croisent jamais (avant : 9,5 → 12,5 ; arrière : 4,3 → 6,7).
+const FRONT = wavePath({ period: 8, amplitude: 1.5, baseline: 11, from: -4, to: 36 });
+const BACK = wavePath({ period: 8, amplitude: 1.2, baseline: 5.5, from: -4, to: 36, phase: 3 });
 // La mer calme (pause) : des rides basses, immobiles, dans la boîte seule.
-const CALM_FRONT = wavePath({ period: 10, amplitude: 0.7, baseline: 10, from: -2, to: 18 });
-const CALM_BACK = wavePath({ period: 10, amplitude: 0.5, baseline: 5.6, from: -2, to: 18, phase: 4 });
+const CALM_FRONT = wavePath({ period: 8, amplitude: 0.5, baseline: 11, from: -4, to: 20 });
+const CALM_BACK = wavePath({ period: 8, amplitude: 0.4, baseline: 5.5, from: -4, to: 20, phase: 3 });
 
 function Wave({ d, width, className }: { d: string; width: number; className: string }) {
   return (
