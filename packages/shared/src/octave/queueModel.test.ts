@@ -6,6 +6,7 @@ import {
   currentItem,
   cycleRepeat,
   enqueue,
+  extendWith,
   followWith,
   jumpTo,
   moveUpcoming,
@@ -127,5 +128,25 @@ describe("la suite d'un titre (S3 : la radio après un clic de recherche)", () =
     const q = createQueue(list, 1, { contextId: "search:q" });
     expect(followWith(q, "autre", radio, "radio:x")).toBe(q);
     expect(followWith(q, currentItem(q)!.uid, [libraryTrack("b")], "radio:x")).toBe(q);
+  });
+});
+
+describe("la radio sans fin (G3) : la page suivante au bout de la file", () => {
+  const list = ["a", "b", "c"].map((id) => libraryTrack(id));
+
+  it("s'ajoute au bout, sans ce que la file porte déjà (écouté, courant, à venir) ni un titre redit dans la page", () => {
+    const q = createQueue(list, 1, { contextId: "radio:jf:a" });
+    const page = ["a", "b", "c", "x", "x", "y"].map((id) => libraryTrack(id));
+    const next = extendWith(q, "radio:jf:a", page);
+    expect(keys(next.items)).toEqual(["jf:a", "jf:b", "jf:c", "jf:x", "jf:y"]);
+    expect(currentItem(next)?.uid).toBe(currentItem(q)?.uid);
+    expect(next.original).toEqual(next.items.map((i) => i.uid));
+  });
+
+  it("sans effet si la file n'est plus celle de cette radio, ou si la page ne dit rien de nouveau", () => {
+    const q = createQueue(list, 0, { contextId: "album:1" });
+    expect(extendWith(q, "radio:jf:a", [libraryTrack("x")])).toBe(q);
+    const radio = createQueue(list, 0, { contextId: "radio:jf:a" });
+    expect(extendWith(radio, "radio:jf:a", list)).toBe(radio);
   });
 });

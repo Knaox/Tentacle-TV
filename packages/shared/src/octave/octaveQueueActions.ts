@@ -9,6 +9,7 @@ import {
   createQueue,
   cycleRepeat,
   enqueue,
+  extendWith,
   followWith,
   jumpTo,
   moveUpcoming,
@@ -75,6 +76,14 @@ export const queueActions = {
   /** La suite du titre `uid` devient `tracks` (la radio d'un clic de recherche), s'il est encore le courant. */
   followWith(player: OctavePlayer, uid: string, tracks: readonly MusicTrack[], contextId: string): void {
     apply(player, followWith(player.snapshot.get().queue, uid, tracks, contextId));
+  },
+
+  /** La page suivante de la radio `contextId` au bout de la file (G3) ; rend le nombre de titres NOUVEAUX ajoutés. */
+  extendWith(player: OctavePlayer, contextId: string, tracks: readonly MusicTrack[]): number {
+    const before = player.snapshot.get().queue;
+    const queue = extendWith(before, contextId, tracks);
+    apply(player, queue);
+    return queue.items.length - before.items.length;
   },
 
   /** « Réessayer » : le titre courant, redemandé de zéro à l'extension — un geste, jamais sauté. */

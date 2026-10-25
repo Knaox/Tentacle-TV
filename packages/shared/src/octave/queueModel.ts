@@ -202,6 +202,24 @@ export function followWith(q: QueueState, uid: string, tracks: readonly MusicTra
   return { ...q, items: [...head, ...added], original: [...head.map((i) => i.uid), ...added.map((i) => i.uid)], contextId };
 }
 
+/**
+ * La radio SANS FIN (G3) : les titres d'une page suivante s'ajoutent au BOUT de la file, sans ceux qu'elle porte
+ * déjà (une page suivante peut redire les précédentes, et un titre déjà écouté ne revient pas). Sans effet si la
+ * file n'est plus celle de cette radio (`contextId`) : l'utilisateur a lancé autre chose.
+ */
+export function extendWith(q: QueueState, contextId: string, tracks: readonly MusicTrack[]): QueueState {
+  if (q.cursor < 0 || q.contextId !== contextId) return q;
+  const known = new Set(q.items.map((item) => item.track.key));
+  const fresh = tracks.filter((track) => {
+    if (known.has(track.key)) return false;
+    known.add(track.key);
+    return true;
+  });
+  if (fresh.length === 0) return q;
+  const added = wrap(fresh);
+  return { ...q, items: [...q.items, ...added], original: [...q.original, ...added.map((i) => i.uid)] };
+}
+
 /** Saute à une entrée (clic dans la file). */
 export function jumpTo(q: QueueState, uid: string): QueueState {
   const index = q.items.findIndex((item) => item.uid === uid);
