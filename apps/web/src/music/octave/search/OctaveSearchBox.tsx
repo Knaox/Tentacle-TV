@@ -106,7 +106,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
           aria-controls={LIST_ID}
           aria-activedescendant={activeId}
           aria-autocomplete="list"
-          className="h-12 w-full rounded-full border border-line-subtle bg-fill-subtle pl-12 pr-12 text-base text-content-primary placeholder:text-content-quaternary focus:border-line-focus focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="h-12 w-full rounded-full border border-line-subtle bg-fill-subtle pl-12 pr-12 text-base text-content-primary placeholder:text-content-quaternary focus:border-octave-accent focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {completion !== null && (
           // Calque PAR-DESSUS le champ (sans pointeur), même boîte : le texte tapé y est invisible, la suite visible après le curseur.
