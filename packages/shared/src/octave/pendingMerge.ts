@@ -9,13 +9,14 @@
  */
 
 import { pendingAsPlaylistEntry, type MusicPlaylistEntry, type MusicTrack, type PendingMusicItem } from "../music";
+import { sameRecording } from "./trackTwins";
 
 export interface ListRow {
   /** Clé de rangée stable : la clé du titre, ou `pending:<operationId>`. */
   rowKey: string;
   track: MusicTrack;
-  /** `null` pour une ligne réelle ; sinon l'état de l'attente. */
-  pending: null | { operationId: string; failed: boolean };
+  /** `null` pour une ligne réelle ; sinon l'état de l'attente, et ce que l'extension en dit (`note`). */
+  pending: null | { operationId: string; failed: boolean; note: string | null };
   /** L'entrée de playlist Jellyfin (retrait, déplacement), `null` pour une attente. */
   entryId: string | null;
 }
@@ -36,17 +37,24 @@ function alreadyThere(item: PendingMusicItem, recordings: Set<string>, keys: Set
 }
 
 function pendingRow(item: PendingMusicItem): ListRow {
-  return { rowKey: `pending:${item.operationId}`, track: asPendingTrack(item), pending: { operationId: item.operationId, failed: item.state === "failed" }, entryId: null };
+  const pending = { operationId: item.operationId, failed: item.state === "failed", note: typeof item.note === "string" && item.note ? item.note : null };
+  return { rowKey: `pending:${item.operationId}`, track: asPendingTrack(item), pending, entryId: null };
 }
 
-/** « Titres likés » : les attentes d'abord (les plus récentes en tête), puis les favoris Jellyfin. */
+/**
+ * « Titres likés » : les attentes d'abord (les plus récentes en tête), puis les favoris Jellyfin. Un titre n'y
+ * est JAMAIS deux fois (retour de Damien du 25/10) : une attente dont le jumeau est déjà un favori, ou déjà une
+ * autre attente, s'efface (même enregistrement, ou même titre et même artiste : trackTwins.ts).
+ */
 export function mergeLiked(liked: readonly MusicTrack[], pending: readonly PendingMusicItem[]): ListRow[] {
   const recordings = knownRecordings(liked);
   const keys = new Set(liked.map((t) => t.key));
-  const waiting = pending
-    .filter((item) => item.kind === "like" && !alreadyThere(item, recordings, keys))
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .map(pendingRow);
+  const kept: PendingMusicItem[] = [];
+  for (const item of [...pending].filter((i) => i.kind === "like").sort((a, b) => a.createdAt - b.createdAt)) {
+    if (alreadyThere(item, recordings, keys) || liked.some((t) => sameRecording(t, item.track)) || kept.some((k) => sameRecording(k.track, item.track))) continue;
+    kept.push(item);
+  }
+  const waiting = kept.sort((a, b) => b.createdAt - a.createdAt).map(pendingRow);
   return [...waiting, ...liked.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }))];
 }
 
@@ -57,7 +65,8 @@ export function mergePlaylist(entries: readonly MusicPlaylistEntry[], pending: r
   const recordings = knownRecordings(tracks);
   const keys = new Set(tracks.map((t) => t.key));
   const waiting = pending
-    .filter((item) => item.kind === "playlistAdd" && item.playlistId === playlistId && !alreadyThere(item, recordings, keys))
+    // Un doublon CONFIRMÉ ne se fond pas dans l'entrée existante : il a sa rangée.
+    .filter((item) => item.kind === "playlistAdd" && item.playlistId === playlistId && (item.duplicate === true || !alreadyThere(item, recordings, keys)))
     .map((item) => ({ item, entry: pendingAsPlaylistEntry(item) }))
     .sort((a, b) => a.entry.position - b.entry.position || a.item.createdAt - b.item.createdAt);
 
@@ -72,4 +81,28 @@ export function mergePlaylist(entries: readonly MusicPlaylistEntry[], pending: r
   });
   for (; w < waiting.length; w += 1) rows.push(pendingRow((waiting[w] as { item: PendingMusicItem }).item));
   return rows;
+}
+
+/**
+ * Le titre est-il DÉJÀ dans cette playlist (une entrée, ou un ajout en attente) ? Avant un ajout, Octave demande
+ * alors confirmation : un doublon reste permis, jamais par mégarde.
+ */
+export function playlistHasTrack(entries: readonly MusicPlaylistEntry[], pending: readonly PendingMusicItem[], playlistId: string, track: MusicTrack): boolean {
+  if (entries.some((e) => sameRecording(e.track, track))) return true;
+  return pending.some((i) => i.kind === "playlistAdd" && i.playlistId === playlistId && (i.externalId === track.external?.id || sameRecording(i.track, track)));
+}
+
+/** Les entrées de cette playlist qui portent ce titre (pour le retirer) : celles de Jellyfin, puis les attentes. */
+export function playlistOccurrences(
+  entries: readonly MusicPlaylistEntry[],
+  pending: readonly PendingMusicItem[],
+  playlistId: string,
+  track: MusicTrack,
+): { entryIds: string[]; operationIds: string[] } {
+  return {
+    entryIds: entries.filter((e) => sameRecording(e.track, track)).map((e) => e.entryId),
+    operationIds: pending
+      .filter((i) => i.kind === "playlistAdd" && i.playlistId === playlistId && (i.externalId === track.external?.id || sameRecording(i.track, track)))
+      .map((i) => i.operationId),
+  };
 }

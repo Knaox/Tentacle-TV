@@ -5,29 +5,13 @@
  * normalisé, même premier artiste, et — si les deux la connaissent — une durée à ± 3 s. Règle pure.
  */
 
-import type { MusicAlbum, MusicArtist, MusicTrack } from "@tentacle-tv/shared/music";
+import type { MusicAlbum, MusicArtist } from "@tentacle-tv/shared/music";
+import { firstArtistText, sameTrack, twinText } from "@tentacle-tv/shared/octave";
 
-const DURATION_GAP_MS = 3_000;
+// La règle d'un TITRE est partagée (« Titres likés », ajout en playlist) : @tentacle-tv/shared/octave › trackTwins.
+export { sameTrack, twinText };
 
-/** Casse, accents, ponctuation et espaces mis de côté (« Feel Good Inc. » = « feel good inc »). */
-export function twinText(text: string): string {
-  return text
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/['’`]/g, "")
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .trim();
-}
-
-const firstArtist = (artists: readonly { name: string }[]) => twinText(artists[0]?.name ?? "");
-
-export function sameTrack(a: MusicTrack, b: MusicTrack): boolean {
-  if (twinText(a.title) !== twinText(b.title) || firstArtist(a.artists) !== firstArtist(b.artists)) return false;
-  if (a.durationMs !== null && b.durationMs !== null && Math.abs(a.durationMs - b.durationMs) > DURATION_GAP_MS) return false;
-  return true;
-}
+const firstArtist = firstArtistText;
 
 export const sameAlbum = (a: MusicAlbum, b: MusicAlbum): boolean => twinText(a.title) === twinText(b.title) && firstArtist(a.artists) === firstArtist(b.artists);
 export const sameArtist = (a: MusicArtist, b: MusicArtist): boolean => twinText(a.name) === twinText(b.name);
