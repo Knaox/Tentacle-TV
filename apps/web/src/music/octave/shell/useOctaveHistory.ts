@@ -11,6 +11,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useNavigationType, type NavigationType } from "react-router-dom";
 
+/** Le type d'une navigation, en clair (les valeurs de l'énumération du routeur). */
+export type HistoryMove = `${NavigationType}`;
+
 export interface HistoryRange {
   base: number;
   at: number;
@@ -25,7 +28,7 @@ function historyIndex(): number {
 }
 
 /** La règle, pure : où l'on est après une navigation de ce type. */
-export function nextHistoryRange(range: HistoryRange, at: number, type: NavigationType): HistoryRange {
+export function nextHistoryRange(range: HistoryRange, at: number, type: HistoryMove): HistoryRange {
   const base = Math.min(range.base, at);
   // Une page NOUVELLE efface ce qu'il y avait « devant » ; un retour ou un
   // remplacement le garde.
