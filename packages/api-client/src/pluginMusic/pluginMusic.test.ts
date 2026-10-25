@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExternalMusicSearchPage, MusicTrack } from "@tentacle-tv/shared/music";
 import { findMusicProvider, musicRouteUrl, type MusicProvider } from "./musicProvider";
-import { mergeExternalMusicPages, readMusicSearchPage } from "./musicSearchMerge";
+import { mergeExternalMusicPages, readMusicSearchPage, readMusicTop } from "./musicSearchMerge";
 import { likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests, resolveMusicSource, resolveMusicSources } from "./musicRequests";
 import { useMusicProvider } from "./useMusicProvider";
 import { useMusicSearch, type MusicSearchState } from "./useMusicSearch";
@@ -72,6 +72,22 @@ describe("fusion des pages progressives", () => {
     expect(merged.provisional).toBe(false);
     expect(mergeExternalMusicPages([provisional], new Set()).provisional).toBe(true);
     expect(readMusicSearchPage({ ...provisional, replace: true, provisional: true }, "q")).toMatchObject({ replace: true, provisional: true });
+  });
+
+  it("meilleur résultat et playlists (additifs) : lus s'ils ont leur forme, gardés de la dernière page qui en dit un", () => {
+    const playlist = { key: "ext:sillon:ytm:pl:x", external: { pluginId: "sillon", id: "ytm:pl:x" }, title: "Mix", owner: "YouTube Music", trackCount: 50, artworkUrl: null };
+    const first = { ...page([track("a", null)], false, "c1"), replace: true, top: { kind: "track" as const, track: track("a", null) }, playlists: [playlist] };
+    const second = { ...page([track("a", null), track("b", null)], true, null), replace: true, top: { kind: "artist" as const, artist: { key: "ext:sillon:ytm:ar:y", jellyfinId: null, external: null, name: "Y", mbid: null, imageUrl: null } } };
+    const merged = mergeExternalMusicPages([first, second], new Set());
+    expect(merged.top?.kind).toBe("artist");
+    expect(merged.playlists).toEqual([]);
+    expect(mergeExternalMusicPages([first], new Set()).playlists.map((p) => p.key)).toEqual(["ext:sillon:ytm:pl:x"]);
+    // Une page d'avant (sans `top`) ne dit rien : le meilleur résultat d'une page précédente reste.
+    expect(mergeExternalMusicPages([first, page([track("c", null)], true, null)], new Set()).top?.kind).toBe("track");
+    expect(readMusicTop({ kind: "album" })).toBeNull();
+    expect(readMusicTop({ kind: "video", track: track("a", null) })).toBeNull();
+    expect(readMusicTop({ kind: "artist", artist: { key: "k" }, tracks: [track("a", null), { nope: 1 }, track("b", null), track("c", null), track("d", null)] })).toMatchObject({ kind: "artist", tracks: [{ key: "a" }, { key: "b" }, { key: "c" }] });
+    expect(readMusicSearchPage({ tracks: [], albums: [], artists: [], complete: true, cursor: null, top: { kind: "?" }, playlists: [{ key: "p" }, "x"] }, "q")).toMatchObject({ top: null, playlists: [{ key: "p" }] });
   });
 
   it("ne croit qu'une réponse qui a la forme d'une page", () => {
@@ -173,7 +189,7 @@ describe("crochets montés, selon ce que le serveur déclare", () => {
     vi.stubGlobal("fetch", fetchMock);
     await mount({ version: "1.31.1" });
     expect(seen?.provider).toBeNull();
-    expect(seen?.search).toEqual({ tracks: [], albums: [], artists: [], complete: true, provisional: false, pending: false, failed: false, available: false });
+    expect(seen?.search).toEqual({ top: null, tracks: [], albums: [], artists: [], playlists: [], complete: true, provisional: false, pending: false, failed: false, available: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import type { ExternalMusicSearchPage } from "@tentacle-tv/shared/music";
+import type { ExternalMusicSearchPage, MusicSearchKind } from "@tentacle-tv/shared/music";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { musicRouteUrl, type MusicProvider } from "./musicProvider";
 import { mergeExternalMusicPages, readMusicSearchPage, type MergedMusicResults } from "./musicSearchMerge";
@@ -31,6 +31,11 @@ export interface MusicSearchOptions {
   libraryRecordings?: ReadonlySet<string>;
   libraryReleases?: ReadonlySet<string>;
   enabled?: boolean;
+  /**
+   * Une liste SEULE (puce de filtre) — seulement si l'extension la déclare (`music.searchKinds`) ; sinon le
+   * paramètre ne part pas (une extension d'avant le prendrait pour une recherche « Tout »).
+   */
+  kind?: MusicSearchKind;
 }
 
 export interface MusicSearchState extends MergedMusicResults {
@@ -47,13 +52,14 @@ const EMPTY_SET: ReadonlySet<string> = new Set();
 export function useMusicSearch(provider: MusicProvider | null, query: string, options: MusicSearchOptions = {}): MusicSearchState {
   const q = query.trim();
   const limit = options.limit ?? 20;
-  const enabled = !!provider && (options.enabled ?? true) && q.length >= MIN_QUERY;
+  const kind = options.kind && provider?.music.searchKinds?.includes(options.kind) ? options.kind : null;
+  const enabled = !!provider && (options.enabled ?? true) && q.length >= MIN_QUERY && (!options.kind || kind !== null);
 
   const result = useInfiniteQuery({
-    queryKey: ["music", "external-search", provider?.pluginId ?? null, provider?.music.search ?? null, q, limit],
+    queryKey: ["music", "external-search", provider?.pluginId ?? null, provider?.music.search ?? null, q, limit, ...(kind ? [kind] : [])],
     queryFn: async ({ pageParam, signal }: { pageParam: string | null; signal: AbortSignal }): Promise<ExternalMusicSearchPage> => {
       if (!provider) throw new Error("no music provider");
-      const raw = await tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.search, { q, limit, cursor: pageParam, revise: 1 }), { signal });
+      const raw = await tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.search, { q, limit, cursor: pageParam, revise: 1, ...(kind ? { kind } : {}) }), { signal });
       return readMusicSearchPage(raw, q) ?? { query: q, complete: true, cursor: null, tracks: [], albums: [], artists: [] };
     },
     initialPageParam: null as string | null,
@@ -75,7 +81,7 @@ export function useMusicSearch(provider: MusicProvider | null, query: string, op
   const releases = options.libraryReleases ?? EMPTY_SET;
   const pages = result.data?.pages;
   return useMemo(() => {
-    const merged = enabled && pages ? mergeExternalMusicPages(pages, recordings, releases) : { tracks: [], albums: [], artists: [], complete: !enabled, provisional: false };
+    const merged = enabled && pages ? mergeExternalMusicPages(pages, recordings, releases) : { top: null, tracks: [], albums: [], artists: [], playlists: [], complete: !enabled, provisional: false };
     return { ...merged, pending: enabled && result.isPending && !result.isError, failed: enabled && result.isError, available: !!provider };
   }, [enabled, pages, recordings, releases, result.isPending, result.isError, provider]);
 }

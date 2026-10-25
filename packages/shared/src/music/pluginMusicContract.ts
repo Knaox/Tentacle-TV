@@ -41,9 +41,43 @@ export interface PluginMusicManifest {
    * qu'à la validation. Capacité serveur `music.suggest`.
    */
   suggest?: string;
+  /** Vue playlist hors bibliothèque — GET <playlist>/<playlistId> → `ExternalMusicPlaylist` avec `tracks`. */
+  playlist?: string;
+  /**
+   * Les listes que la recherche sait rendre SEULES (`search?…&kind=<k>` → une page où seule cette liste est
+   * remplie) : les puces de filtre en font UNE requête au clic. Absent : l'interface filtre la page « Tout ».
+   */
+  searchKinds?: MusicSearchKind[];
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
 }
+
+/** Liste FERMÉE des listes filtrables d'une recherche. */
+export type MusicSearchKind = "tracks" | "albums" | "artists" | "playlists";
+export const MUSIC_SEARCH_KINDS: readonly MusicSearchKind[] = ["tracks", "albums", "artists", "playlists"];
+
+/** Une playlist HORS bibliothèque (celle d'une extension) — jamais une playlist Jellyfin (`MusicPlaylist`). */
+export interface ExternalMusicPlaylist {
+  key: string;
+  external: ExternalRef;
+  title: string;
+  /** Qui l'a composée (une rédaction, une chaîne), si l'extension le sait. */
+  owner: string | null;
+  trackCount: number | null;
+  artworkUrl: string | null;
+  /** Rendus par la vue playlist seulement. */
+  tracks?: MusicTrack[];
+}
+
+/**
+ * Le MEILLEUR RÉSULTAT d'une recherche, choisi par l'extension (pertinence ET popularité) : un titre, un album,
+ * un artiste ou une playlist ; `tracks` : ce qu'il y a à lire tout de suite depuis sa carte (≤ 3).
+ */
+export type ExternalMusicTop =
+  | { kind: "track"; track: MusicTrack }
+  | { kind: "album"; album: MusicAlbum; tracks?: MusicTrack[] }
+  | { kind: "artist"; artist: MusicArtist; tracks?: MusicTrack[] }
+  | { kind: "playlist"; playlist: ExternalMusicPlaylist };
 
 /** Ce que les clients lisent d'une extension active (forme réduite d'`ActivePluginMeta`). */
 export interface MusicCapablePlugin {
@@ -83,6 +117,10 @@ export interface ExternalMusicSearchPage {
   replace?: boolean;
   /** v2 : ce classement peut encore changer — une page suivante le révisera. */
   provisional?: boolean;
+  /** Le meilleur résultat (absent : aucune mise en avant ; un client d'avant l'ignore). */
+  top?: ExternalMusicTop | null;
+  /** Les playlists hors bibliothèque (un client d'avant les ignore). */
+  playlists?: ExternalMusicPlaylist[];
 }
 
 /** 2 · Une source par identifiant demandé ; absent = pas de source (le client passe au suivant). */
@@ -168,9 +206,13 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
+  }
+  if (Array.isArray(m.searchKinds)) {
+    const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
+    if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;
   }
   if (m.labels && typeof m.labels === "object") {
     const labels: Record<string, string> = {};
