@@ -51,5 +51,6 @@ export function collectionSummary(keys: readonly string[], byKey: ReadonlyMap<st
 
 /** La place occupée par ce que le compte a gardé (octets complets ou reçus). */
 export function keptBytes(tracks: readonly KeptMusicTrack[]): number {
-  return tracks.reduce((sum, k) => sum + (k.status === "complete" ? (k.expectedSize ?? k.bytesDone) : k.bytesDone), 0);
+  // Les octets sur le disque : la taille d'un Allégé n'est qu'une estimation jusqu'au bout.
+  return tracks.reduce((sum, k) => sum + k.bytesDone, 0);
 }

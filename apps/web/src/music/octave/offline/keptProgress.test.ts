@@ -36,5 +36,7 @@ describe("keptProgress", () => {
 
   it("la place occupée", () => {
     expect(keptBytes([kept("a"), kept("b", { status: "downloading", bytesDone: 30, expectedSize: 100 })])).toBe(130);
+    // Un Allégé complet : ses octets réels, jamais l'estimation.
+    expect(keptBytes([kept("a", { variant: "light", bytesDone: 90, expectedSize: 100 })])).toBe(90);
   });
 });

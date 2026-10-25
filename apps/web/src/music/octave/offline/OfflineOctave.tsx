@@ -14,6 +14,7 @@ import { Fragment, type ReactElement, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useOfflineMode } from "../../../offline/useOfflineMode";
 import type { OctaveAvailability } from "../mode/useOctaveAvailability";
+import { octavePaths } from "../octavePaths";
 import { DeviceView } from "./DeviceView";
 import { useKeptMusic } from "./useKeptMusic";
 
@@ -51,7 +52,8 @@ export function OfflineOctaveRoutes({ children }: { children: ReactNode }) {
   return (
     <Routes>
       <Route path="device" element={<DeviceView />} />
-      <Route path="*" element={<Navigate to="device" replace />} />
+      {/* Une adresse ABSOLUE : relative, elle s'ajoutait à la route courante (`…/album/x/device/device…`). */}
+      <Route path="*" element={<Navigate to={octavePaths.device} replace />} />
     </Routes>
   );
 }
