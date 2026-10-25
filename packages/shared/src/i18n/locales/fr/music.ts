@@ -119,6 +119,12 @@ export default {
     duplicateMessage: "« {{title}} » est déjà dans « {{name}} ». L'ajouter quand même ?",
     duplicateConfirm: "Ajouter quand même",
     duplicateCancel: "Annuler",
+    removeQuick: "Retirer « {{title}} » de cette playlist",
+    removedOne: "« {{title}} » retiré de « {{name}} »",
+    removedMany_one: "{{count}} titre retiré de « {{name}} »",
+    removedMany_other: "{{count}} titres retirés de « {{name}} »",
+    undo: "Annuler",
+    restored: "Remis dans « {{name}} »",
   },
   count: {
     tracks_one: "{{count}} titre",

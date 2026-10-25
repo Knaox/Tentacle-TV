@@ -119,6 +119,12 @@ export default {
     duplicateMessage: "“{{title}}” is already in “{{name}}”. Add it anyway?",
     duplicateConfirm: "Add anyway",
     duplicateCancel: "Cancel",
+    removeQuick: "Remove “{{title}}” from this playlist",
+    removedOne: "“{{title}}” removed from “{{name}}”",
+    removedMany_one: "{{count}} track removed from “{{name}}”",
+    removedMany_other: "{{count}} tracks removed from “{{name}}”",
+    undo: "Undo",
+    restored: "Put back in “{{name}}”",
   },
   count: {
     tracks_one: "{{count}} song",

@@ -4,32 +4,35 @@
  * suite. Une playlist modifiable permet de retirer une entrée.
  */
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ListMusic, Search } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useMusicPlaylist, useRemoveMusicPlaylistEntry } from "@tentacle-tv/api-client";
+import { useMusicPlaylist } from "@tentacle-tv/api-client";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
 import { TrackList } from "../components/TrackList";
 import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { octavePaths } from "../octavePaths";
 import { mergePlaylist, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
-import { useTrackActions } from "../actions/useTrackActions";
+import { usePlaylistRemoval } from "../actions/usePlaylistRemoval";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 
 export function PlaylistView() {
   const { t } = useTranslation("music");
   const { id = "" } = useParams();
-  const { mutate: removeEntry } = useRemoveMusicPlaylistEntry();
-  const actions = useTrackActions();
   const player = useOctavePlayer();
   const playlist = useMusicPlaylist(id);
+  const target = useMemo(() => (playlist.data ? { jellyfinId: id, name: playlist.data.name } : null), [id, playlist.data]);
+  const removeRows = usePlaylistRemoval(target);
   const pending = usePendingMusic();
   const rows = useMemo(() => mergePlaylist(playlist.data?.entries ?? [], pending, id), [id, pending, playlist.data]);
   const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
   const meta = useCountAndDuration(rows.length, rows.reduce((s, r) => s + (r.track.durationMs ?? 0), 0));
   const contextId = `playlist:${id}`;
+  // Une entrée Jellyfin comme un titre hors bibliothèque en attente (sa demande s'annule), d'un geste : l'avis porte « Annuler ».
+  const editable = playlist.data?.editable === true;
+  const onRemoveRows = useCallback((keys: string[]) => void removeRows(rows, new Set(keys)), [removeRows, rows]);
 
   if (playlist.isPending) {
     return (
@@ -42,13 +45,6 @@ export function PlaylistView() {
   if (playlist.isError || !playlist.data) return <ErrorState onRetry={() => void playlist.refetch()} message={t("playlist.notFound")} />;
 
   const data = playlist.data;
-  const remove = data.editable
-    ? (entryId: string) => {
-        removeEntry({ playlistId: id, entryId });
-      }
-    : undefined;
-  // Un titre hors bibliothèque en attente se retire aussi (25/10) : sa demande s'annule chez l'extension.
-  const removeWaiting = data.editable ? (operationId: string) => void actions.removePending(operationId) : undefined;
 
   return (
     <div className="pb-10">
@@ -77,7 +73,7 @@ export function PlaylistView() {
             {data.editable ? t("views.playlistEmptyHint") : null}
           </EmptyState>
         ) : (
-          <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveEntry={remove} onRemovePending={removeWaiting} />
+          <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveRows={editable ? onRemoveRows : undefined} />
         )}
       </div>
     </div>

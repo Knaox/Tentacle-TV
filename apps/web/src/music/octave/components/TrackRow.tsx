@@ -21,6 +21,7 @@ import { AvailabilityMark } from "./AvailabilityMark";
 import { HeartButton } from "./HeartButton";
 import { TrackMenu } from "./TrackMenu";
 import { QuickAddButton } from "./QuickAddButton";
+import { QuickRemoveButton } from "./QuickRemoveButton";
 import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
 
 /**
@@ -45,13 +46,12 @@ export interface TrackRowProps {
   /** Rang dans la liste : le rappel est STABLE (une rangée ne se redessine pas quand le titre courant change ailleurs). */
   index: number;
   onPlayIndex: (index: number) => void;
-  entryId?: string | null;
-  onRemoveEntry?: (entryId: string) => void;
+  /** La clé de la rangée (une entrée de playlist, une attente) : ce que retire `onRemoveRow`. */
+  rowKey?: string;
+  /** Retirer cette rangée de la playlist courante (entrée Jellyfin, ou attente hors bibliothèque). */
+  onRemoveRow?: (rowKey: string) => void;
   /** Ce que l'extension dit de l'entrée en attente (« Ne peut pas entrer dans la bibliothèque… »). */
   note?: string | null;
-  /** L'entrée en attente de cette rangée, et son retrait (titre hors bibliothèque dans une playlist). */
-  pendingId?: string | null;
-  onRemovePending?: (operationId: string) => void;
 }
 
 function ArtistLinks({ track }: { track: MusicTrack }) {
@@ -90,11 +90,11 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry, note = null, pendingId = null, onRemovePending }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null }: TrackRowProps) {
   const { t } = useTranslation("music");
   const onPlay = () => onPlayIndex(index);
   // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).
-  const onRemove = entryId && onRemoveEntry ? () => onRemoveEntry(entryId) : pendingId && onRemovePending ? () => onRemovePending(pendingId) : undefined;
+  const onRemove = rowKey !== undefined && onRemoveRow ? () => onRemoveRow(rowKey) : undefined;
   const prefetch = usePrefetchHandlers(() => [track]);
   const muted = track.availability === "pending" || failed;
   return (
@@ -149,6 +149,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
         </div>
       )}
       <div role="gridcell" className="flex items-center gap-1">
+        {onRemove && <QuickRemoveButton title={track.title} onRemove={onRemove} />}
         <QuickAddButton track={track} actions={actions} />
         <HeartButton track={track} actions={actions} quiet />
         {/* Une durée inconnue (titre d'une recherche hors bibliothèque) : la place, pas de « –:–– ». */}

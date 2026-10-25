@@ -26,9 +26,11 @@ interface TrackListProps {
   /** Le libellé de la liste (lecteurs d'écran). */
   label: string;
   showHeader?: boolean;
-  onRemoveEntry?: (entryId: string) => void;
-  /** Retirer une entrée EN ATTENTE (titre hors bibliothèque ajouté à la playlist) : sa demande s'annule. */
-  onRemovePending?: (operationId: string) => void;
+  /**
+   * Retirer des rangées de la playlist (leurs clés) : une entrée Jellyfin, ou une attente hors bibliothèque (sa
+   * demande s'annule). Absent : la liste ne se modifie pas.
+   */
+  onRemoveRows?: (rowKeys: string[]) => void;
   /**
    * La file que lit un clic, quand la liste n'en montre qu'un DÉBUT (titres
    * phares repliés) : `rows` en est un préfixe, les rangs coïncident.
@@ -47,7 +49,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
   return tracks.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }));
 }
 
-export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, onRemovePending, queueTracks, sectionBefore }: TrackListProps) {
+export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveRows, queueTracks, sectionBefore }: TrackListProps) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const actions = useTrackActions();
@@ -68,6 +70,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
     },
     [contextId, player, tracks],
   );
+  const removeRow = useMemo(() => (onRemoveRows ? (rowKey: string) => onRemoveRows([rowKey]) : undefined), [onRemoveRows]);
 
   return (
     <div role="grid" aria-label={label} className="flex flex-col">
@@ -95,16 +98,14 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
           playing={row.track.key === currentKey && wantsPlay}
           failed={row.pending?.failed ?? false}
           note={row.pending?.note ?? null}
-          pendingId={row.pending?.operationId ?? null}
-          onRemovePending={onRemovePending}
           showArtwork={showArtwork}
           showAlbum={showAlbum}
           markLibrary={markLibrary}
           actions={actions}
           index={index}
           onPlayIndex={play}
-          entryId={row.entryId}
-          onRemoveEntry={onRemoveEntry}
+          rowKey={row.rowKey}
+          onRemoveRow={row.entryId !== null || row.pending ? removeRow : undefined}
         />
         </Fragment>
         );
