@@ -44,6 +44,11 @@ export interface PluginMusicManifest {
   /** Vue playlist hors bibliothèque — GET <playlist>/<playlistId> → `ExternalMusicPlaylist` avec `tracks`. */
   playlist?: string;
   /**
+   * Pause de frappe — POST { q } → 202, BUREAU seulement (accord de Damien, 25/10) : l'extension PRÉPARE la
+   * recherche depuis l'appareil ; rien n'est affiché ni attendu avant la validation.
+   */
+  typingPause?: string;
+  /**
    * Les listes que la recherche sait rendre SEULES (`search?…&kind=<k>` → une page où seule cette liste est
    * remplie) : les puces de filtre en font UNE requête au clic. Absent : l'interface filtre la page « Tout ».
    */
@@ -206,7 +211,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "typingPause"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }

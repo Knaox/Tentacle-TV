@@ -14,7 +14,7 @@ import { OctaveSearchBox } from "../search/OctaveSearchBox";
 import { parseSearchFilter } from "../search/SearchFilters";
 import type { SearchFilter } from "../search/searchLayout";
 import { SearchResults } from "../search/SearchResults";
-import { useTypingPause } from "../search/typingPause";
+import { useTypingPause } from "../data/typingPause";
 import { useOctaveSuggestions } from "../search/useOctaveSuggestions";
 import { useRevealedResults } from "../search/useRevealedResults";
 
@@ -44,19 +44,23 @@ export function SearchView() {
   useEffect(() => setDraft(query), [query]);
 
   const { suggestions, remember, forget } = useOctaveSuggestions(draft);
-  // Une pause de frappe, pour qui s'y abonne (recherche préparée du bureau) : rien n'est cherché ni montré ici.
-  useTypingPause(draft === query ? "" : draft);
+  // La recherche préparée à la pause de frappe (bureau seulement, axe R7) : rien n'est cherché ni montré ici.
+  const pause = useTypingPause();
+  useEffect(() => {
+    if (draft !== query) pause.note(draft);
+  }, [draft, pause, query]);
   const results = useRevealedResults(query);
   const preparing = useDelayedFlag(results.preparing, PREPARING_VISIBLE_MS);
 
   const submit = useCallback(
     (text: string) => {
+      pause.cancel();
       setDraft(text);
       remember(text);
       // Une nouvelle recherche repart sur « Tout ».
       setParams({ q: text }, { replace: false });
     },
-    [remember, setParams],
+    [pause, remember, setParams],
   );
   // Une puce ne crée pas d'entrée d'historique : le retour arrière ramène à la recherche précédente.
   const onFilter = useCallback(
