@@ -14,6 +14,8 @@ import { ARTWORK_RADIUS, Artwork } from "../components/Artwork";
 import { useGridColumns } from "../components/cardGrid";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { usePrefetchHandlers } from "../player/usePrefetchHandlers";
+import { useTrackActions } from "../actions/useTrackActions";
+import { TrackMenu } from "../components/TrackMenu";
 
 /** Une tuile fait au moins 15 rem ; trois colonnes au plus, deux rangées. */
 const TILE_MIN_PX = 240;
@@ -40,14 +42,17 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
   const player = useOctavePlayer();
   const track = tracks[index] as MusicTrack;
   const prefetch = usePrefetchHandlers(() => [track]);
+  const actions = useTrackActions();
+  // La tuile lit ; à côté, le menu du titre (playlist : ajouter, retirer) — un bouton à part, jamais dans le bouton.
   return (
+    <div className="group flex h-16 min-w-0 items-center gap-1 rounded-[var(--oc-radius-art)] pr-1 transition-colors duration-150 hover:bg-octave-hover">
     <button
       type="button"
       onClick={() => (current ? player.togglePlay() : player.playList(tracks, index, "home:recent"))}
       {...prefetch}
       aria-label={t("track.play", { title: track.title })}
       aria-current={current ? "true" : undefined}
-      className="group flex h-16 min-w-0 cursor-pointer items-center gap-3 rounded-[var(--oc-radius-art)] p-1 pr-3 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="flex h-16 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[var(--oc-radius-art)] p-1 pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
       <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-14 w-14 shadow-[var(--oc-shadow-art)]" />
       <span className="min-w-0 flex-1">
@@ -62,6 +67,8 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
         </span>
       )}
     </button>
+    <TrackMenu track={track} actions={actions} />
+    </div>
   );
 });
 

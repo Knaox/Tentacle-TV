@@ -106,6 +106,13 @@ export default {
     empty: "This playlist is empty.",
     none: "No editable playlist.",
     notFound: "This playlist no longer exists.",
+    removeFrom: "Remove from a playlist",
+    removed: "Removed from “{{name}}”",
+    notIn: "“{{title}}” isn't in “{{name}}”.",
+    duplicateTitle: "Already in the playlist",
+    duplicateMessage: "“{{title}}” is already in “{{name}}”. Add it anyway?",
+    duplicateConfirm: "Add anyway",
+    duplicateCancel: "Cancel",
   },
   count: {
     tracks_one: "{{count}} song",

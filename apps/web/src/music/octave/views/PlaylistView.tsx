@@ -15,12 +15,14 @@ import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, HeaderSkeleton, RowsSkeleto
 import { octavePaths } from "../octavePaths";
 import { mergePlaylist, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
+import { useTrackActions } from "../actions/useTrackActions";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 
 export function PlaylistView() {
   const { t } = useTranslation("music");
   const { id = "" } = useParams();
   const { mutate: removeEntry } = useRemoveMusicPlaylistEntry();
+  const actions = useTrackActions();
   const player = useOctavePlayer();
   const playlist = useMusicPlaylist(id);
   const pending = usePendingMusic();
@@ -45,6 +47,8 @@ export function PlaylistView() {
         removeEntry({ playlistId: id, entryId });
       }
     : undefined;
+  // Un titre hors bibliothèque en attente se retire aussi (25/10) : sa demande s'annule chez l'extension.
+  const removeWaiting = data.editable ? (operationId: string) => void actions.removePending(operationId) : undefined;
 
   return (
     <div className="pb-10">
@@ -73,7 +77,7 @@ export function PlaylistView() {
             {data.editable ? t("views.playlistEmptyHint") : null}
           </EmptyState>
         ) : (
-          <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveEntry={remove} />
+          <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveEntry={remove} onRemovePending={removeWaiting} />
         )}
       </div>
     </div>

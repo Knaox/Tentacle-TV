@@ -43,6 +43,11 @@ export interface TrackRowProps {
   onPlayIndex: (index: number) => void;
   entryId?: string | null;
   onRemoveEntry?: (entryId: string) => void;
+  /** Ce que l'extension dit de l'entrée en attente (« Ne peut pas entrer dans la bibliothèque… »). */
+  note?: string | null;
+  /** L'entrée en attente de cette rangée, et son retrait (titre hors bibliothèque dans une playlist). */
+  pendingId?: string | null;
+  onRemovePending?: (operationId: string) => void;
 }
 
 function ArtistLinks({ track }: { track: MusicTrack }) {
@@ -81,10 +86,11 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry, note = null, pendingId = null, onRemovePending }: TrackRowProps) {
   const { t } = useTranslation("music");
   const onPlay = () => onPlayIndex(index);
-  const onRemove = entryId && onRemoveEntry ? () => onRemoveEntry(entryId) : undefined;
+  // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).
+  const onRemove = entryId && onRemoveEntry ? () => onRemoveEntry(entryId) : pendingId && onRemovePending ? () => onRemovePending(pendingId) : undefined;
   const prefetch = usePrefetchHandlers(() => [track]);
   const muted = track.availability === "pending" || failed;
   return (
@@ -114,9 +120,11 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
             )}
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-content-tertiary">
-            <AvailabilityMark availability={track.availability} failed={failed} />
+            <AvailabilityMark availability={track.availability} failed={failed} note={note} />
             <span className="truncate">
               <ArtistLinks track={track} />
+              {/* Un échec dit POURQUOI, en mot (jamais l'icône seule) : « ne peut pas entrer dans la bibliothèque… ». */}
+              {failed && note && <span className="text-status-error-fg"> · {note}</span>}
             </span>
           </div>
         </div>

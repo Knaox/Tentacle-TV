@@ -18,6 +18,7 @@ import { useTrackActions } from "../actions/useTrackActions";
 import { Artwork } from "../components/Artwork";
 import { AvailabilityMark } from "../components/AvailabilityMark";
 import { HeartButton } from "../components/HeartButton";
+import { TrackMenu } from "../components/TrackMenu";
 import { octavePaths } from "../octavePaths";
 import { usePlayerSelector } from "../player/OctavePlayerProvider";
 import { FormatBadge } from "./FormatBadge";
@@ -102,6 +103,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
               <p className="mt-2 truncate text-base text-content-secondary md:text-lg">{track.artists.map((a) => a.name).join(", ")}</p>
             </div>
             <HeartButton track={track} actions={actions} size="md" />
+            <TrackMenu track={track} actions={actions} visible="always" buttonClassName="h-11 w-11 text-content-secondary" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <AvailabilityMark availability={track.availability} variant="chip" showLibrary />

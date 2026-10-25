@@ -33,6 +33,9 @@ const actions = (canLike: boolean): TrackActions => ({
   toggleLike: () => undefined,
   canAddToPlaylist: () => canLike,
   addToPlaylist: async () => true,
+  canRemoveFromPlaylist: () => canLike,
+  removeFromPlaylist: async () => true,
+  removePending: async () => true,
 });
 
 const inRouter = (node: React.ReactNode) => renderToStaticMarkup(<>{node}</>);
@@ -67,6 +70,12 @@ describe("rangée de titre", () => {
     const html = row(externalTrack("demo", "r1"), false);
     expect(html).not.toContain("track.like");
     expect(html).not.toContain("aria-pressed");
+  });
+  it("un échec dit POURQUOI, en mot : la note de l'extension (25/10)", () => {
+    const note = "Ne peut pas entrer dans la bibliothèque : aucun identifiant MusicBrainz.";
+    const html = inRouter(<TrackRow track={externalTrack("demo", "r1", { availability: "pending" })} number={1} current={false} failed note={note} actions={actions(true)} index={0} onPlayIndex={() => undefined} />);
+    expect(html).toContain("availability.failed");
+    expect(html).toContain(`· ${note}`);
   });
   it("un titre de la bibliothèque n'affiche aucune marque d'état", () => {
     expect(row(libraryTrack("a"), true)).not.toContain("availability.");

@@ -106,6 +106,13 @@ export default {
     empty: "Cette playlist est vide.",
     none: "Aucune playlist modifiable.",
     notFound: "Cette playlist n'existe plus.",
+    removeFrom: "Retirer d'une playlist",
+    removed: "Retiré de « {{name}} »",
+    notIn: "« {{title}} » n'est pas dans « {{name}} ».",
+    duplicateTitle: "Déjà dans la playlist",
+    duplicateMessage: "« {{title}} » est déjà dans « {{name}} ». L'ajouter quand même ?",
+    duplicateConfirm: "Ajouter quand même",
+    duplicateCancel: "Annuler",
   },
   count: {
     tracks_one: "{{count}} titre",

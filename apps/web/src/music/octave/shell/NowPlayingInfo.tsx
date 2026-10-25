@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useTrackActions } from "../actions/useTrackActions";
 import { Artwork } from "../components/Artwork";
 import { HeartButton } from "../components/HeartButton";
+import { TrackMenu } from "../components/TrackMenu";
 import { octavePaths } from "../octavePaths";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
@@ -88,6 +89,8 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
         </p>
       </div>
       <HeartButton track={track} actions={actions} />
+      {/* Le titre EN COURS s'ajoute à une playlist, ou s'en retire, sans quitter le lecteur (25/10). */}
+      <TrackMenu track={track} actions={actions} visible="always" />
     </div>
   );
 });
