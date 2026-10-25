@@ -237,5 +237,6 @@ export default {
     back: "Page précédente",
     forward: "Page suivante",
     nowPlaying: "En cours",
+    quality: "Qualité : {{detail}}",
   },
 };

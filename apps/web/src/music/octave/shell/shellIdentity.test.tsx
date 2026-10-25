@@ -63,28 +63,39 @@ describe("la glissière commune", () => {
 
 describe("la colonne de droite du dock (O3-2 : jamais « Sans pe »)", () => {
   const css = readFileSync(join(__dirname, "shell.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-  // Mesuré au banc (Inter) : état + pastille « Sans perte » (le plus long), file, bouton du volume, écarts.
-  const META = 97;
-  const FIXED = 36 + 40 + 3 * 6;
+  // Mesuré au banc (Inter) : état + mot « Sans perte » (le plus long), icône de qualité, file, bouton du volume, écart.
+  const LABEL = 97;
+  const ICON = 22;
+  const QUEUE = 36;
+  const VOLUME_BUTTON = 40;
+  const GAP = 6;
   const rules = Array.from(css.matchAll(/@container \(min-width: (\d+)px\) \{([\s\S]*?\})\s*\}/g), (m) => ({
     min: Number(m[1]),
     body: m[2] as string,
-    slider: Number(/width: (\d+)px/.exec(m[2] as string)?.[1] ?? 0),
-  }));
+  })).sort((a, b) => a.min - b.min);
 
-  it("est un conteneur ; la qualité y est cachée tant que la place manque", () => {
+  it("est un conteneur ; au plus étroit, ni qualité ni glissière (le bouton muet reste)", () => {
     expect(css).toMatch(/\.octave-dock-aside\s*\{\s*container-type:\s*inline-size;/);
-    expect(css).toMatch(/\.octave-dock-meta\s*\{\s*display:\s*none;/);
+    expect(css).toMatch(/\.octave-dock-meta,\s*\.octave-dock-availability,\s*\.octave-dock-quality-label\s*\{\s*display:\s*none;/);
+    expect(css).toMatch(/\.octave-range\.octave-dock-volume\s*\{\s*display:\s*none;/);
   });
 
-  it("chaque palier tient EN ENTIER ce qu'il montre", () => {
-    const metaAt = rules.find((r) => /octave-dock-meta \{ display: inline-flex/.test(r.body))?.min ?? Number.NaN;
-    expect(metaAt).toBeGreaterThan(0);
-    for (const r of rules) {
-      if (!r.slider) continue;
-      // Avec la qualité : elle, plus ce qui reste ; sans elle : un écart de moins.
-      const needed = r.min >= metaAt ? META + FIXED + r.slider : FIXED - 6 + r.slider;
-      expect(r.min, `palier ${r.min}px, glissière ${r.slider}px`).toBeGreaterThanOrEqual(needed);
+  it("chaque palier tient EN ENTIER ce qu'il montre (mot, ou icône seule, ou rien)", () => {
+    let meta = false;
+    let label = false;
+    let slider = 0;
+    let sliderWidth = 64;
+    for (const rule of rules) {
+      if (/\.octave-dock-meta \{ display: inline-flex; \}/.test(rule.body)) meta = true;
+      if (/\.octave-dock-quality-label \{ display: inline-flex; \}/.test(rule.body)) label = true;
+      if (/\.octave-range\.octave-dock-volume \{ display: flex; \}/.test(rule.body)) slider = 1;
+      const width = /\.octave-range\.octave-dock-volume \{ width: (\d+)px; \}/.exec(rule.body)?.[1];
+      if (width) sliderWidth = Number(width);
+      const volume = VOLUME_BUTTON + (slider ? sliderWidth : 0);
+      const needed = meta ? (label ? LABEL : ICON) + QUEUE + volume + 2 * GAP : QUEUE + volume + GAP;
+      expect(rule.min, `palier ${rule.min}px`).toBeGreaterThanOrEqual(needed);
     }
+    // L'icône seule existe bien entre les deux : elle paraît AVANT le mot.
+    expect(meta && label).toBe(true);
   });
 });
