@@ -63,12 +63,12 @@ export const ListenedCard = memo(function ListenedCard({ card }: { card: Listene
   return (
     <article className="octave-card flex min-w-0 flex-col gap-2 rounded-xl p-2 transition-colors duration-150 hover:bg-octave-hover">
       <div className="relative aspect-square w-full">
-        {albumLink(<Artwork url={card.artworkUrl} alt="" className="h-full w-full rounded-[var(--oc-radius-art)] [box-shadow:var(--oc-shadow-art)]" />, t("search.openAlbum", { title }))}
+        {albumLink(<Artwork url={card.artworkUrl} alt="" className="h-full w-full rounded-[var(--oc-radius-art)] shadow-[var(--oc-shadow-art)]" />, t("search.openAlbum", { title }))}
         <button
           type="button"
           onClick={() => player.playList(card.tracks, 0, contextId)}
           aria-label={t("track.play", { title: lead.title })}
-          className="octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+          className="octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
         >
           <Play className="ml-0.5 h-5 w-5" fill="currentColor" aria-hidden />
         </button>

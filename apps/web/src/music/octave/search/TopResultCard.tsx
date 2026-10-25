@@ -91,7 +91,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
             e.stopPropagation();
             onPlay(top);
           }}
-          className="octave-card-play octave-brand-fill absolute bottom-5 right-5 z-10 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+          className="octave-card-play octave-brand-fill absolute bottom-5 right-5 z-10 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
         >
           <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
         </button>

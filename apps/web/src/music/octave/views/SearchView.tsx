@@ -81,7 +81,7 @@ export function SearchView() {
         <OctaveSearchBox value={draft} onChange={setDraft} onSubmit={submit} suggestions={suggestions} onForget={forget} onClear={clear} />
         {/* Place réservée : la barre d'attente n'ajoute ni ne retire de hauteur. */}
         <div aria-hidden className="mt-2 h-0.5 max-w-2xl overflow-hidden rounded-full">
-          {preparing && <div className="h-full w-1/4 animate-loading-bar rounded-full bg-brand motion-reduce:animate-none" />}
+          {preparing && <div className="h-full w-1/4 animate-loading-bar rounded-full bg-octave-accent motion-reduce:animate-none" />}
         </div>
         {results.preparing && (
           <span className="sr-only" role="status">
