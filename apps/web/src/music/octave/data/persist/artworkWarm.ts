@@ -48,6 +48,44 @@ export function warmArtworkList(recent: readonly unknown[], max = WARM_ARTWORK_M
   return out;
 }
 
+/** Les hôtes d'images à préconnecter au plus (la poignée TLS d'une première pochette, gratuite d'avance). */
+export const PRECONNECT_MAX = 4;
+
+/**
+ * Les ORIGINES (https, autres que la page) des pochettes gardées, les plus vues d'abord : tirées des données,
+ * jamais d'une liste d'hôtes — le cœur ne sait pas d'où viennent les images.
+ */
+export function preconnectOrigins(urls: readonly (string | null)[], pageOrigin: string, max = PRECONNECT_MAX): string[] {
+  const counts = new Map<string, number>();
+  for (const url of urls) {
+    if (!url) continue;
+    let origin: string;
+    try {
+      origin = new URL(url).origin;
+    } catch {
+      continue;
+    }
+    if (!origin.startsWith("https://") || origin === pageOrigin) continue;
+    counts.set(origin, (counts.get(origin) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, max).map(([origin]) => origin);
+}
+
+const connected = new Set<string>();
+
+/** Une `<link rel="preconnect">` par origine, une fois par chargement de la page (sans `crossorigin` : celui des `<img>`). */
+export function preconnect(origins: readonly string[], doc: Document | undefined = globalThis.document): void {
+  if (!doc?.head) return;
+  for (const origin of origins) {
+    if (connected.has(origin)) continue;
+    connected.add(origin);
+    const link = doc.createElement("link");
+    link.rel = "preconnect";
+    link.href = origin;
+    doc.head.appendChild(link);
+  }
+}
+
 type IdleScheduler = (run: () => void) => void;
 
 const onIdle: IdleScheduler = (run) => {
