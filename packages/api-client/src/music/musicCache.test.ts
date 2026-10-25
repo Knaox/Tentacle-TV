@@ -58,6 +58,7 @@ describe("évènements music:* → cache", () => {
     qc.setQueryData(musicKeys.source("t1"), { url: "/api/music/stream/t1" });
     qc.setQueryData(musicKeys.playlist("p1"), { jellyfinId: "p1", entries: [] } as unknown as MusicPlaylistDetail);
     qc.setQueryData(musicKeys.playlist("p2"), { jellyfinId: "p2", entries: [] } as unknown as MusicPlaylistDetail);
+    qc.setQueryData(musicKeys.match("ext:x:1@"), { tracks: [], albums: [] });
     return qc;
   }
   const invalidated = (qc: QueryClient, key: readonly unknown[]) => qc.getQueryState(key)?.isInvalidated === true;
@@ -75,6 +76,14 @@ describe("évènements music:* → cache", () => {
     applyMusicEvent(qc, { type: "music:library", added: [], updated: [], removed: ["t1"] });
     expect(qc.getQueryData(musicKeys.source("t1"))).toBeUndefined();
     expect(invalidated(qc, musicKeys.search("q", 20))).toBe(true);
+    // Un titre importé (Lidarr…) : ce que la bibliothèque a parmi les titres montrés d'ailleurs se relit.
+    expect(invalidated(qc, musicKeys.match("ext:x:1@"))).toBe(true);
+  });
+
+  it("music:resolved : la correspondance avec la bibliothèque se relit", () => {
+    const qc = client();
+    applyMusicEvent(qc, { type: "music:resolved", pluginId: "x", externalId: "1", jellyfinId: "t9", recording: null, track: null });
+    expect(invalidated(qc, musicKeys.match("ext:x:1@"))).toBe(true);
   });
 
   it("music:playlist : cette playlist-là seulement", () => {

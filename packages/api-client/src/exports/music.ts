@@ -7,6 +7,9 @@ export {
   useMusicCapability, useMusicStatus, useMusicAvailable, useMusicAlbums, useMusicAlbum, useMusicArtists,
   useMusicArtist, useMusicHome, useMusicByMbid, useMusicSource, fetchMusicSource,
 } from "../music/useMusicLibrary";
+export {
+  useMusicLibraryMatch, libraryMatchRequest, trackMatchQuery, albumMatchQuery, type LibraryMatches, type LibraryAlbumMatch,
+} from "../music/useMusicLibraryMatch";
 export { useMusicSearch, useDebouncedText, musicSearchText, type MusicSearchOptions } from "../music/useMusicSearch";
 export { useMusicLiked, useToggleMusicFavorite, patchFavorites, MUSIC_LIKED_PAGE } from "../music/useMusicFavorite";
 export {
