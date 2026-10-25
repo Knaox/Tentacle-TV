@@ -67,6 +67,11 @@ export interface AudioBridgeSource {
    * local si son hôte est déclaré par l'extension, `url` (le serveur) restant le repli.
    */
   direct?: { url: string; expiresAt: number | null };
+  /**
+   * Lire la copie de ce titre GARDÉE HORS LIGNE par ce compte (capacité `offline.music`) : la coquille cherche le
+   * fichier dans SA base de transferts — la page ne désigne jamais un chemin — et, s'il manque, lit `url`.
+   */
+  kept?: { userId: string };
 }
 
 export type AudioBridgeReplayGainMode = "off" | "track" | "album" | "auto";

@@ -32,6 +32,7 @@ import { PLUGIN_HOST } from "./pluginDocuments";
 import { CommandRegistry } from "./ipc/registry";
 import { registerDownloadsEngineCommands } from "./ipc/downloadsEngine";
 import { registerDownloadsPlaybackCommands } from "./ipc/downloadsPlayback";
+import { registerDownloadsMusicCommands } from "./ipc/downloadsMusic";
 import { registerDownloadsStorageCommands } from "./ipc/downloadsStorage";
 import { registerJellyfinCommands } from "./ipc/jellyfin";
 import { holdQuitForFarewell } from "./quitFarewell";
@@ -238,6 +239,7 @@ function main(): void {
       // qu'elle répond, toute la section réapparaît et appelle les autres.
       registerDownloadsStorageCommands(registry);
       registerDownloadsPlaybackCommands(registry);
+      registerDownloadsMusicCommands(registry);
       registerDownloadsEngineCommands(registry);
       registry.install();
       registerShellCapabilities();
