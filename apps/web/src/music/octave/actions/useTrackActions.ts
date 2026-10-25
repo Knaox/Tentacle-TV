@@ -23,7 +23,8 @@ import { isLibraryTrack, usePlaylistGestures, type PlaylistGestures } from "./us
 
 export interface TrackActions extends PlaylistGestures {
   canLike: (track: MusicTrack) => boolean;
-  toggleLike: (track: MusicTrack) => void;
+  /** `quiet` : pas d'avis par titre (un geste groupé dit le sien). */
+  toggleLike: (track: MusicTrack, options?: { quiet?: boolean }) => void;
 }
 
 export function useTrackActions(): TrackActions {
@@ -40,7 +41,7 @@ export function useTrackActions(): TrackActions {
   const ownsTrack = useCallback((track: MusicTrack) => isFromProvider(provider, track.external?.pluginId), [provider]);
 
   const toggleLike = useCallback(
-    (track: MusicTrack) => {
+    (track: MusicTrack, options?: { quiet?: boolean }) => {
       const liked = !(likeOverrideOf(track.key) ?? track.favorite);
       setLikeOverride(track.key, liked);
       queueActions.patchFavorite(player, track.key, liked);
@@ -56,7 +57,7 @@ export function useTrackActions(): TrackActions {
       gestures.like(track.external.id, liked).then(
         (outcome: ExternalActionOutcome) => {
           if (!outcome.ok) return revert(), failed(outcome.reason);
-          if (liked && outcome.state === "pending") toast.show("success", t("track.likedPending"));
+          if (liked && outcome.state === "pending" && !options?.quiet) toast.show("success", t("track.likedPending"));
         },
         () => (revert(), failed()),
       );

@@ -1,5 +1,5 @@
 /**
- * Octave — choisir une playlist pour un titre, ou en CRÉER une (« Nouvelle playlist… » : un nom, puis le titre y
+ * Octave — choisir une playlist pour un titre (ou une sélection), ou en CRÉER une (« Nouvelle playlist… » : un nom, puis le titre y
  * entre aussitôt — bibliothèque comme hors bibliothèque). Une seule boîte pour tout Octave, montée par la
  * coquille ; ouverte par le « + » sans playlist connue, et par « Changer » de l'avis « Ajouté à X ».
  */
@@ -11,6 +11,7 @@ import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { Modal } from "../../../components/ui/Modal";
 import { useTrackActions } from "./useTrackActions";
+import { useBulkTrackActions } from "./selection/useBulkTrackActions";
 import { chooserSnapshot, closePlaylistChooser, subscribeChooser, type ChooserRequest } from "./playlistChooserStore";
 
 const rowClass =
@@ -27,23 +28,27 @@ function Chooser({ request }: { request: ChooserRequest }) {
   const inputId = useId();
   const playlists = useMusicPlaylists();
   const actions = useTrackActions();
+  const bulk = useBulkTrackActions();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const editable = (playlists.data ?? []).filter((p) => p.editable && p.jellyfinId !== request.moveFrom?.jellyfinId);
 
+  const [first] = request.tracks;
+  const many = request.tracks.length > 1;
   const pick = async (playlist: MusicPlaylist) => {
+    if (!first) return;
     setBusy(true);
-    const added = await actions.addToPlaylist(request.track, playlist);
-    if (added && request.moveFrom) await actions.removeFromPlaylist(request.track, request.moveFrom);
+    const added = many ? await bulk.addToPlaylist(request.tracks, playlist) : await actions.addToPlaylist(first, playlist);
+    if (added && request.moveFrom) await actions.removeFromPlaylist(first, request.moveFrom);
     setBusy(false);
     if (added) closePlaylistChooser();
   };
   const create = async () => {
     const trimmed = name.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed || busy || !first) return;
     setBusy(true);
-    const created = await actions.createPlaylistAndAdd(request.track, trimmed);
-    if (created && request.moveFrom) await actions.removeFromPlaylist(request.track, request.moveFrom);
+    const created = many ? await bulk.createPlaylistAndAdd(request.tracks, trimmed) : await actions.createPlaylistAndAdd(first, trimmed);
+    if (created && request.moveFrom) await actions.removeFromPlaylist(first, request.moveFrom);
     setBusy(false);
     if (created) closePlaylistChooser();
   };
@@ -52,7 +57,7 @@ function Chooser({ request }: { request: ChooserRequest }) {
     <Modal open onClose={closePlaylistChooser} maxWidth={400} labelledBy={titleId}>
       <div className="flex max-h-[70vh] flex-col gap-3 p-5">
         <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
-          {t(request.moveFrom ? "playlist.moveTitle" : "playlist.chooseTitle", { title: request.track.title })}
+          {many ? t("selection.chooseTitle", { count: request.tracks.length }) : t(request.moveFrom ? "playlist.moveTitle" : "playlist.chooseTitle", { title: first?.title ?? "" })}
         </h2>
         <div className="flex items-center gap-2">
           <label htmlFor={inputId} className="sr-only">{t("playlist.namePlaceholder")}</label>
