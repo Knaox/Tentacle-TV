@@ -8,6 +8,7 @@ import { transcodeMemory } from "../services/adminSessions/transcodeMemory";
 import type { AdminGroupActionResultDto } from "../services/adminSessions/dto";
 import { allRooms } from "../services/watchTogether/roomRegistry";
 import { familyGuestOwners } from "../services/family/familyGuestMarkers";
+import { refusesMessage } from "../services/adminSessions/listening";
 
 /**
  * Le tableau de bord des sessions en direct — enregistré depuis adminRoutes,
@@ -75,8 +76,11 @@ export const adminSessionsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/sessions/:sessionId/message", async (request, reply) => {
     const { sessionId } = sessionParams.parse(request.params);
     const message = messageBody.parse(request.body);
-    // Une écoute d'extension n'affiche rien : pas de message (le tableau de bord ne le propose pas).
-    if (sessionId.startsWith(DECLARED_SESSION_PREFIX)) return reply.status(409).send({ ok: false, message: "Pas de message pour une écoute" });
+    // Une écoute n'affiche rien : pas de message (le tableau de bord ne le propose pas). Une lecture
+    // d'extension en est toujours une, même disparue entre-temps.
+    if (sessionId.startsWith(DECLARED_SESSION_PREFIX) || refusesMessage((await snapshot()).sessions.find((s) => s.id === sessionId))) {
+      return reply.status(409).send({ ok: false, message: "Pas de message pour une écoute" });
+    }
     const ok = await sendMessage(sessionId, message);
     return ok ? { ok } : reply.status(502).send({ ok, message: "Jellyfin a refusé le message" });
   });
