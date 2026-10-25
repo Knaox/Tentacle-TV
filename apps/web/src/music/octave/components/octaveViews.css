@@ -60,3 +60,10 @@
   box-shadow: inset 0 0 0 1px rgba(var(--oc-accent-rgb), 0.55);
 }
 .octave-chip:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+
+/* Les raccourcis de l'accueil : 1 à 3 colonnes (QuickPicks.tsx, `data-columns`,
+   mesuré sur la largeur). Dans la feuille et non en style en ligne : les
+   passes PostCSS du client LG la traitent. */
+.octave-quickpicks { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.octave-quickpicks[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.octave-quickpicks[data-columns="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
