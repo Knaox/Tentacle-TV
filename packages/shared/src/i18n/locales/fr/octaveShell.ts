@@ -33,9 +33,6 @@ export default {
     cancel: "Annuler",
   },
   track: {
-    goToAlbum: "Voir l'album",
-    goToArtist: "Voir l'artiste",
-    openAlbum: "Ouvrir l'album {{album}}",
-    openArtist: "Ouvrir l'artiste {{artist}}",
+    goToArtistNamed: "Voir {{artist}}",
   },
 };

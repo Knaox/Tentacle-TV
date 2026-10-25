@@ -13,6 +13,7 @@ import { type QueueItem, upcoming, queueActions } from "@tentacle-tv/shared/octa
 import { Artwork } from "../components/Artwork";
 import { AvailabilityMark } from "../components/AvailabilityMark";
 import { TrackMenu } from "../components/TrackMenu";
+import { AlbumLink, ArtistLinks } from "../components/TrackLinks";
 import { useTrackActions, type TrackActions } from "../actions/useTrackActions";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { SelectCell } from "../components/SelectCell";
@@ -39,29 +40,39 @@ function QueueEntry({ item, index, count, current, actions, selection }: { item:
       {selection && (
         <SelectCell cell={false} title={track.title} selected={selection.selected} selecting={selection.selecting} onSelect={(g) => selection.onSelect(item.uid, g)} />
       )}
-      <button
-        type="button"
-        disabled={current}
-        aria-pressed={selection ? selection.selected : undefined}
-        // Maj-clic, Cmd/Ctrl-clic choisissent ; en sélection, un clic coche (il ne saute plus au titre).
-        onClick={(e) => {
-          const gesture = selection ? clickGesture(e, selection.selecting) : "play";
-          if (gesture === "play") queueActions.jumpTo(player, item.uid);
-          else selection?.onSelect(item.uid, gesture);
-        }}
-        onPointerDown={() => player.prefetch([track], "press")}
-        aria-label={t("track.play", { title: track.title })}
-        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-lg text-left disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-      >
-        <Artwork url={track.artworkUrl} className="h-10 w-10" />
-        <span className="min-w-0">
+      {/* Toute l'entrée lit le titre (un bouton qui la couvre) ; artistes et album, posés dessus, mènent à leur page. */}
+      <div className="relative flex min-w-0 flex-1 items-center gap-3">
+        <button
+          type="button"
+          disabled={current}
+          aria-pressed={selection ? selection.selected : undefined}
+          // Maj-clic, Cmd/Ctrl-clic choisissent ; en sélection, un clic coche (il ne saute plus au titre).
+          onClick={(e) => {
+            const gesture = selection ? clickGesture(e, selection.selecting) : "play";
+            if (gesture === "play") queueActions.jumpTo(player, item.uid);
+            else selection?.onSelect(item.uid, gesture);
+          }}
+          onPointerDown={() => player.prefetch([track], "press")}
+          aria-label={t("track.play", { title: track.title })}
+          className="absolute inset-0 cursor-pointer rounded-lg disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        />
+        <Artwork url={track.artworkUrl} className="pointer-events-none h-10 w-10" />
+        <span className="pointer-events-none min-w-0">
           <span className={`block truncate text-sm font-medium ${current ? "text-octave-accent-text" : "text-content-primary"}`}>{track.title}</span>
           <span className="flex items-center gap-1.5 truncate text-xs text-content-tertiary">
             <AvailabilityMark availability={track.availability} />
-            <span className="truncate">{track.artists.map((a) => a.name).join(", ")}</span>
+            <span className="pointer-events-auto relative truncate">
+              <ArtistLinks track={track} />
+              {track.album && (
+                <>
+                  {" · "}
+                  <AlbumLink track={track} />
+                </>
+              )}
+            </span>
           </span>
         </span>
-      </button>
+      </div>
       {/* Le titre de la file s'ajoute à une playlist, ou s'en retire, comme partout (25/10). */}
       <TrackMenu track={track} actions={actions} visible={current ? "always" : "hover"} />
       {!current && (

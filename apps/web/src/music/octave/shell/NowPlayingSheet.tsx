@@ -12,15 +12,14 @@
 import { memo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTrackActions } from "../actions/useTrackActions";
 import { Artwork } from "../components/Artwork";
 import { AvailabilityMark } from "../components/AvailabilityMark";
 import { HeartButton } from "../components/HeartButton";
 import { TrackMenu } from "../components/TrackMenu";
+import { AlbumLink, ArtistLinks } from "../components/TrackLinks";
 import { QuickAddButton } from "../components/QuickAddButton";
-import { octavePaths } from "../octavePaths";
 import { usePlayerSelector } from "../player/OctavePlayerProvider";
 import { FormatBadge } from "./FormatBadge";
 import { SeekBar } from "./SeekBar";
@@ -50,7 +49,6 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
   const actions = useTrackActions();
   const close = useDialogFocus(onClose);
   if (!track) return null;
-  const albumId = track.album?.jellyfinId;
   // Un portail : sous un verre ou un `transform`, un `fixed` prendrait son parent pour cadre.
   return createPortal(
     <div
@@ -91,21 +89,17 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
             <div className="min-w-0 flex-1">
               {track.album && (
                 <p className="truncate text-sm text-content-tertiary">
-                  {albumId ? (
-                    <Link to={octavePaths.album(albumId)} onClick={onClose} className="hover:text-content-primary hover:underline">
-                      {track.album.title}
-                    </Link>
-                  ) : (
-                    track.album.title
-                  )}
+                  <AlbumLink track={track} onNavigate={onClose} />
                 </p>
               )}
               <h2 className="oc-display mt-1 break-words text-3xl text-content-primary md:text-5xl">{track.title}</h2>
-              <p className="mt-2 truncate text-base text-content-secondary md:text-lg">{track.artists.map((a) => a.name).join(", ")}</p>
+              <p className="mt-2 truncate text-base text-content-secondary md:text-lg">
+                <ArtistLinks track={track} onNavigate={onClose} />
+              </p>
             </div>
             <HeartButton track={track} actions={actions} size="md" />
             <QuickAddButton track={track} actions={actions} visible="always" className="h-11 w-11 text-content-secondary" />
-            <TrackMenu track={track} actions={actions} visible="always" buttonClassName="h-11 w-11 text-content-secondary" />
+            <TrackMenu track={track} actions={actions} visible="always" buttonClassName="h-11 w-11 text-content-secondary" onNavigate={onClose} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <AvailabilityMark availability={track.availability} variant="chip" showLibrary />

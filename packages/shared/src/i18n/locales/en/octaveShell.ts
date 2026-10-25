@@ -30,9 +30,6 @@ export default {
     cancel: "Cancel",
   },
   track: {
-    goToAlbum: "Go to album",
-    goToArtist: "Go to artist",
-    openAlbum: "Open the album {{album}}",
-    openArtist: "Open the artist {{artist}}",
+    goToArtistNamed: "Go to {{artist}}",
   },
 };
