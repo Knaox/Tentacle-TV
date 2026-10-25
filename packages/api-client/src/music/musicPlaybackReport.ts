@@ -6,6 +6,8 @@
  */
 
 import type { MusicPlaybackReport } from "@tentacle-tv/shared/music";
+import { TentacleApiError } from "../hooks/usePreferences";
+import { reportNetworkSuspect } from "../net/requestPolicy";
 import { musicApi } from "./musicApi";
 
 /** Un titre est « écouté » au-delà de 90 % de sa durée (la règle de Jellyfin pour l'audio). */
@@ -18,7 +20,11 @@ export function isListenCompleted(positionMs: number, durationMs: number | null)
 export async function reportMusicPlayback(report: MusicPlaybackReport): Promise<boolean> {
   try {
     return (await musicApi.playback(report)).ok;
-  } catch {
+  } catch (error) {
+    // Pas de réponse (serveur coupé) ou une passerelle en panne : la sonde de connectivité de l'app doit
+    // l'apprendre. Une écoute d'une copie GARDÉE ne fait souvent aucune autre requête : sans ce signal, le
+    // passage hors ligne attendait la sonde périodique (jusqu'à 90 s au bureau — recette D8, défaut 2).
+    if (!(error instanceof TentacleApiError) || error.status >= 502) reportNetworkSuspect();
     return false;
   }
 }

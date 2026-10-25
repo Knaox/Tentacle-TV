@@ -33,6 +33,7 @@ function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
     nextRetryAt: null,
     phase: null,
     subtitlesDone: null,
+    sourcePath: null,
     subtitlesExpected: 0,
     title: `Titre ${id}`,
     seriesName: null,

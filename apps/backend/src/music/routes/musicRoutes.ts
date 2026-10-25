@@ -15,6 +15,7 @@ import { homeView } from "../view/userViews";
 import { clampLimit, parseCursor } from "../view/viewContext";
 import { musicMediaRoutes } from "./musicMediaRoutes";
 import { musicUserRoutes } from "./musicUserRoutes";
+import { musicOfflineRoutes } from "./musicOfflineRoutes";
 import { applyQueryToken } from "./mediaQueryToken";
 import { octaveAccessGate } from "./octaveAccessGate";
 import { viewOf } from "./requestView";
@@ -71,4 +72,5 @@ export const musicRoutes: FastifyPluginAsync = async (app) => {
   libraryRoutes(app);
   musicUserRoutes(app);
   musicMediaRoutes(app);
+  musicOfflineRoutes(app);
 };

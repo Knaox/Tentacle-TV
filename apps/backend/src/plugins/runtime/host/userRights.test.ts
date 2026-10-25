@@ -29,11 +29,11 @@ beforeEach(() => {
 
 describe("users.rights et « Accès à Octave »", () => {
   it("permis : l'extension de musique sert le compte", async () => {
-    expect(await userRights("musique", USER)).toEqual({ exists: true, isAdmin: false, canUse: true, canRequest: true, familyGuest: false });
+    expect(await userRights("musique", USER)).toEqual({ exists: true, isAdmin: false, canUse: true, canRequest: true, familyGuest: false, keepOffline: false });
   });
 
   it("coupé : ni usage ni demande", async () => {
     state.octave = false;
-    expect(await userRights("musique", USER)).toEqual({ exists: true, isAdmin: false, canUse: false, canRequest: false, familyGuest: false });
+    expect(await userRights("musique", USER)).toEqual({ exists: true, isAdmin: false, canUse: false, canRequest: false, familyGuest: false, keepOffline: false });
   });
 });

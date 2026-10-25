@@ -295,6 +295,12 @@ export const SERVER_CAPABILITIES = {
    *  sessions de musique portent artistes, album et pochette. Sans elle : rien n'est déclaré, la
    *  musique de la bibliothèque paraît par Jellyfin seul, comme avant. */
   "sessions.musicControl": "1.32.0",
+  /** Garder hors ligne la MUSIQUE (Octave, bureau) : `POST /api/music/offline/plan` dit, pour des
+   *  titres de la bibliothèque, d'où les tirer et sous quelle forme (l'original, ou l'Allégé audio
+   *  `a256` de `/api/downloads/light` quand l'administration le permet), et
+   *  `users.rights` dit `keepOffline` à une extension (titre hors bibliothèque, route `offline` du
+   *  contrat `music`). Sans elle : aucun bouton « Garder hors ligne » dans Octave. */
+  "offline.music": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

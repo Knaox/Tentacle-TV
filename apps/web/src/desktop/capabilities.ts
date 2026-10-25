@@ -38,6 +38,11 @@ export function supportsDownloads(): boolean {
   return hasNativeCommand("downloads_list");
 }
 
+/** La musique gardée hors ligne d'Octave, sur le même moteur (`ipc/downloadsMusic.ts`). */
+export function supportsMusicOffline(): boolean {
+  return hasNativeCommand("downloads_music_list");
+}
+
 /** Lecteur mpv natif. Sinon, l'app retombe sur le lecteur web (hls.js). */
 export function supportsMpv(): boolean {
   return hasNativeCommand("mpv_init");

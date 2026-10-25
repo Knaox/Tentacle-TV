@@ -26,6 +26,7 @@ import { octavePaths } from "../octavePaths";
 import { HistoryButtons } from "./HistoryButtons";
 import { OctaveWordmark } from "./OctaveWordmark";
 import { OctaveModeSlot } from "./OctaveModeSlot";
+import { DeviceNavItem } from "../offline/DeviceNavItem";
 import { OctaveProfileButton } from "../profiles";
 
 export const OCTAVE_DESTINATIONS = [
@@ -71,6 +72,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
             </NavLink>
           </li>
         ))}
+        <DeviceNavItem className={linkClass} />
       </ul>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>

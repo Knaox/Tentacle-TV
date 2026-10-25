@@ -22,17 +22,19 @@ import { hasOctaveAccess } from "../../../services/octaveRights/octaveAccess";
  * `canRequest` (garder hors bibliothèque, demander) suit `canUse` — un invité
  * qui l'a reçu agit à SON nom. `familyGuest` le dit à l'extension, qui peut
  * en faire moins (une extension de musique n'y fait jamais rien entrer).
+ * `keepOffline` (garder hors ligne sur l'appareil) suit en plus
+ * `EnableContentDownloading`, et n'est jamais celui d'un invité.
  */
 
 interface RawUser {
   Id?: string;
-  Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; EnableAllFolders?: boolean; EnabledFolders?: string[] };
+  Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; EnableAllFolders?: boolean; EnabledFolders?: string[]; EnableContentDownloading?: boolean };
 }
 
-export async function userRights(pluginId: string, userId: string): Promise<HostApi["users.rights"]["result"]> {
+export async function userRights(pluginId: string, userId: string): Promise<Required<HostApi["users.rights"]["result"]>> {
   const res = await jellyfinAdminFetch<RawUser>(`/Users/${encodeURIComponent(userId)}`);
   if (!res.ok) {
-    if (res.status === 404 || res.status === 400) return { exists: false, isAdmin: false, canUse: false, canRequest: false };
+    if (res.status === 404 || res.status === 400) return { exists: false, isAdmin: false, canUse: false, canRequest: false, familyGuest: false, keepOffline: false };
     throw new HostCallFailure("unavailable", "Jellyfin ne répond pas");
   }
   const policy = res.data.Policy ?? {};
@@ -53,5 +55,7 @@ export async function userRights(pluginId: string, userId: string): Promise<Host
     familyGuest = true;
   }
   const canUse = pluginOn && policy.IsDisabled !== true && seesMusic && familyOk && (await hasOctaveAccess(userId));
-  return { exists: true, isAdmin, canUse, canRequest: canUse, familyGuest };
+  // Garder hors ligne (`offline.music`) : le droit Jellyfin du compte ; un invité de la Famille, jamais.
+  const keepOffline = canUse && !familyGuest && policy.EnableContentDownloading === true;
+  return { exists: true, isAdmin, canUse, canRequest: canUse, familyGuest, keepOffline };
 }

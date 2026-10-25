@@ -184,6 +184,22 @@ dans le backend, le bureau et Sillon (`types/tentacle/`), tests miroirs.
   seulement, jamais pour une anticipation ; correspondances partagées avec leur provenance (jamais
   par-dessus un jugement du serveur). Le web ne s'annonce pas : chemin serveur inchangé.
 
+## Garder hors ligne la musique (lot « Octave droits », D4 — capacité `offline.music`, BUREAU)
+
+Le MÊME moteur que les films (`packages/offline-core`, miroir du bureau) : un titre gardé est un fichier (`files`,
+`claims`, même file, mêmes relances, même contrôle d'espace) ; sa fiche vit dans `music_meta` (palier v11 de la base
+locale) et son média se tire d'un chemin du SERVEUR Tentacle (`files.source_path`, validé : `/api/…` seulement — le
+jeton ne sort jamais). Albums et playlists gardés en entier : `music_collections`, par compte, dans leur ordre.
+
+| Pièce | Où | Contrat |
+|---|---|---|
+| Plan de la bibliothèque | `POST /api/music/offline/plan` (`MUSIC_ROUTES.offlinePlan`, `MusicOffline*` de `musicCoreApi.ts`) | `{ ids }` (200 au plus) → `{ tracks: [{ id, variant, preset, path, container, expectedSize, estimatedSize }], refused }`. Session personnelle + `EnableContentDownloading`, sinon 404. Allégé audio `a256` (AAC 256 kb/s, MP4 fragmenté) si `EnableMediaConversion` + conversion du son ET source sans perte ou > 320 kb/s ; sinon l'original. |
+| Allégé audio | `/api/downloads/light/:id?preset=a256` (`offlinePrepare/audioLight.ts`) | `Audio/{id}/stream.m4a` de Jellyfin, plafond de débit de l'admin ; `/prepared` ne le sert pas (le bureau tire `/light`, ~50× le temps réel). |
+| Titre d'ailleurs | manifeste `music.offline` (Sillon `/music/offline`) | `GET <offline>/<externalId>` → le fichier COMPLET (`Content-Length`, `Range` → 206) ; 503 + `Retry-After` pendant la préparation (le moteur réessaie seul) ; 404 pour un refus ou un titre introuvable. L'extension tient : session personnelle, `users.rights.keepOffline` (hôte : `canUse` + `EnableContentDownloading`, jamais un invité), et ses propres droits (`rights` → `keepOffline`). |
+| Lecture | `PlaybackSource.kept { userId }` → `AudioBridgeSource.kept` | La coquille cherche la copie dans SA base (`ipc/audioKept.ts`), revérifiée à chaque lecture ; absente : `url` (le serveur). La page ne désigne jamais un chemin. |
+| Coquille | `downloads_music_enqueue` · `downloads_music_list` · `downloads_music_remove` | Pause/reprise/annulation : celles des films. `supportsMusicOffline()` = la coquille sait garder la musique. |
+| Interface | `apps/web/src/music/octave/offline/*` | Une porte (`keepRules.ts`, calculée une fois : `MusicOfflineScope`) ; « Sur cet appareil » `/octave/device` ; sans réseau, Octave n'offre qu'elle. |
+
 ## Synchro temps réel
 
 Le cœur écoute les sockets Jellyfin des comptes (`jellyfinUserEvents.ts`) et émet

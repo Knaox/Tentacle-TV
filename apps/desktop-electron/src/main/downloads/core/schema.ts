@@ -187,6 +187,58 @@ ALTER TABLE files ADD COLUMN subtitles_done INTEGER;
 `;
 
 /**
+ * v11 — la MUSIQUE (Octave, bureau) dans le même moteur que les films.
+ *
+ * Un titre gardé est un fichier comme un autre (`files`, `claims`, la même
+ * file, les mêmes relances) : seule sa fiche change. `item_meta` porte un
+ * `CHECK` (`movie`, `episode`) qu'une base figée ne peut pas élargir, d'où une
+ * table à part — sa présence est AUSSI ce qui distingue un titre de musique
+ * d'un film (la page des films, la réparation et le rattrapage l'écartent).
+ *
+ * `files.source_path` : le chemin, sur le serveur Tentacle, d'où tirer le
+ * média, quand ce n'est pas celui que la variante déduit (un titre hors
+ * bibliothèque : la route de l'extension). `NULL` pour tout l'existant.
+ *
+ * `music_collections` : un album ou une playlist gardés EN ENTIER, par compte,
+ * dans leur ordre — pour les retrouver sans réseau. Aucun `CHECK` (v9).
+ */
+const SCHEMA_V11 = `
+ALTER TABLE files ADD COLUMN source_path TEXT;
+
+CREATE TABLE IF NOT EXISTS music_meta (
+  item_id      TEXT PRIMARY KEY,
+  track_key    TEXT NOT NULL,
+  origin       TEXT NOT NULL,
+  title        TEXT NOT NULL,
+  artist       TEXT,
+  album        TEXT,
+  album_key    TEXT,
+  disc_number  INTEGER,
+  track_number INTEGER,
+  duration_ms  INTEGER,
+  artwork_path TEXT,
+  cover_rel    TEXT,
+  track_json   TEXT NOT NULL,
+  created_at   INTEGER NOT NULL,
+  updated_at   INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS music_meta_track_key ON music_meta (track_key);
+
+CREATE TABLE IF NOT EXISTS music_collections (
+  jellyfin_user_id TEXT NOT NULL,
+  collection_key   TEXT NOT NULL,
+  kind             TEXT NOT NULL,
+  title            TEXT NOT NULL,
+  subtitle         TEXT,
+  cover_item_id    TEXT,
+  track_keys_json  TEXT NOT NULL,
+  created_at       INTEGER NOT NULL,
+  updated_at       INTEGER NOT NULL,
+  PRIMARY KEY (jellyfin_user_id, collection_key)
+);
+`;
+
+/**
  * Les paliers, dans l'ordre. L'INDEX vaut la version : le palier 0 amène à
  * `user_version = 1`, et ainsi de suite. Ajouter un palier, c'est pousser à la
  * fin de ce tableau — jamais réordonner.
@@ -202,6 +254,7 @@ export const MIGRATIONS: readonly string[] = [
   SCHEMA_V8,
   SCHEMA_V9,
   SCHEMA_V10,
+  SCHEMA_V11,
 ];
 
 /** Version de schéma que ce code sait produire et lire. */

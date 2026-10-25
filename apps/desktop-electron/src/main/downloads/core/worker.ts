@@ -17,6 +17,7 @@
 import type { Clock, DatabaseHandle, TransferDriver, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import { getSpec, snapshotExists } from "./meta";
+import { fetchMusicCover } from "./musicLibrary";
 import { safeJoin } from "./paths";
 import { snapshot } from "./snapshot";
 import { setSubtitlesDone, type FileRow } from "./store";
@@ -63,6 +64,8 @@ function lightQuery(file: FileRow): string {
  * transcodage tiré en direct (`light`).
  */
 export function mediaUrl(serverUrl: string, file: FileRow, prepare: ServerPrepare | null = null): string {
+  // Un titre de musique dit lui-même d'où le tirer (la bibliothèque, ou la route d'une extension).
+  if (file.sourcePath !== null) return `${serverUrl}${file.sourcePath}`;
   if (file.variant === "original") {
     return `${serverUrl}/api/downloads/original/${file.itemId}?mediaSourceId=${file.mediaSourceId}`;
   }
@@ -91,7 +94,7 @@ export async function runWorker(
     return { kind: "failed", code: "io", bytesDone: 0 };
   }
 
-  const prepare = file.variant === "original" ? null : (deps.serverPrepare ?? null);
+  const prepare = file.variant === "original" || file.sourcePath !== null ? null : (deps.serverPrepare ?? null);
   const job: TransferJob = {
     url: mediaUrl(creds.serverUrl, file, prepare),
     token: creds.token,
@@ -125,6 +128,15 @@ export async function runWorker(
 
 /** Snapshot et sous-titres, best-effort : leur échec n'empêche jamais le média. */
 async function fetchSidecars(deps: WorkerDeps, creds: Creds, file: FileRow, nowMs: number): Promise<void> {
+  // Un titre de musique : sa pochette seulement (aucune fiche Jellyfin, aucun sous-titre).
+  if (file.sourcePath !== null) {
+    try {
+      await fetchMusicCover(deps.fetchBytes, deps.db, creds.serverUrl, deps.volume, file.itemId);
+    } catch {
+      // Sans pochette, le titre reste lisible.
+    }
+    return;
+  }
   // La réparation repassera derrière ce qui manque.
   if (!snapshotExists(deps.volume, file.itemId)) {
     const spec = getSpec(deps.db, file.itemId);

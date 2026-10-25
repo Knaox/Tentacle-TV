@@ -29,10 +29,14 @@ import { ExternalPlaylistView } from "./views/ExternalPlaylistView";
 import { PlaylistsView } from "./views/PlaylistsView";
 import { SearchView } from "./views/SearchView";
 import { SearchListenRecorder } from "./search/SearchListenRecorder";
+import { DeviceView } from "./offline/DeviceView";
+import { MusicOfflineScope } from "./offline/MusicOfflineScope";
+import { OfflineOctaveRoutes, useKeptAwareAvailability } from "./offline/OfflineOctave";
 
 export function OctaveApp() {
   // Au lancement, le miroir de la dernière réponse peint Octave sans attendre ; le serveur corrige ensuite.
-  const { available, settled } = useOctaveLaunchAvailability();
+  // Hors ligne, la musique gardée sur l'appareil suffit (`offline/OfflineOctave.tsx`).
+  const { available, settled } = useKeptAwareAvailability(useOctaveLaunchAvailability());
   useOctaveCacheWarmStart();
   const navigate = useNavigate();
 
@@ -53,23 +57,29 @@ export function OctaveApp() {
   return (
     <OctaveCacheBoundary>
       <OctavePlayerProvider>
-        <SearchListenRecorder />
-        <OctaveShell onExit={exit}>
-          <Routes>
-            <Route index element={<HomeView />} />
-            <Route path="search" element={<SearchView />} />
-            <Route path="library" element={<LibraryView />} />
-            <Route path="liked" element={<LikedView />} />
-            <Route path="playlists" element={<PlaylistsView />} />
-            <Route path="playlist/:id" element={<PlaylistView />} />
-            <Route path="mix/:id" element={<ExternalPlaylistView />} />
-            <Route path="album/:id" element={<AlbumView />} />
-            <Route path="artist/:id" element={<ArtistView />} />
-            <Route path="*" element={<Navigate to="." replace />} />
-          </Routes>
-        </OctaveShell>
-        {/* Après la coquille : la page gardée retrouve son défilement après la remise en haut d'une page neuve. */}
-        <OctavePageResume />
+        <MusicOfflineScope>
+          <SearchListenRecorder />
+          <OctaveShell onExit={exit}>
+            {/* Sans réseau : « Sur cet appareil » seulement (`offline/OfflineOctave.tsx`). */}
+            <OfflineOctaveRoutes>
+              <Routes>
+                <Route index element={<HomeView />} />
+                <Route path="search" element={<SearchView />} />
+                <Route path="library" element={<LibraryView />} />
+                <Route path="liked" element={<LikedView />} />
+                <Route path="playlists" element={<PlaylistsView />} />
+                <Route path="playlist/:id" element={<PlaylistView />} />
+                <Route path="mix/:id" element={<ExternalPlaylistView />} />
+                <Route path="album/:id" element={<AlbumView />} />
+                <Route path="artist/:id" element={<ArtistView />} />
+                <Route path="device" element={<DeviceView />} />
+                <Route path="*" element={<Navigate to="." replace />} />
+              </Routes>
+            </OfflineOctaveRoutes>
+          </OctaveShell>
+          {/* Après la coquille : la page gardée retrouve son défilement après la remise en haut d'une page neuve. */}
+          <OctavePageResume />
+        </MusicOfflineScope>
       </OctavePlayerProvider>
     </OctaveCacheBoundary>
   );

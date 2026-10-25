@@ -14,6 +14,8 @@ export const octavePaths = {
   library: `${OCTAVE_BASE_PATH}/library`,
   liked: `${OCTAVE_BASE_PATH}/liked`,
   playlists: `${OCTAVE_BASE_PATH}/playlists`,
+  /** La musique gardée sur cet appareil (bureau, `offline/DeviceView.tsx`). */
+  device: `${OCTAVE_BASE_PATH}/device`,
   playlist: (id: string) => `${OCTAVE_BASE_PATH}/playlist/${enc(id)}`,
   /** Une playlist HORS bibliothèque (celle d'une extension), par sa clé `ext:<pluginId>:<id>`. */
   externalPlaylist: (key: string) => `${OCTAVE_BASE_PATH}/mix/${enc(key)}`,

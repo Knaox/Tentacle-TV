@@ -12,7 +12,11 @@ import { FILE_COLS, mapFileRow, publicFile, type PublicFile } from "./store";
 import { flag, integer, integerOrNull, text, textOrNull, type Row } from "./rows";
 import { parseSpecs } from "./subs";
 
-/** Une entrée telle que la page la consomme (`DownloadEntry`, `api.ts`). */
+/**
+ * Une entrée telle que la page la consomme (`DownloadEntry`, `api.ts`). Les
+ * titres de MUSIQUE n'y sont pas (`music_meta`, v11) : Octave a sa liste
+ * (`musicLibrary.ts`).
+ */
 export type DownloadKind = "movie" | "episode";
 
 function kindOf(row: Row): DownloadKind | null {
@@ -127,6 +131,7 @@ export function listForUser(db: DatabaseHandle, userId: string): DownloadListEnt
        LEFT JOIN item_meta ON item_meta.item_id = files.item_id
        ${PLAYBACK_JOIN}
        WHERE claims.jellyfin_user_id = ?
+         AND NOT EXISTS (SELECT 1 FROM music_meta WHERE music_meta.item_id = files.item_id)
        ORDER BY files.created_at DESC, files.id DESC`,
     )
     .all(userId)

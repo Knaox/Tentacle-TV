@@ -42,6 +42,12 @@ export interface PlaybackSource {
    * pour que l'extension oublie cette source. Un moteur qui ne le connaît pas l'ignore.
    */
   direct?: { url: string; expiresAt: number | null };
+  /**
+   * La copie GARDÉE HORS LIGNE de ce titre par ce compte (bureau, capacité `offline.music`) : le moteur natif la lit
+   * depuis le disque (la coquille la cherche elle-même) et ne reprend `url` que si elle manque. Jamais posé par le
+   * serveur ni par une extension ; un moteur qui ne le connaît pas lit `url`.
+   */
+  kept?: { userId: string };
 }
 
 export type ReplayGainMode = "off" | "track" | "album" | "auto";

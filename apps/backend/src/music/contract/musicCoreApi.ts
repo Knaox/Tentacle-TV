@@ -51,7 +51,34 @@ export const MUSIC_ROUTES = {
   artwork: "/api/music/artwork/:id",
   /** POST { itemId, positionMs, event } — rapport d'écoute à Jellyfin (start, progress, stop). */
   playback: "/api/music/playback",
+  /** POST `MusicOfflinePlanRequest` — d'où et sous quelle forme garder hors ligne des titres (capacité `offline.music`, bureau). */
+  offlinePlan: "/api/music/offline/plan",
 } as const;
+
+/** `POST /api/music/offline/plan` — des titres de la bibliothèque à garder sur CET appareil (200 au plus). */
+export interface MusicOfflinePlanRequest {
+  ids: string[];
+}
+
+/**
+ * Un titre planifié : le chemin du serveur Tentacle d'où le tirer (l'original, ou l'Allégé audio `a256` si
+ * l'administration le permet et que la source y gagne), son conteneur, sa taille exacte (original) ou estimée.
+ */
+export interface MusicOfflineTrackPlan {
+  id: string;
+  variant: "original" | "light";
+  preset: string | null;
+  path: string;
+  container: string;
+  expectedSize: number | null;
+  estimatedSize: number | null;
+}
+
+/** La réponse : les titres planifiés, et ceux que ce compte ne peut pas garder (`refused`). 404 : aucun hors ligne. */
+export interface MusicOfflinePlanResponse {
+  tracks: MusicOfflineTrackPlan[];
+  refused: string[];
+}
 
 export interface MusicStatus {
   /** Faux : aucune bibliothèque musique visible — le mode Octave ne s'offre pas. */

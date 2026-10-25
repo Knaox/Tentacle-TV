@@ -18,6 +18,7 @@ import { albumPathOf, linkedArtistsOf } from "./trackTargets";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { openPlaylistChooser } from "../actions/playlistChooserStore";
+import { KeepMenuItem } from "../offline/KeepMenuItem";
 
 interface TrackMenuProps {
   track: MusicTrack;
@@ -133,6 +134,7 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate 
                   <ChevronRight className="h-4 w-4 text-content-tertiary" />
                 </button>
               )}
+              <KeepMenuItem track={track} className={itemClass} onDone={close} />
               {(albumPath || artists.length > 0) && <div className="my-1 h-px bg-line-subtle" />}
               {albumPath && (
                 <button type="button" role="menuitem" className={itemClass} onClick={run(() => { navigate(albumPath); onNavigate?.(); })}>
