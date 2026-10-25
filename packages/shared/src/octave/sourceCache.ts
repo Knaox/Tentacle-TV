@@ -18,8 +18,11 @@ export interface ExternalRetry {
   retryAfterMs: number;
 }
 
-/** Pourquoi une source est demandée : un geste (`play`), ou le préchargement du suivant de la file (`next`). */
-export type SourceIntent = "play" | "next";
+/**
+ * Pourquoi une source est demandée : un geste (`play`), le préchargement du suivant de la file (`next`), ou
+ * « Réessayer » (`retry` : l'extension refait tout, sans s'en tenir à un échec qu'elle aurait retenu).
+ */
+export type SourceIntent = "play" | "next" | "retry";
 
 export interface SourceResolvers {
   /** Un titre de la bibliothèque (`/api/music/source/:id`). */
@@ -56,7 +59,7 @@ export class SourceCache {
     if (ready) return Promise.resolve(ready);
     const pending = this.inFlight.get(track.key);
     // Un clic sur un titre qu'on préchargeait : redemandé comme geste (l'extension promeut la résolution en cours).
-    if (pending && (intent === "next" || pending.intent === "play")) return pending.request;
+    if (pending && (intent === "next" || pending.intent !== "next")) return pending.request;
     // Une nouvelle demande : un ancien « réessaie plus tard » ne vaut plus.
     this.retryHints.delete(track.key);
     const request = this.resolve(track, intent)

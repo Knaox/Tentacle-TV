@@ -39,13 +39,27 @@ describe("« réessaie plus tard » (contrat `retry` de music.resolve)", () => {
     expect(player.snapshot.get().notice).toBeNull();
   });
 
-  it("deux « réessaie » de suite : UN seul nouvel essai, puis l'échec ordinaire (et le suivant)", async () => {
-    const { player, external } = setup({ [a.key]: [{ retryAfterMs: 20 }, { retryAfterMs: 20 }], [b.key]: [sourceOf(b.key)] });
+  it("un titre CHOISI : jusqu'à trois nouveaux essais, puis l'échec — et il RESTE, jamais sauté", async () => {
+    const { player, external } = setup({ [a.key]: [{ retryAfterMs: 10 }, { retryAfterMs: 10 }, { retryAfterMs: 10 }, { retryAfterMs: 10 }], [b.key]: [sourceOf(b.key)] });
     player.playList([a, b], 0);
-    await wait(80);
-    expect(external.mock.calls.filter(([t]) => t.key === a.key)).toHaveLength(2);
+    await wait(150);
+    expect(external.mock.calls.filter(([t]) => t.key === a.key)).toHaveLength(4);
+    expect(player.snapshot.get().current?.key).toBe(a.key);
+    expect(player.snapshot.get()).toMatchObject({ phase: "error", error: "noSource", notice: null });
+  });
+
+  it("un titre ENCHAÎNÉ : un seul nouvel essai, puis l'échec ordinaire (et le suivant)", async () => {
+    const first = externalTrack("sillon", "first");
+    const { player, engine, external } = setup({ [first.key]: [sourceOf(first.key)], [a.key]: [{ retryAfterMs: 10 }, { retryAfterMs: 10 }], [b.key]: [sourceOf(b.key)] });
+    player.playList([first, a, b], 0);
+    await wait(5);
+    engine.sound(0);
+    engine.emit({ type: "state", state: { ...engine.getState(), status: "ended" } });
+    await wait(150);
+    // Le préchargement du suivant (a) a eu son « réessaie » ; à l'enchaînement, un seul nouvel essai, puis b.
     expect(player.snapshot.get().current?.key).toBe(b.key);
     expect(player.snapshot.get().notice).toBeNull();
+    expect(external.mock.calls.filter(([t]) => t.key === a.key).length).toBeLessThanOrEqual(3);
   });
 
   it("l'utilisateur change de titre pendant l'attente : le nouvel essai n'a pas lieu", async () => {

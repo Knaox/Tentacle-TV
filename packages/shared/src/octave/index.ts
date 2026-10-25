@@ -16,3 +16,4 @@ export * from "./playbackReports";
 export * from "./octavePlayer";
 export * from "./octaveQueueActions";
 export * from "./octaveResolution";
+export * from "./startCause";
