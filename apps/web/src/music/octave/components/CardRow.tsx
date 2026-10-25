@@ -6,6 +6,7 @@
  */
 
 import { useRef, type ReactNode } from "react";
+import { ARTWORK_RADIUS } from "./Artwork";
 import { CARD_GRID_CLASS, useGridColumns } from "./cardGrid";
 
 interface CardRowProps<T> {
@@ -41,7 +42,7 @@ export function CardRowSkeleton({ rows = 1, round = false }: { rows?: number; ro
 export function CardSkeleton({ round = false }: { round?: boolean }) {
   return (
     <div className="flex flex-col gap-2 p-2">
-      <div className={`aspect-square w-full bg-fill-soft ${round ? "rounded-full" : "rounded-md"}`} />
+      <div className="aspect-square w-full bg-fill-soft" style={{ borderRadius: round ? "9999px" : ARTWORK_RADIUS.art }} />
       <div className={`flex flex-col px-0.5 ${round ? "items-center" : ""}`}>
         <div className="flex h-5 w-3/4 items-center">
           <div className="h-3.5 w-full rounded bg-fill-soft" />

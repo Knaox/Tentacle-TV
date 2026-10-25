@@ -59,7 +59,7 @@ export function HomeView() {
 
   return (
     <div className="flex flex-col gap-10 px-2 pb-10 pt-6 md:px-6">
-      <h1 className="px-2 text-3xl font-black tracking-tight text-content-primary">{greeting}</h1>
+      <h1 className="px-2 oc-display text-3xl text-content-primary">{greeting}</h1>
       {home.isPending && <HomeSkeleton />}
       {empty && (
         <EmptyState

@@ -64,7 +64,7 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   const HoverIcon = current && playing ? Pause : Play;
   return (
     <div role="gridcell" className="relative flex h-8 w-8 items-center justify-center text-sm tabular-nums text-content-tertiary">
-      <span className={`octave-row-number transition-opacity duration-150 ${current ? "text-brand" : ""}`}>
+      <span className={`octave-row-number transition-opacity duration-150 ${current ? "text-octave-accent-text" : ""}`}>
         {current && playing ? <AudioLines className="h-4 w-4" aria-hidden /> : number}
       </span>
       {current && <span className="sr-only">{t("track.nowPlaying")}</span>}
@@ -91,7 +91,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
         if (e.key === "Enter" && e.target === e.currentTarget) onPlay();
       }}
       {...prefetch}
-      className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         showAlbum ? "grid-cols-[2rem_minmax(0,1fr)_minmax(0,0.8fr)_auto] md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]" : "grid-cols-[2rem_minmax(0,1fr)_auto]"
       }`}
     >
@@ -99,7 +99,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       <div role="gridcell" className="flex min-w-0 items-center gap-3">
         {showArtwork && <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-10 w-10" />}
         <div className="min-w-0">
-          <div title={track.title} className={`flex items-center gap-1.5 truncate text-[15px] font-medium leading-5 ${current ? "text-brand" : muted ? "text-content-secondary" : "text-content-primary"}`}>
+          <div title={track.title} className={`flex items-center gap-1.5 truncate text-[15px] font-medium leading-5 ${current ? "text-octave-accent-text" : muted ? "text-content-secondary" : "text-content-primary"}`}>
             <span className="truncate">{track.title}</span>
             {track.explicit && (
               <span className="shrink-0 rounded-sm bg-fill-medium px-1 text-[10px] font-bold leading-4 text-content-secondary" title={t("track.explicit")}>
@@ -129,7 +129,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       <div role="gridcell" className="flex items-center gap-1">
         <HeartButton track={track} actions={actions} quiet />
         {/* Une durée inconnue (titre d'une recherche hors bibliothèque) : la place, pas de « –:–– ». */}
-        <span className="w-12 text-right text-[13px] tabular-nums text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>
+        <span className="oc-meta w-12 text-right text-[13px] text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>
         <TrackMenu track={track} actions={actions} onRemove={onRemove} />
       </div>
     </div>

@@ -8,6 +8,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LucideIcon } from "lucide-react";
+import { ARTWORK_RADIUS } from "./Artwork";
 import { CardSkeleton } from "./CardRow";
 import { CARD_GRID_CLASS } from "./cardGrid";
 
@@ -20,7 +21,7 @@ export function RowsSkeleton({ rows = 8, showArtwork = true }: { rows?: number; 
           <div className="flex w-8 justify-center">
             <div className="h-3 w-4 rounded bg-fill-subtle" />
           </div>
-          {showArtwork && <div className="h-10 w-10 shrink-0 rounded-md bg-fill-soft" />}
+          {showArtwork && <div className="h-10 w-10 shrink-0 bg-fill-soft" style={{ borderRadius: ARTWORK_RADIUS.sm }} />}
           <div className="flex flex-1 flex-col gap-2">
             {/* Des largeurs qui varient : une liste, pas un code-barres. */}
             <div className="h-3 rounded bg-fill-soft" style={{ width: `${28 + ((i * 17) % 22)}%` }} />
@@ -48,7 +49,7 @@ export function HeaderSkeleton({ round = false }: { round?: boolean }) {
   return (
     <div aria-hidden className="px-4 pb-6 pt-8 md:px-8">
       <div className="flex flex-col items-start gap-6 md:flex-row md:items-end">
-        <div className={`h-44 w-44 shrink-0 bg-fill-soft md:h-56 md:w-56 ${round ? "rounded-full" : "rounded-lg"}`} />
+        <div className="h-44 w-44 shrink-0 bg-fill-soft md:h-56 md:w-56" style={{ borderRadius: round ? "9999px" : ARTWORK_RADIUS.lg }} />
         <div className="flex w-full flex-1 flex-col gap-3">
           <div className="h-3 w-20 rounded bg-fill-subtle" />
           <div className="h-10 w-2/3 rounded bg-fill-soft md:h-12" />
@@ -91,7 +92,7 @@ export function EmptyState({ icon: Icon, title, children, action }: EmptyStatePr
 
 /** Le lien ou bouton d'un état vide : une capsule discrète, cible de 40 px. */
 export const EMPTY_ACTION_CLASS =
-  "inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-line-strong px-5 text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-line-strong px-5 text-sm font-semibold text-content-primary transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export function ErrorState({ onRetry, message }: { onRetry: () => void; message?: string }) {
   const { t } = useTranslation("music");

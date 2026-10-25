@@ -40,9 +40,19 @@ interface ArtworkProps {
   label?: string;
   /** Vignette de liste (≤ 64 px) : 128 px demandés au cœur. */
   thumb?: boolean;
-  /** Coins droits (une vignette collée au bord d'une tuile). */
-  square?: boolean;
+  /** Le rayon, par jeton d'Octave : `xs` ≤ 32 px, `sm` rangée (défaut), `art` carte, `lg` tête de vue. */
+  radius?: ArtworkRadius;
 }
+
+export type ArtworkRadius = "xs" | "sm" | "art" | "lg";
+
+/** Le rayon d'une pochette (`--oc-radius-art-*`, octaveTokens.css) ; un repli si les jetons manquent. */
+export const ARTWORK_RADIUS: Record<ArtworkRadius, string> = {
+  xs: "var(--oc-radius-art-xs, 4px)",
+  sm: "var(--oc-radius-art-sm, 6px)",
+  art: "var(--oc-radius-art, 10px)",
+  lg: "var(--oc-radius-art-lg, 14px)",
+};
 
 /** La règle d'adresse d'une image : jamais de jeton hors du serveur Tentacle. */
 function artworkSrcOf(url: string | null, auth: { baseUrl: string; token: string | null; useCredentials: boolean }): string | null {
@@ -72,7 +82,7 @@ function ArtworkFallback({ kind, label }: { kind: "album" | "artist"; label: str
   );
 }
 
-export const Artwork = memo(function Artwork({ url, alt = "", className = "", round = false, kind = "album", eager = false, label, thumb = false, square = false }: ArtworkProps) {
+export const Artwork = memo(function Artwork({ url, alt = "", className = "", round = false, kind = "album", eager = false, label, thumb = false, radius = "sm" }: ArtworkProps) {
   const [failed, setFailed] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<string | null>(null);
   const resolve = useArtworkResolver();
@@ -84,10 +94,10 @@ export const Artwork = memo(function Artwork({ url, alt = "", className = "", ro
   // Une image dont le préchargement a déjà échoué : le repli d'emblée, jamais une case vide un instant.
   const src = resolved !== null && failed !== resolved && !isArtworkFailed(resolved) ? resolved : null;
   const ready = src !== null && (loaded === src || isArtworkDecoded(src));
-  const shape = round ? "rounded-full" : square ? "" : "rounded-md";
   return (
     <div
-      className={`relative shrink-0 overflow-hidden bg-fill-soft ${shape} ${className}`}
+      className={`relative shrink-0 overflow-hidden bg-fill-soft ${className}`}
+      style={{ borderRadius: round ? "9999px" : ARTWORK_RADIUS[radius] }}
       aria-hidden={alt === "" ? true : undefined}
     >
       {src ? (

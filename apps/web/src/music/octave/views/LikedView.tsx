@@ -10,6 +10,7 @@ import { useMemo } from "react";
 import { Heart, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { ARTWORK_RADIUS } from "../components/Artwork";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
 import { TrackList } from "../components/TrackList";
 import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, RowsSkeleton } from "../components/ViewStates";
@@ -39,7 +40,7 @@ export function LikedView() {
         kicker={t("liked.kicker")}
         title={t("liked.title")}
         art={
-          <div className="octave-brand-fill flex h-44 w-44 shrink-0 items-center justify-center rounded-lg shadow-2xl md:h-56 md:w-56" aria-hidden>
+          <div className="octave-brand-fill flex h-44 w-44 shrink-0 items-center justify-center shadow-[var(--oc-shadow-art-lg)] md:h-56 md:w-56" style={{ borderRadius: ARTWORK_RADIUS.lg }} aria-hidden>
             <Heart className="h-20 w-20" fill="currentColor" strokeWidth={0} />
           </div>
         }

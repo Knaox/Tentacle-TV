@@ -49,14 +49,14 @@ const PLAY_PROPS = {
   appearance: { level: "prominent", tint: "brand", shape: "capsule" },
   className: "flex h-12 items-center gap-2.5 pl-5 pr-7 text-base font-bold disabled:cursor-default disabled:opacity-40",
   fallbackClassName: "hero-cta-primary rounded-full",
-  fallbackStyle: { boxShadow: "0 10px 28px rgba(var(--brand-accent-rgb), 0.32)" },
+  fallbackStyle: { boxShadow: "var(--oc-shadow-play)" },
 } as const;
 
 const SHUFFLE_PROPS = {
   appearance: { level: "regular", shape: "capsule" },
   className: "flex h-12 items-center gap-2 px-5 text-sm font-semibold disabled:cursor-default disabled:opacity-40",
   fallbackClassName:
-    "rounded-full border border-line-subtle bg-fill-subtle text-content-primary transition-colors duration-150 hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus",
+    "rounded-full border border-octave-line bg-octave-hover text-content-primary transition-colors duration-150 hover:bg-octave-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus",
 } as const;
 
 export function CollectionHeader({ kicker, title, artworkUrl = null, art, round = false, meta, canPlay, onPlay, onShuffle, onPress, extra }: CollectionHeaderProps) {
@@ -71,13 +71,14 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
             label={title}
             round={round}
             kind={round ? "artist" : "album"}
-            className={`h-44 w-44 shadow-2xl md:h-56 md:w-56 ${round ? "" : "rounded-lg"}`}
+            radius="lg"
+            className="h-44 w-44 shadow-[var(--oc-shadow-art-lg)] md:h-56 md:w-56"
             eager
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="octave-eyebrow text-xs font-bold uppercase tracking-[0.14em]">{kicker}</p>
-          <h1 className={`mt-2 break-words font-black leading-[1.05] tracking-tight text-content-primary ${titleSizeClass(title)}`}>{title}</h1>
+          <p className="oc-eyebrow">{kicker}</p>
+          <h1 className={`oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`}>{title}</h1>
           <div className="mt-3 flex min-h-5 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-content-secondary">{meta}</div>
         </div>
       </div>

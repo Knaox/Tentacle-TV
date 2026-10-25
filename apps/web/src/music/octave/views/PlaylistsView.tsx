@@ -26,7 +26,7 @@ function NewPlaylist({ open, setOpen }: { open: boolean; setOpen: (open: boolean
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="octave-brand-fill flex h-10 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-md transition-transform duration-150 hover:scale-[1.03] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus motion-reduce:transform-none"
+        className="octave-brand-fill flex h-10 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--oc-shadow-play)] transition-transform duration-150 hover:scale-[1.03] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus motion-reduce:transform-none"
       >
         <Plus className="h-4 w-4" />
         {t("playlist.new")}
@@ -82,7 +82,7 @@ export function PlaylistsView() {
   return (
     <div className="flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4 px-2">
-        <h1 className="text-3xl font-black tracking-tight text-content-primary">{t("nav.playlists")}</h1>
+        <h1 className="oc-display text-3xl text-content-primary">{t("nav.playlists")}</h1>
         <NewPlaylist open={creating} setOpen={setCreating} />
       </div>
       {playlists.isPending && <CardsSkeleton />}

@@ -22,7 +22,7 @@ export const AvailabilityMark = memo(function AvailabilityMark({ availability, f
   if (availability === "library" && !showLibrary) return null;
   const key = failed ? "failed" : availability;
   const Icon = failed ? AlertCircle : availability === "pending" ? Clock3 : availability === "cache" ? Zap : availability === "remote" ? Cloud : Library;
-  const tone = failed ? "text-status-error-fg" : availability === "pending" ? "text-status-warning-fg" : availability === "cache" ? "text-brand-light" : "text-content-tertiary";
+  const tone = failed ? "text-status-error-fg" : availability === "pending" ? "text-status-warning-fg" : availability === "cache" ? "text-octave-accent-text" : "text-content-tertiary";
   const label = t(`availability.${key}`);
   // En attente : l'infobulle dit ce qui va se passer (il s'écoute déjà).
   const hint = key === "pending" ? `${label} — ${t("availability.pendingHint")}` : label;

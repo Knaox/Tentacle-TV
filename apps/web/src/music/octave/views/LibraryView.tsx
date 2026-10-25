@@ -74,7 +74,7 @@ function Albums() {
               /* stockage refusé */
             }
           }}
-          className="h-9 cursor-pointer rounded-full border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary focus:border-line-focus focus:outline-none"
+          className="h-9 cursor-pointer rounded-full border border-octave-line bg-octave-hover px-3 text-sm text-content-primary focus:border-line-focus focus:outline-none"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -146,7 +146,7 @@ export function LibraryView() {
   };
   return (
     <div className="flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
-      <h1 className="px-2 text-3xl font-black tracking-tight text-content-primary">{t("library.title")}</h1>
+      <h1 className="px-2 oc-display text-3xl text-content-primary">{t("library.title")}</h1>
       <div role="tablist" aria-label={t("library.title")} className="flex gap-2 px-2" onKeyDown={onKeyDown}>
         {TABS.map((id) => (
           <button

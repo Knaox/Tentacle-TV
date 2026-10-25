@@ -2,14 +2,15 @@
  * Octave — « Écoutés récemment » en tête de l'accueil : des tuiles à relancer
  * d'un clic (la série reprend à ce titre). Deux rangées PLEINES au plus — trois
  * colonnes quand la place le permet, jamais une tuile seule sur sa rangée. Le
- * titre en cours se reconnaît (barres en couleur de marque, et en mot).
+ * titre en cours se reconnaît (barres roses, et en mot). Pas d'îlot gris : la
+ * pochette sur l'encre, le survol seul dessine la tuile (IDENTITE.md).
  */
 
 import { memo, useRef } from "react";
 import { AudioLines, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
-import { Artwork } from "../components/Artwork";
+import { ARTWORK_RADIUS, Artwork } from "../components/Artwork";
 import { useGridColumns } from "../components/cardGrid";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { usePrefetchHandlers } from "../player/usePrefetchHandlers";
@@ -44,15 +45,15 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
       {...prefetch}
       aria-label={t("track.play", { title: track.title })}
       aria-current={current ? "true" : undefined}
-      className="group flex h-16 min-w-0 cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-line-subtle bg-fill-subtle pr-3 text-left transition-colors duration-150 hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+      className="group flex h-16 min-w-0 cursor-pointer items-center gap-3 rounded-[var(--oc-radius-art)] p-1 pr-3 text-left transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
     >
-      <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb square className="h-16 w-16" />
+      <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-14 w-14 shadow-[var(--oc-shadow-art)]" />
       <span className="min-w-0 flex-1">
-        <span className={`block truncate text-sm font-semibold leading-5 ${current ? "text-brand" : "text-content-primary"}`}>{track.title}</span>
+        <span className={`block truncate text-sm font-semibold leading-5 ${current ? "text-octave-accent-text" : "text-content-primary"}`}>{track.title}</span>
         <span className="block truncate text-xs leading-5 text-content-tertiary">{track.artists.map((a) => a.name).join(", ")}</span>
       </span>
       {current && playing ? (
-        <AudioLines className="h-4 w-4 shrink-0 text-brand" aria-hidden />
+        <AudioLines className="h-4 w-4 shrink-0 text-octave-accent-text" aria-hidden />
       ) : (
         <span className="octave-hover-reveal octave-brand-fill flex h-8 w-8 shrink-0 items-center justify-center rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden>
           <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
@@ -85,8 +86,8 @@ export function QuickPicksSkeleton() {
   return (
     <div ref={ref} aria-hidden className={GRID_CLASS} style={{ gridTemplateColumns: `repeat(${Math.max(columns, 1)}, minmax(0, 1fr))` }}>
       {Array.from({ length: columns * ROWS }, (_, i) => (
-        <div key={i} className="flex h-16 items-center gap-3 overflow-hidden rounded-lg border border-line-subtle bg-fill-subtle pr-3">
-          <div className="h-16 w-16 bg-fill-soft" />
+        <div key={i} className="flex h-16 items-center gap-3 p-1 pr-3">
+          <div className="h-14 w-14 bg-fill-soft" style={{ borderRadius: ARTWORK_RADIUS.sm }} />
           <div className="flex flex-1 flex-col gap-2">
             <div className="h-3 w-2/3 rounded bg-fill-soft" />
             <div className="h-2.5 w-1/3 rounded bg-fill-subtle" />
