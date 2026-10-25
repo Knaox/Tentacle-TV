@@ -26,7 +26,7 @@ nuit de la barre de lecture), en classes Tailwind sous `octave-*` (`apps/web/tai
    Le reste suit le thème : la barre latérale est un rail posé sur l'encre, sans dalle ni bordure ; un
    panneau (file, « en cours », menu) est un îlot opaque, encre prune en sombre, nacre rosée en clair.
 5. **Les pochettes font le décor.** Ni motif ni illustration : la couleur vient des pochettes. Rayons
-   doux, ombres qui soulèvent.
+   doux, ombres qui soulèvent. Une seule exception, qui est la signature d'Octave : **l'océan** (plus bas).
 6. **Intuitif d'abord.** Les conventions d'un lecteur de musique sont gardées : navigation à gauche,
    titre en cours à gauche de la barre, transport au centre, volume à droite, ‹ › pour revenir.
 
@@ -80,13 +80,33 @@ rien d'autre ; une variable qui en DÉRIVE se redéclare sur la nuit (elle se ca
 - **Focus** : l'anneau de Tentacle (`ring-line-focus`), inchangé ; sur une glissière, la tête rose et
   son halo.
 
+## L'océan — le mouvement d'Octave
+
+Tentacle est un poulpe : quand la musique joue, Octave a la mer (`apps/web/src/music/octave/motion/`).
+
+- **La houle** (`OceanSwell`) dit « en cours » : deux vagues qui roulent en sens contraire, le « ≈ » de
+  l'eau, vivant — jamais les barres d'un égaliseur. À la couleur du texte (le rose), de 12 à 16 px. En
+  pause, la mer se CALME (deux rides immobiles). Sur le numéro de la rangée en cours, dans les raccourcis
+  de l'accueil, la file, et en pastille sur la pochette de l'album ou de la playlist qui se joue
+  (`CollectionSwell`, coin bas gauche).
+- **L'ambiance** (`OceanAmbience`), sous le lecteur « en cours » : une lueur à la teinte de la pochette
+  derrière elle, des reflets de surface en haut, trois bandes de houle au pied (violet au fond, la teinte,
+  le rose devant avec une crête de lumière). Discrète : elle ne passe jamais devant le contenu.
+- **Le coût** : `transform` et `opacity` seulement, sur des calques dessinés une fois ; PAR PAS, 15 images
+  par seconde, toutes les animations calées sur la même cadence (`oceanMotion.test.tsx` la tient) ;
+  suspendue hors écran, fenêtre cachée, en pause et sous le lecteur plein écran (`oceanCover.ts`) ;
+  mouvement réduit : la même composition, fixe. Mesuré au bureau pendant une lecture (build de
+  production, 25/10) : 15 images dessinées par seconde de plus (contre 120 en continu sur un écran à
+  120 Hz), aucune abandonnée, ~1 % de CPU au processus GPU (6 % en continu) ; en pause, rien.
+
 ## Ce qu'on ne fait pas
 
 - Ni le vert de Spotify, ni ses îlots gris, ni son bouton Lecture blanc rond.
 - Jamais une barre de lecture blanche, dans aucun thème ; jamais une surface blanc pur en clair.
 - Pas de violet seul pour un état actif (`text-brand` dans Octave : remplacé par le rose).
 - Pas de verre sur du verre, pas de flou décoratif, pas de `backdrop-filter` derrière un fond opaque.
-- Rien qui bat en boucle : la progression avance par pas (≈ 4 par seconde), sans transition continue.
+- Rien qui bat en boucle, hors l'océan (ci-dessus) : la progression avance par pas (≈ 4 par seconde), sans
+  transition continue.
 - Pas de `/opacité` Tailwind sur une couleur `octave-*` autre que `accent`.
 - Pas de `color-mix()`, `min()`, `max()`, `clamp()` dans une feuille d'Octave (garde du client LG).
 - Pas le mot « téléchargement » dans un texte visible.
