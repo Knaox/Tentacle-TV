@@ -18,7 +18,7 @@ const REPLY = z.union([
     response: z.object({
       status: z.number().int().min(100).max(599),
       url: z.string().max(4096),
-      headers: z.record(z.string().max(1024)).refine((h) => Object.keys(h).length <= 8),
+      headers: z.record(z.string(), z.string().max(1024)).refine((h) => Object.keys(h).length <= 8),
       body: z.string(),
     }),
   }),

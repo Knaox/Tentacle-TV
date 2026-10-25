@@ -47,7 +47,7 @@ const SOURCE = z.object({
 const RG_MODE = z.enum(["off", "track", "album", "auto"]);
 const START = z.object({
   serverOrigin: z.string().min(1).max(2048),
-  headers: z.record(z.string().max(4096)),
+  headers: z.record(z.string(), z.string().max(4096)),
   volume: z.number().min(0).max(1),
   muted: z.boolean(),
   replayGain: RG_MODE,

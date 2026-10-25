@@ -17,12 +17,12 @@ import type { CommandRegistry } from "./registry";
 
 const RUN = z.object({
   serverOrigin: z.string().min(1).max(2048).refine((v) => /^https?:\/\//.test(v)),
-  headers: z.record(z.string().max(4096)),
+  headers: z.record(z.string(), z.string().max(4096)),
   pluginId: z.string().refine(isValidPluginId),
   request: z.object({
     method: z.enum(["GET", "POST"]),
     url: z.string().max(4096),
-    headers: z.record(z.string().max(8192)).optional(),
+    headers: z.record(z.string(), z.string().max(8192)).optional(),
     body: z.string().max(256 * 1024).optional(),
     timeoutMs: z.number().int().positive().optional(),
     maxBytes: z.number().int().positive().optional(),

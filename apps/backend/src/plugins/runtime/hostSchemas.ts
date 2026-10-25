@@ -14,7 +14,7 @@ const tool = z.enum(["yt-dlp"]);
 const empty = z.object({}).strict();
 
 /** Un événement émis : objet JSON simple et borné ; son `type` est contrôlé à part (PLUGIN_EMITTABLE_MUSIC_EVENTS). */
-const eventPayload = z.record(z.unknown()).refine((value) => JSON.stringify(value).length <= 64 * 1024, "événement trop gros");
+const eventPayload = z.record(z.string(), z.unknown()).refine((value) => JSON.stringify(value).length <= 64 * 1024, "événement trop gros");
 
 type ParamSchemas = { [M in HostMethod]: z.ZodType<HostApi[M]["params"]> };
 
@@ -74,7 +74,7 @@ export const HOST_PARAM_SCHEMAS: ParamSchemas = {
         .object({
           method: z.enum(["GET", "POST"]),
           url: z.string().min(8).max(4096),
-          headers: z.record(z.string().max(8192)).optional(),
+          headers: z.record(z.string(), z.string().max(8192)).optional(),
           body: z.string().max(256 * 1024).optional(),
           timeoutMs: z.number().int().min(1).max(8_000).optional(),
           maxBytes: z.number().int().min(1).max(2 * 1024 * 1024).optional(),

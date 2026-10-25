@@ -21,7 +21,7 @@ const emittable = z.discriminatedUnion("type", [
     jellyfinId: z.string().regex(/^[A-Za-z0-9-]{1,64}$/),
     recording: mbid.nullable(),
     // Un titre du contrat (`MusicTrack`) ou rien : le cœur le relaie, il ne l'interprète pas.
-    track: z.record(z.unknown()).nullable(),
+    track: z.record(z.string(), z.unknown()).nullable(),
   }),
   z.object({ type: z.literal("music:pending") }),
 ]);
