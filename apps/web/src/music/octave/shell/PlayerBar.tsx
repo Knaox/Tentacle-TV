@@ -58,7 +58,7 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
     radius: "xl",
     scale: "surface",
     className:
-      "pointer-events-auto mx-auto grid h-[var(--oc-dock-height)] w-full max-w-[var(--oc-dock-max)] grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1fr)] items-center gap-4 px-3",
+      "octave-glass pointer-events-auto mx-auto grid h-[var(--oc-dock-height)] w-full max-w-[var(--oc-dock-max)] grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1fr)] items-center gap-4 px-3",
     fallbackClassName: "octave-dock-fallback",
   });
   return (
@@ -98,7 +98,7 @@ export const MiniPlayer = memo(function MiniPlayer({ onOpen }: { onOpen: () => v
     shape: "rounded",
     radius: "lg",
     scale: "surface",
-    className: "relative mx-2 overflow-hidden",
+    className: "octave-glass relative mx-2 overflow-hidden",
     fallbackClassName: "octave-dock-fallback",
   });
   if (!track) return null;

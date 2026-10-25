@@ -187,4 +187,6 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* Sous un verre, l'ombre de texte héritée ternirait le dégradé. */
+  text-shadow: none;
 }

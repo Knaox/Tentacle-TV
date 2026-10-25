@@ -1,5 +1,6 @@
 @import "./octaveTokens.css";
 @import "./shell/shell.css";
+@import "./shell/shellGlass.css";
 
 /*
  * Octave — ce que Tailwind ne dit pas. Jetons de l'identité : octaveTokens.css
@@ -20,6 +21,9 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* Une ombre de texte (celle d'un verre, héritée) se peindrait PAR-DESSUS le
+   * dégradé, qui ne vit que dans les lettres : il deviendrait terne. */
+  text-shadow: none;
 }
 
 /* La tête d'une vue (album, playlist, likés) : un voile de marque, ROSE en tête, qui fond vers la page. */

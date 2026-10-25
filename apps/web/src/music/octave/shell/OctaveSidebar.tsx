@@ -54,7 +54,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
   const glass = useLiquidGlassSurface({
     radius: "lg",
     scale: "surface",
-    className: `flex shrink-0 flex-col gap-5 pb-3 pt-4 w-[var(--oc-sidebar-width)] ${native ? "octave-rail-glass my-2 ml-2 px-2" : "h-full px-3"}`,
+    className: `flex shrink-0 flex-col gap-5 pb-3 pt-4 w-[var(--oc-sidebar-width)] ${native ? "octave-glass octave-rail-glass my-2 ml-2 px-2" : "h-full px-3"}`,
   });
   return (
     <nav aria-label={t("nav.main")} {...glass.props}>
