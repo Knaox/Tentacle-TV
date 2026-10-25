@@ -33,6 +33,9 @@
    qu'on toucherait sans le voir. */
 @media (hover: none) {
   .octave-hover-reveal { opacity: 1 !important; transform: none !important; }
+  /* Un raccourci de SURVOL (Lecture sur une carte, une tuile) dont le toucher
+     fait déjà l'équivalent : retiré, ni visible ni touchable par mégarde. */
+  .octave-hover-only { display: none !important; }
 }
 
 /* Une puce d'onglet ou de filtre : choisie, elle prend le ROSE de la musique

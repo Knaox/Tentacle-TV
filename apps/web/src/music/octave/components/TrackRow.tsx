@@ -21,6 +21,12 @@ import { AvailabilityMark } from "./AvailabilityMark";
 import { HeartButton } from "./HeartButton";
 import { TrackMenu } from "./TrackMenu";
 
+/**
+ * La grille d'une rangée avec sa colonne Album : la colonne n'existe qu'à
+ * partir de `lg` — plus étroit, elle écrasait le titre (« Mo… »).
+ */
+export const ALBUM_COLUMNS = "grid-cols-[2rem_minmax(0,1fr)_auto] lg:grid-cols-[2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]";
+
 export interface TrackRowProps {
   track: MusicTrack;
   /** Numéro affiché (piste d'album ou rang dans la liste). */
@@ -92,7 +98,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       }}
       {...prefetch}
       className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-        showAlbum ? "grid-cols-[2rem_minmax(0,1fr)_minmax(0,0.8fr)_auto] md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]" : "grid-cols-[2rem_minmax(0,1fr)_auto]"
+        showAlbum ? ALBUM_COLUMNS : "grid-cols-[2rem_minmax(0,1fr)_auto]"
       }`}
     >
       <NumberCell number={number} current={current} playing={playing} />
@@ -116,7 +122,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
         </div>
       </div>
       {showAlbum && (
-        <div role="gridcell" className="min-w-0 truncate text-[13px] text-content-tertiary">
+        <div role="gridcell" className="hidden min-w-0 truncate text-[13px] text-content-tertiary lg:block">
           {track.album?.jellyfinId ? (
             <Link to={octavePaths.album(track.album.jellyfinId)} onClick={(e) => e.stopPropagation()} className="hover:text-content-primary hover:underline">
               {track.album.title}

@@ -55,7 +55,7 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
       {current && playing ? (
         <AudioLines className="h-4 w-4 shrink-0 text-octave-accent-text" aria-hidden />
       ) : (
-        <span className="octave-hover-reveal octave-brand-fill flex h-8 w-8 shrink-0 items-center justify-center rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden>
+        <span className="octave-hover-only octave-brand-fill flex h-8 w-8 shrink-0 items-center justify-center rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden>
           <Play className="ml-0.5 h-4 w-4" fill="currentColor" />
         </span>
       )}

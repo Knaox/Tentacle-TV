@@ -12,7 +12,7 @@ import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";
 import type { ListRow } from "@tentacle-tv/shared/octave";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
-import { TrackRow } from "./TrackRow";
+import { ALBUM_COLUMNS, TrackRow } from "./TrackRow";
 
 interface TrackListProps {
   rows: readonly ListRow[];
@@ -68,10 +68,10 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
   return (
     <div role="grid" aria-label={label} className="flex flex-col">
       {showHeader && (
-        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${showAlbum ? "grid-cols-[2rem_minmax(0,1fr)_minmax(0,0.8fr)_auto] md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]" : "grid-cols-[2rem_minmax(0,1fr)_auto]"}`}>
+        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${showAlbum ? ALBUM_COLUMNS : "grid-cols-[2rem_minmax(0,1fr)_auto]"}`}>
           <span role="columnheader" className="text-center">{t("track.number")}</span>
           <span role="columnheader">{t("track.title")}</span>
-          {showAlbum && <span role="columnheader">{t("track.album")}</span>}
+          {showAlbum && <span role="columnheader" className="hidden lg:block">{t("track.album")}</span>}
           <span role="columnheader" className="pr-9 text-right">{t("track.duration")}</span>
         </div>
       )}
