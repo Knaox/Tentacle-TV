@@ -2,17 +2,21 @@
  * Octave — les cartes : album, artiste, playlist. Pochette carrée (place
  * réservée), titre, sous-titre. Le bouton lecture monte au survol (opacité +
  * transform) — toujours visible sur un écran tactile ; le clic sur la carte
- * ouvre sa vue. Un titre coupé se lit en entier dans l'infobulle.
+ * ouvre sa vue. Un titre coupé se lit en entier dans l'infobulle. Parmi des
+ * albums d'ailleurs, celui que la bibliothèque a porte sa pastille AU REPOS,
+ * dans le coin haut gauche (`ownership` : en entier, ou « En partie ») —
+ * jamais au centre de l'image, le bouton lecture garde le bas droit.
  */
 
 import { memo } from "react";
-import { Play } from "lucide-react";
+import { Library, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { useCollectionPlayback, type CollectionRef } from "../actions/useCollectionPlayback";
 import { rememberAlbumPreview } from "../data/albumPreview";
 import { useEntityIntent } from "../data/entityIntent";
+import type { AlbumOwnership } from "../library/ownedItems";
 import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
 import { CARD_GRID_CLASS } from "./cardGrid";
@@ -37,10 +41,23 @@ function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) 
   );
 }
 
+/** La pastille « dans la bibliothèque » d'une carte : icône ET mot (lecteurs d'écran, infobulle), fond plein. */
+function OwnershipBadge({ ownership }: { ownership: AlbumOwnership }) {
+  const { t } = useTranslation("music");
+  const label = t(ownership === "full" ? "availability.albumFull" : "availability.albumPartial");
+  return (
+    <span title={label} className="pointer-events-none absolute left-2 top-2 inline-flex h-6 items-center gap-1 rounded-full bg-black/70 px-1.5 text-[11px] font-semibold leading-none text-white shadow-[var(--oc-shadow-art)]">
+      <Library className="h-3.5 w-3.5 text-status-success-fg" aria-hidden />
+      {ownership === "partial" && <span aria-hidden>{t("availability.partlyShort")}</span>}
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 const cardClass =
   "octave-card group flex min-w-0 flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
-export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum }) {
+export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { album: MusicAlbum; ownership?: AlbumOwnership | null }) {
   const { t } = useTranslation("music");
   const target = entityTarget(album);
   const intent = useEntityIntent("album", target);
@@ -50,6 +67,7 @@ export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum 
     <>
       <div className="relative aspect-square w-full">
         <Artwork url={album.artworkUrl} label={album.title} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
+        {ownership && <OwnershipBadge ownership={ownership} />}
         {album.jellyfinId && <PlayOverlay refOf={{ kind: "album", id: album.jellyfinId }} label={t("track.play", { title: album.title })} />}
       </div>
       <div className="min-w-0 px-0.5">

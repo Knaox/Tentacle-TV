@@ -177,6 +177,11 @@ export default {
     remote: "Not in the library yet",
     failed: "Couldn't be added",
     pendingHint: "It joins the library in a few moments; you can already play it.",
+    albumFull: "Album in the library",
+    albumPartial: "Album partly in the library",
+    partlyShort: "Partly",
+    albumCoverage_one: "{{count}} of {{total}} songs in the library",
+    albumCoverage_other: "{{count}} of {{total}} songs in the library",
   },
   player: {
     region: "Player",

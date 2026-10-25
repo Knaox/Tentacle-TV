@@ -177,6 +177,11 @@ export default {
     remote: "Pas encore dans la bibliothèque",
     failed: "Ajout impossible",
     pendingHint: "Il rejoint la bibliothèque dans quelques instants ; il s'écoute déjà.",
+    albumFull: "Album dans la bibliothèque",
+    albumPartial: "Album en partie dans la bibliothèque",
+    partlyShort: "En partie",
+    albumCoverage_one: "{{count}} titre sur {{total}} dans la bibliothèque",
+    albumCoverage_other: "{{count}} titres sur {{total}} dans la bibliothèque",
   },
   player: {
     region: "Lecteur",

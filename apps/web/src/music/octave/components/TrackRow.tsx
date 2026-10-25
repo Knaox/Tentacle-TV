@@ -37,6 +37,8 @@ export interface TrackRowProps {
   failed?: boolean;
   showArtwork?: boolean;
   showAlbum?: boolean;
+  /** Une liste qui mêle bibliothèque et ailleurs : les titres de la bibliothèque y portent leur marque. */
+  markLibrary?: boolean;
   actions: TrackActions;
   /** Rang dans la liste : le rappel est STABLE (une rangée ne se redessine pas quand le titre courant change ailleurs). */
   index: number;
@@ -81,7 +83,7 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry }: TrackRowProps) {
   const { t } = useTranslation("music");
   const onPlay = () => onPlayIndex(index);
   const onRemove = entryId && onRemoveEntry ? () => onRemoveEntry(entryId) : undefined;
@@ -114,7 +116,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
             )}
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-content-tertiary">
-            <AvailabilityMark availability={track.availability} failed={failed} />
+            <AvailabilityMark availability={track.availability} failed={failed} showLibrary={markLibrary} />
             <span className="truncate">
               <ArtistLinks track={track} />
             </span>

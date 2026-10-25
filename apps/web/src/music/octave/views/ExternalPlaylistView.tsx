@@ -1,7 +1,8 @@
 /**
  * Octave — une playlist HORS bibliothèque (celle d'une extension) : sa tête (pochette, nom, qui l'a composée, nombre
  * de titres et durée), Lecture et Aléatoire, puis ses titres. Lecture seule : elle n'est pas une playlist Jellyfin
- * (on ne la modifie pas) ; chaque titre s'aime ou s'ajoute à une playlist comme tout titre hors bibliothèque.
+ * (on ne la modifie pas) ; chaque titre s'aime ou s'ajoute à une playlist comme tout titre hors bibliothèque. Un titre
+ * que la bibliothèque a y est montré et joué comme le sien, marqué (`useOwnedTracks`).
  */
 
 import { useMemo } from "react";
@@ -13,6 +14,7 @@ import { CollectionHeader, Dot, useCountAndDuration } from "../components/Collec
 import { TrackList, rowsOf } from "../components/TrackList";
 import { EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { useExternalPlaylist } from "../data/useExternalPlaylist";
+import { useOwnedTracks } from "../library/useOwnedTracks";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 
 export function ExternalPlaylistView() {
@@ -20,7 +22,8 @@ export function ExternalPlaylistView() {
   const { id = "" } = useParams();
   const player = useOctavePlayer();
   const playlist = useExternalPlaylist(id);
-  const tracks = useMemo(() => playlist.data?.tracks ?? [], [playlist.data]);
+  const shown = useMemo(() => playlist.data?.tracks ?? [], [playlist.data]);
+  const { tracks } = useOwnedTracks(shown);
   const rows = useMemo(() => rowsOf(tracks), [tracks]);
   const meta = useCountAndDuration(tracks.length, tracks.reduce((s, track) => s + (track.durationMs ?? 0), 0));
   const contextId = `playlist:${id}`;
@@ -58,7 +61,7 @@ export function ExternalPlaylistView() {
         {rows.length === 0 ? (
           <EmptyState icon={ListMusic} title={t("playlist.empty")} />
         ) : (
-          <TrackList rows={rows} contextId={contextId} showArtwork showAlbum label={data.title} showHeader />
+          <TrackList rows={rows} contextId={contextId} showArtwork showAlbum markLibrary label={data.title} showHeader />
         )}
       </div>
     </div>
