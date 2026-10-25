@@ -16,6 +16,7 @@ import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/Oct
 import { usePrefetchHandlers } from "../player/usePrefetchHandlers";
 import { useTrackActions } from "../actions/useTrackActions";
 import { TrackMenu } from "../components/TrackMenu";
+import { QuickAddButton } from "../components/QuickAddButton";
 
 /** Une tuile fait au moins 15 rem ; trois colonnes au plus, deux rangées. */
 const TILE_MIN_PX = 240;
@@ -67,6 +68,7 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
         </span>
       )}
     </button>
+    <QuickAddButton track={track} actions={actions} />
     <TrackMenu track={track} actions={actions} />
     </div>
   );

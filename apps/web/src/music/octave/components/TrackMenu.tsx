@@ -7,7 +7,7 @@
  */
 
 import { useRef, useState, type RefObject } from "react";
-import { ChevronLeft, ChevronRight, Disc3, ListEnd, ListMinus, ListPlus, ListStart, MoreHorizontal, Trash2, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Disc3, ListEnd, ListMinus, ListPlus, ListStart, MoreHorizontal, Plus, Trash2, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicPlaylist, MusicTrack } from "@tentacle-tv/shared/music";
@@ -17,6 +17,7 @@ import type { TrackActions } from "../actions/useTrackActions";
 import { octavePaths } from "../octavePaths";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
+import { openPlaylistChooser } from "../actions/playlistChooserStore";
 
 interface TrackMenuProps {
   track: MusicTrack;
@@ -100,6 +101,7 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenu
               mode={picking}
               playlists={editable}
               onBack={() => setPicking(null)}
+              onCreate={picking === "add" ? run(() => openPlaylistChooser(track)) : undefined}
               onPick={(p, position) =>
                 run(() => void (picking === "add" ? actions.addToPlaylist(track, p, position) : actions.removeFromPlaylist(track, p)))()
               }
@@ -159,11 +161,13 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenu
 }
 
 /** Le choix d'une playlist modifiable : pour y ajouter (à la fin, ou « En tête »), ou pour en retirer le titre. */
-function PlaylistPicker({ mode, playlists, onBack, onPick }: {
+function PlaylistPicker({ mode, playlists, onBack, onPick, onCreate }: {
   mode: "add" | "remove";
   playlists: readonly MusicPlaylist[];
   onBack: () => void;
   onPick: (playlist: MusicPlaylist, position?: number) => void;
+  /** « Nouvelle playlist… » (ajout seulement) : un nom, puis le titre y entre aussitôt. */
+  onCreate?: () => void;
 }) {
   const { t } = useTranslation("music");
   return (
@@ -173,7 +177,13 @@ function PlaylistPicker({ mode, playlists, onBack, onPick }: {
         {t(mode === "add" ? "playlist.addTo" : "playlist.removeFrom")}
       </button>
       <div className="my-1 h-px bg-line-subtle" />
-      {playlists.length === 0 && <p className="px-3 py-2 text-sm text-content-tertiary">{t("playlist.none")}</p>}
+      {onCreate && (
+        <button type="button" role="menuitem" className={itemClass} onClick={onCreate}>
+          <Plus className="h-4 w-4 text-content-tertiary" />
+          {t("playlist.newEllipsis")}
+        </button>
+      )}
+      {playlists.length === 0 && !onCreate && <p className="px-3 py-2 text-sm text-content-tertiary">{t("playlist.none")}</p>}
       {playlists.map((p) => (
         <div key={p.jellyfinId} className="flex items-center gap-1">
           {/* Le nom ajoute à la fin (ou retire) ; « En tête » ajoute à la position 0. */}

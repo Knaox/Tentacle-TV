@@ -9,13 +9,15 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useAddToMusicPlaylist, useMusicGestures, useMusicPlaylistReader, useRemoveMusicPlaylistEntry } from "@tentacle-tv/api-client";
+import { useAddToMusicPlaylist, useCreateMusicPlaylist, useMusicGestures, useMusicPlaylistReader, useMusicPlaylists, useRemoveMusicPlaylistEntry } from "@tentacle-tv/api-client";
 import type { MusicPlaylist, MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
 import { playlistHasTrack, playlistOccurrences } from "@tentacle-tv/shared/octave";
 import { useToast } from "../../../contexts/ToastContext";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { usePendingMusic } from "../pending/usePendingMusic";
 import { askDuplicate } from "./duplicateConfirm";
+import { lastPlaylistId, quickTarget, rememberPlaylist } from "./lastPlaylist";
+import { openPlaylistChooser } from "./playlistChooserStore";
 
 export interface PlaylistGestures {
   canAddToPlaylist: (track: MusicTrack) => boolean;
@@ -26,6 +28,10 @@ export interface PlaylistGestures {
   removeFromPlaylist: (track: MusicTrack, playlist: MusicPlaylist) => Promise<boolean>;
   /** Retire une entrée EN ATTENTE (rangée `pending:` d'une playlist). */
   removePending: (operationId: string) => Promise<boolean>;
+  /** « Nouvelle playlist… » : la crée sous ce nom, et le titre y entre aussitôt. */
+  createPlaylistAndAdd: (track: MusicTrack, name: string) => Promise<boolean>;
+  /** Le « + » : d'un geste dans la DERNIÈRE playlist utilisée (avis « Ajouté à X — Changer ») ; sans elle, le choix. */
+  quickAdd: (track: MusicTrack) => Promise<boolean>;
 }
 
 export function isLibraryTrack(track: MusicTrack): track is MusicTrack & { jellyfinId: string } {
@@ -40,6 +46,12 @@ export function usePlaylistGestures(): PlaylistGestures {
   const readPlaylist = useMusicPlaylistReader();
   const { mutateAsync: insertEntries } = useAddToMusicPlaylist();
   const { mutateAsync: removeEntry } = useRemoveMusicPlaylistEntry();
+  const { mutateAsync: createPlaylist } = useCreateMusicPlaylist();
+  const playlists = useMusicPlaylists();
+  const playlistsRef = useRef<readonly MusicPlaylist[]>([]);
+  useEffect(() => {
+    playlistsRef.current = playlists.data ?? [];
+  }, [playlists.data]);
   // Lue au geste, jamais une dépendance : les gestes restent STABLES (une liste de 500 rangées ne se redessine pas
   // à chaque relecture des attentes).
   const pending = usePendingMusic();
@@ -60,23 +72,27 @@ export function usePlaylistGestures(): PlaylistGestures {
     [readPlaylist],
   );
 
-  const addToPlaylist = useCallback(
-    async (track: MusicTrack, playlist: MusicPlaylist, position?: number): Promise<boolean> => {
+  /** L'ajout ; `offerChange` : l'avis porte « Changer » (le « + » a choisi la playlist tout seul). */
+  const add = useCallback(
+    async (track: MusicTrack, playlist: MusicPlaylist, position?: number, offerChange = false): Promise<boolean> => {
       try {
         const duplicate = await alreadyIn(track, playlist);
         if (duplicate && !(await askDuplicate(track.title, playlist.name))) return false;
+        let pending = false;
         if (isLibraryTrack(track)) {
           await insertEntries({ playlistId: playlist.jellyfinId, itemIds: [track.jellyfinId], position, tracks: [track] });
-          toast.show("success", t("playlist.added", { name: playlist.name }));
-          return true;
+        } else {
+          if (!track.external || !ownsTrack(track)) return false;
+          const outcome = await gestures.playlistAdd(track.external.id, playlist.jellyfinId, position ?? playlist.trackCount, duplicate);
+          if (!outcome.ok) {
+            failed(outcome.reason);
+            return false;
+          }
+          pending = outcome.state === "pending";
         }
-        if (!track.external || !ownsTrack(track)) return false;
-        const outcome = await gestures.playlistAdd(track.external.id, playlist.jellyfinId, position ?? playlist.trackCount, duplicate);
-        if (!outcome.ok) {
-          failed(outcome.reason);
-          return false;
-        }
-        toast.show("success", t(outcome.state === "pending" ? "playlist.addedPending" : "playlist.added", { name: playlist.name }));
+        rememberPlaylist(playlist.jellyfinId);
+        const change = offerChange ? { action: { label: t("playlist.change"), onPress: () => openPlaylistChooser(track, playlist) } } : undefined;
+        toast.show("success", t(pending ? "playlist.addedPending" : "playlist.added", { name: playlist.name }), change);
         return true;
       } catch {
         failed();
@@ -84,6 +100,45 @@ export function usePlaylistGestures(): PlaylistGestures {
       }
     },
     [alreadyIn, failed, gestures, insertEntries, ownsTrack, t, toast],
+  );
+  const addToPlaylist = useCallback((track: MusicTrack, playlist: MusicPlaylist, position?: number) => add(track, playlist, position), [add]);
+
+  const quickAdd = useCallback(
+    async (track: MusicTrack): Promise<boolean> => {
+      const target = quickTarget(playlistsRef.current, lastPlaylistId());
+      if (!target) {
+        openPlaylistChooser(track);
+        return false;
+      }
+      return add(track, target, undefined, true);
+    },
+    [add],
+  );
+
+  const createPlaylistAndAdd = useCallback(
+    async (track: MusicTrack, name: string): Promise<boolean> => {
+      try {
+        const library = isLibraryTrack(track);
+        if (!library && (!track.external || !ownsTrack(track))) return false;
+        const created = await createPlaylist({ name, itemIds: library ? [track.jellyfinId] : [] });
+        let pending = false;
+        if (!library && track.external) {
+          const outcome = await gestures.playlistAdd(track.external.id, created.jellyfinId, 0);
+          if (!outcome.ok) {
+            failed(outcome.reason);
+            return false;
+          }
+          pending = outcome.state === "pending";
+        }
+        rememberPlaylist(created.jellyfinId);
+        toast.show("success", t(pending ? "playlist.addedPending" : "playlist.added", { name: created.name }));
+        return true;
+      } catch {
+        failed();
+        return false;
+      }
+    },
+    [createPlaylist, failed, gestures, ownsTrack, t, toast],
   );
 
   const removePending = useCallback(
@@ -124,7 +179,9 @@ export function usePlaylistGestures(): PlaylistGestures {
       canRemoveFromPlaylist: (track: MusicTrack) => isLibraryTrack(track) || (ownsTrack(track) && gestures.canRemovePending),
       removeFromPlaylist,
       removePending,
+      createPlaylistAndAdd,
+      quickAdd,
     }),
-    [addToPlaylist, gestures.canPlaylistAdd, gestures.canRemovePending, ownsTrack, removeFromPlaylist, removePending],
+    [addToPlaylist, createPlaylistAndAdd, gestures.canPlaylistAdd, gestures.canRemovePending, ownsTrack, quickAdd, removeFromPlaylist, removePending],
   );
 }

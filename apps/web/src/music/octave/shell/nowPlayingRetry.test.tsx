@@ -17,6 +17,7 @@ vi.mock("react-router-dom", () => ({ Link: ({ children }: { children?: ReactNode
 vi.mock("../components/Artwork", () => ({ Artwork: () => <span data-artwork /> }));
 vi.mock("../components/HeartButton", () => ({ HeartButton: () => <span data-heart /> }));
 vi.mock("../components/TrackMenu", () => ({ TrackMenu: ({ visible }: { visible?: string }) => <span data-track-menu={visible} /> }));
+vi.mock("../components/QuickAddButton", () => ({ QuickAddButton: ({ visible }: { visible?: string }) => <span data-quick-add={visible} /> }));
 vi.mock("../actions/useTrackActions", () => ({ useTrackActions: () => ({ canLike: () => false, toggleLike: () => undefined, canAddToPlaylist: () => false, addToPlaylist: async () => false }) }));
 vi.mock("../player/OctavePlayerProvider", () => ({
   usePlayerSelector: (select: (s: Record<string, unknown>) => unknown) => select(h.snapshot),
@@ -91,6 +92,8 @@ describe("un titre qui ne peut pas être lu", () => {
 
   it("le titre EN COURS a son menu (playlist : ajouter, retirer), toujours visible (25/10)", () => {
     h.snapshot = { ...h.snapshot, error: null, notice: null };
-    expect(renderToStaticMarkup(<NowPlayingInfo />)).toContain('data-track-menu="always"');
+    const html = renderToStaticMarkup(<NowPlayingInfo />);
+    expect(html).toContain('data-track-menu="always"');
+    expect(html).toContain('data-quick-add="always"');
   });
 });

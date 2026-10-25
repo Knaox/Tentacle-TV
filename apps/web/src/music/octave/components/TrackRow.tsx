@@ -20,6 +20,8 @@ import { Artwork } from "./Artwork";
 import { AvailabilityMark } from "./AvailabilityMark";
 import { HeartButton } from "./HeartButton";
 import { TrackMenu } from "./TrackMenu";
+import { QuickAddButton } from "./QuickAddButton";
+import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
 
 /**
  * La grille d'une rangée avec sa colonne Album : la colonne n'existe qu'à
@@ -103,6 +105,10 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
         if (e.key === "Enter" && e.target === e.currentTarget) onPlay();
       }}
       {...prefetch}
+      // Glisser le titre sur une playlist du rail l'y ajoute (souris) ; le menu « Ajouter à une playlist » en est l'équivalent.
+      draggable={actions.canAddToPlaylist(track)}
+      onDragStart={(e) => startTrackDrag(e, track)}
+      onDragEnd={endTrackDrag}
       className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         showAlbum ? ALBUM_COLUMNS : "grid-cols-[2rem_minmax(0,1fr)_auto]"
       }`}
@@ -141,6 +147,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
         </div>
       )}
       <div role="gridcell" className="flex items-center gap-1">
+        <QuickAddButton track={track} actions={actions} />
         <HeartButton track={track} actions={actions} quiet />
         {/* Une durée inconnue (titre d'une recherche hors bibliothèque) : la place, pas de « –:–– ». */}
         <span className="oc-meta w-12 text-right text-[13px] text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>
