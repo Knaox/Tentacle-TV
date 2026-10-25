@@ -74,7 +74,8 @@ rien d'autre ; une variable qui en DÉRIVE se redéclare sur la nuit (elle se ca
   dégradé.
 - **La place** : une information qui ne tient pas entière s'efface, elle n'est jamais coupée au milieu
   d'un mot. Dans le dock, la colonne de droite est un conteneur (requêtes de conteneur, `shell.css`) :
-  la glissière du volume cède d'abord, puis la qualité disparaît (son détail reste dans l'infobulle et
+  la glissière du volume cède d'abord, puis la qualité passe en ICÔNE seule — nom accessible et infobulle
+  qui disent tout (« Qualité : Sans perte · FLAC · 16 bits · 44,1 kHz ») —, puis disparaît (le détail reste
   dans le lecteur « en cours »).
 - **Focus** : l'anneau de Tentacle (`ring-line-focus`), inchangé ; sur une glissière, la tête rose et
   son halo.
