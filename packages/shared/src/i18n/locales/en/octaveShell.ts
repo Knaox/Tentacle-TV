@@ -23,7 +23,7 @@ export default {
     switch: "Switch profile",
     manage: "Manage profiles",
     whoListens: "Who's listening?",
-    choose: "Pick a profile. The music stays open.",
+    choose: "Pick a profile. You'll stay in Octave.",
     close: "Close",
   },
   pinSheet: {

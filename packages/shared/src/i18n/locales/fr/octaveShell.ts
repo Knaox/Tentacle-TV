@@ -26,7 +26,7 @@ export default {
     switch: "Changer de profil",
     manage: "Gérer les profils",
     whoListens: "Qui écoute ?",
-    choose: "Choisissez un profil. La musique reste ouverte.",
+    choose: "Choisissez un profil. Vous restez dans Octave.",
     close: "Fermer",
   },
   pinSheet: {
