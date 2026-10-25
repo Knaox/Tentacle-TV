@@ -28,13 +28,20 @@ describe("jumeaux de bibliothèque (sans MBID)", () => {
 });
 
 describe("mise en page d'une recherche (façon Apple Music)", () => {
-  it("le meilleur résultat de l'extension, remplacé par son jumeau de bibliothèque, jamais répété dans les titres", () => {
+  it("le meilleur résultat de l'extension, remplacé par son jumeau de bibliothèque, OUVRE la liste des titres (R5-06), une seule fois", () => {
     const mine = track("jf:1", "Thunder", "Imagine Dragons", 187_000, true);
     const theirs = track("ext:sillon:ytm:t:x", "Thunder", "Imagine Dragons", 187_000);
     const layout = layoutSearch(lib({ tracks: [mine] }), ext({ top: { kind: "track", track: theirs }, tracks: [theirs, track("ext:2", "Thunderstruck", "AC/DC")] }));
     expect(layout.top).toEqual({ kind: "track", track: mine });
-    expect(layout.tracks.map((t) => t.key)).toEqual(["ext:2"]);
-    expect(layout.sideTracks.map((t) => t.key)).toEqual(["ext:2"]);
+    expect(layout.tracks.map((t) => t.key)).toEqual(["jf:1", "ext:2"]);
+    expect(layout.sideTracks.map((t) => t.key)).toEqual(["jf:1", "ext:2"]);
+  });
+
+  it("R5-06 : un titre de l'extension en tête est le premier des titres, même quand la page ne l'y met pas", () => {
+    const radiohead = track("ext:pa", "Paranoid Android", "Radiohead", 387_000);
+    const layout = layoutSearch(null, ext({ top: { kind: "track", track: radiohead }, tracks: [track("ext:bm", "Paranoid Android", "Brad Mehldau"), track("ext:w", "Paranoid Android", "Weezer")] }));
+    expect(layout.sideTracks.map((t) => t.key)).toEqual(["ext:pa", "ext:bm", "ext:w"]);
+    expect(layout.tracks[0]?.key).toBe("ext:pa");
   });
 
   it("un artiste en tête : ses titres d'abord à côté de la carte, puis les autres ; la bibliothèque d'abord dans les titres", () => {

@@ -3,9 +3,11 @@
  * (`useRevealedResults`) :
  * - le MEILLEUR RÉSULTAT : celui que l'extension désigne (`top`), remplacé par son jumeau de bibliothèque s'il
  *   y en a un (il se lit tout de suite) ; sans désignation, aucun ;
- * - à côté, les titres à lire d'un geste : ceux du meilleur résultat (artiste, album), puis les autres ;
- * - puis les sections : titres (la bibliothèque d'abord, les jumeaux de l'extension retirés, rien deux fois),
- *   albums, artistes, playlists — ce que la carte du meilleur résultat montre n'y est pas répété ;
+ * - à côté, les titres à lire d'un geste : un TITRE en tête les ouvre (R5-06, recette de R4 : la liste commence par
+ *   la piste officielle, comme chez Apple Music et Spotify), sinon ceux du meilleur résultat (artiste, album), puis
+ *   les autres ;
+ * - puis les sections : titres (le titre en tête, la bibliothèque, l'extension sans ses jumeaux, rien deux fois),
+ *   albums, artistes, playlists — l'album, l'artiste ou la playlist de la carte n'y sont pas répétés ;
  * - un filtre (`SearchFilter`) ne garde que sa liste.
  */
 
@@ -70,9 +72,9 @@ export function layoutSearch(library: MusicSearchResponse | null, external: Show
   const top = topOf(ext.top, library);
   const topTracks = ext.top && (ext.top.kind === "artist" || ext.top.kind === "album") ? owned(ext.top.tracks ?? [], lib.tracks) : [];
   const shownTop = top?.kind === "track" ? [top.track] : [];
-  // Toujours la bibliothèque d'abord (elle se lit tout de suite), puis l'extension sans ses jumeaux.
-  const tracks = uniqueByKey([...lib.tracks, ...withoutTwins(ext.tracks, lib.tracks, sameTrack)]).filter((t) => !shownTop.some((s) => s.key === t.key));
-  const sideTracks = uniqueByKey([...topTracks, ...tracks]).filter((t) => !shownTop.some((s) => s.key === t.key)).slice(0, SIDE_TRACKS);
+  // Le titre en tête d'abord, puis la bibliothèque (elle se lit tout de suite), puis l'extension sans ses jumeaux.
+  const tracks = uniqueByKey([...shownTop, ...lib.tracks, ...withoutTwins(ext.tracks, lib.tracks, sameTrack)]);
+  const sideTracks = uniqueByKey([...shownTop, ...topTracks, ...tracks]).slice(0, SIDE_TRACKS);
   const topKey = top ? (top.kind === "track" ? top.track.key : top.kind === "album" ? top.album.key : top.kind === "artist" ? top.artist.key : top.playlist.key) : null;
   const notTop = <T extends { key: string }>(item: T) => item.key !== topKey;
   return {
