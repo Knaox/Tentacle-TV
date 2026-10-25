@@ -30,6 +30,7 @@ describe("manifeste music", () => {
     const m = readPluginMusicManifest({ search: "/music/search", resolve: "/music/resolve", playlist: "/music/playlist", typingPause: "/music/warm/typing", searchKinds: ["playlists", "tracks", "videos", 3, "tracks"] });
     expect(m?.playlist).toBe("/music/playlist");
     expect(m?.typingPause).toBe("/music/warm/typing");
+    expect(readPluginMusicManifest({ search: "/music/search", resolve: "/music/resolve", radio: "/music/radio" })?.radio).toBe("/music/radio");
     expect(m?.searchKinds).toEqual(["tracks", "playlists"]);
     // Rien de connu : pas de filtres servis (l'interface filtre la page « Tout »).
     expect(readPluginMusicManifest({ search: "/music/search", resolve: "/music/resolve", searchKinds: ["videos"] })?.searchKinds).toBeUndefined();

@@ -44,6 +44,11 @@ export interface PluginMusicManifest {
   /** Vue playlist hors bibliothèque — GET <playlist>/<playlistId> → `ExternalMusicPlaylist` avec `tracks`. */
   playlist?: string;
   /**
+   * Radio d'un titre — GET <radio>/<externalId> → `ExternalMusicRadio` : ce que la source enchaîne après lui, pour
+   * la SUITE d'un clic dans les résultats de recherche (plan de R8, S3), demandée APRÈS le premier son.
+   */
+  radio?: string;
+  /**
    * Pause de frappe — POST { q } → 202, BUREAU seulement (accord de Damien, 25/10) : l'extension PRÉPARE la
    * recherche depuis l'appareil ; rien n'est affiché ni attendu avant la validation.
    */
@@ -55,6 +60,11 @@ export interface PluginMusicManifest {
   searchKinds?: MusicSearchKind[];
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
+}
+
+/** La radio d'un titre : les titres à enchaîner après lui, sans lui. */
+export interface ExternalMusicRadio {
+  tracks: MusicTrack[];
 }
 
 /** Liste FERMÉE des listes filtrables d'une recherche. */
@@ -211,7 +221,7 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "typingPause"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }

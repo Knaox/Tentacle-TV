@@ -7,6 +7,7 @@
  */
 
 import type {
+  MusicTrack,
   ExternalMusicPlaylist,
   ExternalActionOutcome,
   MusicAlbum,
@@ -137,6 +138,17 @@ export function fetchExternalArtist(provider: MusicProvider, artistId: string, s
 export function fetchExternalPlaylist(provider: MusicProvider, playlistId: string, signal?: AbortSignal): Promise<ExternalMusicPlaylist | null> {
   if (!provider.music.playlist) return Promise.resolve(null);
   return tentacleApiFetch<ExternalMusicPlaylist>(`${musicRouteUrl(provider, provider.music.playlist)}/${encodeURIComponent(playlistId)}`, { signal });
+}
+
+/**
+ * La radio d'un titre hors bibliothèque (`music.radio`) : les titres à enchaîner après lui ; `null` si l'extension
+ * n'en sert pas, ou en cas d'échec (la file garde alors sa suite d'avant). Jamais avant le premier son (S3).
+ */
+export async function fetchExternalRadio(provider: MusicProvider, externalId: string, signal?: AbortSignal): Promise<MusicTrack[] | null> {
+  if (!provider.music.radio) return null;
+  const raw = await tentacleApiFetch<unknown>(`${musicRouteUrl(provider, provider.music.radio)}/${encodeURIComponent(externalId)}`, { signal }).catch(() => null);
+  const tracks = (raw as { tracks?: unknown } | null)?.tracks;
+  return Array.isArray(tracks) ? tracks.filter((t): t is MusicTrack => !!t && typeof (t as { key?: unknown }).key === "string") : null;
 }
 
 /** Pour les tests. */
