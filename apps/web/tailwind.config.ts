@@ -16,6 +16,24 @@ export default {
   ],
   theme: {
     extend: {
+      // Octave, le mode musique : ses jetons `--oc-*` (music/octave/octaveTokens.css,
+      // docs/octave/IDENTITE.md), chargés avec le mode seulement. Le rose porte
+      // `<alpha-value>` : `bg-octave-accent/20` compose son opacité ; les autres
+      // couleurs non — sur elles, jamais de `/opacité` (Tailwind 3 supprimerait
+      // la déclaration en silence, cf. theme/alphaModifier.test.ts).
+      colors: {
+        octave: {
+          ink: "var(--oc-ink)",
+          raised: "var(--oc-ink-raised)",
+          hover: "var(--oc-hover)",
+          selected: "var(--oc-selected)",
+          line: "var(--oc-line)",
+          accent: "rgba(var(--oc-accent-rgb), <alpha-value>)",
+          "accent-text": "var(--oc-accent-text)",
+          "accent-soft": "var(--oc-accent-soft)",
+          rail: "var(--oc-rail)",
+        },
+      },
       // `shimmer` et `breathe` ont été retirés : aucun `animate-shimmer` ni
       // `animate-breathe` dans le code. Le premier faisait doublon avec la
       // classe `.skeleton-shimmer` d'index.css, le second animait `box-shadow`
