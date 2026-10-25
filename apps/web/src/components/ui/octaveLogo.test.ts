@@ -61,13 +61,38 @@ describe("logo d'Octave (module généré par brand/octave.py)", () => {
 
   it("donne le glyphe de l'interface : des contours fermés, dans le repère du logo", () => {
     expect(OCTAVE_GLYPH_VIEWBOX).toBe("0 0 240 240");
-    // Hampe, crochet-bras, tête : trois contours fermés, aucun gabarit resté dedans.
-    expect(OCTAVE_GLYPH_PATHS).toHaveLength(3);
     for (const d of OCTAVE_GLYPH_PATHS) {
       expect(d).toMatch(/^M [\d.]+ [\d.]+ /);
       expect(d.trimEnd().endsWith("Z")).toBe(true);
       // La note de l'écran du logo EST le glyphe : mêmes contours.
       expect(OCTAVE_LOGO_SVG).toContain(`d="${d}"`);
+    }
+  });
+
+  // Défaut O1-1 : trois tracés superposés, remplis d'une couleur translucide (l'entrée de la
+  // barre, le verre), composaient leur alpha trois fois sur la jonction hampe-tête.
+  it("une couleur translucide ne se cumule jamais : le glyphe est UN tracé, sous-tracés du même sens", () => {
+    expect(OCTAVE_GLYPH_PATHS).toHaveLength(1);
+    for (const svg of [OCTAVE_GLYPH_SVG, OCTAVE_GLYPH_ON_DARK_SVG, OCTAVE_GLYPH_ON_LIGHT_SVG]) {
+      expect(svg.match(/<path /g)).toHaveLength(1);
+    }
+    // Hampe, crochet, tête : trois sous-tracés, tous antihoraires à l'écran — avec `nonzero`,
+    // un recouvrement vaut +1 +1 (rempli), jamais +1 −1 (un trou).
+    const subpaths = OCTAVE_GLYPH_PATHS[0].split(/(?=M )/);
+    expect(subpaths).toHaveLength(3);
+    for (const sub of subpaths) {
+      if (sub.includes("A ")) {
+        // Les arcs de la tête : « grand arc » 1, sens 0 (antihoraire à l'écran).
+        expect([...sub.matchAll(/A [\d.]+ [\d.]+ -?[\d.]+ (\d) (\d)/g)].map((m) => `${m[1]}${m[2]}`)).toEqual(["10", "10"]);
+        continue;
+      }
+      const nums = (sub.match(/-?[\d.]+/g) ?? []).map(Number);
+      const points = nums.flatMap((_, i) => (i % 2 === 0 ? [[nums[i], nums[i + 1]] as const] : []));
+      const area = points.reduce((sum, [x0, y0], i) => {
+        const [x1, y1] = points[(i + 1) % points.length];
+        return sum + x0 * y1 - x1 * y0;
+      }, 0);
+      expect(area).toBeLessThan(0);
     }
   });
 });

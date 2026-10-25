@@ -51,8 +51,33 @@ def polygon_path(points):
     return "M " + " L ".join(f"{x:.2f} {y:.2f}" for x, y in points) + " Z"
 
 
+def signed_area(points):
+    """Aire signée (repère de l'écran, y vers le bas) : négative = sens antihoraire à l'écran."""
+    return sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1])) / 2
+
+
+def counterclockwise(points):
+    """Le polygone parcouru dans le sens antihoraire à l'écran — celui des arcs de la tête."""
+    return points[::-1] if signed_area(points) > 0 else points
+
+
+def polygon_points(d):
+    """Les sommets d'un contour « M x y L x y … Z » (la forme que rend `geometry.tapered`)."""
+    nums = [float(v) for v in d.replace("M", " ").replace("L", " ").replace("Z", " ").split()]
+    return list(zip(nums[0::2], nums[1::2]))
+
+
 def glyph():
-    """Les contours du glyphe, de l'arrière vers l'avant : hampe, crochet, tête."""
+    """
+    Le glyphe en UN SEUL tracé : hampe, crochet, tête, en sous-tracés du même
+    sens (antihoraire à l'écran, celui des arcs de la tête, `sweep` 0). Avec la
+    règle `nonzero`, leurs recouvrements s'additionnent (+1 +1) au lieu de se
+    creuser, et le tracé est peint UNE fois : une couleur translucide
+    (`currentColor` à 0,78 d'alpha, le verre) ne se cumule jamais sur la
+    jonction hampe-tête ou hampe-crochet (défaut O1-1 : trois tracés
+    superposés, trois couches d'alpha). Rendu dans une liste d'un élément :
+    le nom d'export `OCTAVE_GLYPH_PATHS` reste stable.
+    """
     cx, cy, rx, ry = HEAD
     a = math.radians(HEAD_ROT)
     # Le bord droit de la tête (côté du grand axe), où la hampe s'attache ;
@@ -60,12 +85,16 @@ def glyph():
     ax, ay = cx + rx * math.cos(a), cy + rx * math.sin(a)
     x1 = ax + 1
     x0 = x1 - STEM_W
-    stem = polygon_path([(x0, STEM_TOP), (x1, STEM_TOP), (x1, ay), (x0, ay + 6)])
+    stem = [(x0, STEM_TOP), (x1, STEM_TOP), (x1, ay), (x0, ay + 6)]
+    # Le crochet part du milieu du haut de la hampe, son bord haut AU RAS du
+    # sien (demi-base 13) : aucune marche à la jonction.
     top = STEM_TOP
-    spine = arm_spine((x0 + 10, top + 8), (x1 + 52, top + 6), (x1 + 84, top + 46),
+    spine = arm_spine((x0 + 10, top + 13), (x1 + 52, top + 11), (x1 + 84, top + 46),
                       (x1 + 60, top + 98), 24, 9, -0.1, FLAG_TURNS, cw=True)
-    flag = tapered(spine, *FLAG_W)
-    return [stem, flag, ellipse_path(cx, cy, rx, ry, HEAD_ROT)]
+    flag = polygon_points(tapered(spine, *FLAG_W))
+    parts = [polygon_path(counterclockwise(stem)), polygon_path(counterclockwise(flag)),
+             ellipse_path(cx, cy, rx, ry, HEAD_ROT)]
+    return [" ".join(parts)]
 
 
 def placed(size, center, fill):

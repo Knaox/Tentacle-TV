@@ -37,6 +37,12 @@ les bras du logo —, qui s'enroule vers l'intérieur. On lit d'abord une note
 d'une icône Lucide à 24 px : la hampe a la largeur de leur trait. Une seule
 couleur, aucun visage.
 
+**Un seul tracé** : hampe, crochet et tête sont trois sous-tracés du même sens
+(antihoraires à l'écran) dans UN `<path>`. Trois tracés superposés composaient
+une couleur translucide (l'entrée de la barre à 0,78 d'alpha, le verre) trois
+fois sur leurs jonctions (défaut O1-1) ; un seul est peint une fois. Le test
+`octaveLogo.test.ts` tient la règle.
+
 ## Le logo
 
 Le corps du logo de Tentacle (`BODY`), dans le même ordre, le play remplacé par
