@@ -19,7 +19,7 @@
 
 /* L'initiale d'un artiste sans photo : grande, posée, à l'échelle de la case. */
 .octave-art-initial {
-  /* Sans `min()` (garde du client LG) : la taille suit la case ; repli fixe sans unités de conteneur. */
+  /* Aucune fonction de borne (garde du client LG) : la taille suit la case ; repli fixe sans unités de conteneur. */
   font-size: 2rem;
   font-size: 40cqw;
   font-weight: 800;
