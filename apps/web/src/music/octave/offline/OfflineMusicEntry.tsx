@@ -5,6 +5,7 @@
  * introuvable. Le compte de l'appareil seulement, une ligne de montage.
  */
 
+import type { ReactNode } from "react";
 import { Music } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -17,6 +18,23 @@ export function OfflineMusicEntry() {
   const profileSession = useActiveProfile() !== null;
   if (!supportsMusicOffline() || profileSession) return null;
   return <OfflineMusicEntryCard />;
+}
+
+/**
+ * Hors ligne, rien de gardé côté films : la musique gardée REMPLACE le message
+ * « aucun contenu » — la page ne se contredit pas (recette de D8) ; sans musique
+ * gardée, le message d'avant (`fallback`).
+ */
+export function OfflineMusicOrEmpty({ fallback }: { fallback: ReactNode }) {
+  const profileSession = useActiveProfile() !== null;
+  if (!supportsMusicOffline() || profileSession) return <>{fallback}</>;
+  return <MusicOrFallback fallback={fallback} />;
+}
+
+function MusicOrFallback({ fallback }: { fallback: ReactNode }) {
+  const kept = useKeptMusic();
+  if (!kept.loaded) return null;
+  return kept.tracks.some((k) => k.status === "complete") ? <div className="mt-6"><OfflineMusicEntryCard /></div> : <>{fallback}</>;
 }
 
 function OfflineMusicEntryCard() {
