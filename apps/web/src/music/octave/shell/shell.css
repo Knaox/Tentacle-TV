@@ -21,26 +21,36 @@
 
 /* La colonne de droite du dock se règle sur SA place (requête de conteneur :
  * elle se resserre quand la file s'ouvre ou la fenêtre rétrécit). La qualité
- * et l'état ne paraissent que s'ils tiennent EN ENTIER — jamais coupés au
- * milieu d'un mot ; la glissière du volume cède d'abord de la largeur.
- * Mesuré (Inter, « Sans perte », le plus long) : état + pastille 97, file 36,
- * bouton du volume 40, écarts 6. D'où l'échelle (glissière / qualité) :
- *   < 160 : pas de glissière (le bouton muet reste) ;
- *   160 → 64 px ;  200 → 96 px ;
- *   280 → qualité + 72 px (263 utiles) ;  310 → qualité + 96 px (287 utiles).
+ * tient EN ENTIER ou passe en icône seule (nom accessible, infobulle) — jamais
+ * un mot coupé ; la glissière du volume cède de la largeur avant elle.
+ * Mesuré (Inter, « Sans perte », le plus long) : état + mot 97, icône 22, file
+ * 36, bouton du volume 40, écarts 6. D'où l'échelle (qualité / glissière) :
+ *   < 160 : ni qualité ni glissière (le bouton muet reste) ;
+ *   160 → glissière 64 (82 + 64 = 146 utiles) ;
+ *   180 → icône + glissière 56 (110 + 56 = 166) ;  240 → icône + 96 (206) ;
+ *   280 → état + mot + 72 (185 + 72 = 257) ;  310 → état + mot + 96 (281).
  * `.octave-range.octave-dock-volume` : la règle de `.octave-range`, plus bas
  * dans la feuille, reprendrait sinon le `display`. */
 .octave-dock-aside { container-type: inline-size; }
-.octave-dock-meta { display: none; }
+.octave-dock-meta,
+.octave-dock-availability,
+.octave-dock-quality-label { display: none; }
+.octave-dock-quality-icon { display: inline-flex; }
 .octave-range.octave-dock-volume { display: none; width: 64px; }
 @container (min-width: 160px) {
   .octave-range.octave-dock-volume { display: flex; }
 }
-@container (min-width: 200px) {
+@container (min-width: 180px) {
+  .octave-dock-meta { display: inline-flex; }
+  .octave-range.octave-dock-volume { width: 56px; }
+}
+@container (min-width: 240px) {
   .octave-range.octave-dock-volume { width: 96px; }
 }
 @container (min-width: 280px) {
-  .octave-dock-meta { display: inline-flex; }
+  .octave-dock-availability,
+  .octave-dock-quality-label { display: inline-flex; }
+  .octave-dock-quality-icon { display: none; }
   .octave-range.octave-dock-volume { width: 72px; }
 }
 @container (min-width: 310px) {

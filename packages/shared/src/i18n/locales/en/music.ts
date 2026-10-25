@@ -237,5 +237,6 @@ export default {
     back: "Go back",
     forward: "Go forward",
     nowPlaying: "Now playing",
+    quality: "Quality: {{detail}}",
   },
 };

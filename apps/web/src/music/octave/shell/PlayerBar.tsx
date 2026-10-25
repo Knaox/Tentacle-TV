@@ -13,9 +13,10 @@
  * les pochettes qui passent dessous se courbent au biseau. Ailleurs : le verre
  * sombre de `shell.css` (`octave-dock-fallback`).
  *
- * La qualité n'est jamais coupée au milieu d'un mot : elle paraît quand SA
- * colonne a la place (requête de conteneur, `shell.css`), sinon elle s'efface
- * — le détail reste dans son infobulle et dans le lecteur « en cours ».
+ * La qualité n'est jamais coupée au milieu d'un mot : en mot quand SA colonne
+ * a la place (requête de conteneur, `shell.css`), en icône seule (nom
+ * accessible, infobulle) plus à l'étroit, sinon elle s'efface — le détail
+ * reste dans le lecteur « en cours ».
  */
 
 import { memo } from "react";
@@ -79,8 +80,17 @@ export const PlayerBar = memo(function PlayerBar({ queueOpen, onToggleQueue, onO
         </div>
         <div className="octave-dock-aside flex min-w-0 items-center justify-end gap-1.5">
           <div className="octave-dock-meta shrink-0 items-center gap-2 whitespace-nowrap">
-            {availability && <AvailabilityMark availability={availability} variant="icon" showLibrary />}
-            <FormatBadge format={format} compact />
+            {availability && (
+              <span className="octave-dock-availability">
+                <AvailabilityMark availability={availability} variant="icon" showLibrary />
+              </span>
+            )}
+            <span className="octave-dock-quality-label">
+              <FormatBadge format={format} compact />
+            </span>
+            <span className="octave-dock-quality-icon">
+              <FormatBadge format={format} icon />
+            </span>
           </div>
           <QueueButton open={queueOpen} onToggle={onToggleQueue} />
           <VolumeControl className="octave-dock-volume" />
