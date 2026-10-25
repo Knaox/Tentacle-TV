@@ -3,6 +3,8 @@
  * out-of-library source (an extension names its own section), and never the
  * word "download" or its forms.
  */
+import rights from "./musicRights";
+
 export default {
   mode: {
     enter: "Octave",
@@ -271,7 +273,7 @@ export default {
   },
   refusal: {
     title: "Couldn't do that",
-    quota: "The addition limit is reached for now. Try again later.",
+    quota: "Today's addition limit is reached. It resets at midnight.",
     forbidden: "This account can't add music from outside the library.",
     unavailable: "This track isn't available right now.",
     notFound: "Track not found.",
@@ -292,4 +294,5 @@ export default {
     nowPlaying: "Now playing",
     quality: "Quality: {{detail}}",
   },
+  rights,
 };

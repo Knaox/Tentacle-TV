@@ -21,6 +21,7 @@ import {
   reportExternalPlayed,
   reportMusicPlayback,
   resolveMusicSource,
+  useServerCapability,
   type MusicProvider,
 } from "@tentacle-tv/api-client";
 import type { AudioEnginePort } from "@tentacle-tv/shared/music";
@@ -29,6 +30,7 @@ import { AudioEngineProvider, useAudioEngine, type EnginePrefs } from "../../eng
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { followSearchWithRadio } from "./searchRadio";
 import { withKeptSources } from "../offline/keptSources";
+import { attachSessionRemote } from "./octaveSessionRemote";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
 
@@ -85,6 +87,8 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
   const provider = useOctaveProvider();
   const providerRef = useRef(provider);
   providerRef.current = provider;
+  const declaresRef = useRef(false);
+  declaresRef.current = useServerCapability("sessions.musicControl");
   const [player, setPlayer] = useState<OctavePlayer | null>(null);
 
   useLayoutEffect(() => {
@@ -104,10 +108,13 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
     });
     // S3 : après le premier son d'un titre de recherche, sa radio devient la suite.
     const offRadio = followSearchWithRadio(p, () => providerRef.current);
+    // Les sessions en cours de l'administration : ce qui joue s'y dit, et s'y commande.
+    const offRemote = attachSessionRemote(p, () => declaresRef.current);
     setPlayer(p);
     return () => {
       off();
       offRadio();
+      offRemote();
       p.dispose();
       setPlayer(null);
     };

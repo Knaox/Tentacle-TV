@@ -11,7 +11,7 @@ export { getClockOffsetMs, getClockRttMs } from "../socket/clockSync";
 // Canal de session : la télémétrie de lecture et la télécommande Jellyfin
 // passent par le backend (opt-in de l'hôte — web, bureau, mobile et TV)
 export {
-  configureSessionChannel, getChannelStatus, isChannelReporting, onChannelStatus,
+  configureSessionChannel, declarePlayback, getChannelStatus, isChannelReporting, onChannelStatus,
   onSessionCommand, onSessionGeneral, onSessionMessage,
   type ChannelStatus, type SessionChannelApp, type SessionCommand, type SessionGeneral, type SessionMessage,
 } from "../socket/sessionChannel";
@@ -30,7 +30,7 @@ export { useOutageNotice, type OutageNotice } from "../playback/useOutageNotice"
 // La télécommande appliquée au lecteur (commande Jellyfin → geste), la même
 // traduction pour le web, le bureau et le mobile.
 export {
-  useSessionRemoteTarget, REMOTE_REWIND_SECONDS, REMOTE_FAST_FORWARD_SECONDS, type SessionRemoteTarget,
+  applySessionCommand, useSessionRemoteTarget, REMOTE_REWIND_SECONDS, REMOTE_FAST_FORWARD_SECONDS, type SessionRemoteTarget,
 } from "../hooks/useSessionRemote";
 
 // Le retour d'une commande du tableau de bord des sessions, de l'appui à

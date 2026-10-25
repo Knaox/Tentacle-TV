@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useAddToMusicPlaylist, useCreateMusicPlaylist, useMusicGestures, useMusicPlaylistReader, useMusicPlaylists, useRemoveMusicPlaylistEntry } from "@tentacle-tv/api-client";
-import type { MusicPlaylist, MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
+import type { ExternalActionRefusal, MusicPlaylist, MusicTrack, PendingMusicItem } from "@tentacle-tv/shared/music";
 import { playlistHasTrack, playlistOccurrences } from "@tentacle-tv/shared/octave";
 import { useToast } from "../../../contexts/ToastContext";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
@@ -18,6 +18,7 @@ import { usePendingMusic } from "../pending/usePendingMusic";
 import { askDuplicate } from "./duplicateConfirm";
 import { lastPlaylistId, quickTarget, rememberPlaylist } from "./lastPlaylist";
 import { openPlaylistChooser } from "./playlistChooserStore";
+import { useAcquireRights } from "../rights/useAcquireRights";
 
 export interface PlaylistGestures {
   canAddToPlaylist: (track: MusicTrack) => boolean;
@@ -60,7 +61,22 @@ export function usePlaylistGestures(): PlaylistGestures {
     pendingRef.current = pending;
   }, [pending]);
 
-  const failed = useCallback((reason: string = "failed") => toast.show("error", t(`refusal.${reason}`), { title: t("refusal.title") }), [t, toast]);
+  // Ajouter à une playlist un titre hors bibliothèque l'AJOUTE à la bibliothèque : le droit et la limite du jour.
+  const acquire = useAcquireRights();
+  const acquireRef = useRef(acquire);
+  useEffect(() => {
+    acquireRef.current = acquire;
+  }, [acquire]);
+  const failed = useCallback((reason: ExternalActionRefusal = "failed") => {
+    const said = acquireRef.current.refusal(reason);
+    toast.show("error", said.message, { title: said.title });
+  }, [toast]);
+  /** L'avis d'un ajout réussi ; s'il attend la bibliothèque, le reste du jour quand on approche de la limite. */
+  const added = useCallback((pending: boolean, name: string, change?: { action: { label: string; onPress: () => void } }) => {
+    const message = t(pending ? "playlist.addedPending" : "playlist.added", { name });
+    const left = pending ? acquireRef.current.acquired() : null;
+    toast.show("success", left ?? message, left ? { ...change, title: message } : change);
+  }, [t, toast]);
   const ownsTrack = useCallback((track: MusicTrack) => isFromProvider(provider, track.external?.pluginId), [provider]);
 
   /** Le titre est-il déjà dans la playlist ? Une lecture impossible ne bloque pas l'ajout. */
@@ -83,6 +99,7 @@ export function usePlaylistGestures(): PlaylistGestures {
           await insertEntries({ playlistId: playlist.jellyfinId, itemIds: [track.jellyfinId], position, tracks: [track] });
         } else {
           if (!track.external || !ownsTrack(track)) return false;
+          if (acquireRef.current.exhausted) return failed("quota"), false;
           const outcome = await gestures.playlistAdd(track.external.id, playlist.jellyfinId, position ?? playlist.trackCount, duplicate);
           if (!outcome.ok) {
             failed(outcome.reason);
@@ -92,14 +109,14 @@ export function usePlaylistGestures(): PlaylistGestures {
         }
         rememberPlaylist(playlist.jellyfinId);
         const change = offerChange ? { action: { label: t("playlist.change"), onPress: () => openPlaylistChooser(track, playlist) } } : undefined;
-        toast.show("success", t(pending ? "playlist.addedPending" : "playlist.added", { name: playlist.name }), change);
+        added(pending, playlist.name, change);
         return true;
       } catch {
         failed();
         return false;
       }
     },
-    [alreadyIn, failed, gestures, insertEntries, ownsTrack, t, toast],
+    [added, alreadyIn, failed, gestures, insertEntries, ownsTrack, t],
   );
   const addToPlaylist = useCallback((track: MusicTrack, playlist: MusicPlaylist, position?: number) => add(track, playlist, position), [add]);
 
@@ -131,14 +148,14 @@ export function usePlaylistGestures(): PlaylistGestures {
           pending = outcome.state === "pending";
         }
         rememberPlaylist(created.jellyfinId);
-        toast.show("success", t(pending ? "playlist.addedPending" : "playlist.added", { name: created.name }));
+        added(pending, created.name);
         return true;
       } catch {
         failed();
         return false;
       }
     },
-    [createPlaylist, failed, gestures, ownsTrack, t, toast],
+    [added, createPlaylist, failed, gestures, ownsTrack],
   );
 
   const removePending = useCallback(
@@ -174,7 +191,7 @@ export function usePlaylistGestures(): PlaylistGestures {
 
   return useMemo(
     () => ({
-      canAddToPlaylist: (track: MusicTrack) => isLibraryTrack(track) || (ownsTrack(track) && gestures.canPlaylistAdd),
+      canAddToPlaylist: (track: MusicTrack) => isLibraryTrack(track) || (ownsTrack(track) && gestures.canPlaylistAdd && acquire.canAcquire),
       addToPlaylist,
       canRemoveFromPlaylist: (track: MusicTrack) => isLibraryTrack(track) || (ownsTrack(track) && gestures.canRemovePending),
       removeFromPlaylist,
@@ -182,6 +199,6 @@ export function usePlaylistGestures(): PlaylistGestures {
       createPlaylistAndAdd,
       quickAdd,
     }),
-    [addToPlaylist, createPlaylistAndAdd, gestures.canPlaylistAdd, gestures.canRemovePending, ownsTrack, quickAdd, removeFromPlaylist, removePending],
+    [acquire.canAcquire, addToPlaylist, createPlaylistAndAdd, gestures.canPlaylistAdd, gestures.canRemovePending, ownsTrack, quickAdd, removeFromPlaylist, removePending],
   );
 }

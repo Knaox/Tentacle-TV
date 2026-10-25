@@ -29,6 +29,8 @@ export default {
   playing: "En lecture",
   lastActive: "Actif {{time}}",
   noRemote: "Cet appareil ne se laisse pas piloter à distance.",
+  // Une écoute hors bibliothèque : Jellyfin ne la voit pas, Tentacle la suit et la commande.
+  extensionPlayback: "Hors bibliothèque — lue par une extension de musique.",
   // « Actif il y a 3 min » — Hermes n'a pas Intl.RelativeTimeFormat.
   agoNow: "à l'instant",
   agoMinutes: "il y a {{count}} min",

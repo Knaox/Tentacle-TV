@@ -101,6 +101,14 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    l'anticipation (`results`, `hover`, `press` au mousedown/touchstart, `next`).
 3. **Gestes** — `music.like`, `music.playlistAdd` : réponse immédiate `pending`,
    le cœur affiche l'état tout de suite.
+   **Droits du compte (`music.rights`, 26/10, additif)** : GET `<rights>` →
+   `MusicRights` (`shared/music/musicRights.ts`) — `acquire` (peut faire entrer un
+   titre : cœur ou playlist d'un titre hors bibliothèque), `dailyLimit` (0 = sans
+   limite), `remainingToday`, `keepOffline` (garder hors ligne un titre hors
+   bibliothèque), `resetsAt` (minuit, heure du serveur). L'EXTENSION les règle et
+   les tient (refus `forbidden` / `quota`) ; Octave cache le bouton sans `acquire`,
+   dit « Plus que N ajouts aujourd'hui » près de la limite (`octave/rights/`).
+   Sans la route : comportement d'avant (`MUSIC_RIGHTS_BEFORE`).
 4. **En attente** — `music.pending` : les entrées du compte dans « Titres likés »
    et les playlists, résolues par `music:resolved` (et la synchro Jellyfin).
 5. **Navigation et réglages** — `navItems`/`routes` du bundle front ; masqués sans

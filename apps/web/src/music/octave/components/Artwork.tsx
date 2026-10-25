@@ -25,7 +25,7 @@ import "./octaveViews.css";
 import { Music, User } from "lucide-react";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { getBackendBase } from "../../../lib/backendBase";
-import { elementSourceUrl } from "../../engine";
+import { artworkSrcOf } from "./artworkSrc";
 
 interface ArtworkProps {
   url: string | null;
@@ -54,15 +54,6 @@ export const ARTWORK_RADIUS: Record<ArtworkRadius, string> = {
   lg: "var(--oc-radius-art-lg, 14px)",
 };
 
-/** La règle d'adresse d'une image : jamais de jeton hors du serveur Tentacle. */
-function artworkSrcOf(url: string | null, auth: { baseUrl: string; token: string | null; useCredentials: boolean }): string | null {
-  if (!url) return null;
-  // Une adresse d'un autre hôte : jamais de jeton dans sa requête.
-  if (/^https?:\/\//i.test(url)) return url;
-  // Une image GARDÉE sur l'appareil (origine locale de la coquille, `tentacle://local/…`) : telle quelle, sans jeton.
-  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) return url;
-  return elementSourceUrl(url, auth);
-}
 
 /** De quoi calculer l'adresse affichable de n'importe quelle image (préchargement des résultats). */
 export function useArtworkResolver(): (url: string | null) => string | null {

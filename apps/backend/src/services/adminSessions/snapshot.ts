@@ -3,6 +3,7 @@ import { wtPositionTicksAt } from "../watchTogether/protocolMessages";
 import type { Room } from "../watchTogether/roomTypes";
 import type { AdminSessionDto, AdminSessionsSnapshotDto, AdminWatchGroupDto } from "./dto";
 import { toAdminSession, type RawSession } from "./mapSession";
+import { addExtensionSessions, overlayDeclared, type DeclaredSessionInput } from "./declaredSessions";
 import type { TranscodeMemory } from "./transcodeMemory";
 
 /**
@@ -33,6 +34,8 @@ export interface SnapshotInput {
   familyGuests?: ReadonlyMap<string, string>;
   /** Les encodages vus par titre (`transcodeMemory.ts`) : `TranscodingInfo` clignote. */
   transcodes?: TranscodeMemory;
+  /** Les écoutes déclarées par les lecteurs (`playback:declare` : la musique d'Octave). */
+  declared?: readonly DeclaredSessionInput[];
 }
 
 function overlayTentacle(session: AdminSessionDto, connections: readonly ConnectionView[], now: number): void {
@@ -74,8 +77,12 @@ export function buildSnapshot(input: SnapshotInput): AdminSessionsSnapshotDto {
     if (session === null) continue;
     if (session.nowPlaying === null && input.now - Date.parse(session.lastActivity) > IDLE_WINDOW_MS) continue;
     overlayTentacle(session, input.connections, input.now);
-    session.familyGuestOf = input.familyGuests?.get(session.userId.replace(/-/g, "").toLowerCase()) ?? null;
+    overlayDeclared(session, input.declared ?? []);
     sessions.push(session);
+  }
+  addExtensionSessions(sessions, input.declared ?? [], input.now);
+  for (const session of sessions) {
+    session.familyGuestOf = input.familyGuests?.get(session.userId.replace(/-/g, "").toLowerCase()) ?? null;
   }
 
   const groups: AdminWatchGroupDto[] = [];
