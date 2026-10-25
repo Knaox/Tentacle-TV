@@ -68,7 +68,8 @@ export interface ExternalMusicRadio {
   /**
    * La page SUIVANTE (radio sans fin) : GET <radio>/<externalId>?cursor=<cursor>. Absent ou `null` : la radio
    * s'arrête là (une extension d'avant n'en donne jamais). Une page suivante peut REDIRE des titres des précédentes
-   * (YouTube Music, mesuré le 25/10 : 35 sur 49) : la file les écarte.
+   * (YouTube Music, mesuré le 25/10 : 0 sur 49 dans la même session, 35 sur 49 avec un jeton vieux de deux heures) :
+   * la file les écarte.
    */
   cursor?: string | null;
 }
