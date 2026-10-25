@@ -23,9 +23,20 @@ export interface AdminNowPlayingDto {
   episodeNumber?: number;
   productionYear?: number;
   runTimeTicks?: number;
-  /** L'élément dont on montre l'affiche (la série, pour un épisode sans image propre). */
+  /** L'élément dont on montre l'affiche (la série, pour un épisode sans image propre ;
+   *  l'album, pour un titre de musique sans pochette propre). Vide : `imageUrl`. */
   imageItemId: string;
   imageTag?: string;
+  /** Musique (capacité `sessions.musicControl`) : les artistes, déjà joints (« A, B »). */
+  artists?: string;
+  /** Musique : l'album du titre. */
+  album?: string;
+  /** Lecture d'extension : sa pochette — un chemin du serveur Tentacle (`/api/…`) ou une
+   *  adresse https publique. Jamais pour un élément de Jellyfin (`imageItemId`). */
+  imageUrl?: string;
+  /** Lecture d'EXTENSION (hors bibliothèque) : Jellyfin ne la connaît pas, Tentacle la
+   *  commande par le canal de session. Ni méthode de lecture, ni source, ni message. */
+  fromExtension?: boolean;
 }
 
 /** Ce que le média source est — pistes choisies par le lecteur. */

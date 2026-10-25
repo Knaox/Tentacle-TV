@@ -20,12 +20,15 @@ const COMPLETED_RATIO = 0.9;
 export class PlaybackReporter {
   private active: MusicTrack | null = null;
   private lastProgressAt = 0;
+  /** Une pause a été dite : la reprise se dit au premier son, sans attendre les 15 s. */
+  private pausedReported = false;
 
   constructor(private readonly sinks: ReportSinks) {}
 
   started(track: MusicTrack, positionMs: number): void {
     if (this.active?.key === track.key) return;
     this.active = track;
+    this.pausedReported = false;
     this.lastProgressAt = this.sinks.now();
     if (track.jellyfinId && track.availability === "library") {
       this.sinks.library({ itemId: track.jellyfinId, positionMs, event: "start" });
@@ -36,7 +39,8 @@ export class PlaybackReporter {
     const track = this.active;
     if (!track?.jellyfinId || track.availability !== "library") return;
     const now = this.sinks.now();
-    if (now - this.lastProgressAt < PROGRESS_EVERY_MS) return;
+    if (!this.pausedReported && now - this.lastProgressAt < PROGRESS_EVERY_MS) return;
+    this.pausedReported = false;
     this.lastProgressAt = now;
     this.sinks.library({ itemId: track.jellyfinId, positionMs, event: "progress" });
   }
@@ -44,6 +48,7 @@ export class PlaybackReporter {
   paused(positionMs: number): void {
     const track = this.active;
     if (track?.jellyfinId && track.availability === "library") {
+      this.pausedReported = true;
       this.sinks.library({ itemId: track.jellyfinId, positionMs, event: "pause" });
     }
   }

@@ -5,14 +5,15 @@ import { Lock, MessageSquare, Pause, Play, Radio } from "lucide-react";
 import {
   buttonStatus,
   formatClock,
+  listeningLine,
   livePositionTicks,
   nowPlayingTitle,
+  sessionOffersMessage,
   sessionApp,
   sessionDeviceName,
   type AdminSessionDto,
   type Feedback,
 } from "@tentacle-tv/shared";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { easeOut } from "../../../theme/motion";
 import { UserAvatar } from "../../ui/UserAvatar";
 import { FamilyGuestTag } from "./FamilyGuestTag";
@@ -20,7 +21,7 @@ import { ActionPill } from "./ActionPill";
 import { CommandStatus } from "./CommandStatus";
 import { ConfirmButton } from "./ConfirmButton";
 import { PlaybackDetails } from "./PlaybackDetails";
-import { Poster } from "./Poster";
+import { SessionArtwork } from "./SessionArtwork";
 import { SessionAppLabel } from "./SessionAppLabel";
 
 /**
@@ -52,7 +53,6 @@ export const SessionCard = memo(function SessionCard({
   feedback: Feedback | undefined;
 }) {
   const { t } = useTranslation("sessions");
-  const client = useJellyfinClient();
   const reduced = useReducedMotion();
   const item = session.nowPlaying;
   if (!item) return null;
@@ -63,7 +63,8 @@ export const SessionCard = memo(function SessionCard({
   // qui passe à la suivante plutôt que de couper le titre de l'épisode.
   const label = nowPlayingTitle(item);
   const year = label.episode === null && item.productionYear !== undefined ? String(item.productionYear) : "";
-  const poster = client.getImageUrl(item.imageItemId, "Primary", { width: 160, quality: 80, tag: item.imageTag });
+  // Une écoute dit « Artistes · Album » là où une vidéo dit son année.
+  const subline = listeningLine(item) ?? year;
   const device = sessionDeviceName(sessionApp(session));
 
   return (
@@ -74,14 +75,14 @@ export const SessionCard = memo(function SessionCard({
       exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }}
       className="flex flex-col gap-4 rounded-xl border border-line-subtle bg-fill-faint p-4 sm:flex-row"
     >
-      <Poster src={poster} width={80} height={120} className="h-[120px] w-20 shrink-0 rounded-lg bg-fill-soft" />
+      <SessionArtwork item={item} />
       <div className="min-w-0 flex-1 space-y-3">
         <header className="min-w-0">
           <h3 className="line-clamp-2 text-base font-semibold text-content-primary" title={label.full}>
             {label.title}
             {label.episode !== null && <span className="font-medium text-content-secondary"> — {label.episode}</span>}
           </h3>
-          {year && <p className="truncate text-sm text-content-tertiary">{year}</p>}
+          {subline && <p className="truncate text-sm text-content-tertiary">{subline}</p>}
         </header>
 
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-content-secondary">
@@ -122,7 +123,11 @@ export const SessionCard = memo(function SessionCard({
           </div>
         </div>
 
-        <PlaybackDetails session={session} />
+        {item.fromExtension ? (
+          <p className="text-xs text-content-tertiary">{t("extensionPlayback")}</p>
+        ) : (
+          <PlaybackDetails session={session} />
+        )}
 
         {session.supportsRemoteControl ? (
           <div className="flex flex-wrap items-center gap-2 border-t border-line-subtle pt-3">
@@ -133,15 +138,18 @@ export const SessionCard = memo(function SessionCard({
               status={buttonStatus(feedback, ["Pause", "Unpause"])}
               onClick={() => actions.onPlaystate(session, session.isPaused ? "Unpause" : "Pause")}
             />
-            <ActionPill
-              tone="brand"
-              icon={MessageSquare}
-              label={t("message")}
-              doneLabel={t("sentShort")}
-              errorLabel={t("failedShort")}
-              status={buttonStatus(feedback, ["message"])}
-              onClick={() => actions.onMessage(session)}
-            />
+            {/* Une écoute n'a pas d'écran où afficher un message. */}
+            {sessionOffersMessage(item) && (
+              <ActionPill
+                tone="brand"
+                icon={MessageSquare}
+                label={t("message")}
+                doneLabel={t("sentShort")}
+                errorLabel={t("failedShort")}
+                status={buttonStatus(feedback, ["message"])}
+                onClick={() => actions.onMessage(session)}
+              />
+            )}
             <ConfirmButton
               className="ml-auto"
               label={t("stop")}

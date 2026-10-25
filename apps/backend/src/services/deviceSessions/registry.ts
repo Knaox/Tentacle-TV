@@ -196,6 +196,11 @@ export class SessionRegistry {
       }));
   }
 
+  /** L'étiquette d'appareil d'une connexion — celle que le tableau de bord rapproche. */
+  deviceIdOf(conn: ChannelConnection): string | undefined {
+    return this.connections.get(conn)?.deviceId;
+  }
+
   private entryOf(conn: ChannelConnection): ConnectionEntry {
     let entry = this.connections.get(conn);
     if (!entry) {
@@ -281,10 +286,10 @@ export class SessionRegistry {
     }
   }
 
-  /** Une commande vise le lecteur qui LIT ; à défaut, tous ceux de l'appareil. */
+  /** Une commande vise le lecteur qui LIT (ou qui déclare son écoute) ; à défaut, tous ceux de l'appareil. */
   private targets(device: DeviceEntry): ConnectionEntry[] {
     const all = [...device.connections];
-    const playing = all.filter((e) => e.reporter?.isActive());
+    const playing = all.filter((e) => e.reporter?.isActive() || this.deps.declares?.(e.conn) === true);
     return playing.length > 0 ? playing : all;
   }
 }

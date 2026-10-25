@@ -289,6 +289,12 @@ export const SERVER_CAPABILITIES = {
    *  (les droits Jellyfin qui touchent la musique). Le serveur le tient (routes musique,
    *  extension de musique). Sans elle : la fiche d'avant, Octave comme avant. */
   "octave.rights": "1.32.0",
+  /** Les ÉCOUTES dans le tableau de bord des sessions : le lecteur d'Octave déclare ce qu'il joue
+   *  (`playback:declare`, canal de session) et applique pause, reprise, arrêt venus de
+   *  l'administration ; une lecture d'extension (hors bibliothèque) y paraît et s'y commande ; les
+   *  sessions de musique portent artistes, album et pochette. Sans elle : rien n'est déclaré, la
+   *  musique de la bibliothèque paraît par Jellyfin seul, comme avant. */
+  "sessions.musicControl": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
