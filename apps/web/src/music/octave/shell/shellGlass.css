@@ -36,3 +36,22 @@
   --oc-nav-active-bg: linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.1) 100%);
   --oc-nav-active-ring: rgba(var(--brand-accent-rgb), 0.34);
 }
+
+/* Le matériau, teinté d'Octave : prune dans le ton sombre, nacre rosée dans
+ * le ton clair — jamais un blanc pur. Mêmes densités que le socle
+ * (`surfaceTokens.css`, contraste prouvé par `surfaceMaterial.ts`). */
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="dark"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-dark) 0%, transparent 70%),
+    linear-gradient(rgba(24, 18, 30, 0.8), rgba(24, 18, 30, 0.8));
+}
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="light"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-light) 0%, transparent 70%),
+    linear-gradient(rgba(249, 242, 248, 0.8), rgba(249, 242, 248, 0.8));
+}
+
+/* La nuit (le dock, le mini-lecteur) au-dessus d'une page CLAIRE : son verre
+ * s'épaissit pour rester encre, comme hors verre natif (octaveNight.css). */
+:root[data-theme="light"][data-liquid-glass="native"]:not([data-lg-material]) .octave-night.octave-glass[data-lg-scale="surface"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-dark) 0%, transparent 70%),
+    linear-gradient(rgba(24, 18, 30, 0.88), rgba(24, 18, 30, 0.88));
+}

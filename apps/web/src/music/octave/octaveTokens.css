@@ -16,9 +16,14 @@
  *
  * Les jetons `--lg-*` du verre ne se lisent pas ici : le rendu Liquid Glass
  * passe par la primitive (`theme/glass`), sous `[data-liquid-glass="native"]`.
+ *
+ * Le premier bloc (le thème SOMBRE) vaut aussi pour `.octave-night` : la barre
+ * de lecture reste sombre dans les deux thèmes, ses jetons se recalculent sur
+ * elle (octaveNight.css lui rend les couleurs de base du thème sombre).
  */
 
-:root {
+:root,
+.octave-night {
   /* ── L'encre ─────────────────────────────────────────────────────────── */
   /* La page : l'encre de Tentacle, telle quelle (noir pur, nacre en clair). */
   --oc-ink: var(--surface-0);
@@ -118,9 +123,10 @@
 }
 
 :root[data-theme="light"] {
-  /* Le panneau en clair : blanc, détaché de la nacre par son ombre. */
-  --oc-ink-raised: #ffffff;
-  --oc-ink-raised-rgb: 255, 255, 255;
+  /* Le panneau en clair : jamais blanc pur — une nacre teintée de prune et de
+   * rose, détachée de la page par son ombre (texte 18:1, rose actif 5,7:1). */
+  --oc-ink-raised: #f9f3f8;
+  --oc-ink-raised-rgb: 249, 243, 248;
   --oc-hover: rgba(11, 11, 16, 0.045);
   --oc-selected: rgba(11, 11, 16, 0.08);
 
