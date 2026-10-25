@@ -1,45 +1,47 @@
 /**
  * Octave — l'accueil : salutation, écoutés récemment (raccourcis), ajoutés
  * récemment (albums), vos titres les plus écoutés, vos playlists.
+ *
+ * Chaque étagère de cartes tient en UNE rangée pleine (`CardRow`) : jamais une
+ * carte orpheline ; « Tout afficher » mène au reste. L'attente a la forme
+ * exacte de la page (raccourcis, étagère), et un accueil vide dit quoi faire.
  */
 
 import { useMemo } from "react";
+import { Music2, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlbumCard, CardGrid, PlaylistCard, Shelf } from "../components/Cards";
-import { Artwork } from "../components/Artwork";
+import { AlbumCard, PlaylistCard, Shelf } from "../components/Cards";
+import { CardRow, CardRowSkeleton } from "../components/CardRow";
 import { TrackList, rowsOf } from "../components/TrackList";
-import { CardsSkeleton, EmptyState, ErrorState, RowsSkeleton } from "../components/ViewStates";
+import { EMPTY_ACTION_CLASS, EmptyState, ErrorState } from "../components/ViewStates";
 import { useMusicHome } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
-import { useOctavePlayer } from "../player/OctavePlayerProvider";
-import { usePrefetchHandlers } from "../player/usePrefetchHandlers";
-import type { MusicTrack } from "@tentacle-tv/shared/music";
+import { QuickPicks, QuickPicksSkeleton } from "./QuickPicks";
 
 function greetingKey(hour: number): "home.morning" | "home.afternoon" | "home.evening" {
   return hour < 12 ? "home.morning" : hour < 18 ? "home.afternoon" : "home.evening";
 }
 
-/** Un raccourci « écouté récemment » : pochette et titre, un clic relance la série. */
-function QuickPick({ tracks, index }: { tracks: readonly MusicTrack[]; index: number }) {
+function SeeAll({ to }: { to: string }) {
   const { t } = useTranslation("music");
-  const player = useOctavePlayer();
-  const track = tracks[index] as MusicTrack;
-  const prefetch = usePrefetchHandlers(() => [track]);
   return (
-    <button
-      type="button"
-      onClick={() => player.playList(tracks, index, "home:recent")}
-      {...prefetch}
-      aria-label={t("track.play", { title: track.title })}
-      className="group flex min-w-0 cursor-pointer items-center gap-3 overflow-hidden rounded-md bg-fill-subtle pr-3 text-left transition-colors duration-150 hover:bg-fill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-    >
-      <Artwork url={track.artworkUrl} className="h-14 w-14 rounded-none" />
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-content-primary">{track.title}</span>
-        <span className="block truncate text-xs text-content-tertiary">{track.artists.map((a) => a.name).join(", ")}</span>
-      </span>
-    </button>
+    <Link to={to} className="rounded-sm text-sm font-semibold text-content-tertiary hover:text-content-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
+      {t("common.seeAll")}
+    </Link>
+  );
+}
+
+/** L'attente : la forme de la page, à ses places. */
+function HomeSkeleton() {
+  return (
+    <>
+      <QuickPicksSkeleton />
+      <section aria-hidden className="flex flex-col gap-3">
+        <div className="mx-2 h-7 w-48 rounded bg-fill-soft" />
+        <CardRowSkeleton />
+      </section>
+    </>
   );
 }
 
@@ -48,40 +50,35 @@ export function HomeView() {
   const home = useMusicHome();
   const greeting = t(greetingKey(new Date().getHours()));
   const recent = home.data?.recentlyPlayed ?? [];
+  const added = home.data?.recentlyAdded ?? [];
+  const playlists = home.data?.playlists ?? [];
   const mostRows = useMemo(() => rowsOf((home.data?.mostPlayed ?? []).slice(0, 5)), [home.data]);
 
   if (home.isError) return <ErrorState onRetry={() => void home.refetch()} />;
-  const empty = home.data && !recent.length && !home.data.recentlyAdded.length && !home.data.mostPlayed.length && !home.data.playlists.length;
+  const empty = home.data && !recent.length && !added.length && !mostRows.length && !playlists.length;
 
   return (
     <div className="flex flex-col gap-10 px-2 pb-10 pt-6 md:px-6">
-      <h1 className="px-2 text-3xl font-black tracking-tight text-content-primary">{greeting}</h1>
-      {home.isPending && (
-        <>
-          <CardsSkeleton count={6} />
-          <RowsSkeleton rows={5} />
-        </>
-      )}
-      {empty && <EmptyState>{t("home.empty")}</EmptyState>}
-      {recent.length > 0 && (
-        <section aria-label={t("home.recentlyPlayed")} className="grid grid-cols-1 gap-2 px-2 sm:grid-cols-2 xl:grid-cols-3">
-          {recent.slice(0, 6).map((track, i) => (
-            <QuickPick key={track.key} tracks={recent} index={i} />
-          ))}
-        </section>
-      )}
-      {(home.data?.recentlyAdded.length ?? 0) > 0 && (
-        <Shelf
-          title={t("home.recentlyAdded")}
+      <h1 className="px-2 oc-display text-3xl text-content-primary">{greeting}</h1>
+      {home.isPending && <HomeSkeleton />}
+      {empty && (
+        <EmptyState
+          icon={Music2}
+          title={t("views.homeEmptyTitle")}
           action={
-            <Link to={octavePaths.library} className="text-sm font-semibold text-content-tertiary hover:text-content-primary hover:underline">
-              {t("common.seeAll")}
+            <Link to={octavePaths.search} className={EMPTY_ACTION_CLASS}>
+              <Search className="h-4 w-4" aria-hidden />
+              {t("views.findMusic")}
             </Link>
           }
         >
-          <CardGrid>
-            {home.data?.recentlyAdded.slice(0, 12).map((album) => <AlbumCard key={album.key} album={album} />)}
-          </CardGrid>
+          {t("views.homeEmptyHint")}
+        </EmptyState>
+      )}
+      {recent.length > 0 && <QuickPicks tracks={recent} />}
+      {added.length > 0 && (
+        <Shelf title={t("home.recentlyAdded")} action={<SeeAll to={octavePaths.library} />}>
+          <CardRow items={added} render={(album) => <AlbumCard key={album.key} album={album} />} />
         </Shelf>
       )}
       {mostRows.length > 0 && (
@@ -89,11 +86,9 @@ export function HomeView() {
           <TrackList rows={mostRows} contextId="home:most" showArtwork showAlbum label={t("home.mostPlayed")} />
         </Shelf>
       )}
-      {(home.data?.playlists.length ?? 0) > 0 && (
-        <Shelf title={t("home.playlists")}>
-          <CardGrid>
-            {home.data?.playlists.slice(0, 12).map((p) => <PlaylistCard key={p.jellyfinId} playlist={p} />)}
-          </CardGrid>
+      {playlists.length > 0 && (
+        <Shelf title={t("home.playlists")} action={<SeeAll to={octavePaths.playlists} />}>
+          <CardRow items={playlists} render={(p) => <PlaylistCard key={p.jellyfinId} playlist={p} />} />
         </Shelf>
       )}
     </div>

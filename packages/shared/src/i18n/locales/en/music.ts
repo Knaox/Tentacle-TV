@@ -123,6 +123,23 @@ export default {
     other: "Other releases",
     notFound: "This artist can't be found.",
   },
+  /** Les vues d'Octave : états vides, compteurs, repliés. */
+  views: {
+    homeEmptyTitle: "Your music is waiting",
+    homeEmptyHint: "Play a track or an album: it will show up here, ready to start again.",
+    findMusic: "Search for music",
+    likedEmptyTitle: "No liked tracks yet",
+    playlistEmptyHint: "Add tracks from a track's “⋯” menu, or from search.",
+    playlistsEmptyTitle: "No playlists",
+    playlistsEmptyHint: "Create a playlist to gather your favourite tracks.",
+    libraryEmptyTitle: "Nothing here yet",
+    libraryEmptyHint: "Music added to your Jellyfin library shows up here on its own.",
+    releases_one: "{{count}} release",
+    releases_other: "{{count}} releases",
+    showMore: "Show more",
+    showLess: "Show less",
+    released: "Released {{date}}",
+  },
   track: {
     number: "No.",
     title: "Title",

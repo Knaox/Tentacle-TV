@@ -1,0 +1,62 @@
+/*
+ * Octave — ce que les VUES (cartes, listes, têtes de collection) disent que
+ * Tailwind ne dit pas. Jetons du thème seulement (clair ET sombre) ; rien
+ * n'anime autre chose que `transform` et `opacity` (« Coût GPU », CLAUDE.md).
+ */
+
+/* Le repli d'une pochette absente : une teinte de la famille (violet → rose,
+   l'encre de Tentacle), tirée du titre — jamais une case grise anonyme. */
+.octave-art-fallback {
+  background-color: var(--surface-2);
+  color: rgba(255, 255, 255, 0.82);
+}
+.octave-art-fallback[data-tone="0"] { background-image: linear-gradient(140deg, rgba(var(--brand-rgb), 0.85), rgba(var(--brand-accent-rgb), 0.55)); }
+.octave-art-fallback[data-tone="1"] { background-image: linear-gradient(160deg, rgba(var(--brand-accent-rgb), 0.8), rgba(var(--brand-rgb), 0.35)); }
+.octave-art-fallback[data-tone="2"] { background-image: linear-gradient(120deg, rgba(var(--brand-rgb), 0.55), rgba(13, 11, 19, 0.6)); }
+.octave-art-fallback[data-tone="3"] { background-image: linear-gradient(200deg, rgba(var(--brand-accent-rgb), 0.6), rgba(13, 11, 19, 0.55)); }
+.octave-art-fallback[data-tone="4"] { background-image: radial-gradient(circle at 30% 25%, rgba(var(--brand-accent-rgb), 0.75), rgba(var(--brand-rgb), 0.5) 70%); }
+.octave-art-fallback[data-tone="5"] { background-image: radial-gradient(circle at 70% 80%, rgba(var(--brand-rgb), 0.8), rgba(13, 11, 19, 0.5) 75%); }
+
+/* L'initiale d'un artiste sans photo : grande, posée, à l'échelle de la case. */
+.octave-art-initial {
+  /* Sans `min()` (garde du client LG) : la taille suit la case ; repli fixe sans unités de conteneur. */
+  font-size: 2rem;
+  font-size: 40cqw;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.octave-art-box { container-type: inline-size; }
+
+/* Les gestes d'une rangée ou d'une carte, montrés au survol : sur un écran
+   TACTILE (pas de survol), ils restent visibles — jamais un bouton invisible
+   qu'on toucherait sans le voir. */
+@media (hover: none) {
+  .octave-hover-reveal { opacity: 1 !important; transform: none !important; }
+  /* Un raccourci de SURVOL (Lecture sur une carte, une tuile) dont le toucher
+     fait déjà l'équivalent : retiré, ni visible ni touchable par mégarde. */
+  .octave-hover-only { display: none !important; }
+}
+
+/* Une puce d'onglet ou de filtre : choisie, elle prend le ROSE de la musique
+   (teinte + filet), jamais une pastille blanche. Hauteur 36 px, cible pleine. */
+.octave-chip {
+  height: 2.25rem;
+  padding: 0 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: var(--fill-subtle);
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: background-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out;
+  cursor: pointer;
+}
+.octave-chip:hover { color: var(--text-primary); background-color: var(--oc-hover); }
+.octave-chip[aria-selected="true"],
+.octave-chip[aria-pressed="true"] {
+  color: var(--text-primary);
+  background-color: var(--oc-accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(var(--oc-accent-rgb), 0.55);
+}
+.octave-chip:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }

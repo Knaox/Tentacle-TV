@@ -123,6 +123,23 @@ export default {
     other: "Autres parutions",
     notFound: "Cet artiste est introuvable.",
   },
+  /** Les vues d'Octave : états vides, compteurs, repliés. */
+  views: {
+    homeEmptyTitle: "Votre musique vous attend",
+    homeEmptyHint: "Écoutez un titre ou un album : il se retrouvera ici, prêt à relancer.",
+    findMusic: "Rechercher de la musique",
+    likedEmptyTitle: "Aucun titre aimé pour l'instant",
+    playlistEmptyHint: "Ajoutez des titres depuis le menu « ⋯ » d'un titre, ou depuis la recherche.",
+    playlistsEmptyTitle: "Aucune playlist",
+    playlistsEmptyHint: "Créez une playlist pour rassembler vos titres préférés.",
+    libraryEmptyTitle: "Rien ici pour l'instant",
+    libraryEmptyHint: "La musique ajoutée à votre bibliothèque Jellyfin apparaît ici d'elle-même.",
+    releases_one: "{{count}} parution",
+    releases_other: "{{count}} parutions",
+    showMore: "Afficher plus",
+    showLess: "Afficher moins",
+    released: "Sortie le {{date}}",
+  },
   track: {
     number: "N°",
     title: "Titre",
