@@ -24,6 +24,8 @@ export * from "./core/queue";
 export * from "./core/enqueue";
 export * from "./core/listing";
 export * from "./core/purge";
+export * from "./core/musicKeep";
+export * from "./core/musicLibrary";
 export * from "./core/playback";
 export * from "./core/meta";
 export * from "./core/fetcher";

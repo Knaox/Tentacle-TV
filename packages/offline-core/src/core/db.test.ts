@@ -48,6 +48,8 @@ describe("migrations", () => {
       "claims",
       "files",
       "item_meta",
+      "music_collections",
+      "music_meta",
       "playback_state",
       "report_queue",
       "session_cache",

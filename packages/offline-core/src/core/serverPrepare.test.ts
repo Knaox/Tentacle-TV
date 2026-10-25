@@ -59,7 +59,7 @@ function lightFile(db: ReturnType<typeof openInMemory>, itemId: string): number 
 }
 
 describe("les adresses", () => {
-  const file = { variant: "light", itemId: "item1", mediaSourceId: "ms1", preset: "p480", audioStreamIndex: 2, burnSubtitleIndex: null } as FileRow;
+  const file = { variant: "light", itemId: "item1", mediaSourceId: "ms1", preset: "p480", audioStreamIndex: 2, burnSubtitleIndex: null, sourcePath: null } as FileRow;
 
   it("sans préparation du serveur : le transcodage tiré en direct, comme avant", () => {
     expect(mediaUrl("https://s", file)).toBe("https://s/api/downloads/light/item1?mediaSourceId=ms1&preset=p480&audioStreamIndex=2");

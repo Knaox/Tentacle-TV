@@ -77,6 +77,11 @@ export interface FileRow {
   phase: string | null;
   /** Side-cars réellement sur le disque après la dernière tentative ; `null` : jamais tentée. */
   subtitlesDone: number | null;
+  /**
+   * Le chemin du média sur le serveur Tentacle quand la variante ne le dit pas
+   * (musique : v11) ; `null` pour un film, dont l'URL se déduit (`mediaUrl`).
+   */
+  sourcePath: string | null;
 }
 
 /** Ce que la page voit d'un fichier : tout, sauf la liste des side-cars. */
@@ -87,7 +92,7 @@ export const FILE_COLS = `files.id, files.item_id, files.media_source_id, files.
    files.preset, files.rel_path, files.expected_size, files.bytes_done, files.status,
    files.error_code, files.audio_stream_index, files.burn_subtitle_index, files.subtitles_json,
    files.retry_count, files.last_error_at, files.next_retry_at, files.phase,
-   files.subtitles_done`;
+   files.subtitles_done, files.source_path`;
 
 export function mapFileRow(row: Row): FileRow {
   return {
@@ -109,6 +114,7 @@ export function mapFileRow(row: Row): FileRow {
     nextRetryAt: integerOrNull(row, "next_retry_at"),
     phase: textOrNull(row, "phase"),
     subtitlesDone: integerOrNull(row, "subtitles_done"),
+    sourcePath: textOrNull(row, "source_path"),
   };
 }
 
@@ -270,7 +276,11 @@ export function deleteClaim(
     db.prepare("DELETE FROM files WHERE id = ?").run(fileId);
     const siblings = db.prepare("SELECT COUNT(*) AS n FROM files WHERE item_id = ?").get(itemId);
     const metaOrphan = siblings !== undefined && integer(siblings, "n") === 0;
-    if (metaOrphan) db.prepare("DELETE FROM item_meta WHERE item_id = ?").run(itemId);
+    if (metaOrphan) {
+      db.prepare("DELETE FROM item_meta WHERE item_id = ?").run(itemId);
+      // Un titre de musique (v11) : sa fiche part avec son dernier fichier.
+      db.prepare("DELETE FROM music_meta WHERE item_id = ?").run(itemId);
+    }
 
     return { itemId, relPath, metaOrphan };
   });

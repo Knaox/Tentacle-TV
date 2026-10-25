@@ -4,7 +4,9 @@
  * Snapshots, affiches et side-cars manquants pour les fichiers DÉJÀ complets.
  * Lancée en tâche de fond à chaque démarrage du moteur, en ligne. Idempotente —
  * tout ce qui existe est sauté —, best-effort, et c'est elle qui rattrape les
- * téléchargements faits avant un correctif de récupération.
+ * téléchargements faits avant un correctif de récupération. Un titre de musique
+ * n'a ni fiche Jellyfin, ni planches, ni sous-titres : il n'y entre pas (sa
+ * pochette se reprend au transfert, `musicLibrary.ts`).
  *
  * Portage de `apps/desktop/src-tauri/src/downloads/heal.rs`.
  */
@@ -22,6 +24,7 @@ import {
 } from "./meta";
 import * as segments from "./segments";
 import { snapshot } from "./snapshot";
+import { fetchMusicCover } from "./musicLibrary";
 import { firstMediaSourceId } from "./fileLookup";
 import { setSubtitlesDone } from "./store";
 import { fetchAll, parseSpecs } from "./subs";
@@ -38,7 +41,8 @@ function complete(db: DatabaseHandle): CompleteItem[] {
   return db
     .prepare(
       `SELECT DISTINCT item_id, media_source_id, subtitles_json
-       FROM files WHERE status = 'complete'`,
+       FROM files WHERE status = 'complete'
+         AND NOT EXISTS (SELECT 1 FROM music_meta WHERE music_meta.item_id = files.item_id)`,
     )
     .all()
     .map((row) => ({
@@ -142,5 +146,19 @@ export async function heal(
     if (touched) healed += 1;
   }
 
+  for (const itemId of musicMissingCovers(db)) {
+    if (await fetchMusicCover(fetchBytes, db, serverUrl, volume, itemId).catch(() => false)) healed += 1;
+  }
   return healed;
+}
+
+/** Les titres de musique complets dont la pochette n'a jamais été posée. */
+function musicMissingCovers(db: DatabaseHandle): string[] {
+  return db
+    .prepare(
+      `SELECT DISTINCT m.item_id FROM music_meta m JOIN files f ON f.item_id = m.item_id
+       WHERE f.status = 'complete' AND m.cover_rel IS NULL AND m.artwork_path IS NOT NULL`,
+    )
+    .all()
+    .map((row) => text(row, "item_id"));
 }
