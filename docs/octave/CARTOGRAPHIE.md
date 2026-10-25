@@ -293,7 +293,7 @@ clés de manifeste qu'il ne connaît pas (lecture fermée), un client d'avant le
 | Types musique | [`music/musicTypes.ts`](../../packages/shared/src/music/musicTypes.ts) | Titre, album, artiste, playlist, disponibilité, format audio. `artworkUrl` peut être une route de l'extension relayée par le cœur ou une adresse https publique ; le jeton n'accompagne jamais une URL d'un autre hôte. |
 | Clés | [`music/musicKeys.ts`](../../packages/shared/src/music/musicKeys.ts) | `jf:` / `ext:<pluginId>:<id>`, MBID. |
 | Lecture | [`music/musicPlayback.ts`](../../packages/shared/src/music/musicPlayback.ts) | `PlaybackSource`, port `AudioEnginePort` (voir [`LECTEUR.md`](LECTEUR.md)). |
-| Routes du cœur | [`music/musicCoreApi.ts`](../../packages/shared/src/music/musicCoreApi.ts) | `/api/music/status`, `search`, `albums`, `artists`, `home`, `liked`, `favorite/:id`, `playlists…`, `by-mbid`, `source/:id`, `stream/:id`, `artwork/:id`, `playback`. |
+| Routes du cœur | [`music/musicCoreApi.ts`](../../packages/shared/src/music/musicCoreApi.ts) | `/api/music/status`, `search`, `albums`, `artists`, `home`, `liked`, `favorite/:id`, `playlists…`, `by-mbid`, `match`, `source/:id`, `stream/:id`, `artwork/:id`, `playback`. |
 | Événements | [`music/musicEvents.ts`](../../packages/shared/src/music/musicEvents.ts) | `music:library`, `music:userdata`, `music:playlist` (cœur), `music:resolved`, `music:pending` (seuls permis à une extension), `music:provider`. |
 | Contrat `music` d'extension | [`music/pluginMusicContract.ts`](../../packages/shared/src/music/pluginMusicContract.ts) (miroir backend `routes/pluginMusicMeta.ts`, Sillon `types/tentacle/`) | Voir le tableau suivant. |
 | Runtime isolé | [`plugins/pluginServerRuntime.ts`](../../packages/shared/src/plugins/pluginServerRuntime.ts) | § 4. |
@@ -323,10 +323,29 @@ clés de manifeste qu'il ne connaît pas (lecture fermée), un client d'avant le
 hôte des `mediaHosts`, aucun identifiant). À la première erreur, le moteur reprend `url` avec `direct=failed`
 une fois.
 
-**Jumeaux de bibliothèque** : un titre externe qui EST un titre de la bibliothèque sans MBID (même titre
-normalisé, même premier artiste, durée ± 3 s si les deux la connaissent) cède sa place à celui de la
-bibliothèque ([`libraryTwins.ts`](../../apps/web/src/music/octave/search/libraryTwins.ts)) ; avec des MBID des
-deux côtés, la fusion le retire déjà.
+**« Dans la bibliothèque » — une règle, partout** (25/10, retour de Damien : un album entier dans Jellyfin dont
+les titres restaient « hors bibliothèque ») : un titre ou un album d'ailleurs que la bibliothèque du compte a est
+montré et JOUÉ comme celui de la bibliothèque. La règle est UNE, pure, dans le contrat
+([`musicLibraryMatch.ts`](../../packages/shared/src/music/musicLibraryMatch.ts), recopiée dans le backend) :
+MBID d'enregistrement (de parution, de groupe pour un album) s'ils sont là, sinon titre de BASE (sans « feat. »,
+« from … », « Remastered » ; une version live ou remix reste distincte) + un artiste commun (MBID, ou nom, crédits
+découpés) + durée à ± 2 s ; une compilation que Jellyfin crédite à « Various Artists » vaut l'artiste si l'ALBUM
+est le même ; dans un album reconnu, un titre l'est par son titre ou sa place (disque, piste), à ± 2 s. Un
+homonyme n'est jamais pris. Elle s'applique :
+- dans le cœur, par **`POST /api/music/match`** (capacité `music.libraryMatch`) — l'index local seul (FTS sur le
+  nom, MBID), aucune requête à Jellyfin ni à l'extension, droits du compte ; un album rendu `full` (tous ses titres
+  dans CET album) ou `partial` ([`matchViews.ts`](../../apps/backend/src/music/view/matchViews.ts)) ;
+- côté client par `useMusicLibraryMatch` (api-client, en cache, relu à `music:library` et `music:resolved` : un
+  import Lidarr bascule sans recharger), dans la vue album d'ailleurs (entier → la vue de la bibliothèque la
+  remplace ; en partie → titres présents basculés, « 5 titres sur 8 dans la bibliothèque »), la vue artiste
+  d'ailleurs, la playlist d'ailleurs, la recherche (attendue par la révélation : rien ne bascule sous les yeux) et
+  la FILE ([`library/`](../../apps/web/src/music/octave/library/), bascule de `applyResolution`) ;
+- contre les résultats de la même recherche, sans requête, par
+  [`libraryTwins.ts`](../../apps/web/src/music/octave/search/libraryTwins.ts) (la même règle).
+Marque : dans une liste qui mêle, l'icône bibliothèque (ton de réussite, mot pour les lecteurs d'écran) ; sur une
+carte d'album, une pastille au repos dans le coin haut gauche (« En partie » si partiel), jamais au centre.
+Relevé de l'album de Damien (copie de sa base, cache de Sillon) : 8/8 reconnus en 5 ms, dont « Daj Mi Jeszcze
+Jedna Szanse » ≠ « Da mi jeszce jedna szanse » (par sa place et sa durée).
 
 ---
 
