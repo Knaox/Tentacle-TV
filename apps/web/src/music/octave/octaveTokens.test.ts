@@ -80,8 +80,11 @@ describe("les jetons d'Octave", () => {
   });
 
   it("tout jeton lu dans une feuille d'Octave y est déclaré", () => {
+    // Posées en ligne par un composant, à chaque valeur (la tête d'une glissière).
+    const runtime = new Set(["--oc-at"]);
     for (const file of cssFiles(DIR)) {
       for (const [, name] of readFileSync(file, "utf8").matchAll(/var\((--oc-[a-z0-9-]+)/g)) {
+        if (runtime.has(name as string)) continue;
         expect(DARK, `${file.slice(DIR.length)} → ${name}`).toContain(name);
       }
     }

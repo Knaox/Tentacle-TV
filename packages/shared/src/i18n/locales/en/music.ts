@@ -232,4 +232,10 @@ export default {
     retry: "Try again",
     back: "Back",
   },
+  // La coquille d'Octave (axe O3) : ‹ ›, le lecteur « en cours ».
+  shell: {
+    back: "Go back",
+    forward: "Go forward",
+    nowPlaying: "Now playing",
+  },
 };

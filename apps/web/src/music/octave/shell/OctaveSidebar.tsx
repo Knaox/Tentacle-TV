@@ -1,18 +1,26 @@
 /**
- * Octave — la barre latérale (bureau, fenêtre large) : la marque, les cinq
- * destinations, vos playlists, et la SORTIE du mode, toujours visible en bas.
- * Au téléphone, les mêmes destinations passent dans une barre d'onglets.
+ * Octave — la barre latérale (bureau, fenêtre large) : la marque et ‹ › en
+ * tête, les cinq destinations, vos playlists, et le geste qui ramène aux
+ * films et séries, toujours visible en bas (`OctaveModeSlot`). Au téléphone,
+ * les mêmes destinations passent dans une barre d'onglets.
+ *
+ * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
+ * active prend la pastille de Tentacle, rose en tête, son icône rose
+ * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif, le
+ * rail devient un panneau qui flotte (surface de la primitive).
  */
 
 import { memo } from "react";
 import { Heart, Home, Library, ListMusic, Search } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useMusicPlaylists } from "@tentacle-tv/api-client";
+import { useLiquidGlassMode, useLiquidGlassSurface } from "../../../theme/glass";
 import { Artwork } from "../components/Artwork";
 import { OctaveLogo } from "../components/OctaveLogo";
-import { OctaveModeSwitch } from "../mode/OctaveModeSwitch";
-import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
+import { HistoryButtons } from "./HistoryButtons";
+import { OctaveModeSlot } from "./OctaveModeSlot";
 
 export const OCTAVE_DESTINATIONS = [
   { to: octavePaths.home, key: "nav.home", Icon: Home, end: true },
@@ -22,17 +30,18 @@ export const OCTAVE_DESTINATIONS = [
   { to: octavePaths.playlists, key: "nav.playlists", Icon: ListMusic, end: false },
 ] as const;
 
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-3 rounded-lg px-3 py-2 text-[15px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-    isActive ? "bg-fill-soft text-content-primary" : "text-content-tertiary hover:text-content-primary"
-  }`;
+const linkClass =
+  "octave-nav-link flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
-/** La marque du mode : le logo, puis le nom écrit (le logo seul ne se lit pas encore). */
-export function OctaveWordmark({ className = "", logoSize = 36 }: { className?: string; logoSize?: number }) {
+const playlistClass =
+  "octave-nav-link flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+
+/** La marque du mode : le logo, puis le nom écrit au dégradé (le logo seul ne se lit pas encore). */
+export function OctaveWordmark({ className = "", logoSize = 32 }: { className?: string; logoSize?: number }) {
   return (
-    <span className="flex items-center gap-2">
+    <span className="flex min-w-0 items-center gap-2">
       <OctaveLogo size={logoSize} />
-      <span className={`octave-brand-text text-2xl font-black tracking-tight ${className}`}>Octave</span>
+      <span className={`oc-gradient-text truncate text-[22px] font-black tracking-tight ${className}`}>Octave</span>
     </span>
   );
 }
@@ -40,33 +49,36 @@ export function OctaveWordmark({ className = "", logoSize = 36 }: { className?: 
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation("music");
   const playlists = useMusicPlaylists();
+  const native = useLiquidGlassMode() === "native";
+  // Un GRAND verre en mode natif (ton tenu) ; ailleurs, le rail sur l'encre.
+  const glass = useLiquidGlassSurface({
+    radius: "lg",
+    scale: "surface",
+    className: `flex shrink-0 flex-col gap-5 pb-3 pt-4 w-[var(--oc-sidebar-width)] ${native ? "octave-glass octave-rail-glass my-2 ml-2 px-2" : "h-full px-3"}`,
+  });
   return (
-    <nav aria-label={t("nav.main")} className="flex h-full w-[248px] shrink-0 flex-col gap-4 border-r border-line-subtle bg-surface-1 px-3 pb-3 pt-5">
-      <div className="px-3">
+    <nav aria-label={t("nav.main")} {...glass.props}>
+      {glass.layers}
+      <div className="flex items-center justify-between gap-2 pl-3">
         <OctaveWordmark />
+        <HistoryButtons />
       </div>
       <ul className="flex flex-col gap-0.5">
         {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
           <li key={to}>
             <NavLink to={to} end={end} className={linkClass}>
-              <Icon className="h-5 w-5" aria-hidden />
+              <Icon className="octave-nav-icon h-5 w-5" aria-hidden />
               {t(key)}
             </NavLink>
           </li>
         ))}
       </ul>
-      <div className="mx-3 h-px bg-line-subtle" />
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <h2 className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-content-quaternary">{t("nav.yourPlaylists")}</h2>
-        <ul className="flex flex-col">
+        <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>
+        <ul className="flex flex-col gap-0.5">
           {(playlists.data ?? []).map((p) => (
             <li key={p.jellyfinId}>
-              <NavLink
-                to={octavePaths.playlist(p.jellyfinId)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-md px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${isActive ? "bg-fill-subtle text-content-primary" : "text-content-secondary hover:text-content-primary"}`
-                }
-              >
+              <NavLink to={octavePaths.playlist(p.jellyfinId)} className={playlistClass}>
                 <Artwork url={p.artworkUrl} className="h-9 w-9" />
                 <span className="truncate">{p.name}</span>
               </NavLink>
@@ -74,16 +86,16 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
           ))}
         </ul>
       </div>
-      <OctaveModeSwitch placement="octave" onExit={onExit} showLabel className="w-full justify-between rounded-lg px-3" />
+      <OctaveModeSlot onExit={onExit} />
     </nav>
   );
 });
 
-/** La barre d'onglets du téléphone : les mêmes cinq destinations. */
+/** La barre d'onglets du téléphone : les mêmes cinq destinations, l'active en rose. */
 export const OctaveTabBar = memo(function OctaveTabBar() {
   const { t } = useTranslation("music");
   return (
-    <nav aria-label={t("nav.main")} className="grid grid-cols-5 border-t border-line-subtle bg-surface-1 pb-[env(safe-area-inset-bottom,0px)]">
+    <nav aria-label={t("nav.main")} className="grid grid-cols-5 border-t border-octave-line bg-octave-ink pb-[env(safe-area-inset-bottom,0px)]">
       {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
         <NavLink
           key={to}
@@ -93,8 +105,12 @@ export const OctaveTabBar = memo(function OctaveTabBar() {
             `flex min-h-[56px] flex-col items-center justify-center gap-1 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${isActive ? "text-content-primary" : "text-content-tertiary"}`
           }
         >
-          <Icon className="h-5 w-5" aria-hidden />
-          <span className="truncate">{t(key)}</span>
+          {({ isActive }) => (
+            <>
+              <Icon className={`h-5 w-5 ${isActive ? "text-octave-accent-text" : ""}`} aria-hidden />
+              <span className="truncate">{t(key)}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>

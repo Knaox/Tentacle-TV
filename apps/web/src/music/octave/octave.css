@@ -1,24 +1,32 @@
 @import "./octaveTokens.css";
+@import "./shell/shell.css";
+@import "./shell/shellGlass.css";
 
 /*
- * Octave — ce que Tailwind ne dit pas. Thème existant (clair ET sombre, jetons
- * de tokens.css) ; animations en transform/opacity seulement ; rien qui bat
- * en boucle (règles « Coût GPU » de CLAUDE.md).
+ * Octave — ce que Tailwind ne dit pas. Jetons de l'identité : octaveTokens.css
+ * (docs/octave/IDENTITE.md) ; la coquille : shell/shell.css. Clair ET sombre ;
+ * animations en transform/opacity seulement ; rien qui bat en boucle (règles
+ * « Coût GPU » de CLAUDE.md).
  */
 
+/* L'aplat de marque d'un bouton Lecture : le dégradé PROFOND (blanc dessus). */
 .octave-brand-fill {
-  background-image: var(--cta-brand-gradient);
-  color: var(--cta-brand-fg, #fff);
+  background-image: var(--oc-gradient-deep);
+  color: var(--oc-on-gradient);
 }
 
+/* Le texte de marque (qualité « Hi-Res », mot « Octave ») : le dégradé. */
 .octave-brand-text {
-  background-image: var(--cta-brand-gradient);
+  background-image: var(--oc-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* Une ombre de texte (celle d'un verre, héritée) se peindrait PAR-DESSUS le
+   * dégradé, qui ne vit que dans les lettres : il deviendrait terne. */
+  text-shadow: none;
 }
 
-/* La tête d'une vue (album, playlist, likés) : un voile de marque qui fond vers la page. */
+/* La tête d'une vue (album, playlist, likés) : un voile de marque, ROSE en tête, qui fond vers la page. */
 .octave-hero {
   position: relative;
   isolation: isolate;
@@ -28,8 +36,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image: var(--cta-brand-gradient);
-  opacity: 0.22;
+  background-image: var(--oc-hero-veil);
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
   pointer-events: none;
@@ -64,15 +71,8 @@
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.octave-drawer { animation: octaveSlideIn 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.octave-sheet { animation: octaveSheetIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-
-/* Le remplissage de la barre de progression : une échelle, jamais une largeur. */
-.octave-progress-fill {
-  transform-origin: left center;
-  will-change: transform;
-}
-.octave-progress-fill[data-running="true"] { transition: transform 250ms linear; }
+.octave-drawer { animation: octaveSlideIn var(--oc-duration-slow) var(--oc-ease-out) both; }
+.octave-sheet { animation: octaveSheetIn var(--oc-duration-slow) var(--oc-ease-out) both; }
 
 /* Les nouveaux résultats d'une page externe entrent en fondu. */
 @keyframes octaveFadeIn {
@@ -82,8 +82,7 @@
 .octave-enter { animation: octaveFadeIn 200ms ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .octave-card .octave-card-play,
-  .octave-progress-fill[data-running="true"] { transition: none; }
+  .octave-card .octave-card-play { transition: none; }
   .octave-enter,
   .octave-drawer,
   .octave-sheet { animation: none; }

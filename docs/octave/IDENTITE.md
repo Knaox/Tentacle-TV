@@ -56,8 +56,13 @@ Tout dérive des jetons de Tentacle : une couleur de marque redéfinie par l'adm
 - **Mouvement** : `transform` et `opacity` seulement ; 120 ms (survol, appui), 200 ms (apparition),
   320 ms (panneau) ; une sortie dure deux tiers de son entrée ; `prefers-reduced-motion` coupe tout.
 - **Liquid Glass** : la porte `data-liquid-glass` ne change pas. En mode `native`, la barre de lecture
-  et la barre latérale sont des surfaces de la primitive (`theme/glass`), les boutons dedans de simples
-  glyphes ; partout ailleurs, le verre sombre ou l'encre ci-dessus.
+  et la barre latérale sont des surfaces de la primitive (`theme/glass`, régime `surface` : un ton tenu),
+  les boutons dedans de simples glyphes ; partout ailleurs, le verre sombre ou l'encre ci-dessus.
+  **Dans un verre, tout suit le TON du verre, jamais le thème** : textes, survols, rail des glissières,
+  rose — la classe `octave-glass` sur la surface s'en charge (`shell/shellGlass.css`). Un texte au
+  dégradé (`.oc-gradient-text`) n'a jamais d'ombre de texte : celle du verre ternirait le dégradé.
+- **Focus** : l'anneau de Tentacle (`ring-line-focus`), inchangé ; sur une glissière, la tête rose et
+  son halo.
 
 ## Ce qu'on ne fait pas
 

@@ -5,9 +5,12 @@
  * pendant le nouvel essai, le bouton s'efface et « Lecture dans un instant… »
  * paraît si la source tarde.
  * Mis à jour AU CLIC (instantané synchrone du lecteur).
+ *
+ * Avec `onOpen` (le dock du bureau), la pochette ouvre le lecteur « en cours ».
  */
 
 import { memo } from "react";
+import { Maximize2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTrackActions } from "../actions/useTrackActions";
@@ -17,7 +20,12 @@ import { octavePaths } from "../octavePaths";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 
-export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-14 w-14" }: { artworkClass?: string }) {
+interface NowPlayingInfoProps {
+  artworkClass?: string;
+  onOpen?: () => void;
+}
+
+export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-14 w-14", onOpen }: NowPlayingInfoProps) {
   const { t } = useTranslation("music");
   const track = usePlayerSelector((s) => s.current);
   const error = usePlayerSelector((s) => s.error);
@@ -28,9 +36,25 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
     return <p className="truncate px-2 text-sm text-content-tertiary">{t("player.nothing")}</p>;
   }
   const albumId = track.album?.jellyfinId;
+  const artwork = <Artwork url={track.artworkUrl} alt={track.album?.title ?? track.title} className={`${artworkClass} shadow-[var(--oc-shadow-art)]`} eager />;
   return (
     <div className="flex min-w-0 items-center gap-3" data-octave-now-playing={track.key}>
-      <Artwork url={track.artworkUrl} alt={track.album?.title ?? track.title} className={`${artworkClass} shadow-md`} eager />
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={t("player.open")}
+          title={t("player.open")}
+          className="octave-art-open relative shrink-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        >
+          {artwork}
+          <span aria-hidden className="octave-art-open-hint absolute inset-0 flex items-center justify-center rounded-md bg-black/45 text-white">
+            <Maximize2 className="h-4 w-4" />
+          </span>
+        </button>
+      ) : (
+        artwork
+      )}
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
           {albumId ? (
@@ -51,7 +75,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
               <button
                 type="button"
                 onClick={() => queueActions.retry(player)}
-                className="relative shrink-0 cursor-pointer rounded-full px-1.5 font-semibold text-content-primary underline-offset-2 transition-colors duration-150 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+                className="relative shrink-0 cursor-pointer rounded-full px-1.5 font-semibold text-octave-accent-text underline-offset-2 transition-colors duration-150 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
               >
                 {t("player.retry")}
               </button>
