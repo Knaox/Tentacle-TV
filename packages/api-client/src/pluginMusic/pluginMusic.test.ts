@@ -9,6 +9,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExternalMusicSearchPage, MusicTrack } from "@tentacle-tv/shared/music";
+import { CLIENT_FETCH_ANNOUNCE_HEADER } from "@tentacle-tv/shared/pluginClientFetch";
+import { setClientFetchAnnounced } from "./clientFetchAnnounce";
 import { findMusicProvider, musicRouteUrl, type MusicProvider } from "./musicProvider";
 import { mergeExternalMusicPages, readMusicSearchPage, readMusicTop } from "./musicSearchMerge";
 import { fetchExternalRadio, likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests, resolveMusicSource, resolveMusicSources } from "./musicRequests";
@@ -134,6 +136,20 @@ describe("appels à l'extension", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/api/plugins/sillon/music/radio/ytm%3At%3Ax");
     vi.stubGlobal("fetch", vi.fn(async () => new Response("non", { status: 502 })));
     expect(await fetchExternalRadio(radioProvider, "ytm:t:x")).toBeNull();
+  });
+
+  it("radio (S3) au bureau : la demande annonce l'appareil, comme toute requête d'extension — jamais le serveur à sa place", async () => {
+    const radioProvider = { ...provider, music: { ...provider.music, radio: "/music/radio" } };
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(JSON.stringify({ tracks: [] })));
+    vi.stubGlobal("fetch", fetchMock);
+    setClientFetchAnnounced(true);
+    try {
+      await fetchExternalRadio(radioProvider, "ytm:t:x");
+    } finally {
+      setClientFetchAnnounced(false);
+    }
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string> | undefined;
+    expect(headers?.[CLIENT_FETCH_ANNOUNCE_HEADER]).toBe("1");
   });
 
   it("un refus HTTP devient une raison de la liste fermée", async () => {
