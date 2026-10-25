@@ -6,6 +6,7 @@ import {
   currentItem,
   cycleRepeat,
   enqueue,
+  followWith,
   jumpTo,
   moveUpcoming,
   peekNext,
@@ -106,5 +107,25 @@ describe("file Octave — gestes", () => {
     const next = replaceTrack(q, (t) => t.key === "jf:b", resolved);
     expect(keys(next.items)).toEqual(["jf:a", "jf:b2", "jf:c", "jf:d"]);
     expect(next.items[1]!.uid).toBe(q.items[1]!.uid);
+  });
+});
+
+describe("la suite d'un titre (S3 : la radio après un clic de recherche)", () => {
+  const list = ["a", "b", "c", "d"].map((id) => libraryTrack(id));
+  const radio = ["b", "x", "y"].map((id) => libraryTrack(id));
+
+  it("tout ce qui suivait le titre est remplacé, l'historique reste, le titre lui-même n'est pas repris", () => {
+    const q = createQueue(list, 1, { contextId: "search:q" });
+    const current = currentItem(q)!;
+    const next = followWith(q, current.uid, radio, "radio:jf:b");
+    expect(next.items.map((i) => i.track.key)).toEqual(["jf:a", "jf:b", "jf:x", "jf:y"]);
+    expect(currentItem(next)?.uid).toBe(current.uid);
+    expect(next.contextId).toBe("radio:jf:b");
+  });
+
+  it("sans effet si l'utilisateur est passé à un autre titre, ou si la suite est vide", () => {
+    const q = createQueue(list, 1, { contextId: "search:q" });
+    expect(followWith(q, "autre", radio, "radio:x")).toBe(q);
+    expect(followWith(q, currentItem(q)!.uid, [libraryTrack("b")], "radio:x")).toBe(q);
   });
 });

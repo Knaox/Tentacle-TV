@@ -9,6 +9,7 @@ import {
   createQueue,
   cycleRepeat,
   enqueue,
+  followWith,
   jumpTo,
   moveUpcoming,
   patchTracks,
@@ -69,6 +70,11 @@ export const queueActions = {
 
   move(player: OctavePlayer, uid: string, toUpcomingIndex: number): void {
     apply(player, moveUpcoming(player.snapshot.get().queue, uid, toUpcomingIndex));
+  },
+
+  /** La suite du titre `uid` devient `tracks` (la radio d'un clic de recherche), s'il est encore le courant. */
+  followWith(player: OctavePlayer, uid: string, tracks: readonly MusicTrack[], contextId: string): void {
+    apply(player, followWith(player.snapshot.get().queue, uid, tracks, contextId));
   },
 
   /** « Réessayer » : le titre courant, redemandé de zéro à l'extension — un geste, jamais sauté. */
