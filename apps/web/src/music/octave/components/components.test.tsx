@@ -24,7 +24,12 @@ vi.mock("react-router-dom", () => ({
   useNavigate: () => () => undefined,
 }));
 
+vi.mock("../actions/useCollectionPlayback", () => ({ useCollectionPlayback: () => ({ play: () => undefined, warm: () => undefined }) }));
+vi.mock("../data/entityIntent", () => ({ useEntityIntent: () => ({}) }));
+vi.mock("./Artwork", () => ({ Artwork: () => null }));
+
 const { AvailabilityMark } = await import("./AvailabilityMark");
+const { AlbumCard } = await import("./Cards");
 const { TrackRow } = await import("./TrackRow");
 const { FormatBadge } = await import("../shell/FormatBadge");
 
@@ -70,6 +75,23 @@ describe("rangée de titre", () => {
   });
   it("un titre de la bibliothèque n'affiche aucune marque d'état", () => {
     expect(row(libraryTrack("a"), true)).not.toContain("availability.");
+  });
+  it("dans une liste qui mêle, le titre de la bibliothèque porte sa marque (mot pour les lecteurs d'écran)", () => {
+    const html = inRouter(<TrackRow track={libraryTrack("a")} number={1} current={false} markLibrary actions={actions(true)} index={0} onPlayIndex={() => undefined} />);
+    expect(html).toContain("availability.library");
+  });
+});
+
+describe("carte d'album", () => {
+  const album = { key: "ext:demo:al", jellyfinId: null, external: { pluginId: "demo", id: "al" }, title: "Al", artists: [], year: null, releaseDate: null, kind: "album" as const, artworkUrl: null, trackCount: 3, durationMs: null, mbids: { release: null, releaseGroup: null } };
+  it("en entier ou en partie dans la bibliothèque : la pastille, en mot", () => {
+    expect(inRouter(<AlbumCard album={{ ...album, key: "jf:x", jellyfinId: "x", external: null }} ownership="full" />)).toContain("availability.albumFull");
+    const partial = inRouter(<AlbumCard album={album} ownership="partial" />);
+    expect(partial).toContain("availability.albumPartial");
+    expect(partial).toContain("availability.partlyShort");
+  });
+  it("sans correspondance, aucune pastille", () => {
+    expect(inRouter(<AlbumCard album={album} />)).not.toContain("availability.");
   });
 });
 
