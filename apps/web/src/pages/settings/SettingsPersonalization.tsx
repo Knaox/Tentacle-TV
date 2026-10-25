@@ -24,6 +24,7 @@ import { useHomeRowsEditorModel } from "../../components/settings/personalizatio
 import { LinkedAccounts } from "../../components/settings/personalization/LinkedAccounts";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { rangeFill } from "../../lib/rangeFill";
+import { OctaveStartupSetting } from "../../music/octave/mode/OctaveStartupSetting";
 
 /** Le curseur n'écrit qu'au repos : une mutation par cran ferait vingt allers-retours. */
 const BALANCE_SAVE_MS = 300;
@@ -101,6 +102,8 @@ export function SettingsPersonalization() {
 
   return (
     <div className="flex flex-col gap-6">
+      <OctaveStartupSetting />
+
       <SettingsSection title={tHome("heroTitle")} caption={tHome("heroCaption")}>
         {/* SettingsSection ne pose AUCUN padding (et rogne via overflow-hidden) :
             le p-5 est à la charge du contenu, comme partout ailleurs. */}
