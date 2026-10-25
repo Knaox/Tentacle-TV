@@ -39,6 +39,7 @@ const NAMESPACES = [
   "accountAccess",
   "music",
   "musicOffline",
+  "octaveShell",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {

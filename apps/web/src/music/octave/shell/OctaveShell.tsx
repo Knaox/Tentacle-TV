@@ -19,7 +19,9 @@ import { useQueueLibraryTwins } from "../library/useQueueLibraryTwins";
 import { HistoryButtons } from "./HistoryButtons";
 import { NowPlayingSheet } from "./NowPlayingSheet";
 import { OctaveModeSlot } from "./OctaveModeSlot";
-import { OctaveSidebar, OctaveTabBar, OctaveWordmark } from "./OctaveSidebar";
+import { OctaveProfileButton } from "../profiles";
+import { OctaveSidebar, OctaveTabBar } from "./OctaveSidebar";
+import { OctaveWordmark } from "./OctaveWordmark";
 import { MiniPlayer, PlayerBar } from "./PlayerBar";
 import { QueuePanel } from "./QueuePanel";
 
@@ -62,6 +64,7 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
             <OctaveWordmark logoSize={28} className="text-xl" />
           </div>
           <OctaveModeSlot onExit={onExit} compact />
+          <OctaveProfileButton compact />
         </header>
         <main ref={main} id="octave-main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
           {children}

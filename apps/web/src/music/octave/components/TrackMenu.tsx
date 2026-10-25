@@ -14,7 +14,7 @@ import type { MusicPlaylist, MusicTrack } from "@tentacle-tv/shared/music";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import { FloatingLayer } from "../../../components/floating/FloatingLayer";
 import type { TrackActions } from "../actions/useTrackActions";
-import { octavePaths } from "../octavePaths";
+import { albumPathOf, linkedArtistsOf } from "./trackTargets";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 import { openPlaylistChooser } from "../actions/playlistChooserStore";
@@ -29,6 +29,8 @@ interface TrackMenuProps {
   visible?: "hover" | "always";
   /** Taille et teinte du bouton hors d'une rangée (le lecteur, la feuille plein écran). */
   buttonClassName?: string;
+  /** « Voir l'album / l'artiste » mène ailleurs : ce qui entoure se referme aussi (la feuille « en cours »). */
+  onNavigate?: () => void;
 }
 
 const itemClass =
@@ -36,7 +38,7 @@ const itemClass =
 
 const HOVER_CLASS = "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-visible:opacity-100 group-hover:opacity-100 aria-expanded:opacity-100";
 
-export function TrackMenu({ track, actions, onRemove, visible = "hover", buttonClassName = "h-8 w-8 text-content-tertiary" }: TrackMenuProps) {
+export function TrackMenu({ track, actions, onRemove, visible = "hover", buttonClassName = "h-8 w-8 text-content-tertiary", onNavigate }: TrackMenuProps) {
   const { t } = useTranslation("music");
   const anchor = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -57,13 +59,13 @@ export function TrackMenu({ track, actions, onRemove, visible = "hover", buttonC
         <MoreHorizontal className="h-4 w-4" />
       </button>
       {/* Monté seulement ouvert : une liste de 500 titres ne porte pas 500 requêtes de playlists. */}
-      {open && <TrackMenuPanel track={track} actions={actions} onRemove={onRemove} anchor={anchor} onClose={() => setOpen(false)} />}
+      {open && <TrackMenuPanel track={track} actions={actions} onRemove={onRemove} anchor={anchor} onClose={() => setOpen(false)} onNavigate={onNavigate} />}
     </>
   );
 }
 
-function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenuProps & { anchor: RefObject<HTMLButtonElement | null>; onClose: () => void }) {
-  const { t } = useTranslation("music");
+function TrackMenuPanel({ track, actions, onRemove, anchor, onClose, onNavigate }: TrackMenuProps & { anchor: RefObject<HTMLButtonElement | null>; onClose: () => void }) {
+  const { t } = useTranslation(["music", "octaveShell"]);
   const [picking, setPicking] = useState<"add" | "remove" | null>(null);
   const player = useOctavePlayer();
   const navigate = useNavigate();
@@ -73,8 +75,9 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenu
     fn();
     close();
   };
-  const albumId = track.album?.jellyfinId ?? null;
-  const artistId = track.artists[0]?.jellyfinId ?? null;
+  // Bibliothèque ou ailleurs (la vue de l'extension) ; rien où aller : pas d'entrée.
+  const albumPath = albumPathOf(track);
+  const artists = linkedArtistsOf(track);
   const editable = (playlists.data ?? []).filter((p) => p.editable);
 
   return (
@@ -132,19 +135,20 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenu
                 </button>
               )}
               <KeepMenuItem track={track} className={itemClass} onDone={close} />
-              {(albumId || artistId) && <div className="my-1 h-px bg-line-subtle" />}
-              {albumId && (
-                <button type="button" role="menuitem" className={itemClass} onClick={run(() => navigate(octavePaths.album(albumId)))}>
+              {(albumPath || artists.length > 0) && <div className="my-1 h-px bg-line-subtle" />}
+              {albumPath && (
+                <button type="button" role="menuitem" className={itemClass} onClick={run(() => { navigate(albumPath); onNavigate?.(); })}>
                   <Disc3 className="h-4 w-4 text-content-tertiary" />
                   {t("track.goToAlbum")}
                 </button>
               )}
-              {artistId && (
-                <button type="button" role="menuitem" className={itemClass} onClick={run(() => navigate(octavePaths.artist(artistId)))}>
-                  <User className="h-4 w-4 text-content-tertiary" />
-                  {t("track.goToArtist")}
+              {/* Un artiste : « Voir l'artiste » ; plusieurs crédités : une entrée chacun, à son nom. */}
+              {artists.map((artist) => (
+                <button key={artist.path} type="button" role="menuitem" className={itemClass} onClick={run(() => { navigate(artist.path); onNavigate?.(); })}>
+                  <User className="h-4 w-4 shrink-0 text-content-tertiary" />
+                  <span className="truncate">{artists.length > 1 ? t("octaveShell:track.goToArtistNamed", { artist: artist.name }) : t("track.goToArtist")}</span>
                 </button>
-              )}
+              ))}
               {onRemove && (
                 <>
                   <div className="my-1 h-px bg-line-subtle" />

@@ -34,4 +34,9 @@ export const SESSION_FILES: Record<string, string> = {
   // profil (bureau) : la LG n'a ni hors ligne ni profils, et le vrai module
   // ferait entrer `profiles/launch/` dans le graphe.
   [resolve(WEB, "offline/accountFallback.ts")]: resolve(CLIENT, "shims/noAccountFallback.ts"),
+
+  // Les profils dans Octave (menu de la coquille, feuille du code PIN) : la LG
+  // n'a pas les profils de la Famille, et leur porte ferait entrer `profiles/`
+  // dans le graphe.
+  [resolve(WEB, "music/octave/profiles/index.ts")]: resolve(CLIENT, "shims/noOctaveProfiles.ts"),
 };

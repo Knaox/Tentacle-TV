@@ -8,6 +8,7 @@ import {
   OCTAVE_GLYPH_PATHS,
   OCTAVE_GLYPH_SVG,
   OCTAVE_GLYPH_VIEWBOX,
+  OCTAVE_LOGO_SMALL_SVG,
   OCTAVE_LOGO_SVG,
   octaveLogoDataUri,
   octaveLogoSvg,
@@ -17,6 +18,7 @@ import {
 const BRAND = resolve(__dirname, "../../../../../brand/octave");
 const FILES: Record<string, string> = {
   "logo-octave.svg": OCTAVE_LOGO_SVG,
+  "logo-octave-small.svg": OCTAVE_LOGO_SMALL_SVG,
   "glyph-octave.svg": OCTAVE_GLYPH_SVG,
   "glyph-octave-on-dark.svg": OCTAVE_GLYPH_ON_DARK_SVG,
   "glyph-octave-on-light.svg": OCTAVE_GLYPH_ON_LIGHT_SVG,
@@ -38,19 +40,34 @@ describe("logo d'Octave (module généré par brand/octave.py)", () => {
     }
   });
 
-  it("l'ancien logo est retiré : ni chapeau, ni tête de mort, ni mascotte monochrome", () => {
-    for (const svg of Object.values(FILES)) {
-      // Le tricorne (dégradé `gH`) et le masque du monochrome (`mOct`) de l'ancien dessin.
-      expect(svg).not.toMatch(/url\(#gH\)|mOct|sans chapeau/);
+  it("la mascotte porte le tricorne de Tentacle, à toutes les tailles", () => {
+    const tentacle = readFileSync(resolve(BRAND, "../logo-color.svg"), "utf8");
+    // La calotte du logo de toujours, au même endroit (même chemin, même repère).
+    const hat = /<g transform="([^"]+)"><path d="([^"]+)" fill="url\(#gH\)"/.exec(tentacle);
+    expect(hat).not.toBeNull();
+    for (const svg of [OCTAVE_LOGO_SVG, OCTAVE_LOGO_SMALL_SVG]) {
+      expect(svg).toContain(`<g transform="${hat?.[1]}"><path d="${hat?.[2]}" fill="url(#gH)"`);
+    }
+    // Le glyphe et le monochrome n'ont pas de mascotte, donc pas de chapeau ; ni l'ancien masque.
+    for (const svg of [OCTAVE_GLYPH_SVG, OCTAVE_GLYPH_ON_DARK_SVG, OCTAVE_GLYPH_ON_LIGHT_SVG]) {
+      expect(svg).not.toMatch(/url\(#gH\)|mOct/);
     }
     expect(Object.keys(octave).filter((name) => /NOHAT|MONO|NOTE_/.test(name))).toEqual([]);
   });
 
-  it("sert la mascotte à partir de 24 px, le glyphe en dessous et pour tout monochrome", () => {
+  it("sous 24 px, le tricorne est cerné (il se lit sur l'encre) et les ventouses s'effacent", () => {
+    expect(OCTAVE_LOGO_SMALL_SVG).toMatch(/fill="url\(#gH\)" stroke="url\(#gV\)" stroke-width="\d+" stroke-linejoin="round" paint-order="stroke"/);
+    expect(OCTAVE_LOGO_SVG).not.toContain('paint-order="stroke"');
+    // Les ventouses : le groupe à l'opacité des ventouses du logo.
+    expect(OCTAVE_LOGO_SVG).toMatch(/<g fill="#FBCFE8" opacity="\.8">/);
+    expect(OCTAVE_LOGO_SMALL_SVG).not.toContain("#FBCFE8");
+  });
+
+  it("sert la mascotte à toute taille (sa petite taille sous 24 px), le glyphe pour tout monochrome", () => {
     expect(octaveLogoSvg("color", 48, true)).toBe(OCTAVE_LOGO_SVG);
     expect(octaveLogoSvg("color", 24, false)).toBe(OCTAVE_LOGO_SVG);
-    expect(octaveLogoSvg("color", 22, true)).toBe(OCTAVE_GLYPH_SVG);
-    expect(octaveLogoSvg("color", 16, false)).toBe(OCTAVE_GLYPH_SVG);
+    expect(octaveLogoSvg("color", 22, true)).toBe(OCTAVE_LOGO_SMALL_SVG);
+    expect(octaveLogoSvg("color", 16, false)).toBe(OCTAVE_LOGO_SMALL_SVG);
     expect(octaveLogoSvg("mono", 22, true)).toBe(OCTAVE_GLYPH_ON_DARK_SVG);
     expect(octaveLogoSvg("mono", 64, false)).toBe(OCTAVE_GLYPH_ON_LIGHT_SVG);
   });

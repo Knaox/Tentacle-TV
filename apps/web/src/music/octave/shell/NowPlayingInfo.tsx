@@ -18,7 +18,8 @@ import { Artwork } from "../components/Artwork";
 import { HeartButton } from "../components/HeartButton";
 import { TrackMenu } from "../components/TrackMenu";
 import { QuickAddButton } from "../components/QuickAddButton";
-import { octavePaths } from "../octavePaths";
+import { AlbumLink, ArtistLinks } from "../components/TrackLinks";
+import { albumPathOf } from "../components/trackTargets";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 
@@ -37,7 +38,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
   if (!track) {
     return <p className="truncate px-2 text-sm text-content-tertiary">{t("player.nothing")}</p>;
   }
-  const albumId = track.album?.jellyfinId;
+  const albumPath = albumPathOf(track);
   const artwork = <Artwork url={track.artworkUrl} alt={track.album?.title ?? track.title} className={`${artworkClass} shadow-[var(--oc-shadow-art)]`} eager />;
   return (
     <div className="flex min-w-0 items-center gap-3" data-octave-now-playing={track.key}>
@@ -59,8 +60,8 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
       )}
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
-          {albumId ? (
-            <Link to={octavePaths.album(albumId)} className="truncate text-sm font-semibold text-content-primary hover:underline">
+          {albumPath ? (
+            <Link to={albumPath} className="truncate text-sm font-semibold text-content-primary hover:underline">
               {track.title}
             </Link>
           ) : (
@@ -85,7 +86,15 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
           ) : notice === "retrySoon" ? (
             <span role="status">{t("player.retrySoon")}</span>
           ) : (
-            <span className="truncate">{track.artists.map((a) => a.name).join(", ")}</span>
+            <span className="truncate">
+              <ArtistLinks track={track} />
+              {track.album && (
+                <>
+                  {" · "}
+                  <AlbumLink track={track} />
+                </>
+              )}
+            </span>
           )}
         </p>
       </div>

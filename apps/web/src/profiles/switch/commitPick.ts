@@ -54,6 +54,12 @@ export interface CommitContext {
    * Écrit seulement une fois la bascule faite.
    */
   stayOnDevice?: boolean;
+  /**
+   * Le rideau d'arrivée après le rechargement (`markArrival`) ; faux : la page
+   * revient telle quelle, sans rien jouer (Octave : on change de profil sans
+   * quitter la musique ni voir d'animation). Vrai par défaut.
+   */
+  arrival?: boolean;
 }
 
 export type CommitResult = "stay" | "reload";
@@ -94,7 +100,7 @@ export async function commitPick(picked: PickedProfileDto, context: CommitContex
   clearPickerRequest();
   noteCurrentProfile(picked.profile.userId);
   noteStay(picked.profile, accountId, context.stayOnDevice);
-  markArrival(curtain);
+  if (context.arrival !== false) markArrival(curtain);
   try {
     localStorage.removeItem(QUERY_CACHE_KEY);
   } catch {

@@ -14,8 +14,9 @@ TARGET = "apps/web/src/components/ui/octaveLogo.generated.ts"
 
 # Nom de fichier → nom de la constante exportée.
 EXPORTS = {
-    "logo-octave.svg": ("OCTAVE_LOGO_SVG", "Le logo couleur : la mascotte, sans chapeau, la note sur son écran. Fond clair ou sombre, À PARTIR DE 24 PX."),
-    "glyph-octave.svg": ("OCTAVE_GLYPH_SVG", "Le glyphe au dégradé de la marque : le logo couleur SOUS 24 PX (fond clair ou sombre)."),
+    "logo-octave.svg": ("OCTAVE_LOGO_SVG", "Le logo couleur : la mascotte et son tricorne, la note sur son écran. Fond clair ou sombre, À PARTIR DE 24 PX."),
+    "logo-octave-small.svg": ("OCTAVE_LOGO_SMALL_SVG", "Le logo couleur SOUS 24 PX (pouce de la bascule) : le même, tricorne cerné, sans ventouses."),
+    "glyph-octave.svg": ("OCTAVE_GLYPH_SVG", "Le glyphe au dégradé de la marque, la note seule (fond clair ou sombre)."),
     "glyph-octave-on-dark.svg": ("OCTAVE_GLYPH_ON_DARK_SVG", "Le glyphe monochrome blanc, pour un fond sombre (`currentColor`)."),
     "glyph-octave-on-light.svg": ("OCTAVE_GLYPH_ON_LIGHT_SVG", "Le glyphe monochrome encre, pour un fond clair (`currentColor`)."),
 }
@@ -32,7 +33,7 @@ def module(files, pieces, glyph):
     pieces.update({f"GLYPH_{i}": d for i, d in enumerate(glyph)})
     out = ["// GÉNÉRÉ par brand/octave.py — ne pas éditer à la main.",
            "//",
-           "// Le logo d'Octave : la mascotte de Tentacle, sans chapeau, qui montre la note",
+           "// Le logo d'Octave : la mascotte de Tentacle, son tricorne sur la tête, qui montre la note",
            "// d'Octave sur son écran ; et le glyphe, une croche dont le crochet est un bras.",
            "// Repère 240 × 240, le même que `brand/*.svg`.",
            ""]
@@ -53,13 +54,14 @@ def module(files, pieces, glyph):
         "export type OctaveLogoVariant = \"color\" | \"mono\";",
         "",
         "/**",
-        " * Le SVG à servir. La mascotte en couleur à partir de 24 px ; en dessous, le glyphe",
-        " * au dégradé. Le monochrome est TOUJOURS le glyphe (blanc sur fond sombre, encre sur",
-        " * fond clair) : la mascotte réduite à une masse lisait « tête de mort ».",
+        " * Le SVG à servir. La mascotte en couleur, chapeau compris, à TOUTE taille : sous 24 px,",
+        " * sa déclinaison au tricorne cerné, lisible à 16 px. Le monochrome est TOUJOURS le",
+        " * glyphe (blanc sur fond sombre, encre sur fond clair) : la mascotte réduite à une",
+        " * masse lisait « tête de mort ».",
         " */",
         "export function octaveLogoSvg(variant: OctaveLogoVariant, size: number, onDark = true): string {",
         "  if (variant === \"mono\") return onDark ? OCTAVE_GLYPH_ON_DARK_SVG : OCTAVE_GLYPH_ON_LIGHT_SVG;",
-        "  return size < 24 ? OCTAVE_GLYPH_SVG : OCTAVE_LOGO_SVG;",
+        "  return size < 24 ? OCTAVE_LOGO_SMALL_SVG : OCTAVE_LOGO_SVG;",
         "}",
         "",
         "/** Le même SVG en `data:` URI, pour un `<img src>` (aucun identifiant partagé avec la page). */",

@@ -1,8 +1,9 @@
 /**
- * Octave — la barre latérale (bureau, fenêtre large) : la marque et ‹ › en
- * tête, juste dessous la BASCULE du mode (`OctaveModeSlot` : la première
- * chose qu'on voit, jamais perdue en pied de rail), puis les cinq
- * destinations et vos playlists. Au téléphone, les mêmes destinations passent
+ * Octave — la barre latérale (bureau, fenêtre large) : la marque — signée
+ * Tentacle — et ‹ › en tête, juste dessous la BASCULE du mode et le retour aux
+ * films (`OctaveModeSlot` : la première chose qu'on voit, jamais perdue en pied
+ * de rail), puis les cinq destinations, vos playlists, et en pied le profil
+ * (`OctaveProfileButton`). Au téléphone, les mêmes destinations passent
  * dans une barre d'onglets.
  *
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
@@ -21,11 +22,12 @@ import { carriesTrack, draggedTrack } from "../actions/dragTrack";
 import { useTrackActions } from "../actions/useTrackActions";
 import { useLiquidGlassMode, useLiquidGlassSurface } from "../../../theme/glass";
 import { Artwork } from "../components/Artwork";
-import { OctaveLogo } from "../components/OctaveLogo";
 import { octavePaths } from "../octavePaths";
 import { HistoryButtons } from "./HistoryButtons";
+import { OctaveWordmark } from "./OctaveWordmark";
 import { OctaveModeSlot } from "./OctaveModeSlot";
 import { DeviceNavItem } from "../offline/DeviceNavItem";
+import { OctaveProfileButton } from "../profiles";
 
 export const OCTAVE_DESTINATIONS = [
   { to: octavePaths.home, key: "nav.home", Icon: Home, end: true },
@@ -40,16 +42,6 @@ const linkClass =
 
 const playlistClass =
   "octave-nav-link flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
-
-/** La marque du mode : le logo, puis le nom écrit au dégradé (le logo seul ne se lit pas encore). */
-export function OctaveWordmark({ className = "", logoSize = 32 }: { className?: string; logoSize?: number }) {
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      <OctaveLogo size={logoSize} />
-      <span className={`oc-gradient-text truncate text-[22px] font-black tracking-tight ${className}`}>Octave</span>
-    </span>
-  );
-}
 
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation("music");
@@ -95,6 +87,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
           ))}
         </ul>
       </div>
+      <OctaveProfileButton />
     </nav>
   );
 });

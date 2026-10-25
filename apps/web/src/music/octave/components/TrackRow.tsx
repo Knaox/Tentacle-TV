@@ -9,12 +9,10 @@
 
 import { memo, useCallback } from "react";
 import { Pause, Play } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import type { TrackActions } from "../actions/useTrackActions";
 import { durationLabel } from "@tentacle-tv/shared/octave";
-import { octavePaths } from "../octavePaths";
 import { usePrefetchHandlers } from "../player/usePrefetchHandlers";
 import { Artwork } from "./Artwork";
 import { AvailabilityMark } from "./AvailabilityMark";
@@ -26,6 +24,7 @@ import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
 import { clickGesture, type SelectGesture } from "../actions/selection/selectionRules";
 import { SelectCell } from "./SelectCell";
 import { KeptMark } from "../offline/KeptMark";
+import { AlbumLink, ArtistLinks } from "./TrackLinks";
 import { OceanSwell } from "../motion/OceanSwell";
 
 /**
@@ -65,25 +64,6 @@ export interface TrackRowProps {
   selecting?: boolean;
   /** Choisir cette rangée (rappel STABLE, par rang). */
   onSelect?: (index: number, gesture: SelectGesture) => void;
-}
-
-function ArtistLinks({ track }: { track: MusicTrack }) {
-  return (
-    <>
-      {track.artists.map((artist, i) => (
-        <span key={`${artist.name}-${i}`}>
-          {i > 0 && ", "}
-          {artist.jellyfinId ? (
-            <Link to={octavePaths.artist(artist.jellyfinId)} onClick={(e) => e.stopPropagation()} className="hover:text-content-primary hover:underline">
-              {artist.name}
-            </Link>
-          ) : (
-            artist.name
-          )}
-        </span>
-      ))}
-    </>
-  );
 }
 
 /** La case du numéro : numéro, ou Lecture au survol ; pour le titre en cours, son état et le geste qui l'inverse. */
@@ -158,6 +138,13 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
             <KeptMark trackKey={track.key} />
             <span className="truncate">
               <ArtistLinks track={track} />
+              {/* L'album, lien vers sa page : dans sa colonne en fenêtre large, ici en dessous. */}
+              {showAlbum && track.album && (
+                <span className="lg:hidden">
+                  {" · "}
+                  <AlbumLink track={track} />
+                </span>
+              )}
               {/* Un échec dit POURQUOI, en mot (jamais l'icône seule) : « ne peut pas entrer dans la bibliothèque… ». */}
               {failed && note && <span className="text-status-error-fg"> · {note}</span>}
             </span>
@@ -166,13 +153,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       </div>
       {showAlbum && (
         <div role="gridcell" className="hidden min-w-0 truncate text-[13px] text-content-tertiary lg:block">
-          {track.album?.jellyfinId ? (
-            <Link to={octavePaths.album(track.album.jellyfinId)} onClick={(e) => e.stopPropagation()} className="hover:text-content-primary hover:underline">
-              {track.album.title}
-            </Link>
-          ) : (
-            track.album?.title
-          )}
+          <AlbumLink track={track} />
         </div>
       )}
       <div role="gridcell" className="flex items-center gap-1">

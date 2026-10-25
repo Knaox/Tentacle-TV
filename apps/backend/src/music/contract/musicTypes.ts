@@ -36,12 +36,20 @@ export interface MusicArtistRef {
   mbid: Mbid | null;
   /** L'élément MusicArtist de Jellyfin, s'il existe. */
   jellyfinId: string | null;
+  /**
+   * La vue de l'artiste chez l'extension qui a donné le titre (hors bibliothèque), si elle en sert une —
+   * « Voir l'artiste » d'un titre d'ailleurs. Optionnel, ajouté le 25/10 : une extension d'avant ne
+   * l'envoie pas (pas de lien, sans erreur). `jellyfinId` passe avant.
+   */
+  external?: ExternalRef | null;
 }
 
 export interface MusicAlbumRef {
   title: string;
   mbid: Mbid | null;
   jellyfinId: string | null;
+  /** La vue de l'album chez l'extension (hors bibliothèque) ; mêmes règles que `MusicArtistRef.external`. */
+  external?: ExternalRef | null;
 }
 
 /** Ce que le fichier est vraiment — affiché dans la barre de lecture (format/qualité). */
