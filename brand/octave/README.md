@@ -29,6 +29,16 @@ Le web consomme `apps/web/src/components/ui/octaveLogo.generated.ts` :
 `<img>` — chaque SVG garde ses identifiants de dégradés, aucune collision avec un
 autre logo de la page.
 
+## Le glyphe de l'interface
+
+`glyph-octave-on-dark.svg` · `glyph-octave-on-light.svg` (`octave_glyph.py`) :
+une croche dont le crochet est un BRAS de la mascotte (même spine, même
+effilement que les bras du logo), qui s'enroule vers l'intérieur. C'est lui —
+pas la mascotte — qui représente Octave dans l'interface, de 16 à 24 px : la
+bascule vers le mode musique, un onglet, une entrée de navigation. Une seule
+couleur, `currentColor`, aucun visage. Le web le rend par
+`apps/web/src/components/ui/OctaveGlyph.tsx` (`OCTAVE_GLYPH_PATHS`, nom stable).
+
 ## La construction
 
 - **La double-croche enlacée (retenue).** Deux têtes gravées (inclinées de

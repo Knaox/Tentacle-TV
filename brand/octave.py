@@ -18,6 +18,7 @@ import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from geometry import save
+import octave_glyph
 import octave_notes
 import octave_sheet
 import octave_ts
@@ -185,6 +186,11 @@ def main():
     for name, text in variants(CHOSEN).items():
         save(OUT / name, text)
         count += 1
+    glyphs = {"glyph-octave-on-dark.svg": octave_glyph.glyph_svg(MONO_DARK_BG, NOTE),
+              "glyph-octave-on-light.svg": octave_glyph.glyph_svg(MONO_LIGHT_BG, NOTE)}
+    for name, text in glyphs.items():
+        save(OUT / name, text)
+        count += 1
     props = OUT / "propositions"
     props.mkdir(exist_ok=True)
     for key in octave_notes.PROPOSALS:
@@ -209,7 +215,8 @@ def main():
         target = ROOT / octave_ts.TARGET
         pieces = {f"FRONT_ARM_{i}": d for i, d in enumerate(A["FRONT_DS"])}
         pieces.update({f"BACK_ARM_{i}": d for i, d in enumerate(A["BACK_DS"])})
-        save(target, octave_ts.module(variants(CHOSEN), octave_notes.PROPOSALS[CHOSEN](), pieces))
+        save(target, octave_ts.module(variants(CHOSEN), octave_notes.PROPOSALS[CHOSEN](), pieces,
+                                     octave_glyph.glyph()))
     print(f"{count} SVG Octave (retenu : {CHOSEN}) — planche : {sheet}"
           + (" (aperçu : module TS non écrit)" if PREVIEW else f" + {octave_ts.TARGET}"))
 
