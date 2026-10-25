@@ -1,0 +1,207 @@
+/*
+ * Octave — la coquille : barre de lecture (le « dock »), glissières, rail de
+ * navigation, file, lecteur « en cours ». Jetons : ../octaveTokens.css.
+ *
+ * Règles « Coût GPU » (CLAUDE.md) : seules `transform` et `opacity` s'animent ;
+ * rien ne tourne en boucle ; un seul `backdrop-filter` permanent, celui du
+ * dock HORS verre natif (le contenu défile dessous : il floute quelque chose).
+ * En verre natif, le dock et le rail sont des surfaces de la primitive : ces
+ * classes `-fallback` ne s'y appliquent pas (`fallbackClassName`).
+ */
+
+/* ── Le dock : la capsule de verre sombre qui flotte au-dessus des pages ── */
+.octave-dock-fallback {
+  border-radius: var(--oc-radius-dock);
+  background: var(--oc-dock-bg);
+  border: 1px solid var(--oc-dock-border);
+  box-shadow: inset 0 1px 0 var(--oc-dock-highlight), var(--oc-dock-shadow);
+  -webkit-backdrop-filter: blur(var(--oc-dock-blur)) saturate(1.4);
+  backdrop-filter: blur(var(--oc-dock-blur)) saturate(1.4);
+}
+
+/* Le bord du bas : la page se fond dans l'encre sous le dock — un dégradé
+ * posé, sans flou (le contenu reste lisible jusqu'au dock, puis s'efface).
+ * En verre natif, à moitié : le verre doit encore voir ce qui passe dessous. */
+.octave-dock-edge {
+  position: absolute;
+  left: 0;
+  right: 8px;
+  bottom: 0;
+  z-index: 10;
+  height: calc(var(--oc-dock-height) + var(--oc-dock-inset) * 2 + 24px);
+  background-image: linear-gradient(to bottom, transparent 0%, var(--oc-ink) 80%);
+  pointer-events: none;
+}
+:root[data-liquid-glass="native"] .octave-dock-edge { opacity: 0.55; }
+
+/* Les barres de défilement d'Octave : rose, comme son accent (celles de
+ * Tentacle sont violettes) ; dans un îlot, le fond de l'îlot. */
+[data-octave-shell] ::-webkit-scrollbar-thumb,
+[data-octave-now-playing-view]::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--oc-accent-rgb), 0.3);
+}
+[data-octave-shell] ::-webkit-scrollbar-thumb:hover,
+[data-octave-now-playing-view]::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--oc-accent-rgb), 0.5);
+}
+.octave-island ::-webkit-scrollbar,
+.octave-island ::-webkit-scrollbar-track,
+.octave-island ::-webkit-scrollbar-corner {
+  background-color: var(--oc-ink-raised);
+}
+
+/* Le rail de navigation en verre natif : un panneau qui flotte, inséré. */
+.octave-rail-glass {
+  border-radius: var(--oc-radius-panel);
+}
+
+/* ── Un îlot d'encre prune (la file d'attente) ─────────────────────────── */
+.octave-island {
+  border-radius: var(--oc-radius-panel);
+  background: var(--oc-ink-raised);
+  box-shadow: var(--oc-shadow-panel);
+}
+
+/* ── L'entrée de navigation active : la pastille de Tentacle, rose en tête ── */
+.octave-nav-link[aria-current="page"] {
+  background-image: var(--oc-nav-active-bg);
+  box-shadow: inset 0 0 0 1px var(--oc-nav-active-ring);
+  color: var(--text-primary);
+}
+.octave-nav-link[aria-current="page"] .octave-nav-icon {
+  color: var(--oc-accent-text);
+}
+
+/* ── Le bouton Lecture : le dégradé profond, l'ombre rose ──────────────── */
+.octave-play {
+  position: relative;
+  background-image: var(--oc-gradient-deep);
+  color: var(--oc-on-gradient);
+  box-shadow: var(--oc-shadow-play);
+  transition: transform var(--oc-duration-fast) var(--oc-ease-out);
+}
+/* Le survol éclaircit par un calque blanc en fondu (jamais un `filter`). */
+.octave-play::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #ffffff;
+  opacity: 0;
+  transition: opacity var(--oc-duration-fast) var(--oc-ease-out);
+  pointer-events: none;
+}
+.octave-play:hover:not(:disabled)::after { opacity: 0.12; }
+.octave-play:active:not(:disabled) { transform: scale(0.94); }
+
+/* ── Les glissières (progression, volume) ──────────────────────────────── */
+/* La zone de saisie : 24 px de haut (WCAG 2.5.8), le rail fin au milieu.
+ * `container-type` : la tête de lecture se place en `cqw`, sans mesure. */
+.octave-range {
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+.octave-range-rail {
+  position: relative;
+  width: 100%;
+  height: var(--oc-rail-height);
+  overflow: hidden;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-rail);
+}
+/* Le remplissage est une ÉCHELLE, jamais une largeur — et sans transition :
+ * la position avance par pas (≈ 4 par seconde), rien ne s'anime en continu. */
+.octave-range-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: left center;
+  will-change: transform;
+}
+.octave-range-fill[data-fill="progress"] { background-image: var(--oc-progress-fill); }
+.octave-range-fill[data-fill="volume"] { background: var(--oc-volume-fill); }
+/* Désactivée (rien en lecture), la glissière s'efface à moitié. */
+.octave-range[data-disabled="true"] .octave-range-rail { opacity: 0.5; }
+
+/* La tête : une enveloppe qui la PLACE (sans transition), un point qui
+ * paraît (fondu et échelle). Visible au survol, à la saisie, au focus. */
+.octave-range-head {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transform: translateX(calc(var(--oc-at, 0) * 100cqw));
+}
+.octave-range-dot {
+  position: absolute;
+  width: var(--oc-thumb-size);
+  height: var(--oc-thumb-size);
+  left: calc(var(--oc-thumb-size) / -2);
+  top: calc(var(--oc-thumb-size) / -2);
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-thumb);
+  box-shadow: 0 0 0 2px var(--oc-thumb-ring), 0 2px 6px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity var(--oc-duration-fast) var(--oc-ease-out), transform var(--oc-duration-fast) var(--oc-ease-out);
+}
+.octave-range:hover .octave-range-dot,
+.octave-range[data-dragging="true"] .octave-range-dot,
+.octave-range-input:focus-visible ~ .octave-range-head .octave-range-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+/* Le focus clavier : le halo rose autour du point, et le rail souligné. */
+.octave-range-input:focus-visible ~ .octave-range-head .octave-range-dot {
+  box-shadow: 0 0 0 2px var(--oc-thumb-ring), 0 0 0 6px var(--oc-accent-glow);
+}
+.octave-range-input:focus-visible ~ .octave-range-rail {
+  box-shadow: 0 0 0 1px var(--oc-accent-glow);
+}
+.octave-range[data-disabled="true"] .octave-range-dot { opacity: 0; }
+
+/* ── Le dock du téléphone : la même capsule, plus serrée ───────────────── */
+.octave-mini-progress {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 2px;
+  overflow: hidden;
+  border-radius: var(--oc-radius-pill);
+  background: var(--oc-rail);
+}
+
+/* ── La pochette du dock : « ouvrir le lecteur » au survol ─────────────── */
+.octave-art-open .octave-art-open-hint {
+  opacity: 0;
+  transition: opacity var(--oc-duration-fast) var(--oc-ease-out);
+}
+.octave-art-open:hover .octave-art-open-hint,
+.octave-art-open:focus-visible .octave-art-open-hint { opacity: 1; }
+
+/* ── Le lecteur « en cours » : il monte du dock (entrée finie) ─────────── */
+@keyframes octaveStageIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.octave-stage-in { animation: octaveStageIn var(--oc-duration-slow) var(--oc-ease-out) both; }
+.octave-now-veil {
+  position: absolute;
+  inset: 0;
+  background-image: var(--oc-hero-veil);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .octave-play,
+  .octave-play::after,
+  .octave-range-dot,
+  .octave-art-open .octave-art-open-hint { transition: none; }
+  .octave-stage-in { animation: none; }
+}
