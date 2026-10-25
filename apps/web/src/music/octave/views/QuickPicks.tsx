@@ -20,7 +20,9 @@ const TILE_MIN_PX = 240;
 const TILE_GAP_PX = 8;
 const MAX_COLUMNS = 3;
 const ROWS = 2;
-const GRID_CLASS = "grid gap-2 px-2";
+// Les colonnes viennent de la FEUILLE (`octaveViews.css`, `[data-columns]`), jamais d'un style en ligne :
+// un attribut `style` échappe aux passes PostCSS du client LG (garde `tentacle-garde-styles-en-ligne`).
+const GRID_CLASS = "octave-quickpicks grid gap-2 px-2";
 
 /** Combien de tuiles montrer pour `columns` colonnes : des rangées pleines, deux au plus. */
 export function quickPickCount(available: number, columns: number): number {
@@ -71,7 +73,7 @@ export function QuickPicks({ tracks }: { tracks: readonly MusicTrack[] }) {
   const wantsPlay = usePlayerSelector((s) => s.wantsPlay);
   const count = quickPickCount(tracks.length, columns);
   return (
-    <section ref={ref} aria-label={t("home.recentlyPlayed")} className={GRID_CLASS} style={{ gridTemplateColumns: `repeat(${Math.max(columns, 1)}, minmax(0, 1fr))` }}>
+    <section ref={ref} aria-label={t("home.recentlyPlayed")} className={GRID_CLASS} data-columns={Math.max(columns, 1)}>
       {tracks.slice(0, count).map((track, i) => (
         <QuickPick key={track.key} tracks={tracks} index={i} current={track.key === currentKey} playing={track.key === currentKey && wantsPlay} />
       ))}
@@ -84,7 +86,7 @@ export function QuickPicksSkeleton() {
   const ref = useRef<HTMLDivElement>(null);
   const columns = useTileColumns(ref);
   return (
-    <div ref={ref} aria-hidden className={GRID_CLASS} style={{ gridTemplateColumns: `repeat(${Math.max(columns, 1)}, minmax(0, 1fr))` }}>
+    <div ref={ref} aria-hidden className={GRID_CLASS} data-columns={Math.max(columns, 1)}>
       {Array.from({ length: columns * ROWS }, (_, i) => (
         <div key={i} className="flex h-16 items-center gap-3 p-1 pr-3">
           <div className="h-14 w-14 bg-fill-soft" style={{ borderRadius: ARTWORK_RADIUS.sm }} />
