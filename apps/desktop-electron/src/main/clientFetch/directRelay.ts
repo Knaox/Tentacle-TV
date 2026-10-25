@@ -7,9 +7,12 @@
  *   (`http-header-fields`) : le jeton partirait chez l'hôte du flux ;
  * - le REPLI : tant qu'aucun octet du direct n'a été servi, un refus de l'hôte
  *   (URL expirée, liée à une autre adresse, coupure) bascule sur le flux du
- *   serveur (`url` de la source), sans que mpv le sache. Après, une erreur rend
- *   502 : le moteur redemande la source (`needSource`), comme pour toute source
- *   d'extension.
+ *   serveur (`url` de la source), sans que mpv le sache. Après, la lecture en
+ *   cours reçoit 502 — jamais la suite d'un fichier lue dans un AUTRE (les deux
+ *   flux peuvent différer) — et le moteur, prévenu (`onCut`), rouvre l'adresse à
+ *   la position (`audio/cutRecovery.ts`) : cette réouverture (`Range: bytes=0-`)
+ *   lit le serveur. Un amont qui meurt en plein corps ferme aussitôt la réponse
+ *   à mpv : il se reconnecte tout de suite, au lieu d'attendre son délai.
  *
  * Seulement la boucle locale, des jetons de 32 octets aléatoires, des entrées
  * oubliées après une heure sans lecture.
@@ -21,12 +24,16 @@ import { request as httpsRequest } from "node:https";
 import { publicOnlyLookup } from "./safeLookup";
 
 interface Entry {
+  /** L'adresse locale donnée à mpv. */
+  localUrl: string;
   directUrl: string;
   fallbackUrl: string;
   fallbackHeaders: Record<string, string>;
   /** Un octet du direct a été servi : plus de repli possible (les deux flux peuvent différer). */
   delivered: boolean;
   mode: "direct" | "server";
+  /** Le direct a cassé APRÈS avoir servi : jusqu'à la prochaine ouverture, la suite de la lecture est refusée. */
+  cut: boolean;
   /** L'échec du direct a été signalé au serveur (`direct=failed` sur la première requête de repli). */
   reported: boolean;
   usedAt: number;
@@ -49,7 +56,12 @@ const CONNECT_TIMEOUT_MS = 8_000;
 export interface RelayStats {
   direct: number;
   fallbacks: number;
+  /** Coupures du direct en cours de lecture (la réouverture lit le serveur). */
+  cuts: number;
 }
+
+/** Une OUVERTURE du flux (pas la suite d'une lecture) : sans plage, ou depuis l'octet 0. */
+const opensStream = (range: string | undefined): boolean => range === undefined || /^bytes=0-/.test(range);
 
 /** Ouvre la requête vers l'hôte du flux direct (https, adresses publiques seulement ; remplacée dans les tests). */
 export type OpenDirect = (url: string, method: string, headers: Record<string, string>, onResponse: (res: IncomingMessage) => void) => ClientRequest;
@@ -63,15 +75,18 @@ export class DirectRelay {
   private server: Server | null = null;
   private port: Promise<number> | null = null;
   private readonly entries = new Map<string, Entry>();
-  readonly stats: RelayStats = { direct: 0, fallbacks: 0 };
+  readonly stats: RelayStats = { direct: 0, fallbacks: 0, cuts: 0 };
+  /** Une coupure du direct en pleine lecture, dite au moteur (qui relit le titre à la position). */
+  onCut: ((localUrl: string) => void) | null = null;
 
   /** L'adresse LOCALE à donner à mpv pour ce flux direct (repli : `fallbackUrl`, avec ses en-têtes). */
   async adopt(directUrl: string, fallbackUrl: string, fallbackHeaders: Record<string, string>): Promise<string> {
     const port = await this.listen();
     this.sweep();
     const id = randomBytes(32).toString("base64url");
-    this.entries.set(id, { directUrl, fallbackUrl, fallbackHeaders, delivered: false, mode: "direct", reported: false, usedAt: Date.now() });
-    return `http://127.0.0.1:${port}/d/${id}`;
+    const localUrl = `http://127.0.0.1:${port}/d/${id}`;
+    this.entries.set(id, { localUrl, directUrl, fallbackUrl, fallbackHeaders, delivered: false, mode: "direct", cut: false, reported: false, usedAt: Date.now() });
+    return localUrl;
   }
 
   /** L'origine du relais, une fois démarré (le moteur l'accepte comme source). */
@@ -116,7 +131,14 @@ export class DirectRelay {
     entry.usedAt = Date.now();
     const range = typeof req.headers.range === "string" ? req.headers.range : undefined;
     const method = req.method;
-    if (entry.mode === "server") return this.pipeFrom(entry, "server", method, range, res);
+    if (entry.mode === "server") {
+      if (entry.cut && !opensStream(range)) {
+        res.writeHead(502).end();
+        return;
+      }
+      entry.cut = false;
+      return this.pipeFrom(entry, "server", method, range, res);
+    }
     const upstream = this.openDirect(entry.directUrl, method ?? "GET", range ? { range } : {}, (up) => {
       const status = up.statusCode ?? 502;
       if (status >= 400) {
@@ -136,13 +158,17 @@ export class DirectRelay {
     upstream.end();
   }
 
-  /** Le direct a refusé : repli sur le serveur s'il n'a encore rien servi, sinon 502 (le moteur redemande la source). */
+  /** Le direct a refusé : repli sur le serveur s'il n'a encore rien servi ; sinon 502, et la réouverture lira le serveur. */
   private failed(entry: Entry, method: string | undefined, range: string | undefined, res: ServerResponse): void {
+    entry.mode = "server";
     if (entry.delivered) {
+      entry.cut = true;
+      this.stats.cuts++;
+      console.warn("[client-fetch] flux direct coupé en cours de lecture : la réouverture lira le serveur");
       res.writeHead(502).end();
+      this.onCut?.(entry.localUrl);
       return;
     }
-    entry.mode = "server";
     this.stats.fallbacks++;
     console.warn("[client-fetch] flux direct refusé : repli sur le serveur");
     this.pipeFrom(entry, "server", method, range, res);
@@ -166,6 +192,10 @@ export class DirectRelay {
       if (typeof value === "string") headers[name] = value;
     }
     res.writeHead(up.statusCode ?? 502, headers);
+    // L'amont meurt en plein corps : mpv le voit tout de suite (sinon il attend son délai de lecture, ~15 s).
+    up.once("close", () => {
+      if (!up.complete) res.destroy();
+    });
     up.pipe(res);
   }
 }
