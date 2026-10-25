@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
 import { useCollectionPlayback, type CollectionRef } from "../actions/useCollectionPlayback";
 import { rememberAlbumPreview } from "../data/albumPreview";
+import { useEntityIntent } from "../data/entityIntent";
 import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
 
@@ -40,6 +41,7 @@ const cardClass =
 export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum }) {
   const { t } = useTranslation("music");
   const target = entityTarget(album);
+  const intent = useEntityIntent("album", target);
   const year = album.year ? `${album.year} · ` : "";
   const content = (
     <>
@@ -58,7 +60,7 @@ export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum 
   );
   return target ? (
     // Un album hors bibliothèque : sa vue s'ouvre sur ce que la carte montre déjà (`albumPreview.ts`).
-    <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)}>
+    <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)} {...intent}>
       {content}
     </Link>
   ) : (
@@ -69,6 +71,7 @@ export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum 
 export const ArtistCard = memo(function ArtistCard({ artist }: { artist: MusicArtist }) {
   const { t } = useTranslation("music");
   const target = entityTarget(artist);
+  const intent = useEntityIntent("artist", target);
   const content = (
     <>
       <Artwork url={artist.imageUrl} kind="artist" round className="aspect-square w-full shadow-md" />
@@ -79,7 +82,7 @@ export const ArtistCard = memo(function ArtistCard({ artist }: { artist: MusicAr
     </>
   );
   return target ? (
-    <Link to={octavePaths.artist(target)} className={cardClass}>
+    <Link to={octavePaths.artist(target)} className={cardClass} {...intent}>
       {content}
     </Link>
   ) : (
