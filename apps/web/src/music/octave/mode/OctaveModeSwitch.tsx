@@ -11,8 +11,9 @@
  *   c'est `onExit`.
  *
  * INSTANTANÉ : le pouce glisse au clic (état optimiste), et l'on ne change de
- * page qu'une fois le module d'Octave en main — jamais d'écran vide entre les
- * deux. Le module se prépare dès le survol ou le focus.
+ * page qu'une fois le module d'Octave en main et son cache gardé relu (borné à
+ * 200 ms) — jamais d'écran vide entre les deux. Le module se prépare dès le
+ * survol ou le focus.
  *
  * `role="switch"` + `aria-checked` : annoncé « activé / désactivé ». Espace et
  * Entrée par le `<button>` natif ; cible de 50 × 36 px ; mouvement réduit :
@@ -20,6 +21,7 @@
  */
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./octaveModeSwitch.css";
@@ -37,6 +39,7 @@ const preload = () => void loadOctaveApp().catch(() => undefined);
 export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
   const { t } = useTranslation("music");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const mode = useOctaveMode();
   const inOctave = props.placement === "octave";
   // Dans Octave, la disponibilité est déjà acquise (sa porte l'a vérifiée).
@@ -58,13 +61,15 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
       return;
     }
     setOptimistic(true);
-    loadOctaveApp().then(
-      () => {
-        setOctaveMode(true);
-        navigate(OCTAVE_BASE_PATH);
-      },
-      () => setOptimistic(null),
-    );
+    loadOctaveApp()
+      .then((octave) => octave.warmOctaveCache(queryClient))
+      .then(
+        () => {
+          setOctaveMode(true);
+          navigate(OCTAVE_BASE_PATH);
+        },
+        () => setOptimistic(null),
+      );
   };
 
   const label = t("mode.switchLabel");

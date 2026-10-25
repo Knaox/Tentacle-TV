@@ -68,3 +68,6 @@ export function OctaveApp() {
 }
 
 export default OctaveApp;
+
+/** Préparer l'entrée (la bascule) : le cache gardé, lu avant le premier rendu. */
+export { warmOctaveCache } from "./data/persist/OctaveCacheBoundary";
