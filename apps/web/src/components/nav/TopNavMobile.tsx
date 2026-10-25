@@ -11,7 +11,7 @@ import { avatarRingStyleFor, getUserInfo } from "../userMenu/menuItems";
 import { useAccountFaceColor } from "../../profiles/face/useAccountFaceColor";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
 import { useOfflineMode } from "../../offline/useOfflineMode";
-import { OctaveEntryButton } from "../../music/octave/mode/OctaveEntry";
+import { OctaveModeSwitch } from "../../music/octave/mode/OctaveModeSwitch";
 
 interface TopNavMobileProps {
   showSearch?: boolean;
@@ -67,7 +67,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
 
           <div className="flex flex-shrink-0 items-center gap-2">
             {showSearch && <SearchLauncher variant="icon" />}
-            {!offline && <OctaveEntryButton compact />}
+            {!offline && <OctaveModeSwitch placement="tentacle" />}
             {!offline && <WatchTogetherButton />}
             <NotificationBell />
             <button

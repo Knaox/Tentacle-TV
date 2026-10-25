@@ -1,0 +1,98 @@
+/*
+ * Octave — la bascule du mode (`OctaveModeSwitch`). Le pouce porte le logo et
+ * GLISSE (`transform`) ; la piste allumée est un calque en fondu d'opacité —
+ * rien ne se repeint pendant le geste (règles « Coût GPU » de CLAUDE.md).
+ * Aucun verre : posée dans un groupe de verre de la barre, elle n'en ajoute
+ * pas un second (jamais de verre sur du verre).
+ *
+ * L'accent de la musique est le ROSE (docs/octave/IDENTITE.md) : la piste
+ * allumée prend la signature d'Octave (`--oc-gradient`, violet → rose, le rose
+ * en tête), recopiée en repli parce que la barre de Tentacle ne charge pas les
+ * jetons d'Octave (module à la demande). Le pouce reste blanc dans les deux
+ * thèmes : le glyphe y est d'encre éteint, rose allumé.
+ */
+
+.octave-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.octave-switch:focus-visible {
+  outline: none;
+}
+
+.octave-switch-track {
+  position: relative;
+  isolation: isolate;
+  flex-shrink: 0;
+  width: 50px;
+  height: 30px;
+  border-radius: var(--radius-pill, 9999px);
+  background: var(--fill-strong);
+  border: 1px solid var(--border-subtle);
+  transition: transform var(--duration-instant, 120ms) var(--ease-out);
+}
+
+.octave-switch-track::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--oc-gradient, linear-gradient(90deg, var(--brand) 0%, var(--brand-accent) 72%, var(--brand-accent-light) 100%));
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.octave-switch[aria-checked="true"] .octave-switch-track::before {
+  opacity: 1;
+}
+
+.octave-switch:hover .octave-switch-track {
+  border-color: var(--border-strong);
+}
+
+.octave-switch:active .octave-switch-track {
+  transform: scale(0.95);
+}
+
+.octave-switch:focus-visible .octave-switch-track {
+  box-shadow: 0 0 0 2px var(--border-focus);
+}
+
+/* ⚠️ `left: 0` : un absolu sans ancre horizontale garde sa position statique,
+ * et un `<button>` centre son contenu (leçon de `.ctl-switch-thumb`). */
+.octave-switch-thumb {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill, 9999px);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  color: #3d3249;
+  transform: translateX(2px);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.octave-switch[aria-checked="true"] .octave-switch-thumb {
+  color: var(--brand-accent);
+  transform: translateX(22px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .octave-switch-track,
+  .octave-switch-track::before,
+  .octave-switch-thumb {
+    transition: none;
+  }
+}

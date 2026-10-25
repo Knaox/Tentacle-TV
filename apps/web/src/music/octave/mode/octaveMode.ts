@@ -3,11 +3,15 @@
  * s'ouvre sur l'interface musique (`/octave`) et y revient au prochain
  * lancement ; éteint, l'interface d'avant, intacte.
  *
- * Préférence d'APPAREIL (une fenêtre, un navigateur) : `tentacle_octave_mode`.
+ * Préférence d'APPAREIL (une fenêtre, un navigateur) : `tentacle_octave_mode`
+ * — le mode où l'on est, gardé quand on quitte ; le lancement suit le réglage
+ * « Au démarrage, ouvrir » (`octaveStartup.ts`).
  * Clé de stockage : elle ne se renomme jamais.
  */
 
 import { useSyncExternalStore } from "react";
+import { startupWantsOctave } from "./octaveStartup";
+import { readOctaveStartup } from "./octaveStartupStore";
 
 export const OCTAVE_MODE_KEY = "tentacle_octave_mode";
 export const OCTAVE_BASE_PATH = "/octave";
@@ -22,7 +26,29 @@ function read(): boolean {
   }
 }
 
-let current = read();
+function persist(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(OCTAVE_MODE_KEY, "1");
+    else localStorage.removeItem(OCTAVE_MODE_KEY);
+  } catch {
+    /* stockage refusé : le mode vaut pour cette session seulement */
+  }
+}
+
+/**
+ * Décidé UNE fois, au chargement du module (= au lancement de l'app, ou au
+ * rechargement de la page) : le réglage « Au démarrage, ouvrir » appliqué au
+ * dernier mode. Le résultat devient le mode courant, donc le « dernier mode »
+ * du prochain lancement.
+ */
+function launchMode(): boolean {
+  const last = read();
+  const wanted = startupWantsOctave(readOctaveStartup(), last);
+  if (wanted !== last) persist(wanted);
+  return wanted;
+}
+
+let current = launchMode();
 
 export function isOctaveMode(): boolean {
   return current;
@@ -31,12 +57,7 @@ export function isOctaveMode(): boolean {
 export function setOctaveMode(on: boolean): void {
   if (on === current) return;
   current = on;
-  try {
-    if (on) localStorage.setItem(OCTAVE_MODE_KEY, "1");
-    else localStorage.removeItem(OCTAVE_MODE_KEY);
-  } catch {
-    /* stockage refusé : le mode vaut pour cette session seulement */
-  }
+  persist(on);
   for (const l of listeners) l();
 }
 

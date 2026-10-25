@@ -5,11 +5,12 @@
  */
 
 import { memo } from "react";
-import { Heart, Home, Library, ListMusic, LogOut, Search } from "lucide-react";
+import { Heart, Home, Library, ListMusic, Search } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Artwork } from "../components/Artwork";
 import { OctaveLogo } from "../components/OctaveLogo";
+import { OctaveModeSwitch } from "../mode/OctaveModeSwitch";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import { octavePaths } from "../octavePaths";
 
@@ -73,15 +74,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
           ))}
         </ul>
       </div>
-      <button
-        type="button"
-        onClick={onExit}
-        title={t("mode.exitHint")}
-        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-content-tertiary hover:bg-fill-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-      >
-        <LogOut className="h-5 w-5" aria-hidden />
-        {t("mode.exit")}
-      </button>
+      <OctaveModeSwitch placement="octave" onExit={onExit} showLabel className="w-full justify-between rounded-lg px-3" />
     </nav>
   );
 });
