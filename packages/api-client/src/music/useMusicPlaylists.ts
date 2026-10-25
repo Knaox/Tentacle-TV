@@ -5,6 +5,7 @@
  * telle que Jellyfin la tient — remplace l'optimiste ; un refus le défait.
  */
 
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { MusicPlaylistDetail, MusicTrack } from "@tentacle-tv/shared/music";
 import { musicApi } from "./musicApi";
@@ -30,6 +31,18 @@ export function useMusicPlaylist(id: string | null | undefined) {
     enabled: capable && !!id,
     staleTime: 30_000,
   });
+}
+
+/**
+ * Lire une playlist À LA DEMANDE (avant un ajout : le titre y est-il déjà ? ; avant un retrait depuis le lecteur) :
+ * le cache s'il est frais, sinon une requête — sans monter une requête par playlist dans chaque menu.
+ */
+export function useMusicPlaylistReader(): (id: string) => Promise<MusicPlaylistDetail> {
+  const qc = useQueryClient();
+  return useCallback(
+    (id: string) => qc.fetchQuery({ queryKey: musicKeys.playlist(id), queryFn: ({ signal }) => musicApi.playlist(id, signal), staleTime: 30_000 }),
+    [qc],
+  );
 }
 
 type Edit = (entries: MusicPlaylistDetail["entries"]) => MusicPlaylistDetail["entries"];
