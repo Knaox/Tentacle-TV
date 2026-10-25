@@ -4,18 +4,17 @@
  */
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ListMusic, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCreateMusicPlaylist, useMusicPlaylists } from "@tentacle-tv/api-client";
 import { useToast } from "../../../contexts/ToastContext";
 import { CardGrid, PlaylistCard } from "../components/Cards";
-import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates";
+import { CardsSkeleton, EMPTY_ACTION_CLASS, EmptyState, ErrorState } from "../components/ViewStates";
 import { octavePaths } from "../octavePaths";
 
-function NewPlaylist() {
+function NewPlaylist({ open, setOpen }: { open: boolean; setOpen: (open: boolean) => void }) {
   const { t } = useTranslation("music");
-  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const { mutateAsync: createPlaylist } = useCreateMusicPlaylist();
@@ -27,7 +26,7 @@ function NewPlaylist() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex cursor-pointer items-center gap-2 rounded-full bg-cta-primary-bg px-4 py-2 text-sm font-semibold text-cta-primary-fg hover:bg-cta-primary-bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+        className="octave-brand-fill flex h-10 cursor-pointer items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-md transition-transform duration-150 hover:scale-[1.03] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus motion-reduce:transform-none"
       >
         <Plus className="h-4 w-4" />
         {t("playlist.new")}
@@ -66,10 +65,10 @@ function NewPlaylist() {
         placeholder={t("playlist.namePlaceholder")}
         className="h-10 w-64 rounded-full border border-line-subtle bg-fill-subtle px-4 text-sm text-content-primary placeholder:text-content-quaternary focus:border-line-focus focus:outline-none"
       />
-      <button type="submit" disabled={!name.trim() || busy} className="h-10 cursor-pointer rounded-full bg-cta-primary-bg px-4 text-sm font-semibold text-cta-primary-fg disabled:opacity-50">
+      <button type="submit" disabled={!name.trim() || busy} className="octave-brand-fill h-10 cursor-pointer rounded-full px-5 text-sm font-semibold disabled:cursor-default disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
         {t("playlist.create")}
       </button>
-      <button type="button" onClick={() => setOpen(false)} className="h-10 cursor-pointer rounded-full px-3 text-sm font-semibold text-content-tertiary hover:text-content-primary">
+      <button type="button" onClick={() => setOpen(false)} className="h-10 cursor-pointer rounded-full px-3 text-sm font-semibold text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus">
         {t("playlist.cancel")}
       </button>
     </form>
@@ -79,15 +78,31 @@ function NewPlaylist() {
 export function PlaylistsView() {
   const { t } = useTranslation("music");
   const playlists = useMusicPlaylists();
+  const [creating, setCreating] = useState(false);
   return (
     <div className="flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4 px-2">
         <h1 className="text-3xl font-black tracking-tight text-content-primary">{t("nav.playlists")}</h1>
-        <NewPlaylist />
+        <NewPlaylist open={creating} setOpen={setCreating} />
       </div>
       {playlists.isPending && <CardsSkeleton />}
       {playlists.isError && <ErrorState onRetry={() => void playlists.refetch()} />}
-      {playlists.data?.length === 0 && <EmptyState>{t("library.empty")}</EmptyState>}
+      {playlists.data?.length === 0 && (
+        <EmptyState
+          icon={ListMusic}
+          title={t("views.playlistsEmptyTitle")}
+          action={
+            creating ? undefined : (
+              <button type="button" onClick={() => setCreating(true)} className={EMPTY_ACTION_CLASS}>
+                <Plus className="h-4 w-4" aria-hidden />
+                {t("playlist.new")}
+              </button>
+            )
+          }
+        >
+          {t("views.playlistsEmptyHint")}
+        </EmptyState>
+      )}
       {playlists.data && playlists.data.length > 0 && (
         <CardGrid>
           {playlists.data.map((p) => (

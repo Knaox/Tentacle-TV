@@ -5,10 +5,11 @@
  */
 
 import { useMemo } from "react";
+import { ListMusic } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { queueActions } from "@tentacle-tv/shared/octave";
-import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
+import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { useExternalPlaylist } from "../data/useExternalPlaylist";
@@ -44,7 +45,7 @@ export function ExternalPlaylistView() {
         meta={
           <>
             {data.owner && <span className="font-semibold text-content-primary">{data.owner}</span>}
-            {data.owner && <span aria-hidden>·</span>}
+            {data.owner && <Dot />}
             <span>{meta}</span>
           </>
         }
@@ -55,7 +56,7 @@ export function ExternalPlaylistView() {
       />
       <div className="px-2 md:px-6">
         {rows.length === 0 ? (
-          <EmptyState>{t("library.empty")}</EmptyState>
+          <EmptyState icon={ListMusic} title={t("playlist.empty")} />
         ) : (
           <TrackList rows={rows} contextId={contextId} showArtwork showAlbum label={data.title} showHeader />
         )}
