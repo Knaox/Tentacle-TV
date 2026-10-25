@@ -93,6 +93,8 @@ export * from "./settingsCatalog";
 export * from "./userRights/userRightsContract";
 export * from "./userRights/userRightsRoutes";
 export * from "./userRights/userRightsPatch";
+// « Accès à Octave » : le droit Tentacle d'un compte au mode musique (miroir backend, `octave.rights`).
+export * from "./octaveRights/octaveRightsContract";
 // Supprimer des titres de la bibliothèque : routes, lots, droits lus dans la
 // politique Jellyfin du compte (miroir backend, docs/DROITS-UTILISATEURS.md § 9.7).
 export * from "./libraryDelete/libraryDeleteContract";
