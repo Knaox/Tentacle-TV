@@ -86,3 +86,42 @@ export function forgetSavedOctavePage(): void {
     /* rien à oublier */
   }
 }
+
+/**
+ * Le défilement à rejouer, une fois par chargement : `undefined` pas encore lu,
+ * un nombre EN ATTENTE pour `pendingPath`, `null` rien (ou fait). Il n'est
+ * consommé que par le rejeu réussi, un geste de l'utilisateur ou le délai —
+ * jamais par un démontage (le double montage de StrictMode le perdait).
+ */
+let pending: number | null | undefined;
+let pendingPath: string | null = null;
+
+/** Au premier montage du chargement : la cible pour CETTE page (lue une seule fois). */
+export function beginScrollResume(owner: string | null, path: string, basePath: string, now: number = Date.now()): void {
+  if (pending !== undefined) return;
+  pending = resumeScroll(savedOctavePageAtLaunch(), owner, now, basePath, path);
+  pendingPath = path;
+}
+
+/** Le défilement encore à rejouer sur `path`, ou null. */
+export function pendingScrollFor(path: string): number | null {
+  return typeof pending === "number" && pendingPath === path ? pending : null;
+}
+
+/** Le rejeu a eu lieu (ou n'aura plus lieu : geste, délai, autre page). */
+export function settleScrollResume(): void {
+  pending = null;
+}
+
+/** Ce qu'on écrit pour `path` : la cible tant que son rejeu attend (jamais le 0 d'avant le contenu), sinon `current`. */
+export function scrollToSave(path: string, current: number): number {
+  return pendingScrollFor(path) ?? Math.round(current);
+}
+
+/** Pour les tests. */
+export function resetScrollResumeForTests(): void {
+  pending = undefined;
+  pendingPath = null;
+  atLaunch = undefined;
+  reached = false;
+}

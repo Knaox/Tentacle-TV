@@ -1,5 +1,16 @@
-import { describe, expect, it } from "vitest";
-import { PAGE_RESUME_MAX_AGE_MS, isOctavePath, resumePath, resumeScroll, type SavedOctavePage } from "./pageResume";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  PAGE_RESUME_MAX_AGE_MS,
+  beginScrollResume,
+  isOctavePath,
+  pendingScrollFor,
+  resetScrollResumeForTests,
+  resumePath,
+  resumeScroll,
+  scrollToSave,
+  settleScrollResume,
+  type SavedOctavePage,
+} from "./pageResume";
 
 /** Octave — la page où l'on était : rouverte telle quelle, pour la même identité seulement. */
 
@@ -38,5 +49,35 @@ describe("le défilement rejoué", () => {
     expect(resumeScroll(saved(), OWNER, NOW, BASE, "/octave")).toBeNull();
     expect(resumeScroll(saved({ scrollTop: 0 }), OWNER, NOW, BASE, "/octave/album/a1")).toBeNull();
     expect(resumeScroll(saved(), "|user-2", NOW, BASE, "/octave/album/a1")).toBeNull();
+  });
+});
+
+describe("le rejeu du défilement, d'un montage à l'autre", () => {
+  afterEach(() => {
+    resetScrollResumeForTests();
+    vi.unstubAllGlobals();
+  });
+  const stub = (page: SavedOctavePage) => vi.stubGlobal("localStorage", { getItem: (k: string) => (k === "tentacle_octave_page" ? JSON.stringify(page) : null) });
+
+  it("double montage (StrictMode) : la cible survit au démontage, et la sauvegarde ne l'écrase jamais par 0", () => {
+    stub(saved({ path: "/octave", scrollTop: 500, savedAt: Date.now() - 1_000 }));
+    beginScrollResume(OWNER, "/octave", BASE); // 1er montage
+    expect(scrollToSave("/octave", 0)).toBe(500); // sauvegarde du montage, contenu pas encore là
+    beginScrollResume(OWNER, "/octave", BASE); // démontage puis 2e montage : relu ? non, gardé
+    expect(pendingScrollFor("/octave")).toBe(500);
+    settleScrollResume(); // rejeu fait
+    expect(pendingScrollFor("/octave")).toBeNull();
+    expect(scrollToSave("/octave", 497.6)).toBe(498);
+  });
+
+  it("une autre page n'hérite jamais de la cible ; rien de gardé, rien à rejouer", () => {
+    stub(saved({ path: "/octave", scrollTop: 500, savedAt: Date.now() - 1_000 }));
+    beginScrollResume(OWNER, "/octave", BASE);
+    expect(pendingScrollFor("/octave/library")).toBeNull();
+    expect(scrollToSave("/octave/library", 12)).toBe(12);
+    resetScrollResumeForTests();
+    vi.stubGlobal("localStorage", { getItem: () => null });
+    beginScrollResume(OWNER, "/octave", BASE);
+    expect(pendingScrollFor("/octave")).toBeNull();
   });
 });

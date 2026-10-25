@@ -13,7 +13,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { OCTAVE_BASE_PATH } from "../mode/octaveMode";
 import { octaveOwner } from "./octaveOwner";
-import { markOctavePageReached, resumeScroll, savedOctavePageAtLaunch, writeSavedOctavePage } from "./pageResume";
+import { beginScrollResume, markOctavePageReached, pendingScrollFor, scrollToSave, settleScrollResume, writeSavedOctavePage } from "./pageResume";
 
 const MAIN_ID = "octave-main";
 /** Un défilement s'écrit une fois au repos. */
@@ -21,13 +21,6 @@ const SAVE_DELAY_MS = 300;
 /** La page gardée a ce temps pour devenir assez haute (ses données arrivent du cache, puis du réseau). */
 const RESTORE_WINDOW_MS = 3_000;
 const USER_GESTURES = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
-
-let restored = false;
-
-/** Pour les tests. */
-export function resetPageResumeForTests(): void {
-  restored = false;
-}
 
 function main(): HTMLElement | null {
   return document.getElementById(MAIN_ID);
@@ -39,29 +32,35 @@ function main(): HTMLElement | null {
  * où le contenu arrive — aucun saut visible) ; une remise en haut par la
  * coquille (page neuve) est corrigée dans la même image (évènement `scroll`,
  * avant la peinture). Jamais contre un geste de l'utilisateur, au plus
- * `RESTORE_WINDOW_MS`. Rend l'arrêt.
+ * `RESTORE_WINDOW_MS`. `settle` : le rejeu a eu lieu (ou n'aura plus lieu).
+ * Rend l'arrêt (démontage : rien n'est consommé).
  */
-function restoreWhenTall(el: HTMLElement, wanted: number): () => void {
+function restoreWhenTall(el: HTMLElement, wanted: number, settle: () => void): () => void {
   let done = false;
   const place = () => {
-    if (done || Math.abs(el.scrollTop - wanted) < 2 || el.scrollHeight - el.clientHeight < wanted - 1) return;
-    el.scrollTop = wanted;
+    if (done || el.scrollHeight - el.clientHeight < wanted - 1) return;
+    if (Math.abs(el.scrollTop - wanted) >= 2) el.scrollTop = wanted;
+    settle();
   };
   const resize = new ResizeObserver(place);
   const watch = () => {
     for (const child of Array.from(el.children)) resize.observe(child);
   };
   const children = new MutationObserver(watch);
-  const timer = setTimeout(() => stop(), RESTORE_WINDOW_MS);
+  const giveUp = () => {
+    settle();
+    stop();
+  };
+  const timer = setTimeout(giveUp, RESTORE_WINDOW_MS);
   function stop() {
     done = true;
     resize.disconnect();
     children.disconnect();
     clearTimeout(timer);
     el.removeEventListener("scroll", place);
-    for (const type of USER_GESTURES) el.removeEventListener(type, stop);
+    for (const type of USER_GESTURES) el.removeEventListener(type, giveUp);
   }
-  for (const type of USER_GESTURES) el.addEventListener(type, stop, { passive: true });
+  for (const type of USER_GESTURES) el.addEventListener(type, giveUp, { passive: true });
   el.addEventListener("scroll", place, { passive: true });
   children.observe(el, { childList: true });
   watch();
@@ -76,28 +75,25 @@ export function OctavePageResume() {
   pathRef.current = path;
   const owner = useRef(octaveOwner());
 
-  // Le défilement de la page gardée, une fois par chargement de l'application.
-  const target = useRef<number | null>(null);
-  if (!restored && target.current === null) {
-    target.current = resumeScroll(savedOctavePageAtLaunch(), owner.current, Date.now(), OCTAVE_BASE_PATH, path);
-  }
+  // Le défilement de la page gardée : lu au premier montage du chargement, pour SA page seulement.
+  beginScrollResume(owner.current, path, OCTAVE_BASE_PATH);
   useLayoutEffect(() => {
     markOctavePageReached();
-    if (restored) return;
-    restored = true;
-    const wanted = target.current;
     const el = main();
+    const wanted = pendingScrollFor(path);
     if (wanted === null || !el) return;
-    return restoreWhenTall(el, wanted);
-  }, []);
+    return restoreWhenTall(el, wanted, settleScrollResume);
+  }, [path]);
 
-  // L'écriture : la page à chaque changement, le défilement au repos, la sortie de page.
+  // L'écriture : la page à chaque changement, le défilement au repos, la sortie de page. Tant que le
+  // rejeu est en attente sur cette page, c'est SA cible qu'on garde (jamais le 0 d'avant le contenu).
   useEffect(() => {
+    if (pendingScrollFor(path) === null) settleScrollResume(); // une autre page : plus rien à rejouer
     const save = () => {
       if (owner.current === null) return;
-      writeSavedOctavePage({ owner: owner.current, path: pathRef.current, scrollTop: Math.round(main()?.scrollTop ?? 0), savedAt: Date.now() });
-    };
-    save();
+      const scrollTop = scrollToSave(pathRef.current, main()?.scrollTop ?? 0);
+      writeSavedOctavePage({ owner: owner.current, path: pathRef.current, scrollTop, savedAt: Date.now() });
+    };    save();
     const el = main();
     let timer: ReturnType<typeof setTimeout> | null = null;
     const onScroll = () => {
