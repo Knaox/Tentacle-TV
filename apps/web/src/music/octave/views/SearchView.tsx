@@ -62,6 +62,12 @@ export function SearchView() {
     },
     [pause, remember, setParams],
   );
+  // Le ✕ du champ ramène à l'état d'avant la frappe ; le retour arrière retrouve la recherche quittée.
+  const clear = useCallback(() => {
+    pause.cancel();
+    setDraft("");
+    if (query) setParams({}, { replace: false });
+  }, [pause, query, setParams]);
   // Une puce ne crée pas d'entrée d'historique : le retour arrière ramène à la recherche précédente.
   const onFilter = useCallback(
     (next: SearchFilter) => setParams(next === "all" ? { q: query } : { q: query, f: next }, { replace: true }),
@@ -71,7 +77,7 @@ export function SearchView() {
   return (
     <div className="flex flex-col gap-8 px-2 pb-10 pt-6 md:px-6">
       <div className="sticky top-0 z-10 -mx-2 bg-surface-0 px-2 pb-2 pt-1 md:-mx-6 md:px-6">
-        <OctaveSearchBox value={draft} onChange={setDraft} onSubmit={submit} suggestions={suggestions} onForget={forget} />
+        <OctaveSearchBox value={draft} onChange={setDraft} onSubmit={submit} suggestions={suggestions} onForget={forget} onClear={clear} />
         {/* Place réservée : la barre d'attente n'ajoute ni ne retire de hauteur. */}
         <div aria-hidden className="mt-2 h-0.5 max-w-2xl overflow-hidden rounded-full">
           {preparing && <div className="h-full w-1/4 animate-loading-bar rounded-full bg-brand motion-reduce:animate-none" />}

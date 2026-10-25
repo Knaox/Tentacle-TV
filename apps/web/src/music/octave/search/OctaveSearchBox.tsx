@@ -3,9 +3,17 @@
  * seulement, aucune recherche complète) ; Entrée, « Rechercher » ou une
  * suggestion choisie lancent la recherche. Combobox ARIA comme l'omnibox de
  * Tentacle : le champ garde le focus, les flèches parcourent la liste
- * (`aria-activedescendant`), Échap la ferme. La liste n'existe que montrée
- * (son flou d'arrière-plan ne coûte rien quand elle est fermée). Et comme
- * l'omnibox, la barre COMPLÈTE : la suite de la première suggestion qui
+ * (`aria-activedescendant`), Échap la ferme. Barre vide, AUCUNE liste : les
+ * récentes et le « déjà écouté » sont dans la page (`SearchHome`).
+ *
+ * La liste flottante est un verre de régime SURFACE (`useGlassControl`, comme
+ * l'omnibox) : matériau épais, UN ton mesuré à l'ouverture et tenu, textes
+ * accordés. Sans lui, `.lg-menu` prenait le verre fin (voile 0,07) sous un
+ * flou épais, et le grand titre de la page passait en traînée blanche derrière
+ * les suggestions (« le flou pas très beau », O5, 25/10). Hors verre natif :
+ * le fond à 0,95 seul — un `backdrop-filter` derrière lui ne floutait rien de
+ * visible et coûtait une passe de composition. La liste n'existe que montrée.
+ * Comme l'omnibox, la barre COMPLÈTE : la suite de la première suggestion qui
  * commence par la frappe s'inscrit en gris après le curseur (⇥ ou → l'accepte).
  */
 
@@ -13,6 +21,7 @@ import { memo, useCallback, useState, type KeyboardEvent } from "react";
 import { Clock, Disc3, Music, Search, User, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { inlineCompletion } from "@tentacle-tv/shared";
+import { useGlassControl } from "../../../components/ui/glass/useGlassControl";
 import { moveActive, type OctaveSuggestion } from "./suggestionModel";
 
 const LIST_ID = "octave-search-suggestions";
@@ -25,12 +34,15 @@ interface OctaveSearchBoxProps {
   onSubmit: (text: string) => void;
   suggestions: readonly OctaveSuggestion[];
   onForget: (text: string) => void;
+  /** Le ✕ du champ : vider la barre ET revenir à l'état d'avant la frappe. */
+  onClear: () => void;
 }
 
-export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, onSubmit, suggestions, onForget }: OctaveSearchBoxProps) {
+export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, onSubmit, suggestions, onForget, onClear }: OctaveSearchBoxProps) {
   const { t } = useTranslation("music");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
+  const glass = useGlassControl<HTMLUListElement>({ lens: false, scale: "surface" });
   const shown = open && suggestions.length > 0;
   const activeId = shown && active >= 0 && active < suggestions.length ? `${LIST_ID}-${active}` : undefined;
   // La suite proposée : jamais une réécriture de ce qui est tapé, seulement ce qui le prolonge.
@@ -108,8 +120,8 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
-              onChange("");
-              setOpen(true);
+              setActive(-1);
+              onClear();
             }}
             aria-label={t("search.clear")}
             className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-content-tertiary hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
@@ -119,6 +131,8 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
         )}
         {shown && (
           <ul
+            ref={glass.ref}
+            {...glass.props}
             id={LIST_ID}
             role="listbox"
             aria-label={t("search.suggestions")}
@@ -126,14 +140,14 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
             onMouseDown={(e) => e.preventDefault()}
             className="lg-menu absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden p-1.5"
             style={{
+              ...glass.props.style,
               background: "var(--surface-dropdown)",
               border: "1px solid var(--border-subtle)",
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--shadow-dropdown)",
-              backdropFilter: "blur(var(--blur-dropdown))",
-              WebkitBackdropFilter: "blur(var(--blur-dropdown))",
             }}
           >
+            {glass.layers}
             {suggestions.map((s, i) => {
               const Icon = ICONS[s.kind];
               return (

@@ -55,23 +55,22 @@ function textOf(s: SuggestionInput): string {
 
 export function buildSuggestions({ draft, recents, library, extension }: SuggestionSources): OctaveSuggestion[] {
   const words = searchTokens(draft);
+  // Barre vide : AUCUNE liste. Les récentes et le « déjà écouté » sont DANS la page (`SearchHome`) — une
+  // liste flottante ouverte dès l'arrivée recouvrait le titre de la page et le floutait (O5, 25/10).
+  if (words.length === 0) return [];
   const seen = new Set<string>();
   const byKind = new Map<SuggestionKind, OctaveSuggestion[]>(KIND_ORDER.map((k) => [k, []]));
   const add = (kind: SuggestionKind, title: string, subtitle: string | null, text: string) => {
     const folded = searchTokens(text).join(" ");
     const bucket = byKind.get(kind);
-    // Barre vide : seulement les récentes, jusqu'au maximum.
-    const cap = words.length === 0 ? SUGGESTIONS_MAX : PER_KIND[kind];
-    if (!folded || seen.has(folded) || !bucket || bucket.length >= cap) return;
+    if (!folded || seen.has(folded) || !bucket || bucket.length >= PER_KIND[kind]) return;
     seen.add(folded);
     bucket.push({ id: `${kind}:${folded}`, kind, text, title, subtitle });
   };
   for (const r of recents) if (matchesDraft(words, r)) add("recent", r, null, r);
-  if (words.length > 0) {
-    // La bibliothèque d'abord : ce qu'on a déjà, puis ce que l'extension propose.
-    for (const s of [...library, ...extension]) {
-      if (matchesDraft(words, `${s.title} ${s.subtitle ?? ""}`)) add(s.kind, s.title, s.subtitle, textOf(s));
-    }
+  // La bibliothèque d'abord : ce qu'on a déjà, puis ce que l'extension propose.
+  for (const s of [...library, ...extension]) {
+    if (matchesDraft(words, `${s.title} ${s.subtitle ?? ""}`)) add(s.kind, s.title, s.subtitle, textOf(s));
   }
   return KIND_ORDER.flatMap((k) => byKind.get(k) ?? []).slice(0, SUGGESTIONS_MAX);
 }
