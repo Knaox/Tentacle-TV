@@ -25,15 +25,22 @@ function useHasPlayableKept(): boolean | null {
   return kept.tracks.some((k) => k.status === "complete");
 }
 
-function KeptOnlyGate({ children }: { children: ReactElement }) {
+/**
+ * TOUJOURS rendue, active ou non : la place de la route dans l'arbre ne change
+ * jamais au passage hors ligne. Ajoutée seulement hors ligne, elle faisait
+ * REMONTER tout Octave à la coupure du serveur — lecteur compris : la musique
+ * gardée s'arrêtait au moment précis où elle devait continuer (vu au banc).
+ */
+function KeptOnlyGate({ active, children }: { active: boolean; children: ReactElement }) {
   const has = useHasPlayableKept();
+  if (!active) return children;
   if (has === null) return null;
   return has ? children : <Navigate to="/" replace />;
 }
 
 /** La route d'Octave dans `App.tsx` : en ligne telle quelle ; hors ligne, seulement avec de la musique gardée. */
 export function octaveOfflineAware(offlineMode: boolean, element: ReactElement): ReactElement {
-  return offlineMode ? <KeptOnlyGate>{element}</KeptOnlyGate> : element;
+  return <KeptOnlyGate active={offlineMode}>{element}</KeptOnlyGate>;
 }
 
 /** La disponibilité d'Octave : hors ligne, ce qui est gardé sur l'appareil la donne. */

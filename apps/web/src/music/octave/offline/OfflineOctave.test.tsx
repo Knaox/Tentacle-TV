@@ -18,7 +18,7 @@ vi.mock("react-router-dom", () => ({
   Routes: (props: { children: ReactNode }) => props,
 }));
 
-import { OfflineOctaveRoutes } from "./OfflineOctave";
+import { OfflineOctaveRoutes, octaveOfflineAware } from "./OfflineOctave";
 
 type Props = { children?: ReactNode; path?: string; element?: ReactElement<{ to?: string }> };
 
@@ -40,5 +40,14 @@ describe("OfflineOctaveRoutes", () => {
     h.offline = false;
     const tree = OfflineOctaveRoutes({ children: "en ligne" });
     expect(isValidElement<Props>(tree) && tree.props.children).toBe("en ligne");
+  });
+});
+
+describe("octaveOfflineAware", () => {
+  it("la même enveloppe en ligne et hors ligne : la coupure du serveur ne remonte pas Octave (ni son lecteur)", () => {
+    const app = <i />;
+    const online = octaveOfflineAware(false, app);
+    const offline = octaveOfflineAware(true, app);
+    expect(isValidElement(online) && isValidElement(offline) && online.type === offline.type).toBe(true);
   });
 });
