@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { TentacleApiError, appConfigQuery, useJellyfinClient } from "@tentacle-tv/api-client";
-import { pickerStayState, resolveServerCapabilities, type PickerProfilesDto } from "@tentacle-tv/shared";
+import { pickerStayState, resolveServerCapabilities, type PickerProfileDto, type PickerProfilesDto } from "@tentacle-tv/shared";
 import { accountUserId, readActiveProfile } from "../../auth/profileSession";
 import { endProfileSession, readPickerRequest } from "../../auth/profileEnded";
 import { dropAllSessions } from "../../auth/dropSessions";
@@ -18,6 +18,10 @@ import { ProfileLaunchScreen } from "./ProfileLaunchScreen";
 import { forgetStayOnDevice, readStayOnDevice, readStayOnThisServer } from "./stayOnDevice";
 import { LaunchSplash } from "./LaunchSplash";
 import { publishStartupWindow, usePublishStartupWindow } from "../../startup/startupStore";
+import { octaveGateStep } from "../../music/octave/mode/octaveLaunch";
+import { isTentacleHeld } from "../../music/octave/mode/octaveLaunchStore";
+import { OctaveLaunchBackdrop } from "../../music/octave/mode/OctaveLaunchBackdrop";
+import { OctavePinSheet } from "../../music/octave/profiles/OctavePinSheet";
 
 /**
  * « Qui regarde ? » à l'ouverture du BUREAU et du NAVIGATEUR — la porte qu'`App.tsx` consulte
@@ -37,8 +41,11 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
   const queryClient = useQueryClient();
   const client = useJellyfinClient();
   const navigate = useNavigate();
-  const [gate, setGate] = useState<GateState>(() => initialState(authed));
   const [initialListing] = useState(() => readLaunchMirror()?.listing ?? null);
+  // Lancement en Octave : jamais le sélecteur (sauf la sécurité) — l'identité gardée, ou la feuille de son code.
+  const [initial] = useState(() => octaveInitial(initialState(authed), initialListing));
+  const [gate, setGate] = useState<GateState>(initial.gate);
+  const [octavePin, setOctavePin] = useState<PickerProfileDto | null>(initial.pin);
   const gateRef = useRef(gate);
   gateRef.current = gate;
   const eligible = useRef(authed);
@@ -83,7 +90,10 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
     const step = afterFresh(gateRef.current, answer, late);
     if (step.logout) logout();
     if (step.endProfile && endProfileSession("ended")) return;
-    setGate((current) => ({ ...current, phase: step.phase }));
+    const { heldProfileId, stay } = gateRef.current;
+    const octave = octaveGateStep(step.phase, answer.kind === "listing" ? answer.listing : null, heldProfileId, stay, Date.now(), isTentacleHeld());
+    setOctavePin(octave.pinProfile);
+    setGate((current) => (octave.opened ? { ...current, phase: "app", mode: "verify" } : { ...current, phase: octave.phase }));
   }, [logout]);
 
   const check = useCallback(() => {
@@ -95,17 +105,43 @@ export function useProfileLaunchGate(authed: boolean): ReactElement | null {
     if (eligible.current) check();
   }, [check]);
 
+  // La feuille du code (lancement en Octave) : son propre profil s'ouvre sans rechargement ; sinon la page repart.
+  const onOctaveOpened = useCallback((result: "stay" | "reload") => {
+    if (result !== "stay") return;
+    setOctavePin(null);
+    setGate((current) => ({ ...current, phase: "app", mode: "verify" }));
+  }, []);
+
   const onDone = useCallback((landing?: string) => {
     setGate((current) => ({ ...current, phase: "app", mode: "verify" }));
     if (landing) navigate(landing);
   }, [navigate]);
 
   if (!authed || gate.phase === "app") return null;
+  if (octavePin) {
+    return (
+      <>
+        <OctaveLaunchBackdrop />
+        <OctavePinSheet profile={octavePin} onOpened={onOctaveOpened} onStale={check} />
+      </>
+    );
+  }
   if (gate.phase === "picker") {
     return <ProfileLaunchScreen initialListing={initialListing} ended={gate.requested} onDone={onDone} onAccountLost={logout} />;
   }
   if (gate.phase === "error") return <ErrorScreen onRetry={check} />;
-  return <LaunchSplash />;
+  return isTentacleHeld() ? <OctaveLaunchBackdrop /> : <LaunchSplash />;
+}
+
+/**
+ * Le lancement en Octave, d'après le miroir : le sélecteur devient l'identité
+ * gardée, ou la feuille de son code. Ouverte sur la foi du miroir, la porte
+ * reste « late » : la réponse fraîche, dans l'attente bornée, peut encore
+ * demander le code (posé ailleurs depuis), comme hors d'Octave.
+ */
+function octaveInitial(gate: GateState, listing: PickerProfilesDto | null): { gate: GateState; pin: PickerProfileDto | null } {
+  const step = octaveGateStep(gate.phase, listing, gate.heldProfileId, gate.stay, Date.now(), isTentacleHeld());
+  return { gate: step.opened ? { ...gate, phase: "app", mode: "late" } : gate, pin: step.pinProfile };
 }
 
 /** La source de la première fenêtre du démarrage que tient cette porte. */

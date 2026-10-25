@@ -8,7 +8,7 @@ import { usePickFlow, type PickFlow } from "../../../profiles/pick/usePickFlow";
 import { commitPick, type CommitResult } from "../../../profiles/switch/commitPick";
 import { pickerModelOf } from "../../../profiles/launch/pickerModel";
 import type { PinPadModel } from "../../../profiles/picker/pickerTypes";
-import { useWatchTogether } from "../../../watchTogether/WatchTogetherProvider";
+import { useWatchTogetherOptional } from "@tentacle-tv/api-client";
 
 /**
  * Octave — ouvrir un profil de la famille SANS quitter la musique : le même
@@ -44,12 +44,15 @@ export function useOctavePick({ profiles, onOpened, onStale, landing }: OctavePi
   const { t, i18n } = useTranslation("profilePicker");
   const client = useJellyfinClient();
   const queryClient = useQueryClient();
-  const { isInGroup, actions } = useWatchTogether();
+  // Au démarrage (D6), la feuille paraît AVANT l'application : aucun Watch Together monté, aucun groupe à quitter.
+  const watchTogether = useWatchTogetherOptional();
+  const isInGroup = watchTogether?.isInGroup ?? false;
+  const actions = watchTogether?.actions;
 
   const onPicked = useCallback(async (picked: PickedProfileDto) => {
     const result = await commitPick(picked, {
       landing: landing ?? currentLanding(),
-      leaveGroup: isInGroup ? () => actions.leave() : undefined,
+      leaveGroup: isInGroup && actions ? () => actions.leave() : undefined,
       arrival: false,
     });
     onOpened?.(result);
