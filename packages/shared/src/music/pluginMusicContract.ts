@@ -19,7 +19,7 @@ import type { PlaybackSource } from "./musicPlayback";
 export interface PluginMusicManifest {
   /** 1 · Recherche — GET ?q=&limit=&cursor= → `ExternalMusicSearchPage`. */
   search: string;
-  /** 2 · Source de lecture — POST { ids } → `ExternalSourcesResponse`. */
+  /** 2 · Source de lecture — POST `ExternalSourcesRequest` → `ExternalSourcesResponse`. */
   resolve: string;
   /** 2 · Anticipation — POST `MusicPrefetchRequest` → 204. Jamais bloquant. */
   prefetch?: string;
@@ -136,6 +136,17 @@ export interface ExternalMusicSearchPage {
   top?: ExternalMusicTop | null;
   /** Les playlists hors bibliothèque (un client d'avant les ignore). */
   playlists?: ExternalMusicPlaylist[];
+}
+
+/**
+ * 2 · La demande de sources. `intent` (additif) : `"next"` quand le lecteur
+ * PRÉCHARGE le titre suivant de sa file (du fond : l'extension le fait passer
+ * après les gestes) ; absent : un geste — un clic —, comme avant. Une extension
+ * d'avant l'ignore.
+ */
+export interface ExternalSourcesRequest {
+  ids: string[];
+  intent?: "next";
 }
 
 /** 2 · Une source par identifiant demandé ; absent = pas de source (le client passe au suivant). */

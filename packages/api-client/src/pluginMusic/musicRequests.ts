@@ -16,6 +16,7 @@ import type {
   PendingMusicResponse,
   PlaybackSource,
   PrefetchIntent,
+  ExternalSourcesRequest,
 } from "@tentacle-tv/shared/music";
 import { tentacleApiFetch } from "../hooks/usePreferences";
 import { musicRouteUrl, type MusicProvider } from "./musicProvider";
@@ -39,8 +40,10 @@ export async function resolveMusicSources(provider: MusicProvider, ids: readonly
 /** La source d'UN titre ; sans source parce que le budget de l'extension est atteint, le délai à attendre (`retry`). */
 export type MusicSourceOutcome = { source: PlaybackSource } | { retryAfterMs: number } | null;
 
-export async function resolveMusicSource(provider: MusicProvider, id: string, signal?: AbortSignal): Promise<MusicSourceOutcome> {
-  const raw = await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post({ ids: [id] }, signal));
+/** `intent: "next"` : le lecteur précharge le suivant de sa file (du fond pour l'extension) ; absent : un geste. */
+export async function resolveMusicSource(provider: MusicProvider, id: string, signal?: AbortSignal, intent?: "next"): Promise<MusicSourceOutcome> {
+  const body: ExternalSourcesRequest = intent ? { ids: [id], intent } : { ids: [id] };
+  const raw = await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post(body, signal));
   const source = readSources(raw).get(id);
   if (source) return { source };
   const retry = raw?.retry;

@@ -156,7 +156,7 @@ export class OctavePlayer {
       this.deps.engine.setNext(next.track, source);
     };
     if (ready) hand(ready);
-    else void this.deps.sources.get(next.track).then(hand);
+    else void this.deps.sources.get(next.track, "next").then(hand);
   }
 
   /* ── Transport ── */
@@ -228,7 +228,7 @@ export class OctavePlayer {
   prefetch(tracks: readonly MusicTrack[], intent: PrefetchIntent): void {
     if (tracks.length === 0) return;
     this.deps.prefetchExternal(tracks, intent);
-    if (intent === "press" || intent === "next") for (const track of tracks) void this.deps.sources.get(track);
+    if (intent === "press" || intent === "next") for (const track of tracks) void this.deps.sources.get(track, intent === "next" ? "next" : "play");
   }
 
   /* ── Moteur ── */
