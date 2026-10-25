@@ -62,9 +62,16 @@ export interface PluginMusicManifest {
   labels?: Record<string, string>;
 }
 
-/** La radio d'un titre : les titres à enchaîner après lui, sans lui. */
+/** La radio d'un titre : les titres à enchaîner après lui, sans lui — une page. */
 export interface ExternalMusicRadio {
   tracks: MusicTrack[];
+  /**
+   * La page SUIVANTE (radio sans fin) : GET <radio>/<externalId>?cursor=<cursor>. Absent ou `null` : la radio
+   * s'arrête là (une extension d'avant n'en donne jamais). Une page suivante peut REDIRE des titres des précédentes
+   * (YouTube Music, mesuré le 25/10 : 0 sur 49 dans la même session, 35 sur 49 avec un jeton vieux de deux heures) :
+   * la file les écarte.
+   */
+  cursor?: string | null;
 }
 
 /** Liste FERMÉE des listes filtrables d'une recherche. */

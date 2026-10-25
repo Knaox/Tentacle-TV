@@ -13,7 +13,7 @@ import { CLIENT_FETCH_ANNOUNCE_HEADER } from "@tentacle-tv/shared/pluginClientFe
 import { setClientFetchAnnounced } from "./clientFetchAnnounce";
 import { findMusicProvider, musicRouteUrl, type MusicProvider } from "./musicProvider";
 import { mergeExternalMusicPages, readMusicSearchPage, readMusicTop } from "./musicSearchMerge";
-import { fetchExternalRadio, likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests, resolveMusicSource, resolveMusicSources } from "./musicRequests";
+import { fetchExternalRadio, fetchExternalRadioPage, likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests, resolveMusicSource, resolveMusicSources } from "./musicRequests";
 import { useMusicProvider } from "./useMusicProvider";
 import { useMusicSearch, type MusicSearchState } from "./useMusicSearch";
 import { isMusicEvent } from "./useMusicEvents";
@@ -150,6 +150,21 @@ describe("appels à l'extension", () => {
     }
     const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string> | undefined;
     expect(headers?.[CLIENT_FETCH_ANNOUNCE_HEADER]).toBe("1");
+  });
+
+  it("radio sans fin : la page et son jeton ; la suivante demandée par `?cursor=` ; une extension d'avant n'en donne pas", async () => {
+    const radioProvider = { ...provider, music: { ...provider.music, radio: "/music/radio" } };
+    const fetchMock = vi.fn(async (_url: string) => new Response(JSON.stringify({ tracks: [track("ext:sillon:ytm:t:a", null)], cursor: "CDISOBILanZ3%3D" })));
+    vi.stubGlobal("fetch", fetchMock);
+    const page = await fetchExternalRadioPage(radioProvider, "ytm:t:x");
+    expect(page).toEqual({ tracks: [expect.objectContaining({ key: "ext:sillon:ytm:t:a" })], cursor: "CDISOBILanZ3%3D" });
+    await fetchExternalRadioPage(radioProvider, "ytm:t:x", { cursor: page?.cursor ?? "" });
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/music/radio/ytm%3At%3Ax?cursor=CDISOBILanZ3%253D");
+    // Un jeton illisible ne part pas ; une réponse sans jeton : la radio s'arrête là.
+    expect(await fetchExternalRadioPage(radioProvider, "ytm:t:x", { cursor: "a&b" })).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ tracks: [] }))));
+    expect(await fetchExternalRadioPage(radioProvider, "ytm:t:x")).toEqual({ tracks: [], cursor: null });
   });
 
   it("un refus HTTP devient une raison de la liste fermée", async () => {

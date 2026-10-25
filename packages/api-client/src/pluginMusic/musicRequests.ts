@@ -9,6 +9,7 @@
 import type {
   MusicTrack,
   ExternalMusicPlaylist,
+  ExternalMusicRadio,
   ExternalActionOutcome,
   MusicAlbum,
   MusicArtist,
@@ -143,15 +144,29 @@ export function fetchExternalPlaylist(provider: MusicProvider, playlistId: strin
   return tentacleApiFetch<ExternalMusicPlaylist>(`${musicRouteUrl(provider, provider.music.playlist)}/${encodeURIComponent(playlistId)}`, { signal });
 }
 
+/** Un jeton de page suivante lisible (opaque, court, sans caractère qui changerait l'adresse). */
+const RADIO_CURSOR = /^[A-Za-z0-9_\-%=]{1,2048}$/;
+
 /**
- * La radio d'un titre hors bibliothèque (`music.radio`) : les titres à enchaîner après lui ; `null` si l'extension
- * n'en sert pas, ou en cas d'échec (la file garde alors sa suite d'avant). Jamais avant le premier son (S3).
+ * Une page de la radio d'un titre hors bibliothèque (`music.radio`) : les titres à enchaîner après lui, et le jeton
+ * de la page suivante (`cursor`, `null` : la radio s'arrête là) ; `null` si l'extension n'en sert pas, ou en cas
+ * d'échec (la file garde alors sa suite d'avant). Jamais avant le premier son (S3). `cursor` : la page suivante.
  */
-export async function fetchExternalRadio(provider: MusicProvider, externalId: string, signal?: AbortSignal): Promise<MusicTrack[] | null> {
+export async function fetchExternalRadioPage(provider: MusicProvider, externalId: string, options: { cursor?: string; signal?: AbortSignal } = {}): Promise<ExternalMusicRadio | null> {
   if (!provider.music.radio) return null;
-  const raw = await tentacleApiFetch<unknown>(`${musicRouteUrl(provider, provider.music.radio)}/${encodeURIComponent(externalId)}`, { signal }).catch(() => null);
-  const tracks = (raw as { tracks?: unknown } | null)?.tracks;
-  return Array.isArray(tracks) ? tracks.filter((t): t is MusicTrack => !!t && typeof (t as { key?: unknown }).key === "string") : null;
+  if (options.cursor !== undefined && !RADIO_CURSOR.test(options.cursor)) return null;
+  const query = options.cursor !== undefined ? `?cursor=${encodeURIComponent(options.cursor)}` : "";
+  const raw = await tentacleApiFetch<unknown>(`${musicRouteUrl(provider, provider.music.radio)}/${encodeURIComponent(externalId)}${query}`, { signal: options.signal }).catch(() => null);
+  const page = raw as { tracks?: unknown; cursor?: unknown } | null;
+  if (!Array.isArray(page?.tracks)) return null;
+  const tracks = page.tracks.filter((t): t is MusicTrack => !!t && typeof (t as { key?: unknown }).key === "string");
+  const cursor = typeof page.cursor === "string" && RADIO_CURSOR.test(page.cursor) ? page.cursor : null;
+  return { tracks, cursor };
+}
+
+/** La 1re page seule (ses titres) — la forme d'avant `cursor`. */
+export async function fetchExternalRadio(provider: MusicProvider, externalId: string, signal?: AbortSignal): Promise<MusicTrack[] | null> {
+  return (await fetchExternalRadioPage(provider, externalId, { signal }))?.tracks ?? null;
 }
 
 /** Pour les tests. */
