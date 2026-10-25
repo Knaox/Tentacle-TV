@@ -7,6 +7,9 @@ vi.mock("../../../components/ui/glass/PressableGlass", () => ({ PressableGlass: 
 
 const { titleSizeClass } = await import("./CollectionHeader");
 const { quickPickCount } = await import("../views/QuickPicks");
+const { rowClickAction } = await import("./TrackList");
+const { longReleaseDate } = await import("../views/AlbumView");
+const { parseLibraryTab } = await import("../views/LibraryView");
 
 /**
  * Octave — les règles des vues qui se décident sans écran : le repli d'une
@@ -70,5 +73,30 @@ describe("titre d'une collection", () => {
     expect(titleSizeClass("Bad")).toContain("text-6xl");
     expect(titleSizeClass("Bright Piano Works et autres pièces")).toContain("text-4xl");
     expect(titleSizeClass("x".repeat(80))).toContain("text-3xl");
+  });
+});
+
+describe("clic sur une rangée", () => {
+  it("le titre en cours de la même liste : pause ou reprise, jamais un redémarrage", () => {
+    expect(rowClickAction("a", "a", "album:1", "album:1")).toBe("toggle");
+  });
+  it("le même titre dans une AUTRE liste, ou un autre titre : lecture", () => {
+    expect(rowClickAction("a", "a", "liked", "album:1")).toBe("play");
+    expect(rowClickAction("b", "a", "album:1", "album:1")).toBe("play");
+    expect(rowClickAction(undefined, null, null, "album:1")).toBe("play");
+  });
+});
+
+describe("dos de la pochette et onglets", () => {
+  it("une date complète en toutes lettres, une date partielle rien", () => {
+    expect(longReleaseDate("2014-03-12", "fr")).toBe("12 mars 2014");
+    expect(longReleaseDate("2014-03-12T00:00:00Z", "en")).toBe("March 12, 2014");
+    expect(longReleaseDate("2014", "fr")).toBeNull();
+    expect(longReleaseDate(null, "fr")).toBeNull();
+  });
+  it("l'onglet de l'adresse, « albums » par défaut", () => {
+    expect(parseLibraryTab("artists")).toBe("artists");
+    expect(parseLibraryTab(null)).toBe("albums");
+    expect(parseLibraryTab("autre")).toBe("albums");
   });
 });

@@ -1,7 +1,8 @@
 /**
- * Octave — un album : pochette, type, artistes, année, label, nombre de
- * titres, durée, qualité de la parution (la meilleure de ses pistes), puis
- * ses titres, disque par disque.
+ * Octave — un album : pochette, type, artistes, année, nombre de titres,
+ * durée, qualité de la parution (la meilleure de ses pistes), puis ses titres,
+ * disque par disque. La date complète et le label ferment la page, comme au
+ * dos d'une pochette — la ligne de tête reste courte.
  */
 
 import { useMemo } from "react";
@@ -46,7 +47,9 @@ export function AlbumView() {
     return (
       <>
         <HeaderSkeleton />
-        <RowsSkeleton />
+        <div className="px-2 md:px-6">
+          <RowsSkeleton showArtwork={false} />
+        </div>
       </>
     );
   }
@@ -90,12 +93,6 @@ export function AlbumView() {
                 <span>{meta}</span>
               </>
             )}
-            {data.label && (
-              <>
-                <Dot />
-                <span>{data.label}</span>
-              </>
-            )}
             {format && <FormatBadge format={format} />}
           </>
         }
@@ -105,7 +102,7 @@ export function AlbumView() {
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
       />
       <div className="px-2 md:px-6">
-        {preview ? <RowsSkeleton rows={Math.min(12, data.trackCount ?? 8)} /> : <TrackList
+        {preview ? <RowsSkeleton rows={Math.min(12, data.trackCount ?? 8)} showArtwork={false} /> : <TrackList
           rows={rows}
           contextId={contextId}
           useTrackNumbers
@@ -113,7 +110,29 @@ export function AlbumView() {
           label={data.title}
           sectionBefore={discs.length > 1 ? (row, index) => (index === 0 || rows[index - 1]?.track.discNumber !== row.track.discNumber ? t("album.disc", { number: row.track.discNumber ?? 1 }) : null) : undefined}
         />}
+        {!preview && <AlbumFooter releaseDate={data.releaseDate ?? null} label={data.label ?? null} />}
       </div>
     </div>
+  );
+}
+
+/** Une date `AAAA-MM-JJ` en toutes lettres ; une date partielle (`AAAA`, `AAAA-MM`) n'en est pas une. */
+export function longReleaseDate(date: string | null, locale: string): string | null {
+  if (!date || !/^\d{4}-\d{2}-\d{2}/.test(date)) return null;
+  const parsed = new Date(`${date.slice(0, 10)}T12:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(parsed);
+}
+
+/** Le dos de la pochette : la date de sortie complète, puis le label. */
+function AlbumFooter({ releaseDate, label }: { releaseDate: string | null; label: string | null }) {
+  const { t, i18n } = useTranslation("music");
+  const date = longReleaseDate(releaseDate, i18n.language);
+  if (!date && !label) return null;
+  return (
+    <footer className="mt-6 flex flex-col gap-0.5 px-2 text-xs text-content-tertiary">
+      {date && <p>{t("views.released", { date })}</p>}
+      {label && <p>℗ {label}</p>}
+    </footer>
   );
 }

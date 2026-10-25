@@ -25,22 +25,32 @@ interface TrackListProps {
   label: string;
   showHeader?: boolean;
   onRemoveEntry?: (entryId: string) => void;
+  /**
+   * La file que lit un clic, quand la liste n'en montre qu'un DÉBUT (titres
+   * phares repliés) : `rows` en est un préfixe, les rangs coïncident.
+   */
+  queueTracks?: readonly MusicTrack[];
   /** Un intertitre avant une rangée (« Disque 2 ») — la liste reste UNE seule file. */
   sectionBefore?: (row: ListRow, index: number) => string | null;
+}
+
+/** Un clic sur une rangée : le titre en cours de CETTE liste se met en pause ou reprend ; tout autre se lit. */
+export function rowClickAction(clickedKey: string | undefined, currentKey: string | null, playingContext: string | null, contextId: string): "toggle" | "play" {
+  return clickedKey !== undefined && clickedKey === currentKey && playingContext === contextId ? "toggle" : "play";
 }
 
 export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
   return tracks.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }));
 }
 
-export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, sectionBefore }: TrackListProps) {
+export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, queueTracks, sectionBefore }: TrackListProps) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const actions = useTrackActions();
   const currentKey = useCurrentKey();
   const playingContext = usePlayerSelector((s) => s.queue.contextId);
   const wantsPlay = usePlayerSelector((s) => s.wantsPlay);
-  const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
+  const tracks = useMemo(() => queueTracks ?? rows.map((r) => r.track), [queueTracks, rows]);
   // Lu au clic, jamais une dépendance du rappel (sinon chaque titre suivant redessinerait toute la liste).
   const live = useRef({ currentKey, playingContext });
   useEffect(() => {
@@ -49,7 +59,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
   const play = useCallback(
     (index: number) => {
       const { currentKey: key, playingContext: context } = live.current;
-      if (tracks[index]?.key === key && context === contextId) player.togglePlay();
+      if (rowClickAction(tracks[index]?.key, key, context, contextId) === "toggle") player.togglePlay();
       else player.playList(tracks, index, contextId);
     },
     [contextId, player, tracks],
