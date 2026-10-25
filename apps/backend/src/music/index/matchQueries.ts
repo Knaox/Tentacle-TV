@@ -44,9 +44,9 @@ export async function rowsNamed(kind: "track" | "album", title: string, limit: n
 /** Les albums d'une parution ou d'un groupe de parutions MusicBrainz. */
 export async function albumsByMbids(releases: readonly string[], groups: readonly string[]): Promise<IndexRow[]> {
   if (releases.length === 0 && groups.length === 0) return [];
-  const marks = (n: number) => (n === 0 ? "NULL" : Array.from({ length: n }, () => "?").join(", "));
+  // SQLite admet une liste vide (« IN () » : faux) ; seules des marques `?` entrent dans le texte.
   const rows = await getPrisma().$queryRawUnsafe<DbRow[]>(
-    `SELECT * FROM "music_items" WHERE "kind" = 'album' AND ("releaseMbid" IN (${marks(releases.length)}) OR "releaseGroupMbid" IN (${marks(groups.length)}))`,
+    `SELECT * FROM "music_items" WHERE "kind" = 'album' AND ("releaseMbid" IN (${releases.map(() => "?").join(", ")}) OR "releaseGroupMbid" IN (${groups.map(() => "?").join(", ")}))`,
     ...releases,
     ...groups,
   );

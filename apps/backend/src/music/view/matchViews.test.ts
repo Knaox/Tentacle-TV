@@ -140,3 +140,11 @@ describe("ce que la bibliothèque a (POST /api/music/match)", () => {
     expect(parseMatchRequest({ tracks: [{ ref: "r" }] })).toEqual({ tracks: [], albums: [] });
   });
 });
+
+describe("par MBID de parution", () => {
+  it("un seul côté connu (liste vide de l'autre) : la requête tient", async () => {
+    await client.$executeRawUnsafe(`UPDATE "music_items" SET "releaseGroupMbid" = ? WHERE "id" = ?`, "f90e8f69-1f06-4aae-9c28-74d4b8220fe1", ALBUM);
+    const out = await run({ albums: [albumQuery(soundtrackTracks, { title: "Autre nom", artists: [], releaseGroup: "f90e8f69-1f06-4aae-9c28-74d4b8220fe1" })] });
+    expect(out.albums[0]).toMatchObject({ coverage: "full", album: { jellyfinId: ALBUM } });
+  });
+});
