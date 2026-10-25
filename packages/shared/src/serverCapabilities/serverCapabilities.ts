@@ -284,6 +284,12 @@ export const SERVER_CAPABILITIES = {
    *  `navItems` de `/api/plugins/active` (`primary`). Sans elle : pages épinglées d'office sous le
    *  nom du manifeste, et l'extension n'offre pas ce réglage. */
   "plugins.navigation": "1.32.0",
+  /** Les ÉCOUTES dans le tableau de bord des sessions : le lecteur d'Octave déclare ce qu'il joue
+   *  (`playback:declare`, canal de session) et applique pause, reprise, arrêt venus de
+   *  l'administration ; une lecture d'extension (hors bibliothèque) y paraît et s'y commande ; les
+   *  sessions de musique portent artistes, album et pochette. Sans elle : rien n'est déclaré, la
+   *  musique de la bibliothèque paraît par Jellyfin seul, comme avant. */
+  "sessions.musicControl": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

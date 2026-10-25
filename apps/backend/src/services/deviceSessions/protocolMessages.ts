@@ -58,6 +58,30 @@ export type SessionPlaystateCommandDto =
   | "Rewind"
   | "FastForward";
 
+/**
+ * Une écoute que le lecteur DÉCLARE lui-même (capacité `sessions.musicControl`) :
+ * la musique d'Octave. Un titre de la bibliothèque a déjà sa session chez
+ * Jellyfin (rapports HTTP) — la déclaration y ajoute la position à la seconde
+ * et désigne LE lecteur que vise une commande. Une lecture d'EXTENSION (hors
+ * bibliothèque) n'existe pas pour Jellyfin : la déclaration est sa seule
+ * trace, et le tableau de bord la commande par le canal.
+ */
+export interface DeclaredPlaybackDto {
+  /** Clé stable du titre chez le lecteur (`jf:<id>`, `ext:<extension>:<id>`). */
+  key: string;
+  /** Titre de la bibliothèque : son élément Jellyfin. Absent : lecture d'extension. */
+  itemId?: string;
+  title: string;
+  /** Les artistes, déjà joints (« A, B »). */
+  artists?: string;
+  album?: string;
+  /** Pochette : un chemin du serveur Tentacle (`/api/…`) ou une adresse https publique. */
+  imageUrl?: string;
+  durationMs?: number;
+  positionMs: number;
+  isPaused: boolean;
+}
+
 /** Messages du lecteur vers le backend. */
 export type SessionClientMessage =
   /** Ce lecteur sait parler par le canal. `deviceId` n'est qu'une étiquette
@@ -79,7 +103,10 @@ export type SessionClientMessage =
   | { type: "playback:start"; state: PlaybackStateDto; resumed?: boolean }
   | { type: "playback:progress"; event: PlaybackEventDto; state: PlaybackStateDto }
   /** Fin de lecture ; `playback:stopped` répond une fois Jellyfin servi. */
-  | { type: "playback:stop"; state: PlaybackStateDto; requestId: string };
+  | { type: "playback:stop"; state: PlaybackStateDto; requestId: string }
+  /** L'écoute déclarée de ce lecteur ; `null` : plus rien ne joue. Un serveur
+   *  d'avant l'ignore (le lecteur ne l'envoie que face à `sessions.musicControl`). */
+  | { type: "playback:declare"; state: DeclaredPlaybackDto | null };
 
 /**
  * L'état de Jellyfin vu par le backend (`jellyfinHealth.ts`) : `up` il sert ;
