@@ -8,11 +8,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { LogOut } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { useOctaveEvents } from "../events/useOctaveEvents";
+import { OctaveModeSwitch } from "../mode/OctaveModeSwitch";
 import { NowPlayingSheet } from "./NowPlayingSheet";
 import { OctaveSidebar, OctaveTabBar, OctaveWordmark } from "./OctaveSidebar";
 import { MiniPlayer, PlayerBar } from "./PlayerBar";
@@ -32,7 +31,6 @@ function useResetScroll(main: React.RefObject<HTMLElement | null>) {
 }
 
 export function OctaveShell({ children, onExit }: OctaveShellProps) {
-  const { t } = useTranslation("music");
   const mobile = useIsMobile();
   const [queueOpen, setQueueOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -48,15 +46,7 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
       <div className="fixed inset-0 flex flex-col bg-surface-0" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="mobile">
         <header className="flex h-14 shrink-0 items-center justify-between px-4 pt-[env(safe-area-inset-top,0px)]">
           <OctaveWordmark className="text-xl" logoSize={30} />
-          <button
-            type="button"
-            onClick={onExit}
-            aria-label={t("mode.exit")}
-            title={t("mode.exitHint")}
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+          <OctaveModeSwitch placement="octave" onExit={onExit} />
         </header>
         <main ref={main} id="octave-main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
           {children}
