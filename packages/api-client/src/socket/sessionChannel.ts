@@ -1,5 +1,6 @@
 import {
   SESSION_CHANNEL_VERSION,
+  type DeclaredPlaybackDto,
   type PlaybackEventDto,
   type PlaybackStateDto,
   type SessionPlaystateCommandDto,
@@ -49,6 +50,7 @@ let deviceIdProvider: (() => string) | null = null;
 let appProvider: (() => SessionChannelApp) | null = null;
 let status: ChannelStatus = { reporting: false, remoteControl: false };
 let activePlayback: (() => PlaybackStateDto | null) | null = null;
+let declaredPlayback: (() => DeclaredPlaybackDto | null) | null = null;
 let requestSeq = 0;
 const pendingStops = new Map<string, (ok: boolean) => void>();
 
@@ -125,6 +127,9 @@ export function configureSessionChannel(options: { deviceId: () => string; app?:
         deviceId: deviceIdProvider?.(),
         ...(app ? { client: app.client, device: app.device, appVersion: app.version } : {}),
       });
+      // Une écoute déclarée se redit au serveur qui l'a oubliée (socket rouvert).
+      const declared = declaredPlayback?.();
+      if (declared) sendSocketMessage({ type: "playback:declare", state: declared });
       return;
     }
     // Socket fermé : plus de canal tant qu'un nouveau `session:ready` n'arrive pas.
@@ -151,6 +156,17 @@ export function setActivePlayback(provider: () => PlaybackStateDto | null): void
  *  (un lecteur démonté après le montage du suivant ne doit pas l'effacer). */
 export function clearActivePlayback(provider: () => PlaybackStateDto | null): void {
   if (activePlayback === provider) activePlayback = null;
+}
+
+/**
+ * L'écoute que ce lecteur DÉCLARE (`playback:declare`, capacité
+ * `sessions.musicControl` — à l'appelant de la vérifier) : envoyée tout de
+ * suite, et le fournisseur relu à chaque (ré)ouverture du socket. `null` : plus
+ * rien ne joue. Faux si le socket n'est pas ouvert.
+ */
+export function declarePlayback(state: DeclaredPlaybackDto | null, provider: (() => DeclaredPlaybackDto | null) | null): boolean {
+  declaredPlayback = provider;
+  return sendSocketMessage({ type: "playback:declare", state });
 }
 
 /** Le titre en cours de lecture sur cet appareil, s'il y en a un. */
