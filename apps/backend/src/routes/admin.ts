@@ -21,6 +21,7 @@ import { adminDirectStreamingRoutes } from "./adminDirectStreaming";
 import { adminServerUpdateRoutes } from "./adminServerUpdate";
 import { adminLibraryRescanRoutes } from "./adminLibraryRescan";
 import { adminUserRightsRoutes } from "./adminUserRights";
+import { adminOctaveRightsRoutes } from "./adminOctaveRights";
 import { remoteAccessRoutes } from "../remoteAccess/remoteAccessRoutes";
 import { requestPageOrigin, syncJellyfinCors } from "../services/jellyfinCorsSync";
 
@@ -73,6 +74,8 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Les droits d'un compte, dans SA politique Jellyfin (requireAdmin, puis session personnelle).
   await app.register(adminUserRightsRoutes);
+  // « Accès à Octave » : un droit Tentacle du compte (requireAdmin, puis session personnelle).
+  await app.register(adminOctaveRightsRoutes);
 
   /** GET /api/admin/public-url — Read the public server URL (DB value + env fallback). */
   app.get("/public-url", async () => {

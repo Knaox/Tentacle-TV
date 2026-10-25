@@ -30,6 +30,7 @@ import { OctaveSwitchGlyph } from "./octaveSwitchGlyph";
 import { loadOctaveApp } from "./OctaveEntry";
 import { OCTAVE_BASE_PATH, setOctaveMode, useOctaveMode } from "./octaveMode";
 import { useOctaveAvailability } from "./useOctaveAvailability";
+import { useOctaveAccessLive } from "./useOctaveAccessLive";
 
 type OctaveModeSwitchProps =
   | { placement: "tentacle"; showLabel?: boolean; className?: string }
@@ -47,6 +48,8 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
   const inOctave = props.placement === "octave";
   // Dans Octave, la disponibilité est déjà acquise (sa porte l'a vérifiée).
   const { available } = useOctaveAvailability(!inOctave);
+  // Dans Tentacle : l'accès coupé ou rendu par l'administration se voit sans recharger.
+  useOctaveAccessLive(!inOctave);
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   if (!inOctave && !available) return null;
 

@@ -61,6 +61,9 @@ export interface MusicStatus {
   /** L'index local est-il prêt (premier passage fini) ? */
   indexReady: boolean;
   trackCount: number;
+  /** `octave.rights` (1.32.0) : faux = le compte n'a pas « Accès à Octave » (`available` est alors faux).
+   *  Absent : serveur d'avant, ou accès permis. */
+  octaveAccess?: boolean;
 }
 
 export interface MusicSearchResponse {

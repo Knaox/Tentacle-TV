@@ -284,6 +284,11 @@ export const SERVER_CAPABILITIES = {
    *  `navItems` de `/api/plugins/active` (`primary`). Sans elle : pages épinglées d'office sous le
    *  nom du manifeste, et l'extension n'offre pas ce réglage. */
   "plugins.navigation": "1.32.0",
+  /** « Accès à Octave » : un droit TENTACLE par compte (allumé par défaut), réglé dans la fiche des
+   *  droits d'un utilisateur (`/api/admin/users/:userId/octave`), avec la rubrique « Musique · Octave »
+   *  (les droits Jellyfin qui touchent la musique). Le serveur le tient (routes musique,
+   *  extension de musique). Sans elle : la fiche d'avant, Octave comme avant. */
+  "octave.rights": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;
