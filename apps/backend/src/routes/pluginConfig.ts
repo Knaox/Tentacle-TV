@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { lookup } from "dns/promises";
 import { getInstalled, saveInstalled, type InstalledPlugin } from "../services/pluginManager";
+import { isolatedPluginChanged } from "../plugins/runtime/runtimeRegistry";
 import { isPrivateIp } from "../services/networkUtils";
 import { isValidRouteId } from "./pluginRouteGuards";
 
@@ -37,6 +38,8 @@ export function registerPluginConfigRoutes(admin: FastifyInstance): void {
     if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
     plugin.config = configSchema.parse(request.body);
     saveInstalled(installed);
+    // Un invité isolé l'apprend (`settings.changed`), et les clients relisent ce qu'il offre.
+    await isolatedPluginChanged(plugin.pluginId);
     return plugin.config;
   });
 

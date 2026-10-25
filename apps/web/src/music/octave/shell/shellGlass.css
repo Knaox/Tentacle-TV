@@ -1,0 +1,57 @@
+/*
+ * Octave — le dock et le rail en VERRE NATIF (macOS 26, `data-liquid-glass="native"`).
+ *
+ * Ce sont des surfaces de la primitive au régime `surface` (`.lg-surface`) :
+ * un ton mesuré puis TENU, un matériau épais dont le contraste est prouvé
+ * (`surfaceMaterial.ts`). Le socle remappe les textes du thème pour les
+ * peaux CSS, pas pour les surfaces de la primitive : les descendants
+ * d'Octave (`text-content-*`, survols, rail, rose) suivaient donc le THÈME,
+ * illisibles quand le ton du verre ne lui ressemble pas (le dock tenu sombre
+ * au-dessus de pochettes sombres, en thème clair). Ici, tout suit le TON.
+ *
+ * Hors du mode natif aucune de ces règles ne s'applique (rendu d'avant).
+ */
+
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"] {
+  --text-primary: var(--lg-surface-glyph);
+  --text-secondary: var(--lg-surface-glyph-secondary);
+  --text-tertiary: var(--lg-surface-glyph-secondary);
+  --text-quaternary: var(--lg-surface-glyph-secondary);
+  --status-error-fg: var(--lg-surface-danger);
+  --border-subtle: rgba(255, 255, 255, 0.14);
+  --oc-hover: rgba(255, 255, 255, 0.08);
+  --oc-selected: rgba(255, 255, 255, 0.12);
+  --oc-rail: rgba(255, 255, 255, 0.2);
+  --oc-accent-text: var(--brand-accent-light);
+  --oc-nav-active-bg: linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.3) 0%, rgba(var(--brand-rgb), 0.16) 100%);
+  --oc-nav-active-ring: rgba(var(--brand-accent-rgb), 0.42);
+}
+
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="light"] {
+  --border-subtle: rgba(0, 0, 0, 0.12);
+  --oc-hover: rgba(0, 0, 0, 0.06);
+  --oc-selected: rgba(0, 0, 0, 0.1);
+  --oc-rail: rgba(0, 0, 0, 0.14);
+  --oc-accent-text: var(--brand-accent-dark);
+  --oc-nav-active-bg: linear-gradient(135deg, rgba(var(--brand-accent-rgb), 0.18) 0%, rgba(var(--brand-rgb), 0.1) 100%);
+  --oc-nav-active-ring: rgba(var(--brand-accent-rgb), 0.34);
+}
+
+/* Le matériau, teinté d'Octave : prune dans le ton sombre, nacre rosée dans
+ * le ton clair — jamais un blanc pur. Mêmes densités que le socle
+ * (`surfaceTokens.css`, contraste prouvé par `surfaceMaterial.ts`). */
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="dark"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-dark) 0%, transparent 70%),
+    linear-gradient(rgba(24, 18, 30, 0.8), rgba(24, 18, 30, 0.8));
+}
+:root[data-liquid-glass="native"]:not([data-lg-material]) .octave-glass[data-lg-scale="surface"][data-lg-tone="light"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-light) 0%, transparent 70%),
+    linear-gradient(rgba(249, 242, 248, 0.8), rgba(249, 242, 248, 0.8));
+}
+
+/* La nuit (le dock, le mini-lecteur) au-dessus d'une page CLAIRE : son verre
+ * s'épaissit pour rester encre, comme hors verre natif (octaveNight.css). */
+:root[data-theme="light"][data-liquid-glass="native"]:not([data-lg-material]) .octave-night.octave-glass[data-lg-scale="surface"] {
+  --lg-surface-fill: radial-gradient(130% 90% at 30% 0%, var(--lg-surface-sheen-on-dark) 0%, transparent 70%),
+    linear-gradient(rgba(24, 18, 30, 0.88), rgba(24, 18, 30, 0.88));
+}

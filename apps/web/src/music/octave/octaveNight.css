@@ -1,0 +1,54 @@
+/*
+ * Octave — la NUIT : la barre de lecture (le dock) et le mini-lecteur restent
+ * SOMBRES dans les deux thèmes (Damien, 25/10 : « JAMAIS une barre blanche » ;
+ * tranché par la cheffe du lot) — encre prune, verre sombre, glyphes clairs,
+ * glissières au dégradé et rose. C'est la signature d'Octave.
+ *
+ * Une surface `.octave-night` reçoit d'abord les jetons d'Octave du thème
+ * sombre (le premier bloc d'octaveTokens.css vaut pour `:root, .octave-night` :
+ * ils se recalculent sur elle). En thème CLAIR, elle reprend en plus, ici, les
+ * couleurs de BASE du thème sombre de Tentacle — texte, remplissages, bordures,
+ * marque, statuts —, recopiées de `theme/tokens.css` (`:root`) : un test en
+ * tient la parité (octaveTokens.test.ts). Les jetons qui en DÉRIVENT
+ * (`--border-focus`, `--cta-brand-gradient`) sont redéclarés : une variable se
+ * calcule là où elle est déclarée, et `:root` les a figés aux valeurs claires.
+ *
+ * En verre natif, la surface force son ton à `dark` (`data-lg-tone`, posé par
+ * le composant) : le matériau sombre et ses glyphes, quel que soit le dessous.
+ */
+
+:root[data-theme="light"] .octave-night {
+  color-scheme: dark;
+  --surface-0: #000000;
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.78);
+  --text-tertiary: rgba(255, 255, 255, 0.55);
+  --text-quaternary: rgba(255, 255, 255, 0.34);
+  --text-disabled: rgba(255, 255, 255, 0.22);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --fill-faint: rgba(255, 255, 255, 0.03);
+  --fill-subtle: rgba(255, 255, 255, 0.05);
+  --fill-soft: rgba(255, 255, 255, 0.08);
+  --fill-medium: rgba(255, 255, 255, 0.12);
+  --fill-strong: rgba(255, 255, 255, 0.28);
+  --brand: #8B5CF6;
+  --brand-rgb: 139, 92, 246;
+  --brand-light: #A78BFA;
+  --brand-dark: #7C3AED;
+  --brand-accent: #EC4899;
+  --brand-accent-rgb: 236, 72, 153;
+  --brand-accent-light: #F472B6;
+  --brand-accent-dark: #DB2777;
+  --status-success-fg: #34D399;
+  --status-error-fg: #F87171;
+  --status-warning-fg: #FBBF24;
+  --status-info-fg: #60A5FA;
+  --border-focus: rgba(var(--brand-rgb), 0.85);
+  --cta-brand-gradient: linear-gradient(120deg, var(--brand-dark) 0%, var(--brand-accent-dark) 100%);
+  /* Au-dessus d'une page CLAIRE, le verre de nuit s'épaissit pour rester
+   * encre (blanc dessus ≥ 15:1, rose ≥ 5:1, texte tertiaire ≥ 4,5:1) ; son
+   * ombre, plus courte, prend la teinte prune des ombres du clair. */
+  --oc-dock-bg: rgba(18, 14, 24, 0.88);
+  --oc-dock-shadow: 0 18px 40px -18px rgba(40, 20, 70, 0.55), 0 2px 8px rgba(11, 11, 16, 0.18);
+}

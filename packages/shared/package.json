@@ -12,7 +12,12 @@
     "./licenses": "./src/licenses/index.ts",
     "./licenses/texts": "./src/licenses/texts.ts",
     "./brandIntro": "./src/brandIntro/index.ts",
-    "./brandIntro/synth": "./src/brandIntro/introSynth.ts"
+    "./brandIntro/synth": "./src/brandIntro/introSynth.ts",
+    "./music": "./src/music/index.ts",
+    "./octave": "./src/octave/index.ts",
+    "./octave/testing": "./src/octave/testing.ts",
+    "./pluginServerRuntime": "./src/plugins/pluginServerRuntime.ts",
+    "./pluginClientFetch": "./src/plugins/pluginClientFetch.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

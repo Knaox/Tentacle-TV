@@ -3,7 +3,8 @@ import { resolve } from "path";
 import { pathToFileURL } from "url";
 import { existsSync, readFileSync, readdirSync } from "fs";
 import { getInstalled, DATA_DIR } from "./pluginManager";
-import { serverModuleCandidates } from "./pluginServerModule";
+import { readPluginManifest, serverModuleCandidates } from "./pluginServerModule";
+import { readRuntimeManifest } from "../plugins/runtime/runtimeManifest";
 import { storageRefusal } from "./pluginStorage/gate";
 import { NOTIFICATION_EXTRA_FIELDS } from "../notifications/notificationTarget";
 
@@ -79,6 +80,11 @@ export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
   console.log(`[PluginBackend] Found ${installed.length} enabled plugin(s): ${installed.map((p) => p.pluginId).join(", ") || "(none)"}`);
 
   for (const plugin of installed) {
+    // Une extension ISOLÉE n'est jamais importée ici : son processus est celui du runtime (plugins/runtime/).
+    if (readRuntimeManifest(readPluginManifest(plugin.pluginId))) {
+      pluginBackendDiag.loadResults.push({ pluginId: plugin.pluginId, status: "isolated" });
+      continue;
+    }
     const pluginDir = resolve(DATA_DIR, plugin.pluginId);
     const dirExists = existsSync(pluginDir);
     console.log(`[PluginBackend] Checking "${plugin.pluginId}" — dir: ${pluginDir} (exists: ${dirExists})`);

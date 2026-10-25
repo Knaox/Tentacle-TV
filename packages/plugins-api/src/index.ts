@@ -22,6 +22,9 @@ export {
   getRegistrySnapshot,
 } from "./registry";
 
+// Le bac à sable des pages d'extension (aucun formulaire natif : voir iframeSandbox.ts)
+export { PLUGIN_IFRAME_SANDBOX } from "./iframeSandbox";
+
 // Context & Provider
 export { PluginContext } from "./context";
 export type { PluginContextValue, ActivePluginMeta } from "./context";

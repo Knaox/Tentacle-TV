@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "fs";
 import { resolve, sep } from "path";
 import { DATA_DIR, isValidPluginId } from "./pluginManager";
+import { readRuntimeManifest } from "../plugins/runtime/runtimeManifest";
 
 /**
  * Où vit le module serveur d'une extension, et son manifeste lu sans erreur.
@@ -47,6 +48,8 @@ export function serverModuleCandidates(pluginId: string, declared?: unknown): st
 export function pluginHasServerModule(pluginId: string): boolean {
   if (!isValidPluginId(pluginId)) return false;
   const manifest = readPluginManifest(pluginId);
+  // Un module ISOLÉ ne tourne pas dans ce processus : ni redémarrage, ni garde de stockage (plugins/runtime/).
+  if (readRuntimeManifest(manifest)) return false;
   if (manifest?.server) return true;
   return serverModuleCandidates(pluginId).some((path) => existsSync(path));
 }

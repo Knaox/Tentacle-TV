@@ -1,9 +1,11 @@
 import { broadcastAll, broadcastToUser } from "./wsManager";
+import { notifyLibraryListeners } from "./jellyfinLibraryListeners";
 import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 import { pokeProfile } from "./reco/jobs";
 import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
 import { markCatalogChanged } from "./search/catalog";
 import { markAllUserAccessStale, refreshUserAccess } from "./search/userAccess";
+import { onJellyfinUserDataChanged } from "../music/events/musicLiveEvents";
 
 /**
  * Ce que Jellyfin pousse aux sessions d'UTILISATEUR, relayé aux applications.
@@ -42,6 +44,8 @@ function addedCount(data: unknown): number {
 }
 
 export function relayLibraryChanged(data: unknown, now = Date.now()): void {
+  // Ce qui a changé, à qui veut le savoir — avant la fenêtre des rangées (cf. jellyfinLibraryListeners.ts).
+  notifyLibraryListeners(data, now);
   if (now - lastLibraryAt < DUPLICATE_MS) return;
   lastLibraryAt = now;
   console.log(`[JellyfinEvents] bibliothèque changée (+${addedCount(data)}) → rangées « Derniers ajouts »`);
@@ -55,6 +59,7 @@ export function relayLibraryChanged(data: unknown, now = Date.now()): void {
 }
 
 export function relayUserDataChanged(data: unknown, now = Date.now()): void {
+  void onJellyfinUserDataChanged(data, now);
   const userId = (data as { UserId?: unknown } | null)?.UserId;
   if (typeof userId !== "string" || userId === "") return;
   if (now - (lastUserDataAt.get(userId) ?? 0) < DUPLICATE_MS) return;

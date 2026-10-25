@@ -1,0 +1,138 @@
+/**
+ * Octave — les cartes : album, artiste, playlist. Pochette carrée (place
+ * réservée), titre, sous-titre. Le bouton lecture monte au survol (opacité +
+ * transform) — toujours visible sur un écran tactile ; le clic sur la carte
+ * ouvre sa vue. Un titre coupé se lit en entier dans l'infobulle.
+ */
+
+import { memo } from "react";
+import { Play } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import type { MusicAlbum, MusicArtist, MusicPlaylist } from "@tentacle-tv/shared/music";
+import { useCollectionPlayback, type CollectionRef } from "../actions/useCollectionPlayback";
+import { rememberAlbumPreview } from "../data/albumPreview";
+import { useEntityIntent } from "../data/entityIntent";
+import { entityTarget, octavePaths } from "../octavePaths";
+import { Artwork } from "./Artwork";
+import { CARD_GRID_CLASS } from "./cardGrid";
+
+function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) {
+  const { play, warm } = useCollectionPlayback();
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onPointerEnter={() => warm(refOf, "hover")}
+      onPointerDown={() => warm(refOf, "press")}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void play(refOf);
+      }}
+      className="octave-card-play octave-hover-only octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-[var(--oc-shadow-play)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+    >
+      <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
+    </button>
+  );
+}
+
+const cardClass =
+  "octave-card group flex min-w-0 flex-col gap-2 rounded-[var(--oc-radius-art)] p-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+
+export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum }) {
+  const { t } = useTranslation("music");
+  const target = entityTarget(album);
+  const intent = useEntityIntent("album", target);
+  const year = album.year ? `${album.year} · ` : "";
+  const artists = album.artists.map((a) => a.name).join(", ");
+  const content = (
+    <>
+      <div className="relative aspect-square w-full">
+        <Artwork url={album.artworkUrl} label={album.title} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
+        {album.jellyfinId && <PlayOverlay refOf={{ kind: "album", id: album.jellyfinId }} label={t("track.play", { title: album.title })} />}
+      </div>
+      <div className="min-w-0 px-0.5">
+        <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={album.title}>
+          {album.title}
+        </p>
+        <p className="truncate text-[13px] leading-5 text-content-tertiary" title={artists}>
+          {year}
+          {artists}
+        </p>
+      </div>
+    </>
+  );
+  return target ? (
+    // Un album hors bibliothèque : sa vue s'ouvre sur ce que la carte montre déjà (`albumPreview.ts`).
+    <Link to={octavePaths.album(target)} className={cardClass} onClick={album.jellyfinId ? undefined : () => rememberAlbumPreview(target, album)} {...intent}>
+      {content}
+    </Link>
+  ) : (
+    <div className={cardClass}>{content}</div>
+  );
+});
+
+export const ArtistCard = memo(function ArtistCard({ artist }: { artist: MusicArtist }) {
+  const { t } = useTranslation("music");
+  const target = entityTarget(artist);
+  const intent = useEntityIntent("artist", target);
+  const content = (
+    <>
+      <Artwork url={artist.imageUrl} kind="artist" label={artist.name} round className="aspect-square w-full shadow-[var(--oc-shadow-art)]" />
+      <div className="min-w-0 px-0.5 text-center">
+        <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={artist.name}>
+          {artist.name}
+        </p>
+        <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("artist.kicker")}</p>
+      </div>
+    </>
+  );
+  return target ? (
+    <Link to={octavePaths.artist(target)} className={cardClass} {...intent}>
+      {content}
+    </Link>
+  ) : (
+    <div className={cardClass}>{content}</div>
+  );
+});
+
+export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist: MusicPlaylist }) {
+  const { t } = useTranslation("music");
+  return (
+    <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass}>
+      <div className="relative aspect-square w-full">
+        <Artwork url={playlist.artworkUrl} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
+        <PlayOverlay refOf={{ kind: "playlist", id: playlist.jellyfinId }} label={t("track.play", { title: playlist.name })} />
+      </div>
+      <div className="min-w-0 px-0.5">
+        <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={playlist.name}>
+          {playlist.name}
+        </p>
+        <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("count.tracks", { count: playlist.trackCount })}</p>
+      </div>
+    </Link>
+  );
+});
+
+/**
+ * Une grille de cartes qui suit la largeur de SA colonne (pas celle de la
+ * fenêtre : la barre latérale et la file ouverte la rétrécissent) — 2 colonnes
+ * au téléphone, autant que la place en tient au-delà.
+ */
+export function CardGrid({ children }: { children: React.ReactNode }) {
+  return <div className={CARD_GRID_CLASS}>{children}</div>;
+}
+
+/** Une étagère : un titre de section, éventuellement « Tout afficher », puis son contenu. */
+export function Shelf({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-4 px-2">
+        <h2 className="oc-heading text-xl text-content-primary">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}

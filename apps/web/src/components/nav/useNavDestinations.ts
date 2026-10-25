@@ -3,8 +3,9 @@
  *
  * Par défaut, la barre montre TOUT ce qui compte d'un coup d'œil : l'accueil,
  * les recommandations, puis les bibliothèques elles-mêmes — plus de menu à
- * ouvrir pour atteindre « Films ». Ma liste, Mes favoris et les pages
- * d'extensions y entrent quand on les épingle (`usePinnedNav`, que le mobile
+ * ouvrir pour atteindre « Films ». Ma liste et Mes favoris y entrent quand on
+ * les épingle ; une page d'extension, là où son extension la place (`primary`,
+ * dans la barre sans avis), puis là où on la met (`usePinnedNav`, que le mobile
  * lit aussi). Ce qui ne tient pas en largeur passe dans « Plus » (`NavTabs`).
  *
  * Chacun la dispose ensuite à sa main (`useNavBarLayout`) : toute destination
@@ -122,8 +123,8 @@ export function useNavDestinations() {
           label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),
           path: nav.path,
           icon: Puzzle,
-          pinned: pinned.isPluginNavPinned(key),
-          toggle: () => pinned.togglePluginNav(key),
+          pinned: pinned.isPluginNavPinned(key, nav.primary),
+          toggle: () => pinned.togglePluginNav(key, nav.primary),
         });
       }
     }
@@ -156,7 +157,8 @@ export function useNavDestinations() {
       reset: () => {
         bar.reset();
         for (const entry of lists) if (entry.pinned) entry.toggle();
-        for (const entry of extensions) if (!entry.pinned) entry.toggle();
+        // Chaque page d'extension reprend la place que son extension lui donne.
+        pinned.resetPluginNav();
       },
     };
 

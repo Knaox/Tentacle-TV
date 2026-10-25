@@ -25,6 +25,16 @@ import {
 import { isNewerVersion } from "../services/semver";
 import { isValidRouteId, pluginHasServerModule, restartPolicy } from "./pluginRouteGuards";
 import { setupOfManifest } from "./pluginSetup/pluginSetupRoutes";
+import { stopIsolatedPlugin, syncIsolatedPlugins } from "../plugins/runtime/runtimeRegistry";
+import { forgetToolGrants, grantedTools } from "../plugins/runtime/tools/toolGrants";
+import { isolatedManifestOf } from "../plugins/runtime/runtimeRegistry";
+
+function runtimeToolsOf(pluginId: string) {
+  const tools = isolatedManifestOf(pluginId)?.tools ?? [];
+  if (tools.length === 0) return {};
+  const granted = grantedTools(pluginId);
+  return { runtimeTools: tools.map((tool) => ({ tool, granted: granted.includes(tool) })) };
+}
 
 const installSchema = z.object({
   pluginId: z.string().min(1).regex(/^[a-z0-9][a-z0-9._-]{0,63}$/, "Invalid plugin ID format"),
@@ -75,6 +85,8 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
       navItems,
       ...(setup ? { setup } : {}),
       ...restartPolicy(p),
+      // Extension isolée : les outils qu'elle demande, chacun fermé tant que l'administrateur ne l'a pas permis.
+      ...runtimeToolsOf(p.pluginId),
     };
   }));
 
@@ -120,6 +132,8 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
       const installed = getInstalled();
       installed.push(plugin);
       saveInstalled(installed);
+      // Un module isolé démarre tout de suite, sans redémarrage (plugins/runtime/).
+      await syncIsolatedPlugins();
       const restart = pluginHasServerModule(body.pluginId);
       if (restart) requestServerRestart(`Plugin « ${plugin.name} » installé`);
       return { ...plugin, ...restartInfo(restart) };
@@ -145,8 +159,12 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
     // Décidé AVANT de retirer les fichiers : seul un module chargé dans ce
     // processus a besoin d'un redémarrage pour disparaître.
     const restart = restartPolicy(target).restartsOn.uninstall;
+    // Un invité isolé part AVANT ses fichiers (sa base est ouverte), et ses accords d'outils avec lui.
+    await stopIsolatedPlugin(target.pluginId);
+    forgetToolGrants(target.pluginId);
     removePluginFiles(target.pluginId);
     saveInstalled(installed.filter((p) => p.id !== id));
+    await syncIsolatedPlugins();
     if (restart) requestServerRestart(`Plugin « ${target.name} » désinstallé`);
     return { success: true, ...restartInfo(restart) };
   });
@@ -159,6 +177,8 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
     if (!plugin) return reply.status(404).send({ message: "Plugin not found" });
     plugin.enabled = !plugin.enabled;
     saveInstalled(installed);
+    // Un module isolé suit aussitôt : coupé, il reçoit `shutdown` et son relais se ferme.
+    await syncIsolatedPlugins();
     // Pas de redémarrage ici : l'administrateur choisit son moment
     // (`restartRequired`, puis POST /restart) — il interrompt les lectures.
     return { ...plugin, ...restartPolicy(plugin) };
@@ -190,6 +210,8 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
       }
       if (latest.downloadUrl) {
         const archive = await downloadPlugin(current.pluginId, latest.downloadUrl, latest.checksum);
+        // L'invité isolé s'arrête le temps de poser la nouvelle version (sa base, ses fichiers ouverts).
+        await stopIsolatedPlugin(current.pluginId);
         await extractPlugin(archive, current.pluginId);
       }
       // Relu après le téléchargement, comme à l'installation.
@@ -199,6 +221,7 @@ export function registerPluginInstalledRoutes(admin: FastifyInstance): void {
       plugin.version = latest.version;
       plugin.name = latest.name || plugin.name;
       saveInstalled(installed);
+      await syncIsolatedPlugins();
       const restart = restartPolicy(plugin).restartsOn.update;
       if (restart) requestServerRestart(`Plugin « ${plugin.name} » mis à jour`);
       return { ...plugin, ...restartInfo(restart) };

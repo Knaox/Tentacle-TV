@@ -5,10 +5,12 @@ import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
 import { answerPluginApiRequest, getAuthHeaders } from "./pluginIframe/pluginApiRelay";
 import { setHostChromeVeil } from "./pluginIframe/hostChromeVeil";
+import { useNavigationWriteWatcher } from "./pluginIframe/pluginNavigationWrite";
 import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
 import { useServerCapabilities } from "@tentacle-tv/api-client";
+import { PLUGIN_IFRAME_SANDBOX } from "@tentacle-tv/plugins-api";
 import { TRAILER_PLAYER_AVAILABLE, TrailerPlayer } from "./trailerPlayer";
 import {
   OPEN_TRAILER_CATALOG_MESSAGE, loadPluginTrailerQueue, parsePluginTrailerCatalogQuery, type PluginTrailerQueue,
@@ -30,7 +32,7 @@ interface PluginIframeProps {
 }
 
 /**
- * Renders a plugin inside a sandboxed iframe (allow-scripts only).
+ * Renders a plugin inside a sandboxed iframe (allow-scripts only — aucun formulaire natif : `PLUGIN_IFRAME_SANDBOX`).
  * The plugin has NO access to the parent's DOM, localStorage, or cookies.
  * API requests are proxied through postMessage → host fetch with credentials.
  */
@@ -56,6 +58,8 @@ export function PluginIframe({
   const trailerCatalog = server.capabilities.has("trailers.catalog") && TRAILER_PLAYER_AVAILABLE;
 
   const lang = localStorage.getItem("tentacle_language") || "fr";
+  // L'extension règle sa navigation depuis sa page : la barre suit aussitôt.
+  const onApiAnswered = useNavigationWriteWatcher(pluginId);
 
   // shared-deps.js + Tailwind, puis le bundle : un échec se DIT (pluginLoad.tsx).
   const { deps, failBundle, retry } = usePluginDeps(pluginId, () => { bundleFetched.current = false; });
@@ -108,7 +112,10 @@ export function PluginIframe({
         }
 
         case "API_REQUEST":
-          void answerPluginApiRequest(data, backendUrl || "", (message) => iframe.contentWindow?.postMessage(message, "*"));
+          void answerPluginApiRequest(data, backendUrl || "", (message) => {
+            iframe.contentWindow?.postMessage(message, "*");
+            onApiAnswered(data, message);
+          });
           break;
 
         case "NAVIGATE":
@@ -181,7 +188,7 @@ export function PluginIframe({
           break;
       }
     },
-    [bundleUrl, navigate, pluginId, failBundle, trailerCatalog, lang],
+    [bundleUrl, navigate, pluginId, failBundle, trailerCatalog, lang, onApiAnswered],
   );
 
   useEffect(() => {
@@ -238,7 +245,7 @@ export function PluginIframe({
       <iframe
         ref={iframeRef}
         {...mount}
-        sandbox="allow-scripts"
+        sandbox={PLUGIN_IFRAME_SANDBOX}
         title={`plugin-${pluginId}`}
         className="h-full w-full border-0"
         style={{ minHeight: "calc(100vh - 64px)" }}

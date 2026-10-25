@@ -43,6 +43,16 @@ export function supportsMpv(): boolean {
   return hasNativeCommand("mpv_init");
 }
 
+/** Le moteur audio natif de la musique (mpv en audio seul, `music/engine/mpv/`). */
+export function supportsNativeAudio(): boolean {
+  return hasNativeCommand("audio_play");
+}
+
+/** Les requêtes déléguées d'une extension, exécutées depuis cet appareil (`ipc/clientFetch.ts`). */
+export function supportsClientFetch(): boolean {
+  return hasNativeCommand("client_fetch_run");
+}
+
 /** Contrôles média du système (SMTC sous Windows). */
 export function supportsSmtc(): boolean {
   return hasNativeCommand("smtc_init");

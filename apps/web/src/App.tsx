@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense } from "react";
-import { Route, Navigate } from "react-router-dom";
+import { Route, Navigate, useLocation } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { AnimatedRoutes } from "./components/routeTransition/AnimatedRoutes";
 import { StartupOverlays } from "./components/StartupOverlays";
@@ -22,7 +22,10 @@ import { isDesktopApp } from "./desktop/bridge";
 import { supportsPictureInPicture } from "./desktop/capabilities";
 import { PlayerStage } from "./pictureInPicture/PlayerStage";
 import { PageSpinner } from "./components/PageSpinner";
+import { UnknownRoute } from "./components/pluginIframe/UnknownRoute";
 import { useProfileLaunchGate } from "./profiles/launch/useProfileLaunchGate";
+import { LazyOctaveApp, OctaveHomeGate } from "./music/octave/mode/OctaveEntry";
+import { OCTAVE_BASE_PATH } from "./music/octave/mode/octaveMode";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
@@ -83,6 +86,8 @@ export function App() {
   // sections serveur ne sont pas rendues, elles redirigent vers le catalogue.
   const offlineMode = useOfflineMode();
   const onlineOnly = (el: React.ReactElement) => (offlineMode ? <Navigate to="/" replace /> : el);
+  // Le mode musique (Octave) a sa propre coquille : la recherche vidéo (⌘K) s'y tait.
+  const inOctave = useLocation().pathname.startsWith(OCTAVE_BASE_PATH);
 
   // Re-fetch plugins after login (backendUrl doesn't change so the effect won't re-run otherwise)
   useEffect(() => {
@@ -148,9 +153,13 @@ export function App() {
               hors ligne. Immersives, comme la fiche. */}
           <Route path="/offline/item/:itemId" element={guard(<OfflineMediaDetail />)} />
           <Route path="/offline/series/:seriesKey" element={guard(<OfflineSeriesView />)} />
+          {/* Le mode musique : sa coquille, chargée à la demande ; il se garde lui-même (`music.library`). */}
+          <Route path={`${OCTAVE_BASE_PATH}/*`} element={guard(onlineOnly(<Suspense fallback={null}><LazyOctaveApp /></Suspense>))} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
-          <Route element={guard(<AppLayout />)}>
+          {/* Mode musique allumé : l'accueil EST Octave (comme le hors ligne remplace
+              l'accueil), décidé AVANT la mise en page — rien de Tentacle ne clignote. */}
+          <Route element={guard(<OctaveHomeGate enabled={!offlineMode}><AppLayout /></OctaveHomeGate>)}>
             {/* Hors ligne : l'accueil devient le catalogue local. */}
             <Route index element={offlineMode ? <OfflineCatalog /> : <ByFormFactor desktop={<Home />} mirror={<MirrorHome />} />} />
             <Route path="library/:libraryId" element={onlineOnly(<ByFormFactor desktop={<Library />} mirror={<MirrorLibraryCatalog />} />)} />
@@ -285,14 +294,14 @@ export function App() {
           </Route>
 
           <Route path="/preferences" element={<Navigate to="/settings" replace />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<UnknownRoute authed={authed} notFound={<NotFound />} />} />
         </AnimatedRoutes>
       </Suspense>
       {authed && playerOnStage && <PlayerStage />}
       <StartupOverlays authed={authed} />
       {/* La recherche de toute l'application (⌘K, « / », la barre) — au-dessus
           des pages avec ou sans navigation, jamais pendant la lecture. */}
-      <OmniboxHost enabled={authed && !offlineMode} />
+      <OmniboxHost enabled={authed && !offlineMode && !inOctave} />
       {authed && <OfflineSessionGate />}
       {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)

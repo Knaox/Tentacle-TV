@@ -941,3 +941,43 @@ model PluginMigration {
 // ne sont volontairement PAS déclarées ici. Elles sont créées et migrées par
 // l'extension elle-même (SQL brut, colonnes snake_case, migrations notées dans
 // plugin_migrations). Le cœur ne les gère jamais : jamais de prisma db push.
+
+// Octave — l'INDEX LOCAL de la musique Jellyfin (services : src/music/index/).
+// Jellyfin reste la source de vérité : cette table n'est qu'une copie
+// reconstruisible (premier passage paginé, puis évènements des sockets des
+// comptes). Aucun favori, aucune playlist, aucune donnée d'un compte ici.
+// La recherche passe par la table virtuelle FTS5 `music_fts` (migration 0012,
+// SQL brut : Prisma ne sait pas décrire une table virtuelle).
+model MusicIndexItem {
+  id                String    @id // identifiant Jellyfin, sans tirets, en minuscules
+  kind              String // "track" | "album" | "artist"
+  name              String
+  sortName          String
+  albumId           String?
+  albumName         String?
+  albumArtist       String?
+  artistsJson       String    @default("[]") // [{ id, name, mbid }] dans l'ordre du crédit
+  year              Int?
+  trackNumber       Int?
+  discNumber        Int?
+  durationMs        Int?
+  recordingMbid     String?
+  releaseMbid       String?
+  releaseGroupMbid  String?
+  artistMbid        String?
+  formatJson        String? // MusicAudioFormat, tel que Jellyfin l'a lu
+  sizeBytes         BigInt?
+  normalizationGain Float?
+  replayGainJson    String? // lu des tags à la première source demandée
+  imageTag          String?
+  childCount        Int?
+  dateCreated       DateTime?
+  syncedAt          DateTime
+  generation        Int       @default(0)
+
+  @@index([kind, sortName])
+  @@index([albumId])
+  @@index([recordingMbid])
+  @@index([kind, dateCreated])
+  @@map("music_items")
+}

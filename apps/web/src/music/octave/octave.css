@@ -1,0 +1,90 @@
+@import "./octaveTokens.css";
+@import "./octaveNight.css";
+@import "./shell/shell.css";
+@import "./shell/shellGlass.css";
+
+/*
+ * Octave — ce que Tailwind ne dit pas. Jetons de l'identité : octaveTokens.css
+ * (docs/octave/IDENTITE.md) ; la coquille : shell/shell.css. Clair ET sombre ;
+ * animations en transform/opacity seulement ; rien qui bat en boucle (règles
+ * « Coût GPU » de CLAUDE.md).
+ */
+
+/* L'aplat de marque d'un bouton Lecture : le dégradé PROFOND (blanc dessus). */
+.octave-brand-fill {
+  background-image: var(--oc-gradient-deep);
+  color: var(--oc-on-gradient);
+}
+
+/* Le texte de marque (qualité « Hi-Res », mot « Octave ») : le dégradé. */
+.octave-brand-text {
+  background-image: var(--oc-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Une ombre de texte (celle d'un verre, héritée) se peindrait PAR-DESSUS le
+   * dégradé, qui ne vit que dans les lettres : il deviendrait terne. */
+  text-shadow: none;
+}
+
+/* La tête d'une vue (album, playlist, likés) : un voile de marque, ROSE en tête, qui fond vers la page. */
+.octave-hero {
+  position: relative;
+  isolation: isolate;
+}
+.octave-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--oc-hero-veil);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Une rangée de titre : le bouton lecture remplace le numéro au survol et au focus. */
+.octave-row .octave-row-play { opacity: 0; }
+.octave-row:hover .octave-row-play,
+.octave-row:focus-within .octave-row-play { opacity: 1; }
+.octave-row:hover .octave-row-number,
+.octave-row:focus-within .octave-row-number { opacity: 0; }
+
+/* Une carte : le bouton lecture monte au survol (transform + opacité seulement). */
+.octave-card .octave-card-play {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 160ms ease-out, transform 160ms ease-out;
+}
+.octave-card:hover .octave-card-play,
+.octave-card:focus-within .octave-card-play {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* La file d'attente et le lecteur plein écran : montés à l'ouverture, ils entrent
+   en glissant (une animation d'ENTRÉE, finie — rien ne tourne une fois posé). */
+@keyframes octaveSlideIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes octaveSheetIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.octave-drawer { animation: octaveSlideIn var(--oc-duration-slow) var(--oc-ease-out) both; }
+.octave-sheet { animation: octaveSheetIn var(--oc-duration-slow) var(--oc-ease-out) both; }
+
+/* Les nouveaux résultats d'une page externe entrent en fondu. */
+@keyframes octaveFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.octave-enter { animation: octaveFadeIn 200ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .octave-card .octave-card-play { transition: none; }
+  .octave-enter,
+  .octave-drawer,
+  .octave-sheet { animation: none; }
+}

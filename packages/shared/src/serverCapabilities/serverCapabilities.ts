@@ -257,6 +257,29 @@ export const SERVER_CAPABILITIES = {
    *  réveille l'iPhone quand elle s'achève sans lui. Sans elle, le téléphone tire le transcodage
    *  en direct (`/light`), comme avant. */
   "offline.serverPrepare": "1.31.1",
+  // ── Octave : la musique de la bibliothèque, et les extensions isolées (docs/octave/CONTRATS.md) ──
+  /** La musique de la bibliothèque Jellyfin servie par le cœur (`/api/music/*` : index et
+   *  recherche, favoris, playlists, flux direct, événements `music:*`). Sans elle : aucun mode
+   *  Octave, aucune entrée musique. */
+  "music.library": "1.32.0",
+  /** Le runtime ISOLÉ des modules serveur d'extension (processus à part, API d'hôte fermée) et le
+   *  contrat `music` du manifeste relayé par `/api/plugins/active`. Sans elle : aucun résultat,
+   *  aucune lecture ni geste hors bibliothèque. */
+  "plugins.isolatedRuntime": "1.32.0",
+  /** Le point d'extension `music.suggest` relayé par `/api/plugins/active` : pendant la frappe, la
+   *  barre d'Octave demande des SUGGESTIONS LOCALES à l'extension (ses index, aucune requête
+   *  réseau de sa part), la recherche complète ne part qu'à la validation. Sans elle : suggestions
+   *  de la bibliothèque et recherches récentes seulement. */
+  "music.suggest": "1.32.0",
+  /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
+   *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
+   *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */
+  "plugins.clientFetch": "1.32.0",
+  /** La NAVIGATION réglée par l'extension (`navigation` du manifeste, `pluginNavigation.ts`) : le
+   *  nom de ses pages et leur place par défaut (barre principale ou « Plus »), fusionnés dans les
+   *  `navItems` de `/api/plugins/active` (`primary`). Sans elle : pages épinglées d'office sous le
+   *  nom du manifeste, et l'extension n'offre pas ce réglage. */
+  "plugins.navigation": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

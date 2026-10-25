@@ -54,6 +54,12 @@ export function diffMigrationsToSchema(dir: string, schema: string = SCHEMA_PATH
     // La table de suivi n'est pas dans le schéma : la garder, ce serait une dérive inventée.
     const db = openSqlite(file);
     db.exec(`DROP TABLE "${MIGRATIONS_TABLE}"`);
+    // Les tables VIRTUELLES (FTS5 de la musique, `music_fts`) ne s'écrivent pas
+    // dans schema.prisma : Prisma ne les décrit pas, et lirait leurs tables
+    // d'ombre (`…_data`, `…_idx`…) comme des tables en trop. Les retirer
+    // emporte leurs ombres ; le test de la migration 0012 les tient à part.
+    const virtuals = db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND sql LIKE 'CREATE VIRTUAL TABLE%'`).all() as Array<{ name: string }>;
+    for (const { name } of virtuals) db.exec(`DROP TABLE "${name}"`);
     db.close();
     const url = `file:${file.replace(/\\/g, "/")}`;
     const sql = runPrisma(["migrate", "diff", "--from-url", url, "--to-schema-datamodel", schema, "--script"]);

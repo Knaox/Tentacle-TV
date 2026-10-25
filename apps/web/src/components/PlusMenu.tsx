@@ -238,8 +238,8 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
                 key={page.key}
                 icon={page.icon}
                 label={page.label}
-                isPinned={pinned.isPluginNavPinned(page.key)}
-                onTogglePin={() => pinned.togglePluginNav(page.key)}
+                isPinned={pinned.isPluginNavPinned(page.key, page.primary)}
+                onTogglePin={() => pinned.togglePluginNav(page.key, page.primary)}
                 onNavigate={() => onNavigate(page.path)}
               />
             ))}
@@ -255,6 +255,7 @@ interface PluginPage {
   path: string;
   label: string;
   icon: React.ReactNode;
+  primary?: boolean; // place par défaut donnée par l'extension (absent : dans la barre)
 }
 
 /** Pages de plugin épinglables — générique, aucun plugin nommé. */
@@ -273,6 +274,7 @@ function usePluginPages(): PluginPage[] {
           path: nav.path,
           label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),
           icon: getLucideIcon(nav.icon),
+          primary: nav.primary,
         });
       }
     }

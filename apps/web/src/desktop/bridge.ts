@@ -27,9 +27,11 @@ export {
 } from "./detect";
 export {
   supportsAppUpdates,
+  supportsClientFetch,
   supportsDownloads,
   supportsMediaWarm,
   supportsMpv,
+  supportsNativeAudio,
   supportsOfflineSession,
   supportsSmtc,
 } from "./capabilities";

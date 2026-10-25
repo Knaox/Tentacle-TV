@@ -1,0 +1,73 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+
+/**
+ * Octave — la bascule : un vrai interrupteur (`role="switch"`, état annoncé),
+ * absente sans musique, allumée dans Octave ; et le réglage du démarrage,
+ * absent sans musique, ses trois choix visibles sinon.
+ */
+const h = vi.hoisted(() => ({ available: true, mode: false }));
+
+vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
+vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({}) }));
+vi.mock("../../engine/engineAuth", () => ({ useMusicEngineAuth: () => ({ baseUrl: "", token: null, useCredentials: true }) }));
+vi.mock("./useOctaveAvailability", () => ({
+  useOctaveAvailability: (enabled = true) => ({ available: enabled && h.available, settled: true }),
+}));
+vi.mock("./octaveMode", () => ({
+  OCTAVE_BASE_PATH: "/octave",
+  isOctaveMode: () => h.mode,
+  useOctaveMode: () => h.mode,
+  setOctaveMode: () => undefined,
+}));
+
+const { OctaveModeSwitch } = await import("./OctaveModeSwitch");
+const { OctaveStartupSetting } = await import("./OctaveStartupSetting");
+
+beforeEach(() => {
+  h.available = true;
+  h.mode = false;
+});
+
+describe("bascule du mode", () => {
+  it("barre de Tentacle, sans musique : aucune trace", () => {
+    h.available = false;
+    expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toBe("");
+  });
+
+  it("barre de Tentacle : un interrupteur éteint, nommé, qui dit où il mène", () => {
+    const html = renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />);
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('aria-checked="false"');
+    expect(html).toContain('aria-label="mode.switchLabel"');
+    expect(html).toContain('title="mode.enterHint"');
+  });
+
+  it("barre de Tentacle, mode resté allumé : l'interrupteur le dit", () => {
+    h.mode = true;
+    expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toContain('aria-checked="true"');
+  });
+
+  it("dans Octave : allumé, et propose de revenir", () => {
+    const html = renderToStaticMarkup(<OctaveModeSwitch placement="octave" onExit={() => undefined} showLabel />);
+    expect(html).toContain('aria-checked="true"');
+    expect(html).toContain('title="mode.exitHint"');
+    expect(html).toContain(">mode.switchLabel<");
+  });
+});
+
+describe("réglage « Au démarrage, ouvrir »", () => {
+  it("sans musique : aucune trace", () => {
+    h.available = false;
+    expect(renderToStaticMarkup(<OctaveStartupSetting />)).toBe("");
+  });
+
+  it("avec musique : les trois choix, « dernier mode utilisé » par défaut", () => {
+    const html = renderToStaticMarkup(<OctaveStartupSetting />);
+    for (const key of ["mode.startupLast", "mode.startupOctave", "mode.startupTentacle", "mode.startupLabel"]) expect(html).toContain(key);
+    const checked = [...html.matchAll(/role="radio" aria-checked="true"[^>]*>([\s\S]*?)<\/button>/g)].map((m) => m[1]);
+    expect(checked).toHaveLength(1);
+    expect(checked[0]).toContain("mode.startupLast");
+  });
+});

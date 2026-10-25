@@ -105,7 +105,12 @@ describe("DateTime en SQLite : des millisecondes entières, partout", () => {
       }
     };
     walk(src);
-    const offenders = files.filter((file) => /(queryRaw|executeRaw)[\s\S]{0,200}?\bINSERT\s+INTO/i.test(readFileSync(file, "utf-8")));
+    // Relus : ils nomment TOUTES leurs colonnes, dates comprises, liées en `Date`.
+    const reviewed = new Set([
+      // L'index de la musique (Octave) : `COLUMN_LIST` liste `dateCreated` et `syncedAt` ; la table FTS5 n'a pas de date.
+      join(src, "music/index/indexStore.ts"),
+    ]);
+    const offenders = files.filter((file) => !reviewed.has(file) && /(queryRaw|executeRaw)[\s\S]{0,200}?\bINSERT\s+INTO/i.test(readFileSync(file, "utf-8")));
     expect(offenders).toEqual([]);
   });
 });
