@@ -1,8 +1,8 @@
 # Octave — le logo du mode musique
 
-La mascotte de Tentacle, **sans chapeau**, qui montre sur son écran la note
-d'Octave à la place du play ; et le **glyphe**, cette même note seule, pour
-l'interface. Rien ici ne se retouche à la main :
+La mascotte de Tentacle, **son tricorne de pirate sur la tête** (celui de
+`tentacle-logo-pirate.svg`), qui montre sur son écran la note d'Octave à la
+place du play ; et le **glyphe**, cette même note seule, pour l'interface. Rien ici ne se retouche à la main :
 
 ```bash
 python3 brand/octave.py              # brand/octave/ + le module TS du web
@@ -17,16 +17,17 @@ poulpe se fait dans `generate-svg.py`, puis `octave.py` se relance.
 | Fichier | Rôle |
 |---|---|
 | `logo-octave.svg` | Le logo couleur, à partir de 24 px, sur fond clair comme sombre : la vitre sombre dans son cadre au dégradé se lit sur les deux (comme le logo de Tentacle). |
-| `glyph-octave.svg` | Le glyphe au dégradé des bras : le logo couleur SOUS 24 px. |
+| `logo-octave-small.svg` | Le logo couleur SOUS 24 px (le pouce de la bascule « Mode musique », 16 → 23 px) : le même dessin, le tricorne cerné d'un liseré au dégradé du cadre, sans ventouses ni reflets. |
+| `glyph-octave.svg` | Le glyphe au dégradé des bras, la note seule. |
 | `glyph-octave-on-dark.svg` | Le glyphe monochrome blanc (fond sombre), `currentColor`. |
 | `glyph-octave-on-light.svg` | Le glyphe monochrome encre `#241040` (fond clair), `currentColor`. |
 
 Le web consomme `apps/web/src/components/ui/octaveLogo.generated.ts` :
-`OctaveGlyph` (`components/ui/OctaveGlyph.tsx`, en ligne, `currentColor` — la
-bascule, un onglet, la navigation) et `octaveLogoSvg(variant, taille, surFondSombre)`
+`OctaveGlyph` (`components/ui/OctaveGlyph.tsx`, en ligne, `currentColor` — un
+onglet, la navigation, le monochrome) et `octaveLogoSvg(variant, taille, surFondSombre)`
 / `octaveLogoDataUri(…)` pour un `<img>` (composant `OctaveLogo` du mode musique).
-Noms d'export stables : `OCTAVE_GLYPH_PATHS`, `OCTAVE_GLYPH_VIEWBOX`,
-`octaveLogoSvg`, `octaveLogoDataUri`.
+(la bascule y prend la petite taille). Noms d'export stables :
+`OCTAVE_GLYPH_PATHS`, `OCTAVE_GLYPH_VIEWBOX`, `octaveLogoSvg`, `octaveLogoDataUri`.
 
 ## Le glyphe
 
@@ -45,20 +46,29 @@ fois sur leurs jonctions (défaut O1-1) ; un seul est peint une fois. Le test
 
 ## Le logo
 
-Le corps du logo de Tentacle (`BODY`), dans le même ordre, le play remplacé par
-le glyphe — posé par son centre optique au centre de l'écran, 76 de côté de
+Le logo de Tentacle (`BODY`, `HAT_G`, `FRONT_G`), dans le même ordre, le play
+remplacé par le glyphe — posé par son centre optique au centre de l'écran, 76 de côté de
 repère, au dégradé du play (`gP`). La spirale du bras gauche passe sur la tête
 de la note : la pieuvre la tient.
+
+## Le chapeau, à toutes les tailles (25/10 au soir)
+
+Le tricorne est la marque de toujours, pas un déguisement : sans lui, la
+mascotte d'Octave est « chauve, ça rend moche » (Damien). Il est sur le logo
+à toutes les tailles. Le favicon de Tentacle l'ôte parce qu'à 16 px sa calotte
+sombre se fond dans un fond sombre ; Octave le garde en le CERNANT, sous 24 px,
+d'un liseré au dégradé du cadre (`SMALL_HAT_RIM`, un pixel plein à 20 px) — il
+se lit sur l'encre comme sur la nacre.
 
 ## Ce qui a été retiré (25/10) et pourquoi
 
 Le dessin d'avant — une double-croche géante À LA PLACE de l'écran, le tricorne
-à tête de mort, un monochrome aux orbites creusées — était « en mode
-Halloween » (les logos d'Halloween, c'est fini), la note « trop grosse », le
-rendu pas « natif ». Donc :
+penché à tête de mort géante, un monochrome aux orbites creusées — était « en
+mode Halloween », la note « trop grosse », le rendu pas « natif ». Donc :
 
-- **plus jamais de chapeau** ni rien de saisonnier, à aucune taille ;
 - **la note à la proportion du play**, sur l'écran que la pieuvre enlace ;
+- **le chapeau de Tentacle tel quel** (celui du logo de toujours), jamais un
+  autre ;
 - **pas de mascotte monochrome** : réduite à une masse, ses yeux creusés
   lisent « tête de mort » (déjà payé sur l'Apple TV, 2026-10-02). Le
   monochrome, c'est le glyphe.

@@ -1,9 +1,9 @@
 /**
  * Octave — le logo, tiré du module GÉNÉRÉ par `brand/octave.py` (jamais
- * redessiné ici) : la mascotte sans chapeau, la note sur son écran, à partir
- * de 24 px ; le glyphe au dégradé en dessous (le module en décide). En
- * monochrome, toujours le glyphe, rendu en ligne à `currentColor` comme une
- * icône posée à côté.
+ * redessiné ici) : la mascotte et son tricorne, la note sur son écran, à
+ * toute taille (sous 24 px, sa petite taille au tricorne cerné : le module en
+ * décide). En monochrome, toujours le glyphe, rendu en ligne à
+ * `currentColor` comme une icône posée à côté.
  */
 
 import { memo } from "react";

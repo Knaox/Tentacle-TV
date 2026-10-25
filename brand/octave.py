@@ -1,6 +1,8 @@
 """
-Le logo d'Octave, le mode musique de Tentacle : la MÊME mascotte, sans
-chapeau, qui montre sur son écran le glyphe d'Octave à la place du play.
+Le logo d'Octave, le mode musique de Tentacle : la MÊME mascotte, son
+tricorne de pirate sur la tête (celui de `tentacle-logo-pirate.svg`, la
+marque de toujours), qui montre sur son écran le glyphe d'Octave à la place
+du play.
 Rien ici ne redessine le poulpe : ses pièces (bras, tête, visage, écran,
 dégradés) sont LUES dans `generate-svg.py`, exécuté vers un dossier jetable —
 le logo d'origine et ses fichiers ne sont jamais réécrits par ce script.
@@ -12,8 +14,10 @@ Le glyphe (la croche dont le crochet est un bras) vit dans `octave_glyph.py`,
 le module TypeScript dans `octave_ts.py`.
 
 Le dessin d'avant (2026-10, une double-croche géante à la place de l'écran,
-tricorne à tête de mort, monochrome aux orbites creusées) est retiré : « en
-mode Halloween », la note « trop grosse », pas « natif » (Damien, 25/10).
+monochrome aux orbites creusées) est retiré : la note « trop grosse », pas
+« natif » (Damien, 25/10). Le chapeau, lui, était parti avec, à tort : sans
+lui la mascotte est « chauve, ça rend moche » (Damien, 25/10 au soir) — il
+est revenu, à toutes les tailles.
 """
 import pathlib
 import runpy
@@ -77,8 +81,8 @@ def face():
 
 def logo_art():
     """
-    Le dessin, de l'arrière vers l'avant — l'ordre de `BODY` du logo de
-    Tentacle, le play remplacé par la note, et jamais de chapeau : la vitre
+    Le dessin, de l'arrière vers l'avant — l'ordre du logo de Tentacle (`BODY`,
+    `HAT_G`, `FRONT_G`), le play remplacé par la note, le tricorne tel quel : la vitre
     sombre dans son cadre au dégradé se lit sur fond clair comme sur fond
     sombre (le logo de Tentacle n'a qu'une version couleur), une seule suffit.
     """
@@ -88,12 +92,54 @@ def logo_art():
             + A["screen_rect"](fill="url(#gT)")
             + A["screen_rect"](extra=f' stroke="url(#gV)" stroke-width="{A["S"]["frame"]}"')
             + octave_glyph.placed(NOTE_SIZE, NOTE_CENTER, "url(#gPn)")
-            + face() + A["FRONT_G"])
+            + face() + A["HAT_G"] + A["FRONT_G"])
 
 
-def logo_svg():
-    return (octave_glyph.HEAD_TAG.format(extra="") + f"<title>Octave</title>{NOTE}"
-            f'<defs>{A["GRADS"]}{NOTE_GRAD}</defs>{logo_art()}</svg>\n')
+# Le liseré du tricorne en petite taille, dans le repère du chapeau (réduit à
+# 0,64 par `HAT_T`) : ~14 unités du logo, un pixel plein à 20 px.
+SMALL_HAT_RIM = 22
+
+
+def small_hat():
+    """
+    Le tricorne de la petite taille : le MÊME chapeau (calotte, bande, crâne),
+    cerné d'un liseré au dégradé du cadre (`gV`) — sous 24 px, la calotte
+    sombre seule se fondait dans un fond sombre (le favicon de Tentacle l'ôte
+    pour cette raison) ; cernée, elle se lit sur l'encre comme sur la nacre.
+    """
+    c = A["COLORS"]
+    return (f'<g transform="{A["HAT_T"]}">'
+            f'<path d="{A["HAT"]}" fill="url(#gH)" stroke="url(#gV)" stroke-width="{SMALL_HAT_RIM}" '
+            f'stroke-linejoin="round" paint-order="stroke"/>'
+            f'<path d="{A["BAND"]}" fill="none" stroke="url(#gV)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
+            f'<path d="{A["SKULL"]}" fill="{c["skull"]}"/></g>')
+
+
+def small_art():
+    """
+    Le logo SOUS 24 px (pouce de la bascule, 16 → 23 px) : le même dessin et le
+    même ordre, sans ce qui ne survit pas à la réduction — ventouses, yeux du
+    crâne, reflets des yeux — et le tricorne cerné (`small_hat`).
+    """
+    back = "".join(f'<path d="{d}"/>' for d in A["BACK_DS"])
+    front = "".join(f'<path d="{d}"/>' for d in A["FRONT_DS"])
+    c = A["COLORS"]
+    eyes = ("".join(f'<circle cx="{x}" cy="{y}" r="{r}" fill="#fff"/>' for x, y, r in A["EYE_WHITES"])
+            + "".join(f'<circle cx="{x}" cy="{y}" r="{r}" fill="{A["INK"]}"/>' for x, y, r in A["EYE_PUPILS"]))
+    return (f'<g fill="url(#gA)">{back}</g>'
+            f'<path d="{A["HEAD"]}" fill="url(#gHd)"/>'
+            + A["screen_rect"](fill="url(#gT)")
+            + A["screen_rect"](extra=f' stroke="url(#gV)" stroke-width="{A["S"]["frame"]}"')
+            + octave_glyph.placed(NOTE_SIZE, NOTE_CENTER, "url(#gPn)")
+            + eyes
+            + f'<path d="{A["SMILE"]}" fill="none" stroke="{A["INK"]}" stroke-width="3.2" stroke-linecap="round"/>'
+            + small_hat()
+            + f'<g fill="url(#gA)">{front}</g>')
+
+
+def logo_svg(art=None, title="Octave"):
+    return (octave_glyph.HEAD_TAG.format(extra="") + f"<title>{title}</title>{NOTE}"
+            f'<defs>{A["GRADS"]}{NOTE_GRAD}</defs>{art if art is not None else logo_art()}</svg>\n')
 
 
 def variants():
@@ -104,6 +150,7 @@ def variants():
     """
     return {
         "logo-octave.svg": logo_svg(),
+        "logo-octave-small.svg": logo_svg(small_art(), "Octave — petite taille"),
         "glyph-octave.svg": octave_glyph.glyph_color_svg(NOTE),
         "glyph-octave-on-dark.svg": octave_glyph.glyph_svg(MONO_ON_DARK, NOTE),
         "glyph-octave-on-light.svg": octave_glyph.glyph_svg(MONO_ON_LIGHT, NOTE),

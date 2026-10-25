@@ -243,3 +243,20 @@
   .octave-art-open .octave-art-open-hint { transition: none; }
   .octave-stage-in { animation: none; }
 }
+
+/* ── Le repère de la première visite : la pointe de la bulle, vers la bascule ── */
+.octave-hint-tip {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--oc-ink-raised);
+  transform: rotate(45deg);
+}
+.octave-hint-tip-up {
+  top: -5px;
+}
+.octave-hint-tip-left {
+  top: 18px;
+  left: -5px;
+}

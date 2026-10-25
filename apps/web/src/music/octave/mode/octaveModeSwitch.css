@@ -9,7 +9,8 @@
  * allumée prend la signature d'Octave (`--oc-gradient`, violet → rose, le rose
  * en tête), recopiée en repli parce que la barre de Tentacle ne charge pas les
  * jetons d'Octave (module à la demande). Le pouce reste blanc dans les deux
- * thèmes : le glyphe y est d'encre éteint, rose allumé.
+ * thèmes : il porte le logo d'Octave, la mascotte et son tricorne
+ * (`octaveSwitchGlyph.tsx`), le même allumé ou éteint.
  */
 
 .octave-switch {

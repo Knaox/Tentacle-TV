@@ -61,6 +61,7 @@ import userRights from "./userRights";
 import libraryDelete from "./libraryDelete";
 import accountAccess from "./accountAccess";
 import music from "./music";
+import octaveShell from "./octaveShell";
 
 export default {
   common, auth, player, admin,
@@ -98,4 +99,5 @@ export default {
   libraryDelete,
   accountAccess,
   music,
+  octaveShell,
 };

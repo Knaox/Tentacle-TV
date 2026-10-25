@@ -1,6 +1,6 @@
 /**
  * Octave — LA bascule du mode : un interrupteur dont le pouce porte le logo
- * d'Octave. Allumé, on est dans la musique ; éteint, dans les films et séries.
+ * d'Octave (la mascotte de Tentacle et son tricorne). Allumé, on est dans la musique ; éteint, dans les films et séries.
  * Le mode reste tel quel quand on quitte l'application (`octaveMode.ts`).
  *
  * - `placement="tentacle"` (barre de Tentacle) : n'existe qu'avec la musique
@@ -105,7 +105,7 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
       {props.showLabel && <span className="text-sm font-semibold text-content-secondary">{label}</span>}
       <span aria-hidden className="octave-switch-track">
         <span className="octave-switch-thumb">
-          <OctaveSwitchGlyph size={18} />
+          <OctaveSwitchGlyph size={20} />
         </span>
       </span>
     </button>
