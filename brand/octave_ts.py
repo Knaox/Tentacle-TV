@@ -25,9 +25,10 @@ EXPORTS = {
 }
 
 
-def module(files, note, pieces):
+def module(files, note, pieces, glyph):
     """
     `files` : nom → SVG (les déclinaisons retenues) ; `note` : la note dessinée ;
+    `glyph` : les contours du glyphe de l'interface (`octave_glyph.py`) ;
     `pieces` : nom → fragment répété d'une variante à l'autre (les contours des
     bras, l'essentiel du poids). Chaque fragment s'écrit UNE fois et les SVG le
     reprennent en gabarit (le module pèse le tiers de la somme des SVG).
@@ -75,4 +76,16 @@ def module(files, note, pieces):
     out.append("export const OCTAVE_NOTE_GLINTS: readonly { cx: number; cy: number; r: number }[] = [")
     out += [f"  {{ cx: {x:.1f}, cy: {y:.1f}, r: {r} }}," for x, y, r in note.get("glints", [])]
     out.append("];")
+    out.append("")
+    out.append("/**")
+    out.append(" * Le GLYPHE d'Octave, pour l'interface (bascule, onglet, navigation ; 16 → 24 px) :")
+    out.append(" * une croche dont le crochet est un bras de la mascotte. Une seule couleur, à remplir")
+    out.append(" * en `currentColor`, repère `OCTAVE_GLYPH_VIEWBOX`. Nom d'export STABLE.")
+    out.append(" */")
+    out.append("export const OCTAVE_GLYPH_PATHS: readonly string[] = [")
+    out += [f"  {json.dumps(d)}," for d in glyph]
+    out.append("];")
+    out.append("")
+    out.append("/** Le repère du glyphe (celui de `brand/*.svg`). */")
+    out.append('export const OCTAVE_GLYPH_VIEWBOX = "0 0 240 240";')
     return "\n".join(out) + "\n"

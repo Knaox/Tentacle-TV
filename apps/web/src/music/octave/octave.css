@@ -1,3 +1,5 @@
+@import "./octaveTokens.css";
+
 /*
  * Octave — ce que Tailwind ne dit pas. Thème existant (clair ET sombre, jetons
  * de tokens.css) ; animations en transform/opacity seulement ; rien qui bat
