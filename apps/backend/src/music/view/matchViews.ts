@@ -97,10 +97,12 @@ async function matchAlbum(view: UserView, query: MusicMatchAlbumQuery, byMbid: r
   for (const row of candidates) {
     if (seen.has(row.id) || !isSameAlbum(albumMatchable(row), wanted)) continue;
     seen.add(row.id);
-    const tracks = query.tracks ? withinAlbum(query, visibleRows(view, await albumTracks(row.id))) : new Map<string, IndexRow>();
+    // Une liste vide ne dit rien des titres : c'est alors le compte de titres qui juge, comme pour une carte.
+    const listed = (query.tracks?.length ?? 0) > 0;
+    const tracks = listed ? withinAlbum(query, visibleRows(view, await albumTracks(row.id))) : new Map<string, IndexRow>();
     // Des titres listés, aucun reconnu : un homonyme.
-    if (query.tracks && query.tracks.length > 0 && tracks.size === 0) continue;
-    const full = query.tracks ? tracks.size === query.tracks.length : query.trackCount !== null && (row.childCount ?? 0) >= query.trackCount;
+    if (listed && tracks.size === 0) continue;
+    const full = listed ? tracks.size === query.tracks!.length : query.trackCount !== null && query.trackCount > 0 && (row.childCount ?? 0) >= query.trackCount;
     if (!best || tracks.size > best.tracks.size) best = { query, row, tracks, full };
   }
   return best;

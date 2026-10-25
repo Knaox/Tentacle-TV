@@ -121,6 +121,9 @@ describe("ce que la bibliothèque a (POST /api/music/match)", () => {
     delete card.tracks;
     expect((await run({ albums: [card] })).albums[0]?.coverage).toBe("full");
     expect((await run({ albums: [{ ...card, trackCount: 12 }] })).albums[0]?.coverage).toBe("partial");
+    // Une liste vide ou un compte inconnu ne font jamais un album « entier ».
+    expect((await run({ albums: [{ ...card, tracks: [] }] })).albums[0]?.coverage).toBe("full");
+    expect((await run({ albums: [{ ...card, tracks: [], trackCount: null }] })).albums[0]?.coverage).toBe("partial");
   });
 
   it("les droits du compte : ce qu'il ne voit pas n'existe pas", async () => {
