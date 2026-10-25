@@ -19,6 +19,7 @@ import { SelectCell } from "../components/SelectCell";
 import { SelectionBar } from "../actions/selection/SelectionBar";
 import { clickGesture, orderedKeys, type SelectGesture } from "../actions/selection/selectionRules";
 import { useListSelection } from "../actions/selection/useListSelection";
+import { NowSwell } from "../motion/NowSwell";
 
 const small =
   "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
@@ -61,6 +62,7 @@ function QueueEntry({ item, index, count, current, actions, selection }: { item:
             <span className="truncate">{track.artists.map((a) => a.name).join(", ")}</span>
           </span>
         </span>
+        {current && <NowSwell className="ml-auto mr-1 h-4 w-4 text-octave-accent-text" />}
       </button>
       {/* Le titre de la file s'ajoute à une playlist, ou s'en retire, comme partout (25/10). */}
       <TrackMenu track={track} actions={actions} visible={current ? "always" : "hover"} />
