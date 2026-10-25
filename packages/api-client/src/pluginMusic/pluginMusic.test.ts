@@ -144,6 +144,14 @@ describe("appels à l'extension", () => {
     expect(await resolveMusicSource(provider, "a")).toBeNull();
   });
 
+  it("le préchargement du suivant se dit (`intent: \"next\"`) ; un geste envoie la demande d'avant, à l'identique", async () => {
+    const bodies: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => (bodies.push(JSON.parse(String(init.body))), new Response(JSON.stringify({ sources: [] })))));
+    await resolveMusicSource(provider, "a");
+    await resolveMusicSource(provider, "b", undefined, "next");
+    expect(bodies).toEqual([{ ids: ["a"] }, { ids: ["b"], intent: "next" }]);
+  });
+
   it("reconnaît les événements music:* et eux seuls", () => {
     expect(isMusicEvent({ type: "music:resolved" })).toBe(true);
     expect(isMusicEvent({ type: "music:whatever" })).toBe(false);

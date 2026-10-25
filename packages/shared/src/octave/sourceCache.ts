@@ -5,6 +5,10 @@
  * (`press`, `next`, `hover`) la prépare, et le clic la trouve PRÊTE — c'est ce
  * qui rend l'attente invisible. Une demande en vol est partagée ; une source
  * expirée (`expiresAt`, avec une marge) est redemandée.
+ *
+ * Le PRÉCHARGEMENT du titre suivant se dit (`"next"`) : l'extension le fait
+ * passer après les gestes. Un clic sur un titre qu'on préchargeait encore le
+ * redemande comme un geste — l'extension promeut la résolution en cours.
  */
 
 import type { MusicTrack, PlaybackSource } from "../music";
@@ -14,11 +18,14 @@ export interface ExternalRetry {
   retryAfterMs: number;
 }
 
+/** Pourquoi une source est demandée : un geste (`play`), ou le préchargement du suivant de la file (`next`). */
+export type SourceIntent = "play" | "next";
+
 export interface SourceResolvers {
   /** Un titre de la bibliothèque (`/api/music/source/:id`). */
   library: (jellyfinId: string) => Promise<PlaybackSource>;
   /** Un titre d'extension (`music.resolve`) ; `null` : pas de source ; `{ retryAfterMs }` : réessayer plus tard. */
-  external: (track: MusicTrack) => Promise<PlaybackSource | ExternalRetry | null>;
+  external: (track: MusicTrack, intent: SourceIntent) => Promise<PlaybackSource | ExternalRetry | null>;
   now: () => number;
 }
 
@@ -27,7 +34,7 @@ const EXPIRY_MARGIN_MS = 10_000;
 
 export class SourceCache {
   private readonly sources = new Map<string, PlaybackSource>();
-  private readonly inFlight = new Map<string, Promise<PlaybackSource | null>>();
+  private readonly inFlight = new Map<string, { intent: SourceIntent; request: Promise<PlaybackSource | null> }>();
   /** Le dernier « réessaie plus tard » de l'extension, par titre (`takeRetryHint`). */
   private readonly retryHints = new Map<string, number>();
 
@@ -44,14 +51,15 @@ export class SourceCache {
     return source;
   }
 
-  get(track: MusicTrack): Promise<PlaybackSource | null> {
+  get(track: MusicTrack, intent: SourceIntent = "play"): Promise<PlaybackSource | null> {
     const ready = this.peek(track.key);
     if (ready) return Promise.resolve(ready);
     const pending = this.inFlight.get(track.key);
-    if (pending) return pending;
+    // Un clic sur un titre qu'on préchargeait : redemandé comme geste (l'extension promeut la résolution en cours).
+    if (pending && (intent === "next" || pending.intent === "play")) return pending.request;
     // Une nouvelle demande : un ancien « réessaie plus tard » ne vaut plus.
     this.retryHints.delete(track.key);
-    const request = this.resolve(track)
+    const request = this.resolve(track, intent)
       .then((result) => {
         if (result !== null && "retryAfterMs" in result) {
           this.retryHints.set(track.key, result.retryAfterMs);
@@ -61,8 +69,10 @@ export class SourceCache {
         return result;
       })
       .catch(() => null)
-      .finally(() => this.inFlight.delete(track.key));
-    this.inFlight.set(track.key, request);
+      .finally(() => {
+        if (this.inFlight.get(track.key)?.request === request) this.inFlight.delete(track.key);
+      });
+    this.inFlight.set(track.key, { intent, request });
     return request;
   }
 
@@ -81,9 +91,9 @@ export class SourceCache {
     return hint ?? null;
   }
 
-  private resolve(track: MusicTrack): Promise<PlaybackSource | ExternalRetry | null> {
+  private resolve(track: MusicTrack, intent: SourceIntent): Promise<PlaybackSource | ExternalRetry | null> {
     if (track.jellyfinId && track.availability === "library") return this.resolvers.library(track.jellyfinId);
-    if (track.external) return this.resolvers.external(track);
+    if (track.external) return this.resolvers.external(track, intent);
     if (track.jellyfinId) return this.resolvers.library(track.jellyfinId);
     return Promise.resolve(null);
   }
