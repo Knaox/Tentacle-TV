@@ -1,16 +1,30 @@
 /**
  * Octave — la bibliothèque : albums (triables), artistes, playlists, par
  * onglets. Les listes se chargent page après page à l'approche du bas.
+ *
+ * L'onglet vit dans l'adresse (`?tab=`, remplacé : pas d'entrée d'historique
+ * par clic) — le retour depuis un album ramène sur « Artistes » si on y était,
+ * et un lien profond ouvre le bon onglet. Onglets au clavier : flèches,
+ * Début, Fin (motif ARIA « tabs »).
  */
 
-import { useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
+import { Library } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AlbumCard, ArtistCard, CardGrid, PlaylistCard } from "../components/Cards";
 import { CardsSkeleton, EmptyState, ErrorState } from "../components/ViewStates";
 import { useMusicAlbums, useMusicArtists, useMusicPlaylists, type MusicAlbumSort } from "@tentacle-tv/api-client";
 import { LoadMore, flattenPages } from "./LoadMore";
 
-type Tab = "albums" | "artists" | "playlists";
+const TABS = ["albums", "artists", "playlists"] as const;
+type Tab = (typeof TABS)[number];
+
+/** L'onglet d'une adresse ; « albums » pour une valeur absente ou inconnue. */
+export function parseLibraryTab(value: string | null): Tab {
+  return TABS.find((tab) => tab === value) ?? "albums";
+}
+
 /** Les tris demandés au serveur (`/api/music/albums?sort=`). */
 const SORTS: readonly { value: MusicAlbumSort; key: string }[] = [
   { value: "recent", key: "library.sortAdded" },
@@ -27,6 +41,15 @@ function readSort(): MusicAlbumSort {
   } catch {
     return "recent";
   }
+}
+
+function LibraryEmpty() {
+  const { t } = useTranslation("music");
+  return (
+    <EmptyState icon={Library} title={t("views.libraryEmptyTitle")}>
+      {t("views.libraryEmptyHint")}
+    </EmptyState>
+  );
 }
 
 function Albums() {
@@ -62,7 +85,7 @@ function Albums() {
       </div>
       {albums.isPending && <CardsSkeleton count={12} />}
       {albums.isError && <ErrorState onRetry={() => void albums.refetch()} />}
-      {albums.isSuccess && list.length === 0 && <EmptyState>{t("library.empty")}</EmptyState>}
+      {albums.isSuccess && list.length === 0 && <LibraryEmpty />}
       <CardGrid>
         {list.map((album) => (
           <AlbumCard key={album.key} album={album} />
@@ -74,14 +97,13 @@ function Albums() {
 }
 
 function Artists() {
-  const { t } = useTranslation("music");
   const artists = useMusicArtists();
   const list = flattenPages(artists.data?.pages);
   return (
     <div className="flex flex-col gap-4">
-      {artists.isPending && <CardsSkeleton count={12} />}
+      {artists.isPending && <CardsSkeleton count={12} round />}
       {artists.isError && <ErrorState onRetry={() => void artists.refetch()} />}
-      {artists.isSuccess && list.length === 0 && <EmptyState>{t("library.empty")}</EmptyState>}
+      {artists.isSuccess && list.length === 0 && <LibraryEmpty />}
       <CardGrid>
         {list.map((artist) => (
           <ArtistCard key={artist.key} artist={artist} />
@@ -93,11 +115,10 @@ function Artists() {
 }
 
 function Playlists() {
-  const { t } = useTranslation("music");
   const playlists = useMusicPlaylists();
   if (playlists.isPending) return <CardsSkeleton />;
   if (playlists.isError) return <ErrorState onRetry={() => void playlists.refetch()} />;
-  if (!playlists.data.length) return <EmptyState>{t("library.empty")}</EmptyState>;
+  if (!playlists.data.length) return <LibraryEmpty />;
   return (
     <CardGrid>
       {playlists.data.map((p) => (
@@ -109,28 +130,46 @@ function Playlists() {
 
 export function LibraryView() {
   const { t } = useTranslation("music");
-  const [tab, setTab] = useState<Tab>("albums");
-  const tabs: Tab[] = ["albums", "artists", "playlists"];
+  const [params, setParams] = useSearchParams();
+  const tab = parseLibraryTab(params.get("tab"));
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ albums: null, artists: null, playlists: null });
+  const select = (next: Tab, focus = false) => {
+    setParams(next === "albums" ? {} : { tab: next }, { replace: true });
+    if (focus) tabRefs.current[next]?.focus();
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = TABS.indexOf(tab);
+    const next = e.key === "ArrowRight" ? TABS[(i + 1) % TABS.length] : e.key === "ArrowLeft" ? TABS[(i + TABS.length - 1) % TABS.length] : e.key === "Home" ? TABS[0] : e.key === "End" ? TABS[TABS.length - 1] : null;
+    if (!next) return;
+    e.preventDefault();
+    select(next, true);
+  };
   return (
     <div className="flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
       <h1 className="px-2 text-3xl font-black tracking-tight text-content-primary">{t("library.title")}</h1>
-      <div role="tablist" aria-label={t("library.title")} className="flex gap-2 px-2">
-        {tabs.map((id) => (
+      <div role="tablist" aria-label={t("library.title")} className="flex gap-2 px-2" onKeyDown={onKeyDown}>
+        {TABS.map((id) => (
           <button
             key={id}
+            ref={(el) => {
+              tabRefs.current[id] = el;
+            }}
+            id={`octave-library-tab-${id}`}
             type="button"
             role="tab"
             aria-selected={tab === id}
-            onClick={() => setTab(id)}
-            className={`h-9 cursor-pointer rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-              tab === id ? "bg-cta-primary-bg text-cta-primary-fg" : "bg-fill-subtle text-content-secondary hover:text-content-primary"
-            }`}
+            aria-controls="octave-library-panel"
+            tabIndex={tab === id ? 0 : -1}
+            onClick={() => select(id)}
+            className="octave-chip"
           >
             {t(`library.${id}`)}
           </button>
         ))}
       </div>
-      <div role="tabpanel">{tab === "albums" ? <Albums /> : tab === "artists" ? <Artists /> : <Playlists />}</div>
+      <div id="octave-library-panel" role="tabpanel" aria-labelledby={`octave-library-tab-${tab}`}>
+        {tab === "albums" ? <Albums /> : tab === "artists" ? <Artists /> : <Playlists />}
+      </div>
     </div>
   );
 }
