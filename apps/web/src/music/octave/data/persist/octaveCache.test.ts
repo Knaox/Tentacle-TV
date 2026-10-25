@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
-import { artworkUrlsOf, warmArtworkList } from "./artworkWarm";
+import { artworkUrlsOf, preconnectOrigins, warmArtworkList } from "./artworkWarm";
 import { attachOctaveCache, hydrateOctaveCache, type OctaveQueryClientLike } from "./octaveCachePersister";
 import { ENTITY_MAX_AGE_MS, evictionPlan, persistable, persistKindOf, SEARCH_MAX_AGE_MS, type StoredEntry } from "./octaveCachePolicy";
 import { memoryBackend } from "./octaveCacheStore";
@@ -111,5 +111,13 @@ describe("pochettes des pages gardées", () => {
     expect(artworkUrlsOf(data, 10)).toEqual(["a", "b", "c"]);
     expect(artworkUrlsOf({ artworkUrl: "x", tracks: [{ artworkUrl: "y" }] }, 1)).toEqual(["x"]);
     expect(warmArtworkList([{ artworkUrl: "x" }, { artworkUrl: "x", imageUrl: "z" }], 5)).toEqual(["x", "z"]);
+  });
+});
+
+describe("préconnexion aux hôtes des pochettes", () => {
+  it("les origines https des données, les plus vues d'abord, hors la page elle-même, bornées", () => {
+    const urls = ["https://img.a/1", "https://img.b/1", "https://img.a/2", "/api/plugins/x/art", "http://insecure/1", "https://page.test/x", null, "pas une url"];
+    expect(preconnectOrigins(urls, "https://page.test")).toEqual(["https://img.a", "https://img.b"]);
+    expect(preconnectOrigins(urls, "https://page.test", 1)).toEqual(["https://img.a"]);
   });
 });

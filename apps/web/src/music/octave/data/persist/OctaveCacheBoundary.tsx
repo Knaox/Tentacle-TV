@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getBackendBase } from "../../../../lib/backendBase";
 import { useArtworkResolver } from "../../components/Artwork";
-import { warmArtworkList, warmArtworkWhenIdle } from "./artworkWarm";
+import { preconnect, preconnectOrigins, warmArtworkList, warmArtworkWhenIdle } from "./artworkWarm";
 import { attachOctaveCache, hydrateOctaveCache, type HydrationResult, type OctaveQueryClientLike } from "./octaveCachePersister";
 import { indexedDbBackend, type OctaveCacheBackend } from "./octaveCacheStore";
 
@@ -83,7 +83,10 @@ export function OctaveCacheBoundary({ children }: { children: ReactNode }) {
       clearTimeout(wait);
       setReady(true);
       detach = attachOctaveCache(qc, currentBackend(), owner, { known: result.known });
-      warmArtworkWhenIdle(warmArtworkList(result.recent).map((url) => resolve.current(url)));
+      const artwork = warmArtworkList(result.recent).map((url) => resolve.current(url));
+      // La connexion aux hôtes des pochettes s'ouvre dès maintenant : la première image n'attend plus sa poignée TLS.
+      preconnect(preconnectOrigins(warmArtworkList(result.recent, 60, 12).map((url) => resolve.current(url)), globalThis.location?.origin ?? ""));
+      warmArtworkWhenIdle(artwork);
     });
     return () => {
       alive = false;
