@@ -8,7 +8,8 @@
  * growingSlow, writerStall, formats (sortie
  * PCM, mesurés à l'échantillon) ; gaplessRealtime, swapRealtime, heldRealtime,
  * latency, ram, exclusive, outputs (vraie
- * sortie CoreAudio, volume quasi nul) ; jfGaplessPcm, jfGaplessRealtime, jfLatency,
+ * sortie CoreAudio, volume quasi nul) ; cutRealtime (URL directe coupée en
+ * milieu de titre, sortie `null` cadencée) ; jfGaplessPcm, jfGaplessRealtime, jfLatency,
  * jfFormats, jfReplayGain (le Jellyfin du banc Octave). Sans argument : tous
  * sauf ceux du Jellyfin.
  * `BENCH_DIR` : dossier des fichiers témoins (défaut : un dossier temporaire).
@@ -25,6 +26,7 @@ import { exclusive, latency, outputs, ram } from "./deviceScenarios.mts";
 import { gaplessRealtime, heldRealtime, swapRealtime } from "./realtimeScenarios.mts";
 import { jfFormats, jfGaplessPcm, jfGaplessRealtime, jfLatency, jfReplayGain } from "./jellyfinScenarios.mts";
 import { firstClick, jfClicks } from "./clickScenarios.mts";
+import { cutRealtime } from "./cutScenarios.mts";
 
 const dir = process.env["BENCH_DIR"] ?? path.join(tmpdir(), "tentacle-audio-bench");
 mkdirSync(dir, { recursive: true });
@@ -57,6 +59,8 @@ const all: Record<string, () => Promise<unknown>> = {
   jfReplayGain: () => jfReplayGain(fx),
   jfClicks: () => jfClicks(Number(process.env["CLICKS"] ?? 20)),
   jfFirstClick: () => firstClick(),
+  // S5 : une URL directe coupée en milieu de titre (sortie `null`, cadencée et muette).
+  cutRealtime: () => cutRealtime(fx),
 };
 const DEFAULT = Object.keys(all).filter((k) => !k.startsWith("jf"));
 

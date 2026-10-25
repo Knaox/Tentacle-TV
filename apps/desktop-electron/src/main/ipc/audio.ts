@@ -15,7 +15,7 @@ import { app } from "electron";
 import { z } from "zod";
 import { NativeAudioEngine } from "../audio/audioEngine";
 import { refuseSource } from "../audio/audioSources";
-import { adoptDirect, pluginManifests } from "../clientFetch/directSources";
+import { adoptDirect, directRelay, pluginManifests } from "../clientFetch/directSources";
 import type { Platform } from "../audio/audioOptions";
 import { libmpvAvailable } from "../video/mpvFfi";
 import { sendToPage } from "../pageEvents";
@@ -110,6 +110,8 @@ export function registerAudioCommands(registry: CommandRegistry): void {
       schema: START,
       run: async (args) => {
         engine ??= new NativeAudioEngine({ platform: platform(), extraOptions: devLogOptions() }, (event) => sendToPage("audio://event", event));
+        // Un flux direct coupé en pleine lecture : le moteur relit le titre à la position (S5).
+        directRelay.onCut = (url) => engine?.sourceCut(url);
         serverOrigin = args.serverOrigin;
         serverHeaders = args.headers;
         // Les hôtes déclarés lus d'avance : le premier flux direct n'attend pas cette lecture.

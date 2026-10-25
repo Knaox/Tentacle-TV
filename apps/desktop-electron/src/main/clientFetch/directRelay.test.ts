@@ -55,7 +55,7 @@ describe("relais local des flux directs", () => {
     for (const name of ["x-emby-token", "authorization", "cookie", "x-emby-authorization", "x-mediabrowser-token"]) expect(direct.seen[0]?.headers[name], name).toBeUndefined();
     expect(direct.seen[0]?.url).toBe("/videoplayback?x=1");
     expect(server.seen).toHaveLength(0);
-    expect(relay.stats).toEqual({ direct: 1, fallbacks: 0 });
+    expect(relay.stats).toEqual({ direct: 1, fallbacks: 0, cuts: 0 });
   });
 
   it("direct refusé AVANT le premier octet : repli sur le serveur (avec ses en-têtes), puis tout du serveur", async () => {
@@ -74,16 +74,27 @@ describe("relais local des flux directs", () => {
     expect(relay.stats.fallbacks).toBe(1);
   });
 
-  it("direct refusé APRÈS des octets servis : 502 (les deux flux peuvent différer, le moteur redemande la source)", async () => {
+  it("direct coupé APRÈS des octets servis : la suite de la lecture reçoit 502, la réouverture du moteur lit le serveur (S5)", async () => {
     let calls = 0;
     const direct = await upstream(() => (calls++ === 0 ? { status: 206, body: "DEBUT" } : { status: 403 }));
-    const server = await upstream(() => ({ status: 200, body: "SERVEUR" }));
+    const server = await upstream(() => ({ status: 206, body: "SERVEUR" }));
     const relay = new DirectRelay(openLocal);
     relays.push(relay);
     const local = await relay.adopt(`${direct.url}/v`, `${server.url}/s`, {});
     expect((await get(local)).body).toBe("DEBUT");
+    // L'URL directe refusée en pleine lecture (pause de plusieurs heures, adresse changée) : la suite de CETTE lecture
+    // ne se lit jamais dans le fichier du serveur (autre format possible), même redemandée.
     expect((await get(local, "bytes=5-")).status).toBe(502);
+    expect((await get(local, "bytes=9-")).status).toBe(502);
     expect(server.seen).toHaveLength(0);
+    expect(relay.stats).toMatchObject({ direct: 1, cuts: 1 });
+    // Le moteur relit le titre à la position : une OUVERTURE, servie par le serveur, l'échec du direct signalé.
+    expect(await get(local, "bytes=0-")).toMatchObject({ status: 206, body: "SERVEUR" });
+    expect(server.seen[0]?.url).toBe("/s?direct=failed");
+    // Puis la suite de cette nouvelle lecture, dans le même fichier (celui du serveur).
+    expect((await get(local, "bytes=4-")).body).toBe("SERVEUR");
+    expect(server.seen[1]).toMatchObject({ url: "/s" });
+    expect(direct.seen).toHaveLength(2);
   });
 
   it("jeton inconnu : 404", async () => {

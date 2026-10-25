@@ -17,13 +17,14 @@ import { opArgs, settingCommands } from "./audioEngineOps";
 import {
   applyProperty, buildState, durationOf, freshFlags, NO_PROPS, OBSERVED_PROPERTIES, type EngineFlags, type LiveProps, type Settings,
 } from "./audioEngineState";
+import { FileEnds } from "./audioEngineEnds";
 import { AudioMpv, END_REASON } from "./audioMpv";
 import { headerFields, outputOptions, startOptions, swapPoint, type Platform } from "./audioOptions";
 import { parseOutputs } from "./audioOutputs";
 import { AudioQueue, offsetOf, type QueueResult } from "./audioQueue";
-import { ProvisionalEnd, StateThrottle } from "./audioEngineTimers";
+import { StateThrottle } from "./audioEngineTimers";
 import { expiresSoon, servedSource } from "./audioSources";
-import { cachedToEnd, isRealEnd } from "./partialSource";
+import { cachedToEnd } from "./partialSource";
 import { warmOutput } from "./outputWarmup";
 
 export interface EngineConfig {
@@ -54,7 +55,8 @@ export class NativeAudioEngine {
   };
   /** Sources basculées pour un titre ni courant ni suivant : servies à son tour. */
   private readonly overrides = new Map<string, AudioBridgeSource>();
-  private readonly provisional = new ProvisionalEnd();
+  /** Vraie fin, fin provisoire, coupure en milieu de titre (`audioEngineEnds.ts`). */
+  private readonly ends: FileEnds;
   private readonly throttle: StateThrottle;
   /** L'instant T de la bascule en attente, pour dire une bascule manquée. */
   private swapAtS: number | null = null;
@@ -68,13 +70,28 @@ export class NativeAudioEngine {
     this.mpv = new AudioMpv({
       property: (name, value) => this.onProperty(name, value),
       startFile: (id) => this.onStartFile(id),
-      endFile: (id, reason, error) => this.onEndFile(id, reason, error),
+      endFile: (id, reason, error) => this.ends.endFile(id, reason === END_REASON.EOF ? "eof" : reason === END_REASON.ERROR ? "error" : "other", error),
       playbackRestart: () => {
         this.flags.awaitingRestart = false;
         this.emitState();
       },
       commandFailed: (_id, args, error) => console.warn(`[audio] ${args[0] ?? "?"} refusée : ${error}`),
     }, config.activePumpMs);
+    this.ends = new FileEnds({
+      queue: this.queue,
+      props: () => this.props,
+      flags: () => this.flags,
+      positionS: () => this.positionS(),
+      swapScheduled: () => this.swapAtS !== null,
+      run: (result) => this.run(result),
+      fail: (message, entry) => this.fail(message, entry.track.trackKey, entry.source),
+      stopAtEnd: () => {
+        this.flags.ended = true;
+        this.mpv.setActive(false);
+        this.emitState();
+      },
+      emitState: () => this.emitState(),
+    });
   }
 
   /** Démarre l'instance (ou met à jour l'authentification) ; rend les capacités. */
@@ -95,7 +112,8 @@ export class NativeAudioEngine {
   }
 
   play(track: AudioBridgeTrack, source: AudioBridgeSource, startMs: number): void {
-    this.provisional.reset();
+    this.ends.provisional.reset();
+    this.ends.cuts.reset();
     this.flags = freshFlags(true);
     this.props = { ...NO_PROPS };
     this.run(this.queue.play(track, servedSource(this.overrides, track.trackKey, source), startMs > 0 ? startMs / 1000 : null));
@@ -125,7 +143,7 @@ export class NativeAudioEngine {
       return;
     }
     if (result.ops.some((op) => op.op === "setEnd")) this.swapAtS = at;
-    if (this.flags.reloading || this.props.eofReached) this.clearReload();
+    if (this.flags.reloading || this.props.eofReached) this.ends.clearReload();
     this.run(result);
   }
 
@@ -142,7 +160,7 @@ export class NativeAudioEngine {
         this.mpv.setActive(true);
         break;
       case "stop":
-        this.clearReload();
+        this.ends.clearReload();
         this.run(this.queue.stop());
         this.flags = freshFlags(false);
         this.props = { ...NO_PROPS };
@@ -167,12 +185,15 @@ export class NativeAudioEngine {
     if (errors.length > 0) throw new Error(errors.join(" ; "));
   }
 
+  /** Le relais local dit la source `url` coupée en pleine lecture : le titre est relu à la position (`audioEngineEnds.ts`). */
+  sourceCut = (url: string): void => this.ends.sourceCut(url);
+
   /** Une propriété de mpv, en chaîne — banc et diagnostic seulement. */
   readProperty = (name: string): Promise<string | null> => this.mpv.get(name);
 
   /** Arrête l'instance et libère la sortie (le mode exclusif avec). */
   dispose(): Promise<void> {
-    this.clearReload();
+    this.ends.clearReload();
     this.throttle.cancel();
     return this.mpv.destroy();
   }
@@ -181,7 +202,7 @@ export class NativeAudioEngine {
     void (expiresSoon(source, Date.now(), EXPIRY_MARGIN_MS) && this.emit({ type: "needSource", trackKey }));
 
   private seekTo(seconds: number): void {
-    this.clearReload();
+    this.ends.clearReload();
     this.flags.ended = false;
     this.run(this.queue.seek(Math.max(0, seconds)));
   }
@@ -216,7 +237,8 @@ export class NativeAudioEngine {
 
   private onProperty(name: string, value: unknown): void {
     this.props = applyProperty(this.props, name, value);
-    if (name === "eof-reached" && value === true) this.onEof();
+    if (name === "time-pos" && typeof value === "number") this.ends.played();
+    if (name === "eof-reached" && value === true) this.ends.eof();
     if (name !== "demuxer-cache-time") return this.emitState(name === "time-pos" || name === "audio-bitrate");
     const current = this.queue.current();
     if (current !== null && !current.source.complete && cachedToEnd(this.props.cacheTime, offsetOf(current), durationOf(current, this.props))) {
@@ -245,52 +267,11 @@ export class NativeAudioEngine {
     // et la pause posée par `keep-open` sur la fin du précédent levée.
     this.props = { ...this.props, eofReached: false, timePos: null };
     if (!this.flags.wantPaused) void this.mpv.set("pause", "no");
-    if (!this.flags.reloading) this.provisional.reset();
+    if (!this.flags.reloading) this.ends.provisional.reset();
     this.flags.reloading = false;
     this.flags.ended = false;
     this.flags.error = null;
     this.run(result);
-  }
-
-  private onEndFile(mpvId: number, reason: number, error: number): void {
-    const current = this.queue.current();
-    if (reason !== END_REASON.ERROR || current === null || current.mpvId !== mpvId) return;
-    this.fail(`end-file ${error}`, current.track.trackKey, current.source);
-  }
-
-  /** mpv tient la fin du dernier fichier (`keep-open`) : vraie fin, ou provisoire ? */
-  private onEof(): void {
-    const current = this.queue.current();
-    if (current === null || !this.queue.isStarted() || this.flags.awaitingRestart || this.provisional.pending()) return;
-    const real = isRealEnd({
-      complete: current.source.complete,
-      durationMs: durationOf(current, this.props),
-      positionMs: this.positionS() * 1000,
-      stalledReloads: this.provisional.stalledReloads(),
-    });
-    if (!real) {
-      this.flags.reloading = true;
-      this.provisional.schedule(
-        () => this.queue.current() === current && this.props.eofReached,
-        () => this.positionS() * 1000,
-        (positionS) => this.run(this.queue.reload(positionS)),
-      );
-      this.emitState();
-      return;
-    }
-    const next = this.queue.advanceHeld();
-    if (next !== null) {
-      this.run(next);
-      return;
-    }
-    this.flags.ended = true;
-    this.mpv.setActive(false);
-    this.emitState();
-  }
-
-  private clearReload(): void {
-    this.provisional.cancel();
-    this.flags.reloading = false;
   }
 
   /** Pousse l'état ; `throttled` (la position) : au plus quatre fois par seconde. */
