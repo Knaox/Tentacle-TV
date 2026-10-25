@@ -137,8 +137,16 @@ export interface HostApi {
    * d'un hôte d'avant) et garde `notifyPath` en repli.
    */
   "jellyfin.refreshPath": { params: { path: string }; result: { ok: true; scope: "folder" | "library"; itemId: string } };
-  /** Les droits du compte face à CETTE extension (Jellyfin + réglages du cœur). */
-  "users.rights": { params: { userId: string }; result: { exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean } };
+  /**
+   * Les droits du compte face à CETTE extension (Jellyfin + réglages du cœur). `familyGuest` : le compte est un
+   * invité de la Famille (absent : hôte d'avant, on ne sait pas).
+   */
+  "users.rights": { params: { userId: string }; result: { exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean; familyGuest?: boolean } };
+  /**
+   * Les comptes du serveur, pour qu'une extension règle des droits par compte : Jellyfin, désactivés exclus, SANS
+   * les invités de la Famille (`withoutFamilyGuests`). Un hôte d'avant : méthode inconnue (`invalid`).
+   */
+  "users.list": { params: Record<string, never>; result: { userId: string; name: string; isAdmin: boolean }[] };
   /** Émet un événement musique (types : PLUGIN_EMITTABLE_MUSIC_EVENTS) aux comptes nommés. */
   "events.emit": { params: { userIds: string[]; event: Record<string, unknown> }; result: { delivered: number } };
   /** Version et chemin d'un outil AUTORISÉ (pour l'afficher ; jamais pour le lancer soi-même). */
@@ -197,6 +205,7 @@ export const HOST_METHODS: readonly HostMethod[] = [
   "jellyfin.notifyPath",
   "jellyfin.refreshPath",
   "users.rights",
+  "users.list",
   "events.emit",
   "tools.info",
   "tools.exec",
