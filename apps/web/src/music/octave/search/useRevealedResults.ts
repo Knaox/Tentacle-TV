@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { MusicAlbum, MusicArtist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
+import type { ExternalMusicPlaylist, ExternalMusicTop, MusicAlbum, MusicArtist, MusicSearchResponse, MusicTrack } from "@tentacle-tv/shared/music";
 import { preloadArtwork } from "../components/artworkPreload";
 import { useArtworkResolver } from "../components/Artwork";
 import { ART_BUDGET_MS, ART_FIRST_CARDS, EXTERNAL_TRACKS_SHOWN, LIBRARY_TRACKS_SHOWN, REVEAL_CAP_MS, revealDecision } from "./revealModel";
@@ -19,10 +19,22 @@ import { useOctaveSearch } from "./useOctaveSearch";
 
 export interface ShownExternal {
   query: string;
+  /** Le meilleur résultat, figé à la révélation (une révision ne le remplace pas sous les yeux). */
+  top: ExternalMusicTop | null;
   tracks: MusicTrack[];
   albums: MusicAlbum[];
   artists: MusicArtist[];
+  playlists: ExternalMusicPlaylist[];
   complete: boolean;
+}
+
+/** La pochette (et celles de ses titres) du meilleur résultat : attendue avant la révélation, comme les rangées. */
+function topArt(top: ExternalMusicTop | null): (string | null)[] {
+  if (!top) return [];
+  if (top.kind === "track") return [top.track.artworkUrl];
+  if (top.kind === "playlist") return [top.playlist.artworkUrl];
+  const tracks = (top.tracks ?? []).map((t) => t.artworkUrl);
+  return [top.kind === "album" ? top.album.artworkUrl : top.artist.imageUrl, ...tracks];
 }
 
 const sameList = <T,>(a: readonly T[], b: readonly T[]) => a.length === b.length && a.every((x, i) => x === b[i]);
@@ -59,7 +71,10 @@ export function useRevealedResults(query: string) {
 
   const libraryData = library.data;
   const libraryArt = useMemo(() => artOf(libraryData?.tracks ?? [], LIBRARY_TRACKS_SHOWN, [...(libraryData?.albums ?? []), ...(libraryData?.artists ?? [])]), [libraryData]);
-  const externalArt = useMemo(() => artOf(external.tracks, EXTERNAL_TRACKS_SHOWN, [...external.albums, ...external.artists]), [external.tracks, external.albums, external.artists]);
+  const externalArt = useMemo(
+    () => [...topArt(external.top), ...artOf(external.tracks, EXTERNAL_TRACKS_SHOWN, [...external.albums, ...external.artists, ...external.playlists])],
+    [external.top, external.tracks, external.albums, external.artists, external.playlists],
+  );
   const libraryArtReady = useArtReady(`${query}|library`, libraryReady, libraryArt);
   const externalArtReady = useArtReady(`${query}|external`, externalReady, externalArt);
   const decision = revealDecision({ elapsedMs: lateFor === query ? REVEAL_CAP_MS : 0, libraryReady, externalReady, libraryArtReady, externalArtReady });
@@ -72,16 +87,17 @@ export function useRevealedResults(query: string) {
   if (active && decision.library && lib?.query !== query) setLib({ query, data: libraryData ?? null });
   if (active && decision.external) {
     // Une recherche en échec après une page provisoire : rien de provisoire n'est jamais montré.
-    const usable = external.provisional ? { tracks: [], albums: [], artists: [] } : external;
+    const usable = external.provisional ? { top: null, tracks: [], albums: [], artists: [], playlists: [] } : external;
     const complete = external.complete || external.failed;
     if (ext?.query !== query) {
-      setExt({ query, tracks: usable.tracks, albums: usable.albums, artists: usable.artists, complete });
+      setExt({ query, top: usable.top, tracks: usable.tracks, albums: usable.albums, artists: usable.artists, playlists: usable.playlists, complete });
     } else {
       const tracks = settleOrder(ext.tracks, usable.tracks, true);
       const albums = settleOrder(ext.albums, usable.albums, true);
       const artists = settleOrder(ext.artists, usable.artists, true);
-      if (!sameList(tracks, ext.tracks) || !sameList(albums, ext.albums) || !sameList(artists, ext.artists) || ext.complete !== complete) {
-        setExt({ query, tracks, albums, artists, complete });
+      const playlists = settleOrder(ext.playlists, usable.playlists, true);
+      if (!sameList(tracks, ext.tracks) || !sameList(albums, ext.albums) || !sameList(artists, ext.artists) || !sameList(playlists, ext.playlists) || ext.complete !== complete) {
+        setExt({ query, top: ext.top, tracks, albums, artists, playlists, complete });
       }
     }
   }

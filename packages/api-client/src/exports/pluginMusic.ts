@@ -2,10 +2,10 @@
 // fournisseur, recherche progressive fusionnée, source, anticipation, gestes,
 // en attente, événements `music:*`.
 export { findMusicProvider, musicRouteUrl, musicSectionLabel, type MusicProvider } from "../pluginMusic/musicProvider";
-export { mergeExternalMusicPages, readMusicSearchPage, type MergedMusicResults } from "../pluginMusic/musicSearchMerge";
+export { mergeExternalMusicPages, readMusicSearchPage, readMusicTop, type MergedMusicResults } from "../pluginMusic/musicSearchMerge";
 export {
   resolveMusicSources, resolveMusicSource, type MusicSourceOutcome, isSourceFresh, prefetchMusic, likeExternalTrack, addExternalTrackToPlaylist, fetchPendingMusic,
-  reportExternalPlayed, fetchExternalAlbum, fetchExternalArtist,
+  reportExternalPlayed, fetchExternalAlbum, fetchExternalArtist, fetchExternalPlaylist,
 } from "../pluginMusic/musicRequests";
 export { useMusicProvider } from "../pluginMusic/useMusicProvider";
 export { useMusicSuggest, readMusicSuggestions } from "../pluginMusic/useMusicSuggest";

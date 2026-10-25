@@ -11,7 +11,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { OctaveSearchBox } from "../search/OctaveSearchBox";
+import { parseSearchFilter } from "../search/SearchFilters";
+import type { SearchFilter } from "../search/searchLayout";
 import { SearchResults } from "../search/SearchResults";
+import { useTypingPause } from "../data/typingPause";
 import { useOctaveSuggestions } from "../search/useOctaveSuggestions";
 import { useRevealedResults } from "../search/useRevealedResults";
 
@@ -35,21 +38,34 @@ export function SearchView() {
   const { t } = useTranslation("music");
   const [params, setParams] = useSearchParams();
   const query = params.get("q") ?? "";
+  const filter = parseSearchFilter(params.get("f"));
   const [draft, setDraft] = useState(query);
   // Une recherche validée ailleurs (retour arrière, lien) reprend la barre.
   useEffect(() => setDraft(query), [query]);
 
   const { suggestions, remember, forget } = useOctaveSuggestions(draft);
+  // La recherche préparée à la pause de frappe (bureau seulement, axe R7) : rien n'est cherché ni montré ici.
+  const pause = useTypingPause();
+  useEffect(() => {
+    if (draft !== query) pause.note(draft);
+  }, [draft, pause, query]);
   const results = useRevealedResults(query);
   const preparing = useDelayedFlag(results.preparing, PREPARING_VISIBLE_MS);
 
   const submit = useCallback(
     (text: string) => {
+      pause.cancel();
       setDraft(text);
       remember(text);
+      // Une nouvelle recherche repart sur « Tout ».
       setParams({ q: text }, { replace: false });
     },
-    [remember, setParams],
+    [pause, remember, setParams],
+  );
+  // Une puce ne crée pas d'entrée d'historique : le retour arrière ramène à la recherche précédente.
+  const onFilter = useCallback(
+    (next: SearchFilter) => setParams(next === "all" ? { q: query } : { q: query, f: next }, { replace: true }),
+    [query, setParams],
   );
 
   return (
@@ -74,7 +90,7 @@ export function SearchView() {
         </div>
       )}
 
-      {query.trim() && <SearchResults results={results} />}
+      {query.trim() && <SearchResults results={results} filter={filter} onFilter={onFilter} />}
     </div>
   );
 }

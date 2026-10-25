@@ -68,6 +68,22 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    **Pochettes** : `artworkUrl` peut être une route de l'extension relayée par le
    cœur (`/api/plugins/<id>/…`, servie de son cache) ; le jeton n'accompagne
    jamais une URL d'un autre hôte.
+   **Meilleur résultat, playlists, filtres (25/10, additifs)** : une page peut
+   porter `top` (`ExternalMusicTop` : un titre, un album, un artiste ou une
+   playlist, choisi par l'extension — pertinence ET popularité — avec au plus
+   3 titres à lire depuis sa carte) et `playlists` (`ExternalMusicPlaylist`,
+   hors bibliothèque : jamais une playlist Jellyfin). `top` absent : rien n'est
+   mis en avant ; `top: null` : l'extension dit qu'il n'y en a pas. Le manifeste
+   peut déclarer `playlist` (vue : GET `<playlist>/<id>` → `ExternalMusicPlaylist`
+   avec `tracks`) et `searchKinds` (liste FERMÉE `tracks · albums · artists ·
+   playlists`) : `search?…&kind=<k>` rend une page où seule cette liste est
+   remplie — une puce de filtre = UNE requête, au clic. Sans `searchKinds`,
+   l'interface filtre la page « Tout » sans requête. Pas de capacité serveur :
+   aucune route du cœur ; un serveur d'avant ne relaie ni `playlist` ni
+   `searchKinds` (lecture fermée du manifeste), une page traverse le relais telle
+   quelle. Un titre externe qui EST un titre de la bibliothèque sans MBID (même
+   titre normalisé, même 1er artiste, durée ± 3 s si les deux la connaissent)
+   cède sa place à celui de la bibliothèque.
 2. **Source de lecture** — `music.resolve` (POST `{ ids }` → `PlaybackSource`,
    jouable pendant l'écriture : `complete: false`) ; `music.prefetch` reçoit
    l'anticipation (`results`, `hover`, `press` au mousedown/touchstart, `next`).
