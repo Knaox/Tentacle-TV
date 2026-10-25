@@ -7,7 +7,7 @@
  */
 
 import { memo, useRef } from "react";
-import { AudioLines, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { ARTWORK_RADIUS, Artwork } from "../components/Artwork";
@@ -17,6 +17,7 @@ import { usePrefetchHandlers } from "../player/usePrefetchHandlers";
 import { useTrackActions } from "../actions/useTrackActions";
 import { TrackMenu } from "../components/TrackMenu";
 import { QuickAddButton } from "../components/QuickAddButton";
+import { OceanSwell } from "../motion/OceanSwell";
 
 /** Une tuile fait au moins 15 rem ; trois colonnes au plus, deux rangées. */
 const TILE_MIN_PX = 240;
@@ -61,7 +62,7 @@ const QuickPick = memo(function QuickPick({ tracks, index, current, playing }: {
         <span className="block truncate text-xs leading-5 text-content-tertiary">{track.artists.map((a) => a.name).join(", ")}</span>
       </span>
       {current && playing ? (
-        <AudioLines className="h-4 w-4 shrink-0 text-octave-accent-text" aria-hidden />
+        <OceanSwell playing className="h-4 w-4 text-octave-accent-text" />
       ) : (
         <span className="octave-hover-only octave-brand-fill flex h-8 w-8 shrink-0 items-center justify-center rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden>
           <Play className="ml-0.5 h-4 w-4" fill="currentColor" />

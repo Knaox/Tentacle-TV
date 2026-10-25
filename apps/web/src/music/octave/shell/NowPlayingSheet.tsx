@@ -26,6 +26,7 @@ import { FormatBadge } from "./FormatBadge";
 import { SeekBar } from "./SeekBar";
 import { Transport } from "./Transport";
 import { VolumeControl } from "./VolumeControl";
+import { OceanAmbience } from "../motion/OceanAmbience";
 
 /** Échap referme ; le focus entre sur ⌄ et revient, à la fermeture, là où il était. */
 function useDialogFocus(onClose: () => void) {
@@ -62,6 +63,7 @@ export const NowPlayingSheet = memo(function NowPlayingSheet({ onClose }: { onCl
       style={{ paddingTop: "calc(var(--hote-bandeau, 0px) + 1rem + env(safe-area-inset-top, 0px))" }}
     >
       <div aria-hidden className="octave-now-veil" />
+      <OceanAmbience artworkUrl={track.artworkUrl} />
       <div className="relative flex items-center justify-between">
         <button
           ref={close}
