@@ -789,8 +789,9 @@ Décisions du lot « Sillon recherche » (24-25/10), tenues dans `DECISIONS.md` 
   connue, non fermée.
 - **Historique d'écoute dans la réponse instantanée** : le préchauffage ne reçoit pas les écoutes du compte
   (`personalPlays`) ; l'historique passe AVANT lui côté catalogue, sans effet visible connu.
-- **Justesse** : 17 / 20 au n° 1 sur la playlist de recette (rejeu) ; « cyberpunk » en partie (Edgerunners 1
-  absent de la page générale) ; recette complète de la playlist et liste des introuvables : à finir (R4).
+- **Justesse** : 17 / 20 au n° 1 sur la playlist de recette (rejeu) ; un album célèbre absent de la page
+  générale de YouTube Music ne peut pas sortir en tête ; recette complète de la playlist et liste des
+  introuvables : à finir (testeur R4).
 - Le cache audio du serveur ne se remplit pas pendant une écoute directe au bureau.
 
 **Non vérifié**
