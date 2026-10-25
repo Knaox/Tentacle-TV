@@ -3,6 +3,7 @@ import { notifyProfileSessionChange } from "../../auth/profileSession";
 import { forgetProfileSession } from "../../auth/sessionSwap";
 import type { LaunchMirror } from "./launchDecision";
 import { forgetDeviceLaunchChoice, readDeviceChoice } from "./stayOnDevice";
+import { forgetOctaveDevice } from "../../music/octave/cache/forgetOctaveDevice";
 
 /**
  * Ce que « Qui regarde ? » garde entre deux ouvertures (le MIROIR, stockage
@@ -97,6 +98,8 @@ export function noteFreshLogin(): void {
  */
 export function noteLoggedOut(): void {
   forgetPastProfileSession();
+  // Ce qu'Octave gardait sur l'appareil (pages, dernier titre, page en cours) ne survit pas à la session.
+  forgetOctaveDevice();
 }
 
 function forgetPastProfileSession(): void {

@@ -26,6 +26,8 @@ import {
 import type { AudioEnginePort } from "@tentacle-tv/shared/music";
 import { OctavePlayer, PlaybackReporter, SourceCache, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
 import { AudioEngineProvider, useAudioEngine, type EnginePrefs } from "../../engine";
+import { attachPlayerResume } from "../cache/playerResume";
+import { octaveOwner } from "../cache/octaveOwner";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { followSearchWithRadio } from "./searchRadio";
 
@@ -103,10 +105,13 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
     });
     // S3 : après le premier son d'un titre de recherche, sa radio devient la suite.
     const offRadio = followSearchWithRadio(p, () => providerRef.current);
+    // La session quittée revient en pause (dernier titre, file, position) ; gardée AVANT l'arrêt du lecteur.
+    const offResume = attachPlayerResume(p, octaveOwner());
     setPlayer(p);
     return () => {
       off();
       offRadio();
+      offResume();
       p.dispose();
       setPlayer(null);
     };

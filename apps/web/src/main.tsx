@@ -55,6 +55,7 @@ import { AppErrorBoundary } from "./components/problems/AppErrorBoundary";
 import { DatabaseMigrationGate } from "./databaseMigration/DatabaseMigrationGate";
 import { AccountAccessGate } from "./accountAccess/AccountAccessGate";
 import { ProfileArrival } from "./profiles/switch/ProfileArrival";
+import { bootOctave } from "./music/octave/mode/OctaveEntry";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -302,8 +303,9 @@ function renderApp() {
 
 // Route de démarrage : son chunk d'abord (au plus 300 ms), pour rendre la
 // page d'un coup depuis le cache hydraté — sans spinner à l'arrivée.
+// Lancement en Octave : son module et son cache gardé (≤ 350 ms) — la page où l'on était, avec ses données.
 // Le débogage, s'il est permis, est posé avant ce premier rendu.
-void Promise.all([bootRoutePreload(window.location.pathname), webDebugReady]).then(() => {
+void Promise.all([bootRoutePreload(window.location.pathname), webDebugReady, bootOctave(queryClient)]).then(() => {
   renderApp();
   // La fiche média, en temps mort : le premier clic sur une affiche n'attend plus son chunk.
   scheduleDetailPagePreload();

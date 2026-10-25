@@ -15,6 +15,8 @@ import { useMirror } from "../mirror/useFormFactor";
 import type { StartupWindowState } from "../startup/startupOrder";
 import { describeStartup, setStartupReady, useStartupMayShow, usePublishStartupWindow } from "../startup/startupStore";
 import { UpdateModal } from "./UpdateModal";
+import { OCTAVE_BASE_PATH } from "../music/octave/mode/octaveMode";
+import { useTentacleHeld } from "../music/octave/mode/octaveLaunchStore";
 
 interface StartupOverlaysProps {
   authed: boolean;
@@ -30,7 +32,8 @@ interface StartupOverlaysProps {
  * code PIN, accueil, photo, d'après le catalogue partagé) prend la place du
  * code PIN conseillé et de l'invitation aux avatars. Chacune
  * publie son état et attend son tour ; celle qui attend paraît après, rien ne
- * se perd. Jamais sur /watch, jamais avant la session (`ready`).
+ * se perd. Jamais sur /watch, jamais dans Octave ni avant la première image
+ * de Tentacle d'un lancement en Octave, jamais avant la session (`ready`).
  *
  * Seule exception : une mise à jour EN COURS (téléchargement, installation)
  * reste à l'écran quoi qu'il arrive — elle ne s'interrompt pas, et ce qui
@@ -40,7 +43,9 @@ export function StartupOverlays({ authed }: StartupOverlaysProps) {
   const update = useAutoUpdate();
   const { pathname } = useLocation();
   const desktopLike = useMemo(whatsNewGateForced, []);
-  const ready = authed && !pathname.startsWith("/watch");
+  // Ni dans Octave, ni avant la première image de Tentacle d'un lancement en Octave : ils attendent Tentacle.
+  const tentacleHeld = useTentacleHeld();
+  const ready = authed && !pathname.startsWith("/watch") && !pathname.startsWith(OCTAVE_BASE_PATH) && !tentacleHeld;
   // Hors ligne ÉTABLI seulement : `checking`, l'état du démarrage, n'est pas une absence.
   const connectivity = useConnectivity().state;
   const offline = connectivity === "offline-auto" || connectivity === "offline-manual";

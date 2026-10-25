@@ -29,6 +29,7 @@ import { AutoWatchHarness } from "./dev/autoWatch";
 import { FrameMeter, frameMeterEnabled } from "./dev/FrameMeter";
 import { useDirectStreamingGuard } from "./hooks/useDirectStreamingGuard";
 import { useScrollMemory } from "./hooks/useScrollMemory";
+import { useTentacleHeld } from "./music/octave/mode/octaveLaunchStore";
 
 interface AppBindingsProps {
   authed: boolean;
@@ -47,6 +48,9 @@ interface AppBindingsProps {
  * la table des routes.
  */
 export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
+  // Lancement en Octave : rien des films (recommandations, mesure de débit,
+  // aperçus, lecteur vidéo) avant la première image de Tentacle.
+  const films = !useTentacleHeld();
   return (
     <>
       {/* Definitions SVG de la refraction Liquid Glass. Montees UNE fois pres
@@ -72,10 +76,10 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
           déclenche est démonté dès que le curseur s'en va, il ne peut pas le
           porter (cf. downloadRequest.ts). */}
       {authed && <DownloadRequestHost />}
-      {authed && <DirectStreamingSync />}
+      {authed && films && <DirectStreamingSync />}
       {/* Linux : mpv prêt d'avance — la première lecture ne paie plus la
           naissance de sa sortie vidéo (desktop/playerWarmup.ts). */}
-      {authed && <PlayerWarmupBinding />}
+      {authed && films && <PlayerWarmupBinding />}
       {authed && <ImpersonationBanner />}
       {/* Bureau : la session d'un profil de la Famille — sa fin, son identité Jellyfin. */}
       {authed && <ProfileSessionBinding />}
@@ -91,13 +95,13 @@ export function AppBindings({ authed, offlineMode }: AppBindingsProps) {
       {authed && <PreferencesLiveBinding />}
       {/* Le filtre de plateformes suit le compte pour toute la session — il
           vaut sur l'accueil, pas seulement sur la page Recommandations. */}
-      {authed && !offlineMode && <RecoFilterBinding />}
+      {authed && !offlineMode && films && <RecoFilterBinding />}
       {/* Préchargement de la page Recommandations en temps mort : arriver sur
           la page ne montre ni spinner ni squelette. */}
-      {authed && <RecoPrefetchBoot />}
+      {authed && films && <RecoPrefetchBoot />}
       {/* L'aperçu de bande-annonce au survol : connectivité et gabarit lus une
           fois pour toutes les cartes (trailerPreview/previewEnvironment.ts). */}
-      {authed && <TrailerPreviewBinding />}
+      {authed && films && <TrailerPreviewBinding />}
       <ScrollMemoryWrapper />
       {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
       {import.meta.env.DEV && <SoakHarness />}

@@ -3,13 +3,23 @@
  * allumé (au lancement par le réglage « Au démarrage, ouvrir », ou en cours de
  * session par la bascule), `/` EST Octave — comme le mode hors ligne remplace
  * l'accueil par le catalogue local.
+ *
+ * Lancement en Octave (`octaveLaunchStore.ts`) : le module d'Octave et la
+ * lecture du cache gardé partent AU CHARGEMENT de ce module ; `main.tsx`
+ * attend l'un et l'autre (borné, `bootOctave`) avant la première image, qui
+ * est alors la page où l'on était en quittant, avec ses données.
  */
 
-import { lazy, type ReactElement } from "react";
+import { lazy, useEffect, type ReactElement } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { OCTAVE_BASE_PATH, isOctaveMode, useOctaveMode } from "./octaveMode";
+import { bootOctaveCache } from "../cache/octaveCacheHydration";
+import type { OctaveQueryClientLike } from "../data/persist/octaveCachePersister";
+import { octaveOwner } from "../cache/octaveOwner";
+import { octavePageReached, resumePath, savedOctavePageAtLaunch } from "../cache/pageResume";
+import { OCTAVE_BASE_PATH, useOctaveMode } from "./octaveMode";
+import { releaseTentacle, wasLaunchedInOctave } from "./octaveLaunchStore";
 import { octaveLanding } from "./octaveStartup";
-import { useOctaveAvailability } from "./useOctaveAvailability";
+import { useOctaveLaunchAvailability } from "./useOctaveLaunchAvailability";
 
 type OctaveModule = typeof import("../OctaveApp");
 let octaveModule: Promise<OctaveModule> | null = null;
@@ -29,8 +39,20 @@ export function loadOctaveApp(): Promise<OctaveModule> {
 export const LazyOctaveApp = lazy(loadOctaveApp);
 
 // Lancement en Octave : le module part AVEC la vérification de la disponibilité,
-// pas après — la première image peinte est celle d'Octave.
-if (isOctaveMode()) void loadOctaveApp().catch(() => undefined);
+// pas après — la première image peinte est celle d'Octave. La page gardée est
+// lue ICI, avant toute écriture de la session.
+const launchPage = wasLaunchedInOctave() ? resumePath(savedOctavePageAtLaunch(), octaveOwner(), Date.now(), OCTAVE_BASE_PATH) : OCTAVE_BASE_PATH;
+if (wasLaunchedInOctave()) void loadOctaveApp().catch(() => undefined);
+
+/**
+ * Le démarrage, côté Octave (`main.tsx`, avant la première image) : rien hors
+ * d'un lancement en Octave ; sinon le module et le cache gardé, attendus au
+ * plus `OCTAVE_BOOT_BUDGET_MS`, puis les pages de l'identité rendues au cache.
+ */
+export function bootOctave(qc: OctaveQueryClientLike): Promise<void> {
+  if (!wasLaunchedInOctave()) return Promise.resolve();
+  return bootOctaveCache(qc, loadOctaveApp());
+}
 
 /**
  * Enveloppe la mise en page de l'application. Sur l'accueil (`/`), mode
@@ -43,8 +65,13 @@ export function OctaveHomeGate({ children, enabled }: { children: ReactElement; 
   const on = useOctaveMode();
   const atHome = useLocation().pathname === "/";
   const wants = on && enabled && atHome;
-  const landing = octaveLanding(wants, useOctaveAvailability(wants));
+  const landing = octaveLanding(wants, useOctaveLaunchAvailability(wants));
+  // La première image de Tentacle : ce que le lancement en Octave retenait part.
+  useEffect(() => {
+    if (landing === "tentacle") releaseTentacle();
+  }, [landing]);
   if (landing === "pending") return null;
-  if (landing === "octave") return <Navigate to={OCTAVE_BASE_PATH} replace />;
+  // La page gardée tant qu'Octave n'a pas été atteint dans ce chargement ; ensuite, son accueil.
+  if (landing === "octave") return <Navigate to={octavePageReached() ? OCTAVE_BASE_PATH : launchPage} replace />;
   return children;
 }
