@@ -74,7 +74,8 @@ export function useTopPlayback(sideTracks: readonly MusicTrack[], contextId: str
 
   const play = useCallback(
     (top: TopResult) => {
-      if (top.kind === "track") return player.playList([top.track, ...sideTracks], 0, contextId);
+      // La liste à côté s'ouvre déjà sur le titre en tête (R5-06) : il n'entre qu'une fois dans la file.
+      if (top.kind === "track") return player.playList([top.track, ...sideTracks.filter((t) => t.key !== top.track.key)], 0, contextId);
       if (top.kind === "artist") return sideTracks.length > 0 ? player.playList([...sideTracks], 0, contextId) : undefined;
       if (top.kind === "album") return top.album.jellyfinId ? void library.play({ kind: "album", id: top.album.jellyfinId }) : void external.play({ kind: "album", album: top.album });
       return void external.play({ kind: "playlist", playlist: top.playlist });
