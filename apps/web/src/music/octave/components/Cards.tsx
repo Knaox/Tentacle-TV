@@ -1,7 +1,8 @@
 /**
  * Octave — les cartes : album, artiste, playlist. Pochette carrée (place
  * réservée), titre, sous-titre. Le bouton lecture monte au survol (opacité +
- * transform) ; le clic sur la carte ouvre sa vue.
+ * transform) — toujours visible sur un écran tactile ; le clic sur la carte
+ * ouvre sa vue. Un titre coupé se lit en entier dans l'infobulle.
  */
 
 import { memo } from "react";
@@ -14,6 +15,7 @@ import { rememberAlbumPreview } from "../data/albumPreview";
 import { useEntityIntent } from "../data/entityIntent";
 import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
+import { CARD_GRID_CLASS } from "./cardGrid";
 
 function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) {
   const { play, warm } = useCollectionPlayback();
@@ -28,7 +30,7 @@ function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) 
         e.stopPropagation();
         void play(refOf);
       }}
-      className="octave-card-play octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
+      className="octave-card-play octave-hover-reveal octave-brand-fill absolute bottom-2 right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus active:scale-95"
     >
       <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
     </button>
@@ -43,17 +45,20 @@ export const AlbumCard = memo(function AlbumCard({ album }: { album: MusicAlbum 
   const target = entityTarget(album);
   const intent = useEntityIntent("album", target);
   const year = album.year ? `${album.year} · ` : "";
+  const artists = album.artists.map((a) => a.name).join(", ");
   const content = (
     <>
       <div className="relative aspect-square w-full">
-        <Artwork url={album.artworkUrl} className="h-full w-full shadow-md" />
+        <Artwork url={album.artworkUrl} label={album.title} className="h-full w-full shadow-md" />
         {album.jellyfinId && <PlayOverlay refOf={{ kind: "album", id: album.jellyfinId }} label={t("track.play", { title: album.title })} />}
       </div>
       <div className="min-w-0 px-0.5">
-        <p className="truncate text-sm font-semibold text-content-primary">{album.title}</p>
-        <p className="truncate text-[13px] text-content-tertiary">
+        <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={album.title}>
+          {album.title}
+        </p>
+        <p className="truncate text-[13px] leading-5 text-content-tertiary" title={artists}>
           {year}
-          {album.artists.map((a) => a.name).join(", ")}
+          {artists}
         </p>
       </div>
     </>
@@ -74,10 +79,12 @@ export const ArtistCard = memo(function ArtistCard({ artist }: { artist: MusicAr
   const intent = useEntityIntent("artist", target);
   const content = (
     <>
-      <Artwork url={artist.imageUrl} kind="artist" round className="aspect-square w-full shadow-md" />
+      <Artwork url={artist.imageUrl} kind="artist" label={artist.name} round className="aspect-square w-full shadow-md" />
       <div className="min-w-0 px-0.5 text-center">
-        <p className="truncate text-sm font-semibold text-content-primary">{artist.name}</p>
-        <p className="truncate text-[13px] text-content-tertiary">{t("artist.kicker")}</p>
+        <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={artist.name}>
+          {artist.name}
+        </p>
+        <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("artist.kicker")}</p>
       </div>
     </>
   );
@@ -95,20 +102,26 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
   return (
     <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass}>
       <div className="relative aspect-square w-full">
-        <Artwork url={playlist.artworkUrl} className="h-full w-full shadow-md" />
+        <Artwork url={playlist.artworkUrl} label={playlist.name} className="h-full w-full shadow-md" />
         <PlayOverlay refOf={{ kind: "playlist", id: playlist.jellyfinId }} label={t("track.play", { title: playlist.name })} />
       </div>
       <div className="min-w-0 px-0.5">
-        <p className="truncate text-sm font-semibold text-content-primary">{playlist.name}</p>
-        <p className="truncate text-[13px] text-content-tertiary">{t("count.tracks", { count: playlist.trackCount })}</p>
+        <p className="truncate text-sm font-semibold leading-5 text-content-primary" title={playlist.name}>
+          {playlist.name}
+        </p>
+        <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("count.tracks", { count: playlist.trackCount })}</p>
       </div>
     </Link>
   );
 });
 
-/** Une grille de cartes qui suit la largeur (2 colonnes au téléphone, jusqu'à 7). */
+/**
+ * Une grille de cartes qui suit la largeur de SA colonne (pas celle de la
+ * fenêtre : la barre latérale et la file ouverte la rétrécissent) — 2 colonnes
+ * au téléphone, autant que la place en tient au-delà.
+ */
 export function CardGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">{children}</div>;
+  return <div className={CARD_GRID_CLASS}>{children}</div>;
 }
 
 /** Une étagère : un titre de section, éventuellement « Tout afficher », puis son contenu. */
