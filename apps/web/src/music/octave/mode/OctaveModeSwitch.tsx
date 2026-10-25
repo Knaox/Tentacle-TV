@@ -66,11 +66,10 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
     setOptimistic(true);
     loadOctaveApp()
       .then((octave) => octave.warmOctaveCache(queryClient))
+      // On change seulement de PAGE : Octave allume le mode en s'ouvrant (`OctaveApp`). L'allumer
+      // ici, encore sur `/`, faisait rendre à la porte de l'accueil une image vide avant Octave.
       .then(
-        () => {
-          setOctaveMode(true);
-          navigate(OCTAVE_BASE_PATH);
-        },
+        () => navigate(OCTAVE_BASE_PATH),
         () => setOptimistic(null),
       );
   };
