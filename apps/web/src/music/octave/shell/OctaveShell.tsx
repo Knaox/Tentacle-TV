@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { useOctaveEvents } from "../events/useOctaveEvents";
+import { useQueueLibraryTwins } from "../library/useQueueLibraryTwins";
 import { HistoryButtons } from "./HistoryButtons";
 import { NowPlayingSheet } from "./NowPlayingSheet";
 import { OctaveModeSlot } from "./OctaveModeSlot";
@@ -45,6 +46,8 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
   const openSheet = useCallback(() => setSheetOpen(true), []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
   useOctaveEvents();
+  // La file : un titre d'ailleurs que la bibliothèque a devient le sien, à sa place.
+  useQueueLibraryTwins();
   useResetScroll(main);
 
   if (mobile) {
