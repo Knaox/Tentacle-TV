@@ -3,54 +3,29 @@
  * du compte reviennent dans le cache de requêtes AVANT le premier rendu (au
  * plus `HYDRATE_WAIT_MS` : au-delà, Octave s'ouvre quand même et les pages
  * arrivent dès qu'elles sont lues), puis chaque page finie est gardée.
- * Une seule lecture du disque par compte et par chargement de la page.
+ * Une seule lecture du disque par identité et par chargement de la page ; au
+ * lancement en Octave, elle a eu lieu avant le premier rendu (`octaveCacheBoot`).
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { getBackendBase } from "../../../../lib/backendBase";
 import { useArtworkResolver } from "../../components/Artwork";
+import { octaveCacheBackend as currentBackend } from "../../cache/octaveCacheBoot";
+import { isOctaveCacheHydrated, octaveCacheHydration as hydrationOf, resetOctaveCacheHydration } from "../../cache/octaveCacheHydration";
+import { octaveOwner } from "../../cache/octaveOwner";
 import { preconnect, preconnectOrigins, warmArtworkList, warmArtworkWhenIdle } from "./artworkWarm";
-import { attachOctaveCache, hydrateOctaveCache, type HydrationResult, type OctaveQueryClientLike } from "./octaveCachePersister";
-import { indexedDbBackend, type OctaveCacheBackend } from "./octaveCacheStore";
+import { attachOctaveCache, type OctaveQueryClientLike } from "./octaveCachePersister";
+import type { OctaveCacheBackend } from "./octaveCacheStore";
 
 export const HYDRATE_WAIT_MS = 200;
 
-let backend: OctaveCacheBackend | null = null;
-const hydrations = new Map<string, Promise<HydrationResult>>();
-const settled = new Set<string>();
-
-function currentBackend(): OctaveCacheBackend {
-  return (backend ??= indexedDbBackend());
-}
-
 /** Pour les tests. */
 export function setOctaveCacheBackendForTests(next: OctaveCacheBackend | null): void {
-  backend = next;
-  hydrations.clear();
-  settled.clear();
+  resetOctaveCacheHydration(next);
 }
 
 /** À qui sont les pages : le serveur et le compte (le profil ouvert compris). Sans compte : rien de gardé. */
-export function octaveCacheOwner(): string | null {
-  try {
-    const raw = localStorage.getItem("tentacle_user");
-    const id = raw ? (JSON.parse(raw) as { Id?: unknown }).Id : null;
-    return typeof id === "string" && id ? `${getBackendBase()}|${id}` : null;
-  } catch {
-    return null;
-  }
-}
-
-function hydrationOf(qc: OctaveQueryClientLike, owner: string): Promise<HydrationResult> {
-  let job = hydrations.get(owner);
-  if (!job) {
-    job = hydrateOctaveCache(qc, currentBackend(), owner).catch(() => ({ restored: 0, dropped: 0, recent: [], known: [] }));
-    job.then(() => settled.add(owner), () => settled.add(owner));
-    hydrations.set(owner, job);
-  }
-  return job;
-}
+export const octaveCacheOwner = octaveOwner;
 
 /**
  * La lecture du disque part AU PLUS TÔT (montage d'Octave, pendant que sa disponibilité se vérifie) :
@@ -83,7 +58,8 @@ export function OctaveCacheBoundary({ children }: { children: ReactNode }) {
   const resolver = useArtworkResolver();
   const resolve = useRef(resolver);
   resolve.current = resolver;
-  const [ready, setReady] = useState(() => owner === null || settled.has(owner));
+  // Lancement en Octave : `main.tsx` a déjà rendu les pages au cache, la porte s'ouvre au premier rendu.
+  const [ready, setReady] = useState(() => owner === null || isOctaveCacheHydrated(owner));
 
   useEffect(() => {
     if (owner === null) return;
