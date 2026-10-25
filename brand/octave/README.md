@@ -1,12 +1,12 @@
 # Octave — le logo du mode musique
 
-La mascotte de Tentacle, intacte (bras, tête, visage, tricorne), qui tient une
-**note de musique à la place de l'écran**. Rien ici ne se retouche à la main :
+La mascotte de Tentacle, **sans chapeau**, qui montre sur son écran la note
+d'Octave à la place du play ; et le **glyphe**, cette même note seule, pour
+l'interface. Rien ici ne se retouche à la main :
 
 ```bash
-python3 brand/octave.py                              # brand/octave/ + le module TS du web
-python3 brand/octave.py --sheet /chemin/planche.png  # en plus, la planche de comparaison
-python3 brand/octave.py /tmp/apercu                  # aperçu ailleurs, sans le module TS
+python3 brand/octave.py              # brand/octave/ + le module TS du web
+python3 brand/octave.py /tmp/apercu  # aperçu ailleurs, sans le module TS
 ```
 
 `octave.py` LIT les pièces du logo dans `generate-svg.py`, exécuté vers un
@@ -16,51 +16,43 @@ poulpe se fait dans `generate-svg.py`, puis `octave.py` se relance.
 
 | Fichier | Rôle |
 |---|---|
-| `logo-octave.svg` · `-nohat` | Couleur, pour fond CLAIR : la note a la vitre sombre de l'écran (`gT`). |
-| `logo-octave-on-dark.svg` · `-nohat` | Couleur, pour fond SOMBRE : la vitre devient le blanc lavé des yeux (`gN`) — une vitre sombre y laissait un contour vide, illisible à 16 px. |
-| `logo-octave-mono-dark.svg` · `-nohat` | Monochrome blanc (fond sombre), `currentColor`. |
-| `logo-octave-mono-light.svg` · `-nohat` | Monochrome encre `#241040` (fond clair), `currentColor`. |
-| `propositions/` | Les deux propositions écartées, mêmes déclinaisons. |
-
-Sans chapeau **sous 24 px**, comme le logo de l'app.
+| `logo-octave.svg` | Le logo couleur, à partir de 24 px, sur fond clair comme sombre : la vitre sombre dans son cadre au dégradé se lit sur les deux (comme le logo de Tentacle). |
+| `glyph-octave.svg` | Le glyphe au dégradé des bras : le logo couleur SOUS 24 px. |
+| `glyph-octave-on-dark.svg` | Le glyphe monochrome blanc (fond sombre), `currentColor`. |
+| `glyph-octave-on-light.svg` | Le glyphe monochrome encre `#241040` (fond clair), `currentColor`. |
 
 Le web consomme `apps/web/src/components/ui/octaveLogo.generated.ts` :
-`octaveLogoSvg(variant, taille, surFondSombre)` ou `octaveLogoDataUri(…)` pour un
-`<img>` — chaque SVG garde ses identifiants de dégradés, aucune collision avec un
-autre logo de la page.
+`OctaveGlyph` (`components/ui/OctaveGlyph.tsx`, en ligne, `currentColor` — la
+bascule, un onglet, la navigation) et `octaveLogoSvg(variant, taille, surFondSombre)`
+/ `octaveLogoDataUri(…)` pour un `<img>` (composant `OctaveLogo` du mode musique).
+Noms d'export stables : `OCTAVE_GLYPH_PATHS`, `OCTAVE_GLYPH_VIEWBOX`,
+`octaveLogoSvg`, `octaveLogoDataUri`.
 
-## Le glyphe de l'interface
+## Le glyphe
 
-`glyph-octave-on-dark.svg` · `glyph-octave-on-light.svg` (`octave_glyph.py`) :
-une croche dont le crochet est un BRAS de la mascotte (même spine, même
-effilement que les bras du logo), qui s'enroule vers l'intérieur. C'est lui —
-pas la mascotte — qui représente Octave dans l'interface, de 16 à 24 px : la
-bascule vers le mode musique, un onglet, une entrée de navigation. Une seule
-couleur, `currentColor`, aucun visage. Le web le rend par
-`apps/web/src/components/ui/OctaveGlyph.tsx` (`OCTAVE_GLYPH_PATHS`, nom stable).
+`octave_glyph.py` : une croche dont le crochet est un BRAS de la mascotte —
+même spine (`arm_spine`, Bézier puis spirale), même effilement (`tapered`) que
+les bras du logo —, qui s'enroule vers l'intérieur. On lit d'abord une note
+(c'est ce qu'il faut comprendre dans une bascule), puis le tentacule. Poids
+d'une icône Lucide à 24 px : la hampe a la largeur de leur trait. Une seule
+couleur, aucun visage.
 
-## La construction
+## Le logo
 
-- **La double-croche enlacée (retenue).** Deux têtes gravées (inclinées de
-  22°), deux hampes montées à leur droite, une barre qui monte vers la droite.
-  Elle prend la place de l'écran : la barre ferme le bas du dôme comme le
-  faisait le haut du cadre, les hampes courent sous les bras, et les SPIRALES
-  des bras se referment sur les têtes — la pieuvre tient la note par ses
-  têtes. Même langage que l'écran : vitre `gT`, cadre au dégradé `gV` posé
-  AUTOUR de la forme (une hampe de 11 ne survivrait pas à un cadre de 5
-  intérieur), et un éclat rose `gP` sur chaque tête, là où était le play.
-- **L'écran musical.** L'écran tel quel, la double-croche à la place du play.
-  Le plus fidèle, mais indiscernable du logo de Tentacle à 16 px.
-- **La croche-tentacule.** Une croche seule dont le crochet est un bras
-  (`geometry.tapered` sur une spirale) ; le bras gauche tient la tête, le
-  droit le crochet. Belle en grand, confuse à 16 px.
+Le corps du logo de Tentacle (`BODY`), dans le même ordre, le play remplacé par
+le glyphe — posé par son centre optique au centre de l'écran, 76 de côté de
+repère, au dégradé du play (`gP`). La spirale du bras gauche passe sur la tête
+de la note : la pieuvre la tient.
 
-Le choix s'est fait sur la planche (grand, 48 px, 16 px, clair et sombre) :
-seule la double-croche reste une note reconnaissable à 16 px, sur les deux fonds.
+## Ce qui a été retiré (25/10) et pourquoi
 
-## Le monochrome
+Le dessin d'avant — une double-croche géante À LA PLACE de l'écran, le tricorne
+à tête de mort, un monochrome aux orbites creusées — était « en mode
+Halloween » (les logos d'Halloween, c'est fini), la note « trop grosse », le
+rendu pas « natif ». Donc :
 
-Une masse, détails creusés au masque comme `logo-mono.svg`. La note est
-PLEINE, détachée du dôme par un jour (sinon la barre fond dans la tête) — un
-jour assez court pour ne pas mordre le sourire ; les bras s'en détachent par
-leur liseré, comme ils se détachaient du cadre.
+- **plus jamais de chapeau** ni rien de saisonnier, à aucune taille ;
+- **la note à la proportion du play**, sur l'écran que la pieuvre enlace ;
+- **pas de mascotte monochrome** : réduite à une masse, ses yeux creusés
+  lisent « tête de mort » (déjà payé sur l'Apple TV, 2026-10-02). Le
+  monochrome, c'est le glyphe.

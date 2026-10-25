@@ -1,18 +1,20 @@
 /**
- * Octave — le logo (la mascotte qui tient une note), tiré du module GÉNÉRÉ par
- * `brand/octave.py` (jamais redessiné ici) : vitre selon le thème, sans
- * chapeau sous 24 px (le module en décide).
+ * Octave — le logo, tiré du module GÉNÉRÉ par `brand/octave.py` (jamais
+ * redessiné ici) : la mascotte sans chapeau, la note sur son écran, à partir
+ * de 24 px ; le glyphe au dégradé en dessous (le module en décide). En
+ * monochrome, toujours le glyphe, rendu en ligne à `currentColor` comme une
+ * icône posée à côté.
  */
 
 import { memo } from "react";
+import { OctaveGlyph } from "../../../components/ui/OctaveGlyph";
 import { octaveLogoDataUri } from "../../../components/ui/octaveLogo.generated";
-import { useThemeMode } from "../../../theme/useThemeMode";
 
 export const OctaveLogo = memo(function OctaveLogo({ size, mono = false, className = "" }: { size: number; mono?: boolean; className?: string }) {
-  const { isDark } = useThemeMode();
+  if (mono) return <OctaveGlyph size={size} className={`select-none ${className}`} />;
   return (
     <img
-      src={octaveLogoDataUri(mono ? "mono" : "color", size, isDark)}
+      src={octaveLogoDataUri("color", size)}
       width={size}
       height={size}
       alt=""
