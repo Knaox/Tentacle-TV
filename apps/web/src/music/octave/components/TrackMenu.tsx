@@ -41,7 +41,7 @@ export function TrackMenu({ track, actions, onRemove }: TrackMenuProps) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-tertiary opacity-0 transition-opacity duration-150 hover:text-content-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus group-hover:opacity-100 aria-expanded:opacity-100"
+        className="octave-hover-reveal flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-tertiary opacity-0 transition-opacity duration-150 hover:text-content-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus group-hover:opacity-100 aria-expanded:opacity-100"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>

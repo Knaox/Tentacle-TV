@@ -1,14 +1,17 @@
 /**
  * Octave — une liste de titres jouable : cliquer une rangée lit la liste à
- * partir d'elle (la file prend le contexte : album, playlist, likés…).
+ * partir d'elle (la file prend le contexte : album, playlist, likés…) ;
+ * cliquer le titre EN COURS de cette même liste le met en pause ou le reprend.
+ * Le rappel reste STABLE : un changement de titre ne redessine que les deux
+ * rangées concernées.
  */
 
-import { Fragment, memo, useCallback, useMemo } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";
 import type { ListRow } from "@tentacle-tv/shared/octave";
-import { useCurrentKey, useOctavePlayer } from "../player/OctavePlayerProvider";
+import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 import { TrackRow } from "./TrackRow";
 
 interface TrackListProps {
@@ -35,8 +38,22 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
   const player = useOctavePlayer();
   const actions = useTrackActions();
   const currentKey = useCurrentKey();
+  const playingContext = usePlayerSelector((s) => s.queue.contextId);
+  const wantsPlay = usePlayerSelector((s) => s.wantsPlay);
   const tracks = useMemo(() => rows.map((r) => r.track), [rows]);
-  const play = useCallback((index: number) => player.playList(tracks, index, contextId), [contextId, player, tracks]);
+  // Lu au clic, jamais une dépendance du rappel (sinon chaque titre suivant redessinerait toute la liste).
+  const live = useRef({ currentKey, playingContext });
+  useEffect(() => {
+    live.current = { currentKey, playingContext };
+  }, [currentKey, playingContext]);
+  const play = useCallback(
+    (index: number) => {
+      const { currentKey: key, playingContext: context } = live.current;
+      if (tracks[index]?.key === key && context === contextId) player.togglePlay();
+      else player.playList(tracks, index, contextId);
+    },
+    [contextId, player, tracks],
+  );
 
   return (
     <div role="grid" aria-label={label} className="flex flex-col">
@@ -61,6 +78,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
           track={row.track}
           number={useTrackNumbers ? (row.track.trackNumber ?? index + 1) : index + 1}
           current={row.track.key === currentKey}
+          playing={row.track.key === currentKey && wantsPlay}
           failed={row.pending?.failed ?? false}
           showArtwork={showArtwork}
           showAlbum={showAlbum}
