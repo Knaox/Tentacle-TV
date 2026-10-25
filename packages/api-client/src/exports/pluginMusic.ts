@@ -5,7 +5,7 @@ export { findMusicProvider, musicRouteUrl, musicSectionLabel, type MusicProvider
 export { mergeExternalMusicPages, readMusicSearchPage, readMusicTop, type MergedMusicResults } from "../pluginMusic/musicSearchMerge";
 export {
   resolveMusicSources, resolveMusicSource, type MusicSourceOutcome, isSourceFresh, prefetchMusic, likeExternalTrack, addExternalTrackToPlaylist, fetchPendingMusic,
-  reportExternalPlayed, fetchExternalAlbum, fetchExternalArtist, fetchExternalPlaylist,
+  reportExternalPlayed, fetchExternalAlbum, fetchExternalArtist, fetchExternalPlaylist, fetchExternalRadio,
 } from "../pluginMusic/musicRequests";
 export { useMusicProvider } from "../pluginMusic/useMusicProvider";
 export { useMusicSuggest, readMusicSuggestions } from "../pluginMusic/useMusicSuggest";

@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExternalMusicSearchPage, MusicTrack } from "@tentacle-tv/shared/music";
 import { findMusicProvider, musicRouteUrl, type MusicProvider } from "./musicProvider";
 import { mergeExternalMusicPages, readMusicSearchPage, readMusicTop } from "./musicSearchMerge";
-import { likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests, resolveMusicSource, resolveMusicSources } from "./musicRequests";
+import { fetchExternalRadio, likeExternalTrack, prefetchMusic, resetMusicPrefetchForTests, resolveMusicSource, resolveMusicSources } from "./musicRequests";
 import { useMusicProvider } from "./useMusicProvider";
 import { useMusicSearch, type MusicSearchState } from "./useMusicSearch";
 import { isMusicEvent } from "./useMusicEvents";
@@ -122,6 +122,18 @@ describe("appels à l'extension", () => {
     prefetchMusic(provider, ["a"], "results", 29_999);
     await new Promise((r) => setTimeout(r, 0));
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("radio (S3) : seulement si l'extension la déclare ; ses titres lus s'ils ont leur forme ; une panne = pas de radio", async () => {
+    expect(await fetchExternalRadio(provider, "ytm:t:x")).toBeNull();
+    const radioProvider = { ...provider, music: { ...provider.music, radio: "/music/radio" } };
+    const fetchMock = vi.fn(async (_url: string) => new Response(JSON.stringify({ tracks: [track("ext:sillon:ytm:t:a", null), { nope: true }] })));
+    vi.stubGlobal("fetch", fetchMock);
+    const tracks = await fetchExternalRadio(radioProvider, "ytm:t:x");
+    expect(tracks?.map((t) => t.key)).toEqual(["ext:sillon:ytm:t:a"]);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/api/plugins/sillon/music/radio/ytm%3At%3Ax");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("non", { status: 502 })));
+    expect(await fetchExternalRadio(radioProvider, "ytm:t:x")).toBeNull();
   });
 
   it("un refus HTTP devient une raison de la liste fermée", async () => {
