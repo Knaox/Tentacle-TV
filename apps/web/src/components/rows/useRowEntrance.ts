@@ -3,6 +3,7 @@ import {
   CARD_ENTER_MS, CARD_FROM, ENTRANCE_EASE, ENTRANCE_GIVE_UP_MS, ENTRANCE_HOLD_MAX_MS, ENTRANCE_VISIBLE_RATIO,
   HEADER_ENTER_MS, HEADER_FROM, cardEntranceDelays, createEntranceClock, entranceKeyframes,
 } from "./rowEntrance";
+import { hasRowEntered, markRowEntered } from "./rowEntranceMemory";
 
 /**
  * Joue l'entrée d'une rangée (cf. `rowEntrance`) UNE fois dans sa vie : une
@@ -23,6 +24,10 @@ import {
  * garde sa place pendant la retenue — la barre de défilement ne le voit pas.
  *
  * Mouvement réduit (réglage du système) : ni retenue ni animation.
+ *
+ * Une rangée qui revient avec le MÊME contenu (changement de page, retour à
+ * l'accueil) ne la rejoue pas : `entranceId` dit son contenu, et une entrée
+ * déjà jouée pour lui ne se retient plus du tout (`rowEntranceMemory`).
  */
 
 const HELD = "held";
@@ -83,14 +88,21 @@ function play(section: HTMLElement, scroller: HTMLElement): void {
 /**
  * @param scrollRef La piste de cartes.
  * @param ready     Les cartes sont montées (la rangée a franchi sa porte).
+ * @param entranceId Le contenu de la rangée (`rowEntranceId`) ; absent : la
+ *                  rangée entre à chaque montage, comme avant.
  * @returns         Le rappel de ref à poser sur la `<section>` (à composer).
  */
-export function useRowEntrance(scrollRef: RefObject<HTMLElement | null>, ready: boolean) {
+export function useRowEntrance(scrollRef: RefObject<HTMLElement | null>, ready: boolean, entranceId?: string) {
   const pending = useRef(!reducedMotion());
   const section = useRef<HTMLElement | null>(null);
+  // Lu au montage de la section (rappel de ref, après le rendu) : le contenu du moment.
+  const identity = useRef(entranceId);
+  identity.current = entranceId;
 
   const holdRef = useCallback((el: HTMLElement | null) => {
     section.current = el;
+    // Déjà entrée avec ce contenu : ni retenue, ni cascade — les affiches sont déjà là.
+    if (el && pending.current && hasRowEntered(identity.current)) pending.current = false;
     if (el && pending.current) el.setAttribute(ATTR, HELD);
   }, []);
 
@@ -117,6 +129,7 @@ export function useRowEntrance(scrollRef: RefObject<HTMLElement | null>, ready: 
       if (!pending.current) return;
       pending.current = false;
       stop();
+      markRowEntered(identity.current);
       // Les éléments du MOMENT : une section remplacée entre-temps (rangée
       // passée par sa branche vide) garderait sinon sa retenue pour toujours.
       const root = section.current;

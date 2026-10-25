@@ -17,6 +17,7 @@ import { useHoverGuard } from "../../hooks/useHoverGuard";
 import { useHoverMount } from "../../hooks/useHoverMount";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useRowEntrance } from "./useRowEntrance";
+import { rowEntranceId } from "./rowEntranceMemory";
 
 export type CardVariant = "poster" | "episode";
 
@@ -65,7 +66,9 @@ export function MediaRow({ title, items: served, variant = "poster", href, poste
   const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
   // Les deux observateurs (entrée + porte) partagent la racine d'un seul geste.
   // L'entrée (titre, puis cartes de la première vue) : une fois, cf. `rowEntrance`.
-  const holdEntrance = useRowEntrance(scrollRef, visible);
+  // Revenue avec le même contenu (changement de page), elle ne la rejoue pas.
+  const entranceId = useMemo(() => rowEntranceId(title, served.map(mediaKey)), [title, served]);
+  const holdEntrance = useRowEntrance(scrollRef, visible, entranceId);
   const setRowRoot = useCallback((el: HTMLElement | null) => {
     rowRef.current = el;
     setRowEl(el);
