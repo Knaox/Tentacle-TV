@@ -11,8 +11,12 @@ import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";
 import type { ListRow } from "@tentacle-tv/shared/octave";
+import type { SelectGesture } from "../actions/selection/selectionRules";
 import { useCurrentKey, useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
-import { ALBUM_COLUMNS, TrackRow } from "./TrackRow";
+import { TrackRow, rowColumns } from "./TrackRow";
+import { SelectionBar } from "../actions/selection/SelectionBar";
+import { orderedKeys } from "../actions/selection/selectionRules";
+import { useListSelection } from "../actions/selection/useListSelection";
 
 interface TrackListProps {
   rows: readonly ListRow[];
@@ -26,9 +30,11 @@ interface TrackListProps {
   /** Le libellé de la liste (lecteurs d'écran). */
   label: string;
   showHeader?: boolean;
-  onRemoveEntry?: (entryId: string) => void;
-  /** Retirer une entrée EN ATTENTE (titre hors bibliothèque ajouté à la playlist) : sa demande s'annule. */
-  onRemovePending?: (operationId: string) => void;
+  /**
+   * Retirer des rangées de la playlist (leurs clés) : une entrée Jellyfin, ou une attente hors bibliothèque (sa
+   * demande s'annule). Absent : la liste ne se modifie pas.
+   */
+  onRemoveRows?: (rowKeys: string[]) => void;
   /**
    * La file que lit un clic, quand la liste n'en montre qu'un DÉBUT (titres
    * phares repliés) : `rows` en est un préfixe, les rangs coïncident.
@@ -47,7 +53,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
   return tracks.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }));
 }
 
-export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, onRemovePending, queueTracks, sectionBefore }: TrackListProps) {
+export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveRows, queueTracks, sectionBefore }: TrackListProps) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const actions = useTrackActions();
@@ -68,11 +74,27 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
     },
     [contextId, player, tracks],
   );
+  const removeRow = useMemo(() => (onRemoveRows ? (rowKey: string) => onRemoveRows([rowKey]) : undefined), [onRemoveRows]);
+
+  // La sélection multiple : Maj/Cmd-clic, la case au survol ; une liste à la fois (useListSelection).
+  const order = useMemo(() => rows.map((r) => r.rowKey), [rows]);
+  const selection = useListSelection(order);
+  const { select: selectKey } = selection;
+  const selectIndex = useCallback((index: number, gesture: SelectGesture) => {
+    const key = order[index];
+    if (key !== undefined) selectKey(key, gesture);
+  }, [order, selectKey]);
+  const chosen = orderedKeys(order, selection.selected);
+  const selectedTracks = () => {
+    const byKey = new Map(rows.map((r) => [r.rowKey, r.track]));
+    return chosen.flatMap((k) => byKey.get(k) ?? []);
+  };
 
   return (
     <div role="grid" aria-label={label} className="flex flex-col">
       {showHeader && (
-        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${showAlbum ? ALBUM_COLUMNS : "grid-cols-[2rem_minmax(0,1fr)_auto]"}`}>
+        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum)}`}>
+          <span role="columnheader" aria-label={t("selection.column")} />
           <span role="columnheader" className="text-center">{t("track.number")}</span>
           <span role="columnheader">{t("track.title")}</span>
           {showAlbum && <span role="columnheader" className="hidden lg:block">{t("track.album")}</span>}
@@ -95,20 +117,32 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
           playing={row.track.key === currentKey && wantsPlay}
           failed={row.pending?.failed ?? false}
           note={row.pending?.note ?? null}
-          pendingId={row.pending?.operationId ?? null}
-          onRemovePending={onRemovePending}
           showArtwork={showArtwork}
           showAlbum={showAlbum}
           markLibrary={markLibrary}
           actions={actions}
           index={index}
           onPlayIndex={play}
-          entryId={row.entryId}
-          onRemoveEntry={onRemoveEntry}
+          rowKey={row.rowKey}
+          onRemoveRow={row.entryId !== null || row.pending ? removeRow : undefined}
+          selected={selection.selected.has(row.rowKey)}
+          selecting={selection.selecting}
+          onSelect={selectIndex}
         />
         </Fragment>
         );
       })}
+      {selection.selecting && (
+        <SelectionBar
+          count={chosen.length}
+          total={order.length}
+          tracks={selectedTracks}
+          onClear={selection.clear}
+          onSelectAll={selection.selectAll}
+          onRemove={onRemoveRows ? () => onRemoveRows(chosen) : undefined}
+          removeLabel={t("playlist.remove")}
+        />
+      )}
     </div>
   );
 });

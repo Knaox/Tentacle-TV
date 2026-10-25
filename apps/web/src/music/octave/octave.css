@@ -81,10 +81,13 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .octave-enter { animation: octaveFadeIn 200ms ease-out both; }
+/* La barre d'une sélection multiple paraît d'un fondu court (SelectionBar). */
+.octave-selection-bar { animation: octaveFadeIn 180ms ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   .octave-card .octave-card-play { transition: none; }
   .octave-enter,
+  .octave-selection-bar,
   .octave-drawer,
   .octave-sheet { animation: none; }
 }

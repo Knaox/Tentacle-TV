@@ -34,6 +34,7 @@ const COLORS = {
 
 /** Une erreur explique (titre et cause) : un peu plus de temps pour la lire. */
 const DURATION_MS = { success: 4000, info: 4000, error: 6000 } as const;
+const ACTION_DURATION_MS = 7000;
 
 /**
  * Un message bref. Il s'efface seul — sauf tant qu'on le survole ou qu'on y
@@ -44,7 +45,8 @@ const DURATION_MS = { success: 4000, info: 4000, error: 6000 } as const;
 export const Toast = memo(function Toast({ id, type, title, message, action, onDismiss }: ToastProps) {
   const reduced = useReducedMotion() ?? false;
   const [held, setHeld] = useState(false);
-  const durationMs = DURATION_MS[type];
+  // Un avis qui porte un geste (« Annuler », « Changer ») laisse le temps de le faire.
+  const durationMs = action ? Math.max(ACTION_DURATION_MS, DURATION_MS[type]) : DURATION_MS[type];
   const countdown = useMessageCountdown(durationMs, held, () => onDismiss(id));
   const c = COLORS[type];
   // En mode natif : la lentille exacte du galet, et le matériau d'une SURFACE

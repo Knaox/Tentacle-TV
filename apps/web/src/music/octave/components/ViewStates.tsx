@@ -18,6 +18,8 @@ export function RowsSkeleton({ rows = 8, showArtwork = true }: { rows?: number; 
     <div aria-hidden className="flex flex-col">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex h-14 items-center gap-3 px-2">
+          {/* La place de la case de sélection (TrackRow) : la liste arrive sans rien décaler. */}
+          <div className="w-6 shrink-0" />
           <div className="flex w-8 justify-center">
             <div className="h-3 w-4 rounded bg-fill-subtle" />
           </div>

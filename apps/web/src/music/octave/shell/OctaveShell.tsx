@@ -13,6 +13,7 @@ import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { DuplicateConfirmHost } from "../actions/duplicateConfirm";
 import { PlaylistChooserHost } from "../actions/playlistChooser";
+import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
 import { useOctaveEvents } from "../events/useOctaveEvents";
 import { useQueueLibraryTwins } from "../library/useQueueLibraryTwins";
 import { HistoryButtons } from "./HistoryButtons";
@@ -72,6 +73,7 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
         {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
         <DuplicateConfirmHost />
         <PlaylistChooserHost />
+        <BulkDuplicateHost />
       </div>
     );
   }
@@ -94,6 +96,7 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
       {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
       <DuplicateConfirmHost />
       <PlaylistChooserHost />
+      <BulkDuplicateHost />
     </div>
   );
 }

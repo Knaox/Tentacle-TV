@@ -8,7 +8,8 @@ vi.mock("framer-motion", () => ({
   motion: { div: ({ children, initial: _i, animate: _a, exit: _e, transition: _t, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) => <div {...rest}>{children}</div> },
   useReducedMotion: () => false,
 }));
-vi.mock("./session/useMessageCountdown", () => ({ useMessageCountdown: () => ({ running: true }) }));
+const countdown = vi.fn((_ms: number) => ({ running: true }));
+vi.mock("./session/useMessageCountdown", () => ({ useMessageCountdown: (ms: number) => countdown(ms) }));
 
 const { Toast } = await import("./Toast");
 
@@ -22,5 +23,11 @@ describe("avis avec action", () => {
   it("sans action : le message seul, comme avant", () => {
     const html = renderToStaticMarkup(<Toast id={2} type="info" message="Bonjour" onDismiss={() => undefined} />);
     expect(html).not.toContain("<button");
+  });
+  it("un avis qui porte « Annuler » reste plus longtemps (le temps du geste)", () => {
+    countdown.mockClear();
+    renderToStaticMarkup(<Toast id={3} type="success" message="Retiré" action={{ label: "Annuler", onPress: () => undefined }} onDismiss={() => undefined} />);
+    renderToStaticMarkup(<Toast id={4} type="success" message="Ajouté" onDismiss={() => undefined} />);
+    expect(countdown.mock.calls.map((c) => c[0])).toEqual([7000, 4000]);
   });
 });
