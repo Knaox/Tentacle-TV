@@ -5,7 +5,11 @@
  * texte lui répond (« imagine dragons » → un titre d'Imagine Dragons, même
  * lancé depuis la page de l'album) —, puis l'historique de la bibliothèque
  * (« Écoutés récemment » du serveur, qui connaît aussi les autres appareils).
- * Une carte par recherche : l'album, et le titre écouté (deux au plus).
+ * Une carte par recherche : l'ALBUM écouté (le plus récent dont on connaît
+ * l'album : page d'album, bibliothèque) ET les titres écoutés (deux au plus,
+ * le plus récent d'abord, chacun dit une fois). Un titre venu des résultats
+ * d'une extension n'a souvent pas d'album (`album: null`) : le cœur ne
+ * l'invente pas — sans album connu, la carte montre le titre seul, une fois.
  */
 
 import type { MusicTrack } from "@tentacle-tv/shared/music";
@@ -16,18 +20,22 @@ import { matchesDraft } from "./suggestionModel";
 export const LISTENED_CARDS_MAX = 4;
 const TRACKS_PER_CARD = 2;
 
+export interface ListenedAlbum {
+  title: string;
+  artists: string;
+  artworkUrl: string | null;
+  /** Où ouvrir l'album (`octavePaths.album`), sinon `null`. */
+  target: string | null;
+}
+
 export interface ListenedCard {
   /** Stable : la recherche, pliée (clé React). */
   id: string;
   query: string;
-  /** Le titre écouté en tête, puis un autre du même album s'il y en a un. */
+  /** L'album écouté après cette recherche, s'il est connu. */
+  album: ListenedAlbum | null;
+  /** Les titres écoutés, le plus récent d'abord (un au moins sans album, deux au plus). */
   tracks: MusicTrack[];
-  /** L'album du premier titre, sinon `null` (la carte montre alors le titre seul). */
-  albumTitle: string | null;
-  artists: string;
-  artworkUrl: string | null;
-  /** Où ouvrir l'album (`octavePaths.album`), sinon `null`. */
-  albumTarget: string | null;
 }
 
 export interface SearchHomeSources {
@@ -97,26 +105,30 @@ function linkedOwners(recents: readonly string[], listens: readonly SearchListen
 export function buildListenedCards({ recents, listens, history, max = LISTENED_CARDS_MAX }: SearchHomeSources): ListenedCard[] {
   const owners = linkedOwners(recents, listens);
   const usedAlbums = new Set<string>();
+  const usedTracks = new Set<string>();
   const cards: ListenedCard[] = [];
   for (const query of recents) {
     if (cards.length >= max) break;
     if (searchTokens(query).length === 0) continue;
     const folded = fold(query);
-    // Un album déjà montré, ou né d'une AUTRE recherche, n'est pas redit ici : on prend le suivant.
-    const candidates = candidatesFor(query, listens, history).filter((c) => (owners.get(albumKeyOf(c)) ?? folded) === folded);
-    const lead = candidates.find((c) => !usedAlbums.has(albumKeyOf(c)));
-    if (!lead) continue;
-    const album = albumKeyOf(lead);
-    usedAlbums.add(album);
-    const tracks = [lead, ...candidates.filter((c) => c !== lead && albumKeyOf(c) === album)].slice(0, TRACKS_PER_CARD).map((c) => c.track);
+    const candidates = candidatesFor(query, listens, history);
+    // L'album : un album déjà montré, ou né d'une AUTRE recherche, n'est pas redit ici.
+    const albumOf = candidates.find((c) => c.track.album?.title && !usedAlbums.has(albumKeyOf(c)) && (owners.get(albumKeyOf(c)) ?? folded) === folded);
+    // Les titres : jamais celui qu'une carte plus récente montre déjà, ni l'album d'une autre recherche.
+    const tracks = candidates
+      .filter((c) => !usedTracks.has(c.track.key) && (owners.get(albumKeyOf(c)) ?? folded) === folded)
+      .slice(0, TRACKS_PER_CARD)
+      .map((c) => c.track);
+    if (!albumOf && tracks.length === 0) continue;
+    if (albumOf) usedAlbums.add(albumKeyOf(albumOf));
+    for (const t of tracks) usedTracks.add(t.key);
     cards.push({
       id: folded,
       query,
-      tracks,
-      albumTitle: lead.track.album?.title ?? null,
-      artists: artistsOf(lead.track),
-      artworkUrl: lead.track.artworkUrl,
-      albumTarget: lead.albumTarget,
+      album: albumOf
+        ? { title: albumOf.track.album?.title ?? "", artists: artistsOf(albumOf.track), artworkUrl: albumOf.track.artworkUrl, target: albumOf.albumTarget }
+        : null,
+      tracks: tracks.length > 0 ? tracks : albumOf ? [albumOf.track] : [],
     });
   }
   return cards;

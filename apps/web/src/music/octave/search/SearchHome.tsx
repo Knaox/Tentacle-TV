@@ -66,7 +66,7 @@ export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget
             </h2>
             <p className="mt-1 text-sm text-content-tertiary">{t("search.listenedHint")}</p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {cards.map((card) => (
               <ListenedCard key={card.id} card={card} />
             ))}
