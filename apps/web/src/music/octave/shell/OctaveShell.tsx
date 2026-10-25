@@ -1,19 +1,20 @@
 /**
- * Octave — le cadre du mode : barre latérale, page, file d'attente, barre de
- * lecture (bureau) ; page, mini-lecteur, onglets (téléphone). La page défile
- * seule, le lecteur reste en place.
+ * Octave — le cadre du mode. Bureau : le rail de navigation à gauche, la page
+ * au centre avec le DOCK qui flotte au-dessus d'elle (la page défile dessous),
+ * la file d'attente en îlot à droite. Téléphone : en-tête, page, mini-lecteur,
+ * onglets. Le lecteur « en cours » s'ouvre par-dessus tout.
  *
  * Le bandeau d'hôte de macOS (feux tricolores) garde sa place
  * (`--hote-bandeau`), comme dans la coquille vidéo.
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { LogOut } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { useOctaveEvents } from "../events/useOctaveEvents";
+import { HistoryButtons } from "./HistoryButtons";
 import { NowPlayingSheet } from "./NowPlayingSheet";
+import { OctaveModeSlot } from "./OctaveModeSlot";
 import { OctaveSidebar, OctaveTabBar, OctaveWordmark } from "./OctaveSidebar";
 import { MiniPlayer, PlayerBar } from "./PlayerBar";
 import { QueuePanel } from "./QueuePanel";
@@ -23,7 +24,10 @@ interface OctaveShellProps {
   onExit: () => void;
 }
 
-/** Une nouvelle page s'ouvre en haut ; le focus passe à son contenu (lecteurs d'écran). */
+/** La place que le dock flottant prend au bas de la page : rien ne reste caché dessous. */
+const DOCK_ROOM = "calc(var(--oc-dock-height) + var(--oc-dock-inset) * 2 + 16px)";
+
+/** Une nouvelle page s'ouvre en haut. */
 function useResetScroll(main: React.RefObject<HTMLElement | null>) {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -32,37 +36,32 @@ function useResetScroll(main: React.RefObject<HTMLElement | null>) {
 }
 
 export function OctaveShell({ children, onExit }: OctaveShellProps) {
-  const { t } = useTranslation("music");
   const mobile = useIsMobile();
   const [queueOpen, setQueueOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const main = useRef<HTMLElement>(null);
   const toggleQueue = useCallback(() => setQueueOpen((v) => !v), []);
   const closeQueue = useCallback(() => setQueueOpen(false), []);
+  const openSheet = useCallback(() => setSheetOpen(true), []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
   useOctaveEvents();
   useResetScroll(main);
 
   if (mobile) {
     return (
-      <div className="fixed inset-0 flex flex-col bg-surface-0" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="mobile">
-        <header className="flex h-14 shrink-0 items-center justify-between px-4 pt-[env(safe-area-inset-top,0px)]">
-          <OctaveWordmark className="text-xl" logoSize={30} />
-          <button
-            type="button"
-            onClick={onExit}
-            aria-label={t("mode.exit")}
-            title={t("mode.exitHint")}
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+      <div className="fixed inset-0 flex flex-col bg-octave-ink" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="mobile">
+        <header className="flex h-14 shrink-0 items-center gap-1 px-2 pt-[env(safe-area-inset-top,0px)]">
+          <HistoryButtons compact />
+          <div className="min-w-0 flex-1 px-2">
+            <OctaveWordmark logoSize={28} className="text-xl" />
+          </div>
+          <OctaveModeSlot onExit={onExit} compact />
         </header>
         <main ref={main} id="octave-main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
           {children}
         </main>
         <div className="shrink-0 pb-2">
-          <MiniPlayer onOpen={() => setSheetOpen(true)} />
+          <MiniPlayer onOpen={openSheet} />
         </div>
         <OctaveTabBar />
         {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
@@ -71,19 +70,21 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-surface-0" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop">
-      <div className="flex min-h-0 flex-1">
-        <OctaveSidebar onExit={onExit} />
-        <main ref={main} id="octave-main" className="relative min-w-0 flex-1 overflow-y-auto overscroll-contain">
+    <div className="fixed inset-0 flex bg-octave-ink" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop">
+      <OctaveSidebar onExit={onExit} />
+      <div className="relative min-w-0 flex-1">
+        <main ref={main} id="octave-main" className="h-full overflow-y-auto overscroll-contain" style={{ paddingBottom: DOCK_ROOM }}>
           {children}
         </main>
-        {queueOpen && (
-          <div className="octave-drawer w-[340px] shrink-0 border-l border-line-subtle bg-surface-1">
-            <QueuePanel onClose={closeQueue} />
-          </div>
-        )}
+        <div aria-hidden className="octave-dock-edge" />
+        <PlayerBar queueOpen={queueOpen} onToggleQueue={toggleQueue} onOpenNowPlaying={openSheet} />
       </div>
-      <PlayerBar queueOpen={queueOpen} onToggleQueue={toggleQueue} />
+      {queueOpen && (
+        <div className="octave-drawer octave-island my-2 mr-2 w-[var(--oc-queue-width)] shrink-0 overflow-hidden">
+          <QueuePanel onClose={closeQueue} />
+        </div>
+      )}
+      {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
     </div>
   );
 }
