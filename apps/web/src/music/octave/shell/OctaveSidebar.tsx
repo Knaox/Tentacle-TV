@@ -26,7 +26,7 @@ import { octavePaths } from "../octavePaths";
 import { HistoryButtons } from "./HistoryButtons";
 import { OctaveWordmark } from "./OctaveWordmark";
 import { OctaveModeSlot } from "./OctaveModeSlot";
-import { OctaveProfileButton } from "../profiles/OctaveProfileButton";
+import { OctaveProfileButton } from "../profiles";
 
 export const OCTAVE_DESTINATIONS = [
   { to: octavePaths.home, key: "nav.home", Icon: Home, end: true },

@@ -19,7 +19,7 @@ import { useQueueLibraryTwins } from "../library/useQueueLibraryTwins";
 import { HistoryButtons } from "./HistoryButtons";
 import { NowPlayingSheet } from "./NowPlayingSheet";
 import { OctaveModeSlot } from "./OctaveModeSlot";
-import { OctaveProfileButton } from "../profiles/OctaveProfileButton";
+import { OctaveProfileButton } from "../profiles";
 import { OctaveSidebar, OctaveTabBar } from "./OctaveSidebar";
 import { OctaveWordmark } from "./OctaveWordmark";
 import { MiniPlayer, PlayerBar } from "./PlayerBar";
