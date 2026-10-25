@@ -17,6 +17,7 @@ import { SearchResults } from "../search/SearchResults";
 import { useTypingPause } from "../data/typingPause";
 import { useOctaveSuggestions } from "../search/useOctaveSuggestions";
 import { useRevealedResults } from "../search/useRevealedResults";
+import { SearchHome } from "../search/SearchHome";
 
 /** La barre d'attente ne se montre que si l'attente se voit (une recherche en cache n'en a pas). */
 const PREPARING_VISIBLE_MS = 150;
@@ -43,7 +44,7 @@ export function SearchView() {
   // Une recherche validée ailleurs (retour arrière, lien) reprend la barre.
   useEffect(() => setDraft(query), [query]);
 
-  const { suggestions, remember, forget } = useOctaveSuggestions(draft);
+  const { suggestions, recents, remember, forget } = useOctaveSuggestions(draft);
   // La recherche préparée à la pause de frappe (bureau seulement, axe R7) : rien n'est cherché ni montré ici.
   const pause = useTypingPause();
   useEffect(() => {
@@ -89,12 +90,8 @@ export function SearchView() {
         )}
       </div>
 
-      {!query.trim() && (
-        <div className="px-2 py-10">
-          <h1 className="text-2xl font-bold text-content-primary">{t("search.emptyTitle")}</h1>
-          <p className="mt-2 text-sm text-content-tertiary">{t("search.emptyHint")}</p>
-        </div>
-      )}
+      {/* Avant la frappe : le « déjà écouté » et les recherches récentes, dans la page. */}
+      {!query.trim() && <SearchHome recents={recents} onSearch={submit} onForget={forget} />}
 
       {query.trim() && <SearchResults results={results} filter={filter} onFilter={onFilter} />}
     </div>
