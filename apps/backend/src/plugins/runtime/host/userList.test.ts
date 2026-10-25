@@ -5,6 +5,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { userList } from "./userList";
 
 const state = vi.hoisted(() => ({
   down: false,
@@ -23,8 +24,6 @@ vi.mock("../../../services/family/familyGuestMarkers", () => ({
     return items.filter((item) => !state.guests.has(idOf(item)));
   },
 }));
-
-const { userList } = await import("./userList");
 
 describe("users.list", () => {
   beforeEach(() => {
