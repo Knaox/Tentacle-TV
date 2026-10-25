@@ -10,7 +10,7 @@ export {
 export { useMusicSearch, useDebouncedText, musicSearchText, type MusicSearchOptions } from "../music/useMusicSearch";
 export { useMusicLiked, useToggleMusicFavorite, patchFavorites, MUSIC_LIKED_PAGE } from "../music/useMusicFavorite";
 export {
-  useMusicPlaylists, useMusicPlaylist, useAddToMusicPlaylist, useMoveMusicPlaylistEntry, useRemoveMusicPlaylistEntry,
+  useMusicPlaylists, useMusicPlaylist, useMusicPlaylistReader, useAddToMusicPlaylist, useMoveMusicPlaylistEntry, useRemoveMusicPlaylistEntry,
   useRenameMusicPlaylist, useCreateMusicPlaylist, useDeleteMusicPlaylist,
 } from "../music/useMusicPlaylists";
 export { useMusicLive, applyMusicEvent, type UseMusicLiveOptions } from "../music/useMusicLive";

@@ -11,11 +11,14 @@
  * rail devient un panneau qui flotte (surface de la primitive).
  */
 
-import { memo } from "react";
+import { memo, useState, type DragEvent, type ReactNode } from "react";
 import { Heart, Home, Library, ListMusic, Search } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
+import type { MusicPlaylist } from "@tentacle-tv/shared/music";
+import { carriesTrack, draggedTrack } from "../actions/dragTrack";
+import { useTrackActions } from "../actions/useTrackActions";
 import { useLiquidGlassMode, useLiquidGlassSurface } from "../../../theme/glass";
 import { Artwork } from "../components/Artwork";
 import { OctaveLogo } from "../components/OctaveLogo";
@@ -81,18 +84,49 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
         <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>
         <ul className="flex flex-col gap-0.5">
           {(playlists.data ?? []).map((p) => (
-            <li key={p.jellyfinId}>
+            <PlaylistDropTarget key={p.jellyfinId} playlist={p}>
               <NavLink to={octavePaths.playlist(p.jellyfinId)} className={playlistClass}>
                 <Artwork url={p.artworkUrl} className="h-9 w-9" />
                 <span className="truncate">{p.name}</span>
               </NavLink>
-            </li>
+            </PlaylistDropTarget>
           ))}
         </ul>
       </div>
     </nav>
   );
 });
+
+/**
+ * Une playlist du rail qui ACCUEILLE un titre glissé (bureau, web) : contour rose pendant le survol, l'ajout au
+ * dépôt — un doublon demande confirmation, comme tout ajout. Une playlist qu'on ne peut pas modifier ne réagit pas.
+ */
+function PlaylistDropTarget({ playlist, children }: { playlist: MusicPlaylist; children: ReactNode }) {
+  const actions = useTrackActions();
+  const [over, setOver] = useState(false);
+  const accepts = (e: DragEvent) => playlist.editable && carriesTrack(e);
+  return (
+    <li
+      className={`rounded-xl transition-shadow duration-150 ${over ? "ring-2 ring-octave-accent-text" : ""}`}
+      onDragOver={(e) => {
+        if (!accepts(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        setOver(false);
+        const track = accepts(e) ? draggedTrack(e) : null;
+        if (!track) return;
+        e.preventDefault();
+        void actions.addToPlaylist(track, playlist);
+      }}
+    >
+      {children}
+    </li>
+  );
+}
 
 /** La barre d'onglets du téléphone : les mêmes cinq destinations, l'active en rose. */
 export const OctaveTabBar = memo(function OctaveTabBar() {

@@ -11,6 +11,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../../hooks/useIsMobile";
+import { DuplicateConfirmHost } from "../actions/duplicateConfirm";
+import { PlaylistChooserHost } from "../actions/playlistChooser";
 import { useOctaveEvents } from "../events/useOctaveEvents";
 import { HistoryButtons } from "./HistoryButtons";
 import { NowPlayingSheet } from "./NowPlayingSheet";
@@ -65,6 +67,8 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
         </div>
         <OctaveTabBar />
         {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
+        <DuplicateConfirmHost />
+        <PlaylistChooserHost />
       </div>
     );
   }
@@ -85,6 +89,8 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
         </div>
       )}
       {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
+      <DuplicateConfirmHost />
+      <PlaylistChooserHost />
     </div>
   );
 }

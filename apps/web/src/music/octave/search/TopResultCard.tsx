@@ -9,6 +9,8 @@ import { memo, useId } from "react";
 import { Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useTrackActions } from "../actions/useTrackActions";
+import { TrackMenu } from "../components/TrackMenu";
 import { rememberAlbumPreview } from "../data/albumPreview";
 import { Artwork } from "../components/Artwork";
 import { entityTarget, octavePaths } from "../octavePaths";
@@ -55,6 +57,7 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
   const { t } = useTranslation("music");
   const headingId = useId();
   const face = useFace(top);
+  const actions = useTrackActions();
   const albumTarget = top.kind === "album" && !top.album.jellyfinId ? entityTarget(top.album) : null;
   // Le nom : un lien vers sa vue, dont la zone couvre toute la carte (le bouton Lecture reste au-dessus).
   const nameClass =
@@ -95,6 +98,12 @@ export const TopResultCard = memo(function TopResultCard({ top, onPlay, onWarm }
         >
           <Play className="ml-0.5 h-5 w-5" fill="currentColor" />
         </button>
+        {/* Un TITRE en meilleur résultat a son menu (playlist : ajouter, retirer), au-dessus du lien de la carte. */}
+        {top.kind === "track" && (
+          <div className="absolute right-5 top-5 z-10">
+            <TrackMenu track={top.track} actions={actions} visible="always" buttonClassName="h-9 w-9 text-content-secondary" />
+          </div>
+        )}
       </div>
     </section>
   );

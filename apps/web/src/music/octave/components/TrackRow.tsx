@@ -20,6 +20,8 @@ import { Artwork } from "./Artwork";
 import { AvailabilityMark } from "./AvailabilityMark";
 import { HeartButton } from "./HeartButton";
 import { TrackMenu } from "./TrackMenu";
+import { QuickAddButton } from "./QuickAddButton";
+import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
 
 /**
  * La grille d'une rangée avec sa colonne Album : la colonne n'existe qu'à
@@ -43,6 +45,11 @@ export interface TrackRowProps {
   onPlayIndex: (index: number) => void;
   entryId?: string | null;
   onRemoveEntry?: (entryId: string) => void;
+  /** Ce que l'extension dit de l'entrée en attente (« Ne peut pas entrer dans la bibliothèque… »). */
+  note?: string | null;
+  /** L'entrée en attente de cette rangée, et son retrait (titre hors bibliothèque dans une playlist). */
+  pendingId?: string | null;
+  onRemovePending?: (operationId: string) => void;
 }
 
 function ArtistLinks({ track }: { track: MusicTrack }) {
@@ -81,10 +88,11 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry, note = null, pendingId = null, onRemovePending }: TrackRowProps) {
   const { t } = useTranslation("music");
   const onPlay = () => onPlayIndex(index);
-  const onRemove = entryId && onRemoveEntry ? () => onRemoveEntry(entryId) : undefined;
+  // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).
+  const onRemove = entryId && onRemoveEntry ? () => onRemoveEntry(entryId) : pendingId && onRemovePending ? () => onRemovePending(pendingId) : undefined;
   const prefetch = usePrefetchHandlers(() => [track]);
   const muted = track.availability === "pending" || failed;
   return (
@@ -97,6 +105,10 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
         if (e.key === "Enter" && e.target === e.currentTarget) onPlay();
       }}
       {...prefetch}
+      // Glisser le titre sur une playlist du rail l'y ajoute (souris) ; le menu « Ajouter à une playlist » en est l'équivalent.
+      draggable={actions.canAddToPlaylist(track)}
+      onDragStart={(e) => startTrackDrag(e, track)}
+      onDragEnd={endTrackDrag}
       className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         showAlbum ? ALBUM_COLUMNS : "grid-cols-[2rem_minmax(0,1fr)_auto]"
       }`}
@@ -114,9 +126,11 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
             )}
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-content-tertiary">
-            <AvailabilityMark availability={track.availability} failed={failed} />
+            <AvailabilityMark availability={track.availability} failed={failed} note={note} />
             <span className="truncate">
               <ArtistLinks track={track} />
+              {/* Un échec dit POURQUOI, en mot (jamais l'icône seule) : « ne peut pas entrer dans la bibliothèque… ». */}
+              {failed && note && <span className="text-status-error-fg"> · {note}</span>}
             </span>
           </div>
         </div>
@@ -133,6 +147,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
         </div>
       )}
       <div role="gridcell" className="flex items-center gap-1">
+        <QuickAddButton track={track} actions={actions} />
         <HeartButton track={track} actions={actions} quiet />
         {/* Une durée inconnue (titre d'une recherche hors bibliothèque) : la place, pas de « –:–– ». */}
         <span className="oc-meta w-12 text-right text-[13px] text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>

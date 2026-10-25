@@ -15,9 +15,11 @@ interface AvailabilityMarkProps {
   /** `chip` : pastille avec le mot ; `icon` : l'icône seule (le mot en infobulle et pour les lecteurs d'écran). */
   variant?: "chip" | "icon";
   showLibrary?: boolean;
+  /** Ce que l'extension dit de l'entrée : remplace l'infobulle générique. */
+  note?: string | null;
 }
 
-export const AvailabilityMark = memo(function AvailabilityMark({ availability, failed = false, variant = "icon", showLibrary = false }: AvailabilityMarkProps) {
+export const AvailabilityMark = memo(function AvailabilityMark({ availability, failed = false, variant = "icon", showLibrary = false, note = null }: AvailabilityMarkProps) {
   const { t } = useTranslation("music");
   if (availability === "library" && !showLibrary) return null;
   const key = failed ? "failed" : availability;
@@ -25,7 +27,7 @@ export const AvailabilityMark = memo(function AvailabilityMark({ availability, f
   const tone = failed ? "text-status-error-fg" : availability === "pending" ? "text-status-warning-fg" : availability === "cache" ? "text-octave-accent-text" : "text-content-tertiary";
   const label = t(`availability.${key}`);
   // En attente : l'infobulle dit ce qui va se passer (il s'écoute déjà).
-  const hint = key === "pending" ? `${label} — ${t("availability.pendingHint")}` : label;
+  const hint = note ? `${label} — ${note}` : key === "pending" ? `${label} — ${t("availability.pendingHint")}` : label;
   if (variant === "icon") {
     return (
       <span className={`inline-flex shrink-0 items-center ${tone}`} title={hint}>

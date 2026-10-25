@@ -8,6 +8,7 @@ import {
   isSourceFresh,
   likeExternalTrack,
   prefetchMusic,
+  removePendingMusic,
   resolveMusicSources,
 } from "./musicRequests";
 
@@ -49,10 +50,14 @@ export function useMusicPrefetch(provider: MusicProvider | null): (ids: readonly
 
 export interface MusicGestures {
   like: (externalId: string, liked: boolean) => Promise<ExternalActionOutcome>;
-  playlistAdd: (externalId: string, playlistId: string, position: number) => Promise<ExternalActionOutcome>;
-  /** L'extension sait-elle aimer / ajouter à une playlist ? Sinon, pas de bouton. */
+  /** `duplicate` : un doublon CONFIRMÉ par l'utilisateur. */
+  playlistAdd: (externalId: string, playlistId: string, position: number, duplicate?: boolean) => Promise<ExternalActionOutcome>;
+  /** Retire une entrée en attente (titre hors bibliothèque d'une playlist, ou aimé). */
+  removePending: (operationId: string) => Promise<boolean>;
+  /** L'extension sait-elle aimer / ajouter à une playlist / retirer une attente ? Sinon, pas de bouton. */
   canLike: boolean;
   canPlaylistAdd: boolean;
+  canRemovePending: boolean;
 }
 
 const UNAVAILABLE: ExternalActionOutcome = { ok: false, reason: "unavailable", message: null };
@@ -69,17 +74,24 @@ export function useMusicGestures(provider: MusicProvider | null): MusicGestures 
     onSettled: settle,
   });
   const add = useMutation({
-    mutationFn: ({ externalId, playlistId, position }: { externalId: string; playlistId: string; position: number }) =>
-      provider ? addExternalTrackToPlaylist(provider, externalId, playlistId, position) : Promise.resolve(UNAVAILABLE),
+    mutationFn: ({ externalId, playlistId, position, duplicate }: { externalId: string; playlistId: string; position: number; duplicate?: boolean }) =>
+      provider ? addExternalTrackToPlaylist(provider, externalId, playlistId, position, duplicate) : Promise.resolve(UNAVAILABLE),
+    onSettled: settle,
+  });
+  const remove = useMutation({
+    mutationFn: (operationId: string) => (provider ? removePendingMusic(provider, operationId) : Promise.resolve(false)),
     onSettled: settle,
   });
   const { mutateAsync: likeAsync } = like;
   const { mutateAsync: addAsync } = add;
+  const { mutateAsync: removeAsync } = remove;
   return {
     like: useCallback((externalId, liked) => likeAsync({ externalId, liked }), [likeAsync]),
-    playlistAdd: useCallback((externalId, playlistId, position) => addAsync({ externalId, playlistId, position }), [addAsync]),
+    playlistAdd: useCallback((externalId, playlistId, position, duplicate) => addAsync({ externalId, playlistId, position, duplicate }), [addAsync]),
+    removePending: useCallback((operationId: string) => removeAsync(operationId), [removeAsync]),
     canLike: !!provider?.music.like,
     canPlaylistAdd: !!provider?.music.playlistAdd,
+    canRemovePending: !!provider?.music.pending,
   };
 }
 
