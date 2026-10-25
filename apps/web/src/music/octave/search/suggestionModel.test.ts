@@ -3,10 +3,14 @@ import { buildSuggestions, matchesDraft, moveActive, SUGGESTIONS_MAX } from "./s
 import { searchTokens } from "@tentacle-tv/shared";
 
 describe("suggestions de la barre (Octave)", () => {
-  it("barre vide : les recherches récentes seules", () => {
-    const out = buildSuggestions({ draft: "", recents: ["radiohead", "thunderstruck"], library: [{ kind: "artist", title: "Queen", subtitle: null }], extension: [] });
-    expect(out.map((s) => s.text)).toEqual(["radiohead", "thunderstruck"]);
-    expect(out.every((s) => s.kind === "recent")).toBe(true);
+  it("barre vide : aucune liste (les récentes sont dans la page, rien ne recouvre son titre)", () => {
+    expect(buildSuggestions({ draft: "", recents: ["radiohead", "thunderstruck"], library: [{ kind: "artist", title: "Queen", subtitle: null }], extension: [] })).toEqual([]);
+    expect(buildSuggestions({ draft: "   ", recents: ["radiohead"], library: [], extension: [] })).toEqual([]);
+  });
+
+  it("pendant la frappe, les récentes qui commencent comme elle restent en tête", () => {
+    const out = buildSuggestions({ draft: "ra", recents: ["radiohead", "queen", "rammstein"], library: [], extension: [] });
+    expect(out.map((s) => [s.kind, s.text])).toEqual([["recent", "radiohead"], ["recent", "rammstein"]]);
   });
 
   it("la frappe filtre par début de mot, accents et casse confondus", () => {

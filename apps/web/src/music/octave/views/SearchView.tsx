@@ -17,6 +17,7 @@ import { SearchResults } from "../search/SearchResults";
 import { useTypingPause } from "../data/typingPause";
 import { useOctaveSuggestions } from "../search/useOctaveSuggestions";
 import { useRevealedResults } from "../search/useRevealedResults";
+import { SearchHome } from "../search/SearchHome";
 
 /** La barre d'attente ne se montre que si l'attente se voit (une recherche en cache n'en a pas). */
 const PREPARING_VISIBLE_MS = 150;
@@ -43,7 +44,7 @@ export function SearchView() {
   // Une recherche validée ailleurs (retour arrière, lien) reprend la barre.
   useEffect(() => setDraft(query), [query]);
 
-  const { suggestions, remember, forget } = useOctaveSuggestions(draft);
+  const { suggestions, recents, remember, forget } = useOctaveSuggestions(draft);
   // La recherche préparée à la pause de frappe (bureau seulement, axe R7) : rien n'est cherché ni montré ici.
   const pause = useTypingPause();
   useEffect(() => {
@@ -62,6 +63,12 @@ export function SearchView() {
     },
     [pause, remember, setParams],
   );
+  // Le ✕ du champ ramène à l'état d'avant la frappe ; le retour arrière retrouve la recherche quittée.
+  const clear = useCallback(() => {
+    pause.cancel();
+    setDraft("");
+    if (query) setParams({}, { replace: false });
+  }, [pause, query, setParams]);
   // Une puce ne crée pas d'entrée d'historique : le retour arrière ramène à la recherche précédente.
   const onFilter = useCallback(
     (next: SearchFilter) => setParams(next === "all" ? { q: query } : { q: query, f: next }, { replace: true }),
@@ -71,10 +78,10 @@ export function SearchView() {
   return (
     <div className="flex flex-col gap-8 px-2 pb-10 pt-6 md:px-6">
       <div className="sticky top-0 z-10 -mx-2 bg-surface-0 px-2 pb-2 pt-1 md:-mx-6 md:px-6">
-        <OctaveSearchBox value={draft} onChange={setDraft} onSubmit={submit} suggestions={suggestions} onForget={forget} />
+        <OctaveSearchBox value={draft} onChange={setDraft} onSubmit={submit} suggestions={suggestions} onForget={forget} onClear={clear} />
         {/* Place réservée : la barre d'attente n'ajoute ni ne retire de hauteur. */}
         <div aria-hidden className="mt-2 h-0.5 max-w-2xl overflow-hidden rounded-full">
-          {preparing && <div className="h-full w-1/4 animate-loading-bar rounded-full bg-brand motion-reduce:animate-none" />}
+          {preparing && <div className="h-full w-1/4 animate-loading-bar rounded-full bg-octave-accent motion-reduce:animate-none" />}
         </div>
         {results.preparing && (
           <span className="sr-only" role="status">
@@ -83,12 +90,8 @@ export function SearchView() {
         )}
       </div>
 
-      {!query.trim() && (
-        <div className="px-2 py-10">
-          <h1 className="text-2xl font-bold text-content-primary">{t("search.emptyTitle")}</h1>
-          <p className="mt-2 text-sm text-content-tertiary">{t("search.emptyHint")}</p>
-        </div>
-      )}
+      {/* Avant la frappe : le « déjà écouté » et les recherches récentes, dans la page. */}
+      {!query.trim() && <SearchHome recents={recents} onSearch={submit} onForget={forget} />}
 
       {query.trim() && <SearchResults results={results} filter={filter} onFilter={onFilter} />}
     </div>

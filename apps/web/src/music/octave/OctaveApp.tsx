@@ -25,6 +25,7 @@ import { PlaylistView } from "./views/PlaylistView";
 import { ExternalPlaylistView } from "./views/ExternalPlaylistView";
 import { PlaylistsView } from "./views/PlaylistsView";
 import { SearchView } from "./views/SearchView";
+import { SearchListenRecorder } from "./search/SearchListenRecorder";
 
 export function OctaveApp() {
   const { available, settled } = useOctaveAvailability();
@@ -48,6 +49,7 @@ export function OctaveApp() {
   return (
     <OctaveCacheBoundary>
       <OctavePlayerProvider>
+        <SearchListenRecorder />
         <OctaveShell onExit={exit}>
           <Routes>
             <Route index element={<HomeView />} />

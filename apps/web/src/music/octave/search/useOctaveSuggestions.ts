@@ -10,6 +10,7 @@ import { useMusicSearch, useMusicSuggest } from "@tentacle-tv/api-client";
 import type { MusicSuggestion } from "@tentacle-tv/shared/music";
 import { useOctaveProvider } from "../mode/useOctaveProvider";
 import { pushRecentMusicSearch, readRecentMusicSearches, removeRecentMusicSearch } from "./recentMusicSearches";
+import { forgetSearchListens } from "./searchListens";
 import { buildSuggestions, type OctaveSuggestion, type SuggestionInput } from "./suggestionModel";
 
 /** Le temps de laisser finir une lettre tapée d'un trait (celui de la barre de Tentacle). */
@@ -43,6 +44,10 @@ export function useOctaveSuggestions(draft: string) {
   );
 
   const remember = useCallback((query: string) => setRecents(pushRecentMusicSearch(query)), []);
-  const forget = useCallback((query: string) => setRecents(removeRecentMusicSearch(query)), []);
-  return { suggestions, remember, forget };
+  // Oublier une recherche, c'est aussi oublier ce qu'elle a fait écouter (le « déjà écouté »).
+  const forget = useCallback((query: string) => {
+    forgetSearchListens(query);
+    setRecents(removeRecentMusicSearch(query));
+  }, []);
+  return { suggestions, recents, remember, forget };
 }
