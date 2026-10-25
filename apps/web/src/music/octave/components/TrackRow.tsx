@@ -25,6 +25,7 @@ import { QuickRemoveButton } from "./QuickRemoveButton";
 import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
 import { clickGesture, type SelectGesture } from "../actions/selection/selectionRules";
 import { SelectCell } from "./SelectCell";
+import { KeptMark } from "../offline/KeptMark";
 
 /**
  * La grille d'une rangée : la case de sélection, le numéro, le titre, (l'album), les gestes. La colonne Album
@@ -153,6 +154,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-content-tertiary">
             <AvailabilityMark availability={track.availability} failed={failed} note={note} showLibrary={markLibrary} />
+            <KeptMark trackKey={track.key} />
             <span className="truncate">
               <ArtistLinks track={track} />
               {/* Un échec dit POURQUOI, en mot (jamais l'icône seule) : « ne peut pas entrer dans la bibliothèque… ». */}

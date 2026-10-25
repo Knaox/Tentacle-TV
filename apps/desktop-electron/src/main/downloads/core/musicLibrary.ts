@@ -36,6 +36,8 @@ export interface KeptMusicTrack {
   durationMs: number | null;
   /** La pochette sur le disque (relative à la racine), `null` tant qu'elle n'y est pas. */
   coverRel: string | null;
+  /** Le chemin du serveur d'où le titre a été tiré : le repli de la lecture si la copie manque. */
+  sourcePath: string | null;
   trackJson: string;
   createdAt: number;
 }
@@ -76,6 +78,7 @@ function mapKept(row: Row): KeptMusicTrack {
     trackNumber: integerOrNull(row, "track_number"),
     durationMs: integerOrNull(row, "duration_ms"),
     coverRel: textOrNull(row, "cover_rel"),
+    sourcePath: file.sourcePath,
     trackJson: text(row, "track_json"),
     createdAt: integer(row, "created_at"),
   };

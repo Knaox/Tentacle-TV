@@ -28,6 +28,7 @@ import { OctavePlayer, PlaybackReporter, SourceCache, type PlayerSnapshot, type 
 import { AudioEngineProvider, useAudioEngine, type EnginePrefs } from "../../engine";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { followSearchWithRadio } from "./searchRadio";
+import { withKeptSources } from "../offline/keptSources";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
 
@@ -44,7 +45,7 @@ function readVolume(): number {
 }
 
 export function buildOctavePlayer(engine: AudioEnginePort, qc: QueryClient, provider: () => MusicProvider | null): OctavePlayer {
-  const sources = new SourceCache({
+  const sources = new SourceCache(withKeptSources({
     library: (id) => fetchMusicSource(qc, id),
     external: async (track, intent) => {
       const p = provider();
@@ -55,7 +56,7 @@ export function buildOctavePlayer(engine: AudioEnginePort, qc: QueryClient, prov
       return outcome === null ? null : "source" in outcome ? outcome.source : outcome;
     },
     now: () => Date.now(),
-  });
+  }));
   const reporter = new PlaybackReporter({
     library: (report) => void reportMusicPlayback(report),
     externalPlayed: (track, completed) => {

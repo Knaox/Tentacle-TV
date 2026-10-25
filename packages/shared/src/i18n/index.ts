@@ -38,6 +38,7 @@ const NAMESPACES = [
   "libraryDelete",
   "accountAccess",
   "music",
+  "musicOffline",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {

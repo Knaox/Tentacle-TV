@@ -26,6 +26,7 @@ import { UnknownRoute } from "./components/pluginIframe/UnknownRoute";
 import { useProfileLaunchGate } from "./profiles/launch/useProfileLaunchGate";
 import { LazyOctaveApp, OctaveHomeGate } from "./music/octave/mode/OctaveEntry";
 import { OCTAVE_BASE_PATH } from "./music/octave/mode/octaveMode";
+import { octaveOfflineAware } from "./music/octave/offline/OfflineOctave";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
@@ -154,7 +155,7 @@ export function App() {
           <Route path="/offline/item/:itemId" element={guard(<OfflineMediaDetail />)} />
           <Route path="/offline/series/:seriesKey" element={guard(<OfflineSeriesView />)} />
           {/* Le mode musique : sa coquille, chargée à la demande ; il se garde lui-même (`music.library`). */}
-          <Route path={`${OCTAVE_BASE_PATH}/*`} element={guard(onlineOnly(<Suspense fallback={null}><LazyOctaveApp /></Suspense>))} />
+          <Route path={`${OCTAVE_BASE_PATH}/*`} element={guard(octaveOfflineAware(offlineMode, <Suspense fallback={null}><LazyOctaveApp /></Suspense>))} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           {/* Mode musique allumé : l'accueil EST Octave (comme le hors ligne remplace

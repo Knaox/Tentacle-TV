@@ -10,6 +10,7 @@ import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylist } from "@tentacle-tv/api-client";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
+import { KeepCollectionButton } from "../offline/KeepCollectionButton";
 import { TrackList } from "../components/TrackList";
 import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { octavePaths } from "../octavePaths";
@@ -57,6 +58,7 @@ export function PlaylistView() {
         onPress={() => tracks[0] && player.prefetch([tracks[0]], "press")}
         onPlay={() => player.playList(tracks, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
+        extra={<KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={tracks} />}
       />
       <div className="px-2 md:px-6">
         {rows.length === 0 ? (

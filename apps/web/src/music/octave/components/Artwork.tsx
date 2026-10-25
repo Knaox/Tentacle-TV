@@ -59,6 +59,8 @@ function artworkSrcOf(url: string | null, auth: { baseUrl: string; token: string
   if (!url) return null;
   // Une adresse d'un autre hôte : jamais de jeton dans sa requête.
   if (/^https?:\/\//i.test(url)) return url;
+  // Une image GARDÉE sur l'appareil (origine locale de la coquille, `tentacle://local/…`) : telle quelle, sans jeton.
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) return url;
   return elementSourceUrl(url, auth);
 }
 
