@@ -30,6 +30,9 @@ vi.mock("@tentacle-tv/api-client", () => ({
   // La rubrique « Famille » (S4, `family.creationRights`), montée après « Gestion ».
   useAccountFamilyRights: () => ({ data: undefined, isError: false }),
   useSetAccountFamilyRights: () => ({ mutate: () => undefined, isPending: false }),
+  // La rubrique « Musique · Octave » (`octave.rights`), montée après la Famille.
+  useOctaveRights: () => ({ data: { userId: "u-1", access: true }, isError: false }),
+  useSetOctaveRights: () => ({ mutate: () => undefined, isPending: false }),
 }));
 vi.mock("../../../../contexts/ToastContext", () => ({ useToast: () => ({ show: () => undefined }) }));
 vi.mock("../../../../hooks/useIsMobile", () => ({ useIsMobile: () => false }));
@@ -63,7 +66,7 @@ describe("la fiche des droits d'un compte", () => {
     expect(h.rightsCalls).toBe(0);
   });
 
-  it("serveur qui déclare la capacité : six rubriques repliées, chacune résumée, puis la Famille", () => {
+  it("serveur qui déclare la capacité : six rubriques repliées, chacune résumée, puis la Famille et la musique", () => {
     h.capability = true;
     h.rights = { data: { userId: "u-1", name: "Léa", rights: PLAIN_RIGHTS, readAt: "2026-10-15T10:00:00Z" }, isPending: false, error: null };
     const html = render();
@@ -73,7 +76,9 @@ describe("la fiche des droits d'un compte", () => {
     }
     expect(html).toContain("summary.noParental");
     expect(html).toContain("accountRights.title");
-    expect(html.match(/aria-expanded="false"/g)).toHaveLength(7);
+    expect(html).toContain("octave.title");
+    expect(html).toContain("octave.summary.access");
+    expect(html.match(/aria-expanded="false"/g)).toHaveLength(8);
   });
 
   it("un refus du serveur à la lecture est dit en mots, avec « Réessayer »", () => {

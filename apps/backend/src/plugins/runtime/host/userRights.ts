@@ -6,6 +6,7 @@ import { getInstalled } from "../../../services/pluginManager";
 import { isPluginUsable } from "../../../services/pluginStorage/gate";
 import { HostCallFailure } from "../hostDispatcher";
 import { runtimeServices } from "../hostServices";
+import { hasOctaveAccess } from "../../../services/octaveRights/octaveAccess";
 
 /**
  * `users.rights` : ce qu'un compte peut faire avec CETTE extension, décidé par
@@ -15,7 +16,9 @@ import { runtimeServices } from "../hostServices";
  * - la Famille (CLAUDE.md) : un invité n'a d'extension qu'avec « peut demander »,
  *   que seul le propriétaire donne (`guestExtensionAccess`) ; sans lui, rien ;
  * - le cœur : l'extension sert (installée, activée, pas refusée) et son
- *   intégration est allumée par l'administrateur (`configEnabled`).
+ *   intégration est allumée par l'administrateur (`configEnabled`) ;
+ * - « Accès à Octave » (`octave.rights`, droit Tentacle du compte ; un invité
+ *   vaut son créateur) : sans lui, l'extension de musique ne le sert pas.
  * `canRequest` (garder hors bibliothèque, demander) suit `canUse` — un invité
  * qui l'a reçu agit à SON nom. `familyGuest` le dit à l'extension, qui peut
  * en faire moins (une extension de musique n'y fait jamais rien entrer).
@@ -51,7 +54,7 @@ export async function userRights(pluginId: string, userId: string): Promise<Requ
     familyOk = false;
     familyGuest = true;
   }
-  const canUse = pluginOn && policy.IsDisabled !== true && seesMusic && familyOk;
+  const canUse = pluginOn && policy.IsDisabled !== true && seesMusic && familyOk && (await hasOctaveAccess(userId));
   // Garder hors ligne (`offline.music`) : le droit Jellyfin du compte ; un invité de la Famille, jamais.
   const keepOffline = canUse && !familyGuest && policy.EnableContentDownloading === true;
   return { exists: true, isAdmin, canUse, canRequest: canUse, familyGuest, keepOffline };

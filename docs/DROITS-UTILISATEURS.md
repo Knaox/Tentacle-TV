@@ -1403,3 +1403,37 @@ le vois pas. »
   locale de `playbackRights/localAddress`) avec un état d'accès dédié dans le contrat partagé.
 - Un titre gardé lu SANS réseau pendant les heures interdites n'est pas coupé (l'appareil ne
   connaît pas les plages d'un compte « permis » ; Jellyfin non plus n'y a prise).
+
+## 9.11 La musique (Octave) — lot « Octave droits », D1 (2026-10-25)
+
+Capacité `octave.rights` (1.32.0). Contrat : `packages/shared/src/octaveRights/octaveRightsContract.ts`
+(miroir backend, test miroir). Serveur d'avant : la fiche d'avant, Octave comme avant.
+
+- **« Accès à Octave »** — un droit TENTACLE, pas un champ de la politique Jellyfin : table
+  `octave_account_rights` (migration 0013), sans ligne = PERMIS (rien ne change pour personne).
+  Réglé par `GET|PUT /api/admin/users/:userId/octave` (`requirePersonalAdmin` ; `invalid_value`,
+  `unknown_user`, `family_guest`, `unavailable`). Un invité de la Famille ne se règle pas : il vaut
+  son CRÉATEUR (le propriétaire pour une ligne d'avant la v2) — `resolveOctaveAccess`, pure.
+- **Le serveur le tient** (`music/routes/octaveAccessGate.ts`, après `requireAuth`) : sans lui,
+  `/api/music/status` → `{ available: false, octaveAccess: false, … }` (aucune erreur côté client),
+  toute autre route `/api/music/*` → 403 `octave_access_denied`, avant le moindre travail ;
+  l'extension de musique ne le sert plus (`users.rights` → `canUse` faux : ni `/api/plugins/active`,
+  ni relais — l'administrateur en session personnelle garde le relais pour régler l'extension).
+  Gardé 30 s, oublié à chaque écriture ; base muette : fermé (5 s). Un changement envoie
+  `music:provider` au compte et à ses invités (leurs clients relisent le statut et les extensions).
+- **« Lecture des médias »** (`EnableMediaPlayback`) s'applique AUSSI à la musique : sans elle,
+  `/api/music/source/:id` et `/api/music/stream/:id` → 403 `playback_not_allowed` (le code du proxy
+  vidéo) ; parcourir reste permis. Politique illisible : rien de refusé d'office, comme la vidéo.
+- **Clients** : `useOctaveAvailability` lit le statut (`octaveAccess: false` → indisponible) — ni
+  bascule, ni réglage « Au démarrage, ouvrir », et un démarrage réglé sur Octave ouvre Tentacle
+  (`OctaveHomeGate`), un lien `/octave/...` revient à l'accueil.
+- **Fiche des droits** — rubrique « Musique · Octave », après la Famille
+  (`components/admin/users/octaveRights/`) : Accès à Octave ; bibliothèques de MUSIQUE
+  (`CollectionType = music`, cases écrites dans `enabledFolders` ; « Toutes » se règle dans
+  « Bibliothèques ») ; « Garder la musique hors ligne » (`EnableContentDownloading`) ; « Convertir la
+  musique » (`EnableAudioPlaybackTranscoding`) ; avertissement si la lecture est coupée ; le débit à
+  distance LU (Octave lit le fichier d'origine : `RemoteClientBitrateLimit` ne le réduit pas).
+  Mêmes champs, même écriture que les rubriques d'origine. « Bibliothèques » dit le type de chaque
+  bibliothèque ; « Téléchargement » dit qu'il vaut aussi pour la musique.
+- **Non repris** : `EnableLyricManagement` (gérer les paroles dans Jellyfin) — Octave n'en montre
+  aucune ; il reste tel que Jellyfin le tient.

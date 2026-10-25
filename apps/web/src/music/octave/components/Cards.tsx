@@ -20,6 +20,7 @@ import type { AlbumOwnership } from "../library/ownedItems";
 import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
 import { CARD_GRID_CLASS } from "./cardGrid";
+import { CollectionSwell } from "../motion/NowSwell";
 
 function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) {
   const { play, warm } = useCollectionPlayback();
@@ -68,6 +69,7 @@ export const AlbumCard = memo(function AlbumCard({ album, ownership = null }: { 
       <div className="relative aspect-square w-full">
         <Artwork url={album.artworkUrl} label={album.title} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
         {ownership && <OwnershipBadge ownership={ownership} />}
+        <CollectionSwell contextId={target ? `album:${target}` : null} />
         {album.jellyfinId && <PlayOverlay refOf={{ kind: "album", id: album.jellyfinId }} label={t("track.play", { title: album.title })} />}
       </div>
       <div className="min-w-0 px-0.5">
@@ -121,6 +123,7 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
     <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass}>
       <div className="relative aspect-square w-full">
         <Artwork url={playlist.artworkUrl} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
+        <CollectionSwell contextId={`playlist:${playlist.jellyfinId}`} />
         <PlayOverlay refOf={{ kind: "playlist", id: playlist.jellyfinId }} label={t("track.play", { title: playlist.name })} />
       </div>
       <div className="min-w-0 px-0.5">

@@ -4,11 +4,11 @@
  * cours de CETTE liste, il met en pause ou reprend — jamais un redémarrage au
  * début. Le survol et l'appui ANTICIPENT (`hover`, `press`). Le titre en cours
  * est marqué en mot (lecteurs d'écran) et en couleur de marque ; en lecture,
- * des barres, en pause, le numéro en couleur.
+ * une houle qui roule (`motion/OceanSwell`), qui se calme en pause.
  */
 
 import { memo, useCallback } from "react";
-import { AudioLines, Pause, Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
@@ -26,6 +26,7 @@ import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
 import { clickGesture, type SelectGesture } from "../actions/selection/selectionRules";
 import { SelectCell } from "./SelectCell";
 import { KeptMark } from "../offline/KeptMark";
+import { OceanSwell } from "../motion/OceanSwell";
 
 /**
  * La grille d'une rangée : la case de sélection, le numéro, le titre, (l'album), les gestes. La colonne Album
@@ -92,7 +93,7 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   return (
     <div role="gridcell" className="relative flex h-8 w-8 items-center justify-center text-sm tabular-nums text-content-tertiary">
       <span className={`octave-row-number transition-opacity duration-150 ${current ? "text-octave-accent-text" : ""}`}>
-        {current && playing ? <AudioLines className="h-4 w-4" aria-hidden /> : number}
+        {current ? <OceanSwell playing={playing} /> : number}
       </span>
       {current && <span className="sr-only">{t("track.nowPlaying")}</span>}
       <span className="octave-row-play absolute inset-0 flex items-center justify-center text-content-primary transition-opacity duration-150" aria-hidden>

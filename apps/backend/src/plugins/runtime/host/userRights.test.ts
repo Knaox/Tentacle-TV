@@ -1,46 +1,39 @@
 /**
- * `users.rights` → `keepOffline` (capacité `offline.music`) : garder hors ligne
- * ce qu'une extension sert suit le droit Jellyfin du compte, jamais pour un
- * invité de la Famille, jamais sans l'usage de l'extension.
+ * `users.rights` de l'hôte : « Accès à Octave » coupé, l'extension de musique
+ * n'est plus permise au compte (`canUse` faux) — donc ni `/api/plugins/active`,
+ * ni son relais (`mayUseIsolatedPlugin`), ni ses propres gardes ne la lui offrent.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({
-  policy: {} as Record<string, unknown>,
-  guest: null as null | "denied" | { accountName: string | null },
-}));
+const USER = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const LIB = "f137a2dd21bbc1b99aa5c0f6bf02a805";
+
+const state = vi.hoisted(() => ({ octave: true }));
 
 vi.mock("../../../services/jellyfinAdminFetch", () => ({
-  jellyfinAdminFetch: async () => ({ ok: true, status: 200, data: { Id: "u1", Policy: state.policy } }),
+  jellyfinAdminFetch: async () => ({ ok: true, data: { Id: USER, Policy: { IsDisabled: false, EnableAllFolders: true } } }),
 }));
-vi.mock("../../../services/family/familyGuestExtensions", () => ({ guestExtensionAccess: async () => state.guest }));
-vi.mock("../../../services/family/familyGuestMarkers", () => ({ isFamilyGuest: async () => state.guest !== null }));
+vi.mock("../../../services/family/familyGuestExtensions", () => ({ guestExtensionAccess: async () => null }));
+vi.mock("../../../services/family/familyGuestMarkers", () => ({ isFamilyGuest: async () => false }));
 vi.mock("../../../services/pluginManager", () => ({ getInstalled: () => [{ pluginId: "musique", config: { enabled: true } }] }));
 vi.mock("../../../services/pluginStorage/gate", () => ({ isPluginUsable: () => true }));
-vi.mock("../hostServices", () => ({ runtimeServices: () => ({ jellyfin: { musicLibrary: async () => ({ libraryId: "lib" }) } }) }));
+vi.mock("../hostServices", () => ({ runtimeServices: () => ({ jellyfin: { musicLibrary: async () => ({ libraryId: LIB }) } }) }));
+vi.mock("../../../services/octaveRights/octaveAccess", () => ({ hasOctaveAccess: async () => state.octave }));
 
 import { userRights } from "./userRights";
 
 beforeEach(() => {
-  state.policy = { EnableAllFolders: true, EnableContentDownloading: true };
-  state.guest = null;
+  state.octave = true;
 });
 
-describe("users.rights → keepOffline", () => {
-  it("le droit Jellyfin de garder du compte", async () => {
-    expect(await userRights("musique", "u1")).toMatchObject({ canUse: true, keepOffline: true });
-    state.policy = { EnableAllFolders: true, EnableContentDownloading: false };
-    expect(await userRights("musique", "u1")).toMatchObject({ canUse: true, keepOffline: false });
+describe("users.rights et « Accès à Octave »", () => {
+  it("permis : l'extension de musique sert le compte", async () => {
+    expect(await userRights("musique", USER)).toEqual({ exists: true, isAdmin: false, canUse: true, canRequest: true, familyGuest: false, keepOffline: false });
   });
 
-  it("un invité de la Famille ne garde jamais rien, même avec « peut demander »", async () => {
-    state.guest = { accountName: "invite" };
-    expect(await userRights("musique", "u1")).toMatchObject({ canUse: true, keepOffline: false });
-  });
-
-  it("sans l'usage de l'extension, pas de hors ligne", async () => {
-    state.policy = { EnableAllFolders: false, EnabledFolders: [], EnableContentDownloading: true };
-    expect(await userRights("musique", "u1")).toMatchObject({ canUse: false, keepOffline: false });
+  it("coupé : ni usage ni demande", async () => {
+    state.octave = false;
+    expect(await userRights("musique", USER)).toEqual({ exists: true, isAdmin: false, canUse: false, canRequest: false, familyGuest: false, keepOffline: false });
   });
 });

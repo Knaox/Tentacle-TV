@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
  * absente sans musique, allumée dans Octave ; et le réglage du démarrage,
  * absent sans musique, ses trois choix visibles sinon.
  */
-const h = vi.hoisted(() => ({ available: true, mode: false }));
+const h = vi.hoisted(() => ({ available: true, mode: false, live: [] as boolean[] }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => () => undefined }));
@@ -15,6 +15,7 @@ vi.mock("../../engine/engineAuth", () => ({ useMusicEngineAuth: () => ({ baseUrl
 vi.mock("./useOctaveAvailability", () => ({
   useOctaveAvailability: (enabled = true) => ({ available: enabled && h.available, settled: true }),
 }));
+vi.mock("./useOctaveAccessLive", () => ({ useOctaveAccessLive: (enabled: boolean) => void h.live.push(enabled) }));
 vi.mock("./octaveMode", () => ({
   OCTAVE_BASE_PATH: "/octave",
   isOctaveMode: () => h.mode,
@@ -28,12 +29,20 @@ const { OctaveStartupSetting } = await import("./OctaveStartupSetting");
 beforeEach(() => {
   h.available = true;
   h.mode = false;
+  h.live = [];
 });
 
 describe("bascule du mode", () => {
   it("barre de Tentacle, sans musique : aucune trace", () => {
     h.available = false;
     expect(renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />)).toBe("");
+  });
+
+  it("barre de Tentacle, même sans musique, écoute l'accès en direct (il peut revenir) ; Octave l'écoute déjà", () => {
+    h.available = false;
+    renderToStaticMarkup(<OctaveModeSwitch placement="tentacle" />);
+    renderToStaticMarkup(<OctaveModeSwitch placement="octave" onExit={() => undefined} />);
+    expect(h.live).toEqual([true, false]);
   });
 
   it("barre de Tentacle : un interrupteur éteint, nommé, qui dit où il mène", () => {

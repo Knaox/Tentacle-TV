@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useNearViewport } from "../../hooks/useNearViewport";
+import { markImageSeen, wasImageSeen } from "../../lib/seenImages";
 
 /**
  * Délais avant nouvelle tentative, indexés par le nombre d'échecs déjà vus.
@@ -44,9 +45,13 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
    *
    * `src` VIDE : la donnée a prouvé qu'il n'y a pas d'image (cf.
    * `cardImage.ts`, shared) — le repli se rend d'emblée, sans `<img>` (un src
-   * vide se résout vers l'URL de la page) ni squelette (rien ne viendra). */
-  const [state, setState] = useState({ src, loaded: false, errored: src === "", attempt: 0 });
-  if (state.src !== src) setState({ src, loaded: false, errored: src === "", attempt: 0 });
+   * vide se résout vers l'URL de la page) ni squelette (rien ne viendra).
+   *
+   * Une affiche DÉJÀ montrée dans la session (`lib/seenImages`) est d'emblée
+   * « chargée » : ni squelette, ni fondu quand sa rangée se remonte — revenir
+   * sur l'accueil ne la fait plus clignoter. */
+  const [state, setState] = useState({ src, loaded: wasImageSeen(src), errored: src === "", attempt: 0 });
+  if (state.src !== src) setState({ src, loaded: wasImageSeen(src), errored: src === "", attempt: 0 });
   const { loaded, errored, attempt } = state;
   /** Instant du dernier échec — la chance du retour attend un peu après lui. */
   const errorAtRef = useRef(0);
@@ -136,7 +141,10 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
           // quand elle est prête, comme avant.
           decoding="async"
           draggable={false}
-          onLoad={() => setState((e) => (e.src === src ? { ...e, loaded: true } : e))}
+          onLoad={() => {
+            markImageSeen(src);
+            setState((e) => (e.src === src ? { ...e, loaded: true } : e));
+          }}
           onError={() => {
             errorAtRef.current = Date.now();
             setState((e) => (e.src === src ? { ...e, errored: true } : e));
