@@ -5,6 +5,8 @@ import { HeroScrims } from "../../hero/HeroScrims";
 import { HERO_BACKDROP_WIDTH } from "../../hero/resolveBackdrop";
 import { AMBIENT_HZ, cadence } from "../../../theme/motion";
 import { useBrokenImage } from "../../../hooks/useBrokenImage";
+import { markImageSeen } from "../../../lib/seenImages";
+import { ENTRY_FADE, useBillboardEntry } from "../../hero/useBillboardEntry";
 import { recoBackdropUrl } from "@tentacle-tv/api-client";
 
 // Miroir de HeroBackdrop pour un RecoRowItem (qui n'est pas un MediaItem) :
@@ -13,6 +15,7 @@ import { recoBackdropUrl } from "@tentacle-tv/api-client";
 // (`hero-zoom`, theme/heroMotion.css), jouée par le compositeur.
 const FADE_DURATION_S = 1.2;
 const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1));
+const CROSSFADE = { duration: FADE_DURATION_S, ease: FADE_EASE };
 
 /**
  * Fond d'une diapositive du carrousel de recommandations : backdrop TMDB
@@ -32,12 +35,14 @@ export function RecoHeroBackdrop({ item }: { item: RecoRowItem }) {
   const client = useJellyfinClient();
   const url = recoHeroBackdropUrl(client, item);
   const { broken, reportFailure } = useBrokenImage(url ?? undefined);
+  // L'arrivée sur la page ne repart jamais du noir (cf. `useBillboardEntry`).
+  const entry = useBillboardEntry(url ? item.key : null, url);
 
   return (
     <>
       <div className="absolute inset-0 bg-surface-0" />
 
-      <AnimatePresence>
+      <AnimatePresence initial={entry.presenceInitial}>
         {url && (
           <motion.img
             key={item.key}
@@ -46,10 +51,11 @@ export function RecoHeroBackdrop({ item }: { item: RecoRowItem }) {
             draggable={false}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ opacity: { duration: FADE_DURATION_S, ease: FADE_EASE } }}
+            exit={{ opacity: 0, transition: { opacity: CROSSFADE } }}
+            transition={{ opacity: entry.isEntry ? ENTRY_FADE : CROSSFADE }}
             className="hero-zoom absolute inset-0 h-full w-full object-cover will-change-transform"
             style={{ display: broken ? "none" : undefined }}
+            onLoad={() => markImageSeen(url)}
             onError={reportFailure}
           />
         )}
