@@ -67,11 +67,15 @@ export function matchText(text: string): string {
 const NOISE_GROUP = /\s*[([][^)\]]*\b(?:feat|ft|featuring|with|from|remaster(?:ed)?|prod)\b[^)\]]*[)\]]/gi;
 const NOISE_TAIL = /\s+(?:-\s+)?(?:\(?\s*(?:feat|ft|featuring)\.?\s.*|-\s+(?:\d{4}\s+)?remaster(?:ed)?(?:\s+\d{4})?(?:\s+version)?)$/i;
 
+/** Le titre sans ce qui ne change pas l'enregistrement, tel quel (casse et accents gardés). */
+export function stripTitleNoise(title: string): string {
+  const stripped = title.replace(NOISE_GROUP, " ").replace(NOISE_TAIL, "").trim();
+  return matchText(stripped).length > 0 ? stripped : title;
+}
+
 /** Le titre de BASE : sans invité, sans « (from … ) », sans « - Remastered 2011 » — une version (live, remix) reste. */
 export function baseTitle(title: string): string {
-  const stripped = title.replace(NOISE_GROUP, " ").replace(NOISE_TAIL, "");
-  const base = matchText(stripped);
-  return base.length > 0 ? base : matchText(title);
+  return matchText(stripTitleNoise(title));
 }
 
 const CREDIT_SPLIT = /\s*(?:,|;|\/|&|\+|\band\b|\bfeat\.?|\bft\.?|\bfeaturing\b|\bwith\b|\bx\b|\bvs\.?)\s*/i;
