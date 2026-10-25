@@ -7,6 +7,7 @@
  */
 
 import type {
+  ExternalMusicPlaylist,
   ExternalActionOutcome,
   MusicAlbum,
   MusicArtist,
@@ -130,6 +131,12 @@ export function fetchExternalAlbum(provider: MusicProvider, albumId: string, sig
 export function fetchExternalArtist(provider: MusicProvider, artistId: string, signal?: AbortSignal): Promise<MusicArtist | null> {
   if (!provider.music.artist) return Promise.resolve(null);
   return tentacleApiFetch<MusicArtist>(`${musicRouteUrl(provider, provider.music.artist)}/${encodeURIComponent(artistId)}`, { signal });
+}
+
+/** La vue d'une playlist hors bibliothèque (`music.playlist`), `null` si l'extension n'en sert pas. */
+export function fetchExternalPlaylist(provider: MusicProvider, playlistId: string, signal?: AbortSignal): Promise<ExternalMusicPlaylist | null> {
+  if (!provider.music.playlist) return Promise.resolve(null);
+  return tentacleApiFetch<ExternalMusicPlaylist>(`${musicRouteUrl(provider, provider.music.playlist)}/${encodeURIComponent(playlistId)}`, { signal });
 }
 
 /** Pour les tests. */

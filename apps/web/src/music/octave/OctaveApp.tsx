@@ -22,6 +22,7 @@ import { HomeView } from "./views/HomeView";
 import { LibraryView } from "./views/LibraryView";
 import { LikedView } from "./views/LikedView";
 import { PlaylistView } from "./views/PlaylistView";
+import { ExternalPlaylistView } from "./views/ExternalPlaylistView";
 import { PlaylistsView } from "./views/PlaylistsView";
 import { SearchView } from "./views/SearchView";
 
@@ -55,6 +56,7 @@ export function OctaveApp() {
             <Route path="liked" element={<LikedView />} />
             <Route path="playlists" element={<PlaylistsView />} />
             <Route path="playlist/:id" element={<PlaylistView />} />
+            <Route path="mix/:id" element={<ExternalPlaylistView />} />
             <Route path="album/:id" element={<AlbumView />} />
             <Route path="artist/:id" element={<ArtistView />} />
             <Route path="*" element={<Navigate to="." replace />} />
