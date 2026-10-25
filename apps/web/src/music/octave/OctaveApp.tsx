@@ -14,7 +14,9 @@ import { resetLikeOverrides } from "./actions/likeOverrides";
 import { OctaveCacheBoundary, useOctaveCacheWarmStart } from "./data/persist/OctaveCacheBoundary";
 import { setOctaveMode } from "./mode/octaveMode";
 import { useOctaveAvailability } from "./mode/useOctaveAvailability";
-import { OctavePlayerProvider } from "./player/OctavePlayerProvider";
+import { octaveEnginePrefs, OctavePlayerProvider } from "./player/OctavePlayerProvider";
+import type { MusicEngineAuth } from "../engine";
+import { prestartAudioEngine } from "../engine/enginePrestart";
 import { OctaveShell } from "./shell/OctaveShell";
 import { AlbumView } from "./views/AlbumView";
 import { ArtistView } from "./views/ArtistView";
@@ -71,3 +73,8 @@ export default OctaveApp;
 
 /** Préparer l'entrée (la bascule) : le cache gardé, lu avant le premier rendu. */
 export { warmOctaveCache } from "./data/persist/OctaveCacheBoundary";
+
+/** Démarrer le moteur au GESTE de la bascule (jamais avant) ; `AudioEngineProvider` le reprend. */
+export function prestartOctaveEngine(auth: MusicEngineAuth): void {
+  prestartAudioEngine(auth, octaveEnginePrefs());
+}
