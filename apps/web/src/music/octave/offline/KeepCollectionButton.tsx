@@ -5,8 +5,9 @@
  *   - le glyphe hors ligne au trait : « Garder … hors ligne » ;
  *   - un anneau qui se remplit, « 3 sur 12 » pour les lecteurs d'écran : le bouton
  *     ne fait rien de plus (aucun geste accidentel) ;
- *   - gardé (glyphe plein, ton de réussite) ou en défaut : le clic retire ou
- *     réessaie, dans un petit menu (le retrait n'est jamais au premier clic).
+ *   - gardé (glyphe plein, ton de réussite) ou en défaut : le clic retire,
+ *     réessaie, ou garde les titres qui manquent (retirés un à un, ajoutés à la
+ *     playlist depuis), dans un petit menu (le retrait n'est jamais au premier clic).
  * Rien sans le droit, rien sur le web.
  */
 
@@ -53,6 +54,8 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
   const keys = useMemo(() => tracks.map((track) => track.key), [tracks]);
   const summary = collectionSummary(keys, kept.byKey);
   const keepable = tracks.some((track) => canKeepTrack(track, surface));
+  // Un titre retiré, ou arrivé dans la playlist depuis : la collection n'est plus entière sur l'appareil.
+  const missing = tracks.filter((track) => canKeepTrack(track, surface) && !kept.byKey.has(track.key));
   const keepLabel = t(kind === "album" ? "keepAlbum" : "keepPlaylist");
   const collection = { key: `${kind}:${collectionKey}`, kind, title, subtitle };
   const ownKept = () => keys.map((key) => kept.byKey.get(key)).filter((k): k is NonNullable<typeof k> => !!k);
@@ -103,6 +106,12 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
           style={{ background: "var(--oc-ink-raised)", borderRadius: "var(--oc-radius-panel)", boxShadow: "var(--oc-shadow-panel)" }}
         >
           <p className="px-3 py-2 text-xs text-content-tertiary">{t("keptCount", { count: summary.done })}</p>
+          {missing.length > 0 && (
+            <button type="button" role="menuitem" className={ITEM} onClick={() => (setOpen(false), void gestures.keep(missing, collection))}>
+              <DownloadGlyph done={false} className="h-4 w-4 text-content-tertiary" />
+              {t("keepMissing", { count: missing.length })}
+            </button>
+          )}
           {failed && keepable && (
             <button type="button" role="menuitem" className={ITEM} onClick={() => (setOpen(false), void gestures.keep(tracks, collection))}>
               <RotateCcw className="h-4 w-4 text-content-tertiary" aria-hidden />

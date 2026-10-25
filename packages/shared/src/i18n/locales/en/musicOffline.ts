@@ -5,6 +5,8 @@ export default {
   keep: "Keep offline",
   keepAlbum: "Keep album offline",
   keepPlaylist: "Keep playlist offline",
+  keepMissing_one: "Keep the missing track",
+  keepMissing_other: "Keep the {{count}} missing tracks",
   remove: "Remove from this device",
   removeAlbum: "Remove album from this device",
   removePlaylist: "Remove playlist from this device",
@@ -24,6 +26,11 @@ export default {
   noSpace: "Not enough space on this device ({{needed}} needed).",
   failedAll: "These tracks can't be kept offline right now.",
   removed: "Removed from this device",
+  entry: {
+    title: "Your music on this device",
+    subtitle_one: "{{count}} track · listen in Octave",
+    subtitle_other: "{{count}} tracks · listen in Octave",
+  },
   view: {
     title: "On this device",
     kicker: "Offline",

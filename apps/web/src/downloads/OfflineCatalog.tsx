@@ -23,6 +23,7 @@ import { useOfflineMode } from "../offline/useOfflineMode";
 import { ProfileOfflineScreen } from "../offline/ProfileOfflineScreen";
 import { useActiveProfile } from "../auth/profileSession";
 import { DownloadsEmptyState } from "./DownloadsEmptyState";
+import { OfflineMusicEntry } from "../music/octave/offline/OfflineMusicEntry";
 import { OfflineDeviceSummary } from "./OfflineDeviceSummary";
 import { OfflineBillboard } from "./home/OfflineBillboard";
 import { OfflineCardRow } from "./home/OfflineCardRow";
@@ -59,6 +60,7 @@ function DeviceCatalog() {
       <PageTransition className="px-4 pb-24 pt-10 md:px-8">
         <h1 className="sr-only">{t("downloads:heroLabel")}</h1>
         {offline ? <OfflineEmpty /> : <DownloadsEmptyState />}
+        <div className="mt-10"><OfflineMusicEntry /></div>
       </PageTransition>
     );
   }
@@ -78,6 +80,7 @@ function DeviceCatalog() {
 
       <div className="relative z-10 space-y-10 pb-24">
         <OfflineDeviceSummary complete={home.complete} />
+        <OfflineMusicEntry />
         <OfflineCardRow title={t("common:resumeWatching")} entries={home.resume} />
         <OfflineCardRow title={t("common:nextEpisode")} entries={home.nextUp} />
         <OfflineLibrarySection

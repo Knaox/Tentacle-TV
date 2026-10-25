@@ -8,6 +8,8 @@ export default {
   keep: "Garder hors ligne",
   keepAlbum: "Garder l'album hors ligne",
   keepPlaylist: "Garder la playlist hors ligne",
+  keepMissing_one: "Garder le titre qui manque",
+  keepMissing_other: "Garder les {{count}} titres qui manquent",
   remove: "Retirer de cet appareil",
   removeAlbum: "Retirer l'album de cet appareil",
   removePlaylist: "Retirer la playlist de cet appareil",
@@ -27,6 +29,11 @@ export default {
   noSpace: "Pas assez de place sur cet appareil ({{needed}} nécessaires).",
   failedAll: "Impossible de garder ces titres hors ligne pour l'instant.",
   removed: "Retiré de cet appareil",
+  entry: {
+    title: "Votre musique sur cet appareil",
+    subtitle_one: "{{count}} titre · écouter dans Octave",
+    subtitle_other: "{{count}} titres · écouter dans Octave",
+  },
   view: {
     title: "Sur cet appareil",
     kicker: "Hors ligne",
