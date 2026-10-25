@@ -37,10 +37,16 @@ function trackFraction(kept: KeptMusicTrack): number {
  * Une collection (les clés de ses titres) : rien gardé → `none` ; un transfert
  * en cours → `progress` ; tout complet → `complete` ; plus rien en cours mais un
  * titre en défaut → `failed` (le geste propose de réessayer).
+ *
+ * `wholeKept` : la collection a été gardée EN ENTIER (elle figure parmi les
+ * collections du compte). Sinon, ses titres gardés par ailleurs (l'album d'un
+ * titre de la playlist) ne font pas d'elle une collection gardée : s'il lui en
+ * manque, `none` — le geste propose de la garder (le moteur s'accroche à ce qui
+ * est déjà là).
  */
-export function collectionSummary(keys: readonly string[], byKey: ReadonlyMap<string, KeptMusicTrack>): KeptSummary {
+export function collectionSummary(keys: readonly string[], byKey: ReadonlyMap<string, KeptMusicTrack>, wholeKept = true): KeptSummary {
   const kept = keys.map((k) => byKey.get(k)).filter((k): k is KeptMusicTrack => !!k && k.status !== "canceled");
-  if (kept.length === 0) return NONE;
+  if (kept.length === 0 || (!wholeKept && kept.length < keys.length)) return NONE;
   const done = kept.filter((k) => k.status === "complete").length;
   const running = kept.some((k) => trackPhase(k) === "progress");
   const failed = kept.some((k) => k.status === "error");

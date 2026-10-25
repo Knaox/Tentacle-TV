@@ -52,12 +52,13 @@ function KeepCollectionButtonFor({ kind, collectionKey, title, subtitle = null, 
   const anchor = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const keys = useMemo(() => tracks.map((track) => track.key), [tracks]);
-  const summary = collectionSummary(keys, kept.byKey);
+  const wholeKey = `${kind}:${collectionKey}`;
+  const summary = collectionSummary(keys, kept.byKey, kept.collections.some((c) => c.key === wholeKey));
   const keepable = tracks.some((track) => canKeepTrack(track, surface));
   // Un titre retiré, ou arrivé dans la playlist depuis : la collection n'est plus entière sur l'appareil.
   const missing = tracks.filter((track) => canKeepTrack(track, surface) && !kept.byKey.has(track.key));
   const keepLabel = t(kind === "album" ? "keepAlbum" : "keepPlaylist");
-  const collection = { key: `${kind}:${collectionKey}`, kind, title, subtitle };
+  const collection = { key: wholeKey, kind, title, subtitle, trackKeys: keys };
   const ownKept = () => keys.map((key) => kept.byKey.get(key)).filter((k): k is NonNullable<typeof k> => !!k);
 
   if (summary.phase === "none") {

@@ -34,6 +34,14 @@ describe("keptProgress", () => {
     expect(collectionSummary(["x"], map(kept("a"))).phase).toBe("none");
   });
 
+  it("une playlist jamais gardée en entier, dont l'album d'un titre l'est : elle se propose encore", () => {
+    const byKey = map(kept("a"), kept("b"));
+    expect(collectionSummary(["a", "b", "c"], byKey, false).phase).toBe("none");
+    expect(collectionSummary(["a", "b", "c"], byKey, true).phase).toBe("complete");
+    // Tout y est déjà, même par ailleurs : rien à proposer.
+    expect(collectionSummary(["a", "b"], byKey, false).phase).toBe("complete");
+  });
+
   it("la place occupée", () => {
     expect(keptBytes([kept("a"), kept("b", { status: "downloading", bytesDone: 30, expectedSize: 100 })])).toBe(130);
     // Un Allégé complet : ses octets réels, jamais l'estimation.

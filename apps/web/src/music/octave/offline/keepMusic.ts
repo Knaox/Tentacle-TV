@@ -27,6 +27,8 @@ export interface KeepCollection {
   kind: "album" | "playlist";
   title: string;
   subtitle: string | null;
+  /** TOUS ses titres, dans leur ordre — même quand le lot n'en garde qu'une partie (« les titres qui manquent »). */
+  trackKeys: readonly string[];
 }
 
 export type KeepOutcome =
@@ -117,7 +119,7 @@ export async function keepTracks(tracks: readonly MusicTrack[], provider: MusicP
       serverUrl: getBackendBase(),
       token: owner.token,
       items,
-      collection: collection && { ...collection, coverItemId: null, trackKeys: tracks.map((t) => t.key) },
+      collection: collection && { ...collection, coverItemId: null, trackKeys: [...collection.trackKeys] },
     });
     await refreshKeptMusic();
     if (!outcome.accepted) return { kind: "noSpace", neededBytes: outcome.neededBytes };
