@@ -47,6 +47,8 @@ export interface RegistryDeps {
   createReporter(auth: DeviceAuth): PlaybackReporter;
   /** L'état de Jellyfin (`jellyfinHealth.ts`), dit à chaque lecteur qui s'annonce. */
   jellyfinHealth(): { state: JellyfinHealthState; since: number };
+  /** Cette connexion déclare une écoute (`declaredPlayback.ts`) : c'est elle que vise une commande. */
+  declares?(conn: ChannelConnection): boolean;
 }
 
 /** Ce que le tableau de bord voit d'une connexion. */

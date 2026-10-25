@@ -6,6 +6,8 @@ import { PlaybackReporter } from "./playbackReporter";
 import { parseSessionMessage } from "./protocolParse";
 import { SessionRegistry, type ChannelConnection, type ConnectionView } from "./registry";
 import { resolveDeviceAuth } from "./tokenResolver";
+import { DeclaredPlaybacks, type DeclaredEntry } from "./declaredPlayback";
+import type { DeclaredPlaybackDto, SessionPlaystateCommandDto } from "./protocolMessages";
 import { relayLibraryChanged, relayUserDataChanged } from "../jellyfinUserEvents";
 
 /**
@@ -15,6 +17,8 @@ import { relayLibraryChanged, relayUserDataChanged } from "../jellyfinUserEvents
  * `TENTACLE_SESSION_CHANNEL=off` coupe le canal : chaque lecteur reçoit
  * `reporting: false` et garde ses reports HTTP, comme avant.
  */
+
+const declared = new DeclaredPlaybacks();
 
 const registry = new SessionRegistry({
   enabled: () => process.env.TENTACLE_SESSION_CHANNEL !== "off",
@@ -33,6 +37,7 @@ const registry = new SessionRegistry({
     }),
   createReporter: (auth) => new PlaybackReporter(jellyfinCaller(auth)),
   jellyfinHealth,
+  declares: (conn) => declared.of(conn) !== null,
 });
 
 // Les lecteurs apprennent chaque changement ; au retour, les connexions des
@@ -66,11 +71,15 @@ export function handleSessionMessage(conn: ChannelConnection, authToken: string,
     case "playback:stop":
       void registry.stop(conn, msg.state, msg.requestId);
       break;
+    case "playback:declare":
+      declared.declare(conn, msg.state);
+      break;
   }
 }
 
 /** La connexion `/api/ws` s'est fermée. */
 export function handleSessionClosed(conn: ChannelConnection): void {
+  declared.forget(conn);
   registry.closed(conn);
 }
 
@@ -84,3 +93,34 @@ export function endPairedDeviceSessions(jellyfinDeviceId: string): Promise<void>
 export function sessionConnections(): ConnectionView[] {
   return registry.list();
 }
+
+/** Une écoute déclarée, telle que le tableau de bord la voit. */
+export interface DeclaredPlaybackView extends DeclaredEntry {
+  userId: string;
+  username: string;
+  deviceId: string | undefined;
+}
+
+/** Les écoutes déclarées (`playback:declare`), pour le tableau de bord. */
+export function declaredPlaybacks(): DeclaredPlaybackView[] {
+  return declared.entries().map(([conn, entry]) => ({
+    ...entry,
+    userId: conn.userId,
+    username: conn.username,
+    deviceId: registry.deviceIdOf(conn),
+  }));
+}
+
+/**
+ * Une commande du tableau de bord pour une lecture d'EXTENSION : Jellyfin ne
+ * la connaît pas, elle part par le canal, au lecteur qui l'a déclarée. Faux si
+ * cette lecture n'existe plus.
+ */
+export function commandDeclaredPlayback(id: string, command: SessionPlaystateCommandDto): boolean {
+  const conn = declared.connectionOf(id);
+  if (conn === null) return false;
+  conn.send({ type: "session:command", command });
+  return true;
+}
+
+export type { DeclaredPlaybackDto };

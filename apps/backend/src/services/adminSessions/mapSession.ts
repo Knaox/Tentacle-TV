@@ -49,6 +49,12 @@ interface RawItem {
   ProductionYear?: number;
   RunTimeTicks?: number;
   ImageTags?: Record<string, string>;
+  /** Musique (`Audio`) : ses artistes, son album et la pochette de l'album. */
+  Artists?: string[];
+  AlbumArtist?: string;
+  Album?: string;
+  AlbumId?: string;
+  AlbumPrimaryImageTag?: string;
   /** `mkv`, ou la liste `mov,mp4,m4a,…` qu'écrit Jellyfin pour un MP4. */
   Container?: string;
   MediaStreams?: RawStream[];
@@ -95,9 +101,29 @@ function str(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
 
+/** Un titre de musique : sa pochette est le plus souvent celle de son album. */
+function audioNowPlaying(item: RawItem, itemId: string): AdminNowPlayingDto {
+  const ownImage = str(item.ImageTags?.Primary);
+  const albumImage = ownImage === undefined && str(item.AlbumId) !== undefined ? str(item.AlbumPrimaryImageTag) : undefined;
+  const artists = Array.isArray(item.Artists) ? item.Artists.filter((a): a is string => typeof a === "string" && a !== "") : [];
+  return {
+    itemId,
+    name: str(item.Name) ?? "",
+    type: "Audio",
+    productionYear: num(item.ProductionYear),
+    runTimeTicks: num(item.RunTimeTicks),
+    imageItemId: albumImage !== undefined ? (item.AlbumId as string) : itemId,
+    imageTag: ownImage ?? albumImage,
+    artists: artists.length > 0 ? artists.join(", ") : str(item.AlbumArtist),
+    album: str(item.Album),
+  };
+}
+
 function nowPlaying(item: RawItem): AdminNowPlayingDto | null {
   const itemId = str(item.Id);
   if (itemId === undefined) return null;
+  // Un titre de musique n'a ni saison ni épisode : Jellyfin y range le disque et la piste.
+  if (item.Type === "Audio") return audioNowPlaying(item, itemId);
   const ownImage = str(item.ImageTags?.Primary);
   // Un épisode sans vignette propre prend l'affiche de sa série.
   const seriesImage = ownImage === undefined && str(item.SeriesId) !== undefined ? str(item.SeriesPrimaryImageTag) : undefined;
@@ -170,7 +196,8 @@ function transcoding(raw: RawTranscoding): AdminTranscodingDto {
 export function toAdminSession(raw: RawSession, receivedAt: number): AdminSessionDto | null {
   const id = str(raw.Id);
   const userId = str(raw.UserId);
-  if (id === undefined || userId === undefined) return null;
+  // Le GUID vide est la session de la clé d'API (Tentacle lui-même) : personne ne l'utilise.
+  if (id === undefined || userId === undefined || /^[0-]+$/.test(userId)) return null;
   const item = raw.NowPlayingItem ? nowPlaying(raw.NowPlayingItem) : null;
   const play = raw.PlayState ?? {};
   const method = str(play.PlayMethod);

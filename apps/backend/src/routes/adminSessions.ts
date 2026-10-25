@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { sessionConnections } from "../services/deviceSessions/gateway";
+import { commandDeclaredPlayback, declaredPlaybacks, sessionConnections } from "../services/deviceSessions/gateway";
+import { DECLARED_SESSION_PREFIX } from "../services/deviceSessions/declaredPlayback";
 import { loadRawSessions, sendMessage, sendPlaystate } from "../services/adminSessions/jellyfinAdmin";
 import { buildSnapshot } from "../services/adminSessions/snapshot";
 import { transcodeMemory } from "../services/adminSessions/transcodeMemory";
@@ -37,6 +38,7 @@ async function snapshot() {
   const familyGuests = await familyGuestOwners().catch(() => new Map<string, string>());
   return buildSnapshot({
     raw: sessions, receivedAt: at, connections: sessionConnections(), rooms: allRooms(), now, familyGuests, transcodes: transcodeMemory,
+    declared: declaredPlaybacks(),
   });
 }
 
@@ -59,6 +61,12 @@ export const adminSessionsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/sessions/:sessionId/playstate", async (request, reply) => {
     const { sessionId } = sessionParams.parse(request.params);
     const { command } = playstateBody.parse(request.body);
+    // Une lecture d'extension n'existe pas pour Jellyfin : la commande part par le canal.
+    if (sessionId.startsWith(DECLARED_SESSION_PREFIX)) {
+      return commandDeclaredPlayback(sessionId, command)
+        ? { ok: true }
+        : reply.status(404).send({ ok: false, message: "Lecture introuvable" });
+    }
     const ok = await sendPlaystate(sessionId, command);
     return ok ? { ok } : reply.status(502).send({ ok, message: "Jellyfin a refusé la commande" });
   });
@@ -67,6 +75,8 @@ export const adminSessionsRoutes: FastifyPluginAsync = async (app) => {
   app.post("/sessions/:sessionId/message", async (request, reply) => {
     const { sessionId } = sessionParams.parse(request.params);
     const message = messageBody.parse(request.body);
+    // Une écoute d'extension n'affiche rien : pas de message (le tableau de bord ne le propose pas).
+    if (sessionId.startsWith(DECLARED_SESSION_PREFIX)) return reply.status(409).send({ ok: false, message: "Pas de message pour une écoute" });
     const ok = await sendMessage(sessionId, message);
     return ok ? { ok } : reply.status(502).send({ ok, message: "Jellyfin a refusé le message" });
   });
