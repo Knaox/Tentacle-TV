@@ -7,7 +7,7 @@
  * des barres, en pause, le numéro en couleur.
  */
 
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { AudioLines, Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -23,12 +23,18 @@ import { TrackMenu } from "./TrackMenu";
 import { QuickAddButton } from "./QuickAddButton";
 import { QuickRemoveButton } from "./QuickRemoveButton";
 import { endTrackDrag, startTrackDrag } from "../actions/dragTrack";
+import { clickGesture, type SelectGesture } from "../actions/selection/selectionRules";
+import { SelectCell } from "./SelectCell";
 
 /**
- * La grille d'une rangée avec sa colonne Album : la colonne n'existe qu'à
- * partir de `lg` — plus étroit, elle écrasait le titre (« Mo… »).
+ * La grille d'une rangée : la case de sélection, le numéro, le titre, (l'album), les gestes. La colonne Album
+ * n'existe qu'à partir de `lg` — plus étroit, elle écrasait le titre (« Mo… »).
  */
-export const ALBUM_COLUMNS = "grid-cols-[2rem_minmax(0,1fr)_auto] lg:grid-cols-[2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]";
+export function rowColumns(showAlbum: boolean): string {
+  return showAlbum
+    ? "grid-cols-[1.5rem_2rem_minmax(0,1fr)_auto] lg:grid-cols-[1.5rem_2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]"
+    : "grid-cols-[1.5rem_2rem_minmax(0,1fr)_auto]";
+}
 
 export interface TrackRowProps {
   track: MusicTrack;
@@ -52,6 +58,11 @@ export interface TrackRowProps {
   onRemoveRow?: (rowKey: string) => void;
   /** Ce que l'extension dit de l'entrée en attente (« Ne peut pas entrer dans la bibliothèque… »). */
   note?: string | null;
+  /** Sélection multiple (selectionRules.ts) : cette rangée est choisie ; la liste est « en sélection ». */
+  selected?: boolean;
+  selecting?: boolean;
+  /** Choisir cette rangée (rappel STABLE, par rang). */
+  onSelect?: (index: number, gesture: SelectGesture) => void;
 }
 
 function ArtistLinks({ track }: { track: MusicTrack }) {
@@ -90,9 +101,10 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, rowKey, onRemoveRow, note = null, selected = false, selecting = false, onSelect }: TrackRowProps) {
   const { t } = useTranslation("music");
   const onPlay = () => onPlayIndex(index);
+  const select = useCallback((gesture: SelectGesture) => onSelect?.(index, gesture), [index, onSelect]);
   // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).
   const onRemove = rowKey !== undefined && onRemoveRow ? () => onRemoveRow(rowKey) : undefined;
   const prefetch = usePrefetchHandlers(() => [track]);
@@ -102,19 +114,31 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       role="row"
       tabIndex={0}
       aria-current={current ? "true" : undefined}
-      onClick={onPlay}
+      aria-selected={onSelect ? selected : undefined}
+      // Maj-clic, Cmd/Ctrl-clic choisissent ; en sélection, un clic simple coche aussi (il ne lit plus).
+      onClick={(e) => {
+        const gesture = onSelect ? clickGesture(e, selecting) : "play";
+        if (gesture === "play") onPlay();
+        else select(gesture);
+      }}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && e.target === e.currentTarget) onPlay();
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter") onPlay();
+        else if (e.key === " " && onSelect) {
+          e.preventDefault();
+          select(e.shiftKey ? "range" : "toggle");
+        }
       }}
       {...prefetch}
       // Glisser le titre sur une playlist du rail l'y ajoute (souris) ; le menu « Ajouter à une playlist » en est l'équivalent.
       draggable={actions.canAddToPlaylist(track)}
       onDragStart={(e) => startTrackDrag(e, track)}
       onDragEnd={endTrackDrag}
-      className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-        showAlbum ? ALBUM_COLUMNS : "grid-cols-[2rem_minmax(0,1fr)_auto]"
-      }`}
+      className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+        selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
+      } ${rowColumns(showAlbum)}`}
     >
+      {onSelect ? <SelectCell title={track.title} selected={selected} selecting={selecting} onSelect={select} /> : <div role="gridcell" />}
       <NumberCell number={number} current={current} playing={playing} />
       <div role="gridcell" className="flex min-w-0 items-center gap-3">
         {showArtwork && <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-10 w-10" />}

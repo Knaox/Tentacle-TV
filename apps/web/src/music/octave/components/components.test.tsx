@@ -122,3 +122,33 @@ describe("qualité réelle", () => {
     expect(renderToStaticMarkup(<FormatBadge format={null} />)).toBe("");
   });
 });
+
+/** La sélection multiple (25/10) : la case est une vraie case, la rangée choisie le dit ; le « − » d'une playlist nomme le titre. */
+describe("sélection et retrait d'une rangée", () => {
+  const row = (extra: Record<string, unknown>) =>
+    inRouter(<TrackRow track={libraryTrack("a")} number={1} current={false} actions={actions(true)} index={0} onPlayIndex={() => undefined} {...extra} />);
+
+  it("sans sélection possible : aucune case, aucun état choisi", () => {
+    const html = row({});
+    expect(html).not.toContain('role="checkbox"');
+    expect(html).not.toContain("aria-selected");
+  });
+
+  it("choisie : case cochée, rangée « selected », case visible sans survol", () => {
+    const html = row({ onSelect: () => undefined, selected: true, selecting: true });
+    expect(html).toMatch(/role="checkbox" aria-checked="true"/);
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain("selection.select");
+    expect(html).not.toMatch(/role="checkbox"[^>]*octave-hover-reveal/);
+  });
+
+  it("hors sélection : la case attend le survol", () => {
+    expect(row({ onSelect: () => undefined })).toMatch(/role="checkbox" aria-checked="false"[^>]*octave-hover-reveal/);
+  });
+
+  it("dans une playlist modifiable : le « − » rapide, au nom du titre", () => {
+    const html = row({ rowKey: "a", onRemoveRow: () => undefined });
+    expect(html).toContain("playlist.removeQuick");
+    expect(row({})).not.toContain("playlist.removeQuick");
+  });
+});
