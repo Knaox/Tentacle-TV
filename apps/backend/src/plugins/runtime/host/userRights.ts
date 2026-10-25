@@ -15,18 +15,21 @@ import { runtimeServices } from "../hostServices";
  * - le cœur : l'extension sert (installée, activée, pas refusée) et son
  *   intégration est allumée par l'administrateur (`configEnabled`).
  * `canRequest` (garder hors bibliothèque, demander) suit `canUse` — un invité
- * qui l'a reçu agit à SON nom.
+ * qui l'a reçu agit à SON nom. `keepOffline` (garder hors ligne sur l'appareil)
+ * suit en plus `EnableContentDownloading`, et n'est jamais celui d'un invité.
  */
 
 interface RawUser {
   Id?: string;
-  Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; EnableAllFolders?: boolean; EnabledFolders?: string[] };
+  Policy?: { IsAdministrator?: boolean; IsDisabled?: boolean; EnableAllFolders?: boolean; EnabledFolders?: string[]; EnableContentDownloading?: boolean };
 }
 
-export async function userRights(pluginId: string, userId: string): Promise<{ exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean }> {
+type UserRights = { exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean; keepOffline: boolean };
+
+export async function userRights(pluginId: string, userId: string): Promise<UserRights> {
   const res = await jellyfinAdminFetch<RawUser>(`/Users/${encodeURIComponent(userId)}`);
   if (!res.ok) {
-    if (res.status === 404 || res.status === 400) return { exists: false, isAdmin: false, canUse: false, canRequest: false };
+    if (res.status === 404 || res.status === 400) return { exists: false, isAdmin: false, canUse: false, canRequest: false, keepOffline: false };
     throw new HostCallFailure("unavailable", "Jellyfin ne répond pas");
   }
   const policy = res.data.Policy ?? {};
@@ -37,12 +40,18 @@ export async function userRights(pluginId: string, userId: string): Promise<{ ex
   const lib = await runtimeServices().jellyfin?.musicLibrary({}).catch(() => null) ?? null;
   const seesMusic = !!lib && (policy.EnableAllFolders === true || (policy.EnabledFolders ?? []).includes(lib.libraryId));
   let familyOk: boolean;
+  let guest: boolean;
   try {
-    familyOk = (await guestExtensionAccess(userId)) !== "denied";
+    const access = await guestExtensionAccess(userId);
+    familyOk = access !== "denied";
+    guest = access !== null;
   } catch {
     // Base muette : fermé à l'échec, comme `requireAuth`.
     familyOk = false;
+    guest = true;
   }
   const canUse = pluginOn && policy.IsDisabled !== true && seesMusic && familyOk;
-  return { exists: true, isAdmin, canUse, canRequest: canUse };
+  // Garder hors ligne (`offline.music`) : le droit Jellyfin du compte ; un invité de la Famille, jamais.
+  const keepOffline = canUse && !guest && policy.EnableContentDownloading === true;
+  return { exists: true, isAdmin, canUse, canRequest: canUse, keepOffline };
 }

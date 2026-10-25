@@ -284,6 +284,12 @@ export const SERVER_CAPABILITIES = {
    *  `navItems` de `/api/plugins/active` (`primary`). Sans elle : pages épinglées d'office sous le
    *  nom du manifeste, et l'extension n'offre pas ce réglage. */
   "plugins.navigation": "1.32.0",
+  /** Garder hors ligne la MUSIQUE (Octave, bureau) : `POST /api/music/offline/plan` dit, pour des
+   *  titres de la bibliothèque, d'où les tirer et sous quelle forme (l'original, ou l'Allégé audio
+   *  `a256` des routes `/api/downloads/light|prepared` quand l'administration le permet), et
+   *  `users.rights` dit `keepOffline` à une extension (titre hors bibliothèque, route `offline` du
+   *  contrat `music`). Sans elle : aucun bouton « Garder hors ligne » dans Octave. */
+  "offline.music": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

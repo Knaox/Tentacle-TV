@@ -34,6 +34,8 @@ import {
   presetsFor,
   REMUX_PRESET_ID,
 } from "../services/offlinePrepare/lightStream";
+import { parseAudioLightRequest } from "../services/offlinePrepare/audioLight";
+import { serveAudioLight } from "./downloadsAudio";
 
 
 /** Identifiant d'appareil qu'un client peut choisir pour sa session de transcodage. */
@@ -155,6 +157,9 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
     const token = getTokenFromRequest(request);
     const { itemId } = request.params as { itemId: string };
     const query = request.query as Record<string, string | undefined>;
+    // Un titre de musique gardé (capacité `offline.music`) : l'Allégé AUDIO.
+    const audio = token ? parseAudioLightRequest(itemId, query) : null;
+    if (token && audio) return serveAudioLight(request, reply, token, audio);
     const light = token ? parseLightRequest(itemId, query) : null;
     if (!token || !light) return notFound(reply);
     // La garde suit le palier : `pmax` recopie l'image et n'exige donc que le

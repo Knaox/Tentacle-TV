@@ -210,3 +210,18 @@ export async function checkRemuxRight(token: string, itemId: string): Promise<bo
   if (!capabilitiesFromPolicy(policy).remuxDownloads) return false;
   return checkDownloadRight(token, itemId);
 }
+
+/**
+ * L'Allégé AUDIO de la musique gardée (`offlinePrepare/audioLight.ts`) : le mode
+ * Allégé de l'administration (`EnableMediaConversion`, que Jellyfin n'applique
+ * pas lui-même) ET la conversion du son (`EnableAudioPlaybackTranscoding`, que
+ * Jellyfin applique à `Audio/{id}/stream`), plus le droit de garder ce titre.
+ */
+export function audioLightAllowed(policy: DownloadPolicySnapshot | null): boolean {
+  return !!policy && policy.enableContentDownloading && policy.enableMediaConversion && policy.enableAudioPlaybackTranscoding;
+}
+
+export async function checkAudioLightRight(token: string, itemId: string): Promise<boolean> {
+  if (!audioLightAllowed(await getUserDownloadPolicy(token))) return false;
+  return checkDownloadRight(token, itemId);
+}

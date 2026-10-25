@@ -137,8 +137,13 @@ export interface HostApi {
    * d'un hôte d'avant) et garde `notifyPath` en repli.
    */
   "jellyfin.refreshPath": { params: { path: string }; result: { ok: true; scope: "folder" | "library"; itemId: string } };
-  /** Les droits du compte face à CETTE extension (Jellyfin + réglages du cœur). */
-  "users.rights": { params: { userId: string }; result: { exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean } };
+  /**
+   * Les droits du compte face à CETTE extension (Jellyfin + réglages du cœur). `keepOffline` (capacité
+   * `offline.music`, absent d'un hôte d'avant : à lire comme FAUX) : le compte peut garder hors ligne ce que
+   * l'extension lui sert — `canUse`, `EnableContentDownloading` de Jellyfin, et jamais un invité de la Famille.
+   * L'extension vérifie EN PLUS que la requête vient d'une session personnelle (`x-tentacle-session`).
+   */
+  "users.rights": { params: { userId: string }; result: { exists: boolean; isAdmin: boolean; canUse: boolean; canRequest: boolean; keepOffline?: boolean } };
   /** Émet un événement musique (types : PLUGIN_EMITTABLE_MUSIC_EVENTS) aux comptes nommés. */
   "events.emit": { params: { userIds: string[]; event: Record<string, unknown> }; result: { delivered: number } };
   /** Version et chemin d'un outil AUTORISÉ (pour l'afficher ; jamais pour le lancer soi-même). */
