@@ -15,6 +15,7 @@ import { broadcastMusicProvider } from "./host/musicEvents";
 import { forgetIsolatedRights } from "./accountRights";
 import { stopAllWorkers, stopPluginWorkers } from "./tools/toolWorkers";
 import type { RelayTarget } from "./relay/relayRoute";
+import { forgetPluginNavigation } from "./navigation/navigationRuntime";
 
 /**
  * Les invités du runtime isolé, un par extension ISOLÉE qui sert (installée,
@@ -74,6 +75,7 @@ export async function syncIsolatedPlugins(): Promise<string[]> {
     supervisors.delete(pluginId);
     changed.push(pluginId);
     await supervisor.stop("disabled");
+    forgetPluginNavigation(pluginId);
   }
   for (const [pluginId, manifest] of wanted) {
     if (supervisors.has(pluginId)) continue;

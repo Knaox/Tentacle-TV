@@ -6,6 +6,7 @@ import { configureIsolatedRuntime, type IsolatedRuntimeServices } from "./hostSe
 import { registerClientFetchRoute } from "./clientFetch/clientFetchRoute";
 import { clientFetchBroker, relayClientHandle } from "./clientFetch/clientFetchRuntime";
 import { pushJellyfinState, relayLookup, serverLocale, startIsolatedRuntime, stopIsolatedRuntime } from "./runtimeRegistry";
+import { configureNavigationLookup, navigationWritten } from "./navigation/navigationRuntime";
 
 /**
  * Le runtime ISOLÉ des modules serveur d'extension (capacité
@@ -21,7 +22,10 @@ import { pushJellyfinState, relayLookup, serverLocale, startIsolatedRuntime, sto
  */
 export async function registerIsolatedRuntime(app: FastifyInstance, services: Partial<IsolatedRuntimeServices> = {}): Promise<void> {
   configureIsolatedRuntime(services);
-  await registerPluginRelay(app, { lookup: relayLookup, serverLocale, mayUse: mayUseIsolatedPlugin, clientHandle: relayClientHandle });
+  configureNavigationLookup({ socketOf: async (pluginId) => (await relayLookup(pluginId)?.ready()) ?? null, locale: serverLocale });
+  await registerPluginRelay(app, {
+    lookup: relayLookup, serverLocale, mayUse: mayUseIsolatedPlugin, clientHandle: relayClientHandle, onWrite: navigationWritten,
+  });
   await registerClientFetchRoute(app, clientFetchBroker);
   const started = await startIsolatedRuntime();
   if (started.length > 0) console.log(`[runtime] invités isolés : ${started.join(", ")}`);

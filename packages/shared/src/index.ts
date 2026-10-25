@@ -75,6 +75,7 @@ export * from "./jellyfinCompat/setupContract";
 // Le formulaire qu'un plugin déclare pour se brancher (`setup` de son
 // manifeste) : rendu par l'administration sans rien savoir du plugin.
 export * from "./plugins/pluginSetup";
+export * from "./plugins/pluginNavigation";
 // L'aide : le guide « Bandes-annonces » (sa structure ; ses mots sont dans
 // l'espace i18n `trailerHelp`), les rappels qu'un compte masque pour de bon
 // (contrat de /api/preferences/hints, miroir backend) et la règle du rappel

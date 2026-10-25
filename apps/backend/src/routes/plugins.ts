@@ -20,6 +20,8 @@ import { readPluginMusicManifest, type PluginMusicManifest } from "./pluginMusic
 import { readRuntimeManifest } from "../plugins/runtime/runtimeManifest";
 import type { ClientFetchManifest } from "../plugins/runtime/pluginClientFetch";
 import { registerPluginRuntimeAdminRoutes } from "./pluginRuntimeAdmin";
+import { readNavigationRoute } from "../plugins/runtime/navigation/pluginNavigation";
+import { withPluginNavigation } from "../plugins/runtime/navigation/navigationRuntime";
 // L'administration, découpée par sujet — ce fichier ne garde que ce que
 // chaque client lit (dépendances partagées, plugins actifs, bundles).
 import { registerPluginSourceRoutes } from "./pluginSources";
@@ -72,9 +74,11 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
     // Une extension ISOLÉE que ce compte n'a pas le droit d'employer non plus : rien d'elle, navigation comprise.
     const user = (request as { user?: JellyfinUser }).user;
     const active = await withoutForbiddenIsolated(usablePlugins(), user);
-    return active.map((p) => {
+    return Promise.all(active.map(async (p) => {
       const pluginDir = resolve(DATA_DIR, p.pluginId);
-      let navItems: unknown[] = [];
+      let navItems: Array<{ path: string; admin?: unknown }> = [];
+      // La route où l'extension ISOLÉE dit le nom et la place de ses pages — cf. pluginNavigation.
+      let navigation: string | null = null;
       // L'onglet mobile de l'extension (icône, libellés) — cf. pluginTabMeta.
       let tab: PluginTabMeta | undefined;
       // La recherche hors bibliothèque que le plugin sait mener — cf. pluginSearchMeta.
@@ -91,6 +95,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
         try {
           const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
           if (Array.isArray(manifest.navItems)) navItems = manifest.navItems;
+          navigation = isIsolatedPlugin(p.pluginId) ? readNavigationRoute(manifest) : null;
           tab = readTabMeta(manifest);
           search = readSearchMeta(manifest);
           titles = readTitlesMeta(manifest);
@@ -100,12 +105,17 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
         } catch { /* ignore malformed manifest */ }
       }
       const configEnabled = (p.config as Record<string, unknown>)?.enabled === true;
+      // Une entrée qui n'est pas un objet n'est pas une page : écartée (la fusion lit son `path`).
+      const shown = navItems.filter((n) => typeof n === "object" && n !== null && (isAdminNavItem(n) ? user?.isAdmin === true : configEnabled));
+      // Une intégration éteinte n'a pas de pages : rien à demander à son invité.
+      const route = configEnabled ? navigation : null;
       return {
         id: p.id, pluginId: p.pluginId, name: p.name, version: p.version,
         hasBundle: existsSync(resolve(pluginDir, "dist")),
         // Une entrée d'ADMINISTRATION ne part qu'à un administrateur, configurée ou non (c'est elle
         // qui la règle) ; les autres, seulement une fois l'extension configurée.
-        navItems: navItems.filter((n) => (isAdminNavItem(n) ? user?.isAdmin === true : configEnabled)),
+        navItems: await withPluginNavigation(p.pluginId, route, shown),
+        ...(route ? { navigation: route } : {}),
         configEnabled,
         tab,
         // Comme les pages : une intégration éteinte ne cherche rien.
@@ -114,7 +124,7 @@ export const pluginRoutes: FastifyPluginAsync = async (app) => {
         ...(configEnabled && music ? { music } : {}),
         ...(configEnabled && clientFetch ? { clientFetch } : {}),
       };
-    });
+    }));
   });
 
   app.get("/:pluginId/bundle", { preHandler: requireAuth, config: { compress: false } }, async (request, reply) => {

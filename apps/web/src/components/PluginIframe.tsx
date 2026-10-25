@@ -5,6 +5,7 @@ import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
 import { answerPluginApiRequest, getAuthHeaders } from "./pluginIframe/pluginApiRelay";
 import { setHostChromeVeil } from "./pluginIframe/hostChromeVeil";
+import { useNavigationWriteWatcher } from "./pluginIframe/pluginNavigationWrite";
 import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
@@ -57,6 +58,8 @@ export function PluginIframe({
   const trailerCatalog = server.capabilities.has("trailers.catalog") && TRAILER_PLAYER_AVAILABLE;
 
   const lang = localStorage.getItem("tentacle_language") || "fr";
+  // L'extension règle sa navigation depuis sa page : la barre suit aussitôt.
+  const onApiAnswered = useNavigationWriteWatcher(pluginId);
 
   // shared-deps.js + Tailwind, puis le bundle : un échec se DIT (pluginLoad.tsx).
   const { deps, failBundle, retry } = usePluginDeps(pluginId, () => { bundleFetched.current = false; });
@@ -109,7 +112,10 @@ export function PluginIframe({
         }
 
         case "API_REQUEST":
-          void answerPluginApiRequest(data, backendUrl || "", (message) => iframe.contentWindow?.postMessage(message, "*"));
+          void answerPluginApiRequest(data, backendUrl || "", (message) => {
+            iframe.contentWindow?.postMessage(message, "*");
+            onApiAnswered(data, message);
+          });
           break;
 
         case "NAVIGATE":
@@ -182,7 +188,7 @@ export function PluginIframe({
           break;
       }
     },
-    [bundleUrl, navigate, pluginId, failBundle, trailerCatalog, lang],
+    [bundleUrl, navigate, pluginId, failBundle, trailerCatalog, lang, onApiAnswered],
   );
 
   useEffect(() => {

@@ -16,7 +16,16 @@ export interface ActivePluginMeta {
     icon: string;
     platforms: string[];
     admin?: boolean;
+    /**
+     * La place PAR DÉFAUT que l'extension donne à la page (capacité
+     * `plugins.navigation`) : dans la barre principale (`true`) ou dans
+     * « Plus » (`false`). Absent (serveur ou extension d'avant) : dans la barre.
+     * Le geste de l'utilisateur sur l'appareil l'emporte (`usePinnedNav`).
+     */
+    primary?: boolean;
   }>;
+  /** La route où l'extension règle sa navigation (`navigation` du manifeste) ; son écriture se relit aussitôt. */
+  navigation?: string;
   /** Onglet mobile de l'extension (champ `tab` du manifeste), relayé s'il est bien formé. */
   tab?: { icon?: string; labels?: Record<string, string> };
   /**

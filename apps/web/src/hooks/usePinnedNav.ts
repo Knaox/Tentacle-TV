@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { isPluginNavPinnedBy, readKeyList, withPluginNavPinned } from "./pluginNavPins";
 
 const STORAGE_KEY = "tentacle_pinned_nav";
 
@@ -15,11 +16,17 @@ interface PinnedState {
    * première ouverture, sans migration pour les installations existantes.
    *
    * Clé d'une entrée : `${pluginId}:${path}`.
+   *
+   * Depuis que l'extension peut dire sa place par défaut (`primary`,
+   * capacité `plugins.navigation`), ces deux listes ne gardent que les
+   * gestes de l'appareil qui s'en écartent (`pluginNavPins.ts`).
    */
   pluginsUnpinned: string[];
+  /** Pages qu'on a mises dans la barre alors que l'extension les laissait dans « Plus ». */
+  pluginsPinned: string[];
 }
 
-const DEFAULT: PinnedState = { libraries: [], favorites: false, watchlist: false, pluginsUnpinned: [] };
+const DEFAULT: PinnedState = { libraries: [], favorites: false, watchlist: false, pluginsUnpinned: [], pluginsPinned: [] };
 
 // Shared in-memory snapshot so all hook instances stay in sync
 let snapshot: PinnedState = readFromStorage();
@@ -29,7 +36,9 @@ function readFromStorage(): PinnedState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT;
-    return { ...DEFAULT, ...JSON.parse(raw) };
+    const parsed = { ...DEFAULT, ...JSON.parse(raw) } as PinnedState;
+    // Un champ abîmé ne fait pas tomber la barre : une liste illisible vaut « rien de choisi ».
+    return { ...parsed, pluginsUnpinned: readKeyList(parsed.pluginsUnpinned), pluginsPinned: readKeyList(parsed.pluginsPinned) };
   } catch {
     return DEFAULT;
   }
@@ -76,12 +85,20 @@ export function usePinnedNav() {
     persist({ ...prev, watchlist: !prev.watchlist });
   }, []);
 
-  const togglePluginNav = useCallback((key: string) => {
+  /** `primary` : la place par défaut que l'extension donne à la page (absent : dans la barre). */
+  const setPluginNavPinned = useCallback((key: string, on: boolean, primary?: boolean) => {
     const prev = getSnapshot();
-    const unpinned = prev.pluginsUnpinned.includes(key)
-      ? prev.pluginsUnpinned.filter((k) => k !== key)
-      : [...prev.pluginsUnpinned, key];
-    persist({ ...prev, pluginsUnpinned: unpinned });
+    persist({ ...prev, ...withPluginNavPinned(prev, key, on, primary) });
+  }, []);
+
+  const togglePluginNav = useCallback((key: string, primary?: boolean) => {
+    const prev = getSnapshot();
+    persist({ ...prev, ...withPluginNavPinned(prev, key, !isPluginNavPinnedBy(prev, key, primary), primary) });
+  }, []);
+
+  /** Plus aucun geste sur les pages d'extensions : chacune reprend la place que son extension lui donne. */
+  const resetPluginNav = useCallback(() => {
+    persist({ ...getSnapshot(), pluginsUnpinned: [], pluginsPinned: [] });
   }, []);
 
   const isLibraryPinned = useCallback(
@@ -90,8 +107,8 @@ export function usePinnedNav() {
   );
 
   const isPluginNavPinned = useCallback(
-    (key: string) => !state.pluginsUnpinned.includes(key),
-    [state.pluginsUnpinned]
+    (key: string, primary?: boolean) => isPluginNavPinnedBy(state, key, primary),
+    [state]
   );
 
   return useMemo(
@@ -101,9 +118,11 @@ export function usePinnedNav() {
       toggleFavorites,
       toggleWatchlist,
       togglePluginNav,
+      setPluginNavPinned,
+      resetPluginNav,
       isLibraryPinned,
       isPluginNavPinned,
     }),
-    [state, toggleLibrary, toggleFavorites, toggleWatchlist, togglePluginNav, isLibraryPinned, isPluginNavPinned]
+    [state, toggleLibrary, toggleFavorites, toggleWatchlist, togglePluginNav, setPluginNavPinned, resetPluginNav, isLibraryPinned, isPluginNavPinned]
   );
 }
