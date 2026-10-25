@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { JellyfinClient } from "@tentacle-tv/api-client";
 import { heroImagePlan, type MediaItem } from "@tentacle-tv/shared";
-import { heroBackdropUrl, heroOptionUrl } from "./resolveBackdrop";
+import { heroBackdropUrl, heroOptionUrl, libraryBannerItem } from "./resolveBackdrop";
 
 const client = {
   getImageUrl: (id: string, type: string, o?: { width?: number; quality?: number; index?: number }) =>
@@ -24,5 +24,22 @@ describe("heroOptionUrl", () => {
     const [tmdb] = heroImagePlan({ ...movie, BackdropImageTags: [] }, [{ kind: "tmdb", url: "https://image.tmdb.org/t/p/w1280/x.jpg" }]);
     expect(heroOptionUrl(client, tmdb)).toBe("https://image.tmdb.org/t/p/w1280/x.jpg");
     expect(heroOptionUrl(client, tmdb, 128, 70)).toBe("https://image.tmdb.org/t/p/w300/x.jpg");
+  });
+});
+
+describe("libraryBannerItem — la bannière d'une bibliothèque ne change pas sous les yeux", () => {
+  const withBackdrop = (id: string) => ({ Id: id, BackdropImageTags: ["t"] }) as unknown as MediaItem;
+  const latest = [withBackdrop("dernier")];
+
+  it("tirage en route : rien, même si le repli est déjà en cache", () => {
+    expect(libraryBannerItem({ data: undefined, isLoading: true }, latest)).toBeNull();
+  });
+
+  it("tirage revenu : lui", () => {
+    expect(libraryBannerItem({ data: withBackdrop("tire"), isLoading: false }, latest)?.Id).toBe("tire");
+  });
+
+  it("tirage revenu sans rien (ou en échec) : le premier des derniers ajouts", () => {
+    expect(libraryBannerItem({ data: undefined, isLoading: false }, latest)?.Id).toBe("dernier");
   });
 });
