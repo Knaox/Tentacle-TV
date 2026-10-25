@@ -13,7 +13,10 @@
 /*  - extensions : une lecture (`play`) tant que le total < 140, une     */
 /*    anticipation (`prefetch`) tant qu'il < 110 — il reste toujours    */
 /*    ≥ 40 par heure aux bandes-annonces et aux clics ; 100 par heure   */
-/*    au plus par extension ; 20 par minute (tout compris) ; une        */
+/*    au plus par extension ; 20 par minute (tout compris), dont 12 au  */
+/*    plus pour une anticipation : la minute garde TOUJOURS 8 places    */
+/*    aux gestes (clic, recherche validée) et aux bandes-annonces — le  */
+/*    fond ne fait plus attendre un clic d'une minute (25/10) ; une     */
 /*    cadence de 250 ms entre deux places accordées à une extension ;   */
 /*  - le disjoncteur est COMMUN (celui des bandes-annonces) : un        */
 /*    anti-robot vu par l'un arrête l'autre ; disjoncteur ouvert, une   */
@@ -39,6 +42,8 @@ export interface SharedBreaker {
 export interface LedgerLimits {
   perHour: number;
   perMinute: number;
+  /** Une anticipation d'extension n'est admise que sous ce total de la minute (toutes sources). */
+  prefetchPerMinute: number;
   playBelow: number;
   prefetchBelow: number;
   perExtensionHour: number;
@@ -49,6 +54,7 @@ export interface LedgerLimits {
 export const HOST_YOUTUBE_LIMITS: LedgerLimits = {
   perHour: 150,
   perMinute: 20,
+  prefetchPerMinute: 12,
   playBelow: 140,
   prefetchBelow: 110,
   perExtensionHour: 100,
@@ -104,6 +110,9 @@ export class HostYouTubeLedger {
       if (total + cost > below) return this.budget(total + cost - below, this.entries, now, HOUR);
       const minute = this.entries.filter((e) => e.at > now - MINUTE);
       if (minute.length + cost > this.limits.perMinute) return this.budget(minute.length + cost - this.limits.perMinute, minute, now, MINUTE);
+      if (kind === "prefetch" && minute.length + cost > this.limits.prefetchPerMinute) {
+        return this.budget(minute.length + cost - this.limits.prefetchPerMinute, minute, now, MINUTE);
+      }
       const own = this.entries.filter((e) => e.source === pluginId);
       if (own.length + cost > this.limits.perExtensionHour) return this.budget(own.length + cost - this.limits.perExtensionHour, own, now, HOUR);
     } else this.lastProbeAt = now;

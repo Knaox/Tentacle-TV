@@ -29,7 +29,8 @@ function admitMany(ledger: HostYouTubeLedger, n: number, kind: "play" | "prefetc
     const r = ledger.admitExtension(id, kind, 1, t);
     if (!r.granted) return { granted, refusal: r, t };
     granted++;
-    t += r.waitMs + 3_100; // au-delà de la minute de 20
+    // Au-delà de la minute : 20 tout compris, 12 pour l'anticipation (bandes-annonces de la minute comprises).
+    t += r.waitMs + (kind === "play" ? 3_100 : 8_100);
   }
   return { granted, refusal: null, t };
 }
@@ -73,6 +74,26 @@ describe("budget YouTube de l'hôte", () => {
     expect(granted).toBe(HOST_YOUTUBE_LIMITS.perMinute);
     t += 60_001 + 20 * HOST_YOUTUBE_LIMITS.extensionSpacingMs;
     expect(other.admitExtension("sillon", "play", 1, t).granted).toBe(true);
+  });
+
+  it("la minute garde 8 places aux gestes : l'anticipation s'arrête à 12 (tout compris), un clic passe encore", () => {
+    const ledger = new HostYouTubeLedger(breaker().b);
+    let t = 0;
+    let prefetch = 0;
+    for (let i = 0; i < 20; i++) {
+      const r = ledger.admitExtension("sillon", "prefetch", 1, t);
+      if (!r.granted) {
+        expect(r.reason).toBe("budget");
+        break;
+      }
+      prefetch++;
+      t += r.waitMs;
+    }
+    expect(prefetch).toBe(HOST_YOUTUBE_LIMITS.prefetchPerMinute);
+    // Le fond a rempli SA part de la minute : la lecture a encore la sienne.
+    let plays = 0;
+    for (let i = 0; i < 20; i++) if (ledger.admitExtension("sillon", "play", 1, t).granted) plays++;
+    expect(plays).toBe(HOST_YOUTUBE_LIMITS.perMinute - HOST_YOUTUBE_LIMITS.prefetchPerMinute);
   });
 
   it("cadence : deux places d'extension à 250 ms d'écart au moins ; un coût de 3 en réserve trois", () => {
