@@ -84,6 +84,14 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    quelle. Un titre externe qui EST un titre de la bibliothèque sans MBID (même
    titre normalisé, même 1er artiste, durée ± 3 s si les deux la connaissent)
    cède sa place à celui de la bibliothèque.
+   **Radio d'un titre (`music.radio`, 25/10, additif)** : GET
+   `<radio>/<externalId>` → `ExternalMusicRadio` (`tracks` : ce que la source
+   enchaîne après lui, sans lui), pour la SUITE d'un clic dans les résultats —
+   demandée APRÈS le premier son, jamais avant. Radio sans fin : `cursor`
+   (absent ou `null` : la fin), la page suivante par `?cursor=<cursor>` ; une
+   page suivante peut REDIRE des titres des précédentes, la file les écarte.
+   `fetchExternalRadioPage` (api-client) rend la page et son jeton ;
+   `fetchExternalRadio`, la 1re page seule.
 2. **Source de lecture** — `music.resolve` (POST `{ ids }` → `PlaybackSource`,
    jouable pendant l'écriture : `complete: false`) ; `music.prefetch` reçoit
    l'anticipation (`results`, `hover`, `press` au mousedown/touchstart, `next`).
