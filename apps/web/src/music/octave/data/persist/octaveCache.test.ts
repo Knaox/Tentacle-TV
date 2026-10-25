@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { artworkUrlsOf, preconnectOrigins, warmArtworkList } from "./artworkWarm";
 import { attachOctaveCache, hydrateOctaveCache, type OctaveQueryClientLike } from "./octaveCachePersister";
-import { ENTITY_MAX_AGE_MS, evictionPlan, persistable, persistKindOf, SEARCH_MAX_AGE_MS, type StoredEntry } from "./octaveCachePolicy";
+import { ENTITY_MAX_AGE_MS, entryId, evictionPlan, persistable, persistKindOf, SEARCH_MAX_AGE_MS, type StoredEntry } from "./octaveCachePolicy";
 import { memoryBackend } from "./octaveCacheStore";
 
 const OWNER = "http://srv|user-1";
@@ -18,11 +18,16 @@ function entry(id: unknown[], over: Partial<StoredEntry> = {}): StoredEntry {
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false } } }) as unknown as OctaveQueryClientLike & QueryClient;
 
 describe("politique du cache gardé d'Octave", () => {
-  it("ne garde que les pages de l'extension, sous « music »", () => {
+  it("garde les pages de l'extension et celles de la bibliothèque, sous « music »", () => {
     expect(persistKindOf(SEARCH_KEY)).toBe("search");
     expect(persistKindOf(ALBUM_KEY)).toBe("entity");
-    expect(persistKindOf(["music", "external-suggest", "x"])).toBeNull();
-    expect(persistKindOf(["resume-items"])).toBeNull();
+    for (const key of [["music", "home"], ["music", "status"], ["music", "playlists"], ["music", "playlist", "p"], ["music", "album", "a"], ["music", "artist", "r"], ["music", "albums", "recent", 60], ["music", "artists", 60], ["music", "liked", 500]]) {
+      expect(persistKindOf(key)).toBe("library");
+    }
+    // Ni les sources (signées, éphémères), ni les rapprochements, ni la recherche de la bibliothèque, ni Tentacle.
+    for (const key of [["music", "source", "t"], ["music", "match", "x"], ["music", "by-mbid", "x"], ["music", "search", "q", 20], ["music", "external-suggest", "x"], ["resume-items"]]) {
+      expect(persistKindOf(key)).toBeNull();
+    }
   });
 
   it("une recherche se garde FINIE et jamais provisoire", () => {
@@ -33,7 +38,7 @@ describe("politique du cache gardé d'Octave", () => {
     expect(persistable("entity", { key: "a" })).toBe(true);
   });
 
-  it("évince les expirées, celles d'un autre compte, puis les moins récemment utilisées", () => {
+  it("évince les expirées, puis les moins récemment utilisées, identité par identité", () => {
     const now = 10 * ENTITY_MAX_AGE_MS;
     const list = [
       entry(["a"], { savedAt: now - SEARCH_MAX_AGE_MS - 1 }),
@@ -42,14 +47,26 @@ describe("politique du cache gardé d'Octave", () => {
       entry(["d"], { savedAt: now, usedAt: now - 5 }),
       entry(["e"], { savedAt: now, usedAt: now - 1 }),
     ];
-    expect(evictionPlan(list, OWNER, now, 2).sort()).toEqual([JSON.stringify(["a"]), JSON.stringify(["b"]), JSON.stringify(["d"])].sort());
+    // « b » appartient à une autre identité : gardée, à ses propres bornes.
+    expect(evictionPlan(list, OWNER, now, 2).sort()).toEqual([JSON.stringify(["a"]), JSON.stringify(["d"])].sort());
     expect(evictionPlan(list.slice(3), OWNER, now, 10, 150)).toEqual([JSON.stringify(["d"])]);
+  });
+
+  it("au-delà de MAX_OWNERS identités, les moins récentes partent — jamais celle en cours", () => {
+    const now = 1_000_000;
+    const list = ["u1", "u2", "u3", "u4", "u5"].map((who, i) => entry([who], { owner: who, savedAt: now, usedAt: now - i * 10 }));
+    list.push(entry(["moi"], { owner: OWNER, savedAt: now, usedAt: 0 }));
+    expect(evictionPlan(list, OWNER, now, 150, Infinity, 4).sort()).toEqual([JSON.stringify(["u4"]), JSON.stringify(["u5"])].sort());
+  });
+
+  it("deux identités gardent la même clé sans s'écraser", () => {
+    expect(entryId("http://srv|a", '["music","home"]')).not.toBe(entryId("http://srv|b", '["music","home"]'));
   });
 });
 
 describe("hydratation et écriture", () => {
-  it("rend les pages du compte avec leur vraie date, jette celles d'un autre", async () => {
-    const backend = memoryBackend([entry(SEARCH_KEY, { savedAt: Date.now() - 60_000 }), entry(ALBUM_KEY, { owner: "autre", kind: "entity", data: { key: "x" } })]);
+  it("rend les pages de l'identité avec leur vraie date, jamais celles d'une autre (gardées à leur nom)", async () => {
+    const backend = memoryBackend([entry(SEARCH_KEY, { savedAt: Date.now() - 60_000 }), entry(ALBUM_KEY, { owner: "autre", kind: "entity", data: { key: "x" }, savedAt: Date.now() })]);
     const qc = client();
     const result = await hydrateOctaveCache(qc, backend, OWNER);
     expect(result.restored).toBe(1);
@@ -57,7 +74,7 @@ describe("hydratation et écriture", () => {
     expect(qc.getQueryState(SEARCH_KEY)?.dataUpdatedAt).toBeLessThan(Date.now() - 59_000);
     expect(qc.getQueryData(ALBUM_KEY)).toBeUndefined();
     await Promise.resolve();
-    expect(backend.entries.has(JSON.stringify(ALBUM_KEY))).toBe(false);
+    expect(backend.entries.has(JSON.stringify(ALBUM_KEY))).toBe(true);
   });
 
   it("n'écrase jamais une donnée déjà en mémoire", async () => {
@@ -78,8 +95,8 @@ describe("hydratation et écriture", () => {
     await qc.fetchQuery({ queryKey: ALBUM_KEY, queryFn: async () => ({ key: "album", artworkUrl: "https://lh3/b" }) });
     await new Promise((r) => setTimeout(r, 5));
     detach();
-    expect([...backend.entries.keys()].sort()).toEqual([JSON.stringify(ALBUM_KEY), JSON.stringify(SEARCH_KEY)].sort());
-    const saved = backend.entries.get(JSON.stringify(SEARCH_KEY));
+    expect([...backend.entries.keys()].sort()).toEqual([entryId(OWNER, JSON.stringify(ALBUM_KEY)), entryId(OWNER, JSON.stringify(SEARCH_KEY))].sort());
+    const saved = backend.entries.get(entryId(OWNER, JSON.stringify(SEARCH_KEY)));
     expect(saved?.owner).toBe(OWNER);
     expect(saved?.bytes).toBeGreaterThan(10);
 
@@ -100,7 +117,7 @@ describe("hydratation et écriture", () => {
     await new Promise((r) => setTimeout(r, 5));
     detach();
     expect(backend.entries.size).toBe(150);
-    expect(backend.entries.has(JSON.stringify(ALBUM_KEY))).toBe(true);
+    expect(backend.entries.has(entryId(OWNER, JSON.stringify(ALBUM_KEY)))).toBe(true);
     expect(backend.entries.has(JSON.stringify(["music", "external", "album", "old-0"]))).toBe(false);
   });
 });

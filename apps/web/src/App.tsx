@@ -24,8 +24,9 @@ import { PlayerStage } from "./pictureInPicture/PlayerStage";
 import { PageSpinner } from "./components/PageSpinner";
 import { UnknownRoute } from "./components/pluginIframe/UnknownRoute";
 import { useProfileLaunchGate } from "./profiles/launch/useProfileLaunchGate";
-import { LazyOctaveApp, OctaveHomeGate } from "./music/octave/mode/OctaveEntry";
+import { OctaveHomeGate, OctaveRoute } from "./music/octave/mode/OctaveEntry";
 import { OCTAVE_BASE_PATH } from "./music/octave/mode/octaveMode";
+import { LaunchWait, useTentacleRelease } from "./music/octave/mode/OctaveLaunchBackdrop";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
@@ -87,7 +88,9 @@ export function App() {
   const offlineMode = useOfflineMode();
   const onlineOnly = (el: React.ReactElement) => (offlineMode ? <Navigate to="/" replace /> : el);
   // Le mode musique (Octave) a sa propre coquille : la recherche vidéo (⌘K) s'y tait.
-  const inOctave = useLocation().pathname.startsWith(OCTAVE_BASE_PATH);
+  const { pathname } = useLocation();
+  const inOctave = pathname.startsWith(OCTAVE_BASE_PATH);
+  useTentacleRelease(pathname); // une page de Tentacle relâche ce qu'un lancement en Octave retenait
 
   // Re-fetch plugins after login (backendUrl doesn't change so the effect won't re-run otherwise)
   useEffect(() => {
@@ -101,7 +104,7 @@ export function App() {
     return <AppConnect onConnected={() => { setNeedsServerUrl(false); window.location.reload(); }} />;
   }
 
-  if (setupRequired === null) return <PageSpinner />;
+  if (setupRequired === null) return <LaunchWait />; // lancement en Octave : son fond, sans anneau
 
   // Backend unreachable (502/503/crash) — show crying tentacle, reload on reconnect
   if (backendDown) {
@@ -154,7 +157,7 @@ export function App() {
           <Route path="/offline/item/:itemId" element={guard(<OfflineMediaDetail />)} />
           <Route path="/offline/series/:seriesKey" element={guard(<OfflineSeriesView />)} />
           {/* Le mode musique : sa coquille, chargée à la demande ; il se garde lui-même (`music.library`). */}
-          <Route path={`${OCTAVE_BASE_PATH}/*`} element={guard(onlineOnly(<Suspense fallback={null}><LazyOctaveApp /></Suspense>))} />
+          <Route path={`${OCTAVE_BASE_PATH}/*`} element={guard(onlineOnly(<OctaveRoute />))} />
 
           {/* Protected — with layout (sidebar desktop / tabbar mobile) */}
           {/* Mode musique allumé : l'accueil EST Octave (comme le hors ligne remplace

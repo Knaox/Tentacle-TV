@@ -16,10 +16,14 @@ import { saveCachedSession } from "./offlineSession";
 import { refreshLibrariesCache, refreshLibraryPrefsCache } from "./localTrackPrefs";
 import { refreshItemTracksCache } from "./localItemTracks";
 import { refreshAutoplayConfigCache } from "../hooks/useAutoplayConfigLocalFirst";
+import { useTentacleHeld } from "../music/octave/mode/octaveLaunchStore";
 
 export function OfflineSessionSync() {
   const userId = useUserId();
   const { state } = useConnectivity();
+  // Lancement en Octave : la photo de session oui (le hors ligne de la musique en dépend aussi), les
+  // caches des FILMS (pistes, bibliothèques, autolecture) seulement à la première image de Tentacle.
+  const filmsHeld = useTentacleHeld();
 
   useEffect(() => {
     if (!supportsOfflineSession() || !userId || state !== "online") return;
@@ -29,6 +33,7 @@ export function OfflineSessionSync() {
     } catch {
       /* localStorage inaccessible : rien à mettre en cache. */
     }
+    if (filmsHeld) return;
     // Préférences de pistes par bibliothèque — photographiées pour leur
     // résolution hors ligne (useLocalPlaybackTracks) — et liste des
     // bibliothèques (page Préférences utilisable hors ligne).
@@ -43,7 +48,7 @@ export function OfflineSessionSync() {
     // locale (zéro réseau) — sans cette photo, un poste qui ne lit que des
     // téléchargements resterait sur la valeur de repli.
     void refreshAutoplayConfigCache(backendUrl);
-  }, [userId, state]);
+  }, [userId, state, filmsHeld]);
 
   return null;
 }

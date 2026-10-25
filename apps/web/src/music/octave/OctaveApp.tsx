@@ -11,9 +11,10 @@ import { useCallback, useEffect } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import "./octave.css";
 import { resetLikeOverrides } from "./actions/likeOverrides";
+import { OctavePageResume } from "./cache/OctavePageResume";
 import { OctaveCacheBoundary, useOctaveCacheWarmStart } from "./data/persist/OctaveCacheBoundary";
 import { setOctaveMode } from "./mode/octaveMode";
-import { useOctaveAvailability } from "./mode/useOctaveAvailability";
+import { useOctaveLaunchAvailability } from "./mode/useOctaveLaunchAvailability";
 import { octaveEnginePrefs, OctavePlayerProvider } from "./player/OctavePlayerProvider";
 import type { MusicEngineAuth } from "../engine";
 import { prestartAudioEngine } from "../engine/enginePrestart";
@@ -30,7 +31,8 @@ import { SearchView } from "./views/SearchView";
 import { SearchListenRecorder } from "./search/SearchListenRecorder";
 
 export function OctaveApp() {
-  const { available, settled } = useOctaveAvailability();
+  // Au lancement, le miroir de la dernière réponse peint Octave sans attendre ; le serveur corrige ensuite.
+  const { available, settled } = useOctaveLaunchAvailability();
   useOctaveCacheWarmStart();
   const navigate = useNavigate();
 
@@ -66,6 +68,8 @@ export function OctaveApp() {
             <Route path="*" element={<Navigate to="." replace />} />
           </Routes>
         </OctaveShell>
+        {/* Après la coquille : la page gardée retrouve son défilement après la remise en haut d'une page neuve. */}
+        <OctavePageResume />
       </OctavePlayerProvider>
     </OctaveCacheBoundary>
   );

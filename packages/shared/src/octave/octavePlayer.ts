@@ -41,6 +41,8 @@ export class OctavePlayer {
   readonly engineKeys = new Map<string, string>();
   /** L'entrée préchargée comme « suivante » dans le moteur. */
   nextUid: string | null = null;
+  /** Une session quittée, REPRISE en pause (`octaveResume.ts`) : rien de chargé, « Lecture » la démarre à cette position. */
+  restoredAtMs: number | null = null;
   /** Le suivant attend que le courant SONNE : préchargé plus tôt, il disputait au courant l'ouverture (mpv, mesuré). */
   private nextAfterStart = false;
   private playToken = 0;
@@ -78,11 +80,9 @@ export class OctavePlayer {
     const item = currentItem(queue);
     const before = this.snapshot.get();
     if (before.current) this.deps.reporter.stopped(this.position.get().positionMs, this.position.get().durationMs);
-    if (!item) {
-      this.stop();
-      return;
-    }
+    if (!item) return this.stop();
     const token = ++this.playToken;
+    this.restoredAtMs = null;
     // 1 · L'instantané d'abord : titre, pochette et « Pause », dans la même image que le clic.
     this.snapshot.update({
       queue,
@@ -113,7 +113,6 @@ export class OctavePlayer {
     });
   }
 
-
   private launch(item: QueueItem, source: Parameters<AudioEnginePort["play"]>[1], startMs: number): void {
     this.engineKeys.set(item.uid, item.track.key);
     this.snapshot.update({ origin: source.origin, format: source.format ?? item.track.format, durationMs: source.durationMs ?? item.track.durationMs });
@@ -137,6 +136,7 @@ export class OctavePlayer {
 
   /** Donne au moteur le suivant de la file (préchargement sans blanc), et l'annonce à l'extension. */
   scheduleNext(): void {
+    if (this.restoredAtMs !== null) return; // rien ne joue encore : le suivant viendra au démarrage
     const queue = this.snapshot.get().queue;
     const next = peekNext(queue, true);
     const token = this.playToken;
@@ -175,10 +175,7 @@ export class OctavePlayer {
     const snap = this.snapshot.get();
     if (!snap.current) return;
     if (snap.phase === "error") return queueActions.retry(this);
-    if (snap.phase === "ended") {
-      this.startItem(snap.queue, 0);
-      return;
-    }
+    if (snap.phase === "ended" || this.restoredAtMs !== null) return this.startItem(snap.queue, this.restoredAtMs ?? 0);
     this.snapshot.update({ wantsPlay: true });
     this.deps.engine.resume();
   }
@@ -198,7 +195,8 @@ export class OctavePlayer {
   seek(positionMs: number): void {
     const clamped = Math.max(0, positionMs);
     this.position.update({ positionMs: clamped });
-    this.deps.engine.seek(clamped);
+    if (this.restoredAtMs !== null) this.restoredAtMs = clamped;
+    else this.deps.engine.seek(clamped);
   }
 
   setVolume(volume: number): void {
@@ -216,6 +214,7 @@ export class OctavePlayer {
 
   stop(): void {
     this.playToken += 1;
+    this.restoredAtMs = null;
     this.deps.reporter.stopped(this.position.get().positionMs, this.position.get().durationMs);
     this.deps.engine.stop();
     this.nextUid = null;

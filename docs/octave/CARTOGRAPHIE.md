@@ -629,14 +629,28 @@ flowchart TD
   recherches que PLUSIEURS comptes valident sont refaites la nuit (2 h – 5 h) juste avant d'expirer. La réponse
   instantanée n'est donnée que SÛRE (« titre artiste » d'un artiste connu, nom d'artiste seul, titre écouté par
   le compte ou écrasant) — sinon la recherche réseau tranche.
-- **Côté cœur** (R7) : [`octaveCachePolicy.ts`](../../apps/web/src/music/octave/data/persist/octaveCachePolicy.ts)
-  (recherches finies seulement, 3 jours ; vues 14 jours ; 150 pages, 6 Mo ; propriétaire = serveur + compte),
+- **Côté cœur** (R7, étendu au lot « Octave droits », D6) : [`octaveCachePolicy.ts`](../../apps/web/src/music/octave/data/persist/octaveCachePolicy.ts)
+  (recherches finies seulement, 3 jours ; vues d'ailleurs ET pages de la bibliothèque — accueil, statut, playlists,
+  albums, artistes, titres likés — 14 jours ; rangé PAR IDENTITÉ serveur + compte (profil compris), jamais rendu à
+  une autre, 4 identités au plus, 150 pages et 6 Mo chacune ; effacé à la déconnexion),
   [`octaveCacheStore.ts`](../../apps/web/src/music/octave/data/persist/octaveCacheStore.ts) (IndexedDB
   `tentacle_octave_cache` ; tout échec = stockage vide, Octave marche comme avant),
   [`OctaveCacheBoundary.tsx`](../../apps/web/src/music/octave/data/persist/OctaveCacheBoundary.tsx) (pages
   rendues au cache de requêtes au montage, 200 ms au plus d'attente),
   [`artworkWarm.ts`](../../apps/web/src/music/octave/data/persist/artworkWarm.ts) (24 pochettes décodées au
   repos, 4 origines préconnectées, sans hôte nommé dans le cœur).
+- **Lancement en Octave** (D6) : règle pure [`octaveLaunch.ts`](../../apps/web/src/music/octave/mode/octaveLaunch.ts),
+  décidée au chargement ([`octaveLaunchStore.ts`](../../apps/web/src/music/octave/mode/octaveLaunchStore.ts) ; miroir
+  de disponibilité `tentacle_octave_launch`, qui n'apprend que des réponses). La lecture IndexedDB part avec le module
+  ([`octaveCacheBoot.ts`](../../apps/web/src/music/octave/cache/octaveCacheBoot.ts)) ; `main.tsx` attend l'un et
+  l'autre au plus 350 ms et rend les pages au cache AVANT le premier rendu
+  ([`octaveCacheHydration.ts`](../../apps/web/src/music/octave/cache/octaveCacheHydration.ts)). On arrive sur la page
+  quittée (`tentacle_octave_page`, défilement rejoué avant la peinture par un `ResizeObserver`) avec le dernier titre
+  et la file EN PAUSE (`tentacle_octave_player`, `octaveResume.ts` de shared : rien de chargé, « Lecture » repart à la
+  position). Jusqu'à la première image de Tentacle : ni « Qui regarde ? » (l'identité gardée, ou la feuille du code
+  PIN ; seule la sécurité garde le sélecteur), ni recouvrement de démarrage, ni requête des films, ni relecture du
+  cache de Tentacle (au repos, ou dès que Tentacle en a besoin). Pochettes : le cache HTTP du navigateur (cache disque
+  de Chromium au bureau), `private, max-age=1 an, immutable` + étiquette dans l'adresse.
 
 ### 6.7 Aimer un titre hors bibliothèque → Lidarr → Jellyfin
 

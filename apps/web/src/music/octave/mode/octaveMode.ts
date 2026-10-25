@@ -61,11 +61,11 @@ export function setOctaveMode(on: boolean): void {
   for (const l of listeners) l();
 }
 
-function subscribe(listener: () => void): () => void {
+export function subscribeOctaveMode(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
 export function useOctaveMode(): boolean {
-  return useSyncExternalStore(subscribe, isOctaveMode, () => false);
+  return useSyncExternalStore(subscribeOctaveMode, isOctaveMode, () => false);
 }

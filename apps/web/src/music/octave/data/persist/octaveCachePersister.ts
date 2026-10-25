@@ -1,7 +1,7 @@
 /**
  * Octave — les pages gardées, reliées au cache de requêtes :
- * - `hydrateOctaveCache` : au montage, les pages du COMPTE (jamais celles d'un
- *   autre, effacées) reviennent dans le cache avec leur vraie date — affichées
+ * - `hydrateOctaveCache` : au montage, les pages de l'IDENTITÉ (jamais celles
+ *   d'une autre, gardées à leur nom) reviennent dans le cache avec leur vraie date — affichées
  *   aussitôt, revalidées en silence quand elles sont périmées pour leur crochet ;
  *   une donnée déjà en mémoire n'est jamais écrasée ;
  * - `attachOctaveCache` : chaque page FINIE reçue est écrite (par lots, au
@@ -10,7 +10,7 @@
  * celui dont les données sont en mémoire.
  */
 
-import { evictionPlan, persistable, persistKindOf, type StoredEntry } from "./octaveCachePolicy";
+import { entryId, entryKey, evictionPlan, persistable, persistKindOf, type StoredEntry } from "./octaveCachePolicy";
 import type { OctaveCacheBackend } from "./octaveCacheStore";
 
 interface QueryLike {
@@ -56,14 +56,22 @@ function bytesOf(data: unknown): number {
 }
 
 export async function hydrateOctaveCache(qc: OctaveQueryClientLike, backend: OctaveCacheBackend, owner: string, now = Date.now()): Promise<HydrationResult> {
-  const all = await backend.loadAll();
+  return restoreOctaveEntries(qc, await backend.loadAll(), backend, owner, now);
+}
+
+/**
+ * Le cœur SYNCHRONE de l'hydratation : des entrées déjà lues (au démarrage,
+ * avant la première image) reviennent dans le cache dans le même tour.
+ */
+export function restoreOctaveEntries(qc: OctaveQueryClientLike, all: readonly StoredEntry[], backend: OctaveCacheBackend, owner: string, now = Date.now()): HydrationResult {
   const drop = new Set(evictionPlan(all, owner, now));
   if (drop.size > 0) void backend.remove([...drop]);
-  const kept = all.filter((e) => !drop.has(e.id)).sort((a, b) => b.usedAt - a.usedAt);
+  // Seules les pages de CETTE identité reviennent ; les autres restent sur le disque, à leur nom.
+  const kept = all.filter((e) => !drop.has(e.id) && e.owner === owner).sort((a, b) => b.usedAt - a.usedAt);
   let restored = 0;
   for (const entry of kept) {
     try {
-      const key = JSON.parse(entry.id) as unknown[];
+      const key = JSON.parse(entryKey(entry)) as unknown[];
       if (qc.getQueryData(key) !== undefined) continue;
       qc.setQueryData(key, entry.data, { updatedAt: entry.savedAt });
       restored++;
@@ -71,7 +79,7 @@ export async function hydrateOctaveCache(qc: OctaveQueryClientLike, backend: Oct
       /* Une entrée illisible ne retient pas les autres. */
     }
   }
-  const known = kept.map(({ data: _data, ...meta }) => meta);
+  const known = all.filter((e) => !drop.has(e.id)).map(({ data: _data, ...meta }) => meta);
   return { restored, dropped: drop.size, recent: kept.map((e) => e.data), known };
 }
 
@@ -108,17 +116,18 @@ export function attachOctaveCache(qc: OctaveQueryClientLike, backend: OctaveCach
     const kind = persistKindOf(query.queryKey);
     const { status, data, dataUpdatedAt } = query.state;
     if (!kind || status !== "success" || !persistable(kind, data)) return;
-    let id: string;
+    let key: string;
     try {
-      id = JSON.stringify(query.queryKey);
+      key = JSON.stringify(query.queryKey);
     } catch {
       return;
     }
+    const id = entryId(owner, key);
     // Une page rouverte sans changement est réécrite telle quelle : sa place dans l'éviction remonte.
     if (touchOnly && pending.has(id)) return;
     const bytes = bytesOf(data);
     if (!Number.isFinite(bytes)) return;
-    pending.set(id, { id, owner, kind, data, savedAt: dataUpdatedAt, usedAt: now(), bytes });
+    pending.set(id, { id, key, owner, kind, data, savedAt: dataUpdatedAt, usedAt: now(), bytes });
     schedule();
   };
 
