@@ -70,12 +70,12 @@ export function MobileTabBar() {
       }
     }
 
-    // Plugin nav items — épinglés par défaut, retirables depuis le menu « + ».
+    // Plugin nav items — à la place que leur extension leur donne (épinglés sans avis), réglables depuis le menu « + ».
     for (const plugin of activePluginsMeta) {
       if (plugin.configEnabled !== true) continue;
       for (const nav of plugin.navItems || []) {
         if (nav.admin || !nav.platforms?.includes("web")) continue;
-        if (!pinned.isPluginNavPinned(pluginNavKey(plugin.pluginId, nav.path))) continue;
+        if (!pinned.isPluginNavPinned(pluginNavKey(plugin.pluginId, nav.path), nav.primary)) continue;
         list.push({
           path: nav.path,
           label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),

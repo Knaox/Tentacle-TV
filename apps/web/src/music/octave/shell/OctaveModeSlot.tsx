@@ -1,43 +1,26 @@
 /**
- * Octave — le SEUL point de montage, dans Octave, du geste qui ramène aux
- * films et séries : en pied de la barre latérale (bureau), dans l'en-tête
- * (fenêtre étroite). La bascule du lot (axe O2) remplace ce contenu ; la
- * coquille n'a rien d'autre à changer.
+ * Octave — le SEUL point de montage, dans Octave, de la bascule qui ramène aux
+ * films et séries (`OctaveModeSwitch`, axe O2) : en pied de la barre latérale
+ * (bureau, avec son libellé), dans l'en-tête (fenêtre étroite, l'interrupteur
+ * seul).
  */
 
-import { LogOut } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { OctaveModeSwitch } from "../mode/OctaveModeSwitch";
 
 interface OctaveModeSlotProps {
   onExit: () => void;
-  /** En-tête étroit : l'icône seule. */
+  /** En-tête étroit : l'interrupteur seul. */
   compact?: boolean;
 }
 
 export function OctaveModeSlot({ onExit, compact = false }: OctaveModeSlotProps) {
-  const { t } = useTranslation("music");
-  if (compact) {
-    return (
-      <button
-        type="button"
-        onClick={onExit}
-        aria-label={t("mode.exit")}
-        title={t("mode.exitHint")}
-        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-      >
-        <LogOut className="h-5 w-5" aria-hidden />
-      </button>
-    );
-  }
+  if (compact) return <OctaveModeSwitch placement="octave" onExit={onExit} className="px-1" />;
   return (
-    <button
-      type="button"
-      onClick={onExit}
-      title={t("mode.exitHint")}
-      className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
-    >
-      <LogOut className="h-5 w-5" aria-hidden />
-      {t("mode.exit")}
-    </button>
+    <OctaveModeSwitch
+      placement="octave"
+      onExit={onExit}
+      showLabel
+      className="w-full justify-between rounded-xl px-3 transition-colors duration-150 hover:bg-octave-hover"
+    />
   );
 }

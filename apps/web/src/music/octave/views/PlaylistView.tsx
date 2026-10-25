@@ -5,12 +5,14 @@
  */
 
 import { useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { ListMusic, Search } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylist, useRemoveMusicPlaylistEntry } from "@tentacle-tv/api-client";
 import { CollectionHeader, useCountAndDuration } from "../components/CollectionHeader";
 import { TrackList } from "../components/TrackList";
-import { EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
+import { EMPTY_ACTION_CLASS, EmptyState, ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
+import { octavePaths } from "../octavePaths";
 import { mergePlaylist, queueActions } from "@tentacle-tv/shared/octave";
 import { usePendingMusic } from "../pending/usePendingMusic";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
@@ -58,7 +60,18 @@ export function PlaylistView() {
       />
       <div className="px-2 md:px-6">
         {rows.length === 0 ? (
-          <EmptyState>{t("playlist.empty")}</EmptyState>
+          <EmptyState
+            icon={ListMusic}
+            title={t("playlist.empty")}
+            action={
+              <Link to={octavePaths.search} className={EMPTY_ACTION_CLASS}>
+                <Search className="h-4 w-4" aria-hidden />
+                {t("views.findMusic")}
+              </Link>
+            }
+          >
+            {data.editable ? t("views.playlistEmptyHint") : null}
+          </EmptyState>
         ) : (
           <TrackList rows={rows} contextId={contextId} showArtwork showAlbum showHeader label={data.name} onRemoveEntry={remove} />
         )}

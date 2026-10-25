@@ -40,6 +40,8 @@ export interface RelayDeps {
   authenticate?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
   /** La poignée de l'appareil appelant pour les requêtes déléguées (`clientFetchRuntime.ts`), ou `null`. */
   clientHandle?: (pluginId: string, manifest: PluginRuntimeManifest, request: FastifyRequest) => string | null;
+  /** Une écriture (non-GET) que l'invité a ACCEPTÉE (2xx) : ce que le cœur garde d'elle se relit (navigation). */
+  onWrite?: (pluginId: string, route: string) => void;
 }
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
@@ -93,7 +95,9 @@ async function relay(deps: RelayDeps, request: FastifyRequest, reply: FastifyRep
     upstream.setTimeout(IDLE_MS, abort);
     upstream.once("response", (res: IncomingMessage) => {
       res.setTimeout(IDLE_MS, () => res.destroy());
-      reply.status(res.statusCode ?? 502).headers(clientResponseHeaders(res.headers));
+      const status = res.statusCode ?? 502;
+      if (request.method !== "GET" && status >= 200 && status < 300) deps.onWrite?.(pluginId, route);
+      reply.status(status).headers(clientResponseHeaders(res.headers));
       done(reply.send(res));
     });
     upstream.once("error", () => {

@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { getBackendBase } from "../../../../lib/backendBase";
 import { useArtworkResolver } from "../../components/Artwork";
 import { preconnect, preconnectOrigins, warmArtworkList, warmArtworkWhenIdle } from "./artworkWarm";
@@ -62,6 +62,18 @@ export function useOctaveCacheWarmStart(): void {
   useEffect(() => {
     if (owner !== null) void hydrationOf(qc, owner);
   }, [qc, owner]);
+}
+
+/**
+ * La même lecture, lancée AVANT d'entrer (la bascule du mode) et bornée à
+ * `HYDRATE_WAIT_MS` : la porte, montée ensuite, rend aussitôt — la page qu'on
+ * quitte reste à l'écran pendant l'attente, jamais un écran vide.
+ */
+export function warmOctaveCache(qc: QueryClient): Promise<void> {
+  const owner = octaveCacheOwner();
+  if (owner === null) return Promise.resolve();
+  const job = hydrationOf(qc as unknown as OctaveQueryClientLike, owner).then(() => undefined);
+  return Promise.race([job, new Promise<void>((resolve) => setTimeout(resolve, HYDRATE_WAIT_MS))]);
 }
 
 export function OctaveCacheBoundary({ children }: { children: ReactNode }) {

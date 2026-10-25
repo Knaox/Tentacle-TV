@@ -23,7 +23,7 @@ interface TrackMenuProps {
 }
 
 const itemClass =
-  "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-content-primary hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:outline-none";
+  "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none";
 
 export function TrackMenu({ track, actions, onRemove }: TrackMenuProps) {
   const { t } = useTranslation("music");
@@ -41,7 +41,7 @@ export function TrackMenu({ track, actions, onRemove }: TrackMenuProps) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-tertiary opacity-0 transition-opacity duration-150 hover:text-content-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus group-hover:opacity-100 aria-expanded:opacity-100"
+        className="octave-hover-reveal flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-content-tertiary opacity-0 transition-opacity duration-150 hover:text-content-primary focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus group-hover:opacity-100 aria-expanded:opacity-100"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>
@@ -76,14 +76,12 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenu
         ariaLabel={t("track.more", { title: track.title })}
         side="bottom"
         align="end"
-        className="lg-menu w-64 overflow-y-auto overscroll-contain p-1.5"
+        className="w-64 overflow-y-auto overscroll-contain p-1.5"
+        // Un îlot d'encre PRUNE, opaque (IDENTITE.md) : ni verre ni flou derrière un fond plein.
         style={{
-          background: "var(--surface-dropdown)",
-          border: "1px solid var(--border-subtle)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow: "var(--shadow-dropdown)",
-          backdropFilter: "blur(var(--blur-dropdown))",
-          WebkitBackdropFilter: "blur(var(--blur-dropdown))",
+          background: "var(--oc-ink-raised)",
+          borderRadius: "var(--oc-radius-panel)",
+          boxShadow: "var(--oc-shadow-panel)",
           maxHeight: 360,
         }}
       >
@@ -107,7 +105,7 @@ function TrackMenuPanel({ track, actions, onRemove, anchor, onClose }: TrackMenu
                     role="menuitem"
                     title={t("playlist.addFirst")}
                     onClick={run(() => void actions.addToPlaylist(track, p, 0))}
-                    className="shrink-0 cursor-pointer rounded-md px-2 py-2 text-xs font-semibold text-content-tertiary hover:bg-fill-subtle hover:text-content-primary focus-visible:bg-fill-subtle focus-visible:outline-none"
+                    className="shrink-0 cursor-pointer rounded-md px-2 py-2 text-xs font-semibold text-content-tertiary hover:bg-octave-hover hover:text-content-primary focus-visible:bg-octave-hover focus-visible:outline-none"
                   >
                     {t("playlist.first")}
                   </button>

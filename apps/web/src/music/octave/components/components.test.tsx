@@ -24,7 +24,6 @@ vi.mock("react-router-dom", () => ({
   useNavigate: () => () => undefined,
 }));
 
-const { OctaveEntryButton } = await import("../mode/OctaveEntry");
 const { AvailabilityMark } = await import("./AvailabilityMark");
 const { TrackRow } = await import("./TrackRow");
 const { FormatBadge } = await import("../shell/FormatBadge");
@@ -40,16 +39,6 @@ const inRouter = (node: React.ReactNode) => renderToStaticMarkup(<>{node}</>);
 
 beforeEach(() => {
   h.available = true;
-});
-
-describe("entrée du mode Octave", () => {
-  it("visible avec une bibliothèque musique", () => {
-    expect(inRouter(<OctaveEntryButton />)).toContain("mode.enterHint");
-  });
-  it("invisible sinon (capacité absente ou aucune bibliothèque) : aucune trace", () => {
-    h.available = false;
-    expect(inRouter(<OctaveEntryButton />)).toBe("");
-  });
 });
 
 describe("état d'un titre", () => {

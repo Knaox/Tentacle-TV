@@ -48,7 +48,7 @@ import { DownloadsNavButton } from "../../downloads/DownloadsNavButton";
 import { OfflineNavLinks } from "../../offline/OfflineNavLinks";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 import { useActiveProfile } from "../../auth/profileSession";
-import { OctaveEntryButton } from "../../music/octave/mode/OctaveEntry";
+import { OctaveModeSwitch } from "../../music/octave/mode/OctaveModeSwitch";
 
 export function TopNav() {
   const offline = useOfflineMode();
@@ -144,7 +144,7 @@ export function TopNav() {
             {actionsGroup.layers}
             {glass && statusChips}
             {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
-            {!offline && <OctaveEntryButton />}
+            {!offline && <OctaveModeSwitch placement="tentacle" />}
             <DownloadsNavButton />
             {!offline && <WatchTogetherButton />}
             {!offline && <NotificationBell />}

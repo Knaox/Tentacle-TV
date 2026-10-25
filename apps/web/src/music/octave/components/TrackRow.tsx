@@ -1,11 +1,14 @@
 /**
- * Octave — une rangée de titre. Un clic lit (la barre se met à jour dans la
- * même image), le survol et l'appui ANTICIPENT (`hover`, `press`). Le titre en
- * cours est marqué en mot (lecteurs d'écran) et en couleur de marque.
+ * Octave — une rangée de titre, 56 px FIXES (le squelette tient la même place).
+ * Un clic lit (la barre se met à jour dans la même image) ; sur le titre en
+ * cours de CETTE liste, il met en pause ou reprend — jamais un redémarrage au
+ * début. Le survol et l'appui ANTICIPENT (`hover`, `press`). Le titre en cours
+ * est marqué en mot (lecteurs d'écran) et en couleur de marque ; en lecture,
+ * des barres, en pause, le numéro en couleur.
  */
 
 import { memo } from "react";
-import { Play, Volume2 } from "lucide-react";
+import { AudioLines, Pause, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
@@ -18,11 +21,19 @@ import { AvailabilityMark } from "./AvailabilityMark";
 import { HeartButton } from "./HeartButton";
 import { TrackMenu } from "./TrackMenu";
 
+/**
+ * La grille d'une rangée avec sa colonne Album : la colonne n'existe qu'à
+ * partir de `lg` — plus étroit, elle écrasait le titre (« Mo… »).
+ */
+export const ALBUM_COLUMNS = "grid-cols-[2rem_minmax(0,1fr)_auto] lg:grid-cols-[2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]";
+
 export interface TrackRowProps {
   track: MusicTrack;
   /** Numéro affiché (piste d'album ou rang dans la liste). */
   number: number;
   current: boolean;
+  /** Le titre en cours est-il en lecture (seule la rangée courante le reçoit vrai) ? */
+  playing?: boolean;
   failed?: boolean;
   showArtwork?: boolean;
   showAlbum?: boolean;
@@ -53,7 +64,24 @@ function ArtistLinks({ track }: { track: MusicTrack }) {
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry }: TrackRowProps) {
+/** La case du numéro : numéro, ou Lecture au survol ; pour le titre en cours, son état et le geste qui l'inverse. */
+function NumberCell({ number, current, playing }: { number: number; current: boolean; playing: boolean }) {
+  const { t } = useTranslation("music");
+  const HoverIcon = current && playing ? Pause : Play;
+  return (
+    <div role="gridcell" className="relative flex h-8 w-8 items-center justify-center text-sm tabular-nums text-content-tertiary">
+      <span className={`octave-row-number transition-opacity duration-150 ${current ? "text-octave-accent-text" : ""}`}>
+        {current && playing ? <AudioLines className="h-4 w-4" aria-hidden /> : number}
+      </span>
+      {current && <span className="sr-only">{t("track.nowPlaying")}</span>}
+      <span className="octave-row-play absolute inset-0 flex items-center justify-center text-content-primary transition-opacity duration-150" aria-hidden>
+        <HoverIcon className="h-4 w-4" fill="currentColor" />
+      </span>
+    </div>
+  );
+}
+
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry }: TrackRowProps) {
   const { t } = useTranslation("music");
   const onPlay = () => onPlayIndex(index);
   const onRemove = entryId && onRemoveEntry ? () => onRemoveEntry(entryId) : undefined;
@@ -69,26 +97,15 @@ export const TrackRow = memo(function TrackRow({ track, number, current, failed 
         if (e.key === "Enter" && e.target === e.currentTarget) onPlay();
       }}
       {...prefetch}
-      className={`octave-row group grid cursor-pointer select-none items-center gap-3 rounded-md px-2 py-1.5 transition-colors duration-150 hover:bg-fill-subtle focus-visible:bg-fill-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-        showAlbum ? "grid-cols-[2rem_minmax(0,1fr)_minmax(0,0.8fr)_auto] md:grid-cols-[2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto]" : "grid-cols-[2rem_minmax(0,1fr)_auto]"
+      className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+        showAlbum ? ALBUM_COLUMNS : "grid-cols-[2rem_minmax(0,1fr)_auto]"
       }`}
     >
-      <div role="gridcell" className="relative flex h-8 w-8 items-center justify-center text-sm tabular-nums text-content-tertiary">
-        {current ? (
-          <Volume2 className="h-4 w-4 text-brand" aria-label={t("track.nowPlaying")} />
-        ) : (
-          <>
-            <span className="octave-row-number transition-opacity duration-150">{number}</span>
-            <span className="octave-row-play absolute inset-0 flex items-center justify-center text-content-primary transition-opacity duration-150" aria-hidden>
-              <Play className="h-4 w-4" fill="currentColor" />
-            </span>
-          </>
-        )}
-      </div>
+      <NumberCell number={number} current={current} playing={playing} />
       <div role="gridcell" className="flex min-w-0 items-center gap-3">
-        {showArtwork && <Artwork url={track.artworkUrl} className="h-10 w-10" />}
+        {showArtwork && <Artwork url={track.artworkUrl} label={track.album?.title ?? track.title} thumb className="h-10 w-10" />}
         <div className="min-w-0">
-          <div className={`flex items-center gap-1.5 truncate text-[15px] font-medium ${current ? "text-brand" : muted ? "text-content-secondary" : "text-content-primary"}`}>
+          <div title={track.title} className={`flex items-center gap-1.5 truncate text-[15px] font-medium leading-5 ${current ? "text-octave-accent-text" : muted ? "text-content-secondary" : "text-content-primary"}`}>
             <span className="truncate">{track.title}</span>
             {track.explicit && (
               <span className="shrink-0 rounded-sm bg-fill-medium px-1 text-[10px] font-bold leading-4 text-content-secondary" title={t("track.explicit")}>
@@ -96,7 +113,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, failed 
               </span>
             )}
           </div>
-          <div className="flex min-w-0 items-center gap-1.5 text-[13px] text-content-tertiary">
+          <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-content-tertiary">
             <AvailabilityMark availability={track.availability} failed={failed} />
             <span className="truncate">
               <ArtistLinks track={track} />
@@ -105,7 +122,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, failed 
         </div>
       </div>
       {showAlbum && (
-        <div role="gridcell" className="min-w-0 truncate text-[13px] text-content-tertiary">
+        <div role="gridcell" className="hidden min-w-0 truncate text-[13px] text-content-tertiary lg:block">
           {track.album?.jellyfinId ? (
             <Link to={octavePaths.album(track.album.jellyfinId)} onClick={(e) => e.stopPropagation()} className="hover:text-content-primary hover:underline">
               {track.album.title}
@@ -118,7 +135,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, failed 
       <div role="gridcell" className="flex items-center gap-1">
         <HeartButton track={track} actions={actions} quiet />
         {/* Une durée inconnue (titre d'une recherche hors bibliothèque) : la place, pas de « –:–– ». */}
-        <span className="w-12 text-right text-[13px] tabular-nums text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>
+        <span className="oc-meta w-12 text-right text-[13px] text-content-tertiary">{track.durationMs === null ? "" : durationLabel(track.durationMs)}</span>
         <TrackMenu track={track} actions={actions} onRemove={onRemove} />
       </div>
     </div>
