@@ -5,3 +5,4 @@ export * from "./musicPlayback";
 export * from "./musicCoreApi";
 export * from "./musicEvents";
 export * from "./pluginMusicContract";
+export * from "./musicLibraryMatch";

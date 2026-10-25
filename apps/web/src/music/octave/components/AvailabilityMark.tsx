@@ -1,7 +1,10 @@
 /**
  * Octave — l'état d'un titre hors bibliothèque, en mot ET en icône (jamais la
  * couleur seule) : prêt à écouter, en attente d'ajout, hors bibliothèque.
- * Rien pour un titre de la bibliothèque : c'est le cas ordinaire.
+ * Rien pour un titre de la bibliothèque — c'est le cas ordinaire — sauf dans
+ * une liste qui MÊLE les deux (`showLibrary` : album en partie présent,
+ * recherche, playlist d'ailleurs) : l'icône de la bibliothèque, au ton de
+ * réussite, y distingue ce qui est déjà à soi.
  */
 
 import { memo } from "react";
@@ -24,7 +27,7 @@ export const AvailabilityMark = memo(function AvailabilityMark({ availability, f
   if (availability === "library" && !showLibrary) return null;
   const key = failed ? "failed" : availability;
   const Icon = failed ? AlertCircle : availability === "pending" ? Clock3 : availability === "cache" ? Zap : availability === "remote" ? Cloud : Library;
-  const tone = failed ? "text-status-error-fg" : availability === "pending" ? "text-status-warning-fg" : availability === "cache" ? "text-octave-accent-text" : "text-content-tertiary";
+  const tone = failed ? "text-status-error-fg" : availability === "pending" ? "text-status-warning-fg" : availability === "cache" ? "text-octave-accent-text" : availability === "library" ? "text-status-success-fg" : "text-content-tertiary";
   const label = t(`availability.${key}`);
   // En attente : l'infobulle dit ce qui va se passer (il s'écoute déjà).
   const hint = note ? `${label} — ${note}` : key === "pending" ? `${label} — ${t("availability.pendingHint")}` : label;

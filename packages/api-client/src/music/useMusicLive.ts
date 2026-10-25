@@ -8,7 +8,8 @@
  *   de Jellyfin) → posé dans tout le cache, « Titres likés » relu.
  * - `music:playlist` : cette playlist et la liste des playlists.
  * - `music:resolved` / `music:pending` (extensions) : un titre en attente a son
- *   élément → titres likés, playlists, accueil.
+ *   élément → titres likés, playlists, accueil, et ce que la bibliothèque a
+ *   parmi les titres montrés d'ailleurs (`match`).
  * Au retour du socket après une coupure : tout ce qui est musique se relit.
  * Un seul montage par application suffit.
  */
@@ -45,7 +46,7 @@ export function applyMusicEvent(qc: QueryClient, event: MusicEvent): void {
       return;
     case "music:resolved":
     case "music:pending":
-      invalidateScopes(qc, ["liked", "playlists", "playlist", "home"]);
+      invalidateScopes(qc, ["liked", "playlists", "playlist", "home", "match"]);
       return;
     case "music:provider":
       // L'extension elle-même (`/api/plugins/active`) se relit ailleurs ; ici, ce qu'elle mêlait.

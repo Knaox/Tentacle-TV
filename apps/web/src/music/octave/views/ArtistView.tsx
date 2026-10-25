@@ -2,7 +2,9 @@
  * Octave — un artiste : photo, ses titres phares (cinq, « Afficher plus » pour
  * dix), puis ses parutions rangées par type (albums, singles et EP,
  * compilations, live, autres). La ligne de détails dit ce que la page contient
- * (« 12 parutions »), pas le nombre de titres phares.
+ * (« 12 parutions »), pas le nombre de titres phares. Un artiste d'ailleurs :
+ * ce que la bibliothèque a de lui y est montré et joué comme le sien, marqué
+ * (titres, albums entiers ; un album en partie présent porte « En partie »).
  */
 
 import { useMemo, useState } from "react";
@@ -14,6 +16,9 @@ import { CollectionHeader } from "../components/CollectionHeader";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { useArtistEntity } from "../data/useEntityQueries";
+import type { ShownAlbum } from "../library/ownedItems";
+import { useOwnedAlbums } from "../library/useOwnedAlbums";
+import { useOwnedTracks } from "../library/useOwnedTracks";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
 
@@ -36,14 +41,17 @@ const TOP_FOLDED = 5;
 const TOP_MAX = 10;
 
 /** Les parutions par type, chacune de la plus récente à la plus ancienne. */
-export function groupReleases(albums: readonly MusicAlbum[]): { group: Group; albums: MusicAlbum[] }[] {
-  const map = new Map<Group, MusicAlbum[]>();
-  for (const a of albums) map.set(GROUP_OF[a.kind], [...(map.get(GROUP_OF[a.kind]) ?? []), a]);
+export function groupReleases<T extends { album: MusicAlbum }>(albums: readonly T[]): { group: Group; albums: T[] }[] {
+  const map = new Map<Group, T[]>();
+  for (const a of albums) map.set(GROUP_OF[a.album.kind], [...(map.get(GROUP_OF[a.album.kind]) ?? []), a]);
+  const date = (a: MusicAlbum) => a.releaseDate ?? String(a.year ?? "");
   return ORDER.filter((g) => map.has(g)).map((group) => ({
     group,
-    albums: [...(map.get(group) ?? [])].sort((x, y) => (y.releaseDate ?? String(y.year ?? "")).localeCompare(x.releaseDate ?? String(x.year ?? ""))),
+    albums: [...(map.get(group) ?? [])].sort((x, y) => date(y.album).localeCompare(date(x.album))),
   }));
 }
+
+const NO_ALBUMS: MusicAlbum[] = [];
 
 export function ArtistView() {
   const { t } = useTranslation("music");
@@ -51,9 +59,12 @@ export function ArtistView() {
   const player = useOctavePlayer();
   const artist = useArtistEntity(id);
   const [expanded, setExpanded] = useState(false);
-  const top = useMemo(() => (artist.data?.topTracks ?? []).slice(0, TOP_MAX), [artist.data]);
+  const shownTop = useMemo(() => (artist.data?.topTracks ?? []).slice(0, TOP_MAX), [artist.data]);
+  const { tracks: top } = useOwnedTracks(shownTop);
   const topRows = useMemo(() => rowsOf(expanded ? top : top.slice(0, TOP_FOLDED)), [expanded, top]);
-  const groups = useMemo(() => groupReleases(artist.data?.albums ?? []), [artist.data]);
+  const albums: ShownAlbum[] = useOwnedAlbums(artist.data?.albums ?? NO_ALBUMS);
+  const groups = useMemo(() => groupReleases(albums), [albums]);
+  const elsewhere = artist.data?.jellyfinId === null;
   const contextId = `artist:${id}`;
 
   if (artist.isPending) {
@@ -87,7 +98,7 @@ export function ArtistView() {
         {top.length > 0 && (
           <Shelf title={t("artist.top")}>
             {/* La file reprend les DIX titres phares, repliés ou non : seul l'affichage se replie. */}
-            <TrackList rows={topRows} queueTracks={top} contextId={contextId} showArtwork label={t("artist.top")} />
+            <TrackList rows={topRows} queueTracks={top} contextId={contextId} showArtwork markLibrary={elsewhere} label={t("artist.top")} />
             {top.length > TOP_FOLDED && (
               <button
                 type="button"
@@ -103,8 +114,8 @@ export function ArtistView() {
         {groups.map(({ group, albums }) => (
           <Shelf key={group} title={t(`artist.${group}`)}>
             <CardGrid>
-              {albums.map((album) => (
-                <AlbumCard key={album.key} album={album} />
+              {albums.map(({ album, ownership }) => (
+                <AlbumCard key={album.key} album={album} ownership={ownership} />
               ))}
             </CardGrid>
           </Shelf>

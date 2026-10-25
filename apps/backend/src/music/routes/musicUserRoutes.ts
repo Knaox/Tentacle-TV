@@ -1,6 +1,7 @@
 /**
  * Octave — ce qui appartient au COMPTE, dans Jellyfin : son cœur (favori),
- * « Titres likés », ses playlists, et la recherche par MBID d'enregistrement.
+ * « Titres likés », ses playlists, la recherche par MBID d'enregistrement, et
+ * ce que sa bibliothèque a parmi des titres d'ailleurs (`/match`).
  */
 
 import type { FastifyInstance, FastifyReply } from "fastify";
@@ -18,6 +19,8 @@ import {
 } from "../playlists/playlistService";
 import { playlistDetail, playlistsView } from "../view/playlistViews";
 import { byMbidView, likedView } from "../view/userViews";
+import { parseMatchRequest } from "../view/matchInput";
+import { matchView } from "../view/matchViews";
 import { clampLimit, parseCursor, visibleRows, type UserView } from "../view/viewContext";
 import { sendToUser } from "../../services/wsManager";
 import { musicMessage } from "../events/musicSend";
@@ -127,5 +130,12 @@ export function musicUserRoutes(app: FastifyInstance): void {
     const recordings = request.body?.recordings;
     if (!Array.isArray(recordings) || recordings.length > 200) return reply.status(400).send({ error: "invalid_input" });
     return byMbidView(await viewOf(request), recordings);
+  });
+
+  app.post("/match", async (request, reply) => {
+    const parsed = parseMatchRequest(request.body);
+    if (!parsed) return reply.status(400).send({ error: "invalid_input" });
+    reply.header("cache-control", "private, no-store");
+    return matchView(await viewOf(request), parsed);
   });
 }

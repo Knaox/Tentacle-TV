@@ -20,10 +20,12 @@ export const musicKeys = {
   playlist: (id: string) => ["music", "playlist", id] as const,
   source: (id: string) => ["music", "source", id] as const,
   byMbid: (recordings: readonly string[]) => ["music", "by-mbid", [...recordings].sort().join(",")] as const,
+  /** Ce que la bibliothèque a parmi des titres et albums d'ailleurs (`signature` : leurs clés, triées). */
+  match: (signature: string) => ["music", "match", signature] as const,
 };
 
 /** Ce qu'un changement de la BIBLIOTHÈQUE rend faux (pas les sources : un fichier relu garde son URL). */
-export const LIBRARY_SCOPES = ["status", "search", "albums", "album", "artists", "artist", "home", "liked", "by-mbid"] as const;
+export const LIBRARY_SCOPES = ["status", "search", "albums", "album", "artists", "artist", "home", "liked", "by-mbid", "match"] as const;
 
 /** Double compatibilité TanStack v4/v5 (la TV résout la v4) : garder la réponse précédente affichée. */
 export const KEEP_PREVIOUS = { keepPreviousData: true, placeholderData: (prev: unknown) => prev } as object;

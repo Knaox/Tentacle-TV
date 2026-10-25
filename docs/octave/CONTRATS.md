@@ -81,9 +81,13 @@ aux clients par `/api/plugins/active` (champ `music`), routes de l'extension sou
    l'interface filtre la page « Tout » sans requête. Pas de capacité serveur :
    aucune route du cœur ; un serveur d'avant ne relaie ni `playlist` ni
    `searchKinds` (lecture fermée du manifeste), une page traverse le relais telle
-   quelle. Un titre externe qui EST un titre de la bibliothèque sans MBID (même
-   titre normalisé, même 1er artiste, durée ± 3 s si les deux la connaissent)
-   cède sa place à celui de la bibliothèque.
+   quelle. Un titre (ou un album) externe qui EST un élément de la bibliothèque
+   cède sa place à celui de la bibliothèque, PARTOUT où il est montré — règle
+   unique `musicLibraryMatch.ts` (MBID, sinon titre de base + artiste commun +
+   durée à ± 2 s ; « Various Artists » vaut l'artiste si l'album est le même),
+   appliquée par le cœur sur son index (`POST /api/music/match`, capacité
+   `music.libraryMatch` 1.32.0 : `{ tracks?, albums? }` → titres par `ref`,
+   albums `full`/`partial` et leurs titres). L'extension n'a rien à faire.
    **Radio d'un titre (`music.radio`, 25/10, additif)** : GET
    `<radio>/<externalId>` → `ExternalMusicRadio` (`tracks` : ce que la source
    enchaîne après lui, sans lui), pour la SUITE d'un clic dans les résultats —

@@ -3,16 +3,24 @@
  * durée, qualité de la parution (la meilleure de ses pistes), puis ses titres,
  * disque par disque. La date complète et le label ferment la page, comme au
  * dos d'une pochette — la ligne de tête reste courte.
+ *
+ * Un album d'AILLEURS que la bibliothèque a en entier ouvre la vue de la
+ * bibliothèque (à sa place dans l'historique) ; en partie, ses titres présents
+ * sont ceux de la bibliothèque, marqués, et la tête dit combien
+ * (`useAlbumOwnership`).
  */
 
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Library } from "lucide-react";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { MusicAudioFormat, MusicTrack } from "@tentacle-tv/shared/music";
 import { CollectionHeader, Dot, useCountAndDuration } from "../components/CollectionHeader";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { ErrorState, HeaderSkeleton, RowsSkeleton } from "../components/ViewStates";
 import { useAlbumEntity } from "../data/useEntityQueries";
+import { ownedCount } from "../library/ownedItems";
+import { useAlbumOwnership } from "../library/useAlbumOwnership";
 import { octavePaths } from "../octavePaths";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
@@ -37,7 +45,9 @@ export function AlbumView() {
   const { id = "" } = useParams();
   const player = useOctavePlayer();
   const album = useAlbumEntity(id);
-  const { ordered: tracks, discs } = useMemo(() => inDiscOrder(album.data?.tracks ?? []), [album.data]);
+  const { ordered, discs } = useMemo(() => inDiscOrder(album.data?.tracks ?? []), [album.data]);
+  const ownership = useAlbumOwnership(album.data, ordered, album.isPlaceholder);
+  const tracks = ownership.tracks;
   const rows = useMemo(() => rowsOf(tracks), [tracks]);
   const meta = useCountAndDuration(album.data?.trackCount ?? tracks.length, album.data?.durationMs ?? tracks.reduce((s, x) => s + (x.durationMs ?? 0), 0));
   const format = useMemo(() => bestFormat(tracks), [tracks]);
@@ -54,9 +64,13 @@ export function AlbumView() {
     );
   }
   if (album.isError || !album.data) return <ErrorState onRetry={() => void album.refetch()} message={t("album.notFound")} />;
+  if (ownership.libraryAlbumId) return <Navigate replace to={octavePaths.album(ownership.libraryAlbumId)} />;
   const data = album.data;
-  // L'aperçu de la carte : l'en-tête tout de suite, à sa place définitive ; les titres (et leur compte) à la réponse.
-  const preview = album.isPlaceholder;
+  const elsewhere = data.jellyfinId === null;
+  // L'aperçu de la carte : l'en-tête tout de suite, à sa place définitive ; les titres (et leur compte) à la réponse
+  // — et, pour un album d'ailleurs, à ce que la bibliothèque en a (une rangée ne change pas sous les yeux).
+  const preview = album.isPlaceholder || !ownership.settled;
+  const owned = elsewhere ? ownedCount(tracks) : 0;
 
   return (
     <div className="pb-10">
@@ -94,6 +108,15 @@ export function AlbumView() {
               </>
             )}
             {format && <FormatBadge format={format} />}
+            {!preview && owned > 0 && (
+              <>
+                <Dot />
+                <span className="inline-flex items-center gap-1 text-content-secondary">
+                  <Library className="h-3.5 w-3.5 text-status-success-fg" aria-hidden />
+                  {t("availability.albumCoverage", { count: owned, total: tracks.length })}
+                </span>
+              </>
+            )}
           </>
         }
         canPlay={tracks.length > 0}
@@ -106,6 +129,7 @@ export function AlbumView() {
           rows={rows}
           contextId={contextId}
           useTrackNumbers
+          markLibrary={elsewhere}
           showHeader
           label={data.title}
           sectionBefore={discs.length > 1 ? (row, index) => (index === 0 || rows[index - 1]?.track.discNumber !== row.track.discNumber ? t("album.disc", { number: row.track.discNumber ?? 1 }) : null) : undefined}

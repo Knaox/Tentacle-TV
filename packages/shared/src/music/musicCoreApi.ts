@@ -41,6 +41,8 @@ export const MUSIC_ROUTES = {
   playlistEntry: "/api/music/playlists/:id/entries/:entryId",
   /** POST { recordings: Mbid[] } — retrouve des éléments audio par MBID d'enregistrement. */
   byMbid: "/api/music/by-mbid",
+  /** POST `MusicMatchRequest` — ce que la bibliothèque a parmi des titres et albums d'ailleurs (capacité `music.libraryMatch`). */
+  match: "/api/music/match",
   /** GET /:id — la source de lecture d'un titre de la bibliothèque. */
   source: "/api/music/source/:id",
   /** GET /:id — le flux DIRECT du fichier (Range), jamais transcodé. */
@@ -93,6 +95,49 @@ export interface MusicPlaylistDetail extends MusicPlaylist {
 
 export interface MusicByMbidResponse {
   matches: { recording: Mbid; jellyfinId: string; track: MusicTrack }[];
+}
+
+/**
+ * Des titres et des albums montrés hors bibliothèque, à confronter à l'index local (aucune requête à
+ * Jellyfin ni à l'extension). `ref` est la clé du client (`ext:…`), rendue telle quelle. Règle :
+ * `musicLibraryMatch.ts`. Bornes : 200 titres, 50 albums, 300 titres d'albums en tout.
+ */
+export interface MusicMatchTrackQuery {
+  ref: string;
+  title: string;
+  artists: { name: string; mbid: Mbid | null }[];
+  albumTitle: string | null;
+  durationMs: number | null;
+  recording: Mbid | null;
+  discNumber?: number | null;
+  trackNumber?: number | null;
+}
+
+export interface MusicMatchAlbumQuery {
+  ref: string;
+  title: string;
+  artists: { name: string; mbid: Mbid | null }[];
+  release: Mbid | null;
+  releaseGroup: Mbid | null;
+  compilation: boolean;
+  trackCount: number | null;
+  /** Les titres de l'album, quand le client les a (vue album) : la couverture se dit alors piste par piste. */
+  tracks?: MusicMatchTrackQuery[];
+}
+
+export interface MusicMatchRequest {
+  tracks?: MusicMatchTrackQuery[];
+  albums?: MusicMatchAlbumQuery[];
+}
+
+export interface MusicMatchResponse {
+  /** Les titres que la bibliothèque a (visibles par ce compte), par `ref`. */
+  tracks: { ref: string; track: MusicTrack }[];
+  /**
+   * Les albums reconnus : `full` = tous ses titres y sont (sans liste : au moins autant de titres que
+   * l'album en compte), sinon `partial` ; `tracks` = ceux de ses titres que la bibliothèque a, par `ref`.
+   */
+  albums: { ref: string; album: MusicAlbum; coverage: "full" | "partial"; tracks: { ref: string; track: MusicTrack }[] }[];
 }
 
 export type MusicSourceResponse = PlaybackSource;

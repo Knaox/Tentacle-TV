@@ -271,6 +271,10 @@ export const SERVER_CAPABILITIES = {
    *  réseau de sa part), la recherche complète ne part qu'à la validation. Sans elle : suggestions
    *  de la bibliothèque et recherches récentes seulement. */
   "music.suggest": "1.32.0",
+  /** `POST /api/music/match` : ce que la bibliothèque a parmi des titres et albums montrés hors
+   *  bibliothèque (vue album, artiste, playlist, recherche, file), sur l'index local. Sans elle :
+   *  seule la recherche remplace un titre par celui de la bibliothèque, d'après ses propres résultats. */
+  "music.libraryMatch": "1.32.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

@@ -10,6 +10,7 @@ import type { MusicSearchResponse } from "@tentacle-tv/shared/music";
 import { AlbumCard, ArtistCard, CardGrid, PlaylistCard } from "../components/Cards";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { CardsSkeleton, EmptyState, RowsSkeleton } from "../components/ViewStates";
+import { searchAlbumOwnership, type AlbumOwnership } from "../library/ownedItems";
 import { ExternalPlaylistCard } from "./ExternalPlaylistCard";
 import { layoutSearch, type SearchFilter, type ShownExternalLists } from "./searchLayout";
 
@@ -18,10 +19,12 @@ interface SearchKindViewProps {
   filter: Exclude<SearchFilter, "all">;
   library: MusicSearchResponse | null;
   external: ShownExternalLists | null;
+  /** Les albums que la bibliothèque a (en entier ou en partie), par clé de carte. */
+  albumOwnership: ReadonlyMap<string, AlbumOwnership>;
   pending: boolean;
 }
 
-export const SearchKindView = memo(function SearchKindView({ query, filter, library, external, pending }: SearchKindViewProps) {
+export const SearchKindView = memo(function SearchKindView({ query, filter, library, external, albumOwnership, pending }: SearchKindViewProps) {
   const { t } = useTranslation("music");
   const layout = useMemo(() => layoutSearch(library, external ? { ...external, top: null } : null), [library, external]);
   const rows = useMemo(() => rowsOf(layout.tracks), [layout.tracks]);
@@ -36,8 +39,8 @@ export const SearchKindView = memo(function SearchKindView({ query, filter, libr
   }
   return (
     <section aria-label={label} className="flex flex-col gap-3">
-      {filter === "tracks" && rows.length > 0 && <TrackList rows={rows} contextId={`search:${query}:tracks`} showArtwork showAlbum label={label} />}
-      {filter === "albums" && layout.albums.length > 0 && <CardGrid>{layout.albums.map((a) => <AlbumCard key={a.key} album={a} />)}</CardGrid>}
+      {filter === "tracks" && rows.length > 0 && <TrackList rows={rows} contextId={`search:${query}:tracks`} showArtwork showAlbum markLibrary label={label} />}
+      {filter === "albums" && layout.albums.length > 0 && <CardGrid>{layout.albums.map((a) => <AlbumCard key={a.key} album={a} ownership={searchAlbumOwnership(a, albumOwnership)} />)}</CardGrid>}
       {filter === "artists" && layout.artists.length > 0 && <CardGrid>{layout.artists.map((a) => <ArtistCard key={a.key} artist={a} />)}</CardGrid>}
       {filter === "playlists" && (
         <CardGrid>

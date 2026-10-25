@@ -14,6 +14,8 @@ import {
   type MusicByMbidResponse,
   type MusicHomeResponse,
   type MusicLikedPage,
+  type MusicMatchRequest,
+  type MusicMatchResponse,
   type MusicPlaybackReport,
   type MusicPlaylist,
   type MusicPlaylistDetail,
@@ -68,6 +70,8 @@ export const musicApi = {
     tentacleApiFetch<MusicPlaylistDetail>(at(MUSIC_ROUTES.playlistEntry, { id, entryId }), { method: "DELETE" }),
   byMbid: (recordings: string[], signal?: AbortSignal) =>
     tentacleApiFetch<MusicByMbidResponse>(MUSIC_ROUTES.byMbid, json("POST", { recordings }, signal)),
+  match: (request: MusicMatchRequest, signal?: AbortSignal) =>
+    tentacleApiFetch<MusicMatchResponse>(MUSIC_ROUTES.match, json("POST", request, signal)),
   source: (id: string, signal?: AbortSignal) => tentacleApiFetch<MusicSourceResponse>(at(MUSIC_ROUTES.source, { id }), { signal }),
   playback: (report: MusicPlaybackReport) =>
     tentacleApiFetch<{ ok: boolean }>(MUSIC_ROUTES.playback, { ...json("POST", report), keepalive: true }),

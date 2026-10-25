@@ -1,7 +1,8 @@
 /**
  * Octave — la vue « Tout » d'une recherche (façon Apple Music) : le MEILLEUR RÉSULTAT en grande carte, les titres
  * à lire d'un geste à côté, puis les albums, les artistes et les playlists. Une extension en retard garde sa place
- * (rangées fantômes) au lieu de pousser la page en arrivant ; rien ne se réordonne une fois montré.
+ * (rangées fantômes) au lieu de pousser la page en arrivant ; rien ne se réordonne une fois montré. La page mêle
+ * bibliothèque et ailleurs : ce qui est à soi porte sa marque (rangées, pastille des cartes d'album).
  */
 
 import { memo, useMemo } from "react";
@@ -9,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { AlbumCard, ArtistCard, CardGrid, PlaylistCard, Shelf } from "../components/Cards";
 import { TrackList, rowsOf } from "../components/TrackList";
 import { RowsSkeleton } from "../components/ViewStates";
+import { searchAlbumOwnership, type AlbumOwnership } from "../library/ownedItems";
 import { ExternalPlaylistCard } from "./ExternalPlaylistCard";
 import type { SearchFilter, SearchLayout } from "./searchLayout";
 import { TopResultCard } from "./TopResultCard";
@@ -22,6 +24,7 @@ const PLAYLISTS_SHOWN = 6;
 interface SearchAllViewProps {
   query: string;
   layout: SearchLayout;
+  albumOwnership: ReadonlyMap<string, AlbumOwnership>;
   /** L'extension tarde : sa place est réservée sous les titres. */
   externalPending: boolean;
   onFilter: (filter: SearchFilter) => void;
@@ -36,7 +39,7 @@ function SeeAll({ onClick }: { onClick: () => void }) {
   );
 }
 
-export const SearchAllView = memo(function SearchAllView({ query, layout, externalPending, onFilter }: SearchAllViewProps) {
+export const SearchAllView = memo(function SearchAllView({ query, layout, albumOwnership, externalPending, onFilter }: SearchAllViewProps) {
   const { t } = useTranslation("music");
   const contextId = `search:${query}`;
   const top = layout.top;
@@ -53,14 +56,14 @@ export const SearchAllView = memo(function SearchAllView({ query, layout, extern
           <TopResultCard top={top} onPlay={play} onWarm={warm} />
           {sideRows.length > 0 && (
             <Shelf title={t("search.tracks")} action={moreTracks}>
-              <TrackList rows={sideRows} contextId={`${contextId}:side`} showArtwork label={t("search.tracks")} />
+              <TrackList rows={sideRows} contextId={`${contextId}:side`} showArtwork markLibrary label={t("search.tracks")} />
             </Shelf>
           )}
         </div>
       ) : (
         trackRows.length > 0 && (
           <Shelf title={t("search.tracks")} action={moreTracks}>
-            <TrackList rows={trackRows} contextId={contextId} showArtwork showAlbum label={t("search.tracks")} />
+            <TrackList rows={trackRows} contextId={contextId} showArtwork showAlbum markLibrary label={t("search.tracks")} />
           </Shelf>
         )
       )}
@@ -71,7 +74,7 @@ export const SearchAllView = memo(function SearchAllView({ query, layout, extern
       )}
       {layout.albums.length > 0 && (
         <Shelf title={t("search.albums")} action={layout.albums.length > ALBUMS_SHOWN ? <SeeAll onClick={() => onFilter("albums")} /> : undefined}>
-          <CardGrid>{layout.albums.slice(0, ALBUMS_SHOWN).map((a) => <AlbumCard key={a.key} album={a} />)}</CardGrid>
+          <CardGrid>{layout.albums.slice(0, ALBUMS_SHOWN).map((a) => <AlbumCard key={a.key} album={a} ownership={searchAlbumOwnership(a, albumOwnership)} />)}</CardGrid>
         </Shelf>
       )}
       {layout.artists.length > 0 && (

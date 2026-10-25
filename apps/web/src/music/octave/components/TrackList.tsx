@@ -19,6 +19,8 @@ interface TrackListProps {
   contextId: string;
   showArtwork?: boolean;
   showAlbum?: boolean;
+  /** La liste mêle bibliothèque et ailleurs : marquer les titres de la bibliothèque. */
+  markLibrary?: boolean;
   /** Le numéro de la piste d'album au lieu du rang. */
   useTrackNumbers?: boolean;
   /** Le libellé de la liste (lecteurs d'écran). */
@@ -45,7 +47,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
   return tracks.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }));
 }
 
-export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, onRemovePending, queueTracks, sectionBefore }: TrackListProps) {
+export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, onRemovePending, queueTracks, sectionBefore }: TrackListProps) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const actions = useTrackActions();
@@ -97,6 +99,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
           onRemovePending={onRemovePending}
           showArtwork={showArtwork}
           showAlbum={showAlbum}
+          markLibrary={markLibrary}
           actions={actions}
           index={index}
           onPlayIndex={play}

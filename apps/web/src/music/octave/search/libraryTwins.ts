@@ -1,20 +1,29 @@
 /**
  * Octave — les JUMEAUX : un titre (ou un album, un artiste) de l'extension qui EST déjà dans la bibliothèque.
- * La bibliothèque gagne : il se lit tout de suite, sans rien demander. Avec des MBID des deux côtés, c'est
- * `useOctaveSearch` qui les retire ; ici, la règle GÉNÉRIQUE sans MBID (contrat, CONTRATS.md) : même titre
- * normalisé, même premier artiste, et — si les deux la connaissent — une durée à ± 3 s. Règle pure.
+ * La bibliothèque gagne : il se lit tout de suite, sans rien demander. Ici, contre les résultats de bibliothèque
+ * de la MÊME recherche (aucune requête) ; contre l'index entier, c'est `POST /api/music/match` (`ownedSearch.ts`).
+ * La règle est UNE, celle du contrat (`musicLibraryMatch.ts` : MBID, sinon titre de base + artiste commun +
+ * durée à ± 2 s).
  */
 
-import type { MusicAlbum, MusicArtist } from "@tentacle-tv/shared/music";
-import { firstArtistText, sameTrack, twinText } from "@tentacle-tv/shared/octave";
+import { isSameAlbum, type MatchableAlbum, type MusicAlbum, type MusicArtist } from "@tentacle-tv/shared/music";
+import { sameTrack, twinText } from "@tentacle-tv/shared/octave";
 
-// La règle d'un TITRE est partagée (« Titres likés », ajout en playlist) : @tentacle-tv/shared/octave › trackTwins.
+// La règle d'un TITRE est partagée (« Titres likés », ajout en playlist) : @tentacle-tv/shared/octave › trackTwins,
+// elle-même la règle du contrat (musicLibraryMatch).
 export { sameTrack, twinText };
 
-const firstArtist = firstArtistText;
+const albumView = (a: MusicAlbum): MatchableAlbum => ({
+  title: a.title,
+  artists: a.artists,
+  release: a.mbids.release,
+  releaseGroup: a.mbids.releaseGroup,
+  compilation: a.kind === "compilation" || a.kind === "soundtrack",
+});
 
-export const sameAlbum = (a: MusicAlbum, b: MusicAlbum): boolean => twinText(a.title) === twinText(b.title) && firstArtist(a.artists) === firstArtist(b.artists);
-export const sameArtist = (a: MusicArtist, b: MusicArtist): boolean => twinText(a.name) === twinText(b.name);
+/** `a` : celui de la bibliothèque ; `b` : celui de l'extension. */
+export const sameAlbum = (a: MusicAlbum, b: MusicAlbum): boolean => isSameAlbum(albumView(a), albumView(b));
+export const sameArtist = (a: MusicArtist, b: MusicArtist): boolean => (a.mbid && b.mbid ? a.mbid === b.mbid : twinText(a.name) === twinText(b.name));
 
 /** Le jumeau de bibliothèque d'un élément de l'extension, s'il y en a un. */
 export function libraryTwin<T>(item: T, library: readonly T[], same: (a: T, b: T) => boolean): T | null {

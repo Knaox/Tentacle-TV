@@ -39,6 +39,8 @@ export interface TrackRowProps {
   failed?: boolean;
   showArtwork?: boolean;
   showAlbum?: boolean;
+  /** Une liste qui mêle bibliothèque et ailleurs : les titres de la bibliothèque y portent leur marque. */
+  markLibrary?: boolean;
   actions: TrackActions;
   /** Rang dans la liste : le rappel est STABLE (une rangée ne se redessine pas quand le titre courant change ailleurs). */
   index: number;
@@ -88,7 +90,7 @@ function NumberCell({ number, current, playing }: { number: number; current: boo
   );
 }
 
-export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry, note = null, pendingId = null, onRemovePending }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, number, current, playing = false, failed = false, showArtwork = false, showAlbum = false, markLibrary = false, actions, index, onPlayIndex, entryId = null, onRemoveEntry, note = null, pendingId = null, onRemovePending }: TrackRowProps) {
   const { t } = useTranslation("music");
   const onPlay = () => onPlayIndex(index);
   // Une entrée Jellyfin se retire ; un titre hors bibliothèque en attente aussi (sa demande s'annule).
@@ -126,7 +128,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
             )}
           </div>
           <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-content-tertiary">
-            <AvailabilityMark availability={track.availability} failed={failed} note={note} />
+            <AvailabilityMark availability={track.availability} failed={failed} note={note} showLibrary={markLibrary} />
             <span className="truncate">
               <ArtistLinks track={track} />
               {/* Un échec dit POURQUOI, en mot (jamais l'icône seule) : « ne peut pas entrer dans la bibliothèque… ». */}
