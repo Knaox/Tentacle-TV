@@ -3,6 +3,8 @@
  * hors bibliothèque (une extension nomme sa section elle-même), et jamais le
  * mot « téléchargement » ni ses dérivés.
  */
+import rights from "./musicRights";
+
 export default {
   mode: {
     enter: "Octave",
@@ -271,7 +273,7 @@ export default {
   },
   refusal: {
     title: "Action impossible",
-    quota: "Limite d'ajouts atteinte pour le moment. Réessayez plus tard.",
+    quota: "Limite d'ajouts du jour atteinte. Elle repart à minuit.",
     forbidden: "Ce compte ne peut pas ajouter de musique hors bibliothèque.",
     unavailable: "Ce titre n'est pas disponible pour l'instant.",
     notFound: "Titre introuvable.",
@@ -292,4 +294,5 @@ export default {
     nowPlaying: "En cours",
     quality: "Qualité : {{detail}}",
   },
+  rights,
 };

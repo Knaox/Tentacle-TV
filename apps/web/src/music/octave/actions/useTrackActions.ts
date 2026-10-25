@@ -10,14 +10,15 @@
  * qui tiennent des copies des titres. Un geste impossible n'est pas proposé.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useMusicGestures, useToggleMusicFavorite } from "@tentacle-tv/api-client";
-import type { ExternalActionOutcome, MusicTrack } from "@tentacle-tv/shared/music";
+import type { ExternalActionOutcome, ExternalActionRefusal, MusicTrack } from "@tentacle-tv/shared/music";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useToast } from "../../../contexts/ToastContext";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
+import { useAcquireRights } from "../rights/useAcquireRights";
 import { likeOverrideOf, setLikeOverride } from "./likeOverrides";
 import { isLibraryTrack, usePlaylistGestures, type PlaylistGestures } from "./usePlaylistGestures";
 
@@ -35,8 +36,18 @@ export function useTrackActions(): TrackActions {
   const gestures = useMusicGestures(provider);
   const playlists = usePlaylistGestures();
   const { mutate: toggleFavorite } = useToggleMusicFavorite();
+  // Aimer un titre hors bibliothèque l'AJOUTE à la bibliothèque : le droit et la limite du jour (rights/).
+  // Lu au geste (une référence) : les gestes restent STABLES quand les droits se relisent après un ajout.
+  const acquire = useAcquireRights();
+  const acquireRef = useRef(acquire);
+  useEffect(() => {
+    acquireRef.current = acquire;
+  }, [acquire]);
 
-  const failed = useCallback((reason: string = "failed") => toast.show("error", t(`refusal.${reason}`), { title: t("refusal.title") }), [t, toast]);
+  const failed = useCallback((reason: ExternalActionRefusal = "failed") => {
+    const said = acquireRef.current.refusal(reason);
+    toast.show("error", said.message, { title: said.title });
+  }, [toast]);
 
   const ownsTrack = useCallback((track: MusicTrack) => isFromProvider(provider, track.external?.pluginId), [provider]);
 
@@ -54,10 +65,12 @@ export function useTrackActions(): TrackActions {
         return;
       }
       if (!track.external || !ownsTrack(track)) return revert();
+      if (liked && acquireRef.current.exhausted) return revert(), failed("quota");
       gestures.like(track.external.id, liked).then(
         (outcome: ExternalActionOutcome) => {
           if (!outcome.ok) return revert(), failed(outcome.reason);
-          if (liked && outcome.state === "pending" && !options?.quiet) toast.show("success", t("track.likedPending"));
+          const left = liked && outcome.state === "pending" ? acquireRef.current.acquired() : null;
+          if (liked && outcome.state === "pending" && !options?.quiet) toast.show("success", left ?? t("track.likedPending"), left ? { title: t("track.likedPending") } : undefined);
         },
         () => (revert(), failed()),
       );
@@ -68,9 +81,11 @@ export function useTrackActions(): TrackActions {
   return useMemo(
     () => ({
       ...playlists,
-      canLike: (track: MusicTrack) => isLibraryTrack(track) || (ownsTrack(track) && gestures.canLike),
+      // Sans le droit d'ajouter, plus de cœur — sauf pour retirer un titre déjà aimé.
+      canLike: (track: MusicTrack) =>
+        isLibraryTrack(track) || (ownsTrack(track) && gestures.canLike && (acquire.canAcquire || (likeOverrideOf(track.key) ?? track.favorite))),
       toggleLike,
     }),
-    [gestures.canLike, ownsTrack, playlists, toggleLike],
+    [acquire.canAcquire, gestures.canLike, ownsTrack, playlists, toggleLike],
   );
 }
