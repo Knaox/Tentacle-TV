@@ -19,6 +19,8 @@ vi.mock("../player/OctavePlayerProvider", () => ({
   useCurrentKey: () => null,
   usePlayerSelector: () => null,
 }));
+// Le « + » lit les playlists (client de requêtes) : ici, une marque — sa règle a son propre test (lastPlaylist).
+vi.mock("./QuickAddButton", () => ({ QuickAddButton: () => <span data-quick-add /> }));
 vi.mock("react-router-dom", () => ({
   Link: ({ to, children, className }: { to: string; children?: React.ReactNode; className?: string }) => <a href={to} className={className}>{children}</a>,
   useNavigate: () => () => undefined,
@@ -38,6 +40,11 @@ const actions = (canLike: boolean): TrackActions => ({
   toggleLike: () => undefined,
   canAddToPlaylist: () => canLike,
   addToPlaylist: async () => true,
+  canRemoveFromPlaylist: () => canLike,
+  removeFromPlaylist: async () => true,
+  removePending: async () => true,
+  createPlaylistAndAdd: async () => true,
+  quickAdd: async () => true,
 });
 
 const inRouter = (node: React.ReactNode) => renderToStaticMarkup(<>{node}</>);
@@ -72,6 +79,15 @@ describe("rangée de titre", () => {
     const html = row(externalTrack("demo", "r1"), false);
     expect(html).not.toContain("track.like");
     expect(html).not.toContain("aria-pressed");
+  });
+  it("un échec dit POURQUOI, en mot : la note de l'extension (25/10)", () => {
+    const note = "Ne peut pas entrer dans la bibliothèque : aucun identifiant MusicBrainz.";
+    const html = inRouter(<TrackRow track={externalTrack("demo", "r1", { availability: "pending" })} number={1} current={false} failed note={note} actions={actions(true)} index={0} onPlayIndex={() => undefined} />);
+    expect(html).toContain("availability.failed");
+    expect(html).toContain(`· ${note}`);
+  });
+  it("chaque rangée porte le « + » de l'ajout rapide (25/10)", () => {
+    expect(row(libraryTrack("a"), true)).toContain("data-quick-add");
   });
   it("un titre de la bibliothèque n'affiche aucune marque d'état", () => {
     expect(row(libraryTrack("a"), true)).not.toContain("availability.");

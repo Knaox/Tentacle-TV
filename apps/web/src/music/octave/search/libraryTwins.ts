@@ -6,20 +6,12 @@
  * durée à ± 2 s).
  */
 
-import { isSameAlbum, isSameTrack, matchText, type MatchableAlbum, type MatchableTrack, type MusicAlbum, type MusicArtist, type MusicTrack } from "@tentacle-tv/shared/music";
+import { isSameAlbum, type MatchableAlbum, type MusicAlbum, type MusicArtist } from "@tentacle-tv/shared/music";
+import { sameTrack, twinText } from "@tentacle-tv/shared/octave";
 
-/** Casse, accents, ponctuation et espaces mis de côté (« Feel Good Inc. » = « feel good inc »). */
-export const twinText = matchText;
-
-const trackView = (t: MusicTrack): MatchableTrack => ({
-  title: t.title,
-  artists: t.artists,
-  albumTitle: t.album?.title ?? null,
-  durationMs: t.durationMs,
-  recording: t.mbids.recording,
-  discNumber: t.discNumber,
-  trackNumber: t.trackNumber,
-});
+// La règle d'un TITRE est partagée (« Titres likés », ajout en playlist) : @tentacle-tv/shared/octave › trackTwins,
+// elle-même la règle du contrat (musicLibraryMatch).
+export { sameTrack, twinText };
 
 const albumView = (a: MusicAlbum): MatchableAlbum => ({
   title: a.title,
@@ -30,7 +22,6 @@ const albumView = (a: MusicAlbum): MatchableAlbum => ({
 });
 
 /** `a` : celui de la bibliothèque ; `b` : celui de l'extension. */
-export const sameTrack = (a: MusicTrack, b: MusicTrack): boolean => isSameTrack(trackView(a), trackView(b));
 export const sameAlbum = (a: MusicAlbum, b: MusicAlbum): boolean => isSameAlbum(albumView(a), albumView(b));
 export const sameArtist = (a: MusicArtist, b: MusicArtist): boolean => (a.mbid && b.mbid ? a.mbid === b.mbid : twinText(a.name) === twinText(b.name));
 

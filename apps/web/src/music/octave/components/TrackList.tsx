@@ -27,6 +27,8 @@ interface TrackListProps {
   label: string;
   showHeader?: boolean;
   onRemoveEntry?: (entryId: string) => void;
+  /** Retirer une entrée EN ATTENTE (titre hors bibliothèque ajouté à la playlist) : sa demande s'annule. */
+  onRemovePending?: (operationId: string) => void;
   /**
    * La file que lit un clic, quand la liste n'en montre qu'un DÉBUT (titres
    * phares repliés) : `rows` en est un préfixe, les rangs coïncident.
@@ -45,7 +47,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
   return tracks.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }));
 }
 
-export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, queueTracks, sectionBefore }: TrackListProps) {
+export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveEntry, onRemovePending, queueTracks, sectionBefore }: TrackListProps) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const actions = useTrackActions();
@@ -92,6 +94,9 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
           current={row.track.key === currentKey}
           playing={row.track.key === currentKey && wantsPlay}
           failed={row.pending?.failed ?? false}
+          note={row.pending?.note ?? null}
+          pendingId={row.pending?.operationId ?? null}
+          onRemovePending={onRemovePending}
           showArtwork={showArtwork}
           showAlbum={showAlbum}
           markLibrary={markLibrary}

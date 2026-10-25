@@ -19,7 +19,7 @@ import type {
   PrefetchIntent,
   ExternalSourcesRequest,
 } from "@tentacle-tv/shared/music";
-import { tentacleApiFetch } from "../hooks/usePreferences";
+import { TentacleApiError, tentacleApiFetch } from "../hooks/usePreferences";
 import { musicRouteUrl, type MusicProvider } from "./musicProvider";
 
 const post = (body: unknown, signal?: AbortSignal): RequestInit => ({ method: "POST", body: JSON.stringify(body), signal });
@@ -104,14 +104,28 @@ export async function likeExternalTrack(provider: MusicProvider, externalId: str
   return tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.like), post({ externalId, liked })).then(readOutcome, refusalOf);
 }
 
+/** `duplicate` : l'utilisateur a CONFIRMÉ l'ajout d'un titre déjà présent dans la playlist. */
 export async function addExternalTrackToPlaylist(
   provider: MusicProvider,
   externalId: string,
   playlistId: string,
   position: number,
+  duplicate = false,
 ): Promise<ExternalActionOutcome> {
   if (!provider.music.playlistAdd) return { ok: false, reason: "unavailable", message: null };
-  return tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.playlistAdd), post({ externalId, playlistId, position })).then(readOutcome, refusalOf);
+  const body = { externalId, playlistId, position, ...(duplicate ? { duplicate: true } : {}) };
+  return tentacleApiFetch<unknown>(musicRouteUrl(provider, provider.music.playlistAdd), post(body)).then(readOutcome, refusalOf);
+}
+
+/**
+ * Retire une entrée EN ATTENTE du compte (`DELETE <pending>/<operationId>`, 204) : « Retirer de la playlist »
+ * d'un titre hors bibliothèque, « Je n'aime plus ». `false` : refusée ou introuvable.
+ */
+export async function removePendingMusic(provider: MusicProvider, operationId: string): Promise<boolean> {
+  if (!provider.music.pending) return false;
+  const url = musicRouteUrl(provider, `${provider.music.pending}/${encodeURIComponent(operationId)}`);
+  // 204 sans corps : la lecture du JSON échoue, mais la réponse était bonne ; seul un refus HTTP compte.
+  return tentacleApiFetch<unknown>(url, { method: "DELETE" }).then(() => true, (err: unknown) => !(err instanceof TentacleApiError));
 }
 
 export async function fetchPendingMusic(provider: MusicProvider, signal?: AbortSignal): Promise<PendingMusicResponse> {

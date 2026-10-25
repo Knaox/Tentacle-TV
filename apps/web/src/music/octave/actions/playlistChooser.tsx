@@ -1,0 +1,92 @@
+/**
+ * Octave — choisir une playlist pour un titre, ou en CRÉER une (« Nouvelle playlist… » : un nom, puis le titre y
+ * entre aussitôt — bibliothèque comme hors bibliothèque). Une seule boîte pour tout Octave, montée par la
+ * coquille ; ouverte par le « + » sans playlist connue, et par « Changer » de l'avis « Ajouté à X ».
+ */
+
+import { useId, useState, useSyncExternalStore } from "react";
+import { ListMusic, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useMusicPlaylists } from "@tentacle-tv/api-client";
+import type { MusicPlaylist } from "@tentacle-tv/shared/music";
+import { Modal } from "../../../components/ui/Modal";
+import { useTrackActions } from "./useTrackActions";
+import { chooserSnapshot, closePlaylistChooser, subscribeChooser, type ChooserRequest } from "./playlistChooserStore";
+
+const rowClass =
+  "flex min-h-[44px] w-full cursor-pointer items-center gap-3 rounded-lg px-3 text-left text-sm text-content-primary hover:bg-octave-hover focus-visible:bg-octave-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+
+export function PlaylistChooserHost() {
+  const request = useSyncExternalStore(subscribeChooser, chooserSnapshot, () => null);
+  return request ? <Chooser request={request} /> : null;
+}
+
+function Chooser({ request }: { request: ChooserRequest }) {
+  const { t } = useTranslation("music");
+  const titleId = useId();
+  const inputId = useId();
+  const playlists = useMusicPlaylists();
+  const actions = useTrackActions();
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const editable = (playlists.data ?? []).filter((p) => p.editable && p.jellyfinId !== request.moveFrom?.jellyfinId);
+
+  const pick = async (playlist: MusicPlaylist) => {
+    setBusy(true);
+    const added = await actions.addToPlaylist(request.track, playlist);
+    if (added && request.moveFrom) await actions.removeFromPlaylist(request.track, request.moveFrom);
+    setBusy(false);
+    if (added) closePlaylistChooser();
+  };
+  const create = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || busy) return;
+    setBusy(true);
+    const created = await actions.createPlaylistAndAdd(request.track, trimmed);
+    if (created && request.moveFrom) await actions.removeFromPlaylist(request.track, request.moveFrom);
+    setBusy(false);
+    if (created) closePlaylistChooser();
+  };
+
+  return (
+    <Modal open onClose={closePlaylistChooser} maxWidth={400} labelledBy={titleId}>
+      <div className="flex max-h-[70vh] flex-col gap-3 p-5">
+        <h2 id={titleId} className="text-lg font-bold tracking-tight text-content-primary">
+          {t(request.moveFrom ? "playlist.moveTitle" : "playlist.chooseTitle", { title: request.track.title })}
+        </h2>
+        <div className="flex items-center gap-2">
+          <label htmlFor={inputId} className="sr-only">{t("playlist.namePlaceholder")}</label>
+          <input
+            id={inputId}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) void create();
+            }}
+            placeholder={t("playlist.newPlaceholder")}
+            maxLength={200}
+            className="min-h-[44px] min-w-0 flex-1 rounded-lg border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+          />
+          <button
+            type="button"
+            onClick={() => void create()}
+            disabled={!name.trim() || busy}
+            className="octave-brand-fill flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-sm font-semibold disabled:cursor-default disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            {t("playlist.create")}
+          </button>
+        </div>
+        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+          {editable.length === 0 && <p className="px-3 py-2 text-sm text-content-tertiary">{t("playlist.none")}</p>}
+          {editable.map((p) => (
+            <button key={p.jellyfinId} type="button" className={rowClass} disabled={busy} onClick={() => void pick(p)}>
+              <ListMusic className="h-4 w-4 shrink-0 text-content-tertiary" aria-hidden />
+              <span className="truncate">{p.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </Modal>
+  );
+}

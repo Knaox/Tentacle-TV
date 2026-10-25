@@ -25,9 +25,15 @@ export interface PluginMusicManifest {
   prefetch?: string;
   /** 3 · Cœur — POST { externalId, liked } → `ExternalActionOutcome`. */
   like?: string;
-  /** 3 · Playlist — POST { externalId, playlistId, position } → `ExternalActionOutcome`. */
+  /**
+   * 3 · Playlist — POST { externalId, playlistId, position, duplicate? } → `ExternalActionOutcome`. `duplicate` :
+   * l'utilisateur a CONFIRMÉ l'ajout d'un titre déjà présent (un doublon voulu, jamais refusé ni fusionné).
+   */
   playlistAdd?: string;
-  /** 4 · En attente — GET → `PendingMusicResponse` (les entrées du COMPTE). */
+  /**
+   * 4 · En attente — GET → `PendingMusicResponse` (les entrées du COMPTE). `DELETE <pending>/<operationId>` → 204 :
+   * l'entrée est retirée (« Je n'aime plus », « Retirer de la playlist » d'un titre hors bibliothèque).
+   */
   pending?: string;
   /** Écoute menée au bout d'un titre hors bibliothèque — POST { externalId, completed } → 204. */
   played?: string;
@@ -210,6 +216,13 @@ export interface PendingMusicItem {
   track: MusicTrack;
   state: "pending" | "failed";
   createdAt: number;
+  /**
+   * Ce que l'extension dit de cette entrée, en une phrase courte, dans la langue du compte (« Ne peut pas entrer
+   * dans la bibliothèque… ») ; le cœur l'affiche tel quel. Absent : rien à dire.
+   */
+  note?: string;
+  /** Un ajout en playlist d'un titre déjà présent, confirmé : il ne se fond pas dans l'entrée existante. */
+  duplicate?: boolean;
 }
 
 export interface PendingMusicResponse {

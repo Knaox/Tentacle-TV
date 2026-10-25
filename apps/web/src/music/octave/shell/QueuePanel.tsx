@@ -12,12 +12,14 @@ import { useTranslation } from "react-i18next";
 import { type QueueItem, upcoming, queueActions } from "@tentacle-tv/shared/octave";
 import { Artwork } from "../components/Artwork";
 import { AvailabilityMark } from "../components/AvailabilityMark";
+import { TrackMenu } from "../components/TrackMenu";
+import { useTrackActions, type TrackActions } from "../actions/useTrackActions";
 import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 
 const small =
   "flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
-function QueueEntry({ item, index, count, current }: { item: QueueItem; index: number; count: number; current: boolean }) {
+function QueueEntry({ item, index, count, current, actions }: { item: QueueItem; index: number; count: number; current: boolean; actions: TrackActions }) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const track = item.track;
@@ -40,6 +42,8 @@ function QueueEntry({ item, index, count, current }: { item: QueueItem; index: n
           </span>
         </span>
       </button>
+      {/* Le titre de la file s'ajoute à une playlist, ou s'en retire, comme partout (25/10). */}
+      <TrackMenu track={track} actions={actions} visible={current ? "always" : "hover"} />
       {!current && (
         <div className="flex shrink-0 items-center opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
           <button type="button" className={small} disabled={index === 0} aria-label={t("queue.moveUp")} onClick={() => queueActions.move(player, item.uid, index - 1)}>
@@ -64,6 +68,7 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
   const queue = usePlayerSelector((s) => s.queue);
   const current = queue.items[queue.cursor] ?? null;
   const next = upcoming(queue);
+  const actions = useTrackActions();
   return (
     <aside aria-label={t("queue.title")} className="flex h-full flex-col">
       <div className="flex items-center justify-between px-4 pb-2 pt-4">
@@ -77,7 +82,7 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
           <>
             <h3 className={`${sectionTitle} pt-2 text-octave-accent-text`}>{t("queue.nowPlaying")}</h3>
             <ul>
-              <QueueEntry item={current} index={-1} count={0} current />
+              <QueueEntry item={current} index={-1} count={0} current actions={actions} />
             </ul>
           </>
         )}
@@ -87,7 +92,7 @@ export const QueuePanel = memo(function QueuePanel({ onClose }: { onClose: () =>
         ) : (
           <ul className="flex flex-col gap-0.5">
             {next.map((item, i) => (
-              <QueueEntry key={item.uid} item={item} index={i} count={next.length} current={false} />
+              <QueueEntry key={item.uid} item={item} index={i} count={next.length} current={false} actions={actions} />
             ))}
           </ul>
         )}
