@@ -188,6 +188,20 @@ export function moveUpcoming(q: QueueState, uid: string, toUpcomingIndex: number
   return { ...q, items };
 }
 
+/**
+ * La SUITE d'un titre (S3 du plan de R8 : la radio de YouTube Music après un clic de recherche) : tout ce qui
+ * suivait l'entrée `uid` est remplacé par `tracks` (le titre lui-même écarté), l'historique reste, la file prend
+ * le contexte `contextId`. Sans effet si `uid` n'est plus le courant : l'utilisateur est passé à autre chose.
+ */
+export function followWith(q: QueueState, uid: string, tracks: readonly MusicTrack[], contextId: string): QueueState {
+  const current = currentItem(q);
+  if (!current || current.uid !== uid) return q;
+  const added = wrap(tracks.filter((t) => t.key !== current.track.key));
+  if (added.length === 0) return q;
+  const head = q.items.slice(0, q.cursor + 1);
+  return { ...q, items: [...head, ...added], original: [...head.map((i) => i.uid), ...added.map((i) => i.uid)], contextId };
+}
+
 /** Saute à une entrée (clic dans la file). */
 export function jumpTo(q: QueueState, uid: string): QueueState {
   const index = q.items.findIndex((item) => item.uid === uid);

@@ -1,7 +1,7 @@
 /**
  * Octave — les gestes sur la file (aléatoire, répétition, « Lire ensuite »,
- * retrait, déplacement, saut). Chacun change la file, puis redit au moteur
- * quel est le SUIVANT : le moteur ne connaît jamais que courant + suivant.
+ * retrait, déplacement, saut, « Réessayer »). Chacun change la file, puis redit
+ * au moteur quel est le SUIVANT : le moteur ne connaît jamais que courant + suivant.
  */
 
 import type { MusicTrack } from "../music";
@@ -9,6 +9,7 @@ import {
   createQueue,
   cycleRepeat,
   enqueue,
+  followWith,
   jumpTo,
   moveUpcoming,
   patchTracks,
@@ -69,6 +70,19 @@ export const queueActions = {
 
   move(player: OctavePlayer, uid: string, toUpcomingIndex: number): void {
     apply(player, moveUpcoming(player.snapshot.get().queue, uid, toUpcomingIndex));
+  },
+
+  /** La suite du titre `uid` devient `tracks` (la radio d'un clic de recherche), s'il est encore le courant. */
+  followWith(player: OctavePlayer, uid: string, tracks: readonly MusicTrack[], contextId: string): void {
+    apply(player, followWith(player.snapshot.get().queue, uid, tracks, contextId));
+  },
+
+  /** « Réessayer » : le titre courant, redemandé de zéro à l'extension — un geste, jamais sauté. */
+  retry(player: OctavePlayer): void {
+    const snap = player.snapshot.get();
+    if (!snap.current) return;
+    player.deps.sources.invalidate(snap.current.key);
+    player.startItem(snap.queue, 0, "chosen", "retry");
   },
 
   /** Clic sur une entrée de la file : elle devient le courant. */

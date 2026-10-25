@@ -168,6 +168,7 @@ export default {
     noSource: "Ce titre ne peut pas être lu pour l'instant",
     retrySoon: "Lecture dans un instant…",
     engineError: "La lecture s'est interrompue",
+    retry: "Réessayer",
     lossless: "Sans perte",
     hiRes: "Hi-Res",
     bits: "{{count}} bits",

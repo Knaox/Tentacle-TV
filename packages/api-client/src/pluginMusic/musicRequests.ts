@@ -40,8 +40,8 @@ export async function resolveMusicSources(provider: MusicProvider, ids: readonly
 /** La source d'UN titre ; sans source parce que le budget de l'extension est atteint, le délai à attendre (`retry`). */
 export type MusicSourceOutcome = { source: PlaybackSource } | { retryAfterMs: number } | null;
 
-/** `intent: "next"` : le lecteur précharge le suivant de sa file (du fond pour l'extension) ; absent : un geste. */
-export async function resolveMusicSource(provider: MusicProvider, id: string, signal?: AbortSignal, intent?: "next"): Promise<MusicSourceOutcome> {
+/** `intent` : « next » = le lecteur précharge le suivant (du fond), « retry » = « Réessayer » (un geste) ; absent : un geste. */
+export async function resolveMusicSource(provider: MusicProvider, id: string, signal?: AbortSignal, intent?: ExternalSourcesRequest["intent"]): Promise<MusicSourceOutcome> {
   const body: ExternalSourcesRequest = intent ? { ids: [id], intent } : { ids: [id] };
   const raw = await tentacleApiFetch<ExternalSourcesResponse>(musicRouteUrl(provider, provider.music.resolve), post(body, signal));
   const source = readSources(raw).get(id);

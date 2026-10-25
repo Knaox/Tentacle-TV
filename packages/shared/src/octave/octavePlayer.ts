@@ -16,10 +16,12 @@ import type { AudioEnginePort, EngineEvent, EngineState, MusicTrack, PrefetchInt
 import { advance, createQueue, currentItem, peekNext, previous, type QueueItem, type QueueState, type Random } from "./queueModel";
 import { enginePhase, INITIAL_POSITION, INITIAL_SNAPSHOT, ValueStore, type PlayerSnapshot, type PositionState } from "./playerState";
 import type { PlaybackReporter } from "./playbackReports";
-import type { SourceCache } from "./sourceCache";
+import type { SourceCache, SourceIntent } from "./sourceCache";
 import { FailureStreak } from "./failureStreak";
 import { refreshEngineSource } from "./octaveResolution";
-import { scheduleSourceRetry } from "./sourceRetry";
+import { waitForSource } from "./sourceRetry";
+import { CHOSEN_BUDGET_TRIES, type StartCause } from "./startCause";
+import { queueActions } from "./octaveQueueActions";
 
 export interface OctavePlayerDeps {
   engine: AudioEnginePort;
@@ -71,8 +73,8 @@ export class OctavePlayer {
     this.startItem(queue, 0);
   }
 
-  /** Démarre l'entrée courante de `queue` à `startMs`. */
-  startItem(queue: QueueState, startMs: number): void {
+  /** Démarre l'entrée courante de `queue` à `startMs` — choisie par l'utilisateur, sauf mention contraire. */
+  startItem(queue: QueueState, startMs: number, cause: StartCause = "chosen", intent: SourceIntent = "play"): void {
     const item = currentItem(queue);
     const before = this.snapshot.get();
     if (before.current) this.deps.reporter.stopped(this.position.get().positionMs, this.position.get().durationMs);
@@ -101,21 +103,16 @@ export class OctavePlayer {
       this.launch(item, ready, startMs);
       return;
     }
-    void this.deps.sources.get(item.track).then((source) => {
-      if (token !== this.playToken) return;
-      if (source) this.launch(item, source, startMs);
-      else if (!this.retrySoon(item, token, startMs)) this.failCurrent(token);
+    // Sinon : avis s'il tarde, nouveaux essais si le budget de l'extension l'exige (`sourceRetry.ts`).
+    waitForSource(this.deps.sources, item.track, {
+      intent,
+      tries: cause === "chosen" ? CHOSEN_BUDGET_TRIES : 1,
+      current: () => token === this.playToken,
+      notice: (notice) => this.snapshot.update({ notice }),
+      done: (source) => (source ? this.launch(item, source, startMs) : this.failCurrent(token, cause)),
     });
   }
 
-  /** Le budget de l'extension est atteint : « Lecture dans un instant… », UN nouvel essai, borné (`sourceRetry.ts`). */
-  private retrySoon(item: QueueItem, token: number, startMs: number): boolean {
-    return scheduleSourceRetry(this.deps.sources, item.track, {
-      current: () => token === this.playToken,
-      notice: (notice) => this.snapshot.update({ notice }),
-      done: (source) => (source ? this.launch(item, source, startMs) : this.failCurrent(token)),
-    });
-  }
 
   private launch(item: QueueItem, source: Parameters<AudioEnginePort["play"]>[1], startMs: number): void {
     this.engineKeys.set(item.uid, item.track.key);
@@ -125,15 +122,16 @@ export class OctavePlayer {
     this.nextAfterStart = true;
   }
 
-  /** Aucune source : on le dit, puis on passe au suivant — au plus deux fois d'affilée (`failureStreak.ts`). */
-  private failCurrent(token: number): void {
-    this.snapshot.update({ phase: "error", error: "noSource" });
-    if (!this.failures.failed()) return;
+  /** Aucune source : on le dit ; un titre CHOISI reste là, l'enchaînement passe au suivant (deux fois d'affilée au plus). */
+  private failCurrent(token: number, cause: StartCause): void {
+    // Rien ne joue : le bouton redevient « Lecture » (qui vaut « Réessayer »).
+    this.snapshot.update({ phase: "error", error: "noSource", notice: null, wantsPlay: false });
+    if (cause !== "chained" || !this.failures.failed()) return;
     const delay = this.deps.skipDelayMs ?? 1_500;
     setTimeout(() => {
       if (token !== this.playToken) return;
       const moved = advance(this.snapshot.get().queue, false);
-      if (moved && moved.cursor !== this.snapshot.get().queue.cursor) this.startItem(moved, 0);
+      if (moved && moved.cursor !== this.snapshot.get().queue.cursor) this.startItem(moved, 0, "chained");
     }, delay);
   }
 
@@ -176,7 +174,8 @@ export class OctavePlayer {
   resume(): void {
     const snap = this.snapshot.get();
     if (!snap.current) return;
-    if (snap.phase === "ended" || snap.phase === "error") {
+    if (snap.phase === "error") return queueActions.retry(this);
+    if (snap.phase === "ended") {
       this.startItem(snap.queue, 0);
       return;
     }
@@ -269,10 +268,10 @@ export class OctavePlayer {
     if (state.status === "ended") this.onEnded();
   }
 
-  /** Fin sans enchaînement préparé (source du suivant pas encore là) : on démarre le suivant. */
+  /** Fin sans enchaînement préparé (source du suivant pas encore là) : on démarre le suivant — enchaîné. */
   private onEnded(): void {
     const moved = advance(this.snapshot.get().queue, true);
-    if (moved) this.startItem(moved, 0);
+    if (moved) this.startItem(moved, 0, "chained");
     else {
       this.deps.reporter.stopped(this.position.get().positionMs, this.position.get().durationMs);
       this.snapshot.update({ wantsPlay: false, phase: "ended" });

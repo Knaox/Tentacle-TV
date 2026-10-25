@@ -168,6 +168,7 @@ export default {
     noSource: "This song can't be played right now",
     retrySoon: "Playing in a moment…",
     engineError: "Playback stopped",
+    retry: "Try again",
     lossless: "Lossless",
     hiRes: "Hi-Res",
     bits: "{{count}}-bit",

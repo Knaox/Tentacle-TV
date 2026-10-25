@@ -141,12 +141,14 @@ export interface ExternalMusicSearchPage {
 /**
  * 2 · La demande de sources. `intent` (additif) : `"next"` quand le lecteur
  * PRÉCHARGE le titre suivant de sa file (du fond : l'extension le fait passer
- * après les gestes) ; absent : un geste — un clic —, comme avant. Une extension
- * d'avant l'ignore.
+ * après les gestes) ; `"retry"` quand l'utilisateur a demandé « Réessayer » (un
+ * geste : l'extension refait tout, sans s'en tenir à un échec qu'elle aurait
+ * retenu) ; absent : un geste — un clic —, comme avant. Une extension d'avant
+ * l'ignore.
  */
 export interface ExternalSourcesRequest {
   ids: string[];
-  intent?: "next";
+  intent?: "next" | "retry";
 }
 
 /** 2 · Une source par identifiant demandé ; absent = pas de source (le client passe au suivant). */

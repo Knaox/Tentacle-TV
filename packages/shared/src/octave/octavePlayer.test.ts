@@ -95,49 +95,75 @@ describe("le moteur ne reçoit que courant + suivant", () => {
     expect(engine.calls.slice(before).some((c) => c.method === "setNext")).toBe(true);
   });
 
-  it("un titre sans source est signalé puis passé", async () => {
+  it("un titre CHOISI sans source est signalé et RESTE : jamais sauté (Damien, 25/10)", async () => {
     const { player } = setup({ externalSource: false });
-    player.playList([externalTrack("sillon", "r1"), libraryTrack("b")], 0);
+    const chosen = externalTrack("sillon", "r1");
+    player.playList([chosen, libraryTrack("b")], 0);
+    for (let i = 0; i < 10; i++) await flush();
+    expect(player.snapshot.get()).toMatchObject({ phase: "error", error: "noSource" });
+    expect(player.snapshot.get().current?.key).toBe(chosen.key);
+  });
+
+  it("un titre ENCHAÎNÉ (fin du précédent) sans source est signalé puis passé", async () => {
+    const { player, engine } = setup({ externalSource: false });
+    player.playList([libraryTrack("a"), externalTrack("sillon", "r1"), libraryTrack("b")], 0);
     await flush();
-    expect(player.snapshot.get().error).toBe("noSource");
-    await flush();
-    await flush();
+    engine.sound(0);
+    engine.emit({ type: "state", state: { ...engine.getState(), status: "ended" } });
+    for (let i = 0; i < 10; i++) await flush();
     expect(player.snapshot.get().current?.key).toBe("jf:b");
+  });
+
+  it("L1 : rien du SUIVANT ne part avant le premier son du titre touché", async () => {
+    const { player, engine, prefetched, library } = setup();
+    player.playList(tracks, 0);
+    await flush();
+    expect(prefetched.filter((p) => p.startsWith("next:"))).toEqual([]);
+    expect(library.mock.calls.map(([id]) => id)).toEqual(["a"]);
+    engine.sound(0);
+    await flush();
+    expect(prefetched).toContain("next:jf:b");
   });
 });
 
 describe("titres sans source d'affilée (défaut R2-04)", () => {
-  it("une file de titres injouables ne défile pas toute seule : au 3e d'affilée, le lecteur s'arrête, message affiché", async () => {
-    const { player, external } = setup({ externalSource: false });
-    const queue = Array.from({ length: 8 }, (_, i) => externalTrack("sillon", `r${i}`));
-    player.playList(queue, 0);
+  /** Le premier titre de la file sonne puis se termine : la suite ENCHAÎNE d'elle-même. */
+  const endFirst = async (engine: ReturnType<typeof createFakeEngine>) => {
+    await flush();
+    engine.sound(0);
+    engine.emit({ type: "state", state: { ...engine.getState(), status: "ended" } });
     for (let i = 0; i < 20; i++) await flush();
-    expect(external).toHaveBeenCalledTimes(3);
-    expect(player.snapshot.get().current?.key).toBe(queue[2]!.key);
+  };
+
+  it("une file de titres injouables ne défile pas toute seule : au 3e d'affilée, le lecteur s'arrête, message affiché", async () => {
+    const { player, engine } = setup({ externalSource: false });
+    const queue = [libraryTrack("a"), ...Array.from({ length: 8 }, (_, i) => externalTrack("sillon", `r${i}`))];
+    player.playList(queue, 0);
+    await endFirst(engine);
+    expect(player.snapshot.get().current?.key).toBe(queue[3]!.key);
     expect(player.snapshot.get()).toMatchObject({ phase: "error", error: "noSource" });
-    // « Suivant » est un choix de l'utilisateur : la série repart, au plus trois titres de plus.
+    // « Suivant » est un CHOIX de l'utilisateur : le titre choisi reste, même sans source — plus rien ne défile.
     player.next();
     for (let i = 0; i < 20; i++) await flush();
-    expect(external).toHaveBeenCalledTimes(6);
-    expect(player.snapshot.get().current?.key).toBe(queue[5]!.key);
+    expect(player.snapshot.get().current?.key).toBe(queue[4]!.key);
+    expect(player.snapshot.get()).toMatchObject({ phase: "error", error: "noSource" });
   });
 
   it("un titre qui SONNE remet la série à zéro", async () => {
     const engine = createFakeEngine();
-    let calls = 0;
-    const sources = new SourceCache({ library: async (id) => sourceOf(`jf:${id}`), external: async (t) => (calls++ === 2 ? sourceOf(t.key, "plugin") : null), now: () => 0 });
+    const sources = new SourceCache({ library: async (id) => sourceOf(`jf:${id}`), external: async (t) => (t.key.endsWith(":s2") ? sourceOf(t.key, "plugin") : null), now: () => 0 });
     const reporter = new PlaybackReporter({ library: () => {}, externalPlayed: () => {}, now: () => 0 });
     const player = new OctavePlayer({ engine, sources, reporter, prefetchExternal: () => {}, skipDelayMs: 0 });
-    const queue = Array.from({ length: 6 }, (_, i) => externalTrack("sillon", `s${i}`));
+    const queue = [libraryTrack("a"), ...Array.from({ length: 6 }, (_, i) => externalTrack("sillon", `s${i}`))];
     player.playList(queue, 0);
-    for (let i = 0; i < 20; i++) await flush();
-    expect(player.snapshot.get().current?.key).toBe(queue[2]!.key);
+    await endFirst(engine);
+    expect(player.snapshot.get().current?.key).toBe(queue[3]!.key);
     engine.sound(500);
     expect(player.snapshot.get().phase).toBe("playing");
-    player.next();
+    engine.emit({ type: "state", state: { ...engine.getState(), status: "ended" } });
     for (let i = 0; i < 20; i++) await flush();
-    // Après le son, trois nouveaux échecs permis (s3, s4, s5).
-    expect(player.snapshot.get().current?.key).toBe(queue[5]!.key);
+    // Après le son, trois nouveaux échecs enchaînés permis (s3, s4, s5) : arrêt sur s5.
+    expect(player.snapshot.get().current?.key).toBe(queue[6]!.key);
   });
 });
 

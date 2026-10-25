@@ -27,6 +27,7 @@ import type { AudioEnginePort } from "@tentacle-tv/shared/music";
 import { OctavePlayer, PlaybackReporter, SourceCache, type PlayerSnapshot, type PositionState } from "@tentacle-tv/shared/octave";
 import { AudioEngineProvider, useAudioEngine, type EnginePrefs } from "../../engine";
 import { isFromProvider, useOctaveProvider } from "../mode/useOctaveProvider";
+import { followSearchWithRadio } from "./searchRadio";
 
 const PlayerContext = createContext<OctavePlayer | null>(null);
 
@@ -49,8 +50,8 @@ export function buildOctavePlayer(engine: AudioEnginePort, qc: QueryClient, prov
       const p = provider();
       if (!track.external || !isFromProvider(p, track.external.pluginId)) return null;
       // Sans source parce que le budget de l'extension est atteint : le lecteur réessaiera (contrat `retry`).
-      // Le préchargement du suivant se dit : l'extension le fait passer après les gestes.
-      const outcome = await resolveMusicSource(p, track.external.id, undefined, intent === "next" ? "next" : undefined);
+      // Le préchargement du suivant se dit (l'extension le fait passer après les gestes), « Réessayer » aussi.
+      const outcome = await resolveMusicSource(p, track.external.id, undefined, intent === "play" ? undefined : intent);
       return outcome === null ? null : "source" in outcome ? outcome.source : outcome;
     },
     now: () => Date.now(),
@@ -100,9 +101,12 @@ function PlayerOnEngine({ children }: { children: ReactNode }) {
         /* stockage refusé */
       }
     });
+    // S3 : après le premier son d'un titre de recherche, sa radio devient la suite.
+    const offRadio = followSearchWithRadio(p, () => providerRef.current);
     setPlayer(p);
     return () => {
       off();
+      offRadio();
       p.dispose();
       setPlayer(null);
     };

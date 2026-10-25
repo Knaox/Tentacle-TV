@@ -1,6 +1,9 @@
 /**
  * Octave — pochette, titre, artistes et cœur du titre en cours, et un message
- * court si le son ne vient pas.
+ * court si le son ne vient pas. Un titre qui ne peut pas être lu RESTE affiché,
+ * avec « Réessayer » à côté du message (Damien, 25/10 : jamais sauté au suivant) ;
+ * pendant le nouvel essai, le bouton s'efface et « Lecture dans un instant… »
+ * paraît si la source tarde.
  * Mis à jour AU CLIC (instantané synchrone du lecteur).
  */
 
@@ -11,7 +14,8 @@ import { useTrackActions } from "../actions/useTrackActions";
 import { Artwork } from "../components/Artwork";
 import { HeartButton } from "../components/HeartButton";
 import { octavePaths } from "../octavePaths";
-import { usePlayerSelector } from "../player/OctavePlayerProvider";
+import { queueActions } from "@tentacle-tv/shared/octave";
+import { useOctavePlayer, usePlayerSelector } from "../player/OctavePlayerProvider";
 
 export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-14 w-14" }: { artworkClass?: string }) {
   const { t } = useTranslation("music");
@@ -19,6 +23,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
   const error = usePlayerSelector((s) => s.error);
   const notice = usePlayerSelector((s) => s.notice);
   const actions = useTrackActions();
+  const player = useOctavePlayer();
   if (!track) {
     return <p className="truncate px-2 text-sm text-content-tertiary">{t("player.nothing")}</p>;
   }
@@ -36,15 +41,25 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
             <span className="truncate text-sm font-semibold text-content-primary">{track.title}</span>
           )}
         </div>
-        <p className="truncate text-[13px] text-content-tertiary">
+        <p className="flex min-w-0 items-center gap-2 text-[13px] text-content-tertiary">
           {error ? (
-            <span className="text-status-error-fg" role="status">
-              {t(error === "noSource" ? "player.noSource" : "player.engineError")}
-            </span>
+            <>
+              <span className="truncate text-status-error-fg" role="status">
+                {t(error === "noSource" ? "player.noSource" : "player.engineError")}
+              </span>
+              {/* La zone de clic dépasse la ligne (24 px au moins, WCAG 2.5.8) sans la faire bouger. */}
+              <button
+                type="button"
+                onClick={() => queueActions.retry(player)}
+                className="relative shrink-0 cursor-pointer rounded-full px-1.5 font-semibold text-content-primary underline-offset-2 transition-colors duration-150 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
+              >
+                {t("player.retry")}
+              </button>
+            </>
           ) : notice === "retrySoon" ? (
             <span role="status">{t("player.retrySoon")}</span>
           ) : (
-            track.artists.map((a) => a.name).join(", ")
+            <span className="truncate">{track.artists.map((a) => a.name).join(", ")}</span>
           )}
         </p>
       </div>
