@@ -9,7 +9,8 @@
  * Jamais sur le web (aucun exécuteur de requêtes déléguées), jamais sans la
  * route déclarée, jamais deux fois le même texte de suite, au moins
  * `MIN_CHARS` caractères ; Entrée (ou une suggestion choisie) annule la pause
- * en cours (`cancel`).
+ * en cours (`cancel`). Deux branchements : `useTypingPauseSender` derrière l'émetteur de pause de la barre,
+ * ou `useTypingPauseAnnouncer` (pause comprise) pour une barre qui n'en a pas.
  */
 
 import { useEffect, useMemo } from "react";
@@ -69,14 +70,29 @@ export function typingPauseRoute(provider: MusicProvider | null): string | null 
 
 const NOOP: TypingPause = { note: () => undefined, cancel: () => undefined, dispose: () => undefined };
 
-export function useTypingPause(): TypingPause {
+/**
+ * L'ANNONCE d'une pause, prête à brancher sur un émetteur de pause (la barre) : `null` hors bureau ou sans route.
+ * Sans attente ni erreur visible : une préparation manquée ne coûte qu'un aller-retour à Entrée.
+ */
+export function useTypingPauseSender(): ((query: string) => void) | null {
   const provider = useOctaveProvider();
   const route = typingPauseRoute(provider);
-  const pause = useMemo(() => {
-    if (!provider || !route || !supportsClientFetch()) return NOOP;
-    // Annonce sans attente ni erreur visible : une préparation manquée ne coûte qu'un aller-retour à Entrée.
-    return createTypingPause((q) => void tentacleApiFetch(musicRouteUrl(provider, route), { method: "POST", body: JSON.stringify({ q }) }).catch(() => undefined));
+  return useMemo(() => {
+    if (!provider || !route || !supportsClientFetch()) return null;
+    let last: string | null = null;
+    return (query: string) => {
+      const key = comparable(query);
+      if ([...key.replace(/\s/g, "")].length < MIN_CHARS || key === last) return;
+      last = key;
+      void tentacleApiFetch(musicRouteUrl(provider, route), { method: "POST", body: JSON.stringify({ q: query.trim() }) }).catch(() => undefined);
+    };
   }, [provider, route]);
+}
+
+/** La pause ET l'annonce, pour une barre qui n'a pas son propre émetteur : `note` à chaque changement, `cancel` à Entrée. */
+export function useTypingPauseAnnouncer(): TypingPause {
+  const send = useTypingPauseSender();
+  const pause = useMemo(() => (send ? createTypingPause(send) : NOOP), [send]);
   useEffect(() => () => pause.dispose(), [pause]);
   return pause;
 }
