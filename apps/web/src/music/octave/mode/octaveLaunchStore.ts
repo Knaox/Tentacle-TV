@@ -15,7 +15,7 @@
 import { useSyncExternalStore } from "react";
 import { octaveOwner } from "../cache/octaveOwner";
 import { launchesInOctave, type OctaveLaunchMirror } from "./octaveLaunch";
-import { isOctaveMode } from "./octaveMode";
+import { isOctaveMode, subscribeOctaveMode } from "./octaveMode";
 
 export const OCTAVE_LAUNCH_MIRROR_KEY = "tentacle_octave_launch";
 
@@ -84,4 +84,41 @@ function subscribe(listener: () => void): () => void {
 
 export function useTentacleHeld(): boolean {
   return useSyncExternalStore(subscribe, isTentacleHeld, () => false);
+}
+
+/** Après la première image d'Octave, le temps qu'il reste au repos avant de faire le travail de Tentacle retenu. */
+const TENTACLE_IDLE_DELAY_MS = 2_500;
+
+/**
+ * Le travail de démarrage de TENTACLE qui n'a rien à faire dans Octave (la
+ * relecture de son cache de requêtes, jusqu'à 3 Mo de JSON) : tout de suite
+ * hors d'un lancement en Octave ; sinon au repos après la première image, ou
+ * dès que Tentacle en a besoin (le mode s'éteint, sa première image) — une
+ * fois. Rien n'est perdu si l'application se ferme avant : rien n'a été lu,
+ * donc rien n'est réécrit.
+ */
+export function whenTentacleNeeded(run: () => void): void {
+  if (!launchedInOctave) {
+    run();
+    return;
+  }
+  let done = false;
+  let idle: number | null = null;
+  const go = () => {
+    if (done) return;
+    done = true;
+    listeners.delete(go);
+    offMode();
+    clearTimeout(timer);
+    if (idle !== null && typeof cancelIdleCallback === "function") cancelIdleCallback(idle);
+    run();
+  };
+  listeners.add(go);
+  const offMode = subscribeOctaveMode(() => {
+    if (!isOctaveMode()) go();
+  });
+  const timer = setTimeout(() => {
+    if (typeof requestIdleCallback === "function") idle = requestIdleCallback(go, { timeout: 2_000 });
+    else go();
+  }, TENTACLE_IDLE_DELAY_MS);
 }

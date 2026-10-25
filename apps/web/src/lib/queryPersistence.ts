@@ -47,8 +47,17 @@ function cacheOwner(): string | null {
   }
 }
 
-/** Hydrate le client depuis le disque, puis y sauvegarde ce qu'il apprend. */
-export function installQueryPersistence(queryClient: QueryClient): void {
+/**
+ * Hydrate le client depuis le disque, puis y sauvegarde ce qu'il apprend.
+ * `schedule` décide QUAND (lancement en Octave : plus tard, cf.
+ * `whenTentacleNeeded`) ; relecture et sauvegarde partent ENSEMBLE — une
+ * sauvegarde avant la relecture écraserait le cache gardé par un cache vide.
+ */
+export function installQueryPersistence(queryClient: QueryClient, schedule: (run: () => void) => void = (run) => run()): void {
+  schedule(() => install(queryClient));
+}
+
+function install(queryClient: QueryClient): void {
   const owner = cacheOwner();
   // La page de recommandations et l'annuaire des plateformes survivent au
   // rechargement comme les hubs de l'accueil : la page se rend d'un coup depuis

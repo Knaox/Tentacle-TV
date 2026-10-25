@@ -56,6 +56,7 @@ import { DatabaseMigrationGate } from "./databaseMigration/DatabaseMigrationGate
 import { AccountAccessGate } from "./accountAccess/AccountAccessGate";
 import { ProfileArrival } from "./profiles/switch/ProfileArrival";
 import { bootOctave } from "./music/octave/mode/OctaveEntry";
+import { whenTentacleNeeded } from "./music/octave/mode/octaveLaunchStore";
 import "./index.css";
 
 // Expose shared modules for dynamically loaded plugins (IIFE bundles)
@@ -249,7 +250,7 @@ installSessionGuard({ client: jellyfinClient, storage, queryClient });
 
 // Cold start instantané : le cache de requêtes revient du disque avant le
 // premier render, et y retourne — voir `lib/queryPersistence.ts`.
-installQueryPersistence(queryClient);
+installQueryPersistence(queryClient, whenTentacleNeeded); // lancement en Octave : après sa première image
 
 // `__animations()` en console — développement uniquement. Dit POURQUOI le
 // compositeur tourne, là où le compteur d'images ne dit qu'à quelle cadence.

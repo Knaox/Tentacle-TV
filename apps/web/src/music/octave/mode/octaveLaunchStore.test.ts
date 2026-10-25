@@ -72,3 +72,46 @@ describe("le miroir de la disponibilité", () => {
     expect(disk.get("tentacle_octave_launch")).toBe("{pas du json");
   });
 });
+
+describe("le travail de Tentacle retenu (sa relecture de cache)", () => {
+  it("hors d'un lancement en Octave : tout de suite", async () => {
+    const s = await launch({ tentacle_user: USER });
+    const run = vi.fn();
+    s.whenTentacleNeeded(run);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("lancement en Octave : à la première image de Tentacle, une seule fois", async () => {
+    const s = await launch({ tentacle_octave_mode: "1", tentacle_user: USER });
+    const run = vi.fn();
+    s.whenTentacleNeeded(run);
+    expect(run).not.toHaveBeenCalled();
+    s.releaseTentacle();
+    s.releaseTentacle();
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("lancement en Octave : dès que le mode s'éteint (avant que Tentacle ne se rende)", async () => {
+    const s = await launch({ tentacle_octave_mode: "1", tentacle_user: USER });
+    const mode = await import("./octaveMode");
+    const run = vi.fn();
+    s.whenTentacleNeeded(run);
+    mode.setOctaveMode(false);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it("lancement en Octave : au repos après la première image, sinon", async () => {
+    vi.useFakeTimers();
+    try {
+      const s = await launch({ tentacle_octave_mode: "1", tentacle_user: USER });
+      const run = vi.fn();
+      s.whenTentacleNeeded(run);
+      vi.advanceTimersByTime(2_000);
+      expect(run).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(5_000);
+      expect(run).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
