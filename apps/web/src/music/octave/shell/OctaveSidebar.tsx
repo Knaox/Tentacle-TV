@@ -1,8 +1,9 @@
 /**
  * Octave — la barre latérale (bureau, fenêtre large) : la marque et ‹ › en
- * tête, les cinq destinations, vos playlists, et le geste qui ramène aux
- * films et séries, toujours visible en bas (`OctaveModeSlot`). Au téléphone,
- * les mêmes destinations passent dans une barre d'onglets.
+ * tête, juste dessous la BASCULE du mode (`OctaveModeSlot` : la première
+ * chose qu'on voit, jamais perdue en pied de rail), puis les cinq
+ * destinations et vos playlists. Au téléphone, les mêmes destinations passent
+ * dans une barre d'onglets.
  *
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
  * active prend la pastille de Tentacle, rose en tête, son icône rose
@@ -59,9 +60,12 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
   return (
     <nav aria-label={t("nav.main")} {...glass.props}>
       {glass.layers}
-      <div className="flex items-center justify-between gap-2 pl-3">
-        <OctaveWordmark />
-        <HistoryButtons />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2 pl-3">
+          <OctaveWordmark />
+          <HistoryButtons />
+        </div>
+        <OctaveModeSlot onExit={onExit} />
       </div>
       <ul className="flex flex-col gap-0.5">
         {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
@@ -86,7 +90,6 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
           ))}
         </ul>
       </div>
-      <OctaveModeSlot onExit={onExit} />
     </nav>
   );
 });
