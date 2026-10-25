@@ -7,6 +7,7 @@ import { currentRating, ratingChoices, ratingLabel } from "../../../parental/par
 import { SMALL_BUTTON } from "../../../parental/fieldStyles";
 import { SHEET_LIST, SheetSkeleton, UserSheetSection } from "../UserSheetSection";
 import { AccountFamilyRightsGroup } from "../familyRights/AccountFamilyRightsGroup";
+import { OctaveRightsGroup } from "../octaveRights/OctaveRightsGroup";
 import { AccountBody, ManagementBody, OfflineBody, PlaybackBody, type GroupProps } from "./GroupBodies";
 import { LibrariesBody } from "./LibrariesBody";
 import { ParentalBody } from "./ParentalBody";
@@ -89,6 +90,8 @@ export function UserRightsPanel({ userId, name, isSelf }: UserRightsPanelProps) 
             {/* Les droits de la FAMILLE (une rubrique de plus, après « Gestion ») : ils ne sont pas
                 un champ de la politique Jellyfin, Tentacle les garde (`family.creationRights`). */}
             <AccountFamilyRightsGroup userId={userId} />
+            {/* La MUSIQUE (`octave.rights`) : « Accès à Octave » et les droits Jellyfin qui la touchent. */}
+            <OctaveRightsGroup userId={userId} rights={rights} options={options} writer={writer} />
           </div>
         </>
       )}

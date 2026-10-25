@@ -77,7 +77,7 @@ export default {
     forceRemoteSourceTranscoding: { label: "Forcer la conversion à distance", hint: "Hors de la maison, le serveur convertit toujours, même un fichier lisible tel quel." },
     remoteClientBitrateLimit: { label: "Débit maximal à distance", hint: "Hors de la maison, en Mbit/s : au-delà, le serveur réduit la qualité. 0 : sans limite." },
     syncPlayAccess: { label: "Watch Together", hint: "Regarder ensemble, au même moment, dans un salon." },
-    enableContentDownloading: { label: "Téléchargement", hint: "Garder des films et des épisodes sur ses appareils pour les regarder hors ligne." },
+    enableContentDownloading: { label: "Téléchargement", hint: "Garder des films, des épisodes et de la musique sur ses appareils, pour en profiter hors ligne." },
     enableMediaConversion: { label: "Version légère", hint: "Préparer une copie plus petite avant de la télécharger. Demande aussi la conversion de la vidéo ou le changement de conteneur." },
     enableContentDeletion: { label: "Supprimer des titres", hint: "Effacer du disque un film, un épisode ou une série, dans toutes les bibliothèques — un par un ou par sélection." },
     enableContentDeletionFromFolders: { label: "Supprimer dans ces bibliothèques", hint: "Sans le droit de tout supprimer : effacer des titres de ces bibliothèques seulement." },
@@ -98,6 +98,45 @@ export default {
   libraries: {
     none: "Aucune bibliothèque sur ce Jellyfin.",
     unknown: "Bibliothèque disparue",
+    // Le type de chaque bibliothèque (`CollectionType` de Jellyfin) : la musique s'y reconnaît.
+    types: {
+      movies: "Films", tvshows: "Séries", music: "Musique", musicvideos: "Clips", books: "Livres",
+      homevideos: "Vidéos personnelles", boxsets: "Collections", photos: "Photos", mixed: "Mixte",
+    },
+  },
+
+  // La rubrique « Musique · Octave » (`octave.rights`) : « Accès à Octave » est un droit de
+  // Tentacle ; le reste, ce sont les MÊMES champs Jellyfin que les autres rubriques, dits pour la musique.
+  octave: {
+    title: "Musique · Octave",
+    hint: "Le mode musique de Tentacle. L'accès à Octave est réglé par Tentacle ; bibliothèques, hors ligne et son suivent les droits Jellyfin du compte.",
+    access: {
+      label: "Accès à Octave",
+      hint: "Ouvrir le mode musique, écouter la bibliothèque et chercher au-delà avec l'extension de musique.",
+      hintOff: "Ni bascule vers Octave, ni écoute, ni extension de musique. Un démarrage réglé sur Octave ouvre Tentacle.",
+      loading: "Lecture du réglage…",
+      loadError: "Réglage illisible : le serveur n'a pas répondu.",
+      saveError: "Le changement n'a pas pu être enregistré. L'état réel a été relu.",
+    },
+    libraries: { label: "Bibliothèques de musique", hint: "Ce qu'Octave lui montre — le même réglage que dans « Bibliothèques »." },
+    allLibraries: "Toutes ses bibliothèques sont ouvertes, musique comprise : cela se règle dans « Bibliothèques ».",
+    noMusicLibrary: "Aucune bibliothèque de musique sur ce Jellyfin.",
+    playbackOff: "La lecture des médias est coupée (rubrique « Lecture ») : Octave ne lira rien.",
+    offline: { label: "Garder la musique hors ligne", hint: "Le même droit que « Téléchargement » : il vaut pour toute la bibliothèque, musique comprise." },
+    convert: { label: "Convertir la musique", hint: "Le serveur réencode un format qu'un appareil ne sait pas lire. Octave, lui, lit toujours le fichier d'origine." },
+    bitrate: "Débit hors de la maison : {{mbps}} Mbit/s, réglé dans « Lecture ». Octave lit le fichier d'origine, cette limite ne le réduit pas.",
+    bitrateNone: "Débit hors de la maison : sans limite (rubrique « Lecture »).",
+    summary: {
+      access: "Accès à Octave",
+      noAccess: "Sans accès à Octave",
+      noPlayback: "Lecture coupée",
+      allMusic: "Toute la musique",
+      someMusic_one: "{{count}} bibliothèque de musique sur {{total}}",
+      someMusic_other: "{{count}} bibliothèques de musique sur {{total}}",
+      noMusic: "Aucune bibliothèque de musique",
+      noMusicLibrary: "Pas de bibliothèque de musique",
+      offline: "Hors ligne",
+    },
   },
 
   parental: {

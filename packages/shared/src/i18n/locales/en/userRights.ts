@@ -76,7 +76,7 @@ export default {
     forceRemoteSourceTranscoding: { label: "Force conversion when away", hint: "Away from home, the server always converts, even a file playable as is." },
     remoteClientBitrateLimit: { label: "Maximum bitrate when away", hint: "Away from home, in Mbit/s: above it, the server lowers the quality. 0: no limit." },
     syncPlayAccess: { label: "Watch Together", hint: "Watch together, at the same time, in a room." },
-    enableContentDownloading: { label: "Download", hint: "Keep movies and episodes on their devices to watch offline." },
+    enableContentDownloading: { label: "Download", hint: "Keep movies, episodes and music on their devices to enjoy offline." },
     enableMediaConversion: { label: "Light version", hint: "Prepare a smaller copy before downloading it. Also needs video conversion or container change." },
     enableContentDeletion: { label: "Delete titles", hint: "Erase a movie, an episode or a show from disk, in every library — one at a time or by selection." },
     enableContentDeletionFromFolders: { label: "Delete in these libraries", hint: "Without the right to delete everything: erase titles from these libraries only." },
@@ -97,6 +97,45 @@ export default {
   libraries: {
     none: "No library on this Jellyfin.",
     unknown: "Library gone",
+    // Each library's type (Jellyfin `CollectionType`): music libraries stand out.
+    types: {
+      movies: "Movies", tvshows: "Shows", music: "Music", musicvideos: "Music videos", books: "Books",
+      homevideos: "Home videos", boxsets: "Collections", photos: "Photos", mixed: "Mixed",
+    },
+  },
+
+  // The "Music · Octave" section (`octave.rights`): "Octave access" is a Tentacle right; the rest
+  // are the SAME Jellyfin fields as the other sections, worded for music.
+  octave: {
+    title: "Music · Octave",
+    hint: "Tentacle's music mode. Octave access is set by Tentacle; libraries, offline and sound follow the account's Jellyfin rights.",
+    access: {
+      label: "Octave access",
+      hint: "Open the music mode, listen to the library and search beyond it with the music extension.",
+      hintOff: "No switch to Octave, no listening, no music extension. A startup set to Octave opens Tentacle.",
+      loading: "Reading the setting…",
+      loadError: "Setting unreadable: the server didn't answer.",
+      saveError: "The change couldn't be saved. The actual state was read again.",
+    },
+    libraries: { label: "Music libraries", hint: "What Octave shows them — the same setting as in \"Libraries\"." },
+    allLibraries: "All their libraries are open, music included: set this in \"Libraries\".",
+    noMusicLibrary: "No music library on this Jellyfin.",
+    playbackOff: "Media playback is off (\"Playback\" section): Octave won't play anything.",
+    offline: { label: "Keep music offline", hint: "The same right as \"Download\": it covers the whole library, music included." },
+    convert: { label: "Convert music", hint: "The server re-encodes a format a device can't play. Octave always plays the original file." },
+    bitrate: "Bitrate away from home: {{mbps}} Mbit/s, set in \"Playback\". Octave plays the original file; this limit doesn't reduce it.",
+    bitrateNone: "Bitrate away from home: no limit (\"Playback\" section).",
+    summary: {
+      access: "Octave access",
+      noAccess: "No Octave access",
+      noPlayback: "Playback off",
+      allMusic: "All music",
+      someMusic_one: "{{count}} music library of {{total}}",
+      someMusic_other: "{{count}} music libraries of {{total}}",
+      noMusic: "No music library",
+      noMusicLibrary: "No music library on the server",
+      offline: "Offline",
+    },
   },
 
   parental: {

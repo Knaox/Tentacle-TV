@@ -17,18 +17,21 @@ interface ToggleRightProps {
   writer: RightsWriter;
   /** Pourquoi le réglage est figé (ex. « vous ne pouvez pas… ») ; absent : modifiable. */
   lockedReason?: string;
+  /** Un autre nom et une autre aide pour le MÊME champ (rubrique « Musique · Octave »). */
+  label?: string;
+  hint?: string;
 }
 
 /** Un droit oui / non : libellé, une ligne d'explication, l'interrupteur. */
-export const ToggleRight = memo(function ToggleRight({ field, checked, writer, lockedReason }: ToggleRightProps) {
+export const ToggleRight = memo(function ToggleRight({ field, checked, writer, lockedReason, label: ownLabel, hint }: ToggleRightProps) {
   const { t } = useTranslation("userRights");
-  const label = t(`fields.${field}.label`);
+  const label = ownLabel ?? t(`fields.${field}.label`);
   return (
     <div>
       <div className="flex items-start gap-3">
         <span className="min-w-0 flex-1">
           <span className={FIELD_LABEL}>{label}</span>
-          <span className={FIELD_HINT}>{lockedReason ?? t(`fields.${field}.hint`)}</span>
+          <span className={FIELD_HINT}>{lockedReason ?? hint ?? t(`fields.${field}.hint`)}</span>
         </span>
         <span className="pt-0.5">
           <ToggleSwitch
