@@ -10,7 +10,7 @@
  * est alors la page où l'on était en quittant, avec ses données.
  */
 
-import { lazy, useEffect, type ReactElement } from "react";
+import { Suspense, lazy, useEffect, type ReactElement } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { bootOctaveCache } from "../cache/octaveCacheHydration";
 import type { OctaveQueryClientLike } from "../data/persist/octaveCachePersister";
@@ -23,20 +23,41 @@ import { useOctaveLaunchAvailability } from "./useOctaveLaunchAvailability";
 
 type OctaveModule = typeof import("../OctaveApp");
 let octaveModule: Promise<OctaveModule> | null = null;
+/** Le module, une fois arrivé : rendu tel quel, sans repasser par `lazy`. */
+let loadedOctave: OctaveModule | null = null;
 
 /** Le module du mode, chargé UNE fois ; un échec (réseau) se retente au geste suivant. */
 export function loadOctaveApp(): Promise<OctaveModule> {
   if (!octaveModule) {
     octaveModule = import("../OctaveApp");
-    octaveModule.catch(() => {
-      octaveModule = null;
-    });
+    octaveModule.then(
+      (module) => {
+        loadedOctave = module;
+      },
+      () => {
+        octaveModule = null;
+      },
+    );
   }
   return octaveModule;
 }
 
 /** Le mode entier, chargé à la demande : rien n'est téléchargé avant d'y entrer. */
 export const LazyOctaveApp = lazy(loadOctaveApp);
+
+/**
+ * La route d'Octave. `lazy` suspend une fois même quand le module est déjà là
+ * (mesuré au bureau : ~110 ms vides au lancement en Octave) : un module arrivé
+ * — ce que le démarrage attend (`bootOctave`) — se rend directement.
+ */
+export function OctaveRoute() {
+  if (loadedOctave) return <loadedOctave.OctaveApp />;
+  return (
+    <Suspense fallback={null}>
+      <LazyOctaveApp />
+    </Suspense>
+  );
+}
 
 // Lancement en Octave : le module part AVEC la vérification de la disponibilité,
 // pas après — la première image peinte est celle d'Octave. La page gardée est
