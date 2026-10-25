@@ -275,6 +275,11 @@ export const SERVER_CAPABILITIES = {
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */
   "plugins.clientFetch": "1.32.0",
+  /** La NAVIGATION réglée par l'extension (`navigation` du manifeste, `pluginNavigation.ts`) : le
+   *  nom de ses pages et leur place par défaut (barre principale ou « Plus »), fusionnés dans les
+   *  `navItems` de `/api/plugins/active` (`primary`). Sans elle : pages épinglées d'office sous le
+   *  nom du manifeste, et l'extension n'offre pas ce réglage. */
+  "plugins.navigation": "1.32.0",
 } as const satisfies Record<string, string>;
 
 export type ServerCapability = keyof typeof SERVER_CAPABILITIES;

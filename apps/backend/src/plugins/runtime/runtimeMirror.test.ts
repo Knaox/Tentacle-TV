@@ -6,6 +6,7 @@
  * canonique est SHARED ; on modifie là-bas, on recopie ici :
  *
  *   cp packages/shared/src/plugins/pluginServerRuntime.ts packages/shared/src/plugins/pluginClientFetch.ts apps/backend/src/plugins/runtime/
+ *   cp packages/shared/src/plugins/pluginNavigation.ts apps/backend/src/plugins/runtime/navigation/
  */
 
 import { existsSync, readFileSync } from "fs";
@@ -27,6 +28,13 @@ describe("miroir du runtime isolé", () => {
     const root = repoRoot();
     const shared = readFileSync(join(root, "packages/shared/src/plugins/pluginServerRuntime.ts"), "utf8");
     const mirror = readFileSync(join(root, "apps/backend/src/plugins/runtime/pluginServerRuntime.ts"), "utf8");
+    expect(mirror).toBe(shared);
+  });
+
+  it("pluginNavigation.ts (navigation réglée par l'extension) est identique à celui de shared", () => {
+    const root = repoRoot();
+    const shared = readFileSync(join(root, "packages/shared/src/plugins/pluginNavigation.ts"), "utf8");
+    const mirror = readFileSync(join(root, "apps/backend/src/plugins/runtime/navigation/pluginNavigation.ts"), "utf8");
     expect(mirror).toBe(shared);
   });
 
