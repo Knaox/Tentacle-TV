@@ -1,0 +1,230 @@
+/*
+ * Octave — le mouvement « océan » : l'indicateur « en cours » (la houle) et
+ * l'ambiance du lecteur plein écran. Règles « Coût GPU » de CLAUDE.md :
+ *
+ * - on n'anime QUE `transform` et `opacity`, sur des calques dessinés une fois
+ *   (aucun filtre, aucun flou, aucun mélange, aucun verre) ;
+ * - PAR PAS, 15 images par seconde, TOUTES calées sur la même cadence : chaque
+ *   animation va d'un état à l'autre (deux étapes seulement), ses pas valent
+ *   15 × sa durée, et ses délais sont des multiples de 1/15 s. Les calques
+ *   changent donc aux MÊMES instants, et le compositeur n'a que 15 images à
+ *   faire par seconde au lieu de 60 — une image qui ne change pas ne lui coûte
+ *   rien (le travelling du héros, CLAUDE.md : 60 % → 20 % du GPU) ;
+ * - `data-swell` / `data-ocean` (swellState.ts) : `run` anime, `still` (hors
+ *   écran, fenêtre cachée) et `rest` (pause) suspendent ;
+ * - mouvement réduit : aucune animation, la même composition fixe.
+ *
+ * Variables `--ocean-*` À PART (pas `--oc-*`) : la teinte de la pochette est
+ * posée en ligne par le composant (`--ocean-tint-rgb`).
+ */
+
+/* ── L'indicateur « en cours » ─────────────────────────────────────────── */
+
+.oc-swell {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  overflow: hidden;
+  contain: layout paint;
+  vertical-align: middle;
+}
+
+.oc-swell-sea,
+.oc-swell-calm {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--oc-duration-slow) var(--oc-ease-out);
+}
+
+.oc-swell-calm { opacity: 0; }
+
+.oc-swell-wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  will-change: transform;
+  animation: ocSwellLeft 2.4s steps(36) infinite;
+}
+
+.oc-swell-back {
+  opacity: 0.5;
+  animation-name: ocSwellRight;
+  animation-duration: 3.6s;
+  animation-timing-function: steps(54);
+}
+
+.oc-swell svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.oc-swell[data-swell="still"] .oc-swell-wave,
+.oc-swell[data-swell="rest"] .oc-swell-wave { animation-play-state: paused; }
+
+/* En pause, la mer se calme : la houle s'efface, deux rides immobiles la remplacent. */
+.oc-swell[data-swell="rest"] .oc-swell-sea { opacity: 0; }
+.oc-swell[data-swell="rest"] .oc-swell-calm { opacity: 1; }
+
+@keyframes ocSwellLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes ocSwellRight {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
+/* La pastille d'une carte dont l'album ou la playlist se joue (sur la pochette, coin bas gauche). */
+.oc-collection-swell {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: var(--oc-accent-text);
+  box-shadow: var(--oc-shadow-art);
+  pointer-events: none;
+}
+
+/* ── L'ambiance du lecteur plein écran ─────────────────────────────────── */
+
+.oc-ocean {
+  --ocean-tint-rgb: var(--oc-accent-rgb);
+  --ocean-glow-alpha: 0.2;
+  --ocean-band-top: 0.15;
+  --ocean-band-bottom: 0.02;
+  --ocean-crest: rgba(255, 255, 255, 0.16);
+  --ocean-light: rgba(255, 255, 255, 0.055);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+
+:root[data-theme="light"] .oc-ocean {
+  --ocean-glow-alpha: 0.16;
+  --ocean-band-top: 0.13;
+  --ocean-crest: rgba(255, 255, 255, 0.75);
+  --ocean-light: rgba(255, 255, 255, 0.45);
+}
+
+/* La lueur de la pochette, derrière elle : fixe, renouvelée en fondu à chaque titre. */
+.oc-ocean-glow {
+  position: absolute;
+  left: -12%;
+  top: -10%;
+  width: 78%;
+  height: 92%;
+  background-image: radial-gradient(closest-side, rgba(var(--ocean-tint-rgb), var(--ocean-glow-alpha)), rgba(var(--ocean-tint-rgb), 0));
+  animation: ocOceanFade 700ms var(--oc-ease-out) both;
+}
+
+/* Les reflets : la lumière de la surface qui joue, lente, en haut de la scène. */
+.oc-ocean-light {
+  position: absolute;
+  top: -18%;
+  width: 46%;
+  height: 52%;
+  border-radius: 50%;
+  background-image: radial-gradient(closest-side, var(--ocean-light), rgba(255, 255, 255, 0));
+  will-change: transform, opacity;
+  animation: ocOceanShimmer 18s steps(270) infinite alternate;
+}
+
+.oc-ocean-light-1 { left: 8%; }
+.oc-ocean-light-2 { left: 40%; animation-duration: 24s; animation-timing-function: steps(360); animation-delay: -9s; }
+.oc-ocean-light-3 { left: 66%; animation-duration: 30s; animation-timing-function: steps(450); animation-delay: -17s; }
+
+/* La houle : trois bandes au pied de la scène, qui dérivent et se soulèvent. */
+.oc-ocean-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1.5rem;
+  height: 30%;
+  will-change: transform;
+  animation: ocOceanBob 11s steps(165) infinite alternate;
+}
+
+.oc-ocean-band-back { height: 34%; animation-duration: 13s; animation-timing-function: steps(195); animation-delay: -4s; }
+.oc-ocean-band-mid { height: 27%; animation-duration: 9s; animation-timing-function: steps(135); animation-delay: -7s; }
+.oc-ocean-band-front { height: 21%; }
+
+.oc-ocean-drift {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 150%;
+  height: 100%;
+  will-change: transform;
+  animation: ocOceanDriftLeft 64s steps(960) infinite;
+}
+
+.oc-ocean-band-mid .oc-ocean-drift { animation-name: ocOceanDriftRight; animation-duration: 46s; animation-timing-function: steps(690); }
+.oc-ocean-band-front .oc-ocean-drift { animation-duration: 38s; animation-timing-function: steps(570); }
+
+.oc-ocean-drift svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.oc-ocean-stop-back { stop-color: rgb(var(--brand-rgb)); }
+.oc-ocean-stop-mid { stop-color: rgb(var(--ocean-tint-rgb)); }
+.oc-ocean-stop-front { stop-color: rgb(var(--oc-accent-rgb)); }
+.oc-ocean-stop-top { stop-opacity: var(--ocean-band-top); }
+.oc-ocean-stop-bottom { stop-opacity: var(--ocean-band-bottom); }
+.oc-ocean-crest { stroke: var(--ocean-crest); }
+
+.oc-ocean[data-ocean="still"] *,
+.oc-ocean[data-ocean="rest"] * { animation-play-state: paused; }
+
+/* La lueur garde son fondu d'entrée, même en pause. */
+.oc-ocean[data-ocean="rest"] .oc-ocean-glow,
+.oc-ocean[data-ocean="still"] .oc-ocean-glow { animation-play-state: running; }
+
+@keyframes ocOceanFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ocOceanShimmer {
+  from { transform: translate3d(-6%, 0, 0) scale(0.94); opacity: 0.5; }
+  to { transform: translate3d(8%, 5%, 0) scale(1.12); opacity: 1; }
+}
+
+@keyframes ocOceanBob {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -0.6rem, 0); }
+}
+
+/* La bande est 1,5 fois plus large que la scène, et son tracé se répète tous les tiers : glisser d'un tiers boucle. */
+@keyframes ocOceanDriftLeft {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-33.3333%, 0, 0); }
+}
+
+@keyframes ocOceanDriftRight {
+  from { transform: translate3d(-33.3333%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oc-swell-wave,
+  .oc-ocean-glow,
+  .oc-ocean-light,
+  .oc-ocean-band,
+  .oc-ocean-drift { animation: none; }
+  .oc-swell-sea,
+  .oc-swell-calm { transition: none; }
+}
