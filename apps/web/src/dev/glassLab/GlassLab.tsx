@@ -17,7 +17,8 @@
  * VRAIS menus et popovers (`labMenus.tsx`, axe des menus) ; `?vue=contenu` la
  * couche de contenu (`labContent.tsx`, axe D du lot lg2) ; `?vue=controles` les CONTRÔLES des
  * pages en verre (`labControls.tsx`, lot lg4) ; `?vue=feuilles` les VRAIES feuilles et barres
- * flottantes (`labSheets.tsx`, lot lg7). Hors du mode natif, le labo montre le
+ * flottantes (`labSheets.tsx`, lot lg7) ; `?vue=maquette` le verre de la maquette du
+ * 26/10 en socle (`labMockup.tsx` : fond ambiant, `.lg-pane`, `.lg-bead`). Hors du mode natif, le labo montre le
  * rendu d'avant : c'est aussi une preuve.
  */
 
@@ -34,6 +35,7 @@ import { LabContent } from "./labContent";
 import { LabControls } from "./labControls";
 import { LabSurfaceMenu, LabSurfacePopover, LabSurfaceSidebar } from "./labLargeSurfaces";
 import { LabMenus } from "./labMenus";
+import { LabMockup } from "./labMockup";
 import { LabSheets } from "./labSheets";
 import { LabCardTray, LabHeroActions, LabMenu, LabNav, LabPlayer, LabRowEdge } from "./labSurfaces";
 import { AVATAR_CHARACTERS } from "@tentacle-tv/shared";
@@ -44,9 +46,9 @@ function initialBackdrop(): LabBackdrop {
   return LAB_BACKDROPS.find((b) => b === asked) ?? "affiches";
 }
 
-type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus" | "contenu" | "controles" | "feuilles";
+type LabView = "surfaces" | "composants" | "grandes" | "barres" | "menus" | "contenu" | "controles" | "feuilles" | "maquette";
 
-const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus", "contenu", "controles", "feuilles"];
+const LAB_VIEWS: readonly LabView[] = ["surfaces", "grandes", "composants", "barres", "menus", "contenu", "controles", "feuilles", "maquette"];
 
 const initialView = (): LabView => {
   const asked = new URLSearchParams(window.location.search).get("vue");
@@ -125,8 +127,8 @@ export function GlassLab() {
 
   return (
     <div style={{ position: "relative", minHeight: "100vh" }}>
-      <LabBackdropView kind={backdrop} />
-      {view === "menus" ? (
+      {view === "maquette" ? <LabMockup top={top} poster={poster} /> : <LabBackdropView kind={backdrop} />}
+      {view === "maquette" ? null : view === "menus" ? (
         <LabMenus top={top} />
       ) : view === "barres" ? (
         <LabChrome top={top} />
