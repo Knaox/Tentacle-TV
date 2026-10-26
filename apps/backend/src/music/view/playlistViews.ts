@@ -59,5 +59,5 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
     const track = tracks.get(entry.itemId);
     if (track) out.push({ entryId: entry.entryId, position, track, stats: { addedAt: added.get(entry.itemId) ?? null, ...entry.plays } });
   });
-  return { ...toPlaylist(playlist), entries: out };
+  return { ...toPlaylist(playlist), description: playlist.Overview?.trim() || null, entries: out };
 }

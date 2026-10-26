@@ -28,6 +28,8 @@ import { HistoryButtons } from "./HistoryButtons";
 import { OctaveWordmark } from "./OctaveWordmark";
 import { OctaveModeSlot } from "./OctaveModeSlot";
 import { DeviceNavItem } from "../offline/DeviceNavItem";
+import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
 import { OctaveProfileButton } from "../profiles";
 import { ImportEntryButton } from "../import/ImportEntryButton";
 
@@ -79,10 +81,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
         <ul className="flex flex-col gap-0.5">
           {(playlists.data ?? []).map((p) => (
             <PlaylistDropTarget key={p.jellyfinId} playlist={p}>
-              <NavLink to={octavePaths.playlist(p.jellyfinId)} className={playlistClass}>
-                <Artwork url={p.artworkUrl} className="h-9 w-9" />
-                <span className="truncate">{p.name}</span>
-              </NavLink>
+              <RailPlaylist playlist={p} />
             </PlaylistDropTarget>
           ))}
         </ul>
@@ -153,3 +152,21 @@ export const OctaveTabBar = memo(function OctaveTabBar() {
     </nav>
   );
 });
+
+/** Une playlist du rail : le lien, et — si le compte peut la modifier — « … » au survol et le clic droit. */
+function RailPlaylist({ playlist }: { playlist: MusicPlaylist }) {
+  const context = usePlaylistContextMenu(playlist);
+  const [menuOpen, setMenuOpen] = useState(false);
+  return (
+    <div className="group/rail relative">
+      <NavLink to={octavePaths.playlist(playlist.jellyfinId)} className={`${playlistClass}${playlist.editable ? " pr-9" : ""}`} onContextMenu={context.onContextMenu}>
+        <Artwork url={playlist.artworkUrl} className="h-9 w-9" />
+        <span className="truncate">{playlist.name}</span>
+      </NavLink>
+      <div className={`absolute right-1 top-1/2 -translate-y-1/2 ${menuOpen ? "" : "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/rail:opacity-100"}`}>
+        <PlaylistMenuButton playlist={playlist} open={menuOpen} onOpenChange={setMenuOpen} className="h-8 w-8" />
+      </div>
+      {context.menu}
+    </div>
+  );
+}

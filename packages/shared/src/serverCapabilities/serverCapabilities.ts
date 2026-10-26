@@ -286,6 +286,10 @@ export const SERVER_CAPABILITIES = {
    *  (`/api/music/playlists/:id/order`). Sans elle : la playlist dans son ordre, les likés comme
    *  avant, aucune barre de tri. */
   "music.listOrder": "1.40.0",
+  /** GÉRER une playlist dans Octave au-delà du nom : sa DESCRIPTION (Jellyfin `Overview`), lue dans le détail
+   *  (`GET /api/music/playlists/:id` → `description`) et écrite par `PATCH /api/music/playlists/:id`
+   *  { description }. Renommer et supprimer viennent de `music.library`. Sans elle : aucun champ de description. */
+  "music.playlistManage": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

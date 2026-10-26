@@ -8,7 +8,7 @@
  * jamais au centre de l'image, le bouton lecture garde le bas droit.
  */
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Library, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,8 @@ import { entityTarget, octavePaths } from "../octavePaths";
 import { Artwork } from "./Artwork";
 import { CARD_GRID_CLASS } from "./cardGrid";
 import { CollectionSwell } from "../motion/NowSwell";
+import { PlaylistMenuButton } from "../playlists/PlaylistMenu";
+import { usePlaylistContextMenu } from "../playlists/usePlaylistContextMenu";
 
 function PlayOverlay({ refOf, label }: { refOf: CollectionRef; label: string }) {
   const { play, warm } = useCollectionPlayback();
@@ -119,8 +121,12 @@ export const ArtistCard = memo(function ArtistCard({ artist }: { artist: MusicAr
 
 export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist: MusicPlaylist }) {
   const { t } = useTranslation("music");
+  // Gérer la playlist (« … » au survol, ou clic droit) : seulement si le compte peut la modifier.
+  const context = usePlaylistContextMenu(playlist);
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass}>
+    <div className="group/playlist relative min-w-0">
+    <Link to={octavePaths.playlist(playlist.jellyfinId)} className={cardClass} onContextMenu={context.onContextMenu}>
       <div className="relative aspect-square w-full">
         <Artwork url={playlist.artworkUrl} label={playlist.name} radius="art" className="h-full w-full shadow-[var(--oc-shadow-art)]" />
         <CollectionSwell contextId={`playlist:${playlist.jellyfinId}`} />
@@ -133,6 +139,11 @@ export const PlaylistCard = memo(function PlaylistCard({ playlist }: { playlist:
         <p className="truncate text-[13px] leading-5 text-content-tertiary">{t("count.tracks", { count: playlist.trackCount })}</p>
       </div>
     </Link>
+    <div className={`absolute bottom-2 right-1 ${menuOpen ? "" : "octave-hover-reveal opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/playlist:opacity-100 [@media(hover:none)]:opacity-100"}`}>
+      <PlaylistMenuButton playlist={playlist} open={menuOpen} onOpenChange={setMenuOpen} className="h-9 w-9" />
+    </div>
+    {context.menu}
+    </div>
   );
 });
 

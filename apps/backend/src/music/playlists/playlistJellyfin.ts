@@ -40,7 +40,7 @@ export function forgetUserPlaylists(userId?: string): void {
 
 /** La playlist vue PAR ce compte ; `null` s'il ne la voit pas (404 de Jellyfin), ou si ce n'en est pas une. */
 export async function playlistFor(userId: string, playlistId: string): Promise<JfPlaylist | null> {
-  const result = await jfAdmin<JfPlaylist>(`/Items/${q(playlistId)}?userId=${q(userId)}&Fields=ChildCount,CanDelete,CumulativeRunTimeTicks`);
+  const result = await jfAdmin<JfPlaylist>(`/Items/${q(playlistId)}?userId=${q(userId)}&Fields=ChildCount,CanDelete,CumulativeRunTimeTicks,Overview`);
   if (!result.ok || result.data.Type !== "Playlist") return null;
   return result.data;
 }

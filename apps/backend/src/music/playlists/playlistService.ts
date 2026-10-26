@@ -88,14 +88,22 @@ export async function createPlaylist(userId: string, name: string, itemIds: stri
   return { ok: true, value: normalizeId(result.data.Id) };
 }
 
-export function renamePlaylist(userId: string, playlistId: string, name: string): Promise<PlaylistResult<true>> {
+export interface PlaylistDetailsChange {
+  name?: string;
+  /** `""` efface la description. */
+  description?: string;
+}
+
+/** Le nom et/ou la description (Jellyfin `Overview`) : la fiche de l'élément, relue puis réécrite entière. */
+export function updatePlaylistDetails(userId: string, playlistId: string, change: PlaylistDetailsChange): Promise<PlaylistResult<true>> {
   return locked(playlistId, async () => {
     const refusal = await editable(userId, playlistId);
     if (refusal) return { ok: false, failure: refusal };
     // `POST /Playlists/{id}` exige le jeton du compte ; la fiche de l'élément, la clé suffit.
     const item = await jfAdmin<JfItem & Record<string, unknown>>(`/Items/${q(playlistId)}?userId=${q(userId)}`);
     if (!item.ok) return { ok: false, failure: "unavailable" };
-    const saved = await jfWrite(`/Items/${q(playlistId)}`, "POST", { ...item.data, Name: name });
+    const next = { ...item.data, ...(change.name !== undefined && { Name: change.name }), ...(change.description !== undefined && { Overview: change.description }) };
+    const saved = await jfWrite(`/Items/${q(playlistId)}`, "POST", next);
     if (!saved.ok) return { ok: false, failure: "unavailable" };
     done(userId, playlistId);
     return { ok: true, value: true };

@@ -15,7 +15,7 @@ import {
   insertIntoPlaylist,
   moveInPlaylist,
   removeFromPlaylist,
-  renamePlaylist,
+  updatePlaylistDetails,
   type PlaylistResult,
 } from "../playlists/playlistService";
 import { playlistDetail, playlistsView } from "../view/playlistViews";
@@ -37,6 +37,13 @@ function playlistName(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const name = value.trim();
   return name.length >= 1 && name.length <= 200 ? name : null;
+}
+
+/** Une description : 1 000 caractères au plus, espaces de bord retirés ; vide = l'effacer. */
+function playlistDescription(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  return text.length <= 1000 ? text : null;
 }
 
 /** Les titres que le compte peut mettre dans une playlist : visibles, de l'index. `null` si un identifiant est mal formé. */
@@ -95,11 +102,16 @@ export function musicUserRoutes(app: FastifyInstance): void {
     return detail ?? reply.status(404).send({ error: "not_found" });
   });
 
-  app.patch<{ Params: { id: string }; Body: { name?: unknown } }>("/playlists/:id", async (request, reply) => {
-    const name = playlistName(request.body?.name);
-    if (!name || !isJellyfinId(request.params.id)) return reply.status(400).send({ error: "invalid_input" });
+  // Le nom et/ou la description (capacité `music.playlistManage`) : au moins l'un des deux, chacun valide.
+  app.patch<{ Params: { id: string }; Body: { name?: unknown; description?: unknown } }>("/playlists/:id", async (request, reply) => {
+    const body = request.body ?? {};
+    const name = body.name === undefined ? undefined : playlistName(body.name);
+    const description = body.description === undefined ? undefined : playlistDescription(body.description);
+    if (name === null || description === null || (name === undefined && description === undefined) || !isJellyfinId(request.params.id)) {
+      return reply.status(400).send({ error: "invalid_input" });
+    }
     const view = await viewOf(request);
-    return answer(reply, await renamePlaylist(view.userId, request.params.id, name), async () => playlistDetail(view, request.params.id));
+    return answer(reply, await updatePlaylistDetails(view.userId, request.params.id, { name, description }), async () => playlistDetail(view, request.params.id));
   });
 
   app.delete<{ Params: { id: string } }>("/playlists/:id", async (request, reply) => {

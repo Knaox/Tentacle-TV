@@ -158,6 +158,8 @@ export interface MusicPlaylist {
   artworkUrl: string | null;
   /** Le compte peut-il la modifier (propriétaire ou partage en écriture) ? */
   editable: boolean;
+  /** La description (Jellyfin `Overview`), rendue par le détail d'une playlist (`music.playlistManage`) ; `null` : aucune. */
+  description?: string | null;
   entries?: MusicPlaylistEntry[];
 }
 

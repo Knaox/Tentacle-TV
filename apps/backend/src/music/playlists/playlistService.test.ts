@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { insertIntoPlaylist, moveInPlaylist, removeFromPlaylist, reorderPlaylist } from "./playlistService";
+import { deletePlaylist, insertIntoPlaylist, moveInPlaylist, removeFromPlaylist, reorderPlaylist, updatePlaylistDetails } from "./playlistService";
 import { resetPlaylistMemoForTests } from "./playlistJellyfin";
 
 interface FakePlaylist {
@@ -25,6 +25,7 @@ const { jf } = vi.hoisted(() => ({
     calls: [] as string[],
     refuseAppend: false,
     longest: 0,
+    saved: new Map<string, Record<string, unknown>>(),
   },
 }));
 
@@ -40,7 +41,16 @@ function answer(method: string, path: string, body?: unknown): { ok: boolean; st
   const item = path.match(/^\/Items\/([^/?]+)/);
   if (method === "GET" && item) {
     const p = jf.playlists.get(item[1]!);
-    return visible(p, userId) ? { ok: true, data: { Id: item[1], Type: "Playlist", CanDelete: p.owner === userId } } : { ok: false, status: 404 };
+    return visible(p, userId) ? { ok: true, data: { Id: item[1], Type: "Playlist", CanDelete: p.owner === userId, Name: "Avant", Overview: "", ...jf.saved.get(item[1]!) } } : { ok: false, status: 404 };
+  }
+  // La fiche réécrite par la clé (relevé du lot : `POST /Items/{id}` l'accepte), et la suppression.
+  if (method === "POST" && item) {
+    jf.saved.set(item[1]!, body as Record<string, unknown>);
+    return { ok: true };
+  }
+  if (method === "DELETE" && item) {
+    jf.playlists.delete(item[1]!);
+    return { ok: true };
   }
   const move = path.match(/^\/Playlists\/[^/]+\/Items\/[^/]+\/Move\//);
   if (move) return { ok: false, status: 400 };
@@ -90,6 +100,7 @@ beforeEach(() => {
   jf.calls.length = 0;
   jf.refuseAppend = false;
   jf.playlists.clear();
+  jf.saved.clear();
   jf.playlists.set(P, { owner: OWNER, open: false, items: ["a", "b", "c", "d"] });
   jf.playlists.set(SHARED, { owner: OWNER, open: true, items: ["a", "b", "c"] });
 });
@@ -165,3 +176,52 @@ describe("réordonner toute la playlist (glisser dans Octave)", () => {
     expect(deletes()).toEqual([]);
   });
 });
+
+vi.mock("../listOrder/listPrefsStore", () => ({ forgetPlaylistOrder: async () => undefined }));
+
+describe("gérer une playlist : nom, description, suppression", () => {
+  it("le nom et la description réécrivent la fiche entière, sans toucher au reste", async () => {
+    expect(await updatePlaylistDetails(OWNER, P, { description: "Pour la route" })).toEqual({ ok: true, value: true });
+    expect(jf.saved.get(P)).toMatchObject({ Name: "Avant", Overview: "Pour la route", Type: "Playlist" });
+    expect(await updatePlaylistDetails(OWNER, P, { name: "Été", description: "" })).toEqual({ ok: true, value: true });
+    expect(jf.saved.get(P)).toMatchObject({ Name: "Été", Overview: "" });
+  });
+
+  it("un autre compte ne renomme ni ne supprime : refusé AVANT toute écriture", async () => {
+    expect(await updatePlaylistDetails(OTHER, SHARED, { name: "Pirate" })).toEqual({ ok: false, failure: "forbidden" });
+    expect(await deletePlaylist(OTHER, SHARED)).toEqual({ ok: false, failure: "forbidden" });
+    expect(await deletePlaylist(OTHER, P)).toEqual({ ok: false, failure: "not_found" });
+    expect(jf.saved.size).toBe(0);
+    expect(jf.playlists.has(SHARED)).toBe(true);
+    expect(deletes()).toEqual([]);
+  });
+
+  it("le propriétaire supprime", async () => {
+    expect(await deletePlaylist(OWNER, P)).toEqual({ ok: true, value: true });
+    expect(jf.playlists.has(P)).toBe(false);
+  });
+});
+
+describe("règle de Damien : jamais un titre supprimé du serveur", () => {
+  const audioDeletes = () => jf.calls.filter((c) => c.startsWith("DELETE /Items/") && c !== `DELETE /Items/${P}`);
+
+  it("retirer un titre d'une playlist : l'ENTRÉE sort (DELETE …/Items?entryIds), jamais l'élément audio", async () => {
+    expect((await removeFromPlaylist(OWNER, P, "b")).ok).toBe(true);
+    expect(jf.calls.filter((c) => c.startsWith("DELETE"))).toEqual([`DELETE /Playlists/${P}/Items`]);
+    expect(audioDeletes()).toEqual([]);
+  });
+
+  it("supprimer une playlist : l'OBJET playlist seul (DELETE /Items/<playlist>), aucun titre, aucun appel hors Jellyfin", async () => {
+    expect((await deletePlaylist(OWNER, P)).ok).toBe(true);
+    expect(jf.calls.filter((c) => c.startsWith("DELETE"))).toEqual([`DELETE /Items/${P}`]);
+    expect(audioDeletes()).toEqual([]);
+    // Le cœur ne parle qu'à Jellyfin : aucune route de Lidarr, aucune suppression de fichier.
+    expect(jf.calls.some((c) => /lidarr|\/Library\/|\/Videos\/|\/Audio\//i.test(c))).toBe(false);
+  });
+
+  it("réordonner ou retirer en masse ne touche jamais un élément audio", async () => {
+    expect((await reorderPlaylist(OWNER, P, ["d", "c", "b", "a"])).ok).toBe(true);
+    expect(audioDeletes()).toEqual([]);
+  });
+});
+

@@ -14,7 +14,7 @@ export { useMusicSearch, useDebouncedText, musicSearchText, type MusicSearchOpti
 export { useMusicLiked, useToggleMusicFavorite, patchFavorites, MUSIC_LIKED_PAGE } from "../music/useMusicFavorite";
 export {
   useMusicPlaylists, useMusicPlaylist, useMusicPlaylistReader, useAddToMusicPlaylist, useMoveMusicPlaylistEntry, useRemoveMusicPlaylistEntry,
-  useRenameMusicPlaylist, useCreateMusicPlaylist, useDeleteMusicPlaylist,
+  useRenameMusicPlaylist, useCreateMusicPlaylist, useDeleteMusicPlaylist, useUpdateMusicPlaylistDetails, useDuplicateMusicPlaylist, duplicateInBatches,
 } from "../music/useMusicPlaylists";
 export { useMusicLive, applyMusicEvent, type UseMusicLiveOptions } from "../music/useMusicLive";
 export { reportMusicPlayback, isListenCompleted, MUSIC_COMPLETED_RATIO } from "../music/musicPlaybackReport";
