@@ -28,12 +28,12 @@ function TentaclePage({ on }: { on: boolean }) {
   return (
     <>
       {[54, 46, 50].map((w, i) => (
-        <Place key={w} x={22 + i * 66} y={25} w={w} h={10} className="rounded-full bg-[rgba(255,255,255,0.12)]" />
+        <Place key={w} x={22 + i * 66} y={25} w={w} h={10} className="rounded-full bg-fill-soft" />
       ))}
       <Place x={PILL.x} y={PILL.y} w={PILL.w} h={PILL.h}>
         <span
-          className="flex h-full items-center gap-2 rounded-full px-3 text-[12px] font-semibold"
-          style={{ background: on ? GRADIENT : "rgba(255,255,255,0.08)", color: on ? "#fff" : "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.12)" }}
+          className={`flex h-full items-center gap-2 rounded-full border px-3 text-[12px] font-semibold ${on ? "border-transparent text-white" : "border-line-subtle bg-fill-soft text-content-secondary"}`}
+          style={on ? { background: GRADIENT } : undefined}
         >
           <Music size={14} aria-hidden />
           {t("music:mode.switchLabel")}
