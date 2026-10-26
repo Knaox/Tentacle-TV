@@ -1,26 +1,23 @@
 /* ── Liquid Glass : la scène de la fiche (lot lg7, R4) ────────────────────
  *
- * HIG Materials, « Scroll edge effects » : au repos, le contenu monte jusqu'au
- * bord de la fenêtre — l'app TV de macOS 26 passe l'image de la fiche sous les
- * feux. Ici, la bande des feux est déjà transparente en verre natif
- * (`windowGlass.css`) ; mais l'image commençait SOUS elle (le `body` garde son
- * retrait de 38 pt), qui restait l'aplat de la page : un bord dur au-dessus du
- * décor (audit lg6, d-12, l-12). Une fois défilée, l'effet de bord
- * (`ScrollEdgeEffect`, monté par `HostTitleBar`) prend le relais.
+ * La peau de la fiche en verre natif ; ses boîtes restent celles d'avant.
  *
  * Tout sous la porte : hors macOS 26, la scène d'avant. */
 
-/* La boîte IMAGE monte de la hauteur de la bande : elle part du haut de la
- * fenêtre — la MÊME boîte que celle du calque d'ouverture (`DetailOpenOverlay`,
- * fixe, en haut de la fenêtre), qui s'efface donc sans ressaut. */
-:root[data-liquid-glass="native"] .lg-detail .detail-stage-box {
-  top: calc(-1 * var(--hote-bandeau));
+/* La boîte IMAGE garde sa place d'avant, SOUS la bande des feux : le verre
+ * change le MATÉRIAU, jamais les DIMENSIONS ni les places (Damien, 26/10). */
+
+/* La capsule d'actions (`DetailCapsule`) : un seul verre de la maquette, même
+ * boîte qu'hors verre ; ses actions y sont de simples glyphes — la pastille
+ * du socle perd sa peau (jamais de verre sur du verre), le survol l'éclaire. */
+:root[data-liquid-glass="native"] .lgc-detail-capsule .lg-bead {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
-/* Le libellé de la bande (« Tentacle TV ») ne se pose pas sur l'image : comme
- * dans l'app TV, la fenêtre n'a que ses feux au-dessus du décor. */
-:root[data-liquid-glass="native"]:has(.lg-detail .detail-stage-box) .bandeau-hote > span {
-  visibility: hidden;
+:root[data-liquid-glass="native"] .lgc-detail-capsule .lg-bead:hover {
+  background: var(--lg-pane-row-hover);
 }
 
 /* ── L'assise du texte : un dégradé PLEINE LARGEUR, jamais un rectangle ──
