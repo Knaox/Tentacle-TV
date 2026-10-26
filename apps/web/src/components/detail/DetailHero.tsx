@@ -111,7 +111,7 @@ export function DetailHero({ backdropUrl, item, instant = false, onBack, backLab
         <GlassButton
           onClick={onBack ?? (() => navigate(-1))}
           aria-label={backLabel ?? t("common:back")}
-          appearance={{ level: "clear", shape: "capsule" }}
+          appearance={{ material: "pane", tone: "dark", level: "clear", shape: "capsule" }}
           className="absolute left-4 top-4 z-20 flex items-center gap-2 px-4 py-2 text-sm md:left-8 md:top-8"
           fallbackClassName="rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.45)] text-on-media-secondary backdrop-blur-md transition-colors hover:bg-[rgba(var(--scrim-media-rgb),0.65)] hover:text-on-media-primary"
         >

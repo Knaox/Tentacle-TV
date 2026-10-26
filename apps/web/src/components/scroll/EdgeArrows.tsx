@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { PressableGlass } from "../ui/glass/PressableGlass";
 
 /** En mode natif : la lentille exacte du disque (monté au survol seulement). */
-const DISC_GLASS = { level: "clear", shape: "circle" } as const;
+const DISC_GLASS = { material: "bead", tone: "dark", level: "clear", shape: "circle" } as const;
 
 interface EdgeArrowsProps {
   canLeft: boolean;

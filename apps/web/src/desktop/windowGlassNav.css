@@ -3,13 +3,13 @@
  * Jetons dans `windowGlass.css`. Même garde : `:root[data-liquid-glass="native"]`,
  * sinon rien. Voir l'en-tête de ce fichier-là.
  *
- * Refonte du 22/10 (cible Apple) : plus de capsule unique, des GROUPES qui
- * flottent — `.lgc-group` (marque + onglets), `.lgc-field` (recherche),
- * `.lgc-actions-group` (boutons, profil). Chacun est une `.lg-surface` de la
- * primitive : presque transparente, lentille au biseau, lumière du bord dans
- * le filtre, ombre qui soulève, et glyphes au TON du dessous (`data-lg-tone`,
- * `--lg-glyph*`). Ici : la mise en page des groupes, et la correspondance des
- * couleurs de texte de la page vers ces glyphes. Aucun liseré gris. */
+ * Des GROUPES qui flottent (refonte du 22/10) — `.lgc-group` (marque +
+ * onglets), `.lgc-field` (recherche), `.lgc-actions-group` (boutons, profil) —
+ * au verre de la MAQUETTE depuis le 26/10 : chacun est un `.lg-pane` de la
+ * primitive (`material: "pane"`) — dégradé, givre qui avive, liseré en
+ * dégradé, glyphes du verre (`--lg-pane-glyph*`). Sous une affiche, la frange
+ * du bord de défilement tient l'AA des libellés. Ici : la mise en page des
+ * groupes, et la correspondance des couleurs de texte vers ces glyphes. */
 
 /* ── Les groupes ───────────────────────────────────────────────────────── */
 
@@ -62,15 +62,15 @@
  * mesuré sous CHAQUE groupe) : clair dessous → sombres, et inversement. */
 
 :root[data-liquid-glass="native"] :is(.lgc-group, .lgc-actions-group, .lgc-field) .text-content-primary {
-  color: var(--lg-glyph);
+  color: var(--lg-pane-glyph);
 }
 
 :root[data-liquid-glass="native"] :is(.lgc-group, .lgc-actions-group, .lgc-field) :is(.text-content-secondary, .text-content-tertiary, .text-content-quaternary) {
-  color: var(--lg-glyph-secondary);
+  color: var(--lg-pane-glyph-secondary);
 }
 
 :root[data-liquid-glass="native"] .lgc-field > span {
-  color: var(--lg-glyph);
+  color: var(--lg-pane-glyph);
 }
 
 /* Les libellés des onglets — inactifs compris — prennent le ton PRIMAIRE du
@@ -79,11 +79,11 @@
 :root[data-liquid-glass="native"] .lgc-group .lgc-tab,
 :root[data-liquid-glass="native"] :is(.lgc-group, .lgc-actions-group) :is(a, button):hover,
 :root[data-liquid-glass="native"] :is(.lgc-group, .lgc-actions-group) :is(a, button):hover svg {
-  color: var(--lg-glyph);
+  color: var(--lg-pane-glyph);
 }
 
 :root[data-liquid-glass="native"] .lgc-group .lgc-tab:not(:has(> .lgc-lens)) svg {
-  color: var(--lg-glyph-secondary);
+  color: var(--lg-pane-glyph-secondary);
 }
 
 /* L'onglet courant (ou « Plus » quand il porte la page courante : la pastille
@@ -94,29 +94,21 @@
 }
 
 /* ── Dans un groupe : de simples glyphes (pas de verre dans le verre) ──────
- * Des remplissages NEUTRES au ton du dessous, du plus léger au plus marqué :
- * survol < appui (« Plus » ouvert) < sélection. La sélection est la pastille
- * de la barre d'onglets d'iOS 26 (`ActiveIndicator` lit `--lg-chrome-lens-*`),
- * concentrique au groupe — jamais un aplat de marque bordé. Déclarées sur le
- * GROUPE : c'est lui qui porte `data-lg-tone`. */
+ * Des remplissages, du plus léger au plus marqué : survol < appui (« Plus »
+ * ouvert) < sélection. La sélection (`NavTab` lit `--lg-chrome-lens-*`) est
+ * le dégradé de la maquette, concentrique au groupe, qui glisse. */
 
-:root[data-liquid-glass="native"] .lg-surface:is(.lgc-group, .lgc-actions-group) {
-  --lg-chrome-item-hover: rgba(var(--lg-light-rgb), 0.08);
-  --lg-chrome-item-pressed: rgba(var(--lg-light-rgb), 0.12);
-  --lg-chrome-selection: rgba(var(--lg-light-rgb), 0.16);
-  --lg-chrome-accent: var(--brand-light);
-  --lg-chrome-lens-bg: var(--lg-chrome-selection);
-  --lg-chrome-lens-shadow: none;
+:root[data-liquid-glass="native"] .lg-pane:is(.lgc-group, .lgc-actions-group) {
+  /* Le `.nav` de la maquette : survol 0,08, appui un cran de plus, sélection
+   * en dégradé rose → violet avec son reflet — un remplissage dans le verre. */
+  --lg-chrome-item-hover: var(--lg-pane-nav-hover);
+  --lg-chrome-item-pressed: color-mix(in srgb, var(--lg-pane-nav-hover) 160%, transparent);
+  --lg-chrome-accent: var(--lg-pane-glyph);
+  --lg-chrome-lens-bg: var(--lg-pane-selected);
+  --lg-chrome-lens-shadow: var(--lg-pane-selected-shadow);
   /* Les boutons qui peignent leur fond en ligne (la cloche) lisent ces deux-là. */
   --lg-chrome-button-rest: transparent;
   --lg-chrome-button-open: var(--lg-chrome-item-pressed);
-}
-
-:root[data-liquid-glass="native"] .lg-surface:is(.lgc-group, .lgc-actions-group)[data-lg-tone="light"] {
-  --lg-chrome-item-hover: rgba(var(--lg-shade-rgb), 0.05);
-  --lg-chrome-item-pressed: rgba(var(--lg-shade-rgb), 0.08);
-  --lg-chrome-selection: rgba(var(--lg-shade-rgb), 0.1);
-  --lg-chrome-accent: var(--brand);
 }
 
 :root[data-liquid-glass="native"] .lgc-group :is(.lgc-tab, .lgc-lens) {
@@ -152,7 +144,7 @@
   border-color: transparent;
   border-radius: var(--lg-chrome-item-radius);
   background: transparent;
-  color: var(--lg-glyph);
+  color: var(--lg-pane-glyph);
 }
 
 :root[data-liquid-glass="native"] .lgc-actions-group .lgc-status:hover {
@@ -168,23 +160,19 @@
   background: #fbbf24;
 }
 
-:root[data-liquid-glass="native"] .lgc-actions-group[data-lg-tone="light"] .lgc-status .lgc-status-dot.bg-status-warning {
+:root[data-liquid-glass="native"][data-theme="light"] .lgc-actions-group .lgc-status .lgc-status-dot.bg-status-warning {
   background: #b45309;
 }
 
 :root[data-liquid-glass="native"] .lgc-actions-group .lgc-status .lgc-status-dot:not(.bg-status-warning) {
-  background: var(--lg-glyph-secondary);
+  background: var(--lg-pane-glyph-secondary);
 }
 
 /* Le rappel du raccourci : une pastille SANS bord. */
 :root[data-liquid-glass="native"] .lgc-field kbd {
   border-color: transparent;
-  background: rgba(var(--lg-light-rgb), 0.12);
-  color: var(--lg-glyph-secondary);
-}
-
-:root[data-liquid-glass="native"] .lgc-field[data-lg-tone="light"] kbd {
-  background: rgba(var(--lg-shade-rgb), 0.07);
+  background: var(--lg-pane-separator);
+  color: var(--lg-pane-glyph-secondary);
 }
 
 /* L'avatar : une bille de verre — liseré et arête spéculaire PAR-DESSUS la
@@ -204,8 +192,8 @@
 
 /* ── Fenêtre inactive : les verres de la barre perdent leur saturation, et
  * l'onglet courant son accent (sa pastille neutre reste). */
-:root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule .lg-surface {
-  --lg-saturate: 1;
+:root[data-liquid-glass="native"][data-window-inactive] .lgc-capsule .lg-pane {
+  --lg-pane-saturate: 1;
 }
 
 :root[data-liquid-glass="native"][data-window-inactive] .lgc-group .lgc-tab:has(> .lgc-lens) > svg:first-of-type {

@@ -162,7 +162,7 @@ export function DetailImageViewer({ title, gallery, index, onIndexChange, onClos
 
 /** Les ronds de la visionneuse : en Liquid Glass (mode natif), le rond de verre
  * CLAIR de la fiche (lot lg7, R16) ; ailleurs, la peau d'avant. */
-const VIEWER_ROUND = { level: "clear", shape: "circle" } as const;
+const VIEWER_ROUND = { material: "bead", tone: "dark", level: "clear", shape: "circle" } as const;
 const VIEWER_ROUND_SKIN = "rounded-full bg-white/10 transition-colors hover:bg-white/20";
 
 function StepButton({ side, label, onClick }: { side: "left" | "right"; label: string; onClick: () => void }) {

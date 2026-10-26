@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { AMBIENT_DARK, AMBIENT_INK, PANE_DARK, paneBody } from "../../../theme/glass/paneMaterial";
 
 const strip = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 const TOKENS = strip(readFileSync(join(__dirname, "lgPageControls.css"), "utf8"));
@@ -101,7 +102,30 @@ function stackAll(fill: string, base: Rgba): Rgba {
 }
 
 const ROOT = rules(TOKENS).find(([s]) => s === ':root[data-liquid-glass="native"]')![1];
-const DARK_PANEL = parse("#18181b");
+/**
+ * Le dessous le plus CLAIR d'un contrôle de page en sombre, calculé sur le
+ * socle (`theme/glass/paneMaterial.ts`, qui suit ses jetons) : le pire
+ * croisement de deux taches du fond ambiant sur l'encre, puis, au plus clair,
+ * le CORPS d'un panneau de la maquette (encre + voile blanc, sans givre) ou le
+ * voile d'un conteneur au survol (`--lgd-fill-hover`). Le coin du reflet d'un
+ * panneau, comme pour le socle, ne tient que 3:1 : un contrôle ne s'y pose pas.
+ */
+function worstDarkBase(): Rgba {
+  const ink: Rgba = [AMBIENT_INK.r, AMBIENT_INK.g, AMBIENT_INK.b, 1];
+  const veil = Number(/--lgd-fill-hover:\s*rgba\(255, 255, 255, ([\d.]+)\)/.exec(CONTENT)![1]);
+  const white = (a: number): Rgba => [255, 255, 255, a];
+  let worst: Rgba = ink;
+  for (const a of AMBIENT_DARK) {
+    for (const b of AMBIENT_DARK) {
+      if (a === b) continue;
+      const cross = over([b.color.r, b.color.g, b.color.b, b.alpha], over([a.color.r, a.color.g, a.color.b, a.alpha], ink));
+      const body = over(white(paneBody(PANE_DARK)), over([PANE_DARK.ink.r, PANE_DARK.ink.g, PANE_DARK.ink.b, PANE_DARK.ink.a], cross));
+      for (const candidate of [body, over(white(veil), cross)]) if (luminance(candidate) > luminance(worst)) worst = candidate;
+    }
+  }
+  return worst;
+}
+const DARK_PANEL = worstDarkBase();
 const LIGHT_PANEL = parse("#ffffff");
 
 describe("les contrôles des pages en verre", () => {
@@ -143,14 +167,21 @@ describe("les contrôles des pages en verre", () => {
     }
   });
 
-  it("aucun TRAIT : la lumière de bord est floue, jamais un anneau ni un filet net", () => {
-    // Retour de Damien sur la première version : des pilules cerclées, « ça ressemble pas à Apple ».
+  it("le liseré de la maquette : un anneau fin et CLAIR, jamais un trait sombre ni opaque", () => {
+    // La pastille de la maquette (`.chip`, 26/10) se dessine par un liseré de 1 px
+    // translucide et l'arête haute éclairée ; un trait net SOMBRE ou opaque reste
+    // interdit (« des pilules cerclées », retour de Damien du 22/10).
     for (const tone of ["dark", "light"]) {
       for (const name of ["edge", "lens-edge", "track-edge"]) {
         const value = token(ROOT, `--lgp-${name}-on-${tone}`);
         for (const shadow of layersOf(value)) {
           const [, , blur] = shadow.replace(/rgba?\([^)]*\)|#[0-9a-f]+/gi, "").replace("inset", "").trim().split(/\s+/);
-          expect(parseFloat(blur), `${name}-on-${tone} : ${shadow}`).toBeGreaterThan(0);
+          if (parseFloat(blur) > 0) continue;
+          const [r, g, b, a] = parse(shadow);
+          const clear = r === 255 && g === 255 && b === 255;
+          const brandRim = tone === "light" && r === 219 && g === 39 && b === 119;
+          expect(clear || brandRim, `${name}-on-${tone} : ${shadow}`).toBe(true);
+          expect(a, `${name}-on-${tone} : ${shadow}`).toBeLessThanOrEqual(tone === "dark" ? 0.3 : 0.95);
         }
       }
     }
@@ -209,12 +240,16 @@ describe("les contrôles des pages en verre", () => {
   });
 
   it("l'action principale (`glassProminent`) : blanc ≥ 4,5:1 aux deux bouts du dégradé", () => {
-    expect(token(ROOT, "--lgp-prominent-gradient")).toMatch(/var\(--brand-dark\)[\s\S]*82%, black/);
-    const sheen = parse("rgba(255,255,255,0.1)");
-    // Les bouts les plus clairs des deux thèmes : #7C3AED, et #DB2777 assombri à 82 %.
-    const pink: Rgba = [0xdb * 0.82, 0x27 * 0.82, 0x77 * 0.82, 1];
-    for (const end of [parse("#7c3aed"), pink]) {
-      expect(contrast(parse("#ffffff"), over(sheen, end))).toBeGreaterThanOrEqual(4.5);
+    // Le « Lecture » de la maquette, avec les couleurs du socle (`--lg-pane-prominent-fill`).
+    const gradient = token(ROOT, "--lgp-prominent-gradient");
+    expect(gradient).toContain("rgba(190, 24, 93, 0.96)");
+    expect(gradient).toContain("rgba(109, 40, 217, 0.9)");
+    const sheen = parse("rgba(255,255,255,0.07)");
+    // Sous le dégradé : l'encre, et le plus clair des fonds (le pire croisement des taches).
+    for (const end of [parse("rgba(190, 24, 93, 0.96)"), parse("rgba(109, 40, 217, 0.9)")]) {
+      for (const base of [parse("#07050c"), DARK_PANEL]) {
+        expect(contrast(parse("#ffffff"), over(sheen, over(end, base)))).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 

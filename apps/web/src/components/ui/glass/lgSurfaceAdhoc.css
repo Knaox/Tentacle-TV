@@ -41,7 +41,7 @@
 /* L'action PRINCIPALE : `glassProminent` peint. */
 :root[data-liquid-glass="native"] :is(.lg-sheet, .lg-menu, .lg-toast) :is(button, a).bg-cta-primary-bg:is(.rounded-full, .rounded-lg, .rounded-md):not([class*="lg-"], [role^="menuitem"], [role="option"]) {
   background: var(--lgp-prominent-fill);
-  box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
+  box-shadow: var(--lgp-prominent-shadow);
   color: var(--lgp-tint-glyph);
 }
 

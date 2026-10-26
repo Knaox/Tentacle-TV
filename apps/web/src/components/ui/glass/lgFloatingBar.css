@@ -94,7 +94,7 @@
   padding-inline: 18px;
   /* `!important` contre le dégradé d'avant posé EN LIGNE (« Ajouter à ma liste »). */
   background: var(--lgp-prominent-fill) !important;
-  box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
+  box-shadow: var(--lgp-prominent-shadow);
   color: var(--lgp-tint-glyph);
   font-weight: 700;
   text-shadow: none;

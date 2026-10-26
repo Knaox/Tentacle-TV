@@ -1,0 +1,51 @@
+/* ── Liquid Glass de la maquette (26/10) : la COQUILLE des pages de Tentacle ──
+ *
+ * L'encre de la page et le fond ambiant (`GlassAmbient`, socle : `theme/glass/`)
+ * sous le contenu de la coquille (`AppLayout` : `.lgc-shell`) et de la fiche
+ * (`MediaDetail` : `.lg-detail`). Le verre a enfin quelque chose à réfracter :
+ * sur le noir uni d'avant, il se lisait comme du gris.
+ *
+ * ⚠️ Tout est porté par `:root[data-liquid-glass="native"]` : ailleurs, aucune
+ * règle — le rendu d'avant au pixel près (`liquidGlassTokens.test.ts`).
+ *
+ * Coût (CLAUDE.md, « Coût GPU ») : le fond est UNE couche fixe de dégradés
+ * radiaux, peinte une fois, jamais animée ; rien ici n'est flouté. */
+
+/* L'encre prune de la maquette (#07050C), en sombre : celle sur laquelle la
+ * lisibilité du verre est PROUVÉE (`theme/glass/paneMaterial.ts`, `AMBIENT_INK`).
+ * Les voiles du haut des pages (`--scrim-page-rgb`) suivent : une bannière se
+ * fond dans l'encre, sans écart. */
+:root[data-liquid-glass="native"]:not([data-theme="light"]) {
+  --surface-0: #07050c;
+  --scrim-page-rgb: 7, 5, 12;
+}
+
+/* La coquille laisse voir le document (`html` porte l'encre) : le fond
+ * ambiant se pose ENTRE les deux. `body` aussi se retire — son fond, peint
+ * dans le flux, couvrirait une couche à `z-index: -1`. */
+:root[data-liquid-glass="native"] body,
+:root[data-liquid-glass="native"] :is(.lgc-shell, .lg-detail) {
+  background: transparent;
+}
+
+/* Les sections de page qui peignaient l'encre en plein (le cadre des bannières
+ * de l'accueil, de « Pour vous » et du hors ligne, la page d'une personne, les
+ * vues hors ligne) découpaient un rectangle opaque dans le fond ambiant — une
+ * démarcation. Elles laissent passer le fond ; les aplats `absolute` (sous une
+ * image qui charge) gardent le leur. */
+:root[data-liquid-glass="native"] .lg-page :is(.w-full, .min-h-screen).bg-surface-0:not(.absolute) {
+  background: transparent;
+}
+
+/* Le fond passe SOUS le contenu, qui n'est pas positionné : à `z-index: 0`, une
+ * couche fixe se peindrait PAR-DESSUS lui (ordre de peinture des éléments
+ * positionnés) et voilerait les affiches. À −1, entre le document et le flux. */
+:root[data-liquid-glass="native"] .lg-ambient.lgc-ambient {
+  z-index: -1;
+}
+
+/* La lueur d'avant (`.brand-ambient`, deux halos à 10 % PAR-DESSUS la page) :
+ * le fond ambiant la remplace. */
+:root[data-liquid-glass="native"] .lgc-shell > .brand-ambient {
+  display: none;
+}

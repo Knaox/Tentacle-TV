@@ -33,7 +33,7 @@ export function LibraryToolbarPanel(props: LibraryFilterBarProps) {
     <>
       <section
         aria-label={t("library:toolbar")}
-        className="lg-content relative rounded-[var(--radius-xl)] p-2.5 shadow-[var(--elev-2)] ring-1 ring-line-subtle md:p-3"
+        className="lg-content lg-content-frosted relative rounded-[var(--radius-xl)] p-2.5 shadow-[var(--elev-2)] ring-1 ring-line-subtle md:p-3"
         style={{
           background:
             "linear-gradient(180deg, rgba(var(--brand-rgb),0.07), rgba(var(--brand-rgb),0) 60%), var(--surface-1)",

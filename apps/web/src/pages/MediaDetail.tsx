@@ -24,6 +24,7 @@ import { DetailSections } from "../components/detail/DetailSections";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
 import { tmdbIdForItem } from "../lib/ratingIdentity";
 import { textCascadeArrival } from "../theme/motion";
+import { GlassAmbient } from "../theme/glass";
 
 // `fadeUp` / `fadeIn` viennent de `theme/motion` — la fiche avait ses propres
 // copies, restées à 24 px de course quand la référence est passée à 10. La
@@ -220,6 +221,10 @@ export function MediaDetail() {
     {/* Voile de page neutralisé quand la fiche ne s'ouvre pas : il déplace la
         page de 12 px et l'échelonne à 99,5 % SOUS le calque, mouvement que
         personne ne voit et qui n'a plus qu'à finir au mauvais moment. */}
+    {/* Liquid Glass (natif) : les taches de la maquette, teintées par l'image
+        de la fiche — HORS de la transition de page, dont la transformation
+        ferait défiler une couche fixe. Ailleurs, rien n'est rendu. */}
+    <GlassAmbient image={backdropUrl} className="lgc-ambient" />
     <PageTransition skip={skipEntrance.current}>
       {/* `lg-detail` : sous le verre de macOS 26, les contrôles de la fiche sont en
           verre comme ceux des pages (`lgPageGlass.css`) — marqueur sans style. */}

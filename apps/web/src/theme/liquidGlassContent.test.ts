@@ -34,7 +34,7 @@ describe("la couche de contenu", () => {
   it("les jetons locaux existent en sombre ET en clair", () => {
     const dark = block(':root[data-liquid-glass="native"]');
     const light = block(':root[data-liquid-glass="native"][data-theme="light"]');
-    for (const name of ["--lgd-fill", "--lgd-fill-hover", "--lgd-stroke", "--lgd-raised", "--lgd-control", "--lgd-selected", "--lgd-selected-fg", "--lgd-tab-selected", "--lgd-accent-fg"]) {
+    for (const name of ["--lgd-fill", "--lgd-fill-hover", "--lgd-stroke", "--lgd-light", "--lgd-raised", "--lgd-control", "--lgd-selected", "--lgd-selected-fg", "--lgd-tab-selected", "--lgd-accent-fg"]) {
       expect(dark).toContain(`${name}:`);
       expect(light).toContain(`${name}:`);
     }
@@ -45,10 +45,6 @@ describe("la couche de contenu", () => {
       expect(body).not.toMatch(/backdrop-filter:(?!\s*none)/);
       expect(body).not.toMatch(/--ctl-gradient|--lgc-fill-prominent|--lg-prominent-gradient/);
     }
-  });
-
-  it("un conteneur est opaque : son remplissage se compose sur le fond de la page", () => {
-    expect(block(':root[data-liquid-glass="native"] .lg-content')).toMatch(/var\(--lgd-base\)/);
   });
 
   it("les contrôles du contenu (pastilles, champ, segmenté, panneaux) n'ont plus de verre", () => {

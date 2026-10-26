@@ -1,19 +1,19 @@
 /* ── Liquid Glass : les CONTRÔLES des pages sont du VERRE (lot lg4, 22/10) ──
  *
  * Décision de Damien (« certains boutons sont pas liquid glass ») : un
- * CONTRÔLE n'est pas du contenu. Les dalles restent des remplissages opaques
- * (`theme/liquidGlassContent.css`) ; tout ce qui est interactif DANS une page
+ * CONTRÔLE n'est pas du contenu. Depuis le 26/10, l'un et l'autre prennent le
+ * verre de la MAQUETTE : les dalles, son panneau (`theme/liquidGlassContent.css`),
+ * les contrôles, sa pastille (`.chip`). Tout ce qui est interactif DANS une page
  * — boutons, pastilles de filtre, déclencheurs de menus, tri, champs de
  * recherche, segmentés, interrupteurs — prend le style `glass` de macOS 26
  * (`glassProminent` : l'action principale, ailleurs).
  *
- * Le verre posé sur un remplissage OPAQUE n'a rien à réfracter : aucun
- * `backdrop-filter` (il ne flouterait qu'un aplat, pour une passe de
- * composition de plus par contrôle — CLAUDE.md, « Coût GPU »). Ce qui le fait
- * lire comme du verre, et pas comme un aplat plus clair :
- *  • une LÉGÈRE translucidité — un voile blanc dégressif, le dessous passe ;
- *  • un REFLET diffus en haut à gauche (la lumière du socle) ;
- *  • un LISERÉ DE LUMIÈRE : l'arête haute éclairée, une contre-arête en bas ;
+ * Posé sur un panneau ou sur le fond ambiant (déjà flou), le contrôle n'a
+ * rien à réfracter : aucun `backdrop-filter` (une passe de composition de plus
+ * par contrôle, refaite à chaque défilement — CLAUDE.md, « Coût GPU »). Ce qui
+ * le fait lire comme la pastille de la maquette :
+ *  • une LÉGÈRE translucidité — un voile blanc sur l'encre légère du socle ;
+ *  • un LISERÉ fin et translucide (1 px) et le REFLET de l'arête haute ;
  *  • la PROFONDEUR : une ombre de contact et une ombre portée douce.
  * Tout est FIXE (peint une fois) ; à l'appui, le verre gonfle par `scale` —
  * composité, sur le ressort de la lentille.
@@ -29,48 +29,47 @@
  * `lgPageControls.test.ts` (contraste des libellés, AA). */
 
 :root[data-liquid-glass="native"] {
-  /* Le verre `glass` de macOS 26 (retour de Damien sur la première version,
-   * « moche, ça ressemble pas à Apple » : des pilules cerclées d'un trait net).
-   * AUCUN trait : la forme se lit par un remplissage translucide un cran plus
-   * clair que le dessous, une LUMIÈRE DE BORD floue — forte en haut, nulle sur
-   * les côtés (ombre intérieure décalée vers le bas, floue, rétractée), un
-   * contre-reflet à peine visible en bas —, un reflet doux et une ombre portée
-   * très légère. */
-  --lgp-sheen-on-dark: radial-gradient(120% 100% at 30% 0%, rgba(255, 255, 255, 0.07) 0%, transparent 60%);
-  --lgp-fill-on-dark: var(--lgp-sheen-on-dark),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.07) 100%);
-  --lgp-fill-hover-on-dark: var(--lgp-sheen-on-dark),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
-  --lgp-edge-on-dark: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.3), inset 0 -1px 1px -0.5px rgba(255, 255, 255, 0.05);
-  --lgp-depth-on-dark: 0 1px 2px rgba(0, 0, 0, 0.22), 0 2px 8px -4px rgba(0, 0, 0, 0.3);
+  /* La PASTILLE de la maquette (`.chip`, 26/10), aux valeurs ADOUCIES du socle
+   * (consigne de Damien : verre transparent, jamais violent) : un voile blanc
+   * 0,05 sur une encre légère (`--lg-bead-*`), un liseré presque nul (1 px,
+   * 0,07) et la lumière de l'arête haute (0,16). Valeurs recopiées du socle
+   * (`theme/glass/paneTokens.css`) en clair : le test les calcule. */
+  --lgp-fill-on-dark: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)),
+    linear-gradient(rgba(7, 5, 12, 0.08), rgba(7, 5, 12, 0.08));
+  /* Le survol s'éclaire (0,09) sur une encre un cran plus dense (0,14) : le
+   * danger et la marque d'un libellé y tiennent 4,5:1 sur le pire fond (test). */
+  --lgp-fill-hover-on-dark: linear-gradient(rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.09)),
+    linear-gradient(rgba(7, 5, 12, 0.14), rgba(7, 5, 12, 0.14));
+  --lgp-edge-on-dark: inset 0 0 0 1px rgba(255, 255, 255, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --lgp-depth-on-dark: 0 1px 2px rgba(0, 0, 0, 0.16), 0 6px 16px -12px rgba(0, 0, 0, 0.35);
   --lgp-glyph-on-dark: rgba(255, 255, 255, 0.94);
   --lgp-glyph-secondary-on-dark: rgba(255, 255, 255, 0.76);
   /* Le danger au ton du verre (corail) : le rouge du thème y tombait à 3,9:1. */
   --lgp-danger-on-dark: var(--lg-surface-danger-on-dark, #ffc4bc);
-  /* La LENTILLE d'un segmenté (le segment choisi) : plus claire, sans contour. */
-  --lgp-lens-fill-on-dark: radial-gradient(120% 100% at 30% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.15) 100%);
-  --lgp-lens-edge-on-dark: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.42), inset 0 -1px 1px -0.5px rgba(255, 255, 255, 0.07);
-  --lgp-lens-depth-on-dark: 0 1px 3px rgba(0, 0, 0, 0.3), 0 3px 10px -5px rgba(0, 0, 0, 0.35);
+  /* Le segment CHOISI : la sélection de la maquette (`--lg-pane-selected`),
+   * le dégradé rose → violet avec son reflet — un remplissage, jamais un verre. */
+  --lgp-lens-fill-on-dark: linear-gradient(140deg, rgba(236, 72, 153, 0.18), rgba(124, 58, 237, 0.1));
+  --lgp-lens-edge-on-dark: inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --lgp-lens-depth-on-dark: 0 6px 16px -12px rgba(236, 72, 153, 0.35);
   /* La piste d'un segmenté, d'un interrupteur : un remplissage, à peine en creux. */
   --lgp-track-on-dark: rgba(255, 255, 255, 0.06);
   --lgp-track-edge-on-dark: inset 0 1px 1.5px -0.5px rgba(0, 0, 0, 0.3);
 
-  /* En clair, rien n'est plus clair qu'un groupe blanc : le verre y est un
-   * voile gris très léger que la lumière du haut éclaire, posé par une ombre douce. */
-  --lgp-sheen-on-light: radial-gradient(120% 100% at 30% 0%, rgba(255, 255, 255, 0.7) 0%, transparent 60%);
+  /* En clair, la pastille NACRÉE du socle (`--lg-bead-*` clair) : voile blanc
+   * 0,55, liseré blanc, reflet du haut ; une ombre douce la pose sur la nacre. */
+  --lgp-sheen-on-light: radial-gradient(120% 100% at 30% 0%, rgba(255, 255, 255, 0.5) 0%, transparent 60%);
   --lgp-fill-on-light: var(--lgp-sheen-on-light),
-    linear-gradient(180deg, rgba(246, 246, 249, 0.75) 0%, rgba(229, 229, 235, 0.72) 100%);
+    linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55));
   --lgp-fill-hover-on-light: var(--lgp-sheen-on-light),
-    linear-gradient(180deg, rgba(250, 250, 252, 0.85) 0%, rgba(236, 236, 241, 0.82) 100%);
-  --lgp-edge-on-light: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.95), inset 0 -1px 1px -0.5px rgba(0, 0, 0, 0.05);
-  --lgp-depth-on-light: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 7px -3px rgba(0, 0, 0, 0.12);
+    linear-gradient(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.78));
+  --lgp-edge-on-light: inset 0 0 0 1px rgba(255, 255, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --lgp-depth-on-light: 0 1px 2px rgba(0, 0, 0, 0.06), 0 6px 14px -8px rgba(60, 20, 80, 0.18);
   --lgp-glyph-on-light: rgba(12, 12, 18, 0.88);
   --lgp-glyph-secondary-on-light: rgba(12, 12, 18, 0.7);
   --lgp-danger-on-light: var(--lg-danger-on-light, #6e0b10);
-  --lgp-lens-fill-on-light: linear-gradient(180deg, #ffffff 0%, rgba(253, 253, 254, 0.96) 100%);
-  --lgp-lens-edge-on-light: inset 0 1px 1px -0.5px #ffffff;
-  --lgp-lens-depth-on-light: 0 1px 3px rgba(0, 0, 0, 0.13), 0 0 1px rgba(0, 0, 0, 0.06);
+  --lgp-lens-fill-on-light: linear-gradient(140deg, rgba(219, 39, 119, 0.16), rgba(124, 58, 237, 0.1));
+  --lgp-lens-edge-on-light: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(219, 39, 119, 0.14);
+  --lgp-lens-depth-on-light: 0 4px 12px -8px rgba(219, 39, 119, 0.35);
   --lgp-track-on-light: rgba(0, 0, 0, 0.05);
   --lgp-track-edge-on-light: inset 0 1px 1.5px -0.5px rgba(0, 0, 0, 0.08);
 
@@ -81,12 +80,15 @@
       color-mix(in srgb, var(--brand-dark) 88%, black) 100%);
   --lgp-tint-edge: inset 0 1px 1px -0.5px rgba(255, 255, 255, 0.38);
   --lgp-tint-glyph: #ffffff;
-  /* L'action PRINCIPALE d'un écran (`glassProminent`) : la marque dans le verre.
-   * Le rose du bout assombri (82 %) : blanc ≥ 4,5:1 partout (le rose pur : 4,4). */
-  --lgp-prominent-gradient: linear-gradient(120deg, var(--brand-dark) 0%,
-    color-mix(in srgb, var(--brand-accent-dark) 82%, black) 100%);
-  --lgp-prominent-fill: radial-gradient(140% 120% at 28% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 62%),
+  /* L'action PRINCIPALE d'un écran (`glassProminent`) : la marque dans le verre,
+   * le « Lecture » de la maquette avec nos couleurs un cran profondes (celles du
+   * socle, `--lg-pane-prominent-fill`) : blanc ≥ 4,5:1 aux deux bouts (test). */
+  --lgp-prominent-gradient: linear-gradient(140deg, rgba(190, 24, 93, 0.96) 0%, rgba(109, 40, 217, 0.9) 100%);
+  --lgp-prominent-fill: radial-gradient(120% 60% at 15% 0%, rgba(255, 255, 255, 0.07) 0%, transparent 55%),
     var(--lgp-prominent-gradient);
+  /* Le « Lecture » de la maquette : arête haute, creux en bas, halo rose. */
+  --lgp-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -2px 6px rgba(0, 0, 0, 0.16),
+    0 12px 30px -14px rgba(var(--brand-accent-rgb), 0.45);
 
   /* L'appui fait GONFLER le verre (petit : une pastille côtoie ses voisines). */
   --lgp-press-scale: 1.04;

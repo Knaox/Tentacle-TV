@@ -67,8 +67,9 @@
   /* La barre latérale : une surface flottante, en retrait des bords. Son
    * matériau est celui de la primitive ; sa sélection, ses glyphes :
    * `windowGlassSidebar.css`, au ton du rail. */
-  --lg-chrome-sidebar-radius: var(--lg-radius-lg);
-  --lg-chrome-sidebar-pad: 8px;
+  /* Le panneau de la maquette : rayon 28 (`--lg-radius-xl`), marge 12. */
+  --lg-chrome-sidebar-radius: var(--lg-radius-xl);
+  --lg-chrome-sidebar-pad: 12px;
 
   /* Fenêtre inactive (`windowFocus.ts`) : l'accent cède au gris. */
   --lg-chrome-inactive-icon: var(--text-secondary);

@@ -59,7 +59,10 @@ describe("verre de fenêtre", () => {
     });
   }
 
-  it("la sélection de la barre latérale lit le remplissage neutre du socle", () => {
-    expect(sheet("./windowGlassSidebar.css")).toMatch(/var\(--lg-sidebar-selection,/);
+  it("la barre latérale et la barre du haut prennent le verre de la maquette (sélection, survol)", () => {
+    const sidebar = sheet("./windowGlassSidebar.css");
+    expect(sidebar).toMatch(/\.lgc-sidebar\.lg-pane\s*\{[^}]*--lg-chrome-sidebar-selection-bg:\s*var\(--lg-pane-selected\)/);
+    expect(sidebar).toMatch(/--lg-chrome-item-hover:\s*var\(--lg-pane-nav-hover\)/);
+    expect(sheet("./windowGlassNav.css")).toMatch(/--lg-chrome-lens-bg:\s*var\(--lg-pane-selected\)/);
   });
 });

@@ -1,0 +1,101 @@
+/* ── Liquid Glass de la maquette (26/10) : le CONTENU des pages de Tentacle ──
+ *
+ * Consigne de Damien (26/10, elle prime sur la maquette) : « un effet de VERRE
+ * TRANSPARENT, pas trop violent, sinon on perd l'âme de l'app » — le verre est
+ * la couche FONCTIONNELLE (barres, rail, pastilles, menus) ; le contenu reste
+ * net. Les groupes de réglages, les cartes de l'admin, les encadrés — jusqu'ici
+ * des aplats gris zinc opaques (lot lg2) — deviennent donc un VOILE translucide
+ * posé sur le fond ambiant : un blanc très bas, un bord fin, la lumière de
+ * l'arête haute (une lumière, pas un contour). Ni ombre portée, ni liseré en
+ * dégradé, ni givre : ils défilent avec la page sur un fond déjà flou.
+ * Les classes-marqueurs d'avant restent les portes :
+ *  • `.lg-content` (une quinzaine de conteneurs nommés) ;
+ *  • les cartes AD HOC des pages, reconnues à leur forme (arrondi, liseré
+ *    `line-subtle`, remplissage translucide) — une soixantaine, sans marqueur.
+ *
+ * Seul un panneau qui se pose sur une IMAGE est du verre (`.lg-content-frosted`
+ * : outils d'une bibliothèque au bas de sa bannière, encadré de la fiche) —
+ * le panneau givré de la maquette (`theme/glass/pane.css`, jetons `--lg-pane-*`).
+ *
+ * ⚠️ Tout est porté par `:root[data-liquid-glass="native"]` : ailleurs, le
+ * rendu d'avant au pixel près. Jetons : `--lgd-*` (`liquidGlassContent.css`)
+ * et ceux du socle, sombre ET clair. */
+
+/* Le texte posé sur le fond ambiant ou sur un voile : le tertiaire du thème
+ * (0,55) tombait sous 4,5:1 au cœur de deux taches croisées ; relevé, il tient
+ * partout (`paneContent.test.ts`). Le secondaire (0,78) tient déjà. */
+:root[data-liquid-glass="native"]:not([data-theme="light"]) :is(.lg-page, .lg-detail) {
+  --text-tertiary: rgba(255, 255, 255, 0.76);
+}
+
+/* ── 1. Le voile du contenu ─────────────────────────────────────────────── */
+
+/* `!important` : contre le fond EN LIGNE d'un panneau d'outils (même règle
+ * qu'avant, `liquidGlassContent.css`). */
+:root[data-liquid-glass="native"] .lg-content {
+  border-color: var(--lgd-stroke);
+  background: linear-gradient(var(--lgd-fill), var(--lgd-fill)) !important;
+  box-shadow: var(--lgd-light);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field) {
+  border-color: var(--lgd-stroke);
+  background: var(--lgd-fill);
+  box-shadow: var(--lgd-light);
+}
+
+/* Une tuile, une carte cliquable : le voile s'éclaire au survol. */
+:root[data-liquid-glass="native"] .lg-content-tile:hover {
+  background: linear-gradient(var(--lgd-fill-hover), var(--lgd-fill-hover)) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-page :is(a, button):is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field):hover {
+  background: var(--lgd-fill-hover);
+}
+
+/* Un conteneur qui est AUSSI un filtre (tuiles du bilan), choisi : la
+ * sélection de la maquette, rose → violet, sur le voile. */
+:root[data-liquid-glass="native"] .lg-content[aria-pressed="true"] {
+  background: var(--lg-pane-selected), linear-gradient(var(--lgd-fill), var(--lgd-fill)) !important;
+  box-shadow: var(--lg-pane-selected-shadow);
+}
+
+/* Une carte DANS un conteneur : un cran plus clair, sans lumière d'arête. */
+:root[data-liquid-glass="native"] :is(.lg-content, .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle)) :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle) {
+  border-color: transparent;
+  background: var(--lgd-raised);
+  box-shadow: inset 0 0 0 1px var(--lgd-stroke);
+}
+
+/* ── 2. Posé sur une image : le panneau givré de la maquette ────────────── */
+
+/* La peau du socle (`.lg-pane`) : dégradé blanc léger sur l'encre, givre qui
+ * floute et AVIVE ce qui passe dessous, bord, ombres, reflets. */
+:root[data-liquid-glass="native"] .lg-content.lg-content-frosted {
+  border-color: var(--lg-pane-border);
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink)) !important;
+  box-shadow: var(--lg-pane-shadow);
+  -webkit-backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+  backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+}
+
+/* Son liseré en dégradé (un anneau de 1 px masqué) ; `relative` SANS
+ * spécificité : la classe de position de l'élément l'emporte. */
+:where(:root[data-liquid-glass="native"] .lg-content.lg-content-frosted) {
+  position: relative;
+}
+
+:root[data-liquid-glass="native"] .lg-content.lg-content-frosted::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: var(--lg-pane-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}

@@ -86,6 +86,10 @@ function QuickButton({ glass, box, active, accent = false, label, state, onClick
   const layout = `${box} flex items-center justify-center`;
   const skin = `rounded-full border bg-black/55 transition-transform duration-150 hover:scale-105 ${state}`;
   const surface = useLiquidGlassSurface({
+    material: "bead",
+    // Posée sur une image (affiche, bannière, fiche) : le verre SOMBRE, quel que
+    // soit le thème — la nacre du clair y perdait ses glyphes.
+    tone: "dark",
     level: "clear",
     shape: "circle",
     interactive: true,

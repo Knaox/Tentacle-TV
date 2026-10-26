@@ -29,6 +29,7 @@ export const SearchLauncher = memo(function SearchLauncher({ variant, className 
   // les barres de macOS 26 sont des groupes séparés. Hors mode natif, la
   // peau d'avant (`fallbackClassName`), classe pour classe.
   const field = useLiquidGlassSurface({
+    material: "pane",
     shape: "capsule",
     interactive: true,
     className: `lgc-field group flex h-10 items-center gap-2.5 px-3.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`,

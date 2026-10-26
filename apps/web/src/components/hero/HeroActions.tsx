@@ -30,13 +30,13 @@ export const HERO_INFO_CLASS =
  * est un verre clair aux glyphes adaptés au décor.
  */
 export const HERO_PLAY_PROPS = {
-  appearance: { level: "prominent", tint: "brand", shape: "capsule" },
+  appearance: { material: "pane", level: "prominent", tint: "brand", shape: "capsule" },
   className: "flex items-center gap-2.5 px-7 py-3 text-base font-bold",
   fallbackClassName: HERO_PLAY_CLASS,
   fallbackStyle: HERO_PLAY_STYLE,
 } as const;
 export const HERO_INFO_PROPS = {
-  appearance: { level: "clear", shape: "capsule" },
+  appearance: { material: "pane", tone: "dark", level: "clear", shape: "capsule" },
   className: "flex items-center gap-2 px-6 py-3 text-base font-semibold",
   fallbackClassName: HERO_INFO_CLASS,
 } as const;

@@ -52,7 +52,9 @@ export const MetadataHint = memo(function MetadataHint({ item, tone = "media" }:
       variants={fadeUp}
       role="note"
       data-metadata-hint
-      className={`mt-5 max-w-2xl rounded-xl border px-4 py-3 text-sm leading-relaxed ${
+      // `lg-content` : sous le verre de macOS 26, le panneau de la maquette,
+      // givré (posé sur l'image de la fiche) — marqueurs sans style ailleurs.
+      className={`lg-content lg-content-frosted mt-5 max-w-2xl rounded-xl border px-4 py-3 text-sm leading-relaxed ${
         onMedia
           ? "border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.5)] text-on-media-secondary"
           : "border-line-subtle bg-fill-faint text-content-secondary"
