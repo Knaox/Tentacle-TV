@@ -15,7 +15,8 @@ import type { OctaveStartupChoice } from "./octaveStartup";
 import { setOctaveStartup, useOctaveStartup } from "./octaveStartupStore";
 import { useOctaveAvailability } from "./useOctaveAvailability";
 
-export function OctaveStartupSetting() {
+/** `title` / `caption` : la page « Réglages d'Octave » la range sous son propre titre (« Démarrage »). */
+export function OctaveStartupSetting({ title, caption }: { title?: string; caption?: string } = {}) {
   const { t } = useTranslation("music");
   const { available } = useOctaveAvailability();
   const choice = useOctaveStartup();
@@ -30,7 +31,7 @@ export function OctaveStartupSetting() {
   if (!available) return null;
 
   return (
-    <SettingsSection title={t("mode.startupTitle")} caption={t("mode.startupCaption")}>
+    <SettingsSection title={title ?? t("mode.startupTitle")} caption={caption ?? t("mode.startupCaption")}>
       <div className="p-5">
         <p className="mb-2 text-sm font-medium text-content-primary">{t("mode.startupLabel")}</p>
         <SegmentedChoice label={t("mode.startupLabel")} value={choice} options={options} onChange={setOctaveStartup} />

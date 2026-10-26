@@ -13,6 +13,11 @@
  *   + .lg-pane-flat    même peau SANS `backdrop-filter` : un grand panneau posé
  *                      sur le fond ambiant seul (qui est déjà flou) — la passe
  *                      de flou ne se voit pas, elle coûte à chaque défilement.
+ *   + .lg-pane-thick   ÉPAIS : la même peau sur une encre qui tient l'AA sur
+ *                      n'importe quel dessous (affiche blanche, héros noir) —
+ *                      menus, feuilles, modales, avis. Tout le régime `surface`
+ *                      (`data-lg-scale="surface"`, primitive ET peaux `.lg-menu`,
+ *                      `.lg-sheet`…) la prend d'office : UNE porte, plus bas.
  *   + .lg-pane-noring  sans le liseré : l'élément garde SON `::after`.
  *   + .lg-pane-prominent (ou `data-lg-level="prominent"`) : l'action principale,
  *                      la marque dans le verre.
@@ -70,6 +75,12 @@
 :root[data-liquid-glass="native"] .lg-pane.lg-pane-flat {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"] .lg-pane.lg-pane-thick {
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-thick-ink), var(--lg-pane-thick-ink));
+  -webkit-backdrop-filter: blur(var(--lg-pane-thick-blur)) saturate(var(--lg-pane-thick-saturate)) brightness(var(--lg-pane-thick-brightness));
+  backdrop-filter: blur(var(--lg-pane-thick-blur)) saturate(var(--lg-pane-thick-saturate)) brightness(var(--lg-pane-thick-brightness));
 }
 
 :root[data-liquid-glass="native"] .lg-pane:is(.lg-pane-prominent, [data-lg-level="prominent"]) {
@@ -132,6 +143,40 @@
 :root[data-liquid-glass="native"] :is(.lg-pane-row, .lg-pane-nav):is([aria-current="page"], [aria-selected="true"], [data-selected="true"]) {
   background: var(--lg-pane-selected);
   box-shadow: var(--lg-pane-selected-shadow);
+}
+
+/* ── Le régime `surface` prend le verre ÉPAIS (une seule porte) ──────────────
+ * Menus, « Plus », filtres, ⌘K, `Modal`, `Sheet`, avis : la primitive
+ * (`.lg-surface[data-lg-scale="surface"]`) comme les peaux CSS (`--lgc-*`,
+ * remappées par `liquidGlassSurface.css`) lisent ces jetons. On remplace le
+ * matériau gris d'avant (`surfaceTokens.css`, toujours déclaré) par la peau de
+ * la maquette sur l'encre épaisse prouvée (`PANE_THICK_*`, `paneMaterial.test.ts`) ;
+ * le ton tenu de la surface choisit l'encre (les jetons `--lg-pane-*` suivent
+ * `data-lg-tone`). Une surface qui fixe SON matériau (le dock d'Octave,
+ * `shellGlass.css`) le garde : sa règle est plus précise. */
+:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"],
+:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"][data-lg-tone] {
+  --lg-surface-fill: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-thick-ink), var(--lg-pane-thick-ink));
+  --lg-surface-blur: var(--lg-pane-thick-blur);
+  --lg-surface-saturate: var(--lg-pane-thick-saturate);
+  --lg-surface-brightness: var(--lg-pane-thick-brightness);
+  --lg-surface-shadow: var(--lg-pane-shadow);
+  --lg-edge: var(--lg-pane-border);
+}
+:where(:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"]:not(.lg-pane-noring)) {
+  position: relative;
+}
+:root[data-liquid-glass="native"]:not([data-lg-material]) [data-lg-scale="surface"]:not(.lg-pane-noring)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: var(--lg-pane-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 /* ── « Réduire la transparence », « Contraste accru » : l'aplat, aucun givre ── */

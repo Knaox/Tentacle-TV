@@ -41,7 +41,15 @@ export default {
     themeDark: "Sombre",
     glass: "Liquid Glass dans Octave",
     tentacleGlass: "Liquid Glass dans Tentacle",
-    shortcut: "Apparence d'Octave…",
+  },
+  settings: {
+    kicker: "Octave",
+    title: "Réglages d'Octave",
+    appearance: "Apparence",
+    startup: "Démarrage",
+    nav: "Réglages",
+    shortcut: "Réglages d'Octave…",
+    open: "Ouvrir les réglages d'Octave",
   },
   artistMore: {
     elsewhere: "Pas encore dans votre bibliothèque",

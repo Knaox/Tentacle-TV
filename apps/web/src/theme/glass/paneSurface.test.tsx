@@ -57,6 +57,12 @@ describe("en mode natif", () => {
     expect(render("native", <LiquidGlass material="pane" radius="lg" />)).toContain('data-lg-radius="lg"');
   });
 
+  it("un verre « pane » au régime `surface` est ÉPAIS (menus, feuilles) — sans `data-lg-scale`", () => {
+    const html = render("native", <LiquidGlass material="pane" scale="surface" className="p-2" />);
+    expect(html).toContain('class="lg-pane lg-pane-thick p-2"');
+    expect(html).not.toContain("data-lg-scale");
+  });
+
   it("sans `material`, la lentille d'avant (rien ne change pour les appelants)", () => {
     const html = render("native", <LiquidGlass className="x">y</LiquidGlass>);
     expect(html).toContain("lg-surface");

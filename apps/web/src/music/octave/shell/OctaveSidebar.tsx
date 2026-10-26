@@ -2,8 +2,8 @@
  * Octave — la barre latérale (bureau, fenêtre large) : la marque — signée
  * Tentacle — et ‹ › en tête, juste dessous la BASCULE du mode et le retour aux
  * films (`OctaveModeSlot` : la première chose qu'on voit, jamais perdue en pied
- * de rail), puis les cinq destinations, vos playlists, et en pied le profil
- * (`OctaveProfileButton`). Au téléphone, les mêmes destinations passent
+ * de rail), puis les cinq destinations, vos playlists, et en pied les réglages
+ * d'Octave (discrets) et le profil (`OctaveProfileButton`). Au téléphone, les mêmes destinations passent
  * dans une barre d'onglets.
  *
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
@@ -16,7 +16,7 @@
  */
 
 import { memo, useState, type DragEvent, type ReactNode } from "react";
-import { Heart, Home, Library, ListMusic, Search } from "lucide-react";
+import { Heart, Home, Library, ListMusic, Search, Settings2 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMusicPlaylists } from "@tentacle-tv/api-client";
@@ -42,11 +42,14 @@ export const OCTAVE_DESTINATIONS = [
 const linkClass =
   "octave-nav-link flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
+const settingsClass =
+  "octave-nav-link -mb-3 flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+
 const playlistClass =
   "octave-nav-link flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
-  const { t } = useTranslation("music");
+  const { t } = useTranslation(["music", "octaveShell"]);
   const playlists = useMusicPlaylists();
   return (
     <nav aria-label={t("nav.main")} className="flex h-full w-[var(--oc-sidebar-width)] shrink-0 flex-col gap-5 px-3 pb-3 pt-4">
@@ -81,6 +84,11 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
           ))}
         </ul>
       </div>
+      {/* Les réglages d'Octave, DANS Octave : une entrée discrète au pied du rail, au-dessus du profil. */}
+      <NavLink to={octavePaths.settings} className={settingsClass}>
+        <Settings2 className="octave-nav-icon h-4 w-4" aria-hidden />
+        {t("octaveShell:settings.nav")}
+      </NavLink>
       <OctaveProfileButton />
     </nav>
   );

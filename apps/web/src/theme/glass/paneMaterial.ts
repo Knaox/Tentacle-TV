@@ -106,6 +106,31 @@ export const PANE_LIGHT: PaneToneMaterial = {
   glyphSecondary: rgb(12, 12, 18, 0.68),
 };
 
+/**
+ * Le verre ÉPAIS (`.lg-pane-thick`, et tout le régime `surface` : menus, feuilles,
+ * modales, avis, palette) : la même peau, sur une encre qui tient l'AA sur
+ * N'IMPORTE quel dessous — une affiche blanche comme un héros noir (`backdropGrid`,
+ * 216 dessous). Prune en sombre, nacre en clair : lisible, jamais laiteux.
+ */
+export const PANE_THICK_BLUR_PX = 24;
+/** Les glyphes sont ceux du régime `surface` (`--lg-surface-glyph(-secondary)-on-*`, `surfaceTokens.css`). */
+export const PANE_THICK_DARK: PaneToneMaterial = {
+  ...PANE_DARK,
+  saturate: 1.3,
+  brightness: 1,
+  ink: rgb(14, 10, 20, 0.76),
+  glyph: rgb(255, 255, 255, 0.96),
+  glyphSecondary: rgb(255, 255, 255, 0.8),
+};
+export const PANE_THICK_LIGHT: PaneToneMaterial = {
+  ...PANE_LIGHT,
+  saturate: 1.3,
+  brightness: 1,
+  ink: rgb(249, 246, 250, 0.62),
+  glyph: rgb(12, 12, 18, 0.88),
+  glyphSecondary: rgb(12, 12, 18, 0.72),
+};
+
 /** L'action principale (`--lg-pane-prominent-fill`) : la marque, presque opaque, le rose un cran profond. */
 export const PANE_PROMINENT = { from: rgb(190, 24, 93, 0.96), to: rgb(109, 40, 217, 0.9) } as const;
 
