@@ -38,6 +38,11 @@ export interface IsolatedRuntimeServices {
   /** À tous les comptes connectés (`music:provider`). */
   broadcastMusicEvent: (event: RuntimeMusicEvent) => number;
   onAudioItems: ((listener: (change: AudioItemsChange) => void) => () => void) | null;
+  /**
+   * Le titre de la bibliothèque tel que CE compte le voit (index du cœur), pour `music:resolved` : Jellyfin fait foi,
+   * pochette comprise (26/10). `null` : pas (encore) indexé, ou invisible au compte — le titre de l'extension reste.
+   */
+  libraryTrack: ((userId: string, jellyfinId: string) => Promise<unknown | null>) | null;
 }
 
 const NONE: IsolatedRuntimeServices = {
@@ -45,6 +50,7 @@ const NONE: IsolatedRuntimeServices = {
   sendMusicEvent: () => 0,
   broadcastMusicEvent: () => 0,
   onAudioItems: null,
+  libraryTrack: null,
 };
 
 let services: IsolatedRuntimeServices = NONE;

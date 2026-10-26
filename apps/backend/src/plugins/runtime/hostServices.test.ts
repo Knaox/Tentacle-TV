@@ -78,6 +78,20 @@ describe("events.emit", () => {
     expect(sent).toEqual([{ ids: ["u1", "u2"], event: { type: "music:pending", pluginId: "sillon" } }]);
   });
 
+  it("music:resolved : le titre relayé est celui de la BIBLIOTHÈQUE, compte par compte (pochette comprise) ; pas indexé → celui de l'extension", async () => {
+    const sent: { ids: readonly string[]; event: RuntimeMusicEvent }[] = [];
+    configureIsolatedRuntime({
+      sendMusicEvent: (ids, event) => (sent.push({ ids, event }), ids.length),
+      libraryTrack: async (userId, jellyfinId) => (userId === "u1" ? { key: `jf:${jellyfinId}`, artworkUrl: "/api/music/artwork/alb?tag=t" } : null),
+    });
+    const event = { type: "music:resolved", externalId: "ext:sillon:r", jellyfinId: "jf1", recording: null, track: { key: "jf:jf1", artworkUrl: null } };
+    expect(await call("events.emit", { userIds: ["u1", "u2"], event })).toMatchObject({ ok: true, value: { delivered: 2 } });
+    expect(sent).toEqual([
+      { ids: ["u1"], event: { ...event, pluginId: "sillon", track: { key: "jf:jf1", artworkUrl: "/api/music/artwork/alb?tag=t" } } },
+      { ids: ["u2"], event: { ...event, pluginId: "sillon" } },
+    ]);
+  });
+
   it("refuse un type du cœur et un événement mal formé", async () => {
     expect(await call("events.emit", { userIds: ["u1"], event: { type: "music:library", added: [] } })).toMatchObject({ error: { code: "forbidden" } });
     expect(await call("events.emit", { userIds: ["u1"], event: { type: "music:resolved", externalId: "x" } })).toMatchObject({ error: { code: "invalid" } });
