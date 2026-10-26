@@ -75,3 +75,40 @@
   font-size: 14px;
   color: rgba(255, 255, 255, 0.75);
 }
+
+/* ── Les squelettes : la même place que la tête et le tableau qui arrivent ── */
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head {
+  padding: 24px 12px 0;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head > div:first-child {
+  gap: 36px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-art {
+  --oc-radius-art-lg: 30px;
+  width: 260px;
+  height: 260px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head > div:last-child {
+  margin-top: 28px;
+  gap: 14px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head > div:last-child > div {
+  height: 56px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-rows {
+  margin: 28px 12px 0;
+  padding: 58px 10px 10px;
+  border-radius: 28px;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-row {
+  height: 70px;
+  margin-top: 4px;
+  padding: 0 18px;
+  gap: 16px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-row > div:nth-child(3) {
+  --oc-radius-art-sm: 12px;
+  width: 50px;
+  height: 50px;
+}
