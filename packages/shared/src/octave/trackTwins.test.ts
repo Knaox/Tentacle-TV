@@ -23,7 +23,8 @@ describe("jumeaux : la règle du contrat, pour la recherche, les likés et les d
     const keyed = theirs({ mbids: { recording: "0c7a0e00-0000-5000-8000-000000000001", release: null, releaseGroup: null, artists: [] } });
     const ownRec = { ...own, mbids: { ...own.mbids, recording: "15befd0f-2c0c-49f5-b863-d254bbddbe90" } };
     expect(sameRecording(ownRec, keyed)).toBe(true);
-    // La recherche, elle, laisse un vrai MBID trancher.
-    expect(sameTrack(ownRec, keyed)).toBe(false);
+    // La recherche aussi, dans un RECUEIL (« Various Artists ») : titre + album + durée suffisent, un MBID différent
+    // ne contredit plus (26/10, « Sucker for Pain »). Hors recueil, un vrai MBID tranche toujours (musicLibraryMatch).
+    expect(sameTrack(ownRec, keyed)).toBe(true);
   });
 });

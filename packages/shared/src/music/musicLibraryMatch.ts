@@ -24,7 +24,10 @@ export const MATCH_DURATION_GAP_MS = 2_000;
 
 /** L'identifiant MusicBrainz de « Various Artists » (artiste spécial des compilations). */
 const VARIOUS_ARTISTS_MBID = "89ad4ac3-39f7-470e-963a-56509c546377";
-const VARIOUS_NAMES = new Set(["various artists", "various", "va", "artistes divers", "artistes varies", "divers"]);
+const VARIOUS_NAMES = new Set([
+  "various artists", "various artist", "various", "va", "v a", "artistes divers", "artistes varies", "divers",
+  "varios artistas", "diversos artistas", "artisti vari", "verschiedene interpreten", "verschiedene kunstler", "multiple artists",
+]);
 
 export interface MatchArtist {
   name: string;
@@ -38,6 +41,8 @@ export interface MatchableTrack {
   albumTitle: string | null;
   durationMs: number | null;
   recording: Mbid | null;
+  /** L'artiste de l'ALBUM (Jellyfin `AlbumArtist`) : « Various Artists » y dit un recueil. */
+  albumArtist?: string | null;
   discNumber?: number | null;
   trackNumber?: number | null;
 }
@@ -126,21 +131,41 @@ export function closeDuration(a: number | null, b: number | null): boolean | nul
   return Math.abs(a - b) <= MATCH_DURATION_GAP_MS;
 }
 
+// Ce qui ne change pas l'ALBUM : son édition (« Collector's Edition », « Deluxe », « Explicit », « 2016 Remaster »).
+const EDITION_GROUP = /\s*[([][^)\]]*\b(?:deluxe|edition|expanded|explicit|clean|bonus|anniversary|special|collectors?|remaster(?:ed)?)\b[^)\]]*[)\]]/gi;
+
+/** Deux titres d'album : le même, édition mise de côté (une B.O. « Score » n'est pas la « Soundtrack »). */
+export function sameAlbumTitle(a: string, b: string): boolean {
+  return sameTitle(a, b) || matchText(a.replace(EDITION_GROUP, " ")) === matchText(b.replace(EDITION_GROUP, " "));
+}
+
+/** Un titre d'un RECUEIL : crédité « Various Artists » (ou rien), ou dans un album de « Various Artists ». */
+function onCompilation(track: MatchableTrack): boolean {
+  return isVariousCredit(track.artists) || (track.albumArtist != null && VARIOUS_NAMES.has(matchText(track.albumArtist)));
+}
+
 /** Le verdict des MBID : `true`/`false` s'ils tranchent, `null` s'il en manque un. */
 function mbidVerdict(a: Mbid | null, b: Mbid | null): boolean | null {
   return a && b ? a.toLowerCase() === b.toLowerCase() : null;
 }
 
-/** Un titre de l'extension (`candidate`) EST-il ce titre de la bibliothèque (`own`) ? */
+/**
+ * Un titre de l'extension (`candidate`) EST-il ce titre de la bibliothèque (`own`) ?
+ *
+ * Dans un RECUEIL (« Various Artists » d'un côté, crédit ou album-artiste), même titre, même album (édition à part)
+ * et même durée suffisent : c'est lui, même sous deux MBID d'enregistrement — Damien, 26/10 : « Sucker for Pain »
+ * rangé par Lidarr en « Various Artists », un autre enregistrement que celui demandé, restait « en attente » pendant
+ * qu'il jouait depuis la bibliothèque. Hors recueil, les MBID tranchent comme avant.
+ */
 export function isSameTrack(own: MatchableTrack, candidate: MatchableTrack): boolean {
+  const titled = sameTitle(own.title, candidate.title);
+  const sameAlbum = own.albumTitle !== null && candidate.albumTitle !== null && sameAlbumTitle(own.albumTitle, candidate.albumTitle);
+  if (titled && sameAlbum && (onCompilation(own) || onCompilation(candidate)) && closeDuration(own.durationMs, candidate.durationMs) === true) return true;
   const byMbid = mbidVerdict(own.recording, candidate.recording);
   if (byMbid !== null) return byMbid;
-  if (!sameTitle(own.title, candidate.title)) return false;
+  if (!titled) return false;
   if (closeDuration(own.durationMs, candidate.durationMs) === false) return false;
-  if (shareArtist(own.artists, candidate.artists)) return true;
-  // Une compilation créditée à « Various Artists » : c'est l'album qui dit l'artiste.
-  const various = isVariousCredit(own.artists) || isVariousCredit(candidate.artists);
-  return various && own.albumTitle !== null && candidate.albumTitle !== null && sameTitle(own.albumTitle, candidate.albumTitle) && closeDuration(own.durationMs, candidate.durationMs) === true;
+  return shareArtist(own.artists, candidate.artists);
 }
 
 /** Un album de l'extension EST-il cet album de la bibliothèque ? (Ses titres disent ensuite ce qui y est.) */
