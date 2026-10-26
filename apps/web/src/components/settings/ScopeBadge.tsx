@@ -28,7 +28,7 @@ export const ScopeBadge = memo(function ScopeBadge({ scope, className }: ScopeBa
   const { t } = useTranslation("settingsMobile");
   const Icon = ICONS[scope];
   const tone = scope === "account"
-    ? "border-tentacle-accent/30 bg-tentacle-accent/10 text-tentacle-accent-light"
+    ? "border-[rgba(var(--brand-rgb),0.3)] bg-[rgba(var(--brand-rgb),0.1)] text-tentacle-accent-light"
     : "border-line-subtle bg-white/5 text-content-tertiary";
   return (
     <span
