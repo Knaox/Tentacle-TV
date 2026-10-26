@@ -98,7 +98,7 @@ export const NowPlayingInfo = memo(function NowPlayingInfo({ artworkClass = "h-1
           )}
         </p>
       </div>
-      <HeartButton track={track} actions={actions} className="octave-dock-chip" />
+      <HeartButton track={track} actions={actions} className="octave-dock-chip lg-bead" />
       {/* Le titre EN COURS s'ajoute à une playlist, ou s'en retire, sans quitter le lecteur (25/10). */}
       <QuickAddButton track={track} actions={actions} visible="always" />
       <TrackMenu track={track} actions={actions} visible="always" />

@@ -6,9 +6,8 @@
  * s'arrêtent au-dessus du dock ; la page, elle, défile dessous (le verre du dock
  * a quelque chose à voir passer).
  *
- * La scène est la NUIT d'Octave (`octave-night`) dans les deux thèmes, comme le
- * dock : la maquette est une encre, et ses taches de couleur n'ont de sens que
- * sur elle. Les menus et feuilles portés hors de la scène suivent le thème.
+ * La scène suit le THÈME (encre et taches vives en sombre, nacre et taches pastel
+ * en clair : les jetons du socle) ; seul le dock reste la nuit d'Octave.
  *
  * Seulement sous `data-liquid-glass="native"` : `OctaveShell` ne la monte que là.
  * Mesures et matériaux : `octaveStage.css`.
@@ -29,14 +28,14 @@ interface OctaveGlassStageProps {
 
 export function OctaveGlassStage({ mainRef, sidebar, dock, queue, overlays, children }: OctaveGlassStageProps) {
   return (
-    <div className="octave-stage octave-night fixed inset-0" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop" data-octave-stage>
+    <div className="octave-stage fixed inset-0" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop" data-octave-stage>
       <OctaveAmbient />
       <div className="octave-stage-row">
         {sidebar}
         <main ref={mainRef} id="octave-main" className="octave-stage-main">
           {children}
         </main>
-        {queue && <div className="octave-drawer octave-stage-queue">{queue}</div>}
+        {queue && <div className="octave-drawer octave-stage-queue lg-pane">{queue}</div>}
       </div>
       {dock}
       {overlays}

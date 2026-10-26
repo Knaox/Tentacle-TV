@@ -116,7 +116,7 @@ export const TrackRow = memo(function TrackRow({ track, number, current, playing
       draggable={actions.canAddToPlaylist(track)}
       onDragStart={(e) => startTrackDrag(e, track)}
       onDragEnd={endTrackDrag}
-      className={`octave-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+      className={`octave-row lg-pane-row group grid h-14 cursor-pointer select-none items-center gap-3 rounded-md px-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
         selected ? "bg-octave-selected" : "hover:bg-octave-hover focus-visible:bg-octave-hover"
       } ${rowColumns(showAlbum)}`}
     >

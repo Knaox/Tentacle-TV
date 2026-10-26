@@ -1,23 +1,26 @@
 /**
- * Octave en Liquid Glass — le FOND : l'encre prune et de grandes taches de
- * couleur douces, ce que les verres d'Octave réfractent (maquette « Octave ·
- * Playlist »). Les couleurs d'Octave — le rose de la musique, le violet de
- * Tentacle — et, quand un titre est là, la TEINTE DE SA POCHETTE
- * (`useArtworkTint`, celle de l'eau du lecteur « en cours ») à la place des
- * deux taches froides de la maquette.
+ * Octave en Liquid Glass — le FOND : le fond ambiant du socle (`GlassAmbient`,
+ * cinq taches violet → rose sur l'encre, peintes une fois), teinté par la
+ * POCHETTE EN COURS : ses deux teintes prennent la place de deux taches, bornées
+ * pour que le verre reste lisible. Sans titre, ou une pochette sans couleur :
+ * nos couleurs. Une vignette de 64 px suffit à la lecture des teintes.
  *
- * Coût (CLAUDE.md, « Coût GPU ») : UNE couche FIXE, des dégradés radiaux peints
- * une fois (aucun `filter: blur`, rien d'animé) ; elle ne se repeint qu'au
+ * Monté une fois, dans la scène (`position: absolute`) : il ne se repeint qu'au
  * changement de pochette.
  */
 
-import { memo, type CSSProperties } from "react";
-import { useArtworkTint } from "../motion/useArtworkTint";
+import { memo } from "react";
+import { GlassAmbient } from "../../../theme/glass";
+import { useArtworkResolver } from "../components/Artwork";
+import { sizedArtworkUrl } from "../components/artworkTone";
 import { usePlayerSelector } from "../player/OctavePlayerProvider";
+
+/** La taille de vignette lue pour les teintes (la plus petite de la route du cœur). */
+const TINT_ARTWORK_SIZE = 64;
 
 export const OctaveAmbient = memo(function OctaveAmbient() {
   const artworkUrl = usePlayerSelector((s) => s.current?.artworkUrl ?? null);
-  const tint = useArtworkTint(artworkUrl);
-  const style = tint === null ? undefined : ({ "--ocs-tint": tint } as CSSProperties);
-  return <div aria-hidden className="octave-ambient" data-tinted={tint === null ? undefined : "true"} style={style} />;
+  const resolve = useArtworkResolver();
+  const image = artworkUrl === null ? null : resolve(sizedArtworkUrl(artworkUrl, TINT_ARTWORK_SIZE));
+  return <GlassAmbient image={image} position="absolute" />;
 });

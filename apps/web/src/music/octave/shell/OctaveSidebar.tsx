@@ -10,8 +10,10 @@
  * active prend la pastille de Tentacle, rose en tête, son icône rose
  * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif, le
  * rail devient un panneau de verre posé sur le fond coloré d'Octave, comme dans
- * la maquette « Octave · Playlist » (surface de la primitive ; mesures :
- * `glass/octaveStage.css`, `glass/octaveRail.css`).
+ * la maquette « Octave · Playlist » : le verre `pane` du socle, avec son givre
+ * qui AVIVE les taches (sans lui, un panneau gris) — gratuit ici : ni le rail ni
+ * le fond ne bougent, la passe ne se refait pas. Ses entrées en `lg-pane-nav`.
+ * Mesures : `glass/octaveRail.css`.
  */
 
 import { memo, useState, type DragEvent, type ReactNode } from "react";
@@ -40,23 +42,23 @@ export const OCTAVE_DESTINATIONS = [
 ] as const;
 
 const linkClass =
-  "octave-nav-link flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link lg-pane-nav flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 const settingsClass =
   "octave-nav-link -mb-3 flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 const playlistClass =
-  "octave-nav-link octave-nav-playlist flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link octave-nav-playlist lg-pane-nav flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation(["music", "octaveShell"]);
   const playlists = useMusicPlaylists();
   const native = useLiquidGlassMode() === "native";
-  // Un GRAND verre en mode natif (ton tenu) ; ailleurs, le rail sur l'encre.
+  // Le verre de la maquette en mode natif ; ailleurs, le rail sur l'encre.
   const glass = useLiquidGlassSurface({
+    material: "pane",
     radius: "xl",
-    scale: "surface",
-    className: `flex shrink-0 flex-col w-[var(--oc-sidebar-width)] ${native ? "octave-glass octave-stage-rail" : "h-full gap-5 px-3 pb-3 pt-4"}`,
+    className: `flex shrink-0 flex-col w-[var(--oc-sidebar-width)] ${native ? "octave-stage-rail" : "h-full gap-5 px-3 pb-3 pt-4"}`,
   });
   return (
     <nav aria-label={t("nav.main")} {...glass.props}>

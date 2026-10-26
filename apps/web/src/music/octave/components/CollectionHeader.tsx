@@ -60,14 +60,14 @@ export function titleLength(title: string): "short" | "medium" | "long" | "huge"
 }
 
 const PLAY_PROPS = {
-  appearance: { level: "prominent", tint: "brand", shape: "capsule" },
+  appearance: { material: "pane", level: "prominent", tint: "brand", shape: "capsule" },
   className: "octave-cta octave-cta-play flex h-12 items-center gap-2.5 pl-5 pr-7 text-base font-bold disabled:cursor-default disabled:opacity-40",
   fallbackClassName: "hero-cta-primary rounded-full",
   fallbackStyle: { boxShadow: "var(--oc-shadow-play)" },
 } as const;
 
 const SHUFFLE_PROPS = {
-  appearance: { level: "regular", shape: "capsule" },
+  appearance: { material: "pane", level: "regular", shape: "capsule" },
   className: "octave-cta octave-cta-shuffle flex h-12 items-center gap-2 px-5 text-sm font-semibold disabled:cursor-default disabled:opacity-40",
   fallbackClassName:
     "rounded-full border border-octave-line bg-octave-hover text-content-primary transition-colors duration-150 hover:bg-octave-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus",
@@ -93,14 +93,14 @@ export function CollectionHeader({ kicker, title, artworkUrl = null, art, round 
       <div className="octave-hero-main flex flex-col items-start gap-6 md:flex-row md:items-end">
         {/* En verre : la pochette posée dans un cadre de verre (rayon 30, 10 de marge). */}
         {native ? (
-          <div className="octave-art-frame" data-round={round ? "true" : undefined}>
+          <div className="octave-art-frame lg-pane" data-round={round ? "true" : undefined}>
             {cover}
           </div>
         ) : (
           cover
         )}
         <div className="min-w-0 flex-1">
-          <p className="oc-eyebrow">{kicker}</p>
+          <p className={native ? "oc-eyebrow lg-bead" : "oc-eyebrow"}>{kicker}</p>
           <h1 className={`oc-display mt-2 break-words text-content-primary ${titleSizeClass(title)}`} data-title-length={native ? titleLength(title) : undefined}>{title}</h1>
           <div className="mt-3 flex min-h-5 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-content-secondary">{meta}</div>
         </div>

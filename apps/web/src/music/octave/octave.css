@@ -9,7 +9,6 @@
 @import "./glass/octaveTable.css";
 @import "./glass/octaveControls.css";
 @import "./glass/octaveNowPlaying.css";
-@import "./glass/octaveMaterial.css";
 
 /*
  * Octave — ce que Tailwind ne dit pas. Jetons de l'identité : octaveTokens.css

@@ -1,51 +1,55 @@
 /**
- * Octave en verre natif (`shellGlass.css`, D11 du 26/10) : le dock garde un
- * verre dont le texte se lit sur TOUT dessous. Le rail est un panneau de verre
- * posé sur le fond coloré d'Octave (maquette « Octave · Playlist », D13 du
- * 26/10) — plus sur l'encre nue, où il n'avait rien à réfracter.
+ * Octave en verre natif (`shellGlass.css`) : le dock est le verre `pane` du
+ * socle, ton sombre forcé, avec une encre plus dense — il flotte au-dessus de
+ * la PAGE qui défile, pas du seul fond ambiant que couvre la preuve du socle.
+ * Le texte s'y lit sur TOUT dessous, un blanc pur compris. Le rail est un
+ * panneau de verre posé sur le fond coloré d'Octave (maquette « Octave ·
+ * Playlist », D13 du 26/10).
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compositeOver, contrastRatio, parseColor, WCAG_AA_LARGE, WCAG_AA_TEXT, WHITE, type Rgba } from "../../../theme/glass/contrast";
+import { PANE_DARK, paneColorOver, sheenCorner } from "../../../theme/glass/paneMaterial";
 
 const CSS = readFileSync(join(__dirname, "shellGlass.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
 const SIDEBAR = readFileSync(join(__dirname, "OctaveSidebar.tsx"), "utf8");
+const PLAYER_BAR = readFileSync(join(__dirname, "PlayerBar.tsx"), "utf8");
 
-/** L'encre du dock (le dernier aplat `rgba(…)` de `--lg-surface-fill`) dans le bloc dont le sélecteur contient `marker`. */
+/** L'encre du dock (`--lg-pane-ink`) dans le bloc dont le sélecteur contient `marker`. */
 function dockInk(marker: string): Rgba {
-  const block = CSS.split("}").find((b) => b.includes(marker) && b.includes("--lg-surface-fill"));
-  const fill = /--lg-surface-fill:([^;]+);/.exec(block ?? "")?.[1] ?? "";
-  const colors = [...fill.matchAll(/rgba\([^)]+\)/g)].map((m) => m[0]);
-  const ink = parseColor(colors.at(-1) ?? "");
+  const block = CSS.split("}").find((b) => b.includes(marker) && b.includes("--lg-pane-ink"));
+  const ink = parseColor(/--lg-pane-ink:\s*([^;]+);/.exec(block ?? "")?.[1]?.trim() ?? "");
   if (!ink) throw new Error(`encre du dock introuvable : ${marker}`);
   return ink;
 }
 
 describe("le dock d'Octave en verre natif", () => {
-  // Le pire dessous : un blanc pur (ni le fondu de la page, ni le reflet ne sont comptés).
-  it.each([
-    ["sombre", '[data-lg-tone="dark"]'],
-    ["clair", ':root[data-theme="light"]'],
-  ])("thème %s : le texte blanc tient l'AA sur un dessous blanc pur", (_theme, marker) => {
-    const surface = compositeOver(dockInk(marker), WHITE);
-    expect(contrastRatio(WHITE, surface)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
-    const secondary = compositeOver({ r: 255, g: 255, b: 255, a: 0.8 }, surface);
-    expect(contrastRatio(secondary, surface)).toBeGreaterThanOrEqual(WCAG_AA_LARGE);
+  it("est le verre de la maquette (matériau `pane`), ton sombre forcé", () => {
+    expect(PLAYER_BAR).toMatch(/material: "pane",\s*tone: "dark"/);
   });
 
-  it("n'a ni liseré ni givre éteint : la forme est dite par le biseau, les pochettes gardent leur couleur", () => {
-    const dock = CSS.split("}").find((b) => b.includes(".octave-night.octave-glass.lg-surface")) ?? "";
-    expect(dock).toMatch(/--lg-edge:\s*transparent/);
-    const saturate = Number(/--lg-saturate:\s*([\d.]+)/.exec(dock)?.[1]);
-    expect(saturate).toBeGreaterThanOrEqual(1);
+  // Le pire dessous : un blanc pur (une pochette blanche qui passe sous le dock).
+  it.each([
+    ["sombre", ':root[data-liquid-glass="native"] .octave-night.lg-pane'],
+    ["clair", '[data-theme="light"] .octave-night.lg-pane'],
+  ])("thème %s : le texte blanc tient l'AA sur un dessous blanc pur", (_theme, marker) => {
+    const tone = { ...PANE_DARK, ink: dockInk(marker) };
+    // Le corps du verre, au plus fort de son dégradé blanc.
+    const body = paneColorOver(WHITE, tone, tone.fillPeak);
+    expect(contrastRatio(WHITE, body)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+    const secondary = compositeOver({ r: 255, g: 255, b: 255, a: 0.72 }, body);
+    expect(contrastRatio(secondary, body)).toBeGreaterThanOrEqual(WCAG_AA_LARGE);
+    // Le coin du reflet : grand texte, icônes.
+    const corner = paneColorOver(WHITE, tone, sheenCorner(tone));
+    expect(contrastRatio(WHITE, corner)).toBeGreaterThanOrEqual(WCAG_AA_LARGE);
   });
 });
 
 describe("le rail d'Octave", () => {
   it("est un panneau de verre en mode natif, la peau d'avant ailleurs (la maquette)", () => {
-    expect(SIDEBAR).toMatch(/useLiquidGlassSurface/);
+    expect(SIDEBAR).toMatch(/material: "pane"/);
     expect(SIDEBAR).toMatch(/native \? "[^"]*octave-stage-rail/);
   });
 });

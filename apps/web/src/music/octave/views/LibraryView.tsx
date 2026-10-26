@@ -74,7 +74,7 @@ function Albums() {
               /* stockage refusé */
             }
           }}
-          className="octave-pill h-9 cursor-pointer rounded-full border border-octave-line bg-octave-hover px-3 text-sm text-content-primary focus:border-line-focus focus:outline-none"
+          className="octave-pill lg-bead h-9 cursor-pointer rounded-full border border-octave-line bg-octave-hover px-3 text-sm text-content-primary focus:border-line-focus focus:outline-none"
         >
           {SORTS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -161,7 +161,7 @@ export function LibraryView() {
             aria-controls="octave-library-panel"
             tabIndex={tab === id ? 0 : -1}
             onClick={() => select(id)}
-            className="octave-chip"
+            className="octave-chip lg-bead"
           >
             {t(`library.${id}`)}
           </button>

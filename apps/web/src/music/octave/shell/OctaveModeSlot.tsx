@@ -33,7 +33,7 @@ export function OctaveModeSlot({ onExit, compact = false }: OctaveModeSlotProps)
     );
   }
   return (
-    <div ref={anchor} className="flex flex-col gap-0.5 rounded-xl bg-octave-hover p-1" data-octave-mode-slot>
+    <div ref={anchor} className="lg-bead flex flex-col gap-0.5 rounded-xl bg-octave-hover p-1" data-octave-mode-slot>
       <OctaveModeSwitch
         placement="octave"
         onExit={onExit}
