@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
-import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useSetInterfaceLanguage, useUserId } from "@tentacle-tv/api-client";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useDeleteLibraryPreference, useUserId } from "@tentacle-tv/api-client";
 import type { LibraryPreference } from "@tentacle-tv/api-client";
 import { cacheLibrariesList, cacheLibraryPrefs, readLibrariesList, readLibraryPrefs, type SubtitleMode } from "../../offline/localTrackPrefs";
-import { clearPendingInterfaceLanguage, markInterfaceLanguagePending, queuePendingPref } from "../../offline/pendingPrefs";
+import { queuePendingPref } from "../../offline/pendingPrefs";
 import { useOfflineMode } from "../../offline/useOfflineMode";
 import { PageTransition } from "../../components/PageTransition";
 import { LibraryPrefCard } from "../preferences/LibraryPrefCard";
@@ -12,6 +11,7 @@ import { INTERFACE_LANGUAGES, LANGUAGE_CODES, LANGUAGE_KEYS } from "../preferenc
 import { SETTING_FIELD } from "../../components/settings/SettingToggleRow";
 import { SettingItem } from "../../components/settings/wide/SettingItem";
 import { WideGroup } from "../../components/settings/wide/WideGroup";
+import { useInterfaceLanguage } from "../../components/settings/useInterfaceLanguage";
 
 /**
  * Réglages › Langues et sous-titres — ce qu'on cherche quand « le film ne se
@@ -26,13 +26,13 @@ import { WideGroup } from "../../components/settings/wide/WideGroup";
  */
 export function SettingsLanguages() {
   const { t, i18n } = useTranslation("preferences");
-  const queryClient = useQueryClient();
   const offline = useOfflineMode();
   const { data: libraries } = useLibraries({ enabled: !offline });
   const { data: prefs } = useLibraryPreferences({ enabled: !offline });
   const setMut = useSetLibraryPreference();
   const deleteMut = useDeleteLibraryPreference();
-  const setLangMut = useSetInterfaceLanguage();
+  // La langue des menus : le geste unique de toutes les pages qui l'offrent (Octave compris).
+  const { setLanguage: setInterfaceLanguage } = useInterfaceLanguage();
 
   // Toute lecture réussie alimente le cache hors ligne (y compris après une
   // sauvegarde, l'invalidation refetch) : le lecteur local applique alors les
@@ -55,20 +55,6 @@ export function SettingsLanguages() {
     () => (offline && userId ? readLibraryPrefs(userId) : []),
     [offline, userId, cacheVersion], // eslint-disable-line react-hooks/exhaustive-deps
   );
-
-  const handleInterfaceLangChange = (lng: string) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem("tentacle_language", lng);
-    if (offline) {
-      // Poussée au retour en ligne (flushPendingInterfaceLanguage) ; le pull
-      // du démarrage (main.tsx) la respecte — pas d'écrasement.
-      markInterfaceLanguagePending(lng);
-    } else {
-      clearPendingInterfaceLanguage();
-      setLangMut.mutate(lng);
-    }
-    queryClient.invalidateQueries();
-  };
 
   const savePref = (data: { libraryId: string; audioLang?: string | null; subtitleLang?: string | null; subtitleMode?: SubtitleMode }) => {
     if (offline && userId) {
@@ -163,7 +149,7 @@ export function SettingsLanguages() {
             trailing={(
               <select
                 value={i18n.language}
-                onChange={(e) => handleInterfaceLangChange(e.target.value)}
+                onChange={(e) => setInterfaceLanguage(e.target.value)}
                 aria-label={t("preferences:interfaceLanguage")}
                 className={`w-40 ${SETTING_FIELD}`}
               >
