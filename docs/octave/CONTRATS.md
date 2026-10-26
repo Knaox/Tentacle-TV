@@ -157,6 +157,17 @@ code chargé, aucune trace dans l'interface.
 - Extension désactivée → `shutdown`, plus aucun relais, `music:provider` émis.
 - Repli si le runtime se révèle trop risqué : conteneur séparé, MÊME contrat HTTP.
 
+## Configuration d'office d'une extension (`configDefaults`, D14b — 26/10)
+
+`/api/plugins/active` ne publie les pages et les contrats d'une extension (`music` compris) qu'avec
+`config.enabled === true` ; une installation depuis une source naît avec `config: {}`. Une extension
+sans formulaire qui pose cette clé restait donc MUETTE (Octave ne cherchait jamais dans Sillon).
+Champ ADDITIF du manifeste : `"configDefaults": { "enabled": true }` — valeurs simples seulement
+(booléen, nombre, texte ≤ 256, `null`), 16 clés au plus. Posé à l'installation et à la mise à jour,
+et au démarrage pour une extension déjà installée (`services/pluginConfigDefaults.ts`), TOUJOURS
+seulement là où la clé MANQUE : un `enabled: false` posé exprès reste coupé. Une extension qui ne
+déclare rien (Vigie) garde sa configuration d'avant. Sillon le déclare.
+
 ## Requêtes déléguées à l'appareil (lot « Sillon recherche », R3 — capacité `plugins.clientFetch`)
 
 Une extension DÉCRIT une requête HTTP, l'appareil qui l'a sollicitée (le bureau) l'exécute depuis

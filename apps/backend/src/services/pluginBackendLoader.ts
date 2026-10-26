@@ -8,6 +8,7 @@ import { readRuntimeManifest } from "../plugins/runtime/runtimeManifest";
 import { missingServerVersion, storageRefusal } from "./pluginStorage/gate";
 import { BACKEND_VERSION } from "./version";
 import { NOTIFICATION_EXTRA_FIELDS } from "../notifications/notificationTarget";
+import { repairInstalledConfigDefaults } from "./pluginConfigDefaults";
 
 /** Diagnostic info collected during loading (exposed via /api/health) */
 export const pluginBackendDiag: {
@@ -65,6 +66,9 @@ export interface PluginBackendContext {
 }
 
 export async function loadPluginBackends(app: FastifyInstance): Promise<void> {
+  // Au démarrage, avant tout : les clés d'office des manifestes (`configDefaults`) qui manquent à une
+  // extension déjà installée — sans elles, une extension installée depuis une source restait muette.
+  repairInstalledConfigDefaults();
   const installed = getInstalled().filter((p) => p.enabled);
 
   pluginBackendDiag.dataDir = DATA_DIR;

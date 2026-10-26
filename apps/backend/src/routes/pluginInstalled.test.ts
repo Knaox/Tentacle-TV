@@ -27,7 +27,7 @@ vi.mock("../services/pluginRestart", () => ({
 }));
 
 // L'archive « extraite » : un manifeste, avec ou sans module serveur.
-const archive = vi.hoisted(() => ({ withServer: true, downloads: [] as string[] }));
+const archive = vi.hoisted(() => ({ withServer: true, downloads: [] as string[], extra: {} as Record<string, unknown> }));
 vi.mock("../services/pluginInstall", async () => {
   const fs = await import("fs");
   const path = await import("path");
@@ -40,7 +40,7 @@ vi.mock("../services/pluginInstall", async () => {
     extractPlugin: async (_file: string, pluginId: string) => {
       const dir = path.join(DATA_DIR, pluginId);
       fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify(archive.withServer ? { server: "server/index.mjs", storage: { sqlite: true } } : {}));
+      fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify({ ...(archive.withServer ? { server: "server/index.mjs", storage: { sqlite: true } } : {}), ...archive.extra }));
       return dir;
     },
     removePluginFiles: (pluginId: string) => {
@@ -93,6 +93,7 @@ beforeEach(() => {
   restart.reasons = [];
   archive.withServer = true;
   archive.downloads = [];
+  archive.extra = {};
   pluginBackendDiag.loadResults = [];
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.stubGlobal("fetch", vi.fn(async () => Response.json(REGISTRY)));
@@ -163,6 +164,17 @@ describe("POST /install", () => {
     expect(response.statusCode).toBe(404);
     expect(getInstalled()).toEqual([]);
     expect(archive.downloads).toEqual([]);
+  });
+
+  it("la configuration d'office du manifeste est posée : installée depuis une source, elle marche sans un geste", async () => {
+    archive.extra = { configDefaults: { enabled: true } };
+    await call("POST", "/install", { pluginId: "vigie", version: "1.2.0", sourceId: "official" });
+    expect(getInstalled()[0]?.config).toEqual({ enabled: true });
+  });
+
+  it("sans configuration d'office (Vigie), la config reste vide comme avant", async () => {
+    await call("POST", "/install", { pluginId: "vigie", version: "1.2.0", sourceId: "official" });
+    expect(getInstalled()[0]?.config).toEqual({});
   });
 
   it("refuse pendant qu'un redémarrage est en route", async () => {
@@ -258,3 +270,16 @@ describe("PUT /:id/toggle et POST /restart", () => {
 
 // Le dossier jetable entier, pas seulement plugins/ : sinon un dossier par lancement reste dans /tmp.
 afterAll(() => rmSync(DATA_ROOT, { recursive: true, force: true }));
+
+describe("POST /:id/update — configuration d'office", () => {
+  it("une clé d'office nouvelle est posée si elle manque, jamais par-dessus un enabled:false", async () => {
+    archive.extra = { configDefaults: { enabled: true } };
+    const fresh = seed("vigie");
+    await call("POST", `/${fresh.id}/update`);
+    expect(getInstalled()[0]?.config).toEqual({ enabled: true });
+
+    saveInstalled(getInstalled().map((p) => ({ ...p, version: "1.0.0", config: { enabled: false } })));
+    await call("POST", `/${fresh.id}/update`);
+    expect(getInstalled()[0]?.config).toEqual({ enabled: false });
+  });
+});
