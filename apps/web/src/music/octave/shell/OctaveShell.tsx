@@ -7,10 +7,11 @@
  * Le bandeau d'hôte de macOS (feux tricolores) garde sa place
  * (`--hote-bandeau`), comme dans la coquille vidéo.
  *
- * Liquid Glass (mode natif, bureau) : une autre DISPOSITION (`OctaveGlassStage`,
- * la maquette « Octave · Playlist ») — le fond coloré d'Octave sous tout, le rail,
- * la page et la file en panneaux de verre posés à 20 px des bords, le dock qui
- * flotte sur TOUTE la largeur. Ailleurs, rien ne change.
+ * Liquid Glass (mode natif, bureau) : la MÊME disposition, aux mêmes tailles (le
+ * verre change le matériau, jamais les dimensions — Damien, 26/10) ; la coquille
+ * reçoit seulement le fond ambiant (`glass/OctaveAmbient`, teinté par la pochette)
+ * et la classe `octave-stage` que lisent les peaux de `glass/*.css`. Ailleurs,
+ * rien ne change.
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -18,7 +19,8 @@ import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { useDisplayedSurface } from "../../../theme/displayedSurface";
 import { useLiquidGlassMode } from "../../../theme/glass";
-import { OctaveGlassStage } from "../glass/OctaveGlassStage";
+import { OctaveAmbient } from "../glass/OctaveAmbient";
+import { OctaveGlassStageContext } from "../glass/glassStage";
 import { DuplicateConfirmHost } from "../actions/duplicateConfirm";
 import { PlaylistChooserHost } from "../actions/playlistChooser";
 import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
@@ -90,27 +92,10 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
     );
   }
 
-  if (native) {
-    return (
-      <OctaveGlassStage
-        mainRef={main}
-        sidebar={<OctaveSidebar onExit={onExit} />}
-        dock={<PlayerBar queueOpen={queueOpen} onToggleQueue={toggleQueue} onOpenNowPlaying={openSheet} />}
-        queue={queueOpen ? <QueuePanel onClose={closeQueue} /> : null}
-        overlays={
-          <>
-            {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
-            <ShellHosts />
-          </>
-        }
-      >
-        {children}
-      </OctaveGlassStage>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 flex bg-octave-ink" style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop">
+    <OctaveGlassStageContext.Provider value={native}>
+    <div className={`fixed inset-0 flex bg-octave-ink${native ? " octave-stage" : ""}`} style={{ paddingTop: "var(--hote-bandeau, 0px)" }} data-octave-shell="desktop">
+      {native && <OctaveAmbient />}
       <OctaveSidebar onExit={onExit} />
       <div className="relative min-w-0 flex-1">
         <main ref={main} id="octave-main" className="h-full overflow-y-auto overscroll-contain" style={{ paddingBottom: DOCK_ROOM }}>
@@ -127,6 +112,7 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
       {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
       <ShellHosts />
     </div>
+    </OctaveGlassStageContext.Provider>
   );
 }
 

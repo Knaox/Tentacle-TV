@@ -1,27 +1,27 @@
 /*
- * Octave en Liquid Glass — les CONTRÔLES des pages (maquette « Octave ·
- * Playlist », sa `.chip`) : le champ de recherche, « Rechercher », les filtres,
- * les onglets de la bibliothèque, le tri sont des `.lg-bead` du socle. Ici,
- * l'état CHOISI (le remplissage de sélection du socle, rose → violet, jamais
- * un blanc plein) et le focus du champ.
- *
- * La bande collée de la recherche perd son aplat : le champ est verre, la page
- * passe dessous. Seulement sous la porte, dans la scène d'Octave.
+ * Octave en Liquid Glass — la PEAU des contrôles des pages : le champ de
+ * recherche, « Rechercher », les filtres, les onglets de la bibliothèque, le tri
+ * sont des `.lg-bead` du socle. Rien n'y change de taille (le verre change le
+ * matériau, jamais les dimensions — Damien, 26/10) : un contrôle qui n'avait pas
+ * de bord garde un bord de 0, son filet passe en ombre intérieure.
+ * L'état CHOISI : le remplissage de sélection du socle (rose → violet, jamais un
+ * blanc plein). Seulement sous la porte, dans la coquille de bureau d'Octave.
  */
 
+/* Sans bord au mode normal : la pastille n'en ajoute pas (sa boîte ne bouge pas). */
+:root[data-liquid-glass="native"] .octave-stage [role="tab"].lg-bead,
+:root[data-liquid-glass="native"] .octave-stage [data-octave-mode-slot].lg-bead {
+  border-width: 0;
+  box-shadow: inset 0 0 0 1px var(--lg-bead-border), var(--lg-bead-shadow);
+}
 :root[data-liquid-glass="native"] .octave-stage .octave-pill.lg-bead,
-:root[data-liquid-glass="native"] .octave-stage .octave-chip.lg-bead {
-  color: var(--lg-pane-glyph);
-}
-:root[data-liquid-glass="native"] .octave-stage .octave-pill.lg-bead[aria-selected="true"],
-:root[data-liquid-glass="native"] .octave-stage .octave-pill.lg-bead[aria-pressed="true"],
-:root[data-liquid-glass="native"] .octave-stage .octave-chip.lg-bead[aria-selected="true"],
-:root[data-liquid-glass="native"] .octave-stage .octave-chip.lg-bead[aria-pressed="true"] {
-  background: var(--lg-pane-selected);
-  box-shadow: var(--lg-pane-selected-shadow);
-}
+:root[data-liquid-glass="native"] .octave-stage .octave-chip.lg-bead,
 :root[data-liquid-glass="native"] .octave-stage .octave-field.lg-bead {
   color: var(--lg-pane-glyph);
+}
+:root[data-liquid-glass="native"] .octave-stage [role="tab"].lg-bead[aria-selected="true"] {
+  background: var(--lg-pane-selected);
+  box-shadow: var(--lg-pane-selected-shadow);
 }
 :root[data-liquid-glass="native"] .octave-stage .octave-field.lg-bead:focus {
   border-color: rgba(var(--brand-accent-rgb), 0.7);
@@ -33,14 +33,13 @@
  * d'empilement) la recouvrirait — elle passe devant. */
 :root[data-liquid-glass="native"] .octave-stage .octave-field-icon {
   z-index: 1;
-  color: var(--lg-pane-glyph-secondary);
 }
 /* Le menu natif du tri garde ses options lisibles. */
 :root[data-liquid-glass="native"] .octave-stage select.octave-pill > option {
   background-color: var(--oc-ink-raised);
   color: var(--text-primary);
 }
-
+/* La bande collée de la recherche perd son aplat noir : le fond d'Octave passe. */
 :root[data-liquid-glass="native"] .octave-stage .octave-search-band {
   background-color: transparent;
 }

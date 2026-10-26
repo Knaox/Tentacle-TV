@@ -72,7 +72,7 @@ export function ArtistView() {
     return (
       <>
         <HeaderSkeleton round />
-        <div className="octave-view-pad px-2 md:px-6">
+        <div className="px-2 md:px-6">
           <RowsSkeleton rows={TOP_FOLDED} />
         </div>
       </>
@@ -95,7 +95,7 @@ export function ArtistView() {
         onPlay={() => player.playList(top, 0, contextId)}
         onShuffle={() => queueActions.playShuffled(player, top, contextId)}
       />
-      <div className="octave-view-pad flex flex-col gap-10 px-2 md:px-6">
+      <div className="flex flex-col gap-10 px-2 md:px-6">
         {top.length > 0 && (
           <Shelf title={t("artist.top")}>
             {/* La file reprend les DIX titres phares, repliés ou non : seul l'affichage se replie. */}

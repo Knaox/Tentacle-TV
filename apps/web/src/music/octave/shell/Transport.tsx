@@ -34,7 +34,7 @@ export const Transport = memo(function Transport({ size = "md" }: { size?: "md" 
   const activeDot = <span aria-hidden className="absolute bottom-0.5 h-1 w-1 rounded-full bg-octave-accent" />;
 
   return (
-    <div className={`octave-transport flex items-center justify-center ${big ? "gap-6" : "gap-2.5"}`}>
+    <div className={`flex items-center justify-center ${big ? "gap-6" : "gap-2.5"}`}>
       <button
         type="button"
         aria-pressed={shuffle}

@@ -62,7 +62,7 @@ export function PlaylistView() {
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
         extra={<KeepCollectionButton kind="playlist" collectionKey={`jf:${id}`} title={data.name} tracks={tracks} />}
       />
-      <div className="octave-view-pad px-2 md:px-6">
+      <div className="px-2 md:px-6">
         {rows.length === 0 ? (
           <EmptyState
             icon={ListMusic}

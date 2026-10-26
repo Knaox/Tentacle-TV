@@ -80,7 +80,7 @@ export function PlaylistsView() {
   const playlists = useMusicPlaylists();
   const [creating, setCreating] = useState(false);
   return (
-    <div className="octave-view-pad flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
+    <div className="flex flex-col gap-6 px-2 pb-10 pt-6 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4 px-2">
         <h1 className="oc-display text-3xl text-content-primary">{t("nav.playlists")}</h1>
         <NewPlaylist open={creating} setOpen={setCreating} />

@@ -48,8 +48,9 @@ describe("le dock d'Octave en verre natif", () => {
 });
 
 describe("le rail d'Octave", () => {
-  it("est un panneau de verre en mode natif, la peau d'avant ailleurs (la maquette)", () => {
-    expect(SIDEBAR).toMatch(/material: "pane"/);
-    expect(SIDEBAR).toMatch(/native \? "[^"]*octave-stage-rail/);
+  it("garde sa boîte du mode normal : aucune surface de verre, seule la peau de ses entrées change", () => {
+    expect(SIDEBAR).not.toMatch(/useLiquidGlassSurface/);
+    expect(SIDEBAR).toMatch(/className="flex h-full w-\[var\(--oc-sidebar-width\)\] shrink-0 flex-col gap-5 px-3 pb-3 pt-4"/);
+    expect(SIDEBAR).toMatch(/lg-pane-nav/);
   });
 });

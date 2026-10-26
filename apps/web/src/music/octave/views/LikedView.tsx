@@ -52,7 +52,7 @@ export function LikedView() {
         onPlay={() => player.playList(tracks, 0, "liked")}
         onShuffle={() => queueActions.playShuffled(player, tracks, "liked")}
       />
-      <div className="octave-view-pad px-2 md:px-6">
+      <div className="px-2 md:px-6">
         {liked.isPending && <RowsSkeleton />}
         {liked.isError && <ErrorState onRetry={() => void liked.refetch()} />}
         {liked.isSuccess && rows.length === 0 && (
