@@ -8,6 +8,7 @@ import { useThemeMode } from "../../theme/useThemeMode";
 import { useLiquidGlass } from "../../theme/useLiquidGlass";
 import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 import { TrailerPreviewSetting } from "../../components/settings/TrailerPreviewSetting";
+import { OctaveAppearanceSettings, useTentacleGlassLabel } from "../../music/octave/settings/OctaveAppearanceSettings";
 
 /**
  * Apparence — thème clair/sombre/auto, Liquid Glass et les aperçus de
@@ -24,6 +25,8 @@ export function SettingsAppearance() {
   const { t } = useTranslation("preferences");
   const { mode, setMode } = useThemeMode();
   const glass = useLiquidGlass();
+  // Avec Octave, deux interrupteurs Liquid Glass : celui-ci se nomme « Liquid Glass dans Tentacle ».
+  const glassLabel = useTentacleGlassLabel() ?? t("liquidGlassTitle");
   const glassCaption = glass.nativeSupported
     ? t("liquidGlassNativeDescription")
     : glass.supported
@@ -58,20 +61,20 @@ export function SettingsAppearance() {
         ))}
       </SettingsSection>
 
-      {/* Sur le bureau macOS, l'interrupteur n'existe que là où le verre
-          natif existe (macOS 26) : sur un système d'avant, rien à régler, et
-          la section entière se tait. Ailleurs, le comportement d'avant. */}
+      {/* L'interrupteur n'existe que là où le verre natif existe (bureau,
+          macOS 26) : au web, sous Windows, Linux ou un macOS d'avant, rien à
+          régler, et la section entière se tait (Damien, 26/10). */}
       {glass.toggleVisible ? (
         <SettingsSection title={t("effects")} caption={glassCaption}>
           <SettingsRow
             icon={<Sparkles size={ICON} />}
-            label={t("liquidGlassTitle")}
+            label={glassLabel}
             last
             trailing={
               <ToggleSwitch
                 checked={glass.enabled}
                 onChange={glass.setEnabled}
-                label={t("liquidGlassTitle")}
+                label={glassLabel}
               />
             }
           />
@@ -80,6 +83,9 @@ export function SettingsAppearance() {
 
       {/* Les aperçus de bande-annonce au survol des cartes : un comportement de
           l'interface, réglé par appareil comme le thème et le verre. */}
+      {/* L'apparence d'Octave, réglée à part (thème ; Liquid Glass sur macOS 26). */}
+      <OctaveAppearanceSettings />
+
       <TrailerPreviewSetting />
     </div>
   );
