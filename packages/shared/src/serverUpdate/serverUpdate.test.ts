@@ -20,6 +20,14 @@ describe("versions du serveur", () => {
     expect(compareServerVersions("v1.22.3", "1.22.3")).toBe(0);
     expect(compareServerVersions("n'importe", "0.0.1")).toBeLessThan(0);
   });
+
+  it("une version fixée au build (« +preview.<sha> ») vaut sa version, jamais une pré-version", () => {
+    expect(parseServerVersion("1.40.0+preview.fab15c3")).toEqual([1, 40, 0]);
+    expect(compareServerVersions("1.40.0+preview.fab15c3", "1.40.0")).toBe(0);
+    expect(compareServerVersions("1.40.0+preview.fab15c3", "1.31.4")).toBeGreaterThan(0);
+    expect(parseServerVersion("1.40.0-preview")).toBeNull();
+    expect(parseServerVersion("1.40.0+")).toBeNull();
+  });
 });
 
 describe("ce que la carte dit de la version en service", () => {
@@ -27,6 +35,10 @@ describe("ce que la carte dit de la version en service", () => {
 
   it("à jour : la dernière publiée tourne, et rien n'exige plus", () => {
     expect(resolveServerUpdate(base)).toEqual({ status: "up-to-date", required: null });
+  });
+
+  it("une version fixée au build, en avance sur la dernière publiée : « en avance », rien de conseillé", () => {
+    expect(resolveServerUpdate({ ...base, current: "1.40.0+preview.fab15c3", latest: "1.31.4" })).toEqual({ status: "ahead", required: null });
   });
 
   it("conseillée : une plus récente est publiée, aucun client ne l'exige", () => {
