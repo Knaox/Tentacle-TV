@@ -25,6 +25,8 @@ import {
   type ResolvedScheme,
   type ThemeMode,
 } from "@tentacle-tv/theme";
+import { getDisplayedSurface, subscribeDisplayedSurface, type DisplayedSurface } from "./displayedSurface";
+import { getOctaveTheme, subscribeOctaveAppearance, type OctaveTheme } from "./octaveAppearance";
 
 export const THEME_MODE_STORAGE_KEY = "tentacle_theme_mode";
 
@@ -48,8 +50,17 @@ const readStoredMode = (): ThemeMode => {
   }
 };
 
+/**
+ * Le mode qui vaut à l'écran : celui de Tentacle, sauf quand Octave est affiché et a le sien (« Clair » ou
+ * « Sombre » ; « Comme Tentacle » le suit) — Damien, 26/10. Le choix de Tentacle (`mode`) n'est jamais touché.
+ */
+export function effectiveThemeMode(surface: DisplayedSurface, tentacle: ThemeMode, octave: OctaveTheme): ThemeMode {
+  return surface === "octave" && octave !== "same" ? octave : tentacle;
+}
+
 let mode: ThemeMode = readStoredMode();
-let scheme: ResolvedScheme = resolveScheme(mode, prefersDark());
+const shownMode = (): ThemeMode => effectiveThemeMode(getDisplayedSurface(), mode, getOctaveTheme());
+let scheme: ResolvedScheme = resolveScheme(shownMode(), prefersDark());
 
 const listeners = new Set<() => void>();
 const emit = (): void => {
@@ -65,7 +76,7 @@ const applyToDocument = (next: ResolvedScheme): void => {
 };
 
 const recompute = (): void => {
-  const next = resolveScheme(mode, prefersDark());
+  const next = resolveScheme(shownMode(), prefersDark());
   if (next === scheme) return;
   scheme = next;
   applyToDocument(next);
@@ -83,6 +94,10 @@ try {
   /* matchMedia absent : on reste sur la valeur d'amorçage. */
 }
 
+// L'autre surface affichée, ou l'apparence d'Octave changée : le thème suit, sans recharger.
+subscribeDisplayedSurface(recompute);
+subscribeOctaveAppearance(recompute);
+
 export const getMode = (): ThemeMode => mode;
 export const getScheme = (): ResolvedScheme => scheme;
 
@@ -93,7 +108,7 @@ export function setMode(next: ThemeMode): void {
   } catch {
     /* Persistance impossible : le choix vaut pour la session en cours. */
   }
-  const resolved = resolveScheme(next, prefersDark());
+  const resolved = resolveScheme(shownMode(), prefersDark());
   scheme = resolved;
   applyToDocument(resolved);
   emit();

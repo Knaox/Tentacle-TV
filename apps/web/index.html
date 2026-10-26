@@ -32,6 +32,12 @@
           // Défaut SOMBRE, comme `sanitizeThemeMode` — l'app est dessinée pour
           // le noir. « auto » reste choisissable, il n'est plus le défaut.
           if (mode !== "light" && mode !== "dark" && mode !== "auto") mode = "dark";
+          // Une adresse d'Octave : SON thème s'il en a un (« Clair » / « Sombre » ; absent = comme
+          // Tentacle) — la même règle que colorScheme.ts › effectiveThemeMode et displayedSurface.ts.
+          var path = window.location.pathname;
+          var inOctave = path === "/octave" || path.indexOf("/octave/") === 0;
+          var octaveTheme = localStorage.getItem("tentacle_octave_theme");
+          if (inOctave && (octaveTheme === "light" || octaveTheme === "dark")) mode = octaveTheme;
           dark =
             mode === "dark" ||
             (mode === "auto" &&
