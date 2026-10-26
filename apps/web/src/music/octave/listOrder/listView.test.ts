@@ -114,3 +114,13 @@ describe("1 000 titres", () => {
     expect(t3 - t0).toBeLessThan(250);
   });
 });
+
+describe("un titre importé SANS MBID", () => {
+  it("garde sa place glissée quand il entre dans la bibliothèque (titre | artiste)", () => {
+    const imported: ListRow = { ...waiting("w9", "Ma meilleure ennemie", ""), track: { ...waiting("w9", "Ma meilleure ennemie", "").track, mbids: { recording: null, release: null, releaseGroup: null, artist: null } as never, artists: [{ name: "Stromae", mbid: null, jellyfinId: null }] } };
+    const custom = customOf([natural[2]!, imported, natural[0]!]);
+    expect(custom[1]!.r).toBe("s:ma meilleure ennemie|stromae");
+    const arrived = lib("77", "Ma Meilleure Ennemie", { artists: [{ name: "Stromae", mbid: null, jellyfinId: null }], mbids: { recording: null, release: null, releaseGroup: null, artist: null } as never });
+    expect(titles(applyCustomOrder([natural[0]!, natural[2]!, arrived], (r) => rowSubject(r, null), custom))).toEqual(["Charlie", "Ma Meilleure Ennemie", "Alpha"]);
+  });
+});

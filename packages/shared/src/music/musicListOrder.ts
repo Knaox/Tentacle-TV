@@ -15,7 +15,9 @@
  *   prédécesseur dans l'ordre naturel (en tête s'il n'en a pas : un nouveau
  *   like arrive en haut, un ajout de playlist à sa place).
  * - Un titre en attente (hors bibliothèque) garde sa place quand il entre dans
- *   la bibliothèque : son entrée porte aussi son MBID d'enregistrement (`r`).
+ *   la bibliothèque : son entrée porte aussi son IDENTITÉ (`r`) — le MBID
+ *   d'enregistrement, ou à défaut « titre | artiste » replié (`listAlias` : un
+ *   titre importé n'a souvent pas de MBID).
  */
 
 export type MusicListSortKey = "custom" | "added" | "title" | "artist" | "album" | "duration" | "year" | "plays" | "lastPlayed";
@@ -42,7 +44,7 @@ export interface MusicListStats {
   lastPlayedAt: number | null;
 }
 
-/** Une place de l'ordre personnalisé : la clé du titre, et son MBID d'enregistrement s'il est en attente. */
+/** Une place de l'ordre personnalisé : la clé du titre, et son identité (`listAlias`) s'il est en attente. */
 export interface MusicCustomEntry {
   k: string;
   r?: string;
@@ -102,8 +104,25 @@ export interface MusicListSubject {
   track: number | null;
   durationMs: number | null;
   year: number | null;
+  /** L'identité qui survit à l'entrée dans la bibliothèque : `listAlias(…)`. */
   recording: string | null;
   stats: MusicListStats | null;
+}
+
+function fold(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+/** L'identité d'un titre pour l'ordre personnalisé : son MBID d'enregistrement, sinon « titre | artiste » replié. */
+export function listAlias(recording: string | null | undefined, title: string, artist: string): string | null {
+  if (recording) return recording;
+  const signature = `${fold(title)}|${fold(artist)}`;
+  return signature === "|" ? null : `s:${signature}`.slice(0, 64);
 }
 
 const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });

@@ -12,6 +12,7 @@
 
 import {
   customEntriesOf,
+  listAlias,
   sortListItems,
   type MusicCustomEntry,
   type MusicListPrefs,
@@ -27,16 +28,18 @@ export type StatsOf = (row: ListRow) => MusicListStats | null;
 
 export function rowSubject(row: ListRow, stats: MusicListStats | null): MusicListSubject {
   const t = row.track;
+  const artist = t.artists[0]?.name ?? "";
   return {
     key: t.key,
     title: t.title,
-    artist: t.artists[0]?.name ?? "",
+    artist,
     album: t.album?.title ?? "",
     disc: t.discNumber,
     track: t.trackNumber,
     durationMs: t.durationMs,
     year: t.year,
-    recording: t.mbids.recording ?? null,
+    // Un titre importé n'a souvent pas de MBID : « titre | artiste » le reconnaît quand il entre dans la bibliothèque.
+    recording: listAlias(t.mbids.recording, t.title, artist),
     stats,
   };
 }
@@ -115,7 +118,7 @@ export function movedRows<T>(rows: readonly T[], from: number, to: number): T[] 
   return next;
 }
 
-/** L'ordre affiché gardé comme ordre personnalisé ; une attente garde son MBID (sa place survit à son entrée). */
+/** L'ordre affiché gardé comme ordre personnalisé ; une attente garde son identité (sa place survit à son entrée). */
 export function customOf(rows: readonly ListRow[]): MusicCustomEntry[] {
   const pending = new Set(rows.filter((r) => r.pending).map((r) => r.track.key));
   return customEntriesOf(rows.map((r) => rowSubject(r, null)), (s) => pending.has(s.key));
