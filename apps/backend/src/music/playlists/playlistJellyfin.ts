@@ -10,6 +10,7 @@
 
 import { jfAdmin, normalizeId, q, type JfItem, type JfItemsPage } from "../jellyfin/musicJellyfin";
 import type { PlaylistEntryRef } from "./playlistOrder";
+import { playStatsOf, type PlayStats } from "../listOrder/playStats";
 
 const LIST_TTL_MS = 60_000;
 const listMemo = new Map<string, { at: number; items: JfItem[] }>();
@@ -44,15 +45,20 @@ export async function playlistFor(userId: string, playlistId: string): Promise<J
   return result.data;
 }
 
-/** Les entrées, dans l'ordre de Jellyfin ; `null` si Jellyfin ne répond pas. */
-export async function playlistEntries(userId: string, playlistId: string): Promise<PlaylistEntryRef[] | null> {
+/** Une entrée, et les écoutes du compte qui la lit (pour trier). */
+export interface PlaylistEntryRead extends PlaylistEntryRef {
+  plays: PlayStats;
+}
+
+/** Les entrées, dans l'ordre de Jellyfin, avec les écoutes du compte ; `null` si Jellyfin ne répond pas. */
+export async function playlistEntries(userId: string, playlistId: string): Promise<PlaylistEntryRead[] | null> {
   const result = await jfAdmin<JfItemsPage>(
-    `/Playlists/${q(playlistId)}/Items?userId=${q(userId)}&Fields=&EnableImages=false&EnableUserData=false`,
+    `/Playlists/${q(playlistId)}/Items?userId=${q(userId)}&Fields=&EnableImages=false&EnableUserData=true`,
   );
   if (!result.ok) return null;
   return (result.data.Items ?? [])
     .filter((i) => i.Id)
-    .map((i) => ({ entryId: i.PlaylistItemId ?? i.Id, itemId: normalizeId(i.Id) }));
+    .map((i) => ({ entryId: i.PlaylistItemId ?? i.Id, itemId: normalizeId(i.Id), plays: playStatsOf(i) }));
 }
 
 export function resetPlaylistMemoForTests(): void {

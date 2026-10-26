@@ -15,6 +15,7 @@ import { homeView } from "../view/userViews";
 import { clampLimit, parseCursor } from "../view/viewContext";
 import { musicMediaRoutes } from "./musicMediaRoutes";
 import { musicUserRoutes } from "./musicUserRoutes";
+import { musicListRoutes } from "./musicListRoutes";
 import { musicOfflineRoutes } from "./musicOfflineRoutes";
 import { musicImportRoutes } from "../playlistImport/importRoutes";
 import { applyQueryToken } from "./mediaQueryToken";
@@ -78,4 +79,6 @@ export const musicRoutes: FastifyPluginAsync = async (app) => {
   musicMediaRoutes(app);
   musicOfflineRoutes(app);
   musicImportRoutes(app);
+  // Encapsulé : le garde de `music.listOrder` ne touche que ses routes.
+  await app.register(async (scope) => musicListRoutes(scope));
 };

@@ -11,6 +11,7 @@
 
 import type { Mbid, MusicAlbum, MusicArtist, MusicPage, MusicPlaylist, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
 import type { PlaybackSource } from "./musicPlayback";
+import type { MusicListStats } from "./musicListOrder";
 
 export const MUSIC_ROUTES = {
   /** GET — l'état : y a-t-il une bibliothèque musique visible pour ce compte ? */
@@ -150,7 +151,10 @@ export interface MusicArtistResponse extends MusicArtist {
   albums: MusicAlbum[];
 }
 
-export type MusicLikedPage = MusicPage<MusicTrack>;
+/** Les likés, dans l'ordre de la préférence du compte ; `stats` par identifiant Jellyfin (capacité `music.listOrder`). */
+export interface MusicLikedPage extends MusicPage<MusicTrack> {
+  stats?: Record<string, MusicListStats>;
+}
 export type MusicAlbumPage = MusicPage<MusicAlbum>;
 export type MusicArtistPage = MusicPage<MusicArtist>;
 

@@ -11,6 +11,11 @@ import { orderedIds, rowsByIds, tracksByRecording } from "../index/indexQueries"
 import type { IndexRow } from "../index/indexTypes";
 import { jfAdmin, normalizeId, q, type JfItemsPage } from "../jellyfin/musicJellyfin";
 import { forYouView } from "./homeForYou";
+import { sortListItems, type MusicListStats } from "../contract/musicListOrder";
+import { addedDatesFor, likedScope } from "../listOrder/addedDates";
+import { readListPrefs } from "../listOrder/listPrefsStore";
+import { likedPlayStats } from "../listOrder/playStats";
+import { rowSubject } from "../listOrder/rowSubject";
 import { playlistsView } from "./playlistViews";
 import { albumsOf, nextCursor, tracksOf, visibleIds, visibleInOrder, visibleRows, type UserView } from "./viewContext";
 
@@ -50,7 +55,7 @@ export async function homeView(view: UserView): Promise<MusicHomeResponse> {
   };
 }
 
-/** L'ordre des titres likés : artiste de l'album, album, disque, piste (Jellyfin ne date pas un favori). */
+/** L'ordre de départ des likés (avant les dates d'entrée) : artiste de l'album, album, disque, piste. */
 export function likedOrder(a: IndexRow, b: IndexRow): number {
   return (
     (a.albumArtist ?? "").localeCompare(b.albumArtist ?? "") ||
@@ -61,13 +66,34 @@ export function likedOrder(a: IndexRow, b: IndexRow): number {
   );
 }
 
+/**
+ * Les likés dans l'ORDRE de la préférence du compte (`music.listOrder`) : chaque page est le début de la
+ * liste que le client affiche. L'ordre naturel est le dernier like en tête (Tentacle date les likes,
+ * `listOrder/addedDates.ts`) ; `stats` dit à chaque titre de la page son entrée et ses écoutes.
+ */
 export async function likedView(view: UserView, offset: number, limit: number): Promise<MusicLikedPage> {
   if (view.access.mode === "none" || view.favorites.size === 0) return { items: [], total: 0, cursor: null };
+  const libraryId = view.access.libraryId;
   const rows = visibleRows(view, (await rowsByIds([...view.favorites])).values())
     .filter((r) => r.kind === "track")
     .sort(likedOrder);
-  const page = rows.slice(offset, offset + limit);
-  return { items: await tracksOf(view, page), total: rows.length, cursor: nextCursor(offset, page.length, rows.length) };
+  const libraryDate = new Map(rows.map((r) => [r.id, r.dateCreated]));
+  const [prefs, plays, added] = await Promise.all([
+    readListPrefs(view.userId, "liked"),
+    likedPlayStats(view.userId, libraryId),
+    addedDatesFor(likedScope(view.userId), rows.map((r) => r.id), (id) => libraryDate.get(id) ?? null),
+  ]);
+  const stats = new Map<string, MusicListStats>(rows.map((r) => [r.id, { addedAt: added.get(r.id) ?? null, ...(plays.get(r.id) ?? { plays: 0, lastPlayedAt: null }) }]));
+  const subject = (r: IndexRow) => rowSubject(r, stats.get(r.id) ?? null);
+  const natural = sortListItems(rows, subject, { sort: "added", direction: "desc", custom: null });
+  const ordered = sortListItems(natural, subject, prefs);
+  const page = ordered.slice(offset, offset + limit);
+  return {
+    items: await tracksOf(view, page),
+    total: ordered.length,
+    cursor: nextCursor(offset, page.length, ordered.length),
+    stats: Object.fromEntries(page.map((r) => [r.id, stats.get(r.id)!])),
+  };
 }
 
 export async function byMbidView(view: UserView, recordings: unknown[]): Promise<MusicByMbidResponse> {

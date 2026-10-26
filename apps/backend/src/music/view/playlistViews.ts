@@ -11,6 +11,7 @@ import { normalizeId } from "../jellyfin/musicJellyfin";
 import { artworkUrl } from "../model/toMusic";
 import { listUserPlaylists, playlistEntries, playlistFor, type JfPlaylist } from "../playlists/playlistJellyfin";
 import { searchTokens } from "../index/searchQuery";
+import { addedDatesFor, playlistScope } from "../listOrder/addedDates";
 import { tracksOf, visibleInOrder, type UserView } from "./viewContext";
 
 export function toPlaylist(item: JfPlaylist): MusicPlaylist {
@@ -51,10 +52,12 @@ export async function playlistDetail(view: UserView, playlistId: string): Promis
   const entries = (await playlistEntries(view.userId, playlistId)) ?? [];
   const rows = await visibleInOrder(view, entries.map((e) => e.itemId));
   const tracks = new Map((await tracksOf(view, rows)).map((t) => [t.jellyfinId!, t]));
+  // Jellyfin ne date pas une entrée : Tentacle relève quand elle est apparue (l'ordre de la playlist à la première lecture).
+  const added = await addedDatesFor(playlistScope(playlistId), entries.map((e) => e.itemId));
   const out: MusicPlaylistEntry[] = [];
   entries.forEach((entry, position) => {
     const track = tracks.get(entry.itemId);
-    if (track) out.push({ entryId: entry.entryId, position, track });
+    if (track) out.push({ entryId: entry.entryId, position, track, stats: { addedAt: added.get(entry.itemId) ?? null, ...entry.plays } });
   });
   return { ...toPlaylist(playlist), entries: out };
 }

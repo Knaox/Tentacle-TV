@@ -280,6 +280,12 @@ export const SERVER_CAPABILITIES = {
    *  playlist Jellyfin créée au nom du compte ; les absents ne vont qu'à une extension qui déclare
    *  `importTracks`. Sans elle : aucune entrée « Importer une playlist ». */
   "music.playlistImport": "1.40.0",
+  /** L'ORDRE des listes d'Octave (`musicListOrder.ts`) : tri par date d'ajout, écoutes, titre…, le tri
+   *  choisi gardé par liste et par COMPTE (`/api/music/lists/:key/prefs`), l'ordre personnalisé (une
+   *  poignée par titre) gardé pour les likés et appliqué à la playlist Jellyfin elle-même
+   *  (`/api/music/playlists/:id/order`). Sans elle : la playlist dans son ordre, les likés comme
+   *  avant, aucune barre de tri. */
+  "music.listOrder": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

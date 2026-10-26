@@ -14,6 +14,8 @@
  * voulue. La tête ne bouge jamais.
  */
 
+import { applyCustomOrder } from "../contract/musicListOrder";
+
 export interface PlaylistEntryRef {
   entryId: string;
   itemId: string;
@@ -45,6 +47,23 @@ export function movedOrder(current: readonly PlaylistEntryRef[], entryId: string
   const [moved] = ids.splice(from, 1);
   ids.splice(Math.max(0, Math.min(Math.floor(newIndex), ids.length)), 0, moved!);
   return ids;
+}
+
+/**
+ * L'ordre voulu quand le client envoie l'ordre COMPLET de ses entrées (glisser dans Octave). Une entrée
+ * qu'il ne connaissait pas (ajoutée entre-temps) reste juste après son prédécesseur ; une entrée qu'il
+ * cite et qui n'existe plus est ignorée.
+ */
+export function reorderedOrder(current: readonly PlaylistEntryRef[], entryIds: readonly string[]): string[] {
+  const subject = (e: PlaylistEntryRef) => ({ key: e.entryId, title: "", artist: "", album: "", disc: null, track: null, durationMs: null, year: null, recording: null, stats: null });
+  return applyCustomOrder(current, subject, entryIds.map((k) => ({ k }))).map((e) => e.itemId);
+}
+
+/** Des lots bornés : Jellyfin (Kestrel) refuse une ligne de requête de plus de 8 Kio. */
+export function chunks<T>(list: readonly T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+  return out;
 }
 
 /** Ce qu'il faut retirer et rajouter pour passer de `current` à `desired` ; `null` s'ils sont égaux. */
