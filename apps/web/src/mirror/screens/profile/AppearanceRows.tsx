@@ -36,15 +36,15 @@ export function ThemeChoiceRow({ scope, last }: { scope?: SettingScope | null; l
  */
 export function LanguageChoiceRow({ last, scope, label }: { last?: boolean; scope?: SettingScope | null; label?: string }) {
   const { t } = useTranslation("profile");
-  const { current, change } = useInterfaceLanguage();
+  const { language, setLanguage } = useInterfaceLanguage();
 
   return (
     <SettingsChoiceRow
       icon={Globe}
       label={label ?? t("language")}
       options={[{ value: "fr", label: t("french") }, { value: "en", label: t("english") }]}
-      value={current}
-      onChange={change}
+      value={language}
+      onChange={setLanguage}
       last={last}
       scope={scope}
     />

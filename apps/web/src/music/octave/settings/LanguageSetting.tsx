@@ -15,12 +15,12 @@ const OPTIONS = INTERFACE_LANGUAGE_CODES.map((value) => ({ value, label: ENDONYM
 
 export function LanguageSetting({ badge }: { badge?: ReactNode }) {
   const { t } = useTranslation("octaveShell");
-  const { current, change } = useInterfaceLanguage();
+  const { language, setLanguage } = useInterfaceLanguage();
   return (
     <SettingsSection title={t("settings.language")} caption={t("settings.languageCaption")} badge={badge}>
       <div className="p-5">
         <p className="mb-2 text-sm font-medium text-content-primary">{t("settings.languageLabel")}</p>
-        <SegmentedChoice label={t("settings.languageLabel")} value={current} options={OPTIONS} onChange={change} />
+        <SegmentedChoice label={t("settings.languageLabel")} value={language} options={OPTIONS} onChange={setLanguage} />
       </div>
     </SettingsSection>
   );

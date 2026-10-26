@@ -28,7 +28,7 @@ vi.mock("../../../components/settings/SegmentedChoice", () => ({
 vi.mock("../../../components/settings/ToggleSwitch", () => ({ ToggleSwitch: () => <button /> }));
 vi.mock("../../../components/settings/useInterfaceLanguage", () => ({
   INTERFACE_LANGUAGE_CODES: ["fr", "en"],
-  useInterfaceLanguage: () => ({ current: "fr", change: (lng: string) => void h.language.push(lng) }),
+  useInterfaceLanguage: () => ({ language: "fr", setLanguage: (lng: string) => void h.language.push(lng) }),
 }));
 vi.mock("../../../theme/useLiquidGlass", () => ({ useLiquidGlass: () => ({ toggleVisible: false }) }));
 vi.mock("../mode/useOctaveAvailability", () => ({ useOctaveAvailability: () => ({ available: true, settled: true }) }));
