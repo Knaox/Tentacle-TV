@@ -15,7 +15,7 @@ TARGET = "apps/web/src/components/ui/octaveLogo.generated.ts"
 # Nom de fichier → nom de la constante exportée.
 EXPORTS = {
     "logo-octave.svg": ("OCTAVE_LOGO_SVG", "Le logo couleur : la mascotte et son tricorne, la note sur son écran. Fond clair ou sombre, À PARTIR DE 24 PX."),
-    "logo-octave-small.svg": ("OCTAVE_LOGO_SMALL_SVG", "Le logo couleur SOUS 24 PX (pouce de la bascule) : le même, tricorne cerné, sans ventouses."),
+    "logo-octave-small.svg": ("OCTAVE_LOGO_SMALL_SVG", "Le logo couleur SOUS 24 PX : le même, tricorne cerné, sans ventouses."),
     "glyph-octave.svg": ("OCTAVE_GLYPH_SVG", "Le glyphe au dégradé de la marque, la note seule (fond clair ou sombre)."),
     "glyph-octave-on-dark.svg": ("OCTAVE_GLYPH_ON_DARK_SVG", "Le glyphe monochrome blanc, pour un fond sombre (`currentColor`)."),
     "glyph-octave-on-light.svg": ("OCTAVE_GLYPH_ON_LIGHT_SVG", "Le glyphe monochrome encre, pour un fond clair (`currentColor`)."),
@@ -70,7 +70,7 @@ def module(files, pieces, glyph):
         "}",
         "",
         "/**",
-        " * Le GLYPHE d'Octave, pour l'interface (bascule, onglet, navigation ; 16 → 24 px) :",
+        " * Le GLYPHE d'Octave, pour l'interface (pouce de la bascule, onglet, navigation ; 14 → 24 px) :",
         " * une croche dont le crochet est un bras de la mascotte. Une seule couleur, à remplir",
         " * en `currentColor`, repère `OCTAVE_GLYPH_VIEWBOX`. Nom d'export STABLE.",
         " */",

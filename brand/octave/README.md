@@ -17,16 +17,16 @@ poulpe se fait dans `generate-svg.py`, puis `octave.py` se relance.
 | Fichier | Rôle |
 |---|---|
 | `logo-octave.svg` | Le logo couleur, à partir de 24 px, sur fond clair comme sombre : la vitre sombre dans son cadre au dégradé se lit sur les deux (comme le logo de Tentacle). |
-| `logo-octave-small.svg` | Le logo couleur SOUS 24 px (le pouce de la bascule « Mode musique », 16 → 23 px) : le même dessin, le tricorne cerné d'un liseré au dégradé du cadre, sans ventouses ni reflets. |
+| `logo-octave-small.svg` | Le logo couleur SOUS 24 px (16 → 23 px) : le même dessin, le tricorne cerné d'un liseré au dégradé du cadre, sans ventouses ni reflets. |
 | `glyph-octave.svg` | Le glyphe au dégradé des bras, la note seule. |
 | `glyph-octave-on-dark.svg` | Le glyphe monochrome blanc (fond sombre), `currentColor`. |
 | `glyph-octave-on-light.svg` | Le glyphe monochrome encre `#241040` (fond clair), `currentColor`. |
 
 Le web consomme `apps/web/src/components/ui/octaveLogo.generated.ts` :
 `OctaveGlyph` (`components/ui/OctaveGlyph.tsx`, en ligne, `currentColor` — un
-onglet, la navigation, le monochrome) et `octaveLogoSvg(variant, taille, surFondSombre)`
+onglet, la navigation, le monochrome, et le POUCE de la bascule « Mode musique » — la note, pas la mascotte : Damien, 26/10) et `octaveLogoSvg(variant, taille, surFondSombre)`
 / `octaveLogoDataUri(…)` pour un `<img>` (composant `OctaveLogo` du mode musique).
-(la bascule y prend la petite taille). Noms d'export stables :
+Noms d'export stables :
 `OCTAVE_GLYPH_PATHS`, `OCTAVE_GLYPH_VIEWBOX`, `octaveLogoSvg`, `octaveLogoDataUri`.
 
 ## Le glyphe

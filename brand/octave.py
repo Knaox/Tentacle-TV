@@ -117,7 +117,7 @@ def small_hat():
 
 def small_art():
     """
-    Le logo SOUS 24 px (pouce de la bascule, 16 → 23 px) : le même dessin et le
+    Le logo SOUS 24 px (16 → 23 px) : le même dessin et le
     même ordre, sans ce qui ne survit pas à la réduction — ventouses, yeux du
     crâne, reflets des yeux — et le tricorne cerné (`small_hat`).
     """

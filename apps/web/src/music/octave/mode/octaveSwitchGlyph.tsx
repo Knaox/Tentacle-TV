@@ -1,25 +1,10 @@
 /**
  * Octave — ce que porte le pouce de la bascule : UN SEUL point d'import, le
- * LOGO d'Octave en couleur (la mascotte et son tricorne, généré par
- * `brand/octave.py`), dans sa petite taille (sous 24 px : le tricorne cerné,
- * lisible à 16 px). Le même dans les deux états : la piste dit allumé ou
- * éteint ; le pouce dit « Octave, c'est Tentacle ».
+ * GLYPHE d'interface d'Octave (`OctaveGlyph`, la croche dont le crochet est un
+ * bras, généré par `brand/octave_glyph.py`). Il prend `currentColor` : la
+ * feuille de la bascule le teinte selon l'état (encre éteint, rose allumé).
+ * La mascotte au tricorne reste le LOGO d'Octave partout ailleurs ; dans la
+ * bascule, Damien préfère la note (26/10).
  */
 
-import { memo } from "react";
-import { octaveLogoDataUri } from "../../../components/ui/octaveLogo.generated";
-
-export const OctaveSwitchGlyph = memo(function OctaveSwitchGlyph({ size }: { size: number }) {
-  return (
-    <img
-      src={octaveLogoDataUri("color", size)}
-      width={size}
-      height={size}
-      alt=""
-      aria-hidden
-      draggable={false}
-      className="pointer-events-none shrink-0 select-none"
-      data-octave-switch-logo
-    />
-  );
-});
+export { OctaveGlyph as OctaveSwitchGlyph } from "../../../components/ui/OctaveGlyph";
