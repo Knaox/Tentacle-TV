@@ -18,7 +18,9 @@ const listeners = new Set<(signal: SyncSignal) => void>();
 export function signalMusicEvent(event: MusicEvent): void {
   let signal: SyncSignal | null = null;
   if (event.type === "music:playlist") signal = { kind: "playlist", playlistId: event.playlistId };
-  else if (event.type === "music:library" && event.added.length > 0) signal = { kind: "library" };
+  // Un ajout, ou une MISE À JOUR : Jellyfin pose souvent un titre avant d'en lire les étiquettes (artiste, durée) —
+  // c'est la mise à jour qui le rend reconnaissable comme la version d'une copie d'ailleurs (vu au banc).
+  else if (event.type === "music:library" && event.added.length + event.updated.length > 0) signal = { kind: "library" };
   else if (event.type === "music:resolved") {
     signal = { kind: "twin", externalKey: externalTrackKey({ pluginId: event.pluginId, id: event.externalId }), track: event.track };
   }
