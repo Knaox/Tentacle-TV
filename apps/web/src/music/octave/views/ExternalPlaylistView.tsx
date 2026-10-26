@@ -59,7 +59,7 @@ export function ExternalPlaylistView() {
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
         extra={<KeepCollectionButton kind="playlist" collectionKey={id} title={data.title} subtitle={data.owner ?? null} tracks={tracks} />}
       />
-      <div className="px-2 md:px-6">
+      <div className="octave-view-pad px-2 md:px-6">
         {rows.length === 0 ? (
           <EmptyState icon={ListMusic} title={t("playlist.empty")} />
         ) : (

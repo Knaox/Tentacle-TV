@@ -4,9 +4,13 @@
  * cliquer le titre EN COURS de cette même liste le met en pause ou le reprend.
  * Le rappel reste STABLE : un changement de titre ne redessine que les deux
  * rangées concernées.
+ *
+ * Liquid Glass (mode natif) : une liste complète (avec son en-tête) prend les
+ * mesures du tableau de la maquette « Octave · Playlist » (`glass/octaveTable.css`)
+ * — SANS panneau de verre : le contenu reste net (consigne de Damien, 26/10).
  */
 
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MusicTrack } from "@tentacle-tv/shared/music";
 import { useTrackActions } from "../actions/useTrackActions";
@@ -17,6 +21,7 @@ import { TrackRow, rowColumns } from "./TrackRow";
 import { SelectionBar } from "../actions/selection/SelectionBar";
 import { orderedKeys } from "../actions/selection/selectionRules";
 import { useListSelection } from "../actions/selection/useListSelection";
+import { useOctaveGlassStage } from "../glass/glassStage";
 
 interface TrackListProps {
   rows: readonly ListRow[];
@@ -55,6 +60,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
 
 export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveRows, queueTracks, sectionBefore }: TrackListProps) {
   const { t } = useTranslation("music");
+  const glassTable = useOctaveGlassStage() && showHeader;
   const player = useOctavePlayer();
   const actions = useTrackActions();
   const currentKey = useCurrentKey();
@@ -92,8 +98,9 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
 
   return (
     <div role="grid" aria-label={label} className="flex flex-col">
+      <GlassTable on={glassTable}>
       {showHeader && (
-        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum)}`}>
+        <div role="row" className={`octave-table-head mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum)}`}>
           <span role="columnheader" aria-label={t("selection.column")} />
           <span role="columnheader" className="text-center">{t("track.number")}</span>
           <span role="columnheader">{t("track.title")}</span>
@@ -132,6 +139,7 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
         </Fragment>
         );
       })}
+      </GlassTable>
       {selection.selecting && (
         <SelectionBar
           count={chosen.length}
@@ -146,3 +154,13 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
     </div>
   );
 });
+
+/** Le tableau de la scène de verre (ses mesures), ou rien : les rangées restent les enfants directs de la grille. */
+function GlassTable({ on, children }: { on: boolean; children: ReactNode }) {
+  if (!on) return <>{children}</>;
+  return (
+    <div role="presentation" className="octave-track-table">
+      {children}
+    </div>
+  );
+}

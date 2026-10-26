@@ -1,0 +1,104 @@
+/*
+ * Octave en Liquid Glass — le RAIL (maquette « Octave · Playlist ») : un
+ * panneau de verre de 260 × (hauteur − dock), rayon 28, 22 × 16 de marge, ses
+ * blocs à 22 px ; la bascule du mode dans une pastille (rayon 20) ; les
+ * destinations en 16 px, 12 × 14, rayon 14 ; « Vos playlists » espacé.
+ *
+ * Le verre est celui du rail (`.lg-pane` du socle, givre compris : rien ne bouge dessous), rien n'est
+ * verre DEDANS : ‹ › et la pastille du mode sont des `.lg-bead` (sans givre dans
+ * un panneau), les entrées des `.lg-pane-nav` (survol et sélection du socle).
+ * Ici, les MESURES seulement. Sous la porte : hors verre, le rail d'avant.
+ */
+
+:root[data-liquid-glass="native"] .octave-stage .octave-stage-rail {
+  height: calc(100% - var(--oc-dock-inset) - var(--ocs-dock-clear));
+  gap: 22px;
+  padding: 22px 16px;
+  box-sizing: border-box;
+}
+
+/* ‹ › : deux ronds de 32 (des `.lg-bead`). */
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-history] {
+  gap: 6px;
+}
+
+/* La bascule du mode et le retour aux films : une pastille (rayon 20, 6 de marge). */
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-mode-slot] {
+  gap: 2px;
+  padding: 6px;
+  border-radius: 20px;
+}
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-mode-slot] > .octave-switch {
+  min-height: 44px;
+  padding: 0 6px 0 12px;
+  border-radius: 14px;
+}
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-mode-slot] > .octave-switch > span:first-child {
+  font-size: 15px;
+  color: var(--lg-pane-glyph);
+}
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-back-to-films] {
+  min-height: 44px;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Les destinations : 16 px, 12 × 14, rayon 14, 14 entre l'icône et le mot. */
+:root[data-liquid-glass="native"] .octave-stage-rail .octave-rail-destinations {
+  gap: 4px;
+}
+:root[data-liquid-glass="native"] .octave-stage-rail .octave-nav-link:not(.octave-nav-playlist) {
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--lg-pane-glyph);
+}
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-back-to-films]:hover {
+  background-color: var(--lg-pane-nav-hover);
+}
+
+/* « Vos playlists » : petit, très espacé. */
+:root[data-liquid-glass="native"] .octave-stage-rail .octave-rail-heading {
+  padding: 0 14px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--lg-pane-glyph-secondary);
+}
+:root[data-liquid-glass="native"] .octave-stage-rail .octave-nav-playlist {
+  gap: 12px;
+  padding: 8px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lg-pane-glyph);
+}
+:root[data-liquid-glass="native"] .octave-stage-rail .octave-nav-playlist > :first-child {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+/* Le profil, en pied : avatar, nom 15, « Profil actuel » 12. */
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-profile] > button {
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 16px;
+}
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-profile] > button > span:nth-child(2) > span:first-child {
+  font-size: 15px;
+}
+:root[data-liquid-glass="native"] .octave-stage-rail [data-octave-profile] > button > span:nth-child(2) > span:last-child {
+  font-size: 12px;
+  color: var(--lg-pane-glyph-secondary);
+}
+
+/* La barre de défilement des playlists : un filet du verre, plus le rose plein. */
+:root[data-liquid-glass="native"] .octave-stage-rail .octave-rail-playlists::-webkit-scrollbar-thumb {
+  background-color: var(--lg-pane-separator);
+}

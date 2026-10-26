@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { inlineCompletion } from "@tentacle-tv/shared";
 import { useGlassControl } from "../../../components/ui/glass/useGlassControl";
 import { moveActive, type OctaveSuggestion } from "./suggestionModel";
+import { useOctaveGlassStage } from "../glass/glassStage";
 
 const LIST_ID = "octave-search-suggestions";
 const ICONS = { recent: Clock, artist: User, track: Music, album: Disc3 } as const;
@@ -43,6 +44,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const glass = useGlassControl<HTMLUListElement>({ lens: false, scale: "surface" });
+  const bead = useOctaveGlassStage() ? "lg-bead " : "";
   const shown = open && suggestions.length > 0;
   const activeId = shown && active >= 0 && active < suggestions.length ? `${LIST_ID}-${active}` : undefined;
   // La suite proposée : jamais une réécriture de ce qui est tapé, seulement ce qui le prolonge.
@@ -80,7 +82,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
   return (
     <div className="relative flex max-w-2xl items-center gap-2">
       <div className="relative min-w-0 flex-1">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-content-tertiary" aria-hidden />
+        <Search className="octave-field-icon pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-content-tertiary" aria-hidden />
 
         <input
           id="octave-search"
@@ -106,7 +108,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
           aria-controls={LIST_ID}
           aria-activedescendant={activeId}
           aria-autocomplete="list"
-          className="h-12 w-full rounded-full border border-line-subtle bg-fill-subtle pl-12 pr-12 text-base text-content-primary placeholder:text-content-quaternary focus:border-octave-accent focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className={`octave-field ${bead}h-12 w-full rounded-full border border-line-subtle bg-fill-subtle pl-12 pr-12 text-base text-content-primary placeholder:text-content-quaternary focus:border-octave-accent focus:outline-none [&::-webkit-search-cancel-button]:hidden`}
         />
         {completion !== null && (
           // Calque PAR-DESSUS le champ (sans pointeur), même boîte : le texte tapé y est invisible, la suite visible après le curseur.
@@ -190,7 +192,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
         type="button"
         onClick={() => submit(value)}
         disabled={!value.trim()}
-        className="h-12 shrink-0 cursor-pointer rounded-full border border-octave-line bg-fill-subtle px-5 text-sm font-bold text-content-primary transition-[background-color,transform] duration-150 hover:bg-octave-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-40"
+        className={`octave-pill ${bead}h-12 shrink-0 cursor-pointer rounded-full border border-octave-line bg-fill-subtle px-5 text-sm font-bold text-content-primary transition-[background-color,transform] duration-150 hover:bg-octave-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-40`}
       >
         {t("search.submit")}
       </button>

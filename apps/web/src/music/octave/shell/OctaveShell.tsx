@@ -6,12 +6,19 @@
  *
  * Le bandeau d'hôte de macOS (feux tricolores) garde sa place
  * (`--hote-bandeau`), comme dans la coquille vidéo.
+ *
+ * Liquid Glass (mode natif, bureau) : une autre DISPOSITION (`OctaveGlassStage`,
+ * la maquette « Octave · Playlist ») — le fond coloré d'Octave sous tout, le rail,
+ * la page et la file en panneaux de verre posés à 20 px des bords, le dock qui
+ * flotte sur TOUTE la largeur. Ailleurs, rien ne change.
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useIsMobile } from "../../../hooks/useIsMobile";
 import { useDisplayedSurface } from "../../../theme/displayedSurface";
+import { useLiquidGlassMode } from "../../../theme/glass";
+import { OctaveGlassStage } from "../glass/OctaveGlassStage";
 import { DuplicateConfirmHost } from "../actions/duplicateConfirm";
 import { PlaylistChooserHost } from "../actions/playlistChooser";
 import { BulkDuplicateHost } from "../actions/selection/bulkDuplicateConfirm";
@@ -44,6 +51,7 @@ function useResetScroll(main: React.RefObject<HTMLElement | null>) {
 
 export function OctaveShell({ children, onExit }: OctaveShellProps) {
   const mobile = useIsMobile();
+  const native = useLiquidGlassMode() === "native";
   const [queueOpen, setQueueOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const main = useRef<HTMLElement>(null);
@@ -77,10 +85,27 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
         </div>
         <OctaveTabBar />
         {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
-        <DuplicateConfirmHost />
-        <PlaylistChooserHost />
-        <BulkDuplicateHost />
+        <ShellHosts />
       </div>
+    );
+  }
+
+  if (native) {
+    return (
+      <OctaveGlassStage
+        mainRef={main}
+        sidebar={<OctaveSidebar onExit={onExit} />}
+        dock={<PlayerBar queueOpen={queueOpen} onToggleQueue={toggleQueue} onOpenNowPlaying={openSheet} />}
+        queue={queueOpen ? <QueuePanel onClose={closeQueue} /> : null}
+        overlays={
+          <>
+            {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
+            <ShellHosts />
+          </>
+        }
+      >
+        {children}
+      </OctaveGlassStage>
     );
   }
 
@@ -100,9 +125,18 @@ export function OctaveShell({ children, onExit }: OctaveShellProps) {
         </div>
       )}
       {sheetOpen && <NowPlayingSheet onClose={closeSheet} />}
+      <ShellHosts />
+    </div>
+  );
+}
+
+/** Les confirmations et le choix d'une playlist, montés une fois par coquille. */
+function ShellHosts() {
+  return (
+    <>
       <DuplicateConfirmHost />
       <PlaylistChooserHost />
       <BulkDuplicateHost />
-    </div>
+    </>
   );
 }

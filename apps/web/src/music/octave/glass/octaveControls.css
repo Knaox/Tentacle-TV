@@ -1,0 +1,46 @@
+/*
+ * Octave en Liquid Glass — les CONTRÔLES des pages (maquette « Octave ·
+ * Playlist », sa `.chip`) : le champ de recherche, « Rechercher », les filtres,
+ * les onglets de la bibliothèque, le tri sont des `.lg-bead` du socle. Ici,
+ * l'état CHOISI (le remplissage de sélection du socle, rose → violet, jamais
+ * un blanc plein) et le focus du champ.
+ *
+ * La bande collée de la recherche perd son aplat : le champ est verre, la page
+ * passe dessous. Seulement sous la porte, dans la scène d'Octave.
+ */
+
+:root[data-liquid-glass="native"] .octave-stage .octave-pill.lg-bead,
+:root[data-liquid-glass="native"] .octave-stage .octave-chip.lg-bead {
+  color: var(--lg-pane-glyph);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-pill.lg-bead[aria-selected="true"],
+:root[data-liquid-glass="native"] .octave-stage .octave-pill.lg-bead[aria-pressed="true"],
+:root[data-liquid-glass="native"] .octave-stage .octave-chip.lg-bead[aria-selected="true"],
+:root[data-liquid-glass="native"] .octave-stage .octave-chip.lg-bead[aria-pressed="true"] {
+  background: var(--lg-pane-selected);
+  box-shadow: var(--lg-pane-selected-shadow);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-field.lg-bead {
+  color: var(--lg-pane-glyph);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-field.lg-bead:focus {
+  border-color: rgba(var(--brand-accent-rgb), 0.7);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-field.lg-bead::placeholder {
+  color: var(--lg-pane-glyph-secondary);
+}
+/* La loupe est posée AVANT le champ : le verre du champ (un contexte
+ * d'empilement) la recouvrirait — elle passe devant. */
+:root[data-liquid-glass="native"] .octave-stage .octave-field-icon {
+  z-index: 1;
+  color: var(--lg-pane-glyph-secondary);
+}
+/* Le menu natif du tri garde ses options lisibles. */
+:root[data-liquid-glass="native"] .octave-stage select.octave-pill > option {
+  background-color: var(--oc-ink-raised);
+  color: var(--text-primary);
+}
+
+:root[data-liquid-glass="native"] .octave-stage .octave-search-band {
+  background-color: transparent;
+}

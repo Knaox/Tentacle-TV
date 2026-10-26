@@ -1,0 +1,78 @@
+/*
+ * Octave en Liquid Glass — la DISPOSITION (maquette « Octave · Playlist ») :
+ * le fond coloré, le rail, la page et la file à 20 px des bords, le dock sur
+ * toute la largeur. `OctaveGlassStage.tsx` ne se monte qu'en mode natif ; ces
+ * règles sont en plus portées par la porte : hors verre, rien ne s'applique.
+ *
+ * Mesures relevées sur la maquette (fenêtre 1440) : rail 260 × (hauteur − dock),
+ * rayon 28, 22 × 16 de marge intérieure ; dock 1240 au plus, 111 de haut,
+ * rayon 32, à 20 px du bas ; 10 px entre le rail et le dock.
+ */
+
+:root[data-liquid-glass="native"] .octave-stage {
+  --ocs-gap: 20px;
+  --oc-sidebar-width: 260px;
+  --oc-dock-height: 111px;
+  --oc-dock-inset: 20px;
+  --oc-dock-max: 1240px;
+  /* Ce qu'il faut laisser au bas d'un panneau pour finir au-dessus du dock. */
+  --ocs-dock-clear: calc(var(--oc-dock-height) + 10px);
+  /* L'encre sous le fond ambiant : celle de la maquette (nos prunes, `AMBIENT_INK`
+   * du socle) ; en clair, la nacre de la page. */
+  background-color: #07050c;
+  color: var(--lg-pane-glyph);
+}
+:root[data-liquid-glass="native"][data-theme="light"] .octave-stage {
+  background-color: var(--surface-0);
+}
+/* Le dock porte la nuit d'Octave, qui redéclare ses mesures : on les lui rend. */
+:root[data-liquid-glass="native"] .octave-stage .octave-night {
+  --oc-dock-height: 111px;
+  --oc-dock-inset: 20px;
+  --oc-dock-max: 1240px;
+}
+
+/* Le fond ambiant (`OctaveAmbient` → `GlassAmbient` du socle) est sous tout ; le
+ * reste de la scène passe au-dessus. */
+
+/* ── La rangée : rail · page · file, au-dessus du dock ──────────────────── */
+:root[data-liquid-glass="native"] .octave-stage-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  gap: var(--ocs-gap);
+  padding: var(--ocs-gap) var(--ocs-gap) 0;
+  box-sizing: border-box;
+}
+/* La page défile jusqu'au bas de la fenêtre, SOUS le dock ; son dernier contenu
+ * s'arrête au-dessus de lui. */
+:root[data-liquid-glass="native"] .octave-stage-main {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 0%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: calc(var(--oc-dock-height) + var(--oc-dock-inset) + 24px);
+  box-sizing: border-box;
+}
+:root[data-liquid-glass="native"] .octave-stage-queue {
+  width: var(--oc-queue-width);
+  flex-shrink: 0;
+  height: calc(100% - var(--oc-dock-inset) - var(--ocs-dock-clear));
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+/* ── Les pages : 12 px de marge (24 en tête de page), la liste à 28 sous la tête ── */
+:root[data-liquid-glass="native"] .octave-stage .octave-view-pad {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-view-pad.pt-6 {
+  padding-top: 24px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-hero + .octave-view-pad {
+  margin-top: 28px;
+}

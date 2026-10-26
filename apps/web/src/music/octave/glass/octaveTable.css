@@ -1,0 +1,105 @@
+/*
+ * Octave en Liquid Glass — le TABLEAU des titres (maquette « Octave ·
+ * Playlist ») : ses MESURES, sans panneau de verre — la liste reste nette
+ * (consigne de Damien, 26/10 : le verre est pour la couche fonctionnelle).
+ * L'en-tête en capitales espacées (12, 0,14 em) sur un filet ; des rangées de 70
+ * au rayon 18, 4 px entre elles, 18 de marge, la pochette 50 au rayon 12, le
+ * titre 16, le reste 14 ; survol et sélection : `.lg-pane-row` du socle.
+ * Seulement sous la porte, dans la scène d'Octave.
+ */
+
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table {
+  --oc-radius-art-sm: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-liquid-glass="native"] .octave-stage .octave-table-head {
+  margin-bottom: 0;
+  padding: 14px 18px;
+  gap: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--lg-pane-glyph-secondary);
+  border-bottom-color: var(--lg-pane-separator);
+}
+
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row {
+  height: 70px;
+  margin-top: 4px;
+  padding: 0 18px;
+  gap: 16px;
+  border-radius: 18px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row:focus-visible {
+  background-color: var(--lg-pane-row-hover);
+}
+/* Le numéro, la pochette, le titre et son artiste, l'album, la durée. */
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row-number {
+  font-size: 15px;
+  color: var(--lg-pane-glyph-secondary);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row[aria-current="true"] .octave-row-number {
+  color: var(--oc-accent-text);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row > [role="gridcell"]:nth-child(3) {
+  gap: 14px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row > [role="gridcell"]:nth-child(3) > :first-child:not(:last-child) {
+  width: 50px;
+  height: 50px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 6px 14px -6px rgba(0, 0, 0, 0.6);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row > [role="gridcell"]:nth-child(3) > :last-child > :first-child {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row > [role="gridcell"]:nth-child(3) > :last-child > :last-child {
+  font-size: 14px;
+  color: var(--lg-pane-glyph-secondary);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row > [role="gridcell"]:nth-child(4):not(:last-child) {
+  font-size: 14px;
+  color: var(--lg-pane-glyph-secondary);
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-track-table .octave-row .oc-meta {
+  font-size: 14px;
+  color: var(--lg-pane-glyph-secondary);
+}
+
+/* ── Les squelettes : la même place que la tête et le tableau qui arrivent ── */
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head {
+  padding: 24px 12px 0;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head > div:first-child {
+  gap: 36px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-art {
+  --oc-radius-art-lg: 22px;
+  width: 260px;
+  height: 260px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head > div:last-child {
+  margin-top: 28px;
+  gap: 14px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-head > div:last-child > div {
+  height: 56px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-rows {
+  margin: 28px 12px 0;
+  padding-top: 48px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-row {
+  height: 70px;
+  margin-top: 4px;
+  padding: 0 18px;
+  gap: 16px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-skeleton-row > div:nth-child(3) {
+  --oc-radius-art-sm: 12px;
+  width: 50px;
+  height: 50px;
+}

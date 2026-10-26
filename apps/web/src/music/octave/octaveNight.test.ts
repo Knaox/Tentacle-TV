@@ -34,9 +34,9 @@ const tentacleDark = declarations(blockFor(TENTACLE, ":root"));
 describe("la nuit d'Octave", () => {
   it("le dock et le mini-lecteur sont des surfaces de nuit", () => {
     const bar = readFileSync(join(__dirname, "shell/PlayerBar.tsx"), "utf8");
-    expect(bar.match(/octave-glass octave-night/g)?.length).toBe(2);
-    // Le verre natif : ton FORCÉ à sombre, quel que soit le dessous.
-    expect(bar.match(/data-lg-tone=\{glass\.render === "fallback" \? undefined : "dark"\}/g)?.length).toBe(2);
+    expect(bar.match(/"octave-night /g)?.length).toBe(2);
+    // Le verre natif (le `pane` du socle) : ton FORCÉ à sombre, quel que soit le dessous.
+    expect(bar.match(/material: "pane",\s*tone: "dark"/g)?.length).toBe(2);
   });
 
   it("les jetons d'Octave du thème sombre se recalculent sur la nuit", () => {

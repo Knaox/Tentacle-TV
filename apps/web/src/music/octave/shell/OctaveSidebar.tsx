@@ -8,11 +8,12 @@
  *
  * L'identité : un RAIL posé sur l'encre, sans dalle ni bordure ; l'entrée
  * active prend la pastille de Tentacle, rose en tête, son icône rose
- * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif aussi
- * (Liquid Glass, D11 du 26/10) : rien ne passe sous le rail, un verre n'y
- * réfracterait que l'encre — il devenait une dalle grise givrée, cerclée et
- * ombrée, détachée de la page (« une grosse démarcation »). Le rail reste donc
- * posé sur l'encre, sans dalle : le verre est pour ce qui FLOTTE (le dock).
+ * (`shell.css`, sur `aria-current` que pose `NavLink`). En verre natif, le
+ * rail devient un panneau de verre posé sur le fond coloré d'Octave, comme dans
+ * la maquette « Octave · Playlist » : le verre `pane` du socle, avec son givre
+ * qui AVIVE les taches (sans lui, un panneau gris) — gratuit ici : ni le rail ni
+ * le fond ne bougent, la passe ne se refait pas. Ses entrées en `lg-pane-nav`.
+ * Mesures : `glass/octaveRail.css`.
  */
 
 import { memo, useState, type DragEvent, type ReactNode } from "react";
@@ -23,6 +24,7 @@ import { useMusicPlaylists } from "@tentacle-tv/api-client";
 import type { MusicPlaylist } from "@tentacle-tv/shared/music";
 import { carriesTrack, draggedTrack } from "../actions/dragTrack";
 import { useTrackActions } from "../actions/useTrackActions";
+import { useLiquidGlassMode, useLiquidGlassSurface } from "../../../theme/glass";
 import { Artwork } from "../components/Artwork";
 import { octavePaths } from "../octavePaths";
 import { HistoryButtons } from "./HistoryButtons";
@@ -40,19 +42,27 @@ export const OCTAVE_DESTINATIONS = [
 ] as const;
 
 const linkClass =
-  "octave-nav-link flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link lg-pane-nav flex items-center gap-3 rounded-xl px-3 py-2 text-[15px] font-semibold text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 const settingsClass =
   "octave-nav-link -mb-3 flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-[13px] font-medium text-content-tertiary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 const playlistClass =
-  "octave-nav-link flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
+  "octave-nav-link octave-nav-playlist lg-pane-nav flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm text-content-secondary transition-colors duration-150 hover:bg-octave-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus";
 
 export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation(["music", "octaveShell"]);
   const playlists = useMusicPlaylists();
+  const native = useLiquidGlassMode() === "native";
+  // Le verre de la maquette en mode natif ; ailleurs, le rail sur l'encre.
+  const glass = useLiquidGlassSurface({
+    material: "pane",
+    radius: "xl",
+    className: `flex shrink-0 flex-col w-[var(--oc-sidebar-width)] ${native ? "octave-stage-rail" : "h-full gap-5 px-3 pb-3 pt-4"}`,
+  });
   return (
-    <nav aria-label={t("nav.main")} className="flex h-full w-[var(--oc-sidebar-width)] shrink-0 flex-col gap-5 px-3 pb-3 pt-4">
+    <nav aria-label={t("nav.main")} {...glass.props}>
+      {glass.layers}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 pl-3">
           <OctaveWordmark />
@@ -60,7 +70,7 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
         </div>
         <OctaveModeSlot onExit={onExit} />
       </div>
-      <ul className="flex flex-col gap-0.5">
+      <ul className="octave-rail-destinations flex flex-col gap-0.5">
         {OCTAVE_DESTINATIONS.map(({ to, key, Icon, end }) => (
           <li key={to}>
             <NavLink to={to} end={end} className={linkClass}>
@@ -71,8 +81,8 @@ export const OctaveSidebar = memo(function OctaveSidebar({ onExit }: { onExit: (
         ))}
         <DeviceNavItem className={linkClass} />
       </ul>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <h2 className="px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>
+      <div className="octave-rail-playlists min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <h2 className="octave-rail-heading px-3 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-content-quaternary">{t("nav.yourPlaylists")}</h2>
         <ul className="flex flex-col gap-0.5">
           {(playlists.data ?? []).map((p) => (
             <PlaylistDropTarget key={p.jellyfinId} playlist={p}>

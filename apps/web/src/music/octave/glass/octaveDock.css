@@ -1,0 +1,114 @@
+/*
+ * Octave en Liquid Glass — le DOCK (maquette « Octave · Playlist ») : la
+ * capsule de verre de 1240 au plus, 111 de haut, 14 × 22 de marge ; pochette
+ * 58 (rayon 14), titre 16, sous-titre 13 ; transport à 14 d'écart, ronds de 44,
+ * Lecture de 58 au dégradé de la musique ; progression de 8 px, sa tête blanche
+ * toujours là ; à droite la qualité en pastille, la file en rond de 44, le
+ * volume en rail de 6.
+ *
+ * Le dock est le `.lg-pane` du socle (ton sombre forcé, `shellGlass.css`) ;
+ * rien n'est verre DEDANS : les ronds sont des `.lg-bead` (sans givre dans un
+ * panneau), les rails en prennent la peau, la Lecture le dégradé de la musique.
+ * Seulement sous la porte, et seulement dans la scène d'Octave.
+ */
+
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] {
+  border-radius: 32px;
+  gap: 18px;
+  padding: 0 22px;
+}
+
+/* ── À gauche : le titre en cours ───────────────────────────────────────── */
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] [data-octave-now-playing] {
+  gap: 14px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] [data-octave-now-playing] .octave-art-open > :first-child {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 24px -8px rgba(var(--brand-rgb), 0.9);
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] [data-octave-now-playing] > div:nth-child(2) > div {
+  font-size: 16px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] [data-octave-now-playing] > div:nth-child(2) > div > * {
+  font-size: 16px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] [data-octave-now-playing] > div:nth-child(2) > p {
+  color: var(--lg-pane-glyph-secondary);
+}
+
+/* Les ronds du dock (des `.lg-bead`) : le cœur, la file — 44 px. */
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-dock-chip {
+  width: 44px;
+  height: 44px;
+}
+
+/* ── Au centre : le transport et la progression ─────────────────────────── */
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-transport {
+  gap: 14px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-transport > button {
+  width: 44px;
+  height: 44px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-transport > button.octave-play {
+  width: 58px;
+  height: 58px;
+  background-image: linear-gradient(140deg, var(--brand-accent), rgba(147, 51, 234, 0.8));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -3px 8px rgba(0, 0, 0, 0.2), 0 12px 30px -8px var(--brand-accent);
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-transport > button.octave-play > svg {
+  width: 22px;
+  height: 22px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-seek {
+  max-width: 520px;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--lg-pane-glyph-secondary);
+}
+
+/* Les rails : une pastille claire (bord et reflet), le remplissage au dégradé
+ * de la musique qui luit ; la tête de la progression, blanche, toujours là. */
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-range {
+  --oc-rail-height: 8px;
+  --oc-rail: var(--lg-bead-fill);
+  --oc-thumb: rgba(255, 255, 255, 0.95);
+  --oc-thumb-size: 16px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-range.octave-dock-volume {
+  --oc-rail-height: 6px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-range-rail {
+  box-shadow: inset 0 0 0 1px var(--lg-bead-border), var(--lg-bead-shadow);
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-range-fill {
+  background-image: linear-gradient(90deg, #a855f7, var(--brand-accent));
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-seek .octave-range-dot {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 -2px 3px rgba(0, 0, 0, 0.12);
+  opacity: 1;
+  transform: scale(1);
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-seek .octave-range[data-disabled="true"] .octave-range-dot {
+  opacity: 0;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-seek .octave-range-input:focus-visible ~ .octave-range-head .octave-range-dot {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 6px var(--oc-accent-glow);
+}
+
+/* ── À droite : la qualité en pastille ──────────────────────────────────── */
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-dock-aside {
+  gap: 10px;
+}
+:root[data-liquid-glass="native"] .octave-stage [data-octave-dock] .octave-dock-quality-label > span {
+  padding: 6px 12px;
+  border: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lg-pane-glyph);
+  background-color: var(--lg-bead-fill);
+  box-shadow: inset 0 0 0 1px var(--lg-bead-border), var(--lg-bead-shadow);
+}

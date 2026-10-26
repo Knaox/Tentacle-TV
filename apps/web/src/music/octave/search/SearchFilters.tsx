@@ -7,6 +7,7 @@
 import { memo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { SearchFilter } from "./searchLayout";
+import { useOctaveGlassStage } from "../glass/glassStage";
 
 export const SEARCH_FILTERS: readonly SearchFilter[] = ["all", "tracks", "albums", "artists", "playlists"];
 
@@ -24,6 +25,7 @@ interface SearchFiltersProps {
 export const SearchFilters = memo(function SearchFilters({ value, onChange, panelId }: SearchFiltersProps) {
   const { t } = useTranslation("music");
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const bead = useOctaveGlassStage() ? "lg-bead " : "";
   const label = (f: SearchFilter) => (f === "all" ? t("search.filterAll") : t(`search.${f}`));
   const move = (index: number) => {
     const next = (index + SEARCH_FILTERS.length) % SEARCH_FILTERS.length;
@@ -56,7 +58,7 @@ export const SearchFilters = memo(function SearchFilters({ value, onChange, pane
               else return;
               e.preventDefault();
             }}
-            className={`h-9 cursor-pointer rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
+            className={`octave-pill ${bead}h-9 cursor-pointer rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
               selected ? "bg-content-primary text-surface-0" : "bg-fill-subtle text-content-secondary hover:bg-fill-medium hover:text-content-primary"
             }`}
           >

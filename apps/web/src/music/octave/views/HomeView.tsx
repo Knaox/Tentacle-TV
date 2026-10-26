@@ -58,7 +58,7 @@ export function HomeView() {
   const empty = home.data && !recent.length && !added.length && !mostRows.length && !playlists.length;
 
   return (
-    <div className="flex flex-col gap-10 px-2 pb-10 pt-6 md:px-6">
+    <div className="octave-view-pad flex flex-col gap-10 px-2 pb-10 pt-6 md:px-6">
       <h1 className="px-2 oc-display text-3xl text-content-primary">{greeting}</h1>
       {home.isPending && <HomeSkeleton />}
       {empty && (
