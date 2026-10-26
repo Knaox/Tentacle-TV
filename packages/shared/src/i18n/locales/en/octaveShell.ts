@@ -29,6 +29,10 @@ export default {
   pinSheet: {
     cancel: "Cancel",
   },
+  artistMore: {
+    elsewhere: "Not in your library yet",
+    library: "Also in your library",
+  },
   track: {
     goToArtistNamed: "Go to {{artist}}",
   },

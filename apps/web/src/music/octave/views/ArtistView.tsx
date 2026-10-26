@@ -21,6 +21,7 @@ import { useOwnedAlbums } from "../library/useOwnedAlbums";
 import { useOwnedTracks } from "../library/useOwnedTracks";
 import { queueActions } from "@tentacle-tv/shared/octave";
 import { useOctavePlayer } from "../player/OctavePlayerProvider";
+import { ArtistMore } from "./artist/ArtistMore";
 
 type Group = "albums" | "singles" | "compilations" | "live" | "other";
 
@@ -120,6 +121,8 @@ export function ArtistView() {
             </CardGrid>
           </Shelf>
         ))}
+        {/* Mission 3 : ce que l'autre côté (l'extension, ou la bibliothèque) connaît de plus, dessous. */}
+        <ArtistMore artist={data} shown={albums} groupOf={groupReleases} contextId={contextId} />
       </div>
     </div>
   );
