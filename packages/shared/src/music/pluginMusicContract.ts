@@ -14,6 +14,7 @@
 
 import type { ExternalRef, MusicAlbum, MusicArtist, MusicPlaylistEntry, MusicTrack } from "./musicTypes";
 import type { PlaybackSource } from "./musicPlayback";
+import type { MusicImportSource } from "./musicImport";
 
 /** Ce que déclare le manifeste (`plugin.json` → `music`), relayé par `/api/plugins/active`. */
 export interface PluginMusicManifest {
@@ -76,6 +77,12 @@ export interface PluginMusicManifest {
    * tenus par l'extension : session personnelle, `users.rights` → `keepOffline`, et les siens.
    */
   offline?: string;
+  /** Import (capacité `music.playlistImport`) — POST { url } → `ImportedPlaylist` : lire une source que le cœur ne lit pas. */
+  importRead?: string;
+  /** Les sources que `importRead` sait lire (liste fermée `MusicImportSource`, sans `text`). */
+  importSources?: MusicImportSource[];
+  /** Import — POST `ImportTracksRequest` → 202 `ImportTracksAccepted` ; GET/DELETE `<importTracks>/<operationId>`. */
+  importTracks?: string;
   /** Nom de la section de recherche, par langue (« Pas encore dans la bibliothèque »). */
   labels?: Record<string, string>;
 }
@@ -235,6 +242,8 @@ export interface PendingMusicItem {
   note?: string;
   /** Un ajout en playlist d'un titre déjà présent, confirmé : il ne se fond pas dans l'entrée existante. */
   duplicate?: boolean;
+  /** Une entrée d'un IMPORT de playlist (`importTracks`) : elle n'attend pas la bibliothèque, sa disponibilité fait foi. */
+  imported?: true;
 }
 
 export interface PendingMusicResponse {
@@ -266,13 +275,17 @@ export function readPluginMusicManifest(raw: unknown): PluginMusicManifest | nul
   const resolve = safePath(m.resolve);
   if (!search || !resolve) return null;
   const out: PluginMusicManifest = { search, resolve };
-  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline"] as const) {
+  for (const key of ["prefetch", "like", "playlistAdd", "pending", "played", "album", "artist", "suggest", "playlist", "radio", "typingPause", "rights", "offline", "importRead", "importTracks"] as const) {
     const path = safePath(m[key]);
     if (path) out[key] = path;
   }
   if (Array.isArray(m.searchKinds)) {
     const kinds = ["tracks", "albums", "artists", "playlists"].filter((k) => (m.searchKinds as unknown[]).includes(k));
     if (kinds.length > 0) out.searchKinds = kinds as NonNullable<PluginMusicManifest["searchKinds"]>;
+  }
+  if (Array.isArray(m.importSources)) {
+    const sources = ["spotify", "apple", "deezer", "youtube"].filter((k) => (m.importSources as unknown[]).includes(k));
+    if (sources.length > 0) out.importSources = sources as MusicImportSource[];
   }
   if (m.labels && typeof m.labels === "object") {
     const labels: Record<string, string> = {};

@@ -275,6 +275,11 @@ export const SERVER_CAPABILITIES = {
    *  bibliothèque (vue album, artiste, playlist, recherche, file), sur l'index local. Sans elle :
    *  seule la recherche remplace un titre par celui de la bibliothèque, d'après ses propres résultats. */
   "music.libraryMatch": "1.40.0",
+  /** L'IMPORT d'une playlist d'un autre service dans Octave (`POST /api/music/import`, musicImport.ts) :
+   *  Spotify, Apple Music, Deezer et une liste collée lus par le serveur, rapprochés de la bibliothèque,
+   *  playlist Jellyfin créée au nom du compte ; les absents ne vont qu'à une extension qui déclare
+   *  `importTracks`. Sans elle : aucune entrée « Importer une playlist ». */
+  "music.playlistImport": "1.40.0",
   /** Les requêtes DÉLÉGUÉES à l'appareil (`client.fetch`, `pluginClientFetch.ts`) : une extension fait
    *  exécuter ses requêtes déclarées par le bureau qui la sollicite, depuis SA connexion, et un flux
    *  peut s'y lire en direct (`PlaybackSource.direct`). Sans elle : tout passe par le serveur. */

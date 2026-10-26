@@ -7,3 +7,4 @@ export * from "./musicEvents";
 export * from "./pluginMusicContract";
 export * from "./musicLibraryMatch";
 export * from "./musicRights";
+export * from "./musicImport";
