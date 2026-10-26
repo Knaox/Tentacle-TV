@@ -17,6 +17,9 @@ import { TrackRow, rowColumns } from "./TrackRow";
 import { SelectionBar } from "../actions/selection/SelectionBar";
 import { orderedKeys } from "../actions/selection/selectionRules";
 import { useListSelection } from "../actions/selection/useListSelection";
+import type { HandleSlot } from "../listOrder/DragHandle";
+import type { ReorderBlock } from "../listOrder/useListOrder";
+import { VirtualTrackRows } from "../listOrder/VirtualTrackRows";
 
 interface TrackListProps {
   rows: readonly ListRow[];
@@ -42,6 +45,12 @@ interface TrackListProps {
   queueTracks?: readonly MusicTrack[];
   /** Un intertitre avant une rangée (« Disque 2 ») — la liste reste UNE seule file. */
   sectionBefore?: (row: ListRow, index: number) => string | null;
+  /**
+   * Une GRANDE liste (playlist, likés) : rangées virtualisées (seules celles à l'écran existent) ;
+   * sans intertitres. Avec `reorder`, chaque rangée a sa poignée de glisser.
+   */
+  virtual?: boolean;
+  reorder?: { block: ReorderBlock | null; onMove: (from: number, to: number) => void } | null;
 }
 
 /** Un clic sur une rangée : le titre en cours de CETTE liste se met en pause ou reprend ; tout autre se lit. */
@@ -53,7 +62,7 @@ export function rowsOf(tracks: readonly MusicTrack[]): ListRow[] {
   return tracks.map((track) => ({ rowKey: track.key, track, pending: null, entryId: null }));
 }
 
-export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveRows, queueTracks, sectionBefore }: TrackListProps) {
+export const TrackList = memo(function TrackList({ rows, contextId, showArtwork = false, showAlbum = false, markLibrary = false, useTrackNumbers = false, label, showHeader = false, onRemoveRows, queueTracks, sectionBefore, virtual = false, reorder = null }: TrackListProps) {
   const { t } = useTranslation("music");
   const player = useOctavePlayer();
   const actions = useTrackActions();
@@ -90,10 +99,34 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
     return chosen.flatMap((k) => byKey.get(k) ?? []);
   };
 
+  const renderRow = (row: ListRow, index: number, handle: HandleSlot | null) => (
+    <TrackRow
+      track={row.track}
+      number={useTrackNumbers ? (row.track.trackNumber ?? index + 1) : index + 1}
+      current={row.track.key === currentKey}
+      playing={row.track.key === currentKey && wantsPlay}
+      failed={row.pending?.failed ?? false}
+      note={row.pending?.note ?? null}
+      showArtwork={showArtwork}
+      showAlbum={showAlbum}
+      markLibrary={markLibrary}
+      actions={actions}
+      index={index}
+      onPlayIndex={play}
+      rowKey={row.rowKey}
+      onRemoveRow={row.entryId !== null || row.pending ? removeRow : undefined}
+      selected={selection.selected.has(row.rowKey)}
+      selecting={selection.selecting}
+      onSelect={selectIndex}
+      handle={handle}
+    />
+  );
+
   return (
-    <div role="grid" aria-label={label} className="flex flex-col">
+    <div role="grid" aria-label={label} aria-rowcount={virtual ? rows.length : undefined} className="flex flex-col">
       {showHeader && (
-        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum)}`}>
+        <div role="row" className={`mb-1 grid items-center gap-3 border-b border-line-subtle px-2 pb-2 text-xs font-medium uppercase tracking-wide text-content-quaternary ${rowColumns(showAlbum, reorder !== null)}`}>
+          {reorder && <span role="columnheader" aria-hidden />}
           <span role="columnheader" aria-label={t("selection.column")} />
           <span role="columnheader" className="text-center">{t("track.number")}</span>
           <span role="columnheader">{t("track.title")}</span>
@@ -101,37 +134,29 @@ export const TrackList = memo(function TrackList({ rows, contextId, showArtwork 
           <span role="columnheader" className="pr-9 text-right">{t("track.duration")}</span>
         </div>
       )}
-      {rows.map((row, index) => {
-        const section = sectionBefore?.(row, index) ?? null;
-        return (
-        <Fragment key={row.rowKey}>
-        {section && (
-          <div role="row" className="px-2 pb-1 pt-4 text-sm font-semibold text-content-secondary">
-            <span role="rowheader">{section}</span>
-          </div>
-        )}
-        <TrackRow
-          track={row.track}
-          number={useTrackNumbers ? (row.track.trackNumber ?? index + 1) : index + 1}
-          current={row.track.key === currentKey}
-          playing={row.track.key === currentKey && wantsPlay}
-          failed={row.pending?.failed ?? false}
-          note={row.pending?.note ?? null}
-          showArtwork={showArtwork}
-          showAlbum={showAlbum}
-          markLibrary={markLibrary}
-          actions={actions}
-          index={index}
-          onPlayIndex={play}
-          rowKey={row.rowKey}
-          onRemoveRow={row.entryId !== null || row.pending ? removeRow : undefined}
-          selected={selection.selected.has(row.rowKey)}
-          selecting={selection.selecting}
-          onSelect={selectIndex}
+      {virtual ? (
+        <VirtualTrackRows
+          count={rows.length}
+          keyAt={(index) => rows[index]?.rowKey ?? String(index)}
+          titleAt={(index) => rows[index]?.track.title ?? ""}
+          renderRow={(index, handle) => (rows[index] ? renderRow(rows[index], index, handle) : null)}
+          reorder={reorder}
         />
-        </Fragment>
-        );
-      })}
+      ) : (
+        rows.map((row, index) => {
+          const section = sectionBefore?.(row, index) ?? null;
+          return (
+            <Fragment key={row.rowKey}>
+              {section && (
+                <div role="row" className="px-2 pb-1 pt-4 text-sm font-semibold text-content-secondary">
+                  <span role="rowheader">{section}</span>
+                </div>
+              )}
+              {renderRow(row, index, null)}
+            </Fragment>
+          );
+        })
+      )}
       {selection.selecting && (
         <SelectionBar
           count={chosen.length}

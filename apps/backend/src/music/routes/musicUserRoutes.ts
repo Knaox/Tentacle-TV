@@ -6,6 +6,7 @@
 
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { writeFavorite } from "../access/userFavorites";
+import { noteLiked } from "../listOrder/addedDates";
 import { rowById } from "../index/indexQueries";
 import { isJellyfinId, normalizeId } from "../jellyfin/musicJellyfin";
 import {
@@ -68,6 +69,8 @@ export function musicUserRoutes(app: FastifyInstance): void {
     const row = await rowById(normalizeId(request.params.id));
     if (!row || visibleRows(view, [row]).length === 0) return reply.status(404).send({ error: "not_found" });
     if (!(await writeFavorite(view.userId, row.id, favorite))) return reply.status(503).send({ error: "unavailable" });
+    // « Dernier ajout » des likés : daté à l'instant du geste (Jellyfin ne date pas un favori).
+    await noteLiked(view.userId, row.id, favorite);
     // Les autres appareils du compte l'apprennent tout de suite (Jellyfin le redira ; le doublon est sans effet).
     sendToUser(userOf(request).userId, musicMessage({ type: "music:userdata", changes: [{ jellyfinId: row.id, favorite }] }));
     return { jellyfinId: row.id, favorite };

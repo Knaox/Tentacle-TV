@@ -991,3 +991,30 @@ model MusicIndexItem {
   @@index([kind, dateCreated])
   @@map("music_items")
 }
+
+/// 1.40.0 (`music.listOrder`) : QUAND un titre est entré dans une liste d'Octave (Jellyfin ne date ni
+/// un favori ni une entrée de playlist). `scope` = `liked:<userId>` ou `playlist:<playlistId>`.
+/// Relevé à la première lecture qui le voit ; ce qui y était avant est estimé (ordre de la playlist,
+/// ajout à la bibliothèque pour un like). Une ligne dont le titre a quitté la liste est effacée.
+model MusicListAdded {
+  scope   String
+  itemId  String
+  addedAt DateTime
+
+  @@id([scope, itemId])
+  @@map("music_list_added")
+}
+
+/// 1.40.0 (`music.listOrder`) : le tri d'une liste d'Octave et son ordre personnalisé, par COMPTE.
+/// `listKey` = `liked` ou `playlist:<id>` ; `customJson` = `MusicCustomEntry[]` (musicListOrder.ts).
+model MusicListPrefs {
+  userId     String
+  listKey    String
+  sort       String
+  direction  String
+  customJson String?
+  updatedAt  DateTime @updatedAt
+
+  @@id([userId, listKey])
+  @@map("music_list_prefs")
+}

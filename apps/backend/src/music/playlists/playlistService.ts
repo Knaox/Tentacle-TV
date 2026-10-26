@@ -9,7 +9,8 @@
 import { jfAdmin, jfWrite, normalizeId, q, type JfItem } from "../jellyfin/musicJellyfin";
 import { tellPlaylistChanged } from "../events/musicLiveEvents";
 import { forgetUserPlaylists, playlistEntries, playlistFor } from "./playlistJellyfin";
-import { insertedOrder, movedOrder, planRewrite, type PlaylistEntryRef } from "./playlistOrder";
+import { chunks, insertedOrder, movedOrder, planRewrite, reorderedOrder, type PlaylistEntryRef } from "./playlistOrder";
+import { forgetPlaylistOrder } from "../listOrder/listPrefsStore";
 
 export type PlaylistFailure = "not_found" | "forbidden" | "invalid" | "unavailable";
 export type PlaylistResult<T> = { ok: true; value: T } | { ok: false; failure: PlaylistFailure };
@@ -39,12 +40,18 @@ function done(userId: string, playlistId: string): void {
   tellPlaylistChanged(userId, playlistId);
 }
 
-/** L'ajout à la FIN, au nom du compte : Jellyfin y juge ses droits (404/403). */
+/** 100 identifiants (~3,3 Kio) par requête : sous la borne de 8 Kio de la ligne de requête de Jellyfin. */
+const BATCH = 100;
+
+/** L'ajout à la FIN, au nom du compte, par lots dans l'ordre : Jellyfin y juge ses droits (404/403). */
 async function append(userId: string, playlistId: string, itemIds: string[]): Promise<PlaylistFailure | null> {
-  if (itemIds.length === 0) return null;
-  const added = await jfWrite(`/Playlists/${q(playlistId)}/Items?ids=${itemIds.map(q).join(",")}&userId=${q(userId)}`, "POST");
-  if (added.ok) return null;
-  return added.status === 404 ? "not_found" : added.status === 403 || added.status === 401 ? "forbidden" : "unavailable";
+  for (const batch of chunks(itemIds, BATCH)) {
+    let added = await jfWrite(`/Playlists/${q(playlistId)}/Items?ids=${batch.map(q).join(",")}&userId=${q(userId)}`, "POST");
+    // Un lot refusé par une panne passagère se retente une fois : la fin retirée ne se perd pas en silence.
+    if (!added.ok && added.status !== 404 && added.status !== 403 && added.status !== 401) added = await jfWrite(`/Playlists/${q(playlistId)}/Items?ids=${batch.map(q).join(",")}&userId=${q(userId)}`, "POST");
+    if (!added.ok) return added.status === 404 ? "not_found" : added.status === 403 || added.status === 401 ? "forbidden" : "unavailable";
+  }
+  return null;
 }
 
 /**
@@ -55,12 +62,19 @@ async function append(userId: string, playlistId: string, itemIds: string[]): Pr
 async function rewriteTo(userId: string, playlistId: string, current: PlaylistEntryRef[], desired: string[]): Promise<boolean> {
   const plan = planRewrite(current, desired);
   if (!plan) return true;
-  if (plan.remove.length > 0) {
-    // Sans contrôle de propriétaire chez Jellyfin : l'appelant a vérifié le droit (`editable`).
-    const removed = await jfWrite(`/Playlists/${q(playlistId)}/Items?entryIds=${plan.remove.map(q).join(",")}`, "DELETE");
-    if (!removed.ok) return false;
+  // Sans contrôle de propriétaire chez Jellyfin : l'appelant a vérifié le droit (`editable`).
+  for (const batch of chunks(plan.remove, BATCH)) {
+    const removed = await jfWrite(`/Playlists/${q(playlistId)}/Items?entryIds=${batch.map(q).join(",")}`, "DELETE");
+    if (!removed.ok) {
+      // Ce qui est déjà retiré revient à la fin, dans l'ordre voulu : rien ne se perd.
+      const gone = new Set(plan.remove.slice(0, plan.remove.indexOf(batch[0]!)));
+      const goneItems = new Set(current.filter((e) => gone.has(e.entryId)).map((e) => e.itemId));
+      const back = plan.append.filter((id) => goneItems.has(id));
+      if (back.length > 0) await append(userId, playlistId, back);
+      return false;
+    }
   }
-  return (await append(userId, playlistId, plan.append)) === null || (await append(userId, playlistId, plan.append)) === null;
+  return (await append(userId, playlistId, plan.append)) === null;
 }
 
 export async function createPlaylist(userId: string, name: string, itemIds: string[]): Promise<PlaylistResult<string>> {
@@ -94,6 +108,7 @@ export function deletePlaylist(userId: string, playlistId: string): Promise<Play
     if (refusal) return { ok: false, failure: refusal };
     const removed = await jfWrite(`/Items/${q(playlistId)}`, "DELETE");
     if (!removed.ok) return { ok: false, failure: "unavailable" };
+    await forgetPlaylistOrder(playlistId).catch(() => undefined);
     done(userId, playlistId);
     return { ok: true, value: true };
   });
@@ -128,6 +143,19 @@ export function moveInPlaylist(userId: string, playlistId: string, entryId: stri
     // `Move` de Jellyfin refuse la clé (400) : la fin se réécrit dans l'ordre voulu.
     const desired = movedOrder(current, entryId, position);
     if (desired && !(await rewriteTo(userId, playlistId, current, desired))) return { ok: false, failure: "unavailable" };
+    done(userId, playlistId);
+    return { ok: true, value: true };
+  });
+}
+
+/** L'ordre COMPLET voulu par le client (glisser dans Octave), écrit dans la playlist Jellyfin elle-même. */
+export function reorderPlaylist(userId: string, playlistId: string, entryIds: string[]): Promise<PlaylistResult<true>> {
+  return locked(playlistId, async () => {
+    const refusal = await editable(userId, playlistId);
+    if (refusal) return { ok: false, failure: refusal };
+    const current = await playlistEntries(userId, playlistId);
+    if (!current) return { ok: false, failure: "unavailable" };
+    if (!(await rewriteTo(userId, playlistId, current, reorderedOrder(current, entryIds)))) return { ok: false, failure: "unavailable" };
     done(userId, playlistId);
     return { ok: true, value: true };
   });

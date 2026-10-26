@@ -11,6 +11,8 @@
  * compte, une playlist EST une playlist Jellyfin. Aucun stockage propre au cœur.
  */
 
+import type { MusicListStats } from "./musicListOrder";
+
 /** Un identifiant MusicBrainz (UUID en minuscules). */
 export type Mbid = string;
 
@@ -143,6 +145,8 @@ export interface MusicPlaylistEntry {
   entryId: string;
   position: number;
   track: MusicTrack;
+  /** Pour trier (capacité `music.listOrder`) : l'ajout à la playlist, les écoutes du compte. */
+  stats?: MusicListStats;
 }
 
 export interface MusicPlaylist {

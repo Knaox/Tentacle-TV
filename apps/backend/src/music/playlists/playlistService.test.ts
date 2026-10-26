@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { insertIntoPlaylist, moveInPlaylist, removeFromPlaylist } from "./playlistService";
+import { insertIntoPlaylist, moveInPlaylist, removeFromPlaylist, reorderPlaylist } from "./playlistService";
 import { resetPlaylistMemoForTests } from "./playlistJellyfin";
 
 interface FakePlaylist {
@@ -24,6 +24,7 @@ const { jf } = vi.hoisted(() => ({
     playlists: new Map<string, FakePlaylist>(),
     calls: [] as string[],
     refuseAppend: false,
+    longest: 0,
   },
 }));
 
@@ -33,6 +34,7 @@ function visible(p: FakePlaylist | undefined, userId: string): p is FakePlaylist
 
 function answer(method: string, path: string, body?: unknown): { ok: boolean; status?: number; data?: unknown } {
   jf.calls.push(`${method} ${path.split("?")[0]}`);
+  jf.longest = Math.max(jf.longest, path.length);
   const url = new URL(`http://jf${path}`);
   const userId = url.searchParams.get("userId") ?? "";
   const item = path.match(/^\/Items\/([^/?]+)/);
@@ -130,6 +132,36 @@ describe("playlist d'un compte non administrateur, face aux pièges de Jellyfin 
     jf.refuseAppend = true;
     expect(await insertIntoPlaylist(OWNER, P, ["x"], 0)).toEqual({ ok: false, failure: "forbidden" });
     expect(items()).toEqual(["a", "b", "c", "d"]);
+    expect(deletes()).toEqual([]);
+  });
+});
+
+describe("réordonner toute la playlist (glisser dans Octave)", () => {
+  it("l'ordre complet du client devient celui de Jellyfin — sans `Move`", async () => {
+    expect(await reorderPlaylist(OWNER, P, ["c", "a", "d", "b"])).toEqual({ ok: true, value: true });
+    expect(items()).toEqual(["c", "a", "d", "b"]);
+    expect(jf.calls.some((c) => c.includes("/Move/"))).toBe(false);
+  });
+
+  it("une entrée ajoutée entre-temps reste après son prédécesseur ; une entrée disparue est ignorée", async () => {
+    jf.playlists.get(P)!.items = ["a", "b", "n", "c", "d"];
+    expect((await reorderPlaylist(OWNER, P, ["d", "c", "b", "a", "gone"])).ok).toBe(true);
+    expect(items()).toEqual(["d", "c", "b", "n", "a"]);
+  });
+
+  it("1 000 titres : des requêtes sous la borne de Jellyfin (8 Kio), rien de perdu", async () => {
+    const ids = Array.from({ length: 1000 }, (_, i) => i.toString(16).padStart(32, "0"));
+    jf.playlists.get(P)!.items = [...ids];
+    const wanted = [ids[999]!, ...ids.slice(0, 999)];
+    jf.longest = 0;
+    expect((await reorderPlaylist(OWNER, P, wanted)).ok).toBe(true);
+    expect(items()).toEqual(wanted);
+    expect(jf.longest).toBeLessThan(8 * 1024);
+  });
+
+  it("un autre compte : refusé, rien retiré", async () => {
+    expect(await reorderPlaylist(OTHER, SHARED, ["c", "b", "a"])).toEqual({ ok: false, failure: "forbidden" });
+    expect(items(SHARED)).toEqual(["a", "b", "c"]);
     expect(deletes()).toEqual([]);
   });
 });

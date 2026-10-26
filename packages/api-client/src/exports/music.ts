@@ -21,3 +21,7 @@ export { reportMusicPlayback, isListenCompleted, MUSIC_COMPLETED_RATIO } from ".
 // Octave — l'import d'une playlist d'un autre service (capacité `music.playlistImport`).
 export { useMusicImport, importPortFor, extensionImportSources, type MusicImportHandle } from "../music/import/useMusicImport";
 export { runImport, IMPORT_IDLE, type ImportFlowState, type ImportFlowFailure, type ImportPhase, type ImportSummary, type ImportUserInput, type ImportPort } from "../music/import/importFlow";
+// Octave — l'ordre des listes : tri, ordre personnalisé (capacité `music.listOrder`).
+export {
+  musicListApi, useMusicListOrderCapability, useMusicListPrefs, useSaveMusicListPrefs, useReorderMusicPlaylist, latestWinsQueue,
+} from "../music/useMusicListOrder";
