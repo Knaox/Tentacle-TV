@@ -65,16 +65,15 @@ rien d'autre ; une variable qui en DÉRIVE se redéclare sur la nuit (elle se ca
   320 ms (panneau) ; une sortie dure deux tiers de son entrée ; `prefers-reduced-motion` coupe tout.
 - **Liquid Glass** : la porte `data-liquid-glass` ne change pas. En mode `native` (bureau, macOS 26), Octave prend la
   DISPOSITION de la maquette « Octave · Playlist » (26/10, `music/octave/glass/`) : une scène (`OctaveGlassStage`) où le
-  fond ambiant du socle (`GlassAmbient`, taches violet → rose peintes une fois) est TEINTÉ par la pochette en cours ; le
-  rail (260, rayon 28), la page et la file posés à 20 px des bords ; le dock sur toute la largeur (1240 au plus, 111 de
-  haut, rayon 32). Les matériaux sont ceux du socle (`theme/glass/pane.css`) : `.lg-pane` pour le rail, la file, le
-  dock (ton FORCÉ à sombre, encre 0,7 : lisible au-dessus d'un blanc pur, `shellGlass.test.ts`), le tableau des titres
-  et le cadre de la pochette ; ces deux-là SANS givre (`lg-pane-flat` : ils défilent, la passe coûtait des images au
-  défilement) ; `.lg-bead` pour les pastilles (‹ ›, bascule, surtitre, champ, filtres, ronds du dock) ; `.lg-pane-row` /
-  `.lg-pane-nav` pour les rangées et les entrées. Rien n'est verre DANS un verre. La scène suit le thème (nacre et
-  taches pastel en clair), le dock reste la nuit. La coquille étroite et tout ce qui n'est pas la scène gardent leur
-  rendu (`useOctaveGlassStage`). Un texte au dégradé (`.oc-gradient-text`) n'a jamais d'ombre de texte ; sur le rail
-  teinté, le mot « Octave » prend le dégradé un cran plus clair.
+  fond ambiant du socle (`GlassAmbient`, taches violet → rose DISCRÈTES, peintes une fois) est teinté par la pochette en
+  cours ; le rail (260, rayon 28), la page et la file posés à 20 px des bords ; le dock sur toute la largeur (1240 au
+  plus, 111 de haut, rayon 32). **Verre transparent, pas violent** (consigne de Damien) : seule la couche fonctionnelle
+  est du verre — le rail et le dock (`.lg-pane` du socle ; le dock en ton FORCÉ sombre, encre 0,7 : lisible au-dessus
+  d'un blanc pur, `shellGlass.test.ts`), les pastilles (`.lg-bead` : ‹ ›, bascule, surtitre, champ, filtres, ronds du
+  dock), les menus (régime commun). Le CONTENU reste net : pochettes sans cadre, listes sans panneau (les mesures du
+  tableau de la maquette seulement : rangées de 70, `.lg-pane-row`), la file reste l'îlot prune. Rien n'est verre dans
+  un verre. La scène suit le thème, le dock reste la nuit. La coquille étroite et tout ce qui n'est pas la scène gardent
+  leur rendu (`useOctaveGlassStage`). Un texte au dégradé (`.oc-gradient-text`) n'a jamais d'ombre de texte.
 - **La place** : une information qui ne tient pas entière s'efface, elle n'est jamais coupée au milieu
   d'un mot. Dans le dock, la colonne de droite est un conteneur (requêtes de conteneur, `shell.css`) :
   la glissière du volume cède d'abord, puis la qualité passe en ICÔNE seule — nom accessible et infobulle
