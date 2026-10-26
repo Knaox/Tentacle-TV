@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { octaveLanding, parseOctaveStartup, startupWantsOctave, type OctaveStartupChoice } from "./octaveStartup";
+import { octaveLanding, parseOctaveStartup, startupWantsOctave, tentaclePageEndsMode, type OctaveStartupChoice } from "./octaveStartup";
 
 /**
  * Octave — la règle du démarrage : trois choix × le dernier mode × Octave
@@ -50,5 +50,13 @@ describe("démarrage d'Octave", () => {
     expect(parseOctaveStartup("music")).toBe("last");
     expect(parseOctaveStartup("octave")).toBe("octave");
     expect(parseOctaveStartup("tentacle")).toBe("tentacle");
+  });
+});
+
+describe("une page de Tentacle, mode allumé", () => {
+  it("éteint le mode (on est sorti de la musique) ; l'accueil, que le mode remplace, non", () => {
+    expect(tentaclePageEndsMode(true, false)).toBe(true);
+    expect(tentaclePageEndsMode(true, true)).toBe(false);
+    expect(tentaclePageEndsMode(false, false)).toBe(false);
   });
 });

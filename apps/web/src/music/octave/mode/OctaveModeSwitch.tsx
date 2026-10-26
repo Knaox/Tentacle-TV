@@ -5,9 +5,9 @@
  * Le mode reste tel quel quand on quitte l'application (`octaveMode.ts`).
  *
  * - `placement="tentacle"` (barre de Tentacle) : n'existe qu'avec la musique
- *   (`useOctaveAvailability`) ; reflète le mode. L'allumer passe dans Octave ;
- *   l'éteindre (mode resté allumé, page vidéo ouverte par un lien) l'éteint
- *   sur place.
+ *   (`useOctaveAvailability`) ; toujours ÉTEINT — on est dans Tentacle (une page
+ *   de Tentacle éteint le mode, `tentaclePageEndsMode`). Un clic passe dans
+ *   Octave, toujours.
  * - `placement="octave"` (coquille d'Octave) : toujours allumé ; l'éteindre,
  *   c'est `onExit`.
  *
@@ -29,7 +29,7 @@ import "./octaveModeSwitch.css";
 import { useMusicEngineAuth } from "../../engine/engineAuth";
 import { OctaveSwitchGlyph } from "./octaveSwitchGlyph";
 import { loadOctaveApp } from "./OctaveEntry";
-import { OCTAVE_BASE_PATH, setOctaveMode, useOctaveMode } from "./octaveMode";
+import { OCTAVE_BASE_PATH } from "./octaveMode";
 import { useOctaveAvailability } from "./useOctaveAvailability";
 import { useOctaveAccessLive } from "./useOctaveAccessLive";
 
@@ -45,7 +45,6 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const engineAuth = useMusicEngineAuth();
-  const mode = useOctaveMode();
   const inOctave = props.placement === "octave";
   // Dans Octave, la disponibilité est déjà acquise (sa porte l'a vérifiée).
   const { available } = useOctaveAvailability(!inOctave);
@@ -54,7 +53,7 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   if (!inOctave && !available) return null;
 
-  const checked = optimistic ?? (inOctave || mode);
+  const checked = optimistic ?? inOctave;
 
   const toggle = () => {
     if (props.placement === "octave") {
@@ -62,11 +61,7 @@ export function OctaveModeSwitch(props: OctaveModeSwitchProps) {
       props.onExit();
       return;
     }
-    if (checked) {
-      setOptimistic(null);
-      setOctaveMode(false);
-      return;
-    }
+    if (optimistic) return;
     setOptimistic(true);
     loadOctaveApp()
       .then((octave) => octave.warmOctaveCache(queryClient))

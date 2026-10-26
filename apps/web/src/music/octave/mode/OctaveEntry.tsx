@@ -16,9 +16,9 @@ import { bootOctaveCache } from "../cache/octaveCacheHydration";
 import type { OctaveQueryClientLike } from "../data/persist/octaveCachePersister";
 import { octaveOwner } from "../cache/octaveOwner";
 import { octavePageReached, resumePath, savedOctavePageAtLaunch } from "../cache/pageResume";
-import { OCTAVE_BASE_PATH, useOctaveMode } from "./octaveMode";
+import { OCTAVE_BASE_PATH, isOctaveMode, setOctaveMode, useOctaveMode } from "./octaveMode";
 import { releaseTentacle, wasLaunchedInOctave } from "./octaveLaunchStore";
-import { octaveLanding } from "./octaveStartup";
+import { octaveLanding, tentaclePageEndsMode } from "./octaveStartup";
 import { useOctaveLaunchAvailability } from "./useOctaveLaunchAvailability";
 
 type OctaveModule = typeof import("../OctaveApp");
@@ -80,17 +80,23 @@ export function bootOctave(qc: OctaveQueryClientLike): Promise<void> {
  * allumé : rien tant que la disponibilité n'est pas connue (jamais la barre ni
  * l'accueil vidéo qui clignotent avant Octave), puis Octave — ou, sans
  * musique, l'accueil d'avant, sans erreur. Toute autre adresse (un lien
- * profond) est servie telle quelle.
+ * profond) est servie telle quelle — et éteint le mode (`tentaclePageEndsMode`).
  */
 export function OctaveHomeGate({ children, enabled }: { children: ReactElement; enabled: boolean }) {
   const on = useOctaveMode();
-  const atHome = useLocation().pathname === "/";
+  const { pathname } = useLocation();
+  const atHome = pathname === "/";
   const wants = on && enabled && atHome;
   const landing = octaveLanding(wants, useOctaveLaunchAvailability(wants));
   // La première image de Tentacle : ce que le lancement en Octave retenait part.
   useEffect(() => {
     if (landing === "tentacle") releaseTentacle();
   }, [landing]);
+  // À l'ARRIVÉE sur une page, jamais à un changement du mode : la page qui s'efface vers Octave
+  // garde son adresse (`AnimatedRoutes`) et éteindrait le mode qu'Octave vient d'allumer.
+  useEffect(() => {
+    if (tentaclePageEndsMode(isOctaveMode(), atHome)) setOctaveMode(false);
+  }, [pathname, atHome]);
   if (landing === "pending") return null;
   // La page gardée tant qu'Octave n'a pas été atteint dans ce chargement ; ensuite, son accueil.
   if (landing === "octave") return <Navigate to={octavePageReached() ? OCTAVE_BASE_PATH : launchPage} replace />;
