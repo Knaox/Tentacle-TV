@@ -5,7 +5,7 @@
  * n'est inventé : seulement ce que la carte affichait déjà. Borné.
  */
 
-import type { MusicAlbum } from "@tentacle-tv/shared/music";
+import type { MusicAlbum, MusicTrack } from "@tentacle-tv/shared/music";
 
 const MAX_PREVIEWS = 200;
 const previews = new Map<string, MusicAlbum>();
@@ -25,4 +25,28 @@ export function rememberAlbumPreview(key: string, album: MusicAlbum): void {
 export function albumPreview(key: string): MusicAlbum | undefined {
   const album = previews.get(key);
   return album ? { ...album, tracks: undefined, label: undefined } : undefined;
+}
+
+/**
+ * L'album qu'une RANGÉE de titre montrait (son lien d'album, hors bibliothèque) : son nom, les artistes du titre,
+ * sa pochette (celle de la rangée : la vue d'un titre importé rend la même, rien ne saute), son année. `null`
+ * sans album ou sans page où aller.
+ */
+export function albumPreviewOfTrack(key: string, track: Pick<MusicTrack, "album" | "artists"> & Partial<Pick<MusicTrack, "artworkUrl" | "year">>): MusicAlbum | null {
+  const album = track.album;
+  if (!album || album.jellyfinId || !album.external) return null;
+  return {
+    key,
+    jellyfinId: null,
+    external: album.external,
+    title: album.title,
+    artists: track.artists.map((a) => ({ name: a.name, mbid: a.mbid, jellyfinId: a.jellyfinId })),
+    year: track.year ?? null,
+    releaseDate: null,
+    kind: "album",
+    artworkUrl: track.artworkUrl ?? null,
+    trackCount: null,
+    durationMs: null,
+    mbids: { release: album.mbid, releaseGroup: null },
+  };
 }
