@@ -21,3 +21,4 @@ export { useMusicEvents, applyMusicEvent as applyPluginMusicEvent, isMusicEvent,
 export { startClientFetchAgent, isClientFetchJob, type ClientFetchExecutor } from "../pluginMusic/clientFetchAgent";
 export { useClientFetchAgent } from "../pluginMusic/useClientFetchAgent";
 export { tentacleApiSession, type TentacleApiSession } from "../hooks/usePreferences";
+export { fetchMusicMoods, fetchMusicMood, musicMoodsKey, musicMoodKey } from "../pluginMusic/musicMoods";
