@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNavigationWrite } from "./pluginNavigationWrite";
+import { isConfigWrite, isNavigationWrite } from "./pluginNavigationWrite";
 
 describe("écriture de la navigation par une extension", () => {
   const route = "/navigation";
@@ -19,5 +19,14 @@ describe("écriture de la navigation par une extension", () => {
 
   it("une extension qui ne déclare rien (serveur d'avant) : rien", () => {
     expect(isNavigationWrite({ method: "PUT", path: "/api/plugins/ext/navigation" }, 200, "ext", undefined)).toBe(false);
+  });
+});
+
+describe("écriture de sa configuration par une extension (activer, couper)", () => {
+  it("un PUT réussi sur SA config : les extensions se relisent ; une lecture, un refus, une autre : rien", () => {
+    expect(isConfigWrite({ method: "PUT", path: "/api/plugins/ext/config" }, 200, "ext")).toBe(true);
+    expect(isConfigWrite({ method: "GET", path: "/api/plugins/ext/config" }, 200, "ext")).toBe(false);
+    expect(isConfigWrite({ method: "PUT", path: "/api/plugins/ext/config" }, 403, "ext")).toBe(false);
+    expect(isConfigWrite({ method: "PUT", path: "/api/plugins/autre/config" }, 200, "ext")).toBe(false);
   });
 });
