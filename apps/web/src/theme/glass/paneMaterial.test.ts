@@ -6,7 +6,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { relativeLuminance, WCAG_AA_LARGE, WCAG_AA_TEXT, type Rgba } from "./contrast";
+import { compositeOver, contrastRatio, relativeLuminance, WCAG_AA_LARGE, WCAG_AA_TEXT, type Rgba } from "./contrast";
+import { backdropGrid } from "./surfaceMaterial";
 import {
   AMBIENT_DARK,
   AMBIENT_INK,
@@ -19,6 +20,10 @@ import {
   PANE_DARK,
   PANE_LIGHT,
   PANE_PROMINENT,
+  PANE_THICK_BLUR_PX,
+  PANE_THICK_DARK,
+  PANE_THICK_LIGHT,
+  paneColorOver,
   capTintLuminance,
   paneBody,
   sheenCorner,
@@ -96,6 +101,32 @@ describe("la lisibilité du verre sur le fond ambiant (clair)", () => {
   });
 });
 
+describe("le verre ÉPAIS (menus, feuilles, modales, avis) : lisible sur N'IMPORTE quel dessous", () => {
+  const grid = backdropGrid();
+  const worst = (tone: typeof PANE_DARK, text: Rgba, white: number) =>
+    Math.min(...grid.map((b) => { const s = paneColorOver(b, tone, white); return contrastRatio(compositeOver(text, s), s); }));
+  for (const [name, tone] of [["sombre", PANE_THICK_DARK], ["clair", PANE_THICK_LIGHT]] as const) {
+    it(`${name} : TOUT texte (principal, secondaire) ≥ 4,5:1 sur 216 dessous, blanc et noir purs compris, reflet au plus fort`, () => {
+      for (const white of [tone.fillBody, paneBody(tone), sheenCorner(tone)]) {
+        expect(worst(tone, tone.glyph, white)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+        expect(worst(tone, tone.glyphSecondary, white)).toBeGreaterThanOrEqual(WCAG_AA_TEXT);
+      }
+    });
+  }
+  it("ses glyphes sont ceux que le régime `surface` rend (surfaceTokens.css)", () => {
+    const tokens = readFileSync(join(__dirname, "surfaceTokens.css"), "utf8");
+    const rgbaOf = (c: Rgba) => `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`;
+    expect(tokens).toContain(`--lg-surface-glyph-on-dark: ${rgbaOf(PANE_THICK_DARK.glyph)};`);
+    expect(tokens).toContain(`--lg-surface-glyph-on-dark-secondary: ${rgbaOf(PANE_THICK_DARK.glyphSecondary)};`);
+    expect(tokens).toContain(`--lg-surface-glyph-on-light: ${rgbaOf(PANE_THICK_LIGHT.glyph)};`);
+    expect(tokens).toContain(`--lg-surface-glyph-on-light-secondary: ${rgbaOf(PANE_THICK_LIGHT.glyphSecondary)};`);
+  });
+  it("jamais laiteux : moins dense que le matériau gris d'avant (0,78 sombre, 0,76 clair)", () => {
+    expect(PANE_THICK_DARK.ink.a).toBeLessThan(0.78);
+    expect(PANE_THICK_LIGHT.ink.a).toBeLessThan(0.76);
+  });
+});
+
 describe("une teinte d'image est bornée", () => {
   it("à la luminance de nos roses, même teinte", () => {
     const yellow = capTintLuminance({ r: 255, g: 230, b: 0, a: 1 });
@@ -135,6 +166,13 @@ describe("les jetons recopiés du modèle (paneTokens.css)", () => {
     expect(LIGHT.get("--lg-pane-glyph")).toBe(rgba(PANE_LIGHT.glyph));
     expect(LIGHT.get("--lg-pane-glyph-secondary")).toBe(rgba(PANE_LIGHT.glyphSecondary));
     expect(LIGHT.get("--lg-bead-fill")).toBe(`rgba(255, 255, 255, ${BEAD_LIGHT.fill})`);
+  });
+  it("le verre épais", () => {
+    expect(DARK.get("--lg-pane-thick-blur")).toBe(`${PANE_THICK_BLUR_PX}px`);
+    expect(Number(DARK.get("--lg-pane-thick-saturate"))).toBe(PANE_THICK_DARK.saturate);
+    expect(Number(DARK.get("--lg-pane-thick-brightness"))).toBe(PANE_THICK_DARK.brightness);
+    expect(DARK.get("--lg-pane-thick-ink")).toBe(rgba(PANE_THICK_DARK.ink));
+    expect(LIGHT.get("--lg-pane-thick-ink")).toBe(rgba(PANE_THICK_LIGHT.ink));
   });
   it("le clair ne déclare rien que le sombre n'ait pas", () => {
     for (const name of LIGHT.keys()) expect(DARK.has(name), name).toBe(true);

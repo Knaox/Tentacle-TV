@@ -145,7 +145,7 @@ export function useLiquidGlassSurface(options: LiquidGlassSurfaceOptions): Liqui
   if (pane && isPaneMaterial(appearance.material)) {
     return {
       render,
-      props: { ref, className: paneClassName(appearance.material, className), style, ...paneAttributes(appearance) },
+      props: { ref, className: paneClassName(appearance.material, className, appearance.scale), style, ...paneAttributes(appearance) },
       layers: null,
     };
   }

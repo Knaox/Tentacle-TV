@@ -10,12 +10,16 @@
  * dégradé, reflet, taches) sont recopiées de `paneMaterial.ts`, qui PROUVE
  * l'AA ; un test tient les deux identiques. Le TON (`data-lg-tone`, posé par
  * la primitive ou à la main) l'emporte sur le thème : un verre forcé sombre
- * dans le thème clair (le dock d'Octave) prend le bloc sombre.
+ * dans le thème clair (le dock d'Octave) prend le bloc sombre. Une surface du
+ * régime `surface` sans ton clair est SOMBRE, comme ses glyphes
+ * (`liquidGlassSurface.css`) : jamais un texte blanc sur une encre claire.
  *
  * ── CATALOGUE ─────────────────────────────────────────────────────────────
  *  - panneau      --lg-pane-{blur|saturate|brightness|ink|fill|sheen|border|
  *                 shadow|rim|glyph|glyph-secondary|separator}
  *  - action       --lg-pane-prominent-{fill|shadow} (la marque dans le verre)
+ *  - épais        --lg-pane-thick-{blur|saturate|brightness|ink} (menus, feuilles,
+ *                 modales, avis : tout le régime `surface`, `pane.css`)
  *  - pastille     --lg-bead-{blur|saturate|ink|fill|border|shadow}
  *  - rangées      --lg-pane-row-hover, --lg-pane-nav-hover, --lg-pane-selected,
  *                 --lg-pane-selected-shadow
@@ -23,7 +27,8 @@
  *                 --lg-ambient-tint-a (opacité d'une teinte d'image) */
 
 :root[data-liquid-glass="native"],
-:root[data-liquid-glass="native"] [data-lg-tone="dark"] {
+:root[data-liquid-glass="native"] [data-lg-tone="dark"],
+:root[data-liquid-glass="native"] [data-lg-scale="surface"]:not([data-lg-tone="light"]) {
   --lg-pane-blur: 16px;
   --lg-pane-saturate: 1.5;
   --lg-pane-brightness: 1.04;
@@ -45,6 +50,11 @@
   --lg-pane-prominent-fill: linear-gradient(140deg, rgba(190, 24, 93, 0.96) 0%, rgba(109, 40, 217, 0.9) 100%);
   --lg-pane-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -2px 6px rgba(0, 0, 0, 0.16),
     0 12px 30px -14px rgba(var(--brand-accent-rgb), 0.45);
+
+  --lg-pane-thick-blur: 24px;
+  --lg-pane-thick-saturate: 1.3;
+  --lg-pane-thick-brightness: 1;
+  --lg-pane-thick-ink: rgba(14, 10, 20, 0.76);
 
   --lg-bead-blur: 10px;
   --lg-bead-saturate: 1.5;
@@ -77,6 +87,8 @@
 
   --lg-pane-prominent-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), inset 0 -2px 6px rgba(0, 0, 0, 0.12),
     0 10px 26px -14px rgba(var(--brand-accent-rgb), 0.35);
+
+  --lg-pane-thick-ink: rgba(249, 246, 250, 0.62);
 
   --lg-bead-saturate: 1.4;
   --lg-bead-ink: rgba(255, 255, 255, 0);
