@@ -20,6 +20,7 @@ import type { MusicHomeResponse } from "@tentacle-tv/shared/music";
 import { ListenedCard } from "./ListenedCard";
 import { buildListenedCards } from "./searchHomeModel";
 import { readSearchListens } from "./searchListens";
+import { SearchHomeMoodsSlot } from "../home/ambianceSlots";
 
 /** L'instantané d'arrivée : ce que l'appareil a noté, et l'historique déjà connu de la bibliothèque. */
 function useListenedCards(recents: readonly string[]) {
@@ -48,9 +49,12 @@ export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget
 
   if (cards.length === 0 && recents.length === 0) {
     return (
+      <div className="flex flex-col gap-10">
+      <SearchHomeMoodsSlot onSearch={onSearch} />
       <div className="px-2 py-10">
         <h1 className="text-2xl font-bold text-content-primary">{t("search.emptyTitle")}</h1>
         <p className="mt-2 text-sm text-content-tertiary">{t("search.emptyHint")}</p>
+      </div>
       </div>
     );
   }
@@ -58,6 +62,7 @@ export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget
   return (
     <div className="flex flex-col gap-10">
       <h1 className="sr-only">{t("search.title")}</h1>
+      <SearchHomeMoodsSlot onSearch={onSearch} />
       {cards.length > 0 && (
         <section aria-labelledby="octave-search-listened" className="flex flex-col gap-3">
           <div className="px-2">
