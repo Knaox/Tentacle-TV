@@ -1,7 +1,8 @@
 /**
- * Octave — la recherche AVANT la frappe : « Déjà écouté » (ce qu'on a écouté
- * après ses recherches, `searchHomeModel.ts`), puis les recherches récentes
- * (relancer, retirer). Dans la PAGE, jamais en liste flottante : rien ne
+ * Octave — la recherche AVANT la frappe : les ambiances (emplacement), les
+ * albums consultés récemment et les artistes récents (`recentShelves.ts`),
+ * « Déjà écouté » (ce qu'on a écouté après ses recherches,
+ * `searchHomeModel.ts`), puis les recherches récentes (relancer, retirer). Dans la PAGE, jamais en liste flottante : rien ne
  * recouvre ni ne floute quoi que ce soit, et c'est lisible avant même de
  * toucher la barre.
  *
@@ -21,20 +22,25 @@ import { ListenedCard } from "./ListenedCard";
 import { buildListenedCards } from "./searchHomeModel";
 import { readSearchListens } from "./searchListens";
 import { SearchHomeMoodsSlot } from "../home/ambianceSlots";
+import { AlbumCard, ArtistCard, Shelf } from "../components/Cards";
+import { CardRow } from "../components/CardRow";
+import { readRecentVisits } from "./recentVisits";
+import { buildRecentShelves } from "./recentShelves";
 
-/** L'instantané d'arrivée : ce que l'appareil a noté, et l'historique déjà connu de la bibliothèque. */
-function useListenedCards(recents: readonly string[]) {
+/** L'instantané d'arrivée : ce que l'appareil a noté, et l'accueil déjà connu du serveur. */
+function useArrivalSnapshot(recents: readonly string[]) {
   const qc = useQueryClient();
   const capable = useMusicCapability();
-  const [snapshot] = useState(() => ({
-    listens: readSearchListens(),
-    history: qc.getQueryData<MusicHomeResponse>(musicKeys.home())?.recentlyPlayed ?? [],
-  }));
+  const [snapshot] = useState(() => {
+    const home = qc.getQueryData<MusicHomeResponse>(musicKeys.home());
+    return { listens: readSearchListens(), history: home?.recentlyPlayed ?? [], shelves: buildRecentShelves(readRecentVisits(), home?.forYou) };
+  });
   useEffect(() => {
     if (!capable || qc.getQueryData(musicKeys.home())) return;
     void qc.prefetchQuery({ queryKey: musicKeys.home(), queryFn: ({ signal }) => musicApi.home(signal), staleTime: 30_000 });
   }, [capable, qc]);
-  return useMemo(() => buildListenedCards({ recents, listens: snapshot.listens, history: snapshot.history }), [recents, snapshot]);
+  const cards = useMemo(() => buildListenedCards({ recents, listens: snapshot.listens, history: snapshot.history }), [recents, snapshot]);
+  return { cards, shelves: snapshot.shelves };
 }
 
 interface SearchHomeProps {
@@ -45,9 +51,9 @@ interface SearchHomeProps {
 
 export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget }: SearchHomeProps) {
   const { t } = useTranslation("music");
-  const cards = useListenedCards(recents);
+  const { cards, shelves } = useArrivalSnapshot(recents);
 
-  if (cards.length === 0 && recents.length === 0) {
+  if (cards.length === 0 && recents.length === 0 && shelves.albums.length === 0 && shelves.artists.length === 0) {
     return (
       <div className="flex flex-col gap-10">
       <SearchHomeMoodsSlot onSearch={onSearch} />
@@ -63,6 +69,16 @@ export const SearchHome = memo(function SearchHome({ recents, onSearch, onForget
     <div className="flex flex-col gap-10">
       <h1 className="sr-only">{t("search.title")}</h1>
       <SearchHomeMoodsSlot onSearch={onSearch} />
+      {shelves.albums.length > 0 && (
+        <Shelf title={t("octaveHome.viewedAlbums")}>
+          <CardRow items={shelves.albums} render={(album) => <AlbumCard key={album.key} album={album} />} />
+        </Shelf>
+      )}
+      {shelves.artists.length > 0 && (
+        <Shelf title={t("octaveHome.viewedArtists")}>
+          <CardRow items={shelves.artists} render={(artist) => <ArtistCard key={artist.key} artist={artist} />} />
+        </Shelf>
+      )}
       {cards.length > 0 && (
         <section aria-labelledby="octave-search-listened" className="flex flex-col gap-3">
           <div className="px-2">

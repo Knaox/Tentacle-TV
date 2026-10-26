@@ -63,4 +63,6 @@ export default {
   recentAlbums: "Vos albums du moment",
   recentArtists: "Vos artistes du moment",
   newInLibrary: "Nouveautés dans la bibliothèque",
+  viewedAlbums: "Albums consultés récemment",
+  viewedArtists: "Artistes récents",
 };
