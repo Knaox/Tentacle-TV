@@ -25,11 +25,11 @@ export const SearchLauncher = memo(function SearchLauncher({ variant, className 
   className?: string;
 }) {
   const { t } = useTranslation("search");
-  // Le champ est une capsule de verre à lui seul (Liquid Glass, mode natif) :
-  // les barres de macOS 26 sont des groupes séparés. Hors mode natif, la
-  // peau d'avant (`fallbackClassName`), classe pour classe.
+  // Liquid Glass (mode natif) : la peau du champ change, jamais sa boîte. Hors
+  // mode natif, la peau d'avant (`fallbackClassName`), classe pour classe.
   const field = useLiquidGlassSurface({
-    material: "pane",
+    // La pastille du socle, sans givre dans la capsule de la barre (`windowGlassNav.css`).
+    material: "bead",
     shape: "capsule",
     interactive: true,
     className: `lgc-field group flex h-10 items-center gap-2.5 px-3.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`,
