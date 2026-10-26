@@ -82,6 +82,8 @@ export interface SettingsShellProps {
    * fourni par le client). Absent, la sélection d'avant.
    */
   selectionIndicator?: ReactNode;
+  /** Posé en tête du rail, au-dessus des sections (la recherche des réglages). */
+  railHeader?: ReactNode;
   /** Le rail en surface de verre (voir `SettingsShellSurface`). */
   sidebarSurface?: SettingsShellSurface;
   children: ReactNode;
@@ -98,6 +100,7 @@ export function SettingsShell({
   backLabel,
   fluid = false,
   selectionIndicator,
+  railHeader,
   sidebarSurface,
   children,
 }: SettingsShellProps) {
@@ -126,6 +129,7 @@ export function SettingsShell({
         className={`lgc-sidebar ${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:sticky md:top-[calc(var(--topnav-height)+1.5rem)] md:w-60 md:self-start${sidebarSurface?.className ? ` ${sidebarSurface.className}` : ""}`}
       >
         {sidebarSurface?.layers}
+        {railHeader ? <div className="relative mb-4">{railHeader}</div> : null}
         {groups.map((group, gi) => (
           <div key={group.name ?? gi} className={gi > 0 ? "mt-6" : ""}>
             {/* L'intertitre NOMME sa liste (« Comptes, liste, 3 éléments »)

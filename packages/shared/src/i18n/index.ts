@@ -33,6 +33,7 @@ const NAMESPACES = [
   "profilePicker",
   "familyRightsSummary",
   "settingsMobile",
+  "settingsWeb",
   "avatars",
   "userRights",
   "libraryDelete",

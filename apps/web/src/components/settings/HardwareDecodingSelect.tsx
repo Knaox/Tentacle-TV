@@ -8,8 +8,8 @@ import {
   setHardwareDecoding,
   type HardwareDecoding,
 } from "../../lib/hardwareDecoding";
-import { SettingsSection } from "@tentacle-tv/ui";
 import { SegmentedChoice } from "./SegmentedChoice";
+import { SettingItem } from "./wide/SettingItem";
 
 /**
  * Le décodage matériel — Auto / Copie mémoire / Logiciel.
@@ -34,9 +34,8 @@ export function HardwareDecodingSelect() {
   if (!supportsMpv() || desktopPlatform() === null) return null;
 
   return (
-    <SettingsSection title={t("hwDecodeTitle")}>
-      <div className="p-5">
-        <p className="text-xs leading-relaxed text-content-tertiary">{t("hwDecodeHint")}</p>
+    <SettingItem setting="hardwareDecoding">
+      <div>
         <SegmentedChoice
           label={t("hwDecodeTitle")}
           value={choice}
@@ -49,7 +48,7 @@ export function HardwareDecodingSelect() {
             setChoice(next);
             setHardwareDecoding(next);
           }}
-          className="mt-4 max-w-full"
+          className="max-w-full"
         />
         <p className="mt-3 text-xs leading-relaxed text-content-quaternary">
           {t(choice === "auto" ? "hwDecodeAutoHint" : choice === "copy" ? "hwDecodeCopyHint" : "hwDecodeOffHint")}
@@ -64,6 +63,6 @@ export function HardwareDecodingSelect() {
           </p>
         )}
       </div>
-    </SettingsSection>
+    </SettingItem>
   );
 }

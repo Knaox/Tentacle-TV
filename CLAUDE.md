@@ -707,6 +707,24 @@ tv-core) ; un membre garde son propre Vigie.
   (`useTrendingNowSetting`) : Réglages › Personnalisation (web, bureau,
   miroir), Réglages › Accueil (TV). Sans clé TMDB, rien.
 
+## Réglages utilisateur — un catalogue, une ligne par réglage, sa portée dite
+
+Les réglages du web LARGE et du bureau (`/settings/*`) se lisent dans le catalogue partagé
+`packages/shared/src/settingsCatalog/wideSettingsSections.ts` (même grammaire que celui du mobile et du
+web étroit, `settingsSections.ts` ; équivalences testées, même portée) : rubriques par INTENTION —
+Regarder (Lecture, Langues et sous-titres, Téléchargements), Interface (Apparence, Accueil et
+découverte), Vous (Famille, Compte et sécurité) —, deux niveaux, textes dans l'espace i18n `settingsWeb`.
+- **Chaque réglage est une `SettingItem setting="<id>"`** (`components/settings/wide/`) : libellé, pastille
+  de portée (`ScopeBadge` : Compte, Cet appareil, Octave seulement), une phrase qui dit ce qu'il fait,
+  ancre `#<id>`. Un bloc qui porte son propre titre (la Famille, Octave) pose `settingAnchor("<id>")`.
+  Un réglage nouveau : sa ligne dans le catalogue (portée, texte, mots-clés), puis son composant —
+  `wideCoverage.test.ts` refuse l'un sans l'autre.
+- **La recherche** (tête du rail) et le rail lisent le même catalogue ; une ligne dont les conditions ne
+  tiennent pas ici (navigateur, profil de la Famille, serveur d'avant) n'existe ni dans sa page ni dans
+  la recherche. Anciennes adresses : `WIDE_LEGACY_PATHS` (`/settings/data` → Lecture › Connexion).
+- **Jamais une entrée de plus dans `lazyPages.ts`** pour une rubrique (la cible LG le substitue) :
+  `Preferences` sert Lecture ET Langues (la rubrique se lit dans l'adresse).
+
 ## Aide — un guide, une source ; un rappel, jamais une bannière
 
 Le guide « Bandes-annonces » (`/help/trailers`, `#admin` pour la partie

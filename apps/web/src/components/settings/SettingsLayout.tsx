@@ -1,117 +1,104 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Gauge, HardDriveDownload, Palette, Play, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { HardDriveDownload, Languages, Palette, Play, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
+import { firstWideSection, visibleWideSections, type WideSettingsSectionId } from "@tentacle-tv/shared";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
-import { useDownloadsVisibility } from "../../downloads/useDownloadState";
-import { useOfflineMode } from "../../offline/useOfflineMode";
-import { useFamilyEntryShown } from "../../family/useFamilyEntryShown";
-import { useActiveProfile } from "../../auth/profileSession";
-import { useSecurityAbilities } from "../../rights/useSecurityAbilities";
 import { useGlassSidebar } from "../nav/useGlassSidebar";
+import { SettingsSearchField, SettingsSearchResults } from "./wide/SettingsSearch";
+import { useSettingHashScroll } from "./wide/useSettingHashScroll";
+import { useWideSettingsContext } from "./wide/useWideSettingsContext";
+import { SettingTargetCtx, WideSettingsCtx, useCatalogText } from "./wide/wideSettingsMeta";
 
 /**
- * Coquille des réglages utilisateur.
+ * Coquille des réglages utilisateur du web large et du bureau — maître-détail,
+ * comme l'administration et les Réglages Système de macOS.
  *
- * `/settings` était une colonne à plat : langue, puis UNE CARTE PAR
- * bibliothèque Jellyfin, puis — tout en bas — le mot de passe, les appareils
- * jumelés et le changement de serveur. Autrement dit, la profondeur de
- * défilement pour atteindre son mot de passe dépendait du nombre de
- * bibliothèques de l'instance.
- *
- * Même coquille que l'administration, donc même grammaire de navigation entre
- * les deux écrans de configuration.
+ * Le rail, sa phrase d'intro par rubrique et la recherche lisent le
+ * CATALOGUE partagé (`@tentacle-tv/shared` › `WIDE_SETTINGS_SECTIONS`) :
+ * rubriques rangées par intention (« Regarder », « Interface », « Vous »),
+ * une rubrique sans ligne visible ici n'existe pas (un navigateur n'a pas de
+ * téléchargements, un profil de la Famille n'a pas de mot de passe). La
+ * recherche remplace la rubrique tant qu'elle a un mot ; un résultat mène à
+ * SA ligne (`#<id>`).
  */
 
 const ICON = 17;
 
+const ICONS: Readonly<Record<WideSettingsSectionId, ReactNode>> = {
+  playback: <Play size={ICON} />,
+  languages: <Languages size={ICON} />,
+  downloads: <HardDriveDownload size={ICON} />,
+  appearance: <Palette size={ICON} />,
+  personalization: <Sparkles size={ICON} />,
+  family: <Users size={ICON} />,
+  security: <ShieldCheck size={ICON} />,
+};
+
 /**
- * Index de `/settings`. Sur desktop l'index n'affichait qu'un titre au-dessus
- * d'un panneau vide — on redirige vers Apparence, la premiere section. Sur
- * mobile on garde le rail comme ecran d'atterrissage : rediriger ici ferait
- * BOUCLER le bouton Retour (Retour -> /settings -> redirection -> la meme page).
+ * Index de `/settings`. Sur grand écran, la première rubrique visible ; sur
+ * mobile, le rail reste l'écran d'atterrissage (rediriger ferait BOUCLER le
+ * bouton Retour : Retour → /settings → redirection → la même page).
  */
 export function SettingsIndex() {
   const isMobile = useIsMobile();
+  const ctx = useWideSettingsContext();
   if (isMobile) return null;
-  return <Navigate to="/settings/appearance" replace />;
+  return <Navigate to={`/settings/${firstWideSection(ctx)}`} replace />;
 }
 
 export function SettingsLayout() {
-  const { t } = useTranslation("preferences");
-  const { t: tf } = useTranslation("familyWeb");
+  const { t } = useTranslation(["settingsWeb", "preferences"]);
+  const text = useCatalogText();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  // Desktop uniquement, et seulement avec le droit Jellyfin OU du contenu
-  // local déjà présent — sinon la section n'existe pas (invisibilité stricte).
-  const { visible: downloadsVisible } = useDownloadsVisibility();
-  // Hors ligne : la section Sécurité (mot de passe, appareils, serveur)
-  // n'a aucun sens sans serveur — non rendue.
-  const offline = useOfflineMode();
-  // La Famille : seulement si le serveur l'annonce (`features.family`) —
-  // un serveur d'avant n'en montre rien, hors ligne non plus. Un profil qui
-  // gère l'a aussi (1.30.0, `family.profileManage`).
-  // La Famille, et quelque chose à y faire (un droit coupé par l'administration n'y laisse rien).
-  const familyAvailable = useFamilyEntryShown();
-  // Bureau, session d'un profil : mot de passe et appareils sont ceux du
-  // compte — le serveur les refuse à un profil, la section n'existe pas.
-  const profileSession = useActiveProfile() !== null;
-  // Ni mot de passe ni appareils permis à cette session (`account.abilities`) : pas de section.
-  const { any: securityAllowed } = useSecurityAbilities();
+  const { pathname, hash } = useLocation();
+  const target = hash ? decodeURIComponent(hash.slice(1)) : null;
+  const ctx = useWideSettingsContext();
+  const [query, setQuery] = useState("");
+  useSettingHashScroll();
 
+  const visible = useMemo(() => visibleWideSections(ctx), [ctx]);
   const sections = useMemo<SettingsShellSection[]>(
-    () => [
-      { id: "appearance", label: t("sectionAppearance"), icon: <Palette size={ICON} /> },
-      // Personnalisation : accueil configurable + moteur de recommandation.
-      // Sans serveur, rien à personnaliser — non rendue hors ligne.
-      ...(offline
-        ? []
-        : [{ id: "personalization", label: t("sectionPersonalization"), icon: <Sparkles size={ICON} /> }]),
-      ...(familyAvailable
-        ? [{ id: "family", label: tf("nav"), icon: <Users size={ICON} /> }]
-        : []),
-      ...(offline || profileSession || !securityAllowed
-        ? []
-        : [{ id: "security", label: t("sectionSecurity"), icon: <ShieldCheck size={ICON} /> }]),
-      { id: "playback", label: t("sectionPlayback"), icon: <Play size={ICON} /> },
-      ...(downloadsVisible
-        ? [{ id: "downloads", label: t("sectionDownloads"), icon: <HardDriveDownload size={ICON} /> }]
-        : []),
-      // Économie de données : utile sur toutes les plateformes, y compris hors
-      // ligne (le réglage vaut pour le retour en ligne).
-      { id: "data", label: t("sectionData"), icon: <Gauge size={ICON} /> },
-    ],
-    [t, tf, downloadsVisible, offline, familyAvailable, profileSession, securityAllowed],
+    () => visible.map((section) => ({
+      id: section.id,
+      label: text(section.label),
+      icon: ICONS[section.id],
+      group: t(`settingsWeb:rail.${section.railGroup}`),
+    })),
+    [visible, text, t],
   );
 
-  const activeId = useMemo(() => {
-    const rest = pathname.replace(/^\/settings\/?/, "");
-    return rest.split("/")[0] || null;
-  }, [pathname]);
+  const activeId = useMemo(() => pathname.replace(/^\/settings\/?/, "").split("/")[0] || null, [pathname]);
+  // Changer de rubrique (le rail, un lien) referme la recherche.
+  useEffect(() => { setQuery(""); }, [activeId]);
 
-  const active = sections.find((s) => s.id === activeId);
+  const active = visible.find((s) => s.id === activeId);
+  const searching = query.trim().length > 0;
   const sidebar = useGlassSidebar("settings");
 
   return (
     <div className="pt-6">
-      <SettingsShell
-        sections={sections}
-        activeId={activeId}
-        onSelect={(id) => navigate(`/settings/${id}`)}
-        /* Le titre generique n'apparait que sur l'atterrissage mobile (le rail).
-           `t("title")` = « Preferences de langues » etait faux comme ombrelle :
-           c'est le titre historique de la seule page Lecture. */
-        title={active ? active.label : t("settingsTitle")}
-        description={undefined}
-        onBack={() => navigate("/settings")}
-        backLabel={t("back")}
-        selectionIndicator={sidebar.selection}
-        sidebarSurface={sidebar.surface}
-      >
-        <Outlet />
-      </SettingsShell>
+      <WideSettingsCtx.Provider value={ctx}>
+        <SettingTargetCtx.Provider value={target}>
+          <SettingsShell
+            sections={sections}
+            activeId={searching ? activeId ?? "search" : activeId}
+            onSelect={(id) => navigate(`/settings/${id}`)}
+            title={searching ? t("settingsWeb:search.title", { query: query.trim() }) : active ? text(active.label) : t("preferences:settingsTitle")}
+            description={searching ? undefined : active ? text(active.intro) : undefined}
+            navLabel={t("preferences:settingsTitle")}
+            onBack={() => (searching ? setQuery("") : navigate("/settings"))}
+            backLabel={t("preferences:back")}
+            railHeader={<SettingsSearchField value={query} onChange={setQuery} />}
+            selectionIndicator={sidebar.selection}
+            sidebarSurface={sidebar.surface}
+          >
+            {searching ? <SettingsSearchResults query={query} ctx={ctx} onPick={() => setQuery("")} /> : <Outlet />}
+          </SettingsShell>
+        </SettingTargetCtx.Provider>
+      </WideSettingsCtx.Provider>
     </div>
   );
 }

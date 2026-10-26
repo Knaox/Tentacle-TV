@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { UserPlus, Users } from "lucide-react";
 import { SettingsSection } from "@tentacle-tv/ui";
@@ -58,7 +58,7 @@ const UNSPOKEN = new Set<FamilyErrorCode>([
  * Chaque geste vient de `familyActions` / `profileActions` (shared) ; le
  * serveur revérifie tout.
  */
-export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
+export function FamilySection({ overview, badge }: { overview: FamilyOverviewDto; badge?: ReactNode }) {
   const { t } = useTranslation(["familyWeb", "family"]);
   const { errorText, codeText } = useFamilyText();
   const toast = useToast();
@@ -169,7 +169,7 @@ export function FamilySection({ overview }: { overview: FamilyOverviewDto }) {
 
   return (
     <>
-      <SettingsSection title={title} caption={caption || undefined}>
+      <SettingsSection title={title} caption={caption || undefined} badge={badge}>
         {family ? (
           <ul>
             {family.profiles.map((profile, index) => (

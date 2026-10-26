@@ -37,6 +37,7 @@ import { Stats, TrailerGuide } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 import { ByFormFactor } from "./mirror/ByFormFactor";
 import { RECO_REFINE_PATH } from "./lib/recoSections";
+import { WIDE_LEGACY_PATHS } from "@tentacle-tv/shared";
 import { DevGlassLab } from "./dev/glassLab/devRoute";
 import {
   MirrorAbout,
@@ -198,13 +199,9 @@ export function App() {
             <Route path="settings" element={<ByFormFactor desktop={<SettingsLayout />} mirror={<MirrorSettingsPane />} />}>
               <Route index element={<SettingsIndex />} />
               <Route path="appearance" element={<SettingsAppearance />} />
-              {/* Personnalisation (accueil + recommandations) : réglages serveur,
-                  sans objet hors ligne. */}
-              <Route
-                path="personalization"
-                element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsPersonalization />}
-              />
-              {/* Sécurité (mot de passe, appareils, serveur) : sans objet hors ligne. */}
+              {/* Accueil et découverte : la page tient le hors ligne elle-même (le démarrage d'Octave y reste réglable). */}
+              <Route path="personalization" element={<SettingsPersonalization />} />
+              {/* Compte et sécurité : sans objet hors ligne (tout y parle au serveur, sauf le serveur lui-même). */}
               <Route
                 path="security"
                 element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsSecurity />}
@@ -214,12 +211,16 @@ export function App() {
                 path="family"
                 element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsFamily />}
               />
+              {/* Lecture, et Langues et sous-titres : le même module paresseux (la rubrique se lit dans l'adresse). */}
               <Route path="playback" element={<Preferences />} />
+              <Route path="languages" element={<Preferences />} />
               <Route path="downloads" element={<SettingsDownloads />} />
-            <Route path="data" element={<SettingsData />} />
-              {/* Volets propres au miroir (Profil de l'app) : au bureau, leur page. */}
-              <Route path="password" element={<Navigate to="/settings/security" replace />} />
-              <Route path="devices" element={<Navigate to="/settings/security" replace />} />
+              {/* « Données » n'est plus une rubrique : la page renvoie à Lecture › Connexion (la cible LG y garde son écran Compte). */}
+              <Route path="data" element={<SettingsData />} />
+              {/* Volets propres au miroir (Profil de l'app) : au bureau, la ligne qui les porte. */}
+              <Route path="password" element={<Navigate to={WIDE_LEGACY_PATHS.password} replace />} />
+              <Route path="devices" element={<Navigate to={WIDE_LEGACY_PATHS.devices} replace />} />
+              <Route path="media-languages" element={<Navigate to={WIDE_LEGACY_PATHS["media-languages"]} replace />} />
               <Route path="invites" element={<Navigate to="/admin/invites" replace />} />
             </Route>
             {/* Le chemin de la Famille commun aux clients (cloche, liens) : sa section des réglages. */}

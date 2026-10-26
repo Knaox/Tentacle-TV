@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { SettingsSection } from "@tentacle-tv/ui";
 import { desktopPlatform, invoke, relaunch } from "../../desktop/bridge";
 import { supportsLinuxSession } from "../../desktop/capabilities";
+import { SettingItem } from "./wide/SettingItem";
 
 /**
  * Le choix de session graphique Linux — Auto / Wayland / X11.
@@ -60,15 +60,13 @@ export function LinuxSessionSelect() {
   };
 
   return (
-    <SettingsSection title={t("preferences:linuxSessionTitle")}>
-      <div className="p-5">
-        <p className="text-xs leading-relaxed text-content-tertiary">
-          {t("preferences:linuxSessionHint")}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+    <SettingItem setting="linuxSession">
+      <div>
+        <div className="flex flex-wrap items-center gap-3">
           <select
             value={value}
             onChange={(e) => changer(e.target.value as SessionChoice)}
+            aria-label={t("preferences:linuxSessionTitle")}
             className="w-full max-w-xs appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary"
           >
             <option value="auto">{t("preferences:linuxSessionAuto")}</option>
@@ -84,12 +82,13 @@ export function LinuxSessionSelect() {
             </button>
           )}
         </div>
+        <p className="mt-3 text-xs leading-relaxed text-content-quaternary">{t("preferences:linuxSessionHint")}</p>
         {state.montage !== null && (
           <p className="mt-2 text-xs text-content-tertiary">
             {t("preferences:linuxSessionCurrent", { montage: state.montage })}
           </p>
         )}
       </div>
-    </SettingsSection>
+    </SettingItem>
   );
 }

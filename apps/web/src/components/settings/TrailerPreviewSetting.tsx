@@ -1,16 +1,14 @@
 import { useTranslation } from "react-i18next";
-import { Clapperboard, Timer } from "lucide-react";
-import { SettingsRow, SettingsSection } from "@tentacle-tv/ui";
 import { useServerCapability } from "@tentacle-tv/api-client";
 import { TRAILER_PREVIEW_DELAYS, parseTrailerPreviewDelay } from "@tentacle-tv/shared";
 import { useTrailerPreviewDelay, useTrailerPreviewsSetting } from "../../trailerPreview";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { ToggleSwitch } from "./ToggleSwitch";
-
-const ICON = 17;
+import { SettingItem } from "./wide/SettingItem";
 
 /**
- * « Aperçus de bande-annonce au survol » — réglages d'APPAREIL (le son d'une
+ * « Aperçus de bande-annonce au survol » (Réglages › Accueil et découverte :
+ * un comportement des cartes, pas une couleur) — réglages d'APPAREIL (le son d'une
  * bande-annonce qui part au survol se décide là où l'on est assis, pas pour
  * le compte), activés par défaut : l'aperçu lui-même, puis son DÉLAI — le
  * temps entre le début du survol et sa première image (shared
@@ -28,20 +26,14 @@ export function TrailerPreviewSetting() {
   if (!available) return null;
 
   return (
-    <SettingsSection title={t("settingSection")}>
-      <SettingsRow
-        icon={<Clapperboard size={ICON} />}
-        label={t("settingTitle")}
-        description={t("settingDescription")}
-        last={!enabled}
+    <>
+      <SettingItem
+        setting="trailerPreviews"
         trailing={<ToggleSwitch checked={enabled} onChange={setEnabled} label={t("settingAccessibleName")} />}
       />
       {enabled && (
-        <SettingsRow
-          icon={<Timer size={ICON} />}
-          label={t("delayTitle")}
-          description={t("delayDescription")}
-          last
+        <SettingItem
+          setting="trailerPreviewDelay"
           trailing={(
             <SegmentedChoice
               label={t("delayTitle")}
@@ -53,6 +45,6 @@ export function TrailerPreviewSetting() {
           )}
         />
       )}
-    </SettingsSection>
+    </>
   );
 }

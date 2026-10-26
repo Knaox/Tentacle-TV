@@ -12,7 +12,10 @@ const INPUT =
  * fait valider le mot de passe actuel par Jellyfin). Masquée pendant une
  * session d'impersonation : le backend la refuserait de toute façon (403).
  */
-export function ChangePasswordSection() {
+export function ChangePasswordSection({ embedded = false }: {
+  /** Posé dans une ligne des réglages du web large (`SettingItem`), qui porte déjà le titre et l'explication. */
+  embedded?: boolean;
+} = {}) {
   const { t } = useTranslation(["preferences", "common"]);
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -61,9 +64,13 @@ export function ChangePasswordSection() {
   };
 
   return (
-    <div className="lg-content mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
-      <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("preferences:changePasswordTitle")}</h3>
-      <p className="mb-4 text-xs text-content-tertiary">{t("preferences:changePasswordDescription")}</p>
+    <div className={embedded ? "" : "lg-content mt-8 rounded-xl border border-line-subtle bg-fill-subtle p-5"}>
+      {!embedded && (
+        <>
+          <h3 className="mb-1 text-sm font-semibold text-content-primary">{t("preferences:changePasswordTitle")}</h3>
+          <p className="mb-4 text-xs text-content-tertiary">{t("preferences:changePasswordDescription")}</p>
+        </>
+      )}
 
       <form onSubmit={handleSubmit} className="max-w-sm space-y-3">
         <PasswordField

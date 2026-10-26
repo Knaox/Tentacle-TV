@@ -120,6 +120,8 @@ export function parseSettingsSegment(raw: string | null | undefined): SettingsPa
   if (!raw) return { kind: "profile" };
   if (raw === "family") return { kind: "family" };
   if (raw === "security") return { kind: "pane", id: "password" };
+  // Rubrique du web large (Langues et sous-titres) : son pendant étroit est le volet des langues.
+  if (raw === "languages") return { kind: "pane", id: "mediaLanguages" };
   const pane = WEB_PANES.find((id) => WEB_PANE_SEGMENTS[id] === raw || id === raw);
   if (pane) return { kind: "pane", id: pane };
   const section = LEGACY_SECTION_SEGMENTS[raw];

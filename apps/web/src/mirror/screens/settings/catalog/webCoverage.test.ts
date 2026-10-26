@@ -104,6 +104,7 @@ describe("le web étroit rend le catalogue partagé des réglages", () => {
     expect(webSectionRoute("playback", "personalization")).toBe("/profile/playback?pane=personalization");
     expect(parseSettingsSegment("media-languages")).toEqual({ kind: "pane", id: "mediaLanguages" });
     expect(parseSettingsSegment("security")).toEqual({ kind: "pane", id: "password" });
+    expect(parseSettingsSegment("languages")).toEqual({ kind: "pane", id: "mediaLanguages" });
     expect(parseSettingsSegment("playback")).toEqual({ kind: "section", id: "playback" });
     expect(parseSettingsSegment("data")).toEqual({ kind: "section", id: "playback" });
     expect(parseSettingsSegment("family")).toEqual({ kind: "family" });
