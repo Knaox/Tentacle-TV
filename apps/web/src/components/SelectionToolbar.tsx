@@ -1,5 +1,5 @@
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { FloatingBar } from "./ui/glass/FloatingBar";
 
 interface SelectionToolbarProps {
   count: number;
@@ -12,12 +12,10 @@ interface SelectionToolbarProps {
 }
 
 /**
- * La barre de sélection (Mes favoris, Ma liste…). Verre natif : deux capsules
- * qui flottent — le compte et « Tout sélectionner » | « Annuler » et l'action
- * (lot lg7, R2 : `FloatingBar`). Ailleurs, la bande d'avant, telle quelle.
+ * La barre de sélection (Mes favoris, Ma liste…). Verre natif : la même bande,
+ * à la même place (le verre change le MATÉRIAU, jamais les DIMENSIONS).
  */
 export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDeleting, removal = false }: SelectionToolbarProps) {
-  const { t } = useTranslation("common");
   const counter = (
     <span className="lg-fb-status text-sm font-medium text-content-secondary">
       <Counter count={count} />
@@ -27,28 +25,23 @@ export function SelectionToolbar({ count, onSelectAll, onCancel, onDelete, isDel
   const cancel = <CancelButton onClick={onCancel} />;
   const remove = <DeleteButton count={count} onClick={onDelete} disabled={count === 0 || isDeleting} isDeleting={isDeleting} removal={removal} />;
   return (
-    <FloatingBar
-      portal
-      role="toolbar"
-      label={t("common:selectedCount", { count })}
-      groups={[<>{counter}{selectAll}</>, <>{cancel}{remove}</>]}
-      legacy={
-        <div
-          className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
-          style={{ animation: "slideUp 0.25s ease" }}
-        >
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-12">
-            {counter}
-            <div className="flex items-center gap-2">
-              {selectAll}
-              {cancel}
-              {remove}
-            </div>
+    createPortal(
+      <div
+        className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
+        style={{ animation: "slideUp 0.25s ease" }}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-12">
+          {counter}
+          <div className="flex items-center gap-2">
+            {selectAll}
+            {cancel}
+            {remove}
           </div>
-          <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
         </div>
-      }
-    />
+        <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+      </div>,
+      document.body,
+    )
   );
 }
 

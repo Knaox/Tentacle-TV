@@ -59,6 +59,10 @@ export function DetailDownloadAction({ item, variant = "circle" }: { item: Media
   const native = useLiquidGlassMode() === "native";
   const complete = !isSeries && state?.status === "complete";
   const capsuleGlass = useLiquidGlassSurface({
+    // Dans la capsule de la fiche (un seul verre) : la pastille du socle, que
+    // `lgDetailStage.css` réduit à son glyphe — jamais de verre sur du verre.
+    material: "bead",
+    tone: "dark",
     level: "clear",
     shape: "circle",
     interactive: true,

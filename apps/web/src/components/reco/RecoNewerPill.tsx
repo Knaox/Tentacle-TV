@@ -2,8 +2,6 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
-import { useLiquidGlassMode } from "../../theme/glass";
-import { FloatingBar } from "../ui/glass/FloatingBar";
 
 interface RecoNewerPillProps {
   /** Une page recalculée attend, avec du nouveau (`useRecoPageVisit().hasNewer`). */
@@ -22,35 +20,18 @@ interface RecoNewerPillProps {
  * d'alpha, un flou ne montrerait rien). Le clic affiche la page et remonte en
  * tête — là où la nouvelle page commence.
  *
- * Verre natif : une capsule de verre qui flotte sous la barre du haut (lot
- * lg7, R16, `FloatingBar`) — le glyphe à l'accent, le libellé au ton du
- * dessous ; plus de liseré violet.
+ * Verre natif : la même pilule, à la même place (le verre change le MATÉRIAU,
+ * jamais les DIMENSIONS — Damien, 26/10).
  */
 export const RecoNewerPill = memo(function RecoNewerPill({ visible, onShow }: RecoNewerPillProps) {
   const { t } = useTranslation("reco");
   const reduced = useReducedMotion();
-  const native = useLiquidGlassMode() === "native";
 
   const show = () => {
     onShow();
     window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
   };
 
-  if (native) {
-    return (
-      <FloatingBar
-        edge="top"
-        live="polite"
-        legacy={null}
-        groups={visible ? [
-          <button key="show" type="button" onClick={show} aria-label={t("newerShowAria")} className="lg-fb-btn text-sm font-semibold">
-            <RefreshCw size={15} aria-hidden className="lg-fb-accent" />
-            {t("newerAvailable")}
-          </button>,
-        ] : []}
-      />
-    );
-  }
   return (
     <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-[64px] z-30 flex justify-center md:top-[80px]">
       <AnimatePresence>

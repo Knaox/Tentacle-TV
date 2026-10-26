@@ -61,8 +61,25 @@ describe("verre de fenêtre", () => {
 
   it("la barre latérale et la barre du haut prennent le verre de la maquette (sélection, survol)", () => {
     const sidebar = sheet("./windowGlassSidebar.css");
-    expect(sidebar).toMatch(/\.lgc-sidebar\.lg-pane\s*\{[^}]*--lg-chrome-sidebar-selection-bg:\s*var\(--lg-pane-selected\)/);
+    expect(sidebar).toMatch(/\.lgc-sidebar\.lgc-sidebar-plate\s*\{[^}]*--lg-chrome-sidebar-selection-bg:\s*var\(--lg-pane-selected\)/);
     expect(sidebar).toMatch(/--lg-chrome-item-hover:\s*var\(--lg-pane-nav-hover\)/);
     expect(sheet("./windowGlassNav.css")).toMatch(/--lg-chrome-lens-bg:\s*var\(--lg-pane-selected\)/);
+  });
+
+  // Damien, 26/10 : « pourquoi tout paraît énorme en mode Liquid Glass » — le
+  // verre change le MATÉRIAU, jamais les DIMENSIONS. Aucune feuille de la
+  // fenêtre ne touche une taille, une marge, un espacement ou une typographie
+  // (le banc des boîtes le vérifie page par page, `pret/D12.md`).
+  it("aucune dimension : ni taille, ni marge, ni espacement, ni corps de texte", () => {
+    const LAYOUT = /^\s*(height|min-height|max-height|width|min-width|max-width|padding(-[a-z]+)?|margin(-[a-z]+)?|gap|row-gap|column-gap|font-size|line-height|letter-spacing|font-weight|text-transform|top|right|bottom|left|display|flex(-[a-z]+)?)\s*:/m;
+    for (const name of ["./windowGlass.css", "./windowGlassNav.css", "./windowGlassSidebar.css"]) {
+      const bare = sheet(name).replace(/\/\*[\s\S]*?\*\//g, "");
+      for (const match of bare.matchAll(/([^{};]+)\{([^{}]*)\}/g)) {
+        const [, selector, body] = match;
+        // Les calques (effet de bord, pseudo-éléments de la plaque) se posent PAR-DESSUS : ils n'ont aucune boîte de contenu.
+        if (/::(before|after)|\.lgc-edge/.test(selector ?? "")) continue;
+        expect(body, `${name} ${selector?.trim()}`).not.toMatch(LAYOUT);
+      }
+    }
   });
 });

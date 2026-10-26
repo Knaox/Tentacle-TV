@@ -3,14 +3,14 @@ import { useMemo, type ReactNode } from "react";
 import type { SettingsShellSurface } from "@tentacle-tv/ui";
 
 import { useWindowGlass } from "../../desktop/windowGlass";
-import { glassMorphProps, useLiquidGlassSurface } from "../../theme/glass";
+import { glassMorphProps } from "../../theme/glass";
 
 /**
- * Rayon de la sélection, en px : CONCENTRIQUE au rail — `--lg-radius-xl` (28)
- * moins sa marge (`--lg-chrome-sidebar-pad`, 12). En nombre et en `style`,
+ * Rayon de la sélection, en px : CONCENTRIQUE à la plaque — `--lg-radius-lg`
+ * (22) moins son débord (`--lg-chrome-sidebar-pad`, 8). En nombre et en `style`,
  * sinon framer ne le corrige pas pendant l'étirement.
  */
-const SELECTION_RADIUS = 16;
+const SELECTION_RADIUS = 14;
 
 export interface GlassSidebar {
   /** Posé dans l'entrée active (`SettingsShell` : `selectionIndicator`). */
@@ -21,11 +21,9 @@ export interface GlassSidebar {
 
 /**
  * La barre latérale en verre (`SettingsShell` : Réglages, Administration) :
- * la barre FLOTTANTE de macOS 26 — une surface de la primitive, d'UN seul ton
- * pour tout le rail, et une sélection en remplissage NEUTRE translucide
- * (Finder, Réglages Système) qui GLISSE d'une entrée à l'autre sur le ressort
- * de métamorphose. Jamais la marque en aplat : seule l'icône active prend
- * l'accent (`windowGlassSidebar.css`).
+ * la plaque de verre de la maquette, peinte AUTOUR du rail sans changer sa
+ * boîte, et une sélection (le dégradé rose → violet de la maquette) qui GLISSE
+ * d'une entrée à l'autre sur le ressort de métamorphose (`windowGlassSidebar.css`).
  *
  * Mode natif seulement (`useWindowGlass`) ; ailleurs, rien (`undefined`) et
  * le rail d'avant, au pixel près. `id` distingue les barres (réglages,
@@ -34,10 +32,6 @@ export interface GlassSidebar {
 export function useGlassSidebar(id: string): GlassSidebar {
   const glass = useWindowGlass();
   const reduced = useReducedMotion() ?? false;
-  // Le panneau de la maquette (`material: "pane"`, 26/10) : posé sur le fond
-  // ambiant, sans givre (`lg-pane-flat`) — le fond est déjà flou, la passe ne
-  // se verrait pas et coûterait à chaque défilement du rail.
-  const material = useLiquidGlassSurface({ material: "pane", radius: "xl", className: "lg-pane-flat" });
 
   const selection = useMemo(() => {
     if (!glass) return undefined;
@@ -53,9 +47,9 @@ export function useGlassSidebar(id: string): GlassSidebar {
     );
   }, [glass, reduced, id]);
 
-  const { ref, className, style, ...attributes } = material.props;
-  const surface = glass && material.render !== "fallback"
-    ? { ref, className, style, attributes, layers: material.layers }
-    : undefined;
+  // Le verre change le MATÉRIAU, jamais les DIMENSIONS (Damien, 26/10) : le
+  // rail garde sa boîte d'avant ; sa plaque de verre (le panneau de la
+  // maquette) est peinte AUTOUR par `.lgc-sidebar-plate` (`windowGlassSidebar.css`).
+  const surface = useMemo(() => (glass ? { className: "lgc-sidebar-plate" } : undefined), [glass]);
   return { selection, surface };
 }

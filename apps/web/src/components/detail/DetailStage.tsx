@@ -81,8 +81,7 @@ export function DetailStage({ backdropUrl, item, instant = false, onOpenImages, 
 
   return (
     <section className={`relative flex w-full flex-col justify-end ${DETAIL_STAGE_MIN_H}`} aria-label={item.Name}>
-      {/* `detail-stage-box` : en verre natif, la boîte monte sous la bande des
-          feux, transparente (`lgDetailStage.css`). Marqueur sans style ailleurs. */}
+      {/* `detail-stage-box` : marqueur de la boîte image (sans style). */}
       <div ref={boxRef} className={`detail-stage-box pointer-events-none absolute inset-x-0 top-0 overflow-hidden ${DETAIL_STAGE_BOX}`}>
         {backdropUrl && !broken && (
           // Arrivé après l'entrée (réseau lent) : le décor fond, il ne surgit pas.

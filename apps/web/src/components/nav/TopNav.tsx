@@ -18,24 +18,17 @@
  * qui remontent leur bannière dessous (`-mt-[68px]`) continuent de le faire.
  * Le bandeau d'hôte de macOS (feux tricolores) reste au-dessus.
  *
- * Liquid Glass (macOS 26, mode natif, `windowGlass.ts`) : plus de capsule
- * unique — les barres de macOS 26 sont des GROUPES séparés qui flottent. Trois
- * surfaces de la primitive (`useLiquidGlassSurface`, lentille de page : la
- * bannière se courbe au biseau, lumière du bord, glyphes au ton du dessous) :
- * la marque et les onglets ; la recherche (`SearchLauncher`) ; les boutons et
- * le profil. Le groupe des onglets ÉPOUSE son contenu : « Plus » se calcule
- * alors sur la place libre de sa case (`usePriorityOverflow`, `slack`).
- * Hors mode natif, les enveloppes de groupe sont en `display: contents` et
- * la capsule d'avant est rendue telle quelle. `data-lg-toolbar` dit à l'effet
- * de bord de défilement de couvrir aussi la barre.
+ * Liquid Glass (macOS 26, mode natif, `windowGlass.ts`) : le verre change le
+ * MATÉRIAU, jamais les DIMENSIONS (Damien, 26/10) — même capsule, mêmes places
+ * qu'hors verre ; seule sa peau devient celle de la maquette
+ * (`windowGlassNav.css`). `data-lg-toolbar` dit à l'effet de bord de
+ * défilement de couvrir aussi la barre.
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
 
 import { useScrollScrim } from "./useScrollScrim";
 import { useWindowGlass } from "../../desktop/windowGlass";
-import { useLiquidGlassSurface } from "../../theme/glass";
 import { NavBrand } from "./NavBrand";
 import { NavTabs } from "./NavTabs";
 import { SearchLauncher } from "../search/SearchLauncher";
@@ -53,39 +46,21 @@ import { OctaveModeSwitch } from "../../music/octave/mode/OctaveModeSwitch";
 export function TopNav() {
   const offline = useOfflineMode();
   const glass = useWindowGlass();
-  // La case qui s'étire, et le groupe de verre qui épouse les onglets — en
-  // ÉTAT : leur arrivée relance la mesure des onglets (`usePriorityOverflow`).
-  const [slotEl, setSlotEl] = useState<HTMLDivElement | null>(null);
-  const [hugEl, setHugEl] = useState<HTMLElement | null>(null);
-  const slack = useMemo(
-    () => (glass && slotEl && hugEl ? { slot: slotEl, hug: hugEl } : undefined),
-    [glass, slotEl, hugEl],
-  );
   // Hors ligne, la session d'un PROFIL n'a ni catalogue local ni transferts
   // (rien n'est gardé pour lui) : aucun onglet, et pas de séparateur qui ne
   // sépare rien.
   const profileSession = useActiveProfile() !== null;
-  // Sur la page de recherche, son champ EST la recherche (lot lg7, R13) : en
-  // mode natif, la barre retire le sien — jamais deux champs à l'écran.
-  const onSearchPage = useLocation().pathname === "/search";
-  const showFieldLauncher = !offline && !(glass && onSearchPage);
-  // Les puces d'état (hors ligne, économiseur) : en mode natif, DANS le groupe
-  // d'actions (lot lg7, R16) — jamais un aplat qui flotte hors des groupes.
+  const showFieldLauncher = !offline;
+  // Liquid Glass (26/10, Damien : « le verre change le MATÉRIAU, jamais les
+  // DIMENSIONS ») : la barre garde EXACTEMENT la mise en page d'avant — même
+  // capsule, mêmes places ; en natif, seule sa peau change (`windowGlassNav.css`).
   const statusChips = (
     <>
       <ConnectivityChip />
       <DataSaverChip />
     </>
   );
-  const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs slack={slack} />;
-
-  // Les groupes (mode natif). Ailleurs : `contents`, ils n'existent pas pour
-  // la mise en page.
-  // Le verre de la maquette (`material: "pane"`, 26/10) : dégradé, givre qui
-  // avive, liseré en dégradé — la frange du bord de défilement assure l'AA
-  // des libellés quand une affiche passe dessous.
-  const tabsGroup = useLiquidGlassSurface({ material: "pane", shape: "capsule", className: "lgc-group", fallbackClassName: "contents", ref: setHugEl });
-  const actionsGroup = useLiquidGlassSurface({ material: "pane", shape: "capsule", className: "lgc-actions-group", fallbackClassName: "contents" });
+  const tabs = offline ? (profileSession ? null : <OfflineNavLinks />) : <NavTabs />;
 
   // L'assise d'avant : nulle en haut de page (le verre seul, par-dessus la
   // bannière), puis jusqu'à 0,78 au défilement. Seule son OPACITÉ varie — la
@@ -119,16 +94,11 @@ export function TopNav() {
         data-hote-voile="topbar"
         className="lgc-capsule pointer-events-auto relative mx-auto mt-2 flex h-[52px] max-w-[1840px] items-center gap-1 rounded-[18px] px-1.5"
       >
-        {!glass && (
-          <>
-            <div aria-hidden className="nav-capsule-glass" />
-            <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
-          </>
-        )}
+        <div aria-hidden className="nav-capsule-glass" />
+        <div ref={scrim.ref} aria-hidden className="nav-capsule-scrim" />
 
-        <div ref={setSlotEl} className="relative flex min-w-0 flex-1 items-center gap-1">
-          <div {...tabsGroup.props}>
-            {tabsGroup.layers}
+        <div className="relative flex min-w-0 flex-1 items-center gap-1">
+          <div className="contents">
             <NavBrand />
             {tabs && (
               <>
@@ -140,11 +110,9 @@ export function TopNav() {
         </div>
 
         <div className="lgc-actions relative flex shrink-0 items-center gap-1.5 pl-2">
-          {!glass && statusChips}
+          {statusChips}
           {showFieldLauncher && <SearchLauncher variant="field" className="hidden w-[clamp(220px,21vw,360px)] lg:flex" />}
-          <div {...actionsGroup.props}>
-            {actionsGroup.layers}
-            {glass && statusChips}
+          <div className="contents">
             {!offline && <SearchLauncher variant="icon" className="lg:hidden" />}
             {!offline && <OctaveModeSwitch placement="tentacle" />}
             <DownloadsNavButton />

@@ -20,7 +20,7 @@
  * le thème. Spécificité (0,3,0) et plus : l'emporte sur les utilitaires de
  * Tailwind (fond, anneau `ring-*`) sans `!important`. */
 
-:root[data-liquid-glass="native"] :is([data-lg-scale="surface"], .lg-sheet, .lg-floating-bar)[data-lg-tone="light"] {
+:root[data-liquid-glass="native"] :is([data-lg-scale="surface"], .lg-sheet)[data-lg-tone="light"] {
   --lgp-fill: var(--lgp-fill-on-light);
   --lgp-fill-hover: var(--lgp-fill-hover-on-light);
   --lgp-edge: var(--lgp-edge-on-light);
@@ -33,7 +33,7 @@
   --lgp-lens-depth: var(--lgp-lens-depth-on-light);
 }
 
-:root[data-liquid-glass="native"] :is([data-lg-scale="surface"], .lg-sheet, .lg-floating-bar)[data-lg-tone="dark"] {
+:root[data-liquid-glass="native"] :is([data-lg-scale="surface"], .lg-sheet)[data-lg-tone="dark"] {
   --lgp-fill: var(--lgp-fill-on-dark);
   --lgp-fill-hover: var(--lgp-fill-hover-on-dark);
   --lgp-edge: var(--lgp-edge-on-dark);

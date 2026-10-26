@@ -111,17 +111,19 @@ export function DetailActionCapsule({ item }: { item: MediaItem }) {
  * La capsule elle-même — un seul objet secondaire posé sur le décor. Partagée
  * avec la fiche d'un titre gardé, qui y range ses propres bascules.
  *
- * Verre natif (macOS 26) : comme les boutons de Musique ou TV, la capsule
- * n'est plus qu'un GROUPE — chaque action est sa propre pastille ronde de
- * verre clair (`CapsuleButton`), posée sur le décor.
+ * Verre natif (macOS 26) : le verre change le MATÉRIAU, jamais les DIMENSIONS
+ * (Damien, 26/10) — même capsule, même pas entre les actions ; elle devient
+ * UN verre de la maquette au ton sombre (`.lg-pane`), ses actions de simples
+ * glyphes dedans (`lgDetailStage.css` : jamais de verre sur du verre).
  */
 export function DetailCapsule({ children }: { children: ReactNode }) {
   const native = useLiquidGlassMode() === "native";
   return (
     <div
       role="group"
+      data-lg-tone={native ? "dark" : undefined}
       className={native
-        ? "flex h-14 items-center gap-2"
+        ? "lg-pane lgc-detail-capsule flex h-14 items-center gap-0.5 rounded-full border px-1.5"
         : "flex h-14 items-center gap-0.5 rounded-full border border-on-media-muted bg-[rgba(var(--scrim-media-rgb),0.38)] px-1.5"}
     >
       {children}

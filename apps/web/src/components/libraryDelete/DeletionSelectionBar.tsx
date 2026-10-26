@@ -1,7 +1,7 @@
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Trash2, X } from "lucide-react";
 import type { DeletionSelection } from "./useDeletionSelection";
-import { FloatingBar } from "../ui/glass/FloatingBar";
 
 interface Props {
   selection: DeletionSelection;
@@ -25,8 +25,8 @@ const SECONDARY =
  * Pas de `backdrop-filter` : le fond de barre est à 0,92 d'opacité, un flou n'y
  * changerait rien de visible et coûterait une passe à chaque image de défilement.
  *
- * Verre natif : deux capsules qui flottent (lot lg7, R2, `FloatingBar`) — le
- * compte et la sélection | « Supprimer… » et « Terminer ».
+ * Verre natif : la même barre, à la même place (le verre change le MATÉRIAU,
+ * jamais les DIMENSIONS — Damien, 26/10).
  */
 export function DeletionSelectionBar({ selection, onDelete, failed, onRetry, note }: Props) {
   const { t } = useTranslation("libraryDelete");
@@ -89,31 +89,25 @@ export function DeletionSelectionBar({ selection, onDelete, failed, onRetry, not
     </>
   );
   return (
-    <FloatingBar
-      portal
-      role="toolbar"
-      label={t("selectHint")}
-      data={{ "data-deletion-bar": "" }}
-      groups={[<>{status}{choose}</>, finish]}
-      legacy={
-        <div
-          role="toolbar"
-          data-deletion-bar
-          aria-label={t("selectHint")}
-          className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
-          style={{ animation: "deletionBarIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)" }}
-        >
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 md:px-8">
-            {status}
-            <div className="flex flex-wrap items-center gap-1">
-              {choose}
-              <span aria-hidden className="mx-2 h-6 w-px bg-line-subtle" />
-              {finish}
-            </div>
+    createPortal(
+      <div
+        role="toolbar"
+        data-deletion-bar
+        aria-label={t("selectHint")}
+        className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
+        style={{ animation: "deletionBarIn 0.22s cubic-bezier(0.16, 1, 0.3, 1)" }}
+      >
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 md:px-8">
+          {status}
+          <div className="flex flex-wrap items-center gap-1">
+            {choose}
+            <span aria-hidden className="mx-2 h-6 w-px bg-line-subtle" />
+            {finish}
           </div>
-          <style>{"@keyframes deletionBarIn { from { transform: translateY(100%); } to { transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { [data-deletion-bar] { animation: none !important; } }"}</style>
         </div>
-      }
-    />
+        <style>{"@keyframes deletionBarIn { from { transform: translateY(100%); } to { transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { [data-deletion-bar] { animation: none !important; } }"}</style>
+      </div>,
+      document.body,
+    )
   );
 }

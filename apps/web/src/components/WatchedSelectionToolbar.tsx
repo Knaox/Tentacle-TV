@@ -1,5 +1,5 @@
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { FloatingBar } from "./ui/glass/FloatingBar";
 
 interface Props {
   count: number;
@@ -78,33 +78,27 @@ export function WatchedSelectionToolbar({
       {t("common:markUnwatched")}
     </button>
   );
-  // Verre natif : deux capsules qui flottent (lot lg7, R2) — le compte et
-  // « Tout sélectionner » | « Annuler », les gestes, « Marquer vu » en tête de
-  // la marque. Ailleurs, la bande d'avant, telle quelle.
+  // Verre natif : la même bande, à la même place (le verre change le
+  // MATÉRIAU, jamais les DIMENSIONS — Damien, 26/10) ; seule sa peau change.
   return (
-    <FloatingBar
-      portal
-      role="toolbar"
-      label={t("common:selectedCount", { count })}
-      groups={[<>{counter}{selectAll}</>, <>{cancel}{download}{unwatched}{watched}</>]}
-      legacy={
-        <div
-          className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
-          style={{ animation: "slideUp 0.25s ease" }}
-        >
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-            {counter}
-            <div className="flex items-center gap-2">
-              {selectAll}
-              {cancel}
-              {download}
-              {watched}
-              {unwatched}
-            </div>
+    createPortal(
+      <div
+        className="lg-bar fixed inset-x-0 bottom-0 z-50 border-t border-line-subtle bg-surface-toolbar backdrop-blur-lg"
+        style={{ animation: "slideUp 0.25s ease" }}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
+          {counter}
+          <div className="flex items-center gap-2">
+            {selectAll}
+            {cancel}
+            {download}
+            {watched}
+            {unwatched}
           </div>
-          <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
         </div>
-      }
-    />
+        <style>{`@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+      </div>,
+      document.body,
+    )
   );
 }

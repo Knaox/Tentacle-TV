@@ -714,6 +714,22 @@ Tenue par **lg-lecteur**. `apps/web/src/components/player/glass/`.
 
 ## 8. La fenêtre, la navigation, les composants, le hors ligne
 
+> **Règle du 26/10 (Damien : « pourquoi tout paraît énorme en mode Liquid
+> Glass ») — le verre change le MATÉRIAU, jamais les DIMENSIONS.** Tailles,
+> marges, espacements, typographie et places sont EXACTEMENT ceux d'hors verre ;
+> un rayon plus doux reste permis s'il ne change ni la taille ni la place. Ce qui
+> suit a été ramené à cette règle : la barre du haut garde sa capsule unique
+> d'avant (seule la peau de `.nav-capsule-glass` change, `windowGlassNav.css`) ;
+> le rail des réglages garde sa boîte (la plaque de verre est peinte AUTOUR par
+> des pseudo-éléments, `.lgc-sidebar-plate`) ; les menus gardent leurs marges et
+> leurs intertitres ; la fiche garde sa boîte image et l'espacement de sa
+> capsule ; les barres flottantes (`FloatingBar`, `lgFloatingBar.css`) sont
+> RETIRÉES — chaque barre garde son balisage d'avant. Preuve : banc des boîtes
+> (`getBoundingClientRect`, natif contre réglage coupé, 1440 × 900, ≤ 1 px), et
+> `windowGlass.test.ts` (« aucune dimension ») sur les feuilles de la fenêtre.
+> Les passages plus bas qui décrivent des GROUPES, des marges ou une boîte
+> déplacée racontent l'état d'avant cette règle.
+
 Tout en LENTILLE de Chromium (§ 4) — aucune région native par contrôle. Les
 glyphes de chaque surface suivent son ton (`data-lg-tone`) : les couleurs de
 texte du thème deviennent `--lg-glyph*` sous la porte.
@@ -844,21 +860,17 @@ texte du thème deviennent `--lg-glyph*` sous la porte.
     groupe », « Terminé », « Choisir »…), secondaires en `glass` peint, sans
     liseré. Tuiles de choix (`.lg-choice-tile`, `aria-pressed`) : remplissage,
     la choisie à l'accent uni (blanc 5,7:1).
-  - **`FloatingBar`** (`components/ui/glass/`, `lgFloatingBar.css`) : la barre
-    d'actions qui flotte — sélection (trois barres), liste partagée, « Pour
-    vous » prêt, « Nouveautés disponibles », « voir en tant que ». Une capsule
-    de la primitive par groupe (régime `control`, ton mesuré) à 16 px du bord,
-    de simples glyphes dedans (`.lg-fb-btn`, `-primary`, `-danger`), et l'effet
-    de bord du BAS (recette de `.lgc-edge`, retournée). Hors porte, le balisage
-    d'avant que l'appelant lui donne, tel quel ; le rendu natif est toujours
-    porté dans `document.body`.
-  - **Fiche** (`lgDetailStage.css`) : la boîte image monte sous la bande des
-    feux (même boîte que le calque d'ouverture), le libellé de la bande ne se
-    pose pas sur l'image ; l'assise du texte est un dégradé pleine largeur à la
+  - **Barres d'actions flottantes** (sélection, liste partagée, « Pour vous »
+    prêt, « Nouveautés disponibles », « voir en tant que ») : leur balisage
+    d'avant, à la même place (règle du 26/10) — `FloatingBar` est retiré ; la
+    bande de sélection garde la peau `.lg-bar` (`lgOverlays.css`).
+  - **Fiche** (`lgDetailStage.css`) : la boîte image reste à sa place d'avant ;
+    la capsule d'actions est UN verre (`.lg-pane`, ton sombre) aux glyphes
+    nus, même pas qu'hors verre ; l'assise du texte est un dégradé pleine largeur à la
     densité d'avant, plus le rectangle aux bords flous (blanc à 90 % ≥ 5,25:1
     mesuré sur un décor blanc).
-  - **Barre latérale** de Réglages et d'Admin : du dessous de la barre du haut
-    au bas de la fenêtre, collante (`windowGlassSidebar.css`).
+  - **Barre latérale** de Réglages et d'Admin : sa boîte d'avant ; la plaque de
+    verre de la maquette est peinte autour (`.lgc-sidebar-plate`, débord de 8 px).
   - **Avis** : message de l'administrateur en `.lg-notice` (plaque pleine
     d'avant pendant une lecture native : `useNativePlaybackActive`),
     invitations Watch Together dans `Modal`.
