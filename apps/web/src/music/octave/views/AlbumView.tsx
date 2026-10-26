@@ -58,7 +58,7 @@ export function AlbumView() {
     return (
       <>
         <HeaderSkeleton />
-        <div className="px-2 md:px-6">
+        <div className="octave-view-pad px-2 md:px-6">
           <RowsSkeleton showArtwork={false} />
         </div>
       </>
@@ -126,7 +126,7 @@ export function AlbumView() {
         onShuffle={() => queueActions.playShuffled(player, tracks, contextId)}
         extra={preview ? undefined : <KeepCollectionButton kind="album" collectionKey={data.key} title={data.title} subtitle={data.artists.map((a) => a.name).join(", ") || null} tracks={tracks} />}
       />
-      <div className="px-2 md:px-6">
+      <div className="octave-view-pad px-2 md:px-6">
         {preview ? <RowsSkeleton rows={Math.min(12, data.trackCount ?? 8)} showArtwork={false} /> : <TrackList
           rows={rows}
           contextId={contextId}

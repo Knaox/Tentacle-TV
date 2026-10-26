@@ -106,7 +106,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
           aria-controls={LIST_ID}
           aria-activedescendant={activeId}
           aria-autocomplete="list"
-          className="h-12 w-full rounded-full border border-line-subtle bg-fill-subtle pl-12 pr-12 text-base text-content-primary placeholder:text-content-quaternary focus:border-octave-accent focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="octave-field h-12 w-full rounded-full border border-line-subtle bg-fill-subtle pl-12 pr-12 text-base text-content-primary placeholder:text-content-quaternary focus:border-octave-accent focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {completion !== null && (
           // Calque PAR-DESSUS le champ (sans pointeur), même boîte : le texte tapé y est invisible, la suite visible après le curseur.
@@ -190,7 +190,7 @@ export const OctaveSearchBox = memo(function OctaveSearchBox({ value, onChange, 
         type="button"
         onClick={() => submit(value)}
         disabled={!value.trim()}
-        className="h-12 shrink-0 cursor-pointer rounded-full border border-octave-line bg-fill-subtle px-5 text-sm font-bold text-content-primary transition-[background-color,transform] duration-150 hover:bg-octave-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-40"
+        className="octave-pill h-12 shrink-0 cursor-pointer rounded-full border border-octave-line bg-fill-subtle px-5 text-sm font-bold text-content-primary transition-[background-color,transform] duration-150 hover:bg-octave-hover active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:cursor-default disabled:opacity-40"
       >
         {t("search.submit")}
       </button>

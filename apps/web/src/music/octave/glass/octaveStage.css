@@ -77,4 +77,17 @@
   flex-shrink: 0;
   height: calc(100% - var(--oc-dock-inset) - var(--oc-stage-dock-clear));
   overflow: hidden;
+  border-radius: 28px;
+}
+
+/* ── Les pages : 12 px de marge (24 en tête de page), la liste à 28 sous la tête ── */
+:root[data-liquid-glass="native"] .octave-stage .octave-view-pad {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-view-pad.pt-6 {
+  padding-top: 24px;
+}
+:root[data-liquid-glass="native"] .octave-stage .octave-hero + .octave-view-pad {
+  margin-top: 28px;
 }
