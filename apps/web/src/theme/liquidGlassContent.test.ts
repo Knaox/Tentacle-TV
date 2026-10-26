@@ -47,10 +47,6 @@ describe("la couche de contenu", () => {
     }
   });
 
-  it("un conteneur est opaque : son remplissage se compose sur le fond de la page", () => {
-    expect(block(':root[data-liquid-glass="native"] .lg-content')).toMatch(/var\(--lgd-base\)/);
-  });
-
   it("les contrôles du contenu (pastilles, champ, segmenté, panneaux) n'ont plus de verre", () => {
     for (const [selector, body] of rules(CONTROLS)) {
       if (!/\.(lg-chip|lg-field|lg-segmented|lg-panel|lg-pill)\b/.test(selector)) continue;

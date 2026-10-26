@@ -52,7 +52,7 @@
   border-radius: 9999px;
   background: var(--lgp-prominent-fill);
   border-color: transparent;
-  box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
+  box-shadow: var(--lgp-prominent-shadow);
   color: var(--lgp-tint-glyph);
   text-shadow: none;
   scale: 1;

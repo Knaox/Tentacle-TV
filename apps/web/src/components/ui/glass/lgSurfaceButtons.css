@@ -76,7 +76,7 @@
  * du dégradé (`lgPageControls.test.ts`). */
 :root[data-liquid-glass="native"] .lg-surface-btn.lg-surface-btn-prominent {
   background: var(--lgp-prominent-fill);
-  box-shadow: var(--lgp-tint-edge), var(--lgp-depth);
+  box-shadow: var(--lgp-prominent-shadow);
   color: var(--lgp-tint-glyph);
 }
 

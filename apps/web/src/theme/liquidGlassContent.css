@@ -1,5 +1,11 @@
 /* ── Liquid Glass : la COUCHE DE CONTENU (lot lg2, 22/10) ─────────────────
  *
+ * ⚠️ Depuis le 26/10 (verre de la MAQUETTE), les CONTENEURS — `.lg-content` et
+ * les cartes ad hoc des pages — prennent le panneau de la maquette :
+ * `theme/paneContent.css`. Restent ici les jetons `--lgd-*`, les petits
+ * contrôles du contenu, les segmentés, les tuiles et les onglets de saison.
+ * L'histoire qui suit est celle du lot lg2 :
+ *
  * Règle d'Apple (HIG « Materials ») : le verre est la couche FONCTIONNELLE —
  * barres, menus, feuilles, contrôles qui flottent. Le CONTENU (groupes de
  * réglages, tuiles, panneaux d'outils posés dans la page, sections) prend des
@@ -34,11 +40,13 @@
 :root[data-liquid-glass="native"] {
   /* Le fond sur lequel un remplissage se compose : celui de la page. */
   --lgd-base: var(--surface-0);
-  --lgd-fill: var(--lg-content-fill, #18181b);
-  --lgd-fill-hover: var(--lg-content-fill-hover, #202024);
+  /* Le remplissage « carte par défaut » (`--surface-1` des pages) : depuis le
+   * 26/10, un voile translucide sur le fond ambiant, plus un aplat zinc. */
+  --lgd-fill: rgba(255, 255, 255, 0.06);
+  --lgd-fill-hover: rgba(255, 255, 255, 0.1);
   --lgd-stroke: var(--lg-content-stroke, rgba(255, 255, 255, 0.07));
   /* Un élément posé DANS un groupe (carte de choix, encadré) : un cran plus clair. */
-  --lgd-raised: #232327;
+  --lgd-raised: rgba(255, 255, 255, 0.05);
   /* Un contrôle posé dans un groupe : un cran au-dessus du groupe. */
   --lgd-control: rgba(255, 255, 255, 0.08);
   --lgd-control-hover: rgba(255, 255, 255, 0.13);
@@ -57,10 +65,10 @@
 }
 
 :root[data-liquid-glass="native"][data-theme="light"] {
-  --lgd-fill: var(--lg-content-fill, #ffffff);
-  --lgd-fill-hover: var(--lg-content-fill-hover, #f4f4f7);
+  --lgd-fill: rgba(255, 255, 255, 0.55);
+  --lgd-fill-hover: rgba(255, 255, 255, 0.72);
   --lgd-stroke: var(--lg-content-stroke, rgba(0, 0, 0, 0.07));
-  --lgd-raised: #f0f0f4;
+  --lgd-raised: rgba(255, 255, 255, 0.5);
   --lgd-control: rgba(0, 0, 0, 0.055);
   --lgd-control-hover: rgba(0, 0, 0, 0.085);
   --lgd-selected: #ffffff;
@@ -82,40 +90,8 @@
   --surface-2: var(--lgd-raised);
 }
 
-:root[data-liquid-glass="native"] .lg-content {
-  /* OPAQUE : le remplissage est composé sur le fond de la page. Un panneau
-   * qui chevauche le bas d'une bannière (Bibliothèque, Ma liste, Mes favoris)
-   * laissait voir l'affiche au travers — illisible en clair (banc du 22/10). */
-  background: linear-gradient(var(--lgd-fill), var(--lgd-fill)), var(--lgd-base) !important;
-  border-color: transparent;
-  box-shadow: inset 0 0 0 1px var(--lgd-stroke);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-/* Les cartes ad hoc des pages (une trentaine : sessions, invitations,
- * extensions, accès à distance, recherche…) se reconnaissent à leur forme :
- * arrondi, liseré `line-subtle`, remplissage translucide. Le même remplissage
- * que `.lg-content`, sans marqueur sur chacune ; une carte DANS une carte
- * prend le cran plus clair. Un champ de page (`.lg-field`) n'en est pas une :
- * c'est un CONTRÔLE, en verre (`lgPageGlass.css`). */
-:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field) {
-  background: var(--lgd-fill);
-  border-color: transparent;
-  box-shadow: inset 0 0 0 1px var(--lgd-stroke);
-}
-
-:root[data-liquid-glass="native"] .lg-page :is(a, button):is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field):hover {
-  background: var(--lgd-fill-hover);
-}
-
-:root[data-liquid-glass="native"] .lg-page :is(.lg-content, :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle)) :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle) {
-  background: var(--lgd-raised);
-}
-
-:root[data-liquid-glass="native"] .lg-content-tile:hover {
-  background: linear-gradient(var(--lgd-fill-hover), var(--lgd-fill-hover)), var(--lgd-base) !important;
-}
+/* Les conteneurs eux-mêmes (`.lg-content`, cartes ad hoc, carte dans une
+ * carte, survol d'une tuile) : le panneau de la maquette, `theme/paneContent.css`. */
 
 /* ══ 2. Les petits contrôles du contenu ═══════════════════════════════════ */
 :root[data-liquid-glass="native"] .lg-content-control {
@@ -170,13 +146,8 @@
 
 /* ══ 4. Un conteneur qui est AUSSI un filtre (tuiles du bilan) ═════════════
  *
- * Choisi : un cran plus clair, liseré d'accent, et la pastille d'icône en
- * accent UNI — jamais le dégradé ni un fond violet sur toute la tuile. */
-:root[data-liquid-glass="native"] .lg-content[aria-pressed="true"] {
-  background: linear-gradient(var(--lgd-fill-hover), var(--lgd-fill-hover)), var(--lgd-base) !important;
-  box-shadow: inset 0 0 0 1.5px rgba(var(--brand-rgb), 0.7);
-}
-
+ * Choisie, la tuile prend la sélection de la maquette (`paneContent.css`) ;
+ * ici, la pastille d'icône en accent UNI et le libellé d'accent. */
 :root[data-liquid-glass="native"] .lg-content[aria-pressed="true"] .lg-content-badge {
   background: var(--lgd-accent) !important;
 }
@@ -267,24 +238,26 @@
  * — signet et coche violets, cœur rose —, réglé sur le TON du verre pour
  * tenir 3:1 (sombre : #A78BFA 5,4:1, #EC4899 4,2:1 ; clair : #6D28D9,
  * #BE185D). Le seul fond coloré de l'écran reste « Lecture ». */
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle] {
+:root[data-liquid-glass="native"] :is(.lg-surface, .lg-pane, .lg-bead)[aria-pressed="true"][data-lg-toggle] {
   --lg-toggle-on: #a78bfa;
   color: var(--lg-toggle-on);
 }
 
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle="accent"] {
+:root[data-liquid-glass="native"] :is(.lg-surface, .lg-pane, .lg-bead)[aria-pressed="true"][data-lg-toggle="accent"] {
   --lg-toggle-on: #ec4899;
 }
 
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle][data-lg-tone="light"] {
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle][data-lg-tone="light"],
+:root[data-liquid-glass="native"][data-theme="light"] :is(.lg-pane, .lg-bead)[aria-pressed="true"]:not([data-lg-tone="dark"])[data-lg-toggle] {
   --lg-toggle-on: #6d28d9;
 }
 
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle="accent"][data-lg-tone="light"] {
+:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle="accent"][data-lg-tone="light"],
+:root[data-liquid-glass="native"][data-theme="light"] :is(.lg-pane, .lg-bead)[aria-pressed="true"]:not([data-lg-tone="dark"])[data-lg-toggle="accent"] {
   --lg-toggle-on: #be185d;
 }
 
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle]:hover,
-:root[data-liquid-glass="native"] .lg-surface[aria-pressed="true"][data-lg-toggle] svg {
+:root[data-liquid-glass="native"] :is(.lg-surface, .lg-pane, .lg-bead)[aria-pressed="true"][data-lg-toggle]:hover,
+:root[data-liquid-glass="native"] :is(.lg-surface, .lg-pane, .lg-bead)[aria-pressed="true"][data-lg-toggle] svg {
   color: var(--lg-toggle-on);
 }

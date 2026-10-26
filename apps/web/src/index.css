@@ -47,6 +47,7 @@
 @import "./theme/glass/pane.css";
 /* Les pages de Tentacle au verre de la maquette (APRÈS le socle et les recettes lg*). */
 @import "./theme/paneShell.css";
+@import "./theme/paneContent.css";
 
 @tailwind base;
 @tailwind components;

@@ -1,0 +1,110 @@
+/* ── Liquid Glass de la maquette (26/10) : le CONTENU des pages de Tentacle ──
+ *
+ * Les groupes de réglages, les panneaux d'outils, les cartes de l'admin, les
+ * encadrés — jusqu'ici des aplats gris zinc opaques (lot lg2) — prennent le
+ * PANNEAU de la maquette (`.glass` : `theme/glass/pane.css`, jetons
+ * `--lg-pane-*`) : dégradé blanc léger sur l'encre, bord, ombres, reflets et
+ * liseré en dégradé. Les classes-marqueurs d'avant restent les portes :
+ *  • `.lg-content` (une quinzaine de conteneurs nommés) ;
+ *  • les cartes AD HOC des pages, reconnues à leur forme (arrondi, liseré
+ *    `line-subtle`, remplissage translucide) — une soixantaine, sans marqueur.
+ *
+ * SANS givre (`.lg-pane-flat` du socle) : ces panneaux défilent AVEC la page
+ * sur le fond ambiant, déjà flou — la passe ne se verrait pas et coûterait à
+ * chaque défilement (grille de coûts de `maquette-lg/SOCLE.md`). Seul le
+ * panneau qui se pose sur une IMAGE garde le givre (`.lg-content-frosted` :
+ * outils d'une bibliothèque, au bas de sa bannière).
+ *
+ * Jamais de verre sur du verre : une carte DANS un panneau est un remplissage
+ * (`--lgd-raised`, jetons de `liquidGlassContent.css`), sans liseré ni ombre.
+ *
+ * ⚠️ Tout est porté par `:root[data-liquid-glass="native"]` : ailleurs, le
+ * rendu d'avant au pixel près. Valeurs : les jetons du socle, sombre ET clair. */
+
+/* Le texte posé sur le fond ambiant ou dans un panneau : le tertiaire du thème
+ * (0,55) tombait à 3,1:1 au cœur de deux taches croisées ; à 0,76, ≥ 4,5:1
+ * partout (`paneContent.test.ts`). Le secondaire (0,78) tient déjà. */
+:root[data-liquid-glass="native"]:not([data-theme="light"]) :is(.lg-page, .lg-detail) {
+  --text-tertiary: rgba(255, 255, 255, 0.76);
+}
+
+/* ── 1. Le panneau ──────────────────────────────────────────────────────── */
+
+/* Le liseré (`::after`) se place sur la boîte : `relative` SANS spécificité,
+ * la classe de position de l'élément (`absolute`, `sticky`) l'emporte. */
+:where(:root[data-liquid-glass="native"] .lg-content),
+:where(:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field)) {
+  position: relative;
+}
+
+/* `!important` : contre le fond EN LIGNE d'un panneau d'outils (même règle
+ * qu'avant, `liquidGlassContent.css`). */
+:root[data-liquid-glass="native"] .lg-content {
+  border-color: var(--lg-pane-border);
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink)) !important;
+  box-shadow: var(--lg-pane-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field) {
+  border-color: var(--lg-pane-border);
+  background: var(--lg-pane-sheen), var(--lg-pane-fill), linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink));
+  box-shadow: var(--lg-pane-shadow);
+}
+
+/* Le liseré en dégradé de la maquette : un anneau de 1 px masqué. Jamais sur
+ * une carte posée dans un panneau. */
+:root[data-liquid-glass="native"] .lg-content:not(.lg-content .lg-content)::after,
+:root[data-liquid-glass="native"] .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field):not(:is(.lg-content, :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle)) *)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: var(--lg-pane-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Le panneau qui se pose sur une IMAGE (outils d'une bibliothèque, au bas de
+ * sa bannière) : le givre du socle, qui floute et AVIVE ce qui passe dessous. */
+:root[data-liquid-glass="native"] .lg-content.lg-content-frosted {
+  -webkit-backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+  backdrop-filter: blur(var(--lg-pane-blur)) saturate(var(--lg-pane-saturate)) brightness(var(--lg-pane-brightness));
+}
+
+/* ── 2. Survol, choix ───────────────────────────────────────────────────── */
+
+/* Une tuile, une carte cliquable : le voile de survol de la maquette (0,07). */
+:root[data-liquid-glass="native"] .lg-content-tile:hover {
+  background: linear-gradient(var(--lg-pane-row-hover), var(--lg-pane-row-hover)), var(--lg-pane-sheen), var(--lg-pane-fill),
+    linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink)) !important;
+}
+
+:root[data-liquid-glass="native"] .lg-page :is(a, button):is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle):not(.lg-field):hover {
+  background: linear-gradient(var(--lg-pane-row-hover), var(--lg-pane-row-hover)), var(--lg-pane-sheen), var(--lg-pane-fill),
+    linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink));
+}
+
+/* Un conteneur qui est AUSSI un filtre (tuiles du bilan), choisi : la
+ * sélection de la maquette, rose → violet, dans le panneau. */
+:root[data-liquid-glass="native"] .lg-content[aria-pressed="true"] {
+  background: var(--lg-pane-selected), var(--lg-pane-sheen), var(--lg-pane-fill),
+    linear-gradient(var(--lg-pane-ink), var(--lg-pane-ink)) !important;
+  box-shadow: var(--lg-pane-selected-shadow), var(--lg-pane-shadow);
+}
+
+/* ── 3. Une carte DANS un panneau : un remplissage, pas un verre ─────────── */
+:root[data-liquid-glass="native"] :is(.lg-content, .lg-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle)) :is(.rounded-xl, .rounded-2xl, .rounded-3xl).border.border-line-subtle:is(.bg-fill-faint, .bg-fill-subtle) {
+  border-color: transparent;
+  background: var(--lgd-raised);
+  box-shadow: inset 0 0 0 1px var(--lg-pane-separator);
+}
+
+/* Les filets d'un groupe (rangées de réglages) : celui du verre. */
+:root[data-liquid-glass="native"] .lg-content :is(.divide-line-subtle > * + *, .border-line-subtle:not(.rounded-xl, .rounded-2xl, .rounded-3xl)) {
+  border-color: var(--lg-pane-separator);
+}
