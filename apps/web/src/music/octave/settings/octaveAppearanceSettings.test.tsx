@@ -10,7 +10,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 const h = vi.hoisted(() => ({ native: false, octave: true }));
 
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
-vi.mock("react-router-dom", () => ({ useLocation: () => ({ hash: "" }) }));
+vi.mock("react-router-dom", () => ({
+  useLocation: () => ({ hash: "" }),
+  Link: ({ to, children }: { to: string; children: React.ReactNode }) => <a href={to}>{children}</a>,
+}));
+vi.mock("../mode/OctaveStartupSetting", () => ({ OctaveStartupSetting: ({ title }: { title?: string }) => <section data-startup={title} /> }));
 vi.mock("@tentacle-tv/ui", () => ({
   SettingsSection: ({ title, children }: { title?: string; children: React.ReactNode }) => <section data-title={title}>{children}</section>,
   SettingsRow: ({ label, trailing }: { label: string; trailing?: React.ReactNode }) => <div data-row={label}>{trailing}</div>,
@@ -27,6 +31,9 @@ vi.mock("../../../theme/useLiquidGlass", () => ({
 vi.mock("../mode/useOctaveAvailability", () => ({ useOctaveAvailability: () => ({ available: h.octave, settled: true }) }));
 
 const { SettingsAppearance } = await import("../../../pages/settings/SettingsAppearance");
+const { OctaveSettingsView } = await import("./OctaveSettingsView");
+const { octavePaths } = await import("../octavePaths");
+const { isOctavePath } = await import("../cache/pageResume");
 
 beforeEach(() => {
   h.native = false;
@@ -38,6 +45,10 @@ describe("Réglages › Apparence", () => {
     const html = renderToStaticMarkup(<SettingsAppearance />);
     expect(html).toContain("appearance.themeSame");
     expect(html).not.toMatch(/liquidGlassTitle|appearance\.glass|appearance\.tentacleGlass/);
+  });
+
+  it("le groupe Octave renvoie aux réglages DANS Octave", () => {
+    expect(renderToStaticMarkup(<SettingsAppearance />)).toContain(`href="${octavePaths.settings}"`);
   });
 
   it("macOS compatible : « Liquid Glass dans Tentacle » et « Liquid Glass dans Octave »", () => {
@@ -54,5 +65,25 @@ describe("Réglages › Apparence", () => {
     const html = renderToStaticMarkup(<SettingsAppearance />);
     expect(html).not.toContain("appearance.theme");
     expect(html).toContain('data-row="liquidGlassTitle"');
+  });
+});
+
+describe("Réglages d'Octave, DANS Octave (/octave/settings)", () => {
+  it("une adresse d'Octave : la coquille la sert, la surface reste Octave, la réouverture y revient", () => {
+    expect(octavePaths.settings).toBe("/octave/settings");
+    expect(isOctavePath(octavePaths.settings, "/octave")).toBe(true);
+  });
+
+  it("les MÊMES réglages : apparence (thème) et « Au démarrage, ouvrir » ; au web, aucune ligne Liquid Glass", () => {
+    const html = renderToStaticMarkup(<OctaveSettingsView />);
+    expect(html).toContain("settings.title");
+    expect(html).toContain("appearance.themeSame");
+    expect(html).toContain('data-startup="settings.startup"');
+    expect(html).not.toMatch(/appearance\.glass|Liquid/);
+  });
+
+  it("macOS compatible : « Liquid Glass dans Octave » y est aussi", () => {
+    h.native = true;
+    expect(renderToStaticMarkup(<OctaveSettingsView />)).toContain('data-row="appearance.glass"');
   });
 });
